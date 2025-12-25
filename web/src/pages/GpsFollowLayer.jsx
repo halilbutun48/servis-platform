@@ -10,30 +10,22 @@ const toNum = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
-export default function GpsFollowLayer({ vehicleId = 1, pollMs = 15000 }) {
+export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
   const map = useMap();
   const [follow, setFollow] = useState(true);
   const followRef = useRef(true);
-
   const [last, setLast] = useState(null);
   const lastPosRef = useRef(null);
   const firstFixRef = useRef(true);
-  const warnedRef = useRef(false);
 
-  useEffect(() => {
-    followRef.current = follow;
-  }, [follow]);
+  useEffect(() => { followRef.current = follow; }, [follow]);
 
-  // User drag/zoom => follow OFF
+  // Drag/Zoom => follow OFF
   useEffect(() => {
     const off = () => {
       if (followRef.current) {
         setFollow(false);
-        if (!warnedRef.current) {
-          warnedRef.current = true;
-          toast("Drag/Zoom: Follow OFF", { id: "follow-off" });
-          setTimeout(() => (warnedRef.current = false), 1200);
-        }
+        toast("Drag/Zoom yaptin: follow kapandi", { id: "follow-off" });
       }
     };
     map.on("dragstart", off);
@@ -51,7 +43,7 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 15000 }) {
 
     const run = async () => {
       try {
-        const r = await fetch(`/api/gps/last?vehicleId=${vehicleId}`, { cache: "no-store" });
+        const r = await fetch(`/api/gps/last?vehicleId=${vehicleId}`);
         const j = await r.json();
         if (!alive) return;
         if (j && j.ok) setLast(j.last || null);
@@ -60,20 +52,21 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 15000 }) {
     };
 
     run();
-    return () => {
-      alive = false;
-      if (t) clearTimeout(t);
-    };
+    return () => { alive = false; if (t) clearTimeout(t); };
   }, [vehicleId, pollMs]);
 
   const pos = useMemo(() => {
-    const lat = toNum(last && last.lat);
-    const lon = toNum(last && last.lon);
+    const lat = toNum(last?.lat);
+    const lon = toNum(last?.lon);
     if (lat === null || lon === null) return null;
     return [lat, lon];
   }, [last]);
 
-  // Follow ON => setView. OFF => never jump.
+  const heading = useMemo(() => {
+    const h = toNum(last?.heading);
+    return h === null ? 0 : h;
+  }, [last]);
+
   useEffect(() => {
     if (!pos) return;
     lastPosRef.current = pos;
@@ -84,72 +77,71 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 15000 }) {
     firstFixRef.current = false;
   }, [pos, map]);
 
-  const icon = useMemo(
-    () =>
-      new L.DivIcon({
-        className: "veh-icon",
-        html: `
-          <div style="
-            width:18px;height:18px;border-radius:999px;
-            background:#111; box-shadow:0 0 0 3px rgba(0,0,0,.15);
-            border:2px solid #fff;
-          "></div>
-        `,
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
-      }),
-    []
-  );
+  const icon = useMemo(() => new L.DivIcon({
+    className: "veh-icon",
+    html: `
+      <div style="position:relative;width:22px;height:22px;">
+        <div style="
+          position:absolute;inset:0;border-radius:999px;
+          background:#111;border:2px solid #fff;
+          box-shadow:0 0 0 3px rgba(0,0,0,.12);
+        "></div>
+        <div style="
+          position:absolute;left:50%;top:50%;
+          width:0;height:0;
+          border-left:5px solid transparent;
+          border-right:5px solid transparent;
+          border-bottom:10px solid #fff;
+          transform: translate(-50%,-70%) rotate(${heading}deg);
+          transform-origin: 50% 80%;
+          opacity:.95;
+        "></div>
+      </div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  }), [heading]);
 
   const enableFollow = () => {
     setFollow(true);
-    toast("Follow ON", { id: "follow-on" });
+    toast("Follow acildi", { id: "follow-on" });
     if (lastPosRef.current) map.setView(lastPosRef.current, map.getZoom(), { animate: true });
   };
 
   return (
     <>
       <Toaster position="top-center" />
-
       {pos && (
         <Marker position={pos} icon={icon}>
           <Popup>
             <div style={{ fontSize: 12 }}>
-              <div>
-                <b>Arac</b> #{vehicleId}
-              </div>
+              <div><b>Arac</b> #{vehicleId}</div>
               <div>lat: {pos[0]}</div>
               <div>lon: {pos[1]}</div>
-              {last && last.recordedAt && <div>ts: {String(last.recordedAt)}</div>}
+              <div>heading: {heading}</div>
+              {last?.recordedAt && <div>ts: {String(last.recordedAt)}</div>}
             </div>
           </Popup>
         </Marker>
       )}
 
       {!follow && (
-        <div
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            zIndex: 2000,
-            background: "white",
-            padding: "8px 10px",
-            borderRadius: 10,
-            boxShadow: "0 6px 24px rgba(0,0,0,.12)",
-          }}
-        >
-          <button
-            onClick={enableFollow}
-            style={{
-              border: "1px solid #ddd",
-              background: "white",
-              borderRadius: 8,
-              padding: "6px 10px",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
+        <div style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          zIndex: 2000,
+          background: "white",
+          padding: "8px 10px",
+          borderRadius: 10,
+          boxShadow: "0 6px 24px rgba(0,0,0,.12)"
+        }}>
+          <button onClick={enableFollow} style={{
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            padding: "6px 10px",
+            cursor: "pointer",
+            fontWeight: 600
+          }}>
             Takip Ac
           </button>
         </div>
