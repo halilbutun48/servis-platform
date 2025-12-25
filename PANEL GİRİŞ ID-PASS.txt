@@ -1,0 +1,23 @@
+Seed’deki demo hesaplar ve şifre şu:
+
+Şifre (hepsi için): Demo123!
+
+Kullanıcılar:
+
+SUPER_ADMIN: admin@demo.com
+
+SERVICE_ROOM: room@demo.com
+
+SCHOOL_ADMIN (schoolId=1): school_admin@demo.com
+
+DRIVER (schoolId=1): driver_seed@demo.com
+
+PARENT (schoolId=1): parent_seed@demo.com
+
+Admin panel için:
+
+admin@demo.com (SUPER_ADMIN) veya
+
+room@demo.com (SERVICE_ROOM)
+
+İkisi de /admin işlemlerine yetkili.

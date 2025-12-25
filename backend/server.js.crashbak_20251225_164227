@@ -1,0 +1,29 @@
+﻿require("dotenv").config();
+app.get("/api/gps/latest", auth, async (req, res) => {
+  const vehicleId = Number(req.query.vehicleId || 1);
+
+  const last = await prisma.gpsLog.findFirst({
+    where: { vehicleId },
+    orderBy: { recordedAt: "desc" },
+  });
+
+  if (!last) return res.json({ ok: true, last: null });
+
+  res.json({
+    ok: true,
+    last: {
+      vehicleId,
+      lat: last.lat,
+      lon: last.lon,
+      speed: last.speed,
+      heading: last.heading,
+      recordedAt: last.recordedAt.toISOString(),
+    },
+  });
+});
+
+PORT, () => console.log("API listening on", PORT));
+
+app.listen(PORT, () => console.log("API listening on", PORT));
+
+

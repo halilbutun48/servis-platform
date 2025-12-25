@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  SERVICE_ROOM
+  SCHOOL_ADMIN
+  DRIVER
+  PARENT
+}
+
+enum AttendanceType {
+  BOARD
+  DROP
+  ABSENT
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  schoolId     Int?
+  createdAt    DateTime @default(now())
+
+  school       School?  @relation(fields: [schoolId], references: [id])
+  students     Student[] @relation("ParentStudents")
+  driverVehicle Vehicle? @relation("DriverVehicle")
+
+  @@index([schoolId])
+}
+
+model School {
+  id        Int      @id @default(autoincrement())
+  name      String
+  lat       Float?
+  lon       Float?
+  createdAt DateTime @default(now())
+
+  users     User[]
+  vehicles  Vehicle[]
+  routes    Route[]
+  students  Student[]
+}
+
+model Vehicle {
+  id          Int      @id @default(autoincrement())
+  plate       String
+  schoolId    Int
+  driverUserId Int?     @unique
+  createdAt   DateTime @default(now())
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  driver      User?    @relation("DriverVehicle", fields: [driverUserId], references: [id])
+  routes      Route[]
+  gpsLogs     GpsLog[]
+
+  @@index([schoolId])
+}
+
+model Route {
+  id        Int      @id @default(autoincrement())
+  name      String
+  schoolId  Int
+  vehicleId Int?
+  createdAt DateTime @default(now())
+
+  school    School   @relation(fields: [schoolId], references: [id])
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+  stops     RouteStop[]
+  students  Student[]
+
+  @@index([schoolId])
+  @@index([vehicleId])
+}
+
+model RouteStop {
+  id      Int    @id @default(autoincrement())
+  routeId Int
+  ord     Int
+  name    String
+  lat     Float
+  lon     Float
+
+  route   Route  @relation(fields: [routeId], references: [id])
+
+  @@index([routeId])
+  @@unique([routeId, ord])
+}
+
+model Student {
+  id          Int      @id @default(autoincrement())
+  fullName    String
+  schoolId    Int
+  parentUserId Int?
+  routeId     Int?
+  createdAt   DateTime @default(now())
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  parent      User?    @relation("ParentStudents", fields: [parentUserId], references: [id])
+  route       Route?   @relation(fields: [routeId], references: [id])
+
+  attendance  AttendanceEvent[]
+  absences    Absence[]
+
+  @@index([schoolId])
+  @@index([parentUserId])
+  @@index([routeId])
+}
+
+model AttendanceEvent {
+  id         Int            @id @default(autoincrement())
+  studentId  Int
+  type       AttendanceType
+  routeStopId Int?
+  createdAt  DateTime       @default(now())
+  source     String         @default("MANUAL")
+
+  student    Student        @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@index([createdAt])
+}
+
+model Absence {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  day       DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  student   Student  @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@unique([studentId, day])
+}
+
+model GpsLog {
+  id         Int      @id @default(autoincrement())
+  vehicleId  Int
+  lat        Float
+  lon        Float
+  speed      Float?
+  heading    Float?
+  recordedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId])
+  @@index([recordedAt])
+}
+
+model PingLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+}
