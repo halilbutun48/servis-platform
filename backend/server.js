@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
@@ -13,10 +13,31 @@ const { PrismaClient } = require("@prisma/client");
 dotenv.config();
 
 const app = express();
+app.set("etag", false);
+app.get("/api/_build", (req, res) => {
+  res.json({ ok: true, build: "20251225_175033" });
+});
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: true, credentials: true } });
 
 const prisma = new PrismaClient();
+ // GPS_LAST_PINNED_TOP
+ app.get("/api/gps/last", async (req, res) => {
+   const vehicleId = Number(req.query.vehicleId || 0);
+   if (!vehicleId) return res.status(400).json({ ok: false, error: "MISSING_VEHICLE_ID" });
+
+   const d = prisma["gpsLog"];
+   if (!d?.findFirst) return res.status(500).json({ ok: false, error: "GPS_DELEGATE_NOT_FOUND", delegate: "gpsLog" });
+
+   let last = null;
+   try {
+     last = await d.findFirst({ where: { vehicleId }, orderBy: { recordedAt: "desc" } });
+   } catch (e) {
+     last = await d.findFirst({ where: { vehicleId }, orderBy: { createdAt: "desc" } });
+   }
+
+   return res.json({ ok: true, last });
+ });
 
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
@@ -65,7 +86,9 @@ io.on("connection", (socket) => {
   });
 });
 
+app.use("/api", (req, res, next) => { res.set("Cache-Control","no-store"); res.set("Pragma","no-cache"); res.set("Expires","0"); next(); });
 // --- API ---
+app.use("/api/events", require("./routes/events"));
 app.get("/api/_ping", async (req, res) => {
   await prisma.pingLog.create({ data: {} });
 
@@ -149,7 +172,7 @@ app.get("/api/school/me", auth, async (req, res) => {
   });
 });
 
-// School: location update (demo iÃƒÆ’Ã‚Â§in)
+// School: location update (demo iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§in)
 app.put(
   "/api/school/:id/location",
   auth,
@@ -159,7 +182,7 @@ app.put(
     const { lat, lon } = req.body || {};
     if (!id || lat == null || lon == null) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
 
-    // SCHOOL_ADMIN sadece kendi okulunu gÃƒÆ’Ã‚Â¼nceller
+    // SCHOOL_ADMIN sadece kendi okulunu gÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼nceller
     if (req.user.role === "SCHOOL_ADMIN" && Number(req.user.schoolId) !== id) {
       return res.status(403).json({ ok: false, error: "FORBIDDEN" });
     }
@@ -181,7 +204,7 @@ app.get("/api/routes/:id/stops", auth, async (req, res) => {
   const route = await prisma.route.findUnique({ where: { id: routeId } });
   if (!route) return res.status(404).json({ ok: false, error: "ROUTE_NOT_FOUND" });
 
-  // kullanÃƒâ€Ã‚Â±cÃƒâ€Ã‚Â± bir okula baÃƒâ€Ã…Â¸lÃƒâ€Ã‚Â±ysa, baÃƒâ€¦Ã…Â¸ka okulun rotasÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â± gÃƒÆ’Ã‚Â¶rmesin
+  // kullanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±cÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± bir okula baÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸lÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±ysa, baÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸ka okulun rotasÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±nÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± gÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶rmesin
   if (req.user.schoolId && route.schoolId !== Number(req.user.schoolId)) {
     return res.status(403).json({ ok: false, error: "FORBIDDEN" });
   }
@@ -256,7 +279,7 @@ app.get("/api/gps/latest", auth, async (req, res) => {
   });
 });
 
-// --- ADMIN: schools & users (Super Admin / Servis OdasÃ„Â±) ---
+// --- ADMIN: schools & users (Super Admin / Servis OdasÃƒâ€Ã‚Â±) ---
 app.get("/api/admin/schools", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), async (req, res) => {
   const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
   res.json({ ok: true, schools: schools.map(s => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon })) });
@@ -313,7 +336,7 @@ app.post("/api/admin/users", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), a
 
 
 // --- SCHOOL_ADMIN: vehicles/routes/stops ---
-// Not: auth middleware'in req.user.id set ettiÃ„Å¸ini varsayÃ„Â±yoruz (api/me zaten bÃƒÂ¶yle ÃƒÂ§alÃ„Â±Ã…Å¸Ã„Â±yor).
+// Not: auth middleware'in req.user.id set ettiÃƒâ€Ã…Â¸ini varsayÃƒâ€Ã‚Â±yoruz (api/me zaten bÃƒÆ’Ã‚Â¶yle ÃƒÆ’Ã‚Â§alÃƒâ€Ã‚Â±Ãƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â±yor).
 async function loadMe(req, res, next) {
   try {
     const me = await prisma.user.findUnique({
@@ -544,3 +567,7 @@ app.delete("/api/school/stops/:stopId", auth, requireRole("SCHOOL_ADMIN"), loadM
 
 
 server.listen(PORT, () => console.log("API listening on", PORT));
+
+
+
+

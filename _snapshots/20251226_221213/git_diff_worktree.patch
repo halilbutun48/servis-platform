@@ -1,0 +1,236 @@
+﻿diff --git a/backend/package.json b/backend/package.json
+index 781812c..a026f8a 100644
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -1,11 +1,11 @@
+-{
++´╗┐{
+   "name": "backend",
+   "version": "1.0.0",
+   "description": "",
+   "main": "server.js",
+   "scripts": {
+     "test": "echo \"Error: no test specified\" && exit 1",
+-    "dev": "nodemon server.js",
++    "dev": "nodemon D:\\servis-platform\\backend\\server.js",
+     "start": "node server.js"
+   },
+   "keywords": [],
+@@ -32,4 +32,4 @@
+   "prisma": {
+     "seed": "node prisma/seed.cjs"
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/backend/server.js b/backend/server.js
+index d25176e..981cd82 100644
+--- a/backend/server.js
++++ b/backend/server.js
+@@ -1,4 +1,4 @@
+-const express = require("express");
++´╗┐const express = require("express");
+ const cors = require("cors");
+ const dotenv = require("dotenv");
+ const morgan = require("morgan");
+@@ -13,10 +13,31 @@ const { PrismaClient } = require("@prisma/client");
+ dotenv.config();
+ 
+ const app = express();
++app.set("etag", false);
++app.get("/api/_build", (req, res) => {
++  res.json({ ok: true, build: "20251225_175033" });
++});
+ const server = http.createServer(app);
+ const io = new Server(server, { cors: { origin: true, credentials: true } });
+ 
+ const prisma = new PrismaClient();
++ // GPS_LAST_PINNED_TOP
++ app.get("/api/gps/last", async (req, res) => {
++   const vehicleId = Number(req.query.vehicleId || 0);
++   if (!vehicleId) return res.status(400).json({ ok: false, error: "MISSING_VEHICLE_ID" });
++
++   const d = prisma["gpsLog"];
++   if (!d?.findFirst) return res.status(500).json({ ok: false, error: "GPS_DELEGATE_NOT_FOUND", delegate: "gpsLog" });
++
++   let last = null;
++   try {
++     last = await d.findFirst({ where: { vehicleId }, orderBy: { recordedAt: "desc" } });
++   } catch (e) {
++     last = await d.findFirst({ where: { vehicleId }, orderBy: { createdAt: "desc" } });
++   }
++
++   return res.json({ ok: true, last });
++ });
+ 
+ const PORT = Number(process.env.PORT || 3000);
+ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
+@@ -65,7 +86,9 @@ io.on("connection", (socket) => {
+   });
+ });
+ 
++app.use("/api", (req, res, next) => { res.set("Cache-Control","no-store"); res.set("Pragma","no-cache"); res.set("Expires","0"); next(); });
+ // --- API ---
++app.use("/api/events", require("./routes/events"));
+ app.get("/api/_ping", async (req, res) => {
+   await prisma.pingLog.create({ data: {} });
+ 
+@@ -149,7 +172,7 @@ app.get("/api/school/me", auth, async (req, res) => {
+   });
+ });
+ 
+-// School: location update (demo i├âãÆ├åÔÇÖ├âÔÇÜ├é┬ğin)
++// School: location update (demo i├âãÆ├åÔÇÖ├âÔÇá├óÔé¼Ôäó├âãÆ├óÔé¼┼í├âÔÇÜ├é┬ğin)
+ app.put(
+   "/api/school/:id/location",
+   auth,
+@@ -159,7 +182,7 @@ app.put(
+     const { lat, lon } = req.body || {};
+     if (!id || lat == null || lon == null) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
+ 
+-    // SCHOOL_ADMIN sadece kendi okulunu g├âãÆ├åÔÇÖ├âÔÇÜ├é┬╝nceller
++    // SCHOOL_ADMIN sadece kendi okulunu g├âãÆ├åÔÇÖ├âÔÇá├óÔé¼Ôäó├âãÆ├óÔé¼┼í├âÔÇÜ├é┬╝nceller
+     if (req.user.role === "SCHOOL_ADMIN" && Number(req.user.schoolId) !== id) {
+       return res.status(403).json({ ok: false, error: "FORBIDDEN" });
+     }
+@@ -181,7 +204,7 @@ app.get("/api/routes/:id/stops", auth, async (req, res) => {
+   const route = await prisma.route.findUnique({ where: { id: routeId } });
+   if (!route) return res.status(404).json({ ok: false, error: "ROUTE_NOT_FOUND" });
+ 
+-  // kullan├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒c├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒ bir okula ba├âãÆ├óÔé¼┬Ş├âÔÇĞ├é┬©l├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒ysa, ba├âãÆ├óÔé¼┬Ğ├âÔÇĞ├é┬©ka okulun rotas├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒n├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒ g├âãÆ├åÔÇÖ├âÔÇÜ├é┬Ârmesin
++  // kullan├âãÆ├åÔÇÖ├â┬ó├óÔÇÜ┬¼├é┬Ş├âãÆ├óÔé¼┼í├âÔÇÜ├é┬▒c├âãÆ├åÔÇÖ├â┬ó├óÔÇÜ┬¼├é┬Ş├âãÆ├óÔé¼┼í├âÔÇÜ├é┬▒ bir okula ba├âãÆ├åÔÇÖ├â┬ó├óÔÇÜ┬¼├é┬Ş├âãÆ├óÔé¼┬Ğ├âÔÇÜ├é┬©l├âãÆ├åÔÇÖ├â┬ó├óÔÇÜ┬¼├é┬Ş├âãÆ├óÔé¼┼í├âÔÇÜ├é┬▒ysa, ba├âãÆ├åÔÇÖ├â┬ó├óÔÇÜ┬¼├é┬Ğ├âãÆ├óÔé¼┬Ğ├âÔÇÜ├é┬©ka okulun rotas├âãÆ├åÔÇÖ├â┬ó├óÔÇÜ┬¼├é┬Ş├âãÆ├óÔé¼┼í├âÔÇÜ├é┬▒n├âãÆ├åÔÇÖ├â┬ó├óÔÇÜ┬¼├é┬Ş├âãÆ├óÔé¼┼í├âÔÇÜ├é┬▒ g├âãÆ├åÔÇÖ├âÔÇá├óÔé¼Ôäó├âãÆ├óÔé¼┼í├âÔÇÜ├é┬Ârmesin
+   if (req.user.schoolId && route.schoolId !== Number(req.user.schoolId)) {
+     return res.status(403).json({ ok: false, error: "FORBIDDEN" });
+   }
+@@ -256,7 +279,7 @@ app.get("/api/gps/latest", auth, async (req, res) => {
+   });
+ });
+ 
+-// --- ADMIN: schools & users (Super Admin / Servis Odas├âÔÇŞ├é┬▒) ---
++// --- ADMIN: schools & users (Super Admin / Servis Odas├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒) ---
+ app.get("/api/admin/schools", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), async (req, res) => {
+   const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
+   res.json({ ok: true, schools: schools.map(s => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon })) });
+@@ -313,7 +336,7 @@ app.post("/api/admin/users", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), a
+ 
+ 
+ // --- SCHOOL_ADMIN: vehicles/routes/stops ---
+-// Not: auth middleware'in req.user.id set etti├âÔÇŞ├à┬©ini varsay├âÔÇŞ├é┬▒yoruz (api/me zaten b├âãÆ├é┬Âyle ├âãÆ├é┬ğal├âÔÇŞ├é┬▒├âÔÇĞ├à┬©├âÔÇŞ├é┬▒yor).
++// Not: auth middleware'in req.user.id set etti├âãÆ├óÔé¼┬Ş├âÔÇĞ├é┬©ini varsay├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒yoruz (api/me zaten b├âãÆ├åÔÇÖ├âÔÇÜ├é┬Âyle ├âãÆ├åÔÇÖ├âÔÇÜ├é┬ğal├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒├âãÆ├óÔé¼┬Ğ├âÔÇĞ├é┬©├âãÆ├óÔé¼┬Ş├âÔÇÜ├é┬▒yor).
+ async function loadMe(req, res, next) {
+   try {
+     const me = await prisma.user.findUnique({
+@@ -543,4 +566,8 @@ app.delete("/api/school/stops/:stopId", auth, requireRole("SCHOOL_ADMIN"), loadM
+ });
+ 
+ 
+-server.listen(PORT, () => console.log("API listening on", PORT));
+\ No newline at end of file
++server.listen(PORT, () => console.log("API listening on", PORT));
++
++
++
++
+diff --git a/web/src/pages/GpsFollowLayer.jsx b/web/src/pages/GpsFollowLayer.jsx
+index 8384100..6bd8754 100644
+--- a/web/src/pages/GpsFollowLayer.jsx
++++ b/web/src/pages/GpsFollowLayer.jsx
+@@ -1,4 +1,4 @@
+-import { useEffect, useMemo, useRef, useState } from "react";
++´╗┐import { useEffect, useMemo, useRef, useState } from "react";
+ import { Marker, Popup, useMap } from "react-leaflet";
+ import toast, { Toaster } from "react-hot-toast";
+ import L from "leaflet";
+@@ -36,13 +36,14 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
+     };
+   }, [map]);
+ 
+-  // Poll GPS last (fallback) - adaptive backoff + pause when tab hidden
++  // Poll GPS last (fallback) - adaptive backoff + pause when tab hidden + slower when follow OFF
+   useEffect(() => {
+     let alive = true;
+     let t = null;
++    let controller = null;
+ 
+-    // backoff starts at pollMs, grows on errors up to 30s
+-    let delay = pollMs;
++    const baseDelay = () => (follow ? pollMs : Math.max(pollMs, 15000));
++    let delay = baseDelay();
+ 
+     const schedule = (ms) => {
+       if (!alive) return;
+@@ -55,15 +56,24 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
+ 
+       // If tab is hidden, do not hammer the API
+       if (typeof document !== "undefined" && document.hidden) {
+-        schedule(pollMs);
++        delay = baseDelay();
++        schedule(delay);
++        return;
++      }
++
++      const vid = Number(vehicleId || 0);
++      if (!vid) {
++        delay = 15000;
++        schedule(delay);
+         return;
+       }
+ 
+-      const controller = new AbortController();
++      controller?.abort?.();
++      controller = new AbortController();
+       const kill = setTimeout(() => controller.abort(), 4000);
+ 
+       try {
+-        const r = await fetch(`/api/gps/last?vehicleId=${vehicleId}`, {
++        const r = await fetch(`/api/gps/last?vehicleId=${vid}`, {
+           signal: controller.signal,
+           cache: "no-store",
+         });
+@@ -77,14 +87,21 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
+         if (j && j.ok) setLast(j.last || null);
+ 
+         // success -> reset delay
+-        delay = pollMs;
+-        schedule(pollMs);
++        delay = baseDelay();
++        schedule(delay);
+       } catch (e) {
+         clearTimeout(kill);
+         if (!alive) return;
+ 
+-        // failure -> exponential backoff (max 30s)
+-        delay = Math.min(Math.max(pollMs, delay * 2), 30000);
++        // AbortError -> stay quiet and retry normally
++        if (e?.name === "AbortError") {
++          delay = baseDelay();
++          schedule(delay);
++          return;
++        }
++
++        // failure -> exponential backoff (max 60s)
++        delay = Math.min(Math.max(baseDelay(), delay * 2), 60000);
+         schedule(delay);
+       }
+     };
+@@ -102,13 +119,13 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
+ 
+     return () => {
+       alive = false;
++      controller?.abort?.();
+       if (t) clearTimeout(t);
+       if (typeof document !== "undefined") {
+         document.removeEventListener("visibilitychange", onVis);
+       }
+     };
+-  }, [vehicleId, pollMs]);
+-
++  }, [vehicleId, pollMs, follow]);
+ const pos = useMemo(() => {
+     const lat = toNum(last?.lat);
+     const lon = toNum(last?.lon);
+@@ -203,3 +220,4 @@ const pos = useMemo(() => {
+     </>
+   );
+ }
++
