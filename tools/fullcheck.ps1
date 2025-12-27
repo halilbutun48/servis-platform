@@ -56,3 +56,8 @@ $me = Invoke-RestMethod -Headers $h -Uri "http://127.0.0.1:3000/api/me" -Timeout
 if ($me.ok) { Pass "GET AUTH /me" } else { Fail "GET AUTH /me (ok=false)" }
 
 Pass "FULLCHECK: ALL GREEN"
+
+# ENCODING_CHECK_v1
+powershell -ExecutionPolicy Bypass -File "$PSScriptRoot\encoding-check.ps1"
+if ($LASTEXITCODE -ne 0) { throw "ENCODING CHECK FAIL" }
+

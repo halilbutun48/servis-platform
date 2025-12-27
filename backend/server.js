@@ -487,6 +487,60 @@ app.put("/api/school/routes/:id", auth, requireRole("SCHOOL_ADMIN"), loadMe, req
 });
 
 // Stops
+app.get(
+  "/api/school/students",
+  auth,
+  requireRole("SCHOOL_ADMIN"),
+  loadMe,
+  requireSchool,
+  async (req, res) => {
+    const q = String(req.query.q || "").trim();
+
+    const where = { schoolId: req.me.schoolId };
+    if (q) {
+      where.fullName = { contains: q, mode: "insensitive" };
+    }
+
+    // PARENT_EMAIL_v1
+    const students = await prisma.student.findMany({
+      where,
+      orderBy: { id: "asc" },
+      take: 500,
+      select: {
+        id: true,
+        fullName: true,
+        schoolId: true,
+        parentUserId: true,
+        routeId: true,
+        createdAt: true,
+      },
+    });
+
+    const parentIds = Array.from(
+      new Set(
+        students
+          .map((s) => s.parentUserId)
+          .filter((v) => v !== null && v !== undefined)
+      )
+    );
+
+    let parentById = {};
+    if (parentIds.length) {
+      const parents = await prisma.user.findMany({
+        where: { id: { in: parentIds } },
+        select: { id: true, email: true },
+      });
+      parentById = Object.fromEntries(parents.map((p) => [p.id, p.email]));
+    }
+
+    const out = students.map((s) => ({
+      ...s,
+      parentEmail: s.parentUserId ? (parentById[s.parentUserId] || null) : null,
+    }));
+
+    return res.json({ ok: true, students: out });
+  }
+);
 app.get("/api/school/routes/:id/stops", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
   const routeId = Number(req.params.id);
   const r = await prisma.route.findFirst({ where: { id: routeId, schoolId: req.me.schoolId }, select: { id: true } });

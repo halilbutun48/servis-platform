@@ -1,4 +1,4 @@
-﻿const router = require("express").Router();
+const router = require("express").Router();
 
 // Eğer projende auth middleware varsa burada require et.
 // Yoksa şimdilik açık bırakıp 404'ü kaldırırız.

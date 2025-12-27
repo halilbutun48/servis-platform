@@ -1,4 +1,4 @@
-﻿const path = require("path");
+const path = require("path");
 try { require("dotenv").config({ path: path.join(__dirname, "..", ".env") }); } catch {}
 
 const jwt = require("jsonwebtoken");
