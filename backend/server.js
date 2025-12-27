@@ -1,3 +1,4 @@
+// backend/server.js
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -14,40 +15,42 @@ dotenv.config();
 
 const app = express();
 app.set("etag", false);
-app.get("/api/_build", (req, res) => {
-  res.json({ ok: true, build: "20251225_175033" });
-});
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: true, credentials: true } });
-
-const prisma = new PrismaClient();
- // GPS_LAST_PINNED_TOP
- app.get("/api/gps/last", async (req, res) => {
-   const vehicleId = Number(req.query.vehicleId || 0);
-   if (!vehicleId) return res.status(400).json({ ok: false, error: "MISSING_VEHICLE_ID" });
-
-   const d = prisma["gpsLog"];
-   if (!d?.findFirst) return res.status(500).json({ ok: false, error: "GPS_DELEGATE_NOT_FOUND", delegate: "gpsLog" });
-
-   let last = null;
-   try {
-     last = await d.findFirst({ where: { vehicleId }, orderBy: { recordedAt: "desc" } });
-   } catch (e) {
-     last = await d.findFirst({ where: { vehicleId }, orderBy: { createdAt: "desc" } });
-   }
-
-   return res.json({ ok: true, last });
- });
 
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
+const BUILD_STAMP = "20251225_175033";
 
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: true, credentials: true } });
+const prisma = new PrismaClient();
+
+// --- Format helpers (TR TZ) ---
+const _fmtTR = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Istanbul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+function fmtYMD_TR(dt) {
+  return _fmtTR.format(dt); // "YYYY-MM-DD"
+}
+
+// ===== Middlewares =====
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
-app.use(morgan('dev', { skip: (req) => req.path === '/api/gps/last' }));
+app.use(morgan("dev", { skip: (req) => req.path === "/api/gps/last" }));
 app.use(helmet());
 app.use(rateLimit({ windowMs: 60_000, max: 600 }));
 
+// ✅ No-cache for ALL /api (mutlaka route'lardan önce)
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+});
+
+// ===== Auth helpers =====
 function signToken(user) {
   return jwt.sign(
     { id: user.id, role: user.role, schoolId: user.schoolId ?? null, email: user.email },
@@ -76,7 +79,27 @@ function requireRole(...roles) {
   };
 }
 
-// WS rooms: vehicle:{vehicleId}, school:{schoolId}, route:{routeId}
+// SCHOOL_ADMIN helpers
+async function loadMe(req, res, next) {
+  try {
+    const me = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, role: true, schoolId: true, email: true },
+    });
+    if (!me) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+    req.me = me;
+    next();
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: "SERVER_ERROR" });
+  }
+}
+
+function requireSchool(req, res, next) {
+  if (!req.me?.schoolId) return res.status(400).json({ ok: false, error: "NO_SCHOOL" });
+  next();
+}
+
+// ===== WS rooms: vehicle:{vehicleId}, school:{schoolId}, route:{routeId} =====
 io.on("connection", (socket) => {
   socket.on("join", (p = {}) => {
     const { vehicleId, schoolId, routeId } = p || {};
@@ -86,55 +109,34 @@ io.on("connection", (socket) => {
   });
 });
 
-app.use("/api", (req, res, next) => { res.set("Cache-Control","no-store"); res.set("Pragma","no-cache"); res.set("Expires","0"); next(); });
-// --- API ---
-app.use("/api/events", require("./routes/events"));
+// ===== Debug/Health =====
+app.get("/api/_build", (req, res) => res.json({ ok: true, build: BUILD_STAMP }));
+
 app.get("/api/_ping", async (req, res) => {
   await prisma.pingLog.create({ data: {} });
-
-// GPS LAST (UI fallback)
-app.get("/api/gps/last", async (req, res) => {
-  try {
-    const vehicleId = Number(req.query.vehicleId || 0);
-    const where = vehicleId ? { vehicleId } : {};
-    const last = await prisma.gpsLog.findFirst({
-      where,
-      orderBy: { recordedAt: "desc" },
-    });
-
-// DEBUG: build stamp
-app.get("/api/_build", (req, res) => {
-  res.json({ ok: true, build: "20251225_175033" });
+  res.json({ ok: true, ts: new Date().toISOString() });
 });
 
-
-// DEBUG: list registered routes
 app.get("/api/_routes", (req, res) => {
   try {
     const stack = (app._router && app._router.stack) || (app.router && app.router.stack) || [];
     const routes = [];
     for (const layer of stack) {
       if (layer && layer.route && layer.route.path) {
-        const methods = Object.keys(layer.route.methods || {}).filter(k => layer.route.methods[k]);
+        const methods = Object.keys(layer.route.methods || {}).filter((k) => layer.route.methods[k]);
         routes.push({ path: layer.route.path, methods });
       }
     }
-    res.json({ ok: true, routes });
+    res.json({ ok: true, count: routes.length, routes });
   } catch (e) {
     res.status(500).json({ ok: false, error: "SERVER_ERROR" });
   }
 });
 
-    res.json({ ok: true, last });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: "SERVER_ERROR" });
-  }
-});
+// ===== External routes =====
+app.use("/api/events", require("./routes/events"));
 
-
-  res.json({ ok: true, ts: new Date().toISOString() });
-});
-
+// ===== Auth =====
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
@@ -158,7 +160,7 @@ app.get("/api/me", auth, async (req, res) => {
   });
 });
 
-// School: me (harita okul konumu DB'den gelsin)
+// ===== School endpoints =====
 app.get("/api/school/me", auth, async (req, res) => {
   const schoolId = req.user.schoolId;
   if (!schoolId) return res.json({ ok: true, school: null });
@@ -172,7 +174,6 @@ app.get("/api/school/me", auth, async (req, res) => {
   });
 });
 
-// School: location update (demo)
 app.put(
   "/api/school/:id/location",
   auth,
@@ -181,7 +182,7 @@ app.put(
     const id = Number(req.params.id);
     const { lat, lon } = req.body || {};
     if (!id || lat == null || lon == null) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
-    // SCHOOL_ADMIN can only update own school
+
     if (req.user.role === "SCHOOL_ADMIN" && Number(req.user.schoolId) !== id) {
       return res.status(403).json({ ok: false, error: "FORBIDDEN" });
     }
@@ -195,28 +196,19 @@ app.put(
   }
 );
 
-// Route stops (haritada duraklar)
-app.get("/api/routes/:id/stops", auth, async (req, res) => {
-  const routeId = Number(req.params.id);
-  if (!routeId) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
+// ===== GPS =====
+app.get("/api/gps/last", async (req, res) => {
+  const vehicleId = Number(req.query.vehicleId || 0);
+  if (!vehicleId) return res.status(400).json({ ok: false, error: "MISSING_VEHICLE_ID" });
 
-  const route = await prisma.route.findUnique({ where: { id: routeId } });
-  if (!route) return res.status(404).json({ ok: false, error: "ROUTE_NOT_FOUND" });
-
-// Access control: a user tied to a school must not view routes from other schools
-  if (req.user.schoolId && route.schoolId !== Number(req.user.schoolId)) {
-    return res.status(403).json({ ok: false, error: "FORBIDDEN" });
+  let last = null;
+  try {
+    last = await prisma.gpsLog.findFirst({ where: { vehicleId }, orderBy: { recordedAt: "desc" } });
+  } catch (e) {
+    last = await prisma.gpsLog.findFirst({ where: { vehicleId }, orderBy: { createdAt: "desc" } });
   }
 
-  const stops = await prisma.routeStop.findMany({
-    where: { routeId },
-    orderBy: { ord: "asc" },
-  });
-
-  res.json({
-    ok: true,
-    stops: stops.map((s) => ({ id: s.id, ord: s.ord, name: s.name, lat: s.lat, lon: s.lon })),
-  });
+  return res.json({ ok: true, last });
 });
 
 app.post("/api/gps", auth, requireRole("DRIVER"), async (req, res) => {
@@ -224,7 +216,6 @@ app.post("/api/gps", auth, requireRole("DRIVER"), async (req, res) => {
   if (!vehicleId || lat == null || lon == null) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
 
   const vId = Number(vehicleId);
-
   const vehicle = await prisma.vehicle.findUnique({ where: { id: vId } });
   const schoolId = vehicle?.schoolId ?? null;
 
@@ -278,10 +269,130 @@ app.get("/api/gps/latest", auth, async (req, res) => {
   });
 });
 
-// --- ADMIN: schools & users (Super Admin / Service Room) ---
+// ===== Route stops (public by school restriction) =====
+app.get("/api/routes/:id/stops", auth, async (req, res) => {
+  const routeId = Number(req.params.id);
+  if (!routeId) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
+
+  const route = await prisma.route.findUnique({ where: { id: routeId } });
+  if (!route) return res.status(404).json({ ok: false, error: "ROUTE_NOT_FOUND" });
+
+  if (req.user.schoolId && route.schoolId !== Number(req.user.schoolId)) {
+    return res.status(403).json({ ok: false, error: "FORBIDDEN" });
+  }
+
+  const stops = await prisma.routeStop.findMany({ where: { routeId }, orderBy: { ord: "asc" } });
+  res.json({
+    ok: true,
+    stops: stops.map((s) => ({ id: s.id, ord: s.ord, name: s.name, lat: s.lat, lon: s.lon })),
+  });
+});
+
+// ===== ABSENCE (DATE-safe) =====
+// YYYY-MM-DD -> Date(UTC midnight). @db.Date ile stabil.
+function parseYMDToUTCDate(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || "").trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const da = Number(m[3]);
+  if (!y || mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+  return new Date(Date.UTC(y, mo - 1, da, 0, 0, 0, 0));
+}
+
+// CREATE absence
+app.post("/api/absence", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
+  const studentId = Number((req.body && req.body.studentId) || 0);
+  const dayStr = String((req.body && req.body.day) || "").trim();
+  const reason = req.body && req.body.reason != null ? String(req.body.reason) : null;
+
+  if (!studentId || !dayStr) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
+
+  const day = parseYMDToUTCDate(dayStr);
+  if (!day) return res.status(400).json({ ok: false, error: "BAD_DAY" });
+
+  const st = await prisma.student.findFirst({
+    where: { id: studentId, schoolId: req.me.schoolId },
+    select: { id: true },
+  });
+  if (!st) return res.status(404).json({ ok: false, error: "STUDENT_NOT_FOUND" });
+
+  try {
+    const created = await prisma.absence.create({
+      data: { studentId, day, reason },
+      select: { id: true, studentId: true, day: true, reason: true, createdAt: true },
+    });
+
+    const out = { ...created, day: fmtYMD_TR(created.day) };
+    return res.json({ ok: true, id: out.id, absence: out });
+  } catch (e) {
+    if (e && e.code === "P2002") return res.status(409).json({ ok: false, error: "DUPLICATE_DAY" });
+    return res.status(500).json({ ok: false, error: "SERVER_ERROR" });
+  }
+});
+
+// LIST absences
+app.get("/api/absence", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
+  const studentId = req.query.studentId ? Number(req.query.studentId) : null;
+  const takeNum = Math.min(Math.max(Number(req.query.take || 50), 1), 500);
+
+  const fromStr = String(req.query.from || "").trim();
+  const toStr = String(req.query.to || "").trim();
+
+  let allowedIds = [];
+
+  if (studentId) {
+    const st = await prisma.student.findFirst({
+      where: { id: studentId, schoolId: req.me.schoolId },
+      select: { id: true },
+    });
+    if (!st) return res.json({ ok: true, items: [] });
+    allowedIds = [studentId];
+  } else {
+    const sts = await prisma.student.findMany({
+      where: { schoolId: req.me.schoolId },
+      select: { id: true },
+      take: 2000,
+    });
+    allowedIds = sts.map((s) => s.id);
+    if (!allowedIds.length) return res.json({ ok: true, items: [] });
+  }
+
+  // ✅ day filtresi DB'de yok, string filtre var (DATE + TZ sürprizini keser)
+  const items = await prisma.absence.findMany({
+    where: { studentId: { in: allowedIds } },
+    orderBy: [{ day: "desc" }, { id: "desc" }],
+    take: 500,
+    select: { id: true, studentId: true, day: true, reason: true, createdAt: true },
+  });
+
+  let out = items.map((a) => ({ ...a, day: fmtYMD_TR(a.day) }));
+  if (fromStr) out = out.filter((a) => a.day >= fromStr);
+  if (toStr) out = out.filter((a) => a.day <= toStr);
+  out = out.slice(0, takeNum);
+
+  return res.json({ ok: true, items: out });
+});
+
+// DELETE absence
+app.delete("/api/absence/:id", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
+  const id = Number(req.params.id || 0);
+  if (!id) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
+
+  const a = await prisma.absence.findFirst({
+    where: { id, student: { schoolId: req.me.schoolId } },
+    select: { id: true },
+  });
+  if (!a) return res.status(404).json({ ok: false, error: "NOT_FOUND" });
+
+  await prisma.absence.delete({ where: { id } });
+  return res.json({ ok: true });
+});
+
+// ===== ADMIN: schools & users =====
 app.get("/api/admin/schools", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), async (req, res) => {
   const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
-  res.json({ ok: true, schools: schools.map(s => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon })) });
+  res.json({ ok: true, schools: schools.map((s) => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon })) });
 });
 
 app.post("/api/admin/schools", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), async (req, res) => {
@@ -333,46 +444,7 @@ app.post("/api/admin/users", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), a
   }
 });
 
-
-// --- SCHOOL_ADMIN: vehicles/routes/stops ---
-// Note: auth middleware sets req.user.id; api/me loads user from DB.
-async function loadMe(req, res, next) {
-  try {
-    const me = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { id: true, role: true, schoolId: true, email: true },
-    });
-    if (!me) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
-    req.me = me;
-    next();
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: "SERVER_ERROR" });
-  }
-}
-
-function requireSchool(req, res, next) {
-  if (!req.me?.schoolId) return res.status(400).json({ ok: false, error: "NO_SCHOOL" });
-  next();
-}
-
-// School me
-app.get("/api/school/me", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
-  const school = await prisma.school.findUnique({
-    where: { id: req.me.schoolId },
-    select: { id: true, name: true, lat: true, lon: true, createdAt: true },
-  });
-  res.json({ ok: true, school });
-});
-
-app.put("/api/school/me/location", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
-  const { lat, lon } = req.body || {};
-  const updated = await prisma.school.update({
-    where: { id: req.me.schoolId },
-    data: { lat: lat == null ? null : Number(lat), lon: lon == null ? null : Number(lon) },
-    select: { id: true, name: true, lat: true, lon: true },
-  });
-  res.json({ ok: true, school: updated });
-});
+// ===== SCHOOL_ADMIN: vehicles/routes/stops/students =====
 
 // Vehicles
 app.get("/api/school/vehicles", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
@@ -380,7 +452,11 @@ app.get("/api/school/vehicles", auth, requireRole("SCHOOL_ADMIN"), loadMe, requi
     where: { schoolId: req.me.schoolId },
     orderBy: { id: "asc" },
     select: {
-      id: true, plate: true, schoolId: true, driverUserId: true, createdAt: true,
+      id: true,
+      plate: true,
+      schoolId: true,
+      driverUserId: true,
+      createdAt: true,
       driver: { select: { id: true, email: true, role: true } },
     },
   });
@@ -420,7 +496,10 @@ app.put("/api/school/vehicles/:id", auth, requireRole("SCHOOL_ADMIN"), loadMe, r
 
   let driverId = driverUserId == null || driverUserId === "" ? null : Number(driverUserId);
   if (driverId) {
-    const driver = await prisma.user.findFirst({ where: { id: driverId, role: "DRIVER", schoolId: req.me.schoolId }, select: { id: true } });
+    const driver = await prisma.user.findFirst({
+      where: { id: driverId, role: "DRIVER", schoolId: req.me.schoolId },
+      select: { id: true },
+    });
     if (!driver) return res.status(400).json({ ok: false, error: "BAD_DRIVER" });
   }
 
@@ -442,7 +521,11 @@ app.get("/api/school/routes", auth, requireRole("SCHOOL_ADMIN"), loadMe, require
     where: { schoolId: req.me.schoolId },
     orderBy: { id: "asc" },
     select: {
-      id: true, name: true, schoolId: true, vehicleId: true, createdAt: true,
+      id: true,
+      name: true,
+      schoolId: true,
+      vehicleId: true,
+      createdAt: true,
       vehicle: { select: { id: true, plate: true } },
       _count: { select: { stops: true } },
     },
@@ -453,11 +536,13 @@ app.get("/api/school/routes", auth, requireRole("SCHOOL_ADMIN"), loadMe, require
 app.post("/api/school/routes", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
   const { name, vehicleId } = req.body || {};
   if (!name) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
+
   let vid = vehicleId == null || vehicleId === "" ? null : Number(vehicleId);
   if (vid) {
     const v = await prisma.vehicle.findFirst({ where: { id: vid, schoolId: req.me.schoolId }, select: { id: true } });
     if (!v) return res.status(400).json({ ok: false, error: "BAD_VEHICLE" });
   }
+
   const created = await prisma.route.create({
     data: { name: String(name), schoolId: req.me.schoolId, vehicleId: vid },
     select: { id: true, name: true, schoolId: true, vehicleId: true, createdAt: true },
@@ -486,61 +571,52 @@ app.put("/api/school/routes/:id", auth, requireRole("SCHOOL_ADMIN"), loadMe, req
   res.json({ ok: true, route: updated });
 });
 
-// Stops
-app.get(
-  "/api/school/students",
-  auth,
-  requireRole("SCHOOL_ADMIN"),
-  loadMe,
-  requireSchool,
-  async (req, res) => {
-    const q = String(req.query.q || "").trim();
+// Students (list)
+app.get("/api/school/students", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
+  const q = String(req.query.q || "").trim();
 
-    const where = { schoolId: req.me.schoolId };
-    if (q) {
-      where.fullName = { contains: q, mode: "insensitive" };
-    }
+  const where = { schoolId: req.me.schoolId };
+  if (q) where.fullName = { contains: q, mode: "insensitive" };
 
-    // PARENT_EMAIL_v1
-    const students = await prisma.student.findMany({
-      where,
-      orderBy: { id: "asc" },
-      take: 500,
-      select: {
-        id: true,
-        fullName: true,
-        schoolId: true,
-        parentUserId: true,
-        routeId: true,
-        createdAt: true,
-      },
+  const students = await prisma.student.findMany({
+    where,
+    orderBy: { id: "asc" },
+    take: 500,
+    select: { id: true, fullName: true, schoolId: true, parentUserId: true, routeId: true, createdAt: true },
+  });
+
+  const parentIds = Array.from(new Set(students.map((s) => s.parentUserId).filter((v) => v != null)));
+  let parentById = {};
+  if (parentIds.length) {
+    const parents = await prisma.user.findMany({
+      where: { id: { in: parentIds } },
+      select: { id: true, email: true },
     });
-
-    const parentIds = Array.from(
-      new Set(
-        students
-          .map((s) => s.parentUserId)
-          .filter((v) => v !== null && v !== undefined)
-      )
-    );
-
-    let parentById = {};
-    if (parentIds.length) {
-      const parents = await prisma.user.findMany({
-        where: { id: { in: parentIds } },
-        select: { id: true, email: true },
-      });
-      parentById = Object.fromEntries(parents.map((p) => [p.id, p.email]));
-    }
-
-    const out = students.map((s) => ({
-      ...s,
-      parentEmail: s.parentUserId ? (parentById[s.parentUserId] || null) : null,
-    }));
-
-    return res.json({ ok: true, students: out });
+    parentById = Object.fromEntries(parents.map((p) => [p.id, p.email]));
   }
-);
+
+  const out = students.map((s) => ({
+    ...s,
+    parentEmail: s.parentUserId ? parentById[s.parentUserId] || null : null,
+  }));
+
+  return res.json({ ok: true, students: out });
+});
+
+// Students (create)
+app.post("/api/school/students", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
+  const fullName = String((req.body && (req.body.fullName || req.body.name)) || "").trim();
+  if (!fullName) return res.status(400).json({ ok: false, error: "BAD_INPUT", field: "fullName" });
+
+  const st = await prisma.student.create({
+    data: { schoolId: req.me.schoolId, fullName },
+    select: { id: true, fullName: true, schoolId: true, parentUserId: true, routeId: true, createdAt: true },
+  });
+
+  return res.json({ ok: true, student: st });
+});
+
+// Stops under school route
 app.get("/api/school/routes/:id/stops", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
   const routeId = Number(req.params.id);
   const r = await prisma.route.findFirst({ where: { id: routeId, schoolId: req.me.schoolId }, select: { id: true } });
@@ -608,6 +684,7 @@ app.put("/api/school/stops/:stopId", auth, requireRole("SCHOOL_ADMIN"), loadMe, 
 
 app.delete("/api/school/stops/:stopId", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool, async (req, res) => {
   const stopId = Number(req.params.stopId);
+
   const stop = await prisma.routeStop.findUnique({ where: { id: stopId }, select: { id: true, routeId: true } });
   if (!stop) return res.status(404).json({ ok: false, error: "NOT_FOUND" });
 
@@ -617,6 +694,5 @@ app.delete("/api/school/stops/:stopId", auth, requireRole("SCHOOL_ADMIN"), loadM
   await prisma.routeStop.delete({ where: { id: stopId } });
   res.json({ ok: true });
 });
-
 
 server.listen(PORT, () => console.log("API listening on", PORT));

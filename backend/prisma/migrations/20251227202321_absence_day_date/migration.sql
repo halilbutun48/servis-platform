@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Absence" ALTER COLUMN "day" SET DATA TYPE DATE;
