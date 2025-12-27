@@ -41,10 +41,10 @@ $web = "http://localhost:5173"
 
 # Basic endpoints
 Get-Json "$be/api/_ping" | Out-Null
-Pass "GET BE /_ping"
+Pass "GET BE /api/_ping"
 
 $beBuildObj  = Get-Json "$be/api/_build"
-Pass "GET BE /_build"
+Pass "GET BE /api/_build"
 
 $webBuildObj = Get-Json "$web/api/_build"
 Pass "GET WEB proxy /api/_build"
@@ -86,11 +86,22 @@ $headers = @{ "x-auth-token" = $token }
 Get-Json "$be/api/me" $headers | Out-Null
 Pass "GET AUTH /me"
 
-Pass "FULLCHECK: ALL GREEN"
+# --- Artifact check (bak/patch/dump etc) ---
+$art = Join-Path -Path $root -ChildPath "tools\snap-move-artifacts.ps1"
+if (-not (Test-Path $art)) { Fail "snap-move-artifacts.ps1 missing (tools\snap-move-artifacts.ps1)" }
 
-# Encoding check
+powershell -NoProfile -ExecutionPolicy Bypass -File $art -DryRun -FailIfFound
+if ($LASTEXITCODE -ne 0) {
+  throw "ARTIFACT CHECK FAIL (run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\snap-move-artifacts.ps1)"
+}
+Pass "ARTIFACT CHECK: OK"
+
+# --- Encoding check ---
 $enc = Join-Path -Path $root -ChildPath "tools\encoding-check.ps1"
 if (-not (Test-Path $enc)) { Fail "encoding-check.ps1 missing (tools\encoding-check.ps1)" }
 
 powershell -NoProfile -ExecutionPolicy Bypass -File $enc
 if ($LASTEXITCODE -ne 0) { throw "ENCODING CHECK FAIL" }
+Pass "ENCODING CHECK: PASS"
+
+Pass "FULLCHECK: ALL GREEN"
