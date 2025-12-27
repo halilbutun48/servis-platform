@@ -22,6 +22,10 @@ function Is-Excluded([string]$fullPath) {
   return ($fullPath -match $excludeDirRegex)
 }
 
+function Ensure-Dir([string]$p){
+  if (-not (Test-Path $p)) { New-Item -ItemType Directory -Force $p | Out-Null }
+}
+
 # Artifact rules:
 # - backups: *.bak, *.bak_*, *.bak-nul, *.bak_nul, *.bad, *.orig
 # - crashbak/fixbak: *crashbak_*, *fixbak_*
@@ -29,8 +33,11 @@ function Is-Excluded([string]$fullPath) {
 # - tools helpers: tools\fix-*.ps1, tools\repair-*.ps1, tools\sanitize-*.ps1
 # - db dumps: *.sql, *.dump, *.backup
 function Is-Artifact([string]$fullPath) {
-  $rel = $fullPath.Replace($root + "\", "")
+  $rel  = $fullPath.Replace($root + "\", "")
   $name = [IO.Path]::GetFileName($fullPath)
+
+  # NEVER treat Prisma migration.sql as artifact
+  if ($rel -match '^backend\\prisma\\migrations\\.+\\migration\.sql$') { return $false }
 
   if ($name -match '\.bak$') { return $true }
   if ($name -match '\.bad$') { return $true }
@@ -48,10 +55,6 @@ function Is-Artifact([string]$fullPath) {
   if ($rel -match '^tools\\(fix|repair|sanitize)-.+\.ps1$') { return $true }
 
   return $false
-}
-
-function Ensure-Dir([string]$p){
-  if (-not (Test-Path $p)) { New-Item -ItemType Directory -Force $p | Out-Null }
 }
 
 $found = @()

@@ -21,6 +21,52 @@ function Get-BuildId($x){
   return ($x | ConvertTo-Json -Compress)
 }
 
+function Extract-Jwt([string]$raw){
+  if (-not $raw) { return $null }
+  $m = [regex]::Match($raw, 'eyJ[a-zA-Z0-9_\-]*\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+')
+  if ($m.Success) { return $m.Value }
+  return $null
+}
+
+function Ensure-Token(){
+  # If already set and looks valid -> OK
+  $jwt = Extract-Jwt $env:SERVIS_TOKEN
+  if ($jwt) { return $jwt }
+
+  # If autotoken disabled -> fail
+  if ($env:FULLCHECK_AUTOTOKEN -ne "1") {
+    Fail "SERVIS_TOKEN missing (set: `$env:SERVIS_TOKEN = <JWT>)  (or set FULLCHECK_AUTOTOKEN=1 to auto-generate)"
+  }
+
+  # Auto-generate admin token
+  $gen = Join-Path -Path $root -ChildPath "backend\tools\gen-token.js"
+  if (-not (Test-Path $gen)) { Fail "gen-token.js missing (backend\tools\gen-token.js)" }
+
+  $email = $env:FULLCHECK_TOKEN_EMAIL
+  $pass  = $env:FULLCHECK_TOKEN_PASS
+  if (-not $email) { $email = "admin@demo.com" }
+  if (-not $pass)  { $pass  = "Demo123!" }
+
+  $node = Get-Command node -ErrorAction SilentlyContinue
+  if (-not $node) { Fail "node not found in PATH" }
+
+  # Run from repo root to avoid cwd surprises
+  Push-Location $root
+  try {
+    $out = & node $gen $email $pass 2>$null
+  } finally {
+    Pop-Location
+  }
+
+  $token = ($out -join "").Trim()
+  $jwt2 = Extract-Jwt $token
+  if (-not $jwt2) { Fail "Auto-token failed (gen-token.js output not JWT). Check credentials/env." }
+
+  $env:SERVIS_TOKEN = $jwt2
+  Pass ("SERVIS_TOKEN auto-set for this session (user=" + $email + ")")
+  return $jwt2
+}
+
 $root = Split-Path -Parent $PSScriptRoot
 
 # Docker container check
@@ -72,15 +118,8 @@ try {
 }
 if ($gpsOk) { Pass "GET BE gps last (vehicleId=1)" } else { Fail "GET BE gps last failed" }
 
-# Auth /me
-$raw = $env:SERVIS_TOKEN
-if (-not $raw) { Fail "SERVIS_TOKEN missing (set: `$env:SERVIS_TOKEN = <JWT>)" }
-
-# extract JWT even if wrapped like <...>
-$m = [regex]::Match($raw, 'eyJ[a-zA-Z0-9_\-]*\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+')
-if (-not $m.Success) { Fail "SERVIS_TOKEN invalid (no JWT found)" }
-
-$token = $m.Value
+# Auth /me (token)
+$token = Ensure-Token
 $headers = @{ "x-auth-token" = $token }
 
 Get-Json "$be/api/me" $headers | Out-Null
@@ -90,7 +129,12 @@ Pass "GET AUTH /me"
 $art = Join-Path -Path $root -ChildPath "tools\snap-move-artifacts.ps1"
 if (-not (Test-Path $art)) { Fail "snap-move-artifacts.ps1 missing (tools\snap-move-artifacts.ps1)" }
 
-powershell -NoProfile -ExecutionPolicy Bypass -File $art -DryRun -FailIfFound
+if ($env:FULLCHECK_AUTOFIX -eq "1") {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $art
+} else {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $art -DryRun -FailIfFound
+}
+
 if ($LASTEXITCODE -ne 0) {
   throw "ARTIFACT CHECK FAIL (run: powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\snap-move-artifacts.ps1)"
 }
