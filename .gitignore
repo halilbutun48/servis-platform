@@ -34,3 +34,5 @@ web/scan-*.cjs
 # snapshots folder
 _snapshots/**
 !_snapshots/.gitkeep
+
+PANEL G*ID-PASS.txt
