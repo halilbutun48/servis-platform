@@ -14,11 +14,11 @@ function Home({ me, onLogout }) {
 
       {me ? (
         <>
-          <div><b>{me.email}</b> â€” {me.role} (schoolId: {me.schoolId ?? "-"})</div>
+          <div><b>{me.email}</b>{" \u2014 "}{me.role} (schoolId: {me.schoolId ?? "-"})</div>
           <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
             <Link to="/map">Harita</Link>
-        {(me?.role === "SUPER_ADMIN" || me?.role === "SERVICE_ROOM") && <Link to="/admin">Servis Odası</Link>}
-        {me?.role === "SCHOOL_ADMIN" && <Link to="/school">Okul Yönetimi</Link>}
+        {(me?.role === "SUPER_ADMIN" || me?.role === "SERVICE_ROOM") && <Link to="/admin">{"Servis Odas\u0131"}</Link>}
+        {me?.role === "SCHOOL_ADMIN" && <Link to="/school">{"Okul Y\u00f6netimi"}</Link>}
             <button onClick={onLogout}>Cikis</button>
           </div>
         </>

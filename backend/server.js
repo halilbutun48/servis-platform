@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
@@ -172,7 +172,7 @@ app.get("/api/school/me", auth, async (req, res) => {
   });
 });
 
-// School: location update (demo iÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§in)
+// School: location update (demo)
 app.put(
   "/api/school/:id/location",
   auth,
@@ -181,8 +181,7 @@ app.put(
     const id = Number(req.params.id);
     const { lat, lon } = req.body || {};
     if (!id || lat == null || lon == null) return res.status(400).json({ ok: false, error: "BAD_INPUT" });
-
-    // SCHOOL_ADMIN sadece kendi okulunu gÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼nceller
+    // SCHOOL_ADMIN can only update own school
     if (req.user.role === "SCHOOL_ADMIN" && Number(req.user.schoolId) !== id) {
       return res.status(403).json({ ok: false, error: "FORBIDDEN" });
     }
@@ -204,7 +203,7 @@ app.get("/api/routes/:id/stops", auth, async (req, res) => {
   const route = await prisma.route.findUnique({ where: { id: routeId } });
   if (!route) return res.status(404).json({ ok: false, error: "ROUTE_NOT_FOUND" });
 
-  // kullanÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±cÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± bir okula baÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸lÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±ysa, baÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸ka okulun rotasÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±nÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± gÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶rmesin
+// Access control: a user tied to a school must not view routes from other schools
   if (req.user.schoolId && route.schoolId !== Number(req.user.schoolId)) {
     return res.status(403).json({ ok: false, error: "FORBIDDEN" });
   }
@@ -279,7 +278,7 @@ app.get("/api/gps/latest", auth, async (req, res) => {
   });
 });
 
-// --- ADMIN: schools & users (Super Admin / Servis OdasÃƒâ€Ã‚Â±) ---
+// --- ADMIN: schools & users (Super Admin / Service Room) ---
 app.get("/api/admin/schools", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), async (req, res) => {
   const schools = await prisma.school.findMany({ orderBy: { id: "asc" } });
   res.json({ ok: true, schools: schools.map(s => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon })) });
@@ -336,7 +335,7 @@ app.post("/api/admin/users", auth, requireRole("SUPER_ADMIN", "SERVICE_ROOM"), a
 
 
 // --- SCHOOL_ADMIN: vehicles/routes/stops ---
-// Not: auth middleware'in req.user.id set ettiÃƒâ€Ã…Â¸ini varsayÃƒâ€Ã‚Â±yoruz (api/me zaten bÃƒÆ’Ã‚Â¶yle ÃƒÆ’Ã‚Â§alÃƒâ€Ã‚Â±Ãƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â±yor).
+// Note: auth middleware sets req.user.id; api/me loads user from DB.
 async function loadMe(req, res, next) {
   try {
     const me = await prisma.user.findUnique({
@@ -567,7 +566,3 @@ app.delete("/api/school/stops/:stopId", auth, requireRole("SCHOOL_ADMIN"), loadM
 
 
 server.listen(PORT, () => console.log("API listening on", PORT));
-
-
-
-
