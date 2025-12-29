@@ -36,3 +36,5 @@ _snapshots/**
 !_snapshots/.gitkeep
 
 PANEL G*ID-PASS.txt
+# generated outputs (do not commit)
+artifacts/
