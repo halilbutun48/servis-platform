@@ -31,11 +31,14 @@ function ToD($v){
   $s = ([string]$v).Trim()
   if(-not $s){ return $null }
   $s = $s.Replace(",",".")
-  try {
-    return [double]::Parse($s, [Globalization.CultureInfo]::InvariantCulture)
-  } catch {
-    try { return [double]$v } catch { return $null }
-  }
+  try { return [double]::Parse($s, [Globalization.CultureInfo]::InvariantCulture) } catch { return $null }
+}
+
+function ToDt($v){
+  if($null -eq $v){ return $null }
+  try { return [DateTime]::Parse([string]$v, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AssumeUniversal) } catch {}
+  try { return [DateTime]$v } catch {}
+  return $null
 }
 
 function ReadErrBody($ex){
@@ -82,6 +85,25 @@ function GetToken([string]$email,[string]$password){
   return ""
 }
 
+function UnwrapLast($obj){
+  if($null -eq $obj){ return $null }
+  try { if($obj.last){ return $obj.last } } catch {}
+  try { if($obj.data -and $obj.data.last){ return $obj.data.last } } catch {}
+  return $obj
+}
+
+function Pick($obj,[string[]]$keys){
+  foreach($k in $keys){
+    try{
+      if($obj -and ($obj.PSObject.Properties.Name -contains $k)){
+        $v = $obj.$k
+        if($v -ne $null -and "$v" -ne ""){ return $v }
+      }
+    } catch {}
+  }
+  return $null
+}
+
 $failed = $false
 
 $token = GetToken "driver_seed@demo.com" "Demo123!"
@@ -101,46 +123,64 @@ if(-not $post.ok){
 }
 Pass "gps POST ok"
 
-# GET last (try both)
-$lastRes = TryReq "GET" ($BaseUrl + "/api/gps/last") $h ""
-if(-not $lastRes.ok){
-  $lastRes = TryReq "GET" ($BaseUrl + "/api/gps/last?vehicleId=" + $VehicleId) $h ""
+# Extract vehicleId + recordedAt from POST response if available
+$postLast = UnwrapLast $post.body
+$postVehicleId = $null
+try { $v = Pick $postLast @("vehicleId","vehicle_id"); if($v -ne $null){ $postVehicleId = [int]$v } } catch {}
+if(-not $postVehicleId){ $postVehicleId = $VehicleId }
+
+$postRecordedAt = $null
+try { $t = Pick $postLast @("recordedAt","createdAt","ts","time"); if($t){ $postRecordedAt = ToDt $t } } catch {}
+
+# Poll /api/gps/last until it reflects our POST (or timeout)
+$maxTry = 12
+$ok = $false
+$last = $null
+
+for($i=1; $i -le $maxTry; $i++){
+  $res = TryReq "GET" ($BaseUrl + "/api/gps/last") $h ""
+  if(-not $res.ok){
+    $res = TryReq "GET" ($BaseUrl + "/api/gps/last?vehicleId=" + $postVehicleId) $h ""
+  }
+  if($res.ok){
+    $last = UnwrapLast $res.body
+    if($last -is [array] -and $last.Count -gt 0){ $last = $last[0] }
+
+    $lat2 = ToD (Pick $last @("lat","latitude"))
+    $lon2 = ToD (Pick $last @("lon","lng","longitude"))
+    $t2   = ToDt (Pick $last @("recordedAt","createdAt","ts","time"))
+
+    if($lat2 -ne $null -and $lon2 -ne $null){
+      $dLat = [Math]::Abs($lat2 - $lat)
+      $dLon = [Math]::Abs($lon2 - $lon)
+
+      $timeOk = $true
+      if($postRecordedAt -and $t2){
+        # allow small skew
+        $timeOk = ($t2 -ge $postRecordedAt.AddSeconds(-10))
+      }
+
+      if($dLat -lt 0.02 -and $dLon -lt 0.02 -and $timeOk){
+        Pass ("gps last verify ok try=" + $i + " lat=" + $lat2 + " lon=" + $lon2)
+        $ok = $true
+        break
+      }
+    }
+  }
+
+  Start-Sleep -Seconds 1
 }
 
-if(-not $lastRes.ok){
-  Fail ("gps last failed status=" + $lastRes.status + " err=" + $lastRes.err)
-  if($lastRes.raw){ Warn ("gps last body(200)=" + $lastRes.raw.Substring(0,[Math]::Min(200,$lastRes.raw.Length))) }
-  exit 1
-}
-
-$last = $lastRes.body
-# unwrap common shapes
-try { if($last.last){ $last = $last.last } } catch {}
-try { if($last.data -and $last.data.last){ $last = $last.data.last } } catch {}
-if($last -is [array] -and $last.Count -gt 0){ $last = $last[0] }
-
-# extract lat/lon
-$lat2 = $null; $lon2 = $null
-try { if($last.lat -ne $null){ $lat2 = ToD $last.lat } } catch {}
-try { if($lat2 -eq $null -and $last.latitude){ $lat2 = ToD $last.latitude } } catch {}
-try { if($last.lon -ne $null){ $lon2 = ToD $last.lon } } catch {}
-try { if($lon2 -eq $null -and $last.lng){ $lon2 = ToD $last.lng } } catch {}
-try { if($lon2 -eq $null -and $last.longitude){ $lon2 = ToD $last.longitude } } catch {}
-
-if($lat2 -eq $null -or $lon2 -eq $null){
-  Warn "gps last response does not expose lat/lon fields (verify partial)"
-  Pass "gps last ok"
-  exit 0
-}
-
-$dLat = [Math]::Abs($lat2 - $lat)
-$dLon = [Math]::Abs($lon2 - $lon)
-
-# slightly tolerant
-if($dLat -lt 0.02 -and $dLon -lt 0.02){
-  Pass ("gps last verify ok lat=" + $lat2 + " lon=" + $lon2)
-} else {
-  Fail ("gps last mismatch expected=(" + $lat + "," + $lon + ") got=(" + $lat2 + "," + $lon2 + ") d=(" + $dLat + "," + $dLon + ")")
+if(-not $ok){
+  # final diagnostics
+  if($last){
+    $latX = Pick $last @("lat","latitude")
+    $lonX = Pick $last @("lon","lng","longitude")
+    $tX   = Pick $last @("recordedAt","createdAt","ts","time")
+    Fail ("gps last did not converge after " + $maxTry + " tries. last.lat=" + $latX + " last.lon=" + $lonX + " last.time=" + $tX)
+  } else {
+    Fail ("gps last failed: no usable response after " + $maxTry + " tries")
+  }
 }
 
 if($failed){ exit 1 } else { exit 0 }
