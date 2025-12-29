@@ -1,7 +1,7 @@
 param(
   [string]$BaseUrl = "http://localhost:3000",
   [string]$ExpectedBuild = "",
-  [Alias("PackDir","Dir","LastPackDir")]
+  [Alias("PackDir","Dir")]
   [string]$LastPackDir = ""
 )
 $ErrorActionPreference="Stop"
