@@ -41,7 +41,7 @@ function Get-Token($email, $password) {
 
 function Api($method, $url, $token, $bodyObj=$null) {
   $u = ([string]$url).Trim()
-  # gizli CRLF/tab/space temizle (URI patlamasın)
+  # gizli CRLF/tab/space temizle (URI patlamasin)
   $u = $u -replace "[`r`n`t ]", ""
 
   if ($VerboseOut) { Write-Host "CALL $method $u" }
@@ -68,10 +68,10 @@ function Has-Prop($obj, [string]$name) {
 function Pick-Items($obj) {
   if ($null -eq $obj) { return @() }
 
-  # direkt array döndüyse
+  # direkt array donduyse
   if ($obj -is [System.Array]) { return @($obj) }
 
-  # güvenli property kontrolü
+  # guvenli property kontrolu
   if (Has-Prop $obj "items" -and $null -ne $obj.items) { return @($obj.items) }
   if (Has-Prop $obj "students" -and $null -ne $obj.students) { return @($obj.students) }
   if (Has-Prop $obj "absences" -and $null -ne $obj.absences) { return @($obj.absences) }
@@ -111,7 +111,7 @@ try {
 
   $list  = Api "GET" $studentsUrl $tokSchool
 
-  # ✅ KRİTİK FIX: tek eleman gelirse scalar olmasın -> her zaman array
+  # ? KRITIK FIX: tek eleman gelirse scalar olmasin -> her zaman array
   $items = @(Pick-Items $list)
 
   if ($VerboseOut) {
@@ -129,7 +129,7 @@ $studentId = [int]$student.id
 Assert ($studentId -gt 0) "studentId invalid"
 
 # 3) create absence
-$day = (Get-Date).AddDays(1).ToString("yyyy-MM-dd")  # yarın
+$day = (Get-Date).AddDays(1).ToString("yyyy-MM-dd")  # yarin
 $absenceUrl = "$BaseUrl/api/absence"
 
 $absResp = $null
@@ -142,7 +142,7 @@ try {
 } catch {
   $code = Get-StatusCode $_
   if ($code -eq 404) {
-    Fail "MISSING_ENDPOINT: POST /api/absence (backend'de route yok / mount edilmemiş)"
+    Fail "MISSING_ENDPOINT: POST /api/absence (backend'de route yok / mount edilmemis)"
   }
   throw
 }
@@ -161,10 +161,10 @@ try {
   throw
 }
 
-# ✅ KRİTİK FIX: tek eleman gelirse scalar olmasın -> her zaman array
+# ? KRITIK FIX: tek eleman gelirse scalar olmasin -> her zaman array
 $absItems = @(Pick-Items $listAbs)
 
-# DEBUG: boşsa raw response'u bas
+# DEBUG: bossa raw response'u bas
 if ($absItems.Count -lt 1 -and $VerboseOut) {
   Write-Host "DEBUG absence list type: $($listAbs.GetType().FullName)"
   try { Write-Host ("DEBUG absence props: " + ($listAbs.PSObject.Properties.Name -join ", ")) } catch {}

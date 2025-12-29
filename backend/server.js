@@ -42,7 +42,7 @@ app.use(morgan("dev", { skip: (req) => req.path === "/api/gps/last" }));
 app.use(helmet());
 app.use(rateLimit({ windowMs: 60_000, max: 600 }));
 
-// ✅ No-cache for ALL /api (mutlaka route'lardan önce)
+// ? No-cache for ALL /api (mutlaka route'lardan once)
 app.use("/api", (req, res, next) => {
   res.set("Cache-Control", "no-store");
   res.set("Pragma", "no-cache");
@@ -358,7 +358,7 @@ app.get("/api/absence", auth, requireRole("SCHOOL_ADMIN"), loadMe, requireSchool
     if (!allowedIds.length) return res.json({ ok: true, items: [] });
   }
 
-  // ✅ day filtresi DB'de yok, string filtre var (DATE + TZ sürprizini keser)
+  // ? day filtresi DB'de yok, string filtre var (DATE + TZ surprizini keser)
   const items = await prisma.absence.findMany({
     where: { studentId: { in: allowedIds } },
     orderBy: [{ day: "desc" }, { id: "desc" }],
