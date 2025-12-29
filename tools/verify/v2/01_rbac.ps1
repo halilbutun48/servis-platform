@@ -59,7 +59,10 @@ function ExtractToken($obj){
 function GetToken([string]$email,[string]$password){
   $urls = @("/api/auth/login","/api/auth","/api/login") | ForEach-Object { $BaseUrl + $_ }
 
-  $passCandidates = @($password,"demo123","Demo123","demo1234","123456","demo") | Where-Object { $_ } | Select-Object -Unique
+  # include your real seed password
+  $passCandidates = @($password,"Demo123!","demo123","Demo123","demo1234","123456","demo") |
+    Where-Object { $_ } | Select-Object -Unique
+
   $payloadsBase = @(
     @{ email=$email;    password="__PASS__" },
     @{ username=$email; password="__PASS__" },
@@ -74,7 +77,7 @@ function GetToken([string]$email,[string]$password){
       foreach($pw in $passCandidates){
         $p = @{}
         foreach($k in $p0.Keys){ $p[$k] = $p0[$k] }
-        foreach($k in $p.Keys){
+        foreach($k in @($p.Keys)){
           if($p[$k] -eq "__PASS__"){ $p[$k] = $pw }
         }
 
@@ -116,13 +119,13 @@ function TryGet([string]$path,[string]$token){
 
 $failed = $false
 
-# Demo creds (repo icinde zaten kullaniliyor)
+# Seed demo creds (all use Demo123!)
 $creds = @(
-  @{ role="SUPER_ADMIN";  email="admin@demo.com";        pass="demo123" },
-  @{ role="SERVICE_ROOM"; email="room@demo.com";         pass="demo123" },
-  @{ role="SCHOOL_ADMIN"; email="school_admin@demo.com"; pass="demo123" },
-  @{ role="DRIVER";       email="driver_seed@demo.com";  pass="demo123" },
-  @{ role="PARENT";       email="parent_seed@demo.com";  pass="demo123" }
+  @{ role="SUPER_ADMIN";  email="admin@demo.com";        pass="Demo123!" },
+  @{ role="SERVICE_ROOM"; email="room@demo.com";         pass="Demo123!" },
+  @{ role="SCHOOL_ADMIN"; email="school_admin@demo.com"; pass="Demo123!" },
+  @{ role="DRIVER";       email="driver_seed@demo.com";  pass="Demo123!" },
+  @{ role="PARENT";       email="parent_seed@demo.com";  pass="Demo123!" }
 )
 
 $tokens = @{}
@@ -138,14 +141,17 @@ foreach($c in $creds){
 
 if($failed){ exit 1 }
 
-# 1) /api/me -> herkes 200
-foreach($role in $tokens.Keys){
+# snapshot keys to avoid "collection modified" crash
+$roles = @($tokens.Keys)
+
+# 1) /api/me -> all 200
+foreach($role in $roles){
   $r = TryGet "/api/me" $tokens[$role]
   if($r.ok){ Pass ("/me ok " + $role) } else { Fail ("/me " + $role + " status=" + $r.status) }
 }
 
-# 2) /api/school/me -> SCHOOL_ADMIN 200, digerleri 403/401
-foreach($role in $tokens.Keys){
+# 2) /api/school/me -> SCHOOL_ADMIN 200, others 401/403
+foreach($role in $roles){
   $r = TryGet "/api/school/me" $tokens[$role]
   if($role -eq "SCHOOL_ADMIN"){
     if($r.ok){ Pass ("/school/me ok SCHOOL_ADMIN") } else { Fail ("/school/me SCHOOL_ADMIN status=" + $r.status) }
@@ -160,8 +166,8 @@ foreach($role in $tokens.Keys){
   }
 }
 
-# 3) /api/admin/schools -> SUPER_ADMIN ve SERVICE_ROOM 200, digerleri 403/401
-foreach($role in $tokens.Keys){
+# 3) /api/admin/schools -> SUPER_ADMIN & SERVICE_ROOM 200, others 401/403
+foreach($role in $roles){
   $r = TryGet "/api/admin/schools" $tokens[$role]
   if($role -in @("SUPER_ADMIN","SERVICE_ROOM")){
     if($r.ok){ Pass ("/admin/schools ok " + $role) } else { Fail ("/admin/schools " + $role + " status=" + $r.status) }
