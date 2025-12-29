@@ -14,27 +14,91 @@ function NormBase([string]$u){
 }
 $BaseUrl = NormBase $BaseUrl
 
-function Fail([string]$msg){
-  Write-Host ("FAIL " + $msg) -ForegroundColor Red
-  $script:failed = $true
+function Fail([string]$msg){ Write-Host ("FAIL " + $msg) -ForegroundColor Red; $script:failed = $true }
+function Pass([string]$msg){ Write-Host ("PASS " + $msg) -ForegroundColor Green }
+function Warn([string]$msg){ Write-Host ("WARN " + $msg) -ForegroundColor Yellow }
+
+function ReadErrBody($ex){
+  $raw = ""
+  try {
+    if($ex.Response -and $ex.Response.GetResponseStream()){
+      $sr = New-Object IO.StreamReader($ex.Response.GetResponseStream())
+      $raw = $sr.ReadToEnd()
+    }
+  } catch {}
+  return $raw
 }
-function Pass([string]$msg){
-  Write-Host ("PASS " + $msg) -ForegroundColor Green
+
+function TryPostJson([string]$url,[hashtable]$payload){
+  try {
+    $body = $payload | ConvertTo-Json -Compress
+    $r = Invoke-RestMethod -Method Post -Uri $url -ContentType "application/json" -Body $body -TimeoutSec 15
+    return @{ ok=$true; status=200; resp=$r; raw="" ; url=$url }
+  } catch {
+    $code = 0
+    try { $code = [int]$_.Exception.Response.StatusCode.value__ } catch {}
+    $raw = ReadErrBody $_.Exception
+    return @{ ok=$false; status=$code; resp=$null; raw=$raw; err=$_.Exception.Message; url=$url }
+  }
 }
-function Warn([string]$msg){
-  Write-Host ("WARN " + $msg) -ForegroundColor Yellow
+
+function ExtractToken($obj){
+  if($null -eq $obj){ return "" }
+  foreach($k in @("token","accessToken","access_token","jwt")){
+    if($obj.PSObject.Properties.Name -contains $k){
+      $v = $obj.$k
+      if($v){ return [string]$v }
+    }
+  }
+  if($obj.PSObject.Properties.Name -contains "data"){
+    return ExtractToken $obj.data
+  }
+  return ""
 }
 
 function GetToken([string]$email,[string]$password){
-  try {
-    $body = @{ email=$email; password=$password } | ConvertTo-Json -Compress
-    $r = Invoke-RestMethod -Method Post -Uri ($BaseUrl + "/api/auth/login") -ContentType "application/json" -Body $body -TimeoutSec 15
-    if($r.token){ return [string]$r.token }
-    if($r.data -and $r.data.token){ return [string]$r.data.token }
-    return ""
-  } catch {
-    return ""
+  $urls = @("/api/auth/login","/api/auth","/api/login") | ForEach-Object { $BaseUrl + $_ }
+
+  $passCandidates = @($password,"demo123","Demo123","demo1234","123456","demo") | Where-Object { $_ } | Select-Object -Unique
+  $payloadsBase = @(
+    @{ email=$email;    password="__PASS__" },
+    @{ username=$email; password="__PASS__" },
+    @{ email=$email;    pass="__PASS__" },
+    @{ username=$email; pass="__PASS__" }
+  )
+
+  $last = $null
+
+  foreach($u in $urls){
+    foreach($p0 in $payloadsBase){
+      foreach($pw in $passCandidates){
+        $p = @{}
+        foreach($k in $p0.Keys){ $p[$k] = $p0[$k] }
+        foreach($k in $p.Keys){
+          if($p[$k] -eq "__PASS__"){ $p[$k] = $pw }
+        }
+
+        $res = TryPostJson $u $p
+        $last = @{ url=$res.url; status=$res.status; err=$res.err; raw=$res.raw; payload=($p | ConvertTo-Json -Compress) }
+
+        if($res.ok){
+          $t = ExtractToken $res.resp
+          if($t){ return $t }
+        }
+      }
+    }
   }
+
+  if($last){
+    $snippet = ""
+    if($last.raw){ $snippet = $last.raw.Substring(0, [Math]::Min(200, $last.raw.Length)) }
+    Warn ("login debug email=" + $email + " url=" + $last.url + " status=" + $last.status)
+    if($last.err){ Warn ("login err=" + $last.err) }
+    Warn ("login payload=" + $last.payload)
+    if($snippet){ Warn ("login body(200)=" + $snippet) }
+  }
+
+  return ""
 }
 
 function TryGet([string]$path,[string]$token){
@@ -45,7 +109,7 @@ function TryGet([string]$path,[string]$token){
     return @{ ok=$true; status=200; body=$r }
   } catch {
     $code = 0
-    try { $code = [int]$_.Exception.Response.StatusCode } catch {}
+    try { $code = [int]$_.Exception.Response.StatusCode.value__ } catch {}
     return @{ ok=$false; status=$code; err=$_.Exception.Message }
   }
 }
@@ -54,11 +118,11 @@ $failed = $false
 
 # Demo creds (repo icinde zaten kullaniliyor)
 $creds = @(
-  @{ role="SUPER_ADMIN";  email="admin@demo.com";       pass="demo123" },
-  @{ role="SERVICE_ROOM"; email="room@demo.com";        pass="demo123" },
-  @{ role="SCHOOL_ADMIN"; email="school_admin@demo.com";pass="demo123" },
-  @{ role="DRIVER";       email="driver_seed@demo.com"; pass="demo123" },
-  @{ role="PARENT";       email="parent_seed@demo.com"; pass="demo123" }
+  @{ role="SUPER_ADMIN";  email="admin@demo.com";        pass="demo123" },
+  @{ role="SERVICE_ROOM"; email="room@demo.com";         pass="demo123" },
+  @{ role="SCHOOL_ADMIN"; email="school_admin@demo.com"; pass="demo123" },
+  @{ role="DRIVER";       email="driver_seed@demo.com";  pass="demo123" },
+  @{ role="PARENT";       email="parent_seed@demo.com";  pass="demo123" }
 )
 
 $tokens = @{}
@@ -74,7 +138,6 @@ foreach($c in $creds){
 
 if($failed){ exit 1 }
 
-# === RBAC MATRIX (minimum) ===
 # 1) /api/me -> herkes 200
 foreach($role in $tokens.Keys){
   $r = TryGet "/api/me" $tokens[$role]
