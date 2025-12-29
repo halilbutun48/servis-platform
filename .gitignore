@@ -38,3 +38,7 @@ _snapshots/**
 PANEL G*ID-PASS.txt
 # generated outputs (do not commit)
 artifacts/
+
+# local temp
+_tmp_patches/
+
