@@ -42,3 +42,7 @@ artifacts/
 # local temp
 _tmp_patches/
 
+
+# generated status snapshot
+docs/STATUS_CURRENT.md
+
