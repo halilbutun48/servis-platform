@@ -1,0 +1,25 @@
+$ErrorActionPreference = "Stop"
+
+function Pass([string]$m){ Write-Host ("PASS  " + $m) -ForegroundColor Green }
+function Fail([string]$m){ Write-Host ("FAIL  " + $m) -ForegroundColor Red; throw $m }
+
+function Get-JwtFromEnv(){
+  $raw = $env:SERVIS_TOKEN
+  if(-not $raw){ throw "SERVIS_TOKEN missing. Set: `$env:SERVIS_TOKEN = <JWT>" }
+  $m = [regex]::Match($raw, 'eyJ[a-zA-Z0-9_\-]*\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+')
+  if(-not $m.Success){ throw "SERVIS_TOKEN invalid (no JWT found)" }
+  return $m.Value
+}
+
+$be = "http://localhost:3000"
+
+Invoke-RestMethod -Uri "$be/_ping" -TimeoutSec 10 | Out-Null
+Pass "GET /_ping"
+
+$token = Get-JwtFromEnv
+$h = @{ "x-auth-token" = $token }
+
+Invoke-RestMethod -Uri "$be/api/me" -Headers $h -TimeoutSec 10 | Out-Null
+Pass "GET /api/me"
+
+Pass "SMOKE: OK"

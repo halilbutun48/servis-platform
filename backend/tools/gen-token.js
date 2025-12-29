@@ -1,0 +1,91 @@
+/* gen-token.js (ASCII only)
+   Usage:
+     node tools/gen-token.js                -> try parent_seed@demo.com then admin@demo.com (no password check)
+     node tools/gen-token.js <email>        -> no password check
+     node tools/gen-token.js <email> <pass> -> bcrypt check if hash exists
+*/
+const dotenv = require("dotenv");
+dotenv.config();
+
+const jwt = require("jsonwebtoken");
+const { PrismaClient } = require("@prisma/client");
+
+let bcrypt = null;
+try { bcrypt = require("bcryptjs"); } catch (_) {}
+
+const prisma = new PrismaClient();
+
+function pickSecret() {
+  const keys = [
+    "JWT_SECRET",
+    "JWT_SECRET_KEY",
+    "JWT_KEY",
+    "TOKEN_SECRET",
+    "SECRET_KEY",
+    "SECRET",
+  ];
+  for (const k of keys) {
+    if (process.env[k]) return { key: k, value: process.env[k] };
+  }
+  const envKeys = Object.keys(process.env || {});
+  const guess = envKeys.find((k) => /JWT/i.test(k) && /SECRET|KEY/i.test(k));
+  if (guess && process.env[guess]) return { key: guess, value: process.env[guess] };
+  return null;
+}
+
+async function getUserByEmail(email) {
+  if (!email) return null;
+  return prisma.user.findUnique({ where: { email } });
+}
+
+async function main() {
+  const secretObj = pickSecret();
+  if (!secretObj) {
+    console.error("Missing JWT secret env var. Put JWT_SECRET in backend/.env");
+    process.exit(1);
+  }
+
+  const emailArg = process.argv[2] || "";
+  const passArg  = process.argv[3] || "";
+
+  let user = null;
+
+  if (emailArg) {
+    user = await getUserByEmail(emailArg);
+  } else {
+    // no-arg default: try parent seed then admin
+    user = await getUserByEmail("parent_seed@demo.com");
+    if (!user) user = await getUserByEmail("admin@demo.com");
+  }
+
+  if (!user) {
+    console.error("User not found. Provide email: node tools/gen-token.js <email> [pass]");
+    process.exit(1);
+  }
+
+  // Optional password check (only if BOTH email and pass provided)
+  if (emailArg && passArg) {
+    const hash = user.passwordHash || user.password_hash || user.password || null;
+    if (hash && typeof hash === "string" && hash.startsWith("$2") && bcrypt) {
+      const ok = await bcrypt.compare(passArg, hash);
+      if (!ok) {
+        console.error("Password mismatch for " + emailArg);
+        process.exit(1);
+      }
+    }
+  }
+
+  const payload = {
+    id: user.id,
+    role: user.role,
+    schoolId: user.schoolId == null ? null : user.schoolId,
+    email: user.email,
+  };
+
+  const token = jwt.sign(payload, secretObj.value, { expiresIn: "30d" });
+  console.log(token);
+}
+
+main()
+  .catch((e) => { console.error(e); process.exit(1); })
+  .finally(async () => { try { await prisma.$disconnect(); } catch (_) {} });

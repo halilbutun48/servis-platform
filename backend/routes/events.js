@@ -1,0 +1,12 @@
+const router = require("express").Router();
+
+// E-ser projende auth middleware varsa burada require et.
+// Yoksa simdilik ag-k b-rak-p 404' kald-r-r-z.
+// const auth = require("../middleware/auth");
+
+router.get("/me", /*auth,*/ async (req, res) => {
+  // Simdilik minimum: 200 + bos liste
+  return res.json({ ok: true, items: [] });
+});
+
+module.exports = router;

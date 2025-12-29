@@ -8,9 +8,37 @@
 **/.env.*
 
 # Local backups / temp
-*.bak_*
 *.log
 
 # OS
 .DS_Store
 Thumbs.db
+# --- local backups / one-off artifacts ---
+*.bak
+*.bad
+*.orig
+*.bak_*
+*.bak-nul
+*.bak_nul
+*.crashbak_*
+*.fixbak_*
+
+# one-off patch scripts (if you don't want them tracked)
+backend/patch-*.cjs
+web/patch-*.cjs
+web/fix-*.cjs
+web/repair-*.cjs
+web/sanitize-*.cjs
+web/scan-*.cjs
+
+# snapshots folder
+_snapshots/**
+!_snapshots/.gitkeep
+
+PANEL G*ID-PASS.txt
+# generated outputs (do not commit)
+artifacts/
+
+# local temp
+_tmp_patches/
+

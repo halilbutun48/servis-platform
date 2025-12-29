@@ -36,14 +36,13 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
     };
   }, [map]);
 
-  // Poll GPS last (fallback) - adaptive backoff + pause when tab hidden + slower when follow OFF
+  // Poll GPS last (fallback) - adaptive backoff + pause when tab hidden
   useEffect(() => {
     let alive = true;
     let t = null;
-    let controller = null;
 
-    const baseDelay = () => (follow ? pollMs : Math.max(pollMs, 15000));
-    let delay = baseDelay();
+    // backoff starts at pollMs, grows on errors up to 30s
+    let delay = pollMs;
 
     const schedule = (ms) => {
       if (!alive) return;
@@ -56,24 +55,15 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
 
       // If tab is hidden, do not hammer the API
       if (typeof document !== "undefined" && document.hidden) {
-        delay = baseDelay();
-        schedule(delay);
+        schedule(pollMs);
         return;
       }
 
-      const vid = Number(vehicleId || 0);
-      if (!vid) {
-        delay = 15000;
-        schedule(delay);
-        return;
-      }
-
-      controller?.abort?.();
-      controller = new AbortController();
+      const controller = new AbortController();
       const kill = setTimeout(() => controller.abort(), 4000);
 
       try {
-        const r = await fetch(`/api/gps/last?vehicleId=${vid}`, {
+        const r = await fetch(`/api/gps/last?vehicleId=${vehicleId}`, {
           signal: controller.signal,
           cache: "no-store",
         });
@@ -87,21 +77,14 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
         if (j && j.ok) setLast(j.last || null);
 
         // success -> reset delay
-        delay = baseDelay();
-        schedule(delay);
+        delay = pollMs;
+        schedule(pollMs);
       } catch (e) {
         clearTimeout(kill);
         if (!alive) return;
 
-        // AbortError -> stay quiet and retry normally
-        if (e?.name === "AbortError") {
-          delay = baseDelay();
-          schedule(delay);
-          return;
-        }
-
-        // failure -> exponential backoff (max 60s)
-        delay = Math.min(Math.max(baseDelay(), delay * 2), 60000);
+        // failure -> exponential backoff (max 30s)
+        delay = Math.min(Math.max(pollMs, delay * 2), 30000);
         schedule(delay);
       }
     };
@@ -119,13 +102,13 @@ export default function GpsFollowLayer({ vehicleId = 1, pollMs = 5000 }) {
 
     return () => {
       alive = false;
-      controller?.abort?.();
       if (t) clearTimeout(t);
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", onVis);
       }
     };
-  }, [vehicleId, pollMs, follow]);
+  }, [vehicleId, pollMs]);
+
 const pos = useMemo(() => {
     const lat = toNum(last?.lat);
     const lon = toNum(last?.lon);
@@ -220,4 +203,5 @@ const pos = useMemo(() => {
     </>
   );
 }
+
 

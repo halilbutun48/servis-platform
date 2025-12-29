@@ -29,9 +29,9 @@ model User {
   schoolId     Int?
   createdAt    DateTime @default(now())
 
-  school       School?  @relation(fields: [schoolId], references: [id])
-  students     Student[] @relation("ParentStudents")
-  driverVehicle Vehicle? @relation("DriverVehicle")
+  school        School?   @relation(fields: [schoolId], references: [id])
+  students      Student[] @relation("ParentStudents")
+  driverVehicle Vehicle?  @relation("DriverVehicle")
 
   @@index([schoolId])
 }
@@ -43,23 +43,23 @@ model School {
   lon       Float?
   createdAt DateTime @default(now())
 
-  users     User[]
-  vehicles  Vehicle[]
-  routes    Route[]
-  students  Student[]
+  users    User[]
+  vehicles Vehicle[]
+  routes   Route[]
+  students Student[]
 }
 
 model Vehicle {
-  id          Int      @id @default(autoincrement())
-  plate       String
-  schoolId    Int
+  id           Int      @id @default(autoincrement())
+  plate        String
+  schoolId     Int
   driverUserId Int?     @unique
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
-  school      School   @relation(fields: [schoolId], references: [id])
-  driver      User?    @relation("DriverVehicle", fields: [driverUserId], references: [id])
-  routes      Route[]
-  gpsLogs     GpsLog[]
+  school  School   @relation(fields: [schoolId], references: [id])
+  driver  User?    @relation("DriverVehicle", fields: [driverUserId], references: [id])
+  routes  Route[]
+  gpsLogs GpsLog[]
 
   @@index([schoolId])
 }
@@ -71,10 +71,10 @@ model Route {
   vehicleId Int?
   createdAt DateTime @default(now())
 
-  school    School   @relation(fields: [schoolId], references: [id])
-  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
-  stops     RouteStop[]
-  students  Student[]
+  school   School      @relation(fields: [schoolId], references: [id])
+  vehicle  Vehicle?    @relation(fields: [vehicleId], references: [id])
+  stops    RouteStop[]
+  students Student[]
 
   @@index([schoolId])
   @@index([vehicleId])
@@ -88,26 +88,25 @@ model RouteStop {
   lat     Float
   lon     Float
 
-  route   Route  @relation(fields: [routeId], references: [id])
+  route Route @relation(fields: [routeId], references: [id])
 
-  @@index([routeId])
   @@unique([routeId, ord])
+  @@index([routeId])
 }
 
 model Student {
-  id          Int      @id @default(autoincrement())
-  fullName    String
-  schoolId    Int
+  id           Int      @id @default(autoincrement())
+  fullName     String
+  schoolId     Int
   parentUserId Int?
-  routeId     Int?
-  createdAt   DateTime @default(now())
+  routeId      Int?
+  createdAt    DateTime @default(now())
 
-  school      School   @relation(fields: [schoolId], references: [id])
-  parent      User?    @relation("ParentStudents", fields: [parentUserId], references: [id])
-  route       Route?   @relation(fields: [routeId], references: [id])
-
-  attendance  AttendanceEvent[]
-  absences    Absence[]
+  school     School            @relation(fields: [schoolId], references: [id])
+  parent     User?             @relation("ParentStudents", fields: [parentUserId], references: [id])
+  route      Route?            @relation(fields: [routeId], references: [id])
+  attendance AttendanceEvent[]
+  absences   Absence[]
 
   @@index([schoolId])
   @@index([parentUserId])
@@ -115,14 +114,14 @@ model Student {
 }
 
 model AttendanceEvent {
-  id         Int            @id @default(autoincrement())
-  studentId  Int
-  type       AttendanceType
+  id          Int            @id @default(autoincrement())
+  studentId   Int
+  type        AttendanceType
   routeStopId Int?
-  createdAt  DateTime       @default(now())
-  source     String         @default("MANUAL")
+  createdAt   DateTime       @default(now())
+  source      String         @default("MANUAL")
 
-  student    Student        @relation(fields: [studentId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
 
   @@index([studentId])
   @@index([createdAt])
@@ -131,14 +130,14 @@ model AttendanceEvent {
 model Absence {
   id        Int      @id @default(autoincrement())
   studentId Int
-  day       DateTime
+  day       DateTime @db.Date // only date, no timezone shift
   reason    String?
   createdAt DateTime @default(now())
 
-  student   Student  @relation(fields: [studentId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
 
-  @@index([studentId])
   @@unique([studentId, day])
+  @@index([studentId])
 }
 
 model GpsLog {
@@ -151,7 +150,7 @@ model GpsLog {
   recordedAt DateTime @default(now())
   createdAt  DateTime @default(now())
 
-  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@index([vehicleId])
   @@index([recordedAt])
