@@ -15,3 +15,11 @@ build/
 .env.*
 backend/indexes/
 backend/data/
+node_modules/
+**/node_modules/
+dist/
+build/
+.env
+.env.*
+backend/indexes/
+backend/data/
