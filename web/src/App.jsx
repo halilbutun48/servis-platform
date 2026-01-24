@@ -17,6 +17,8 @@ import CompanyMapPanel from "./panels/company/MapPanel";
 import DriverMapPanel from "./panels/driver/MapPanel";
 import PersonelLivePanel from "./panels/personel/LivePanel";
 
+import ErrorBoundary from "./components/ErrorBoundary";
+
 function roleDefaultPath(role) {
   if (role === "ROOM") return "/room/map";
   if (role === "COMPANY") return "/company/map";
@@ -119,5 +121,7 @@ export default function App() {
   }, [token, me, path]);
 
   if (!view.layout) return view.node;
-  return <AppShell path={path}>{view.node}</AppShell>;
+  return <AppShell path={path}>
+<ErrorBoundary>{view.node}</ErrorBoundary>
+</AppShell>;
 }
