@@ -1,0 +1,303 @@
+// PERSONEL-SERVIS V1 — Prisma schema (PostgreSQL)
+//
+// Tek kaynak doküman hedefi:
+// - docs/PROJECT_SPEC_V1.md
+// - docs/API_SPEC_V1.md
+// - docs/DB_SCHEMA_V1.md
+//
+// Not: Bu schema, kullanıcıların yapıştırdığı PRIMER + Mermaid DB şemasına göre
+// sadeleştirilmiş çekirdek veri modelidir (Milestone-0 / iskelet).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum Role {
+  SUPER_ADMIN
+  ROOM
+  COMPANY
+  DRIVER
+  PERSONEL
+}
+
+enum VehicleStatus {
+  ACTIVE
+  PASSIVE
+  STALE
+}
+
+enum ShiftStatus {
+  DRAFT
+  REQUESTED
+  APPROVED
+  ACTIVE
+  DONE
+}
+
+enum StopType {
+  COMMON
+  MANUAL
+}
+
+enum PickupRequestStatus {
+  OPEN
+  CANCELLED
+  ACCEPTED
+}
+
+enum GpsLastStatus {
+  OK
+  STALE
+}
+
+enum NotificationScope {
+  ROOM
+  COMPANY
+  DRIVER
+}
+
+// --- Core Models ---
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+
+  rooms     Room[]
+  users     User[]
+  shifts    Shift[]
+  personels Personel[]
+  notifications Notification[]
+}
+
+model Room {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+
+  company   Company  @relation(fields: [companyId], references: [id])
+  users     User[]
+  vehicles  Vehicle[]
+  drivers   Driver[]
+  shifts    Shift[]
+  notifications Notification[]
+
+  @@index([companyId])
+}
+
+// Auth entity (login) — role taşıyıcı
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  fullName     String
+  phone        String?
+  createdAt    DateTime @default(now())
+
+  // Scope bindings
+  companyId    Int?
+  roomId       Int?
+  company      Company? @relation(fields: [companyId], references: [id])
+  room         Room?    @relation(fields: [roomId], references: [id])
+
+  // Optional profile links
+  driver       Driver?
+  personel     Personel?
+
+  @@index([companyId])
+  @@index([roomId])
+}
+
+model Vehicle {
+  id                Int           @id @default(autoincrement())
+  roomId            Int
+  plate             String        @unique
+  capacity          Int
+  status            VehicleStatus @default(ACTIVE)
+  speedLimitKmh     Int           @default(80)
+  nextMaintenanceAt DateTime?
+  createdAt         DateTime      @default(now())
+
+  room              Room          @relation(fields: [roomId], references: [id])
+  gpsLast           GpsLast?
+  gpsPoints         GpsPoint[]
+  shifts            Shift[]
+  notifications     Notification[]
+
+  @@index([roomId])
+}
+
+model Driver {
+  id           Int      @id @default(autoincrement())
+  roomId       Int
+  fullName     String
+  phone        String
+  deviceInfo   String
+  backupDriverId Int?
+  createdAt    DateTime @default(now())
+
+  room         Room     @relation(fields: [roomId], references: [id])
+
+  // Optional login user link (role=DRIVER)
+  userId       Int?     @unique
+  user         User?    @relation(fields: [userId], references: [id])
+
+  // self-reference
+  backupDriver Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
+  backupsFor   Driver[] @relation("BackupDriver")
+
+  shifts       Shift[]
+  notifications Notification[]
+
+  @@index([roomId])
+}
+
+model Shift {
+  id        Int        @id @default(autoincrement())
+  companyId Int
+  roomId    Int
+  vehicleId Int?
+  driverId  Int?
+  startAt   DateTime
+  endAt     DateTime
+  status    ShiftStatus @default(DRAFT)
+  createdAt DateTime   @default(now())
+
+  company   Company    @relation(fields: [companyId], references: [id])
+  room      Room       @relation(fields: [roomId], references: [id])
+  vehicle   Vehicle?   @relation(fields: [vehicleId], references: [id])
+  driver    Driver?    @relation(fields: [driverId], references: [id])
+
+  stops     Stop[]
+  pickupRequests PickupRequest[]
+  progress  ShiftProgress?
+  notifications Notification[]
+
+  @@index([companyId])
+  @@index([roomId])
+  @@index([vehicleId])
+  @@index([driverId])
+}
+
+model Stop {
+  id        Int      @id @default(autoincrement())
+  shiftId   Int
+  name      String
+  lat       Float
+  lng       Float
+  order     Int
+  type      StopType
+
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+
+  @@index([shiftId, order])
+}
+
+model Personel {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  fullName  String
+  homeLat   Float
+  homeLng   Float
+  createdAt DateTime @default(now())
+
+  company   Company  @relation(fields: [companyId], references: [id])
+
+  // Optional login user link (role=PERSONEL)
+  userId    Int?     @unique
+  user      User?    @relation(fields: [userId], references: [id])
+
+  pickupRequests PickupRequest[]
+
+  @@index([companyId])
+}
+
+model PickupRequest {
+  id        Int                 @id @default(autoincrement())
+  shiftId   Int
+  personelId Int
+  lat       Float
+  lng       Float
+  status    PickupRequestStatus @default(OPEN)
+  createdAt DateTime            @default(now())
+
+  shift     Shift               @relation(fields: [shiftId], references: [id])
+  personel  Personel            @relation(fields: [personelId], references: [id])
+
+  @@index([shiftId, status])
+  @@index([personelId])
+}
+
+model GpsLast {
+  vehicleId Int          @id
+  lat       Float
+  lng       Float
+  speed     Float?
+  at        DateTime
+  status    GpsLastStatus @default(OK)
+
+  vehicle   Vehicle      @relation(fields: [vehicleId], references: [id])
+}
+
+model GpsPoint {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int
+  lat       Float
+  lng       Float
+  speed     Float?
+  at        DateTime
+  createdAt DateTime @default(now())
+
+  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, at])
+}
+
+// Notification: scope bazlı (ROOM/COMPANY/DRIVER)
+// payloadJson: Json tipinde serbest içerik
+model Notification {
+  id        Int               @id @default(autoincrement())
+  type      String
+  scope     NotificationScope
+  payloadJson Json
+  createdAt DateTime          @default(now())
+
+  // optional targets
+  companyId Int?
+  roomId    Int?
+  driverId  Int?
+  vehicleId Int?
+  shiftId   Int?
+
+  company   Company? @relation(fields: [companyId], references: [id])
+  room      Room?    @relation(fields: [roomId], references: [id])
+  driver    Driver?  @relation(fields: [driverId], references: [id])
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+  shift     Shift?   @relation(fields: [shiftId], references: [id])
+
+  @@index([scope, createdAt])
+  @@index([companyId, createdAt])
+  @@index([roomId, createdAt])
+  @@index([driverId, createdAt])
+}
+
+model ShiftProgress {
+  id              Int      @id @default(autoincrement())
+  shiftId          Int      @unique
+  lastReachedOrder Int      @default(0)
+  completedAt      DateTime?
+  updatedAt        DateTime @updatedAt
+
+  shift            Shift    @relation(fields: [shiftId], references: [id])
+}

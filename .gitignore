@@ -1,0 +1,9 @@
+node_modules
+.env
+dist
+backend/node_modules
+backend/prisma/dev.db
+
+# Large / generated indexes (ETA graph, clustering, etc.)
+backend/indexes/
+backend/data/
