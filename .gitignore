@@ -7,3 +7,11 @@ backend/prisma/dev.db
 # Large / generated indexes (ETA graph, clustering, etc.)
 backend/indexes/
 backend/data/
+node_modules/
+**/node_modules/
+dist/
+build/
+.env
+.env.*
+backend/indexes/
+backend/data/
