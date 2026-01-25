@@ -6,6 +6,8 @@ import { gpsIngestSchema } from "../validators.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
 import { haversineKm, etaMinutes } from "../geo.js";
+import { gpsStatusFromAt } from "../gps/status.js";
+import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW
 
 export function gpsRouter(io) {
   const r = express.Router();
@@ -45,7 +47,7 @@ export function gpsRouter(io) {
         },
       });
 
-      // ✅ DB enum: OK | STALE  (LIVE yazılmaz)
+      // ✅ DB enum: OK | STALE  (LIVE/OFFLINE DB’ye yazılmaz)
       const last = await prisma.gpsLast.upsert({
         where: { vehicleId },
         update: {
@@ -66,32 +68,99 @@ export function gpsRouter(io) {
       });
 
       // ✅ VehicleStatus enum: ACTIVE | PASSIVE | STALE
-      // GPS geldiyse ACTIVE'a çek
       await prisma.vehicle.update({
         where: { id: vehicleId },
         data: { status: "ACTIVE" },
       });
 
-      // ✅ WS: gps:update (UI status = LIVE)
+      // ✅ Tek kaynak: UI status + ageSec
+      const { status: uiStatus, ageSec } = gpsStatusFromAt(last.at);
+
+      // =========================================================
+      // ✅ RECOVERY GATE (OFFLINE/STALE -> LIVE) — spam olmaz
+      // =========================================================
+      const gate = await gateVehicleGpsState({
+        prisma,
+        vehicleId,
+        newUiStatus: uiStatus,
+        now: new Date(),
+      });
+
+      if (gate.shouldNotify && gate.transition === "TO_LIVE") {
+        const payload = buildNotifPayloadV1({
+          title: "GPS Geri Geldi",
+          message: `Araç ${vehicle.plate}: ${gate.prevStatus} → ${gate.newStatus}`,
+          vehicleId,
+          at: last.at?.toISOString ? last.at.toISOString() : new Date(last.at).toISOString(),
+          ageSec,
+          status: uiStatus,
+          kind: "GPS_RECOVERY",
+        });
+
+        // DRIVER scope (bu request'i atan driver user ise)
+        const driver = await prisma.driver.findFirst({
+          where: { userId: u.id },
+          select: { id: true },
+        });
+
+        if (driver) {
+          await createAndEmitNotification({
+            io,
+            type: "GPS_RECOVERY",
+            scope: "DRIVER",
+            payload,
+            driverId: driver.id,
+            userId: u.id,
+            vehicleId,
+            roomId: vehicle.roomId,
+            companyId: vehicle.room.companyId,
+          });
+        }
+
+        // ROOM scope
+        await createAndEmitNotification({
+          io,
+          type: "GPS_RECOVERY",
+          scope: "ROOM",
+          payload,
+          roomId: vehicle.roomId,
+          companyId: vehicle.room.companyId,
+          vehicleId,
+        });
+
+        // COMPANY scope
+        await createAndEmitNotification({
+          io,
+          type: "GPS_RECOVERY",
+          scope: "COMPANY",
+          payload,
+          companyId: vehicle.room.companyId,
+          roomId: vehicle.roomId,
+          vehicleId,
+        });
+      }
+
+      // ✅ WS: gps:update (UI status = LIVE/STALE/OFFLINE) + ageSec
       const gpsPayload = {
         vehicleId,
         lat,
         lng,
         speed: typeof speed === "number" ? speed : null,
         at: last.at,
-        status: "LIVE",
+        status: uiStatus,
+        ageSec,
       };
 
       io.to(`vehicle:${vehicleId}`).emit("gps:update", gpsPayload);
       io.to(`room:${vehicle.roomId}`).emit("gps:update", gpsPayload);
       io.to(`company:${vehicle.room.companyId}`).emit("gps:update", gpsPayload);
 
-      // (Opsiyonel ama iyi): UI vehicle status yayını
-      io.to(`room:${vehicle.roomId}`).emit("vehicle:status", {
-        vehicleId,
-        status: "LIVE",
-        ageSec: 0,
-      });
+      // ✅ WS: vehicle:status (UI status + ageSec) — gps:update ile aynı standart
+      const vehicleStatusPayload = { vehicleId, status: uiStatus, ageSec };
+
+      io.to(`vehicle:${vehicleId}`).emit("vehicle:status", vehicleStatusPayload);
+      io.to(`room:${vehicle.roomId}`).emit("vehicle:status", vehicleStatusPayload);
+      io.to(`company:${vehicle.room.companyId}`).emit("vehicle:status", vehicleStatusPayload);
 
       // Overspeed notif (v1 payload)
       if (typeof speed === "number" && speed > (vehicle.speedLimitKmh ?? 80)) {
@@ -102,12 +171,11 @@ export function gpsRouter(io) {
           message: `Araç ${vehicle.plate}: ${Math.round(speed)} km/h (limit ${limit})`,
           vehicleId,
           at: last.at?.toISOString ? last.at.toISOString() : new Date(last.at).toISOString(),
-          ageSec: 0,
-          status: "LIVE",
+          ageSec,
+          status: uiStatus,
           kind: "OVERSPEED",
         });
 
-        // driver target (DB: driverId dolsun + WS: user:{id})
         const driver = await prisma.driver.findFirst({
           where: { userId: u.id },
           select: { id: true },
@@ -120,14 +188,13 @@ export function gpsRouter(io) {
             scope: "DRIVER",
             payload,
             driverId: driver.id,
-            userId: u.id, // ✅ WS için
+            userId: u.id,
             vehicleId,
             roomId: vehicle.roomId,
             companyId: vehicle.room.companyId,
           });
         }
 
-        // room target
         await createAndEmitNotification({
           io,
           type: "OVERSPEED",
@@ -138,7 +205,6 @@ export function gpsRouter(io) {
           vehicleId,
         });
 
-        // company target
         await createAndEmitNotification({
           io,
           type: "OVERSPEED",
@@ -150,11 +216,17 @@ export function gpsRouter(io) {
         });
       }
 
-      // ETA broadcast: APPROVED/ACTIVE shifts assigned to this vehicle
+      // =========================================================
+      // ✅ ETA broadcast (progress-aware)
+      // - ShiftProgress.lastReachedOrder'a göre kalan durakları yayınlar
+      // =========================================================
       try {
         const shifts = await prisma.shift.findMany({
           where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
-          include: { stops: { orderBy: { order: "asc" } } },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true, // ✅ NEW
+          },
         });
 
         const speedKmh = typeof speed === "number" ? speed : 30;
@@ -162,7 +234,13 @@ export function gpsRouter(io) {
         for (const sh of shifts) {
           if (!sh.stops?.length) continue;
 
-          const items = sh.stops.map((s) => {
+          const lastReachedOrder = sh.progress?.lastReachedOrder ?? 0;
+          const remainingStops = sh.stops.filter((s) => s.order > lastReachedOrder);
+
+          // kalan durak yoksa boş yayın yerine skip
+          if (!remainingStops.length) continue;
+
+          const items = remainingStops.map((s) => {
             const km = haversineKm(lat, lng, s.lat, s.lng);
             return {
               id: s.id,
@@ -174,9 +252,6 @@ export function gpsRouter(io) {
           });
 
           const payload = { shiftId: sh.id, vehicleId, at: last.at, stops: items };
-
-          // ✅ debug log doğru yerde
-          // console.log("eta:update", { shiftId: sh.id, vehicleId, stops: items.length });
 
           io.to(`vehicle:${vehicleId}`).emit("eta:update", payload);
           io.to(`room:${sh.roomId}`).emit("eta:update", payload);
