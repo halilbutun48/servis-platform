@@ -63,6 +63,13 @@ enum NotificationScope {
   DRIVER
 }
 
+// ✅ UI/WS status gate (notif dedupe/transition için)
+enum UiGpsStatus {
+  LIVE
+  STALE
+  OFFLINE
+}
+
 // --- Core Models ---
 
 model Company {
@@ -131,6 +138,7 @@ model Vehicle {
 
   room              Room          @relation(fields: [roomId], references: [id])
   gpsLast           GpsLast?
+  gpsState          VehicleGpsState? // ✅ yeni: UI status gate state
   gpsPoints         GpsPoint[]
   shifts            Shift[]
   notifications     Notification[]
@@ -139,32 +147,32 @@ model Vehicle {
 }
 
 model Driver {
-  id           Int      @id @default(autoincrement())
-  roomId       Int
-  fullName     String
-  phone        String
-  deviceInfo   String
+  id             Int      @id @default(autoincrement())
+  roomId         Int
+  fullName       String
+  phone          String
+  deviceInfo     String
   backupDriverId Int?
-  createdAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
 
-  room         Room     @relation(fields: [roomId], references: [id])
+  room           Room     @relation(fields: [roomId], references: [id])
 
   // Optional login user link (role=DRIVER)
-  userId       Int?     @unique
-  user         User?    @relation(fields: [userId], references: [id])
+  userId         Int?     @unique
+  user           User?    @relation(fields: [userId], references: [id])
 
   // self-reference
-  backupDriver Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
-  backupsFor   Driver[] @relation("BackupDriver")
+  backupDriver   Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
+  backupsFor     Driver[] @relation("BackupDriver")
 
-  shifts       Shift[]
-  notifications Notification[]
+  shifts         Shift[]
+  notifications  Notification[]
 
   @@index([roomId])
 }
 
 model Shift {
-  id        Int        @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   companyId Int
   roomId    Int
   vehicleId Int?
@@ -172,12 +180,12 @@ model Shift {
   startAt   DateTime
   endAt     DateTime
   status    ShiftStatus @default(DRAFT)
-  createdAt DateTime   @default(now())
+  createdAt DateTime    @default(now())
 
-  company   Company    @relation(fields: [companyId], references: [id])
-  room      Room       @relation(fields: [roomId], references: [id])
-  vehicle   Vehicle?   @relation(fields: [vehicleId], references: [id])
-  driver    Driver?    @relation(fields: [driverId], references: [id])
+  company   Company     @relation(fields: [companyId], references: [id])
+  room      Room        @relation(fields: [roomId], references: [id])
+  vehicle   Vehicle?    @relation(fields: [vehicleId], references: [id])
+  driver    Driver?     @relation(fields: [driverId], references: [id])
 
   stops     Stop[]
   pickupRequests PickupRequest[]
@@ -191,15 +199,15 @@ model Shift {
 }
 
 model Stop {
-  id        Int      @id @default(autoincrement())
-  shiftId   Int
-  name      String
-  lat       Float
-  lng       Float
-  order     Int
-  type      StopType
+  id      Int     @id @default(autoincrement())
+  shiftId Int
+  name    String
+  lat     Float
+  lng     Float
+  order   Int
+  type    StopType
 
-  shift     Shift    @relation(fields: [shiftId], references: [id])
+  shift   Shift   @relation(fields: [shiftId], references: [id])
 
   @@index([shiftId, order])
 }
@@ -224,30 +232,40 @@ model Personel {
 }
 
 model PickupRequest {
-  id        Int                 @id @default(autoincrement())
-  shiftId   Int
+  id         Int                 @id @default(autoincrement())
+  shiftId    Int
   personelId Int
-  lat       Float
-  lng       Float
-  status    PickupRequestStatus @default(OPEN)
-  createdAt DateTime            @default(now())
+  lat        Float
+  lng        Float
+  status     PickupRequestStatus @default(OPEN)
+  createdAt  DateTime            @default(now())
 
-  shift     Shift               @relation(fields: [shiftId], references: [id])
-  personel  Personel            @relation(fields: [personelId], references: [id])
+  shift      Shift               @relation(fields: [shiftId], references: [id])
+  personel   Personel            @relation(fields: [personelId], references: [id])
 
   @@index([shiftId, status])
   @@index([personelId])
 }
 
 model GpsLast {
-  vehicleId Int          @id
+  vehicleId Int           @id
   lat       Float
   lng       Float
   speed     Float?
   at        DateTime
   status    GpsLastStatus @default(OK)
 
-  vehicle   Vehicle      @relation(fields: [vehicleId], references: [id])
+  vehicle   Vehicle       @relation(fields: [vehicleId], references: [id])
+}
+
+// ✅ notif dedupe/transition gate için UI status state’i
+model VehicleGpsState {
+  vehicleId     Int        @id
+  lastUiStatus  UiGpsStatus
+  lastChangedAt DateTime   @default(now())
+  seenLiveAt    DateTime?
+
+  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 }
 
 model GpsPoint {
@@ -259,7 +277,7 @@ model GpsPoint {
   at        DateTime
   createdAt DateTime @default(now())
 
-  vehicle   Vehicle   @relation(fields: [vehicleId], references: [id])
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
 
   @@index([vehicleId, at])
 }
@@ -267,24 +285,24 @@ model GpsPoint {
 // Notification: scope bazlı (ROOM/COMPANY/DRIVER)
 // payloadJson: Json tipinde serbest içerik
 model Notification {
-  id        Int               @id @default(autoincrement())
-  type      String
-  scope     NotificationScope
+  id         Int               @id @default(autoincrement())
+  type       String
+  scope      NotificationScope
   payloadJson Json
-  createdAt DateTime          @default(now())
+  createdAt  DateTime          @default(now())
 
   // optional targets
-  companyId Int?
-  roomId    Int?
-  driverId  Int?
-  vehicleId Int?
-  shiftId   Int?
+  companyId  Int?
+  roomId     Int?
+  driverId   Int?
+  vehicleId  Int?
+  shiftId    Int?
 
-  company   Company? @relation(fields: [companyId], references: [id])
-  room      Room?    @relation(fields: [roomId], references: [id])
-  driver    Driver?  @relation(fields: [driverId], references: [id])
-  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
-  shift     Shift?   @relation(fields: [shiftId], references: [id])
+  company    Company? @relation(fields: [companyId], references: [id])
+  room       Room?    @relation(fields: [roomId], references: [id])
+  driver     Driver?  @relation(fields: [driverId], references: [id])
+  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
+  shift      Shift?   @relation(fields: [shiftId], references: [id])
 
   @@index([scope, createdAt])
   @@index([companyId, createdAt])
@@ -294,10 +312,10 @@ model Notification {
 
 model ShiftProgress {
   id              Int      @id @default(autoincrement())
-  shiftId          Int      @unique
+  shiftId         Int      @unique
   lastReachedOrder Int      @default(0)
-  completedAt      DateTime?
-  updatedAt        DateTime @updatedAt
+  completedAt     DateTime?
+  updatedAt       DateTime @updatedAt
 
-  shift            Shift    @relation(fields: [shiftId], references: [id])
+  shift           Shift    @relation(fields: [shiftId], references: [id])
 }
