@@ -1,15 +1,36 @@
 import { verifyToken } from "./jwt.js";
 import { prisma } from "../prisma.js";
 
+function readToken(req) {
+  // 1) Authorization: Bearer <token>
+  const header = req.headers["authorization"] || "";
+  if (typeof header === "string" && header.startsWith("Bearer ")) {
+    const t = header.slice(7).trim();
+    if (t) return t;
+  }
+
+  // 2) x-auth-token: <token> (web tarafı bunu kullanıyor)
+  const xt = req.headers["x-auth-token"];
+  if (typeof xt === "string" && xt.trim()) return xt.trim();
+
+  // 3) bazen proxy vs. farklı casing ile gelebilir
+  const xt2 = req.headers["X-Auth-Token"];
+  if (typeof xt2 === "string" && xt2.trim()) return xt2.trim();
+
+  return null;
+}
+
 export function authRequired() {
   return async (req, res, next) => {
     try {
-      const header = req.headers["authorization"] || "";
-      const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+      const token = readToken(req);
       if (!token) return res.status(401).json({ error: "Missing token" });
 
       const decoded = verifyToken(token);
-      const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+      });
       if (!user) return res.status(401).json({ error: "Invalid token" });
 
       req.user = user;
