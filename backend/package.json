@@ -4,7 +4,8 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "node src/server.js",
+    "dev": "nodemon --watch src --ext js,json --signal SIGTERM --exec \"node src/server.js\"",
+    "start": "node src/server.js",
     "seed": "node prisma/seed.js",
     "lint": "node -e \"console.log('lint placeholder')\""
   },
@@ -22,6 +23,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "nodemon": "^3.1.11",
     "prisma": "^5.18.0"
   }
 }

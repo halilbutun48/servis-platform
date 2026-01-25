@@ -70,7 +70,6 @@ export function SessionProvider({ children }) {
     s.on("gps:update", () => invalidate("vehicles"));
     s.on("eta:update", () => invalidate("eta"));
     s.on("notif:new", () => invalidate("notifications"));
-    s.on("notify:new", () => invalidate("notifications"));
 
     return () => {
       try {

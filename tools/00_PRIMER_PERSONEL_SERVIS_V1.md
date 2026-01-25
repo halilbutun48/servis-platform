@@ -69,12 +69,41 @@ web/src/panels/
 - “Tek kaynak doküman”: docs/PROJECT_SPEC_V1.md + API_SPEC_V1.md + DB_SCHEMA_V1.md
 
 ## Milestone (Kaldığımız Yer / Plan)
-- Milestone-0 (Şimdi): Sıfırdan repo + DB + Prisma schema + seed + auth/roles iskeleti
-- Milestone-1: Room panel (Vehicle/Driver CRUD + atama) + Company panel (Shift draft/request) + Room onay akışı
-- Milestone-2: GPS (gps:last + gps:points) + Map (Room: tüm araçlar, Personel: atanmış araç)
-- Milestone-3: Route/Stops (company oluştur/öner, room düzenle, driver’a gönder)
-- Milestone-4: WS canlı akış (gps:update, route:progress, notif:new) + Notification kuralları (overspeed, maint_7d, stale)
-- Milestone-5: “Ortak durak önerisi” (clustering) + operasyonel detaylar (geçici araç talebi, ek servis)
+✅ Milestone-0 (iskelet) — DONE
+
+Repo/compose ayakta, Prisma/seed, auth/roles çalışıyor.
+
+Token okuma (Authorization Bearer + x-auth-token) fix’i yapıldı.
+
+🟡 Milestone-1 (Room/Company CRUD + onay akışı) — KISMİ
+
+Shift mantığı ve /api/shifts/my var (driver için çalışıyor).
+
+Ama genel /api/shifts (room/company/personel) endpoint’i sende 404’tü → bu kısım tam değil.
+
+✅ Milestone-2 (GPS + Map) — DONE (core)
+
+POST /api/gps ile araç konumu güncelleniyor, haritalarda araç yer değiştiriyor.
+
+GET /api/eta?vehicleId=1 çalışıyor.
+
+ETA payload’ında status standardı + ageSec olacak şekilde standardizasyonu yaptın.
+
+🟡 Milestone-3 (Route/Stops akışı) — KISMİ
+
+Shift içinde stop’lar var (ETA onları kullanıyor).
+
+Ama “Company stop önerir → Room düzeltir → Driver’a plan gider” akışının tamamı dokümante/standart değil (tamamlandı diyemeyiz).
+
+🟡 Milestone-4 (WS + Notification kuralları) — KISMİ
+
+Sistem tarafında gps:update/panel reload mantığı çalışıyor.
+
+Ama bizim konuştuğumuz iki kritik standard hâlâ eksik:
+
+B) DB_SCHEMA Mermaid (doküman) ⛔
+
+C) Notification payloadJson sabit şema ⛔
 
 ## Bugünkü not
 - Eski repo’da backend/src/routes/driver.js yanlışlıkla React UI içeriğine dönmüş olabilir (import ... from "react").

@@ -2,28 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import { normalizeNotifV1 } from "../../utils/notificationV1";
 
-function asText(v) {
+function fmt(v) {
   if (v == null) return "";
   if (typeof v === "string") return v;
   try {
     return JSON.stringify(v);
   } catch {
     return String(v);
-  }
-}
-
-function safeParseJson(v) {
-  // v string ise JSON parse etmeyi dene, değilse olduğu gibi dön
-  if (v == null) return null;
-  if (typeof v !== "string") return v;
-  const s = v.trim();
-  if (!s) return null;
-  if (!(s.startsWith("{") || s.startsWith("["))) return v; // plain string
-  try {
-    return JSON.parse(s);
-  } catch {
-    return v; // bozuk json ise string kalsın
   }
 }
 
@@ -40,7 +27,10 @@ export default function NotificationsPanel() {
     setErr("");
     try {
       const r = await api("/api/notifications/my", { token });
-      setItems(Array.isArray(r) ? r : []);
+
+      // endpoint bazen dizi, bazen {items: []} dönebilir
+      const list = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : [];
+      setItems(list);
     } catch (e) {
       setErr(String(e?.message || e));
       setItems([]);
@@ -58,43 +48,32 @@ export default function NotificationsPanel() {
 
   const rows = useMemo(() => {
     return (items || []).map((n, idx) => {
-      const rawPayload = n?.payloadJson ?? n?.payload ?? n;
-      const parsed = safeParseJson(rawPayload);
+      const rawPayload = n?.payloadJson ?? n?.payload ?? null;
+      const p = normalizeNotifV1(rawPayload);
 
-      const payloadObj = parsed && typeof parsed === "object" ? parsed : null;
+      // UI sadece v1 alanlarını baz alır
+      const title = p.title || fmt(n?.type) || "-";
+      const message = p.message || "";
+      const vehicleId = p.vehicleId ?? n?.vehicleId ?? "";
+      const at = p.at ?? n?.createdAt ?? "";
 
-      const title =
-        asText(n?.type) ||
-        asText(payloadObj?.title) ||
-        asText(payloadObj?.type) ||
-        "-";
-
-      const message =
-        asText(payloadObj?.message) ||
-        asText(n?.message) ||
-        "";
-
-      const vehicleId =
-        payloadObj?.vehicleId ?? n?.vehicleId ?? "";
-
-      const created =
-        n?.createdAt ?? n?.at ?? "";
-
-      const payloadText = payloadObj
-        ? asText(payloadObj)
-        : asText(parsed);
+      const payloadPretty = JSON.stringify(p, null, 2);
 
       return {
         key: n?.id ?? idx,
         id: n?.id ?? "-",
-        type: asText(n?.type ?? payloadObj?.type ?? "-"),
-        scope: asText(n?.scope ?? "-"),
-        created: asText(created),
+        scope: fmt(n?.scope ?? "-"),
+        type: fmt(n?.type ?? "-"),
+
         title,
         message,
-        vehicleId: asText(vehicleId),
-        payloadText,
-        payloadPretty: payloadObj ? JSON.stringify(payloadObj, null, 2) : asText(parsed),
+        vehicleId: fmt(vehicleId),
+        kind: fmt(p.kind ?? ""),
+        status: fmt(p.status ?? ""),
+        ageSec: p.ageSec,
+        at: fmt(at),
+
+        payloadPretty,
       };
     });
   }, [items]);
@@ -125,10 +104,13 @@ export default function NotificationsPanel() {
                 <th>ID</th>
                 <th>Type</th>
                 <th>Scope</th>
-                <th>Created</th>
+                <th>At</th>
                 <th>Title</th>
                 <th>Message</th>
                 <th>Vehicle</th>
+                <th>Kind</th>
+                <th>Status</th>
+                <th>Age</th>
                 <th>Payload</th>
               </tr>
             </thead>
@@ -136,19 +118,41 @@ export default function NotificationsPanel() {
               {rows.map((r) => (
                 <tr key={r.key}>
                   <td>{r.id}</td>
-                  <td><b>{r.type}</b></td>
+                  <td>
+                    <b>{r.type}</b>
+                  </td>
                   <td>{r.scope}</td>
-                  <td className="muted">{r.created}</td>
+                  <td className="muted">{r.at}</td>
                   <td>{r.title}</td>
-                  <td className="muted" style={{ maxWidth: 320, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={r.message}>
+                  <td
+                    className="muted"
+                    style={{
+                      maxWidth: 320,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                    title={r.message}
+                  >
                     {r.message}
                   </td>
                   <td className="muted">{r.vehicleId}</td>
-                  <td className="muted" style={{ maxWidth: 420, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <td className="muted">{r.kind}</td>
+                  <td className="muted">{r.status}</td>
+                  <td className="muted">{typeof r.ageSec === "number" ? `${r.ageSec}s` : ""}</td>
+                  <td
+                    className="muted"
+                    style={{
+                      maxWidth: 420,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     <button
                       style={{ padding: "6px 10px" }}
                       onClick={() => setSelected(r)}
-                      title={r.payloadText}
+                      title="v1 payload"
                     >
                       Detay
                     </button>
@@ -182,7 +186,9 @@ export default function NotificationsPanel() {
             <div className="topbar" style={{ marginBottom: 12 }}>
               <div>
                 <h3 style={{ margin: 0 }}>Notification #{selected.id}</h3>
-                <div className="muted">{selected.type} • {selected.scope} • {selected.created}</div>
+                <div className="muted">
+                  {selected.type} • {selected.scope} • {selected.at}
+                </div>
               </div>
               <button onClick={() => setSelected(null)}>Kapat</button>
             </div>
@@ -195,7 +201,7 @@ export default function NotificationsPanel() {
             </div>
 
             <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-{selected.payloadPretty}
+              {selected.payloadPretty}
             </pre>
           </div>
         </div>

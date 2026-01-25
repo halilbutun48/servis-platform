@@ -19,9 +19,11 @@ import { requestsRouter } from "./routes/requests.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { driverRouter } from "./routes/driver.js";
 import { etaRouter } from "./routes/eta.js";
-import { createNotification } from "./notifications/service.js";
+import "dotenv/config";
 
-
+import { createAndEmitNotification } from "./notifications/service.js";
+import { buildNotifPayloadV1 } from "./notifications/payloadV1.js";
+import { gpsStatusFromAt } from "./gps/status.js";
 
 const app = express();
 app.use(cors());
@@ -38,7 +40,9 @@ app.use(
   })
 );
 
-app.get("/health", (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+app.get("/health", (req, res) =>
+  res.json({ ok: true, ts: new Date().toISOString() })
+);
 
 app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
@@ -57,6 +61,7 @@ app.use("/api/shifts", shiftsRouter(io));
 app.use("/api/gps", gpsRouter(io));
 app.use("/api/requests", requestsRouter(io));
 app.use("/api/driver", driverRouter(io));
+
 // Socket auth
 io.use(async (socket, next) => {
   try {
@@ -85,25 +90,48 @@ io.on("connection", (socket) => {
   // Driver: join vehicle rooms via assigned shifts
   (async () => {
     if (user.role !== "DRIVER") return;
-    const driver = await prisma.driver.findFirst({ where: { userId: user.id }, select: { id: true } });
+
+    const driver = await prisma.driver.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
     if (!driver) return;
+
     const shifts = await prisma.shift.findMany({
-      where: { driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] }, vehicleId: { not: null } },
+      where: {
+        driverId: driver.id,
+        status: { in: ["APPROVED", "ACTIVE"] },
+        vehicleId: { not: null },
+      },
       select: { vehicleId: true },
     });
-    const vehicleIds = Array.from(new Set(shifts.map((s) => s.vehicleId).filter(Boolean)));
+
+    const vehicleIds = Array.from(
+      new Set(shifts.map((s) => s.vehicleId).filter(Boolean))
+    );
     vehicleIds.forEach((vid) => socket.join(`vehicle:${vid}`));
   })();
 
   socket.emit("ws:ready", { userId: user.id, role: user.role, rooms });
-
   socket.on("disconnect", () => {});
 });
 
 // Background checks: stale vehicles + maintenance upcoming
 async function backgroundTick() {
   try {
-    // stale: if gpsLast.at older than 45 seconds => STALE
+    // ✅ DB hazır değilse tick'i pas geç (log spam olmasın)
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      globalThis.__dbWarned = false;
+    } catch (e) {
+      if (!globalThis.__dbWarned) {
+        globalThis.__dbWarned = true;
+        console.warn("backgroundTick: DB not ready, skipping checks.");
+      }
+      return;
+    }
+
+    // stale gate: 45sn altı = alert yok (LIVE say)
     const staleThresholdMs = 45_000;
     const now = Date.now();
 
@@ -112,50 +140,135 @@ async function backgroundTick() {
     });
 
     for (const last of lasts) {
-      const age = now - new Date(last.at).getTime();
-      if (age <= staleThresholdMs) continue;
-      if (last.status === "STALE") continue;
+      const ageMs = now - new Date(last.at).getTime();
 
-      await prisma.gpsLast.update({ where: { vehicleId: last.vehicleId }, data: { status: "STALE" } });
-      await prisma.vehicle.update({ where: { id: last.vehicleId }, data: { status: "STALE" } });
+      // 45sn altı ise alert üretme
+      if (ageMs <= staleThresholdMs) continue;
 
-      const payloadJson = {
-        title: "GPS Stale",
-        message: `Araç ${last.vehicle.plate} konum güncellemesi gecikti (${Math.round(age / 1000)}sn).`,
+      // Tek kaynak UI status/ageSec: LIVE | STALE | OFFLINE
+      const derived = gpsStatusFromAt(last.at);
+      const uiStatus = derived?.status ?? "STALE";
+
+      // DB enum: OK | STALE  (OFFLINE YAZILMAZ)
+      // LIVE -> OK, STALE/OFFLINE -> STALE
+      const gpsLastDbStatus = uiStatus === "LIVE" ? "OK" : "STALE";
+const vehicleDbStatus = uiStatus === "LIVE" ? "ACTIVE" : "STALE";
+
+await prisma.gpsLast.update({
+  where: { vehicleId: last.vehicleId },
+  data: { status: gpsLastDbStatus },
+});
+
+await prisma.vehicle.update({
+  where: { id: last.vehicleId },
+  data: { status: vehicleDbStatus },
+});
+
+      // Status değişmediyse spam üretme (DB tarafı kontrol)
+     if (last.status === gpsLastDbStatus) continue;
+
+      // DB status update: sadece OK/STALE
+      await prisma.gpsLast.update({
+where: { vehicleId: last.vehicleId },
+data: { status: gpsLastDbStatus },
+});
+
+
+await prisma.vehicle.update({
+where: { id: last.vehicleId },
+data: { status: vehicleDbStatus },
+});
+   
+      const ageSec = Math.round(ageMs / 1000);
+
+      // UI ayrımı kind ile: STALE vs OFFLINE
+      const kind = uiStatus === "OFFLINE" ? "GPS_OFFLINE" : "GPS_STALE";
+
+      const payload = buildNotifPayloadV1({
+        title: uiStatus === "OFFLINE" ? "GPS Offline" : "GPS Stale",
+        message:
+          uiStatus === "OFFLINE"
+            ? `Araç ${last.vehicle.plate} uzun süredir çevrimdışı (${ageSec}sn).`
+            : `Araç ${last.vehicle.plate} konum güncellemesi gecikti (${ageSec}sn).`,
         vehicleId: last.vehicleId,
-        ageSec: Math.round(age / 1000),
-        at: last.at,
-      };
+        at: new Date().toISOString(),
+        ageSec,
+        status: uiStatus, // payload: LIVE/STALE/OFFLINE
+        kind,
+      });
 
       // ROOM scope
-      await createNotification({ type: "STALE", scope: "ROOM", payloadJson, roomId: last.vehicle.roomId, vehicleId: last.vehicleId });
-      io.to(`room:${last.vehicle.roomId}`).emit("notif:new", { scope: "ROOM", type: "STALE", payload: payloadJson });
-      io.to(`room:${last.vehicle.roomId}`).emit("vehicle:status", { vehicleId: last.vehicleId, status: "STALE" });
+      await createAndEmitNotification({
+        io,
+        type: "STALE", // type sabit; ayrımı kind+status yapıyor
+        scope: "ROOM",
+        payload,
+        roomId: last.vehicle.roomId,
+        companyId: last.vehicle.room.companyId,
+        vehicleId: last.vehicleId,
+      });
 
-      // COMPANY scope (Room'un Companysi)
-      await createNotification({ type: "STALE", scope: "COMPANY", payloadJson, companyId: last.vehicle.room.companyId, vehicleId: last.vehicleId });
-      io.to(`company:${last.vehicle.room.companyId}`).emit("notif:new", { scope: "COMPANY", type: "STALE", payload: payloadJson });
+      // Araç status yayınla (UI status: STALE/OFFLINE)
+      io.to(`room:${last.vehicle.roomId}`).emit("vehicle:status", {
+        vehicleId: last.vehicleId,
+        status: uiStatus,
+        ageSec,
+      });
 
-      // DRIVER scope (aktif shift üzerinden driver bulmaya çalış)
+      // COMPANY scope
+      await createAndEmitNotification({
+        io,
+        type: "STALE",
+        scope: "COMPANY",
+        payload,
+        companyId: last.vehicle.room.companyId,
+        roomId: last.vehicle.roomId,
+        vehicleId: last.vehicleId,
+      });
+
+      // DRIVER scope (aktif shift üzerinden driver bul)
       const sh = await prisma.shift.findFirst({
-        where: { vehicleId: last.vehicleId, status: { in: ["APPROVED", "ACTIVE"] }, driverId: { not: null } },
+        where: {
+          vehicleId: last.vehicleId,
+          status: { in: ["APPROVED", "ACTIVE"] },
+          driverId: { not: null },
+        },
         select: { driverId: true },
       });
+
       if (sh?.driverId) {
-        await createNotification({ type: "STALE", scope: "DRIVER", payloadJson, driverId: sh.driverId, vehicleId: last.vehicleId });
-        // driver user'sa user roomuna da basabiliriz
-        const dUser = await prisma.driver.findUnique({ where: { id: sh.driverId }, select: { userId: true } });
-        if (dUser?.userId) io.to(`user:${dUser.userId}`).emit("notif:new", { scope: "DRIVER", type: "STALE", payload: payloadJson });
+        // driver'ın userId'sini al
+        const dUser = await prisma.driver.findUnique({
+          where: { id: sh.driverId },
+          select: { userId: true },
+        });
+
+        await createAndEmitNotification({
+          io,
+          type: "STALE",
+          scope: "DRIVER",
+          payload,
+          driverId: sh.driverId,
+          userId: dUser?.userId ?? null, // ✅ kritik
+          vehicleId: last.vehicleId,
+          roomId: last.vehicle.roomId,
+          companyId: last.vehicle.room.companyId,
+        });
       }
     }
 
     // maintenance upcoming: 7 days window
-    const upcoming = await prisma.vehicle.findMany({ where: { nextMaintenanceAt: { not: null } }, include: { room: true } });
+    const upcoming = await prisma.vehicle.findMany({
+      where: { nextMaintenanceAt: { not: null } },
+      include: { room: true },
+    });
+
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
     for (const v of upcoming) {
       const due = v.nextMaintenanceAt ? new Date(v.nextMaintenanceAt).getTime() : null;
       if (!due) continue;
+
       const diff = due - now;
       if (diff <= 0 || diff >= sevenDays) continue;
 
@@ -170,28 +283,63 @@ async function backgroundTick() {
       });
       if (existing) continue;
 
-      const payloadJson = {
+      const payload = buildNotifPayloadV1({
         title: "Bakım Yaklaşıyor",
         message: `Araç ${v.plate} bakım tarihi yaklaştı (${new Date(due).toISOString().slice(0, 10)}).`,
         vehicleId: v.id,
-        nextMaintenanceAt: v.nextMaintenanceAt,
-      };
+        at: new Date().toISOString(),
+        ageSec: null,
+        status: null,
+        kind: "MAINT_7D",
+      });
 
-      await createNotification({ type: "MAINT_7D", scope: "ROOM", payloadJson, roomId: v.roomId, vehicleId: v.id });
-      io.to(`room:${v.roomId}`).emit("notif:new", { scope: "ROOM", type: "MAINT_7D", payload: payloadJson });
+      await createAndEmitNotification({
+        io,
+        type: "MAINT_7D",
+        scope: "ROOM",
+        payload,
+        roomId: v.roomId,
+        companyId: v.room.companyId,
+        vehicleId: v.id,
+      });
 
-      await createNotification({ type: "MAINT_7D", scope: "COMPANY", payloadJson, companyId: v.room.companyId, vehicleId: v.id });
-      io.to(`company:${v.room.companyId}`).emit("notif:new", { scope: "COMPANY", type: "MAINT_7D", payload: payloadJson });
+      await createAndEmitNotification({
+        io,
+        type: "MAINT_7D",
+        scope: "COMPANY",
+        payload,
+        companyId: v.room.companyId,
+        roomId: v.roomId,
+        vehicleId: v.id,
+      });
 
       // if any active shift -> driver
       const sh = await prisma.shift.findFirst({
-        where: { vehicleId: v.id, status: { in: ["APPROVED", "ACTIVE"] }, driverId: { not: null } },
+        where: {
+          vehicleId: v.id,
+          status: { in: ["APPROVED", "ACTIVE"] },
+          driverId: { not: null },
+        },
         select: { driverId: true },
       });
+
       if (sh?.driverId) {
-        await createNotification({ type: "MAINT_7D", scope: "DRIVER", payloadJson, driverId: sh.driverId, vehicleId: v.id });
-        const dUser = await prisma.driver.findUnique({ where: { id: sh.driverId }, select: { userId: true } });
-        if (dUser?.userId) io.to(`user:${dUser.userId}`).emit("notif:new", { scope: "DRIVER", type: "MAINT_7D", payload: payloadJson });
+        const dUser = await prisma.driver.findUnique({
+          where: { id: sh.driverId },
+          select: { userId: true },
+        });
+
+        await createAndEmitNotification({
+          io,
+          type: "MAINT_7D",
+          scope: "DRIVER",
+          payload,
+          driverId: sh.driverId,
+          userId: dUser?.userId ?? null, // ✅ kritik
+          vehicleId: v.id,
+          roomId: v.roomId,
+          companyId: v.room.companyId,
+        });
       }
     }
   } catch (e) {
@@ -205,4 +353,4 @@ server.listen(ENV.PORT, () => {
   console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
 
-
+console.log("server reload test", new Date().toISOString());
