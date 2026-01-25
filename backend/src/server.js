@@ -1,3 +1,4 @@
+// backend/src/server.js
 import express from "express";
 import http from "http";
 import cors from "cors";
@@ -20,10 +21,12 @@ import { notificationsRouter } from "./routes/notifications.js";
 import { driverRouter } from "./routes/driver.js";
 import { etaRouter } from "./routes/eta.js";
 import "dotenv/config";
+import { personelsRouter } from "./routes/personels.js";
 
 import { createAndEmitNotification } from "./notifications/service.js";
 import { buildNotifPayloadV1 } from "./notifications/payloadV1.js";
 import { gpsStatusFromAt } from "./gps/status.js";
+import { gateVehicleGpsState } from "./gps/gpsStateGate.js"; // ✅ transition gate
 
 const app = express();
 app.use(cors());
@@ -61,7 +64,7 @@ app.use("/api/shifts", shiftsRouter(io));
 app.use("/api/gps", gpsRouter(io));
 app.use("/api/requests", requestsRouter(io));
 app.use("/api/driver", driverRouter(io));
-
+app.use("/api/personels", personelsRouter(io));
 // Socket auth
 io.use(async (socket, next) => {
   try {
@@ -84,10 +87,12 @@ io.use(async (socket, next) => {
 
 io.on("connection", (socket) => {
   const user = socket.user;
+
+  // Base scope rooms
   const rooms = scopeRoomsForUser(user);
   rooms.forEach((r) => socket.join(r));
 
-  // Driver: join vehicle rooms via assigned shifts
+  // Driver: join vehicle + shift rooms via assigned shifts
   (async () => {
     if (user.role !== "DRIVER") return;
 
@@ -101,22 +106,24 @@ io.on("connection", (socket) => {
       where: {
         driverId: driver.id,
         status: { in: ["APPROVED", "ACTIVE"] },
-        vehicleId: { not: null },
       },
-      select: { vehicleId: true },
+      select: { id: true, vehicleId: true },
     });
 
     const vehicleIds = Array.from(
       new Set(shifts.map((s) => s.vehicleId).filter(Boolean))
     );
     vehicleIds.forEach((vid) => socket.join(`vehicle:${vid}`));
+
+    const shiftIds = Array.from(new Set(shifts.map((s) => s.id)));
+    shiftIds.forEach((sid) => socket.join(`shift:${sid}`));
   })();
 
   socket.emit("ws:ready", { userId: user.id, role: user.role, rooms });
   socket.on("disconnect", () => {});
 });
 
-// Background checks: stale vehicles + maintenance upcoming
+// Background checks: stale/offline vehicles + maintenance upcoming
 async function backgroundTick() {
   try {
     // ✅ DB hazır değilse tick'i pas geç (log spam olmasın)
@@ -131,88 +138,103 @@ async function backgroundTick() {
       return;
     }
 
-    // stale gate: 45sn altı = alert yok (LIVE say)
-    const staleThresholdMs = 45_000;
-    const now = Date.now();
+    const now = new Date();
+    const nowMs = now.getTime();
 
+    // ----------------------------
+    // 1) GPS STALE/OFFLINE monitor
+    // ----------------------------
     const lasts = await prisma.gpsLast.findMany({
       include: { vehicle: { include: { room: true } } },
     });
 
     for (const last of lasts) {
-      const ageMs = now - new Date(last.at).getTime();
-
-      // 45sn altı ise alert üretme
-      if (ageMs <= staleThresholdMs) continue;
+      const vehicle = last.vehicle;
+      if (!vehicle) continue;
 
       // Tek kaynak UI status/ageSec: LIVE | STALE | OFFLINE
       const derived = gpsStatusFromAt(last.at);
-      const uiStatus = derived?.status ?? "STALE";
+      const uiStatus = derived?.status ?? "OFFLINE";
+      const ageSec =
+        typeof derived?.ageSec === "number"
+          ? derived.ageSec
+          : Math.max(
+              0,
+              Math.round((nowMs - new Date(last.at).getTime()) / 1000)
+            );
 
-      // DB enum: OK | STALE  (OFFLINE YAZILMAZ)
-      // LIVE -> OK, STALE/OFFLINE -> STALE
+      // UI status yayınla (harita/clients güncel kalsın)
+      const vehicleStatusPayload = {
+        vehicleId: last.vehicleId,
+        status: uiStatus,
+        ageSec,
+      };
+      io.to(`vehicle:${last.vehicleId}`).emit("vehicle:status", vehicleStatusPayload);
+      io.to(`room:${vehicle.roomId}`).emit("vehicle:status", vehicleStatusPayload);
+      io.to(`company:${vehicle.room.companyId}`).emit("vehicle:status", vehicleStatusPayload);
+
+      // DB mapping: LIVE => OK/ACTIVE, STALE/OFFLINE => STALE/STALE
       const gpsLastDbStatus = uiStatus === "LIVE" ? "OK" : "STALE";
-const vehicleDbStatus = uiStatus === "LIVE" ? "ACTIVE" : "STALE";
+      const vehicleDbStatus = uiStatus === "LIVE" ? "ACTIVE" : "STALE";
 
-await prisma.gpsLast.update({
-  where: { vehicleId: last.vehicleId },
-  data: { status: gpsLastDbStatus },
-});
+      // gereksiz write olmasın
+      await prisma.gpsLast.updateMany({
+        where: { vehicleId: last.vehicleId, status: { not: gpsLastDbStatus } },
+        data: { status: gpsLastDbStatus },
+      });
 
-await prisma.vehicle.update({
-  where: { id: last.vehicleId },
-  data: { status: vehicleDbStatus },
-});
+      await prisma.vehicle.updateMany({
+        where: { id: last.vehicleId, status: { not: vehicleDbStatus } },
+        data: { status: vehicleDbStatus },
+      });
 
-      // Status değişmediyse spam üretme (DB tarafı kontrol)
-     if (last.status === gpsLastDbStatus) continue;
+      // ✅ SPAM'i KESEN YER: UI status transition gate
+      const gate = await gateVehicleGpsState({
+        prisma,
+        vehicleId: last.vehicleId,
+        newUiStatus: uiStatus,
+        now,
+      });
 
-      // DB status update: sadece OK/STALE
-      await prisma.gpsLast.update({
-where: { vehicleId: last.vehicleId },
-data: { status: gpsLastDbStatus },
-});
+      if (!gate.shouldNotify) continue;
 
+      // backgroundTick sadece STALE/OFFLINE transition üretir.
+      // Recovery (TO_LIVE) /api/gps içinde üretilsin.
+      let kind = null;
+      let title = null;
 
-await prisma.vehicle.update({
-where: { id: last.vehicleId },
-data: { status: vehicleDbStatus },
-});
-   
-      const ageSec = Math.round(ageMs / 1000);
-
-      // UI ayrımı kind ile: STALE vs OFFLINE
-      const kind = uiStatus === "OFFLINE" ? "GPS_OFFLINE" : "GPS_STALE";
+      if (gate.transition === "LIVE_TO_STALE") {
+        kind = "GPS_STALE";
+        title = "GPS Stale";
+      } else if (gate.transition === "STALE_TO_OFFLINE") {
+        kind = "GPS_OFFLINE";
+        title = "GPS Offline";
+      } else {
+        continue;
+      }
 
       const payload = buildNotifPayloadV1({
-        title: uiStatus === "OFFLINE" ? "GPS Offline" : "GPS Stale",
+        title,
         message:
-          uiStatus === "OFFLINE"
-            ? `Araç ${last.vehicle.plate} uzun süredir çevrimdışı (${ageSec}sn).`
-            : `Araç ${last.vehicle.plate} konum güncellemesi gecikti (${ageSec}sn).`,
+          kind === "GPS_OFFLINE"
+            ? `Araç ${vehicle.plate} uzun süredir çevrimdışı (${ageSec}sn).`
+            : `Araç ${vehicle.plate} konum güncellemesi gecikti (${ageSec}sn).`,
         vehicleId: last.vehicleId,
-        at: new Date().toISOString(),
+        at: now.toISOString(),
         ageSec,
-        status: uiStatus, // payload: LIVE/STALE/OFFLINE
+        status: uiStatus,
         kind,
       });
 
       // ROOM scope
       await createAndEmitNotification({
         io,
-        type: "STALE", // type sabit; ayrımı kind+status yapıyor
+        type: "STALE", // geriye dönük uyumluluk
         scope: "ROOM",
         payload,
-        roomId: last.vehicle.roomId,
-        companyId: last.vehicle.room.companyId,
+        roomId: vehicle.roomId,
+        companyId: vehicle.room.companyId,
         vehicleId: last.vehicleId,
-      });
-
-      // Araç status yayınla (UI status: STALE/OFFLINE)
-      io.to(`room:${last.vehicle.roomId}`).emit("vehicle:status", {
-        vehicleId: last.vehicleId,
-        status: uiStatus,
-        ageSec,
       });
 
       // COMPANY scope
@@ -221,8 +243,8 @@ data: { status: vehicleDbStatus },
         type: "STALE",
         scope: "COMPANY",
         payload,
-        companyId: last.vehicle.room.companyId,
-        roomId: last.vehicle.roomId,
+        companyId: vehicle.room.companyId,
+        roomId: vehicle.roomId,
         vehicleId: last.vehicleId,
       });
 
@@ -237,7 +259,6 @@ data: { status: vehicleDbStatus },
       });
 
       if (sh?.driverId) {
-        // driver'ın userId'sini al
         const dUser = await prisma.driver.findUnique({
           where: { id: sh.driverId },
           select: { userId: true },
@@ -249,35 +270,37 @@ data: { status: vehicleDbStatus },
           scope: "DRIVER",
           payload,
           driverId: sh.driverId,
-          userId: dUser?.userId ?? null, // ✅ kritik
+          userId: dUser?.userId ?? null,
           vehicleId: last.vehicleId,
-          roomId: last.vehicle.roomId,
-          companyId: last.vehicle.room.companyId,
+          roomId: vehicle.roomId,
+          companyId: vehicle.room.companyId,
         });
       }
     }
 
-    // maintenance upcoming: 7 days window
+    // ----------------------------
+    // 2) Maintenance upcoming: 7 days window
+    // ----------------------------
     const upcoming = await prisma.vehicle.findMany({
       where: { nextMaintenanceAt: { not: null } },
       include: { room: true },
     });
 
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
     for (const v of upcoming) {
       const due = v.nextMaintenanceAt ? new Date(v.nextMaintenanceAt).getTime() : null;
       if (!due) continue;
 
-      const diff = due - now;
-      if (diff <= 0 || diff >= sevenDays) continue;
+      const diff = due - nowMs;
+      if (diff <= 0 || diff >= sevenDaysMs) continue;
 
       // spam gate: same type+vehicle within last 24h
       const existing = await prisma.notification.findFirst({
         where: {
           type: "MAINT_7D",
           vehicleId: v.id,
-          createdAt: { gte: new Date(now - 24 * 60 * 60 * 1000) },
+          createdAt: { gte: new Date(nowMs - 24 * 60 * 60 * 1000) },
         },
         select: { id: true },
       });
@@ -335,7 +358,7 @@ data: { status: vehicleDbStatus },
           scope: "DRIVER",
           payload,
           driverId: sh.driverId,
-          userId: dUser?.userId ?? null, // ✅ kritik
+          userId: dUser?.userId ?? null,
           vehicleId: v.id,
           roomId: v.roomId,
           companyId: v.room.companyId,

@@ -1,3 +1,4 @@
+//backend/src/routes/me.js
 import express from "express";
 import { authRequired } from "../auth/middleware.js";
 import { prisma } from "../prisma.js";

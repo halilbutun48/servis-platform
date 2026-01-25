@@ -1,3 +1,4 @@
+//backend/src/routes/notifications.js
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../auth/middleware.js";
