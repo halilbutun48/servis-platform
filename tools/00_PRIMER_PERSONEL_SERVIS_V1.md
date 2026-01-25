@@ -1,116 +1,104 @@
-# PERSONEL-SERVIS V1 — PRIMER (Yapıştır & Devam Et)
+# PERSONEL-SERVIS-V1 — PRIMER (2026-01-25) ✅ Yapıştır & Devam Et
 
-## Amaç
+
+## 0) Repo / Çalışma Ortamı
+- Repo: `D:\personel-servis-v1`
+- API: `http://127.0.0.1:3000`
+- DB (docker): `personel_db` / DB: `servisdb` / user: `servis`
+- Monorepo: `backend/`, `web/`, `infra/`, `docs/`, `tools/`
+
+
+## 1) Ürün Amaç / Kapsam
 Öğrenci/parent yok. GPS tabanlı “personel servisi” platformu:
-- Canlı araç takibi (map), rota/durak planı, vardiya yönetimi
-- Hız/bakım/stale gibi uyarılar (notification)
-- Personel taleplerinden ortak durak önerisi + manuel durak yönetimi
-- Driver’a rota/duraklar gider; driver yakın duraktan başlayarak güzergah oluşturur
+- Canlı araç takibi (map)
+- Vardiya + durak planı (Shift/Stop)
+- ETA hesaplama (araç→durak remainingKm/etaMin)
+- Bildirimler (GPS stale/offline, overspeed, maintenance vb.)
+- REST = CRUD/planlama, WS = canlı + bildirim
 
-## Roller (5)
-1) SUPER_ADMIN
-- Company ekler, Company/Room yetkilerini yönetir
 
-2) ROOM (Operasyon/Servis odası)
-- Araç ekler (plaka, kapasite, hız limiti, bakım tarihleri, cihaz bilgisi)
-- Sürücü ekler (ad/soyad/tel, cihaz), opsiyonel yedek sürücü
-- Company’den gelen vardiya talebini onaylar, araca+sürücüye bağlar
-- Haritada: tüm araçları görür; tek araç seçince araç+driver+company+rota+durağı görür
-- Bakım 7 gün kala map/dashboard uyarı; aktif/pasif/stale görür
-- Ek servis ihtiyacı bildirir; geçici/kalıcı araç talebi açar
-- Company’nin duraklarını görür/düzeltir; araca rota gönderir
+## 2) Roller (5)
+- **SUPER_ADMIN**: Company/Room yönetimi
+- **ROOM**: operasyon; araç/driver/shift onay-atama; harita
+- **COMPANY**: vardiya talebi + personel/durak planı üretir
+- **DRIVER**: atanmış araç + stop/rota görür; GPS gönderir; reached ile ilerleme
+- **PERSONEL**: kendi atanmış araç + ETA takip (ileride)
 
-3) COMPANY (Müşteri firma)
-- Room’un kendine tanımladığı araç/driver bilgilerini görür
-- Vardiya oluşturur (tarih/saat/personel listesi/kapasite)
-- Personel taleplerine göre duraklar belirler veya ortak durak (clustering) önerir
-- Vardiya+durak planını Room’a gönderir (onay/atama için)
 
-4) DRIVER
-- Kendine atanmış araç bilgisi direkt görünür (kapasite, bakım, limitler)
-- Durak planı gelir; konuma en yakın duraktan başlatıp rota çıkarır
-- GPS gönderir; “Reached” ile ilerleme günceller
-- Hız/bakım/stale uyarıları driver’a da gelir
-
-5) PERSONEL
-- Sadece kendine atanmış aracı görür (yaklaşıyor/konum/ETA)
-- Konum al-kaydet, yakın durak seç, “binmiyorum”
-- Konum/durak talepleri Company’ye gider
-
-## Çekirdek WS (socket.io) odalar & event’ler
+## 3) WS Odalar / Event’ler (çekirdek)
 Join rooms:
-- vehicle:{vehicleId}, room:{roomId}, company:{companyId}, shift:{shiftId}
+- `vehicle:{vehicleId}`
+- `room:{roomId}`
+- `company:{companyId}`
+- `shift:{shiftId}`
 
-Emit events:
-- gps:update {vehicleId,lat,lng,speed,at,status}
-- vehicle:status {vehicleId,status:ACTIVE|STALE|PASSIVE}
-- notif:new {scope,type,payload}
-- route:plan {shiftId,stops[]}
-- route:progress {shiftId,lastReachedOrder,nextStop,completed}
 
-## Veri Şeması (çekirdek tablolar)
-Company, Room
-Vehicle (roomId, plate, capacity, speedLimitKmh, nextMaintenanceAt, status)
-Driver (roomId, fullName, phone, deviceInfo, backupDriverId?)
-Shift (companyId, roomId, vehicleId, driverId, startAt, endAt, status)
-Stop (shiftId, name, lat,lng, order, type COMMON/MANUAL)
-Personel (companyId, fullName, homeLat, homeLng)
-PickupRequest (shiftId, personelId, lat,lng, status)
-GpsLast (vehicleId, lat,lng,speed,at,status) + GpsPoint history
-Notification (scope ROOM|COMPANY|DRIVER, type MAINT_7D|OVERSPEED|STALE|..., payloadJson)
+Emit:
+- `gps:update` `{vehicleId,lat,lng,speed,at,status}` *(status UI: LIVE/STALE/OFFLINE)*
+- `vehicle:status` `{vehicleId,status,ageSec}` *(şu an UI amaçlı LIVE gönderiyoruz; ileride netleştirilecek)*
+- `notif:new` `{scope,type,payload}` *(payload v1 object)*
+- `eta:update` `{shiftId,vehicleId,at,stops:[{id,name,order,remainingKm,etaMin}]}`
 
-## Proje Yapısı (panel klasörleri)
-web/src/panels/
-- room/, company/, driver/, personel/, superadmin/
 
-## Geliştirme kuralı
-- Sıfırdan temiz DB + Prisma + seed ile başlayacağız (monorepo: backend/web/infra/docs/tools)
-- REST=CRUD/planlama, WS=canlı/bildirim
-- “Tek kaynak doküman”: docs/PROJECT_SPEC_V1.md + API_SPEC_V1.md + DB_SCHEMA_V1.md
+## 4) DB Model Özeti (çekirdek)
+Tablolar:
+- `Company`, `Room`
+- `Vehicle (roomId, plate, capacity, speedLimitKmh, nextMaintenanceAt, status)`
+- `Driver (roomId, fullName, phone, deviceInfo)`
+- `Shift (companyId, roomId, vehicleId, driverId, startAt, endAt, status)`
+- `Stop (shiftId, name, lat,lng, order, type COMMON/MANUAL)`
+- `GpsLast (vehicleId, lat,lng,speed,at,status)` + `GpsPoint` history
+- `Notification (scope, type, payloadJson, vehicleId?, roomId?, companyId?, driverId?)`
 
-## Milestone (Kaldığımız Yer / Plan)
-✅ Milestone-0 (iskelet) — DONE
 
-Repo/compose ayakta, Prisma/seed, auth/roles çalışıyor.
+### 4.1 Enum gerçekleri (KRİTİK)
+- **GpsLastStatus (DB)**: `OK | STALE` ✅ (LIVE/OFFLINE DB’ye yazılmaz)
+- **VehicleStatus (DB)**: `ACTIVE | PASSIVE | STALE` ✅
 
-Token okuma (Authorization Bearer + x-auth-token) fix’i yapıldı.
 
-🟡 Milestone-1 (Room/Company CRUD + onay akışı) — KISMİ
+## 5) Status Standardı (tek kaynak)
+- Backend tek kaynak: `backend/src/gps/status.js`
+- UI status (render amaçlı): `LIVE | STALE | OFFLINE`
+- LIVE: `ageSec <= 20`
+- STALE: `20 < ageSec <= 300`
+- OFFLINE: `ageSec > 300` (veya at yok/bozuk)
 
-Shift mantığı ve /api/shifts/my var (driver için çalışıyor).
 
-Ama genel /api/shifts (room/company/personel) endpoint’i sende 404’tü → bu kısım tam değil.
+**DB status mapping kuralı (karar):**
+- UI `LIVE` → `GpsLast.status = OK` ve `Vehicle.status = ACTIVE`
+- UI `STALE/OFFLINE` → `GpsLast.status = STALE` ve `Vehicle.status = STALE`
 
-✅ Milestone-2 (GPS + Map) — DONE (core)
 
-POST /api/gps ile araç konumu güncelleniyor, haritalarda araç yer değiştiriyor.
+## 6) GPS ingest (backend) — güncel davranış ✅
+Dosya: `backend/src/routes/gps.js`
 
-GET /api/eta?vehicleId=1 çalışıyor.
 
-ETA payload’ında status standardı + ageSec olacak şekilde standardizasyonu yaptın.
+POST `/api/gps` (DRIVER):
+- `GpsPoint.create` (history)
+- `GpsLast.upsert` **status: "OK"** ✅
+- `Vehicle.update` **status: "ACTIVE"** ✅
+- WS `gps:update` payload **status: "LIVE"** (UI için) ✅
+- Overspeed olursa `Notification` üretir + WS `notif:new` yayar ✅
+- Shift(ASSIGNED/ACTIVE) stop’larına göre `eta:update` yayınlar ✅
 
-🟡 Milestone-3 (Route/Stops akışı) — KISMİ
 
-Shift içinde stop’lar var (ETA onları kullanıyor).
+## 7) Notification payload standardı (v1) ✅
+Dosya: `backend/src/notifications/service.js` (+ `backend/src/notifications/payloadV1.js`)
 
-Ama “Company stop önerir → Room düzeltir → Driver’a plan gider” akışının tamamı dokümante/standart değil (tamamlandı diyemeyiz).
 
-🟡 Milestone-4 (WS + Notification kuralları) — KISMİ
+DB kuralı:
+- `Notification.payloadJson` alanına **daima v1 object (JSONB)** yazılır.
 
-Sistem tarafında gps:update/panel reload mantığı çalışıyor.
 
-Ama bizim konuştuğumuz iki kritik standard hâlâ eksik:
-
-B) DB_SCHEMA Mermaid (doküman) ⛔
-
-C) Notification payloadJson sabit şema ⛔
-
-## Bugünkü not
-- Eski repo’da backend/src/routes/driver.js yanlışlıkla React UI içeriğine dönmüş olabilir (import ... from "react").
-
-## Son karar (ilişki)
-- Company 1 — Room N (varsayılan). Room operasyonel havuz, company vardiya/talep üretir.
-- Bu ürün kararı değil; dosya yolu/yerleşim karışıklığı. Biz bu projeyi sıfırdan temiz kuracağız.
-
-## Son karar (ilişki)
-- Company 1 — Room N (varsayılan). Room operasyonel havuz, company vardiya/talep üretir.
+V1 payload:
+```json
+{
+"v": 1,
+"title": "string",
+"message": "string",
+"vehicleId": 1,
+"at": "ISO",
+"ageSec": 0,
+"status": "LIVE|STALE|OFFLINE|null",
+"kind": "string|null"
+}
