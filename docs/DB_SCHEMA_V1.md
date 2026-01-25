@@ -1,129 +1,62 @@
-# PERSONEL-SERVIS V1 — DB SCHEMA
-
-> Referans: PROJECT_SPEC_V1.md
-
-## Mermaid (çekirdek)
-
-```mermaid
 erDiagram
-  COMPANY ||--o{ COMPANY_USER : has
-  ROOM    ||--o{ ROOM_USER    : has
+  USER ||--o| DRIVER : "userId"
+  USER ||--o{ SHIFT : "createdBy(optional)"
+  VEHICLE ||--|| GPS_LAST : "vehicleId"
+  VEHICLE ||--o{ SHIFT : "vehicleId"
+  SHIFT ||--o{ SHIFT_STOP : "shiftId"
+  USER ||--o{ NOTIFICATION : "userId(optional)"
+  VEHICLE ||--o{ NOTIFICATION : "vehicleId(optional)"
 
-  ROOM    ||--o{ VEHICLE : owns
-  ROOM    ||--o{ DRIVER  : employs
-
-  COMPANY ||--o{ SHIFT : creates
-  ROOM    ||--o{ SHIFT : approves_for
-  VEHICLE ||--o{ SHIFT : assigned_vehicle
-  DRIVER ||--o{ SHIFT : assigned_driver
-
-  SHIFT   ||--o{ STOP : has
-  COMPANY ||--o{ PERSONEL : employs
-  PERSONEL ||--o{ PICKUP_REQUEST : creates
-  SHIFT   ||--o{ PICKUP_REQUEST : includes
-
-  VEHICLE ||--o{ GPS_POINT : history
-  VEHICLE ||--|| GPS_LAST  : last
-
-  COMPANY ||--o{ NOTIFICATION : emits
-  ROOM    ||--o{ NOTIFICATION : emits
-  VEHICLE ||--o{ NOTIFICATION : about
-
-  COMPANY {
-    int id
-    string name
-    string status
-  }
-  ROOM {
-    int id
-    string name
-    string status
-  }
-  VEHICLE {
-    int id
+  USER {
+    int id PK
+    string email
+    string role
+    int companyId
     int roomId
-    string plate
-    int capacity
-    string status   "ACTIVE/PASSIVE/STALE"
-    int speedLimitKmh
-    date nextMaintenanceAt
   }
+
   DRIVER {
-    int id
-    int roomId
-    string fullName
-    string phone
-    string deviceInfo
-    int backupDriverId
+    int id PK
+    int userId FK
   }
-  SHIFT {
-    int id
+
+  VEHICLE {
+    int id PK
+    string plate
+    int roomId
     int companyId
-    int roomId
-    int vehicleId
-    int driverId
-    datetime startAt
-    datetime endAt
-    string status "DRAFT/REQUESTED/APPROVED/ACTIVE/DONE"
   }
-  STOP {
-    int id
-    int shiftId
+
+  GPS_LAST {
+    int vehicleId PK,FK
+    float lat
+    float lng
+    float speed
+    datetime at
+    string status
+  }
+
+  SHIFT {
+    int id PK
+    int vehicleId FK
+    int driverId FK
+    string status
+  }
+
+  SHIFT_STOP {
+    int id PK
+    int shiftId FK
+    int order
     string name
     float lat
     float lng
-    int order
-    string type "COMMON/MANUAL"
   }
-  PERSONEL {
-    int id
-    int companyId
-    string fullName
-    float homeLat
-    float homeLng
-  }
-  PICKUP_REQUEST {
-    int id
-    int shiftId
-    int personelId
-    float lat
-    float lng
-    string status "OPEN/CANCELLED/ACCEPTED"
-  }
-  GPS_LAST {
-    int vehicleId
-    float lat
-    float lng
-    float speed
-    datetime at
-    string status "OK/STALE"
-  }
-  GPS_POINT {
-    int id
-    int vehicleId
-    float lat
-    float lng
-    float speed
-    datetime at
-  }
+
   NOTIFICATION {
-    int id
-    string type "MAINT_7D/OVERSPEED/STALE/..."
-    string scope "ROOM/COMPANY/DRIVER"
-    string payloadJson
+    int id PK
+    string type
+    string scope
     datetime createdAt
+    string payloadJson
+    int vehicleId
   }
-```
-
-## Prisma notları
-- Bu repo'da login/auth için ayrıca `User` tablosu bulunur (role + scope alanları).
-- Rota ilerleme takibi için `ShiftProgress(shiftId, lastReachedOrder, completedAt)` tablosu eklenmiştir.
-
-## Enumlar
-- `Role`: SUPER_ADMIN, ROOM, COMPANY, DRIVER, PERSONEL
-- `VehicleStatus`: ACTIVE, PASSIVE, STALE
-- `ShiftStatus`: DRAFT, REQUESTED, APPROVED, ACTIVE, DONE
-- `StopType`: COMMON, MANUAL
-- `PickupRequestStatus`: OPEN, CANCELLED, ACCEPTED
-- `GpsLastStatus`: OK, STALE
-- `NotificationScope`: ROOM, COMPANY, DRIVER

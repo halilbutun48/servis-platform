@@ -1,8 +1,10 @@
 /* =========================================================
-   markers.css — Okul Servis Platformu V1 (ASCII only)
+   markers.css — Servis Platformu V1 (ASCII only)
    - School pin (pin-wrap--school)
+   - Company pin (pin-wrap--company)
    - Stop pin   (pin-wrap--stop)
    - Vehicle marker Style C (vmc-*)
+   - Status badge (lists + tables)
    ========================================================= */
 
 /* Leaflet DivIcon reset */
@@ -12,7 +14,7 @@
 }
 
 /* =========================
-   SCHOOL + STOP PINS (DivIcon)
+   SCHOOL + COMPANY + STOP PINS (DivIcon)
    ========================= */
 
 .pin-wrap{
@@ -34,13 +36,13 @@
   gap:8px;
   padding:6px 10px;
   border-radius:999px;
-   background:rgba(255,255,255,.98);
+  background:rgba(255,255,255,.98);
   color:#080808;
   font-weight:900;
   font-size:11px;
   letter-spacing:.4px;
-border:1px solid rgba(0,0,0,.10);
- box-shadow:0 16px 34px rgba(0,0,0,.22);
+  border:1px solid rgba(0,0,0,.10);
+  box-shadow:0 16px 34px rgba(0,0,0,.22);
   white-space:nowrap;
   z-index:3;
   pointer-events:none;
@@ -66,10 +68,10 @@ border:1px solid rgba(0,0,0,.10);
   pointer-events:auto;
   z-index:2;
 
-  background:rgba(255,255,255,.96);       /* more visible */
+  background:rgba(255,255,255,.96);
   box-shadow:
     0 12px 30px rgba(15,23,42,.22),
-    0 0 0 2px rgba(255,255,255,.70);      /* halo for any basemap */
+    0 0 0 2px rgba(255,255,255,.70);
 }
 
 .pin__core{
@@ -87,34 +89,32 @@ border:1px solid rgba(0,0,0,.10);
   stroke: currentColor;
 }
 
+/* =========================
+   SCHOOL
+   ========================= */
+
 /* SCHOOL wrapper size matches MapView iconSize */
 .pin-wrap--school{ width:140px; height:76px; }
 
-/* SCHOOL pin */
 /* SCHOOL pin */
 .pin-wrap--school .pin{
   top:16px;
   width:44px;
   height:44px;
   border:2px solid rgba(255,255,255,.92);
-  background: rgba(16,185,129,1);                 /* solid green */
+  background: rgba(16,185,129,1);
   box-shadow:
     0 16px 36px rgba(0,0,0,.28),
-    0 0 0 5px rgba(16,185,129,.22);               /* outer glow */
+    0 0 0 5px rgba(16,185,129,.22);
 }
 
 .pin-wrap--school .pin__core{
   width:30px;
   height:30px;
-  background: rgba(255,255,255,.18);             /* glassy */
-  color:#fff;                                     /* icon white */
+  background: rgba(255,255,255,.18);
+  color:#fff;
   border:1px solid rgba(255,255,255,.35);
 }
-
-.pin-wrap--school .pin__core svg{
-  stroke:#fff;
-}
-
 
 .pin-wrap--school .pin__core svg{
   stroke:#fff;
@@ -125,7 +125,9 @@ border:1px solid rgba(0,0,0,.10);
   box-shadow:0 0 0 4px rgba(16,185,129,.18);
 }
 
-
+/* =========================
+   COMPANY
+   ========================= */
 
 /* COMPANY wrapper size matches MapView iconSize */
 .pin-wrap--company{ width:140px; height:76px; }
@@ -152,8 +154,20 @@ border:1px solid rgba(0,0,0,.10);
 
 .pin-wrap--company .pin__core svg{ stroke:#fff; }
 
-.pin-wrap--company .pin-tag{ border-color:#c4b5fd; background:rgba(124,58,237,.12); }
-.pin-wrap--company .pin-tag__dot{ background:#7c3aed; box-shadow:0 0 0 4px rgba(124,58,237,.18); }
+.pin-wrap--company .pin-tag{
+  border-color:#c4b5fd;
+  background:rgba(124,58,237,.12);
+}
+
+.pin-wrap--company .pin-tag__dot{
+  background:#7c3aed;
+  box-shadow:0 0 0 4px rgba(124,58,237,.18);
+}
+
+/* =========================
+   STOP
+   ========================= */
+
 /* STOP wrapper size matches MapView iconSize */
 .pin-wrap--stop{ width:40px; height:54px; }
 
@@ -189,10 +203,9 @@ border:1px solid rgba(0,0,0,.10);
 
 /* =========================
    VEHICLE MARKER — Style C (Bus + heading nav)
-   (your current style kept)
    ========================= */
 
-/* ===== Vehicle Marker - Style C (Bus + heading nav) ===== */
+/* Vehicle Marker - Style C (Bus + heading nav) */
 .vmc-root{ background: transparent !important; border: none !important; }
 
 .vmc{
@@ -201,8 +214,10 @@ border:1px solid rgba(0,0,0,.10);
   pointer-events: none;
 }
 
-/* status colors */
+/* status colors (standard: LIVE / STALE / OFFLINE) */
+.vmc--live,
 .vmc--online  { --vmc-accent:#2563eb; --vmc-accent-dark:#1d4ed8; --vmc-glow:rgba(37,99,235,.18); }
+
 .vmc--stale   { --vmc-accent:#f59e0b; --vmc-accent-dark:#d97706; --vmc-glow:rgba(245,158,11,.18); }
 .vmc--offline { --vmc-accent:#64748b; --vmc-accent-dark:#475569; --vmc-glow:rgba(100,116,139,.18); }
 
@@ -210,7 +225,7 @@ border:1px solid rgba(0,0,0,.10);
 .vmc-label{
   position:absolute;
   left: 28px;
-top: -18px;
+  top: -18px;
   display:flex;
   align-items:center;
   gap:10px;
@@ -225,7 +240,9 @@ top: -18px;
 }
 
 .vmc-dot{
-  width:10px; height:10px; border-radius:999px;
+  width:10px;
+  height:10px;
+  border-radius:999px;
   background: var(--vmc-accent);
   box-shadow: 0 0 0 4px var(--vmc-glow);
 }
@@ -251,8 +268,11 @@ top: -18px;
   background: rgba(2,6,23,.04);
   border: 1px solid rgba(2,6,23,.08);
 }
+
 .vmc-pillDot{
-  width:8px; height:8px; border-radius:999px;
+  width:8px;
+  height:8px;
+  border-radius:999px;
   background: var(--vmc-accent);
 }
 
@@ -280,7 +300,7 @@ top: -18px;
   box-shadow:
     0 0 0 2px rgba(255,255,255,.75),
     0 18px 44px rgba(15,23,42,.20);
-    outline: 2px solid rgba(255,255,255,.55);
+  outline: 2px solid rgba(255,255,255,.55);
 }
 
 .vmc-pulse{
@@ -294,6 +314,7 @@ top: -18px;
   transform: scale(1);
   opacity: .9;
 }
+
 .vmc--offline .vmc-pulse{ display:none; }
 
 @keyframes vmcPulse{
@@ -329,6 +350,7 @@ top: -18px;
   z-index: 1;
   opacity: .90;
 }
+
 .vmc-navSvg{
   width: 54px;
   height: 54px;
@@ -358,3 +380,37 @@ top: -18px;
   border-radius: 0 0 0 3px;
   box-shadow: 0 10px 18px rgba(15,23,42,.12);
 }
+
+/* =========================
+   STATUS BADGE (lists + tables)
+   ========================= */
+
+.statusBadge{
+  --sb-accent:#64748b;
+  --sb-glow:rgba(100,116,139,.18);
+  --sb-bg:rgba(2,6,23,.04);
+
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-weight:850;
+  font-size:12px;
+  letter-spacing:.3px;
+  color:#0f172a;
+  background: var(--sb-bg);
+  border: 1px solid rgba(2,6,23,.10);
+}
+
+.statusBadge__dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background: var(--sb-accent);
+  box-shadow: 0 0 0 4px var(--sb-glow);
+}
+
+.statusBadge--live   { --sb-accent:#2563eb; --sb-glow:rgba(37,99,235,.18); --sb-bg:rgba(37,99,235,.10); }
+.statusBadge--stale  { --sb-accent:#f59e0b; --sb-glow:rgba(245,158,11,.18); --sb-bg:rgba(245,158,11,.12); }
+.statusBadge--offline{ --sb-accent:#64748b; --sb-glow:rgba(100,116,139,.18); --sb-bg:rgba(100,116,139,.12); }
