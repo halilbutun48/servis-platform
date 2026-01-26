@@ -18,7 +18,6 @@ async function canSeeVehicle(user, vehicleId) {
 
   if (user.role === "ROOM") return !!user.roomId && vehicle.roomId === user.roomId;
 
-  // Driver: aracı ancak APPROVED/ACTIVE shift ile görsün
   if (user.role === "DRIVER") {
     const driver = await prisma.driver.findFirst({ where: { userId: user.id }, select: { id: true } });
     if (!driver) return false;
@@ -43,27 +42,49 @@ async function canSeeVehicle(user, vehicleId) {
   return false;
 }
 
-async function computeEta(vehicleId) {
+async function pickShift(vehicleId, shiftId) {
+  if (shiftId) {
+    const s = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      include: { stops: { orderBy: { order: "asc" } }, progress: true },
+    });
+    if (!s) return null;
+    if (s.vehicleId !== vehicleId) return null;
+    if (!["APPROVED", "ACTIVE"].includes(s.status)) return null;
+    return s;
+  }
+
+  const active = await prisma.shift.findFirst({
+    where: { vehicleId, status: "ACTIVE" },
+    orderBy: [{ startAt: "desc" }, { id: "desc" }],
+    include: { stops: { orderBy: { order: "asc" } }, progress: true },
+  });
+  if (active && (active.stops?.length ?? 0) > 0) return active;
+
+  const approved = await prisma.shift.findFirst({
+    where: { vehicleId, status: "APPROVED" },
+    orderBy: [{ startAt: "desc" }, { id: "desc" }],
+    include: { stops: { orderBy: { order: "asc" } }, progress: true },
+  });
+  if (approved && (approved.stops?.length ?? 0) > 0) return approved;
+
+  return null;
+}
+
+async function computeEta(vehicleId, shiftId) {
   const last = await prisma.gpsLast.findUnique({ where: { vehicleId } });
   if (!last) return { error: "No last gps for vehicle", status: 404 };
 
-  const shifts = await prisma.shift.findMany({
-    where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
-    include: { stops: { orderBy: { order: "asc" } } },
-  });
-
-  const chosen =
-    shifts.find((s) => s.status === "ACTIVE" && (s.stops?.length ?? 0) > 0) ??
-    shifts.find((s) => (s.stops?.length ?? 0) > 0) ??
-    null;
+  const chosen = await pickShift(vehicleId, shiftId);
 
   const speedKmh = typeof last.speed === "number" ? last.speed : 30;
-
   const { status, ageSec } = gpsStatusFromAt(last.at);
 
-  // smoke & WS ile uyumlu: root'ta stops olsun
-  const shiftId = chosen?.id ?? null;
-  const stops = (chosen?.stops ?? []).map((st) => {
+  const chosenShiftId = chosen?.id ?? null;
+  const lastReachedOrder = chosen?.progress?.lastReachedOrder ?? 0;
+  const remainingStops = (chosen?.stops ?? []).filter((s) => s.order > lastReachedOrder);
+
+  const stops = remainingStops.map((st) => {
     const km = haversineKm(last.lat, last.lng, st.lat, st.lng);
     return {
       id: st.id,
@@ -75,7 +96,7 @@ async function computeEta(vehicleId) {
   });
 
   return {
-    shiftId,
+    shiftId: chosenShiftId,
     vehicleId,
     at: new Date().toISOString(),
     stops,
@@ -85,19 +106,21 @@ async function computeEta(vehicleId) {
 
 etaRouter.get("/", authRequired(), async (req, res) => {
   const vehicleId = Number(req.query.vehicleId);
+  const shiftId = req.query.shiftId ? Number(req.query.shiftId) : null;
   if (!vehicleId) return res.status(400).json({ error: "vehicleId query param required" });
   if (!(await canSeeVehicle(req.user, vehicleId))) return res.status(403).json({ error: "Forbidden" });
 
-  const payload = await computeEta(vehicleId);
+  const payload = await computeEta(vehicleId, shiftId);
   if (payload?.error && payload?.status) return res.status(payload.status).json({ error: payload.error });
   res.json(payload);
 });
 
 etaRouter.get("/vehicle/:id", authRequired(), async (req, res) => {
   const vehicleId = Number(req.params.id);
+  const shiftId = req.query.shiftId ? Number(req.query.shiftId) : null;
   if (!(await canSeeVehicle(req.user, vehicleId))) return res.status(403).json({ error: "Forbidden" });
 
-  const payload = await computeEta(vehicleId);
+  const payload = await computeEta(vehicleId, shiftId);
   if (payload?.error && payload?.status) return res.status(payload.status).json({ error: payload.error });
   res.json(payload);
 });
