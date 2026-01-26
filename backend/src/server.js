@@ -22,6 +22,8 @@ import { driverRouter } from "./routes/driver.js";
 import { etaRouter } from "./routes/eta.js";
 import "dotenv/config";
 import { personelsRouter } from "./routes/personels.js";
+import { companiesRouter } from "./routes/companies.js";
+import { roomsRouter } from "./routes/rooms.js";
 
 import { startMonitors } from "./jobs/index.js";
 
@@ -48,6 +50,8 @@ app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/eta", etaRouter);
+app.use("/api/companies", companiesRouter());
+app.use("/api/rooms", roomsRouter());
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -138,3 +142,4 @@ process.on("SIGINT", shutdown);
 server.listen(ENV.PORT, () => {
   console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
+

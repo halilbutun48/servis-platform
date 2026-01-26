@@ -1,377 +1,250 @@
-// backend/src/routes/shifts.js
+// backend/src/routes/shifts.js (SAFE MINIMAL - M1/M3 uyumlu)
 import express from "express";
+import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
-import { createShiftSchema, approveShiftSchema, setRouteSchema } from "../validators.js";
 
-/**
- * Stops normalize:
- * - order boş/dup ise 1..N reindex
- * - input sırası stabil kalsın (önce verilen order, sonra index)
- */
-function normalizeStops(stops) {
-  const input = Array.isArray(stops) ? stops : [];
-  const withMeta = input.map((s, idx) => ({
-    ...s,
-    __idx: idx,
-    __order: typeof s.order === "number" ? s.order : null,
-  }));
+const createShiftSchema = z.object({
+  roomId: z.number().int().positive(),
+  startAt: z.string(),
+  endAt: z.string(),
+  status: z.string().optional(),
+  stops: z.array(z.object({
+    name: z.string().min(1),
+    lat: z.number(),
+    lng: z.number(),
+    order: z.number().int().min(1),
+    type: z.enum(["COMMON","MANUAL"]).optional(),
+  })).optional(),
+});
 
-  // önce geçerli order'ı olanlar order'a göre, sonra idx
-  withMeta.sort((a, b) => {
-    const ao = a.__order;
-    const bo = b.__order;
-    if (ao != null && bo != null) return ao - bo || a.__idx - b.__idx;
-    if (ao != null) return -1;
-    if (bo != null) return 1;
-    return a.__idx - b.__idx;
-  });
+const approveSchema = z.object({
+  vehicleId: z.number().int().positive(),
+  driverId: z.number().int().positive(),
+  status: z.string().optional(),
+});
 
-  const orders = new Set();
-  let hasDup = false;
+const addStopSchema = z.object({
+  name: z.string().min(1),
+  lat: z.number(),
+  lng: z.number(),
+  order: z.number().int().min(1).optional(),
+  type: z.enum(["COMMON","MANUAL"]).optional(),
+});
 
-  const normalizedList = withMeta.map((s, i) => {
-    const newOrder = i + 1;
-    if (s.__order != null) {
-      if (orders.has(s.__order)) hasDup = true;
-      orders.add(s.__order);
-    }
-    const { __idx, __order, ...rest } = s;
-    return { ...rest, order: newOrder };
-  });
+const reorderSchema = z.object({
+  idsInOrder: z.array(z.number().int().positive()).optional(),
+  orders: z.array(z.object({
+    id: z.number().int().positive().optional(),
+    stopId: z.number().int().positive().optional(),
+    order: z.number().int().min(1).optional(),
+  })).optional(),
+});
 
-  // changed?
-  let changed = false;
-  if (normalizedList.length !== input.length) changed = true;
-  else {
-    for (let i = 0; i < input.length; i++) {
-      const a = input[i];
-      const b =
-        normalizedList.find(
-          (x) => x.name === a.name && x.lat === a.lat && x.lng === a.lng
-        ) || normalizedList[i];
-
-      const ao = typeof a.order === "number" ? a.order : null;
-      const bo = typeof b.order === "number" ? b.order : null;
-      if (ao !== bo) {
-        changed = true;
-        break;
-      }
-    }
-    if (hasDup) changed = true;
-  }
-
-  return { normalized: true, changed, hasDup, stops: normalizedList };
-}
+const reachedSchema = z.object({ order: z.number().int().min(1) });
 
 export function shiftsRouter(io) {
   const r = express.Router();
 
-  // COMPANY: create shift request (REQUESTED)
-  r.post("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
-    const u = req.user;
-    if (!u.companyId) {
-      return res.status(400).json({ error: "COMPANY must have companyId" });
-    }
+  // DRIVER: my assigned shifts
+  r.get("/my", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const driver = await prisma.driver.findFirst({ where: { userId: req.user.id }, select: { id: true } });
+    if (!driver) return res.json({ items: [] });
 
+    const items = await prisma.shift.findMany({
+      where: { driverId: driver.id, status: { in: ["APPROVED","ACTIVE"] } },
+      orderBy: { id: "desc" },
+      include: { stops: { orderBy: { order: "asc" } }, progress: true, vehicle: true },
+      take: 20,
+    });
+
+    res.json({ items });
+  });
+
+  // COMPANY: create shift (with optional initial stops)
+  r.post("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const parsed = createShiftSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
-    }
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    if (!req.user.companyId) return res.status(400).json({ error: "User has no companyId" });
+
+    const status = String(parsed.data.status ?? "REQUESTED");
 
     const shift = await prisma.shift.create({
       data: {
-        companyId: u.companyId,
+        companyId: req.user.companyId,
         roomId: parsed.data.roomId,
         startAt: new Date(parsed.data.startAt),
         endAt: new Date(parsed.data.endAt),
-        status: "REQUESTED",
+        status,
+        ...(parsed.data.stops?.length
+          ? {
+              stops: {
+                create: parsed.data.stops.map((s) => ({
+                  name: s.name,
+                  lat: s.lat,
+                  lng: s.lng,
+                  order: s.order,
+                  type: s.type ?? "COMMON",
+                })),
+              },
+            }
+          : {}),
       },
+      include: { stops: { orderBy: { order: "asc" } } },
     });
 
-    const evt = { shiftId: shift.id, action: "requested", status: shift.status };
-    io.to(`room:${shift.roomId}`).emit("shift:update", evt);
-    io.to(`company:${shift.companyId}`).emit("shift:update", evt);
-    io.to(`shift:${shift.id}`).emit("shift:update", evt);
-
-    return res.json(shift);
+    res.json(shift);
   });
 
-  // ROOM: approve shift + assign vehicle & driver
-  r.post("/:id/approve", authRequired(), requireRole("ROOM"), async (req, res) => {
-    const u = req.user;
-    if (!u.roomId) return res.status(400).json({ error: "ROOM must have roomId" });
-
-    const shiftId = Number(req.params.id);
-    const parsed = approveShiftSchema.safeParse(req.body);
+  // ROOM: approve/assign (POST + PUT alias)
+  const approveHandler = async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = approveSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
+    const shift = await prisma.shift.findUnique({ where: { id } });
     if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (shift.roomId !== u.roomId) return res.status(403).json({ error: "Forbidden" });
-
-    if (shift.status !== "REQUESTED" && shift.status !== "DRAFT") {
-      return res.status(400).json({ error: `Shift status must be REQUESTED/DRAFT to approve (current=${shift.status})` });
-    }
+    if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
 
     const updated = await prisma.shift.update({
-      where: { id: shiftId },
-      data: {
-        status: "APPROVED",
-        vehicleId: parsed.data.vehicleId,
-        driverId: parsed.data.driverId,
-      },
+      where: { id },
+      data: { vehicleId: parsed.data.vehicleId, driverId: parsed.data.driverId, status: "APPROVED" },
+      include: { stops: { orderBy: { order: "asc" } }, progress: true },
     });
 
-    const evt = {
-      shiftId,
-      action: "approved",
-      status: updated.status,
-      vehicleId: updated.vehicleId,
-      driverId: updated.driverId,
-    };
+    res.json(updated);
+  };
 
-    io.to(`company:${shift.companyId}`).emit("shift:update", evt);
-    io.to(`room:${shift.roomId}`).emit("shift:update", evt);
-    if (updated.vehicleId) io.to(`vehicle:${updated.vehicleId}`).emit("shift:update", evt);
-    io.to(`shift:${shiftId}`).emit("shift:update", evt);
-
-    return res.json(updated);
-  });
+  r.post("/:id/approve", authRequired(), requireRole("ROOM"), approveHandler);
+  r.put("/:id/approve", authRequired(), requireRole("ROOM"), approveHandler);
+  r.put("/:id/assign", authRequired(), requireRole("ROOM"), approveHandler);
 
   // ROOM: start shift (APPROVED -> ACTIVE)
   r.post("/:id/start", authRequired(), requireRole("ROOM"), async (req, res) => {
-    const u = req.user;
-    if (!u.roomId) return res.status(400).json({ error: "ROOM must have roomId" });
+    const id = Number(req.params.id);
+    const shift = await prisma.shift.findUnique({ where: { id } });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
+    if (shift.status !== "APPROVED") return res.status(400).json({ error: "Shift must be APPROVED to start" });
 
-    const shiftId = Number(req.params.id);
+    const updated = await prisma.shift.update({
+      where: { id },
+      data: { status: "ACTIVE" },
+      include: { stops: { orderBy: { order: "asc" } }, progress: true },
+    });
 
+    res.json(updated);
+  });
+
+  // COMPANY: add stop to shift (DRAFT/REQUESTED)
+  r.post("/:id/stops", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
     const shift = await prisma.shift.findUnique({
-      where: { id: shiftId },
-      include: { stops: true },
+      where: { id },
+      include: { stops: { orderBy: { order: "asc" } } },
     });
     if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (shift.roomId !== u.roomId) return res.status(403).json({ error: "Forbidden" });
+    if (!req.user.companyId || req.user.companyId !== shift.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (shift.status !== "DRAFT" && shift.status !== "REQUESTED") return res.status(400).json({ error: "Stops can be edited only in DRAFT/REQUESTED" });
 
-    if (shift.status === "ACTIVE") {
-      return res.status(409).json({ error: "Shift already ACTIVE" });
-    }
-    if (shift.status !== "APPROVED") {
-      return res.status(400).json({ error: `Shift must be APPROVED to start (current=${shift.status})` });
-    }
-    if (!shift.vehicleId || !shift.driverId) {
-      return res.status(400).json({ error: "Shift must have vehicleId and driverId to start" });
-    }
-    if (!shift.stops?.length) {
-      return res.status(400).json({ error: "Shift must have stops to start" });
-    }
-
-    const updated = await prisma.$transaction(async (tx) => {
-      const up = await tx.shift.update({
-        where: { id: shiftId },
-        data: { status: "ACTIVE" },
-      });
-
-      await tx.shiftProgress.upsert({
-        where: { shiftId },
-        update: { lastReachedOrder: 0, completedAt: null },
-        create: { shiftId, lastReachedOrder: 0, completedAt: null },
-      });
-
-      return up;
-    });
-
-    const evt = {
-      shiftId,
-      action: "started",
-      status: updated.status,
-      vehicleId: updated.vehicleId,
-      driverId: updated.driverId,
-    };
-
-    io.to(`company:${updated.companyId}`).emit("shift:update", evt);
-    io.to(`room:${updated.roomId}`).emit("shift:update", evt);
-    if (updated.vehicleId) io.to(`vehicle:${updated.vehicleId}`).emit("shift:update", evt);
-    io.to(`shift:${shiftId}`).emit("shift:update", evt);
-
-    return res.json(updated);
-  });
-
-  // ROOM: end shift (ACTIVE -> DONE)
-  r.post("/:id/end", authRequired(), requireRole("ROOM"), async (req, res) => {
-    const u = req.user;
-    if (!u.roomId) return res.status(400).json({ error: "ROOM must have roomId" });
-
-    const shiftId = Number(req.params.id);
-
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
-    if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (shift.roomId !== u.roomId) return res.status(403).json({ error: "Forbidden" });
-
-    if (shift.status === "DONE") {
-      return res.status(409).json({ error: "Shift already DONE" });
-    }
-    if (shift.status !== "ACTIVE") {
-      return res.status(400).json({ error: `Shift must be ACTIVE to end (current=${shift.status})` });
-    }
-
-    const now = new Date();
-
-    const updated = await prisma.$transaction(async (tx) => {
-      await tx.shiftProgress.upsert({
-        where: { shiftId },
-        update: { completedAt: now },
-        create: { shiftId, lastReachedOrder: 0, completedAt: now },
-      });
-
-      return tx.shift.update({
-        where: { id: shiftId },
-        data: { status: "DONE" },
-      });
-    });
-
-    const evt = {
-      shiftId,
-      action: "ended",
-      status: updated.status,
-      vehicleId: updated.vehicleId,
-      driverId: updated.driverId,
-    };
-
-    io.to(`company:${updated.companyId}`).emit("shift:update", evt);
-    io.to(`room:${updated.roomId}`).emit("shift:update", evt);
-    if (updated.vehicleId) io.to(`vehicle:${updated.vehicleId}`).emit("shift:update", evt);
-    io.to(`shift:${shiftId}`).emit("shift:update", evt);
-
-    return res.json(updated);
-  });
-
-  // ROOM: set stops (route plan) for a shift
-  r.post("/:id/stops", authRequired(), requireRole("ROOM"), async (req, res) => {
-    const u = req.user;
-    if (!u.roomId) return res.status(400).json({ error: "ROOM must have roomId" });
-
-    const shiftId = Number(req.params.id);
-    const parsed = setRouteSchema.safeParse(req.body);
+    const parsed = addStopSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
+    const maxOrder = (shift.stops ?? []).reduce((m, s) => Math.max(m, s.order), 0);
+    const order = parsed.data.order ?? (maxOrder + 1);
+    if ((shift.stops ?? []).some((s) => s.order === order)) return res.status(400).json({ error: "Stop order already exists" });
+
+    const stop = await prisma.stop.create({
+      data: {
+        shiftId: shift.id,
+        name: parsed.data.name,
+        lat: parsed.data.lat,
+        lng: parsed.data.lng,
+        order,
+        type: parsed.data.type ?? "COMMON",
+      },
+    });
+
+    res.json({ ok: true, stop });
+  });
+
+  // COMPANY/ROOM: reorder stops (lenient)
+  r.put("/:id/stops/reorder", authRequired(), requireRole("COMPANY","ROOM"), async (req, res) => {
+    const id = Number(req.params.id);
+    const shift = await prisma.shift.findUnique({
+      where: { id },
+      include: { stops: { orderBy: { order: "asc" } } },
+    });
     if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (shift.roomId !== u.roomId) return res.status(403).json({ error: "Forbidden" });
 
-    if (shift.status === "ACTIVE") {
-      return res.status(400).json({ error: "Cannot change stops while shift is ACTIVE" });
+    if (req.user.role === "COMPANY") {
+      if (!req.user.companyId || req.user.companyId !== shift.companyId) return res.status(403).json({ error: "Forbidden" });
     }
-    if (shift.status === "DONE") {
-      return res.status(400).json({ error: "Cannot change stops for a DONE shift" });
+    if (req.user.role === "ROOM") {
+      if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
     }
 
-    const { normalized, changed, hasDup, stops } = normalizeStops(parsed.data.stops);
+    const parsed = reorderSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    await prisma.$transaction(async (tx) => {
-      await tx.stop.deleteMany({ where: { shiftId } });
+    const stops = shift.stops ?? [];
+    if (!stops.length) return res.json({ ok: true, noop: true });
 
-      const data = stops.map((s, idx) => ({
-        shiftId,
-        name: s.name,
-        lat: s.lat,
-        lng: s.lng,
-        order: s.order ?? idx + 1,
-        type: s.type ?? "COMMON",
-      }));
-
-      await tx.stop.createMany({ data });
-
-      // route değişti → progress sıfırla (varsa)
-      await tx.shiftProgress.updateMany({
-        where: { shiftId },
-        data: { lastReachedOrder: 0, completedAt: null },
-      });
-    });
-
-    const normalizedData = stops.map((s) => ({
-      shiftId,
-      name: s.name,
-      lat: s.lat,
-      lng: s.lng,
-      order: s.order,
-      type: s.type ?? "COMMON",
-    }));
-
-    io.to(`company:${shift.companyId}`).emit("route:plan", { shiftId, stops: normalizedData });
-    io.to(`room:${shift.roomId}`).emit("route:plan", { shiftId, stops: normalizedData });
-    if (shift.vehicleId) {
-      io.to(`vehicle:${shift.vehicleId}`).emit("route:plan", {
-        shiftId,
-        vehicleId: shift.vehicleId,
-        stops: normalizedData,
-      });
+    if (Array.isArray(parsed.data.idsInOrder) && parsed.data.idsInOrder.length) {
+      await prisma.$transaction(
+        parsed.data.idsInOrder.map((stopId, idx) =>
+          prisma.stop.update({ where: { id: stopId }, data: { order: idx + 1 } })
+        )
+      );
+      return res.json({ ok: true });
     }
-    io.to(`shift:${shiftId}`).emit("route:plan", { shiftId, stops: normalizedData });
 
-    return res.json({
-      ok: true,
-      shiftId,
-      count: normalizedData.length,
-      normalized,
-      changed,
-      hasDup,
-      stops: normalizedData,
-    });
+    if (Array.isArray(parsed.data.orders) && parsed.data.orders.length) {
+      const ops = [];
+      for (const o of parsed.data.orders) {
+        const sid = o.id ?? o.stopId;
+        if (!sid || !o.order) continue;
+        ops.push(prisma.stop.update({ where: { id: sid }, data: { order: o.order } }));
+      }
+      if (ops.length) await prisma.$transaction(ops);
+      return res.json({ ok: true });
+    }
+
+    res.json({ ok: true, noop: true });
   });
 
-  // List shifts relevant to user
-  r.get("/my", authRequired(), async (req, res) => {
-    const u = req.user;
+  // DRIVER: reached stop (progress)
+  const reachedHandler = async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = reachedSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    if (u.role === "COMPANY") {
-      const items = await prisma.shift.findMany({
-        where: { companyId: u.companyId ?? -1 },
-        include: { vehicle: true, driver: true, stops: { orderBy: { order: "asc" } }, progress: true },
-        orderBy: { id: "desc" },
-      });
-      return res.json(items);
-    }
-
-    if (u.role === "ROOM") {
-      const items = await prisma.shift.findMany({
-        where: { roomId: u.roomId ?? -1 },
-        include: { company: true, vehicle: true, driver: true, stops: { orderBy: { order: "asc" } }, progress: true },
-        orderBy: { id: "desc" },
-      });
-      return res.json(items);
-    }
-
-    if (u.role === "DRIVER") {
-      const driver = await prisma.driver.findFirst({ where: { userId: u.id } });
-      if (!driver) return res.json([]);
-
-      const items = await prisma.shift.findMany({
-        where: { driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] } },
-        include: { company: true, room: true, vehicle: true, stops: { orderBy: { order: "asc" } }, progress: true },
-        orderBy: { id: "desc" },
-        take: 10,
-      });
-      return res.json(items);
-    }
-
-    if (u.role === "PERSONEL") {
-      const items = await prisma.shift.findMany({
-        where: { companyId: u.companyId ?? -1, status: { in: ["APPROVED", "ACTIVE"] } },
-        include: { vehicle: { include: { gpsLast: true } }, stops: { orderBy: { order: "asc" } }, progress: true },
-        orderBy: { id: "desc" },
-        take: 10,
-      });
-      return res.json(items);
-    }
-
-    // SUPER_ADMIN
-    const items = await prisma.shift.findMany({
-      include: { company: true, room: true, vehicle: true, driver: true },
-      orderBy: { id: "desc" },
+    const shift = await prisma.shift.findUnique({
+      where: { id },
+      include: { stops: { orderBy: { order: "asc" } }, progress: true },
     });
-    return res.json(items);
-  });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (shift.status !== "ACTIVE") return res.status(400).json({ error: "Shift must be ACTIVE" });
+
+    const driver = await prisma.driver.findFirst({ where: { userId: req.user.id }, select: { id: true } });
+    if (!driver) return res.status(400).json({ error: "Driver profile missing" });
+    if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+
+    const prev = shift.progress?.lastReachedOrder ?? 0;
+    const next = Math.max(prev, parsed.data.order);
+
+    const prog = await prisma.shiftProgress.upsert({
+      where: { shiftId: shift.id },
+      update: { lastReachedOrder: next },
+      create: { shiftId: shift.id, lastReachedOrder: next },
+    });
+
+    res.json({ ok: true, lastReachedOrder: prog.lastReachedOrder });
+  };
+
+  r.post("/:id/reached", authRequired(), requireRole("DRIVER"), reachedHandler);
+  r.post("/:id/stop/reached", authRequired(), requireRole("DRIVER"), reachedHandler);
+  r.post("/:id/progress/reached", authRequired(), requireRole("DRIVER"), reachedHandler);
 
   return r;
 }
