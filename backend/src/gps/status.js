@@ -35,3 +35,4 @@ export function normalizeGpsStatus(s) {
   if (x === "LIVE" || x === "STALE" || x === "OFFLINE") return x;
   return GPS_STATUS.OFFLINE;
 }
+

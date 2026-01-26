@@ -23,10 +23,7 @@ import { etaRouter } from "./routes/eta.js";
 import "dotenv/config";
 import { personelsRouter } from "./routes/personels.js";
 
-import { createAndEmitNotification } from "./notifications/service.js";
-import { buildNotifPayloadV1 } from "./notifications/payloadV1.js";
-import { gpsStatusFromAt } from "./gps/status.js";
-import { gateVehicleGpsState } from "./gps/gpsStateGate.js"; // ✅ transition gate
+import { startMonitors } from "./jobs/index.js";
 
 const app = express();
 app.use(cors());
@@ -123,257 +120,21 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {});
 });
 
-// Background checks: stale/offline vehicles + maintenance upcoming
-async function backgroundTick() {
+// Background monitors (GPS stale/offline, maintenance, ...)
+const stopMonitors = startMonitors(io);
+
+function shutdown() {
   try {
-    // ✅ DB hazır değilse tick'i pas geç (log spam olmasın)
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-      globalThis.__dbWarned = false;
-    } catch (e) {
-      if (!globalThis.__dbWarned) {
-        globalThis.__dbWarned = true;
-        console.warn("backgroundTick: DB not ready, skipping checks.");
-      }
-      return;
-    }
-
-    const now = new Date();
-    const nowMs = now.getTime();
-
-    // ----------------------------
-    // 1) GPS STALE/OFFLINE monitor
-    // ----------------------------
-    const lasts = await prisma.gpsLast.findMany({
-      include: { vehicle: { include: { room: true } } },
-    });
-
-    for (const last of lasts) {
-      const vehicle = last.vehicle;
-      if (!vehicle) continue;
-
-      // Tek kaynak UI status/ageSec: LIVE | STALE | OFFLINE
-      const derived = gpsStatusFromAt(last.at);
-      const uiStatus = derived?.status ?? "OFFLINE";
-      const ageSec =
-        typeof derived?.ageSec === "number"
-          ? derived.ageSec
-          : Math.max(
-              0,
-              Math.round((nowMs - new Date(last.at).getTime()) / 1000)
-            );
-
-      // UI status yayınla (harita/clients güncel kalsın)
-      const vehicleStatusPayload = {
-        vehicleId: last.vehicleId,
-        status: uiStatus,
-        ageSec,
-      };
-      io.to(`vehicle:${last.vehicleId}`).emit("vehicle:status", vehicleStatusPayload);
-      io.to(`room:${vehicle.roomId}`).emit("vehicle:status", vehicleStatusPayload);
-      io.to(`company:${vehicle.room.companyId}`).emit("vehicle:status", vehicleStatusPayload);
-
-      // DB mapping: LIVE => OK/ACTIVE, STALE/OFFLINE => STALE/STALE
-      const gpsLastDbStatus = uiStatus === "LIVE" ? "OK" : "STALE";
-      const vehicleDbStatus = uiStatus === "LIVE" ? "ACTIVE" : "STALE";
-
-      // gereksiz write olmasın
-      await prisma.gpsLast.updateMany({
-        where: { vehicleId: last.vehicleId, status: { not: gpsLastDbStatus } },
-        data: { status: gpsLastDbStatus },
-      });
-
-      await prisma.vehicle.updateMany({
-        where: { id: last.vehicleId, status: { not: vehicleDbStatus } },
-        data: { status: vehicleDbStatus },
-      });
-
-      // ✅ SPAM'i KESEN YER: UI status transition gate
-      const gate = await gateVehicleGpsState({
-        prisma,
-        vehicleId: last.vehicleId,
-        newUiStatus: uiStatus,
-        now,
-      });
-
-      if (!gate.shouldNotify) continue;
-
-      // backgroundTick sadece STALE/OFFLINE transition üretir.
-      // Recovery (TO_LIVE) /api/gps içinde üretilsin.
-      let kind = null;
-      let title = null;
-
-      if (gate.transition === "LIVE_TO_STALE") {
-        kind = "GPS_STALE";
-        title = "GPS Stale";
-      } else if (gate.transition === "STALE_TO_OFFLINE") {
-        kind = "GPS_OFFLINE";
-        title = "GPS Offline";
-      } else {
-        continue;
-      }
-
-      const payload = buildNotifPayloadV1({
-        title,
-        message:
-          kind === "GPS_OFFLINE"
-            ? `Araç ${vehicle.plate} uzun süredir çevrimdışı (${ageSec}sn).`
-            : `Araç ${vehicle.plate} konum güncellemesi gecikti (${ageSec}sn).`,
-        vehicleId: last.vehicleId,
-        at: now.toISOString(),
-        ageSec,
-        status: uiStatus,
-        kind,
-      });
-
-      // ROOM scope
-      await createAndEmitNotification({
-        io,
-        type: "STALE", // geriye dönük uyumluluk
-        scope: "ROOM",
-        payload,
-        roomId: vehicle.roomId,
-        companyId: vehicle.room.companyId,
-        vehicleId: last.vehicleId,
-      });
-
-      // COMPANY scope
-      await createAndEmitNotification({
-        io,
-        type: "STALE",
-        scope: "COMPANY",
-        payload,
-        companyId: vehicle.room.companyId,
-        roomId: vehicle.roomId,
-        vehicleId: last.vehicleId,
-      });
-
-      // DRIVER scope (aktif shift üzerinden driver bul)
-      const sh = await prisma.shift.findFirst({
-        where: {
-          vehicleId: last.vehicleId,
-          status: { in: ["APPROVED", "ACTIVE"] },
-          driverId: { not: null },
-        },
-        select: { driverId: true },
-      });
-
-      if (sh?.driverId) {
-        const dUser = await prisma.driver.findUnique({
-          where: { id: sh.driverId },
-          select: { userId: true },
-        });
-
-        await createAndEmitNotification({
-          io,
-          type: "STALE",
-          scope: "DRIVER",
-          payload,
-          driverId: sh.driverId,
-          userId: dUser?.userId ?? null,
-          vehicleId: last.vehicleId,
-          roomId: vehicle.roomId,
-          companyId: vehicle.room.companyId,
-        });
-      }
-    }
-
-    // ----------------------------
-    // 2) Maintenance upcoming: 7 days window
-    // ----------------------------
-    const upcoming = await prisma.vehicle.findMany({
-      where: { nextMaintenanceAt: { not: null } },
-      include: { room: true },
-    });
-
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-
-    for (const v of upcoming) {
-      const due = v.nextMaintenanceAt ? new Date(v.nextMaintenanceAt).getTime() : null;
-      if (!due) continue;
-
-      const diff = due - nowMs;
-      if (diff <= 0 || diff >= sevenDaysMs) continue;
-
-      // spam gate: same type+vehicle within last 24h
-      const existing = await prisma.notification.findFirst({
-        where: {
-          type: "MAINT_7D",
-          vehicleId: v.id,
-          createdAt: { gte: new Date(nowMs - 24 * 60 * 60 * 1000) },
-        },
-        select: { id: true },
-      });
-      if (existing) continue;
-
-      const payload = buildNotifPayloadV1({
-        title: "Bakım Yaklaşıyor",
-        message: `Araç ${v.plate} bakım tarihi yaklaştı (${new Date(due).toISOString().slice(0, 10)}).`,
-        vehicleId: v.id,
-        at: new Date().toISOString(),
-        ageSec: null,
-        status: null,
-        kind: "MAINT_7D",
-      });
-
-      await createAndEmitNotification({
-        io,
-        type: "MAINT_7D",
-        scope: "ROOM",
-        payload,
-        roomId: v.roomId,
-        companyId: v.room.companyId,
-        vehicleId: v.id,
-      });
-
-      await createAndEmitNotification({
-        io,
-        type: "MAINT_7D",
-        scope: "COMPANY",
-        payload,
-        companyId: v.room.companyId,
-        roomId: v.roomId,
-        vehicleId: v.id,
-      });
-
-      // if any active shift -> driver
-      const sh = await prisma.shift.findFirst({
-        where: {
-          vehicleId: v.id,
-          status: { in: ["APPROVED", "ACTIVE"] },
-          driverId: { not: null },
-        },
-        select: { driverId: true },
-      });
-
-      if (sh?.driverId) {
-        const dUser = await prisma.driver.findUnique({
-          where: { id: sh.driverId },
-          select: { userId: true },
-        });
-
-        await createAndEmitNotification({
-          io,
-          type: "MAINT_7D",
-          scope: "DRIVER",
-          payload,
-          driverId: sh.driverId,
-          userId: dUser?.userId ?? null,
-          vehicleId: v.id,
-          roomId: v.roomId,
-          companyId: v.room.companyId,
-        });
-      }
-    }
-  } catch (e) {
-    console.error("backgroundTick error:", e);
+    stopMonitors?.();
+  } catch {
+    // ignore
   }
+  server.close(() => process.exit(0));
 }
 
-setInterval(backgroundTick, 15_000);
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 server.listen(ENV.PORT, () => {
   console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
-
-console.log("server reload test", new Date().toISOString());

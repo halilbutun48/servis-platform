@@ -7,7 +7,8 @@
     "dev": "nodemon --watch src --ext js,json --signal SIGTERM --exec \"node src/server.js\"",
     "start": "node src/server.js",
     "seed": "node prisma/seed.js",
-    "lint": "node -e \"console.log('lint placeholder')\""
+    "lint": "node -e \"console.log('lint placeholder')\"",
+    "smoke": "node scripts/smoke.js"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
@@ -20,6 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "socket.io": "^4.7.5",
+    "socket.io-client": "^4.8.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {

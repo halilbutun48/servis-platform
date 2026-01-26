@@ -1,4 +1,4 @@
-//backend/src/routes/eta.js
+// backend/src/routes/eta.js
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../auth/middleware.js";
@@ -18,19 +18,13 @@ async function canSeeVehicle(user, vehicleId) {
 
   if (user.role === "ROOM") return !!user.roomId && vehicle.roomId === user.roomId;
 
+  // Driver: aracı ancak APPROVED/ACTIVE shift ile görsün
   if (user.role === "DRIVER") {
-    const driver = await prisma.driver.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
-    });
+    const driver = await prisma.driver.findFirst({ where: { userId: user.id }, select: { id: true } });
     if (!driver) return false;
 
     const any = await prisma.shift.findFirst({
-      where: {
-        vehicleId,
-        driverId: driver.id,
-        status: { in: ["APPROVED", "ACTIVE"] },
-      },
+      where: { vehicleId, driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] } },
       select: { id: true },
     });
     return !!any;
@@ -40,11 +34,7 @@ async function canSeeVehicle(user, vehicleId) {
     if (!user.companyId) return false;
 
     const any = await prisma.shift.findFirst({
-      where: {
-        vehicleId,
-        companyId: user.companyId,
-        status: { in: ["APPROVED", "ACTIVE"] },
-      },
+      where: { vehicleId, companyId: user.companyId, status: { in: ["APPROVED", "ACTIVE"] } },
       select: { id: true },
     });
     return !!any;
@@ -53,7 +43,7 @@ async function canSeeVehicle(user, vehicleId) {
   return false;
 }
 
-async function computeEtaPayload(vehicleId) {
+async function computeEta(vehicleId) {
   const last = await prisma.gpsLast.findUnique({ where: { vehicleId } });
   if (!last) return { error: "No last gps for vehicle", status: 404 };
 
@@ -62,66 +52,52 @@ async function computeEtaPayload(vehicleId) {
     include: { stops: { orderBy: { order: "asc" } } },
   });
 
+  const chosen =
+    shifts.find((s) => s.status === "ACTIVE" && (s.stops?.length ?? 0) > 0) ??
+    shifts.find((s) => (s.stops?.length ?? 0) > 0) ??
+    null;
+
   const speedKmh = typeof last.speed === "number" ? last.speed : 30;
 
-  const items = shifts
-    .filter((s) => (s.stops?.length ?? 0) > 0)
-    .map((s) => ({
-      shiftId: s.id,
-      vehicleId,
-      at: new Date().toISOString(),
-      stops: s.stops.map((st) => {
-        const km = haversineKm(last.lat, last.lng, st.lat, st.lng);
-        return {
-          id: st.id,
-          name: st.name,
-          order: st.order,
-          remainingKm: Number(km.toFixed(2)),
-          etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)),
-        };
-      }),
-    }));
-
-  // ✅ payload standardizasyonu: status + ageSec tek kaynaktan
   const { status, ageSec } = gpsStatusFromAt(last.at);
 
+  // smoke & WS ile uyumlu: root'ta stops olsun
+  const shiftId = chosen?.id ?? null;
+  const stops = (chosen?.stops ?? []).map((st) => {
+    const km = haversineKm(last.lat, last.lng, st.lat, st.lng);
+    return {
+      id: st.id,
+      name: st.name,
+      order: st.order,
+      remainingKm: Number(km.toFixed(2)),
+      etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)),
+    };
+  });
+
   return {
+    shiftId,
     vehicleId,
-    last: {
-      lat: last.lat,
-      lng: last.lng,
-      speed: last.speed,
-      at: last.at,
-      status, // LIVE / STALE / OFFLINE
-      ageSec, // saniye cinsinden yaş
-    },
-    items,
+    at: new Date().toISOString(),
+    stops,
+    last: { lat: last.lat, lng: last.lng, speed: last.speed, at: last.at, status, ageSec },
   };
 }
 
-/**
- * ✅ Yeni: UI'nin çağırdığı format
- * GET /api/eta?vehicleId=1
- */
 etaRouter.get("/", authRequired(), async (req, res) => {
   const vehicleId = Number(req.query.vehicleId);
   if (!vehicleId) return res.status(400).json({ error: "vehicleId query param required" });
   if (!(await canSeeVehicle(req.user, vehicleId))) return res.status(403).json({ error: "Forbidden" });
 
-  const payload = await computeEtaPayload(vehicleId);
+  const payload = await computeEta(vehicleId);
   if (payload?.error && payload?.status) return res.status(payload.status).json({ error: payload.error });
   res.json(payload);
 });
 
-/**
- * Var olan: REST format
- * GET /api/eta/vehicle/1
- */
 etaRouter.get("/vehicle/:id", authRequired(), async (req, res) => {
   const vehicleId = Number(req.params.id);
   if (!(await canSeeVehicle(req.user, vehicleId))) return res.status(403).json({ error: "Forbidden" });
 
-  const payload = await computeEtaPayload(vehicleId);
+  const payload = await computeEta(vehicleId);
   if (payload?.error && payload?.status) return res.status(payload.status).json({ error: payload.error });
   res.json(payload);
 });
