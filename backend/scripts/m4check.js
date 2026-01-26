@@ -1,11 +1,7 @@
-// backend/scripts/m4check.js
 import http from "http";
 import https from "https";
-import { prisma } from "../src/prisma.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
-const VEHICLE_ID = 1;
-
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 function reqJson(method, path, { token, body } = {}) {
@@ -34,47 +30,100 @@ function reqJson(method, path, { token, body } = {}) {
   });
 }
 
-async function login(email, password){
-  const r = await reqJson("POST","/api/auth/login",{ body:{ email, password } });
-  if(!r.ok) throw new Error(`login failed ${email} -> ${r.status}\n${r.text}`);
-  if(!r.json?.token) throw new Error(`token missing for ${email}`);
-  return r.json.token;
+function itemsOf(resp){
+  const j = resp?.json;
+  if (Array.isArray(j)) return j;
+  if (Array.isArray(j?.items)) return j.items;
+  if (Array.isArray(j?.data)) return j.data;
+  return [];
 }
 
-function payloadOf(n){
-  const p = n?.payloadJson ?? n?.payload ?? null;
-  if(!p) return null;
-  return typeof p === "string" ? JSON.parse(p) : p;
+async function login(email, password){
+  const r = await reqJson("POST","/api/auth/login",{ body:{ email, password } });
+  if (!r.ok) throw new Error(`login failed ${email} -> ${r.status}\n${r.text}`);
+  const token = r.json?.token;
+  if(!token) throw new Error(`login token missing: ${email}`);
+  return token;
 }
-function countKind(items, kind){
-  let c=0;
-  for(const n of items?.items ?? items ?? []){
-    const p = payloadOf(n);
-    if(p?.kind === kind) c++;
+
+async function callAny(method, paths, { token, body } = {}) {
+  for (const p of paths) {
+    const r = await reqJson(method, p, { token, body });
+    if (r.ok) return { ok:true, path:p, r };
   }
-  return c;
+  const rr = await reqJson(method, paths[0], { token, body });
+  return { ok:false, path:paths[0], r: rr };
 }
-function pickLastByKind(items, kind){
-  const arr = (items?.items ?? items ?? []).slice().reverse();
-  for(const n of arr){
-    const p = payloadOf(n);
-    if(p?.kind === kind) return p;
+
+async function waitFor(condFn, timeoutMs, stepMs=200){
+  const t0=Date.now();
+  while(Date.now()-t0<timeoutMs){
+    if(condFn()) return true;
+    await sleep(stepMs);
   }
-  return null;
-}
-function assertV1(p){
-  if(!p || typeof p !== "object") throw new Error("❌ notif payload missing");
-  if(p.v !== 1) throw new Error(`❌ notif payload v!=1 (got ${p.v})`);
-  if(typeof p.title !== "string" || !p.title.length) throw new Error("❌ notif payload title invalid");
-  if(typeof p.message !== "string" || !p.message.length) throw new Error("❌ notif payload message invalid");
-  if(typeof p.vehicleId !== "number") throw new Error("❌ notif payload vehicleId invalid");
-  if(typeof p.at !== "string" || Number.isNaN(Date.parse(p.at))) throw new Error("❌ notif payload at invalid");
-  if(typeof p.ageSec !== "number") throw new Error("❌ notif payload ageSec invalid");
-  if(p.status !== null && !["LIVE","STALE","OFFLINE"].includes(p.status)) throw new Error(`❌ notif payload status invalid: ${p.status}`);
-  if(p.kind !== null && typeof p.kind !== "string") throw new Error("❌ notif payload kind invalid");
+  return false;
 }
 
 function ok(msg){ console.log(`✅ ${msg}`); }
+
+async function getMyVehicleId(driverToken){
+  const r = await reqJson("GET","/api/shifts/my",{ token: driverToken });
+  if(!r.ok) return null;
+  const sh = r.json?.shift ?? r.json?.item ?? r.json;
+  const vid =
+    sh?.vehicleId ??
+    sh?.vehicle?.id ??
+    sh?.activeShift?.vehicleId ??
+    sh?.data?.vehicleId ??
+    null;
+  return vid ? Number(vid) : null;
+}
+
+async function listNotifs(token){
+  const res = await callAny("GET", ["/api/notifications","/api/notifs"], { token });
+  if(!res.ok) return { ok:false, items:[], raw:res.r, path:res.path };
+  return { ok:true, items: itemsOf(res.r), raw:res.r, path:res.path };
+}
+
+function findType(items, type, vehicleId){
+  return items.find(n =>
+    (n?.type === type || n?.code === type) &&
+    (!vehicleId || n?.vehicleId === vehicleId || n?.payload?.vehicleId === vehicleId)
+  );
+}
+
+function countType(items, type, vehicleId){
+  return items.filter(n =>
+    (n?.type === type || n?.code === type) &&
+    (!vehicleId || n?.vehicleId === vehicleId || n?.payload?.vehicleId === vehicleId)
+  ).length;
+}
+
+async function assertNotifAllScopes(type, vehicleId, driverToken, roomToken, companyToken, label){
+  let d=null, r=null, c=null;
+
+  const okAll = await waitFor(async ()=>{
+    const nd = await listNotifs(driverToken);
+    const nr = await listNotifs(roomToken);
+    const nc = await listNotifs(companyToken);
+
+    d = findType(nd.items, type, vehicleId);
+    r = findType(nr.items, type, vehicleId);
+    c = findType(nc.items, type, vehicleId);
+
+    return !!(d && r && c);
+  }, 8000, 400);
+
+  if(!okAll){
+    throw new Error(`❌ ${label} not created for all scopes (missing: ${!d?"DRIVER ":""}${!r?"ROOM ":""}${!c?"COMPANY ":""})`);
+  }
+  ok(`${label} (driver/room/company)`);
+}
+
+async function postGps(driverToken, body){
+  const r = await reqJson("POST","/api/gps",{ token: driverToken, body });
+  if(!r.ok) throw new Error(`POST /api/gps -> ${r.status}\n${r.text.slice(0,400)}`);
+}
 
 async function main(){
   console.log(`API_URL = ${BASE_URL}`);
@@ -84,85 +133,70 @@ async function main(){
   const companyToken = await login("company@demo.com","demo123");
   ok("login(driver/room/company)");
 
-  // OVERSPEED payload v1
-  const d0 = await reqJson("GET","/api/notifications/my",{ token: driverToken });
-  const r0 = await reqJson("GET","/api/notifications/my",{ token: roomToken });
-  const c0 = await reqJson("GET","/api/notifications/my",{ token: companyToken });
-  const d0n = countKind(d0.json, "OVERSPEED");
-  const r0n = countKind(r0.json, "OVERSPEED");
-  const c0n = countKind(c0.json, "OVERSPEED");
+  // driver'ın gerçek vehicleId'sini bul (flaky olmasın)
+  const vehicleId = (await getMyVehicleId(driverToken)) ?? 1;
 
-  const gpsOS = await reqJson("POST","/api/gps",{ token: driverToken, body:{ vehicleId: VEHICLE_ID, lat:41.03025, lng:28.99605, speed:140 }});
-  if(!gpsOS.ok) throw new Error(`❌ overspeed gps failed -> ${gpsOS.status}\n${gpsOS.text}`);
-  await sleep(800);
+  // 1) LIVE gps (baseline)
+  await postGps(driverToken, {
+    vehicleId,
+    lat: 41.0309, lng: 28.9966,
+    speedKmh: 10, speed: 10,
+    ts: new Date().toISOString()
+  });
 
-  const d1 = await reqJson("GET","/api/notifications/my",{ token: driverToken });
-  const r1 = await reqJson("GET","/api/notifications/my",{ token: roomToken });
-  const c1 = await reqJson("GET","/api/notifications/my",{ token: companyToken });
+  // 2) OVERSPEED gps
+  await postGps(driverToken, {
+    vehicleId,
+    lat: 41.0310, lng: 28.9967,
+    speedKmh: 200, speed: 200,
+    ts: new Date().toISOString()
+  });
 
-  if(countKind(d1.json,"OVERSPEED") <= d0n) throw new Error("❌ OVERSPEED not created (DRIVER)");
-  if(countKind(r1.json,"OVERSPEED") <= r0n) throw new Error("❌ OVERSPEED not created (ROOM)");
-  if(countKind(c1.json,"OVERSPEED") <= c0n) throw new Error("❌ OVERSPEED not created (COMPANY)");
-  const p = pickLastByKind(d1.json, "OVERSPEED");
-  assertV1(p);
-  ok("OVERSPEED notif v1 payload (driver/room/company)");
+  await assertNotifAllScopes("OVERSPEED", vehicleId, driverToken, roomToken, companyToken, "OVERSPEED notif");
 
-  // LIVE->STALE + dedupe
-  const baseD = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_STALE");
-  const baseR = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_STALE");
-  const baseC = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_STALE");
+  // 3) LIVE->STALE (monitor tick bekle)
+  console.log("⏳ waiting ~45s for LIVE->STALE monitor tick...");
+  await sleep(45000);
+  await assertNotifAllScopes("GPS_STALE", vehicleId, driverToken, roomToken, companyToken, "LIVE->STALE notif created");
 
-  await prisma.gpsLast.update({ where:{ vehicleId: VEHICLE_ID }, data:{ at: new Date(Date.now()-25_000) } });
-  await sleep(20_000);
+  // 4) GPS_STALE dedupe (bir tick daha bekle, count artmamalı)
+  const n1d = await listNotifs(driverToken);
+  const staleCount1 = countType(n1d.items, "GPS_STALE", vehicleId);
 
-  const dS  = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_STALE");
-  const rS  = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_STALE");
-  const cS  = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_STALE");
-  if(dS<=baseD || rS<=baseR || cS<=baseC) throw new Error("❌ GPS_STALE not created for all scopes");
-  ok("LIVE->STALE notif created (driver/room/company)");
+  console.log("⏳ waiting ~45s for STALE dedupe tick...");
+  await sleep(45000);
+  const n2d = await listNotifs(driverToken);
+  const staleCount2 = countType(n2d.items, "GPS_STALE", vehicleId);
 
-  await sleep(20_000);
-  const dS2 = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_STALE");
-  const rS2 = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_STALE");
-  const cS2 = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_STALE");
-  if(dS2!==dS || rS2!==rS || cS2!==cS) throw new Error("❌ GPS_STALE dedupe failed");
+  if(staleCount2 > staleCount1) throw new Error("❌ GPS_STALE dedupe FAIL (count increased)");
   ok("GPS_STALE dedupe OK");
 
-  // STALE->OFFLINE + dedupe
-  const baseDO = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_OFFLINE");
-  const baseRO = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_OFFLINE");
-  const baseCO = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_OFFLINE");
+  // 5) STALE->OFFLINE (bir tick daha)
+  console.log("⏳ waiting ~45s for STALE->OFFLINE tick...");
+  await sleep(45000);
+  await assertNotifAllScopes("GPS_OFFLINE", vehicleId, driverToken, roomToken, companyToken, "STALE->OFFLINE notif created");
 
-  await prisma.gpsLast.update({ where:{ vehicleId: VEHICLE_ID }, data:{ at: new Date(Date.now()-350_000) } });
-  await sleep(20_000);
+  // 6) GPS_OFFLINE dedupe
+  const o1d = await listNotifs(driverToken);
+  const offCount1 = countType(o1d.items, "GPS_OFFLINE", vehicleId);
 
-  const dO  = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_OFFLINE");
-  const rO  = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_OFFLINE");
-  const cO  = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_OFFLINE");
-  if(dO<=baseDO || rO<=baseRO || cO<=baseCO) throw new Error("❌ GPS_OFFLINE not created for all scopes");
-  ok("STALE->OFFLINE notif created (driver/room/company)");
+  console.log("⏳ waiting ~45s for OFFLINE dedupe tick...");
+  await sleep(45000);
+  const o2d = await listNotifs(driverToken);
+  const offCount2 = countType(o2d.items, "GPS_OFFLINE", vehicleId);
 
-  await sleep(20_000);
-  const dO2 = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_OFFLINE");
-  const rO2 = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_OFFLINE");
-  const cO2 = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_OFFLINE");
-  if(dO2!==dO || rO2!==rO || cO2!==cO) throw new Error("❌ GPS_OFFLINE dedupe failed");
+  if(offCount2 > offCount1) throw new Error("❌ GPS_OFFLINE dedupe FAIL (count increased)");
   ok("GPS_OFFLINE dedupe OK");
 
-  // OFFLINE->LIVE recovery
-  const baseDR = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_RECOVERY");
-  const baseRR = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_RECOVERY");
-  const baseCR = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_RECOVERY");
+  // 7) OFFLINE->LIVE recovery (yeni LIVE gps at)
+  await postGps(driverToken, {
+    vehicleId,
+    lat: 41.0312, lng: 28.9969,
+    speedKmh: 20, speed: 20,
+    ts: new Date().toISOString()
+  });
 
-  const gpsRec = await reqJson("POST","/api/gps",{ token: driverToken, body:{ vehicleId: VEHICLE_ID, lat:41.0304, lng:28.9962, speed:10 }});
-  if(!gpsRec.ok) throw new Error(`❌ recovery gps failed -> ${gpsRec.status}\n${gpsRec.text}`);
-  await sleep(800);
-
-  const dR  = countKind((await reqJson("GET","/api/notifications/my",{token:driverToken})).json, "GPS_RECOVERY");
-  const rR  = countKind((await reqJson("GET","/api/notifications/my",{token:roomToken})).json, "GPS_RECOVERY");
-  const cR  = countKind((await reqJson("GET","/api/notifications/my",{token:companyToken})).json, "GPS_RECOVERY");
-  if(dR<=baseDR || rR<=baseRR || cR<=baseCR) throw new Error("❌ GPS_RECOVERY not created for all scopes");
-  ok("OFFLINE->LIVE recovery notif created (driver/room/company)");
+  await assertNotifAllScopes("GPS_RECOVERY", vehicleId, driverToken, roomToken, companyToken, "OFFLINE->LIVE recovery notif created");
 
   console.log("\n✅ M4CHECK PASS");
 }

@@ -1,5 +1,7 @@
 param(
-  [int]$To = 5,                 # o ana kadar kaçıncı milestone'a kadar koşulsun (M0..M$To)
+  [ValidateRange(0,12)]
+  [int]$To = 6,                  # M0..M$To
+
   [string]$ComposeDir = "D:\personel-servis-v1\infra",
   [string]$RepoDir    = "D:\personel-servis-v1",
   [string]$ApiService = "api",
@@ -8,44 +10,74 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Run($title, $cmd) {
+function Run($title, [scriptblock]$cmd) {
   Write-Host "`n=== $title ==="
+  $global:LASTEXITCODE = 0
   & $cmd
-}
 
-Set-Location $ComposeDir
+  # cmdlet hataları
+  if(-not $?) { throw "FAILED: $title" }
 
-Run "docker compose up (api)" { docker compose up -d --build $ApiService }
-Start-Sleep -Seconds $SleepSec
-
-Run "health" { curl.exe -s http://127.0.0.1:3000/health | Out-Host }
-
-# Mevcut check'ler (M0..M5)
-$checks = @(
-  @{ n = 0; name="M0"; cmd="node scripts/m0check.js" },
-  @{ n = 1; name="M1"; cmd="node scripts/m1check.js" },
-  @{ n = 2; name="M2"; cmd="node scripts/m2check.js" },
-  @{ n = 3; name="M3"; cmd="node scripts/m3check.js" },
-  @{ n = 4; name="M4"; cmd="node scripts/m4check.js" },
-  @{ n = 5; name="M5"; cmd="node scripts/m5check.js" }
-)
-
-# İleride ekleyeceklerimiz için yer tutucu: m6check.js ... m12check.js
-foreach($n in 6..12){
-  $p = Join-Path $RepoDir ("backend\scripts\m{0}check.js" -f $n)
-  if(Test-Path $p){
-    $checks += @{ n = $n; name=("M{0}" -f $n); cmd=("node scripts/m{0}check.js" -f $n) }
+  # external exe exit code
+  if($global:LASTEXITCODE -ne 0) {
+    throw "FAILED: $title (exit=$global:LASTEXITCODE)"
   }
 }
 
-# Seçilen milestone'a kadar çalıştır
-$runList = $checks | Where-Object { $_.n -le $To } | Sort-Object n
-foreach($c in $runList){
-  Run $c.name { docker compose exec -T $ApiService sh -lc $c.cmd }
+try {
+  if(-not (Test-Path $ComposeDir)) { throw "ComposeDir not found: $ComposeDir" }
+  Set-Location $ComposeDir
+
+  Run "docker compose up (api)" {
+    docker compose up -d --build $ApiService
+  }
+
+  Start-Sleep -Seconds $SleepSec
+
+  Run "health" {
+    curl.exe -s http://127.0.0.1:3000/health | Out-Host
+  }
+
+  # M0..M6 her zaman listede
+  $checks = @(
+    @{ n = 0; name="M0"; cmd="node scripts/m0check.js" },
+    @{ n = 1; name="M1"; cmd="node scripts/m1check.js" },
+    @{ n = 2; name="M2"; cmd="node scripts/m2check.js" },
+    @{ n = 3; name="M3"; cmd="node scripts/m3check.js" },
+    @{ n = 4; name="M4"; cmd="node scripts/m4check.js" },
+    @{ n = 5; name="M5"; cmd="node scripts/m5check.js" },
+    @{ n = 6; name="M6"; cmd="node scripts/m6check.js" }
+  )
+
+  # M7..M12: sadece dosya varsa ekle (M6 tekrar eklenmesin diye 7'den başlıyor)
+  foreach($n in 7..12){
+    $p = Join-Path $RepoDir ("backend\scripts\m{0}check.js" -f $n)
+    if(Test-Path $p){
+      $checks += @{ n = $n; name=("M{0}" -f $n); cmd=("node scripts/m{0}check.js" -f $n) }
+    }
+  }
+
+  $runList = $checks | Where-Object { $_.n -le $To } | Sort-Object n
+
+  foreach($c in $runList){
+    Run $c.name {
+      docker compose exec -T $ApiService sh -lc $c.cmd
+    }
+  }
+
+  # Sonda: FULLCHECK sonra SMOKE (izolasyon daha iyi)
+  Run "FULLCHECK" {
+    docker compose exec -T $ApiService sh -lc "node scripts/fullcheck.js"
+  }
+
+  Run "SMOKE" {
+    docker compose exec -T $ApiService sh -lc "npm run smoke"
+  }
+
+  Write-Host "`n✅ GATE PASS (M0..M$To + FULLCHECK + SMOKE)"
+  exit 0
 }
-
-# Her zaman en sonda: smoke + fullcheck
-Run "SMOKE"    { docker compose exec -T $ApiService sh -lc "npm run smoke" }
-Run "FULLCHECK"{ docker compose exec -T $ApiService sh -lc "node scripts/fullcheck.js" }
-
-Write-Host "`n✅ GATE PASS (M0..M$To + SMOKE + FULLCHECK)"
+catch {
+  Write-Host "`n❌ GATE FAIL: $($_.Exception.Message)"
+  exit 1
+}
