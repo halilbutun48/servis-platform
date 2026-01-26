@@ -27,19 +27,15 @@ function ensurePayloadObject({ payload, payloadJson }) {
     throw new Error("createNotification: payload/payloadJson gerekli.");
   }
 
-  // object gelirse direkt kullan
   if (typeof v === "object") return v;
 
-  // string gelirse JSON parse etmeyi dene
   if (typeof v === "string") {
     try {
       const parsed = JSON.parse(v);
       if (parsed && typeof parsed === "object") return parsed;
       throw new Error("payloadJson string parse edildi ama object değil.");
     } catch {
-      throw new Error(
-        "createNotification: payloadJson string ise geçerli JSON object olmalı."
-      );
+      throw new Error("createNotification: payloadJson string ise geçerli JSON object olmalı.");
     }
   }
 
@@ -48,9 +44,7 @@ function ensurePayloadObject({ payload, payloadJson }) {
 
 function normalizeToV1({ type, payloadObj, vehicleIdFallback = null }) {
   const vehicleId =
-    (payloadObj && typeof payloadObj.vehicleId === "number"
-      ? payloadObj.vehicleId
-      : null) ??
+    (payloadObj && typeof payloadObj.vehicleId === "number" ? payloadObj.vehicleId : null) ??
     (typeof vehicleIdFallback === "number" ? vehicleIdFallback : null);
 
   const at =
@@ -61,7 +55,6 @@ function normalizeToV1({ type, payloadObj, vehicleIdFallback = null }) {
         : new Date().toISOString();
 
   const ageSec = typeof payloadObj?.ageSec === "number" ? payloadObj.ageSec : null;
-
   const status = typeof payloadObj?.status === "string" ? payloadObj.status : null;
 
   const kind =
@@ -92,14 +85,138 @@ function normalizeToV1({ type, payloadObj, vehicleIdFallback = null }) {
   };
 }
 
-// scope: ROOM | COMPANY | DRIVER
+function isUnknownArgError(err, argName) {
+  const msg = String(err?.message ?? "");
+  return (
+    msg.includes(`Unknown argument \`${argName}\``) ||
+    msg.includes(`Unknown argument '${argName}'`) ||
+    (msg.includes(`data.${argName}`) && msg.includes("Unknown"))
+  );
+}
+
+function isWhereNotUniqueError(err) {
+  const msg = String(err?.message ?? "");
+  return (
+    msg.includes("needs at least one of") ||
+    msg.includes("Argument `where`") ||
+    msg.includes("must contain at least one unique field") ||
+    msg.includes("Unique constraint")
+  );
+}
+
+// Şema scalar id bekliyorsa relation alanları (company/room/...) "Unknown argument" verir.
+function needsScalarFallback(err) {
+  return (
+    isUnknownArgError(err, "company") ||
+    isUnknownArgError(err, "room") ||
+    isUnknownArgError(err, "driver") ||
+    isUnknownArgError(err, "vehicle") ||
+    isUnknownArgError(err, "shift")
+  );
+}
+
+// Şema relation connect bekliyorsa scalar alanlar (companyId/roomId/...) "Unknown argument" verir.
+function needsRelationConnectFallback(err) {
+  return (
+    isUnknownArgError(err, "companyId") ||
+    isUnknownArgError(err, "roomId") ||
+    isUnknownArgError(err, "driverId") ||
+    isUnknownArgError(err, "vehicleId") ||
+    isUnknownArgError(err, "shiftId")
+  );
+}
+
+function buildAutoDedupeKey({
+  type,
+  scope,
+  vehicleId,
+  companyId,
+  roomId,
+  driverId,
+  userId,
+  shiftId,
+}) {
+  if (type !== "OVERSPEED") return null;
+  if (!vehicleId) return null;
+
+  // Dedupe bucket server time’a göre (payload.at sabit olabilir)
+  const bucket10s = Math.floor(Date.now() / 10_000);
+
+  let actor = "X";
+  if (scope === "DRIVER") actor = userId ?? driverId ?? "X";
+  else if (scope === "ROOM") actor = roomId ?? "X";
+  else if (scope === "COMPANY") actor = companyId ?? "X";
+  else if (scope === "SHIFT") actor = shiftId ?? "X";
+
+  return `OVERSPEED:${vehicleId}:${scope}:${actor}:${bucket10s}`;
+}
+
+function buildScalarData({
+  type,
+  scope,
+  v1,
+  companyId,
+  roomId,
+  driverId,
+  vehicleId,
+  shiftId,
+  userId,
+  dedupeKey,
+}) {
+  const data = {
+    type,
+    scope,
+    payloadJson: v1,
+    companyId,
+    roomId,
+    driverId,
+    vehicleId,
+    shiftId,
+  };
+
+  if (dedupeKey) data.dedupeKey = dedupeKey;
+  if (userId != null) data.userId = userId;
+
+  return data;
+}
+
+function buildConnectData({
+  type,
+  scope,
+  v1,
+  companyId,
+  roomId,
+  driverId,
+  vehicleId,
+  shiftId,
+  userId,
+  dedupeKey,
+}) {
+  const data = {
+    type,
+    scope,
+    payloadJson: v1,
+  };
+
+  if (dedupeKey) data.dedupeKey = dedupeKey;
+  if (userId != null) data.userId = userId;
+
+  // scalar *Id yerine relation connect
+  if (companyId) data.company = { connect: { id: companyId } };
+  if (roomId) data.room = { connect: { id: roomId } };
+  if (driverId) data.driver = { connect: { id: driverId } };
+  if (vehicleId) data.vehicle = { connect: { id: vehicleId } };
+  if (shiftId) data.shift = { connect: { id: shiftId } };
+
+  return data;
+}
+
+// scope: ROOM | COMPANY | DRIVER | SHIFT | USER (projende ne varsa)
 export async function createNotification({
   type,
   scope,
 
-  // yeni standart kullanım: payload object (v1 şema)
   payload = null,
-  // geri uyum: payloadJson (string/object) kabul eder
   payloadJson = null,
 
   companyId = null,
@@ -107,25 +224,162 @@ export async function createNotification({
   driverId = null,
   vehicleId = null,
   shiftId = null,
+
+  // modelde yoksa otomatik kırpılıyor
+  userId = null,
+
+  // opsiyonel
+  dedupeKey = null,
 } = {}) {
   if (!type) throw new Error("createNotification: type gerekli.");
   if (!scope) throw new Error("createNotification: scope gerekli.");
 
   const obj = ensurePayloadObject({ payload, payloadJson });
   const v1 = normalizeToV1({ type, payloadObj: obj, vehicleIdFallback: vehicleId });
+  const finalVehicleId = vehicleId ?? v1.vehicleId ?? null;
 
-  return prisma.notification.create({
-    data: {
+  const autoDk = buildAutoDedupeKey({
+    type,
+    scope,
+    vehicleId: finalVehicleId,
+    companyId,
+    roomId,
+    driverId,
+    userId,
+    shiftId,
+  });
+
+  const finalDedupeKey = dedupeKey ?? autoDk;
+
+  async function tryUpsertOrCreate({ useConnect }) {
+    const mkData = useConnect ? buildConnectData : buildScalarData;
+
+    // UPSERT (dedupeKey varsa)
+    if (finalDedupeKey) {
+      try {
+        const createData = mkData({
+          type,
+          scope,
+          v1,
+          companyId,
+          roomId,
+          driverId,
+          vehicleId: finalVehicleId,
+          shiftId,
+          userId,
+          dedupeKey: finalDedupeKey,
+        });
+
+        const updateData = mkData({
+          type,
+          scope,
+          v1,
+          companyId,
+          roomId,
+          driverId,
+          vehicleId: finalVehicleId,
+          shiftId,
+          userId,
+          dedupeKey: null, // update'de dedupeKey set etmeyelim
+        });
+
+        return await prisma.notification.upsert({
+          where: { dedupeKey: finalDedupeKey },
+          update: updateData,
+          create: createData,
+        });
+      } catch (e) {
+        const dkUnknown = isUnknownArgError(e, "dedupeKey");
+        const userUnknown = isUnknownArgError(e, "userId");
+        const notUnique = isWhereNotUniqueError(e);
+
+        // yanlış moddaysak üst seviyeye fırlat (mode switch)
+        if (useConnect && needsScalarFallback(e)) throw e;
+        if (!useConnect && needsRelationConnectFallback(e)) throw e;
+
+        // dedupeKey/userId/where-not-unique ise create fallback'e düş
+        if (!dkUnknown && !userUnknown && !notUnique) throw e;
+      }
+    }
+
+    // CREATE
+    try {
+      const createData = mkData({
+        type,
+        scope,
+        v1,
+        companyId,
+        roomId,
+        driverId,
+        vehicleId: finalVehicleId,
+        shiftId,
+        userId,
+        dedupeKey: finalDedupeKey,
+      });
+
+      return await prisma.notification.create({ data: createData });
+    } catch (e) {
+      // yanlış moddaysak üst seviyeye fırlat
+      if (useConnect && needsScalarFallback(e)) throw e;
+      if (!useConnect && needsRelationConnectFallback(e)) throw e;
+
+      const dkUnknown = isUnknownArgError(e, "dedupeKey");
+      const userUnknown = isUnknownArgError(e, "userId");
+      if (!dkUnknown && !userUnknown) throw e;
+
+      // dedupeKey/userId bilinmiyorsa kırp ve tekrar dene
+      const createData2 = mkData({
+        type,
+        scope,
+        v1,
+        companyId,
+        roomId,
+        driverId,
+        vehicleId: finalVehicleId,
+        shiftId,
+        userId: userUnknown ? null : userId,
+        dedupeKey: dkUnknown ? null : finalDedupeKey,
+      });
+
+      return await prisma.notification.create({ data: createData2 });
+    }
+  }
+
+  // 1) önce scalar dene (eski şemalar için)
+  try {
+    return await tryUpsertOrCreate({ useConnect: false });
+  } catch (e1) {
+    if (!needsRelationConnectFallback(e1)) throw e1;
+  }
+
+  // 2) relation connect dene (yeni şemalar için)
+  try {
+    return await tryUpsertOrCreate({ useConnect: true });
+  } catch (e2) {
+    // connect modunda da userId/dedupeKey bilinmiyorsa kırpıp bir kez daha dene
+    const dkUnknown = isUnknownArgError(e2, "dedupeKey");
+    const userUnknown = isUnknownArgError(e2, "userId");
+    if (!dkUnknown && !userUnknown) throw e2;
+
+    const obj2 = ensurePayloadObject({ payload, payloadJson });
+    const v12 = normalizeToV1({ type, payloadObj: obj2, vehicleIdFallback: vehicleId });
+    const finalVehicleId2 = vehicleId ?? v12.vehicleId ?? null;
+
+    const createDataFinal = buildConnectData({
       type,
       scope,
-      payloadJson: v1, // ✅ JSONB object
+      v1: v12,
       companyId,
       roomId,
       driverId,
-      vehicleId,
+      vehicleId: finalVehicleId2,
       shiftId,
-    },
-  });
+      userId: userUnknown ? null : userId,
+      dedupeKey: dkUnknown ? null : finalDedupeKey,
+    });
+
+    return await prisma.notification.create({ data: createDataFinal });
+  }
 }
 
 /**
@@ -186,7 +440,9 @@ export async function createAndEmitNotification({
   driverId = null,
   vehicleId = null,
   shiftId = null,
-  userId = null, // opsiyonel
+
+  userId = null,
+  dedupeKey = null,
 } = {}) {
   const created = await createNotification({
     type,
@@ -198,6 +454,8 @@ export async function createAndEmitNotification({
     driverId,
     vehicleId,
     shiftId,
+    userId,
+    dedupeKey,
   });
 
   emitNotification({

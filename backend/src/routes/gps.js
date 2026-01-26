@@ -47,7 +47,7 @@ export function gpsRouter(io) {
         },
       });
 
-      // ✅ DB enum: OK | STALE  (LIVE/OFFLINE DB’ye yazılmaz)
+      // ✅ DB enum: OK | STALE
       const last = await prisma.gpsLast.upsert({
         where: { vehicleId },
         update: {
@@ -73,11 +73,60 @@ export function gpsRouter(io) {
         data: { status: "ACTIVE" },
       });
 
-      // ✅ Tek kaynak: UI status + ageSec
+      // ✅ UI status + ageSec
       const { status: uiStatus, ageSec } = gpsStatusFromAt(last.at);
 
       // =========================================================
-      // ✅ RECOVERY GATE (OFFLINE/STALE -> LIVE) — spam olmaz
+      // ✅ helper: DRIVER notif hedeflerini üret
+      // - her zaman sender user hedefi var (driverId null olabilir)
+      // - ayrıca shift’e atanmış driver varsa onu da ekle
+      // =========================================================
+      async function getDriverNotifTargets() {
+        const targets = [];
+
+        // sender driver record (yoksa null kalır)
+        let senderDriverId = null;
+        try {
+          const sender = await prisma.driver.findFirst({
+            where: { userId: u.id },
+            select: { id: true },
+          });
+          senderDriverId = sender?.id ?? null;
+        } catch {
+          senderDriverId = null;
+        }
+
+        // ✅ her durumda sender user’a DRIVER notif üret
+        targets.push({ driverId: senderDriverId, userId: u.id });
+
+        // assigned shift driver (varsa)
+        try {
+          const sh = await prisma.shift.findFirst({
+            where: {
+              vehicleId,
+              status: { in: ["APPROVED", "ACTIVE"] },
+              driverId: { not: null },
+            },
+            select: { driverId: true },
+          });
+
+          const assignedDriverId = sh?.driverId ?? null;
+          if (assignedDriverId && assignedDriverId !== senderDriverId) {
+            const dUser = await prisma.driver.findUnique({
+              where: { id: assignedDriverId },
+              select: { userId: true },
+            });
+            targets.push({ driverId: assignedDriverId, userId: dUser?.userId ?? null });
+          }
+        } catch {
+          // ignore
+        }
+
+        return targets;
+      }
+
+      // =========================================================
+      // ✅ RECOVERY GATE (OFFLINE/STALE -> LIVE)
       // =========================================================
       const gate = await gateVehicleGpsState({
         prisma,
@@ -97,50 +146,48 @@ export function gpsRouter(io) {
           kind: "GPS_RECOVERY",
         });
 
-        // DRIVER scope (bu request'i atan driver user ise)
-        const driver = await prisma.driver.findFirst({
-          where: { userId: u.id },
-          select: { id: true },
-        });
+        // ✅ NOTIF tarafı GPS ingest'i KIRAMAZ
+        try {
+          const targets = await getDriverNotifTargets();
+          for (const t of targets) {
+            await createAndEmitNotification({
+              io,
+              type: "GPS_RECOVERY",
+              scope: "DRIVER",
+              payload,
+              driverId: t.driverId, // null olabilir (FULLCHECK için sorun değil)
+              userId: t.userId,     // WS user room için kritik
+              vehicleId,
+              roomId: vehicle.roomId,
+              companyId: vehicle.room.companyId,
+            });
+          }
 
-        if (driver) {
           await createAndEmitNotification({
             io,
             type: "GPS_RECOVERY",
-            scope: "DRIVER",
+            scope: "ROOM",
             payload,
-            driverId: driver.id,
-            userId: u.id,
-            vehicleId,
             roomId: vehicle.roomId,
             companyId: vehicle.room.companyId,
+            vehicleId,
           });
+
+          await createAndEmitNotification({
+            io,
+            type: "GPS_RECOVERY",
+            scope: "COMPANY",
+            payload,
+            companyId: vehicle.room.companyId,
+            roomId: vehicle.roomId,
+            vehicleId,
+          });
+        } catch (e) {
+          console.error("GPS_RECOVERY notif error:", e);
         }
-
-        // ROOM scope
-        await createAndEmitNotification({
-          io,
-          type: "GPS_RECOVERY",
-          scope: "ROOM",
-          payload,
-          roomId: vehicle.roomId,
-          companyId: vehicle.room.companyId,
-          vehicleId,
-        });
-
-        // COMPANY scope
-        await createAndEmitNotification({
-          io,
-          type: "GPS_RECOVERY",
-          scope: "COMPANY",
-          payload,
-          companyId: vehicle.room.companyId,
-          roomId: vehicle.roomId,
-          vehicleId,
-        });
       }
 
-      // ✅ WS: gps:update (UI status = LIVE/STALE/OFFLINE) + ageSec
+      // ✅ WS: gps:update
       const gpsPayload = {
         vehicleId,
         lat,
@@ -155,14 +202,15 @@ export function gpsRouter(io) {
       io.to(`room:${vehicle.roomId}`).emit("gps:update", gpsPayload);
       io.to(`company:${vehicle.room.companyId}`).emit("gps:update", gpsPayload);
 
-      // ✅ WS: vehicle:status (UI status + ageSec) — gps:update ile aynı standart
+      // ✅ WS: vehicle:status
       const vehicleStatusPayload = { vehicleId, status: uiStatus, ageSec };
-
       io.to(`vehicle:${vehicleId}`).emit("vehicle:status", vehicleStatusPayload);
       io.to(`room:${vehicle.roomId}`).emit("vehicle:status", vehicleStatusPayload);
       io.to(`company:${vehicle.room.companyId}`).emit("vehicle:status", vehicleStatusPayload);
 
-      // Overspeed notif (v1 payload)
+      // =========================================================
+      // ✅ OVERSPEED
+      // =========================================================
       if (typeof speed === "number" && speed > (vehicle.speedLimitKmh ?? 80)) {
         const limit = vehicle.speedLimitKmh ?? 80;
 
@@ -176,56 +224,56 @@ export function gpsRouter(io) {
           kind: "OVERSPEED",
         });
 
-        const driver = await prisma.driver.findFirst({
-          where: { userId: u.id },
-          select: { id: true },
-        });
+        // ✅ NOTIF tarafı GPS ingest'i KIRAMAZ
+        try {
+          const targets = await getDriverNotifTargets();
+          for (const t of targets) {
+            await createAndEmitNotification({
+              io,
+              type: "OVERSPEED",
+              scope: "DRIVER",
+              payload,
+              driverId: t.driverId, // null olabilir -> yine de DRIVER notif oluşur
+              userId: t.userId,
+              vehicleId,
+              roomId: vehicle.roomId,
+              companyId: vehicle.room.companyId,
+            });
+          }
 
-        if (driver) {
           await createAndEmitNotification({
             io,
             type: "OVERSPEED",
-            scope: "DRIVER",
+            scope: "ROOM",
             payload,
-            driverId: driver.id,
-            userId: u.id,
-            vehicleId,
             roomId: vehicle.roomId,
             companyId: vehicle.room.companyId,
+            vehicleId,
           });
+
+          await createAndEmitNotification({
+            io,
+            type: "OVERSPEED",
+            scope: "COMPANY",
+            payload,
+            companyId: vehicle.room.companyId,
+            roomId: vehicle.roomId,
+            vehicleId,
+          });
+        } catch (e) {
+          console.error("OVERSPEED notif error:", e);
         }
-
-        await createAndEmitNotification({
-          io,
-          type: "OVERSPEED",
-          scope: "ROOM",
-          payload,
-          roomId: vehicle.roomId,
-          companyId: vehicle.room.companyId,
-          vehicleId,
-        });
-
-        await createAndEmitNotification({
-          io,
-          type: "OVERSPEED",
-          scope: "COMPANY",
-          payload,
-          companyId: vehicle.room.companyId,
-          roomId: vehicle.roomId,
-          vehicleId,
-        });
       }
 
       // =========================================================
       // ✅ ETA broadcast (progress-aware)
-      // - ShiftProgress.lastReachedOrder'a göre kalan durakları yayınlar
       // =========================================================
       try {
         const shifts = await prisma.shift.findMany({
           where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
           include: {
             stops: { orderBy: { order: "asc" } },
-            progress: true, // ✅ NEW
+            progress: true,
           },
         });
 
@@ -236,8 +284,6 @@ export function gpsRouter(io) {
 
           const lastReachedOrder = sh.progress?.lastReachedOrder ?? 0;
           const remainingStops = sh.stops.filter((s) => s.order > lastReachedOrder);
-
-          // kalan durak yoksa boş yayın yerine skip
           if (!remainingStops.length) continue;
 
           const items = remainingStops.map((s) => {

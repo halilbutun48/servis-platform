@@ -1,3 +1,4 @@
+# gate.ps1
 param(
   [ValidateRange(0,12)]
   [int]$To = 6,                  # M0..M$To

@@ -290,7 +290,8 @@ model Notification {
   scope      NotificationScope
   payloadJson Json
   createdAt  DateTime          @default(now())
-
+  dedupeKey String? @unique
+  
   // optional targets
   companyId  Int?
   roomId     Int?
@@ -304,10 +305,11 @@ model Notification {
   vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
   shift      Shift?   @relation(fields: [shiftId], references: [id])
 
-  @@index([scope, createdAt])
+    @@index([scope, createdAt])
   @@index([companyId, createdAt])
   @@index([roomId, createdAt])
   @@index([driverId, createdAt])
+  
 }
 
 model ShiftProgress {
