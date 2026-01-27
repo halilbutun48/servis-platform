@@ -1,52 +1,144 @@
-# STARTPACK_V1 — Personel Servis V1
+# STARTPACK_V1 — Personel Servis Platformu (Single Source of Truth)
 
-Bu dosya, projeyi yeni bir makinede **tek bakışta ayağa kaldırmak** ve
-her milestone sonrası “ne çalışıyor / ne eksik” durumunu hızlı doğrulamak için
-tek kaynak (single source of truth) olarak tutulur.
+Bu dosya **tek kaynak**tır:
+- Yeni sohbette yapıştırılacak **PRIMER**
+- Çalıştırma / doğrulama adımları
+- Mini runbook (en sık hatalar)
+- Standartlar (WS scope, dedupe, kritik DB kuralları)
 
-> Not: Repo içinde tools/ ve backend/scripts/ altında otomasyonlar vardır.
+> Diğer dokümanlar (PROJECT_SPEC_V1, API_SPEC_V1, DB_SCHEMA_V1, UI_SPEC_V1) detay içerir.
+> “Ne çalışıyor / nasıl test ederim / en hızlı debug” = burası.
 
-## Dizin yapısı
-- `backend/` REST API + WS (Socket.IO) + Prisma
-- `web/` Vite tabanlı UI
-- `infra/` docker-compose (postgres)
-- `docs/` spesifikasyonlar
-- `tools/` gate/pack/primer/runbook
+---
 
-## Hızlı başlangıç
+## 1) PRIMER (Yeni Sohbet İçin Yapıştır)
 
-### 1) Infra (Postgres)
-- `infra/docker-compose.yml` ile postgres ayağa kalkar
-- Varsayılan DB: `servisdb` (host port: `5433`)
+### Güncel Durum
+- **Tarih:** 28 Ocak 2026
+- **Stack:** Backend + Web + Postgres(docker) + Redis ✅
+- **Check PASS:** `npm run smoke` ✅, `npm run fullcheck` ✅
+- **Health:** `/health` → `dbOk:true`, `dbLatencyMs`, `version` ✅
+- **State machine:** LIVE → STALE → OFFLINE → LIVE + **dedupe** ✅
+- **Not:** 3000 port çakışırsa eski node process kapatılmalı (EADDRINUSE)
 
-### 2) Backend
-- `.env.example` → `.env` (gerekirse)
-- Prisma migrate + seed
-- API: `http://localhost:3000`
-- Health: `GET /health`
+### Amaç
+GPS tabanlı **personel servisi** platformu:
+- Canlı araç takibi (harita)
+- Vardiya → rota/durak planı
+- Company talebini Room onaylar, araca+sürücüye bağlar
+- Driver’a rota/durak düşer
+- Bildirimler: **OVERSPEED / GPS_STALE / GPS_OFFLINE / RECOVERY**
+- WS ile canlı yayınlar: `gps:update`, `vehicle:status`, `eta:update`, `notify:new`
 
-### 3) Web
-- `web/` içinde `npm i` + `npm run dev`
+**İleri hedef (Company):** Vardiya bazlı Excel personel listesi yükle → adres yakınlığına göre grupla → durak öner → kapasiteye göre araç talebi oluştur → rota/durak bilgisi Room’a düşsün.
 
-## Milestone kontrolü
+### Roller (5)
+1) **SUPER_ADMIN**: Company oluştur/yönet, rol/yetki  
+2) **COMPANY**: Vardiya şablonlarıyla talep açar, talepleri yönetir (v1 temel)  
+3) **ROOM (Operasyon)**: Araç/sürücü yönetir, talepleri onaylar, haritada tüm araçları izler  
+4) **DRIVER**: Kendi rotasını/duraklarını görür, GPS gönderir, bildirim alır  
+5) **PERSONEL (çalışan)**: Adres/konum yönetimi (v1 minimum)
 
-Backend tarafında kontrol scriptleri:
-- `npm run smoke`
-- `npm run fullcheck`
-- `npm run m0check ... m12check`
+### Seed / Demo Hesaplar
+Şifre (hepsi): **demo123**
+- `superadmin@demo.com`
+- `company@demo.com`
+- `room@demo.com`
+- `driver@demo.com`
+- `personel@demo.com`
 
-## M11 — Security hardening (özet)
-- `helmet` (security headers)
-- `express-rate-limit` (abuse gate)
-- `apiRequestLog` (ApiRequest insert)
-- `/health` → `dbOk/dbLatencyMs/version`
+### Portlar / Servisler
+- API: `http://localhost:3000`  (Health: `/health`)
+- Postgres: `localhost:5433` → container `5432`
+- Redis: `localhost:6379`
+- Web (Vite): genelde `http://localhost:5173`
 
-## M12 — Pack (GreenPack)
-- `tools/pack.ps1` tek komutla: infra + backend + web gate koşar
-- Çıktı: konsolda PASS/FAIL
+### Repo Yapısı (Özet)
+- `backend/src/server.js`: REST + WS mount, `/health`, rate-limit, request log, socket auth/scope join  
+- `backend/src/routes/*`: auth, me, companies, rooms, vehicles, drivers, shifts, gps, requests, routeTemplates, driver, personels, notifications, eta  
+- `backend/src/jobs/*`: stale/offline monitor + dedupe  
+- `backend/scripts/*`: smoke/fullcheck (+ varsa m-check’ler)
+- `infra/`: docker-compose (postgres + redis)
+- `docs/`: PROJECT/API/DB/UI + bu dosya
+- `tools/pack.ps1`: GreenPack / kontrol paketleri (varsa)
 
-## Ortak kurallar
-- REST = CRUD/rapor; WS = canlı güncelleme/bildirim
-- DB live/history ayrımı: `GpsLast` + `GpsPoint`
-- GPS policy: canlı 10sn; history gate 30sn/50m (uygulanır)
-- Scope/rooms: `company:{id}`, `room:{id}`, `vehicle:{id}`, `shift:{id}`
+---
+
+## 2) Hızlı Doğrulama (Gate)
+
+### Minimum doğrulama
+- `/health` çağrısı `dbOk:true` dönmeli
+- `npm run smoke` PASS
+- `npm run fullcheck` PASS
+  - WS connect + `ws:ready`
+  - `gps:update` + `vehicle:status`
+  - LIVE→STALE→OFFLINE→LIVE transition + **dedupe** (aynı state’te spam yok)
+
+> Dedupe standardı: bildirim/WS yayınları **yalnızca state transition** olduğunda üretilir (LIVE→STALE gibi).
+> State değişmediyse aynı tip notification tekrar üretilmez.
+
+---
+
+## 3) Standartlar (Kısa)
+
+### 3.1 WS Scope / Rooms
+- Socket auth: token → user → role/scope
+- `ws:ready`: join olunan odalar döner
+- Event’ler:
+  - `gps:update` (konum güncellemesi)
+  - `vehicle:status` (LIVE/STALE/OFFLINE state)
+  - `eta:update`
+  - `notify:new`
+
+### 3.2 DB / Model kritik kuralları
+- Stop state: `PENDING / REACHED / SKIPPED`
+  - `reachedAt`, `skippedAt`, `updatedAt`
+- Request validation:
+  - `lat/lng` zorunlu
+  - aynı scope’da duplicate **OPEN** request → **409**
+- Template stop sırası:
+  - `order` alanı (veya reorder mekanizması)
+
+### 3.3 Güvenlik & RBAC
+- RBAC + scope zorunlu
+- Rate limit / abuse guard açık
+- **/admin ekranı sadece SUPER_ADMIN** (UI link + backend guard)
+
+### 3.4 Observability (M10)
+- `ApiRequest` middleware insert ✅
+- `/health` db ping + latency ✅
+- (Varsa) `AuditLog` ✅
+- 🟡 Plan: retention/cleanup job (logların eskisini silme/arsiv)
+
+---
+
+## 4) Mini Runbook (En Sık Hatalar)
+
+### 4.1 `EADDRINUSE: address already in use :::3000`
+- 3000 portunda başka process vardır → PID bulunup kapatılır.
+
+### 4.2 Prisma: `Can't reach database server at localhost:5433`
+- DB container çalışmıyor/healthy değil veya port yanlış.
+- Önce `infra` docker db/redis ayağa kalkmalı, sonra migrate/seed.
+
+### 4.3 Docker: `open //./pipe/dockerDesktopLinuxEngine`
+- Docker Desktop/Engine çalışmıyor ya da context sorunlu.
+- Docker’ı başlat, doğru context’i seç, tekrar dene.
+
+### 4.4 Backend log: `gpsStaleMonitor: DB not ready`
+- DB bağlanmadan monitor tick atlamıştır.
+- DB’yi ayağa kaldır → backend restart.
+
+### 4.5 Web çalışıyor ama API çağrıları düşmüyor
+- `VITE_API_URL` / proxy / baseURL yanlış olabilir.
+- `http://127.0.0.1:3000` hedeflenmeli; CORS ve header uyumu kontrol.
+
+### 4.6 Windows TIME_WAIT çok
+- Normal. Kritik olan 3000 LISTENING’in tek PID’de olması.
+
+---
+
+## 5) Değişiklik Politikası (Basit)
+- Bu dosya değiştiyse: PRIMER da değişmiş sayılır.
+- Yeni bir doğrulama script’i eklendiyse (smoke/fullcheck/m-check): Gate bölümüne eklenir.
+- Yeni bir “sık hata” görüldüyse: Runbook’a 1 madde olarak eklenir.
