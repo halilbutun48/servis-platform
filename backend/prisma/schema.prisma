@@ -365,3 +365,40 @@ model ShiftProgress {
 
   shift           Shift    @relation(fields: [shiftId], references: [id])
 }
+model ApiRequest {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+
+  method     String
+  path       String
+  status     Int
+  durationMs Int
+
+  ip         String?
+  userAgent  String?
+
+  userId     Int?
+  role       String?
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([path, createdAt])
+  @@index([role, createdAt])
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+
+  actorUserId Int?
+  actorRole   String?
+
+  action      String
+  entity      String
+  entityId    Int?
+  meta        Json?
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entity, entityId])
+}

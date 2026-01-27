@@ -1,8 +1,9 @@
-// backend/src/routes/shifts.js (M5 + M7)
+// backend/src/routes/shifts.js (M5 + M7 + M8 + M9 + M10 audit)
 import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { audit } from "../audit.js";
 
 const createShiftSchema = z.object({
   roomId: z.number().int().positive(),
@@ -64,10 +65,12 @@ const reachedSchema = z.object({ order: z.number().int().min(1) });
 function isEditableStatus(status) {
   return status === "DRAFT" || status === "REQUESTED";
 }
+
 const fromTemplateSchema = z.object({
   templateId: z.number().int().positive(),
   mode: z.enum(["REPLACE", "APPEND"]).default("REPLACE"),
 });
+
 // --- M7 helpers ---
 function haversineM(aLat, aLng, bLat, bLng) {
   const R = 6371000;
@@ -142,6 +145,7 @@ async function getShiftAndCheckScopeOrThrow(shiftId, user) {
   e.status = 403;
   throw e;
 }
+
 // --- M7: Request delegate detect (prisma.request olmayabilir) ---
 let _ReqDelegate = null;
 let _ReqLatField = "lat";
@@ -149,17 +153,17 @@ let _ReqLngField = "lng";
 let _ReqStatusField = "status";
 
 async function getRequestDelegateOrThrow() {
-  if (_ReqDelegate) {
-    return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
-  }
-
-  // ✅ M9: StopState geldiği için Stop modeli yanlışlıkla "request" sanılabiliyor.
-  // Request modelini sabitle: PickupRequest
+  // ✅ M9: StopState geldiği için yanlışlıkla Stop modeli "request" sanılabiliyor.
+  // Request modelini sabitle: PickupRequest (varsa HER ZAMAN bunu kullan)
   if (prisma.pickupRequest) {
     _ReqDelegate = prisma.pickupRequest;
     _ReqLatField = "lat";
     _ReqLngField = "lng";
     _ReqStatusField = "status";
+    return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
+  }
+
+  if (_ReqDelegate) {
     return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
   }
 
@@ -189,7 +193,9 @@ async function getRequestDelegateOrThrow() {
         _ReqStatusField = p.status;
 
         return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
-      } catch {}
+      } catch {
+        // continue
+      }
     }
   }
 
@@ -198,10 +204,32 @@ async function getRequestDelegateOrThrow() {
   throw e;
 }
 
-
-
 export function shiftsRouter(io) {
   const r = express.Router();
+
+  // ROOM/COMPANY/SUPER_ADMIN: list shifts
+  r.get("/", authRequired(), async (req, res) => {
+    const role = req.user?.role;
+
+    const where = {};
+    if (role === "ROOM") where.roomId = req.user.roomId;
+    else if (role === "COMPANY") where.companyId = req.user.companyId;
+    else if (role === "SUPER_ADMIN") {
+      // no filter
+    } else {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const items = await prisma.shift.findMany({
+      where,
+      orderBy: { id: "desc" },
+      include: { vehicle: true, driver: true, company: true, room: true },
+      take: 50,
+    });
+
+    // UI şu an array bekliyor → array dönelim
+    res.json(items);
+  });
 
   // DRIVER: my assigned shifts
   r.get("/my", authRequired(), requireRole("DRIVER"), async (req, res) => {
@@ -266,10 +294,20 @@ export function shiftsRouter(io) {
     if (!shift) return res.status(404).json({ error: "Shift not found" });
     if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
 
+    const vehicleId = parsed.data.vehicleId;
+    const driverId = parsed.data.driverId;
+
     const updated = await prisma.shift.update({
       where: { id },
-      data: { vehicleId: parsed.data.vehicleId, driverId: parsed.data.driverId, status: "APPROVED" },
+      data: { vehicleId, driverId, status: "APPROVED" },
       include: { stops: { orderBy: { order: "asc" } }, progress: true },
+    });
+
+    await audit(req, {
+      action: "SHIFT_APPROVE",
+      entity: "Shift",
+      entityId: updated.id,
+      meta: { vehicleId, driverId },
     });
 
     res.json(updated);
@@ -297,6 +335,12 @@ export function shiftsRouter(io) {
       where: { shiftId: updated.id },
       update: {},
       create: { shiftId: updated.id, lastReachedOrder: 0 },
+    });
+
+    await audit(req, {
+      action: "SHIFT_START",
+      entity: "Shift",
+      entityId: updated.id,
     });
 
     res.json(updated);
@@ -393,72 +437,66 @@ export function shiftsRouter(io) {
     await prisma.stop.delete({ where: { id: stopId } });
     res.json({ ok: true });
   });
-// COMPANY/ROOM: apply route template to shift stops (only in DRAFT/REQUESTED)
-r.post("/:id/stops/from-template", authRequired(), requireRole("COMPANY", "ROOM"), async (req, res) => {
-const id = Number(req.params.id);
-const parsed = fromTemplateSchema.safeParse(req.body ?? {});
-if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
+  // COMPANY/ROOM: apply route template to shift stops (only in DRAFT/REQUESTED)
+  r.post("/:id/stops/from-template", authRequired(), requireRole("COMPANY", "ROOM"), async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = fromTemplateSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-const shift = await prisma.shift.findUnique({
-where: { id },
-include: { stops: { orderBy: { order: "asc" } } },
-});
-if (!shift) return res.status(404).json({ error: "Shift not found" });
-if (!isEditableStatus(shift.status))
-return res.status(400).json({ error: "Stops can be edited only in DRAFT/REQUESTED" });
+    const shift = await prisma.shift.findUnique({
+      where: { id },
+      include: { stops: { orderBy: { order: "asc" } } },
+    });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (!isEditableStatus(shift.status))
+      return res.status(400).json({ error: "Stops can be edited only in DRAFT/REQUESTED" });
 
+    // scope
+    if (req.user.role === "COMPANY") {
+      if (!req.user.companyId || req.user.companyId !== shift.companyId)
+        return res.status(403).json({ error: "Forbidden" });
+    }
+    if (req.user.role === "ROOM") {
+      if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
+    }
 
-// scope
-if (req.user.role === "COMPANY") {
-if (!req.user.companyId || req.user.companyId !== shift.companyId)
-return res.status(403).json({ error: "Forbidden" });
-}
-if (req.user.role === "ROOM") {
-if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
-}
+    const tpl = await prisma.routeTemplate.findUnique({
+      where: { id: parsed.data.templateId },
+      include: { stops: { orderBy: { order: "asc" } } },
+    });
+    if (!tpl) return res.status(404).json({ error: "Template not found" });
+    if (tpl.roomId !== shift.roomId) return res.status(403).json({ error: "Template room mismatch" });
 
+    const mode = parsed.data.mode;
 
-const tpl = await prisma.routeTemplate.findUnique({
-where: { id: parsed.data.templateId },
-include: { stops: { orderBy: { order: "asc" } } },
-});
-if (!tpl) return res.status(404).json({ error: "Template not found" });
-if (tpl.roomId !== shift.roomId) return res.status(403).json({ error: "Template room mismatch" });
+    const maxOrder = (shift.stops ?? []).reduce((m, s) => Math.max(m, s.order), 0);
+    const rows = (tpl.stops ?? []).map((s) => ({
+      shiftId: shift.id,
+      name: s.name,
+      lat: s.lat,
+      lng: s.lng,
+      order: mode === "APPEND" ? maxOrder + s.order : s.order,
+      type: s.type,
+    }));
 
+    await prisma.$transaction(async (tx) => {
+      if (mode === "REPLACE") {
+        await tx.stop.deleteMany({ where: { shiftId: shift.id } });
+      }
+      if (rows.length) {
+        await tx.stop.createMany({ data: rows });
+      }
+    });
 
-const mode = parsed.data.mode;
+    // WS notify
+    io?.to(`room:${shift.roomId}`).emit("route:plan", { shiftId: shift.id });
+    io?.to(`company:${shift.companyId}`).emit("route:plan", { shiftId: shift.id });
+    io?.to(`shift:${shift.id}`).emit("route:plan", { shiftId: shift.id });
 
+    res.json({ ok: true, mode, created: rows.length });
+  });
 
-const maxOrder = (shift.stops ?? []).reduce((m, s) => Math.max(m, s.order), 0);
-const rows = (tpl.stops ?? []).map((s) => ({
-shiftId: shift.id,
-name: s.name,
-lat: s.lat,
-lng: s.lng,
-order: mode === "APPEND" ? (maxOrder + s.order) : s.order,
-type: s.type,
-}));
-
-
-await prisma.$transaction(async (tx) => {
-if (mode === "REPLACE") {
-await tx.stop.deleteMany({ where: { shiftId: shift.id } });
-}
-if (rows.length) {
-await tx.stop.createMany({ data: rows });
-}
-});
-
-
-// WS notify (M11 için iyi)
-io?.to(`room:${shift.roomId}`).emit("route:plan", { shiftId: shift.id });
-io?.to(`company:${shift.companyId}`).emit("route:plan", { shiftId: shift.id });
-io?.to(`shift:${shift.id}`).emit("route:plan", { shiftId: shift.id });
-
-
-res.json({ ok: true, mode, created: rows.length });
-});
   // COMPANY/ROOM: reorder stops (only in DRAFT/REQUESTED)
   r.put("/:id/stops/reorder", authRequired(), requireRole("COMPANY", "ROOM"), async (req, res) => {
     const id = Number(req.params.id);
@@ -557,143 +595,128 @@ res.json({ ok: true, mode, created: rows.length });
   // =======================
 
   // ROOM/COMPANY/SUPER_ADMIN: list suggestions (OPEN requests clustered)
-  r.get(
-    "/:id/stop-suggestions",
-    authRequired(),
-    requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
-        const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+  r.get("/:id/stop-suggestions", authRequired(), requireRole("ROOM", "COMPANY", "SUPER_ADMIN"), async (req, res) => {
+    try {
+      const shiftId = Number(req.params.id);
+      if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
 
-        await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+      await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
-        const radiusM = Number(req.query.radiusM ?? 120);
-        const onlyOpen = String(req.query.onlyOpen ?? "1") === "1";
+      const radiusM = Number(req.query.radiusM ?? 120);
+      const onlyOpen = String(req.query.onlyOpen ?? "1") === "1";
 
-        const { d: Req, latF, lngF, statusF } = await getRequestDelegateOrThrow();
+      const { d: Req, latF, lngF, statusF } = await getRequestDelegateOrThrow();
 
-        const where = { shiftId };
-        if (onlyOpen) where[statusF] = "OPEN";
+      const where = { shiftId };
+      if (onlyOpen) where[statusF] = "OPEN";
 
-        const select = { id: true };
-        select[latF] = true;
-        select[lngF] = true;
+      const select = { id: true };
+      select[latF] = true;
+      select[lngF] = true;
 
-        const reqs = await Req.findMany({ where, select });
+      const reqs = await Req.findMany({ where, select });
 
-        const points = reqs
-          .map((x) => ({ id: x.id, lat: Number(x[latF]), lng: Number(x[lngF]) }))
-          .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+      const points = reqs
+        .map((x) => ({ id: x.id, lat: Number(x[latF]), lng: Number(x[lngF]) }))
+        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
 
-        if (!points.length) return res.json({ items: [] });
+      if (!points.length) return res.json({ items: [] });
 
-        const clusters = clusterPoints(points, radiusM);
+      const clusters = clusterPoints(points, radiusM);
 
-        const items = clusters
-          .map((idxs, k) => {
-            const count = idxs.length;
-            const lat = idxs.reduce((s, i) => s + points[i].lat, 0) / count;
-            const lng = idxs.reduce((s, i) => s + points[i].lng, 0) / count;
-            const requestIds = idxs.map((i) => points[i].id);
-            return { id: `s-${shiftId}-${k + 1}`, lat, lng, count, requestIds };
-          })
-          .sort((a, b) => b.count - a.count);
+      const items = clusters
+        .map((idxs, k) => {
+          const count = idxs.length;
+          const lat = idxs.reduce((s, i) => s + points[i].lat, 0) / count;
+          const lng = idxs.reduce((s, i) => s + points[i].lng, 0) / count;
+          const requestIds = idxs.map((i) => points[i].id);
+          return { id: `s-${shiftId}-${k + 1}`, lat, lng, count, requestIds };
+        })
+        .sort((a, b) => b.count - a.count);
 
-        return res.json({ items });
-      } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
-      }
+      return res.json({ items });
+    } catch (e) {
+      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
     }
-  );
+  });
 
   // ROOM/SUPER_ADMIN: accept suggestion -> create COMMON stop
-  r.post(
-    "/:id/stops/from-suggestion",
-    authRequired(),
-    requireRole("ROOM", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
-        const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+  r.post("/:id/stops/from-suggestion", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+    try {
+      const shiftId = Number(req.params.id);
+      if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
 
-        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+      const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
-        if (shift.status === "ACTIVE") {
-          return res.status(400).json({ error: "Cannot add stop while shift is ACTIVE" });
-        }
-
-        const lat = Number(req.body?.lat);
-        const lng = Number(req.body?.lng);
-        const name = String(req.body?.name ?? "COMMON from requests");
-
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          return res.status(400).json({ error: "lat/lng required" });
-        }
-
-        const maxAgg = await prisma.stop.aggregate({
-          where: { shiftId },
-          _max: { order: true },
-        });
-        const nextOrder = (maxAgg?._max?.order ?? 0) + 1;
-
-        const stop = await prisma.stop.create({
-          data: { shiftId, name, lat, lng, order: nextOrder, type: "COMMON" },
-        });
-
-        return res.json({ ok: true, stop });
-      } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      if (shift.status === "ACTIVE") {
+        return res.status(400).json({ error: "Cannot add stop while shift is ACTIVE" });
       }
+
+      const lat = Number(req.body?.lat);
+      const lng = Number(req.body?.lng);
+      const name = String(req.body?.name ?? "COMMON from requests");
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return res.status(400).json({ error: "lat/lng required" });
+      }
+
+      const maxAgg = await prisma.stop.aggregate({
+        where: { shiftId },
+        _max: { order: true },
+      });
+      const nextOrder = (maxAgg?._max?.order ?? 0) + 1;
+
+      const stop = await prisma.stop.create({
+        data: { shiftId, name, lat, lng, order: nextOrder, type: "COMMON" },
+      });
+
+      return res.json({ ok: true, stop });
+    } catch (e) {
+      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
     }
-  );
+  });
 
   // =======================
   // Shift detail (include stops)
   // =======================
-  r.get(
-    "/:id(\\d+)",
-    authRequired(),
-    requireRole("ROOM", "COMPANY", "DRIVER", "SUPER_ADMIN"),
-    async (req, res) => {
-      const id = Number(req.params.id);
+  r.get("/:id(\\d+)", authRequired(), requireRole("ROOM", "COMPANY", "DRIVER", "SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
 
-      const shift = await prisma.shift.findUnique({
-        where: { id },
-        include: {
-          stops: { orderBy: { order: "asc" } },
-          progress: true,
-          vehicle: true,
-        },
-      });
+    const shift = await prisma.shift.findUnique({
+      where: { id },
+      include: {
+        stops: { orderBy: { order: "asc" } },
+        progress: true,
+        vehicle: true,
+      },
+    });
 
-      if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
 
-      // scope check
-      if (req.user.role === "ROOM") {
-        if (!req.user.roomId || req.user.roomId !== shift.roomId) {
-          return res.status(403).json({ error: "Forbidden" });
-        }
+    // scope check
+    if (req.user.role === "ROOM") {
+      if (!req.user.roomId || req.user.roomId !== shift.roomId) {
+        return res.status(403).json({ error: "Forbidden" });
       }
-
-      if (req.user.role === "COMPANY") {
-        if (!req.user.companyId || req.user.companyId !== shift.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
-        }
-      }
-
-      if (req.user.role === "DRIVER") {
-        const driver = await prisma.driver.findFirst({
-          where: { userId: req.user.id },
-          select: { id: true },
-        });
-        if (!driver) return res.status(400).json({ error: "Driver profile missing" });
-        if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
-      }
-
-      return res.json(shift);
     }
-  );
+
+    if (req.user.role === "COMPANY") {
+      if (!req.user.companyId || req.user.companyId !== shift.companyId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
+    if (req.user.role === "DRIVER") {
+      const driver = await prisma.driver.findFirst({
+        where: { userId: req.user.id },
+        select: { id: true },
+      });
+      if (!driver) return res.status(400).json({ error: "Driver profile missing" });
+      if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+    }
+
+    return res.json(shift);
+  });
 
   return r;
 }
