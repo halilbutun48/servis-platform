@@ -112,5 +112,11 @@ Company vardiya bazÄ±nda personel listesi yÃ¼kler â†’ sistem geocode/cache yapar
 - `docs/SPRINT_3_PLAN.md`
 - `docs/SPRINT_4_PLAN.md`
 
-## Plan Dokümanlarý
+## Plan Dokï¿½manlarï¿½
 - docs/SPRINT_1_PLAN.md`n- docs/SPRINT_2_PLAN.md`n- docs/SPRINT_3_PLAN.md`n- docs/SPRINT_4_PLAN.md`n
+## Gate & Dependency DokÃ¼manlarÄ±
+- `docs/MILESTONE_GATE_MATRIX.md`
+- `docs/DEPENDENCY_MAP.md`
+
+## Gate & Dependency Dokümanlarý
+- docs/MILESTONE_GATE_MATRIX.md`n- docs/DEPENDENCY_MAP.md`n
