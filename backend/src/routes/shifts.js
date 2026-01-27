@@ -149,10 +149,22 @@ let _ReqLngField = "lng";
 let _ReqStatusField = "status";
 
 async function getRequestDelegateOrThrow() {
-  if (_ReqDelegate) return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
+  if (_ReqDelegate) {
+    return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
+  }
+
+  // ✅ M9: StopState geldiği için Stop modeli yanlışlıkla "request" sanılabiliyor.
+  // Request modelini sabitle: PickupRequest
+  if (prisma.pickupRequest) {
+    _ReqDelegate = prisma.pickupRequest;
+    _ReqLatField = "lat";
+    _ReqLngField = "lng";
+    _ReqStatusField = "status";
+    return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
+  }
 
   const candidates = Object.keys(prisma).filter(
-    (k) => prisma[k] && typeof prisma[k].findMany === "function"
+    (k) => k !== "stop" && prisma[k] && typeof prisma[k].findMany === "function"
   );
 
   const probes = [
@@ -185,6 +197,9 @@ async function getRequestDelegateOrThrow() {
   e.status = 500;
   throw e;
 }
+
+
+
 export function shiftsRouter(io) {
   const r = express.Router();
 
@@ -512,15 +527,25 @@ res.json({ ok: true, mode, created: rows.length });
     if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
 
     const prev = shift.progress?.lastReachedOrder ?? 0;
-    const next = Math.max(prev, parsed.data.order);
+    const stop = (shift.stops ?? []).find((s) => s.order === parsed.data.order);
+    if (!stop) return res.status(404).json({ error: "Stop not found" });
 
-    const prog = await prisma.shiftProgress.upsert({
-      where: { shiftId: shift.id },
-      update: { lastReachedOrder: next },
-      create: { shiftId: shift.id, lastReachedOrder: next },
-    });
+    const next = Math.max(prev, stop.order);
+    const now = new Date();
 
-    res.json({ ok: true, lastReachedOrder: prog.lastReachedOrder });
+    await prisma.$transaction([
+      prisma.stop.update({
+        where: { id: stop.id },
+        data: { state: "REACHED", reachedAt: now, skippedAt: null },
+      }),
+      prisma.shiftProgress.upsert({
+        where: { shiftId: shift.id },
+        update: { lastReachedOrder: next },
+        create: { shiftId: shift.id, lastReachedOrder: next },
+      }),
+    ]);
+
+    res.json({ ok: true, lastReachedOrder: next, stopId: stop.id, state: "REACHED" });
   };
 
   r.post("/:id/reached", authRequired(), requireRole("DRIVER"), reachedHandler);

@@ -36,6 +36,29 @@ export function gpsRouter(io) {
       });
       if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
 
+      // =========================================================
+      // ✅ M9 GPS hardening
+      // Driver yalnızca kendi APPROVED/ACTIVE shift'inde atanmış araca GPS basabilir
+      // =========================================================
+      const senderDriver = await prisma.driver.findFirst({
+        where: { userId: u.id },
+        select: { id: true },
+      });
+      if (!senderDriver) return res.status(400).json({ error: "Driver profile not found" });
+
+      const allowedShift = await prisma.shift.findFirst({
+        where: {
+          driverId: senderDriver.id,
+          vehicleId,
+          status: { in: ["APPROVED", "ACTIVE"] },
+        },
+        select: { id: true },
+      });
+
+      if (!allowedShift) {
+        return res.status(403).json({ error: "Forbidden: driver not assigned to this vehicle" });
+      }
+
       // History point
       await prisma.gpsPoint.create({
         data: {
@@ -276,7 +299,6 @@ export function gpsRouter(io) {
           where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
           include: {
             stops: { orderBy: { order: "asc" } },
-            progress: true,
           },
         });
 
@@ -285,8 +307,7 @@ export function gpsRouter(io) {
         for (const sh of shifts) {
           if (!sh.stops?.length) continue;
 
-          const lastReachedOrder = sh.progress?.lastReachedOrder ?? 0;
-          const remainingStops = sh.stops.filter((s) => s.order > lastReachedOrder);
+          const remainingStops = sh.stops.filter((s) => s.state === "PENDING");
           if (!remainingStops.length) continue;
 
           const items = remainingStops.map((s) => {

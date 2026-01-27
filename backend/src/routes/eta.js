@@ -46,7 +46,7 @@ async function pickShift(vehicleId, shiftId) {
   if (shiftId) {
     const s = await prisma.shift.findUnique({
       where: { id: shiftId },
-      include: { stops: { orderBy: { order: "asc" } }, progress: true },
+      include: { stops: { orderBy: { order: "asc" } } },
     });
     if (!s) return null;
     if (s.vehicleId !== vehicleId) return null;
@@ -57,14 +57,14 @@ async function pickShift(vehicleId, shiftId) {
   const active = await prisma.shift.findFirst({
     where: { vehicleId, status: "ACTIVE" },
     orderBy: [{ startAt: "desc" }, { id: "desc" }],
-    include: { stops: { orderBy: { order: "asc" } }, progress: true },
+    include: { stops: { orderBy: { order: "asc" } } },
   });
   if (active && (active.stops?.length ?? 0) > 0) return active;
 
   const approved = await prisma.shift.findFirst({
     where: { vehicleId, status: "APPROVED" },
     orderBy: [{ startAt: "desc" }, { id: "desc" }],
-    include: { stops: { orderBy: { order: "asc" } }, progress: true },
+    include: { stops: { orderBy: { order: "asc" } } },
   });
   if (approved && (approved.stops?.length ?? 0) > 0) return approved;
 
@@ -81,8 +81,7 @@ async function computeEta(vehicleId, shiftId) {
   const { status, ageSec } = gpsStatusFromAt(last.at);
 
   const chosenShiftId = chosen?.id ?? null;
-  const lastReachedOrder = chosen?.progress?.lastReachedOrder ?? 0;
-  const remainingStops = (chosen?.stops ?? []).filter((s) => s.order > lastReachedOrder);
+  const remainingStops = (chosen?.stops ?? []).filter((s) => s.state === "PENDING");
 
   const stops = remainingStops.map((st) => {
     const km = haversineKm(last.lat, last.lng, st.lat, st.lng);

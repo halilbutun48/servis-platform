@@ -46,6 +46,12 @@ enum StopType {
   MANUAL
 }
 
+enum StopState {
+  PENDING
+  REACHED
+  SKIPPED
+}
+
 enum PickupRequestStatus {
   OPEN
   CANCELLED
@@ -207,9 +213,15 @@ model Stop {
   order   Int
   type    StopType
 
+  state     StopState @default(PENDING)
+  reachedAt DateTime?
+  skippedAt DateTime?
+  updatedAt DateTime  @updatedAt
+
   shift   Shift   @relation(fields: [shiftId], references: [id])
 
   @@index([shiftId, order])
+  @@index([shiftId, state, order])
 }
 model RouteTemplate {
 id Int @id @default(autoincrement())
