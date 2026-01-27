@@ -1,285 +1,162 @@
-M8-Shift’e template uygulama
+M0 — Guardrails
 
-Bunu en temiz “shift context” içinde yaparsın:
+ Yeni işlerde mümkünse feature gate/env ile aç/kapat (default kapalı ya da soft)
 
-Dosya: backend/src/routes/shifts.js
-Stop delete endpoint’i satır 357–377 civarında bitiyor, reorder satır 379’da başlıyor.
+ Her PR sonrası: npm run smoke + npm run fullcheck PASS
 
-✅ Tam araya yeni endpoint ekle (satır 378’e):
+ WS scope/rooms + dedupe davranışı bozulmayacak
 
-POST /api/shifts/:id/stops/from-template
+M1 — EPIC C: No-show / Ceza (hızlı değer)
 
-body: { templateId, mode: "REPLACE"|"APPEND" }
+DB
 
-REPLACE: shift’teki stopları sil → template stoplarını kopyala
-
-APPEND: mevcut stopların sonuna ekle (order devam ettir)
-
-Bu endpoint io var zaten shiftsRouter(io) içinde; başarılı olunca io.to(room/company/vehicle).emit("route:plan") yapmak M11 için iyi.
-
-M8-Test (gate)
-
-✅ Yeni script:
-
-backend/scripts/m8check.js (yeni)
-
-Gate otomatik buluyor (tools/gate.ps1 7..12 aralığında dosya varsa ekliyor). Sen sadece dosyayı koyacaksın.
-
-M9 — Driver operasyon + Stop state + GPS hardening (M8’den sonra yapmak doğru)
-M9-DB) Stop state ekle (skip/reopen için şart)
-
-Dosya: backend/prisma/schema.prisma
-
-1) Yeni enum: StopState
-
-enum StopType bloğu satır 44–48 arası.
-✅ enum PickupRequestStatus başlamadan önce (mevcut satır ~50) ekle:
-
-enum StopState { PENDING REACHED SKIPPED }
-
-2) Stop modeline state alanları
-
-Stop modeli satır 201–213.
-
-✅ satır 208 (type StopType) ile satır 210 (shift relation) arasına ekle:
-
-state StopState @default(PENDING)
-
-reachedAt DateTime?
-
-skippedAt DateTime?
-
-updatedAt DateTime @updatedAt
-
-Böylece “next stop” = state=PENDING ilk sıradaki stop olur.
-
-M9-API) “next stop / skip / reopen / end”
-1) Driver “active route” nextStop hesabı değişmeli
-
-Dosya: backend/src/routes/driver.js
-
-Şu an:
-
-satır 63: lastReachedOrder...
-
-satır 64: find(order > lastReachedOrder)
-
-✅ satır 63–64’ü değiştir:
-
-nextStop artık shift.stops içinden state === "PENDING" ilk stop (order asc)
-
-progress.lastReachedOrder yine UI için kalsın ama derive edebilirsin: max(REACHED order)
-
-Böyle yapmazsan skip/reopen UI mantığı bozulur.
-
-2) Driver reached endpoint stop.state set etmeli
-
-Dosya: backend/src/routes/driver.js
-Route: /driver/shifts/:shiftId/stops/:stopId/reached
-
-✅ Bu endpoint içinde:
-
-ilgili stop’u bul
-
-state=REACHED, reachedAt=now
-
-gerekiyorsa shift status ACTIVE
-
-nextStop’ı yeniden hesapla (PENDING)
-
-3) Yeni endpoint’ler (M9)
-
-Dosya: backend/src/routes/driver.js
-Reached endpoint’inin hemen altına ekle:
-
-POST /api/driver/shifts/:shiftId/stops/:stopId/skip
-
-state=SKIPPED, skippedAt=now
-
-POST /api/driver/shifts/:shiftId/stops/:stopId/reopen
-
-state=PENDING, skippedAt=null (veya reopenAt ayrı alan)
-
-POST /api/driver/shifts/:shiftId/complete
-
-shift.status = DONE, progress.completedAt = now
-
-POST /api/driver/shifts/:shiftId/cancel (opsiyonel ama M9 listende var)
-
-shift.status = CANCELLED (ShiftStatus enum/field genişletmen gerekir)
-
-Bu 4’ü koyunca M11 Driver UI çok rahat tamamlanır.
-
-M9-ETA hesapları stop.state’e göre güncellenmeli
-
-Dosya: backend/src/routes/eta.js
-
-Şu an remainingStops = order > lastReachedOrder mantığı var.
-✅ Bunu state === PENDING olarak değiştir.
-
-Bu değişiklik yapılmazsa:
-
-reopen/skip sonrası ETA “kafayı yer”
-
-driver panelde “kalan durak/eta” tutarsızlaşır
-
-M9-GPS hardening (driver sadece kendi aracına gps basabilsin)
-
-Dosya: backend/src/routes/gps.js
-
-✅ POST /api/gps içinde, driver için:
-
-driver.userId = req.user.id bulunur
-
-DB’de APPROVED/ACTIVE shift var mı? (driverId + vehicleId) yoksa 403
-
-Bu kontrol testlerini bozmaz çünkü seed’de driver+vehicle için approved shift var.
-
-M10 — Observability (api_requests + audit_log + retention + health detay)
-
-Bu repoda şu an observability yok; ekleyince M11’de “niye UI böyle” debug süper kolaylaşır.
-
-M10-DB
-
-Dosya: backend/prisma/schema.prisma
-ShiftProgress modeli en sonda bitiyor (son satır 323).
-
-✅ satır 323’ten sonra ekle:
-
-model ApiRequest
-
-model AuditLog
-
-indeksler (createdAt, route, userId, companyId, roomId vs.)
-
-M10-API middleware
-
-Dosya: backend/src/server.js
-
-app.use(morgan("dev")) (satır 34) → production’da kapat (ya da tamamen kaldır)
-
-apiRequestsMiddleware ekle (request start/end ölç, statusCode, latencyMs, userId/role, path)
-
-M10-retention job
-
-Dosya: backend/src/jobs/index.js
-
-yeni startRetentionJob() ekle (örn günlük)
-
-ApiRequest ve AuditLog eski kayıtları sil (örn 90 gün/2 yıl gibi env’den)
-
-M10-health detay
-
-Dosya: backend/src/server.js
-/health şu an sadece {ok, ts} dönüyor (satır 45–47).
-
-✅ /health içine:
-
-db SELECT 1 + redis ping + version + uptime + queue/monitor status
-
-M11 — Web UI tamam (templates + driver ops + build kontrolleri)
-
-Repoda map standardın zaten iyi (FitController vs).
-
-M11-1) Nav + Route ekleme
-
-Dosya: web/src/layout/NavDock.jsx
-
-ROOM menüsüne: Templates (satır 23–24 civarına)
-
-COMPANY menüsüne: Templates (satır 27–28 civarına)
-
-Dosya: web/src/App.jsx
-
-yeni panel importları
-
-path mapping:
-
-/room/templates
-
-/company/templates
-
-driver route paneline skip/reopen/complete butonları
-
-M11-2) WS invalidation zaten S0’da düzelecek
-
-Bu olmadan M11 “canlılık” hissi zayıf kalır.
-
-M11-3) Web build kontrolleri
-
-web/vite.config.js şu an http proxy. M12’ye giderken “env template + HTTPS opsiyon” koymak iyi olur.
-
-M12 — Release/Runbook + tek-komut pack
-
-Bu repoda tools/gate.ps1 var, ama “GreenPack tek komut” henüz yok.
-
-M12’de:
-
-docs/RUNBOOK.md (backup/restore, env örnekleri, release adımı)
-
-tools/pack.ps1 (tek komut):
-
-compose up
-
-gate (To param ile)
-
-web build
-
-(ops) export logs / panel-proof screenshot adımları
-
-imdi yol haritası (net sıra + her adımın çıktısı)
-1) M8 — RouteTemplate (DB + API + gate)
-
-Çıktı: gate.ps1 -To 8 PASS
-
-DB (Prisma)
-
-RouteTemplate, RouteTemplateStop
-
-Room.routeTemplates relation
-
-routeTemplateId + order unique
+ DriverPenalty (driverId, kind=NO_SHOW, startsAt, endsAt, reason, createdBy, createdAt) + index
 
 API
 
-GET/POST/PUT/DELETE /api/route-templates (ROOM)
+ POST /api/room/drivers/:id/penalties/no-show (months=3 default)
 
-POST/PUT/DELETE /api/route-templates/:id/stops
+ GET /api/drivers/:id/penalties (scope kontrollü)
 
-PUT /api/route-templates/:id/stops/reorder (M6 reorder contract aynen)
+Enforcement
 
-POST /api/shifts/:id/stops/from-template (REPLACE/APPEND)
+ Driver assignment/approve noktasında “aktif ceza varsa” engelle (403/409)
 
-Test
+WS/Notify/Audit
 
-backend/scripts/m8check.js
+ notify:new (driver + room)
 
-2) M9 — StopState + driver ops + GPS hardening
+ AuditLog: “NO_SHOW_PENALTY_CREATED” (kim verdi/niye)
 
-Çıktı: gate.ps1 -To 9 PASS
+DoD / Check
 
-Stop’a state(PENDING/REACHED/SKIPPED) + timestamps
+ Demo’da ceza ver → driver’a shift ata → engellendi
 
-Driver: next stop, skip, reopen, complete/cancel
+ fullcheck içine 1 senaryo ekle (penalty gate)
 
-ETA hesapları state=PENDING üzerinden
+M2 — EPIC D: KVKK Onay (Soft Policy ile başla)
 
-GPS: driver sadece kendi shift’inde atanmış araca gps basabilsin
+DB
 
-3) M10 — Observability
+ ConsentDocument (version, contentHash, publishedAt)
 
-Çıktı: gate.ps1 -To 10 PASS
+ UserConsent (userId, documentId, acceptedAt, ip/userAgent ops.)
 
-api_requests, audit_log, retention job, health detay
+API
 
-4) M11 — Web UI tamam + build gate
+ GET /api/consent/current
 
-Çıktı: gate.ps1 -To 11 PASS (+ web build)
+ POST /api/consent/accept
 
-templates panel, driver ops UI, ws status update vs.
+ /api/me → consent: { ok, documentId, acceptedAt }
 
-5) M12 — Release/Runbook
+Policy (Soft)
 
-Çıktı: gate.ps1 -To 12 PASS
+ Consent yoksa: “konum/harita gibi kritik” alanlarda kısıt/uyarı (bloklamayı sonra strict’e çekebiliriz)
 
-backup/restore runbook, env templates, tools/pack.ps1 tek komut
+Audit
+
+ Consent accept aksiyonu audit’e düşer
+
+DoD / Check
+
+ Consent yok → kısıt görülebilir
+
+ Accept → kısıt kalkar
+
+ fullcheck içine “consent state” kontrolü
+
+M3 — EPIC A / Sprint 1: Excel Import + Geocode Cache
+
+DB
+
+ Personel: addressText/addressNorm/lat/lng/geoStatus/geoUpdatedAt/geoManualOverride...
+
+ Import izleri: ShiftImport + ShiftImportRow
+
+API
+
+ POST /api/company/shifts
+
+ POST /api/company/shifts/:id/import-excel (xlsx/csv)
+
+Service
+
+ normalizeAddress() + cache kuralı + throttle
+
+ Status: OK | NEEDS_REVIEW | FAILED
+
+DoD / Check
+
+ Aynı adres tekrar import → geocode tekrar çağrılmaz
+
+ Adres değişince sadece o satır geocode olur
+
+ Import summary doğru (ok/failed/review)
+
+M4 — EPIC A / Sprint 2: Clustering + Draft → ROOM
+
+DB
+
+ StopAssignment (stopId, personelId, shiftId) + index/unique
+
+Service
+
+ clusterStops(points, maxWalkM) (maxWalkM garantili, medoid stop)
+
+Akış
+
+ Draft üretimi: durak insert + assignment insert
+
+ Shift status: DRAFT → REQUESTED
+
+ ROOM approve: vehicle+driver ata
+
+WS
+
+ shift:requested (room:{roomId}, company:{companyId})
+
+ shift:approved (driver:{driverId} + scope)
+
+DoD / Check
+
+ Room’da draft görünür → approve → driver durakları görür
+
+ Replace mode net (yeniden üretme davranışı)
+
+M5 — EPIC A / Sprint 3: Review UI + Kalite + Check Pack
+
+API
+
+ GET /api/company/personels?geoStatus=NEEDS_REVIEW
+
+ PUT /api/company/personels/:id/location (manual override)
+
+Kalite
+
+ Rota sıralama MVP: nearest-neighbor (+ opsiyon 2-opt)
+
+ m-check/fullcheck genişlet: import → cache → cluster → draft → approve
+
+DoD
+
+ NEEDS_REVIEW listesi yönetilebilir
+
+ Test pack regression yakalar
+
+M6 — EPIC B: Rapor/Export (MVP → Advanced)
+B-MVP (önce)
+
+ Rapor endpoint’leri: overspeed/offline/stop-times gibi “kolay metrikler”
+
+ CSV export (format standardı)
+
+ RBAC + pagination
+
+B-Advanced (sonra)
+
+ Günlük km hesabı (GPS history netleşince)
+
+ Async export / büyük veri kuyruğu
+
+ Performans/index iyileştirmeleri
