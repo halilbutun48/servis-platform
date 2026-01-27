@@ -47,9 +47,9 @@ try {
     @{ n = 3; name="M3"; cmd="node scripts/m3check.js" },
     @{ n = 4; name="M4"; cmd="node scripts/m4check.js" },
     @{ n = 5; name="M5"; cmd="node scripts/m5check.js" },
-    @{ n = 6; name="M6"; cmd="node scripts/m6check.js" }
-    @{ n = 7; name="M7"; cmd="node scripts/m7check.js" }
-    @{ n = 8; name="M8"; cmd="node scripts/m8check.js" }
+    @{ n = 6; name="M6"; cmd="node scripts/m6check.js" },
+    @{ n = 7; name="M7"; cmd="node scripts/m7check.js" },
+    @{ n = 8; name="M8"; cmd="node scripts/m8check.js" },
     @{ n = 9; name="M9"; cmd="node scripts/m9check.js" }
   )
 

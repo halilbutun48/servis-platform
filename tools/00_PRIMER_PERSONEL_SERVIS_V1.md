@@ -104,3 +104,66 @@
 ## Notlar
 - Shift template apply endpoint’i M8’de zaten geçti (REPLACE).
 - M9 ile “durak operasyonu” gerçek anlamda tamamlanacak (skip/reopen/complete).
+
+---
+
+# Repo Tarama (Servis/Backend Checklist) — 2026-01-27
+
+Bu repo snapshot'ı checklist'e göre **dosya bazlı** işaretlendi.
+
+## 1) Backend temel yapı
+
+✅ Var
+- backend/src/server.js (REST+WS mount)
+- backend/src/env.js
+- backend/src/prisma.js + backend/prisma/schema.prisma + migrations/
+- backend/src/auth/
+- backend/src/routes/: auth, me, companies, rooms, vehicles, drivers, shifts, gps, requests, routeTemplates, driver, personels, notifications, eta
+- backend/src/ws/
+- backend/src/middleware/apiRequestLog.js
+- backend/src/jobs/
+
+✅ Var
+- /health endpoint'i db ping + uptime + version içerir (M10/M11 kriteri)
+- apiRequestLog middleware server.js'de early mount edilir (M10 kriteri)
+- Public router factory'leri `companiesRouter()` gibi **çağrılarak** mount edilir
+
+## 2) Script/Gate paketi
+
+✅ Var
+- backend/scripts/smoke.js
+- backend/scripts/fullcheck.js
+- backend/scripts/m0check.js ... m10check.js
+
+✅ Var
+- backend/package.json scripts alias: smoke/fullcheck + m0..m12check
+
+## 3) DB/Model kritik alanlar
+
+✅ Var
+- Stop state: PENDING/REACHED/SKIPPED + reachedAt/skippedAt/updatedAt
+- Request validation: lat/lng zorunlu + DUPLICATE OPEN 409
+- Template stops ordering: order + idsInOrder + reorder endpoint
+
+## 4) Observability (M10)
+
+✅ Var
+- Prisma model: ApiRequest
+- Middleware: apiRequestLog.js
+- Prisma model: AuditLog + helper: src/audit.js
+
+🟡 İyileştirme
+- Retention/job (örn 90 gün / 2 yıl) otomasyonu (planlandı)
+
+## 5) Servis klasörü sık kaçanlar
+
+✅ Var
+- .env.example
+- infra/docker-compose.yml
+- docs: PROJECT_SPEC_V1.md, API_SPEC_V1.md, DB_SCHEMA_V1.md
+- tools: gate.ps1
+
+✅ Var
+- docs/UI_SPEC_V1.md
+- docs/STARTPACK_V1.md
+- tools/pack.ps1

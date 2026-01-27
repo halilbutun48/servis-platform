@@ -15,45 +15,122 @@ import { scopeRoomsForUser } from "./ws/scope.js";
 
 import { authRouter } from "./routes/auth.js";
 import { meRouter } from "./routes/me.js";
-import { vehiclesRouter } from "./routes/vehicles.js";
-import { driversRouter } from "./routes/drivers.js";
-import { shiftsRouter } from "./routes/shifts.js";
-import { gpsRouter } from "./routes/gps.js";
-import { requestsRouter } from "./routes/requests.js";
 import { notificationsRouter } from "./routes/notifications.js";
-import { driverRouter } from "./routes/driver.js";
 import { etaRouter } from "./routes/eta.js";
-import { personelsRouter } from "./routes/personels.js";
-import { companiesRouter } from "./routes/companies.js";
-import { roomsRouter } from "./routes/rooms.js";
-import { routeTemplatesRouter } from "./routes/routeTemplates.js";
+
+// Router export tipleri karışsa bile crash etmemek için namespace import
+import * as vehiclesMod from "./routes/vehicles.js";
+import * as driversMod from "./routes/drivers.js";
+import * as shiftsMod from "./routes/shifts.js";
+import * as gpsMod from "./routes/gps.js";
+import * as requestsMod from "./routes/requests.js";
+import * as driverMod from "./routes/driver.js";
+import * as personelsMod from "./routes/personels.js";
+
+// Public router’lar (io yok)
+import * as companiesMod from "./routes/companies.js";
+import * as roomsMod from "./routes/rooms.js";
+import * as routeTemplatesMod from "./routes/routeTemplates.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
 
+/**
+ * mod export'ları 3 tip olabilir:
+ * 1) export function xxxRouter(io){...}  => factory
+ * 2) export default function (io){...}  => factory
+ * 3) export default router               => Router objesi
+ *
+ * Biz server.js tarafında HER ZAMAN xxxRouter(...) çağırmak istiyoruz.
+ * Bu yüzden Router objesi gelirse factory wrapper’a sarıyoruz.
+ */
+function pickExport(mod, preferredName) {
+  const picked = mod?.[preferredName] ?? mod?.default;
+  if (!picked) return null;
+  if (typeof picked === "function") return picked;
+  return (..._args) => picked;
+}
+
+const vehiclesRouter = pickExport(vehiclesMod, "vehiclesRouter");
+const driversRouter = pickExport(driversMod, "driversRouter");
+const shiftsRouter = pickExport(shiftsMod, "shiftsRouter");
+const gpsRouter = pickExport(gpsMod, "gpsRouter");
+const requestsRouter = pickExport(requestsMod, "requestsRouter");
+const driverRouter = pickExport(driverMod, "driverRouter");
+const personelsRouter = pickExport(personelsMod, "personelsRouter");
+
+const companiesRouter = pickExport(companiesMod, "companiesRouter");
+const roomsRouter = pickExport(roomsMod, "roomsRouter");
+const routeTemplatesRouter = pickExport(routeTemplatesMod, "routeTemplatesRouter");
+
+for (const [name, fn] of Object.entries({
+  vehiclesRouter,
+  driversRouter,
+  shiftsRouter,
+  gpsRouter,
+  requestsRouter,
+  driverRouter,
+  personelsRouter,
+  companiesRouter,
+  roomsRouter,
+  routeTemplatesRouter,
+})) {
+  if (!fn) {
+    throw new Error(`Route export missing: ${name} (check named/default export)`);
+  }
+}
+
 const app = express();
-app.use(cors());
-app.use(helmet());
+
+// M11: proxy / güvenlik baseline
+app.disable("x-powered-by");
+app.set("trust proxy", 1);
+
+app.use(cors({ origin: ENV.CORS_ORIGIN === "*" ? true : ENV.CORS_ORIGIN }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+);
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 
 // M10: request log (must be early)
 app.use(apiRequestLog());
 
+// M11: Rate limit
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 600,
+    windowMs: ENV.RATE_LIMIT_WINDOW_MS,
+    max: ENV.RATE_LIMIT_MAX,
     standardHeaders: true,
     legacyHeaders: false,
   })
 );
 
-app.get("/health", (req, res) =>
-  res.json({ ok: true, ts: new Date().toISOString() })
-);
+// Health (M10+M11: db ping + uptime + version)
+app.get("/health", async (req, res) => {
+  const t0 = Date.now();
+  let dbOk = false;
 
-// public routes
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbOk = true;
+  } catch {
+    dbOk = false;
+  }
+
+  res.json({
+    ok: true, // geriye dönük uyum
+    ts: new Date().toISOString(),
+    uptimeSec: Math.round(process.uptime()),
+    dbOk,
+    dbLatencyMs: Date.now() - t0,
+    version: ENV.APP_VERSION,
+  });
+});
+
+// Public routes
 app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
 app.use("/api/notifications", notificationsRouter);
@@ -62,11 +139,11 @@ app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());
 
-// create server + io
+// Server + Socket.IO
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { cors: { origin: ENV.CORS_ORIGIN === "*" ? true : ENV.CORS_ORIGIN } });
 
-// ✅ SOCKET AUTH (decode token -> fetch user -> join scopes)
+// Socket auth: token -> decode -> DB user -> join scopes
 io.use(async (socket, next) => {
   try {
     const token =
@@ -76,28 +153,28 @@ io.use(async (socket, next) => {
 
     if (!token) return next(new Error("missing token"));
 
-    const decoded = verifyToken(String(token)); // { userId, role }
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const decoded = verifyToken(String(token));
+    const userId = decoded?.userId ?? decoded?.id;
+    if (!userId) return next(new Error("invalid token payload"));
+
+    const user = await prisma.user.findUnique({ where: { id: Number(userId) } });
     if (!user) return next(new Error("invalid user"));
 
     socket.user = user;
     return next();
-  } catch (e) {
+  } catch {
     return next(new Error("unauthorized"));
   }
 });
 
 io.on("connection", (socket) => {
   const user = socket.user;
-
   const rooms = scopeRoomsForUser(user);
   rooms.forEach((r) => socket.join(r));
-
   socket.emit("ws:ready", { userId: user.id, role: user.role, rooms });
-  socket.on("disconnect", () => {});
 });
 
-// io-needed routes
+// API routes needing io
 app.use("/api/vehicles", vehiclesRouter(io));
 app.use("/api/drivers", driversRouter(io));
 app.use("/api/shifts", shiftsRouter(io));
@@ -106,7 +183,7 @@ app.use("/api/requests", requestsRouter(io));
 app.use("/api/driver", driverRouter(io));
 app.use("/api/personels", personelsRouter(io));
 
-// monitors
+// Background monitors
 const stopMonitors = startMonitors(io);
 
 function shutdown() {
