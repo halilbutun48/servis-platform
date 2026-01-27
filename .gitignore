@@ -23,3 +23,7 @@ build/
 .env.*
 backend/indexes/
 backend/data/
+
+# local backups
+_bak_retention_*/
+

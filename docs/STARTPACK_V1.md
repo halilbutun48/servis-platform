@@ -108,7 +108,18 @@ GPS tabanlı **personel servisi** platformu:
 - `ApiRequest` middleware insert ✅
 - `/health` db ping + latency ✅
 - (Varsa) `AuditLog` ✅
-- 🟡 Plan: retention/cleanup job (logların eskisini silme/arsiv)
+- ✅ Log retention/cleanup job: `backend/src/jobs/retentionCleanup.js`
+  - Varsayılan: **ApiRequest + AuditLog = 730 gün (2 yıl)**
+  - Batch delete (lock riskini azaltır), periyodik (varsayılan 24 saatte 1)
+
+**ENV ayarları (opsiyonel):**
+- `LOG_RETENTION_ENABLED=1|0` (default 1)
+- `LOG_RETENTION_INTERVAL_HOURS=24` (default 24)
+- `LOG_RETENTION_INTERVAL_HOURS` küsuratlı verilebilir (test için); minimum 1 dakika
+- `LOG_RETENTION_BATCH_SIZE=5000` (default 5000)
+- `API_REQUEST_RETENTION_DAYS=730` (default 730)
+- `AUDIT_LOG_RETENTION_DAYS=730` (default 730)
+- `NOTIFICATION_RETENTION_DAYS=0` (default 0=kapalı)
 
 ---
 

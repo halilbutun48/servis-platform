@@ -3,6 +3,7 @@
 
 import { startGpsStaleMonitor } from "./gpsStaleMonitor.js";
 import { startMaintenanceMonitor } from "./maintenanceMonitor.js";
+import { startRetentionCleanup } from "./retentionCleanup.js";
 
 /**
  * @param {import('socket.io').Server} io
@@ -23,6 +24,15 @@ export function startMonitors(io, opts = {}) {
       intervalMs: opts.maintenanceIntervalMs,
       windowDays: opts.maintenanceWindowDays,
       dedupeHours: opts.maintenanceDedupeHours,
+    })
+  );
+
+  // M10+ops: log retention / cleanup (ApiRequest, AuditLog)
+  stopFns.push(
+    startRetentionCleanup(io, {
+      intervalMs: opts.retentionIntervalMs,
+      batchSize: opts.retentionBatchSize,
+      runOnStart: opts.retentionRunOnStart,
     })
   );
 
