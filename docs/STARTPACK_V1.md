@@ -148,8 +148,12 @@ GPS tabanlı **personel servisi** platformu:
 - Normal. Kritik olan 3000 LISTENING’in tek PID’de olması.
 
 ---
+### 4.7 Retention job çalışıyor mu?
+- Backend açılışında `retentionCleanup:` log satırı görülebilir (silme varsa yazar).
+- Ayarlar ENV ile kontrol edilir: `LOG_RETENTION_ENABLED`, `*_RETENTION_DAYS`, `LOG_RETENTION_INTERVAL_HOURS`.
 
 ## 5) Değişiklik Politikası (Basit)
 - Bu dosya değiştiyse: PRIMER da değişmiş sayılır.
 - Yeni bir doğrulama script’i eklendiyse (smoke/fullcheck/m-check): Gate bölümüne eklenir.
 - Yeni bir “sık hata” görüldüyse: Runbook’a 1 madde olarak eklenir.
+V1 sonrası backlog SSOT: docs/NEXT_BACKLOG_V1.md
