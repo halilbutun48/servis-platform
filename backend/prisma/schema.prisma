@@ -98,7 +98,7 @@ model Room {
   drivers   Driver[]
   shifts    Shift[]
   notifications Notification[]
-
+  routeTemplates RouteTemplate[]
   @@index([companyId])
 }
 
@@ -210,6 +210,38 @@ model Stop {
   shift   Shift   @relation(fields: [shiftId], references: [id])
 
   @@index([shiftId, order])
+}
+model RouteTemplate {
+id Int @id @default(autoincrement())
+roomId Int
+name String
+status String @default("ACTIVE")
+createdAt DateTime @default(now())
+
+
+room Room @relation(fields: [roomId], references: [id])
+stops RouteTemplateStop[]
+
+
+@@index([roomId])
+}
+
+
+model RouteTemplateStop {
+id Int @id @default(autoincrement())
+routeTemplateId Int
+name String
+lat Float
+lng Float
+order Int
+type StopType @default(COMMON)
+
+
+template RouteTemplate @relation(fields: [routeTemplateId], references: [id], onDelete: Cascade)
+
+
+@@unique([routeTemplateId, order])
+@@index([routeTemplateId, order])
 }
 
 model Personel {

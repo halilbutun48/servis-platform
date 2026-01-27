@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
+import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 
 export default function RoomMapPanel() {
   const { token } = useSession();
@@ -16,7 +17,7 @@ export default function RoomMapPanel() {
       const r = await api("/api/vehicles", { token });
       const items = Array.isArray(r) ? r : [];
       setVehicles(items);
-      // keep selection valid
+
       if (selectedVehicleId && !items.some((v) => v.id === selectedVehicleId)) setSelectedVehicleId(null);
       if (!selectedVehicleId && items.length) setSelectedVehicleId(items[0].id);
     } catch (e) {
@@ -27,9 +28,12 @@ export default function RoomMapPanel() {
   useEffect(() => { load(); }, []); // eslint-disable-line
   useAutoReload("vehicles", load);
 
-  const selected = useMemo(() => vehicles.find((v) => v.id === selectedVehicleId) || null, [vehicles, selectedVehicleId]);
+  const selected = useMemo(
+    () => vehicles.find((v) => v.id === selectedVehicleId) || null,
+    [vehicles, selectedVehicleId]
+  );
+
   const stops = useMemo(() => {
-    // pick latest approved/active shift stops if present
     const s = selected?.shifts?.[0];
     return Array.isArray(s?.stops) ? s.stops : [];
   }, [selected]);
@@ -45,22 +49,28 @@ export default function RoomMapPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      <div className="grid mapGrid" style={{ ['--mapH']: 'calc(100vh - 260px)' }}>
+      <div className="grid mapGrid" style={{ ["--mapH"]: "calc(100vh - 260px)" }}>
         <div className="card mapAsideCard">
           <div className="title" style={{ fontSize: 16 }}>Araçlar</div>
           <div className="muted" style={{ marginBottom: 10 }}>Marker'a tıkla veya listeden seç.</div>
+
           <div className="col mapAsideList">
-            {vehicles.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setSelectedVehicleId(v.id)}
-                className={v.id === selectedVehicleId ? "navItem active" : "navItem"}
-                style={{ justifyContent: "space-between" }}
-              >
-                <span>{v.plate}</span>
-                <span className="pill" data-status={v.status}>{v.status}</span>
-              </button>
-            ))}
+            {vehicles.map((v) => {
+              const ui = uiStatusFromVehicle(v);   // LIVE|STALE|OFFLINE
+              const pillKey = pillKeyFromUi(ui);   // ACTIVE|STALE|PASSIVE (CSS için)
+
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedVehicleId(v.id)}
+                  className={v.id === selectedVehicleId ? "navItem active" : "navItem"}
+                  style={{ justifyContent: "space-between" }}
+                >
+                  <span>{v.plate}</span>
+                  <span className="pill" data-status={pillKey}>{ui}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

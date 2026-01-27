@@ -1,7 +1,9 @@
+// web/src/panels/room/VehiclesPanel.jsx
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 
 export default function VehiclesPanel() {
   const { token } = useSession();
@@ -12,7 +14,7 @@ export default function VehiclesPanel() {
   const [plate, setPlate] = useState("");
   const [capacity, setCapacity] = useState(16);
   const [speedLimitKmh, setSpeedLimitKmh] = useState(80);
-  const [nextMaintenanceAt, setNextMaintenanceAt] = useState(""); // ISO string
+  const [nextMaintenanceAt, setNextMaintenanceAt] = useState(""); // datetime-local
 
   async function load() {
     setErr("");
@@ -74,7 +76,11 @@ export default function VehiclesPanel() {
           </div>
           <div className="col">
             <label className="muted">Bakım tarihi</label>
-            <input type="datetime-local" value={nextMaintenanceAt} onChange={(e) => setNextMaintenanceAt(e.target.value)} />
+            <input
+              type="datetime-local"
+              value={nextMaintenanceAt}
+              onChange={(e) => setNextMaintenanceAt(e.target.value)}
+            />
           </div>
           <div className="col" style={{ justifyContent: "end" }}>
             <button disabled={busy} type="submit">{busy ? "..." : "Ekle"}</button>
@@ -97,19 +103,31 @@ export default function VehiclesPanel() {
             </tr>
           </thead>
           <tbody>
-            {items.map((v) => (
-              <tr key={v.id}>
-                <td>{v.id}</td>
-                <td>{v.plate}</td>
-                <td><span className="pill" data-status={v.status}>{v.status}</span></td>
-                <td>{v.capacity}</td>
-                <td>{v.speedLimitKmh}</td>
-                <td className="muted">{v.nextMaintenanceAt ? String(v.nextMaintenanceAt) : "-"}</td>
-                <td className="muted">
-                  {v.gpsLast ? `${v.gpsLast.lat.toFixed(4)}, ${v.gpsLast.lng.toFixed(4)} • ${v.gpsLast.speed ?? "-"} km/h • ${String(v.gpsLast.status)}` : "-"}
-                </td>
-              </tr>
-            ))}
+            {items.map((v) => {
+              const ui = uiStatusFromVehicle(v);     // LIVE|STALE|OFFLINE
+              const pillKey = pillKeyFromUi(ui);     // ACTIVE|STALE|PASSIVE (CSS)
+
+              return (
+                <tr key={v.id}>
+                  <td>{v.id}</td>
+                  <td>{v.plate}</td>
+
+                  <td>
+                    <span className="pill" data-status={pillKey}>{ui}</span>
+                  </td>
+
+                  <td>{v.capacity}</td>
+                  <td>{v.speedLimitKmh}</td>
+                  <td className="muted">{v.nextMaintenanceAt ? String(v.nextMaintenanceAt) : "-"}</td>
+
+                  <td className="muted">
+                    {v.gpsLast
+                      ? `${v.gpsLast.lat.toFixed(4)}, ${v.gpsLast.lng.toFixed(4)} • ${v.gpsLast.speed ?? "-"} km/h • ${String(v.gpsLast.status)}`
+                      : "-"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

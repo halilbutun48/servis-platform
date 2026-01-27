@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { normalizeNotifV1 } from "../../utils/notificationV1";
+import { pillKeyFromAny } from "../../utils/uiStatus";
 
 function fmt(v) {
   if (v == null) return "";
@@ -19,7 +20,7 @@ function fmtAtCompact(v) {
   if (!v) return "";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  // daha kısa: DD.MM HH:mm:ss
+  // DD.MM HH:mm:ss
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
@@ -38,15 +39,13 @@ function fmtAge(ageSec) {
   return `${h}h`;
 }
 
-function chipClassByValue(v) {
-  const x = String(v || "").toUpperCase();
-  if (!x) return "chip";
-  if (x.includes("OFFLINE") || x === "STALE") return "chip chipDanger";
-  if (x.includes("RECOVERY") || x === "LIVE") return "chip chipOk";
-  if (x.includes("MAINT")) return "chip chipWarn";
-  if (x === "ACCEPTED") return "chip chipOk";
-  if (x === "CANCELLED") return "chip chipWarn";
-  return "chip";
+function uniq(arr) {
+  const s = new Set();
+  for (const x of arr) {
+    const t = String(x || "").trim();
+    if (t) s.add(t);
+  }
+  return Array.from(s).sort((a, b) => a.localeCompare(b));
 }
 
 export default function NotificationsPanel() {
@@ -55,6 +54,12 @@ export default function NotificationsPanel() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(null);
+
+  // Filters
+  const [q, setQ] = useState("");
+  const [fScope, setFScope] = useState("ALL");
+  const [fType, setFType] = useState("ALL");
+  const [fStatus, setFStatus] = useState("ALL");
 
   async function load() {
     if (!token) return;
@@ -90,18 +95,25 @@ export default function NotificationsPanel() {
       const atRaw = p.at ?? n?.createdAt ?? "";
       const at = fmtAtCompact(atRaw);
 
+      // UI text fields
+      const type = fmt(n?.type ?? "-");
+      const typeLabel = fmt(p.kind ?? n?.type ?? "-"); // önce kind yoksa type
+      const kind = fmt(p.kind ?? "");
+      const status = fmt(p.status ?? "");
+
       const payloadPretty = JSON.stringify(p, null, 2);
 
       return {
         key: n?.id ?? idx,
         id: n?.id ?? "-",
         scope: fmt(n?.scope ?? "-"),
-        type: fmt(n?.type ?? "-"),
+        type,
+        typeLabel,
         title,
         message,
         vehicleId: fmt(vehicleId),
-        kind: fmt(p.kind ?? ""),
-        status: fmt(p.status ?? ""),
+        kind,
+        status,
         ageSec: p.ageSec,
         at,
         atRaw: fmt(atRaw),
@@ -110,16 +122,60 @@ export default function NotificationsPanel() {
     });
   }, [items]);
 
+  const scopes = useMemo(() => uniq(rows.map((r) => r.scope)), [rows]);
+  const types = useMemo(() => uniq(rows.map((r) => r.typeLabel)), [rows]);
+  const statuses = useMemo(() => uniq(rows.map((r) => r.status).filter(Boolean)), [rows]);
+
+  const filteredRows = useMemo(() => {
+    const qq = String(q || "").trim().toLowerCase();
+
+    return rows.filter((r) => {
+      if (fScope !== "ALL" && r.scope !== fScope) return false;
+      if (fType !== "ALL" && r.typeLabel !== fType) return false;
+      if (fStatus !== "ALL" && r.status !== fStatus) return false;
+
+      if (!qq) return true;
+
+      const hay = [
+        r.id,
+        r.scope,
+        r.type,
+        r.typeLabel,
+        r.title,
+        r.message,
+        r.vehicleId,
+        r.kind,
+        r.status,
+      ]
+        .map((x) => String(x || "").toLowerCase())
+        .join(" | ");
+
+      return hay.includes(qq);
+    });
+  }, [rows, q, fScope, fType, fStatus]);
+
+  function resetFilters() {
+    setQ("");
+    setFScope("ALL");
+    setFType("ALL");
+    setFStatus("ALL");
+  }
+
   return (
     <div className="wrap notifWide">
       <style>{`
         .wrap.notifWide { max-width:none !important; width:100% !important; }
 
         .notifLayout { display:flex; flex-direction:column; gap:12px; min-height: calc(100vh - 120px); }
-        .notifTopbar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .notifTopbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+
+        .notifFilters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .notifFilters input, .notifFilters select {
+          height: 34px;
+          padding: 6px 10px;
+        }
 
         .notifTblCard { flex:1; min-height:420px; overflow:hidden; }
-        /* YATAY SCROLL İSTEMİYORUZ -> x hidden */
         .notifTblWrap { height:100%; overflow-y:auto; overflow-x:hidden; }
 
         .notifTbl { width:100%; border-collapse:collapse; table-layout:fixed; }
@@ -135,7 +191,6 @@ export default function NotificationsPanel() {
         .nowrap { white-space:nowrap; }
         .ellipsis { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-        /* 2 satır clamp (Message için) */
         .clamp2{
           display:-webkit-box;
           -webkit-line-clamp:2;
@@ -143,32 +198,29 @@ export default function NotificationsPanel() {
           overflow:hidden;
         }
 
-        .chip {
-          display:inline-flex; align-items:center; gap:6px;
-          padding:3px 8px; border-radius:999px;
-          border:1px solid rgba(255,255,255,0.12);
-          background: rgba(255,255,255,0.06);
-          font-weight:700; font-size:11px;
-          max-width:100%;
-        }
-        .chipOk { border-color: rgba(46, 204, 113, 0.35); background: rgba(46, 204, 113, 0.12); }
-        .chipWarn { border-color: rgba(241, 196, 15, 0.35); background: rgba(241, 196, 15, 0.12); }
-        .chipDanger { border-color: rgba(231, 76, 60, 0.35); background: rgba(231, 76, 60, 0.12); }
-
-        /* Daha kompakt kolonlar (yatay taşmayı azaltır) */
+        /* Daha kompakt kolonlar */
         .colId { width:54px; }
-        .colType { width:116px; }
+        .colType { width:160px; }
         .colScope { width:96px; }
         .colAt { width:120px; }
         .colTitle { width:160px; }
-        .colMsg { width:auto; }        /* kalan alan Message */
+        .colMsg { width:auto; }
         .colVehicle { width:68px; }
-        .colKind { width:120px; }
-        .colStatus { width:110px; }
+        .colKind { width:150px; }
+        .colStatus { width:120px; }
         .colAge { width:60px; }
         .colPayload { width:72px; }
 
-        /* küçük ekran: bazı kolonları gizle (opsiyonel ama çok işe yarıyor) */
+        /* .pill taşmasın */
+        .pillEllip {
+          display:inline-block;
+          max-width: 150px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          vertical-align: top;
+        }
+
         @media (max-width: 1150px){
           .hideMd { display:none; }
         }
@@ -184,9 +236,46 @@ export default function NotificationsPanel() {
               <h3 style={{ margin: 0 }}>Notifications</h3>
               <div className="muted">Son 100 kayıt</div>
             </div>
-            <button onClick={load} disabled={busy}>
-              {busy ? "..." : "Yenile"}
-            </button>
+
+            <div className="notifFilters">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Ara: id / type / title / message / veh..."
+                style={{ minWidth: 240 }}
+              />
+
+              <select value={fScope} onChange={(e) => setFScope(e.target.value)}>
+                <option value="ALL">Scope: ALL</option>
+                {scopes.map((x) => (
+                  <option key={x} value={x}>{x}</option>
+                ))}
+              </select>
+
+              <select value={fType} onChange={(e) => setFType(e.target.value)} style={{ minWidth: 160 }}>
+                <option value="ALL">Type: ALL</option>
+                {types.map((x) => (
+                  <option key={x} value={x}>{x}</option>
+                ))}
+              </select>
+
+              <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} style={{ minWidth: 150 }}>
+                <option value="ALL">Status: ALL</option>
+                {statuses.map((x) => (
+                  <option key={x} value={x}>{x}</option>
+                ))}
+              </select>
+
+              <button onClick={resetFilters} type="button">Sıfırla</button>
+
+              <button onClick={load} disabled={busy} type="button">
+                {busy ? "..." : "Yenile"}
+              </button>
+            </div>
+          </div>
+
+          <div className="muted" style={{ marginTop: 8 }}>
+            Gösterilen: <b>{filteredRows.length}</b> / {rows.length}
           </div>
         </div>
 
@@ -194,8 +283,8 @@ export default function NotificationsPanel() {
 
         <div className="card notifTblCard">
           <div className="notifTblWrap">
-            {rows.length === 0 ? (
-              <div className="muted">Henüz bildirim yok (veya endpoint boş dönüyor).</div>
+            {filteredRows.length === 0 ? (
+              <div className="muted">Bildirim yok (veya filtreler her şeyi eledi).</div>
             ) : (
               <table className="notifTbl">
                 <colgroup>
@@ -229,13 +318,13 @@ export default function NotificationsPanel() {
                 </thead>
 
                 <tbody>
-                  {rows.map((r) => (
+                  {filteredRows.map((r) => (
                     <tr key={r.key}>
                       <td className="mono nowrap">{r.id}</td>
 
-                      <td>
-                        <span className={chipClassByValue(r.type)} title={r.type}>
-                          <span className="ellipsis" style={{ maxWidth: 96 }}>{r.type}</span>
+                      <td title={r.typeLabel}>
+                        <span className="pill pillEllip" data-status={pillKeyFromAny(r.typeLabel)}>
+                          {r.typeLabel}
                         </span>
                       </td>
 
@@ -255,20 +344,20 @@ export default function NotificationsPanel() {
 
                       <td className="hideMd muted mono nowrap">{r.vehicleId || "-"}</td>
 
-                      <td className="hideMd">
+                      <td className="hideMd" title={r.kind || "-"}>
                         {r.kind ? (
-                          <span className={chipClassByValue(r.kind)} title={r.kind}>
-                            <span className="ellipsis" style={{ maxWidth: 96 }}>{r.kind}</span>
+                          <span className="pill pillEllip" data-status={pillKeyFromAny(r.kind)}>
+                            {r.kind}
                           </span>
                         ) : (
                           <span className="muted">-</span>
                         )}
                       </td>
 
-                      <td className="hideSm">
+                      <td className="hideSm" title={r.status || "-"}>
                         {r.status ? (
-                          <span className={chipClassByValue(r.status)} title={r.status}>
-                            <span className="ellipsis" style={{ maxWidth: 90 }}>{r.status}</span>
+                          <span className="pill pillEllip" data-status={pillKeyFromAny(r.status)}>
+                            {r.status}
                           </span>
                         ) : (
                           <span className="muted">-</span>
@@ -280,7 +369,12 @@ export default function NotificationsPanel() {
                       </td>
 
                       <td>
-                        <button style={{ padding: "6px 10px" }} onClick={() => setSelected(r)} title="v1 payload">
+                        <button
+                          style={{ padding: "6px 10px" }}
+                          onClick={() => setSelected(r)}
+                          title="v1 payload"
+                          type="button"
+                        >
                           Detay
                         </button>
                       </td>
@@ -315,11 +409,14 @@ export default function NotificationsPanel() {
             <div className="topbar" style={{ marginBottom: 12 }}>
               <div>
                 <h3 style={{ margin: 0 }}>Notification #{selected.id}</h3>
-                <div className="muted mono">
-                  {selected.type} • {selected.scope} • {selected.at}
+                <div className="muted mono" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                  <span className="pill" data-status={pillKeyFromAny(selected.typeLabel)}>{selected.typeLabel}</span>
+                  <span className="pill" data-status={pillKeyFromAny(selected.status || "")}>{selected.status || "-"}</span>
+                  <span className="mono">{selected.scope}</span>
+                  <span className="mono">{selected.at}</span>
                 </div>
               </div>
-              <button onClick={() => setSelected(null)}>Kapat</button>
+              <button onClick={() => setSelected(null)} type="button">Kapat</button>
             </div>
 
             <div className="muted" style={{ marginBottom: 8 }}>

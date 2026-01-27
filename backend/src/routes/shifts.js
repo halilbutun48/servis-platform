@@ -64,7 +64,10 @@ const reachedSchema = z.object({ order: z.number().int().min(1) });
 function isEditableStatus(status) {
   return status === "DRAFT" || status === "REQUESTED";
 }
-
+const fromTemplateSchema = z.object({
+  templateId: z.number().int().positive(),
+  mode: z.enum(["REPLACE", "APPEND"]).default("REPLACE"),
+});
 // --- M7 helpers ---
 function haversineM(aLat, aLng, bLat, bLng) {
   const R = 6371000;
@@ -375,7 +378,72 @@ export function shiftsRouter(io) {
     await prisma.stop.delete({ where: { id: stopId } });
     res.json({ ok: true });
   });
+// COMPANY/ROOM: apply route template to shift stops (only in DRAFT/REQUESTED)
+r.post("/:id/stops/from-template", authRequired(), requireRole("COMPANY", "ROOM"), async (req, res) => {
+const id = Number(req.params.id);
+const parsed = fromTemplateSchema.safeParse(req.body ?? {});
+if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
+
+const shift = await prisma.shift.findUnique({
+where: { id },
+include: { stops: { orderBy: { order: "asc" } } },
+});
+if (!shift) return res.status(404).json({ error: "Shift not found" });
+if (!isEditableStatus(shift.status))
+return res.status(400).json({ error: "Stops can be edited only in DRAFT/REQUESTED" });
+
+
+// scope
+if (req.user.role === "COMPANY") {
+if (!req.user.companyId || req.user.companyId !== shift.companyId)
+return res.status(403).json({ error: "Forbidden" });
+}
+if (req.user.role === "ROOM") {
+if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
+}
+
+
+const tpl = await prisma.routeTemplate.findUnique({
+where: { id: parsed.data.templateId },
+include: { stops: { orderBy: { order: "asc" } } },
+});
+if (!tpl) return res.status(404).json({ error: "Template not found" });
+if (tpl.roomId !== shift.roomId) return res.status(403).json({ error: "Template room mismatch" });
+
+
+const mode = parsed.data.mode;
+
+
+const maxOrder = (shift.stops ?? []).reduce((m, s) => Math.max(m, s.order), 0);
+const rows = (tpl.stops ?? []).map((s) => ({
+shiftId: shift.id,
+name: s.name,
+lat: s.lat,
+lng: s.lng,
+order: mode === "APPEND" ? (maxOrder + s.order) : s.order,
+type: s.type,
+}));
+
+
+await prisma.$transaction(async (tx) => {
+if (mode === "REPLACE") {
+await tx.stop.deleteMany({ where: { shiftId: shift.id } });
+}
+if (rows.length) {
+await tx.stop.createMany({ data: rows });
+}
+});
+
+
+// WS notify (M11 için iyi)
+io?.to(`room:${shift.roomId}`).emit("route:plan", { shiftId: shift.id });
+io?.to(`company:${shift.companyId}`).emit("route:plan", { shiftId: shift.id });
+io?.to(`shift:${shift.id}`).emit("route:plan", { shiftId: shift.id });
+
+
+res.json({ ok: true, mode, created: rows.length });
+});
   // COMPANY/ROOM: reorder stops (only in DRAFT/REQUESTED)
   r.put("/:id/stops/reorder", authRequired(), requireRole("COMPANY", "ROOM"), async (req, res) => {
     const id = Number(req.params.id);

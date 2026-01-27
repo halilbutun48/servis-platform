@@ -68,6 +68,7 @@ export function SessionProvider({ children }) {
     s.on("route:plan", () => invalidate("shifts"));
     s.on("route:progress", () => invalidate("shifts"));
     s.on("gps:update", () => invalidate("vehicles"));
+    s.on("vehicle:status", () => invalidate("vehicles"));
     s.on("eta:update", () => invalidate("eta"));
     s.on("notif:new", () => invalidate("notifications"));
 

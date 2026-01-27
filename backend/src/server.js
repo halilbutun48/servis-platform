@@ -24,8 +24,10 @@ import "dotenv/config";
 import { personelsRouter } from "./routes/personels.js";
 import { companiesRouter } from "./routes/companies.js";
 import { roomsRouter } from "./routes/rooms.js";
-
 import { startMonitors } from "./jobs/index.js";
+
+//yeni eklediklerim m8 için
+import { routeTemplatesRouter } from "./routes/routeTemplates.js";
 
 const app = express();
 app.use(cors());
@@ -52,7 +54,7 @@ app.use("/api/notifications", notificationsRouter);
 app.use("/api/eta", etaRouter);
 app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
-
+app.use("/api/route-templates", routeTemplatesRouter()); //m8 için 
 
 const server = http.createServer(app);
 const io = new Server(server, {

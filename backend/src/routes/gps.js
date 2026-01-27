@@ -236,6 +236,7 @@ export function gpsRouter(io) {
               driverId: t.driverId, // null olabilir -> yine de DRIVER notif oluşur
               userId: t.userId,
               vehicleId,
+              dedupeKey: "", // ✅ overspeed için dedupe yok
               roomId: vehicle.roomId,
               companyId: vehicle.room.companyId,
             });
@@ -249,6 +250,7 @@ export function gpsRouter(io) {
             roomId: vehicle.roomId,
             companyId: vehicle.room.companyId,
             vehicleId,
+            dedupeKey: "", // ✅ overspeed için dedupe yok
           });
 
           await createAndEmitNotification({
@@ -259,6 +261,7 @@ export function gpsRouter(io) {
             companyId: vehicle.room.companyId,
             roomId: vehicle.roomId,
             vehicleId,
+            dedupeKey: "", // ✅ overspeed için dedupe yok
           });
         } catch (e) {
           console.error("OVERSPEED notif error:", e);

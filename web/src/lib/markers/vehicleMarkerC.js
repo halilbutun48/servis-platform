@@ -1,3 +1,4 @@
+// web/src/lib/markers/vehicleMarkerC.js
 import L from "leaflet";
 
 function escHtml(s) {
@@ -9,6 +10,23 @@ function escHtml(s) {
 
 let _uid = 0;
 
+// ✅ Icon cache: status/heading değişince icon güncellensin
+const _iconCache = new Map();
+const CACHE_MAX = 2000;
+
+function cacheGet(key) {
+  return _iconCache.get(key);
+}
+
+function cacheSet(key, val) {
+  _iconCache.set(key, val);
+  // basit limit (LRU değil ama yeterli)
+  if (_iconCache.size > CACHE_MAX) {
+    const firstKey = _iconCache.keys().next().value;
+    if (firstKey) _iconCache.delete(firstKey);
+  }
+}
+
 export function makeVehicleMarkerC({ plate, status = "online", heading = 0 }) {
   const st = String(status || "online").toLowerCase(); // online|stale|offline
   const safePlate = escHtml(plate && String(plate).trim() ? plate : "ARAC");
@@ -16,9 +34,20 @@ export function makeVehicleMarkerC({ plate, status = "online", heading = 0 }) {
   const h = Number(heading);
   const rot = Number.isFinite(h) ? h : 0;
 
+  // heading çok sık değişebileceği için bucket’layalım (10 derece)
+  const rotBucket = Math.round(rot / 10) * 10;
+
+  // ✅ Cache key: plate + status + heading bucket
+  const cacheKey = `${safePlate}|${st}|${rotBucket}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
   // Ayni sayfada birden fazla marker olunca <defs id> cakismasin
   _uid = (_uid + 1) % 1000000;
   const gid = `vmcBusG_${_uid}`;
+
+  // ✅ UI label: ONLINE yerine LIVE
+  const labelText = st === "online" ? "LIVE" : st.toUpperCase();
 
   const html = `
     <div class="vmc vmc--${st}">
@@ -27,7 +56,7 @@ export function makeVehicleMarkerC({ plate, status = "online", heading = 0 }) {
         <span class="vmc-plate">${safePlate}</span>
         <span class="vmc-pill">
           <span class="vmc-pillDot" aria-hidden="true"></span>
-          ${st.toUpperCase()}
+          ${labelText}
         </span>
       </div>
 
@@ -98,11 +127,14 @@ export function makeVehicleMarkerC({ plate, status = "online", heading = 0 }) {
     </div>
   `;
 
-  return new L.DivIcon({
+  const icon = new L.DivIcon({
     className: "vmc-root",
     html,
     iconSize: [240, 96],
     iconAnchor: [28, 82],
     popupAnchor: [0, -78],
   });
+
+  cacheSet(cacheKey, icon);
+  return icon;
 }
