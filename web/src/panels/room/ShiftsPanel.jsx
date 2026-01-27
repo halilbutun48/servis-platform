@@ -1,3 +1,4 @@
+//web/src/panels/room/ShiftsPanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -17,7 +18,7 @@ export default function RoomShiftsPanel() {
     setErr("");
     try {
       const [s, v, d] = await Promise.all([
-        api("/api/shifts/my", { token }),
+        api("/api/shifts", { token }),
         api("/api/vehicles", { token }),
         api("/api/drivers", { token }),
       ]);

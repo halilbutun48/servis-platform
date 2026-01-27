@@ -60,7 +60,7 @@ async function login(email, password) {
 }
 
 function ok(msg) {
-  console.log(`[OK] ${msg}`);
+  console.log(`✅ ${msg}`);
 }
 
 async function main() {
@@ -129,7 +129,7 @@ async function main() {
   }
   ok("gps hardening 403 ok (driver not assigned vehicle)");
 
-  console.log("\nM9CHECK PASS");
+  console.log("\n✅ M9CHECK PASS");
 }
 
 main().catch((e) => {

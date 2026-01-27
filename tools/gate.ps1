@@ -1,7 +1,7 @@
 # gate.ps1
 param(
   [ValidateRange(0,12)]
-  [int]$To = 6,                  # M0..M$To
+  [int]$To = 9,                  # M0..M$To
 
   [string]$ComposeDir = "D:\personel-servis-v1\infra",
   [string]$RepoDir    = "D:\personel-servis-v1",
@@ -39,7 +39,7 @@ try {
     curl.exe -s http://127.0.0.1:3000/health | Out-Host
   }
 
-  # M0..M6 her zaman listede
+  # M0..M9 her zaman listede
   $checks = @(
     @{ n = 0; name="M0"; cmd="node scripts/m0check.js" },
     @{ n = 1; name="M1"; cmd="node scripts/m1check.js" },
@@ -48,10 +48,13 @@ try {
     @{ n = 4; name="M4"; cmd="node scripts/m4check.js" },
     @{ n = 5; name="M5"; cmd="node scripts/m5check.js" },
     @{ n = 6; name="M6"; cmd="node scripts/m6check.js" }
+    @{ n = 7; name="M7"; cmd="node scripts/m7check.js" }
+    @{ n = 8; name="M8"; cmd="node scripts/m8check.js" }
+    @{ n = 9; name="M9"; cmd="node scripts/m9check.js" }
   )
 
-  # M7..M12: sadece dosya varsa ekle (M6 tekrar eklenmesin diye 7'den başlıyor)
-  foreach($n in 7..12){
+  # M10..M12: sadece dosya varsa ekle (M9 tekrar eklenmesin diye10'den başlıyor)
+  foreach($n in 10..12){
     $p = Join-Path $RepoDir ("backend\scripts\m{0}check.js" -f $n)
     if(Test-Path $p){
       $checks += @{ n = $n; name=("M{0}" -f $n); cmd=("node scripts/m{0}check.js" -f $n) }
