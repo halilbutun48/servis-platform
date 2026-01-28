@@ -20,7 +20,7 @@ export default function DriverMapPanel() {
 
       // ✅ driver için doğru endpoint
       const s = await api("/api/shifts/my", { token });
-      setShifts(Array.isArray(s) ? s : []);
+      setShifts(Array.isArray(s) ? s : (s?.items ?? []));
 
       const firstVeh = Array.isArray(v) && v[0] ? v[0].id : null;
       setSelectedVehicleId((x) => x ?? firstVeh);

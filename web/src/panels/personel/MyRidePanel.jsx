@@ -13,7 +13,7 @@ export default function MyRidePanel() {
     setErr("");
     try {
       const r = await api("/api/shifts/my", { token });
-      setShifts(Array.isArray(r) ? r : []);
+      setShifts(Array.isArray(r) ? r : (r?.items ?? []));
     } catch (e) {
       setErr(String(e?.message || e));
     }

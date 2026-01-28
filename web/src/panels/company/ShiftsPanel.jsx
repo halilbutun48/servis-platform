@@ -16,7 +16,7 @@ export default function CompanyShiftsPanel() {
   async function load() {
     setErr("");
     try {
-      const r = await api("/api/shifts/my", { token });
+      const r = await api("/api/shifts", { token });
       setItems(Array.isArray(r) ? r : []);
     } catch (e) {
       setErr(String(e?.message || e));

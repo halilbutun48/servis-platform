@@ -231,8 +231,12 @@ export function shiftsRouter(io) {
     res.json(items);
   });
 
-  // DRIVER: my assigned shifts
-  r.get("/my", authRequired(), requireRole("DRIVER"), async (req, res) => {
+ // DRIVER or PERSONEL: my shifts
+r.get("/my", authRequired(), async (req, res) => {
+  const role = req.user?.role;
+
+  // DRIVER: assigned shifts
+  if (role === "DRIVER") {
     const driver = await prisma.driver.findFirst({
       where: { userId: req.user.id },
       select: { id: true },
@@ -246,9 +250,57 @@ export function shiftsRouter(io) {
       take: 20,
     });
 
-    res.json({ items });
-  });
+    return res.json({ items });
+  }
 
+  // PERSONEL: shifts where this personel has pickup request (OPEN/ACCEPTED)
+  if (role === "PERSONEL") {
+    const personel = await prisma.personel.findFirst({
+      where: { userId: req.user.id },
+      select: { id: true, companyId: true },
+    });
+    if (!personel) return res.json({ items: [] });
+
+    const prs = await prisma.pickupRequest.findMany({
+      where: {
+        personelId: personel.id,
+        status: { in: ["OPEN", "ACCEPTED"] },
+        shift: {
+          is: {
+            companyId: personel.companyId,
+            status: { in: ["APPROVED", "ACTIVE"] },
+          },
+        },
+      },
+      orderBy: { id: "desc" },
+      include: {
+        shift: {
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+          },
+        },
+      },
+      take: 20,
+    });
+
+    // dedupe same shift (if multiple pickup requests exist)
+    const seen = new Set();
+    const items = [];
+    for (const pr of prs) {
+      const sh = pr.shift;
+      if (!sh) continue;
+      if (seen.has(sh.id)) continue;
+      seen.add(sh.id);
+      items.push(sh);
+    }
+
+    return res.json({ items });
+  }
+
+  return res.status(403).json({ error: "Forbidden" });
+});
   // COMPANY: create shift (with optional initial stops)
   r.post("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const parsed = createShiftSchema.safeParse(req.body);
