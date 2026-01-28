@@ -88,17 +88,26 @@ async function main(){
   console.log("✅ /health");
 
   // 2) logins
-  const driverToken = await login("driver@demo.com","demo123");
-  const roomToken   = await login("room@demo.com","demo123");
-  const companyToken= await login("company@demo.com","demo123");
-  console.log("✅ login(driver/room/company)");
+  const driverToken  = await login("driver@demo.com","demo123");
+  const roomToken    = await login("room@demo.com","demo123");
+  const companyToken = await login("company@demo.com","demo123");
+  const personelToken= await login("personel@demo.com","demo123");
+  console.log("✅ login(driver/room/company/personel)");
 
   // 3) WS connect
   const driverWS = await connectWs(driverToken,"driver");
   const roomWS   = await connectWs(roomToken,"room");
   const compWS   = await connectWs(companyToken,"company");
   console.log("✅ WS connect + ws:ready");
+  
+  // 3.1) /api/shifts/my regression guard (DRIVER + PERSONEL)
+  const myD = await requestJson("GET","/api/shifts/my",{token:driverToken});
+  if(!myD || !Array.isArray(myD.items)) throw new Error("❌ /api/shifts/my invalid (driver)");
 
+  const myP = await requestJson("GET","/api/shifts/my",{token:personelToken});
+  if(!myP || !Array.isArray(myP.items)) throw new Error("❌ /api/shifts/my invalid (personel)");
+
+console.log("✅ /api/shifts/my returns {items[]} (driver/personel)");
   // helper to clear bags
   const clearBags = ()=>{ driverWS.bag.gps=[]; driverWS.bag.vstat=[]; driverWS.bag.notif=[]; driverWS.bag.eta=[];
                           roomWS.bag.gps=[]; roomWS.bag.vstat=[]; roomWS.bag.notif=[]; roomWS.bag.eta=[];
