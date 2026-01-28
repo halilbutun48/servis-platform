@@ -84,63 +84,14 @@ export function vehiclesRouter(io) {
     const parsed = createVehicleSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const {
-      plate,
-      capacity,
-      speedLimitKmh,
-      nextMaintenanceAt,
-
-      type,
-      brand,
-      model,
-      modelYear,
-      color,
-      vin,
-      note,
-
-      inspectionDueAt,
-      insuranceDueAt,
-      cascoDueAt,
-
-      lastServiceAt,
-      lastServiceKm,
-      serviceIntervalKm,
-      serviceIntervalDays,
-
-      odometerKm,
-    } = parsed.data;
-
-    const dt = (v) => (v ? new Date(v) : null);
-
+    const { plate, capacity, speedLimitKmh, nextMaintenanceAt } = parsed.data;
     const vehicle = await prisma.vehicle.create({
       data: {
         roomId: u.roomId,
         plate,
         capacity,
         speedLimitKmh: speedLimitKmh ?? 80,
-
-        type: type ?? null,
-        brand: brand ?? null,
-        model: model ?? null,
-        modelYear: modelYear ?? null,
-        color: color ?? null,
-        vin: vin ?? null,
-        note: note ?? null,
-
-        inspectionDueAt: dt(inspectionDueAt),
-        insuranceDueAt: dt(insuranceDueAt),
-        cascoDueAt: dt(cascoDueAt),
-
-        lastServiceAt: dt(lastServiceAt),
-        lastServiceKm: lastServiceKm ?? null,
-        serviceIntervalKm: serviceIntervalKm ?? 15000,
-        serviceIntervalDays: serviceIntervalDays ?? null,
-
-        odometerKm: odometerKm ?? null,
-        odometerUpdatedAt: odometerKm != null ? new Date() : null,
-        odometerSource: odometerKm != null ? "MANUAL" : undefined,
-
-        nextMaintenanceAt: dt(nextMaintenanceAt),
+        nextMaintenanceAt: nextMaintenanceAt ? new Date(nextMaintenanceAt) : null,
       },
     });
 

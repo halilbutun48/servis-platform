@@ -1,3 +1,4 @@
+// web/src/state/session.jsx
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api, clearToken, getToken, setToken } from "../api";
 import { connectSocket } from "../socket";
@@ -64,16 +65,37 @@ export function SessionProvider({ children }) {
     // invalidate keys on events so all panels stay in sync
     s.on("vehicle:update", () => invalidate("vehicles"));
     s.on("driver:update", () => invalidate("drivers"));
+
+    // legacy / generic
     s.on("shift:update", () => invalidate("shifts"));
+
+    // NEW: shift lifecycle + negotiation events (backend emits these)
+    const SHIFT_EVENTS = [
+      "shift:created",
+      "shift:approved",
+      "shift:started",
+      "shift:room-offer",
+      "shift:company-offer",
+      "shift:progress",
+    ];
+    SHIFT_EVENTS.forEach((ev) => s.on(ev, () => invalidate("shifts")));
+
+    // route / planning
     s.on("route:plan", () => invalidate("shifts"));
     s.on("route:progress", () => invalidate("shifts"));
+
+    // vehicle + gps
     s.on("gps:update", () => invalidate("vehicles"));
     s.on("vehicle:status", () => invalidate("vehicles"));
     s.on("eta:update", () => invalidate("eta"));
+
+    // notifications
     s.on("notif:new", () => invalidate("notifications"));
 
     return () => {
       try {
+        // (optional cleanup) remove listeners before disconnect
+        SHIFT_EVENTS.forEach((ev) => s.off(ev));
         s.disconnect();
       } catch {}
     };

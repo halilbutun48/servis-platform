@@ -33,18 +33,6 @@ enum VehicleStatus {
   STALE
 }
 
-
-
-enum VehicleType {
-  MINIBUS
-  MIDIBUS
-  OTOBUS
-}
-
-enum OdometerSource {
-  MANUAL
-  GPS
-}
 enum ShiftStatus {
   DRAFT
   REQUESTED
@@ -151,35 +139,7 @@ model Vehicle {
   capacity          Int
   status            VehicleStatus @default(ACTIVE)
   speedLimitKmh     Int           @default(80)
-
-  // V1 meta (araç tanımı)
-  type              VehicleType?
-  brand             String?
-  model             String?
-  modelYear         Int?
-  color             String?
-  vin               String?       @unique
-  note              String?
-
-  // Resmi tarihler
-  inspectionDueAt   DateTime?
-  insuranceDueAt    DateTime?
-  cascoDueAt        DateTime?
-
-  // Bakım (tarih + km)
-  lastServiceAt     DateTime?
-  lastServiceKm     Int?
-  serviceIntervalKm Int           @default(15000)
-  serviceIntervalDays Int?
-
-  // Odometer
-  odometerKm        Int?
-  odometerUpdatedAt DateTime?
-  odometerSource    OdometerSource @default(MANUAL)
-
-  // Geriye dönük uyum: eski bakım alanı (UI'da opsiyonel gösterilebilir)
   nextMaintenanceAt DateTime?
-
   createdAt         DateTime      @default(now())
 
   room              Room          @relation(fields: [roomId], references: [id])
@@ -228,34 +188,20 @@ model Shift {
   status    ShiftStatus @default(DRAFT)
   createdAt DateTime    @default(now())
 
-  // COMPANY → ROOM teklif (mevcut)
-  companyOfferVehicleId Int?
-  companyOfferNote      String?
-
-  // ROOM → COMPANY teklif (yeni)
-  roomOfferVehicleId   Int?
-  roomOfferNote        String?
-  roomOfferToDriver    Boolean  @default(false)
-  roomOfferDriverNote  String?
-
   company   Company     @relation(fields: [companyId], references: [id])
   room      Room        @relation(fields: [roomId], references: [id])
   vehicle   Vehicle?    @relation(fields: [vehicleId], references: [id])
   driver    Driver?     @relation(fields: [driverId], references: [id])
 
-  stops           Stop[]
-  pickupRequests  PickupRequest[]
-  progress        ShiftProgress?
-  notifications   Notification[]
+  stops     Stop[]
+  pickupRequests PickupRequest[]
+  progress  ShiftProgress?
+  notifications Notification[]
 
   @@index([companyId])
   @@index([roomId])
   @@index([vehicleId])
   @@index([driverId])
-  @@index([companyOfferVehicleId])
-
-  // yeni indexler
-  @@index([roomOfferVehicleId])
 }
 
 model Stop {

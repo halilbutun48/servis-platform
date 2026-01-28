@@ -57,29 +57,13 @@ erDiagram
 
   VEHICLE {
     int id PK
+    int companyId FK
     int roomId FK
     string plate
-    int capacity
-    int speedLimitKmh
-    string type "MINIBUS|MIDIBUS|OTOBUS (nullable)"
-    string brand "nullable"
-    string model "nullable"
-    int modelYear "nullable"
-    string color "nullable"
-    string vin "nullable"
-    string note "nullable"
-    datetime inspectionDueAt "nullable"
-    datetime insuranceDueAt "nullable"
-    datetime cascoDueAt "nullable"
-    datetime lastServiceAt "nullable"
-    int lastServiceKm "nullable"
-    int serviceIntervalKm "default 15000"
-    int serviceIntervalDays "nullable"
-    int odometerKm "nullable"
-    datetime odometerUpdatedAt "nullable"
-    string odometerSource "MANUAL|GPS"
-    datetime nextMaintenanceAt "nullable (legacy)"
-    string status
+    int capacity "nullable"
+    int speedLimitKmh "nullable"
+    datetime nextMaintenanceAt "nullable"
+    string status "nullable"
     datetime createdAt
   }
 

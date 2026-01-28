@@ -26,34 +26,8 @@ export const createVehicleSchema = z.object({
   plate: z.string().min(3),
   capacity: z.number().int().min(1),
   speedLimitKmh: z.number().int().min(10).max(200).optional(),
-
-  // V1 meta (opsiyonel)
-  type: z.enum(["MINIBUS", "MIDIBUS", "OTOBUS"]).optional(),
-  brand: z.string().trim().min(1).optional(),
-  model: z.string().trim().min(1).optional(),
-  modelYear: z.number().int().min(1970).max(2100).optional(),
-  color: z.string().trim().min(1).optional(),
-  vin: z.string().trim().min(5).optional(),
-  note: z.string().trim().min(1).optional(),
-
-  // Resmi tarihler
-  inspectionDueAt: dateTimeString.optional(),
-  insuranceDueAt: dateTimeString.optional(),
-  cascoDueAt: dateTimeString.optional(),
-
-  // Bakım (tarih + km)
-  lastServiceAt: dateTimeString.optional(),
-  lastServiceKm: z.number().int().min(0).optional(),
-  serviceIntervalKm: z.number().int().min(1000).max(100000).optional(),
-  serviceIntervalDays: z.number().int().min(1).max(3650).optional(),
-
-  // Odometer
-  odometerKm: z.number().int().min(0).optional(),
-
-  // Geriye dönük uyum
   nextMaintenanceAt: dateTimeString.optional(),
 });
-
 
 export const createDriverSchema = z.object({
   fullName: z.string().min(2),

@@ -26,31 +26,6 @@ yeniden tartışılmaması.
 - Vardiya şablonları + talep oluşturma (pickup request)
 - Personel listesi (personels) + adres güncelleme
 
-
-## Vehicles (ROOM) — Alanlar ve Filtre
-
-### Yeni Araç formu (V1 minimal)
-Zorunlu:
-- `plate`
-- `capacity` (yolcu koltuğu)
-
-Önerilen (V1):
-- `type`: `MINIBUS | MIDIBUS | OTOBUS`
-- `brand`, `model`, `modelYear`
-
-Opsiyonel (bakım/operasyon):
-- `inspectionDueAt`
-- `odometerKm`
-- `lastServiceAt`, `lastServiceKm`, `serviceIntervalKm` (default 15000)
-- (legacy) `nextMaintenanceAt`
-
-### Liste görünümü
-- Öncelik: plaka + kapasite + araç tipi + marka/model/yıl
-- Bakım/ muayene bilgileri badge olarak gösterilebilir.
-
-### Filtre (V1)
-- Kapasite filtresi: `capacity >= seatDemand` (Company taleplerinde asıl karar)
-
 ## Map standardı (tek kaynak)
 
 1) İlk açılışta **1 kez** fitBounds yapılır.

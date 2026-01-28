@@ -46,19 +46,6 @@ Body:
   "plate": "34ABC123",
   "capacity": 16,
   "speedLimitKmh": 80,
-
-  "type": "MINIBUS",
-  "brand": "Ford",
-  "model": "Transit",
-  "modelYear": 2021,
-
-  "inspectionDueAt": "2026-12-31T00:00:00.000Z",
-
-  "odometerKm": 123456,
-  "lastServiceAt": "2026-01-10T00:00:00.000Z",
-  "lastServiceKm": 120000,
-  "serviceIntervalKm": 15000,
-
   "nextMaintenanceAt": "2026-01-30T00:00:00.000Z"
 }
 ```
