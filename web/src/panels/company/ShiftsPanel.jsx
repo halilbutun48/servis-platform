@@ -58,6 +58,36 @@ export default function CompanyShiftsPanel() {
     setDecisionNoteSel((p) => ({ ...p, [Number(shiftId)]: value }));
   }
 
+  // ✅ TR/İstanbul gösterim (ISO -> Istanbul local)
+  const fmtTR = (iso) => {
+    if (!iso) return "-";
+    return new Date(iso).toLocaleString("tr-TR", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // ✅ datetime-local (Istanbul local) -> UTC ISO (backend'e doğru saat gitsin)
+  const IST_OFFSET_MIN = 180; // TR sabit UTC+3
+  function istanbulLocalToUtcIso(dtLocal) {
+    // dtLocal: "YYYY-MM-DDTHH:mm"
+    if (!dtLocal) return null;
+    const [d, t] = String(dtLocal).split("T");
+    if (!d || !t) return null;
+
+    const [Y, M, D] = d.split("-").map(Number);
+    const [h, m] = t.split(":").map(Number);
+    if (![Y, M, D, h, m].every(Number.isFinite)) return null;
+
+    // Istanbul local -> UTC: 3 saat çıkar
+    const utcMs = Date.UTC(Y, M - 1, D, h, m, 0) - IST_OFFSET_MIN * 60 * 1000;
+    return new Date(utcMs).toISOString();
+  }
+
   // dropdown'lar string sever; gönderirken Number() yapıyoruz
   const [roomId, setRoomId] = useState("1");
   const [startAt, setStartAt] = useState("");
@@ -91,11 +121,7 @@ export default function CompanyShiftsPanel() {
       // ✅ COMPANY rolünde /api/rooms çağrısı yapma (403 spam biter)
       const roomsPromise = !isCompany ? api("/api/rooms", { token }).catch(() => []) : Promise.resolve([]);
 
-      const [sh, veh, rm] = await Promise.all([
-        api("/api/shifts", { token }),
-        api("/api/vehicles", { token }),
-        roomsPromise,
-      ]);
+      const [sh, veh, rm] = await Promise.all([api("/api/shifts", { token }), api("/api/vehicles", { token }), roomsPromise]);
 
       const list = Array.isArray(sh) ? sh : sh?.items ?? [];
       setItems(list);
@@ -243,8 +269,8 @@ export default function CompanyShiftsPanel() {
     try {
       const body = {
         roomId: Number(roomId),
-        startAt: new Date(startAt).toISOString(),
-        endAt: new Date(endAt).toISOString(),
+        startAt: istanbulLocalToUtcIso(startAt),
+        endAt: istanbulLocalToUtcIso(endAt),
       };
 
       if (offerVehicleId) body.companyOfferVehicleId = Number(offerVehicleId);
@@ -387,7 +413,7 @@ export default function CompanyShiftsPanel() {
     if (!has) return <span className="muted">-</span>;
 
     const decision = String(s.roomOfferDecision || "PENDING");
-    const decisionAtText = s.roomOfferDecisionAt ? String(s.roomOfferDecisionAt) : "";
+    const decisionAtText = s.roomOfferDecisionAt ? fmtTR(s.roomOfferDecisionAt) : "";
 
     const sid = Number(s.id);
     const noteVal = decisionNoteSel[sid] ?? "";
@@ -431,7 +457,6 @@ export default function CompanyShiftsPanel() {
         {decision === "PENDING" ? (
           canNegotiate ? (
             <div style={{ marginTop: 8 }}>
-              {/* ✅ karar notu input */}
               <div className="muted" style={{ marginBottom: 6 }}>
                 <b>Karar Notu (opsiyonel)</b>
               </div>
@@ -444,18 +469,10 @@ export default function CompanyShiftsPanel() {
               />
 
               <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  disabled={busy || decidingId === sid}
-                  onClick={() => decideRoomOffer(s, "ACCEPTED", noteVal)}
-                >
+                <button type="button" disabled={busy || decidingId === sid} onClick={() => decideRoomOffer(s, "ACCEPTED", noteVal)}>
                   {decidingId === sid ? "..." : "Kabul"}
                 </button>
-                <button
-                  type="button"
-                  disabled={busy || decidingId === sid}
-                  onClick={() => decideRoomOffer(s, "REJECTED", noteVal)}
-                >
+                <button type="button" disabled={busy || decidingId === sid} onClick={() => decideRoomOffer(s, "REJECTED", noteVal)}>
                   {decidingId === sid ? "..." : "Reddet"}
                 </button>
               </div>
@@ -702,8 +719,12 @@ export default function CompanyShiftsPanel() {
 
                   <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
                   <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
-                  <td className="muted">{String(s.startAt)}</td>
-                  <td className="muted">{String(s.endAt)}</td>
+                  <td className="muted" title={String(s.startAt)}>
+                    {fmtTR(s.startAt)}
+                  </td>
+                  <td className="muted" title={String(s.endAt)}>
+                    {fmtTR(s.endAt)}
+                  </td>
                 </tr>
               );
             })}

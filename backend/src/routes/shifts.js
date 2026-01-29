@@ -452,6 +452,9 @@ export function shiftsRouter(io) {
   r.put("/:id/company-offer", authRequired(), requireRole("COMPANY"), async (req, res) => {
     try {
       const id = Number(req.params.id);
+if (!Number.isInteger(id) || id <= 0) {
+return res.status(400).json({ error: "Invalid shift id" });
+}
       const parsed = companyOfferSchema.safeParse(req.body ?? {});
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
       if (!req.user.companyId) return res.status(400).json({ error: "User has no companyId" });
@@ -537,6 +540,9 @@ export function shiftsRouter(io) {
   r.put("/:id/room-offer-decision", authRequired(), requireRole("COMPANY"), async (req, res) => {
     try {
       const id = Number(req.params.id);
+if (!Number.isInteger(id) || id <= 0) {
+  return res.status(400).json({ error: "Invalid shift id" });
+}
       const parsed = roomOfferDecisionSchema.safeParse(req.body ?? {});
       if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
       if (!req.user.companyId) return res.status(400).json({ error: "User has no companyId" });
@@ -700,22 +706,27 @@ export function shiftsRouter(io) {
   r.put("/:id/approve", authRequired(), requireRole("ROOM"), approveHandler);
   r.put("/:id/assign", authRequired(), requireRole("ROOM"), approveHandler);
 
-  // ROOM: (opsiyonel) Company'e karşı teklif ilet + isterse driver'a da ilet
-  r.put("/:id/room-offer", authRequired(), requireRole("ROOM"), async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      const parsed = roomOfferSchema.safeParse(req.body ?? {});
-      if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+// ROOM: (opsiyonel) Company'e karşı teklif ilet + isterse driver'a da ilet
+r.put("/:id/room-offer", authRequired(), requireRole("ROOM"), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "Invalid shift id" });
+    }
 
-      const shift = await prisma.shift.findUnique({ where: { id } });
-      if (!shift) return res.status(404).json({ error: "Shift not found" });
-      if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
+    const parsed = roomOfferSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-      // pazarlık sadece approve öncesi mantıklı
-      if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
-        return res.status(400).json({ error: "Room offer can be set only before APPROVE (DRAFT/REQUESTED)" });
-      }
+    const shift = await prisma.shift.findUnique({ where: { id } });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
 
+    // pazarlık sadece approve öncesi mantıklı
+    if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
+      return res.status(400).json({ error: "Room offer can be set only before APPROVE (DRAFT/REQUESTED)" });
+    }
+
+    
       // ✅ presence-aware normalize (body'de yoksa DB'yi ezme)
       const body = req.body ?? {};
       const hasVehicle = Object.prototype.hasOwnProperty.call(body, "roomOfferVehicleId");
