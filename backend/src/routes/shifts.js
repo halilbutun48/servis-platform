@@ -1,9 +1,11 @@
-// backend/src/routes/shifts.js (M5 + M7 + M8 + M9 + M10 audit)
+// backend/src/routes/shifts.js
 import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { audit } from "../audit.js";
+import { createNotification } from "../notifications/service.js";
+import { checkShiftConflicts, conflictResponse } from "../services/shiftConflict.js";
 
 const createShiftSchema = z.object({
   roomId: z.number().int().positive(),
@@ -13,6 +15,8 @@ const createShiftSchema = z.object({
 
   // COMPANY → ROOM teklif (shift seviyesinde)
   companyOfferVehicleId: z.number().int().positive().optional(),
+  // ✅ yeni: teklif tutarı (TL)
+  companyOfferAmount: z.number().int().positive().optional(),
   companyOfferNote: z.string().max(200).optional(),
 
   stops: z
@@ -35,19 +39,31 @@ const approveSchema = z.object({
 });
 
 // ROOM → COMPANY teklif schema (pazarlık)
-const roomOfferSchema = z.object({
-  roomOfferVehicleId: z.number().int().positive().optional(),
-  roomOfferNote: z.string().max(200).optional(),
+const roomOfferSchema = z
+  .object({
+    roomOfferVehicleId: z.union([z.number().int().positive(), z.null()]).optional(),
+    // ✅ yeni: teklif tutarı (TL)
+    roomOfferAmount: z.union([z.number().int().positive(), z.null()]).optional(),
+    roomOfferNote: z.union([z.string().max(200), z.null()]).optional(),
 
-  // opsiyonel: driver'a ilet (room isterse)
-  notifyDriver: z.boolean().optional(),
-  driverNote: z.string().max(200).optional(),
+    // opsiyonel: driver'a ilet (room isterse)
+    notifyDriver: z.boolean().optional(),
+    driverNote: z.union([z.string().max(200), z.null()]).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
+
+// COMPANY: room teklifine karar (kabul/red)
+const roomOfferDecisionSchema = z.object({
+  decision: z.enum(["ACCEPTED", "REJECTED"]),
+  note: z.string().max(200).optional(),
 });
 
 // COMPANY: mevcut shift üstünde teklif güncelle (karşı teklif)
 const companyOfferSchema = z
   .object({
     companyOfferVehicleId: z.union([z.number().int().positive(), z.null()]).optional(),
+    // ✅ yeni: teklif tutarı (TL)
+    companyOfferAmount: z.union([z.number().int().positive(), z.null()]).optional(),
     companyOfferNote: z.union([z.string().max(200), z.null()]).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
@@ -372,6 +388,9 @@ export function shiftsRouter(io) {
         }
       }
 
+      // ✅ (truthy yerine null-check)
+      const offerAmount = parsed.data.companyOfferAmount != null ? Number(parsed.data.companyOfferAmount) : null;
+
       const shift = await prisma.shift.create({
         data: {
           companyId: req.user.companyId,
@@ -381,6 +400,7 @@ export function shiftsRouter(io) {
           status,
 
           companyOfferVehicleId: offerVehicleId,
+          companyOfferAmount: offerAmount,
           companyOfferNote: trimOrNull(parsed.data.companyOfferNote),
 
           ...(parsed.data.stops?.length
@@ -415,13 +435,13 @@ export function shiftsRouter(io) {
           startAt: shift.startAt,
           endAt: shift.endAt,
           status: shift.status,
-          hasCompanyOffer: Boolean(shift.companyOfferVehicleId || shift.companyOfferNote),
+          hasCompanyOffer: Boolean(
+            shift.companyOfferVehicleId || shift.companyOfferAmount != null || shift.companyOfferNote
+          ),
         },
       });
 
-      // WS notify
       emitShift(io, shift, "shift:created");
-
       res.json(shift);
     } catch (e) {
       return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
@@ -430,85 +450,191 @@ export function shiftsRouter(io) {
 
   // COMPANY: update offer on existing shift (counter-offer)
   r.put("/:id/company-offer", authRequired(), requireRole("COMPANY"), async (req, res) => {
-    const id = Number(req.params.id);
-    const parsed = companyOfferSchema.safeParse(req.body ?? {});
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    if (!req.user.companyId) return res.status(400).json({ error: "User has no companyId" });
+    try {
+      const id = Number(req.params.id);
+      const parsed = companyOfferSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+      if (!req.user.companyId) return res.status(400).json({ error: "User has no companyId" });
 
-    const shift = await prisma.shift.findUnique({ where: { id } });
-    if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (shift.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+      const shift = await prisma.shift.findUnique({ where: { id } });
+      if (!shift) return res.status(404).json({ error: "Shift not found" });
+      if (shift.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
 
-    // sadece approve öncesi
-    if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
-      return res.status(400).json({ error: "Company offer can be set only before APPROVE (DRAFT/REQUESTED)" });
-    }
-
-    // payload normalize
-    const rawVehicleId = Object.prototype.hasOwnProperty.call(parsed.data, "companyOfferVehicleId")
-      ? parsed.data.companyOfferVehicleId
-      : undefined;
-
-    const rawNote = Object.prototype.hasOwnProperty.call(parsed.data, "companyOfferNote")
-      ? parsed.data.companyOfferNote
-      : undefined;
-
-    const companyOfferVehicleId =
-      rawVehicleId === undefined ? undefined : rawVehicleId === null ? null : Number(rawVehicleId);
-
-    const noteStr = rawNote === undefined ? undefined : rawNote === null ? null : trimOrNull(rawNote);
-
-    // vehicle doğrula (set ediliyorsa)
-    if (companyOfferVehicleId) {
-      const v = await prisma.vehicle.findUnique({
-        where: { id: companyOfferVehicleId },
-        select: { id: true, roomId: true },
-      });
-      if (!v) return res.status(400).json({ error: "Offer vehicle not found" });
-      if (v.roomId !== shift.roomId) {
-        return res.status(400).json({ error: "Offer vehicle must belong to the same roomId" });
+      // sadece approve öncesi
+      if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
+        return res
+          .status(400)
+          .json({ error: "Company offer can be set only before APPROVE (DRAFT/REQUESTED)" });
       }
+
+      // payload normalize (undefined = dokunma, null = temizle)
+      const rawVehicleId = Object.prototype.hasOwnProperty.call(parsed.data, "companyOfferVehicleId")
+        ? parsed.data.companyOfferVehicleId
+        : undefined;
+
+      const rawAmount = Object.prototype.hasOwnProperty.call(parsed.data, "companyOfferAmount")
+        ? parsed.data.companyOfferAmount
+        : undefined;
+
+      const rawNote = Object.prototype.hasOwnProperty.call(parsed.data, "companyOfferNote")
+        ? parsed.data.companyOfferNote
+        : undefined;
+
+      const companyOfferVehicleId =
+        rawVehicleId === undefined ? undefined : rawVehicleId === null ? null : Number(rawVehicleId);
+
+      const companyOfferAmount =
+        rawAmount === undefined ? undefined : rawAmount === null ? null : Number(rawAmount);
+
+      const noteStr = rawNote === undefined ? undefined : rawNote === null ? null : trimOrNull(rawNote);
+
+      // vehicle doğrula (set ediliyorsa)
+      if (companyOfferVehicleId) {
+        const v = await prisma.vehicle.findUnique({
+          where: { id: companyOfferVehicleId },
+          select: { id: true, roomId: true },
+        });
+        if (!v) return res.status(400).json({ error: "Offer vehicle not found" });
+        if (v.roomId !== shift.roomId) {
+          return res.status(400).json({ error: "Offer vehicle must belong to the same roomId" });
+        }
+      }
+
+      const updated = await prisma.shift.update({
+        where: { id },
+        data: {
+          ...(companyOfferVehicleId !== undefined ? { companyOfferVehicleId } : {}),
+          ...(companyOfferAmount !== undefined ? { companyOfferAmount } : {}),
+          ...(noteStr !== undefined ? { companyOfferNote: noteStr } : {}),
+        },
+        include: {
+          vehicle: true,
+          driver: true,
+          company: true,
+          room: true,
+        },
+      });
+
+      await audit(req, {
+        action: "SHIFT_COMPANY_OFFER",
+        entity: "Shift",
+        entityId: updated.id,
+        meta: {
+          companyOfferVehicleId: updated.companyOfferVehicleId,
+          companyOfferAmount: updated.companyOfferAmount,
+          hasNote: Boolean(updated.companyOfferNote),
+        },
+      });
+
+      emitShift(io, updated, "shift:company-offer");
+      return res.json(updated);
+    } catch (e) {
+      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
     }
+  });
 
-    const updated = await prisma.shift.update({
-      where: { id },
-      data: {
-        ...(companyOfferVehicleId !== undefined ? { companyOfferVehicleId } : {}),
-        ...(noteStr !== undefined ? { companyOfferNote: noteStr } : {}),
-      },
-      include: {
-        vehicle: true,
-        driver: true,
-        company: true,
-        room: true,
-      },
-    });
+  // COMPANY: decide room offer (ACCEPT / REJECT)
+  r.put("/:id/room-offer-decision", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const parsed = roomOfferDecisionSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+      if (!req.user.companyId) return res.status(400).json({ error: "User has no companyId" });
 
-    await audit(req, {
-      action: "SHIFT_COMPANY_OFFER",
-      entity: "Shift",
-      entityId: updated.id,
-      meta: {
-        companyOfferVehicleId: updated.companyOfferVehicleId,
-        hasNote: Boolean(updated.companyOfferNote),
-      },
-    });
+      const shift = await prisma.shift.findUnique({ where: { id } });
+      if (!shift) return res.status(404).json({ error: "Shift not found" });
+      if (shift.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
 
-    // WS: company/room ekranı yenilensin
-    emitShift(io, updated, "shift:company-offer");
+      // sadece approve öncesi
+      if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
+        return res
+          .status(400)
+          .json({ error: "Decision can be set only before APPROVE (DRAFT/REQUESTED)" });
+      }
 
-    res.json(updated);
+      // ortada room teklifi yoksa karar anlamsız
+      const hasRoomOffer = Boolean(
+        shift.roomOfferVehicleId ||
+          shift.roomOfferAmount != null ||
+          shift.roomOfferNote ||
+          shift.roomOfferToDriver ||
+          shift.roomOfferDriverNote
+      );
+      if (!hasRoomOffer) return res.status(400).json({ error: "No room offer to decide" });
+
+      const now = new Date();
+
+      const updated = await prisma.shift.update({
+        where: { id },
+        data: {
+          roomOfferDecision: parsed.data.decision,
+          roomOfferDecisionNote: trimOrNull(parsed.data.note),
+          roomOfferDecisionAt: now,
+        },
+        include: { vehicle: true, driver: true, company: true, room: true },
+      });
+
+      // Notification: Company karar verdi → ROOM haberdar olsun (dedupeKey + upsert)
+      try {
+        const decision = String(parsed.data.decision ?? updated.roomOfferDecision ?? "PENDING");
+        const note = parsed.data.note
+          ? String(parsed.data.note)
+          : updated.roomOfferDecisionNote
+            ? String(updated.roomOfferDecisionNote)
+            : "";
+
+        await createNotification({
+          type: "SHIFT_ROOM_OFFER_DECISION",
+          scope: "ROOM",
+
+          companyId: updated.companyId ?? null,
+          roomId: updated.roomId ?? null,
+          shiftId: updated.id ?? null,
+
+          dedupeKey: `SHIFT_ROOM_OFFER_DECISION:${Number(updated.id)}:${decision}`,
+
+          payload: {
+            kind: "SHIFT_ROOM_OFFER_DECISION",
+            title: decision === "ACCEPTED" ? "Company teklifi kabul etti" : "Company teklifi reddetti",
+            message: note || "",
+            at: now.toISOString(),
+            decision,
+            shiftId: Number(updated.id),
+            companyId: updated.companyId ?? null,
+            roomId: updated.roomId ?? null,
+          },
+        });
+      } catch (e) {
+        console.warn("[notif] room-offer-decision createNotification failed:", e?.message || e);
+      }
+
+      await audit(req, {
+        action: "SHIFT_ROOM_OFFER_DECISION",
+        entity: "Shift",
+        entityId: updated.id,
+        meta: { decision: updated.roomOfferDecision },
+      });
+
+      emitShift(io, updated, "shift:room-offer-decision");
+      return res.json(updated);
+    } catch (e) {
+      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+    }
   });
 
   // ROOM: approve/assign (POST + PUT alias)
   const approveHandler = async (req, res) => {
     const id = Number(req.params.id);
     const parsed = approveSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ code: "VALIDATION_ERROR", message: "Validation failed", details: parsed.error.flatten() });
+    }
 
     const shift = await prisma.shift.findUnique({ where: { id } });
-    if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
+    if (!shift) return res.status(404).json({ code: "NOT_FOUND", message: "Shift not found" });
+    if (req.user.roomId !== shift.roomId) return res.status(403).json({ code: "FORBIDDEN", message: "Forbidden" });
 
     const vehicleId = Number(parsed.data.vehicleId);
     let driverId = parsed.data.driverId ? Number(parsed.data.driverId) : null;
@@ -519,17 +645,32 @@ export function shiftsRouter(io) {
         where: { id: vehicleId },
         select: { id: true, roomId: true, driverId: true },
       });
-      if (!v) return res.status(400).json({ error: "Vehicle not found" });
+      if (!v) return res.status(400).json({ code: "VEHICLE_NOT_FOUND", message: "Vehicle not found" });
 
       if (v.roomId !== shift.roomId) {
-        return res.status(400).json({ error: "Vehicle must belong to the same roomId" });
+        return res.status(400).json({ code: "BAD_REQUEST", message: "Vehicle must belong to the same roomId" });
       }
 
       if (!v.driverId) {
-        return res.status(400).json({ error: "Selected vehicle has no driver. Bind a driver to the vehicle first." });
+        return res.status(400).json({
+          code: "VEHICLE_DRIVER_NOT_BOUND",
+          message: "Selected vehicle has no driver. Bind a driver to the vehicle first.",
+          vehicleId: v.id,
+        });
       }
       driverId = v.driverId;
     }
+
+    // overlap checks (driver + vehicle)
+    const conflicts = await checkShiftConflicts({
+      driverId,
+      vehicleId,
+      startAt: shift.startAt,
+      endAt: shift.endAt,
+      excludeShiftId: shift.id,
+    });
+    const conflict = conflictResponse(conflicts);
+    if (conflict) return res.status(400).json(conflict);
 
     const updated = await prisma.shift.update({
       where: { id },
@@ -561,87 +702,143 @@ export function shiftsRouter(io) {
 
   // ROOM: (opsiyonel) Company'e karşı teklif ilet + isterse driver'a da ilet
   r.put("/:id/room-offer", authRequired(), requireRole("ROOM"), async (req, res) => {
-    const id = Number(req.params.id);
-    const parsed = roomOfferSchema.safeParse(req.body ?? {});
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    try {
+      const id = Number(req.params.id);
+      const parsed = roomOfferSchema.safeParse(req.body ?? {});
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const shift = await prisma.shift.findUnique({ where: { id } });
-    if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
+      const shift = await prisma.shift.findUnique({ where: { id } });
+      if (!shift) return res.status(404).json({ error: "Shift not found" });
+      if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
 
-    // pazarlık sadece approve öncesi mantıklı
-    if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
-      return res.status(400).json({ error: "Room offer can be set only before APPROVE (DRAFT/REQUESTED)" });
-    }
-
-    const roomOfferVehicleId = parsed.data.roomOfferVehicleId ? Number(parsed.data.roomOfferVehicleId) : null;
-
-    // araç validasyonu: aynı room + driverId yakala (driver’a ilet seçildiyse lazım)
-    let driverId = null;
-    if (roomOfferVehicleId) {
-      const v = await prisma.vehicle.findUnique({
-        where: { id: roomOfferVehicleId },
-        select: { id: true, roomId: true, driverId: true },
-      });
-      if (!v) return res.status(400).json({ error: "Room offer vehicle not found" });
-      if (v.roomId !== shift.roomId) {
-        return res.status(400).json({ error: "Room offer vehicle must belong to the same roomId" });
+      // pazarlık sadece approve öncesi mantıklı
+      if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
+        return res.status(400).json({ error: "Room offer can be set only before APPROVE (DRAFT/REQUESTED)" });
       }
-      driverId = v.driverId ?? null;
-    }
 
-    const notifyDriver = Boolean(parsed.data.notifyDriver);
-    const driverNote = trimOrNull(parsed.data.driverNote);
+      // ✅ presence-aware normalize (body'de yoksa DB'yi ezme)
+      const body = req.body ?? {};
+      const hasVehicle = Object.prototype.hasOwnProperty.call(body, "roomOfferVehicleId");
+      const hasAmount = Object.prototype.hasOwnProperty.call(body, "roomOfferAmount");
+      const hasNote = Object.prototype.hasOwnProperty.call(body, "roomOfferNote");
+      const hasNotify = Object.prototype.hasOwnProperty.call(body, "notifyDriver");
+      const hasDriverNote = Object.prototype.hasOwnProperty.call(body, "driverNote");
 
-    // notifyDriver true ise: araç + driver şart
-    if (notifyDriver) {
-      if (!roomOfferVehicleId) {
+      const roomOfferVehicleId = hasVehicle
+        ? parsed.data.roomOfferVehicleId === null
+          ? null
+          : parsed.data.roomOfferVehicleId != null
+            ? Number(parsed.data.roomOfferVehicleId)
+            : null
+        : undefined;
+
+      const roomOfferAmount = hasAmount
+        ? parsed.data.roomOfferAmount === null
+          ? null
+          : parsed.data.roomOfferAmount != null
+            ? Number(parsed.data.roomOfferAmount)
+            : null
+        : undefined;
+
+      const roomOfferNote = hasNote
+        ? parsed.data.roomOfferNote === null
+          ? null
+          : trimOrNull(parsed.data.roomOfferNote)
+        : undefined;
+
+      const notifyDriver = hasNotify ? Boolean(parsed.data.notifyDriver) : undefined;
+
+      const driverNoteNorm = hasDriverNote
+        ? parsed.data.driverNote === null
+          ? null
+          : trimOrNull(parsed.data.driverNote)
+        : undefined;
+
+      // driver'a iletme durumunda hangi vehicle kullanılacak?
+      const vehicleToUse = (roomOfferVehicleId !== undefined ? roomOfferVehicleId : shift.roomOfferVehicleId) ?? null;
+
+      // araç validasyonu + driverId yakala (notifyDriver true ise şart)
+      let driverId = null;
+      if (vehicleToUse) {
+        const v = await prisma.vehicle.findUnique({
+          where: { id: Number(vehicleToUse) },
+          select: { id: true, roomId: true, driverId: true },
+        });
+        if (!v) return res.status(400).json({ error: "Room offer vehicle not found" });
+        if (v.roomId !== shift.roomId) {
+          return res.status(400).json({ error: "Room offer vehicle must belong to the same roomId" });
+        }
+        driverId = v.driverId ?? null;
+
+        if (notifyDriver === true && !driverId) {
+          return res.status(400).json({ error: "Selected offer vehicle has no driver. Bind a driver first." });
+        }
+      }
+
+      if (notifyDriver === true && !vehicleToUse) {
         return res.status(400).json({ error: "notifyDriver requires roomOfferVehicleId" });
       }
-      if (!driverId) {
-        return res.status(400).json({ error: "Selected offer vehicle has no driver. Bind a driver first." });
+
+      // update payload: sadece gelen alanları uygula
+      const data = {};
+      if (roomOfferVehicleId !== undefined) data.roomOfferVehicleId = roomOfferVehicleId;
+      if (roomOfferAmount !== undefined) data.roomOfferAmount = roomOfferAmount;
+      if (roomOfferNote !== undefined) data.roomOfferNote = roomOfferNote;
+
+      if (notifyDriver !== undefined) {
+        data.roomOfferToDriver = notifyDriver;
+
+        if (notifyDriver) {
+          // driverNote gelmediyse eskisini koru; geldiyse güncelle
+          const noteToSet = driverNoteNorm !== undefined ? driverNoteNorm : shift.roomOfferDriverNote;
+          data.roomOfferDriverNote = noteToSet ?? null;
+        } else {
+          data.roomOfferDriverNote = null;
+        }
+      } else if (driverNoteNorm !== undefined) {
+        // notifyDriver belirtilmemiş ama driverNote geldiyse: sadece note güncelle (roomOfferToDriver true ise anlamlı)
+        data.roomOfferDriverNote = driverNoteNorm;
       }
-    }
 
-    const updated = await prisma.shift.update({
-      where: { id },
-      data: {
-        roomOfferVehicleId,
-        roomOfferNote: trimOrNull(parsed.data.roomOfferNote),
-        roomOfferToDriver: notifyDriver,
-        roomOfferDriverNote: notifyDriver ? driverNote : null,
-      },
-      include: {
-        vehicle: true,
-        driver: true,
-        company: true,
-        room: true,
-      },
-    });
-
-    await audit(req, {
-      action: "SHIFT_ROOM_OFFER",
-      entity: "Shift",
-      entityId: updated.id,
-      meta: {
-        roomOfferVehicleId,
-        notifyDriver,
-        hasDriverNote: Boolean(driverNote),
-      },
-    });
-
-    emitShift(io, updated, "shift:room-offer");
-
-    // opsiyonel driver notify
-    if (notifyDriver && driverId) {
-      io?.to(`driver:${driverId}`).emit("shift:room-offer", {
-        shiftId: shift.id,
-        roomOfferVehicleId,
-        roomOfferDriverNote: driverNote,
+      const updated = await prisma.shift.update({
+        where: { id },
+        data,
+        include: {
+          vehicle: true,
+          driver: true,
+          company: true,
+          room: true,
+        },
       });
-    }
 
-    res.json(updated);
+      await audit(req, {
+        action: "SHIFT_ROOM_OFFER",
+        entity: "Shift",
+        entityId: updated.id,
+        meta: {
+          roomOfferVehicleId: updated.roomOfferVehicleId,
+          roomOfferAmount: updated.roomOfferAmount,
+          notifyDriver: updated.roomOfferToDriver,
+          hasDriverNote: Boolean(updated.roomOfferDriverNote),
+        },
+      });
+
+      emitShift(io, updated, "shift:room-offer");
+
+      // opsiyonel driver notify
+      if (updated.roomOfferToDriver && driverId) {
+        io?.to(`driver:${driverId}`).emit("shift:room-offer", {
+          shiftId: shift.id,
+          roomOfferVehicleId: updated.roomOfferVehicleId,
+          roomOfferAmount: updated.roomOfferAmount,
+          roomOfferDriverNote: updated.roomOfferDriverNote,
+        });
+      }
+
+      res.json(updated);
+    } catch (e) {
+      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+    }
   });
 
   // ROOM: start shift (APPROVED -> ACTIVE)
@@ -652,10 +849,31 @@ export function shiftsRouter(io) {
     if (req.user.roomId !== shift.roomId) return res.status(403).json({ error: "Forbidden" });
     if (shift.status !== "APPROVED") return res.status(400).json({ error: "Shift must be APPROVED to start" });
 
+    if (!shift.vehicleId || !shift.driverId) {
+      return res.status(400).json({ code: "MISSING_ASSIGNMENT", message: "Start için vehicleId ve driverId atanmış olmalı." });
+    }
+
+    const conflicts = await checkShiftConflicts({
+      driverId: shift.driverId,
+      vehicleId: shift.vehicleId,
+      startAt: shift.startAt,
+      endAt: shift.endAt,
+      excludeShiftId: shift.id,
+    });
+    const conflict = conflictResponse(conflicts);
+    if (conflict) return res.status(400).json(conflict);
+
     const updated = await prisma.shift.update({
       where: { id },
       data: { status: "ACTIVE" },
-      include: { stops: { orderBy: { order: "asc" } }, progress: true, vehicle: true, driver: true, company: true, room: true },
+      include: {
+        stops: { orderBy: { order: "asc" } },
+        progress: true,
+        vehicle: true,
+        driver: true,
+        company: true,
+        room: true,
+      },
     });
 
     await prisma.shiftProgress.upsert({

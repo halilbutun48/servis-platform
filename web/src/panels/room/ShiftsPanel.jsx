@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import { invalidate } from "../../live/bus";
+import { navigate } from "../../router";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -27,6 +29,25 @@ function trimOrNull(s) {
   return t ? t : null;
 }
 
+function formatTRY(amount) {
+  if (amount == null) return "";
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("tr-TR").format(n);
+}
+
+function parseTryInput(raw) {
+  if (raw == null) return null;
+  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+function fmtDT(x) {
+  if (!x) return "-";
+  const d = new Date(x);
+  return Number.isNaN(d.getTime()) ? String(x) : d.toLocaleString("tr-TR");
+}
 export default function RoomShiftsPanel() {
   const { token } = useSession();
 
@@ -67,7 +88,59 @@ export default function RoomShiftsPanel() {
       setErr(String(e?.message || e));
     }
   }
+async function applyCompanyOffer(shift) {
+  const sid = Number(shift?.id);
+  const offerVehicleId = shift?.companyOfferVehicleId ? Number(shift.companyOfferVehicleId) : null;
 
+  if (!sid) {
+    setErr("Shift id yok.");
+    return;
+  }
+  if (!offerVehicleId) {
+    setErr("Company teklif aracı yok.");
+    return;
+  }
+
+  // (opsiyonel) UI’da select’i teklife çek (dropdown'da da görünsün)
+  setSel(sid, { vehicleId: String(offerVehicleId) });
+
+  setBusy(true);
+  setErr("");
+  try {
+    await api(`/api/shifts/${sid}/approve`, {
+      method: "POST",
+      token,
+      body: { vehicleId: offerVehicleId },
+    });
+
+    invalidate("shifts");
+    await loadAll();
+  } catch (e) {
+    const payload = e?.payload;
+
+    if (payload?.code === "VEHICLE_DRIVER_NOT_BOUND") {
+      setErr("Bu araçta driver bağlı değil. Vehicles panelinden araca driver bağla → yönlendiriyorum.");
+      navigate("/room/vehicles");
+      return;
+    }
+
+    // ✅ NET TEŞHİS: çakışan vardiyanın saatlerini göster
+    if (payload?.code === "DRIVER_CONFLICT" || payload?.code === "VEHICLE_CONFLICT") {
+      const c = payload?.conflictingShift;
+      const a = c?.startAt ? new Date(c.startAt).toLocaleString("tr-TR") : "?";
+      const b = c?.endAt ? new Date(c.endAt).toLocaleString("tr-TR") : "?";
+      const who = payload.code === "DRIVER_CONFLICT" ? "Driver" : "Araç";
+      setErr(`${who} çakışması: ${payload?.message || ""}
+Çakışan shift: #${c?.id ?? "?"} (${a} - ${b})`);
+      return;
+    }
+
+    setErr(String(e?.message || payload?.message || e));
+    console.error(e);
+  } finally {
+    setBusy(false);
+  }
+}
   useEffect(() => {
     loadAll();
   }, []); // eslint-disable-line
@@ -91,7 +164,7 @@ export default function RoomShiftsPanel() {
     setRoomOfferOpen((p) => ({ ...p, [shiftId]: !p[shiftId] }));
   }
 
-  // form değerleri: { roomOfferVehicleId, roomOfferNote, notifyDriver, driverNote }
+  // form değerleri: { roomOfferVehicleId, roomOfferAmount, roomOfferNote, notifyDriver, driverNote }
   const [roomOfferSel, setRoomOfferSel] = useState({});
   function setRoomOffer(shiftId, patch) {
     setRoomOfferSel((prev) => ({
@@ -136,7 +209,8 @@ export default function RoomShiftsPanel() {
           "";
 
         next[sid] = {
-          roomOfferVehicleId: fallbackVehicleId, // string
+          roomOfferVehicleId: fallbackVehicleId,
+          roomOfferAmount: s.roomOfferAmount != null ? String(s.roomOfferAmount) : "",
           roomOfferNote: s.roomOfferNote ?? "",
           notifyDriver: Boolean(s.roomOfferToDriver),
           driverNote: s.roomOfferDriverNote ?? "",
@@ -186,7 +260,7 @@ export default function RoomShiftsPanel() {
       return;
     }
 
-    // UX: seçilen araçta driver bağlı mı? (backend zaten kontrol ediyor ama UI hızlı uyarı)
+    // UX: seçilen araçta driver bağlı mı?
     const v = vehiclesById.get(Number(sel.vehicleId));
     const did = v?.driverId || v?.driver?.id || null;
     if (!did) {
@@ -200,17 +274,40 @@ export default function RoomShiftsPanel() {
       await api(`/api/shifts/${shiftId}/approve`, {
         method: "POST",
         token,
-        body: { vehicleId: Number(sel.vehicleId) }, // ✅ driver yok
+        body: { vehicleId: Number(sel.vehicleId) },
       });
       await loadAll();
     } catch (e) {
-      setErr(String(e?.message || e));
+      const payload = e?.payload;
+
+      if (payload?.code === "VEHICLE_DRIVER_NOT_BOUND") {
+        setErr("Bu araçta driver bağlı değil. Vehicles panelinden araca driver bağla → yönlendiriyorum.");
+        navigate("/room/vehicles");
+        return;
+      }
+
+      if (payload?.code === "MISSING_ROOM_OFFER_VEHICLE") {
+        setErr(payload?.message || "Atama için araç seçilmeli.");
+        return;
+      }
+
+      if (payload?.code === "DRIVER_CONFLICT" || payload?.code === "VEHICLE_CONFLICT") {
+        const c = payload?.conflictingShift;
+        const a = c?.startAt ? new Date(c.startAt).toLocaleString() : "?";
+        const b = c?.endAt ? new Date(c.endAt).toLocaleString() : "?";
+        const who = payload.code === "DRIVER_CONFLICT" ? "Driver" : "Araç";
+        setErr(`${who} çakışması: ${payload?.message || ""}
+Çakışan shift: #${c?.id ?? "?"} (${a} - ${b})`);
+        return;
+      }
+
+      setErr(String(e?.message || payload?.message || e));
     } finally {
       setBusy(false);
     }
   }
 
-  // 3.2) Room teklif gönder handler
+  // Room teklif gönder handler
   async function sendRoomOffer(shift) {
     const shiftId = shift.id;
     const form = roomOfferSel[shiftId] || {};
@@ -222,7 +319,9 @@ export default function RoomShiftsPanel() {
     const notifyDriver = Boolean(form.notifyDriver);
     const driverNote = trimOrNull(form.driverNote);
 
-    // notifyDriver true ise: araç + driver olmalı (backend de kontrol ediyor ama UI hızlı uyarı)
+    const roomOfferAmount = parseTryInput(form.roomOfferAmount);
+
+    // notifyDriver true ise: araç + driver olmalı
     if (notifyDriver) {
       if (!roomOfferVehicleId) {
         setErr("Driver’a ilet için bir araç seçmelisin.");
@@ -244,23 +343,81 @@ export default function RoomShiftsPanel() {
         token,
         body: {
           roomOfferVehicleId: roomOfferVehicleId || undefined,
+          roomOfferAmount: roomOfferAmount ?? undefined, // ✅ gönder
           roomOfferNote: roomOfferNote || undefined,
           notifyDriver: notifyDriver || undefined,
           driverNote: notifyDriver ? driverNote || undefined : undefined,
         },
       });
 
-      // UI: kapat + refresh
       setRoomOfferOpen((p) => ({ ...p, [shiftId]: false }));
       await loadAll();
     } catch (e) {
-      setErr(String(e?.message || e));
+      const payload = e?.payload;
+
+      if (payload?.code === "VEHICLE_DRIVER_NOT_BOUND") {
+        setErr("Bu araçta driver bağlı değil. Vehicles panelinden araca driver bağla → yönlendiriyorum.");
+        navigate("/room/vehicles");
+        return;
+      }
+
+      if (payload?.code === "MISSING_ROOM_OFFER_VEHICLE") {
+        setErr(payload?.message || "Atama için araç seçilmeli.");
+        return;
+      }
+
+      if (payload?.code === "DRIVER_CONFLICT" || payload?.code === "VEHICLE_CONFLICT") {
+        const c = payload?.conflictingShift;
+        const a = c?.startAt ? new Date(c.startAt).toLocaleString() : "?";
+        const b = c?.endAt ? new Date(c.endAt).toLocaleString() : "?";
+        const who = payload.code === "DRIVER_CONFLICT" ? "Driver" : "Araç";
+        setErr(`${who} çakışması: ${payload?.message || ""}
+Çakışan shift: #${c?.id ?? "?"} (${a} - ${b})`);
+        return;
+      }
+
+      setErr(String(e?.message || payload?.message || e));
     } finally {
       setBusy(false);
     }
   }
 
-  // 3.3) renderOfferCell(s) içinde Company teklifinin altına “Room Teklifi” UI
+  function renderDecisionBlock(s) {
+    const decision = String(s.roomOfferDecision || "PENDING");
+    const atText = s.roomOfferDecisionAt ? String(s.roomOfferDecisionAt) : "";
+
+    const rawRoomOfferAmount = s.roomOfferAmount ?? s.roomOffer?.amount ?? s.offers?.room?.amount ?? null;
+    const acceptedAmount = decision === "ACCEPTED" && rawRoomOfferAmount != null ? Number(rawRoomOfferAmount) : null;
+    const acceptedText = acceptedAmount != null ? formatTRY(acceptedAmount) : "";
+
+    return (
+      <div style={{ marginTop: 8 }}>
+        <b>Karar:</b>{" "}
+        {decision === "PENDING" ? (
+          <span className="muted">PENDING</span>
+        ) : (
+          <span className="pill" data-status={decision}>
+            {decision}
+          </span>
+        )}
+        {decision !== "PENDING" && atText ? <span className="muted"> • {atText}</span> : null}
+
+        {decision === "ACCEPTED" ? (
+          <div style={{ marginTop: 6 }}>
+            <b>Kabul edilen:</b>{" "}
+            {acceptedText ? <span className="pill">{acceptedText} ₺</span> : <span className="muted">(tutar yok)</span>}
+          </div>
+        ) : null}
+
+        {s.roomOfferDecisionNote ? (
+          <div className="muted" style={{ marginTop: 6 }}>
+            <b>Karar Notu:</b> {s.roomOfferDecisionNote}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   function renderOfferCell(s) {
     const ovId = s.companyOfferVehicleId ? Number(s.companyOfferVehicleId) : null;
     const ov = ovId ? vehiclesById.get(ovId) : null;
@@ -268,13 +425,14 @@ export default function RoomShiftsPanel() {
     const rvId = s.roomOfferVehicleId ? Number(s.roomOfferVehicleId) : null;
     const rv = rvId ? vehiclesById.get(rvId) : null;
 
-    const hasCompanyOffer = Boolean(ovId || s.companyOfferNote);
-    const hasRoomOffer = Boolean(rvId || s.roomOfferNote || s.roomOfferToDriver || s.roomOfferDriverNote);
+    const cAmt = s.companyOfferAmount != null ? Number(s.companyOfferAmount) : null;
+    const rAmt = s.roomOfferAmount != null ? Number(s.roomOfferAmount) : null;
+
+    const hasCompanyOffer = Boolean(ovId || cAmt != null || s.companyOfferNote);
+    const hasRoomOffer = Boolean(rvId || rAmt != null || s.roomOfferNote || s.roomOfferToDriver || s.roomOfferDriverNote);
 
     const isOpen = Boolean(roomOfferOpen[s.id]);
     const form = roomOfferSel[s.id] || {};
-
-    // Room teklifinde araç listesi: müsait araçlar (pazarlık için de mantıklı)
     const avail = availableVehiclesForShift(s);
 
     return (
@@ -289,6 +447,12 @@ export default function RoomShiftsPanel() {
               </div>
             ) : null}
 
+            {cAmt != null ? (
+              <div className="muted" style={{ marginTop: 6 }}>
+                <b>Company Tutar:</b> {formatTRY(cAmt)} ₺
+              </div>
+            ) : null}
+
             {s.companyOfferNote ? (
               <div className="muted" style={{ marginTop: 6 }}>
                 <b>Company Not:</b> {s.companyOfferNote}
@@ -297,14 +461,14 @@ export default function RoomShiftsPanel() {
 
             {ovId ? (
               <button
-                type="button"
-                disabled={busy}
-                style={{ marginTop: 6 }}
-                onClick={() => setSel(s.id, { vehicleId: String(ovId) })}
-                title="Teklif edilen aracı seç"
-              >
-                Teklifi Uygula
-              </button>
+  type="button"
+  disabled={busy}
+  style={{ marginTop: 6 }}
+  onClick={() => applyCompanyOffer(s)}
+  title="Teklif edilen aracı uygula (approve)"
+>
+  Teklifi Uygula
+</button>
             ) : null}
           </div>
         ) : (
@@ -319,6 +483,12 @@ export default function RoomShiftsPanel() {
               {rvId ? (rv ? `${rv.plate}${vehicleMetaLine(rv) ? ` • ${vehicleMetaLine(rv)}` : ""}` : `#${rvId}`) : "-"}
             </div>
 
+            {rAmt != null ? (
+              <div className="muted" style={{ marginTop: 6 }}>
+                <b>Room Tutar:</b> {formatTRY(rAmt)} ₺
+              </div>
+            ) : null}
+
             {s.roomOfferNote ? (
               <div className="muted" style={{ marginTop: 6 }}>
                 <b>Room Not:</b> {s.roomOfferNote}
@@ -330,6 +500,8 @@ export default function RoomShiftsPanel() {
                 <b>Driver’a iletildi:</b> evet{s.roomOfferDriverNote ? ` • ${s.roomOfferDriverNote}` : ""}
               </div>
             ) : null}
+
+            {renderDecisionBlock(s)}
           </div>
         ) : null}
 
@@ -347,7 +519,9 @@ export default function RoomShiftsPanel() {
 
               <div style={{ display: "grid", gap: 8 }}>
                 <label className="muted">
-                  <div style={{ marginBottom: 4 }}><b>Teklif Araç (opsiyonel)</b></div>
+                  <div style={{ marginBottom: 4 }}>
+                    <b>Teklif Araç (opsiyonel)</b>
+                  </div>
                   <select
                     value={form.roomOfferVehicleId || ""}
                     onChange={(e) => setRoomOffer(s.id, { roomOfferVehicleId: e.target.value })}
@@ -356,18 +530,32 @@ export default function RoomShiftsPanel() {
                     <option value="">(Araç seçmeden de not gönderebilirsin)</option>
                     {avail.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.plate}{vehicleMetaLine(v) ? ` • ${vehicleMetaLine(v)}` : ""} (#{v.id})
+                        {v.plate}
+                        {vehicleMetaLine(v) ? ` • ${vehicleMetaLine(v)}` : ""} (#{v.id})
                       </option>
                     ))}
                   </select>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    <b>Driver (auto):</b>{" "}
-                    {form.roomOfferVehicleId ? driverLabelForVehicleId(form.roomOfferVehicleId) : "-"}
+                    <b>Driver (auto):</b> {form.roomOfferVehicleId ? driverLabelForVehicleId(form.roomOfferVehicleId) : "-"}
                   </div>
                 </label>
 
                 <label className="muted">
-                  <div style={{ marginBottom: 4 }}><b>Room Not (opsiyonel)</b></div>
+                  <div style={{ marginBottom: 4 }}>
+                    <b>Room Tutar (₺)</b>
+                  </div>
+                  <input
+                    value={form.roomOfferAmount ?? ""}
+                    onChange={(e) => setRoomOffer(s.id, { roomOfferAmount: e.target.value })}
+                    placeholder="Örn: 25000"
+                    disabled={busy}
+                  />
+                </label>
+
+                <label className="muted">
+                  <div style={{ marginBottom: 4 }}>
+                    <b>Room Not (opsiyonel)</b>
+                  </div>
                   <textarea
                     rows={2}
                     value={form.roomOfferNote ?? ""}
@@ -384,12 +572,16 @@ export default function RoomShiftsPanel() {
                     onChange={(e) => setRoomOffer(s.id, { notifyDriver: e.target.checked })}
                     disabled={busy}
                   />
-                  <span><b>Driver’a da ilet (opsiyonel)</b></span>
+                  <span>
+                    <b>Driver’a da ilet (opsiyonel)</b>
+                  </span>
                 </label>
 
                 {Boolean(form.notifyDriver) ? (
                   <label className="muted">
-                    <div style={{ marginBottom: 4 }}><b>Driver Not (opsiyonel)</b></div>
+                    <div style={{ marginBottom: 4 }}>
+                      <b>Driver Not (opsiyonel)</b>
+                    </div>
                     <textarea
                       rows={2}
                       value={form.driverNote ?? ""}
@@ -414,6 +606,7 @@ export default function RoomShiftsPanel() {
                     onClick={() =>
                       setRoomOffer(s.id, {
                         roomOfferVehicleId: "",
+                        roomOfferAmount: "",
                         roomOfferNote: "",
                         notifyDriver: false,
                         driverNote: "",
@@ -439,6 +632,9 @@ export default function RoomShiftsPanel() {
     const rvId = s.roomOfferVehicleId ? Number(s.roomOfferVehicleId) : null;
     const rv = rvId ? vehiclesById.get(rvId) : null;
 
+    const cAmt = s.companyOfferAmount != null ? Number(s.companyOfferAmount) : null;
+    const rAmt = s.roomOfferAmount != null ? Number(s.roomOfferAmount) : null;
+
     const companyLine = ovId
       ? ov
         ? `${ov.plate}${vehicleMetaLine(ov) ? ` • ${vehicleMetaLine(ov)}` : ""}`
@@ -453,16 +649,24 @@ export default function RoomShiftsPanel() {
 
     return (
       <div className="muted" title={s.companyOfferNote || ""}>
-        <div><b>C→R:</b> {companyLine}</div>
+        <div>
+          <b>C→R:</b> {companyLine}
+          {cAmt != null ? <span className="muted"> • {formatTRY(cAmt)} ₺</span> : null}
+        </div>
         {s.companyOfferNote ? <div className="muted" style={{ marginTop: 4 }}>{s.companyOfferNote}</div> : null}
 
-        <div style={{ marginTop: 6 }}><b>R→C:</b> {roomLine}</div>
+        <div style={{ marginTop: 6 }}>
+          <b>R→C:</b> {roomLine}
+          {rAmt != null ? <span className="muted"> • {formatTRY(rAmt)} ₺</span> : null}
+        </div>
         {s.roomOfferNote ? <div className="muted" style={{ marginTop: 4 }}>{s.roomOfferNote}</div> : null}
         {s.roomOfferToDriver ? (
           <div className="muted" style={{ marginTop: 4 }}>
             <b>R→D:</b> evet{s.roomOfferDriverNote ? ` • ${s.roomOfferDriverNote}` : ""}
           </div>
         ) : null}
+
+        {renderDecisionBlock(s)}
       </div>
     );
   }
@@ -506,19 +710,15 @@ export default function RoomShiftsPanel() {
                   <tr key={s.id}>
                     <td>{s.id}</td>
                     <td className="muted">{s.company?.name || s.companyId}</td>
-                    <td className="muted">{String(s.startAt)}</td>
-                    <td className="muted">{String(s.endAt)}</td>
+                    <td className="muted">{fmtDT(s.startAt)}</td>
+                    <td className="muted">{fmtDT(s.endAt)}</td>
 
                     <td>{renderOfferCell(s)}</td>
 
                     <td>
-                      <select
-                        value={selectedVid}
-                        onChange={(e) => setSel(s.id, { vehicleId: e.target.value })}
-                      >
+                      <select value={selectedVid} onChange={(e) => setSel(s.id, { vehicleId: e.target.value })}>
                         <option value="">Seç</option>
 
-                        {/* offered araç müsait değilse bile bilgi amaçlı dursun */}
                         {ovId && !offeredAvailable ? (
                           <option value={ovId} disabled>
                             TEKLİF #{ovId} (müsait değil)
@@ -539,9 +739,7 @@ export default function RoomShiftsPanel() {
 
                       <div style={{ marginTop: 8 }}>
                         <button type="button" onClick={() => toggleAvail(s.id)} disabled={busy}>
-                          {openAvail[s.id]
-                            ? `Müsait Araçları Gizle (${avail.length})`
-                            : `Müsait Araçları Göster (${avail.length})`}
+                          {openAvail[s.id] ? `Müsait Araçları Gizle (${avail.length})` : `Müsait Araçları Göster (${avail.length})`}
                         </button>
                       </div>
 
@@ -614,8 +812,8 @@ export default function RoomShiftsPanel() {
 
                 <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
                 <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
-                <td className="muted">{String(s.startAt)}</td>
-                <td className="muted">{String(s.endAt)}</td>
+                <td className="muted">{fmtDT(s.startAt)}</td>
+                <td className="muted">{fmtDT(s.endAt)}</td>
               </tr>
             ))}
           </tbody>
@@ -624,3 +822,8 @@ export default function RoomShiftsPanel() {
     </div>
   );
 }
+
+
+
+
+

@@ -17,6 +17,7 @@ export function vehiclesRouter(io) {
         where: { roomId: u.roomId },
         include: {
           gpsLast: true,
+          driver: true,
           shifts: {
             where: { status: { in: ["APPROVED", "ACTIVE"] } },
             include: { company: true, driver: true, stops: { orderBy: { order: "asc" } } },
@@ -74,6 +75,38 @@ export function vehiclesRouter(io) {
     // SUPER_ADMIN: all
     const items = await prisma.vehicle.findMany({ include: { gpsLast: true, room: true }, orderBy: { id: "asc" } });
     return res.json(items);
+  });
+
+
+  // Bind driver to vehicle (ROOM)
+  r.put("/:id/bind-driver", authRequired(), requireRole("ROOM"), async (req, res) => {
+    const u = req.user;
+    const vehicleId = Number(req.params.id);
+    const driverId = Number(req.body?.driverId);
+
+    if (!u.roomId) return res.status(400).json({ code: "BAD_REQUEST", message: "ROOM must have roomId" });
+    if (!vehicleId || !driverId) {
+      return res.status(400).json({ code: "BAD_REQUEST", message: "driverId gerekli" });
+    }
+
+    const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { id: true, roomId: true } });
+    if (!vehicle) return res.status(404).json({ code: "NOT_FOUND", message: "Vehicle bulunamadı" });
+    if (vehicle.roomId !== u.roomId) return res.status(403).json({ code: "FORBIDDEN", message: "Forbidden" });
+
+    const driver = await prisma.driver.findUnique({ where: { id: driverId }, select: { id: true, roomId: true, fullName: true } });
+    if (!driver) return res.status(404).json({ code: "NOT_FOUND", message: "Driver bulunamadı" });
+    if (driver.roomId !== u.roomId) {
+      return res.status(400).json({ code: "BAD_REQUEST", message: "Driver aynı room içinde olmalı" });
+    }
+
+    const updated = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { driverId },
+      include: { gpsLast: true, driver: true },
+    });
+
+    io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId: updated.id, action: "bind-driver" });
+    return res.json({ ok: true, vehicle: updated });
   });
 
   // Create vehicle (ROOM)

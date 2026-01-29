@@ -77,6 +77,8 @@ export function SessionProvider({ children }) {
       "shift:room-offer",
       "shift:company-offer",
       "shift:progress",
+      "shift:room-offer-decision",
+      "shift:company-decision"
     ];
     SHIFT_EVENTS.forEach((ev) => s.on(ev, () => invalidate("shifts")));
 

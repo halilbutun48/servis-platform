@@ -33,7 +33,11 @@ enum VehicleStatus {
   STALE
 }
 
-
+enum OfferDecision {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
 
 enum VehicleType {
   MINIBUS
@@ -152,6 +156,9 @@ model Vehicle {
   status            VehicleStatus @default(ACTIVE)
   speedLimitKmh     Int           @default(80)
 
+  // Opsiyonel: bu araca bağlı varsayılan driver
+  driverId           Int?
+
   // V1 meta (araç tanımı)
   type              VehicleType?
   brand             String?
@@ -183,6 +190,7 @@ model Vehicle {
   createdAt         DateTime      @default(now())
 
   room              Room          @relation(fields: [roomId], references: [id])
+  driver            Driver?       @relation(fields: [driverId], references: [id], onDelete: SetNull)
   gpsLast           GpsLast?
   gpsState          VehicleGpsState? // ✅ yeni: UI status gate state
   gpsPoints         GpsPoint[]
@@ -202,6 +210,8 @@ model Driver {
   createdAt      DateTime @default(now())
 
   room           Room     @relation(fields: [roomId], references: [id])
+
+  vehicles       Vehicle[]
 
   // Optional login user link (role=DRIVER)
   userId         Int?     @unique
@@ -228,15 +238,22 @@ model Shift {
   status    ShiftStatus @default(DRAFT)
   createdAt DateTime    @default(now())
 
-  // COMPANY → ROOM teklif (mevcut)
+  // COMPANY → ROOM teklif
   companyOfferVehicleId Int?
+  companyOfferAmount    Int?
   companyOfferNote      String?
 
-  // ROOM → COMPANY teklif (yeni)
-  roomOfferVehicleId   Int?
-  roomOfferNote        String?
-  roomOfferToDriver    Boolean  @default(false)
-  roomOfferDriverNote  String?
+  // ROOM → COMPANY teklif
+  roomOfferVehicleId    Int?
+  roomOfferAmount       Int?
+  roomOfferNote         String?
+  roomOfferToDriver     Boolean  @default(false)
+  roomOfferDriverNote   String?
+
+  // COMPANY: room teklifine karar
+  roomOfferDecision      OfferDecision @default(PENDING)
+  roomOfferDecisionNote  String?
+  roomOfferDecisionAt    DateTime?
 
   company   Company     @relation(fields: [companyId], references: [id])
   room      Room        @relation(fields: [roomId], references: [id])
@@ -252,10 +269,13 @@ model Shift {
   @@index([roomId])
   @@index([vehicleId])
   @@index([driverId])
-  @@index([companyOfferVehicleId])
 
-  // yeni indexler
+  @@index([companyOfferVehicleId])
+  @@index([companyOfferAmount])
+
+  @@index([roomOfferDecision])
   @@index([roomOfferVehicleId])
+  @@index([roomOfferAmount])
 }
 
 model Stop {

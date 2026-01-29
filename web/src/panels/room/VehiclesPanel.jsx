@@ -15,6 +15,8 @@ const VEHICLE_TYPES = [
 export default function VehiclesPanel() {
   const { token } = useSession();
   const [items, setItems] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [bindSel, setBindSel] = useState({});
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -45,8 +47,12 @@ export default function VehiclesPanel() {
   async function load() {
     setErr("");
     try {
-      const r = await api("/api/vehicles", { token });
-      setItems(Array.isArray(r) ? r : []);
+      const [v, d] = await Promise.all([
+        api("/api/vehicles", { token }),
+        api("/api/drivers", { token }),
+      ]);
+      setItems(Array.isArray(v) ? v : []);
+      setDrivers(Array.isArray(d) ? d : []);
     } catch (e) {
       setErr(String(e?.message || e));
     }
@@ -54,6 +60,7 @@ export default function VehiclesPanel() {
 
   useEffect(() => { load(); }, []); // eslint-disable-line
   useAutoReload("vehicles", load);
+  useAutoReload("drivers", load);
 
   async function createVehicle(e) {
     e.preventDefault();
@@ -87,6 +94,31 @@ export default function VehiclesPanel() {
       await load();
     } catch (e2) {
       setErr(String(e2?.message || e2));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+
+  async function bindDriver(vehicleId) {
+    const sel = bindSel?.[vehicleId] ?? "";
+    const driverId = Number(sel || 0);
+    if (!driverId) {
+      setErr("Bağlamak için driver seçmelisin.");
+      return;
+    }
+
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/vehicles/${vehicleId}/bind-driver`, {
+        method: "PUT",
+        token,
+        body: { driverId },
+      });
+      await load();
+    } catch (e) {
+      setErr(String(e?.payload?.message || e?.message || e));
     } finally {
       setBusy(false);
     }
@@ -211,6 +243,7 @@ export default function VehiclesPanel() {
             <tr>
               <th>ID</th>
               <th>Plaka</th>
+              <th>Driver</th>
               <th>Status</th>
               <th>Tip</th>
               <th>Marka/Model/Yıl</th>
@@ -236,10 +269,40 @@ export default function VehiclesPanel() {
 
               const brandLine = [v.brand, v.model, v.modelYear].filter(Boolean).join(" ");
 
+              const curDriverId = v.driverId ?? v.driver?.id ?? "";
+              const selectedDriverId = String(bindSel[v.id] ?? curDriverId ?? "");
+              const currentDriverLabel = v.driver?.fullName || (curDriverId ? `#${curDriverId}` : "-");
+
               return (
                 <tr key={v.id}>
                   <td>{v.id}</td>
                   <td>{v.plate}</td>
+
+                  <td>
+                    <div className="muted">{currentDriverLabel}</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <select
+                        value={selectedDriverId}
+                        onChange={(e) => setBindSel((prev) => ({ ...prev, [v.id]: e.target.value }))}
+                        disabled={busy}
+                      >
+                        <option value="">Driver seç</option>
+                        {drivers.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.fullName}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={busy || !selectedDriverId || String(curDriverId || "") === String(selectedDriverId)}
+                        onClick={() => bindDriver(v.id)}
+                        title="Araca driver bağla"
+                      >
+                        Bağla
+                      </button>
+                    </div>
+                  </td>
 
                   <td>
                     <span className="pill" data-status={pillKey}>{ui}</span>

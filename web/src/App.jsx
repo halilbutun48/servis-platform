@@ -1,3 +1,4 @@
+// web/src/App.jsx
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
@@ -18,6 +19,9 @@ import DriverMapPanel from "./panels/driver/MapPanel";
 import PersonelLivePanel from "./panels/personel/LivePanel";
 
 import ErrorBoundary from "./components/ErrorBoundary";
+
+// ✅ WS
+import { startLiveWs, stopLiveWs } from "./live/ws";
 
 function roleDefaultPath(role) {
   if (role === "ROOM") return "/room/map";
@@ -79,6 +83,15 @@ export default function App() {
   const { token, me } = useSession();
   const { path } = useHashRoute();
 
+  // ✅ WS: token geldikçe başlat, token gidince durdur
+  useEffect(() => {
+    if (token) startLiveWs(token);
+    else stopLiveWs();
+
+    // component unmount olursa da kapat
+    return () => stopLiveWs();
+  }, [token]);
+
   // Redirect to default panel after login
   useEffect(() => {
     if (!token || !me?.role) return;
@@ -121,7 +134,10 @@ export default function App() {
   }, [token, me, path]);
 
   if (!view.layout) return view.node;
-  return <AppShell path={path}>
-<ErrorBoundary>{view.node}</ErrorBoundary>
-</AppShell>;
+
+  return (
+    <AppShell path={path}>
+      <ErrorBoundary>{view.node}</ErrorBoundary>
+    </AppShell>
+  );
 }

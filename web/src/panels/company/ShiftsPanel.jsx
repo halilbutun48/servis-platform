@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import { invalidate } from "../../live/bus";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -23,8 +24,23 @@ function trimOrNull(s) {
   return t ? t : null;
 }
 
+function formatTRY(amount) {
+  if (amount == null) return "";
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("tr-TR").format(n);
+}
+
+function parseTryInput(raw) {
+  if (raw == null) return null;
+  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export default function CompanyShiftsPanel() {
-  const { token } = useSession();
+  const { token, me } = useSession();
 
   const [items, setItems] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -32,6 +48,15 @@ export default function CompanyShiftsPanel() {
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Room teklif kararı butonları için
+  const [decidingId, setDecidingId] = useState(null);
+
+  // ✅ Decision note input state (shift bazlı)
+  const [decisionNoteSel, setDecisionNoteSel] = useState({}); // { [shiftId]: string }
+  function setDecisionNote(shiftId, value) {
+    setDecisionNoteSel((p) => ({ ...p, [Number(shiftId)]: value }));
+  }
 
   // dropdown'lar string sever; gönderirken Number() yapıyoruz
   const [roomId, setRoomId] = useState("1");
@@ -41,11 +66,14 @@ export default function CompanyShiftsPanel() {
   // filtre/teklif (yeni shift oluştururken)
   const [seatDemand, setSeatDemand] = useState(""); // opsiyonel filtre
   const [offerVehicleId, setOfferVehicleId] = useState(""); // opsiyonel
+  const [offerAmount, setOfferAmount] = useState(""); // opsiyonel (₺)
   const [offerNote, setOfferNote] = useState(""); // opsiyonel
 
   // Karşı teklif UI (mevcut shift üstünde offer güncelleme)
   const [offerOpen, setOfferOpen] = useState({}); // { [shiftId]: boolean }
-  const [offerSel, setOfferSel] = useState({}); // { [shiftId]: { companyOfferVehicleId, companyOfferNote } }
+  const [offerSel, setOfferSel] = useState({}); // { [shiftId]: { companyOfferVehicleId, companyOfferAmount, companyOfferNote } }
+
+  const isCompany = String(me?.role || "") === "COMPANY";
 
   function toggleOffer(shiftId) {
     setOfferOpen((p) => ({ ...p, [shiftId]: !p[shiftId] }));
@@ -60,24 +88,47 @@ export default function CompanyShiftsPanel() {
   async function load() {
     setErr("");
     try {
+      // ✅ COMPANY rolünde /api/rooms çağrısı yapma (403 spam biter)
+      const roomsPromise = !isCompany ? api("/api/rooms", { token }).catch(() => []) : Promise.resolve([]);
+
       const [sh, veh, rm] = await Promise.all([
         api("/api/shifts", { token }),
         api("/api/vehicles", { token }),
-        api("/api/rooms", { token }).catch(() => []), // endpoint yoksa paneli komple bozmayalım
+        roomsPromise,
       ]);
 
-      setItems(Array.isArray(sh) ? sh : (sh?.items ?? []));
+      const list = Array.isArray(sh) ? sh : sh?.items ?? [];
+      setItems(list);
       setVehicles(Array.isArray(veh) ? veh : []);
       setRooms(Array.isArray(rm) ? rm : []);
+
+      // ✅ Decision note map init (varsa elle yazılanı ezme)
+      setDecisionNoteSel((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const s of list) {
+          const sid = Number(s.id);
+          if (next[sid] === undefined) {
+            next[sid] = "";
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
     } catch (e) {
       setErr(String(e?.message || e));
     }
   }
 
-  useEffect(() => { load(); }, []); // eslint-disable-line
+  // me role geldikçe tekrar load et
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.role]);
+
   useAutoReload("shifts", load);
   useAutoReload("vehicles", load);
-  useAutoReload("rooms", load);
+  useAutoReload("rooms", load, !isCompany);
 
   const roomsById = useMemo(() => {
     const m = new Map();
@@ -99,9 +150,10 @@ export default function CompanyShiftsPanel() {
     const baseRooms =
       rooms?.length
         ? rooms
-        : Array.from(
-            new Set(vehicles.map((v) => v?.roomId).filter(Boolean).map((x) => Number(x)))
-          ).map((id) => ({ id, name: `Room #${id}` }));
+        : Array.from(new Set(vehicles.map((v) => v?.roomId).filter(Boolean).map((x) => Number(x)))).map((id) => ({
+            id,
+            name: `Room #${id}`,
+          }));
 
     const list = baseRooms.map((r) => {
       const rid = Number(r.id);
@@ -116,12 +168,11 @@ export default function CompanyShiftsPanel() {
     });
 
     const filtered = seatN ? list.filter((r) => r.eligibleCount > 0) : list;
-
     filtered.sort((a, b) => Number(a.id) - Number(b.id));
     return filtered;
   }, [rooms, vehicles, seatN]);
 
-  // seatDemand değişince: seçili room artık uygunsuzsa ilk uygun room'a çek
+  // seatDemand değişince: seçili room uygunsuzsa ilk uygun room'a çek
   useEffect(() => {
     if (!roomOptions.length) return;
     const rid = Number(roomId);
@@ -145,12 +196,21 @@ export default function CompanyShiftsPanel() {
   useEffect(() => {
     if (!offerVehicleId) return;
     const v = vehiclesById.get(Number(offerVehicleId));
-    if (!v) { setOfferVehicleId(""); return; }
+    if (!v) {
+      setOfferVehicleId("");
+      return;
+    }
 
     const rid = Number(roomId);
-    if (rid && v?.roomId && Number(v.roomId) !== rid) { setOfferVehicleId(""); return; }
+    if (rid && v?.roomId && Number(v.roomId) !== rid) {
+      setOfferVehicleId("");
+      return;
+    }
 
-    if (seatN && Number(v?.capacity || 0) < seatN) { setOfferVehicleId(""); return; }
+    if (seatN && Number(v?.capacity || 0) < seatN) {
+      setOfferVehicleId("");
+      return;
+    }
   }, [roomId, seatN, offerVehicleId, vehiclesById]);
 
   // Karşı teklif formunu (ilk kez) shift üstündeki mevcut companyOffer* ile initialize et
@@ -165,6 +225,7 @@ export default function CompanyShiftsPanel() {
 
         next[sid] = {
           companyOfferVehicleId: s.companyOfferVehicleId ? String(s.companyOfferVehicleId) : "",
+          companyOfferAmount: s.companyOfferAmount != null ? String(s.companyOfferAmount) : "",
           companyOfferNote: s.companyOfferNote ?? "",
         };
         changed = true;
@@ -187,6 +248,10 @@ export default function CompanyShiftsPanel() {
       };
 
       if (offerVehicleId) body.companyOfferVehicleId = Number(offerVehicleId);
+
+      const amt = parseTryInput(offerAmount);
+      if (amt != null) body.companyOfferAmount = amt;
+
       if (offerNote.trim()) body.companyOfferNote = offerNote.trim();
 
       await api("/api/shifts", { method: "POST", token, body });
@@ -195,6 +260,7 @@ export default function CompanyShiftsPanel() {
       setEndAt("");
       setSeatDemand("");
       setOfferVehicleId("");
+      setOfferAmount("");
       setOfferNote("");
 
       await load();
@@ -213,6 +279,7 @@ export default function CompanyShiftsPanel() {
     const vRaw = form.companyOfferVehicleId;
     const vId = vRaw ? Number(vRaw) : null;
 
+    const amt = parseTryInput(form.companyOfferAmount);
     const note = trimOrNull(form.companyOfferNote);
 
     // araç seçildiyse: seçilen araç bu shift'in roomId'siyle aynı room'da olmalı (UI quick check)
@@ -232,6 +299,7 @@ export default function CompanyShiftsPanel() {
         token,
         body: {
           companyOfferVehicleId: vId || null,
+          companyOfferAmount: amt ?? null,
           companyOfferNote: note || null,
         },
       });
@@ -254,16 +322,49 @@ export default function CompanyShiftsPanel() {
       await api(`/api/shifts/${sid}/company-offer`, {
         method: "PUT",
         token,
-        body: { companyOfferVehicleId: null, companyOfferNote: null },
+        body: { companyOfferVehicleId: null, companyOfferAmount: null, companyOfferNote: null },
       });
 
-      setOfferSel((p) => ({ ...p, [sid]: { companyOfferVehicleId: "", companyOfferNote: "" } }));
+      setOfferSel((p) => ({
+        ...p,
+        [sid]: { companyOfferVehicleId: "", companyOfferAmount: "", companyOfferNote: "" },
+      }));
       setOfferOpen((p) => ({ ...p, [sid]: false }));
       await load();
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  // ✅ Company: Room teklifini kabul / reddet (note destekli)
+  async function decideRoomOffer(shift, decision, noteRaw) {
+    const sid = Number(shift.id);
+    setDecidingId(sid);
+    setErr("");
+
+    const note = trimOrNull(noteRaw);
+
+    try {
+      await api(`/api/shifts/${sid}/room-offer-decision`, {
+        method: "PUT",
+        token,
+        body: {
+          decision, // "ACCEPTED" | "REJECTED"
+          ...(note ? { note } : {}),
+        },
+      });
+
+      // notu temizle (isteğe bağlı UX)
+      setDecisionNoteSel((p) => ({ ...p, [sid]: "" }));
+
+      invalidate("shifts");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setDecidingId(null);
     }
   }
 
@@ -275,30 +376,100 @@ export default function CompanyShiftsPanel() {
       .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
   }
 
-  const selectedRoom =
-    roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
+  const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
 
-  function renderRoomOfferSummary(s) {
+  function renderRoomOfferSummary(s, canNegotiate) {
     const rvId = s.roomOfferVehicleId ? Number(s.roomOfferVehicleId) : null;
     const rv = rvId ? vehiclesById.get(rvId) : null;
+    const rAmt = s.roomOfferAmount != null ? Number(s.roomOfferAmount) : null;
 
-    const has = Boolean(rvId || s.roomOfferNote || s.roomOfferToDriver || s.roomOfferDriverNote);
+    const has = Boolean(rvId || rAmt != null || s.roomOfferNote || s.roomOfferToDriver || s.roomOfferDriverNote);
     if (!has) return <span className="muted">-</span>;
+
+    const decision = String(s.roomOfferDecision || "PENDING");
+    const decisionAtText = s.roomOfferDecisionAt ? String(s.roomOfferDecisionAt) : "";
+
+    const sid = Number(s.id);
+    const noteVal = decisionNoteSel[sid] ?? "";
 
     return (
       <div className="muted">
         <div>
-          <b>R→C Araç:</b>{" "}
-          {rvId ? (rv ? `${rv.plate} • ${vehicleMetaLine(rv)}` : `#${rvId}`) : "-"}
+          <b>R→C Araç:</b> {rvId ? (rv ? `${rv.plate} • ${vehicleMetaLine(rv)}` : `#${rvId}`) : "-"}
         </div>
+
+        {rAmt != null ? (
+          <div className="muted" style={{ marginTop: 4 }}>
+            <b>R→C Tutar:</b> {formatTRY(rAmt)} ₺
+          </div>
+        ) : null}
+
         {s.roomOfferNote ? (
           <div className="muted" style={{ marginTop: 4 }}>
             <b>R→C Not:</b> {s.roomOfferNote}
           </div>
         ) : null}
+
         {s.roomOfferToDriver ? (
           <div className="muted" style={{ marginTop: 4 }}>
             <b>R→D:</b> evet{s.roomOfferDriverNote ? ` • ${s.roomOfferDriverNote}` : ""}
+          </div>
+        ) : null}
+
+        <div style={{ marginTop: 8 }}>
+          <b>Karar:</b>{" "}
+          {decision === "PENDING" ? (
+            <span className="muted">PENDING</span>
+          ) : (
+            <span className="pill" data-status={decision}>
+              {decision}
+            </span>
+          )}
+          {decision !== "PENDING" && decisionAtText ? <span className="muted"> • {decisionAtText}</span> : null}
+        </div>
+
+        {decision === "PENDING" ? (
+          canNegotiate ? (
+            <div style={{ marginTop: 8 }}>
+              {/* ✅ karar notu input */}
+              <div className="muted" style={{ marginBottom: 6 }}>
+                <b>Karar Notu (opsiyonel)</b>
+              </div>
+              <input
+                value={noteVal}
+                onChange={(e) => setDecisionNote(sid, e.target.value)}
+                placeholder="örn. Fiyat uygun, onayladık / Uygun değil, şu yüzden..."
+                maxLength={200}
+                disabled={busy || decidingId === sid}
+              />
+
+              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  disabled={busy || decidingId === sid}
+                  onClick={() => decideRoomOffer(s, "ACCEPTED", noteVal)}
+                >
+                  {decidingId === sid ? "..." : "Kabul"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || decidingId === sid}
+                  onClick={() => decideRoomOffer(s, "REJECTED", noteVal)}
+                >
+                  {decidingId === sid ? "..." : "Reddet"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="muted" style={{ marginTop: 8 }}>
+              Bu status’te karar verilemez.
+            </div>
+          )
+        ) : null}
+
+        {s.roomOfferDecisionNote ? (
+          <div className="muted" style={{ marginTop: 6 }}>
+            <b>Karar Notu:</b> {s.roomOfferDecisionNote}
           </div>
         ) : null}
       </div>
@@ -308,16 +479,21 @@ export default function CompanyShiftsPanel() {
   function renderCompanyOfferSummary(s) {
     const ovId = s.companyOfferVehicleId ? Number(s.companyOfferVehicleId) : null;
     const ov = ovId ? vehiclesById.get(ovId) : null;
+    const cAmt = s.companyOfferAmount != null ? Number(s.companyOfferAmount) : null;
 
-    const has = Boolean(ovId || s.companyOfferNote);
+    const has = Boolean(ovId || cAmt != null || s.companyOfferNote);
     if (!has) return <span className="muted">-</span>;
 
     return (
       <div className="muted" title={s.companyOfferNote || ""}>
         <div>
-          <b>C→R Araç:</b>{" "}
-          {ovId ? (ov ? `${ov.plate} • ${vehicleMetaLine(ov)}` : `#${ovId}`) : "-"}
+          <b>C→R Araç:</b> {ovId ? (ov ? `${ov.plate} • ${vehicleMetaLine(ov)}` : `#${ovId}`) : "-"}
         </div>
+        {cAmt != null ? (
+          <div className="muted" style={{ marginTop: 4 }}>
+            <b>C→R Tutar:</b> {formatTRY(cAmt)} ₺
+          </div>
+        ) : null}
         {s.companyOfferNote ? <div className="muted" style={{ marginTop: 4 }}>{s.companyOfferNote}</div> : null}
       </div>
     );
@@ -338,12 +514,7 @@ export default function CompanyShiftsPanel() {
         <form onSubmit={createShift} className="grid">
           <div className="col">
             <label className="muted">Kişi sayısı (opsiyonel filtre)</label>
-            <input
-              type="number"
-              placeholder="örn. 16"
-              value={seatDemand}
-              onChange={(e) => setSeatDemand(e.target.value)}
-            />
+            <input type="number" placeholder="örn. 16" value={seatDemand} onChange={(e) => setSeatDemand(e.target.value)} />
           </div>
 
           <div className="col">
@@ -397,16 +568,19 @@ export default function CompanyShiftsPanel() {
           </div>
 
           <div className="col" style={{ gridColumn: "1 / -1" }}>
+            <label className="muted">Company Tutar (₺) (opsiyonel)</label>
+            <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" />
+          </div>
+
+          <div className="col" style={{ gridColumn: "1 / -1" }}>
             <label className="muted">Teklif Notu (opsiyonel)</label>
-            <input
-              value={offerNote}
-              onChange={(e) => setOfferNote(e.target.value)}
-              placeholder="örn. Bu vardiya için bu araç uygun"
-            />
+            <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" />
           </div>
 
           <div className="col" style={{ justifyContent: "end" }}>
-            <button disabled={busy} type="submit">{busy ? "..." : "Request"}</button>
+            <button disabled={busy} type="submit">
+              {busy ? "..." : "Request"}
+            </button>
           </div>
         </form>
       </div>
@@ -442,10 +616,14 @@ export default function CompanyShiftsPanel() {
               return (
                 <tr key={s.id}>
                   <td>{s.id}</td>
-                  <td><span className="pill" data-status={s.status}>{s.status}</span></td>
+                  <td>
+                    <span className="pill" data-status={s.status}>
+                      {s.status}
+                    </span>
+                  </td>
                   <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
 
-                  <td>{renderRoomOfferSummary(s)}</td>
+                  <td>{renderRoomOfferSummary(s, canNegotiate)}</td>
                   <td>{renderCompanyOfferSummary(s)}</td>
 
                   <td>
@@ -467,7 +645,9 @@ export default function CompanyShiftsPanel() {
 
                         <div style={{ display: "grid", gap: 8 }}>
                           <label className="muted">
-                            <div style={{ marginBottom: 4 }}><b>Teklif Araç (opsiyonel)</b></div>
+                            <div style={{ marginBottom: 4 }}>
+                              <b>Teklif Araç (opsiyonel)</b>
+                            </div>
                             <select
                               value={form.companyOfferVehicleId || ""}
                               onChange={(e) => setOfferForShift(sid, { companyOfferVehicleId: e.target.value })}
@@ -483,7 +663,21 @@ export default function CompanyShiftsPanel() {
                           </label>
 
                           <label className="muted">
-                            <div style={{ marginBottom: 4 }}><b>Teklif Notu (opsiyonel)</b></div>
+                            <div style={{ marginBottom: 4 }}>
+                              <b>Teklif Tutar (₺) (opsiyonel)</b>
+                            </div>
+                            <input
+                              value={form.companyOfferAmount ?? ""}
+                              onChange={(e) => setOfferForShift(sid, { companyOfferAmount: e.target.value })}
+                              placeholder="örn. 25000"
+                              disabled={busy}
+                            />
+                          </label>
+
+                          <label className="muted">
+                            <div style={{ marginBottom: 4 }}>
+                              <b>Teklif Notu (opsiyonel)</b>
+                            </div>
                             <input
                               value={form.companyOfferNote ?? ""}
                               onChange={(e) => setOfferForShift(sid, { companyOfferNote: e.target.value })}
@@ -520,7 +714,6 @@ export default function CompanyShiftsPanel() {
       <div className="card">
         <div className="muted">
           Not: Bu panel “Karşı Teklif” için <b>PUT /api/shifts/:id/company-offer</b> endpoint’ini çağırır.
-          Backend’de yoksa eklemelisin.
         </div>
       </div>
     </div>

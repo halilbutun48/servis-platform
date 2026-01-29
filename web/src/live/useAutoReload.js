@@ -1,11 +1,26 @@
-import { useEffect } from "react";
-import { onInvalidate } from "./bus";
+// web/src/live/useAutoReload.js
+import { useEffect, useRef } from "react";
+import { on } from "./bus";
 
-// Re-run `load` when `key` is invalidated.
-export function useAutoReload(key, load) {
+/**
+ * useAutoReload("shifts", loadAll)
+ * useAutoReload("rooms", load, !isCompany)  // enabled gate
+ */
+export function useAutoReload(topic, fn, enabled = true) {
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+
   useEffect(() => {
-    if (!key || !load) return;
-    return onInvalidate(key, () => load());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+    if (!enabled) return;
+
+    return on(topic, () => {
+      try {
+        fnRef.current?.();
+      } catch (e) {
+        // sessizce geç
+        // eslint-disable-next-line no-console
+        console.warn("useAutoReload handler error:", e);
+      }
+    });
+  }, [topic, enabled]);
 }
