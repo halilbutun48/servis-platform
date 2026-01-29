@@ -19,6 +19,11 @@ export function uiStatusFromAt(atIso) {
 
 // UI standard: LIVE | STALE | OFFLINE
 export function uiStatusFromVehicle(v) {
+  // ✅ 1) backend gpsState varsa onu esas al (transition gate)
+  const gs = String(v?.gpsState?.lastUiStatus || "").toUpperCase();
+  if (gs === "LIVE" || gs === "STALE" || gs === "OFFLINE") return gs;
+
+  // ✅ 2) gpsLast.at varsa yaşa göre hesapla
   const atIso =
     v?.gpsLast?.at ||
     v?.gpsLast?.ts ||
@@ -29,10 +34,7 @@ export function uiStatusFromVehicle(v) {
   const byAt = uiStatusFromAt(atIso);
   if (byAt) return byAt;
 
-  // fallback (at yoksa)
-  const vs = String(v?.status || "").toUpperCase(); // ACTIVE|STALE|...
-  if (vs === "ACTIVE") return "LIVE";
-  if (vs === "STALE") return "STALE";
+  // ✅ 3) Hiç GPS yoksa LIVE demeyelim (haritada görünmez, OFFLINE doğru)
   return "OFFLINE";
 }
 
@@ -49,6 +51,7 @@ export function pillKeyFromUi(ui) {
   if (ui === "STALE") return "STALE";
   return "PASSIVE"; // OFFLINE
 }
+
 // Notifications gibi yerlerde GPS_STALE / GPS_OFFLINE / LIVE / OFFLINE vs. gelirse
 // mevcut pill CSS (ACTIVE|STALE|PASSIVE) ile uyumlu hale getirir.
 export function pillKeyFromAny(x) {

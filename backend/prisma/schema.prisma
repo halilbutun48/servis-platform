@@ -157,7 +157,7 @@ model Vehicle {
   speedLimitKmh     Int           @default(80)
 
   // Opsiyonel: bu araca bağlı varsayılan driver
-  driverId           Int?
+  driverId          Int?
 
   // V1 meta (araç tanımı)
   type              VehicleType?
@@ -174,18 +174,22 @@ model Vehicle {
   cascoDueAt        DateTime?
 
   // Bakım (tarih + km)
-  lastServiceAt     DateTime?
-  lastServiceKm     Int?
-  serviceIntervalKm Int           @default(15000)
+  lastServiceAt       DateTime?
+  lastServiceKm       Int?
+  serviceIntervalKm   Int            @default(15000)
   serviceIntervalDays Int?
 
   // Odometer
   odometerKm        Int?
   odometerUpdatedAt DateTime?
-  odometerSource    OdometerSource @default(MANUAL)
+  odometerSource    OdometerSource  @default(MANUAL)
 
   // Geriye dönük uyum: eski bakım alanı (UI'da opsiyonel gösterilebilir)
   nextMaintenanceAt DateTime?
+
+  // ✅ Archive (shift bağlıyken "sil" => archive)
+  archivedAt        DateTime?
+  archivedReason    String?
 
   createdAt         DateTime      @default(now())
 
@@ -197,8 +201,11 @@ model Vehicle {
   shifts            Shift[]
   notifications     Notification[]
 
+  // index
   @@index([roomId])
+  @@index([roomId, archivedAt])
 }
+
 
 model Driver {
   id             Int      @id @default(autoincrement())

@@ -1,271 +1,35 @@
 // backend/src/routes/shifts.js
 import express from "express";
-import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { audit } from "../audit.js";
 import { createNotification } from "../notifications/service.js";
 import { checkShiftConflicts, conflictResponse } from "../services/shiftConflict.js";
 
-const createShiftSchema = z.object({
-  roomId: z.number().int().positive(),
-  startAt: z.string(),
-  endAt: z.string(),
-  status: z.string().optional(),
+// ✅ satır sayısını azaltmak için schema + helper'lar ayrı dosyalarda
+import {
+  createShiftSchema,
+  approveSchema,
+  roomOfferSchema,
+  roomOfferDecisionSchema,
+  companyOfferSchema,
+  addStopSchema,
+  updateStopSchema,
+  reorderSchema,
+  reachedSchema,
+  fromTemplateSchema,
+} from "./shifts.schemas.js";
 
-  // COMPANY → ROOM teklif (shift seviyesinde)
-  companyOfferVehicleId: z.number().int().positive().optional(),
-  // ✅ yeni: teklif tutarı (TL)
-  companyOfferAmount: z.number().int().positive().optional(),
-  companyOfferNote: z.string().max(200).optional(),
-
-  stops: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        lat: z.number(),
-        lng: z.number(),
-        order: z.number().int().min(1),
-        type: z.enum(["COMMON", "MANUAL"]).optional(),
-      })
-    )
-    .optional(),
-});
-
-const approveSchema = z.object({
-  vehicleId: z.number().int().positive(),
-  driverId: z.number().int().positive().optional(), // opsiyonel
-  status: z.string().optional(),
-});
-
-// ROOM → COMPANY teklif schema (pazarlık)
-const roomOfferSchema = z
-  .object({
-    roomOfferVehicleId: z.union([z.number().int().positive(), z.null()]).optional(),
-    // ✅ yeni: teklif tutarı (TL)
-    roomOfferAmount: z.union([z.number().int().positive(), z.null()]).optional(),
-    roomOfferNote: z.union([z.string().max(200), z.null()]).optional(),
-
-    // opsiyonel: driver'a ilet (room isterse)
-    notifyDriver: z.boolean().optional(),
-    driverNote: z.union([z.string().max(200), z.null()]).optional(),
-  })
-  .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
-
-// COMPANY: room teklifine karar (kabul/red)
-const roomOfferDecisionSchema = z.object({
-  decision: z.enum(["ACCEPTED", "REJECTED"]),
-  note: z.string().max(200).optional(),
-});
-
-// COMPANY: mevcut shift üstünde teklif güncelle (karşı teklif)
-const companyOfferSchema = z
-  .object({
-    companyOfferVehicleId: z.union([z.number().int().positive(), z.null()]).optional(),
-    // ✅ yeni: teklif tutarı (TL)
-    companyOfferAmount: z.union([z.number().int().positive(), z.null()]).optional(),
-    companyOfferNote: z.union([z.string().max(200), z.null()]).optional(),
-  })
-  .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
-
-const addStopSchema = z.object({
-  name: z.string().min(1),
-  lat: z.number(),
-  lng: z.number(),
-  order: z.number().int().min(1).optional(),
-  type: z.enum(["COMMON", "MANUAL"]).optional(),
-});
-
-const updateStopSchema = z
-  .object({
-    name: z.string().min(1).optional(),
-    lat: z.number().optional(),
-    lng: z.number().optional(),
-    order: z.number().int().min(1).optional(),
-    type: z.enum(["COMMON", "MANUAL"]).optional(),
-  })
-  .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
-
-const reorderSchema = z.object({
-  idsInOrder: z.array(z.number().int().positive()).optional(),
-  orders: z
-    .array(
-      z.object({
-        id: z.number().int().positive().optional(),
-        stopId: z.number().int().positive().optional(),
-        order: z.number().int().min(1).optional(),
-      })
-    )
-    .optional(),
-});
-
-const reachedSchema = z.object({ order: z.number().int().min(1) });
-
-const fromTemplateSchema = z.object({
-  templateId: z.number().int().positive(),
-  mode: z.enum(["REPLACE", "APPEND"]).default("REPLACE"),
-});
-
-function isEditableStatus(status) {
-  return status === "DRAFT" || status === "REQUESTED";
-}
-
-function trimOrNull(s) {
-  const t = String(s ?? "").trim();
-  return t ? t : null;
-}
-
-function parseDateOrThrow(s, fieldName) {
-  const d = new Date(s);
-  if (!d || Number.isNaN(d.getTime())) {
-    const e = new Error(`Invalid date for ${fieldName}`);
-    e.status = 400;
-    throw e;
-  }
-  return d;
-}
-
-// WS helper
-function emitShift(io, shift, event, payload = {}) {
-  if (!io || !shift) return;
-  const base = { shiftId: shift.id, ...payload };
-  io.to(`company:${shift.companyId}`).emit(event, base);
-  io.to(`room:${shift.roomId}`).emit(event, base);
-  io.to(`shift:${shift.id}`).emit(event, base);
-}
-
-// --- M7 helpers ---
-function haversineM(aLat, aLng, bLat, bLng) {
-  const R = 6371000;
-  const toRad = (x) => (x * Math.PI) / 180;
-  const dLat = toRad(bLat - aLat);
-  const dLng = toRad(bLng - aLng);
-  const lat1 = toRad(aLat);
-  const lat2 = toRad(bLat);
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
-}
-
-function clusterPoints(points, radiusM) {
-  const left = new Set(points.map((_, i) => i));
-  const clusters = [];
-
-  while (left.size) {
-    const seed = left.values().next().value;
-    left.delete(seed);
-
-    const q = [seed];
-    const members = [seed];
-
-    while (q.length) {
-      const i = q.shift();
-      for (const j of Array.from(left)) {
-        const d = haversineM(points[i].lat, points[i].lng, points[j].lat, points[j].lng);
-        if (d <= radiusM) {
-          left.delete(j);
-          q.push(j);
-          members.push(j);
-        }
-      }
-    }
-    clusters.push(members);
-  }
-
-  return clusters;
-}
-
-async function getShiftAndCheckScopeOrThrow(shiftId, user) {
-  const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
-  if (!shift) {
-    const e = new Error("Shift not found");
-    e.status = 404;
-    throw e;
-  }
-
-  if (user.role === "SUPER_ADMIN") return shift;
-
-  if (user.role === "ROOM") {
-    if (!user.roomId || user.roomId !== shift.roomId) {
-      const e = new Error("Forbidden");
-      e.status = 403;
-      throw e;
-    }
-    return shift;
-  }
-
-  if (user.role === "COMPANY") {
-    if (!user.companyId || user.companyId !== shift.companyId) {
-      const e = new Error("Forbidden");
-      e.status = 403;
-      throw e;
-    }
-    return shift;
-  }
-
-  const e = new Error("Forbidden");
-  e.status = 403;
-  throw e;
-}
-
-// --- M7: Request delegate detect (prisma.request olmayabilir) ---
-let _ReqDelegate = null;
-let _ReqLatField = "lat";
-let _ReqLngField = "lng";
-let _ReqStatusField = "status";
-
-async function getRequestDelegateOrThrow() {
-  // PickupRequest varsa HER ZAMAN onu kullan
-  if (prisma.pickupRequest) {
-    _ReqDelegate = prisma.pickupRequest;
-    _ReqLatField = "lat";
-    _ReqLngField = "lng";
-    _ReqStatusField = "status";
-    return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
-  }
-
-  if (_ReqDelegate) {
-    return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
-  }
-
-  const candidates = Object.keys(prisma).filter(
-    (k) => k !== "stop" && prisma[k] && typeof prisma[k].findMany === "function"
-  );
-
-  const probes = [
-    { lat: "lat", lng: "lng", status: "status" },
-    { lat: "latitude", lng: "longitude", status: "status" },
-    { lat: "lat", lng: "lng", status: "state" },
-  ];
-
-  for (const k of candidates) {
-    for (const p of probes) {
-      try {
-        const sel = { id: true, shiftId: true };
-        sel[p.lat] = true;
-        sel[p.lng] = true;
-        sel[p.status] = true;
-
-        await prisma[k].findMany({ take: 1, select: sel });
-
-        _ReqDelegate = prisma[k];
-        _ReqLatField = p.lat;
-        _ReqLngField = p.lng;
-        _ReqStatusField = p.status;
-
-        return { d: _ReqDelegate, latF: _ReqLatField, lngF: _ReqLngField, statusF: _ReqStatusField };
-      } catch {
-        // continue
-      }
-    }
-  }
-
-  const e = new Error("Request modeli Prisma Client'ta bulunamadı (shiftId + lat/lng + status/state bekleniyor)");
-  e.status = 500;
-  throw e;
-}
-
+import {
+  isEditableStatus,
+  trimOrNull,
+  parseDateOrThrow,
+  emitShift,
+  haversineM,
+  clusterPoints,
+  getShiftAndCheckScopeOrThrow,
+  getRequestDelegateOrThrow,
+} from "./shifts.helpers.js";
 export function shiftsRouter(io) {
   const r = express.Router();
 

@@ -1,4 +1,8 @@
 // backend/src/routes/driver.js
+// Mounted at: /api/driver
+// Purpose: DRIVER operational endpoints (active route, stop actions, completion)
+// NOTE: ROOM driver CRUD lives in routes/drivers.js (mounted at /api/drivers).
+
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
@@ -35,7 +39,7 @@ async function getDriverByUserId(userId) {
   return prisma.driver.findFirst({ where: { userId }, select: { id: true } });
 }
 
-async function getShiftForDriver({ driverId, shiftId }) {
+async function getShiftForDriver({ shiftId }) {
   return prisma.shift.findUnique({
     where: { id: shiftId },
     include: {
@@ -65,6 +69,7 @@ async function completeShift({ shiftId, roomId, companyId, vehicleId, io }) {
 
   await prisma.shift.update({ where: { id: shiftId }, data: { status: "DONE" } });
 
+  // NOTE: Kept as-is to avoid breaking clients.
   const payload = { shiftId, completed: true, nextStop: null };
   io?.to(`shift:${shiftId}`).emit("route:progress", payload);
   io?.to(`room:${roomId}`).emit("route:progress", payload);
@@ -119,8 +124,7 @@ export function driverRouter(io) {
     if (last) orderedStops.sort((a, b) => a.remainingKm - b.remainingKm);
 
     const nextStop = firstPendingStop(shift.stops ?? []);
-    const lastReachedOrder =
-      shift.progress?.lastReachedOrder ?? derivedLastReachedOrder(shift.stops ?? []);
+    const lastReachedOrder = shift.progress?.lastReachedOrder ?? derivedLastReachedOrder(shift.stops ?? []);
 
     return res.json({
       mode: "OK",
@@ -172,14 +176,13 @@ export function driverRouter(io) {
   });
 
   async function applyStopState({ req, res, state }) {
-    const u = req.user;
     const shiftId = Number(req.params.shiftId);
     const stopId = Number(req.params.stopId);
 
-    const driver = await getDriverByUserId(u.id);
+    const driver = await getDriverByUserId(req.user.id);
     if (!driver) return res.status(400).json({ error: "Driver profile not found" });
 
-    const shift = await getShiftForDriver({ driverId: driver.id, shiftId });
+    const shift = await getShiftForDriver({ shiftId });
     if (!shift) return res.status(404).json({ error: "Shift not found" });
     if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
     if (!["APPROVED", "ACTIVE"].includes(shift.status)) {
@@ -217,8 +220,7 @@ export function driverRouter(io) {
 
     // keep legacy progress monotonic (best-effort)
     const currentReached = shift.progress?.lastReachedOrder ?? 0;
-    const nextLegacyReached =
-      state === "PENDING" ? currentReached : Math.max(currentReached, stop.order ?? 0);
+    const nextLegacyReached = state === "PENDING" ? currentReached : Math.max(currentReached, stop.order ?? 0);
 
     await prisma.$transaction([
       prisma.stop.update({ where: { id: stopId }, data }),
@@ -286,7 +288,6 @@ export function driverRouter(io) {
           io,
         });
       } catch (e) {
-        // do not break main response
         console.error("auto complete error:", e);
       }
     }
@@ -295,27 +296,18 @@ export function driverRouter(io) {
   }
 
   // DRIVER: reached
-  r.post(
-    "/shifts/:shiftId/stops/:stopId/reached",
-    authRequired(),
-    requireRole("DRIVER"),
-    async (req, res) => applyStopState({ req, res, state: "REACHED" })
+  r.post("/shifts/:shiftId/stops/:stopId/reached", authRequired(), requireRole("DRIVER"), async (req, res) =>
+    applyStopState({ req, res, state: "REACHED" })
   );
 
   // DRIVER: skip
-  r.post(
-    "/shifts/:shiftId/stops/:stopId/skip",
-    authRequired(),
-    requireRole("DRIVER"),
-    async (req, res) => applyStopState({ req, res, state: "SKIPPED" })
+  r.post("/shifts/:shiftId/stops/:stopId/skip", authRequired(), requireRole("DRIVER"), async (req, res) =>
+    applyStopState({ req, res, state: "SKIPPED" })
   );
 
   // DRIVER: reopen (back to PENDING)
-  r.post(
-    "/shifts/:shiftId/stops/:stopId/reopen",
-    authRequired(),
-    requireRole("DRIVER"),
-    async (req, res) => applyStopState({ req, res, state: "PENDING" })
+  r.post("/shifts/:shiftId/stops/:stopId/reopen", authRequired(), requireRole("DRIVER"), async (req, res) =>
+    applyStopState({ req, res, state: "PENDING" })
   );
 
   // DRIVER: complete shift (manual)
