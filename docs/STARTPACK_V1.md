@@ -1,3 +1,9 @@
+# STARTPACK_V1 — Quick entry point (SSOT)
+
+Bu dosya “başlangıç noktasıdır”. Güncel ürün/akış/kurallar için:
+- SSOT: docs/PRIMER_SSOT.md
+- Kısa yapıştır: tools/PRIMER_SNAPSHOT.md
+
 # STARTPACK_V1 — Personel Servis Platformu (Single Source of Truth)
 
 Bu dosya **tek kaynak**tır:

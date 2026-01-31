@@ -1,24 +1,26 @@
-# personel-servis-v1 (Docker Compose + Prisma + Seed)
+# servis-platform — Personel Servis V1
 
-Bu paket: Room / Company / Driver / Personel akışlarını çalışır bir backend (REST + WebSocket) ile ayağa kaldırır.
+Bu repo: **öğrenci/parent olmayan** GPS tabanlı “personel servisi” platformunun backend + web uygulamasını içerir.
 
-## Servisler
-- **api**: Node/Express + Socket.IO (REST + WS)
-- **db**: PostgreSQL
-- **redis**: Redis (rate limit/cache/ws adapter placeholder)
+## Milestone referansı
+- Tag: `v1-m12-green` (PACK M0..M12 + FULLCHECK + SMOKE PASS)
 
-## Varsayılan URL'ler
-- API: http://localhost:3000
-- WS:  ws://localhost:3000  (Socket.IO)
-- Health: http://localhost:3000/health
-- Seed kullanıcıları: docs/SEED_USERS.md
-- Tek kaynak dokümanlar: docs/PROJECT_SPEC_V1.md, docs/API_SPEC_V1.md, docs/DB_SCHEMA_V1.md
+## Bileşenler
+- **backend/**: Node.js (ESM) + Express + Prisma
+- **web/**: Vite + React (role-based routing)
+- **infra/**: Docker Compose (Postgres + Redis + API)
+- **docs/**: SSOT dokümantasyon (spec’ler + primer)
+- **tools/**: Gate/Pack script’leri + PRIMER snapshot
 
-## Hızlı Başlangıç (PowerShell)
-1) Zip'i aç
-2) docker compose up --build
+## Dokümantasyon
+- Başlangıç: `docs/README.md`
+- Yapıştır & devam et (kısa): `tools/PRIMER_SNAPSHOT.md`
+- SSOT (detay): `docs/PRIMER_SSOT.md`
+- Seed kullanıcılar: `docs/SEED_USERS.md`
 
-Not: API container ilk açılışta Prisma migrate + seed çalıştırır.
+## Gate / doğrulama standardı
+Milestone ilerlerken her adımda “GREEN” almak hedef:
+- `tools/pack.(ps1|cmd)` → M0..M12 + fullcheck + smoke
+- Yeni referans noktasını tag ile sabitle (örn. `v1-m13-green`)
 
-
-⚠️ Dev paket: schema değişikliklerinde `prisma db push` kullanır.
+> Not: Bu ZIP paket `.git/` içermez. Git ile çalışmak için repo’yu klonlayıp bu dosyaları üzerine alabilirsiniz.

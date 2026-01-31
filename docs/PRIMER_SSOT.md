@@ -1,174 +1,210 @@
-# PERSONEL-SERVİS V1 — PRIMER (SSOT)
+# SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER (SSOT)
+Tarih: 2026-01-31  
+Timezone: Europe/Istanbul  
 
-Son güncelleme: **30 Ocak 2026**  
-Timezone: **Europe/Istanbul (TRT)**  
-Repo tipi: **backend/** + **web/** + **infra/** + **docs/** + **tools/**  
-Kural: Bu dosya SSOT. V1’e alınan her madde burada güncellenir.
+## 0) Bu dosya ne?
+Bu dosya “yapıştır & devam et” değil; **tek kaynak (SSOT) seviyesinde** repo özeti ve çalışma standardıdır:
+- Repo şu an **ne**?
+- Nasıl doğruluyoruz (**Gate/Pack**)?
+- “Green milestone” ne demek?
+- Bir sonraki işlerin **öncelik sırası** ne?
 
-## 1) Amaç ve Kapsam
-GPS tabanlı personel servis platformu.
+> Hızlı sohbet başlangıcı için ayrıca: `tools/PRIMER_SNAPSHOT.md`
 
-- Canlı araç takibi (harita)
-- Vardiya (Shift) → rota/durak yönetimi
-- COMPANY talepleri → ROOM onay + araç+sürücü atama
-- DRIVER tarafında durak ilerleme (REACHED / SKIPPED / REOPEN)
-- Bildirimler: OVERSPEED / GPS_STALE / GPS_OFFLINE / GPS_RECOVERY
-- Socket.IO ile canlı güncellemeler (gps/status, ETA, notif, route progress)
+---
 
-> V1’de Excel/cluster/otomatik durak üretimi yok (Backlog’ta). (M7’de sadece “stop suggestions” API var.)
+## 1) Repo referansı ve milestone sabitleme
+- Repo:
+  - https://github.com/halilbutun48/servis-platform
+- Branch: `main`
+- Stabil referans tag: `v1-m12-green`
+- Milestone durumu: ✅ PACK PASS (M0..M12) + ✅ FULLCHECK PASS + ✅ SMOKE PASS
 
-## 2) Son Değişiklikler (Repo’da)
-✅ Drivers CRUD (ROOM): list/create/update/delete + opsiyonel DRIVER user oluşturma  
-✅ Vehicle → Driver bind/unbind endpoint’i + panel desteği  
-✅ Vehicle delete/archive policy (aktif shift varsa engelle; geçmiş shift varsa arşivle; hiç shift yoksa sil)  
-✅ GPS hardening: DRIVER yalnızca kendi assigned shift’indeki araca GPS basabilir  
-✅ STALE/OFFLINE monitor + dedupe + RECOVERY (job + gate)  
-✅ Retention cleanup job (ApiRequest / Notification / AuditLog / GpsPoint vb.)  
-✅ **Shift REJECTED** status + ROOM için **/api/shifts/:id/reject** endpoint’i (UI “Reddet”)  
-🟡 shifts.js hâlâ büyük; helpers/schemas split var (daha da bölünebilir)
+**Kural (milestone disiplin):**
+- `v1-m12-green` = “M12 GREEN referans noktasıdır”.
+- Bundan sonraki her değişiklik **yeni milestone/tag mantığıyla** ilerler.
+- “Green” olmadan sonraki işe geçilmez.
 
-Not: “aktif shift” tanımı pratikte APPROVED/ACTIVE gibi “işleyen/çalışan bağ” anlamına gelir (UI metinleri buna göre hizalanmalı).
+---
 
-## 3) Roller (5)
-- **SUPER_ADMIN**: Company/Room yönetimi
-- **COMPANY**: Shift/Request oluşturur; kendi kapsamını izler
-- **ROOM**: Araç/Sürücü yönetimi; talepleri onaylar, shift’i araç+sürücüye bağlar; tüm araçları izler
-- **DRIVER**: Kendi shift rotasını/duraklarını görür; GPS gönderir; durak state günceller
-- **PERSONEL**: V1’de minimal (temel kullanıcı)
+## 2) Ürün amacı (Personel Servisi V1)
+Öğrenci/parent yok. GPS tabanlı “personel servisi” platformu:
+- Canlı araç takibi (map)
+- Vardiya/shift yönetimi
+- Rota/durak yönetimi (stop progression + stop state)
+- Uyarılar (notifications): overspeed, GPS_STALE, GPS_OFFLINE, recovery
+- Personel talepleri (request) → yakın adreslerden stop önerisi (suggestions) → shifte durak ekleme
+- Route Templates: Company hazır şablonlar → shift’e REPLACE uygula
 
-## 4) Servisler ve Portlar
-- Backend API: **http://localhost:3000**
-- Socket.IO: **aynı sunucuda** (default path: **/socket.io**)  
-- Health: **http://localhost:3000/health**
-- Postgres (Docker): host **5433 → 5432**
-- Redis (Docker): **6379**
-- Web (Vite): genelde **http://localhost:5173**
+---
 
-## 5) Hızlı Çalıştırma (3 komut)
-Windows/PowerShell için tek seferlik hızlı ayağa kaldırma. (Detaylar README.md + tools/pack.ps1.)
+## 3) Roller (RBAC) ve temel yetkiler
+### Roller
+1) SUPER_ADMIN
+- Company/Room yönetimi, kurulum & seed
 
-> Not (Windows): ExecutionPolicy / imza engeline takılırsan `tools\pack.cmd` ve `tools\gate.cmd` wrapper’larını kullan.
+2) ROOM (Operasyon/Servis odası)
+- Araç/sürücü yönetimi
+- Company shift’ini APPROVE + ASSIGN (vehicle/driver)
+- Haritada tüm araçlar + bildirimler
+- Request kapatma yetkisi (ACCEPTED)
 
-1) `cd infra; docker compose up -d`
-2) `cd ..\backend; npm run dev`
-3) `cd ..\web; npm run dev`
+3) COMPANY
+- Shift oluşturur
+- Template yönetir/uygular
+- Açık request’leri görür (kapatamaz)
 
-## 6) Seed / Demo Hesaplar
-Hepsi: **demo123**
+4) DRIVER
+- Kendi shift/rota akışı: active route, next stop, stop state update, complete
+- GPS gönderir (yalnızca assigned vehicle ile)
+- Bildirimleri görür
 
-- superadmin@demo.com
-- company@demo.com
-- room@demo.com
-- driver@demo.com
-- personel@demo.com
+5) PERSONEL
+- Request açar (lat/lng zorunlu)
+- Kendi ride/shift görünümü + live panel
 
-Detay: docs/SEED_USERS.md
+> RBAC ayrıntısı ve endpoint bazlı kurallar: `docs/API_SPEC_V1.md`
 
-## 7) WS Scope / Rooms ve Event’ler
-Socket auth: JWT → user → role/scope join.
+---
 
-Tipik room’lar:
-- user:{userId}
-- room:{roomId}
-- company:{companyId}
-- vehicle:{vehicleId}
-- shift:{shiftId}
+## 4) Mimari (kısa ama net)
+- Backend: Node.js (ESM) + Express + Prisma
+- DB: Postgres (Docker)
+- Cache/Jobs: Redis (monitor/işler + dedupe)
+- Realtime: WebSocket (gps/update, request/update, eta/update, status vb.)
+- Web: Vite + React (role-based routing)
 
-Önemli event örnekleri:
-- ws:ready (join edilen room’lar)
-- gps:update
-- vehicle:status
-- eta:update
-- notify:new
-- route:progress
+Monorepo dizilimi (özet):
+- `backend/` API + jobs + ws
+- `web/` UI
+- `infra/` docker-compose
+- `docs/` SSOT dokümanlar
+- `tools/` Gate/Pack runner ve primer snapshot’lar
 
-## 8) V1 Durum Matrisi (Tamamlananlar)
-### 8.1 Core / Auth / RBAC
-- JWT login + authRequired()
-- Role bazlı route guard (requireRole)
-- /api/me
-- Socket auth + scope join
+---
 
-### 8.2 ROOM Operasyon
-- Vehicle CRUD (list/create/update)
-- Vehicle delete/archive policy
-- Driver CRUD (list/create/update/delete)
-- Driver’a opsiyonel login user oluşturma (role=DRIVER)
-- Vehicle ↔ Driver bind/unbind
+## 5) “GreenPack / Gate” standardı (tek doğru doğrulama)
+Bu repo için “çalışıyor” demek, **Gate PASS** demektir.
 
-### 8.3 GPS / Bildirimler
-- DRIVER GPS ingest: POST /api/gps
-- GPS Last + History (GpsLast / GpsPoint)
-- gps:update + vehicle:status WS broadcast (company/room/vehicle)
-- Overspeed notification
-- STALE/OFFLINE monitor job + dedupe
-- RECOVERY notification + gate
+### Gate/Pack mantığı
+- `tools/pack.(ps1|cmd)` → M0..M12 check + fullcheck + smoke çalıştırır
+- `backend/scripts/*check.js` → her milestone için senaryo doğrulaması
+- Hedef: her milestone sonunda **PACK PASS** almadan ilerleme yok
 
-### 8.4 Shift / Rota / Durak
-- Shift lifecycle (draft/request → approved → active → done)
-- **REJECTED** (ROOM reddetti)
-- Stop state: PENDING / REACHED / SKIPPED + timestamp
-- Driver route endpoints: active route, next stop, reached/skip/reopen, complete
-- Route progress WS (route:progress)
-- ETA hesap + WS (eta:update)
-- M7 stop-suggestions (cluster) + accept (COMMON stop oluştur)
+### “Green” tanımı
+Bir milestone “GREEN” sayılması için:
+- M0..M12 ilgili check’ler PASS
+- FULLCHECK PASS
+- SMOKE PASS
 
-### 8.5 Observability / Operasyon
-- /health
-- ApiRequest middleware log
-- Audit log helper
-- Retention cleanup job
+> Detay check matrisi: `docs/MILESTONE_GATE_MATRIX.md` (varsa/ileride güncellenecek)
 
-### 8.6 Web UI (Vite)
-- Auth/session + role based routes
-- ROOM: VehiclesPanel (yönetim + bind)
-- ROOM: DriversPanel
-- ROOM: MapPanel + MapView
-- ROOM: ShiftsPanel (bekleyen talepler: Approve + **Reddet**; liste: **filtre + ara + temizle**) 
-- Notifications panel
+---
 
-## 9) Bilinen “Kopukluk / Çakışma / Temizlik”
-### 9.1 UI ↔ Backend davranış uyumsuzlukları
-- VehiclesPanel “Sil/Arşivle” metni: UI’da “shift bağlıysa otomatik arşivlenir” gibi görünebilir.
-- Backend davranışı: aktif/işleyen shift varsa 400 (HAS_ACTIVE_SHIFTS).
+## 6) Çekirdek iş akışları (konsept seviyesinde)
+### 6.1 Shift lifecycle
+- COMPANY: shift create
+- ROOM: approve/assign (shift → vehicleId + driverId)
+- DRIVER: start → reached/skip/reopen (stop progression) → complete
+- ETA: REST ile hesap + WS ile anlık güncelleme
 
-Öneri: UI bu hata kodunu yakalayıp “Aktif vardiya var, işlem yapılamaz” toast göstermeli.
+### 6.2 GPS & Status
+- DRIVER: GPS post eder
+- DB mapping: LIVE → Vehicle.ACTIVE + GpsLast.OK
+- Monitor: LIVE→STALE, STALE→OFFLINE, OFFLINE→LIVE recovery
+- Dedupe: GPS_STALE / GPS_OFFLINE spam engeli (state transition bazlı)
 
-### 9.2 Doküman/Encoding tekrarı
-docs/_quarantine içinde benzer içerik kopyaları olabilir. Canonical: **docs/** altındaki dosyalardır.
+### 6.3 Notifications
+- Türler: overspeed, gps_stale, gps_offline, recovery vb.
+- Kural: aynı state değişmediği sürece tekrar üretme (dedupeKey / transition gate)
 
-### 9.3 Repo temizlik notları
-- `backend/src/routes/driver.js.bak` gibi artefact dosyaları repo’da kalmamalı.
-- shifts.js satır sayısı yüksek; modül bazlı split yapılabilir.
+Standart payload: `docs/NOTIFICATION_PAYLOAD_STANDARD.md`
 
-### 9.4 API Spec güncelleme ihtiyacı
-- Socket.IO path/port bilgileri repo gerçekleriyle hizalı olmalı (3000 + /socket.io).
+### 6.4 Requests → Suggestions → Stops
+- PERSONEL: request create (lat/lng required)
+- WS: request:update (create/close) personel/company/room
+- ROOM: request close (ACCEPTED)
+- Shift suggestions: stop-suggestions → from-suggestion ile stop ekleme
 
-## 10) Test / Gate (Repo’da)
-- backend/scripts/smoke.js
-- backend/scripts/fullcheck.js
-- backend/scripts/m10check.js … m12check.js
-- tools/gate.ps1 / tools/pack.ps1 (Windows wrapper: tools\\gate.cmd / tools\\pack.cmd)
+### 6.5 Route templates
+- COMPANY: template create + stops add/reorder
+- Shift’e apply: from-template (REPLACE) ile stop set’i güncellenir
 
-## 11) NEXT / UPDATE BACKLOG
-A) Company Excel → Personel/Adres → Otomatik Durak & Rota
-- Excel upload (vardiya seç + saat şablonu)
-- Geocode + cache
-- Clustering → stop önerisi + seatDemand
-- Otomatik rota sıralama (NN + opsiyonel 2-opt)
+### 6.6 Driver stop state
+- Driver: next-stop / stop skip / stop reopen / stop reached
+- Pending stops bitince shift complete
 
-B) Log/Rapor/Export (Excel/CSV)
-- Araç günlük km / hız ihlali / durak geçiş zamanları
-- Tarih aralığı filtreleri
+---
 
-C) No-show / görev reddi cezası
+## 7) Dokümantasyon (SSOT dosyalar)
+M12 “required files” (Gate tarafından kontrol edilir):
+- `docs/PROJECT_SPEC_V1.md`
+- `docs/API_SPEC_V1.md`
+- `docs/DB_SCHEMA_V1.md`
+- `docs/UI_SPEC_V1.md`
+- `docs/STARTPACK_V1.md`
+- `tools/pack.ps1`
 
-D) KVKK Onay + 2 yıl saklama politikası
+Ek standartlar:
+- `docs/STATUS_STANDARD.md`
+- `docs/NOTIFICATION_PAYLOAD_STANDARD.md`
+- `docs/PRIMER_SSOT.md` (bu dosya)
 
-## 12) SSOT (Tek Kaynak) Düzeni
-- **docs/**: PROJECT_SPEC_V1.md, API_SPEC_V1.md, DB_SCHEMA_V1.md, UI_SPEC_V1.md, PRIMER_SSOT.md (bu dosya)
-- **tools/**: sadece script’ler (pack.ps1, gate.ps1, pack.cmd, gate.cmd, dev.ps1 vb.)
+**SSOT kuralı:**
+Uygulama değişirse (API/DB/UI/flow) **aynı PR içinde** ilgili docs güncellenir.
 
-Ek: “Haritada yok” hızlı teşhis
-- Araç listede “LIVE” görünse bile gpsLast yoksa MapView marker çizmez.
-- Çözüm: DRIVER’dan en az 1 adet POST /api/gps gelmeli (ya da seed demo GPS).
+---
+
+## 8) Event/Scope isimlendirme kuralı (WS)
+Genel kural:
+- WS event isimleri “shift bağlamı” ile uyumlu olmalı (client invalidate/guessTopics mantığıyla).
+- Event payload’larında mümkünse shiftId/vehicleId bağlamı taşınır.
+
+> Detay event isimleri ve payload örnekleri: `docs/API_SPEC_V1.md` ve ilgili standard dokümanları.
+
+---
+
+## 9) Windows satır sonu (LF/CRLF) — repo stabilitesi notu
+Amaç: platformlar arası tutarlılık ve “LF will be replaced by CRLF” uyarılarını azaltmak.
+
+Öneri:
+- Repo root’ta `.gitattributes` ile `text=auto` + eol politikası belirlenebilir.
+- Bu değişiklik yapılırsa **yeni bir tag** ile sabitlenmesi önerilir (mevcut `v1-m12-green` referansını kirletmemek için).
+
+---
+
+## 10) Şu anki durum (M12 GREEN kapsamında doğrulananlar)
+✅ CRUD (company/room/vehicle/driver)  
+✅ Shift approve/assign/start/reached/complete  
+✅ GPS + ETA + WS updates  
+✅ Notifications + dedupe + stale/offline monitors  
+✅ Requests + RBAC close + suggestions  
+✅ Route templates + apply (REPLACE)  
+✅ Driver route endpoints (skip/reopen/next-stop)  
+✅ Observability (M10) + required docs (M12)  
+
+Referans: tag `v1-m12-green`
+
+---
+
+## 11) NEXT backlog (öncelik sırası — kısa ama net)
+1) Vehicle ↔ Driver “bind” kuralı (overlap rules)
+- Aynı vardiya saatinde driver başka room/vehicle’a bağlanamasın (overlap check)
+- Farklı saatlerde farklı room’da çalışabilsin (allowed)
+- UI: ROOM panelinde bind/atama UX’i (hata mesajları + uygunluk göstergesi)
+
+2) Company shift template preset’leri
+- Sabah/Akşam/Gece gibi hazır preset + custom template builder
+
+3) Availability endpoint (opsiyonel ama UX’i güçlendirir)
+- Driver/vehicle uygunluk sorgusu (çatışma kontrolüyle)
+
+4) KVKK/Güvenlik genişletme
+- rate limit/abuse + audit + retention + backup/restore runbook
+
+---
+
+## 12) Yeni sohbet başlangıç cümlesi (SSOT referanslı)
+“`servis-platform` repo, tag `v1-m12-green` referansından devam ediyoruz. Next hedef: Vehicle↔Driver bind + overlap rules. API + UI görevlerini sıraya koy; Gate/Pack standardını bozmadan ilerle.”
+
+---

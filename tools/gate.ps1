@@ -3,8 +3,9 @@ param(
   [ValidateRange(0,12)]
   [int]$To = 9,                  # M0..M$To
 
-  [string]$ComposeDir = "D:\personel-servis-v1\infra",
-  [string]$RepoDir    = "D:\personel-servis-v1",
+  # Repo-relative defaults (portable)
+  [string]$ComposeDir = (Join-Path $PSScriptRoot "..\infra"),
+  [string]$RepoDir    = (Join-Path $PSScriptRoot ".."),
   [string]$ApiService = "api",
   [int]$SleepSec = 8
 )
@@ -26,6 +27,10 @@ function Run($title, [scriptblock]$cmd) {
 }
 
 try {
+  # Normalize/resolve (helps if called from different working dirs)
+  $ComposeDir = (Resolve-Path $ComposeDir).Path
+  $RepoDir    = (Resolve-Path $RepoDir).Path
+
   if(-not (Test-Path $ComposeDir)) { throw "ComposeDir not found: $ComposeDir" }
   Set-Location $ComposeDir
 
