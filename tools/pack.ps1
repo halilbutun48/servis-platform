@@ -1,52 +1,52 @@
+# tools/pack.ps1
 param(
-  [ValidateSet(0,1,2,3,4,5,6,7,8,9,10,11,12)]
+  [ValidateRange(0,12)]
   [int]$To = 12,
-  [switch]$NoInstall
+
+  # Docker workflow varsayılan: host node_modules gerekmiyor
+  [bool]$DockerOnly = $true,
+
+  [string]$RepoDir,
+  [string]$ComposeDir,
+  [string]$ApiService = "api"
 )
 
 $ErrorActionPreference = "Stop"
 
-function Section($title){
-  Write-Host "\n=== $title ===" -ForegroundColor Cyan
+if (-not $RepoDir) {
+  $RepoDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+}
+if (-not $ComposeDir) {
+  $ComposeDir = Join-Path $RepoDir "infra"
 }
 
-Section "PERSONEL-SERVIS V1 — PACK (M0→M12)"
-Write-Host "Target stage: M$To"
+$targetStage = "M$To"
 
-if (-not $NoInstall) {
-  Section "Install (backend)"
-  Push-Location "$PSScriptRoot\..\backend"
-  if (-not (Test-Path "node_modules")) { npm i }
-  Pop-Location
+Write-Host "`n=== PERSONEL-SERVIS V1 — PACK (M0→M12) ==="
+Write-Host "Target stage: $targetStage"
 
-  Section "Install (web)"
-  Push-Location "$PSScriptRoot\..\web"
-  if (-not (Test-Path "node_modules")) { npm i }
-  Pop-Location
+Write-Host "`n=== Install (backend) ==="
+if ($DockerOnly) {
+  Write-Host "SKIP (Docker mode) — host node_modules gerekmiyor."
+} else {
+  Push-Location (Join-Path $RepoDir "backend")
+  try { npm ci } finally { Pop-Location }
 }
 
-Section "Gate"
-& "$PSScriptRoot\gate.ps1" -To $To
+Write-Host "`n=== Install (web) ==="
+if ($DockerOnly) {
+  Write-Host "SKIP (Docker mode) — host node_modules gerekmiyor."
+} else {
+  Push-Location (Join-Path $RepoDir "web")
+  try { npm ci } finally { Pop-Location }
+}
+
+Write-Host "`n=== Gate ==="
+$gate = Join-Path $PSScriptRoot "gate.ps1"
+
+& $gate -To $To -ComposeDir $ComposeDir -RepoDir $RepoDir -ApiService $ApiService
 if ($LASTEXITCODE -ne 0) { throw "GATE FAIL (exit=$LASTEXITCODE)" }
 
-Section "Backend checks"
-Push-Location "$PSScriptRoot\..\backend"
-npm run smoke
-if ($LASTEXITCODE -ne 0) { throw "SMOKE FAIL (exit=$LASTEXITCODE)" }
-
-npm run fullcheck
-if ($LASTEXITCODE -ne 0) { throw "FULLCHECK FAIL (exit=$LASTEXITCODE)" }
-
-if ($To -ge 11) {
-  npm run m11check
-  if ($LASTEXITCODE -ne 0) { throw "M11CHECK FAIL (exit=$LASTEXITCODE)" }
-}
-
-if ($To -ge 12) {
-  npm run m12check
-  if ($LASTEXITCODE -ne 0) { throw "M12CHECK FAIL (exit=$LASTEXITCODE)" }
-}
-Pop-Location
-
-Section "DONE"
-Write-Host "✅ PACK PASS" -ForegroundColor Green
+Write-Host "`n=== DONE ==="
+Write-Host "✅ PACK PASS (Docker-only: Gate already ran FULLCHECK + SMOKE)"
+exit 0
