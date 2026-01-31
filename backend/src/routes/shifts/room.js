@@ -1,0 +1,531 @@
+import prisma from "../../prisma.js";
+import { authRequired, requireRole } from "../../auth/middleware.js";
+import { validateWithZod } from "../../z.js";
+import { audit } from "../../audit.js";
+
+import {
+  approveShiftSchema,
+  assignShiftSchema,
+  rejectShiftSchema,
+  roomOfferSchema,
+} from "./schemas.js";
+
+// Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
+import * as H from "./helpers.js";
+
+const clusterPoints = H.clusterPoints;
+const emitShift = H.emitShift;
+const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
+const resolveRequestDelegateSafe = H.resolveRequestDelegateSafe;
+
+import {
+  checkShiftConflicts,
+} from "../../services/shiftConflict.js";
+
+// ROOM + SUPER_ADMIN endpoints (approve/reject/start/room-offer + M7 suggestions)
+export function attachShiftRoomRoutes(r, io) {
+  // ROOM: approve/assign shift (bind vehicle+driver) -> sets status APPROVED
+    const approveShiftHandler = async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
+
+        const body = validateWithZod(approveShiftSchema, req.body);
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        if (shift.status === "ACTIVE") {
+          return res
+            .status(400)
+            .json({ error: "Cannot approve while shift is ACTIVE" });
+        }
+
+        const vehicleId = Number(body.vehicleId);
+        const driverId = Number(body.driverId);
+        if (!Number.isFinite(vehicleId) || !Number.isFinite(driverId)) {
+          return res
+            .status(400)
+            .json({ error: "vehicleId/driverId required" });
+        }
+
+        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
+        const c1 = await checkShiftConflicts({ driverId, startAt: shift.startAt, endAt: shift.endAt, ignoreShiftId: shift.id });
+        if (c1?.ok === false) {
+          return res.status(400).json({
+            code: "DRIVER_CONFLICT",
+            message: "Driver aynı zaman aralığında başka bir vardiyada.",
+            conflictingShift: c1.conflictingShift,
+          });
+        }
+        const c2 = await checkShiftConflicts({ vehicleId, startAt: shift.startAt, endAt: shift.endAt, ignoreShiftId: shift.id });
+        if (c2?.ok === false) {
+          return res.status(400).json({
+            code: "VEHICLE_CONFLICT",
+            message: "Araç aynı zaman aralığında başka bir vardiyada.",
+            conflictingShift: c2.conflictingShift,
+          });
+        }
+
+        const updated = await prisma.shift.update({
+          where: { id: shiftId },
+          data: {
+            status: "APPROVED",
+            vehicleId,
+            driverId,
+          },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: true,
+            company: true,
+            room: true,
+          },
+        });
+
+        await audit(req, {
+          action: "SHIFT_APPROVE",
+          entity: "Shift",
+          entityId: updated.id,
+          meta: { vehicleId, driverId },
+        });
+
+        emitShift(io, updated, "shift:update");
+        emitShift(io, updated, "route:plan");
+        return res.json(updated);
+      } catch (e) {
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
+      }
+      };
+
+  // Support both PUT and POST for approve (scripts expect POST)
+  r.put(
+    "/:id/approve",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    approveShiftHandler
+  );
+  r.post(
+    "/:id/approve",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    approveShiftHandler
+  );
+
+  // ROOM: assign shift (backward compatible alias)
+  // Some gate scripts call `/api/shifts/:id/assign`.
+  // We treat it as `APPROVED` + bind vehicle/driver.
+  r.put(
+    "/:id/assign",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
+
+        const body = validateWithZod(assignShiftSchema, req.body);
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        if (shift.status === "ACTIVE") {
+          return res
+            .status(400)
+            .json({ error: "Cannot assign while shift is ACTIVE" });
+        }
+
+        const vehicleId = Number(body.vehicleId);
+        const driverId = Number(body.driverId);
+        if (!Number.isFinite(vehicleId) || !Number.isFinite(driverId)) {
+          return res
+            .status(400)
+            .json({ error: "vehicleId/driverId required" });
+        }
+
+        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
+        const c1 = await checkShiftConflicts({
+          driverId,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          ignoreShiftId: shift.id,
+        });
+        if (c1?.ok === false) {
+          return res.status(400).json({
+            code: "DRIVER_CONFLICT",
+            message: "Driver aynı zaman aralığında başka bir vardiyada.",
+            conflictingShift: c1.conflictingShift,
+          });
+        }
+        const c2 = await checkShiftConflicts({
+          vehicleId,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          ignoreShiftId: shift.id,
+        });
+        if (c2?.ok === false) {
+          return res.status(400).json({
+            code: "VEHICLE_CONFLICT",
+            message: "Araç aynı zaman aralığında başka bir vardiyada.",
+            conflictingShift: c2.conflictingShift,
+          });
+        }
+
+        const updated = await prisma.shift.update({
+          where: { id: shiftId },
+          data: {
+            status: "APPROVED",
+            vehicleId,
+            driverId,
+          },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: true,
+            company: true,
+            room: true,
+          },
+        });
+
+        await audit(req, {
+          action: "SHIFT_ASSIGN",
+          entity: "Shift",
+          entityId: updated.id,
+          meta: { vehicleId, driverId },
+        });
+
+        emitShift(io, updated, "shift:update");
+        emitShift(io, updated, "route:plan");
+        return res.json(updated);
+      } catch (e) {
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
+  // ROOM: reject shift -> sets status REJECTED + unbind
+  r.put(
+    "/:id/reject",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
+
+        validateWithZod(rejectShiftSchema, req.body ?? {});
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        if (shift.status === "DONE") {
+          return res
+            .status(400)
+            .json({ error: "Cannot reject a DONE shift" });
+        }
+        if (shift.status === "ACTIVE") {
+          return res
+            .status(400)
+            .json({ error: "Cannot reject an ACTIVE shift" });
+        }
+
+        const updated = await prisma.shift.update({
+          where: { id: shiftId },
+          data: {
+            status: "REJECTED",
+            driverId: null,
+            vehicleId: null,
+            roomOfferVehicleId: null,
+            roomOfferDecision: "REJECTED",
+          },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: true,
+            company: true,
+            room: true,
+          },
+        });
+
+        await audit(req, {
+          action: "SHIFT_REJECT",
+          entity: "Shift",
+          entityId: updated.id,
+        });
+
+        emitShift(io, updated, "shift:update");
+        return res.json(updated);
+      } catch (e) {
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
+  // ROOM: send room-offer (vehicle suggestion) for company decision
+  r.put(
+    "/:id/room-offer",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
+
+        const body = validateWithZod(roomOfferSchema, req.body);
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        if (shift.status === "ACTIVE") {
+          return res
+            .status(400)
+            .json({ error: "Cannot send room-offer while shift is ACTIVE" });
+        }
+
+        const roomOfferVehicleId = body.roomOfferVehicleId
+          ? Number(body.roomOfferVehicleId)
+          : null;
+        if (body.roomOfferVehicleId && !Number.isFinite(roomOfferVehicleId)) {
+          return res.status(400).json({ error: "roomOfferVehicleId invalid" });
+        }
+
+        const updated = await prisma.shift.update({
+          where: { id: shiftId },
+          data: {
+            roomOfferVehicleId,
+            roomOfferDecision: "PENDING",
+          },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: true,
+            company: true,
+            room: true,
+          },
+        });
+
+        await audit(req, {
+          action: "SHIFT_ROOM_OFFER",
+          entity: "Shift",
+          entityId: updated.id,
+          meta: { roomOfferVehicleId },
+        });
+
+        emitShift(io, updated, "shift:update");
+        return res.json(updated);
+      } catch (e) {
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
+  // ROOM: start shift (status ACTIVE)
+  r.post(
+    "/:id/start",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
+
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        if (shift.status !== "APPROVED") {
+          return res
+            .status(400)
+            .json({ error: "Shift must be APPROVED to start" });
+        }
+        if (!shift.vehicleId || !shift.driverId) {
+          return res
+            .status(400)
+            .json({ error: "Shift missing vehicle/driver" });
+        }
+
+        const c1 = await checkShiftConflicts({
+          driverId: shift.driverId,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          ignoreShiftId: shift.id,
+        });
+        if (c1?.ok === false) {
+          return res.status(400).json({
+            code: "DRIVER_CONFLICT",
+            message: "Driver aynı zaman aralığında başka bir vardiyada.",
+            conflictingShift: c1.conflictingShift,
+          });
+        }
+        const c2 = await checkShiftConflicts({
+          vehicleId: shift.vehicleId,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          ignoreShiftId: shift.id,
+        });
+        if (c2?.ok === false) {
+          return res.status(400).json({
+            code: "VEHICLE_CONFLICT",
+            message: "Araç aynı zaman aralığında başka bir vardiyada.",
+            conflictingShift: c2.conflictingShift,
+          });
+        }
+
+        const updated = await prisma.shift.update({
+          where: { id: shiftId },
+          data: { status: "ACTIVE" },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: true,
+            company: true,
+            room: true,
+          },
+        });
+
+        await audit(req, {
+          action: "SHIFT_START",
+          entity: "Shift",
+          entityId: updated.id,
+        });
+
+        emitShift(io, updated, "shift:update");
+        emitShift(io, updated, "route:plan");
+        return res.json(updated);
+      } catch (e) {
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
+  // =======================
+  // M7: Stop suggestions + accept
+  // =======================
+
+  // ROOM/COMPANY/SUPER_ADMIN: list suggestions (OPEN requests clustered)
+  r.get(
+    "/:id/stop-suggestions",
+    authRequired(),
+    requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
+
+        await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        const radiusM = Number(req.query.radiusM ?? 120);
+        const onlyOpen = String(req.query.onlyOpen ?? "1") === "1";
+
+        const { Req, latF, lngF, statusF } = await resolveRequestDelegateSafe();
+        if (!Req || typeof Req.findMany !== "function") {
+          return res.status(500).json({
+            error:
+              "Requests prisma delegate missing. Expected getRequestDelegateOrThrow().d.findMany or prisma.pickupRequest.findMany",
+          });
+        }
+
+        const where = { shiftId };
+        if (onlyOpen) where[statusF] = "OPEN";
+
+        const select = { id: true, [latF]: true, [lngF]: true };
+        const reqs = await Req.findMany({ where, select });
+
+        const points = (reqs ?? [])
+          .map((x) => ({
+            id: x.id,
+            lat: Number(x?.[latF]),
+            lng: Number(x?.[lngF]),
+          }))
+          .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+        if (!points.length) return res.json({ items: [] });
+
+        const clusters = clusterPoints(points, radiusM);
+
+        const items = clusters
+          .map((idxs, k) => {
+            const count = idxs.length;
+            const lat = idxs.reduce((s, i) => s + points[i].lat, 0) / count;
+            const lng = idxs.reduce((s, i) => s + points[i].lng, 0) / count;
+            const requestIds = idxs.map((i) => points[i].id);
+            return { id: `s-${shiftId}-${k + 1}`, lat, lng, count, requestIds };
+          })
+          .sort((a, b) => b.count - a.count);
+
+        return res.json({ items });
+      } catch (e) {
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
+  // ROOM/SUPER_ADMIN: accept suggestion -> create COMMON stop
+  r.post(
+    "/:id/stops/from-suggestion",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
+
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        // M7 harness expects accepting a suggestion while shift is ACTIVE.
+        // We only block terminal states.
+        if (shift.status === "DONE" || shift.status === "REJECTED") {
+          return res
+            .status(400)
+            .json({ error: `Cannot add stop while shift is ${shift.status}` });
+        }
+
+        const lat = Number(req.body?.lat);
+        const lng = Number(req.body?.lng);
+        const name = String(req.body?.name ?? "COMMON from requests");
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          return res.status(400).json({ error: "lat/lng required" });
+        }
+
+        const maxAgg = await prisma.stop.aggregate({
+          where: { shiftId },
+          _max: { order: true },
+        });
+        const nextOrder = (maxAgg?._max?.order ?? 0) + 1;
+
+        const stop = await prisma.stop.create({
+          data: { shiftId, name, lat, lng, order: nextOrder, type: "COMMON" },
+        });
+
+        await audit(req, {
+          action: "SHIFT_SUGGESTION_ACCEPT",
+          entity: "Shift",
+          entityId: shift.id,
+          meta: { stopId: stop.id, order: stop.order },
+        });
+
+        emitShift(io, shift, "route:plan");
+        return res.json({ ok: true, stop });
+      } catch (e) {
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+}

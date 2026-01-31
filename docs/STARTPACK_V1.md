@@ -66,6 +66,8 @@ GPS tabanlı **personel servisi** platformu:
 
 ## 2) Hızlı Doğrulama (Gate)
 
+> Not (Windows): `tools\pack.ps1` / `tools\gate.ps1` ExecutionPolicy (imza) engeline takılırsa **`tools\pack.cmd`** ve **`tools\gate.cmd`** wrapper’larını kullan.
+
 ### Minimum doğrulama
 - `/health` çağrısı `dbOk:true` dönmeli
 - `npm run smoke` PASS

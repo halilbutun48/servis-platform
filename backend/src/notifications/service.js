@@ -249,7 +249,9 @@ export async function createNotification({
     shiftId,
   });
 
-  const finalDedupeKey = dedupeKey ?? autoDk;
+  // NOTE: dedupeKey=="" => dedupe kapalı (unique ihlali olmasın diye null yazıyoruz)
+  const dedupeDisabled = dedupeKey === "";
+  const finalDedupeKey = dedupeDisabled ? null : (dedupeKey ?? autoDk);
 
   async function tryUpsertOrCreate({ useConnect }) {
     const mkData = useConnect ? buildConnectData : buildScalarData;

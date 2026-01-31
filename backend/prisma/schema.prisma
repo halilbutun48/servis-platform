@@ -54,6 +54,7 @@ enum ShiftStatus {
   REQUESTED
   APPROVED
   ACTIVE
+  REJECTED
   DONE
 }
 

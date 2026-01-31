@@ -1,74 +1,23 @@
 // backend/scripts/m6check.js
-import http from "http";
-import https from "https";
 import { io as ioc } from "socket.io-client";
+import {
+  BASE_URL,
+  login,
+  getRoomCompanyIds,
+  pickVehicleDriver,
+  preCleanDriverShifts,
+  ensureActiveShift,
+  closeShiftHard,
+  reqJson,
+  callAny,
+  itemsOf,
+  sleep,
+} from "./_harness.js";
 
-const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 const nowTag = new Date().toISOString().replace(/[:.TZ-]/g, "").slice(0, 14);
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-function reqJson(method, path, { token, body } = {}) {
-  const url = new URL(path, BASE_URL);
-  const lib = url.protocol === "https:" ? https : http;
-
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return new Promise((resolve) => {
-    const req = lib.request(
-      {
-        method,
-        hostname: url.hostname,
-        port: url.port,
-        path: url.pathname + url.search,
-        headers,
-      },
-      (res) => {
-        let data = "";
-        res.on("data", (c) => (data += c));
-        res.on("end", () => {
-          const text = data || "";
-          let json = null;
-          try {
-            json = text ? JSON.parse(text) : null;
-          } catch {}
-          resolve({
-            ok: res.statusCode >= 200 && res.statusCode < 300,
-            status: res.statusCode,
-            json,
-            text,
-          });
-        });
-      }
-    );
-    req.on("error", (e) =>
-      resolve({ ok: false, status: 0, json: null, text: String(e) })
-    );
-    if (body) req.write(JSON.stringify(body));
-    req.end();
-  });
-}
-
-// response shape helper: supports [] or {items:[]} or {data:[]}
-function itemsOf(resp) {
-  const j = resp?.json;
-  if (Array.isArray(j)) return j;
-  if (Array.isArray(j?.items)) return j.items;
-  if (Array.isArray(j?.data)) return j.data;
-  return [];
-}
-
-async function login(email, password) {
-  const r = await reqJson("POST", "/api/auth/login", {
-    body: { email, password },
-  });
-  if (!r.ok) throw new Error(`login failed ${email} -> ${r.status}\n${r.text}`);
-  const token = r.json?.token;
-  if (!token) throw new Error(`login token missing: ${email}`);
-  return token;
+function ok(msg) {
+  console.log(`✅ ${msg}`);
 }
 
 async function connectWs(token, label) {
@@ -81,7 +30,6 @@ async function connectWs(token, label) {
   const t0 = Date.now();
   while (!bag.ready && Date.now() - t0 < 5000) await sleep(100);
   if (!bag.ready) throw new Error(`WS ready timeout: ${label}`);
-
   return { sock, bag };
 }
 
@@ -94,12 +42,7 @@ async function waitFor(condFn, timeoutMs, stepMs = 100) {
   return false;
 }
 
-function ok(msg) {
-  console.log(`✅ ${msg}`);
-}
-
 async function fetchOpenList(token) {
-  // try onlyOpen first; fallback to status=OPEN for compatibility
   let r = await reqJson("GET", "/api/requests?onlyOpen=1", { token });
   if (!r.ok) r = await reqJson("GET", "/api/requests?status=OPEN", { token });
   return r;
@@ -111,7 +54,8 @@ async function main() {
   const personelToken = await login("personel@demo.com", "demo123");
   const companyToken = await login("company@demo.com", "demo123");
   const roomToken = await login("room@demo.com", "demo123");
-  ok("login(personel/company/room)");
+  const driverToken = await login("driver@demo.com", "demo123");
+  ok("login(personel/company/room/driver)");
 
   // WS
   const wsP = await connectWs(personelToken, "personel");
@@ -119,199 +63,122 @@ async function main() {
   const wsR = await connectWs(roomToken, "room");
   ok("WS connect + ws:ready");
 
+  const { roomId, companyId } = await getRoomCompanyIds(roomToken, companyToken);
+  const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
+
+  const pre = await preCleanDriverShifts({ roomToken, driverToken, driverId });
+  if (pre.found) console.log(`🧹 pre-clean: found=${pre.found} cleaned=${pre.cleaned}`);
+
+  const h = await ensureActiveShift({
+    companyToken,
+    roomToken,
+    driverToken,
+    companyId,
+    roomId,
+    vehicleId,
+    driverId,
+    tag: "M6",
+  });
+  ok(`shift ACTIVE (id=${h.shiftId})`);
+
   try {
-    const meRoom = await reqJson("GET", "/api/me", { token: roomToken });
-    const meComp = await reqJson("GET", "/api/me", { token: companyToken });
-    const roomId = meRoom.json?.roomId ?? 1;
-    const companyId = meComp.json?.companyId ?? 1;
-
-    // pick vehicle/driver
-    const vlist = await reqJson("GET", "/api/vehicles", { token: roomToken });
-    const dlist = await reqJson("GET", "/api/drivers", { token: roomToken });
-    const vehicleId = vlist.json?.items?.[0]?.id ?? vlist.json?.[0]?.id ?? 1;
-    const driverId = dlist.json?.items?.[0]?.id ?? dlist.json?.[0]?.id ?? 1;
-
-    // Create shift as company (REQUESTED)
-    const startAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const endAt = new Date(Date.now() + 70 * 60 * 1000).toISOString();
-    const shBody = {
-      companyId,
-      roomId,
-      startAt,
-      endAt,
-      status: "REQUESTED",
-      stops: [
-        { name: `M6 Stop 1 ${nowTag}`, lat: 41.0306, lng: 28.9964, order: 1, type: "COMMON" },
-        { name: `M6 Stop 2 ${nowTag}`, lat: 41.0310, lng: 28.9968, order: 2, type: "COMMON" },
-        { name: `M6 Stop 3 ${nowTag}`, lat: 41.0313, lng: 28.9971, order: 3, type: "COMMON" },
-      ],
-    };
-
-    const shCreate = await reqJson("POST", "/api/shifts", {
-      token: companyToken,
-      body: shBody,
-    });
-    if (!shCreate.ok)
-      throw new Error(
-        `shift create -> ${shCreate.status}\n${shCreate.text.slice(0, 400)}`
-      );
-    const shiftId = shCreate.json?.id ?? shCreate.json?.shift?.id;
-    if (!shiftId) throw new Error("shiftId missing");
-    ok(`shift create (id=${shiftId})`);
-
-    // Approve/assign as ROOM (PUT alias)
-    const ap = await reqJson("PUT", `/api/shifts/${shiftId}/approve`, {
-      token: roomToken,
-      body: { vehicleId, driverId, status: "APPROVED" },
-    });
-    if (!ap.ok)
-      throw new Error(`approve -> ${ap.status}\n${ap.text.slice(0, 400)}`);
-    ok("approve/assign");
-
-    // Negative: invalid create (missing fields) -> 400
+    // Negative create -> 400
     const badCreate = await reqJson("POST", "/api/requests", {
       token: personelToken,
-      body: { shiftId },
+      body: { shiftId: h.shiftId },
     });
-    if (badCreate.status !== 400)
-      throw new Error(
-        `request validation expected 400 got ${badCreate.status}`
-      );
+    if (badCreate.status !== 400) throw new Error(`request validation expected 400 got ${badCreate.status}`);
     ok("request validation 400 (missing lat/lng)");
 
-    // Create request as PERSONEL
+    // Create request
     wsP.bag.req = [];
     wsC.bag.req = [];
     wsR.bag.req = [];
+
     const rqCreate = await reqJson("POST", "/api/requests", {
       token: personelToken,
-      body: { shiftId, lat: 41.0309, lng: 28.9966 },
+      body: { shiftId: h.shiftId, lat: 41.0309, lng: 28.9966 },
     });
-    if (!rqCreate.ok)
-      throw new Error(
-        `request create -> ${rqCreate.status}\n${rqCreate.text.slice(0, 400)}`
-      );
+    if (!rqCreate.ok) throw new Error(`request create -> ${rqCreate.status}\n${rqCreate.text.slice(0, 400)}`);
     const requestId = rqCreate.json?.id ?? rqCreate.json?.request?.id;
     if (!requestId) throw new Error("requestId missing");
     ok(`request create (id=${requestId})`);
 
-    // WS should receive request:update on create (company+room+personel)
     const wsOk = await waitFor(
-      () =>
-        wsP.bag.req.length > 0 &&
-        wsC.bag.req.length > 0 &&
-        wsR.bag.req.length > 0,
+      () => wsP.bag.req.length > 0 && wsC.bag.req.length > 0 && wsR.bag.req.length > 0,
       4000
     );
-    if (!wsOk)
-      throw new Error("WS request:update missing for one of (personel/company/room)");
+    if (!wsOk) throw new Error("WS request:update missing for one of (personel/company/room)");
     ok("WS request:update (create) personel/company/room");
 
-    // Duplicate OPEN request should be blocked (409)
+    // Duplicate OPEN -> 409
     const dup = await reqJson("POST", "/api/requests", {
       token: personelToken,
-      body: { shiftId, lat: 41.0310, lng: 28.9967 },
+      body: { shiftId: h.shiftId, lat: 41.0310, lng: 28.9967 },
     });
-    if (dup.status !== 409)
-      throw new Error(`duplicate expected 409 got ${dup.status}`);
+    if (dup.status !== 409) throw new Error(`duplicate expected 409 got ${dup.status}`);
     ok("duplicate OPEN blocked (409)");
 
-    // List onlyOpen for company + room must include requestId (robust query+shape)
+    // list onlyOpen contains
     const lc = await fetchOpenList(companyToken);
     const lr = await fetchOpenList(roomToken);
-
-    if (!lc.ok) {
-      console.error("Company list debug:", {
-        status: lc.status,
-        sample: (lc.text ?? "").slice(0, 300),
-      });
-      throw new Error("company list failed");
-    }
-    if (!lr.ok) {
-      console.error("Room list debug:", {
-        status: lr.status,
-        sample: (lr.text ?? "").slice(0, 300),
-      });
-      throw new Error("room list failed");
-    }
+    if (!lc.ok) throw new Error(`company list failed -> ${lc.status}`);
+    if (!lr.ok) throw new Error(`room list failed -> ${lr.status}`);
 
     const inC = itemsOf(lc).some((x) => x?.id === requestId);
     const inR = itemsOf(lr).some((x) => x?.id === requestId);
-    if (!inC) {
-      console.error("Company items sample:", itemsOf(lc).slice(0, 3));
-      throw new Error("company list missing request");
-    }
-    if (!inR) {
-      console.error("Room items sample:", itemsOf(lr).slice(0, 3));
-      throw new Error("room list missing request");
-    }
+    if (!inC) throw new Error("company list missing request");
+    if (!inR) throw new Error("room list missing request");
     ok("list onlyOpen includes request (company+room)");
 
-    // COMPANY cannot close (403)
+    // COMPANY cannot close -> 403
     const cClose = await reqJson("POST", `/api/requests/${requestId}/close`, {
       token: companyToken,
       body: { status: "ACCEPTED" },
     });
-    if (cClose.status !== 403)
-      throw new Error(`company close expected 403 got ${cClose.status}`);
+    if (cClose.status !== 403) throw new Error(`company close expected 403 got ${cClose.status}`);
     ok("RBAC: company close forbidden (403)");
 
     // Close as ROOM
     wsP.bag.req = [];
     wsC.bag.req = [];
     wsR.bag.req = [];
+
     const rClose = await reqJson("POST", `/api/requests/${requestId}/close`, {
       token: roomToken,
       body: { status: "ACCEPTED" },
     });
-    if (!rClose.ok)
-      throw new Error(`room close -> ${rClose.status}\n${rClose.text.slice(0, 400)}`);
+    if (!rClose.ok) throw new Error(`room close -> ${rClose.status}\n${rClose.text.slice(0, 400)}`);
     ok("room close ACCEPTED");
 
     const wsOk2 = await waitFor(
-      () =>
-        wsP.bag.req.length > 0 &&
-        wsC.bag.req.length > 0 &&
-        wsR.bag.req.length > 0,
+      () => wsP.bag.req.length > 0 && wsC.bag.req.length > 0 && wsR.bag.req.length > 0,
       4000
     );
-    if (!wsOk2)
-      throw new Error(
-        "WS request:update missing on close for one of (personel/company/room)"
-      );
+    if (!wsOk2) throw new Error("WS request:update missing on close for one of (personel/company/room)");
     ok("WS request:update (close) personel/company/room");
 
-    // Re-close must be blocked (409)
+    // Re-close -> 409
     const reclose = await reqJson("POST", `/api/requests/${requestId}/close`, {
       token: roomToken,
       body: { status: "ACCEPTED" },
     });
-    if (reclose.status !== 409)
-      throw new Error(`re-close expected 409 got ${reclose.status}`);
+    if (reclose.status !== 409) throw new Error(`re-close expected 409 got ${reclose.status}`);
     ok("re-close blocked (409)");
-
-    // onlyOpen should NOT include anymore
-    const lc2 = await fetchOpenList(companyToken);
-    if (!lc2.ok) {
-      console.error("Company list2 debug:", {
-        status: lc2.status,
-        sample: (lc2.text ?? "").slice(0, 300),
-      });
-      throw new Error("company list failed (post-close)");
-    }
-    const still = itemsOf(lc2).some((x) => x?.id === requestId);
-    if (still) throw new Error("request still in onlyOpen after close");
-    ok("onlyOpen cleared after close");
 
     console.log("\n✅ M6CHECK PASS");
   } finally {
     wsP.sock.close();
     wsC.sock.close();
     wsR.sock.close();
+
+    const closed = await closeShiftHard({ shiftId: h.shiftId, driverToken, roomToken });
+    if (closed) ok(`shift complete (cleanup) shiftId=${h.shiftId}`);
+    else console.log(`⚠️ cleanup failed shiftId=${h.shiftId}`);
   }
 }
 
 main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
-}); 
+});

@@ -93,7 +93,6 @@ export function roomsRouter() {
     const id = Number(req.params.id);
 
     const item = await prisma.room.findUnique({
-负责: undefined,
       where: { id },
       include: { company: { select: { id: true, name: true } } },
     });
@@ -131,6 +130,19 @@ export function roomsRouter() {
         status: parsed.data.status ?? "ACTIVE",
       },
     });
+
+    // DEV/DEMO convenience (same reasoning as companies.js):
+    // IMPORTANT: M1 gate akışında ROOM kullanıcısı ile /api/me okunuyor (roomId alınıyor)
+    // ve ileride Shift create/approve akışında bu roomId kullanılıyor.
+    // Bu yüzden demo ROOM user'unu HER room create'de farklı odaya taşımak,
+    // daha sonra 403 scope mismatch'e sebep olabiliyor.
+    // Çözüm: sadece roomId yoksa (ilk kurulumda) bağla.
+    if (process.env.NODE_ENV !== "production") {
+      await prisma.user.updateMany({
+        where: { email: "room@demo.com", role: "ROOM", roomId: null },
+        data: { roomId: item.id },
+      });
+    }
 
     res.status(201).json(item);
   });

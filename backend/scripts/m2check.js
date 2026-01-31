@@ -1,72 +1,84 @@
 // backend/scripts/m2check.js
-import http from "http";
-import https from "https";
 import { prisma } from "../src/prisma.js";
+import {
+  BASE_URL,
+  login,
+  getRoomCompanyIds,
+  pickVehicleDriver,
+  preCleanDriverShifts,
+  ensureActiveShift,
+  closeShiftHard,
+  postGps,
+  reqJson,
+} from "./_harness.js";
 
-const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
-
-function reqJson(method, path, { token, body } = {}) {
-  const url = new URL(path, BASE_URL);
-  const lib = url.protocol === "https:" ? https : http;
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return new Promise((resolve) => {
-    const req = lib.request(
-      { method, hostname: url.hostname, port: url.port, path: url.pathname + url.search, headers },
-      (res) => {
-        let data = "";
-        res.on("data", (c) => (data += c));
-        res.on("end", () => {
-          const text = data || "";
-          let json = null;
-          try { json = text ? JSON.parse(text) : null; } catch {}
-          resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, json, text });
-        });
-      }
-    );
-    req.on("error", (e)=> resolve({ ok:false, status:0, json:null, text:String(e) }));
-    if (body) req.write(JSON.stringify(body));
-    req.end();
-  });
+function ok(msg) {
+  console.log(`✅ ${msg}`);
 }
 
-async function login(email, password){
-  const r = await reqJson("POST","/api/auth/login",{ body:{ email, password } });
-  if(!r.ok) throw new Error(`login failed ${email} -> ${r.status}\n${r.text}`);
-  if(!r.json?.token) throw new Error(`token missing for ${email}`);
-  return r.json.token;
-}
-
-function ok(msg){ console.log(`✅ ${msg}`); }
-
-async function main(){
+async function main() {
   console.log(`API_URL = ${BASE_URL}`);
 
-  const driverToken = await login("driver@demo.com","demo123");
-  ok("login(driver)");
+  const driverToken = await login("driver@demo.com", "demo123");
+  const roomToken = await login("room@demo.com", "demo123");
+  const companyToken = await login("company@demo.com", "demo123");
+  ok("login(driver/room/company)");
 
-  // GPS ingest
-  const g = await reqJson("POST","/api/gps",{
-    token: driverToken,
-    body: { vehicleId: 1, lat: 41.0302, lng: 28.9960, speed: 20 }
+  const { roomId, companyId } = await getRoomCompanyIds(roomToken, companyToken);
+  const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
+
+  const pre = await preCleanDriverShifts({ roomToken, driverToken, driverId });
+  if (pre.found) console.log(`🧹 pre-clean: found=${pre.found} cleaned=${pre.cleaned}`);
+
+  const h = await ensureActiveShift({
+    companyToken,
+    roomToken,
+    driverToken,
+    companyId,
+    roomId,
+    vehicleId,
+    driverId,
+    tag: "M2",
   });
-  if(!g.ok) throw new Error(`❌ POST /api/gps failed -> ${g.status}\n${g.text}`);
-  ok("POST /api/gps (LIVE)");
+  ok(`shift ACTIVE (id=${h.shiftId})`);
 
-  // DB mapping (LIVE -> Vehicle.ACTIVE + GpsLast.OK)
-  const v = await prisma.vehicle.findUnique({ where:{id:1}, select:{ status:true } });
-  const gl= await prisma.gpsLast.findUnique({ where:{ vehicleId:1 }, select:{ status:true, at:true } });
-  if(v?.status!=="ACTIVE" || gl?.status!=="OK") throw new Error(`❌ DB mapping wrong: Vehicle=${v?.status} GpsLast=${gl?.status}`);
-  ok("DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
+  try {
+    // GPS ingest
+    await postGps(driverToken, {
+      vehicleId: h.vehicleId,
+      lat: 41.0302,
+      lng: 28.996,
+      speed: 20,
+      speedKmh: 20,
+    });
+    ok("POST /api/gps (LIVE)");
 
-  // ETA http sanity
-  const eta = await reqJson("GET","/api/eta?vehicleId=1",{ token: driverToken });
-  if(!eta.ok) throw new Error(`❌ GET /api/eta failed -> ${eta.status}\n${eta.text}`);
-  if(!Array.isArray(eta.json?.stops)) throw new Error("❌ /api/eta invalid (stops[])");
-  ok(`/api/eta ok (stops=${eta.json.stops.length})`);
+    // DB mapping
+    const v = await prisma.vehicle.findUnique({ where: { id: h.vehicleId }, select: { status: true } });
+    const gl = await prisma.gpsLast.findUnique({
+      where: { vehicleId: h.vehicleId },
+      select: { status: true, at: true },
+    });
+    if (v?.status !== "ACTIVE" || gl?.status !== "OK") {
+      throw new Error(`❌ DB mapping wrong: Vehicle=${v?.status} GpsLast=${gl?.status}`);
+    }
+    ok("DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
 
-  console.log("\n✅ M2CHECK PASS");
+    // ETA
+    const eta = await reqJson("GET", `/api/eta?vehicleId=${h.vehicleId}`, { token: driverToken });
+    if (!eta.ok) throw new Error(`❌ GET /api/eta failed -> ${eta.status}\n${eta.text}`);
+    if (!Array.isArray(eta.json?.stops)) throw new Error("❌ /api/eta invalid (stops[])");
+    ok(`/api/eta ok (stops=${eta.json.stops.length})`);
+
+    console.log("\n✅ M2CHECK PASS");
+  } finally {
+    const closed = await closeShiftHard({ shiftId: h.shiftId, driverToken, roomToken });
+    if (closed) ok(`shift complete (cleanup) shiftId=${h.shiftId}`);
+    else console.log(`⚠️ cleanup failed shiftId=${h.shiftId}`);
+  }
 }
 
-main().catch((e)=>{ console.error(String(e?.stack ?? e)); process.exit(1); });
+main().catch((e) => {
+  console.error(String(e?.stack ?? e));
+  process.exit(1);
+});

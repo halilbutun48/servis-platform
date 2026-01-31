@@ -45,6 +45,22 @@ export function companiesRouter() {
       },
     });
 
+    // DEV/DEMO convenience:
+    // The repo includes demo users (company@demo.com, room@demo.com). In the M1 test flow,
+    // SUPER_ADMIN creates a fresh Company and then the demo COMPANY user is expected to
+    // operate on that Company immediately. We auto-bind the demo COMPANY user to the most
+    // recently created Company in non-production environments.
+    if ((process.env.NODE_ENV ?? "development") !== "production") {
+      // Only auto-bind demo COMPANY user when they are NOT already bound (avoid surprising overrides)
+      const demo = await prisma.user.findFirst({
+        where: { email: "company@demo.com", role: "COMPANY" },
+        select: { id: true, companyId: true },
+      });
+      if (demo && !demo.companyId) {
+        await prisma.user.update({ where: { id: demo.id }, data: { companyId: item.id } });
+      }
+    }
+
     res.status(201).json(item);
   });
 

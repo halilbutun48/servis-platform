@@ -23,7 +23,7 @@ async function canSeeVehicle(user, vehicleId) {
     if (!driver) return false;
 
     const any = await prisma.shift.findFirst({
-      where: { vehicleId, driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] } },
+      where: { vehicleId, driverId: driver.id, status: { in: ["APPROVED", "ACTIVE", "DONE"] } },
       select: { id: true },
     });
     return !!any;
@@ -33,7 +33,7 @@ async function canSeeVehicle(user, vehicleId) {
     if (!user.companyId) return false;
 
     const any = await prisma.shift.findFirst({
-      where: { vehicleId, companyId: user.companyId, status: { in: ["APPROVED", "ACTIVE"] } },
+      where: { vehicleId, companyId: user.companyId, status: { in: ["APPROVED", "ACTIVE", "DONE"] } },
       select: { id: true },
     });
     return !!any;
@@ -50,7 +50,7 @@ async function pickShift(vehicleId, shiftId) {
     });
     if (!s) return null;
     if (s.vehicleId !== vehicleId) return null;
-    if (!["APPROVED", "ACTIVE"].includes(s.status)) return null;
+    if (!["APPROVED", "ACTIVE", "DONE"].includes(s.status)) return null;
     return s;
   }
 
@@ -67,6 +67,15 @@ async function pickShift(vehicleId, shiftId) {
     include: { stops: { orderBy: { order: "asc" } } },
   });
   if (approved && (approved.stops?.length ?? 0) > 0) return approved;
+
+  // If the shift was auto-completed (DONE) after the last stop was reached,
+  // still allow ETA queries to return an empty pending list rather than 403.
+  const done = await prisma.shift.findFirst({
+    where: { vehicleId, status: "DONE" },
+    orderBy: [{ id: "desc" }],
+    include: { stops: { orderBy: { order: "asc" } } },
+  });
+  if (done) return done;
 
   return null;
 }

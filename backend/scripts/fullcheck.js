@@ -1,3 +1,4 @@
+// backend/scripts/fullcheck.js
 import http from "http";
 import https from "https";
 import { io as ioc } from "socket.io-client";
@@ -5,7 +6,7 @@ import { prisma } from "../src/prisma.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 function requestJson(method, path, { token, body } = {}) {
   const url = new URL(path, BASE_URL);
@@ -24,211 +25,305 @@ function requestJson(method, path, { token, body } = {}) {
           let json = null;
           try { json = text ? JSON.parse(text) : null; } catch {}
           if (res.statusCode >= 200 && res.statusCode < 300) resolve(json ?? text);
-          else reject(new Error(`${method} ${path} -> ${res.statusCode}\n${text.slice(0,800)}`));
+          else reject(new Error(`${method} ${path} -> ${res.statusCode}\n${text.slice(0, 800)}`));
         });
       }
     );
     req.on("error", reject);
-    if (body) req.write(JSON.stringify(body));
+    if (body !== undefined) req.write(JSON.stringify(body));
     req.end();
   });
 }
 
-async function login(email, password){
-  const r = await requestJson("POST","/api/auth/login",{body:{email,password}});
-  if(!r?.token) throw new Error("login token missing");
+async function login(email, password) {
+  const r = await requestJson("POST", "/api/auth/login", { body: { email, password } });
+  if (!r?.token) throw new Error("login token missing");
   return r.token;
 }
 
-function payloadOf(n){
+function payloadOf(n) {
   const p = n?.payloadJson ?? n?.payload ?? null;
-  if(!p) return null;
+  if (!p) return null;
   return typeof p === "string" ? JSON.parse(p) : p;
 }
-function countKind(items, kind){
-  let c=0;
-  for(const n of items??[]){
-    const p=payloadOf(n);
-    if(p?.kind===kind) c++;
+function countKind(items, kind) {
+  let c = 0;
+  for (const n of items ?? []) {
+    const p = payloadOf(n);
+    if (p?.kind === kind) c++;
   }
   return c;
 }
 
-async function connectWs(token, label){
+/**
+ * GPS hardening sonrası: driver /api/gps basabilsin diye ACTIVE shift şart.
+ * - varsa ACTIVE shift'i reuse eder
+ * - yoksa company->create, room->approve+start ile shift kurar
+ */
+async function ensureActiveShift({ companyToken, roomToken, driverToken }) {
+  const my = await requestJson("GET", "/api/shifts/my", { token: driverToken });
+  const items = my?.items ?? [];
+
+  const active = items.find((s) => s?.status === "ACTIVE");
+  if (active?.id && active?.vehicleId) {
+    return { created: false, shiftId: active.id, vehicleId: active.vehicleId };
+  }
+
+  const approved = items.find((s) => s?.status === "APPROVED" && s?.id);
+  if (approved?.id && approved?.vehicleId) {
+    await requestJson("POST", `/api/shifts/${approved.id}/start`, { token: roomToken, body: {} });
+    return { created: false, shiftId: approved.id, vehicleId: approved.vehicleId };
+  }
+
+  const meRoom = await requestJson("GET", "/api/me", { token: roomToken });
+  const meComp = await requestJson("GET", "/api/me", { token: companyToken });
+  const meDrv = await requestJson("GET", "/api/me", { token: driverToken });
+
+  const roomId = meRoom?.roomId ?? 1;
+  const companyId = meComp?.companyId ?? 1;
+
+  const vlist = await requestJson("GET", "/api/vehicles", { token: roomToken });
+  const vehicleId = vlist?.items?.[0]?.id ?? vlist?.[0]?.id ?? 1;
+
+  let driverId = meDrv?.driverId;
+  if (!driverId) {
+    const dlist = await requestJson("GET", "/api/drivers", { token: roomToken });
+    driverId = dlist?.items?.[0]?.id ?? dlist?.[0]?.id ?? 1;
+  }
+
+  const startAt = new Date(Date.now() - 60_000).toISOString();
+  const endAt = new Date(Date.now() + 2 * 60 * 60_000).toISOString();
+
+  const shBody = {
+    companyId,
+    roomId,
+    startAt,
+    endAt,
+    status: "REQUESTED",
+    stops: [
+      { name: `FULLCHECK Stop 1 ${Date.now()}`, lat: 41.0306, lng: 28.9964, order: 1, type: "COMMON" },
+      { name: `FULLCHECK Stop 2 ${Date.now()}`, lat: 41.0310, lng: 28.9968, order: 2, type: "COMMON" },
+      { name: `FULLCHECK Stop 3 ${Date.now()}`, lat: 41.0313, lng: 28.9971, order: 3, type: "COMMON" },
+    ],
+  };
+
+  const sh = await requestJson("POST", "/api/shifts", { token: companyToken, body: shBody });
+  const shiftId = sh?.id ?? sh?.shift?.id;
+  if (!shiftId) throw new Error("ensureActiveShift: shiftId missing");
+
+  await requestJson("PUT", `/api/shifts/${shiftId}/approve`, {
+    token: roomToken,
+    body: { vehicleId, driverId, status: "APPROVED" },
+  });
+
+  await requestJson("POST", `/api/shifts/${shiftId}/start`, { token: roomToken, body: {} });
+
+  return { created: true, shiftId, vehicleId };
+}
+
+async function completeShiftBestEffort({ shiftId, driverToken }) {
+  try {
+    for (const order of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+      try {
+        await requestJson("POST", `/api/shifts/${shiftId}/reached`, { token: driverToken, body: { order } });
+      } catch {}
+    }
+    await requestJson("POST", `/api/driver/shifts/${shiftId}/complete`, { token: driverToken, body: {} });
+    console.log(`✅ shift complete (cleanup) shiftId=${shiftId}`);
+  } catch (e) {
+    console.log(`ℹ️ cleanup complete failed (ignored): ${String(e?.message ?? e).slice(0, 200)}`);
+  }
+}
+
+async function connectWs(token, label) {
   const sock = ioc(BASE_URL, { auth: { token }, transports: ["websocket"] });
-  const bag = { ready:null, gps:[], vstat:[], notif:[], eta:[] };
+  const bag = { ready: null, gps: [], vstat: [], notif: [], eta: [] };
 
-  sock.on("ws:ready", (d)=> bag.ready=d);
-  sock.on("gps:update", (d)=> bag.gps.push(d));
-  sock.on("vehicle:status", (d)=> bag.vstat.push(d));
-  sock.on("notif:new", (d)=> bag.notif.push(d));
-  sock.on("eta:update", (d)=> bag.eta.push(d));
+  sock.on("ws:ready", (d) => (bag.ready = d));
+  sock.on("gps:update", (d) => bag.gps.push(d));
+  sock.on("vehicle:status", (d) => bag.vstat.push(d));
+  sock.on("notif:new", (d) => bag.notif.push(d));
+  sock.on("eta:update", (d) => bag.eta.push(d));
 
-  const t0=Date.now();
-  while(!bag.ready && Date.now()-t0<5000) await sleep(100);
-  if(!bag.ready) throw new Error(`WS ready timeout: ${label}`);
+  const t0 = Date.now();
+  while (!bag.ready && Date.now() - t0 < 5000) await sleep(100);
+  if (!bag.ready) throw new Error(`WS ready timeout: ${label}`);
   return { sock, bag };
 }
 
-async function waitFor(condFn, timeoutMs, stepMs=100){
-  const t0=Date.now();
-  while(Date.now()-t0<timeoutMs){
-    if(condFn()) return true;
+async function waitFor(condFn, timeoutMs, stepMs = 100) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    if (condFn()) return true;
     await sleep(stepMs);
   }
   return false;
 }
 
-async function main(){
+async function main() {
   console.log(`API_URL = ${BASE_URL}`);
 
   // 1) health
-  const health = await requestJson("GET","/health");
-  if(!health?.ok) throw new Error("❌ /health invalid");
+  const health = await requestJson("GET", "/health");
+  if (!health?.ok) throw new Error("❌ /health invalid");
   console.log("✅ /health");
 
   // 2) logins
-  const driverToken  = await login("driver@demo.com","demo123");
-  const roomToken    = await login("room@demo.com","demo123");
-  const companyToken = await login("company@demo.com","demo123");
-  const personelToken= await login("personel@demo.com","demo123");
+  const driverToken = await login("driver@demo.com", "demo123");
+  const roomToken = await login("room@demo.com", "demo123");
+  const companyToken = await login("company@demo.com", "demo123");
+  const personelToken = await login("personel@demo.com", "demo123");
   console.log("✅ login(driver/room/company/personel)");
 
+  // ✅ ACTIVE shift harness (GPS/ETA 403 fix) — WS connect’ten ÖNCE
+  const harness = await ensureActiveShift({ companyToken, roomToken, driverToken });
+  const vehicleId = harness.vehicleId;
+
   // 3) WS connect
-  const driverWS = await connectWs(driverToken,"driver");
-  const roomWS   = await connectWs(roomToken,"room");
-  const compWS   = await connectWs(companyToken,"company");
+  const driverWS = await connectWs(driverToken, "driver");
+  const roomWS = await connectWs(roomToken, "room");
+  const compWS = await connectWs(companyToken, "company");
   console.log("✅ WS connect + ws:ready");
-  
+
   // 3.1) /api/shifts/my regression guard (DRIVER + PERSONEL)
-  const myD = await requestJson("GET","/api/shifts/my",{token:driverToken});
-  if(!myD || !Array.isArray(myD.items)) throw new Error("❌ /api/shifts/my invalid (driver)");
+  const myD = await requestJson("GET", "/api/shifts/my", { token: driverToken });
+  if (!myD || !Array.isArray(myD.items)) throw new Error("❌ /api/shifts/my invalid (driver)");
 
-  const myP = await requestJson("GET","/api/shifts/my",{token:personelToken});
-  if(!myP || !Array.isArray(myP.items)) throw new Error("❌ /api/shifts/my invalid (personel)");
+  const myP = await requestJson("GET", "/api/shifts/my", { token: personelToken });
+  if (!myP || !Array.isArray(myP.items)) throw new Error("❌ /api/shifts/my invalid (personel)");
+  console.log("✅ /api/shifts/my returns {items[]} (driver/personel)");
 
-console.log("✅ /api/shifts/my returns {items[]} (driver/personel)");
-  // helper to clear bags
-  const clearBags = ()=>{ driverWS.bag.gps=[]; driverWS.bag.vstat=[]; driverWS.bag.notif=[]; driverWS.bag.eta=[];
-                          roomWS.bag.gps=[]; roomWS.bag.vstat=[]; roomWS.bag.notif=[]; roomWS.bag.eta=[];
-                          compWS.bag.gps=[]; compWS.bag.vstat=[]; compWS.bag.notif=[]; compWS.bag.eta=[]; };
+  const clearBags = () => {
+    driverWS.bag.gps = []; driverWS.bag.vstat = []; driverWS.bag.notif = []; driverWS.bag.eta = [];
+    roomWS.bag.gps = []; roomWS.bag.vstat = []; roomWS.bag.notif = []; roomWS.bag.eta = [];
+    compWS.bag.gps = []; compWS.bag.vstat = []; compWS.bag.notif = []; compWS.bag.eta = [];
+  };
 
   // 4) LIVE gps -> WS + DB mapping
   clearBags();
-  await requestJson("POST","/api/gps",{token:driverToken, body:{vehicleId:1, lat:41.0302, lng:28.9960, speed:20}});
-  const gotDriverGps = await waitFor(()=>driverWS.bag.gps.some(x=>x.vehicleId===1), 4000);
-  const gotDriverVs  = await waitFor(()=>driverWS.bag.vstat.some(x=>x.vehicleId===1), 4000);
-  if(!gotDriverGps || !gotDriverVs) throw new Error("❌ WS gps:update / vehicle:status missing (driver)");
+  await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.0302, lng: 28.9960, speed: 20 } });
 
-  const gotRoomAny = await waitFor(()=> roomWS.bag.gps.some(x=>x.vehicleId===1) || roomWS.bag.vstat.some(x=>x.vehicleId===1), 4000);
-  const gotCompAny = await waitFor(()=> compWS.bag.gps.some(x=>x.vehicleId===1) || compWS.bag.vstat.some(x=>x.vehicleId===1), 4000);
-  if(!gotRoomAny) throw new Error("❌ WS update missing (room)");
-  if(!gotCompAny) throw new Error("❌ WS update missing (company)");
+  const gotDriverGps = await waitFor(() => driverWS.bag.gps.some((x) => x.vehicleId === vehicleId), 4000);
+  const gotDriverVs = await waitFor(() => driverWS.bag.vstat.some((x) => x.vehicleId === vehicleId), 4000);
+  if (!gotDriverGps || !gotDriverVs) throw new Error("❌ WS gps:update / vehicle:status missing (driver)");
+
+  const gotRoomAny = await waitFor(
+    () => roomWS.bag.gps.some((x) => x.vehicleId === vehicleId) || roomWS.bag.vstat.some((x) => x.vehicleId === vehicleId),
+    4000
+  );
+  const gotCompAny = await waitFor(
+    () => compWS.bag.gps.some((x) => x.vehicleId === vehicleId) || compWS.bag.vstat.some((x) => x.vehicleId === vehicleId),
+    4000
+  );
+  if (!gotRoomAny) throw new Error("❌ WS update missing (room)");
+  if (!gotCompAny) throw new Error("❌ WS update missing (company)");
   console.log("✅ WS gps:update + vehicle:status (driver/room/company)");
 
-  const v = await prisma.vehicle.findUnique({ where:{id:1}, select:{ status:true } });
-  const gl= await prisma.gpsLast.findUnique({ where:{ vehicleId:1 }, select:{ status:true }});
-  if(v?.status!=="ACTIVE" || gl?.status!=="OK") throw new Error(`❌ DB mapping wrong: Vehicle=${v?.status} GpsLast=${gl?.status}`);
+  const v = await prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { status: true } });
+  const gl = await prisma.gpsLast.findUnique({ where: { vehicleId }, select: { status: true } });
+  if (v?.status !== "ACTIVE" || gl?.status !== "OK") {
+    throw new Error(`❌ DB mapping wrong: Vehicle=${v?.status} GpsLast=${gl?.status}`);
+  }
   console.log("✅ DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
 
   // 5) overspeed -> notif (DB + WS) for DRIVER/ROOM/COMPANY
-  const d0 = await requestJson("GET","/api/notifications/my",{token:driverToken});
-  const r0 = await requestJson("GET","/api/notifications/my",{token:roomToken});
-  const c0 = await requestJson("GET","/api/notifications/my",{token:companyToken});
-  const d0n=countKind(d0,"OVERSPEED"), r0n=countKind(r0,"OVERSPEED"), c0n=countKind(c0,"OVERSPEED");
+  const d0 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
+  const r0 = await requestJson("GET", "/api/notifications/my", { token: roomToken });
+  const c0 = await requestJson("GET", "/api/notifications/my", { token: companyToken });
+  const d0n = countKind(d0, "OVERSPEED"), r0n = countKind(r0, "OVERSPEED"), c0n = countKind(c0, "OVERSPEED");
 
   clearBags();
-  await requestJson("POST","/api/gps",{token:driverToken, body:{vehicleId:1, lat:41.03025, lng:28.99605, speed:140}});
+  await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 } });
 
-  await sleep(800); // notif pipeline
-  const d1 = await requestJson("GET","/api/notifications/my",{token:driverToken});
-  const r1 = await requestJson("GET","/api/notifications/my",{token:roomToken});
-  const c1 = await requestJson("GET","/api/notifications/my",{token:companyToken});
-  if(countKind(d1,"OVERSPEED")<=d0n) throw new Error("❌ OVERSPEED not created for DRIVER");
-  if(countKind(r1,"OVERSPEED")<=r0n) throw new Error("❌ OVERSPEED not created for ROOM");
-  if(countKind(c1,"OVERSPEED")<=c0n) throw new Error("❌ OVERSPEED not created for COMPANY");
+  await sleep(800);
+  const d1 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
+  const r1 = await requestJson("GET", "/api/notifications/my", { token: roomToken });
+  const c1 = await requestJson("GET", "/api/notifications/my", { token: companyToken });
+  if (countKind(d1, "OVERSPEED") <= d0n) throw new Error("❌ OVERSPEED not created for DRIVER");
+  if (countKind(r1, "OVERSPEED") <= r0n) throw new Error("❌ OVERSPEED not created for ROOM");
+  if (countKind(c1, "OVERSPEED") <= c0n) throw new Error("❌ OVERSPEED not created for COMPANY");
 
-  const wsD = await waitFor(()=>driverWS.bag.notif.length>0, 4000);
-  const wsR = await waitFor(()=>roomWS.bag.notif.length>0, 4000);
-  const wsC = await waitFor(()=>compWS.bag.notif.length>0, 4000);
-  if(!wsD || !wsR || !wsC) throw new Error("❌ WS notif:new missing for one of (driver/room/company)");
+  const wsD = await waitFor(() => driverWS.bag.notif.length > 0, 4000);
+  const wsR = await waitFor(() => roomWS.bag.notif.length > 0, 4000);
+  const wsC = await waitFor(() => compWS.bag.notif.length > 0, 4000);
+  if (!wsD || !wsR || !wsC) throw new Error("❌ WS notif:new missing for one of (driver/room/company)");
   console.log("✅ OVERSPEED notif (DB + WS) driver/room/company");
 
   // 6) ETA http + eta:update ws
   clearBags();
-  const eta = await requestJson("GET","/api/eta?vehicleId=1",{token:driverToken});
-  if(!eta || !Array.isArray(eta.stops)) throw new Error("❌ /api/eta invalid (stops[])");
+  const eta = await requestJson("GET", `/api/eta?vehicleId=${vehicleId}`, { token: driverToken });
+  if (!eta || !Array.isArray(eta.stops)) throw new Error("❌ /api/eta invalid (stops[])");
   console.log(`✅ /api/eta (stops=${eta.stops.length})`);
 
-  // trigger ETA update by one more gps
-  await requestJson("POST","/api/gps",{token:driverToken, body:{vehicleId:1, lat:41.0303, lng:28.9961, speed:25}});
-  const gotEtaWs = await waitFor(()=>driverWS.bag.eta.length>0, 4000);
-  if(!gotEtaWs) throw new Error("❌ WS eta:update missing (driver)");
+  await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.0303, lng: 28.9961, speed: 25 } });
+  const gotEtaWs = await waitFor(() => driverWS.bag.eta.length > 0, 4000);
+  if (!gotEtaWs) throw new Error("❌ WS eta:update missing (driver)");
   console.log("✅ WS eta:update (driver)");
 
-  // 7) LIVE->STALE (force by backdating gpsLast.at) + dedupe
-  const baseD = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_STALE");
-  const baseR = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_STALE");
-  const baseC = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_STALE");
+  // 7) LIVE->STALE + dedupe
+  const baseD = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_STALE");
+  const baseR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_STALE");
+  const baseC = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_STALE");
 
-  await prisma.gpsLast.update({ where:{vehicleId:1}, data:{ at: new Date(Date.now()-25_000) } });
+  await prisma.gpsLast.update({ where: { vehicleId }, data: { at: new Date(Date.now() - 25_000) } });
   clearBags();
-  // monitor tick (15s) + jitter
   await sleep(20_000);
 
-  const dS = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_STALE");
-  const rS = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_STALE");
-  const cS = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_STALE");
-  if(dS<=baseD || rS<=baseR || cS<=baseC) throw new Error("❌ GPS_STALE not created for all scopes");
+  const dS = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_STALE");
+  const rS = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_STALE");
+  const cS = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_STALE");
+  if (dS <= baseD || rS <= baseR || cS <= baseC) throw new Error("❌ GPS_STALE not created for all scopes");
   console.log("✅ LIVE->STALE notif created (driver/room/company)");
 
-  // dedupe: wait one more tick, counts must not increase
   await sleep(20_000);
-  const dS2 = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_STALE");
-  const rS2 = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_STALE");
-  const cS2 = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_STALE");
-  if(dS2!==dS || rS2!==rS || cS2!==cS) throw new Error("❌ GPS_STALE dedupe failed (count increased without transition)");
+  const dS2 = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_STALE");
+  const rS2 = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_STALE");
+  const cS2 = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_STALE");
+  if (dS2 !== dS || rS2 !== rS || cS2 !== cS) throw new Error("❌ GPS_STALE dedupe failed");
   console.log("✅ GPS_STALE dedupe OK");
 
   // 8) STALE->OFFLINE + dedupe
-  const baseDO = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_OFFLINE");
-  const baseRO = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_OFFLINE");
-  const baseCO = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_OFFLINE");
+  const baseDO = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_OFFLINE");
+  const baseRO = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_OFFLINE");
+  const baseCO = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_OFFLINE");
 
-  await prisma.gpsLast.update({ where:{vehicleId:1}, data:{ at: new Date(Date.now()-350_000) } });
+  await prisma.gpsLast.update({ where: { vehicleId }, data: { at: new Date(Date.now() - 350_000) } });
   await sleep(20_000);
 
-  const dO = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_OFFLINE");
-  const rO = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_OFFLINE");
-  const cO = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_OFFLINE");
-  if(dO<=baseDO || rO<=baseRO || cO<=baseCO) throw new Error("❌ GPS_OFFLINE not created for all scopes");
+  const dO = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_OFFLINE");
+  const rO = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_OFFLINE");
+  const cO = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_OFFLINE");
+  if (dO <= baseDO || rO <= baseRO || cO <= baseCO) throw new Error("❌ GPS_OFFLINE not created for all scopes");
   console.log("✅ STALE->OFFLINE notif created (driver/room/company)");
 
   await sleep(20_000);
-  const dO2 = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_OFFLINE");
-  const rO2 = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_OFFLINE");
-  const cO2 = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_OFFLINE");
-  if(dO2!==dO || rO2!==rO || cO2!==cO) throw new Error("❌ GPS_OFFLINE dedupe failed");
+  const dO2 = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_OFFLINE");
+  const rO2 = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_OFFLINE");
+  const cO2 = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_OFFLINE");
+  if (dO2 !== dO || rO2 !== rO || cO2 !== cO) throw new Error("❌ GPS_OFFLINE dedupe failed");
   console.log("✅ GPS_OFFLINE dedupe OK");
 
   // 9) OFFLINE->LIVE recovery
-  const baseDR = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_RECOVERY");
-  const baseRR = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_RECOVERY");
-  const baseCR = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_RECOVERY");
+  const baseDR = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_RECOVERY");
+  const baseRR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_RECOVERY");
+  const baseCR = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_RECOVERY");
 
-  await requestJson("POST","/api/gps",{token:driverToken, body:{vehicleId:1, lat:41.0304, lng:28.9962, speed:10}});
+  await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.0304, lng: 28.9962, speed: 10 } });
   await sleep(800);
 
-  const dR = countKind(await requestJson("GET","/api/notifications/my",{token:driverToken}), "GPS_RECOVERY");
-  const rR = countKind(await requestJson("GET","/api/notifications/my",{token:roomToken}), "GPS_RECOVERY");
-  const cR = countKind(await requestJson("GET","/api/notifications/my",{token:companyToken}), "GPS_RECOVERY");
-  if(dR<=baseDR || rR<=baseRR || cR<=baseCR) throw new Error("❌ GPS_RECOVERY not created for all scopes");
+  const dR = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_RECOVERY");
+  const rR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_RECOVERY");
+  const cR = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_RECOVERY");
+  if (dR <= baseDR || rR <= baseRR || cR <= baseCR) throw new Error("❌ GPS_RECOVERY not created for all scopes");
   console.log("✅ OFFLINE->LIVE recovery notif created (driver/room/company)");
 
-  // close
+  // cleanup
+  await completeShiftBestEffort({ shiftId: harness.shiftId, driverToken });
+
+  // close sockets
   driverWS.sock.close(); roomWS.sock.close(); compWS.sock.close();
 
   console.log("\n✅ FULLCHECK PASS");
 }
 
-main().catch((e)=>{ console.error(String(e?.stack ?? e)); process.exit(1); });
+main().catch((e) => { console.error(String(e?.stack ?? e)); process.exit(1); });

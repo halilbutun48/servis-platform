@@ -21,7 +21,7 @@ import { etaRouter } from "./routes/eta.js";
 // Router export tipleri karışsa bile crash etmemek için namespace import
 import * as vehiclesMod from "./routes/vehicles.js";
 import * as driversMod from "./routes/drivers.js";
-import * as shiftsMod from "./routes/shifts.js";
+import * as shiftsMod from "./routes/shifts/index.js";
 import * as gpsMod from "./routes/gps.js";
 import * as requestsMod from "./routes/requests.js";
 import * as driverMod from "./routes/driver.js";

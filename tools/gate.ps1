@@ -33,10 +33,23 @@ try {
     docker compose up -d --build $ApiService
   }
 
-  Start-Sleep -Seconds $SleepSec
-
-  Run "health" {
-    curl.exe -s http://127.0.0.1:3000/health | Out-Host
+  # API container may need extra time for Prisma generate/db push before it starts listening.
+  # Instead of a single sleep, retry /health for a short window.
+  $healthOk = $false
+  for ($i = 0; $i -lt 30; $i++) {
+    try {
+      $r = curl.exe -s http://127.0.0.1:3000/health
+      if ($LASTEXITCODE -eq 0 -and $r) {
+        $healthOk = $true
+        Write-Host "=== health ===" -ForegroundColor Cyan
+        $r | Out-Host
+        break
+      }
+    } catch { }
+    Start-Sleep -Seconds 2
+  }
+  if (-not $healthOk) {
+    throw "FAILED: health (exit=52)"
   }
 
   # M0..M9 her zaman listede

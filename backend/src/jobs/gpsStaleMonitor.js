@@ -130,37 +130,59 @@ export function startGpsStaleMonitor(io, opts = {}) {
             kind,
           });
 
-          // ROOM scope
-          await createAndEmitNotification({
-            io,
-            type: "STALE", // UI'da daha temiz (payload.kind ile detay)
-            scope: "ROOM",
-            payload,
-            roomId: v.roomId,
-            companyId: v.room.companyId,
-            vehicleId: v.id,
+          // Hedef scope'lar (driver/room/company) için bağları mümkünse SHIFT'ten üret.
+          // ÖNEMLİ: findFirst orderBy olmadan farklı tick'lerde farklı SHIFT dönebilir
+          // (özellikle aynı araçta hem APPROVED hem ACTIVE shift açık kalırsa).
+          // Bu yüzden önce ACTIVE'ı, yoksa en yeni APPROVED'ı seçiyoruz.
+          const shActive = await prisma.shift.findFirst({
+            where: { vehicleId: v.id, status: "ACTIVE", driverId: { not: null } },
+            orderBy: { id: "desc" },
+            select: { id: true, driverId: true, roomId: true, companyId: true },
           });
+
+          const sh =
+            shActive ??
+            (await prisma.shift.findFirst({
+              where: { vehicleId: v.id, status: "APPROVED", driverId: { not: null } },
+              orderBy: { id: "desc" },
+              select: { id: true, driverId: true, roomId: true, companyId: true },
+            }));
+
+          const targetRoomId = sh?.roomId ?? v.roomId ?? null;
+          const targetCompanyId = sh?.companyId ?? v.room?.companyId ?? null;
+          const dedupeKeyOf = (scope) => `GPS:${v.id}:${kind}:${scope}:${sh?.id ?? 0}`;
+
+          // ROOM scope
+          if (targetRoomId) {
+            await createAndEmitNotification({
+              io,
+              // API/testler Notification.type alanını okuyor (GPS_STALE / GPS_OFFLINE)
+              type: kind,
+              scope: "ROOM",
+              payload,
+              // dedupeKey ayrı ayrı (ROOM/DRIVER/COMPANY) tutulur.
+              // NOTE: createAndEmitNotification 'dedupeKey' paramı bekler (meta değil).
+              dedupeKey: dedupeKeyOf("ROOM"),
+              roomId: targetRoomId,
+              companyId: targetCompanyId,
+              vehicleId: v.id,
+            });
+          }
 
           // COMPANY scope
-          await createAndEmitNotification({
-            io,
-            type: "STALE",
-            scope: "COMPANY",
-            payload,
-            companyId: v.room.companyId,
-            roomId: v.roomId,
-            vehicleId: v.id,
-          });
-
-          // DRIVER scope (aktif shift üzerinden driver bul)
-          const sh = await prisma.shift.findFirst({
-            where: {
+          if (targetCompanyId) {
+            await createAndEmitNotification({
+              io,
+              type: kind,
+              scope: "COMPANY",
+              payload,
+              // NOTE: createAndEmitNotification 'dedupeKey' paramı bekler (meta değil).
+              dedupeKey: dedupeKeyOf("COMPANY"),
+              companyId: targetCompanyId,
+              roomId: targetRoomId,
               vehicleId: v.id,
-              status: { in: ["APPROVED", "ACTIVE"] },
-              driverId: { not: null },
-            },
-            select: { driverId: true },
-          });
+            });
+          }
 
           if (sh?.driverId) {
             const dUser = await prisma.driver.findUnique({
@@ -170,14 +192,16 @@ export function startGpsStaleMonitor(io, opts = {}) {
 
             await createAndEmitNotification({
               io,
-              type: "STALE",
+              type: kind,
               scope: "DRIVER",
               payload,
+              // NOTE: createAndEmitNotification 'dedupeKey' paramı bekler (meta değil).
+              dedupeKey: dedupeKeyOf("DRIVER"),
               driverId: sh.driverId,
               userId: dUser?.userId ?? null,
               vehicleId: v.id,
-              roomId: v.roomId,
-              companyId: v.room.companyId,
+              roomId: targetRoomId,
+              companyId: targetCompanyId,
             });
           }
         }

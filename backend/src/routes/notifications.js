@@ -26,15 +26,26 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
     return res.json(items);
   }
 
+
   if (u.role === "COMPANY" || u.role === "PERSONEL") {
     if (!u.companyId) return res.json([]);
     const items = await prisma.notification.findMany({
-      where: { scope: "COMPANY", companyId: u.companyId },
+      where: {
+        OR: [
+          // COMPANY paneli için: aynı şirketle ilişkili tüm bildirimler.
+          // Not: bazı bildirimler scope=DRIVER/ROOM olsa bile companyId set ediliyor.
+          // Ek fallback: room/driver relation üzerinden company filtrele.
+          { companyId: u.companyId },
+          { room: { companyId: u.companyId } },
+          { driver: { room: { companyId: u.companyId } } },
+        ],
+      },
       orderBy: { id: "desc" },
       take: 100,
     });
     return res.json(items);
   }
+
 
   if (u.role === "DRIVER") {
     const driver = await prisma.driver.findFirst({ where: { userId: u.id }, select: { id: true } });

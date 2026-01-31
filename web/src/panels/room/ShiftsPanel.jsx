@@ -57,8 +57,51 @@ export default function RoomShiftsPanel() {
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("OPEN"); // OPEN = DONE/REJECTED hariç
+  const [q, setQ] = useState("");
 
   const requested = useMemo(() => shifts.filter((s) => s.status === "REQUESTED"), [shifts]);
+
+
+  const filteredRequested = useMemo(() => {
+    const qn = (q ?? "").trim().toLowerCase();
+    if (!qn) return requested;
+    const txt = (s) =>
+      `${s.id} ${s.status} ${s.company?.name ?? ""} ${s.companyId ?? ""} ${s.vehicle?.plate ?? ""} ${s.driver?.fullName ?? s.driver?.name ?? ""}`
+        .toLowerCase();
+    return requested.filter((s) => txt(s).includes(qn));
+  }, [requested, q]);
+
+  const filteredShifts = useMemo(() => {
+    const normQ = String(q ?? "").trim().toLowerCase();
+    const statusOk = (s) => {
+      if (statusFilter === "ALL") return true;
+      if (statusFilter === "OPEN") return s.status !== "DONE" && s.status !== "REJECTED";
+      if (statusFilter === "CLOSED") return s.status === "DONE" || s.status === "REJECTED";
+      return s.status === statusFilter;
+    };
+
+    const matchQ = (s) => {
+      if (!normQ) return true;
+      const hay = [
+        s.id,
+        s.status,
+        s.company?.name,
+        s.companyId,
+        s.vehicle?.plate,
+        s.vehicleId,
+        s.driver?.fullName,
+        s.driverId,
+        s.routeName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(normQ);
+    };
+
+    return (shifts ?? []).filter((s) => statusOk(s) && matchQ(s));
+  }, [shifts, statusFilter, q]);
 
   const vehiclesById = useMemo(() => {
     const m = new Map();
@@ -76,7 +119,7 @@ export default function RoomShiftsPanel() {
     setErr("");
     try {
       const [s, v, d] = await Promise.all([
-        api("/api/shifts", { token }),
+        api("/api/shifts?take=200", { token }),
         api("/api/vehicles", { token }),
         api("/api/drivers", { token }),
       ]);
@@ -302,6 +345,20 @@ async function applyCompanyOffer(shift) {
       }
 
       setErr(String(e?.message || payload?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejectShift(shiftId) {
+    if (!confirm("Bu talebi reddetmek istiyor musun?")) return;
+    try {
+      setBusy(true);
+      setErr("");
+      await api(`/api/shifts/${shiftId}/reject`, { method: "PUT", token });
+      await loadAll();
+    } catch (e) {
+      setErr(e?.message ?? String(e));
     } finally {
       setBusy(false);
     }
@@ -683,7 +740,7 @@ async function applyCompanyOffer(shift) {
       <div className="card">
         <h3>Bekleyen Talepler</h3>
 
-        {requested.length ? (
+        {filteredRequested.length ? (
           <table className="tbl">
             <thead>
               <tr>
@@ -693,11 +750,12 @@ async function applyCompanyOffer(shift) {
                 <th>End</th>
                 <th>Teklif / Pazarlık</th>
                 <th>Vehicle</th>
-                <th></th>
+                <th>Approve</th>
+                <th>Reddet</th>
               </tr>
             </thead>
             <tbody>
-              {requested.map((s) => {
+              {filteredRequested.map((s) => {
                 const avail = availableVehiclesForShift(s);
 
                 const selectedVid = approveSel[s.id]?.vehicleId || "";
@@ -772,6 +830,11 @@ async function applyCompanyOffer(shift) {
                         {busy ? "..." : "Approve"}
                       </button>
                     </td>
+                    <td>
+                      <button disabled={busy} onClick={() => rejectShift(s.id)}>
+                        {busy ? "..." : "Reddet"}
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -783,7 +846,35 @@ async function applyCompanyOffer(shift) {
       </div>
 
       <div className="card">
-        <h3>Tüm Shifts</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <h3 style={{ margin: 0 }}>Tüm Shifts</h3>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="OPEN">Açık</option>
+              <option value="CLOSED">Kapananlar (DONE + REJECTED)</option>
+              <option value="ALL">Hepsi</option>
+              <option value="REQUESTED">REQUESTED</option>
+              <option value="APPROVED">APPROVED</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="DONE">DONE</option>
+              <option value="REJECTED">REJECTED</option>
+            </select>
+            <input
+              placeholder="Ara (id / company / plate / driver)"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              style={{ minWidth: 240 }}
+            />
+            <button
+              onClick={() => {
+                setStatusFilter("OPEN");
+                setQ("");
+              }}
+            >
+              Temizle
+            </button>
+          </div>
+        </div>
         <table className="tbl">
           <thead>
             <tr>
@@ -798,7 +889,7 @@ async function applyCompanyOffer(shift) {
             </tr>
           </thead>
           <tbody>
-            {shifts.map((s) => (
+            {filteredShifts.map((s) => (
               <tr key={s.id}>
                 <td>{s.id}</td>
                 <td>

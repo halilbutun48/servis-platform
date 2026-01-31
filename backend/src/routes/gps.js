@@ -99,6 +99,19 @@ export function gpsRouter(io) {
       // ✅ UI status + ageSec
       const { status: uiStatus, ageSec } = gpsStatusFromAt(last.at);
 
+      // ✅ company fanout: vehicle's operator company + any shift companies (APPROVED/ACTIVE)
+      // Not: COMPANY rolü /api/notifications/my'da companyId üzerinden filtreliyor.
+      // Bu yüzden GPS bildirimlerinde SHIFT.companyId mutlaka kapsanmalı.
+      const companyIds = new Set();
+      if (vehicle.room?.companyId) companyIds.add(vehicle.room.companyId);
+      try {
+        const rel = await prisma.shift.findMany({
+          where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
+          select: { companyId: true },
+        });
+        for (const r of rel) if (r.companyId) companyIds.add(r.companyId);
+      } catch (_) {}
+
       // =========================================================
       // ✅ helper: DRIVER notif hedeflerini üret
       // - her zaman sender user hedefi var (driverId null olabilir)
@@ -196,15 +209,18 @@ export function gpsRouter(io) {
             vehicleId,
           });
 
-          await createAndEmitNotification({
-            io,
-            type: "GPS_RECOVERY",
-            scope: "COMPANY",
-            payload,
-            companyId: vehicle.room.companyId,
-            roomId: vehicle.roomId,
-            vehicleId,
-          });
+          // COMPANY scope: hem room'un operatör şirketi hem de (APPROVED/ACTIVE) shift şirketleri
+          for (const cid of companyIds) {
+            await createAndEmitNotification({
+              io,
+              type: "GPS_RECOVERY",
+              scope: "COMPANY",
+              payload,
+              companyId: cid,
+              roomId: vehicle.roomId,
+              vehicleId,
+            });
+          }
         } catch (e) {
           console.error("GPS_RECOVERY notif error:", e);
         }
@@ -221,15 +237,16 @@ export function gpsRouter(io) {
         ageSec,
       };
 
+
       io.to(`vehicle:${vehicleId}`).emit("gps:update", gpsPayload);
       io.to(`room:${vehicle.roomId}`).emit("gps:update", gpsPayload);
-      io.to(`company:${vehicle.room.companyId}`).emit("gps:update", gpsPayload);
+      for (const cid of companyIds) io.to(`company:${cid}`).emit("gps:update", gpsPayload);
 
       // ✅ WS: vehicle:status
       const vehicleStatusPayload = { vehicleId, status: uiStatus, ageSec };
       io.to(`vehicle:${vehicleId}`).emit("vehicle:status", vehicleStatusPayload);
       io.to(`room:${vehicle.roomId}`).emit("vehicle:status", vehicleStatusPayload);
-      io.to(`company:${vehicle.room.companyId}`).emit("vehicle:status", vehicleStatusPayload);
+      for (const cid of companyIds) io.to(`company:${cid}`).emit("vehicle:status", vehicleStatusPayload);
 
       // =========================================================
       // ✅ OVERSPEED
@@ -276,16 +293,18 @@ export function gpsRouter(io) {
             dedupeKey: "", // ✅ overspeed için dedupe yok
           });
 
-          await createAndEmitNotification({
-            io,
-            type: "OVERSPEED",
-            scope: "COMPANY",
-            payload,
-            companyId: vehicle.room.companyId,
-            roomId: vehicle.roomId,
-            vehicleId,
-            dedupeKey: "", // ✅ overspeed için dedupe yok
-          });
+          for (const cid of companyIds) {
+            await createAndEmitNotification({
+              io,
+              type: "OVERSPEED",
+              scope: "COMPANY",
+              payload,
+              companyId: cid,
+              roomId: vehicle.roomId,
+              vehicleId,
+              dedupeKey: "", // ✅ overspeed için dedupe yok
+            });
+          }
         } catch (e) {
           console.error("OVERSPEED notif error:", e);
         }

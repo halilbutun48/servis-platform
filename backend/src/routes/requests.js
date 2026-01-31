@@ -47,8 +47,23 @@ export function requestsRouter(io) {
       });
       if (!shift) return res.status(404).json({ error: "Shift not found" });
 
-      if (shift.companyId !== personel.companyId) {
+      // Company scope check: shift must belong to the same company as the authenticated user (or the linked personel record).
+      const userCompanyId = req.user?.companyId ?? null;
+      const personelCompanyId = personel.companyId ?? null;
+
+      const matchesUser = userCompanyId && shift.companyId === userCompanyId;
+      const matchesPersonel = personelCompanyId && shift.companyId === personelCompanyId;
+
+      if (!matchesUser && !matchesPersonel) {
         return res.status(403).json({ error: "Forbidden" });
+      }
+
+      // Auto-heal: if user is scoped but personel.companyId is missing/wrong, align it.
+      if (matchesUser && !matchesPersonel) {
+        await prisma.personel.update({
+          where: { id: personel.id },
+          data: { companyId: userCompanyId },
+        });
       }
 
       // MVP: sadece APPROVED/ACTIVE shift'e istek atılsın

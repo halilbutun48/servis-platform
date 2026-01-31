@@ -27,13 +27,25 @@ if (-not $NoInstall) {
 
 Section "Gate"
 & "$PSScriptRoot\gate.ps1" -To $To
+if ($LASTEXITCODE -ne 0) { throw "GATE FAIL (exit=$LASTEXITCODE)" }
 
 Section "Backend checks"
 Push-Location "$PSScriptRoot\..\backend"
 npm run smoke
+if ($LASTEXITCODE -ne 0) { throw "SMOKE FAIL (exit=$LASTEXITCODE)" }
+
 npm run fullcheck
-if ($To -ge 11) { npm run m11check }
-if ($To -ge 12) { npm run m12check }
+if ($LASTEXITCODE -ne 0) { throw "FULLCHECK FAIL (exit=$LASTEXITCODE)" }
+
+if ($To -ge 11) {
+  npm run m11check
+  if ($LASTEXITCODE -ne 0) { throw "M11CHECK FAIL (exit=$LASTEXITCODE)" }
+}
+
+if ($To -ge 12) {
+  npm run m12check
+  if ($LASTEXITCODE -ne 0) { throw "M12CHECK FAIL (exit=$LASTEXITCODE)" }
+}
 Pop-Location
 
 Section "DONE"
