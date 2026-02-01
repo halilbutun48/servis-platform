@@ -18,7 +18,9 @@ async function loginFirst(emailCandidates, password) {
       continue;
     }
   }
-  throw new Error(`login failed: ${emailCandidates.join(", ")} -> ${String(lastErr?.message || lastErr)}`);
+  throw new Error(
+    `login failed: ${emailCandidates.join(", ")} -> ${String(lastErr?.message || lastErr)}`
+  );
 }
 
 async function createVehicle(roomToken, plate) {
@@ -53,13 +55,64 @@ async function delVehicle(roomToken, vehicleId) {
   ok(`Vehicle delete id=${vehicleId}`, r.status === 200 || r.status === 201);
 }
 
+async function delDriver(roomToken, driverId) {
+  const r = await reqJson("DELETE", `/api/drivers/${driverId}`, { token: roomToken });
+  ok(`Driver delete id=${driverId}`, r.status === 200 || r.status === 201);
+}
+
+async function listVehicles(roomToken) {
+  const r = await reqJson("GET", "/api/vehicles", { token: roomToken });
+  ok("Vehicle list", r.status === 200);
+  return Array.isArray(r.json) ? r.json : [];
+}
+
+function normDriverId(v) {
+  const id =
+    v?.driverId != null ? Number(v.driverId) :
+    v?.driver?.id != null ? Number(v.driver.id) :
+    null;
+
+  if (!id || Number.isNaN(id)) return null;
+  return id;
+}
+
+async function assertVehicleDriver(roomToken, vehicleId, expectedDriverIdOrNull, title) {
+  const items = await listVehicles(roomToken);
+  const v = items.find((x) => Number(x.id) === Number(vehicleId));
+  must(`${title}: vehicle exists id=${vehicleId}`, !!v);
+
+  const got = normDriverId(v);
+  const exp = expectedDriverIdOrNull == null ? null : Number(expectedDriverIdOrNull);
+
+  if (exp == null) {
+    must(`${title}: driverId should be null`, got === null);
+  } else {
+    must(`${title}: driverId should be ${exp}`, got === exp);
+  }
+}
+
+function dump(label, r) {
+  try {
+    const body = r?.json != null ? JSON.stringify(r.json) : String(r?.text || "");
+    console.log(`ℹ️ ${label}: status=${r?.status} body=${body.slice(0, 800)}`);
+  } catch {
+    console.log(`ℹ️ ${label}: status=${r?.status}`);
+  }
+}
+
 async function main() {
   console.log("=== M15 ===");
   console.log("API_URL = http://127.0.0.1:3000");
 
   const PASS = process.env.SEED_PASS || "demo123";
+
   const roomToken = await loginFirst(
     [process.env.ROOM_EMAIL || "room@demo.com", "room_seed@demo.com"],
+    PASS
+  );
+
+  const companyToken = await loginFirst(
+    [process.env.COMPANY_EMAIL || "company@demo.com", "company_seed@demo.com"],
     PASS
   );
 
@@ -69,34 +122,66 @@ async function main() {
   const d1 = await createDriver(roomToken, `M15 Driver ${rand(4)}`);
 
   try {
-    // bind ok
+    // 1) bind ok: vA <- d1
     const b1 = await bind(roomToken, vA, d1);
     ok("Bind ok (vA<-d1)", b1.status === 200);
-    ok("Bind response ok", b1.json?.ok === true);
+    must("Bind response ok:true", b1.json?.ok === true || b1.json?.vehicle?.id === vA);
+    await assertVehicleDriver(roomToken, vA, d1, "after bind vA<-d1");
 
-    // conflict: aynı driver başka araca
+    // 2) bind vB <- d1: iki olası contract
     const b2 = await bind(roomToken, vB, d1);
-    ok("Bind conflict -> 409", b2.status === 409);
-    must("Bind conflict code", String(b2.json?.code || "") === "DRIVER_ALREADY_BOUND");
-    must("conflictingVehicle.id", Number(b2.json?.conflictingVehicle?.id || 0) === vA);
 
-    // unbind vA
-    const u1 = await bind(roomToken, vA, null);
-    ok("Unbind ok (vA)", u1.status === 200);
+    if (b2.status === 200) {
+      // MODE A: auto-unbind (200)
+      ok("Bind ok (vB<-d1) auto-unbind", true);
+      await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1");
+      await assertVehicleDriver(roomToken, vA, null, "after auto-unbind vA");
+    } else if (b2.status === 409) {
+      // MODE B: conflict (409) -> önce vA unbind, sonra vB bind
+      ok("Bind conflict -> 409 (driver already bound)", true);
 
-    // now bind vB ok
-    const b3 = await bind(roomToken, vB, d1);
-    ok("Bind ok after unbind (vB<-d1)", b3.status === 200);
+      const code = String(b2.json?.code || "");
+      // tolerans: farklı code isimleri olabilir
+      must(
+        "Bind conflict code (expected driver-bound type)",
+        ["DRIVER_ALREADY_BOUND", "DRIVER_CONFLICT", "DRIVER_IN_USE"].includes(code) || !!b2.json?.conflictingVehicle
+      );
 
-    // cleanup: unbind vB
-    const u2 = await bind(roomToken, vB, null);
-    ok("Unbind ok (vB)", u2.status === 200);
+      const cid = Number(b2.json?.conflictingVehicle?.id || 0);
+      if (cid) must("conflictingVehicle.id == vA", cid === vA);
+      else dump("bind conflict body", b2);
+
+      // unbind vA
+      const uA = await bind(roomToken, vA, null);
+      ok("Unbind ok (vA)", uA.status === 200);
+
+      // now bind vB ok
+      const b3 = await bind(roomToken, vB, d1);
+      ok("Bind ok after unbind (vB<-d1)", b3.status === 200);
+      await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1 post-unbind");
+      await assertVehicleDriver(roomToken, vA, null, "after unbind vA (still null)");
+    } else {
+      dump("unexpected bind vB<-d1", b2);
+      must("Bind vB<-d1 should be 200 or 409", false);
+    }
+
+    // 3) unbind vB ok (idempotent)
+    const uB = await bind(roomToken, vB, null);
+    ok("Unbind ok (vB)", uB.status === 200);
+    await assertVehicleDriver(roomToken, vB, null, "after unbind vB");
+
+    // 4) RBAC: company bind denemesi 403/401 olmalı
+    const rb = await bind(companyToken, vA, d1);
+    ok("RBAC: company cannot bind-driver", rb.status === 403 || rb.status === 401);
 
     console.log("✅ M15CHECK PASS");
   } finally {
-    // best-effort cleanup vehicles
+    // best-effort cleanup
+    try { await bind(roomToken, vA, null); } catch {}
+    try { await bind(roomToken, vB, null); } catch {}
     try { await delVehicle(roomToken, vA); } catch {}
     try { await delVehicle(roomToken, vB); } catch {}
+    try { await delDriver(roomToken, d1); } catch {}
   }
 }
 

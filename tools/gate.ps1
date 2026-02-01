@@ -70,7 +70,7 @@ try {
     @{ n = 15; name="M15"; cmd="node scripts/m15check.js" }
   )
 
-  # ✅ Only include checks that exist in the image/host (defensive)
+  # ✅ Only include checks that exist on host (defensive)
   $runList = @()
   foreach ($c in $checks | Where-Object { $_.n -le $To } | Sort-Object n) {
     $hostPath = Join-Path $RepoDir ("backend\scripts\m{0}check.js" -f $c.n)

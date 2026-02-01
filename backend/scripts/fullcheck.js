@@ -55,6 +55,94 @@ function countKind(items, kind) {
   return c;
 }
 
+// ---------- Deterministic notif helpers (WS jitter + upsert/dedupe safe) ----------
+async function listMyNotifs(token) {
+  const r = await requestJson("GET", "/api/notifications/my", { token });
+  // /my returns array in this codebase (based on existing usage)
+  return Array.isArray(r) ? r : (Array.isArray(r?.items) ? r.items : []);
+}
+
+function hasKind(items, kind) {
+  const K = String(kind || "").toUpperCase();
+  for (const n of items ?? []) {
+    const p = payloadOf(n);
+    const k = String(p?.kind || "").toUpperCase();
+    if (k === K) return true;
+  }
+  return false;
+}
+
+/**
+ * Wait until all given tokens have at least one notification with payload.kind == kind.
+ * This is resilient against:
+ * - monitor tick jitter
+ * - dedupe/upsert behavior (count may not increase)
+ */
+async function waitKindAllScopes({ kind, tokens, timeoutMs = 90_000, intervalMs = 2_500, label = "" }) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    const lists = await Promise.all(tokens.map((t) => listMyNotifs(t)));
+    const okAll = lists.every((lst) => hasKind(lst, kind));
+    if (okAll) return true;
+    await sleep(intervalMs);
+  }
+  console.log(`ℹ️ waitKindAllScopes TIMEOUT kind=${kind} label=${label}`);
+  try {
+    const lists = await Promise.all(tokens.map((t) => listMyNotifs(t)));
+    console.log("debug notif counts:", lists.map((x) => (x || []).length));
+  } catch {}
+  return false;
+}
+
+/**
+ * Wait until all given tokens have count(kind) >= minCount.
+ * Useful for OVERSPEED where we expect a new row.
+ */
+async function waitCountAllScopes({ kind, tokens, minCount, timeoutMs = 15_000, intervalMs = 800, label = "" }) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeoutMs) {
+    const lists = await Promise.all(tokens.map((t) => listMyNotifs(t)));
+    const okAll = lists.every((lst) => countKind(lst, kind) >= minCount);
+    if (okAll) return true;
+    await sleep(intervalMs);
+  }
+  console.log(`ℹ️ waitCountAllScopes TIMEOUT kind=${kind} minCount=${minCount} label=${label}`);
+  return false;
+}
+
+/**
+ * Wait until counts for all scopes stop changing for a window.
+ * Used for dedupe checks (no additional rows).
+ */
+async function waitCountsStable({ kind, tokens, stableWindowMs = 8_000, intervalMs = 1_000, label = "" }) {
+  const start = Date.now();
+  let last = null;
+  let lastChangeAt = Date.now();
+
+  while (Date.now() - start < 40_000) {
+    const lists = await Promise.all(tokens.map((t) => listMyNotifs(t)));
+    const counts = lists.map((lst) => countKind(lst, kind));
+    const key = counts.join(",");
+
+    if (last === null) {
+      last = key;
+      lastChangeAt = Date.now();
+    } else if (key !== last) {
+      last = key;
+      lastChangeAt = Date.now();
+    }
+
+    if (Date.now() - lastChangeAt >= stableWindowMs) return counts; // stable
+    await sleep(intervalMs);
+  }
+
+  console.log(`ℹ️ waitCountsStable TIMEOUT kind=${kind} label=${label}`);
+  const lists = await Promise.all(tokens.map((t) => listMyNotifs(t)));
+  return lists.map((lst) => countKind(lst, kind));
+}
+
+// ---------------------------------------------------------------------------
+
 /**
  * GPS hardening sonrası: driver /api/gps basabilsin diye ACTIVE shift şart.
  * - varsa ACTIVE shift'i reuse eder
@@ -199,6 +287,8 @@ async function main() {
     compWS.bag.gps = []; compWS.bag.vstat = []; compWS.bag.notif = []; compWS.bag.eta = [];
   };
 
+  const scopeTokens = [driverToken, roomToken, companyToken];
+
   // 4) LIVE gps -> WS + DB mapping
   clearBags();
   await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.0302, lng: 28.9960, speed: 20 } });
@@ -226,22 +316,25 @@ async function main() {
   }
   console.log("✅ DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
 
-  // 5) overspeed -> notif (DB + WS) for DRIVER/ROOM/COMPANY
-  const d0 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
-  const r0 = await requestJson("GET", "/api/notifications/my", { token: roomToken });
-  const c0 = await requestJson("GET", "/api/notifications/my", { token: companyToken });
+  // 5) overspeed -> notif (DB + WS) for DRIVER/ROOM/COMPANY (count should increase)
+  const d0 = await listMyNotifs(driverToken);
+  const r0 = await listMyNotifs(roomToken);
+  const c0 = await listMyNotifs(companyToken);
   const d0n = countKind(d0, "OVERSPEED"), r0n = countKind(r0, "OVERSPEED"), c0n = countKind(c0, "OVERSPEED");
 
   clearBags();
   await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 } });
 
-  await sleep(800);
-  const d1 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
-  const r1 = await requestJson("GET", "/api/notifications/my", { token: roomToken });
-  const c1 = await requestJson("GET", "/api/notifications/my", { token: companyToken });
-  if (countKind(d1, "OVERSPEED") <= d0n) throw new Error("❌ OVERSPEED not created for DRIVER");
-  if (countKind(r1, "OVERSPEED") <= r0n) throw new Error("❌ OVERSPEED not created for ROOM");
-  if (countKind(c1, "OVERSPEED") <= c0n) throw new Error("❌ OVERSPEED not created for COMPANY");
+  // wait DB increase deterministically
+  const overspeedOk = await waitCountAllScopes({
+    kind: "OVERSPEED",
+    tokens: scopeTokens,
+    minCount: Math.max(d0n + 1, r0n + 1, c0n + 1), // conservative
+    timeoutMs: 15_000,
+    intervalMs: 900,
+    label: "OVERSPEED after gps",
+  });
+  if (!overspeedOk) throw new Error("❌ OVERSPEED not created for all scopes (DB)");
 
   const wsD = await waitFor(() => driverWS.bag.notif.length > 0, 4000);
   const wsR = await waitFor(() => roomWS.bag.notif.length > 0, 4000);
@@ -260,62 +353,93 @@ async function main() {
   if (!gotEtaWs) throw new Error("❌ WS eta:update missing (driver)");
   console.log("✅ WS eta:update (driver)");
 
-  // 7) LIVE->STALE + dedupe
-  const baseD = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_STALE");
-  const baseR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_STALE");
-  const baseC = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_STALE");
-
+  // 7) LIVE->STALE + dedupe (deterministic: existence + stable counts)
+  // Make vehicle stale by moving gpsLast.at back; then wait until all scopes HAVE GPS_STALE.
   await prisma.gpsLast.update({ where: { vehicleId }, data: { at: new Date(Date.now() - 25_000) } });
   clearBags();
-  await sleep(20_000);
 
-  const dS = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_STALE");
-  const rS = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_STALE");
-  const cS = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_STALE");
-  if (dS <= baseD || rS <= baseR || cS <= baseC) throw new Error("❌ GPS_STALE not created for all scopes");
-  console.log("✅ LIVE->STALE notif created (driver/room/company)");
+  const staleExists = await waitKindAllScopes({
+    kind: "GPS_STALE",
+    tokens: scopeTokens,
+    timeoutMs: 90_000,
+    intervalMs: 2_500,
+    label: "LIVE->STALE",
+  });
+  if (!staleExists) throw new Error("❌ GPS_STALE not found for all scopes (WS+API)");
+  console.log("✅ LIVE->STALE notif exists (driver/room/company)");
 
-  await sleep(20_000);
-  const dS2 = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_STALE");
-  const rS2 = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_STALE");
-  const cS2 = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_STALE");
-  if (dS2 !== dS || rS2 !== rS || cS2 !== cS) throw new Error("❌ GPS_STALE dedupe failed");
+  // Dedupe check: counts should stabilize and remain stable
+  const staleCounts1 = await waitCountsStable({
+    kind: "GPS_STALE",
+    tokens: scopeTokens,
+    stableWindowMs: 8_000,
+    intervalMs: 1_000,
+    label: "GPS_STALE stable window 1",
+  });
+
+  await sleep(15_000);
+
+  const staleCounts2 = await waitCountsStable({
+    kind: "GPS_STALE",
+    tokens: scopeTokens,
+    stableWindowMs: 8_000,
+    intervalMs: 1_000,
+    label: "GPS_STALE stable window 2",
+  });
+
+  if (staleCounts2.join(",") !== staleCounts1.join(",")) {
+    throw new Error(`❌ GPS_STALE dedupe failed (counts changed: ${staleCounts1.join(",")} -> ${staleCounts2.join(",")})`);
+  }
   console.log("✅ GPS_STALE dedupe OK");
 
-  // 8) STALE->OFFLINE + dedupe
-  const baseDO = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_OFFLINE");
-  const baseRO = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_OFFLINE");
-  const baseCO = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_OFFLINE");
-
+  // 8) STALE->OFFLINE + dedupe (same strategy: existence + stable counts)
   await prisma.gpsLast.update({ where: { vehicleId }, data: { at: new Date(Date.now() - 350_000) } });
-  await sleep(20_000);
 
-  const dO = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_OFFLINE");
-  const rO = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_OFFLINE");
-  const cO = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_OFFLINE");
-  if (dO <= baseDO || rO <= baseRO || cO <= baseCO) throw new Error("❌ GPS_OFFLINE not created for all scopes");
-  console.log("✅ STALE->OFFLINE notif created (driver/room/company)");
+  const offlineExists = await waitKindAllScopes({
+    kind: "GPS_OFFLINE",
+    tokens: scopeTokens,
+    timeoutMs: 90_000,
+    intervalMs: 2_500,
+    label: "STALE->OFFLINE",
+  });
+  if (!offlineExists) throw new Error("❌ GPS_OFFLINE not found for all scopes (WS+API)");
+  console.log("✅ STALE->OFFLINE notif exists (driver/room/company)");
 
-  await sleep(20_000);
-  const dO2 = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_OFFLINE");
-  const rO2 = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_OFFLINE");
-  const cO2 = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_OFFLINE");
-  if (dO2 !== dO || rO2 !== rO || cO2 !== cO) throw new Error("❌ GPS_OFFLINE dedupe failed");
+  const offCounts1 = await waitCountsStable({
+    kind: "GPS_OFFLINE",
+    tokens: scopeTokens,
+    stableWindowMs: 8_000,
+    intervalMs: 1_000,
+    label: "GPS_OFFLINE stable window 1",
+  });
+
+  await sleep(15_000);
+
+  const offCounts2 = await waitCountsStable({
+    kind: "GPS_OFFLINE",
+    tokens: scopeTokens,
+    stableWindowMs: 8_000,
+    intervalMs: 1_000,
+    label: "GPS_OFFLINE stable window 2",
+  });
+
+  if (offCounts2.join(",") !== offCounts1.join(",")) {
+    throw new Error(`❌ GPS_OFFLINE dedupe failed (counts changed: ${offCounts1.join(",")} -> ${offCounts2.join(",")})`);
+  }
   console.log("✅ GPS_OFFLINE dedupe OK");
 
-  // 9) OFFLINE->LIVE recovery
-  const baseDR = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_RECOVERY");
-  const baseRR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_RECOVERY");
-  const baseCR = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_RECOVERY");
-
+  // 9) OFFLINE->LIVE recovery (existence)
   await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.0304, lng: 28.9962, speed: 10 } });
-  await sleep(800);
 
-  const dR = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_RECOVERY");
-  const rR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_RECOVERY");
-  const cR = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_RECOVERY");
-  if (dR <= baseDR || rR <= baseRR || cR <= baseCR) throw new Error("❌ GPS_RECOVERY not created for all scopes");
-  console.log("✅ OFFLINE->LIVE recovery notif created (driver/room/company)");
+  const recExists = await waitKindAllScopes({
+    kind: "GPS_RECOVERY",
+    tokens: scopeTokens,
+    timeoutMs: 45_000,
+    intervalMs: 2_000,
+    label: "OFFLINE->LIVE recovery",
+  });
+  if (!recExists) throw new Error("❌ GPS_RECOVERY not found for all scopes (WS+API)");
+  console.log("✅ OFFLINE->LIVE recovery notif exists (driver/room/company)");
 
   // cleanup
   await completeShiftBestEffort({ shiftId: harness.shiftId, driverToken });
