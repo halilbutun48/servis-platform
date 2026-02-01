@@ -165,3 +165,10 @@ GPS tabanlı **personel servisi** platformu:
 - Yeni bir doğrulama script’i eklendiyse (smoke/fullcheck/m-check): Gate bölümüne eklenir.
 - Yeni bir “sık hata” görüldüyse: Runbook’a 1 madde olarak eklenir.
 V1 sonrası backlog SSOT: docs/NEXT_BACKLOG_V1.md
+## Gate PASS (Stable Reference)
+
+- stable: v1-m15-green.5
+- date: 2026-02-01
+- commit: 1b3efc5
+- result: PACK PASS (M0..M15 + FULLCHECK + SMOKE)
+- notes: fullcheck/m4check deterministic (gpsLast.at back + poll), greenpack header rate-limit bypass (dev)

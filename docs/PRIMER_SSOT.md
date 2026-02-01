@@ -208,6 +208,20 @@ Referans: tag `v1-m15-green.2`
 “`servis-platform` repo, tag `v1-m15-green.2` referansından devam ediyoruz. Next hedef: Vehicle↔Driver bind (M15) + UI: Vehicles panel bind/unbind + tek source of truth + M15 check
 
 ---
+# PERSONEL-SERVIS V1 — PRIMER_SSOT
+
+## Stable Reference
+- stable: v1-m15-green.5
+- date: 2026-02-01
+- commit: 1b3efc5
+- gate: PACK PASS (M0..M15 + FULLCHECK + SMOKE)
+
+## How to verify
+- run: tools/pack.ps1 -To 15
+
+## Notes
+- GreenPack header (dev): x-greenpack: 1  (rate limit bypass only for gate scripts)
+- Deterministic monitors: stale/offline tests use gpsLast.at back + poll
 
 
 
