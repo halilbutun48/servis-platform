@@ -104,6 +104,19 @@ function isWhereNotUniqueError(err) {
   );
 }
 
+function isPrismaUniqueViolation(err, field) {
+  const code = err?.code;
+  const target = err?.meta?.target;
+  const msg = String(err?.message ?? "");
+  const targetHit =
+    Array.isArray(target) ? target.includes(field) : typeof target === "string" ? target.includes(field) : false;
+
+  return (
+    code === "P2002" &&
+    (targetHit || msg.includes(`(${field})`) || msg.includes(`\`${field}\``) || msg.includes(`'${field}'`))
+  );
+}
+
 // Şema scalar id bekliyorsa relation alanları (company/room/...) "Unknown argument" verir.
 function needsScalarFallback(err) {
   return (
@@ -136,10 +149,10 @@ function buildAutoDedupeKey({
   userId,
   shiftId,
 }) {
+  // Varsayılan otomatik dedupe sadece overspeed için (10sn bucket).
   if (type !== "OVERSPEED") return null;
   if (!vehicleId) return null;
 
-  // Dedupe bucket server time’a göre (payload.at sabit olabilir)
   const bucket10s = Math.floor(Date.now() / 10_000);
 
   let actor = "X";
@@ -174,6 +187,7 @@ function buildScalarData({
     shiftId,
   };
 
+  // şemada yoksa "Unknown argument" ile yakalayıp kırpıyoruz
   if (dedupeKey) data.dedupeKey = dedupeKey;
   if (userId != null) data.userId = userId;
 
@@ -201,7 +215,6 @@ function buildConnectData({
   if (dedupeKey) data.dedupeKey = dedupeKey;
   if (userId != null) data.userId = userId;
 
-  // scalar *Id yerine relation connect
   if (companyId) data.company = { connect: { id: companyId } };
   if (roomId) data.room = { connect: { id: roomId } };
   if (driverId) data.driver = { connect: { id: driverId } };
@@ -209,6 +222,41 @@ function buildConnectData({
   if (shiftId) data.shift = { connect: { id: shiftId } };
 
   return data;
+}
+
+async function safeUpdateByDedupeKey({ dedupeKey, data, useConnect }) {
+  try {
+    // dedupeKey unique ise update çalışır
+    return await prisma.notification.update({
+      where: { dedupeKey },
+      data,
+    });
+  } catch (e) {
+    // userId/dedupeKey unknown gibi durumlarda bir kez kırpıp tekrar dene
+    const userUnknown = isUnknownArgError(e, "userId");
+    const dkUnknown = isUnknownArgError(e, "dedupeKey");
+    if (!userUnknown && !dkUnknown) throw e;
+
+    const data2 = { ...data };
+    if (userUnknown) delete data2.userId;
+    if (dkUnknown) {
+      // dedupeKey alanı yoksa update de anlamsız; findUnique da çalışmayabilir
+      throw e;
+    }
+
+    return await prisma.notification.update({
+      where: { dedupeKey },
+      data: data2,
+    });
+  }
+}
+
+async function safeFindByDedupeKey(dedupeKey) {
+  try {
+    return await prisma.notification.findUnique({ where: { dedupeKey } });
+  } catch {
+    return null;
+  }
 }
 
 // scope: ROOM | COMPANY | DRIVER | SHIFT | USER (projende ne varsa)
@@ -256,56 +304,8 @@ export async function createNotification({
   async function tryUpsertOrCreate({ useConnect }) {
     const mkData = useConnect ? buildConnectData : buildScalarData;
 
-    // UPSERT (dedupeKey varsa)
+    // Öncelik: dedupeKey varsa UPSERT
     if (finalDedupeKey) {
-      try {
-        const createData = mkData({
-          type,
-          scope,
-          v1,
-          companyId,
-          roomId,
-          driverId,
-          vehicleId: finalVehicleId,
-          shiftId,
-          userId,
-          dedupeKey: finalDedupeKey,
-        });
-
-        const updateData = mkData({
-          type,
-          scope,
-          v1,
-          companyId,
-          roomId,
-          driverId,
-          vehicleId: finalVehicleId,
-          shiftId,
-          userId,
-          dedupeKey: null, // update'de dedupeKey set etmeyelim
-        });
-
-        return await prisma.notification.upsert({
-          where: { dedupeKey: finalDedupeKey },
-          update: updateData,
-          create: createData,
-        });
-      } catch (e) {
-        const dkUnknown = isUnknownArgError(e, "dedupeKey");
-        const userUnknown = isUnknownArgError(e, "userId");
-        const notUnique = isWhereNotUniqueError(e);
-
-        // yanlış moddaysak üst seviyeye fırlat (mode switch)
-        if (useConnect && needsScalarFallback(e)) throw e;
-        if (!useConnect && needsRelationConnectFallback(e)) throw e;
-
-        // dedupeKey/userId/where-not-unique ise create fallback'e düş
-        if (!dkUnknown && !userUnknown && !notUnique) throw e;
-      }
-    }
-
-    // CREATE
-    try {
       const createData = mkData({
         type,
         scope,
@@ -319,17 +319,144 @@ export async function createNotification({
         dedupeKey: finalDedupeKey,
       });
 
+      const updateData = mkData({
+        type,
+        scope,
+        v1,
+        companyId,
+        roomId,
+        driverId,
+        vehicleId: finalVehicleId,
+        shiftId,
+        userId,
+        dedupeKey: null, // update'de dedupeKey set etmeyelim
+      });
+
+      try {
+        return await prisma.notification.upsert({
+          where: { dedupeKey: finalDedupeKey },
+          update: updateData,
+          create: createData,
+        });
+      } catch (e) {
+        // yanlış moddaysak üst seviyeye fırlat (mode switch)
+        if (useConnect && needsScalarFallback(e)) throw e;
+        if (!useConnect && needsRelationConnectFallback(e)) throw e;
+
+        // Şema dedupeKey/userId tanımı yoksa kırpıp tekrar dene
+        const dkUnknown = isUnknownArgError(e, "dedupeKey");
+        const userUnknown = isUnknownArgError(e, "userId");
+
+        if (dkUnknown || userUnknown) {
+          const createData2 = mkData({
+            type,
+            scope,
+            v1,
+            companyId,
+            roomId,
+            driverId,
+            vehicleId: finalVehicleId,
+            shiftId,
+            userId: userUnknown ? null : userId,
+            dedupeKey: dkUnknown ? null : finalDedupeKey,
+          });
+
+          const updateData2 = mkData({
+            type,
+            scope,
+            v1,
+            companyId,
+            roomId,
+            driverId,
+            vehicleId: finalVehicleId,
+            shiftId,
+            userId: userUnknown ? null : userId,
+            dedupeKey: null,
+          });
+
+          // dedupeKey alanı yoksa upsert anlamsız; create'a düşecek
+          if (dkUnknown) {
+            return await prisma.notification.create({ data: createData2 });
+          }
+
+          try {
+            return await prisma.notification.upsert({
+              where: { dedupeKey: finalDedupeKey },
+              update: updateData2,
+              create: createData2,
+            });
+          } catch (e2) {
+            // Çok nadir: yarış / edge durumda create'a düşerse P2002 yakalayacağız.
+            // Burada aşağıya devam ediyoruz.
+            e = e2;
+          }
+        }
+
+        // Şema where unique değilse create fallback
+        if (isWhereNotUniqueError(e)) {
+          // devam: create'a düş
+        } else {
+          // beklenmedik hata
+          throw e;
+        }
+      }
+    }
+
+    // CREATE (dedupeKey yoksa veya upsert mümkün değilse)
+    const createData = mkData({
+      type,
+      scope,
+      v1,
+      companyId,
+      roomId,
+      driverId,
+      vehicleId: finalVehicleId,
+      shiftId,
+      userId,
+      dedupeKey: finalDedupeKey,
+    });
+
+    try {
       return await prisma.notification.create({ data: createData });
     } catch (e) {
       // yanlış moddaysak üst seviyeye fırlat
       if (useConnect && needsScalarFallback(e)) throw e;
       if (!useConnect && needsRelationConnectFallback(e)) throw e;
 
+      // ✅ KRİTİK FIX: dedupeKey unique çakışması (P2002) => var olanı update et / bul ve dön
+      if (finalDedupeKey && isPrismaUniqueViolation(e, "dedupeKey")) {
+        const updateData = mkData({
+          type,
+          scope,
+          v1,
+          companyId,
+          roomId,
+          driverId,
+          vehicleId: finalVehicleId,
+          shiftId,
+          userId,
+          dedupeKey: null,
+        });
+
+        try {
+          return await safeUpdateByDedupeKey({
+            dedupeKey: finalDedupeKey,
+            data: updateData,
+            useConnect,
+          });
+        } catch {
+          const existing = await safeFindByDedupeKey(finalDedupeKey);
+          if (existing) return existing;
+          // bulamazsa orijinal hatayı fırlat
+          throw e;
+        }
+      }
+
+      // dedupeKey/userId bilinmiyorsa kırp ve tekrar dene
       const dkUnknown = isUnknownArgError(e, "dedupeKey");
       const userUnknown = isUnknownArgError(e, "userId");
       if (!dkUnknown && !userUnknown) throw e;
 
-      // dedupeKey/userId bilinmiyorsa kırp ve tekrar dene
       const createData2 = mkData({
         type,
         scope,
@@ -343,45 +470,51 @@ export async function createNotification({
         dedupeKey: dkUnknown ? null : finalDedupeKey,
       });
 
-      return await prisma.notification.create({ data: createData2 });
+      try {
+        return await prisma.notification.create({ data: createData2 });
+      } catch (e2) {
+        // yine dedupeKey çakışırsa aynı fix
+        if (finalDedupeKey && isPrismaUniqueViolation(e2, "dedupeKey")) {
+          const updateData2 = mkData({
+            type,
+            scope,
+            v1,
+            companyId,
+            roomId,
+            driverId,
+            vehicleId: finalVehicleId,
+            shiftId,
+            userId: userUnknown ? null : userId,
+            dedupeKey: null,
+          });
+
+          try {
+            return await safeUpdateByDedupeKey({
+              dedupeKey: finalDedupeKey,
+              data: updateData2,
+              useConnect,
+            });
+          } catch {
+            const existing = await safeFindByDedupeKey(finalDedupeKey);
+            if (existing) return existing;
+            throw e2;
+          }
+        }
+
+        throw e2;
+      }
     }
   }
 
-  // 1) önce scalar dene (eski şemalar için)
+  // 1) önce scalar dene (senin şemanda bu çalışır)
   try {
     return await tryUpsertOrCreate({ useConnect: false });
   } catch (e1) {
     if (!needsRelationConnectFallback(e1)) throw e1;
   }
 
-  // 2) relation connect dene (yeni şemalar için)
-  try {
-    return await tryUpsertOrCreate({ useConnect: true });
-  } catch (e2) {
-    // connect modunda da userId/dedupeKey bilinmiyorsa kırpıp bir kez daha dene
-    const dkUnknown = isUnknownArgError(e2, "dedupeKey");
-    const userUnknown = isUnknownArgError(e2, "userId");
-    if (!dkUnknown && !userUnknown) throw e2;
-
-    const obj2 = ensurePayloadObject({ payload, payloadJson });
-    const v12 = normalizeToV1({ type, payloadObj: obj2, vehicleIdFallback: vehicleId });
-    const finalVehicleId2 = vehicleId ?? v12.vehicleId ?? null;
-
-    const createDataFinal = buildConnectData({
-      type,
-      scope,
-      v1: v12,
-      companyId,
-      roomId,
-      driverId,
-      vehicleId: finalVehicleId2,
-      shiftId,
-      userId: userUnknown ? null : userId,
-      dedupeKey: dkUnknown ? null : finalDedupeKey,
-    });
-
-    return await prisma.notification.create({ data: createDataFinal });
-  }
+  // 2) relation connect dene (fallback)
+  return await tryUpsertOrCreate({ useConnect: true });
 }
 
 /**
