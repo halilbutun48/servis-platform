@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { invalidate } from "../../live/bus";
+import RoutePreviewModal from "../../components/RoutePreviewModal";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -123,6 +124,14 @@ export default function RoomShiftsPanel() {
   // status: idle | checking | ok | conflict | error | missing
   const [avail, setAvail] = useState({});
   const availInflight = useRef(new Set());
+
+  // M16: Haritada Önizleme (modal)
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewShift, setPreviewShift] = useState(null);
+  const [previewStops, setPreviewStops] = useState([]);
+  const [previewPeople, setPreviewPeople] = useState([]); // şimdilik boş (backend gelince assignment/personel eklenebilir)
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewErr, setPreviewErr] = useState("");
 
   function toggleAvailable(shiftId) {
     setShowAvailableOnly((p) => ({ ...p, [Number(shiftId)]: !p[Number(shiftId)] }));
@@ -363,9 +372,7 @@ export default function RoomShiftsPanel() {
         if (looks404) {
           out = { ...localAvailability({ shift, vehicleId, driverId }), source: "local" };
         } else {
-          // bazı projelerde availability yok ama approve 409 conflict ile geliyor; en azından local ile gösterelim
           out = { ...localAvailability({ shift, vehicleId, driverId }), source: "local" };
-          // eğer local ok ama remote hataysa, yine de ok göster (UX)
           if (out.status === "ok") out = { ...out, message: "Uygun (local)." };
         }
       }
@@ -385,6 +392,45 @@ export default function RoomShiftsPanel() {
       }));
     } finally {
       availInflight.current.delete(inflightKey);
+    }
+  }
+
+  function mapStopsResponse(resp) {
+    const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
+    return (list || [])
+      .filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number")
+      .map((s, i) => ({
+        id: String(s.id ?? `stop_${i}`),
+        title: String(s.title || s.name || `Durak ${i + 1}`),
+        lat: s.lat,
+        lng: s.lng,
+        count: s.assignmentCount ?? s.count ?? null,
+        memberIds: [],
+      }));
+  }
+
+  async function openRoutePreview(shift) {
+    const sid = Number(shift?.id);
+    if (!sid) return;
+
+    setPreviewShift(shift);
+    setPreviewStops([]);
+    setPreviewPeople([]); // şimdilik boş
+    setPreviewErr("");
+    setPreviewLoading(true);
+    setPreviewOpen(true);
+
+    try {
+      const resp = await api(`/api/shifts/${sid}/stops`, { token });
+      const stops = mapStopsResponse(resp);
+      setPreviewStops(stops);
+      if (!stops.length) setPreviewErr("Bu shift için durak bulunamadı (boş).");
+    } catch (e) {
+      const ne = normalizeErr(e);
+      setPreviewErr(ne.message || "Duraklar yüklenemedi.");
+      setPreviewStops([]);
+    } finally {
+      setPreviewLoading(false);
     }
   }
 
@@ -830,8 +876,6 @@ export default function RoomShiftsPanel() {
     setBusy(true);
     setErr("");
     try {
-      console.log("room-offer payload =>", payload);
-
       const res = await api(`/api/shifts/${sid}/room-offer`, {
         method: "PUT",
         token,
@@ -849,8 +893,6 @@ export default function RoomShiftsPanel() {
         (payload.roomOfferNote != null && (res.roomOfferNote ?? null) !== payload.roomOfferNote) ||
         (payload.roomOfferAmount != null && Number(res.roomOfferAmount ?? NaN) !== Number(payload.roomOfferAmount)) ||
         (payload.roomOfferVehicleId != null && Number(res.roomOfferVehicleId ?? NaN) !== Number(payload.roomOfferVehicleId));
-
-      console.log("room-offer response =>", res);
 
       if (mismatch) {
         throw new Error("Backend teklifi kaydetmedi (response mismatch). Network response’u kontrol et.");
@@ -937,6 +979,7 @@ export default function RoomShiftsPanel() {
                 <th>Company</th>
                 <th>Start</th>
                 <th>End</th>
+                <th>Harita</th>
                 <th>Teklif / Pazarlık</th>
                 <th>Vehicle + Driver</th>
                 <th>Approve</th>
@@ -988,6 +1031,22 @@ export default function RoomShiftsPanel() {
                     <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
                     <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
                     <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+
+                    <td>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        <button
+                          type="button"
+                          disabled={busy || previewLoading}
+                          onClick={() => openRoutePreview(s)}
+                          title="Rota/Durakları haritada önizle"
+                        >
+                          {previewLoading && Number(previewShift?.id) === sid ? "Yükleniyor..." : "Haritada Önizle"}
+                        </button>
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          Duraklar: API /api/shifts/{sid}/stops
+                        </div>
+                      </div>
+                    </td>
 
                     <td>
                       <div style={{ display: "grid", gap: 6 }}>
@@ -1103,9 +1162,6 @@ export default function RoomShiftsPanel() {
                               const vv = vid ? vehiclesById.get(vid) : null;
                               if (vv?.driverId) {
                                 setDriverSel((p) => ({ ...p, [sid]: String(vv.driverId) }));
-                                // availability check will run via effect
-                              } else {
-                                // availability check will run via effect
                               }
                             }
                           }}
@@ -1265,6 +1321,32 @@ export default function RoomShiftsPanel() {
           <div className="muted">Kayıt yok.</div>
         )}
       </div>
+
+      {/* Preview error/info (modal dışında küçük banner) */}
+      {previewOpen && previewErr ? (
+        <div className="card err" style={{ marginTop: 10 }}>
+          Harita Önizleme: {previewErr}
+        </div>
+      ) : null}
+
+      <RoutePreviewModal
+        open={previewOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setPreviewShift(null);
+          setPreviewStops([]);
+          setPreviewPeople([]);
+          setPreviewErr("");
+          setPreviewLoading(false);
+        }}
+        title={
+          previewShift
+            ? `Shift #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
+            : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
+        }
+        stops={previewStops}
+        people={previewPeople}
+      />
     </div>
   );
 }

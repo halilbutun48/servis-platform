@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { invalidate } from "../../live/bus";
+import ShiftPeopleTab from "./ShiftPeopleTab";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -36,57 +37,43 @@ function parseTryInput(raw) {
 }
 
 function pad2(n) {
-  const x = Number(n);
-  return x < 10 ? `0${x}` : String(x);
+  return String(n).padStart(2, "0");
 }
-function parseHHMM(v) {
-  const s = String(v || "").trim();
-  const m = /^(\d{1,2}):(\d{2})$/.exec(s);
+function minutesOf(hhmm) {
+  const m = String(hhmm || "").match(/^(\d{2}):(\d{2})$/);
   if (!m) return null;
   const hh = Number(m[1]);
   const mm = Number(m[2]);
-  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
-  if (hh < 0 || hh > 23) return null;
-  if (mm < 0 || mm > 59) return null;
-  return { hh, mm, minutes: hh * 60 + mm, norm: `${pad2(hh)}:${pad2(mm)}` };
+  if (![hh, mm].every(Number.isFinite)) return null;
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+  return hh * 60 + mm;
 }
-function dateStrInIstanbul(d = new Date()) {
-  // en-CA => YYYY-MM-DD
-  try {
-    return d.toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
-  } catch {
-    // fallback: local date
-    const Y = d.getFullYear();
-    const M = pad2(d.getMonth() + 1);
-    const D = pad2(d.getDate());
-    return `${Y}-${M}-${D}`;
-  }
+function todayYmdLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
-function addDaysDateStr(dateStr, days) {
-  const [Y, M, D] = String(dateStr).split("-").map(Number);
-  if (![Y, M, D].every(Number.isFinite)) return dateStr;
-  const ms = Date.UTC(Y, M - 1, D, 0, 0, 0) + Number(days) * 86400000;
-  const dd = new Date(ms);
-  const y = dd.getUTCFullYear();
-  const m = pad2(dd.getUTCMonth() + 1);
-  const d = pad2(dd.getUTCDate());
-  return `${y}-${m}-${d}`;
-}
-function buildDatetimeLocal(dateStr, hhmm) {
-  const p = parseHHMM(hhmm);
-  if (!p) return "";
-  return `${dateStr}T${p.norm}`;
+function addDaysYmd(ymd, deltaDays) {
+  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return todayYmdLocal();
+  const Y = Number(m[1]);
+  const M = Number(m[2]);
+  const D = Number(m[3]);
+  const dt = new Date(Y, M - 1, D, 12, 0, 0);
+  dt.setDate(dt.getDate() + Number(deltaDays || 0));
+  return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`;
 }
 
-// Built-in vardiya şablonları
-const BUILTIN_SHIFT_TEMPLATES = [
-  { id: "builtin-morning", name: "Sabah", startTime: "07:00", endTime: "09:00", defaultSeatDemand: null, builtIn: true },
-  { id: "builtin-evening", name: "Akşam", startTime: "17:00", endTime: "19:00", defaultSeatDemand: null, builtIn: true },
-  { id: "builtin-night", name: "Gece", startTime: "23:00", endTime: "01:00", defaultSeatDemand: null, builtIn: true },
+const PRESET_TEMPLATES = [
+  { id: "preset_sabah", name: "Sabah", startHHMM: "07:00", endHHMM: "09:00", people: null, kind: "PRESET" },
+  { id: "preset_aksam", name: "Akşam", startHHMM: "17:00", endHHMM: "19:00", people: null, kind: "PRESET" },
+  { id: "preset_gece", name: "Gece", startHHMM: "23:00", endHHMM: "01:00", people: null, kind: "PRESET" },
 ];
 
 export default function CompanyShiftsPanel() {
   const { token, me } = useSession();
+
+  // Top tabs
+  const [topTab, setTopTab] = useState("request"); // request | templates | people
 
   const [items, setItems] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -94,9 +81,6 @@ export default function CompanyShiftsPanel() {
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-
-  // Üst sekme: Yeni Talep / Vardiya Şablonları
-  const [topTab, setTopTab] = useState("request"); // request|templates
 
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
@@ -142,7 +126,103 @@ export default function CompanyShiftsPanel() {
     return new Date(utcMs).toISOString();
   }
 
-  // Yeni shift (request) form state
+  // ===== Templates (company-localStorage) =====
+  const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
+  const templatesStorageKey = `psv1:company:${companyKey}:shiftTemplates:v1`;
+
+  const [customTemplates, setCustomTemplates] = useState([]); // [{id,name,startHHMM,endHHMM,people,kind:"CUSTOM"}]
+
+  // Custom create form
+  const [tplName, setTplName] = useState("");
+  const [tplStart, setTplStart] = useState("07:00");
+  const [tplEnd, setTplEnd] = useState("09:00");
+  const [tplPeople, setTplPeople] = useState("");
+
+  function loadCustomTemplates() {
+    try {
+      const raw = localStorage.getItem(templatesStorageKey);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((x) => ({
+          id: String(x?.id || ""),
+          name: String(x?.name || "").trim(),
+          startHHMM: String(x?.startHHMM || ""),
+          endHHMM: String(x?.endHHMM || ""),
+          people: x?.people == null || x?.people === "" ? null : Number(x.people),
+          kind: "CUSTOM",
+        }))
+        .filter((x) => x.id && x.name && minutesOf(x.startHHMM) != null && minutesOf(x.endHHMM) != null);
+    } catch {
+      return [];
+    }
+  }
+
+  useEffect(() => {
+    setCustomTemplates(loadCustomTemplates());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templatesStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(templatesStorageKey, JSON.stringify(customTemplates));
+    } catch {
+      // ignore
+    }
+  }, [customTemplates, templatesStorageKey]);
+
+  const allTemplates = useMemo(() => {
+    const customs = (customTemplates || []).map((t) => ({ ...t, kind: "CUSTOM" }));
+    return [...PRESET_TEMPLATES, ...customs];
+  }, [customTemplates]);
+
+  function templateLabel(t) {
+    const ppl = t.people != null ? ` • ${t.people} kişi` : "";
+    const kind = t.kind === "PRESET" ? "PRESET" : "CUSTOM";
+    return `${t.name} (${t.startHHMM}–${t.endHHMM})${ppl} • ${kind}`;
+  }
+
+  function saveCustomTemplate(e) {
+    e?.preventDefault?.();
+    setErr("");
+
+    const name = String(tplName || "").trim();
+    const s = String(tplStart || "").trim();
+    const en = String(tplEnd || "").trim();
+
+    if (!name) {
+      setErr("Şablon adı zorunlu.");
+      return;
+    }
+    if (minutesOf(s) == null || minutesOf(en) == null) {
+      setErr("Start/End HH:MM formatında olmalı (örn 07:00).");
+      return;
+    }
+
+    const pplRaw = String(tplPeople || "").trim();
+    const ppl = pplRaw ? Number(pplRaw) : null;
+    if (pplRaw && (!Number.isFinite(ppl) || ppl <= 0)) {
+      setErr("Varsayılan kişi sayısı pozitif sayı olmalı (opsiyonel).");
+      return;
+    }
+
+    const id = `cust_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const next = { id, name, startHHMM: s, endHHMM: en, people: ppl, kind: "CUSTOM" };
+
+    setCustomTemplates((prev) => [next, ...(prev || [])]);
+    setTplName("");
+    setTplPeople("");
+  }
+
+  function deleteCustomTemplate(id) {
+    const t = customTemplates.find((x) => x.id === id);
+    if (!t) return;
+    if (!confirm(`"${t.name}" şablonunu silmek istiyor musun?`)) return;
+    setCustomTemplates((prev) => (prev || []).filter((x) => x.id !== id));
+  }
+
+  // ===== Yeni shift (request) form state =====
   const [roomId, setRoomId] = useState("1");
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
@@ -151,140 +231,48 @@ export default function CompanyShiftsPanel() {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerNote, setOfferNote] = useState("");
 
-  // Vardiya türü (şablon) seçimi
-  const [shiftTemplateId, setShiftTemplateId] = useState("");
+  // template selection in request tab
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
-  // Company custom vardiya şablonları (localStorage)
-  const [customShiftTemplates, setCustomShiftTemplates] = useState([]);
+  function applyTemplateToRequest(tpl) {
+    if (!tpl) return;
 
-  // Template create form (custom)
-  const [tplName, setTplName] = useState("");
-  const [tplStart, setTplStart] = useState("07:00");
-  const [tplEnd, setTplEnd] = useState("09:00");
-  const [tplSeats, setTplSeats] = useState("");
+    const baseDate = startAt ? String(startAt).slice(0, 10) : todayYmdLocal();
 
-  const isCompany = String(me?.role || "") === "COMPANY";
+    const sMin = minutesOf(tpl.startHHMM);
+    const eMin = minutesOf(tpl.endHHMM);
+    if (sMin == null || eMin == null) return;
 
-  function lsKey() {
-    const cid = me?.companyId != null ? String(me.companyId) : "unknown";
-    return `psv1:company:${cid}:shift-templates`;
-  }
+    const startDT = `${baseDate}T${tpl.startHHMM}`;
+    const endDate = eMin <= sMin ? addDaysYmd(baseDate, 1) : baseDate;
+    const endDT = `${endDate}T${tpl.endHHMM}`;
 
-  function loadTemplatesFromLS() {
-    try {
-      const raw = localStorage.getItem(lsKey());
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .map((x) => ({
-          id: String(x?.id || ""),
-          name: String(x?.name || "").trim(),
-          startTime: String(x?.startTime || "").trim(),
-          endTime: String(x?.endTime || "").trim(),
-          defaultSeatDemand: x?.defaultSeatDemand != null ? Number(x.defaultSeatDemand) : null,
-          builtIn: false,
-        }))
-        .filter((x) => x.id && x.name && parseHHMM(x.startTime) && parseHHMM(x.endTime));
-    } catch {
-      return [];
+    setStartAt(startDT);
+    setEndAt(endDT);
+
+    if (!String(seatDemand || "").trim() && tpl.people != null) {
+      setSeatDemand(String(tpl.people));
     }
   }
 
-  function saveTemplatesToLS(list) {
-    try {
-      localStorage.setItem(
-        lsKey(),
-        JSON.stringify(
-          (list || []).map((x) => ({
-            id: x.id,
-            name: x.name,
-            startTime: x.startTime,
-            endTime: x.endTime,
-            defaultSeatDemand: x.defaultSeatDemand ?? null,
-          }))
-        )
-      );
-    } catch {
-      // ignore
-    }
+  function onSelectTemplate(id) {
+    setSelectedTemplateId(String(id || ""));
+    const tpl = allTemplates.find((t) => t.id === String(id || ""));
+    if (!tpl) return;
+    applyTemplateToRequest(tpl);
   }
 
-  useEffect(() => {
-    // company değişince custom template reload
-    const list = loadTemplatesFromLS();
-    setCustomShiftTemplates(list);
-    // template seçimi artık yoksa temizle
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.companyId]);
-
-  useEffect(() => {
-    saveTemplatesToLS(customShiftTemplates);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customShiftTemplates]);
-
-  const allShiftTemplates = useMemo(() => {
-    const builtins = BUILTIN_SHIFT_TEMPLATES.map((t) => ({
-      ...t,
-      startTime: parseHHMM(t.startTime)?.norm || t.startTime,
-      endTime: parseHHMM(t.endTime)?.norm || t.endTime,
-    }));
-    const customs = (customShiftTemplates || []).map((t) => ({
-      ...t,
-      startTime: parseHHMM(t.startTime)?.norm || t.startTime,
-      endTime: parseHHMM(t.endTime)?.norm || t.endTime,
-      builtIn: false,
-    }));
-    return [...builtins, ...customs];
-  }, [customShiftTemplates]);
-
-  const shiftTemplatesById = useMemo(() => {
-    const m = new Map();
-    for (const t of allShiftTemplates) m.set(String(t.id), t);
-    return m;
-  }, [allShiftTemplates]);
-
-  function shiftTemplateLabel(t) {
-    if (!t) return "";
-    const seats = t.defaultSeatDemand != null ? ` • ${t.defaultSeatDemand} kişi` : "";
-    return `${t.name} • ${t.startTime}→${t.endTime}${seats}${t.builtIn ? " • PRESET" : ""}`;
-  }
-
-  function applyShiftTemplateToForm(t, opts = {}) {
-    const tt = t ? { ...t } : null;
-    if (!tt) return;
-
-    const st = parseHHMM(tt.startTime);
-    const en = parseHHMM(tt.endTime);
-    if (!st || !en) return;
-
-    // baz tarih: startAt içinden tarih varsa onu kullan, yoksa bugün (Istanbul)
-    const baseDate =
-      (String(startAt || "").includes("T") ? String(startAt).split("T")[0] : "") ||
-      (String(endAt || "").includes("T") ? String(endAt).split("T")[0] : "") ||
-      dateStrInIstanbul(new Date());
-
-    const startLocal = buildDatetimeLocal(baseDate, st.norm);
-
-    // end: midnight aşıyorsa +1 gün
-    const endDate = en.minutes <= st.minutes ? addDaysDateStr(baseDate, 1) : baseDate;
-    const endLocal = buildDatetimeLocal(endDate, en.norm);
-
-    setStartAt(startLocal);
-    setEndAt(endLocal);
-
-    // kişi sayısı: sadece boşsa doldur
-    if (!String(seatDemand || "").trim() && tt.defaultSeatDemand != null && Number(tt.defaultSeatDemand) > 0) {
-      setSeatDemand(String(Number(tt.defaultSeatDemand)));
-    }
-
-    // opsiyon: otomatik tab request'e dön
-    if (opts?.goRequest) setTopTab("request");
+  function useTemplateFromList(tpl) {
+    setTopTab("request");
+    setSelectedTemplateId(tpl.id);
+    applyTemplateToRequest(tpl);
   }
 
   // Karşı teklif UI
   const [offerOpen, setOfferOpen] = useState({});
   const [offerSel, setOfferSel] = useState({});
+
+  const isCompany = String(me?.role || "") === "COMPANY";
 
   function toggleOffer(shiftId) {
     setOfferOpen((p) => ({ ...p, [shiftId]: !p[shiftId] }));
@@ -443,18 +431,6 @@ export default function CompanyShiftsPanel() {
     });
   }, [items]);
 
-  // Şablon seçimi: otomatik uygula (sadece seçildiği anda)
-  useEffect(() => {
-    if (!shiftTemplateId) return;
-    const t = shiftTemplatesById.get(String(shiftTemplateId));
-    if (!t) {
-      setShiftTemplateId("");
-      return;
-    }
-    applyShiftTemplateToForm(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shiftTemplateId]);
-
   async function createShift(e) {
     e.preventDefault();
     setBusy(true);
@@ -468,6 +444,11 @@ export default function CompanyShiftsPanel() {
         status: "REQUESTED",
       };
 
+      if (!body.startAt || !body.endAt) {
+        setErr("Start/End zorunlu.");
+        return;
+      }
+
       if (offerVehicleId) body.companyOfferVehicleId = Number(offerVehicleId);
 
       const amt = parseTryInput(offerAmount);
@@ -477,7 +458,7 @@ export default function CompanyShiftsPanel() {
 
       await api("/api/shifts", { method: "POST", token, body });
 
-      setShiftTemplateId("");
+      setSelectedTemplateId("");
       setStartAt("");
       setEndAt("");
       setSeatDemand("");
@@ -771,73 +752,13 @@ export default function CompanyShiftsPanel() {
       });
   }, [finalItemsRaw, finalQ, finalStatus]);
 
-  const roomsByIdLookup = roomsById;
-  const selectedRoom = roomsByIdLookup.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
+  const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
 
   function vehiclesForShiftRoom(shift) {
     const rid = Number(shift.roomId);
     return vehicles
       .filter((v) => !v?.roomId || Number(v.roomId) === rid)
       .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
-  }
-
-  // Template manager actions
-  function createCustomTemplate(e) {
-    e?.preventDefault?.();
-    setErr("");
-
-    const name = String(tplName || "").trim();
-    const st = parseHHMM(tplStart);
-    const en = parseHHMM(tplEnd);
-    const seats = String(tplSeats || "").trim() ? Number(tplSeats) : null;
-
-    if (!name) {
-      setErr("Şablon adı zorunlu.");
-      return;
-    }
-    if (!st || !en) {
-      setErr("Start/End saat formatı HH:MM olmalı (örn. 07:00).");
-      return;
-    }
-    if (st.minutes === en.minutes) {
-      setErr("Start ve End aynı olamaz.");
-      return;
-    }
-    if (seats != null && (!Number.isFinite(seats) || seats <= 0)) {
-      setErr("Kişi sayısı sayı olmalı (opsiyonel).");
-      return;
-    }
-
-    const id = `custom-${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 8)}`;
-
-    const next = [
-      ...customShiftTemplates,
-      {
-        id,
-        name,
-        startTime: st.norm,
-        endTime: en.norm,
-        defaultSeatDemand: seats != null ? Number(seats) : null,
-        builtIn: false,
-      },
-    ];
-
-    setCustomShiftTemplates(next);
-    setTplName("");
-    setTplSeats("");
-
-    // hızlı kullanım: seç ve request tabına dön
-    setShiftTemplateId(id);
-    setTopTab("request");
-  }
-
-  function deleteCustomTemplate(id) {
-    const t = customShiftTemplates.find((x) => String(x.id) === String(id));
-    if (!t) return;
-    if (!confirm(`"${t.name}" şablonunu silmek istiyor musun?`)) return;
-
-    setCustomShiftTemplates((prev) => prev.filter((x) => String(x.id) !== String(id)));
-    if (String(shiftTemplateId) === String(id)) setShiftTemplateId("");
   }
 
   return (
@@ -849,68 +770,58 @@ export default function CompanyShiftsPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      {/* ÜST SEKME: Yeni Talep / Vardiya Şablonları */}
+      {/* Top Tabs */}
       <div className="card">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" disabled={busy} onClick={() => setTopTab("request")} className={topTab === "request" ? "btn primary" : "btn"}>
+          <button type="button" className={topTab === "request" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("request")}>
             Yeni Talep
           </button>
-          <button type="button" disabled={busy} onClick={() => setTopTab("templates")} className={topTab === "templates" ? "btn primary" : "btn"}>
+          <button type="button" className={topTab === "templates" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("templates")}>
             Vardiya Şablonları
           </button>
+          <button type="button" className={topTab === "people" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("people")}>
+            Personel & Rota
+          </button>
         </div>
-        <div className="muted" style={{ marginTop: 8 }}>
-          Yeni vardiya talebi oluştururken “Vardiya türü” şablonu seçebilirsin. Custom şablonlar company bazlı tarayıcıda saklanır.
+
+        <div className="muted" style={{ marginTop: 6 }}>
+          {topTab === "request"
+            ? "Yeni vardiya talebi oluştur. İstersen şablon seçerek Start/End'i otomatik doldur."
+            : topTab === "templates"
+            ? "Preset’ler sabit. Custom şablon ekleyip Yeni Talep ekranında seçebilirsin (company bazlı tarayıcıda saklanır)."
+            : "Shift seç → personel ekle/import → durak üret (preview) → rota/durak mini-harita önizleme."}
         </div>
       </div>
 
-      {/* Yeni Vardiya Talebi */}
+      {/* TAB: Yeni Talep */}
       {topTab === "request" ? (
         <div className="card">
           <h3>Yeni Vardiya Talebi</h3>
 
           <form onSubmit={createShift} className="grid">
-            <div className="col" style={{ gridColumn: "1 / -1" }}>
-              <label className="muted">Vardiya türü (şablon) (opsiyonel)</label>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <select value={shiftTemplateId} onChange={(e) => setShiftTemplateId(e.target.value)} disabled={busy} style={{ minWidth: 320 }}>
-                  <option value="">— şablon seç —</option>
-                  {allShiftTemplates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {shiftTemplateLabel(t)}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  disabled={busy || !shiftTemplateId}
-                  onClick={() => {
-                    const t = shiftTemplatesById.get(String(shiftTemplateId));
-                    if (t) applyShiftTemplateToForm(t);
-                  }}
-                >
-                  Uygula
-                </button>
-
-                <button type="button" disabled={busy || !shiftTemplateId} onClick={() => setShiftTemplateId("")}>
-                  Temizle
-                </button>
-              </div>
-
-              <div className="muted" style={{ marginTop: 6 }}>
-                Not: Şablon seçince Start/End otomatik dolar. İstersen sonrasında manuel değiştirebilirsin.
+            <div className="col">
+              <label className="muted">Vardiya türü (şablon)</label>
+              <select value={selectedTemplateId} onChange={(e) => onSelectTemplate(e.target.value)} disabled={busy}>
+                <option value="">— Şablon seç (opsiyonel) —</option>
+                {allTemplates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {templateLabel(t)}
+                  </option>
+                ))}
+              </select>
+              <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                Not: “Gece” gibi vardiyalarda End, otomatik olarak bir sonraki güne taşınır.
               </div>
             </div>
 
             <div className="col">
               <label className="muted">Kişi sayısı (opsiyonel filtre)</label>
-              <input type="number" placeholder="örn. 16" value={seatDemand} onChange={(e) => setSeatDemand(e.target.value)} />
+              <input type="number" placeholder="örn. 16" value={seatDemand} onChange={(e) => setSeatDemand(e.target.value)} disabled={busy} />
             </div>
 
             <div className="col">
               <label className="muted">Room</label>
-              <select value={roomId} onChange={(e) => setRoomId(e.target.value)}>
+              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={busy}>
                 {roomOptions.length ? (
                   roomOptions.map((r) => (
                     <option key={r.id} value={String(r.id)}>
@@ -928,17 +839,17 @@ export default function CompanyShiftsPanel() {
 
             <div className="col">
               <label className="muted">Start</label>
-              <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
+              <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} disabled={busy} />
             </div>
 
             <div className="col">
               <label className="muted">End</label>
-              <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} />
+              <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} disabled={busy} />
             </div>
 
             <div className="col" style={{ gridColumn: "1 / -1" }}>
               <label className="muted">Teklif Araç (opsiyonel)</label>
-              <select value={offerVehicleId} onChange={(e) => setOfferVehicleId(e.target.value)}>
+              <select value={offerVehicleId} onChange={(e) => setOfferVehicleId(e.target.value)} disabled={busy}>
                 <option value="">— teklif yok —</option>
                 {filteredVehicles.map((v) => (
                   <option key={v.id} value={String(v.id)}>
@@ -950,12 +861,12 @@ export default function CompanyShiftsPanel() {
 
             <div className="col" style={{ gridColumn: "1 / -1" }}>
               <label className="muted">Company Tutar (₺) (opsiyonel)</label>
-              <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" />
+              <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
             </div>
 
             <div className="col" style={{ gridColumn: "1 / -1" }}>
               <label className="muted">Teklif Notu (opsiyonel)</label>
-              <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" />
+              <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" disabled={busy} />
             </div>
 
             <div className="col" style={{ justifyContent: "end" }}>
@@ -967,54 +878,52 @@ export default function CompanyShiftsPanel() {
         </div>
       ) : null}
 
-      {/* Vardiya Şablonları */}
+      {/* TAB: Vardiya Şablonları */}
       {topTab === "templates" ? (
         <div className="card">
           <h3>Vardiya Şablonları</h3>
-          <div className="muted">Preset’ler sabit. Custom şablon ekleyip Yeni Talep ekranında seçebilirsin.</div>
+          <div className="muted">Preset’ler sabit. Custom şablon ekleyip “Yeni Talep” ekranında seçebilirsin. Custom şablonlar company bazlı tarayıcıda saklanır.</div>
 
-          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1.05fr 1.95fr", gap: 12, alignItems: "start" }}>
-            {/* SOL: Create */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 12, alignItems: "start", marginTop: 12 }}>
+            {/* Sol: Custom create */}
             <div className="card" style={{ margin: 0 }}>
               <h3 style={{ marginTop: 0 }}>Custom Şablon Oluştur</h3>
-
-              <form onSubmit={createCustomTemplate} className="grid">
+              <form onSubmit={saveCustomTemplate} className="grid">
                 <div className="col" style={{ gridColumn: "1 / -1" }}>
                   <label className="muted">Şablon adı</label>
-                  <input value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="örn. Sabah Servis (Şirket A)" maxLength={48} />
+                  <input value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="örn. Sabah Servis (Şirket A)" disabled={busy} />
                 </div>
 
                 <div className="col">
                   <label className="muted">Start (HH:MM)</label>
-                  <input value={tplStart} onChange={(e) => setTplStart(e.target.value)} placeholder="07:00" />
+                  <input value={tplStart} onChange={(e) => setTplStart(e.target.value)} placeholder="07:00" disabled={busy} />
                 </div>
 
                 <div className="col">
                   <label className="muted">End (HH:MM)</label>
-                  <input value={tplEnd} onChange={(e) => setTplEnd(e.target.value)} placeholder="09:00" />
+                  <input value={tplEnd} onChange={(e) => setTplEnd(e.target.value)} placeholder="09:00" disabled={busy} />
                 </div>
 
                 <div className="col" style={{ gridColumn: "1 / -1" }}>
                   <label className="muted">Varsayılan kişi sayısı (opsiyonel)</label>
-                  <input type="number" value={tplSeats} onChange={(e) => setTplSeats(e.target.value)} placeholder="örn. 16" />
+                  <input type="number" value={tplPeople} onChange={(e) => setTplPeople(e.target.value)} placeholder="örn. 16" disabled={busy} />
                 </div>
 
                 <div className="col" style={{ justifyContent: "end" }}>
                   <button type="submit" disabled={busy}>
-                    {busy ? "..." : "Kaydet"}
+                    Kaydet
                   </button>
                 </div>
-
-                <div className="muted" style={{ gridColumn: "1 / -1", marginTop: 6, fontSize: 12 }}>
-                  İpucu: End, Start’tan küçükse “gece vardiyası” gibi değerlendirilir (bir sonraki güne taşar).
-                </div>
               </form>
+
+              <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+                İpucu: End, Start’tan küçükse “gece vardiyası” gibi değerlendirilir (bir sonraki güne taşar).
+              </div>
             </div>
 
-            {/* SAĞ: List */}
+            {/* Sağ: Template list */}
             <div className="card" style={{ margin: 0, overflowX: "auto" }}>
               <h3 style={{ marginTop: 0 }}>Şablon Listesi</h3>
-
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
                   <tr>
@@ -1027,32 +936,23 @@ export default function CompanyShiftsPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allShiftTemplates.map((t) => (
-                    <tr key={t.id} style={t.builtIn ? { opacity: 0.9 } : undefined}>
+                  {allTemplates.map((t) => (
+                    <tr key={t.id}>
                       <td>{t.name}</td>
-                      <td className="muted">{t.startTime}</td>
-                      <td className="muted">{t.endTime}</td>
-                      <td className="muted">{t.defaultSeatDemand != null ? t.defaultSeatDemand : "-"}</td>
+                      <td className="muted">{t.startHHMM}</td>
+                      <td className="muted">{t.endHHMM}</td>
+                      <td className="muted">{t.people != null ? t.people : "-"}</td>
                       <td>
-                        {t.builtIn ? (
-                          <span className="pill" data-status="PASSIVE">PRESET</span>
-                        ) : (
-                          <span className="pill" data-status="OK">CUSTOM</span>
-                        )}
+                        <span className="pill" data-status={t.kind === "PRESET" ? "PRESET" : "CUSTOM"}>
+                          {t.kind}
+                        </span>
                       </td>
                       <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setShiftTemplateId(String(t.id));
-                            applyShiftTemplateToForm(t, { goRequest: true });
-                          }}
-                        >
+                        <button type="button" disabled={busy} onClick={() => useTemplateFromList(t)}>
                           Kullan
                         </button>
-                        {!t.builtIn ? (
-                          <button type="button" disabled={busy} onClick={() => deleteCustomTemplate(t.id)}>
+                        {t.kind === "CUSTOM" ? (
+                          <button type="button" className="btn" disabled={busy} onClick={() => deleteCustomTemplate(t.id)}>
                             Sil
                           </button>
                         ) : null}
@@ -1062,12 +962,17 @@ export default function CompanyShiftsPanel() {
                 </tbody>
               </table>
 
-              <div className="muted" style={{ marginTop: 8 }}>
+              <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
                 “Kullan” → Yeni Talep’e geçer ve Start/End’i doldurur.
               </div>
             </div>
           </div>
         </div>
+      ) : null}
+
+      {/* TAB: Personel & Rota */}
+      {topTab === "people" ? (
+        <ShiftPeopleTab token={token} me={me} shifts={items} roomsById={roomsById} />
       ) : null}
 
       {/* BEKLEYEN */}
@@ -1086,7 +991,11 @@ export default function CompanyShiftsPanel() {
               style={{ minWidth: 240 }}
             />
             <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="checkbox" checked={pendingOnlyRoomOffer} onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={pendingOnlyRoomOffer}
+                onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)}
+              />
               Sadece Room teklifi olanlar
             </label>
             <button
@@ -1118,7 +1027,7 @@ export default function CompanyShiftsPanel() {
             </thead>
             <tbody>
               {pendingItems.map((s) => {
-                const r = roomsByIdLookup.get(Number(s.roomId));
+                const r = roomsById.get(Number(s.roomId));
                 const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(s.status));
 
                 const sid = Number(s.id);
@@ -1213,12 +1122,8 @@ export default function CompanyShiftsPanel() {
                       </button>
                     </td>
 
-                    <td className="muted" title={String(s.startAt)}>
-                      {fmtTR(s.startAt)}
-                    </td>
-                    <td className="muted" title={String(s.endAt)}>
-                      {fmtTR(s.endAt)}
-                    </td>
+                    <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
+                    <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
                   </tr>
                 );
               })}
@@ -1281,7 +1186,7 @@ export default function CompanyShiftsPanel() {
 
             <tbody>
               {finalItems.map((s) => {
-                const r = roomsByIdLookup.get(Number(s.roomId));
+                const r = roomsById.get(Number(s.roomId));
                 return (
                   <tr key={s.id}>
                     <td>{s.id}</td>
@@ -1295,12 +1200,8 @@ export default function CompanyShiftsPanel() {
                     <td>{renderCompanyOfferSummary(s)}</td>
                     <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
                     <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
-                    <td className="muted" title={String(s.startAt)}>
-                      {fmtTR(s.startAt)}
-                    </td>
-                    <td className="muted" title={String(s.endAt)}>
-                      {fmtTR(s.endAt)}
-                    </td>
+                    <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
+                    <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
                   </tr>
                 );
               })}
