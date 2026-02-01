@@ -19,7 +19,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# ✅ default: M0..M15 (max: M16)
+# ✅ default: M0..M16
 $checks = @(
   @{ n = 0;  name="M0";  cmd="node scripts/m0check.js"  },
   @{ n = 1;  name="M1";  cmd="node scripts/m1check.js"  },
@@ -75,7 +75,9 @@ if ($dockerCmd) {
 function Dc {
   param([Parameter(ValueFromRemainingArguments=$true)] $Args)
   & $dc @dcBaseArgs @Args
-  if ($LASTEXITCODE -ne 0) { throw "Docker compose command failed: $dc $($dcBaseArgs -join ' ') $($Args -join ' ')" }
+  if ($LASTEXITCODE -ne 0) {
+    throw "Docker compose command failed: $dc $($dcBaseArgs -join ' ') $($Args -join ' ')"
+  }
 }
 
 # Include all checks up to -To; missing scripts are a hard error (milestone discipline)
@@ -91,12 +93,22 @@ foreach ($c in $checks) {
   $runList += $c
 }
 
+# Clean up any previous run (do NOT remove volumes)
+Write-Host "=== Docker Compose Down (safe) ===" -ForegroundColor Cyan
+try {
+  Dc -f $composeFile down --remove-orphans | Out-Host
+} catch {
+  # down başarısız olsa bile devam edebiliriz (ilk run vs.)
+  Write-Host ("down skipped: {0}" -f ($_.Exception.Message)) -ForegroundColor DarkYellow
+}
+
+Write-Host ""
 if ($NoBuild) {
   Write-Host "=== Docker Compose Up (NoBuild) ===" -ForegroundColor Cyan
-  Dc -f $composeFile up -d | Out-Host
+  Dc -f $composeFile up -d --remove-orphans | Out-Host
 } else {
   Write-Host "=== Docker Compose Build+Up ===" -ForegroundColor Cyan
-  Dc -f $composeFile up -d --build | Out-Host
+  Dc -f $composeFile up -d --build --remove-orphans | Out-Host
 }
 
 # Wait API health
@@ -111,7 +123,11 @@ for ($i=0; $i -lt $max; $i++) {
   } catch {}
   Start-Sleep -Seconds 1
 }
-if (-not $ok) { throw "API health timeout" }
+if (-not $ok) {
+  Write-Host "API health timeout. Last logs:" -ForegroundColor Red
+  try { Dc -f $composeFile logs --tail 120 $ApiService | Out-Host } catch {}
+  throw "API health timeout"
+}
 Write-Host "health OK" -ForegroundColor Green
 
 # Run milestone checks inside api container
@@ -122,8 +138,8 @@ foreach ($c in $runList) {
   Write-Host ""
   Write-Host ("--- {0} ---" -f $c.name) -ForegroundColor Cyan
 
-  # run in container (linux image)
-  Dc -f $composeFile exec -T $ApiService bash -lc ("cd /app/backend && {0}" -f $c.cmd) | Out-Host
+  # alpine güvenli: bash yerine sh
+  Dc -f $composeFile exec -T $ApiService sh -lc ("cd /app/backend && {0}" -f $c.cmd) | Out-Host
 }
 
 Write-Host ""
