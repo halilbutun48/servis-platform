@@ -8,6 +8,7 @@ let backoffMs = 500;
 
 let tokenRef = null;
 let started = false;
+let connecting = false; // ✅ aynı anda 2 connect olmasın
 
 // Dedupe cache: key -> lastTimestampMs
 const lastSig = new Map();
@@ -103,7 +104,7 @@ function guessTopics(msg) {
 
 function pruneSigMap() {
   if (lastSig.size <= MAX_SIG_SIZE) return;
-  // en eskileri at (basit yaklaşım)
+
   const entries = Array.from(lastSig.entries()).sort((a, b) => a[1] - b[1]);
   const removeCount = Math.max(50, Math.floor(entries.length * 0.25));
   for (let i = 0; i < removeCount; i++) lastSig.delete(entries[i][0]);
@@ -130,7 +131,6 @@ function shouldInvalidate(msg, topics) {
     }
   }
 
-  // Diğer event’lerde dedupe uygulamıyoruz (riskli olur).
   return true;
 }
 
@@ -164,7 +164,10 @@ function closeSocket() {
 
 function connect() {
   if (!started) return;
-  if (!tokenRef) return; // ✅ token yoksa bağlanma
+  if (!tokenRef) return;
+  if (connecting) return; // ✅ ikinci kez connect çalışmasın
+
+  connecting = true;
 
   const base = defaultSocketBase();
 
@@ -177,32 +180,38 @@ function connect() {
       transports: ["websocket"],
       reconnection: false,
 
-      // backend hangisini destekliyorsa
       auth: { token: tokenRef },
       query: { token: tokenRef },
     });
   } catch (e) {
+    connecting = false;
     console.debug("[ws] create failed:", e);
     scheduleReconnect();
     return;
   }
 
   socket.on("connect", () => {
+    connecting = false;
     backoffMs = 500;
     console.debug("[ws] connected", socket.id);
   });
 
   socket.on("disconnect", (reason) => {
+    connecting = false;
     console.debug("[ws] disconnected:", reason, "-> reconnect");
     scheduleReconnect();
   });
 
   socket.on("connect_error", (err) => {
+    connecting = false;
     console.debug("[ws] connect_error:", err?.message || err, "-> reconnect");
     scheduleReconnect();
   });
 
   socket.onAny((eventName, payload) => {
+    // ✅ "message" hem onAny’e hem aşağıdaki on("message")’a düşebilir → çift invalidate
+    if (eventName === "message") return;
+
     const msg = normalizeEvent(eventName, payload);
     const topics = guessTopics(msg);
 
@@ -215,7 +224,6 @@ function connect() {
     if (topics.length) console.debug("[ws] invalidate:", topics, msg);
   });
 
-  // Bazı server’lar "message" ile string atabilir
   socket.on("message", (payload) => {
     const msg = normalizeEvent("message", payload);
     const topics = guessTopics(msg);
@@ -232,10 +240,10 @@ function connect() {
 
 export function startLiveWs(token) {
   const t = token ? String(token) : null;
-  if (!t) return; // ✅ token yoksa WS yok
+  if (!t) return;
 
-  // ✅ aynı token ile ikinci kez çağrılırsa tekrar connect etme
-  if (started && tokenRef === t && socket?.connected) return;
+  // ✅ aynı token ve bağlanma sürecindeyken tekrar bağlanma
+  if (started && tokenRef === t && (socket?.connected || connecting)) return;
 
   started = true;
   tokenRef = t;
@@ -245,7 +253,11 @@ export function startLiveWs(token) {
 export function stopLiveWs() {
   started = false;
   tokenRef = null;
+  connecting = false;
 
   clearReconnectTimer();
   closeSocket();
+
+  // temiz restart için
+  lastSig.clear();
 }

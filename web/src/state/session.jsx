@@ -1,8 +1,7 @@
 // web/src/state/session.jsx
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api, clearToken, getToken, setToken } from "../api";
-import { connectSocket } from "../socket";
-import { invalidate } from "../live/bus";
+import { startLiveWs, stopLiveWs } from "../live/ws";
 
 const SessionCtx = createContext(null);
 
@@ -10,7 +9,6 @@ export function SessionProvider({ children }) {
   const [token, setTok] = useState(getToken());
   const [me, setMe] = useState(null);
   const [authErr, setAuthErr] = useState("");
-  const sockRef = useRef(null);
 
   // persist token
   useEffect(() => {
@@ -35,9 +33,8 @@ export function SessionProvider({ children }) {
 
   function logout() {
     try {
-      if (sockRef.current) sockRef.current.disconnect();
+      stopLiveWs();
     } catch {}
-    sockRef.current = null;
     clearToken();
     setTok("");
     setMe(null);
@@ -49,57 +46,19 @@ export function SessionProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // websocket connect
+  // websocket connect (single source: live/ws.js)
   useEffect(() => {
-    if (!token) return;
+    // token yoksa ws kapalı kalsın
+    if (!token) {
+      stopLiveWs();
+      return;
+    }
 
-    // reset old
-    try {
-      if (sockRef.current) sockRef.current.disconnect();
-    } catch {}
-    sockRef.current = null;
-
-    const s = connectSocket(token);
-    sockRef.current = s;
-
-    // invalidate keys on events so all panels stay in sync
-    s.on("vehicle:update", () => invalidate("vehicles"));
-    s.on("driver:update", () => invalidate("drivers"));
-
-    // legacy / generic
-    s.on("shift:update", () => invalidate("shifts"));
-
-    // NEW: shift lifecycle + negotiation events (backend emits these)
-    const SHIFT_EVENTS = [
-      "shift:created",
-      "shift:approved",
-      "shift:started",
-      "shift:room-offer",
-      "shift:company-offer",
-      "shift:progress",
-      "shift:room-offer-decision",
-      "shift:company-decision"
-    ];
-    SHIFT_EVENTS.forEach((ev) => s.on(ev, () => invalidate("shifts")));
-
-    // route / planning
-    s.on("route:plan", () => invalidate("shifts"));
-    s.on("route:progress", () => invalidate("shifts"));
-
-    // vehicle + gps
-    s.on("gps:update", () => invalidate("vehicles"));
-    s.on("vehicle:status", () => invalidate("vehicles"));
-    s.on("eta:update", () => invalidate("eta"));
-
-    // notifications
-    s.on("notif:new", () => invalidate("notifications"));
+    // token varsa ws başlat
+    startLiveWs(token);
 
     return () => {
-      try {
-        // (optional cleanup) remove listeners before disconnect
-        SHIFT_EVENTS.forEach((ev) => s.off(ev));
-        s.disconnect();
-      } catch {}
+      stopLiveWs();
     };
   }, [token]);
 
