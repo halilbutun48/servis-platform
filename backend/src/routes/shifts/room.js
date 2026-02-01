@@ -18,9 +18,7 @@ const emitShift = H.emitShift;
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 const resolveRequestDelegateSafe = H.resolveRequestDelegateSafe;
 
-import {
-  checkShiftConflicts,
-} from "../../services/shiftConflict.js";
+import { checkShiftConflicts, conflictResponse } from "../../services/shiftConflict.js";
 
 // ROOM + SUPER_ADMIN endpoints (approve/reject/start/room-offer + M7 suggestions)
 export function attachShiftRoomRoutes(r, io) {
@@ -48,25 +46,41 @@ export function attachShiftRoomRoutes(r, io) {
             .json({ error: "vehicleId/driverId required" });
         }
 
-        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
-        const c1 = await checkShiftConflicts({ driverId, startAt: shift.startAt, endAt: shift.endAt, ignoreShiftId: shift.id });
-        if (c1?.ok === false) {
-          return res.status(400).json({
-            code: "DRIVER_CONFLICT",
-            message: "Driver aynı zaman aralığında başka bir vardiyada.",
-            conflictingShift: c1.conflictingShift,
-          });
+        
+        // scope validation: vehicle and driver must belong to this shift's room
+        const vehicle = await prisma.vehicle.findUnique({
+          where: { id: vehicleId },
+          select: { id: true, roomId: true, archivedAt: true },
+        });
+        if (!vehicle || vehicle.archivedAt) {
+          return res.status(400).json({ error: "Vehicle not found/archived" });
         }
-        const c2 = await checkShiftConflicts({ vehicleId, startAt: shift.startAt, endAt: shift.endAt, ignoreShiftId: shift.id });
-        if (c2?.ok === false) {
-          return res.status(400).json({
-            code: "VEHICLE_CONFLICT",
-            message: "Araç aynı zaman aralığında başka bir vardiyada.",
-            conflictingShift: c2.conflictingShift,
-          });
+        if (vehicle.roomId != null && Number(vehicle.roomId) !== Number(shift.roomId)) {
+          return res.status(403).json({ error: "Vehicle is not in this room scope" });
         }
 
-        const updated = await prisma.shift.update({
+        const driver = await prisma.driver.findUnique({
+          where: { id: driverId },
+          select: { id: true, roomId: true },
+        });
+        if (!driver) {
+          return res.status(400).json({ error: "Driver not found" });
+        }
+        if (driver.roomId != null && Number(driver.roomId) !== Number(shift.roomId)) {
+          return res.status(403).json({ error: "Driver is not in this room scope" });
+        }
+
+        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
+        const conflicts = await checkShiftConflicts({
+          driverId: driverId,
+          vehicleId: vehicleId,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          excludeShiftId: shift.id,
+        });
+        const cr = conflictResponse(conflicts);
+        if (cr) return res.status(409).json(cr);
+const updated = await prisma.shift.update({
           where: { id: shiftId },
           data: {
             status: "APPROVED",
@@ -144,35 +158,41 @@ export function attachShiftRoomRoutes(r, io) {
             .json({ error: "vehicleId/driverId required" });
         }
 
-        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
-        const c1 = await checkShiftConflicts({
-          driverId,
-          startAt: shift.startAt,
-          endAt: shift.endAt,
-          ignoreShiftId: shift.id,
+        
+        // scope validation: vehicle and driver must belong to this shift's room
+        const vehicle = await prisma.vehicle.findUnique({
+          where: { id: vehicleId },
+          select: { id: true, roomId: true, archivedAt: true },
         });
-        if (c1?.ok === false) {
-          return res.status(400).json({
-            code: "DRIVER_CONFLICT",
-            message: "Driver aynı zaman aralığında başka bir vardiyada.",
-            conflictingShift: c1.conflictingShift,
-          });
+        if (!vehicle || vehicle.archivedAt) {
+          return res.status(400).json({ error: "Vehicle not found/archived" });
         }
-        const c2 = await checkShiftConflicts({
-          vehicleId,
-          startAt: shift.startAt,
-          endAt: shift.endAt,
-          ignoreShiftId: shift.id,
-        });
-        if (c2?.ok === false) {
-          return res.status(400).json({
-            code: "VEHICLE_CONFLICT",
-            message: "Araç aynı zaman aralığında başka bir vardiyada.",
-            conflictingShift: c2.conflictingShift,
-          });
+        if (vehicle.roomId != null && Number(vehicle.roomId) !== Number(shift.roomId)) {
+          return res.status(403).json({ error: "Vehicle is not in this room scope" });
         }
 
-        const updated = await prisma.shift.update({
+        const driver = await prisma.driver.findUnique({
+          where: { id: driverId },
+          select: { id: true, roomId: true },
+        });
+        if (!driver) {
+          return res.status(400).json({ error: "Driver not found" });
+        }
+        if (driver.roomId != null && Number(driver.roomId) !== Number(shift.roomId)) {
+          return res.status(403).json({ error: "Driver is not in this room scope" });
+        }
+
+        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
+        const conflicts = await checkShiftConflicts({
+          driverId: driverId,
+          vehicleId: vehicleId,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          excludeShiftId: shift.id,
+        });
+        const cr = conflictResponse(conflicts);
+        if (cr) return res.status(409).json(cr);
+const updated = await prisma.shift.update({
           where: { id: shiftId },
           data: {
             status: "APPROVED",
@@ -400,34 +420,18 @@ export function attachShiftRoomRoutes(r, io) {
             .json({ error: "Shift missing vehicle/driver" });
         }
 
-        const c1 = await checkShiftConflicts({
+        
+        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
+        const conflicts = await checkShiftConflicts({
           driverId: shift.driverId,
-          startAt: shift.startAt,
-          endAt: shift.endAt,
-          ignoreShiftId: shift.id,
-        });
-        if (c1?.ok === false) {
-          return res.status(400).json({
-            code: "DRIVER_CONFLICT",
-            message: "Driver aynı zaman aralığında başka bir vardiyada.",
-            conflictingShift: c1.conflictingShift,
-          });
-        }
-        const c2 = await checkShiftConflicts({
           vehicleId: shift.vehicleId,
           startAt: shift.startAt,
           endAt: shift.endAt,
-          ignoreShiftId: shift.id,
+          excludeShiftId: shift.id,
         });
-        if (c2?.ok === false) {
-          return res.status(400).json({
-            code: "VEHICLE_CONFLICT",
-            message: "Araç aynı zaman aralığında başka bir vardiyada.",
-            conflictingShift: c2.conflictingShift,
-          });
-        }
-
-        const updated = await prisma.shift.update({
+        const cr = conflictResponse(conflicts);
+        if (cr) return res.status(409).json(cr);
+const updated = await prisma.shift.update({
           where: { id: shiftId },
           data: { status: "ACTIVE" },
           include: {

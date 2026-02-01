@@ -1,7 +1,7 @@
 # tools/gate.ps1
 param(
-  [ValidateRange(0,12)]
-  [int]$To = 12,                 # ✅ default: M0..M12
+  [ValidateRange(0,13)]
+  [int]$To = 13,                 # ✅ default: M0..M13
 
   # Repo-relative defaults (portable)
   [string]$ComposeDir = (Join-Path $PSScriptRoot "..\infra"),
@@ -64,7 +64,8 @@ try {
     @{ n = 9;  name="M9";  cmd="node scripts/m9check.js"  },
     @{ n = 10; name="M10"; cmd="node scripts/m10check.js" },
     @{ n = 11; name="M11"; cmd="node scripts/m11check.js" },
-    @{ n = 12; name="M12"; cmd="node scripts/m12check.js" }
+    @{ n = 12; name="M12"; cmd="node scripts/m12check.js" },
+    @{ n = 13; name="M13"; cmd="node scripts/m13check.js" }
   )
 
   # ✅ Only include checks that exist in the image (defensive)

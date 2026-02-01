@@ -25,7 +25,6 @@ export function SessionProvider({ children }) {
       setMe(r);
       setAuthErr("");
     } catch (e) {
-      // token invalid
       setAuthErr(String(e?.message || e));
       logout();
     }
@@ -46,27 +45,17 @@ export function SessionProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // websocket connect (single source: live/ws.js)
+  // WS lifecycle (token varsa aç, yoksa kapat)
   useEffect(() => {
-    // token yoksa ws kapalı kalsın
     if (!token) {
       stopLiveWs();
       return;
     }
-
-    // token varsa ws başlat
     startLiveWs(token);
-
-    return () => {
-      stopLiveWs();
-    };
+    return () => stopLiveWs();
   }, [token]);
 
-  const value = useMemo(
-    () => ({ token, setToken: setTok, me, loadMe, logout, authErr }),
-    [token, me, authErr]
-  );
-
+  const value = useMemo(() => ({ token, setToken: setTok, me, loadMe, logout, authErr }), [token, me, authErr]);
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>;
 }
 

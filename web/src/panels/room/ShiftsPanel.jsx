@@ -80,8 +80,9 @@ export default function RoomShiftsPanel() {
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
 
-  // Bekleyen satır: seçili araç (approve için)
+  // Bekleyen satır: seçili araç + seçili driver (approve için)
   const [assignSel, setAssignSel] = useState({}); // { [shiftId]: vehicleIdStr }
+  const [driverSel, setDriverSel] = useState({}); // { [shiftId]: driverIdStr }
   const [showAvailableOnly, setShowAvailableOnly] = useState({}); // { [shiftId]: bool }
 
   // Room karşı teklif UI
@@ -199,6 +200,26 @@ export default function RoomShiftsPanel() {
 
           // default: companyOfferVehicleId varsa onu seç, yoksa boş
           next[sid] = s.companyOfferVehicleId ? String(s.companyOfferVehicleId) : "";
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+
+
+      // driver seçimleri init (var olanı ezme)
+      const vMap = new Map(vlist.map((v) => [Number(v.id), v]));
+      setDriverSel((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const s of list) {
+          const sid = Number(s.id);
+          if (next[sid] !== undefined) continue;
+
+          const vid = s.vehicleId ?? s.companyOfferVehicleId ?? null;
+          const vv = vid ? vMap.get(Number(vid)) : null;
+          const did = s.driverId ?? vv?.driverId ?? null;
+
+          next[sid] = did ? String(did) : "";
           changed = true;
         }
         return changed ? next : prev;
@@ -364,8 +385,12 @@ export default function RoomShiftsPanel() {
 
   async function approveShift(shift) {
     const sid = Number(shift.id);
-    const sel = assignSel[sid] || "";
-    const vehicleId = sel ? Number(sel) : null;
+
+    const selV = assignSel[sid] || "";
+    const vehicleId = selV ? Number(selV) : null;
+
+    const selD = driverSel[sid] || "";
+    const manualDriverId = selD ? Number(selD) : null;
 
     if (!vehicleId) {
       setErr("Approve için araç seçmelisin.");
@@ -373,10 +398,12 @@ export default function RoomShiftsPanel() {
     }
 
     const v = vehiclesById.get(vehicleId);
-    const driverId = v?.driverId ? Number(v.driverId) : null;
+
+    // Öncelik: kullanıcı seçimi → yoksa aracın bağlı driverId'si
+    const driverId = manualDriverId ?? (v?.driverId ? Number(v.driverId) : null);
 
     if (!driverId) {
-      setErr("Seçilen araçta driver bağlı değil (vehicle.driverId yok). Önce driver→vehicle bind yap.");
+      setErr("Approve için driver seçmelisin (veya araçta driver bağlı olmalı).");
       return;
     }
 
@@ -724,7 +751,19 @@ async function sendRoomOffer(shift) {
                       <div style={{ display: "grid", gap: 6 }}>
                         <select
                           value={selectedVehicleId}
-                          onChange={(e) => setAssignSel((p) => ({ ...p, [sid]: e.target.value }))}
+                          onChange={(e) => {
+                      const val = e.target.value;
+                      setAssignSel((p) => ({ ...p, [sid]: val }));
+
+                      // araç değişince (driver seçilmemişse) araçtaki driver'ı otomatik seç
+                      if (!driverSel[sid]) {
+                        const vid = val ? Number(val) : null;
+                        const v = vid ? vehiclesById.get(vid) : null;
+                        if (v?.driverId) {
+                          setDriverSel((p) => ({ ...p, [sid]: String(v.driverId) }));
+                        }
+                      }
+                    }}
                           disabled={busy}
                         >
                           <option value="">— araç seç —</option>
@@ -735,7 +774,26 @@ async function sendRoomOffer(shift) {
                           ))}
                         </select>
 
-                        <div className="muted">Driver (auto): {autoDriverName}</div>
+                        <div className="row" style={{ marginTop: 6, alignItems: "center" }}>
+                    <label className="muted" style={{ minWidth: 80 }}>Driver</label>
+                    <select
+                      value={driverSel[sid] ?? ""}
+                      onChange={(e) => setDriverSel((p) => ({ ...p, [sid]: e.target.value }))}
+                      disabled={busy}
+                    >
+                      <option value="">Seç (opsiyonel)</option>
+                      {drivers
+                        .filter((d) => Number(d.roomId) === Number(shift.roomId))
+                        .map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.fullName || d.name || `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || `#${d.id}`}
+                          </option>
+                        ))}
+                    </select>
+                    <span className="muted" style={{ marginLeft: 8 }}>
+                      (Araç driver: {autoDriverName})
+                    </span>
+                  </div>
 
                         <button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
                           {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}

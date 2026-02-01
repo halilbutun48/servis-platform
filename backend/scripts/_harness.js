@@ -4,6 +4,25 @@ import https from "https";
 
 export const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
+// m13check bunu import ediyor
+export function ok(msg, cond = true) {
+  if (cond) {
+    console.log(`✅ ${msg}`);
+    return true;
+  }
+  console.log(`❌ ${msg}`);
+  return false;
+}
+
+// m13check bunu import ediyor
+export function must(msg, cond) {
+  if (cond) {
+    console.log(`✅ ${msg}`);
+    return true;
+  }
+  throw new Error(`❌ ${msg}`);
+}
+
 export function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -43,10 +62,8 @@ export function reqJson(method, path, { token, body } = {}) {
       }
     );
 
-    req.on("error", (e) =>
-      resolve({ ok: false, status: 0, json: null, text: String(e) })
-    );
-    if (body) req.write(JSON.stringify(body));
+    req.on("error", (e) => resolve({ ok: false, status: 0, json: null, text: String(e) }));
+    if (body !== undefined) req.write(JSON.stringify(body));
     req.end();
   });
 }
@@ -71,9 +88,7 @@ export function itemsOf(resp) {
 }
 
 export async function login(email, password) {
-  const r = await reqJson("POST", "/api/auth/login", {
-    body: { email, password },
-  });
+  const r = await reqJson("POST", "/api/auth/login", { body: { email, password } });
   if (!r.ok) throw new Error(`login failed ${email} -> ${r.status}\n${r.text}`);
   if (!r.json?.token) throw new Error(`token missing for ${email}`);
   return r.json.token;
@@ -110,6 +125,7 @@ export async function ensureActiveShift({
 }) {
   const nowTag = tag + "-" + new Date().toISOString().replace(/[:.TZ-]/g, "").slice(0, 14);
 
+  // kısa aralık (gate hızlı olsun)
   const startAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   const endAt = new Date(Date.now() + 70 * 60 * 1000).toISOString();
 
@@ -118,7 +134,7 @@ export async function ensureActiveShift({
     roomId,
     startAt,
     endAt,
-    status: "REQUESTED",
+    // status göndermiyoruz (backend default REQUESTED set etmeli)
     stops: [
       { name: `${tag} Stop 1 ${nowTag}`, lat: 41.0306, lng: 28.9964, order: 1, type: "COMMON" },
       { name: `${tag} Stop 2 ${nowTag}`, lat: 41.0310, lng: 28.9968, order: 2, type: "COMMON" },
@@ -135,10 +151,11 @@ export async function ensureActiveShift({
   const shiftId = shCreate.r.json?.id ?? shCreate.r.json?.shift?.id;
   if (!shiftId) throw new Error("shiftId missing");
 
+  // approve body: SADECE vehicleId + driverId
   const shApprove = await callAny(
     "PUT",
     [`/api/shifts/${shiftId}/approve`, `/api/shifts/${shiftId}/assign`],
-    { token: roomToken, body: { vehicleId, driverId, status: "APPROVED" } }
+    { token: roomToken, body: { vehicleId, driverId } }
   );
   if (!shApprove.ok) {
     throw new Error(`approve -> ${shApprove.r.status}\n${shApprove.r.text.slice(0, 400)}`);
@@ -157,7 +174,7 @@ export async function ensureActiveShift({
 }
 
 export async function closeShiftHard({ shiftId, driverToken, roomToken }) {
-  // try reach a few orders; ignore 400/404
+  // ACTIVE olmayan shiftlerde reached/complete 400 dönebilir; ignore.
   for (let order = 1; order <= 8; order++) {
     const r = await reqJson("POST", `/api/shifts/${shiftId}/reached`, {
       token: driverToken,
@@ -166,7 +183,6 @@ export async function closeShiftHard({ shiftId, driverToken, roomToken }) {
     if (r.status === 401 || r.status === 403) break;
   }
 
-  // prefer driver complete endpoint (projende var: /api/driver/shifts/:id/complete)
   const done = await callAny(
     "POST",
     [
@@ -177,20 +193,26 @@ export async function closeShiftHard({ shiftId, driverToken, roomToken }) {
     ],
     { token: driverToken, body: {} }
   );
-
   if (done.ok) return true;
 
-  // room fallback (bazı sistemlerde complete room tarafında)
+  // room fallback
   const done2 = await callAny(
     "POST",
     [`/api/shifts/${shiftId}/complete`, `/api/shifts/${shiftId}/done`],
     { token: roomToken, body: {} }
   );
-  return !!done2.ok;
+  if (done2.ok) return true;
+
+  // EN SON çare: reject (özellikle APPROVED/REQUESTED cleanup için)
+  const rej = await callAny(
+    "PUT",
+    [`/api/shifts/${shiftId}/reject`],
+    { token: roomToken, body: { reason: "harness cleanup" } }
+  );
+  return !!rej.ok;
 }
 
 export async function preCleanDriverShifts({ roomToken, driverToken, driverId }) {
-  // try list open shifts
   const list = await callAny("GET", ["/api/shifts?onlyOpen=1", "/api/shifts"], { token: roomToken });
   if (!list.ok) return { cleaned: 0, found: 0 };
 
@@ -206,17 +228,17 @@ export async function preCleanDriverShifts({ roomToken, driverToken, driverId })
   for (const s of openish) {
     const sid = Number(s?.id);
     if (!sid) continue;
-    const ok = await closeShiftHard({ shiftId: sid, driverToken, roomToken });
-    if (ok) cleaned++;
+
+    // önce kapatmayı dene (complete/reject)
+    const okClose = await closeShiftHard({ shiftId: sid, driverToken, roomToken });
+    if (okClose) cleaned++;
   }
+
   return { cleaned, found: openish.length };
 }
 
 export async function postGps(driverToken, body) {
-  const payload = {
-    ts: new Date().toISOString(),
-    ...body,
-  };
+  const payload = { ts: new Date().toISOString(), ...body };
   if (payload.speed == null && payload.speedKmh == null) payload.speed = 20;
 
   const r = await reqJson("POST", "/api/gps", { token: driverToken, body: payload });
