@@ -40,16 +40,43 @@ $checks = @(
   @{ n = 16; name="M16"; cmd="node scripts/m16check.js" }
 )
 
-$repo = Resolve-Path $RepoDir
+$repo = (Resolve-Path $RepoDir).Path
 $compose = Join-Path $repo $ComposeDir
 $backend = Join-Path $repo "backend"
+$composeFile = Join-Path $compose "docker-compose.yml"
 
 if (-not (Test-Path $compose)) { throw "compose dir not found: $compose" }
+if (-not (Test-Path $composeFile)) { throw "compose file not found: $composeFile" }
 if (-not (Test-Path $backend)) { throw "backend dir not found: $backend" }
 
 Write-Host ""
 Write-Host ("=== GATE (M0→M{0}) ===" -f $To) -ForegroundColor Cyan
 Write-Host ""
+
+# ✅ Compose runner seçimi:
+# - Prefer: docker + "compose"
+# - Fallback: docker-compose
+$dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+$dockerComposeCmd = Get-Command docker-compose -ErrorAction SilentlyContinue
+
+$dc = $null
+$dcBaseArgs = @()
+
+if ($dockerCmd) {
+  $dc = $dockerCmd.Source
+  $dcBaseArgs = @("compose")
+} elseif ($dockerComposeCmd) {
+  $dc = $dockerComposeCmd.Source
+  $dcBaseArgs = @()
+} else {
+  throw "Docker not found. Install Docker Desktop (docker) or docker-compose."
+}
+
+function Dc {
+  param([Parameter(ValueFromRemainingArguments=$true)] $Args)
+  & $dc @dcBaseArgs @Args
+  if ($LASTEXITCODE -ne 0) { throw "Docker compose command failed: $dc $($dcBaseArgs -join ' ') $($Args -join ' ')" }
+}
 
 # Include all checks up to -To; missing scripts are a hard error (milestone discipline)
 $runList = @()
@@ -64,16 +91,12 @@ foreach ($c in $checks) {
   $runList += $c
 }
 
-# docker compose cmd
-$dc = "docker compose"
-$composeArgs = @("-f", (Join-Path $compose "docker-compose.yml"))
-
 if ($NoBuild) {
   Write-Host "=== Docker Compose Up (NoBuild) ===" -ForegroundColor Cyan
-  & $dc @composeArgs up -d | Out-Host
+  Dc -f $composeFile up -d | Out-Host
 } else {
   Write-Host "=== Docker Compose Build+Up ===" -ForegroundColor Cyan
-  & $dc @composeArgs up -d --build | Out-Host
+  Dc -f $composeFile up -d --build | Out-Host
 }
 
 # Wait API health
@@ -99,8 +122,8 @@ foreach ($c in $runList) {
   Write-Host ""
   Write-Host ("--- {0} ---" -f $c.name) -ForegroundColor Cyan
 
-  # run in container
-  & $dc @composeArgs exec -T $ApiService bash -lc ("cd /app/backend && {0}" -f $c.cmd) | Out-Host
+  # run in container (linux image)
+  Dc -f $composeFile exec -T $ApiService bash -lc ("cd /app/backend && {0}" -f $c.cmd) | Out-Host
 }
 
 Write-Host ""
