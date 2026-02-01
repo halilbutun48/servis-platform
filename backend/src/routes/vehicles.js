@@ -19,6 +19,12 @@ export function vehiclesRouter(io) {
   // "Silme engeli" sayacağımız shift status'leri
   const BLOCKING_SHIFT_STATUSES = ["APPROVED", "ACTIVE"];
 
+  function emitRoom(roomId, event, payload) {
+    try {
+      if (io && roomId) io.to(`room:${roomId}`).emit(event, payload);
+    } catch {}
+  }
+
   async function assertRoomVehicle(req, res, vehicleId, { allowArchived = false } = {}) {
     const u = req.user;
     if (!u.roomId) {
@@ -43,6 +49,38 @@ export function vehiclesRouter(io) {
       res.status(400).json({ code: "BAD_REQUEST", message: "Vehicle archived (işlem yapılamaz)" });
       return null;
     }
+    return v;
+  }
+
+  async function getVehicleForBind(req, res, vehicleId) {
+    const u = req.user;
+
+    const v = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: { id: true, plate: true, roomId: true, archivedAt: true },
+    });
+
+    if (!v) {
+      res.status(404).json({ code: "NOT_FOUND", message: "Vehicle bulunamadı" });
+      return null;
+    }
+    if (v.archivedAt) {
+      res.status(400).json({ code: "BAD_REQUEST", message: "Vehicle archived (işlem yapılamaz)" });
+      return null;
+    }
+
+    // ROOM scope
+    if (u.role === "ROOM") {
+      if (!u.roomId) {
+        res.status(400).json({ code: "BAD_REQUEST", message: "ROOM must have roomId" });
+        return null;
+      }
+      if (v.roomId !== u.roomId) {
+        res.status(403).json({ code: "FORBIDDEN", message: "Forbidden" });
+        return null;
+      }
+    }
+
     return v;
   }
 
@@ -161,12 +199,14 @@ export function vehiclesRouter(io) {
   });
 
   // ---------------------------------------------------------
-  // Bind / Unbind driver to vehicle (ROOM)
+  // Bind / Unbind driver to vehicle (ROOM + SUPER_ADMIN)
   // body: { driverId: number }  -> bind
   // body: { driverId: null }    -> unbind
-  // Ayrıca: aynı driver başka araca bağlıysa otomatik sök (tek driver/tek araç)
+  //
+  // KURAL: aynı driver aynı anda birden fazla araca bağlı olamaz
+  // -> başka araca bağlıysa 409 DRIVER_ALREADY_BOUND
   // ---------------------------------------------------------
-  r.put("/:id/bind-driver", authRequired(), requireRole("ROOM"), async (req, res) => {
+  r.put("/:id/bind-driver", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
     const u = req.user;
     const vehicleId = Number(req.params.id);
 
@@ -176,17 +216,11 @@ export function vehiclesRouter(io) {
 
     const driverId = raw == null ? null : Number(raw);
 
-    if (!u.roomId) return res.status(400).json({ code: "BAD_REQUEST", message: "ROOM must have roomId" });
     if (!vehicleId) return res.status(400).json({ code: "BAD_REQUEST", message: "Invalid vehicle id" });
     if (!hasDriverId) return res.status(400).json({ code: "BAD_REQUEST", message: "driverId gerekli (null=ayır)" });
 
-    const vehicle = await prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      select: { id: true, roomId: true, archivedAt: true },
-    });
-    if (!vehicle) return res.status(404).json({ code: "NOT_FOUND", message: "Vehicle bulunamadı" });
-    if (vehicle.archivedAt) return res.status(400).json({ code: "BAD_REQUEST", message: "Vehicle archived (işlem yapılamaz)" });
-    if (vehicle.roomId !== u.roomId) return res.status(403).json({ code: "FORBIDDEN", message: "Forbidden" });
+    const vehicle = await getVehicleForBind(req, res, vehicleId);
+    if (!vehicle) return;
 
     // UNBIND
     if (driverId === null || Number.isNaN(driverId) || driverId === 0) {
@@ -196,7 +230,7 @@ export function vehiclesRouter(io) {
         include: { gpsLast: true, gpsState: true, driver: true },
       });
 
-      io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId: updated.id, action: "unbind-driver" });
+      emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "unbind-driver" });
       return res.json({ ok: true, vehicle: updated, unbound: true });
     }
 
@@ -206,25 +240,34 @@ export function vehiclesRouter(io) {
       select: { id: true, roomId: true, fullName: true },
     });
     if (!driver) return res.status(404).json({ code: "NOT_FOUND", message: "Driver bulunamadı" });
-    if (driver.roomId !== u.roomId) {
+
+    // Driver aynı room içinde olmalı (tek source of truth: driver.roomId)
+    if (vehicle.roomId == null || driver.roomId == null || driver.roomId !== vehicle.roomId) {
       return res.status(400).json({ code: "BAD_REQUEST", message: "Driver aynı room içinde olmalı" });
     }
 
-    // ✅ tek driver tek araç: driver başka araçta bağlıysa sök
-    const updated = await prisma.$transaction(async (tx) => {
-      await tx.vehicle.updateMany({
-        where: { roomId: u.roomId, archivedAt: null, driverId: driverId, id: { not: vehicleId } },
-        data: { driverId: null },
-      });
-
-      return tx.vehicle.update({
-        where: { id: vehicleId },
-        data: { driverId },
-        include: { gpsLast: true, gpsState: true, driver: true },
-      });
+    // ❌ başka araca bağlı mı?
+    const other = await prisma.vehicle.findFirst({
+      where: { driverId: driverId, archivedAt: null, id: { not: vehicleId } },
+      select: { id: true, plate: true, roomId: true },
     });
 
-    io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId: updated.id, action: "bind-driver" });
+    if (other) {
+      return res.status(409).json({
+        code: "DRIVER_ALREADY_BOUND",
+        message: "Bu sürücü zaten başka bir araca bağlı.",
+        conflictingVehicle: { id: other.id, plate: other.plate, roomId: other.roomId },
+      });
+    }
+
+    // ✅ bind
+    const updated = await prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: { driverId },
+      include: { gpsLast: true, gpsState: true, driver: true },
+    });
+
+    emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "bind-driver" });
     return res.json({ ok: true, vehicle: updated, bound: true });
   });
 
@@ -311,7 +354,7 @@ export function vehiclesRouter(io) {
         include: { gpsLast: true, gpsState: true, driver: true },
       });
 
-      io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId: updated.id, action: "updated" });
+      emitRoom(u.roomId, "vehicle:update", { vehicleId: updated.id, action: "updated" });
       return res.json({ ok: true, vehicle: updated });
     } catch (e) {
       return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
@@ -364,18 +407,17 @@ export function vehiclesRouter(io) {
           include: { gpsLast: true, gpsState: true, driver: true },
         });
 
-        io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId, action: "archived" });
+        emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "archived" });
         return res.json({ ok: true, archived: true, vehicle: archived });
       }
 
       await prisma.vehicle.delete({ where: { id: vehicleId } });
-      io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId, action: "deleted" });
+      emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "deleted" });
       return res.json({ ok: true, archived: false });
     } catch (e) {
       return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
     }
   });
-
 
   // ---------------------------------------------------------
   // UNARCHIVE (ROOM)  ✅ Arşivden geri al
@@ -398,7 +440,7 @@ export function vehiclesRouter(io) {
       include: { gpsLast: true, gpsState: true, driver: true },
     });
 
-    io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId, action: "unarchived" });
+    emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "unarchived" });
     return res.json({ ok: true, vehicle: updated, unarchived: true });
   });
 
@@ -474,7 +516,7 @@ export function vehiclesRouter(io) {
       include: { gpsLast: true, gpsState: true, driver: true },
     });
 
-    io.to(`room:${u.roomId}`).emit("vehicle:update", { vehicleId: vehicle.id, action: "created" });
+    emitRoom(u.roomId, "vehicle:update", { vehicleId: vehicle.id, action: "created" });
     res.json(vehicle);
   });
 

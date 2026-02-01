@@ -205,9 +205,10 @@ Referans: tag `v1-m14-green.2`
 ---
 
 ## 12) Yeni sohbet başlangıç cümlesi (SSOT referanslı)
-“`servis-platform` repo, tag `v1-m14-green.2` referansından devam ediyoruz. Next hedef: Vehicle↔Driver bind + overlap rules. API + UI görevlerini sıraya koy; Gate/Pack standardını bozmadan ilerle.”
+“`servis-platform` repo, tag `v1-m14-green.2` referansından devam ediyoruz. Next hedef: Vehicle↔Driver bind (M15) + UI: Vehicles panel bind/unbind + tek source of truth + M15 check
 
 ---
+
 
 
 

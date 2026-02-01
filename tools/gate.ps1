@@ -1,7 +1,7 @@
 # tools/gate.ps1
 param(
-  [ValidateRange(0,14)]
-  [int]$To = 14,                 # ✅ default: M0..M14
+  [ValidateRange(0,15)]
+  [int]$To = 15,                 # ✅ default: M0..M15
 
   # Repo-relative defaults (portable)
   [string]$ComposeDir = (Join-Path $PSScriptRoot "..\infra"),
@@ -50,7 +50,7 @@ try {
   }
   if (-not $healthOk) { throw "FAILED: health (exit=52)" }
 
-  # Milestone checks (M0..M14) — ✅ single source
+  # Milestone checks (M0..M15) — ✅ single source
   $checks = @(
     @{ n = 0;  name="M0";  cmd="node scripts/m0check.js"  },
     @{ n = 1;  name="M1";  cmd="node scripts/m1check.js"  },
@@ -66,7 +66,8 @@ try {
     @{ n = 11; name="M11"; cmd="node scripts/m11check.js" },
     @{ n = 12; name="M12"; cmd="node scripts/m12check.js" },
     @{ n = 13; name="M13"; cmd="node scripts/m13check.js" },
-    @{ n = 14; name="M14"; cmd="node scripts/m14check.js" }
+    @{ n = 14; name="M14"; cmd="node scripts/m14check.js" },
+    @{ n = 15; name="M15"; cmd="node scripts/m15check.js" }
   )
 
   # ✅ Only include checks that exist in the image/host (defensive)
