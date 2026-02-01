@@ -224,7 +224,31 @@ Referans: tag `v1-m15-green.2`
 - Deterministic monitors: stale/offline tests use gpsLast.at back + poll
 
 
+PERSONEL-SERVIS V1 — NEXT (M16) PRIMER
 
+Hedef: Company shift için personel ekleme + import + geocode review + durak üret + map önizleme; ROOM tarafında rota/durak önizleme.
+
+UI:
+
+Company ShiftsPanel tabs: Yeni Talep / Vardiya Şablonları / Personel & Rota
+
+Personel & Rota tab:
+
+Shift seç → personel ekle/import → geocode status → maxWalkM ile durak üret (REPLACE) → map preview
+
+Room pending list: “Haritada Önizle” modalı (aynı component)
+
+Backend:
+
+Personel cache: geoStatus (OK/NEEDS_REVIEW/FAILED), geoManualOverride
+
+Import izleri: ShiftImport, ShiftImportRow
+
+Durak üretimi: clusterStops(maxWalkM) + StopAssignment
+
+Gate/Test:
+
+M16CHECK: shift oluştur → import (deterministik sample) → draft üret → stop sayısı + maxWalkM garantisi → UI preview endpointleri 200.
 
 
 
