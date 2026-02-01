@@ -7,7 +7,7 @@ import { prisma } from "../src/prisma.js";
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
 // Global throttle (burst engelle)
-const MIN_GAP_MS = Number(process.env.HTTP_THROTTLE_MS ?? 160);
+const MIN_GAP_MS = Number(process.env.HTTP_THROTTLE_MS ?? 250);
 let _lastHttpAt = 0;
 
 function sleep(ms) {
@@ -21,17 +21,51 @@ async function throttle() {
   _lastHttpAt = Date.now();
 }
 
-function parseRetryAfterMs(res) {
-  const ra = res?.headers?.["retry-after"];
+function parseRetryAfterMs(headers) {
+  const ra = headers?.["retry-after"];
   if (!ra) return null;
+
   const s = Number(ra);
-  if (Number.isFinite(s) && s > 0) return Math.min(120_000, Math.max(250, Math.round(s * 1000)));
+  if (Number.isFinite(s) && s > 0) return Math.min(10 * 60_000, Math.max(250, Math.round(s * 1000)));
+
   const t = Date.parse(String(ra));
   if (Number.isFinite(t)) {
     const ms = t - Date.now();
-    if (ms > 0) return Math.min(120_000, ms);
+    if (ms > 0) return Math.min(10 * 60_000, ms);
   }
   return null;
+}
+
+/**
+ * express-rate-limit standardHeaders => RateLimit-Remaining, RateLimit-Reset
+ * Node headers are lowercased: "ratelimit-remaining", "ratelimit-reset"
+ *
+ * Reset değeri implementasyona göre:
+ * - delta-seconds (örn: "57")
+ * - unix timestamp seconds (örn: "1700000000")
+ * Biz ikisini de tolere ediyoruz.
+ */
+function parseRateLimitResetMs(headers) {
+  const raw = headers?.["ratelimit-reset"];
+  if (!raw) return null;
+
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  // unix seconds gibi görünüyorsa
+  if (n > 1_000_000_000) {
+    const ms = n * 1000 - Date.now();
+    return ms > 0 ? Math.min(10 * 60_000, ms) : 0;
+  }
+
+  // delta seconds gibi
+  return Math.min(10 * 60_000, Math.round(n * 1000));
+}
+
+function ratelimitRemaining(headers) {
+  const raw = headers?.["ratelimit-remaining"];
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
 }
 
 function requestJsonOnce(method, path, { token, body } = {}) {
@@ -70,9 +104,10 @@ function requestJsonOnce(method, path, { token, body } = {}) {
 /**
  * 429-safe JSON request:
  * - global throttle ile burst engeller
- * - 429 gelirse Retry-After varsa onu, yoksa backoff kullanır
+ * - 429 gelirse Retry-After / RateLimit-Reset varsa onları kullanır
+ * - yoksa exponential backoff yapar
  */
-async function requestJson(method, path, { token, body, maxWaitMs = 90_000 } = {}) {
+async function requestJson(method, path, { token, body, maxWaitMs = 8 * 60_000 } = {}) {
   const t0 = Date.now();
   let attempt = 0;
 
@@ -85,9 +120,13 @@ async function requestJson(method, path, { token, body, maxWaitMs = 90_000 } = {
     }
 
     if (res.status === 429) {
-      const retryAfterMs = parseRetryAfterMs(res);
-      const backoff = Math.min(10_000, 800 + attempt * 700);
-      const waitMs = retryAfterMs ?? backoff;
+      const raMs = parseRetryAfterMs(res.headers);
+      const rlMs = parseRateLimitResetMs(res.headers);
+
+      // backoff: 1.5s, 2.5s, 3.5s... cap 30s
+      const backoff = Math.min(30_000, 1500 + attempt * 1000);
+
+      const waitMs = Math.max(raMs ?? 0, rlMs ?? 0, backoff);
 
       if (Date.now() - t0 + waitMs > maxWaitMs) {
         throw new Error(
@@ -96,7 +135,7 @@ async function requestJson(method, path, { token, body, maxWaitMs = 90_000 } = {
       }
 
       console.log(`ℹ️ 429 on ${method} ${path} -> wait ${waitMs}ms (attempt=${attempt + 1})`);
-      await sleep(waitMs);
+      await sleep(waitMs + 150); // küçük buffer
       attempt++;
       continue;
     }
@@ -124,6 +163,26 @@ function countKind(items, kind) {
     if (p?.kind === kind) c++;
   }
   return c;
+}
+
+/**
+ * FULLCHECK başlamadan önce rate-limit doluysa “reset”e kadar bekle.
+ * Bu, PACK sonrası FULLCHECK’in 429’a takılmasını deterministik çözer.
+ */
+async function cooloffIfRateLimited() {
+  // 1) /health ile header oku (token gerektirmez)
+  await throttle();
+  const res = await requestJsonOnce("GET", "/health");
+
+  const rem = ratelimitRemaining(res.headers);
+  const rlMs = parseRateLimitResetMs(res.headers);
+
+  // Eğer zaten 429 ise ya da remaining çok düşükse reset’e kadar bekle.
+  if (res.status === 429 || (rem != null && rem <= 2)) {
+    const waitMs = parseRetryAfterMs(res.headers) ?? rlMs ?? 30_000;
+    console.log(`ℹ️ rate-limit cooldown: status=${res.status} remaining=${rem ?? "?"} wait=${waitMs}ms`);
+    await sleep(waitMs + 400);
+  }
 }
 
 /**
@@ -173,7 +232,7 @@ async function ensureActiveShift({ companyToken, roomToken, driverToken }) {
     status: "REQUESTED",
     stops: [
       { name: `FULLCHECK Stop 1 ${Date.now()}`, lat: 41.0306, lng: 28.9964, order: 1, type: "COMMON" },
-      { name: `FULLCHECK Stop 2 ${Date.now()}`, lat: 41.0310, lng: 28.9968, order: 2, type: "COMMON" },
+      { name: `FULLCHECK Stop 2 ${Date.now()}`, lat: 41.031, lng: 28.9968, order: 2, type: "COMMON" },
       { name: `FULLCHECK Stop 3 ${Date.now()}`, lat: 41.0313, lng: 28.9971, order: 3, type: "COMMON" },
     ],
   };
@@ -246,6 +305,9 @@ async function main() {
   const personelToken = await login("personel@demo.com", "demo123");
   console.log("✅ login(driver/room/company/personel)");
 
+  // ✅ PACK sonrası rate-limit doluysa reset bekle
+  await cooloffIfRateLimited();
+
   // ✅ ACTIVE shift harness — WS connect’ten ÖNCE
   const harness = await ensureActiveShift({ companyToken, roomToken, driverToken });
   const vehicleId = harness.vehicleId;
@@ -314,7 +376,9 @@ async function main() {
   console.log("✅ DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
 
   // 5) overspeed -> notif (DB + WS) for DRIVER/ROOM/COMPANY
-  // 429-safe: requestJson zaten retry/backoff yapıyor.
+  // Cooloff check before notification-heavy section (tam burada 429 alıyordun)
+  await cooloffIfRateLimited();
+
   const d0 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
   const r0 = await requestJson("GET", "/api/notifications/my", { token: roomToken });
   const c0 = await requestJson("GET", "/api/notifications/my", { token: companyToken });
