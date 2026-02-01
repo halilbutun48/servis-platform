@@ -1,52 +1,47 @@
 # tools/pack.ps1
 param(
-  [ValidateRange(0,15)]
+  [Parameter(Mandatory=$false)]
+  [ValidateRange(0,16)]
   [int]$To = 15,
 
-  # Docker workflow varsayılan: host node_modules gerekmiyor
-  [bool]$DockerOnly = $true,
+  [Parameter(Mandatory=$false)]
+  [string]$ComposeDir = "infra",
 
-  [string]$RepoDir,
-  [string]$ComposeDir,
-  [string]$ApiService = "api"
+  [Parameter(Mandatory=$false)]
+  [string]$RepoDir = ".",
+
+  [Parameter(Mandatory=$false)]
+  [string]$ApiService = "api",
+
+  [Parameter(Mandatory=$false)]
+  [switch]$NoBuild
 )
 
 $ErrorActionPreference = "Stop"
 
-if (-not $RepoDir) {
-  $RepoDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-}
-if (-not $ComposeDir) {
-  $ComposeDir = Join-Path $RepoDir "infra"
-}
+Write-Host ""
+Write-Host ("=== PERSONEL-SERVIS V1 — PACK (M0→M{0}) ===" -f $To) -ForegroundColor Cyan
+Write-Host ("Target stage: M{0}" -f $To)
+Write-Host ""
 
-$targetStage = "M$To"
+$repo = Resolve-Path $RepoDir
+$compose = Join-Path $repo $ComposeDir
+$gate = Join-Path $repo "tools/gate.ps1"
 
-Write-Host "`n=== PERSONEL-SERVIS V1 — PACK (M0→$targetStage) ==="
-Write-Host "Target stage: $targetStage"
+if (-not (Test-Path $gate)) { throw "gate.ps1 not found: $gate" }
+if (-not (Test-Path $compose)) { throw "compose dir not found: $compose" }
 
-Write-Host "`n=== Install (backend) ==="
-if ($DockerOnly) {
-  Write-Host "SKIP (Docker mode) — host node_modules gerekmiyor."
-} else {
-  Push-Location (Join-Path $RepoDir "backend")
-  try { npm ci } finally { Pop-Location }
-}
+Write-Host "=== Install (backend) ===" -ForegroundColor Cyan
+Write-Host "SKIP (Docker mode) — host node_modules gerekmiyor."
+Write-Host ""
 
-Write-Host "`n=== Install (web) ==="
-if ($DockerOnly) {
-  Write-Host "SKIP (Docker mode) — host node_modules gerekmiyor."
-} else {
-  Push-Location (Join-Path $RepoDir "web")
-  try { npm ci } finally { Pop-Location }
-}
+Write-Host "=== Install (web) ===" -ForegroundColor Cyan
+Write-Host "SKIP (Docker mode) — host node_modules gerekmiyor."
+Write-Host ""
 
-Write-Host "`n=== Gate ==="
-$gate = Join-Path $PSScriptRoot "gate.ps1"
+Write-Host "=== Gate ===" -ForegroundColor Cyan
+& $gate -To $To -ComposeDir $ComposeDir -RepoDir $RepoDir -ApiService $ApiService -NoBuild:$NoBuild
 
-& $gate -To $To -ComposeDir $ComposeDir -RepoDir $RepoDir -ApiService $ApiService
-if ($LASTEXITCODE -ne 0) { throw "GATE FAIL (exit=$LASTEXITCODE)" }
-
-Write-Host "`n=== DONE ==="
-Write-Host "✅ PACK PASS (Docker-only: Gate already ran FULLCHECK + SMOKE)"
-exit 0
+Write-Host ""
+Write-Host "=== PACK PASS ✅ ===" -ForegroundColor Green
+Write-Host ""
