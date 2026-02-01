@@ -4,7 +4,24 @@ import https from "https";
 
 export const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
-// m13check bunu import ediyor
+// ---- GreenPack / HTTP stability knobs ----
+const GREENPACK_HEADER = "1";
+
+// istekler arası min gap (rate-limit tetiklenmesini azaltır)
+const MIN_GAP_MS = Number(process.env.HTTP_THROTTLE_MS ?? 120);
+
+// 429 retry için toplam max bekleme (ms)
+const MAX_WAIT_MS = Number(process.env.HTTP_429_MAXWAIT_MS ?? 4 * 60_000);
+
+let _lastHttpAt = 0;
+
+async function throttle() {
+  const now = Date.now();
+  const dt = now - _lastHttpAt;
+  if (dt < MIN_GAP_MS) await sleep(MIN_GAP_MS - dt);
+  _lastHttpAt = Date.now();
+}
+
 export function ok(msg, cond = true) {
   if (cond) {
     console.log(`✅ ${msg}`);
@@ -14,7 +31,6 @@ export function ok(msg, cond = true) {
   return false;
 }
 
-// m13check bunu import ediyor
 export function must(msg, cond) {
   if (cond) {
     console.log(`✅ ${msg}`);
@@ -27,11 +43,46 @@ export function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export function reqJson(method, path, { token, body } = {}) {
+function parseRetryAfterMs(headers) {
+  const ra = headers?.["retry-after"];
+  if (!ra) return null;
+
+  const s = Number(ra);
+  if (Number.isFinite(s) && s > 0) return Math.min(10 * 60_000, Math.max(250, Math.round(s * 1000)));
+
+  const t = Date.parse(String(ra));
+  if (Number.isFinite(t)) {
+    const ms = t - Date.now();
+    if (ms > 0) return Math.min(10 * 60_000, ms);
+  }
+  return null;
+}
+
+function parseRateLimitResetMs(headers) {
+  // bazı implementasyonlar ratelimit-reset header’ı döndürüyor
+  const raw = headers?.["ratelimit-reset"];
+  if (!raw) return null;
+
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  // epoch seconds vs delta seconds ayrımı
+  if (n > 1_000_000_000) {
+    const ms = n * 1000 - Date.now();
+    return ms > 0 ? Math.min(10 * 60_000, ms) : 0;
+  }
+  return Math.min(10 * 60_000, Math.round(n * 1000));
+}
+
+// Raw request (429 retry yok)
+async function reqJsonOnce(method, path, { token, body } = {}) {
   const url = new URL(path, BASE_URL);
   const lib = url.protocol === "https:" ? https : http;
 
-  const headers = { "Content-Type": "application/json" };
+  const headers = {
+    "Content-Type": "application/json",
+    "x-greenpack": GREENPACK_HEADER, // ✅ gate traffic marker
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   return new Promise((resolve) => {
@@ -55,6 +106,7 @@ export function reqJson(method, path, { token, body } = {}) {
           resolve({
             ok: res.statusCode >= 200 && res.statusCode < 300,
             status: res.statusCode,
+            headers: res.headers ?? {},
             json,
             text,
           });
@@ -62,10 +114,48 @@ export function reqJson(method, path, { token, body } = {}) {
       }
     );
 
-    req.on("error", (e) => resolve({ ok: false, status: 0, json: null, text: String(e) }));
+    req.on("error", (e) => resolve({ ok: false, status: 0, headers: {}, json: null, text: String(e) }));
     if (body !== undefined) req.write(JSON.stringify(body));
     req.end();
   });
+}
+
+/**
+ * Deterministic HTTP helper:
+ * - min gap throttle
+ * - 429 retry (Retry-After / RateLimit-Reset / backoff)
+ * - returns same shape as old reqJson: { ok, status, json, text, headers }
+ */
+export async function reqJson(method, path, { token, body, maxWaitMs = MAX_WAIT_MS } = {}) {
+  const t0 = Date.now();
+  let attempt = 0;
+
+  while (true) {
+    await throttle();
+    const r = await reqJsonOnce(method, path, { token, body });
+
+    if (r.ok) return r;
+
+    if (r.status === 429) {
+      const raMs = parseRetryAfterMs(r.headers);
+      const rlMs = parseRateLimitResetMs(r.headers);
+      const backoff = Math.min(10_000, 400 + attempt * 400);
+      const waitMs = Math.max(raMs ?? 0, rlMs ?? 0, backoff);
+
+      if (Date.now() - t0 + waitMs > maxWaitMs) {
+        // aynı hata formatını koru (scripts log’ları için)
+        const msg = `${method} ${path} -> 429 (rate limited; maxWait exceeded)\n${String(r.text || "").slice(0, 800)}`;
+        return { ok: false, status: 429, headers: r.headers, json: r.json, text: msg };
+      }
+
+      console.log(`ℹ️ 429 on ${method} ${path} -> wait ${waitMs}ms (attempt=${attempt + 1})`);
+      await sleep(waitMs + 100);
+      attempt++;
+      continue;
+    }
+
+    return r;
+  }
 }
 
 export async function callAny(method, paths, { token, body } = {}) {
@@ -79,6 +169,7 @@ export async function callAny(method, paths, { token, body } = {}) {
 }
 
 export function itemsOf(resp) {
+  // resp: { ok,status,json,text,... }
   const j = resp?.json;
   if (Array.isArray(j)) return j;
   if (Array.isArray(j?.items)) return j.items;
@@ -137,7 +228,7 @@ export async function ensureActiveShift({
     // status göndermiyoruz (backend default REQUESTED set etmeli)
     stops: [
       { name: `${tag} Stop 1 ${nowTag}`, lat: 41.0306, lng: 28.9964, order: 1, type: "COMMON" },
-      { name: `${tag} Stop 2 ${nowTag}`, lat: 41.0310, lng: 28.9968, order: 2, type: "COMMON" },
+      { name: `${tag} Stop 2 ${nowTag}`, lat: 41.031, lng: 28.9968, order: 2, type: "COMMON" },
       { name: `${tag} Stop 3 ${nowTag}`, lat: 41.0313, lng: 28.9971, order: 3, type: "COMMON" },
     ],
   };
@@ -204,11 +295,10 @@ export async function closeShiftHard({ shiftId, driverToken, roomToken }) {
   if (done2.ok) return true;
 
   // EN SON çare: reject (özellikle APPROVED/REQUESTED cleanup için)
-  const rej = await callAny(
-    "PUT",
-    [`/api/shifts/${shiftId}/reject`],
-    { token: roomToken, body: { reason: "harness cleanup" } }
-  );
+  const rej = await callAny("PUT", [`/api/shifts/${shiftId}/reject`], {
+    token: roomToken,
+    body: { reason: "harness cleanup" },
+  });
   return !!rej.ok;
 }
 
@@ -229,7 +319,6 @@ export async function preCleanDriverShifts({ roomToken, driverToken, driverId })
     const sid = Number(s?.id);
     if (!sid) continue;
 
-    // önce kapatmayı dene (complete/reject)
     const okClose = await closeShiftHard({ shiftId: sid, driverToken, roomToken });
     if (okClose) cleaned++;
   }

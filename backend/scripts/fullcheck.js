@@ -6,8 +6,7 @@ import { prisma } from "../src/prisma.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
-// Global throttle (burst engelle)
-const MIN_GAP_MS = Number(process.env.HTTP_THROTTLE_MS ?? 250);
+const MIN_GAP_MS = Number(process.env.HTTP_THROTTLE_MS ?? 120);
 let _lastHttpAt = 0;
 
 function sleep(ms) {
@@ -21,57 +20,14 @@ async function throttle() {
   _lastHttpAt = Date.now();
 }
 
-function parseRetryAfterMs(headers) {
-  const ra = headers?.["retry-after"];
-  if (!ra) return null;
-
-  const s = Number(ra);
-  if (Number.isFinite(s) && s > 0) return Math.min(10 * 60_000, Math.max(250, Math.round(s * 1000)));
-
-  const t = Date.parse(String(ra));
-  if (Number.isFinite(t)) {
-    const ms = t - Date.now();
-    if (ms > 0) return Math.min(10 * 60_000, ms);
-  }
-  return null;
-}
-
-/**
- * express-rate-limit standardHeaders => RateLimit-Remaining, RateLimit-Reset
- * Node headers are lowercased: "ratelimit-remaining", "ratelimit-reset"
- *
- * Reset değeri implementasyona göre:
- * - delta-seconds (örn: "57")
- * - unix timestamp seconds (örn: "1700000000")
- * Biz ikisini de tolere ediyoruz.
- */
-function parseRateLimitResetMs(headers) {
-  const raw = headers?.["ratelimit-reset"];
-  if (!raw) return null;
-
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n <= 0) return null;
-
-  // unix seconds gibi görünüyorsa
-  if (n > 1_000_000_000) {
-    const ms = n * 1000 - Date.now();
-    return ms > 0 ? Math.min(10 * 60_000, ms) : 0;
-  }
-
-  // delta seconds gibi
-  return Math.min(10 * 60_000, Math.round(n * 1000));
-}
-
-function ratelimitRemaining(headers) {
-  const raw = headers?.["ratelimit-remaining"];
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
-}
-
 function requestJsonOnce(method, path, { token, body } = {}) {
   const url = new URL(path, BASE_URL);
   const lib = url.protocol === "https:" ? https : http;
-  const headers = { "Content-Type": "application/json" };
+
+  const headers = {
+    "Content-Type": "application/json",
+    "x-greenpack": "1", // ✅ dev/test rate-limit skip
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   return new Promise((resolve, reject) => {
@@ -101,13 +57,36 @@ function requestJsonOnce(method, path, { token, body } = {}) {
   });
 }
 
-/**
- * 429-safe JSON request:
- * - global throttle ile burst engeller
- * - 429 gelirse Retry-After / RateLimit-Reset varsa onları kullanır
- * - yoksa exponential backoff yapar
- */
-async function requestJson(method, path, { token, body, maxWaitMs = 8 * 60_000 } = {}) {
+function parseRetryAfterMs(headers) {
+  const ra = headers?.["retry-after"];
+  if (!ra) return null;
+
+  const s = Number(ra);
+  if (Number.isFinite(s) && s > 0) return Math.min(10 * 60_000, Math.max(250, Math.round(s * 1000)));
+
+  const t = Date.parse(String(ra));
+  if (Number.isFinite(t)) {
+    const ms = t - Date.now();
+    if (ms > 0) return Math.min(10 * 60_000, ms);
+  }
+  return null;
+}
+
+function parseRateLimitResetMs(headers) {
+  const raw = headers?.["ratelimit-reset"];
+  if (!raw) return null;
+
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  if (n > 1_000_000_000) {
+    const ms = n * 1000 - Date.now();
+    return ms > 0 ? Math.min(10 * 60_000, ms) : 0;
+  }
+  return Math.min(10 * 60_000, Math.round(n * 1000));
+}
+
+async function requestJson(method, path, { token, body, maxWaitMs = 4 * 60_000 } = {}) {
   const t0 = Date.now();
   let attempt = 0;
 
@@ -115,17 +94,12 @@ async function requestJson(method, path, { token, body, maxWaitMs = 8 * 60_000 }
     await throttle();
     const res = await requestJsonOnce(method, path, { token, body });
 
-    if (res.status >= 200 && res.status < 300) {
-      return res.json ?? res.text;
-    }
+    if (res.status >= 200 && res.status < 300) return res.json ?? res.text;
 
     if (res.status === 429) {
       const raMs = parseRetryAfterMs(res.headers);
       const rlMs = parseRateLimitResetMs(res.headers);
-
-      // backoff: 1.5s, 2.5s, 3.5s... cap 30s
-      const backoff = Math.min(30_000, 1500 + attempt * 1000);
-
+      const backoff = Math.min(10_000, 400 + attempt * 400);
       const waitMs = Math.max(raMs ?? 0, rlMs ?? 0, backoff);
 
       if (Date.now() - t0 + waitMs > maxWaitMs) {
@@ -135,7 +109,7 @@ async function requestJson(method, path, { token, body, maxWaitMs = 8 * 60_000 }
       }
 
       console.log(`ℹ️ 429 on ${method} ${path} -> wait ${waitMs}ms (attempt=${attempt + 1})`);
-      await sleep(waitMs + 150); // küçük buffer
+      await sleep(waitMs + 100);
       attempt++;
       continue;
     }
@@ -155,7 +129,6 @@ function payloadOf(n) {
   if (!p) return null;
   return typeof p === "string" ? JSON.parse(p) : p;
 }
-
 function countKind(items, kind) {
   let c = 0;
   for (const n of items ?? []) {
@@ -165,39 +138,12 @@ function countKind(items, kind) {
   return c;
 }
 
-/**
- * FULLCHECK başlamadan önce rate-limit doluysa “reset”e kadar bekle.
- * Bu, PACK sonrası FULLCHECK’in 429’a takılmasını deterministik çözer.
- */
-async function cooloffIfRateLimited() {
-  // 1) /health ile header oku (token gerektirmez)
-  await throttle();
-  const res = await requestJsonOnce("GET", "/health");
-
-  const rem = ratelimitRemaining(res.headers);
-  const rlMs = parseRateLimitResetMs(res.headers);
-
-  // Eğer zaten 429 ise ya da remaining çok düşükse reset’e kadar bekle.
-  if (res.status === 429 || (rem != null && rem <= 2)) {
-    const waitMs = parseRetryAfterMs(res.headers) ?? rlMs ?? 30_000;
-    console.log(`ℹ️ rate-limit cooldown: status=${res.status} remaining=${rem ?? "?"} wait=${waitMs}ms`);
-    await sleep(waitMs + 400);
-  }
-}
-
-/**
- * GPS hardening sonrası: driver /api/gps basabilsin diye ACTIVE shift şart.
- * - varsa ACTIVE shift'i reuse eder
- * - yoksa company->create, room->approve+start ile shift kurar
- */
 async function ensureActiveShift({ companyToken, roomToken, driverToken }) {
   const my = await requestJson("GET", "/api/shifts/my", { token: driverToken });
   const items = my?.items ?? [];
 
   const active = items.find((s) => s?.status === "ACTIVE");
-  if (active?.id && active?.vehicleId) {
-    return { created: false, shiftId: active.id, vehicleId: active.vehicleId };
-  }
+  if (active?.id && active?.vehicleId) return { created: false, shiftId: active.id, vehicleId: active.vehicleId };
 
   const approved = items.find((s) => s?.status === "APPROVED" && s?.id);
   if (approved?.id && approved?.vehicleId) {
@@ -266,7 +212,11 @@ async function completeShiftBestEffort({ shiftId, driverToken }) {
 }
 
 async function connectWs(token, label) {
-  const sock = ioc(BASE_URL, { auth: { token }, transports: ["websocket"] });
+  const sock = ioc(BASE_URL, {
+    auth: { token },
+    transports: ["websocket"],
+  });
+
   const bag = { ready: null, gps: [], vstat: [], notif: [], eta: [] };
 
   sock.on("ws:ready", (d) => (bag.ready = d));
@@ -293,32 +243,28 @@ async function waitFor(condFn, timeoutMs, stepMs = 100) {
 async function main() {
   console.log(`API_URL = ${BASE_URL}`);
 
-  // 1) health
+  // health
   const health = await requestJson("GET", "/health");
   if (!health?.ok) throw new Error("❌ /health invalid");
   console.log("✅ /health");
 
-  // 2) logins
+  // logins
   const driverToken = await login("driver@demo.com", "demo123");
   const roomToken = await login("room@demo.com", "demo123");
   const companyToken = await login("company@demo.com", "demo123");
   const personelToken = await login("personel@demo.com", "demo123");
   console.log("✅ login(driver/room/company/personel)");
 
-  // ✅ PACK sonrası rate-limit doluysa reset bekle
-  await cooloffIfRateLimited();
-
-  // ✅ ACTIVE shift harness — WS connect’ten ÖNCE
+  // ACTIVE shift harness
   const harness = await ensureActiveShift({ companyToken, roomToken, driverToken });
   const vehicleId = harness.vehicleId;
 
-  // 3) WS connect
+  // WS
   const driverWS = await connectWs(driverToken, "driver");
   const roomWS = await connectWs(roomToken, "room");
   const compWS = await connectWs(companyToken, "company");
   console.log("✅ WS connect + ws:ready");
 
-  // 3.1) /api/shifts/my regression guard (DRIVER + PERSONEL)
   const myD = await requestJson("GET", "/api/shifts/my", { token: driverToken });
   if (!myD || !Array.isArray(myD.items)) throw new Error("❌ /api/shifts/my invalid (driver)");
 
@@ -341,27 +287,20 @@ async function main() {
     compWS.bag.eta = [];
   };
 
-  // 4) LIVE gps -> WS + DB mapping
+  // LIVE gps -> WS + DB mapping
   clearBags();
-  await requestJson("POST", "/api/gps", {
-    token: driverToken,
-    body: { vehicleId, lat: 41.0302, lng: 28.996, speed: 20 },
-  });
+  await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.0302, lng: 28.996, speed: 20 } });
 
   const gotDriverGps = await waitFor(() => driverWS.bag.gps.some((x) => x.vehicleId === vehicleId), 4000);
   const gotDriverVs = await waitFor(() => driverWS.bag.vstat.some((x) => x.vehicleId === vehicleId), 4000);
   if (!gotDriverGps || !gotDriverVs) throw new Error("❌ WS gps:update / vehicle:status missing (driver)");
 
   const gotRoomAny = await waitFor(
-    () =>
-      roomWS.bag.gps.some((x) => x.vehicleId === vehicleId) ||
-      roomWS.bag.vstat.some((x) => x.vehicleId === vehicleId),
+    () => roomWS.bag.gps.some((x) => x.vehicleId === vehicleId) || roomWS.bag.vstat.some((x) => x.vehicleId === vehicleId),
     4000
   );
   const gotCompAny = await waitFor(
-    () =>
-      compWS.bag.gps.some((x) => x.vehicleId === vehicleId) ||
-      compWS.bag.vstat.some((x) => x.vehicleId === vehicleId),
+    () => compWS.bag.gps.some((x) => x.vehicleId === vehicleId) || compWS.bag.vstat.some((x) => x.vehicleId === vehicleId),
     4000
   );
   if (!gotRoomAny) throw new Error("❌ WS update missing (room)");
@@ -375,10 +314,7 @@ async function main() {
   }
   console.log("✅ DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
 
-  // 5) overspeed -> notif (DB + WS) for DRIVER/ROOM/COMPANY
-  // Cooloff check before notification-heavy section (tam burada 429 alıyordun)
-  await cooloffIfRateLimited();
-
+  // overspeed -> notif (DB + WS)
   const d0 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
   const r0 = await requestJson("GET", "/api/notifications/my", { token: roomToken });
   const c0 = await requestJson("GET", "/api/notifications/my", { token: companyToken });
@@ -406,7 +342,7 @@ async function main() {
   if (!wsD || !wsR || !wsC) throw new Error("❌ WS notif:new missing for one of (driver/room/company)");
   console.log("✅ OVERSPEED notif (DB + WS) driver/room/company");
 
-  // 6) ETA http + eta:update ws
+  // ETA http + eta:update ws
   clearBags();
   const eta = await requestJson("GET", `/api/eta?vehicleId=${vehicleId}`, { token: driverToken });
   if (!eta || !Array.isArray(eta.stops)) throw new Error("❌ /api/eta invalid (stops[])");
@@ -420,7 +356,7 @@ async function main() {
   if (!gotEtaWs) throw new Error("❌ WS eta:update missing (driver)");
   console.log("✅ WS eta:update (driver)");
 
-  // 7) LIVE->STALE + dedupe
+  // LIVE->STALE + dedupe
   const baseD = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_STALE");
   const baseR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_STALE");
   const baseC = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_STALE");
@@ -442,7 +378,7 @@ async function main() {
   if (dS2 !== dS || rS2 !== rS || cS2 !== cS) throw new Error("❌ GPS_STALE dedupe failed");
   console.log("✅ GPS_STALE dedupe OK");
 
-  // 8) STALE->OFFLINE + dedupe
+  // STALE->OFFLINE + dedupe
   const baseDO = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_OFFLINE");
   const baseRO = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_OFFLINE");
   const baseCO = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_OFFLINE");
@@ -463,15 +399,12 @@ async function main() {
   if (dO2 !== dO || rO2 !== rO || cO2 !== cO) throw new Error("❌ GPS_OFFLINE dedupe failed");
   console.log("✅ GPS_OFFLINE dedupe OK");
 
-  // 9) OFFLINE->LIVE recovery
+  // OFFLINE->LIVE recovery
   const baseDR = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_RECOVERY");
   const baseRR = countKind(await requestJson("GET", "/api/notifications/my", { token: roomToken }), "GPS_RECOVERY");
   const baseCR = countKind(await requestJson("GET", "/api/notifications/my", { token: companyToken }), "GPS_RECOVERY");
 
-  await requestJson("POST", "/api/gps", {
-    token: driverToken,
-    body: { vehicleId, lat: 41.0304, lng: 28.9962, speed: 10 },
-  });
+  await requestJson("POST", "/api/gps", { token: driverToken, body: { vehicleId, lat: 41.0304, lng: 28.9962, speed: 10 } });
   await sleep(900);
 
   const dR = countKind(await requestJson("GET", "/api/notifications/my", { token: driverToken }), "GPS_RECOVERY");
@@ -483,7 +416,6 @@ async function main() {
   // cleanup
   await completeShiftBestEffort({ shiftId: harness.shiftId, driverToken });
 
-  // close sockets
   driverWS.sock.close();
   roomWS.sock.close();
   compWS.sock.close();

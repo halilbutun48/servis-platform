@@ -101,12 +101,22 @@ app.use(morgan("dev"));
 app.use(apiRequestLog());
 
 // M11: Rate limit
+// GreenPack deterministic gate için (dev/test only) header bazlı skip.
+// PROD'DA asla skip yok.
+const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
+const isProd = mode === "production";
+
 app.use(
   rateLimit({
     windowMs: ENV.RATE_LIMIT_WINDOW_MS,
     max: ENV.RATE_LIMIT_MAX,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => {
+      if (isProd) return false;
+      const gp = String(req.get("x-greenpack") || "").toLowerCase();
+      return gp === "1" || gp === "true";
+    },
   })
 );
 
