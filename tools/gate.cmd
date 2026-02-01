@@ -4,7 +4,7 @@ setlocal
 REM gate.ps1 wrapper that bypasses ExecutionPolicy (no signing required)
 REM Usage:
 REM   tools\gate.cmd
-REM   tools\gate.cmd -To 6
+REM   tools\gate.cmd -To 9
 
 pushd "%~dp0.." >nul
 

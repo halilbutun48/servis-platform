@@ -1,13 +1,12 @@
-# gate.ps1
+# tools/gate.ps1
 param(
   [ValidateRange(0,12)]
-  [int]$To = 9,                  # M0..M$To
+  [int]$To = 12,                 # ✅ default: M0..M12
 
   # Repo-relative defaults (portable)
   [string]$ComposeDir = (Join-Path $PSScriptRoot "..\infra"),
   [string]$RepoDir    = (Join-Path $PSScriptRoot ".."),
-  [string]$ApiService = "api",
-  [int]$SleepSec = 8
+  [string]$ApiService = "api"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,29 +16,25 @@ function Run($title, [scriptblock]$cmd) {
   $global:LASTEXITCODE = 0
   & $cmd
 
-  # cmdlet hataları
   if(-not $?) { throw "FAILED: $title" }
-
-  # external exe exit code
-  if($global:LASTEXITCODE -ne 0) {
-    throw "FAILED: $title (exit=$global:LASTEXITCODE)"
-  }
+  if($global:LASTEXITCODE -ne 0) { throw "FAILED: $title (exit=$global:LASTEXITCODE)" }
 }
 
 try {
-  # Normalize/resolve (helps if called from different working dirs)
+  # Resolve paths (works regardless of current working dir)
   $ComposeDir = (Resolve-Path $ComposeDir).Path
   $RepoDir    = (Resolve-Path $RepoDir).Path
 
   if(-not (Test-Path $ComposeDir)) { throw "ComposeDir not found: $ComposeDir" }
+  if(-not (Test-Path $RepoDir))    { throw "RepoDir not found: $RepoDir" }
+
   Set-Location $ComposeDir
 
   Run "docker compose up (api)" {
     docker compose up -d --build $ApiService
   }
 
-  # API container may need extra time for Prisma generate/db push before it starts listening.
-  # Instead of a single sleep, retry /health for a short window.
+  # Wait for /health
   $healthOk = $false
   for ($i = 0; $i -lt 30; $i++) {
     try {
@@ -53,41 +48,43 @@ try {
     } catch { }
     Start-Sleep -Seconds 2
   }
-  if (-not $healthOk) {
-    throw "FAILED: health (exit=52)"
-  }
+  if (-not $healthOk) { throw "FAILED: health (exit=52)" }
 
-  # M0..M9 her zaman listede
+  # Milestone checks (M0..M12) — ✅ single source
   $checks = @(
-    @{ n = 0; name="M0"; cmd="node scripts/m0check.js" },
-    @{ n = 1; name="M1"; cmd="node scripts/m1check.js" },
-    @{ n = 2; name="M2"; cmd="node scripts/m2check.js" },
-    @{ n = 3; name="M3"; cmd="node scripts/m3check.js" },
-    @{ n = 4; name="M4"; cmd="node scripts/m4check.js" },
-    @{ n = 5; name="M5"; cmd="node scripts/m5check.js" },
-    @{ n = 6; name="M6"; cmd="node scripts/m6check.js" },
-    @{ n = 7; name="M7"; cmd="node scripts/m7check.js" },
-    @{ n = 8; name="M8"; cmd="node scripts/m8check.js" },
-    @{ n = 9; name="M9"; cmd="node scripts/m9check.js" }
+    @{ n = 0;  name="M0";  cmd="node scripts/m0check.js"  },
+    @{ n = 1;  name="M1";  cmd="node scripts/m1check.js"  },
+    @{ n = 2;  name="M2";  cmd="node scripts/m2check.js"  },
+    @{ n = 3;  name="M3";  cmd="node scripts/m3check.js"  },
+    @{ n = 4;  name="M4";  cmd="node scripts/m4check.js"  },
+    @{ n = 5;  name="M5";  cmd="node scripts/m5check.js"  },
+    @{ n = 6;  name="M6";  cmd="node scripts/m6check.js"  },
+    @{ n = 7;  name="M7";  cmd="node scripts/m7check.js"  },
+    @{ n = 8;  name="M8";  cmd="node scripts/m8check.js"  },
+    @{ n = 9;  name="M9";  cmd="node scripts/m9check.js"  },
+    @{ n = 10; name="M10"; cmd="node scripts/m10check.js" },
+    @{ n = 11; name="M11"; cmd="node scripts/m11check.js" },
+    @{ n = 12; name="M12"; cmd="node scripts/m12check.js" }
   )
 
-  # M10..M12: sadece dosya varsa ekle (M9 tekrar eklenmesin diye10'den başlıyor)
-  foreach($n in 10..12){
-    $p = Join-Path $RepoDir ("backend\scripts\m{0}check.js" -f $n)
-    if(Test-Path $p){
-      $checks += @{ n = $n; name=("M{0}" -f $n); cmd=("node scripts/m{0}check.js" -f $n) }
+  # ✅ Only include checks that exist in the image (defensive)
+  $runList = @()
+  foreach ($c in $checks | Where-Object { $_.n -le $To } | Sort-Object n) {
+    $hostPath = Join-Path $RepoDir ("backend\scripts\m{0}check.js" -f $c.n)
+    if (Test-Path $hostPath) {
+      $runList += $c
+    } else {
+      Write-Host "ℹ️ skip $($c.name): file missing on host ($hostPath)" -ForegroundColor DarkYellow
     }
   }
 
-  $runList = $checks | Where-Object { $_.n -le $To } | Sort-Object n
-
-  foreach($c in $runList){
+  foreach ($c in $runList) {
     Run $c.name {
       docker compose exec -T $ApiService sh -lc $c.cmd
     }
   }
 
-  # Sonda: FULLCHECK sonra SMOKE (izolasyon daha iyi)
+  # Sonda: FULLCHECK sonra SMOKE
   Run "FULLCHECK" {
     docker compose exec -T $ApiService sh -lc "node scripts/fullcheck.js"
   }
