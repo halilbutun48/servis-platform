@@ -267,7 +267,7 @@ export function attachShiftRoomRoutes(r, io) {
     }
   );
 
-  // ROOM: send room-offer (vehicle suggestion) for company decision
+  // ROOM: send room-offer (vehicle/amount/note + optional notifyDriver) for company decision
   r.put(
     "/:id/room-offer",
     authRequired(),
@@ -275,31 +275,76 @@ export function attachShiftRoomRoutes(r, io) {
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId))
-          return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
 
         const body = validateWithZod(roomOfferSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot send room-offer while shift is ACTIVE" });
+          return res.status(400).json({ error: "Cannot send room-offer while shift is ACTIVE" });
         }
 
-        const roomOfferVehicleId = body.roomOfferVehicleId
-          ? Number(body.roomOfferVehicleId)
-          : null;
-        if (body.roomOfferVehicleId && !Number.isFinite(roomOfferVehicleId)) {
-          return res.status(400).json({ error: "roomOfferVehicleId invalid" });
+        // Keep backward-compat: fields can be omitted (undefined), provided as null, or provided as value
+        const hasVehicle = Object.prototype.hasOwnProperty.call(body, "roomOfferVehicleId");
+        const hasAmount = Object.prototype.hasOwnProperty.call(body, "roomOfferAmount");
+        const hasNote = Object.prototype.hasOwnProperty.call(body, "roomOfferNote");
+        const hasDriverNote = Object.prototype.hasOwnProperty.call(body, "driverNote");
+
+        const roomOfferVehicleId = hasVehicle ? (body.roomOfferVehicleId ?? null) : undefined;
+        const roomOfferAmount = hasAmount ? (body.roomOfferAmount ?? null) : undefined;
+        const roomOfferNote = hasNote ? (body.roomOfferNote ?? null) : undefined;
+
+        const notifyDriver = Boolean(body.notifyDriver);
+        const driverNote = hasDriverNote ? (body.driverNote ?? null) : undefined;
+
+        let roomOfferToDriver = false;
+
+        // notifyDriver true ise: araç zorunlu + aynı room + araçta driver bağlı olmalı
+        if (notifyDriver) {
+          if (roomOfferVehicleId == null) {
+            return res.status(400).json({
+              error: "notifyDriver requires roomOfferVehicleId",
+              code: "MISSING_ROOM_OFFER_VEHICLE",
+            });
+          }
+
+          const v = await prisma.vehicle.findUnique({
+            where: { id: Number(roomOfferVehicleId) },
+            select: { id: true, roomId: true, driverId: true },
+          });
+          if (!v) return res.status(400).json({ error: "roomOfferVehicleId not found" });
+
+          if (shift.roomId && v.roomId && Number(v.roomId) !== Number(shift.roomId)) {
+            return res.status(400).json({ error: "roomOfferVehicleId must belong to the same room" });
+          }
+
+          if (!v.driverId) {
+            return res.status(400).json({
+              error: "Vehicle has no bound driver",
+              code: "VEHICLE_DRIVER_NOT_BOUND",
+            });
+          }
+
+          roomOfferToDriver = true;
         }
+
+        const data = {
+          ...(roomOfferVehicleId !== undefined ? { roomOfferVehicleId } : {}),
+          ...(roomOfferAmount !== undefined ? { roomOfferAmount } : {}),
+          ...(roomOfferNote !== undefined ? { roomOfferNote } : {}),
+
+          roomOfferToDriver,
+          roomOfferDriverNote: roomOfferToDriver ? (driverNote ?? null) : null,
+
+          // yeni teklif → karar sürecini resetle
+          roomOfferDecision: "PENDING",
+          roomOfferDecisionAt: null,
+          roomOfferDecisionNote: null,
+        };
 
         const updated = await prisma.shift.update({
           where: { id: shiftId },
-          data: {
-            roomOfferVehicleId,
-            roomOfferDecision: "PENDING",
-          },
+          data,
           include: {
             stops: { orderBy: { order: "asc" } },
             progress: true,
@@ -314,18 +359,22 @@ export function attachShiftRoomRoutes(r, io) {
           action: "SHIFT_ROOM_OFFER",
           entity: "Shift",
           entityId: updated.id,
-          meta: { roomOfferVehicleId },
+          meta: {
+            roomOfferVehicleId: roomOfferVehicleId ?? null,
+            roomOfferAmount: roomOfferAmount ?? null,
+            roomOfferToDriver,
+          },
         });
 
         emitShift(io, updated, "shift:update");
+        emitShift(io, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );
+
 
   // ROOM: start shift (status ACTIVE)
   r.post(

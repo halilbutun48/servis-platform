@@ -1,16 +1,13 @@
+// backend/src/routes/shifts/shared.js
 import prisma from "../../prisma.js";
 import { authRequired, requireRole } from "../../auth/middleware.js";
 
-// NOTE: Avoid named-importing helpers.
-// Named imports can fail hard at module-load time in some environments (stale bind-mounts / mixed builds),
-// crashing the API before it even starts. Using a namespace import keeps startup resilient.
+// NOTE: Avoid named-importing helpers (stale mount risk).
 import * as H from "./helpers.js";
 
 const buildShiftsWhereFromQuery =
   H.buildShiftsWhereFromQuery ??
   function buildShiftsWhereFromQueryFallback(q = {}, user) {
-    // Minimal fallback: keep list endpoint usable if a stale helpers.js is mounted.
-    // Mirrors the canonical helper behaviour closely enough for gate scripts.
     const where = {};
 
     // Scope
@@ -43,7 +40,6 @@ const buildShiftsWhereFromQuery =
       where.OR = [
         { routeName: { contains: s, mode: "insensitive" } },
         { vehicle: { plate: { contains: s, mode: "insensitive" } } },
-        // Driver model uses `fullName` (not `name`)
         { driver: { fullName: { contains: s, mode: "insensitive" } } },
       ];
     }
@@ -53,7 +49,6 @@ const buildShiftsWhereFromQuery =
 
 const getDriverIdOrThrow = H.getDriverIdOrThrow;
 const getPersonelIdOrThrow = H.getPersonelIdOrThrow;
-const getMyShiftPayload = H.getMyShiftPayload;
 
 // Shared endpoints: list, my, detail
 export function attachShiftSharedRoutes(r) {
@@ -64,22 +59,29 @@ export function attachShiftSharedRoutes(r) {
     authRequired(),
     requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
-      const where = buildShiftsWhereFromQuery(req.query, req.user);
-      const take = Math.min(Number(req.query.take ?? 200), 500);
-      const items = await prisma.shift.findMany({
-        where,
-        orderBy: { startAt: "desc" },
-        take: Number.isFinite(take) ? take : 200,
-        include: {
-          company: { select: { id: true, name: true } },
-          room: { select: { id: true, name: true } },
-          // Driver model uses `fullName` (not `name`)
-          driver: { select: { id: true, fullName: true, phone: true } },
-          vehicle: { select: { id: true, plate: true, status: true } },
-          stops: { orderBy: { order: "asc" } },
-        },
-      });
-      return res.json({ items });
+      try {
+        const where = buildShiftsWhereFromQuery(req.query, req.user);
+        const take = Math.min(Number(req.query.take ?? 200), 500);
+
+        const items = await prisma.shift.findMany({
+          where,
+          orderBy: { startAt: "desc" },
+          take: Number.isFinite(take) ? take : 200,
+          include: {
+            company: { select: { id: true, name: true } },
+            room: { select: { id: true, name: true } },
+            driver: { select: { id: true, fullName: true, phone: true } },
+            vehicle: { select: { id: true, plate: true, status: true } },
+            stops: { orderBy: { order: "asc" } },
+          },
+        });
+
+        // IMPORTANT:
+        // Prisma include => shift scalar alanlar (roomOffer*, companyOffer*, vb) otomatik gelir.
+        return res.json({ items });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      }
     }
   );
 
@@ -114,7 +116,6 @@ export function attachShiftSharedRoutes(r) {
 
         if (req.user.role === "PERSONEL") {
           const personelId = await getPersonelIdOrThrow(req.user);
-          // personel: latest shift where the personel has an OPEN/ACCEPTED request
           const latestReq = await prisma.pickupRequest.findFirst({
             where: { personelId, status: { in: ["OPEN", "ACCEPTED"] } },
             orderBy: { createdAt: "desc" },
@@ -135,67 +136,63 @@ export function attachShiftSharedRoutes(r) {
           }
         }
 
-        // IMPORTANT: return a stable shape for gate scripts.
-        // The gate expects `{ items: [...] }`.
         if (!shift) return res.json({ items: [] });
         return res.json({ items: [shift] });
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );
 
-  // =======================
   // Shift detail (include stops)
-  // =======================
   r.get(
     "/:id(\\d+)",
     authRequired(),
     requireRole("ROOM", "COMPANY", "DRIVER", "SUPER_ADMIN"),
     async (req, res) => {
-      const id = Number(req.params.id);
+      try {
+        const id = Number(req.params.id);
 
-      const shift = await prisma.shift.findUnique({
-        where: { id },
-        include: {
-          stops: { orderBy: { order: "asc" } },
-          progress: true,
-          vehicle: true,
-          driver: true,
-          company: true,
-          room: true,
-        },
-      });
-
-      if (!shift) return res.status(404).json({ error: "Shift not found" });
-
-      // scope check
-      if (req.user.role === "ROOM") {
-        if (!req.user.roomId || req.user.roomId !== shift.roomId) {
-          return res.status(403).json({ error: "Forbidden" });
-        }
-      }
-
-      if (req.user.role === "COMPANY") {
-        if (!req.user.companyId || req.user.companyId !== shift.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
-        }
-      }
-
-      if (req.user.role === "DRIVER") {
-        const driver = await prisma.driver.findFirst({
-          where: { userId: req.user.id },
-          select: { id: true },
+        const shift = await prisma.shift.findUnique({
+          where: { id },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: true,
+            company: true,
+            room: true,
+          },
         });
-        if (!driver)
-          return res.status(400).json({ error: "Driver profile missing" });
-        if (shift.driverId !== driver.id)
-          return res.status(403).json({ error: "Forbidden" });
-      }
 
-      return res.json(shift);
+        if (!shift) return res.status(404).json({ error: "Shift not found" });
+
+        // scope check
+        if (req.user.role === "ROOM") {
+          if (!req.user.roomId || req.user.roomId !== shift.roomId) {
+            return res.status(403).json({ error: "Forbidden" });
+          }
+        }
+
+        if (req.user.role === "COMPANY") {
+          if (!req.user.companyId || req.user.companyId !== shift.companyId) {
+            return res.status(403).json({ error: "Forbidden" });
+          }
+        }
+
+        if (req.user.role === "DRIVER") {
+          const driver = await prisma.driver.findFirst({
+            where: { userId: req.user.id },
+            select: { id: true },
+          });
+          if (!driver) return res.status(400).json({ error: "Driver profile missing" });
+          if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+        }
+
+        return res.json(shift);
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      }
     }
   );
 }

@@ -1,8 +1,8 @@
+// backend/src/routes/shifts/company.js
 import prisma from "../../prisma.js";
 import { authRequired, requireRole } from "../../auth/middleware.js";
 import { validateWithZod } from "../../z.js";
 import { audit } from "../../audit.js";
-
 import { createNotification } from "../../notifications/service.js";
 
 import {
@@ -24,7 +24,7 @@ const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 
 // Company-focused endpoints (some are also allowed for ROOM/SUPER_ADMIN)
 export function attachShiftCompanyRoutes(r, io) {
-  // COMPANY/SUPER_ADMIN: create shift (REQUESTED or DRAFT)
+  // COMPANY/SUPER_ADMIN: create shift
   r.post(
     "/",
     authRequired(),
@@ -33,23 +33,48 @@ export function attachShiftCompanyRoutes(r, io) {
       try {
         const body = validateWithZod(createShiftSchema, req.body);
 
-
         // Scope:
         // - COMPANY: companyId body'de zorunlu değil; token'dan alınır.
         // - SUPER_ADMIN: companyId body'de zorunludur.
-        // Ayrıca COMPANY rolünde body.companyId gönderilse bile güvenlik için yok sayılır.
         const effectiveCompanyId =
           req.user.role === "COMPANY" ? req.user.companyId : body.companyId;
-        if (!effectiveCompanyId)
+
+        if (!effectiveCompanyId) {
           return res.status(400).json({ error: "companyId required" });
+        }
+
+        // ✅ COMPANY her zaman REQUESTED üretir
+        const effectiveStatus =
+          req.user.role === "COMPANY" ? "REQUESTED" : body.status ?? "DRAFT";
+
+        // Optional: companyOfferVehicleId verildiyse araç var mı ve aynı room mu?
+        if (body.companyOfferVehicleId != null) {
+          const v = await prisma.vehicle.findUnique({
+            where: { id: body.companyOfferVehicleId },
+            select: { id: true, roomId: true },
+          });
+          if (!v) {
+            return res.status(400).json({ error: "companyOfferVehicleId not found" });
+          }
+          if (v.roomId && body.roomId && Number(v.roomId) !== Number(body.roomId)) {
+            return res
+              .status(400)
+              .json({ error: "companyOfferVehicleId must belong to the same room" });
+          }
+        }
 
         const shift = await prisma.shift.create({
           data: {
-	            companyId: effectiveCompanyId,
+            companyId: effectiveCompanyId,
             roomId: body.roomId,
             startAt: body.startAt,
             endAt: body.endAt,
-            status: body.status,
+
+            status: effectiveStatus,
+
+            companyOfferVehicleId: body.companyOfferVehicleId ?? null,
+            companyOfferAmount: body.companyOfferAmount ?? null,
+            companyOfferNote: body.companyOfferNote ?? null,
           },
           include: { company: true, room: true, stops: true },
         });
@@ -84,7 +109,7 @@ export function attachShiftCompanyRoutes(r, io) {
           action: "SHIFT_CREATE",
           entity: "Shift",
           entityId: shift.id,
-          meta: { status: shift.status },
+          meta: { status: effectiveStatus },
         });
 
         emitShift(io, full, "shift:list");
@@ -105,15 +130,15 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id))
-          return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
 
         const body = validateWithZod(updateShiftSchema, req.body);
 
         const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
-        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId)
+        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
           return res.status(403).json({ error: "Forbidden" });
+        }
 
         const updated = await prisma.shift.update({
           where: { id },
@@ -148,7 +173,7 @@ export function attachShiftCompanyRoutes(r, io) {
     }
   );
 
-  // COMPANY/SUPER_ADMIN: set company offer metadata (optional)
+  // COMPANY/SUPER_ADMIN: update company offer fields (vehicle/amount/note)
   r.put(
     "/:id/company-offer",
     authRequired(),
@@ -156,20 +181,39 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id))
-          return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
 
         const body = validateWithZod(updateCompanyOfferSchema, req.body);
 
         const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
-        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId)
+        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
           return res.status(403).json({ error: "Forbidden" });
+        }
+
+        // only allow negotiate in DRAFT/REQUESTED (optional rule)
+        if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
+          return res.status(400).json({ error: `Offer not allowed for status=${shift.status}` });
+        }
+
+        if (body.companyOfferVehicleId != null) {
+          const v = await prisma.vehicle.findUnique({
+            where: { id: body.companyOfferVehicleId },
+            select: { id: true, roomId: true },
+          });
+          if (!v) return res.status(400).json({ error: "companyOfferVehicleId not found" });
+          if (v.roomId && shift.roomId && Number(v.roomId) !== Number(shift.roomId)) {
+            return res.status(400).json({
+              error: "companyOfferVehicleId must belong to the same room",
+            });
+          }
+        }
 
         const updated = await prisma.shift.update({
           where: { id },
           data: {
-            companyOfferStatus: body.status,
-            companyOfferMeta: body.meta ?? undefined,
+            companyOfferVehicleId: body.companyOfferVehicleId ?? null,
+            companyOfferAmount: body.companyOfferAmount ?? null,
+            companyOfferNote: body.companyOfferNote ?? null,
           },
           include: {
             stops: { orderBy: { order: "asc" } },
@@ -185,7 +229,6 @@ export function attachShiftCompanyRoutes(r, io) {
           action: "SHIFT_COMPANY_OFFER",
           entity: "Shift",
           entityId: id,
-          meta: { status: body.status },
         });
 
         emitShift(io, updated, "shift:list");
@@ -198,7 +241,7 @@ export function attachShiftCompanyRoutes(r, io) {
     }
   );
 
-  // COMPANY/SUPER_ADMIN: company decides on room offer (APPROVE/REJECT)
+  // COMPANY/SUPER_ADMIN: company decides on room offer (ACCEPTED/REJECTED) + optional note
   r.put(
     "/:id/room-offer-decision",
     authRequired(),
@@ -206,20 +249,21 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id))
-          return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
 
         const body = validateWithZod(updateRoomOfferDecisionSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
-        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId)
+        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
           return res.status(403).json({ error: "Forbidden" });
+        }
 
         const updated = await prisma.shift.update({
           where: { id },
           data: {
             roomOfferDecision: body.decision,
             roomOfferDecisionAt: new Date(),
+            roomOfferDecisionNote: body.note ?? null,
           },
           include: {
             stops: { orderBy: { order: "asc" } },
@@ -262,7 +306,8 @@ export function attachShiftCompanyRoutes(r, io) {
     }
   );
 
-  // COMPANY: add stop
+  // --- stops endpoints (aynen) ---
+
   r.post(
     "/:id/stops",
     authRequired(),
@@ -270,16 +315,13 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId))
-          return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
 
         const body = validateWithZod(addStopSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot add stop while shift is ACTIVE" });
+          return res.status(400).json({ error: "Cannot add stop while shift is ACTIVE" });
         }
 
         const maxAgg = await prisma.stop.aggregate({
@@ -321,14 +363,11 @@ export function attachShiftCompanyRoutes(r, io) {
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, stop, shift: full });
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );
 
-  // COMPANY: update stop
   r.put(
     "/:id/stops/:stopId(\\d+)",
     authRequired(),
@@ -337,21 +376,19 @@ export function attachShiftCompanyRoutes(r, io) {
       try {
         const shiftId = Number(req.params.id);
         const stopId = Number(req.params.stopId);
-        if (!Number.isFinite(shiftId) || !Number.isFinite(stopId))
+        if (!Number.isFinite(shiftId) || !Number.isFinite(stopId)) {
           return res.status(400).json({ error: "bad ids" });
+        }
 
         const body = validateWithZod(updateStopSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot update stop while shift is ACTIVE" });
+          return res.status(400).json({ error: "Cannot update stop while shift is ACTIVE" });
         }
 
         const stop = await prisma.stop.findUnique({ where: { id: stopId } });
-        if (!stop || stop.shiftId !== shiftId)
-          return res.status(404).json({ error: "Stop not found" });
+        if (!stop || stop.shiftId !== shiftId) return res.status(404).json({ error: "Stop not found" });
 
         const updatedStop = await prisma.stop.update({
           where: { id: stopId },
@@ -386,14 +423,11 @@ export function attachShiftCompanyRoutes(r, io) {
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, stop: updatedStop, shift: full });
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );
 
-  // COMPANY: delete stop
   r.delete(
     "/:id/stops/:stopId(\\d+)",
     authRequired(),
@@ -402,20 +436,18 @@ export function attachShiftCompanyRoutes(r, io) {
       try {
         const shiftId = Number(req.params.id);
         const stopId = Number(req.params.stopId);
-        if (!Number.isFinite(shiftId) || !Number.isFinite(stopId))
+        if (!Number.isFinite(shiftId) || !Number.isFinite(stopId)) {
           return res.status(400).json({ error: "bad ids" });
+        }
 
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot delete stop while shift is ACTIVE" });
+          return res.status(400).json({ error: "Cannot delete stop while shift is ACTIVE" });
         }
 
         const stop = await prisma.stop.findUnique({ where: { id: stopId } });
-        if (!stop || stop.shiftId !== shiftId)
-          return res.status(404).json({ error: "Stop not found" });
+        if (!stop || stop.shiftId !== shiftId) return res.status(404).json({ error: "Stop not found" });
 
         await prisma.stop.delete({ where: { id: stopId } });
 
@@ -441,14 +473,11 @@ export function attachShiftCompanyRoutes(r, io) {
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, shift: full });
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );
 
-  // COMPANY/ROOM: apply template to stops (REPLACE or APPEND)
   r.post(
     "/:id/stops/from-template",
     authRequired(),
@@ -456,15 +485,12 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId))
-          return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
 
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot add stops while shift is ACTIVE" });
+          return res.status(400).json({ error: "Cannot add stops while shift is ACTIVE" });
         }
 
         const body = validateWithZod(applyTemplateSchema, req.body);
@@ -475,30 +501,22 @@ export function attachShiftCompanyRoutes(r, io) {
         });
         if (!tpl) return res.status(404).json({ error: "Template not found" });
 
-        // scope: ROOM must match template.roomId, COMPANY must match template.companyId (if any)
         if (req.user.role === "ROOM") {
-          if (tpl.roomId && tpl.roomId !== req.user.roomId)
-            return res.status(403).json({ error: "Forbidden" });
+          if (tpl.roomId && tpl.roomId !== req.user.roomId) return res.status(403).json({ error: "Forbidden" });
         }
         if (req.user.role === "COMPANY") {
-          if (tpl.companyId && tpl.companyId !== req.user.companyId)
-            return res.status(403).json({ error: "Forbidden" });
+          if (tpl.companyId && tpl.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
         }
 
-        // mode: REPLACE removes all existing stops (including dummy), APPEND keeps them.
         const mode = body.mode ?? "REPLACE";
 
         let baseOrder = 1;
         if (mode === "REPLACE") {
           await prisma.stop.deleteMany({ where: { shiftId } });
-          // If progress exists (rare here), reset it since stop orders changed.
           await prisma.shiftProgress.deleteMany({ where: { shiftId } });
           baseOrder = 1;
         } else {
-          const maxAgg = await prisma.stop.aggregate({
-            where: { shiftId },
-            _max: { order: true },
-          });
+          const maxAgg = await prisma.stop.aggregate({ where: { shiftId }, _max: { order: true } });
           baseOrder = (maxAgg?._max?.order ?? 0) + 1;
         }
 
@@ -507,14 +525,11 @@ export function attachShiftCompanyRoutes(r, io) {
           name: s.name,
           lat: s.lat,
           lng: s.lng,
-          // RouteTemplateStop has a DB default (COMMON) but ensure we never pass undefined
           type: s.type ?? "COMMON",
           order: baseOrder + idx,
         }));
 
-        if (data.length) {
-          await prisma.stop.createMany({ data });
-        }
+        if (data.length) await prisma.stop.createMany({ data });
 
         await audit(req, {
           action: "SHIFT_STOPS_FROM_TEMPLATE",
@@ -538,14 +553,11 @@ export function attachShiftCompanyRoutes(r, io) {
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, shift: full });
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );
 
-  // COMPANY/ROOM: reorder stops (full list of stop ids)
   r.put(
     "/:id/stops/reorder",
     authRequired(),
@@ -553,22 +565,15 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId))
-          return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
 
         const body = validateWithZod(reorderStopsSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot reorder stops while shift is ACTIVE" });
+          return res.status(400).json({ error: "Cannot reorder stops while shift is ACTIVE" });
         }
 
-                // Accept multiple payload styles:
-        // - { idsInOrder: [stopId, ...] }  (preferred; used by scripts)
-        // - { stopIds: [stopId, ...] }     (legacy)
-        // - { orders: [{ id|stopId, order }, ...] } (alternative)
         let stopIds = [];
         if (Array.isArray(body.idsInOrder) && body.idsInOrder.length) {
           stopIds = body.idsInOrder;
@@ -583,26 +588,19 @@ export function attachShiftCompanyRoutes(r, io) {
         }
 
         stopIds = stopIds.map((x) => Number(x)).filter(Number.isFinite);
-        if (!stopIds.length)
-          return res.status(400).json({ error: "stopIds required" });
+        if (!stopIds.length) return res.status(400).json({ error: "stopIds required" });
 
-        // Require a full list (no partial reorder)
         const totalStops = await prisma.stop.count({ where: { shiftId } });
-        if (totalStops !== stopIds.length)
-          return res.status(400).json({ error: "Stop ids mismatch" });
+        if (totalStops !== stopIds.length) return res.status(400).json({ error: "Stop ids mismatch" });
 
         const stops = await prisma.stop.findMany({
           where: { shiftId, id: { in: stopIds } },
           select: { id: true },
         });
-        if (stops.length !== stopIds.length)
-          return res.status(400).json({ error: "Stop ids mismatch" });
+        if (stops.length !== stopIds.length) return res.status(400).json({ error: "Stop ids mismatch" });
 
-        // update sequential order
         await prisma.$transaction(
-          stopIds.map((id, idx) =>
-            prisma.stop.update({ where: { id }, data: { order: idx + 1 } })
-          )
+          stopIds.map((id, idx) => prisma.stop.update({ where: { id }, data: { order: idx + 1 } }))
         );
 
         await audit(req, {
@@ -627,9 +625,7 @@ export function attachShiftCompanyRoutes(r, io) {
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, shift: full });
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );

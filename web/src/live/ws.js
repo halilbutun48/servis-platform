@@ -1,18 +1,43 @@
 // web/src/live/ws.js
+import { io } from "socket.io-client";
 import { invalidate } from "./bus";
 
-let ws = null;
+let socket = null;
 let reconnectTimer = null;
 let backoffMs = 500;
+
 let tokenRef = null;
 let started = false;
 
-function defaultWsUrl() {
-  const fromEnv = import.meta.env.VITE_WS_URL;
-  if (fromEnv) return String(fromEnv);
+// Dedupe cache: key -> lastTimestampMs
+const lastSig = new Map();
+const DEDUPE_TTL_MS = 10_000; // aynı status 10 sn içinde tekrar gelirse invalidate etme
+const MAX_SIG_SIZE = 400;
 
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${proto}//${window.location.host}/ws`; // backend path /ws değilse değiştir
+function nowMs() {
+  return Date.now();
+}
+
+function normalizeBaseUrl(u) {
+  const s = String(u || "").trim();
+  if (!s) return null;
+
+  // socket.io için http(s) base ister; ws/wss gelirse dönüştür
+  if (s.startsWith("ws://")) return "http://" + s.slice("ws://".length);
+  if (s.startsWith("wss://")) return "https://" + s.slice("wss://".length);
+
+  return s;
+}
+
+function defaultSocketBase() {
+  // Öncelik: VITE_WS_URL -> VITE_API_URL -> window.origin
+  const fromWs = normalizeBaseUrl(import.meta.env.VITE_WS_URL);
+  if (fromWs) return fromWs;
+
+  const fromApi = normalizeBaseUrl(import.meta.env.VITE_API_URL);
+  if (fromApi) return fromApi;
+
+  return window.location.origin;
 }
 
 function safeJsonParse(s) {
@@ -27,17 +52,27 @@ function toText(x) {
   return String(x ?? "").toLowerCase();
 }
 
-function normalizeMsg(rawText) {
-  const parsed = safeJsonParse(rawText);
+// payload’ı normalize edip "kind" üret (eventName bazlı)
+function normalizeEvent(eventName, payload) {
+  if (typeof payload === "string") {
+    const parsed = safeJsonParse(payload);
+    if (parsed && typeof parsed === "object") {
+      return { kind: eventName, ...parsed };
+    }
+    if (typeof parsed === "string") {
+      return { kind: parsed };
+    }
+    return { kind: eventName, data: payload };
+  }
 
-  // ✅ JSON string gelirse: "shift:..." -> { kind: "shift:..." }
-  if (typeof parsed === "string") return { kind: parsed };
+  if (payload && typeof payload === "object") {
+    if (!payload.kind && !payload.type && !payload.event && !payload.name) {
+      return { kind: eventName, ...payload };
+    }
+    return payload;
+  }
 
-  // ✅ object gelirse aynen kullan
-  if (parsed && typeof parsed === "object") return parsed;
-
-  // ✅ JSON değilse raw text üzerinden çalış
-  return { kind: "raw", data: rawText };
+  return { kind: eventName, data: payload };
 }
 
 function guessTopics(msg) {
@@ -53,14 +88,54 @@ function guessTopics(msg) {
   if (raw.includes("room")) topics.add("rooms");
   if (raw.includes("notif")) topics.add("notifications");
 
-  if (topic === "shifts" || topic === "vehicles" || topic === "drivers" || topic === "rooms" || topic === "notifications") {
+  if (
+    topic === "shifts" ||
+    topic === "vehicles" ||
+    topic === "drivers" ||
+    topic === "rooms" ||
+    topic === "notifications"
+  ) {
     topics.add(topic);
   }
 
   return Array.from(topics);
 }
 
+function pruneSigMap() {
+  if (lastSig.size <= MAX_SIG_SIZE) return;
+  // en eskileri at (basit yaklaşım)
+  const entries = Array.from(lastSig.entries()).sort((a, b) => a[1] - b[1]);
+  const removeCount = Math.max(50, Math.floor(entries.length * 0.25));
+  for (let i = 0; i < removeCount; i++) lastSig.delete(entries[i][0]);
+}
+
+function shouldInvalidate(msg, topics) {
+  if (!topics || topics.length === 0) return false;
+
+  const kind = String(msg?.kind || msg?.type || msg?.event || msg?.name || "");
+  if (!kind) return true;
+
+  // ⚠️ En kritik spam: vehicle:status (ageSec artıyor ama status aynı)
+  if (kind === "vehicle:status") {
+    const vid = Number(msg?.vehicleId);
+    const st = String(msg?.status || "");
+    if (Number.isFinite(vid) && st) {
+      const key = `vehicle:status:${vid}:${st}`;
+      const t = nowMs();
+      const prev = lastSig.get(key) || 0;
+      if (t - prev < DEDUPE_TTL_MS) return false;
+      lastSig.set(key, t);
+      pruneSigMap();
+      return true;
+    }
+  }
+
+  // Diğer event’lerde dedupe uygulamıyoruz (riskli olur).
+  return true;
+}
+
 function scheduleReconnect() {
+  if (!started) return;
   if (reconnectTimer) return;
 
   reconnectTimer = window.setTimeout(() => {
@@ -71,58 +146,99 @@ function scheduleReconnect() {
   backoffMs = Math.min(backoffMs * 2, 8000);
 }
 
-function closeWs() {
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function closeSocket() {
   try {
-    ws?.close?.();
+    socket?.offAny?.();
+    socket?.removeAllListeners?.();
+    socket?.disconnect?.();
   } catch {}
-  ws = null;
+  socket = null;
 }
 
 function connect() {
   if (!started) return;
+  if (!tokenRef) return; // ✅ token yoksa bağlanma
 
-  const base = defaultWsUrl();
-  const u = new URL(base, window.location.origin);
+  const base = defaultSocketBase();
 
-  // backend query token destekliyorsa iş görür; desteklemiyorsa ignore eder
-  if (tokenRef) u.searchParams.set("token", tokenRef);
-
-  closeWs();
+  clearReconnectTimer();
+  closeSocket();
 
   try {
-    ws = new WebSocket(u.toString());
-  } catch {
+    socket = io(base, {
+      path: "/socket.io",
+      transports: ["websocket"],
+      reconnection: false,
+
+      // backend hangisini destekliyorsa
+      auth: { token: tokenRef },
+      query: { token: tokenRef },
+    });
+  } catch (e) {
+    console.debug("[ws] create failed:", e);
     scheduleReconnect();
     return;
   }
 
-  ws.onopen = () => {
+  socket.on("connect", () => {
     backoffMs = 500;
-    console.debug("[ws] connected");
-  };
+    console.debug("[ws] connected", socket.id);
+  });
 
-  ws.onclose = () => {
-    console.debug("[ws] closed -> reconnect");
+  socket.on("disconnect", (reason) => {
+    console.debug("[ws] disconnected:", reason, "-> reconnect");
     scheduleReconnect();
-  };
+  });
 
-  ws.onmessage = (ev) => {
-    const text = String(ev?.data ?? "");
-    const msg = normalizeMsg(text);
+  socket.on("connect_error", (err) => {
+    console.debug("[ws] connect_error:", err?.message || err, "-> reconnect");
+    scheduleReconnect();
+  });
 
+  socket.onAny((eventName, payload) => {
+    const msg = normalizeEvent(eventName, payload);
     const topics = guessTopics(msg);
+
+    if (!shouldInvalidate(msg, topics)) return;
 
     for (const t of topics) {
       invalidate(t, { source: "ws", msg });
     }
 
     if (topics.length) console.debug("[ws] invalidate:", topics, msg);
-  };
+  });
+
+  // Bazı server’lar "message" ile string atabilir
+  socket.on("message", (payload) => {
+    const msg = normalizeEvent("message", payload);
+    const topics = guessTopics(msg);
+
+    if (!shouldInvalidate(msg, topics)) return;
+
+    for (const t of topics) {
+      invalidate(t, { source: "ws", msg });
+    }
+
+    if (topics.length) console.debug("[ws] invalidate(message):", topics, msg);
+  });
 }
 
 export function startLiveWs(token) {
+  const t = token ? String(token) : null;
+  if (!t) return; // ✅ token yoksa WS yok
+
+  // ✅ aynı token ile ikinci kez çağrılırsa tekrar connect etme
+  if (started && tokenRef === t && socket?.connected) return;
+
   started = true;
-  tokenRef = token ? String(token) : null;
+  tokenRef = t;
   connect();
 }
 
@@ -130,9 +246,6 @@ export function stopLiveWs() {
   started = false;
   tokenRef = null;
 
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
-  closeWs();
+  clearReconnectTimer();
+  closeSocket();
 }

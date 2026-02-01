@@ -17,12 +17,22 @@ export default defineConfig({
     },
 
     proxy: {
+      // REST API
       "/api": {
         target: "http://127.0.0.1:3000",
         changeOrigin: true,
       },
+
+      // Socket.IO (web/src/live/ws.js bunu kullanır)
       "/socket.io": {
         target: "http://127.0.0.1:3000",
+        ws: true,
+        changeOrigin: true,
+      },
+
+      // Eğer backend'de raw WebSocket endpoint'i varsa (örn: /ws)
+      "/ws": {
+        target: "ws://127.0.0.1:3000",
         ws: true,
         changeOrigin: true,
       },

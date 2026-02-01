@@ -1,18 +1,25 @@
 // web/src/socket.js
-import { io } from "socket.io-client";
+// DEPRECATED: Tek kaynak WS artık web/src/live/ws.js
+// Bu dosya eskiden ikinci bir Socket.IO bağlantısı açıyordu ve event'leri 2x yapıyordu.
+// Şimdilik geriye dönük uyumluluk için NO-OP bıraktık.
 
 export function connectSocket(token) {
-  const s = io("/", {
-    path: "/socket.io",
-    transports: ["websocket"],
-    auth: { token },
-    reconnection: true,
-  });
+  // Eski çağrıları kırmamak için dummy nesne dönüyoruz.
+  // Nereden çağrıldığını yakalamak için uyarı basıyoruz.
+  console.warn(
+    "[socket.js] connectSocket() is deprecated. Use startLiveWs(token) from web/src/live/ws.js instead.",
+    { hasToken: Boolean(token) }
+  );
 
-  // sadece bağlantı logları
-  s.on("connect", () => console.log("WS CONNECTED", s.id));
-  s.on("disconnect", (r) => console.log("WS DISCONNECTED", r));
-  s.on("connect_error", (e) => console.log("WS ERROR", e?.message || e));
-
-  return s;
+  // Socket.IO benzeri minimal API (kırılmayı önler)
+  return {
+    id: null,
+    connected: false,
+    on() {},
+    off() {},
+    onAny() {},
+    offAny() {},
+    removeAllListeners() {},
+    disconnect() {},
+  };
 }
