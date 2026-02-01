@@ -66,20 +66,112 @@ function countKind(items, kind, vehicleId) {
   return c;
 }
 
-async function waitForKindAllScopes({ kind, vehicleId, tokens, timeoutMs = 45_000, stepMs = 1500, label = "" }) {
+function tsOf(n) {
+  const c =
+    n?.createdAt ??
+    n?.created_at ??
+    n?.created ??
+    n?.ts ??
+    n?.at ??
+    null;
+
+  if (!c) return 0;
+  const t = Date.parse(String(c));
+  return Number.isFinite(t) ? t : 0;
+}
+
+function markerFor(items, kind, vehicleId) {
+  // Prefer numeric id (stable for “new row”), else fall back to createdAt-like timestamp.
+  const K = upper(kind);
+  let maxId = 0;
+  let maxTs = 0;
+  let hasId = false;
+
+  for (const n of items ?? []) {
+    const p = payloadOf(n);
+    if (!p) continue;
+    if (upper(p?.kind) !== K) continue;
+    if (!matchVehicle(p, vehicleId)) continue;
+
+    const idNum = Number(n?.id);
+    if (Number.isFinite(idNum) && idNum > 0) {
+      hasId = true;
+      if (idNum > maxId) maxId = idNum;
+    } else {
+      const t = tsOf(n);
+      if (t > maxTs) maxTs = t;
+    }
+  }
+
+  return hasId ? maxId : maxTs; // 0 olabilir
+}
+
+async function snapScope(token, kind, vehicleId) {
+  const s = await listNotifs(token);
+  return {
+    ok: s.ok,
+    count: countKind(s.items, kind, vehicleId),
+    marker: markerFor(s.items, kind, vehicleId),
+  };
+}
+
+function increased(cur, base) {
+  // marker varsa marker ile karşılaştır; marker yoksa count ile
+  if (base.marker > 0 || cur.marker > 0) return cur.marker > base.marker;
+  return cur.count > base.count;
+}
+
+function increasedBeyond(cur, base) {
+  if (base.marker > 0 || cur.marker > 0) return cur.marker > base.marker;
+  return cur.count > base.count;
+}
+
+async function waitForNewAllScopes({ kind, vehicleId, driverToken, roomToken, companyToken, timeoutMs, stepMs, label }) {
+  const base = await Promise.all([
+    snapScope(driverToken, kind, vehicleId),
+    snapScope(roomToken, kind, vehicleId),
+    snapScope(companyToken, kind, vehicleId),
+  ]);
+
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
-    const [d, r, c] = await Promise.all(tokens.map((t) => listNotifs(t)));
-    const okAll =
-      countKind(d.items, kind, vehicleId) > 0 &&
-      countKind(r.items, kind, vehicleId) > 0 &&
-      countKind(c.items, kind, vehicleId) > 0;
+    const cur = await Promise.all([
+      snapScope(driverToken, kind, vehicleId),
+      snapScope(roomToken, kind, vehicleId),
+      snapScope(companyToken, kind, vehicleId),
+    ]);
 
-    if (okAll) return true;
+    const okAll = increased(cur[0], base[0]) && increased(cur[1], base[1]) && increased(cur[2], base[2]);
+    if (okAll) return { base, cur };
+
     await sleep(stepMs);
   }
-  console.log(`ℹ️ waitForKindAllScopes TIMEOUT kind=${kind} label=${label} vehicleId=${vehicleId}`);
-  return false;
+
+  console.log(`ℹ️ waitForNewAllScopes TIMEOUT kind=${kind} label=${label} vehicleId=${vehicleId}`);
+  return null;
+}
+
+async function watchNoNew({ kind, vehicleId, driverToken, roomToken, companyToken, sinceSnap, watchMs, stepMs, label }) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < watchMs) {
+    const cur = await Promise.all([
+      snapScope(driverToken, kind, vehicleId),
+      snapScope(roomToken, kind, vehicleId),
+      snapScope(companyToken, kind, vehicleId),
+    ]);
+
+    if (
+      increasedBeyond(cur[0], sinceSnap[0]) ||
+      increasedBeyond(cur[1], sinceSnap[1]) ||
+      increasedBeyond(cur[2], sinceSnap[2])
+    ) {
+      const a = sinceSnap.map((x) => `${x.marker || 0}/${x.count}`).join(",");
+      const b = cur.map((x) => `${x.marker || 0}/${x.count}`).join(",");
+      throw new Error(`❌ ${kind} dedupe FAIL (new record observed) ${a} -> ${b} (${label})`);
+    }
+
+    await sleep(stepMs);
+  }
 }
 
 async function getVehicleInfo(roomToken, vehicleId) {
@@ -90,7 +182,6 @@ async function getVehicleInfo(roomToken, vehicleId) {
 }
 
 function computeOverspeedKmh(vehicle) {
-  // speedLimitKmh yoksa default 90 kabul edip güvenli bir overspeed üret.
   const raw =
     vehicle?.speedLimitKmh ??
     vehicle?.speedLimit ??
@@ -100,7 +191,6 @@ function computeOverspeedKmh(vehicle) {
   const limit = Number(raw);
   const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 90;
 
-  // limit ne olursa olsun “kesin overspeed” için limit + 40; min 140; max 240.
   const kmh = Math.min(Math.max(safeLimit + 40, 140), 240);
   return { limit: safeLimit, overspeedKmh: kmh };
 }
@@ -114,9 +204,6 @@ async function main() {
   ok("login(driver/room/company)");
 
   const { roomId, companyId } = await getRoomCompanyIds(roomToken, companyToken);
-
-  // mevcut seçim: araç + sürücü
-  // (burayı bozmayalım; deterministikliği overspeed hızını limitle hesaplayarak sağlıyoruz)
   const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
 
   const pre = await preCleanDriverShifts({ roomToken, driverToken, driverId });
@@ -134,17 +221,26 @@ async function main() {
   });
   ok(`shift ACTIVE (id=${h.shiftId})`);
 
-  const tokens = [driverToken, roomToken, companyToken];
-
   try {
-    // baseline LIVE (fresh gpsLast)
+    // baseline LIVE
     await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.0309, lng: 28.9966, speed: 10, speedKmh: 10 });
     await sleep(300);
 
-    // OVERSPEED (deterministic: vehicle limit -> overspeedKmh)
+    // OVERSPEED (marker-based: “yeni notif geldi mi?”)
     const vInfo = await getVehicleInfo(roomToken, h.vehicleId);
     const { limit, overspeedKmh } = computeOverspeedKmh(vInfo);
     console.log(`ℹ️ overspeed plan: vehicleId=${h.vehicleId} limit=${limit} -> speedKmh=${overspeedKmh}`);
+
+    const ovWait = waitForNewAllScopes({
+      kind: "OVERSPEED",
+      vehicleId: h.vehicleId,
+      driverToken,
+      roomToken,
+      companyToken,
+      timeoutMs: 45_000,
+      stepMs: 1500,
+      label: "OVERSPEED",
+    });
 
     await postGps(driverToken, {
       vehicleId: h.vehicleId,
@@ -154,82 +250,86 @@ async function main() {
       speedKmh: overspeedKmh,
     });
 
-    const overspeedOk = await waitForKindAllScopes({
-      kind: "OVERSPEED",
-      vehicleId: h.vehicleId,
-      tokens,
-      timeoutMs: 45_000,
-      stepMs: 1500,
-      label: "OVERSPEED",
-    });
-    if (!overspeedOk) throw new Error("❌ OVERSPEED missing for one of (driver/room/company)");
+    const ov = await ovWait;
+    if (!ov) throw new Error("❌ OVERSPEED missing for one of (driver/room/company)");
     ok("OVERSPEED notif (driver/room/company)");
 
-    // LIVE->STALE (deterministic: gpsLast.at geri çek + monitor tick bekle)
+    // LIVE->STALE (deterministic: at -35s) + “yeni stale” bekle
     console.log("⏳ forcing LIVE->STALE (gpsLast.at -35s) and waiting for monitor tick...");
+    const staleWait = waitForNewAllScopes({
+      kind: "GPS_STALE",
+      vehicleId: h.vehicleId,
+      driverToken,
+      roomToken,
+      companyToken,
+      timeoutMs: 90_000,
+      stepMs: 2500,
+      label: "LIVE->STALE",
+    });
+
     await prisma.gpsLast.update({
       where: { vehicleId: h.vehicleId },
       data: { at: new Date(Date.now() - 35_000) },
     });
 
-    const staleOk = await waitForKindAllScopes({
-      kind: "GPS_STALE",
-      vehicleId: h.vehicleId,
-      tokens,
-      timeoutMs: 90_000,
-      stepMs: 2500,
-      label: "LIVE->STALE",
-    });
-    if (!staleOk) throw new Error("❌ GPS_STALE missing for one of (driver/room/company)");
+    const st = await staleWait;
+    if (!st) throw new Error("❌ GPS_STALE missing for one of (driver/room/company)");
     ok("LIVE->STALE notif created (driver/room/company)");
 
-    // dedupe STALE (count artmamalı)
-    const s0 = await Promise.all(tokens.map((t) => listNotifs(t)));
-    const staleCounts1 = s0.map((x) => countKind(x.items, "GPS_STALE", h.vehicleId));
-    console.log(`ℹ️ stale counts baseline (d,r,c) = ${staleCounts1.join(",")}`);
-
-    console.log("⏳ waiting for STALE dedupe window...");
-    await sleep(20_000);
-
-    const s1 = await Promise.all(tokens.map((t) => listNotifs(t)));
-    const staleCounts2 = s1.map((x) => countKind(x.items, "GPS_STALE", h.vehicleId));
-    console.log(`ℹ️ stale counts after wait (d,r,c) = ${staleCounts2.join(",")}`);
-
-    if (staleCounts2.some((c, i) => c > staleCounts1[i])) {
-      throw new Error(`❌ GPS_STALE dedupe FAIL (counts increased) ${staleCounts1.join(",")} -> ${staleCounts2.join(",")}`);
-    }
+    // STALE dedupe: 1 tick boyunca “yeni stale daha gelmemeli”
+    console.log("⏳ watching for STALE dedupe (no new GPS_STALE should be created)...");
+    await watchNoNew({
+      kind: "GPS_STALE",
+      vehicleId: h.vehicleId,
+      driverToken,
+      roomToken,
+      companyToken,
+      sinceSnap: st.cur,      // ilk yeni stale yakalandıktan sonraki marker
+      watchMs: 70_000,        // en az 1 monitor tick yakalansın
+      stepMs: 2500,
+      label: "STALE_DEDUPE",
+    });
     ok("GPS_STALE dedupe OK");
 
-    // STALE->OFFLINE (deterministic: gpsLast.at -350s + poll)
+    // STALE->OFFLINE + “yeni offline” bekle
     console.log("⏳ forcing STALE->OFFLINE (gpsLast.at -350s) and waiting for monitor tick...");
+
+    const offWait = waitForNewAllScopes({
+      kind: "GPS_OFFLINE",
+      vehicleId: h.vehicleId,
+      driverToken,
+      roomToken,
+      companyToken,
+      timeoutMs: 90_000,
+      stepMs: 2500,
+      label: "STALE->OFFLINE",
+    });
+
     await prisma.gpsLast.update({
       where: { vehicleId: h.vehicleId },
       data: { at: new Date(Date.now() - 350_000) },
     });
 
-    const offlineOk = await waitForKindAllScopes({
-      kind: "GPS_OFFLINE",
-      vehicleId: h.vehicleId,
-      tokens,
-      timeoutMs: 90_000,
-      stepMs: 2500,
-      label: "STALE->OFFLINE",
-    });
-    if (!offlineOk) throw new Error("❌ GPS_OFFLINE missing for one of (driver/room/company)");
+    const off = await offWait;
+    if (!off) throw new Error("❌ GPS_OFFLINE missing for one of (driver/room/company)");
     ok("STALE->OFFLINE notif created (driver/room/company)");
 
-    // recovery (OFFLINE->LIVE)
-    await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.0312, lng: 28.9969, speed: 20, speedKmh: 20 });
-
-    const recOk = await waitForKindAllScopes({
+    // recovery + “yeni recovery” bekle
+    const recWait = waitForNewAllScopes({
       kind: "GPS_RECOVERY",
       vehicleId: h.vehicleId,
-      tokens,
+      driverToken,
+      roomToken,
+      companyToken,
       timeoutMs: 60_000,
       stepMs: 1500,
       label: "OFFLINE->LIVE",
     });
-    if (!recOk) throw new Error("❌ GPS_RECOVERY missing for one of (driver/room/company)");
+
+    await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.0312, lng: 28.9969, speed: 20, speedKmh: 20 });
+
+    const rec = await recWait;
+    if (!rec) throw new Error("❌ GPS_RECOVERY missing for one of (driver/room/company)");
     ok("OFFLINE->LIVE recovery notif created (driver/room/company)");
 
     console.log("\n✅ M4CHECK PASS");
