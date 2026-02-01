@@ -35,6 +35,56 @@ function parseTryInput(raw) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+function pad2(n) {
+  const x = Number(n);
+  return x < 10 ? `0${x}` : String(x);
+}
+function parseHHMM(v) {
+  const s = String(v || "").trim();
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s);
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  if (hh < 0 || hh > 23) return null;
+  if (mm < 0 || mm > 59) return null;
+  return { hh, mm, minutes: hh * 60 + mm, norm: `${pad2(hh)}:${pad2(mm)}` };
+}
+function dateStrInIstanbul(d = new Date()) {
+  // en-CA => YYYY-MM-DD
+  try {
+    return d.toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+  } catch {
+    // fallback: local date
+    const Y = d.getFullYear();
+    const M = pad2(d.getMonth() + 1);
+    const D = pad2(d.getDate());
+    return `${Y}-${M}-${D}`;
+  }
+}
+function addDaysDateStr(dateStr, days) {
+  const [Y, M, D] = String(dateStr).split("-").map(Number);
+  if (![Y, M, D].every(Number.isFinite)) return dateStr;
+  const ms = Date.UTC(Y, M - 1, D, 0, 0, 0) + Number(days) * 86400000;
+  const dd = new Date(ms);
+  const y = dd.getUTCFullYear();
+  const m = pad2(dd.getUTCMonth() + 1);
+  const d = pad2(dd.getUTCDate());
+  return `${y}-${m}-${d}`;
+}
+function buildDatetimeLocal(dateStr, hhmm) {
+  const p = parseHHMM(hhmm);
+  if (!p) return "";
+  return `${dateStr}T${p.norm}`;
+}
+
+// Built-in vardiya şablonları
+const BUILTIN_SHIFT_TEMPLATES = [
+  { id: "builtin-morning", name: "Sabah", startTime: "07:00", endTime: "09:00", defaultSeatDemand: null, builtIn: true },
+  { id: "builtin-evening", name: "Akşam", startTime: "17:00", endTime: "19:00", defaultSeatDemand: null, builtIn: true },
+  { id: "builtin-night", name: "Gece", startTime: "23:00", endTime: "01:00", defaultSeatDemand: null, builtIn: true },
+];
+
 export default function CompanyShiftsPanel() {
   const { token, me } = useSession();
 
@@ -44,6 +94,9 @@ export default function CompanyShiftsPanel() {
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Üst sekme: Yeni Talep / Vardiya Şablonları
+  const [topTab, setTopTab] = useState("request"); // request|templates
 
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
@@ -98,11 +151,140 @@ export default function CompanyShiftsPanel() {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerNote, setOfferNote] = useState("");
 
+  // Vardiya türü (şablon) seçimi
+  const [shiftTemplateId, setShiftTemplateId] = useState("");
+
+  // Company custom vardiya şablonları (localStorage)
+  const [customShiftTemplates, setCustomShiftTemplates] = useState([]);
+
+  // Template create form (custom)
+  const [tplName, setTplName] = useState("");
+  const [tplStart, setTplStart] = useState("07:00");
+  const [tplEnd, setTplEnd] = useState("09:00");
+  const [tplSeats, setTplSeats] = useState("");
+
+  const isCompany = String(me?.role || "") === "COMPANY";
+
+  function lsKey() {
+    const cid = me?.companyId != null ? String(me.companyId) : "unknown";
+    return `psv1:company:${cid}:shift-templates`;
+  }
+
+  function loadTemplatesFromLS() {
+    try {
+      const raw = localStorage.getItem(lsKey());
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((x) => ({
+          id: String(x?.id || ""),
+          name: String(x?.name || "").trim(),
+          startTime: String(x?.startTime || "").trim(),
+          endTime: String(x?.endTime || "").trim(),
+          defaultSeatDemand: x?.defaultSeatDemand != null ? Number(x.defaultSeatDemand) : null,
+          builtIn: false,
+        }))
+        .filter((x) => x.id && x.name && parseHHMM(x.startTime) && parseHHMM(x.endTime));
+    } catch {
+      return [];
+    }
+  }
+
+  function saveTemplatesToLS(list) {
+    try {
+      localStorage.setItem(
+        lsKey(),
+        JSON.stringify(
+          (list || []).map((x) => ({
+            id: x.id,
+            name: x.name,
+            startTime: x.startTime,
+            endTime: x.endTime,
+            defaultSeatDemand: x.defaultSeatDemand ?? null,
+          }))
+        )
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    // company değişince custom template reload
+    const list = loadTemplatesFromLS();
+    setCustomShiftTemplates(list);
+    // template seçimi artık yoksa temizle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.companyId]);
+
+  useEffect(() => {
+    saveTemplatesToLS(customShiftTemplates);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customShiftTemplates]);
+
+  const allShiftTemplates = useMemo(() => {
+    const builtins = BUILTIN_SHIFT_TEMPLATES.map((t) => ({
+      ...t,
+      startTime: parseHHMM(t.startTime)?.norm || t.startTime,
+      endTime: parseHHMM(t.endTime)?.norm || t.endTime,
+    }));
+    const customs = (customShiftTemplates || []).map((t) => ({
+      ...t,
+      startTime: parseHHMM(t.startTime)?.norm || t.startTime,
+      endTime: parseHHMM(t.endTime)?.norm || t.endTime,
+      builtIn: false,
+    }));
+    return [...builtins, ...customs];
+  }, [customShiftTemplates]);
+
+  const shiftTemplatesById = useMemo(() => {
+    const m = new Map();
+    for (const t of allShiftTemplates) m.set(String(t.id), t);
+    return m;
+  }, [allShiftTemplates]);
+
+  function shiftTemplateLabel(t) {
+    if (!t) return "";
+    const seats = t.defaultSeatDemand != null ? ` • ${t.defaultSeatDemand} kişi` : "";
+    return `${t.name} • ${t.startTime}→${t.endTime}${seats}${t.builtIn ? " • PRESET" : ""}`;
+  }
+
+  function applyShiftTemplateToForm(t, opts = {}) {
+    const tt = t ? { ...t } : null;
+    if (!tt) return;
+
+    const st = parseHHMM(tt.startTime);
+    const en = parseHHMM(tt.endTime);
+    if (!st || !en) return;
+
+    // baz tarih: startAt içinden tarih varsa onu kullan, yoksa bugün (Istanbul)
+    const baseDate =
+      (String(startAt || "").includes("T") ? String(startAt).split("T")[0] : "") ||
+      (String(endAt || "").includes("T") ? String(endAt).split("T")[0] : "") ||
+      dateStrInIstanbul(new Date());
+
+    const startLocal = buildDatetimeLocal(baseDate, st.norm);
+
+    // end: midnight aşıyorsa +1 gün
+    const endDate = en.minutes <= st.minutes ? addDaysDateStr(baseDate, 1) : baseDate;
+    const endLocal = buildDatetimeLocal(endDate, en.norm);
+
+    setStartAt(startLocal);
+    setEndAt(endLocal);
+
+    // kişi sayısı: sadece boşsa doldur
+    if (!String(seatDemand || "").trim() && tt.defaultSeatDemand != null && Number(tt.defaultSeatDemand) > 0) {
+      setSeatDemand(String(Number(tt.defaultSeatDemand)));
+    }
+
+    // opsiyon: otomatik tab request'e dön
+    if (opts?.goRequest) setTopTab("request");
+  }
+
   // Karşı teklif UI
   const [offerOpen, setOfferOpen] = useState({});
   const [offerSel, setOfferSel] = useState({});
-
-  const isCompany = String(me?.role || "") === "COMPANY";
 
   function toggleOffer(shiftId) {
     setOfferOpen((p) => ({ ...p, [shiftId]: !p[shiftId] }));
@@ -261,6 +443,18 @@ export default function CompanyShiftsPanel() {
     });
   }, [items]);
 
+  // Şablon seçimi: otomatik uygula (sadece seçildiği anda)
+  useEffect(() => {
+    if (!shiftTemplateId) return;
+    const t = shiftTemplatesById.get(String(shiftTemplateId));
+    if (!t) {
+      setShiftTemplateId("");
+      return;
+    }
+    applyShiftTemplateToForm(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shiftTemplateId]);
+
   async function createShift(e) {
     e.preventDefault();
     setBusy(true);
@@ -283,6 +477,7 @@ export default function CompanyShiftsPanel() {
 
       await api("/api/shifts", { method: "POST", token, body });
 
+      setShiftTemplateId("");
       setStartAt("");
       setEndAt("");
       setSeatDemand("");
@@ -553,14 +748,7 @@ export default function CompanyShiftsPanel() {
       })
       .filter((s) => {
         if (!q) return true;
-        const hay = [
-          s.id,
-          s.status,
-          s.roomId,
-          s.companyId,
-          s.roomOfferNote,
-          s.companyOfferNote,
-        ]
+        const hay = [s.id, s.status, s.roomId, s.companyId, s.roomOfferNote, s.companyOfferNote]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -575,16 +763,7 @@ export default function CompanyShiftsPanel() {
       .filter((s) => (finalStatus === "ALL" ? true : String(s.status) === finalStatus))
       .filter((s) => {
         if (!q) return true;
-        const hay = [
-          s.id,
-          s.status,
-          s.roomId,
-          s.companyId,
-          s.roomOfferNote,
-          s.companyOfferNote,
-          s.vehicle?.plate,
-          s.driver?.fullName,
-        ]
+        const hay = [s.id, s.status, s.roomId, s.companyId, s.roomOfferNote, s.companyOfferNote, s.vehicle?.plate, s.driver?.fullName]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -592,13 +771,73 @@ export default function CompanyShiftsPanel() {
       });
   }, [finalItemsRaw, finalQ, finalStatus]);
 
-  const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
+  const roomsByIdLookup = roomsById;
+  const selectedRoom = roomsByIdLookup.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
 
   function vehiclesForShiftRoom(shift) {
     const rid = Number(shift.roomId);
     return vehicles
       .filter((v) => !v?.roomId || Number(v.roomId) === rid)
       .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
+  }
+
+  // Template manager actions
+  function createCustomTemplate(e) {
+    e?.preventDefault?.();
+    setErr("");
+
+    const name = String(tplName || "").trim();
+    const st = parseHHMM(tplStart);
+    const en = parseHHMM(tplEnd);
+    const seats = String(tplSeats || "").trim() ? Number(tplSeats) : null;
+
+    if (!name) {
+      setErr("Şablon adı zorunlu.");
+      return;
+    }
+    if (!st || !en) {
+      setErr("Start/End saat formatı HH:MM olmalı (örn. 07:00).");
+      return;
+    }
+    if (st.minutes === en.minutes) {
+      setErr("Start ve End aynı olamaz.");
+      return;
+    }
+    if (seats != null && (!Number.isFinite(seats) || seats <= 0)) {
+      setErr("Kişi sayısı sayı olmalı (opsiyonel).");
+      return;
+    }
+
+    const id = `custom-${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 8)}`;
+
+    const next = [
+      ...customShiftTemplates,
+      {
+        id,
+        name,
+        startTime: st.norm,
+        endTime: en.norm,
+        defaultSeatDemand: seats != null ? Number(seats) : null,
+        builtIn: false,
+      },
+    ];
+
+    setCustomShiftTemplates(next);
+    setTplName("");
+    setTplSeats("");
+
+    // hızlı kullanım: seç ve request tabına dön
+    setShiftTemplateId(id);
+    setTopTab("request");
+  }
+
+  function deleteCustomTemplate(id) {
+    const t = customShiftTemplates.find((x) => String(x.id) === String(id));
+    if (!t) return;
+    if (!confirm(`"${t.name}" şablonunu silmek istiyor musun?`)) return;
+
+    setCustomShiftTemplates((prev) => prev.filter((x) => String(x.id) !== String(id)));
+    if (String(shiftTemplateId) === String(id)) setShiftTemplateId("");
   }
 
   return (
@@ -610,72 +849,226 @@ export default function CompanyShiftsPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
+      {/* ÜST SEKME: Yeni Talep / Vardiya Şablonları */}
       <div className="card">
-        <h3>Yeni Vardiya Talebi</h3>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" disabled={busy} onClick={() => setTopTab("request")} className={topTab === "request" ? "btn primary" : "btn"}>
+            Yeni Talep
+          </button>
+          <button type="button" disabled={busy} onClick={() => setTopTab("templates")} className={topTab === "templates" ? "btn primary" : "btn"}>
+            Vardiya Şablonları
+          </button>
+        </div>
+        <div className="muted" style={{ marginTop: 8 }}>
+          Yeni vardiya talebi oluştururken “Vardiya türü” şablonu seçebilirsin. Custom şablonlar company bazlı tarayıcıda saklanır.
+        </div>
+      </div>
 
-        <form onSubmit={createShift} className="grid">
-          <div className="col">
-            <label className="muted">Kişi sayısı (opsiyonel filtre)</label>
-            <input type="number" placeholder="örn. 16" value={seatDemand} onChange={(e) => setSeatDemand(e.target.value)} />
-          </div>
+      {/* Yeni Vardiya Talebi */}
+      {topTab === "request" ? (
+        <div className="card">
+          <h3>Yeni Vardiya Talebi</h3>
 
-          <div className="col">
-            <label className="muted">Room</label>
-            <select value={roomId} onChange={(e) => setRoomId(e.target.value)}>
-              {roomOptions.length ? (
-                roomOptions.map((r) => (
-                  <option key={r.id} value={String(r.id)}>
-                    {roomLabel(r)} (#{r.id}){seatN ? ` • ${r.eligibleCount} araç` : ""}
+          <form onSubmit={createShift} className="grid">
+            <div className="col" style={{ gridColumn: "1 / -1" }}>
+              <label className="muted">Vardiya türü (şablon) (opsiyonel)</label>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <select value={shiftTemplateId} onChange={(e) => setShiftTemplateId(e.target.value)} disabled={busy} style={{ minWidth: 320 }}>
+                  <option value="">— şablon seç —</option>
+                  {allShiftTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {shiftTemplateLabel(t)}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  disabled={busy || !shiftTemplateId}
+                  onClick={() => {
+                    const t = shiftTemplatesById.get(String(shiftTemplateId));
+                    if (t) applyShiftTemplateToForm(t);
+                  }}
+                >
+                  Uygula
+                </button>
+
+                <button type="button" disabled={busy || !shiftTemplateId} onClick={() => setShiftTemplateId("")}>
+                  Temizle
+                </button>
+              </div>
+
+              <div className="muted" style={{ marginTop: 6 }}>
+                Not: Şablon seçince Start/End otomatik dolar. İstersen sonrasında manuel değiştirebilirsin.
+              </div>
+            </div>
+
+            <div className="col">
+              <label className="muted">Kişi sayısı (opsiyonel filtre)</label>
+              <input type="number" placeholder="örn. 16" value={seatDemand} onChange={(e) => setSeatDemand(e.target.value)} />
+            </div>
+
+            <div className="col">
+              <label className="muted">Room</label>
+              <select value={roomId} onChange={(e) => setRoomId(e.target.value)}>
+                {roomOptions.length ? (
+                  roomOptions.map((r) => (
+                    <option key={r.id} value={String(r.id)}>
+                      {roomLabel(r)} (#{r.id}){seatN ? ` • ${r.eligibleCount} araç` : ""}
+                    </option>
+                  ))
+                ) : (
+                  <option value={roomId}>Room #{roomId}</option>
+                )}
+              </select>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Seçili room: {selectedRoom ? `${roomLabel(selectedRoom)} (#${selectedRoom.id})` : `#${roomId}`}
+              </div>
+            </div>
+
+            <div className="col">
+              <label className="muted">Start</label>
+              <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
+            </div>
+
+            <div className="col">
+              <label className="muted">End</label>
+              <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} />
+            </div>
+
+            <div className="col" style={{ gridColumn: "1 / -1" }}>
+              <label className="muted">Teklif Araç (opsiyonel)</label>
+              <select value={offerVehicleId} onChange={(e) => setOfferVehicleId(e.target.value)}>
+                <option value="">— teklif yok —</option>
+                {filteredVehicles.map((v) => (
+                  <option key={v.id} value={String(v.id)}>
+                    {v.plate} • {vehicleMetaLine(v)}
                   </option>
-                ))
-              ) : (
-                <option value={roomId}>Room #{roomId}</option>
-              )}
-            </select>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Seçili room: {selectedRoom ? `${roomLabel(selectedRoom)} (#${selectedRoom.id})` : `#${roomId}`}
+                ))}
+              </select>
+            </div>
+
+            <div className="col" style={{ gridColumn: "1 / -1" }}>
+              <label className="muted">Company Tutar (₺) (opsiyonel)</label>
+              <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" />
+            </div>
+
+            <div className="col" style={{ gridColumn: "1 / -1" }}>
+              <label className="muted">Teklif Notu (opsiyonel)</label>
+              <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" />
+            </div>
+
+            <div className="col" style={{ justifyContent: "end" }}>
+              <button disabled={busy} type="submit">
+                {busy ? "..." : "Request"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {/* Vardiya Şablonları */}
+      {topTab === "templates" ? (
+        <div className="card">
+          <h3>Vardiya Şablonları</h3>
+          <div className="muted">Preset’ler sabit. Custom şablon ekleyip Yeni Talep ekranında seçebilirsin.</div>
+
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1.05fr 1.95fr", gap: 12, alignItems: "start" }}>
+            {/* SOL: Create */}
+            <div className="card" style={{ margin: 0 }}>
+              <h3 style={{ marginTop: 0 }}>Custom Şablon Oluştur</h3>
+
+              <form onSubmit={createCustomTemplate} className="grid">
+                <div className="col" style={{ gridColumn: "1 / -1" }}>
+                  <label className="muted">Şablon adı</label>
+                  <input value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="örn. Sabah Servis (Şirket A)" maxLength={48} />
+                </div>
+
+                <div className="col">
+                  <label className="muted">Start (HH:MM)</label>
+                  <input value={tplStart} onChange={(e) => setTplStart(e.target.value)} placeholder="07:00" />
+                </div>
+
+                <div className="col">
+                  <label className="muted">End (HH:MM)</label>
+                  <input value={tplEnd} onChange={(e) => setTplEnd(e.target.value)} placeholder="09:00" />
+                </div>
+
+                <div className="col" style={{ gridColumn: "1 / -1" }}>
+                  <label className="muted">Varsayılan kişi sayısı (opsiyonel)</label>
+                  <input type="number" value={tplSeats} onChange={(e) => setTplSeats(e.target.value)} placeholder="örn. 16" />
+                </div>
+
+                <div className="col" style={{ justifyContent: "end" }}>
+                  <button type="submit" disabled={busy}>
+                    {busy ? "..." : "Kaydet"}
+                  </button>
+                </div>
+
+                <div className="muted" style={{ gridColumn: "1 / -1", marginTop: 6, fontSize: 12 }}>
+                  İpucu: End, Start’tan küçükse “gece vardiyası” gibi değerlendirilir (bir sonraki güne taşar).
+                </div>
+              </form>
+            </div>
+
+            {/* SAĞ: List */}
+            <div className="card" style={{ margin: 0, overflowX: "auto" }}>
+              <h3 style={{ marginTop: 0 }}>Şablon Listesi</h3>
+
+              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                <thead>
+                  <tr>
+                    <th>Ad</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Kişi (vars.)</th>
+                    <th>Tip</th>
+                    <th>Aksiyon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allShiftTemplates.map((t) => (
+                    <tr key={t.id} style={t.builtIn ? { opacity: 0.9 } : undefined}>
+                      <td>{t.name}</td>
+                      <td className="muted">{t.startTime}</td>
+                      <td className="muted">{t.endTime}</td>
+                      <td className="muted">{t.defaultSeatDemand != null ? t.defaultSeatDemand : "-"}</td>
+                      <td>
+                        {t.builtIn ? (
+                          <span className="pill" data-status="PASSIVE">PRESET</span>
+                        ) : (
+                          <span className="pill" data-status="OK">CUSTOM</span>
+                        )}
+                      </td>
+                      <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setShiftTemplateId(String(t.id));
+                            applyShiftTemplateToForm(t, { goRequest: true });
+                          }}
+                        >
+                          Kullan
+                        </button>
+                        {!t.builtIn ? (
+                          <button type="button" disabled={busy} onClick={() => deleteCustomTemplate(t.id)}>
+                            Sil
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="muted" style={{ marginTop: 8 }}>
+                “Kullan” → Yeni Talep’e geçer ve Start/End’i doldurur.
+              </div>
             </div>
           </div>
-
-          <div className="col">
-            <label className="muted">Start</label>
-            <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
-          </div>
-
-          <div className="col">
-            <label className="muted">End</label>
-            <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} />
-          </div>
-
-          <div className="col" style={{ gridColumn: "1 / -1" }}>
-            <label className="muted">Teklif Araç (opsiyonel)</label>
-            <select value={offerVehicleId} onChange={(e) => setOfferVehicleId(e.target.value)}>
-              <option value="">— teklif yok —</option>
-              {filteredVehicles.map((v) => (
-                <option key={v.id} value={String(v.id)}>
-                  {v.plate} • {vehicleMetaLine(v)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="col" style={{ gridColumn: "1 / -1" }}>
-            <label className="muted">Company Tutar (₺) (opsiyonel)</label>
-            <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" />
-          </div>
-
-          <div className="col" style={{ gridColumn: "1 / -1" }}>
-            <label className="muted">Teklif Notu (opsiyonel)</label>
-            <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" />
-          </div>
-
-          <div className="col" style={{ justifyContent: "end" }}>
-            <button disabled={busy} type="submit">
-              {busy ? "..." : "Request"}
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+      ) : null}
 
       {/* BEKLEYEN */}
       <div className="card">
@@ -693,11 +1086,7 @@ export default function CompanyShiftsPanel() {
               style={{ minWidth: 240 }}
             />
             <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={pendingOnlyRoomOffer}
-                onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)}
-              />
+              <input type="checkbox" checked={pendingOnlyRoomOffer} onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)} />
               Sadece Room teklifi olanlar
             </label>
             <button
@@ -729,7 +1118,7 @@ export default function CompanyShiftsPanel() {
             </thead>
             <tbody>
               {pendingItems.map((s) => {
-                const r = roomsById.get(Number(s.roomId));
+                const r = roomsByIdLookup.get(Number(s.roomId));
                 const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(s.status));
 
                 const sid = Number(s.id);
@@ -824,8 +1213,12 @@ export default function CompanyShiftsPanel() {
                       </button>
                     </td>
 
-                    <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                    <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+                    <td className="muted" title={String(s.startAt)}>
+                      {fmtTR(s.startAt)}
+                    </td>
+                    <td className="muted" title={String(s.endAt)}>
+                      {fmtTR(s.endAt)}
+                    </td>
                   </tr>
                 );
               })}
@@ -888,7 +1281,7 @@ export default function CompanyShiftsPanel() {
 
             <tbody>
               {finalItems.map((s) => {
-                const r = roomsById.get(Number(s.roomId));
+                const r = roomsByIdLookup.get(Number(s.roomId));
                 return (
                   <tr key={s.id}>
                     <td>{s.id}</td>
@@ -902,8 +1295,12 @@ export default function CompanyShiftsPanel() {
                     <td>{renderCompanyOfferSummary(s)}</td>
                     <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
                     <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
-                    <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                    <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+                    <td className="muted" title={String(s.startAt)}>
+                      {fmtTR(s.startAt)}
+                    </td>
+                    <td className="muted" title={String(s.endAt)}>
+                      {fmtTR(s.endAt)}
+                    </td>
                   </tr>
                 );
               })}
