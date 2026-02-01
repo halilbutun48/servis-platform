@@ -221,6 +221,13 @@ export default function VehiclesPanel() {
     if (tab === "manage") load({ includeArchived: showArchived });
   }, [showArchived, tab]); // eslint-disable-line
 
+  // ✅ Mini polish: Link tabına girince (ve link tabındayken araç değişince) driver seçimini temizle
+  useEffect(() => {
+    if (tab !== "link") return;
+    if (!focusVehicleId) return;
+    setBindSel((p) => ({ ...p, [focusVehicleId]: "" }));
+  }, [tab, focusVehicleId]);
+
   async function createVehicle(e) {
     e.preventDefault();
     setBusy(true);
@@ -390,11 +397,14 @@ export default function VehiclesPanel() {
     const fromPlate = items.find((x) => Number(x.id) === Number(fromVehicleId))?.plate || `#${fromVehicleId}`;
     const toPlate = items.find((x) => Number(x.id) === Number(toVehicleId))?.plate || `#${toVehicleId}`;
 
+    // ✅ Mini polish: daha net confirm metni
     const ok = window.confirm(
-      `Bu sürücü şu an ${fromPlate} aracına bağlı.\n` +
-      `Hedef: ${toPlate}\n\n` +
-      `Transfer edilsin mi?\n\n` +
-      `1) Eski araçtan ayır\n2) Yeni araca bağla`
+      `Sürücü şu an "${fromPlate}" aracına bağlı.\n` +
+      `Yeni araç: "${toPlate}"\n\n` +
+      `Onaylarsan şu adımlar uygulanacak:\n` +
+      `1) "${fromPlate}" aracından ayrılacak\n` +
+      `2) "${toPlate}" aracına bağlanacak\n\n` +
+      `Devam edilsin mi?`
     );
     if (!ok) return;
 
@@ -571,7 +581,11 @@ export default function VehiclesPanel() {
               key={t.key}
               type="button"
               disabled={busy}
-              onClick={() => setTab(t.key)}
+              onClick={() => {
+                setTab(t.key);
+                setErr("");
+                // Link tabına geçince (focusVehicleId varsa) seçim temizlenir; useEffect zaten yapıyor.
+              }}
               className={tab === t.key ? "btn primary" : "btn"}
             >
               {t.label}
@@ -854,6 +868,7 @@ export default function VehiclesPanel() {
                                 setFocusVehicleId(Number(v.id));
                                 setTab("link");
                                 setErr("");
+                                // bindSel temizliği useEffect ile otomatik
                               }}
                             >
                               Bağlantı
@@ -923,8 +938,11 @@ export default function VehiclesPanel() {
                   <select
                     value={String(focusVehicleId || "")}
                     onChange={(e) => {
-                      setFocusVehicleId(Number(e.target.value || 0));
+                      const nextId = Number(e.target.value || 0);
+                      setFocusVehicleId(nextId);
                       setErr("");
+                      // ✅ araç değişince de boşla (useEffect de yapıyor ama deterministic kalsın)
+                      if (nextId) setBindSel((p) => ({ ...p, [nextId]: "" }));
                     }}
                     disabled={busy}
                   >
@@ -959,7 +977,7 @@ export default function VehiclesPanel() {
                     !focusVehicleId ||
                     !bindSel[focusVehicleId] ||
                     focusArchived ||
-                    selectedBoundOther // <- UX: başka araca bağlıysa bind yok, transfer var
+                    selectedBoundOther
                   }
                   onClick={() => bindDriver(focusVehicleId)}
                   title={selectedBoundOther ? "Driver başka araca bağlı. Transfer kullan." : ""}
