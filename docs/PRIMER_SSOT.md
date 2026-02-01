@@ -17,11 +17,11 @@ Bu dosya “yapıştır & devam et” değil; **tek kaynak (SSOT) seviyesinde** 
 - Repo:
   - https://github.com/halilbutun48/servis-platform
 - Branch: `main`
-- Stabil referans tag: `v1-m12-green`
+- Stabil referans tag: `v1-m13-green.1`
 - Milestone durumu: ✅ PACK PASS (M0..M12) + ✅ FULLCHECK PASS + ✅ SMOKE PASS
 
 **Kural (milestone disiplin):**
-- `v1-m12-green` = “M12 GREEN referans noktasıdır”.
+- `v1-m13-green.1` = “M13 GREEN referans noktasıdır”.
 - Bundan sonraki her değişiklik **yeni milestone/tag mantığıyla** ilerler.
 - “Green” olmadan sonraki işe geçilmez.
 
@@ -169,11 +169,11 @@ Amaç: platformlar arası tutarlılık ve “LF will be replaced by CRLF” uyar
 
 Öneri:
 - Repo root’ta `.gitattributes` ile `text=auto` + eol politikası belirlenebilir.
-- Bu değişiklik yapılırsa **yeni bir tag** ile sabitlenmesi önerilir (mevcut `v1-m12-green` referansını kirletmemek için).
+- Bu değişiklik yapılırsa **yeni bir tag** ile sabitlenmesi önerilir (mevcut `v1-m13-green.1` referansını kirletmemek için).
 
 ---
 
-## 10) Şu anki durum (M12 GREEN kapsamında doğrulananlar)
+## 10) Şu anki durum (M13 GREEN kapsamında doğrulananlar)
 ✅ CRUD (company/room/vehicle/driver)  
 ✅ Shift approve/assign/start/reached/complete  
 ✅ GPS + ETA + WS updates  
@@ -183,7 +183,7 @@ Amaç: platformlar arası tutarlılık ve “LF will be replaced by CRLF” uyar
 ✅ Driver route endpoints (skip/reopen/next-stop)  
 ✅ Observability (M10) + required docs (M12)  
 
-Referans: tag `v1-m12-green`
+Referans: tag `v1-m13-green.1`
 
 ---
 
@@ -205,6 +205,9 @@ Referans: tag `v1-m12-green`
 ---
 
 ## 12) Yeni sohbet başlangıç cümlesi (SSOT referanslı)
-“`servis-platform` repo, tag `v1-m12-green` referansından devam ediyoruz. Next hedef: Vehicle↔Driver bind + overlap rules. API + UI görevlerini sıraya koy; Gate/Pack standardını bozmadan ilerle.”
+“`servis-platform` repo, tag `v1-m13-green.1` referansından devam ediyoruz. Next hedef: Vehicle↔Driver bind + overlap rules. API + UI görevlerini sıraya koy; Gate/Pack standardını bozmadan ilerle.”
 
 ---
+
+
+
