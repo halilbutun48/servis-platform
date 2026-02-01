@@ -68,6 +68,31 @@ function normalizeList(resp) {
   return [];
 }
 
+// Hata mesajını tek yerden normalize et
+function pickErr(e) {
+  const payload = e?.payload;
+  const msg =
+    payload?.message ||
+    payload?.error ||
+    e?.message ||
+    String(e);
+  const status = payload?.status || payload?.httpStatus || e?.status || null;
+  const code = payload?.code || e?.code || null;
+
+  return { msg, status, code, payload };
+}
+
+// Driver label: isim + telefon (varsa)
+function fmtDriverHuman(d) {
+  if (!d) return "-";
+  const name =
+    d.fullName ||
+    [d.firstName, d.lastName].filter(Boolean).join(" ").trim() ||
+    (d.id ? `#${d.id}` : "-");
+  const phone = d.phone || d.tel || d.mobile || d.gsm || "";
+  return phone ? `${name} • ${phone}` : name;
+}
+
 export default function VehiclesPanel() {
   const { token } = useSession();
 
@@ -170,7 +195,6 @@ export default function VehiclesPanel() {
   }
 
   async function load(opts = {}) {
-    setErr("");
     try {
       const includeArchived = opts.includeArchived ?? showArchived;
       const path = includeArchived ? "/api/vehicles?includeArchived=1" : "/api/vehicles";
@@ -184,7 +208,8 @@ export default function VehiclesPanel() {
 
       if (!focusVehicleId && vv.length) setFocusVehicleId(Number(vv[0].id));
     } catch (e) {
-      setErr(String(e?.message || e));
+      const { msg } = pickErr(e);
+      setErr(String(msg));
     }
   }
 
@@ -230,11 +255,20 @@ export default function VehiclesPanel() {
       showToast("Araç eklendi");
       await load();
     } catch (e2) {
-      setErr(String(e2?.payload?.message || e2?.message || e2));
+      const { msg } = pickErr(e2);
+      setErr(String(msg));
+      showToast("Araç eklenemedi", "err");
     } finally {
       setBusy(false);
     }
   }
+
+  // driver lookup map (telefon vs için)
+  const driversById = useMemo(() => {
+    const m = new Map();
+    (drivers || []).forEach((d) => m.set(Number(d.id), d));
+    return m;
+  }, [drivers]);
 
   // Driver -> bağlı araç haritası (aktif araçlar üzerinden)
   const driverBoundMap = useMemo(() => {
@@ -248,12 +282,23 @@ export default function VehiclesPanel() {
     return m;
   }, [items]);
 
-  const focusVehicle = useMemo(() => items.find((x) => Number(x.id) === Number(focusVehicleId)), [items, focusVehicleId]);
+  const focusVehicle = useMemo(
+    () => items.find((x) => Number(x.id) === Number(focusVehicleId)),
+    [items, focusVehicleId]
+  );
+
   const focusArchived = Boolean(focusVehicle?.archivedAt);
-  const focusDriverLabel =
-    focusVehicle?.driver?.fullName ||
-    (focusVehicle?.driverId ? `#${focusVehicle?.driverId}` : "-");
-  const focusHasDriver = Boolean(focusVehicle?.driverId || focusVehicle?.driver?.id);
+
+  const focusDriverId = Number(focusVehicle?.driver?.id || focusVehicle?.driverId || 0);
+  const focusDriverObj =
+    focusVehicle?.driver ||
+    (focusDriverId ? driversById.get(focusDriverId) : null);
+
+  const focusDriverLabel = focusDriverObj
+    ? fmtDriverHuman(focusDriverObj)
+    : (focusDriverId ? `#${focusDriverId}` : "-");
+
+  const focusHasDriver = Boolean(focusDriverId);
 
   const selectedDriverId = Number(bindSel?.[focusVehicleId] || 0);
   const selectedBound = selectedDriverId ? driverBoundMap.get(selectedDriverId) : null;
@@ -274,6 +319,15 @@ export default function VehiclesPanel() {
       return;
     }
 
+    // UI-side conflict gate: başka araca bağlıysa bind denemesini engelle
+    const bound = driverBoundMap.get(driverId);
+    const isOther = bound && Number(bound.vehicleId) !== Number(vehicleId);
+    if (isOther) {
+      setErr(`Bu sürücü zaten başka araca bağlı: ${bound.plate}. Transfer kullan.`);
+      showToast("Sürücü başka araca bağlı", "warn");
+      return;
+    }
+
     setBusy(true);
     setErr("");
     try {
@@ -286,18 +340,26 @@ export default function VehiclesPanel() {
       setBindSel((p) => ({ ...p, [vehicleId]: "" }));
       await load();
     } catch (e) {
-      const code = e?.payload?.code;
-      const msg = e?.payload?.message || e?.message || String(e);
+      const { msg, code, status, payload } = pickErr(e);
 
+      // Backend spesifik kod
       if (code === "DRIVER_ALREADY_BOUND") {
-        const cv = e?.payload?.conflictingVehicle;
+        const cv = payload?.conflictingVehicle;
         const detail = cv?.plate ? ` (Bağlı araç: ${cv.plate})` : "";
         setErr(`${msg}${detail}`);
         showToast("Sürücü başka araca bağlı", "warn");
         return;
       }
 
+      // 409 vb: netleştir
+      if (Number(status) === 409) {
+        setErr(`Uygun değil (409): ${msg}`);
+        showToast("Uygun değil", "warn");
+        return;
+      }
+
       setErr(String(msg));
+      showToast("Bağlama başarısız", "err");
     } finally {
       setBusy(false);
     }
@@ -315,15 +377,22 @@ export default function VehiclesPanel() {
       showToast("Bağlantı kaldırıldı", "warn");
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      const { msg, status } = pickErr(e);
+      if (Number(status) === 409) setErr(`Uygun değil (409): ${msg}`);
+      else setErr(String(msg));
+      showToast("Ayırma başarısız", "err");
     } finally {
       setBusy(false);
     }
   }
 
   async function transferDriver(toVehicleId, driverId, fromVehicleId) {
+    const fromPlate = items.find((x) => Number(x.id) === Number(fromVehicleId))?.plate || `#${fromVehicleId}`;
+    const toPlate = items.find((x) => Number(x.id) === Number(toVehicleId))?.plate || `#${toVehicleId}`;
+
     const ok = window.confirm(
-      `Bu sürücü şu an ${items.find((x) => Number(x.id) === Number(fromVehicleId))?.plate || `#${fromVehicleId}`} aracına bağlı.\n` +
+      `Bu sürücü şu an ${fromPlate} aracına bağlı.\n` +
+      `Hedef: ${toPlate}\n\n` +
       `Transfer edilsin mi?\n\n` +
       `1) Eski araçtan ayır\n2) Yeni araca bağla`
     );
@@ -348,7 +417,10 @@ export default function VehiclesPanel() {
       setBindSel((p) => ({ ...p, [toVehicleId]: "" }));
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      const { msg, status } = pickErr(e);
+      if (Number(status) === 409) setErr(`Uygun değil (409): ${msg}`);
+      else setErr(String(msg));
+      showToast("Transfer başarısız", "err");
     } finally {
       setBusy(false);
     }
@@ -424,7 +496,9 @@ export default function VehiclesPanel() {
       showToast("Araç güncellendi");
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      const { msg } = pickErr(e);
+      setErr(String(msg));
+      showToast("Güncelleme başarısız", "err");
     } finally {
       setBusy(false);
     }
@@ -449,7 +523,9 @@ export default function VehiclesPanel() {
 
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      const { msg } = pickErr(e);
+      setErr(String(msg));
+      showToast("Silme/arşivleme başarısız", "err");
     } finally {
       setBusy(false);
     }
@@ -480,7 +556,7 @@ export default function VehiclesPanel() {
 
       {toast ? (
         <div className={`card ${toast.kind === "err" ? "err" : ""}`} style={{ borderLeft: "6px solid", padding: "10px 12px" }}>
-          <b>{toast.kind === "warn" ? "⚠️ " : "✅ "}</b>
+          <b>{toast.kind === "warn" ? "⚠️ " : toast.kind === "err" ? "❌ " : "✅ "}</b>
           {toast.text}
         </div>
       ) : null}
@@ -729,9 +805,12 @@ export default function VehiclesPanel() {
                     const nextKm = v.lastServiceKm != null && v.serviceIntervalKm != null ? v.lastServiceKm + v.serviceIntervalKm : null;
                     const remainingKm = nextKm != null && v.odometerKm != null ? nextKm - v.odometerKm : null;
 
-                    const driverName = v.driver?.fullName || (v.driverId ? `#${v.driverId}` : "-");
+                    const drvId = Number(v.driver?.id || v.driverId || 0);
+                    const drvObj = v.driver || (drvId ? driversById.get(drvId) : null);
+                    const driverLabel = drvObj ? fmtDriverHuman(drvObj) : (drvId ? `#${drvId}` : "-");
+
                     const isArchived = Boolean(v.archivedAt);
-                    const hasDriver = Boolean(v.driverId || v.driver?.id);
+                    const hasDriver = Boolean(drvId);
                     const gpsOk = hasGpsFix(v);
 
                     return (
@@ -766,7 +845,7 @@ export default function VehiclesPanel() {
                         <td className="muted">{v.note ? String(v.note) : "-"}</td>
 
                         <td>
-                          <div className="muted">{driverName}</div>
+                          <div className="muted">{driverLabel}{drvId ? ` (id=${drvId})` : ""}</div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                             <button
                               type="button"
@@ -774,6 +853,7 @@ export default function VehiclesPanel() {
                               onClick={() => {
                                 setFocusVehicleId(Number(v.id));
                                 setTab("link");
+                                setErr("");
                               }}
                             >
                               Bağlantı
@@ -842,7 +922,10 @@ export default function VehiclesPanel() {
                   <label className="muted">Araç</label>
                   <select
                     value={String(focusVehicleId || "")}
-                    onChange={(e) => setFocusVehicleId(Number(e.target.value || 0))}
+                    onChange={(e) => {
+                      setFocusVehicleId(Number(e.target.value || 0));
+                      setErr("");
+                    }}
                     disabled={busy}
                   >
                     {items.map((v) => (
@@ -871,8 +954,15 @@ export default function VehiclesPanel() {
 
                 <button
                   type="button"
-                  disabled={busy || !focusVehicleId || !bindSel[focusVehicleId] || focusArchived}
+                  disabled={
+                    busy ||
+                    !focusVehicleId ||
+                    !bindSel[focusVehicleId] ||
+                    focusArchived ||
+                    selectedBoundOther // <- UX: başka araca bağlıysa bind yok, transfer var
+                  }
                   onClick={() => bindDriver(focusVehicleId)}
+                  title={selectedBoundOther ? "Driver başka araca bağlı. Transfer kullan." : ""}
                 >
                   Bağla
                 </button>
@@ -914,6 +1004,8 @@ export default function VehiclesPanel() {
                 <div className="muted">Aktif sürücü</div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
                   <b>{focusDriverLabel}</b>
+                  {focusHasDriver ? <span className="muted">(id={focusDriverId})</span> : null}
+
                   <button
                     type="button"
                     disabled={busy || focusArchived || !focusHasDriver}
