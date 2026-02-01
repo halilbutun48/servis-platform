@@ -1,5 +1,5 @@
 // web/src/panels/room/ShiftsPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -61,6 +61,35 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
   return a0 < b1 && b0 < a1; // [a0,a1) with [b0,b1)
 }
 
+// api wrapper bazen JSON string message fırlatıyor; normalize edelim
+function parsePossibleJson(text) {
+  try {
+    if (!text) return null;
+    const t = String(text).trim();
+    if (!t) return null;
+    if (t.startsWith("{") || t.startsWith("[")) return JSON.parse(t);
+  } catch {}
+  return null;
+}
+
+function normalizeErr(e) {
+  const msg = String(e?.message || e || "");
+  const j = parsePossibleJson(msg);
+  if (j && typeof j === "object") {
+    // {code,message,conflictingShift} veya {error:{...}}
+    if (j.code || j.message) return { code: j.code, message: j.message || msg, data: j };
+    if (j.error && typeof j.error === "object") {
+      return { code: j.error.code, message: j.error.message || msg, data: j.error };
+    }
+    if (j.error && typeof j.error === "string") {
+      const jj = parsePossibleJson(j.error);
+      if (jj && typeof jj === "object") return { code: jj.code, message: jj.message || msg, data: jj };
+      return { code: null, message: j.error, data: j };
+    }
+  }
+  return { code: null, message: msg, data: null };
+}
+
 export default function RoomShiftsPanel() {
   const { token } = useSession();
 
@@ -88,6 +117,12 @@ export default function RoomShiftsPanel() {
   // Room karşı teklif UI
   const [roomOfferOpen, setRoomOfferOpen] = useState({}); // { [shiftId]: bool }
   const [roomOfferSel, setRoomOfferSel] = useState({}); // { [shiftId]: { roomOfferVehicleId, roomOfferAmount, roomOfferNote, notifyDriver, driverNote } }
+
+  // M14: uygunluk/çatışma state (shift bazlı)
+  // shape: { [sid]: { sig, status, code, message, conflictingShift, source } }
+  // status: idle | checking | ok | conflict | error | missing
+  const [avail, setAvail] = useState({});
+  const availInflight = useRef(new Set());
 
   function toggleAvailable(shiftId) {
     setShowAvailableOnly((p) => ({ ...p, [Number(shiftId)]: !p[Number(shiftId)] }));
@@ -161,11 +196,196 @@ export default function RoomShiftsPanel() {
     return blockers.length === 0;
   }
 
+  function isDriverAvailableForShift(driverId, shift) {
+    const dId = Number(driverId);
+    if (!Number.isFinite(dId)) return false;
+
+    const blockers = items.filter((x) => {
+      if (!x?.driverId) return false;
+      if (Number(x.driverId) !== dId) return false;
+      const st = String(x.status || "");
+      if (!["APPROVED", "ACTIVE"].includes(st)) return false;
+      if (Number(x.id) === Number(shift.id)) return false;
+      return overlaps(x.startAt, x.endAt, shift.startAt, shift.endAt);
+    });
+
+    return blockers.length === 0;
+  }
+
   function vehiclesForRoom(roomId) {
     const rid = Number(roomId);
     return vehicles
       .filter((v) => !v?.roomId || Number(v.roomId) === rid)
       .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
+  }
+
+  function makeSig({ shift, vehicleId, driverId }) {
+    return [
+      String(vehicleId || ""),
+      String(driverId || ""),
+      String(shift?.startAt || ""),
+      String(shift?.endAt || ""),
+    ].join("|");
+  }
+
+  function localAvailability({ shift, vehicleId, driverId }) {
+    if (!vehicleId || !driverId) {
+      return { status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." };
+    }
+
+    const dOk = isDriverAvailableForShift(driverId, shift);
+    if (!dOk) {
+      const conflictingShift = items.find((x) => {
+        if (Number(x.id) === Number(shift.id)) return false;
+        const st = String(x.status || "");
+        if (!["APPROVED", "ACTIVE"].includes(st)) return false;
+        return (
+          Number(x.driverId) === Number(driverId) &&
+          overlaps(x.startAt, x.endAt, shift.startAt, shift.endAt)
+        );
+      });
+      return {
+        status: "conflict",
+        code: "DRIVER_CONFLICT",
+        message: "Driver aynı zaman aralığında başka bir vardiyada.",
+        conflictingShift: conflictingShift || null,
+      };
+    }
+
+    const vOk = isVehicleAvailableForShift(vehicleId, shift);
+    if (!vOk) {
+      const conflictingShift = items.find((x) => {
+        if (Number(x.id) === Number(shift.id)) return false;
+        const st = String(x.status || "");
+        if (!["APPROVED", "ACTIVE"].includes(st)) return false;
+        return (
+          Number(x.vehicleId) === Number(vehicleId) &&
+          overlaps(x.startAt, x.endAt, shift.startAt, shift.endAt)
+        );
+      });
+      return {
+        status: "conflict",
+        code: "VEHICLE_CONFLICT",
+        message: "Araç aynı zaman aralığında başka bir vardiyada.",
+        conflictingShift: conflictingShift || null,
+      };
+    }
+
+    return { status: "ok", code: "OK", message: "Uygun." };
+  }
+
+  async function remoteAvailability({ shift, vehicleId, driverId }) {
+    // backend’de varsa: GET /api/availability?vehicleId=..&driverId=..&startAt=..&endAt=..
+    const qs = new URLSearchParams({
+      vehicleId: String(vehicleId),
+      driverId: String(driverId),
+      startAt: String(shift.startAt),
+      endAt: String(shift.endAt),
+      shiftId: String(shift.id),
+    }).toString();
+
+    const r = await api(`/api/availability?${qs}`, { token });
+
+    // olası formatlar:
+    // { ok:true }
+    // { ok:false, code, message, conflictingShift }
+    // { available:true/false, ... }
+    if (r && typeof r === "object") {
+      if (r.ok === true || r.available === true) return { status: "ok", code: "OK", message: "Uygun.", source: "remote" };
+      if (r.ok === false || r.available === false) {
+        return {
+          status: "conflict",
+          code: r.code || "CONFLICT",
+          message: r.message || "Çakışma.",
+          conflictingShift: r.conflictingShift || r.conflict || null,
+          source: "remote",
+        };
+      }
+      // başka payload: {code,message,...}
+      if (r.code && (String(r.code).includes("CONFLICT") || String(r.code).includes("OVERLAP"))) {
+        return {
+          status: "conflict",
+          code: r.code,
+          message: r.message || "Çakışma.",
+          conflictingShift: r.conflictingShift || null,
+          source: "remote",
+        };
+      }
+      if (r.code || r.message) {
+        return {
+          status: "error",
+          code: r.code || "REMOTE_ERROR",
+          message: r.message || "Availability hata.",
+          source: "remote",
+        };
+      }
+    }
+
+    return { status: "error", code: "REMOTE_BAD_RESPONSE", message: "Availability: beklenmeyen response.", source: "remote" };
+  }
+
+  async function checkAvailabilityForShift(shift, vehicleId, driverId) {
+    const sid = Number(shift.id);
+    const sig = makeSig({ shift, vehicleId, driverId });
+
+    // sig değişmediyse tekrar etme
+    const prev = avail[sid];
+    if (prev?.sig === sig && prev?.status && prev.status !== "checking") return;
+
+    // seçim eksik
+    if (!vehicleId || !driverId) {
+      setAvail((p) => ({
+        ...p,
+        [sid]: { sig, status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." },
+      }));
+      return;
+    }
+
+    // inflight tekilleştirme
+    const inflightKey = `${sid}|${sig}`;
+    if (availInflight.current.has(inflightKey)) return;
+    availInflight.current.add(inflightKey);
+
+    setAvail((p) => ({
+      ...p,
+      [sid]: { sig, status: "checking", code: "CHECKING", message: "Kontrol ediliyor..." },
+    }));
+
+    try {
+      // önce remote dene; 404 vb. olursa local fallback
+      let out = null;
+      try {
+        out = await remoteAvailability({ shift, vehicleId, driverId });
+      } catch (e) {
+        const ne = normalizeErr(e);
+        const m = (ne?.message || "").toLowerCase();
+        const looks404 = m.includes("404") || m.includes("not found") || m.includes("cannot get") || m.includes("no route");
+        if (looks404) {
+          out = { ...localAvailability({ shift, vehicleId, driverId }), source: "local" };
+        } else {
+          // bazı projelerde availability yok ama approve 409 conflict ile geliyor; en azından local ile gösterelim
+          out = { ...localAvailability({ shift, vehicleId, driverId }), source: "local" };
+          // eğer local ok ama remote hataysa, yine de ok göster (UX)
+          if (out.status === "ok") out = { ...out, message: "Uygun (local)." };
+        }
+      }
+
+      if (!out) out = { status: "error", code: "AVAIL_UNKNOWN", message: "Uygunluk durumu belirlenemedi." };
+
+      setAvail((p) => ({
+        ...p,
+        [sid]: {
+          sig,
+          status: out.status || "error",
+          code: out.code || null,
+          message: out.message || "",
+          conflictingShift: out.conflictingShift || null,
+          source: out.source || "local",
+        },
+      }));
+    } finally {
+      availInflight.current.delete(inflightKey);
+    }
   }
 
   async function load() {
@@ -204,7 +424,6 @@ export default function RoomShiftsPanel() {
         }
         return changed ? next : prev;
       });
-
 
       // driver seçimleri init (var olanı ezme)
       const vMap = new Map(vlist.map((v) => [Number(v.id), v]));
@@ -260,8 +479,6 @@ export default function RoomShiftsPanel() {
   useAutoReload("rooms", load);
 
   const PENDING_STATUSES = useMemo(() => new Set(["DRAFT", "REQUESTED"]), []);
-  const FINAL_STATUSES = useMemo(() => new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]), []);
-
   const pendingBase = useMemo(
     () => items.filter((s) => PENDING_STATUSES.has(String(s.status))),
     [items, PENDING_STATUSES]
@@ -290,6 +507,36 @@ export default function RoomShiftsPanel() {
     arr = arr.filter((s) => matchShift(s, listQ));
     return arr;
   }, [listBase, listStatus, listQ]);
+
+  // M14: bekleyen listede seçimler değiştikçe availability güncelle (throttle)
+  useEffect(() => {
+    if (!pendingFiltered?.length) return;
+
+    let canceled = false;
+    const t = setTimeout(async () => {
+      for (const s of pendingFiltered) {
+        if (canceled) return;
+        const sid = Number(s.id);
+        const vStr = assignSel[sid] || "";
+        const dStr = driverSel[sid] || "";
+
+        const vId = vStr ? Number(vStr) : null;
+        const dId = dStr ? Number(dStr) : null;
+
+        // araç seçili ama driver boşsa, araçtaki driverId’yi kullan (approve ile uyum)
+        const autoD = vId ? (vehiclesById.get(Number(vId))?.driverId ? Number(vehiclesById.get(Number(vId))?.driverId) : null) : null;
+        const effDriverId = dId ?? autoD;
+
+        await checkAvailabilityForShift(s, vId, effDriverId);
+      }
+    }, 250);
+
+    return () => {
+      canceled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFiltered, assignSel, driverSel, vehiclesById]);
 
   function renderCompanyOfferSummary(s) {
     const ovId = s.companyOfferVehicleId ? Number(s.companyOfferVehicleId) : null;
@@ -383,6 +630,69 @@ export default function RoomShiftsPanel() {
     );
   }
 
+  function renderAvailLine(shift, vehicleId, driverId, autoDriverName) {
+    const sid = Number(shift.id);
+    const a = avail[sid] || null;
+
+    const missing = !vehicleId || !driverId;
+    const conflict = a?.status === "conflict";
+    const ok = a?.status === "ok";
+    const checking = a?.status === "checking";
+
+    const code = a?.code || (missing ? "SELECT_REQUIRED" : null);
+    const msg = a?.message || (missing ? "Araç ve driver seç." : "");
+
+    // conflict details
+    const cs = a?.conflictingShift || null;
+    const csId = cs?.id ? Number(cs.id) : null;
+    const csRoom = cs?.roomId ? roomsById.get(Number(cs.roomId)) : null;
+    const csCompanyName = cs?.company?.name || (cs?.companyId ? `#${cs.companyId}` : null);
+    const csRoomName = csRoom ? roomLabel(csRoom) : (cs?.roomId ? `Room #${cs.roomId}` : null);
+
+    return (
+      <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+        <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span>
+            <b>Uygunluk:</b>{" "}
+            {checking ? (
+              <span className="pill" data-status="PENDING">CHECK</span>
+            ) : ok ? (
+              <span className="pill" data-status="OK">OK</span>
+            ) : conflict ? (
+              <span className="pill" data-status="REJECTED">{String(code || "CONFLICT")}</span>
+            ) : missing ? (
+              <span className="pill" data-status="PENDING">SEÇİM</span>
+            ) : (
+              <span className="pill" data-status="REJECTED">ERROR</span>
+            )}
+          </span>
+
+          <span className="muted">
+            (Araç driver: {autoDriverName})
+          </span>
+
+          {msg ? <span className="muted">• {msg}</span> : null}
+        </div>
+
+        {conflict && csId ? (
+          <div className="card" style={{ padding: 10 }}>
+            <div className="muted">
+              <b>Çakışan vardiya:</b> #{csId}{" "}
+              {cs?.status ? <span className="pill" data-status={cs.status} style={{ marginLeft: 6 }}>{cs.status}</span> : null}
+            </div>
+            <div className="muted" style={{ marginTop: 6 }}>
+              {csCompanyName ? <span><b>Company:</b> {csCompanyName}</span> : null}
+              {csRoomName ? <span>{" "}• <b>Room:</b> {csRoomName}</span> : null}
+            </div>
+            <div className="muted" style={{ marginTop: 6 }}>
+              <b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   async function approveShift(shift) {
     const sid = Number(shift.id);
 
@@ -407,6 +717,21 @@ export default function RoomShiftsPanel() {
       return;
     }
 
+    // UI gate: eğer local/remote conflict görüyorsak approve’e izin verme
+    const a = avail[sid];
+    if (a?.status === "conflict") {
+      setErr(a?.message || "Çakışma var. Uygun olmayan driver/araç.");
+      return;
+    }
+
+    // son bir kez kontrol (seçim yeni ise)
+    await checkAvailabilityForShift(shift, vehicleId, driverId);
+    const a2 = avail[sid];
+    if (a2?.status === "conflict") {
+      setErr(a2?.message || "Çakışma var. Uygun olmayan driver/araç.");
+      return;
+    }
+
     setBusy(true);
     setErr("");
     try {
@@ -419,7 +744,22 @@ export default function RoomShiftsPanel() {
       invalidate("shifts");
       await load();
     } catch (e) {
-      setErr(String(e?.message || e));
+      const ne = normalizeErr(e);
+      // conflict payload gelirse availability panelini de güncelle
+      if (ne?.data?.conflictingShift || ne?.data?.code) {
+        setAvail((p) => ({
+          ...p,
+          [sid]: {
+            sig: makeSig({ shift, vehicleId, driverId }),
+            status: "conflict",
+            code: ne.data.code || ne.code || "CONFLICT",
+            message: ne.data.message || ne.message || "Çakışma.",
+            conflictingShift: ne.data.conflictingShift || null,
+            source: "approve",
+          },
+        }));
+      }
+      setErr(ne.message);
     } finally {
       setBusy(false);
     }
@@ -440,102 +780,91 @@ export default function RoomShiftsPanel() {
     }
   }
 
-  function applyCompanyOffer(shift) {
+  async function sendRoomOffer(shift) {
     const sid = Number(shift.id);
-    if (shift.companyOfferVehicleId) {
-      setAssignSel((p) => ({ ...p, [sid]: String(shift.companyOfferVehicleId) }));
-    }
-  }
+    const form = roomOfferSel[sid] || {};
 
-async function sendRoomOffer(shift) {
-  const sid = Number(shift.id);
-  const form = roomOfferSel[sid] || {};
+    const toIntOrNull = (v) => {
+      if (v == null) return null;
+      if (typeof v === "number") return Number.isFinite(v) && v > 0 ? v : null;
+      const s = String(v).trim();
+      if (!s) return null;
+      const digits = s.replace(/[^\d]/g, "");
+      if (!digits) return null;
+      const n = Number(digits);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
 
-  const toIntOrNull = (v) => {
-    if (v == null) return null;
-    if (typeof v === "number") return Number.isFinite(v) && v > 0 ? v : null;
-    const s = String(v).trim();
-    if (!s) return null;
-    const digits = s.replace(/[^\d]/g, "");
-    if (!digits) return null;
-    const n = Number(digits);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  };
+    const roomOfferVehicleId = toIntOrNull(form.roomOfferVehicleId);
+    const roomOfferAmount = toIntOrNull(parseTryInput(form.roomOfferAmount));
+    const roomOfferNote = trimOrNull(form.roomOfferNote);
 
-  const roomOfferVehicleId = toIntOrNull(form.roomOfferVehicleId);
-  const roomOfferAmount = toIntOrNull(parseTryInput(form.roomOfferAmount));
-  const roomOfferNote = trimOrNull(form.roomOfferNote);
+    const notifyDriver = Boolean(form.notifyDriver);
+    const driverNote = trimOrNull(form.driverNote);
 
-  const notifyDriver = Boolean(form.notifyDriver);
-  const driverNote = trimOrNull(form.driverNote);
-
-  if (notifyDriver && !roomOfferVehicleId) {
-    setErr("Driver’a ilet seçtiysen teklif aracı seçmelisin.");
-    return;
-  }
-
-  const hasAny =
-    roomOfferVehicleId != null ||
-    roomOfferAmount != null ||
-    roomOfferNote != null ||
-    notifyDriver === true ||
-    (notifyDriver && driverNote != null);
-
-  if (!hasAny) {
-    setErr("Gönderilecek bir teklif alanı yok. (Araç / tutar / not seç)");
-    return;
-  }
-
-  const payload = {
-    roomOfferVehicleId: roomOfferVehicleId ?? null,
-    roomOfferAmount: roomOfferAmount ?? null,
-    roomOfferNote: roomOfferNote ?? null,
-    notifyDriver: notifyDriver ? true : false,
-    driverNote: notifyDriver ? driverNote ?? null : null,
-  };
-
-  setBusy(true);
-  setErr("");
-  try {
-    // Debug: gerçek payload’ı gör
-    console.log("room-offer payload =>", payload);
-
-    const res = await api(`/api/shifts/${sid}/room-offer`, {
-      method: "PUT",
-      token,
-      body: payload,
-    });
-
-    // ✅ sessiz hata yakala
-    if (res && typeof res === "object" && res.error) {
-      throw new Error(res.error);
-    }
-    if (!res || !res.id) {
-      throw new Error("room-offer başarısız: boş response");
+    if (notifyDriver && !roomOfferVehicleId) {
+      setErr("Driver’a ilet seçtiysen teklif aracı seçmelisin.");
+      return;
     }
 
-    // ✅ “persist doğrulama”: response’ta beklediğimiz değerler yoksa UI kapanmasın
-    const mismatch =
-      (payload.roomOfferNote != null && (res.roomOfferNote ?? null) !== payload.roomOfferNote) ||
-      (payload.roomOfferAmount != null && Number(res.roomOfferAmount ?? NaN) !== Number(payload.roomOfferAmount)) ||
-      (payload.roomOfferVehicleId != null && Number(res.roomOfferVehicleId ?? NaN) !== Number(payload.roomOfferVehicleId));
+    const hasAny =
+      roomOfferVehicleId != null ||
+      roomOfferAmount != null ||
+      roomOfferNote != null ||
+      notifyDriver === true ||
+      (notifyDriver && driverNote != null);
 
-    console.log("room-offer response =>", res);
-
-    if (mismatch) {
-      throw new Error("Backend teklifi kaydetmedi (response mismatch). Network response’u kontrol et.");
+    if (!hasAny) {
+      setErr("Gönderilecek bir teklif alanı yok. (Araç / tutar / not seç)");
+      return;
     }
 
-    // sadece gerçekten başarılıysa kapat
-    setRoomOfferOpen((p) => ({ ...p, [sid]: false }));
-    invalidate("shifts");
-    await load();
-  } catch (e) {
-    setErr(String(e?.message || e));
-  } finally {
-    setBusy(false);
+    const payload = {
+      roomOfferVehicleId: roomOfferVehicleId ?? null,
+      roomOfferAmount: roomOfferAmount ?? null,
+      roomOfferNote: roomOfferNote ?? null,
+      notifyDriver: notifyDriver ? true : false,
+      driverNote: notifyDriver ? driverNote ?? null : null,
+    };
+
+    setBusy(true);
+    setErr("");
+    try {
+      console.log("room-offer payload =>", payload);
+
+      const res = await api(`/api/shifts/${sid}/room-offer`, {
+        method: "PUT",
+        token,
+        body: payload,
+      });
+
+      if (res && typeof res === "object" && res.error) {
+        throw new Error(res.error);
+      }
+      if (!res || !res.id) {
+        throw new Error("room-offer başarısız: boş response");
+      }
+
+      const mismatch =
+        (payload.roomOfferNote != null && (res.roomOfferNote ?? null) !== payload.roomOfferNote) ||
+        (payload.roomOfferAmount != null && Number(res.roomOfferAmount ?? NaN) !== Number(payload.roomOfferAmount)) ||
+        (payload.roomOfferVehicleId != null && Number(res.roomOfferVehicleId ?? NaN) !== Number(payload.roomOfferVehicleId));
+
+      console.log("room-offer response =>", res);
+
+      if (mismatch) {
+        throw new Error("Backend teklifi kaydetmedi (response mismatch). Network response’u kontrol et.");
+      }
+
+      setRoomOfferOpen((p) => ({ ...p, [sid]: false }));
+      invalidate("shifts");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
   }
-}
 
   async function clearRoomOffer(shift) {
     const sid = Number(shift.id);
@@ -609,7 +938,7 @@ async function sendRoomOffer(shift) {
                 <th>Start</th>
                 <th>End</th>
                 <th>Teklif / Pazarlık</th>
-                <th>Vehicle</th>
+                <th>Vehicle + Driver</th>
                 <th>Approve</th>
                 <th>Reddet</th>
               </tr>
@@ -619,7 +948,8 @@ async function sendRoomOffer(shift) {
                 const sid = Number(s.id);
                 const roomVehicles = vehiclesForRoom(s.roomId);
                 const selectedVehicleId = assignSel[sid] || "";
-                const selectedVehicle = selectedVehicleId ? vehiclesById.get(Number(selectedVehicleId)) : null;
+                const vId = selectedVehicleId ? Number(selectedVehicleId) : null;
+                const selectedVehicle = vId ? vehiclesById.get(vId) : null;
 
                 const onlyAvail = Boolean(showAvailableOnly[sid]);
                 const availVehicles = roomVehicles.filter((v) => isVehicleAvailableForShift(v.id, s));
@@ -635,6 +965,19 @@ async function sendRoomOffer(shift) {
                     ? `#${autoDriverId}`
                     : "-";
 
+                const selD = driverSel[sid] ?? "";
+                const manualDriverId = selD ? Number(selD) : null;
+                const effDriverId = manualDriverId ?? autoDriverId ?? null;
+
+                const a = avail[sid];
+                const approveDisabled =
+                  busy ||
+                  !vId ||
+                  !effDriverId ||
+                  a?.status === "checking" ||
+                  a?.status === "conflict" ||
+                  a?.status === "error";
+
                 const offerIsOpen = Boolean(roomOfferOpen[sid]);
                 const offerForm = roomOfferSel[sid] || {};
                 const offerVehList = roomVehicles;
@@ -649,8 +992,6 @@ async function sendRoomOffer(shift) {
                     <td>
                       <div style={{ display: "grid", gap: 6 }}>
                         <div>{renderCompanyOfferSummary(s)}</div>
-
-                        
 
                         <button type="button" disabled={busy} onClick={() => toggleRoomOffer(sid)}>
                           {offerIsOpen ? "Room Teklifi Kapat" : "Room Teklifi (opsiyonel) Aç"}
@@ -751,19 +1092,23 @@ async function sendRoomOffer(shift) {
                       <div style={{ display: "grid", gap: 6 }}>
                         <select
                           value={selectedVehicleId}
-                          onChange={(e) => {
-                      const val = e.target.value;
-                      setAssignSel((p) => ({ ...p, [sid]: val }));
+                          onChange={async (e) => {
+                            const val = e.target.value;
+                            setAssignSel((p) => ({ ...p, [sid]: val }));
 
-                      // araç değişince (driver seçilmemişse) araçtaki driver'ı otomatik seç
-                      if (!driverSel[sid]) {
-                        const vid = val ? Number(val) : null;
-                        const v = vid ? vehiclesById.get(vid) : null;
-                        if (v?.driverId) {
-                          setDriverSel((p) => ({ ...p, [sid]: String(v.driverId) }));
-                        }
-                      }
-                    }}
+                            // araç değişince (driver seçilmemişse) araçtaki driver'ı otomatik seç
+                            const hadManual = Boolean(driverSel[sid]);
+                            if (!hadManual) {
+                              const vid = val ? Number(val) : null;
+                              const vv = vid ? vehiclesById.get(vid) : null;
+                              if (vv?.driverId) {
+                                setDriverSel((p) => ({ ...p, [sid]: String(vv.driverId) }));
+                                // availability check will run via effect
+                              } else {
+                                // availability check will run via effect
+                              }
+                            }
+                          }}
                           disabled={busy}
                         >
                           <option value="">— araç seç —</option>
@@ -775,34 +1120,48 @@ async function sendRoomOffer(shift) {
                         </select>
 
                         <div className="row" style={{ marginTop: 6, alignItems: "center" }}>
-                    <label className="muted" style={{ minWidth: 80 }}>Driver</label>
-                    <select
-                      value={driverSel[sid] ?? ""}
-                      onChange={(e) => setDriverSel((p) => ({ ...p, [sid]: e.target.value }))}
-                      disabled={busy}
-                    >
-                      <option value="">Seç (opsiyonel)</option>
-                      {drivers
-                        .filter((d) => Number(d.roomId) === Number(shift.roomId))
-                        .map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.fullName || d.name || `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() || `#${d.id}`}
-                          </option>
-                        ))}
-                    </select>
-                    <span className="muted" style={{ marginLeft: 8 }}>
-                      (Araç driver: {autoDriverName})
-                    </span>
-                  </div>
+                          <label className="muted" style={{ minWidth: 80 }}>Driver</label>
+                          <select
+                            value={driverSel[sid] ?? ""}
+                            onChange={(e) => setDriverSel((p) => ({ ...p, [sid]: e.target.value }))}
+                            disabled={busy}
+                          >
+                            <option value="">Seç (opsiyonel)</option>
+                            {drivers
+                              .filter((d) => !d?.roomId || Number(d.roomId) === Number(s.roomId))
+                              .map((d) => (
+                                <option key={d.id} value={String(d.id)}>
+                                  {d.fullName ||
+                                    d.name ||
+                                    `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() ||
+                                    `#${d.id}`}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
 
                         <button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
                           {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}
                         </button>
+
+                        {renderAvailLine(s, vId, effDriverId, autoDriverName)}
                       </div>
                     </td>
 
                     <td>
-                      <button type="button" disabled={busy} onClick={() => approveShift(s)}>
+                      <button
+                        type="button"
+                        disabled={approveDisabled}
+                        onClick={() => approveShift(s)}
+                        title={
+                          !vId ? "Araç seç" :
+                          !effDriverId ? "Driver seç (veya araç driver bağlı olsun)" :
+                          a?.status === "checking" ? "Kontrol ediliyor" :
+                          a?.status === "conflict" ? "Çakışma var" :
+                          a?.status === "error" ? "Uygunluk hatası" :
+                          ""
+                        }
+                      >
                         {busy ? "..." : "Approve"}
                       </button>
                     </td>

@@ -1,3 +1,4 @@
+// backend/src/routes/shifts/room.js
 import prisma from "../../prisma.js";
 import { authRequired, requireRole } from "../../auth/middleware.js";
 import { validateWithZod } from "../../z.js";
@@ -18,114 +19,233 @@ const emitShift = H.emitShift;
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 const resolveRequestDelegateSafe = H.resolveRequestDelegateSafe;
 
-import { checkShiftConflicts, conflictResponse } from "../../services/shiftConflict.js";
+import {
+  checkShiftConflicts,
+  conflictResponse,
+} from "../../services/shiftConflict.js";
 
 // ROOM + SUPER_ADMIN endpoints (approve/reject/start/room-offer + M7 suggestions)
 export function attachShiftRoomRoutes(r, io) {
-  // ROOM: approve/assign shift (bind vehicle+driver) -> sets status APPROVED
-    const approveShiftHandler = async (req, res) => {
+  // -------------------------
+  // shared helpers (M14 SSOT)
+  // -------------------------
+  const httpError = (status, message) => {
+    const e = new Error(message);
+    e.status = status;
+    return e;
+  };
+
+  const toInt = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const isValidIso = (iso) => {
+    const t = new Date(String(iso)).getTime();
+    return Number.isFinite(t);
+  };
+
+  async function ensureVehicleDriverScopeOrThrow({ scopeRoomId, vehicleId, driverId }) {
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: { id: true, roomId: true, archivedAt: true },
+    });
+    if (!vehicle || vehicle.archivedAt) {
+      throw httpError(400, "Vehicle not found/archived");
+    }
+    if (
+      scopeRoomId != null &&
+      vehicle.roomId != null &&
+      Number(vehicle.roomId) !== Number(scopeRoomId)
+    ) {
+      throw httpError(403, "Vehicle is not in this room scope");
+    }
+
+    const driver = await prisma.driver.findUnique({
+      where: { id: driverId },
+      select: { id: true, roomId: true },
+    });
+    if (!driver) {
+      throw httpError(400, "Driver not found");
+    }
+    if (
+      scopeRoomId != null &&
+      driver.roomId != null &&
+      Number(driver.roomId) !== Number(scopeRoomId)
+    ) {
+      throw httpError(403, "Driver is not in this room scope");
+    }
+
+    return { vehicle, driver };
+  }
+
+  async function getConflictOrNull({ driverId, vehicleId, startAt, endAt, excludeShiftId }) {
+    const conflicts = await checkShiftConflicts({
+      driverId,
+      vehicleId,
+      startAt,
+      endAt,
+      excludeShiftId,
+    });
+    const cr = conflictResponse(conflicts);
+    return cr || null;
+  }
+
+  // -------------------------
+  // M14: Availability endpoint
+  // -------------------------
+  // ROOM/SUPER_ADMIN:
+  // GET /api/availability?driverId=..&vehicleId=..&startAt=..&endAt=..&excludeShiftId=..
+  r.get(
+    "/availability",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
       try {
-        const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId))
-          return res.status(400).json({ error: "bad shiftId" });
+        const driverId = toInt(req.query.driverId);
+        const vehicleId = toInt(req.query.vehicleId);
+        const startAt = String(req.query.startAt ?? "");
+        const endAt = String(req.query.endAt ?? "");
+        const excludeShiftId = toInt(req.query.excludeShiftId);
 
-        const body = validateWithZod(approveShiftSchema, req.body);
-        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
-
-        if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot approve while shift is ACTIVE" });
+        if (!driverId || !vehicleId) {
+          return res.status(400).json({ error: "driverId/vehicleId required" });
+        }
+        if (!startAt || !endAt || !isValidIso(startAt) || !isValidIso(endAt)) {
+          return res.status(400).json({ error: "startAt/endAt invalid" });
+        }
+        const a0 = new Date(startAt).getTime();
+        const a1 = new Date(endAt).getTime();
+        if (!(a0 < a1)) {
+          return res.status(400).json({ error: "startAt must be < endAt" });
         }
 
-        const vehicleId = Number(body.vehicleId);
-        const driverId = Number(body.driverId);
-        if (!Number.isFinite(vehicleId) || !Number.isFinite(driverId)) {
-          return res
-            .status(400)
-            .json({ error: "vehicleId/driverId required" });
-        }
+        // scopeRoomId:
+        // - ROOM ise req.user.roomId üzerinden scope'la
+        // - SUPER_ADMIN ise scopeRoomId null kalsın (daha esnek)
+        const scopeRoomId =
+          req.user?.role === "ROOM" ? toInt(req.user?.roomId) : null;
 
-        
-        // scope validation: vehicle and driver must belong to this shift's room
-        const vehicle = await prisma.vehicle.findUnique({
-          where: { id: vehicleId },
-          select: { id: true, roomId: true, archivedAt: true },
-        });
-        if (!vehicle || vehicle.archivedAt) {
-          return res.status(400).json({ error: "Vehicle not found/archived" });
-        }
-        if (vehicle.roomId != null && Number(vehicle.roomId) !== Number(shift.roomId)) {
-          return res.status(403).json({ error: "Vehicle is not in this room scope" });
-        }
-
-        const driver = await prisma.driver.findUnique({
-          where: { id: driverId },
-          select: { id: true, roomId: true },
-        });
-        if (!driver) {
-          return res.status(400).json({ error: "Driver not found" });
-        }
-        if (driver.roomId != null && Number(driver.roomId) !== Number(shift.roomId)) {
-          return res.status(403).json({ error: "Driver is not in this room scope" });
-        }
-
-        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
-        const conflicts = await checkShiftConflicts({
-          driverId: driverId,
-          vehicleId: vehicleId,
-          startAt: shift.startAt,
-          endAt: shift.endAt,
-          excludeShiftId: shift.id,
-        });
-        const cr = conflictResponse(conflicts);
-        if (cr) return res.status(409).json(cr);
-const updated = await prisma.shift.update({
-          where: { id: shiftId },
-          data: {
-            status: "APPROVED",
-            vehicleId,
-            driverId,
-          },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
+        // validate that vehicle/driver are in scope (same room)
+        await ensureVehicleDriverScopeOrThrow({
+          scopeRoomId,
+          vehicleId,
+          driverId,
         });
 
-        await audit(req, {
-          action: "SHIFT_APPROVE",
-          entity: "Shift",
-          entityId: updated.id,
-          meta: { vehicleId, driverId },
+        const cr = await getConflictOrNull({
+          driverId,
+          vehicleId,
+          startAt,
+          endAt,
+          excludeShiftId: excludeShiftId || null,
         });
 
-        emitShift(io, updated, "shift:update");
-        emitShift(io, updated, "route:plan");
-        return res.json(updated);
+        if (cr) {
+          return res.status(409).json({ ok: false, ...cr });
+        }
+        return res.json({ ok: true });
       } catch (e) {
         return res
           .status(e?.status ?? 500)
           .json({ error: String(e?.message ?? e) });
       }
-      };
+    }
+  );
 
-  // Support both PUT and POST for approve (scripts expect POST)
+  // -------------------------
+  // ROOM: approve/assign helpers
+  // -------------------------
+  async function approveOrAssign(req, res, { auditAction }) {
+    try {
+      const shiftId = Number(req.params.id);
+      if (!Number.isFinite(shiftId))
+        return res.status(400).json({ error: "bad shiftId" });
+
+      // schema differs (approve vs assign) but both contain vehicleId/driverId
+      const body = validateWithZod(
+        auditAction === "SHIFT_ASSIGN" ? assignShiftSchema : approveShiftSchema,
+        req.body
+      );
+
+      const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+      if (shift.status === "ACTIVE") {
+        return res
+          .status(400)
+          .json({ error: "Cannot approve/assign while shift is ACTIVE" });
+      }
+
+      const vehicleId = Number(body.vehicleId);
+      const driverId = Number(body.driverId);
+      if (!Number.isFinite(vehicleId) || !Number.isFinite(driverId)) {
+        return res.status(400).json({ error: "vehicleId/driverId required" });
+      }
+
+      // scope validation: vehicle and driver must belong to this shift's room
+      await ensureVehicleDriverScopeOrThrow({
+        scopeRoomId: Number(shift.roomId),
+        vehicleId,
+        driverId,
+      });
+
+      // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
+      const cr = await getConflictOrNull({
+        driverId,
+        vehicleId,
+        startAt: shift.startAt,
+        endAt: shift.endAt,
+        excludeShiftId: shift.id,
+      });
+      if (cr) return res.status(409).json(cr);
+
+      const updated = await prisma.shift.update({
+        where: { id: shiftId },
+        data: {
+          status: "APPROVED",
+          vehicleId,
+          driverId,
+        },
+        include: {
+          stops: { orderBy: { order: "asc" } },
+          progress: true,
+          vehicle: true,
+          driver: true,
+          company: true,
+          room: true,
+        },
+      });
+
+      await audit(req, {
+        action: auditAction,
+        entity: "Shift",
+        entityId: updated.id,
+        meta: { vehicleId, driverId },
+      });
+
+      emitShift(io, updated, "shift:update");
+      emitShift(io, updated, "route:plan");
+      return res.json(updated);
+    } catch (e) {
+      return res
+        .status(e?.status ?? 500)
+        .json({ error: String(e?.message ?? e) });
+    }
+  }
+
+  // ROOM: approve shift (bind vehicle+driver) -> sets status APPROVED
   r.put(
     "/:id/approve",
     authRequired(),
     requireRole("ROOM", "SUPER_ADMIN"),
-    approveShiftHandler
+    (req, res) => approveOrAssign(req, res, { auditAction: "SHIFT_APPROVE" })
   );
+  // Support both PUT and POST for approve (scripts expect POST)
   r.post(
     "/:id/approve",
     authRequired(),
     requireRole("ROOM", "SUPER_ADMIN"),
-    approveShiftHandler
+    (req, res) => approveOrAssign(req, res, { auditAction: "SHIFT_APPROVE" })
   );
 
   // ROOM: assign shift (backward compatible alias)
@@ -135,96 +255,7 @@ const updated = await prisma.shift.update({
     "/:id/assign",
     authRequired(),
     requireRole("ROOM", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
-        const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId))
-          return res.status(400).json({ error: "bad shiftId" });
-
-        const body = validateWithZod(assignShiftSchema, req.body);
-        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
-
-        if (shift.status === "ACTIVE") {
-          return res
-            .status(400)
-            .json({ error: "Cannot assign while shift is ACTIVE" });
-        }
-
-        const vehicleId = Number(body.vehicleId);
-        const driverId = Number(body.driverId);
-        if (!Number.isFinite(vehicleId) || !Number.isFinite(driverId)) {
-          return res
-            .status(400)
-            .json({ error: "vehicleId/driverId required" });
-        }
-
-        
-        // scope validation: vehicle and driver must belong to this shift's room
-        const vehicle = await prisma.vehicle.findUnique({
-          where: { id: vehicleId },
-          select: { id: true, roomId: true, archivedAt: true },
-        });
-        if (!vehicle || vehicle.archivedAt) {
-          return res.status(400).json({ error: "Vehicle not found/archived" });
-        }
-        if (vehicle.roomId != null && Number(vehicle.roomId) !== Number(shift.roomId)) {
-          return res.status(403).json({ error: "Vehicle is not in this room scope" });
-        }
-
-        const driver = await prisma.driver.findUnique({
-          where: { id: driverId },
-          select: { id: true, roomId: true },
-        });
-        if (!driver) {
-          return res.status(400).json({ error: "Driver not found" });
-        }
-        if (driver.roomId != null && Number(driver.roomId) !== Number(shift.roomId)) {
-          return res.status(403).json({ error: "Driver is not in this room scope" });
-        }
-
-        // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
-        const conflicts = await checkShiftConflicts({
-          driverId: driverId,
-          vehicleId: vehicleId,
-          startAt: shift.startAt,
-          endAt: shift.endAt,
-          excludeShiftId: shift.id,
-        });
-        const cr = conflictResponse(conflicts);
-        if (cr) return res.status(409).json(cr);
-const updated = await prisma.shift.update({
-          where: { id: shiftId },
-          data: {
-            status: "APPROVED",
-            vehicleId,
-            driverId,
-          },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
-        });
-
-        await audit(req, {
-          action: "SHIFT_ASSIGN",
-          entity: "Shift",
-          entityId: updated.id,
-          meta: { vehicleId, driverId },
-        });
-
-        emitShift(io, updated, "shift:update");
-        emitShift(io, updated, "route:plan");
-        return res.json(updated);
-      } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
-      }
-    }
+    (req, res) => approveOrAssign(req, res, { auditAction: "SHIFT_ASSIGN" })
   );
 
   // ROOM: reject shift -> sets status REJECTED + unbind
@@ -295,27 +326,46 @@ const updated = await prisma.shift.update({
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId))
+          return res.status(400).json({ error: "bad shiftId" });
 
         const body = validateWithZod(roomOfferSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res.status(400).json({ error: "Cannot send room-offer while shift is ACTIVE" });
+          return res
+            .status(400)
+            .json({ error: "Cannot send room-offer while shift is ACTIVE" });
         }
 
         // Keep backward-compat: fields can be omitted (undefined), provided as null, or provided as value
-        const hasVehicle = Object.prototype.hasOwnProperty.call(body, "roomOfferVehicleId");
-        const hasAmount = Object.prototype.hasOwnProperty.call(body, "roomOfferAmount");
-        const hasNote = Object.prototype.hasOwnProperty.call(body, "roomOfferNote");
-        const hasDriverNote = Object.prototype.hasOwnProperty.call(body, "driverNote");
+        const hasVehicle = Object.prototype.hasOwnProperty.call(
+          body,
+          "roomOfferVehicleId"
+        );
+        const hasAmount = Object.prototype.hasOwnProperty.call(
+          body,
+          "roomOfferAmount"
+        );
+        const hasNote = Object.prototype.hasOwnProperty.call(
+          body,
+          "roomOfferNote"
+        );
+        const hasDriverNote = Object.prototype.hasOwnProperty.call(
+          body,
+          "driverNote"
+        );
 
-        const roomOfferVehicleId = hasVehicle ? (body.roomOfferVehicleId ?? null) : undefined;
-        const roomOfferAmount = hasAmount ? (body.roomOfferAmount ?? null) : undefined;
-        const roomOfferNote = hasNote ? (body.roomOfferNote ?? null) : undefined;
+        const roomOfferVehicleId = hasVehicle
+          ? body.roomOfferVehicleId ?? null
+          : undefined;
+        const roomOfferAmount = hasAmount
+          ? body.roomOfferAmount ?? null
+          : undefined;
+        const roomOfferNote = hasNote ? body.roomOfferNote ?? null : undefined;
 
         const notifyDriver = Boolean(body.notifyDriver);
-        const driverNote = hasDriverNote ? (body.driverNote ?? null) : undefined;
+        const driverNote = hasDriverNote ? body.driverNote ?? null : undefined;
 
         let roomOfferToDriver = false;
 
@@ -332,10 +382,19 @@ const updated = await prisma.shift.update({
             where: { id: Number(roomOfferVehicleId) },
             select: { id: true, roomId: true, driverId: true },
           });
-          if (!v) return res.status(400).json({ error: "roomOfferVehicleId not found" });
+          if (!v)
+            return res
+              .status(400)
+              .json({ error: "roomOfferVehicleId not found" });
 
-          if (shift.roomId && v.roomId && Number(v.roomId) !== Number(shift.roomId)) {
-            return res.status(400).json({ error: "roomOfferVehicleId must belong to the same room" });
+          if (
+            shift.roomId &&
+            v.roomId &&
+            Number(v.roomId) !== Number(shift.roomId)
+          ) {
+            return res.status(400).json({
+              error: "roomOfferVehicleId must belong to the same room",
+            });
           }
 
           if (!v.driverId) {
@@ -354,7 +413,7 @@ const updated = await prisma.shift.update({
           ...(roomOfferNote !== undefined ? { roomOfferNote } : {}),
 
           roomOfferToDriver,
-          roomOfferDriverNote: roomOfferToDriver ? (driverNote ?? null) : null,
+          roomOfferDriverNote: roomOfferToDriver ? driverNote ?? null : null,
 
           // yeni teklif → karar sürecini resetle
           roomOfferDecision: "PENDING",
@@ -390,11 +449,12 @@ const updated = await prisma.shift.update({
         emitShift(io, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return res
+          .status(e?.status ?? 500)
+          .json({ error: String(e?.message ?? e) });
       }
     }
   );
-
 
   // ROOM: start shift (status ACTIVE)
   r.post(
@@ -415,23 +475,20 @@ const updated = await prisma.shift.update({
             .json({ error: "Shift must be APPROVED to start" });
         }
         if (!shift.vehicleId || !shift.driverId) {
-          return res
-            .status(400)
-            .json({ error: "Shift missing vehicle/driver" });
+          return res.status(400).json({ error: "Shift missing vehicle/driver" });
         }
 
-        
         // conflict checks: driver/vehicle overlap (ACTIVE or APPROVED)
-        const conflicts = await checkShiftConflicts({
+        const cr = await getConflictOrNull({
           driverId: shift.driverId,
           vehicleId: shift.vehicleId,
           startAt: shift.startAt,
           endAt: shift.endAt,
           excludeShiftId: shift.id,
         });
-        const cr = conflictResponse(conflicts);
         if (cr) return res.status(409).json(cr);
-const updated = await prisma.shift.update({
+
+        const updated = await prisma.shift.update({
           where: { id: shiftId },
           data: { status: "ACTIVE" },
           include: {

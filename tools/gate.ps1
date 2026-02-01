@@ -1,7 +1,7 @@
 # tools/gate.ps1
 param(
-  [ValidateRange(0,13)]
-  [int]$To = 13,                 # ✅ default: M0..M13
+  [ValidateRange(0,14)]
+  [int]$To = 14,                 # ✅ default: M0..M14
 
   # Repo-relative defaults (portable)
   [string]$ComposeDir = (Join-Path $PSScriptRoot "..\infra"),
@@ -50,7 +50,7 @@ try {
   }
   if (-not $healthOk) { throw "FAILED: health (exit=52)" }
 
-  # Milestone checks (M0..M12) — ✅ single source
+  # Milestone checks (M0..M14) — ✅ single source
   $checks = @(
     @{ n = 0;  name="M0";  cmd="node scripts/m0check.js"  },
     @{ n = 1;  name="M1";  cmd="node scripts/m1check.js"  },
@@ -65,10 +65,11 @@ try {
     @{ n = 10; name="M10"; cmd="node scripts/m10check.js" },
     @{ n = 11; name="M11"; cmd="node scripts/m11check.js" },
     @{ n = 12; name="M12"; cmd="node scripts/m12check.js" },
-    @{ n = 13; name="M13"; cmd="node scripts/m13check.js" }
+    @{ n = 13; name="M13"; cmd="node scripts/m13check.js" },
+    @{ n = 14; name="M14"; cmd="node scripts/m14check.js" }
   )
 
-  # ✅ Only include checks that exist in the image (defensive)
+  # ✅ Only include checks that exist in the image/host (defensive)
   $runList = @()
   foreach ($c in $checks | Where-Object { $_.n -le $To } | Sort-Object n) {
     $hostPath = Join-Path $RepoDir ("backend\scripts\m{0}check.js" -f $c.n)

@@ -1,7 +1,7 @@
 # tools/pack.ps1
 param(
-  [ValidateRange(0,13)]
-  [int]$To = 13,
+  [ValidateRange(0,14)]
+  [int]$To = 14,
 
   # Docker workflow varsayılan: host node_modules gerekmiyor
   [bool]$DockerOnly = $true,
@@ -22,7 +22,7 @@ if (-not $ComposeDir) {
 
 $targetStage = "M$To"
 
-Write-Host "`n=== PERSONEL-SERVIS V1 — PACK (M0→M12) ==="
+Write-Host "`n=== PERSONEL-SERVIS V1 — PACK (M0→$targetStage) ==="
 Write-Host "Target stage: $targetStage"
 
 Write-Host "`n=== Install (backend) ==="

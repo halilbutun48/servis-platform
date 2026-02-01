@@ -18,6 +18,8 @@ import { meRouter } from "./routes/me.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { etaRouter } from "./routes/eta.js";
 
+import availabilityRoutes from "./routes/availability.js";
+
 // Router export tipleri karışsa bile crash etmemek için namespace import
 import * as vehiclesMod from "./routes/vehicles.js";
 import * as driversMod from "./routes/drivers.js";
@@ -138,6 +140,7 @@ app.use("/api/eta", etaRouter);
 app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());
+app.use("/api/availability", availabilityRoutes);
 
 // Server + Socket.IO
 const server = http.createServer(app);
