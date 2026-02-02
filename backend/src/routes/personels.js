@@ -57,12 +57,16 @@ export function personelsRouter(io) {
       });
 
       const personel = await tx.personel.create({
-        data: {
-          companyId: u.companyId,
-          userId: user.id,
-        },
-        include: { user: { select: { id: true, email: true, fullName: true, phone: true } } },
-      });
+  data: {
+    companyId: u.companyId,
+    userId: user.id,
+    fullName,
+    phone,
+    geoStatus: "NEEDS_REVIEW",
+  },
+  include: { user: { select: { id: true, email: true, fullName: true, phone: true } } },
+});
+
 
       return personel;
     });

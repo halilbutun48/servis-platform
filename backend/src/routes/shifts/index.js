@@ -5,6 +5,9 @@ import { attachShiftCompanyRoutes } from "./company.js";
 import { attachShiftRoomRoutes } from "./room.js";
 import { attachShiftDriverRoutes } from "./driver.js";
 
+import { attachShiftPeopleRoutes } from "./people.js";
+
+
 // NOTE: This file intentionally stays small.
 // Role-specific endpoints live in shifts.*.js modules.
 export function shiftsRouter(io) {
@@ -15,6 +18,7 @@ export function shiftsRouter(io) {
   attachShiftCompanyRoutes(r, io);
   attachShiftRoomRoutes(r, io);
   attachShiftDriverRoutes(r, io);
+attachShiftPeopleRoutes(r, io);
 
   return r;
 }

@@ -1,6 +1,14 @@
+
+---
+
+## 2) `docs/PRIMER_SSOT.md` (FULL REPLACE)
+
+> Bu versiyon mevcut içeriğini **temizleyip tek SSOT** haline getiriyor; M15 GREEN’i koruyor, M16 UI’yi “mevcut ama henüz GREEN tag’e sabit değil” diye notluyor, M16.1’i de “backend milestone” olarak ekliyor ve doğrulama satırlarını koyuyor.
+
+```md
 # SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER (SSOT)
-Tarih: 2026-01-31  
-Timezone: Europe/Istanbul  
+Tarih: 2026-02-01  
+Timezone: Europe/Istanbul
 
 ## 0) Bu dosya ne?
 Bu dosya “yapıştır & devam et” değil; **tek kaynak (SSOT) seviyesinde** repo özeti ve çalışma standardıdır:
@@ -13,17 +21,19 @@ Bu dosya “yapıştır & devam et” değil; **tek kaynak (SSOT) seviyesinde** 
 
 ---
 
-## 1) Repo referansı ve milestone sabitleme
-- Repo:
-  - https://github.com/halilbutun48/servis-platform
-- Branch: `main`
-- Stabil referans tag: `v1-m15-green.2`
-- Milestone durumu: ✅ PACK PASS (M0..M12) + ✅ FULLCHECK PASS + ✅ SMOKE PASS
+## 1) Stabil referans ve doğrulama (milestone disiplin)
+### Son GREEN referans (değişmez)
+- Stable tag: `v1-m15-green.5`
+- Green tanımı: ✅ PACK PASS (M0..M15 + FULLCHECK + SMOKE)
 
-**Kural (milestone disiplin):**
-- `v1-m15-green.2` = “M15 GREEN referans noktasıdır”.
-- Bundan sonraki her değişiklik **yeni milestone/tag mantığıyla** ilerler.
-- “Green” olmadan sonraki işe geçilmez.
+### Nasıl doğrularız?
+- M15 için: `tools/pack.ps1 -To 15`
+
+> Not: M16/M16.1 tamamlandığında doğrulama: `tools/pack.ps1 -To 16`
+
+**Kural:**
+- GREEN olmadan sonraki işe geçilmez.
+- Her milestone değişikliği aynı PR/commit serisinde docs güncellenir.
 
 ---
 
@@ -87,21 +97,19 @@ Monorepo dizilimi (özet):
 Bu repo için “çalışıyor” demek, **Gate PASS** demektir.
 
 ### Gate/Pack mantığı
-- `tools/pack.(ps1|cmd)` → M0..M12 check + fullcheck + smoke çalıştırır
+- `tools/pack.(ps1|cmd)` → milestone check + fullcheck + smoke
 - `backend/scripts/*check.js` → her milestone için senaryo doğrulaması
 - Hedef: her milestone sonunda **PACK PASS** almadan ilerleme yok
 
 ### “Green” tanımı
 Bir milestone “GREEN” sayılması için:
-- M0..M12 ilgili check’ler PASS
+- İlgili milestone check PASS
 - FULLCHECK PASS
 - SMOKE PASS
 
-> Detay check matrisi: `docs/MILESTONE_GATE_MATRIX.md` (varsa/ileride güncellenecek)
-
 ---
 
-## 6) Çekirdek iş akışları (konsept seviyesinde)
+## 6) Çekirdek iş akışları (konsept)
 ### 6.1 Shift lifecycle
 - COMPANY: shift create
 - ROOM: approve/assign (shift → vehicleId + driverId)
@@ -160,8 +168,6 @@ Genel kural:
 - WS event isimleri “shift bağlamı” ile uyumlu olmalı (client invalidate/guessTopics mantığıyla).
 - Event payload’larında mümkünse shiftId/vehicleId bağlamı taşınır.
 
-> Detay event isimleri ve payload örnekleri: `docs/API_SPEC_V1.md` ve ilgili standard dokümanları.
-
 ---
 
 ## 9) Windows satır sonu (LF/CRLF) — repo stabilitesi notu
@@ -169,11 +175,11 @@ Amaç: platformlar arası tutarlılık ve “LF will be replaced by CRLF” uyar
 
 Öneri:
 - Repo root’ta `.gitattributes` ile `text=auto` + eol politikası belirlenebilir.
-- Bu değişiklik yapılırsa **yeni bir tag** ile sabitlenmesi önerilir (mevcut `v1-m15-green.2` referansını kirletmemek için).
+- Bu değişiklik yapılırsa yeni bir GREEN tag ile sabitlemek önerilir (mevcut GREEN referansı kirletmemek için).
 
 ---
 
-## 10) Şu anki durum (M15 GREEN kapsamında doğrulananlar)
+## 10) M15 GREEN kapsamında doğrulananlar (özet)
 ✅ CRUD (company/room/vehicle/driver)  
 ✅ Shift approve/assign/start/reached/complete  
 ✅ GPS + ETA + WS updates  
@@ -183,73 +189,29 @@ Amaç: platformlar arası tutarlılık ve “LF will be replaced by CRLF” uyar
 ✅ Driver route endpoints (skip/reopen/next-stop)  
 ✅ Observability (M10) + required docs (M12)  
 
-Referans: tag `v1-m15-green.2`
+Referans: `v1-m15-green.5`
 
 ---
 
-## 11) NEXT backlog (öncelik sırası — kısa ama net)
-1) Vehicle ↔ Driver “bind” kuralı (overlap rules)
-- Aynı vardiya saatinde driver başka room/vehicle’a bağlanamasın (overlap check)
-- Farklı saatlerde farklı room’da çalışabilsin (allowed)
-- UI: ROOM panelinde bind/atama UX’i (hata mesajları + uygunluk göstergesi)
+## 11) M16 UI (mevcut durum notu)
+UI tarafında Company/Room shift ekranlarına şu yetenekler eklendi:
+- Company ShiftsPanel: Yeni Talep / Vardiya Şablonları / Personel & Rota tab yapısı
+- Ortak modal: RoutePreviewModal (ROOM “Haritada Önizle” hedefi)
+- Personel tablo bileşeni (opsiyonel) ve tab component’e bölme
 
-2) Company shift template preset’leri
-- Sabah/Akşam/Gece gibi hazır preset + custom template builder
-
-3) Availability endpoint (opsiyonel ama UX’i güçlendirir)
-- Driver/vehicle uygunluk sorgusu (çatışma kontrolüyle)
-
-4) KVKK/Güvenlik genişletme
-- rate limit/abuse + audit + retention + backup/restore runbook
+> Bu UI, M16.1 backend endpoint’lerine bağlanmak üzere hazırlandı.
 
 ---
 
-## 12) Yeni sohbet başlangıç cümlesi (SSOT referanslı)
-“`servis-platform` repo, tag `v1-m15-green.2` referansından devam ediyoruz. Next hedef: Vehicle↔Driver bind (M15) + UI: Vehicles panel bind/unbind + tek source of truth + M15 check
+## 12) NEXT — M16.1 (Backend) kısa kayıt (SSOT)
+**M16.1 hedefi:** Company shift için personel ekleme + import izi + geocode cache + durak üret + map önizleme; ROOM tarafında aynı preview modal.
+
+**Detay doküman:** `docs/MILESTONE_M16_1.md`
+
+**Doğrulama (tamamlandığında):**
+- `tools/pack.ps1 -To 16`
 
 ---
-# PERSONEL-SERVIS V1 — PRIMER_SSOT
 
-## Stable Reference
-- stable: v1-m15-green.5
-- date: 2026-02-01
-- commit: 1b3efc5
-- gate: PACK PASS (M0..M15 + FULLCHECK + SMOKE)
-
-## How to verify
-- run: tools/pack.ps1 -To 15
-
-## Notes
-- GreenPack header (dev): x-greenpack: 1  (rate limit bypass only for gate scripts)
-- Deterministic monitors: stale/offline tests use gpsLast.at back + poll
-
-
-PERSONEL-SERVIS V1 — NEXT (M16) PRIMER
-
-Hedef: Company shift için personel ekleme + import + geocode review + durak üret + map önizleme; ROOM tarafında rota/durak önizleme.
-
-UI:
-
-Company ShiftsPanel tabs: Yeni Talep / Vardiya Şablonları / Personel & Rota
-
-Personel & Rota tab:
-
-Shift seç → personel ekle/import → geocode status → maxWalkM ile durak üret (REPLACE) → map preview
-
-Room pending list: “Haritada Önizle” modalı (aynı component)
-
-Backend:
-
-Personel cache: geoStatus (OK/NEEDS_REVIEW/FAILED), geoManualOverride
-
-Import izleri: ShiftImport, ShiftImportRow
-
-Durak üretimi: clusterStops(maxWalkM) + StopAssignment
-
-Gate/Test:
-
-M16CHECK: shift oluştur → import (deterministik sample) → draft üret → stop sayısı + maxWalkM garantisi → UI preview endpointleri 200.
-
-
-
-
+## 13) Yeni sohbet başlangıç cümlesi
+“`servis-platform` repo `v1-m15-green.5` referansından devam ediyoruz. Sıradaki hedef: **M16.1 backend** (people/import + stop generate + route preview) ve `tools/pack.ps1 -To 16` ile GREEN almak.”

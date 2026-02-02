@@ -49,6 +49,7 @@ enum OdometerSource {
   MANUAL
   GPS
 }
+
 enum ShiftStatus {
   DRAFT
   REQUESTED
@@ -93,6 +94,13 @@ enum UiGpsStatus {
   OFFLINE
 }
 
+// ✅ M16.1: personel geocode cache
+enum GeoStatus {
+  OK
+  NEEDS_REVIEW
+  FAILED
+}
+
 // --- Core Models ---
 
 model Company {
@@ -101,10 +109,10 @@ model Company {
   status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
 
-  rooms     Room[]
-  users     User[]
-  shifts    Shift[]
-  personels Personel[]
+  rooms         Room[]
+  users         User[]
+  shifts        Shift[]
+  personels     Personel[]
   notifications Notification[]
 }
 
@@ -115,13 +123,14 @@ model Room {
   status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
 
-  company   Company  @relation(fields: [companyId], references: [id])
-  users     User[]
-  vehicles  Vehicle[]
-  drivers   Driver[]
-  shifts    Shift[]
-  notifications Notification[]
+  company        Company @relation(fields: [companyId], references: [id])
+  users          User[]
+  vehicles       Vehicle[]
+  drivers        Driver[]
+  shifts         Shift[]
+  notifications  Notification[]
   routeTemplates RouteTemplate[]
+
   @@index([companyId])
 }
 
@@ -136,77 +145,78 @@ model User {
   createdAt    DateTime @default(now())
 
   // Scope bindings
-  companyId    Int?
-  roomId       Int?
-  company      Company? @relation(fields: [companyId], references: [id])
-  room         Room?    @relation(fields: [roomId], references: [id])
+  companyId Int?
+  roomId    Int?
+  company   Company? @relation(fields: [companyId], references: [id])
+  room      Room?    @relation(fields: [roomId], references: [id])
 
   // Optional profile links
-  driver       Driver?
-  personel     Personel?
+  driver   Driver?
+  personel Personel?
+
+  // ✅ M16.1: import trail (createdBy)
+  shiftImportsCreated ShiftImport[] @relation("ShiftImportCreatedBy")
 
   @@index([companyId])
   @@index([roomId])
 }
 
 model Vehicle {
-  id                Int           @id @default(autoincrement())
-  roomId            Int
-  plate             String        @unique
-  capacity          Int
-  status            VehicleStatus @default(ACTIVE)
-  speedLimitKmh     Int           @default(80)
+  id            Int           @id @default(autoincrement())
+  roomId        Int
+  plate         String        @unique
+  capacity      Int
+  status        VehicleStatus @default(ACTIVE)
+  speedLimitKmh Int           @default(80)
 
   // Opsiyonel: bu araca bağlı varsayılan driver
-  driverId          Int?
+  driverId Int?
 
   // V1 meta (araç tanımı)
-  type              VehicleType?
-  brand             String?
-  model             String?
-  modelYear         Int?
-  color             String?
-  vin               String?       @unique
-  note              String?
+  type      VehicleType?
+  brand     String?
+  model     String?
+  modelYear Int?
+  color     String?
+  vin       String? @unique
+  note      String?
 
   // Resmi tarihler
-  inspectionDueAt   DateTime?
-  insuranceDueAt    DateTime?
-  cascoDueAt        DateTime?
+  inspectionDueAt DateTime?
+  insuranceDueAt  DateTime?
+  cascoDueAt      DateTime?
 
   // Bakım (tarih + km)
   lastServiceAt       DateTime?
   lastServiceKm       Int?
-  serviceIntervalKm   Int            @default(15000)
+  serviceIntervalKm   Int  @default(15000)
   serviceIntervalDays Int?
 
   // Odometer
   odometerKm        Int?
   odometerUpdatedAt DateTime?
-  odometerSource    OdometerSource  @default(MANUAL)
+  odometerSource    OdometerSource @default(MANUAL)
 
   // Geriye dönük uyum: eski bakım alanı (UI'da opsiyonel gösterilebilir)
   nextMaintenanceAt DateTime?
 
   // ✅ Archive (shift bağlıyken "sil" => archive)
-  archivedAt        DateTime?
-  archivedReason    String?
+  archivedAt     DateTime?
+  archivedReason String?
 
-  createdAt         DateTime      @default(now())
+  createdAt DateTime @default(now())
 
-  room              Room          @relation(fields: [roomId], references: [id])
-  driver            Driver?       @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  gpsLast           GpsLast?
-  gpsState          VehicleGpsState? // ✅ yeni: UI status gate state
-  gpsPoints         GpsPoint[]
-  shifts            Shift[]
-  notifications     Notification[]
+  room          Room            @relation(fields: [roomId], references: [id])
+  driver        Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  gpsLast       GpsLast?
+  gpsState      VehicleGpsState? // ✅ UI status gate state
+  gpsPoints     GpsPoint[]
+  shifts        Shift[]
+  notifications Notification[]
 
-  // index
   @@index([roomId])
   @@index([roomId, archivedAt])
 }
-
 
 model Driver {
   id             Int      @id @default(autoincrement())
@@ -217,20 +227,20 @@ model Driver {
   backupDriverId Int?
   createdAt      DateTime @default(now())
 
-  room           Room     @relation(fields: [roomId], references: [id])
+  room Room @relation(fields: [roomId], references: [id])
 
-  vehicles       Vehicle[]
+  vehicles Vehicle[]
 
   // Optional login user link (role=DRIVER)
-  userId         Int?     @unique
-  user           User?    @relation(fields: [userId], references: [id])
+  userId Int?  @unique
+  user   User? @relation(fields: [userId], references: [id])
 
   // self-reference
-  backupDriver   Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
-  backupsFor     Driver[] @relation("BackupDriver")
+  backupDriver Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
+  backupsFor   Driver[] @relation("BackupDriver")
 
-  shifts         Shift[]
-  notifications  Notification[]
+  shifts        Shift[]
+  notifications Notification[]
 
   @@index([roomId])
 }
@@ -252,26 +262,31 @@ model Shift {
   companyOfferNote      String?
 
   // ROOM → COMPANY teklif
-  roomOfferVehicleId    Int?
-  roomOfferAmount       Int?
-  roomOfferNote         String?
-  roomOfferToDriver     Boolean  @default(false)
-  roomOfferDriverNote   String?
+  roomOfferVehicleId  Int?
+  roomOfferAmount     Int?
+  roomOfferNote       String?
+  roomOfferToDriver   Boolean @default(false)
+  roomOfferDriverNote String?
 
   // COMPANY: room teklifine karar
-  roomOfferDecision      OfferDecision @default(PENDING)
-  roomOfferDecisionNote  String?
-  roomOfferDecisionAt    DateTime?
+  roomOfferDecision     OfferDecision @default(PENDING)
+  roomOfferDecisionNote String?
+  roomOfferDecisionAt   DateTime?
 
-  company   Company     @relation(fields: [companyId], references: [id])
-  room      Room        @relation(fields: [roomId], references: [id])
-  vehicle   Vehicle?    @relation(fields: [vehicleId], references: [id])
-  driver    Driver?     @relation(fields: [driverId], references: [id])
+  company Company  @relation(fields: [companyId], references: [id])
+  room    Room     @relation(fields: [roomId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
 
-  stops           Stop[]
-  pickupRequests  PickupRequest[]
-  progress        ShiftProgress?
-  notifications   Notification[]
+  stops          Stop[]
+  pickupRequests PickupRequest[]
+  progress       ShiftProgress?
+  notifications  Notification[]
+
+  // ✅ M16.1
+  people      ShiftPersonel[]
+  imports     ShiftImport[]
+  assignments StopAssignment[]
 
   @@index([companyId])
   @@index([roomId])
@@ -287,74 +302,158 @@ model Shift {
 }
 
 model Stop {
-  id      Int     @id @default(autoincrement())
+  id     Int  @id @default(autoincrement())
   shiftId Int
-  name    String
-  lat     Float
-  lng     Float
-  order   Int
-  type    StopType
+  name   String
+  lat    Float
+  lng    Float
+  order  Int
+  type   StopType
 
   state     StopState @default(PENDING)
   reachedAt DateTime?
   skippedAt DateTime?
   updatedAt DateTime  @updatedAt
 
-  shift   Shift   @relation(fields: [shiftId], references: [id])
+  shift Shift @relation(fields: [shiftId], references: [id])
+
+  // ✅ M16.1
+  assignments StopAssignment[]
 
   @@index([shiftId, order])
   @@index([shiftId, state, order])
 }
+
 model RouteTemplate {
-id Int @id @default(autoincrement())
-roomId Int
-name String
-status String @default("ACTIVE")
-createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
 
+  room  Room               @relation(fields: [roomId], references: [id])
+  stops RouteTemplateStop[]
 
-room Room @relation(fields: [roomId], references: [id])
-stops RouteTemplateStop[]
-
-
-@@index([roomId])
+  @@index([roomId])
 }
-
 
 model RouteTemplateStop {
-id Int @id @default(autoincrement())
-routeTemplateId Int
-name String
-lat Float
-lng Float
-order Int
-type StopType @default(COMMON)
+  id              Int      @id @default(autoincrement())
+  routeTemplateId Int
+  name            String
+  lat             Float
+  lng             Float
+  order           Int
+  type            StopType @default(COMMON)
 
+  template RouteTemplate @relation(fields: [routeTemplateId], references: [id], onDelete: Cascade)
 
-template RouteTemplate @relation(fields: [routeTemplateId], references: [id], onDelete: Cascade)
-
-
-@@unique([routeTemplateId, order])
-@@index([routeTemplateId, order])
+  @@unique([routeTemplateId, order])
+  @@index([routeTemplateId, order])
 }
 
+// ✅ M16.1: Personel (geocode cache + optional lat/lng)
 model Personel {
   id        Int      @id @default(autoincrement())
   companyId Int
-  fullName  String
-  homeLat   Float
-  homeLng   Float
-  createdAt DateTime @default(now())
-
-  company   Company  @relation(fields: [companyId], references: [id])
-
-  // Optional login user link (role=PERSONEL)
   userId    Int?     @unique
-  user      User?    @relation(fields: [userId], references: [id])
+
+  // Master profile
+  fullName    String
+  phone       String?
+  homeAddress String?
+  homeLat     Float?
+  homeLng     Float?
+
+  // Geocode cache / review state
+  geoStatus         GeoStatus @default(NEEDS_REVIEW)
+  geoManualOverride Boolean   @default(false)
+  geoNote           String?
+  geoUpdatedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
 
   pickupRequests PickupRequest[]
 
+  // ✅ M16.1
+   shiftImportRows ShiftImportRow[]
+  shiftLinks  ShiftPersonel[]
+  assignments StopAssignment[]
+
   @@index([companyId])
+  @@unique([companyId, phone])
+}
+
+model ShiftPersonel {
+  id         Int      @id @default(autoincrement())
+  shiftId    Int
+  personelId Int
+  note       String?
+  createdAt  DateTime @default(now())
+
+  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, personelId])
+  @@index([shiftId])
+  @@index([personelId])
+}
+
+model ShiftImport {
+  id             Int      @id @default(autoincrement())
+  shiftId         Int
+  createdByUserId Int?
+  fileName        String?
+  createdAt       DateTime @default(now())
+
+  shift     Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("ShiftImportCreatedBy", fields: [createdByUserId], references: [id])
+
+  rows ShiftImportRow[]
+
+  @@index([shiftId])
+}
+
+model ShiftImportRow {
+  id        Int      @id @default(autoincrement())
+  importId  Int
+  rowNo     Int
+  rawJson   Json?
+  fullName  String?
+  phone     String?
+  address   String?
+  lat       Float?
+  lng       Float?
+  geoStatus GeoStatus @default(NEEDS_REVIEW)
+  personelId Int?
+
+  createdAt DateTime @default(now())
+
+  import  ShiftImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  personel Personel?  @relation(fields: [personelId], references: [id])
+
+  @@index([importId])
+}
+
+model StopAssignment {
+  id         Int      @id @default(autoincrement())
+  shiftId    Int
+  stopId     Int
+  personelId Int
+  walkM      Int
+  createdAt  DateTime @default(now())
+
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  stop     Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, personelId])
+  @@index([shiftId])
+  @@index([stopId])
 }
 
 model PickupRequest {
@@ -366,32 +465,32 @@ model PickupRequest {
   status     PickupRequestStatus @default(OPEN)
   createdAt  DateTime            @default(now())
 
-  shift      Shift               @relation(fields: [shiftId], references: [id])
-  personel   Personel            @relation(fields: [personelId], references: [id])
+  shift    Shift    @relation(fields: [shiftId], references: [id])
+  personel Personel @relation(fields: [personelId], references: [id])
 
   @@index([shiftId, status])
   @@index([personelId])
 }
 
 model GpsLast {
-  vehicleId Int           @id
+  vehicleId Int @id
   lat       Float
   lng       Float
   speed     Float?
   at        DateTime
   status    GpsLastStatus @default(OK)
 
-  vehicle   Vehicle       @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 }
 
 // ✅ notif dedupe/transition gate için UI status state’i
 model VehicleGpsState {
-  vehicleId     Int        @id
+  vehicleId     Int       @id
   lastUiStatus  UiGpsStatus
-  lastChangedAt DateTime   @default(now())
+  lastChangedAt DateTime  @default(now())
   seenLiveAt    DateTime?
 
-  vehicle       Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 }
 
 model GpsPoint {
@@ -403,7 +502,7 @@ model GpsPoint {
   at        DateTime
   createdAt DateTime @default(now())
 
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@index([vehicleId, at])
 }
@@ -416,51 +515,51 @@ model Notification {
   scope      NotificationScope
   payloadJson Json
   createdAt  DateTime          @default(now())
-  dedupeKey String? @unique
-  
+  dedupeKey  String?           @unique
+
   // optional targets
-  companyId  Int?
-  roomId     Int?
-  driverId   Int?
-  vehicleId  Int?
-  shiftId    Int?
+  companyId Int?
+  roomId    Int?
+  driverId  Int?
+  vehicleId Int?
+  shiftId   Int?
 
-  company    Company? @relation(fields: [companyId], references: [id])
-  room       Room?    @relation(fields: [roomId], references: [id])
-  driver     Driver?  @relation(fields: [driverId], references: [id])
-  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
-  shift      Shift?   @relation(fields: [shiftId], references: [id])
+  company Company? @relation(fields: [companyId], references: [id])
+  room    Room?    @relation(fields: [roomId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  shift   Shift?   @relation(fields: [shiftId], references: [id])
 
-    @@index([scope, createdAt])
+  @@index([scope, createdAt])
   @@index([companyId, createdAt])
   @@index([roomId, createdAt])
   @@index([driverId, createdAt])
-  
 }
 
 model ShiftProgress {
-  id              Int      @id @default(autoincrement())
-  shiftId         Int      @unique
+  id               Int      @id @default(autoincrement())
+  shiftId          Int      @unique
   lastReachedOrder Int      @default(0)
-  completedAt     DateTime?
-  updatedAt       DateTime @updatedAt
+  completedAt      DateTime?
+  updatedAt        DateTime @updatedAt
 
-  shift           Shift    @relation(fields: [shiftId], references: [id])
+  shift Shift @relation(fields: [shiftId], references: [id])
 }
+
 model ApiRequest {
-  id         Int      @id @default(autoincrement())
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
 
   method     String
   path       String
   status     Int
   durationMs Int
 
-  ip         String?
-  userAgent  String?
+  ip        String?
+  userAgent String?
 
-  userId     Int?
-  role       String?
+  userId Int?
+  role   String?
 
   @@index([createdAt])
   @@index([userId, createdAt])
@@ -469,16 +568,16 @@ model ApiRequest {
 }
 
 model AuditLog {
-  id          Int      @id @default(autoincrement())
-  createdAt   DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
 
   actorUserId Int?
   actorRole   String?
 
-  action      String
-  entity      String
-  entityId    Int?
-  meta        Json?
+  action   String
+  entity   String
+  entityId Int?
+  meta     Json?
 
   @@index([createdAt])
   @@index([actorUserId, createdAt])

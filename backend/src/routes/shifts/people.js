@@ -1,0 +1,411 @@
+import { Router } from "express";
+import { z } from "zod";
+import { requireRole } from "../../auth/middleware.js";
+import { prisma } from "../../prisma.js";
+import { audit } from "../../audit.js";
+import { clusterStops } from "../../services/clusterStops.js";
+import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
+
+const qModeSchema = z
+  .enum(["REPLACE", "MERGE"])
+  .optional()
+  .transform((v) => v ?? "REPLACE");
+
+const qMaxWalkSchema = z
+  .preprocess((v) => (v == null ? undefined : Number(v)), z.number().int().min(50).max(2000))
+  .optional()
+  .transform((v) => v ?? 250);
+
+const personelItemSchema = z.object({
+  personelId: z.preprocess((v) => (v == null ? undefined : Number(v)), z.number().int().positive()).optional(),
+  fullName: z.string().min(1).max(120),
+  phone: z.string().trim().min(3).max(32).optional().nullable(),
+  address: z.string().trim().min(2).max(240).optional().nullable(),
+  lat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+  lng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+  geoManualOverride: z.boolean().optional(),
+});
+
+function sanitizePhone(p) {
+  const s = (p ?? "").trim();
+  if (!s) return null;
+  return s;
+}
+
+function normalizeGeoStatus({ lat, lng, geoManualOverride }) {
+  if (geoManualOverride) return "OK";
+  if (typeof lat === "number" && typeof lng === "number") return "OK";
+  return "NEEDS_REVIEW";
+}
+
+async function upsertCompanyPersonel(companyId, item) {
+  const phone = sanitizePhone(item.phone);
+  const data = {
+    fullName: item.fullName,
+    phone,
+    homeAddress: item.address ?? null,
+    homeLat: typeof item.lat === "number" ? item.lat : null,
+    homeLng: typeof item.lng === "number" ? item.lng : null,
+    geoManualOverride: Boolean(item.geoManualOverride),
+    geoStatus: normalizeGeoStatus(item),
+    geoUpdatedAt:
+      typeof item.lat === "number" && typeof item.lng === "number" ? new Date() : null,
+  };
+
+  // If explicit personelId provided, update it (must belong to company)
+  if (item.personelId) {
+    const existing = await prisma.personel.findFirst({
+      where: { id: item.personelId, companyId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw Object.assign(new Error("personelId does not belong to this company"), { status: 400 });
+    }
+    return prisma.personel.update({ where: { id: item.personelId }, data });
+  }
+
+  // If phone present, upsert by (companyId, phone)
+  if (phone) {
+    return prisma.personel.upsert({
+      where: { companyId_phone: { companyId, phone } },
+      create: { companyId, ...data },
+      update: data,
+    });
+  }
+
+  // Otherwise create a new record (no stable key)
+  return prisma.personel.create({ data: { companyId, ...data } });
+}
+
+async function getShiftPeople(shiftId) {
+  const rows = await prisma.shiftPersonel.findMany({
+    where: { shiftId },
+    include: {
+      personel: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          homeAddress: true,
+          homeLat: true,
+          homeLng: true,
+          geoStatus: true,
+          geoManualOverride: true,
+          geoNote: true,
+          geoUpdatedAt: true,
+        },
+      },
+    },
+    orderBy: { id: "asc" },
+  });
+
+  return rows
+    .map((r) => r.personel)
+    .filter(Boolean);
+}
+
+function pickEligiblePoints(personels) {
+  const ok = [];
+  const skipped = [];
+
+  for (const p of personels) {
+    const lat = p.homeLat;
+    const lng = p.homeLng;
+    const eligible =
+      (p.geoStatus === "OK" || p.geoManualOverride) &&
+      typeof lat === "number" &&
+      typeof lng === "number" &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng);
+
+    if (eligible) ok.push({ personelId: p.id, lat, lng });
+    else skipped.push(p);
+  }
+
+  return { ok, skipped };
+}
+
+function parseItemArray(req) {
+  const items = req.body?.items ?? req.body?.rows ?? [];
+  const parsed = z.array(personelItemSchema).max(500).parse(items);
+  return parsed;
+}
+
+export function attachShiftPeopleRoutes(router, _io) {
+  const r = Router();
+
+  // COMPANY: get shift people
+  r.get("/:id/people", requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
+
+    const items = await getShiftPeople(shift.id);
+    res.json({ ok: true, items });
+  });
+
+  // COMPANY: replace/merge shift people
+  r.put("/:id/people", requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const mode = qModeSchema.parse(req.query.mode);
+    const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
+
+    const items = parseItemArray(req);
+
+    const createdOrUpdated = [];
+    for (const it of items) {
+      const p = await upsertCompanyPersonel(req.user.companyId, it);
+      createdOrUpdated.push(p);
+    }
+
+    // Deduplicate by personelId
+    const uniq = new Map(createdOrUpdated.map((p) => [p.id, p]));
+    const personelIds = [...uniq.keys()];
+
+    if (mode === "REPLACE") {
+      await prisma.shiftPersonel.deleteMany({ where: { shiftId: shift.id } });
+    }
+
+    // For MERGE, we only create missing links
+    const existingLinks = mode === "MERGE"
+      ? await prisma.shiftPersonel.findMany({
+          where: { shiftId: shift.id, personelId: { in: personelIds } },
+          select: { personelId: true },
+        })
+      : [];
+
+    const existingSet = new Set(existingLinks.map((x) => x.personelId));
+    const toCreate = personelIds
+      .filter((pid) => !existingSet.has(pid))
+      .map((pid) => ({ shiftId: shift.id, personelId: pid }));
+
+    if (toCreate.length > 0) {
+      await prisma.shiftPersonel.createMany({ data: toCreate, skipDuplicates: true });
+    }
+
+    audit(req, "SHIFT_PEOPLE_UPSERT", {
+      shiftId: shift.id,
+      mode,
+      count: items.length,
+      linked: toCreate.length,
+    });
+
+    res.json({ ok: true, shiftId: shift.id, mode, inputCount: items.length, linkedCount: toCreate.length });
+  });
+
+  // COMPANY: import people + write import trail
+  r.post("/:id/people/import", requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const mode = qModeSchema.parse(req.query.mode);
+    const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
+
+    const bodySchema = z.object({
+      fileName: z.string().max(200).optional(),
+      rows: z.array(personelItemSchema).max(2000).optional(),
+      items: z.array(personelItemSchema).max(2000).optional(),
+    });
+
+    const body = bodySchema.parse(req.body ?? {});
+    const rows = body.rows ?? body.items ?? [];
+    if (rows.length === 0) {
+      return res.status(400).json({ ok: false, error: "rows/items required" });
+    }
+
+    const imp = await prisma.shiftImport.create({
+      data: {
+        shiftId: shift.id,
+        createdByUserId: req.user.id,
+        fileName: body.fileName ?? null,
+        rows: {
+          create: rows.map((row, idx) => ({
+            rowNo: idx + 1,
+            rawJson: row,
+            fullName: row.fullName,
+            phone: sanitizePhone(row.phone),
+            address: row.address ?? null,
+            lat: typeof row.lat === "number" ? row.lat : null,
+            lng: typeof row.lng === "number" ? row.lng : null,
+            geoStatus: normalizeGeoStatus(row),
+          })),
+        },
+      },
+      select: { id: true },
+    });
+
+    const createdOrUpdated = [];
+    for (const row of rows) {
+      const p = await upsertCompanyPersonel(req.user.companyId, row);
+      createdOrUpdated.push(p);
+
+      // back-link import row -> personelId for trace
+      await prisma.shiftImportRow.updateMany({
+        where: {
+          importId: imp.id,
+          phone: sanitizePhone(row.phone),
+          rowNo: { gt: 0 },
+        },
+        data: { personelId: p.id },
+      });
+    }
+
+    const uniq = new Map(createdOrUpdated.map((p) => [p.id, p]));
+    const personelIds = [...uniq.keys()];
+
+    if (mode === "REPLACE") {
+      await prisma.shiftPersonel.deleteMany({ where: { shiftId: shift.id } });
+    }
+
+    const existingLinks = mode === "MERGE"
+      ? await prisma.shiftPersonel.findMany({
+          where: { shiftId: shift.id, personelId: { in: personelIds } },
+          select: { personelId: true },
+        })
+      : [];
+
+    const existingSet = new Set(existingLinks.map((x) => x.personelId));
+    const toCreate = personelIds
+      .filter((pid) => !existingSet.has(pid))
+      .map((pid) => ({ shiftId: shift.id, personelId: pid }));
+
+    if (toCreate.length > 0) {
+      await prisma.shiftPersonel.createMany({ data: toCreate, skipDuplicates: true });
+    }
+
+    audit(req, "SHIFT_PEOPLE_IMPORT", {
+      shiftId: shift.id,
+      importId: imp.id,
+      mode,
+      rows: rows.length,
+      linked: toCreate.length,
+    });
+
+    res.json({ ok: true, shiftId: shift.id, importId: imp.id, mode, inputCount: rows.length, linkedCount: toCreate.length });
+  });
+
+  // COMPANY: generate stops from shift people
+  r.post("/:id/stops/generate", requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const mode = qModeSchema.parse(req.query.mode);
+    const maxWalkM = qMaxWalkSchema.parse(req.query.maxWalkM);
+
+    const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
+
+    const people = await getShiftPeople(shift.id);
+    const { ok: points, skipped } = pickEligiblePoints(people);
+
+    if (points.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        error: "No eligible personel points (need geoStatus OK or manual override + lat/lng)",
+        skippedCount: skipped.length,
+      });
+    }
+
+    if (mode === "REPLACE") {
+      // Remove old route artifacts
+      await prisma.stopAssignment.deleteMany({ where: { shiftId: shift.id } });
+      await prisma.shiftProgress.deleteMany({ where: { shiftId: shift.id } });
+      await prisma.stop.deleteMany({ where: { shiftId: shift.id } });
+    }
+
+    const clusters = clusterStops(points, maxWalkM);
+
+    // Create stops in order
+    const createdStops = [];
+    for (let i = 0; i < clusters.length; i++) {
+      const c = clusters[i];
+      const stop = await prisma.stop.create({
+        data: {
+          shiftId: shift.id,
+          name: `Pickup ${i + 1}`,
+          order: i,
+          lat: c.center.lat,
+          lng: c.center.lng,
+          type: "COMMON",
+          state: "PENDING",
+        },
+      });
+      createdStops.push(stop);
+
+      // Assign members to the stop
+      const assignments = c.members.map((m) => ({
+        shiftId: shift.id,
+        stopId: stop.id,
+        personelId: m.personelId,
+        walkM: c.walkMByPersonelId.get(m.personelId) ?? 0,
+      }));
+
+      await prisma.stopAssignment.createMany({ data: assignments, skipDuplicates: true });
+    }
+
+    const assignmentCount = await prisma.stopAssignment.count({ where: { shiftId: shift.id } });
+
+    audit(req, "SHIFT_STOPS_GENERATE", {
+      shiftId: shift.id,
+      mode,
+      maxWalkM,
+      stops: createdStops.length,
+      assignments: assignmentCount,
+      skipped: skipped.length,
+    });
+
+    res.json({
+      ok: true,
+      shiftId: shift.id,
+      maxWalkM,
+      stopCount: createdStops.length,
+      assignmentCount,
+      skippedCount: skipped.length,
+    });
+  });
+
+  // COMPANY + ROOM: route preview
+  r.get("/:id/route-preview", async (req, res) => {
+    const role = req.user.role;
+    if (!["COMPANY", "ROOM", "SUPER_ADMIN"].includes(role)) {
+      return res.status(403).json({ ok: false, error: "forbidden" });
+    }
+
+    const id = Number(req.params.id);
+    const shift = await getShiftAndCheckScopeOrThrow(id, req.user, {
+      include: { room: true },
+    });
+
+    const people = await getShiftPeople(shift.id);
+    const stops = await prisma.stop.findMany({
+      where: { shiftId: shift.id },
+      orderBy: { order: "asc" },
+    });
+    const assignments = await prisma.stopAssignment.findMany({
+      where: { shiftId: shift.id },
+      select: { stopId: true, personelId: true, walkM: true },
+    });
+
+    const { skipped } = pickEligiblePoints(people);
+
+    res.json({
+      ok: true,
+      shift: {
+        id: shift.id,
+        status: shift.status,
+        startAt: shift.startAt,
+        endAt: shift.endAt,
+        roomId: shift.roomId,
+        companyId: shift.companyId,
+      },
+      people,
+      stops,
+      assignments,
+      skipped: skipped.map((p) => ({
+        id: p.id,
+        fullName: p.fullName,
+        phone: p.phone,
+        geoStatus: p.geoStatus,
+        geoManualOverride: p.geoManualOverride,
+        homeLat: p.homeLat,
+        homeLng: p.homeLng,
+      })),
+    });
+  });
+
+  router.use(r);
+}
