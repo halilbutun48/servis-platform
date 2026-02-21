@@ -1,3 +1,4 @@
+//web/src/layout/AppShell.jsx
 import NavDock from "./NavDock";
 import { useSession } from "../state/session";
 

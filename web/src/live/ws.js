@@ -89,12 +89,16 @@ function guessTopics(msg) {
   if (raw.includes("room")) topics.add("rooms");
   if (raw.includes("notif")) topics.add("notifications");
 
+  // ✅ M17.1: agreements auto-refresh
+  if (raw.includes("agreement")) topics.add("agreements");
+
   if (
     topic === "shifts" ||
     topic === "vehicles" ||
     topic === "drivers" ||
     topic === "rooms" ||
-    topic === "notifications"
+    topic === "notifications" ||
+    topic === "agreements"
   ) {
     topics.add(topic);
   }

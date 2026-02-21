@@ -1,27 +1,47 @@
-# DB_SCHEMA_V1 (Taslak)
 
-> PERSONEL-SERVIS V1 — çekirdek tablo ve ilişkiler (taslak)
-> Not: UI/WS bazı alanları “derived” hesaplar (örn ageSec).
+---
 
-## Mermaid ER Diagram
+## `docs/DB_SCHEMA_V1.md` — FULL REPLACE
+
+```md
+# DB_SCHEMA_V1 (SSOT)
+
+> PERSONEL-SERVIS V1 — çekirdek tablo ve ilişkiler (M0→M18, GREEN)  
+> Not: UI/WS bazı alanları “derived” hesaplar (örn `ageSec`).
+
+---
+
+## Mermaid ER Diagram (High-level)
 
 ```mermaid
 erDiagram
   COMPANY ||--o{ ROOM : has
   COMPANY ||--o{ USER : employs
-  ROOM    ||--o{ VEHICLE : owns
-  ROOM    ||--o{ DRIVER  : manages
-
   COMPANY ||--o{ SHIFT : requests
-  ROOM    ||--o{ SHIFT : operates
-  VEHICLE ||--o{ SHIFT : assigned
-  DRIVER  ||--o{ SHIFT : drives
+  COMPANY ||--o{ PERSONEL : employs
+  COMPANY ||--o{ AGREEMENT : requests
 
-  SHIFT   ||--o{ STOP : has
+  ROOM ||--o{ VEHICLE : owns
+  ROOM ||--o{ DRIVER  : manages
+  ROOM ||--o{ SHIFT   : operates
+  ROOM ||--o{ AGREEMENT : approves
+
   VEHICLE ||--|| GPS_LAST : last_position
+  VEHICLE ||--|| VEHICLE_GPS_STATE : ui_state_gate
 
-  USER ||--o{ NOTIFICATION : creates_optional
-  VEHICLE ||--o{ NOTIFICATION : related_optional
+  SHIFT ||--o{ STOP : has
+  SHIFT ||--o{ PICKUP_REQUEST : receives
+
+  SHIFT ||--o{ SHIFT_PERSONEL : links
+  PERSONEL ||--o{ SHIFT_PERSONEL : linked
+
+  STOP ||--o{ STOP_ASSIGNMENT : assigned
+  PERSONEL ||--o{ STOP_ASSIGNMENT : assigned
+
+  SHIFT ||--o{ SHIFT_IMPORT : imports
+  SHIFT_IMPORT ||--o{ SHIFT_IMPORT_ROW : rows
+
+  AGREEMENT ||--o{ SHIFT : generates
 
   COMPANY {
     int id PK
@@ -38,10 +58,11 @@ erDiagram
 
   USER {
     int id PK
-    string email
-    string role  "SUPER_ADMIN|ROOM|COMPANY|DRIVER|PERSONEL"
-    int companyId FK
-    int roomId FK  "nullable"
+    string email UNIQUE
+    string passwordHash
+    string role "SUPER_ADMIN|ROOM|COMPANY|DRIVER|PERSONEL"
+    int companyId FK "nullable"
+    int roomId FK "nullable"
     datetime createdAt
   }
 
@@ -51,35 +72,18 @@ erDiagram
     int userId FK "nullable"
     string fullName
     string phone
-    string deviceInfo "nullable"
+    string deviceInfo
     datetime createdAt
   }
 
   VEHICLE {
     int id PK
     int roomId FK
-    string plate
+    string plate UNIQUE
     int capacity
     int speedLimitKmh
-    string type "MINIBUS|MIDIBUS|OTOBUS (nullable)"
-    string brand "nullable"
-    string model "nullable"
-    int modelYear "nullable"
-    string color "nullable"
-    string vin "nullable"
-    string note "nullable"
-    datetime inspectionDueAt "nullable"
-    datetime insuranceDueAt "nullable"
-    datetime cascoDueAt "nullable"
-    datetime lastServiceAt "nullable"
-    int lastServiceKm "nullable"
-    int serviceIntervalKm "default 15000"
-    int serviceIntervalDays "nullable"
-    int odometerKm "nullable"
-    datetime odometerUpdatedAt "nullable"
-    string odometerSource "MANUAL|GPS"
-    datetime nextMaintenanceAt "nullable (legacy)"
-    string status
+    int driverId FK "nullable (bind-driver)"
+    string status "ACTIVE|PASSIVE|STALE"
     datetime createdAt
   }
 
@@ -89,19 +93,26 @@ erDiagram
     float lng
     float speed
     datetime at
-    string status "LIVE|STALE|OFFLINE (derived or stored)"
+    string status "OK|STALE"
+  }
+
+  VEHICLE_GPS_STATE {
+    int vehicleId PK, FK
+    string lastUiStatus "LIVE|STALE|OFFLINE"
+    datetime lastChangedAt
+    datetime seenLiveAt "nullable"
   }
 
   SHIFT {
     int id PK
     int companyId FK
     int roomId FK
-    int vehicleId FK
-    int driverId FK
+    int vehicleId FK "nullable"
+    int driverId FK "nullable"
     datetime startAt
     datetime endAt
-    string status "DRAFT|REQUESTED|APPROVED|ACTIVE|DONE|CANCELLED"
-    int createdBy "nullable USER.id"
+    string status "DRAFT|REQUESTED|APPROVED|ACTIVE|REJECTED|DONE"
+    int agreementId FK "nullable (M18)"
     datetime createdAt
   }
 
@@ -113,14 +124,91 @@ erDiagram
     float lat
     float lng
     string type "COMMON|MANUAL"
+    string state "PENDING|REACHED|SKIPPED"
+    datetime updatedAt
   }
 
-  NOTIFICATION {
+  PICKUP_REQUEST {
     int id PK
-    string scope "ROOM|COMPANY|DRIVER"
-    string type
-    string payloadJson "TEXT(JSON)"
-    int userId "nullable"
-    int vehicleId "nullable"
+    int shiftId FK
+    int personelId FK
+    float lat
+    float lng
+    string status "OPEN|CANCELLED|ACCEPTED"
     datetime createdAt
+  }
+
+  PERSONEL {
+    int id PK
+    int companyId FK
+    int userId FK "nullable"
+    string fullName
+    string phone "nullable"
+    string homeAddress "nullable"
+    float homeLat "nullable"
+    float homeLng "nullable"
+    string geoStatus "OK|NEEDS_REVIEW|FAILED"
+    bool geoManualOverride
+    datetime geoUpdatedAt "nullable"
+    datetime createdAt
+  }
+
+  SHIFT_PERSONEL {
+    int id PK
+    int shiftId FK
+    int personelId FK
+    string note "nullable"
+    datetime createdAt
+  }
+
+  STOP_ASSIGNMENT {
+    int id PK
+    int shiftId FK
+    int stopId FK
+    int personelId FK
+    int walkM
+    datetime createdAt
+  }
+
+  SHIFT_IMPORT {
+    int id PK
+    int shiftId FK
+    int createdByUserId FK "nullable"
+    string fileName "nullable"
+    datetime createdAt
+  }
+
+  SHIFT_IMPORT_ROW {
+    int id PK
+    int importId FK
+    int rowNo
+    json rawJson "nullable"
+    string fullName "nullable"
+    string phone "nullable"
+    string address "nullable"
+    float lat "nullable"
+    float lng "nullable"
+    string geoStatus "OK|NEEDS_REVIEW|FAILED"
+    int personelId FK "nullable"
+    datetime createdAt
+  }
+
+  AGREEMENT {
+    int id PK
+    int companyId FK
+    int roomId FK
+    int vehicleId FK "nullable"
+    int driverId FK "nullable"
+    date startDate
+    date endDate
+    int weekMask
+    int startMin
+    int endMin
+    string status "REQUESTED|APPROVED|ACTIVE|DONE|CANCELLED|REJECTED"
+    int companyOfferAmount "nullable"
+    string companyOfferNote "nullable"
+    int roomOfferAmount "nullable"
+    string roomOfferNote "nullable"
+    datetime createdAt
+    datetime updatedAt
   }

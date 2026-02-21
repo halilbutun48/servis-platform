@@ -5,12 +5,25 @@ import { startGpsStaleMonitor } from "./gpsStaleMonitor.js";
 import { startMaintenanceMonitor } from "./maintenanceMonitor.js";
 import { startRetentionCleanup } from "./retentionCleanup.js";
 
+import { startAgreementMonitor } from "./agreementMonitor.js";
+import { startAgreementShiftGenerator } from "./agreementShiftGenerator.js";
+
 /**
  * @param {import('socket.io').Server} io
  * @param {object} opts
  */
 export function startMonitors(io, opts = {}) {
   const stopFns = [];
+
+  // ✅ M17: agreement lifecycle monitor (AUTO DONE)
+  stopFns.push(startAgreementMonitor(io, { intervalMs: opts.agreementIntervalMs }));
+
+  // ✅ M18: agreement -> daily shift generator
+  stopFns.push(
+    startAgreementShiftGenerator(io, {
+      intervalMs: opts.agreementShiftGenIntervalMs,
+    })
+  );
 
   stopFns.push(
     startGpsStaleMonitor(io, {

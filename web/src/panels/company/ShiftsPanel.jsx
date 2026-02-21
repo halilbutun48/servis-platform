@@ -8,6 +8,22 @@ import ShiftPeopleTab from "./ShiftPeopleTab";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
+function AgreementBadge({ agreementId }) {
+  const id = Number(agreementId);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return (
+    <span
+      className="pill"
+      data-status="AGREEMENT"
+      title="Agreement kaynaklı otomatik shift"
+      style={{ marginLeft: 8 }}
+    >
+      Agreement #{id}
+    </span>
+  );
+}
+
+
 function vehicleMetaLine(v) {
   const type = TYPE_TR[v?.type] || (v?.type ? String(v.type) : "");
   const bmy = [v?.brand, v?.model, v?.modelYear].filter(Boolean).join(" ");
@@ -94,6 +110,7 @@ export default function CompanyShiftsPanel() {
   // Pending filtreler
   const [pendingQ, setPendingQ] = useState("");
   const [pendingOnlyRoomOffer, setPendingOnlyRoomOffer] = useState(false);
+  const [onlyAgreement, setOnlyAgreement] = useState(false);
 
   // Final liste filtreler
   const [finalQ, setFinalQ] = useState("");
@@ -717,7 +734,8 @@ export default function CompanyShiftsPanel() {
   const pendingItems = useMemo(() => {
     const q = String(pendingQ || "").trim().toLowerCase();
     return pendingItemsRaw
-      .filter((s) => {
+        .filter((s) => (!onlyAgreement ? true : Number(s.agreementId) > 0))
+        .filter((s) => {
         if (!pendingOnlyRoomOffer) return true;
         const hasRoomOffer =
           Boolean(s.roomOfferVehicleId) ||
@@ -735,13 +753,14 @@ export default function CompanyShiftsPanel() {
           .toLowerCase();
         return hay.includes(q);
       });
-  }, [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer]);
+  }, [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement]);
 
   // Final filtre uygula
   const finalItems = useMemo(() => {
     const q = String(finalQ || "").trim().toLowerCase();
     return finalItemsRaw
-      .filter((s) => (finalStatus === "ALL" ? true : String(s.status) === finalStatus))
+        .filter((s) => (!onlyAgreement ? true : Number(s.agreementId) > 0))
+        .filter((s) => (finalStatus === "ALL" ? true : String(s.status) === finalStatus))
       .filter((s) => {
         if (!q) return true;
         const hay = [s.id, s.status, s.roomId, s.companyId, s.roomOfferNote, s.companyOfferNote, s.vehicle?.plate, s.driver?.fullName]
@@ -750,7 +769,7 @@ export default function CompanyShiftsPanel() {
           .toLowerCase();
         return hay.includes(q);
       });
-  }, [finalItemsRaw, finalQ, finalStatus]);
+  }, [finalItemsRaw, finalQ, finalStatus, onlyAgreement]);
 
   const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
 
@@ -998,11 +1017,20 @@ export default function CompanyShiftsPanel() {
               />
               Sadece Room teklifi olanlar
             </label>
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={onlyAgreement}
+                onChange={(e) => setOnlyAgreement(e.target.checked)}
+              />
+              Sadece Agreement shiftleri
+            </label>
             <button
               type="button"
               onClick={() => {
                 setPendingQ("");
                 setPendingOnlyRoomOffer(false);
+                setOnlyAgreement(false);
               }}
             >
               Temizle
@@ -1037,7 +1065,10 @@ export default function CompanyShiftsPanel() {
 
                 return (
                   <tr key={s.id}>
-                    <td>{s.id}</td>
+                    <td>
+                      {s.id}
+                      <AgreementBadge agreementId={s.agreementId} />
+                    </td>
                     <td>
                       <span className="pill" data-status={s.status}>
                         {s.status}
@@ -1156,11 +1187,20 @@ export default function CompanyShiftsPanel() {
               onChange={(e) => setFinalQ(e.target.value)}
               style={{ minWidth: 240 }}
             />
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={onlyAgreement}
+                onChange={(e) => setOnlyAgreement(e.target.checked)}
+              />
+              Sadece Agreement shiftleri
+            </label>
             <button
               type="button"
               onClick={() => {
                 setFinalStatus("ALL");
                 setFinalQ("");
+                setOnlyAgreement(false);
               }}
             >
               Temizle
@@ -1189,7 +1229,10 @@ export default function CompanyShiftsPanel() {
                 const r = roomsById.get(Number(s.roomId));
                 return (
                   <tr key={s.id}>
-                    <td>{s.id}</td>
+                    <td>
+                      {s.id}
+                      <AgreementBadge agreementId={s.agreementId} />
+                    </td>
                     <td>
                       <span className="pill" data-status={s.status}>
                         {s.status}

@@ -1,7 +1,8 @@
 # tools/gate.ps1
+
 param(
   [Parameter(Mandatory=$false)]
-  [ValidateRange(0,16)]
+  [ValidateRange(0,18)]
   [int]$To = 15,
 
   [Parameter(Mandatory=$false)]
@@ -37,7 +38,12 @@ $checks = @(
   @{ n = 13; name="M13"; cmd="node scripts/m13check.js" },
   @{ n = 14; name="M14"; cmd="node scripts/m14check.js" },
   @{ n = 15; name="M15"; cmd="node scripts/m15check.js" },
-  @{ n = 16; name="M16"; cmd="node scripts/m16check.js" }
+  @{ n = 16; name="M16";   file="m16check.js";  cmd="node scripts/m16check.js" },
+  # Sub-milestones (still under -To 16): deterministic contract checks
+  @{ n = 16; name="M16.2"; file="m162check.js"; cmd="node scripts/m162check.js" },
+  @{ n = 16; name="M16.3"; file="m163check.js"; cmd="node scripts/m163check.js" },
+  @{ n = 17; name="M17"; file="m17check.js"; cmd="node scripts/m17check.js" },
+  @{ n = 18; name="M18"; file="m18check.js"; cmd="node scripts/m18check.js" }
 )
 
 $repo = (Resolve-Path $RepoDir).Path
@@ -85,7 +91,10 @@ $runList = @()
 foreach ($c in $checks) {
   if ($c.n -gt $To) { continue }
 
-  $hostPath = Join-Path $backend ("scripts/m{0}check.js" -f $c.n)
+  # Backward compatible: if an explicit file is provided, check that file;
+  # otherwise keep legacy m{n}check.js naming.
+  $scriptFile = if ($c.ContainsKey('file') -and $c.file) { $c.file } else { ("m{0}check.js" -f $c.n) }
+  $hostPath = Join-Path $backend ("scripts/{0}" -f $scriptFile)
   if (-not (Test-Path $hostPath)) {
     throw "Missing check script on host ($hostPath) required for -To $To"
   }
@@ -105,10 +114,12 @@ try {
 Write-Host ""
 if ($NoBuild) {
   Write-Host "=== Docker Compose Up (NoBuild) ===" -ForegroundColor Cyan
-  Dc -f $composeFile up -d --remove-orphans | Out-Host
+  # IMPORTANT: use --detach (NOT -d), because -d can be captured as PowerShell -Debug
+  Dc -f $composeFile up --detach --remove-orphans | Out-Host
 } else {
   Write-Host "=== Docker Compose Build+Up ===" -ForegroundColor Cyan
-  Dc -f $composeFile up -d --build --remove-orphans | Out-Host
+  # IMPORTANT: use --detach (NOT -d), because -d can be captured as PowerShell -Debug
+  Dc -f $composeFile up --detach --build --remove-orphans | Out-Host
 }
 
 # Wait API health

@@ -28,6 +28,7 @@ import * as gpsMod from "./routes/gps.js";
 import * as requestsMod from "./routes/requests.js";
 import * as driverMod from "./routes/driver.js";
 import * as personelsMod from "./routes/personels.js";
+import * as companyPersonelsMod from "./routes/companyPersonels.js";
 
 // Public router’lar (io yok)
 import * as companiesMod from "./routes/companies.js";
@@ -37,6 +38,7 @@ import * as routeTemplatesMod from "./routes/routeTemplates.js";
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
 
+import * as agreementsMod from "./routes/agreements.js";
 /**
  * mod export'ları 3 tip olabilir:
  * 1) export function xxxRouter(io){...}  => factory
@@ -60,11 +62,12 @@ const gpsRouter = pickExport(gpsMod, "gpsRouter");
 const requestsRouter = pickExport(requestsMod, "requestsRouter");
 const driverRouter = pickExport(driverMod, "driverRouter");
 const personelsRouter = pickExport(personelsMod, "personelsRouter");
+const companyPersonelsRouter = pickExport(companyPersonelsMod, "companyPersonelsRouter");
 
 const companiesRouter = pickExport(companiesMod, "companiesRouter");
 const roomsRouter = pickExport(roomsMod, "roomsRouter");
 const routeTemplatesRouter = pickExport(routeTemplatesMod, "routeTemplatesRouter");
-
+const agreementsRouter = pickExport(agreementsMod, "agreementsRouter");
 for (const [name, fn] of Object.entries({
   vehiclesRouter,
   driversRouter,
@@ -73,6 +76,7 @@ for (const [name, fn] of Object.entries({
   requestsRouter,
   driverRouter,
   personelsRouter,
+  companyPersonelsRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,
@@ -195,7 +199,8 @@ app.use("/api/gps", gpsRouter(io));
 app.use("/api/requests", requestsRouter(io));
 app.use("/api/driver", driverRouter(io));
 app.use("/api/personels", personelsRouter(io));
-
+app.use("/api/company/personels", companyPersonelsRouter());
+app.use("/api/agreements", agreementsRouter(io));
 // Background monitors
 const stopMonitors = startMonitors(io);
 

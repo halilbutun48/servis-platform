@@ -15,8 +15,13 @@ import NotificationsPanel from "./panels/shared/NotificationsPanel";
 import SuperAdminPanel from "./panels/superadmin/SuperAdminPanel";
 import RoomMapPanel from "./panels/room/MapPanel";
 import CompanyMapPanel from "./panels/company/MapPanel";
+import GeoReviewPanel from "./panels/company/GeoReviewPanel";
 import DriverMapPanel from "./panels/driver/MapPanel";
 import PersonelLivePanel from "./panels/personel/LivePanel";
+
+// ✅ M17.1 UI
+import RoomAgreementsPanel from "./panels/room/AgreementsPanel";
+import CompanyAgreementsPanel from "./panels/company/AgreementsPanel";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -57,7 +62,9 @@ function LoginCard() {
     <div className="wrap">
       <div className="card">
         <div className="title">Personel-Servis V1</div>
-        <div className="muted">Tek UI → Role-based paneller (ROOM/COMPANY/DRIVER/PERSONEL)</div>
+        <div className="muted">
+          Tek UI → Role-based paneller (ROOM/COMPANY/DRIVER/PERSONEL)
+        </div>
       </div>
 
       <div className="card">
@@ -66,13 +73,25 @@ function LoginCard() {
           <label className="muted">E-posta</label>
           <input value={email} onChange={(e) => setEmail(e.target.value)} />
           <label className="muted">Şifre</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button disabled={busy} type="submit">{busy ? "..." : "Giriş"}</button>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button disabled={busy} type="submit">
+            {busy ? "..." : "Giriş"}
+          </button>
         </form>
-        {err ? <div className="card err" style={{ marginTop: 12 }}>{err}</div> : null}
+        {err ? (
+          <div className="card err" style={{ marginTop: 12 }}>
+            {err}
+          </div>
+        ) : null}
         <hr />
         <div className="muted">
-          Demo kullanıcılar: <b>room@demo.com</b>, <b>company@demo.com</b>, <b>driver@demo.com</b>, <b>personel@demo.com</b> (şifre: <b>demo123</b>)
+          Demo kullanıcılar: <b>room@demo.com</b>, <b>company@demo.com</b>,{" "}
+          <b>driver@demo.com</b>, <b>personel@demo.com</b> (şifre:{" "}
+          <b>demo123</b>)
         </div>
       </div>
     </div>
@@ -101,31 +120,56 @@ export default function App() {
 
   const view = useMemo(() => {
     if (!token) return { layout: false, node: <LoginCard /> };
-    if (!me) return { layout: false, node: <div className="wrap"><div className="card">Loading...</div></div> };
+    if (!me)
+      return {
+        layout: false,
+        node: (
+          <div className="wrap">
+            <div className="card">Loading...</div>
+          </div>
+        ),
+      };
 
     // Shared
-    if (path === "/shared/notifications") return { layout: true, node: <NotificationsPanel /> };
+    if (path === "/shared/notifications")
+      return { layout: true, node: <NotificationsPanel /> };
 
     // ROOM
     if (path === "/room/map") return { layout: true, node: <RoomMapPanel /> };
-    if (path === "/room/vehicles") return { layout: true, node: <VehiclesPanel /> };
-    if (path === "/room/drivers") return { layout: true, node: <DriversPanel /> };
-    if (path === "/room/shifts") return { layout: true, node: <RoomShiftsPanel /> };
+    if (path === "/room/vehicles")
+      return { layout: true, node: <VehiclesPanel /> };
+    if (path === "/room/drivers")
+      return { layout: true, node: <DriversPanel /> };
+    if (path === "/room/shifts")
+      return { layout: true, node: <RoomShiftsPanel /> };
+    if (path === "/room/agreements")
+      return { layout: true, node: <RoomAgreementsPanel /> };
 
     // COMPANY
-    if (path === "/company/map") return { layout: true, node: <CompanyMapPanel /> };
-    if (path === "/company/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
+    if (path === "/company/map")
+      return { layout: true, node: <CompanyMapPanel /> };
+    if (path === "/company/shifts")
+      return { layout: true, node: <CompanyShiftsPanel /> };
+    if (path === "/company/georeview")
+      return { layout: true, node: <GeoReviewPanel /> };
+    if (path === "/company/agreements")
+      return { layout: true, node: <CompanyAgreementsPanel /> };
 
     // DRIVER
-    if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
-    if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
+    if (path === "/driver/map")
+      return { layout: true, node: <DriverMapPanel /> };
+    if (path === "/driver/route")
+      return { layout: true, node: <RoutePanel /> };
 
     // PERSONEL
-    if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };
-    if (path === "/personel/my") return { layout: true, node: <MyRidePanel /> };
+    if (path === "/personel/live")
+      return { layout: true, node: <PersonelLivePanel /> };
+    if (path === "/personel/my")
+      return { layout: true, node: <MyRidePanel /> };
 
     // SUPER_ADMIN
-    if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };
+    if (path === "/superadmin")
+      return { layout: true, node: <SuperAdminPanel /> };
 
     // Unknown: go default
     const def = roleDefaultPath(me.role);

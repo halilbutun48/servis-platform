@@ -1,84 +1,124 @@
-# PERSONEL-SERVIS V1 — PROJECT SPEC
+# PERSONEL-SERVIS V1 — PROJECT SPEC (SSOT)
 
 ## Amaç
-Öğrenci/parent yok. GPS tabanlı **"personel servisi"** platformu:
+Öğrenci/parent yok. GPS tabanlı **personel servisi** platformu:
+- Canlı araç takibi (map), rota/durak planı, vardiya (shift) yönetimi
+- Uyarılar (notifications): overspeed, stale/offline, recovery, bakım yaklaşıyor
+- Personel talepleri (request) → stop suggestions → shift’e stop ekleme
+- Route templates (company) → shift’e REPLACE uygula
+- Periyodik rezervasyon (Agreement) + çakışma yönetimi
+- Agreement’tan **günlük shift otomatik üretimi** (M18)
 
-- Canlı araç takibi (map), rota/durak planı, vardiya yönetimi
-- Hız/bakım/stale gibi uyarılar (notification)
-- Personel taleplerinden ortak durak önerisi + manuel durak yönetimi
-- Driver’a rota/duraklar gider; driver yakın duraktan başlayarak güzergah oluşturur
+---
 
 ## Roller (5)
+
 1) **SUPER_ADMIN**
-- Company ekler, Company/Room yetkilerini yönetir
+- Company/Room kurulum & seed
 
 2) **ROOM (Operasyon/Servis odası)**
-- Araç ekler (plaka, kapasite, hız limiti, bakım tarihleri, cihaz bilgisi)
-- Sürücü ekler (ad/soyad/tel, cihaz), opsiyonel yedek sürücü
-- Company’den gelen vardiya talebini onaylar, araca+sürücüye bağlar
-- Haritada: tüm araçları görür; tek araç seçince araç+driver+company+rota+durağı görür
-- Bakım 7 gün kala map/dashboard uyarı; aktif/pasif/stale görür
-- Ek servis ihtiyacı bildirir; geçici/kalıcı araç talebi açar
-- Company’nin duraklarını görür/düzeltir; araca rota gönderir
+- Vehicle/Driver CRUD
+- Shift approve/assign/start
+- Request close (ACCEPTED)
+- Stop suggestions + from-suggestion
+- Agreement approve (vehicle+driver assign) + conflict yönetimi
+- Availability kontrolü (shift + agreement)
 
-3) **COMPANY (Müşteri firma)**
-- Room’un kendine tanımladığı araç/driver bilgilerini görür
-- Vardiya oluşturur (tarih/saat/personel listesi/kapasite)
-- Personel taleplerine göre duraklar belirler veya ortak durak (clustering) önerir
-- Vardiya+durak planını Room’a gönderir (onay/atama için)
+3) **COMPANY**
+- Shift create, template yönetimi
+- Agreements create/list/cancel/extend
+- Request’leri görür (kapatamaz)
 
 4) **DRIVER**
-- Kendine atanmış araç bilgisi direkt görünür (kapasite, bakım, limitler)
-- Durak planı gelir; konuma en yakın duraktan başlatıp rota çıkarır
-- GPS gönderir; “Reached” ile ilerleme günceller
-- Hız/bakım/stale uyarıları driver’a da gelir
+- Assigned vehicle ile GPS post
+- Active route + stop progression + complete
 
 5) **PERSONEL**
-- Sadece kendine atanmış aracı görür (yaklaşıyor/konum/ETA)
-- Konum al-kaydet, yakın durak seç, “binmiyorum”
-- Konum/durak talepleri Company’ye gider
+- Request create (lat/lng zorunlu)
+- Kendi live/my view
 
-## Çekirdek WS (socket.io)
-### Join rooms
-- `vehicle:{vehicleId}`
-- `room:{roomId}`
-- `company:{companyId}`
-- `shift:{shiftId}`
+---
 
-### Emit events
-- `gps:update {vehicleId,lat,lng,speed,at,status}`
-- `vehicle:status {vehicleId,status:ACTIVE|STALE|PASSIVE}`
-- `notif:new {scope,type,payload}`
-- `route:plan {shiftId,stops[]}`
-- `route:progress {shiftId,lastReachedOrder,nextStop,completed}`
+## Mimari
+- Backend: Node.js (ESM) + Express + Prisma
+- DB: Postgres (Docker)
+- Redis: job/monitor + dedupe
+- Realtime: Socket.IO
+- Web: Vite + React
+- Monorepo: `backend/`, `web/`, `infra/`, `docs/`, `tools/`
 
-## Proje Yapısı
-Monorepo hedefi:
-- `backend/` API + socket.io
-- `web/` panel UI
-- `infra/` (docker-compose/k8s vb.)
-- `docs/` tek kaynak doküman
-- `tools/` doğrulama / pack scriptleri
+---
 
-Panel klasör standardı:
-`web/src/panels/room/`, `company/`, `driver/`, `personel/`, `superadmin/`
+## GREEN disiplini
+- “Çalışıyor” demek: `tools/pack.ps1 -To <hedef>` **PACK PASS**
+- Her milestone:
+  - check script (backend/scripts/*check.js)
+  - docs update (SSOT)
+  - pack doğrulama
 
-## Geliştirme Kuralı
-- Sıfırdan temiz DB + Prisma + seed ile başlayacağız
-- REST = CRUD/planlama, WS = canlı/bildirim
-- “Tek kaynak doküman”: `docs/PROJECT_SPEC_V1.md` + `docs/API_SPEC_V1.md` + `docs/DB_SCHEMA_V1.md`
+---
 
-## Milestone Plan
-- **Milestone-0:** Sıfırdan repo + DB + Prisma schema + seed + auth/roles iskeleti
-- **Milestone-1:** Room panel (Vehicle/Driver CRUD + atama) + Company panel (Shift draft/request) + Room onay akışı
-- **Milestone-2:** GPS (gps:last + gps:points) + Map (Room: tüm araçlar, Personel: atanmış araç)
-- **Milestone-3:** Route/Stops (company oluştur/öner, room düzenle, driver’a gönder)
-- **Milestone-4:** WS canlı akış + Notification kuralları (overspeed, maint_7d, stale)
-- **Milestone-5:** “Ortak durak önerisi” (clustering) + operasyonel detaylar
+## Kurallar (SSOT)
 
-## Bug Notu
-- Eski repo’da `backend/src/routes/driver.js` yanlışlıkla React UI içeriğine dönmüş olabilir (import ... from "react").
-- Bu ürün kararı değil; dosya yolu/yerleşim karışıklığı. Bu projede backend route dosyaları **Express router** olmalı.
+### 1) Scope/RBAC
+- Company sadece kendi company scope’unu görür.
+- Room sadece kendi room scope’unu yönetir.
+- Driver sadece assigned shift/vehicle ile GPS/route işlemi yapar.
+- Personel request açar, kendi view’ını görür.
 
-## Son Karar (İlişki)
-- **Company 1 — Room N** (varsayılan). Room operasyonel havuz, Company vardiya/talep üretir.
+### 2) Overlap kuralları (Shift)
+- Aynı driver aynı zaman aralığında 2 shift’e atanamaz → 409
+- Aynı vehicle aynı zaman aralığında 2 shift’e atanamaz → 409
+
+### 3) Agreement rezervasyon kuralları (M17)
+- Aynı time window’da aynı vehicle/driver başka agreement’a verilemez → 409
+- Availability endpoint hem shift hem agreement rezervasyonunu dikkate alır.
+- Determinism: Availability’de **agreement conflict önce** raporlanır (m17check stabil).
+
+### 4) Monitoring & Dedupe
+- GPS state transition: LIVE→STALE→OFFLINE→LIVE
+- Notif dedupe: aynı transition tekrar tekrar üretmez.
+- agreementMonitor: endDate+endMin geçince DONE.
+
+---
+
+## M18 — Agreement → Günlük Shift Otomatik Üretimi ✅
+
+### Amaç
+Onaylı anlaşmalardan (Agreement) **günlük vardiya (Shift)** üretmek:
+- Agreement tarih aralığı + weekMask + saat penceresine göre “bugün” shift create.
+- Üretilen shift normal shift lifecycle’a girer.
+
+### Kurallar
+- Sadece `APPROVED/ACTIVE` ve `vehicleId+driverId` atanmış agreements.
+- Gün filtresi: `weekMask` bugünün bit’ini içeriyorsa üret.
+- Midnight aşımı: `endMin < startMin` → `endAt` ertesi güne taşar.
+- Duplicate guard: aynı agreement aynı gün için tek shift:
+  - DB: `unique(agreementId, startAt)`
+
+### Conflict/Çakışma
+- Üretimden önce shiftConflict kontrol edilir.
+- Conflict varsa o gün için üretim **skip** edilir.
+
+### UI (M18)
+- Company/Room shift listesinde satırda `Agreement #<id>` badge
+- Filtre: “Sadece Agreement shiftleri”
+
+---
+
+## Milestone yol haritası (özet)
+✅ M0–M15: CRUD + shift + gps + ws + notifications + overlap/bind  
+✅ M16: requests→suggestions→stops + template REPLACE  
+✅ M16.2: shift people + route-preview + assignmentCount  
+✅ M16.3: geo review + manual override  
+✅ M17: agreements + conflict + monitor + availability  
+✅ M17.2: agreements UI polish  
+✅ M17.3: UI smoke runbook  
+✅ **M18: agreement→daily shift generator + UI badge/filter** (GREEN)
+
+---
+
+## DoD (Başarı)
+- Pack PASS olmadan milestone tamam sayılmaz.
+- Agreement “happy path”: Company create → Room approve → conflict → extend/cancel
+- M18 “happy path”: agreement approve → bugün shift oluşur → listede badge görünür.

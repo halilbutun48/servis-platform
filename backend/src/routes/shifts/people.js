@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireRole } from "../../auth/middleware.js";
+import { authRequired, requireRole } from "../../auth/middleware.js";
 import { prisma } from "../../prisma.js";
 import { audit } from "../../audit.js";
 import { clusterStops } from "../../services/clusterStops.js";
@@ -135,7 +135,7 @@ export function attachShiftPeopleRoutes(router, _io) {
   const r = Router();
 
   // COMPANY: get shift people
-  r.get("/:id/people", requireRole("COMPANY"), async (req, res) => {
+  r.get("/:id/people", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
@@ -144,7 +144,7 @@ export function attachShiftPeopleRoutes(router, _io) {
   });
 
   // COMPANY: replace/merge shift people
-  r.put("/:id/people", requireRole("COMPANY"), async (req, res) => {
+  r.put("/:id/people", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const mode = qModeSchema.parse(req.query.mode);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
@@ -193,7 +193,7 @@ export function attachShiftPeopleRoutes(router, _io) {
   });
 
   // COMPANY: import people + write import trail
-  r.post("/:id/people/import", requireRole("COMPANY"), async (req, res) => {
+  r.post("/:id/people/import", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const mode = qModeSchema.parse(req.query.mode);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
@@ -282,7 +282,7 @@ export function attachShiftPeopleRoutes(router, _io) {
   });
 
   // COMPANY: generate stops from shift people
-  r.post("/:id/stops/generate", requireRole("COMPANY"), async (req, res) => {
+  r.post("/:id/stops/generate", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const mode = qModeSchema.parse(req.query.mode);
     const maxWalkM = qMaxWalkSchema.parse(req.query.maxWalkM);
@@ -359,11 +359,7 @@ export function attachShiftPeopleRoutes(router, _io) {
   });
 
   // COMPANY + ROOM: route preview
-  r.get("/:id/route-preview", async (req, res) => {
-    const role = req.user.role;
-    if (!["COMPANY", "ROOM", "SUPER_ADMIN"].includes(role)) {
-      return res.status(403).json({ ok: false, error: "forbidden" });
-    }
+  r.get("/:id/route-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
 
     const id = Number(req.params.id);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user, {
@@ -382,6 +378,18 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const { skipped } = pickEligiblePoints(people);
 
+    // stopId -> kişi sayısı
+    const countByStopId = new Map();
+    for (const a of assignments) {
+      countByStopId.set(a.stopId, (countByStopId.get(a.stopId) || 0) + 1);
+    }
+
+    // stops’a assignmentCount ekle
+    const stopsWithCounts = stops.map((s) => ({
+      ...s,
+      assignmentCount: countByStopId.get(s.id) || 0,
+    }));
+
     res.json({
       ok: true,
       shift: {
@@ -393,7 +401,7 @@ export function attachShiftPeopleRoutes(router, _io) {
         companyId: shift.companyId,
       },
       people,
-      stops,
+      stops: stopsWithCounts,
       assignments,
       skipped: skipped.map((p) => ({
         id: p.id,

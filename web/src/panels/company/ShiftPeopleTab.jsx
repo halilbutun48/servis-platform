@@ -1,6 +1,7 @@
 // web/src/panels/company/ShiftPeopleTab.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { apiOr404Fallback } from "../../utils/apiFallback";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftPersonelTable from "../../components/ShiftPersonelTable";
 
@@ -138,6 +139,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
 
+  // M16.2 soft-switch: backend varsa kullan; endpoint yoksa (404) localStorage fallback
+  const [peopleBackend, setPeopleBackend] = useState("unknown"); // unknown | on | off
+
   const shiftOptions = useMemo(() => {
     const list = Array.isArray(shifts) ? shifts : [];
     const sorted = [...list].sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
@@ -184,29 +188,136 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
     }
   }
 
+
+  function mapBackendPeopleToUi(items) {
+    const list = Array.isArray(items) ? items : [];
+    return list
+      .map((p) => ({
+        id: String(p?.id ?? ""),
+        personelId: Number(p?.id ?? 0) || null,
+        name: String(p?.fullName ?? ""),
+        phone: String(p?.phone ?? ""),
+        address: String(p?.homeAddress ?? ""),
+        lat: typeof p?.homeLat === "number" ? p.homeLat : null,
+        lng: typeof p?.homeLng === "number" ? p.homeLng : null,
+        geoStatus: String(p?.geoStatus ?? ""),
+        geoManualOverride: Boolean(p?.geoManualOverride),
+      }))
+      .filter((x) => x.id);
+  }
+
+  function mapUiPeopleToBackend(list) {
+    const arr = Array.isArray(list) ? list : [];
+    return arr.map((p) => ({
+      personelId:
+        p.personelId ||
+        (String(p.id).match(/^\d+$/) ? Number(p.id) : undefined),
+      fullName: String(p.name || "").trim(),
+      phone: String(p.phone || "").trim() || null,
+      address: String(p.address || "").trim() || null,
+      lat: typeof p.lat === "number" ? p.lat : null,
+      lng: typeof p.lng === "number" ? p.lng : null,
+      geoManualOverride: Boolean(p.geoManualOverride),
+    }));
+  }
+
+  async function loadPeopleFromBackend(shiftId) {
+    const r = await api(`/api/shifts/${shiftId}/people`, { token });
+    return mapBackendPeopleToUi(r?.items);
+  }
+
+  async function savePeopleToBackend(shiftId, list) {
+    const items = mapUiPeopleToBackend(list);
+    return api(`/api/shifts/${shiftId}/people?mode=REPLACE`, {
+      method: "PUT",
+      body: { items },
+      token,
+    });
+  }
+
   // init selected shift
   useEffect(() => {
     if (selectedShiftId) return;
     if (shiftOptions.length) setSelectedShiftId(String(shiftOptions[0].id));
   }, [shiftOptions, selectedShiftId]);
 
-  // load people on shift change
+  // load people on shift change (backend first; 404 => localStorage fallback)
   useEffect(() => {
     if (!selectedShiftId) return;
-    const list = loadPeopleFromStorage();
-    setPeople(list);
-    setDraftStops([]);
-    setInfo("");
+
+    let alive = true;
+    setBusy(true);
     setErr("");
+    setInfo("");
+
+    const sid = String(selectedShiftId);
+
+    (async () => {
+      try {
+        const list = await apiOr404Fallback(
+          async () => {
+            const data = await loadPeopleFromBackend(sid);
+            setPeopleBackend("on");
+            return data;
+          },
+          async () => {
+            setPeopleBackend("off");
+            return loadPeopleFromStorage();
+          }
+        );
+
+        if (!alive) return;
+        setPeople(list);
+        setDraftStops([]);
+        setInfo("");
+      } catch (e) {
+        if (!alive) return;
+        setErr(e?.message || String(e));
+        setPeople(loadPeopleFromStorage());
+      } finally {
+        if (alive) setBusy(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peopleStorageKey]);
 
-  // keep storage in sync
+  // keep localStorage in sync + (soft) persist to backend
   useEffect(() => {
     if (!selectedShiftId) return;
+
+    // always keep local fallback updated
     savePeopleToStorage(people);
+
+    // debounce backend save; only if backend not known as missing
+    if (peopleBackend === "off") return;
+
+    const sid = String(selectedShiftId);
+    const t = setTimeout(async () => {
+      try {
+        await apiOr404Fallback(
+          async () => {
+            await savePeopleToBackend(sid, people);
+            setPeopleBackend("on");
+            return true;
+          },
+          async () => {
+            setPeopleBackend("off");
+            return false;
+          }
+        );
+      } catch (e) {
+        // Do not overwrite UI; just show error
+        setErr(e?.message || String(e));
+      }
+    }, 500);
+
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, selectedShiftId]);
+  }, [people, selectedShiftId, peopleBackend]);
 
   const geoStats = useMemo(() => {
     let ok = 0, review = 0, failed = 0;
@@ -407,6 +518,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
 
           <div className="muted" style={{ marginTop: 6 }}>
             <b>Personel:</b> {geoStats.total} • OK: {geoStats.ok} • Review: {geoStats.review} • Failed: {geoStats.failed}
+            {geoStats.review > 0 || geoStats.failed > 0 ? (
+              <span style={{ marginLeft: 10 }}>
+                <a href="#/company/georeview">Geo Review’e git</a>
+              </span>
+            ) : null}
           </div>
 
           <div className="muted" style={{ marginTop: 6 }}>

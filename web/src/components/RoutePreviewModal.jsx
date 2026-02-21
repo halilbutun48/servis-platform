@@ -1,5 +1,7 @@
 // web/src/components/RoutePreviewModal.jsx
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../api";
+import { apiOr404Fallback } from "../utils/apiFallback";
 
 function bboxFromPoints(points) {
   if (!points.length) return null;
@@ -30,11 +32,70 @@ function project(p, box, w, h, pad) {
   };
 }
 
-export default function RoutePreviewModal({ open, onClose, title, stops, people }) {
+export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people }) {
   if (!open) return null;
 
-  const stopPts = (stops || []).filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number");
-  const peoplePts = (people || [])
+  const [remote, setRemote] = useState({ stops: null, people: null, err: "" });
+
+  useEffect(() => {
+    if (!open) return;
+    if (!shiftId) return;
+
+    let alive = true;
+    setRemote((s) => ({ ...s, err: "" }));
+
+    (async () => {
+      try {
+        const data = await apiOr404Fallback(
+          async () => await api(`/api/shifts/${shiftId}/route-preview`),
+          // 404 fallback: legacy /stops endpoint
+          async () => {
+            const resp = await api(`/api/shifts/${shiftId}/stops`);
+            const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
+            return { ok: true, people: [], stops: list };
+          }
+        );
+
+        if (!alive) return;
+
+        if (data && data.ok) {
+          // Map backend shape -> UI shape
+          const p = Array.isArray(data.people) ? data.people : [];
+          const st = Array.isArray(data.stops) ? data.stops : [];
+          setRemote({
+            stops: st.map((s) => ({
+              id: String(s?.id ?? ""),
+              title: String(s?.title ?? s?.name ?? ""),
+              lat: typeof s?.lat === "number" ? s.lat : (typeof s?.stopLat === "number" ? s.stopLat : null),
+              lng: typeof s?.lng === "number" ? s.lng : (typeof s?.stopLng === "number" ? s.stopLng : null),
+              // M16.2+: backend may send assignmentCount
+              count: (s?.assignmentCount ?? s?.count ?? null),
+            })),
+            people: p.map((x) => ({
+              id: String(x?.id ?? ""),
+              name: String(x?.fullName ?? ""),
+              lat: typeof x?.homeLat === "number" ? x.homeLat : null,
+              lng: typeof x?.homeLng === "number" ? x.homeLng : null,
+            })),
+            err: "",
+          });
+        } else {
+          setRemote((s) => ({ ...s, stops: null, people: null }));
+        }
+      } catch (e) {
+        if (!alive) return;
+        setRemote((s) => ({ ...s, stops: null, people: null, err: e?.message || String(e) }));
+      }
+    })();
+
+    return () => { alive = false; };
+  }, [open, shiftId]);
+
+  const effStops = remote.stops ?? stops ?? [];
+  const effPeople = remote.people ?? people ?? [];
+
+  const stopPts = (effStops || []).filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number");
+  const peoplePts = (effPeople || [])
     .filter((p) => typeof p?.lat === "number" && typeof p?.lng === "number")
     .map((p) => ({ lat: p.lat, lng: p.lng }));
 
@@ -74,6 +135,8 @@ export default function RoutePreviewModal({ open, onClose, title, stops, people 
             Kapat
           </button>
         </div>
+
+        {remote.err ? <div className="card err" style={{ marginTop: 12 }}>{remote.err}</div> : null}
 
         <div className="muted" style={{ marginTop: 8 }}>
           Durak: {stopPts.length} • Personel (koordinatlı): {peoplePts.length}
