@@ -93,6 +93,121 @@ function fmtDriverHuman(d) {
   return phone ? `${name} • ${phone}` : name;
 }
 
+
+// Shift label helpers (Atamalar / Müsaitlik)
+function fmtTR(dt) {
+  if (!dt) return "-";
+  try {
+    return new Date(dt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
+  } catch {
+    return String(dt);
+  }
+}
+function fmtHm(dt) {
+  if (!dt) return "-";
+  try {
+    return new Date(dt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
+  } catch {
+    return String(dt);
+  }
+}
+function shiftWindowLabel(s) {
+  if (!s) return "-";
+  return `${fmtHm(s.startAt)}–${fmtHm(s.endAt)}`;
+}
+function pickCurrentShift(shifts, now = new Date()) {
+  const arr = Array.isArray(shifts) ? shifts : [];
+  // prefer ACTIVE if any
+  const active = arr.find((x) => x?.status === "ACTIVE" && new Date(x.endAt).getTime() > now.getTime());
+  if (active) return active;
+  return arr.find((x) => {
+    const st = new Date(x.startAt).getTime();
+    const en = new Date(x.endAt).getTime();
+    return ["APPROVED", "ACTIVE"].includes(x?.status) && st <= now.getTime() && en > now.getTime();
+  }) || null;
+}
+function pickNextShift(shifts, now = new Date()) {
+  const arr = (Array.isArray(shifts) ? shifts : [])
+    .filter((x) => x && new Date(x.endAt).getTime() > now.getTime())
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+
+  // next = first that starts after now; fallback: soonest future (including APPROVED)
+  return arr.find((x) => new Date(x.startAt).getTime() > now.getTime()) || null;
+}
+function conflictCodeLabel(payload) {
+  if (!payload) return "CONFLICT";
+  return payload.code || payload.kind || payload.error || "CONFLICT";
+}
+
+// --- Mini accordion helpers (Atamalar) ---
+function expKey(vehicleId, which) {
+  return `${vehicleId}:${which}`; // which = "cur" | "next"
+}
+
+function toggleExp(setter, key) {
+  setter((prev) => ({ ...prev, [key]: !prev[key] }));
+}
+
+function shiftOneLine(s) {
+  if (!s) return "—";
+  const start = new Date(s.startAt);
+  const end = new Date(s.endAt);
+  const hhmm = (d) => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  const win = `${hhmm(start)}–${hhmm(end)}`;
+  const st = s.status || "";
+  return `#${s.id} ${st} • ${win}`;
+}
+
+function ShiftCompact({ s, open, onToggle }) {
+  if (!s) return <span className="muted">—</span>;
+
+  const companyName = s.company?.name || (s.companyId ? `company#${s.companyId}` : "");
+  const hasAgreement = Number(s.agreementId) > 0;
+
+  return (
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <span><b>{shiftOneLine(s)}</b></span>
+        <span className="pill" data-status={s.status === "ACTIVE" ? "BUSY" : "OK"}>{s.status}</span>
+        {hasAgreement ? <span className="pill" data-status="AGREEMENT">Agreement #{s.agreementId}</span> : null}
+        <button
+          type="button"
+          onClick={onToggle}
+          style={{ padding: "2px 8px", fontSize: 12 }}
+          title="Detay göster/gizle"
+        >
+          {open ? "Gizle" : "Detay"}
+        </button>
+      </div>
+
+      {open ? (
+        <div className="muted" style={{ fontSize: 12, display: "grid", gap: 4 }}>
+          <div>{companyName ? `${companyName} • ` : ""}{shiftWindowLabel(s)}</div>
+          <div>start: {fmtTR(s.startAt)} • end: {fmtTR(s.endAt)}</div>
+          {s.roomId ? <div>roomId: {s.roomId}</div> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// --- Selection helpers (Müsaitlik) ---
+function toggleSel(setter, id) {
+  setter((prev) => ({ ...prev, [id]: !prev[id] }));
+}
+
+function setSelMany(setter, ids, val) {
+  setter((prev) => {
+    const next = { ...prev };
+    for (const id of ids) {
+      if (val) next[id] = true;
+      else delete next[id];
+    }
+    return next;
+  });
+}
+
+
 export default function VehiclesPanel() {
   const { token } = useSession();
 
@@ -148,6 +263,35 @@ export default function VehiclesPanel() {
   const [bindSel, setBindSel] = useState({});
   const [focusVehicleId, setFocusVehicleId] = useState(0);
 
+
+
+// Atamalar/Müsaitlik
+const [assignRangeDays, setAssignRangeDays] = useState(7);
+
+// Atamalar filters
+const [assignQuery, setAssignQuery] = useState("");
+const [assignFilter, setAssignFilter] = useState("ALL"); // ALL | HAS_CURRENT | HAS_NEXT | AGREEMENT_ONLY
+const [assignSort, setAssignSort] = useState("PLATE_ASC"); // PLATE_ASC | PLATE_DESC | CURRENT_SOON | NEXT_SOON
+
+// Müsaitlik filters
+const [availQuery, setAvailQuery] = useState("");
+const [availFilter, setAvailFilter] = useState("ALL"); 
+// ALL | ONLY_CONFLICT | ONLY_OK | ONLY_UNCHECKED | ONLY_WITH_DRIVER
+
+// Availability (custom window)
+const [availStartAt, setAvailStartAt] = useState(() => new Date().toISOString().slice(0, 16)); // datetime-local
+const [availEndAt, setAvailEndAt] = useState(() => {
+  const d = new Date(Date.now() + 30 * 60 * 1000);
+  return d.toISOString().slice(0, 16);
+});
+const [availBusy, setAvailBusy] = useState(false);
+const [availMap, setAvailMap] = useState({}); // { [vehicleId]: { vehicleOk, vehicleConflict, driverOk, driverConflict } }
+
+// Atamalar: mini-accordion (Şu an / Sıradaki)
+const [shiftExp, setShiftExp] = useState({}); // { "vehicleId:cur": true }
+
+// Müsaitlik: selection (checkbox)
+const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   // Edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editTemplateId, setEditTemplateId] = useState("");
@@ -556,6 +700,151 @@ export default function VehiclesPanel() {
         return true;
       });
   }, [items, statusFilter, plateQuery]);
+const assignRows = useMemo(() => {
+  const now = new Date();
+  const q = String(assignQuery || "").trim().toLowerCase();
+  const maxMs = assignRangeDays * 24 * 60 * 60 * 1000;
+
+  const rows = (items || [])
+    .filter((v) => !v.archivedAt)
+    .filter((v) => (q ? String(v.plate || "").toLowerCase().includes(q) : true))
+    .map((v) => {
+      const shifts = Array.isArray(v.shifts) ? v.shifts : [];
+      const cur = pickCurrentShift(shifts, now);
+      const next = pickNextShift(shifts, now);
+      const nextInRange = next && (new Date(next.startAt).getTime() - now.getTime() <= maxMs);
+      const hasAgreement = Boolean(cur?.agreementId || next?.agreementId);
+      return { v, cur, next: nextInRange ? next : null, hasAgreement };
+    })
+    .filter((r) => {
+      if (assignFilter === "HAS_CURRENT") return Boolean(r.cur);
+      if (assignFilter === "HAS_NEXT") return Boolean(r.next);
+      if (assignFilter === "AGREEMENT_ONLY") return Boolean(r.hasAgreement);
+      return true;
+    });
+
+  rows.sort((a, b) => {
+    if (assignSort === "PLATE_DESC") return String(b.v.plate || "").localeCompare(String(a.v.plate || ""), "tr");
+    if (assignSort === "CURRENT_SOON") {
+      const at = a.cur ? new Date(a.cur.startAt).getTime() : Number.POSITIVE_INFINITY;
+      const bt = b.cur ? new Date(b.cur.startAt).getTime() : Number.POSITIVE_INFINITY;
+      return at - bt;
+    }
+    if (assignSort === "NEXT_SOON") {
+      const at = a.next ? new Date(a.next.startAt).getTime() : Number.POSITIVE_INFINITY;
+      const bt = b.next ? new Date(b.next.startAt).getTime() : Number.POSITIVE_INFINITY;
+      return at - bt;
+    }
+    return String(a.v.plate || "").localeCompare(String(b.v.plate || ""), "tr");
+  });
+
+  return rows;
+}, [items, assignQuery, assignFilter, assignSort, assignRangeDays]);
+
+const availRows = useMemo(() => {
+  const q = String(availQuery || "").trim().toLowerCase();
+
+  const rows = (items || [])
+    .filter((v) => !v.archivedAt)
+    .filter((v) => (q ? String(v.plate || "").toLowerCase().includes(q) : true))
+    .map((v) => {
+      const row = availMap?.[v.id] || null;
+      const now = new Date();
+      const cur = pickCurrentShift(v.shifts, now);
+      const quickBusy = Boolean(cur);
+      const vehicleOk = row ? row.vehicleOk : null;
+      const driverOk = row ? row.driverOk : null;
+      const hasDriver = Boolean(v.driverId || v.driver?.id || v.driver);
+
+      const anyConflict =
+        row ? (row.vehicleOk === false || (hasDriver && row.driverOk === false)) : false;
+      const allOk =
+        row ? (row.vehicleOk === true && (!hasDriver || row.driverOk === true)) : false;
+
+      return { v, row, quickBusy, hasDriver, anyConflict, allOk };
+    })
+    .filter((r) => {
+      if (availFilter === "ONLY_WITH_DRIVER") return r.hasDriver;
+      if (availFilter === "ONLY_UNCHECKED") return !r.row;
+      if (availFilter === "ONLY_CONFLICT") return r.anyConflict;
+      if (availFilter === "ONLY_OK") return r.allOk;
+      return true;
+    });
+
+  // Premium: meşguller üstte, sonra plaka
+  rows.sort((a, b) => {
+    if (a.quickBusy !== b.quickBusy) return a.quickBusy ? -1 : 1;
+    return String(a.v.plate || "").localeCompare(String(b.v.plate || ""), "tr");
+  });
+
+  return rows;
+}, [items, availMap, availQuery, availFilter]);
+
+async function checkAvailabilityAll(onlySelected = false) {
+  const startIso = new Date(availStartAt).toISOString();
+  const endIso = new Date(availEndAt).toISOString();
+
+  if (!startIso || !endIso) { showToast("start/end seç", "warn"); return; }
+  if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {
+    showToast("end > start olmalı", "warn");
+    return;
+  }
+
+  // görünür liste = filtrelenmiş availRows
+  const visible = (availRows || []).map((r) => r.v);
+  const visibleIds = visible.map((v) => Number(v.id));
+  const selectedIds = visibleIds.filter((id) => !!availSel[id]);
+
+  let targetIds;
+  if (onlySelected) {
+    if (!selectedIds.length) {
+      showToast("Seçili araç yok", "warn");
+      return;
+    }
+    targetIds = selectedIds;
+  } else {
+    // seçili varsa seçiliyi, yoksa görünürlerin hepsini kontrol et
+    targetIds = selectedIds.length ? selectedIds : visibleIds;
+  }
+
+  const vlist = visible.filter((v) => targetIds.includes(Number(v.id)));
+
+  setAvailBusy(true);
+  setErr("");
+
+  try {
+    const payload = {
+      startAt: startIso,
+      endAt: endIso,
+      items: vlist.map((v) => ({
+        vehicleId: Number(v.id),
+        driverId: Number(v.driverId || v.driver?.id || 0) || undefined,
+      })),
+    };
+
+    const resp = await api("/api/availability/batch", { method: "POST", body: payload, token });
+
+    const next = {};
+    for (const it of resp?.items || []) {
+      next[it.vehicleId] = {
+        vehicleOk: !!it.vehicleOk,
+        vehicleConflict: it.vehicleConflict || null,
+        driverOk: it.driverId ? !!it.driverOk : true,
+        driverConflict: it.driverConflict || null,
+      };
+    }
+
+    // selection modunda eski sonuçları koru
+    setAvailMap((prev) => ({ ...prev, ...next }));
+    showToast(`Müsaitlik güncellendi (${Object.keys(next).length})`, "ok");
+  } catch (e) {
+    const ne = pickErr(e);
+    setErr(ne.msg || "Müsaitlik kontrolü başarısız");
+    showToast("Müsaitlik kontrolü başarısız", "err");
+  } finally {
+    setAvailBusy(false);
+  }
+}
 
   return (
     <div>
@@ -908,21 +1197,305 @@ export default function VehiclesPanel() {
         </div>
       ) : null}
 
-      {/* ATAMALAR */}
-      {tab === "assign" ? (
-        <div className="card">
-          <h3>Atamalar</h3>
-          <div className="muted">Shift overview (current/next) geldiğinde burayı araç bazlı dolduracağız.</div>
+      
+{/* ATAMALAR */}
+{tab === "assign" ? (
+  <div className="card">
+    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <div>
+        <h3 style={{ marginBottom: 0 }}>Atamalar</h3>
+        <div className="muted" style={{ marginTop: 6 }}>
+          Araç bazlı <b>mevcut</b> ve <b>sıradaki</b> shift özeti. (Kaynak: <code>/api/vehicles</code> içindeki APPROVED/ACTIVE shifts)
         </div>
-      ) : null}
+      </div>
+      <div style={{ marginLeft: "auto" }} className="muted">
+        Gösterilen: <b>{assignRows.length}</b>
+      </div>
+    </div>
 
-      {/* MÜSAİTLİK */}
-      {tab === "avail" ? (
-        <div className="card">
-          <h3>Müsaitlik</h3>
-          <div className="muted">V1: Shift yok = müsait. Availability endpoint gelince gerçek veriye bağlanır.</div>
+    {/* Filters */}
+    <div style={{ display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap", marginTop: 12 }}>
+      <div style={{ minWidth: 240 }}>
+        <label className="muted">Plaka ara</label>
+        <input value={assignQuery} onChange={(e) => setAssignQuery(e.target.value)} placeholder="34ABC123" />
+      </div>
+
+      <div>
+        <label className="muted">Filtre</label>
+        <select value={assignFilter} onChange={(e) => setAssignFilter(e.target.value)}>
+          <option value="ALL">Hepsi</option>
+          <option value="HAS_CURRENT">Sadece “Şu an” olanlar</option>
+          <option value="HAS_NEXT">Sadece “Sıradaki” olanlar</option>
+          <option value="AGREEMENT_ONLY">Sadece Agreement olanlar</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="muted">Sıralama</label>
+        <select value={assignSort} onChange={(e) => setAssignSort(e.target.value)}>
+          <option value="PLATE_ASC">Plaka (A→Z)</option>
+          <option value="PLATE_DESC">Plaka (Z→A)</option>
+          <option value="CURRENT_SOON">Şu an (yakın başlama)</option>
+          <option value="NEXT_SOON">Sıradaki (yakın başlama)</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="muted">Pencere</label>
+        <select value={assignRangeDays} onChange={(e) => setAssignRangeDays(Number(e.target.value || 7))}>
+          <option value={1}>Bugün</option>
+          <option value={3}>3 gün</option>
+          <option value={7}>7 gün</option>
+          <option value={14}>14 gün</option>
+        </select>
+      </div>
+
+      <button type="button" disabled={busy} onClick={() => load()}>
+        Yenile
+      </button>
+    </div>
+
+    {/* Table */}
+    <div style={{ marginTop: 12, overflowX: "auto" }}>
+      <table className="table" style={{ width: "100%", minWidth: 1180, tableLayout: "fixed" }}>
+        <colgroup>
+          <col style={{ width: "20%" }} />
+          <col style={{ width: "22%" }} />
+          <col style={{ width: "29%" }} />
+          <col style={{ width: "29%" }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Araç</th>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Sürücü</th>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Şu an</th>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Sıradaki</th>
+          </tr>
+        </thead>
+        <tbody>
+          {assignRows.map(({ v, cur, next }) => (
+            <tr key={v.id}>
+              <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <b>{v.plate}</b>
+                  <span className="muted">#{v.id}</span>
+                </div>
+              </td>
+
+              <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                {v.driver ? <span>{fmtDriverHuman(v.driver)}</span> : <span className="muted">Bağlı sürücü yok</span>}
+              </td>
+
+              <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                <ShiftCompact
+                  s={cur}
+                  open={!!shiftExp[expKey(v.id, "cur")]}
+                  onToggle={() => toggleExp(setShiftExp, expKey(v.id, "cur"))}
+                />
+              </td>
+
+              <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                <ShiftCompact
+                  s={next}
+                  open={!!shiftExp[expKey(v.id, "next")]}
+                  onToggle={() => toggleExp(setShiftExp, expKey(v.id, "next"))}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+      Not: Bu tablo <code>/api/vehicles</code> içindeki <b>APPROVED/ACTIVE</b> shifts set’ini kullanır. REQUESTED (henüz atanmadı) burada görünmez.
+    </div>
+  </div>
+) : null}
+{/* MÜSAİTLİK */}
+{tab === "avail" ? (
+  <div className="card">
+    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <div>
+        <h3 style={{ marginBottom: 0 }}>Müsaitlik</h3>
+        <div className="muted" style={{ marginTop: 6 }}>
+          Seçilen zaman penceresinde araç/sürücü uygunluğu. (Kaynak: <code>/api/availability</code> — agreement-first)
         </div>
-      ) : null}
+      </div>
+      <div style={{ marginLeft: "auto" }} className="muted">
+        Gösterilen: <b>{availRows.length}</b> • Seçili: <b>{availRows.filter((r) => !!availSel[r.v.id]).length}</b>
+      </div>
+    </div>
+
+    {/* Controls + Filters */}
+    <div style={{ display: "flex", gap: 12, alignItems: "end", flexWrap: "wrap", marginTop: 12 }}>
+      <div style={{ minWidth: 240 }}>
+        <label className="muted">Plaka ara</label>
+        <input value={availQuery} onChange={(e) => setAvailQuery(e.target.value)} placeholder="34ABC123" disabled={availBusy} />
+      </div>
+
+      <div>
+        <label className="muted">Filtre</label>
+        <select value={availFilter} onChange={(e) => setAvailFilter(e.target.value)} disabled={availBusy}>
+          <option value="ALL">Hepsi</option>
+          <option value="ONLY_UNCHECKED">Sadece kontrol edilmemiş</option>
+          <option value="ONLY_OK">Sadece OK</option>
+          <option value="ONLY_CONFLICT">Sadece CONFLICT</option>
+          <option value="ONLY_WITH_DRIVER">Sadece sürücüsü bağlı</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="muted">Start</label>
+        <input type="datetime-local" value={availStartAt} onChange={(e) => setAvailStartAt(e.target.value)} disabled={availBusy} />
+      </div>
+
+      <div>
+        <label className="muted">End</label>
+        <input type="datetime-local" value={availEndAt} onChange={(e) => setAvailEndAt(e.target.value)} disabled={availBusy} />
+      </div>
+
+      <button type="button" disabled={availBusy || busy} onClick={() => checkAvailabilityAll(false)}>
+        {availBusy ? "Kontrol..." : "Tümünü Kontrol Et"}
+      </button>
+
+      <button type="button" disabled={availBusy || busy} onClick={() => checkAvailabilityAll(true)} title="Sadece seçili araçları kontrol eder">
+        Seçiliyi Kontrol Et
+      </button>
+
+      <button
+        type="button"
+        disabled={availBusy || busy}
+        onClick={() => setSelMany(setAvailSel, availRows.map((r) => r.v.id), true)}
+      >
+        Hepsini Seç
+      </button>
+
+      <button type="button" disabled={availBusy || busy} onClick={() => setAvailSel({})}>
+        Seçimi Temizle
+      </button>
+
+      <button type="button" disabled={availBusy || busy} onClick={() => setAvailMap({})}>
+        Sonuçları Temizle
+      </button>
+    </div>
+
+    {/* Table */}
+    <div style={{ marginTop: 12, overflowX: "auto" }}>
+      <table className="table" style={{ width: "100%", minWidth: 1180, tableLayout: "fixed" }}>
+        <colgroup>
+          <col style={{ width: "4%" }} />
+          <col style={{ width: "20%" }} />
+          <col style={{ width: "28%" }} />
+          <col style={{ width: "24%" }} />
+          <col style={{ width: "24%" }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th style={{ padding: "12px 10px", textAlign: "left" }}>
+              <input
+                type="checkbox"
+                title="Görünenlerin hepsini seç/çöz"
+                checked={availRows.length > 0 && availRows.every((r) => !!availSel[r.v.id])}
+                onChange={(e) => setSelMany(setAvailSel, availRows.map((r) => r.v.id), e.target.checked)}
+                disabled={availBusy}
+              />
+            </th>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Araç</th>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Sürücü</th>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Araç uygun mu?</th>
+            <th style={{ padding: "12px 14px", textAlign: "left" }}>Sürücü uygun mu?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {availRows.map(({ v, row, quickBusy, hasDriver }) => {
+            const vOk = row ? row.vehicleOk : null;
+            const dOk = row ? row.driverOk : null;
+
+            const vCode = row?.vehicleConflict ? conflictCodeLabel(row.vehicleConflict) : null;
+            const dCode = row?.driverConflict ? conflictCodeLabel(row.driverConflict) : null;
+
+            const vHint =
+              row?.vehicleConflict?.conflictingAgreementId
+                ? `A#${row.vehicleConflict.conflictingAgreementId}`
+                : row?.vehicleConflict?.conflictingShiftId
+                ? `S#${row.vehicleConflict.conflictingShiftId}`
+                : "";
+            const dHint =
+              row?.driverConflict?.conflictingAgreementId
+                ? `A#${row.driverConflict.conflictingAgreementId}`
+                : row?.driverConflict?.conflictingShiftId
+                ? `S#${row.driverConflict.conflictingShiftId}`
+                : "";
+
+            return (
+              <tr key={v.id}>
+                <td style={{ padding: "12px 10px", verticalAlign: "top" }}>
+                  <input
+                    type="checkbox"
+                    checked={!!availSel[v.id]}
+                    onChange={() => toggleSel(setAvailSel, v.id)}
+                    disabled={availBusy}
+                  />
+                </td>
+
+                <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <b>{v.plate}</b>
+                    <span className="muted">#{v.id}</span>
+                    {quickBusy ? (
+                      <span className="pill" data-status="BUSY" title="Şu an shift var">Şu an meşgul</span>
+                    ) : (
+                      <span className="pill" data-status="FREE" title="Şu an shift yok">Şu an müsait</span>
+                    )}
+                  </div>
+                </td>
+
+                <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                  {v.driver ? fmtDriverHuman(v.driver) : <span className="muted">Bağlı sürücü yok</span>}
+                </td>
+
+                <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                  {vOk == null ? (
+                    <span className="muted">Kontrol edilmedi</span>
+                  ) : vOk ? (
+                    <span className="pill" data-status="OK">OK</span>
+                  ) : (
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                      <span className="pill" data-status="CONFLICT">CONFLICT: {vCode}</span>
+                      {vHint ? <span className="muted" style={{ fontSize: 12 }}>{vHint}</span> : null}
+                    </div>
+                  )}
+                </td>
+
+                <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                  {hasDriver ? (
+                    dOk == null ? (
+                      <span className="muted">Kontrol edilmedi</span>
+                    ) : dOk ? (
+                      <span className="pill" data-status="OK">OK</span>
+                    ) : (
+                      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                        <span className="pill" data-status="CONFLICT">CONFLICT: {dCode}</span>
+                        {dHint ? <span className="muted" style={{ fontSize: 12 }}>{dHint}</span> : null}
+                      </div>
+                    )
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+
+    <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+      İpucu: Agreement → Daily Shift (M18) aynı pencereye shift ürettiyse bile <code>/api/availability</code> önce agreement conflict döner (deterministik).
+    </div>
+  </div>
+) : null}
 
       {/* BAĞLANTI */}
       {tab === "link" ? (
@@ -1143,11 +1716,6 @@ export default function VehiclesPanel() {
               <div className="col">
                 <label className="muted">Bakım periyodu (km)</label>
                 <input type="number" value={editForm.serviceIntervalKm} onChange={(e) => setEditForm((p) => ({ ...p, serviceIntervalKm: e.target.value }))} />
-              </div>
-
-              <div className="col">
-                <label className="muted">Bakım tarihi (eski)</label>
-                <input type="datetime-local" value={editForm.nextMaintenanceAt} onChange={(e) => setEditForm((p) => ({ ...p, nextMaintenanceAt: e.target.value }))} />
               </div>
 
               <div className="col">
