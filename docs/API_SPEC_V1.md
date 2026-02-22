@@ -155,6 +155,12 @@ PUT /api/company/personels/:id/location
 Availability (ROOM/SUPER_ADMIN)
 GET /api/availability?startAt=...&endAt=...&driverId=...
 
+Bulk (önerilen — tek istekle çok araç):
+POST /api/availability/bulk (ROOM/SUPER_ADMIN)
+{ "startAt": "...", "endAt": "...", "vehicleIds": [1,2,3] }
+
+200: { "ok": true, "items": [ {"vehicleId":1,"driverId":1,"vehicleOk":true,"driverOk":true} ] }
+
 200: { "ok": true }
 
 409: conflict response

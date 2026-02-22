@@ -35,7 +35,7 @@ function project(p, box, w, h, pad) {
 export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people }) {
   if (!open) return null;
 
-  const [remote, setRemote] = useState({ stops: null, people: null, err: "" });
+  const [remote, setRemote] = useState({ stops: null, people: null, summary: null, pathPoints: null, source: null, err: "" });
 
   useEffect(() => {
     if (!open) return;
@@ -77,14 +77,17 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
               lat: typeof x?.homeLat === "number" ? x.homeLat : null,
               lng: typeof x?.homeLng === "number" ? x.homeLng : null,
             })),
+            summary: data?.summary ?? null,
+            pathPoints: Array.isArray(data?.path?.points) ? data.path.points : null,
+            source: data?.path?.source ?? null,
             err: "",
           });
         } else {
-          setRemote((s) => ({ ...s, stops: null, people: null }));
+          setRemote((s) => ({ ...s, stops: null, people: null, summary: null, pathPoints: null, source: null }));
         }
       } catch (e) {
         if (!alive) return;
-        setRemote((s) => ({ ...s, stops: null, people: null, err: e?.message || String(e) }));
+        setRemote((s) => ({ ...s, stops: null, people: null, summary: null, pathPoints: null, source: null, err: e?.message || String(e) }));
       }
     })();
 
@@ -95,25 +98,34 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
   const effPeople = remote.people ?? people ?? [];
 
   const stopPts = (effStops || []).filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number");
+  const pathPts = (remote.pathPoints || [])
+    .filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number")
+    .map((p) => ({ lat: p.lat, lng: p.lng }));
+
   const peoplePts = (effPeople || [])
     .filter((p) => typeof p?.lat === "number" && typeof p?.lng === "number")
     .map((p) => ({ lat: p.lat, lng: p.lng }));
 
-  const allPts = [...stopPts.map((s) => ({ lat: s.lat, lng: s.lng })), ...peoplePts];
+  const allPts = [...stopPts.map((s) => ({ lat: s.lat, lng: s.lng })), ...peoplePts, ...pathPts];
 
   const { w, h, pad } = { w: 760, h: 420, pad: 24 };
 
   const box = useMemo(() => bboxFromPoints(allPts), [allPts]);
 
   const polyline = useMemo(() => {
-    if (!box || stopPts.length < 2) return "";
-    return stopPts
-      .map((s) => {
-        const pt = project({ lat: s.lat, lng: s.lng }, box, w, h, pad);
+    if (!box) return "";
+    const linePts = (pathPts.length >= 2)
+      ? pathPts
+      : stopPts.map((s) => ({ lat: s.lat, lng: s.lng }));
+
+    if (linePts.length < 2) return "";
+    return linePts
+      .map((p) => {
+        const pt = project({ lat: p.lat, lng: p.lng }, box, w, h, pad);
         return `${pt.x},${pt.y}`;
       })
       .join(" ");
-  }, [box, stopPts, w, h, pad]);
+  }, [box, pathPts, stopPts, w, h, pad]);
 
   return (
     <div
@@ -141,6 +153,39 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
         <div className="muted" style={{ marginTop: 8 }}>
           Durak: {stopPts.length} • Personel (koordinatlı): {peoplePts.length}
         </div>
+
+        {remote.summary ? (
+          <div className="card" style={{ marginTop: 12, padding: 10 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <b>Özet</b>
+              <span className="muted">•</span>
+              <span className="muted">Tip: {remote.summary.direction}/{remote.summary.pattern}{remote.summary.isLoop ? " (LOOP)" : ""}</span>
+              <span className="muted">•</span>
+              <span className="muted">Kaynak: {remote.source || "ESTIMATED"}</span>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+              <div>Durak: <b>{remote.summary.stopCount ?? stopPts.length}</b></div>
+              <div>KM (tahmini): <b>{Number(remote.summary.distanceKmEstimated || 0).toFixed(2)}</b></div>
+              <div>Süre (tahmini): <b>{Number(remote.summary.durationMinEstimated || 0)}</b> dk</div>
+
+              {remote.summary.distanceKmLearned != null ? (
+                <>
+                  <div>KM (learned): <b>{Number(remote.summary.distanceKmLearned || 0).toFixed(2)}</b></div>
+                  <div>Süre (learned): <b>{Number(remote.summary.durationMinLearned || 0)}</b> dk</div>
+                  <div className="muted">n={remote.summary.learnedSampleCount || 0}</div>
+                </>
+              ) : null}
+            </div>
+
+            {remote.summary.warning ? (
+              <div className="muted" style={{ marginTop: 8 }}>
+                Uyarı: {String(remote.summary.warning)}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
 
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
           {/* Mini-map */}

@@ -21,7 +21,7 @@ async function upsertUser({ email, role, fullName, phone, companyId, roomId }) {
 }
 
 async function main() {
-  // Company + Room (Company 1 — Room N)
+  // Demo Company (kiralayan) + Demo Room (servis sağlayan)
   const company = await prisma.company.upsert({
     where: { id: 1 },
     update: { name: "DemoCompany", status: "ACTIVE" },
@@ -30,8 +30,8 @@ async function main() {
 
   const room = await prisma.room.upsert({
     where: { id: 1 },
-    update: { name: "DemoRoom", status: "ACTIVE", companyId: company.id },
-    create: { name: "DemoRoom", status: "ACTIVE", companyId: company.id },
+    update: { name: "DemoRoom", status: "ACTIVE" },
+    create: { name: "DemoRoom", status: "ACTIVE" },
   });
 
   // Seed users (login)
@@ -56,7 +56,6 @@ async function main() {
     fullName: "Room Operator",
     phone: "+90 555 000 00 03",
     roomId: room.id,
-    companyId: company.id,
   });
 
   // Driver entity + driver login
@@ -82,7 +81,6 @@ async function main() {
     fullName: driver.fullName,
     phone: driver.phone,
     roomId: room.id,
-    companyId: company.id,
   });
 
   // link driver <-> user

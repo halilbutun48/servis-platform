@@ -13,6 +13,8 @@ import RoutePanel from "./panels/driver/RoutePanel";
 import MyRidePanel from "./panels/personel/MyRidePanel";
 import NotificationsPanel from "./panels/shared/NotificationsPanel";
 import SuperAdminPanel from "./panels/superadmin/SuperAdminPanel";
+import SuperCompaniesPanel from "./panels/superadmin/CompaniesPanel";
+import SuperRoomsPanel from "./panels/superadmin/RoomsPanel";
 import RoomMapPanel from "./panels/room/MapPanel";
 import CompanyMapPanel from "./panels/company/MapPanel";
 import GeoReviewPanel from "./panels/company/GeoReviewPanel";
@@ -170,6 +172,10 @@ export default function App() {
     // SUPER_ADMIN
     if (path === "/superadmin")
       return { layout: true, node: <SuperAdminPanel /> };
+    if (path === "/superadmin/companies")
+      return { layout: true, node: <SuperCompaniesPanel /> };
+    if (path === "/superadmin/rooms")
+      return { layout: true, node: <SuperRoomsPanel /> };
 
     // Unknown: go default
     const def = roleDefaultPath(me.role);

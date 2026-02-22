@@ -40,7 +40,7 @@ export function startMaintenanceMonitor(io, opts = {}) {
 
       const upcoming = await prisma.vehicle.findMany({
         where: { nextMaintenanceAt: { not: null } },
-        include: { room: true },
+        // roomId is on vehicle; room relation not needed here
       });
 
       for (const v of upcoming) {
@@ -73,25 +73,38 @@ export function startMaintenanceMonitor(io, opts = {}) {
           kind: "MAINT_7D",
         });
 
+        // Company targets: only companies that currently have APPROVED/ACTIVE shifts for this vehicle
+        const companyIds = new Set();
+        try {
+          const rel = await prisma.shift.findMany({
+            where: { vehicleId: v.id, status: { in: ["APPROVED", "ACTIVE"] } },
+            select: { companyId: true },
+          });
+          for (const row of rel) if (row.companyId) companyIds.add(row.companyId);
+        } catch {
+          // ignore
+        }
+
         await createAndEmitNotification({
           io,
           type: "MAINT_7D",
           scope: "ROOM",
           payload,
           roomId: v.roomId,
-          companyId: v.room.companyId,
           vehicleId: v.id,
         });
 
-        await createAndEmitNotification({
-          io,
-          type: "MAINT_7D",
-          scope: "COMPANY",
-          payload,
-          companyId: v.room.companyId,
-          roomId: v.roomId,
-          vehicleId: v.id,
-        });
+        for (const cid of companyIds) {
+          await createAndEmitNotification({
+            io,
+            type: "MAINT_7D",
+            scope: "COMPANY",
+            payload,
+            companyId: cid,
+            roomId: v.roomId,
+            vehicleId: v.id,
+          });
+        }
 
         // if any active shift -> driver
         const sh = await prisma.shift.findFirst({
@@ -118,7 +131,6 @@ export function startMaintenanceMonitor(io, opts = {}) {
             userId: dUser?.userId ?? null,
             vehicleId: v.id,
             roomId: v.roomId,
-            companyId: v.room.companyId,
           });
         }
       }

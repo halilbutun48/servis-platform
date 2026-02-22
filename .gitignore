@@ -29,3 +29,17 @@ _bak_retention_*/
 
 
 docs/_quarantine/
+
+infra/osrm-data/
+
+
+infra/osrm-data/
+
+
+# OSRM big data
+infra/osrm-data/
+
+
+# OSRM data (large blobs)
+infra/osrm-data/
+

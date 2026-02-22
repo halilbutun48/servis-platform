@@ -91,6 +91,12 @@ export default function AgreementsPanel() {
   const [startHHMM, setStartHHMM] = useState("08:00");
   const [endHHMM, setEndHHMM] = useState("10:00");
 
+  // ✅ M19: routing meta
+  const [direction, setDirection] = useState("INBOUND");
+  const [pattern, setPattern] = useState("ONE_WAY");
+  const [hubLat, setHubLat] = useState("");
+  const [hubLng, setHubLng] = useState("");
+
   const startMin = useMemo(() => parseHHMM(startHHMM), [startHHMM]);
   const endMin = useMemo(() => parseHHMM(endHHMM), [endHHMM]);
   const midnightCross = useMemo(
@@ -168,6 +174,17 @@ export default function AgreementsPanel() {
     if (!weekMask) return setErr("weekMask required (1..127)");
     if (startMin == null || endMin == null) return setErr("Saat formatı HH:MM olmalı.");
 
+    // ✅ M19: hub validation (optional)
+    const hasHubLat = String(hubLat || "").trim() !== "";
+    const hasHubLng = String(hubLng || "").trim() !== "";
+    if (hasHubLat !== hasHubLng) return setErr("Hub için lat/lng birlikte girilmeli.");
+    if (hasHubLat) {
+      const a = Number(hubLat);
+      const b = Number(hubLng);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return setErr("Hub lat/lng sayı olmalı.");
+      if (a < -90 || a > 90 || b < -180 || b > 180) return setErr("Hub lat/lng range invalid.");
+    }
+
     setBusy(true);
     try {
       await api("/api/agreements", {
@@ -180,6 +197,10 @@ export default function AgreementsPanel() {
           weekMask,
           startMin,
           endMin,
+          direction,
+          pattern,
+          hubLat: String(hubLat || "").trim() === "" ? null : Number(hubLat),
+          hubLng: String(hubLng || "").trim() === "" ? null : Number(hubLng),
         },
       });
       await load();
@@ -346,6 +367,37 @@ export default function AgreementsPanel() {
               <input value={endHHMM} onChange={(e) => setEndHHMM(e.target.value)} />
             </label>
           </div>
+
+          {/* ✅ M19: routing meta */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420, marginTop: 6 }}>
+            <label className="muted">
+              Direction
+              <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ width: "100%" }}>
+                <option value="INBOUND">INBOUND (Toplama → Hub)</option>
+                <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
+              </select>
+            </label>
+
+            <label className="muted">
+              Pattern
+              <select value={pattern} onChange={(e) => setPattern(e.target.value)} style={{ width: "100%" }}>
+                <option value="ONE_WAY">ONE_WAY</option>
+                <option value="LOOP">LOOP (Hub’a dön)</option>
+              </select>
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420 }}>
+            <label className="muted">
+              Hub Lat (opsiyonel)
+              <input type="number" step="0.000001" value={hubLat} onChange={(e) => setHubLat(e.target.value)} />
+            </label>
+            <label className="muted">
+              Hub Lng (opsiyonel)
+              <input type="number" step="0.000001" value={hubLng} onChange={(e) => setHubLng(e.target.value)} />
+            </label>
+          </div>
+
 
           {midnightCross ? (
             <div className="muted" style={{ marginTop: 6, color: "#8a5" }}>

@@ -816,20 +816,17 @@ async function checkAvailabilityAll(onlySelected = false) {
     const payload = {
       startAt: startIso,
       endAt: endIso,
-      items: vlist.map((v) => ({
-        vehicleId: Number(v.id),
-        driverId: Number(v.driverId || v.driver?.id || 0) || undefined,
-      })),
+      vehicleIds: targetIds,
     };
 
-    const resp = await api("/api/availability/batch", { method: "POST", body: payload, token });
+    const resp = await api("/api/availability/bulk", { method: "POST", body: payload, token });
 
     const next = {};
     for (const it of resp?.items || []) {
       next[it.vehicleId] = {
-        vehicleOk: !!it.vehicleOk,
+        vehicleOk: it.vehicleOk !== false,
         vehicleConflict: it.vehicleConflict || null,
-        driverOk: it.driverId ? !!it.driverOk : true,
+        driverOk: it.driverId ? it.driverOk !== false : true,
         driverConflict: it.driverConflict || null,
       };
     }
@@ -1055,11 +1052,6 @@ async function checkAvailabilityAll(onlySelected = false) {
                 <div className="col">
                   <label className="muted">Bakım periyodu</label>
                   <input type="number" value={serviceIntervalKm} onChange={(e) => setServiceIntervalKm(e.target.value)} />
-                </div>
-
-                <div className="col">
-                  <label className="muted">Bakım (eski)</label>
-                  <input type="datetime-local" value={nextMaintenanceAt} onChange={(e) => setNextMaintenanceAt(e.target.value)} />
                 </div>
 
                 <div className="col">
@@ -1319,7 +1311,7 @@ async function checkAvailabilityAll(onlySelected = false) {
       <div>
         <h3 style={{ marginBottom: 0 }}>Müsaitlik</h3>
         <div className="muted" style={{ marginTop: 6 }}>
-          Seçilen zaman penceresinde araç/sürücü uygunluğu. (Kaynak: <code>/api/availability</code> — agreement-first)
+          Seçilen zaman penceresinde araç/sürücü uygunluğu. (Kaynak: <code>/api/availability/bulk</code> — agreement-first)
         </div>
       </div>
       <div style={{ marginLeft: "auto" }} className="muted">
@@ -1492,7 +1484,7 @@ async function checkAvailabilityAll(onlySelected = false) {
     </div>
 
     <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-      İpucu: Agreement → Daily Shift (M18) aynı pencereye shift ürettiyse bile <code>/api/availability</code> önce agreement conflict döner (deterministik).
+      İpucu: Agreement → Daily Shift (M18) aynı pencereye shift ürettiyse bile <code>/api/availability/bulk</code> önce agreement conflict döner (deterministik).
     </div>
   </div>
 ) : null}

@@ -7,9 +7,12 @@ yeniden tartışılmaması.
 ## Roller ve ekranlar
 
 ### SUPER_ADMIN
-- Company CRUD
-- Room CRUD
-- (Opsiyonel) System settings
+V1 (M21):
+- Overview: `/superadmin`
+- Companies: `/superadmin/companies` (create + list)
+- Rooms: `/superadmin/rooms` (create + list, hub opsiyonel)
+
+Not: Update/Delete gibi “tam CRUD” genişletmeleri sonraki milestone’lara bırakılabilir.
 
 ### ROOM (Operasyon)
 - Dashboard: canlı araçlar + uyarılar

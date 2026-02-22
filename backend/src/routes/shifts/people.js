@@ -4,6 +4,8 @@ import { authRequired, requireRole } from "../../auth/middleware.js";
 import { prisma } from "../../prisma.js";
 import { audit } from "../../audit.js";
 import { clusterStops } from "../../services/clusterStops.js";
+import { etaMinutes } from "../../geo.js";
+import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
 
 const qModeSchema = z
@@ -358,12 +360,13 @@ export function attachShiftPeopleRoutes(router, _io) {
     });
   });
 
-  // COMPANY + ROOM: route preview
+    // COMPANY + ROOM: route preview (M19: summary + directional hub path + learned overlay)
   r.get("/:id/route-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
-
     const id = Number(req.params.id);
+
+    // include room + agreement for hub fallback, progress for time window hints
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user, {
-      include: { room: true },
+      include: { room: true, agreement: true, progress: true },
     });
 
     const people = await getShiftPeople(shift.id);
@@ -390,6 +393,94 @@ export function attachShiftPeopleRoutes(router, _io) {
       assignmentCount: countByStopId.get(s.id) || 0,
     }));
 
+    // ✅ M19: hub resolution (shift -> agreement -> room)
+    const hubLat =
+      typeof shift.hubLat === "number"
+        ? shift.hubLat
+        : typeof shift.agreement?.hubLat === "number"
+          ? shift.agreement.hubLat
+          : typeof shift.room?.hubLat === "number"
+            ? shift.room.hubLat
+            : null;
+
+    const hubLng =
+      typeof shift.hubLng === "number"
+        ? shift.hubLng
+        : typeof shift.agreement?.hubLng === "number"
+          ? shift.agreement.hubLng
+          : typeof shift.room?.hubLng === "number"
+            ? shift.room.hubLng
+            : null;
+
+    const hub = typeof hubLat === "number" && typeof hubLng === "number" ? { lat: hubLat, lng: hubLng } : null;
+
+    const direction = String(shift.direction || shift.agreement?.direction || "INBOUND").toUpperCase();
+    const pattern = String(shift.pattern || shift.agreement?.pattern || "ONE_WAY").toUpperCase();
+
+    const stopPoints = stopsWithCounts
+      .filter((s) => typeof s.lat === "number" && typeof s.lng === "number")
+      .map((s) => ({ lat: s.lat, lng: s.lng }));
+
+    // ✅ M19: build service path points (driver home/depot is out of scope)
+    let estPoints = [];
+    let startLabel = "";
+    let endLabel = "";
+    let warning = null;
+
+    if (!hub) {
+      warning = "hubMissing";
+      estPoints = stopPoints.slice();
+      startLabel = stopPoints.length ? "FIRST_STOP" : "";
+      endLabel = stopPoints.length ? "LAST_STOP" : "";
+    } else if (pattern === "LOOP") {
+      estPoints = [hub, ...stopPoints, hub];
+      startLabel = "HUB";
+      endLabel = "HUB";
+    } else if (direction === "OUTBOUND") {
+      estPoints = [hub, ...stopPoints];
+      startLabel = "HUB";
+      endLabel = stopPoints.length ? "LAST_STOP" : "HUB";
+    } else {
+      // INBOUND default
+      estPoints = [...stopPoints, hub];
+      startLabel = stopPoints.length ? "FIRST_STOP" : "HUB";
+      endLabel = "HUB";
+    }
+
+    // estimated km/süre (haversine)
+    const distanceKmEstimated = Number(sumDistanceKm(estPoints).toFixed(2));
+    const durationMinEstimated = Math.round(Number(etaMinutes(distanceKmEstimated, 30)));
+
+    // learned overlay (if exists and stable)
+    const routeKey = computeRouteKey({ direction, pattern, hub, stops: stopPoints });
+    const learned = await prisma.routeLearned.findUnique({ where: { routeKey } });
+
+    const learnedPoints =
+      learned && Number(learned.sampleCount || 0) >= 3
+        ? parsePolyline(learned.polylineCanonical)
+        : null;
+
+    const source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
+    const pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
+
+    const summary = {
+      stopCount: stopPoints.length,
+      direction,
+      pattern,
+      isLoop: pattern === "LOOP",
+      startLabel,
+      endLabel,
+      distanceKmEstimated,
+      durationMinEstimated,
+      warning,
+    };
+
+    if (learned) {
+      summary.distanceKmLearned = Number(Number(learned.distanceKmLearned || 0).toFixed(2));
+      summary.durationMinLearned = Number(learned.durationMinLearned || 0);
+      summary.learnedSampleCount = Number(learned.sampleCount || 0);
+    }
+
     res.json({
       ok: true,
       shift: {
@@ -399,6 +490,11 @@ export function attachShiftPeopleRoutes(router, _io) {
         endAt: shift.endAt,
         roomId: shift.roomId,
         companyId: shift.companyId,
+        agreementId: shift.agreementId ?? null,
+        hubLat,
+        hubLng,
+        direction,
+        pattern,
       },
       people,
       stops: stopsWithCounts,
@@ -412,6 +508,8 @@ export function attachShiftPeopleRoutes(router, _io) {
         homeLat: p.homeLat,
         homeLng: p.homeLng,
       })),
+      summary,
+      path: { source, points: pathPoints, routeKey },
     });
   });
 

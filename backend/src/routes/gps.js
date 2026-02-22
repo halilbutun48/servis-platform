@@ -32,7 +32,7 @@ export function gpsRouter(io) {
 
       const vehicle = await prisma.vehicle.findUnique({
         where: { id: vehicleId },
-        include: { room: true },
+        select: { id: true, plate: true, roomId: true, speedLimitKmh: true },
       });
       if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
 
@@ -99,11 +99,10 @@ export function gpsRouter(io) {
       // ✅ UI status + ageSec
       const { status: uiStatus, ageSec } = gpsStatusFromAt(last.at);
 
-      // ✅ company fanout: vehicle's operator company + any shift companies (APPROVED/ACTIVE)
+      // ✅ company fanout: sadece shift şirketleri (APPROVED/ACTIVE)
       // Not: COMPANY rolü /api/notifications/my'da companyId üzerinden filtreliyor.
       // Bu yüzden GPS bildirimlerinde SHIFT.companyId mutlaka kapsanmalı.
       const companyIds = new Set();
-      if (vehicle.room?.companyId) companyIds.add(vehicle.room.companyId);
       try {
         const rel = await prisma.shift.findMany({
           where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
@@ -195,7 +194,6 @@ export function gpsRouter(io) {
               userId: t.userId,     // WS user room için kritik
               vehicleId,
               roomId: vehicle.roomId,
-              companyId: vehicle.room.companyId,
             });
           }
 
@@ -205,7 +203,6 @@ export function gpsRouter(io) {
             scope: "ROOM",
             payload,
             roomId: vehicle.roomId,
-            companyId: vehicle.room.companyId,
             vehicleId,
           });
 
@@ -278,7 +275,6 @@ export function gpsRouter(io) {
               vehicleId,
               dedupeKey: "", // ✅ overspeed için dedupe yok
               roomId: vehicle.roomId,
-              companyId: vehicle.room.companyId,
             });
           }
 
@@ -288,7 +284,6 @@ export function gpsRouter(io) {
             scope: "ROOM",
             payload,
             roomId: vehicle.roomId,
-            companyId: vehicle.room.companyId,
             vehicleId,
             dedupeKey: "", // ✅ overspeed için dedupe yok
           });

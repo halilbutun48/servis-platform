@@ -50,6 +50,12 @@ export const createShiftSchema = z.object({
   endAt: z.string(),
   status: z.string().optional(),
 
+  // ✅ M19: routing meta (optional)
+  hubLat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+  hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+  direction: z.enum(["INBOUND", "OUTBOUND"]).optional(),
+  pattern: z.enum(["ONE_WAY", "LOOP"]).optional(),
+
   // COMPANY → ROOM teklif (shift seviyesinde)
   companyOfferVehicleId: posIntOpt,
   companyOfferAmount: posIntOpt,
@@ -89,6 +95,10 @@ export const updateShiftSchema = z
     status: z.string().optional(),
 
     // harmless extras (ignored by handler)
+    hubLat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+    hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+    direction: z.enum(["INBOUND", "OUTBOUND"]).optional(),
+    pattern: z.enum(["ONE_WAY", "LOOP"]).optional(),
     companyOfferVehicleId: posIntOpt,
     companyOfferAmount: z.coerce.number().nonnegative().optional(),
     companyOfferNote: z.string().max(500).optional(),

@@ -101,6 +101,11 @@ export function startAgreementShiftGenerator(io, opts = {}) {
               endAt,
               status: "APPROVED",
               agreementId: a.id,
+              // ✅ M19: routing meta
+              hubLat: a.hubLat ?? null,
+              hubLng: a.hubLng ?? null,
+              direction: a.direction ?? "INBOUND",
+              pattern: a.pattern ?? "ONE_WAY",
             },
           });
 

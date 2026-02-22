@@ -33,4 +33,10 @@ export const ENV = {
 
   // Optional (off by default): old notifications cleanup
   NOTIFICATION_RETENTION_DAYS: Number(process.env.NOTIFICATION_RETENTION_DAYS ?? 0),
+
+  // ✅ M19: route learning (optional)
+  OSRM_URL: process.env.OSRM_URL ?? "",
+  ROUTE_LEARN_ENABLED: (process.env.ROUTE_LEARN_ENABLED ?? "0") === "1",
+  ROUTE_LEARN_INTERVAL_MS: Number(process.env.ROUTE_LEARN_INTERVAL_MS ?? 30000),
+  ROUTE_LEARN_MAX_SAMPLES: Number(process.env.ROUTE_LEARN_MAX_SAMPLES ?? 20),
 };

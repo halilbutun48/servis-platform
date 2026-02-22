@@ -40,6 +40,8 @@ export default function NavDock({ role, path }) {
     items.push({ label: "Notifications", path: "/shared/notifications" });
   } else if (role === "SUPER_ADMIN") {
     items.push({ label: "Overview", path: "/superadmin" });
+    items.push({ label: "Companies", path: "/superadmin/companies" });
+    items.push({ label: "Rooms", path: "/superadmin/rooms" });
   }
 
   return (

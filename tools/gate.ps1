@@ -2,8 +2,8 @@
 
 param(
   [Parameter(Mandatory=$false)]
-  [ValidateRange(0,18)]
-  [int]$To = 15,
+  [ValidateRange(0,21)]
+  [int]$To = 21,
 
   [Parameter(Mandatory=$false)]
   [string]$ComposeDir = "infra",
@@ -43,7 +43,10 @@ $checks = @(
   @{ n = 16; name="M16.2"; file="m162check.js"; cmd="node scripts/m162check.js" },
   @{ n = 16; name="M16.3"; file="m163check.js"; cmd="node scripts/m163check.js" },
   @{ n = 17; name="M17"; file="m17check.js"; cmd="node scripts/m17check.js" },
-  @{ n = 18; name="M18"; file="m18check.js"; cmd="node scripts/m18check.js" }
+  @{ n = 18; name="M18"; file="m18check.js"; cmd="node scripts/m18check.js" },
+  @{ n = 19; name="M19"; file="m19check.js"; cmd="node scripts/m19check.js" },
+  @{ n = 20; name="M20"; file="m20check.js"; cmd="node scripts/m20check.js" },
+  @{ n = 21; name="M21"; file="m21check.js"; cmd="node scripts/m21check.js" }
 )
 
 $repo = (Resolve-Path $RepoDir).Path

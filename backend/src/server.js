@@ -30,6 +30,8 @@ import * as driverMod from "./routes/driver.js";
 import * as personelsMod from "./routes/personels.js";
 import * as companyPersonelsMod from "./routes/companyPersonels.js";
 
+import { adminRouter } from "./routes/admin.js";
+
 // Public router’lar (io yok)
 import * as companiesMod from "./routes/companies.js";
 import * as roomsMod from "./routes/rooms.js";
@@ -155,6 +157,7 @@ app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());
 app.use("/api/availability", availabilityRoutes);
+app.use("/api/admin", adminRouter());
 
 // Server + Socket.IO
 const server = http.createServer(app);

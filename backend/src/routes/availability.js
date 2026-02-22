@@ -6,6 +6,9 @@ import {
   findAgreementConflictForRange,
   agreementConflictResponse,
 } from "../services/agreementConflict.js";
+import { findAgreementConflictsForRangeBatch } from "../services/agreementConflictBatch.js";
+import { findShiftConflictsForRangeBatch } from "../services/shiftConflictBatch.js";
+import { prisma } from "../prisma.js";
 
 const r = express.Router();
 
@@ -147,6 +150,140 @@ r.post("/batch", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req,
 
     // stable order: vehicleId asc
     out.sort((a, b) => Number(a.vehicleId || 0) - Number(b.vehicleId || 0));
+
+    return res.json({ ok: true, startAt, endAt, items: out });
+  } catch (e) {
+    return res.status(500).json({ error: String(e?.message ?? e) });
+  }
+});
+
+// POST /api/availability/bulk
+// Body:
+// {
+//   startAt, endAt,
+//   vehicleIds?: number[],          // optional (defaults to all room vehicles)
+//   includeArchived?: boolean,
+//   excludeShiftId?: number,
+//   roomId?: number                 // SUPER_ADMIN only (optional)
+// }
+// agreement-first (deterministic) — designed for large N (e.g. 1500 vehicles)
+r.post("/bulk", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+  try {
+    const startAt = toIsoOrNull(req.body?.startAt);
+    const endAt = toIsoOrNull(req.body?.endAt);
+    const excludeShiftId = toIntOrNull(req.body?.excludeShiftId);
+    const includeArchived = Boolean(req.body?.includeArchived);
+
+    if (!startAt || !endAt) return res.status(400).json({ error: "startAt/endAt required" });
+    if (new Date(endAt).getTime() <= new Date(startAt).getTime()) {
+      return res.status(400).json({ error: "endAt must be > startAt" });
+    }
+
+    // Scope: ROOM -> own room; SUPER_ADMIN -> body.roomId or own room
+    const roomId =
+      req.user.role === "SUPER_ADMIN"
+        ? toIntOrNull(req.body?.roomId) ?? toIntOrNull(req.user.roomId)
+        : toIntOrNull(req.user.roomId);
+    if (!roomId) return res.status(400).json({ error: "roomId required" });
+
+    const rawIds = Array.isArray(req.body?.vehicleIds) ? req.body.vehicleIds : null;
+    const vehicleIds = rawIds
+      ? rawIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)
+      : null;
+    if (vehicleIds && vehicleIds.length > 2000) {
+      return res.status(400).json({ error: "vehicleIds too large (max 2000)" });
+    }
+
+    // 1) Load vehicles once (room scope)
+    const vWhere = {
+      roomId,
+      ...(includeArchived ? {} : { archivedAt: null }),
+      ...(vehicleIds ? { id: { in: vehicleIds } } : {}),
+    };
+
+    const vehicles = await prisma.vehicle.findMany({
+      where: vWhere,
+      select: {
+        id: true,
+        driverId: true,
+      },
+      orderBy: { id: "asc" },
+    });
+
+    const ids = vehicles.map((v) => Number(v.id));
+    const driverIds = Array.from(
+      new Set(vehicles.map((v) => Number(v.driverId || 0)).filter((x) => x > 0))
+    );
+
+    if (!ids.length) {
+      return res.json({ ok: true, startAt, endAt, items: [] });
+    }
+
+    // 2) Agreement conflicts (batch)
+    const ag = await findAgreementConflictsForRangeBatch({
+      vehicleIds: ids,
+      driverIds,
+      startAt,
+      endAt,
+    });
+
+    // 3) Shift conflicts (batch)
+    const sh = await findShiftConflictsForRangeBatch({
+      vehicleIds: ids,
+      driverIds,
+      startAt,
+      endAt,
+      excludeShiftId: excludeShiftId ?? undefined,
+    });
+
+    // 4) Compose rows (agreement-first)
+    const out = [];
+    for (const v of vehicles) {
+      const vehicleId = Number(v.id);
+      const driverId = Number(v.driverId || 0) || null;
+
+      const row = {
+        vehicleId,
+        driverId,
+        vehicleOk: true,
+        vehicleConflict: null,
+        driverOk: true,
+        driverConflict: null,
+      };
+
+      const agV = ag?.vehicleConflictById?.get(vehicleId) ?? null;
+      if (agV) {
+        row.vehicleOk = false;
+        row.vehicleConflict = slimConflict(agV);
+      }
+
+      if (driverId) {
+        const agD = ag?.driverConflictById?.get(driverId) ?? null;
+        if (agD) {
+          row.driverOk = false;
+          row.driverConflict = slimConflict(agD);
+        }
+      }
+
+      // Shift conflicts only if agreement OK
+      if (row.vehicleOk) {
+        const c = sh?.vehicleConflictById?.get(vehicleId) ?? null;
+        if (c) {
+          row.vehicleOk = false;
+          row.vehicleConflict = slimConflict(c);
+        }
+      }
+
+      if (driverId && row.driverOk) {
+        const c = sh?.driverConflictById?.get(driverId) ?? null;
+        if (c) {
+          row.driverOk = false;
+          row.driverConflict = slimConflict(c);
+        }
+      }
+
+      out.push(row);
+    }
 
     return res.json({ ok: true, startAt, endAt, items: out });
   } catch (e) {

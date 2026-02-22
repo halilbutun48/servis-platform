@@ -71,8 +71,8 @@ export function clusterPoints(points, radiusM) {
   return clusters;
 }
 
-export async function getShiftAndCheckScopeOrThrow(shiftId, user) {
-  const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
+export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId }, ...(opts || {}) });
   if (!shift) {
     const e = new Error("Shift not found");
     e.status = 404;

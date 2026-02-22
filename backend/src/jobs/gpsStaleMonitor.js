@@ -50,7 +50,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
       while (true) {
         const vehicles = await prisma.vehicle.findMany({
           where: { id: { gt: lastId }, gpsLast: { isNot: null } },
-          include: { room: true, gpsLast: true },
+          include: { gpsLast: true },
           take: batchSize,
           orderBy: { id: "asc" },
         });
@@ -73,7 +73,23 @@ export function startGpsStaleMonitor(io, opts = {}) {
           const vehicleStatusPayload = { vehicleId: v.id, status: uiStatus, ageSec };
           io.to(`vehicle:${v.id}`).emit("vehicle:status", vehicleStatusPayload);
           io.to(`room:${v.roomId}`).emit("vehicle:status", vehicleStatusPayload);
-          io.to(`company:${v.room.companyId}`).emit("vehicle:status", vehicleStatusPayload);
+
+          // ✅ Company fanout artık Room.companyId üzerinden değil;
+          // sadece bu araca bağlı APPROVED/ACTIVE shift'lerin companyId'leri üzerinden.
+          // Not: LIVE status zaten gps ingest ile şirketlere gider; burada asıl kritik STALE/OFFLINE.
+          if (uiStatus !== "LIVE") {
+            try {
+              const rel = await prisma.shift.findMany({
+                where: { vehicleId: v.id, status: { in: ["APPROVED", "ACTIVE"] } },
+                select: { companyId: true },
+              });
+              for (const row of rel) {
+                if (row.companyId) io.to(`company:${row.companyId}`).emit("vehicle:status", vehicleStatusPayload);
+              }
+            } catch {
+              // ignore
+            }
+          }
 
           // 2) DB mapping (tek kaynak status.js)
           // LIVE => GpsLast.OK + Vehicle.ACTIVE
@@ -149,7 +165,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
             }));
 
           const targetRoomId = sh?.roomId ?? v.roomId ?? null;
-          const targetCompanyId = sh?.companyId ?? v.room?.companyId ?? null;
+          const targetCompanyId = sh?.companyId ?? null;
           const dedupeKeyOf = (scope) => `GPS:${v.id}:${kind}:${scope}:${sh?.id ?? 0}`;
 
           // ROOM scope

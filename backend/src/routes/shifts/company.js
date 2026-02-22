@@ -47,6 +47,14 @@ export function attachShiftCompanyRoutes(r, io) {
         const effectiveStatus =
           req.user.role === "COMPANY" ? "REQUESTED" : body.status ?? "DRAFT";
 
+
+        // ✅ M19: hub pair validation
+        const hasHubLat = body.hubLat != null;
+        const hasHubLng = body.hubLng != null;
+        if (hasHubLat !== hasHubLng) {
+          return res.status(400).json({ error: "hubLat+hubLng together" });
+        }
+
         // Optional: companyOfferVehicleId verildiyse araç var mı ve aynı room mu?
         if (body.companyOfferVehicleId != null) {
           const v = await prisma.vehicle.findUnique({
@@ -71,6 +79,12 @@ export function attachShiftCompanyRoutes(r, io) {
             endAt: body.endAt,
 
             status: effectiveStatus,
+
+            // ✅ M19: routing meta
+            hubLat: body.hubLat ?? null,
+            hubLng: body.hubLng ?? null,
+            direction: body.direction ?? "INBOUND",
+            pattern: body.pattern ?? "ONE_WAY",
 
             companyOfferVehicleId: body.companyOfferVehicleId ?? null,
             companyOfferAmount: body.companyOfferAmount ?? null,
@@ -140,12 +154,24 @@ export function attachShiftCompanyRoutes(r, io) {
           return res.status(403).json({ error: "Forbidden" });
         }
 
+        // ✅ M19: hub pair validation (update)
+        const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
+        const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
+        if (updHasHubLat !== updHasHubLng) {
+          return res.status(400).json({ error: "hubLat+hubLng together" });
+        }
+
         const updated = await prisma.shift.update({
           where: { id },
           data: {
             startAt: body.startAt ?? undefined,
             endAt: body.endAt ?? undefined,
             status: body.status ?? undefined,
+            // ✅ M19: routing meta
+            hubLat: body.hubLat === undefined ? undefined : body.hubLat,
+            hubLng: body.hubLng === undefined ? undefined : body.hubLng,
+            direction: body.direction ?? undefined,
+            pattern: body.pattern ?? undefined,
           },
           include: {
             stops: { orderBy: { order: "asc" } },
@@ -188,6 +214,13 @@ export function attachShiftCompanyRoutes(r, io) {
         const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
           return res.status(403).json({ error: "Forbidden" });
+        }
+
+        // ✅ M19: hub pair validation (update)
+        const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
+        const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
+        if (updHasHubLat !== updHasHubLng) {
+          return res.status(400).json({ error: "hubLat+hubLng together" });
         }
 
         // only allow negotiate in DRAFT/REQUESTED (optional rule)
@@ -256,6 +289,13 @@ export function attachShiftCompanyRoutes(r, io) {
 
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
           return res.status(403).json({ error: "Forbidden" });
+        }
+
+        // ✅ M19: hub pair validation (update)
+        const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
+        const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
+        if (updHasHubLat !== updHasHubLng) {
+          return res.status(400).json({ error: "hubLat+hubLng together" });
         }
 
         const updated = await prisma.shift.update({

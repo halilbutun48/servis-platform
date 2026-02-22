@@ -7,6 +7,7 @@ import { startRetentionCleanup } from "./retentionCleanup.js";
 
 import { startAgreementMonitor } from "./agreementMonitor.js";
 import { startAgreementShiftGenerator } from "./agreementShiftGenerator.js";
+import { startRouteLearnMonitor } from "./routeLearnMonitor.js";
 
 /**
  * @param {import('socket.io').Server} io
@@ -19,6 +20,9 @@ export function startMonitors(io, opts = {}) {
   stopFns.push(startAgreementMonitor(io, { intervalMs: opts.agreementIntervalMs }));
 
   // ✅ M18: agreement -> daily shift generator
+  // ✅ M19: learned route monitor (optional)
+  stopFns.push(startRouteLearnMonitor(io, { intervalMs: opts.routeLearnIntervalMs }));
+
   stopFns.push(
     startAgreementShiftGenerator(io, {
       intervalMs: opts.agreementShiftGenIntervalMs,

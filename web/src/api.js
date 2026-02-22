@@ -1,3 +1,4 @@
+//web/src/api.js
 export function getToken() {
   return (localStorage.getItem("token") || "").trim();
 }
@@ -51,6 +52,11 @@ export async function api(path, { method = "GET", body, token } = {}) {
 
   return ct.includes("application/json") ? res.json() : res.text();
 }
+// ✅ convenience helpers (SuperAdmin panelleri api.get/post/put/del kullanıyor)
+api.get = (path, opts = {}) => api(path, { ...opts, method: "GET" });
+api.post = (path, body, opts = {}) => api(path, { ...opts, method: "POST", body });
+api.put = (path, body, opts = {}) => api(path, { ...opts, method: "PUT", body });
+api.del = (path, opts = {}) => api(path, { ...opts, method: "DELETE" });
 
 export async function login(email, password) {
   // login'de token yok, o yüzden Authorization göndermiyoruz

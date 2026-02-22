@@ -18,6 +18,10 @@ function toInt(v, def = null) {
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
 }
+function toFloat(v, def = null) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
 function clampMin(v) {
   const n = toInt(v, null);
   if (n == null) return null;
@@ -29,6 +33,25 @@ function clampWeekMask(v) {
   if (n == null) return null;
   if (n < 1 || n > 127) return null;
   return n;
+}
+
+function normDirection(v) {
+  const s = String(v || "INBOUND").trim().toUpperCase();
+  if (s === "INBOUND" || s === "OUTBOUND") return s;
+  return null;
+}
+function normPattern(v) {
+  const s = String(v || "ONE_WAY").trim().toUpperCase();
+  if (s === "ONE_WAY" || s === "LOOP") return s;
+  return null;
+}
+function parseHub(body) {
+  const lat = body?.hubLat == null || body?.hubLat === "" ? null : toFloat(body.hubLat, null);
+  const lng = body?.hubLng == null || body?.hubLng === "" ? null : toFloat(body.hubLng, null);
+  if (lat == null && lng == null) return { hubLat: null, hubLng: null };
+  if (lat == null || lng == null) return { error: "hubLat+hubLng birlikte olmalı" };
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { error: "hubLat/hubLng range invalid" };
+  return { hubLat: lat, hubLng: lng };
 }
 
 export function agreementsRouter(io) {
@@ -77,8 +100,8 @@ export function agreementsRouter(io) {
     if (!companyId) return res.status(400).json({ error: "companyId required" });
 
     const roomId = Number(req.body.roomId);
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
-    if (!room || room.companyId !== companyId) return res.status(400).json({ error: "invalidRoomId" });
+    const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true, status: true } });
+    if (!room || room.status === "DELETED") return res.status(400).json({ error: "invalidRoomId" });
 
     const startDate = parseDateOnly(req.body.startDate);
     const endDate = parseDateOnly(req.body.endDate);
@@ -91,6 +114,14 @@ export function agreementsRouter(io) {
     if (weekMask == null) return res.status(400).json({ error: "weekMask required (1..127)" });
     if (startMin == null || endMin == null) return res.status(400).json({ error: "startMin/endMin required (0..1439)" });
 
+    // ✅ M19: routing meta
+    const direction = normDirection(req.body.direction);
+    const pattern = normPattern(req.body.pattern);
+    if (!direction) return res.status(400).json({ error: "direction invalid (INBOUND|OUTBOUND)" });
+    if (!pattern) return res.status(400).json({ error: "pattern invalid (ONE_WAY|LOOP)" });
+    const hub = parseHub(req.body);
+    if (hub?.error) return res.status(400).json({ error: hub.error });
+
     const created = await prisma.agreement.create({
       data: {
         companyId,
@@ -101,6 +132,10 @@ export function agreementsRouter(io) {
         startMin,
         endMin,
         status: "REQUESTED",
+        hubLat: hub.hubLat,
+        hubLng: hub.hubLng,
+        direction,
+        pattern,
         companyOfferAmount: toInt(req.body.companyOfferAmount, null),
         companyOfferNote: req.body.companyOfferNote ? String(req.body.companyOfferNote) : null,
       },

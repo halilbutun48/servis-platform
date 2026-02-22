@@ -1,124 +1,166 @@
-# PERSONEL-SERVIS V1 — PROJECT SPEC (SSOT)
+PERSONEL-SERVIS V1 — PROJECT SPEC (SSOT)
+Ürün açıklaması (tek sayfa)
 
-## Amaç
-Öğrenci/parent yok. GPS tabanlı **personel servisi** platformu:
-- Canlı araç takibi (map), rota/durak planı, vardiya (shift) yönetimi
-- Uyarılar (notifications): overspeed, stale/offline, recovery, bakım yaklaşıyor
-- Personel talepleri (request) → stop suggestions → shift’e stop ekleme
-- Route templates (company) → shift’e REPLACE uygula
-- Periyodik rezervasyon (Agreement) + çakışma yönetimi
-- Agreement’tan **günlük shift otomatik üretimi** (M18)
+Personel-Servis V1, şirketlerin ve servis operasyon ekiplerinin günlük personel shuttle (vardiya/shift) operasyonunu uçtan uca yönetmesi için geliştirilmiş GPS tabanlı, rol bazlı ve doğrulanabilir (GREEN disiplinli) bir platformdur.
 
----
+Problem
+Araç/şoför/rota planlama Excel / WhatsApp / manuel yöntemlerle yürür.
+Canlı takip yoktur; gecikme, hız ihlali ve “araç kayboldu (STALE/OFFLINE)” geç fark edilir.
+Personel talepleri merkezi toplanamaz; operasyonel cluster üretilemez.
+Uzun dönem servis anlaşmaları manuel vardiyaya dökülür.
+Araç/şoför çakışmaları geç yakalanır.
+Gerçek rota ile tahmini rota arasında fark oluşur.
 
-## Roller (5)
+Çözüm (V1 Neler Sunar)
+🚦 Operasyon Paneli (ROOM)
+Vehicle/Driver CRUD
+Shift approve / assign / start
+Stop suggestions + from-suggestion
+Request close (ACCEPTED)
+Agreement approve + conflict yönetimi
+Availability kontrolü (shift + agreement + bulk)
 
-1) **SUPER_ADMIN**
-- Company/Room kurulum & seed
+🏢 Şirket Paneli (COMPANY)
+Shift create
+Route template yönetimi (REPLACE)
+Agreement create / list / cancel / extend
+Shift list + agreement badge
 
-2) **ROOM (Operasyon/Servis odası)**
-- Vehicle/Driver CRUD
-- Shift approve/assign/start
-- Request close (ACCEPTED)
-- Stop suggestions + from-suggestion
-- Agreement approve (vehicle+driver assign) + conflict yönetimi
-- Availability kontrolü (shift + agreement)
+🚗 Şoför Akışı (DRIVER)
+Assigned vehicle ile GPS gönderimi
+Active route görüntüleme
+Stop progression (reached / skip / reopen)
+Shift complete
 
-3) **COMPANY**
-- Shift create, template yönetimi
-- Agreements create/list/cancel/extend
-- Request’leri görür (kapatamaz)
+👤 Personel Akışı (PERSONEL)
+Lat/Lng zorunlu request create
+Stop suggestion üretimine veri sağlar
 
-4) **DRIVER**
-- Assigned vehicle ile GPS post
-- Active route + stop progression + complete
+🔴 Realtime + Uyarılar
+Overspeed detection
+LIVE → STALE → OFFLINE → LIVE geçişleri
+Notification dedupe
+WebSocket auto-refresh
 
-5) **PERSONEL**
-- Request create (lat/lng zorunlu)
-- Kendi live/my view
+🔁 Agreement → Günlük Shift Otomasyonu (M18)
+Onaylı agreement’lardan bugünün shift’leri otomatik üretilir
+Duplicate guard ile aynı güne ikinci shift yazılmaz
+🗺 Route Preview + Route Learning (M19)
+OSRM ile estimated km/süre hesaplama
+OSRM match ile gerçek GPS polyline üretme
+Belirli örnek sonrası rota LEARNED olur
+ESTIMATED → LEARNED deterministik geçiş
 
----
+⚡ Bulk Availability (M20)
+Tek endpoint ile tüm araçların uygunluk kontrolü
+Agreement conflict öncelikli raporlanır
+DB yükü azaltılır
+Hedef Kullanıcılar
+ROOM (Operasyon)
+COMPANY (Planlama)
+DRIVER
+PERSONEL
+SUPER_ADMIN (Kurulum + Yönetim)
+SUPER_ADMIN (M21 Güncellemesi)
+Company create/list
+Room create/list (company bağlantılı)
+Sistem kurulum & seed
+RBAC izolasyonu
+V1’de update/delete minimal tutulabilir; genişletme sonraki milestone’lara bırakılabilir.
 
-## Mimari
-- Backend: Node.js (ESM) + Express + Prisma
-- DB: Postgres (Docker)
-- Redis: job/monitor + dedupe
-- Realtime: Socket.IO
-- Web: Vite + React
-- Monorepo: `backend/`, `web/`, `infra/`, `docs/`, `tools/`
+Amaç
+Öğrenci/parent yok.
+GPS tabanlı personel servisi platformu:
+Canlı araç takibi
+Rota/durak planı
+Shift lifecycle
+Notification sistemi
+Request → suggestion → stop entegrasyonu
+Agreement + çakışma yönetimi
+Agreement’tan günlük shift otomasyonu
+Route learning ile gerçek rota doğrulama
 
----
+Mimari
+Backend: Node.js (ESM) + Express + Prisma
+DB: PostgreSQL (Docker)
+Redis: monitor + dedupe + jobs
+Realtime: Socket.IO
+OSRM: route + match
+Web: Vite + React
+Monorepo: backend/, web/, infra/, docs/, tools/
 
-## GREEN disiplini
-- “Çalışıyor” demek: `tools/pack.ps1 -To <hedef>` **PACK PASS**
-- Her milestone:
-  - check script (backend/scripts/*check.js)
-  - docs update (SSOT)
-  - pack doğrulama
+GREEN Disiplini
+“Çalışıyor” demek:
+tools/pack.ps1 -To <hedef>
+PACK PASS almak.
 
----
+Her milestone:
+Check script (backend/scripts/mXcheck.js)
+Docs update (SSOT)
+Gate PASS zorunlu
+Kurallar (SSOT)
 
-## Kurallar (SSOT)
+1️⃣ Scope / RBAC
+Company sadece kendi scope’unu görür.
+Room sadece kendi room scope’unu yönetir.
+Driver sadece assigned vehicle/shift ile işlem yapar.
+Personel sadece kendi request’lerini görür.
 
-### 1) Scope/RBAC
-- Company sadece kendi company scope’unu görür.
-- Room sadece kendi room scope’unu yönetir.
-- Driver sadece assigned shift/vehicle ile GPS/route işlemi yapar.
-- Personel request açar, kendi view’ını görür.
+2️⃣ Shift Overlap Kuralları
+Aynı driver aynı zaman aralığında 2 shift’e atanamaz → 409
+Aynı vehicle aynı zaman aralığında 2 shift’e atanamaz → 409
 
-### 2) Overlap kuralları (Shift)
-- Aynı driver aynı zaman aralığında 2 shift’e atanamaz → 409
-- Aynı vehicle aynı zaman aralığında 2 shift’e atanamaz → 409
+3️⃣ Agreement Rezervasyon Kuralları (M17)
+Aynı time window’da aynı vehicle/driver başka agreement’a verilemez → 409
+Availability hem shift hem agreement rezervasyonunu dikkate alır.
+Determinism: agreement conflict önce raporlanır.
 
-### 3) Agreement rezervasyon kuralları (M17)
-- Aynı time window’da aynı vehicle/driver başka agreement’a verilemez → 409
-- Availability endpoint hem shift hem agreement rezervasyonunu dikkate alır.
-- Determinism: Availability’de **agreement conflict önce** raporlanır (m17check stabil).
+4️⃣ Route Learning Kuralları (M19)
+GPS history match edilir.
+Sample threshold sonrası RouteLearned kaydı oluşur.
+Preview’de:
+source = ESTIMATED | LEARNED
+LEARNED varsa estimated override edilir.
 
-### 4) Monitoring & Dedupe
-- GPS state transition: LIVE→STALE→OFFLINE→LIVE
-- Notif dedupe: aynı transition tekrar tekrar üretmez.
-- agreementMonitor: endDate+endMin geçince DONE.
+5️⃣ Monitoring & Dedupe
+GPS state machine: LIVE → STALE → OFFLINE → LIVE
+Aynı transition tekrar tekrar notification üretmez.
+agreementMonitor: süresi dolan agreement → DONE
+M18 — Agreement → Günlük Shift Otomatik Üretimi ✅
 
----
+Amaç
+Onaylı agreement’lardan günlük shift üretmek.
 
-## M18 — Agreement → Günlük Shift Otomatik Üretimi ✅
+Kurallar
+Status: APPROVED/ACTIVE
+vehicleId + driverId atanmış olmalı
+weekMask bugünü içermeli
+Midnight aşımı desteklenir
+Unique: (agreementId, startAt)
 
-### Amaç
-Onaylı anlaşmalardan (Agreement) **günlük vardiya (Shift)** üretmek:
-- Agreement tarih aralığı + weekMask + saat penceresine göre “bugün” shift create.
-- Üretilen shift normal shift lifecycle’a girer.
+Conflict
+Üretimden önce shiftConflict kontrol edilir
+Conflict varsa üretim skip edilir
 
-### Kurallar
-- Sadece `APPROVED/ACTIVE` ve `vehicleId+driverId` atanmış agreements.
-- Gün filtresi: `weekMask` bugünün bit’ini içeriyorsa üret.
-- Midnight aşımı: `endMin < startMin` → `endAt` ertesi güne taşar.
-- Duplicate guard: aynı agreement aynı gün için tek shift:
-  - DB: `unique(agreementId, startAt)`
+UI
+Agreement shift’lerde badge
+Filtre: “Agreement shifts only”
+Milestone Yol Haritası (Güncel)
 
-### Conflict/Çakışma
-- Üretimden önce shiftConflict kontrol edilir.
-- Conflict varsa o gün için üretim **skip** edilir.
+✅ M0–M15: CRUD + shift + gps + ws + notifications + overlap/bind
+✅ M16: requests → suggestions → stops + template REPLACE
+✅ M16.2: shift people + route-preview + assignmentCount
+✅ M16.3: geo review + manual override
+✅ M17: agreements + conflict + monitor + availability
+✅ M18: agreement → daily shift generator
+✅ M19: OSRM + route learning
+✅ M20: bulk availability
+✅ M21: SUPER_ADMIN companies + rooms panel
 
-### UI (M18)
-- Company/Room shift listesinde satırda `Agreement #<id>` badge
-- Filtre: “Sadece Agreement shiftleri”
-
----
-
-## Milestone yol haritası (özet)
-✅ M0–M15: CRUD + shift + gps + ws + notifications + overlap/bind  
-✅ M16: requests→suggestions→stops + template REPLACE  
-✅ M16.2: shift people + route-preview + assignmentCount  
-✅ M16.3: geo review + manual override  
-✅ M17: agreements + conflict + monitor + availability  
-✅ M17.2: agreements UI polish  
-✅ M17.3: UI smoke runbook  
-✅ **M18: agreement→daily shift generator + UI badge/filter** (GREEN)
-
----
-
-## DoD (Başarı)
-- Pack PASS olmadan milestone tamam sayılmaz.
-- Agreement “happy path”: Company create → Room approve → conflict → extend/cancel
-- M18 “happy path”: agreement approve → bugün shift oluşur → listede badge görünür.
+DoD (Başarı Kriteri)
+Pack PASS olmadan milestone tamam sayılmaz.
+Agreement happy path çalışır.
+Route preview ESTIMATED → LEARNED geçişi doğrulanır.
+Bulk availability deterministik conflict raporlar.
+M18 happy path: agreement approve → bugün shift oluşur → listede badge görünür.
+M21: SUPER_ADMIN company + room create UI’dan yapılabilir.

@@ -130,6 +130,8 @@ export default function AgreementsPanel() {
                 <th align="left">Date</th>
                 <th align="left">Time</th>
                 <th align="left">Günler</th>
+                <th align="left">Dir/Pat</th>
+                <th align="left">Hub</th>
                 <th align="left">Aksiyon</th>
               </tr>
             </thead>
@@ -147,6 +149,14 @@ export default function AgreementsPanel() {
                   <td className="muted" title={`weekMask=${a.weekMask}`}>
                     {weekMaskToText(a.weekMask)}
                   </td>
+                  <td className="muted">
+                    {String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}
+                  </td>
+                  <td className="muted">
+                    {typeof a.hubLat === "number" && typeof a.hubLng === "number"
+                      ? `${a.hubLat.toFixed(4)}, ${a.hubLng.toFixed(4)}`
+                      : "-"}
+                  </td>
                   <td>
                     <button
                       type="button"
@@ -163,7 +173,7 @@ export default function AgreementsPanel() {
               ))}
               {!pending.length ? (
                 <tr>
-                  <td colSpan={5} className="muted" style={{ paddingTop: 10 }}>
+                  <td colSpan={7} className="muted" style={{ paddingTop: 10 }}>
                     Pending yok.
                   </td>
                 </tr>

@@ -109,6 +109,17 @@ enum AgreementStatus {
   CANCELLED
   REJECTED
 }
+
+// ✅ M19: directional routing + hub
+enum ShiftDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum RoutePattern {
+  ONE_WAY
+  LOOP
+}
 // --- Core Models ---
 
 model Company {
@@ -117,7 +128,6 @@ model Company {
   status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
 
-  rooms         Room[]
   users         User[]
   shifts        Shift[]
   personels     Personel[]
@@ -127,12 +137,13 @@ model Company {
 
 model Room {
   id        Int      @id @default(autoincrement())
-  companyId Int
   name      String
   status    String   @default("ACTIVE")
+  // ✅ M19: worksite hub (company/site)
+  hubLat    Float?
+  hubLng    Float?
   createdAt DateTime @default(now())
 
-  company        Company @relation(fields: [companyId], references: [id])
   users          User[]
   vehicles       Vehicle[]
   drivers        Driver[]
@@ -140,8 +151,6 @@ model Room {
   notifications  Notification[]
   routeTemplates RouteTemplate[]
   agreements Agreement[]
-
-  @@index([companyId])
 }
 
 // Auth entity (login) — role taşıyıcı
@@ -222,6 +231,8 @@ model Vehicle {
   gpsLast       GpsLast?
   gpsState      VehicleGpsState? // ✅ UI status gate state
   gpsPoints     GpsPoint[]
+  // ✅ M19: learned route samples
+  routeLearnSamples RouteLearnSample[]
   shifts        Shift[]
   notifications Notification[]
 
@@ -266,6 +277,12 @@ model Shift {
   startAt   DateTime
   endAt     DateTime
   status    ShiftStatus @default(DRAFT)
+
+  // ✅ M19: routing meta (worksite hub + direction/pattern)
+  hubLat    Float?
+  hubLng    Float?
+  direction ShiftDirection @default(INBOUND)
+  pattern   RoutePattern   @default(ONE_WAY)
   createdAt DateTime    @default(now())
 
   // COMPANY → ROOM teklif
@@ -303,6 +320,9 @@ model Shift {
   agreementId Int?
   agreement   Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
 
+  // ✅ M19: learned route sample (1:1, generated after shift complete)
+  routeLearnSample RouteLearnSample?
+
   @@index([companyId])
   @@index([roomId])
   @@index([vehicleId])
@@ -325,6 +345,13 @@ model Agreement {
 
   vehicleId Int?
   driverId  Int?
+
+
+  // ✅ M19: routing meta (worksite hub + direction/pattern)
+  hubLat    Float?
+  hubLng    Float?
+  direction ShiftDirection @default(INBOUND)
+  pattern   RoutePattern   @default(ONE_WAY)
 
   startDate DateTime @db.Date
   endDate   DateTime @db.Date
@@ -563,6 +590,36 @@ model GpsPoint {
   @@index([vehicleId, at])
 }
 
+
+// ✅ M19: learned route store (map-matched samples + canonical)
+model RouteLearnSample {
+  id            Int      @id @default(autoincrement())
+  routeKey      String
+  shiftId       Int
+  vehicleId     Int
+  startAt       DateTime
+  polylineMatched String // JSON string: [{lat,lng}...]
+  distanceKm    Float
+  durationMin   Int
+  qualityScore  Float
+  createdAt     DateTime @default(now())
+
+  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([routeKey, createdAt])
+  @@unique([shiftId])
+  @@index([vehicleId, startAt])
+}
+
+model RouteLearned {
+  routeKey          String   @id
+  polylineCanonical String   // JSON string: [{lat,lng}...]
+  distanceKmLearned Float
+  durationMinLearned Int
+  sampleCount       Int
+  updatedAt         DateTime @updatedAt
+}
 // Notification: scope bazlı (ROOM/COMPANY/DRIVER)
 // payloadJson: Json tipinde serbest içerik
 model Notification {
