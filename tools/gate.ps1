@@ -2,7 +2,7 @@
 
 param(
   [Parameter(Mandatory=$false)]
-  [ValidateRange(0,22)]
+  [ValidateRange(0,23)]
   [int]$To = 21,
 
   [Parameter(Mandatory=$false)]
@@ -20,7 +20,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# ✅ default: M0..M16
+# ✅ default: M0..M23
 $checks = @(
   @{ n = 0;  name="M0";  cmd="node scripts/m0check.js"  },
   @{ n = 1;  name="M1";  cmd="node scripts/m1check.js"  },
@@ -47,7 +47,8 @@ $checks = @(
   @{ n = 19; name="M19"; file="m19check.js"; cmd="node scripts/m19check.js" },
   @{ n = 20; name="M20"; file="m20check.js"; cmd="node scripts/m20check.js" },
   @{ n = 21; name="M21"; file="m21check.js"; cmd="node scripts/m21check.js" },
-  @{ n = 22; name="M22"; file="m22check.js"; cmd="node scripts/m22check.js" }
+  @{ n = 22; name="M22"; file="m22check.js"; cmd="node scripts/m22check.js" },
+  @{ n = 23; name="M23"; file="m23check.js"; cmd="node scripts/m23check.js" }
 )
 
 

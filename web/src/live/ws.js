@@ -53,33 +53,49 @@ function toText(x) {
   return String(x ?? "").toLowerCase();
 }
 
-// payload’ı normalize edip "kind" üret (eventName bazlı)
+/**
+ * payload’ı normalize eder ve her zaman event adını taşır.
+ * - msg._event: gerçek WS event adı (örn: "agreement:update")
+ * - msg.kind: payload’da yoksa eventName set edilir
+ */
 function normalizeEvent(eventName, payload) {
+  // String payload
   if (typeof payload === "string") {
     const parsed = safeJsonParse(payload);
     if (parsed && typeof parsed === "object") {
-      return { kind: eventName, ...parsed };
+      return { ...parsed, kind: parsed.kind ?? eventName, _event: eventName };
     }
     if (typeof parsed === "string") {
-      return { kind: parsed };
+      return { kind: parsed, _event: eventName };
     }
-    return { kind: eventName, data: payload };
+    return { kind: eventName, data: payload, _event: eventName };
   }
 
+  // Object payload
   if (payload && typeof payload === "object") {
-    if (!payload.kind && !payload.type && !payload.event && !payload.name) {
-      return { kind: eventName, ...payload };
+    const hasAnyKind =
+      !!payload.kind || !!payload.type || !!payload.event || !!payload.name;
+
+    if (!hasAnyKind) {
+      // payload’da belirleyici yoksa kind=eventName yap
+      return { ...payload, kind: eventName, _event: eventName };
     }
-    return payload;
+
+    // payload kind farklı olsa bile eventName’i sakla (M23 fix)
+    return { ...payload, _event: eventName };
   }
 
-  return { kind: eventName, data: payload };
+  // Primitive / null
+  return { kind: eventName, data: payload, _event: eventName };
 }
 
 function guessTopics(msg) {
+  // ✅ M23: event adını da dahil et (payload.kind "created" olsa bile agreement:update yakalansın)
   const kind = toText(msg?.kind || msg?.type || msg?.event || msg?.name || "");
   const topic = toText(msg?.topic || msg?.channel || "");
-  const raw = `${kind} ${topic}`;
+  const ev = toText(msg?._event || "");
+
+  const raw = `${kind} ${topic} ${ev}`;
 
   const topics = new Set();
 
@@ -89,9 +105,10 @@ function guessTopics(msg) {
   if (raw.includes("room")) topics.add("rooms");
   if (raw.includes("notif")) topics.add("notifications");
 
-  // ✅ M17.1: agreements auto-refresh
+  // ✅ agreements auto-refresh
   if (raw.includes("agreement")) topics.add("agreements");
 
+  // explicit topic override (backend msg.topic kullanırsa)
   if (
     topic === "shifts" ||
     topic === "vehicles" ||
@@ -117,7 +134,11 @@ function pruneSigMap() {
 function shouldInvalidate(msg, topics) {
   if (!topics || topics.length === 0) return false;
 
-  const kind = String(msg?.kind || msg?.type || msg?.event || msg?.name || "");
+  // ✅ M23: kind yoksa _event’e bak (eventName kaynaklı topic dedupe/guard)
+  const kind = String(
+    msg?.kind || msg?._event || msg?.type || msg?.event || msg?.name || ""
+  );
+
   if (!kind) return true;
 
   // ⚠️ En kritik spam: vehicle:status (ageSec artıyor ama status aynı)
@@ -183,7 +204,6 @@ function connect() {
       path: "/socket.io",
       transports: ["websocket"],
       reconnection: false,
-
       auth: { token: tokenRef },
       query: { token: tokenRef },
     });
