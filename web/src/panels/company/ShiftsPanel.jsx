@@ -88,6 +88,8 @@ const PRESET_TEMPLATES = [
 export default function CompanyShiftsPanel() {
   const { token, me } = useSession();
 
+  const LS_LAST_ROOM = "company:lastRoomId";
+
   // Top tabs
   const [topTab, setTopTab] = useState("request"); // request | templates | people
 
@@ -240,7 +242,14 @@ export default function CompanyShiftsPanel() {
   }
 
   // ===== Yeni shift (request) form state =====
-  const [roomId, setRoomId] = useState("1");
+  const [roomId, setRoomId] = useState(() => {
+    try {
+      return localStorage.getItem(LS_LAST_ROOM) || "";
+    } catch {
+      return "";
+    }
+  });
+  const [roomQ, setRoomQ] = useState(""); // M22: room directory search
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
   const [seatDemand, setSeatDemand] = useState("");
@@ -304,7 +313,8 @@ export default function CompanyShiftsPanel() {
   async function load() {
     setErr("");
     try {
-      const roomsPromise = !isCompany ? api("/api/rooms", { token }).catch(() => []) : Promise.resolve([]);
+      // M22: Company can also read room directory
+      const roomsPromise = api("/api/rooms?take=500", { token }).catch(() => ({ items: [] }));
 
       const [sh, veh, rm] = await Promise.all([
         api("/api/shifts?take=200", { token }),
@@ -346,7 +356,7 @@ export default function CompanyShiftsPanel() {
 
   useAutoReload("shifts", load);
   useAutoReload("vehicles", load);
-  useAutoReload("rooms", load, !isCompany);
+  useAutoReload("rooms", load);
 
   const roomsById = useMemo(() => {
     const m = new Map();
@@ -363,13 +373,19 @@ export default function CompanyShiftsPanel() {
   const seatN = useMemo(() => (seatDemand ? Number(seatDemand) : null), [seatDemand]);
 
   const roomOptions = useMemo(() => {
-    const baseRooms =
+    const baseRoomsRaw =
       rooms?.length
         ? rooms
         : Array.from(new Set(vehicles.map((v) => v?.roomId).filter(Boolean).map((x) => Number(x)))).map((id) => ({
             id,
             name: `Room #${id}`,
           }));
+
+    // M22: client-side search (directory)
+    const q = String(roomQ || "").trim().toLowerCase();
+    const baseRooms = q
+      ? baseRoomsRaw.filter((r) => roomLabel(r).toLowerCase().includes(q))
+      : baseRoomsRaw;
 
     const list = baseRooms.map((r) => {
       const rid = Number(r.id);
@@ -383,10 +399,11 @@ export default function CompanyShiftsPanel() {
       return { ...r, eligibleCount };
     });
 
-    const filtered = seatN ? list.filter((r) => r.eligibleCount > 0) : list;
+    // COMPANY için vehicle kapasitesine göre room elemek doğru değil (company room araçlarını bilmez).
+    const filtered = seatN && !isCompany ? list.filter((r) => r.eligibleCount > 0) : list;
     filtered.sort((a, b) => Number(a.id) - Number(b.id));
     return filtered;
-  }, [rooms, vehicles, seatN]);
+  }, [rooms, vehicles, seatN, roomQ, isCompany]);
 
   useEffect(() => {
     if (!roomOptions.length) return;
@@ -394,7 +411,15 @@ export default function CompanyShiftsPanel() {
     const ok = roomOptions.some((r) => Number(r.id) === rid);
     if (!ok) setRoomId(String(roomOptions[0].id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seatDemand, rooms, vehicles]);
+  }, [roomOptions, roomId]);
+
+  // persist last selected room for COMPANY
+  useEffect(() => {
+    if (!isCompany) return;
+    try {
+      if (roomId) localStorage.setItem(LS_LAST_ROOM, String(roomId));
+    } catch {}
+  }, [roomId, isCompany]);
 
   const filteredVehicles = useMemo(() => {
     const rid = Number(roomId);
@@ -840,11 +865,20 @@ export default function CompanyShiftsPanel() {
 
             <div className="col">
               <label className="muted">Room</label>
+              <input
+                value={roomQ}
+                onChange={(e) => setRoomQ(e.target.value)}
+                placeholder="Room ara (name contains)"
+                disabled={busy}
+                style={{ marginBottom: 6 }}
+              />
               <select value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={busy}>
                 {roomOptions.length ? (
                   roomOptions.map((r) => (
                     <option key={r.id} value={String(r.id)}>
-                      {roomLabel(r)} (#{r.id}){seatN ? ` • ${r.eligibleCount} araç` : ""}
+                      {roomLabel(r)} (#{r.id})
+                      {r?.hubLat != null && r?.hubLng != null ? "" : " • (Hub yok)"}
+                      {seatN && !isCompany ? ` • ${r.eligibleCount} araç` : ""}
                     </option>
                   ))
                 ) : (
@@ -853,6 +887,15 @@ export default function CompanyShiftsPanel() {
               </select>
               <div className="muted" style={{ marginTop: 6 }}>
                 Seçili room: {selectedRoom ? `${roomLabel(selectedRoom)} (#${selectedRoom.id})` : `#${roomId}`}
+                {selectedRoom ? (
+                  selectedRoom?.hubLat != null && selectedRoom?.hubLng != null ? (
+                    <span>
+                      {" "}• hub: {Number(selectedRoom.hubLat).toFixed(6)}, {Number(selectedRoom.hubLng).toFixed(6)}
+                    </span>
+                  ) : (
+                    <span style={{ color: "#b85" }}>{" "}• hub yok</span>
+                  )
+                ) : null}
               </div>
             </div>
 

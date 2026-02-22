@@ -1,6 +1,8 @@
 // backend/src/routes/rooms.js
 // Room = servis sağlayan (operator) organizasyon.
 // Company (kiralayan) ile bağ: Agreement üzerinden kurulmalı (room.companyId yok).
+//
+// M22: Company için "Room Directory" (search + hasHub filter)
 
 import express from "express";
 import { z } from "zod";
@@ -22,6 +24,11 @@ function requireAnyRole(...roles) {
   };
 }
 
+function truthy(v) {
+  const s = String(v ?? "").toLowerCase().trim();
+  return s === "1" || s === "true" || s === "yes" || s === "y";
+}
+
 // CREATE: allow optional hub on create
 const createRoomSchema = z
   .object({
@@ -30,19 +37,22 @@ const createRoomSchema = z
     hubLat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
     hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
   })
-  .refine((v) => {
-    const hasLat = Object.prototype.hasOwnProperty.call(v, "hubLat");
-    const hasLng = Object.prototype.hasOwnProperty.call(v, "hubLng");
-    if (!hasLat && !hasLng) return true;
-    if (hasLat !== hasLng) return false;
-    const a = v.hubLat;
-    const b = v.hubLng;
-    if (a == null && b == null) return true;
-    if (a == null || b == null) return false;
-    if (a < -90 || a > 90) return false;
-    if (b < -180 || b > 180) return false;
-    return true;
-  }, { message: "hubLat+hubLng birlikte olmalı ve range valid olmalı" });
+  .refine(
+    (v) => {
+      const hasLat = Object.prototype.hasOwnProperty.call(v, "hubLat");
+      const hasLng = Object.prototype.hasOwnProperty.call(v, "hubLng");
+      if (!hasLat && !hasLng) return true;
+      if (hasLat !== hasLng) return false;
+      const a = v.hubLat;
+      const b = v.hubLng;
+      if (a == null && b == null) return true;
+      if (a == null || b == null) return false;
+      if (a < -90 || a > 90) return false;
+      if (b < -180 || b > 180) return false;
+      return true;
+    },
+    { message: "hubLat+hubLng birlikte olmalı ve range valid olmalı" }
+  );
 
 const updateRoomSchema = z
   .object({
@@ -57,15 +67,18 @@ const updateHubSchema = z
     hubLat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()),
     hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()),
   })
-  .refine((v) => {
-    const a = v.hubLat;
-    const b = v.hubLng;
-    if (a == null && b == null) return true;
-    if (a == null || b == null) return false;
-    if (a < -90 || a > 90) return false;
-    if (b < -180 || b > 180) return false;
-    return true;
-  }, { message: "hubLat+hubLng birlikte olmalı ve range valid olmalı" });
+  .refine(
+    (v) => {
+      const a = v.hubLat;
+      const b = v.hubLng;
+      if (a == null && b == null) return true;
+      if (a == null || b == null) return false;
+      if (a < -90 || a > 90) return false;
+      if (b < -180 || b > 180) return false;
+      return true;
+    },
+    { message: "hubLat+hubLng birlikte olmalı ve range valid olmalı" }
+  );
 
 export function roomsRouter() {
   const r = express.Router();
@@ -77,12 +90,16 @@ export function roomsRouter() {
   // SUPER_ADMIN -> tüm roomlar
   // COMPANY -> tüm aktif roomlar (directory)
   // ROOM -> sadece kendi room'u
+  //
+  // M22 query:
+  //  - ?q=term (name contains, insensitive)
+  //  - ?hasHub=1  (hubLat+hubLng not null)
+  //  - ?take=200
   r.get("/", requireAnyRole("SUPER_ADMIN", "ROOM", "COMPANY"), async (req, res) => {
     const role = roleOf(req);
     const take = Math.min(500, Math.max(1, Number(req.query.take || 200)));
 
-    const baseWhere = { status: { not: "DELETED" } };
-
+    // ROOM: only own room (ignore filters)
     if (role === "ROOM") {
       const rid = roomIdOf(req);
       if (!rid) return res.json({ items: [] });
@@ -91,10 +108,31 @@ export function roomsRouter() {
       return res.json({ items: [item] });
     }
 
+    const q = String(req.query.q || "").trim();
+    const hasHub = truthy(req.query.hasHub);
+
+    const where = {
+      status: { not: "DELETED" },
+      ...(q
+        ? {
+            name: {
+              contains: q,
+              mode: "insensitive",
+            },
+          }
+        : {}),
+      ...(hasHub
+        ? {
+            hubLat: { not: null },
+            hubLng: { not: null },
+          }
+        : {}),
+    };
+
     const items = await prisma.room.findMany({
-      where: baseWhere,
+      where,
       take,
-      orderBy: { id: "asc" },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
     });
 
     return res.json({ items });

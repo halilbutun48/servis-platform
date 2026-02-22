@@ -68,6 +68,8 @@ function StatusPill({ status }) {
 export default function AgreementsPanel() {
   const { token } = useSession();
 
+  const LS_LAST_ROOM = "company:lastRoomId";
+
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -80,8 +82,18 @@ export default function AgreementsPanel() {
   const [roomErr, setRoomErr] = useState("");
   const [roomsSupported, setRoomsSupported] = useState(true);
 
+  // M22: directory search
+  const [roomQ, setRoomQ] = useState("");
+  const [onlyHubRooms, setOnlyHubRooms] = useState(false);
+
   // create form
-  const [roomId, setRoomId] = useState("");
+  const [roomId, setRoomId] = useState(() => {
+    try {
+      return localStorage.getItem(LS_LAST_ROOM) || "";
+    } catch {
+      return "";
+    }
+  });
   const [startDate, setStartDate] = useState(todayYmd());
   const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 30));
 
@@ -110,7 +122,12 @@ export default function AgreementsPanel() {
     setRoomsSupported(true);
 
     try {
-      const resp = await api("/api/rooms", { token });
+      const qs = new URLSearchParams();
+      qs.set("take", "200");
+      if (String(roomQ || "").trim()) qs.set("q", String(roomQ || "").trim());
+      if (onlyHubRooms) qs.set("hasHub", "1");
+
+      const resp = await api(`/api/rooms?${qs.toString()}`, { token });
       const list = resp?.items ?? [];
       setRooms(Array.isArray(list) ? list : []);
     } catch (e) {
@@ -140,9 +157,15 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     if (!token) return;
-    loadRooms();
+
+    // debounce: typing q
+    const t = window.setTimeout(() => {
+      loadRooms();
+    }, 250);
+
+    return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, roomQ, onlyHubRooms]);
 
   // ✅ rooms geldiyse roomId auto seç
   useEffect(() => {
@@ -157,6 +180,34 @@ export default function AgreementsPanel() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
+
+  // persist last room
+  useEffect(() => {
+    try {
+      if (roomId) localStorage.setItem(LS_LAST_ROOM, String(roomId));
+    } catch {}
+  }, [roomId]);
+
+  const selectedRoom = useMemo(() => {
+    const rid = Number(roomId || 0);
+    if (!rid) return null;
+    return rooms.find((r) => Number(r.id) === rid) || null;
+  }, [rooms, roomId]);
+
+  // If selected room has hub and hub inputs are empty, auto-fill (UX)
+  useEffect(() => {
+    if (!selectedRoom) return;
+    const rh = selectedRoom?.hubLat != null && selectedRoom?.hubLng != null;
+    if (!rh) return;
+
+    const a = String(hubLat || "").trim();
+    const b = String(hubLng || "").trim();
+    if (a === "" && b === "") {
+      setHubLat(String(selectedRoom.hubLat));
+      setHubLng(String(selectedRoom.hubLng));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoom?.id]);
 
   useEffect(() => {
     load();
@@ -174,9 +225,17 @@ export default function AgreementsPanel() {
     if (!weekMask) return setErr("weekMask required (1..127)");
     if (startMin == null || endMin == null) return setErr("Saat formatı HH:MM olmalı.");
 
-    // ✅ M19: hub validation (optional)
+    // ✅ M22: room hub required OR manual hub required
+    const roomHasHub = !!(selectedRoom && selectedRoom.hubLat != null && selectedRoom.hubLng != null);
+
+    // ✅ M19: hub validation (optional/manual)
     const hasHubLat = String(hubLat || "").trim() !== "";
     const hasHubLng = String(hubLng || "").trim() !== "";
+
+    if (!roomHasHub && !hasHubLat && !hasHubLng) {
+      return setErr("Seçilen room’un hub bilgisi yok. Agreement için hub lat/lng gir (veya room’da hub tanımla).");
+    }
+
     if (hasHubLat !== hasHubLng) return setErr("Hub için lat/lng birlikte girilmeli.");
     if (hasHubLat) {
       const a = Number(hubLat);
@@ -271,14 +330,56 @@ export default function AgreementsPanel() {
           <label className="muted">
             Room
             {roomsSupported ? (
-              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={{ width: "100%" }}>
-                <option value="">Seç</option>
-                {rooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name ?? `Room #${r.id}`}
-                  </option>
-                ))}
-              </select>
+              <>
+                <div style={{ display: "flex", gap: 8, marginTop: 6, marginBottom: 6, flexWrap: "wrap" }}>
+                  <input
+                    value={roomQ}
+                    onChange={(e) => setRoomQ(e.target.value)}
+                    placeholder="Room ara (name contains)"
+                    style={{ flex: 1, minWidth: 220 }}
+                    disabled={busy}
+                  />
+                  <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input
+                      type="checkbox"
+                      checked={onlyHubRooms}
+                      onChange={(e) => setOnlyHubRooms(e.target.checked)}
+                      disabled={busy}
+                    />
+                    Sadece hub’lı
+                  </label>
+                </div>
+
+                <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={{ width: "100%" }}>
+                  <option value="">Seç</option>
+                  {rooms.map((r) => {
+                    const hasHub = r?.hubLat != null && r?.hubLng != null;
+                    const name = r.name ?? `Room #${r.id}`;
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {name}{hasHub ? "" : " • (Hub yok)"}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                  {selectedRoom ? (
+                    selectedRoom?.hubLat != null && selectedRoom?.hubLng != null ? (
+                      <>
+                        Seçili room: <b>{selectedRoom.name ?? `Room #${selectedRoom.id}`}</b> • hub:
+                        <b> {Number(selectedRoom.hubLat).toFixed(6)}, {Number(selectedRoom.hubLng).toFixed(6)}</b>
+                      </>
+                    ) : (
+                      <>
+                        Seçili room: <b>{selectedRoom.name ?? `Room #${selectedRoom.id}`}</b> • <b style={{ color: "#b85" }}>Hub yok</b>
+                      </>
+                    )
+                  ) : (
+                    <span>Seçili room: -</span>
+                  )}
+                </div>
+              </>
             ) : (
               <div
                 className="muted"
