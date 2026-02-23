@@ -12,13 +12,25 @@ function todayYmd() {
   return `${y}-${m}-${dd}`;
 }
 
+function todayWeekBit() {
+  // JS: 0=Sun..6=Sat -> our bits: Mon=1..Sun=64
+  const d = new Date();
+  const wd = d.getDay();
+  if (wd === 0) return 64; // Sun
+  return 1 << (wd - 1); // Mon..Sat
+}
+
 function Card({ title, desc, right, onClick }) {
   return (
     <div className="card" style={{ cursor: "pointer" }} onClick={onClick}>
       <div className="row" style={{ justifyContent: "space-between", gap: 12 }}>
         <div>
           <div style={{ fontWeight: 900, fontSize: 16 }}>{title}</div>
-          {desc ? <div className="muted" style={{ marginTop: 4 }}>{desc}</div> : null}
+          {desc ? (
+            <div className="muted" style={{ marginTop: 4 }}>
+              {desc}
+            </div>
+          ) : null}
         </div>
         {right != null ? <div style={{ fontWeight: 900, fontSize: 18 }}>{right}</div> : null}
       </div>
@@ -36,8 +48,10 @@ export default function WorkflowPanel() {
   const [agreements, setAgreements] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [geoNeedsReview, setGeoNeedsReview] = useState(0);
+  const [openOffersCount, setOpenOffersCount] = useState(0);
 
   const today = useMemo(() => todayYmd(), []);
+  const todayBit = useMemo(() => todayWeekBit(), []);
 
   async function loadRooms() {
     if (!token) return;
@@ -78,6 +92,15 @@ export default function WorkflowPanel() {
     } catch {
       setGeoNeedsReview(0);
     }
+
+    // ✅ M28: open offers summary (OPEN/COUNTERED)
+    try {
+      const oo = await api("/api/offers/company?status=OPEN,COUNTERED&take=800", { token });
+      const items = Array.isArray(oo?.items) ? oo.items : [];
+      setOpenOffersCount(items.length);
+    } catch {
+      setOpenOffersCount(0);
+    }
   }
 
   useEffect(() => {
@@ -88,21 +111,27 @@ export default function WorkflowPanel() {
   }, [token]);
 
   const stats = useMemo(() => {
-    const by = { REQUESTED: 0, APPROVED: 0, ACTIVE: 0, DONE: 0, CANCELLED: 0, REJECTED: 0 };
-    for (const a of agreements || []) {
-      const k = String(a.status || "").toUpperCase();
-      if (by[k] != null) by[k]++;
-    }
+    const todayAgreements = (agreements || []).filter((a) => {
+      const st = String(a?.status || "").toUpperCase();
+      if (!["REQUESTED", "APPROVED", "ACTIVE"].includes(st)) return false;
+      const sd = String(a?.startDate || "").slice(0, 10);
+      const ed = String(a?.endDate || "").slice(0, 10);
+      if (!sd || !ed) return false;
+      if (sd > today || ed < today) return false;
+      const wm = Number(a?.weekMask || 0);
+      if (!wm) return false;
+      return (wm & todayBit) !== 0;
+    }).length;
 
     const todayShiftCount = (shifts || []).filter((s) => String(s?.startAt || "").slice(0, 10) === today).length;
     const marketShiftCount = (shifts || []).filter((s) => !s?.roomId).length;
 
     return {
-      agreementsActive: by.ACTIVE + by.APPROVED + by.REQUESTED,
+      todayAgreements,
       todayShiftCount,
       marketShiftCount,
     };
-  }, [agreements, shifts, today]);
+  }, [agreements, shifts, today, todayBit]);
 
   return (
     <div className="wrap">
@@ -113,11 +142,28 @@ export default function WorkflowPanel() {
         </div>
       </div>
 
-      {err ? <div className="card err" style={{ marginTop: 10 }}>{err}</div> : null}
+      {geoNeedsReview > 0 ? (
+        <div className="card" style={{ border: "1px solid #f2c", marginTop: 12 }}>
+          <div style={{ fontWeight: 900 }}>⚠ Geo Review gerekli</div>
+          <div className="muted" style={{ marginTop: 4 }}>
+            {geoNeedsReview} personel konumu <b>NEEDS_REVIEW</b>. Planlama doğruluğu için önce düzeltmen önerilir.
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <button type="button" onClick={() => navigate("/company/georeview")}>Geo Review’e git</button>
+          </div>
+        </div>
+      ) : null}
+
+      {err ? (
+        <div className="card err" style={{ marginTop: 10 }}>
+          {err}
+        </div>
+      ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginTop: 12 }}>
-        <Card title="Agreements" desc="Planlama / rezervasyon (primary)" right={stats.agreementsActive} onClick={() => navigate("/company/agreements")} />
-        <Card title="Market" desc="Room seçmeden shift aç → çoklu room teklif" right={stats.marketShiftCount} onClick={() => navigate("/company/shifts")} />
+        <Card title="Bugünkü Agreements" desc="Bugün planlanan vardiyalar" right={stats.todayAgreements} onClick={() => navigate("/company/agreements")} />
+        <Card title="Açık Teklifler" desc="OPEN + COUNTERED" right={openOffersCount} onClick={() => navigate("/company/shifts")} />
+        <Card title="Market Shifts" desc="Room seçmeden talep aç" right={stats.marketShiftCount} onClick={() => navigate("/company/shifts")} />
         <Card title="Geo Review" desc="Adres/konum sorunlarını düzelt" right={geoNeedsReview} onClick={() => navigate("/company/georeview")} />
         <Card title="Bugünkü Shifts" desc="Operasyon (start/reached/complete)" right={stats.todayShiftCount} onClick={() => navigate("/company/shifts")} />
       </div>
@@ -150,7 +196,7 @@ export default function WorkflowPanel() {
         </div>
 
         <div className="muted" style={{ marginTop: 10 }}>
-          İpucu: Geo Review sayısı &gt; 0 ise önce düzelt, sonra planla.
+          İpucu: Agreement oluşturduktan sonra istersen <b>Market</b> ile birden fazla room’dan teklif toplayabilirsin.
         </div>
       </div>
 

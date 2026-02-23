@@ -127,6 +127,17 @@ export default function RoomShiftsPanel() {
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
 
+  // M28: offers inbox -> shifts focus (minimize clicks)
+  useEffect(() => {
+    const raw = localStorage.getItem("room:focusShiftId");
+    if (!raw) return;
+    localStorage.removeItem("room:focusShiftId");
+    const sid = String(raw || "").trim();
+    if (!sid) return;
+    setListStatus("ALL");
+    setListQ(sid);
+  }, []);
+
   // Bekleyen satır: seçili araç + seçili driver (approve için)
   const [assignSel, setAssignSel] = useState({}); // { [shiftId]: vehicleIdStr }
   const [driverSel, setDriverSel] = useState({}); // { [shiftId]: driverIdStr }

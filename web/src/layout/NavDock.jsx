@@ -5,12 +5,12 @@ function Item({ label, path, active, badge }) {
   return (
     <button
       type="button"
-      className={active ? "nav-item active" : "nav-item"}
+      className={active ? "navItem active" : "navItem"}
       onClick={() => navigate(path)}
       title={label}
     >
-      <span>{label}</span>
-      {badge ? <span className="badge">{badge}</span> : null}
+      <span className="navLabel">{label}</span>
+      {badge ? <span className="navBadge">{badge}</span> : null}
     </button>
   );
 }
@@ -27,7 +27,7 @@ export default function NavDock({ role, path }) {
     items.push({ label: "Offers", path: "/room/offers" });
     items.push({ label: "Notifications", path: "/shared/notifications" });
   } else if (role === "COMPANY") {
-    // ✅ M26: workflow-first (minimum confusion)
+    // ✅ M26+: workflow-first (minimum confusion)
     items.push({ label: "Home", path: "/company" });
     items.push({ label: "Agreements", path: "/company/agreements" });
     items.push({ label: "Shifts", path: "/company/shifts" });
@@ -48,12 +48,15 @@ export default function NavDock({ role, path }) {
     items.push({ label: "Rooms", path: "/superadmin/rooms" });
   }
 
+  // active match: exact or startsWith (query params)
+  const isActive = (p) => path === p || String(path || "").startsWith(p + "?");
+
   return (
-    <div className="nav">
-      <div className="nav-role">{role}</div>
-      <div className="nav-items">
+    <div className="navDock">
+      <div className="navDockTitle">{role}</div>
+      <div className="navDockItems">
         {items.map((it) => (
-          <Item key={it.path} label={it.label} path={it.path} active={path === it.path} badge={it.badge} />
+          <Item key={it.path} label={it.label} path={it.path} active={isActive(it.path)} badge={it.badge} />
         ))}
       </div>
     </div>

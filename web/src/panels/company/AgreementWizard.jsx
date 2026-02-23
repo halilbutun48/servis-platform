@@ -41,6 +41,13 @@ function parseHHMM(s) {
   return hh * 60 + mm;
 }
 
+function ymdMinToIso(ymd, min) {
+  const m = ((Number(min) % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(m / 60)).padStart(2, "0");
+  const mm = String(m % 60).padStart(2, "0");
+  return new Date(ymd + "T" + hh + ":" + mm + ":00+03:00").toISOString();
+}
+
 function trimOrNull(s) {
   const t = String(s ?? "").trim();
   return t ? t : null;
@@ -103,6 +110,70 @@ const PACKS = [
 
 function Modal({ open, onClose, children }) {
   if (!open) return null;
+  async function createMarketShiftAndOpenOffer() {
+    setErr("");
+    if (!token) return setErr("Token yok.");
+    if (!isYmd(startDate)) return setErr("Baslangic tarihi gecersiz.");
+
+    // create 1 market shift from first pack item
+    let it = (pack.items || [])[0];
+    if (pack.key === "CUSTOM") {
+      const sMin = parseHHMM(startHHMM);
+      const eMin = parseHHMM(endHHMM);
+      if (sMin == null || eMin == null) return setErr("Saat formati HH:MM olmali.");
+      it = { startMin: sMin, endMin: eMin, direction, pattern };
+    }
+    if (!it) return setErr("Paket secimi gecersiz.");
+
+    const sMin = Number(it.startMin);
+    const eMin = Number(it.endMin);
+    if (!Number.isFinite(sMin) || !Number.isFinite(eMin)) return setErr("Saat verisi hatali.");
+
+    const startAt = ymdMinToIso(startDate, sMin);
+    const endDateForShift = eMin < sMin ? addDaysISO(startDate, 1) : startDate;
+    const endAt = ymdMinToIso(endDateForShift, eMin);
+
+    const hasHubLat = String(hubLat || "").trim() !== "";
+    const hasHubLng = String(hubLng || "").trim() !== "";
+    if (hasHubLat !== hasHubLng) return setErr("Hub icin lat/lng birlikte girilmeli.");
+
+    let hubLatN = null;
+    let hubLngN = null;
+    if (hasHubLat) {
+      const a = Number(hubLat);
+      const b = Number(hubLng);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return setErr("Hub lat/lng sayi olmali.");
+      hubLatN = a;
+      hubLngN = b;
+    }
+
+    setBusy(true);
+    try {
+      const body = {
+        startAt,
+        endAt,
+        // no roomId => market
+        hubLat: hubLatN,
+        hubLng: hubLngN,
+        direction: it.direction || "INBOUND",
+        pattern: it.pattern || "ONE_WAY",
+      };
+
+      const r = await api("/api/shifts", { token, method: "POST", body });
+      const sid = Number(r?.id || r?.shift?.id || 0);
+      if (!sid) throw new Error("Shift olusturulamadi");
+
+      // Company ShiftsPanel will auto-open offer modal
+      localStorage.setItem("company:autoOfferShiftId", String(sid));
+      navigate("/company/shifts");
+      setOpen(false);
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div
       style={{
@@ -387,6 +458,7 @@ export default function AgreementWizard({
             <div style={{ fontWeight: 800 }}>{okMsg}</div>
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
               <button type="button" disabled={busy} onClick={() => navigate("/company/agreements")}>Agreements’e git</button>
+              <button type="button" disabled={busy} onClick={createMarketShiftAndOpenOffer}>Room'lara Teklif Topla (Market)</button>
               <button type="button" disabled={busy} onClick={() => setOpen(false)}>Kapat</button>
             </div>
           </div>
