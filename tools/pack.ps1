@@ -1,8 +1,8 @@
 # tools/pack.ps1
 param(
   [Parameter(Mandatory=$false)]
-  [ValidateRange(0,25)]
-  [int]$To = 15,
+  [ValidateRange(0,26)]
+  [int]$To = 21,
 
   [Parameter(Mandatory=$false)]
   [string]$ComposeDir = "infra",

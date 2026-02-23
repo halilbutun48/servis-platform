@@ -27,10 +27,51 @@ function isYmd(s) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(s || "").trim());
 }
 
+const PLAN_TEMPLATES = [
+  {
+    key: "MORNING",
+    label: "Sabah (07:00→09:00) • Hafta içi • 30 gün",
+    daysMask: 62,
+    startMin: 7 * 60,
+    endMin: 9 * 60,
+    direction: "INBOUND",
+    pattern: "ONE_WAY",
+    durationDays: 30,
+  },
+  {
+    key: "EVENING",
+    label: "Akşam (17:00→19:00) • Hafta içi • 30 gün",
+    daysMask: 62,
+    startMin: 17 * 60,
+    endMin: 19 * 60,
+    direction: "OUTBOUND",
+    pattern: "ONE_WAY",
+    durationDays: 30,
+  },
+  {
+    key: "NIGHT",
+    label: "Gece (23:00→01:00) • Hafta içi • 30 gün",
+    daysMask: 62,
+    startMin: 23 * 60,
+    endMin: 1 * 60,
+    direction: "INBOUND",
+    pattern: "ONE_WAY",
+    durationDays: 30,
+  },
+  {
+    key: "CUSTOM",
+    label: "Özel (elle ayarla)",
+    daysMask: 62,
+    startMin: 8 * 60,
+    endMin: 10 * 60,
+    direction: "INBOUND",
+    pattern: "ONE_WAY",
+    durationDays: 30,
+  },
+];
+
 function StatusPill({ status }) {
   const s = String(status || "").toUpperCase();
-
-  // Renk vermeden da anlaşılır olsun diye kısa ikon + border ile gidiyoruz
   const label =
     s === "REQUESTED"
       ? "⏳ REQUESTED"
@@ -68,8 +109,6 @@ function StatusPill({ status }) {
 export default function AgreementsPanel() {
   const { token } = useSession();
 
-  const LS_LAST_ROOM = "company:lastRoomId";
-
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -79,33 +118,27 @@ export default function AgreementsPanel() {
 
   // rooms dropdown
   const [rooms, setRooms] = useState([]);
-  const [roomErr, setRoomErr] = useState("");
   const [roomsSupported, setRoomsSupported] = useState(true);
-
-  // M22: directory search
-  const [roomQ, setRoomQ] = useState("");
-  const [onlyHubRooms, setOnlyHubRooms] = useState(false);
+  const [roomErr, setRoomErr] = useState("");
 
   // create form
-  const [roomId, setRoomId] = useState(() => {
-    try {
-      return localStorage.getItem(LS_LAST_ROOM) || "";
-    } catch {
-      return "";
-    }
-  });
+  const [templateKey, setTemplateKey] = useState("MORNING");
+  const [roomId, setRoomId] = useState("");
+
   const [startDate, setStartDate] = useState(todayYmd());
   const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 30));
 
-  const [daysSel, setDaysSel] = useState(() => selectedFromMask(127));
+  const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
 
-  const [startHHMM, setStartHHMM] = useState("08:00");
-  const [endHHMM, setEndHHMM] = useState("10:00");
+  const [startHHMM, setStartHHMM] = useState("07:00");
+  const [endHHMM, setEndHHMM] = useState("09:00");
 
   // ✅ M19: routing meta
   const [direction, setDirection] = useState("INBOUND");
   const [pattern, setPattern] = useState("ONE_WAY");
+
+  const [useRoomHub, setUseRoomHub] = useState(true);
   const [hubLat, setHubLat] = useState("");
   const [hubLng, setHubLng] = useState("");
 
@@ -116,18 +149,54 @@ export default function AgreementsPanel() {
     [startMin, endMin]
   );
 
+  const roomById = useMemo(() => {
+    const m = new Map();
+    (rooms || []).forEach((r) => m.set(Number(r.id), r));
+    return m;
+  }, [rooms]);
+
+  function applyTemplate(key) {
+    const t = PLAN_TEMPLATES.find((x) => x.key === key) || PLAN_TEMPLATES[0];
+    setDaysSel(selectedFromMask(t.daysMask));
+    setStartHHMM(toHHMM(t.startMin));
+    setEndHHMM(toHHMM(t.endMin));
+    setDirection(t.direction);
+    setPattern(t.pattern);
+
+    if (isYmd(startDate)) {
+      setEndDate(addDaysISO(startDate, t.durationDays));
+    }
+  }
+
+  // template apply when selection changes
+  useEffect(() => {
+    applyTemplate(templateKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateKey]);
+
+  // room selection => hub autofill (optional)
+  useEffect(() => {
+    if (!useRoomHub) return;
+    const rid = Number(roomId || 0);
+    const r = rid ? roomById.get(rid) : null;
+    if (!r) return;
+
+    const hasHub = r?.hubLat != null && r?.hubLng != null;
+    if (!hasHub) return;
+
+    if (String(hubLat).trim() === "" && String(hubLng).trim() === "") {
+      setHubLat(String(r.hubLat));
+      setHubLng(String(r.hubLng));
+    }
+  }, [roomId, useRoomHub, roomById, hubLat, hubLng]);
+
   async function loadRooms() {
     if (!token) return;
     setRoomErr("");
     setRoomsSupported(true);
 
     try {
-      const qs = new URLSearchParams();
-      qs.set("take", "200");
-      if (String(roomQ || "").trim()) qs.set("q", String(roomQ || "").trim());
-      if (onlyHubRooms) qs.set("hasHub", "1");
-
-      const resp = await api(`/api/rooms?${qs.toString()}`, { token });
+      const resp = await api("/api/rooms?take=200", { token });
       const list = resp?.items ?? [];
       setRooms(Array.isArray(list) ? list : []);
     } catch (e) {
@@ -157,15 +226,9 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     if (!token) return;
-
-    // debounce: typing q
-    const t = window.setTimeout(() => {
-      loadRooms();
-    }, 250);
-
-    return () => window.clearTimeout(t);
+    loadRooms();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, roomQ, onlyHubRooms]);
+  }, [token]);
 
   // ✅ rooms geldiyse roomId auto seç
   useEffect(() => {
@@ -181,67 +244,39 @@ export default function AgreementsPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms]);
 
-  // persist last room
   useEffect(() => {
-    try {
-      if (roomId) localStorage.setItem(LS_LAST_ROOM, String(roomId));
-    } catch {}
-  }, [roomId]);
-
-  const selectedRoom = useMemo(() => {
-    const rid = Number(roomId || 0);
-    if (!rid) return null;
-    return rooms.find((r) => Number(r.id) === rid) || null;
-  }, [rooms, roomId]);
-
-  // If selected room has hub and hub inputs are empty, auto-fill (UX)
-  useEffect(() => {
-    if (!selectedRoom) return;
-    const rh = selectedRoom?.hubLat != null && selectedRoom?.hubLng != null;
-    if (!rh) return;
-
-    const a = String(hubLat || "").trim();
-    const b = String(hubLng || "").trim();
-    if (a === "" && b === "") {
-      setHubLat(String(selectedRoom.hubLat));
-      setHubLng(String(selectedRoom.hubLng));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRoom?.id]);
-
-  useEffect(() => {
+    if (!token) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, take, statusFilter]);
 
   async function createAgreement() {
     setErr("");
-    const rid = Number(roomId);
 
     if (!roomsSupported) return setErr("Rooms endpoint missing — agreement oluşturmak için /api/rooms gerekli.");
+
+    const rid = Number(roomId || 0);
     if (!rid) return setErr("Room seçmelisin.");
-    if (!startDate || !endDate) return setErr("startDate/endDate required");
     if (!isYmd(startDate) || !isYmd(endDate)) return setErr("Tarih formatı YYYY-MM-DD olmalı.");
-    if (!weekMask) return setErr("weekMask required (1..127)");
-    if (startMin == null || endMin == null) return setErr("Saat formatı HH:MM olmalı.");
+    if (!weekMask) return setErr("Gün seçmelisin.");
 
-    // ✅ M22: room hub required OR manual hub required
-    const roomHasHub = !!(selectedRoom && selectedRoom.hubLat != null && selectedRoom.hubLng != null);
+    const sMin = startMin;
+    const eMin = endMin;
+    if (sMin == null || eMin == null) return setErr("Saat formatı HH:MM olmalı.");
 
-    // ✅ M19: hub validation (optional/manual)
+    // hub optional, but must be pair
     const hasHubLat = String(hubLat || "").trim() !== "";
     const hasHubLng = String(hubLng || "").trim() !== "";
-
-    if (!roomHasHub && !hasHubLat && !hasHubLng) {
-      return setErr("Seçilen room’un hub bilgisi yok. Agreement için hub lat/lng gir (veya room’da hub tanımla).");
-    }
-
     if (hasHubLat !== hasHubLng) return setErr("Hub için lat/lng birlikte girilmeli.");
+
+    let hubLatN = null;
+    let hubLngN = null;
     if (hasHubLat) {
       const a = Number(hubLat);
       const b = Number(hubLng);
       if (!Number.isFinite(a) || !Number.isFinite(b)) return setErr("Hub lat/lng sayı olmalı.");
-      if (a < -90 || a > 90 || b < -180 || b > 180) return setErr("Hub lat/lng range invalid.");
+      hubLatN = a;
+      hubLngN = b;
     }
 
     setBusy(true);
@@ -254,25 +289,27 @@ export default function AgreementsPanel() {
           startDate,
           endDate,
           weekMask,
-          startMin,
-          endMin,
+          startMin: sMin,
+          endMin: eMin,
           direction,
           pattern,
-          hubLat: String(hubLat || "").trim() === "" ? null : Number(hubLat),
-          hubLng: String(hubLng || "").trim() === "" ? null : Number(hubLng),
+          hubLat: hubLatN,
+          hubLng: hubLngN,
         },
       });
+
+      // refresh
       await load();
     } catch (e) {
-      setErr(e?.message || "Agreement create failed");
+      setErr(e?.message || "Create failed");
     } finally {
       setBusy(false);
     }
   }
 
   async function cancelAgreement(id) {
-    setErr("");
     setBusy(true);
+    setErr("");
     try {
       await api(`/api/agreements/${id}/cancel`, { token, method: "PUT", body: {} });
       await load();
@@ -283,18 +320,11 @@ export default function AgreementsPanel() {
     }
   }
 
-  async function extendAgreement(id, newEndDate) {
-    setErr("");
-    if (!newEndDate) return setErr("endDate required");
-    if (!isYmd(newEndDate)) return setErr("endDate formatı YYYY-MM-DD olmalı.");
-
+  async function extendAgreement(id, nextEndDate) {
     setBusy(true);
+    setErr("");
     try {
-      await api(`/api/agreements/${id}/extend`, {
-        token,
-        method: "PUT",
-        body: { endDate: newEndDate },
-      });
+      await api(`/api/agreements/${id}/extend`, { token, method: "PUT", body: { endDate: nextEndDate } });
       await load();
     } catch (e) {
       setErr(e?.message || "Extend failed");
@@ -312,6 +342,13 @@ export default function AgreementsPanel() {
     extendAgreement(a.id, ymd);
   }
 
+  const rows = useMemo(() => {
+    return (items || []).map((a) => {
+      const r = a?.roomId ? roomById.get(Number(a.roomId)) : null;
+      return { a, room: r };
+    });
+  }, [items, roomById]);
+
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
       <h2 style={{ margin: 0 }}>Agreements (Company)</h2>
@@ -324,71 +361,54 @@ export default function AgreementsPanel() {
 
       {/* Create */}
       <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 12 }}>
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>Yeni Agreement</div>
+        <div style={{ fontWeight: 800, marginBottom: 8 }}>Yeni Agreement</div>
+        <div className="muted" style={{ marginBottom: 10 }}>
+          Hızlı akış: <b>Room</b> seç → <b>Plan Şablonu</b> seç → Kaydet.
+        </div>
+
+        {/* template row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+          <label className="muted">
+            Plan Şablonu
+            <select value={templateKey} onChange={(e) => setTemplateKey(e.target.value)} style={{ width: "100%" }}>
+              {PLAN_TEMPLATES.map((t) => (
+                <option key={t.key} value={t.key}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="muted">
+            Durum filtresi (liste)
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: "100%" }}>
+              <option value="">(tümü)</option>
+              <option value="REQUESTED">REQUESTED</option>
+              <option value="APPROVED">APPROVED</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="DONE">DONE</option>
+              <option value="CANCELLED">CANCELLED</option>
+              <option value="REJECTED">REJECTED</option>
+            </select>
+          </label>
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <label className="muted">
             Room
             {roomsSupported ? (
-              <>
-                <div style={{ display: "flex", gap: 8, marginTop: 6, marginBottom: 6, flexWrap: "wrap" }}>
-                  <input
-                    value={roomQ}
-                    onChange={(e) => setRoomQ(e.target.value)}
-                    placeholder="Room ara (name contains)"
-                    style={{ flex: 1, minWidth: 220 }}
-                    disabled={busy}
-                  />
-                  <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input
-                      type="checkbox"
-                      checked={onlyHubRooms}
-                      onChange={(e) => setOnlyHubRooms(e.target.checked)}
-                      disabled={busy}
-                    />
-                    Sadece hub’lı
-                  </label>
-                </div>
-
-                <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={{ width: "100%" }}>
-                  <option value="">Seç</option>
-                  {rooms.map((r) => {
-                    const hasHub = r?.hubLat != null && r?.hubLng != null;
-                    const name = r.name ?? `Room #${r.id}`;
-                    return (
-                      <option key={r.id} value={r.id}>
-                        {name}{hasHub ? "" : " • (Hub yok)"}
-                      </option>
-                    );
-                  })}
-                </select>
-
-                <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                  {selectedRoom ? (
-                    selectedRoom?.hubLat != null && selectedRoom?.hubLng != null ? (
-                      <>
-                        Seçili room: <b>{selectedRoom.name ?? `Room #${selectedRoom.id}`}</b> • hub:
-                        <b> {Number(selectedRoom.hubLat).toFixed(6)}, {Number(selectedRoom.hubLng).toFixed(6)}</b>
-                      </>
-                    ) : (
-                      <>
-                        Seçili room: <b>{selectedRoom.name ?? `Room #${selectedRoom.id}`}</b> • <b style={{ color: "#b85" }}>Hub yok</b>
-                      </>
-                    )
-                  ) : (
-                    <span>Seçili room: -</span>
-                  )}
-                </div>
-              </>
+              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={{ width: "100%" }}>
+                <option value="">Seç</option>
+                {rooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name ?? `Room #${r.id}`}
+                  </option>
+                ))}
+              </select>
             ) : (
               <div
                 className="muted"
-                style={{
-                  marginTop: 6,
-                  padding: "8px 10px",
-                  border: "1px dashed #ddd",
-                  borderRadius: 10,
-                }}
+                style={{ marginTop: 6, padding: "8px 10px", border: "1px dashed #ddd", borderRadius: 10 }}
                 title={roomErr || "Rooms endpoint missing"}
               >
                 (rooms endpoint missing)
@@ -411,7 +431,9 @@ export default function AgreementsPanel() {
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <div className="muted" style={{ marginBottom: 6 }}>Günler</div>
+          <div className="muted" style={{ marginBottom: 6 }}>
+            Günler
+          </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             {DAY_PRESETS.map((p) => (
@@ -440,7 +462,9 @@ export default function AgreementsPanel() {
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <div className="muted" style={{ marginBottom: 6 }}>Saat penceresi</div>
+          <div className="muted" style={{ marginBottom: 6 }}>
+            Saat penceresi
+          </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             {TIME_PRESETS.map((p) => (
@@ -488,6 +512,28 @@ export default function AgreementsPanel() {
             </label>
           </div>
 
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420, marginTop: 6 }}>
+            <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="checkbox" checked={useRoomHub} onChange={(e) => setUseRoomHub(e.target.checked)} />
+              Room hub’ını otomatik kullan
+            </label>
+
+            <button
+              type="button"
+              disabled={busy || !roomId}
+              onClick={() => {
+                const r = roomById.get(Number(roomId));
+                if (r?.hubLat != null && r?.hubLng != null) {
+                  setHubLat(String(r.hubLat));
+                  setHubLng(String(r.hubLng));
+                }
+              }}
+              title="Room hub değerlerini hubLat/hubLng alanına kopyalar"
+            >
+              Hub’ı Room’dan al
+            </button>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420 }}>
             <label className="muted">
               Hub Lat (opsiyonel)
@@ -498,7 +544,6 @@ export default function AgreementsPanel() {
               <input type="number" step="0.000001" value={hubLng} onChange={(e) => setHubLng(e.target.value)} />
             </label>
           </div>
-
 
           {midnightCross ? (
             <div className="muted" style={{ marginTop: 6, color: "#8a5" }}>
@@ -520,118 +565,120 @@ export default function AgreementsPanel() {
           </div>
         </div>
 
-        <div style={{ marginTop: 12 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
           <button type="button" disabled={busy || !roomsSupported} onClick={createAgreement}>
-            {busy ? "Kaydediliyor..." : "Agreement Oluştur"}
+            {busy ? "..." : "Agreement Oluştur"}
+          </button>
+
+          <button type="button" disabled={busy} onClick={load}>
+            Yenile
+          </button>
+
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setTemplateKey("MORNING");
+              setRoomId("");
+              setStartDate(todayYmd());
+              setEndDate(addDaysISO(todayYmd(), 30));
+              setDaysSel(selectedFromMask(62));
+              setStartHHMM("07:00");
+              setEndHHMM("09:00");
+              setDirection("INBOUND");
+              setPattern("ONE_WAY");
+              setHubLat("");
+              setHubLng("");
+            }}
+          >
+            Formu Sıfırla
           </button>
         </div>
       </div>
 
       {/* List */}
       <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ fontWeight: 700 }}>Agreements</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">(status: all)</option>
-              <option value="REQUESTED">REQUESTED</option>
-              <option value="APPROVED">APPROVED</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="DONE">DONE</option>
-              <option value="CANCELLED">CANCELLED</option>
-              <option value="REJECTED">REJECTED</option>
-            </select>
-            <select value={take} onChange={(e) => setTake(Number(e.target.value))}>
-              <option value={20}>take 20</option>
-              <option value={50}>take 50</option>
-              <option value={100}>take 100</option>
-            </select>
-            <button type="button" disabled={busy} onClick={load}>
-              Yenile
-            </button>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <div style={{ fontWeight: 800 }}>Liste</div>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Take
+              <select value={take} onChange={(e) => setTake(Number(e.target.value))}>
+                {[25, 50, 100, 200].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
-        <div style={{ marginTop: 10, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div style={{ overflowX: "auto", marginTop: 10 }}>
+          <table>
             <thead>
-              <tr className="muted">
-                <th align="left">ID</th>
-                <th align="left">Status</th>
-                <th align="left">Date</th>
-                <th align="left">Time</th>
-                <th align="left">Günler</th>
-                <th align="left">Vehicle/Driver</th>
-                <th align="left">Aksiyon</th>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Room</th>
+                <th>Date</th>
+                <th>Days</th>
+                <th>Time</th>
+                <th>Dir/Pat</th>
+                <th>Vehicle/Driver</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((a) => (
-                <tr key={a.id} style={{ borderTop: "1px solid #eee" }}>
-                  <td>{a.id}</td>
-                  <td className="muted">
+              {rows.map(({ a, room }) => (
+                <tr key={a.id}>
+                  <td className="muted">#{a.id}</td>
+                  <td>
                     <StatusPill status={a.status} />
                   </td>
+                  <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
                   <td className="muted">
-                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}
-                  </td>
-                  <td className="muted">
-                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)}{" "}
-                    {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
+                    {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)}
                   </td>
                   <td className="muted" title={`weekMask=${a.weekMask}`}>
-                    {weekMaskToText(a.weekMask)}
+                    {weekMaskToText(Number(a.weekMask || 0))}
+                  </td>
+                  <td className="muted" title={`startMin=${a.startMin} endMin=${a.endMin}`}>
+                    {toHHMM(Number(a.startMin || 0))} → {toHHMM(Number(a.endMin || 0))}
                   </td>
                   <td className="muted">
-                    v:{a.vehicleId ?? "-"} / d:{a.driverId ?? "-"}
+                    {String(a.direction || "").toUpperCase()} / {String(a.pattern || "").toUpperCase()}
+                  </td>
+                  <td className="muted">
+                    {a.vehicle ? a.vehicle.plate : a.vehicleId ? `#${a.vehicleId}` : "-"} / {a.driver ? a.driver.fullName : a.driverId ? `#${a.driverId}` : "-"}
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button
                         type="button"
-                        disabled={busy || a.status === "CANCELLED" || a.status === "DONE"}
+                        disabled={busy || ["CANCELLED", "DONE", "REJECTED"].includes(String(a.status || "").toUpperCase())}
                         onClick={() => cancelAgreement(a.id)}
                       >
-                        İptal
+                        Cancel
                       </button>
-
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => extendPrompt(a)}
-                        title="Tarih seçerek uzat"
-                      >
-                        Tarih ile Uzat
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => {
-                          const next = addDaysISO(String(a.endDate).slice(0, 10), 7);
-                          extendAgreement(a.id, next);
-                        }}
-                        title="+7 gün uzat"
-                      >
-                        +7g
+                      <button type="button" disabled={busy} onClick={() => extendPrompt(a)}>
+                        Extend
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {!items.length ? (
+
+              {!rows.length ? (
                 <tr>
-                  <td colSpan={7} className="muted" style={{ paddingTop: 10 }}>
-                    Kayıt yok.
+                  <td className="muted" colSpan={9}>
+                    (no items)
                   </td>
                 </tr>
               ) : null}
             </tbody>
           </table>
-        </div>
-
-        <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-          Endpoint: <code>/api/agreements</code>
         </div>
       </div>
     </div>

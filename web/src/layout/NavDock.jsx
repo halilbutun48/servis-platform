@@ -4,12 +4,13 @@ import { navigate } from "../router";
 function Item({ label, path, active, badge }) {
   return (
     <button
-      className={active ? "navItem active" : "navItem"}
+      type="button"
+      className={active ? "nav-item active" : "nav-item"}
       onClick={() => navigate(path)}
       title={label}
     >
-      <span className="navLabel">{label}</span>
-      {badge ? <span className="navBadge">{badge}</span> : null}
+      <span>{label}</span>
+      {badge ? <span className="badge">{badge}</span> : null}
     </button>
   );
 }
@@ -26,10 +27,12 @@ export default function NavDock({ role, path }) {
     items.push({ label: "Offers", path: "/room/offers" });
     items.push({ label: "Notifications", path: "/shared/notifications" });
   } else if (role === "COMPANY") {
-    items.push({ label: "Map", path: "/company/map" });
-    items.push({ label: "Shifts", path: "/company/shifts" });
+    // ✅ M26: workflow-first (minimum confusion)
+    items.push({ label: "Home", path: "/company" });
     items.push({ label: "Agreements", path: "/company/agreements" });
+    items.push({ label: "Shifts", path: "/company/shifts" });
     items.push({ label: "Geo Review", path: "/company/georeview" });
+    items.push({ label: "Map", path: "/company/map" });
     items.push({ label: "Notifications", path: "/shared/notifications" });
   } else if (role === "DRIVER") {
     items.push({ label: "Map", path: "/driver/map" });
@@ -46,17 +49,11 @@ export default function NavDock({ role, path }) {
   }
 
   return (
-    <div className="navDock">
-      <div className="navDockTitle">{role}</div>
-      <div className="navDockItems">
+    <div className="nav">
+      <div className="nav-role">{role}</div>
+      <div className="nav-items">
         {items.map((it) => (
-          <Item
-            key={it.path}
-            label={it.label}
-            path={it.path}
-            active={path === it.path}
-            badge={it.badge}
-          />
+          <Item key={it.path} label={it.label} path={it.path} active={path === it.path} badge={it.badge} />
         ))}
       </div>
     </div>
