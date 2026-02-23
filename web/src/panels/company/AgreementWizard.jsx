@@ -110,70 +110,6 @@ const PACKS = [
 
 function Modal({ open, onClose, children }) {
   if (!open) return null;
-  async function createMarketShiftAndOpenOffer() {
-    setErr("");
-    if (!token) return setErr("Token yok.");
-    if (!isYmd(startDate)) return setErr("Baslangic tarihi gecersiz.");
-
-    // create 1 market shift from first pack item
-    let it = (pack.items || [])[0];
-    if (pack.key === "CUSTOM") {
-      const sMin = parseHHMM(startHHMM);
-      const eMin = parseHHMM(endHHMM);
-      if (sMin == null || eMin == null) return setErr("Saat formati HH:MM olmali.");
-      it = { startMin: sMin, endMin: eMin, direction, pattern };
-    }
-    if (!it) return setErr("Paket secimi gecersiz.");
-
-    const sMin = Number(it.startMin);
-    const eMin = Number(it.endMin);
-    if (!Number.isFinite(sMin) || !Number.isFinite(eMin)) return setErr("Saat verisi hatali.");
-
-    const startAt = ymdMinToIso(startDate, sMin);
-    const endDateForShift = eMin < sMin ? addDaysISO(startDate, 1) : startDate;
-    const endAt = ymdMinToIso(endDateForShift, eMin);
-
-    const hasHubLat = String(hubLat || "").trim() !== "";
-    const hasHubLng = String(hubLng || "").trim() !== "";
-    if (hasHubLat !== hasHubLng) return setErr("Hub icin lat/lng birlikte girilmeli.");
-
-    let hubLatN = null;
-    let hubLngN = null;
-    if (hasHubLat) {
-      const a = Number(hubLat);
-      const b = Number(hubLng);
-      if (!Number.isFinite(a) || !Number.isFinite(b)) return setErr("Hub lat/lng sayi olmali.");
-      hubLatN = a;
-      hubLngN = b;
-    }
-
-    setBusy(true);
-    try {
-      const body = {
-        startAt,
-        endAt,
-        // no roomId => market
-        hubLat: hubLatN,
-        hubLng: hubLngN,
-        direction: it.direction || "INBOUND",
-        pattern: it.pattern || "ONE_WAY",
-      };
-
-      const r = await api("/api/shifts", { token, method: "POST", body });
-      const sid = Number(r?.id || r?.shift?.id || 0);
-      if (!sid) throw new Error("Shift olusturulamadi");
-
-      // Company ShiftsPanel will auto-open offer modal
-      localStorage.setItem("company:autoOfferShiftId", String(sid));
-      navigate("/company/shifts");
-      setOpen(false);
-    } catch (e) {
-      setErr(String(e?.message || e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <div
       style={{
@@ -193,6 +129,21 @@ function Modal({ open, onClose, children }) {
       </div>
     </div>
   );
+}
+
+function onlyDigits(raw) {
+  return String(raw ?? "").replace(/\./g, "").replace(/[^\d]/g, "");
+}
+
+function pickPackFirstItem(pack, { startHHMM, endHHMM, direction, pattern }) {
+  let it = (pack?.items || [])[0];
+  if (pack?.key === "CUSTOM") {
+    const sMin = parseHHMM(startHHMM);
+    const eMin = parseHHMM(endHHMM);
+    if (sMin == null || eMin == null) return null;
+    it = { startMin: sMin, endMin: eMin, direction, pattern };
+  }
+  return it || null;
 }
 
 export default function AgreementWizard({
@@ -249,6 +200,21 @@ export default function AgreementWizard({
   // offer
   const [companyOfferAmount, setCompanyOfferAmount] = useState("");
   const [companyOfferNote, setCompanyOfferNote] = useState("");
+
+  // ✅ M30-A: Wizard sonrası tek modal içinde "Market shift + multi-room offers"
+  const [marketOpen, setMarketOpen] = useState(false);
+  const [marketErr, setMarketErr] = useState("");
+  const [marketBusy, setMarketBusy] = useState(false);
+  const [marketQ, setMarketQ] = useState("");
+  const [marketOnlyHub, setMarketOnlyHub] = useState(true);
+  const [marketRoomIds, setMarketRoomIds] = useState({});
+  const [marketDate, setMarketDate] = useState(todayYmd());
+  const [marketStartHHMM, setMarketStartHHMM] = useState("07:00");
+  const [marketEndHHMM, setMarketEndHHMM] = useState("09:00");
+  const [marketAmountCompany, setMarketAmountCompany] = useState("");
+  const [marketNoteCompany, setMarketNoteCompany] = useState("");
+  const [marketDirection, setMarketDirection] = useState("INBOUND");
+  const [marketPattern, setMarketPattern] = useState("ONE_WAY");
 
   const roomById = useMemo(() => {
     const m = new Map();
@@ -328,6 +294,34 @@ export default function AgreementWizard({
       .slice(0, 120);
   }, [roomsList, q, onlyHub]);
 
+  const filteredMarketRooms = useMemo(() => {
+    const qq = String(marketQ || "").trim().toLowerCase();
+    return (roomsList || [])
+      .filter((r) => {
+        if (marketOnlyHub && !(r?.hubLat != null && r?.hubLng != null)) return false;
+        if (!qq) return true;
+        const hay = [r?.id, r?.name].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(qq);
+      })
+      .slice(0, 200);
+  }, [roomsList, marketQ, marketOnlyHub]);
+
+  function toggleMarketRoom(roomId) {
+    const rid = Number(roomId);
+    if (!Number.isFinite(rid) || rid <= 0) return;
+    setMarketRoomIds((p) => ({ ...(p || {}), [rid]: !p?.[rid] }));
+  }
+
+  function selectAllMarketFiltered() {
+    const next = { ...(marketRoomIds || {}) };
+    for (const r of filteredMarketRooms) next[Number(r.id)] = true;
+    setMarketRoomIds(next);
+  }
+
+  function clearMarketSelected() {
+    setMarketRoomIds({});
+  }
+
   async function create() {
     setErr("");
     setOkMsg("");
@@ -397,6 +391,103 @@ export default function AgreementWizard({
     }
   }
 
+  function openMarketFlow() {
+    setMarketErr("");
+    // Default: wizard startDate + pack first slot
+    setMarketDate(startDate);
+
+    const it = pickPackFirstItem(pack, { startHHMM, endHHMM, direction, pattern });
+    if (it) {
+      setMarketStartHHMM(toHHMM(it.startMin));
+      setMarketEndHHMM(toHHMM(it.endMin));
+      setMarketDirection(it.direction || "INBOUND");
+      setMarketPattern(it.pattern || "ONE_WAY");
+    }
+
+    // Default offer: agreement offer values
+    setMarketAmountCompany(onlyDigits(companyOfferAmount));
+    setMarketNoteCompany(String(companyOfferNote || ""));
+
+    // Select at least the chosen room (so user doesn't start empty)
+    const rid = Number(roomId || 0);
+    if (rid) setMarketRoomIds((p) => ({ ...(p || {}), [rid]: true }));
+
+    setMarketOpen(true);
+  }
+
+  async function createMarketShiftAndSendOffers() {
+    setMarketErr("");
+    if (!token) return setMarketErr("Token yok.");
+    if (!isYmd(marketDate)) return setMarketErr("Tarih formatı YYYY-MM-DD olmalı.");
+
+    const pickedRooms = Object.entries(marketRoomIds || {})
+      .filter(([, v]) => Boolean(v))
+      .map(([k]) => Number(k))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (!pickedRooms.length) return setMarketErr("En az 1 room seçmelisin.");
+
+    const sMin = parseHHMM(marketStartHHMM);
+    const eMin = parseHHMM(marketEndHHMM);
+    if (sMin == null || eMin == null) return setMarketErr("Saat formatı HH:MM olmalı.");
+
+    const startAt = ymdMinToIso(marketDate, sMin);
+    const endDateForShift = eMin < sMin ? addDaysISO(marketDate, 1) : marketDate;
+    const endAt = ymdMinToIso(endDateForShift, eMin);
+
+    // Hub: same as wizard hub fields (lat/lng together)
+    const hasHubLat = String(hubLat || "").trim() !== "";
+    const hasHubLng = String(hubLng || "").trim() !== "";
+    if (hasHubLat !== hasHubLng) return setMarketErr("Hub için lat/lng birlikte girilmeli.");
+
+    let hubLatN = null;
+    let hubLngN = null;
+    if (hasHubLat) {
+      const a = Number(hubLat);
+      const b = Number(hubLng);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return setMarketErr("Hub lat/lng sayı olmalı.");
+      hubLatN = a;
+      hubLngN = b;
+    }
+
+    const amt = parseTryInput(marketAmountCompany);
+    const note = trimOrNull(marketNoteCompany);
+
+    setMarketBusy(true);
+    try {
+      // 1) create market shift (roomId=null)
+      const sh = await api("/api/shifts", {
+        token,
+        method: "POST",
+        body: {
+          startAt,
+          endAt,
+          hubLat: hubLatN,
+          hubLng: hubLngN,
+          direction: marketDirection,
+          pattern: marketPattern,
+        },
+      });
+      const sid = Number(sh?.id || sh?.shift?.id || 0);
+      if (!sid) throw new Error("Shift oluşturulamadı");
+
+      // 2) send offers to selected rooms
+      const body = { roomIds: pickedRooms };
+      if (amt != null) body.amountCompany = amt;
+      if (note) body.noteCompany = note;
+      await api(`/api/shifts/${sid}/offers`, { token, method: "POST", body });
+
+      // UX: jump to shifts and auto-open offers list
+      localStorage.setItem("company:autoOffersListShiftId", String(sid));
+      setMarketOpen(false);
+      setOpen(false);
+      navigate("/company/shifts");
+    } catch (e) {
+      setMarketErr(String(e?.message || e));
+    } finally {
+      setMarketBusy(false);
+    }
+  }
+
   return (
     <>
       {renderTrigger ? (
@@ -458,11 +549,128 @@ export default function AgreementWizard({
             <div style={{ fontWeight: 800 }}>{okMsg}</div>
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
               <button type="button" disabled={busy} onClick={() => navigate("/company/agreements")}>Agreements’e git</button>
-              <button type="button" disabled={busy} onClick={createMarketShiftAndOpenOffer}>Room'lara Teklif Topla (Market)</button>
+              <button type="button" disabled={busy} onClick={openMarketFlow}>Room'lara Teklif Topla (Market)</button>
               <button type="button" disabled={busy} onClick={() => setOpen(false)}>Kapat</button>
             </div>
           </div>
         ) : null}
+
+        {/* ✅ M30-A: Market teklif akışı modal */}
+        <Modal
+          open={marketOpen}
+          onClose={() => {
+            if (marketBusy) return;
+            setMarketOpen(false);
+          }}
+        >
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div>
+              <div className="title">Market Teklif Topla</div>
+              <div className="muted">Tek modal: market shift aç → birden fazla room seç → teklifi gönder</div>
+            </div>
+            <button type="button" disabled={marketBusy} onClick={() => setMarketOpen(false)}>
+              Kapat
+            </button>
+          </div>
+
+          {marketErr ? <div className="card err" style={{ marginTop: 10 }}>{marketErr}</div> : null}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+            <div className="card">
+              <div style={{ fontWeight: 900, marginBottom: 8 }}>1) Zaman</div>
+              <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                <div className="col" style={{ minWidth: 160 }}>
+                  <label className="muted">Tarih</label>
+                  <input value={marketDate} onChange={(e) => setMarketDate(e.target.value)} placeholder="YYYY-MM-DD" />
+                </div>
+                <div className="col" style={{ minWidth: 140 }}>
+                  <label className="muted">Başlangıç</label>
+                  <input value={marketStartHHMM} onChange={(e) => setMarketStartHHMM(e.target.value)} placeholder="07:00" />
+                </div>
+                <div className="col" style={{ minWidth: 140 }}>
+                  <label className="muted">Bitiş</label>
+                  <input value={marketEndHHMM} onChange={(e) => setMarketEndHHMM(e.target.value)} placeholder="09:00" />
+                </div>
+              </div>
+
+              <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+                <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  Direction
+                  <select value={marketDirection} onChange={(e) => setMarketDirection(e.target.value)}>
+                    <option value="INBOUND">INBOUND</option>
+                    <option value="OUTBOUND">OUTBOUND</option>
+                  </select>
+                </label>
+                <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  Pattern
+                  <select value={marketPattern} onChange={(e) => setMarketPattern(e.target.value)}>
+                    <option value="ONE_WAY">ONE_WAY</option>
+                    <option value="LOOP">LOOP</option>
+                  </select>
+                </label>
+              </div>
+
+              <div style={{ marginTop: 12, fontWeight: 900 }}>2) Teklif</div>
+              <div className="col" style={{ marginTop: 6 }}>
+                <label className="muted">Company Tutar (₺) (opsiyonel)</label>
+                <input value={marketAmountCompany} onChange={(e) => setMarketAmountCompany(onlyDigits(e.target.value))} placeholder="örn 25000" />
+              </div>
+              <div className="col" style={{ marginTop: 8 }}>
+                <label className="muted">Not (opsiyonel)</label>
+                <input value={marketNoteCompany} onChange={(e) => setMarketNoteCompany(e.target.value)} placeholder="opsiyonel" />
+              </div>
+            </div>
+
+            <div className="card">
+              <div style={{ fontWeight: 900, marginBottom: 8 }}>3) Room seç</div>
+              <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  placeholder="Room ara"
+                  value={marketQ}
+                  onChange={(e) => setMarketQ(e.target.value)}
+                  style={{ minWidth: 220 }}
+                />
+                <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input type="checkbox" checked={marketOnlyHub} onChange={(e) => setMarketOnlyHub(e.target.checked)} />
+                  Sadece hub’lı
+                </label>
+                <button type="button" disabled={marketBusy} onClick={selectAllMarketFiltered}>Tümünü seç</button>
+                <button type="button" disabled={marketBusy} onClick={clearMarketSelected}>Temizle</button>
+              </div>
+
+              <div style={{ marginTop: 10, maxHeight: 340, overflow: "auto", border: "1px solid #eee", borderRadius: 8 }}>
+                {(filteredMarketRooms || []).map((r) => (
+                  <label
+                    key={r.id}
+                    className="muted"
+                    style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 10px", borderBottom: "1px solid #f2f2f2" }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(marketRoomIds?.[r.id])}
+                      onChange={() => toggleMarketRoom(r.id)}
+                      disabled={marketBusy}
+                    />
+                    <span>
+                      <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
+                      {r?.hubLat != null && r?.hubLng != null ? <span className="muted"> • hub</span> : null}
+                    </span>
+                  </label>
+                ))}
+                {!filteredMarketRooms.length ? <div className="muted" style={{ padding: 10 }}>Room bulunamadı.</div> : null}
+              </div>
+
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
+                <div className="muted">
+                  Seçili: {Object.values(marketRoomIds || {}).filter(Boolean).length}
+                </div>
+                <button type="button" disabled={marketBusy} onClick={createMarketShiftAndSendOffers}>
+                  {marketBusy ? "..." : "Shift Aç + Teklif Gönder"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
           <div className="card">

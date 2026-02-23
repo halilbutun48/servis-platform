@@ -13,6 +13,7 @@ export default function RoutePanel() {
   const orderedStops = data?.orderedStops || [];
   const nextStop = data?.nextStop || null;
   const progress = data?.progress || null;
+  const [showStops, setShowStops] = useState(false);
 
   const pct = useMemo(() => {
     if (!shift || !progress || !orderedStops.length) return 0;
@@ -60,8 +61,8 @@ export default function RoutePanel() {
   return (
     <div>
       <div className="card">
-        <h3>Driver Route</h3>
-        <div className="muted">mode: {mode || "-"}</div>
+        <h3>Bugün Rotam</h3>
+        <div className="muted">En az adım: sonraki durağı gör → tek tık reached</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -97,52 +98,66 @@ export default function RoutePanel() {
         </div>
 
         <div className="card">
-          <h3>Son Durum</h3>
-          <div className="muted">Araç: {data?.vehicle?.plate || "-"}</div>
-          <div className="muted">Konum: {data?.last ? `${data.last.lat}, ${data.last.lng}` : "-"}</div>
-          <div className="muted">Hız: {data?.last?.speed ?? "-"} km/h</div>
-          <div className="muted">GPS Status: {data?.last?.status || "-"}</div>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <h3>Sonraki Durak</h3>
+              <div className="muted">Araç: {data?.vehicle?.plate || "-"} • GPS: {data?.last?.status || "-"}</div>
+            </div>
+            <button type="button" disabled={busy} onClick={load}>Yenile</button>
+          </div>
 
           <hr />
 
-          <h3>Sonraki Durak</h3>
           {nextStop ? (
-            <>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div>
-                <b>{nextStop.name}</b> (order: {nextStop.order})
+                <div style={{ fontWeight: 900, fontSize: 18 }}>{nextStop.name}</div>
+                <div className="muted">order: {nextStop.order} • konum: {data?.last ? `${data.last.lat}, ${data.last.lng}` : "-"}</div>
               </div>
-              <button disabled={busy} onClick={reached}>
+              <button type="button" disabled={busy} onClick={reached} style={{ fontWeight: 900 }}>
                 {busy ? "..." : "Reached"}
               </button>
-            </>
+            </div>
           ) : (
-            <div className="muted">Sonraki durak yok</div>
+            <div className="muted">Sonraki durak yok (vardiya bitmiş olabilir).</div>
           )}
+
+          <div className="muted" style={{ marginTop: 10 }}>mode: {mode || "-"}</div>
         </div>
       </div>
 
       <div className="card">
-        <h3>Duraklar (mesafeye göre)</h3>
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Ad</th>
-              <th>Km</th>
-              <th>ETA (dk)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orderedStops.map((s) => (
-              <tr key={s.id}>
-                <td>{s.order}</td>
-                <td>{s.name}</td>
-                <td>{s.remainingKm}</td>
-                <td>{s.etaMin}</td>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <h3>Duraklar (mesafe/ETA)</h3>
+          <button type="button" onClick={() => setShowStops((p) => !p)}>
+            {showStops ? "Gizle" : "Göster"}
+          </button>
+        </div>
+
+        {showStops ? (
+          <table className="tbl" style={{ marginTop: 10 }}>
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Ad</th>
+                <th>Km</th>
+                <th>ETA (dk)</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orderedStops.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.order}</td>
+                  <td>{s.name}</td>
+                  <td>{s.remainingKm}</td>
+                  <td>{s.etaMin}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="muted" style={{ marginTop: 8 }}>Detaylı listeyi sadece gerekirse aç.</div>
+        )}
       </div>
     </div>
   );

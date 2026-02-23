@@ -46,6 +46,17 @@ export default function RoomOffersPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
+  // ✅ M30-A: Accepted offer -> quick approve
+  const [approveModal, setApproveModal] = useState({
+    open: false,
+    shiftId: null,
+    offerId: null,
+    vehicleId: "",
+    driverId: "",
+  });
+  const [vehicles, setVehicles] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+
   const [statusFilter, setStatusFilter] = useState("OPEN,COUNTERED");
   const [q, setQ] = useState("");
 
@@ -67,6 +78,17 @@ export default function RoomOffersPanel() {
       setItems(r?.items || []);
     } catch (e) {
       setErr(String(e?.message || e));
+    }
+  }
+
+  async function loadAssets() {
+    try {
+      const [v, d] = await Promise.all([api.get("/api/vehicles"), api.get("/api/drivers")]);
+      setVehicles(Array.isArray(v) ? v : (v?.items ?? []));
+      setDrivers(Array.isArray(d) ? d : (d?.items ?? []));
+    } catch {
+      setVehicles([]);
+      setDrivers([]);
     }
   }
 
@@ -125,6 +147,39 @@ export default function RoomOffersPanel() {
     navigate("/room/shifts");
   }
 
+  async function openApprove(o) {
+    const sid = Number(o?.shiftId);
+    if (!sid) return;
+    setErr("");
+    await loadAssets();
+    setApproveModal({ open: true, shiftId: sid, offerId: Number(o?.id) || null, vehicleId: "", driverId: "" });
+  }
+
+  async function doApprove() {
+    const sid = Number(approveModal.shiftId);
+    const vid = Number(approveModal.vehicleId);
+    const did = Number(approveModal.driverId);
+    if (!sid || !vid || !did) {
+      setErr("Approve için vehicle + driver seçmelisin.");
+      return;
+    }
+
+    setBusy(true);
+    setErr("");
+    try {
+      await api.put(`/api/shifts/${sid}/approve`, { vehicleId: vid, driverId: did });
+      setApproveModal((p) => ({ ...p, open: false }));
+      // shift panelde focus
+      localStorage.setItem("room:focusShiftId", String(sid));
+      await load();
+      navigate("/room/shifts");
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="wrap">
       <div className="card">
@@ -168,6 +223,9 @@ export default function RoomOffersPanel() {
         const company = shift?.company;
         const c = counterSel[o.id] || {};
         const canCounter = o.status !== "CANCELLED" && o.status !== "ACCEPTED";
+
+        const canQuickApprove =
+          String(o.status) === "ACCEPTED" && ["REQUESTED"].includes(String(shift?.status || ""));
         return (
           <div className="card" key={o.id}>
             <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -185,6 +243,12 @@ export default function RoomOffersPanel() {
                 <button type="button" disabled={busy} onClick={() => goShift(o.shiftId)}>
                   Shift’e Git
                 </button>
+
+                {canQuickApprove ? (
+                  <button type="button" disabled={busy} onClick={() => openApprove(o)}>
+                    Hızlı Onayla
+                  </button>
+                ) : null}
               </div>
             </div>
 
@@ -231,6 +295,59 @@ export default function RoomOffersPanel() {
           </div>
         );
       })}
+
+      {/* ✅ M30-A: Quick approve modal */}
+      {approveModal.open ? (
+        <div className="card" style={{ border: "2px solid #ddd" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 900 }}>Shift #{approveModal.shiftId} — Onayla</div>
+              <div className="muted">ACCEPTED teklif → bu shift artık senin. Araç + sürücü seçip onayla.</div>
+            </div>
+            <button type="button" disabled={busy} onClick={() => setApproveModal((p) => ({ ...p, open: false }))}>
+              Kapat
+            </button>
+          </div>
+
+          <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Vehicle
+              <select
+                value={approveModal.vehicleId}
+                onChange={(e) => setApproveModal((p) => ({ ...p, vehicleId: e.target.value }))}
+                disabled={busy}
+              >
+                <option value="">Seç…</option>
+                {(vehicles || []).filter((v) => !v?.archivedAt).map((v) => (
+                  <option key={v.id} value={String(v.id)}>
+                    {v.plate} (#{v.id})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Driver
+              <select
+                value={approveModal.driverId}
+                onChange={(e) => setApproveModal((p) => ({ ...p, driverId: e.target.value }))}
+                disabled={busy}
+              >
+                <option value="">Seç…</option>
+                {(drivers || []).map((d) => (
+                  <option key={d.id} value={String(d.id)}>
+                    {d.fullName} (#{d.id})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button type="button" disabled={busy} onClick={doApprove}>
+              {busy ? "..." : "Onayla"}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

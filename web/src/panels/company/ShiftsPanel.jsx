@@ -378,6 +378,17 @@ export default function CompanyShiftsPanel() {
     openOfferModalForShift(sid);
   }, [rooms.length]);
 
+  // ✅ M30-A: AgreementWizard market flow -> open offers list automatically
+  useEffect(() => {
+    const raw = localStorage.getItem("company:autoOffersListShiftId");
+    if (!raw) return;
+    localStorage.removeItem("company:autoOffersListShiftId");
+    const sid = Number(raw);
+    if (!sid) return;
+    // delay so modal has token + room list ready
+    setTimeout(() => openOffersModalForShift(sid), 120);
+  }, [rooms.length]);
+
   useAutoReload("shifts", load);
   useAutoReload("vehicles", load);
   useAutoReload("rooms", load);

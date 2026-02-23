@@ -29,6 +29,7 @@ import * as requestsMod from "./routes/requests.js";
 import * as driverMod from "./routes/driver.js";
 import * as personelsMod from "./routes/personels.js";
 import * as companyPersonelsMod from "./routes/companyPersonels.js";
+import * as personelShiftsMod from "./routes/personelShifts.js";
 
 import { adminRouter } from "./routes/admin.js";
 
@@ -66,6 +67,7 @@ const requestsRouter = pickExport(requestsMod, "requestsRouter");
 const driverRouter = pickExport(driverMod, "driverRouter");
 const personelsRouter = pickExport(personelsMod, "personelsRouter");
 const companyPersonelsRouter = pickExport(companyPersonelsMod, "companyPersonelsRouter");
+const personelShiftsRouter = pickExport(personelShiftsMod, "personelShiftsRouter");
 
 const companiesRouter = pickExport(companiesMod, "companiesRouter");
 const roomsRouter = pickExport(roomsMod, "roomsRouter");
@@ -80,6 +82,7 @@ for (const [name, fn] of Object.entries({
   driverRouter,
   personelsRouter,
   companyPersonelsRouter,
+  personelShiftsRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,
@@ -204,6 +207,7 @@ app.use("/api/requests", requestsRouter(io));
 app.use("/api/driver", driverRouter(io));
 app.use("/api/personels", personelsRouter(io));
 app.use("/api/company/personels", companyPersonelsRouter());
+app.use("/api/personel/shifts", personelShiftsRouter());
 app.use("/api/agreements", agreementsRouter(io));
 app.use("/api/offers", offersRouter(io));
 // Background monitors
