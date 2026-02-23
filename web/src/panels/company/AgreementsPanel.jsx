@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import AgreementWizard from "./AgreementWizard";
 import {
   WEEKDAYS,
   DAY_PRESETS,
@@ -121,11 +122,18 @@ export default function AgreementsPanel() {
   const [roomsSupported, setRoomsSupported] = useState(true);
   const [roomErr, setRoomErr] = useState("");
 
-  // create form
+  // ✅ M27: advanced create (optional)
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+
   const [templateKey, setTemplateKey] = useState("MORNING");
   const [roomId, setRoomId] = useState("");
 
   const [startDate, setStartDate] = useState(todayYmd());
+  const [durationKey, setDurationKey] = useState("1m");
+  const durationDays = useMemo(() => {
+    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS[1];
+    return Number(p.days || 30);
+  }, [durationKey]);
   const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 30));
 
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
@@ -134,7 +142,7 @@ export default function AgreementsPanel() {
   const [startHHMM, setStartHHMM] = useState("07:00");
   const [endHHMM, setEndHHMM] = useState("09:00");
 
-  // ✅ M19: routing meta
+  // routing meta
   const [direction, setDirection] = useState("INBOUND");
   const [pattern, setPattern] = useState("ONE_WAY");
 
@@ -144,10 +152,9 @@ export default function AgreementsPanel() {
 
   const startMin = useMemo(() => parseHHMM(startHHMM), [startHHMM]);
   const endMin = useMemo(() => parseHHMM(endHHMM), [endHHMM]);
-  const midnightCross = useMemo(
-    () => startMin != null && endMin != null && endMin < startMin,
-    [startMin, endMin]
-  );
+
+  // ✅ live refresh
+  useAutoReload("agreements");
 
   const roomById = useMemo(() => {
     const m = new Map();
@@ -163,27 +170,27 @@ export default function AgreementsPanel() {
     setDirection(t.direction);
     setPattern(t.pattern);
 
-    if (isYmd(startDate)) {
-      setEndDate(addDaysISO(startDate, t.durationDays));
-    }
+    if (isYmd(startDate)) setEndDate(addDaysISO(startDate, t.durationDays));
   }
 
-  // template apply when selection changes
   useEffect(() => {
     applyTemplate(templateKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateKey]);
 
-  // room selection => hub autofill (optional)
+  useEffect(() => {
+    if (!isYmd(startDate)) return;
+    setEndDate(addDaysISO(startDate, durationDays));
+  }, [startDate, durationDays]);
+
+  // room selection => hub autofill
   useEffect(() => {
     if (!useRoomHub) return;
     const rid = Number(roomId || 0);
     const r = rid ? roomById.get(rid) : null;
     if (!r) return;
-
     const hasHub = r?.hubLat != null && r?.hubLng != null;
     if (!hasHub) return;
-
     if (String(hubLat).trim() === "" && String(hubLng).trim() === "") {
       setHubLat(String(r.hubLat));
       setHubLng(String(r.hubLng));
@@ -197,10 +204,8 @@ export default function AgreementsPanel() {
 
     try {
       const resp = await api("/api/rooms?take=200", { token });
-      const list = resp?.items ?? [];
-      setRooms(Array.isArray(list) ? list : []);
+      setRooms(Array.isArray(resp?.items) ? resp.items : []);
     } catch (e) {
-      // ✅ /api/rooms yoksa: input göstermiyoruz, label gösteriyoruz
       setRooms([]);
       setRoomsSupported(false);
       setRoomErr(e?.message || "Rooms endpoint missing");
@@ -221,50 +226,28 @@ export default function AgreementsPanel() {
     }
   }
 
-  // ✅ WS invalidate → agreements topic gelince reload
-  useAutoReload("agreements", load, !!token);
-
   useEffect(() => {
     if (!token) return;
     loadRooms();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // ✅ rooms geldiyse roomId auto seç
   useEffect(() => {
-    if (!rooms.length) return;
-
-    const current = Number(roomId || 0);
-    const hasCurrent = rooms.some((r) => Number(r.id) === current);
-
-    if (!hasCurrent) {
-      if (rooms.length === 1) setRoomId(String(rooms[0].id));
-      else if (!roomId) setRoomId(String(rooms[0].id));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rooms]);
-
-  useEffect(() => {
-    if (!token) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, take, statusFilter]);
+  }, [take, statusFilter]);
 
-  async function createAgreement() {
+  async function createAdvanced() {
     setErr("");
-
-    if (!roomsSupported) return setErr("Rooms endpoint missing — agreement oluşturmak için /api/rooms gerekli.");
+    if (!roomsSupported) return setErr("Rooms endpoint yok. Önce /api/rooms çalışmalı.");
 
     const rid = Number(roomId || 0);
     if (!rid) return setErr("Room seçmelisin.");
     if (!isYmd(startDate) || !isYmd(endDate)) return setErr("Tarih formatı YYYY-MM-DD olmalı.");
     if (!weekMask) return setErr("Gün seçmelisin.");
+    if (startMin == null || endMin == null) return setErr("Saat formatı HH:MM olmalı.");
 
-    const sMin = startMin;
-    const eMin = endMin;
-    if (sMin == null || eMin == null) return setErr("Saat formatı HH:MM olmalı.");
-
-    // hub optional, but must be pair
     const hasHubLat = String(hubLat || "").trim() !== "";
     const hasHubLng = String(hubLng || "").trim() !== "";
     if (hasHubLat !== hasHubLng) return setErr("Hub için lat/lng birlikte girilmeli.");
@@ -289,8 +272,8 @@ export default function AgreementsPanel() {
           startDate,
           endDate,
           weekMask,
-          startMin: sMin,
-          endMin: eMin,
+          startMin,
+          endMin,
           direction,
           pattern,
           hubLat: hubLatN,
@@ -298,8 +281,8 @@ export default function AgreementsPanel() {
         },
       });
 
-      // refresh
       await load();
+      setAdvancedOpen(false);
     } catch (e) {
       setErr(e?.message || "Create failed");
     } finally {
@@ -308,8 +291,8 @@ export default function AgreementsPanel() {
   }
 
   async function cancelAgreement(id) {
-    setBusy(true);
     setErr("");
+    setBusy(true);
     try {
       await api(`/api/agreements/${id}/cancel`, { token, method: "PUT", body: {} });
       await load();
@@ -320,11 +303,13 @@ export default function AgreementsPanel() {
     }
   }
 
-  async function extendAgreement(id, nextEndDate) {
-    setBusy(true);
+  async function extendAgreement(id, endDateYmd) {
     setErr("");
+    if (!isYmd(endDateYmd)) return setErr("Bitiş tarihi YYYY-MM-DD olmalı");
+
+    setBusy(true);
     try {
-      await api(`/api/agreements/${id}/extend`, { token, method: "PUT", body: { endDate: nextEndDate } });
+      await api(`/api/agreements/${id}/extend`, { token, method: "PUT", body: { endDate: endDateYmd } });
       await load();
     } catch (e) {
       setErr(e?.message || "Extend failed");
@@ -333,13 +318,10 @@ export default function AgreementsPanel() {
     }
   }
 
-  function extendPrompt(a) {
-    const cur = String(a?.endDate || "").slice(0, 10);
-    const def = isYmd(cur) ? cur : todayYmd();
-    const next = window.prompt("Yeni endDate (YYYY-MM-DD)", def);
+  function askExtend(a) {
+    const next = prompt("Yeni endDate (YYYY-MM-DD):", a.endDate?.slice(0, 10) || "");
     if (!next) return;
-    const ymd = String(next).trim();
-    extendAgreement(a.id, ymd);
+    extendAgreement(a.id, String(next).trim());
   }
 
   const rows = useMemo(() => {
@@ -351,37 +333,12 @@ export default function AgreementsPanel() {
 
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Agreements (Company)</h2>
-
-      {err ? (
-        <div className="muted" style={{ color: "crimson" }}>
-          {String(err)}
-        </div>
-      ) : null}
-
-      {/* Create */}
-      <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 12 }}>
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>Yeni Agreement</div>
-        <div className="muted" style={{ marginBottom: 10 }}>
-          Hızlı akış: <b>Room</b> seç → <b>Plan Şablonu</b> seç → Kaydet.
-        </div>
-
-        {/* template row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0 }}>Agreements (Company)</h2>
+        <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <label className="muted">
-            Plan Şablonu
-            <select value={templateKey} onChange={(e) => setTemplateKey(e.target.value)} style={{ width: "100%" }}>
-              {PLAN_TEMPLATES.map((t) => (
-                <option key={t.key} value={t.key}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="muted">
-            Durum filtresi (liste)
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: "100%" }}>
+            Durum
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} disabled={busy}>
               <option value="">(tümü)</option>
               <option value="REQUESTED">REQUESTED</option>
               <option value="APPROVED">APPROVED</option>
@@ -391,295 +348,265 @@ export default function AgreementsPanel() {
               <option value="REJECTED">REJECTED</option>
             </select>
           </label>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <label className="muted">
-            Room
-            {roomsSupported ? (
-              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={{ width: "100%" }}>
-                <option value="">Seç</option>
-                {rooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name ?? `Room #${r.id}`}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div
-                className="muted"
-                style={{ marginTop: 6, padding: "8px 10px", border: "1px dashed #ddd", borderRadius: 10 }}
-                title={roomErr || "Rooms endpoint missing"}
-              >
-                (rooms endpoint missing)
-              </div>
-            )}
-            {!roomsSupported && roomErr ? (
-              <div className="muted" style={{ marginTop: 6, color: "#b85" }}>
-                {roomErr}
-              </div>
-            ) : null}
+            Take
+            <select value={String(take)} onChange={(e) => setTake(Number(e.target.value))} disabled={busy}>
+              {[20, 50, 100, 200].map((n) => (
+                <option key={n} value={String(n)}>
+                  {n}
+                </option>
+              ))}
+            </select>
           </label>
-
-          <label className="muted">
-            Tarih aralığı
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
-          </label>
-        </div>
-
-        <div style={{ marginTop: 10 }}>
-          <div className="muted" style={{ marginBottom: 6 }}>
-            Günler
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            {DAY_PRESETS.map((p) => (
-              <button key={p.key} type="button" disabled={busy} onClick={() => setDaysSel(selectedFromMask(p.mask))}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {WEEKDAYS.map((d) => (
-              <label key={d.k} className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={!!daysSel[d.k]}
-                  onChange={(e) => setDaysSel((s) => ({ ...s, [d.k]: e.target.checked }))}
-                />
-                {d.label}
-              </label>
-            ))}
-          </div>
-
-          <div className="muted" style={{ marginTop: 6 }}>
-            Günler: <b>{weekMaskToText(weekMask)}</b> • weekMask: <b>{weekMask}</b>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <div className="muted" style={{ marginBottom: 6 }}>
-            Saat penceresi
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            {TIME_PRESETS.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setStartHHMM(toHHMM(p.startMin));
-                  setEndHHMM(toHHMM(p.endMin));
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 320 }}>
-            <label className="muted">
-              Start (HH:MM)
-              <input value={startHHMM} onChange={(e) => setStartHHMM(e.target.value)} />
-            </label>
-            <label className="muted">
-              End (HH:MM)
-              <input value={endHHMM} onChange={(e) => setEndHHMM(e.target.value)} />
-            </label>
-          </div>
-
-          {/* ✅ M19: routing meta */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420, marginTop: 6 }}>
-            <label className="muted">
-              Direction
-              <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ width: "100%" }}>
-                <option value="INBOUND">INBOUND (Toplama → Hub)</option>
-                <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
-              </select>
-            </label>
-
-            <label className="muted">
-              Pattern
-              <select value={pattern} onChange={(e) => setPattern(e.target.value)} style={{ width: "100%" }}>
-                <option value="ONE_WAY">ONE_WAY</option>
-                <option value="LOOP">LOOP (Hub’a dön)</option>
-              </select>
-            </label>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420, marginTop: 6 }}>
-            <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input type="checkbox" checked={useRoomHub} onChange={(e) => setUseRoomHub(e.target.checked)} />
-              Room hub’ını otomatik kullan
-            </label>
-
-            <button
-              type="button"
-              disabled={busy || !roomId}
-              onClick={() => {
-                const r = roomById.get(Number(roomId));
-                if (r?.hubLat != null && r?.hubLng != null) {
-                  setHubLat(String(r.hubLat));
-                  setHubLng(String(r.hubLng));
-                }
-              }}
-              title="Room hub değerlerini hubLat/hubLng alanına kopyalar"
-            >
-              Hub’ı Room’dan al
-            </button>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420 }}>
-            <label className="muted">
-              Hub Lat (opsiyonel)
-              <input type="number" step="0.000001" value={hubLat} onChange={(e) => setHubLat(e.target.value)} />
-            </label>
-            <label className="muted">
-              Hub Lng (opsiyonel)
-              <input type="number" step="0.000001" value={hubLng} onChange={(e) => setHubLng(e.target.value)} />
-            </label>
-          </div>
-
-          {midnightCross ? (
-            <div className="muted" style={{ marginTop: 6, color: "#8a5" }}>
-              🌙 Midnight aşımı (end &lt; start)
-            </div>
-          ) : null}
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-            {DURATION_PRESETS.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                disabled={busy || !startDate}
-                onClick={() => setEndDate(addDaysISO(startDate, p.days))}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <button type="button" disabled={busy || !roomsSupported} onClick={createAgreement}>
-            {busy ? "..." : "Agreement Oluştur"}
-          </button>
-
           <button type="button" disabled={busy} onClick={load}>
             Yenile
-          </button>
-
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setTemplateKey("MORNING");
-              setRoomId("");
-              setStartDate(todayYmd());
-              setEndDate(addDaysISO(todayYmd(), 30));
-              setDaysSel(selectedFromMask(62));
-              setStartHHMM("07:00");
-              setEndHHMM("09:00");
-              setDirection("INBOUND");
-              setPattern("ONE_WAY");
-              setHubLat("");
-              setHubLng("");
-            }}
-          >
-            Formu Sıfırla
           </button>
         </div>
       </div>
 
-      {/* List */}
-      <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 12 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-          <div style={{ fontWeight: 800 }}>Liste</div>
+      {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}
 
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Take
-              <select value={take} onChange={(e) => setTake(Number(e.target.value))}>
-                {[25, 50, 100, 200].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
+      {/* ✅ M27: Wizard (primary UX) */}
+      <div className="card">
+        <div style={{ fontWeight: 900 }}>Yeni Agreement (Wizard)</div>
+        <div className="muted" style={{ marginTop: 4 }}>
+          Preset paket seç → room seç → tarih aralığı → oluştur. (İstersen sabah+akşam tek tıkla 2 agreement.)
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <AgreementWizard
+            rooms={rooms}
+            roomsSupported={roomsSupported}
+            onReloadRooms={loadRooms}
+            renderTrigger={(open) => (
+              <button type="button" onClick={open} disabled={!roomsSupported || busy}>
+                Wizard’ı Aç
+              </button>
+            )}
+            onCreated={load}
+          />
+          {!roomsSupported ? (
+            <div className="muted" style={{ marginTop: 8, color: "#b85" }}>
+              (rooms endpoint missing) {roomErr ? `• ${roomErr}` : ""}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Advanced create (optional) */}
+      <div className="card">
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 900 }}>Gelişmiş Oluştur (opsiyonel)</div>
+            <div className="muted">Wizard yetmezse elle ayarla.</div>
+          </div>
+          <button type="button" disabled={busy} onClick={() => setAdvancedOpen((p) => !p)}>
+            {advancedOpen ? "Kapat" : "Aç"}
+          </button>
+        </div>
+
+        {advancedOpen ? (
+          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <label className="muted">
+              Plan Şablonu
+              <select value={templateKey} onChange={(e) => setTemplateKey(e.target.value)} style={{ width: "100%" }} disabled={busy}>
+                {PLAN_TEMPLATES.map((t) => (
+                  <option key={t.key} value={t.key}>
+                    {t.label}
                   </option>
                 ))}
               </select>
             </label>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <label className="muted">
+                Room
+                {roomsSupported ? (
+                  <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={{ width: "100%" }} disabled={busy}>
+                    <option value="">Seç</option>
+                    {rooms.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name ?? `Room #${r.id}`}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="muted" style={{ marginTop: 6, padding: "8px 10px", border: "1px dashed #ddd", borderRadius: 10 }}>
+                    (rooms endpoint missing)
+                  </div>
+                )}
+              </label>
+
+              <label className="muted">
+                Süre
+                <select value={durationKey} onChange={(e) => setDurationKey(e.target.value)} disabled={busy}>
+                  {DURATION_PRESETS.map((d) => (
+                    <option key={d.key} value={d.key}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <label className="muted">
+                Başlangıç
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} />
+              </label>
+              <label className="muted">
+                Bitiş
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={busy} />
+              </label>
+            </div>
+
+            <div>
+              <div className="muted" style={{ marginBottom: 6 }}>
+                Günler
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                {DAY_PRESETS.map((p) => (
+                  <button key={p.key} type="button" disabled={busy} onClick={() => setDaysSel(selectedFromMask(p.mask))}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {WEEKDAYS.map((d) => (
+                  <label key={d.k} className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input type="checkbox" checked={!!daysSel[d.k]} onChange={(e) => setDaysSel((s) => ({ ...s, [d.k]: e.target.checked }))} disabled={busy} />
+                    {d.label}
+                  </label>
+                ))}
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Günler: <b>{weekMaskToText(weekMask)}</b> • weekMask: <b>{weekMask}</b>
+              </div>
+            </div>
+
+            <div>
+              <div className="muted" style={{ marginBottom: 6 }}>
+                Saat penceresi
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                {TIME_PRESETS.map((p) => (
+                  <button
+                    key={p.key}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setStartHHMM(toHHMM(p.startMin));
+                      setEndHHMM(toHHMM(p.endMin));
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 360 }}>
+                <label className="muted">
+                  Start (HH:MM)
+                  <input value={startHHMM} onChange={(e) => setStartHHMM(e.target.value)} disabled={busy} />
+                </label>
+                <label className="muted">
+                  End (HH:MM)
+                  <input value={endHHMM} onChange={(e) => setEndHHMM(e.target.value)} disabled={busy} />
+                </label>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420, marginTop: 8 }}>
+                <label className="muted">
+                  Direction
+                  <select value={direction} onChange={(e) => setDirection(e.target.value)} style={{ width: "100%" }} disabled={busy}>
+                    <option value="INBOUND">INBOUND (Toplama → Hub)</option>
+                    <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
+                  </select>
+                </label>
+                <label className="muted">
+                  Pattern
+                  <select value={pattern} onChange={(e) => setPattern(e.target.value)} style={{ width: "100%" }} disabled={busy}>
+                    <option value="ONE_WAY">ONE_WAY</option>
+                    <option value="LOOP">LOOP (Hub’a dön)</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                <input type="checkbox" checked={useRoomHub} onChange={(e) => setUseRoomHub(e.target.checked)} disabled={busy} />
+                Room hub’ını otomatik kullan
+              </label>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxWidth: 420, marginTop: 8 }}>
+                <label className="muted">
+                  Hub Lat (opsiyonel)
+                  <input type="number" step="0.000001" value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
+                </label>
+                <label className="muted">
+                  Hub Lng (opsiyonel)
+                  <input type="number" step="0.000001" value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
+                </label>
+              </div>
+            </div>
+
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button type="button" disabled={busy || !roomsSupported} onClick={createAdvanced}>
+                {busy ? "..." : "Agreement Oluştur"}
+              </button>
+              <button type="button" disabled={busy} onClick={() => setAdvancedOpen(false)}>
+                Vazgeç
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
+      </div>
 
-        <div style={{ overflowX: "auto", marginTop: 10 }}>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Room</th>
-                <th>Date</th>
-                <th>Days</th>
-                <th>Time</th>
-                <th>Dir/Pat</th>
-                <th>Vehicle/Driver</th>
-                <th>Actions</th>
+      {/* List */}
+      <div className="card" style={{ overflowX: "auto" }}>
+        <table className="tbl" style={{ minWidth: 980 }}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Room</th>
+              <th>Date</th>
+              <th>Days</th>
+              <th>Time</th>
+              <th>Dir/Pat</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ a, room }) => (
+              <tr key={a.id}>
+                <td className="muted">#{a.id}</td>
+                <td><StatusPill status={a.status} /></td>
+                <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
+                <td className="muted">
+                  {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)}
+                </td>
+                <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                <td className="muted">
+                  {toHHMM(a.startMin)} → {toHHMM(a.endMin)}
+                </td>
+                <td className="muted">{a.direction}/{a.pattern}</td>
+                <td>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE"} onClick={() => cancelAgreement(a.id)}>
+                      Cancel
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => askExtend(a)}>
+                      Extend
+                    </button>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ a, room }) => (
-                <tr key={a.id}>
-                  <td className="muted">#{a.id}</td>
-                  <td>
-                    <StatusPill status={a.status} />
-                  </td>
-                  <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
-                  <td className="muted">
-                    {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)}
-                  </td>
-                  <td className="muted" title={`weekMask=${a.weekMask}`}>
-                    {weekMaskToText(Number(a.weekMask || 0))}
-                  </td>
-                  <td className="muted" title={`startMin=${a.startMin} endMin=${a.endMin}`}>
-                    {toHHMM(Number(a.startMin || 0))} → {toHHMM(Number(a.endMin || 0))}
-                  </td>
-                  <td className="muted">
-                    {String(a.direction || "").toUpperCase()} / {String(a.pattern || "").toUpperCase()}
-                  </td>
-                  <td className="muted">
-                    {a.vehicle ? a.vehicle.plate : a.vehicleId ? `#${a.vehicleId}` : "-"} / {a.driver ? a.driver.fullName : a.driverId ? `#${a.driverId}` : "-"}
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        type="button"
-                        disabled={busy || ["CANCELLED", "DONE", "REJECTED"].includes(String(a.status || "").toUpperCase())}
-                        onClick={() => cancelAgreement(a.id)}
-                      >
-                        Cancel
-                      </button>
-                      <button type="button" disabled={busy} onClick={() => extendPrompt(a)}>
-                        Extend
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {!rows.length ? (
-                <tr>
-                  <td className="muted" colSpan={9}>
-                    (no items)
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+            ))}
+            {!rows.length ? (
+              <tr>
+                <td colSpan={8} className="muted">Kayıt yok.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </div>
     </div>
   );
