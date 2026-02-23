@@ -23,6 +23,7 @@ export default function NavDock({ role, path }) {
     items.push({ label: "Drivers", path: "/room/drivers" });
     items.push({ label: "Shifts", path: "/room/shifts" });
     items.push({ label: "Agreements", path: "/room/agreements" });
+    items.push({ label: "Offers", path: "/room/offers" });
     items.push({ label: "Notifications", path: "/shared/notifications" });
   } else if (role === "COMPANY") {
     items.push({ label: "Map", path: "/company/map" });

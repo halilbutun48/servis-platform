@@ -27,7 +27,8 @@ export function emitShift(io, shift, event, payload = {}) {
   if (!io || !shift) return;
   const base = { shiftId: shift.id, ...payload };
   io.to(`company:${shift.companyId}`).emit(event, base);
-  io.to(`room:${shift.roomId}`).emit(event, base);
+  // ✅ M24: market shift olabilir (roomId null)
+  if (shift.roomId) io.to(`room:${shift.roomId}`).emit(event, base);
   io.to(`shift:${shift.id}`).emit(event, base);
 }
 

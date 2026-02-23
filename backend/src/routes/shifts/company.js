@@ -8,6 +8,7 @@ import { createNotification } from "../../notifications/service.js";
 import {
   createShiftSchema,
   updateShiftSchema,
+  createShiftOffersSchema,
   updateCompanyOfferSchema,
   updateRoomOfferDecisionSchema,
   addStopSchema,
@@ -74,7 +75,8 @@ export function attachShiftCompanyRoutes(r, io) {
         const shift = await prisma.shift.create({
           data: {
             companyId: effectiveCompanyId,
-            roomId: body.roomId,
+            // ✅ M24: roomId optional (market shift)
+            roomId: body.roomId ?? null,
             startAt: body.startAt,
             endAt: body.endAt,
 
@@ -132,6 +134,96 @@ export function attachShiftCompanyRoutes(r, io) {
         return res
           .status(e?.status ?? 500)
           .json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
+  // ✅ M24: COMPANY creates marketplace offers for a market shift
+  // POST /api/shifts/:id/offers
+  r.post(
+    "/:id/offers",
+    authRequired(),
+    requireRole("COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+
+        const body = validateWithZod(createShiftOffersSchema, req.body);
+
+        const shift = await prisma.shift.findUnique({
+          where: { id: shiftId },
+          select: { id: true, companyId: true, roomId: true, status: true },
+        });
+        if (!shift) return res.status(404).json({ error: "Shift not found" });
+
+        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+
+        // Market shift only: roomId must be null
+        if (shift.roomId != null) {
+          return res.status(400).json({ error: "Shift already assigned to a room" });
+        }
+
+        if (shift.status !== "REQUESTED" && shift.status !== "DRAFT") {
+          return res.status(409).json({ error: "Shift not editable for offers" });
+        }
+
+        const roomIds = Array.from(new Set((body.roomIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x))));
+        if (!roomIds.length) return res.status(400).json({ error: "roomIds required" });
+
+        const rooms = await prisma.room.findMany({
+          where: { id: { in: roomIds }, status: "ACTIVE" },
+          select: { id: true },
+        });
+        if (rooms.length !== roomIds.length) {
+          return res.status(400).json({ error: "Some roomIds not found" });
+        }
+
+        await prisma.$transaction(
+          roomIds.map((rid) =>
+            prisma.shiftOffer.upsert({
+              where: { shiftId_roomId: { shiftId, roomId: rid } },
+              create: {
+                shiftId,
+                roomId: rid,
+                status: "OPEN",
+                amountCompany: body.amountCompany ?? null,
+                noteCompany: body.noteCompany ?? null,
+              },
+              update: {
+                // idempotent bulk: refresh company amount/note and reopen unless accepted/cancelled
+                status: "OPEN",
+                amountCompany: body.amountCompany ?? null,
+                noteCompany: body.noteCompany ?? null,
+              },
+            })
+          )
+        );
+
+        const items = await prisma.shiftOffer.findMany({
+          where: { shiftId },
+          orderBy: [{ id: "asc" }],
+        });
+
+        // WS: notify company + each room
+        io?.to?.(`company:${shift.companyId}`)?.emit?.("offer:update", {
+          kind: "offer:bulk",
+          shiftId,
+          roomIds,
+        });
+        for (const rid of roomIds) {
+          io?.to?.(`room:${rid}`)?.emit?.("offer:update", {
+            kind: "offer:inbox",
+            shiftId,
+            roomId: rid,
+          });
+        }
+
+        return res.json({ ok: true, items });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
     }
   );

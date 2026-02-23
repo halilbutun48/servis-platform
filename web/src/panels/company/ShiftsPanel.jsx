@@ -100,6 +100,20 @@ export default function CompanyShiftsPanel() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // ✅ M24: Market shift (room seçmeden) + multi-room offers
+  const [marketMode, setMarketMode] = useState(false);
+  const [marketQ, setMarketQ] = useState("");
+  const [offerModal, setOfferModal] = useState({
+    open: false,
+    shiftId: null,
+    q: "",
+    onlyHub: true,
+    roomIds: {},
+    amountCompany: "",
+    noteCompany: "",
+  });
+  const [offersModal, setOffersModal] = useState({ open: false, shiftId: null, items: [] });
+
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
 
@@ -480,23 +494,33 @@ export default function CompanyShiftsPanel() {
 
     try {
       const body = {
-        roomId: Number(roomId),
         startAt: istanbulLocalToUtcIso(startAt),
         endAt: istanbulLocalToUtcIso(endAt),
         status: "REQUESTED",
       };
+
+      // ✅ M24: Direct vs Market
+      const rid = marketMode ? null : Number(roomId);
+      if (!marketMode && (!rid || !Number.isFinite(rid))) {
+        setErr("Room zorunlu (Market mode kapalı).");
+        return;
+      }
+      if (!marketMode) body.roomId = rid;
 
       if (!body.startAt || !body.endAt) {
         setErr("Start/End zorunlu.");
         return;
       }
 
-      if (offerVehicleId) body.companyOfferVehicleId = Number(offerVehicleId);
+      // Direct shift: optional offer fields
+      if (!marketMode) {
+        if (offerVehicleId) body.companyOfferVehicleId = Number(offerVehicleId);
 
-      const amt = parseTryInput(offerAmount);
-      if (amt != null) body.companyOfferAmount = amt;
+        const amt = parseTryInput(offerAmount);
+        if (amt != null) body.companyOfferAmount = amt;
 
-      if (offerNote.trim()) body.companyOfferNote = offerNote.trim();
+        if (offerNote.trim()) body.companyOfferNote = offerNote.trim();
+      }
 
       await api("/api/shifts", { method: "POST", token, body });
 
@@ -507,11 +531,108 @@ export default function CompanyShiftsPanel() {
       setOfferVehicleId("");
       setOfferAmount("");
       setOfferNote("");
+      setMarketMode(false);
 
       invalidate("shifts");
       await load();
     } catch (e2) {
       setErr(String(e2?.message || e2));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ✅ M24: Market offers
+  function openOfferModalForShift(shiftId) {
+    setOfferModal({
+      open: true,
+      shiftId: Number(shiftId),
+      q: "",
+      onlyHub: true,
+      roomIds: {},
+      amountCompany: "",
+      noteCompany: "",
+    });
+  }
+
+  function toggleOfferRoom(roomId) {
+    const rid = Number(roomId);
+    if (!Number.isFinite(rid)) return;
+    setOfferModal((p) => {
+      const next = { ...(p || {}) };
+      const map = { ...(next.roomIds || {}) };
+      map[rid] = !map[rid];
+      next.roomIds = map;
+      return next;
+    });
+  }
+
+  async function submitOfferModal() {
+    const shiftId = Number(offerModal.shiftId);
+    const roomIds = Object.entries(offerModal.roomIds || {})
+      .filter(([, v]) => Boolean(v))
+      .map(([k]) => Number(k))
+      .filter((x) => Number.isFinite(x));
+
+    if (!shiftId) {
+      setErr("Shift seçilmedi");
+      return;
+    }
+    if (!roomIds.length) {
+      setErr("En az 1 room seç");
+      return;
+    }
+
+    const amountCompany = parseTryInput(offerModal.amountCompany);
+    const noteCompany = trimOrNull(offerModal.noteCompany);
+
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/shifts/${shiftId}/offers`, {
+        method: "POST",
+        token,
+        body: { roomIds, amountCompany: amountCompany ?? null, noteCompany: noteCompany ?? null },
+      });
+
+      setOfferModal((p) => ({ ...p, open: false }));
+      invalidate("offers");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openOffersModalForShift(shiftId) {
+    const sid = Number(shiftId);
+    if (!sid) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api(`/api/offers/shift/${sid}`, { method: "GET", token });
+      setOffersModal({ open: true, shiftId: sid, items: r?.items || [] });
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function acceptOffer(offerId) {
+    const oid = Number(offerId);
+    if (!oid) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/offers/${oid}/accept`, { method: "PUT", token, body: {} });
+      setOffersModal((p) => ({ ...p, open: false }));
+      invalidate("shifts");
+      invalidate("offers");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
     } finally {
       setBusy(false);
     }
@@ -752,7 +873,16 @@ export default function CompanyShiftsPanel() {
 
   // Pending vs Final
   const FINAL_STATUSES = useMemo(() => new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]), []);
-  const pendingItemsRaw = useMemo(() => items.filter((s) => !FINAL_STATUSES.has(String(s.status))), [items, FINAL_STATUSES]);
+  // ✅ M24: market shifts (roomId null) ayrı listelenir
+  const marketItemsRaw = useMemo(
+    () => items.filter((s) => !FINAL_STATUSES.has(String(s.status)) && (s.roomId == null || s.roomId === "")),
+    [items, FINAL_STATUSES]
+  );
+
+  const pendingItemsRaw = useMemo(
+    () => items.filter((s) => !FINAL_STATUSES.has(String(s.status)) && s.roomId != null && s.roomId !== ""),
+    [items, FINAL_STATUSES]
+  );
   const finalItemsRaw = useMemo(() => items.filter((s) => FINAL_STATUSES.has(String(s.status))), [items, FINAL_STATUSES]);
 
   // Pending filtre uygula
@@ -779,6 +909,18 @@ export default function CompanyShiftsPanel() {
         return hay.includes(q);
       });
   }, [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement]);
+
+  // ✅ M24: Market filtre
+  const marketItems = useMemo(() => {
+    const q = String(marketQ || "").trim().toLowerCase();
+    return (marketItemsRaw || [])
+      .filter((s) => (onlyAgreement ? Number(s.agreementId) > 0 : true))
+      .filter((s) => {
+        if (!q) return true;
+        const hay = [s.id, s.status, s.companyId].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+  }, [marketItemsRaw, marketQ, onlyAgreement]);
 
   // Final filtre uygula
   const finalItems = useMemo(() => {
@@ -864,38 +1006,58 @@ export default function CompanyShiftsPanel() {
             </div>
 
             <div className="col">
-              <label className="muted">Room</label>
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                <label className="muted">Room</label>
+                <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }} title="Market shift: room seçmeden oluştur, sonra birden fazla room'a teklif gönder">
+                  <input type="checkbox" checked={marketMode} onChange={(e) => setMarketMode(e.target.checked)} disabled={busy} />
+                  Market
+                </label>
+              </div>
               <input
                 value={roomQ}
                 onChange={(e) => setRoomQ(e.target.value)}
                 placeholder="Room ara (name contains)"
-                disabled={busy}
+                disabled={busy || marketMode}
                 style={{ marginBottom: 6 }}
               />
-              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={busy}>
-                {roomOptions.length ? (
-                  roomOptions.map((r) => (
-                    <option key={r.id} value={String(r.id)}>
-                      {roomLabel(r)} (#{r.id})
-                      {r?.hubLat != null && r?.hubLng != null ? "" : " • (Hub yok)"}
-                      {seatN && !isCompany ? ` • ${r.eligibleCount} araç` : ""}
-                    </option>
-                  ))
-                ) : (
-                  <option value={roomId}>Room #{roomId}</option>
-                )}
-              </select>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Seçili room: {selectedRoom ? `${roomLabel(selectedRoom)} (#${selectedRoom.id})` : `#${roomId}`}
-                {selectedRoom ? (
-                  selectedRoom?.hubLat != null && selectedRoom?.hubLng != null ? (
-                    <span>
-                      {" "}• hub: {Number(selectedRoom.hubLat).toFixed(6)}, {Number(selectedRoom.hubLng).toFixed(6)}
-                    </span>
+              {marketMode ? (
+                <div className="card" style={{ marginTop: 6 }}>
+                  <div className="muted">
+                    Market shift: Room seçmeden talep açılır. Sonra <b>Teklif Gönder</b> ile birden fazla room’a teklif atabilirsin.
+                  </div>
+                </div>
+              ) : (
+                <select value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={busy}>
+                  {roomOptions.length ? (
+                    roomOptions.map((r) => (
+                      <option key={r.id} value={String(r.id)}>
+                        {roomLabel(r)} (#{r.id})
+                        {r?.hubLat != null && r?.hubLng != null ? "" : " • (Hub yok)"}
+                        {seatN && !isCompany ? ` • ${r.eligibleCount} araç` : ""}
+                      </option>
+                    ))
                   ) : (
-                    <span style={{ color: "#b85" }}>{" "}• hub yok</span>
-                  )
-                ) : null}
+                    <option value={roomId}>Room #{roomId}</option>
+                  )}
+                </select>
+              )}
+              <div className="muted" style={{ marginTop: 6 }}>
+                {marketMode ? (
+                  <span>Room: <b>—</b> (Market)</span>
+                ) : (
+                  <>
+                    Seçili room: {selectedRoom ? `${roomLabel(selectedRoom)} (#${selectedRoom.id})` : `#${roomId}`}
+                    {selectedRoom ? (
+                      selectedRoom?.hubLat != null && selectedRoom?.hubLng != null ? (
+                        <span>
+                          {" "}• hub: {Number(selectedRoom.hubLat).toFixed(6)}, {Number(selectedRoom.hubLng).toFixed(6)}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#b85" }}>{" "}• hub yok</span>
+                      )
+                    ) : null}
+                  </>
+                )}
               </div>
             </div>
 
@@ -909,27 +1071,35 @@ export default function CompanyShiftsPanel() {
               <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} disabled={busy} />
             </div>
 
-            <div className="col" style={{ gridColumn: "1 / -1" }}>
-              <label className="muted">Teklif Araç (opsiyonel)</label>
-              <select value={offerVehicleId} onChange={(e) => setOfferVehicleId(e.target.value)} disabled={busy}>
-                <option value="">— teklif yok —</option>
-                {filteredVehicles.map((v) => (
-                  <option key={v.id} value={String(v.id)}>
-                    {v.plate} • {vehicleMetaLine(v)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!marketMode ? (
+              <>
+                <div className="col" style={{ gridColumn: "1 / -1" }}>
+                  <label className="muted">Teklif Araç (opsiyonel)</label>
+                  <select value={offerVehicleId} onChange={(e) => setOfferVehicleId(e.target.value)} disabled={busy}>
+                    <option value="">— teklif yok —</option>
+                    {filteredVehicles.map((v) => (
+                      <option key={v.id} value={String(v.id)}>
+                        {v.plate} • {vehicleMetaLine(v)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="col" style={{ gridColumn: "1 / -1" }}>
-              <label className="muted">Company Tutar (₺) (opsiyonel)</label>
-              <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
-            </div>
+                <div className="col" style={{ gridColumn: "1 / -1" }}>
+                  <label className="muted">Company Tutar (₺) (opsiyonel)</label>
+                  <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
+                </div>
 
-            <div className="col" style={{ gridColumn: "1 / -1" }}>
-              <label className="muted">Teklif Notu (opsiyonel)</label>
-              <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" disabled={busy} />
-            </div>
+                <div className="col" style={{ gridColumn: "1 / -1" }}>
+                  <label className="muted">Teklif Notu (opsiyonel)</label>
+                  <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" disabled={busy} />
+                </div>
+              </>
+            ) : (
+              <div className="col" style={{ gridColumn: "1 / -1" }}>
+                <div className="muted">Market shift’te teklif (tutar/not) room bazlı gönderilir.</div>
+              </div>
+            )}
 
             <div className="col" style={{ justifyContent: "end" }}>
               <button disabled={busy} type="submit">
@@ -1080,6 +1250,61 @@ export default function CompanyShiftsPanel() {
             </button>
           </div>
         </div>
+
+        {/* ✅ M24: Market shifts (room seçilmemiş) */}
+        {marketItems.length ? (
+          <div className="card" style={{ marginTop: 12 }}>
+            <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>Market Shifts</div>
+                <div className="muted">Room seçilmemiş talepler. Teklifi birden fazla room’a gönder.</div>
+              </div>
+              <input
+                placeholder="Ara (id/status)"
+                value={marketQ}
+                onChange={(e) => setMarketQ(e.target.value)}
+                style={{ minWidth: 220 }}
+              />
+            </div>
+
+            <table className="tbl" style={{ marginTop: 10 }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Offers</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marketItems.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      {s.id}
+                      <AgreementBadge agreementId={s.agreementId} />
+                    </td>
+                    <td>
+                      <span className="pill" data-status={s.status}>{s.status}</span>
+                    </td>
+                    <td className="muted">{fmtTR(s.startAt)}</td>
+                    <td className="muted">{fmtTR(s.endAt)}</td>
+                    <td>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button type="button" disabled={busy} onClick={() => openOfferModalForShift(s.id)}>
+                          Teklif Gönder
+                        </button>
+                        <button type="button" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>
+                          Teklifler
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
 
         {pendingItems.length ? (
           <table className="tbl">
@@ -1297,6 +1522,133 @@ export default function CompanyShiftsPanel() {
           <div className="muted">Henüz “Liste”ye düşen kayıt yok.</div>
         )}
       </div>
+
+      {/* ✅ M24: Offer modal */}
+      {offerModal.open ? (
+        <div className="card" style={{ border: "2px solid #ddd" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 800 }}>Teklif Gönder — Shift #{offerModal.shiftId}</div>
+              <div className="muted">Birden fazla room seçip tek seferde teklif at.</div>
+            </div>
+            <button type="button" disabled={busy} onClick={() => setOfferModal((p) => ({ ...p, open: false }))}>
+              Kapat
+            </button>
+          </div>
+
+          <hr />
+
+          <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              placeholder="Room ara"
+              value={offerModal.q}
+              onChange={(e) => setOfferModal((p) => ({ ...p, q: e.target.value }))}
+              style={{ minWidth: 220 }}
+            />
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={offerModal.onlyHub}
+                onChange={(e) => setOfferModal((p) => ({ ...p, onlyHub: e.target.checked }))}
+              />
+              Sadece hub’lı
+            </label>
+          </div>
+
+          <div style={{ marginTop: 10, maxHeight: 220, overflow: "auto" }}>
+            {(rooms || [])
+              .filter((r) => {
+                if (offerModal.onlyHub && !(r?.hubLat != null && r?.hubLng != null)) return false;
+                const q = String(offerModal.q || "").trim().toLowerCase();
+                if (!q) return true;
+                return String(r?.name || "").toLowerCase().includes(q);
+              })
+              .map((r) => (
+                <label key={r.id} className="muted" style={{ display: "flex", gap: 8, alignItems: "center", padding: "4px 0" }}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(offerModal.roomIds?.[r.id])}
+                    onChange={() => toggleOfferRoom(r.id)}
+                  />
+                  <span>
+                    <b>{roomLabel(r)}</b> (#{r.id})
+                    {r?.hubLat != null && r?.hubLng != null ? "" : " • hub yok"}
+                  </span>
+                </label>
+              ))}
+          </div>
+
+          <hr />
+
+          <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
+            <div className="col" style={{ minWidth: 180 }}>
+              <label className="muted">Company Tutar (₺) (opsiyonel)</label>
+              <input
+                value={offerModal.amountCompany}
+                onChange={(e) => setOfferModal((p) => ({ ...p, amountCompany: e.target.value }))}
+                placeholder="örn 25000"
+              />
+            </div>
+            <div className="col" style={{ flex: 1, minWidth: 240 }}>
+              <label className="muted">Not (opsiyonel)</label>
+              <input
+                value={offerModal.noteCompany}
+                onChange={(e) => setOfferModal((p) => ({ ...p, noteCompany: e.target.value }))}
+                placeholder="opsiyonel"
+              />
+            </div>
+            <button type="button" disabled={busy} onClick={submitOfferModal}>
+              {busy ? "..." : "Teklifleri Gönder"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ✅ M24: Offers list modal */}
+      {offersModal.open ? (
+        <div className="card" style={{ border: "2px solid #ddd" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 800 }}>Teklifler — Shift #{offersModal.shiftId}</div>
+              <div className="muted">Birini kabul edince diğerleri otomatik iptal olur.</div>
+            </div>
+            <button type="button" disabled={busy} onClick={() => setOffersModal((p) => ({ ...p, open: false }))}>
+              Kapat
+            </button>
+          </div>
+
+          <table className="tbl" style={{ marginTop: 10 }}>
+            <thead>
+              <tr>
+                <th>Room</th>
+                <th>Status</th>
+                <th>Company</th>
+                <th>Room</th>
+                <th>Accept</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(offersModal.items || []).map((o) => (
+                <tr key={o.id}>
+                  <td className="muted">{o.room ? `${roomLabel(o.room)} (#${o.room.id})` : `#${o.roomId}`}</td>
+                  <td><span className="pill" data-status={o.status}>{o.status}</span></td>
+                  <td className="muted">{formatTRY(o.amountCompany)}</td>
+                  <td className="muted">{formatTRY(o.amountRoom)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      disabled={busy || o.status === "CANCELLED" || o.status === "ACCEPTED"}
+                      onClick={() => acceptOffer(o.id)}
+                    >
+                      Kabul Et
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </div>
   );
 }

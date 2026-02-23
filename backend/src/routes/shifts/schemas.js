@@ -45,7 +45,8 @@ const strOrNullMax = (max) =>
 // ----------------------------------
 export const createShiftSchema = z.object({
   companyId: posIntOpt,
-  roomId: coercePosInt, // required
+  // ✅ M24: roomId optional (market shift)
+  roomId: posIntOpt,
   startAt: z.string(),
   endAt: z.string(),
   status: z.string().optional(),
@@ -74,6 +75,20 @@ export const createShiftSchema = z.object({
       })
     )
     .optional(),
+});
+
+// ----------------------------------
+// M24: Marketplace offers
+// ----------------------------------
+export const createShiftOffersSchema = z.object({
+  roomIds: z.array(coercePosInt).min(1).max(10),
+  amountCompany: posIntOpt,
+  noteCompany: z.string().max(500).optional(),
+});
+
+export const counterShiftOfferSchema = z.object({
+  amountRoom: posIntOpt,
+  noteRoom: z.string().max(500).optional(),
 });
 
 // ----------------------------------

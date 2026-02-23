@@ -36,6 +36,7 @@ import { adminRouter } from "./routes/admin.js";
 import * as companiesMod from "./routes/companies.js";
 import * as roomsMod from "./routes/rooms.js";
 import * as routeTemplatesMod from "./routes/routeTemplates.js";
+import { offersRouter } from "./routes/offers.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -204,6 +205,7 @@ app.use("/api/driver", driverRouter(io));
 app.use("/api/personels", personelsRouter(io));
 app.use("/api/company/personels", companyPersonelsRouter());
 app.use("/api/agreements", agreementsRouter(io));
+app.use("/api/offers", offersRouter(io));
 // Background monitors
 const stopMonitors = startMonitors(io);
 

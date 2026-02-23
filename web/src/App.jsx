@@ -24,6 +24,7 @@ import PersonelLivePanel from "./panels/personel/LivePanel";
 // ✅ M17.1 UI
 import RoomAgreementsPanel from "./panels/room/AgreementsPanel";
 import CompanyAgreementsPanel from "./panels/company/AgreementsPanel";
+import RoomOffersPanel from "./panels/room/OffersPanel";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -146,6 +147,8 @@ export default function App() {
       return { layout: true, node: <RoomShiftsPanel /> };
     if (path === "/room/agreements")
       return { layout: true, node: <RoomAgreementsPanel /> };
+    if (path === "/room/offers")
+      return { layout: true, node: <RoomOffersPanel /> };
 
     // COMPANY
     if (path === "/company/map")

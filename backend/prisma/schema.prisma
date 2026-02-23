@@ -39,6 +39,13 @@ enum OfferDecision {
   REJECTED
 }
 
+enum ShiftOfferStatus {
+  OPEN
+  COUNTERED
+  ACCEPTED
+  CANCELLED
+}
+
 enum VehicleType {
   MINIBUS
   MIDIBUS
@@ -120,6 +127,7 @@ enum RoutePattern {
   ONE_WAY
   LOOP
 }
+
 // --- Core Models ---
 
 model Company {
@@ -132,7 +140,7 @@ model Company {
   shifts        Shift[]
   personels     Personel[]
   notifications Notification[]
-  agreements Agreement[]
+  agreements    Agreement[]
 }
 
 model Room {
@@ -150,7 +158,10 @@ model Room {
   shifts         Shift[]
   notifications  Notification[]
   routeTemplates RouteTemplate[]
-  agreements Agreement[]
+  agreements     Agreement[]
+
+  // ✅ M24: offers inbox (Room ↔ ShiftOffer)
+  shiftOffers    ShiftOffer[] @relation("RoomShiftOffers")
 }
 
 // Auth entity (login) — role taşıyıcı
@@ -187,7 +198,7 @@ model Vehicle {
   capacity      Int
   status        VehicleStatus @default(ACTIVE)
   speedLimitKmh Int           @default(80)
-  agreements Agreement[]
+  agreements    Agreement[]
 
   // Opsiyonel: bu araca bağlı varsayılan driver
   driverId Int?
@@ -226,15 +237,15 @@ model Vehicle {
 
   createdAt DateTime @default(now())
 
-  room          Room            @relation(fields: [roomId], references: [id])
-  driver        Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  gpsLast       GpsLast?
-  gpsState      VehicleGpsState? // ✅ UI status gate state
-  gpsPoints     GpsPoint[]
+  room            Room             @relation(fields: [roomId], references: [id])
+  driver          Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  gpsLast         GpsLast?
+  gpsState        VehicleGpsState? // ✅ UI status gate state
+  gpsPoints       GpsPoint[]
   // ✅ M19: learned route samples
   routeLearnSamples RouteLearnSample[]
-  shifts        Shift[]
-  notifications Notification[]
+  shifts          Shift[]
+  notifications   Notification[]
 
   @@index([roomId])
   @@index([roomId, archivedAt])
@@ -248,7 +259,7 @@ model Driver {
   deviceInfo     String
   backupDriverId Int?
   createdAt      DateTime @default(now())
-  agreements Agreement[]
+  agreements     Agreement[]
 
   room Room @relation(fields: [roomId], references: [id])
 
@@ -271,7 +282,7 @@ model Driver {
 model Shift {
   id        Int         @id @default(autoincrement())
   companyId Int
-  roomId    Int
+  roomId    Int?
   vehicleId Int?
   driverId  Int?
   startAt   DateTime
@@ -283,7 +294,7 @@ model Shift {
   hubLng    Float?
   direction ShiftDirection @default(INBOUND)
   pattern   RoutePattern   @default(ONE_WAY)
-  createdAt DateTime    @default(now())
+  createdAt DateTime       @default(now())
 
   // COMPANY → ROOM teklif
   companyOfferVehicleId Int?
@@ -303,7 +314,7 @@ model Shift {
   roomOfferDecisionAt   DateTime?
 
   company Company  @relation(fields: [companyId], references: [id])
-  room    Room     @relation(fields: [roomId], references: [id])
+  room    Room?    @relation(fields: [roomId], references: [id])
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
   driver  Driver?  @relation(fields: [driverId], references: [id])
 
@@ -312,10 +323,14 @@ model Shift {
   progress       ShiftProgress?
   notifications  Notification[]
 
+  // ✅ M24: marketplace offers
+  offers ShiftOffer[]
+
   // ✅ M16.1
   people      ShiftPersonel[]
   imports     ShiftImport[]
   assignments StopAssignment[]
+
   // ✅ M18: agreement kaynaklı otomatik shift
   agreementId Int?
   agreement   Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
@@ -337,7 +352,34 @@ model Shift {
   @@index([agreementId])
   @@unique([agreementId, startAt])
 }
- // ✅ M17
+
+model ShiftOffer {
+  id        Int              @id @default(autoincrement())
+  shiftId   Int
+  roomId    Int
+  status    ShiftOfferStatus @default(OPEN)
+
+  // Company -> Room initial offer
+  amountCompany Int?
+  noteCompany   String?
+
+  // Room -> Company counter offer
+  amountRoom Int?
+  noteRoom   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  room  Room  @relation("RoomShiftOffers", fields: [roomId], references: [id])
+
+  @@unique([shiftId, roomId])
+  @@index([shiftId])
+  @@index([roomId])
+  @@index([status])
+}
+
+// ✅ M17
 model Agreement {
   id        Int             @id @default(autoincrement())
   companyId Int
@@ -345,7 +387,6 @@ model Agreement {
 
   vehicleId Int?
   driverId  Int?
-
 
   // ✅ M19: routing meta (worksite hub + direction/pattern)
   hubLat    Float?
@@ -375,8 +416,10 @@ model Agreement {
   room    Room     @relation(fields: [roomId], references: [id])
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
   // ✅ M18: agreement -> generated shifts
   shifts Shift[]
+
   @@index([companyId])
   @@index([roomId])
   @@index([vehicleId])
@@ -384,6 +427,7 @@ model Agreement {
   @@index([status])
   @@index([startDate, endDate])
 }
+
 model Stop {
   id     Int  @id @default(autoincrement())
   shiftId Int
@@ -396,7 +440,7 @@ model Stop {
   state     StopState @default(PENDING)
   reachedAt DateTime?
   skippedAt DateTime?
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime @updatedAt
 
   shift Shift @relation(fields: [shiftId], references: [id])
 
@@ -478,7 +522,7 @@ model ShiftPersonel {
   note       String?
   createdAt  DateTime @default(now())
 
-  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
 
   @@unique([shiftId, personelId])
@@ -487,8 +531,8 @@ model ShiftPersonel {
 }
 
 model ShiftImport {
-  id             Int      @id @default(autoincrement())
-  shiftId         Int
+  id              Int      @id @default(autoincrement())
+  shiftId          Int
   createdByUserId Int?
   fileName        String?
   createdAt       DateTime @default(now())
@@ -502,22 +546,22 @@ model ShiftImport {
 }
 
 model ShiftImportRow {
-  id        Int      @id @default(autoincrement())
-  importId  Int
-  rowNo     Int
-  rawJson   Json?
-  fullName  String?
-  phone     String?
-  address   String?
-  lat       Float?
-  lng       Float?
-  geoStatus GeoStatus @default(NEEDS_REVIEW)
+  id         Int      @id @default(autoincrement())
+  importId   Int
+  rowNo      Int
+  rawJson    Json?
+  fullName   String?
+  phone      String?
+  address    String?
+  lat        Float?
+  lng        Float?
+  geoStatus  GeoStatus @default(NEEDS_REVIEW)
   personelId Int?
 
   createdAt DateTime @default(now())
 
-  import  ShiftImport @relation(fields: [importId], references: [id], onDelete: Cascade)
-  personel Personel?  @relation(fields: [personelId], references: [id])
+  import   ShiftImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  personel Personel?   @relation(fields: [personelId], references: [id])
 
   @@index([importId])
 }
@@ -568,9 +612,9 @@ model GpsLast {
 
 // ✅ notif dedupe/transition gate için UI status state’i
 model VehicleGpsState {
-  vehicleId     Int       @id
+  vehicleId     Int        @id
   lastUiStatus  UiGpsStatus
-  lastChangedAt DateTime  @default(now())
+  lastChangedAt DateTime   @default(now())
   seenLiveAt    DateTime?
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
@@ -590,19 +634,18 @@ model GpsPoint {
   @@index([vehicleId, at])
 }
 
-
 // ✅ M19: learned route store (map-matched samples + canonical)
 model RouteLearnSample {
-  id            Int      @id @default(autoincrement())
-  routeKey      String
-  shiftId       Int
-  vehicleId     Int
-  startAt       DateTime
+  id              Int      @id @default(autoincrement())
+  routeKey        String
+  shiftId         Int
+  vehicleId       Int
+  startAt         DateTime
   polylineMatched String // JSON string: [{lat,lng}...]
-  distanceKm    Float
-  durationMin   Int
-  qualityScore  Float
-  createdAt     DateTime @default(now())
+  distanceKm      Float
+  durationMin     Int
+  qualityScore    Float
+  createdAt       DateTime @default(now())
 
   shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
@@ -613,22 +656,23 @@ model RouteLearnSample {
 }
 
 model RouteLearned {
-  routeKey          String   @id
-  polylineCanonical String   // JSON string: [{lat,lng}...]
-  distanceKmLearned Float
+  routeKey           String   @id
+  polylineCanonical  String   // JSON string: [{lat,lng}...]
+  distanceKmLearned  Float
   durationMinLearned Int
-  sampleCount       Int
-  updatedAt         DateTime @updatedAt
+  sampleCount        Int
+  updatedAt          DateTime @updatedAt
 }
+
 // Notification: scope bazlı (ROOM/COMPANY/DRIVER)
 // payloadJson: Json tipinde serbest içerik
 model Notification {
-  id         Int               @id @default(autoincrement())
-  type       String
-  scope      NotificationScope
+  id          Int              @id @default(autoincrement())
+  type        String
+  scope       NotificationScope
   payloadJson Json
-  createdAt  DateTime          @default(now())
-  dedupeKey  String?           @unique
+  createdAt   DateTime         @default(now())
+  dedupeKey   String?          @unique
 
   // optional targets
   companyId Int?

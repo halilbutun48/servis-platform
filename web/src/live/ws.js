@@ -108,6 +108,9 @@ function guessTopics(msg) {
   // ✅ agreements auto-refresh
   if (raw.includes("agreement")) topics.add("agreements");
 
+  // ✅ M24: offers
+  if (raw.includes("offer")) topics.add("offers");
+
   // explicit topic override (backend msg.topic kullanırsa)
   if (
     topic === "shifts" ||
@@ -116,6 +119,7 @@ function guessTopics(msg) {
     topic === "rooms" ||
     topic === "notifications" ||
     topic === "agreements"
+    || topic === "offers"
   ) {
     topics.add(topic);
   }
