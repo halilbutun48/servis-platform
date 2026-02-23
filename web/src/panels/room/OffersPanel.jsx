@@ -81,9 +81,18 @@ export default function RoomOffersPanel() {
     const qq = String(q || "").trim().toLowerCase();
     if (!qq) return items;
     return (items || []).filter((o) => {
-      const shift = o.shift;
-      const company = shift?.company;
-      const hay = [o.id, o.shiftId, o.status, company?.name, shift?.companyId, o.noteCompany, o.noteRoom]
+      const shift = o.shift || {};
+      const company = shift?.company || {};
+      const hay = [
+        o.id,
+        o.shiftId,
+        o.status,
+        company?.name,
+        shift?.companyId,
+        shift?.status, // ✅ M29-B: shift status searchable
+        o.noteCompany,
+        o.noteRoom,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -120,7 +129,9 @@ export default function RoomOffersPanel() {
     <div className="wrap">
       <div className="card">
         <div className="title">Offers (Gelen Teklifler)</div>
-        <div className="muted">Company tarafının gönderdiği market shift teklifleri. (M28: Shift’e git linki)</div>
+        <div className="muted">
+          Company tarafının gönderdiği market shift teklifleri. (M29: shift durumu badge)
+        </div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -139,7 +150,12 @@ export default function RoomOffersPanel() {
                 ))}
               </select>
             </label>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ara (company / shiftId / not...)" style={{ minWidth: 220 }} />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Ara (company / shiftId / shiftStatus / not...)"
+              style={{ minWidth: 240 }}
+            />
           </div>
           <button disabled={busy} onClick={load}>
             Yenile
@@ -148,7 +164,7 @@ export default function RoomOffersPanel() {
       </div>
 
       {filtered.map((o) => {
-        const shift = o.shift;
+        const shift = o.shift || {};
         const company = shift?.company;
         const c = counterSel[o.id] || {};
         const canCounter = o.status !== "CANCELLED" && o.status !== "ACCEPTED";
@@ -163,8 +179,9 @@ export default function RoomOffersPanel() {
                   {fmtTR(shift?.startAt)} → {fmtTR(shift?.endAt)}
                 </div>
               </div>
-              <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 {pill(o.status)}
+                {pill(shift?.status)} {/* ✅ M29-B: shift status badge */}
                 <button type="button" disabled={busy} onClick={() => goShift(o.shiftId)}>
                   Shift’e Git
                 </button>
@@ -191,11 +208,19 @@ export default function RoomOffersPanel() {
                 <div className="row" style={{ gap: 8, alignItems: "end", flexWrap: "wrap" }}>
                   <div className="col" style={{ minWidth: 160 }}>
                     <label className="muted">Karşı Teklif (TL)</label>
-                    <input value={c.amountRoom ?? ""} onChange={(e) => setCounter(o.id, { amountRoom: e.target.value })} placeholder="örn 12500" />
+                    <input
+                      value={c.amountRoom ?? ""}
+                      onChange={(e) => setCounter(o.id, { amountRoom: e.target.value })}
+                      placeholder="örn 12500"
+                    />
                   </div>
                   <div className="col" style={{ flex: 1, minWidth: 220 }}>
                     <label className="muted">Not</label>
-                    <input value={c.noteRoom ?? ""} onChange={(e) => setCounter(o.id, { noteRoom: e.target.value })} placeholder="opsiyonel" />
+                    <input
+                      value={c.noteRoom ?? ""}
+                      onChange={(e) => setCounter(o.id, { noteRoom: e.target.value })}
+                      placeholder="opsiyonel"
+                    />
                   </div>
                   <button disabled={busy} onClick={() => onCounter(o.id)}>
                     Counter Gönder
