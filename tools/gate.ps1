@@ -2,7 +2,7 @@
 
 param(
   [Parameter(Mandatory=$false)]
-  [ValidateRange(0,24)]
+  [ValidateRange(0,25)]
   [int]$To = 21,
 
   [Parameter(Mandatory=$false)]
@@ -49,7 +49,8 @@ $checks = @(
   @{ n = 21; name="M21"; file="m21check.js"; cmd="node scripts/m21check.js" },
   @{ n = 22; name="M22"; file="m22check.js"; cmd="node scripts/m22check.js" },
   @{ n = 23; name="M23"; file="m23check.js"; cmd="node scripts/m23check.js" },
-  @{ n = 24; name="M24"; file="m24check.js"; cmd="node scripts/m24check.js" }
+  @{ n = 24; name="M24"; file="m24check.js"; cmd="node scripts/m24check.js" },
+  @{ n = 25; name="M25"; file="m25check.js"; cmd="node scripts/m25check.js" }
 )
 
 

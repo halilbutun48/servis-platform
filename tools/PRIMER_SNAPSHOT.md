@@ -8,28 +8,21 @@ Repo: servis-platform (aktif çalışma klasörü: D:\servis-platform)
 
 Çalışma modu: Docker mode (Gate/Pack container içinde koşar; host node_modules gerekmiyor)
 
-Son GREEN (güncel): v1-m22-green.1 ✅ tools/pack.ps1 -To 22 PASS
+Son GREEN (güncel): v1-m24-green.1 ✅ tools/pack.ps1 -To 24 PASS
 
-İçerik: M0→M22
+İçerik: M0→M24
 
-M17 Agreements ✅
-
-M18 Agreement→Daily Shift Generator ✅
-
-M19 Hub + Direction/Pattern + Route Preview (summary/path) ✅
-
-M20 Availability bulk ✅
-
-M21 SUPER_ADMIN Companies/Rooms + Overview stats ✅
+M21 Room↔Company decouple + SUPER_ADMIN admin/stats ✅
 
 M22 Room Directory + Company Agreement/Shift Room Select UX ✅
 
+M23 WS agreement:update → Agreements auto-refresh ✅
+
+M24 Marketplace Offers (multi-room offer + counter + accept cancels others) ✅
+
 Doğrulama komutu:
 
-.\tools\pack.ps1 -To 22
-
-Not: PowerShell execution policy sıkıntısı olursa “Process scope bypass” ile sadece o oturumda çalıştırılır.
-
+.\tools\pack.ps1 -To 24
 1) Amaç (V1)
 
 Öğrenci/parent yok. GPS tabanlı personel servis platformu:
@@ -48,127 +41,119 @@ Shift People + Route Preview standardı (M16.2)
 
 Geo Review + Manual Override (M16.3)
 
-Agreements (M17): periyodik rezervasyon + conflict + monitor + availability entegrasyonu
+Agreements (M17) + monitor + availability entegrasyonu
 
-Agreement → “bugün” için otomatik shift üretimi + duplicate guard (M18)
+Agreement → günlük shift üretimi (M18)
 
-Hub/direction/pattern + route-preview summary/path (M19)
+Hub + direction/pattern + route preview summary/path (M19)
 
 Availability bulk (M20)
 
-SUPER_ADMIN yönetim ekranları + Overview stats (M21)
+SUPER_ADMIN yönetimi + overview stats (M21)
 
-Room Directory + Company tarafında room seçimi UX (M22)
+Room Directory + Company UX (M22)
+
+WS auto-refresh (Agreements) (M23)
+
+Marketplace Offers (Shift teklif pazarı) (M24)
 
 2) Roller
 
 SUPER_ADMIN: kurulum, company/room yönetimi, admin stats
 
-ROOM: araç+sürücü CRUD, shift approve/assign/start, request close(ACCEPTED), stop-suggestions + from-suggestion, route-preview, agreement approve
+ROOM: araç+sürücü CRUD, shift approve/assign/start, request close(ACCEPTED), stop-suggestions + from-suggestion, route-preview, agreement approve, offers inbox + counter (M24)
 
-COMPANY: shift create, template yönetimi, request’leri görür (kapatamaz), agreements create/cancel/extend, shift people UI soft-switch
+COMPANY: shift create, template yönetimi, agreements create/cancel/extend, market shift + offers gönder + accept (M24)
 
 DRIVER: GPS post (assigned vehicle), active route, stop progression, complete
 
 PERSONEL: request create (lat/lng zorunlu), own view
 
 3) Kritik Mimari Kural (M21) — Company ↔ Room ilişkisi
-Domain tanımı (V1)
 
 Company = servis kiralayan
 
 Room = servis sağlayan (bağımsız)
 
-Company ile Room arasındaki ilişki Agreement üzerinden kurulur (many-to-many).
+Company ↔ Room ilişkisi Agreement ile (many-to-many)
 
-Sonuçlar
+Room oluştururken company seçilmez
 
-✅ Room oluştururken company seçilmez (Room bağımsız “directory”)
+Room.companyId yok (kaldırıldı)
 
-✅ Eski Room.companyId modeli kaldırıldı (artık yok)
-
-✅ Bildirim/filtre/erişim kuralları room.companyId gibi alanlara bağlı değildir.
-
-4) M16 doğrulanan akış (kısa)
-
-COMPANY shift create
-
-ROOM approve/assign(vehicleId+driverId) + start
-
-PERSONEL request create (lat/lng required)
-
-ROOM stop-suggestions (cluster) → POST stops/from-suggestion
-
-DRIVER route: GET /api/driver/route/active
-
-Cleanup: shift complete
-
-5) M17 — Agreements (Periyodik rezervasyon)
-
-COMPANY: create/list/cancel/extend
-
-ROOM: approve (vehicle+driver assign)
-
-Conflict: approve’da 409
-
-Availability kuralı: agreement conflict önce, shift conflict sonra
-
-Monitor: süresi geçen agreement otomatik DONE
-
-6) M18 — Agreement → Günlük Shift Otomatik Üretimi
-
-Job: agreementShiftGenerator
-
-Duplicate guard: unique(agreementId, startAt)
-
-UI: Company/Room Shifts listesinde Agreement #id badge + filtre
-
-7) M19 — Hub + Direction/Pattern + Route Preview (summary/path)
-
-Shift’te hub + (OUTBOUND/INBOUND) + (LOOP/LINE) desteklenir
-
-Route preview response: summary + path.points içerir (tahmini km/dk)
-
-8) M20 — Availability Bulk
-
-Tek çağrıda çoklu vehicle/driver uygunluk kontrolü
-
-Conflict payload deterministik (agreement-first)
-
-9) M21 — SUPER_ADMIN Admin/Overview
-
-GET /api/admin/stats → { companies, rooms, vehicles, drivers }
-
-SUPER_ADMIN paneli: Companies/Rooms create+list (V1’de update/delete yok)
-
-10) M22 — Room Directory + Company UX
+4) M22 — Room Directory + Company UX
 Backend
 
-GET /api/rooms artık Company için directory gibi çalışır:
+GET /api/rooms Company için directory:
 
-?q= → isimle arama (contains)
+?q= (isimle arama)
 
-?hasHub=1 → hub’ı olan room’lar
+?hasHub=1 (hub’ı olanlar)
 
-?take= → limit
-
-m22check.js ile doğrulama: room create + hub set + company search + agreement create
+?take= (limit)
 
 Web (Company)
 
-Agreements panelinde Room dropdown + search + “sadece hub’lı”
+Agreements: Room dropdown + search + “sadece hub’lı”
 
-Shifts panelinde Room seçimi + search
+Shifts: Room seçimi + search + company:lastRoomId
 
-localStorage: company:lastRoomId (son seçilen room’u hatırlar)
+5) M23 — WS (Agreements Auto-Refresh)
 
-11) OSRM / Learning notu (repo hijyeni)
+Backend agreement:update event’leri geldiğinde web ws.js:
 
-infra/osrm-data/ Git’te yok (runtime artifact, çok büyük)
+eventName’i (agreement:update) normalize eder
 
-Learning/route match için localde data bulunmalı; repo commit/tag/push sırasında taşınmaz.
+agreements topic invalidate eder
 
-12) SSOT dokümanlar
+Company/Room Agreements panelleri otomatik yenilenir.
+
+6) M24 — Marketplace Offers (Multi-Room)
+İş mantığı
+
+Company shift’i room seçmeden oluşturabilir (market shift).
+
+Company aynı shift için birden fazla room’a teklif gönderir.
+
+Room teklifleri “inbox”ta görür ve counter yapabilir.
+
+Company bir teklifi ACCEPT edince:
+
+shift roomId ile o room’a bağlanır
+
+diğer room teklifleri CANCELLED olur (transaction)
+
+ROOM sadece kabul edilen shift’i approve/assign edebilir.
+
+API (özet)
+
+POST /api/shifts → roomId opsiyonel (market shift)
+
+POST /api/shifts/:id/offers (COMPANY) → { roomIds[], amountCompany?, noteCompany? }
+
+GET /api/offers/inbox (ROOM)
+
+GET /api/offers/shift/:shiftId (COMPANY)
+
+PUT /api/offers/:id/counter (ROOM)
+
+PUT /api/offers/:id/accept (COMPANY) → accept 1 + cancel others + bind shift.roomId
+
+(ops) PUT /api/offers/:id/cancel (COMPANY)
+
+UI (özet)
+
+ROOM: Offers panel (inbox + counter)
+
+COMPANY: Shifts panel (market shift + teklif gönder + teklifler listesi + accept)
+
+7) OSRM / Learning notu (repo hijyeni)
+
+infra/osrm-data/ Git’te yok (runtime artifact)
+
+Localde data bulunmalı; commit/tag/push içine girmez.
+
+8) SSOT dokümanlar
 
 docs/PRIMER_SSOT.md
 
@@ -184,16 +169,16 @@ docs/STARTPACK_V1.md
 
 docs/MILESTONE_M22.md
 
-Ek — M16/M19/M22 Endpoint Referansları (kısa)
+docs/MILESTONE_M23.md
 
-Suggestions: GET /api/shifts/:id/stop-suggestions
+docs/MILESTONE_M24.md
 
-From-suggestion: POST /api/shifts/:id/stops/from-suggestion
+M25 Adayları (seçim)
 
-Driver route: GET /api/driver/route/active
+Offer UX polishing: filtre/sıralama, Accept sonrası otomatik refresh + banner, room tarafına “CANCELLED” bildirimleri
 
-Route preview: GET /api/shifts/:id/route-preview
+Shift lifecycle uyumu: market shift → accept sonrası “approve gate” mesajları ve daha net status geçişleri
 
-Room directory: GET /api/rooms?q=&hasHub=1&take=
+WS offers: offer:update eventlerini daha granular topic’lerle auto-refresh (company/room offers ekranları)
 
-İstersen bir sonraki adım olarak M23’ü seçelim. Benim önerim: M23-A = WS agreement:update ile Company/Room Agreements auto-refresh (en hızlı UX kazanımı, düşük risk).
+Hangisini M25 yapalım? (Ben 1’i öneririm: en hızlı kullanıcı değeri, düşük risk.)

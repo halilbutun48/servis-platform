@@ -21,70 +21,87 @@ function emitOffer(io, { companyId, roomId, shiftId, kind, offerId }) {
 export function offersRouter(io) {
   const r = express.Router();
 
-  // ROOM: inbox
-  // GET /api/offers/inbox
-  r.get(
-    "/inbox",
-    authRequired(),
-    requireRole("ROOM", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
-        const roomId = req.user.role === "ROOM" ? req.user.roomId : Number(req.query.roomId || 0);
-        if (!roomId) return res.json({ items: [] });
+// ROOM: inbox
+// GET /api/offers/inbox?status=OPEN,COUNTERED
+r.get(
+  "/inbox",
+  authRequired(),
+  requireRole("ROOM", "SUPER_ADMIN"),
+  async (req, res) => {
+    try {
+      const roomId = req.user.role === "ROOM" ? req.user.roomId : Number(req.query.roomId || 0);
+      if (!roomId) return res.json({ items: [] });
 
-        const items = await prisma.shiftOffer.findMany({
-          where: { roomId },
-          orderBy: [{ updatedAt: "desc" }],
-          take: 200,
-          include: {
-            room: true,
-            shift: {
-              include: {
-                company: true,
-              },
-            },
-          },
-        });
+      // ✅ M25: status filter (comma-separated)
+      const raw = String(req.query.status || "").trim();
+      const statusList = raw
+        ? raw.split(",").map((s) => s.trim()).filter(Boolean)
+        : null;
 
-        return res.json({ items });
-      } catch (e) {
-        return res.status(500).json({ error: String(e?.message ?? e) });
-      }
+      const where = {
+        roomId,
+        ...(statusList ? { status: { in: statusList } } : {}),
+      };
+
+      const items = await prisma.shiftOffer.findMany({
+        where,
+        orderBy: [{ updatedAt: "desc" }],
+        take: 200,
+        include: {
+          room: true,
+          shift: { include: { company: true } },
+        },
+      });
+
+      return res.json({ items });
+    } catch (e) {
+      return res.status(500).json({ error: String(e?.message ?? e) });
     }
-  );
+  }
+);
+// COMPANY: list offers for a shift
+// GET /api/offers/shift/:shiftId?status=OPEN,COUNTERED
+r.get(
+  "/shift/:shiftId",
+  authRequired(),
+  requireRole("COMPANY", "SUPER_ADMIN"),
+  async (req, res) => {
+    try {
+      const shiftId = Number(req.params.shiftId);
+      if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
 
-  // COMPANY: list offers for a shift
-  // GET /api/offers/shift/:shiftId
-  r.get(
-    "/shift/:shiftId",
-    authRequired(),
-    requireRole("COMPANY", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
-        const shiftId = Number(req.params.shiftId);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
-
-        const shift = await prisma.shift.findUnique({
-          where: { id: shiftId },
-          select: { id: true, companyId: true },
-        });
-        if (!shift) return res.status(404).json({ error: "Shift not found" });
-        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
-        }
-
-        const items = await prisma.shiftOffer.findMany({
-          where: { shiftId },
-          orderBy: [{ id: "asc" }],
-          include: { room: true },
-        });
-
-        return res.json({ items });
-      } catch (e) {
-        return res.status(500).json({ error: String(e?.message ?? e) });
+      const shift = await prisma.shift.findUnique({
+        where: { id: shiftId },
+        select: { id: true, companyId: true },
+      });
+      if (!shift) return res.status(404).json({ error: "Shift not found" });
+      if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
+        return res.status(403).json({ error: "Forbidden" });
       }
+
+      // ✅ M25: status filter (comma-separated)
+      const raw = String(req.query.status || "").trim();
+      const statusList = raw
+        ? raw.split(",").map((s) => s.trim()).filter(Boolean)
+        : null;
+
+      const where = {
+        shiftId,
+        ...(statusList ? { status: { in: statusList } } : {}),
+      };
+
+      const items = await prisma.shiftOffer.findMany({
+        where,
+        orderBy: [{ id: "asc" }],
+        include: { room: true },
+      });
+
+      return res.json({ items });
+    } catch (e) {
+      return res.status(500).json({ error: String(e?.message ?? e) });
     }
-  );
+  }
+);
 
   // ROOM: counter offer
   // PUT /api/offers/:id/counter

@@ -23,7 +23,6 @@ function AgreementBadge({ agreementId }) {
   );
 }
 
-
 function vehicleMetaLine(v) {
   const type = TYPE_TR[v?.type] || (v?.type ? String(v.type) : "");
   const bmy = [v?.brand, v?.model, v?.modelYear].filter(Boolean).join(" ");
@@ -113,6 +112,9 @@ export default function CompanyShiftsPanel() {
     noteCompany: "",
   });
   const [offersModal, setOffersModal] = useState({ open: false, shiftId: null, items: [] });
+
+  // ✅ M25: Offer accept banner
+  const [offerBanner, setOfferBanner] = useState("");
 
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
@@ -626,7 +628,14 @@ export default function CompanyShiftsPanel() {
     setBusy(true);
     setErr("");
     try {
-      await api(`/api/offers/${oid}/accept`, { method: "PUT", token, body: {} });
+      const r = await api(`/api/offers/${oid}/accept`, { method: "PUT", token, body: {} });
+
+      // ✅ M25: banner (accept -> cancels others)
+      const cancelledCount = Number(r?.cancelledCount ?? r?.cancelled ?? 0);
+      const extra = cancelledCount > 0 ? ` (${cancelledCount} teklif iptal edildi)` : "";
+      setOfferBanner(`Teklif kabul edildi. Diğer teklifler iptal edildi${extra}.`);
+      window.setTimeout(() => setOfferBanner(""), 8000);
+
       setOffersModal((p) => ({ ...p, open: false }));
       invalidate("shifts");
       invalidate("offers");
@@ -955,6 +964,12 @@ export default function CompanyShiftsPanel() {
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
+
+      {offerBanner ? (
+        <div className="card" style={{ border: "1px solid #ddd" }}>
+          <div style={{ fontWeight: 700 }}>✅ {offerBanner}</div>
+        </div>
+      ) : null}
 
       {/* Top Tabs */}
       <div className="card">
