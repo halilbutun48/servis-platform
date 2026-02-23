@@ -38,6 +38,19 @@ export default function RoutePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ✅ M31-A: keyboard shortcut (Enter) = reached
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key !== "Enter") return;
+      if (busy) return;
+      if (!shift?.id || !nextStop?.id) return;
+      reached();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy, shift?.id, nextStop?.id]);
+
   async function reached() {
     if (!shift?.id || !nextStop?.id) return;
     setBusy(true);
@@ -45,11 +58,15 @@ export default function RoutePanel() {
     try {
       const url = `/api/driver/shifts/${shift.id}/stops/${nextStop.id}/reached`;
       const r = await api(url, { method: "POST", token });
+
+      // hızlı UI güncelle
       setData((prev) => ({
         ...(prev || {}),
         progress: { lastReachedOrder: r.lastReachedOrder, completed: r.completed },
         nextStop: r.nextStop || null,
       }));
+
+      // kesin senkron için yenile
       await load();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -58,11 +75,21 @@ export default function RoutePanel() {
     }
   }
 
+  const reachedBtnStyle = {
+    fontWeight: 900,
+    fontSize: 18,
+    padding: "14px 18px",
+    borderRadius: 14,
+    minWidth: 180,
+  };
+
   return (
     <div>
       <div className="card">
         <h3>Bugün Rotam</h3>
-        <div className="muted">En az adım: sonraki durağı gör → tek tık reached</div>
+        <div className="muted">
+          En az adım: <b>Sonraki durağı gör</b> → <b>Reached</b>. (Kısayol: <b>Enter</b>)
+        </div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -73,24 +100,25 @@ export default function RoutePanel() {
           {shift ? (
             <div className="col">
               <div>
-                <b>Shift #{shift.id}</b> — <span className="pill" data-status={shift.status}>{shift.status}</span>
+                <b>Shift #{shift.id}</b> —{" "}
+                <span className="pill" data-status={shift.status}>
+                  {shift.status}
+                </span>
               </div>
-              <div className="muted">
-                Start: {String(shift.startAt)} | End: {String(shift.endAt)}
-              </div>
+              <div className="muted">Start: {String(shift.startAt)} | End: {String(shift.endAt)}</div>
 
               {progress ? (
                 <>
                   <div className="bar">
                     <div className="barFill" style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="muted">
-                    İlerleme: {pct}% (lastReachedOrder: {progress.lastReachedOrder})
-                  </div>
+                  <div className="muted">İlerleme: {pct}% (lastReachedOrder: {progress.lastReachedOrder})</div>
                 </>
               ) : null}
 
-              {mode === "COMPLETED_FALLBACK" ? <div className="ok">✅ Vardiya tamamlandı. Yeni vardiya bekleniyor.</div> : null}
+              {mode === "COMPLETED_FALLBACK" ? (
+                <div className="ok">✅ Vardiya tamamlandı. Yeni vardiya bekleniyor.</div>
+              ) : null}
             </div>
           ) : (
             <div className="muted">Vardiya bulunamadı</div>
@@ -103,20 +131,25 @@ export default function RoutePanel() {
               <h3>Sonraki Durak</h3>
               <div className="muted">Araç: {data?.vehicle?.plate || "-"} • GPS: {data?.last?.status || "-"}</div>
             </div>
-            <button type="button" disabled={busy} onClick={load}>Yenile</button>
+            <button type="button" disabled={busy} onClick={load}>
+              Yenile
+            </button>
           </div>
 
           <hr />
 
           {nextStop ? (
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div className="col" style={{ gap: 10 }}>
               <div>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>{nextStop.name}</div>
-                <div className="muted">order: {nextStop.order} • konum: {data?.last ? `${data.last.lat}, ${data.last.lng}` : "-"}</div>
+                <div style={{ fontWeight: 900, fontSize: 20 }}>{nextStop.name}</div>
+                <div className="muted">order: {nextStop.order}</div>
               </div>
-              <button type="button" disabled={busy} onClick={reached} style={{ fontWeight: 900 }}>
+
+              <button type="button" disabled={busy} onClick={reached} style={reachedBtnStyle}>
                 {busy ? "..." : "Reached"}
               </button>
+
+              <div className="muted">Konum: {data?.last ? `${data.last.lat}, ${data.last.lng}` : "-"}</div>
             </div>
           ) : (
             <div className="muted">Sonraki durak yok (vardiya bitmiş olabilir).</div>
@@ -156,7 +189,9 @@ export default function RoutePanel() {
             </tbody>
           </table>
         ) : (
-          <div className="muted" style={{ marginTop: 8 }}>Detaylı listeyi sadece gerekirse aç.</div>
+          <div className="muted" style={{ marginTop: 8 }}>
+            Detaylı listeyi sadece gerekirse aç.
+          </div>
         )}
       </div>
     </div>

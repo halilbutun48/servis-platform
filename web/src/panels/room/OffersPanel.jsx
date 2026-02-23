@@ -46,7 +46,8 @@ export default function RoomOffersPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  // ✅ M30-A: Accepted offer -> quick approve
+  // ✅ M30: Accepted offer -> quick approve
+  // ✅ M31: Approve + Start (single click)
   const [approveModal, setApproveModal] = useState({
     open: false,
     shiftId: null,
@@ -84,8 +85,8 @@ export default function RoomOffersPanel() {
   async function loadAssets() {
     try {
       const [v, d] = await Promise.all([api.get("/api/vehicles"), api.get("/api/drivers")]);
-      setVehicles(Array.isArray(v) ? v : (v?.items ?? []));
-      setDrivers(Array.isArray(d) ? d : (d?.items ?? []));
+      setVehicles(Array.isArray(v) ? v : v?.items ?? []);
+      setDrivers(Array.isArray(d) ? d : d?.items ?? []);
     } catch {
       setVehicles([]);
       setDrivers([]);
@@ -111,7 +112,7 @@ export default function RoomOffersPanel() {
         o.status,
         company?.name,
         shift?.companyId,
-        shift?.status, // ✅ M29-B: shift status searchable
+        shift?.status, // ✅ shift status searchable
         o.noteCompany,
         o.noteRoom,
       ]
@@ -142,7 +143,6 @@ export default function RoomOffersPanel() {
   function goShift(shiftId) {
     const sid = Number(shiftId);
     if (!sid) return;
-    // query desteklemediğimiz için localStorage ile focus taşıyoruz
     localStorage.setItem("room:focusShiftId", String(sid));
     navigate("/room/shifts");
   }
@@ -155,7 +155,7 @@ export default function RoomOffersPanel() {
     setApproveModal({ open: true, shiftId: sid, offerId: Number(o?.id) || null, vehicleId: "", driverId: "" });
   }
 
-  async function doApprove() {
+  async function doApprove({ startAfter = false } = {}) {
     const sid = Number(approveModal.shiftId);
     const vid = Number(approveModal.vehicleId);
     const did = Number(approveModal.driverId);
@@ -168,8 +168,13 @@ export default function RoomOffersPanel() {
     setErr("");
     try {
       await api.put(`/api/shifts/${sid}/approve`, { vehicleId: vid, driverId: did });
+
+      // ✅ M31: tek tık "Onayla + Başlat"
+      if (startAfter) {
+        await api.post(`/api/shifts/${sid}/start`, {});
+      }
+
       setApproveModal((p) => ({ ...p, open: false }));
-      // shift panelde focus
       localStorage.setItem("room:focusShiftId", String(sid));
       await load();
       navigate("/room/shifts");
@@ -184,9 +189,7 @@ export default function RoomOffersPanel() {
     <div className="wrap">
       <div className="card">
         <div className="title">Offers (Gelen Teklifler)</div>
-        <div className="muted">
-          Company tarafının gönderdiği market shift teklifleri. (M29: shift durumu badge)
-        </div>
+        <div className="muted">Company tarafının gönderdiği market shift teklifleri.</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -224,8 +227,8 @@ export default function RoomOffersPanel() {
         const c = counterSel[o.id] || {};
         const canCounter = o.status !== "CANCELLED" && o.status !== "ACCEPTED";
 
-        const canQuickApprove =
-          String(o.status) === "ACCEPTED" && ["REQUESTED"].includes(String(shift?.status || ""));
+        const canQuickApprove = String(o.status) === "ACCEPTED" && ["REQUESTED"].includes(String(shift?.status || ""));
+
         return (
           <div className="card" key={o.id}>
             <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -239,13 +242,13 @@ export default function RoomOffersPanel() {
               </div>
               <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 {pill(o.status)}
-                {pill(shift?.status)} {/* ✅ M29-B: shift status badge */}
+                {pill(shift?.status)}
                 <button type="button" disabled={busy} onClick={() => goShift(o.shiftId)}>
                   Shift’e Git
                 </button>
 
                 {canQuickApprove ? (
-                  <button type="button" disabled={busy} onClick={() => openApprove(o)}>
+                  <button type="button" disabled={busy} onClick={() => openApprove(o)} title="Araç+sürücü seç → Onayla (+Start)">
                     Hızlı Onayla
                   </button>
                 ) : null}
@@ -296,13 +299,15 @@ export default function RoomOffersPanel() {
         );
       })}
 
-      {/* ✅ M30-A: Quick approve modal */}
+      {/* ✅ M30/M31: Quick approve (+ optional start) modal */}
       {approveModal.open ? (
         <div className="card" style={{ border: "2px solid #ddd" }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontWeight: 900 }}>Shift #{approveModal.shiftId} — Onayla</div>
-              <div className="muted">ACCEPTED teklif → bu shift artık senin. Araç + sürücü seçip onayla.</div>
+              <div style={{ fontWeight: 900 }}>Shift #{approveModal.shiftId} — Onay</div>
+              <div className="muted">
+                ACCEPTED teklif → bu shift artık senin. Araç + sürücü seçip <b>Onayla</b> veya <b>Onayla + Başlat</b>.
+              </div>
             </div>
             <button type="button" disabled={busy} onClick={() => setApproveModal((p) => ({ ...p, open: false }))}>
               Kapat
@@ -342,9 +347,14 @@ export default function RoomOffersPanel() {
               </select>
             </label>
 
-            <button type="button" disabled={busy} onClick={doApprove}>
-              {busy ? "..." : "Onayla"}
-            </button>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button type="button" disabled={busy} onClick={() => doApprove({ startAfter: false })}>
+                {busy ? "..." : "Onayla"}
+              </button>
+              <button type="button" disabled={busy} onClick={() => doApprove({ startAfter: true })}>
+                {busy ? "..." : "Onayla + Başlat"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
