@@ -6,7 +6,6 @@ import { audit } from "../../audit.js";
 import { clusterStops } from "../../services/clusterStops.js";
 import { etaMinutes } from "../../geo.js";
 import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
-import { osrmRoute } from "../../services/osrmRoute.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
 
 const qModeSchema = z
@@ -461,17 +460,40 @@ export function attachShiftPeopleRoutes(router, _io) {
         ? parsePolyline(learned.polylineCanonical)
         : null;
 
-    let source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
-    let pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
+    let source = "ESTIMATED";
+let pathPoints = estPoints;
 
-    // M33.4: If OSRM is available, return a dense path for nicer mini-map preview
-    if (source !== "LEARNED" && Array.isArray(estPoints) && estPoints.length >= 2) {
-      const rr = await osrmRoute(estPoints, { profile: "driving" });
-      if (rr && rr.ok && Array.isArray(rr.points) && rr.points.length >= 2) {
-        source = "OSRM";
-        pathPoints = rr.points;
-      }
+// Prefer learned polyline when stable, but always anchor to hub so preview
+// starts/ends where the user expects (and M19CHECK asserts).
+if (learnedPoints && learnedPoints.length >= 2) {
+  source = "LEARNED";
+  pathPoints = learnedPoints;
+
+  if (hub) {
+    const eps = 1e-3; // ~111m
+    const nearHub = (p) =>
+      p && Math.abs(Number(p.lat) - hub.lat) <= eps && Math.abs(Number(p.lng) - hub.lng) <= eps;
+
+    if (pattern === "LOOP") {
+      // Start at hub
+      if (!nearHub(pathPoints[0])) pathPoints = [hub, ...pathPoints];
+      else pathPoints = [hub, ...pathPoints.slice(1)];
+
+      // End at hub
+      const lastIdx = pathPoints.length - 1;
+      if (!nearHub(pathPoints[lastIdx])) pathPoints = [...pathPoints, hub];
+      else pathPoints = [...pathPoints.slice(0, lastIdx), hub];
+    } else if (direction === "OUTBOUND") {
+      if (!nearHub(pathPoints[0])) pathPoints = [hub, ...pathPoints];
+      else pathPoints = [hub, ...pathPoints.slice(1)];
+    } else {
+      // INBOUND default: ensure end at hub
+      const lastIdx = pathPoints.length - 1;
+      if (!nearHub(pathPoints[lastIdx])) pathPoints = [...pathPoints, hub];
+      else pathPoints = [...pathPoints.slice(0, lastIdx), hub];
     }
+  }
+}
 
     const summary = {
       stopCount: stopPoints.length,

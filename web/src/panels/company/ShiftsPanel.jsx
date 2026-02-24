@@ -1,5 +1,5 @@
 // web/src/panels/company/ShiftsPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -125,6 +125,23 @@ export default function CompanyShiftsPanel() {
 
   // Pending filtreler
   const [pendingQ, setPendingQ] = useState("");
+  const [applyToast, setApplyToast] = useState(null); // { ids:number[] }
+  const marketSectionRef = useRef(null);
+  const marketSearchRef = useRef(null);
+
+  function focusMarketById(id) {
+    if (!id) return;
+    setMarketQ(String(id));
+    setTimeout(() => {
+      try {
+        marketSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {}
+      try {
+        marketSearchRef.current?.focus?.();
+      } catch {}
+    }, 50);
+  }
+
   const [pendingOnlyRoomOffer, setPendingOnlyRoomOffer] = useState(false);
   const [onlyAgreement, setOnlyAgreement] = useState(false);
 
@@ -1020,11 +1037,33 @@ function usePlanDraftToRequest(draft) {
 
       {err ? <div className="card err">{err}</div> : null}
 
+      {applyToast?.ids?.length ? (
+        <div className="card" style={{ marginTop: 10 }}>
+          <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 800 }}>Oluşturuldu:</div>
+              <div className="muted" style={{ marginTop: 4 }}>
+                {(applyToast.ids || []).map((id) => (
+                  <button key={id} type="button" className="btn" style={{ marginRight: 6, marginTop: 6 }} onClick={() => focusMarketById(id)}>
+                    #{id}
+                  </button>
+                ))}
+                <span className="muted" style={{ marginLeft: 8 }}>Tıkla → Bekleyen Talepler / Market Shifts’te filtrele</span>
+              </div>
+            </div>
+            <button type="button" className="btn" onClick={() => setApplyToast(null)}>
+              Kapat
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+
       {/* Top Tabs */}
       <div className="card">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button type="button" className={topTab === "request" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("request")}>
-            Yeni Talep
+            Manuel Talep
           </button>
           <button type="button" className={topTab === "templates" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("templates")}>
             Vardiya Şablonları
@@ -1039,19 +1078,19 @@ function usePlanDraftToRequest(draft) {
 
         <div className="muted" style={{ marginTop: 6 }}>
           {topTab === "request"
-            ? "Yeni vardiya talebi oluştur. İstersen şablon seçerek Start/End'i otomatik doldur."
+            ? "Manuel vardiya talebi oluştur. İstersen şablon seçerek Start/End'i otomatik doldur."
             : topTab === "templates"
-            ? "Preset’ler sabit. Custom şablon ekleyip Yeni Talep ekranında seçebilirsin (company bazlı tarayıcıda saklanır)."
+            ? "Preset’ler sabit. Custom şablon ekleyip Manuel Talep ekranında seçebilirsin (company bazlı tarayıcıda saklanır)."
             : topTab === "plan"
-            ? "Stage-0: kişi sayısı + kapasite → araç sayısı ve geohash cluster. İstersen tek tıkla Yeni Talep’e aktar, istersen Stage-3 ile direkt N market shift üret."
+            ? "Stage-0: kişi sayısı + kapasite → araç sayısı ve geohash cluster. İstersen tek tıkla Manuel Talep’e aktar, istersen Stage-3 ile direkt N market shift üret."
             : "Shift seç → personel ekle/import → durak üret (preview) → rota/durak önizleme (mini-map)."}
         </div>
       </div>
 
-      {/* TAB: Yeni Talep */}
+      {/* TAB: Manuel Talep */}
       {topTab === "request" ? (
         <div className="card">
-          <h3>Yeni Vardiya Talebi</h3>
+          <h3>Manuel Vardiya Talebi</h3>
 
           <form onSubmit={createShift} className="grid">
             <div className="col">
@@ -1198,11 +1237,15 @@ function usePlanDraftToRequest(draft) {
           token={token}
           templateOptions={templateOptions}
           onUseDraft={usePlanDraftToRequest}
-          onAfterApply={async () => {
+          onAfterApply={async (created) => {
+            const okIds = (created || []).filter((x) => x && x.ok && x.shiftId).map((x) => Number(x.shiftId)).filter(Boolean);
+            if (okIds.length) {
+              setApplyToast({ ids: okIds });
+              focusMarketById(okIds[0]);
+            }
             invalidate("shifts");
             invalidate("offers");
             await load();
-            setTopTab("list");
           }}
         />
       ) : null}
@@ -1259,12 +1302,13 @@ function usePlanDraftToRequest(draft) {
         {/* ✅ M24: Market shifts (room seçilmemiş) */}
         {marketItems.length ? (
           <div className="card" style={{ marginTop: 12 }}>
-            <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div className="row" ref={marketSectionRef} style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontWeight: 700 }}>Market Shifts</div>
                 <div className="muted">Room seçilmemiş talepler. Teklifi birden fazla room’a gönder.</div>
               </div>
               <input
+                ref={marketSearchRef}
                 placeholder="Ara (id/status)"
                 value={marketQ}
                 onChange={(e) => setMarketQ(e.target.value)}

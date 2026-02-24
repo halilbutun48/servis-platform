@@ -1,12 +1,10 @@
-# OVERLAY — M33.3.x UI Copy + Tab Rename (Shift Tools)
+# OVERLAY — M33.5 UX polish
 
-Bu overlay şunları yapar:
-- Company Shifts üst tab: **Personel & Rota** → **Shift Tools**
-- Shift Tools panel başlığı ve açıklaması: M16 draft metinleri temizlendi.
-- Plan Builder Stage-3 **Uygula** açıklaması netleştirildi:
-  - "Yeni Talep’e girmeden direkt market shift(ler) oluşturur..."
+Changes
+- Company/Shifts top tab label: **Yeni Talep** → **Manuel Talep**
+- Plan Builder Apply: after creating shifts, show a toast:
+  - "Oluşturuldu: #<id>, #<id>..."
+  - Clicking an id auto-filters **Bekleyen Talepler → Market Shifts** (sets market search to that id) and scrolls/focuses the search input.
 
-Dosyalar:
+Files
 - web/src/panels/company/ShiftsPanel.jsx
-- web/src/panels/company/ShiftPeopleTab.jsx
-- web/src/panels/company/PlanBuilderPanel.jsx
