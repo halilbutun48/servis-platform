@@ -202,7 +202,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
                 {/* people points */}
                 {peoplePts.map((p, i) => {
                   const pt = project(p, box, w, h, pad);
-                  return <circle key={`p_${i}`} cx={pt.x} cy={pt.y} r="2" opacity="0.45" />;
+                  return <circle key={`p_${i}`} cx={pt.x} cy={pt.y} r="2" fill="currentColor" opacity="0.35" />;
                 })}
 
                 {/* stops */}
@@ -210,7 +210,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
                   const pt = project({ lat: s.lat, lng: s.lng }, box, w, h, pad);
                   return (
                     <g key={s.id || i}>
-                      <circle cx={pt.x} cy={pt.y} r="6" />
+                      <circle cx={pt.x} cy={pt.y} r="6" fill="currentColor" opacity="0.85" />
                       <text x={pt.x + 10} y={pt.y + 4} fontSize="12" opacity="0.9">
                         {String(i + 1)}
                       </text>

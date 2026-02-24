@@ -6,6 +6,7 @@ import { audit } from "../../audit.js";
 import { clusterStops } from "../../services/clusterStops.js";
 import { etaMinutes } from "../../geo.js";
 import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
+import { osrmRoute } from "../../services/osrmRoute.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
 
 const qModeSchema = z
@@ -460,8 +461,17 @@ export function attachShiftPeopleRoutes(router, _io) {
         ? parsePolyline(learned.polylineCanonical)
         : null;
 
-    const source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
-    const pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
+    let source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
+    let pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
+
+    // M33.4: If OSRM is available, return a dense path for nicer mini-map preview
+    if (source !== "LEARNED" && Array.isArray(estPoints) && estPoints.length >= 2) {
+      const rr = await osrmRoute(estPoints, { profile: "driving" });
+      if (rr && rr.ok && Array.isArray(rr.points) && rr.points.length >= 2) {
+        source = "OSRM";
+        pathPoints = rr.points;
+      }
+    }
 
     const summary = {
       stopCount: stopPoints.length,

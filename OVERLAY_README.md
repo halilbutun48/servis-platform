@@ -1,15 +1,17 @@
-OVERLAY — PRIMER/SSOT/STARTPACK sync (M32)
+# overlay_m33_3_apply_fix
 
-Tarih: 2026-02-24 (Europe/Istanbul)
+Amaç: Plan Builder Stage-3 `Uygula: N shift oluştur` butonunun çalışmamasını düzeltmek.
 
-Bu overlay aşağıdaki dosyaları günceller:
-- tools/PRIMER_SNAPSHOT.md (tarih + küçük düzeltmeler)
-- docs/PRIMER_SSOT.md (M32 GREEN’e güncellendi)
-- docs/STARTPACK_V1.md (M32 runbook)
-- tools/README.md (M0→M32)
-- docs/MILESTONE_GATE_MATRIX.md (LEGACY notu eklendi)
-- docs/README.md (index güncellendi)
+## Fix
+- `PlanBuilderPanel.jsx`: `istanbulLocalToUtcIso` fonksiyonu yanlışlıkla `buildLocalRangeFromItem` içinde kalmıştı (return sonrası unreachable). Bu yüzden `Uygula` tıklanınca JS tarafında hata oluşuyor ve backend'e hiç istek gitmiyordu.
+- Fonksiyonlar doğru scope'a alındı.
+- Shift create body'ye template item `direction/pattern` eklendi.
+- Apply sonucu için küçük `Detay` (JSON) görünümü eklendi.
 
-Uygulama: overlay'i repo root'a aç (dosyalar overwrite).
-
-Sonra doğrulama: tools/pack.ps1 -To 32
+## DoD
+- Company → Shifts → Plan Builder
+- `Uygula: N shift oluştur` tıklanınca backend log'da:
+  - `POST /api/shifts`
+  - `PUT /api/shifts/:id/people`
+  - `POST /api/shifts/:id/stops/generate`
+- Ardından Liste/Pending refresh.

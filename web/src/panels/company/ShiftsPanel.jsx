@@ -6,6 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import { invalidate } from "../../live/bus";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import ShiftTemplatesPanel, { PRESET_TEMPLATES, DEFAULT_WEEKMASK, DEFAULT_DURATION_KEY } from "./ShiftTemplatesPanel";
+import PlanBuilderPanel from "./PlanBuilderPanel";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -90,7 +91,7 @@ export default function CompanyShiftsPanel() {
   const LS_LAST_ROOM = "company:lastRoomId";
 
   // Top tabs
-  const [topTab, setTopTab] = useState("request"); // request | templates | people
+  const [topTab, setTopTab] = useState("request"); // request | templates | people | plan
 
   const [items, setItems] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -333,6 +334,21 @@ function useTemplateFromList(tpl, itemIndex = 0) {
   setSelectedTemplateId(k);
   const it = (tpl?.items || [])[Number(itemIndex) || 0];
   applyTemplateItemToRequest(tpl, it);
+}
+
+function usePlanDraftToRequest(draft) {
+  // draft: {startAtLocal,endAtLocal,seatDemand,templateKey,marketMode}
+  setTopTab("request");
+  setSelectedTemplateId(String(draft?.templateKey || ""));
+  setStartAt(String(draft?.startAtLocal || ""));
+  setEndAt(String(draft?.endAtLocal || ""));
+  setSeatDemand(draft?.seatDemand != null ? String(draft.seatDemand) : "");
+  setMarketMode(Boolean(draft?.marketMode));
+
+  // Clear direct-offer fields (Plan Builder genelde market akışını hedefler)
+  setOfferVehicleId("");
+  setOfferAmount("");
+  setOfferNote("");
 }
 
   // Karşı teklif UI
@@ -1013,6 +1029,9 @@ function useTemplateFromList(tpl, itemIndex = 0) {
           <button type="button" className={topTab === "templates" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("templates")}>
             Vardiya Şablonları
           </button>
+          <button type="button" className={topTab === "plan" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("plan")}>
+            Plan Builder
+          </button>
           <button type="button" className={topTab === "people" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("people")}>
             Personel & Rota
           </button>
@@ -1023,6 +1042,8 @@ function useTemplateFromList(tpl, itemIndex = 0) {
             ? "Yeni vardiya talebi oluştur. İstersen şablon seçerek Start/End'i otomatik doldur."
             : topTab === "templates"
             ? "Preset’ler sabit. Custom şablon ekleyip Yeni Talep ekranında seçebilirsin (company bazlı tarayıcıda saklanır)."
+            : topTab === "plan"
+            ? "Stage-0: kişi sayısı + kapasite → araç sayısı ve geohash cluster. Taslağı tek tıkla Yeni Talep ekranına aktar."
             : "Shift seç → personel ekle/import → durak üret (preview) → rota/durak mini-harita önizleme."}
         </div>
       </div>
@@ -1168,6 +1189,21 @@ function useTemplateFromList(tpl, itemIndex = 0) {
           setCustomTemplates={setCustomTemplates}
           onUseTemplate={useTemplateFromList}
           setErr={setErr}
+        />
+      ) : null}
+
+      {/* TAB: Plan Builder (Stage-0) */}
+      {topTab === "plan" ? (
+        <PlanBuilderPanel
+          token={token}
+          templateOptions={templateOptions}
+          onUseDraft={usePlanDraftToRequest}
+          onAfterApply={async () => {
+            invalidate("shifts");
+            invalidate("offers");
+            await load();
+            setTopTab("list");
+          }}
         />
       ) : null}
 

@@ -39,4 +39,8 @@ export const ENV = {
   ROUTE_LEARN_ENABLED: (process.env.ROUTE_LEARN_ENABLED ?? "0") === "1",
   ROUTE_LEARN_INTERVAL_MS: Number(process.env.ROUTE_LEARN_INTERVAL_MS ?? 30000),
   ROUTE_LEARN_MAX_SAMPLES: Number(process.env.ROUTE_LEARN_MAX_SAMPLES ?? 20),
+
+  // ✅ M33.2: Plan Builder solver (optional)
+  // When running with docker-compose, default is http://solver:8000
+  PLAN_SOLVER_URL: process.env.PLAN_SOLVER_URL ?? "",
 };
