@@ -188,34 +188,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
     }
   }
 
-  async function geocodeFromAddress() {
-    const q = String(pAddress || "").trim();
-    if (q.length < 3) {
-      setErr("Adres en az 3 karakter olmalı.");
-      return;
-    }
-
-    setBusy(true);
-    setErr("");
-    setInfo("");
-
-    try {
-      const resp = await api("/api/geocode", { token, method: "POST", body: { q } });
-      if (!resp?.ok) {
-        setErr(`Geocode başarısız: ${String(resp?.error || "unknown")}`);
-        return;
-      }
-
-      setPLat(String(resp.lat));
-      setPLng(String(resp.lng));
-      setInfo(`Konum bulundu: ${Number(resp.lat).toFixed(5)}, ${Number(resp.lng).toFixed(5)}`);
-    } catch (e) {
-      setErr(`Geocode hata: ${String(e?.payload?.message || e?.message || e)}`);
-    } finally {
-      setBusy(false);
-    }
-  }
-
 
   function mapBackendPeopleToUi(items) {
     const list = Array.isArray(items) ? items : [];
@@ -501,8 +473,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
 
   return (
     <div className="card">
-      <h3>Personel & Rota</h3>
-      <div className="muted">M16 UI draft: Personel listesi (localStorage) + durak üret (preview) + mini-harita önizleme. Backend gelince aynı yerden API’ye bağlanacak.</div>
+      <h3>Shift Tools</h3>
+      <div className="muted">Shift bazlı araçlar: personel ekle/import, durak üret (preview) ve rota/durak önizleme. Plan Builder ile üretilen shift’leri burada inceleyip gerektiğinde güncelleyebilirsin.</div>
 
       {err ? <div className="card err" style={{ marginTop: 10 }}>{err}</div> : null}
       {info ? <div className="card" style={{ marginTop: 10 }}>{info}</div> : null}
@@ -589,14 +561,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
             </div>
 
             <div className="col" style={{ justifyContent: "end" }}>
-              <label className="muted">&nbsp;</label>
-              <button type="button" disabled={busy || !String(pAddress || "").trim()} onClick={geocodeFromAddress}>
-                Adresten Bul
-              </button>
-            </div>
-
-            <div className="col" style={{ justifyContent: "end" }}>
-              <label className="muted">&nbsp;</label>
               <button type="submit" disabled={busy}>
                 Ekle
               </button>

@@ -1,17 +1,12 @@
-# overlay_m33_3_apply_fix
+# OVERLAY — M33.3.x UI Copy + Tab Rename (Shift Tools)
 
-Amaç: Plan Builder Stage-3 `Uygula: N shift oluştur` butonunun çalışmamasını düzeltmek.
+Bu overlay şunları yapar:
+- Company Shifts üst tab: **Personel & Rota** → **Shift Tools**
+- Shift Tools panel başlığı ve açıklaması: M16 draft metinleri temizlendi.
+- Plan Builder Stage-3 **Uygula** açıklaması netleştirildi:
+  - "Yeni Talep’e girmeden direkt market shift(ler) oluşturur..."
 
-## Fix
-- `PlanBuilderPanel.jsx`: `istanbulLocalToUtcIso` fonksiyonu yanlışlıkla `buildLocalRangeFromItem` içinde kalmıştı (return sonrası unreachable). Bu yüzden `Uygula` tıklanınca JS tarafında hata oluşuyor ve backend'e hiç istek gitmiyordu.
-- Fonksiyonlar doğru scope'a alındı.
-- Shift create body'ye template item `direction/pattern` eklendi.
-- Apply sonucu için küçük `Detay` (JSON) görünümü eklendi.
-
-## DoD
-- Company → Shifts → Plan Builder
-- `Uygula: N shift oluştur` tıklanınca backend log'da:
-  - `POST /api/shifts`
-  - `PUT /api/shifts/:id/people`
-  - `POST /api/shifts/:id/stops/generate`
-- Ardından Liste/Pending refresh.
+Dosyalar:
+- web/src/panels/company/ShiftsPanel.jsx
+- web/src/panels/company/ShiftPeopleTab.jsx
+- web/src/panels/company/PlanBuilderPanel.jsx

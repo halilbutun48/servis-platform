@@ -91,7 +91,7 @@ export default function CompanyShiftsPanel() {
   const LS_LAST_ROOM = "company:lastRoomId";
 
   // Top tabs
-  const [topTab, setTopTab] = useState("request"); // request | templates | people | plan
+  const [topTab, setTopTab] = useState("request"); // request | templates | plan | tools
 
   const [items, setItems] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -1032,8 +1032,8 @@ function usePlanDraftToRequest(draft) {
           <button type="button" className={topTab === "plan" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("plan")}>
             Plan Builder
           </button>
-          <button type="button" className={topTab === "people" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("people")}>
-            Personel & Rota
+          <button type="button" className={topTab === "tools" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("tools")}>
+            Shift Tools
           </button>
         </div>
 
@@ -1043,8 +1043,8 @@ function usePlanDraftToRequest(draft) {
             : topTab === "templates"
             ? "Preset’ler sabit. Custom şablon ekleyip Yeni Talep ekranında seçebilirsin (company bazlı tarayıcıda saklanır)."
             : topTab === "plan"
-            ? "Stage-0: kişi sayısı + kapasite → araç sayısı ve geohash cluster. Taslağı tek tıkla Yeni Talep ekranına aktar."
-            : "Shift seç → personel ekle/import → durak üret (preview) → rota/durak mini-harita önizleme."}
+            ? "Stage-0: kişi sayısı + kapasite → araç sayısı ve geohash cluster. İstersen tek tıkla Yeni Talep’e aktar, istersen Stage-3 ile direkt N market shift üret."
+            : "Shift seç → personel ekle/import → durak üret (preview) → rota/durak önizleme (mini-map)."}
         </div>
       </div>
 
@@ -1207,8 +1207,8 @@ function usePlanDraftToRequest(draft) {
         />
       ) : null}
 
-      {/* TAB: Personel & Rota */}
-      {topTab === "people" ? (
+      {/* TAB: Shift Tools */}
+      {topTab === "tools" ? (
         <ShiftPeopleTab token={token} me={me} shifts={items} roomsById={roomsById} />
       ) : null}
 

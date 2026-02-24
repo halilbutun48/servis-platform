@@ -81,7 +81,6 @@ function buildLocalRangeFromItem(baseYmd, item) {
   const endDate = eMin <= sMin ? addDaysYmd(baseDate, 1) : baseDate;
   const endAtLocal = `${endDate}T${item.endHHMM}`;
   return { startAtLocal, endAtLocal };
-}
 
 // datetime-local (Istanbul local) -> UTC ISO
 const IST_OFFSET_MIN = 180;
@@ -96,6 +95,7 @@ function istanbulLocalToUtcIso(dtLocal) {
 
   const utcMs = Date.UTC(Y, M - 1, D, h, m, 0) - IST_OFFSET_MIN * 60 * 1000;
   return new Date(utcMs).toISOString();
+}
 }
 
 function avgLatLng(list) {
@@ -426,7 +426,7 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
           const shift = await api("/api/shifts", {
             method: "POST",
             token,
-            body: { startAt, endAt, status: "REQUESTED", direction: selectedTpl?.item?.direction ?? "INBOUND", pattern: selectedTpl?.item?.pattern ?? "ONE_WAY" },
+            body: { startAt, endAt, status: "REQUESTED" },
           });
 
           const shiftId = Number(shift?.id);
@@ -629,26 +629,18 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
               Stops’u OSRM+Solver ile sırala
             </label>
             <div className="muted">
-              Uygula: market shift oluşturur, personelleri bağlar, stop üretir (COMMON) ve (opsiyonel) stop sırasını optimize eder.
+              Uygula: Yeni Talep’e girmeden direkt market shift(ler) oluşturur; personelleri bağlar, stop üretir (COMMON) ve (opsiyonel) stop sırasını optimize eder.
             </div>
           </div>
           <div className="col" style={{ justifyContent: "end" }}>
             <button type="button" disabled={applyBusy || !plan.total || !range.startAtLocal || !range.endAtLocal} onClick={applyPlanToShifts}>
-              {applyBusy ? "Uygulanıyor…" : "Uygula: N shift oluştur"}
+              {applyBusy ? "Uygulanıyor…" : "Uygula: N market shift oluştur"}
             </button>
           </div>
         </div>
         {applyRes?.ok ? (
           <div className="muted" style={{ marginBottom: 8 }}>
             Oluşturulan: <b>{(applyRes.created || []).filter((x) => x.ok).length}</b> • Hata: <b>{(applyRes.created || []).filter((x) => !x.ok).length}</b>
-          </div>
-        ) : null}
-        {applyRes?.ok ? (
-          <div className="muted" style={{ marginBottom: 10 }}>
-            <details>
-              <summary>Detay</summary>
-              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{JSON.stringify(applyRes.created || [], null, 2)}</pre>
-            </details>
           </div>
         ) : null}
         {!plan.total ? (
