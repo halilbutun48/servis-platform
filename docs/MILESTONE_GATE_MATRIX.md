@@ -1,4 +1,14 @@
-# Milestone Gate Matrix — PASS Kriterleri (SSOT)
+# Milestone Gate Matrix — PASS Kriterleri (LEGACY)
+
+⚠️ Not: Bu dosya erken dönem (M1–M6) gate notlarını içeriyor ve **tam kapsamlı** değil.
+Güncel kanıt standardı:
+- `tools/gate.ps1` ve `tools/pack.ps1` (M0→M32)
+- per-milestone açıklamalar: `docs/MILESTONE_M22.md` … `docs/MILESTONE_M32.md`
+- check script’leri: `backend/scripts/m*check.js`
+
+Aşağıdaki içerik “referans/legacy” olarak tutuluyor.
+
+---
 
 Amaç: Her milestone sonrası “çalışıyor mu?” tartışması olmasın.
 Kural: Her milestone merge/commit sonrası aşağıdaki gate’ler PASS olacak.

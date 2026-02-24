@@ -1,184 +1,111 @@
 SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER SNAPSHOT (Yapıştır & Devam Et)
 
-Tarih: 2026-02-23 (Europe/Istanbul)
+Tarih: 2026-02-24 (Europe/Istanbul)
 
 0) Durum / Referans
 
-Repo: servis-platform (aktif çalışma klasörü: D:\servis-platform)
+Repo: D:\servis-platform
 
-Çalışma modu: Docker mode (Gate/Pack container içinde koşar; host node_modules gerekmiyor)
+Son GREEN: v1-m32-green.1 ✅ (M0→M32 PACK PASS)
 
-Son GREEN (güncel): v1-m24-green.1 ✅ tools/pack.ps1 -To 24 PASS
+Doğrulama: .\tools\pack.ps1 -To 32
 
-İçerik: M0→M24
+1) V1 Amaç
 
-M21 Room↔Company decouple + SUPER_ADMIN admin/stats ✅
+GPS tabanlı personel servis platformu:
 
-M22 Room Directory + Company Agreement/Shift Room Select UX ✅
+Company planlama (Agreement Wizard + Market teklifler)
 
-M23 WS agreement:update → Agreements auto-refresh ✅
+Room operasyon (offer inbox → onayla/başlat → shift operasyon)
 
-M24 Marketplace Offers (multi-room offer + counter + accept cancels others) ✅
+Driver operasyon (route + reached + complete)
 
-Doğrulama komutu:
+Personel (my ride + request)
 
-.\tools\pack.ps1 -To 24
-1) Amaç (V1)
-
-Öğrenci/parent yok. GPS tabanlı personel servis platformu:
-
-Live map + GPS status (LIVE/STALE/OFFLINE)
-
-Shift yönetimi + durak akışı (start/reached/skip/reopen/complete)
-
-Notifications (overspeed + gps stale/offline + recovery) + dedupe
-
-Personel request → stop suggestions → shift’e stop ekleme
-
-Route templates (company) → shift’e REPLACE uygula
-
-Shift People + Route Preview standardı (M16.2)
-
-Geo Review + Manual Override (M16.3)
-
-Agreements (M17) + monitor + availability entegrasyonu
-
-Agreement → günlük shift üretimi (M18)
-
-Hub + direction/pattern + route preview summary/path (M19)
-
-Availability bulk (M20)
-
-SUPER_ADMIN yönetimi + overview stats (M21)
-
-Room Directory + Company UX (M22)
-
-WS auto-refresh (Agreements) (M23)
-
-Marketplace Offers (Shift teklif pazarı) (M24)
+WS ile canlı güncelleme + bildirimler + dedupe
 
 2) Roller
 
-SUPER_ADMIN: kurulum, company/room yönetimi, admin stats
+SUPER_ADMIN: Companies/Rooms yönetimi + overview
 
-ROOM: araç+sürücü CRUD, shift approve/assign/start, request close(ACCEPTED), stop-suggestions + from-suggestion, route-preview, agreement approve, offers inbox + counter (M24)
+COMPANY: Agreement/Shift talebi, Market ile çoklu room teklif toplama, offers yönetimi
 
-COMPANY: shift create, template yönetimi, agreements create/cancel/extend, market shift + offers gönder + accept (M24)
+ROOM: Araç+sürücü, offer inbox, approve/start, map/shift operasyonu
 
-DRIVER: GPS post (assigned vehicle), active route, stop progression, complete
+DRIVER: aktif rota + reached akışı
 
-PERSONEL: request create (lat/lng zorunlu), own view
+PERSONEL: request + my ride
 
-3) Kritik Mimari Kural (M21) — Company ↔ Room ilişkisi
+3) En kritik akış (sahada “az tık”)
 
-Company = servis kiralayan
+Geo Review (NEEDS_REVIEW bitir)
 
-Room = servis sağlayan (bağımsız)
+Agreement Wizard ile plan oluştur (preset paketler + günler + süre)
 
-Company ↔ Room ilişkisi Agreement ile (many-to-many)
+Gerekirse Market: aynı shift’e çoklu room teklif gönder
 
-Room oluştururken company seçilmez
+Company 1 teklifi kabul eder → diğerleri CANCELLED (otomatik)
 
-Room.companyId yok (kaldırıldı)
+Room Onayla + Başlat (tek tık) → operasyon ACTIVE
 
-4) M22 — Room Directory + Company UX
-Backend
+Driver “Reached” ilerler → shift DONE
 
-GET /api/rooms Company için directory:
+4) Milestone özet (M17+ sonrası)
 
-?q= (isimle arama)
+✅ M17–M18: Agreements + conflict + monitor + daily shift generator
 
-?hasHub=1 (hub’ı olanlar)
+✅ M22: Room directory (/api/rooms?q&hasHub) + Agreement UX
 
-?take= (limit)
+✅ M24: Marketplace offers (multi-room) + accept cancels others
 
-Web (Company)
+✅ M25: Offer status filtreleri
 
-Agreements: Room dropdown + search + “sadece hub’lı”
+✅ M26–M27: Agreement Wizard + preset paketler
 
-Shifts: Room seçimi + search + company:lastRoomId
+✅ M28: One-click flow + company offers directory + NavDock düzeltme + check fix
 
-5) M23 — WS (Agreements Auto-Refresh)
+✅ M29: Onboarding checklist + offers modal shortcut + room offer shift-status badge
 
-Backend agreement:update event’leri geldiğinde web ws.js:
+✅ M30: Guided market flow + ROOM quick approve + Driver/Personel UX + /api/personel/shifts
 
-eventName’i (agreement:update) normalize eder
+✅ M31: Room one-click approve+start + Driver UX (big reached + Enter) + Usage docs
 
-agreements topic invalidate eder
+✅ M32: Template UI refactor (wizard-style), weekMask fix (Pzt–Cum), custom “Düzenle/Sil”
 
-Company/Room Agreements panelleri otomatik yenilenir.
+5) Bilinen tasarım notu (Plan Builder konusu)
 
-6) M24 — Marketplace Offers (Multi-Room)
-İş mantığı
+Mevcut “Personel & Rota (M16 draft)” ekranı shift’e bağlı (Shift seç → personel/durak üret).
 
-Company shift’i room seçmeden oluşturabilir (market shift).
+Asıl hedef (V1.5): Shift’ten bağımsız Plan Builder:
 
-Company aynı shift için birden fazla room’a teklif gönderir.
+personel cluster + araç sayısı önerisi + OSRM/OR-Tools ile gerçek rota optimizasyonu
 
-Room teklifleri “inbox”ta görür ve counter yapabilir.
+çıktı: N adet shift (1 araç = 1 shift) + market offer akışı
 
-Company bir teklifi ACCEPT edince:
+6) Kurallar / Çalışma disiplini
 
-shift roomId ile o room’a bağlanır
+Yanıtlarda en fazla 3 PowerShell komutu.
 
-diğer room teklifleri CANCELLED olur (transaction)
+“Green” = .\tools\pack.ps1 -To <hedef> PACK PASS.
 
-ROOM sadece kabul edilen shift’i approve/assign edebilir.
+Değişiklikler mümkün olduğunca tek seferde overlay (zip) paket olarak verilecek (M26+ formatı).
 
-API (özet)
+Büyük dosyalar (örn. OSRM blob) repo’ya girmez: infra/osrm-data/ ignore.
 
-POST /api/shifts → roomId opsiyonel (market shift)
+7) Yeni hedef (sonraki sohbet): V1.5 Plan Builder (OSRM + OR-Tools)
 
-POST /api/shifts/:id/offers (COMPANY) → { roomIds[], amountCompany?, noteCompany? }
+Amaç: kullanıcı “kaç araç gerekir / rota nasıl olur”u düşünmesin.
 
-GET /api/offers/inbox (ROOM)
+Aşamalar:
 
-GET /api/offers/shift/:shiftId (COMPANY)
+Kural tabanlı: kişi sayısı + kapasite → araç sayısı, geohash/cluster
 
-PUT /api/offers/:id/counter (ROOM)
+OSRM ile süre/mesafe matrisleri
 
-PUT /api/offers/:id/accept (COMPANY) → accept 1 + cancel others + bind shift.roomId
+OR-Tools VRP ile rota/araç dağıtımı
 
-(ops) PUT /api/offers/:id/cancel (COMPANY)
+“Uygula” → N shift create (market) → offers → accept → room approve/start
 
-UI (özet)
-
-ROOM: Offers panel (inbox + counter)
-
-COMPANY: Shifts panel (market shift + teklif gönder + teklifler listesi + accept)
-
-7) OSRM / Learning notu (repo hijyeni)
-
-infra/osrm-data/ Git’te yok (runtime artifact)
-
-Localde data bulunmalı; commit/tag/push içine girmez.
-
-8) SSOT dokümanlar
-
-docs/PRIMER_SSOT.md
-
-docs/API_SPEC_V1.md
-
-docs/DB_SCHEMA_V1.md
-
-docs/PROJECT_SPEC_V1.md
-
-docs/UI_SPEC_V1.md
-
-docs/STARTPACK_V1.md
-
-docs/MILESTONE_M22.md
-
-docs/MILESTONE_M23.md
-
-docs/MILESTONE_M24.md
-
-M25 Adayları (seçim)
-
-Offer UX polishing: filtre/sıralama, Accept sonrası otomatik refresh + banner, room tarafına “CANCELLED” bildirimleri
-
-Shift lifecycle uyumu: market shift → accept sonrası “approve gate” mesajları ve daha net status geçişleri
-
-WS offers: offer:update eventlerini daha granular topic’lerle auto-refresh (company/room offers ekranları)
-
-Hangisini M25 yapalım? (Ben 1’i öneririm: en hızlı kullanıcı değeri, düşük risk.)
+Not (UI refactor önerisi):
+- ShiftsPanel gibi büyük dosyalarda “Template UI” bloğunu ayrı componente bölmek (örn. `ShiftTemplatesPanel`) overlay merge/manuel copy’de “kapanmayan tag” riskini azaltır.
+- Şu anki repoda template UI, `web/src/panels/company/ShiftsPanel.jsx` içinde (ayrı component dosyası henüz yok).

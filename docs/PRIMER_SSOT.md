@@ -1,13 +1,13 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER (SSOT)
-Tarih: 2026-02-21  
+Tarih: 2026-02-24  
 Timezone: Europe/Istanbul
 
 ## 0) Bu dosya ne?
 Bu dosya “yapıştır & devam et” değil; **tek kaynak (SSOT)** seviyesinde repo özeti ve çalışma standardıdır:
 - Repo şu an **ne** durumda?
-- Nasıl doğruluyoruz (**Gate/Pack**)?
-- “GREEN milestone” ne demek?
-- Sıradaki işlerin **öncelik sırası** ne?
+- Nasıl doğruluyoruz (**Gate/Pack**)? “GREEN” ne demek?
+- Kritik akışlar ve rol davranışları
+- Doküman haritası + bilinen tutarsızlıklar
 
 > Hızlı sohbet başlangıcı için: `tools/PRIMER_SNAPSHOT.md`
 
@@ -16,11 +16,13 @@ Bu dosya “yapıştır & devam et” değil; **tek kaynak (SSOT)** seviyesinde 
 ## 1) Stabil referans ve doğrulama (milestone disiplini)
 
 ### Son GREEN referans (değişmez)
-- Stable tag: **`v1-m18-green.2`**
-- Green tanımı: ✅ `tools/pack.ps1 -To 18` → **PACK PASS** (Gate + tüm milestone check’leri)
+- Stable tag: **`v1-m32-green.1`**
+- Green tanımı: ✅ `tools/pack.ps1 -To 32` → **PACK PASS**  
+  (compose up + smoke + fullcheck + M0..M32 milestone check’leri)
 
-### Nasıl doğrularız?
-- M18 için: `tools/pack.ps1 -To 18`
+### Komutlar (kanıt standardı)
+- PACK: `tools/pack.ps1 -To 32`
+- Sadece gate/check: `tools/gate.ps1 -To 32`
 
 **Kural:**
 - GREEN olmadan sonraki milestone’a geçilmez.
@@ -30,119 +32,81 @@ Bu dosya “yapıştır & devam et” değil; **tek kaynak (SSOT)** seviyesinde 
 
 ## 2) Ürün amacı (Personel Servisi V1)
 Öğrenci/parent yok. GPS tabanlı “personel servisi” platformu:
-- Canlı araç takibi (map)
-- Shift yönetimi + durak akışı (start/reached/skip/reopen/complete)
-- Notifications: overspeed, GPS_STALE/OFFLINE, recovery + dedupe
-- Personel request → stop-suggestions → shift’e stop ekleme
-- Route templates (company) → shift’e REPLACE uygula
-- Agreements (M17): periyodik rezervasyon + conflict
-- Daily shift generator (M18): Agreement → “bugün” için otomatik shift üretimi
-- UI polish (M17.2) + UI smoke runbook (M17.3)
-- M18 UI: Shift listesinde **Agreement badge + filtre**
+
+- **COMPANY**: Agreement/Shift planlama, Market ile çoklu room teklif toplama, 1 teklifi accept etme
+- **ROOM**: araç+sürücü yönetimi, offer inbox, tek tık approve/start, operasyon takibi
+- **DRIVER**: aktif rota + reached akışı + complete
+- **PERSONEL**: uygun vardiyalar + request oluşturma + my ride görünümü
+- **WS + Notifications**: canlı güncelleme, bildirim dedupe, stale/offline ve recovery
 
 ---
 
-## 3) Roller (RBAC)
+## 3) Roller ve UI rotaları
+Referans (SSOT): `docs/UI_SPEC_V1.md`
 
-1) **SUPER_ADMIN**
-- Kurulum/seed, company/room yönetimi
-
-2) **ROOM (Operasyon/Servis odası)**
-- Vehicle/Driver yönetimi
-- Shift approve/assign/start
-- Request close (ACCEPTED)
-- Stop suggestions + from-suggestion ile stop üretme
-- Agreement approve (vehicle+driver assign) + conflict yönetimi
-- Availability endpoint ile driver/vehicle uygunluk kontrolü
-
-3) **COMPANY**
-- Shift oluşturur, template yönetir/uygular
-- Agreement oluşturur, cancel/extend
-- Request’leri görür (kapatamaz)
-- M18 UI: shift listesinde agreement kaynaklı vardiyayı görür
-
-4) **DRIVER**
-- Assigned vehicle ile GPS gönderir
-- Active route + stop progression + complete
-
-5) **PERSONEL**
-- Request açar (lat/lng zorunlu)
-- Kendi live/my view
+Özet:
+- **SUPER_ADMIN**: Companies/Rooms yönetimi + overview
+- **COMPANY**: Agreements + Shifts + Market Offers
+- **ROOM**: Vehicles/Drivers + Offers Inbox + Operasyon
+- **DRIVER**: Bugün rotam / aktif rota
+- **PERSONEL**: Benim servis / talep
 
 ---
 
-## 4) Mimari (kısa)
-- Backend: Node.js (ESM) + Express + Prisma
-- DB: Postgres (Docker)
-- Jobs/Dedupe: Redis (monitor’lar)
-- Realtime: Socket.IO (ws)
-- Web: Vite + React (role-based routing)
-- Monorepo: `backend/`, `web/`, `infra/`, `docs/`, `tools/`
+## 4) “Az tık” kritik akış (sahada standard)
+1) **Geo Review**: NEEDS_REVIEW personelleri düzelt (manual override ile OK)
+2) **Agreement Wizard** ile plan oluştur (preset paketler + günler + süre)
+3) Gerekirse **Market**: aynı shift’e çoklu room teklif gönder
+4) Company 1 teklifi **ACCEPT** eder → diğer teklifler otomatik **CANCELLED**
+5) ROOM: **Onayla + Başlat** (tek adım) → shift ACTIVE
+6) DRIVER: **Reached** ilerler → shift DONE
+
+Bu akışın kullanımı için: `docs/USAGE_GUIDE_V1.md` (+ rol sayfaları)
 
 ---
 
-## 5) Doğrulanan çekirdek akışlar (özet)
+## 5) Milestone durumu (özet)
+✅ **M0–M16**: temel CRUD + shift + gps + ws + notifications + requests→suggestions→stops + geo review  
+✅ **M17–M18**: agreements + conflict + monitor + daily shift generator  
+✅ **M22**: room directory + agreement UX  
+✅ **M24–M25**: marketplace offers (multi-room) + accept→others cancelled + filtreler  
+✅ **M26–M27**: agreement wizard + preset paketler  
+✅ **M28–M32**: one-click flow + guided market + room quick approve + driver/personel UX + template UI refactor
 
-### 5.1 Shift lifecycle
-- COMPANY shift create (REQUESTED/DRAFT)
-- ROOM approve/assign(vehicleId+driverId)
-- ROOM start → DRIVER reached/skip/reopen → complete (DONE)
-
-### 5.2 GPS & Status + Notifications
-- DRIVER GPS post
-- Monitor: LIVE→STALE→OFFLINE→LIVE
-- Dedupe: state transition bazlı (spam yok)
-
-### 5.3 Requests → Suggestions → Stops (M16 / M7 dahil)
-- PERSONEL request create (lat/lng required)
-- ROOM stop-suggestions → POST stops/from-suggestion
-- Stop plan + ETA + driver route preview
-
-### 5.4 Shift People + Route Preview (M16.2)
-- `/api/shifts/:id/people` set/list
-- `stops/generate` ile assignment üretimi
-- `/api/shifts/:id/route-preview` (COMPANY/ROOM) + `assignmentCount`
-
-### 5.5 Geo Review (M16.3)
-- NEEDS_REVIEW listesi → manual override ile OK
-
-### 5.6 Agreements (M17)
-- Company request (date range + weekMask + time window)
-- Room approve(assign vehicle+driver)
-- Conflict: overlap 409
-- agreementMonitor: bitince DONE
-- Availability: agreement conflict’i de dikkate alır (**agreement-first**)
-
-### 5.7 M18 — Agreement → Daily Shift Generator ✅
-- APPROVED/ACTIVE + assigned (vehicleId+driverId) agreement’lardan “bugün” shift üretimi
-- Duplicate guard: `unique(agreementId, startAt)`
-- Conflict varsa üretim o gün skip
-- UI: Company/Room shift listelerinde **Agreement #id badge** + “Sadece Agreement shiftleri” filtresi
+Detaylar: `docs/MILESTONE_M22.md` … `docs/MILESTONE_M32.md`
 
 ---
 
-## 6) Milestone durumu (özet)
-
-✅ M0–M15: temel CRUD + shift + gps + ws + notifications + overlap/bind rules  
-✅ M16: requests→suggestions→stops + route/eta + template REPLACE  
-✅ M16.2: shift people + route-preview + assignmentCount  
-✅ M16.3: geo review + manual override  
-✅ M17: agreements + conflict + monitor + availability integration  
-✅ M17.2: agreements UI polish (room dropdown/fallback label, status pill, extend prompt)  
-✅ M17.3: UI smoke runbook (manuel)  
-✅ **M18: agreement→daily shift generator + UI badge/filter** (GREEN)
+## 6) Repo haritası (SSOT dosyaları)
+- `docs/PROJECT_SPEC_V1.md` — ürün kapsamı / kurallar
+- `docs/API_SPEC_V1.md` — REST + WS sözleşmeleri
+- `docs/DB_SCHEMA_V1.md` — şema (Prisma/DB)
+- `docs/UI_SPEC_V1.md` — UI roller/route’lar
+- `docs/STARTPACK_V1.md` — hızlı runbook (gate/pack/debug)
+- `tools/PRIMER_SNAPSHOT.md` — yeni sohbet yapıştırmalık
 
 ---
 
-## 7) SSOT dosyaları
-- `docs/PROJECT_SPEC_V1.md`
-- `docs/API_SPEC_V1.md`
-- `docs/DB_SCHEMA_V1.md`
-- `docs/UI_SPEC_V1.md`
-- `docs/STARTPACK_V1.md`
-- (ops) `web/scripts/ui-smoke.md`
+## 7) Bilinen tutarsızlıklar / düzenleme listesi (repo hijyeni)
+1) `docs/PRIMER_SSOT.md` (eski sürüm) **M18** referanslıydı → **M32** ile senk edilmesi gerekiyordu. ✅ (bu dosyada düzeltildi)
+2) `docs/STARTPACK_V1.md` bazı bölümler **M16** komutları referanslıydı → **M32** ile güncellenmeli. ✅
+3) `tools/README.md` hâlâ “M0–M12” anlatıyor → **M0–M32** olacak şekilde güncellenmeli. ✅
+4) `docs/MILESTONE_GATE_MATRIX.md` erken dönem (M1–M6) içerik gibi duruyor →  
+   - ya “LEGACY” diye işaretle,  
+   - ya da M32’ye kadar genişlet (tercihen: **per-milestone docs + check script** zaten kanıt).
+5) `tools/gate.ps1` ve `tools/pack.ps1` default `-To` değeri **21** → en güncel hedefe (32) çekmek UX’i iyileştirir (opsiyonel).
 
 ---
 
-## 8) Devam
-- İstersen sıradaki: “M19 — Agreement shift’leri için stop/template otomasyonu” veya “M18 UI iyileştirme (badge renk/pill, filtre presetleri)”.
+## 8) Sonraki hedef: V1.5 Plan Builder (OSRM + OR-Tools)
+Hedef: Kullanıcı “kaç araç gerekir / rota nasıl olur”u düşünmesin.
+
+Önerilen fazlar:
+- **Kural tabanlı**: kişi sayısı + kapasite → araç sayısı, geohash/cluster
+- **OSRM**: süre/mesafe matrisi
+- **OR-Tools VRP**: araç/rota dağıtımı (N araç → N rota)
+- “Uygula” → N shift create (market) → offers → accept → room approve/start
+
+Backlog referans: `docs/NEXT_BACKLOG_V1.md` (özellikle A başlığı)
+
+---

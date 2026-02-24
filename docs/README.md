@@ -11,8 +11,9 @@
 ## Operasyon / test
 - **API_QUICK_TEST.md** — hızlı manuel test notları
 - **SEED_USERS.md** — seed kullanıcılar
-- **MILESTONE_GATE_MATRIX.md** — milestone → check eşlemesi
+- **MILESTONE_GATE_MATRIX.md** — (LEGACY) erken dönem gate notları; canonical kanıt: tools gate/pack + m*check
 - **NEXT_BACKLOG_V1.md** — kısa backlog
+- **MILESTONE_M22.md ... MILESTONE_M32.md** — milestone açıklamaları
 
 ## Arşiv
 - `_archive/plans/` — eski sprint/epic planları
