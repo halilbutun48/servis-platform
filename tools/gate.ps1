@@ -1,7 +1,7 @@
 # tools/gate.ps1
 param(
   [Parameter(Mandatory=$false)]
-  [ValidateRange(0,31)]
+  [ValidateRange(0,32)]
   [int]$To = 21,
 
   [Parameter(Mandatory=$false)]
@@ -57,7 +57,8 @@ $checks = @(
   @{ n = 28; name = "M28"; file = "m28check.js"; cmd = "node scripts/m28check.js" },
   @{ n = 29; name = "M29"; file = "m29check.js"; cmd = "node scripts/m29check.js" },
   @{ n = 30; name = "M30"; file = "m30check.js"; cmd = "node scripts/m30check.js" },
-  @{ n = 31; name = "M31"; file = "m31check.js"; cmd = "node scripts/m31check.js" }
+  @{ n = 31; name = "M31"; file = "m31check.js"; cmd = "node scripts/m31check.js" },
+  @{ n = 32; name = "M32"; file = "m32check.js"; cmd = "node scripts/m32check.js" }
 )
 
 $repo = (Resolve-Path $RepoDir).Path

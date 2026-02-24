@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { invalidate } from "../../live/bus";
 import ShiftPeopleTab from "./ShiftPeopleTab";
+import { WEEKDAYS, DAY_PRESETS, DURATION_PRESETS, selectedFromMask, maskFromSelected, weekMaskToText } from "../../utils/agreementUi";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -79,11 +80,56 @@ function addDaysYmd(ymd, deltaDays) {
   return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`;
 }
 
-const PRESET_TEMPLATES = [
-  { id: "preset_sabah", name: "Sabah", startHHMM: "07:00", endHHMM: "09:00", people: null, kind: "PRESET" },
-  { id: "preset_aksam", name: "Akşam", startHHMM: "17:00", endHHMM: "19:00", people: null, kind: "PRESET" },
-  { id: "preset_gece", name: "Gece", startHHMM: "23:00", endHHMM: "01:00", people: null, kind: "PRESET" },
+
+const TEMPLATE_PACKS = [
+  {
+    key: "WK_MORNING",
+    title: "Hafta içi • Sabah",
+    desc: "07:00 → 09:00 (Toplama → Hub)",
+    items: [{ label: "Sabah", startHHMM: "07:00", endHHMM: "09:00", direction: "INBOUND", pattern: "ONE_WAY" }],
+  },
+  {
+    key: "WK_EVENING",
+    title: "Hafta içi • Akşam",
+    desc: "17:00 → 19:00 (Hub → Dağıtım)",
+    items: [{ label: "Akşam", startHHMM: "17:00", endHHMM: "19:00", direction: "OUTBOUND", pattern: "ONE_WAY" }],
+  },
+  {
+    key: "WK_MORNING_EVENING",
+    title: "Hafta içi • Sabah + Akşam",
+    desc: "2 vardiya (07-09 + 17-19)",
+    items: [
+      { label: "Sabah", startHHMM: "07:00", endHHMM: "09:00", direction: "INBOUND", pattern: "ONE_WAY" },
+      { label: "Akşam", startHHMM: "17:00", endHHMM: "19:00", direction: "OUTBOUND", pattern: "ONE_WAY" },
+    ],
+  },
+  {
+    key: "WK_NIGHT",
+    title: "Hafta içi • Gece",
+    desc: "23:00 → 01:00 (midnight-cross)",
+    items: [{ label: "Gece", startHHMM: "23:00", endHHMM: "01:00", direction: "INBOUND", pattern: "ONE_WAY" }],
+  },
+  {
+    key: "CUSTOM",
+    title: "Özel",
+    desc: "Elle ayarla",
+    items: [{ label: "Özel", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" }],
+  },
 ];
+
+const DEFAULT_WEEKMASK = 31; // Hafta içi (Pzt..Cmt) = 31
+const DEFAULT_DURATION_KEY = "1m";
+
+const PRESET_TEMPLATES = TEMPLATE_PACKS.filter((p) => p.key !== "CUSTOM").map((p) => ({
+  id: `preset_${p.key}`,
+  name: p.title,
+  packKey: p.key,
+  weekMask: DEFAULT_WEEKMASK,
+  durationKey: DEFAULT_DURATION_KEY,
+  items: p.items,
+  people: null,
+  kind: "PRESET",
+}));
 
 export default function CompanyShiftsPanel() {
   const { token, me } = useSession();
@@ -159,103 +205,255 @@ export default function CompanyShiftsPanel() {
     return new Date(utcMs).toISOString();
   }
 
-  // ===== Templates (company-localStorage) =====
-  const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
-  const templatesStorageKey = `psv1:company:${companyKey}:shiftTemplates:v1`;
+// ===== Templates (company-localStorage) =====
+// Amaç: Wizard'daki plan paketleri + günler + süre mantığını tek yerde toplamak.
+// Not: LocalStorage company bazlıdır. Eski (v1) şablonlar otomatik migrate edilir.
 
-  const [customTemplates, setCustomTemplates] = useState([]); // [{id,name,startHHMM,endHHMM,people,kind:"CUSTOM"}]
+const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
+const templatesStorageKey = `psv1:company:${companyKey}:shiftTemplates:v2`;
+const templatesStorageKeyLegacy = `psv1:company:${companyKey}:shiftTemplates:v1`;
 
-  // Custom create form
-  const [tplName, setTplName] = useState("");
-  const [tplStart, setTplStart] = useState("07:00");
-  const [tplEnd, setTplEnd] = useState("09:00");
-  const [tplPeople, setTplPeople] = useState("");
+const [customTemplates, setCustomTemplates] = useState([]); // [{id,name,packKey,weekMask,durationKey,items[],people,kind:"CUSTOM"}]
 
-  function loadCustomTemplates() {
-    try {
-      const raw = localStorage.getItem(templatesStorageKey);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .map((x) => ({
-          id: String(x?.id || ""),
-          name: String(x?.name || "").trim(),
-          startHHMM: String(x?.startHHMM || ""),
-          endHHMM: String(x?.endHHMM || ""),
-          people: x?.people == null || x?.people === "" ? null : Number(x.people),
-          kind: "CUSTOM",
-        }))
-        .filter((x) => x.id && x.name && minutesOf(x.startHHMM) != null && minutesOf(x.endHHMM) != null);
-    } catch {
-      return [];
+// UI state (wizard-like)
+const [tplName, setTplName] = useState("");
+const [tplPackKey, setTplPackKey] = useState("WK_MORNING_EVENING");
+const [tplDurationKey, setTplDurationKey] = useState(DEFAULT_DURATION_KEY);
+const [tplDaysSel, setTplDaysSel] = useState(() => selectedFromMask(DEFAULT_WEEKMASK));
+const [tplPeople, setTplPeople] = useState("");
+const [editingTplId, setEditingTplId] = useState("");
+
+// Custom pack override
+const [tplStart, setTplStart] = useState("08:00");
+const [tplEnd, setTplEnd] = useState("10:00");
+const [tplDirection, setTplDirection] = useState("INBOUND");
+const [tplPattern, setTplPattern] = useState("ONE_WAY");
+
+function normalizeTemplate(x) {
+  if (!x) return null;
+  const id = String(x?.id || "").trim();
+  const name = String(x?.name || "").trim();
+  const packKey = String(x?.packKey || "CUSTOM").trim();
+  const weekMask = Number.isFinite(Number(x?.weekMask)) ? Number(x.weekMask) : DEFAULT_WEEKMASK;
+  const durationKey = String(x?.durationKey || DEFAULT_DURATION_KEY);
+  const people = x?.people == null || x?.people === "" ? null : Number(x.people);
+
+  let items = []
+  if (Array.isArray(x?.items) && x.items.length) {
+    items = x.items
+      .map((it) => ({
+        label: String(it?.label || "Vardiya").trim() || "Vardiya",
+        startHHMM: String(it?.startHHMM || "").trim(),
+        endHHMM: String(it?.endHHMM || "").trim(),
+        direction: String(it?.direction || "INBOUND"),
+        pattern: String(it?.pattern || "ONE_WAY"),
+      }))
+      .filter((it) => minutesOf(it.startHHMM) != null && minutesOf(it.endHHMM) != null);
+  } else if (x?.startHHMM && x?.endHHMM) {
+    // legacy v1
+    const s = String(x.startHHMM).trim();
+    const e = String(x.endHHMM).trim();
+    if (minutesOf(s) != null && minutesOf(e) != null) {
+      items = [{ label: name || "Vardiya", startHHMM: s, endHHMM: e, direction: "INBOUND", pattern: "ONE_WAY" }];
     }
   }
 
-  useEffect(() => {
-    setCustomTemplates(loadCustomTemplates());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templatesStorageKey]);
+  if (!id || !name || !items.length) return null;
 
-  useEffect(() => {
+  return {
+    id,
+    name,
+    packKey,
+    weekMask,
+    durationKey,
+    items,
+    people: Number.isFinite(people) && people > 0 ? people : null,
+    kind: "CUSTOM",
+  };
+}
+
+function loadCustomTemplates() {
+  const candidates = []
+  for (const key of [templatesStorageKey, templatesStorageKeyLegacy]) {
     try {
-      localStorage.setItem(templatesStorageKey, JSON.stringify(customTemplates));
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) candidates.push(...parsed);
     } catch {
       // ignore
     }
-  }, [customTemplates, templatesStorageKey]);
-
-  const allTemplates = useMemo(() => {
-    const customs = (customTemplates || []).map((t) => ({ ...t, kind: "CUSTOM" }));
-    return [...PRESET_TEMPLATES, ...customs];
-  }, [customTemplates]);
-
-  function templateLabel(t) {
-    const ppl = t.people != null ? ` • ${t.people} kişi` : "";
-    const kind = t.kind === "PRESET" ? "PRESET" : "CUSTOM";
-    return `${t.name} (${t.startHHMM}–${t.endHHMM})${ppl} • ${kind}`;
   }
 
-  function saveCustomTemplate(e) {
-    e?.preventDefault?.();
-    setErr("");
+  const seen = new Set();
+  const out = [];
+  for (const x of candidates) {
+    const nx = normalizeTemplate(x);
+    if (!nx) continue;
+    if (seen.has(nx.id)) continue;
+    seen.add(nx.id);
+    out.push(nx);
+  }
 
-    const name = String(tplName || "").trim();
+  // write back migrated v2 (best effort)
+  try {
+    localStorage.setItem(templatesStorageKey, JSON.stringify(out));
+  } catch {
+    // ignore
+  }
+
+  return out;
+}
+
+useEffect(() => {
+  setCustomTemplates(loadCustomTemplates());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [templatesStorageKey]);
+
+useEffect(() => {
+  try {
+    localStorage.setItem(templatesStorageKey, JSON.stringify(customTemplates));
+  } catch {
+    // ignore
+  }
+}, [customTemplates, templatesStorageKey]);
+
+const allTemplates = useMemo(() => {
+  const customs = (customTemplates || []).map((t) => ({ ...t, kind: "CUSTOM" }));
+  return [...PRESET_TEMPLATES, ...customs];
+}, [customTemplates]);
+
+const pack = useMemo(() => TEMPLATE_PACKS.find((p) => p.key === tplPackKey) || TEMPLATE_PACKS[0], [tplPackKey]);
+
+// when pack changes, update custom fields
+useEffect(() => {
+  if (tplPackKey !== "CUSTOM") {
+    const it = (pack?.items || [])[0];
+    if (it) {
+      setTplStart(String(it.startHHMM || "08:00"));
+      setTplEnd(String(it.endHHMM || "10:00"));
+      setTplDirection(String(it.direction || "INBOUND"));
+      setTplPattern(String(it.pattern || "ONE_WAY"));
+    }
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [tplPackKey]);
+
+function resetTemplateForm() {
+  setEditingTplId("");
+  setTplName("");
+  setTplPackKey("WK_MORNING_EVENING");
+  setTplDurationKey(DEFAULT_DURATION_KEY);
+  setTplDaysSel(selectedFromMask(DEFAULT_WEEKMASK));
+  setTplPeople("");
+  setTplStart("08:00");
+  setTplEnd("10:00");
+  setTplDirection("INBOUND");
+  setTplPattern("ONE_WAY");
+}
+
+function loadTemplateIntoForm(tpl) {
+  if (!tpl || tpl.kind !== "CUSTOM") return;
+  setEditingTplId(String(tpl.id));
+  setTplName(String(tpl.name || ""));
+  setTplPackKey(String(tpl.packKey || "CUSTOM"));
+  setTplDurationKey(String(tpl.durationKey || DEFAULT_DURATION_KEY));
+  setTplDaysSel(selectedFromMask(Number(tpl.weekMask || DEFAULT_WEEKMASK)));
+  setTplPeople(tpl.people != null ? String(tpl.people) : "");
+
+  const it = (tpl.items || [])[0];
+  if (it) {
+    setTplStart(String(it.startHHMM || "08:00"));
+    setTplEnd(String(it.endHHMM || "10:00"));
+    setTplDirection(String(it.direction || "INBOUND"));
+    setTplPattern(String(it.pattern || "ONE_WAY"));
+  }
+}
+
+function saveCustomTemplate(e) {
+  e?.preventDefault?.();
+  setErr("");
+
+  const name = String(tplName || "").trim();
+  if (!name) {
+    setErr("Şablon adı zorunlu.");
+    return;
+  }
+
+  const pplRaw = String(tplPeople || "").trim();
+  const ppl = pplRaw ? Number(pplRaw) : null;
+  if (pplRaw && (!Number.isFinite(ppl) || ppl <= 0)) {
+    setErr("Varsayılan kişi sayısı pozitif sayı olmalı (opsiyonel).");
+    return;
+  }
+
+  const weekMask = maskFromSelected(tplDaysSel);
+
+  let items = [];
+  if (tplPackKey === "CUSTOM") {
     const s = String(tplStart || "").trim();
     const en = String(tplEnd || "").trim();
-
-    if (!name) {
-      setErr("Şablon adı zorunlu.");
-      return;
-    }
     if (minutesOf(s) == null || minutesOf(en) == null) {
       setErr("Start/End HH:MM formatında olmalı (örn 07:00).");
       return;
     }
+    items = [{ label: "Özel", startHHMM: s, endHHMM: en, direction: tplDirection, pattern: tplPattern }];
+  } else {
+    const pk = TEMPLATE_PACKS.find((p) => p.key === tplPackKey);
+    items = (pk?.items || []).map((it) => ({ ...it }));
+  }
 
-    const pplRaw = String(tplPeople || "").trim();
-    const ppl = pplRaw ? Number(pplRaw) : null;
-    if (pplRaw && (!Number.isFinite(ppl) || ppl <= 0)) {
-      setErr("Varsayılan kişi sayısı pozitif sayı olmalı (opsiyonel).");
-      return;
+  if (!items.length) {
+    setErr("Şablon içeriği boş.");
+    return;
+  }
+
+  const id = editingTplId || `tpl_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+  const next = {
+    id,
+    name,
+    packKey: tplPackKey,
+    weekMask,
+    durationKey: tplDurationKey,
+    items,
+    people: ppl,
+    kind: "CUSTOM",
+  };
+
+  setCustomTemplates((prev) => {
+    const list = Array.isArray(prev) ? prev : [];
+    const idx = list.findIndex((x) => x.id === id);
+    if (idx >= 0) {
+      const copy = list.slice();
+      copy[idx] = next;
+      return copy;
     }
+    return [next, ...list];
+  });
 
-    const id = `cust_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-    const next = { id, name, startHHMM: s, endHHMM: en, people: ppl, kind: "CUSTOM" };
+  resetTemplateForm();
+}
 
-    setCustomTemplates((prev) => [next, ...(prev || [])]);
-    setTplName("");
-    setTplPeople("");
+function deleteCustomTemplate(id) {
+  const t = customTemplates.find((x) => x.id === id);
+  if (!t) return;
+  if (!confirm(`"${t.name}" şablonunu silmek istiyor musun?`)) return;
+  setCustomTemplates((prev) => (prev || []).filter((x) => x.id !== id));
+  if (editingTplId === id) resetTemplateForm();
+}
+
+function templateItemsSummary(tpl) {
+  const its = tpl?.items || [];
+  if (!its.length) return "-";
+  if (its.length === 1) {
+    const it = its[0];
+    return `${it.label}: ${it.startHHMM}–${it.endHHMM}`;
   }
+  return its.map((it) => `${it.label} ${it.startHHMM}–${it.endHHMM}`).join(" | ");
+}
 
-  function deleteCustomTemplate(id) {
-    const t = customTemplates.find((x) => x.id === id);
-    if (!t) return;
-    if (!confirm(`"${t.name}" şablonunu silmek istiyor musun?`)) return;
-    setCustomTemplates((prev) => (prev || []).filter((x) => x.id !== id));
-  }
-
-  // ===== Yeni shift (request) form state =====
+// ===== Yeni shift (request) form state =====
   const [roomId, setRoomId] = useState(() => {
     try {
       return localStorage.getItem(LS_LAST_ROOM) || "";
@@ -271,42 +469,61 @@ export default function CompanyShiftsPanel() {
   const [offerAmount, setOfferAmount] = useState("");
   const [offerNote, setOfferNote] = useState("");
 
-  // template selection in request tab
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+// template selection in request tab
+// Not: bundle template varsa her item ayrı option olur (tplId::idx)
+const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
-  function applyTemplateToRequest(tpl) {
-    if (!tpl) return;
-
-    const baseDate = startAt ? String(startAt).slice(0, 10) : todayYmdLocal();
-
-    const sMin = minutesOf(tpl.startHHMM);
-    const eMin = minutesOf(tpl.endHHMM);
-    if (sMin == null || eMin == null) return;
-
-    const startDT = `${baseDate}T${tpl.startHHMM}`;
-    const endDate = eMin <= sMin ? addDaysYmd(baseDate, 1) : baseDate;
-    const endDT = `${endDate}T${tpl.endHHMM}`;
-
-    setStartAt(startDT);
-    setEndAt(endDT);
-
-    if (!String(seatDemand || "").trim() && tpl.people != null) {
-      setSeatDemand(String(tpl.people));
+const templateOptions = useMemo(() => {
+  const opts = [];
+  for (const tpl of allTemplates) {
+    const items = tpl?.items || [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const key = `${tpl.id}::${i}`;
+      const base = tpl.name;
+      const label = items.length > 1 ? `${base} • ${it.label}` : base;
+      opts.push({ key, tpl, itemIndex: i, item: it, label });
     }
   }
+  return opts;
+}, [allTemplates]);
 
-  function onSelectTemplate(id) {
-    setSelectedTemplateId(String(id || ""));
-    const tpl = allTemplates.find((t) => t.id === String(id || ""));
-    if (!tpl) return;
-    applyTemplateToRequest(tpl);
-  }
+function applyTemplateItemToRequest(tpl, it) {
+  if (!tpl || !it) return;
 
-  function useTemplateFromList(tpl) {
-    setTopTab("request");
-    setSelectedTemplateId(tpl.id);
-    applyTemplateToRequest(tpl);
+  const baseDate = startAt ? String(startAt).slice(0, 10) : todayYmdLocal();
+
+  const sMin = minutesOf(it.startHHMM);
+  const eMin = minutesOf(it.endHHMM);
+  if (sMin == null || eMin == null) return;
+
+  const startDT = `${baseDate}T${it.startHHMM}`;
+  const endDate = eMin <= sMin ? addDaysYmd(baseDate, 1) : baseDate;
+  const endDT = `${endDate}T${it.endHHMM}`;
+
+  setStartAt(startDT);
+  setEndAt(endDT);
+
+  if (!String(seatDemand || "").trim() && tpl.people != null) {
+    setSeatDemand(String(tpl.people));
   }
+}
+
+function onSelectTemplate(key) {
+  const k = String(key || "");
+  setSelectedTemplateId(k);
+  const opt = templateOptions.find((x) => x.key === k);
+  if (!opt) return;
+  applyTemplateItemToRequest(opt.tpl, opt.item);
+}
+
+function useTemplateFromList(tpl, itemIndex = 0) {
+  setTopTab("request");
+  const k = `${tpl.id}::${Number(itemIndex) || 0}`;
+  setSelectedTemplateId(k);
+  const it = (tpl?.items || [])[Number(itemIndex) || 0];
+  applyTemplateItemToRequest(tpl, it);
+}
 
   // Karşı teklif UI
   const [offerOpen, setOfferOpen] = useState({});
@@ -1010,9 +1227,10 @@ export default function CompanyShiftsPanel() {
               <label className="muted">Vardiya türü (şablon)</label>
               <select value={selectedTemplateId} onChange={(e) => onSelectTemplate(e.target.value)} disabled={busy}>
                 <option value="">— Şablon seç (opsiyonel) —</option>
-                {allTemplates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {templateLabel(t)}
+                {templateOptions.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label} ({o.item.startHHMM}–{o.item.endHHMM})
+                    {o.tpl.kind === "PRESET" ? " • PRESET" : ""}
                   </option>
                 ))}
               </select>
@@ -1131,98 +1349,174 @@ export default function CompanyShiftsPanel() {
         </div>
       ) : null}
 
-      {/* TAB: Vardiya Şablonları */}
-      {topTab === "templates" ? (
-        <div className="card">
-          <h3>Vardiya Şablonları</h3>
-          <div className="muted">Preset’ler sabit. Custom şablon ekleyip “Yeni Talep” ekranında seçebilirsin. Custom şablonlar company bazlı tarayıcıda saklanır.</div>
+{/* TAB: Vardiya Şablonları */}
+{topTab === "templates" ? (
+  <div className="card">
+    <h3>Vardiya Şablonları</h3>
+    <div className="muted">
+      Wizard’daki <b>plan paketi + günler + süre</b> mantığını burada şablon olarak kaydedebilirsin.
+      Bu şablonları hem <b>Yeni Talep</b> ekranında saat doldurmak için, hem de ileride planlama için kullanacağız.
+      Custom şablonlar company bazlı tarayıcıda saklanır.
+    </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 12, alignItems: "start", marginTop: 12 }}>
-            {/* Sol: Custom create */}
-            <div className="card" style={{ margin: 0 }}>
-              <h3 style={{ marginTop: 0 }}>Custom Şablon Oluştur</h3>
-              <form onSubmit={saveCustomTemplate} className="grid">
-                <div className="col" style={{ gridColumn: "1 / -1" }}>
-                  <label className="muted">Şablon adı</label>
-                  <input value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="örn. Sabah Servis (Şirket A)" disabled={busy} />
-                </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
+      {/* 1) Plan paketi */}
+      <div className="card" style={{ margin: 0 }}>
+        <h3 style={{ marginTop: 0 }}>1) Plan paketi seç</h3>
 
-                <div className="col">
-                  <label className="muted">Start (HH:MM)</label>
-                  <input value={tplStart} onChange={(e) => setTplStart(e.target.value)} placeholder="07:00" disabled={busy} />
-                </div>
-
-                <div className="col">
-                  <label className="muted">End (HH:MM)</label>
-                  <input value={tplEnd} onChange={(e) => setTplEnd(e.target.value)} placeholder="09:00" disabled={busy} />
-                </div>
-
-                <div className="col" style={{ gridColumn: "1 / -1" }}>
-                  <label className="muted">Varsayılan kişi sayısı (opsiyonel)</label>
-                  <input type="number" value={tplPeople} onChange={(e) => setTplPeople(e.target.value)} placeholder="örn. 16" disabled={busy} />
-                </div>
-
-                <div className="col" style={{ justifyContent: "end" }}>
-                  <button type="submit" disabled={busy}>
-                    Kaydet
-                  </button>
-                </div>
-              </form>
-
-              <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-                İpucu: End, Start’tan küçükse “gece vardiyası” gibi değerlendirilir (bir sonraki güne taşar).
-              </div>
+        {(TEMPLATE_PACKS || []).map((p) => (
+          <label key={p.key} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 10 }}>
+            <input
+              type="radio"
+              name="tplPack"
+              checked={tplPackKey === p.key}
+              onChange={() => setTplPackKey(p.key)}
+            />
+            <div>
+              <div style={{ fontWeight: 700 }}>{p.title}</div>
+              <div className="muted" style={{ fontSize: 12 }}>{p.desc}</div>
             </div>
+          </label>
+        ))}
 
-            {/* Sağ: Template list */}
-            <div className="card" style={{ margin: 0, overflowX: "auto" }}>
-              <h3 style={{ marginTop: 0 }}>Şablon Listesi</h3>
-              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
-                <thead>
-                  <tr>
-                    <th>Ad</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Kişi (vars.)</th>
-                    <th>Tip</th>
-                    <th>Aksiyon</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allTemplates.map((t) => (
-                    <tr key={t.id}>
-                      <td>{t.name}</td>
-                      <td className="muted">{t.startHHMM}</td>
-                      <td className="muted">{t.endHHMM}</td>
-                      <td className="muted">{t.people != null ? t.people : "-"}</td>
-                      <td>
-                        <span className="pill" data-status={t.kind === "PRESET" ? "PRESET" : "CUSTOM"}>
-                          {t.kind}
-                        </span>
-                      </td>
-                      <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button type="button" disabled={busy} onClick={() => useTemplateFromList(t)}>
-                          Kullan
-                        </button>
-                        {t.kind === "CUSTOM" ? (
-                          <button type="button" className="btn" disabled={busy} onClick={() => deleteCustomTemplate(t.id)}>
-                            Sil
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="muted" style={{ marginBottom: 6 }}>Şablon adı</div>
+          <input value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="örn. Hafta içi Sabah (A)" />
 
-              <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-                “Kullan” → Yeni Talep’e geçer ve Start/End’i doldurur.
-              </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+            <div>
+              <div className="muted">Start (HH:MM)</div>
+              <input value={tplStart} onChange={(e) => setTplStart(e.target.value)} disabled={tplPackKey !== "CUSTOM"} />
+            </div>
+            <div>
+              <div className="muted">End (HH:MM)</div>
+              <input value={tplEnd} onChange={(e) => setTplEnd(e.target.value)} disabled={tplPackKey !== "CUSTOM"} />
             </div>
           </div>
-        </div>
-      ) : null}
 
+          <div className="muted" style={{ marginTop: 10 }}>Varsayılan kişi sayısı (opsiyonel)</div>
+          <input type="number" value={tplPeople} onChange={(e) => setTplPeople(e.target.value)} placeholder="örn. 16" />
+
+          <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+            İpucu: End, Start’tan küçükse “gece vardiyası” gibi değerlendirilir (bir sonraki güne taşar).
+          </div>
+        </div>
+      </div>
+
+      {/* 2) Günler + süre */}
+      <div className="card" style={{ margin: 0 }}>
+        <h3 style={{ marginTop: 0 }}>2) Günler + süre</h3>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+          {DAY_PRESETS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              className="btn"
+              onClick={() => setTplDaysSel(selectedFromMask(p.mask))}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+          {WEEKDAYS.map((d) => (
+            <label key={d.k} className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(tplDaysSel?.[d.k])}
+                onChange={(e) => setTplDaysSel((prev) => ({ ...(prev || {}), [d.k]: e.target.checked }))}
+              />
+              {d.label}
+            </label>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <div className="muted">Süre</div>
+          <select value={tplDurationKey} onChange={(e) => setTplDurationKey(e.target.value)}>
+            {DURATION_PRESETS.map((p) => (
+              <option key={p.key} value={p.key}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="card" style={{ marginTop: 12, borderStyle: "dashed" }}>
+          <div style={{ fontWeight: 700 }}>Özet</div>
+          <ul className="muted" style={{ margin: "8px 0 0 18px" }}>
+            <li><b>Günler:</b> {weekMaskToText(maskFromSelected(tplDaysSel))} • weekMask: {maskFromSelected(tplDaysSel)}</li>
+            <li><b>Süre:</b> {(DURATION_PRESETS.find((x) => x.key === tplDurationKey) || DURATION_PRESETS[1]).label}</li>
+            <li><b>Paket:</b> {templateItemsSummary({ items: tplPackKey === "CUSTOM" ? [{ label: "Özel", startHHMM: tplStart, endHHMM: tplEnd }] : (pack?.items || []) })}</li>
+          </ul>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "end", marginTop: 12, flexWrap: "wrap" }}>
+          <button type="button" className="btn" onClick={resetTemplateForm}>
+            Temizle
+          </button>
+          <button type="button" disabled={busy} onClick={saveCustomTemplate}>
+            {editingTplId ? "Güncelle" : "Kaydet"}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* Liste */}
+    <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
+      <h3 style={{ marginTop: 0 }}>Şablon Listesi</h3>
+      <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+        <thead>
+          <tr>
+            <th>Ad</th>
+            <th>Vardiya(lar)</th>
+            <th>Günler</th>
+            <th>Süre</th>
+            <th>Kişi (vars.)</th>
+            <th>Tip</th>
+            <th>Aksiyon</th>
+          </tr>
+        </thead>
+        <tbody>
+          {allTemplates.map((t) => (
+            <tr key={t.id}>
+              <td>{t.name}</td>
+              <td className="muted">{templateItemsSummary(t)}</td>
+              <td className="muted">{weekMaskToText(t.weekMask)} ({t.weekMask})</td>
+              <td className="muted">{(DURATION_PRESETS.find((x) => x.key === t.durationKey) || DURATION_PRESETS[1]).label}</td>
+              <td className="muted">{t.people != null ? t.people : "-"}</td>
+              <td>
+                <span className="pill" data-status={t.kind === "PRESET" ? "PRESET" : "CUSTOM"}>{t.kind}</span>
+              </td>
+              <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {(t.items || []).map((it, idx) => (
+                  <button key={idx} type="button" disabled={busy} onClick={() => useTemplateFromList(t, idx)}>
+                    Kullan{t.items.length > 1 ? ` (${it.label})` : ""}
+                  </button>
+                ))}
+                {t.kind === "CUSTOM" ? (
+                  <>
+                    <button type="button" className="btn" disabled={busy} onClick={() => loadTemplateIntoForm(t)}>
+                      Düzenle
+                    </button>
+                    <button type="button" className="btn" disabled={busy} onClick={() => deleteCustomTemplate(t.id)}>
+                      Sil
+                    </button>
+                  </>
+                ) : null}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+        “Kullan” → Yeni Talep’e geçer ve Start/End’i doldurur.
+      </div>
+    </div>
+  </div>
+) : null}
+    
       {/* TAB: Personel & Rota */}
       {topTab === "people" ? (
         <ShiftPeopleTab token={token} me={me} shifts={items} roomsById={roomsById} />
