@@ -1,41 +1,41 @@
 // web/src/components/RoutePreviewModal.jsx
 import { useEffect, useMemo, useState } from "react";
+import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from "react-leaflet";
+import { latLngBounds } from "leaflet";
+
 import { api } from "../api";
 import { apiOr404Fallback } from "../utils/apiFallback";
 
-function bboxFromPoints(points) {
-  if (!points.length) return null;
-  let minLat = points[0].lat, maxLat = points[0].lat;
-  let minLng = points[0].lng, maxLng = points[0].lng;
+function FitBounds({ bounds }) {
+  const map = useMap();
 
-  for (const p of points) {
-    minLat = Math.min(minLat, p.lat);
-    maxLat = Math.max(maxLat, p.lat);
-    minLng = Math.min(minLng, p.lng);
-    maxLng = Math.max(maxLng, p.lng);
-  }
-  return { minLat, maxLat, minLng, maxLng };
-}
+  useEffect(() => {
+    // Map is in a modal; make sure Leaflet measures size correctly.
+    const t = setTimeout(() => {
+      try { map.invalidateSize(); } catch {}
+      try {
+        if (bounds) map.fitBounds(bounds, { padding: [24, 24] });
+      } catch {}
+    }, 50);
 
-function project(p, box, w, h, pad) {
-  const { minLat, maxLat, minLng, maxLng } = box;
+    return () => clearTimeout(t);
+  }, [map, bounds]);
 
-  const dx = Math.max(1e-9, maxLng - minLng);
-  const dy = Math.max(1e-9, maxLat - minLat);
-
-  const x = (p.lng - minLng) / dx;
-  const y = (maxLat - p.lat) / dy;
-
-  return {
-    x: pad + x * (w - 2 * pad),
-    y: pad + y * (h - 2 * pad),
-  };
+  return null;
 }
 
 export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people }) {
   if (!open) return null;
 
-  const [remote, setRemote] = useState({ stops: null, people: null, summary: null, pathPoints: null, source: null, err: "" });
+  const [remote, setRemote] = useState({
+    stops: null,
+    people: null,
+    summary: null,
+    pathPoints: null,
+    source: null,
+    err: "",
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -59,16 +59,15 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
         if (!alive) return;
 
         if (data && data.ok) {
-          // Map backend shape -> UI shape
           const p = Array.isArray(data.people) ? data.people : [];
           const st = Array.isArray(data.stops) ? data.stops : [];
+
           setRemote({
             stops: st.map((s) => ({
               id: String(s?.id ?? ""),
               title: String(s?.title ?? s?.name ?? ""),
               lat: typeof s?.lat === "number" ? s.lat : (typeof s?.stopLat === "number" ? s.stopLat : null),
               lng: typeof s?.lng === "number" ? s.lng : (typeof s?.stopLng === "number" ? s.stopLng : null),
-              // M16.2+: backend may send assignmentCount
               count: (s?.assignmentCount ?? s?.count ?? null),
             })),
             people: p.map((x) => ({
@@ -87,7 +86,15 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
         }
       } catch (e) {
         if (!alive) return;
-        setRemote((s) => ({ ...s, stops: null, people: null, summary: null, pathPoints: null, source: null, err: e?.message || String(e) }));
+        setRemote((s) => ({
+          ...s,
+          stops: null,
+          people: null,
+          summary: null,
+          pathPoints: null,
+          source: null,
+          err: e?.message || String(e),
+        }));
       }
     })();
 
@@ -98,34 +105,34 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
   const effPeople = remote.people ?? people ?? [];
 
   const stopPts = (effStops || []).filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number");
-  const pathPts = (remote.pathPoints || [])
-    .filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number")
-    .map((p) => ({ lat: p.lat, lng: p.lng }));
-
   const peoplePts = (effPeople || [])
     .filter((p) => typeof p?.lat === "number" && typeof p?.lng === "number")
     .map((p) => ({ lat: p.lat, lng: p.lng }));
 
-  const allPts = [...stopPts.map((s) => ({ lat: s.lat, lng: s.lng })), ...peoplePts, ...pathPts];
+  const pathPts = (remote.pathPoints || [])
+    .filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number")
+    .map((p) => ({ lat: p.lat, lng: p.lng }));
 
-  const { w, h, pad } = { w: 760, h: 420, pad: 24 };
+  const linePts = useMemo(() => {
+    if (pathPts.length >= 2) return pathPts;
+    if (stopPts.length >= 2) return stopPts.map((s) => ({ lat: s.lat, lng: s.lng }));
+    return [];
+  }, [pathPts, stopPts]);
 
-  const box = useMemo(() => bboxFromPoints(allPts), [allPts]);
+  const bounds = useMemo(() => {
+    const pts = (linePts.length ? linePts : stopPts.map((s) => ({ lat: s.lat, lng: s.lng })));
+    if (!pts.length) return null;
+    return latLngBounds(pts.map((p) => [p.lat, p.lng]));
+  }, [linePts, stopPts]);
 
-  const polyline = useMemo(() => {
-    if (!box) return "";
-    const linePts = (pathPts.length >= 2)
-      ? pathPts
-      : stopPts.map((s) => ({ lat: s.lat, lng: s.lng }));
+  const center = useMemo(() => {
+    const p = (linePts[0] ?? stopPts[0]);
+    return p ? [p.lat, p.lng] : [41.015, 28.979];
+  }, [linePts, stopPts]);
 
-    if (linePts.length < 2) return "";
-    return linePts
-      .map((p) => {
-        const pt = project({ lat: p.lat, lng: p.lng }, box, w, h, pad);
-        return `${pt.x},${pt.y}`;
-      })
-      .join(" ");
-  }, [box, pathPts, stopPts, w, h, pad]);
+  const startPt = linePts.length ? linePts[0] : null;
+  const endPt = linePts.length ? linePts[linePts.length - 1] : null;
+  const showEnd = endPt && startPt && (Math.abs(endPt.lat - startPt.lat) > 1e-9 || Math.abs(endPt.lng - startPt.lng) > 1e-9);
 
   return (
     <div
@@ -143,9 +150,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
       <div className="card" style={{ width: "min(1200px, 96vw)", maxHeight: "92vh", overflow: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
           <h3 style={{ margin: 0 }}>{title || "Rota/Durak Önizleme"}</h3>
-          <button type="button" onClick={onClose}>
-            Kapat
-          </button>
+          <button type="button" onClick={onClose}>Kapat</button>
         </div>
 
         {remote.err ? <div className="card err" style={{ marginTop: 12 }}>{remote.err}</div> : null}
@@ -186,58 +191,51 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
           </div>
         ) : null}
 
-
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
           {/* Mini-map */}
           <div className="card" style={{ margin: 0 }}>
-            <h3 style={{ marginTop: 0 }}>Mini Map (SVG)</h3>
+            <h3 style={{ marginTop: 0 }}>Mini Map</h3>
 
-            {box ? (
-              <svg width={w} height={h} style={{ width: "100%", height: "auto", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)" }}>
-                {/* polyline */}
-                {polyline ? (
-                  <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="2" opacity="0.55" />
-                ) : null}
+            {bounds ? (
+              <div style={{ width: "100%", height: 420, borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <MapContainer center={center} zoom={13} style={{ width: "100%", height: "100%" }} scrollWheelZoom={false}>
+                  <FitBounds bounds={bounds} />
+                  <TileLayer
+                    attribution='&copy; OpenStreetMap contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
 
-                
-                {/* start/end markers */}
-                {pathPts.length >= 2 && box ? (() => {
-                  const s0 = project(pathPts[0], box, w, h, pad);
-                  const sN = project(pathPts[pathPts.length - 1], box, w, h, pad);
-                  return (
-                    <g>
-                      <g>
-                        <circle cx={s0.x} cy={s0.y} r="10" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.7" />
-                        <text x={s0.x - 4} y={s0.y + 4} fontSize="12" fontWeight="700" opacity="0.9">S</text>
-                      </g>
-                      <g>
-                        <circle cx={sN.x} cy={sN.y} r="10" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.7" />
-                        <text x={sN.x - 4} y={sN.y + 4} fontSize="12" fontWeight="700" opacity="0.9">E</text>
-                      </g>
-                    </g>
-                  );
-                })() : null}
+                  {linePts.length >= 2 ? (
+                    <Polyline positions={linePts.map((p) => [p.lat, p.lng])} />
+                  ) : null}
 
-{/* people points */}
-                {peoplePts.map((p, i) => {
-                  const pt = project(p, box, w, h, pad);
-                  return <circle key={`p_${i}`} cx={pt.x} cy={pt.y} r="2" opacity="0.45" />;
-                })}
+                  {/* Stops */}
+                  {stopPts.map((s, i) => (
+                    <CircleMarker key={s.id || i} center={[s.lat, s.lng]} radius={8}>
+                      <Tooltip permanent direction="right" offset={[10, 0]} opacity={0.9}>
+                        {i + 1}
+                      </Tooltip>
+                    </CircleMarker>
+                  ))}
 
-                {/* stops */}
-                {stopPts.map((s, i) => {
-                  const pt = project({ lat: s.lat, lng: s.lng }, box, w, h, pad);
-                  return (
-                    <g key={s.id || i}>
-                      <circle cx={pt.x} cy={pt.y} r="8" opacity="0.9" />
-                      <circle cx={pt.x} cy={pt.y} r="12" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.25" />
-                      <text x={pt.x + 11} y={pt.y + 5} fontSize="13" fontWeight="700" opacity="0.95">
-                        {String(i + 1)}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
+                  {/* Start / End */}
+                  {startPt ? (
+                    <CircleMarker center={[startPt.lat, startPt.lng]} radius={10}>
+                      <Tooltip permanent direction="left" offset={[-10, 0]} opacity={0.9}>
+                        S
+                      </Tooltip>
+                    </CircleMarker>
+                  ) : null}
+
+                  {showEnd ? (
+                    <CircleMarker center={[endPt.lat, endPt.lng]} radius={10}>
+                      <Tooltip permanent direction="left" offset={[-10, 0]} opacity={0.9}>
+                        E
+                      </Tooltip>
+                    </CircleMarker>
+                  ) : null}
+                </MapContainer>
+              </div>
             ) : (
               <div className="muted" style={{ marginTop: 8 }}>
                 Gösterilecek koordinat yok.
@@ -245,7 +243,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
             )}
 
             <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-              Bu bir “mini önizleme”. Leaflet/GoogleMap entegrasyonu gelince aynı modal gerçek haritaya bağlanabilir.
+              Leaflet mini-harita: Duraklar (1..N) ve rota çizgisi. S=Start, E=End.
             </div>
           </div>
 
