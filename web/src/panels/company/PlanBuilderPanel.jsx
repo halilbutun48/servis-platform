@@ -1,5 +1,7 @@
 // web/src/panels/company/PlanBuilderPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+
+
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { api } from "../../api";
 
 // Tiny geohash encoder (no deps)
@@ -135,6 +137,98 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
   // Stage-3: apply (create shifts + people + stops + reorder)
   const [applyBusy, setApplyBusy] = useState(false);
   const [applyRes, setApplyRes] = useState(null); // { ok, created:[{shiftId, seatDemand, stopCount, solver?}] }
+
+  // --- M33.6b BULK OFFER MODAL (PlanBuilder) ---
+  const [pbRooms, setPbRooms] = useState([]);
+  const [pbRoomsBusy, setPbRoomsBusy] = useState(false);
+
+  const [bulkOffer, setBulkOffer] = useState({
+    open: false,
+    shiftIds: [],
+    q: "",
+    roomsSel: {}, // { [roomId]: true }
+    amountCompany: (() => { const n = Number(""); return Number.isFinite(n) && n > 0 ? n : undefined; })(),
+    noteCompany: (() => { const v = (""); return (v === null || v === undefined) ? "" : String(v); })(),
+    busy: false,
+    err: "",
+    done: false,
+    sent: 0,
+  });
+
+  async function ensureRoomsLoaded() {
+    if (pbRooms?.length) return;
+    setPbRoomsBusy(true);
+    try {
+      const r = await api("/api/rooms?take=500", { method: "GET", token });
+      setPbRooms(Array.isArray(r?.items) ? r.items : (Array.isArray(r) ? r : []));
+    } catch (e) {
+      // keep silent, modal shows error on send
+      console.warn("rooms load failed", e);
+    } finally {
+      setPbRoomsBusy(false);
+    }
+  }
+
+  function openBulkOfferModal(shiftIds) {
+    const ids = Array.isArray(shiftIds) ? shiftIds.filter(Boolean) : [];
+    if (!ids.length) return;
+    setBulkOffer((p) => ({
+      ...p,
+      open: true,
+      shiftIds: ids,
+      roomsSel: {},
+      q: "",
+      amountCompany: (() => { const n = Number(""); return Number.isFinite(n) && n > 0 ? n : undefined; })(),
+      noteCompany: (() => { const v = (""); return (v === null || v === undefined) ? "" : String(v); })(),
+      busy: false,
+      err: "",
+      done: false,
+      sent: 0,
+    }));
+    ensureRoomsLoaded();
+  }
+
+  async function sendBulkOffers() {
+    const roomIds = Object.entries(bulkOffer.roomsSel || {})
+      .filter(([_, v]) => !!v)
+      .map(([k]) => Number(k))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    if (!bulkOffer.shiftIds?.length) return;
+    if (!roomIds.length) {
+      setBulkOffer((p) => ({ ...p, err: "En az 1 room seç." }));
+      return;
+    }
+
+    setBulkOffer((p) => ({ ...p, busy: true, err: "", done: false, sent: 0 }));
+    try {
+      const amt = String(bulkOffer.amountCompany || "").trim();
+      const note = String(bulkOffer.noteCompany || "").trim();
+      const amountCompany = amt ? Number(amt) : null;
+
+      let sent = 0;
+      for (const sid of bulkOffer.shiftIds) {
+        await api("/api/shifts/" + sid + "/offers", {
+          method: "POST",
+          token,
+          body: {
+            roomIds,
+            amountCompany: (() => { const n = Number(Number.isFinite(amountCompany) ? amountCompany : null); return Number.isFinite(n) && n > 0 ? n : undefined; })(),
+            noteCompany: (() => { const v = (note || null); return (v === null || v === undefined) ? "" : String(v); })(),
+          },
+        });
+        sent++;
+        setBulkOffer((p) => ({ ...p, sent }));
+      }
+
+      setBulkOffer((p) => ({ ...p, done: true }));
+    } catch (e) {
+      setBulkOffer((p) => ({ ...p, err: String(e?.message || e) }));
+    } finally {
+      setBulkOffer((p) => ({ ...p, busy: false }));
+    }
+  }
+  // --- /M33.6b ---
   const [maxWalkM, setMaxWalkM] = useState("250");
   const [autoReorderStops, setAutoReorderStops] = useState(true);
 
@@ -513,14 +607,30 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
       }
 
       setApplyRes({ ok: true, created });
-      if (typeof onAfterApply === "function") onAfterApply(created);
+      // M33.6b: open bulk offer modal automatically after apply
+      try {
+        const okShiftIds = (created || []).filter((x) => x && x.ok && x.shiftId).map((x) => x.shiftId);
+        openBulkOfferModal(okShiftIds);
+      } catch (e) {}      if (typeof onAfterApply === "function") onAfterApply(created);
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
       setApplyBusy(false);
     }
   }
-  return (
+   const openShiftToolsGeocode = () => {
+    try {
+      const btn = Array.from(document.querySelectorAll("button")).find(
+        (b) => (b.textContent || "").trim() === "Shift Tools"
+      );
+      if (btn) btn.click();
+      setTimeout(() => {
+        const el = document.getElementById("shift-tools-geocode");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    } catch (e) {}
+  };
+ return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -536,7 +646,17 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
 
       {err ? <div className="card err">{err}</div> : null}
 
-      <div className="grid" style={{ marginTop: 10 }}>
+            <div className="card" style={{ marginTop: 10 }}>
+        <h3 style={{ marginTop: 0 }}>İş Akışı</h3>
+        <div className="muted">
+          <b>Plan Builder</b>: toplu üretim (cluster/OSRM/OR-Tools) → <b>Uygula</b> → market shift(ler).
+          <br />
+          <b>Manuel Talep</b>: tekil talep (istisna/düzeltme).
+          <br />
+          <b>Shift Tools</b>: shift sonrası personel/durak/konum düzeltme (Adresten Bul).
+        </div>
+      </div>
+<div className="grid" style={{ marginTop: 10 }}>
         <div className="col">
           <div style={{ fontWeight: 800 }}>Personel Özeti</div>
           <div className="muted">
@@ -544,7 +664,11 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
           </div>
           {stats.needs || stats.failed || stats.missingLoc ? (
             <div className="muted" style={{ marginTop: 6 }}>
-              Not: Stage-0 için varsayılan filtre <b>geoStatus=OK</b> ve <b>lat/lng var</b>. Geo Review bitmeden plan doğruluğu düşer.
+              Not: Stage-0 için varsayılan filtre <b>geoStatus=OK</b> ve <b>lat/lng var</b>. Geo Review bitmeden plan doğruluğu düşer.              <div style={{ marginTop: 8 }}>
+                <button type="button" className="btn" onClick={openShiftToolsGeocode}>
+                  Konumları düzelt (Shift Tools → Adresten Bul)
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
@@ -737,6 +861,113 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
           </table>
         )}
       </div>
-    </div>
+          {/* --- M33.6b BULK OFFER MODAL UI --- */}
+      {bulkOffer.open ? (
+        <div className="modal-backdrop">
+          <div className="modal card" style={{ maxWidth: 900 }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ marginTop: 0, marginBottom: 4 }}>Toplu Teklif Gönder</h3>
+                <div className="muted">
+                  Oluşturulan shift’lere toplu teklif gönder: <b>#{bulkOffer.shiftIds.join(", #")}</b>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setBulkOffer((p) => ({ ...p, open: false }))}
+                disabled={bulkOffer.busy}
+              >
+                Kapat
+              </button>
+            </div>
+
+            <div className="row" style={{ gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+              <div className="col" style={{ minWidth: 260 }}>
+                <label className="muted">Room ara</label>
+                <input
+                  value={bulkOffer.q}
+                  onChange={(e) => setBulkOffer((p) => ({ ...p, q: e.target.value }))}
+                  placeholder="name contains"
+                  disabled={bulkOffer.busy}
+                />
+                <div className="muted" style={{ marginTop: 8 }}>
+                  {pbRoomsBusy ? "Room listesi yükleniyor..." : ("Toplam room: " + ((pbRooms?.length ?? 0)))}
+                </div>
+              </div>
+
+              <div className="col" style={{ minWidth: 160 }}>
+                <label className="muted">Tutar (opsiyonel)</label>
+                <input
+                  value={bulkOffer.amountCompany}
+                  onChange={(e) => setBulkOffer((p) => ({ ...p, amountCompany: (() => { const n = Number(e.target.value ); return Number.isFinite(n) && n > 0 ? n : undefined; })()}))}
+                  placeholder="örn. 2500"
+                  disabled={bulkOffer.busy}
+                />
+              </div>
+
+              <div className="col" style={{ minWidth: 260 }}>
+                <label className="muted">Not (opsiyonel)</label>
+                <input
+                  value={bulkOffer.noteCompany}
+                  onChange={(e) => setBulkOffer((p) => ({ ...p, noteCompany: (() => { const v = (e.target.value ); return (v === null || v === undefined) ? "" : String(v); })()}))}
+                  placeholder="örn. sabah giriş"
+                  disabled={bulkOffer.busy}
+                />
+              </div>
+            </div>
+
+            <div className="card" style={{ marginTop: 12, maxHeight: 320, overflow: "auto" }}>
+              {(pbRooms || [])
+                .filter((r) => {
+                  const q = String(bulkOffer.q || "").trim().toLowerCase();
+                  if (!q) return true;
+                  return String(r?.name || "").toLowerCase().includes(q);
+                })
+                .map((r) => (
+                  <label key={r.id} style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 4px" }}>
+                    <input
+                      type="checkbox"
+                      checked={!!bulkOffer.roomsSel?.[r.id]}
+                      onChange={(e) =>
+                        setBulkOffer((p) => ({ ...p, roomsSel: { ...(p.roomsSel || {}), [r.id]: e.target.checked } }))
+                      }
+                      disabled={bulkOffer.busy}
+                    />
+                    <span>
+                      {r?.name} <span className="muted">#{r.id}</span>
+                    </span>
+                    {r?.hasHub ? <span className="pill ok">HUB</span> : null}
+                  </label>
+                ))}
+              {!pbRooms?.length ? <div className="muted">Room listesi boş.</div> : null}
+            </div>
+
+            {bulkOffer.err ? <div className="err" style={{ marginTop: 10 }}>{bulkOffer.err}</div> : null}
+            {bulkOffer.done ? (
+              <div className="ok" style={{ marginTop: 10 }}>
+                Gönderildi ✅ (shift sayısı: {bulkOffer.sent})
+              </div>
+            ) : null}
+
+            <div className="row" style={{ justifyContent: "end", marginTop: 12, gap: 8 }}>
+              <button type="button" className="secondary"
+                onClick={() => setBulkOffer((p) => ({ ...p, roomsSel: {} }))}
+                disabled={bulkOffer.busy}
+              >
+                Temizle
+              </button>
+              <button type="button" onClick={sendBulkOffers} disabled={bulkOffer.busy}>
+                {bulkOffer.busy ? "Gönderiliyor..." : "Toplu Teklifleri Gönder"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {/* --- /M33.6b --- */}
+</div>
   );
 }
+
+
+

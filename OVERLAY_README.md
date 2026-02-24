@@ -1,10 +1,5 @@
-# OVERLAY — M33.5 UX polish
-
-Changes
-- Company/Shifts top tab label: **Yeni Talep** → **Manuel Talep**
-- Plan Builder Apply: after creating shifts, show a toast:
-  - "Oluşturuldu: #<id>, #<id>..."
-  - Clicking an id auto-filters **Bekleyen Talepler → Market Shifts** (sets market search to that id) and scrolls/focuses the search input.
-
-Files
-- web/src/panels/company/ShiftsPanel.jsx
+M19 OSRM hub anchor fix
+- Fixes M19CHECK 'start near hub' failing when route-preview returns source=OSRM and geometry snaps away from hub.
+- Ensures first/last point anchored to hub for LOOP and correct end for OUTBOUND/INBOUND, even after OSRM dense path override.
+Files:
+- backend/src/routes/shifts/people.js
