@@ -144,7 +144,69 @@ export function attachShiftSharedRoutes(r) {
     }
   );
 
-  // Shift detail (include stops)
+    // Shift stops (Shift Tools): list stops + assignmentCount
+  r.get(
+    "/:id/stops",
+    authRequired(),
+    requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+
+        const shift = await prisma.shift.findUnique({
+          where: { id },
+          select: { id: true, roomId: true, companyId: true },
+        });
+
+        if (!shift) return res.status(404).json({ error: "Shift not found" });
+
+        // scope check
+        if (req.user.role === "ROOM") {
+          if (!req.user.roomId || req.user.roomId !== shift.roomId) {
+            return res.status(403).json({ error: "Forbidden" });
+          }
+        }
+
+        if (req.user.role === "COMPANY") {
+          if (!req.user.companyId || req.user.companyId !== shift.companyId) {
+            return res.status(403).json({ error: "Forbidden" });
+          }
+        }
+
+        const stops = await prisma.stop.findMany({
+          where: { shiftId: shift.id },
+          orderBy: { order: "asc" },
+          select: {
+            id: true,
+            name: true,
+            lat: true,
+            lng: true,
+            order: true,
+            type: true,
+            state: true,
+            _count: { select: { assignments: true } },
+          },
+        });
+
+        return res.json({
+          items: stops.map((s) => ({
+            id: s.id,
+            title: s.name,
+            name: s.name,
+            order: s.order,
+            lat: s.lat,
+            lng: s.lng,
+            type: s.type,
+            state: s.state,
+            assignmentCount: s._count?.assignments ?? 0,
+          })),
+        });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+// Shift detail (include stops)
   r.get(
     "/:id(\\d+)",
     authRequired(),

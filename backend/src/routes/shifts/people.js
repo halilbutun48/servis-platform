@@ -6,7 +6,6 @@ import { audit } from "../../audit.js";
 import { clusterStops } from "../../services/clusterStops.js";
 import { etaMinutes } from "../../geo.js";
 import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
-import { osrmRoute } from "../../services/osrmRoute.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
 
 const qModeSchema = z
@@ -361,7 +360,37 @@ export function attachShiftPeopleRoutes(router, _io) {
     });
   });
 
-    // COMPANY + ROOM: route preview (M19: summary + directional hub path + learned overlay)
+  
+  // COMPANY + ROOM: list stops (used by Shift Tools "Shift’ten Durakları Çek")
+  r.get("/:id/stops", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
+
+    await getShiftAndCheckScopeOrThrow(id, req.user, { include: { room: true, agreement: true } });
+
+    const stops = await prisma.stop.findMany({
+      where: { shiftId: id },
+      orderBy: { order: "asc" },
+    });
+
+    const assignments = await prisma.stopAssignment.findMany({
+      where: { shiftId: id },
+      select: { stopId: true },
+    });
+
+    const countByStopId = new Map();
+    for (const a of assignments) {
+      countByStopId.set(a.stopId, (countByStopId.get(a.stopId) || 0) + 1);
+    }
+
+    const items = stops.map((s) => ({
+      ...s,
+      assignmentCount: countByStopId.get(s.id) || 0,
+    }));
+
+    return res.json({ ok: true, stops: items });
+  });
+
+  // COMPANY + ROOM: route preview (M19: summary + directional hub path + learned overlay)
   r.get("/:id/route-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
 
@@ -461,42 +490,8 @@ export function attachShiftPeopleRoutes(router, _io) {
         ? parsePolyline(learned.polylineCanonical)
         : null;
 
-    let source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
-    let pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
-
-    // M19_ANCHOR_HUB: ensure hub-anchored path even when source=LEARNED polyline
-    if (hub && Array.isArray(pathPoints) && pathPoints.length) {
-      const hubPoint = { lat: hub.lat, lng: hub.lng };
-      if (pattern === "LOOP") {
-        pathPoints[0] = hubPoint;
-        pathPoints[pathPoints.length - 1] = hubPoint;
-      } else if (direction === "OUTBOUND") {
-        pathPoints[0] = hubPoint;
-      } else if (direction === "INBOUND") {
-        pathPoints[pathPoints.length - 1] = hubPoint;
-      }
-    }
-
-    // M33.4: If OSRM is available, return a dense path for nicer mini-map preview
-    if (source !== "LEARNED" && Array.isArray(estPoints) && estPoints.length >= 2) {
-      const rr = await osrmRoute(estPoints, { profile: "driving" });
-      if (rr && rr.ok && Array.isArray(rr.points) && rr.points.length >= 2) {
-        source = "OSRM";
-        pathPoints = rr.points;
-        // M19: OSRM snap can move start/end away from hub; force anchor for gate + UX consistency
-        if (hub && Array.isArray(pathPoints) && pathPoints.length) {
-          const hubPoint = { lat: hub.lat, lng: hub.lng };
-          if (pattern === "LOOP") {
-            pathPoints[0] = hubPoint;
-            pathPoints[pathPoints.length - 1] = hubPoint;
-          } else if (direction === "OUTBOUND") {
-            pathPoints[0] = hubPoint;
-          } else if (direction === "INBOUND") {
-            pathPoints[pathPoints.length - 1] = hubPoint;
-          }
-        }
-      }
-    }
+    const source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
+    const pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
 
     const summary = {
       stopCount: stopPoints.length,

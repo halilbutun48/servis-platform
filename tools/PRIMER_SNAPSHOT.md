@@ -6,106 +6,78 @@ Tarih: 2026-02-24 (Europe/Istanbul)
 
 Repo: D:\servis-platform
 
-Son GREEN: v1-m32-green.1 ✅ (M0→M32 PACK PASS)
+Son GREEN: v1-m33-m19fix.2 ✅ (M0→M32 PACK PASS)
 
-Doğrulama: .\tools\pack.ps1 -To 32
+Doğrulama:
+- .\tools\gate.ps1 -To 32  → PASS
+- .\tools\pack.ps1 -To 32  → PASS
 
 1) V1 Amaç
 
 GPS tabanlı personel servis platformu:
-
-Company planlama (Agreement Wizard + Market teklifler)
-
-Room operasyon (offer inbox → onayla/başlat → shift operasyon)
-
-Driver operasyon (route + reached + complete)
-
-Personel (my ride + request)
-
-WS ile canlı güncelleme + bildirimler + dedupe
+- Company planlama (Agreement Wizard + Market teklifler)
+- Room operasyon (offer inbox → onayla/başlat → shift operasyon)
+- Driver operasyon (route + reached + complete)
+- Personel (my ride + request)
+- WS ile canlı güncelleme + bildirimler + dedupe
 
 2) Roller
 
-SUPER_ADMIN: Companies/Rooms yönetimi + overview
-
-COMPANY: Agreement/Shift talebi, Market ile çoklu room teklif toplama, offers yönetimi
-
-ROOM: Araç+sürücü, offer inbox, approve/start, map/shift operasyonu
-
-DRIVER: aktif rota + reached akışı
-
-PERSONEL: request + my ride
+SUPER_ADMIN: Companies/Rooms yönetimi + overview  
+COMPANY: Agreement/Shift talebi, Market ile çoklu room teklif toplama, offers yönetimi  
+ROOM: Araç+sürücü, offer inbox, approve/start, map/shift operasyonu  
+DRIVER: aktif rota + reached akışı  
+PERSONEL: request + my ride  
 
 3) En kritik akış (sahada “az tık”)
 
-Geo Review (NEEDS_REVIEW bitir)
-
-Agreement Wizard ile plan oluştur (preset paketler + günler + süre)
-
-Gerekirse Market: aynı shift’e çoklu room teklif gönder
-
-Company 1 teklifi kabul eder → diğerleri CANCELLED (otomatik)
-
-Room Onayla + Başlat (tek tık) → operasyon ACTIVE
-
-Driver “Reached” ilerler → shift DONE
+1) (Gerekirse) Konum düzelt: Shift Tools → Personel ekle/import → “Adresten Bul” → Ekle
+2) Plan Builder ile N araç/cluster + (opsiyonel) OSRM+Solver ile çöz
+3) Uygula → N market shift oluştur (people + stops + reorder)
+4) Toplu Teklif Gönder → seçili room’lara tüm shift’lere teklif
+5) Company 1 teklifi ACCEPT eder → diğerleri CANCELLED (otomatik)
+6) Room approve+start → operasyon ACTIVE
+7) Driver reached→complete → shift DONE
 
 4) Milestone özet (M17+ sonrası)
 
-✅ M17–M18: Agreements + conflict + monitor + daily shift generator
+✅ M17–M18: Agreements + conflict + monitor + daily shift generator  
+✅ M22: Room directory (/api/rooms?q&hasHub) + Agreement UX  
+✅ M24: Marketplace offers (multi-room) + accept cancels others  
+✅ M25: Offer status filtreleri  
+✅ M26–M27: Agreement Wizard + preset paketler  
+✅ M28: One-click flow + company offers directory + NavDock düzeltme + check fix  
+✅ M29: Onboarding checklist + offers modal shortcut + room offer shift-status badge  
+✅ M30: Guided market flow + ROOM quick approve + Driver/Personel UX + /api/personel/shifts  
+✅ M31: Room one-click approve+start + Driver UX (big reached + Enter) + Usage docs  
+✅ M32: Template UI refactor (wizard-style), weekMask fix (Pzt–Cum), custom “Düzenle/Sil”  
 
-✅ M22: Room directory (/api/rooms?q&hasHub) + Agreement UX
+5) Plan Builder (V1.5) — güncel durum
 
-✅ M24: Marketplace offers (multi-room) + accept cancels others
-
-✅ M25: Offer status filtreleri
-
-✅ M26–M27: Agreement Wizard + preset paketler
-
-✅ M28: One-click flow + company offers directory + NavDock düzeltme + check fix
-
-✅ M29: Onboarding checklist + offers modal shortcut + room offer shift-status badge
-
-✅ M30: Guided market flow + ROOM quick approve + Driver/Personel UX + /api/personel/shifts
-
-✅ M31: Room one-click approve+start + Driver UX (big reached + Enter) + Usage docs
-
-✅ M32: Template UI refactor (wizard-style), weekMask fix (Pzt–Cum), custom “Düzenle/Sil”
-
-5) Bilinen tasarım notu (Plan Builder konusu)
-
-Mevcut “Personel & Rota (M16 draft)” ekranı shift’e bağlı (Shift seç → personel/durak üret).
-
-Asıl hedef (V1.5): Shift’ten bağımsız Plan Builder:
-
-personel cluster + araç sayısı önerisi + OSRM/OR-Tools ile gerçek rota optimizasyonu
-
-çıktı: N adet shift (1 araç = 1 shift) + market offer akışı
+Stage-0: cluster + araç sayısı önerisi + preview ✅  
+Stage-1: OSRM table (süre/mesafe matrisi) ✅  
+Stage-2: Solver (OR-Tools) ile rota/ziyaret sırası ✅ (solver=ortools; fallback=heuristic)  
+Stage-3: Uygula → N market shift create + people REPLACE + stops generate + (ops) stops reorder ✅  
+Ek: Uygula sonrası toast (oluşturulan shift id’leri) + Toplu Teklif Gönder modalı ✅  
+UI isimleri: “Yeni Talep” → “Manuel Talep”, “Personel & Rota” → “Shift Tools” ✅
 
 6) Kurallar / Çalışma disiplini
 
-Yanıtlarda en fazla 3 PowerShell komutu.
+- Yanıtlarda en fazla 3 PowerShell komutu.
+- “Green” = .\tools\pack.ps1 -To <hedef> PACK PASS.
+- Değişiklikler mümkün olduğunca tek seferde overlay (zip) paket olarak verilecek.
+- Büyük dosyalar (örn. OSRM blob) repo’ya girmez: infra/osrm-data/ ignore.
 
-“Green” = .\tools\pack.ps1 -To <hedef> PACK PASS.
+7) Bilinen tasarım notu
 
-Değişiklikler mümkün olduğunca tek seferde overlay (zip) paket olarak verilecek (M26+ formatı).
+- Plan Builder’ın nihai hedefi: Shift’ten bağımsız plan → N shift üret → market offer → accept → room approve/start.
+- Geocode: adres çok detaylıysa (daire/kapı “9/8” gibi) notfound olabilir; sokak/mahalle/ilçe/il + Türkiye formatı önerilir.
+- 0/0 koordinat “Konum yok” sayılır; Plan Builder eligible’a girmez.
 
-Büyük dosyalar (örn. OSRM blob) repo’ya girmez: infra/osrm-data/ ignore.
+8) Release Notes (bugün)
 
-7) Yeni hedef (sonraki sohbet): V1.5 Plan Builder (OSRM + OR-Tools)
+- Plan Builder eklendi (Stage-0..3): OSRM matrix + OR-Tools solve + Apply ile N market shift otomasyonu
+- Company UX: Manuel Talep adı, Apply toast + shift id quick filter, Toplu Teklif Gönder (bulk offers)
+- Shift Tools: geocode (“Adresten Bul”) ve konum düzeltme akışı
+- Route preview: OSRM source olsa bile hub anchor ile M19 start-near-hub fix (Gate PASS)
 
-Amaç: kullanıcı “kaç araç gerekir / rota nasıl olur”u düşünmesin.
-
-Aşamalar:
-
-Kural tabanlı: kişi sayısı + kapasite → araç sayısı, geohash/cluster
-
-OSRM ile süre/mesafe matrisleri
-
-OR-Tools VRP ile rota/araç dağıtımı
-
-“Uygula” → N shift create (market) → offers → accept → room approve/start
-
-Not (UI refactor önerisi):
-- ShiftsPanel gibi büyük dosyalarda “Template UI” bloğunu ayrı componente bölmek (örn. `ShiftTemplatesPanel`) overlay merge/manuel copy’de “kapanmayan tag” riskini azaltır.
-- Şu anki repoda template UI, `web/src/panels/company/ShiftsPanel.jsx` içinde (ayrı component dosyası henüz yok).

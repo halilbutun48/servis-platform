@@ -1,5 +1,7 @@
-M19 OSRM hub anchor fix
-- Fixes M19CHECK 'start near hub' failing when route-preview returns source=OSRM and geometry snaps away from hub.
-- Ensures first/last point anchored to hub for LOOP and correct end for OUTBOUND/INBOUND, even after OSRM dense path override.
-Files:
-- backend/src/routes/shifts/people.js
+OVERLAY: Shift Tools stops fetch + copy cleanup + SVG preview improved
+
+- backend: GET /api/shifts/:id/stops (returns {ok:true, stops:[...]})
+- web ShiftPeopleTab: title/copy updated to Shift Tools
+- RoutePreviewModal: stop markers more visible + start/end markers
+
+Apply: extract at repo root (D:\servis-platform) overwrite.

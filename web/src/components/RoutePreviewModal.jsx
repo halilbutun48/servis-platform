@@ -199,10 +199,29 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
                   <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="2" opacity="0.55" />
                 ) : null}
 
-                {/* people points */}
+                
+                {/* start/end markers */}
+                {pathPts.length >= 2 && box ? (() => {
+                  const s0 = project(pathPts[0], box, w, h, pad);
+                  const sN = project(pathPts[pathPts.length - 1], box, w, h, pad);
+                  return (
+                    <g>
+                      <g>
+                        <circle cx={s0.x} cy={s0.y} r="10" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.7" />
+                        <text x={s0.x - 4} y={s0.y + 4} fontSize="12" fontWeight="700" opacity="0.9">S</text>
+                      </g>
+                      <g>
+                        <circle cx={sN.x} cy={sN.y} r="10" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.7" />
+                        <text x={sN.x - 4} y={sN.y + 4} fontSize="12" fontWeight="700" opacity="0.9">E</text>
+                      </g>
+                    </g>
+                  );
+                })() : null}
+
+{/* people points */}
                 {peoplePts.map((p, i) => {
                   const pt = project(p, box, w, h, pad);
-                  return <circle key={`p_${i}`} cx={pt.x} cy={pt.y} r="2" fill="currentColor" opacity="0.35" />;
+                  return <circle key={`p_${i}`} cx={pt.x} cy={pt.y} r="2" opacity="0.45" />;
                 })}
 
                 {/* stops */}
@@ -210,8 +229,9 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
                   const pt = project({ lat: s.lat, lng: s.lng }, box, w, h, pad);
                   return (
                     <g key={s.id || i}>
-                      <circle cx={pt.x} cy={pt.y} r="6" fill="currentColor" opacity="0.85" />
-                      <text x={pt.x + 10} y={pt.y + 4} fontSize="12" opacity="0.9">
+                      <circle cx={pt.x} cy={pt.y} r="8" opacity="0.9" />
+                      <circle cx={pt.x} cy={pt.y} r="12" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                      <text x={pt.x + 11} y={pt.y + 5} fontSize="13" fontWeight="700" opacity="0.95">
                         {String(i + 1)}
                       </text>
                     </g>
