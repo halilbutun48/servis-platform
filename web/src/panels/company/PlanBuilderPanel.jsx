@@ -72,6 +72,7 @@ function minutesOf(hhmm) {
   return hh * 60 + mm;
 }
 function buildLocalRangeFromItem(baseYmd, item) {
+
   const baseDate = String(baseYmd || "").match(/^\d{4}-\d{2}-\d{2}$/) ? baseYmd : todayYmdLocal();
   const sMin = minutesOf(item?.startHHMM);
   const eMin = minutesOf(item?.endHHMM);
@@ -81,10 +82,12 @@ function buildLocalRangeFromItem(baseYmd, item) {
   const endDate = eMin <= sMin ? addDaysYmd(baseDate, 1) : baseDate;
   const endAtLocal = `${endDate}T${item.endHHMM}`;
   return { startAtLocal, endAtLocal };
+}
 
 // datetime-local (Istanbul local) -> UTC ISO
 const IST_OFFSET_MIN = 180;
 function istanbulLocalToUtcIso(dtLocal) {
+
   if (!dtLocal) return null;
   const [d, t] = String(dtLocal).split("T");
   if (!d || !t) return null;
@@ -96,7 +99,7 @@ function istanbulLocalToUtcIso(dtLocal) {
   const utcMs = Date.UTC(Y, M - 1, D, h, m, 0) - IST_OFFSET_MIN * 60 * 1000;
   return new Date(utcMs).toISOString();
 }
-}
+
 
 function avgLatLng(list) {
   if (!list?.length) return null;
