@@ -73,7 +73,11 @@ export function clusterPoints(points, radiusM) {
 }
 
 export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
-  const shift = await prisma.shift.findUnique({ where: { id: shiftId }, ...(opts || {}) });
+  // opts is mostly Prisma findUnique args (include/select, etc).
+  // We also allow a custom flag for ROOM access via marketplace offers.
+  const { allowRoomOfferScope = false, ...prismaOpts } = opts || {};
+
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId }, ...(prismaOpts || {}) });
   if (!shift) {
     const e = new Error("Shift not found");
     e.status = 404;
@@ -83,12 +87,33 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
   if (user.role === "SUPER_ADMIN") return shift;
 
   if (user.role === "ROOM") {
-    if (!user.roomId || user.roomId !== shift.roomId) {
+    const roomId = user.roomId ? Number(user.roomId) : null;
+    if (!roomId) {
       const e = new Error("Forbidden");
       e.status = 403;
       throw e;
     }
-    return shift;
+
+    // Normal scope: shift already assigned to this room
+    if (roomId === shift.roomId) return shift;
+
+    // Optional scope: allow ROOM to read market/offered shifts BEFORE assignment
+    // only if there is an active offer (OPEN/COUNTERED/ACCEPTED) for this room.
+    if (allowRoomOfferScope) {
+      const offer = await prisma.shiftOffer.findFirst({
+        where: {
+          shiftId: shift.id,
+          roomId,
+          status: { in: ["OPEN", "COUNTERED", "ACCEPTED"] },
+        },
+        select: { id: true },
+      });
+      if (offer) return shift;
+    }
+
+    const e = new Error("Forbidden");
+    e.status = 403;
+    throw e;
   }
 
   

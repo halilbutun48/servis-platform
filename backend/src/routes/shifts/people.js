@@ -365,7 +365,7 @@ export function attachShiftPeopleRoutes(router, _io) {
   r.get("/:id/stops", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
 
-    await getShiftAndCheckScopeOrThrow(id, req.user, { include: { room: true, agreement: true } });
+    await getShiftAndCheckScopeOrThrow(id, req.user, { include: { room: true, agreement: true }, allowRoomOfferScope: true });
 
     const stops = await prisma.stop.findMany({
       where: { shiftId: id },
@@ -397,6 +397,7 @@ export function attachShiftPeopleRoutes(router, _io) {
     // include room + agreement for hub fallback, progress for time window hints
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user, {
       include: { room: true, agreement: true, progress: true },
+      allowRoomOfferScope: true,
     });
 
     const people = await getShiftPeople(shift.id);
