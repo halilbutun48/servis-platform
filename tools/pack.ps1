@@ -1,7 +1,7 @@
 # tools/pack.ps1
 param(
   [Parameter(Mandatory=$false)]
-  [ValidateRange(0,32)]
+  [ValidateRange(0,33)]
   [int]$To = 21,
 
   [Parameter(Mandatory=$false)]

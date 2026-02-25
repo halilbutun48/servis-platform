@@ -1,69 +1,55 @@
 // backend/src/routes/geocode.js
-// M33.4: Simple geocode endpoint (DEV-friendly)
-// Default provider: Nominatim (OpenStreetMap)
-// NOTE: For production, prefer a paid/provider key or self-hosted Nominatim.
-
+// Lightweight geocode proxy (Nominatim) for UI "Adresten Bul"
 import express from "express";
 import { z } from "zod";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired } from "../auth/middleware.js";
 
-const bodySchema = z.object({
-  q: z.string().trim().min(3).max(250),
+const schema = z.object({
+  q: z.string().trim().min(3),
+  country: z.string().trim().optional(), // default "tr"
 });
 
 export function geocodeRouter() {
   const r = express.Router();
+  r.use(authRequired());
 
-  r.use(authRequired(), requireRole("COMPANY", "SUPER_ADMIN"));
-
-  // POST /api/geocode
-  // body: { q: "address text" }
   r.post("/", async (req, res) => {
-    const parsed = bodySchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ ok: false, error: parsed.error.flatten() });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     const q = parsed.data.q;
-
-    const base = String(process.env.GEOCODE_URL || "https://nominatim.openstreetmap.org/search");
-    const ua = String(process.env.GEOCODE_USER_AGENT || "personel-servis-v1-dev");
-
-    const url = `${base}?format=json&limit=1&q=${encodeURIComponent(q)}`;
-
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 12000);
+    const country = (parsed.data.country || "tr").toLowerCase();
 
     try {
-      const resp = await fetch(url, {
-        method: "GET",
-        headers: {
-          "User-Agent": ua,
-          "Accept": "application/json",
-        },
-        signal: ctrl.signal,
+      const url = new URL("https://nominatim.openstreetmap.org/search");
+      url.searchParams.set("format", "json");
+      url.searchParams.set("q", q);
+      url.searchParams.set("limit", "1");
+      url.searchParams.set("addressdetails", "0");
+      if (country) url.searchParams.set("countrycodes", country);
+      url.searchParams.set("accept-language", "tr");
+
+      const ua = process.env.GEOCODE_USER_AGENT || "personel-servis-v1";
+      const resp = await fetch(url.toString(), {
+        headers: { "User-Agent": ua, Accept: "application/json" },
       });
 
-      const text = await resp.text();
-      if (!resp.ok) return res.json({ ok: false, error: `geocode:${resp.status}`, detail: text.slice(0, 200) });
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => "");
+        return res.status(502).json({ error: "geocode_upstream", status: resp.status, text: (txt || "").slice(0, 200) });
+      }
 
-      const arr = text ? JSON.parse(text) : [];
-      const first = Array.isArray(arr) ? arr[0] : null;
-      const lat = first ? Number(first.lat) : NaN;
-      const lng = first ? Number(first.lon) : NaN;
+      const arr = await resp.json().catch(() => []);
+      const hit = Array.isArray(arr) && arr.length ? arr[0] : null;
+      if (!hit) return res.status(404).json({ error: "notfound" });
 
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.json({ ok: false, error: "notFound" });
+      const lat = Number(hit.lat);
+      const lng = Number(hit.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(502).json({ error: "geocode_bad_payload" });
 
-      return res.json({
-        ok: true,
-        provider: "nominatim",
-        query: q,
-        lat,
-        lng,
-        displayName: String(first.display_name || ""),
-      });
+      return res.json({ ok: true, lat, lng, displayName: String(hit.display_name || "") });
     } catch (e) {
-      return res.json({ ok: false, error: "geocode:fetchFailed", detail: e?.message || String(e) });
-    } finally {
-      clearTimeout(t);
+      return res.status(500).json({ error: "geocode_error", message: String(e?.message || e) });
     }
   });
 

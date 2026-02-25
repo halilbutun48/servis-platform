@@ -25,11 +25,13 @@ export default function NavDock({ role, path }) {
     items.push({ label: "Shifts", path: "/room/shifts" });
     items.push({ label: "Agreements", path: "/room/agreements" });
     items.push({ label: "Offers", path: "/room/offers" });
+    items.push({ label: "Hub", path: "/room/hub" });
     items.push({ label: "Notifications", path: "/shared/notifications" });
   } else if (role === "COMPANY") {
     // ✅ M26+: workflow-first (minimum confusion)
     items.push({ label: "Home", path: "/company" });
     items.push({ label: "Agreements", path: "/company/agreements" });
+    items.push({ label: "Hub", path: "/company/hub" });
     items.push({ label: "Shifts", path: "/company/shifts" });
     items.push({ label: "Geo Review", path: "/company/georeview" });
     items.push({ label: "Map", path: "/company/map" });

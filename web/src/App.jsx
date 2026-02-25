@@ -12,6 +12,7 @@ import DriversPanel from "./panels/room/DriversPanel";
 import RoomShiftsPanel from "./panels/room/ShiftsPanel";
 import RoomAgreementsPanel from "./panels/room/AgreementsPanel";
 import RoomOffersPanel from "./panels/room/OffersPanel";
+import RoomHubPanel from "./panels/room/HubPanel";
 
 // COMPANY
 import CompanyWorkflowPanel from "./panels/company/WorkflowPanel";
@@ -19,6 +20,7 @@ import CompanyMapPanel from "./panels/company/MapPanel";
 import CompanyShiftsPanel from "./panels/company/ShiftsPanel";
 import CompanyAgreementsPanel from "./panels/company/AgreementsPanel";
 import GeoReviewPanel from "./panels/company/GeoReviewPanel";
+import CompanyHubPanel from "./panels/company/HubPanel";
 
 // DRIVER
 import DriverMapPanel from "./panels/driver/MapPanel";
@@ -144,6 +146,7 @@ export default function App() {
     if (path === "/room/shifts") return { layout: true, node: <RoomShiftsPanel /> };
     if (path === "/room/agreements") return { layout: true, node: <RoomAgreementsPanel /> };
     if (path === "/room/offers") return { layout: true, node: <RoomOffersPanel /> };
+    if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
 
     // COMPANY
     if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -151,6 +154,7 @@ export default function App() {
     if (path === "/company/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
     if (path === "/company/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
+    if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
 
     // DRIVER
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };

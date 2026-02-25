@@ -1,43 +1,43 @@
-# Sprint 2 Plan — Otomatik Durak + Draft › ROOM Akışı (Core)
+# Sprint 2 Plan â€” Otomatik Durak + Draft â†’ ROOM AkÄ±ÅŸÄ± (Core)
 
 ## Hedef
-Excel import + geocode cache (Sprint 1) sonrası:
-- Aynı vardiyadaki personelleri `maxWalkM` kuralıyla duraklara böl
-- Durakları + kişi sayılarını Shift Draft olarak üret
-- ROOM’a “bekleyen talep” düşür
-- ROOM araç + driver atayıp driver tarafına rotayı/durakları düşürür
+Excel import + geocode cache (Sprint 1) sonrasÄ±nda:
+- AynÄ± vardiyadaki personelleri `maxWalkM` kuralÄ±yla duraklara bÃ¶l
+- DuraklarÄ± + kiÅŸi sayÄ±larÄ±nÄ± Shift Draft olarak Ã¼ret
+- ROOMâ€™a â€œbekleyen talepâ€ dÃ¼ÅŸÃ¼r
+- ROOM araÃ§ + driver atayÄ±p Driver tarafÄ±na rota/duraklarÄ± dÃ¼ÅŸÃ¼rÃ¼r
 
 ## Kapsam (In)
-- Clustering / durak üretimi (maxWalkM garantili)
-- Stop - Personel bağları (assignment)
-- Shift Draft üretimi + status transition (DRAFT › REQUESTED)
-- ROOM approve (araç+driver ata)
-- WS event’leri: `shift:requested`, `shift:approved` (scope’lu)
+- Clustering / durak Ã¼retimi (maxWalkM garantili)
+- Stop â†” Personel baÄŸlarÄ± (assignment)
+- Shift Draft Ã¼retimi + status transition (DRAFT â†’ REQUESTED)
+- ROOM approve (araÃ§ + driver ata)
+- WS eventâ€™leri: `shift:requested`, `shift:approved` (scopeâ€™lu)
 
-## Kapsam Dışı (Out)
+## Kapsam DÄ±ÅŸÄ± (Out)
 - Company NEEDS_REVIEW UI (Sprint 3)
-- Rota optimizasyon (2-opt vs) (Sprint 3/4)
-- Büyük dosya/async pipeline (Sprint 4)
+- Rota optimizasyon (2-opt vb.) (Sprint 3/4)
+- BÃ¼yÃ¼k dosya/async pipeline (Sprint 4)
 
-## DB Değişiklikleri
-### StopAssignment (öneri)
+## DB DeÄŸiÅŸiklikleri
+### StopAssignment (Ã¶neri)
 - stopId, personelId, shiftId (+ unique/index)
 
 ## Service
 ### `clusterStops(personPoints, maxWalkM)`
 - MVP: greedy clustering + medoid stop point
-- Doğrulama: her assignment için distance <= maxWalkM
+- DoÄŸrulama: her assignment iÃ§in distance <= maxWalkM
 
-## API / İş Akışı
+## API / Ä°ÅŸ AkÄ±ÅŸÄ±
 - (Opsiyonel) `POST /api/company/shifts/:id/generate-draft`
 - ROOM: `POST /api/room/shifts/:id/approve` (vehicleId, driverId)
 
 ## WS
-- `shift:requested` › `room:{roomId}` ve `company:{companyId}`
-- `shift:approved` › `driver:{driverId}` + ilgili scope
+- `shift:requested` â†’ `room:{roomId}` ve `company:{companyId}`
+- `shift:approved` â†’ `driver:{driverId}` + ilgili scope
 
 ## DoD
-- Replace modunda eski durak/assign temizlenip yeniden üretilebilir
-- maxWalkM garantisi testle doğrulanır
-- ROOM listesinde draft görünür, approve edilebilir
-- Driver tarafı durakları görür
+- Replace modunda eski durak/assign temizlenip yeniden Ã¼retilebilir
+- maxWalkM garantisi testle doÄŸrulanÄ±r
+- ROOM listesinde draft gÃ¶rÃ¼nÃ¼r, approve edilebilir
+- Driver tarafÄ± duraklarÄ± gÃ¶rÃ¼r

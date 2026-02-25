@@ -2,7 +2,7 @@
 
 > Referans: `docs/PROJECT_SPEC_V1.md`  
 > Amaç: V1’de mevcut **REST endpoint’leri** ve **WS event’lerini** listeler.  
-> Durum: M0→M18 (GREEN)
+> Durum: M0→M32 (GREEN) — M33: Plan Builder (pending)
 
 ---
 
@@ -218,7 +218,7 @@ UI invalidate standardı: event isimleri “shift/agreement/vehicle/request/eta/
 
 > Referans: `docs/PROJECT_SPEC_V1.md`  
 > Amaç: V1’de mevcut **REST endpoint’leri** ve **WS event’lerini** listeler.  
-> Durum: M0→M18 (GREEN)
+> Durum: M0→M32 (GREEN) — M33: Plan Builder (pending)
 
 ---
 
@@ -424,3 +424,45 @@ shift:update (payload’ta agreementId olabilir)
 agreement:update (agreements panel auto-refresh için)
 
 UI invalidate standardı: event isimleri “shift/agreement/vehicle/request/eta/notif” içeriyorsa ilgili liste/panel reload eder.
+
+---
+
+## Plan Builder (COMPANY)
+
+> Amaç: Guided Flow Step-0 ve Plan Builder V1 için OSRM matris + solver.
+> Not: Default pack çalıştırmada OSRM+solver profile kapalı olabilir; endpoint’ler 200 dönüp {ok:false} ile “optional” davranır.
+
+### GET `/api/plan-builder/precheck`
+- Company hub/personel konumları + OSRM/solver durumu özet.
+
+Response (özet):
+```json
+{
+  "ok": true,
+  "companyHub": {"ok": true, "hubLat": 41.0, "hubLng": 29.0},
+  "personels": {"total": 10, "missingLatLng": 0, "zeroLatLng": 0, "needsReview": 0, "failed": 0},
+  "osrm": {"configured": true, "ok": false, "error": "osrm:fetchFailed"},
+  "solver": {"configured": false, "reachable": false, "ok": false, "mode": "heuristic"},
+  "hints": []
+}
+```
+
+### POST `/api/plan-builder/osrm-table`
+Body:
+```json
+{
+  "profile": "driving",
+  "points": [{"id": 1, "lat": 41.0, "lng": 29.0}, {"id": 2, "lat": 41.01, "lng": 28.99}]
+}
+```
+
+### POST `/api/plan-builder/solve-vrp`
+Body:
+```json
+{
+  "durationsSec": [[0,10],[10,0]],
+  "depotIndex": 0,
+  "returnToDepot": false,
+  "preferOrtools": true
+}
+```

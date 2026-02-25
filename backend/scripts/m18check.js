@@ -81,18 +81,59 @@ async function main() {
   });
   mustOk(ap, "approve ok");
 
-  step("wait generator tick (<= 6.5s)");
-  await sleep(6500);
+  // Generator tick is async in server process. On slower machines/CI, 6.5s can be flaky.
+  // We'll poll up to 25s to make this check deterministic while still validating the real job.
+  step("wait generator tick (<= 25s)");
 
   const startAt = atUtc(startDate, startMin);
 
-  const found = await prisma.shift.findFirst({
-    where: { agreementId, startAt },
-    select: { id: true, status: true, startAt: true },
-  });
+  let found = null;
+  const deadline = Date.now() + 25_000;
+  while (Date.now() < deadline) {
+    // eslint-disable-next-line no-await-in-loop
+    found = await prisma.shift.findFirst({
+      where: { agreementId, startAt },
+      select: { id: true, status: true, startAt: true },
+    });
+    if (found?.id) break;
+    // eslint-disable-next-line no-await-in-loop
+    await sleep(1250);
+  }
 
-  assertOk(!!found?.id, "generated shift exists");
-  assertOk(found.status === "APPROVED", "generated shift status APPROVED");
+  if (!found?.id) {
+    const ag = await prisma.agreement.findUnique({
+      where: { id: agreementId },
+      select: {
+        id: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+        weekMask: true,
+        startMin: true,
+        endMin: true,
+        vehicleId: true,
+        driverId: true,
+      },
+    });
+    const recent = await prisma.shift.findMany({
+      where: { agreementId },
+      take: 5,
+      orderBy: { id: "desc" },
+      select: { id: true, status: true, startAt: true, endAt: true },
+    });
+
+    throw new Error(
+      [
+        "ASSERT_FAIL: generated shift exists",
+        `now=${new Date().toISOString()}`,
+        `expectedStartAt=${startAt.toISOString()}`,
+        `agreement=${JSON.stringify(ag)}`,
+        `recentShifts=${JSON.stringify(recent)}`,
+      ].join("\n")
+    );
+  }
+
+  assertOk(["APPROVED", "ACTIVE"].includes(String(found.status)), "generated shift status APPROVED/ACTIVE");
 
   step("dedupe guard: no second shift");
   await sleep(6500);

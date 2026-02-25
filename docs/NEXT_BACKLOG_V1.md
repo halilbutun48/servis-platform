@@ -106,17 +106,13 @@ Company vardiya bazında personel listesi yükler → sistem geocode/cache yapar
 - Retention job doğrulanır (zaten V1’de aktif)
 
 ---
-## Plan Dokümanları
-- `docs/SPRINT_1_PLAN.md`
-- `docs/SPRINT_2_PLAN.md`
-- `docs/SPRINT_3_PLAN.md`
-- `docs/SPRINT_4_PLAN.md`
+## Plan Dokümanları (archive)
+- `docs/_archive/plans/SPRINT_1_PLAN.md`
+- `docs/_archive/plans/SPRINT_2_PLAN.md`
+- `docs/_archive/plans/SPRINT_3_PLAN.md`
+- `docs/_archive/plans/SPRINT_4_PLAN.md`
 
-## Plan Dok�manlar�
-- docs/SPRINT_1_PLAN.md`n- docs/SPRINT_2_PLAN.md`n- docs/SPRINT_3_PLAN.md`n- docs/SPRINT_4_PLAN.md`n
 ## Gate & Dependency Dokümanları
-- `docs/MILESTONE_GATE_MATRIX.md`
+- `docs/MILESTONE_GATE_MATRIX.md` (legacy)
 - `docs/DEPENDENCY_MAP.md`
 
-## Gate & Dependency Dok�manlar�
-- docs/MILESTONE_GATE_MATRIX.md`n- docs/DEPENDENCY_MAP.md`n

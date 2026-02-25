@@ -4,6 +4,7 @@
 
 import express from "express";
 import { z } from "zod";
+import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { osrmTable } from "../services/osrmTable.js";
 import { solveTsp } from "../services/planSolve.js";
@@ -31,10 +32,99 @@ const solveSchema = z.object({
   preferOrtools: z.boolean().optional(),
 });
 
+
+function companyIdOf(req) {
+  const v = req.user?.companyId ?? req.me?.companyId ?? req.auth?.companyId;
+  return v == null ? null : Number(v);
+}
+
+async function pingSolver(base, timeoutMs = 900) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    const r = await fetch(`${base}/health`, { method: "GET", signal: ctrl.signal });
+    clearTimeout(t);
+    return { reachable: true, ok: r.ok, status: r.status };
+  } catch (e) {
+    return { reachable: false, ok: false, error: e?.message || String(e) };
+  }
+}
+
+
 export function planBuilderRouter() {
   const r = express.Router();
 
   r.use(authRequired(), requireRole("COMPANY", "SUPER_ADMIN"));
+
+
+// GET /api/plan-builder/precheck
+// Step-0 shared contract for Guided Flow
+r.get("/precheck", async (req, res) => {
+  const companyId = companyIdOf(req);
+  if (!companyId) return res.status(400).json({ ok: false, error: "companyId missing" });
+
+  const c = await prisma.company.findUnique({ where: { id: companyId }, select: { id: true, hubLat: true, hubLng: true, name: true } });
+  if (!c) return res.status(404).json({ ok: false, error: "Company not found" });
+
+  const hubOk = c.hubLat != null && c.hubLng != null && !(Number(c.hubLat) === 0 && Number(c.hubLng) === 0);
+
+  const total = await prisma.personel.count({ where: { companyId } });
+  const missing = await prisma.personel.count({ where: { companyId, OR: [{ homeLat: null }, { homeLng: null }] } });
+  const zero = await prisma.personel.count({ where: { companyId, homeLat: 0, homeLng: 0 } });
+  const needsReview = await prisma.personel.count({ where: { companyId, geoStatus: "NEEDS_REVIEW" } });
+  const failed = await prisma.personel.count({ where: { companyId, geoStatus: "FAILED" } });
+
+  // OSRM is optional in default pack (compose profile not active)
+  let osrm = { configured: Boolean(process.env.OSRM_URL), ok: false, error: null };
+  try {
+    const out = await osrmTable(
+      [
+        { lat: 41.0082, lng: 28.9784 },
+        { lat: 41.0122, lng: 28.9760 },
+      ],
+      { profile: "driving", timeoutMs: 1200 }
+    );
+    osrm = { configured: Boolean(process.env.OSRM_URL), ok: Boolean(out?.ok), error: out?.ok ? null : out?.error, detail: out?.detail };
+  } catch (e) {
+    osrm = { configured: Boolean(process.env.OSRM_URL), ok: false, error: "osrm:exception", detail: e?.message || String(e) };
+  }
+
+  // Solver is optional; heuristic fallback exists
+  const solverBase = String(process.env.PLAN_SOLVER_URL || "http://solver:8000").trim().replace(/\/+$/g, "");
+  const solverPing = await pingSolver(solverBase);
+
+  const durationsSec = [
+    [0, 10, 20],
+    [10, 0, 15],
+    [20, 15, 0],
+  ];
+  const solved = await solveTsp(durationsSec, null, { preferOrtools: true, timeoutMs: 900 });
+
+  return res.json({
+    ok: true,
+    companyId: c.id,
+    companyName: c.name,
+    companyHub: { ok: hubOk, hubLat: c.hubLat, hubLng: c.hubLng },
+    personels: { total, missingLatLng: missing, zeroLatLng: zero, needsReview, failed },
+    osrm,
+    solver: {
+      configured: Boolean(process.env.PLAN_SOLVER_URL),
+      reachable: Boolean(solverPing.reachable),
+      ok: Boolean(solverPing.ok),
+      pingStatus: solverPing.status ?? null,
+      mode: solved?.ok ? solved.solver : "unknown",
+    },
+    hints: [
+      !hubOk ? "Company hub eksik/0,0 (Company → Hub ayarla)" : null,
+      missing > 0 ? "Personel konumu eksik (geocode/import düzelt)" : null,
+      zero > 0 ? "Personel konumu 0,0 var (geocode/import düzelt)" : null,
+      needsReview > 0 ? "geoStatus=NEEDS_REVIEW personel var" : null,
+      failed > 0 ? "geoStatus=FAILED personel var" : null,
+      !osrm.ok ? "OSRM aktif değil (compose --profile osrm)" : null,
+      !solverPing.ok ? "Solver aktif değil (compose --profile osrm)" : null,
+    ].filter(Boolean),
+  });
+});
 
   // POST /api/plan-builder/osrm-table
   // body: { points:[{lat,lng,id?}], profile?:"driving" }

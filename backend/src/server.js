@@ -17,6 +17,9 @@ import { authRouter } from "./routes/auth.js";
 import { meRouter } from "./routes/me.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { etaRouter } from "./routes/eta.js";
+import { geocodeRouter } from "./routes/geocode.js";
+import { companyHubRouter } from "./routes/companyHub.js";
+import { planBuilderRouter } from "./routes/planBuilder.js";
 
 import availabilityRoutes from "./routes/availability.js";
 
@@ -38,8 +41,6 @@ import * as companiesMod from "./routes/companies.js";
 import * as roomsMod from "./routes/rooms.js";
 import * as routeTemplatesMod from "./routes/routeTemplates.js";
 import { offersRouter } from "./routes/offers.js";
-import { planBuilderRouter } from "./routes/planBuilder.js";
-import { geocodeRouter } from "./routes/geocode.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -159,8 +160,9 @@ app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/eta", etaRouter);
-app.use("/api/plan-builder", planBuilderRouter());
 app.use("/api/geocode", geocodeRouter());
+app.use("/api/company/hub", companyHubRouter());
+app.use("/api/plan-builder", planBuilderRouter());
 app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());

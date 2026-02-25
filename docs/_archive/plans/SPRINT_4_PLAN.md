@@ -1,19 +1,19 @@
-# Sprint 4 Plan — Ölçek, Ürünleştirme, Dayanıklılık
+# Sprint 4 Plan â€” Ã–lÃ§ek, ÃœrÃ¼nleÅŸtirme, DayanÄ±klÄ±lÄ±k
 
 ## Hedef
-Sistemi “gerçek saha” yüküne hazırlamak:
-- Büyük dosya/çok personel
+Sistemi â€œgerÃ§ek sahaâ€ yÃ¼kÃ¼ne hazÄ±rlamak:
+- BÃ¼yÃ¼k dosya / Ã§ok personel
 - Provider limitleri
-- Performans ve operasyonel güvenlik
+- Performans ve operasyonel gÃ¼venlik
 
-## Kapsam (In) — Öneri
+## Kapsam (In) â€” Ã–neri
 - Async import/geocode pipeline (queue/worker)
-- Geocode provider fallback (Nominatim › Google gibi)
-- Büyük rapor/export (CSV/Excel) — async export opsiyonu
-- Replace mode politikası: versioning veya explicit “overwrite”
-- Performans: batch insert, batch delete, index iyileştirmeleri
+- Geocode provider fallback (Nominatim â†’ Google gibi)
+- BÃ¼yÃ¼k rapor/export (CSV/Excel) â†’ async export opsiyonu
+- Replace mode politikasÄ±: versioning veya explicit â€œoverwriteâ€
+- Performans: batch insert, batch delete, index iyileÅŸtirmeleri
 
 ## DoD
-- 5k–50k satır import senaryoları timeouts olmadan tamamlanır (queue ile)
-- Geocode rate-limit’e dayanıklı (throttle + retry + fallback)
-- Export ölçeklenebilir (async)
+- 5kâ€“50k satÄ±r import senaryolarÄ± timeouts olmadan tamamlanÄ±r (queue ile)
+- Geocode rate-limitâ€™e dayanÄ±klÄ± (throttle + retry + fallback)
+- Export Ã¶lÃ§eklenebilir (async)

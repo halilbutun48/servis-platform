@@ -1,21 +1,21 @@
-# Sprint 3 Plan — Review UI + Kalite + Check Paketi
+# Sprint 3 Plan â€” Review UI + Kalite + Check Paketi
 
 ## Hedef
-- Geocode sorunlarını operasyonel olarak yönetilebilir yap (NEEDS_REVIEW/FAILED)
-- Regression test paketini genişlet (Excel›Draft akışı)
-- Rota kalitesini artırmak için minimal iyileştirmeler
+- Geocode sorunlarÄ±nÄ± operasyonel olarak yÃ¶netilebilir yap (NEEDS_REVIEW/FAILED)
+- Regression test paketini geniÅŸlet (Excel â†’ Draft akÄ±ÅŸÄ±)
+- Rota kalitesini artÄ±rmak iÃ§in minimal iyileÅŸtirmeler
 
 ## Kapsam (In)
-- Company “NEEDS_REVIEW” listesi + manuel düzeltme
+- Company â€œNEEDS_REVIEWâ€ listesi + manuel dÃ¼zeltme
 - Manual override korunur
-- m-check / fullcheck genişletme (Sprint 1–2)
-- Rota sıralama MVP: nearest-neighbor (+ opsiyonel 2-opt)
+- m-check / fullcheck geniÅŸletme (Sprint 1â€“2)
+- Rota sÄ±ralama MVP: nearest-neighbor (+ opsiyonel 2-opt)
 
 ## API
 - `GET /api/company/personels?geoStatus=NEEDS_REVIEW`
 - `PUT /api/company/personels/:id/location` (lat,lng + geoManualOverride=true)
 
 ## DoD
-- NEEDS_REVIEW listesi görülebilir
-- Manuel düzeltme sonrası `geoStatus=OK`
-- Test pack: import + cache + cluster + draft + approve akışını doğrular
+- NEEDS_REVIEW listesi gÃ¶rÃ¼lebilir
+- Manuel dÃ¼zeltme sonrasÄ± `geoStatus=OK`
+- Test pack: import + cache + cluster + draft + approve akÄ±ÅŸÄ±nÄ± doÄŸrular
