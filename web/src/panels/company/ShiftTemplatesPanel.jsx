@@ -229,7 +229,7 @@ export default function ShiftTemplatesPanel({
     <div className="card">
       <h3>Vardiya Şablonları</h3>
       <div className="muted">
-        Wizard’daki <b>plan paketi + günler + süre</b> mantığını burada şablon olarak kaydedebilirsin. Bu şablonları hem{" "}
+        Guided Mode’daki <b>plan paketi + günler + süre</b> mantığını burada şablon olarak kaydedebilirsin. Bu şablonları hem{" "}
         <b>Yeni Talep</b> ekranında saat doldurmak için, hem de ileride planlama için kullanacağız. Custom şablonlar company bazlı tarayıcıda saklanır.
       </div>
 

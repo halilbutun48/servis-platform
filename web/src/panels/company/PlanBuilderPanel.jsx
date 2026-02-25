@@ -3,7 +3,6 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { api } from "../../api";
-import { navigate } from "../../router";
 
 // Tiny geohash encoder (no deps)
 const GEOHASH_BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
@@ -125,11 +124,6 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [items, setItems] = useState([]);
-
-  // ✅ M34 Step-0: precheck (hub/personel/osrm/solver)
-  const [precheck, setPrecheck] = useState(null);
-  const [precheckBusy, setPrecheckBusy] = useState(false);
-  const [precheckErr, setPrecheckErr] = useState("");
 
   // Stage-1: OSRM matrix per draft-vehicle
   const [mxBusy, setMxBusy] = useState({}); // { [idx]: true }
@@ -266,51 +260,10 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
     }
   }
 
-  const loadPrecheck = useCallback(async () => {
-    if (!token) return;
-    setPrecheckErr("");
-    setPrecheckBusy(true);
-    try {
-      const r = await api("/api/plan-builder/precheck", { method: "GET", token });
-      setPrecheck(r);
-    } catch (e) {
-      setPrecheck(null);
-      setPrecheckErr(String(e?.message || e));
-    } finally {
-      setPrecheckBusy(false);
-    }
-  }, [token]);
-
   useEffect(() => {
     load();
-    loadPrecheck();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const pc = useMemo(() => {
-    if (!precheck?.ok) return { ok: false, blockers: [], warns: [] };
-
-    const blockers = [];
-    const warns = [];
-
-    if (!precheck.companyHub?.ok) blockers.push("Company hub eksik/0,0 (Company → Hub)");
-
-    const missing = Number(precheck.personels?.missingLatLng || 0);
-    const zero = Number(precheck.personels?.zeroLatLng || 0);
-    const needs = Number(precheck.personels?.needsReview || 0);
-    const failed = Number(precheck.personels?.failed || 0);
-
-    if (missing > 0) blockers.push(`Personel konumu eksik: ${missing}`);
-    if (zero > 0) blockers.push(`Personel konumu 0,0: ${zero}`);
-    if (needs > 0) warns.push(`geoStatus=NEEDS_REVIEW: ${needs}`);
-    if (failed > 0) warns.push(`geoStatus=FAILED: ${failed}`);
-
-    // OSRM/Solver: V1'de opsiyonel (fallback var) => WARN
-    if (precheck.osrm && precheck.osrm.ok === false) warns.push("OSRM aktif değil (compose --profile osrm)");
-    if (precheck.solver && precheck.solver.ok === false) warns.push("Solver aktif değil (heuristic fallback)");
-
-    return { ok: true, blockers, warns };
-  }, [precheck]);
 
   const stats = useMemo(() => {
     let total = 0;
@@ -557,6 +510,17 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
 
     setApplyBusy(true);
     try {
+      // Company hub (optional but recommended for route preview / INBOUND end anchor)
+      let hubLat = null;
+      let hubLng = null;
+      try {
+        const hub = await api("/api/company/hub", { method: "GET", token });
+        hubLat = typeof hub?.hubLat === "number" ? hub.hubLat : null;
+        hubLng = typeof hub?.hubLng === "number" ? hub.hubLng : null;
+      } catch {
+        // ignore (hub optional)
+      }
+
       const created = [];
       const vehicles = plan?.vehicles || [];
 
@@ -570,7 +534,7 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
           const shift = await api("/api/shifts", {
             method: "POST",
             token,
-            body: { startAt, endAt, status: "REQUESTED" },
+            body: { startAt, endAt, status: "REQUESTED", hubLat, hubLng, direction: "INBOUND", pattern: "ONE_WAY" },
           });
 
           const shiftId = Number(shift?.id);
@@ -605,8 +569,8 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
 
           if (autoReorderStops) {
             // 4) fetch shift stops
-            const detail = await api(`/api/shifts/${shiftId}`, { method: "GET", token });
-            const stops = Array.isArray(detail?.stops) ? detail.stops : [];
+            const stopsResp = await api(`/api/shifts/${shiftId}/stops`, { method: "GET", token });
+            const stops = Array.isArray(stopsResp) ? stopsResp : (Array.isArray(stopsResp?.items) ? stopsResp.items : (Array.isArray(stopsResp?.stops) ? stopsResp.stops : []));
             stopCount = stops.length;
 
             if (stops.length >= 2) {
@@ -686,99 +650,12 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
             Stage-0: kişi sayısı + kapasite → araç sayısı, geohash/cluster → taslak dağıtım. • Stage-1: OSRM Table. • Stage-2: rota sırası (OR-Tools varsa) / fallback: basit heuristic.
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            load();
-            loadPrecheck();
-          }}
-          disabled={busy}
-          title="Personel + ön kontrol yenile"
-        >
+        <button type="button" onClick={load} disabled={busy} title="Personel listesini yenile">
           {busy ? "..." : "Yenile"}
         </button>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
-
-      {/* ✅ M34 Step-0 — Ön Kontrol (bloklayıcı/warn ayrımı) */}
-      <div
-        className="card"
-        style={{
-          marginTop: 10,
-          border:
-            pc.blockers?.length ? "2px solid #f55" : pc.warns?.length ? "2px solid #fb4" : "2px solid #5c5",
-        }}
-      >
-        <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <div>
-            <div style={{ fontWeight: 900 }}>M34 Step-0 — Ön Kontrol</div>
-            <div className="muted">Hub + personel konumları + OSRM/Solver erişimi.</div>
-          </div>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn" onClick={() => navigate("/company/hub")}>Hub</button>
-            <button type="button" className="btn" onClick={() => navigate("/company/georeview")}>Geo Review</button>
-            <button type="button" onClick={loadPrecheck} disabled={precheckBusy} title="Ön kontrol yenile">
-              {precheckBusy ? "..." : "Yenile"}
-            </button>
-          </div>
-        </div>
-
-        {precheckErr ? <div className="muted" style={{ marginTop: 8, color: "#b55" }}>{precheckErr}</div> : null}
-
-        {precheck?.ok ? (
-          <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-            <div>
-              <span style={{ marginRight: 8 }}>{precheck.companyHub?.ok ? "✅" : "⛔"}</span>
-              <b>Company Hub</b>
-              <span className="muted"> — {precheck.companyHub?.ok ? "OK" : "Eksik/0,0"}</span>
-            </div>
-            <div>
-              <span style={{ marginRight: 8 }}>
-                {Number(precheck.personels?.missingLatLng || 0) === 0 && Number(precheck.personels?.zeroLatLng || 0) === 0 ? "✅" : "⛔"}
-              </span>
-              <b>Personel Konum</b>
-              <span className="muted">
-                {" "}— toplam {precheck.personels?.total ?? 0}, eksik {precheck.personels?.missingLatLng ?? 0}, 0,0 {precheck.personels?.zeroLatLng ?? 0}
-              </span>
-            </div>
-            <div>
-              <span style={{ marginRight: 8 }}>
-                {Number(precheck.personels?.needsReview || 0) === 0 && Number(precheck.personels?.failed || 0) === 0 ? "✅" : "⚠️"}
-              </span>
-              <b>Geo Status</b>
-              <span className="muted">
-                {" "}— NEEDS_REVIEW {precheck.personels?.needsReview ?? 0}, FAILED {precheck.personels?.failed ?? 0}
-              </span>
-            </div>
-            <div>
-              <span style={{ marginRight: 8 }}>{precheck.osrm?.ok ? "✅" : "⚠️"}</span>
-              <b>OSRM</b>
-              <span className="muted"> — {precheck.osrm?.ok ? "OK" : "Yok / opsiyonel"}</span>
-            </div>
-            <div>
-              <span style={{ marginRight: 8 }}>{precheck.solver?.ok ? "✅" : "⚠️"}</span>
-              <b>Solver</b>
-              <span className="muted"> — {precheck.solver?.ok ? "OK" : "Yok / heuristic"} • mode: {precheck.solver?.mode || "-"}</span>
-            </div>
-
-            {pc.blockers?.length ? (
-              <div className="muted" style={{ marginTop: 6, color: "#b55" }}>
-                <b>Bloklayıcılar:</b> {pc.blockers.join(" • ")}
-              </div>
-            ) : null}
-            {pc.warns?.length ? (
-              <div className="muted" style={{ marginTop: 6, color: "#b85" }}>
-                <b>Uyarılar:</b> {pc.warns.join(" • ")}
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="muted" style={{ marginTop: 10 }}>
-            Ön kontrol alınamadı. (API: <code>/api/plan-builder/precheck</code>)
-          </div>
-        )}
-      </div>
 
             <div className="card" style={{ marginTop: 10 }}>
         <h3 style={{ marginTop: 0 }}>İş Akışı</h3>

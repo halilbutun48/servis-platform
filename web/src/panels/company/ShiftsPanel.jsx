@@ -103,6 +103,8 @@ export default function CompanyShiftsPanel() {
   // ✅ M24: Market shift (room seçmeden) + multi-room offers
   const [marketMode, setMarketMode] = useState(false);
   const [marketQ, setMarketQ] = useState("");
+  const [marketFocusIds, setMarketFocusIds] = useState([]);
+  const [pendingFocusIds, setPendingFocusIds] = useState([]);
   const [offerModal, setOfferModal] = useState({
     open: false,
     shiftId: null,
@@ -127,7 +129,38 @@ export default function CompanyShiftsPanel() {
   const [pendingQ, setPendingQ] = useState("");
   const [applyToast, setApplyToast] = useState(null); // { ids:number[] }
   const marketSectionRef = useRef(null);
+  const pendingSectionRef = useRef(null);
   const marketSearchRef = useRef(null);
+
+  // M34 Step-6: Plan Builder → Bekleyen Talepler’e filtreli geçiş
+  useEffect(() => {
+    const onFocus = (ev) => {
+      const d = ev?.detail || {};
+      const ids = Array.isArray(d.shiftIds) ? d.shiftIds.map(Number).filter((n) => Number.isFinite(n) && n > 0) : [];
+      if (!ids.length) return;
+
+      const section = String(d.section || "market");
+      if (section === "pending") {
+        setPendingFocusIds(ids);
+        setPendingQ("");
+        setTimeout(() => {
+          try { pendingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+        }, 50);
+      } else {
+        setMarketFocusIds(ids);
+        setMarketQ("");
+        setTimeout(() => {
+          try {
+            marketSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            marketSearchRef.current?.focus?.();
+          } catch (e) {}
+        }, 50);
+      }
+    };
+    window.addEventListener("company:shifts:focus", onFocus);
+    return () => window.removeEventListener("company:shifts:focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function focusMarketById(id) {
     if (!id) return;
@@ -969,8 +1002,10 @@ function usePlanDraftToRequest(draft) {
   // Pending filtre uygula
   const pendingItems = useMemo(() => {
     const q = String(pendingQ || "").trim().toLowerCase();
+    const pendingFocusSet = new Set((pendingFocusIds || []).map(Number));
     return pendingItemsRaw
         .filter((s) => (!onlyAgreement ? true : Number(s.agreementId) > 0))
+        .filter((s) => (pendingFocusSet.size ? pendingFocusSet.has(Number(s.id)) : true))
         .filter((s) => {
         if (!pendingOnlyRoomOffer) return true;
         const hasRoomOffer =
@@ -989,26 +1024,28 @@ function usePlanDraftToRequest(draft) {
           .toLowerCase();
         return hay.includes(q);
       });
-  }, [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement]);
+  }, [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement, pendingFocusIds]);
 
   // ✅ M24: Market filtre
   const marketItems = useMemo(() => {
     const q = String(marketQ || "").trim().toLowerCase();
+    const marketFocusSet = new Set((marketFocusIds || []).map(Number));
     return (marketItemsRaw || [])
       .filter((s) => (onlyAgreement ? Number(s.agreementId) > 0 : true))
+      .filter((s) => (marketFocusSet.size ? marketFocusSet.has(Number(s.id)) : true))
       .filter((s) => {
         if (!q) return true;
         const hay = [s.id, s.status, s.companyId].filter(Boolean).join(" ").toLowerCase();
         return hay.includes(q);
       });
-  }, [marketItemsRaw, marketQ, onlyAgreement]);
+  }, [marketItemsRaw, marketQ, onlyAgreement, marketFocusIds]);
 
   // Final filtre uygula
   const finalItems = useMemo(() => {
     const q = String(finalQ || "").trim().toLowerCase();
     return finalItemsRaw
-        .filter((s) => (!onlyAgreement ? true : Number(s.agreementId) > 0))
-        .filter((s) => (finalStatus === "ALL" ? true : String(s.status) === finalStatus))
+      .filter((s) => (!onlyAgreement ? true : Number(s.agreementId) > 0))
+      .filter((s) => (finalStatus === "ALL" ? true : String(s.status) === finalStatus))
       .filter((s) => {
         if (!q) return true;
         const hay = [s.id, s.status, s.roomId, s.companyId, s.roomOfferNote, s.companyOfferNote, s.vehicle?.plate, s.driver?.fullName]
@@ -1256,7 +1293,7 @@ function usePlanDraftToRequest(draft) {
       ) : null}
 
       {/* BEKLEYEN */}
-      <div className="card">
+      <div className="card" ref={pendingSectionRef}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <div>
             <h3 style={{ margin: 0 }}>Bekleyen Talepler</h3>
@@ -1270,6 +1307,12 @@ function usePlanDraftToRequest(draft) {
               onChange={(e) => setPendingQ(e.target.value)}
               style={{ minWidth: 240 }}
             />
+            {pendingFocusIds.length ? (
+              <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span>Filtre: {(pendingFocusIds || []).map((id) => "#" + id).join(" ")}</span>
+                <button type="button" className="secondary" onClick={() => setPendingFocusIds([])} disabled={busy}>Filtreyi temizle</button>
+              </div>
+            ) : null}
             <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input
                 type="checkbox"
@@ -1307,13 +1350,23 @@ function usePlanDraftToRequest(draft) {
                 <div style={{ fontWeight: 700 }}>Market Shifts</div>
                 <div className="muted">Room seçilmemiş talepler. Teklifi birden fazla room’a gönder.</div>
               </div>
-              <input
-                ref={marketSearchRef}
-                placeholder="Ara (id/status)"
-                value={marketQ}
-                onChange={(e) => setMarketQ(e.target.value)}
-                style={{ minWidth: 220 }}
-              />
+              <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
+                <input
+                  ref={marketSearchRef}
+                  placeholder="Ara (id/status)"
+                  value={marketQ}
+                  onChange={(e) => setMarketQ(e.target.value)}
+                  style={{ minWidth: 220 }}
+                />
+                {marketFocusIds.length ? (
+                  <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <span>Filtre: {(marketFocusIds || []).map((id) => "#" + id).join(" ")}</span>
+                    <button type="button" className="secondary" onClick={() => setMarketFocusIds([])} disabled={busy}>
+                      Filtreyi temizle
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <table className="tbl" style={{ marginTop: 10 }}>

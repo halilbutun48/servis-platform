@@ -6,10 +6,10 @@ Tarih: 2026-02-25 (Europe/Istanbul)
 
 Repo: D:\servis-platform
 
-Son GREEN: ✅ GATE PASS (M0→M32) + ✅ PACK PASS (M0→M32)
+Son GREEN: ✅ GATE PASS (M0→M33) + ✅ PACK PASS (M0→M33)
 
 Doğrulama:
-- .\tools\pack.ps1 -To 32
+- .\tools\pack.ps1 -To 33
 
 1) V1 Amaç
 
@@ -48,6 +48,7 @@ GPS tabanlı personel servis platformu:
 ✅ M30: Guided market flow + ROOM quick approve + Driver/Personel UX + /api/personel/shifts
 ✅ M31: Room one-click approve+start + Driver UX (big reached + Enter) + Usage docs
 ✅ M32: Template UI refactor (wizard-style), weekMask fix (Pzt–Cum), custom “Düzenle/Sil”
+✅ M33: Plan Builder contract + precheck (Step-0) + m33check (PACK)
 ✅ Ek: Route preview mini-map (Leaflet/OSM) taban çizim (SVG yerine)
 
 5) Tasarım notu

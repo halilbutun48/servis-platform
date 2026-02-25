@@ -506,7 +506,7 @@ export default function AgreementWizard({
             setOpen(true);
           }}
         >
-          Agreement Wizard
+          Hızlı Agreement (Advanced)
         </button>
       )}
 
@@ -519,7 +519,7 @@ export default function AgreementWizard({
       >
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
-            <div className="title">Agreement Wizard</div>
+            <div className="title">Hızlı Agreement (Advanced)</div>
             <div className="muted">Az tık → preset plan seç → room seç → tarih aralığı → oluştur</div>
           </div>
           <button type="button" disabled={busy} onClick={() => setOpen(false)}>

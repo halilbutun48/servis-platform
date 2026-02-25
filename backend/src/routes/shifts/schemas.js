@@ -216,6 +216,7 @@ export const updateStopSchema = z
 export const reorderSchema = z
   .object({
     idsInOrder: z.array(z.number().int().positive()).optional(),
+    stopIds: z.array(z.number().int().positive()).optional(),
     orders: z
       .array(
         z.object({

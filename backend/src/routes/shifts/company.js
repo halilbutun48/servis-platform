@@ -43,10 +43,12 @@ export function attachShiftCompanyRoutes(r, io) {
         if (!effectiveCompanyId) {
           return res.status(400).json({ error: "companyId required" });
         }
-
-        // ✅ COMPANY her zaman REQUESTED üretir
+        // ✅ COMPANY: wizard için DRAFT destekle (taslaklar UI'da gizli, sadece wizard includeDrafts=1 ile görür)
+        const reqStatus = String(body.status ?? "").toUpperCase();
         const effectiveStatus =
-          req.user.role === "COMPANY" ? "REQUESTED" : body.status ?? "DRAFT";
+          req.user.role === "COMPANY"
+            ? (reqStatus === "DRAFT" ? "DRAFT" : "REQUESTED")
+            : (body.status ?? "DRAFT");
 
 
         // ✅ M19: hub pair validation
@@ -168,6 +170,11 @@ export function attachShiftCompanyRoutes(r, io) {
 
         if (shift.status !== "REQUESTED" && shift.status !== "DRAFT") {
           return res.status(409).json({ error: "Shift not editable for offers" });
+        }
+
+        // ✅ Taslak (DRAFT) shift: ilk teklif gönderiminde REQUESTED'a geçir (taslaklar sadece wizard içinde görünür)
+        if (shift.status === "DRAFT") {
+          await prisma.shift.update({ where: { id: shiftId }, data: { status: "REQUESTED" } });
         }
 
         const roomIds = Array.from(new Set((body.roomIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x))));

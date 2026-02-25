@@ -1,4 +1,33 @@
 // web/src/components/ShiftPersonelTable.jsx
+function normalizeCoord(v, kind) {
+  if (v === null || v === undefined) return null;
+  let n = null;
+  if (typeof v === "number") n = v;
+  else {
+    const s0 = String(v).trim();
+    if (!s0) return null;
+    const s = s0.replace(",", ".");
+    const nn = Number(s);
+    if (Number.isFinite(nn)) n = nn;
+    else {
+      const pf = parseFloat(s);
+      if (Number.isFinite(pf)) n = pf;
+    }
+  }
+
+  if (!Number.isFinite(n)) return null;
+  const abs = Math.abs(n);
+  if (abs > 1000) {
+    let scaled = n / 1e6;
+    if (Math.abs(scaled) > 180) scaled = n / 1e5;
+    if (Math.abs(scaled) > 180) scaled = n / 1e4;
+    n = scaled;
+  }
+  if (kind === "lat" && Math.abs(n) > 90) return null;
+  if (kind === "lng" && Math.abs(n) > 180) return null;
+  return n;
+}
+
 export default function ShiftPersonelTable({ people, onRemove, onUpdate }) {
   const list = Array.isArray(people) ? people : [];
 
@@ -43,14 +72,22 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate }) {
               <td style={{ width: 120 }}>
                 <input
                   value={p.lat ?? ""}
-                  onChange={(e) => onUpdate?.(p.id, { lat: e.target.value === "" ? null : Number(e.target.value) })}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const lat = raw === "" ? null : normalizeCoord(raw, "lat");
+                    onUpdate?.(p.id, { lat });
+                  }}
                   placeholder="lat"
                 />
               </td>
               <td style={{ width: 120 }}>
                 <input
                   value={p.lng ?? ""}
-                  onChange={(e) => onUpdate?.(p.id, { lng: e.target.value === "" ? null : Number(e.target.value) })}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const lng = raw === "" ? null : normalizeCoord(raw, "lng");
+                    onUpdate?.(p.id, { lng });
+                  }}
                   placeholder="lng"
                 />
               </td>

@@ -366,9 +366,9 @@ export default function AgreementsPanel() {
 
       {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}
 
-      {/* ✅ M27: Wizard (primary UX) */}
+      {/* ✅ M27: Preset ile hızlı oluştur (Advanced) */}
       <div className="card">
-        <div style={{ fontWeight: 900 }}>Yeni Agreement (Wizard)</div>
+        <div style={{ fontWeight: 900 }}>Yeni Agreement (Advanced)</div>
         <div className="muted" style={{ marginTop: 4 }}>
           Preset paket seç → room seç → tarih aralığı → oluştur. (İstersen sabah+akşam tek tıkla 2 agreement.)
         </div>
@@ -379,7 +379,7 @@ export default function AgreementsPanel() {
             onReloadRooms={loadRooms}
             renderTrigger={(open) => (
               <button type="button" onClick={open} disabled={!roomsSupported || busy}>
-                Wizard’ı Aç
+                Aç
               </button>
             )}
             onCreated={load}
@@ -397,7 +397,7 @@ export default function AgreementsPanel() {
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
             <div style={{ fontWeight: 900 }}>Gelişmiş Oluştur (opsiyonel)</div>
-            <div className="muted">Wizard yetmezse elle ayarla.</div>
+            <div className="muted">Preset yetmezse elle ayarla.</div>
           </div>
           <button type="button" disabled={busy} onClick={() => setAdvancedOpen((p) => !p)}>
             {advancedOpen ? "Kapat" : "Aç"}

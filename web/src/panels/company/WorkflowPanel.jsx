@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
-import AgreementWizard from "./AgreementWizard";
+import GuidedPlanModal from "./GuidedPlanModal";
 
 function todayYmd() {
   const d = new Date();
@@ -87,7 +87,6 @@ function ChecklistRow({ done, title, desc, actionLabel, onAction }) {
 
 export default function WorkflowPanel() {
   const { token } = useSession();
-  const wizardOpenRef = useRef(null);
 
   const [err, setErr] = useState("");
   const [rooms, setRooms] = useState([]);
@@ -107,6 +106,8 @@ export default function WorkflowPanel() {
 
   const today = useMemo(() => todayYmd(), []);
   const todayBit = useMemo(() => todayWeekBit(), []);
+
+  const [guidedOpen, setGuidedOpen] = useState(false);
 
   async function loadRooms() {
     if (!token) return;
@@ -300,37 +301,19 @@ export default function WorkflowPanel() {
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
-        <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Agreement Wizard)</div>
+        <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Guided Mode)</div>
         <div className="muted" style={{ marginTop: 4 }}>
-          Kullanıcı "vardiya" düşünmesin: <b>paket seç</b> (Sabah/Akşam/Sabah+Akşam) → <b>room seç</b> → <b>tarih</b> → oluştur.
+          Tek akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>Personel/Durak</b> → <b>Matris/Çöz</b> → <b>Toplu teklif gönder</b>.
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <AgreementWizard
-            rooms={rooms}
-            roomsSupported={roomsSupported}
-            onReloadRooms={loadRooms}
-            geoNeedsReview={geoNeedsReview}
-            onCreated={loadStats}
-            renderTrigger={(open) => {
-              wizardOpenRef.current = open;
-              return (
-                <button type="button" onClick={open} disabled={!roomsSupported}>
-                  Wizard’ı Aç
-                </button>
-              );
-            }}
-          />
-
-          {!roomsSupported ? (
-            <div className="muted" style={{ marginTop: 8, color: "#b85" }}>
-              /api/rooms endpoint bulunamadı. Önce Room directory (M22+) çalışmalı.
-            </div>
-          ) : null}
+          <button type="button" onClick={() => setGuidedOpen(true)} disabled={!roomsSupported}>
+            Rehberi Başlat
+          </button>
         </div>
 
         <div className="muted" style={{ marginTop: 10 }}>
-          İpucu: Agreement oluşturduktan sonra istersen <b>Market</b> ile birden fazla room’dan teklif toplayabilirsin.
+          İpucu: Pazarlık/teklif takibini "Bekleyen Talepler" alanından yaparsın.
         </div>
       </div>
 
@@ -354,11 +337,11 @@ export default function WorkflowPanel() {
           <ChecklistRow
             done={guide.hasAgreementToday}
             title="2) Agreement"
-            desc={guide.hasAgreementToday ? "Bugün için plan var" : "Wizard ile plan oluştur"}
-            actionLabel={guide.hasAgreementToday ? "Agreements" : "Wizard’ı aç"}
+            desc={guide.hasAgreementToday ? "Bugün için plan var" : "Guided Mode ile plan oluştur"}
+            actionLabel={guide.hasAgreementToday ? "Agreements" : "Plan oluştur"}
             onAction={() => {
               if (guide.hasAgreementToday) navigate("/company/agreements");
-              else wizardOpenRef.current?.();
+              else setGuidedOpen(true);
             }}
           />
 
@@ -468,6 +451,18 @@ export default function WorkflowPanel() {
           </div>
         </div>
       ) : null}
+
+      <GuidedPlanModal
+        open={guidedOpen}
+        onClose={() => setGuidedOpen(false)}
+        rooms={rooms}
+        roomsSupported={roomsSupported}
+        onReloadRooms={loadRooms}
+        onAfterCreated={() => {
+          loadStats();
+          navigate("/company/shifts");
+        }}
+      />
     </div>
   );
 }

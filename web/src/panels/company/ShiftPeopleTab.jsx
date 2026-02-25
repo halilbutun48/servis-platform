@@ -25,6 +25,42 @@ function safeNum(x) {
   return Number.isFinite(n) ? n : null;
 }
 
+function normalizeCoord(v, kind) {
+  if (v === null || v === undefined) return null;
+  let n = null;
+
+  if (typeof v === "number") {
+    n = v;
+  } else {
+    const s0 = String(v).trim();
+    if (!s0) return null;
+    const s = s0.replace(",", ".");
+    const nn = Number(s);
+    if (Number.isFinite(nn)) n = nn;
+    else {
+      const pf = parseFloat(s);
+      if (Number.isFinite(pf)) n = pf;
+    }
+  }
+
+  if (!Number.isFinite(n)) return null;
+
+  // Excel/CSV bazen lat/lng'yi "mikro derece" (örn 37755276) olarak verir.
+  // Heuristik: büyük sayıysa ölçekle.
+  const abs = Math.abs(n);
+  if (abs > 1000) {
+    // dene 1e6
+    let scaled = n / 1e6;
+    if (Math.abs(scaled) > 180) scaled = n / 1e5;
+    if (Math.abs(scaled) > 180) scaled = n / 1e4;
+    n = scaled;
+  }
+
+  if (kind === "lat" && Math.abs(n) > 90) return null;
+  if (kind === "lng" && Math.abs(n) > 180) return null;
+  return n;
+}
+
 function parseCsv(text) {
   // MVP parser: virgül ayracı, ilk satır header olabilir.
   // Beklenen kolonlar (case-insensitive): name, phone, address, lat, lng
@@ -41,7 +77,12 @@ function parseCsv(text) {
   };
 
   const head = split(lines[0]).map((h) => h.toLowerCase());
-  const hasHeader = head.includes("name") || head.includes("phone") || head.includes("address") || head.includes("lat") || head.includes("lng");
+  const hasHeader =
+    head.includes("name") ||
+    head.includes("phone") ||
+    head.includes("address") ||
+    head.includes("lat") ||
+    head.includes("lng");
 
   let startIdx = 0;
   let idx = { name: 0, phone: 1, address: 2, lat: 3, lng: 4 };
@@ -63,9 +104,70 @@ function parseCsv(text) {
     const name = row[idx.name] ?? "";
     const phone = row[idx.phone] ?? "";
     const address = row[idx.address] ?? "";
-    const lat = safeNum(row[idx.lat]);
-    const lng = safeNum(row[idx.lng]);
+    const lat = normalizeCoord(row[idx.lat], "lat");
+    const lng = normalizeCoord(row[idx.lng], "lng");
 
+    out.push({ name, phone, address, lat, lng });
+  }
+  return out;
+}
+
+function normalizeHeader(h) {
+  return String(h || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/ı/g, "i")
+    .replace(/ğ/g, "g")
+    .replace(/ş/g, "s")
+    .replace(/ö/g, "o")
+    .replace(/ü/g, "u")
+    .replace(/ç/g, "c");
+}
+
+function headerIndex(head, keys) {
+  for (const k of keys) {
+    const i = head.indexOf(k);
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+function parseSheetRowsToPeople(rows2d) {
+  const rows = Array.isArray(rows2d) ? rows2d : [];
+  if (!rows.length) return [];
+
+  const headRaw = rows[0] || [];
+  const head = headRaw.map((h) => normalizeHeader(h));
+  const hasHeader =
+    head.some((h) => ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"].includes(h)) ||
+    head.some((h) => ["phone", "tel", "telefon", "gsm"].includes(h)) ||
+    head.some((h) => ["address", "adres"].includes(h)) ||
+    head.some((h) => ["lat", "enlem", "latitude"].includes(h)) ||
+    head.some((h) => ["lng", "lon", "boylam", "longitude", "long"].includes(h));
+
+  let startIdx = 0;
+  let idx = { name: 0, phone: 1, address: 2, lat: 3, lng: 4 };
+
+  if (hasHeader) {
+    idx = {
+      name: Math.max(0, headerIndex(head, ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"])),
+      phone: Math.max(0, headerIndex(head, ["phone", "tel", "telefon", "gsm"])),
+      address: Math.max(0, headerIndex(head, ["address", "adres"])),
+      lat: Math.max(0, headerIndex(head, ["lat", "enlem", "latitude"])),
+      lng: Math.max(0, headerIndex(head, ["lng", "lon", "boylam", "longitude", "long"])),
+    };
+    startIdx = 1;
+  }
+
+  const out = [];
+  for (let i = startIdx; i < rows.length; i++) {
+    const row = rows[i] || [];
+    const name = row[idx.name] ?? "";
+    const phone = row[idx.phone] ?? "";
+    const address = row[idx.address] ?? "";
+    const lat = normalizeCoord(row[idx.lat], "lat");
+    const lng = normalizeCoord(row[idx.lng], "lng");
     out.push({ name, phone, address, lat, lng });
   }
   return out;
@@ -118,7 +220,7 @@ function clusterPeople(people, maxWalkM) {
   return clusters;
 }
 
-export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
+export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds }) {
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 
   const [selectedShiftId, setSelectedShiftId] = useState("");
@@ -152,6 +254,14 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
     const sid = Number(selectedShiftId || 0);
     return shiftOptions.find((s) => Number(s.id) === sid) || null;
   }, [shiftOptions, selectedShiftId]);
+
+  // Guided Mode: aynı personel/stop setini birden fazla taslak shift'e aynala
+  const mirrorIds = useMemo(() => {
+    const base = Array.isArray(mirrorShiftIds) ? mirrorShiftIds : [];
+    const ids = [Number(selectedShiftId || 0), ...base.map((x) => Number(x || 0))]
+      .filter((x) => Number.isFinite(x) && x > 0);
+    return Array.from(new Set(ids));
+  }, [mirrorShiftIds, selectedShiftId]);
 
   const peopleStorageKey = useMemo(() => {
     const sid = String(selectedShiftId || "");
@@ -188,7 +298,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
     }
   }
 
-
   function mapBackendPeopleToUi(items) {
     const list = Array.isArray(items) ? items : [];
     return list
@@ -209,9 +318,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
   function mapUiPeopleToBackend(list) {
     const arr = Array.isArray(list) ? list : [];
     return arr.map((p) => ({
-      personelId:
-        p.personelId ||
-        (String(p.id).match(/^\d+$/) ? Number(p.id) : undefined),
+      personelId: p.personelId || (String(p.id).match(/^\d+$/) ? Number(p.id) : undefined),
       fullName: String(p.name || "").trim(),
       phone: String(p.phone || "").trim() || null,
       address: String(p.address || "").trim() || null,
@@ -233,6 +340,36 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
       body: { items },
       token,
     });
+  }
+
+  async function generateStopsOnBackend(shiftId, maxWalkMValue) {
+    const mw = Number(maxWalkMValue);
+    return api(`/api/shifts/${shiftId}/stops/generate?mode=REPLACE&maxWalkM=${encodeURIComponent(String(mw))}`, {
+      method: "POST",
+      token,
+    });
+  }
+
+  function withHubStop(stops, shift) {
+    const list = Array.isArray(stops) ? [...stops] : [];
+    const hubLat = typeof shift?.hubLat === "number" ? shift.hubLat : null;
+    const hubLng = typeof shift?.hubLng === "number" ? shift.hubLng : null;
+    if (hubLat == null || hubLng == null) return list;
+
+    const hub = {
+      id: "hub",
+      title: "Hub",
+      lat: hubLat,
+      lng: hubLng,
+      count: null,
+      memberIds: [],
+      _virtual: true,
+    };
+
+    const dir = String(shift?.direction || "").toUpperCase();
+    if (dir === "OUTBOUND") return [hub, ...list];
+    // INBOUND (Toplama → Hub): rota hub'da bitmeli
+    return [...list, hub];
   }
 
   // init selected shift
@@ -300,7 +437,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
       try {
         await apiOr404Fallback(
           async () => {
-            await savePeopleToBackend(sid, people);
+            // Guided Mode: aynı listeyi taslak shift'lerin hepsine yaz
+            const ids = mirrorIds.length ? mirrorIds : [Number(sid)];
+            for (const id of ids) {
+              await savePeopleToBackend(String(id), people);
+            }
             setPeopleBackend("on");
             return true;
           },
@@ -317,10 +458,12 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
 
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, selectedShiftId, peopleBackend]);
+  }, [people, selectedShiftId, peopleBackend, mirrorIds]);
 
   const geoStats = useMemo(() => {
-    let ok = 0, review = 0, failed = 0;
+    let ok = 0,
+      review = 0,
+      failed = 0;
     for (const p of people) {
       const st = p.geoStatus || computeGeoStatus(p);
       if (st === "OK") ok++;
@@ -338,15 +481,15 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
     const name = String(pName || "").trim();
     const phone = String(pPhone || "").trim();
     const address = String(pAddress || "").trim();
-    const lat = String(pLat || "").trim() ? Number(pLat) : null;
-    const lng = String(pLng || "").trim() ? Number(pLng) : null;
+    const lat = normalizeCoord(pLat, "lat");
+    const lng = normalizeCoord(pLng, "lng");
 
     if (!name) {
       setErr("Ad Soyad zorunlu.");
       return;
     }
-    if ((pLat && !Number.isFinite(lat)) || (pLng && !Number.isFinite(lng))) {
-      setErr("Lat/Lng sayı olmalı (opsiyonel).");
+    if ((String(pLat || "").trim() && lat === null) || (String(pLng || "").trim() && lng === null)) {
+      setErr("Lat/Lng sayı olmalı (opsiyonel). Örn: 37.12345 veya 37,12345");
       return;
     }
 
@@ -355,8 +498,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
       name,
       phone,
       address,
-      lat: Number.isFinite(lat) ? lat : null,
-      lng: Number.isFinite(lng) ? lng : null,
+      lat,
+      lng,
       geoStatus: computeGeoStatus({ address, lat, lng }),
     };
 
@@ -369,36 +512,63 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
   }
 
   async function importCsvFile(file) {
+    const text = await file.text();
+    const rows = parseCsv(text);
+    return rows;
+  }
+
+  async function importExcelFile(file) {
+    // `xlsx` dependency web tarafında kurulu olmalı (npm i xlsx)
+    const XLSX = await import("xlsx");
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows2d = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+    return parseSheetRowsToPeople(rows2d);
+  }
+
+  async function importFile(file) {
     setErr("");
     setInfo("");
     if (!file) return;
 
     try {
-      const text = await file.text();
-      const rows = parseCsv(text);
+      const name = String(file.name || "").toLowerCase();
+      let rows = [];
 
-      if (!rows.length) {
-        setErr("CSV boş veya okunamadı.");
+      if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+        rows = await importExcelFile(file);
+      } else if (name.endsWith(".csv")) {
+        rows = await importCsvFile(file);
+      } else {
+        setErr("Desteklenen dosyalar: .xlsx, .xls, .csv");
         return;
       }
 
-      const mapped = rows.map((r) => {
-        const lat = typeof r.lat === "number" && Number.isFinite(r.lat) ? r.lat : null;
-        const lng = typeof r.lng === "number" && Number.isFinite(r.lng) ? r.lng : null;
-        const address = String(r.address || "").trim();
-        return {
-          id: `p_${Date.now()}_${Math.random().toString(16).slice(2)}_${Math.random().toString(16).slice(2)}`,
-          name: String(r.name || "").trim(),
-          phone: String(r.phone || "").trim(),
-          address,
-          lat,
-          lng,
-          geoStatus: computeGeoStatus({ address, lat, lng }),
-        };
-      }).filter((x) => x.name);
+      if (!rows.length) {
+        setErr("Dosya boş veya okunamadı.");
+        return;
+      }
+
+      const mapped = rows
+        .map((r) => {
+          const lat = normalizeCoord(r.lat, "lat");
+          const lng = normalizeCoord(r.lng, "lng");
+          const address = String(r.address || "").trim();
+          return {
+            id: `p_${Date.now()}_${Math.random().toString(16).slice(2)}_${Math.random().toString(16).slice(2)}`,
+            name: String(r.name || "").trim(),
+            phone: String(r.phone || "").trim(),
+            address,
+            lat,
+            lng,
+            geoStatus: computeGeoStatus({ address, lat, lng }),
+          };
+        })
+        .filter((x) => x.name);
 
       if (!mapped.length) {
-        setErr("CSV’de geçerli satır bulunamadı (name zorunlu).");
+        setErr("Dosyada geçerli satır bulunamadı (name zorunlu).");
         return;
       }
 
@@ -414,27 +584,56 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
   }
 
   function updatePerson(id, patch) {
-    setPeople((prev) => (prev || []).map((p) => {
-      if (p.id !== id) return p;
-      const next = { ...p, ...patch };
-      next.geoStatus = computeGeoStatus(next);
-      return next;
-    }));
+    setPeople((prev) =>
+      (prev || []).map((p) => {
+        if (p.id !== id) return p;
+        const next = { ...p, ...patch };
+        next.geoStatus = computeGeoStatus(next);
+        return next;
+      })
+    );
   }
 
-  function generateDraftStops() {
+  async function generateDraftStops() {
     setErr("");
     setInfo("");
 
     const mw = Number(maxWalkM);
     if (!Number.isFinite(mw) || mw <= 0) {
-      setErr("maxWalkM pozitif sayı olmalı.");
+      setErr("maxWalkM pozitif sayi olmali.");
       return;
     }
 
+    // Prefer backend: generate + persist stops (wizard Step-4 needs persisted stops)
+    // Guided Mode: outbound/inbound taslak shift'lerin hepsine aynı stop setini üret.
+    if (selectedShiftId && peopleBackend !== "off") {
+      try {
+        const ids = mirrorIds.length ? mirrorIds : [Number(selectedShiftId)];
+        await apiOr404Fallback(
+          async () => {
+            for (const id of ids) {
+              await generateStopsOnBackend(String(id), mw);
+            }
+            setPeopleBackend("on");
+            return true;
+          },
+          async () => {
+            setPeopleBackend("off");
+            return false;
+          }
+        );
+
+        await loadShiftStopsFromApi();
+        return;
+      } catch (e) {
+        setErr(String(e?.payload?.message || e?.message || e));
+      }
+    }
+
+    // Fallback: UI-only preview (does not persist)
     const stops = clusterPeople(people, mw);
-    setDraftStops(stops);
-    setInfo(stops.length ? `Draft durak üretildi: ${stops.length} durak` : "OK koordinatlı kayıt yok — durak üretilemedi.");
+    setDraftStops(withHubStop(stops, selectedShift));
+    setInfo(stops.length ? `Draft durak uretildi: ${stops.length} durak` : "OK koordinatli kayit yok - durak uretilemedi.");
   }
 
   async function loadShiftStopsFromApi() {
@@ -456,8 +655,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
           count: s.assignmentCount ?? null,
           memberIds: [],
         }));
-      setDraftStops(mapped);
-      setInfo(`Shift durakları yüklendi: ${mapped.length}`);
+      const withHub = withHubStop(mapped, selectedShift);
+      setDraftStops(withHub);
+      setInfo(`Shift durakları yüklendi: ${withHub.length}`);
     } catch (e) {
       setErr(`Shift durakları yüklenemedi: ${String(e?.payload?.message || e?.message || e)}`);
     } finally {
@@ -474,10 +674,20 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
   return (
     <div className="card">
       <h3>Shift Tools</h3>
-      <div className="muted">Shift bazlı araçlar: personel ekle/import → durak üret (preview) → rota/durak önizleme (mini-map). “Shift’ten Durakları Çek” mevcut durakları API’den getirir.</div>
+      <div className="muted">
+        Shift bazlı araçlar: personel ekle/import → durak üret (preview) → rota/durak önizleme (mini-map). “Shift’ten Durakları Çek” mevcut durakları API’den getirir.
+      </div>
 
-      {err ? <div className="card err" style={{ marginTop: 10 }}>{err}</div> : null}
-      {info ? <div className="card" style={{ marginTop: 10 }}>{info}</div> : null}
+      {err ? (
+        <div className="card err" style={{ marginTop: 10 }}>
+          {err}
+        </div>
+      ) : null}
+      {info ? (
+        <div className="card" style={{ marginTop: 10 }}>
+          {info}
+        </div>
+      ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
         {/* Shift selector + summary */}
@@ -569,13 +779,16 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById }) {
 
           <div className="card" style={{ marginTop: 10 }}>
             <div className="muted">
-              <b>CSV Import (MVP)</b> — kolonlar: <code>name,phone,address,lat,lng</code> (header opsiyonel)
+              <b>Excel/CSV Import</b> — kolonlar: <code>name,phone,address,lat,lng</code> (header opsiyonel)
+              <div style={{ marginTop: 6, fontSize: 12 }}>
+                Excel başlıkları (TR) da olur: <code>ad / ad soyad / telefon / adres / enlem / boylam</code>
+              </div>
             </div>
             <input
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
               disabled={busy}
-              onChange={(e) => importCsvFile(e.target.files?.[0])}
+              onChange={(e) => importFile(e.target.files?.[0])}
               style={{ marginTop: 8 }}
             />
           </div>

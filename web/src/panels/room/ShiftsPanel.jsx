@@ -454,7 +454,8 @@ export default function RoomShiftsPanel() {
     setErr("");
     try {
       const [sh, veh, drv, rm] = await Promise.all([
-        api("/api/shifts?take=200", { token }),
+        // ✅ includeOffered=1: market/offered shift'leri de getir (shift.roomId null olsa bile)
+        api("/api/shifts?take=200&includeOffered=1", { token }),
         api("/api/vehicles", { token }),
         api("/api/drivers", { token }).catch(() => ({ items: [] })), // bazı ortamlarda yoksa kırma
         api("/api/rooms", { token }).catch(() => ({ items: [] })), // ROOM yetkisi var ama yoksa kırma

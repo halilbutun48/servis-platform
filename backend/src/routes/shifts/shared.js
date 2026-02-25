@@ -60,7 +60,29 @@ export function attachShiftSharedRoutes(r) {
     requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       try {
-        const where = buildShiftsWhereFromQuery(req.query, req.user);
+        let where = buildShiftsWhereFromQuery(req.query, req.user);
+
+        // ✅ ROOM: market/offered shift'leri listeye dahil et (roomId null olsa bile)
+        // UI bunu /room/shifts içinde “tek ekranda” görmek için kullanır.
+        // Query: includeOffered=1
+        if (req.user?.role === "ROOM" && req.user?.roomId && String(req.query.includeOffered || "0") === "1") {
+          const roomId = req.user.roomId;
+
+          // buildShiftsWhereFromQuery scope olarak where.roomId=roomId koyuyor.
+          // Offered shift'lerde shift.roomId null → bu yüzden scope'u OR'a çeviriyoruz.
+          const base = { ...(where || {}) };
+          delete base.roomId;
+
+          const scopeOr = {
+            OR: [
+              { roomId },
+              { offers: { some: { roomId } } },
+            ],
+          };
+
+          // base zaten OR içeriyorsa AND ile bağla ki filtreler kaybolmasın.
+          where = { AND: [scopeOr, base] };
+        }
         const take = Math.min(Number(req.query.take ?? 200), 500);
 
         const items = await prisma.shift.findMany({
@@ -73,6 +95,7 @@ export function attachShiftSharedRoutes(r) {
             driver: { select: { id: true, fullName: true, phone: true } },
             vehicle: { select: { id: true, plate: true, status: true } },
             stops: { orderBy: { order: "asc" } },
+            offers: { select: { id: true, roomId: true, status: true } },
           },
         });
 
@@ -162,8 +185,15 @@ export function attachShiftSharedRoutes(r) {
 
         // scope check
         if (req.user.role === "ROOM") {
-          if (!req.user.roomId || req.user.roomId !== shift.roomId) {
-            return res.status(403).json({ error: "Forbidden" });
+          const roomId = req.user.roomId;
+          if (!roomId) return res.status(403).json({ error: "Forbidden" });
+          if (shift.roomId !== roomId) {
+            // market/offered shift: roomId null olabilir; teklif varsa erişime izin ver
+            const offer = await prisma.shiftOffer.findFirst({
+              where: { shiftId: shift.id, roomId },
+              select: { id: true },
+            });
+            if (!offer) return res.status(403).json({ error: "Forbidden" });
           }
         }
 
@@ -231,8 +261,14 @@ export function attachShiftSharedRoutes(r) {
 
         // scope check
         if (req.user.role === "ROOM") {
-          if (!req.user.roomId || req.user.roomId !== shift.roomId) {
-            return res.status(403).json({ error: "Forbidden" });
+          const roomId = req.user.roomId;
+          if (!roomId) return res.status(403).json({ error: "Forbidden" });
+          if (shift.roomId !== roomId) {
+            const offer = await prisma.shiftOffer.findFirst({
+              where: { shiftId: shift.id, roomId },
+              select: { id: true },
+            });
+            if (!offer) return res.status(403).json({ error: "Forbidden" });
           }
         }
 
