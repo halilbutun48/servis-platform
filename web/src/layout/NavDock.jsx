@@ -1,4 +1,5 @@
 // web/src/layout/NavDock.jsx
+import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../router";
 
 function Item({ label, path, active, badge }) {
@@ -15,52 +16,140 @@ function Item({ label, path, active, badge }) {
   );
 }
 
-export default function NavDock({ role, path }) {
-  const items = [];
-
-  if (role === "ROOM") {
-    items.push({ label: "Map", path: "/room/map" });
-    items.push({ label: "Vehicles", path: "/room/vehicles" });
-    items.push({ label: "Drivers", path: "/room/drivers" });
-    items.push({ label: "Shifts", path: "/room/shifts" });
-    items.push({ label: "Agreements", path: "/room/agreements" });
-    items.push({ label: "Offers", path: "/room/offers" });
-    items.push({ label: "Hub", path: "/room/hub" });
-    items.push({ label: "Notifications", path: "/shared/notifications" });
-  } else if (role === "COMPANY") {
-    // ✅ M26+: workflow-first (minimum confusion)
-    items.push({ label: "Home", path: "/company" });
-    items.push({ label: "Agreements", path: "/company/agreements" });
-    items.push({ label: "Hub", path: "/company/hub" });
-    items.push({ label: "Shifts", path: "/company/shifts" });
-    items.push({ label: "Geo Review", path: "/company/georeview" });
-    items.push({ label: "Map", path: "/company/map" });
-    items.push({ label: "Notifications", path: "/shared/notifications" });
-  } else if (role === "DRIVER") {
-    items.push({ label: "Map", path: "/driver/map" });
-    items.push({ label: "Route", path: "/driver/route" });
-    items.push({ label: "Notifications", path: "/shared/notifications" });
-  } else if (role === "PERSONEL") {
-    items.push({ label: "Live", path: "/personel/live" });
-    items.push({ label: "My Ride", path: "/personel/my" });
-    items.push({ label: "Notifications", path: "/shared/notifications" });
-  } else if (role === "SUPER_ADMIN") {
-    items.push({ label: "Overview", path: "/superadmin" });
-    items.push({ label: "Companies", path: "/superadmin/companies" });
-    items.push({ label: "Rooms", path: "/superadmin/rooms" });
-  }
-
-  // active match: exact or startsWith (query params)
+function Section({ title, items, path }) {
   const isActive = (p) => path === p || String(path || "").startsWith(p + "?");
-
+  if (!items?.length) return null;
   return (
-    <div className="navDock">
-      <div className="navDockTitle">{role}</div>
+    <div className="navSection">
+      {title ? <div className="navSectionTitle">{title}</div> : null}
       <div className="navDockItems">
         {items.map((it) => (
           <Item key={it.path} label={it.label} path={it.path} active={isActive(it.path)} badge={it.badge} />
         ))}
       </div>
+    </div>
+  );
+}
+
+export default function NavDock({ role, path }) {
+  const LS_ADV = "psv1:nav:advanced";
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_ADV);
+      setShowAdvanced(raw === "1");
+    } catch {
+      setShowAdvanced(false);
+    }
+  }, []);
+
+  function toggleAdvanced() {
+    setShowAdvanced((p) => {
+      const next = !p;
+      try {
+        localStorage.setItem(LS_ADV, next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }
+
+  const cfg = useMemo(() => {
+    const sections = [];
+    const advanced = [];
+
+    if (role === "ROOM") {
+      sections.push({
+        title: "Ana",
+        items: [
+          { label: "Harita", path: "/room/map" },
+          { label: "Teklifler", path: "/room/offers" },
+          { label: "Vardiyalar", path: "/room/shifts" },
+        ],
+      });
+      sections.push({
+        title: "Operasyon",
+        items: [
+          { label: "Araçlar", path: "/room/vehicles" },
+          { label: "Sürücüler", path: "/room/drivers" },
+        ],
+      });
+      sections.push({
+        title: "Sözleşme",
+        items: [
+          { label: "Sözleşmeler", path: "/room/agreements" },
+        ],
+      });
+      advanced.push({ label: "Hub", path: "/room/hub" });
+      advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+    } else if (role === "COMPANY") {
+      sections.push({
+        title: "Ana",
+        items: [
+          { label: "Harita", path: "/company/map" },
+          { label: "Planlama Merkezi", path: "/company" },
+          { label: "Vardiyalar", path: "/company/shifts" },
+        ],
+      });
+      sections.push({
+        title: "Sözleşme",
+        items: [
+          { label: "Sözleşmeler", path: "/company/agreements" },
+        ],
+      });
+      advanced.push({ label: "Hub", path: "/company/hub" });
+      advanced.push({ label: "Konum İncele", path: "/company/georeview" });
+      advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+    } else if (role === "DRIVER") {
+      sections.push({
+        title: "",
+        items: [
+          { label: "Harita", path: "/driver/map" },
+          { label: "Rota", path: "/driver/route" },
+          { label: "Bildirimler", path: "/shared/notifications" },
+        ],
+      });
+    } else if (role === "PERSONEL") {
+      sections.push({
+        title: "",
+        items: [
+          { label: "Canlı", path: "/personel/live" },
+          { label: "Servisim", path: "/personel/my" },
+          { label: "Bildirimler", path: "/shared/notifications" },
+        ],
+      });
+    } else if (role === "SUPER_ADMIN") {
+      sections.push({
+        title: "",
+        items: [
+          { label: "Overview", path: "/superadmin" },
+          { label: "Companies", path: "/superadmin/companies" },
+          { label: "Rooms", path: "/superadmin/rooms" },
+        ],
+      });
+    }
+
+    return { sections, advanced };
+  }, [role]);
+
+  const hasAdvanced = cfg.advanced.length > 0;
+
+  return (
+    <div className="navDock">
+      <div className="navDockTitle">{role}</div>
+
+      {cfg.sections.map((s) => (
+        <Section key={s.title || "main"} title={s.title} items={s.items} path={path} />
+      ))}
+
+      {hasAdvanced ? (
+        <div className="navAdvanced">
+          <button type="button" className="navToggle" onClick={toggleAdvanced}>
+            {showAdvanced ? "Gelişmiş ▾" : "Gelişmiş ▸"}
+          </button>
+          {showAdvanced ? <Section title={null} items={cfg.advanced} path={path} /> : null}
+        </div>
+      ) : null}
     </div>
   );
 }

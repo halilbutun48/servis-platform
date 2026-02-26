@@ -13,7 +13,6 @@ function sanitizeAddress(input) {
   return s;
 }
 
-
 export default function HubPanel() {
   const { token } = useSession();
   const [addr, setAddr] = useState("");
@@ -24,7 +23,8 @@ export default function HubPanel() {
   const [err, setErr] = useState("");
 
   async function load() {
-    setErr(""); setMsg("");
+    setErr("");
+    setMsg("");
     try {
       const r = await api("/api/company/hub", { token });
       setLat(r?.hubLat == null ? "" : String(r.hubLat));
@@ -34,10 +34,14 @@ export default function HubPanel() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function myLocation() {
-    setErr(""); setMsg("");
+    setErr("");
+    setMsg("");
     if (!navigator?.geolocation) {
       setErr("Tarayıcı konum özelliği yok.");
       return;
@@ -56,14 +60,17 @@ export default function HubPanel() {
       if (typeof a !== "number" || typeof b !== "number") throw new Error("Konum okunamadı");
       setLat(String(a));
       setLng(String(b));
-      setMsg(`Konum alındı: ${a.toFixed(6)}, ${b.toFixed(6)}. Kaydet'e basarak kaydet.`);
+      setMsg(`Konum alındı: ${a.toFixed(6)}, ${b.toFixed(6)}. Kaydet'e bas.`);
     } catch (e) {
       const code = e?.code;
       const m =
-        code === 1 ? "Konum izni reddedildi." :
-        code === 2 ? "Konum bulunamadı." :
-        code === 3 ? "Konum isteği zaman aşımına uğradı." :
-        (e?.message || String(e));
+        code === 1
+          ? "Konum izni reddedildi."
+          : code === 2
+          ? "Konum bulunamadı."
+          : code === 3
+          ? "Konum isteği zaman aşımına uğradı."
+          : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -71,17 +78,21 @@ export default function HubPanel() {
   }
 
   async function geocode() {
-    setErr(""); setMsg("");
+    setErr("");
+    setMsg("");
     const q = sanitizeAddress(addr);
-    if (!q) { setErr("Adres gir."); return; }
+    if (!q) {
+      setErr("Adres gir.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await api("/api/geocode", { method: "POST", token, body: { q, country: "tr" } });
       setLat(String(r.lat));
       setLng(String(r.lng));
-      setMsg(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}. Kaydet'e basarak kaydet.`);
+      setMsg(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}. Kaydet'e bas.`);
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : (e?.message || String(e));
+      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -89,7 +100,8 @@ export default function HubPanel() {
   }
 
   async function save() {
-    setErr(""); setMsg("");
+    setErr("");
+    setMsg("");
     const a = lat === "" ? null : Number(lat);
     const b = lng === "" ? null : Number(lng);
     setBusy(true);
@@ -105,34 +117,54 @@ export default function HubPanel() {
 
   return (
     <div className="card">
-      <h2>Company Hub</h2>
-      <div className="muted" style={{ marginBottom: 8 }}>
-        Şirket tesisi/merkezi (hub) koordinatı. INBOUND/OUTBOUND rota merkezinde kullanılabilir.
+      <div className="topbar">
+        <div>
+          <div className="title">Company Hub</div>
+          <div className="muted">Şirket tesisi/merkezi (hub) koordinatı. INBOUND/OUTBOUND rota merkezinde kullanılır.</div>
+        </div>
+        <button type="button" className="btn sm ghost" onClick={load} disabled={busy}>
+          Yenile
+        </button>
       </div>
 
-      {err ? <div className="error">{err}</div> : null}
-      {msg ? <div className="ok">{msg}</div> : null}
+      {err ? <div className="card err">{err}</div> : null}
+      {msg ? <div className="card" style={{ borderColor: "rgba(34,197,94,.35)", background: "rgba(6,34,20,.25)" }}>{msg}</div> : null}
 
-      <div className="card" style={{ marginTop: 10 }}>
+      <div className="field">
         <div className="muted">Adres</div>
-        <input value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="örn. OSB / Fabrika / İlçe / İl" disabled={busy} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-          <label className="muted">
-            Hub Lat
-            <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
-          </label>
-          <label className="muted">
-            Hub Lng
-            <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
-          </label>
-        </div>
+        <input
+          value={addr}
+          onChange={(e) => setAddr(e.target.value)}
+          placeholder="örn. OSB / Fabrika / İlçe / İl"
+          disabled={busy}
+        />
+      </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-          <button type="button" onClick={myLocation} disabled={busy}>Konumumu Al</button>
-          <button type="button" onClick={geocode} disabled={busy}>Adresten Bul</button>
-          <button type="button" onClick={save} disabled={busy}>Kaydet</button>
-          <button type="button" onClick={load} disabled={busy}>Yenile</button>
+      <div className="fieldRow" style={{ marginTop: 12 }}>
+        <div className="field">
+          <div className="muted">Hub Lat</div>
+          <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
         </div>
+        <div className="field">
+          <div className="muted">Hub Lng</div>
+          <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
+        </div>
+      </div>
+
+      <div className="actionsRow" style={{ marginTop: 12 }}>
+        <button type="button" className="btn sm" onClick={myLocation} disabled={busy}>
+          Konumumu Al
+        </button>
+        <button type="button" className="btn sm" onClick={geocode} disabled={busy}>
+          Adresten Bul
+        </button>
+        <button type="button" className="btn sm primary" onClick={save} disabled={busy}>
+          Kaydet
+        </button>
+      </div>
+
+      <div className="muted" style={{ marginTop: 10 }}>
+        Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman OK).
       </div>
     </div>
   );

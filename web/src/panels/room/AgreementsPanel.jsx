@@ -4,6 +4,15 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { toHHMM, weekMaskToText } from "../../utils/agreementUi";
 
+function pill(status) {
+  const s = String(status || "").toUpperCase();
+  return (
+    <span className="pill" data-status={s} title={s}>
+      {s}
+    </span>
+  );
+}
+
 function ConflictBox({ errObj }) {
   if (!errObj) return null;
   const code = errObj?.code;
@@ -11,18 +20,28 @@ function ConflictBox({ errObj }) {
   const c = errObj?.conflictingAgreement;
 
   return (
-    <div style={{ border: "1px solid #f3c", padding: 10, borderRadius: 10, marginTop: 10 }}>
-      <div style={{ fontWeight: 800, color: "#b07" }}>{code || "CONFLICT"}</div>
-      <div className="muted" style={{ marginTop: 4 }}>{msg}</div>
+    <div className="card" style={{ borderColor: "rgba(239,68,68,.45)", background: "rgba(85,16,20,.25)" }}>
+      <div style={{ fontWeight: 900 }}>{code || "CONFLICT"}</div>
+      <div className="muted" style={{ marginTop: 6 }}>{msg}</div>
 
       {c ? (
-        <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
-          <div>conflict agreementId: <b>{c.id}</b></div>
+        <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
+          <div>
+            conflict agreementId: <b>{c.id}</b>
+          </div>
           <div>status: {c.status}</div>
-          <div>date: {String(c.startDate).slice(0, 10)} → {String(c.endDate).slice(0, 10)}</div>
-          <div>time: {toHHMM(c.startMin)} → {toHHMM(c.endMin)}</div>
-          <div>days: {weekMaskToText(c.weekMask)} (mask={c.weekMask})</div>
-          <div>v:{c.vehicleId ?? "-"} / d:{c.driverId ?? "-"}</div>
+          <div>
+            date: {String(c.startDate).slice(0, 10)} → {String(c.endDate).slice(0, 10)}
+          </div>
+          <div>
+            time: {toHHMM(c.startMin)} → {toHHMM(c.endMin)}
+          </div>
+          <div>
+            days: {weekMaskToText(c.weekMask)} (mask={c.weekMask})
+          </div>
+          <div>
+            v:{c.vehicleId ?? "-"} / d:{c.driverId ?? "-"}
+          </div>
         </div>
       ) : null}
     </div>
@@ -44,16 +63,12 @@ export default function AgreementsPanel() {
   const [selDriver, setSelDriver] = useState("");
   const [conflict, setConflict] = useState(null);
 
-  const approveTarget = useMemo(
-    () => pending.find((x) => x.id === approveId),
-    [pending, approveId]
-  );
+  const approveTarget = useMemo(() => pending.find((x) => x.id === approveId), [pending, approveId]);
 
   async function loadAll() {
     if (!token) return;
     setErr("");
     try {
-      // Room tarafında hem pending hem de approve/active kayıtları görmek için tümünü çekiyoruz.
       const all = await api("/api/agreements?take=200", { token });
       const items = all?.items ?? [];
       setPending(items.filter((x) => String(x.status || "").toUpperCase() === "REQUESTED"));
@@ -95,7 +110,6 @@ export default function AgreementsPanel() {
         body: { vehicleId, driverId },
       });
 
-      // success
       setApproveId(null);
       setSelVehicle("");
       setSelDriver("");
@@ -115,59 +129,55 @@ export default function AgreementsPanel() {
   }
 
   return (
-    <div style={{ padding: 16, display: "grid", gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Agreements (Room)</h2>
-
-      <div className="muted" style={{ marginTop: -6 }}>
-        Not: Pending onay (REQUESTED) burada. Süre uzatma (extend) Company tarafındadır.
+    <div className="card">
+      <div className="topbar">
+        <div>
+          <div className="title">Sözleşmeler (Room)</div>
+          <div className="muted">Pending onay (REQUESTED) burada. Süre uzatma (extend) Company tarafındadır.</div>
+        </div>
+        <button type="button" className="btn sm ghost" disabled={busy} onClick={loadAll}>
+          Yenile
+        </button>
       </div>
 
-      {err ? <div style={{ color: "crimson" }}>{String(err)}</div> : null}
+      {err ? <div className="card err">{String(err)}</div> : null}
 
-      <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ fontWeight: 800 }}>Pending (REQUESTED)</div>
-          <button type="button" disabled={busy} onClick={loadAll}>Yenile</button>
-        </div>
-
-        <div style={{ marginTop: 10, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="card">
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Pending (REQUESTED)</div>
+        <div className="tableWrap">
+          <table className="tbl">
             <thead>
-              <tr className="muted">
-                <th align="left">ID</th>
-                <th align="left">Date</th>
-                <th align="left">Time</th>
-                <th align="left">Günler</th>
-                <th align="left">Dir/Pat</th>
-                <th align="left">Hub</th>
-                <th align="left">Aksiyon</th>
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Günler</th>
+                <th>Dir/Pat</th>
+                <th>Hub</th>
+                <th>Aksiyon</th>
               </tr>
             </thead>
             <tbody>
               {pending.map((a) => (
-                <tr key={a.id} style={{ borderTop: "1px solid #eee" }}>
+                <tr key={a.id}>
                   <td>{a.id}</td>
                   <td className="muted">
                     {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}
                   </td>
                   <td className="muted">
-                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)}{" "}
-                    {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
+                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
                   </td>
-                  <td className="muted" title={`weekMask=${a.weekMask}`}>
-                    {weekMaskToText(a.weekMask)}
-                  </td>
+                  <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
                   <td className="muted">
                     {String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}
                   </td>
                   <td className="muted">
-                    {typeof a.hubLat === "number" && typeof a.hubLng === "number"
-                      ? `${a.hubLat.toFixed(4)}, ${a.hubLng.toFixed(4)}`
-                      : "-"}
+                    {typeof a.hubLat === "number" && typeof a.hubLng === "number" ? `${a.hubLat.toFixed(4)}, ${a.hubLng.toFixed(4)}` : "-"}
                   </td>
                   <td>
                     <button
                       type="button"
+                      className="btn sm"
                       disabled={busy}
                       onClick={() => {
                         setApproveId(a.id);
@@ -181,9 +191,7 @@ export default function AgreementsPanel() {
               ))}
               {!pending.length ? (
                 <tr>
-                  <td colSpan={7} className="muted" style={{ paddingTop: 10 }}>
-                    Pending yok.
-                  </td>
+                  <td colSpan={7} className="muted">Pending yok.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -191,19 +199,18 @@ export default function AgreementsPanel() {
         </div>
 
         {approveTarget ? (
-          <div style={{ marginTop: 12, borderTop: "1px dashed #ddd", paddingTop: 12 }}>
-            <div style={{ fontWeight: 800 }}>Approve Agreement #{approveTarget.id}</div>
+          <div className="card" style={{ marginTop: 12 }}>
+            <div style={{ fontWeight: 900 }}>Approve Agreement #{approveTarget.id}</div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-              <label className="muted">
-                Vehicle
+            <div className="fieldRow" style={{ marginTop: 12 }}>
+              <div className="field">
+                <div className="muted">Vehicle</div>
                 <select
                   value={selVehicle}
                   onChange={(e) => {
                     setSelVehicle(e.target.value);
                     setConflict(null);
                   }}
-                  style={{ width: "100%" }}
                 >
                   <option value="">Seç</option>
                   {vehicles.map((v) => (
@@ -212,17 +219,16 @@ export default function AgreementsPanel() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
 
-              <label className="muted">
-                Driver
+              <div className="field">
+                <div className="muted">Driver</div>
                 <select
                   value={selDriver}
                   onChange={(e) => {
                     setSelDriver(e.target.value);
                     setConflict(null);
                   }}
-                  style={{ width: "100%" }}
                 >
                   <option value="">Seç</option>
                   {drivers.map((d) => (
@@ -231,14 +237,24 @@ export default function AgreementsPanel() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
             </div>
 
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <button type="button" disabled={busy} onClick={approve}>
+            <div className="actionsRow" style={{ marginTop: 12 }}>
+              <button type="button" className="btn sm primary" disabled={busy} onClick={approve}>
                 {busy ? "Onaylanıyor..." : "Onayla"}
               </button>
-              <button type="button" disabled={busy} onClick={() => setApproveId(null)}>
+              <button
+                type="button"
+                className="btn sm ghost"
+                disabled={busy}
+                onClick={() => {
+                  setApproveId(null);
+                  setSelVehicle("");
+                  setSelDriver("");
+                  setConflict(null);
+                }}
+              >
                 Vazgeç
               </button>
             </div>
@@ -248,43 +264,46 @@ export default function AgreementsPanel() {
         ) : null}
       </div>
 
-      {/* ✅ Approved/Active list */}
-      <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ fontWeight: 800 }}>Liste (APPROVED/ACTIVE/DONE/CANCELLED/REJECTED)</div>
-          <button type="button" disabled={busy} onClick={loadAll}>Yenile</button>
+      <div className="card">
+        <div className="topbar" style={{ marginBottom: 10 }}>
+          <div style={{ fontWeight: 900 }}>Diğer Kayıtlar</div>
+          <div className="muted">APPROVED / ACTIVE / DONE / CANCELLED...</div>
         </div>
 
-        <div style={{ marginTop: 10, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="tableWrap">
+          <table className="tbl">
             <thead>
-              <tr className="muted">
-                <th align="left">ID</th>
-                <th align="left">Status</th>
-                <th align="left">Date</th>
-                <th align="left">Time</th>
-                <th align="left">Günler</th>
-                <th align="left">V/D</th>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Days</th>
+                <th>Dir/Pat</th>
+                <th>Vehicle</th>
+                <th>Driver</th>
               </tr>
             </thead>
             <tbody>
               {others.map((a) => (
-                <tr key={a.id} style={{ borderTop: "1px solid #eee" }}>
+                <tr key={a.id}>
                   <td>{a.id}</td>
-                  <td className="muted">{String(a.status || "").toUpperCase()}</td>
-                  <td className="muted">{String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}</td>
+                  <td>{pill(a.status)}</td>
                   <td className="muted">
-                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)}{a.endMin < a.startMin ? " 🌙" : ""}
+                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}
+                  </td>
+                  <td className="muted">
+                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
                   </td>
                   <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
-                  <td className="muted">v:{a.vehicleId ?? "-"} / d:{a.driverId ?? "-"}</td>
+                  <td className="muted">{String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}</td>
+                  <td className="muted">{a.vehicle?.plate ?? a.vehicleId ?? "-"}</td>
+                  <td className="muted">{a.driver?.fullName ?? a.driverId ?? "-"}</td>
                 </tr>
               ))}
               {!others.length ? (
                 <tr>
-                  <td colSpan={6} className="muted" style={{ paddingTop: 10 }}>
-                    Kayıt yok.
-                  </td>
+                  <td colSpan={8} className="muted">Kayıt yok.</td>
                 </tr>
               ) : null}
             </tbody>

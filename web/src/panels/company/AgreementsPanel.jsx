@@ -89,19 +89,7 @@ function StatusPill({ status }) {
       : s;
 
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "2px 8px",
-        borderRadius: 999,
-        border: "1px solid #ddd",
-        fontSize: 12,
-        whiteSpace: "nowrap",
-      }}
-      title={s}
-    >
+    <span className="pill" data-status={s} title={s}>
       {label}
     </span>
   );
@@ -341,7 +329,7 @@ export default function AgreementsPanel() {
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>Agreements (Company)</h2>
+        <h2 style={{ margin: 0 }}>Sözleşmeler (Company)</h2>
         <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <label className="muted">
             Durum
@@ -571,7 +559,7 @@ export default function AgreementsPanel() {
       </div>
 
       {/* List */}
-      <div className="card" style={{ overflowX: "auto" }}>
+      <div className="tableWrap">
         <table className="tbl" style={{ minWidth: 980 }}>
           <thead>
             <tr>

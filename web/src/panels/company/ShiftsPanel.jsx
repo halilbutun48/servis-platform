@@ -1,5 +1,5 @@
 // web/src/panels/company/ShiftsPanel.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -22,6 +22,29 @@ function AgreementBadge({ agreementId }) {
     >
       Agreement #{id}
     </span>
+  );
+}
+
+function AccordionCard({ title, subtitle, count, open, onToggle, innerRef, children }) {
+  return (
+    <div className="card" ref={innerRef}>
+      <div className="accHeader">
+        <div>
+          <div className="accTitleRow">
+            <div className="accTitle">{title}</div>
+            <span className="accCount">{count}</span>
+          </div>
+          {subtitle ? <div className="muted" style={{ marginTop: 4 }}>{subtitle}</div> : null}
+        </div>
+
+        <button type="button" className="btn sm ghost" onClick={onToggle} aria-expanded={open}>
+          <span className="accChevron">{open ? "▾" : "▸"}</span>
+          {open ? "Kapat" : "Aç"}
+        </button>
+      </div>
+
+      {open ? <div className="accBody">{children}</div> : null}
+    </div>
   );
 }
 
@@ -135,6 +158,44 @@ export default function CompanyShiftsPanel() {
   const listSectionRef = useRef(null);
   const marketSearchRef = useRef(null);
 
+  // Premium UX: accordion + satır detay (özet / detay aç-kapat)
+  const LS_ACC = "company:shifts:accordion";
+  const [acc, setAcc] = useState({ market: true, pending: true, list: true });
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_ACC);
+      if (raw) {
+        const j = JSON.parse(raw);
+        if (j && typeof j === "object") {
+          setAcc((p) => ({ ...p, ...j }));
+        }
+      }
+    } catch {}
+  }, []);
+  function setAccSafe(patch) {
+    setAcc((prev) => {
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem(LS_ACC, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }
+  function toggleAcc(key) {
+    setAccSafe({ [key]: !acc[key] });
+  }
+
+  const [pendingRowOpen, setPendingRowOpen] = useState({});
+  const [finalRowOpen, setFinalRowOpen] = useState({});
+  function togglePendingRow(id) {
+    const sid = Number(id);
+    setPendingRowOpen((p) => ({ ...p, [sid]: !p[sid] }));
+  }
+  function toggleFinalRow(id) {
+    const sid = Number(id);
+    setFinalRowOpen((p) => ({ ...p, [sid]: !p[sid] }));
+  }
+
   // M34 Step-6: Plan Builder → Bekleyen Talepler’e filtreli geçiş
   useEffect(() => {
     const onFocus = (ev) => {
@@ -144,12 +205,14 @@ export default function CompanyShiftsPanel() {
 
       const section = String(d.section || "market");
       if (section === "pending") {
+        setAccSafe({ pending: true });
         setPendingFocusIds(ids);
         setPendingQ("");
         setTimeout(() => {
           try { pendingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
         }, 50);
       } else {
+        setAccSafe({ market: true });
         setMarketFocusIds(ids);
         setMarketQ("");
         setTimeout(() => {
@@ -167,6 +230,7 @@ export default function CompanyShiftsPanel() {
 
   function focusMarketById(id) {
     if (!id) return;
+    setAccSafe({ market: true });
     setMarketQ(String(id));
     setTimeout(() => {
       try {
@@ -1400,91 +1464,56 @@ function usePlanDraftToRequest(draft) {
         </div>
       </div>
 
-      {/* BEKLEYEN */}
-      <div className="card" ref={pendingSectionRef}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div>
-            <h3 style={{ margin: 0 }}>Bekleyen Talepler</h3>
-            <div className="muted">Pazarlık/karar tamamlanmadan “Liste”ye düşmez.</div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      {/* MARKET */}
+      <AccordionCard
+        title="Market"
+        subtitle="Room seçilmemiş talepler. Teklifi birden fazla room’a gönder."
+        count={marketItems.length}
+        open={Boolean(acc.market)}
+        onToggle={() => toggleAcc("market")}
+        innerRef={marketSectionRef}
+      >
+        <div className="toolbar" style={{ justifyContent: "space-between" }}>
+          <div className="toolbar">
             <input
-              placeholder="Ara (id/status/note/room)"
-              value={pendingQ}
-              onChange={(e) => setPendingQ(e.target.value)}
-              style={{ minWidth: 240 }}
+              ref={marketSearchRef}
+              placeholder="Ara (id/status)"
+              value={marketQ}
+              onChange={(e) => setMarketQ(e.target.value)}
+              style={{ minWidth: 220 }}
             />
-            {pendingFocusIds.length ? (
-              <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <span>Filtre: {(pendingFocusIds || []).map((id) => "#" + id).join(" ")}</span>
-                <button type="button" className="secondary" onClick={() => setPendingFocusIds([])} disabled={busy}>Filtreyi temizle</button>
-              </div>
-            ) : null}
-            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={pendingOnlyRoomOffer}
-                onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)}
-              />
-              Sadece Room teklifi olanlar
-            </label>
-            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={onlyAgreement}
-                onChange={(e) => setOnlyAgreement(e.target.checked)}
-              />
-              Sadece Agreement shiftleri
-            </label>
             <button
               type="button"
+              className="btn sm"
               onClick={() => {
-                setPendingQ("");
-                setPendingOnlyRoomOffer(false);
-                setOnlyAgreement(false);
+                setMarketQ("");
+                setMarketFocusIds([]);
               }}
             >
               Temizle
             </button>
           </div>
+
+          {marketFocusIds.length ? (
+            <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span>Filtre: {(marketFocusIds || []).map((id) => "#" + id).join(" ")}</span>
+              <button type="button" className="secondary" onClick={() => setMarketFocusIds([])} disabled={busy}>
+                Filtreyi temizle
+              </button>
+            </div>
+          ) : null}
         </div>
 
-        {/* ✅ M24: Market shifts (room seçilmemiş) */}
         {marketItems.length ? (
-          <div className="card" style={{ marginTop: 12 }}>
-            <div className="row" ref={marketSectionRef} style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>Market Shifts</div>
-                <div className="muted">Room seçilmemiş talepler. Teklifi birden fazla room’a gönder.</div>
-              </div>
-              <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-                <input
-                  ref={marketSearchRef}
-                  placeholder="Ara (id/status)"
-                  value={marketQ}
-                  onChange={(e) => setMarketQ(e.target.value)}
-                  style={{ minWidth: 220 }}
-                />
-                {marketFocusIds.length ? (
-                  <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <span>Filtre: {(marketFocusIds || []).map((id) => "#" + id).join(" ")}</span>
-                    <button type="button" className="secondary" onClick={() => setMarketFocusIds([])} disabled={busy}>
-                      Filtreyi temizle
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <table className="tbl" style={{ marginTop: 10 }}>
+          <div className="tableWrap" style={{ marginTop: 10 }}>
+            <table className="tbl">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Status</th>
                   <th>Start</th>
                   <th>End</th>
-                  <th>Offers</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1495,16 +1524,18 @@ function usePlanDraftToRequest(draft) {
                       <AgreementBadge agreementId={s.agreementId} />
                     </td>
                     <td>
-                      <span className="pill" data-status={s.status}>{s.status}</span>
+                      <span className="pill" data-status={s.status}>
+                        {s.status}
+                      </span>
                     </td>
                     <td className="muted">{fmtTR(s.startAt)}</td>
                     <td className="muted">{fmtTR(s.endAt)}</td>
                     <td>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button type="button" disabled={busy} onClick={() => openOfferModalForShift(s.id)}>
+                      <div className="toolbar">
+                        <button type="button" className="btn sm primary" disabled={busy} onClick={() => openOfferModalForShift(s.id)}>
                           Teklif Gönder
                         </button>
-                        <button type="button" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>
+                        <button type="button" className="btn sm" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>
                           Teklifler
                         </button>
                       </div>
@@ -1514,144 +1545,219 @@ function usePlanDraftToRequest(draft) {
               </tbody>
             </table>
           </div>
-        ) : null}
-
-        {pendingItems.length ? (
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Room</th>
-                <th>Room Teklifi (R→C)</th>
-                <th>Company Teklifi (C→R)</th>
-                <th>Karşı Teklif</th>
-                <th>İptal</th>
-                <th>Start</th>
-                <th>End</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingItems.map((s) => {
-                const r = roomsById.get(Number(s.roomId));
-                const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(s.status));
-
-                const sid = Number(s.id);
-                const isOpen = Boolean(offerOpen[sid]);
-                const form = offerSel[sid] || {};
-                const roomVehicles = vehiclesForShiftRoom(s);
-
-                return (
-                  <tr key={s.id}>
-                    <td>
-                      {s.id}
-                      <AgreementBadge agreementId={s.agreementId} />
-                    </td>
-                    <td>
-                      <span className="pill" data-status={s.status}>
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
-
-                    <td>{renderRoomOfferSummary(s, canNegotiate)}</td>
-                    <td>{renderCompanyOfferSummary(s)}</td>
-
-                    <td>
-                      <button type="button" disabled={busy || !canNegotiate} onClick={() => toggleOffer(sid)}>
-                        {isOpen ? "Kapat" : "Karşı Teklif"}
-                      </button>
-
-                      {isOpen ? (
-                        <div className="card" style={{ marginTop: 8 }}>
-                          <div className="muted" style={{ marginBottom: 6 }}>
-                            Company teklifini güncelle (C→R)
-                          </div>
-
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <label className="muted">
-                              <div style={{ marginBottom: 4 }}>
-                                <b>Teklif Araç (opsiyonel)</b>
-                              </div>
-                              <select
-                                value={form.companyOfferVehicleId || ""}
-                                onChange={(e) => setOfferForShift(sid, { companyOfferVehicleId: e.target.value })}
-                                disabled={busy}
-                              >
-                                <option value="">— teklif yok —</option>
-                                {roomVehicles.map((v) => (
-                                  <option key={v.id} value={String(v.id)}>
-                                    {v.plate} • {vehicleMetaLine(v)}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <label className="muted">
-                              <div style={{ marginBottom: 4 }}>
-                                <b>Teklif Tutar (₺) (opsiyonel)</b>
-                              </div>
-                              <input
-                                value={form.companyOfferAmount ?? ""}
-                                onChange={(e) => setOfferForShift(sid, { companyOfferAmount: e.target.value })}
-                                placeholder="örn. 25000"
-                                disabled={busy}
-                              />
-                            </label>
-
-                            <label className="muted">
-                              <div style={{ marginBottom: 4 }}>
-                                <b>Teklif Notu (opsiyonel)</b>
-                              </div>
-                              <input
-                                value={form.companyOfferNote ?? ""}
-                                onChange={(e) => setOfferForShift(sid, { companyOfferNote: e.target.value })}
-                                placeholder="örn. Bu araçla şu şartla…"
-                                disabled={busy}
-                              />
-                            </label>
-
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <button type="button" disabled={busy} onClick={() => sendCounterOffer(s)}>
-                                {busy ? "..." : "Gönder"}
-                              </button>
-
-                              <button type="button" disabled={busy} onClick={() => clearCounterOffer(s)}>
-                                Teklifi Kaldır
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                    </td>
-
-                    <td>
-                      <button type="button" disabled={busy || !canNegotiate} onClick={() => cancelMyRequest(s)}>
-                        Talebi İptal Et
-                      </button>
-                    </td>
-
-                    <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                    <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         ) : (
-          <div className="muted">Bekleyen talep yok.</div>
+          <div className="muted" style={{ marginTop: 10 }}>Market kaydı yok.</div>
         )}
-      </div>
+      </AccordionCard>
 
-      {/* LİSTE */}
-      <div className="card" ref={listSectionRef}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div>
-            <h3 style={{ margin: 0 }}>Liste</h3>
-            <div className="muted">Sadece APPROVED/ACTIVE/DONE/REJECTED burada görünür.</div>
+      {/* BEKLEYEN */}
+      <AccordionCard
+        title="Bekleyen Talepler"
+        subtitle="Pazarlık/karar tamamlanmadan “Liste”ye düşmez."
+        count={pendingItems.length}
+        open={Boolean(acc.pending)}
+        onToggle={() => toggleAcc("pending")}
+        innerRef={pendingSectionRef}
+      >
+        <div className="toolbar" style={{ justifyContent: "space-between" }}>
+          <div className="toolbar">
+            <input
+              placeholder="Ara (id/status/note/room)"
+              value={pendingQ}
+              onChange={(e) => setPendingQ(e.target.value)}
+              style={{ minWidth: 240 }}
+            />
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input type="checkbox" checked={pendingOnlyRoomOffer} onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)} />
+              Sadece Room teklifi
+            </label>
+            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input type="checkbox" checked={onlyAgreement} onChange={(e) => setOnlyAgreement(e.target.checked)} />
+              Sadece Agreement
+            </label>
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => {
+                setPendingQ("");
+                setPendingOnlyRoomOffer(false);
+                setPendingFocusIds([]);
+              }}
+            >
+              Temizle
+            </button>
           </div>
 
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          {pendingFocusIds.length ? (
+            <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span>Filtre: {(pendingFocusIds || []).map((id) => "#" + id).join(" ")}</span>
+              <button type="button" className="secondary" onClick={() => setPendingFocusIds([])} disabled={busy}>
+                Filtreyi temizle
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        {pendingItems.length ? (
+          <div className="tableWrap" style={{ marginTop: 10 }}>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Room</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingItems.map((s) => {
+                  const r = roomsById.get(Number(s.roomId));
+                  const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(s.status));
+
+                  const sid = Number(s.id);
+                  const isRowOpen = Boolean(pendingRowOpen[sid]);
+                  const isCounterOpen = Boolean(offerOpen[sid]);
+                  const form = offerSel[sid] || {};
+                  const roomVehicles = vehiclesForShiftRoom(s);
+
+                  return (
+                    <Fragment key={s.id}>
+                      <tr>
+                        <td>
+                          <button type="button" className="btn sm ghost" onClick={() => togglePendingRow(sid)} title="Detay">
+                            {isRowOpen ? "▾" : "▸"}
+                          </button>
+                          <span style={{ marginLeft: 8 }}>{s.id}</span>
+                          <AgreementBadge agreementId={s.agreementId} />
+                        </td>
+                        <td>
+                          <span className="pill" data-status={s.status}>{s.status}</span>
+                        </td>
+                        <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
+                        <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
+                        <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+                        <td>
+                          <div className="toolbar">
+                            <button
+                              type="button"
+                              className="btn sm"
+                              onClick={() => togglePendingRow(sid)}
+                            >
+                              {isRowOpen ? "Detay Kapat" : "Detay"}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn sm"
+                              disabled={busy || !canNegotiate}
+                              onClick={() => {
+                                if (!isRowOpen) togglePendingRow(sid);
+                                toggleOffer(sid);
+                              }}
+                              title="Company teklifini güncelle (C→R)"
+                            >
+                              {isCounterOpen ? "Karşı Teklif Kapat" : "Karşı Teklif"}
+                            </button>
+                            <button type="button" className="btn sm danger" disabled={busy || !canNegotiate} onClick={() => cancelMyRequest(s)}>
+                              İptal
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {isRowOpen ? (
+                        <tr>
+                          <td colSpan={6}>
+                            <div className="detailGrid">
+                              <div className="detailCol">
+                                <div className="detailTitle">Room Teklifi (R→C)</div>
+                                {renderRoomOfferSummary(s, canNegotiate)}
+                              </div>
+                              <div className="detailCol">
+                                <div className="detailTitle">Company Teklifi (C→R)</div>
+                                {renderCompanyOfferSummary(s)}
+                              </div>
+                            </div>
+
+                            {isCounterOpen ? (
+                              <div className="card" style={{ marginTop: 10 }}>
+                                <div className="muted" style={{ marginBottom: 8 }}>
+                                  Company teklifini güncelle (C→R)
+                                </div>
+                                <div className="fieldRow">
+                                  <label className="field">
+                                    <span className="muted"><b>Teklif Araç (opsiyonel)</b></span>
+                                    <select
+                                      value={form.companyOfferVehicleId || ""}
+                                      onChange={(e) => setOfferForShift(sid, { companyOfferVehicleId: e.target.value })}
+                                      disabled={busy}
+                                    >
+                                      <option value="">— teklif yok —</option>
+                                      {roomVehicles.map((v) => (
+                                        <option key={v.id} value={String(v.id)}>
+                                          {v.plate} • {vehicleMetaLine(v)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+
+                                  <label className="field">
+                                    <span className="muted"><b>Teklif Tutar (₺) (opsiyonel)</b></span>
+                                    <input
+                                      value={form.companyOfferAmount ?? ""}
+                                      onChange={(e) => setOfferForShift(sid, { companyOfferAmount: e.target.value })}
+                                      placeholder="örn. 25000"
+                                      disabled={busy}
+                                    />
+                                  </label>
+                                </div>
+
+                                <label className="field" style={{ marginTop: 10 }}>
+                                  <span className="muted"><b>Teklif Notu (opsiyonel)</b></span>
+                                  <input
+                                    value={form.companyOfferNote ?? ""}
+                                    onChange={(e) => setOfferForShift(sid, { companyOfferNote: e.target.value })}
+                                    placeholder="örn. Bu araçla şu şartla…"
+                                    disabled={busy}
+                                  />
+                                </label>
+
+                                <div className="actionsRow" style={{ marginTop: 10 }}>
+                                  <button type="button" className="btn primary" disabled={busy} onClick={() => sendCounterOffer(s)}>
+                                    {busy ? "..." : "Gönder"}
+                                  </button>
+                                  <button type="button" className="btn" disabled={busy} onClick={() => clearCounterOffer(s)}>
+                                    Teklifi Kaldır
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="muted" style={{ marginTop: 10 }}>Bekleyen talep yok.</div>
+        )}
+      </AccordionCard>
+
+      {/* LİSTE */}
+      <AccordionCard
+        title="Liste"
+        subtitle="Sadece APPROVED/ACTIVE/DONE/REJECTED burada görünür."
+        count={finalItems.length}
+        open={Boolean(acc.list)}
+        onToggle={() => toggleAcc("list")}
+        innerRef={listSectionRef}
+      >
+        <div className="toolbar" style={{ justifyContent: "space-between" }}>
+          <div className="toolbar">
             <select value={finalStatus} onChange={(e) => setFinalStatus(e.target.value)}>
               <option value="ALL">Hepsi</option>
               <option value="OPEN">Açık (APPROVED+ACTIVE)</option>
@@ -1667,19 +1773,15 @@ function usePlanDraftToRequest(draft) {
               style={{ minWidth: 240 }}
             />
             <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={onlyAgreement}
-                onChange={(e) => setOnlyAgreement(e.target.checked)}
-              />
-              Sadece Agreement shiftleri
+              <input type="checkbox" checked={onlyAgreement} onChange={(e) => setOnlyAgreement(e.target.checked)} />
+              Sadece Agreement
             </label>
             <button
               type="button"
+              className="btn sm"
               onClick={() => {
                 setFinalStatus("ALL");
                 setFinalQ("");
-                setOnlyAgreement(false);
               }}
             >
               Temizle
@@ -1688,51 +1790,76 @@ function usePlanDraftToRequest(draft) {
         </div>
 
         {finalItems.length ? (
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Room</th>
-                <th>Room Teklifi (R→C)</th>
-                <th>Company Teklifi (C→R)</th>
-                <th>Assigned Vehicle</th>
-                <th>Driver</th>
-                <th>Start</th>
-                <th>End</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {finalItems.map((s) => {
-                const r = roomsById.get(Number(s.roomId));
-                return (
-                  <tr key={s.id}>
-                    <td>
-                      {s.id}
-                      <AgreementBadge agreementId={s.agreementId} />
-                    </td>
-                    <td>
-                      <span className="pill" data-status={s.status}>
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
-                    <td>{renderRoomOfferSummary(s, false)}</td>
-                    <td>{renderCompanyOfferSummary(s)}</td>
-                    <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
-                    <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
-                    <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                    <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="tableWrap" style={{ marginTop: 10 }}>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Room</th>
+                  <th>Atama</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Detay</th>
+                </tr>
+              </thead>
+              <tbody>
+                {finalItems.map((s) => {
+                  const r = roomsById.get(Number(s.roomId));
+                  const sid = Number(s.id);
+                  const isOpen = Boolean(finalRowOpen[sid]);
+                  const plate = s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-");
+                  const drv = s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-");
+                  return (
+                    <Fragment key={s.id}>
+                      <tr>
+                        <td>
+                          <button type="button" className="btn sm ghost" onClick={() => toggleFinalRow(sid)} title="Detay">
+                            {isOpen ? "▾" : "▸"}
+                          </button>
+                          <span style={{ marginLeft: 8 }}>{s.id}</span>
+                          <AgreementBadge agreementId={s.agreementId} />
+                        </td>
+                        <td><span className="pill" data-status={s.status}>{s.status}</span></td>
+                        <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
+                        <td className="muted">
+                          <div style={{ fontWeight: 800 }}>{plate}</div>
+                          <div className="muted">{drv}</div>
+                        </td>
+                        <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
+                        <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+                        <td>
+                          <button type="button" className="btn sm" onClick={() => toggleFinalRow(sid)}>
+                            {isOpen ? "Kapat" : "Aç"}
+                          </button>
+                        </td>
+                      </tr>
+                      {isOpen ? (
+                        <tr>
+                          <td colSpan={7}>
+                            <div className="detailGrid">
+                              <div className="detailCol">
+                                <div className="detailTitle">Room Teklifi (R→C)</div>
+                                {renderRoomOfferSummary(s, false)}
+                              </div>
+                              <div className="detailCol">
+                                <div className="detailTitle">Company Teklifi (C→R)</div>
+                                {renderCompanyOfferSummary(s)}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <div className="muted">Henüz “Liste”ye düşen kayıt yok.</div>
+          <div className="muted" style={{ marginTop: 10 }}>Henüz “Liste”ye düşen kayıt yok.</div>
         )}
-      </div>
+      </AccordionCard>
 
       {/* ✅ M24: Offer modal */}
       {offerModal.open ? (

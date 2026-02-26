@@ -6,6 +6,9 @@ export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
   const role = me?.role || "-";
 
+  // Map pages should be fluid (full width). Everything else is centered for readability.
+  const isFluid = String(path || "").includes("/map");
+
   return (
     <div className="shell">
       <NavDock role={role} path={path} />
@@ -13,11 +16,17 @@ export default function AppShell({ path, children }) {
         <div className="shellTop">
           <div>
             <div className="title">Personel-Servis V1</div>
-            <div className="muted">{me?.email || "-"} • {role}</div>
+            <div className="muted">
+              {me?.email || "-"} • {role}
+            </div>
           </div>
-          <button onClick={logout}>Çıkış</button>
+          <button className="btn sm" onClick={logout}>
+            Çıkış
+          </button>
         </div>
-        <div className="shellContent">{children}</div>
+        <div className="shellContent">
+          <div className={isFluid ? "page page--fluid" : "page"}>{children}</div>
+        </div>
       </div>
     </div>
   );

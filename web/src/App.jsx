@@ -178,7 +178,7 @@ export default function App() {
   if (!view.layout) return view.node;
 
   return (
-    <AppShell>
+    <AppShell path={path}>
       <ErrorBoundary>{view.node}</ErrorBoundary>
     </AppShell>
   );
