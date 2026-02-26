@@ -127,9 +127,12 @@ export default function CompanyShiftsPanel() {
 
   // Pending filtreler
   const [pendingQ, setPendingQ] = useState("");
+  // Hızlı filtre (Bugün / Yarın) — Istanbul local YYYY-MM-DD
+  const [dayYmd, setDayYmd] = useState("");
   const [applyToast, setApplyToast] = useState(null); // { ids:number[] }
   const marketSectionRef = useRef(null);
   const pendingSectionRef = useRef(null);
+  const listSectionRef = useRef(null);
   const marketSearchRef = useRef(null);
 
   // M34 Step-6: Plan Builder → Bekleyen Talepler’e filtreli geçiş
@@ -193,6 +196,21 @@ export default function CompanyShiftsPanel() {
       minute: "2-digit",
     });
   };
+
+  function shiftStartYmdIstanbul(iso) {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+    } catch {
+      return "";
+    }
+  }
+
+  function isSameDayIstanbul(iso, ymd) {
+    if (!ymd) return true;
+    const d = shiftStartYmdIstanbul(iso);
+    return d && d === ymd;
+  }
 
   // datetime-local (Istanbul local) -> UTC ISO
   const IST_OFFSET_MIN = 180;
@@ -1005,6 +1023,7 @@ function usePlanDraftToRequest(draft) {
     const pendingFocusSet = new Set((pendingFocusIds || []).map(Number));
     return pendingItemsRaw
         .filter((s) => (!onlyAgreement ? true : Number(s.agreementId) > 0))
+        .filter((s) => (!dayYmd ? true : isSameDayIstanbul(s.startAt, dayYmd)))
         .filter((s) => (pendingFocusSet.size ? pendingFocusSet.has(Number(s.id)) : true))
         .filter((s) => {
         if (!pendingOnlyRoomOffer) return true;
@@ -1024,7 +1043,7 @@ function usePlanDraftToRequest(draft) {
           .toLowerCase();
         return hay.includes(q);
       });
-  }, [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement, pendingFocusIds]);
+  }, [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement, pendingFocusIds, dayYmd]);
 
   // ✅ M24: Market filtre
   const marketItems = useMemo(() => {
@@ -1032,20 +1051,27 @@ function usePlanDraftToRequest(draft) {
     const marketFocusSet = new Set((marketFocusIds || []).map(Number));
     return (marketItemsRaw || [])
       .filter((s) => (onlyAgreement ? Number(s.agreementId) > 0 : true))
+      .filter((s) => (!dayYmd ? true : isSameDayIstanbul(s.startAt, dayYmd)))
       .filter((s) => (marketFocusSet.size ? marketFocusSet.has(Number(s.id)) : true))
       .filter((s) => {
         if (!q) return true;
         const hay = [s.id, s.status, s.companyId].filter(Boolean).join(" ").toLowerCase();
         return hay.includes(q);
       });
-  }, [marketItemsRaw, marketQ, onlyAgreement, marketFocusIds]);
+  }, [marketItemsRaw, marketQ, onlyAgreement, marketFocusIds, dayYmd]);
 
   // Final filtre uygula
   const finalItems = useMemo(() => {
     const q = String(finalQ || "").trim().toLowerCase();
     return finalItemsRaw
       .filter((s) => (!onlyAgreement ? true : Number(s.agreementId) > 0))
-      .filter((s) => (finalStatus === "ALL" ? true : String(s.status) === finalStatus))
+      .filter((s) => (!dayYmd ? true : isSameDayIstanbul(s.startAt, dayYmd)))
+      .filter((s) => {
+        const st = String(s.status);
+        if (finalStatus === "ALL") return true;
+        if (finalStatus === "OPEN") return st === "APPROVED" || st === "ACTIVE";
+        return st === finalStatus;
+      })
       .filter((s) => {
         if (!q) return true;
         const hay = [s.id, s.status, s.roomId, s.companyId, s.roomOfferNote, s.companyOfferNote, s.vehicle?.plate, s.driver?.fullName]
@@ -1054,7 +1080,7 @@ function usePlanDraftToRequest(draft) {
           .toLowerCase();
         return hay.includes(q);
       });
-  }, [finalItemsRaw, finalQ, finalStatus, onlyAgreement]);
+  }, [finalItemsRaw, finalQ, finalStatus, onlyAgreement, dayYmd]);
 
   const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
 
@@ -1291,6 +1317,88 @@ function usePlanDraftToRequest(draft) {
       {topTab === "tools" ? (
         <ShiftPeopleTab token={token} me={me} shifts={items} roomsById={roomsById} />
       ) : null}
+
+      {/* Hızlı Filtre Presetleri (sticky) */}
+      <div
+        className="card"
+        style={{
+          position: "sticky",
+          top: 74,
+          zIndex: 4,
+          background: "rgba(18,26,42,.92)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 800 }}>Hızlı Filtre</div>
+            <div className="muted" style={{ marginTop: 4 }}>
+              Gün: <b>{dayYmd || "Hepsi"}</b> • Liste: <b>{finalStatus === "ALL" ? "Hepsi" : finalStatus}</b>
+            </div>
+          </div>
+
+          <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+            <input
+              type="date"
+              value={dayYmd}
+              onChange={(e) => setDayYmd(e.target.value)}
+              title="Gün filtresi"
+              style={{ padding: "8px 10px" }}
+            />
+
+            <button type="button" className="btn sm" onClick={() => setDayYmd(todayYmdLocal())}>
+              Bugün
+            </button>
+            <button type="button" className="btn sm" onClick={() => setDayYmd(addDaysYmd(todayYmdLocal(), 1))}>
+              Yarın
+            </button>
+
+            <span className="muted" style={{ margin: "0 4px" }}>|</span>
+
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => {
+                setFinalStatus("OPEN");
+                setTimeout(() => {
+                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+                }, 0);
+              }}
+              title="Liste: APPROVED + ACTIVE"
+            >
+              Açık
+            </button>
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => {
+                setFinalStatus("ACTIVE");
+                setTimeout(() => {
+                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+                }, 0);
+              }}
+            >
+              Active
+            </button>
+
+            <button
+              type="button"
+              className="btn sm"
+              onClick={() => {
+                setDayYmd("");
+                setFinalStatus("ALL");
+                setFinalQ("");
+                setPendingQ("");
+                setMarketQ("");
+                setPendingOnlyRoomOffer(false);
+                setOnlyAgreement(false);
+              }}
+            >
+              Temizle
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* BEKLEYEN */}
       <div className="card" ref={pendingSectionRef}>
@@ -1536,7 +1644,7 @@ function usePlanDraftToRequest(draft) {
       </div>
 
       {/* LİSTE */}
-      <div className="card">
+      <div className="card" ref={listSectionRef}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <div>
             <h3 style={{ margin: 0 }}>Liste</h3>
@@ -1546,6 +1654,7 @@ function usePlanDraftToRequest(draft) {
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <select value={finalStatus} onChange={(e) => setFinalStatus(e.target.value)}>
               <option value="ALL">Hepsi</option>
+              <option value="OPEN">Açık (APPROVED+ACTIVE)</option>
               <option value="APPROVED">APPROVED</option>
               <option value="ACTIVE">ACTIVE</option>
               <option value="DONE">DONE</option>

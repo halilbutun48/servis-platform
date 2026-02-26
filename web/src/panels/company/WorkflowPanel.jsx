@@ -48,20 +48,20 @@ function formatTRY(amount) {
   return new Intl.NumberFormat("tr-TR").format(n);
 }
 
-function Card({ title, desc, right, onClick }) {
+function KpiCard({ title, desc, right, onClick }) {
   return (
-    <div className="card" style={{ cursor: "pointer" }} onClick={onClick}>
-      <div className="row" style={{ justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <div style={{ fontWeight: 900, fontSize: 16 }}>{title}</div>
-          {desc ? (
-            <div className="muted" style={{ marginTop: 4 }}>
-              {desc}
-            </div>
-          ) : null}
-        </div>
-        {right != null ? <div style={{ fontWeight: 900, fontSize: 18 }}>{right}</div> : null}
-      </div>
+    <div
+      className="kpiCard"
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onClick?.();
+      }}
+    >
+      <div className="kpiLabel">{title}</div>
+      <div className="kpiValue">{right ?? "-"}</div>
+      {desc ? <div className="kpiDesc">{desc}</div> : null}
     </div>
   );
 }
@@ -77,7 +77,7 @@ function ChecklistRow({ done, title, desc, actionLabel, onAction }) {
         {desc ? <div className="muted" style={{ marginTop: 2 }}>{desc}</div> : null}
       </div>
       {actionLabel ? (
-        <button type="button" onClick={onAction} style={{ whiteSpace: "nowrap" }}>
+        <button type="button" className="btn sm" onClick={onAction} style={{ whiteSpace: "nowrap" }}>
           {actionLabel}
         </button>
       ) : null}
@@ -280,8 +280,8 @@ export default function WorkflowPanel() {
             {geoNeedsReview} personel konumu <b>NEEDS_REVIEW</b>. Planlama doğruluğu için önce düzeltmen önerilir.
           </div>
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => navigate("/company/georeview")}>Geo Review’e git</button>
-            <button type="button" onClick={loadStats}>Yenile</button>
+            <button type="button" className="btn" onClick={() => navigate("/company/georeview")}>Geo Review’e git</button>
+            <button type="button" className="btn" onClick={loadStats}>Yenile</button>
           </div>
         </div>
       ) : null}
@@ -292,12 +292,12 @@ export default function WorkflowPanel() {
         </div>
       ) : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginTop: 12 }}>
-        <Card title="Bugünkü Agreements" desc="Bugün planlanan vardiyalar" right={stats.todayAgreements} onClick={() => navigate("/company/agreements")} />
-        <Card title="Açık Teklifler" desc="OPEN + COUNTERED" right={openOffersCount} onClick={openOffers} />
-        <Card title="Market Shifts" desc="Room seçmeden talep aç" right={stats.marketShiftCount} onClick={() => navigate("/company/shifts")} />
-        <Card title="Geo Review" desc="Adres/konum sorunlarını düzelt" right={geoNeedsReview} onClick={() => navigate("/company/georeview")} />
-        <Card title="Bugünkü Shifts" desc="Operasyon (start/reached/complete)" right={stats.todayShiftCount} onClick={() => navigate("/company/shifts")} />
+      <div className="kpiGrid" style={{ marginTop: 12 }}>
+        <KpiCard title="Bugünkü Agreements" desc="Bugün planlanan vardiyalar" right={stats.todayAgreements} onClick={() => navigate("/company/agreements")} />
+        <KpiCard title="Açık Teklifler" desc="OPEN + COUNTERED" right={openOffersCount} onClick={openOffers} />
+        <KpiCard title="Market Shifts" desc="Room seçmeden talep aç" right={stats.marketShiftCount} onClick={() => navigate("/company/shifts")} />
+        <KpiCard title="Geo Review" desc="Adres/konum sorunlarını düzelt" right={geoNeedsReview} onClick={() => navigate("/company/georeview")} />
+        <KpiCard title="Bugünkü Shifts" desc="Operasyon (start/reached/complete)" right={stats.todayShiftCount} onClick={() => navigate("/company/shifts")} />
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
@@ -307,7 +307,7 @@ export default function WorkflowPanel() {
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <button type="button" onClick={() => setGuidedOpen(true)} disabled={!roomsSupported}>
+          <button type="button" className="btn primary" onClick={() => setGuidedOpen(true)} disabled={!roomsSupported}>
             Rehberi Başlat
           </button>
         </div>
@@ -365,15 +365,16 @@ export default function WorkflowPanel() {
 
       {/* ✅ M29-B: Company offers modal */}
       {offersModal.open ? (
-        <div className="card" style={{ border: "2px solid #ddd", marginTop: 12 }}>
+        <div className="modal-backdrop">
+          <div className="modal card">
           <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <div>
               <div style={{ fontWeight: 900 }}>Açık Teklifler</div>
               <div className="muted">Company’ye gelen/gönderilen market teklifleri (OPEN/COUNTERED).</div>
             </div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={() => loadCompanyOffers(offersModal.status)}>Yenile</button>
-              <button type="button" onClick={closeOffers}>Kapat</button>
+              <button type="button" className="btn" onClick={() => loadCompanyOffers(offersModal.status)}>Yenile</button>
+              <button type="button" className="btn" onClick={closeOffers}>Kapat</button>
             </div>
           </div>
 
@@ -433,7 +434,7 @@ export default function WorkflowPanel() {
                       </td>
                       <td className="muted">{fmtTR(o.updatedAt)}</td>
                       <td>
-                        <button type="button" onClick={() => goCompanyShift(o.shiftId)}>
+                        <button type="button" className="btn sm" onClick={() => goCompanyShift(o.shiftId)}>
                           Shift’e git
                         </button>
                       </td>
@@ -448,6 +449,7 @@ export default function WorkflowPanel() {
                 ) : null}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
       ) : null}

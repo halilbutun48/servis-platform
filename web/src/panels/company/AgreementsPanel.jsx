@@ -318,6 +318,13 @@ export default function AgreementsPanel() {
     }
   }
 
+  function extendByDays(a, days) {
+    const base = String(a?.endDate || "").slice(0, 10);
+    if (!isYmd(base)) return setErr("endDate yok/format hatalı");
+    const next = addDaysISO(base, Number(days || 0));
+    extendAgreement(a.id, String(next).trim());
+  }
+
   function askExtend(a) {
     const next = prompt("Yeni endDate (YYYY-MM-DD):", a.endDate?.slice(0, 10) || "");
     if (!next) return;
@@ -365,6 +372,10 @@ export default function AgreementsPanel() {
       </div>
 
       {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}
+
+      <div className="muted" style={{ marginTop: -4 }}>
+        Not: Market/Shift teklifinde “anlaşma” sağlamak Agreement oluşturmaz. Agreement’lar ayrı “sözleşme” kaydıdır.
+      </div>
 
       {/* ✅ M27: Preset ile hızlı oluştur (Advanced) */}
       <div className="card">
@@ -593,8 +604,17 @@ export default function AgreementsPanel() {
                     <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE"} onClick={() => cancelAgreement(a.id)}>
                       Cancel
                     </button>
+                    <button type="button" disabled={busy} onClick={() => extendByDays(a, 7)}>
+                      Uzat +7g
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => extendByDays(a, 30)}>
+                      Uzat +30g
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => extendByDays(a, 90)}>
+                      Uzat +90g
+                    </button>
                     <button type="button" disabled={busy} onClick={() => askExtend(a)}>
-                      Extend
+                      Tarih...
                     </button>
                   </div>
                 </td>

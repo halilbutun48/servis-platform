@@ -971,7 +971,7 @@ export default function RoomShiftsPanel() {
       <div className="card">
         <h3>Bekleyen Talepler</h3>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+        <div className="toolbarLeft" style={{ marginBottom: 10 }}>
           <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
             <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
             <option value="REQUESTED">REQUESTED</option>
@@ -996,6 +996,7 @@ export default function RoomShiftsPanel() {
 
           <button
             type="button"
+            className="btn sm"
             onClick={() => {
               setPendingQ("");
               setOnlyAgreement(false);
@@ -1073,6 +1074,7 @@ export default function RoomShiftsPanel() {
                       <div style={{ display: "grid", gap: 6 }}>
                         <button
                           type="button"
+                          className="btn sm"
                           disabled={busy}
                           onClick={() => openRoutePreview(s)}
                           title="Rota/Durakları haritada önizle"
@@ -1089,7 +1091,7 @@ export default function RoomShiftsPanel() {
                       <div style={{ display: "grid", gap: 6 }}>
                         <div>{renderCompanyOfferSummary(s)}</div>
 
-                        <button type="button" disabled={busy} onClick={() => toggleRoomOffer(sid)}>
+                        <button type="button" className="btn sm" disabled={busy} onClick={() => toggleRoomOffer(sid)}>
                           {offerIsOpen ? "Room Teklifi Kapat" : "Room Teklifi (opsiyonel) Aç"}
                         </button>
 
@@ -1169,10 +1171,10 @@ export default function RoomShiftsPanel() {
                               ) : null}
 
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                <button type="button" disabled={busy} onClick={() => sendRoomOffer(s)}>
+                                <button type="button" className="btn" disabled={busy} onClick={() => sendRoomOffer(s)}>
                                   {busy ? "..." : "Gönder"}
                                 </button>
-                                <button type="button" disabled={busy} onClick={() => clearRoomOffer(s)}>
+                                <button type="button" className="btn ghost" disabled={busy} onClick={() => clearRoomOffer(s)}>
                                   Teklifi Kaldır
                                 </button>
                               </div>
@@ -1278,7 +1280,7 @@ export default function RoomShiftsPanel() {
       <div className="card">
         <h3>Tüm Shifts</h3>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+        <div className="toolbarLeft" style={{ marginBottom: 10 }}>
           <select value={listStatus} onChange={(e) => setListStatus(e.target.value)}>
             <option value="OPEN">Açık</option>
             <option value="ALL">Hepsi</option>
@@ -1308,6 +1310,7 @@ export default function RoomShiftsPanel() {
 
           <button
             type="button"
+            className="btn sm"
             onClick={() => {
               setListQ("");
               setListStatus("OPEN");

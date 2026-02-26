@@ -215,7 +215,7 @@ export default function RoomOffersPanel() {
               style={{ minWidth: 240 }}
             />
           </div>
-          <button disabled={busy} onClick={load}>
+          <button className="btn" disabled={busy} onClick={load}>
             Yenile
           </button>
         </div>
@@ -243,12 +243,12 @@ export default function RoomOffersPanel() {
               <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 {pill(o.status)}
                 {pill(shift?.status)}
-                <button type="button" disabled={busy} onClick={() => goShift(o.shiftId)}>
+                <button type="button" className="btn sm" disabled={busy} onClick={() => goShift(o.shiftId)}>
                   Shift’e Git
                 </button>
 
                 {canQuickApprove ? (
-                  <button type="button" disabled={busy} onClick={() => openApprove(o)} title="Araç+sürücü seç → Onayla (+Start)">
+                  <button type="button" className="btn" disabled={busy} onClick={() => openApprove(o)} title="Araç+sürücü seç → Onayla (+Start)">
                     Hızlı Onayla
                   </button>
                 ) : null}
@@ -289,7 +289,7 @@ export default function RoomOffersPanel() {
                       placeholder="opsiyonel"
                     />
                   </div>
-                  <button disabled={busy} onClick={() => onCounter(o.id)}>
+                  <button className="btn" disabled={busy} onClick={() => onCounter(o.id)}>
                     Counter Gönder
                   </button>
                 </div>
@@ -301,7 +301,8 @@ export default function RoomOffersPanel() {
 
       {/* ✅ M30/M31: Quick approve (+ optional start) modal */}
       {approveModal.open ? (
-        <div className="card" style={{ border: "2px solid #ddd" }}>
+        <div className="modal-backdrop">
+          <div className="modal card">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontWeight: 900 }}>Shift #{approveModal.shiftId} — Onay</div>
@@ -309,7 +310,7 @@ export default function RoomOffersPanel() {
                 ACCEPTED teklif → bu shift artık senin. Araç + sürücü seçip <b>Onayla</b> veya <b>Onayla + Başlat</b>.
               </div>
             </div>
-            <button type="button" disabled={busy} onClick={() => setApproveModal((p) => ({ ...p, open: false }))}>
+            <button type="button" className="btn" disabled={busy} onClick={() => setApproveModal((p) => ({ ...p, open: false }))}>
               Kapat
             </button>
           </div>
@@ -348,13 +349,14 @@ export default function RoomOffersPanel() {
             </label>
 
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="button" disabled={busy} onClick={() => doApprove({ startAfter: false })}>
+              <button type="button" className="btn" disabled={busy} onClick={() => doApprove({ startAfter: false })}>
                 {busy ? "..." : "Onayla"}
               </button>
-              <button type="button" disabled={busy} onClick={() => doApprove({ startAfter: true })}>
+              <button type="button" className="btn primary" disabled={busy} onClick={() => doApprove({ startAfter: true })}>
                 {busy ? "..." : "Onayla + Başlat"}
               </button>
             </div>
+          </div>
           </div>
         </div>
       ) : null}

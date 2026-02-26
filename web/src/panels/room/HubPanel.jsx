@@ -42,6 +42,40 @@ export default function HubPanel() {
 
   useEffect(() => { load(); }, []);
 
+  async function myLocation() {
+    setErr(""); setMsg("");
+    if (!navigator?.geolocation) {
+      setErr("Tarayıcı konum özelliği yok.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (p) => resolve(p),
+          (e) => reject(e),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        );
+      });
+      const a = pos?.coords?.latitude;
+      const b = pos?.coords?.longitude;
+      if (typeof a !== "number" || typeof b !== "number") throw new Error("Konum okunamadı");
+      setLat(String(a));
+      setLng(String(b));
+      setMsg(`Konum alındı: ${a.toFixed(6)}, ${b.toFixed(6)}. Kaydet'e basarak kaydet.`);
+    } catch (e) {
+      const code = e?.code;
+      const m =
+        code === 1 ? "Konum izni reddedildi." :
+        code === 2 ? "Konum bulunamadı." :
+        code === 3 ? "Konum isteği zaman aşımına uğradı." :
+        (e?.message || String(e));
+      setErr(m);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function geocode() {
     setErr(""); setMsg("");
     const q = sanitizeAddress(addr);
@@ -102,8 +136,9 @@ export default function HubPanel() {
           </label>
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-          <button type="button" onClick={geocode} disabled={busy}>Konum Al (Adresten Bul)</button>
+        <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+          <button type="button" onClick={myLocation} disabled={busy}>Konumumu Al</button>
+          <button type="button" onClick={geocode} disabled={busy}>Adresten Bul</button>
           <button type="button" onClick={save} disabled={busy}>Kaydet</button>
           <button type="button" onClick={load} disabled={busy}>Yenile</button>
         </div>

@@ -35,6 +35,7 @@ export default function AgreementsPanel() {
   const [err, setErr] = useState("");
 
   const [pending, setPending] = useState([]);
+  const [others, setOthers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
 
@@ -52,8 +53,11 @@ export default function AgreementsPanel() {
     if (!token) return;
     setErr("");
     try {
-      const p = await api("/api/agreements?take=100&status=REQUESTED", { token });
-      setPending(p?.items ?? []);
+      // Room tarafında hem pending hem de approve/active kayıtları görmek için tümünü çekiyoruz.
+      const all = await api("/api/agreements?take=200", { token });
+      const items = all?.items ?? [];
+      setPending(items.filter((x) => String(x.status || "").toUpperCase() === "REQUESTED"));
+      setOthers(items.filter((x) => String(x.status || "").toUpperCase() !== "REQUESTED"));
 
       const v = await api("/api/vehicles", { token });
       setVehicles(v?.items ?? v ?? []);
@@ -113,6 +117,10 @@ export default function AgreementsPanel() {
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
       <h2 style={{ margin: 0 }}>Agreements (Room)</h2>
+
+      <div className="muted" style={{ marginTop: -6 }}>
+        Not: Pending onay (REQUESTED) burada. Süre uzatma (extend) Company tarafındadır.
+      </div>
 
       {err ? <div style={{ color: "crimson" }}>{String(err)}</div> : null}
 
@@ -238,6 +246,50 @@ export default function AgreementsPanel() {
             <ConflictBox errObj={conflict} />
           </div>
         ) : null}
+      </div>
+
+      {/* ✅ Approved/Active list */}
+      <div style={{ border: "1px solid #eee", borderRadius: 10, padding: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ fontWeight: 800 }}>Liste (APPROVED/ACTIVE/DONE/CANCELLED/REJECTED)</div>
+          <button type="button" disabled={busy} onClick={loadAll}>Yenile</button>
+        </div>
+
+        <div style={{ marginTop: 10, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr className="muted">
+                <th align="left">ID</th>
+                <th align="left">Status</th>
+                <th align="left">Date</th>
+                <th align="left">Time</th>
+                <th align="left">Günler</th>
+                <th align="left">V/D</th>
+              </tr>
+            </thead>
+            <tbody>
+              {others.map((a) => (
+                <tr key={a.id} style={{ borderTop: "1px solid #eee" }}>
+                  <td>{a.id}</td>
+                  <td className="muted">{String(a.status || "").toUpperCase()}</td>
+                  <td className="muted">{String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}</td>
+                  <td className="muted">
+                    {toHHMM(a.startMin)} → {toHHMM(a.endMin)}{a.endMin < a.startMin ? " 🌙" : ""}
+                  </td>
+                  <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
+                  <td className="muted">v:{a.vehicleId ?? "-"} / d:{a.driverId ?? "-"}</td>
+                </tr>
+              ))}
+              {!others.length ? (
+                <tr>
+                  <td colSpan={6} className="muted" style={{ paddingTop: 10 }}>
+                    Kayıt yok.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -127,6 +127,9 @@ export default function RoomShiftsPanel() {
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
 
+  // Tüm shifts: tablo detaylarını satır altında aç/kapat
+  const [listExpanded, setListExpanded] = useState({}); // { [shiftId]: bool }
+
   // Bekleyen satır: seçili araç + seçili driver (approve için)
   const [assignSel, setAssignSel] = useState({}); // { [shiftId]: vehicleIdStr }
   const [driverSel, setDriverSel] = useState({}); // { [shiftId]: driverIdStr }
@@ -1310,49 +1313,131 @@ export default function RoomShiftsPanel() {
           <table className="tbl">
             <thead>
               <tr>
+                <th style={{ width: 44 }}></th>
                 <th>ID</th>
                 <th>Status</th>
                 <th>Company</th>
-                <th>Teklifler</th>
+                <th>Zaman</th>
                 <th>Vehicle</th>
                 <th>Driver</th>
-                <th>Start</th>
-                <th>End</th>
+                <th>Aksiyon</th>
               </tr>
             </thead>
             <tbody>
-              {listFiltered.map((s) => (
-                <tr key={s.id}>
-                  <td>
-                    {s.id}
-                    <AgreementBadge agreementId={s.agreementId} />
-                  </td>
-                  <td>
-                    <span className="pill" data-status={s.status}>
-                      {s.status}
-                    </span>
-                  </td>
-                  <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
+              {listFiltered.map((s) => {
+                const sid = Number(s.id);
+                const isOpen = Boolean(listExpanded[sid]);
+                const vehicleLine = s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-");
+                const driverLine = s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-");
 
-                  <td>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div>
-                        <b>C→R</b>
-                        <div style={{ marginTop: 4 }}>{renderCompanyOfferSummary(s)}</div>
-                      </div>
-                      <div>
-                        <b>R→C</b>
-                        <div style={{ marginTop: 4 }}>{renderRoomOfferSummary(s)}</div>
-                      </div>
-                    </div>
-                  </td>
+                return [
+                  (
+                    <tr key={`s_${sid}`}>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn sm"
+                          onClick={() => setListExpanded((p) => ({ ...p, [sid]: !p[sid] }))}
+                          title={isOpen ? "Detayı kapat" : "Detayı aç"}
+                        >
+                          {isOpen ? "−" : "+"}
+                        </button>
+                      </td>
 
-                  <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
-                  <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
-                  <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                  <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-                </tr>
-              ))}
+                      <td>
+                        {s.id}
+                        <AgreementBadge agreementId={s.agreementId} />
+                      </td>
+
+                      <td>
+                        <span className="pill" data-status={s.status}>
+                          {s.status}
+                        </span>
+                      </td>
+
+                      <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
+
+                      <td className="muted">
+                        <div>{fmtTR(s.startAt)}</div>
+                        <div className="muted">→ {fmtTR(s.endAt)}</div>
+                      </td>
+
+                      <td className="muted">{vehicleLine}</td>
+                      <td className="muted">{driverLine}</td>
+
+                      <td>
+                        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                          <button type="button" className="btn sm" onClick={() => openRoutePreview(s)}>
+                            Önizle
+                          </button>
+                          <button
+                            type="button"
+                            className="btn sm"
+                            onClick={() => setListExpanded((p) => ({ ...p, [sid]: true }))}
+                          >
+                            Detay
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ),
+                  isOpen ? (
+                    <tr key={`d_${sid}`}>
+                      <td colSpan={8}>
+                        <div className="card" style={{ margin: 0 }}>
+                          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                            <div className="col">
+                              <div style={{ fontWeight: 800 }}>Teklifler</div>
+
+                              <div style={{ marginTop: 10 }}>
+                                <b>C→R</b>
+                                <div style={{ marginTop: 6 }}>{renderCompanyOfferSummary(s)}</div>
+                              </div>
+
+                              <div style={{ marginTop: 12 }}>
+                                <b>R→C</b>
+                                <div style={{ marginTop: 6 }}>{renderRoomOfferSummary(s)}</div>
+                              </div>
+                            </div>
+
+                            <div className="col">
+                              <div style={{ fontWeight: 800 }}>Özet</div>
+
+                              <div className="muted" style={{ display: "grid", gap: 6, marginTop: 10 }}>
+                                <div>
+                                  <b>Start:</b> {fmtTR(s.startAt)}
+                                </div>
+                                <div>
+                                  <b>End:</b> {fmtTR(s.endAt)}
+                                </div>
+                                <div>
+                                  <b>Vehicle:</b> {vehicleLine}
+                                </div>
+                                <div>
+                                  <b>Driver:</b> {driverLine}
+                                </div>
+                              </div>
+
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                                <button type="button" className="btn" onClick={() => openRoutePreview(s)}>
+                                  Haritada Önizle
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  onClick={() => setListExpanded((p) => ({ ...p, [sid]: false }))}
+                                >
+                                  Kapat
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null,
+                ];
+              })}
             </tbody>
           </table>
         ) : (
