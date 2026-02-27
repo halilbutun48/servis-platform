@@ -56,6 +56,15 @@ function AgreementBadge({ agreementId }) {
   );
 }
 
+function statusPill(s) {
+  const v = String(s || "").toUpperCase();
+  return (
+    <span className="pill" data-status={v} title={v}>
+      {v}
+    </span>
+  );
+}
+
 // Istanbul local gösterim
 const fmtTR = (iso) => {
   if (!iso) return "-";
@@ -115,6 +124,8 @@ export default function RoomShiftsPanel() {
   const [drivers, setDrivers] = useState([]);
   const [rooms, setRooms] = useState([]);
 
+  const [offers, setOffers] = useState([]); // market offers inbox (SHIFT_OFFER)
+
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -146,6 +157,40 @@ export default function RoomShiftsPanel() {
   // Room karşı teklif UI
   const [roomOfferOpen, setRoomOfferOpen] = useState({}); // { [shiftId]: bool }
   const [roomOfferSel, setRoomOfferSel] = useState({}); // { [shiftId]: { roomOfferVehicleId, roomOfferAmount, roomOfferNote, notifyDriver, driverNote } }
+
+  // Market offer (ShiftOffer) counter UI
+  const [marketCounterSel, setMarketCounterSel] = useState({});
+
+  // M51: Shift süre uzatma (Room karar)
+  const [extendNoteSel, setExtendNoteSel] = useState({}); // { [shiftId]: string }
+  const setExtendNote = (shiftId, v) => setExtendNoteSel((p) => ({ ...p, [Number(shiftId)]: v }));
+ // { [offerId]: { amountRoom, noteRoom } }
+  function setMarketCounter(offerId, patch) {
+    setMarketCounterSel((p) => ({
+      ...p,
+      [Number(offerId)]: { ...(p[Number(offerId)] || {}), ...(patch || {}) },
+    }));
+  }
+
+
+async function decideExtend(shiftId, decision) {
+  const sid = Number(shiftId);
+  if (!sid) return;
+  setBusy(true);
+  setErr("");
+  try {
+    await api.put(`/api/shifts/${sid}/extend-decision`, {
+      decision,
+      noteRoom: trimOrNull(extendNoteSel[sid]),
+    }, { token });
+    setExtendNoteSel((p) => ({ ...p, [sid]: "" }));
+    invalidate("shift:list");
+  } catch (e) {
+    setErr(String(e?.message || e));
+  } finally {
+    setBusy(false);
+  }
+}
 
   // M14: uygunluk/çatışma state (shift bazlı)
   // shape: { [sid]: { sig, status, code, message, conflictingShift, source } }
@@ -193,6 +238,18 @@ export default function RoomShiftsPanel() {
     for (const d of drivers) m.set(Number(d.id), d);
     return m;
   }, [drivers]);
+
+  const offersByShiftId = useMemo(() => {
+    const m = new Map();
+    for (const o of offers || []) {
+      const sid = Number(o?.shiftId);
+      if (!Number.isFinite(sid) || sid <= 0) continue;
+      // unique per (shiftId, roomId)
+      m.set(sid, o);
+    }
+    return m;
+  }, [offers]);
+
 
   function matchShift(s, qRaw) {
     const q = String(qRaw ?? "").trim().toLowerCase();
@@ -453,12 +510,13 @@ export default function RoomShiftsPanel() {
   async function load() {
     setErr("");
     try {
-      const [sh, veh, drv, rm] = await Promise.all([
+      const [sh, veh, drv, rm, off] = await Promise.all([
         // ✅ includeOffered=1: market/offered shift'leri de getir (shift.roomId null olsa bile)
         api("/api/shifts?take=200&includeOffered=1", { token }),
         api("/api/vehicles", { token }),
         api("/api/drivers", { token }).catch(() => ({ items: [] })), // bazı ortamlarda yoksa kırma
         api("/api/rooms", { token }).catch(() => ({ items: [] })), // ROOM yetkisi var ama yoksa kırma
+        api("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token }).catch(() => ({ items: [] })),
       ]);
 
       const list = Array.isArray(sh) ? sh : sh?.items ?? [];
@@ -466,12 +524,15 @@ export default function RoomShiftsPanel() {
       const dlist = Array.isArray(drv) ? drv : drv?.items ?? [];
       const rlist = Array.isArray(rm) ? rm : rm?.items ?? [];
 
+      const olist = Array.isArray(off) ? off : off?.items ?? [];
+
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
 
       setItems(list);
       setVehicles(vlist);
       setDrivers(dlist);
       setRooms(rlist);
+      setOffers(Array.isArray(olist) ? olist : []);
 
       // satır seçimleri init (var olanı ezme)
       setAssignSel((prev) => {
@@ -845,6 +906,27 @@ export default function RoomShiftsPanel() {
     }
   }
 
+  async function sendMarketCounter(offer) {
+    const oid = Number(offer?.id);
+    if (!oid) return;
+    const st = marketCounterSel[oid] || {};
+
+    const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : parseTryInput(st.amountRoom);
+    const noteRoom = String(st.noteRoom ?? "").trim() || undefined;
+
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/offers/${oid}/counter`, { method: "PUT", token, body: { amountRoom, noteRoom } });
+      invalidate("offers");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function sendRoomOffer(shift) {
     const sid = Number(shift.id);
     const form = roomOfferSel[sid] || {};
@@ -1057,8 +1139,11 @@ export default function RoomShiftsPanel() {
                   a?.status === "error";
 
                 const offerIsOpen = Boolean(roomOfferOpen[sid]);
-                const offerForm = roomOfferSel[sid] || {};
-                const offerVehList = roomVehicles;
+                const offerForm = roomOfferSel[sid] || {};                const offerVehList = roomVehicles;
+
+                const marketOffer = offersByShiftId.get(sid) || null;
+                const marketCanCounter = marketOffer && marketOffer.status !== "CANCELLED" && marketOffer.status !== "ACCEPTED";
+                const marketForm = marketOffer ? (marketCounterSel[Number(marketOffer.id)] || {}) : {};
 
                 return (
                   <tr key={s.id}>
@@ -1089,9 +1174,55 @@ export default function RoomShiftsPanel() {
 
                     <td>
                       <div style={{ display: "grid", gap: 6 }}>
-                        <div>{renderCompanyOfferSummary(s)}</div>
+                        <div>
+                          {marketOffer ? (
+                            <div className="card" style={{ marginTop: 6 }} title="Market teklifleri ShiftOffer tablosundan gelir; buradan counter gönderebilirsin.">
+                              <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                                <div style={{ fontWeight: 800 }}>Market Teklifi (C→R)</div>
+                                {statusPill(marketOffer.status)}
+                              </div>
+                              <div className="muted" style={{ marginTop: 6 }}>
+                                Company: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Room: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
+                              </div>
+                              {marketOffer.noteCompany ? <div className="muted" style={{ marginTop: 6 }}>Not (Company): {marketOffer.noteCompany}</div> : null}
+                              {marketOffer.noteRoom ? <div className="muted" style={{ marginTop: 4 }}>Not (Room): {marketOffer.noteRoom}</div> : null}
 
-                        <button type="button" className="btn sm" disabled={busy} onClick={() => toggleRoomOffer(sid)}>
+                              {marketCanCounter ? (
+                                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                                  <div className="row" style={{ gap: 8, alignItems: "end", flexWrap: "wrap" }}>
+                                    <div className="col" style={{ minWidth: 160 }}>
+                                      <label className="muted">Karşı Teklif (₺)</label>
+                                      <input
+                                        value={marketForm.amountRoom ?? ""}
+                                        onChange={(e) => setMarketCounter(marketOffer.id, { amountRoom: e.target.value })}
+                                        placeholder="örn 25000"
+                                        disabled={busy}
+                                      />
+                                    </div>
+                                    <div className="col" style={{ flex: 1, minWidth: 220 }}>
+                                      <label className="muted">Not</label>
+                                      <input
+                                        value={marketForm.noteRoom ?? ""}
+                                        onChange={(e) => setMarketCounter(marketOffer.id, { noteRoom: e.target.value })}
+                                        placeholder="opsiyonel"
+                                        disabled={busy}
+                                      />
+                                    </div>
+                                    <button className="btn sm" disabled={busy} onClick={() => sendMarketCounter(marketOffer)}>
+                                      Counter Gönder
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="muted" style={{ marginTop: 8 }}>Bu teklif artık değiştirilemez ({String(marketOffer.status)}).</div>
+                              )}
+                            </div>
+                          ) : (
+                            <div>{renderCompanyOfferSummary(s)}</div>
+                          )}
+                        </div>
+
+                        <button type="button" className="btn sm" disabled={busy || !!marketOffer} onClick={() => toggleRoomOffer(sid)} title={marketOffer ? "Market teklifi için counter yukarıdan yapılır" : "Room → Company karşı teklif"}>
                           {offerIsOpen ? "Room Teklifi Kapat" : "Room Teklifi (opsiyonel) Aç"}
                         </button>
 
@@ -1333,6 +1464,7 @@ export default function RoomShiftsPanel() {
                 <th>Driver</th>
                 <th>Start</th>
                 <th>End</th>
+                <th>Uzatma</th>
               </tr>
             </thead>
             <tbody>
@@ -1351,6 +1483,19 @@ export default function RoomShiftsPanel() {
 
                   <td>
                     <div style={{ display: "grid", gap: 8 }}>
+                      {(() => {
+                        const mo = offersByShiftId.get(Number(s.id));
+                        if (!mo) return null;
+                        return (
+                          <div className="card" style={{ marginTop: 0 }} title="Market teklifi (ShiftOffer)">
+                            <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                              <div style={{ fontWeight: 800 }}>Market Teklifi</div>
+                              {statusPill(mo.status)}
+                            </div>
+                            <div className="muted" style={{ marginTop: 6 }}>Company: <b>{formatTRY(mo.amountCompany)} ₺</b> • Room: <b>{formatTRY(mo.amountRoom)} ₺</b></div>
+                          </div>
+                        );
+                      })()}
                       <div>
                         <b>C→R</b>
                         <div style={{ marginTop: 4 }}>{renderCompanyOfferSummary(s)}</div>
@@ -1366,7 +1511,28 @@ export default function RoomShiftsPanel() {
                   <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
                   <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
                   <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-                </tr>
+                
+  <td>
+    {s.extendRequestedEndAt && String(s.extendDecision || "PENDING") === "PENDING" ? (
+      <div style={{ display: "grid", gap: 6 }}>
+        <div className="muted" title={String(s.extendRequestedEndAt)}>
+          Talep: <b>{fmtTR(s.extendRequestedEndAt)}</b>
+        </div>
+        <input
+          placeholder="Not (opsiyonel)"
+          value={extendNoteSel[Number(s.id)] || ""}
+          onChange={(e) => setExtendNote(s.id, e.target.value)}
+        />
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <button type="button" disabled={busy} onClick={() => decideExtend(s.id, "ACCEPTED")}>Kabul</button>
+          <button type="button" disabled={busy} onClick={() => decideExtend(s.id, "REJECTED")}>Reddet</button>
+        </div>
+      </div>
+    ) : (
+      <span className="muted">-</span>
+    )}
+  </td>
+</tr>
               ))}
             </tbody>
           </table>

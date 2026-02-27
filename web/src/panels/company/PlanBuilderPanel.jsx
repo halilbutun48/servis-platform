@@ -120,7 +120,16 @@ function avgLatLng(list) {
   return { lat: sumLat / n, lng: sumLng / n };
 }
 
-export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, onAfterApply }) {
+export default function PlanBuilderPanel({
+  token,
+  templateOptions,
+  rangeOverride,
+  hideDraftTransferUI = false,
+  directionOverride,
+  patternOverride,
+  onUseDraft,
+  onAfterApply,
+}) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [items, setItems] = useState([]);
@@ -153,6 +162,8 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
     err: "",
     done: false,
     sent: 0,
+    info: "",
+    skippedRoomIds: [],
   });
 
   async function ensureRoomsLoaded() {
@@ -184,6 +195,8 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
       err: "",
       done: false,
       sent: 0,
+    info: "",
+    skippedRoomIds: [],
     }));
     ensureRoomsLoaded();
   }
@@ -200,28 +213,63 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
       return;
     }
 
-    setBulkOffer((p) => ({ ...p, busy: true, err: "", done: false, sent: 0 }));
+    setBulkOffer((p) => ({ ...p, busy: true, err: "", info: "", done: false, sent: 0, skippedRoomIds: [] }));
     try {
       const amt = String(bulkOffer.amountCompany || "").trim();
       const note = String(bulkOffer.noteCompany || "").trim();
       const amountCompany = amt ? Number(amt) : null;
 
       let sent = 0;
+      const skipped = new Set();
+
       for (const sid of bulkOffer.shiftIds) {
-        await api("/api/shifts/" + sid + "/offers", {
+        const resp = await api("/api/shifts/" + sid + "/offers", {
           method: "POST",
           token,
           body: {
             roomIds,
-            amountCompany: (() => { const n = Number(Number.isFinite(amountCompany) ? amountCompany : null); return Number.isFinite(n) && n > 0 ? n : undefined; })(),
-            noteCompany: (() => { const v = (note || null); return (v === null || v === undefined) ? "" : String(v); })(),
+            amountCompany: (() => {
+              const n = Number(Number.isFinite(amountCompany) ? amountCompany : null);
+              return Number.isFinite(n) && n > 0 ? n : undefined;
+            })(),
+            noteCompany: (() => {
+              const v = note || null;
+              return v == null ? "" : String(v);
+            })(),
           },
         });
+
+        if (resp && Array.isArray(resp.skippedRoomIds)) {
+          for (const rid of resp.skippedRoomIds) {
+            const n = Number(rid);
+            if (Number.isFinite(n) && n > 0) skipped.add(n);
+          }
+        }
+
         sent++;
         setBulkOffer((p) => ({ ...p, sent }));
       }
 
-      setBulkOffer((p) => ({ ...p, done: true }));
+      const skippedRoomIds = Array.from(skipped);
+      const info = skippedRoomIds.length
+        ? `Not: ${skippedRoomIds.length} room teklif atlandı (aktif sözleşme çakışması).`
+        : "";
+
+      setBulkOffer((p) => ({ ...p, done: true, busy: false, info, skippedRoomIds }));
+
+      // ✅ Akış: teklif gönderimi bittikten sonra Market Shifts'e odakla (menü gezdirmesin)
+      try {
+        window.dispatchEvent(
+          new CustomEvent("company:shifts:focus", {
+            detail: { section: "market", shiftIds: bulkOffer.shiftIds },
+          })
+        );
+      } catch {}
+
+      // modal'ı kapat (ekranı serbest bırak)
+      setTimeout(() => {
+        setBulkOffer((p) => ({ ...p, open: false }));
+      }, 150);
     } catch (e) {
       setBulkOffer((p) => ({ ...p, err: String(e?.message || e) }));
     } finally {
@@ -229,7 +277,7 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
     }
   }
   // --- /M33.6b ---
-  const [maxWalkM, setMaxWalkM] = useState("250");
+  const [maxWalkM, setMaxWalkM] = useState("400");
   const [autoReorderStops, setAutoReorderStops] = useState(true);
 
   // Inputs
@@ -350,7 +398,24 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
   }, [eligible, capacity, precision]);
 
   const selectedTpl = useMemo(() => templateOptions?.find((x) => x.key === tplKey) || null, [templateOptions, tplKey]);
-  const range = useMemo(() => buildLocalRangeFromItem(baseDate, selectedTpl?.item), [baseDate, selectedTpl]);
+
+  const range = useMemo(() => {
+    // If parent provides a range (Step-1: Şablon & Zaman), trust it.
+    const s = String(rangeOverride?.startAtLocal || "").trim();
+    const e = String(rangeOverride?.endAtLocal || "").trim();
+    if (s && e) return { startAtLocal: s, endAtLocal: e };
+    return buildLocalRangeFromItem(baseDate, selectedTpl?.item);
+  }, [rangeOverride?.startAtLocal, rangeOverride?.endAtLocal, baseDate, selectedTpl]);
+
+  const activeDirection = useMemo(() => {
+    const raw = String(directionOverride || selectedTpl?.item?.direction || "INBOUND").toUpperCase();
+    return raw === "OUTBOUND" ? "OUTBOUND" : "INBOUND";
+  }, [directionOverride, selectedTpl]);
+
+  const activePattern = useMemo(() => {
+    const raw = String(patternOverride || selectedTpl?.item?.pattern || "ONE_WAY").toUpperCase();
+    return raw === "LOOP" ? "LOOP" : "ONE_WAY";
+  }, [patternOverride, selectedTpl]);
 
   function transferVehicleToRequest(v) {
     if (!onUseDraft) return;
@@ -534,7 +599,7 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
           const shift = await api("/api/shifts", {
             method: "POST",
             token,
-            body: { startAt, endAt, status: "REQUESTED", hubLat, hubLng, direction: "INBOUND", pattern: "ONE_WAY" },
+            body: { startAt, endAt, status: "REQUESTED", hubLat, hubLng, direction: activeDirection, pattern: activePattern },
           });
 
           const shiftId = Number(shift?.id);
@@ -711,7 +776,8 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
 
       <hr />
 
-      <div className="grid">
+      {!hideDraftTransferUI ? (
+        <div className="grid">
         <div className="col">
           <div style={{ fontWeight: 800 }}>Taslak Vardiya Zamanı (Talep ekranına aktarım için)</div>
           <div className="grid" style={{ gap: 10 }}>
@@ -750,6 +816,7 @@ export default function PlanBuilderPanel({ token, templateOptions, onUseDraft, o
           </div>
         </div>
       </div>
+      ) : null}
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ fontWeight: 800, marginBottom: 6 }}>Araç / Cluster Önizleme</div>

@@ -128,6 +128,14 @@ enum RoutePattern {
   LOOP
 }
 
+
+// ✅ M51: shift süre uzatma akışı (Company talep → Room karar)
+enum ShiftExtendDecision {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 // --- Core Models ---
 
 model Company {
@@ -315,6 +323,15 @@ model Shift {
   roomOfferDecisionNote String?
   roomOfferDecisionAt   DateTime?
 
+
+// ✅ M51: süre uzatma (Company → Room talep, Room karar)
+extendRequestedEndAt DateTime?
+extendRequestedAt    DateTime?
+extendDecision       ShiftExtendDecision @default(PENDING)
+extendNoteCompany    String?
+extendNoteRoom       String?
+extendDecisionAt     DateTime?
+
   company Company  @relation(fields: [companyId], references: [id])
   room    Room?    @relation(fields: [roomId], references: [id])
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
@@ -351,6 +368,7 @@ model Shift {
   @@index([roomOfferDecision])
   @@index([roomOfferVehicleId])
   @@index([roomOfferAmount])
+  @@index([extendDecision])
   @@index([agreementId])
   @@unique([agreementId, startAt])
 }

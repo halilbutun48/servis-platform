@@ -125,7 +125,7 @@ export default function RoomOffersPanel() {
 
   async function onCounter(offerId) {
     const st = counterSel[offerId] || {};
-    const amountRoom = st.amountRoom == null || st.amountRoom === "" ? null : Number(st.amountRoom);
+    const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : Number(st.amountRoom);
     const noteRoom = String(st.noteRoom || "").trim() || undefined;
 
     setBusy(true);

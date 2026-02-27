@@ -357,6 +357,14 @@ export default function AgreementsPanel() {
             Yenile
           </button>
         </div>
+
+      <div className="card">
+        <div style={{ fontWeight: 800 }}>Bu sayfa ne?</div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          <b>Sözleşme</b> (Agreement) rota/durak üretmez. Sadece <b>düzenli çalışma dönemi</b> (tarih aralığı + hafta günleri + saat penceresi) için bir “kontrat/rezervasyon” katmanıdır.
+          Durak üretme/önizleme ve market teklif süreci için <b>Vardiyalar</b> ekranını kullan.
+        </div>
+      </div>
       </div>
 
       {err ? <div className="muted" style={{ color: "crimson" }}>{String(err)}</div> : null}

@@ -22,9 +22,10 @@ export default function HubPanel() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
-  async function load() {
+  async function load(opts = {}) {
+    const silent = Boolean(opts?.silent);
     setErr("");
-    setMsg("");
+    if (!silent) setMsg("");
     try {
       const r = await api("/api/company/hub", { token });
       setLat(r?.hubLat == null ? "" : String(r.hubLat));
@@ -35,7 +36,7 @@ export default function HubPanel() {
   }
 
   useEffect(() => {
-    load();
+    load({ silent: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

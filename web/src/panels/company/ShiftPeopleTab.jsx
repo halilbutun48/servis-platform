@@ -61,6 +61,16 @@ function normalizeCoord(v, kind) {
   return n;
 }
 
+function sanitizeAddress(input) {
+  let s = String(input ?? "").trim();
+  if (!s) return "";
+  s = s.replace(/[\/]+/g, " ");
+  s = s.replace(/\b(no|no\.|numara|daire|apt|kat)\b\s*[:#-]?\s*\S+/gi, " ");
+  s = s.replace(/\s+/g, " ").trim();
+  if (!/türkiye|turkiye|tr\b/i.test(s)) s = s + " Türkiye";
+  return s;
+}
+
 function parseCsv(text) {
   // MVP parser: virgül ayracı, ilk satır header olabilir.
   // Beklenen kolonlar (case-insensitive): name, phone, address, lat, lng
@@ -220,11 +230,17 @@ function clusterPeople(people, maxWalkM) {
   return clusters;
 }
 
-export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds }) {
+export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds, preferredShiftId }) {
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 
   const [selectedShiftId, setSelectedShiftId] = useState("");
-  const [maxWalkM, setMaxWalkM] = useState(120);
+  const [maxWalkM, setMaxWalkM] = useState(400);
+
+  // ✅ M51.B: Shift Hub (Toplanma/Dağıtım)
+  const [hubDirection, setHubDirection] = useState("INBOUND");
+  const [hubAddress, setHubAddress] = useState("");
+  const [hubLat, setHubLat] = useState("");
+  const [hubLng, setHubLng] = useState("");
 
   // manual add form
   const [pName, setPName] = useState("");
@@ -243,6 +259,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
   // M16.2 soft-switch: backend varsa kullan; endpoint yoksa (404) localStorage fallback
   const [peopleBackend, setPeopleBackend] = useState("unknown"); // unknown | on | off
+  const [shiftPatchById, setShiftPatchById] = useState({});
 
   const shiftOptions = useMemo(() => {
     const list = Array.isArray(shifts) ? shifts : [];
@@ -250,10 +267,17 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return sorted;
   }, [shifts]);
 
-  const selectedShift = useMemo(() => {
+  const selectedShiftBase = useMemo(() => {
     const sid = Number(selectedShiftId || 0);
     return shiftOptions.find((s) => Number(s.id) === sid) || null;
   }, [shiftOptions, selectedShiftId]);
+
+  const selectedShift = useMemo(() => {
+    if (!selectedShiftBase) return null;
+    const key = String(selectedShiftBase.id);
+    const patch = shiftPatchById?.[key];
+    return patch ? { ...selectedShiftBase, ...patch } : selectedShiftBase;
+  }, [selectedShiftBase, shiftPatchById]);
 
   // Guided Mode: aynı personel/stop setini birden fazla taslak shift'e aynala
   const mirrorIds = useMemo(() => {
@@ -374,6 +398,18 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
   // init selected shift
   useEffect(() => {
+    const pid = Number(preferredShiftId || 0);
+    if (!pid) return;
+    if (!shiftOptions?.length) return;
+
+    const exists = shiftOptions.some((s) => Number(s.id) === pid);
+    if (!exists) return;
+
+    // Kullanıcı elle başka shift seçmediyse otomatik seç
+    setSelectedShiftId((cur) => (cur ? cur : String(pid)));
+  }, [preferredShiftId, shiftOptions]);
+
+  useEffect(() => {
     if (selectedShiftId) return;
     if (shiftOptions.length) setSelectedShiftId(String(shiftOptions[0].id));
   }, [shiftOptions, selectedShiftId]);
@@ -472,6 +508,152 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     }
     return { ok, review, failed, total: people.length };
   }, [people]);
+
+  function stripHubStop(list) {
+    const arr = Array.isArray(list) ? list : [];
+    return arr.filter((x) => String(x?.id || "") !== "hub");
+  }
+
+  // ✅ M51.B: selected shift değişince hub formunu doldur
+  useEffect(() => {
+    if (!selectedShift) return;
+    const dir = String(selectedShift?.direction || "INBOUND").toUpperCase();
+    setHubDirection(dir === "OUTBOUND" ? "OUTBOUND" : "INBOUND");
+    setHubLat(typeof selectedShift?.hubLat === "number" ? String(selectedShift.hubLat) : "");
+    setHubLng(typeof selectedShift?.hubLng === "number" ? String(selectedShift.hubLng) : "");
+    setHubAddress("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedShiftId]);
+
+  const hubPosLabel = useMemo(() => {
+    const dir = String(hubDirection || "").toUpperCase();
+    const n = stripHubStop(draftStops).length;
+    if (dir === "OUTBOUND") return "1. durak";
+    return `${n + 1}. durak`;
+  }, [hubDirection, draftStops]);
+
+  async function geocodeHubAddress() {
+    setErr("");
+    setInfo("");
+    const q = sanitizeAddress(hubAddress);
+    if (!q) {
+      setErr("Adres gir.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
+      setHubLat(String(r?.lat ?? ""));
+      setHubLng(String(r?.lng ?? ""));
+      if (typeof r?.lat === "number" && typeof r?.lng === "number") {
+        setInfo(`Hub konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
+      } else {
+        setInfo("Hub konumu bulundu. Lat/Lng alanlarını kontrol et.");
+      }
+    } catch (e) {
+      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      setErr(m);
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function saveHubToShift() {
+    setErr("");
+    setInfo("");
+    const sid = Number(selectedShiftId || 0);
+    if (!sid) {
+      setErr("Shift seç.");
+      return;
+    }
+
+    const lat = normalizeCoord(hubLat, "lat");
+    const lng = normalizeCoord(hubLng, "lng");
+    if (lat == null || lng == null) {
+      setErr("Hub Lat/Lng zorunlu. (Adresten Bul ile doldurabilirsin)");
+      return;
+    }
+
+    const dir = String(hubDirection || "INBOUND").toUpperCase();
+    setBusy(true);
+    try {
+      const updated = await api(`/api/shifts/${sid}`, {
+        token,
+        method: "PUT",
+        body: { hubLat: lat, hubLng: lng, direction: dir },
+      });
+
+      setShiftPatchById((prev) => ({
+        ...(prev || {}),
+        [String(sid)]: {
+          hubLat: updated?.hubLat ?? lat,
+          hubLng: updated?.hubLng ?? lng,
+          direction: updated?.direction ?? dir,
+        },
+      }));
+
+      // Draft durak listesine hub'ı ekle (OUTBOUND: başa, INBOUND: sona)
+      const baseStops = stripHubStop(draftStops);
+      const withHub = withHubStop(baseStops, { ...(selectedShift || {}), hubLat: lat, hubLng: lng, direction: dir });
+      setDraftStops(withHub);
+
+      setInfo(`Hub kaydedildi. Liste pozisyonu: ${hubPosLabel}`);
+    } catch (e) {
+      setErr(String(e?.payload?.message || e?.payload?.error || e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearHubOnShift() {
+    setErr("");
+    setInfo("");
+    const sid = Number(selectedShiftId || 0);
+    if (!sid) return;
+    setBusy(true);
+    try {
+      await api(`/api/shifts/${sid}`, { token, method: "PUT", body: { hubLat: null, hubLng: null } });
+      setShiftPatchById((prev) => ({ ...(prev || {}), [String(sid)]: { ...(prev?.[String(sid)] || {}), hubLat: null, hubLng: null } }));
+      setHubLat("");
+      setHubLng("");
+      setDraftStops(stripHubStop(draftStops));
+      setInfo("Hub temizlendi.");
+    } catch (e) {
+      setErr(String(e?.payload?.message || e?.payload?.error || e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+
+
+  async function geocodeManualAddress() {
+    setErr("");
+    setInfo("");
+
+    const q = sanitizeAddress(pAddress);
+    if (!q) {
+      setErr("Adres gir.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const r = await api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
+      setPLat(String(r?.lat ?? ""));
+      setPLng(String(r?.lng ?? ""));
+      if (typeof r?.lat === "number" && typeof r?.lng === "number") {
+        setInfo(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
+      } else {
+        setInfo("Konum bulundu. Lat/Lng alanlarını kontrol et.");
+      }
+    } catch (e) {
+      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      setErr(m);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function addPersonManual(e) {
     e.preventDefault();
@@ -691,7 +873,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
         {/* Shift selector + summary */}
-        <div className="card" style={{ margin: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="card" style={{ margin: 0 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}>
             <div style={{ minWidth: 280, flex: 1 }}>
               <label className="muted">Shift</label>
@@ -742,6 +925,68 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
             Not: “Durak Üret” sadece koordinatı (lat/lng) olan personelleri kullanır.
           </div>
+          </div>
+
+          {/* Hub (Toplanma/Dağıtım) */}
+          <div className="card" style={{ margin: 0 }}>
+            <h3 style={{ marginTop: 0 }}>Vardiya Toplanma / Dağıtım Yeri</h3>
+            <div className="muted" style={{ marginTop: -6 }}>
+              INBOUND: hub <b>son durak</b> olur. OUTBOUND: hub <b>1. durak</b> olur.
+            </div>
+
+            <div className="grid" style={{ marginTop: 8 }}>
+              <div className="col">
+                <label className="muted">Yön</label>
+                <select value={hubDirection} onChange={(e) => setHubDirection(e.target.value)} disabled={busy}>
+                  <option value="INBOUND">INBOUND (Toplama → Hub)</option>
+                  <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
+                </select>
+              </div>
+
+              <div className="col" style={{ gridColumn: "1 / -1" }}>
+                <label className="muted">Adres</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    value={hubAddress}
+                    onChange={(e) => setHubAddress(e.target.value)}
+                    placeholder="örn. Fabrika / Ofis / Toplanma noktası"
+                    disabled={busy}
+                    style={{ flex: 1 }}
+                  />
+                  <button type="button" className="btn sm" onClick={geocodeHubAddress} disabled={busy || !String(hubAddress || "").trim()}>
+                    Adresten Bul
+                  </button>
+                </div>
+              </div>
+
+              <div className="col">
+                <label className="muted">Hub Lat</label>
+                <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} placeholder="41.0..." disabled={busy} />
+              </div>
+              <div className="col">
+                <label className="muted">Hub Lng</label>
+                <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} placeholder="29.0..." disabled={busy} />
+              </div>
+
+              <div className="col" style={{ justifyContent: "end", display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" disabled={busy || !selectedShiftId} onClick={saveHubToShift}>
+                  Kaydet
+                </button>
+                <button type="button" className="btn" disabled={busy || (!hubLat && !hubLng)} onClick={clearHubOnShift}>
+                  Temizle
+                </button>
+              </div>
+            </div>
+
+            <div className="muted" style={{ marginTop: 8 }}>
+              <b>Liste pozisyonu:</b> {hubPosLabel}
+              {selectedShift?.hubLat != null && selectedShift?.hubLng != null ? (
+                <span style={{ marginLeft: 10 }}>
+                  <b>Mevcut Hub:</b> {Number(selectedShift.hubLat).toFixed(6)}, {Number(selectedShift.hubLng).toFixed(6)}
+                </span>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         {/* Manual add / import */}
@@ -759,7 +1004,18 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
             </div>
             <div className="col" style={{ gridColumn: "1 / -1" }}>
               <label className="muted">Adres</label>
-              <input value={pAddress} onChange={(e) => setPAddress(e.target.value)} placeholder="örn. Mahalle / Sokak / İlçe" disabled={busy} />
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  value={pAddress}
+                  onChange={(e) => setPAddress(e.target.value)}
+                  placeholder="örn. Mahalle / Sokak / İlçe"
+                  disabled={busy}
+                  style={{ flex: 1 }}
+                />
+                <button type="button" className="btn sm" onClick={geocodeManualAddress} disabled={busy || !String(pAddress || "").trim()}>
+                  Adresten Bul
+                </button>
+              </div>
             </div>
             <div className="col">
               <label className="muted">Lat (ops.)</label>

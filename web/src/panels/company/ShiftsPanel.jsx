@@ -1,5 +1,5 @@
 // web/src/panels/company/ShiftsPanel.jsx
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -22,29 +22,6 @@ function AgreementBadge({ agreementId }) {
     >
       Agreement #{id}
     </span>
-  );
-}
-
-function AccordionCard({ title, subtitle, count, open, onToggle, innerRef, children }) {
-  return (
-    <div className="card" ref={innerRef}>
-      <div className="accHeader">
-        <div>
-          <div className="accTitleRow">
-            <div className="accTitle">{title}</div>
-            <span className="accCount">{count}</span>
-          </div>
-          {subtitle ? <div className="muted" style={{ marginTop: 4 }}>{subtitle}</div> : null}
-        </div>
-
-        <button type="button" className="btn sm ghost" onClick={onToggle} aria-expanded={open}>
-          <span className="accChevron">{open ? "▾" : "▸"}</span>
-          {open ? "Kapat" : "Aç"}
-        </button>
-      </div>
-
-      {open ? <div className="accBody">{children}</div> : null}
-    </div>
   );
 }
 
@@ -113,8 +90,18 @@ export default function CompanyShiftsPanel() {
 
   const LS_LAST_ROOM = "company:lastRoomId";
 
-  // Top tabs
-  const [topTab, setTopTab] = useState("request"); // request | templates | plan | tools
+  // Page tabs (Create vs Track)
+  const [mainTab, setMainTab] = useState("track"); // create | track
+  const [trackTab, setTrackTab] = useState("pending"); // market | pending | list
+
+  // Create flow (no new wizard; in-page steps)
+  const [createStep, setCreateStep] = useState("request"); // request | people | plan
+  const [showTemplatesMgr, setShowTemplatesMgr] = useState(false);
+    // Create flow (Plan Builder time range comes from Step-1)
+  const [pbDate, setPbDate] = useState(() => todayYmdLocal());
+  const [pbTplKey, setPbTplKey] = useState("");
+  const [lastCreatedShiftId, setLastCreatedShiftId] = useState(0);
+
 
   const [items, setItems] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -139,6 +126,9 @@ export default function CompanyShiftsPanel() {
   });
   const [offersModal, setOffersModal] = useState({ open: false, shiftId: null, items: [] });
 
+  // M51: Shift süre uzatma (Company → Room talep)
+  const [extendModal, setExtendModal] = useState({ open: false, shift: null, endLocal: "", note: "" });
+
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
 
@@ -158,43 +148,11 @@ export default function CompanyShiftsPanel() {
   const listSectionRef = useRef(null);
   const marketSearchRef = useRef(null);
 
-  // Premium UX: accordion + satır detay (özet / detay aç-kapat)
-  const LS_ACC = "company:shifts:accordion";
-  const [acc, setAcc] = useState({ market: true, pending: true, list: true });
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LS_ACC);
-      if (raw) {
-        const j = JSON.parse(raw);
-        if (j && typeof j === "object") {
-          setAcc((p) => ({ ...p, ...j }));
-        }
-      }
-    } catch {}
-  }, []);
-  function setAccSafe(patch) {
-    setAcc((prev) => {
-      const next = { ...prev, ...patch };
-      try {
-        localStorage.setItem(LS_ACC, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  }
-  function toggleAcc(key) {
-    setAccSafe({ [key]: !acc[key] });
-  }
 
-  const [pendingRowOpen, setPendingRowOpen] = useState({});
-  const [finalRowOpen, setFinalRowOpen] = useState({});
-  function togglePendingRow(id) {
-    const sid = Number(id);
-    setPendingRowOpen((p) => ({ ...p, [sid]: !p[sid] }));
-  }
-  function toggleFinalRow(id) {
-    const sid = Number(id);
-    setFinalRowOpen((p) => ({ ...p, [sid]: !p[sid] }));
-  }
+// M41: Accordion (Market / Bekleyen / Liste)
+const [accOpen, setAccOpen] = useState({ market: false, pending: true, list: false });
+const toggleAcc = (key) => setAccOpen((p) => ({ ...p, [key]: !p?.[key] }));
+const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: true })));
 
   // M34 Step-6: Plan Builder → Bekleyen Talepler’e filtreli geçiş
   useEffect(() => {
@@ -204,23 +162,37 @@ export default function CompanyShiftsPanel() {
       if (!ids.length) return;
 
       const section = String(d.section || "market");
+      setMainTab("track");
+
       if (section === "pending") {
-        setAccSafe({ pending: true });
+        setTrackTab("pending");
+        ensureAcc("pending");
         setPendingFocusIds(ids);
+        setMarketFocusIds([]);
         setPendingQ("");
         setTimeout(() => {
           try { pendingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
-        }, 50);
+        }, 80);
+      } else if (section === "list") {
+        setTrackTab("list");
+        ensureAcc("list");
+        setPendingFocusIds([]);
+        setMarketFocusIds([]);
+        setTimeout(() => {
+          try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+        }, 80);
       } else {
-        setAccSafe({ market: true });
+        setTrackTab("market");
+        ensureAcc("market");
         setMarketFocusIds(ids);
+        setPendingFocusIds([]);
         setMarketQ("");
         setTimeout(() => {
           try {
             marketSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
             marketSearchRef.current?.focus?.();
           } catch (e) {}
-        }, 50);
+        }, 80);
       }
     };
     window.addEventListener("company:shifts:focus", onFocus);
@@ -230,7 +202,9 @@ export default function CompanyShiftsPanel() {
 
   function focusMarketById(id) {
     if (!id) return;
-    setAccSafe({ market: true });
+    setMainTab("track");
+    setTrackTab("market");
+    ensureAcc("market");
     setMarketQ(String(id));
     setTimeout(() => {
       try {
@@ -241,6 +215,16 @@ export default function CompanyShiftsPanel() {
       } catch {}
     }, 50);
   }
+
+  // Track tab değişince ilgili accordion içeriğini açık tut
+  useEffect(() => {
+    if (mainTab !== "track") return;
+    if (trackTab === "market") ensureAcc("market");
+    if (trackTab === "pending") ensureAcc("pending");
+    if (trackTab === "list") ensureAcc("list");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainTab, trackTab]);
+
 
   const [pendingOnlyRoomOffer, setPendingOnlyRoomOffer] = useState(false);
   const [onlyAgreement, setOnlyAgreement] = useState(false);
@@ -290,6 +274,63 @@ export default function CompanyShiftsPanel() {
     const utcMs = Date.UTC(Y, M - 1, D, h, m, 0) - IST_OFFSET_MIN * 60 * 1000;
     return new Date(utcMs).toISOString();
   }
+
+
+function utcIsoToIstanbulLocalInput(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (!d || Number.isNaN(d.getTime())) return "";
+  const ymd = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+  const hm = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Istanbul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+  return `${ymd}T${hm}`;
+}
+
+function openExtendModal(shift) {
+  if (!shift) return;
+  const baseEnd = shift?.endAt ? new Date(shift.endAt).getTime() : Date.now();
+  const nextIso = new Date(baseEnd + 60 * 60 * 1000).toISOString();
+  setExtendModal({
+    open: true,
+    shift,
+    endLocal: utcIsoToIstanbulLocalInput(nextIso),
+    note: "",
+  });
+}
+
+async function submitExtendRequest() {
+  const s = extendModal.shift;
+  const sid = Number(s?.id);
+  if (!sid) return;
+  const iso = istanbulLocalToUtcIso(extendModal.endLocal);
+  if (!iso) {
+    setErr("Yeni bitiş tarihi geçersiz.");
+    return;
+  }
+  setBusy(true);
+  setErr("");
+  try {
+    await api.put(`/api/shifts/${sid}/extend-request`, {
+      requestedEndAt: iso,
+      noteCompany: trimOrNull(extendModal.note),
+    }, { token });
+    setExtendModal({ open: false, shift: null, endLocal: "", note: "" });
+    invalidate("shift:list");
+  } catch (e) {
+    setErr(String(e?.message || e));
+  } finally {
+    setBusy(false);
+  }
+}
 
 // ===== Templates (company-localStorage) =====
 // Amaç: Wizard'daki plan paketleri + günler + süre mantığını tek yerde toplamak.
@@ -431,6 +472,33 @@ const templateOptions = useMemo(() => {
   return opts;
 }, [allTemplates]);
 
+// Seed Step-1 template selection
+useEffect(() => {
+  if (pbTplKey) return;
+  const first = templateOptions?.[0]?.key ? String(templateOptions[0].key) : "";
+  if (first) setPbTplKey(first);
+}, [templateOptions, pbTplKey]);
+
+const pbSelected = useMemo(
+  () => templateOptions.find((o) => String(o.key) === String(pbTplKey)) || null,
+  [templateOptions, pbTplKey]
+);
+
+function buildLocalRangeFromItem(baseDate, it) {
+  if (!baseDate || !it?.startHHMM || !it?.endHHMM) return { startAtLocal: "", endAtLocal: "" };
+  const sMin = minutesOf(it.startHHMM);
+  const eMin = minutesOf(it.endHHMM);
+  if (sMin == null || eMin == null) return { startAtLocal: "", endAtLocal: "" };
+
+  const startAtLocal = `${baseDate}T${it.startHHMM}`;
+  const endDate = eMin <= sMin ? addDaysYmd(baseDate, 1) : baseDate;
+  const endAtLocal = `${endDate}T${it.endHHMM}`;
+  return { startAtLocal, endAtLocal };
+}
+
+const pbRange = useMemo(() => buildLocalRangeFromItem(pbDate, pbSelected?.item), [pbDate, pbSelected]);
+const pbOk = Boolean(pbRange?.startAtLocal && pbRange?.endAtLocal);
+
 function applyTemplateItemToRequest(tpl, it) {
   if (!tpl || !it) return;
 
@@ -461,7 +529,9 @@ function onSelectTemplate(key) {
 }
 
 function useTemplateFromList(tpl, itemIndex = 0) {
-  setTopTab("request");
+  setMainTab("create");
+  setCreateStep("request");
+  setShowTemplatesMgr(false);
   const k = `${tpl.id}::${Number(itemIndex) || 0}`;
   setSelectedTemplateId(k);
   const it = (tpl?.items || [])[Number(itemIndex) || 0];
@@ -470,7 +540,9 @@ function useTemplateFromList(tpl, itemIndex = 0) {
 
 function usePlanDraftToRequest(draft) {
   // draft: {startAtLocal,endAtLocal,seatDemand,templateKey,marketMode}
-  setTopTab("request");
+  setMainTab("create");
+  setCreateStep("request");
+  setShowTemplatesMgr(false);
   setSelectedTemplateId(String(draft?.templateKey || ""));
   setStartAt(String(draft?.startAtLocal || ""));
   setEndAt(String(draft?.endAtLocal || ""));
@@ -718,7 +790,10 @@ function usePlanDraftToRequest(draft) {
         if (offerNote.trim()) body.companyOfferNote = offerNote.trim();
       }
 
-      await api("/api/shifts", { method: "POST", token, body });
+      const createdShift = await api("/api/shifts", { method: "POST", token, body });
+
+      const createdId = Number(createdShift?.id || 0);
+      if (createdId) setLastCreatedShiftId(createdId);
 
       setSelectedTemplateId("");
       setStartAt("");
@@ -731,6 +806,13 @@ function usePlanDraftToRequest(draft) {
 
       invalidate("shifts");
       await load();
+
+      // Flow: after create, jump to Personel step
+      setMainTab("create");
+      setCreateStep("people");
+      setShowTemplatesMgr(false);
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+
     } catch (e2) {
       setErr(String(e2?.message || e2));
     } finally {
@@ -868,6 +950,13 @@ function usePlanDraftToRequest(draft) {
       setOfferOpen((p) => ({ ...p, [sid]: false }));
       invalidate("shifts");
       await load();
+
+      // Flow: after create, jump to Personel step
+      setMainTab("create");
+      setCreateStep("people");
+      setShowTemplatesMgr(false);
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -894,6 +983,13 @@ function usePlanDraftToRequest(draft) {
       setOfferOpen((p) => ({ ...p, [sid]: false }));
       invalidate("shifts");
       await load();
+
+      // Flow: after create, jump to Personel step
+      setMainTab("create");
+      setCreateStep("people");
+      setShowTemplatesMgr(false);
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -919,6 +1015,13 @@ function usePlanDraftToRequest(draft) {
 
       invalidate("shifts");
       await load();
+
+      // Flow: after create, jump to Personel step
+      setMainTab("create");
+      setCreateStep("people");
+      setShowTemplatesMgr(false);
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -947,6 +1050,13 @@ function usePlanDraftToRequest(draft) {
 
       invalidate("shifts");
       await load();
+
+      // Flow: after create, jump to Personel step
+      setMainTab("create");
+      setCreateStep("people");
+      setShowTemplatesMgr(false);
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -1186,202 +1296,224 @@ function usePlanDraftToRequest(draft) {
       ) : null}
 
 
-      {/* Top Tabs */}
+      {/* Page Tabs: Create vs Track */}
       <div className="card">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" className={topTab === "request" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("request")}>
-            Manuel Talep
+          <button
+            type="button"
+            className={mainTab === "create" ? "btn primary" : "btn"}
+            disabled={busy}
+            onClick={() => setMainTab("create")}
+            title="Manuel talep / şablon / plan builder / shift tools"
+          >
+            Oluştur
           </button>
-          <button type="button" className={topTab === "templates" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("templates")}>
-            Vardiya Şablonları
-          </button>
-          <button type="button" className={topTab === "plan" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("plan")}>
-            Plan Builder
-          </button>
-          <button type="button" className={topTab === "tools" ? "btn primary" : "btn"} disabled={busy} onClick={() => setTopTab("tools")}>
-            Shift Tools
+          <button
+            type="button"
+            className={mainTab === "track" ? "btn primary" : "btn"}
+            disabled={busy}
+            onClick={() => setMainTab("track")}
+            title="Market / Bekleyen / Liste + hızlı filtre"
+          >
+            Takip
           </button>
         </div>
-
         <div className="muted" style={{ marginTop: 6 }}>
-          {topTab === "request"
-            ? "Manuel vardiya talebi oluştur. İstersen şablon seçerek Start/End'i otomatik doldur."
-            : topTab === "templates"
-            ? "Preset’ler sabit. Custom şablon ekleyip Manuel Talep ekranında seçebilirsin (company bazlı tarayıcıda saklanır)."
-            : topTab === "plan"
-            ? "Stage-0: kişi sayısı + kapasite → araç sayısı ve geohash cluster. İstersen tek tıkla Manuel Talep’e aktar, istersen Stage-3 ile direkt N market shift üret."
-            : "Shift seç → personel ekle/import → durak üret (preview) → rota/durak önizleme (mini-map)."}
+          {mainTab === "create"
+            ? "Talep oluşturma akışı (Manuel/Şablon/Plan Builder/Tools)."
+            : "Takip akışı (Hızlı filtre + Market/Bekleyen/Liste)."}
         </div>
       </div>
 
-      {/* TAB: Manuel Talep */}
-      {topTab === "request" ? (
-        <div className="card">
-          <h3>Manuel Vardiya Talebi</h3>
-
-          <form onSubmit={createShift} className="grid">
-            <div className="col">
-              <label className="muted">Vardiya türü (şablon)</label>
-              <select value={selectedTemplateId} onChange={(e) => onSelectTemplate(e.target.value)} disabled={busy}>
-                <option value="">— Şablon seç (opsiyonel) —</option>
-                {templateOptions.map((o) => (
-                  <option key={o.key} value={o.key}>
-                    {o.label} ({o.item.startHHMM}–{o.item.endHHMM})
-                    {o.tpl.kind === "PRESET" ? " • PRESET" : ""}
-                  </option>
-                ))}
-              </select>
-              <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                Not: “Gece” gibi vardiyalarda End, otomatik olarak bir sonraki güne taşınır.
+            {mainTab === "create" ? (
+        <>
+          <div className="card">
+            <div
+              className="row"
+              style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}
+            >
+              <div>
+                <div style={{ fontWeight: 800 }}>Oluşturma Akışı</div>
+                <div className="muted" style={{ marginTop: 4 }}>
+                  1) Şablon/Talep → 2) Personel → 3) Plan &amp; Market
+                </div>
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className={createStep === "request" ? "btn primary" : "btn"}
+                  disabled={busy}
+                  onClick={() => setCreateStep("request")}
+                  title="Şablon seç / talep oluştur"
+                >
+                  1) Şablon / Talep
+                </button>
+                <button
+                  type="button"
+                  className={createStep === "people" ? "btn primary" : "btn"}
+                  disabled={busy}
+                  onClick={() => setCreateStep("people")}
+                  title="Personel ekle/import + durak üret"
+                >
+                  2) Personel
+                </button>
+                <button
+                  type="button"
+                  className={createStep === "plan" ? "btn primary" : "btn"}
+                  disabled={busy}
+                  onClick={() => setCreateStep("plan")}
+                  title="Matris → çöz → market shift üret"
+                >
+                  3) Plan &amp; Market
+                </button>
               </div>
             </div>
+          </div>
 
-            <div className="col">
-              <label className="muted">Kişi sayısı (opsiyonel filtre)</label>
-              <input type="number" placeholder="örn. 16" value={seatDemand} onChange={(e) => setSeatDemand(e.target.value)} disabled={busy} />
-            </div>
-
-            <div className="col">
-              <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                <label className="muted">Room</label>
-                <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }} title="Market shift: room seçmeden oluştur, sonra birden fazla room'a teklif gönder">
-                  <input type="checkbox" checked={marketMode} onChange={(e) => setMarketMode(e.target.checked)} disabled={busy} />
-                  Market
-                </label>
+          {/* STEP 1: Şablon / Zaman */}
+          {createStep === "request" ? (
+            <>
+              <div className="card">
+                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>Şablon &amp; Zaman</div>
+                    <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                      Ana akış: 1) Şablon/Zaman → 2) Personel (Tools) → 3) Plan Builder (Matris/Çöz/Market).
+                    </div>
+                  </div>
+                  <button type="button" className="btn" disabled={busy} onClick={() => setShowTemplatesMgr((v) => !v)}>
+                    {showTemplatesMgr ? "Kapat" : "Şablonları Yönet"}
+                  </button>
+                </div>
               </div>
-              <input
-                value={roomQ}
-                onChange={(e) => setRoomQ(e.target.value)}
-                placeholder="Room ara (name contains)"
-                disabled={busy || marketMode}
-                style={{ marginBottom: 6 }}
-              />
-              {marketMode ? (
-                <div className="card" style={{ marginTop: 6 }}>
-                  <div className="muted">
-                    Market shift: Room seçmeden talep açılır. Sonra <b>Teklif Gönder</b> ile birden fazla room’a teklif atabilirsin.
+
+              {showTemplatesMgr ? (
+                <ShiftTemplatesPanel
+                  busy={busy}
+                  allTemplates={allTemplates}
+                  customTemplates={customTemplates}
+                  setCustomTemplates={setCustomTemplates}
+                  onUseTemplate={useTemplateFromList}
+                  setErr={setErr}
+                />
+              ) : null}
+
+              <div className="card">
+                <div className="grid">
+                  <div className="col">
+                    <label className="muted">Tarih</label>
+                    <input type="date" value={pbDate} onChange={(e) => setPbDate(e.target.value)} disabled={busy} />
+                  </div>
+                  <div className="col">
+                    <label className="muted">Şablon item</label>
+                    <select value={pbTplKey} onChange={(e) => setPbTplKey(e.target.value)} disabled={busy}>
+                      <option value="">— seç —</option>
+                      {(templateOptions || []).map((o) => (
+                        <option key={o.key} value={o.key}>
+                          {o.label} ({o.item.startHHMM}–{o.item.endHHMM})
+                          {o.tpl.kind === "PRESET" ? " • PRESET" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                      Seçim sonucu: Start={pbRange?.startAtLocal || "—"} • End={pbRange?.endAtLocal || "—"}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <select value={roomId} onChange={(e) => setRoomId(e.target.value)} disabled={busy}>
-                  {roomOptions.length ? (
-                    roomOptions.map((r) => (
-                      <option key={r.id} value={String(r.id)}>
-                        {roomLabel(r)} (#{r.id})
-                        {r?.hubLat != null && r?.hubLng != null ? "" : " • (Hub yok)"}
-                        {seatN && !isCompany ? ` • ${r.eligibleCount} araç` : ""}
-                      </option>
-                    ))
-                  ) : (
-                    <option value={roomId}>Room #{roomId}</option>
-                  )}
-                </select>
-              )}
-              <div className="muted" style={{ marginTop: 6 }}>
-                {marketMode ? (
-                  <span>Room: <b>—</b> (Market)</span>
-                ) : (
-                  <>
-                    Seçili room: {selectedRoom ? `${roomLabel(selectedRoom)} (#${selectedRoom.id})` : `#${roomId}`}
-                    {selectedRoom ? (
-                      selectedRoom?.hubLat != null && selectedRoom?.hubLng != null ? (
-                        <span>
-                          {" "}• hub: {Number(selectedRoom.hubLat).toFixed(6)}, {Number(selectedRoom.hubLng).toFixed(6)}
-                        </span>
-                      ) : (
-                        <span style={{ color: "#b85" }}>{" "}• hub yok</span>
-                      )
-                    ) : null}
-                  </>
-                )}
               </div>
-            </div>
 
-            <div className="col">
-              <label className="muted">Start</label>
-              <input type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} disabled={busy} />
-            </div>
-
-            <div className="col">
-              <label className="muted">End</label>
-              <input type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} disabled={busy} />
-            </div>
-
-            {!marketMode ? (
-              <>
-                <div className="col" style={{ gridColumn: "1 / -1" }}>
-                  <label className="muted">Teklif Araç (opsiyonel)</label>
-                  <select value={offerVehicleId} onChange={(e) => setOfferVehicleId(e.target.value)} disabled={busy}>
-                    <option value="">— teklif yok —</option>
-                    {filteredVehicles.map((v) => (
-                      <option key={v.id} value={String(v.id)}>
-                        {v.plate} • {vehicleMetaLine(v)}
-                      </option>
-                    ))}
-                  </select>
+              <div className="card" style={{ padding: 12 }}>
+                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                  <div className="muted">Sonraki adım: Personel ekle/import → durak üret → önizle.</div>
+                  <button type="button" className="btn primary" disabled={busy || !pbOk} onClick={() => setCreateStep("people")}>
+                    Sonraki → Personel
+                  </button>
                 </div>
-
-                <div className="col" style={{ gridColumn: "1 / -1" }}>
-                  <label className="muted">Company Tutar (₺) (opsiyonel)</label>
-                  <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
-                </div>
-
-                <div className="col" style={{ gridColumn: "1 / -1" }}>
-                  <label className="muted">Teklif Notu (opsiyonel)</label>
-                  <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. Bu vardiya için bu araç uygun" disabled={busy} />
-                </div>
-              </>
-            ) : (
-              <div className="col" style={{ gridColumn: "1 / -1" }}>
-                <div className="muted">Market shift’te teklif (tutar/not) room bazlı gönderilir.</div>
+                {!pbOk ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>Devam etmek için tarih + şablon seç.</div> : null}
               </div>
-            )}
 
-            <div className="col" style={{ justifyContent: "end" }}>
-              <button disabled={busy} type="submit">
-                {busy ? "..." : "Request"}
-              </button>
-            </div>
-          </form>
-        </div>
+              
+
+              {/* Manuel Talep kaldırıldı (M51) */}
+
+
+
+            </>
+          ) : null}
+
+{/* STEP 2: Personel */}
+          {createStep === "people" ? (
+            <>
+              <div className="card">
+                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>Personel (Shift Tools)</div>
+                    <div className="muted" style={{ marginTop: 4 }}>
+                      Shift seç → personel ekle/import → durak üret (preview) → rota/durak önizleme.
+                    </div>
+                  </div>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <button type="button" className="btn" disabled={busy} onClick={() => setCreateStep("request")}>
+                      ← Geri
+                    </button>
+                    <button type="button" className="btn primary" disabled={busy} onClick={() => setCreateStep("plan")}>
+                      Sonraki → Plan &amp; Market
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <ShiftPeopleTab token={token} me={me} shifts={items} roomsById={roomsById} preferredShiftId={lastCreatedShiftId} />
+            </>
+          ) : null}
+
+          {/* STEP 3: Plan & Market */}
+          {createStep === "plan" ? (
+            <>
+              <div className="card">
+                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 800 }}>Plan Builder</div>
+                    <div className="muted" style={{ marginTop: 4 }}>
+                      Matris → çöz → N market shift üret. Zaman aralığı Step-1’den gelir (Şablon & Zaman).
+                    </div>
+                  </div>
+                  <button type="button" className="btn" disabled={busy} onClick={() => setCreateStep("people")}>
+                    ← Geri
+                  </button>
+                </div>
+              </div>
+
+              <PlanBuilderPanel
+                token={token}
+                templateOptions={templateOptions}
+                rangeOverride={pbRange}
+                directionOverride={pbSelected?.item?.direction}
+                patternOverride={pbSelected?.item?.pattern}
+                hideDraftTransferUI
+                onAfterApply={async (created) => {
+                  const okIds = (created || [])
+                    .filter((x) => x && x.ok && x.shiftId)
+                    .map((x) => Number(x.shiftId))
+                    .filter(Boolean);
+                  if (okIds.length) {
+                    setApplyToast({ ids: okIds });
+                    setLastCreatedShiftId(okIds[0]);
+                    setShowTemplatesMgr(false);
+                  }
+                  invalidate("shifts");
+                  invalidate("offers");
+                  await load();
+                }}
+              />
+            </>
+          ) : null}
+        </>
       ) : null}
 
-      {/* TAB: Vardiya Şablonları */}
-      {topTab === "templates" ? (
-        <ShiftTemplatesPanel
-          busy={busy}
-          allTemplates={allTemplates}
-          customTemplates={customTemplates}
-          setCustomTemplates={setCustomTemplates}
-          onUseTemplate={useTemplateFromList}
-          setErr={setErr}
-        />
-      ) : null}
 
-      {/* TAB: Plan Builder (Stage-0) */}
-      {topTab === "plan" ? (
-        <PlanBuilderPanel
-          token={token}
-          templateOptions={templateOptions}
-          onUseDraft={usePlanDraftToRequest}
-          onAfterApply={async (created) => {
-            const okIds = (created || []).filter((x) => x && x.ok && x.shiftId).map((x) => Number(x.shiftId)).filter(Boolean);
-            if (okIds.length) {
-              setApplyToast({ ids: okIds });
-              focusMarketById(okIds[0]);
-            }
-            invalidate("shifts");
-            invalidate("offers");
-            await load();
-          }}
-        />
-      ) : null}
-
-      {/* TAB: Shift Tools */}
-      {topTab === "tools" ? (
-        <ShiftPeopleTab token={token} me={me} shifts={items} roomsById={roomsById} />
-      ) : null}
-
+      {mainTab === "track" ? (
+        <>
       {/* Hızlı Filtre Presetleri (sticky) */}
       <div
         className="card"
@@ -1423,6 +1555,8 @@ function usePlanDraftToRequest(draft) {
               type="button"
               className="btn sm"
               onClick={() => {
+                setMainTab("track");
+                setTrackTab("list");
                 setFinalStatus("OPEN");
                 setTimeout(() => {
                   try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
@@ -1436,6 +1570,8 @@ function usePlanDraftToRequest(draft) {
               type="button"
               className="btn sm"
               onClick={() => {
+                setMainTab("track");
+                setTrackTab("list");
                 setFinalStatus("ACTIVE");
                 setTimeout(() => {
                   try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
@@ -1445,6 +1581,7 @@ function usePlanDraftToRequest(draft) {
               Active
             </button>
 
+<span className="muted" style={{ margin: "0 4px" }}>|</span>
             <button
               type="button"
               className="btn sm"
@@ -1464,36 +1601,93 @@ function usePlanDraftToRequest(draft) {
         </div>
       </div>
 
-      {/* MARKET */}
-      <AccordionCard
-        title="Market"
-        subtitle="Room seçilmemiş talepler. Teklifi birden fazla room’a gönder."
-        count={marketItems.length}
-        open={Boolean(acc.market)}
-        onToggle={() => toggleAcc("market")}
-        innerRef={marketSectionRef}
-      >
-        <div className="toolbar" style={{ justifyContent: "space-between" }}>
-          <div className="toolbar">
-            <input
-              ref={marketSearchRef}
-              placeholder="Ara (id/status)"
-              value={marketQ}
-              onChange={(e) => setMarketQ(e.target.value)}
-              style={{ minWidth: 220 }}
-            />
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setMarketQ("");
-                setMarketFocusIds([]);
-              }}
-            >
-              Temizle
-            </button>
-          </div>
 
+
+      {/* Track Tabs: Market / Bekleyen / Liste */}
+      <div className="card" style={{ marginTop: 10 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <button type="button" className={trackTab === "market" ? "btn primary" : "btn"} onClick={() => setTrackTab("market")}>
+            Market <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{marketItems.length}</span>
+          </button>
+          <button type="button" className={trackTab === "pending" ? "btn primary" : "btn"} onClick={() => setTrackTab("pending")}>
+            Bekleyen <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{pendingItems.length}</span>
+          </button>
+          <button type="button" className={trackTab === "list" ? "btn primary" : "btn"} onClick={() => setTrackTab("list")}>
+            Liste <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{finalItems.length}</span>
+          </button>
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Liste: APPROVED/ACTIVE/DONE/REJECTED
+        </div>
+      </div>
+
+{/* MARKET (Accordion) */}
+<div className="card" ref={marketSectionRef} style={{ display: trackTab === "market" ? "block" : "none" }}>
+  <div
+    className="row"
+    style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}
+  >
+    <div className="row" style={{ alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <h3 style={{ margin: 0 }}>Market Shifts</h3>
+      <span className="pill" data-status="COUNT" title="Filtrelere göre görünen market shift sayısı">
+        {marketItems.length}
+      </span>
+      <span className="muted">Room seçilmemiş talepler. Teklifi birden fazla room’a gönder.</span>
+    </div>
+
+    <div
+      className="row"
+      style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="btn sm"
+        disabled={accOpen.market}
+        onClick={(e) => {
+          e.stopPropagation();
+          setAccOpen((p) => ({ ...p, market: true }));
+        }}
+      >
+        Aç
+      </button>
+      <button
+        type="button"
+        className="btn sm"
+        disabled={!accOpen.market}
+        onClick={(e) => {
+          e.stopPropagation();
+          setAccOpen((p) => ({ ...p, market: false }));
+        }}
+      >
+        Kapat
+      </button>
+      <button
+        type="button"
+        className="btn sm"
+        title="Aç / Kapat"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleAcc("market");
+        }}
+      >
+        {accOpen.market ? "▾" : "▸"}
+      </button>
+    </div>
+  </div>
+
+  {accOpen.market ? (
+    <div style={{ marginTop: 10 }}>
+      <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <div />
+        <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
+          <input
+            ref={marketSearchRef}
+            placeholder="Ara (id/status)"
+            value={marketQ}
+            onChange={(e) => setMarketQ(e.target.value)}
+            style={{ minWidth: 220 }}
+          />
           {marketFocusIds.length ? (
             <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <span>Filtre: {(marketFocusIds || []).map((id) => "#" + id).join(" ")}</span>
@@ -1503,91 +1697,97 @@ function usePlanDraftToRequest(draft) {
             </div>
           ) : null}
         </div>
+      </div>
 
-        {marketItems.length ? (
-          <div className="tableWrap" style={{ marginTop: 10 }}>
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Status</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {marketItems.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      {s.id}
-                      <AgreementBadge agreementId={s.agreementId} />
-                    </td>
-                    <td>
-                      <span className="pill" data-status={s.status}>
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="muted">{fmtTR(s.startAt)}</td>
-                    <td className="muted">{fmtTR(s.endAt)}</td>
-                    <td>
-                      <div className="toolbar">
-                        <button type="button" className="btn sm primary" disabled={busy} onClick={() => openOfferModalForShift(s.id)}>
-                          Teklif Gönder
-                        </button>
-                        <button type="button" className="btn sm" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>
-                          Teklifler
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="muted" style={{ marginTop: 10 }}>Market kaydı yok.</div>
-        )}
-      </AccordionCard>
+      {marketItems.length ? (
+        <table className="tbl" style={{ marginTop: 10 }}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Offers</th>
+            </tr>
+          </thead>
+          <tbody>
+            {marketItems.map((s) => (
+              <tr key={s.id}>
+                <td>
+                  {s.id}
+                  <AgreementBadge agreementId={s.agreementId} />
+                </td>
+                <td>
+                  <span className="pill" data-status={s.status}>{s.status}</span>
+                </td>
+                <td className="muted">{fmtTR(s.startAt)}</td>
+                <td className="muted">{fmtTR(s.endAt)}</td>
+                <td>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button type="button" disabled={busy} onClick={() => openOfferModalForShift(s.id)}>
+                      Teklif Gönder
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>
+                      Teklifler
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="muted">Market shift yok.</div>
+      )}
+    </div>
+  ) : null}
+</div>
 
-      {/* BEKLEYEN */}
-      <AccordionCard
-        title="Bekleyen Talepler"
-        subtitle="Pazarlık/karar tamamlanmadan “Liste”ye düşmez."
-        count={pendingItems.length}
-        open={Boolean(acc.pending)}
-        onToggle={() => toggleAcc("pending")}
-        innerRef={pendingSectionRef}
+{/* BEKLEYEN (Accordion) */}
+<div className="card" ref={pendingSectionRef} style={{ display: trackTab === "pending" ? "block" : "none" }}>
+  <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+    <div className="row" style={{ alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <h3 style={{ margin: 0 }}>Bekleyen Talepler</h3>
+      <span className="pill" data-status="COUNT" title="Filtrelere göre görünen bekleyen talep sayısı">
+        {pendingItems.length}
+      </span>
+      <span className="muted">Pazarlık/karar tamamlanmadan “Liste”ye düşmez.</span>
+    </div>
+
+    <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+      <button
+        type="button"
+        className="btn sm"
+        disabled={accOpen.pending}
+        onClick={() => setAccOpen((p) => ({ ...p, pending: true }))}
       >
-        <div className="toolbar" style={{ justifyContent: "space-between" }}>
-          <div className="toolbar">
-            <input
-              placeholder="Ara (id/status/note/room)"
-              value={pendingQ}
-              onChange={(e) => setPendingQ(e.target.value)}
-              style={{ minWidth: 240 }}
-            />
-            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="checkbox" checked={pendingOnlyRoomOffer} onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)} />
-              Sadece Room teklifi
-            </label>
-            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="checkbox" checked={onlyAgreement} onChange={(e) => setOnlyAgreement(e.target.checked)} />
-              Sadece Agreement
-            </label>
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setPendingQ("");
-                setPendingOnlyRoomOffer(false);
-                setPendingFocusIds([]);
-              }}
-            >
-              Temizle
-            </button>
-          </div>
+        Aç
+      </button>
+      <button
+        type="button"
+        className="btn sm"
+        disabled={!accOpen.pending}
+        onClick={() => setAccOpen((p) => ({ ...p, pending: false }))}
+      >
+        Kapat
+      </button>
+      <button type="button" className="btn sm" title="Aç / Kapat" onClick={() => toggleAcc("pending")}>
+        {accOpen.pending ? "▾" : "▸"}
+      </button>
+    </div>
+  </div>
 
+  {accOpen.pending ? (
+    <div style={{ marginTop: 10 }}>
+      <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <div />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <input
+            placeholder="Ara (id/status/note/room)"
+            value={pendingQ}
+            onChange={(e) => setPendingQ(e.target.value)}
+            style={{ minWidth: 240 }}
+          />
           {pendingFocusIds.length ? (
             <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <span>Filtre: {(pendingFocusIds || []).map((id) => "#" + id).join(" ")}</span>
@@ -1596,272 +1796,382 @@ function usePlanDraftToRequest(draft) {
               </button>
             </div>
           ) : null}
+          <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={pendingOnlyRoomOffer}
+              onChange={(e) => setPendingOnlyRoomOffer(e.target.checked)}
+            />
+            Sadece Room teklifi olanlar
+          </label>
+          <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={onlyAgreement}
+              onChange={(e) => setOnlyAgreement(e.target.checked)}
+            />
+            Sadece Agreement shiftleri
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setPendingQ("");
+              setPendingOnlyRoomOffer(false);
+              setOnlyAgreement(false);
+            }}
+          >
+            Temizle
+          </button>
         </div>
+      </div>
 
-        {pendingItems.length ? (
-          <div className="tableWrap" style={{ marginTop: 10 }}>
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Status</th>
-                  <th>Room</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingItems.map((s) => {
-                  const r = roomsById.get(Number(s.roomId));
-                  const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(s.status));
+      {pendingItems.length ? (
+        <table className="tbl" style={{ marginTop: 10 }}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Room</th>
+              <th>Room Teklifi (R→C)</th>
+              <th>Company Teklifi (C→R)</th>
+              <th>Karşı Teklif</th>
+              <th>İptal</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Uzat</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingItems.map((s) => {
+              const r = roomsById.get(Number(s.roomId));
+              const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(s.status));
 
-                  const sid = Number(s.id);
-                  const isRowOpen = Boolean(pendingRowOpen[sid]);
-                  const isCounterOpen = Boolean(offerOpen[sid]);
-                  const form = offerSel[sid] || {};
-                  const roomVehicles = vehiclesForShiftRoom(s);
+              const sid = Number(s.id);
+              const isOpen = Boolean(offerOpen[sid]);
+              const form = offerSel[sid] || {};
+              const roomVehicles = vehiclesForShiftRoom(s);
 
-                  return (
-                    <Fragment key={s.id}>
-                      <tr>
-                        <td>
-                          <button type="button" className="btn sm ghost" onClick={() => togglePendingRow(sid)} title="Detay">
-                            {isRowOpen ? "▾" : "▸"}
-                          </button>
-                          <span style={{ marginLeft: 8 }}>{s.id}</span>
-                          <AgreementBadge agreementId={s.agreementId} />
-                        </td>
-                        <td>
-                          <span className="pill" data-status={s.status}>{s.status}</span>
-                        </td>
-                        <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
-                        <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                        <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-                        <td>
-                          <div className="toolbar">
-                            <button
-                              type="button"
-                              className="btn sm"
-                              onClick={() => togglePendingRow(sid)}
+              return (
+                <tr key={s.id}>
+                  <td>
+                    {s.id}
+                    <AgreementBadge agreementId={s.agreementId} />
+                  </td>
+                  <td>
+                    <span className="pill" data-status={s.status}>
+                      {s.status}
+                    </span>
+                  </td>
+                  <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
+
+                  <td>{renderRoomOfferSummary(s, canNegotiate)}</td>
+                  <td>{renderCompanyOfferSummary(s)}</td>
+
+                  <td>
+                    <button type="button" disabled={busy || !canNegotiate} onClick={() => toggleOffer(sid)}>
+                      {isOpen ? "Kapat" : "Karşı Teklif"}
+                    </button>
+
+                    {isOpen ? (
+                      <div className="card" style={{ marginTop: 8 }}>
+                        <div className="muted" style={{ marginBottom: 6 }}>
+                          Company teklifini güncelle (C→R)
+                        </div>
+
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <label className="muted">
+                            <div style={{ marginBottom: 4 }}>
+                              <b>Teklif Araç (opsiyonel)</b>
+                            </div>
+                            <select
+                              value={form.companyOfferVehicleId || ""}
+                              onChange={(e) => setOfferForShift(sid, { companyOfferVehicleId: e.target.value })}
+                              disabled={busy}
                             >
-                              {isRowOpen ? "Detay Kapat" : "Detay"}
+                              <option value="">— teklif yok —</option>
+                              {roomVehicles.map((v) => (
+                                <option key={v.id} value={String(v.id)}>
+                                  {v.plate} • {vehicleMetaLine(v)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <label className="muted">
+                            <div style={{ marginBottom: 4 }}>
+                              <b>Teklif Tutar (₺) (opsiyonel)</b>
+                            </div>
+                            <input
+                              value={form.companyOfferAmount ?? ""}
+                              onChange={(e) => setOfferForShift(sid, { companyOfferAmount: e.target.value })}
+                              placeholder="örn. 25000"
+                              disabled={busy}
+                            />
+                          </label>
+
+                          <label className="muted">
+                            <div style={{ marginBottom: 4 }}>
+                              <b>Teklif Notu (opsiyonel)</b>
+                            </div>
+                            <input
+                              value={form.companyOfferNote ?? ""}
+                              onChange={(e) => setOfferForShift(sid, { companyOfferNote: e.target.value })}
+                              placeholder="örn. Yakın zamanda başlayabiliriz"
+                              maxLength={200}
+                              disabled={busy}
+                            />
+                          </label>
+
+                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                            <button type="button" disabled={busy} onClick={() => upsertCompanyOffer(sid)}>
+                              Kaydet
                             </button>
-                            <button
-                              type="button"
-                              className="btn sm"
-                              disabled={busy || !canNegotiate}
-                              onClick={() => {
-                                if (!isRowOpen) togglePendingRow(sid);
-                                toggleOffer(sid);
-                              }}
-                              title="Company teklifini güncelle (C→R)"
-                            >
-                              {isCounterOpen ? "Karşı Teklif Kapat" : "Karşı Teklif"}
-                            </button>
-                            <button type="button" className="btn sm danger" disabled={busy || !canNegotiate} onClick={() => cancelMyRequest(s)}>
-                              İptal
+                            <button type="button" disabled={busy} onClick={() => removeCompanyOffer(sid)}>
+                              Teklifi Kaldır
                             </button>
                           </div>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
+                    ) : null}
+                  </td>
 
-                      {isRowOpen ? (
-                        <tr>
-                          <td colSpan={6}>
-                            <div className="detailGrid">
-                              <div className="detailCol">
-                                <div className="detailTitle">Room Teklifi (R→C)</div>
-                                {renderRoomOfferSummary(s, canNegotiate)}
-                              </div>
-                              <div className="detailCol">
-                                <div className="detailTitle">Company Teklifi (C→R)</div>
-                                {renderCompanyOfferSummary(s)}
-                              </div>
-                            </div>
+                  <td>
+                    <button type="button" disabled={busy || !canNegotiate} onClick={() => cancelMyRequest(s)}>
+                      Talebi İptal Et
+                    </button>
+                  </td>
 
-                            {isCounterOpen ? (
-                              <div className="card" style={{ marginTop: 10 }}>
-                                <div className="muted" style={{ marginBottom: 8 }}>
-                                  Company teklifini güncelle (C→R)
-                                </div>
-                                <div className="fieldRow">
-                                  <label className="field">
-                                    <span className="muted"><b>Teklif Araç (opsiyonel)</b></span>
-                                    <select
-                                      value={form.companyOfferVehicleId || ""}
-                                      onChange={(e) => setOfferForShift(sid, { companyOfferVehicleId: e.target.value })}
-                                      disabled={busy}
-                                    >
-                                      <option value="">— teklif yok —</option>
-                                      {roomVehicles.map((v) => (
-                                        <option key={v.id} value={String(v.id)}>
-                                          {v.plate} • {vehicleMetaLine(v)}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-
-                                  <label className="field">
-                                    <span className="muted"><b>Teklif Tutar (₺) (opsiyonel)</b></span>
-                                    <input
-                                      value={form.companyOfferAmount ?? ""}
-                                      onChange={(e) => setOfferForShift(sid, { companyOfferAmount: e.target.value })}
-                                      placeholder="örn. 25000"
-                                      disabled={busy}
-                                    />
-                                  </label>
-                                </div>
-
-                                <label className="field" style={{ marginTop: 10 }}>
-                                  <span className="muted"><b>Teklif Notu (opsiyonel)</b></span>
-                                  <input
-                                    value={form.companyOfferNote ?? ""}
-                                    onChange={(e) => setOfferForShift(sid, { companyOfferNote: e.target.value })}
-                                    placeholder="örn. Bu araçla şu şartla…"
-                                    disabled={busy}
-                                  />
-                                </label>
-
-                                <div className="actionsRow" style={{ marginTop: 10 }}>
-                                  <button type="button" className="btn primary" disabled={busy} onClick={() => sendCounterOffer(s)}>
-                                    {busy ? "..." : "Gönder"}
-                                  </button>
-                                  <button type="button" className="btn" disabled={busy} onClick={() => clearCounterOffer(s)}>
-                                    Teklifi Kaldır
-                                  </button>
-                                </div>
-                              </div>
-                            ) : null}
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="muted" style={{ marginTop: 10 }}>Bekleyen talep yok.</div>
-        )}
-      </AccordionCard>
-
-      {/* LİSTE */}
-      <AccordionCard
-        title="Liste"
-        subtitle="Sadece APPROVED/ACTIVE/DONE/REJECTED burada görünür."
-        count={finalItems.length}
-        open={Boolean(acc.list)}
-        onToggle={() => toggleAcc("list")}
-        innerRef={listSectionRef}
-      >
-        <div className="toolbar" style={{ justifyContent: "space-between" }}>
-          <div className="toolbar">
-            <select value={finalStatus} onChange={(e) => setFinalStatus(e.target.value)}>
-              <option value="ALL">Hepsi</option>
-              <option value="OPEN">Açık (APPROVED+ACTIVE)</option>
-              <option value="APPROVED">APPROVED</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="DONE">DONE</option>
-              <option value="REJECTED">REJECTED</option>
-            </select>
-            <input
-              placeholder="Ara (id/status/plate/driver/note)"
-              value={finalQ}
-              onChange={(e) => setFinalQ(e.target.value)}
-              style={{ minWidth: 240 }}
-            />
-            <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <input type="checkbox" checked={onlyAgreement} onChange={(e) => setOnlyAgreement(e.target.checked)} />
-              Sadece Agreement
-            </label>
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setFinalStatus("ALL");
-                setFinalQ("");
-              }}
-            >
-              Temizle
-            </button>
-          </div>
+                  <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
+                  <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+                
+  <td>
+    {s.extendRequestedEndAt ? (
+      <div style={{ display: "grid", gap: 6 }}>
+        <span className="pill" data-status={s.extendDecision || "PENDING"}>
+          {String(s.extendDecision || "PENDING")}
+        </span>
+        <div className="muted" title={String(s.extendRequestedEndAt)}>
+          Talep: {fmtTR(s.extendRequestedEndAt)}
         </div>
+      </div>
+    ) : (
+      <button
+        type="button"
+        disabled={busy || !(String(s.status || "").toUpperCase() === "APPROVED" || String(s.status || "").toUpperCase() === "ACTIVE")}
+        onClick={() => openExtendModal(s)}
+      >
+        Süre Uzat
+      </button>
+    )}
+  </td>
+</tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ) : (
+        <div className="muted">Bekleyen talep yok.</div>
+      )}
+    </div>
+  ) : null}
+</div>
 
-        {finalItems.length ? (
-          <div className="tableWrap" style={{ marginTop: 10 }}>
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Status</th>
-                  <th>Room</th>
-                  <th>Atama</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Detay</th>
-                </tr>
-              </thead>
-              <tbody>
-                {finalItems.map((s) => {
-                  const r = roomsById.get(Number(s.roomId));
-                  const sid = Number(s.id);
-                  const isOpen = Boolean(finalRowOpen[sid]);
-                  const plate = s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-");
-                  const drv = s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-");
-                  return (
-                    <Fragment key={s.id}>
-                      <tr>
-                        <td>
-                          <button type="button" className="btn sm ghost" onClick={() => toggleFinalRow(sid)} title="Detay">
-                            {isOpen ? "▾" : "▸"}
-                          </button>
-                          <span style={{ marginLeft: 8 }}>{s.id}</span>
-                          <AgreementBadge agreementId={s.agreementId} />
-                        </td>
-                        <td><span className="pill" data-status={s.status}>{s.status}</span></td>
-                        <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
-                        <td className="muted">
-                          <div style={{ fontWeight: 800 }}>{plate}</div>
-                          <div className="muted">{drv}</div>
-                        </td>
-                        <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                        <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-                        <td>
-                          <button type="button" className="btn sm" onClick={() => toggleFinalRow(sid)}>
-                            {isOpen ? "Kapat" : "Aç"}
-                          </button>
-                        </td>
-                      </tr>
-                      {isOpen ? (
-                        <tr>
-                          <td colSpan={7}>
-                            <div className="detailGrid">
-                              <div className="detailCol">
-                                <div className="detailTitle">Room Teklifi (R→C)</div>
-                                {renderRoomOfferSummary(s, false)}
-                              </div>
-                              <div className="detailCol">
-                                <div className="detailTitle">Company Teklifi (C→R)</div>
-                                {renderCompanyOfferSummary(s)}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="muted" style={{ marginTop: 10 }}>Henüz “Liste”ye düşen kayıt yok.</div>
-        )}
-      </AccordionCard>
+{/* LİSTE (Accordion) */}
+<div className="card" ref={listSectionRef} style={{ display: trackTab === "list" ? "block" : "none" }}>
+  <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+    <div className="row" style={{ alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <h3 style={{ margin: 0 }}>Liste</h3>
+      <span className="pill" data-status="COUNT" title="Filtrelere göre görünen liste kaydı sayısı">
+        {finalItems.length}
+      </span>
+      <span className="muted">Sadece APPROVED/ACTIVE/DONE/REJECTED burada görünür.</span>
+    </div>
 
-      {/* ✅ M24: Offer modal */}
+    <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+      <button
+        type="button"
+        className="btn sm"
+        disabled={accOpen.list}
+        onClick={() => setAccOpen((p) => ({ ...p, list: true }))}
+      >
+        Aç
+      </button>
+      <button
+        type="button"
+        className="btn sm"
+        disabled={!accOpen.list}
+        onClick={() => setAccOpen((p) => ({ ...p, list: false }))}
+      >
+        Kapat
+      </button>
+      <button type="button" className="btn sm" title="Aç / Kapat" onClick={() => toggleAcc("list")}>
+        {accOpen.list ? "▾" : "▸"}
+      </button>
+    </div>
+  </div>
+
+  {accOpen.list ? (
+    <div style={{ marginTop: 10 }}>
+      <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <div />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <select value={finalStatus} onChange={(e) => setFinalStatus(e.target.value)}>
+            <option value="ALL">Hepsi</option>
+            <option value="OPEN">Açık (APPROVED+ACTIVE)</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="DONE">DONE</option>
+            <option value="REJECTED">REJECTED</option>
+          </select>
+          <input
+            placeholder="Ara (id/status/plate/driver/note)"
+            value={finalQ}
+            onChange={(e) => setFinalQ(e.target.value)}
+            style={{ minWidth: 240 }}
+          />
+          <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={onlyAgreement}
+              onChange={(e) => setOnlyAgreement(e.target.checked)}
+            />
+            Sadece Agreement shiftleri
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setFinalStatus("ALL");
+              setFinalQ("");
+              setOnlyAgreement(false);
+            }}
+          >
+            Temizle
+          </button>
+        </div>
+      </div>
+
+      {finalItems.length ? (
+        <table className="tbl" style={{ marginTop: 10 }}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Room</th>
+              <th>Room Teklifi (R→C)</th>
+              <th>Company Teklifi (C→R)</th>
+              <th>Assigned Vehicle</th>
+              <th>Driver</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Uzat</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {finalItems.map((s) => {
+              const r = roomsById.get(Number(s.roomId));
+              return (
+                <tr key={s.id}>
+                  <td>
+                    {s.id}
+                    <AgreementBadge agreementId={s.agreementId} />
+                  </td>
+                  <td>
+                    <span className="pill" data-status={s.status}>
+                      {s.status}
+                    </span>
+                  </td>
+                  <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
+                  <td>{renderRoomOfferSummary(s, false)}</td>
+                  <td>{renderCompanyOfferSummary(s)}</td>
+                  <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
+                  <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
+                  <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
+                  <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+                
+  <td>
+    {s.extendRequestedEndAt ? (
+      <div style={{ display: "grid", gap: 6 }}>
+        <span className="pill" data-status={s.extendDecision || "PENDING"}>
+          {String(s.extendDecision || "PENDING")}
+        </span>
+        <div className="muted" title={String(s.extendRequestedEndAt)}>
+          Talep: {fmtTR(s.extendRequestedEndAt)}
+        </div>
+      </div>
+    ) : (
+      <button
+        type="button"
+        disabled={busy || !(String(s.status || "").toUpperCase() === "APPROVED" || String(s.status || "").toUpperCase() === "ACTIVE")}
+        onClick={() => openExtendModal(s)}
+      >
+        Süre Uzat
+      </button>
+    )}
+  </td>
+</tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ) : (
+        <div className="muted">Henüz “Liste”ye düşen kayıt yok.</div>
+      )}
+    </div>
+  ) : null}
+</div>
+
+
+        </>
+      ) : null}
+
+      
+
+{/* ✅ M51: Extend modal */}
+{extendModal.open ? (
+  <div className="card" style={{ border: "2px solid #ddd" }}>
+    <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+      <div>
+        <div style={{ fontWeight: 800 }}>Süre Uzat — Shift #{extendModal.shift?.id}</div>
+        <div className="muted">Bu talep Room’a gider; kabul edilince vardiya süresi uzar.</div>
+      </div>
+      <button
+        type="button"
+        className="btn sm"
+        disabled={busy}
+        onClick={() => setExtendModal({ open: false, shift: null, endLocal: "", note: "" })}
+      >
+        Kapat
+      </button>
+    </div>
+
+    <hr />
+
+    <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
+      <div className="col" style={{ minWidth: 240 }}>
+        <label className="muted">Yeni Bitiş (Istanbul)</label>
+        <input
+          type="datetime-local"
+          value={extendModal.endLocal}
+          onChange={(e) => setExtendModal((p) => ({ ...p, endLocal: e.target.value }))}
+        />
+      </div>
+      <div className="col" style={{ flex: 1, minWidth: 260 }}>
+        <label className="muted">Not (opsiyonel)</label>
+        <input
+          value={extendModal.note}
+          onChange={(e) => setExtendModal((p) => ({ ...p, note: e.target.value }))}
+          placeholder="opsiyonel"
+        />
+      </div>
+      <button type="button" disabled={busy} onClick={submitExtendRequest}>
+        {busy ? "..." : "Talep Gönder"}
+      </button>
+    </div>
+  </div>
+) : null}
+
+{/* ✅ M24: Offer modal */}
       {offerModal.open ? (
         <div className="card" style={{ border: "2px solid #ddd" }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
@@ -1975,7 +2285,7 @@ function usePlanDraftToRequest(draft) {
                   <td>
                     <button
                       type="button"
-                      disabled={busy || o.status === "CANCELLED" || o.status === "ACCEPTED"}
+                      disabled={busy || o.status !== "COUNTERED"}
                       onClick={() => acceptOffer(o.id)}
                     >
                       Kabul Et

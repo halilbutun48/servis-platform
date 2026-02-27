@@ -15,6 +15,7 @@ import {
   updateStopSchema,
   applyTemplateSchema,
   reorderStopsSchema,
+  extendShiftRequestSchema,
 } from "./schemas.js";
 
 // Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
@@ -22,6 +23,92 @@ import * as H from "./helpers.js";
 
 const emitShift = H.emitShift;
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
+
+// --- Agreement overlap helpers (used to skip market offers when a contract already exists) ---
+function dateOnlyUTC(d) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+function addDaysUTC(d, n) {
+  const x = new Date(d.getTime());
+  x.setUTCDate(x.getUTCDate() + n);
+  return x;
+}
+function minutesToDtUTC(day0, min) {
+  return new Date(day0.getTime() + min * 60_000);
+}
+function dowMaskUTC(d) {
+  // JS: 0=Sun ... 6=Sat; Bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
+  const dow = d.getUTCDay();
+  if (dow == 0) return 64;
+  return 1 << (dow - 1);
+}
+function overlapsUTC(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && aEnd > bStart;
+}
+function intervalsForDayUTC(ag, day0) {
+  // week gate: only the "start day" is masked (night shift spills to next day)
+  const mask = dowMaskUTC(day0);
+  if ((Number(ag.weekMask || 0) & mask) === 0) return [];
+
+  const start = minutesToDtUTC(day0, Number(ag.startMin || 0));
+  const endMin = Number(ag.endMin || 0);
+  const startMin = Number(ag.startMin || 0);
+
+  if (endMin >= startMin) {
+    const end = minutesToDtUTC(day0, endMin);
+    return [[start, end]];
+  }
+
+  // midnight cross: [start..24:00) + [00:00..endMin) next day
+  const end1 = minutesToDtUTC(day0, 1440);
+  const next0 = addDaysUTC(day0, 1);
+  const start2 = minutesToDtUTC(next0, 0);
+  const end2 = minutesToDtUTC(next0, endMin);
+  return [
+    [start, end1],
+    [start2, end2],
+  ];
+}
+
+function agreementOverlapsRangeUTC(ag, s, e) {
+  const s0 = dateOnlyUTC(s);
+  const e0 = dateOnlyUTC(e);
+  // iterate days in [s0..e0] + 1 for midnight spill
+  for (let day = s0; day <= addDaysUTC(e0, 1); day = addDaysUTC(day, 1)) {
+    const ints = intervalsForDayUTC(ag, day);
+    for (const [as, ae] of ints) {
+      if (overlapsUTC(as, ae, s, e)) return true;
+    }
+  }
+  return false;
+}
+
+async function findAgreementBlockedRoomIdsForShift({ companyId, roomIds, startAt, endAt }) {
+  const s = new Date(startAt);
+  const e = new Date(endAt);
+  const s0 = dateOnlyUTC(s);
+  const e0 = dateOnlyUTC(e);
+
+  const candidates = await prisma.agreement.findMany({
+    where: {
+      companyId,
+      roomId: { in: roomIds },
+      status: { in: ["APPROVED", "ACTIVE"] },
+      // coarse date range filter
+      startDate: { lte: e0 },
+      endDate: { gte: s0 },
+    },
+    select: { id: true, roomId: true, startDate: true, endDate: true, weekMask: true, startMin: true, endMin: true, status: true },
+    orderBy: { id: "asc" },
+  });
+
+  const blocked = new Set();
+  for (const ag of candidates) {
+    if (agreementOverlapsRangeUTC(ag, s, e)) blocked.add(Number(ag.roomId));
+  }
+  return blocked;
+}
+// --- /Agreement overlap helpers ---
 
 // Company-focused endpoints (some are also allowed for ROOM/SUPER_ADMIN)
 export function attachShiftCompanyRoutes(r, io) {
@@ -155,7 +242,7 @@ export function attachShiftCompanyRoutes(r, io) {
 
         const shift = await prisma.shift.findUnique({
           where: { id: shiftId },
-          select: { id: true, companyId: true, roomId: true, status: true },
+          select: { id: true, companyId: true, roomId: true, status: true, startAt: true, endAt: true },
         });
         if (!shift) return res.status(404).json({ error: "Shift not found" });
 
@@ -188,8 +275,26 @@ export function attachShiftCompanyRoutes(r, io) {
           return res.status(400).json({ error: "Some roomIds not found" });
         }
 
+        // ✅ If there is an active agreement (contract) overlapping this shift for a room,
+        // skip creating market offers for that room to avoid duplicate tracking (Agreement vs Market).
+        const blockedRoomIdsSet = await findAgreementBlockedRoomIdsForShift({
+          companyId: shift.companyId,
+          roomIds,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+        });
+
+        const skippedRoomIds = roomIds.filter((rid) => blockedRoomIdsSet.has(Number(rid)));
+        const effectiveRoomIds = roomIds.filter((rid) => !blockedRoomIdsSet.has(Number(rid)));
+        if (!effectiveRoomIds.length) {
+          return res.status(409).json({
+            error: "All selected rooms are already covered by an active agreement in this time window",
+            skippedRoomIds,
+          });
+        }
+
         await prisma.$transaction(
-          roomIds.map((rid) =>
+          effectiveRoomIds.map((rid) =>
             prisma.shiftOffer.upsert({
               where: { shiftId_roomId: { shiftId, roomId: rid } },
               create: {
@@ -218,9 +323,10 @@ export function attachShiftCompanyRoutes(r, io) {
         io?.to?.(`company:${shift.companyId}`)?.emit?.("offer:update", {
           kind: "offer:bulk",
           shiftId,
-          roomIds,
+          roomIds: effectiveRoomIds,
+          skippedRoomIds,
         });
-        for (const rid of roomIds) {
+        for (const rid of effectiveRoomIds) {
           io?.to?.(`room:${rid}`)?.emit?.("offer:update", {
             kind: "offer:inbox",
             shiftId,
@@ -228,7 +334,7 @@ export function attachShiftCompanyRoutes(r, io) {
           });
         }
 
-        return res.json({ ok: true, items });
+        return res.json({ ok: true, items, skippedRoomIds });
       } catch (e) {
         return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
@@ -421,19 +527,23 @@ export function attachShiftCompanyRoutes(r, io) {
           meta: { decision: body.decision },
         });
 
-        // notify ROOM
-        if (updated?.roomId) {
-          await createNotification({
-            kind: "SHIFT_OFFER_DECISION",
-            status: "INFO",
-            title: `Company decision: ${body.decision}`,
-            body: `Shift #${id}`,
-            roomId: updated.roomId,
-            companyId: updated.companyId,
-            shiftId: id,
-            dedupeKey: `shift:${id}:roomOfferDecision:${body.decision}`,
-          });
-        }
+        
+// notify ROOM
+if (updated?.roomId) {
+  await createNotification({
+    type: "SHIFT_OFFER_DECISION",
+    scope: "ROOM",
+    roomId: updated.roomId,
+    companyId: updated.companyId,
+    shiftId: id,
+    payload: {
+      v: 1,
+      title: `Company decision: ${body.decision}`,
+      message: `Shift #${id}${body.note ? " — " + body.note : ""}`,
+    },
+    dedupeKey: `shift:${id}:roomOfferDecision:${body.decision}`,
+  });
+}
 
         emitShift(io, updated, "shift:list");
         return res.json(updated);
@@ -445,7 +555,98 @@ export function attachShiftCompanyRoutes(r, io) {
     }
   );
 
-  // --- stops endpoints (aynen) ---
+  
+
+// COMPANY/SUPER_ADMIN: request shift end extension (Company → Room)
+r.put(
+  "/:id/extend-request",
+  authRequired(),
+  requireRole("COMPANY", "SUPER_ADMIN"),
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
+
+      const body = validateWithZod(extendShiftRequestSchema, req.body);
+      const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
+
+      if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      if (!shift.roomId) {
+        return res.status(409).json({ error: "Shift has no room (assign first)" });
+      }
+
+      const st = String(shift.status || "").toUpperCase();
+      if (!["APPROVED", "ACTIVE"].includes(st)) {
+        return res.status(409).json({ error: "Shift must be APPROVED/ACTIVE" });
+      }
+
+      if (shift.extendDecision === "PENDING" && shift.extendRequestedEndAt) {
+        return res.status(409).json({ error: "There is already a pending extension request" });
+      }
+
+      const cur = new Date(shift.endAt);
+      const next = new Date(body.requestedEndAt);
+      if (!Number.isFinite(cur.getTime()) || !Number.isFinite(next.getTime())) {
+        return res.status(400).json({ error: "Invalid date" });
+      }
+      if (!(next.getTime() > cur.getTime())) {
+        return res.status(400).json({ error: "requestedEndAt must be > endAt" });
+      }
+
+      const updated = await prisma.shift.update({
+        where: { id },
+        data: {
+          extendRequestedEndAt: next,
+          extendRequestedAt: new Date(),
+          extendDecision: "PENDING",
+          extendNoteCompany: body.noteCompany ?? null,
+          extendNoteRoom: null,
+          extendDecisionAt: null,
+        },
+        include: {
+          stops: { orderBy: { order: "asc" } },
+          progress: true,
+          vehicle: true,
+          driver: true,
+          company: true,
+          room: true,
+        },
+      });
+
+      await audit(req, {
+        action: "SHIFT_EXTEND_REQUEST",
+        entity: "Shift",
+        entityId: id,
+        meta: { requestedEndAt: next.toISOString() },
+      });
+
+      // notify ROOM
+      await createNotification({
+        type: "SHIFT_EXTEND_REQUEST",
+        scope: "ROOM",
+        roomId: updated.roomId,
+        companyId: updated.companyId,
+        shiftId: id,
+        payload: {
+          v: 1,
+          title: "Süre uzatma talebi",
+          message: `Shift #${id} için yeni bitiş: ${next.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`,
+        },
+        dedupeKey: `shift:${id}:extend:${next.toISOString()}`,
+      });
+
+      emitShift(io, updated, "shift:list");
+      return res.json(updated);
+    } catch (e) {
+      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+    }
+  }
+);
+
+// --- stops endpoints (aynen) ---
 
   r.post(
     "/:id/stops",

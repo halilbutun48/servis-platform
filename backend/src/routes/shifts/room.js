@@ -3,12 +3,14 @@ import prisma from "../../prisma.js";
 import { authRequired, requireRole } from "../../auth/middleware.js";
 import { validateWithZod } from "../../z.js";
 import { audit } from "../../audit.js";
+import { createNotification } from "../../notifications/service.js";
 
 import {
   approveShiftSchema,
   assignShiftSchema,
   rejectShiftSchema,
   roomOfferSchema,
+  extendShiftDecisionSchema,
 } from "./schemas.js";
 
 // Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
@@ -456,7 +458,84 @@ export function attachShiftRoomRoutes(r, io) {
     }
   );
 
-  // ROOM: start shift (status ACTIVE)
+  
+
+// ROOM/SUPER_ADMIN: decide on shift extension request (ACCEPT/REJECT)
+r.put(
+  "/:id/extend-decision",
+  authRequired(),
+  requireRole("ROOM", "SUPER_ADMIN"),
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
+
+      const body = validateWithZod(extendShiftDecisionSchema, req.body);
+      const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
+
+      if (req.user.role === "ROOM" && shift.roomId !== req.user.roomId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      if (shift.extendDecision !== "PENDING" || !shift.extendRequestedEndAt) {
+        return res.status(409).json({ error: "No pending extension request" });
+      }
+
+      const decision = body.decision;
+
+      const data = {
+        extendDecision: decision,
+        extendNoteRoom: body.noteRoom ?? null,
+        extendDecisionAt: new Date(),
+      };
+      if (decision === "ACCEPTED") {
+        data.endAt = shift.extendRequestedEndAt;
+      }
+
+      const updated = await prisma.shift.update({
+        where: { id },
+        data,
+        include: {
+          stops: { orderBy: { order: "asc" } },
+          progress: true,
+          vehicle: true,
+          driver: true,
+          company: true,
+          room: true,
+        },
+      });
+
+      await audit(req, {
+        action: "SHIFT_EXTEND_DECISION",
+        entity: "Shift",
+        entityId: id,
+        meta: { decision },
+      });
+
+      // notify COMPANY
+      await createNotification({
+        type: "SHIFT_EXTEND_DECISION",
+        scope: "COMPANY",
+        companyId: updated.companyId,
+        roomId: updated.roomId,
+        shiftId: id,
+        payload: {
+          v: 1,
+          title: "Süre uzatma kararı",
+          message: `Shift #${id} uzatma kararı: ${decision}`,
+        },
+        dedupeKey: `shift:${id}:extendDecision:${String(updated.extendRequestedEndAt ?? "")}`,
+      });
+
+      emitShift(io, updated, "shift:list");
+      return res.json(updated);
+    } catch (e) {
+      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+    }
+  }
+);
+
+// ROOM: start shift (status ACTIVE)
   r.post(
     "/:id/start",
     authRequired(),

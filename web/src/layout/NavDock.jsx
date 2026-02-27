@@ -74,12 +74,8 @@ export default function NavDock({ role, path }) {
           { label: "Sürücüler", path: "/room/drivers" },
         ],
       });
-      sections.push({
-        title: "Sözleşme",
-        items: [
-          { label: "Sözleşmeler", path: "/room/agreements" },
-        ],
-      });
+      // Sözleşmeler: Gelişmiş altında
+      advanced.push({ label: "Sözleşmeler", path: "/room/agreements" });
       advanced.push({ label: "Hub", path: "/room/hub" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "COMPANY") {
@@ -91,12 +87,8 @@ export default function NavDock({ role, path }) {
           { label: "Vardiyalar", path: "/company/shifts" },
         ],
       });
-      sections.push({
-        title: "Sözleşme",
-        items: [
-          { label: "Sözleşmeler", path: "/company/agreements" },
-        ],
-      });
+      // Sözleşmeler: Gelişmiş altında
+      advanced.push({ label: "Sözleşmeler", path: "/company/agreements" });
       advanced.push({ label: "Hub", path: "/company/hub" });
       advanced.push({ label: "Konum İncele", path: "/company/georeview" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });

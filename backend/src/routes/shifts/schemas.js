@@ -87,9 +87,31 @@ export const createShiftOffersSchema = z.object({
 });
 
 export const counterShiftOfferSchema = z.object({
-  amountRoom: posIntOpt,
-  noteRoom: z.string().max(500).optional(),
+  // tolerate null/empty inputs from UI (will become null in DB)
+  amountRoom: posIntOrNullOpt,
+  noteRoom: strOrNullMax(500),
 });
+
+
+// ----------------------------------
+// M51: Shift süre uzatma
+// ----------------------------------
+export const extendShiftRequestSchema = z
+  .object({
+    requestedEndAt: z
+      .string()
+      .datetime({ offset: true })
+      .or(z.string().datetime({ offset: false })),
+    noteCompany: strOrNullMax(500),
+  })
+  .strict();
+
+export const extendShiftDecisionSchema = z
+  .object({
+    decision: z.enum(["ACCEPTED", "REJECTED"]),
+    noteRoom: strOrNullMax(500),
+  })
+  .strict();
 
 // ----------------------------------
 // Update shift

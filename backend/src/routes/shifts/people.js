@@ -291,6 +291,22 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
+    // ✅ Hub auto-fill: shift.hub yoksa Company Hub'dan kopyala (rota önizleme başlangıç/bitiş ankrajı)
+    let hubApplied = false;
+    if (shift.hubLat == null || shift.hubLng == null) {
+      const c = await prisma.company.findUnique({
+        where: { id: shift.companyId },
+        select: { hubLat: true, hubLng: true },
+      });
+      if (c?.hubLat != null && c?.hubLng != null) {
+        await prisma.shift.update({
+          where: { id: shift.id },
+          data: { hubLat: c.hubLat, hubLng: c.hubLng },
+        });
+        hubApplied = true;
+      }
+    }
+
     const people = await getShiftPeople(shift.id);
     const { ok: points, skipped } = pickEligiblePoints(people);
 
@@ -299,6 +315,7 @@ export function attachShiftPeopleRoutes(router, _io) {
         ok: false,
         error: "No eligible personel points (need geoStatus OK or manual override + lat/lng)",
         skippedCount: skipped.length,
+        hubApplied,
       });
     }
 
@@ -311,6 +328,8 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const clusters = clusterStops(points, maxWalkM);
 
+    const namePrefix = String(shift?.direction || "INBOUND").toUpperCase() === "OUTBOUND" ? "Dropoff" : "Pickup";
+
     // Create stops in order
     const createdStops = [];
     for (let i = 0; i < clusters.length; i++) {
@@ -318,7 +337,7 @@ export function attachShiftPeopleRoutes(router, _io) {
       const stop = await prisma.stop.create({
         data: {
           shiftId: shift.id,
-          name: `Pickup ${i + 1}`,
+          name: `${namePrefix} ${i + 1}`,
           order: i,
           lat: c.center.lat,
           lng: c.center.lng,
@@ -348,6 +367,7 @@ export function attachShiftPeopleRoutes(router, _io) {
       stops: createdStops.length,
       assignments: assignmentCount,
       skipped: skipped.length,
+      hubApplied,
     });
 
     res.json({
@@ -357,6 +377,7 @@ export function attachShiftPeopleRoutes(router, _io) {
       stopCount: createdStops.length,
       assignmentCount,
       skippedCount: skipped.length,
+      hubApplied,
     });
   });
 

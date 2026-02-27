@@ -24,9 +24,10 @@ export default function HubPanel() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
-  async function load() {
+  async function load(opts = {}) {
+    const silent = Boolean(opts?.silent);
     setErr("");
-    setMsg("");
+    if (!silent) setMsg("");
     try {
       const r = await api("/api/rooms?take=5", { token });
       const item = r?.items?.[0];
@@ -44,7 +45,7 @@ export default function HubPanel() {
   }
 
   useEffect(() => {
-    load();
+    load({ silent: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -121,7 +122,7 @@ export default function HubPanel() {
     try {
       await api(`/api/rooms/${roomId}/hub`, { method: "PUT", token, body: { hubLat: a, hubLng: b } });
       setMsg("Kaydedildi.");
-      await load();
+      await load({ silent: true });
     } catch (e) {
       setErr(e?.message || String(e));
     } finally {
