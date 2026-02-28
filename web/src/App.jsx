@@ -158,8 +158,9 @@ export default function App() {
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
 
     // DRIVER
+    if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
-    if (path === "/driver/route" || String(path || "").startsWith("/driver/route?")) return { layout: true, node: <RoutePanel /> };
+    if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
 
     // PERSONEL
     if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };

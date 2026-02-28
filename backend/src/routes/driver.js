@@ -7,7 +7,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
-import { emitShift } from "./shifts/helpers.js";
+import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
 
 function buildEtaStops({ lat, lng, speedKmh, stops }) {
   return (stops ?? []).map((s) => {
@@ -80,6 +80,51 @@ async function completeShift({ shiftId, roomId, companyId, vehicleId, io }) {
 
 export function driverRouter(io) {
   const r = express.Router();
+
+  // DRIVER: Bugün + yarın vardiyalar (APPROVED/ACTIVE)
+  r.get("/shifts/today", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const driver = await prisma.driver.findFirst({ where: { userId: req.user.id }, select: { id: true } });
+    if (!driver) return res.json({ mode: "NO_DRIVER_PROFILE", today: [], tomorrow: [], active: null });
+
+    const todayYmd = ymdTR(new Date());
+    const tomorrowYmd = addDaysTR(todayYmd, 1);
+
+    const start = atTR(todayYmd, 0);
+    const end = atTR(addDaysTR(todayYmd, 2), 0);
+
+    const rows = await prisma.shift.findMany({
+      where: {
+        driverId: driver.id,
+        status: { in: ["APPROVED", "ACTIVE"] },
+        startAt: { gte: start, lt: end },
+      },
+      orderBy: { startAt: "asc" },
+      select: {
+        id: true,
+        startAt: true,
+        endAt: true,
+        status: true,
+        companyId: true,
+        roomId: true,
+        vehicleId: true,
+        driverId: true,
+        agreementId: true,
+      },
+    });
+
+    const today = [];
+    const tomorrow = [];
+    for (const s of rows) {
+      const y = ymdTR(s.startAt);
+      if (y === todayYmd) today.push(s);
+      else if (y === tomorrowYmd) tomorrow.push(s);
+    }
+
+    const active = rows.find((s) => s.status === "ACTIVE") || today[0] || tomorrow[0] || null;
+
+    return res.json({ mode: "OK", todayYmd, tomorrowYmd, today, tomorrow, active });
+  });
+
 
   // DRIVER: aktif rota + ilerleme
   r.get("/route/active", authRequired(), requireRole("DRIVER"), async (req, res) => {
@@ -158,41 +203,6 @@ export function driverRouter(io) {
       nextStop,
       routeStops, // order-sorted
     });
-  });
-
-  // DRIVER: shift start (APPROVED -> ACTIVE)
-  // UI uses this to explicitly start a task. First stop action would also auto-start,
-  // but having an explicit endpoint is better for UX.
-  r.post("/shifts/:shiftId/start", authRequired(), requireRole("DRIVER"), async (req, res) => {
-    const shiftId = Number(req.params.shiftId);
-    const driver = await getDriverByUserId(req.user.id);
-    if (!driver) return res.status(400).json({ error: "Driver profile not found" });
-
-    const shift = await prisma.shift.findUnique({
-      where: { id: shiftId },
-      select: { id: true, status: true, driverId: true, companyId: true, roomId: true },
-    });
-    if (!shift) return res.status(404).json({ error: "Shift not found" });
-    if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
-    if (!["APPROVED", "ACTIVE"].includes(shift.status)) {
-      return res.status(400).json({ error: "Shift cannot be started in this status", status: shift.status });
-    }
-
-    if (shift.status === "APPROVED") {
-      await prisma.shift.update({ where: { id: shiftId }, data: { status: "ACTIVE" } });
-    }
-
-    // ensure progress row exists (legacy clients rely on it)
-    await prisma.shiftProgress.upsert({
-      where: { shiftId },
-      update: {},
-      create: { shiftId, lastReachedOrder: 0 },
-    });
-
-    const fresh = await prisma.shift.findUnique({ where: { id: shiftId } });
-    emitShift(io, fresh, "shift:update", { action: "start", status: fresh?.status ?? "ACTIVE" });
-
-    return res.json({ ok: true, shiftId, status: fresh?.status ?? "ACTIVE" });
   });
 
   // DRIVER: next pending stop

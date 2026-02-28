@@ -6,39 +6,42 @@ import { navigate } from "../../router";
 function fmt(dt) {
   try {
     const d = new Date(dt);
-    if (Number.isNaN(d.getTime())) return String(dt ?? "-");
-    return d.toLocaleString("tr-TR", { hour: "2-digit", minute: "2-digit", year: "numeric", month: "2-digit", day: "2-digit" });
+    return d.toLocaleString("tr-TR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
-    return String(dt ?? "-");
-  }
-}
-
-function isSameDay(a, b) {
-  try {
-    const da = new Date(a);
-    const db = new Date(b);
-    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
-  } catch {
-    return false;
+    return String(dt);
   }
 }
 
 export default function DriverTodayPanel() {
   const { token } = useSession();
-  const [items, setItems] = useState([]);
+  const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   const [busyId, setBusyId] = useState(null);
 
+  const active = data?.active || null;
+  const today = data?.today || [];
+  const tomorrow = data?.tomorrow || [];
+
+  const hasAny = (today?.length || 0) + (tomorrow?.length || 0) > 0;
+
+  const activeLabel = useMemo(() => {
+    if (!active) return "Aktif görev yok";
+    return `Shift #${active.id} — ${active.status}`;
+  }, [active]);
+
   async function load() {
-    if (!token) return;
     setErr("");
     try {
-      const r = await api("/api/driver/shifts/open", { token });
-      const list = Array.isArray(r?.items) ? r.items : (Array.isArray(r) ? r : []);
-      setItems(list);
+      const r = await api("/api/driver/shifts/today", { token });
+      setData(r);
     } catch (e) {
       setErr(String(e?.message || e));
-      setItems([]);
     }
   }
 
@@ -47,163 +50,122 @@ export default function DriverTodayPanel() {
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
-  const now = useMemo(() => new Date(), []);
-  const active = useMemo(() => items.find((x) => x.status === "ACTIVE") || null, [items]);
-  const next = useMemo(() => {
-    if (active) return null;
-    // earliest APPROVED
-    return items
-      .filter((x) => x.status === "APPROVED")
-      .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))[0] || null;
-  }, [items, active]);
-
-  const todayItems = useMemo(() => items.filter((x) => isSameDay(x.startAt, new Date())), [items]);
-  const futureItems = useMemo(() => items.filter((x) => !isSameDay(x.startAt, new Date())), [items]);
+  }, []);
 
   async function startShift(shiftId) {
     setBusyId(shiftId);
     setErr("");
     try {
       await api(`/api/driver/shifts/${shiftId}/start`, { method: "POST", token });
-      navigate(`/driver/route?shift=${shiftId}`);
+      navigate("/driver/route");
     } catch (e) {
+      // Eğer endpoint yoksa veya yetki yoksa sürücü yine Rota ekranında manuel reached ile başlayabilir.
       setErr(String(e?.message || e));
     } finally {
       setBusyId(null);
     }
   }
 
-  function openRoute(shiftId) {
-    navigate(`/driver/route?shift=${shiftId}`);
-  }
-
-  function Card({ title, shift }) {
-    if (!shift) return null;
-    const stopsCount = Array.isArray(shift?.stops) ? shift.stops.length : 0;
-    const pendingCount = Array.isArray(shift?.stops) ? shift.stops.filter((s) => s.state === "PENDING").length : 0;
-
+  function ShiftRow({ s }) {
+    const isActive = active && active.id === s.id;
     return (
-      <div className="card">
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div>
-            <div className="title">{title}</div>
-            <div className="muted">
-              <b>Shift #{shift.id}</b> • {fmt(shift.startAt)} → {fmt(shift.endAt)} •{" "}
-              <span className="pill" data-status={shift.status}>{shift.status}</span>
-            </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Durak: <b>{stopsCount}</b> • Kalan: <b>{pendingCount}</b> • Araç: <b>{shift?.vehicle?.plate || "-"}</b>
-            </div>
-          </div>
-
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            {shift.status === "APPROVED" ? (
-              <button type="button" disabled={busyId === shift.id} onClick={() => startShift(shift.id)} style={{ fontWeight: 900 }}>
-                {busyId === shift.id ? "..." : "Göreve Başla"}
-              </button>
-            ) : null}
-            <button type="button" onClick={() => openRoute(shift.id)}>
-              Rota / Mini Harita
+      <tr key={s.id}>
+        <td>#{s.id}</td>
+        <td>
+          <span className="pill" data-status={s.status}>
+            {s.status}
+          </span>
+        </td>
+        <td>{fmt(s.startAt)}</td>
+        <td>{fmt(s.endAt)}</td>
+        <td style={{ whiteSpace: "nowrap" }}>
+          {s.status === "APPROVED" ? (
+            <button type="button" disabled={busyId === s.id} onClick={() => startShift(s.id)}>
+              {busyId === s.id ? "..." : "Göreve Başla"}
             </button>
-          </div>
-        </div>
-      </div>
+          ) : null}
+          <button type="button" style={{ marginLeft: 8 }} onClick={() => navigate("/driver/route")}
+            disabled={!isActive && s.status !== "ACTIVE"}>
+            Rota
+          </button>
+        </td>
+      </tr>
     );
   }
 
   return (
     <div>
       <div className="card">
-        <h3>Driver • Bugün</h3>
-        <div className="muted">En az tık: görev seç → başla → rota ekranında ilerle.</div>
+        <h3>Bugün</h3>
+        <div className="muted">Tek hedef: aktif görevi gör → başlat → rota ekranında reached ile ilerle.</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
 
-      {active ? <Card title="Aktif Görev" shift={active} /> : null}
-      {!active && next ? <Card title="Sıradaki Görev" shift={next} /> : null}
-
-      <div className="grid" style={{ marginTop: 12 }}>
-        <div className="card">
-          <h3>Bugün ({todayItems.length})</h3>
-          {todayItems.length ? (
-            <table className="tbl" style={{ marginTop: 10, whiteSpace: "nowrap" }}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Başlangıç</th>
-                  <th>Durum</th>
-                  <th>Araç</th>
-                  <th>İşlem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {todayItems.map((s) => (
-                  <tr key={s.id}>
-                    <td>#{s.id}</td>
-                    <td>{fmt(s.startAt)}</td>
-                    <td><span className="pill" data-status={s.status}>{s.status}</span></td>
-                    <td>{s?.vehicle?.plate || "-"}</td>
-                    <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {s.status === "APPROVED" ? (
-                        <button type="button" className="btn sm" disabled={busyId === s.id} onClick={() => startShift(s.id)}>
-                          Başla
-                        </button>
-                      ) : null}
-                      <button type="button" className="btn sm" onClick={() => openRoute(s.id)}>
-                        Rota
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="muted">Bugün için görev yok.</div>
-          )}
-        </div>
-
-        <div className="card">
-          <h3>Yaklaşan ({futureItems.length})</h3>
-          {futureItems.length ? (
-            <table className="tbl" style={{ marginTop: 10, whiteSpace: "nowrap" }}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Başlangıç</th>
-                  <th>Durum</th>
-                  <th>Araç</th>
-                  <th>İşlem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {futureItems.map((s) => (
-                  <tr key={s.id}>
-                    <td>#{s.id}</td>
-                    <td>{fmt(s.startAt)}</td>
-                    <td><span className="pill" data-status={s.status}>{s.status}</span></td>
-                    <td>{s?.vehicle?.plate || "-"}</td>
-                    <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {s.status === "APPROVED" ? (
-                        <button type="button" className="btn sm" disabled={busyId === s.id} onClick={() => startShift(s.id)}>
-                          Başla
-                        </button>
-                      ) : null}
-                      <button type="button" className="btn sm" onClick={() => openRoute(s.id)}>
-                        Rota
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="muted">Yaklaşan görev yok.</div>
-          )}
+      <div className="card">
+        <h3>Aktif Görev</h3>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <b>{activeLabel}</b>
+            {active ? (
+              <div className="muted">Start: {fmt(active.startAt)} • End: {fmt(active.endAt)}</div>
+            ) : (
+              <div className="muted">Bugün için atanmış ACTIVE/APPROVED vardiya yok.</div>
+            )}
+          </div>
+          {active?.status === "APPROVED" ? (
+            <button type="button" disabled={busyId === active.id} onClick={() => startShift(active.id)}>
+              {busyId === active.id ? "..." : "Göreve Başla"}
+            </button>
+          ) : null}
+          {active?.status === "ACTIVE" ? (
+            <button type="button" onClick={() => navigate("/driver/route")}>Rota'ya Git</button>
+          ) : null}
         </div>
       </div>
+
+      {!hasAny ? (
+        <div className="card muted">Bugün/yarın için vardiya bulunamadı.</div>
+      ) : (
+        <>
+          <div className="card" style={{ overflowX: "auto" }}>
+            <h3>Bugün Vardiyalar</h3>
+            <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Aksiyon</th>
+                </tr>
+              </thead>
+              <tbody>{today.map((s) => <ShiftRow key={s.id} s={s} />)}</tbody>
+            </table>
+          </div>
+
+          {tomorrow?.length ? (
+            <div className="card" style={{ overflowX: "auto" }}>
+              <h3>Yarın</h3>
+              <table className="tbl" style={{ whiteSpace: "nowrap" }}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Status</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Aksiyon</th>
+                  </tr>
+                </thead>
+                <tbody>{tomorrow.map((s) => <ShiftRow key={s.id} s={s} />)}</tbody>
+              </table>
+              <div className="muted" style={{ marginTop: 8 }}>
+                Not: Yarınki vardiyalar şimdilik sadece bilgi amaçlıdır; başlayınca otomatik ACTIVE olur.
+              </div>
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
