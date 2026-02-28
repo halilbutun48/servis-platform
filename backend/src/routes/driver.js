@@ -1,13 +1,51 @@
 // backend/src/routes/driver.js
 // Mounted at: /api/driver
-// Purpose: DRIVER operational endpoints (active route, stop actions, completion)
+// Purpose: DRIVER operational endpoints (today list, active route, stop actions, completion)
 // NOTE: ROOM driver CRUD lives in routes/drivers.js (mounted at /api/drivers).
 
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
+import { emitShift } from "./shifts/helpers.js";
+
+// TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
+
+// M72: audit helper (must never break ops)
+async function audit(prisma, { actorUserId, actorRole, action, entity, entityId, meta }) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: actorUserId ?? null,
+        actorRole: actorRole ?? null,
+        action,
+        entity,
+        entityId: entityId ?? null,
+        meta: meta ?? undefined,
+      },
+    });
+  } catch (e) {
+    console.error("AUDIT error:", e);
+  }
+}
+
+async function ensureProgressStarted(prisma, shiftId, now) {
+  const p = await prisma.shiftProgress.findUnique({ where: { shiftId } });
+  if (!p) {
+    await prisma.shiftProgress.create({
+      data: { shiftId, lastReachedOrder: 0, startedAt: now, pausedAt: null },
+    });
+    return;
+  }
+  const data = {};
+  if (!p.startedAt) data.startedAt = now;
+  if (p.pausedAt) data.pausedAt = null;
+  if (Object.keys(data).length) {
+    await prisma.shiftProgress.update({ where: { shiftId }, data });
+  }
+}
+
 
 function buildEtaStops({ lat, lng, speedKmh, stops }) {
   return (stops ?? []).map((s) => {
@@ -81,7 +119,9 @@ async function completeShift({ shiftId, roomId, companyId, vehicleId, io }) {
 export function driverRouter(io) {
   const r = express.Router();
 
-  // DRIVER: Bugün + yarın vardiyalar (APPROVED/ACTIVE)
+  // =========================================================
+  // M70: Driver today list (today + tomorrow)
+  // =========================================================
   r.get("/shifts/today", authRequired(), requireRole("DRIVER"), async (req, res) => {
     const driver = await prisma.driver.findFirst({ where: { userId: req.user.id }, select: { id: true } });
     if (!driver) return res.json({ mode: "NO_DRIVER_PROFILE", today: [], tomorrow: [], active: null });
@@ -125,8 +165,9 @@ export function driverRouter(io) {
     return res.json({ mode: "OK", todayYmd, tomorrowYmd, today, tomorrow, active });
   });
 
-
-  // DRIVER: aktif rota + ilerleme
+  // =========================================================
+  // DRIVER: active route + progress
+  // =========================================================
   r.get("/route/active", authRequired(), requireRole("DRIVER"), async (req, res) => {
     const u = req.user;
     const driver = await prisma.driver.findFirst({ where: { userId: u.id } });
@@ -170,7 +211,9 @@ export function driverRouter(io) {
     if (last) orderedStops.sort((a, b) => a.remainingKm - b.remainingKm);
 
     const nextStop = firstPendingStop(shift.stops ?? []);
-    const lastReachedOrder = shift.progress?.lastReachedOrder ?? derivedLastReachedOrder(shift.stops ?? []);
+
+    // M71: lastReachedOrder should follow stop states (undo uses reopen)
+    const lastReachedOrder = derivedLastReachedOrder(shift.stops ?? []);
 
     return res.json({
       mode: "OK",
@@ -197,12 +240,61 @@ export function driverRouter(io) {
       last,
       progress: {
         lastReachedOrder,
+        startedAt: shift.progress?.startedAt ?? null,
+        pausedAt: shift.progress?.pausedAt ?? null,
         completed: shift.status === "DONE" || !!shift.progress?.completedAt,
       },
       orderedStops, // distance-sorted
       nextStop,
       routeStops, // order-sorted
     });
+  });
+
+  // =========================================================
+  // DRIVER: explicit shift start (APPROVED -> ACTIVE)
+  // =========================================================
+  r.post("/shifts/:shiftId/start", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const shiftId = Number(req.params.shiftId);
+    const driver = await getDriverByUserId(req.user.id);
+    if (!driver) return res.status(400).json({ error: "Driver profile not found" });
+
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      select: { id: true, status: true, driverId: true, companyId: true, roomId: true, vehicleId: true },
+    });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+    if (!['APPROVED', 'ACTIVE'].includes(shift.status)) {
+      return res.status(400).json({ error: "Shift cannot be started in this status", status: shift.status });
+    }
+
+    if (shift.status === "APPROVED") {
+      await prisma.shift.update({ where: { id: shiftId }, data: { status: "ACTIVE" } });
+    }
+
+    // ensure progress row exists
+    await prisma.shiftProgress.upsert({
+      where: { shiftId },
+      update: {},
+      create: { shiftId, lastReachedOrder: 0 },
+    });
+
+    const now = new Date();
+    await ensureProgressStarted(prisma, shiftId, now);
+    await audit(prisma, {
+      actorUserId: req.user.id,
+      actorRole: req.user.role,
+      action: "DRIVER_SHIFT_START",
+      entity: "Shift",
+      entityId: shiftId,
+      meta: { source: "MANUAL" },
+    });
+
+
+    const fresh = await prisma.shift.findUnique({ where: { id: shiftId } });
+    emitShift(io, fresh, "shift:update", { action: "start", status: fresh?.status ?? "ACTIVE" });
+
+    return res.json({ ok: true, shiftId, status: fresh?.status ?? "ACTIVE" });
   });
 
   // DRIVER: next pending stop
@@ -221,7 +313,7 @@ export function driverRouter(io) {
     return res.json({ nextStop: firstPendingStop(shift.stops ?? []) });
   });
 
-  async function applyStopState({ req, res, state }) {
+  async function applyStopState({ req, res, state, source = "MANUAL" }) {
     const shiftId = Number(req.params.shiftId);
     const stopId = Number(req.params.stopId);
 
@@ -235,12 +327,19 @@ export function driverRouter(io) {
       return res.status(400).json({ error: "Shift not active" });
     }
 
+    // M72: pause gate (A: safer)
+    if (shift.progress?.pausedAt && (state === "REACHED" || state === "SKIPPED")) {
+      return res.status(409).json({ error: "Shift paused", code: "SHIFT_PAUSED" });
+    }
+
     const stop = (shift.stops ?? []).find((s) => s.id === stopId);
     if (!stop) return res.status(404).json({ error: "Stop not found" });
 
     // idempotent
     if (stop.state === state) {
-      return res.json({ ok: true, shiftId, stopId, state, nextStop: firstPendingStop(shift.stops ?? []) });
+      const nextStop0 = firstPendingStop(shift.stops ?? []);
+      const lastReachedOrder0 = derivedLastReachedOrder(shift.stops ?? []);
+      return res.json({ ok: true, shiftId, stopId, state, nextStop: nextStop0, completed: !nextStop0, lastReachedOrder: lastReachedOrder0 });
     }
 
     const now = new Date();
@@ -248,6 +347,7 @@ export function driverRouter(io) {
     // reached/skip counts as movement -> start shift if still APPROVED
     if (state === "REACHED" || state === "SKIPPED") {
       await maybeStartShiftIfApproved(shiftId);
+      await ensureProgressStarted(prisma, shiftId, now);
     }
 
     const data = { state };
@@ -264,27 +364,40 @@ export function driverRouter(io) {
       data.skippedAt = null;
     }
 
-    // keep legacy progress monotonic (best-effort)
-    const currentReached = shift.progress?.lastReachedOrder ?? 0;
-    const nextLegacyReached = state === "PENDING" ? currentReached : Math.max(currentReached, stop.order ?? 0);
+    if (state !== "PENDING") {
+      // progress -> monotonic increase
+      const currentReached = shift.progress?.lastReachedOrder ?? 0;
+      const nextLegacyReached = Math.max(currentReached, stop.order ?? 0);
 
-    await prisma.$transaction([
-      prisma.stop.update({ where: { id: stopId }, data }),
-      prisma.shiftProgress.upsert({
-        where: { shiftId },
-        update: { lastReachedOrder: nextLegacyReached },
-        create: { shiftId, lastReachedOrder: nextLegacyReached },
-      }),
-    ]);
+      await prisma.$transaction([
+        prisma.stop.update({ where: { id: stopId }, data }),
+        prisma.shiftProgress.upsert({
+          where: { shiftId },
+          update: { lastReachedOrder: nextLegacyReached },
+          create: { shiftId, lastReachedOrder: nextLegacyReached },
+        }),
+      ]);
+    } else {
+      // M71: undo/reopen should ALSO fix progress
+      await prisma.stop.update({ where: { id: stopId }, data });
+    }
 
     // reload stops for accurate nextStop/completion
     const fresh = await prisma.shift.findUnique({
       where: { id: shiftId },
-      include: { stops: { orderBy: { order: "asc" } }, vehicle: { include: { gpsLast: true } } },
+      include: { stops: { orderBy: { order: "asc" } }, vehicle: { include: { gpsLast: true } }, progress: true },
     });
 
     const nextStop = firstPendingStop(fresh?.stops ?? []);
     const completed = !nextStop;
+
+    // M71: progress should match stop states (supports undo window)
+    const lastReachedOrder = derivedLastReachedOrder(fresh?.stops ?? []);
+    await prisma.shiftProgress.upsert({
+      where: { shiftId },
+      update: { lastReachedOrder },
+      create: { shiftId, lastReachedOrder },
+    });
 
     const payload = {
       shiftId,
@@ -338,23 +451,112 @@ export function driverRouter(io) {
       }
     }
 
-    return res.json({ ok: true, shiftId, stopId, state, nextStop, completed });
+    await audit(prisma, {
+      actorUserId: req.user.id,
+      actorRole: req.user.role,
+      action: state === "REACHED" ? "DRIVER_STOP_REACHED" : state === "SKIPPED" ? "DRIVER_STOP_SKIPPED" : (source === "UNDO" ? "DRIVER_STOP_UNDO" : "DRIVER_STOP_REOPEN"),
+      entity: "Shift",
+      entityId: shiftId,
+      meta: { stopId, state, source },
+    });
+
+    return res.json({ ok: true, shiftId, stopId, state, nextStop, completed, lastReachedOrder });
   }
 
   // DRIVER: reached
   r.post("/shifts/:shiftId/stops/:stopId/reached", authRequired(), requireRole("DRIVER"), async (req, res) =>
-    applyStopState({ req, res, state: "REACHED" })
+    applyStopState({ req, res, state: "REACHED", source: "MANUAL" })
   );
 
   // DRIVER: skip
   r.post("/shifts/:shiftId/stops/:stopId/skip", authRequired(), requireRole("DRIVER"), async (req, res) =>
-    applyStopState({ req, res, state: "SKIPPED" })
+    applyStopState({ req, res, state: "SKIPPED", source: "MANUAL" })
   );
 
   // DRIVER: reopen (back to PENDING)
   r.post("/shifts/:shiftId/stops/:stopId/reopen", authRequired(), requireRole("DRIVER"), async (req, res) =>
-    applyStopState({ req, res, state: "PENDING" })
+    applyStopState({ req, res, state: "PENDING", source: "MANUAL" })
   );
+
+  // M71: undo (2 minutes)
+  r.post("/shifts/:shiftId/stops/:stopId/undo", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const shiftId = Number(req.params.shiftId);
+    const stopId = Number(req.params.stopId);
+
+    const driver = await getDriverByUserId(req.user.id);
+    if (!driver) return res.status(400).json({ error: "Driver profile not found" });
+
+    const shift = await getShiftForDriver({ shiftId });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+    if (!["APPROVED", "ACTIVE"].includes(shift.status)) {
+      return res.status(400).json({ error: "Shift not active" });
+    }
+
+    const stop = (shift.stops ?? []).find((s) => s.id === stopId);
+    if (!stop) return res.status(404).json({ error: "Stop not found" });
+
+    if (!["REACHED", "SKIPPED"].includes(stop.state)) {
+      return res.status(409).json({ error: "Nothing to undo", state: stop.state });
+    }
+
+    const actionAt = stop.reachedAt || stop.skippedAt;
+    if (!actionAt) return res.status(409).json({ error: "No action timestamp" });
+
+    const ageMs = Date.now() - new Date(actionAt).getTime();
+    const windowMs = 2 * 60 * 1000;
+    if (ageMs > windowMs) {
+      return res.status(409).json({ error: "Undo window expired", windowSec: 120 });
+    }
+
+    // reuse main flow
+    return applyStopState({ req, res, state: "PENDING", source: "MANUAL" });
+  });
+
+  // M72: pause/resume (shift status stays ACTIVE; progress.pausedAt controls)
+  r.post("/shifts/:shiftId/pause", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const shiftId = Number(req.params.shiftId);
+    const driver = await getDriverByUserId(req.user.id);
+    if (!driver) return res.status(400).json({ error: "Driver profile not found" });
+
+    const sh = await prisma.shift.findUnique({ where: { id: shiftId }, select: { id: true, status: true, driverId: true } });
+    if (!sh) return res.status(404).json({ error: "Shift not found" });
+    if (sh.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+    if (sh.status !== "ACTIVE") return res.status(400).json({ error: "Shift not ACTIVE", status: sh.status });
+
+    const now = new Date();
+    await prisma.shiftProgress.upsert({
+      where: { shiftId },
+      update: { pausedAt: now, startedAt: undefined },
+      create: { shiftId, lastReachedOrder: 0, startedAt: now, pausedAt: now },
+    });
+    await prisma.shiftProgress.updateMany({ where: { shiftId, startedAt: null }, data: { startedAt: now } });
+
+    await audit(prisma, { actorUserId: req.user.id, actorRole: req.user.role, action: "DRIVER_SHIFT_PAUSE", entity: "Shift", entityId: shiftId, meta: {} });
+    return res.json({ ok: true, shiftId, pausedAt: now });
+  });
+
+  r.post("/shifts/:shiftId/resume", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const shiftId = Number(req.params.shiftId);
+    const driver = await getDriverByUserId(req.user.id);
+    if (!driver) return res.status(400).json({ error: "Driver profile not found" });
+
+    const sh = await prisma.shift.findUnique({ where: { id: shiftId }, select: { id: true, status: true, driverId: true } });
+    if (!sh) return res.status(404).json({ error: "Shift not found" });
+    if (sh.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+    if (sh.status !== "ACTIVE") return res.status(400).json({ error: "Shift not ACTIVE", status: sh.status });
+
+    const now = new Date();
+    await prisma.shiftProgress.upsert({
+      where: { shiftId },
+      update: { pausedAt: null },
+      create: { shiftId, lastReachedOrder: 0, startedAt: now, pausedAt: null },
+    });
+    await prisma.shiftProgress.updateMany({ where: { shiftId, startedAt: null }, data: { startedAt: now } });
+
+    await audit(prisma, { actorUserId: req.user.id, actorRole: req.user.role, action: "DRIVER_SHIFT_RESUME", entity: "Shift", entityId: shiftId, meta: {} });
+    return res.json({ ok: true, shiftId });
+  });
 
   // DRIVER: complete shift (manual)
   r.post("/shifts/:shiftId/complete", authRequired(), requireRole("DRIVER"), async (req, res) => {
@@ -372,6 +574,12 @@ export function driverRouter(io) {
       return res.status(400).json({ error: "Shift cannot be completed in this status" });
     }
 
+
+    const prog = await prisma.shiftProgress.findUnique({ where: { shiftId } });
+    if (prog?.pausedAt) {
+      return res.status(409).json({ error: "Shift paused", code: "SHIFT_PAUSED" });
+    }
+
     const pending = (shift.stops ?? []).filter((s) => s.state === "PENDING");
     if (pending.length) {
       return res.status(400).json({ error: "Pending stops exist", pendingCount: pending.length });
@@ -381,6 +589,7 @@ export function driverRouter(io) {
       await completeShift({ shiftId, roomId: shift.roomId, companyId: shift.companyId, vehicleId: shift.vehicleId, io });
     }
 
+    await audit(prisma, { actorUserId: req.user.id, actorRole: req.user.role, action: "DRIVER_SHIFT_COMPLETE", entity: "Shift", entityId: shiftId, meta: { source: "MANUAL" } });
     return res.json({ ok: true, shiftId, status: "DONE" });
   });
 

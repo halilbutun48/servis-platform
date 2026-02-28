@@ -718,6 +718,8 @@ model ShiftProgress {
   id               Int      @id @default(autoincrement())
   shiftId          Int      @unique
   lastReachedOrder Int      @default(0)
+  startedAt        DateTime?
+  pausedAt         DateTime?
   completedAt      DateTime?
   updatedAt        DateTime @updatedAt
 

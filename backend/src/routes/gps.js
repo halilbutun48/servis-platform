@@ -8,12 +8,32 @@ import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW
+import { gpsThrottle1200ms } from "../middleware/gpsThrottle1200ms.js";
+
+// M72: audit helper (must never break gps ingest)
+async function audit(prisma, { actorUserId, actorRole, action, entity, entityId, meta }) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: actorUserId ?? null,
+        actorRole: actorRole ?? null,
+        action,
+        entity,
+        entityId: entityId ?? null,
+        meta: meta ?? undefined,
+      },
+    });
+  } catch (e) {
+    console.error("AUDIT error:", e);
+  }
+}
+
 
 export function gpsRouter(io) {
   const r = express.Router();
 
   // DRIVER: GPS ingest
-  r.post("/", authRequired(), requireRole("DRIVER"), async (req, res) => {
+  r.post("/", authRequired(), requireRole("DRIVER"), gpsThrottle1200ms({ minIntervalMs: 1200 }), async (req, res) => {
     try {
       const u = req.user;
 
@@ -306,6 +326,125 @@ export function gpsRouter(io) {
       }
 
       // =========================================================
+      // ✅ M71: AUTO-REACHED (geofence)
+      // - Uses vehicle GPS ingest (/api/gps) which is typically sent by the driver app/device.
+      // - When within 80m of the NEXT pending stop and (speed <= 15 km/h if provided), mark stop as REACHED.
+      // - Idempotent: already reached/skipped stops are ignored.
+      // =========================================================
+      try {
+        const radiusM = 80;
+        const maxSpeedKmh = 15;
+        const speedKmh = typeof speed === "number" ? speed : null;
+
+        function firstPending(stops) {
+          return (stops ?? []).find((s) => s.state === "PENDING") ?? null;
+        }
+
+        function derivedLastReached(stops) {
+          let max = 0;
+          for (const s of stops ?? []) {
+            if (s.state === "REACHED" || s.state === "SKIPPED") {
+              if (typeof s.order === "number" && s.order > max) max = s.order;
+            }
+          }
+          return max;
+        }
+
+        const shifts = await prisma.shift.findMany({
+          where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
+          include: { stops: { orderBy: { order: "asc" } }, progress: true },
+        });
+
+        for (const sh of shifts) {
+          if (sh.progress?.pausedAt) continue;
+          const next = firstPending(sh.stops ?? []);
+          if (!next) continue;
+
+          const km = haversineKm(lat, lng, next.lat, next.lng);
+          const distM = km * 1000;
+          if (distM > radiusM) continue;
+          if (speedKmh !== null && speedKmh > maxSpeedKmh) continue;
+
+          // start shift if still APPROVED
+          await prisma.shift.updateMany({ where: { id: sh.id, status: "APPROVED" }, data: { status: "ACTIVE" } });
+
+          // ensure startedAt exists and not paused
+          await prisma.shiftProgress.upsert({
+            where: { shiftId: sh.id },
+            update: { pausedAt: null },
+            create: { shiftId: sh.id, lastReachedOrder: 0, startedAt: now2, pausedAt: null },
+          });
+          await prisma.shiftProgress.updateMany({ where: { shiftId: sh.id, startedAt: null }, data: { startedAt: now2 } });
+
+          const now2 = new Date();
+
+          // update stop + progress
+          await prisma.stop.update({
+            where: { id: next.id },
+            data: { state: "REACHED", reachedAt: now2, skippedAt: null },
+          });
+
+          await audit(prisma, {
+            actorUserId: null,
+            actorRole: "SYSTEM",
+            action: "AUTO_STOP_REACHED",
+            entity: "Shift",
+            entityId: sh.id,
+            meta: { stopId: next.id, vehicleId, source: "AUTO_GEOFENCE" },
+          });
+
+          const fresh = await prisma.shift.findUnique({
+            where: { id: sh.id },
+            include: { stops: { orderBy: { order: "asc" } } },
+          });
+
+          const nextStop = firstPending(fresh?.stops ?? []);
+          const completed = !nextStop;
+
+          const lastReachedOrder = derivedLastReached(fresh?.stops ?? []);
+          await prisma.shiftProgress.upsert({
+            where: { shiftId: sh.id },
+            update: { lastReachedOrder },
+            create: { shiftId: sh.id, lastReachedOrder },
+          });
+
+          const payload = {
+            shiftId: sh.id,
+            vehicleId,
+            nextStop,
+            completed,
+            changed: { stopId: next.id, state: "REACHED", reachedAt: now2 },
+            source: "AUTO_GEOFENCE",
+          };
+
+          io.to(`shift:${sh.id}`).emit("route:progress", payload);
+          if (sh.roomId) io.to(`room:${sh.roomId}`).emit("route:progress", payload);
+          if (sh.companyId) io.to(`company:${sh.companyId}`).emit("route:progress", payload);
+          io.to(`vehicle:${vehicleId}`).emit("route:progress", payload);
+
+          if (completed) {
+            // mark DONE + completedAt
+            await prisma.shiftProgress.upsert({
+              where: { shiftId: sh.id },
+              update: { completedAt: now2, lastReachedOrder },
+              create: { shiftId: sh.id, lastReachedOrder, completedAt: now2 },
+            });
+            await prisma.shift.update({ where: { id: sh.id }, data: { status: "DONE" } });
+
+            await audit(prisma, { actorUserId: null, actorRole: "SYSTEM", action: "AUTO_SHIFT_COMPLETE", entity: "Shift", entityId: sh.id, meta: { vehicleId, source: "AUTO_GEOFENCE" } });
+
+            const donePayload = { shiftId: sh.id, vehicleId, completed: true, nextStop: null, source: "AUTO_GEOFENCE" };
+            io.to(`shift:${sh.id}`).emit("route:progress", donePayload);
+            if (sh.roomId) io.to(`room:${sh.roomId}`).emit("route:progress", donePayload);
+            if (sh.companyId) io.to(`company:${sh.companyId}`).emit("route:progress", donePayload);
+            io.to(`vehicle:${vehicleId}`).emit("route:progress", donePayload);
+          }
+        }
+      } catch (e) {
+        console.error("AUTO_REACHED error:", e);
+      }
+
+      // =========================================================
       // ✅ ETA broadcast (progress-aware)
       // =========================================================
       try {
@@ -319,6 +458,7 @@ export function gpsRouter(io) {
         const speedKmh = typeof speed === "number" ? speed : 30;
 
         for (const sh of shifts) {
+          if (sh.progress?.pausedAt) continue;
           if (!sh.stops?.length) continue;
 
           const remainingStops = sh.stops.filter((s) => s.state === "PENDING");

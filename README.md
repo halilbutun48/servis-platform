@@ -1,25 +1,16 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1
+# OVERLAY M72.4.1 — Optimistic Reached (Multi-click safe)
 
-GPS tabanlı personel servis platformu (Company / Room / Driver / Personel).  
-**Son GREEN:** ✅ GATE PASS (M0→M32) + ✅ PACK PASS (M0→M32)
+## Problem
+API down iken Reached queued oluyor; M72.4'te bazı durumlarda sadece 1 kez ilerleyip
+sonraki tıklamalarda ilerleme artmıyordu (closure/stale nextStop).
 
-## Doğrulama (canonical)
-- `tools\pack.ps1 -To 32`  → GREEN kanıtı
-- `tools\gate.ps1 -To 32`  → compose up + milestone check’ler
+## Fix
+Queued olduğunda optimistic ilerlemeyi **state içinden** yap:
+- Her tıklamada `prev.nextStop` (veya lastReachedOrder'a göre ilk stop) reached sayılır
+- `progress.lastReachedOrder` güncellenir
+- `nextStop` bir sonraki durağa geçer
 
-> Windows ExecutionPolicy engeli için: `tools\pack.cmd` / `tools\gate.cmd`
+Bu sayede API down iken arka arkaya Reached basınca her seferinde UI ilerler.
 
-## Repo yapısı
-- `backend/` Node.js (ESM) + Express + Prisma + jobs + ws
-- `web/` Vite + React paneller
-- `infra/` docker-compose (db + redis + api + web)
-- `docs/` SSOT dokümanlar (PRIMER/API/DB/UI/STARTPACK)
-- `tools/` gate/pack scriptleri + primer snapshot
-
-## Opsiyonel servisler (V1.5 / Plan Builder hazırlığı)
-- **OSRM**: `OSRM_URL` tanımlanırsa matriks/rota çağrıları çalışır.
-- **Solver (OR-Tools)**: `PLAN_SOLVER_URL` tanımlanırsa solve hızlanır; yoksa heuristic fallback devrede.
-
-## Notlar
-- Overlay/patch notları: `OVERLAY_NOTES.md`
-- Yeni sohbet “yapıştır & devam et”: `tools/PRIMER_SNAPSHOT.md`
+## Uygulama
+Zip'i repo root'a aç ve script'i çalıştır.
