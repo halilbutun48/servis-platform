@@ -7,6 +7,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
+import { emitShift } from "./shifts/helpers.js";
 
 function buildEtaStops({ lat, lng, speedKmh, stops }) {
   return (stops ?? []).map((s) => {
@@ -157,6 +158,41 @@ export function driverRouter(io) {
       nextStop,
       routeStops, // order-sorted
     });
+  });
+
+  // DRIVER: shift start (APPROVED -> ACTIVE)
+  // UI uses this to explicitly start a task. First stop action would also auto-start,
+  // but having an explicit endpoint is better for UX.
+  r.post("/shifts/:shiftId/start", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const shiftId = Number(req.params.shiftId);
+    const driver = await getDriverByUserId(req.user.id);
+    if (!driver) return res.status(400).json({ error: "Driver profile not found" });
+
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      select: { id: true, status: true, driverId: true, companyId: true, roomId: true },
+    });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+    if (!["APPROVED", "ACTIVE"].includes(shift.status)) {
+      return res.status(400).json({ error: "Shift cannot be started in this status", status: shift.status });
+    }
+
+    if (shift.status === "APPROVED") {
+      await prisma.shift.update({ where: { id: shiftId }, data: { status: "ACTIVE" } });
+    }
+
+    // ensure progress row exists (legacy clients rely on it)
+    await prisma.shiftProgress.upsert({
+      where: { shiftId },
+      update: {},
+      create: { shiftId, lastReachedOrder: 0 },
+    });
+
+    const fresh = await prisma.shift.findUnique({ where: { id: shiftId } });
+    emitShift(io, fresh, "shift:update", { action: "start", status: fresh?.status ?? "ACTIVE" });
+
+    return res.json({ ok: true, shiftId, status: fresh?.status ?? "ACTIVE" });
   });
 
   // DRIVER: next pending stop

@@ -96,8 +96,9 @@ export default function NavDock({ role, path }) {
       sections.push({
         title: "",
         items: [
-          { label: "Harita", path: "/driver/map" },
+          { label: "Bugün", path: "/driver/today" },
           { label: "Rota", path: "/driver/route" },
+          { label: "Harita", path: "/driver/map" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });

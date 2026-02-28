@@ -25,6 +25,7 @@ import CompanyHubPanel from "./panels/company/HubPanel";
 // DRIVER
 import DriverMapPanel from "./panels/driver/MapPanel";
 import RoutePanel from "./panels/driver/RoutePanel";
+import DriverTodayPanel from "./panels/driver/TodayPanel";
 
 // PERSONEL
 import PersonelLivePanel from "./panels/personel/LivePanel";
@@ -46,7 +47,7 @@ import { startLiveWs, stopLiveWs } from "./live/ws";
 function roleDefaultPath(role) {
   if (role === "ROOM") return "/room/map";
   if (role === "COMPANY") return "/company"; // ✅ M26: workflow home
-  if (role === "DRIVER") return "/driver/map";
+  if (role === "DRIVER") return "/driver/today";
   if (role === "PERSONEL") return "/personel/live";
   if (role === "SUPER_ADMIN") return "/superadmin";
   return "/";
@@ -158,7 +159,7 @@ export default function App() {
 
     // DRIVER
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
-    if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
+    if (path === "/driver/route" || String(path || "").startsWith("/driver/route?")) return { layout: true, node: <RoutePanel /> };
 
     // PERSONEL
     if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };

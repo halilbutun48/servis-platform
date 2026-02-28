@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import MapView from "../../components/map/MapView";
 import { useSession } from "../../state/session";
+
+function getQueryParam(name) {
+  try {
+    const raw = (window.location.hash || "").replace(/^#/, "");
+    const q = raw.includes("?") ? raw.split("?")[1] : "";
+    const sp = new URLSearchParams(q);
+    return sp.get(name);
+  } catch {
+    return null;
+  }
+}
 
 export default function RoutePanel() {
   const { token } = useSession();
@@ -24,7 +36,9 @@ export default function RoutePanel() {
   async function load() {
     setErr("");
     try {
-      const r = await api("/api/driver/route/active", { token });
+      const qShift = getQueryParam("shift");
+      const url = qShift ? `/api/driver/shifts/${qShift}/route` : "/api/driver/route/active";
+      const r = await api(url, { token });
       setData(r);
     } catch (e) {
       setErr(String(e?.message || e));
@@ -75,6 +89,35 @@ export default function RoutePanel() {
     }
   }
 
+
+  async function startShift() {
+    if (!shift?.id) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/driver/shifts/${shift.id}/start`, { method: "POST", token });
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function complete() {
+    if (!shift?.id) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/driver/shifts/${shift.id}/complete`, { method: "POST", token });
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const reachedBtnStyle = {
     fontWeight: 900,
     fontSize: 18,
@@ -93,6 +136,18 @@ export default function RoutePanel() {
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
+
+
+      {data?.routeStops?.length ? (
+        <MapView
+          vehicles={data?.vehicle && data?.last ? [{ id: data.vehicle.id, plate: data.vehicle.plate, gpsLast: data.last }] : []}
+          stops={data.routeStops}
+          selectedVehicleId={data?.vehicle?.id ?? null}
+          onSelectVehicle={() => {}}
+          fitKey={`driverRoute:${shift?.id ?? "x"}:${(data.routeStops || []).length}:${data?.last?.at ?? ""}`}
+          height="320px"
+        />
+      ) : null}
 
       <div className="grid">
         <div className="card">
@@ -131,6 +186,16 @@ export default function RoutePanel() {
               <h3>Sonraki Durak</h3>
               <div className="muted">Araç: {data?.vehicle?.plate || "-"} • GPS: {data?.last?.status || "-"}</div>
             </div>
+            {shift?.status === "APPROVED" ? (
+              <button type="button" disabled={busy} onClick={startShift} style={{ fontWeight: 900 }}>
+                Göreve Başla
+              </button>
+            ) : null}
+            {shift?.status === "ACTIVE" && !nextStop ? (
+              <button type="button" disabled={busy} onClick={complete}>
+                Görevi Bitir
+              </button>
+            ) : null}
             <button type="button" disabled={busy} onClick={load}>
               Yenile
             </button>
