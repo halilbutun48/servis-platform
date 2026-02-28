@@ -13,6 +13,32 @@ function pill(status) {
   );
 }
 
+function moneyTry(v) {
+  if (v == null || v === "") return "-";
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return `₺${n}`;
+}
+
+function parseTryInput(raw) {
+  if (raw == null) return null;
+  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function OfferCell({ amount, note }) {
+  const a = moneyTry(amount);
+  const n = String(note || "").trim();
+  return (
+    <div title={n || ""}>
+      <div style={{ fontWeight: 800 }}>{a}</div>
+      {n ? <div className="muted" style={{ fontSize: 12 }}>{n}</div> : null}
+    </div>
+  );
+}
+
 function ConflictBox({ errObj }) {
   if (!errObj) return null;
   const code = errObj?.code;
@@ -63,7 +89,12 @@ export default function AgreementsPanel() {
   const [selDriver, setSelDriver] = useState("");
   const [conflict, setConflict] = useState(null);
 
+  const [counterId, setCounterId] = useState(null);
+  const [counterAmount, setCounterAmount] = useState("");
+  const [counterNote, setCounterNote] = useState("");
+
   const approveTarget = useMemo(() => pending.find((x) => x.id === approveId), [pending, approveId]);
+  const counterTarget = useMemo(() => pending.find((x) => x.id === counterId), [pending, counterId]);
 
   async function loadAll() {
     if (!token) return;
@@ -128,6 +159,31 @@ export default function AgreementsPanel() {
     }
   }
 
+  async function counter() {
+    setErr("");
+    if (!counterId) return;
+    const amount = parseTryInput(counterAmount);
+    if (!amount) return setErr("Karşı teklif amount gerekli");
+
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${counterId}/counter`, {
+        token,
+        method: "PUT",
+        body: { roomOfferAmount: amount, roomOfferNote: String(counterNote || "").trim() || null },
+      });
+
+      setCounterId(null);
+      setCounterAmount("");
+      setCounterNote("");
+      await loadAll();
+    } catch (e) {
+      setErr(e?.message || "Counter failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="card">
       <div className="topbar">
@@ -154,6 +210,8 @@ export default function AgreementsPanel() {
                 <th>Günler</th>
                 <th>Dir/Pat</th>
                 <th>Hub</th>
+                <th>Company Teklif</th>
+                <th>Room Karşı</th>
                 <th>Aksiyon</th>
               </tr>
             </thead>
@@ -174,13 +232,30 @@ export default function AgreementsPanel() {
                   <td className="muted">
                     {typeof a.hubLat === "number" && typeof a.hubLng === "number" ? `${a.hubLat.toFixed(4)}, ${a.hubLng.toFixed(4)}` : "-"}
                   </td>
+                  <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
+                  <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
                   <td>
+                    <button
+                      type="button"
+                      className="btn sm ghost"
+                      disabled={busy}
+                      onClick={() => {
+                        setCounterId(a.id);
+                        setApproveId(null);
+                        setConflict(null);
+                        setCounterAmount(String(a.roomOfferAmount ?? a.companyOfferAmount ?? ""));
+                        setCounterNote(String(a.roomOfferNote ?? ""));
+                      }}
+                    >
+                      Counter
+                    </button>
                     <button
                       type="button"
                       className="btn sm"
                       disabled={busy}
                       onClick={() => {
                         setApproveId(a.id);
+                        setCounterId(null);
                         setConflict(null);
                       }}
                     >
@@ -191,16 +266,61 @@ export default function AgreementsPanel() {
               ))}
               {!pending.length ? (
                 <tr>
-                  <td colSpan={7} className="muted">Pending yok.</td>
+                  <td colSpan={9} className="muted">Pending yok.</td>
                 </tr>
               ) : null}
             </tbody>
           </table>
         </div>
 
+        {counterTarget ? (
+          <div className="card" style={{ marginTop: 12 }}>
+            <div style={{ fontWeight: 900 }}>Counter Agreement #{counterTarget.id}</div>
+
+            <div className="muted" style={{ marginTop: 6 }}>
+              Company teklif: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
+              {counterTarget.companyOfferNote ? <span> — {counterTarget.companyOfferNote}</span> : null}
+            </div>
+
+            <div className="fieldRow" style={{ marginTop: 12 }}>
+              <div className="field">
+                <div className="muted">Karşı Teklif (₺)</div>
+                <input value={counterAmount} onChange={(e) => setCounterAmount(e.target.value)} placeholder="örn: 5000" />
+              </div>
+              <div className="field" style={{ flex: 2 }}>
+                <div className="muted">Not (opsiyonel)</div>
+                <input value={counterNote} onChange={(e) => setCounterNote(e.target.value)} placeholder="örn: 3 gün / 2 araç" />
+              </div>
+            </div>
+
+            <div className="actionsRow" style={{ marginTop: 12 }}>
+              <button type="button" className="btn sm primary" disabled={busy} onClick={counter}>
+                {busy ? "Gönderiliyor..." : "Karşı Teklif Gönder"}
+              </button>
+              <button
+                type="button"
+                className="btn sm ghost"
+                disabled={busy}
+                onClick={() => {
+                  setCounterId(null);
+                  setCounterAmount("");
+                  setCounterNote("");
+                }}
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {approveTarget ? (
           <div className="card" style={{ marginTop: 12 }}>
             <div style={{ fontWeight: 900 }}>Approve Agreement #{approveTarget.id}</div>
+
+            <div className="muted" style={{ marginTop: 6 }}>
+              Company teklif: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
+              {approveTarget.companyOfferNote ? <span> — {approveTarget.companyOfferNote}</span> : null}
+            </div>
 
             <div className="fieldRow" style={{ marginTop: 12 }}>
               <div className="field">
@@ -280,6 +400,8 @@ export default function AgreementsPanel() {
                 <th>Time</th>
                 <th>Days</th>
                 <th>Dir/Pat</th>
+                <th>Company Teklif</th>
+                <th>Room Karşı</th>
                 <th>Vehicle</th>
                 <th>Driver</th>
               </tr>
@@ -297,13 +419,15 @@ export default function AgreementsPanel() {
                   </td>
                   <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
                   <td className="muted">{String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}</td>
+                  <td><OfferCell amount={a.companyOfferAmount} note={a.companyOfferNote} /></td>
+                  <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
                   <td className="muted">{a.vehicle?.plate ?? a.vehicleId ?? "-"}</td>
                   <td className="muted">{a.driver?.fullName ?? a.driverId ?? "-"}</td>
                 </tr>
               ))}
               {!others.length ? (
                 <tr>
-                  <td colSpan={8} className="muted">Kayıt yok.</td>
+                  <td colSpan={10} className="muted">Kayıt yok.</td>
                 </tr>
               ) : null}
             </tbody>

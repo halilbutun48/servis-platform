@@ -19,7 +19,7 @@ export function startMonitors(io, opts = {}) {
   // ✅ M17: agreement lifecycle monitor (AUTO DONE)
   stopFns.push(startAgreementMonitor(io, { intervalMs: opts.agreementIntervalMs }));
 
-  // ✅ M18: agreement -> daily shift generator
+  // ✅ M52: agreement -> rolling 7-day shift generator
   // ✅ M19: learned route monitor (optional)
   stopFns.push(startRouteLearnMonitor(io, { intervalMs: opts.routeLearnIntervalMs }));
 

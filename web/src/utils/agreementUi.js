@@ -1,5 +1,5 @@
 // web/src/utils/agreementUi.js
-// Shared helpers for Agreement Wizard + Templates + Shifts
+// Shared helpers for Agreement Wizard + Guided Mode + Templates + Shifts
 
 // Bit mask mapping (stable):
 // Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64
@@ -37,7 +37,7 @@ export function selectedFromMask(mask) {
   return sel;
 }
 
-// ✅ weekMask -> "Pzt Sal ..." / preset kısa adlar
+// weekMask -> "Pzt Sal ..." / preset kısa adlar
 export function weekMaskToText(mask) {
   const m = normalizeWeekMask(mask);
   if (!m) return "-";
@@ -67,7 +67,7 @@ export function parseHHMM(s) {
   return hh * 60 + mm;
 }
 
-// ✅ Correct masks:
+// Correct masks:
 // Hafta içi (Mon..Fri) = 31
 // 6 gün (Mon..Sat)     = 63
 // 7 gün (Mon..Sun)     = 127
@@ -83,14 +83,26 @@ export const TIME_PRESETS = [
   { key: "night", label: "Gece (22:00–02:00)", startMin: 22 * 60, endMin: 2 * 60 }, // midnight-cross
 ];
 
-export const DURATION_PRESETS = [
+// Quick duration presetleri (M55.1 kararı):
+// 2g / 3g / 4g / 5g / 6g / 1h / 1a
+export const QUICK_DURATION_PRESETS = [
+  { key: "2d", label: "2 gün", days: 2 },
+  { key: "3d", label: "3 gün", days: 3 },
+  { key: "4d", label: "4 gün", days: 4 },
+  { key: "5d", label: "5 gün", days: 5 },
+  { key: "6d", label: "6 gün", days: 6 },
   { key: "1w", label: "1 hafta", days: 7 },
   { key: "1m", label: "1 ay", days: 30 },
+];
+
+export const DURATION_PRESETS = [
+  ...QUICK_DURATION_PRESETS,
   { key: "3m", label: "3 ay", days: 90 },
   { key: "6m", label: "6 ay", days: 180 },
   { key: "1y", label: "1 yıl", days: 365 },
 ];
 
+// ISO YYYY-MM-DD helpers (UTC safe)
 export function addDaysISO(isoDateYmd, days) {
   const d = new Date(`${isoDateYmd}T00:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() + Number(days || 0));
@@ -98,4 +110,44 @@ export function addDaysISO(isoDateYmd, days) {
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
+}
+
+export function weekdayBitFromYmdUTC(isoDateYmd) {
+  const d = new Date(`${isoDateYmd}T00:00:00.000Z`);
+  const dow = d.getUTCDay(); // 0=Sun..6=Sat
+  // Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64
+  const map = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16, 6: 32, 0: 64 };
+  return map[dow] || 0;
+}
+
+// Inclusive count: start..end
+export function countMatchingDaysInRange(startYmd, endYmd, weekMask) {
+  const m = normalizeWeekMask(weekMask);
+  if (!startYmd || !endYmd || !m) return 0;
+
+  // Safety: cap at 370 days to avoid accidental infinite loops
+  let cur = String(startYmd);
+  let count = 0;
+  for (let i = 0; i <= 370; i++) {
+    const bit = weekdayBitFromYmdUTC(cur);
+    if ((m & bit) !== 0) count++;
+
+    if (cur === endYmd) break;
+    cur = addDaysISO(cur, 1);
+  }
+  return count;
+}
+
+// Find next date >= startYmd that matches mask (search window cap)
+export function nextYmdMatchingMask(startYmd, weekMask, limitDays = 21) {
+  const m = normalizeWeekMask(weekMask);
+  if (!startYmd || !m) return null;
+
+  let cur = String(startYmd);
+  for (let i = 0; i <= Math.max(0, Number(limitDays || 0)); i++) {
+    const bit = weekdayBitFromYmdUTC(cur);
+    if ((m & bit) !== 0) return cur;
+    cur = addDaysISO(cur, 1);
+  }
+  return null;
 }

@@ -7,11 +7,18 @@ function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
 }
 
-function ymdUTC(d) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
+// TR-local schedule semantics (UTC+03:00)
+const TR_OFFSET_MS = 180 * 60_000;
+function ymdTR(d) {
+  const tr = new Date(new Date(d).getTime() + TR_OFFSET_MS);
+  const y = tr.getUTCFullYear();
+  const m = String(tr.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(tr.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
+}
+function minTR(d) {
+  const tr = new Date(new Date(d).getTime() + TR_OFFSET_MS);
+  return tr.getUTCHours() * 60 + tr.getUTCMinutes();
 }
 
 function mustOk(r, label) {
@@ -153,10 +160,10 @@ async function main() {
   step("create+approve agreement on v2/d2 covering query window (agreement-first)");
   const s = new Date(qStart);
   const e = new Date(qEnd);
-  const startDate = ymdUTC(s);
-  const endDate = ymdUTC(s);
-  const startMin = s.getUTCHours() * 60 + s.getUTCMinutes();
-  const endMin = e.getUTCHours() * 60 + e.getUTCMinutes();
+  const startDate = ymdTR(s);
+  const endDate = startDate;
+  const startMin = minTR(s);
+  const endMin = minTR(e);
   assertOk(endMin > startMin, "endMin > startMin");
 
   const agId = await createAgreement(companyToken, {

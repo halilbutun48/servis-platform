@@ -359,6 +359,14 @@ export function attachShiftCompanyRoutes(r, io) {
           return res.status(403).json({ error: "Forbidden" });
         }
 
+        // ✅ M54: Agreement kaynaklı shiftlerde pazarlık/offer kapalı
+        if (shift?.agreementId) {
+          return res.status(409).json({
+            error: "Agreement shift: offers disabled",
+            code: "AGREEMENT_NO_OFFERS",
+          });
+        }
+
         // ✅ M19: hub pair validation (update)
         const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
         const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");

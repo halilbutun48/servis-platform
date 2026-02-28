@@ -110,6 +110,7 @@ enum GeoStatus {
 // ✅ M17
 enum AgreementStatus {
   REQUESTED
+  COUNTERED
   APPROVED
   ACTIVE
   DONE

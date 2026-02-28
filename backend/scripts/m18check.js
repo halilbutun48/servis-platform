@@ -2,22 +2,27 @@
 import { prisma } from "../src/prisma.js";
 import { login, reqJson, banner, step, assertOk, sleep } from "./_harness.js";
 
-function ymdUTC(d = new Date()) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
+// TR-local schedule semantics (UTC+03:00)
+const TR_OFFSET_MS = 180 * 60_000;
+
+function ymdTR(d = new Date()) {
+  const tr = new Date(d.getTime() + TR_OFFSET_MS);
+  const y = tr.getUTCFullYear();
+  const m = String(tr.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(tr.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
-function dayBitUTC(d = new Date()) {
-  const wd = d.getUTCDay(); // 0=Sun
+
+function dayBitTR(d = new Date()) {
+  const tr = new Date(d.getTime() + TR_OFFSET_MS);
+  const wd = tr.getUTCDay(); // 0=Sun
   if (wd === 0) return 64;
   return 1 << (wd - 1);
 }
-function atUtc(ymd, min) {
-  const d = new Date(`${ymd}T00:00:00.000Z`);
-  const m = Number(min || 0);
-  d.setUTCHours(Math.floor(m / 60), m % 60, 0, 0);
-  return d;
+
+function atTR(ymd, min) {
+  const base = new Date(`${ymd}T00:00:00.000+03:00`);
+  return new Date(base.getTime() + Number(min || 0) * 60_000);
 }
 function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
@@ -59,9 +64,9 @@ async function main() {
 
   step("create agreement for today");
   const today = new Date();
-  const startDate = ymdUTC(today);
+  const startDate = ymdTR(today);
   const endDate = startDate;
-  const weekMask = dayBitUTC(today);
+  const weekMask = dayBitTR(today);
 
   const startMin = 1; // 00:01
   const endMin = 2;   // 00:02
@@ -85,7 +90,7 @@ async function main() {
   // We'll poll up to 25s to make this check deterministic while still validating the real job.
   step("wait generator tick (<= 25s)");
 
-  const startAt = atUtc(startDate, startMin);
+  const startAt = atTR(startDate, startMin);
 
   let found = null;
   const deadline = Date.now() + 25_000;

@@ -186,65 +186,7 @@ export default function RoomShiftsPanel() {
     return m;
   }, [drivers]);
 
-  
-  // M61_UI_COPY — Paket içi hızlı doldurma (sadece UI)
-  // Not: Bu kopyalama sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
-  const pkgKeyOfShift = (sh) => {
-    const cid = Number(sh?.companyId ?? sh?.company?.id ?? 0);
-    const t0 =
-      sh?.createdAt ? new Date(sh.createdAt).getTime() :
-      sh?.startAt ? new Date(sh.startAt).getTime() :
-      0;
-    const bucket = Number.isFinite(t0) ? Math.floor(t0 / 60000) : 0;
-    return `${cid}:${bucket}`;
-  };
-
-  const pkgShiftIdsFor = (baseShift) => {
-    const key = pkgKeyOfShift(baseShift);
-    const arr = (pendingFiltered || []).filter((x) => pkgKeyOfShift(x) === key);
-    return arr.map((x) => Number(x.id)).filter(Number.isFinite);
-  };
-
-  const uiCopyVehicleToPkg = (baseShift, vehicleIdStr) => {
-    const vidStr = String(vehicleIdStr || "");
-    if (!vidStr) return;
-    const ids = pkgShiftIdsFor(baseShift);
-    if (ids.length <= 1) return;
-
-    setAssignSel((prev) => {
-      const next = { ...(prev || {}) };
-      for (const id of ids) next[id] = vidStr;
-      return next;
-    });
-
-    // araç driver'ı varsa ve satırda manuel driver yoksa doldur
-    const vid = Number(vidStr);
-    const vv = Number.isFinite(vid) ? vehiclesById.get(vid) : null;
-    const autoDid = vv?.driverId ? String(vv.driverId) : "";
-    if (autoDid) {
-      setDriverSel((prev) => {
-        const next = { ...(prev || {}) };
-        for (const id of ids) {
-          if (!next[id]) next[id] = autoDid;
-        }
-        return next;
-      });
-    }
-  };
-
-  const uiCopyDriverToPkg = (baseShift, driverIdStr) => {
-    const didStr = String(driverIdStr || "");
-    if (!didStr) return;
-    const ids = pkgShiftIdsFor(baseShift);
-    if (ids.length <= 1) return;
-
-    setDriverSel((prev) => {
-      const next = { ...(prev || {}) };
-      for (const id of ids) next[id] = didStr;
-      return next;
-    });
-  };
-function matchShift(s, qRaw) {
+  function matchShift(s, qRaw) {
     const q = String(qRaw ?? "").trim().toLowerCase();
     if (!q) return true;
 
@@ -528,6 +470,7 @@ function matchShift(s, qRaw) {
         const next = { ...prev };
         for (const s of list) {
           const sid = Number(s.id);
+                const isAgreement = Number(s?.agreementId) > 0;
           if (next[sid] !== undefined) continue;
 
           // default: companyOfferVehicleId varsa onu seç, yoksa boş
@@ -1071,8 +1014,6 @@ function matchShift(s, qRaw) {
             <tbody>
               {pendingFiltered.map((s) => {
                 const sid = Number(s.id);
-                // Agreement shift'lerde pazarlık/offer kapalı
-                const isAgreement = Number(s?.agreementId) > 0;
                 const roomVehicles = vehiclesForRoom(s.roomId);
                 const selectedVehicleId = assignSel[sid] || "";
                 const vId = selectedVehicleId ? Number(selectedVehicleId) : null;
@@ -1294,28 +1235,7 @@ function matchShift(s, qRaw) {
                           </select>
                         </div>
 
-                                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button
-                            type="button"
-                            disabled={busy || !selectedVehicleId}
-                            onClick={() => uiCopyVehicleToPkg(s, selectedVehicleId)}
-                            title="Seçili aracı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                          >
-                            Araç → Pakete Kopyala
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy || !(driverSel[sid] ?? "")}
-                            onClick={() => uiCopyDriverToPkg(s, driverSel[sid] ?? "")}
-                            title="Seçili driver’ı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                          >
-                            Driver → Pakete Kopyala
-                          </button>
-                        </div>
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          Not: Bu butonlar sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
-                        </div>
-<button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
+                        <button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
                           {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}
                         </button>
 
@@ -1577,4 +1497,3 @@ function matchShift(s, qRaw) {
     </div>
   );
 }
-

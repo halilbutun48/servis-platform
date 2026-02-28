@@ -1,60 +1,54 @@
 // backend/src/services/agreementConflictBatch.js
 // ✅ M20: batch agreement conflict lookup for a time range
 // Deterministic: return the first conflicting agreement by id ASC for each vehicle/driver.
+// TR-local schedule semantics (UTC+03:00).
 
 import { prisma } from "../prisma.js";
+import { addDaysTR, dayBitTRFromYmd, dateOnlyTR } from "../time/tr.js";
 
-// Bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
-function dowMaskUTC(d) {
-  const dow = d.getUTCDay();
-  if (dow === 0) return 64;
-  return 1 << (dow - 1);
+function ymdFromDateOnlyUTC(d) {
+  return String(new Date(d).toISOString()).slice(0, 10);
 }
 
-function dateOnlyUTC(d) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+function minutesToDtTR(ymd, min) {
+  const base = new Date(`${ymd}T00:00:00.000+03:00`);
+  return new Date(base.getTime() + Number(min || 0) * 60_000);
 }
-function addDaysUTC(d, n) {
-  const x = new Date(d.getTime());
-  x.setUTCDate(x.getUTCDate() + n);
-  return x;
-}
-function minutesToDtUTC(day0, min) {
-  return new Date(day0.getTime() + min * 60_000);
-}
+
 function overlaps(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
 
-function intervalsForDay(ag, day0) {
-  // week gate: only the "start day" is masked (night shift spills to next day)
-  const mask = dowMaskUTC(day0);
-  if ((ag.weekMask & mask) === 0) return [];
+function intervalsForDayTR(ag, ymd) {
+  const mask = dayBitTRFromYmd(ymd);
+  if ((Number(ag.weekMask || 0) & mask) === 0) return [];
 
-  const start = minutesToDtUTC(day0, ag.startMin);
-  if (ag.endMin >= ag.startMin) {
-    const end = minutesToDtUTC(day0, ag.endMin);
+  const startMin = Number(ag.startMin || 0);
+  const endMin = Number(ag.endMin || 0);
+  const start = minutesToDtTR(ymd, startMin);
+
+  if (endMin >= startMin) {
+    const end = minutesToDtTR(ymd, endMin);
     return [[start, end]];
   }
 
-  // midnight cross: [start..24:00) + [00:00..endMin) next day
-  const end1 = minutesToDtUTC(day0, 1440);
-  const next0 = addDaysUTC(day0, 1);
-  const start2 = minutesToDtUTC(next0, 0);
-  const end2 = minutesToDtUTC(next0, ag.endMin);
+  const end1 = minutesToDtTR(ymd, 1440);
+  const nextYmd = addDaysTR(ymd, 1);
+  const start2 = minutesToDtTR(nextYmd, 0);
+  const end2 = minutesToDtTR(nextYmd, endMin);
   return [
     [start, end1],
     [start2, end2],
   ];
 }
 
-function agreementOverlapsRange(ag, s, e) {
-  const s0 = dateOnlyUTC(s);
-  const e0 = dateOnlyUTC(e);
+function agreementOverlapsRangeTR(ag, s, e) {
+  const sYmd = ymdFromDateOnlyUTC(dateOnlyTR(s));
+  const eYmd = ymdFromDateOnlyUTC(dateOnlyTR(e));
+  const endPlus = addDaysTR(eYmd, 1);
 
-  // iterate days in [s0..e0] + 1 for midnight spill
-  for (let day = s0; day <= addDaysUTC(e0, 1); day = addDaysUTC(day, 1)) {
-    const ints = intervalsForDay(ag, day);
+  for (let ymd = sYmd; ymd <= endPlus; ymd = addDaysTR(ymd, 1)) {
+    const ints = intervalsForDayTR(ag, ymd);
     for (const [as, ae] of ints) {
       if (overlaps(as, ae, s, e)) return true;
     }
@@ -81,8 +75,8 @@ function mkAgreementConflict(kind, agreement) {
 export async function findAgreementConflictsForRangeBatch({ vehicleIds = [], driverIds = [], startAt, endAt }) {
   const s = new Date(startAt);
   const e = new Date(endAt);
-  const s0 = dateOnlyUTC(s);
-  const e0 = dateOnlyUTC(e);
+  const s0 = dateOnlyTR(s);
+  const e0 = dateOnlyTR(e);
 
   const vSet = new Set((vehicleIds || []).map((x) => Number(x)).filter((x) => x > 0));
   const dSet = new Set((driverIds || []).map((x) => Number(x)).filter((x) => x > 0));
@@ -123,7 +117,7 @@ export async function findAgreementConflictsForRangeBatch({ vehicleIds = [], dri
 
   // deterministic: first conflict wins (id asc)
   for (const ag of candidates) {
-    if (!agreementOverlapsRange(ag, s, e)) continue;
+    if (!agreementOverlapsRangeTR(ag, s, e)) continue;
 
     const vId = Number(ag.vehicleId || 0);
     if (vId && vSet.has(vId) && !vehicleConflictById.has(vId)) {

@@ -1,45 +1,52 @@
 // backend/src/services/agreementConflict.js
+// Agreement schedule semantics are TR-local (UTC+03:00). All calculations below
+// convert TR-local (date + minutes) into absolute UTC timestamps for storage
+// and comparisons.
+
 import { prisma } from "../prisma.js";
+import { addDaysTR, dayBitTRFromYmd, dateOnlyTR } from "../time/tr.js";
 
 // Bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
 export function dowMaskUTC(d) {
-  // JS: 0=Sun ... 6=Sat
-  const dow = d.getUTCDay();
+  // Back-compat name: returns TR day-of-week mask for the given Date.
+  const tr = new Date(new Date(d).getTime() + 180 * 60_000);
+  const dow = tr.getUTCDay();
   if (dow === 0) return 64;
   return 1 << (dow - 1);
 }
 
-function dateOnlyUTC(d) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+function ymdFromDateOnlyUTC(d) {
+  return String(new Date(d).toISOString()).slice(0, 10);
 }
-function addDaysUTC(d, n) {
-  const x = new Date(d.getTime());
-  x.setUTCDate(x.getUTCDate() + n);
-  return x;
+
+function minutesToDtTR(ymd, min) {
+  const base = new Date(`${ymd}T00:00:00.000+03:00`);
+  return new Date(base.getTime() + Number(min || 0) * 60_000);
 }
-function minutesToDtUTC(day0, min) {
-  return new Date(day0.getTime() + min * 60_000);
-}
+
 function overlaps(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
 
-function intervalsForDay(ag, day0) {
+function intervalsForDayTR(ag, ymd) {
   // week gate: only the "start day" is masked (night shift spills to next day)
-  const mask = dowMaskUTC(day0);
-  if ((ag.weekMask & mask) === 0) return [];
+  const mask = dayBitTRFromYmd(ymd);
+  if ((Number(ag.weekMask || 0) & mask) === 0) return [];
 
-  const start = minutesToDtUTC(day0, ag.startMin);
-  if (ag.endMin >= ag.startMin) {
-    const end = minutesToDtUTC(day0, ag.endMin);
+  const startMin = Number(ag.startMin || 0);
+  const endMin = Number(ag.endMin || 0);
+  const start = minutesToDtTR(ymd, startMin);
+
+  if (endMin >= startMin) {
+    const end = minutesToDtTR(ymd, endMin);
     return [[start, end]];
   }
 
   // midnight cross: [start..24:00) + [00:00..endMin) next day
-  const end1 = minutesToDtUTC(day0, 1440);
-  const next0 = addDaysUTC(day0, 1);
-  const start2 = minutesToDtUTC(next0, 0);
-  const end2 = minutesToDtUTC(next0, ag.endMin);
+  const end1 = minutesToDtTR(ymd, 1440);
+  const nextYmd = addDaysTR(ymd, 1);
+  const start2 = minutesToDtTR(nextYmd, 0);
+  const end2 = minutesToDtTR(nextYmd, endMin);
   return [
     [start, end1],
     [start2, end2],
@@ -47,35 +54,43 @@ function intervalsForDay(ag, day0) {
 }
 
 export function computeFinalEndAtUTC(ag) {
-  // endDate at 00:00Z
-  const end0 = dateOnlyUTC(new Date(ag.endDate));
-  const base = minutesToDtUTC(end0, ag.endMin);
+  const endYmd = ymdFromDateOnlyUTC(ag.endDate);
+  const startMin = Number(ag.startMin || 0);
+  const endMin = Number(ag.endMin || 0);
+
+  // endDate + endMin in TR
+  const base = minutesToDtTR(endYmd, endMin);
   // if midnight-cross, last window ends on next day
-  if (ag.endMin < ag.startMin) return addDaysUTC(base, 1);
+  if (endMin < startMin) {
+    const nextYmd = addDaysTR(endYmd, 1);
+    return minutesToDtTR(nextYmd, endMin);
+  }
   return base;
 }
 
 export function computeFirstStartAtUTC(ag) {
-  const start0 = dateOnlyUTC(new Date(ag.startDate));
-  return minutesToDtUTC(start0, ag.startMin);
+  const startYmd = ymdFromDateOnlyUTC(ag.startDate);
+  return minutesToDtTR(startYmd, Number(ag.startMin || 0));
 }
 
 export function agreementsOverlap(a, b) {
   // iterate small range: overlap of date ranges (+1 day for midnight spill)
-  const aStart = dateOnlyUTC(new Date(a.startDate));
-  const aEnd = dateOnlyUTC(new Date(a.endDate));
-  const bStart = dateOnlyUTC(new Date(b.startDate));
-  const bEnd = dateOnlyUTC(new Date(b.endDate));
+  const aStart = ymdFromDateOnlyUTC(a.startDate);
+  const aEnd = ymdFromDateOnlyUTC(a.endDate);
+  const bStart = ymdFromDateOnlyUTC(b.startDate);
+  const bEnd = ymdFromDateOnlyUTC(b.endDate);
 
   let start = aStart > bStart ? aStart : bStart;
   let end = aEnd < bEnd ? aEnd : bEnd;
 
-  // allow 1 extra day because of midnight spill
-  end = addDaysUTC(end, 1);
+  if (end < start) return false;
 
-  for (let day = start; day <= end; day = addDaysUTC(day, 1)) {
-    const ia = intervalsForDay(a, day);
-    const ib = intervalsForDay(b, day);
+  // allow 1 extra day because of midnight spill
+  end = addDaysTR(end, 1);
+
+  for (let ymd = start; ymd <= end; ymd = addDaysTR(ymd, 1)) {
+    const ia = intervalsForDayTR(a, ymd);
+    const ib = intervalsForDayTR(b, ymd);
     for (const [as, ae] of ia) {
       for (const [bs, be] of ib) {
         if (overlaps(as, ae, bs, be)) return true;
@@ -89,10 +104,7 @@ export async function findAgreementConflictForApproval({ agreementId, vehicleId,
   const where = {
     id: { not: agreementId },
     status: { in: ["APPROVED", "ACTIVE"] },
-    OR: [
-      ...(vehicleId ? [{ vehicleId }] : []),
-      ...(driverId ? [{ driverId }] : []),
-    ],
+    OR: [...(vehicleId ? [{ vehicleId }] : []), ...(driverId ? [{ driverId }] : [])],
   };
 
   const candidates = await prisma.agreement.findMany({
@@ -119,8 +131,10 @@ export async function findAgreementConflictForApproval({ agreementId, vehicleId,
 export async function findAgreementConflictForRange({ vehicleId, driverId, startAt, endAt }) {
   const s = new Date(startAt);
   const e = new Date(endAt);
-  const s0 = dateOnlyUTC(s);
-  const e0 = dateOnlyUTC(e);
+
+  // TR-day date-only for coarse filter (important before 03:00TR)
+  const s0 = dateOnlyTR(s);
+  const e0 = dateOnlyTR(e);
 
   const where = {
     status: { in: ["APPROVED", "ACTIVE"] },
@@ -149,11 +163,14 @@ export async function findAgreementConflictForRange({ vehicleId, driverId, start
     orderBy: { id: "asc" },
   });
 
-  // check precise overlap
+  // precise overlap
+  const sYmd = ymdFromDateOnlyUTC(dateOnlyTR(s));
+  const eYmd = ymdFromDateOnlyUTC(dateOnlyTR(e));
+  const endPlus = addDaysTR(eYmd, 1);
+
   for (const ag of candidates) {
-    // iterate days in [s0..e0] + 1 for midnight
-    for (let day = s0; day <= addDaysUTC(e0, 1); day = addDaysUTC(day, 1)) {
-      const ints = intervalsForDay(ag, day);
+    for (let ymd = sYmd; ymd <= endPlus; ymd = addDaysTR(ymd, 1)) {
+      const ints = intervalsForDayTR(ag, ymd);
       for (const [as, ae] of ints) {
         if (overlaps(as, ae, s, e)) return ag;
       }

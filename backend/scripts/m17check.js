@@ -4,11 +4,28 @@ import { login, reqJson, banner, step, assertOk, sleep } from "./_harness.js";
 function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
 }
-function ymdUTC(d) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
+
+// TR-local schedule semantics (UTC+03:00)
+const TR_OFFSET_MS = 180 * 60_000;
+
+function ymdTR(d) {
+  const tr = new Date(new Date(d).getTime() + TR_OFFSET_MS);
+  const y = tr.getUTCFullYear();
+  const m = String(tr.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(tr.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
+}
+
+function addDaysYmdTR(ymd, days) {
+  const base = new Date(`${ymd}T00:00:00.000+03:00`);
+  base.setUTCDate(base.getUTCDate() + Number(days || 0));
+  return ymdTR(base);
+}
+
+function isoTR(ymd, hh, mm) {
+  const H = String(hh).padStart(2, "0");
+  const M = String(mm).padStart(2, "0");
+  return new Date(`${ymd}T${H}:${M}:00+03:00`).toISOString();
 }
 
 function mustOk(r, label) {
@@ -76,8 +93,8 @@ async function main() {
   const dId = await createDriver(roomToken, `M17 Driver ${rand(4)}`);
 
   const today = new Date();
-  const startDate = ymdUTC(today);
-  const endDate = ymdUTC(new Date(today.getTime() + 7 * 86400_000));
+  const startDate = ymdTR(today);
+  const endDate = addDaysYmdTR(startDate, 7);
 
   step("create agreement A (08:00-10:00)");
   const a1id = await createAgreement(companyToken, {
@@ -128,8 +145,8 @@ async function main() {
   mustOk(a3ap, "approve C ok");
 
   step("availability must see agreement reservation (vehicle conflict at 09:00-09:30)");
-  const qStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 9, 0, 0)).toISOString();
-  const qEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 9, 30, 0)).toISOString();
+  const qStart = isoTR(startDate, 9, 0);
+  const qEnd = isoTR(startDate, 9, 30);
 
   const av = await reqJson(
     "GET",
@@ -144,8 +161,8 @@ async function main() {
   );
 
   step("monitor DONE: create past agreement and wait tick");
-  const pastEnd = ymdUTC(new Date(today.getTime() - 1 * 86400_000));
-  const pastStart = ymdUTC(new Date(today.getTime() - 2 * 86400_000));
+  const pastEnd = addDaysYmdTR(startDate, -1);
+  const pastStart = addDaysYmdTR(startDate, -2);
 
   const a4id = await createAgreement(companyToken, {
     roomId,

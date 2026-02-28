@@ -172,6 +172,14 @@ export function attachShiftRoomRoutes(r, io) {
 
       const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
+        // ✅ M54: Agreement kaynaklı shiftlerde pazarlık/offer kapalı
+        if (shift?.agreementId) {
+          return res.status(409).json({
+            error: "Agreement shift: offers disabled",
+            code: "AGREEMENT_NO_OFFERS",
+          });
+        }
+
       if (shift.status === "ACTIVE") {
         return res
           .status(400)

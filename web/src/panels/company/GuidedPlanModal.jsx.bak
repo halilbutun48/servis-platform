@@ -5,14 +5,12 @@ import ShiftPeopleTab from "./ShiftPeopleTab";
 import {
   WEEKDAYS,
   DURATION_PRESETS,
-  QUICK_DURATION_PRESETS,
-  weekdayBitFromYmdUTC,
-  countMatchingDaysInRange,
-  nextYmdMatchingMask,
   selectedFromMask,
   maskFromSelected,
   weekMaskToText,
   addDaysISO,
+  countMatchingDaysInRange,
+  nextYmdMatchingMask,
 } from "../../utils/agreementUi";
 
 function todayYmd() {
@@ -171,12 +169,12 @@ export default function GuidedPlanModal({
   const [packKey, setPackKey] = useState("WK_MORNING_EVENING");
   const pack = useMemo(() => PACKS.find((p) => p.key === packKey) || PACKS[0], [packKey]);
   const [startDate, setStartDate] = useState(todayYmd());
-  const [durationKey, setDurationKey] = useState("2d");
+  const [durationKey, setDurationKey] = useState("1m");
   const durationDays = useMemo(() => {
-    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS.find((x) => x.key === "2d") || DURATION_PRESETS[0];
+    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS[1];
     return Number(p.days || 30);
   }, [durationKey]);
-  const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
+  const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 30));
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
   const eligibleDaysCount = useMemo(() => countMatchingDaysInRange(startDate, endDate, weekMask), [startDate, endDate, weekMask]);
@@ -190,8 +188,6 @@ export default function GuidedPlanModal({
 
   const [draftShiftIds, setDraftShiftIds] = useState([]);
   const [draftShifts, setDraftShifts] = useState([]);
-  const [osrmBatch, setOsrmBatch] = useState({ running: false, done: 0, total: 0 });
-  const [osrmResById, setOsrmResById] = useState({});
   const [me, setMe] = useState(null);
 
   // Step-3: offers
@@ -232,8 +228,8 @@ export default function GuidedPlanModal({
     setHubLoaded(false);
     setPackKey("WK_MORNING_EVENING");
     setStartDate(todayYmd());
-    setDurationKey("2d");
-    setEndDate(addDaysISO(todayYmd(), 0));
+    setDurationKey("1m");
+    setEndDate(addDaysISO(todayYmd(), 30));
     setDaysSel(selectedFromMask(62));
     setCustomStartHHMM("08:00");
     setCustomEndHHMM("10:00");
@@ -243,8 +239,6 @@ export default function GuidedPlanModal({
     setDraftAmount("");
     setDraftShiftIds([]);
     setDraftShifts([]);
-    setOsrmBatch({ running: false, done: 0, total: 0 });
-    setOsrmResById({});
     setRoomQ("");
     setOnlyHubRooms(true);
     setSelRoomIds({});
@@ -289,7 +283,7 @@ export default function GuidedPlanModal({
 
   // Sync endDate when start/duration changes
   useEffect(() => {
-    setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
+    setEndDate(addDaysISO(startDate, durationDays));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, durationDays]);
 
@@ -409,72 +403,50 @@ export default function GuidedPlanModal({
 
     setBusy(true);
     try {
-            const createdIds = [];
+      const createdIds = [];
+      for (const it of items) {
+        const startAt = ymdMinToIso(startDate, it.startMin);
+        const endYmd = it.endMin < it.startMin ? addDaysISO(startDate, 1) : startDate;
+        const endAt = ymdMinToIso(endYmd, it.endMin);
+        const body = {
+          // M34/M35: market shift -> roomId OMIT (roomId optional; null trips zod)
+          startAt,
+          endAt,
+          hubLat: lat,
+          hubLng: lng,
+          direction: it.direction,
+          pattern: it.pattern,
+        };
+        const amt = parseTryInput(draftAmount);
+        if (amt != null) body.companyOfferAmount = amt;
+        if (draftNote) body.companyOfferNote = String(draftNote);
 
-      // Multi-day draft generation (inclusive start..end):
-      // - respects weekMask (selected weekdays)
-      // - creates one shift per (day x slot)
-      const ymds = [];
-      let cur = String(startDate);
-      for (let i = 0; i <= 370; i++) {
-        const bit = weekdayBitFromYmdUTC(cur);
-        if ((weekMask & bit) !== 0) ymds.push(cur);
-
-        if (cur === endDate) break;
-        cur = addDaysISO(cur, 1);
-      }
-
-      if (!ymds.length) {
-        setErr("Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.");
-        return;
-      }
-
-      for (const ymd of ymds) {
-        for (const it of items) {
-          const startAt = ymdMinToIso(ymd, it.startMin);
-          const endYmd = it.endMin < it.startMin ? addDaysISO(ymd, 1) : ymd;
-          const endAt = ymdMinToIso(endYmd, it.endMin);
-          const body = {
-            // M34/M35: market shift -> roomId OMIT (roomId optional; null trips zod)
-            startAt,
-            endAt,
-            hubLat: lat,
-            hubLng: lng,
-            direction: it.direction,
-            pattern: it.pattern,
-          };
-          const amt = parseTryInput(draftAmount);
-          if (amt != null) body.companyOfferAmount = amt;
-          if (draftNote) body.companyOfferNote = String(draftNote);
-
-          const s = await api("/api/shifts", { token, method: "POST", body });
-          if (s?.id) {
-            createdIds.push(Number(s.id));
-            // Persist plan terms per shift (for later negotiation screens)
-            try {
-              localStorage.setItem(
-                `psv1:planTerms:shift:${Number(s.id)}:v1`,
-                JSON.stringify({
-                  planStartDate: startDate,
-                  planEndDate: endDate,
-                  ymd,
-                  weekMask,
-                  startMin: it.startMin,
-                  endMin: it.endMin,
-                  direction: it.direction,
-                  pattern: it.pattern,
-                  hubLat: lat,
-                  hubLng: lng,
-                })
-              );
-            } catch {
-              // ignore
-            }
+        const s = await api("/api/shifts", { token, method: "POST", body });
+        if (s?.id) {
+          createdIds.push(Number(s.id));
+          // Persist plan terms per shift (for later negotiation screens)
+          try {
+            localStorage.setItem(
+              `psv1:planTerms:shift:${Number(s.id)}:v1`,
+              JSON.stringify({
+                startDate,
+                endDate,
+                weekMask,
+                startMin: it.startMin,
+                endMin: it.endMin,
+                direction: it.direction,
+                pattern: it.pattern,
+                hubLat: lat,
+                hubLng: lng,
+              })
+            );
+          } catch {
+            // ignore
           }
         }
       }
 
-setDraftShiftIds(createdIds);
+      setDraftShiftIds(createdIds);
       setInfo(`✅ Taslak shift oluşturuldu: ${createdIds.map((x) => "#" + x).join(", ")}`);
 
       // fetch shifts for Step-2/3
@@ -503,130 +475,79 @@ setDraftShiftIds(createdIds);
     }
   }
 
-  
-async function osrmReorderCore(sid) {
-  const s = (draftShifts || []).find((x) => Number(x.id) === Number(sid));
-  if (!s) return { ok: false, error: "Shift bulunamadı." };
-
-  const stops = Array.isArray(s?.stops) ? s.stops : [];
-  if (stops.length < 2) return { ok: false, error: "Sıralama için en az 2 durak gerekir." };
-
-  const hubOk = s?.hubLat != null && s?.hubLng != null;
-
-  const depot = hubOk
-    ? { id: "depot", lat: Number(s.hubLat), lng: Number(s.hubLng) }
-    : { id: "depot", lat: Number(stops[0].lat), lng: Number(stops[0].lng) };
-
-  const points = [depot, ...stops.map((x) => ({ id: Number(x.id), lat: Number(x.lat), lng: Number(x.lng) }))];
-
-  const t = await api("/api/plan-builder/osrm-table", { token, method: "POST", body: { profile: "driving", points } });
-  if (!t?.ok) return { ok: false, error: "OSRM matrisi alınamadı (opsiyonel). Solver/OSRM kapalı olabilir." };
-
-  const solved = await api("/api/plan-builder/solve-vrp", {
-    token,
-    method: "POST",
-    body: {
-      durationsSec: t?.durationsSec,
-      distancesM: t?.distancesM,
-      pointIds: points.map((p) => p.id),
-      depotIndex: 0,
-      returnToDepot: false,
-      preferOrtools: true,
-    },
-  });
-
-  if (!solved?.ok || !Array.isArray(solved?.orderPointIds)) return { ok: false, error: "Çözüm alınamadı (solver kapalı olabilir)." };
-
-  const orderedStopIds = solved.orderPointIds
-    .filter((id) => id !== "depot")
-    .map((id) => Number(id))
-    .filter(Number.isFinite);
-
-  if (orderedStopIds.length !== stops.length) return { ok: false, error: "Sıralama uyuşmadı (durak sayısı)." };
-
-  await api(`/api/shifts/${Number(sid)}/stops/reorder`, { token, method: "PUT", body: { idsInOrder: orderedStopIds } });
-
-  return { ok: true, solver: solved.solver || null };
-}
-
-async function osrmReorder(shiftId) {
-  setErr("");
-  setInfo("");
-  if (!token) return;
-
-  const sid = Number(shiftId);
-  if (!Number.isFinite(sid)) return;
-
-  setBusy(true);
-  try {
-    const res = await osrmReorderCore(sid);
-    if (!res.ok) {
-      setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: res.error } }));
-      setErr(res.error || "Sıralama başarısız.");
+  async function osrmReorder(shiftId) {
+    setErr("");
+    setInfo("");
+    if (!token) return;
+    const sid = Number(shiftId);
+    const s = (draftShifts || []).find((x) => Number(x.id) === sid);
+    if (!s) {
+      setErr("Shift bulunamadı.");
       return;
     }
-    setOsrmResById((prev) => ({ ...prev, [sid]: { ok: true } }));
-    setInfo(`✅ Rota sıralandı (solver: ${res.solver || "-"}).`);
-    await refreshDraftShifts();
-  } catch (e) {
-    setErr(String(e?.message || e));
-  } finally {
-    setBusy(false);
-  }
-}
+    const stops = Array.isArray(s?.stops) ? s.stops : [];
+    if (stops.length < 2) {
+      setErr("Sıralama için en az 2 durak gerekir.");
+      return;
+    }
+    const hubOk = s?.hubLat != null && s?.hubLng != null;
 
-async function osrmReorderAll() {
-  setErr("");
-  setInfo("");
-  if (!token) return;
+    const depot = hubOk
+      ? { id: "depot", lat: Number(s.hubLat), lng: Number(s.hubLng) }
+      : { id: "depot", lat: Number(stops[0].lat), lng: Number(stops[0].lng) };
 
-  const ids = (draftShifts || [])
-    .map((x) => Number(x.id))
-    .filter(Number.isFinite);
+    const points = [depot, ...stops.map((x) => ({ id: Number(x.id), lat: Number(x.lat), lng: Number(x.lng) }))];
 
-  if (!ids.length) {
-    setErr("Taslak shift yok.");
-    return;
-  }
+    setBusy(true);
+    try {
+      const t = await api("/api/plan-builder/osrm-table", { token, method: "POST", body: { profile: "driving", points } });
+      if (!t?.ok) {
+        setErr("OSRM matrisi alınamadı (opsiyonel). Solver/OSRM kapalı olabilir.");
+        return;
+      }
+      const durationsSec = t?.durationsSec;
+      const distancesM = t?.distancesM;
 
-  setBusy(true);
-  setOsrmBatch({ running: true, done: 0, total: ids.length });
+      const solved = await api("/api/plan-builder/solve-vrp", {
+        token,
+        method: "POST",
+        body: {
+          durationsSec,
+          distancesM,
+          pointIds: points.map((p) => p.id),
+          depotIndex: 0,
+          returnToDepot: false,
+          preferOrtools: true,
+        },
+      });
 
-  try {
-    let okCount = 0;
-    let errCount = 0;
-
-    for (let i = 0; i < ids.length; i++) {
-      const sid = ids[i];
-
-      try {
-        const res = await osrmReorderCore(sid);
-        if (res.ok) {
-          okCount++;
-          setOsrmResById((prev) => ({ ...prev, [sid]: { ok: true } }));
-        } else {
-          errCount++;
-          setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: res.error } }));
-        }
-      } catch (e) {
-        errCount++;
-        setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: String(e?.message || e) } }));
+      if (!solved?.ok || !Array.isArray(solved?.orderPointIds)) {
+        setErr("Çözüm alınamadı (solver kapalı olabilir).");
+        return;
       }
 
-      setOsrmBatch({ running: true, done: i + 1, total: ids.length });
+      // orderPointIds includes "depot" + stop ids
+      const orderedStopIds = solved.orderPointIds
+        .filter((id) => id !== "depot")
+        .map((id) => Number(id))
+        .filter(Number.isFinite);
+
+      if (orderedStopIds.length !== stops.length) {
+        setErr("Sıralama uyuşmadı (durak sayısı).");
+        return;
+      }
+
+      await api(`/api/shifts/${sid}/stops/reorder`, { token, method: "PUT", body: { idsInOrder: orderedStopIds } });
+      setInfo(`✅ Rota sıralandı (solver: ${solved.solver || "-"}).`);
+      await refreshDraftShifts();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
     }
-
-    await refreshDraftShifts();
-    setInfo(`✅ Hepsi işlendi. OK: ${okCount}, Hata: ${errCount}.`);
-  } catch (e) {
-    setErr(String(e?.message || e));
-  } finally {
-    setOsrmBatch((p) => ({ ...p, running: false }));
-    setBusy(false);
   }
-}
 
-async function sendBulkOffers() {
+  async function sendBulkOffers() {
     setErr("");
     setInfo("");
     if (!token) return;
@@ -795,23 +716,12 @@ setSentOk(true);
                   <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} />
                 </div>
                 <div>
-                  <label className="muted">Hızlı süre</label>
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                    {QUICK_DURATION_PRESETS.map((d) => (
-                      <button
-                        key={d.key}
-                        type="button"
-                        className={durationKey === d.key ? "" : "btn"}
-                        disabled={busy}
-                        onClick={() => setDurationKey(d.key)}
-                      >
-                        {d.label}
-                      </button>
+                  <label className="muted">Süre</label>
+                  <select value={durationKey} onChange={(e) => setDurationKey(e.target.value)} disabled={busy}>
+                    {DURATION_PRESETS.map((d) => (
+                      <option key={d.key} value={d.key}>{d.label}</option>
                     ))}
-                  </div>
-                  <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                    Seçince bitiş otomatik hesaplanır.
-                  </div>
+                  </select>
                 </div>
                 <div>
                   <label className="muted">Bitiş (otomatik)</label>
@@ -835,29 +745,18 @@ setSentOk(true);
                     ))}
                   </div>
                   <div className="muted" style={{ marginTop: 6 }}>Günler: {weekMaskToText(weekMask)} • weekMask:{weekMask}</div>
-
                   {eligibleDaysCount === 0 ? (
                     <div className="card err" style={{ marginTop: 8 }}>
-                      Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.
+                      Seçili tarih aralığında seçili gün yok. Başlangıç {startDate} ama gün filtresi {weekMaskToText(weekMask)}.
                       {nextValidStart ? (
                         <div style={{ marginTop: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStartDate(nextValidStart);
-                            }}
-                            disabled={busy}
-                          >
+                          <button type="button" className="btn sm" disabled={busy} onClick={() => setStartDate(nextValidStart)}>
                             Başlangıcı {nextValidStart} yap
                           </button>
                         </div>
                       ) : null}
                     </div>
-                  ) : (
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      Uygun gün sayısı: {eligibleDaysCount}
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -886,7 +785,7 @@ setSentOk(true);
 
           <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setStep(0)} disabled={busy}>Geri</button>
-            <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0}>Taslak shift oluştur</button>
+            <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0} title={eligibleDaysCount === 0 ? "Tarih aralığında seçili gün yok" : ""}>Taslak shift oluştur</button>
           </div>
         </div>
       ) : null}
@@ -921,18 +820,7 @@ setSentOk(true);
           <div className="muted">4. adım: OSRM matrisi (opsiyonel) → çöz → durakları sırala → room’lara toplu teklif gönder.</div>
 
           <div className="card">
-            <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-  <div style={{ fontWeight: 800 }}>Taslak shift’ler</div>
-  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-    <button type="button" onClick={osrmReorderAll} disabled={busy || !(draftShifts || []).length}>
-      Hepsini OSRM ile sırala
-    </button>
-  </div>
-</div>
-{osrmBatch?.running ? (
-  <div className="muted" style={{ marginTop: 6 }}>Sıralanıyor: {osrmBatch.done}/{osrmBatch.total}</div>
-) : null}
-
+            <div style={{ fontWeight: 800 }}>Taslak shift’ler</div>
             <div style={{ overflowX: "auto", marginTop: 10 }}>
               <table className="tbl" style={{ minWidth: 820 }}>
                 <thead>
@@ -958,16 +846,9 @@ setSentOk(true);
                         })()}
                       </td>
                       <td>
-                        <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-  <button type="button" onClick={() => osrmReorder(s.id)} disabled={busy}>
-    OSRM ile sırala
-  </button>
-  {osrmResById?.[Number(s.id)]?.ok === true ? (
-    <span className="muted">✅</span>
-  ) : osrmResById?.[Number(s.id)]?.ok === false ? (
-    <span className="muted" title={osrmResById?.[Number(s.id)]?.error || ""}>⚠️</span>
-  ) : null}
-</div>
+                        <button type="button" onClick={() => osrmReorder(s.id)} disabled={busy}>
+                          OSRM ile sırala
+                        </button>
                       </td>
                     </tr>
                   ))}

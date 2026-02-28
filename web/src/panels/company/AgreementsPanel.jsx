@@ -8,6 +8,7 @@ import {
   DAY_PRESETS,
   TIME_PRESETS,
   DURATION_PRESETS,
+  QUICK_DURATION_PRESETS,
   maskFromSelected,
   selectedFromMask,
   weekMaskToText,
@@ -31,33 +32,30 @@ function isYmd(s) {
 const PLAN_TEMPLATES = [
   {
     key: "MORNING",
-    label: "Sabah (07:00→09:00) • Hafta içi • 30 gün",
+    label: "Sabah (07:00→09:00) • Hafta içi",
     daysMask: 62,
     startMin: 7 * 60,
     endMin: 9 * 60,
     direction: "INBOUND",
     pattern: "ONE_WAY",
-    durationDays: 30,
   },
   {
     key: "EVENING",
-    label: "Akşam (17:00→19:00) • Hafta içi • 30 gün",
+    label: "Akşam (17:00→19:00) • Hafta içi",
     daysMask: 62,
     startMin: 17 * 60,
     endMin: 19 * 60,
     direction: "OUTBOUND",
     pattern: "ONE_WAY",
-    durationDays: 30,
   },
   {
     key: "NIGHT",
-    label: "Gece (23:00→01:00) • Hafta içi • 30 gün",
+    label: "Gece (23:00→01:00) • Hafta içi",
     daysMask: 62,
     startMin: 23 * 60,
     endMin: 1 * 60,
     direction: "INBOUND",
     pattern: "ONE_WAY",
-    durationDays: 30,
   },
   {
     key: "CUSTOM",
@@ -67,7 +65,6 @@ const PLAN_TEMPLATES = [
     endMin: 10 * 60,
     direction: "INBOUND",
     pattern: "ONE_WAY",
-    durationDays: 30,
   },
 ];
 
@@ -76,6 +73,8 @@ function StatusPill({ status }) {
   const label =
     s === "REQUESTED"
       ? "⏳ REQUESTED"
+      : s === "COUNTERED"
+      ? "💬 COUNTERED"
       : s === "APPROVED"
       ? "✅ APPROVED"
       : s === "ACTIVE"
@@ -117,12 +116,14 @@ export default function AgreementsPanel() {
   const [roomId, setRoomId] = useState("");
 
   const [startDate, setStartDate] = useState(todayYmd());
-  const [durationKey, setDurationKey] = useState("1m");
+
+  const DEFAULT_DURATION_KEY = QUICK_DURATION_PRESETS?.[0]?.key || "2d";
+  const [durationKey, setDurationKey] = useState(DEFAULT_DURATION_KEY);
   const durationDays = useMemo(() => {
-    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS[1];
+    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS.find((x) => x.key === DEFAULT_DURATION_KEY) || DURATION_PRESETS[0];
     return Number(p.days || 30);
   }, [durationKey]);
-  const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 30));
+  const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
 
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
@@ -142,7 +143,7 @@ export default function AgreementsPanel() {
   const endMin = useMemo(() => parseHHMM(endHHMM), [endHHMM]);
 
   // ✅ live refresh
-  useAutoReload("agreements");
+  useAutoReload("agreements", load, !!token);
 
   const roomById = useMemo(() => {
     const m = new Map();
@@ -157,8 +158,6 @@ export default function AgreementsPanel() {
     setEndHHMM(toHHMM(t.endMin));
     setDirection(t.direction);
     setPattern(t.pattern);
-
-    if (isYmd(startDate)) setEndDate(addDaysISO(startDate, t.durationDays));
   }
 
   useEffect(() => {
@@ -168,7 +167,7 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     if (!isYmd(startDate)) return;
-    setEndDate(addDaysISO(startDate, durationDays));
+    setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
   // room selection => hub autofill
@@ -273,6 +272,33 @@ export default function AgreementsPanel() {
       setAdvancedOpen(false);
     } catch (e) {
       setErr(e?.message || "Create failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+
+  async function acceptCounter(id) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${id}/accept-counter`, { token, method: "PUT", body: {} });
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Accept counter failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejectCounter(id) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${id}/reject-counter`, { token, method: "PUT", body: {} });
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Reject counter failed");
     } finally {
       setBusy(false);
     }
@@ -443,16 +469,25 @@ export default function AgreementsPanel() {
                 )}
               </label>
 
-              <label className="muted">
-                Süre
-                <select value={durationKey} onChange={(e) => setDurationKey(e.target.value)} disabled={busy}>
-                  {DURATION_PRESETS.map((d) => (
-                    <option key={d.key} value={d.key}>
+              <div>
+                <div className="muted">Hızlı süre</div>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                  {QUICK_DURATION_PRESETS.map((d) => (
+                    <button
+                      key={d.key}
+                      type="button"
+                      className={durationKey === d.key ? "" : "btn"}
+                      disabled={busy}
+                      onClick={() => setDurationKey(d.key)}
+                    >
                       {d.label}
-                    </option>
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+                <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                  Agreement kısa süreli de kullanılabilir. Seçince “Bitiş” otomatik hesaplanır; istersen elle değiştirebilirsin.
+                </div>
+              </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -578,6 +613,8 @@ export default function AgreementsPanel() {
               <th>Days</th>
               <th>Time</th>
               <th>Dir/Pat</th>
+              <th>Company Teklif</th>
+              <th>Room Karşı</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -595,8 +632,26 @@ export default function AgreementsPanel() {
                   {toHHMM(a.startMin)} → {toHHMM(a.endMin)}
                 </td>
                 <td className="muted">{a.direction}/{a.pattern}</td>
+                <td className="muted" title={a.companyOfferNote ? `📝 ${a.companyOfferNote}` : ""}>
+                  {a.companyOfferAmount != null ? `₺${a.companyOfferAmount}` : "-"}
+                  {a.companyOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
+                </td>
+                <td className="muted" title={a.roomOfferNote ? `📝 ${a.roomOfferNote}` : ""}>
+                  {a.roomOfferAmount != null ? `₺${a.roomOfferAmount}` : "-"}
+                  {a.roomOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
+                </td>
                 <td>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    {String(a.status || "").toUpperCase() === "COUNTERED" ? (
+                      <>
+                        <button type="button" disabled={busy} onClick={() => acceptCounter(a.id)}>
+                          Kabul Et
+                        </button>
+                        <button type="button" className="btn" disabled={busy} onClick={() => rejectCounter(a.id)}>
+                          Reddet
+                        </button>
+                      </>
+                    ) : null}
                     <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE"} onClick={() => cancelAgreement(a.id)}>
                       Cancel
                     </button>
@@ -618,7 +673,7 @@ export default function AgreementsPanel() {
             ))}
             {!rows.length ? (
               <tr>
-                <td colSpan={8} className="muted">Kayıt yok.</td>
+                <td colSpan={10} className="muted">Kayıt yok.</td>
               </tr>
             ) : null}
           </tbody>

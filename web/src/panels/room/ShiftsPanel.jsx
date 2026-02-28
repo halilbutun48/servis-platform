@@ -239,7 +239,65 @@ async function decideExtend(shiftId, decision) {
     return m;
   }, [drivers]);
 
-  const offersByShiftId = useMemo(() => {
+  
+  // M61_UI_COPY — Paket içi hızlı doldurma (sadece UI)
+  // Not: Bu kopyalama sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
+  const pkgKeyOfShift = (sh) => {
+    const cid = Number(sh?.companyId ?? sh?.company?.id ?? 0);
+    const t0 =
+      sh?.createdAt ? new Date(sh.createdAt).getTime() :
+      sh?.startAt ? new Date(sh.startAt).getTime() :
+      0;
+    const bucket = Number.isFinite(t0) ? Math.floor(t0 / 60000) : 0;
+    return `${cid}:${bucket}`;
+  };
+
+  const pkgShiftIdsFor = (baseShift) => {
+    const key = pkgKeyOfShift(baseShift);
+    const arr = (pendingFiltered || []).filter((x) => pkgKeyOfShift(x) === key);
+    return arr.map((x) => Number(x.id)).filter(Number.isFinite);
+  };
+
+  const uiCopyVehicleToPkg = (baseShift, vehicleIdStr) => {
+    const vidStr = String(vehicleIdStr || "");
+    if (!vidStr) return;
+    const ids = pkgShiftIdsFor(baseShift);
+    if (ids.length <= 1) return;
+
+    setAssignSel((prev) => {
+      const next = { ...(prev || {}) };
+      for (const id of ids) next[id] = vidStr;
+      return next;
+    });
+
+    // araç driver'ı varsa ve satırda manuel driver yoksa doldur
+    const vid = Number(vidStr);
+    const vv = Number.isFinite(vid) ? vehiclesById.get(vid) : null;
+    const autoDid = vv?.driverId ? String(vv.driverId) : "";
+    if (autoDid) {
+      setDriverSel((prev) => {
+        const next = { ...(prev || {}) };
+        for (const id of ids) {
+          if (!next[id]) next[id] = autoDid;
+        }
+        return next;
+      });
+    }
+  };
+
+  const uiCopyDriverToPkg = (baseShift, driverIdStr) => {
+    const didStr = String(driverIdStr || "");
+    if (!didStr) return;
+    const ids = pkgShiftIdsFor(baseShift);
+    if (ids.length <= 1) return;
+
+    setDriverSel((prev) => {
+      const next = { ...(prev || {}) };
+      for (const id of ids) next[id] = didStr;
+      return next;
+    });
+  };
+const offersByShiftId = useMemo(() => {
     const m = new Map();
     for (const o of offers || []) {
       const sid = Number(o?.shiftId);
@@ -927,7 +985,93 @@ async function decideExtend(shiftId, decision) {
     }
   }
 
-  async function sendRoomOffer(shift) {
+  
+  // === Bulk market counter helpers (M59) ===
+  function offerBundleKey(offer) {
+    const sh = offer?.shift || {};
+    const companyId = sh?.companyId ?? sh?.company?.id ?? null;
+    const ca = sh?.createdAt ? String(sh.createdAt).slice(0, 16) : null; // minute bucket
+    if (!companyId) return null;
+    if (!ca) return null;
+    return `${companyId}|${ca}`;
+  }
+
+  async function bulkMarketCounter(refOffer, mode) {
+    const refId = Number(refOffer?.id);
+    if (!refId) return;
+
+    const st = marketCounterSel[refId] || {};
+    const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : parseTryInput(st.amountRoom);
+    const noteRoom = String(st.noteRoom ?? "").trim() || undefined;
+
+    if (amountRoom == null && !noteRoom) {
+      setErr("Toplu counter için tutar veya not gir. (Bir satırda doldurup Pakete/Şirkete Uygula)");
+      return;
+    }
+
+    const refShift = refOffer?.shift || {};
+    const refCompanyId = Number(refShift?.companyId ?? refShift?.company?.id);
+    if (!refCompanyId) {
+      setErr("Company bulunamadı.");
+      return;
+    }
+
+    const refBundleKey = offerBundleKey(refOffer);
+    if (mode === "bundle" && !refBundleKey) {
+      setErr("Paket anahtarı bulunamadı (createdAt yok). Şirkete Uygula'yı kullan.");
+      return;
+    }
+
+    const targets = (offers || []).filter((o) => {
+      if (!o) return false;
+      const s = String(o.status || "");
+      if (s === "CANCELLED" || s === "ACCEPTED") return false;
+      const sh = o.shift || {};
+      const cid = Number(sh?.companyId ?? sh?.company?.id);
+      if (!cid) return false;
+
+      if (mode === "company") {
+        return cid === refCompanyId;
+      }
+      if (mode === "bundle") {
+        const k = offerBundleKey(o);
+        return k && k === refBundleKey;
+      }
+      return false;
+    });
+
+    if (!targets.length) {
+      setErr("Toplu counter için eşleşen teklif bulunamadı.");
+      return;
+    }
+
+    setBusy(true);
+    setErr("");
+    try {
+      let ok = 0;
+      let fail = 0;
+      for (const o of targets) {
+        const oid = Number(o?.id);
+        if (!oid) continue;
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await api(`/api/offers/${oid}/counter`, { method: "PUT", token, body: { amountRoom, noteRoom } });
+          ok++;
+        } catch {
+          fail++;
+        }
+      }
+      invalidate("offers");
+      await load();
+      if (fail) setErr(`Toplu counter: ${ok} başarılı, ${fail} hata.`);
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  // === /Bulk market counter helpers ===
+async function sendRoomOffer(shift) {
     const sid = Number(shift.id);
     const form = roomOfferSel[sid] || {};
 
@@ -1106,6 +1250,8 @@ async function decideExtend(shiftId, decision) {
             <tbody>
               {pendingFiltered.map((s) => {
                 const sid = Number(s.id);
+                // Agreement shift'lerde pazarlık/offer kapalı
+                const isAgreement = Number(s?.agreementId) > 0;
                 const roomVehicles = vehiclesForRoom(s.roomId);
                 const selectedVehicleId = assignSel[sid] || "";
                 const vId = selectedVehicleId ? Number(selectedVehicleId) : null;
@@ -1139,7 +1285,8 @@ async function decideExtend(shiftId, decision) {
                   a?.status === "error";
 
                 const offerIsOpen = Boolean(roomOfferOpen[sid]);
-                const offerForm = roomOfferSel[sid] || {};                const offerVehList = roomVehicles;
+                const offerForm = roomOfferSel[sid] || {};
+                const offerVehList = roomVehicles;
 
                 const marketOffer = offersByShiftId.get(sid) || null;
                 const marketCanCounter = marketOffer && marketOffer.status !== "CANCELLED" && marketOffer.status !== "ACCEPTED";
@@ -1169,11 +1316,19 @@ async function decideExtend(shiftId, decision) {
                         <div className="muted" style={{ fontSize: 12 }}>
                           Önizleme: API <code>/api/shifts/{sid}/route-preview</code>
                         </div>
-                      </div>
-                    </td>
+                    </div>
+                  </td>
 
                     <td>
                       <div style={{ display: "grid", gap: 6 }}>
+                        {isAgreement ? (
+                          <div className="card" style={{ marginTop: 6 }} title={Number(s?.agreementId) > 0 ? `Agreement #${s.agreementId}` : ""}>
+                            <div style={{ fontWeight: 800 }}>Agreement shift</div>
+                            <div className="muted" style={{ marginTop: 6 }}>Agreement shift — pazarlık kapalı.</div>
+                          </div>
+                        ) : null}
+
+                        {!isAgreement ? (
                         <div>
                           {marketOffer ? (
                             <div className="card" style={{ marginTop: 6 }} title="Market teklifleri ShiftOffer tablosundan gelir; buradan counter gönderebilirsin.">
@@ -1209,8 +1364,14 @@ async function decideExtend(shiftId, decision) {
                                       />
                                     </div>
                                     <button className="btn sm" disabled={busy} onClick={() => sendMarketCounter(marketOffer)}>
-                                      Counter Gönder
-                                    </button>
+  Counter Gönder
+</button>
+<button className="btn sm" disabled={busy} onClick={() => bulkMarketCounter(marketOffer, "bundle")} title="Aynı anda oluşturulmuş paket tekliflerine uygula">
+  Pakete Uygula
+</button>
+<button className="btn sm" disabled={busy} onClick={() => bulkMarketCounter(marketOffer, "company")} title="Bu company'nin tüm açık market tekliflerine uygula">
+  Şirkete Uygula
+</button>
                                   </div>
                                 </div>
                               ) : (
@@ -1221,8 +1382,11 @@ async function decideExtend(shiftId, decision) {
                             <div>{renderCompanyOfferSummary(s)}</div>
                           )}
                         </div>
+                        ) : null}
 
-                        <button type="button" className="btn sm" disabled={busy || !!marketOffer} onClick={() => toggleRoomOffer(sid)} title={marketOffer ? "Market teklifi için counter yukarıdan yapılır" : "Room → Company karşı teklif"}>
+                        {!isAgreement ? (
+                          <>
+                        <button type="button" className="btn sm" disabled={busy || !!marketOffer || isAgreement} onClick={() => toggleRoomOffer(sid)} title={marketOffer ? "Market teklifi için counter yukarıdan yapılır" : "Room → Company karşı teklif"}>
                           {offerIsOpen ? "Room Teklifi Kapat" : "Room Teklifi (opsiyonel) Aç"}
                         </button>
 
@@ -1314,6 +1478,8 @@ async function decideExtend(shiftId, decision) {
                             </div>
                           </div>
                         ) : null}
+                          </>
+                        ) : null}
                       </div>
                     </td>
 
@@ -1366,7 +1532,28 @@ async function decideExtend(shiftId, decision) {
                           </select>
                         </div>
 
-                        <button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
+                                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            disabled={busy || !selectedVehicleId}
+                            onClick={() => uiCopyVehicleToPkg(s, selectedVehicleId)}
+                            title="Seçili aracı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
+                          >
+                            Araç → Pakete Kopyala
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy || !(driverSel[sid] ?? "")}
+                            onClick={() => uiCopyDriverToPkg(s, driverSel[sid] ?? "")}
+                            title="Seçili driver’ı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
+                          >
+                            Driver → Pakete Kopyala
+                          </button>
+                        </div>
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          Not: Bu butonlar sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
+                        </div>
+<button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
                           {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}
                         </button>
 
@@ -1482,6 +1669,12 @@ async function decideExtend(shiftId, decision) {
                   <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
 
                   <td>
+                    {Number(s?.agreementId) > 0 ? (
+                      <div className="card" style={{ marginTop: 0 }}>
+                        <div style={{ fontWeight: 800 }}>Agreement shift</div>
+                        <div className="muted" style={{ marginTop: 6 }}>Pazarlık/teklif kapalı (Agreement kaynaklı).</div>
+                      </div>
+                    ) : (
                     <div style={{ display: "grid", gap: 8 }}>
                       {(() => {
                         const mo = offersByShiftId.get(Number(s.id));
@@ -1505,6 +1698,7 @@ async function decideExtend(shiftId, decision) {
                         <div style={{ marginTop: 4 }}>{renderRoomOfferSummary(s)}</div>
                       </div>
                     </div>
+                    )}
                   </td>
 
                   <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
@@ -1570,3 +1764,5 @@ async function decideExtend(shiftId, decision) {
     </div>
   );
 }
+
+

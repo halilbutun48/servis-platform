@@ -1,13 +1,6 @@
 // web/src/panels/company/ShiftTemplatesPanel.jsx
+// Note: Templates are only slot/time/direction. Days + duration moved to Agreement create.
 import { useEffect, useMemo, useState } from "react";
-import {
-  WEEKDAYS,
-  DAY_PRESETS,
-  DURATION_PRESETS,
-  selectedFromMask,
-  maskFromSelected,
-  weekMaskToText,
-} from "../../utils/agreementUi";
 
 export const TEMPLATE_PACKS = [
   {
@@ -91,8 +84,6 @@ export default function ShiftTemplatesPanel({
   // UI state (wizard-like)
   const [tplName, setTplName] = useState("");
   const [tplPackKey, setTplPackKey] = useState("WK_MORNING_EVENING");
-  const [tplDurationKey, setTplDurationKey] = useState(DEFAULT_DURATION_KEY);
-  const [tplDaysSel, setTplDaysSel] = useState(() => selectedFromMask(DEFAULT_WEEKMASK));
   const [tplPeople, setTplPeople] = useState("");
   const [editingTplId, setEditingTplId] = useState("");
 
@@ -125,8 +116,6 @@ export default function ShiftTemplatesPanel({
     setEditingTplId("");
     setTplName("");
     setTplPackKey("WK_MORNING_EVENING");
-    setTplDurationKey(DEFAULT_DURATION_KEY);
-    setTplDaysSel(selectedFromMask(DEFAULT_WEEKMASK));
     setTplPeople("");
     setTplStart("08:00");
     setTplEnd("10:00");
@@ -139,8 +128,6 @@ export default function ShiftTemplatesPanel({
     setEditingTplId(String(tpl.id));
     setTplName(String(tpl.name || ""));
     setTplPackKey(String(tpl.packKey || "CUSTOM"));
-    setTplDurationKey(String(tpl.durationKey || DEFAULT_DURATION_KEY));
-    setTplDaysSel(selectedFromMask(Number(tpl.weekMask || DEFAULT_WEEKMASK)));
     setTplPeople(tpl.people != null ? String(tpl.people) : "");
 
     const it = (tpl.items || [])[0];
@@ -169,7 +156,7 @@ export default function ShiftTemplatesPanel({
       return;
     }
 
-    const weekMask = maskFromSelected(tplDaysSel);
+    const weekMask = DEFAULT_WEEKMASK;
 
     let items = [];
     if (tplPackKey === "CUSTOM") {
@@ -197,7 +184,7 @@ export default function ShiftTemplatesPanel({
       name,
       packKey: tplPackKey,
       weekMask,
-      durationKey: tplDurationKey,
+      durationKey: DEFAULT_DURATION_KEY,
       items,
       people: ppl,
       kind: "CUSTOM",
@@ -226,10 +213,11 @@ export default function ShiftTemplatesPanel({
   }
 
   return (
-    <div className="card">
+    <>
+      <div className="card">
       <h3>Vardiya Şablonları</h3>
       <div className="muted">
-        Guided Mode’daki <b>plan paketi + günler + süre</b> mantığını burada şablon olarak kaydedebilirsin. Bu şablonları hem{" "}
+        Guided Mode’daki <b>plan paketi</b> (slot/saat/direction) mantığını burada şablon olarak kaydedebilirsin. Bu şablonları hem{" "}
         <b>Yeni Talep</b> ekranında saat doldurmak için, hem de ileride planlama için kullanacağız. Custom şablonlar company bazlı tarayıcıda saklanır.
       </div>
 
@@ -278,56 +266,25 @@ export default function ShiftTemplatesPanel({
           </div>
         </div>
 
-        {/* 2) Günler + süre */}
+        {/* 2) Kaydet */}
         <div className="card" style={{ margin: 0 }}>
-          <h3 style={{ marginTop: 0 }}>2) Günler + süre</h3>
+          <h3 style={{ marginTop: 0 }}>2) Kaydet</h3>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-            {DAY_PRESETS.map((p) => (
-              <button key={p.key} type="button" className="btn" onClick={() => setTplDaysSel(selectedFromMask(p.mask))}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
-            {WEEKDAYS.map((d) => (
-              <label key={d.k} className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={Boolean(tplDaysSel?.[d.k])}
-                  onChange={(e) => setTplDaysSel((prev) => ({ ...(prev || {}), [d.k]: e.target.checked }))}
-                />
-                {d.label}
-              </label>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <div className="muted">Süre</div>
-            <select value={tplDurationKey} onChange={(e) => setTplDurationKey(e.target.value)}>
-              {DURATION_PRESETS.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+          <div className="muted">
+            Şablonlar sadece <b>slot/saat/direction</b> içindir. <b>Günler + süre</b> seçimi Agreement oluştururken yapılır.
           </div>
 
           <div className="card" style={{ marginTop: 12, borderStyle: "dashed" }}>
             <div style={{ fontWeight: 700 }}>Özet</div>
             <ul className="muted" style={{ margin: "8px 0 0 18px" }}>
               <li>
-                <b>Günler:</b> {weekMaskToText(maskFromSelected(tplDaysSel))} • weekMask: {maskFromSelected(tplDaysSel)}
-              </li>
-              <li>
-                <b>Süre:</b> {(DURATION_PRESETS.find((x) => x.key === tplDurationKey) || DURATION_PRESETS[1]).label}
-              </li>
-              <li>
                 <b>Paket:</b>{" "}
                 {templateItemsSummary({
                   items: tplPackKey === "CUSTOM" ? [{ label: "Özel", startHHMM: tplStart, endHHMM: tplEnd }] : pack?.items || [],
                 })}
+              </li>
+              <li>
+                <b>Kişi (vars.):</b> {String(tplPeople || "").trim() ? tplPeople : "-"}
               </li>
             </ul>
           </div>
@@ -342,17 +299,16 @@ export default function ShiftTemplatesPanel({
           </div>
         </div>
       </div>
+      </div>
 
-      {/* Liste */}
-      <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
+    {/* Liste */}
+    <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
         <h3 style={{ marginTop: 0 }}>Şablon Listesi</h3>
         <table className="tbl" style={{ whiteSpace: "nowrap" }}>
           <thead>
             <tr>
               <th>Ad</th>
               <th>Vardiya(lar)</th>
-              <th>Günler</th>
-              <th>Süre</th>
               <th>Kişi (vars.)</th>
               <th>Tip</th>
               <th>Aksiyon</th>
@@ -363,11 +319,7 @@ export default function ShiftTemplatesPanel({
               <tr key={t.id}>
                 <td>{t.name}</td>
                 <td className="muted">{templateItemsSummary(t)}</td>
-                <td className="muted">
-                  {weekMaskToText(t.weekMask)} ({t.weekMask})
-                </td>
-                <td className="muted">{(DURATION_PRESETS.find((x) => x.key === t.durationKey) || DURATION_PRESETS[1]).label}</td>
-                <td className="muted">{t.people != null ? t.people : "-"}</td>
+                                <td className="muted">{t.people != null ? t.people : "-"}</td>
                 <td>
                   <span className="pill" data-status={t.kind === "PRESET" ? "PRESET" : "CUSTOM"}>
                     {t.kind}
@@ -399,6 +351,6 @@ export default function ShiftTemplatesPanel({
           “Kullan” → Yeni Talep’e geçer ve Start/End’i doldurur.
         </div>
       </div>
-    </div>
+    </>
   );
 }

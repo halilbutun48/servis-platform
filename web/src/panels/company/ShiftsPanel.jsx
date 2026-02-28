@@ -125,6 +125,9 @@ export default function CompanyShiftsPanel() {
     noteCompany: "",
   });
   const [offersModal, setOffersModal] = useState({ open: false, shiftId: null, items: [] });
+  // M60: Paket teklif/accept desteği (Company)
+  const [offerModalPkgIds, setOfferModalPkgIds] = useState([]); // number[]
+  const [offersModalPkgIds, setOffersModalPkgIds] = useState([]); // number[]
 
   // M51: Shift süre uzatma (Company → Room talep)
   const [extendModal, setExtendModal] = useState({ open: false, shift: null, endLocal: "", note: "" });
@@ -821,10 +824,40 @@ function usePlanDraftToRequest(draft) {
   }
 
   // ✅ M24: Market offers
-  function openOfferModalForShift(shiftId) {
+  function pkgMinuteKey(s) {
+    const ca = s?.createdAt || s?.created_at || s?.createdAtUtc || null;
+    if (!ca) return null;
+    const d = new Date(ca);
+    if (Number.isNaN(d.getTime())) return null;
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+
+  function computePackageShiftIds(seedShift) {
+    if (!seedShift) return [];
+    const key = pkgMinuteKey(seedShift);
+    const cid = Number(seedShift.companyId || seedShift.company?.id || 0);
+    if (!key || !cid) return [];
+    const ids = (items || [])
+      .filter((x) => Number(x.companyId || x.company?.id || 0) === cid && pkgMinuteKey(x) === key)
+      .map((x) => Number(x.id))
+      .filter((x) => Number.isFinite(x) && x > 0);
+    const uniq = Array.from(new Set(ids)).sort((a, b) => a - b);
+    return uniq;
+  }
+
+  function openOfferModalForShift(shiftId, pkgIds = null) {
+    const sid = Number(shiftId);
+    const seed = (items || []).find((x) => Number(x.id) === sid);
+    const auto = computePackageShiftIds(seed);
+    const idsRaw = Array.isArray(pkgIds) && pkgIds.length ? pkgIds : auto;
+    const ids = Array.from(new Set((idsRaw || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+
+    // sadece "paket" ise sakla (tek shift ise boş kalsın)
+    setOfferModalPkgIds(ids.length > 1 ? ids : []);
+
     setOfferModal({
       open: true,
-      shiftId: Number(shiftId),
+      shiftId: sid,
       q: "",
       onlyHub: true,
       roomIds: {},
@@ -867,13 +900,22 @@ function usePlanDraftToRequest(draft) {
     setBusy(true);
     setErr("");
     try {
-      await api(`/api/shifts/${shiftId}/offers`, {
-        method: "POST",
-        token,
-        body: { roomIds, amountCompany: amountCompany ?? null, noteCompany: noteCompany ?? null },
-      });
+      const targetShiftIds = (offerModalPkgIds || []).length
+        ? Array.from(new Set((offerModalPkgIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)))
+        : [shiftId];
+
+      if (!targetShiftIds.includes(shiftId)) targetShiftIds.unshift(shiftId);
+
+      for (const sid of targetShiftIds) {
+        await api(`/api/shifts/${sid}/offers`, {
+          method: "POST",
+          token,
+          body: { roomIds, amountCompany: amountCompany ?? null, noteCompany: noteCompany ?? null },
+        });
+      }
 
       setOfferModal((p) => ({ ...p, open: false }));
+      setOfferModalPkgIds([]);
       invalidate("offers");
       await load();
     } catch (e) {
@@ -883,8 +925,14 @@ function usePlanDraftToRequest(draft) {
     }
   }
 
-  async function openOffersModalForShift(shiftId) {
+  async function openOffersModalForShift(shiftId, pkgIds = null) {
     const sid = Number(shiftId);
+    const seed = (items || []).find((x) => Number(x.id) === sid);
+    const auto = computePackageShiftIds(seed);
+    const idsRaw = Array.isArray(pkgIds) && pkgIds.length ? pkgIds : auto;
+    const ids = Array.from(new Set((idsRaw || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+    setOffersModalPkgIds(ids.length > 1 ? ids : []);
+
     if (!sid) return;
     setBusy(true);
     setErr("");
@@ -906,6 +954,42 @@ function usePlanDraftToRequest(draft) {
     try {
       await api(`/api/offers/${oid}/accept`, { method: "PUT", token, body: {} });
       setOffersModal((p) => ({ ...p, open: false }));
+      invalidate("shifts");
+      invalidate("offers");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function acceptOfferPackage(roomId) {
+    const rid = Number(roomId);
+    if (!rid) return;
+
+    const baseShiftId = Number(offersModal.shiftId);
+    if (!baseShiftId) return;
+
+    const targetShiftIds = (offersModalPkgIds || []).length
+      ? Array.from(new Set((offersModalPkgIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)))
+      : [baseShiftId];
+
+    if (!targetShiftIds.includes(baseShiftId)) targetShiftIds.unshift(baseShiftId);
+
+    setBusy(true);
+    setErr("");
+    try {
+      for (const sid of targetShiftIds) {
+        const r = await api(`/api/offers/shift/${sid}`, { method: "GET", token });
+        const items = r?.items || [];
+        const match = items.find((o) => Number(o.roomId) === rid && (o.status === "COUNTERED" || o.status === "OFFERED"));
+        if (!match?.id) continue;
+        await api(`/api/offers/${Number(match.id)}/accept`, { method: "PUT", token, body: {} });
+      }
+
+      setOffersModal((p) => ({ ...p, open: false }));
+      setOffersModalPkgIds([]);
       invalidate("shifts");
       invalidate("offers");
       await load();
@@ -1727,6 +1811,14 @@ function usePlanDraftToRequest(draft) {
                     <button type="button" disabled={busy} onClick={() => openOfferModalForShift(s.id)}>
                       Teklif Gönder
                     </button>
+                    <button
+                      type="button"
+                      disabled={busy || computePackageShiftIds(s).length < 2}
+                      title={computePackageShiftIds(s).length < 2 ? "Paket bulunamadı" : `Pakete uygula (${computePackageShiftIds(s).length} shift)`}
+                      onClick={() => openOfferModalForShift(s.id, computePackageShiftIds(s))}
+                    >
+                      Paket Teklif
+                    </button>
                     <button type="button" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>
                       Teklifler
                     </button>
@@ -2258,7 +2350,7 @@ function usePlanDraftToRequest(draft) {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontWeight: 800 }}>Teklifler — Shift #{offersModal.shiftId}</div>
-              <div className="muted">Birini kabul edince diğerleri otomatik iptal olur.</div>
+              <div className="muted">Birini kabul edince diğerleri otomatik iptal olur{offersModalPkgIds.length > 1 ? ` • Paket: ${offersModalPkgIds.length} shift` : ""}.</div>
             </div>
             <button type="button" disabled={busy} onClick={() => setOffersModal((p) => ({ ...p, open: false }))}>
               Kapat
@@ -2283,13 +2375,25 @@ function usePlanDraftToRequest(draft) {
                   <td className="muted">{formatTRY(o.amountCompany)}</td>
                   <td className="muted">{formatTRY(o.amountRoom)}</td>
                   <td>
-                    <button
-                      type="button"
-                      disabled={busy || o.status !== "COUNTERED"}
-                      onClick={() => acceptOffer(o.id)}
-                    >
-                      Kabul Et
-                    </button>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        disabled={busy || o.status !== "COUNTERED"}
+                        onClick={() => acceptOffer(o.id)}
+                      >
+                        Kabul Et
+                      </button>
+                      {offersModalPkgIds.length > 1 ? (
+                        <button
+                          type="button"
+                          disabled={busy || o.status !== "COUNTERED"}
+                          title={`Pakete uygula (${offersModalPkgIds.length} shift)`}
+                          onClick={() => acceptOfferPackage(o.roomId)}
+                        >
+                          Paketi Kabul Et
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}

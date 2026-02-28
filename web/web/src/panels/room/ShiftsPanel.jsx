@@ -56,6 +56,15 @@ function AgreementBadge({ agreementId }) {
   );
 }
 
+function statusPill(s) {
+  const v = String(s || "").toUpperCase();
+  return (
+    <span className="pill" data-status={v} title={v}>
+      {v}
+    </span>
+  );
+}
+
 // Istanbul local gösterim
 const fmtTR = (iso) => {
   if (!iso) return "-";
@@ -115,6 +124,8 @@ export default function RoomShiftsPanel() {
   const [drivers, setDrivers] = useState([]);
   const [rooms, setRooms] = useState([]);
 
+  const [offers, setOffers] = useState([]); // market offers inbox (SHIFT_OFFER)
+
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -127,8 +138,16 @@ export default function RoomShiftsPanel() {
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
 
-  // Tüm shifts: tablo detaylarını satır altında aç/kapat
-  const [listExpanded, setListExpanded] = useState({}); // { [shiftId]: bool }
+  // M28: offers inbox -> shifts focus (minimize clicks)
+  useEffect(() => {
+    const raw = localStorage.getItem("room:focusShiftId");
+    if (!raw) return;
+    localStorage.removeItem("room:focusShiftId");
+    const sid = String(raw || "").trim();
+    if (!sid) return;
+    setListStatus("ALL");
+    setListQ(sid);
+  }, []);
 
   // Bekleyen satır: seçili araç + seçili driver (approve için)
   const [assignSel, setAssignSel] = useState({}); // { [shiftId]: vehicleIdStr }
@@ -138,6 +157,40 @@ export default function RoomShiftsPanel() {
   // Room karşı teklif UI
   const [roomOfferOpen, setRoomOfferOpen] = useState({}); // { [shiftId]: bool }
   const [roomOfferSel, setRoomOfferSel] = useState({}); // { [shiftId]: { roomOfferVehicleId, roomOfferAmount, roomOfferNote, notifyDriver, driverNote } }
+
+  // Market offer (ShiftOffer) counter UI
+  const [marketCounterSel, setMarketCounterSel] = useState({});
+
+  // M51: Shift süre uzatma (Room karar)
+  const [extendNoteSel, setExtendNoteSel] = useState({}); // { [shiftId]: string }
+  const setExtendNote = (shiftId, v) => setExtendNoteSel((p) => ({ ...p, [Number(shiftId)]: v }));
+ // { [offerId]: { amountRoom, noteRoom } }
+  function setMarketCounter(offerId, patch) {
+    setMarketCounterSel((p) => ({
+      ...p,
+      [Number(offerId)]: { ...(p[Number(offerId)] || {}), ...(patch || {}) },
+    }));
+  }
+
+
+async function decideExtend(shiftId, decision) {
+  const sid = Number(shiftId);
+  if (!sid) return;
+  setBusy(true);
+  setErr("");
+  try {
+    await api.put(`/api/shifts/${sid}/extend-decision`, {
+      decision,
+      noteRoom: trimOrNull(extendNoteSel[sid]),
+    }, { token });
+    setExtendNoteSel((p) => ({ ...p, [sid]: "" }));
+    invalidate("shift:list");
+  } catch (e) {
+    setErr(String(e?.message || e));
+  } finally {
+    setBusy(false);
+  }
+}
 
   // M14: uygunluk/çatışma state (shift bazlı)
   // shape: { [sid]: { sig, status, code, message, conflictingShift, source } }
@@ -186,65 +239,19 @@ export default function RoomShiftsPanel() {
     return m;
   }, [drivers]);
 
-  
-  // M61_UI_COPY — Paket içi hızlı doldurma (sadece UI)
-  // Not: Bu kopyalama sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
-  const pkgKeyOfShift = (sh) => {
-    const cid = Number(sh?.companyId ?? sh?.company?.id ?? 0);
-    const t0 =
-      sh?.createdAt ? new Date(sh.createdAt).getTime() :
-      sh?.startAt ? new Date(sh.startAt).getTime() :
-      0;
-    const bucket = Number.isFinite(t0) ? Math.floor(t0 / 60000) : 0;
-    return `${cid}:${bucket}`;
-  };
-
-  const pkgShiftIdsFor = (baseShift) => {
-    const key = pkgKeyOfShift(baseShift);
-    const arr = (pendingFiltered || []).filter((x) => pkgKeyOfShift(x) === key);
-    return arr.map((x) => Number(x.id)).filter(Number.isFinite);
-  };
-
-  const uiCopyVehicleToPkg = (baseShift, vehicleIdStr) => {
-    const vidStr = String(vehicleIdStr || "");
-    if (!vidStr) return;
-    const ids = pkgShiftIdsFor(baseShift);
-    if (ids.length <= 1) return;
-
-    setAssignSel((prev) => {
-      const next = { ...(prev || {}) };
-      for (const id of ids) next[id] = vidStr;
-      return next;
-    });
-
-    // araç driver'ı varsa ve satırda manuel driver yoksa doldur
-    const vid = Number(vidStr);
-    const vv = Number.isFinite(vid) ? vehiclesById.get(vid) : null;
-    const autoDid = vv?.driverId ? String(vv.driverId) : "";
-    if (autoDid) {
-      setDriverSel((prev) => {
-        const next = { ...(prev || {}) };
-        for (const id of ids) {
-          if (!next[id]) next[id] = autoDid;
-        }
-        return next;
-      });
+  const offersByShiftId = useMemo(() => {
+    const m = new Map();
+    for (const o of offers || []) {
+      const sid = Number(o?.shiftId);
+      if (!Number.isFinite(sid) || sid <= 0) continue;
+      // unique per (shiftId, roomId)
+      m.set(sid, o);
     }
-  };
+    return m;
+  }, [offers]);
 
-  const uiCopyDriverToPkg = (baseShift, driverIdStr) => {
-    const didStr = String(driverIdStr || "");
-    if (!didStr) return;
-    const ids = pkgShiftIdsFor(baseShift);
-    if (ids.length <= 1) return;
 
-    setDriverSel((prev) => {
-      const next = { ...(prev || {}) };
-      for (const id of ids) next[id] = didStr;
-      return next;
-    });
-  };
-function matchShift(s, qRaw) {
+  function matchShift(s, qRaw) {
     const q = String(qRaw ?? "").trim().toLowerCase();
     if (!q) return true;
 
@@ -503,11 +510,13 @@ function matchShift(s, qRaw) {
   async function load() {
     setErr("");
     try {
-      const [sh, veh, drv, rm] = await Promise.all([
-        api("/api/shifts?take=200", { token }),
+      const [sh, veh, drv, rm, off] = await Promise.all([
+        // ✅ includeOffered=1: market/offered shift'leri de getir (shift.roomId null olsa bile)
+        api("/api/shifts?take=200&includeOffered=1", { token }),
         api("/api/vehicles", { token }),
         api("/api/drivers", { token }).catch(() => ({ items: [] })), // bazı ortamlarda yoksa kırma
         api("/api/rooms", { token }).catch(() => ({ items: [] })), // ROOM yetkisi var ama yoksa kırma
+        api("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token }).catch(() => ({ items: [] })),
       ]);
 
       const list = Array.isArray(sh) ? sh : sh?.items ?? [];
@@ -515,12 +524,15 @@ function matchShift(s, qRaw) {
       const dlist = Array.isArray(drv) ? drv : drv?.items ?? [];
       const rlist = Array.isArray(rm) ? rm : rm?.items ?? [];
 
+      const olist = Array.isArray(off) ? off : off?.items ?? [];
+
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
 
       setItems(list);
       setVehicles(vlist);
       setDrivers(dlist);
       setRooms(rlist);
+      setOffers(Array.isArray(olist) ? olist : []);
 
       // satır seçimleri init (var olanı ezme)
       setAssignSel((prev) => {
@@ -528,6 +540,7 @@ function matchShift(s, qRaw) {
         const next = { ...prev };
         for (const s of list) {
           const sid = Number(s.id);
+                const isAgreement = Number(s?.agreementId) > 0;
           if (next[sid] !== undefined) continue;
 
           // default: companyOfferVehicleId varsa onu seç, yoksa boş
@@ -670,6 +683,7 @@ function matchShift(s, qRaw) {
           <div className="muted" style={{ marginTop: 4 }}>
             <b>C→R Tutar:</b> {formatTRY(cAmt)} ₺
           </div>
+        ) : null}
         {s.companyOfferNote ? (
           <div className="muted" style={{ marginTop: 4 }}>
             {s.companyOfferNote}
@@ -893,6 +907,27 @@ function matchShift(s, qRaw) {
     }
   }
 
+  async function sendMarketCounter(offer) {
+    const oid = Number(offer?.id);
+    if (!oid) return;
+    const st = marketCounterSel[oid] || {};
+
+    const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : parseTryInput(st.amountRoom);
+    const noteRoom = String(st.noteRoom ?? "").trim() || undefined;
+
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/offers/${oid}/counter`, { method: "PUT", token, body: { amountRoom, noteRoom } });
+      invalidate("offers");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function sendRoomOffer(shift) {
     const sid = Number(shift.id);
     const form = roomOfferSel[sid] || {};
@@ -1019,7 +1054,7 @@ function matchShift(s, qRaw) {
       <div className="card">
         <h3>Bekleyen Talepler</h3>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+        <div className="toolbarLeft" style={{ marginBottom: 10 }}>
           <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
             <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
             <option value="REQUESTED">REQUESTED</option>
@@ -1044,6 +1079,7 @@ function matchShift(s, qRaw) {
 
           <button
             type="button"
+            className="btn sm"
             onClick={() => {
               setPendingQ("");
               setOnlyAgreement(false);
@@ -1071,8 +1107,6 @@ function matchShift(s, qRaw) {
             <tbody>
               {pendingFiltered.map((s) => {
                 const sid = Number(s.id);
-                // Agreement shift'lerde pazarlık/offer kapalı
-                const isAgreement = Number(s?.agreementId) > 0;
                 const roomVehicles = vehiclesForRoom(s.roomId);
                 const selectedVehicleId = assignSel[sid] || "";
                 const vId = selectedVehicleId ? Number(selectedVehicleId) : null;
@@ -1106,8 +1140,11 @@ function matchShift(s, qRaw) {
                   a?.status === "error";
 
                 const offerIsOpen = Boolean(roomOfferOpen[sid]);
-                const offerForm = roomOfferSel[sid] || {};
-                const offerVehList = roomVehicles;
+                const offerForm = roomOfferSel[sid] || {};                const offerVehList = roomVehicles;
+
+                const marketOffer = offersByShiftId.get(sid) || null;
+                const marketCanCounter = marketOffer && marketOffer.status !== "CANCELLED" && marketOffer.status !== "ACCEPTED";
+                const marketForm = marketOffer ? (marketCounterSel[Number(marketOffer.id)] || {}) : {};
 
                 return (
                   <tr key={s.id}>
@@ -1123,6 +1160,7 @@ function matchShift(s, qRaw) {
                       <div style={{ display: "grid", gap: 6 }}>
                         <button
                           type="button"
+                          className="btn sm"
                           disabled={busy}
                           onClick={() => openRoutePreview(s)}
                           title="Rota/Durakları haritada önizle"
@@ -1132,23 +1170,71 @@ function matchShift(s, qRaw) {
                         <div className="muted" style={{ fontSize: 12 }}>
                           Önizleme: API <code>/api/shifts/{sid}/route-preview</code>
                         </div>
-                      </div>
-                    </td>
+                    </div>
+                  </td>
 
                     <td>
                       <div style={{ display: "grid", gap: 6 }}>
                         {isAgreement ? (
-                          <div className="card" style={{ marginTop: 6 }}>
+                          <div className="card" style={{ marginTop: 6 }} title={Number(s?.agreementId) > 0 ? `Agreement #${s.agreementId}` : ""}>
                             <div style={{ fontWeight: 800 }}>Agreement shift</div>
                             <div className="muted" style={{ marginTop: 6 }}>Agreement shift — pazarlık kapalı.</div>
                           </div>
                         ) : null}
 
-                        {!isAgreement ? (<div>{renderCompanyOfferSummary(s)}</div>) : null}
+                        {!isAgreement ? (
+                        <div>
+                          {marketOffer ? (
+                            <div className="card" style={{ marginTop: 6 }} title="Market teklifleri ShiftOffer tablosundan gelir; buradan counter gönderebilirsin.">
+                              <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                                <div style={{ fontWeight: 800 }}>Market Teklifi (C→R)</div>
+                                {statusPill(marketOffer.status)}
+                              </div>
+                              <div className="muted" style={{ marginTop: 6 }}>
+                                Company: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Room: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
+                              </div>
+                              {marketOffer.noteCompany ? <div className="muted" style={{ marginTop: 6 }}>Not (Company): {marketOffer.noteCompany}</div> : null}
+                              {marketOffer.noteRoom ? <div className="muted" style={{ marginTop: 4 }}>Not (Room): {marketOffer.noteRoom}</div> : null}
+
+                              {marketCanCounter ? (
+                                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                                  <div className="row" style={{ gap: 8, alignItems: "end", flexWrap: "wrap" }}>
+                                    <div className="col" style={{ minWidth: 160 }}>
+                                      <label className="muted">Karşı Teklif (₺)</label>
+                                      <input
+                                        value={marketForm.amountRoom ?? ""}
+                                        onChange={(e) => setMarketCounter(marketOffer.id, { amountRoom: e.target.value })}
+                                        placeholder="örn 25000"
+                                        disabled={busy}
+                                      />
+                                    </div>
+                                    <div className="col" style={{ flex: 1, minWidth: 220 }}>
+                                      <label className="muted">Not</label>
+                                      <input
+                                        value={marketForm.noteRoom ?? ""}
+                                        onChange={(e) => setMarketCounter(marketOffer.id, { noteRoom: e.target.value })}
+                                        placeholder="opsiyonel"
+                                        disabled={busy}
+                                      />
+                                    </div>
+                                    <button className="btn sm" disabled={busy} onClick={() => sendMarketCounter(marketOffer)}>
+                                      Counter Gönder
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="muted" style={{ marginTop: 8 }}>Bu teklif artık değiştirilemez ({String(marketOffer.status)}).</div>
+                              )}
+                            </div>
+                          ) : (
+                            <div>{renderCompanyOfferSummary(s)}</div>
+                          )}
+                        </div>
+                        ) : null}
 
                         {!isAgreement ? (
                           <>
-                        <button type="button" disabled={busy} onClick={() => toggleRoomOffer(sid)}>
+                        <button type="button" className="btn sm" disabled={busy || !!marketOffer || isAgreement} onClick={() => toggleRoomOffer(sid)} title={marketOffer ? "Market teklifi için counter yukarıdan yapılır" : "Room → Company karşı teklif"}>
                           {offerIsOpen ? "Room Teklifi Kapat" : "Room Teklifi (opsiyonel) Aç"}
                         </button>
 
@@ -1228,10 +1314,10 @@ function matchShift(s, qRaw) {
                               ) : null}
 
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                <button type="button" disabled={busy} onClick={() => sendRoomOffer(s)}>
+                                <button type="button" className="btn" disabled={busy} onClick={() => sendRoomOffer(s)}>
                                   {busy ? "..." : "Gönder"}
                                 </button>
-                                <button type="button" disabled={busy} onClick={() => clearRoomOffer(s)}>
+                                <button type="button" className="btn ghost" disabled={busy} onClick={() => clearRoomOffer(s)}>
                                   Teklifi Kaldır
                                 </button>
                               </div>
@@ -1294,28 +1380,7 @@ function matchShift(s, qRaw) {
                           </select>
                         </div>
 
-                                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button
-                            type="button"
-                            disabled={busy || !selectedVehicleId}
-                            onClick={() => uiCopyVehicleToPkg(s, selectedVehicleId)}
-                            title="Seçili aracı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                          >
-                            Araç → Pakete Kopyala
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy || !(driverSel[sid] ?? "")}
-                            onClick={() => uiCopyDriverToPkg(s, driverSel[sid] ?? "")}
-                            title="Seçili driver’ı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                          >
-                            Driver → Pakete Kopyala
-                          </button>
-                        </div>
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          Not: Bu butonlar sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
-                        </div>
-<button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
+                        <button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
                           {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}
                         </button>
 
@@ -1360,7 +1425,7 @@ function matchShift(s, qRaw) {
       <div className="card">
         <h3>Tüm Shifts</h3>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+        <div className="toolbarLeft" style={{ marginBottom: 10 }}>
           <select value={listStatus} onChange={(e) => setListStatus(e.target.value)}>
             <option value="OPEN">Açık</option>
             <option value="ALL">Hepsi</option>
@@ -1390,6 +1455,7 @@ function matchShift(s, qRaw) {
 
           <button
             type="button"
+            className="btn sm"
             onClick={() => {
               setListQ("");
               setListStatus("OPEN");
@@ -1404,143 +1470,91 @@ function matchShift(s, qRaw) {
           <table className="tbl">
             <thead>
               <tr>
-                <th style={{ width: 44 }}></th>
                 <th>ID</th>
                 <th>Status</th>
                 <th>Company</th>
-                <th>Zaman</th>
+                <th>Teklifler</th>
                 <th>Vehicle</th>
                 <th>Driver</th>
-                <th>Aksiyon</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Uzatma</th>
               </tr>
             </thead>
             <tbody>
-              {listFiltered.map((s) => {
-                const sid = Number(s.id);
-                const isOpen = Boolean(listExpanded[sid]);
-                const vehicleLine = s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-");
-                const driverLine = s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-");
+              {listFiltered.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    {s.id}
+                    <AgreementBadge agreementId={s.agreementId} />
+                  </td>
+                  <td>
+                    <span className="pill" data-status={s.status}>
+                      {s.status}
+                    </span>
+                  </td>
+                  <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
 
-                return [
-                  (
-                    <tr key={`s_${sid}`}>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn sm"
-                          onClick={() => setListExpanded((p) => ({ ...p, [sid]: !p[sid] }))}
-                          title={isOpen ? "Detayı kapat" : "Detayı aç"}
-                        >
-                          {isOpen ? "−" : "+"}
-                        </button>
-                      </td>
-
-                      <td>
-                        {s.id}
-                        <AgreementBadge agreementId={s.agreementId} />
-                      </td>
-
-                      <td>
-                        <span className="pill" data-status={s.status}>
-                          {s.status}
-                        </span>
-                      </td>
-
-                      <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
-
-                      <td className="muted">
-                        <div>{fmtTR(s.startAt)}</div>
-                        <div className="muted">→ {fmtTR(s.endAt)}</div>
-                      </td>
-
-                      <td className="muted">{vehicleLine}</td>
-                      <td className="muted">{driverLine}</td>
-
-                      <td>
-                        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                          <button type="button" className="btn sm" onClick={() => openRoutePreview(s)}>
-                            Önizle
-                          </button>
-                          <button
-                            type="button"
-                            className="btn sm"
-                            onClick={() => setListExpanded((p) => ({ ...p, [sid]: true }))}
-                          >
-                            Detay
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ),
-                  isOpen ? (
-                    <tr key={`d_${sid}`}>
-                      <td colSpan={8}>
-                        <div className="card" style={{ margin: 0 }}>
-                          <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-                            <div className="col">
-                              <div style={{ fontWeight: 800 }}>Teklifler</div>
-
-                              {Number(s?.agreementId) > 0 ? (
-                                <div className="card" style={{ marginTop: 10 }}>
-                                  <div style={{ fontWeight: 800 }}>Agreement shift</div>
-                                  <div className="muted" style={{ marginTop: 6 }}>Pazarlık/teklif kapalı (Agreement kaynaklı).</div>
-                                </div>
-                              ) : (
-                              <div style={{ marginTop: 10 }}>
-                                <b>C→R</b>
-                                <div style={{ marginTop: 6 }}>{renderCompanyOfferSummary(s)}</div>
-                              </div>
-
-                              <div style={{ marginTop: 12 }}>
-                                <b>R→C</b>
-                                <div style={{ marginTop: 6 }}>{renderRoomOfferSummary(s)}</div>
-                              </div>
+                  <td>
+                    {Number(s?.agreementId) > 0 ? (
+                      <div className="card" style={{ marginTop: 0 }}>
+                        <div style={{ fontWeight: 800 }}>Agreement shift</div>
+                        <div className="muted" style={{ marginTop: 6 }}>Pazarlık/teklif kapalı (Agreement kaynaklı).</div>
+                      </div>
+                    ) : (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {(() => {
+                        const mo = offersByShiftId.get(Number(s.id));
+                        if (!mo) return null;
+                        return (
+                          <div className="card" style={{ marginTop: 0 }} title="Market teklifi (ShiftOffer)">
+                            <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                              <div style={{ fontWeight: 800 }}>Market Teklifi</div>
+                              {statusPill(mo.status)}
                             </div>
-                              )}
-
-                            <div className="col">
-                              <div style={{ fontWeight: 800 }}>Özet</div>
-
-                              <div className="muted" style={{ display: "grid", gap: 6, marginTop: 10 }}>
-                                <div>
-                                  <b>Start:</b> {fmtTR(s.startAt)}
-                                </div>
-                                <div>
-                                  <b>End:</b> {fmtTR(s.endAt)}
-                                </div>
-                                {Number(s?.agreementId) > 0 ? (
-                                  <div>
-                                    <b>Kaynak:</b> Agreement #{s.agreementId}
-                                  </div>
-                                ) : null}
-                                <div>
-                                  <b>Vehicle:</b> {vehicleLine}
-                                </div>
-                                <div>
-                                  <b>Driver:</b> {driverLine}
-                                </div>
-                              </div>
-
-                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                                <button type="button" className="btn" onClick={() => openRoutePreview(s)}>
-                                  Haritada Önizle
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn"
-                                  onClick={() => setListExpanded((p) => ({ ...p, [sid]: false }))}
-                                >
-                                  Kapat
-                                </button>
-                              </div>
-                            </div>
+                            <div className="muted" style={{ marginTop: 6 }}>Company: <b>{formatTRY(mo.amountCompany)} ₺</b> • Room: <b>{formatTRY(mo.amountRoom)} ₺</b></div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null,
-                ];
-              })}
+                        );
+                      })()}
+                      <div>
+                        <b>C→R</b>
+                        <div style={{ marginTop: 4 }}>{renderCompanyOfferSummary(s)}</div>
+                      </div>
+                      <div>
+                        <b>R→C</b>
+                        <div style={{ marginTop: 4 }}>{renderRoomOfferSummary(s)}</div>
+                      </div>
+                    </div>
+                    )}
+                  </td>
+
+                  <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
+                  <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
+                  <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
+                  <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
+                
+  <td>
+    {s.extendRequestedEndAt && String(s.extendDecision || "PENDING") === "PENDING" ? (
+      <div style={{ display: "grid", gap: 6 }}>
+        <div className="muted" title={String(s.extendRequestedEndAt)}>
+          Talep: <b>{fmtTR(s.extendRequestedEndAt)}</b>
+        </div>
+        <input
+          placeholder="Not (opsiyonel)"
+          value={extendNoteSel[Number(s.id)] || ""}
+          onChange={(e) => setExtendNote(s.id, e.target.value)}
+        />
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <button type="button" disabled={busy} onClick={() => decideExtend(s.id, "ACCEPTED")}>Kabul</button>
+          <button type="button" disabled={busy} onClick={() => decideExtend(s.id, "REJECTED")}>Reddet</button>
+        </div>
+      </div>
+    ) : (
+      <span className="muted">-</span>
+    )}
+  </td>
+</tr>
+              ))}
             </tbody>
           </table>
         ) : (
@@ -1577,4 +1591,3 @@ function matchShift(s, qRaw) {
     </div>
   );
 }
-

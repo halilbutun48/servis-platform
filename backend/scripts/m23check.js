@@ -7,10 +7,13 @@ import { banner, step, assertOk, loginFirst, reqJson, pickVehicleDriver } from "
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
-function ymdUTC(d) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
+// TR-local date helper (UTC+03:00)
+const TR_OFFSET_MS = 180 * 60_000;
+function ymdTR(d) {
+  const tr = new Date(new Date(d).getTime() + TR_OFFSET_MS);
+  const y = tr.getUTCFullYear();
+  const m = String(tr.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(tr.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
 
@@ -78,8 +81,8 @@ async function main() {
   // create agreement as company for this room
   step("create agreement (company) -> expect WS agreement:update for both");
   const today = new Date();
-  const startDate = ymdUTC(today);
-  const endDate = ymdUTC(new Date(today.getTime() + 30 * 86400_000));
+  const startDate = ymdTR(today);
+  const endDate = ymdTR(new Date(today.getTime() + 30 * 86400_000));
 
   const pCompany1 = waitForEvent(wsCompany, "agreement:update");
   const pRoom1 = waitForEvent(wsRoom, "agreement:update");

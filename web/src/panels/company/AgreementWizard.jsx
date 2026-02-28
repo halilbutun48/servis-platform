@@ -6,6 +6,7 @@ import {
   WEEKDAYS,
   DAY_PRESETS,
   DURATION_PRESETS,
+  QUICK_DURATION_PRESETS,
   selectedFromMask,
   maskFromSelected,
   weekMaskToText,
@@ -175,12 +176,12 @@ export default function AgreementWizard({
 
   // dates
   const [startDate, setStartDate] = useState(todayYmd());
-  const [durationKey, setDurationKey] = useState("1m");
+  const [durationKey, setDurationKey] = useState("2d");
   const durationDays = useMemo(() => {
-    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS[1];
+    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS.find((x) => x.key === "2d") || DURATION_PRESETS[0];
     return Number(p.days || 30);
   }, [durationKey]);
-  const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 30));
+  const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
 
   // days
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
@@ -248,8 +249,8 @@ export default function AgreementWizard({
   // apply pack defaults when pack changes
   useEffect(() => {
     setDaysSel(selectedFromMask(pack.weekMask));
-    setDurationKey("1m");
-    setEndDate(addDaysISO(startDate, pack.durationDays || 30));
+    setDurationKey("2d");
+    if (isYmd(startDate)) setEndDate(addDaysISO(startDate, 0));
 
     const one = pack.items?.[0];
     if (one) {
@@ -264,7 +265,7 @@ export default function AgreementWizard({
   // duration -> endDate autofill (unless user manually edits endDate after)
   useEffect(() => {
     if (!isYmd(startDate)) return;
-    setEndDate(addDaysISO(startDate, durationDays));
+    setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
   // room selection -> hub autofill
@@ -759,15 +760,25 @@ export default function AgreementWizard({
             <label className="muted">
               Başlangıç
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} />
-            </label>
-            <label className="muted">
-              Süre
-              <select value={durationKey} onChange={(e) => setDurationKey(e.target.value)} disabled={busy}>
-                {DURATION_PRESETS.map((d) => (
-                  <option key={d.key} value={d.key}>{d.label}</option>
+            </label>            <div>
+              <div className="muted">Hızlı süre</div>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                {QUICK_DURATION_PRESETS.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    className={durationKey === d.key ? "" : "btn"}
+                    disabled={busy}
+                    onClick={() => setDurationKey(d.key)}
+                  >
+                    {d.label}
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+              <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                Agreement kısa süreli de kullanılabilir. Seçince “Bitiş” otomatik hesaplanır.
+              </div>
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>

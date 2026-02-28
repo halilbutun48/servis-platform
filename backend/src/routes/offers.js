@@ -171,7 +171,7 @@ export function offersRouter(io) {
 
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
-          include: { shift: { select: { id: true, companyId: true } } },
+          include: { shift: { select: { id: true, companyId: true, agreementId: true } } },
         });
         if (!offer) return res.status(404).json({ error: "Offer not found" });
 
@@ -181,6 +181,11 @@ export function offersRouter(io) {
 
         if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
         if (offer.status === "ACCEPTED") return res.status(409).json({ error: "Offer already accepted" });
+
+        // ✅ M54: Agreement kaynaklı shiftlerde market offers kapalı
+        if (offer?.shift?.agreementId) {
+          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+        }
 
         const updated = await prisma.shiftOffer.update({
           where: { id },
@@ -220,14 +225,24 @@ export function offersRouter(io) {
 
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
-          include: { shift: { select: { id: true, companyId: true, roomId: true, status: true } } },
+          include: { shift: { select: { id: true, companyId: true, roomId: true, status: true, agreementId: true } } },
         });
         if (!offer) return res.status(404).json({ error: "Offer not found" });
 
         if (req.user.role === "COMPANY" && offer.shift.companyId !== req.user.companyId) {
           return res.status(403).json({ error: "Forbidden" });
         }
+
+        // ✅ M54: Agreement kaynaklı shiftlerde market offers kapalı
+        if (offer?.shift?.agreementId) {
+          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+        }
         if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
+
+        // ✅ M54: Agreement kaynaklı shiftlerde market offers kapalı
+        if (offer?.shift?.agreementId) {
+          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+        }
 
         if (offer.shift.roomId != null) return res.status(409).json({ error: "Shift already assigned" });
 
@@ -314,7 +329,7 @@ export function offersRouter(io) {
 
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
-          include: { shift: { select: { companyId: true } } },
+          include: { shift: { select: { companyId: true, agreementId: true } } },
         });
         if (!offer) return res.status(404).json({ error: "Offer not found" });
 
