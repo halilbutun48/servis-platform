@@ -106,7 +106,11 @@ export default function MyRidePanel() {
   }, [avail, selShiftId]);
 
   const etaStops = useMemo(() => {
-    const arr = Array.isArray(eta?.items?.[0]?.stops) ? eta.items[0].stops : [];
+    const arr = Array.isArray(eta?.stops)
+      ? eta.stops
+      : Array.isArray(eta?.items?.[0]?.stops)
+      ? eta.items[0].stops
+      : [];
     return arr.map((s, i) => ({
       ...s,
       order: s?.order ?? (i + 1),
@@ -296,7 +300,8 @@ export default function MyRidePanel() {
               </tr>
             </thead>
             <tbody>
-              {etaStops.map((s) => {
+              {etaStops.length ? (
+                etaStops.map((s) => {
                 const id = s?.id ?? null;
                 const isNext = nextStopId != null && String(nextStopId) === String(id);
                 const isSel = activeStopId != null && String(activeStopId) === String(id);
@@ -316,7 +321,12 @@ export default function MyRidePanel() {
                     <td>{s.etaMin}</td>
                   </tr>
                 );
-              })}
+              })
+              ) : (
+                <tr>
+                  <td colSpan={3} className="muted">ETA bulunamadı (durak yok / GPS yok).</td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div className="muted" style={{ marginTop: 8 }}>
