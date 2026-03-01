@@ -5,7 +5,8 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import StopTimeline, { pickNextStopByRemainingKmOrEta } from "../../components/StopTimeline";
-import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
+import { ageSecFromAt, uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
+
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
   const toRad = (d) => (d * Math.PI) / 180;
@@ -18,6 +19,22 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
+function toNum(v) {
+  const n = typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function gpsAtIso(v) {
+  return v?.gpsLast?.at || v?.gpsLast?.ts || v?.gpsLast?.createdAt || v?.gpsLast?.updatedAt || null;
+}
+
+function gpsAgeLabel(v) {
+  const age = ageSecFromAt(gpsAtIso(v));
+  if (age == null) return "-";
+  if (age < 60) return `${age}s`;
+  if (age < 3600) return `${Math.floor(age / 60)}dk`;
+  return `${Math.floor(age / 3600)}sa`;
+}
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -28,28 +45,74 @@ function fmtTR(iso) {
   }
 }
 
+function stopCoord(stop) {
+  const lat = toNum(stop?.lat ?? stop?.location?.lat);
+  const lng = toNum(stop?.lng ?? stop?.location?.lng);
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
+
+function gpsCoord(v) {
+  const lat = toNum(v?.gpsLast?.lat);
+  const lng = toNum(v?.gpsLast?.lng);
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
+
 function focusStop(stop) {
-  const lat = Number(String(stop?.lat ?? stop?.location?.lat ?? "").replace(",", "."));
-  const lng = Number(String(stop?.lng ?? stop?.location?.lng ?? "").replace(",", "."));
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-  window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat, lng, zoom: 17 } }));
+  const c = stopCoord(stop);
+  if (!c) return;
+  window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat: c.lat, lng: c.lng, zoom: 17 } }));
 }
 
 function openNav(stop, originVehicle) {
-  const dLat = Number(String(stop?.lat ?? stop?.location?.lat ?? "").replace(",", "."));
-  const dLng = Number(String(stop?.lng ?? stop?.location?.lng ?? "").replace(",", "."));
-  if (!Number.isFinite(dLat) || !Number.isFinite(dLng)) return;
+  const sc = stopCoord(stop);
+  if (!sc) return;
 
-  const oLat = Number(String(originVehicle?.gpsLast?.lat ?? "").replace(",", "."));
-  const oLng = Number(String(originVehicle?.gpsLast?.lng ?? "").replace(",", "."));
-  const hasOrigin = Number.isFinite(oLat) && Number.isFinite(oLng);
-
-  const dest = `${dLat},${dLng}`;
-  const url = hasOrigin
-    ? `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dest}&travelmode=driving`
+  const vc = gpsCoord(originVehicle);
+  const dest = `${sc.lat},${sc.lng}`;
+  const url = vc
+    ? `https://www.google.com/maps/dir/?api=1&origin=${vc.lat},${vc.lng}&destination=${dest}&travelmode=driving`
     : `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
 
   window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function isReachedStop(s) {
+  const st = String(s?.status || s?.state || "").toUpperCase();
+  if (st === "REACHED" || st === "DONE" || st === "SKIPPED") return true;
+  if (Boolean(s?.reachedAt) || Boolean(s?.reached)) return true;
+  return false;
+}
+
+function normalizeStop(s, i) {
+  const order = s?.order ?? (i + 1);
+  const id = s?.id ?? `${order}`;
+  const name = s?.name ?? s?.title ?? `Durak ${order}`;
+  const lat = s?.lat ?? s?.location?.lat;
+  const lng = s?.lng ?? s?.location?.lng;
+  const statusRaw = s?.status || s?.state || (Boolean(s?.reachedAt) || Boolean(s?.reached) ? "REACHED" : "");
+  const status = statusRaw ? String(statusRaw).toUpperCase() : "";
+  return { ...s, id, order, name, lat, lng, status };
+}
+
+function etaMinGuess(vehicle, stop) {
+  if (!vehicle || !stop) return null;
+  const em = toNum(stop?.etaMin);
+  if (em != null) return Math.max(0, Math.round(em));
+
+  const km = toNum(stop?.remainingKm);
+  if (km != null) return Math.max(1, Math.round((km / 35) * 60));
+
+  const vc = gpsCoord(vehicle);
+  const sc = stopCoord(stop);
+  if (vc && sc) {
+    // rough: haversine / 35 km/h
+    const km2 = haversineMeters(vc.lat, vc.lng, sc.lat, sc.lng) / 1000;
+    return Math.max(1, Math.round((km2 / 35) * 60));
+  }
+
+  return null;
 }
 
 export default function PersonelLivePanel() {
@@ -60,6 +123,7 @@ export default function PersonelLivePanel() {
   const [err, setErr] = useState("");
   const [myPos, setMyPos] = useState(null);
   const [geoErr, setGeoErr] = useState("");
+  const [selectedStopId, setSelectedStopId] = useState(null);
 
   async function loadMyShift() {
     setErr("");
@@ -68,7 +132,7 @@ export default function PersonelLivePanel() {
       const items = Array.isArray(r?.items) ? r.items : Array.isArray(r) ? r : [];
       const s = items[0] || null;
       setMyShift(s);
-      return s?.vehicleId || s?.vehicle?.id || null;
+      return s;
     } catch (e) {
       setMyShift(null);
       setErr(String(e?.message || e));
@@ -76,10 +140,11 @@ export default function PersonelLivePanel() {
     }
   }
 
-  async function loadEta(vid) {
+  async function loadEta(vid, shiftId) {
     if (!vid) return;
     try {
-      const r = await api(`/api/eta/vehicle/${encodeURIComponent(String(vid))}`, { token });
+      const qs = shiftId ? "?shiftId=" + encodeURIComponent(String(shiftId)) : "";
+      const r = await api("/api/eta/vehicle/" + encodeURIComponent(String(vid)) + qs, { token });
       setEta(r);
     } catch {
       setEta(null);
@@ -87,35 +152,17 @@ export default function PersonelLivePanel() {
   }
 
   async function loadAll() {
-    const vid = await loadMyShift();
-    await loadEta(vid);
+    const s = await loadMyShift();
+    const vid = s?.vehicleId || s?.vehicle?.id || null;
+    await loadEta(vid, s?.id || null);
   }
 
-  useEffect(() => { loadAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useAutoReload("shifts", loadAll);
-  useAutoReload("vehicles", (detail) => {
-    const m = detail?.payload?.msg;
-    const ev = m?._event;
-
-    if (ev === "vehicle:status") {
-      const vid = Number(m?.vehicleId);
-      const st = String(m?.status || "").toUpperCase();
-      if (!Number.isFinite(vid) || !st) return;
-
-      setMyShift((prev) => {
-        if (!prev) return prev;
-        const curVid = Number(prev?.vehicleId || prev?.vehicle?.id || 0);
-        if (!curVid || curVid != vid) return prev;
-        const v = prev.vehicle ? { ...prev.vehicle } : null;
-        if (!v) return prev;
-        v.gpsState = { ...(v.gpsState || {}), lastUiStatus: st };
-        return { ...prev, vehicle: v };
-      });
-      return;
-    }
-
+  useEffect(() => {
     loadAll();
-  });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useAutoReload("shifts", loadAll);
+  useAutoReload("vehicles", loadAll);
   useAutoReload("eta", loadAll);
 
   // Best-effort: get person's location once (for nearest-stop suggestion)
@@ -141,29 +188,77 @@ export default function PersonelLivePanel() {
     }
   }, []);
 
+  const baseVehicle = myShift?.vehicle || null;
 
-  const vehicle = myShift?.vehicle || null;
+  const vehicle = useMemo(() => {
+    if (!baseVehicle) return null;
+
+    // /api/shifts/my payload'ı bazen gpsLast içermeyebilir; ETA payload'ından ödünç al.
+    if (baseVehicle?.gpsLast?.at || baseVehicle?.gpsLast?.ts || !eta?.last) return baseVehicle;
+
+    return {
+      ...baseVehicle,
+      gpsLast: {
+        ...(baseVehicle.gpsLast || {}),
+        lat: eta.last?.lat,
+        lng: eta.last?.lng,
+        at: eta.last?.at,
+        speed: eta.last?.speed,
+      },
+    };
+  }, [baseVehicle, eta]);
+
   const vehicles = useMemo(() => (vehicle ? [vehicle] : []), [vehicle]);
 
   const stops = useMemo(() => {
-    const arr = Array.isArray(eta?.items?.[0]?.stops) ? eta.items[0].stops : [];
-    if (arr.length) return arr.map((s, i) => ({ ...s, order: s?.order ?? (i + 1), name: s?.name ?? s?.title ?? `Durak ${i + 1}`, lat: s?.lat ?? s?.location?.lat, lng: s?.lng ?? s?.location?.lng }));
-    const st2 = Array.isArray(myShift?.stops) ? myShift.stops : [];
-    return st2.map((s, i) => ({ ...s, order: s?.order ?? (i + 1), name: s?.name ?? s?.title ?? `Durak ${i + 1}`, lat: s?.lat ?? s?.location?.lat, lng: s?.lng ?? s?.location?.lng }));
+    const baseAll = Array.isArray(myShift?.stops) ? myShift.stops : [];
+    const etaStops = Array.isArray(eta?.stops) ? eta.stops : [];
+
+    const etaById = new Map(etaStops.map((s) => [String(s?.id ?? ""), s]));
+    const etaByOrder = new Map(etaStops.map((s) => [String(s?.order ?? ""), s]));
+
+    if (baseAll.length) {
+      return baseAll.map((s, i) => {
+        const n = normalizeStop(s, i);
+        const e = etaById.get(String(n.id)) || etaByOrder.get(String(n.order));
+        if (e) {
+          const km = toNum(e?.remainingKm);
+          const em = toNum(e?.etaMin);
+          if (km != null) n.remainingKm = km;
+          if (em != null) n.etaMin = em;
+        }
+        return n;
+      });
+    }
+
+    // fallback: ETA list (pending only)
+    return etaStops.map((s, i) => normalizeStop(s, i));
   }, [eta, myShift]);
 
-  const nextStop = useMemo(() => pickNextStopByRemainingKmOrEta(stops), [stops]);
+  const nextStop = useMemo(() => {
+    const picked = pickNextStopByRemainingKmOrEta(stops);
+    if (picked) return picked;
+    return stops.find((s) => !isReachedStop(s)) || null;
+  }, [stops]);
   const nextStopId = nextStop?.id ?? null;
+
+  const reachedCount = useMemo(() => stops.filter((s) => isReachedStop(s)).length, [stops]);
+  const totalStops = stops.length;
+  const pct = totalStops ? Math.min(100, Math.max(0, Math.round((reachedCount / totalStops) * 100))) : 0;
+
+  const ui = vehicle ? uiStatusFromVehicle(vehicle) : "-";
+  const pillKey = pillKeyFromUi(ui);
+  const nextEtaMin = useMemo(() => etaMinGuess(vehicle, nextStop), [vehicle, nextStop]);
 
   const recommended = useMemo(() => {
     if (!myPos || !Number.isFinite(myPos.lat) || !Number.isFinite(myPos.lng)) return null;
+
     let candidates = stops
       .map((s) => {
-        const lat = Number(String(s?.lat ?? s?.location?.lat ?? "").replace(",", "."));
-        const lng = Number(String(s?.lng ?? s?.location?.lng ?? "").replace(",", "."));
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-        const distM = haversineMeters(myPos.lat, myPos.lng, lat, lng);
-        return { stop: { ...s, lat, lng }, distM };
+        const c = stopCoord(s);
+        if (!c) return null;
+        const distM = haversineMeters(myPos.lat, myPos.lng, c.lat, c.lng);
+        return { stop: { ...s, lat: c.lat, lng: c.lng }, distM };
       })
       .filter(Boolean);
 
@@ -181,9 +276,11 @@ export default function PersonelLivePanel() {
     return best;
   }, [stops, myPos]);
 
-
-  const ui = vehicle ? uiStatusFromVehicle(vehicle) : "-";
-  const pillKey = pillKeyFromUi(ui);
+  function fitAll() {
+    try {
+      window.dispatchEvent(new Event("map:fitAll"));
+    } catch {}
+  }
 
   return (
     <div className="wrap wrap--fluid">
@@ -197,84 +294,156 @@ export default function PersonelLivePanel() {
       {err ? <div className="card err">{err}</div> : null}
 
       <div className="grid mapGrid" style={{ ["--mapH"]: "min(520px, calc(100vh - 420px))" }}>
-        <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 250px)" }}>
-          <div className="title" style={{ fontSize: 16 }}>Şu anki durum</div>
+        <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
+          <div className="title" style={{ fontSize: 16 }}>
+            Şu anki durum
+          </div>
 
           {myShift ? (
             <div className="col" style={{ gap: 6, marginTop: 10 }}>
-              <div>
-                <b>Shift #{myShift.id}</b> — <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>{String(myShift.status || "").toUpperCase()}</span>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <b>Shift #{myShift.id}</b>
+                <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>
+                  {String(myShift.status || "").toUpperCase()}
+                </span>
               </div>
+
               <div className="muted">Room: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
-              <div className="muted">
-                Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}{" "}
-                {vehicle ? <span className="pill" data-status={pillKey} style={{ marginLeft: 8 }}>{ui}</span> : null}
+
+              <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span>
+                  Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}
+                </span>
+                {vehicle ? (
+                  <>
+                    <span className="pill" data-status={pillKey} title={`GPS: ${ui}`}>
+                      {ui}
+                    </span>
+                    <span className="muted">Son GPS:</span>
+                    <span className="pill">{gpsAgeLabel(vehicle)}</span>
+                  </>
+                ) : null}
               </div>
+
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
               <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
 
-              {null}
-
-              
+              {totalStops ? (
+                <div className="muted">
+                  İlerleme: {pct}% (reached:{reachedCount}/{totalStops})
+                  {nextStop?.name ? ` • Sıradaki: ${nextStop.name}` : ""}
+                  {nextStop?.name && nextEtaMin != null ? ` • ETA: ${nextEtaMin}dk` : ""}
+                </div>
+              ) : (
+                <div className="muted">Durak bilgisi yok.</div>
+              )}
             </div>
           ) : (
-            <div className="muted" style={{ marginTop: 10 }}>Henüz eşleşmiş bir servis yok.</div>
+            <div className="muted" style={{ marginTop: 10 }}>
+              Henüz eşleşmiş bir servis yok.
+            </div>
           )}
         </div>
 
         <div>
-<div className="card" data-role="personelMapHeader" style={{ marginBottom: 10 }}>
-  <div className="muted">
-    Sıradaki:{" "}
-    {nextStop?.name ? (
-      <>
-        <span className="pill" data-status="NEXT">{nextStop.name}</span>
-        <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNav(nextStop, vehicle)}>Navigasyon Aç</button>
-        {Number.isFinite(Number(nextStop?.etaMin)) ? (
-          <span className="muted" style={{ marginLeft: 8 }}>ETA: <b>~{Math.round(Number(nextStop.etaMin))}dk</b></span>
-        ) : null}
-        {Number.isFinite(Number(nextStop?.remainingKm)) ? (
-          <span className="muted" style={{ marginLeft: 8 }}>Kalan: <b>{Number(nextStop.remainingKm).toFixed(1)}km</b></span>
-        ) : null}
-      </>
-    ) : (
-      <span className="muted">-</span>
-    )}
-  </div>
+          <div className="card" data-role="personelSelected" style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+              <div>
+                <div className="title" style={{ fontSize: 16 }}>
+                  Seçili Araç
+                </div>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  {vehicle?.plate || "-"} • Shift #{myShift?.id || "-"} • {String(myShift?.status || "-").toUpperCase()}
+                </div>
+              </div>
+              <button className="btn sm" onClick={fitAll}>
+                Tümünü Göster
+              </button>
+            </div>
 
+            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              {vehicle ? (
+                <>
+                  <span className="muted">GPS:</span>
+                  <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(vehicle))}>
+                    {uiStatusFromVehicle(vehicle)}
+                  </span>
+                  <span className="muted">Son GPS:</span>
+                  <span className="pill">{gpsAgeLabel(vehicle)}</span>
+                </>
+              ) : (
+                <span className="muted">Araç yok.</span>
+              )}
 
+              {nextStop?.name ? (
+                <>
+                  <span className="muted">Sıradaki:</span>
+                  <span className="pill" data-status="NEXT">{nextStop.name}</span>
+                  <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNav(nextStop, vehicle)}>
+                    Navigasyon Aç
+                  </button>
+                  {nextEtaMin != null ? (
+                    <span className="muted">
+                      ETA: <b>{nextEtaMin}dk</b>
+                    </span>
+                  ) : null}
+                  {toNum(nextStop?.remainingKm) != null ? (
+                    <span className="muted">
+                      Kalan: <b>{toNum(nextStop.remainingKm).toFixed(1)}km</b>
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <span className="muted">Sıradaki durak yok.</span>
+              )}
+            </div>
 
-  {recommended ? (
-    <div className="muted" style={{ marginTop: 8 }}>
-      Önerilen durak:{" "}
-      <span className="pill" data-status="OK">{recommended.stop?.name || "Durak"}</span>
-      <span className="muted" style={{ marginLeft: 8 }}><b>{Math.round(recommended.distM)}m</b></span>
-      <button
-        className="btn sm"
-        style={{ marginLeft: 8 }}
-        onClick={() => openNav(recommended.stop, { gpsLast: { lat: myPos.lat, lng: myPos.lng } })}
-        title="Konumundan durağa navigasyon"
-      >
-        Navigasyon Aç
-      </button>
-    </div>
-  ) : null}
+            {recommended ? (
+              <div className="muted" style={{ marginTop: 8 }}>
+                Önerilen durak:{" "}
+                <span className="pill" data-status="OK">{recommended.stop?.name || "Durak"}</span>
+                <span className="muted" style={{ marginLeft: 8 }}>
+                  <b>{Math.round(recommended.distM)}m</b>
+                </span>
+                <button
+                  className="btn sm"
+                  style={{ marginLeft: 8 }}
+                  onClick={() => openNav(recommended.stop, { gpsLast: { lat: myPos?.lat, lng: myPos?.lng } })}
+                  title="Konumundan durağa navigasyon"
+                >
+                  Navigasyon Aç
+                </button>
+              </div>
+            ) : null}
 
-  {!recommended && geoErr ? (
-    <div className="muted" style={{ marginTop: 8 }}>Konum alınamadı: {geoErr}</div>
-  ) : null}
-  <div style={{ marginTop: 10 }}>
-    <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
-    <StopTimeline stops={stops} nextStopId={nextStopId} compact onSelect={(s) => focusStop(s)} />
-  </div>
-</div>
+            {!recommended && geoErr ? <div className="muted" style={{ marginTop: 8 }}>Konum alınamadı: {geoErr}</div> : null}
+
+            <div style={{ marginTop: 10 }}>
+              <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
+              <StopTimeline
+                stops={stops}
+                nextStopId={nextStopId}
+                selectedStopId={selectedStopId}
+                compact
+                onSelect={(s) => {
+                  setSelectedStopId(s?.id ?? null);
+                  focusStop(s);
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 10 }}>
+            <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
+            <div className="muted" style={{ fontSize: 12 }}>Seçili araç + (varsa) duraklar</div>
+          </div>
 
           <MapView
             vehicles={vehicles}
             stops={stops}
             selectedVehicleId={vehicle?.id ?? null}
             onSelectVehicle={() => {}}
-            fitKey={`personel-live:${vehicle?.id ?? "none"}:${stops.length}`}
+            fitKey={`personel-live:${vehicle?.id ?? "none"}:${stops.length}:${gpsAtIso(vehicle) || ""}`}
             height="var(--mapH)"
           />
         </div>
@@ -282,4 +451,3 @@ export default function PersonelLivePanel() {
     </div>
   );
 }
-

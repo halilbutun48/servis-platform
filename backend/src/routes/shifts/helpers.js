@@ -304,7 +304,7 @@ export async function getMyShiftPayload(query, user) {
   const include = {
     stops: { orderBy: { order: "asc" } },
     progress: true,
-    vehicle: true,
+    vehicle: { include: { gpsLast: true, gpsState: true } },
     driver: true,
     company: true,
     room: true,
