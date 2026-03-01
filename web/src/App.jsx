@@ -13,7 +13,6 @@ import RoomShiftsPanel from "./panels/room/ShiftsPanel";
 import RoomAgreementsPanel from "./panels/room/AgreementsPanel";
 import RoomOffersPanel from "./panels/room/OffersPanel";
 import RoomHubPanel from "./panels/room/HubPanel";
-
 // COMPANY
 import CompanyWorkflowPanel from "./panels/company/WorkflowPanel";
 import CompanyMapPanel from "./panels/company/MapPanel";
@@ -142,6 +141,7 @@ export default function App() {
 
     // ROOM
     if (path === "/room/map") return { layout: true, node: <RoomMapPanel /> };
+    if (path === "/room/live") return { layout: true, node: <RoomMapPanel /> };
     if (path === "/room/vehicles") return { layout: true, node: <VehiclesPanel /> };
     if (path === "/room/drivers") return { layout: true, node: <DriversPanel /> };
     if (path === "/room/shifts") return { layout: true, node: <RoomShiftsPanel /> };
@@ -185,3 +185,5 @@ export default function App() {
     </AppShell>
   );
 }
+
+

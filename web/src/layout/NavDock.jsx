@@ -62,15 +62,14 @@ export default function NavDock({ role, path }) {
       sections.push({
         title: "Ana",
         items: [
-          { label: "Harita", path: "/room/map" },
+          { label: "Canlı Takip", path: "/room/map" },
           { label: "Teklifler", path: "/room/offers" },
           { label: "Vardiyalar", path: "/room/shifts" },
         ],
       });
       sections.push({
         title: "Operasyon",
-        items: [
-          { label: "Araçlar", path: "/room/vehicles" },
+        items: [          { label: "Araçlar", path: "/room/vehicles" },
           { label: "Sürücüler", path: "/room/drivers" },
         ],
       });
@@ -146,3 +145,4 @@ export default function NavDock({ role, path }) {
     </div>
   );
 }
+

@@ -6,6 +6,7 @@ import { latLngBounds } from "leaflet";
 
 import { api } from "../api";
 import { apiOr404Fallback } from "../utils/apiFallback";
+import StopTimeline from "./StopTimeline";
 
 function FitBounds({ bounds }) {
   const map = useMap();
@@ -36,6 +37,8 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
     source: null,
     err: "",
   });
+
+  const [selectedStopId, setSelectedStopId] = useState(null);
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +108,26 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
   const effPeople = remote.people ?? people ?? [];
 
   const stopPts = (effStops || []).filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number");
+
+const stopsForTimeline = useMemo(() => {
+  return (stopPts || []).map((s, i) => ({
+    ...s,
+    order: Number(s?.order || 0) || (i + 1),
+    name: s?.title || `Durak ${i + 1}`,
+    state: s?.state || "PENDING",
+  }));
+}, [stopPts]);
+
+const nextStopId = stopsForTimeline?.[0]?.id ?? null;
+
+function scrollToStopRow(stopId) {
+  try {
+    const id = `stoprow-${String(stopId)}`;
+    const el = document.getElementById(id);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setSelectedStopId(stopId);
+  } catch {}
+}
   const peoplePts = (effPeople || [])
     .filter((p) => typeof p?.lat === "number" && typeof p?.lng === "number")
     .map((p) => ({ lat: p.lat, lng: p.lng }));
@@ -247,7 +270,23 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
             </div>
           </div>
 
-          {/* Stops list */}
+          
+{/* Mini Timeline (M74.3) */}
+<div className="card" style={{ margin: 0, marginBottom: 12, padding: 10 }}>
+  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+    <b>Mini Timeline</b>
+    <span className="muted" style={{ fontSize: 12 }}>Chip'e tıkla → listede o durağa git</span>
+  </div>
+  <div style={{ marginTop: 8 }}>
+    <StopTimeline
+      stops={stopsForTimeline}
+      nextStopId={nextStopId}
+      selectedStopId={selectedStopId}
+      compact
+      onSelect={(s) => scrollToStopRow(s?.id)}
+    />
+  </div>
+</div>          {/* Stops list */}
           <div className="card" style={{ margin: 0, overflowX: "auto" }}>
             <h3 style={{ marginTop: 0 }}>Durak Listesi</h3>
             {stopPts.length ? (
@@ -262,7 +301,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
                 </thead>
                 <tbody>
                   {stopPts.map((s, i) => (
-                    <tr key={s.id || i}>
+                    <tr key={s.id || i} id={`stoprow-${s.id || i}`} style={selectedStopId && String(selectedStopId) === String(s.id || i) ? { outline: "2px solid rgba(245,158,11,.55)" } : undefined}>
                       <td className="muted">{i + 1}</td>
                       <td>{s.title || `Durak ${i + 1}`}</td>
                       <td className="muted">

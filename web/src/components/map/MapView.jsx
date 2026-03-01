@@ -5,7 +5,6 @@ import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from "reac
 import "leaflet/dist/leaflet.css";
 
 import { uiStatusFromVehicle } from "../../utils/uiStatus";
-
 import "./mapShell.css";
 import "./markers.css";
 import { makeVehicleMarkerC } from "../../lib/markers/vehicleMarkerC";
@@ -20,7 +19,6 @@ function toNum(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-// vehicleMarkerC online|stale|offline bekliyor
 function markerStatus(uiStatus) {
   if (uiStatus === "OFFLINE") return "offline";
   if (uiStatus === "STALE") return "stale";
@@ -53,13 +51,16 @@ function iconStop(label = "DURAK") {
   });
 }
 
-function FitController({ points, followPoint, fitKey }) {
+function FitController({ points, followPoint, followZoom, fitKey, followResetKey }) {
   const map = useMap();
   const didFitRef = useRef(false);
   const [follow, setFollow] = useState(true);
   const followRef = useRef(true);
 
   useEffect(() => { followRef.current = follow; }, [follow]);
+
+  // selection change -> follow ON
+  useEffect(() => { setFollow(true); }, [followResetKey]);
 
   // Drag/Zoom => follow OFF
   useEffect(() => {
@@ -71,6 +72,13 @@ function FitController({ points, followPoint, fitKey }) {
       map.off("zoomstart", off);
     };
   }, [map]);
+
+  // focus event => follow OFF
+  useEffect(() => {
+    const onFocus = () => { if (followRef.current) setFollow(false); };
+    window.addEventListener("map:focus", onFocus);
+    return () => window.removeEventListener("map:focus", onFocus);
+  }, []);
 
   function fitAll() {
     if (!points?.length) return;
@@ -84,7 +92,6 @@ function FitController({ points, followPoint, fitKey }) {
     didFitRef.current = true;
   }
 
-  // one-time fit on first meaningful data
   useEffect(() => {
     if (didFitRef.current) return;
     if (!points?.length) return;
@@ -92,20 +99,40 @@ function FitController({ points, followPoint, fitKey }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points?.length, fitKey]);
 
-  // follow selected vehicle until user drags/zooms
   useEffect(() => {
     if (!followRef.current) return;
     if (!followPoint) return;
-    map.setView(followPoint, map.getZoom(), { animate: true });
-  }, [followPoint, map]);
+    const z = Number.isFinite(Number(followZoom)) ? Number(followZoom) : map.getZoom();
+    map.setView(followPoint, z, { animate: true });
+  }, [followPoint, followZoom, map]);
 
-  // expose fitAll
   useEffect(() => {
     const onFit = () => fitAll();
     window.addEventListener("map:fitAll", onFit);
     return () => window.removeEventListener("map:fitAll", onFit);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [points?.length]);
+
+  return null;
+}
+
+function FocusController() {
+  const map = useMap();
+
+  useEffect(() => {
+    const handler = (e) => {
+      const d = e?.detail || {};
+      const lat = toNum(d.lat);
+      const lng = toNum(d.lng);
+      if (lat === null || lng === null) return;
+
+      const zoom = Number.isFinite(Number(d.zoom)) ? Number(d.zoom) : Math.max(map.getZoom(), 15);
+      map.flyTo([lat, lng], zoom, { animate: true, duration: 0.6 });
+    };
+
+    window.addEventListener("map:focus", handler);
+    return () => window.removeEventListener("map:focus", handler);
+  }, [map]);
 
   return null;
 }
@@ -122,7 +149,7 @@ export default function MapView({
 
   const stopPoints = useMemo(() => {
     return (stops || [])
-      .map((s) => [toNum(s.lat), toNum(s.lng), s])
+      .map((s) => [toNum(s.lat ?? s?.location?.lat), toNum(s.lng ?? s?.location?.lng), s])
       .filter((x) => x[0] !== null && x[1] !== null);
   }, [stops]);
 
@@ -144,40 +171,48 @@ export default function MapView({
     ];
   }, [vehiclePoints, stopPoints]);
 
+  const selectedVehicle = useMemo(
+    () => (vehicles || []).find((x) => x.id === selectedVehicleId) || null,
+    [vehicles, selectedVehicleId]
+  );
+
   const followPoint = useMemo(() => {
-    const v = (vehicles || []).find((x) => x.id === selectedVehicleId);
+    const v = selectedVehicle;
     const lat = toNum(v?.gpsLast?.lat);
     const lng = toNum(v?.gpsLast?.lng);
     if (lat === null || lng === null) return null;
     return [lat, lng];
-  }, [vehicles, selectedVehicleId]);
+  }, [selectedVehicle]);
 
   const polyline = useMemo(() => stopPoints.map((x) => [x[0], x[1]]), [stopPoints]);
+
+  const selectedUi = useMemo(() => (selectedVehicle ? uiStatusFromVehicle(selectedVehicle) : null), [selectedVehicle]);
+  const followZoom = useMemo(() => {
+    if (selectedUi === "OFFLINE") return 12;
+    if (selectedUi === "STALE") return 14;
+    if (selectedUi === "LIVE") return 16;
+    return null;
+  }, [selectedUi]);
 
   return (
     <div className="card" style={{ padding: 0 }}>
       <div style={{ height, width: "100%" }}>
-        <MapContainer
-          center={center}
-          zoom={11}
-          style={{ height: "100%", width: "100%" }}
-          scrollWheelZoom
-        >
-          <FitController points={allPoints} followPoint={followPoint} fitKey={fitKey} />
-
-          <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+          <FitController
+            points={allPoints}
+            followPoint={followPoint}
+            followZoom={followZoom}
+            fitKey={fitKey}
+            followResetKey={selectedVehicleId}
           />
+          <FocusController />
+
+          <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
           {polyline?.length >= 2 ? <Polyline positions={polyline} /> : null}
 
           {stopPoints.map(([lat, lng, s]) => (
-            <Marker
-              key={`stop:${s.id ?? s.order ?? s.name}`}
-              position={[lat, lng]}
-              icon={iconStop(s.name || `Stop ${s.order ?? ""}`)}
-            >
+            <Marker key={`stop:${s.id ?? s.order ?? s.name}`} position={[lat, lng]} icon={iconStop(s.name || `Stop ${s.order ?? ""}`)}>
               <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent={false}>
                 {s.name || "Stop"}
               </Tooltip>
@@ -193,21 +228,14 @@ export default function MapView({
             });
 
             return (
-              <Marker
-                key={`veh:${v.id}`}
-                position={[lat, lng]}
-                icon={icon}
-                eventHandlers={{ click: () => onSelectVehicle && onSelectVehicle(v.id) }}
-              />
+              <Marker key={`veh:${v.id}`} position={[lat, lng]} icon={icon} eventHandlers={{ click: () => onSelectVehicle && onSelectVehicle(v.id) }} />
             );
           })}
         </MapContainer>
       </div>
 
       <div style={{ padding: 12, display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center" }}>
-        <div className="muted">
-          {selectedVehicleId ? `Seçili araç: #${selectedVehicleId}` : "Araç seç: marker'a tıkla"}
-        </div>
+        <div className="muted">{selectedVehicleId ? `Seçili araç: #${selectedVehicleId}` : "Araç seç: marker'a tıkla"}</div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => window.dispatchEvent(new Event("map:fitAll"))}>Tümünü Göster</button>
         </div>
@@ -215,3 +243,5 @@ export default function MapView({
     </div>
   );
 }
+
+

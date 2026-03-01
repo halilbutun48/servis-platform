@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
+import StopTimeline, { pickNextStopByRemainingKmOrEta } from "../../components/StopTimeline";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -25,6 +26,7 @@ export default function MyRidePanel() {
   const [eta, setEta] = useState(null);
   const [notifs, setNotifs] = useState([]);
   const [loc, setLoc] = useState({ lat: "", lng: "" });
+  const [selectedStopId, setSelectedStopId] = useState(null);
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -93,6 +95,22 @@ export default function MyRidePanel() {
   useAutoReload("notifications", loadNotifs);
 
   const vehicle = myShift?.vehicle || null;
+
+const etaStopsForTimeline = useMemo(() => {
+  const arr = Array.isArray(eta?.items?.[0]?.stops) ? eta.items[0].stops : [];
+  return arr.map((s, i) => ({ ...s, order: s?.order ?? (i + 1) }));
+}, [eta]);
+
+const nextStop = useMemo(() => pickNextStopByRemainingKmOrEta(etaStopsForTimeline), [etaStopsForTimeline]);
+const nextStopId = nextStop?.id ?? null;
+
+function scrollToEtaRow(stopId) {
+  try {
+    const el = document.getElementById(`eta-row-${String(stopId)}`);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setSelectedStopId(stopId);
+  } catch {}
+}
 
   const selShift = useMemo(() => {
     const sid = Number(selShiftId);
@@ -215,6 +233,30 @@ export default function MyRidePanel() {
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
               <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
 
+{etaStopsForTimeline.length ? (
+  <div style={{ marginTop: 10 }}>
+    <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
+    <StopTimeline
+      stops={etaStopsForTimeline}
+      nextStopId={nextStopId}
+      selectedStopId={selectedStopId}
+      compact
+      onSelect={(s) => scrollToEtaRow(s?.id)}
+    />
+    {nextStop?.name ? (
+      <div className="muted" style={{ marginTop: 8 }}>
+        NEXT: <span className="pill" data-status="NEXT">{nextStop.name}</span>
+        {Number.isFinite(Number(nextStop?.etaMin)) ? <span className="muted" style={{ marginLeft: 8 }}>ETA: <b>{Math.round(Number(nextStop.etaMin))}dk</b></span> : null}
+        {Number.isFinite(Number(nextStop?.remainingKm)) ? <span className="muted" style={{ marginLeft: 8 }}>km: <b>{Number(nextStop.remainingKm).toFixed(1)}</b></span> : null}
+      </div>
+    ) : null}
+  </div>
+) : (
+  <div className="muted" style={{ marginTop: 10 }}>
+    ETA/Duraklar'a basınca timeline görünür.
+  </div>
+)}
+
               <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                 {vehicle ? (
                   <button type="button" disabled={busy} onClick={() => loadEtaForVehicle(vehicle.id)}>
@@ -243,13 +285,21 @@ export default function MyRidePanel() {
               </tr>
             </thead>
             <tbody>
-              {(eta.items?.[0]?.stops || []).map((s) => (
-                <tr key={s.id}>
-                  <td>{s.name}</td>
+              {(eta.items?.[0]?.stops || []).map((s, i) => {
+              const rowId = `eta-row-${s.id}`;
+              const isSel = selectedStopId && String(selectedStopId) === String(s.id);
+              const isNext = nextStopId && String(nextStopId) === String(s.id);
+              return (
+                <tr key={s.id ?? i} id={rowId} style={isSel ? { outline: "2px solid rgba(245,158,11,.55)" } : undefined}>
+                  <td>
+                    {isNext ? <span className="pill" data-status="NEXT" style={{ marginRight: 8 }}>NEXT</span> : null}
+                    {s.name}
+                  </td>
                   <td>{s.remainingKm}</td>
                   <td>{s.etaMin}</td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
           <div className="muted" style={{ marginTop: 8 }}>

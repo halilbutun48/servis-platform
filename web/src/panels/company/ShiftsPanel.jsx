@@ -7,6 +7,7 @@ import { invalidate } from "../../live/bus";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import ShiftTemplatesPanel, { PRESET_TEMPLATES, DEFAULT_WEEKMASK, DEFAULT_DURATION_KEY } from "./ShiftTemplatesPanel";
 import PlanBuilderPanel from "./PlanBuilderPanel";
+import RoutePreviewModal from "../../components/RoutePreviewModal";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -131,6 +132,7 @@ export default function CompanyShiftsPanel() {
 
   // M51: Shift süre uzatma (Company → Room talep)
   const [extendModal, setExtendModal] = useState({ open: false, shift: null, endLocal: "", note: "" });
+  const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null });
 
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
@@ -2047,14 +2049,17 @@ function usePlanDraftToRequest(draft) {
         </div>
       </div>
     ) : (
-      <button
+      <>
+<button
         type="button"
         disabled={busy || !(String(s.status || "").toUpperCase() === "APPROVED" || String(s.status || "").toUpperCase() === "ACTIVE")}
         onClick={() => openExtendModal(s)}
       >
         Süre Uzat
       </button>
-    )}
+        <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Önizle</button>
+    </>
+)}
   </td>
 </tr>
               );
@@ -2192,14 +2197,17 @@ function usePlanDraftToRequest(draft) {
         </div>
       </div>
     ) : (
-      <button
+      <>
+<button
         type="button"
         disabled={busy || !(String(s.status || "").toUpperCase() === "APPROVED" || String(s.status || "").toUpperCase() === "ACTIVE")}
         onClick={() => openExtendModal(s)}
       >
         Süre Uzat
       </button>
-    )}
+        <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Önizle</button>
+    </>
+)}
   </td>
 </tr>
               );
@@ -2219,6 +2227,15 @@ function usePlanDraftToRequest(draft) {
 
       
 
+{/* M74.2.1: Preview modal from Company list */}
+{previewModal.open ? (
+  <RoutePreviewModal
+    open={previewModal.open}
+    onClose={() => setPreviewModal({ open: false, shiftId: null })}
+    title={previewModal.shiftId ? `Shift #${previewModal.shiftId} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
+    shiftId={previewModal.shiftId}
+  />
+) : null}
 {/* ✅ M51: Extend modal */}
 {extendModal.open ? (
   <div className="card" style={{ border: "2px solid #ddd" }}>
@@ -2404,3 +2421,8 @@ function usePlanDraftToRequest(draft) {
     </div>
   );
 }
+
+
+
+
+

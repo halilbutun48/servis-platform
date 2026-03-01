@@ -123,3 +123,38 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 
 /* M41: subtle count pill */
 .pill[data-status="COUNT"]{ border-color:#31466f; background: rgba(49,70,111,.18); color:#dbeafe; font-weight: 800; }
+
+
+/* M74.1 — Stop timeline pill statuses */
+
+/* M74.1 — Stop timeline pill statuses */
+.stopTimeline {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.stopTimeline.compact .stopPill { padding: 2px 9px; font-weight: 900; }
+.stopPill { white-space: nowrap; }
+
+.pill[data-status="PENDING"] {
+  border-color: #475569;
+  background: rgba(148, 163, 184, .10);
+  color: #e2e8f0;
+}
+.pill[data-status="NEXT"] {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, .18);
+  color: #fde68a;
+}
+.pill[data-status="REACHED"] {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, .18);
+  color: #bbf7d0;
+}
+.pill[data-status="SKIPPED"] {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, .18);
+  color: #fecaca;
+}
+
