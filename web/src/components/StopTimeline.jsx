@@ -1,91 +1,91 @@
 // web/src/components/StopTimeline.jsx
-import React from "react";
+import { useMemo } from "react";
 
-function normState(s) {
-  return String(s || "").toUpperCase();
+function asNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
-
-function isDone(stop) {
-  const st = normState(stop?.state);
-  return st === "REACHED" || st === "SKIPPED" || st === "DONE" || Boolean(stop?.reachedAt);
-}
-
-function stopStatus(stop, nextStopId) {
-  const st = normState(stop?.state);
-  if (nextStopId && stop?.id === nextStopId) return "NEXT";
-  if (st === "REACHED" || st === "DONE" || stop?.reachedAt) return "REACHED";
-  if (st === "SKIPPED") return "SKIPPED";
-  if (st === "PENDING" || !st) return "PENDING";
-  return st;
+function isReached(s) {
+  const st = String(s?.status || "").toUpperCase();
+  return st === "REACHED" || st === "DONE" || Boolean(s?.reachedAt) || Boolean(s?.reached);
 }
 
 /**
- * StopTimeline
- * - stops: [{ id, order, name/title, state, reachedAt, remainingKm, etaMin }]
- * - nextStopId: highlight NEXT
- * - selectedStopId: optional selection highlight
- * - onSelect: optional click handler (stop => void)
+ * Pick NEXT stop by smallest remainingKm (preferred), fallback to smallest etaMin.
+ * Ignores reached stops.
  */
-export default function StopTimeline({
-  stops = [],
-  nextStopId = null,
-  selectedStopId = null,
-  compact = true,
-  onSelect = null,
-}) {
-  const items = Array.isArray(stops) ? [...stops] : [];
-  items.sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0));
+export function pickNextStopByRemainingKmOrEta(stops) {
+  const arr = Array.isArray(stops) ? stops : [];
+  const cand = arr.filter((s) => s && !isReached(s));
 
-  if (!items.length) return <div className="muted">Durak yok.</div>;
+  let best = null;
+  // 1) remainingKm
+  for (const s of cand) {
+    const km = asNum(s?.remainingKm);
+    if (km == null) continue;
+    if (!best || km < asNum(best?.remainingKm)) best = s;
+  }
+  if (best) return best;
+
+  // 2) etaMin fallback
+  for (const s of cand) {
+    const eta = asNum(s?.etaMin);
+    if (eta == null) continue;
+    if (!best || eta < asNum(best?.etaMin)) best = s;
+  }
+  return best;
+}
+
+export default function StopTimeline({ stops, nextStopId, selectedStopId, compact = true, onSelect }) {
+  const items = useMemo(() => (Array.isArray(stops) ? stops : []), [stops]);
 
   return (
-    <div className={compact ? "stopTimeline compact" : "stopTimeline"}>
-      {items.map((s, idx) => {
-        const st = stopStatus(s, nextStopId);
-        const label = `${s?.order ?? idx + 1} ${s?.name ?? s?.title ?? ""}`.trim() || "-";
-        const isSel = selectedStopId && String(s?.id) === String(selectedStopId);
+    <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+      {items.map((s, i) => {
+        const id = s?.id ?? `${i}`;
+        const order = s?.order ?? (i + 1);
+        const name = s?.name ?? s?.title ?? `Durak ${order}`;
+        const reached = isReached(s);
+        const isNext = nextStopId != null && String(nextStopId) === String(id);
+        const isSel = selectedStopId != null && String(selectedStopId) === String(id);
 
-        const commonProps = {
-          key: s?.id ?? label,
-          className: "pill stopPill",
-          "data-status": st,
-          "data-selected": isSel ? "1" : "0",
-          title: label,
-          style: { cursor: onSelect ? "pointer" : "default" },
-          onClick: onSelect ? () => onSelect(s) : undefined,
-          type: onSelect ? "button" : undefined,
+        const style = {
+          width: compact ? 26 : 30,
+          height: compact ? 26 : 30,
+          padding: 0,
+          borderRadius: 999,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "1px solid #334155",
+          background: "rgba(148,163,184,.10)",
+          color: "#e7eefc",
+          fontWeight: 900,
+          cursor: "pointer",
+          userSelect: "none",
+          outline: isSel ? "2px solid rgba(148,163,184,.55)" : "none",
+          outlineOffset: 1,
+          ...(reached
+            ? { borderColor: "#22c55e", background: "rgba(34,197,94,.16)", color: "#bbf7d0" }
+            : {}),
+          ...(isNext
+            ? { borderColor: "#f59e0b", background: "rgba(245,158,11,.16)", color: "#fde68a" }
+            : {}),
         };
 
-        const chipText = compact ? (s?.order ?? idx + 1) : label;
-
-        return onSelect ? (
-          <button {...commonProps}>{chipText}</button>
-        ) : (
-          <span {...commonProps}>{chipText}</span>
+        return (
+          <button
+            key={String(id)}
+            type="button"
+            className="pill"
+            style={style}
+            title={name}
+            onClick={() => onSelect?.(s)}
+          >
+            {order}
+          </button>
         );
       })}
     </div>
   );
-}
-
-export function pickNextStopByRemainingKmOrEta(stops) {
-  const arr = Array.isArray(stops) ? stops : [];
-  const pending = arr.filter((s) => !isDone(s));
-  if (!pending.length) return null;
-
-  const km = pending
-    .map((s) => ({ s, v: Number(s?.remainingKm) }))
-    .filter((x) => Number.isFinite(x.v));
-  if (km.length) km.sort((a, b) => a.v - b.v);
-  if (km.length) return km[0].s;
-
-  const eta = pending
-    .map((s) => ({ s, v: Number(s?.etaMin) }))
-    .filter((x) => Number.isFinite(x.v));
-  if (eta.length) eta.sort((a, b) => a.v - b.v);
-  if (eta.length) return eta[0].s;
-
-  // fallback to first pending by order
-  pending.sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0));
-  return pending[0] || null;
 }

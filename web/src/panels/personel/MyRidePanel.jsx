@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -24,9 +24,12 @@ export default function MyRidePanel() {
   const [selShiftId, setSelShiftId] = useState("");
   const [myShift, setMyShift] = useState(null);
   const [eta, setEta] = useState(null);
+
+  const [showEta, setShowEta] = useState(false);
+  const [activeStopId, setActiveStopId] = useState(null);
+  const rowRefs = useRef({});
   const [notifs, setNotifs] = useState([]);
   const [loc, setLoc] = useState({ lat: "", lng: "" });
-  const [selectedStopId, setSelectedStopId] = useState(null);
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -96,27 +99,35 @@ export default function MyRidePanel() {
 
   const vehicle = myShift?.vehicle || null;
 
-const etaStopsForTimeline = useMemo(() => {
-  const arr = Array.isArray(eta?.items?.[0]?.stops) ? eta.items[0].stops : [];
-  return arr.map((s, i) => ({ ...s, order: s?.order ?? (i + 1) }));
-}, [eta]);
-
-const nextStop = useMemo(() => pickNextStopByRemainingKmOrEta(etaStopsForTimeline), [etaStopsForTimeline]);
-const nextStopId = nextStop?.id ?? null;
-
-function scrollToEtaRow(stopId) {
-  try {
-    const el = document.getElementById(`eta-row-${String(stopId)}`);
-    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
-    setSelectedStopId(stopId);
-  } catch {}
-}
-
   const selShift = useMemo(() => {
     const sid = Number(selShiftId);
     if (!sid) return null;
     return (avail || []).find((s) => Number(s?.id) === sid) || null;
   }, [avail, selShiftId]);
+
+  const etaStops = useMemo(() => {
+    const arr = Array.isArray(eta?.items?.[0]?.stops) ? eta.items[0].stops : [];
+    return arr.map((s, i) => ({
+      ...s,
+      order: s?.order ?? (i + 1),
+      name: s?.name ?? s?.title ?? `Durak ${i + 1}`,
+    }));
+  }, [eta]);
+
+  const nextStop = useMemo(() => pickNextStopByRemainingKmOrEta(etaStops), [etaStops]);
+  const nextStopId = nextStop?.id ?? null;
+
+  function onSelectStop(s) {
+    const id = s?.id ?? null;
+    setActiveStopId(id);
+    if (id != null) {
+      setTimeout(() => {
+        const el = rowRefs.current[String(id)];
+        if (el?.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 0);
+    }
+  }
+
 
   function getLocation() {
     setOkMsg("");
@@ -233,38 +244,38 @@ function scrollToEtaRow(stopId) {
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
               <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
 
-{etaStopsForTimeline.length ? (
-  <div style={{ marginTop: 10 }}>
-    <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
-    <StopTimeline
-      stops={etaStopsForTimeline}
-      nextStopId={nextStopId}
-      selectedStopId={selectedStopId}
-      compact
-      onSelect={(s) => scrollToEtaRow(s?.id)}
-    />
-    {nextStop?.name ? (
-      <div className="muted" style={{ marginTop: 8 }}>
-        NEXT: <span className="pill" data-status="NEXT">{nextStop.name}</span>
-        {Number.isFinite(Number(nextStop?.etaMin)) ? <span className="muted" style={{ marginLeft: 8 }}>ETA: <b>{Math.round(Number(nextStop.etaMin))}dk</b></span> : null}
-        {Number.isFinite(Number(nextStop?.remainingKm)) ? <span className="muted" style={{ marginLeft: 8 }}>km: <b>{Number(nextStop.remainingKm).toFixed(1)}</b></span> : null}
-      </div>
-    ) : null}
-  </div>
-) : (
-  <div className="muted" style={{ marginTop: 10 }}>
-    ETA/Duraklar'a basınca timeline görünür.
-  </div>
-)}
-
               <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                 {vehicle ? (
-                  <button type="button" disabled={busy} onClick={() => loadEtaForVehicle(vehicle.id)}>
+                  <button type="button" disabled={busy} onClick={async () => {
+                    const next = !showEta;
+                    setShowEta(next);
+                    if (next) {
+                      await loadEtaForVehicle(vehicle.id);
+                      setActiveStopId(null);
+                    }
+                  }}>
                     ETA / Duraklar
                   </button>
                 ) : null}
                 <button type="button" disabled={busy} onClick={() => navigate("/shared/notifications")}>Bildirimler</button>
               </div>
+            
+              {showEta && etaStops.length ? (
+                <div style={{ marginTop: 10 }}>
+                  <div className="muted" style={{ marginBottom: 6 }}>
+                    Sıradaki:{" "}
+                    {nextStop?.name ? <span className="pill" data-status="REQUESTED">{nextStop.name}</span> : <span className="muted">-</span>}
+                  </div>
+                  <StopTimeline
+                    stops={etaStops}
+                    nextStopId={nextStopId}
+                    selectedStopId={activeStopId}
+                    compact
+                    onSelect={onSelectStop}
+                  />
+                </div>
+              ) : null}
+
             </div>
           ) : (
             <div className="muted">Henüz eşleşmiş bir servis yok (talep oluşturduktan sonra burada görünür).</div>
@@ -272,7 +283,7 @@ function scrollToEtaRow(stopId) {
         </div>
       </div>
 
-      {eta ? (
+      {showEta && eta ? (
         <div className="card">
           <h3>ETA (approx)</h3>
           <div className="muted">vehicleId: {eta.vehicleId}</div>
@@ -285,21 +296,27 @@ function scrollToEtaRow(stopId) {
               </tr>
             </thead>
             <tbody>
-              {(eta.items?.[0]?.stops || []).map((s, i) => {
-              const rowId = `eta-row-${s.id}`;
-              const isSel = selectedStopId && String(selectedStopId) === String(s.id);
-              const isNext = nextStopId && String(nextStopId) === String(s.id);
-              return (
-                <tr key={s.id ?? i} id={rowId} style={isSel ? { outline: "2px solid rgba(245,158,11,.55)" } : undefined}>
-                  <td>
-                    {isNext ? <span className="pill" data-status="NEXT" style={{ marginRight: 8 }}>NEXT</span> : null}
-                    {s.name}
-                  </td>
-                  <td>{s.remainingKm}</td>
-                  <td>{s.etaMin}</td>
-                </tr>
-              );
-            })}
+              {etaStops.map((s) => {
+                const id = s?.id ?? null;
+                const isNext = nextStopId != null && String(nextStopId) === String(id);
+                const isSel = activeStopId != null && String(activeStopId) === String(id);
+                return (
+                  <tr
+                    key={String(id ?? s.name)}
+                    ref={(el) => {
+                      if (el && id != null) rowRefs.current[String(id)] = el;
+                    }}
+                    style={isSel ? { background: "rgba(59,130,246,.10)", outline: "1px solid rgba(59,130,246,.35)" } : undefined}
+                  >
+                    <td>
+                      {s.name}{" "}
+                      {isNext ? <span className="pill" data-status="REQUESTED" style={{ marginLeft: 6 }}>NEXT</span> : null}
+                    </td>
+                    <td>{s.remainingKm}</td>
+                    <td>{s.etaMin}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <div className="muted" style={{ marginTop: 8 }}>
