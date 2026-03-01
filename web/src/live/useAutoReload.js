@@ -13,9 +13,9 @@ export function useAutoReload(topic, fn, enabled = true) {
   useEffect(() => {
     if (!enabled) return;
 
-    return on(topic, () => {
+    return on(topic, (detail) => {
       try {
-        fnRef.current?.();
+        fnRef.current?.(detail);
       } catch (e) {
         // sessizce geç
         // eslint-disable-next-line no-console

@@ -100,10 +100,14 @@ function guessTopics(msg) {
   const topics = new Set();
 
   if (raw.includes("shift")) topics.add("shifts");
-  if (raw.includes("vehicle") || raw.includes("gps")) topics.add("vehicles");
+  if (raw.includes("vehicle")) topics.add("vehicles");
+  if (raw.includes("gps")) topics.add("gps");
   if (raw.includes("driver")) topics.add("drivers");
   if (raw.includes("room")) topics.add("rooms");
   if (raw.includes("notif")) topics.add("notifications");
+
+  // ✅ eta auto-refresh
+  if (raw.includes("eta")) topics.add("eta");
 
   // ✅ agreements auto-refresh
   if (raw.includes("agreement")) topics.add("agreements");
@@ -115,11 +119,13 @@ function guessTopics(msg) {
   if (
     topic === "shifts" ||
     topic === "vehicles" ||
+    topic === "gps" ||
     topic === "drivers" ||
     topic === "rooms" ||
     topic === "notifications" ||
     topic === "agreements"
     || topic === "offers"
+    || topic === "eta"
   ) {
     topics.add(topic);
   }

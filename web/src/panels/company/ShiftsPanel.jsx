@@ -642,7 +642,6 @@ function usePlanDraftToRequest(draft) {
   }, [rooms.length]);
 
   useAutoReload("shifts", load);
-  useAutoReload("vehicles", load);
   useAutoReload("rooms", load);
 
   const roomsById = useMemo(() => {

@@ -586,7 +586,6 @@ function matchShift(s, qRaw) {
   }, []);
 
   useAutoReload("shifts", load);
-  useAutoReload("vehicles", load);
   useAutoReload("drivers", load);
   useAutoReload("rooms", load);
 

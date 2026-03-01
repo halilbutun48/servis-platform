@@ -15,7 +15,7 @@ export default function DriverMapPanel() {
     if (!token) return;
     setErr("");
     try {
-      const v = await api("/api/vehicles", { token });
+      const v = await api("/api/live/vehicles", { token });
       setVehicles(Array.isArray(v) ? v : []);
 
       // ✅ driver için doğru endpoint
@@ -35,14 +35,61 @@ export default function DriverMapPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  useAutoReload("gps:update", loadAll);
-  useAutoReload("vehicles", loadAll);
+  // gps:update => HTTP reload yok; sadece state patch
+  useAutoReload("gps", (detail) => {
+    const m = detail?.payload?.msg;
+    if (!m || m._event !== "gps:update") return;
+
+    const vid = Number(m.vehicleId);
+    const lat = Number(m.lat);
+    const lng = Number(m.lng);
+    let atIso = null;
+    try {
+      if (m.at) {
+        const dt = new Date(m.at);
+        if (!Number.isNaN(dt.getTime())) atIso = dt.toISOString();
+      }
+    } catch {}
+    const st = String(m.status || "").toUpperCase();
+
+    if (!Number.isFinite(vid) || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    setVehicles((prev) =>
+      (Array.isArray(prev) ? prev : []).map((v) => {
+        if (Number(v?.id) !== vid) return v;
+        return {
+          ...v,
+          gpsLast: { ...(v?.gpsLast || {}), lat, lng, at: atIso || v?.gpsLast?.at || null },
+          gpsState: { ...(v?.gpsState || {}), lastUiStatus: st || v?.gpsState?.lastUiStatus || null },
+        };
+      })
+    );
+  });
+
+  // vehicle:status gibi GPS kaynaklı spam'lerde full reload yapma
+  useAutoReload("vehicles", (detail) => {
+    const ev = detail?.payload?.msg?._event;
+    if (ev === "vehicle:status") {
+      const m = detail?.payload?.msg;
+      const vid = Number(m?.vehicleId);
+      const st = String(m?.status || "").toUpperCase();
+      if (!Number.isFinite(vid)) return;
+      setVehicles((prev) =>
+        (Array.isArray(prev) ? prev : []).map((v) => {
+          if (Number(v?.id) !== vid) return v;
+          return { ...v, gpsState: { ...(v?.gpsState || {}), lastUiStatus: st || v?.gpsState?.lastUiStatus || null } };
+        })
+      );
+      return;
+    }
+    loadAll();
+  });
   useAutoReload("shifts", loadAll);
 
-  // canlı hareket için polling
+  // fallback polling (WS koparsa)
   useEffect(() => {
     if (!token) return;
-    const t = setInterval(loadAll, 3000);
+    const t = setInterval(loadAll, 15000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, selectedVehicleId]);

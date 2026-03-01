@@ -20,6 +20,7 @@ import { etaRouter } from "./routes/eta.js";
 import { geocodeRouter } from "./routes/geocode.js";
 import { companyHubRouter } from "./routes/companyHub.js";
 import { planBuilderRouter } from "./routes/planBuilder.js";
+import { liveRouter } from "./routes/live.js";
 
 import availabilityRoutes from "./routes/availability.js";
 
@@ -119,19 +120,86 @@ app.use(apiRequestLog());
 const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
 const isProd = mode === "production";
 
-app.use(
-  rateLimit({
-    windowMs: ENV.RATE_LIMIT_WINDOW_MS,
-    max: ENV.RATE_LIMIT_MAX,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-      if (isProd) return false;
-      const gp = String(req.get("x-greenpack") || "").toLowerCase();
-      return gp === "1" || gp === "true";
-    },
-  })
-);
+function greenpackSkip(req) {
+  if (isProd) return false;
+  const gp = String(req.get("x-greenpack") || "").toLowerCase();
+  return gp === "1" || gp === "true";
+}
+
+function readBearerToken(req) {
+  const a = String(req.get("authorization") || "");
+  const m = a.match(/^Bearer\s+(.+)$/i);
+  return m ? String(m[1] || "") : "";
+}
+
+function authKey(req) {
+  const token = String(req.get("x-auth-token") || "") || readBearerToken(req);
+  if (token) {
+    try {
+      const decoded = verifyToken(String(token));
+      const userId = decoded?.userId ?? decoded?.id;
+      if (userId) return `u:${userId}`;
+    } catch {}
+    return `t:${token.slice(0, 24)}`; // fallback (do not store full token)
+  }
+  return `ip:${req.ip}`;
+}
+
+// ✅ M77: route-based buckets (login asla GPS tarafından kilitlenmez)
+const authLimiter = rateLimit({
+  windowMs: ENV.AUTH_RATE_LIMIT_WINDOW_MS,
+  max: ENV.AUTH_RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: greenpackSkip,
+  keyGenerator: (req) => {
+    const email = String(req.body?.email || req.body?.username || "").trim().toLowerCase();
+    return `ip:${req.ip}|email:${email}`;
+  },
+});
+
+const readLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: ENV.READ_RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+});
+
+const writeLimiter = rateLimit({
+  windowMs: ENV.WRITE_RATE_LIMIT_WINDOW_MS,
+  max: ENV.WRITE_RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+});
+
+const gpsLimiter = rateLimit({
+  windowMs: ENV.GPS_RATE_LIMIT_WINDOW_MS,
+  max: ENV.GPS_RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+});
+
+// Auth (çok sıkı)
+app.use("/api/auth/login", authLimiter);
+
+// GPS ingest (ayrı kova)
+app.use("/api/gps", gpsLimiter);
+
+// Genel API (GET / write ayrımı)
+app.use("/api", (req, res, next) => {
+  // /api/auth/* ve /api/gps/* kendi limiter'ında
+  if (req.path.startsWith("/auth")) return next();
+  if (req.path.startsWith("/gps")) return next();
+
+  if (req.method === "GET") return readLimiter(req, res, next);
+  return writeLimiter(req, res, next);
+});
 
 // Health (M10+M11: db ping + uptime + version)
 app.get("/health", async (req, res) => {
@@ -163,6 +231,7 @@ app.use("/api/eta", etaRouter);
 app.use("/api/geocode", geocodeRouter());
 app.use("/api/company/hub", companyHubRouter());
 app.use("/api/plan-builder", planBuilderRouter());
+app.use("/api/live", liveRouter());
 app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());

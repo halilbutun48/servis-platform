@@ -61,7 +61,7 @@ export default function CompanyMapPanel() {
     setErr("");
     setBusy(true);
     try {
-      const r = await api("/api/vehicles", { token });
+      const r = await api("/api/live/vehicles", { token });
       const items = Array.isArray(r) ? r : [];
       setVehicles(items);
       setSelectedVehicleId((prev) => (prev && items.some((v) => v.id === prev)) ? prev : (items[0]?.id ?? null));
@@ -116,7 +116,36 @@ useEffect(() => {
   useEffect(() => { loadSelectedShift(selectedVehicleId); }, [selectedVehicleId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useAutoReload("vehicles", loadVehicles);
-  useAutoReload("gps", loadVehicles);
+  // gps:update => HTTP reload yok; sadece state patch (self-DDOS kırılır)
+  useAutoReload("gps", (detail) => {
+    const m = detail?.payload?.msg;
+    if (!m || m._event !== "gps:update") return;
+
+    const vid = Number(m.vehicleId);
+    const lat = Number(m.lat);
+    const lng = Number(m.lng);
+    let atIso = null;
+    try {
+      if (m.at) {
+        const dt = new Date(m.at);
+        if (!Number.isNaN(dt.getTime())) atIso = dt.toISOString();
+      }
+    } catch {}
+    const st = String(m.status || "").toUpperCase();
+
+    if (!Number.isFinite(vid) || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    setVehicles((prev) =>
+      (Array.isArray(prev) ? prev : []).map((v) => {
+        if (Number(v?.id) !== vid) return v;
+        return {
+          ...v,
+          gpsLast: { ...(v?.gpsLast || {}), lat, lng, at: atIso || v?.gpsLast?.at || null },
+          gpsState: { ...(v?.gpsState || {}), lastUiStatus: st || v?.gpsState?.lastUiStatus || null },
+        };
+      })
+    );
+  });
   useAutoReload("shifts", () => loadSelectedShift(selectedVehicleId));
 
   const selectedVehicle = useMemo(() => vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null, [vehicles, selectedVehicleId]);
@@ -137,7 +166,7 @@ useEffect(() => {
           <div className="title">Company • Canlı Harita</div>
           <div className="muted">Onaylı/aktif vardiyalardaki araçlar</div>
           {selectedVehicle ? (
-            <div className="muted">Seçili: {selectedVehicle.plate || `#${selectedVehicle.id}`} • {selectedVehicle.seats || "-"} koltuk</div>
+            <div className="muted">Seçili: {selectedVehicle.plate || `#${selectedVehicle.id}`} • {(selectedVehicle.capacity ?? selectedVehicle.seats) || "-"} koltuk</div>
           ) : null}
         </div>
 
@@ -171,7 +200,7 @@ useEffect(() => {
                   <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
                     <b>{v.plate || `#${v.id}`}</b>
                     <span className="muted" style={{ fontSize: 12 }}>
-                      {v.seats ? `${v.seats} koltuk` : ""} {v.seats ? "• " : ""}{v.room?.name || ""}
+                      {(v.capacity ?? v.seats) ? `${v.capacity ?? v.seats} koltuk` : ""} {(v.capacity ?? v.seats) ? "• " : ""}{v.room?.name || ""}
                     </span>
                   </span>
                   <span className="pill" data-status={pk2}>{ui2}</span>

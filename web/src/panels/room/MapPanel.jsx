@@ -184,7 +184,36 @@ export default function RoomMapPanel() {
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useAutoReload("vehicles", load);
   useAutoReload("shifts", load);
-  useAutoReload("gps", load);
+  // gps:update => HTTP reload yok; sadece state patch
+  useAutoReload("gps", (detail) => {
+    const m = detail?.payload?.msg;
+    if (!m || m._event !== "gps:update") return;
+
+    const vid = Number(m.vehicleId);
+    const lat = Number(m.lat);
+    const lng = Number(m.lng);
+    let atIso = null;
+    try {
+      if (m.at) {
+        const dt = new Date(m.at);
+        if (!Number.isNaN(dt.getTime())) atIso = dt.toISOString();
+      }
+    } catch {}
+    const st = String(m.status || "").toUpperCase();
+
+    if (!Number.isFinite(vid) || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    setVehicles((prev) =>
+      (Array.isArray(prev) ? prev : []).map((v) => {
+        if (Number(v?.id) !== vid) return v;
+        return {
+          ...v,
+          gpsLast: { ...(v?.gpsLast || {}), lat, lng, at: atIso || v?.gpsLast?.at || null },
+          gpsState: { ...(v?.gpsState || {}), lastUiStatus: st || v?.gpsState?.lastUiStatus || null },
+        };
+      })
+    );
+  });
 
   const cards = useMemo(() => {
     const qq = String(q || "").trim().toLowerCase();

@@ -23,6 +23,19 @@ export const ENV = {
   RATE_LIMIT_WINDOW_MS: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
   RATE_LIMIT_MAX: Number(process.env.RATE_LIMIT_MAX ?? 600),
 
+  // ✅ M77: route-based rate limit (optional tuning)
+  AUTH_RATE_LIMIT_WINDOW_MS: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? 60 * 1000),
+  AUTH_RATE_LIMIT_MAX: Number(process.env.AUTH_RATE_LIMIT_MAX ?? 5),
+
+  READ_RATE_LIMIT_WINDOW_MS: Number(process.env.READ_RATE_LIMIT_WINDOW_MS ?? 60 * 1000),
+  READ_RATE_LIMIT_MAX: Number(process.env.READ_RATE_LIMIT_MAX ?? 120),
+
+  WRITE_RATE_LIMIT_WINDOW_MS: Number(process.env.WRITE_RATE_LIMIT_WINDOW_MS ?? 60 * 1000),
+  WRITE_RATE_LIMIT_MAX: Number(process.env.WRITE_RATE_LIMIT_MAX ?? 60),
+
+  GPS_RATE_LIMIT_WINDOW_MS: Number(process.env.GPS_RATE_LIMIT_WINDOW_MS ?? 60 * 1000),
+  GPS_RATE_LIMIT_MAX: Number(process.env.GPS_RATE_LIMIT_MAX ?? 60),
+
   // Log retention / cleanup (M10 + ops)
   // Default: keep 2 years for ApiRequest + AuditLog (spec alignment)
   LOG_RETENTION_ENABLED: (process.env.LOG_RETENTION_ENABLED ?? "1") === "1",
