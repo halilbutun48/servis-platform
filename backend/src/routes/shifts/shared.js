@@ -83,6 +83,19 @@ export function attachShiftSharedRoutes(r) {
           // base zaten OR içeriyorsa AND ile bağla ki filtreler kaybolmasın.
           where = { AND: [scopeOr, base] };
         }
+        // ✅ KVKK: onlyNow=1 -> sadece şu an aralığında (startAt<=now<=endAt)
+        const onlyNow = String(req.query.onlyNow ?? "0") === "1";
+        if (onlyNow) {
+          const now = new Date();
+          const nowCond = { startAt: { lte: now }, endAt: { gte: now } };
+          if (where && typeof where === "object" && Object.prototype.hasOwnProperty.call(where, "AND")) {
+            const arr = Array.isArray(where.AND) ? where.AND : [where.AND];
+            where = { ...where, AND: [...arr, nowCond] };
+          } else {
+            where = { AND: [where, nowCond] };
+          }
+        }
+
         const take = Math.min(Number(req.query.take ?? 200), 500);
 
         const items = await prisma.shift.findMany({

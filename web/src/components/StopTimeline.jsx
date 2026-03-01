@@ -6,8 +6,8 @@ function asNum(v) {
   return Number.isFinite(n) ? n : null;
 }
 function isReached(s) {
-  const st = String(s?.status || "").toUpperCase();
-  return st === "REACHED" || st === "DONE" || Boolean(s?.reachedAt) || Boolean(s?.reached);
+  const st = String(s?.status || s?.state || "").toUpperCase();
+  return st === "REACHED" || st === "DONE" || st === "COMPLETED" || Boolean(s?.reachedAt) || Boolean(s?.reached);
 }
 
 /**
@@ -42,7 +42,7 @@ export default function StopTimeline({ stops, nextStopId, selectedStopId, compac
   return (
     <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
       {items.map((s, i) => {
-        const id = s?.id ?? `${i}`;
+        const id = s?.id ?? s?.stopId ?? s?.order ?? `${i}`;
         const order = s?.order ?? (i + 1);
         const name = s?.name ?? s?.title ?? `Durak ${order}`;
         const reached = isReached(s);

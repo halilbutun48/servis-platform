@@ -120,12 +120,18 @@ export function gpsRouter(io) {
       const { status: uiStatus, ageSec } = gpsStatusFromAt(last.at);
 
       // ✅ company fanout: sadece shift şirketleri (APPROVED/ACTIVE)
+      const nowForScope = at;
       // Not: COMPANY rolü /api/notifications/my'da companyId üzerinden filtreliyor.
       // Bu yüzden GPS bildirimlerinde SHIFT.companyId mutlaka kapsanmalı.
       const companyIds = new Set();
       try {
         const rel = await prisma.shift.findMany({
-          where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
+          where: {
+          vehicleId,
+          status: { in: ["APPROVED", "ACTIVE"] },
+          startAt: { lte: nowForScope },
+          endAt: { gte: nowForScope },
+        },
           select: { companyId: true },
         });
         for (const r of rel) if (r.companyId) companyIds.add(r.companyId);
