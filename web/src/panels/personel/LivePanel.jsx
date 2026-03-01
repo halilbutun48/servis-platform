@@ -93,7 +93,29 @@ export default function PersonelLivePanel() {
 
   useEffect(() => { loadAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useAutoReload("shifts", loadAll);
-  useAutoReload("vehicles", loadAll);
+  useAutoReload("vehicles", (detail) => {
+    const m = detail?.payload?.msg;
+    const ev = m?._event;
+
+    if (ev === "vehicle:status") {
+      const vid = Number(m?.vehicleId);
+      const st = String(m?.status || "").toUpperCase();
+      if (!Number.isFinite(vid) || !st) return;
+
+      setMyShift((prev) => {
+        if (!prev) return prev;
+        const curVid = Number(prev?.vehicleId || prev?.vehicle?.id || 0);
+        if (!curVid || curVid != vid) return prev;
+        const v = prev.vehicle ? { ...prev.vehicle } : null;
+        if (!v) return prev;
+        v.gpsState = { ...(v.gpsState || {}), lastUiStatus: st };
+        return { ...prev, vehicle: v };
+      });
+      return;
+    }
+
+    loadAll();
+  });
   useAutoReload("eta", loadAll);
 
   // Best-effort: get person's location once (for nearest-stop suggestion)

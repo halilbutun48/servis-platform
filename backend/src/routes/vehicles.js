@@ -105,9 +105,53 @@ export function vehiclesRouter(io) {
     if (u.role === "ROOM") {
       if (!u.roomId) return res.json([]);
 
+      const q = String(req.query?.q || "").trim();
+      const pageRaw = req.query?.page;
+      const limitRaw = req.query?.limit ?? req.query?.pageSize;
+      const takeRaw = req.query?.take ?? req.query?.limit;
+
       const where = { roomId: u.roomId };
       if (onlyArchived) where.archivedAt = { not: null };
       else if (!includeArchived) where.archivedAt = null;
+
+      if (q) where.plate = { contains: q, mode: "insensitive" };
+
+      const page = pageRaw != null && pageRaw !== "" ? Number(pageRaw) : null;
+      const limit = limitRaw != null && limitRaw !== "" ? Number(limitRaw) : 50;
+
+      if (page && Number.isFinite(page) && page > 0) {
+        const take = Math.max(1, Math.min(200, Number.isFinite(limit) ? Math.trunc(limit) : 50));
+        const skip = (Math.trunc(page) - 1) * take;
+
+        const [total, items] = await Promise.all([
+          prisma.vehicle.count({ where }),
+          prisma.vehicle.findMany({
+            where,
+            include: {
+              gpsLast: true,
+              gpsState: true,
+              driver: true,
+              shifts: {
+                where: { status: { in: ["APPROVED", "ACTIVE"] } },
+                include: { company: true, driver: true, stops: { orderBy: { order: "asc" } } },
+                orderBy: { startAt: "asc" },
+                take: 5,
+              },
+            },
+            orderBy: { id: "asc" },
+            skip,
+            take,
+          }),
+        ]);
+
+        return res.json({ items, page: Math.trunc(page), limit: take, total });
+      }
+
+      let take = Number.isFinite(Number(takeRaw)) ? Number(takeRaw) : null;
+      if (take == null || take <= 0) take = q ? 200 : 100;
+      take = Math.max(1, Math.min(500, Math.trunc(take)));
+
+      if (!q && take === 100) res.set("x-list-capped", "1");
 
       const items = await prisma.vehicle.findMany({
         where,
@@ -123,6 +167,7 @@ export function vehiclesRouter(io) {
           },
         },
         orderBy: { id: "asc" },
+        take,
       });
       return res.json(items);
     }
@@ -186,17 +231,52 @@ export function vehiclesRouter(io) {
     }
 
     // SUPER_ADMIN: default active only (istersen query ile genişletebiliriz)
+    const q = String(req.query?.q || "").trim();
+    const pageRaw = req.query?.page;
+    const limitRaw = req.query?.limit ?? req.query?.pageSize;
+    const takeRaw = req.query?.take ?? req.query?.limit;
+
     const where = {};
     if (!includeArchived && !onlyArchived) where.archivedAt = null;
     if (onlyArchived) where.archivedAt = { not: null };
+    if (q) where.plate = { contains: q, mode: "insensitive" };
+
+    const page = pageRaw != null && pageRaw !== "" ? Number(pageRaw) : null;
+    const limit = limitRaw != null && limitRaw !== "" ? Number(limitRaw) : 50;
+
+    if (page && Number.isFinite(page) && page > 0) {
+      const take = Math.max(1, Math.min(200, Number.isFinite(limit) ? Math.trunc(limit) : 50));
+      const skip = (Math.trunc(page) - 1) * take;
+
+      const [total, items] = await Promise.all([
+        prisma.vehicle.count({ where }),
+        prisma.vehicle.findMany({
+          where,
+          include: { gpsLast: true, gpsState: true, room: true, driver: true },
+          orderBy: { id: "asc" },
+          skip,
+          take,
+        }),
+      ]);
+
+      return res.json({ items, page: Math.trunc(page), limit: take, total });
+    }
+
+    let take = Number.isFinite(Number(takeRaw)) ? Number(takeRaw) : null;
+    if (take == null || take <= 0) take = q ? 200 : 100;
+    take = Math.max(1, Math.min(500, Math.trunc(take)));
+
+    if (!q && take === 100) res.set("x-list-capped", "1");
 
     const items = await prisma.vehicle.findMany({
       where,
       include: { gpsLast: true, gpsState: true, room: true, driver: true },
       orderBy: { id: "asc" },
+      take,
     });
     return res.json(items);
   });
+
 
   // ---------------------------------------------------------
   // Bind / Unbind driver to vehicle (ROOM + SUPER_ADMIN)
@@ -230,7 +310,7 @@ export function vehiclesRouter(io) {
         include: { gpsLast: true, gpsState: true, driver: true },
       });
 
-      emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "unbind-driver" });
+      emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "unbind-driver", vehicle: updated });
       return res.json({ ok: true, vehicle: updated, unbound: true });
     }
 
@@ -267,7 +347,7 @@ export function vehiclesRouter(io) {
       include: { gpsLast: true, gpsState: true, driver: true },
     });
 
-    emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "bind-driver" });
+    emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "bind-driver", vehicle: updated });
     return res.json({ ok: true, vehicle: updated, bound: true });
   });
 
@@ -354,7 +434,7 @@ export function vehiclesRouter(io) {
         include: { gpsLast: true, gpsState: true, driver: true },
       });
 
-      emitRoom(u.roomId, "vehicle:update", { vehicleId: updated.id, action: "updated" });
+      emitRoom(u.roomId, "vehicle:update", { vehicleId: updated.id, action: "updated", vehicle: updated });
       return res.json({ ok: true, vehicle: updated });
     } catch (e) {
       return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
@@ -407,7 +487,7 @@ export function vehiclesRouter(io) {
           include: { gpsLast: true, gpsState: true, driver: true },
         });
 
-        emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "archived" });
+        emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "archived", vehicle: archived });
         return res.json({ ok: true, archived: true, vehicle: archived });
       }
 
@@ -440,7 +520,7 @@ export function vehiclesRouter(io) {
       include: { gpsLast: true, gpsState: true, driver: true },
     });
 
-    emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "unarchived" });
+    emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "unarchived", vehicle: updated });
     return res.json({ ok: true, vehicle: updated, unarchived: true });
   });
 
@@ -516,7 +596,7 @@ export function vehiclesRouter(io) {
       include: { gpsLast: true, gpsState: true, driver: true },
     });
 
-    emitRoom(u.roomId, "vehicle:update", { vehicleId: vehicle.id, action: "created" });
+    emitRoom(u.roomId, "vehicle:update", { vehicleId: vehicle.id, action: "created", vehicle });
     res.json(vehicle);
   });
 

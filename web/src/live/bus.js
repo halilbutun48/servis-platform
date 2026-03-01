@@ -5,6 +5,7 @@ const et = new EventTarget();
 
 // ✅ M77: WS spam → HTTP spam zincirini kırmak için topic bazlı debounce.
 // Sadece {source:"ws"} invalidate'lerini coalesce eder (local invalidate anında çalışır).
+// ✅ M77.1: sliding debounce (her event timer'ı resetler → quiet window sonrası 1 dispatch)
 const deb = new Map(); // topic -> { timer, lastPayload }
 
 /**
@@ -15,22 +16,22 @@ export function invalidate(topic, payload) {
   const t = String(topic || "").trim();
   if (!t) return;
 
-  // WS debounce (default 1000ms)
   const isWs = payload && typeof payload === "object" && payload.source === "ws";
   const ms = isWs ? Number(payload.debounceMs ?? 1000) : 0;
 
   if (isWs && Number.isFinite(ms) && ms > 0) {
     const prev = deb.get(t);
-    if (prev?.timer) {
-      prev.lastPayload = payload ?? null;
-      return;
+    const rec = prev || { timer: null, lastPayload: null };
+
+    // sliding: reset timer
+    if (rec.timer) {
+      try { clearTimeout(rec.timer); } catch {}
+      rec.timer = null;
     }
 
-    const rec = { timer: null, lastPayload: payload ?? null };
+    rec.lastPayload = payload ?? null;
     rec.timer = window.setTimeout(() => {
-      try {
-        deb.delete(t);
-      } catch {}
+      try { deb.delete(t); } catch {}
 
       et.dispatchEvent(
         new CustomEvent(t, {

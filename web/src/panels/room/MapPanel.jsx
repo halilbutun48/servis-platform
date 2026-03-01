@@ -182,38 +182,28 @@ export default function RoomMapPanel() {
   }
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useAutoReload("vehicles", load);
-  useAutoReload("shifts", load);
-  // gps:update => HTTP reload yok; sadece state patch
-  useAutoReload("gps", (detail) => {
+  useAutoReload("vehicles", (detail) => {
     const m = detail?.payload?.msg;
-    if (!m || m._event !== "gps:update") return;
+    const ev = m?._event;
 
-    const vid = Number(m.vehicleId);
-    const lat = Number(m.lat);
-    const lng = Number(m.lng);
-    let atIso = null;
-    try {
-      if (m.at) {
-        const dt = new Date(m.at);
-        if (!Number.isNaN(dt.getTime())) atIso = dt.toISOString();
-      }
-    } catch {}
-    const st = String(m.status || "").toUpperCase();
+    if (ev === "vehicle:status") {
+      const vid = Number(m?.vehicleId);
+      const st = String(m?.status || "").toUpperCase();
+      if (!Number.isFinite(vid) || !st) return;
 
-    if (!Number.isFinite(vid) || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      setVehicles((prev) =>
+        (Array.isArray(prev) ? prev : []).map((v) => {
+          if (Number(v?.id) !== vid) return v;
+          return { ...v, gpsState: { ...(v?.gpsState || {}), lastUiStatus: st } };
+        })
+      );
+      return;
+    }
 
-    setVehicles((prev) =>
-      (Array.isArray(prev) ? prev : []).map((v) => {
-        if (Number(v?.id) !== vid) return v;
-        return {
-          ...v,
-          gpsLast: { ...(v?.gpsLast || {}), lat, lng, at: atIso || v?.gpsLast?.at || null },
-          gpsState: { ...(v?.gpsState || {}), lastUiStatus: st || v?.gpsState?.lastUiStatus || null },
-        };
-      })
-    );
+    load();
   });
+  useAutoReload("shifts", load);
+  useAutoReload("gps", load);
 
   const cards = useMemo(() => {
     const qq = String(q || "").trim().toLowerCase();

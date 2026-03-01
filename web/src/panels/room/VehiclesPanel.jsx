@@ -358,7 +358,65 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
   }
 
   useEffect(() => { load(); }, []); // eslint-disable-line
-  useAutoReload("vehicles", () => load());
+  useAutoReload("vehicles", (detail) => {
+    const m = detail?.payload?.msg;
+    const ev = m?._event;
+
+    // ✅ vehicle:status spam'inde HTTP reload yapma → state patch
+    if (ev === "vehicle:status") {
+      const vid = Number(m?.vehicleId);
+      const st = String(m?.status || "").toUpperCase();
+      if (!Number.isFinite(vid) || !st) return;
+
+      setItems((prev) =>
+        (Array.isArray(prev) ? prev : []).map((v) => {
+          if (Number(v?.id) !== vid) return v;
+          return { ...v, gpsState: { ...(v?.gpsState || {}), lastUiStatus: st } };
+        })
+      );
+      return;
+    }
+
+    // ✅ vehicle:update (ROOM action) → eğer payload'da vehicle snapshot geldiyse patch
+    if (ev === "vehicle:update") {
+      const action = String(m?.action || "");
+
+      if (action === "deleted") {
+        const vid = Number(m?.vehicleId);
+        if (!Number.isFinite(vid)) return;
+        setItems((prev) => (Array.isArray(prev) ? prev.filter((x) => Number(x?.id) !== vid) : []));
+        return;
+      }
+
+      const veh = m?.vehicle || null;
+      if (veh && typeof veh === "object") {
+        const vid = Number(veh.id || m?.vehicleId);
+        if (!Number.isFinite(vid)) return;
+
+        setItems((prev) => {
+          const arr = Array.isArray(prev) ? [...prev] : [];
+          const idx = arr.findIndex((x) => Number(x?.id) === vid);
+
+          const isArchived = Boolean(veh?.archivedAt);
+          if (!showArchived && isArchived) {
+            if (idx >= 0) arr.splice(idx, 1);
+            return arr;
+          }
+
+          if (idx >= 0) arr[idx] = { ...arr[idx], ...veh };
+          else arr.push(veh);
+          arr.sort((a, b) => Number(a?.id) - Number(b?.id));
+          return arr;
+        });
+        return;
+      }
+
+      load();
+      return;
+    }
+
+    load();
+  });
   useAutoReload("drivers", () => load());
 
   useEffect(() => {
