@@ -319,11 +319,12 @@ export async function ensureActiveShift({
 }) {
   const nowTag = tag + "-" + new Date().toISOString().replace(/[:.TZ-]/g, "").slice(0, 14);
 
-  // kısa aralık (gate hızlı olsun)
-  const startAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-  const endAt = new Date(Date.now() + 70 * 60 * 1000).toISOString();
-
-  const shBody = {
+  // ✅ KVKK time-window gate uyumu
+  // Company canlı takip/notification fanout artık startAt<=now<=endAt şartına bağlı.
+  // ACTIVE shift "şu an çalışıyor" demektir; bu yüzden GreenPack harness shift'i NOW aralığını kapsamalı.
+  const startAt = new Date(Date.now() - 2 * 60 * 1000).toISOString(); // started ~2m ago
+  const endAt = new Date(Date.now() + 70 * 60 * 1000).toISOString();  // ends ~70m later
+const shBody = {
     companyId,
     roomId,
     startAt,

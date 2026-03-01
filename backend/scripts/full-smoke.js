@@ -74,7 +74,7 @@ function reqJson(method, p, { token, body, headers: extraHeaders } = {}) {
   const url = new URL(p, API_URL);
   const lib = url.protocol === "https:" ? https : http;
 
-  const headers = { "Content-Type": "application/json", ...(extraHeaders ?? {}) };
+  const headers = { "Content-Type": "application/json", "x-greenpack": process.env.GREENPACK_HEADER ?? "1", ...(extraHeaders ?? {}) };
 
   // backend bazen Bearer bazen x-auth-token → ikisini de gönder
   if (token) {

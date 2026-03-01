@@ -8,7 +8,7 @@ const nowTag = new Date().toISOString().replace(/[:.TZ-]/g,"").slice(0,14);
 function reqJson(method, path, { token, body } = {}) {
   const url = new URL(path, BASE_URL);
   const lib = url.protocol === "https:" ? https : http;
-  const headers = { "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json", "x-greenpack": process.env.GREENPACK_HEADER ?? "1" };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   return new Promise((resolve) => {

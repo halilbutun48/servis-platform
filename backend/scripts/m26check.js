@@ -9,7 +9,7 @@ const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 function reqJson(method, path, { token, body } = {}) {
   const url = new URL(path, BASE_URL);
   const lib = url.protocol === "https:" ? https : http;
-  const headers = { "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json", "x-greenpack": process.env.GREENPACK_HEADER ?? "1" };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   return new Promise((resolve, reject) => {

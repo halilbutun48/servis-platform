@@ -10,7 +10,7 @@ function reqJson(path, { method = "GET", token, body } = {}) {
   const lib = url.protocol === "https:" ? https : http;
   const payload = body ? JSON.stringify(body) : null;
 
-  const headers = { "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json", "x-greenpack": process.env.GREENPACK_HEADER ?? "1" };
   if (payload) headers["Content-Length"] = Buffer.byteLength(payload);
   if (token) headers.Authorization = `Bearer ${token}`;
 

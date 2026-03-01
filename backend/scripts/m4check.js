@@ -224,7 +224,7 @@ async function main() {
   try {
     // baseline LIVE
     await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.0309, lng: 28.9966, speed: 10, speedKmh: 10 });
-    await sleep(300);
+    await sleep(1300);
 
     // OVERSPEED (marker-based: “yeni notif geldi mi?”)
     const vInfo = await getVehicleInfo(roomToken, h.vehicleId);
