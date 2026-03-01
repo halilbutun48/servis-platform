@@ -134,10 +134,10 @@ Write-Host ""
 if ($NoBuild) {
   Write-Host "=== Docker Compose Up (NoBuild) ===" -ForegroundColor Cyan
   # IMPORTANT: use --detach (NOT -d), because -d can be captured as PowerShell -Debug
-  Dc -f $composeFile up --detach --remove-orphans | Out-Host
+  Dc -f $composeFile --profile osrm up --detach --remove-orphans | Out-Host
 } else {
   Write-Host "=== Docker Compose Build+Up ===" -ForegroundColor Cyan
-  Dc -f $composeFile up --detach --build --remove-orphans | Out-Host
+  Dc -f $composeFile --profile osrm up --detach --build --remove-orphans | Out-Host
 }
 
 # Wait API health
