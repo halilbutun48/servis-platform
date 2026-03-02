@@ -37,6 +37,9 @@ import NotificationsPanel from "./panels/shared/NotificationsPanel";
 import SuperAdminPanel from "./panels/superadmin/SuperAdminPanel";
 import SuperCompaniesPanel from "./panels/superadmin/CompaniesPanel";
 import SuperRoomsPanel from "./panels/superadmin/RoomsPanel";
+import SuperUsersPanel from "./panels/superadmin/UsersPanel";
+import SuperRegionsPanel from "./panels/superadmin/RegionsPanel";
+import SuperAuditLogsPanel from "./panels/superadmin/AuditLogsPanel";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -170,6 +173,9 @@ export default function App() {
     if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };
     if (path === "/superadmin/companies") return { layout: true, node: <SuperCompaniesPanel /> };
     if (path === "/superadmin/rooms") return { layout: true, node: <SuperRoomsPanel /> };
+    if (path === "/superadmin/users") return { layout: true, node: <SuperUsersPanel /> };
+    if (path === "/superadmin/regions") return { layout: true, node: <SuperRegionsPanel /> };
+    if (path === "/superadmin/audit") return { layout: true, node: <SuperAuditLogsPanel /> };
 
     // Unknown: go default
     const def = roleDefaultPath(me.role);

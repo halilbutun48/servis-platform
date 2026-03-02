@@ -16,6 +16,11 @@ function roomIdOf(req) {
   const v = req.user?.roomId ?? req.me?.roomId ?? req.auth?.roomId;
   return v == null ? null : Number(v);
 }
+
+function companyIdOf(req) {
+  const v = req.user?.companyId ?? req.me?.companyId ?? req.auth?.companyId;
+  return v == null ? null : Number(v);
+}
 function requireAnyRole(...roles) {
   return (req, res, next) => {
     const role = roleOf(req);
@@ -34,6 +39,13 @@ const createRoomSchema = z
   .object({
     name: z.string().trim().min(2),
     status: z.string().trim().optional(),
+    regionId: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().int().positive().nullable()).optional(),
+    district: z.string().trim().max(64).optional().nullable(),
+    addressLine: z.string().trim().max(500).optional().nullable(),
+    contactName: z.string().trim().max(120).optional().nullable(),
+    contactPhone: z.string().trim().max(40).optional().nullable(),
+    contactEmail: z.string().trim().max(180).optional().nullable(),
+    notes: z.string().trim().max(2000).optional().nullable(),
     hubLat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
     hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
   })
@@ -58,6 +70,13 @@ const updateRoomSchema = z
   .object({
     name: z.string().trim().min(2).optional(),
     status: z.string().trim().optional(),
+    regionId: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().int().positive().nullable()).optional(),
+    district: z.string().trim().max(64).optional().nullable(),
+    addressLine: z.string().trim().max(500).optional().nullable(),
+    contactName: z.string().trim().max(120).optional().nullable(),
+    contactPhone: z.string().trim().max(40).optional().nullable(),
+    contactEmail: z.string().trim().max(180).optional().nullable(),
+    notes: z.string().trim().max(2000).optional().nullable(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
 
@@ -111,8 +130,22 @@ export function roomsRouter() {
     const q = String(req.query.q || "").trim();
     const hasHub = truthy(req.query.hasHub);
 
+// COMPANY: region gate (KVKK/ops) — only show rooms in my region (or regionId null for legacy data)
+let companyRegionId = null;
+if (role === "COMPANY") {
+  const cid = companyIdOf(req);
+  if (cid) {
+    const c = await prisma.company.findUnique({ where: { id: cid }, select: { regionId: true } });
+    companyRegionId = c?.regionId ?? null;
+  }
+}
+
+
     const where = {
       status: { not: "DELETED" },
+      ...(companyRegionId
+        ? { OR: [{ regionId: companyRegionId }, { regionId: null }] }
+        : {}),
       ...(q
         ? {
             name: {
@@ -167,6 +200,13 @@ export function roomsRouter() {
       data: {
         name: parsed.data.name,
         status: parsed.data.status ?? "ACTIVE",
+        regionId: Object.prototype.hasOwnProperty.call(parsed.data, "regionId") ? (parsed.data.regionId ? Number(parsed.data.regionId) : null) : null,
+        district: parsed.data.district ? String(parsed.data.district).trim() : null,
+        addressLine: parsed.data.addressLine ? String(parsed.data.addressLine).trim() : null,
+        contactName: parsed.data.contactName ? String(parsed.data.contactName).trim() : null,
+        contactPhone: parsed.data.contactPhone ? String(parsed.data.contactPhone).trim() : null,
+        contactEmail: parsed.data.contactEmail ? String(parsed.data.contactEmail).trim() : null,
+        notes: parsed.data.notes ? String(parsed.data.notes).trim() : null,
         hubLat: Object.prototype.hasOwnProperty.call(parsed.data, "hubLat") ? parsed.data.hubLat : null,
         hubLng: Object.prototype.hasOwnProperty.call(parsed.data, "hubLng") ? parsed.data.hubLng : null,
       },
@@ -190,7 +230,16 @@ export function roomsRouter() {
     const parsed = updateRoomSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const item = await prisma.room.update({ where: { id }, data: parsed.data });
+    const data = { ...parsed.data };
+    if (Object.prototype.hasOwnProperty.call(data, "regionId")) data.regionId = data.regionId ? Number(data.regionId) : null;
+    if (Object.prototype.hasOwnProperty.call(data, "district")) data.district = data.district ? String(data.district).trim() : null;
+    if (Object.prototype.hasOwnProperty.call(data, "addressLine")) data.addressLine = data.addressLine ? String(data.addressLine).trim() : null;
+    if (Object.prototype.hasOwnProperty.call(data, "contactName")) data.contactName = data.contactName ? String(data.contactName).trim() : null;
+    if (Object.prototype.hasOwnProperty.call(data, "contactPhone")) data.contactPhone = data.contactPhone ? String(data.contactPhone).trim() : null;
+    if (Object.prototype.hasOwnProperty.call(data, "contactEmail")) data.contactEmail = data.contactEmail ? String(data.contactEmail).trim() : null;
+    if (Object.prototype.hasOwnProperty.call(data, "notes")) data.notes = data.notes ? String(data.notes).trim() : null;
+
+    const item = await prisma.room.update({ where: { id }, data });
     return res.json(item);
   });
 

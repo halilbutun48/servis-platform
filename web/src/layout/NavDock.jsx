@@ -117,6 +117,9 @@ export default function NavDock({ role, path }) {
           { label: "Overview", path: "/superadmin" },
           { label: "Companies", path: "/superadmin/companies" },
           { label: "Rooms", path: "/superadmin/rooms" },
+          { label: "Users", path: "/superadmin/users" },
+          { label: "Regions", path: "/superadmin/regions" },
+          { label: "Audit", path: "/superadmin/audit" },
         ],
       });
     }

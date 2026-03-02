@@ -143,6 +143,19 @@ model Company {
   id        Int      @id @default(autoincrement())
   name      String
   status    String   @default("ACTIVE")
+  regionId  Int?
+  region    Region? @relation(fields: [regionId], references: [id])
+  district  String?   // ilçe (opsiyonel)
+  // ✅ M36.4: profil alanları
+  legalName    String?  // resmi ünvan (opsiyonel)
+  taxNo        String?
+  taxOffice    String?
+  addressLine  String?  // adres (detay)
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  notes        String?
+
   hubLat    Float?   // company worksite hub (optional)
   hubLng    Float?   // company worksite hub (optional)
   createdAt DateTime @default(now())
@@ -152,12 +165,25 @@ model Company {
   personels     Personel[]
   notifications Notification[]
   agreements    Agreement[]
+
+  @@index([regionId])
+  @@index([district])
 }
 
 model Room {
   id        Int      @id @default(autoincrement())
   name      String
   status    String   @default("ACTIVE")
+  regionId  Int?
+  region    Region? @relation(fields: [regionId], references: [id])
+  district  String?   // ilçe (opsiyonel)
+  // ✅ M36.4: profil alanları
+  addressLine  String?  // adres (detay)
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  notes        String?
+
   // ✅ M19: worksite hub (company/site)
   hubLat    Float?
   hubLng    Float?
@@ -173,6 +199,18 @@ model Room {
 
   // ✅ M24: offers inbox (Room ↔ ShiftOffer)
   shiftOffers    ShiftOffer[] @relation("RoomShiftOffers")
+
+  @@index([regionId])
+  @@index([district])
+}
+
+model Region {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  companies Company[]
+  rooms     Room[]
 }
 
 // Auth entity (login) — role taşıyıcı

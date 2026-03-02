@@ -264,20 +264,43 @@ export function attachShiftCompanyRoutes(r, io) {
           await prisma.shift.update({ where: { id: shiftId }, data: { status: "REQUESTED" } });
         }
 
-        const roomIds = Array.from(new Set((body.roomIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x))));
+                const roomIds = Array.from(
+          new Set((body.roomIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x)))
+        );
         if (!roomIds.length) return res.status(400).json({ error: "roomIds required" });
+
+        // COMPANY: region gate (ops/KVKK) — offers can be sent only to rooms in the same region.
+        let companyRegionId = null;
+        if (req.user.role === "COMPANY") {
+          const c = await prisma.company.findUnique({
+            where: { id: shift.companyId },
+            select: { regionId: true },
+          });
+          companyRegionId = c?.regionId ?? null;
+        }
 
         const rooms = await prisma.room.findMany({
           where: { id: { in: roomIds }, status: "ACTIVE" },
-          select: { id: true },
+          select: { id: true, regionId: true },
         });
         if (rooms.length !== roomIds.length) {
           return res.status(400).json({ error: "Some roomIds not found" });
         }
 
-        // ✅ If there is an active agreement (contract) overlapping this shift for a room,
-        // skip creating market offers for that room to avoid duplicate tracking (Agreement vs Market).
-        const blockedRoomIdsSet = await findAgreementBlockedRoomIdsForShift({
+        if (companyRegionId != null) {
+          const cross = rooms
+            .filter((r) => r.regionId != null && Number(r.regionId) !== Number(companyRegionId))
+            .map((r) => Number(r.id));
+          if (cross.length) {
+            return res.status(409).json({
+              error: "Cross-region offer not allowed",
+              companyRegionId,
+              crossRoomIds: cross,
+            });
+          }
+        }
+
+const blockedRoomIdsSet = await findAgreementBlockedRoomIdsForShift({
           companyId: shift.companyId,
           roomIds,
           startAt: shift.startAt,

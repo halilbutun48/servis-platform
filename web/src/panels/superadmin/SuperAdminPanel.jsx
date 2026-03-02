@@ -10,6 +10,10 @@ export default function SuperAdminPanel() {
     rooms: null,
     vehicles: null,
     drivers: null,
+    companiesTotal: null,
+    roomsTotal: null,
+    vehiclesTotal: null,
+    driversTotal: null,
   });
   const [err, setErr] = useState("");
 
@@ -26,6 +30,10 @@ export default function SuperAdminPanel() {
             rooms: s?.rooms ?? null,
             vehicles: s?.vehicles ?? null,
             drivers: s?.drivers ?? null,
+            companiesTotal: s?.companiesTotal ?? null,
+            roomsTotal: s?.roomsTotal ?? null,
+            vehiclesTotal: s?.vehiclesTotal ?? null,
+            driversTotal: s?.driversTotal ?? null,
           });
         }
       } catch (e) {
@@ -37,6 +45,12 @@ export default function SuperAdminPanel() {
       cancelled = true;
     };
   }, [token]);
+
+  const fmtActiveTotal = (active, total) => {
+    if (active == null && total == null) return "-";
+    if (total == null) return String(active ?? "-");
+    return `${active ?? "-"} / ${total}`;
+  };
 
   return (
     <div className="card">
@@ -56,16 +70,12 @@ export default function SuperAdminPanel() {
         >
           <div style={{ fontWeight: 700, marginBottom: 8 }}>Hızlı erişim</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="btn" onClick={() => navigate("/super/companies")}>
-              Şirketler
-            </button>
-            <button className="btn" onClick={() => navigate("/super/rooms")}>
-              Room’lar
-            </button>
+            <button className="btn" onClick={() => navigate("/superadmin/companies")}>Şirketler</button>
+            <button className="btn" onClick={() => navigate("/superadmin/rooms")}>Room’lar</button>
+            <button className="btn" onClick={() => navigate("/superadmin/users")}>Kullanıcılar</button>
+            <button className="btn" onClick={() => navigate("/superadmin/regions")}>İller</button>
           </div>
-          {err ? (
-            <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div>
-          ) : null}
+          {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
         </div>
 
         <div
@@ -78,13 +88,13 @@ export default function SuperAdminPanel() {
         >
           <div style={{ fontWeight: 700, marginBottom: 8 }}>Özet</div>
 
-          <div style={{ opacity: 0.9 }}>Şirket sayısı: {stats.companies ?? "-"}</div>
-          <div style={{ opacity: 0.9, marginTop: 6 }}>Room sayısı: {stats.rooms ?? "-"}</div>
-          <div style={{ opacity: 0.9, marginTop: 6 }}>Araç sayısı: {stats.vehicles ?? "-"}</div>
-          <div style={{ opacity: 0.9, marginTop: 6 }}>Şoför sayısı: {stats.drivers ?? "-"}</div>
+          <div style={{ opacity: 0.9 }}>Şirket (aktif/toplam): {fmtActiveTotal(stats.companies, stats.companiesTotal)}</div>
+          <div style={{ opacity: 0.9, marginTop: 6 }}>Room (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
+          <div style={{ opacity: 0.9, marginTop: 6 }}>Araç sayısı: {stats.vehiclesTotal ?? stats.vehicles ?? "-"}</div>
+          <div style={{ opacity: 0.9, marginTop: 6 }}>Şoför sayısı: {stats.driversTotal ?? stats.drivers ?? "-"}</div>
 
           <div className="muted" style={{ marginTop: 10 }}>
-            Not: V1’de güncelleme/silme yok — sadece oluştur + liste.
+            Not: Özet “aktif” sayıları DELETED (soft delete) kayıtları hariç tutar.
           </div>
         </div>
       </div>

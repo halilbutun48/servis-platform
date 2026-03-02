@@ -21,17 +21,24 @@ async function upsertUser({ email, role, fullName, phone, companyId, roomId }) {
 }
 
 async function main() {
+  // Regions (İl)
+  const region = await prisma.region.upsert({
+    where: { id: 1 },
+    update: { name: "İstanbul" },
+    create: { name: "İstanbul" },
+  });
+
   // Demo Company (kiralayan) + Demo Room (servis sağlayan)
   const company = await prisma.company.upsert({
     where: { id: 1 },
-    update: { name: "DemoCompany", status: "ACTIVE" },
-    create: { name: "DemoCompany", status: "ACTIVE" },
+    update: { name: "DemoCompany", status: "ACTIVE", regionId: region.id },
+    create: { name: "DemoCompany", status: "ACTIVE", regionId: region.id },
   });
 
   const room = await prisma.room.upsert({
     where: { id: 1 },
-    update: { name: "DemoRoom", status: "ACTIVE" },
-    create: { name: "DemoRoom", status: "ACTIVE" },
+    update: { name: "DemoRoom", status: "ACTIVE", regionId: region.id },
+    create: { name: "DemoRoom", status: "ACTIVE", regionId: region.id },
   });
 
   // Seed users (login)
