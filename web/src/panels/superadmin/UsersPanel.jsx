@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import ParentChildMiniPanel from "./ParentChildMiniPanel";
 
 function Pill({ children, status }) {
   return (
@@ -104,16 +105,17 @@ export default function UsersPanel() {
         password: String(createForm.password || "").trim() || undefined,
       };
 
-      if (body.role === "COMPANY" || body.role === "PERSONEL") {
+      if (body.role === "COMPANY") {
         const cid = Number(createForm.companyId);
         if (!cid) throw new Error("Company seç");
         body.companyId = cid;
       }
-      if (body.role === "ROOM" || body.role === "DRIVER") {
+      if (body.role === "ROOM") {
         const rid = Number(createForm.roomId);
         if (!rid) throw new Error("Room seç");
         body.roomId = rid;
       }
+      // PARENT: scope yok
 
       const r = await api("/api/admin/users", { method: "POST", body, token });
       setLastPw({ email: r?.user?.email || body.email, password: r?.tempPassword || "" });
@@ -179,8 +181,8 @@ export default function UsersPanel() {
         fullName: String(edit.fullName || "").trim(),
         phone: String(edit.phone || "").trim() || null,
       };
-      if (edit.role === "COMPANY" || edit.role === "PERSONEL") body.companyId = edit.companyId ? Number(edit.companyId) : null;
-      if (edit.role === "ROOM" || edit.role === "DRIVER") body.roomId = edit.roomId ? Number(edit.roomId) : null;
+      if (edit.role === "COMPANY") body.companyId = edit.companyId ? Number(edit.companyId) : null;
+      if (edit.role === "ROOM") body.roomId = edit.roomId ? Number(edit.roomId) : null;
       await api(`/api/admin/users/${edit.id}`, { method: "PUT", body, token });
       setEdit(null);
       await loadUsers();
@@ -247,13 +249,11 @@ export default function UsersPanel() {
             >
               <option value="COMPANY">COMPANY</option>
               <option value="ROOM">ROOM</option>
-              <option value="DRIVER">DRIVER</option>
-              <option value="PERSONEL">PERSONEL</option>
               <option value="PARENT">PARENT</option>
             </select>
           </label>
 
-          {createForm.role === "COMPANY" || createForm.role === "PERSONEL" ? (
+          {createForm.role === "COMPANY" ? (
             <label className="muted">
               Company
               <select value={createForm.companyId} onChange={(e) => setCreateForm((x) => ({ ...x, companyId: e.target.value }))}>
@@ -265,7 +265,7 @@ export default function UsersPanel() {
                 ))}
               </select>
             </label>
-          ) : (
+          ) : createForm.role === "ROOM" ? (
             <label className="muted">
               Room
               <select value={createForm.roomId} onChange={(e) => setCreateForm((x) => ({ ...x, roomId: e.target.value }))}>
@@ -277,7 +277,7 @@ export default function UsersPanel() {
                 ))}
               </select>
             </label>
-          )}
+          ) : null}
 
           <label className="muted">
             Ad Soyad
@@ -318,6 +318,7 @@ export default function UsersPanel() {
             <option value="COMPANY">COMPANY</option>
             <option value="DRIVER">DRIVER</option>
             <option value="PERSONEL">PERSONEL</option>
+            <option value="PARENT">PARENT</option>
           </select>
 
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -452,7 +453,7 @@ export default function UsersPanel() {
                 <input value={edit.phone} onChange={(e) => setEdit((x) => ({ ...x, phone: e.target.value }))} />
               </label>
 
-              {edit.role === "COMPANY" || edit.role === "PERSONEL" ? (
+              {edit.role === "COMPANY" ? (
                 <label className="muted">
                   Company
                   <select value={edit.companyId} onChange={(e) => setEdit((x) => ({ ...x, companyId: e.target.value }))}>
@@ -466,7 +467,7 @@ export default function UsersPanel() {
                 </label>
               ) : null}
 
-              {edit.role === "ROOM" || edit.role === "DRIVER" ? (
+              {edit.role === "ROOM" ? (
                 <label className="muted">
                   Room
                   <select value={edit.roomId} onChange={(e) => setEdit((x) => ({ ...x, roomId: e.target.value }))}>
@@ -480,6 +481,12 @@ export default function UsersPanel() {
                 </label>
               ) : null}
             </div>
+
+            {edit.role === "PARENT" ? (
+              <div style={{ marginTop: 12 }}>
+                <ParentChildMiniPanel token={token} parentUserId={edit.id} />
+              </div>
+            ) : null}
 
             <div style={{ marginTop: 12 }} className="saActions">
               <button className="btn primary" disabled={busy} onClick={saveEdit}>

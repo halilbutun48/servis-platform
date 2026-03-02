@@ -89,6 +89,9 @@ function ChecklistRow({ done, title, desc, actionLabel, onAction }) {
 
 export default function WorkflowPanel() {
   const { token, me } = useSession();
+  // School mode (Company.kind=SCHOOL) uses the same panel; copy/paste safe label.
+  const who = personLabel(me);
+  const school = me?.companyKind === "SCHOOL";
 
   const [err, setErr] = useState("");
   const [rooms, setRooms] = useState([]);
@@ -270,7 +273,7 @@ export default function WorkflowPanel() {
   return (
     <div className="wrap">
       <div className="card">
-        <div className="title">Company — Planlama Merkezi</div>
+        <div className="title">{school ? "Okul — Planlama Merkezi" : "Company — Planlama Merkezi"}</div>
         <div className="muted">
           Amaç: <b>minimum tık</b>. Önce <b>Agreement</b> ile planla → gerekirse <b>Market</b> ile çoklu teklif topla → sonra <b>Shifts</b> ile operasyon.
         </div>
@@ -280,7 +283,7 @@ export default function WorkflowPanel() {
         <div className="card" style={{ border: "2px solid #f2c", marginTop: 12 }}>
           <div style={{ fontWeight: 900 }}>⚠ Geo Review gerekli</div>
           <div className="muted" style={{ marginTop: 4 }}>
-            {geoNeedsReview} personel konumu <b>NEEDS_REVIEW</b>. Planlama doğruluğu için önce düzeltmen önerilir.
+            {geoNeedsReview} {who.toLowerCase()} konumu <b>NEEDS_REVIEW</b>. Planlama doğruluğu için önce düzeltmen önerilir.
           </div>
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="btn" onClick={() => navigate(companyPath(me, "/georeview"))}>Geo Review’e git</button>

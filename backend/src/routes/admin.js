@@ -59,9 +59,10 @@ const createUserSchema = z
     if (v.role === "PERSONEL") {
       if (!v.companyId) ctx.addIssue({ code: "custom", message: "PERSONEL requires companyId" });
     }
+
     if (v.role === "PARENT") {
-      if (v.companyId) ctx.addIssue({ code: "custom", message: "PARENT must not have companyId" });
       if (v.roomId) ctx.addIssue({ code: "custom", message: "PARENT must not have roomId" });
+      if (v.companyId) ctx.addIssue({ code: "custom", message: "PARENT must not have companyId" });
     }
   });
 
@@ -304,6 +305,16 @@ export function adminRouter() {
       return res.status(400).json({ error: "COMPANY must not have roomId" });
     }
 
+    if (u0.role === "PARENT") {
+      if (Object.prototype.hasOwnProperty.call(data, "roomId") && data.roomId) {
+        return res.status(400).json({ error: "PARENT must not have roomId" });
+      }
+      if (Object.prototype.hasOwnProperty.call(data, "companyId") && data.companyId) {
+        return res.status(400).json({ error: "PARENT must not have companyId" });
+      }
+    }
+
+
     const updated = await prisma.user.update({
       where: { id },
       data,
@@ -400,84 +411,111 @@ export function adminRouter() {
       select: { id: true, email: true, role: true },
     });
 
-
-  // --- Parent ↔ Student links ---
-  const parentChildSchema = z.object({
-    parentUserId: z.number().int().positive(),
-    personelId: z.number().int().positive(),
+    await audit(req, { action: "ADMIN_USER_ENABLE", entity: "User", entityId: updated.id, meta: { email: updated.email, role: updated.role } });
+    res.json({ ok: true, user: updated, disabled: false });
   });
-
+  // --- Parent ↔ Student links (M81) ---
   // GET /api/admin/parent-children?parentUserId=
   r.get("/parent-children", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
-    const parentUserId =
-      req.query.parentUserId != null && String(req.query.parentUserId).trim() !== "" ? Number(req.query.parentUserId) : null;
-    if (!parentUserId) return res.json({ items: [] });
+    const parentUserId = req.query.parentUserId != null && String(req.query.parentUserId).trim() !== "" ? Number(req.query.parentUserId) : null;
+    if (!parentUserId) return res.status(400).json({ error: "parentUserId required" });
 
-    const links = await prisma.parentChild.findMany({
+    const items = await prisma.parentChild.findMany({
       where: { parentUserId },
       orderBy: [{ id: "asc" }],
-      include: { child: { select: { id: true, fullName: true, kind: true, companyId: true } } },
+      include: {
+        child: {
+          include: {
+            company: { select: { id: true, name: true } },
+          },
+        },
+      },
     });
 
     res.json({
-      items: links.map((x) => ({
+      items: items.map((x) => ({
         id: x.id,
         parentUserId: x.parentUserId,
         personelId: x.personelId,
-        child: x.child,
         createdAt: x.createdAt,
+        personel: x.child
+          ? {
+              id: x.child.id,
+              fullName: x.child.fullName,
+              phone: x.child.phone,
+              kind: x.child.kind || null,
+              company: x.child.company ? { id: x.child.company.id, name: x.child.company.name } : null,
+            }
+          : null,
       })),
     });
   });
 
-  // POST /api/admin/parent-children
+  // POST /api/admin/parent-children { parentUserId, personelId }
   r.post("/parent-children", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
-    const parsed = parentChildSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-
-    const { parentUserId, personelId } = parsed.data;
+    const parentUserId = Number(req.body?.parentUserId || 0);
+    const personelId = Number(req.body?.personelId || 0);
+    if (!parentUserId || !personelId) return res.status(400).json({ error: "parentUserId and personelId required" });
 
     const parent = await prisma.user.findUnique({ where: { id: parentUserId }, select: { id: true, role: true, email: true } });
-    if (!parent || parent.role !== "PARENT") return res.status(400).json({ error: "Parent user not found or role!=PARENT" });
+    if (!parent) return res.status(404).json({ error: "Parent user not found" });
+    if (parent.role !== "PARENT") return res.status(400).json({ error: "User role must be PARENT" });
 
-    const child = await prisma.personel.findUnique({ where: { id: personelId }, select: { id: true, kind: true } });
-    if (!child) return res.status(400).json({ error: "Student not found" });
-    if (child.kind !== "STUDENT") return res.status(400).json({ error: "Only STUDENT can be linked" });
+    const p = await prisma.personel.findUnique({ where: { id: personelId }, select: { id: true, kind: true } });
+    if (!p) return res.status(404).json({ error: "Student not found" });
+    if (p.kind && p.kind !== "STUDENT") return res.status(400).json({ error: "Personel.kind must be STUDENT" });
 
-    const exists = await prisma.parentChild.findUnique({
-      where: { parentUserId_personelId: { parentUserId, personelId } },
-      select: { id: true },
+    // idempotent bind (unique (parentUserId, personelId))
+    const existing = await prisma.parentChild.findFirst({ where: { parentUserId, personelId }, select: { id: true } });
+    let created = null;
+
+    if (existing) {
+      created = await prisma.parentChild.findUnique({
+        where: { id: existing.id },
+        include: { child: { include: { company: { select: { id: true, name: true } } } } },
+      });
+    } else {
+      created = await prisma.parentChild.create({
+        data: { parentUserId, personelId },
+        include: { child: { include: { company: { select: { id: true, name: true } } } } },
+      });
+      await audit(req, { action: "ADMIN_PARENT_CHILD_LINK", entity: "ParentChild", entityId: created.id, meta: { parentUserId, personelId } });
+    }
+
+    res.status(201).json({
+      ok: true,
+      item: {
+        id: created.id,
+        parentUserId: created.parentUserId,
+        personelId: created.personelId,
+        createdAt: created.createdAt,
+        personel: created.child
+          ? {
+              id: created.child.id,
+              fullName: created.child.fullName,
+              phone: created.child.phone,
+              kind: created.child.kind || null,
+              company: created.child.company ? { id: created.child.company.id, name: created.child.company.name } : null,
+            }
+          : null,
+      },
     });
-    if (exists) return res.status(409).json({ error: "Link already exists" });
-
-    const created = await prisma.parentChild.create({
-      data: { parentUserId, personelId },
-      select: { id: true, parentUserId: true, personelId: true, createdAt: true },
-    });
-
-    await audit(req.user, "parent_child:create", "ParentChild", created.id, { parentUserId, personelId });
-    res.json({ item: created });
   });
 
   // DELETE /api/admin/parent-children/:id
   r.delete("/parent-children/:id", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    if (!id) return res.status(400).json({ error: "Invalid id" });
 
-    const found = await prisma.parentChild.findUnique({
-      where: { id },
-      select: { id: true, parentUserId: true, personelId: true },
-    });
-    if (!found) return res.status(404).json({ error: "Not found" });
+    const existing = await prisma.parentChild.findUnique({ where: { id }, select: { id: true, parentUserId: true, personelId: true } });
+    if (!existing) return res.status(404).json({ error: "Link not found" });
 
     await prisma.parentChild.delete({ where: { id } });
-    await audit(req.user, "parent_child:delete", "ParentChild", id, found);
+    await audit(req, { action: "ADMIN_PARENT_CHILD_UNLINK", entity: "ParentChild", entityId: id, meta: { parentUserId: existing.parentUserId, personelId: existing.personelId } });
+
     res.json({ ok: true });
   });
 
-    await audit(req, { action: "ADMIN_USER_ENABLE", entity: "User", entityId: updated.id, meta: { email: updated.email, role: updated.role } });
-    res.json({ ok: true, user: updated, disabled: false });
-  });
 
   // --- Regions (İl) ---
   r.get("/regions", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {

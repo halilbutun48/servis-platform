@@ -234,6 +234,8 @@ function clusterPeople(people, maxWalkM) {
 }
 
 export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds, preferredShiftId }) {
+  const who = personLabel(me);
+  const whoPlural = peopleLabel(me);
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 
   const [selectedShiftId, setSelectedShiftId] = useState("");
