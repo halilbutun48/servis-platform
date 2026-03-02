@@ -5,6 +5,13 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 
+function etaText(v) {
+  const m = v?.etaToChildMin;
+  if (typeof m !== "number" || !Number.isFinite(m)) return "—";
+  if (m <= 1) return "1 dk";
+  return `${m} dk`;
+}
+
 export default function ParentLivePanel() {
   const { token } = useSession();
 
@@ -118,6 +125,31 @@ export default function ParentLivePanel() {
         {!vehicles.length ? (
           <div className="muted" style={{ marginTop: 12 }}>
             Şu an canlı konum yok. (Vardiya saatinde ve araç ataması varsa görünür.)
+          </div>
+        ) : null}
+
+        {vehicles.length ? (
+          <div className="card" style={{ marginTop: 12, padding: 12 }}>
+            <div className="muted" style={{ marginBottom: 8 }}>
+              ETA (yaklaşık):
+            </div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {vehicles.map((v) => (
+                <div key={v.id} style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+                  <div>
+                    Araç <b>#{v.id}</b> • <b>{v.plate}</b>
+                  </div>
+                  <div className="muted">ETA: <b>{etaText(v)}</b></div>
+                  {v?.etaTarget?.type === "STOP" ? (
+                    <div className="muted">Hedef: <b>{v.etaTarget.stopName}</b></div>
+                  ) : null}
+                  {v?.etaToChildKm != null ? (
+                    <div className="muted">Mesafe: <b>{v.etaToChildKm} km</b></div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
 

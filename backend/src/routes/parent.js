@@ -4,6 +4,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { haversineKm, etaMinutes } from "../geo.js";
 
 function uniqNums(xs) {
   return Array.from(new Set((xs || []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
@@ -15,9 +16,17 @@ const VEHICLE_LIVE_SELECT = {
   capacity: true,
   roomId: true,
   room: { select: { id: true, name: true } },
-  gpsLast: { select: { lat: true, lng: true, at: true, status: true } },
+  gpsLast: { select: { lat: true, lng: true, at: true, status: true, speed: true } },
   gpsState: { select: { lastUiStatus: true, lastChangeAt: true } },
 };
+
+function computeEtaTo(last, targetLat, targetLng) {
+  if (!last || typeof last.lat !== "number" || typeof last.lng !== "number") return null;
+  if (typeof targetLat !== "number" || typeof targetLng !== "number") return null;
+  const speedKmh = typeof last.speed === "number" && last.speed > 1 ? last.speed : 30;
+  const km = haversineKm(last.lat, last.lng, targetLat, targetLng);
+  return { km: Number(km.toFixed(2)), etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)) };
+}
 
 export function parentRouter() {
   const r = express.Router();
@@ -103,6 +112,58 @@ export function parentRouter() {
       orderBy: { id: "asc" },
       take,
     });
+
+    // ETA for the selected child (UI sends childId after first load).
+    if (childId) {
+      // Prefer StopAssignment.stop ETA; fallback to homeLat/homeLng.
+      const [child, assigns] = await Promise.all([
+        prisma.personel.findUnique({ where: { id: childId }, select: { id: true, fullName: true, homeLat: true, homeLng: true } }),
+        prisma.stopAssignment.findMany({
+          where: {
+            personelId: childId,
+            shift: {
+              status: { in: ["APPROVED", "ACTIVE"] },
+              vehicleId: { in: vehicleIds },
+              startAt: { lte: now },
+              endAt: { gte: now },
+            },
+          },
+          select: {
+            shift: { select: { vehicleId: true } },
+            stop: { select: { id: true, name: true, lat: true, lng: true } },
+          },
+          take: 2000,
+        }),
+      ]);
+
+      const byVehicleId = new Map();
+      for (const a of assigns || []) {
+        const vid = a?.shift?.vehicleId;
+        if (!vid || byVehicleId.has(vid)) continue;
+        byVehicleId.set(vid, a.stop);
+      }
+
+      const patched = (items || []).map((v) => {
+        const stop = byVehicleId.get(v.id) || null;
+        const targetLat = stop?.lat ?? child?.homeLat ?? null;
+        const targetLng = stop?.lng ?? child?.homeLng ?? null;
+        const eta = computeEtaTo(v.gpsLast, targetLat, targetLng);
+
+        return {
+          ...v,
+          childId,
+          etaToChildMin: eta?.etaMin ?? null,
+          etaToChildKm: eta?.km ?? null,
+          etaTarget: stop
+            ? { type: "STOP", stopId: stop.id, stopName: stop.name }
+            : child?.homeLat != null && child?.homeLng != null
+              ? { type: "HOME", label: child?.fullName ?? "Ev" }
+              : null,
+        };
+      });
+
+      return res.json(patched);
+    }
 
     return res.json(items);
   });
