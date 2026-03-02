@@ -28,7 +28,7 @@ function normalizeCoord(v, kind) {
   return n;
 }
 
-export default function ShiftPersonelTable({ people, onRemove, onUpdate }) {
+export default function ShiftPersonelTable({ people, onRemove, onUpdate, emptyLabel }) {
   const list = Array.isArray(people) ? people : [];
 
   return (
@@ -102,7 +102,7 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate }) {
         ) : (
           <tr>
             <td colSpan={7} className="muted">
-              Henüz personel yok.
+              {emptyLabel || "Henüz personel yok."}
             </td>
           </tr>
         )}

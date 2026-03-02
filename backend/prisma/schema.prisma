@@ -25,6 +25,17 @@ enum Role {
   COMPANY
   DRIVER
   PERSONEL
+  PARENT
+}
+
+enum CompanyKind {
+  COMPANY
+  SCHOOL
+}
+
+enum PersonelKind {
+  PERSONEL
+  STUDENT
 }
 
 enum VehicleStatus {
@@ -143,6 +154,7 @@ model Company {
   id        Int      @id @default(autoincrement())
   name      String
   status    String   @default("ACTIVE")
+  kind      CompanyKind @default(COMPANY)
   regionId  Int?
   region    Region? @relation(fields: [regionId], references: [id])
   district  String?   // ilçe (opsiyonel)
@@ -167,6 +179,7 @@ model Company {
   agreements    Agreement[]
 
   @@index([regionId])
+  @@index([kind])
   @@index([district])
 }
 
@@ -201,7 +214,7 @@ model Room {
   shiftOffers    ShiftOffer[] @relation("RoomShiftOffers")
 
   @@index([regionId])
-  @@index([district])
+@@index([district])
 }
 
 model Region {
@@ -232,12 +245,14 @@ model User {
   // Optional profile links
   driver   Driver?
   personel Personel?
+  // ✅ M81: Parent links
+  parentChildren ParentChild[]
 
   // ✅ M16.1: import trail (createdBy)
   shiftImportsCreated ShiftImport[] @relation("ShiftImportCreatedBy")
 
   @@index([companyId])
-  @@index([roomId])
+@@index([roomId])
 }
 
 model Vehicle {
@@ -397,7 +412,7 @@ extendDecisionAt     DateTime?
   routeLearnSample RouteLearnSample?
 
   @@index([companyId])
-  @@index([roomId])
+@@index([roomId])
   @@index([vehicleId])
   @@index([driverId])
 
@@ -480,7 +495,7 @@ model Agreement {
   shifts Shift[]
 
   @@index([companyId])
-  @@index([roomId])
+@@index([roomId])
   @@index([vehicleId])
   @@index([driverId])
   @@index([status])
@@ -515,6 +530,7 @@ model RouteTemplate {
   roomId    Int
   name      String
   status    String   @default("ACTIVE")
+  kind      CompanyKind @default(COMPANY)
   createdAt DateTime @default(now())
 
   room  Room               @relation(fields: [roomId], references: [id])
@@ -543,6 +559,7 @@ model Personel {
   id        Int      @id @default(autoincrement())
   companyId Int
   userId    Int?     @unique
+  kind      PersonelKind @default(PERSONEL)
 
   // Master profile
   fullName    String
@@ -570,9 +587,29 @@ model Personel {
   shiftLinks      ShiftPersonel[]
   assignments     StopAssignment[]
 
+  // ✅ M81: Parent links
+  parentLinks ParentChild[]
+
   @@index([companyId])
+  @@index([companyId, kind])
   @@unique([companyId, phone])
 }
+
+// ✅ M81: Parent ↔ Student link (many-to-many)
+model ParentChild {
+  id           Int      @id @default(autoincrement())
+  parentUserId Int
+  personelId   Int
+  createdAt    DateTime @default(now())
+
+  parent User     @relation(fields: [parentUserId], references: [id], onDelete: Cascade)
+  child  Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@unique([parentUserId, personelId])
+  @@index([parentUserId])
+  @@index([personelId])
+}
+
 
 model ShiftPersonel {
   id         Int      @id @default(autoincrement())

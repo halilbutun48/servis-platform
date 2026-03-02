@@ -39,7 +39,7 @@ const createUserSchema = z
     email: z.string().trim().toLowerCase().email(),
     fullName: z.string().trim().min(2),
     phone: z.string().trim().optional(),
-    role: z.enum(["ROOM", "COMPANY", "DRIVER", "PERSONEL"]),
+    role: z.enum(["ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"]),
     roomId: z.number().int().positive().optional().nullable(),
     companyId: z.number().int().positive().optional().nullable(),
     password: z.string().min(4).optional(),
@@ -58,6 +58,10 @@ const createUserSchema = z
     }
     if (v.role === "PERSONEL") {
       if (!v.companyId) ctx.addIssue({ code: "custom", message: "PERSONEL requires companyId" });
+    }
+    if (v.role === "PARENT") {
+      if (v.companyId) ctx.addIssue({ code: "custom", message: "PARENT must not have companyId" });
+      if (v.roomId) ctx.addIssue({ code: "custom", message: "PARENT must not have roomId" });
     }
   });
 
@@ -395,6 +399,81 @@ export function adminRouter() {
       data: { passwordHash: restored },
       select: { id: true, email: true, role: true },
     });
+
+
+  // --- Parent ↔ Student links ---
+  const parentChildSchema = z.object({
+    parentUserId: z.number().int().positive(),
+    personelId: z.number().int().positive(),
+  });
+
+  // GET /api/admin/parent-children?parentUserId=
+  r.get("/parent-children", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+    const parentUserId =
+      req.query.parentUserId != null && String(req.query.parentUserId).trim() !== "" ? Number(req.query.parentUserId) : null;
+    if (!parentUserId) return res.json({ items: [] });
+
+    const links = await prisma.parentChild.findMany({
+      where: { parentUserId },
+      orderBy: [{ id: "asc" }],
+      include: { child: { select: { id: true, fullName: true, kind: true, companyId: true } } },
+    });
+
+    res.json({
+      items: links.map((x) => ({
+        id: x.id,
+        parentUserId: x.parentUserId,
+        personelId: x.personelId,
+        child: x.child,
+        createdAt: x.createdAt,
+      })),
+    });
+  });
+
+  // POST /api/admin/parent-children
+  r.post("/parent-children", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+    const parsed = parentChildSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const { parentUserId, personelId } = parsed.data;
+
+    const parent = await prisma.user.findUnique({ where: { id: parentUserId }, select: { id: true, role: true, email: true } });
+    if (!parent || parent.role !== "PARENT") return res.status(400).json({ error: "Parent user not found or role!=PARENT" });
+
+    const child = await prisma.personel.findUnique({ where: { id: personelId }, select: { id: true, kind: true } });
+    if (!child) return res.status(400).json({ error: "Student not found" });
+    if (child.kind !== "STUDENT") return res.status(400).json({ error: "Only STUDENT can be linked" });
+
+    const exists = await prisma.parentChild.findUnique({
+      where: { parentUserId_personelId: { parentUserId, personelId } },
+      select: { id: true },
+    });
+    if (exists) return res.status(409).json({ error: "Link already exists" });
+
+    const created = await prisma.parentChild.create({
+      data: { parentUserId, personelId },
+      select: { id: true, parentUserId: true, personelId: true, createdAt: true },
+    });
+
+    await audit(req.user, "parent_child:create", "ParentChild", created.id, { parentUserId, personelId });
+    res.json({ item: created });
+  });
+
+  // DELETE /api/admin/parent-children/:id
+  r.delete("/parent-children/:id", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const found = await prisma.parentChild.findUnique({
+      where: { id },
+      select: { id: true, parentUserId: true, personelId: true },
+    });
+    if (!found) return res.status(404).json({ error: "Not found" });
+
+    await prisma.parentChild.delete({ where: { id } });
+    await audit(req.user, "parent_child:delete", "ParentChild", id, found);
+    res.json({ ok: true });
+  });
 
     await audit(req, { action: "ADMIN_USER_ENABLE", entity: "User", entityId: updated.id, meta: { email: updated.email, role: updated.role } });
     res.json({ ok: true, user: updated, disabled: false });

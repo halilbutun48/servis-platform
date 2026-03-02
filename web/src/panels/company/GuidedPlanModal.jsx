@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import ShiftPeopleTab from "./ShiftPeopleTab";
+import { personLabel } from "../../utils/labels";
 import {
   WEEKDAYS,
   DURATION_PRESETS,
@@ -138,10 +139,10 @@ const PACKS = [
   },
 ];
 
-function stepTitle(step) {
+function stepTitle(step, who) {
   if (step === 0) return "1) Şirket konumu";
   if (step === 1) return "2) Plan paketi";
-  if (step === 2) return "3) Personel + Durak";
+  if (step === 2) return `3) ${who} + Durak`;
   if (step === 3) return "4) Matris/Çöz + Talep gönder";
   return "";
 }
@@ -154,7 +155,8 @@ export default function GuidedPlanModal({
   onReloadRooms = null,
   onAfterCreated = null,
 }) {
-  const { token } = useSession();
+  const { token, me } = useSession();
+  const who = personLabel(me);
 
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -192,7 +194,6 @@ export default function GuidedPlanModal({
   const [draftShifts, setDraftShifts] = useState([]);
   const [osrmBatch, setOsrmBatch] = useState({ running: false, done: 0, total: 0 });
   const [osrmResById, setOsrmResById] = useState({});
-  const [me, setMe] = useState(null);
 
   // Step-3: offers
   const [roomQ, setRoomQ] = useState("");
@@ -253,7 +254,7 @@ export default function GuidedPlanModal({
     setSentOk(false);
   }
 
-  // Load hub + me on open
+  // Load hub on open
   useEffect(() => {
     if (!open) return;
     if (!token) return;
@@ -263,13 +264,6 @@ export default function GuidedPlanModal({
 
     let alive = true;
     (async () => {
-      try {
-        const m = await api("/api/me", { token });
-        if (!alive) return;
-        setMe(m);
-      } catch {
-        // ignore
-      }
       try {
         const h = await api("/api/company/hub", { token });
         if (!alive) return;
@@ -687,7 +681,7 @@ setSentOk(true);
       <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div>
           <div style={{ fontWeight: 900, fontSize: 18 }}>Guided Mode — Yeni Plan</div>
-          <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step)}</div>
+          <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step, who)}</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button type="button" onClick={() => { onClose?.(); resetAll(); }} disabled={busy}>Kapat</button>
@@ -894,7 +888,7 @@ setSentOk(true);
       {/* Step-2: People + stops */}
       {step === 2 ? (
         <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div className="muted">3. adım: Personel ekle/import → durak üret → önizleme.</div>
+          <div className="muted">3. adım: {who} ekle/import → durak üret → önizleme.</div>
           {!draftShiftIds.length ? (
             <div className="card err">Önce taslak shift oluşturmalısın.</div>
           ) : (

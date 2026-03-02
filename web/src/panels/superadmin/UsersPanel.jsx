@@ -79,6 +79,7 @@ export default function UsersPanel() {
       if (u.role === "ROOM") return `Room #${u.roomId} ${rMap.get(Number(u.roomId)) || ""}`.trim();
       if (u.role === "DRIVER") return u.roomId ? `Room #${u.roomId}` : "-";
       if (u.role === "PERSONEL") return u.companyId ? `Company #${u.companyId}` : "-";
+      if (u.role === "PARENT") return "Parent";
       return "-";
     };
   }, [companies, rooms]);
@@ -103,12 +104,12 @@ export default function UsersPanel() {
         password: String(createForm.password || "").trim() || undefined,
       };
 
-      if (body.role === "COMPANY") {
+      if (body.role === "COMPANY" || body.role === "PERSONEL") {
         const cid = Number(createForm.companyId);
         if (!cid) throw new Error("Company seç");
         body.companyId = cid;
       }
-      if (body.role === "ROOM") {
+      if (body.role === "ROOM" || body.role === "DRIVER") {
         const rid = Number(createForm.roomId);
         if (!rid) throw new Error("Room seç");
         body.roomId = rid;
@@ -178,8 +179,8 @@ export default function UsersPanel() {
         fullName: String(edit.fullName || "").trim(),
         phone: String(edit.phone || "").trim() || null,
       };
-      if (edit.role === "COMPANY") body.companyId = edit.companyId ? Number(edit.companyId) : null;
-      if (edit.role === "ROOM") body.roomId = edit.roomId ? Number(edit.roomId) : null;
+      if (edit.role === "COMPANY" || edit.role === "PERSONEL") body.companyId = edit.companyId ? Number(edit.companyId) : null;
+      if (edit.role === "ROOM" || edit.role === "DRIVER") body.roomId = edit.roomId ? Number(edit.roomId) : null;
       await api(`/api/admin/users/${edit.id}`, { method: "PUT", body, token });
       setEdit(null);
       await loadUsers();
@@ -246,10 +247,13 @@ export default function UsersPanel() {
             >
               <option value="COMPANY">COMPANY</option>
               <option value="ROOM">ROOM</option>
+              <option value="DRIVER">DRIVER</option>
+              <option value="PERSONEL">PERSONEL</option>
+              <option value="PARENT">PARENT</option>
             </select>
           </label>
 
-          {createForm.role === "COMPANY" ? (
+          {createForm.role === "COMPANY" || createForm.role === "PERSONEL" ? (
             <label className="muted">
               Company
               <select value={createForm.companyId} onChange={(e) => setCreateForm((x) => ({ ...x, companyId: e.target.value }))}>
@@ -448,7 +452,7 @@ export default function UsersPanel() {
                 <input value={edit.phone} onChange={(e) => setEdit((x) => ({ ...x, phone: e.target.value }))} />
               </label>
 
-              {edit.role === "COMPANY" ? (
+              {edit.role === "COMPANY" || edit.role === "PERSONEL" ? (
                 <label className="muted">
                   Company
                   <select value={edit.companyId} onChange={(e) => setEdit((x) => ({ ...x, companyId: e.target.value }))}>
@@ -462,7 +466,7 @@ export default function UsersPanel() {
                 </label>
               ) : null}
 
-              {edit.role === "ROOM" ? (
+              {edit.role === "ROOM" || edit.role === "DRIVER" ? (
                 <label className="muted">
                   Room
                   <select value={edit.roomId} onChange={(e) => setEdit((x) => ({ ...x, roomId: e.target.value }))}>

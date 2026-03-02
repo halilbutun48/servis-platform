@@ -1,8 +1,13 @@
 // web/src/panels/company/GeoReviewPanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { useSession } from "../../state/session";
+import { isSchool, personLabel } from "../../utils/labels";
 
 export default function GeoReviewPanel() {
+  const { me } = useSession();
+  const who = personLabel(me);
+  const school = isSchool(me);
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -12,7 +17,8 @@ export default function GeoReviewPanel() {
     setBusy(true);
     setErr("");
     try {
-      const r = await api("/api/company/personels?geoStatus=NEEDS_REVIEW");
+      const kindQs = school ? "&kind=STUDENT" : "";
+      const r = await api("/api/company/personels?geoStatus=NEEDS_REVIEW" + kindQs);
       setItems(Array.isArray(r?.items) ? r.items : []);
     } catch (e) {
       setErr(e?.message || String(e));
@@ -47,8 +53,8 @@ export default function GeoReviewPanel() {
   return (
     <div className="wrap">
       <div className="card">
-        <div className="title">Geocode Review</div>
-        <div className="muted">NEEDS_REVIEW personelleri burada düzeltip OK yapabilirsin.</div>
+        <div className="title">{school ? `${who} Konum İncele` : "Geocode Review"}</div>
+        <div className="muted">NEEDS_REVIEW kayıtlarını burada düzeltip OK yapabilirsin.</div>
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>

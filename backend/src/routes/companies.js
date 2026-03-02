@@ -24,6 +24,7 @@ const zOptEmail = z.preprocess(
 const createCompanySchema = z.object({
   name: z.string().trim().min(2),
   status: z.string().trim().optional(),
+  kind: z.enum(["COMPANY", "SCHOOL"]).optional(),
   regionId: zRegionId.optional(),
   district: zOptStr.optional(),
   // profile
@@ -41,6 +42,7 @@ const updateCompanySchema = z
   .object({
     name: z.string().trim().min(2).optional(),
     status: z.string().trim().optional(),
+    kind: z.enum(["COMPANY", "SCHOOL"]).optional(),
     regionId: zRegionId.optional(),
     district: zOptStr.optional(),
     // profile
@@ -65,16 +67,19 @@ export function companiesRouter() {
   // ?q=term (name contains)
   // ?regionId=1
   // ?district=...
+  // ?kind=COMPANY|SCHOOL
   r.get("/", async (req, res) => {
     const all = String(req.query.all ?? "") === "1";
     const q = String(req.query.q || "").trim();
     const district = String(req.query.district || "").trim();
+    const kind = String(req.query.kind || "").trim().toUpperCase();
     const regionId = req.query.regionId == null || req.query.regionId === "" ? null : Number(req.query.regionId);
 
     const where = {
       ...(all ? {} : { status: { not: "DELETED" } }),
       ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
       ...(district ? { district: { contains: district, mode: "insensitive" } } : {}),
+      ...(kind === "COMPANY" || kind === "SCHOOL" ? { kind } : {}),
       ...(!Number.isNaN(regionId) && regionId != null ? { regionId } : {}),
     };
 
@@ -96,6 +101,7 @@ export function companiesRouter() {
       data: {
         name: parsed.data.name,
         status: parsed.data.status ?? "ACTIVE",
+        kind: parsed.data.kind ?? "COMPANY",
         regionId: Object.prototype.hasOwnProperty.call(parsed.data, "regionId") ? parsed.data.regionId : null,
         district: Object.prototype.hasOwnProperty.call(parsed.data, "district") ? parsed.data.district : null,
         legalName: Object.prototype.hasOwnProperty.call(parsed.data, "legalName") ? parsed.data.legalName : null,

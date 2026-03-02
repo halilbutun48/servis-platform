@@ -2,6 +2,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { apiOr404Fallback } from "../../utils/apiFallback";
+import { useSession } from "../../state/session";
+import { personLabel, peopleLabel } from "../../utils/labels";
+import { companyPath } from "../../utils/paths";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftPersonelTable from "../../components/ShiftPersonelTable";
 
@@ -910,10 +913,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           </div>
 
           <div className="muted" style={{ marginTop: 6 }}>
-            <b>Personel:</b> {geoStats.total} • OK: {geoStats.ok} • Review: {geoStats.review} • Failed: {geoStats.failed}
+            <b>{who}:</b> {geoStats.total} • OK: {geoStats.ok} • Review: {geoStats.review} • Failed: {geoStats.failed}
             {geoStats.review > 0 || geoStats.failed > 0 ? (
               <span style={{ marginLeft: 10 }}>
-                <a href="#/company/georeview">Geo Review’e git</a>
+                <a href={"#" + companyPath(me, "/georeview")}>Geo Review’e git</a>
               </span>
             ) : null}
           </div>
@@ -923,7 +926,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           </div>
 
           <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-            Not: “Durak Üret” sadece koordinatı (lat/lng) olan personelleri kullanır.
+            Not: “Durak Üret” sadece koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kullanır.
           </div>
           </div>
 
@@ -991,7 +994,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
         {/* Manual add / import */}
         <div className="card" style={{ margin: 0 }}>
-          <h3 style={{ marginTop: 0 }}>Personel Ekle / Import</h3>
+          <h3 style={{ marginTop: 0 }}>{who} Ekle / Import</h3>
 
           <form onSubmit={addPersonManual} className="grid">
             <div className="col">
@@ -1053,8 +1056,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
       {/* People table */}
       <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
-        <h3 style={{ marginTop: 0 }}>Shift Personel Listesi</h3>
-        <ShiftPersonelTable people={people} onRemove={removePerson} onUpdate={updatePerson} />
+        <h3 style={{ marginTop: 0 }}>Shift {who} Listesi</h3>
+        <ShiftPersonelTable people={people} onRemove={removePerson} onUpdate={updatePerson} emptyLabel={`Henüz ${who.toLowerCase()} yok.`} />
       </div>
 
       <RoutePreviewModal

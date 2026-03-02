@@ -1,6 +1,7 @@
 // web/src/layout/NavDock.jsx
 import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../router";
+import { companyBase } from "../utils/paths";
 
 function Item({ label, path, active, badge }) {
   return (
@@ -31,7 +32,7 @@ function Section({ title, items, path }) {
   );
 }
 
-export default function NavDock({ role, path }) {
+export default function NavDock({ role, path, me }) {
   const LS_ADV = "psv1:nav:advanced";
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -58,6 +59,8 @@ export default function NavDock({ role, path }) {
     const sections = [];
     const advanced = [];
 
+    const base = role === "COMPANY" ? companyBase(me) : "";
+
     if (role === "ROOM") {
       sections.push({
         title: "Ana",
@@ -81,15 +84,15 @@ export default function NavDock({ role, path }) {
       sections.push({
         title: "Ana",
         items: [
-          { label: "Harita", path: "/company/map" },
-          { label: "Planlama Merkezi", path: "/company" },
-          { label: "Vardiyalar", path: "/company/shifts" },
+          { label: "Harita", path: base + "/map" },
+          { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
+          { label: "Vardiyalar", path: base + "/shifts" },
         ],
       });
       // Sözleşmeler: Gelişmiş altında
-      advanced.push({ label: "Sözleşmeler", path: "/company/agreements" });
-      advanced.push({ label: "Hub", path: "/company/hub" });
-      advanced.push({ label: "Konum İncele", path: "/company/georeview" });
+      advanced.push({ label: "Sözleşmeler", path: base + "/agreements" });
+      advanced.push({ label: "Hub", path: base + "/hub" });
+      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : "Konum İncele", path: base + "/georeview" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "DRIVER") {
       sections.push({
@@ -110,6 +113,14 @@ export default function NavDock({ role, path }) {
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
+    } else if (role === "PARENT") {
+      sections.push({
+        title: "",
+        items: [
+          { label: "Canlı", path: "/parent/live" },
+          { label: "Bildirimler", path: "/shared/notifications" },
+        ],
+      });
     } else if (role === "SUPER_ADMIN") {
       sections.push({
         title: "",
@@ -125,13 +136,13 @@ export default function NavDock({ role, path }) {
     }
 
     return { sections, advanced };
-  }, [role]);
+  }, [role, me]);
 
   const hasAdvanced = cfg.advanced.length > 0;
 
   return (
     <div className="navDock">
-      <div className="navDockTitle">{role}</div>
+      <div className="navDockTitle">{role === "COMPANY" && me?.companyKind === "SCHOOL" ? "SCHOOL" : role}</div>
 
       {cfg.sections.map((s) => (
         <Section key={s.title || "main"} title={s.title} items={s.items} path={path} />

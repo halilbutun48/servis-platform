@@ -3,6 +3,8 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { api } from "../../api";
+import { useSession } from "../../state/session";
+import { personLabel } from "../../utils/labels";
 
 // Tiny geohash encoder (no deps)
 const GEOHASH_BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
@@ -130,6 +132,9 @@ export default function PlanBuilderPanel({
   onUseDraft,
   onAfterApply,
 }) {
+  const { me } = useSession();
+  const who = personLabel(me);
+
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [items, setItems] = useState([]);
@@ -715,7 +720,7 @@ export default function PlanBuilderPanel({
             Stage-0: kişi sayısı + kapasite → araç sayısı, geohash/cluster → taslak dağıtım. • Stage-1: OSRM Table. • Stage-2: rota sırası (OR-Tools varsa) / fallback: basit heuristic.
           </div>
         </div>
-        <button type="button" onClick={load} disabled={busy} title="Personel listesini yenile">
+        <button type="button" onClick={load} disabled={busy} title={`${who} listesini yenile`}>
           {busy ? "..." : "Yenile"}
         </button>
       </div>
@@ -734,7 +739,7 @@ export default function PlanBuilderPanel({
       </div>
 <div className="grid" style={{ marginTop: 10 }}>
         <div className="col">
-          <div style={{ fontWeight: 800 }}>Personel Özeti</div>
+          <div style={{ fontWeight: 800 }}>{who} Özeti</div>
           <div className="muted">
             Toplam: <b>{stats.total}</b> • OK: <b>{stats.ok}</b> • NEEDS_REVIEW: <b>{stats.needs}</b> • FAILED: <b>{stats.failed}</b> • Konum eksik: <b>{stats.missingLoc}</b>
           </div>

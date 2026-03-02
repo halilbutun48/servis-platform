@@ -21,6 +21,7 @@ import { geocodeRouter } from "./routes/geocode.js";
 import { companyHubRouter } from "./routes/companyHub.js";
 import { planBuilderRouter } from "./routes/planBuilder.js";
 import { liveRouter } from "./routes/live.js";
+import { parentRouter } from "./routes/parent.js";
 
 import availabilityRoutes from "./routes/availability.js";
 
@@ -232,6 +233,7 @@ app.use("/api/geocode", geocodeRouter());
 app.use("/api/company/hub", companyHubRouter());
 app.use("/api/plan-builder", planBuilderRouter());
 app.use("/api/live", liveRouter());
+app.use("/api/parent", parentRouter());
 app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());

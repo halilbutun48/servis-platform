@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
+import { companyPath } from "../../utils/paths";
 import { useSession } from "../../state/session";
 import {
   WEEKDAYS,
@@ -155,7 +156,7 @@ export default function AgreementWizard({
   renderTrigger = null,
   onCreated = null,
 }) {
-  const { token } = useSession();
+  const { token, me } = useSession();
 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -481,7 +482,7 @@ export default function AgreementWizard({
       localStorage.setItem("company:autoOffersListShiftId", String(sid));
       setMarketOpen(false);
       setOpen(false);
-      navigate("/company/shifts");
+      navigate(companyPath(me, "/shifts"));
     } catch (e) {
       setMarketErr(String(e?.message || e));
     } finally {
@@ -535,7 +536,7 @@ export default function AgreementWizard({
               {geoNeedsReview} personel konumu <b>NEEDS_REVIEW</b>. Planlama yapmadan önce düzeltmen önerilir.
             </div>
             <div style={{ marginTop: 8 }}>
-              <button type="button" disabled={busy} onClick={() => navigate("/company/georeview")}>Geo Review’e git</button>
+              <button type="button" disabled={busy} onClick={() => navigate(companyPath(me, "/georeview"))}>Geo Review’e git</button>
             </div>
           </div>
         ) : null}
@@ -549,7 +550,7 @@ export default function AgreementWizard({
           <div className="card" style={{ marginTop: 10, border: "1px solid #7c7" }}>
             <div style={{ fontWeight: 800 }}>{okMsg}</div>
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              <button type="button" disabled={busy} onClick={() => navigate("/company/agreements")}>Agreements’e git</button>
+              <button type="button" disabled={busy} onClick={() => navigate(companyPath(me, "/agreements"))}>Agreements’e git</button>
               <button type="button" disabled={busy} onClick={openMarketFlow}>Room'lara Teklif Topla (Market)</button>
               <button type="button" disabled={busy} onClick={() => setOpen(false)}>Kapat</button>
             </div>

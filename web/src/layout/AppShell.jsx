@@ -5,19 +5,20 @@ import { useSession } from "../state/session";
 export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
   const role = me?.role || "-";
+  const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
 
   // Map pages should be fluid (full width). Everything else is centered for readability.
   const isFluid = String(path || "").includes("/map");
 
   return (
     <div className="shell">
-      <NavDock role={role} path={path} />
+      <NavDock role={role} path={path} me={me} />
       <div className="shellMain">
         <div className="shellTop">
           <div>
-            <div className="title">Personel-Servis V1</div>
+            <div className="title">{isSchool ? "Okul-Servis V1" : "Personel-Servis V1"}</div>
             <div className="muted">
-              {me?.email || "-"} • {role}
+              {me?.email || "-"} • {isSchool ? "SCHOOL" : role}
             </div>
           </div>
           <button className="btn sm" onClick={logout}>

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
+import { companyPath } from "../../utils/paths";
+import { personLabel } from "../../utils/labels";
 import GuidedPlanModal from "./GuidedPlanModal";
 
 function todayYmd() {
@@ -86,7 +88,7 @@ function ChecklistRow({ done, title, desc, actionLabel, onAction }) {
 }
 
 export default function WorkflowPanel() {
-  const { token } = useSession();
+  const { token, me } = useSession();
 
   const [err, setErr] = useState("");
   const [rooms, setRooms] = useState([]);
@@ -142,7 +144,8 @@ export default function WorkflowPanel() {
     }
 
     try {
-      const gr = await api("/api/company/personels?geoStatus=NEEDS_REVIEW", { token });
+      const kind = me?.companyKind === "SCHOOL" ? "STUDENT" : "PERSONEL";
+      const gr = await api(`/api/company/personels?geoStatus=NEEDS_REVIEW&kind=${kind}`, { token });
       const items = Array.isArray(gr?.items) ? gr.items : [];
       setGeoNeedsReview(items.length);
     } catch {
@@ -261,7 +264,7 @@ export default function WorkflowPanel() {
     const sid = Number(shiftId);
     if (!sid) return;
     // Basit: Shifts'e git. (İstersen sonraki milestone'da otomatik highlight ekleriz)
-    navigate("/company/shifts");
+    navigate(companyPath(me, "/shifts"));
   }
 
   return (
@@ -280,7 +283,7 @@ export default function WorkflowPanel() {
             {geoNeedsReview} personel konumu <b>NEEDS_REVIEW</b>. Planlama doğruluğu için önce düzeltmen önerilir.
           </div>
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn" onClick={() => navigate("/company/georeview")}>Geo Review’e git</button>
+            <button type="button" className="btn" onClick={() => navigate(companyPath(me, "/georeview"))}>Geo Review’e git</button>
             <button type="button" className="btn" onClick={loadStats}>Yenile</button>
           </div>
         </div>
@@ -293,17 +296,17 @@ export default function WorkflowPanel() {
       ) : null}
 
       <div className="kpiGrid" style={{ marginTop: 12 }}>
-        <KpiCard title="Bugünkü Agreements" desc="Bugün planlanan vardiyalar" right={stats.todayAgreements} onClick={() => navigate("/company/agreements")} />
+        <KpiCard title="Bugünkü Agreements" desc="Bugün planlanan vardiyalar" right={stats.todayAgreements} onClick={() => navigate(companyPath(me, "/agreements"))} />
         <KpiCard title="Açık Teklifler" desc="OPEN + COUNTERED" right={openOffersCount} onClick={openOffers} />
-        <KpiCard title="Market Shifts" desc="Room seçmeden talep aç" right={stats.marketShiftCount} onClick={() => navigate("/company/shifts")} />
-        <KpiCard title="Geo Review" desc="Adres/konum sorunlarını düzelt" right={geoNeedsReview} onClick={() => navigate("/company/georeview")} />
-        <KpiCard title="Bugünkü Shifts" desc="Operasyon (start/reached/complete)" right={stats.todayShiftCount} onClick={() => navigate("/company/shifts")} />
+        <KpiCard title="Market Shifts" desc="Room seçmeden talep aç" right={stats.marketShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
+        <KpiCard title="Geo Review" desc="Adres/konum sorunlarını düzelt" right={geoNeedsReview} onClick={() => navigate(companyPath(me, "/georeview"))} />
+        <KpiCard title="Bugünkü Shifts" desc="Operasyon (start/reached/complete)" right={stats.todayShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Guided Mode)</div>
         <div className="muted" style={{ marginTop: 4 }}>
-          Tek akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>Personel/Durak</b> → <b>Matris/Çöz</b> → <b>Toplu teklif gönder</b>.
+          Tek akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Matris/Çöz</b> → <b>Toplu teklif gönder</b>.
         </div>
 
         <div style={{ marginTop: 10 }}>
@@ -331,7 +334,7 @@ export default function WorkflowPanel() {
             title="1) Geo Review"
             desc={guide.geoOk ? "Konumlar OK" : "NEEDS_REVIEW varsa düzelt"}
             actionLabel={guide.geoOk ? "" : "Geo Review’e git"}
-            onAction={() => navigate("/company/georeview")}
+            onAction={() => navigate(companyPath(me, "/georeview"))}
           />
 
           <ChecklistRow
@@ -340,7 +343,7 @@ export default function WorkflowPanel() {
             desc={guide.hasAgreementToday ? "Bugün için plan var" : "Guided Mode ile plan oluştur"}
             actionLabel={guide.hasAgreementToday ? "Agreements" : "Plan oluştur"}
             onAction={() => {
-              if (guide.hasAgreementToday) navigate("/company/agreements");
+              if (guide.hasAgreementToday) navigate(companyPath(me, "/agreements"));
               else setGuidedOpen(true);
             }}
           />
@@ -358,7 +361,7 @@ export default function WorkflowPanel() {
             title="4) Shifts"
             desc={guide.hasShiftToday ? "Bugün operasyon var" : "Henüz bugünkü shift yok"}
             actionLabel="Shifts"
-            onAction={() => navigate("/company/shifts")}
+            onAction={() => navigate(companyPath(me, "/shifts"))}
           />
         </div>
       </div>
@@ -462,7 +465,7 @@ export default function WorkflowPanel() {
         onReloadRooms={loadRooms}
         onAfterCreated={() => {
           loadStats();
-          navigate("/company/shifts");
+          navigate(companyPath(me, "/shifts"));
         }}
       />
     </div>

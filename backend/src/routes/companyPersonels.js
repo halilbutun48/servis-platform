@@ -5,6 +5,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 
 const qGeoStatusSchema = z.string().trim().min(1).optional();
+const qKindSchema = z.enum(["PERSONEL", "STUDENT"]).optional();
 
 const putLocationSchema = z.object({
   lat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite()),
@@ -23,15 +24,18 @@ export function companyPersonelsRouter() {
   r.get("/", async (req, res) => {
     const u = req.user;
     const geoStatus = qGeoStatusSchema.parse(req.query.geoStatus);
+    const kind = qKindSchema.parse((req.query.kind || undefined) ? String(req.query.kind).toUpperCase() : undefined);
 
     const where = { companyId: u.companyId ?? -1 };
     if (geoStatus) where.geoStatus = geoStatus;
+    if (kind) where.kind = kind;
 
     const items = await prisma.personel.findMany({
       where,
       orderBy: { id: "asc" },
       select: {
         id: true,
+        kind: true,
         fullName: true,
         phone: true,
         homeAddress: true,
@@ -72,6 +76,7 @@ export function companyPersonelsRouter() {
       },
       select: {
         id: true,
+        kind: true,
         fullName: true,
         phone: true,
         homeAddress: true,

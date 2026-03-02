@@ -27,12 +27,14 @@ export default function CompaniesPanel() {
   const [q, setQ] = useState("");
   const [regionId, setRegionId] = useState("");
   const [district, setDistrict] = useState("");
+  const [kind, setKind] = useState(""); // "", COMPANY, SCHOOL
 
   const [newName, setNewName] = useState("");
+  const [newKind, setNewKind] = useState("COMPANY");
 
   // edit row
   const [editId, setEditId] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", regionId: "", district: "", status: "ACTIVE" });
+  const [editForm, setEditForm] = useState({ name: "", kind: "COMPANY", regionId: "", district: "", status: "ACTIVE" });
 
   // profile modal
   const [prof, setProf] = useState(null);
@@ -78,6 +80,7 @@ export default function CompaniesPanel() {
       if (q.trim()) qs.set("q", q.trim());
       if (regionId) qs.set("regionId", regionId);
       if (district.trim()) qs.set("district", district.trim());
+      if (kind) qs.set("kind", kind);
       const r = await api(`/api/companies?${qs.toString()}`, { token });
       // some endpoints return {items}, some return array
       const list = Array.isArray(r) ? r : r.items || [];
@@ -101,7 +104,7 @@ export default function CompaniesPanel() {
     setBusy(true);
     setErr("");
     try {
-      const body = { name: n };
+      const body = { name: n, kind: newKind || "COMPANY" };
       if (regionId) body.regionId = Number(regionId);
       if (district.trim()) body.district = district.trim();
       await api("/api/companies", { method: "POST", body, token });
@@ -118,6 +121,7 @@ export default function CompaniesPanel() {
     setEditId(c.id);
     setEditForm({
       name: c.name || "",
+      kind: c.kind || "COMPANY",
       regionId: c.regionId != null ? String(c.regionId) : "",
       district: c.district || "",
       status: c.status || "ACTIVE",
@@ -132,6 +136,7 @@ export default function CompaniesPanel() {
         name: normStr(editForm.name),
         district: normStr(editForm.district) || null,
         status: editForm.status || "ACTIVE",
+        kind: editForm.kind || "COMPANY",
         regionId: editForm.regionId ? Number(editForm.regionId) : null,
       };
       await api(`/api/companies/${id}`, { method: "PUT", body, token });
@@ -204,7 +209,7 @@ export default function CompaniesPanel() {
       <div style={{ padding: 16 }}>
         <div className="topbar">
           <div>
-            <div className="title">Şirketler</div>
+            <div className="title">Şirketler / Okullar</div>
             <div className="muted">SUPER_ADMIN şirket oluşturur/listeler/günceller/siler.</div>
           </div>
           <div className="pill">{filteredCount} kayıt</div>
@@ -220,6 +225,12 @@ export default function CompaniesPanel() {
             ))}
           </select>
 
+          <select value={kind} onChange={(e) => setKind(e.target.value)} style={{ minWidth: 160 }}>
+            <option value="">Tümü</option>
+            <option value="COMPANY">Şirket</option>
+            <option value="SCHOOL">Okul</option>
+          </select>
+
           <input
             value={district}
             onChange={(e) => setDistrict(e.target.value)}
@@ -231,7 +242,12 @@ export default function CompaniesPanel() {
 
           <div style={{ flex: 1 }} />
 
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Yeni şirket adı" style={{ minWidth: 220 }} />
+          <select value={newKind} onChange={(e) => setNewKind(e.target.value)} style={{ minWidth: 140 }}>
+            <option value="COMPANY">Şirket</option>
+            <option value="SCHOOL">Okul</option>
+          </select>
+
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={newKind === "SCHOOL" ? "Yeni okul adı" : "Yeni şirket adı"} style={{ minWidth: 220 }} />
           <button className="btn primary" disabled={busy} onClick={create}>
             Oluştur
           </button>
@@ -246,7 +262,7 @@ export default function CompaniesPanel() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "72px 1.2fr 1fr 1fr 120px 190px 260px",
+              gridTemplateColumns: "72px 1.2fr 140px 1fr 1fr 120px 190px 260px",
               padding: "10px 12px",
               fontWeight: 700,
               opacity: 0.9,
@@ -255,6 +271,7 @@ export default function CompaniesPanel() {
           >
             <div>ID</div>
             <div>Ad</div>
+            <div>Tür</div>
             <div>İl</div>
             <div>İlçe</div>
             <div>Durum</div>
@@ -269,7 +286,7 @@ export default function CompaniesPanel() {
                 key={c.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "72px 1.2fr 1fr 1fr 120px 190px 260px",
+                  gridTemplateColumns: "72px 1.2fr 140px 1fr 1fr 120px 190px 260px",
                   padding: "10px 12px",
                   borderBottom: "1px solid #16203a",
                   alignItems: "center",
@@ -282,6 +299,17 @@ export default function CompaniesPanel() {
                     <input value={editForm.name} onChange={(e) => setEditForm((s) => ({ ...s, name: e.target.value }))} />
                   ) : (
                     <div style={{ fontWeight: 600 }}>{c.name}</div>
+                  )}
+                </div>
+
+                <div>
+                  {editing ? (
+                    <select value={editForm.kind} onChange={(e) => setEditForm((s) => ({ ...s, kind: e.target.value }))}>
+                      <option value="COMPANY">Şirket</option>
+                      <option value="SCHOOL">Okul</option>
+                    </select>
+                  ) : (
+                    <div className="muted">{c.kind === "SCHOOL" ? "Okul" : "Şirket"}</div>
                   )}
                 </div>
 

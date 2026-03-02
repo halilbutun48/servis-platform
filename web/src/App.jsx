@@ -4,6 +4,7 @@ import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
 import { login } from "./api";
 import { useHashRoute, navigate } from "./router";
+import { companyBase, normalizeCompanyPath } from "./utils/paths";
 
 // ROOM
 import RoomMapPanel from "./panels/room/MapPanel";
@@ -30,6 +31,9 @@ import DriverTodayPanel from "./panels/driver/TodayPanel";
 import PersonelLivePanel from "./panels/personel/LivePanel";
 import MyRidePanel from "./panels/personel/MyRidePanel";
 
+// PARENT
+import ParentLivePanel from "./panels/parent/LivePanel";
+
 // SHARED
 import NotificationsPanel from "./panels/shared/NotificationsPanel";
 
@@ -46,11 +50,13 @@ import ErrorBoundary from "./components/ErrorBoundary";
 // ✅ WS
 import { startLiveWs, stopLiveWs } from "./live/ws";
 
-function roleDefaultPath(role) {
+function roleDefaultPath(me) {
+  const role = me?.role;
   if (role === "ROOM") return "/room/map";
-  if (role === "COMPANY") return "/company"; // ✅ M26: workflow home
+  if (role === "COMPANY") return companyBase(me); // COMPANY or SCHOOL variant
   if (role === "DRIVER") return "/driver/today";
   if (role === "PERSONEL") return "/personel/live";
+  if (role === "PARENT") return "/parent/live";
   if (role === "SUPER_ADMIN") return "/superadmin";
   return "/";
 }
@@ -131,7 +137,7 @@ export default function App() {
   // Redirect to default panel after login
   useEffect(() => {
     if (!token || !me?.role) return;
-    if (path === "/" || path === "") navigate(roleDefaultPath(me.role));
+    if (path === "/" || path === "") navigate(roleDefaultPath(me));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, me?.role]);
 
@@ -160,6 +166,15 @@ export default function App() {
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
 
+    // SCHOOL (Company.kind=SCHOOL)
+    if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
+    if (path === "/school/map") return { layout: true, node: <CompanyMapPanel /> };
+    if (path === "/school/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
+    if (path === "/school/georeview") return { layout: true, node: <GeoReviewPanel /> };
+    if (path === "/school/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
+    if (path === "/school/hub") return { layout: true, node: <CompanyHubPanel /> };
+
+
     // DRIVER
     if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
@@ -168,6 +183,9 @@ export default function App() {
     // PERSONEL
     if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };
     if (path === "/personel/my") return { layout: true, node: <MyRidePanel /> };
+
+    // PARENT
+    if (path === "/parent" || path === "/parent/live") return { layout: true, node: <ParentLivePanel /> };
 
     // SUPER_ADMIN
     if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };
@@ -178,7 +196,7 @@ export default function App() {
     if (path === "/superadmin/audit") return { layout: true, node: <SuperAuditLogsPanel /> };
 
     // Unknown: go default
-    const def = roleDefaultPath(me.role);
+    const def = roleDefaultPath(me);
     navigate(def);
     return { layout: true, node: <div style={{ padding: 16 }}>Redirecting...</div> };
   }, [token, me, path]);

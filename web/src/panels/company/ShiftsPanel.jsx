@@ -88,6 +88,7 @@ function addDaysYmd(ymd, deltaDays) {
 
 export default function CompanyShiftsPanel() {
   const { token, me } = useSession();
+  const who = personLabel(me);
 
   const LS_LAST_ROOM = "company:lastRoomId";
 
@@ -1420,7 +1421,7 @@ function usePlanDraftToRequest(draft) {
               <div>
                 <div style={{ fontWeight: 800 }}>Oluşturma Akışı</div>
                 <div className="muted" style={{ marginTop: 4 }}>
-                  1) Şablon/Talep → 2) Personel → 3) Plan &amp; Market
+                  1) Şablon/Talep → 2) {who} → 3) Plan &amp; Market
                 </div>
               </div>
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -1438,9 +1439,9 @@ function usePlanDraftToRequest(draft) {
                   className={createStep === "people" ? "btn primary" : "btn"}
                   disabled={busy}
                   onClick={() => setCreateStep("people")}
-                  title="Personel ekle/import + durak üret"
+                  title={`${who} ekle/import + durak üret`}
                 >
-                  2) Personel
+                  2) {who}
                 </button>
                 <button
                   type="button"
@@ -1463,7 +1464,7 @@ function usePlanDraftToRequest(draft) {
                   <div>
                     <div style={{ fontWeight: 800 }}>Şablon &amp; Zaman</div>
                     <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                      Ana akış: 1) Şablon/Zaman → 2) Personel (Tools) → 3) Plan Builder (Matris/Çöz/Market).
+                      Ana akış: 1) Şablon/Zaman → 2) {who} (Tools) → 3) Plan Builder (Matris/Çöz/Market).
                     </div>
                   </div>
                   <button type="button" className="btn" disabled={busy} onClick={() => setShowTemplatesMgr((v) => !v)}>
@@ -1509,9 +1510,9 @@ function usePlanDraftToRequest(draft) {
 
               <div className="card" style={{ padding: 12 }}>
                 <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                  <div className="muted">Sonraki adım: Personel ekle/import → durak üret → önizle.</div>
+                  <div className="muted">Sonraki adım: {who} ekle/import → durak üret → önizle.</div>
                   <button type="button" className="btn primary" disabled={busy || !pbOk} onClick={() => setCreateStep("people")}>
-                    Sonraki → Personel
+                    Sonraki → {who}
                   </button>
                 </div>
                 {!pbOk ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>Devam etmek için tarih + şablon seç.</div> : null}
@@ -1532,9 +1533,9 @@ function usePlanDraftToRequest(draft) {
               <div className="card">
                 <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontWeight: 800 }}>Personel (Shift Tools)</div>
+                    <div style={{ fontWeight: 800 }}>{who} (Shift Tools)</div>
                     <div className="muted" style={{ marginTop: 4 }}>
-                      Shift seç → personel ekle/import → durak üret (preview) → rota/durak önizleme.
+                      Shift seç → {who.toLowerCase()} ekle/import → durak üret (preview) → rota/durak önizleme.
                     </div>
                   </div>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
