@@ -31,14 +31,14 @@ async function main() {
   // Demo Company (kiralayan) + Demo Room (servis sağlayan)
   const company = await prisma.company.upsert({
     where: { id: 1 },
-    update: { name: "DemoCompany", status: "ACTIVE", regionId: region.id },
-    create: { name: "DemoCompany", status: "ACTIVE", regionId: region.id },
+    update: { name: "DemoCompany", status: "ACTIVE", region: { connect: { id: region.id } } },
+    create: { name: "DemoCompany", status: "ACTIVE", region: { connect: { id: region.id } } },
   });
 
   const room = await prisma.room.upsert({
     where: { id: 1 },
-    update: { name: "DemoRoom", status: "ACTIVE", regionId: region.id },
-    create: { name: "DemoRoom", status: "ACTIVE", regionId: region.id },
+    update: { name: "DemoRoom", status: "ACTIVE", region: { connect: { id: region.id } } },
+    create: { name: "DemoRoom", status: "ACTIVE", region: { connect: { id: region.id } } },
   });
 
   // Seed users (login)
@@ -120,6 +120,62 @@ async function main() {
 
   await prisma.personel.update({ where: { id: personel.id }, data: { userId: personelUser.id } });
 
+  // --- M80/M81 demo accounts (School + Parent) ---
+  // Demo School (Company.kind=SCHOOL) + School login (role=COMPANY, scope=school companyId)
+  // NOTE: Requires schema that includes Company.kind and Role.PARENT / Personel.kind.
+  const school = await prisma.company.upsert({
+    where: { id: 2 },
+    update: { name: "DemoOkul", status: "ACTIVE", region: { connect: { id: region.id } }, kind: "SCHOOL" },
+    create: { name: "DemoOkul", status: "ACTIVE", region: { connect: { id: region.id } }, kind: "SCHOOL" },
+  });
+
+  const schoolUser = await upsertUser({
+    email: "school@demo.com",
+    role: Role.COMPANY,
+    fullName: "School Operator",
+    phone: "+90 555 000 00 06",
+    companyId: school.id,
+  });
+
+  // Parent login (no scope)
+  const parentUser = await upsertUser({
+    email: "parent@demo.com",
+    role: "PARENT",
+    fullName: "DemoParent",
+    phone: "+90 555 000 00 07",
+  });
+
+  // Demo Student (Personel.kind=STUDENT) under school
+  const student = await prisma.personel.upsert({
+    where: { id: 2 },
+    update: {
+      companyId: school.id,
+      fullName: "Student One",
+      homeLat: 41.021,
+      homeLng: 28.986,
+      kind: "STUDENT",
+      geoStatus: "OK",
+      geoManualOverride: true,
+    },
+    create: {
+      companyId: school.id,
+      fullName: "Student One",
+      homeLat: 41.021,
+      homeLng: 28.986,
+      kind: "STUDENT",
+      geoStatus: "OK",
+      geoManualOverride: true,
+    },
+  });
+
+  // ParentChild link (parentUserId <-> personelId)
+  if (prisma.parentChild) {
+    await prisma.parentChild.createMany({
+      data: [{ parentUserId: parentUser.id, personelId: student.id }],
+      skipDuplicates: true,
+    });
+  }
+
   // Vehicle (Room owns)
   const vehicle = await prisma.vehicle.upsert({
     where: { plate: "34ABC123" },
@@ -175,6 +231,29 @@ async function main() {
     },
   });
 
+  // Shift-2 (School demo) — lets Parent/School screens show a live shift for the student
+  const schoolShift = await prisma.shift.upsert({
+    where: { id: 2 },
+    update: {
+      companyId: school.id,
+      roomId: room.id,
+      vehicleId: vehicle.id,
+      driverId: driver.id,
+      startAt,
+      endAt,
+      status: "APPROVED",
+    },
+    create: {
+      companyId: school.id,
+      roomId: room.id,
+      vehicleId: vehicle.id,
+      driverId: driver.id,
+      startAt,
+      endAt,
+      status: "APPROVED",
+    },
+  });
+
   // Stops
   await prisma.stop.deleteMany({ where: { shiftId: shift.id } });
   await prisma.stop.createMany({
@@ -185,6 +264,15 @@ async function main() {
     ],
   });
 
+  await prisma.stop.deleteMany({ where: { shiftId: schoolShift.id } });
+  await prisma.stop.createMany({
+    data: [
+      { shiftId: schoolShift.id, name: "Okul Durak 1", lat: 41.018, lng: 28.982, order: 1, type: "COMMON" },
+      { shiftId: schoolShift.id, name: "Okul Durak 2", lat: 41.022, lng: 28.985, order: 2, type: "COMMON" },
+      { shiftId: schoolShift.id, name: "Okul Durak 3", lat: 41.026, lng: 28.989, order: 3, type: "MANUAL" },
+    ],
+  });
+
   // Progress (no stop reached yet)
   await prisma.shiftProgress.upsert({
     where: { shiftId: shift.id },
@@ -192,11 +280,33 @@ async function main() {
     create: { shiftId: shift.id, lastReachedOrder: 0 },
   });
 
+  await prisma.shiftProgress.upsert({
+    where: { shiftId: schoolShift.id },
+    update: { lastReachedOrder: 0, completedAt: null },
+    create: { shiftId: schoolShift.id, lastReachedOrder: 0 },
+  });
+
   // Pickup request demo
   await prisma.pickupRequest.deleteMany({ where: { shiftId: shift.id, personelId: personel.id } });
   await prisma.pickupRequest.create({
     data: { shiftId: shift.id, personelId: personel.id, lat: personel.homeLat, lng: personel.homeLng, status: "OPEN" },
   });
+
+  // Stop assignment demo (for Parent ETA / remaining stops)
+  const stopB = await prisma.stop.findFirst({ where: { shiftId: schoolShift.id, order: 2 } });
+  if (stopB) {
+    // student assigned to stop-2 (school shift)
+    await prisma.shiftPersonel.upsert({
+      where: { shiftId_personelId: { shiftId: schoolShift.id, personelId: student.id } },
+      update: { note: "demo-student" },
+      create: { shiftId: schoolShift.id, personelId: student.id, note: "demo-student" },
+    });
+    await prisma.stopAssignment.upsert({
+      where: { shiftId_personelId: { shiftId: schoolShift.id, personelId: student.id } },
+      update: { stopId: stopB.id, walkM: 120 },
+      create: { shiftId: schoolShift.id, personelId: student.id, stopId: stopB.id, walkM: 120 },
+    });
+  }
 
   // Notification demo (maintenance 7d)
   const dueIso = vehicle.nextMaintenanceAt ? vehicle.nextMaintenanceAt.toISOString().slice(0, 10) : "-";
@@ -218,6 +328,8 @@ async function main() {
     room: roomUser.email,
     driver: driverUser.email,
     personel: personelUser.email,
+    parent: parentUser.email,
+    school: schoolUser.email,
   });
 }
 

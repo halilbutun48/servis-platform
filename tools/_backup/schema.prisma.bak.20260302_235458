@@ -25,7 +25,6 @@ enum Role {
   COMPANY
   DRIVER
   PERSONEL
-  PARENT
 }
 
 enum VehicleStatus {
@@ -141,14 +140,8 @@ enum ShiftExtendDecision {
 
 // --- Core Models ---
 
-enum CompanyKind {
-  COMPANY
-  SCHOOL
-}
-
-model Company {
-  kind      CompanyKind @default(COMPANY)
-  id        Int      @id @default(autoincrement())
+enum CompanyKind {\n  COMPANY\n  SCHOOL\n}\n\nmodel Company {
+  kind      CompanyKind @default(COMPANY)\n  id        Int      @id @default(autoincrement())
   name      String
   status    String   @default("ACTIVE")
   regionId  Int?
@@ -173,21 +166,12 @@ model Company {
   personels     Personel[]
   notifications Notification[]
   agreements    Agreement[]
-  @@index([regionId, kind])
-
-    @@index([kind])
-
-  
+  @@index([regionId, kind])\n\n    @@index([kind])\n\n  
   @@index([regionId])
   @@index([district])
 }
 
-enum PersonelKind {
-  PERSONEL
-  STUDENT
-}
-
-model Room {
+enum PersonelKind {\n  PERSONEL\n  STUDENT\n}\n\nmodel Room {
   id        Int      @id @default(autoincrement())
   name      String
   status    String   @default("ACTIVE")
@@ -232,8 +216,7 @@ model Region {
 
 // Auth entity (login) — role taşıyıcı
 model User {
-notifications Notification[]
-  id           Int      @id @default(autoincrement())
+  notifications Notification[]\n  notifications Notification[]\n  id           Int      @id @default(autoincrement())
   email        String   @unique
   passwordHash String
   role         Role
@@ -250,13 +233,12 @@ notifications Notification[]
   // Optional profile links
   driver   Driver?
   personel Personel?
+  notifications Notification[]
   // ✅ M16.1: import trail (createdBy)
   shiftImportsCreated ShiftImport[] @relation("ShiftImportCreatedBy")
 
   @@index([companyId])
   @@index([roomId])
-  parentChildren ParentChild[] @relation("ParentUserChildren")
-
 }
 
 model Vehicle {
@@ -561,8 +543,7 @@ model RouteTemplateStop {
 model Personel {
   id        Int      @id @default(autoincrement())
   companyId Int
-  kind      PersonelKind @default(PERSONEL)
-  userId    Int?     @unique
+  kind      PersonelKind @default(PERSONEL)\n  userId    Int?     @unique
 
   // Master profile
   fullName    String
@@ -589,13 +570,9 @@ model Personel {
   shiftImportRows ShiftImportRow[]
   shiftLinks      ShiftPersonel[]
   assignments     StopAssignment[]
-  @@index([companyId, kind])
-
-  
+  @@index([companyId, kind])\n\n  
   @@index([companyId])
   @@unique([companyId, phone])
-  parentLinks ParentChild[] @relation("ParentChildPersonel")
-
 }
 
 model ShiftPersonel {
@@ -828,15 +805,5 @@ model AuditLog {
   @@index([actorUserId, createdAt])
   @@index([entity, entityId])
 }
-model ParentChild {
-  id           Int      @id @default(autoincrement())
-  parentUserId Int
-  personelId   Int
-  createdAt    DateTime @default(now())
 
-  parent User     @relation("ParentUserChildren", fields: [parentUserId], references: [id])
-  child  Personel @relation("ParentChildPersonel", fields: [personelId], references: [id])
 
-  @@unique([parentUserId, personelId])
-  @@index([personelId])
-}

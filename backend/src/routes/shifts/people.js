@@ -13,8 +13,18 @@ const qModeSchema = z
   .optional()
   .transform((v) => v ?? "REPLACE");
 
+// NOTE: Query param (maxWalkM) UI'dan bazen 0/"" gelebiliyor.
+// - 0 -> 50'ye clamp (crash yerine güvenli davranış)
+// - NaN/boş -> default 250
 const qMaxWalkSchema = z
-  .preprocess((v) => (v == null ? undefined : Number(v)), z.number().int().min(50).max(2000))
+  .preprocess((v) => {
+    if (v == null || v === "") return undefined;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return undefined;
+    // clamp + int
+    const clamped = Math.max(50, Math.min(2000, Math.round(n)));
+    return clamped;
+  }, z.number().int().min(50).max(2000))
   .optional()
   .transform((v) => v ?? 250);
 

@@ -5,7 +5,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { gpsIngestSchema } from "../validators.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
-import { emitStopProgressNotifs } from \"../notifications/stopProgressNotifs.js\";
+import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW

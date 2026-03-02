@@ -1,7 +1,7 @@
 import prisma from "../../prisma.js";
 import { authRequired, requireRole } from "../../auth/middleware.js";
 import { audit } from "../../audit.js";
-import { emitStopProgressNotifs } from \"../../notifications/stopProgressNotifs.js\";
+import { emitStopProgressNotifs } from "../../notifications/stopProgressNotifs.js";
 
 // NOTE: this file implements DRIVER endpoints under /api/shifts/*
 // (pack scripts expect /api/shifts/:id/reached with body {order})
@@ -79,7 +79,7 @@ export function attachShiftDriverRoutes(r, io) {
       });
 
       // notify route progress
-      emitShift(io, shift, \"route:progress\", {
+      emitShift(io, shift, "route:progress", {
         stopId: updated.id,
         order,
         state: updated.state,
@@ -87,7 +87,7 @@ export function attachShiftDriverRoutes(r, io) {
         skippedAt: updated.skippedAt,
       });
 
-      await emitStopProgressNotifs({ io, shiftId: shift.id, stop: updated, state: updated.state, source: \"DRIVER_REACHED\" });
+      await emitStopProgressNotifs({ io, shiftId: shift.id, stop: updated, state: updated.state, source: "DRIVER_REACHED" });
 
       return res.json({ ok: true, stop: updated });
     } catch (e) {

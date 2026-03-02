@@ -25,7 +25,6 @@ enum Role {
   COMPANY
   DRIVER
   PERSONEL
-  PARENT
 }
 
 enum VehicleStatus {
@@ -232,7 +231,8 @@ model Region {
 
 // Auth entity (login) — role taşıyıcı
 model User {
-notifications Notification[]
+  notifications Notification[]
+  notifications Notification[]
   id           Int      @id @default(autoincrement())
   email        String   @unique
   passwordHash String
@@ -250,13 +250,12 @@ notifications Notification[]
   // Optional profile links
   driver   Driver?
   personel Personel?
+  notifications Notification[]
   // ✅ M16.1: import trail (createdBy)
   shiftImportsCreated ShiftImport[] @relation("ShiftImportCreatedBy")
 
   @@index([companyId])
   @@index([roomId])
-  parentChildren ParentChild[] @relation("ParentUserChildren")
-
 }
 
 model Vehicle {
@@ -594,8 +593,6 @@ model Personel {
   
   @@index([companyId])
   @@unique([companyId, phone])
-  parentLinks ParentChild[] @relation("ParentChildPersonel")
-
 }
 
 model ShiftPersonel {
@@ -827,16 +824,4 @@ model AuditLog {
   @@index([createdAt])
   @@index([actorUserId, createdAt])
   @@index([entity, entityId])
-}
-model ParentChild {
-  id           Int      @id @default(autoincrement())
-  parentUserId Int
-  personelId   Int
-  createdAt    DateTime @default(now())
-
-  parent User     @relation("ParentUserChildren", fields: [parentUserId], references: [id])
-  child  Personel @relation("ParentChildPersonel", fields: [personelId], references: [id])
-
-  @@unique([parentUserId, personelId])
-  @@index([personelId])
 }

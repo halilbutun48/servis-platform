@@ -121,6 +121,17 @@ const PACKS = [
       { label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
     ],
   },
+   {
+    key: "WK_MORNING_AFTERNOON",
+    title: "Hafta içi • Sabah + Öğleden sonra",
+    desc: "2 vardiya taslağı oluşturur (06-08 + 15-17)",
+    weekMask: 62,
+    durationDays: 30,
+    items: [
+      { label: "Sabah", startMin: 6 * 60, endMin: 8 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
+      { label: "Öğleden sonra", startMin: 15 * 60, endMin: 17 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
+    ],
+  },
   {
     key: "WK_NIGHT",
     title: "Hafta içi • Gece",

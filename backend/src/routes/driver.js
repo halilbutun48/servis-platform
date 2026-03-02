@@ -8,7 +8,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { emitShift } from "./shifts/helpers.js";
-import { emitStopProgressNotifs } from \"../notifications/stopProgressNotifs.js\";
+import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";

@@ -3,6 +3,32 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 
+function copyText(s) {
+  const v = String(s ?? "");
+  if (!v) return;
+  if (navigator?.clipboard?.writeText) navigator.clipboard.writeText(v).catch(() => {});
+  else window.prompt("Kopyala:", v);
+}
+
+function Pill({ children, status }) {
+  return (
+    <span className="pill" data-status={status || "ROLE"}>
+      {children}
+    </span>
+  );
+}
+
+const DEMO_PASSWORD = "demo123";
+const DEMO_ACCOUNTS = [
+  { email: "superadmin@demo.com", role: "SUPER_ADMIN", name: "Super Admin", scope: "-" },
+  { email: "company@demo.com", role: "COMPANY", name: "Company Operator", scope: "Company #1 DemoCompany" },
+  { email: "room@demo.com", role: "ROOM", name: "Room Operator", scope: "Room #1 DemoRoom" },
+  { email: "driver@demo.com", role: "DRIVER", name: "Driver One", scope: "Room #1" },
+  { email: "personel@demo.com", role: "PERSONEL", name: "Personel One", scope: "Company #1" },
+  { email: "parent@demo.com", role: "PARENT", name: "DemoParent", scope: "Parent" },
+  { email: "school@demo.com", role: "COMPANY", name: "School Operator", scope: "Company #2 DemoOkul (SCHOOL)" },
+];
+
 export default function SuperAdminPanel() {
   const { me, token } = useSession();
   const [stats, setStats] = useState({
@@ -75,6 +101,7 @@ export default function SuperAdminPanel() {
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        {/* Quick */}
         <div
           style={{
             flex: "1 1 320px",
@@ -94,6 +121,7 @@ export default function SuperAdminPanel() {
           {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
         </div>
 
+        {/* Summary */}
         <div
           style={{
             flex: "1 1 320px",
@@ -111,6 +139,68 @@ export default function SuperAdminPanel() {
 
           <div className="muted" style={{ marginTop: 10 }}>
             Not: Özet “aktif” sayıları DELETED (soft delete) kayıtları hariç tutar.
+          </div>
+        </div>
+
+        {/* Demo accounts */}
+        <div
+          style={{
+            flex: "1 1 320px",
+            padding: 14,
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 14,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+            <div style={{ fontWeight: 700 }}>Demo Accounts (seed)</div>
+            <button className="btn sm" onClick={() => copyText(DEMO_ACCOUNTS.map((a) => a.email).join("\n"))}>
+              Mailleri Kopyala
+            </button>
+          </div>
+
+          <div className="muted" style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span>
+              Şifre: <b>{DEMO_PASSWORD}</b>
+            </span>
+            <button className="btn sm" onClick={() => copyText(DEMO_PASSWORD)}>
+              Şifreyi Kopyala
+            </button>
+          </div>
+
+          <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+            {DEMO_ACCOUNTS.map((a) => (
+              <div
+                key={a.email}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: 10,
+                  alignItems: "center",
+                  padding: "10px 10px",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 12,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <code style={{ opacity: 0.9 }}>{a.email}</code>
+                    <Pill status="ROLE">{a.role}</Pill>
+                  </div>
+                  <div className="muted" style={{ marginTop: 4, fontSize: 12, opacity: 0.85 }}>
+                    {a.name} • {a.scope}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button className="btn sm" onClick={() => copyText(a.email)}>
+                    Kopyala
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="muted" style={{ marginTop: 10 }}>
+            Not: Bu liste seed ile birlikte gelir. Prod ortamda demo hesapları kullanmayın.
           </div>
         </div>
       </div>
