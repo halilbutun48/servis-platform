@@ -1,55 +1,104 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 
-// Room = servis sağlayan (operator) şirket.
-// Company (kiralayan) ile bağ: Agreement üzerinden kurulur.
+function copyText(s) {
+  const v = String(s ?? "");
+  if (!v) return;
+  if (navigator?.clipboard?.writeText) navigator.clipboard.writeText(v).catch(() => {});
+  else window.prompt("Kopyala:", v);
+}
+
+function normStr(x) {
+  const v = (x ?? "").toString().trim();
+  return v ? v : "";
+}
 
 export default function RoomsPanel() {
   const { token } = useSession();
+
   const [items, setItems] = useState([]);
   const [regions, setRegions] = useState([]);
-  const [regionId, setRegionId] = useState("");
-  const [district, setDistrict] = useState("");
 
-  const [form, setForm] = useState({ name: "" });
-  const [edit, setEdit] = useState(null); // {id,name,status,regionId,district}
-  const [detail, setDetail] = useState(null); // full profile modal
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
+  const [q, setQ] = useState("");
+  const [regionId, setRegionId] = useState("");
+  const [district, setDistrict] = useState("");
+
+  const [newName, setNewName] = useState("");
+
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", regionId: "", district: "", status: "ACTIVE" });
+
+  const [prof, setProf] = useState(null);
+  const [profForm, setProfForm] = useState({
+    addressLine: "",
+    contactName: "",
+    contactPhone: "",
+    contactEmail: "",
+    notes: "",
+  });
+
+  const regionNameById = useMemo(() => {
+    const m = new Map();
+    (regions || []).forEach((r) => m.set(String(r.id), r.name));
+    return m;
+  }, [regions]);
+
+  function getRegionName(it) {
+    if (it?.region?.name) return it.region.name;
+    if (it?.regionName) return it.regionName;
+    const rid = it?.regionId != null ? String(it.regionId) : "";
+    return rid ? regionNameById.get(rid) || "-" : "-";
+  }
+
+  async function loadRegions() {
+    try {
+      const r = await api("/api/admin/regions", { token });
+      setRegions(r.items || []);
+    } catch {
+      // ignore
+    }
+  }
+
   async function load() {
+    setBusy(true);
     setErr("");
     try {
-      const url = `/api/rooms?take=200${regionId ? `&regionId=${encodeURIComponent(regionId)}` : ""}${
-        district.trim() ? `&district=${encodeURIComponent(district.trim())}` : ""
-      }`;
-      const [rr, res] = await Promise.all([api("/api/admin/regions", { token }), api(url, { token })]);
-      setRegions(rr.items || []);
-      setItems(res.items || []);
+      const qs = new URLSearchParams();
+      qs.set("take", "500");
+      if (q.trim()) qs.set("q", q.trim());
+      if (regionId) qs.set("regionId", regionId);
+      if (district.trim()) qs.set("district", district.trim());
+      const r = await api(`/api/rooms?${qs.toString()}`, { token });
+      const list = Array.isArray(r) ? r : r.items || [];
+      setItems(list);
     } catch (e) {
       setErr(e?.message || String(e));
+    } finally {
+      setBusy(false);
     }
   }
 
   useEffect(() => {
+    loadRegions();
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionId, district]);
+  }, []);
 
   async function create() {
-    setErr("");
-    const name = (form.name || "").trim();
-    if (!name) return setErr("Room adı gerekli");
-
+    const n = normStr(newName);
+    if (!n) return setErr("Room adı gerekli");
     setBusy(true);
+    setErr("");
     try {
-      await api("/api/rooms", {
-        method: "POST",
-        body: { name, regionId: regionId || null, district: district.trim() || null },
-        token,
-      });
-      setForm({ name: "" });
+      const body = { name: n };
+      if (regionId) body.regionId = Number(regionId);
+      if (district.trim()) body.district = district.trim();
+      await api("/api/rooms", { method: "POST", body, token });
+      setNewName("");
       await load();
     } catch (e) {
       setErr(e?.message || String(e));
@@ -58,42 +107,28 @@ export default function RoomsPanel() {
     }
   }
 
-  async function saveEdit() {
-    if (!edit?.id) return;
-    setBusy(true);
-    setErr("");
-    try {
-      const body = {
-        name: (edit.name || "").trim(),
-        status: String(edit.status || "ACTIVE"),
-        regionId: edit.regionId ?? null,
-        district: (edit.district || "").trim() || null,
-      };
-      if (!body.name) throw new Error("Room adı gerekli");
-      await api(`/api/rooms/${edit.id}`, { method: "PUT", body, token });
-      setEdit(null);
-      await load();
-    } catch (e) {
-      setErr(e?.message || String(e));
-    } finally {
-      setBusy(false);
-    }
+  function startEdit(r) {
+    setEditId(r.id);
+    setEditForm({
+      name: r.name || "",
+      regionId: r.regionId != null ? String(r.regionId) : "",
+      district: r.district || "",
+      status: r.status || "ACTIVE",
+    });
   }
 
-  async function saveDetail() {
-    if (!detail?.id) return;
+  async function saveEdit(id) {
     setBusy(true);
     setErr("");
     try {
       const body = {
-        addressLine: (detail.addressLine || "").trim() || null,
-        contactName: (detail.contactName || "").trim() || null,
-        contactPhone: (detail.contactPhone || "").trim() || null,
-        contactEmail: (detail.contactEmail || "").trim() || null,
-        notes: (detail.notes || "").trim() || null,
+        name: normStr(editForm.name),
+        district: normStr(editForm.district) || null,
+        status: editForm.status || "ACTIVE",
+        regionId: editForm.regionId ? Number(editForm.regionId) : null,
       };
-      await api(`/api/rooms/${detail.id}`, { method: "PUT", body, token });
-      setDetail(null);
+      await api(`/api/rooms/${id}`, { method: "PUT", body, token });
+      setEditId(null);
       await load();
     } catch (e) {
       setErr(e?.message || String(e));
@@ -101,17 +136,13 @@ export default function RoomsPanel() {
       setBusy(false);
     }
   }
-
 
   async function del(id) {
-    const ok = window.confirm(`#${id} room silinsin mi? (soft delete)`);
-    if (!ok) return;
-
+    if (!window.confirm("Silinsin mi? (soft delete)")) return;
     setBusy(true);
     setErr("");
     try {
       await api(`/api/rooms/${id}`, { method: "DELETE", token });
-      if (edit?.id === id) setEdit(null);
       await load();
     } catch (e) {
       setErr(e?.message || String(e));
@@ -120,252 +151,246 @@ export default function RoomsPanel() {
     }
   }
 
+  function openProfile(r) {
+    setProf(r);
+    setProfForm({
+      addressLine: r.addressLine || "",
+      contactName: r.contactName || "",
+      contactPhone: r.contactPhone || "",
+      contactEmail: r.contactEmail || "",
+      notes: r.notes || "",
+    });
+  }
+
+  async function saveProfile() {
+    if (!prof) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const body = {
+        addressLine: normStr(profForm.addressLine) || null,
+        contactName: normStr(profForm.contactName) || null,
+        contactPhone: normStr(profForm.contactPhone) || null,
+        contactEmail: normStr(profForm.contactEmail) || null,
+        notes: normStr(profForm.notes) || null,
+      };
+      await api(`/api/rooms/${prof.id}`, { method: "PUT", body, token });
+      setProf(null);
+      await load();
+    } catch (e) {
+      setErr(e?.message || String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const filteredCount = (items || []).length;
+
   return (
-    <div style={{ padding: 16 }}>
-      <h2 style={{ margin: 0, marginBottom: 8 }}>Room’lar</h2>
-      <div style={{ opacity: 0.75, marginBottom: 16 }}>
-        Room = servis sağlayan (operator) şirket. Company (kiralayan) ile bağ Agreement üzerinden kurulur.
-      </div>
-
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
-        <select
-          value={regionId}
-          onChange={(e) => setRegionId(e.target.value)}
-          style={{ minWidth: 220, padding: 10, borderRadius: 10, border: "1px solid #2b2f3a" }}
-        >
-          <option value="">Tüm iller</option>
-          {(regions || []).map((r) => (
-            <option key={r.id} value={String(r.id)}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-
-        <input
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-          placeholder="İlçe (opsiyonel)"
-          style={{ minWidth: 220, padding: 10, borderRadius: 10, border: "1px solid #2b2f3a" }}
-        />
-
-        <input
-          value={form.name}
-          onChange={(e) => setForm((x) => ({ ...x, name: e.target.value }))}
-          placeholder="Room adı"
-          style={{ minWidth: 260, padding: 10, borderRadius: 10, border: "1px solid #2b2f3a" }}
-        />
-
-        <button onClick={create} disabled={busy} style={{ padding: "10px 14px", borderRadius: 10 }}>
-          Oluştur
-        </button>
-        <button onClick={load} disabled={busy} style={{ padding: "10px 14px", borderRadius: 10 }}>
-          Yenile
-        </button>
-      </div>
-
-      {err ? <div style={{ color: "#ff7b7b", marginBottom: 12, whiteSpace: "pre-wrap" }}>{err}</div> : null}
-
-      <div style={{ border: "1px solid #222633", borderRadius: 14, overflow: "hidden" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "80px 1fr 160px 160px 140px 220px 220px",
-            padding: "10px 12px",
-            background: "#111520",
-            fontWeight: 600,
-          }}
-        >
-          <div>ID</div>
-          <div>Ad</div>
-          <div>İl</div>
-          <div>İlçe</div>
-          <div>Durum</div>
-          <div>Oluşturma</div>
-          <div>Aksiyon</div>
+    <>
+      <div style={{ padding: 16 }}>
+        <div className="topbar">
+          <div>
+            <div className="title">Room’lar</div>
+            <div className="muted">Room = servis sağlayan (operator) şirket. Company ile bağ Agreement üzerinden kurulur.</div>
+          </div>
+          <div className="pill">{filteredCount} kayıt</div>
         </div>
 
-        {(items || []).map((r) => (
+        <div className="card toolbar">
+          <select value={regionId} onChange={(e) => setRegionId(e.target.value)} style={{ minWidth: 180 }}>
+            <option value="">Tüm iller</option>
+            {(regions || []).map((r) => (
+              <option key={r.id} value={String(r.id)}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+
+          <input value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="İlçe filtresi (opsiyonel)" style={{ minWidth: 220 }} />
+
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ara (id / ad)" style={{ minWidth: 220 }} />
+
+          <div style={{ flex: 1 }} />
+
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Yeni room adı" style={{ minWidth: 220 }} />
+          <button className="btn primary" disabled={busy} onClick={create}>
+            Oluştur
+          </button>
+          <button className="btn" disabled={busy} onClick={load}>
+            Yenile
+          </button>
+        </div>
+
+        {err ? <div style={{ color: "#ff7b7b", marginBottom: 10, whiteSpace: "pre-wrap" }}>{err}</div> : null}
+
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div
-            key={r.id}
             style={{
               display: "grid",
-              gridTemplateColumns: "80px 1fr 160px 160px 140px 220px 220px",
+              gridTemplateColumns: "72px 1.2fr 1fr 1fr 120px 190px 260px",
               padding: "10px 12px",
-              borderTop: "1px solid #222633",
-              alignItems: "center",
+              fontWeight: 700,
+              opacity: 0.9,
+              borderBottom: "1px solid #22314f",
             }}
           >
-            <div style={{ opacity: 0.85 }}>{r.id}</div>
-
-            <div>
-              {edit?.id === r.id ? (
-                <input
-                  value={edit.name}
-                  onChange={(e) => setEdit((x) => ({ ...x, name: e.target.value }))}
-                  style={{ width: "100%", padding: 8, borderRadius: 10, border: "1px solid #2b2f3a" }}
-                />
-              ) : (
-                r.name
-              )}
-            </div>
-
-            <div>
-              {edit?.id === r.id ? (
-                <select
-                  value={String(edit.regionId || "")}
-                  onChange={(e) => setEdit((x) => ({ ...x, regionId: e.target.value ? Number(e.target.value) : null }))}
-                  style={{ padding: 8, borderRadius: 10, border: "1px solid #2b2f3a" }}
-                >
-                  <option value="">-</option>
-                  {(regions || []).map((rr) => (
-                    <option key={rr.id} value={String(rr.id)}>
-                      {rr.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span style={{ opacity: 0.9 }}>{r.region?.name || "-"}</span>
-              )}
-            </div>
-
-            <div>
-              {edit?.id === r.id ? (
-                <input
-                  value={edit.district || ""}
-                  onChange={(e) => setEdit((x) => ({ ...x, district: e.target.value }))}
-                  placeholder="-"
-                  style={{ width: "100%", padding: 8, borderRadius: 10, border: "1px solid #2b2f3a" }}
-                />
-              ) : (
-                <span style={{ opacity: 0.9 }}>{r.district || "-"}</span>
-              )}
-            </div>
-
-            <div>
-              {edit?.id === r.id ? (
-                <select
-                  value={edit.status}
-                  onChange={(e) => setEdit((x) => ({ ...x, status: e.target.value }))}
-                  style={{ padding: 8, borderRadius: 10, border: "1px solid #2b2f3a" }}
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="PASSIVE">PASSIVE</option>
-                </select>
-              ) : (
-                <span className="pill">{r.status || "ACTIVE"}</span>
-              )}
-            </div>
-
-            <div style={{ opacity: 0.75 }}>{r.createdAt ? new Date(r.createdAt).toLocaleString() : "-"}</div>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {edit?.id === r.id ? (
-                <>
-                  <button className="btn sm" disabled={busy} onClick={saveEdit}>
-                    Kaydet
-                  </button>
-                  <button className="btn sm" disabled={busy} onClick={() => setEdit(null)}>
-                    İptal
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="btn sm"
-                    disabled={busy}
-                    onClick={() =>
-                      setEdit({
-                        id: r.id,
-                        name: r.name,
-                        status: r.status || "ACTIVE",
-                        regionId: r.regionId ?? r.region?.id ?? null,
-                        district: r.district || "",
-                      })
-                    }
-                  >
-                    Düzenle
-                  </button>
-                  <button
-                    className="btn sm"
-                    disabled={busy}
-                    onClick={() =>
-                      setDetail({
-                        id: r.id,
-                        addressLine: r.addressLine || "",
-                        contactName: r.contactName || "",
-                        contactPhone: r.contactPhone || "",
-                        contactEmail: r.contactEmail || "",
-                        notes: r.notes || "",
-                      })
-                    }
-                  >
-                    Detay
-                  </button>
-                  <button className="btn sm" disabled={busy} onClick={() => del(r.id)}>
-                    Sil
-                  </button>
-                </>
-              )}
-            </div>
+            <div>ID</div>
+            <div>Ad</div>
+            <div>İl</div>
+            <div>İlçe</div>
+            <div>Durum</div>
+            <div>Oluşturma</div>
+            <div>Aksiyon</div>
           </div>
-        ))}
 
-        {(!items || items.length === 0) && <div style={{ padding: 12, opacity: 0.75 }}>Kayıt yok</div>}
-      </div>
+          {(items || []).map((r) => {
+            const editing = editId === r.id;
+            return (
+              <div
+                key={r.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "72px 1.2fr 1fr 1fr 120px 190px 260px",
+                  padding: "10px 12px",
+                  borderBottom: "1px solid #16203a",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ opacity: 0.85 }}>{r.id}</div>
 
-      <div className="muted" style={{ marginTop: 10 }}>
-        Not: İlçe alanı opsiyonel. Filtreyi kullanırsan listede ilçe içerene göre arar.
-      </div>
-      {detail ? (
-        <div className="modal" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "grid", placeItems: "center", zIndex: 60 }}>
-          <div className="card" style={{ width: "min(900px, 94vw)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <div>
-                <div style={{ fontWeight: 800 }}>Room Profili</div>
-                <div className="muted">#{detail.id}</div>
+                <div>
+                  {editing ? (
+                    <input value={editForm.name} onChange={(e) => setEditForm((s) => ({ ...s, name: e.target.value }))} />
+                  ) : (
+                    <div style={{ fontWeight: 600 }}>{r.name}</div>
+                  )}
+                </div>
+
+                <div>
+                  {editing ? (
+                    <select value={editForm.regionId} onChange={(e) => setEditForm((s) => ({ ...s, regionId: e.target.value }))}>
+                      <option value="">-</option>
+                      {(regions || []).map((rg) => (
+                        <option key={rg.id} value={String(rg.id)}>
+                          {rg.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div>{getRegionName(r)}</div>
+                  )}
+                </div>
+
+                <div>
+                  {editing ? (
+                    <input value={editForm.district} onChange={(e) => setEditForm((s) => ({ ...s, district: e.target.value }))} />
+                  ) : (
+                    <div>{r.district || "-"}</div>
+                  )}
+                </div>
+
+                <div>
+                  {editing ? (
+                    <select value={editForm.status} onChange={(e) => setEditForm((s) => ({ ...s, status: e.target.value }))}>
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="DELETED">DELETED</option>
+                    </select>
+                  ) : (
+                    <span className="pill">{r.status || "ACTIVE"}</span>
+                  )}
+                </div>
+
+                <div style={{ opacity: 0.8 }}>{r.createdAt ? new Date(r.createdAt).toLocaleString() : "-"}</div>
+
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  <button className="btn sm" disabled={busy} onClick={() => copyText(r.id)}>
+                    ID Kopyala
+                  </button>
+
+                  {editing ? (
+                    <>
+                      <button className="btn sm primary" disabled={busy} onClick={() => saveEdit(r.id)}>
+                        Kaydet
+                      </button>
+                      <button className="btn sm" disabled={busy} onClick={() => setEditId(null)}>
+                        İptal
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button className="btn sm" disabled={busy} onClick={() => startEdit(r)}>
+                        Düzenle
+                      </button>
+                      <button className="btn sm" disabled={busy} onClick={() => openProfile(r)}>
+                        Profil
+                      </button>
+                      <button className="btn sm" disabled={busy} onClick={() => del(r.id)}>
+                        Sil
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <button className="btn sm" onClick={() => setDetail(null)}>
+            );
+          })}
+
+          {(!items || items.length === 0) && <div style={{ padding: 12, opacity: 0.75 }}>Kayıt yok</div>}
+        </div>
+
+        <div className="muted" style={{ fontSize: 12 }}>
+          Not: İlçe alanı opsiyonel. Filtreyi kullanırsan listede ilçe içerenlere göre arar.
+        </div>
+      </div>
+
+      {prof ? (
+        <div className="modal-backdrop" onClick={() => !busy && setProf(null)}>
+          <div className="card modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 760 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingBottom: 10, borderBottom: "1px solid #22314f" }}>
+              <div style={{ fontWeight: 800 }}>Room Profili — #{prof.id} {prof.name}</div>
+              <button className="btn sm" disabled={busy} onClick={() => setProf(null)}>
                 Kapat
               </button>
             </div>
 
-            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
-              <label className="muted">
-                Yetkili Adı (ops.)
-                <input value={detail.contactName} onChange={(e) => setDetail((x) => ({ ...x, contactName: e.target.value }))} />
+            <div className="grid" style={{ marginTop: 12 }}>
+              <label className="col muted">
+                Yetkili Ad Soyad
+                <input value={profForm.contactName} onChange={(e) => setProfForm((s) => ({ ...s, contactName: e.target.value }))} />
               </label>
-              <label className="muted">
-                Yetkili Tel (ops.)
-                <input value={detail.contactPhone} onChange={(e) => setDetail((x) => ({ ...x, contactPhone: e.target.value }))} />
+              <label className="col muted">
+                Telefon
+                <input value={profForm.contactPhone} onChange={(e) => setProfForm((s) => ({ ...s, contactPhone: e.target.value }))} />
               </label>
-              <label className="muted">
-                Yetkili Email (ops.)
-                <input value={detail.contactEmail} onChange={(e) => setDetail((x) => ({ ...x, contactEmail: e.target.value }))} />
-              </label>
-
-              <label className="muted" style={{ gridColumn: "1 / -1" }}>
-                Adres (ops.)
-                <textarea rows={3} value={detail.addressLine} onChange={(e) => setDetail((x) => ({ ...x, addressLine: e.target.value }))} />
-              </label>
-
-              <label className="muted" style={{ gridColumn: "1 / -1" }}>
-                Notlar (ops.)
-                <textarea rows={3} value={detail.notes} onChange={(e) => setDetail((x) => ({ ...x, notes: e.target.value }))} />
+              <label className="col muted">
+                E-posta
+                <input value={profForm.contactEmail} onChange={(e) => setProfForm((s) => ({ ...s, contactEmail: e.target.value }))} />
               </label>
             </div>
 
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn" disabled={busy} onClick={saveDetail}>
-                Kaydet
-              </button>
-              <button className="btn" disabled={busy} onClick={() => setDetail(null)}>
+            <label className="col muted" style={{ marginTop: 12 }}>
+              Adres
+              <textarea rows={3} value={profForm.addressLine} onChange={(e) => setProfForm((s) => ({ ...s, addressLine: e.target.value }))} />
+            </label>
+
+            <label className="col muted" style={{ marginTop: 12 }}>
+              Notlar
+              <textarea rows={3} value={profForm.notes} onChange={(e) => setProfForm((s) => ({ ...s, notes: e.target.value }))} />
+            </label>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+              <button className="btn" disabled={busy} onClick={() => setProf(null)}>
                 İptal
               </button>
+              <button className="btn primary" disabled={busy} onClick={saveProfile}>
+                Kaydet
+              </button>
             </div>
+
+            {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
           </div>
         </div>
       ) : null}
-
-    </div>
+    </>
   );
 }

@@ -21,6 +21,12 @@ export default function AuditLogsPanel() {
   const [action, setAction] = useState("");
   const [actorEmail, setActorEmail] = useState("");
 
+  function copyText(t) {
+    try {
+      navigator.clipboard.writeText(String(t || ""));
+    } catch {}
+  }
+
   async function load() {
     setBusy(true);
     setErr("");
@@ -47,9 +53,14 @@ export default function AuditLogsPanel() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2 style={{ margin: 0, marginBottom: 10 }}>Audit Logs</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
+        <h2 style={{ margin: 0 }}>Audit Logs</h2>
+        <span className="pill" data-status="COUNT">
+          {items.length} kayıt
+        </span>
+      </div>
 
-      <div className="card" style={{ marginBottom: 12 }}>
+      <div className="card" style={{ marginTop: 12, marginBottom: 12 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
           <label className="muted">
             Arama (action/entity)
@@ -75,41 +86,67 @@ export default function AuditLogsPanel() {
           </label>
         </div>
 
-        <div style={{ marginTop: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ marginTop: 12 }} className="saActions">
           <button className="btn" disabled={busy} onClick={load}>
             Yenile
           </button>
+          <button
+            className="btn"
+            disabled={busy}
+            onClick={() => {
+              setQ("");
+              setEntity("");
+              setAction("");
+              setActorEmail("");
+            }}
+          >
+            Filtre Temizle
+          </button>
           <div className="muted" style={{ opacity: 0.7 }}>
-            {busy ? "Yükleniyor..." : `${items.length} kayıt`}
+            {busy ? "Yükleniyor..." : ""}
           </div>
         </div>
 
         {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
       </div>
 
-      <div className="card">
-        <div style={{ display: "grid", gridTemplateColumns: "170px 1fr 220px 120px 120px 1fr", padding: "10px 12px", fontWeight: 700, opacity: 0.9 }}>
+      <div className="saTable">
+        <div
+          className="saHead"
+          style={{ display: "grid", gridTemplateColumns: "170px 1fr 240px 120px 120px 1fr 110px", padding: "10px 12px" }}
+        >
           <div>Zaman</div>
           <div>Actor</div>
           <div>Action</div>
           <div>Entity</div>
           <div>EntityId</div>
           <div>Meta</div>
+          <div></div>
         </div>
 
         {(items || []).map((x) => (
-          <div key={x.id} style={{ display: "grid", gridTemplateColumns: "170px 1fr 220px 120px 120px 1fr", padding: "10px 12px", borderTop: "1px solid #222633", alignItems: "center" }}>
+          <div
+            key={x.id}
+            className="saRow"
+            style={{ display: "grid", gridTemplateColumns: "170px 1fr 240px 120px 120px 1fr 110px", padding: "10px 12px", alignItems: "center" }}
+          >
             <div style={{ opacity: 0.85 }}>{fmt(x.createdAt)}</div>
             <div style={{ wordBreak: "break-word" }}>
               <div>{x.actorEmail || "-"}</div>
               <div className="muted" style={{ fontSize: 12 }}>
-                {x.actorRole || "-"}{x.actorUserId ? ` #${x.actorUserId}` : ""}
+                {x.actorRole || "-"}
+                {x.actorUserId ? ` #${x.actorUserId}` : ""}
               </div>
             </div>
             <div style={{ wordBreak: "break-word" }}>{x.action}</div>
             <div>{x.entity}</div>
             <div>{x.entityId ?? "-"}</div>
-            <div style={{ fontSize: 12, opacity: 0.85, whiteSpace: "pre-wrap" }}>{x.meta ? JSON.stringify(x.meta) : ""}</div>
+            <div className="saMeta">{x.meta ? JSON.stringify(x.meta) : ""}</div>
+            <div>
+              <button className="btn sm" onClick={() => copyText(x.meta ? JSON.stringify(x.meta) : "")}>
+                Kopyala
+              </button>
+            </div>
           </div>
         ))}
 

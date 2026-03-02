@@ -3,6 +3,7 @@
 // Company (kiralayan) ile bağ: Agreement üzerinden kurulmalı (room.companyId yok).
 //
 // M22: Company için "Room Directory" (search + hasHub filter)
+// M36+: regionId/district + profile fields + region include for UI
 
 import express from "express";
 import { z } from "zod";
@@ -16,7 +17,6 @@ function roomIdOf(req) {
   const v = req.user?.roomId ?? req.me?.roomId ?? req.auth?.roomId;
   return v == null ? null : Number(v);
 }
-
 function companyIdOf(req) {
   const v = req.user?.companyId ?? req.me?.companyId ?? req.auth?.companyId;
   return v == null ? null : Number(v);
@@ -28,26 +28,41 @@ function requireAnyRole(...roles) {
     return res.status(403).json({ error: "Forbidden" });
   };
 }
-
 function truthy(v) {
   const s = String(v ?? "").toLowerCase().trim();
   return s === "1" || s === "true" || s === "yes" || s === "y";
 }
 
-// CREATE: allow optional hub on create
+const zRegionId = z.preprocess(
+  (v) => (v == null || v === "" ? null : Number(v)),
+  z.number().int().positive().nullable()
+);
+
+const zOptStr = z.preprocess(
+  (v) => (v == null || String(v).trim() === "" ? null : String(v).trim()),
+  z.string().min(1).nullable()
+);
+
+const zOptEmail = z.preprocess(
+  (v) => (v == null || String(v).trim() === "" ? null : String(v).trim().toLowerCase()),
+  z.string().email().nullable()
+);
+
+// CREATE: allow optional hub on create + optional region/profile fields
 const createRoomSchema = z
   .object({
     name: z.string().trim().min(2),
     status: z.string().trim().optional(),
-    regionId: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().int().positive().nullable()).optional(),
-    district: z.string().trim().max(64).optional().nullable(),
-    addressLine: z.string().trim().max(500).optional().nullable(),
-    contactName: z.string().trim().max(120).optional().nullable(),
-    contactPhone: z.string().trim().max(40).optional().nullable(),
-    contactEmail: z.string().trim().max(180).optional().nullable(),
-    notes: z.string().trim().max(2000).optional().nullable(),
+    regionId: zRegionId.optional(),
+    district: zOptStr.optional(),
     hubLat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
     hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
+    // profile
+    addressLine: zOptStr.optional(),
+    contactName: zOptStr.optional(),
+    contactPhone: zOptStr.optional(),
+    contactEmail: zOptEmail.optional(),
+    notes: zOptStr.optional(),
   })
   .refine(
     (v) => {
@@ -70,13 +85,14 @@ const updateRoomSchema = z
   .object({
     name: z.string().trim().min(2).optional(),
     status: z.string().trim().optional(),
-    regionId: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().int().positive().nullable()).optional(),
-    district: z.string().trim().max(64).optional().nullable(),
-    addressLine: z.string().trim().max(500).optional().nullable(),
-    contactName: z.string().trim().max(120).optional().nullable(),
-    contactPhone: z.string().trim().max(40).optional().nullable(),
-    contactEmail: z.string().trim().max(180).optional().nullable(),
-    notes: z.string().trim().max(2000).optional().nullable(),
+    regionId: zRegionId.optional(),
+    district: zOptStr.optional(),
+    // profile
+    addressLine: zOptStr.optional(),
+    contactName: zOptStr.optional(),
+    contactPhone: zOptStr.optional(),
+    contactEmail: zOptEmail.optional(),
+    notes: zOptStr.optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
 
@@ -101,19 +117,19 @@ const updateHubSchema = z
 
 export function roomsRouter() {
   const r = express.Router();
-
-  // ✅ auth required
   r.use(authRequired());
 
   // LIST
-  // SUPER_ADMIN -> tüm roomlar
-  // COMPANY -> tüm aktif roomlar (directory)
+  // SUPER_ADMIN -> tüm roomlar (filters allowed)
+  // COMPANY -> room directory (region enforced if company has regionId)
   // ROOM -> sadece kendi room'u
   //
-  // M22 query:
-  //  - ?q=term (name contains, insensitive)
-  //  - ?hasHub=1  (hubLat+hubLng not null)
+  // Query:
+  //  - ?q=term
+  //  - ?hasHub=1
   //  - ?take=200
+  //  - ?regionId=1 (SUPER_ADMIN only)
+  //  - ?district=... (SUPER_ADMIN only)
   r.get("/", requireAnyRole("SUPER_ADMIN", "ROOM", "COMPANY"), async (req, res) => {
     const role = roleOf(req);
     const take = Math.min(500, Math.max(1, Number(req.query.take || 200)));
@@ -122,7 +138,10 @@ export function roomsRouter() {
     if (role === "ROOM") {
       const rid = roomIdOf(req);
       if (!rid) return res.json({ items: [] });
-      const item = await prisma.room.findUnique({ where: { id: rid } });
+      const item = await prisma.room.findUnique({
+        where: { id: rid },
+        include: { region: { select: { id: true, name: true } } },
+      });
       if (!item || item.status === "DELETED") return res.json({ items: [] });
       return res.json({ items: [item] });
     }
@@ -130,28 +149,11 @@ export function roomsRouter() {
     const q = String(req.query.q || "").trim();
     const hasHub = truthy(req.query.hasHub);
 
-// COMPANY: region gate (KVKK/ops) — only show rooms in my region (or regionId null for legacy data)
-let companyRegionId = null;
-if (role === "COMPANY") {
-  const cid = companyIdOf(req);
-  if (cid) {
-    const c = await prisma.company.findUnique({ where: { id: cid }, select: { regionId: true } });
-    companyRegionId = c?.regionId ?? null;
-  }
-}
-
-
     const where = {
       status: { not: "DELETED" },
-      ...(companyRegionId
-        ? { OR: [{ regionId: companyRegionId }, { regionId: null }] }
-        : {}),
       ...(q
         ? {
-            name: {
-              contains: q,
-              mode: "insensitive",
-            },
+            name: { contains: q, mode: "insensitive" },
           }
         : {}),
       ...(hasHub
@@ -162,9 +164,30 @@ if (role === "COMPANY") {
         : {}),
     };
 
+    // SUPER_ADMIN filters
+    if (role === "SUPER_ADMIN") {
+      const regionId = req.query.regionId == null || req.query.regionId === "" ? null : Number(req.query.regionId);
+      const district = String(req.query.district || "").trim();
+      if (!Number.isNaN(regionId) && regionId != null) where.regionId = regionId;
+      if (district) where.district = { contains: district, mode: "insensitive" };
+    }
+
+    // COMPANY: region gate (legacy allow regionId null rooms too)
+    if (role === "COMPANY") {
+      const cid = companyIdOf(req);
+      if (cid) {
+        const c = await prisma.company.findUnique({ where: { id: cid }, select: { regionId: true } });
+        const rId = c?.regionId ?? null;
+        if (rId != null) {
+          where.OR = [{ regionId: rId }, { regionId: null }];
+        }
+      }
+    }
+
     const items = await prisma.room.findMany({
       where,
       take,
+      include: { region: { select: { id: true, name: true } } },
       orderBy: [{ name: "asc" }, { id: "asc" }],
     });
 
@@ -176,14 +199,16 @@ if (role === "COMPANY") {
   // ROOM -> only own room
   r.get("/:id", requireAnyRole("SUPER_ADMIN", "ROOM", "COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
-    const item = await prisma.room.findUnique({ where: { id } });
+    const item = await prisma.room.findUnique({
+      where: { id },
+      include: { region: { select: { id: true, name: true } } },
+    });
     if (!item || item.status === "DELETED") return res.status(404).json({ error: "Room not found" });
 
     const role = roleOf(req);
     if (role === "ROOM") {
       const rid = roomIdOf(req);
       if (!rid || Number(rid) !== Number(id)) {
-        // info sızdırmamak için 404
         return res.status(404).json({ error: "Room not found" });
       }
     }
@@ -196,25 +221,27 @@ if (role === "COMPANY") {
     const parsed = createRoomSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
+    const data = {
+      name: parsed.data.name,
+      status: parsed.data.status ?? "ACTIVE",
+      regionId: Object.prototype.hasOwnProperty.call(parsed.data, "regionId") ? parsed.data.regionId : null,
+      district: Object.prototype.hasOwnProperty.call(parsed.data, "district") ? parsed.data.district : null,
+      hubLat: Object.prototype.hasOwnProperty.call(parsed.data, "hubLat") ? parsed.data.hubLat : null,
+      hubLng: Object.prototype.hasOwnProperty.call(parsed.data, "hubLng") ? parsed.data.hubLng : null,
+      addressLine: Object.prototype.hasOwnProperty.call(parsed.data, "addressLine") ? parsed.data.addressLine : null,
+      contactName: Object.prototype.hasOwnProperty.call(parsed.data, "contactName") ? parsed.data.contactName : null,
+      contactPhone: Object.prototype.hasOwnProperty.call(parsed.data, "contactPhone") ? parsed.data.contactPhone : null,
+      contactEmail: Object.prototype.hasOwnProperty.call(parsed.data, "contactEmail") ? parsed.data.contactEmail : null,
+      notes: Object.prototype.hasOwnProperty.call(parsed.data, "notes") ? parsed.data.notes : null,
+    };
+
     const item = await prisma.room.create({
-      data: {
-        name: parsed.data.name,
-        status: parsed.data.status ?? "ACTIVE",
-        regionId: Object.prototype.hasOwnProperty.call(parsed.data, "regionId") ? (parsed.data.regionId ? Number(parsed.data.regionId) : null) : null,
-        district: parsed.data.district ? String(parsed.data.district).trim() : null,
-        addressLine: parsed.data.addressLine ? String(parsed.data.addressLine).trim() : null,
-        contactName: parsed.data.contactName ? String(parsed.data.contactName).trim() : null,
-        contactPhone: parsed.data.contactPhone ? String(parsed.data.contactPhone).trim() : null,
-        contactEmail: parsed.data.contactEmail ? String(parsed.data.contactEmail).trim() : null,
-        notes: parsed.data.notes ? String(parsed.data.notes).trim() : null,
-        hubLat: Object.prototype.hasOwnProperty.call(parsed.data, "hubLat") ? parsed.data.hubLat : null,
-        hubLng: Object.prototype.hasOwnProperty.call(parsed.data, "hubLng") ? parsed.data.hubLng : null,
-      },
+      data,
+      include: { region: { select: { id: true, name: true } } },
     });
 
     // DEV/DEMO convenience:
-    // demo ROOM user'unu sadece ilk kez room'a bağla (override etme)
-    if (process.env.NODE_ENV !== "production") {
+    if ((process.env.NODE_ENV ?? "development") !== "production") {
       await prisma.user.updateMany({
         where: { email: "room@demo.com", role: "ROOM", roomId: null },
         data: { roomId: item.id },
@@ -230,22 +257,15 @@ if (role === "COMPANY") {
     const parsed = updateRoomSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const data = { ...parsed.data };
-    if (Object.prototype.hasOwnProperty.call(data, "regionId")) data.regionId = data.regionId ? Number(data.regionId) : null;
-    if (Object.prototype.hasOwnProperty.call(data, "district")) data.district = data.district ? String(data.district).trim() : null;
-    if (Object.prototype.hasOwnProperty.call(data, "addressLine")) data.addressLine = data.addressLine ? String(data.addressLine).trim() : null;
-    if (Object.prototype.hasOwnProperty.call(data, "contactName")) data.contactName = data.contactName ? String(data.contactName).trim() : null;
-    if (Object.prototype.hasOwnProperty.call(data, "contactPhone")) data.contactPhone = data.contactPhone ? String(data.contactPhone).trim() : null;
-    if (Object.prototype.hasOwnProperty.call(data, "contactEmail")) data.contactEmail = data.contactEmail ? String(data.contactEmail).trim() : null;
-    if (Object.prototype.hasOwnProperty.call(data, "notes")) data.notes = data.notes ? String(data.notes).trim() : null;
-
-    const item = await prisma.room.update({ where: { id }, data });
+    const item = await prisma.room.update({
+      where: { id },
+      data: parsed.data,
+      include: { region: { select: { id: true, name: true } } },
+    });
     return res.json(item);
   });
 
   // ✅ M19: HUB UPDATE
-  // SUPER_ADMIN -> any room
-  // ROOM -> only own room (id must match token roomId)
   r.put("/:id/hub", requireAnyRole("SUPER_ADMIN", "ROOM"), async (req, res) => {
     const id = Number(req.params.id);
     const parsed = updateHubSchema.safeParse(req.body);

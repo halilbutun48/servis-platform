@@ -2,8 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 
-function Pill({ children }) {
-  return <span className="pill">{children}</span>;
+function Pill({ children, status }) {
+  return (
+    <span className="pill" data-status={status || "ROLE"}>
+      {children}
+    </span>
+  );
 }
 
 export default function UsersPanel() {
@@ -14,6 +18,7 @@ export default function UsersPanel() {
 
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
+  const [statusFilter, setStatusFilter] = useState(""); // "" | ACTIVE | DISABLED
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -28,7 +33,7 @@ export default function UsersPanel() {
     password: "",
   });
 
-  const [edit, setEdit] = useState(null); // {id, fullName, phone, companyId, roomId}
+  const [edit, setEdit] = useState(null); // {id, role, fullName, phone, companyId, roomId}
   const [lastPw, setLastPw] = useState(null); // {email, password}
 
   async function loadRefs() {
@@ -77,6 +82,14 @@ export default function UsersPanel() {
       return "-";
     };
   }, [companies, rooms]);
+
+  const view = useMemo(() => {
+    const list = items || [];
+    if (!statusFilter) return list;
+    if (statusFilter === "DISABLED") return list.filter((u) => !!u.disabled);
+    if (statusFilter === "ACTIVE") return list.filter((u) => !u.disabled);
+    return list;
+  }, [items, statusFilter]);
 
   async function createUser() {
     setErr("");
@@ -128,8 +141,6 @@ export default function UsersPanel() {
   }
 
   async function enableUser(id) {
-    const ok = window.confirm(`#${id} kullanıcı enable edilsin mi?`);
-    if (!ok) return;
     setBusy(true);
     setErr("");
     try {
@@ -141,7 +152,6 @@ export default function UsersPanel() {
       setBusy(false);
     }
   }
-
 
   async function resetPw(id) {
     const ok = window.confirm(`#${id} için şifre resetlensin mi? Yeni şifre 1 kez gösterilecek.`);
@@ -180,29 +190,35 @@ export default function UsersPanel() {
     }
   }
 
+  function copyText(t) {
+    try {
+      navigator.clipboard.writeText(String(t || ""));
+    } catch {}
+  }
+
   return (
     <div style={{ padding: 16 }}>
-      <h2 style={{ margin: 0, marginBottom: 8 }}>Kullanıcılar</h2>
-      <div style={{ opacity: 0.75, marginBottom: 16 }}>
-        SUPER_ADMIN → Room/Company login hesaplarını oluşturur; gerektiğinde şifre reset/disable yapar.
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
+        <div>
+          <h2 style={{ margin: 0, marginBottom: 6 }}>Kullanıcılar</h2>
+          <div style={{ opacity: 0.75 }}>SUPER_ADMIN → Room/Company login hesaplarını oluşturur; gerektiğinde şifre reset/disable/enable yapar.</div>
+        </div>
+        <div className="saActions">
+          <span className="pill" data-status="COUNT">
+            {view.length} kayıt
+          </span>
+        </div>
       </div>
 
-      {err ? <div style={{ color: "#ff7b7b", marginBottom: 12, whiteSpace: "pre-wrap" }}>{err}</div> : null}
+      {err ? <div style={{ color: "#ff7b7b", marginTop: 12, marginBottom: 12, whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
       {lastPw ? (
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ fontWeight: 700, marginBottom: 6 }}>Yeni şifre (1 kez göster)</div>
           <div className="muted">{lastPw.email}</div>
-          <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ marginTop: 8 }} className="saActions">
             <code style={{ padding: "6px 10px", borderRadius: 10, background: "#111520" }}>{lastPw.password || "-"}</code>
-            <button
-              className="btn sm"
-              onClick={() => {
-                try {
-                  navigator.clipboard.writeText(String(lastPw.password || ""));
-                } catch {}
-              }}
-            >
+            <button className="btn sm" onClick={() => copyText(lastPw.password || "")}>
               Kopyala
             </button>
             <button className="btn sm" onClick={() => setLastPw(null)}>
@@ -277,7 +293,7 @@ export default function UsersPanel() {
           </label>
         </div>
 
-        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ marginTop: 10 }} className="saActions">
           <button className="btn" disabled={busy} onClick={createUser}>
             Oluştur
           </button>
@@ -288,14 +304,10 @@ export default function UsersPanel() {
       </div>
 
       <div className="card">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Ara (email / ad)"
-            style={{ minWidth: 260, padding: 10, borderRadius: 10, border: "1px solid #2b2f3a" }}
-          />
-          <select value={role} onChange={(e) => setRole(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #2b2f3a" }}>
+        <div className="toolbar">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ara (email / ad)" style={{ minWidth: 260 }} />
+
+          <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="">Tüm roller</option>
             <option value="SUPER_ADMIN">SUPER_ADMIN</option>
             <option value="ROOM">ROOM</option>
@@ -303,19 +315,25 @@ export default function UsersPanel() {
             <option value="DRIVER">DRIVER</option>
             <option value="PERSONEL">PERSONEL</option>
           </select>
+
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">Tüm durumlar</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="DISABLED">DISABLED</option>
+          </select>
+
           <button className="btn" disabled={busy} onClick={loadUsers}>
             Yenile
           </button>
         </div>
 
-        <div style={{ marginTop: 12, border: "1px solid #222633", borderRadius: 14, overflow: "hidden" }}>
+        <div className="saTable" style={{ marginTop: 12 }}>
           <div
+            className="saHead"
             style={{
               display: "grid",
-              gridTemplateColumns: "70px 1.2fr 120px 1fr 1fr 120px 240px",
+              gridTemplateColumns: "70px 1.2fr 120px 1fr 1fr 120px 320px",
               padding: "10px 12px",
-              background: "#111520",
-              fontWeight: 600,
             }}
           >
             <div>ID</div>
@@ -327,38 +345,60 @@ export default function UsersPanel() {
             <div>Aksiyon</div>
           </div>
 
-          {(items || []).map((u) => (
+          {(view || []).map((u) => (
             <div
               key={u.id}
+              className="saRow"
               style={{
                 display: "grid",
-                gridTemplateColumns: "70px 1.2fr 120px 1fr 1fr 120px 240px",
+                gridTemplateColumns: "70px 1.2fr 120px 1fr 1fr 120px 320px",
                 padding: "10px 12px",
-                borderTop: "1px solid #222633",
                 alignItems: "center",
               }}
             >
               <div style={{ opacity: 0.85 }}>{u.id}</div>
-              <div style={{ wordBreak: "break-word" }}>{u.email}</div>
+
+              <div style={{ wordBreak: "break-word" }}>
+                {u.email}
+                <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => copyText(u.email)} disabled={busy}>
+                  Kopyala
+                </button>
+              </div>
+
               <div>
                 <Pill>{u.role}</Pill>
               </div>
+
               <div>{u.fullName}</div>
               <div style={{ opacity: 0.9 }}>{scopeLabel(u)}</div>
-              <div>{u.disabled ? <span style={{ color: "#ff7b7b" }}>DISABLED</span> : <span style={{ color: "#7bffb3" }}>ACTIVE</span>}</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+
+              <div>
+                {u.disabled ? (
+                  <span className="pill" data-status="DISABLED">
+                    DISABLED
+                  </span>
+                ) : (
+                  <span className="pill" data-status="ACTIVE">
+                    ACTIVE
+                  </span>
+                )}
+              </div>
+
+              <div className="saActions">
                 <button className="btn sm" disabled={busy} onClick={() => resetPw(u.id)}>
                   Reset PW
                 </button>
+
                 {u.disabled ? (
-                <button className="btn sm" disabled={busy} onClick={() => enableUser(u.id)}>
-                  Enable
-                </button>
-              ) : (
-                <button className="btn sm" disabled={busy} onClick={() => disableUser(u.id)}>
-                  Disable
-                </button>
-              )}
+                  <button className="btn sm" disabled={busy} onClick={() => enableUser(u.id)}>
+                    Enable
+                  </button>
+                ) : (
+                  <button className="btn sm" disabled={busy} onClick={() => disableUser(u.id)}>
+                    Disable
+                  </button>
+                )}
+
                 <button
                   className="btn sm"
                   disabled={busy}
@@ -379,17 +419,19 @@ export default function UsersPanel() {
             </div>
           ))}
 
-          {(!items || items.length === 0) && <div style={{ padding: 12, opacity: 0.75 }}>Kayıt yok</div>}
+          {(!view || view.length === 0) && <div style={{ padding: 12, opacity: 0.75 }}>Kayıt yok</div>}
         </div>
       </div>
 
       {edit ? (
-        <div className="modal" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "grid", placeItems: "center", zIndex: 50 }}>
-          <div className="card" style={{ width: "min(720px, 92vw)" }}>
+        <div className="modal-backdrop" onClick={() => setEdit(null)}>
+          <div className="card modal" style={{ width: "min(720px, 92vw)" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 800 }}>Kullanıcı Düzenle</div>
-                <div className="muted">#{edit.id} • {edit.role}</div>
+                <div className="muted">
+                  #{edit.id} • {edit.role}
+                </div>
               </div>
               <button className="btn sm" onClick={() => setEdit(null)}>
                 Kapat
@@ -435,8 +477,8 @@ export default function UsersPanel() {
               ) : null}
             </div>
 
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn" disabled={busy} onClick={saveEdit}>
+            <div style={{ marginTop: 12 }} className="saActions">
+              <button className="btn primary" disabled={busy} onClick={saveEdit}>
                 Kaydet
               </button>
               <button className="btn" disabled={busy} onClick={() => setEdit(null)}>

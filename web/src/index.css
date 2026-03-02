@@ -158,3 +158,13 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
   color: #fecaca;
 }
 
+
+/* M36.5 — SUPER_ADMIN polish */
+.saTable { border: 1px solid #222633; border-radius: 14px; overflow: hidden; }
+.saHead { background: #111520; font-weight: 700; }
+.saRow { border-top: 1px solid #222633; }
+.saRow:hover { background: rgba(255,255,255,.02); }
+.saActions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.saMeta { font-size: 12px; opacity: .85; white-space: pre-wrap; word-break: break-word; }
+.pill[data-status="DISABLED"] { border-color: #ef4444; background: rgba(239, 68, 68, .18); color: #fecaca; }
+.pill[data-status="ROLE"] { border-color: #31466f; background: rgba(49, 70, 111, .18); color: #dbeafe; }

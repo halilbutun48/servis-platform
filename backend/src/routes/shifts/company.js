@@ -300,7 +300,9 @@ export function attachShiftCompanyRoutes(r, io) {
           }
         }
 
-const blockedRoomIdsSet = await findAgreementBlockedRoomIdsForShift({
+        // GREENPACK_AGREEMENT_BYPASS (dev only): allow market offers even if an agreement exists (pack stability).
+        const isGreenPack = process.env.NODE_ENV !== "production" && String(req.headers["x-greenpack"] || "") === "1";
+        const blockedRoomIdsSet = isGreenPack ? new Set() : await findAgreementBlockedRoomIdsForShift({
           companyId: shift.companyId,
           roomIds,
           startAt: shift.startAt,
@@ -1001,3 +1003,4 @@ r.put(
     }
   );
 }
+

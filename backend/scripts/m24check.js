@@ -7,6 +7,14 @@ function isoPlusMin(min) {
   return new Date(Date.now() + min * 60_000).toISOString();
 }
 
+// Avoid overlap with agreements created in earlier checks (M17) by scheduling this check on tomorrow.
+function isoTomorrowAt(h, m = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+}
+
 function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
 }
@@ -76,8 +84,8 @@ async function main() {
   const shift = await reqJson("POST", "/api/shifts", {
     token: companyToken,
     body: {
-      startAt: isoPlusMin(60),
-      endAt: isoPlusMin(180),
+      startAt: isoTomorrowAt(14, 0),
+      endAt: isoTomorrowAt(17, 0),
       status: "REQUESTED",
     },
   });

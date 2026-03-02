@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 
@@ -6,6 +6,7 @@ export default function RegionsPanel() {
   const { token } = useSession();
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
+  const [q, setQ] = useState("");
   const [edit, setEdit] = useState(null); // {id,name}
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -24,6 +25,12 @@ export default function RegionsPanel() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const view = useMemo(() => {
+    const qq = q.trim().toLowerCase();
+    if (!qq) return items || [];
+    return (items || []).filter((r) => String(r?.name || "").toLowerCase().includes(qq) || String(r?.id || "").includes(qq));
+  }, [items, q]);
 
   async function create() {
     const n = name.trim();
@@ -79,71 +86,58 @@ export default function RegionsPanel() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2 style={{ margin: 0, marginBottom: 8 }}>İller (Region)</h2>
-      <div style={{ opacity: 0.75, marginBottom: 16 }}>
-        SUPER_ADMIN illeri tanımlar. Company/Room listelerinde filtre ve atama için kullanılır.
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
+        <div>
+          <h2 style={{ margin: 0, marginBottom: 6 }}>İller (Region)</h2>
+          <div style={{ opacity: 0.75 }}>SUPER_ADMIN illeri tanımlar. Company/Room listelerinde filtre ve atama için kullanılır.</div>
+        </div>
+        <div className="saActions">
+          <span className="pill" data-status="COUNT">
+            {view.length} kayıt
+          </span>
+        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="İl adı (örn: İstanbul)"
-          style={{ minWidth: 260, padding: 10, borderRadius: 10, border: "1px solid #2b2f3a" }}
-        />
-        <button onClick={create} disabled={busy} style={{ padding: "10px 14px", borderRadius: 10 }}>
-          Ekle
-        </button>
-        <button onClick={load} disabled={busy} style={{ padding: "10px 14px", borderRadius: 10 }}>
-          Yenile
-        </button>
+      <div className="card" style={{ marginTop: 12 }}>
+        <div className="toolbar">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="İl adı (örn: İstanbul)" style={{ minWidth: 260 }} />
+          <button className="btn" onClick={create} disabled={busy}>
+            Ekle
+          </button>
+
+          <div style={{ flex: 1 }} />
+
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ara (id / ad)" style={{ minWidth: 260 }} />
+          <button className="btn" onClick={load} disabled={busy}>
+            Yenile
+          </button>
+        </div>
+
+        {err ? <div style={{ color: "#ff7b7b", marginTop: 12, whiteSpace: "pre-wrap" }}>{err}</div> : null}
       </div>
 
-      {err ? <div style={{ color: "#ff7b7b", marginBottom: 12, whiteSpace: "pre-wrap" }}>{err}</div> : null}
-
-      <div style={{ border: "1px solid #222633", borderRadius: 14, overflow: "hidden" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "80px 1fr 240px",
-            padding: "10px 12px",
-            background: "#111520",
-            fontWeight: 600,
-          }}
-        >
+      <div className="saTable">
+        <div className="saHead" style={{ display: "grid", gridTemplateColumns: "80px 1fr 240px", padding: "10px 12px" }}>
           <div>ID</div>
           <div>Ad</div>
           <div>Aksiyon</div>
         </div>
 
-        {(items || []).map((r) => (
-          <div
-            key={r.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "80px 1fr 240px",
-              padding: "10px 12px",
-              borderTop: "1px solid #222633",
-              alignItems: "center",
-            }}
-          >
+        {(view || []).map((r) => (
+          <div key={r.id} className="saRow" style={{ display: "grid", gridTemplateColumns: "80px 1fr 240px", padding: "10px 12px", alignItems: "center" }}>
             <div style={{ opacity: 0.85 }}>{r.id}</div>
             <div>
               {edit?.id === r.id ? (
-                <input
-                  value={edit.name}
-                  onChange={(e) => setEdit((x) => ({ ...x, name: e.target.value }))}
-                  style={{ width: "100%", padding: 8, borderRadius: 10, border: "1px solid #2b2f3a" }}
-                />
+                <input value={edit.name} onChange={(e) => setEdit((x) => ({ ...x, name: e.target.value }))} style={{ width: "100%" }} />
               ) : (
                 r.name
               )}
             </div>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="saActions">
               {edit?.id === r.id ? (
                 <>
-                  <button className="btn sm" disabled={busy} onClick={saveEdit}>
+                  <button className="btn sm primary" disabled={busy} onClick={saveEdit}>
                     Kaydet
                   </button>
                   <button className="btn sm" disabled={busy} onClick={() => setEdit(null)}>
@@ -164,7 +158,7 @@ export default function RegionsPanel() {
           </div>
         ))}
 
-        {(!items || items.length === 0) && <div style={{ padding: 12, opacity: 0.75 }}>Kayıt yok</div>}
+        {(!view || view.length === 0) && <div style={{ padding: 12, opacity: 0.75 }}>Kayıt yok</div>}
       </div>
 
       <div className="muted" style={{ marginTop: 12 }}>

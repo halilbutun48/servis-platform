@@ -1,4 +1,6 @@
-DEPRECATED
+M36 room delete hotfix
 
-Bu repo içinde `patch_m33_8_geocode_sanitize_zero_coords.ps1` yok.
-Patch/overlay notları için: OVERLAY_NOTES.md
+Run:
+  ./tools/patch-room-delete.ps1
+
+Then run pack -To 36.
