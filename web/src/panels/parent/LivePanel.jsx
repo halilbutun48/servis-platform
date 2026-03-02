@@ -12,6 +12,17 @@ function etaText(v) {
   return `${m} dk`;
 }
 
+function stopTitle(s) {
+  if (!s?.name) return "—";
+  const ord = typeof s.order === "number" ? s.order + 1 : null;
+  return ord ? `${ord}. ${s.name}` : s.name;
+}
+
+function numText(n) {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
+  return String(n);
+}
+
 export default function ParentLivePanel() {
   const { token } = useSession();
 
@@ -107,7 +118,9 @@ export default function ParentLivePanel() {
             {busy ? "..." : "Yenile"}
           </button>
 
-          <div className="muted">Araç: <b>{vehicles.length}</b></div>
+          <div className="muted">
+            Araç: <b>{vehicles.length}</b>
+          </div>
 
           {selected?.company?.name ? (
             <div className="muted">
@@ -131,21 +144,56 @@ export default function ParentLivePanel() {
         {vehicles.length ? (
           <div className="card" style={{ marginTop: 12, padding: 12 }}>
             <div className="muted" style={{ marginBottom: 8 }}>
-              ETA (yaklaşık):
+              Canlı durum (ETA + durak):
             </div>
 
-            <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ display: "grid", gap: 10 }}>
               {vehicles.map((v) => (
                 <div key={v.id} style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
                   <div>
                     Araç <b>#{v.id}</b> • <b>{v.plate}</b>
                   </div>
-                  <div className="muted">ETA: <b>{etaText(v)}</b></div>
+
+                  <div className="muted">
+                    ETA: <b>{etaText(v)}</b>
+                  </div>
+
                   {v?.etaTarget?.type === "STOP" ? (
-                    <div className="muted">Hedef: <b>{v.etaTarget.stopName}</b></div>
+                    <div className="muted">
+                      Çocuk durağı: <b>{v.etaTarget.stopName}</b>
+                    </div>
                   ) : null}
+
                   {v?.etaToChildKm != null ? (
-                    <div className="muted">Mesafe: <b>{v.etaToChildKm} km</b></div>
+                    <div className="muted">
+                      Mesafe: <b>{v.etaToChildKm} km</b>
+                    </div>
+                  ) : null}
+
+                  <div className="muted">
+                    Sonraki: <b>{stopTitle(v.nextStop)}</b>
+                  </div>
+
+                  {v?.remainingStopsToChild != null ? (
+                    <div className="muted">
+                      Çocuğa kalan: <b>{numText(v.remainingStopsToChild)}</b>
+                    </div>
+                  ) : (
+                    <div className="muted">
+                      Çocuğa kalan: <b>—</b>
+                    </div>
+                  )}
+
+                  {v?.remainingStopsTotal != null ? (
+                    <div className="muted">
+                      Toplam kalan: <b>{numText(v.remainingStopsTotal)}</b>
+                    </div>
+                  ) : null}
+
+                  {v?.childStopReached ? (
+                    <div className="muted">
+                      Durum: <b>Ulaşıldı</b>
+                    </div>
                   ) : null}
                 </div>
               ))}

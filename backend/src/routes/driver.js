@@ -8,6 +8,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { emitShift } from "./shifts/helpers.js";
+import { emitStopProgressNotifs } from \"../notifications/stopProgressNotifs.js\";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -418,6 +419,15 @@ export function driverRouter(io) {
     if (fresh?.vehicleId) {
       io?.to(`vehicle:${fresh.vehicleId}`).emit("route:progress", { ...payload, vehicleId: fresh.vehicleId });
     }
+
+    // stop progress notifications (ROOM/COMPANY + user/parent proximity)
+    await emitStopProgressNotifs({
+      io,
+      shiftId,
+      stop: { id: stopId, order: stop.order ?? null, state },
+      state,
+      source: "DRIVER_OPS",
+    });
 
     // instant ETA update (GPS beklemesin)
     try {

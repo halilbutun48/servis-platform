@@ -29,11 +29,34 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
       return res.json(items);
     }
 
-    // COMPANY / PERSONEL: sadece companyId tag'li notifs
-    if (u.role === "COMPANY" || u.role === "PERSONEL") {
+    // COMPANY: companyId tag'li notifs
+    if (u.role === "COMPANY") {
       if (!u.companyId) return res.json([]);
       const items = await prisma.notification.findMany({
         where: { companyId: u.companyId },
+        orderBy: { id: "desc" },
+        take: 100,
+      });
+      return res.json(items);
+    }
+
+    // PERSONEL: companyId + userId (kişisel) notifs
+    if (u.role === "PERSONEL") {
+      const ors = [{ userId: u.id }];
+      if (u.companyId) ors.push({ companyId: u.companyId });
+
+      const items = await prisma.notification.findMany({
+        where: { OR: ors },
+        orderBy: { id: "desc" },
+        take: 100,
+      });
+      return res.json(items);
+    }
+
+    // PARENT: sadece userId (kişisel) notifs
+    if (u.role === "PARENT") {
+      const items = await prisma.notification.findMany({
+        where: { userId: u.id },
         orderBy: { id: "desc" },
         take: 100,
       });

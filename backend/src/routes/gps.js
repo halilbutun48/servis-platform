@@ -5,6 +5,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { gpsIngestSchema } from "../validators.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
+import { emitStopProgressNotifs } from \"../notifications/stopProgressNotifs.js\";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW
@@ -389,6 +390,16 @@ export function gpsRouter(io) {
             where: { id: next.id },
             data: { state: "REACHED", reachedAt: now2, skippedAt: null },
           });
+
+          // stop progress notifications (ROOM/COMPANY + user/parent proximity)
+          await emitStopProgressNotifs({
+            io,
+            shiftId: sh.id,
+            stop: { id: next.id, order: next.order ?? null, state: "REACHED" },
+            state: "REACHED",
+            source: "AUTO_GEOFENCE",
+          });
+
 
           await audit(prisma, {
             actorUserId: null,
