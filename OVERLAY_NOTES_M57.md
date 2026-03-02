@@ -1,1 +1,1 @@
-M57 overlay: agreement bargaining (counter/accept) + UI + notif
+[Archived → docs/overlays/_archive/OVERLAY_NOTES_M57.md](docs/overlays/_archive/OVERLAY_NOTES_M57.md)

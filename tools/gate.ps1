@@ -2,7 +2,7 @@
 param(
   [Parameter(Mandatory=$false)]
   [ValidateRange(0,99)]
-  [int]$To = 21,
+  [int]$To = 0,
 
   [Parameter(Mandatory=$false)]
   [string]$ComposeDir = "infra",
@@ -64,6 +64,16 @@ $checks = @(
   @{ n = 35; name = "M35"; file = "m35check.js"; cmd = "node scripts/m35check.js" },
   @{ n = 36; name = "M36"; file = "m36check.js"; cmd = "node scripts/m36check.js" }
 )
+
+# ✅ supported max milestone (keep checks list as SSOT)
+$maxSupported = ($checks | Measure-Object -Property n -Maximum).Maximum
+
+if ($To -le 0) {
+  $To = $maxSupported
+  Write-Host ("ℹ️ Auto -To: M{0}" -f $To) -ForegroundColor Cyan
+} elseif ($To -gt $maxSupported) {
+  throw ("Requested -To M{0} but gate.ps1 supports up to M{1}. Update tools/gate.ps1 check list." -f $To, $maxSupported)
+}
 
 $repo = (Resolve-Path $RepoDir).Path
 $compose = Join-Path $repo $ComposeDir

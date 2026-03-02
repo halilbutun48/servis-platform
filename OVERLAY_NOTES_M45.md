@@ -1,1 +1,1 @@
-M45: Fix ShiftsPanel.jsx JSX comment + templateOptions TDZ/loop bug.
+[Archived → docs/overlays/_archive/OVERLAY_NOTES_M45.md](docs/overlays/_archive/OVERLAY_NOTES_M45.md)

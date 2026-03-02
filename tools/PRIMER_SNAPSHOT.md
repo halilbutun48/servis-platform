@@ -1,15 +1,15 @@
 SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER SNAPSHOT (Yapıştır & Devam Et)
 
-Tarih: 2026-02-28 (Europe/Istanbul)
+Tarih: 2026-03-02 (Europe/Istanbul)
 
 0) Durum / Referans
 
 Repo: D:\servis-platform
 
 Gate/Pack:
-- tools/pack.ps1 şu an [ValidateRange(0,35)] → hedef üst sınır M35
-- Son kaydedilmiş GREEN: ✅ GATE PASS (M0→M33) + ✅ PACK PASS (M0→M33)
-- Güncel doğrulama komutu (öneri): .\tools\pack.ps1 -To 35
+- tools/pack.ps1: default -To=0 (auto max), şu an max M36
+- Son durum: ✅ GATE PASS (M0→M36) + ✅ PACK PASS
+- Güncel doğrulama: .\tools\pack.ps1   (auto)  veya  .\tools\pack.ps1 -To 36
 
 Not (numaralandırma):
 - “M0→M35” Gate/Pack stage’idir.

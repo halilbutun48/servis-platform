@@ -1,5 +1,5 @@
 # STARTPACK_V1 — SERVIS-PLATFORM (PERSONEL SERVİS V1)
-Tarih: 2026-02-24  
+Tarih: 2026-03-02  
 Timezone: Europe/Istanbul
 
 Bu dosya repo için “tek bakışta çalışma runbook’u”dur:
@@ -25,7 +25,7 @@ Bu dosya repo için “tek bakışta çalışma runbook’u”dur:
 ## 2) Repo Yapısı
 - `backend/` Node(ESM)+Express+Prisma + jobs + ws
 - `web/` Vite+React
-- `infra/` docker-compose
+- `infra/` docker-compose (+ OSRM profile)
 - `docs/` SSOT dokümanlar
 - `tools/` gate/pack + primer snapshot
 
@@ -33,9 +33,12 @@ Bu dosya repo için “tek bakışta çalışma runbook’u”dur:
 
 ## 3) Doğrulama Standardı (Gate/Pack)
 
-### Canonical
-- **PACK (M0→M32):** `tools/pack.ps1 -To 32`
-- **Gate/check (M0→M32):** `tools/gate.ps1 -To 32`
+### Canonical (bu repo)
+- **PACK (M0→M36):** `tools\pack.ps1 -To 36`
+- **Gate/check (M0→M36):** `tools\gate.ps1 -To 36`
+- Sıfırdan temiz kurulum + OSRM + pack: `tools\reset-and-pack.ps1` (auto max milestone)
+
+> `tools/reset-and-pack.ps1` max milestone’ı `backend/scripts/m{N}check.js` dosyalarından otomatik bulur.
 
 ### ExecutionPolicy sorunu (Windows)
 - `tools\gate.cmd` ve `tools\pack.cmd` wrapper’ları `-ExecutionPolicy Bypass` ile çalışır.
@@ -44,8 +47,8 @@ Bu dosya repo için “tek bakışta çalışma runbook’u”dur:
 
 ## 4) En kritik akış (sahada “az tık”)
 1) Geo Review (NEEDS_REVIEW düzelt)  
-2) Agreement Wizard ile plan oluştur  
-3) (Ops.) Market ile çoklu room’dan teklif topla  
+2) Agreement/Shift planı oluştur  
+3) (Ops.) Market ile çoklu Room’dan teklif topla  
 4) 1 teklifi ACCEPT et → diğerleri CANCELLED  
 5) ROOM: Onayla + Başlat → ACTIVE  
 6) DRIVER: Reached → DONE  
@@ -55,6 +58,9 @@ Kullanım sayfaları: `docs/USAGE_GUIDE_V1.md`
 ---
 
 ## 5) Sık Hata / Debug Kısa Rehber
+- **429 / rate-limit**:
+  - PROD: auth/read/write/gps kovaları ayrı.
+  - DEV test: `x-greenpack: 1` limiter/throttle skip (check deterministik olsun diye).
 - **409 conflict** (agreement/availability overlap):
   - UI conflict listesine bak; start/end veya weekMask düzelt.
 - **403 RBAC**:
@@ -62,17 +68,12 @@ Kullanım sayfaları: `docs/USAGE_GUIDE_V1.md`
 - **Notification payload hataları** (ör. `type required`):
   - Payload standardı: `docs/NOTIFICATION_PAYLOAD_STANDARD.md`
 - **WS “gelmiyor”**:
-  - `ws:ready` logu + topic/scope doğrula; event isimlerinde `shift` / `offer` ayrımı tutarlı olmalı.
+  - event name + scope + topic guess (client `web/src/live/ws.js`) doğrula.
 
 ---
 
-## 6) SSOT Dosyaları (Değişince güncelle)
-- `docs/PROJECT_SPEC_V1.md`
-- `docs/API_SPEC_V1.md`
-- `docs/DB_SCHEMA_V1.md`
-- `docs/UI_SPEC_V1.md`
-- `docs/PRIMER_SSOT.md`
-- `docs/STARTPACK_V1.md` (bu dosya)
-- `tools/PRIMER_SNAPSHOT.md`
+## 6) Notlar (numaralandırma)
+- Gate/Pack milestone = `m{N}check.js` (şu an en yüksek: **M36**).
+- `OVERLAY_NOTES_Mxx` ve “M72/M77” = feature/overlay serisi (Gate ile birebir aynı olmak zorunda değil).
 
 ---

@@ -24,7 +24,7 @@ export function liveRouter() {
 
   // ---------------------------------------------------------
   // GET /api/live/vehicles
-  // - COMPANY/PERSONEL: approved/active shifts => vehicles
+  // - COMPANY/PERSONEL: approved/active shifts (onlyNow time-window) => vehicles
   // - DRIVER: my approved/active shifts => vehicles
   // - ROOM: room vehicles (active only)
   // - SUPER_ADMIN: active vehicles (cap)
@@ -49,11 +49,15 @@ export function liveRouter() {
 
     if (u.role === "COMPANY" || u.role === "PERSONEL") {
       if (!u.companyId) return res.json([]);
+      // ✅ KVKK time-window gate: only shifts where startAt<=now<=endAt
+      const now = new Date();
       const shifts = await prisma.shift.findMany({
         where: {
           companyId: u.companyId,
           status: { in: ["APPROVED", "ACTIVE"] },
           vehicleId: { not: null },
+          startAt: { lte: now },
+          endAt: { gte: now },
         },
         select: { vehicleId: true },
       });

@@ -1,5 +1,1 @@
-M34 HOTFIX — pendingFocusSet is not defined
-
-Fix:
-- Company ShiftsPanel: finalItems filter zincirinde yanlışlıkla pendingFocusSet kullanılmıştı. pendingFocusSet sadece pendingItems memo scope'unda tanımlı olduğu için runtime ReferenceError üretiyordu.
-- finalItems artık pendingFocusSet ile filtrelenmiyor (final liste filtre kriterleri: onlyAgreement + finalStatus + finalQ).
+[Archived → docs/overlays/_archive/OVERLAY_NOTES_M34_HOTFIX.md](docs/overlays/_archive/OVERLAY_NOTES_M34_HOTFIX.md)
