@@ -16,7 +16,7 @@ const VEHICLE_LIVE_SELECT = {
   roomId: true,
   room: { select: { id: true, name: true } },
   gpsLast: { select: { lat: true, lng: true, at: true, status: true } },
-  gpsState: { select: { lastUiStatus: true, lastChangeAt: true } },
+  gpsState: { select: { lastUiStatus: true, lastChangedAt: true } },
 };
 
 export function liveRouter() {

@@ -13,17 +13,12 @@ const qModeSchema = z
   .optional()
   .transform((v) => v ?? "REPLACE");
 
-// NOTE: Query param (maxWalkM) UI'dan bazen 0/"" gelebiliyor.
-// - 0 -> 50'ye clamp (crash yerine güvenli davranış)
-// - NaN/boş -> default 250
 const qMaxWalkSchema = z
   .preprocess((v) => {
-    if (v == null || v === "") return undefined;
-    const n = Number(v);
-    if (!Number.isFinite(n)) return undefined;
-    // clamp + int
-    const clamped = Math.max(50, Math.min(2000, Math.round(n)));
-    return clamped;
+    if (v == null) return undefined;
+    const s = String(v).trim();
+    if (!s) return undefined;
+    return Number(s);
   }, z.number().int().min(50).max(2000))
   .optional()
   .transform((v) => v ?? 250);
@@ -36,6 +31,7 @@ const personelItemSchema = z.object({
   lat: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
   lng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
   geoManualOverride: z.boolean().optional(),
+  kind: z.enum(["PERSONEL", "STUDENT"]).optional(),
 });
 
 function sanitizePhone(p) {
@@ -50,10 +46,11 @@ function normalizeGeoStatus({ lat, lng, geoManualOverride }) {
   return "NEEDS_REVIEW";
 }
 
-async function upsertCompanyPersonel(companyId, item) {
+async function upsertCompanyPersonel(companyId, item, defaultKind) {
   const phone = sanitizePhone(item.phone);
   const data = {
     fullName: item.fullName,
+    kind: item.kind ?? defaultKind,
     phone,
     homeAddress: item.address ?? null,
     homeLat: typeof item.lat === "number" ? item.lat : null,
@@ -161,11 +158,14 @@ export function attachShiftPeopleRoutes(router, _io) {
     const mode = qModeSchema.parse(req.query.mode);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
+    const company = await prisma.company.findUnique({ where: { id: req.user.companyId }, select: { kind: true } });
+    const defaultKind = company?.kind === "SCHOOL" ? "STUDENT" : "PERSONEL";
+
     const items = parseItemArray(req);
 
     const createdOrUpdated = [];
     for (const it of items) {
-      const p = await upsertCompanyPersonel(req.user.companyId, it);
+      const p = await upsertCompanyPersonel(req.user.companyId, it, defaultKind);
       createdOrUpdated.push(p);
     }
 
@@ -210,6 +210,9 @@ export function attachShiftPeopleRoutes(router, _io) {
     const mode = qModeSchema.parse(req.query.mode);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
+    const company = await prisma.company.findUnique({ where: { id: req.user.companyId }, select: { kind: true } });
+    const defaultKind = company?.kind === "SCHOOL" ? "STUDENT" : "PERSONEL";
+
     const bodySchema = z.object({
       fileName: z.string().max(200).optional(),
       rows: z.array(personelItemSchema).max(2000).optional(),
@@ -245,7 +248,7 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const createdOrUpdated = [];
     for (const row of rows) {
-      const p = await upsertCompanyPersonel(req.user.companyId, row);
+      const p = await upsertCompanyPersonel(req.user.companyId, row, defaultKind);
       createdOrUpdated.push(p);
 
       // back-link import row -> personelId for trace
@@ -295,6 +298,8 @@ export function attachShiftPeopleRoutes(router, _io) {
 
   // COMPANY: generate stops from shift people
   r.post("/:id/stops/generate", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    try {
+
     const id = Number(req.params.id);
     const mode = qModeSchema.parse(req.query.mode);
     const maxWalkM = qMaxWalkSchema.parse(req.query.maxWalkM);
@@ -348,7 +353,7 @@ export function attachShiftPeopleRoutes(router, _io) {
         data: {
           shiftId: shift.id,
           name: `${namePrefix} ${i + 1}`,
-          order: i,
+          order: i + 1,
           lat: c.center.lat,
           lng: c.center.lng,
           type: "COMMON",
@@ -389,7 +394,14 @@ export function attachShiftPeopleRoutes(router, _io) {
       skippedCount: skipped.length,
       hubApplied,
     });
-  });
+  
+
+} catch (e) {
+  // Never crash the server on bad query params (e.g., maxWalkM=)
+  const msg = String(e?.message ?? e);
+  return res.status(400).json({ ok: false, error: msg });
+}
+});
 
   
   // COMPANY + ROOM: list stops (used by Shift Tools "Shift’ten Durakları Çek")
