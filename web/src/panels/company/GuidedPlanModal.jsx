@@ -194,10 +194,9 @@ export default function GuidedPlanModal({
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
   const eligibleDaysCount = useMemo(() => countMatchingDaysInRange(startDate, endDate, weekMask), [startDate, endDate, weekMask]);
   const nextValidStart = useMemo(() => nextYmdMatchingMask(startDate, weekMask, 31), [startDate, weekMask]);
-  const [customStartHHMM, setCustomStartHHMM] = useState("08:00");
-  const [customEndHHMM, setCustomEndHHMM] = useState("10:00");
-  const [customDirection, setCustomDirection] = useState("INBOUND");
-  const [customPattern, setCustomPattern] = useState("ONE_WAY");
+  const [customSlots, setCustomSlots] = useState(() => [
+    { label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" },
+  ]);
   const [draftNote, setDraftNote] = useState("");
   const [draftAmount, setDraftAmount] = useState("");
 
@@ -247,10 +246,7 @@ export default function GuidedPlanModal({
     setDurationKey("2d");
     setEndDate(addDaysISO(todayYmd(), 0));
     setDaysSel(selectedFromMask(62));
-    setCustomStartHHMM("08:00");
-    setCustomEndHHMM("10:00");
-    setCustomDirection("INBOUND");
-    setCustomPattern("ONE_WAY");
+    setCustomSlots([{ label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" }]);
     setDraftNote("");
     setDraftAmount("");
     setDraftShiftIds([]);
@@ -300,10 +296,22 @@ export default function GuidedPlanModal({
 
   function stepItems() {
     if (pack.key !== "CUSTOM") return pack.items;
-    const sMin = parseHHMM(customStartHHMM);
-    const eMin = parseHHMM(customEndHHMM);
-    if (sMin == null || eMin == null) return [];
-    return [{ label: "Özel", startMin: sMin, endMin: eMin, direction: customDirection, pattern: customPattern }];
+    const slots = Array.isArray(customSlots) ? customSlots : [];
+    if (!slots.length) return [];
+    const out = [];
+    for (const s of slots) {
+      const sMin = parseHHMM(s?.startHHMM);
+      const eMin = parseHHMM(s?.endHHMM);
+      if (sMin == null || eMin == null) return [];
+      out.push({
+        label: String(s?.label || "").trim() || "Özel",
+        startMin: sMin,
+        endMin: eMin,
+        direction: s?.direction || "INBOUND",
+        pattern: s?.pattern || "ONE_WAY",
+      });
+    }
+    return out;
   }
 
   async function saveHub() {
@@ -679,7 +687,7 @@ setSentOk(true);
     const lines = items.map((it) => `${it.label || ""}: ${toHHMM(it.startMin)} – ${toHHMM(it.endMin)} • ${it.direction} • ${it.pattern}`);
     return lines;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packKey, customStartHHMM, customEndHHMM, customDirection, customPattern]);
+  }, [packKey, customSlots]);
 
   return (
     <Modal
@@ -768,25 +776,130 @@ setSentOk(true);
                 ))}
               </div>
 
+              <div className="row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
+                {pack.key !== "CUSTOM" ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => {
+                      const src = Array.isArray(pack?.items) ? pack.items : [];
+                      const slots = src.map((it, idx) => ({
+                        label: String(it?.label || `Vardiya ${idx + 1}`),
+                        startHHMM: toHHMM(it.startMin),
+                        endHHMM: toHHMM(it.endMin),
+                        direction: it?.direction || "INBOUND",
+                        pattern: it?.pattern || "ONE_WAY",
+                      }));
+                      setCustomSlots(slots.length ? slots : [{ label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" }]);
+                      setPackKey("CUSTOM");
+                    }}
+                  >
+                    Özele çevir (düzenle)
+                  </button>
+                ) : null}
+              </div>
+
               {pack.key === "CUSTOM" ? (
-                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                  <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                    <label className="muted">Start <input value={customStartHHMM} onChange={(e) => setCustomStartHHMM(e.target.value)} style={{ width: 120 }} disabled={busy} /></label>
-                    <label className="muted">End <input value={customEndHHMM} onChange={(e) => setCustomEndHHMM(e.target.value)} style={{ width: 120 }} disabled={busy} /></label>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    İpucu: End, Start’tan küçükse “gece vardiyası” sayılır (bir sonraki güne taşar).
                   </div>
-                  <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-                    <label className="muted">Direction
-                      <select value={customDirection} onChange={(e) => setCustomDirection(e.target.value)} disabled={busy}>
-                        <option value="INBOUND">INBOUND</option>
-                        <option value="OUTBOUND">OUTBOUND</option>
-                      </select>
-                    </label>
-                    <label className="muted">Pattern
-                      <select value={customPattern} onChange={(e) => setCustomPattern(e.target.value)} disabled={busy}>
-                        <option value="ONE_WAY">ONE_WAY</option>
-                        <option value="LOOP">LOOP</option>
-                      </select>
-                    </label>
+
+                  {(customSlots || []).map((slot, idx) => (
+                    <div key={idx} className="card" style={{ padding: 10, border: "1px solid #223" }}>
+                      <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <input
+                          value={slot?.label || ""}
+                          onChange={(e) =>
+                            setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, label: e.target.value } : x)))
+                          }
+                          placeholder={`Vardiya ${idx + 1}`}
+                          style={{ minWidth: 160, flex: 1 }}
+                          disabled={busy}
+                        />
+                        {(customSlots || []).length > 1 ? (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => setCustomSlots((p) => (p || []).filter((_, i) => i !== idx))}
+                            disabled={busy}
+                          >
+                            Kaldır
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <div className="row" style={{ gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+                        <label className="muted">
+                          Start{" "}
+                          <input
+                            value={slot?.startHHMM || ""}
+                            onChange={(e) =>
+                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, startHHMM: e.target.value } : x)))
+                            }
+                            style={{ width: 120 }}
+                            disabled={busy}
+                          />
+                        </label>
+                        <label className="muted">
+                          End{" "}
+                          <input
+                            value={slot?.endHHMM || ""}
+                            onChange={(e) =>
+                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, endHHMM: e.target.value } : x)))
+                            }
+                            style={{ width: 120 }}
+                            disabled={busy}
+                          />
+                        </label>
+
+                        <label className="muted">
+                          Direction{" "}
+                          <select
+                            value={slot?.direction || "INBOUND"}
+                            onChange={(e) =>
+                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, direction: e.target.value } : x)))
+                            }
+                            disabled={busy}
+                          >
+                            <option value="INBOUND">INBOUND</option>
+                            <option value="OUTBOUND">OUTBOUND</option>
+                          </select>
+                        </label>
+
+                        <label className="muted">
+                          Pattern{" "}
+                          <select
+                            value={slot?.pattern || "ONE_WAY"}
+                            onChange={(e) =>
+                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, pattern: e.target.value } : x)))
+                            }
+                            disabled={busy}
+                          >
+                            <option value="ONE_WAY">ONE_WAY</option>
+                            <option value="LOOP">LOOP</option>
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() =>
+                        setCustomSlots((p) => [
+                          ...(p || []),
+                          { label: `Vardiya ${(p || []).length + 1}`, startHHMM: "17:00", endHHMM: "19:00", direction: "OUTBOUND", pattern: "ONE_WAY" },
+                        ])
+                      }
+                      disabled={busy || (customSlots || []).length >= 3}
+                      title={(customSlots || []).length >= 3 ? "Maksimum 3 vardiya" : "Yeni vardiya ekle"}
+                    >
+                      + Vardiya ekle
+                    </button>
                   </div>
                 </div>
               ) : null}

@@ -282,7 +282,7 @@ export default function PlanBuilderPanel({
     }
   }
   // --- /M33.6b ---
-  const [maxWalkM, setMaxWalkM] = useState("400");
+  const [maxWalkM, setMaxWalkM] = useState("250");
   const [autoReorderStops, setAutoReorderStops] = useState(true);
 
   // Inputs

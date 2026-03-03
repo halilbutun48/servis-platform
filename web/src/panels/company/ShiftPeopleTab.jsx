@@ -239,7 +239,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 
   const [selectedShiftId, setSelectedShiftId] = useState("");
-  const [maxWalkM, setMaxWalkM] = useState(400);
+  const [maxWalkM, setMaxWalkM] = useState(250);
 
   // ✅ M51.B: Shift Hub (Toplanma/Dağıtım)
   const [hubDirection, setHubDirection] = useState("INBOUND");
