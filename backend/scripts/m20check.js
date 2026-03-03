@@ -21,6 +21,22 @@ function minTR(d) {
   return tr.getUTCHours() * 60 + tr.getUTCMinutes();
 }
 
+function futureTRAtMs(hourTR = 10, minuteTR = 0) {
+  // Returns a UTC ms timestamp that corresponds to the next occurrence of (hourTR:minuteTR) in TR local time.
+  // Ensures it's in the future (>= now + 5min) to avoid edge timing flakiness.
+  const now = Date.now();
+  const tr = new Date(now + TR_OFFSET_MS);
+  const y = tr.getUTCFullYear();
+  const m = tr.getUTCMonth();
+  const dd = tr.getUTCDate();
+
+  // TR is UTC+03:00 (no DST in Türkiye). So TR 10:00 => UTC 07:00.
+  const utcHour = (hourTR + 24 - 3) % 24;
+  let base = Date.UTC(y, m, dd, utcHour, minuteTR, 0, 0);
+  if (base <= now + 5 * 60_000) base += 24 * 60 * 60_000; // tomorrow
+  return base;
+}
+
 function mustOk(r, label) {
   if (r?.ok) {
     console.log(`✅ ${label}`);
@@ -133,15 +149,18 @@ async function main() {
   await bind(roomToken, v2, d2);
 
   // blocker shift on v1/d1
-  const now = Date.now();
-  const start1 = new Date(now + 10 * 60 * 1000).toISOString();
-  const end1 = new Date(now + 70 * 60 * 1000).toISOString();
+  const now = Date.now();// Choose a deterministic future window inside one TR day (avoids midnight flake).
+// Base = next TR 10:00 (or tomorrow if already passed).
+const baseMs = futureTRAtMs(10, 0);
 
-  // query window overlaps blocker
-  const qStart = new Date(now + 20 * 60 * 1000).toISOString();
-  const qEnd = new Date(now + 50 * 60 * 1000).toISOString();
+// query window overlaps blocker
+const qStart = new Date(baseMs).toISOString();
+const qEnd = new Date(baseMs + 30 * 60 * 1000).toISOString();
 
-  step("create+approve blocker shift (v1/d1)");
+// blocker shift overlaps query window (v1/d1)
+const start1 = new Date(baseMs - 10 * 60 * 1000).toISOString();
+const end1 = new Date(baseMs + 50 * 60 * 1000).toISOString();
+step("create+approve blocker shift (v1/d1)");
   const shId = await createShift(companyToken, roomId, start1, end1);
   await approveShift(roomToken, shId, v1, d1);
 
