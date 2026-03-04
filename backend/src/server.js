@@ -22,6 +22,7 @@ import { companyHubRouter } from "./routes/companyHub.js";
 import { planBuilderRouter } from "./routes/planBuilder.js";
 import { liveRouter } from "./routes/live.js";
 import { parentRouter } from "./routes/parent.js";
+import { kvkkRouter } from "./routes/kvkk.js";
 import logsRouter from "./routes/logs.js";
 
 import availabilityRoutes from "./routes/availability.js";
@@ -105,12 +106,36 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
+// M38: env mode flags (needed early)
+const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
+const isProd = mode === "production";
+
+// M38: prod guard — CORS_ORIGIN must not be "*" in production
+if (isProd && String(ENV.CORS_ORIGIN || "").trim() === "*") {
+  throw new Error('CORS_ORIGIN must not be "*" in production');
+}
+
+// Optional prod guard — redirect http->https when behind proxy
+const requireHttps = isProd && String(process.env.REQUIRE_HTTPS || "0") === "1";
+
+
 app.use(cors({ origin: ENV.CORS_ORIGIN === "*" ? true : ENV.CORS_ORIGIN }));
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
   })
 );
+if (requireHttps) {
+  app.set("trust proxy", 1);
+  app.use((req, res, next) => {
+    const xf = String(req.headers["x-forwarded-proto"] || "").toLowerCase();
+    if (req.secure || xf === "https") return next();
+    const host = req.headers.host;
+    if (!host) return res.status(400).send("Bad Request");
+    return res.redirect(301, "https://" + host + req.originalUrl);
+  });
+}
+
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 
@@ -120,9 +145,6 @@ app.use(apiRequestLog());
 // M11: Rate limit
 // GreenPack deterministic gate için (dev/test only) header bazlı skip.
 // PROD'DA asla skip yok.
-const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
-const isProd = mode === "production";
-
 function greenpackSkip(req) {
   if (isProd) return false;
   const gp = String(req.get("x-greenpack") || "").toLowerCase();
@@ -230,6 +252,7 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/kvkk", kvkkRouter());
 app.use("/api/logs", logsRouter());
 app.use("/api/eta", etaRouter);
 app.use("/api/geocode", geocodeRouter());

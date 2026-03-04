@@ -103,7 +103,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Bugün", path: "/driver/today" },
           { label: "Rota", path: "/driver/route" },
           { label: "Harita", path: "/driver/map" },
-          { label: "Log Export", path: "/superadmin/logexport" },
+          { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -113,7 +113,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
         items: [
           { label: "Canlı", path: "/personel/live" },
           { label: "Servisim", path: "/personel/my" },
-          { label: "Log Export", path: "/superadmin/logexport" },
+          { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -122,7 +122,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
         title: "",
         items: [
           { label: "Canlı", path: "/parent/live" },
-          { label: "Log Export", path: "/superadmin/logexport" },
+          { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });

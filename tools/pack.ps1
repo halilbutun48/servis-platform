@@ -12,7 +12,6 @@ param(
 
   [Parameter(Mandatory=$false)]
   [string]$ApiService = "api",
-
   [Parameter(Mandatory=$false)]
   [switch]$NoBuild
 )

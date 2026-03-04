@@ -67,6 +67,13 @@ async function main() {
   const superToken = await loginFirst("super");
   const roomToken = await loginFirst("room");
   const driverToken = await loginFirst("driver");
+
+
+// M38 KVKK: accept location consent for seeded driver user so GPS can be posted during checks
+await reqJson("POST", "/api/kvkk/consents/accept", {
+  token: driverToken,
+  body: { docKey: "LOCATION_CONSENT", docVersion: "1" },
+});
   must("login super", !!superToken);
   must("login room", !!roomToken);
   must("login driver", !!driverToken);
@@ -117,6 +124,13 @@ async function main() {
   must("parent user payload present", parentUserId > 0 && !!parentTempPass);
   const parentToken = await loginWithTemp(parentEmail, parentTempPass);
 
+
+
+// M38 KVKK: accept location consent for parent so live endpoints are accessible in scripted checks
+await reqJson("POST", "/api/kvkk/consents/accept", {
+  token: parentToken,
+  body: { docKey: "LOCATION_CONSENT", docVersion: "1" },
+});
   // Pick vehicle/driver from ROOM (seed)
   const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
   must("seed vehicleId", vehicleId > 0);

@@ -28,10 +28,40 @@ function Get-MaxMilestone {
   return $max
 }
 
+function Get-StableTo {
+  param([string]$RepoRoot)
+
+  # fallback: if empty, use current script's repo root
+  if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+    try { $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..") } catch { $RepoRoot = "" }
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($RepoRoot)) {
+    $p = Join-Path $RepoRoot "tools\STABLE_TO.txt"
+    if (Test-Path $p) {
+      try {
+        $v = (Get-Content $p -Raw).Trim()
+        if ($v -match '^\d+$') { return [int]$v }
+      } catch {}
+    }
+  }
+
+  if ($env:STABLE_TO -and $env:STABLE_TO -match '^\d+$') { return [int]$env:STABLE_TO }
+
+  return 0
+}
+
 if ($To -le 0) {
   $scriptsDir = Join-Path $repoRoot "backend\scripts"
-  $To = Get-MaxMilestone -ScriptsDir $scriptsDir
-  Write-Host "ℹ️ Auto-detected max milestone: M$To" -ForegroundColor Cyan
+  $max = Get-MaxMilestone -ScriptsDir $scriptsDir
+  $stable = Get-StableTo -RepoRoot $repoRoot
+  if ($stable -gt 0) {
+    $To = [Math]::Min($stable, $max)
+    Write-Host "ℹ️ Stable cap: M$To (max found M$max)" -ForegroundColor Cyan
+  } else {
+    $To = $max
+    Write-Host "ℹ️ Auto-detected max milestone: M$To" -ForegroundColor Cyan
+  }
 }
 
 Write-Host "`n=== RESET: docker compose down -v (with osrm profile) ==="

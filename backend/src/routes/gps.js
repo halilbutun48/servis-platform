@@ -2,6 +2,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { requireConsent, CONSENT_DOCS } from "../middleware/consentGate.js";
 import { gpsIngestSchema } from "../validators.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
@@ -34,7 +35,7 @@ export function gpsRouter(io) {
   const r = express.Router();
 
   // DRIVER: GPS ingest
-  r.post("/", authRequired(), requireRole("DRIVER"), gpsThrottle1200ms({ minIntervalMs: 1200 }), async (req, res) => {
+  r.post("/", authRequired(), requireRole("DRIVER"), requireConsent(CONSENT_DOCS.LOCATION.docKey, CONSENT_DOCS.LOCATION.docVersion), gpsThrottle1200ms({ minIntervalMs: 1200 }), async (req, res) => {
     try {
       const u = req.user;
 

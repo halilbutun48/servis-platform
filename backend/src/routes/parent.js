@@ -4,6 +4,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { requireConsent, CONSENT_DOCS } from "../middleware/consentGate.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 
 function uniqNums(xs) {
@@ -112,7 +113,7 @@ export function parentRouter() {
 
   // GET /api/parent/live/vehicles?childId=
   // Returns minimal vehicles list like /api/live/vehicles but scoped to parent's children.
-  r.get("/live/vehicles", authRequired(), requireRole("PARENT"), async (req, res) => {
+  r.get("/live/vehicles", authRequired(), requireRole("PARENT"), requireConsent(CONSENT_DOCS.LOCATION.docKey, CONSENT_DOCS.LOCATION.docVersion), async (req, res) => {
     const u = req.user;
     const now = new Date();
 

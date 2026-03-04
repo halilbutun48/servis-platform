@@ -256,6 +256,7 @@ notifications Notification[]
   @@index([companyId])
   @@index([roomId])
   parentChildren ParentChild[] @relation("ParentUserChildren")
+  consents      Consent[]
 
 }
 
@@ -839,4 +840,28 @@ model ParentChild {
 
   @@unique([parentUserId, personelId])
   @@index([personelId])
+}
+
+model Consent {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId Int
+  role   String?
+
+  docKey     String
+  docVersion String
+
+  acceptedAt DateTime
+  revokedAt  DateTime?
+
+  ip        String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, docKey, docVersion])
+  @@index([userId, createdAt])
+  @@index([docKey, docVersion])
 }
