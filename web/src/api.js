@@ -31,6 +31,7 @@ export async function api(path, { method = "GET", body, token } = {}) {
   if (t) headers.Authorization = `Bearer ${t}`;
 
   const res = await fetch(path, {
+    cache: "no-store",
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -61,6 +62,7 @@ api.del = (path, opts = {}) => api(path, { ...opts, method: "DELETE" });
 export async function login(email, password) {
   // login'de token yok, o yüzden Authorization göndermiyoruz
   const res = await fetch("/api/auth/login", {
+    cache: "no-store",
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
+import { navigate } from "../../router";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 
 const TABS = [

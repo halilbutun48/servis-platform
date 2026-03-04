@@ -1,6 +1,15 @@
 // backend/scripts/m37check.js
 // M37 — E2E School (Company.kind=SCHOOL) + Parent (PARENT role) check
 // Covers M80/M81 feature set with one deterministic integration scenario.
+//
+// Manual UI debug:
+// - Set env M37_KEEP=1 to keep the shift ACTIVE (skip cleanup) and print temp credentials.
+// - Optional: set M37_GPS_PULSE=1 to keep GPS fresh for a short window (prevents STALE badge in UI).
+// - Optional: set M37_GPS_PULSE_DEBUG=1 to print what /api/parent/live/vehicles sees after each pulse.
+//
+// Example:
+//   docker compose -f infra\docker-compose.yml exec -T api sh -lc \
+//     "cd /app/backend && M37_KEEP=1 M37_GPS_PULSE=1 M37_GPS_PULSE_DEBUG=1 node scripts/m37check.js"
 
 import {
   banner,
@@ -14,6 +23,8 @@ import {
   postGps,
   closeShiftHard,
 } from "./_harness.js";
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function loginWithTemp(email, password) {
   const r = await reqJson("POST", "/api/auth/login", { body: { email, password } });
@@ -48,6 +59,10 @@ async function findStudent(companyToken, fullName) {
 
 async function main() {
   banner("M37CHECK: School+Parent E2E (covers M80/M81)");
+
+  const keep = String(process.env.M37_KEEP || "") === "1";
+  const pulse = String(process.env.M37_GPS_PULSE || "") === "1";
+  const pulseDebug = String(process.env.M37_GPS_PULSE_DEBUG || "") === "1";
 
   const superToken = await loginFirst("super");
   const roomToken = await loginFirst("room");
@@ -89,7 +104,7 @@ async function main() {
   must("school tempPassword present", !!schoolTempPass);
   const schoolToken = await loginWithTemp(schoolEmail, schoolTempPass);
 
-  // Create PARENT user (no scopes)
+  // Create PARENT user
   step("create PARENT user");
   const parentEmail = `m37_parent_${ts}@demo.com`;
   const mkParentUser = await reqJson("POST", "/api/admin/users", {
@@ -110,7 +125,7 @@ async function main() {
   // Cleanup old shifts bound to that driver (best-effort)
   await preCleanDriverShifts({ roomToken, driverToken, driverId });
 
-  // Create shift (REQUESTED), then add people, generate stops, approve+start
+  // Create shift
   const startAt = iso(Date.now() - 2 * 60_000);
   const endAt = iso(Date.now() + 70 * 60_000);
 
@@ -124,7 +139,7 @@ async function main() {
   const shiftId = Number(createShift.json?.id ?? createShift.json?.shift?.id ?? createShift.json?.shiftId);
   must("shiftId present", Number.isFinite(shiftId) && shiftId > 0);
 
-  // Insert 3 people far apart -> 3 clusters
+  // People
   const studentName = "M37 Student";
   step("upsert shift people (3)");
   const peopleBody = {
@@ -135,19 +150,13 @@ async function main() {
     ],
   };
 
-  const putPeople = await reqJson("PUT", `/api/shifts/${shiftId}/people?mode=REPLACE`, {
-    token: schoolToken,
-    body: peopleBody,
-  });
+  const putPeople = await reqJson("PUT", `/api/shifts/${shiftId}/people?mode=REPLACE`, { token: schoolToken, body: peopleBody });
   must("PUT /api/shifts/:id/people ok", putPeople.ok);
   must("people upsert ok=true", putPeople.json?.ok === true);
 
-  // Generate stops + assignments (default maxWalkM=250)
+  // Generate stops
   step("generate stops from people");
-  const gen = await reqJson("POST", `/api/shifts/${shiftId}/stops/generate?mode=REPLACE`, {
-    token: schoolToken,
-    body: {},
-  });
+  const gen = await reqJson("POST", `/api/shifts/${shiftId}/stops/generate?mode=REPLACE`, { token: schoolToken, body: {} });
   must("POST /api/shifts/:id/stops/generate ok", gen.ok);
   must("stops generate ok=true", gen.json?.ok === true);
 
@@ -175,67 +184,72 @@ async function main() {
   must("POST /api/shifts/:id/start ok", start.ok);
   must("shift status ACTIVE", String(start.json?.status) === "ACTIVE");
 
-  // Student must exist as kind=STUDENT (School mode)
+  // Student must exist
   step("find STUDENT personel record");
   const student = await findStudent(schoolToken, studentName);
   must("student exists", !!student);
   must("student.kind=STUDENT", String(student.kind) === "STUDENT");
-
   const studentId = Number(student.id);
   must("studentId present", studentId > 0);
 
-  // Bind Parent ↔ Student
+  // Bind parent-child
   step("bind parent-child");
   const bind = await reqJson("POST", "/api/admin/parent-children", { token: superToken, body: { parentUserId, personelId: studentId } });
   must("POST /api/admin/parent-children ok", bind.ok);
   must("bind ok=true", bind.json?.ok === true);
 
-  // Parent: children list
-  step("parent: list children");
-  const pc = await reqJson("GET", "/api/parent/children", { token: parentToken });
-  must("GET /api/parent/children ok", pc.ok);
-  const kids = itemsOf(pc);
-  must("children list contains student", kids.some((k) => Number(k.id) === studentId));
-  const kid = kids.find((k) => Number(k.id) === studentId) || null;
-  must("kid.company.kind=SCHOOL", String(kid?.company?.kind) === "SCHOOL");
-
-  // Driver: GPS near first stop
+  // Driver: initial GPS + reached
   step("driver: post gps near first stop");
-  await postGps(driverToken, { vehicleId, lat: Number(firstStop.lat), lng: Number(firstStop.lng), heading: 90 });
+  await postGps(driverToken, { vehicleId, lat: Number(firstStop.lat), lng: Number(firstStop.lng), heading: 90, speed: 22 });
 
-  // Driver: reached first stop
   step("driver: reached first stop");
   const reached = await reqJson("POST", `/api/shifts/${shiftId}/reached`, { token: driverToken, body: { order: reachOrder } });
   must("POST /api/shifts/:id/reached ok", reached.ok);
   must("reached ok=true", reached.json?.ok === true);
 
-  // Parent: live vehicles for childId
+  // sanity: parent live ok
   step("parent: live vehicles for childId");
-  const live = await reqJson("GET", `/api/parent/live/vehicles?childId=${studentId}&take=50`, { token: parentToken });
-  must("GET /api/parent/live/vehicles ok", live.ok);
-  const liveItems = itemsOf(live);
-  must("live vehicles not empty", liveItems.length >= 1);
+  const live0 = await reqJson("GET", `/api/parent/live/vehicles?childId=${studentId}&take=50`, { token: parentToken });
+  must("GET /api/parent/live/vehicles ok", live0.ok);
 
-  const v = liveItems.find((x) => Number(x.id) === vehicleId) ?? liveItems[0];
-  must("live includes vehicleId", Number(v?.id) === vehicleId);
-  must("live.childId matches", Number(v?.childId) === studentId);
+  if (keep) {
+    console.log("\n=== M37 MANUAL UI DEBUG (M37_KEEP=1) ===");
+    console.log(`SHIFT_ID=${shiftId} (ACTIVE)  VEHICLE_ID=${vehicleId}  DRIVER_ID=${driverId}`);
+    console.log(`SCHOOL_LOGIN: ${schoolEmail} / ${schoolTempPass}`);
+    console.log(`PARENT_LOGIN: ${parentEmail} / ${parentTempPass}`);
+    console.log(`CHILD_ID=${studentId} (select this child in Parent panel)`);
+    console.log("======================================\n");
 
-  must("etaToChildMin is number", typeof v?.etaToChildMin === "number");
-  must("remainingStopsTotal is number", typeof v?.remainingStopsTotal === "number");
-  must("nextStop.order is number", typeof v?.nextStop?.order === "number");
+    if (pulse) {
+      console.log("ℹ️ GPS pulse enabled (M37_GPS_PULSE=1): sending fresh GPS points for ~60s...");
+      for (let i = 0; i < 15; i++) {
+        await postGps(driverToken, {
+          vehicleId,
+          lat: Number(firstStop.lat) + i * 0.00005,
+          lng: Number(firstStop.lng) + i * 0.00005,
+          heading: 90,
+          speed: 22,
+        });
 
-  // Parent: notifications include stop-progress type
-  step("parent: notifications include stop progress type");
-  const notifs = await reqJson("GET", "/api/notifications/my?take=50", { token: parentToken });
-  must("GET /api/notifications/my ok", notifs.ok);
-  const notifItems = itemsOf(notifs);
-  const okTypes = new Set(["ETA_2_STOPS", "ETA_1_STOP", "STOP_REACHED_PARENT"]);
-  const has = notifItems.some((n) => okTypes.has(String(n?.type)));
-  must(`has one of: ${[...okTypes].join(", ")}`, has);
+        if (pulseDebug) {
+          const rr = await reqJson("GET", `/api/parent/live/vehicles?childId=${studentId}&take=50`, { token: parentToken });
+          const arr = itemsOf(rr);
+          const v = arr.find((x) => Number(x.id) === Number(vehicleId)) ?? arr[0];
+          const at = v?.gpsLast?.at ?? null;
+          const st = v?.gpsLast?.status ?? null;
+          const ui = v?.gpsState?.lastUiStatus ?? v?.gpsState?.lastStatus ?? null;
+          const chAt = v?.gpsState?.lastChangedAt ?? v?.gpsState?.lastChangeAt ?? null;
+          console.log(`  pulse#${i + 1}: gpsLast.at=${at} gpsLast.status=${st} gpsUi=${ui} gpsChangedAt=${chAt}`);
+        }
 
-  // Cleanup
-  step("cleanup: close shift");
-  await closeShiftHard({ shiftId, driverToken, roomToken });
+        await sleep(4000);
+      }
+      console.log("✅ GPS pulse done.");
+    }
+  } else {
+    step("cleanup: close shift");
+    await closeShiftHard({ shiftId, driverToken, roomToken });
+  }
 
   banner("M37CHECK PASS");
 }

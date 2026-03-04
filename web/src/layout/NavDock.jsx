@@ -79,7 +79,8 @@ export default function NavDock({ role, path, me }) {
       // Sözleşmeler: Gelişmiş altında
       advanced.push({ label: "Sözleşmeler", path: "/room/agreements" });
       advanced.push({ label: "Hub", path: "/room/hub" });
-      advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+      advanced.push({ label: "Log Export", path: "/shared/logs" });
+advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "COMPANY") {
       sections.push({
         title: "Ana",
@@ -93,6 +94,7 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "Sözleşmeler", path: base + "/agreements" });
       advanced.push({ label: "Hub", path: base + "/hub" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : "Konum İncele", path: base + "/georeview" });
+      advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "DRIVER") {
       sections.push({
@@ -101,6 +103,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Bugün", path: "/driver/today" },
           { label: "Rota", path: "/driver/route" },
           { label: "Harita", path: "/driver/map" },
+          { label: "Log Export", path: "/superadmin/logexport" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -110,6 +113,7 @@ export default function NavDock({ role, path, me }) {
         items: [
           { label: "Canlı", path: "/personel/live" },
           { label: "Servisim", path: "/personel/my" },
+          { label: "Log Export", path: "/superadmin/logexport" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -118,6 +122,7 @@ export default function NavDock({ role, path, me }) {
         title: "",
         items: [
           { label: "Canlı", path: "/parent/live" },
+          { label: "Log Export", path: "/superadmin/logexport" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
       });
@@ -131,6 +136,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Users", path: "/superadmin/users" },
           { label: "Regions", path: "/superadmin/regions" },
           { label: "Audit", path: "/superadmin/audit" },
+          { label: "Log Export", path: "/superadmin/logexport" },
         ],
       });
     }

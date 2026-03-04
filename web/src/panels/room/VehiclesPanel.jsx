@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { navigate } from "../../router";
 import { useAutoReload } from "../../live/useAutoReload";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 
@@ -1232,6 +1233,9 @@ async function checkAvailabilityAll(onlySelected = false) {
                           <button type="button" disabled={busy || isArchived} onClick={() => deleteVehicle(v)}>
                             Sil/Arşivle
                           </button>
+<button type="button" disabled={busy} onClick={() => navigate(`/shared/logs?kind=bundle_vehicle&targetType=vehicle&targetId=${v.id}&format=txt`)}>
+  Log TXT
+</button>
                         </td>
                       </tr>
                     );

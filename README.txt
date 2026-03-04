@@ -1,16 +1,23 @@
-OVERLAY — M20CHECK time-window flake fix (endMin > startMin)
+OVERLAY — logs.js SyntaxError fix + scope/global logs + kind alias
 
-Problem:
-- M20CHECK used now+20m .. now+50m for query window.
-- If run near TR midnight, qEnd crosses to next TR day -> endMin < startMin -> ASSERT_FAIL "endMin > startMin".
+Fixes:
+1) Fixes SyntaxError in backend/src/routes/logs.js caused by multi-line double-quoted strings.
+   (e.g. out += "# LOG EXPORT<newline>";)
 
-Fix:
-- Choose deterministic future window: next TR 10:00 (or tomorrow if already passed).
-- Ensure blocker shift overlaps query window (v1/d1) using the same baseMs.
+2) Makes /api/logs/preview and /api/logs/export usable without Hedef ID for:
+   - kind=api (Requests)
+   - kind=audit
+   - kind=login (AUTH_LOGIN_* from AuditLog)
+   In this mode, logs are filtered by caller scope:
+   - SUPER_ADMIN: all
+   - ROOM: users in same roomId
+   - COMPANY: users in same companyId
+   - others: only self
 
-Files:
-- backend/scripts/m20check.js
+3) Accepts UI alias:
+   - kind=requests -> kind=api
+   - kind=login supported on /api/logs/preview + /api/logs/export
 
-Apply (2 commands):
-1) Expand-Archive -Force .\OVERLAY_M20CHECK_TIMEWINDOW_FIX_2026-03-03.zip .
-2) .\tools\pack.ps1 -To 20
+Apply:
+1) Expand-Archive -Force .\OVERLAY_LOGS_SCOPE_SYNTAX_FIX_2026-03-04.zip .
+2) .\tools\pack.ps1 -To 37

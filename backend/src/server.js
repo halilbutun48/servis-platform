@@ -22,6 +22,7 @@ import { companyHubRouter } from "./routes/companyHub.js";
 import { planBuilderRouter } from "./routes/planBuilder.js";
 import { liveRouter } from "./routes/live.js";
 import { parentRouter } from "./routes/parent.js";
+import logsRouter from "./routes/logs.js";
 
 import availabilityRoutes from "./routes/availability.js";
 
@@ -37,6 +38,7 @@ import * as companyPersonelsMod from "./routes/companyPersonels.js";
 import * as personelShiftsMod from "./routes/personelShifts.js";
 
 import { adminRouter } from "./routes/admin.js";
+import adminLogsRouter from "./routes/admin_logs.js";
 
 // Public router’lar (io yok)
 import * as companiesMod from "./routes/companies.js";
@@ -228,6 +230,7 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/logs", logsRouter());
 app.use("/api/eta", etaRouter);
 app.use("/api/geocode", geocodeRouter());
 app.use("/api/company/hub", companyHubRouter());
@@ -238,6 +241,7 @@ app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());
 app.use("/api/availability", availabilityRoutes);
+app.use("/api/admin/logs", adminLogsRouter());
 app.use("/api/admin", adminRouter());
 
 // Server + Socket.IO

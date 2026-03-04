@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
+import { navigate } from "../../router";
 
 function etaText(v) {
   const m = v?.etaToChildMin;
@@ -14,7 +15,7 @@ function etaText(v) {
 
 function stopTitle(s) {
   if (!s?.name) return "—";
-  const ord = typeof s.order === "number" ? s.order + 1 : null;
+  const ord = typeof s.order === "number" ? s.order : null;
   return ord ? `${ord}. ${s.name}` : s.name;
 }
 
@@ -153,6 +154,19 @@ export default function ParentLivePanel() {
                   <div>
                     Araç <b>#{v.id}</b> • <b>{v.plate}</b>
                   </div>
+<button
+  type="button"
+  className="btn"
+  onClick={() =>
+    navigate(
+      `/shared/logs?kind=bundle_vehicle&targetType=vehicle&targetId=${v.id}&childId=${childId}&format=txt`
+    )
+  }
+  title="Araç için TXT log export (GPS + hız + bildirim)"
+>
+  Log TXT
+</button>
+
 
                   <div className="muted">
                     ETA: <b>{etaText(v)}</b>

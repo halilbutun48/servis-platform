@@ -36,6 +36,7 @@ import ParentLivePanel from "./panels/parent/LivePanel";
 
 // SHARED
 import NotificationsPanel from "./panels/shared/NotificationsPanel";
+import LogsPanel from "./panels/shared/LogsPanel";
 
 // SUPER_ADMIN
 import SuperAdminPanel from "./panels/superadmin/SuperAdminPanel";
@@ -44,6 +45,7 @@ import SuperRoomsPanel from "./panels/superadmin/RoomsPanel";
 import SuperUsersPanel from "./panels/superadmin/UsersPanel";
 import SuperRegionsPanel from "./panels/superadmin/RegionsPanel";
 import SuperAuditLogsPanel from "./panels/superadmin/AuditLogsPanel";
+import SuperLogExportPanel from "./panels/superadmin/LogExportPanel";
 
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -147,6 +149,7 @@ export default function App() {
 
     // Shared
     if (path === "/shared/notifications") return { layout: true, node: <NotificationsPanel /> };
+    if (path === "/shared/logs") return { layout: true, node: <LogsPanel /> };
 
     // ROOM
     if (path === "/room/map") return { layout: true, node: <RoomMapPanel /> };
@@ -194,6 +197,7 @@ export default function App() {
     if (path === "/superadmin/users") return { layout: true, node: <SuperUsersPanel /> };
     if (path === "/superadmin/regions") return { layout: true, node: <SuperRegionsPanel /> };
     if (path === "/superadmin/audit") return { layout: true, node: <SuperAuditLogsPanel /> };
+    if (path === "/superadmin/logexport") return { layout: true, node: <SuperLogExportPanel /> };
 
     // Unknown: go default
     const def = roleDefaultPath(me);

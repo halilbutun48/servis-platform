@@ -1,6 +1,7 @@
 // web/src/panels/personel/LivePanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
