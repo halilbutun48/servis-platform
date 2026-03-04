@@ -1,12 +1,128 @@
 // backend/src/routes/logs.js
+// Unified log preview/export + bundle_* packs (TXT default, CSV optional)
+
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../auth/middleware.js";
 
+const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+const SUPPORTED_KINDS = [
+  "api",
+  "audit",
+  "audit_login",
+  "notifications",
+  "gps",
+  "speed",
+  "bundle_vehicle",
+  "bundle_driver",
+  "bundle_room",
+  "bundle_company",
+  "bundle_user",
+  "bundle_personel",
+  "bundle_student",
+];
+
+function foldKey(x) {
+  return String(x || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normKind(raw) {
+  const s0 = String(raw || "").trim();
+  const s = foldKey(s0);
+
+  // direct supported
+  if (SUPPORTED_KINDS.includes(s0)) return s0;
+  if (SUPPORTED_KINDS.includes(s)) return s;
+
+  // common aliases
+  if (s === "requests" || s === "api_requests" || s === "apirequests") return "api";
+  if (s === "login" || s === "login_logs" || s === "loginlogs") return "audit_login";
+
+  // bundle aliases (TR/EN)
+  if (s.includes("bundle")) {
+    if (s.includes("arac") || s.includes("vehicle")) return "bundle_vehicle";
+    if (s.includes("surucu") || s.includes("driver")) return "bundle_driver";
+    if (s.includes("room")) return "bundle_room";
+    if (s.includes("company") || s.includes("sirket")) return "bundle_company";
+    if (s.includes("user") || s.includes("kullanici")) return "bundle_user";
+    if (s.includes("personel")) return "bundle_personel";
+    if (s.includes("student") || s.includes("ogrenci")) return "bundle_student";
+  }
+
+  // label-only selections (just in case UI sends Turkish labels)
+  if (s.includes("arac") && s.includes("hiz") && s.includes("bildirim")) return "bundle_vehicle";
+  if (s.includes("surucu") && s.includes("bundle")) return "bundle_driver";
+
+  return s0; // keep raw; later we will error with supported list
+}
+
+function normTargetType(raw) {
+  const s0 = String(raw || "").trim();
+  const s = foldKey(s0);
+  const map = {
+    "arac": "vehicle",
+    "vehicle": "vehicle",
+    "surucu": "driver",
+    "driver": "driver",
+    "room": "room",
+    "sirket": "company",
+    "company": "company",
+    "kullanici": "user",
+    "user": "user",
+    "personel": "personel",
+    "ogrenci": "student",
+    "student": "student",
+    "shift": "shift",
+  };
+  return map[s] || s0.toLowerCase();
+}
+
+
 function parseIsoOrNull(v) {
-  if (!v) return null;
-  const d = new Date(String(v));
-  return isNaN(d.getTime()) ? null : d;
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function defaultFromTo(from, to) {
+  const now = new Date();
+  const dTo = to || now;
+  const dFrom = from || new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  return { from: dFrom, to: dTo };
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function fmtTR(d) {
+  if (!d) return "";
+  const ms = d instanceof Date ? d.getTime() : new Date(d).getTime();
+  if (!Number.isFinite(ms)) return "";
+  const tr = new Date(ms + TR_OFFSET_MS);
+  return `${tr.getUTCFullYear()}-${pad2(tr.getUTCMonth() + 1)}-${pad2(tr.getUTCDate())} ${pad2(tr.getUTCHours())}:${pad2(
+    tr.getUTCMinutes()
+  )}:${pad2(tr.getUTCSeconds())}`;
+}
+
+function safeJson(x, maxLen = 400) {
+  try {
+    const s = JSON.stringify(x ?? {});
+    if (s.length <= maxLen) return s;
+    return s.slice(0, maxLen) + `…(+${s.length - maxLen})`;
+  } catch {
+    return "{}";
+  }
+}
+
+function mk(ts, cat, level, text, meta) {
+  return { ts, tsTR: fmtTR(ts), cat, level, text, meta: meta ?? null };
 }
 
 function toCsvRow(cols) {
@@ -18,914 +134,598 @@ function toCsvRow(cols) {
   return cols.map(esc).join(",");
 }
 
-function fmtTR(d) {
-  if (!d) return "";
-  const ms = d instanceof Date ? d.getTime() : new Date(d).getTime();
-  if (!Number.isFinite(ms)) return "";
-  const tr = new Date(ms + 3 * 60 * 60 * 1000); // TR = UTC+03
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = tr.getUTCFullYear();
-  const mm = pad(tr.getUTCMonth() + 1);
-  const dd = pad(tr.getUTCDate());
-  const hh = pad(tr.getUTCHours());
-  const mi = pad(tr.getUTCMinutes());
-  const ss = pad(tr.getUTCSeconds());
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+function rowsToCsv(rows) {
+  const out = [];
+  out.push(toCsvRow(["ts", "tsTR", "cat", "level", "text", "meta"]));
+  for (const it of rows) {
+    out.push(
+      toCsvRow([
+        it.ts?.toISOString?.() || String(it.ts),
+        it.tsTR || "",
+        it.cat || "",
+        it.level || "",
+        it.text || "",
+        safeJson(it.meta),
+      ])
+    );
+  }
+  return out.join("\n") + "\n";
 }
 
-function asTxtSection(title) {
-  return `
-== ${title} ==
-`;
+function rowsToTxt({ kind, targetLabel, from, to, rows }) {
+  let out = "";
+  out += `# LOG EXPORT\n`;
+  out += `# kind=${kind} target=${targetLabel}\n`;
+  out += `# range(TR): ${fmtTR(from)} -> ${fmtTR(to)}\n`;
+  out += `# generatedAt(TR): ${fmtTR(new Date())}\n\n`;
+
+  const byCat = {};
+  const byLevel = {};
+  for (const r of rows) {
+    byCat[r.cat] = (byCat[r.cat] || 0) + 1;
+    byLevel[r.level] = (byLevel[r.level] || 0) + 1;
+  }
+  out += `== SUMMARY ==\n`;
+  out += `total=${rows.length}\n`;
+  out += `byCat=${safeJson(byCat)}\n`;
+  out += `byLevel=${safeJson(byLevel)}\n\n`;
+
+  out += `== EVENTS ==\n`;
+  if (!rows.length) return out + "(none)\n";
+  for (const r of rows) {
+    out += `[TR ${r.tsTR}] ${r.cat} ${r.level} ${r.text}${r.meta ? " meta=" + safeJson(r.meta, 240) : ""}\n`;
+  }
+  return out;
 }
 
-function lineTR(d, rest) {
-  const ts = d ? fmtTR(d) : fmtTR(new Date());
-  return `[TR ${ts}] ${rest}
-`;
+function applyFilters(items, { onlyBad, cat, q }) {
+  let out = items || [];
+  if (String(onlyBad || "") === "1") {
+    out = out.filter((x) => {
+      const lv = String(x.level || "").toUpperCase();
+      const cc = String(x.cat || "").toUpperCase();
+      return lv === "ERROR" || lv === "WARN" || cc === "SPEED";
+    });
+  }
+  if (cat && cat !== "ALL") {
+    const cc = String(cat).toUpperCase();
+    out = out.filter((x) => String(x.cat || "").toUpperCase() === cc);
+  }
+  if (q && String(q).trim()) {
+    const qq = String(q).toLowerCase();
+    out = out.filter((x) => (`${x.text || ""} ${safeJson(x.meta || {})}`).toLowerCase().includes(qq));
+  }
+  return out;
 }
 
-function safeJson(x, maxLen = 500) {
-  try {
-    const s = JSON.stringify(x ?? {});
-    if (s.length <= maxLen) return s;
-    return s.slice(0, maxLen) + `…(+${s.length - maxLen})`;
-  } catch {
-    return "{}";
+// ---------------- RBAC helpers ----------------
+
+async function scopeUserIdsForRole(req) {
+  const role = req.user?.role;
+
+  if (role === "SUPER_ADMIN") return { mode: "all", userIds: null, roomId: null, companyId: null };
+
+  if (role === "ROOM") {
+    const roomId = Number(req.user.roomId || 0);
+    if (!roomId) return { mode: "deny" };
+    const us = await prisma.user.findMany({ where: { roomId }, select: { id: true } });
+    return { mode: "userIds", userIds: us.map((u) => u.id), roomId, companyId: null };
   }
-}
-async function scopeUserIds(req) {
-  // Determines which userIds this caller is allowed to see in "global" logs (api/audit/login without target)
-  const me = req.user;
-  if (!me) return [];
-  if (me.role === "SUPER_ADMIN") return null; // null => no filter (all)
-  if (me.role === "ROOM") {
-    if (!me.roomId) return [me.id];
-    const us = await prisma.user.findMany({ where: { roomId: me.roomId }, select: { id: true } });
-    return us.map((u) => u.id);
+
+  if (role === "COMPANY") {
+    const companyId = Number(req.user.companyId || 0);
+    if (!companyId) return { mode: "deny" };
+    const us = await prisma.user.findMany({ where: { companyId }, select: { id: true } });
+    return { mode: "userIds", userIds: us.map((u) => u.id), companyId, roomId: null };
   }
-  if (me.role === "COMPANY") {
-    if (!me.companyId) return [me.id];
-    const us = await prisma.user.findMany({ where: { companyId: me.companyId }, select: { id: true } });
-    return us.map((u) => u.id);
-  }
-  // DRIVER / PERSONEL / PARENT: only self
-  return [me.id];
+
+  if (req.user?.id) return { mode: "userIds", userIds: [req.user.id], roomId: null, companyId: null };
+  return { mode: "deny" };
 }
 
 async function ensureAccess(req, targetType, targetId, childId) {
   const role = req.user?.role;
+  const id = Number(targetId || 0);
 
-  // SUPER_ADMIN: everything
   if (role === "SUPER_ADMIN") return { ok: true };
 
-  // PARENT: only own notifications + child-linked vehicle (ACTIVE shift)
-  if (role === "PARENT") {
+  if (role === "ROOM") {
+    const roomId = Number(req.user.roomId || 0);
+    if (!roomId) return { ok: false, status: 403, error: "Forbidden" };
+
+    if (targetType === "room") return id === roomId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    if (targetType === "vehicle") {
+      const v = await prisma.vehicle.findUnique({ where: { id }, select: { roomId: true } });
+      return v && Number(v.roomId) === roomId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    }
+    if (targetType === "driver") {
+      const d = await prisma.driver.findUnique({ where: { id }, select: { roomId: true } });
+      return d && Number(d.roomId) === roomId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    }
     if (targetType === "user") {
-      if (Number(targetId) !== Number(req.user.id)) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
+      const u = await prisma.user.findUnique({ where: { id }, select: { roomId: true } });
+      return u && Number(u.roomId) === roomId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
     }
-    if (targetType === "child") {
-      const rel = await prisma.parentChild.findFirst({
-        where: { parentUserId: req.user.id, personelId: Number(targetId) },
-        select: { id: true },
-      });
-      if (!rel) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+
+  if (role === "COMPANY") {
+    const companyId = Number(req.user.companyId || 0);
+    if (!companyId) return { ok: false, status: 403, error: "Forbidden" };
+
+    if (targetType === "company") return id === companyId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    if (targetType === "user") {
+      const u = await prisma.user.findUnique({ where: { id }, select: { companyId: true } });
+      return u && Number(u.companyId) === companyId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
     }
+    if (targetType === "personel" || targetType === "student") {
+      const p = await prisma.personel.findUnique({ where: { id }, select: { companyId: true } });
+      return p && Number(p.companyId) === companyId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    }
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+
+  if (role === "DRIVER") {
+    const meDriver = await prisma.driver.findFirst({ where: { userId: req.user.id }, select: { id: true } });
+    const driverId = Number(meDriver?.id || 0);
+    if (!driverId) return { ok: false, status: 403, error: "Forbidden" };
+
+    if (targetType === "driver") return id === driverId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    if (targetType === "vehicle") {
+      const v = await prisma.vehicle.findUnique({ where: { id }, select: { driverId: true } });
+      return v && Number(v.driverId || 0) === driverId ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    }
+    if (targetType === "user") return id === Number(req.user.id) ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    return { ok: false, status: 403, error: "Forbidden" };
+  }
+
+  if (role === "PARENT") {
+    // Parent can only export for own child / assigned vehicle in ACTIVE shift
     if (targetType === "vehicle") {
       const cid = Number(childId || 0);
       if (!cid) return { ok: false, status: 400, error: "childId required for parent vehicle export" };
 
-      const rel = await prisma.parentChild.findFirst({
-        where: { parentUserId: req.user.id, personelId: cid },
-        select: { id: true },
-      });
+      const rel = await prisma.parentChild.findFirst({ where: { parentUserId: req.user.id, personelId: cid }, select: { id: true } });
       if (!rel) return { ok: false, status: 403, error: "Forbidden" };
 
       const active = await prisma.shift.findFirst({
-        where: {
-          status: "ACTIVE",
-          vehicleId: Number(targetId),
-          stopAssignments: { some: { personelId: cid } },
-        },
+        where: { status: "ACTIVE", vehicleId: id, assignments: { some: { personelId: cid } } },
         select: { id: true },
       });
       if (!active) return { ok: false, status: 403, error: "Forbidden" };
       return { ok: true };
     }
 
-    // deny other targetTypes for parent
+    if (targetType === "student" || targetType === "personel") {
+      const rel = await prisma.parentChild.findFirst({ where: { parentUserId: req.user.id, personelId: id }, select: { id: true } });
+      return rel ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
+    }
+
+    if (targetType === "user") return id === Number(req.user.id) ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
     return { ok: false, status: 403, error: "Forbidden" };
   }
 
-  // ROOM: entities within room
-  if (role === "ROOM") {
-    const roomId = Number(req.user.roomId || 0);
-    if (!roomId) return { ok: false, status: 403, error: "Forbidden" };
-
-    if (targetType === "room") {
-      if (Number(targetId) !== roomId) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    if (targetType === "vehicle") {
-      const v = await prisma.vehicle.findUnique({ where: { id: Number(targetId) }, select: { roomId: true } });
-      if (!v || Number(v.roomId) !== roomId) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    if (targetType === "driver") {
-      const d = await prisma.driver.findUnique({ where: { id: Number(targetId) }, select: { roomId: true } });
-      if (!d || Number(d.roomId) !== roomId) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    if (targetType === "user") {
-      // allow only own user (room user)
-      if (Number(targetId) !== Number(req.user.id)) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    return { ok: false, status: 403, error: "Forbidden" };
-  }
-
-  // COMPANY: company-bound entities
-  if (role === "COMPANY") {
-    const companyId = Number(req.user.companyId || 0);
-    if (!companyId) return { ok: false, status: 403, error: "Forbidden" };
-
-    if (targetType === "company") {
-      if (Number(targetId) !== companyId) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    if (targetType === "personel" || targetType === "child") {
-      const p = await prisma.personel.findUnique({ where: { id: Number(targetId) }, select: { companyId: true } });
-      if (!p || Number(p.companyId) !== companyId) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    if (targetType === "user") {
-      if (Number(targetId) !== Number(req.user.id)) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    // Vehicles belong to ROOM; deny
-    return { ok: false, status: 403, error: "Forbidden" };
-  }
-
-  // DRIVER: only own driver + default vehicle binding
-  if (role === "DRIVER") {
-    const meDriver = await prisma.driver.findFirst({
-      where: { userId: req.user.id },
-      select: { id: true },
-    });
-    const driverId = Number(meDriver?.id || 0);
-    if (!driverId) return { ok: false, status: 403, error: "Forbidden" };
-
-    if (targetType === "driver") {
-      if (Number(targetId) !== driverId) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    if (targetType === "vehicle") {
-      const v = await prisma.vehicle.findUnique({ where: { id: Number(targetId) }, select: { driverId: true } });
-      if (!v || Number(v.driverId || 0) !== driverId) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    if (targetType === "user") {
-      if (Number(targetId) !== Number(req.user.id)) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
-    return { ok: false, status: 403, error: "Forbidden" };
-  }
-
-  // PERSONEL: only own user notifications (and future extensions)
   if (role === "PERSONEL") {
-    if (targetType === "user") {
-      if (Number(targetId) !== Number(req.user.id)) return { ok: false, status: 403, error: "Forbidden" };
-      return { ok: true };
-    }
+    if (targetType === "user") return id === Number(req.user.id) ? { ok: true } : { ok: false, status: 403, error: "Forbidden" };
     return { ok: false, status: 403, error: "Forbidden" };
   }
 
   return { ok: false, status: 403, error: "Forbidden" };
 }
 
-function defaultFromTo(from, to) {
-  const now = new Date();
-  const dTo = to || now;
-  const dFrom = from || new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  return { from: dFrom, to: dTo };
-}
+// ---------------- fetch helpers ----------------
 
-function formatFilename({ kind, targetType, targetId, format }) {
-  const safe = (s) => String(s || "").replace(/[^a-zA-Z0-9._-]+/g, "_");
-  const ext = format === "csv" ? "csv" : "txt";
-  return `logs_${safe(kind)}_${safe(targetType)}_${safe(targetId)}_${Date.now()}.${ext}`;
-}
-
-async function fetchGps(vehicleId, from, to) {
+async function fetchGps(vehicleId, from, to, take = 5000) {
   return prisma.gpsPoint.findMany({
     where: { vehicleId, at: { gte: from, lte: to } },
     orderBy: { at: "asc" },
-    take: 10000,
+    take,
     select: { at: true, lat: true, lng: true, speed: true },
   });
 }
 
-async function fetchNotifications(whereBase) {
+async function fetchNotifications(where, take = 5000) {
   return prisma.notification.findMany({
-    where: whereBase,
+    where,
     orderBy: { createdAt: "asc" },
-    take: 10000,
+    take,
     select: { createdAt: true, type: true, scope: true, payloadJson: true, companyId: true, roomId: true, driverId: true, userId: true, vehicleId: true, shiftId: true },
   });
 }
 
-async function fetchAudit(whereBase) {
+async function fetchAudit(where, take = 5000) {
   return prisma.auditLog.findMany({
-    where: whereBase,
+    where,
     orderBy: { createdAt: "asc" },
-    take: 10000,
+    take,
     select: { createdAt: true, actorUserId: true, actorRole: true, action: true, entity: true, entityId: true, meta: true },
   });
 }
 
-async function fetchApiRequests(whereBase) {
+async function fetchApiRequests(where, take = 5000) {
   return prisma.apiRequest.findMany({
-    where: whereBase,
+    where,
     orderBy: { createdAt: "asc" },
-    take: 10000,
+    take,
     select: { createdAt: true, method: true, path: true, status: true, durationMs: true, userId: true, role: true, ip: true, userAgent: true },
   });
 }
 
-function sendExport(res, { body, format, filename }) {
-  if (format === "csv") {
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  } else {
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+// ---------------- bundle builders ----------------
+
+async function bundleVehicle(req, vehicleId, childId, from, to, take) {
+  const acc = await ensureAccess(req, "vehicle", vehicleId, childId);
+  if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
+
+  const v = await prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { id: true, plate: true, speedLimitKmh: true } });
+  const limit = Number(req.query.speedLimitKph || v?.speedLimitKmh || 80);
+
+  const gps = await fetchGps(vehicleId, from, to, Math.min(10000, take * 20));
+  const notifs = await fetchNotifications({ createdAt: { gte: from, lte: to }, vehicleId }, Math.min(5000, take * 10));
+
+  const rows = [];
+  for (const p of gps) {
+    const sp = Number(p.speed ?? 0);
+    rows.push(mk(p.at, sp >= limit ? "SPEED" : "GPS", sp >= limit ? "WARN" : "OK", `vehicle=${v?.plate || vehicleId} lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`, { speedLimitKph: limit }));
   }
-  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  return res.status(200).send(body);
+  for (const n of notifs) {
+    const payload = n.payloadJson || {};
+    rows.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}`, { shiftId: n.shiftId || null, payload }));
+  }
+
+  rows.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  return { ok: true, targetLabel: `vehicle#${vehicleId} ${v?.plate || ""}`.trim(), rows };
 }
 
-export default function logsRouter() {
-  const r = express.Router();
+async function bundleDriver(req, driverId, from, to, take) {
+  const acc = await ensureAccess(req, "driver", driverId, null);
+  if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
 
+  const d = await prisma.driver.findUnique({ where: { id: driverId }, select: { id: true, fullName: true, userId: true } });
+  const vehicles = await prisma.vehicle.findMany({ where: { driverId }, select: { id: true, plate: true, speedLimitKmh: true } });
 
-// GET /api/logs/preview
-// kind=bundle_vehicle|gps|speed|notifications|audit|api
-// returns { summary, items } where items are most-recent-first
-r.get("/preview", authRequired(), async (req, res) => {
-  try {
-    const kind0 = String(req.query.kind || "");
-    const kind = kind0 === "requests" ? "api" : (kind0 === "login" ? "login" : kind0);
-    const targetType = String(req.query.targetType || "");
-    const targetId = Number(req.query.targetId || 0);
-    const childId = req.query.childId ? Number(req.query.childId) : null;
+  const rows = [];
+  const dNotifs = await fetchNotifications({ createdAt: { gte: from, lte: to }, driverId }, Math.min(3000, take * 10));
+  for (const n of dNotifs) rows.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}`, { shiftId: n.shiftId || null, payload: n.payloadJson || {} }));
 
-    const take = Math.min(500, Math.max(1, Number(req.query.take || 250)));
+  if (d?.userId) {
+    const api = await fetchApiRequests({ createdAt: { gte: from, lte: to }, userId: d.userId }, Math.min(5000, take * 20));
+    for (const r of api) rows.push(mk(r.createdAt, "REQ", r.status >= 500 ? "ERROR" : r.status >= 400 ? "WARN" : "OK", `${r.method} ${r.status} ${r.path} dur=${r.durationMs}ms`, { ip: r.ip || null }));
 
-    const from0 = parseIsoOrNull(req.query.from);
-    const to0 = parseIsoOrNull(req.query.to);
-    const { from, to } = defaultFromTo(from0, to0);
-
-    const now = new Date();
-
-    const mk = (ts, cat, level, text, meta) => ({
-      ts,
-      tsTR: fmtTR(ts),
-      cat,
-      level,
-      text,
-      meta: meta || null,
-    });
-
-    const items = [];
-
-    // bundle_vehicle
-    if (kind === "bundle_vehicle") {
-      if (targetType !== "vehicle" || !targetId) return res.status(400).json({ error: "bundle_vehicle requires targetType=vehicle&targetId" });
-      const acc = await ensureAccess(req, "vehicle", targetId, childId);
-      if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
-
-      const vehicle = await prisma.vehicle.findUnique({ where: { id: targetId }, select: { speedLimitKmh: true, plate: true } });
-      const limit = Number(req.query.speedLimitKph || vehicle?.speedLimitKmh || 80);
-
-      const gps = await prisma.gpsPoint.findMany({
-        where: { vehicleId: targetId, at: { gte: from, lte: to } },
-        orderBy: { at: "desc" },
-        take: Math.min(400, take),
-        select: { at: true, lat: true, lng: true, speed: true },
-      });
-
-      const notifs = await prisma.notification.findMany({
-        where: { vehicleId: targetId, createdAt: { gte: from, lte: to } },
-        orderBy: { createdAt: "desc" },
-        take: Math.min(200, take),
-        select: { createdAt: true, type: true, scope: true, payloadJson: true, shiftId: true, vehicleId: true },
-      });
-
-      for (const p of gps) {
-        const sp = Number(p.speed ?? 0);
-        const cat = sp >= limit ? "SPEED" : "GPS";
-        const level = sp >= limit ? "WARN" : "OK";
-        items.push(mk(p.at, cat, level, `lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`, { speedLimitKph: limit }));
-      }
-
-      for (const n of notifs) {
-        const payload = n.payloadJson || {};
-        const stopName = payload.stopName || payload.stop?.name || payload.nextStop?.name || null;
-        const child = payload.childId || payload.personelId || payload.studentId || payload.personel?.id || null;
-        const extra = `${child ? ` childId=${child}` : ""}${stopName ? ` stop=${stopName}` : ""}`;
-        items.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}${extra}`, { shiftId: n.shiftId || null }));
-      }
-
-      items.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
-      const trimmed = items.slice(0, take);
-
-      const summary = {
-        kind,
-        target: `vehicle#${targetId}`,
-        plate: vehicle?.plate || null,
-        rangeTR: `${fmtTR(from)} -> ${fmtTR(to)}`,
-        generatedAtTR: fmtTR(now),
-        counts: trimmed.reduce((acc2, it) => {
-          acc2.total++;
-          acc2.byCat[it.cat] = (acc2.byCat[it.cat] || 0) + 1;
-          acc2.byLevel[it.level] = (acc2.byLevel[it.level] || 0) + 1;
-          return acc2;
-        }, { total: 0, byCat: {}, byLevel: {} }),
-      };
-
-      return res.json({ summary, items: trimmed });
+    const aud = await fetchAudit({ createdAt: { gte: from, lte: to }, actorUserId: d.userId }, Math.min(5000, take * 20));
+    for (const a of aud) {
+      const cc = a.action.startsWith("AUTH_LOGIN_") ? "LOGIN" : "AUDIT";
+      const lv = a.action.endsWith("_OK") ? "OK" : cc === "LOGIN" ? "WARN" : "INFO";
+      rows.push(mk(a.createdAt, cc, lv, `${a.action} ${a.entity}${a.entityId ? "#" + a.entityId : ""}`, a.meta || {}));
     }
-
-    // gps/speed
-    if (["gps", "speed"].includes(kind)) {
-      if (targetType !== "vehicle" || !targetId) return res.status(400).json({ error: "gps/speed require targetType=vehicle&targetId" });
-      const acc = await ensureAccess(req, "vehicle", targetId, childId);
-      if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
-
-      const vehicle = await prisma.vehicle.findUnique({ where: { id: targetId }, select: { speedLimitKmh: true, plate: true } });
-      const limit = Number(req.query.speedLimitKph || vehicle?.speedLimitKmh || 80);
-
-      const gps = await prisma.gpsPoint.findMany({
-        where: { vehicleId: targetId, at: { gte: from, lte: to } },
-        orderBy: { at: "desc" },
-        take: Math.min(500, take * 2),
-        select: { at: true, lat: true, lng: true, speed: true },
-      });
-
-      for (const p of gps) {
-        const sp = Number(p.speed ?? 0);
-        if (kind === "speed" && sp < limit) continue;
-        const cat = sp >= limit ? "SPEED" : "GPS";
-        const level = sp >= limit ? "WARN" : "OK";
-        items.push(mk(p.at, cat, level, `lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`, { speedLimitKph: limit }));
-      }
-
-      const trimmed = items.slice(0, take);
-      const summary = {
-        kind,
-        target: `vehicle#${targetId}`,
-        plate: vehicle?.plate || null,
-        rangeTR: `${fmtTR(from)} -> ${fmtTR(to)}`,
-        generatedAtTR: fmtTR(now),
-        counts: trimmed.reduce((acc2, it) => {
-          acc2.total++;
-          acc2.byCat[it.cat] = (acc2.byCat[it.cat] || 0) + 1;
-          acc2.byLevel[it.level] = (acc2.byLevel[it.level] || 0) + 1;
-          return acc2;
-        }, { total: 0, byCat: {}, byLevel: {} }),
-      };
-      return res.json({ summary, items: trimmed });
-    }
-
-    if (kind === "notifications") {
-      let tType = targetType;
-      let tId = targetId;
-
-      if (req.user.role === "PARENT" && (!tType || !tId)) {
-        tType = "user";
-        tId = Number(req.user.id);
-      }
-      if (!tType || !tId) return res.status(400).json({ error: "notifications require targetType&targetId (or parent default)" });
-
-      const acc = await ensureAccess(req, tType, tId, childId);
-      if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
-
-      const where = { createdAt: { gte: from, lte: to } };
-      const colMap = { company: "companyId", room: "roomId", driver: "driverId", user: "userId", vehicle: "vehicleId", shift: "shiftId" };
-      const col = colMap[tType];
-      if (!col) return res.status(400).json({ error: "unsupported targetType for notifications" });
-      where[col] = Number(tId);
-
-      const rows = await prisma.notification.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take,
-        select: { createdAt: true, type: true, scope: true, payloadJson: true, shiftId: true, vehicleId: true },
-      });
-
-      for (const n of rows) {
-        const payload = n.payloadJson || {};
-        const stopName = payload.stopName || payload.stop?.name || payload.nextStop?.name || null;
-        const child = payload.childId || payload.personelId || payload.studentId || payload.personel?.id || null;
-        const extra = `${child ? ` childId=${child}` : ""}${stopName ? ` stop=${stopName}` : ""}`;
-        items.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}${extra}`, { shiftId: n.shiftId || null, vehicleId: n.vehicleId || null }));
-      }
-
-      const summary = {
-        kind,
-        target: `${tType}#${tId}`,
-        rangeTR: `${fmtTR(from)} -> ${fmtTR(to)}`,
-        generatedAtTR: fmtTR(now),
-        counts: { total: items.length, byCat: { NOTIF: items.length }, byLevel: { INFO: items.length } },
-      };
-      return res.json({ summary, items });
-    }
-
-    if (kind === "audit") {
-      const where = { createdAt: { gte: from, lte: to } };
-
-      if (!targetType || !targetId) {
-        const ids = await scopeUserIds(req);
-        if (Array.isArray(ids)) where.actorUserId = { in: ids };
-        // SUPER_ADMIN => ids is null => no filter (all)
-      }
-      if (targetType && targetId) {
-  if (targetType === "user") where.actorUserId = Number(targetId);
-  else {
-    where.entity = String(targetType).toUpperCase();
-    where.entityId = Number(targetId);
   }
+
+  for (const v of vehicles) {
+    const limit = Number(v.speedLimitKmh || 80);
+    const gps = await fetchGps(v.id, from, to, Math.min(2000, take * 5));
+    for (const p of gps) {
+      const sp = Number(p.speed ?? 0);
+      rows.push(mk(p.at, sp >= limit ? "SPEED" : "GPS", sp >= limit ? "WARN" : "OK", `vehicle=${v.plate} lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`, { speedLimitKph: limit }));
+    }
+    const vn = await fetchNotifications({ createdAt: { gte: from, lte: to }, vehicleId: v.id }, Math.min(2000, take * 5));
+    for (const n of vn) rows.push(mk(n.createdAt, "NOTIF", "INFO", `vehicle=${v.plate} ${n.type} scope=${n.scope}`, { shiftId: n.shiftId || null }));
+  }
+
+  rows.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  return { ok: true, targetLabel: `driver#${driverId} ${d?.fullName || ""}`.trim(), rows };
 }
 
-      const rows = await prisma.auditLog.findMany({
-        where,
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take,
-        select: { id: true, createdAt: true, actorUserId: true, actorRole: true, action: true, entity: true, entityId: true, meta: true },
-      });
+async function bundleRoom(req, roomId, from, to, take) {
+  const acc = await ensureAccess(req, "room", roomId, null);
+  if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
 
-      const userIds = Array.from(new Set(rows.map((x) => x.actorUserId).filter(Boolean)));
-      const users = userIds.length
-        ? await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true } })
-        : [];
-      const umap = new Map(users.map((u) => [u.id, u.email]));
+  const r = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true, name: true } });
+  const users = await prisma.user.findMany({ where: { roomId }, select: { id: true } });
+  const drivers = await prisma.driver.findMany({ where: { roomId }, select: { id: true, userId: true } });
+  const vehicles = await prisma.vehicle.findMany({ where: { roomId }, select: { id: true, plate: true, speedLimitKmh: true } });
 
-      for (const a of rows) {
-        const actor = a.actorUserId ? (umap.get(a.actorUserId) || `user#${a.actorUserId}`) : "-";
-        const lvl = String(a.action || "").includes("FAIL") || String(a.action || "").includes("DENY") ? "WARN" : "INFO";
-        items.push(mk(a.createdAt, "AUDIT", lvl, `${a.action} actor=${actor} role=${a.actorRole || "-"} entity=${a.entity}${a.entityId ? "#" + a.entityId : ""}`, null));
-      }
+  const userIds = Array.from(new Set(users.map((u) => u.id).concat(drivers.map((d) => d.userId || 0)).filter((x) => x > 0)));
 
-      const summary = {
-        kind,
-        target: (!targetType || !targetId) ? `scope:${req.user.role}` : `${targetType}#${targetId}`,
-        rangeTR: `${fmtTR(from)} -> ${fmtTR(to)}`,
-        generatedAtTR: fmtTR(now),
-        counts: items.reduce((acc2, it) => {
-          acc2.total++;
-          acc2.byCat[it.cat] = (acc2.byCat[it.cat] || 0) + 1;
-          acc2.byLevel[it.level] = (acc2.byLevel[it.level] || 0) + 1;
-          return acc2;
-        }, { total: 0, byCat: {}, byLevel: {} }),
-      };
-      return res.json({ summary, items });
+  const rows = [];
+  if (userIds.length) {
+    const api = await fetchApiRequests({ createdAt: { gte: from, lte: to }, userId: { in: userIds } }, Math.min(10000, take * 50));
+    for (const a of api) rows.push(mk(a.createdAt, "REQ", a.status >= 500 ? "ERROR" : a.status >= 400 ? "WARN" : "OK", `${a.method} ${a.status} ${a.path} dur=${a.durationMs}ms`, { userId: a.userId || null }));
+    const aud = await fetchAudit({ createdAt: { gte: from, lte: to }, actorUserId: { in: userIds } }, Math.min(10000, take * 50));
+    for (const x of aud) {
+      const cc = x.action.startsWith("AUTH_LOGIN_") ? "LOGIN" : "AUDIT";
+      const lv = x.action.endsWith("_OK") ? "OK" : cc === "LOGIN" ? "WARN" : "INFO";
+      rows.push(mk(x.createdAt, cc, lv, `${x.action} ${x.entity}${x.entityId ? "#" + x.entityId : ""}`, x.meta || {}));
+    }
+  }
+
+  const vehicleIds = vehicles.map((v) => v.id);
+  const driverIds = drivers.map((d) => d.id);
+
+  const notifs = await fetchNotifications(
+    {
+      createdAt: { gte: from, lte: to },
+      OR: [
+        { roomId },
+        ...(vehicleIds.length ? [{ vehicleId: { in: vehicleIds } }] : []),
+        ...(driverIds.length ? [{ driverId: { in: driverIds } }] : []),
+        ...(userIds.length ? [{ userId: { in: userIds } }] : []),
+      ],
+    },
+    Math.min(10000, take * 50)
+  );
+  for (const n of notifs) rows.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}`, { vehicleId: n.vehicleId || null, driverId: n.driverId || null, userId: n.userId || null }));
+
+  for (const v of vehicles) {
+    const limit = Number(v.speedLimitKmh || 80);
+    const gps = await fetchGps(v.id, from, to, Math.min(2000, take * 5));
+    for (const p of gps) {
+      const sp = Number(p.speed ?? 0);
+      rows.push(mk(p.at, sp >= limit ? "SPEED" : "GPS", sp >= limit ? "WARN" : "OK", `vehicle=${v.plate} lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`, { speedLimitKph: limit }));
+    }
+  }
+
+  rows.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  return { ok: true, targetLabel: `room#${roomId} ${r?.name || ""}`.trim(), rows };
+}
+
+async function bundleCompany(req, companyId, from, to, take) {
+  const acc = await ensureAccess(req, "company", companyId, null);
+  if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
+
+  const c = await prisma.company.findUnique({ where: { id: companyId }, select: { id: true, name: true, kind: true } });
+  const users = await prisma.user.findMany({ where: { companyId }, select: { id: true } });
+  const userIds = users.map((u) => u.id);
+
+  const rows = [];
+  if (userIds.length) {
+    const api = await fetchApiRequests({ createdAt: { gte: from, lte: to }, userId: { in: userIds } }, Math.min(10000, take * 50));
+    for (const a of api) rows.push(mk(a.createdAt, "REQ", a.status >= 500 ? "ERROR" : a.status >= 400 ? "WARN" : "OK", `${a.method} ${a.status} ${a.path} dur=${a.durationMs}ms`, { userId: a.userId || null }));
+    const aud = await fetchAudit({ createdAt: { gte: from, lte: to }, actorUserId: { in: userIds } }, Math.min(10000, take * 50));
+    for (const x of aud) {
+      const cc = x.action.startsWith("AUTH_LOGIN_") ? "LOGIN" : "AUDIT";
+      const lv = x.action.endsWith("_OK") ? "OK" : cc === "LOGIN" ? "WARN" : "INFO";
+      rows.push(mk(x.createdAt, cc, lv, `${x.action} ${x.entity}${x.entityId ? "#" + x.entityId : ""}`, x.meta || {}));
+    }
+  }
+
+  const notifs = await fetchNotifications({ createdAt: { gte: from, lte: to }, companyId }, Math.min(10000, take * 50));
+  for (const n of notifs) rows.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}`, { userId: n.userId || null, shiftId: n.shiftId || null }));
+
+  rows.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  return { ok: true, targetLabel: `company#${companyId} ${c?.name || ""}`.trim(), rows };
+}
+
+async function bundleUser(req, userId, from, to, take) {
+  const acc = await ensureAccess(req, "user", userId, null);
+  if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
+
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, role: true } });
+
+  const rows = [];
+  const api = await fetchApiRequests({ createdAt: { gte: from, lte: to }, userId }, Math.min(10000, take * 50));
+  for (const a of api) rows.push(mk(a.createdAt, "REQ", a.status >= 500 ? "ERROR" : a.status >= 400 ? "WARN" : "OK", `${a.method} ${a.status} ${a.path} dur=${a.durationMs}ms`, { ip: a.ip || null }));
+  const aud = await fetchAudit({ createdAt: { gte: from, lte: to }, actorUserId: userId }, Math.min(10000, take * 50));
+  for (const x of aud) {
+    const cc = x.action.startsWith("AUTH_LOGIN_") ? "LOGIN" : "AUDIT";
+    const lv = x.action.endsWith("_OK") ? "OK" : cc === "LOGIN" ? "WARN" : "INFO";
+    rows.push(mk(x.createdAt, cc, lv, `${x.action} ${x.entity}${x.entityId ? "#" + x.entityId : ""}`, x.meta || {}));
+  }
+  const notifs = await fetchNotifications({ createdAt: { gte: from, lte: to }, userId }, Math.min(10000, take * 50));
+  for (const n of notifs) rows.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}`, { shiftId: n.shiftId || null }));
+
+  rows.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  return { ok: true, targetLabel: `user#${userId} ${u?.email || ""}`.trim(), rows };
+}
+
+async function bundlePersonelOrStudent(req, personelId, asStudent, childId, from, to, take) {
+  const t = asStudent ? "student" : "personel";
+  const acc = await ensureAccess(req, t, personelId, childId);
+  if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
+
+  const p = await prisma.personel.findUnique({ where: { id: personelId }, select: { id: true, fullName: true, kind: true, companyId: true, userId: true } });
+  if (!p) return { ok: false, status: 404, error: "not found" };
+
+  const rows = [];
+  // user logs if personel has userId
+  if (p.userId) {
+    const api = await fetchApiRequests({ createdAt: { gte: from, lte: to }, userId: p.userId }, Math.min(10000, take * 50));
+    for (const a of api) rows.push(mk(a.createdAt, "REQ", a.status >= 500 ? "ERROR" : a.status >= 400 ? "WARN" : "OK", `${a.method} ${a.status} ${a.path} dur=${a.durationMs}ms`, { userId: p.userId }));
+    const aud = await fetchAudit({ createdAt: { gte: from, lte: to }, actorUserId: p.userId }, Math.min(10000, take * 50));
+    for (const x of aud) {
+      const cc = x.action.startsWith("AUTH_LOGIN_") ? "LOGIN" : "AUDIT";
+      const lv = x.action.endsWith("_OK") ? "OK" : cc === "LOGIN" ? "WARN" : "INFO";
+      rows.push(mk(x.createdAt, cc, lv, `${x.action} ${x.entity}${x.entityId ? "#" + x.entityId : ""}`, x.meta || {}));
+    }
+  }
+
+  // notifications: scoped to company and payload contains personelId/studentId/childId
+  const notifs = await fetchNotifications({ createdAt: { gte: from, lte: to }, companyId: p.companyId }, Math.min(10000, take * 50));
+  for (const n of notifs) {
+    const payload = n.payloadJson || {};
+    const pid = payload.personelId || payload.studentId || payload.childId || payload.personel?.id || payload.student?.id || null;
+    if (Number(pid || 0) !== Number(p.id)) continue;
+    rows.push(mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}`, { shiftId: n.shiftId || null, vehicleId: n.vehicleId || null }));
+  }
+
+  rows.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  return { ok: true, targetLabel: `${t}#${personelId} ${p.fullName || ""}`.trim(), rows };
+}
+
+// ---------------- main dispatcher ----------------
+
+async function buildByKind({ req, kind, targetType, targetId, childId, from, to, take }) {
+  // bundles
+  if (kind === "bundle_vehicle") return bundleVehicle(req, targetId, childId, from, to, take);
+  if (kind === "bundle_driver") return bundleDriver(req, targetId, from, to, take);
+  if (kind === "bundle_room") return bundleRoom(req, targetId, from, to, take);
+  if (kind === "bundle_company") return bundleCompany(req, targetId, from, to, take);
+  if (kind === "bundle_user") return bundleUser(req, targetId, from, to, take);
+  if (kind === "bundle_personel") return bundlePersonelOrStudent(req, targetId, false, childId, from, to, take);
+  if (kind === "bundle_student") return bundlePersonelOrStudent(req, targetId, true, childId, from, to, take);
+
+  // single streams
+  if (kind === "gps" || kind === "speed") {
+    if (targetType !== "vehicle" || !targetId) return { ok: false, status: 400, error: "gps/speed require targetType=vehicle&targetId" };
+    const acc = await ensureAccess(req, "vehicle", targetId, childId);
+    if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
+
+    const v = await prisma.vehicle.findUnique({ where: { id: targetId }, select: { plate: true, speedLimitKmh: true } });
+    const limit = Number(req.query.speedLimitKph || v?.speedLimitKmh || 80);
+
+    const gps = await fetchGps(targetId, from, to, Math.min(10000, take * 50));
+    const rows = [];
+    for (const p of gps) {
+      const sp = Number(p.speed ?? 0);
+      if (kind === "speed" && sp < limit) continue;
+      rows.push(mk(p.at, sp >= limit ? "SPEED" : "GPS", sp >= limit ? "WARN" : "OK", `vehicle=${v?.plate || targetId} lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`, { speedLimitKph: limit }));
+    }
+    return { ok: true, targetLabel: `vehicle#${targetId} ${v?.plate || ""}`.trim(), rows };
+  }
+
+  if (kind === "notifications") {
+    // target optional: if provided, check access
+    if (targetType && targetId) {
+      const acc = await ensureAccess(req, targetType, targetId, childId);
+      if (!acc.ok) return { ok: false, status: acc.status, error: acc.error };
     }
 
+    const scope = await scopeUserIdsForRole(req);
+    if (scope.mode === "deny") return { ok: false, status: 403, error: "Forbidden" };
+
+    const where = { createdAt: { gte: from, lte: to } };
+    if (targetType === "vehicle") where.vehicleId = targetId;
+    else if (targetType === "driver") where.driverId = targetId;
+    else if (targetType === "room") where.roomId = targetId;
+    else if (targetType === "company") where.companyId = targetId;
+    else if (targetType === "user") where.userId = targetId;
+    else {
+      if (scope.mode === "userIds") {
+        where.OR = [
+          { userId: { in: scope.userIds } },
+          ...(scope.roomId ? [{ roomId: scope.roomId }] : []),
+          ...(scope.companyId ? [{ companyId: scope.companyId }] : []),
+        ];
+      }
+    }
+
+    const notifs = await fetchNotifications(where, Math.min(10000, take * 50));
+    const rows = notifs.map((n) => mk(n.createdAt, "NOTIF", "INFO", `${n.type} scope=${n.scope}`, { payload: n.payloadJson || {}, shiftId: n.shiftId || null, vehicleId: n.vehicleId || null }));
+    return { ok: true, targetLabel: targetType && targetId ? `${targetType}#${targetId}` : "scoped", rows };
+  }
+
+  // global view (scope-based)
+  if (kind === "api" || kind === "audit" || kind === "audit_login") {
+    const scope = await scopeUserIdsForRole(req);
+    if (scope.mode === "deny") return { ok: false, status: 403, error: "Forbidden" };
+
+    const rows = [];
     if (kind === "api") {
       const where = { createdAt: { gte: from, lte: to } };
-
-      if (!targetType || !targetId) {
-        const ids = await scopeUserIds(req);
-        if (Array.isArray(ids)) where.userId = { in: ids };
-        // SUPER_ADMIN => ids is null => no filter (all)
-      } else {
-        const acc = await ensureAccess(req, targetType, targetId, childId);
-        if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
-
-        if (targetType === "user") where.userId = Number(targetId);
-        else return res.status(400).json({ error: "api supports targetType=user only" });
-      }
-
-      const rows = await prisma.apiRequest.findMany({
-        where,
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take,
-        select: { id: true, createdAt: true, method: true, path: true, status: true, durationMs: true, userId: true, role: true, ip: true },
-      });
-
-      for (const r0 of rows) {
-        const lvl = Number(r0.status || 0) >= 400 ? "ERROR" : "OK";
-        items.push(mk(r0.createdAt, "REQ", lvl, `${r0.method} ${r0.path} status=${r0.status} dur=${r0.durationMs}ms ip=${r0.ip || "-"}`, null));
-      }
-
-      const summary = {
-        kind,
-        target: (!targetType || !targetId) ? `scope:${req.user.role}` : `${targetType}#${targetId}`,
-        rangeTR: `${fmtTR(from)} -> ${fmtTR(to)}`,
-        generatedAtTR: fmtTR(now),
-        counts: items.reduce((acc2, it) => {
-          acc2.total++;
-          acc2.byCat[it.cat] = (acc2.byCat[it.cat] || 0) + 1;
-          acc2.byLevel[it.level] = (acc2.byLevel[it.level] || 0) + 1;
-          return acc2;
-        }, { total: 0, byCat: {}, byLevel: {} }),
-      };
-      return res.json({ summary, items });
+      if (scope.mode === "userIds") where.userId = { in: scope.userIds };
+      const api = await fetchApiRequests(where, Math.min(10000, take * 200));
+      for (const r of api) rows.push(mk(r.createdAt, "REQ", r.status >= 500 ? "ERROR" : r.status >= 400 ? "WARN" : "OK", `${r.method} ${r.status} ${r.path} dur=${r.durationMs}ms`, { userId: r.userId || null, role: r.role || null, ip: r.ip || null }));
+      return { ok: true, targetLabel: "scoped", rows };
     }
 
+    const where = { createdAt: { gte: from, lte: to } };
+    if (scope.mode === "userIds") where.actorUserId = { in: scope.userIds };
+    if (kind === "audit_login") where.action = { startsWith: "AUTH_LOGIN_" };
+
+    const aud = await fetchAudit(where, Math.min(10000, take * 200));
+    for (const a of aud) {
+      const cc = a.action.startsWith("AUTH_LOGIN_") ? "LOGIN" : "AUDIT";
+      const lv = a.action.endsWith("_OK") ? "OK" : cc === "LOGIN" ? "WARN" : "INFO";
+      rows.push(mk(a.createdAt, cc, lv, `${a.action} ${a.entity}${a.entityId ? "#" + a.entityId : ""}`, a.meta || {}));
+    }
+    return { ok: true, targetLabel: "scoped", rows };
+  }
+
+  return { ok: false, status: 400, error: "unknown kind" };
+}
+
+// ---------------- router ----------------
+
+export function logsRouter() {
+  const r = express.Router();
+
+  // GET /api/logs/preview
+  r.get("/preview", authRequired(), async (req, res) => {
     
+try {
+  const kindRaw = req.query.kind;
+  const kind = normKind(kindRaw);
 
-if (kind === "login") {
-  const where = { createdAt: { gte: from, lte: to }, action: { startsWith: "AUTH_LOGIN_" } };
-
-  // Scope: SUPER_ADMIN => all, ROOM/COMPANY => only their users, others => self
-  const ids = await scopeUserIds(req);
-  if (Array.isArray(ids)) where.actorUserId = { in: ids };
-
-  const rows = await prisma.auditLog.findMany({
-    where,
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take,
-    select: { id: true, createdAt: true, actorUserId: true, action: true, meta: true },
-  });
-
-  for (const a of rows) {
-    const meta = a.meta || {};
-    const email = meta.email || "-";
-    const ip = meta.ip || "-";
-    const reason = meta.reason || "-";
-    const lvl = String(a.action || "").includes("FAIL") || String(a.action || "").includes("DISABLED") ? "WARN" : "OK";
-    items.push(mk(a.createdAt, "LOGIN", lvl, `${a.action} email=${email} ip=${ip} reason=${reason}`, null));
+  if (!SUPPORTED_KINDS.includes(kind)) {
+    return res.status(400).json({ error: "unknown kind", kindRaw, kind, supported: SUPPORTED_KINDS });
   }
 
-  const summary = {
-    kind,
-    target: `scope:${req.user.role}`,
-    rangeTR: `${fmtTR(from)} -> ${fmtTR(to)}`,
-    generatedAtTR: fmtTR(now),
-    counts: items.reduce((acc2, it) => {
-      acc2.total++;
-      acc2.byCat[it.cat] = (acc2.byCat[it.cat] || 0) + 1;
-      acc2.byLevel[it.level] = (acc2.byLevel[it.level] || 0) + 1;
-      return acc2;
-    }, { total: 0, byCat: {}, byLevel: {} }),
-  };
-  return res.json({ summary, items });
-}    return res.status(400).json({ error: "unknown kind" });
-  } catch (e) {
-    return res.status(500).json({ error: String(e?.message || e) });
-  }
-});
-
-  // GET /api/logs/export
-  // kind=gps|speed|notifications|audit|api|bundle_vehicle
-  r.get("/export", authRequired(), async (req, res) => {
-    try {
-      const kind0 = String(req.query.kind || "");
-      const kind = kind0 === "requests" ? "api" : (kind0 === "login" ? "login" : kind0);
-      const targetType = String(req.query.targetType || "");
-      const targetId = Number(req.query.targetId || 0);
+const targetType = normTargetType(req.query.targetType);
+      const targetId = Number(req.query.targetId || 0) || 0;
       const childId = req.query.childId ? Number(req.query.childId) : null;
-      const format = String(req.query.format || "txt").toLowerCase() === "csv" ? "csv" : "txt";
+
+      const take = Math.min(500, Math.max(1, Number(req.query.take || 250)));
 
       const from0 = parseIsoOrNull(req.query.from);
       const to0 = parseIsoOrNull(req.query.to);
       const { from, to } = defaultFromTo(from0, to0);
 
-      if (!kind) return res.status(400).json({ error: "kind required" });
+      const built = await buildByKind({ req, kind, targetType, targetId, childId, from, to, take });
+      if (!built.ok) return res.status(built.status || 400).json({ error: built.error || "error" });
 
-      // bundle_vehicle is a shortcut
-      if (kind === "bundle_vehicle") {
-        if (targetType !== "vehicle" || !targetId) return res.status(400).json({ error: "bundle_vehicle requires targetType=vehicle&targetId" });
+      let rows = built.rows || [];
+      rows = applyFilters(rows, { onlyBad: req.query.onlyBad, cat: req.query.cat || "ALL", q: req.query.q || "" });
+      rows.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 
-        const acc = await ensureAccess(req, "vehicle", targetId, childId);
-        if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
+      const items = rows.slice(0, take);
 
-        const vehicle = await prisma.vehicle.findUnique({
-          where: { id: targetId },
-          select: { id: true, plate: true, capacity: true, roomId: true, speedLimitKmh: true },
-        });
+      const summary = {
+        kind,
+        target: built.targetLabel || (targetType && targetId ? `${targetType}#${targetId}` : "scoped"),
+        rangeTR: `${fmtTR(from)} -> ${fmtTR(to)}`,
+        refreshedAtTR: fmtTR(new Date()),
+        total: rows.length,
+      };
 
-        const gps = await fetchGps(targetId, from, to);
-        const limit = Number(req.query.speedLimitKph || vehicle?.speedLimitKmh || 80);
-        const speedViol = gps.filter((p) => (p.speed ?? 0) >= limit);
+      return res.json({ summary, items });
+    } catch (e) {
+      return res.status(500).json({ error: String(e?.message || e) });
+    }
+  });
 
-        const notifWhere = {
-          createdAt: { gte: from, lte: to },
-          vehicleId: targetId,
-        };
-        const notifs = await fetchNotifications(notifWhere);
+  // GET /api/logs/export (TXT default)
+  r.get("/export", authRequired(), async (req, res) => {
+    
+try {
+  const kindRaw = req.query.kind;
+  const kind = normKind(kindRaw);
 
-        if (format === "csv") {
-          // Multi-section CSV = we prefix section rows
-          const rows = [];
-          rows.push(toCsvRow(["SECTION", "bundle_vehicle"]));
-          rows.push(toCsvRow(["vehicleId", vehicle?.id, "plate", vehicle?.plate, "roomId", vehicle?.roomId, "from", from.toISOString(), "to", to.toISOString()]));
+  if (!SUPPORTED_KINDS.includes(kind)) {
+    return res.status(400).json({ error: "unknown kind", kindRaw, kind, supported: SUPPORTED_KINDS });
+  }
 
-          rows.push(toCsvRow(["SECTION", "gps"]));
-          rows.push(toCsvRow(["at", "lat", "lng", "speed"]));
-          for (const p of gps) rows.push(toCsvRow([p.at?.toISOString?.() || String(p.at), p.lat, p.lng, p.speed ?? ""]));
+const targetType = normTargetType(req.query.targetType);
+      const targetId = Number(req.query.targetId || 0) || 0;
+      const childId = req.query.childId ? Number(req.query.childId) : null;
 
-          rows.push(toCsvRow(["SECTION", `speed>=${limit}`]));
-          rows.push(toCsvRow(["at", "lat", "lng", "speed"]));
-          for (const p of speedViol) rows.push(toCsvRow([p.at?.toISOString?.() || String(p.at), p.lat, p.lng, p.speed ?? ""]));
+      const take = Math.min(5000, Math.max(1, Number(req.query.take || 1000)));
 
-          rows.push(toCsvRow(["SECTION", "notifications"]));
-          rows.push(toCsvRow(["createdAt", "type", "scope", "payload"]));
-          for (const n of notifs) rows.push(toCsvRow([n.createdAt.toISOString(), n.type, n.scope, JSON.stringify(n.payloadJson || {})]));
+      const from0 = parseIsoOrNull(req.query.from);
+      const to0 = parseIsoOrNull(req.query.to);
+      const { from, to } = defaultFromTo(from0, to0);
 
-          const body = rows.join("\n") + "\n";
-          return sendExport(res, { body, format, filename: formatFilename({ kind, targetType, targetId, format }) });
-        }
+      const format = String(req.query.format || "txt").toLowerCase() === "csv" ? "csv" : "txt";
 
-        
-// TXT
-        let out = "";
-        out += "# LOG EXPORT\n";
-        out += `# kind=bundle_vehicle target=vehicle#${vehicle?.id} plate=${vehicle?.plate} roomId=${vehicle?.roomId} capacity=${vehicle?.capacity}
-`;
-        out += `# range(TR): ${fmtTR(from)} -> ${fmtTR(to)}
-`;
-        out += `# generatedAt(TR): ${fmtTR(new Date())}
-`;
-        out += "\n";
+      const built = await buildByKind({ req, kind, targetType, targetId, childId, from, to, take });
+      if (!built.ok) return res.status(built.status || 400).json({ error: built.error || "error" });
 
-        out += asTxtSection("SUMMARY");
-        out += `gpsPoints=${gps.length} speedViolations=${speedViol.length} notifications=${notifs.length} speedLimitKph=${limit}
-`;
+      const rows = (built.rows || []).slice().sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 
-        out += asTxtSection("GPS LAST");
-        if (!gps.length) out += "(none)\n";
-        else {
-          const last = gps[gps.length - 1];
-          out += lineTR(last.at, `GPS lat=${last.lat.toFixed(6)} lng=${last.lng.toFixed(6)} speed=${last.speed ?? "-"}`);
-        }
+      const filename = `logs_${kind}_${targetType || "scoped"}_${targetId || 0}_${Date.now()}.${format === "csv" ? "csv" : "txt"}`;
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Type", format === "csv" ? "text/csv; charset=utf-8" : "text/plain; charset=utf-8");
 
-        out += asTxtSection("GPS POINTS");
-        if (!gps.length) out += "(no gps points)\n";
-        else {
-          const MAX = 2000;
-          const step = gps.length > MAX ? Math.ceil(gps.length / MAX) : 1;
-          if (step > 1) out += `note: sampled every ${step} points (showing ~${Math.ceil(gps.length / step)} of ${gps.length})
-`;
-          for (let i = 0; i < gps.length; i += step) {
-            const p = gps[i];
-            out += lineTR(p.at, `GPS lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`);
-          }
-        }
-
-        out += asTxtSection(`SPEED VIOLATIONS (>=${limit} kph)`);
-        if (!speedViol.length) out += "(none)\n";
-        else {
-          for (const p of speedViol) {
-            out += lineTR(p.at, `SPEED speed=${p.speed ?? "-"} lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)}`);
-          }
-        }
-
-        out += asTxtSection("NOTIFICATIONS (vehicle)");
-        if (!notifs.length) out += "(none)\n";
-        else {
-          for (const n of notifs) {
-            const payload = n.payloadJson || {};
-            const stopName = payload.stopName || payload.stop?.name || payload.nextStop?.name || null;
-            const child = payload.childId || payload.personelId || payload.studentId || payload.personel?.id || null;
-            const extra = `${child ? ` childId=${child}` : ""}${stopName ? ` stop=${stopName}` : ""}`;
-            out += lineTR(n.createdAt, `NOTIF type=${n.type} scope=${n.scope}${extra} shiftId=${n.shiftId || "-"} vehicleId=${n.vehicleId || "-"} payload=${safeJson(payload)}`);
-          }
-        }
-
-        return sendExport(res, { body: out, format, filename: formatFilename({ kind, targetType, targetId, format }) });
-}
-
-      // non-bundle kinds need targetType/Id in most cases
-      if (["gps", "speed"].includes(kind)) {
-        if (targetType !== "vehicle" || !targetId) return res.status(400).json({ error: "gps/speed require targetType=vehicle&targetId" });
-        const acc = await ensureAccess(req, "vehicle", targetId, childId);
-        if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
-
-        const gps = await fetchGps(targetId, from, to);
-
-        if (kind === "speed") {
-          const vehicle = await prisma.vehicle.findUnique({
-            where: { id: targetId },
-            select: { speedLimitKmh: true, plate: true },
-          });
-          const limit = Number(req.query.speedLimitKph || vehicle?.speedLimitKmh || 80);
-          const only = gps.filter((p) => (p.speed ?? 0) >= limit);
-
-          if (format === "csv") {
-            const rows = [];
-            rows.push(toCsvRow(["at", "lat", "lng", "speed"]));
-            for (const p of only) rows.push(toCsvRow([p.at.toISOString(), p.lat, p.lng, p.speed ?? ""]));
-            return sendExport(res, { body: rows.join("\n") + "\n", format, filename: formatFilename({ kind, targetType, targetId, format }) });
-          }
-
-          
-let out = "";
-          out += "# LOG EXPORT\n";
-          out += `# kind=speed target=vehicle#${targetId} limit>=${limit}
-`;
-          out += `# range(TR): ${fmtTR(from)} -> ${fmtTR(to)}
-`;
-          out += `# generatedAt(TR): ${fmtTR(new Date())}
-
-`;
-          out += asTxtSection(`SPEED VIOLATIONS (>=${limit} kph)`);
-          if (!only.length) out += "(none)\n";
-          for (const p of only) out += lineTR(p.at, `SPEED speed=${p.speed ?? "-"} lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)}`);
-          return sendExport(res, { body: out, format, filename: formatFilename({ kind, targetType, targetId, format }) });
-}
-
-        // gps
-        if (format === "csv") {
-          const rows = [];
-          rows.push(toCsvRow(["at", "lat", "lng", "speed"]));
-          for (const p of gps) rows.push(toCsvRow([p.at.toISOString(), p.lat, p.lng, p.speed ?? ""]));
-          return sendExport(res, { body: rows.join("\n") + "\n", format, filename: formatFilename({ kind, targetType, targetId, format }) });
-        }
-
-        
-let out = "";
-        out += "# LOG EXPORT\n";
-        out += `# kind=gps target=vehicle#${targetId}
-`;
-        out += `# range(TR): ${fmtTR(from)} -> ${fmtTR(to)}
-`;
-        out += `# generatedAt(TR): ${fmtTR(new Date())}
-
-`;
-
-        out += asTxtSection("GPS POINTS");
-        if (!gps.length) out += "(none)\n";
-        else {
-          const MAX = 2000;
-          const step = gps.length > MAX ? Math.ceil(gps.length / MAX) : 1;
-          if (step > 1) out += `note: sampled every ${step} points (showing ~${Math.ceil(gps.length / step)} of ${gps.length})
-`;
-          for (let i = 0; i < gps.length; i += step) {
-            const p = gps[i];
-            out += lineTR(p.at, `GPS lat=${p.lat.toFixed(6)} lng=${p.lng.toFixed(6)} speed=${p.speed ?? "-"}`);
-          }
-        }
-
-        return sendExport(res, { body: out, format, filename: formatFilename({ kind, targetType, targetId, format }) });
-}
-
-      if (kind === "notifications") {
-        // targetType can be user/company/room/driver/vehicle/shift. For parent default to own user.
-        let tType = targetType;
-        let tId = targetId;
-
-        if (req.user.role === "PARENT" && (!tType || !tId)) {
-          tType = "user";
-          tId = Number(req.user.id);
-        }
-        if (!tType || !tId) return res.status(400).json({ error: "notifications require targetType&targetId (or parent default)" });
-
-        const acc = await ensureAccess(req, tType, tId, childId);
-        if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
-
-        const where = { createdAt: { gte: from, lte: to } };
-        const colMap = {
-          company: "companyId",
-          room: "roomId",
-          driver: "driverId",
-          user: "userId",
-          vehicle: "vehicleId",
-          shift: "shiftId",
-          personel: "userId",
-          child: "userId",
-        };
-        const col = colMap[tType];
-        if (!col) return res.status(400).json({ error: "unsupported targetType for notifications" });
-        where[col] = Number(tId);
-
-        const rows = await fetchNotifications(where);
-
-        if (format === "csv") {
-          const outRows = [];
-          outRows.push(toCsvRow(["createdAt", "type", "scope", "payload"]));
-          for (const n of rows) outRows.push(toCsvRow([n.createdAt.toISOString(), n.type, n.scope, JSON.stringify(n.payloadJson || {})]));
-          return sendExport(res, { body: outRows.join("\n") + "\n", format, filename: formatFilename({ kind, targetType: tType, targetId: tId, format }) });
-        }
-
-        
-let out = "";
-        out += "# LOG EXPORT\n";
-        out += `# kind=notifications target=${tType}#${tId}
-`;
-        out += `# range(TR): ${fmtTR(from)} -> ${fmtTR(to)}
-`;
-        out += `# generatedAt(TR): ${fmtTR(new Date())}
-
-`;
-
-        out += asTxtSection("NOTIFICATIONS");
-        if (!rows.length) out += "(none)\n";
-        for (const n of rows) {
-          const payload = n.payloadJson || {};
-          const stopName = payload.stopName || payload.stop?.name || payload.nextStop?.name || null;
-          const child = payload.childId || payload.personelId || payload.studentId || payload.personel?.id || null;
-          const extra = `${child ? ` childId=${child}` : ""}${stopName ? ` stop=${stopName}` : ""}`;
-          out += lineTR(n.createdAt, `NOTIF type=${n.type} scope=${n.scope}${extra} shiftId=${n.shiftId || "-"} vehicleId=${n.vehicleId || "-"} payload=${safeJson(payload)}`);
-        }
-
-        return sendExport(res, { body: out, format, filename: formatFilename({ kind, targetType: tType, targetId: tId, format }) });
-}
-
-      if (kind === "audit") {
-        const where = { createdAt: { gte: from, lte: to } };
-
-        if (!targetType || !targetId) {
-          const ids = await scopeUserIds(req);
-          if (Array.isArray(ids)) where.actorUserId = { in: ids };
-          // SUPER_ADMIN => ids null => no filter
-        } else {
-          const acc = await ensureAccess(req, targetType, targetId, childId);
-          if (!acc.ok) return res.status(acc.status || 403).json({ error: acc.error || "Forbidden" });
-
-          // For now: support user(actor) or entity filter
-        // For now: support user(actor) or entity filter
-        if (targetType === "user") where.actorUserId = Number(targetId);
-        else {
-          where.entity = String(targetType).toUpperCase();
-          where.entityId = Number(targetId);
-        }
-        }
-
-        const rows = await fetchAudit(where);
-
-        if (format === "csv") {
-          const outRows = [];
-          outRows.push(toCsvRow(["createdAt", "actorUserId", "actorRole", "action", "entity", "entityId", "meta"]));
-          for (const a of rows) outRows.push(toCsvRow([a.createdAt.toISOString(), a.actorUserId ?? "", a.actorRole ?? "", a.action, a.entity, a.entityId ?? "", JSON.stringify(a.meta || {})]));
-          return sendExport(res, { body: outRows.join("\n") + "\n", format, filename: formatFilename({ kind, targetType, targetId, format }) });
-        }
-
-        
-let out = "";
-        out += "# LOG EXPORT\n";
-        out += `# kind=audit target=${targetType}#${targetId}
-`;
-        out += `# range(TR): ${fmtTR(from)} -> ${fmtTR(to)}
-`;
-        out += `# generatedAt(TR): ${fmtTR(new Date())}
-
-`;
-
-        out += asTxtSection("AUDIT");
-        if (!rows.length) out += "(none)\n";
-        for (const a of rows) {
-          out += lineTR(a.createdAt, `AUDIT action=${a.action} actorUserId=${a.actorUserId ?? "-"} role=${a.actorRole ?? "-"} entity=${a.entity}${a.entityId ? "#" + a.entityId : ""} meta=${safeJson(a.meta)}`);
-        }
-
-        return sendExport(res, { body: out, format, filename: formatFilename({ kind, targetType, targetId, format }) });
-}
-
-      if (kind === "api") {
-        // Global export allowed: if no targetType/targetId, export by scope (ROOM/company/self) or all for SUPER_ADMIN.
-
-        const where = { createdAt: { gte: from, lte: to } };
-
-if (!targetType || !targetId) {
-  const ids = await scopeUserIds(req);
-  if (Array.isArray(ids)) where.userId = { in: ids };
-  // SUPER_ADMIN => ids null => no filter
-} else if (targetType === "user") where.userId = Number(targetId);
-else if (targetType === "role") where.role = String(targetId);
-else return res.status(400).json({ error: "api supports targetType=user|role only" });
-
-        const rows = await fetchApiRequests(where);
-
-        if (format === "csv") {
-          const outRows = [];
-          outRows.push(toCsvRow(["createdAt", "method", "path", "status", "durationMs", "userId", "role", "ip", "userAgent"]));
-          for (const a of rows) outRows.push(toCsvRow([a.createdAt.toISOString(), a.method, a.path, a.status, a.durationMs, a.userId ?? "", a.role ?? "", a.ip ?? "", a.userAgent ?? ""]));
-          return sendExport(res, { body: outRows.join("\n") + "\n", format, filename: formatFilename({ kind, targetType, targetId, format }) });
-        }
-
-        
-let out = "";
-        out += "# LOG EXPORT\n";
-        out += `# kind=api_requests target=${(!targetType || !targetId) ? ("scope:" + req.user.role) : (targetType + "#" + targetId)}
-`;
-        out += `# range(TR): ${fmtTR(from)} -> ${fmtTR(to)}
-`;
-        out += `# generatedAt(TR): ${fmtTR(new Date())}
-
-`;
-
-        out += asTxtSection("API REQUESTS");
-        if (!rows.length) out += "(none)\n";
-        for (const a of rows) {
-          const lvl = Number(a.status || 0) >= 400 ? "ERROR" : "OK";
-          out += lineTR(a.createdAt, `${lvl} ${a.method} ${a.path} status=${a.status} dur=${a.durationMs}ms userId=${a.userId ?? "-"} role=${a.role ?? "-"} ip=${a.ip ?? "-"}`);
-        }
-
-        return sendExport(res, { body: out, format, filename: formatFilename({ kind, targetType, targetId, format }) });
-}
-
-      return res.status(400).json({ error: "unknown kind" });
+      if (format === "csv") return res.status(200).send(rowsToCsv(rows));
+      return res.status(200).send(rowsToTxt({ kind, targetLabel: built.targetLabel || "scoped", from, to, rows }));
     } catch (e) {
       return res.status(500).json({ error: String(e?.message || e) });
     }
@@ -933,3 +733,5 @@ let out = "";
 
   return r;
 }
+
+export default logsRouter;
