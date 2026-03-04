@@ -1,14 +1,18 @@
-OVERLAY — Logs bundles: accept kind aliases + return supported kinds on error
+OVERLAY — SuperAdmin Log Export fix + bundle kind normalization/diagnostics
 
-Fix:
-- /api/logs/preview and /api/logs/export now normalize kind:
-  - accepts bundle_* kinds and Turkish/label aliases
-  - requests -> api, login -> audit_login
-- If kind is unknown, response includes:
-  { error:"unknown kind", kindRaw, kind, supported:[...] }
-  so UI shows exactly what backend received.
-- targetType is also normalized (vehicle/driver/room/company/user/personel/student).
+Fixes:
+1) SuperAdmin UI error "basePathForKind is not defined"
+   - Adds basePathForKind()
+   - Uses api.get(...) instead of api(...)
+
+2) /api/logs now normalizes kind (TR/EN labels tolerant) and, on unknown kind,
+   returns diagnostic payload:
+   { error, kindRaw, kind, supported[] }
 
 Apply:
-1) Expand-Archive -Force .\OVERLAY_LOGS_BUNDLE_UNKNOWNKIND_DIAG_2026-03-04.zip .
+1) Expand-Archive -Force .\OVERLAY_SUPERADMIN_LOGEXPORT_UI_FIX_2026-03-04.zip .
 2) .\tools\pack.ps1 -To 37
+
+After apply:
+- SUPER_ADMIN -> Log Export preview should work (login/audit/requests).
+- ROOM bundles: if still unknown kind, UI will show kindRaw + supported list.

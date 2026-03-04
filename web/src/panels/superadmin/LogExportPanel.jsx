@@ -42,6 +42,16 @@ function fmt(ts) {
   }
 }
 
+
+function basePathForKind(kind) {
+  const k = String(kind || "").trim();
+  // SuperAdmin filters (login/audit/requests) live under /api/admin/logs
+  if (!k.startsWith("bundle_")) return "/api/admin/logs";
+  // Bundles are served by shared logs router
+  return "/api/logs";
+}
+
+
 export default function LogExportPanel() {
   const { token } = useSession();
 
@@ -115,7 +125,7 @@ export default function LogExportPanel() {
       if (status.trim()) qs.set("status", status.trim());
 
       const base = basePathForKind(kind);
-    const r = await api(`${base}/preview?${qs.toString()}`, { token });
+    const r = await api.get(`${base}/preview?${qs.toString()}`, { token });
       setItems(r.items || []);
     } catch (e) {
       setErr(e?.message || String(e));

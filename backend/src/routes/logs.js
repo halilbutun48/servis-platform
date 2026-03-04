@@ -7,81 +7,34 @@ import { authRequired } from "../auth/middleware.js";
 
 const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
 
-const SUPPORTED_KINDS = [
-  "api",
-  "audit",
-  "audit_login",
-  "notifications",
-  "gps",
-  "speed",
-  "bundle_vehicle",
-  "bundle_driver",
-  "bundle_room",
-  "bundle_company",
-  "bundle_user",
-  "bundle_personel",
-  "bundle_student",
-];
 
-function foldKey(x) {
-  return String(x || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
+function normalizeKind(raw) {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  const lc = s.toLowerCase();
 
-function normKind(raw) {
-  const s0 = String(raw || "").trim();
-  const s = foldKey(s0);
+  // aliases
+  if (lc === "requests") return "api";
+  if (lc === "login") return "audit_login";
+  if (lc === "api" || lc === "audit" || lc === "audit_login") return lc;
 
-  // direct supported
-  if (SUPPORTED_KINDS.includes(s0)) return s0;
-  if (SUPPORTED_KINDS.includes(s)) return s;
+  // already canonical bundles
+  if (lc.startsWith("bundle_")) return lc;
 
-  // common aliases
-  if (s === "requests" || s === "api_requests" || s === "apirequests") return "api";
-  if (s === "login" || s === "login_logs" || s === "loginlogs") return "audit_login";
-
-  // bundle aliases (TR/EN)
-  if (s.includes("bundle")) {
-    if (s.includes("arac") || s.includes("vehicle")) return "bundle_vehicle";
-    if (s.includes("surucu") || s.includes("driver")) return "bundle_driver";
-    if (s.includes("room")) return "bundle_room";
-    if (s.includes("company") || s.includes("sirket")) return "bundle_company";
-    if (s.includes("user") || s.includes("kullanici")) return "bundle_user";
-    if (s.includes("personel")) return "bundle_personel";
-    if (s.includes("student") || s.includes("ogrenci")) return "bundle_student";
+  // tolerant matching for UI labels (TR/EN)
+  const hasBundle = lc.includes("bundle");
+  if (hasBundle) {
+    if (lc.includes("driver") || lc.includes("sürücü") || lc.includes("surucu")) return "bundle_driver";
+    if (lc.includes("vehicle") || lc.includes("araç") || lc.includes("arac")) return "bundle_vehicle";
+    if (lc.includes("room")) return "bundle_room";
+    if (lc.includes("company") || lc.includes("şirket") || lc.includes("sirket")) return "bundle_company";
+    if (lc.includes("user")) return "bundle_user";
+    if (lc.includes("personel")) return "bundle_personel";
+    if (lc.includes("student") || lc.includes("öğrenci") || lc.includes("ogrenci")) return "bundle_student";
   }
 
-  // label-only selections (just in case UI sends Turkish labels)
-  if (s.includes("arac") && s.includes("hiz") && s.includes("bildirim")) return "bundle_vehicle";
-  if (s.includes("surucu") && s.includes("bundle")) return "bundle_driver";
-
-  return s0; // keep raw; later we will error with supported list
+  return lc;
 }
-
-function normTargetType(raw) {
-  const s0 = String(raw || "").trim();
-  const s = foldKey(s0);
-  const map = {
-    "arac": "vehicle",
-    "vehicle": "vehicle",
-    "surucu": "driver",
-    "driver": "driver",
-    "room": "room",
-    "sirket": "company",
-    "company": "company",
-    "kullanici": "user",
-    "user": "user",
-    "personel": "personel",
-    "ogrenci": "student",
-    "student": "student",
-    "shift": "shift",
-  };
-  return map[s] || s0.toLowerCase();
-}
-
 
 function parseIsoOrNull(v) {
   const s = String(v ?? "").trim();
@@ -650,16 +603,12 @@ export function logsRouter() {
 
   // GET /api/logs/preview
   r.get("/preview", authRequired(), async (req, res) => {
-    
-try {
-  const kindRaw = req.query.kind;
-  const kind = normKind(kindRaw);
+    try {
+      const kindRaw = String(req.query.kind || "").trim();
 
-  if (!SUPPORTED_KINDS.includes(kind)) {
-    return res.status(400).json({ error: "unknown kind", kindRaw, kind, supported: SUPPORTED_KINDS });
-  }
+      let kind = normalizeKind(kindRaw);
 
-const targetType = normTargetType(req.query.targetType);
+      const targetType = String(req.query.targetType || "").trim().toLowerCase();
       const targetId = Number(req.query.targetId || 0) || 0;
       const childId = req.query.childId ? Number(req.query.childId) : null;
 
@@ -670,7 +619,20 @@ const targetType = normTargetType(req.query.targetType);
       const { from, to } = defaultFromTo(from0, to0);
 
       const built = await buildByKind({ req, kind, targetType, targetId, childId, from, to, take });
-      if (!built.ok) return res.status(built.status || 400).json({ error: built.error || "error" });
+      if (!built.ok) {
+        if (built.error === "unknown kind") {
+          return res.status(400).json({
+            error: "unknown kind",
+            kindRaw,
+            kind,
+            supported: [
+              "api","audit","audit_login","notifications","gps","speed",
+              "bundle_vehicle","bundle_driver","bundle_room","bundle_company","bundle_user","bundle_personel","bundle_student"
+            ],
+          });
+        }
+        return res.status(built.status || 400).json({ error: built.error || "error" });
+      }
 
       let rows = built.rows || [];
       rows = applyFilters(rows, { onlyBad: req.query.onlyBad, cat: req.query.cat || "ALL", q: req.query.q || "" });
@@ -694,16 +656,12 @@ const targetType = normTargetType(req.query.targetType);
 
   // GET /api/logs/export (TXT default)
   r.get("/export", authRequired(), async (req, res) => {
-    
-try {
-  const kindRaw = req.query.kind;
-  const kind = normKind(kindRaw);
+    try {
+      const kindRaw = String(req.query.kind || "").trim();
 
-  if (!SUPPORTED_KINDS.includes(kind)) {
-    return res.status(400).json({ error: "unknown kind", kindRaw, kind, supported: SUPPORTED_KINDS });
-  }
+      let kind = normalizeKind(kindRaw);
 
-const targetType = normTargetType(req.query.targetType);
+      const targetType = String(req.query.targetType || "").trim().toLowerCase();
       const targetId = Number(req.query.targetId || 0) || 0;
       const childId = req.query.childId ? Number(req.query.childId) : null;
 
@@ -716,7 +674,20 @@ const targetType = normTargetType(req.query.targetType);
       const format = String(req.query.format || "txt").toLowerCase() === "csv" ? "csv" : "txt";
 
       const built = await buildByKind({ req, kind, targetType, targetId, childId, from, to, take });
-      if (!built.ok) return res.status(built.status || 400).json({ error: built.error || "error" });
+      if (!built.ok) {
+        if (built.error === "unknown kind") {
+          return res.status(400).json({
+            error: "unknown kind",
+            kindRaw,
+            kind,
+            supported: [
+              "api","audit","audit_login","notifications","gps","speed",
+              "bundle_vehicle","bundle_driver","bundle_room","bundle_company","bundle_user","bundle_personel","bundle_student"
+            ],
+          });
+        }
+        return res.status(built.status || 400).json({ error: built.error || "error" });
+      }
 
       const rows = (built.rows || []).slice().sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 
