@@ -38,7 +38,7 @@ async function isDbReadyOnce() {
  * Delete rows older than cutoff in batches.
  * Prisma's deleteMany has no LIMIT, so we fetch ids with take=batchSize.
  */
-async function deleteOldBatched({ model, label, cutoff, batchSize, maxBatches = 200 }) {
+async function deleteOldBatched({ model, label, cutoff, batchSize, field = "createdAt", maxBatches = 200, dryRun = false }) {
   if (!cutoff) return { deleted: 0, batches: 0 };
 
   let deleted = 0;
@@ -47,7 +47,7 @@ async function deleteOldBatched({ model, label, cutoff, batchSize, maxBatches = 
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const rows = await prisma[model].findMany({
-      where: { createdAt: { lt: cutoff } },
+      where: { [field]: { lt: cutoff } },
       select: { id: true },
       take: batchSize,
       orderBy: { id: "asc" },
@@ -56,8 +56,12 @@ async function deleteOldBatched({ model, label, cutoff, batchSize, maxBatches = 
     if (!rows.length) break;
 
     const ids = rows.map((r) => r.id);
-    const r = await prisma[model].deleteMany({ where: { id: { in: ids } } });
-    deleted += r.count;
+    if (dryRun) {
+      deleted += ids.length;
+    } else {
+      const r = await prisma[model].deleteMany({ where: { id: { in: ids } } });
+      deleted += r.count;
+    }
     batches += 1;
 
     if (batches >= maxBatches) {
@@ -69,6 +73,83 @@ async function deleteOldBatched({ model, label, cutoff, batchSize, maxBatches = 
   }
 
   return { deleted, batches };
+}
+
+/**
+ * Run retention cleanup once (can be used by admin endpoint).
+ * Returns counts for each model. If dryRun=true, no deletes are executed.
+ */
+export async function runRetentionCleanupOnce(opts = {}) {
+  const dryRun = opts.dryRun === true;
+  const batchSize = opts.batchSize ?? ENV.LOG_RETENTION_BATCH_SIZE;
+  const maxBatches = opts.maxBatches ?? 200;
+
+  if (!(await isDbReadyOnce())) {
+    return { ok: false, error: "DB_NOT_READY" };
+  }
+
+  const apiCutoff = cutoffFromDays(ENV.API_REQUEST_RETENTION_DAYS);
+  const auditCutoff = cutoffFromDays(ENV.AUDIT_LOG_RETENTION_DAYS);
+  const notifCutoff = cutoffFromDays(ENV.NOTIFICATION_RETENTION_DAYS);
+  const gpsCutoff = cutoffFromDays(ENV.GPS_POINT_RETENTION_DAYS);
+
+  // In dryRun, we count full table candidates (can be heavy; intended for admin use).
+  const countWhere = async (model, where) => {
+    try { return await prisma[model].count({ where }); } catch { return null; }
+  };
+
+  const result = {
+    dryRun,
+    cutoffs: { apiCutoff, auditCutoff, notifCutoff, gpsCutoff },
+    apiRequest: { deleted: 0, batches: 0, wouldDelete: 0 },
+    auditLog: { deleted: 0, batches: 0, wouldDelete: 0 },
+    notification: { deleted: 0, batches: 0, wouldDelete: 0 },
+    gpsPoint: { deleted: 0, batches: 0, wouldDelete: 0 },
+  };
+
+  // ApiRequest
+  if (apiCutoff) {
+    if (dryRun) {
+      result.apiRequest.wouldDelete = (await countWhere("apiRequest", { createdAt: { lt: apiCutoff } })) ?? 0;
+      result.apiRequest.deleted = 0;
+    } else {
+      const r = await deleteOldBatched({ model: "apiRequest", label: "ApiRequest", cutoff: apiCutoff, batchSize, maxBatches });
+      result.apiRequest.deleted = r.deleted; result.apiRequest.batches = r.batches;
+    }
+  }
+
+  // AuditLog
+  if (auditCutoff) {
+    if (dryRun) {
+      result.auditLog.wouldDelete = (await countWhere("auditLog", { createdAt: { lt: auditCutoff } })) ?? 0;
+    } else {
+      const r = await deleteOldBatched({ model: "auditLog", label: "AuditLog", cutoff: auditCutoff, batchSize, maxBatches });
+      result.auditLog.deleted = r.deleted; result.auditLog.batches = r.batches;
+    }
+  }
+
+  // Notification
+  if (notifCutoff) {
+    if (dryRun) {
+      result.notification.wouldDelete = (await countWhere("notification", { createdAt: { lt: notifCutoff } })) ?? 0;
+    } else {
+      const r = await deleteOldBatched({ model: "notification", label: "Notification", cutoff: notifCutoff, batchSize, maxBatches });
+      result.notification.deleted = r.deleted; result.notification.batches = r.batches;
+    }
+  }
+
+  // GPS points (cut by at)
+  if (gpsCutoff) {
+    if (dryRun) {
+      result.gpsPoint.wouldDelete = (await countWhere("gpsPoint", { at: { lt: gpsCutoff } })) ?? 0;
+    } else {
+      const r = await deleteOldBatched({ model: "gpsPoint", label: "GpsPoint", cutoff: gpsCutoff, batchSize, field: "at", maxBatches });
+      result.gpsPoint.deleted = r.deleted; result.gpsPoint.batches = r.batches;
+    }
+  }
+
+  result.ok = true;
+  return result;
 }
 
 export function startRetentionCleanup(_ioUnused, opts = {}) {

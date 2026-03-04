@@ -65,8 +65,7 @@ $checks = @(
   @{ n = 36; name = "M36"; file = "m36check.js"; cmd = "node scripts/m36check.js" },
   # ✅ M37: E2E School+Parent (covers M80/M81 flow)
   @{ n = 37; name = "M37"; file = "m37check.js"; cmd = "node scripts/m37check.js" },
-  @{ n = 38; name = "M38"; cmd = "node scripts/m38check.js" }
-
+  @{ n = 39; name = "M39"; file = "m39check.js"; cmd = "node scripts/m39check.js" }
 )
 
 # ✅ supported max milestone (keep checks list as SSOT)

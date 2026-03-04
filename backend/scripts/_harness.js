@@ -280,8 +280,6 @@ export async function loginFirst(who = "SUPER_ADMIN", pass = null) {
     driver: "driver@demo.com",
     personel: "personel@demo.com",
     personnel: "personel@demo.com",
-    parent: "parent@demo.com",
-    school: "school@demo.com",
   };
 
   const email =
@@ -439,30 +437,34 @@ export async function preCleanDriverShifts({ roomToken, driverToken, driverId })
   return { cleaned, found: openish.length };
 }
 
+export async function kvkkAccept(token, docKey = "LOCATION_CONSENT", docVersion = "1") {
+  return reqJson("POST", "/api/kvkk/consents/accept", {
+    token,
+    body: { docKey, docVersion },
+  });
+}
+
+
 export async function postGps(driverToken, body) {
   const payload = { ts: new Date().toISOString(), ...body };
-  if (payload.speed == null && payload.speedKmh == null && payload.speedKph == null) payload.speed = 20;
+  if (payload.speed == null && payload.speedKmh == null) payload.speed = 20;
 
   let r = await reqJson("POST", "/api/gps", { token: driverToken, body: payload });
 
-  // ✅ KVKK consent gate: auto-accept in test harness then retry once
-  if (!r.ok && r.status === 403 && r.json?.error === "KVKK_CONSENT_REQUIRED") {
-    const docKey = r.json?.docKey ?? "LOCATION_CONSENT";
-    const docVersion = String(r.json?.docVersion ?? "1");
-    const acc = await reqJson("POST", "/api/kvkk/consents/accept", {
-      token: driverToken,
-      body: { docKey, docVersion },
-    });
-    // accept can return ok=true with small payload
+  // M38: KVKK consent gate — auto accept in harness (dev/test only)
+  if (!r.ok && r.status === 403 && String(r.json?.error || "") === "KVKK_CONSENT_REQUIRED") {
+    const dk = String(r.json?.docKey || "LOCATION_CONSENT");
+    const dv = String(r.json?.docVersion || "1");
+    const acc = await kvkkAccept(driverToken, dk, dv);
     if (acc.ok) {
       r = await reqJson("POST", "/api/gps", { token: driverToken, body: payload });
     }
   }
 
-  if (!r.ok) throw new Error(`POST /api/gps -> ${r.status}
-${String(r.text || "").slice(0, 400)}`);
+  if (!r.ok) throw new Error(`POST /api/gps -> ${r.status}\n${String(r.text || "").slice(0, 400)}`);
   return r;
 }
+
 
 // Küçük log helper’ları (istersen kullanırsın)
 export const ICONS = { I_OK, I_FAIL, I_INFO, I_WAIT, I_BROOM };

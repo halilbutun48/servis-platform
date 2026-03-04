@@ -1,80 +1,145 @@
 // backend/src/middleware/consentGate.js
-// M38 — KVKK Consent Gate (LOCATION) for sensitive endpoints (parent live / driver gps)
+// M38 — KVKK consent gate helpers
+//
+// Exports expected by routes:
+// - CONSENT_DOCS
+// - requireConsent(docKey, docVersion)
+// - upsertConsent({ userId, role, docKey, docVersion, req })
+// - revokeConsent({ userId, docKey, docVersion?, req })
+// - consentGate(...) (alias/advanced) + default export
+//
+// Notes:
+// - Fails closed with 403 KVKK_CONSENT_REQUIRED
+// - Adds optional debug detail when request header: x-greenpack=1
+
 import { prisma } from "../prisma.js";
 
 export const CONSENT_DOCS = {
   LOCATION: { docKey: "LOCATION_CONSENT", docVersion: "1" },
 };
 
-function clientIp(req) {
-  const xfwd = String(req.headers["x-forwarded-for"] || "");
-  return xfwd.split(",")[0]?.trim() || req.ip || req.socket?.remoteAddress || null;
+function getConsentDelegate() {
+  // Prisma model: model Consent -> prisma.consent
+  return prisma.consent || prisma.kvkkConsent || null;
 }
 
-export function requireConsent(docKey, docVersion = "1") {
-  return async function consentGate(req, res, next) {
+function kvkk403(res, { docKey, docVersion, detail }) {
+  return res.status(403).json({
+    error: "KVKK_CONSENT_REQUIRED",
+    docKey: String(docKey),
+    docVersion: String(docVersion),
+    hint: "Open /kvkk consent screen and accept.",
+    ...(detail ? { detail } : {}),
+  });
+}
+
+function normalizeArgs(a, b, c) {
+  if (a && typeof a === "object" && !Array.isArray(a)) {
+    return {
+      docKey: String(a.docKey || CONSENT_DOCS.LOCATION.docKey),
+      docVersion: String(a.docVersion || CONSENT_DOCS.LOCATION.docVersion),
+      roles: Array.isArray(a.roles) ? a.roles : null,
+      bypassEnv: String(a.bypassEnv || "BYPASS_CONSENT_GATE"),
+    };
+  }
+  return {
+    docKey: String(a || CONSENT_DOCS.LOCATION.docKey),
+    docVersion: String(b || CONSENT_DOCS.LOCATION.docVersion),
+    roles: Array.isArray(c) ? c : null,
+    bypassEnv: "BYPASS_CONSENT_GATE",
+  };
+}
+
+export function consentGate(a, b, c) {
+  const { docKey, docVersion, roles, bypassEnv } = normalizeArgs(a, b, c);
+
+  return async function consentGateMiddleware(req, res, next) {
     try {
-      const role = String(req.user?.role || "");
-      // SUPER_ADMIN bypass (still should be audited at higher level)
-      if (role === "SUPER_ADMIN") return next();
+      if (process.env[bypassEnv] === "1") return next();
+
+      if (roles && roles.length) {
+        const role = String(req.user?.role || "");
+        if (!roles.includes(role)) return next();
+      }
 
       const userId = Number(req.user?.id || 0);
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-      const c = await prisma.consent.findFirst({
-        where: { userId, docKey: String(docKey), docVersion: String(docVersion), revokedAt: null },
-        select: { id: true, acceptedAt: true },
-      });
-
-      if (!c) {
-        return res.status(403).json({
-          error: "KVKK_CONSENT_REQUIRED",
-          docKey: String(docKey),
-          docVersion: String(docVersion),
-          hint: "Open /kvkk consent screen and accept.",
-        });
+      const Consent = getConsentDelegate();
+      if (!Consent) {
+        console.error("consentGate: Prisma delegate missing (expected prisma.consent)");
+        return res.status(500).json({ error: "consent model missing" });
       }
 
+      const row = await Consent.findFirst({
+        where: { userId, docKey, docVersion, revokedAt: null },
+        select: { id: true },
+      });
+
+      if (!row) return kvkk403(res, { docKey, docVersion });
       return next();
     } catch (e) {
-      // fail closed
-      return res.status(500).json({ error: "consent gate error" });
+      const gp = String(req.get("x-greenpack") || "").toLowerCase();
+      const detail = gp === "1" || gp === "true" ? String(e?.message || e) : undefined;
+      console.error("consentGate error:", e);
+      return kvkk403(res, { docKey, docVersion, detail });
     }
   };
 }
 
+// Simple alias used by routes
+export function requireConsent(docKey, docVersion) {
+  return consentGate({ docKey, docVersion });
+}
+
 export async function upsertConsent({ userId, role, docKey, docVersion, req }) {
-  const now = new Date();
-  const ip = clientIp(req);
-  const ua = req.headers["user-agent"]?.toString() || null;
+  const Consent = getConsentDelegate();
+  if (!Consent) throw new Error("consent model missing");
 
-  const existing = await prisma.consent.findFirst({
-    where: { userId, docKey, docVersion },
-    select: { id: true },
+  const ip = req?.ip ? String(req.ip) : null;
+  const ua = req?.get ? String(req.get("user-agent") || "") : null;
+
+  // Unique constraint: @@unique([userId, docKey, docVersion])
+  await Consent.upsert({
+    where: { userId_docKey_docVersion: { userId: Number(userId), docKey: String(docKey), docVersion: String(docVersion) } },
+    update: {
+      role: role ? role : undefined,
+      revokedAt: null,
+      acceptedAt: new Date(),
+      ip: ip || undefined,
+      userAgent: ua || undefined,
+    },
+    create: {
+      userId: Number(userId),
+      role: role ? role : undefined,
+      docKey: String(docKey),
+      docVersion: String(docVersion),
+      acceptedAt: new Date(),
+      ip: ip || undefined,
+      userAgent: ua || undefined,
+    },
   });
 
-  if (existing?.id) {
-    return prisma.consent.update({
-      where: { id: existing.id },
-      data: { role, acceptedAt: now, revokedAt: null, ip, userAgent: ua },
-    });
-  }
-
-  return prisma.consent.create({
-    data: { userId, role, docKey, docVersion, acceptedAt: now, revokedAt: null, ip, userAgent: ua },
-  });
+  return true;
 }
 
-export async function revokeConsent({ userId, docKey, docVersion = null, req }) {
-  const now = new Date();
-  const ip = clientIp(req);
-  const ua = req.headers["user-agent"]?.toString() || null;
+export async function revokeConsent({ userId, docKey, docVersion, req }) {
+  const Consent = getConsentDelegate();
+  if (!Consent) throw new Error("consent model missing");
 
-  const where = { userId, docKey };
-  if (docVersion) where["docVersion"] = docVersion;
+  const where = {
+    userId: Number(userId),
+    docKey: String(docKey),
+    ...(docVersion ? { docVersion: String(docVersion) } : {}),
+    revokedAt: null,
+  };
 
-  return prisma.consent.updateMany({
+  const out = await Consent.updateMany({
     where,
-    data: { revokedAt: now, ip, userAgent: ua },
+    data: { revokedAt: new Date() },
   });
+
+  return out;
 }
+
+export default consentGate;

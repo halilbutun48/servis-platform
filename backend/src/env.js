@@ -47,6 +47,9 @@ export const ENV = {
   // Optional (off by default): old notifications cleanup
   NOTIFICATION_RETENTION_DAYS: Number(process.env.NOTIFICATION_RETENTION_DAYS ?? 0),
 
+  // ✅ M39: GPS points retention (0 = disabled)
+  GPS_POINT_RETENTION_DAYS: Number(process.env.GPS_POINT_RETENTION_DAYS ?? 0),
+
   // ✅ M19: route learning (optional)
   OSRM_URL: process.env.OSRM_URL ?? "",
   ROUTE_LEARN_ENABLED: (process.env.ROUTE_LEARN_ENABLED ?? "0") === "1",

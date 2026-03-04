@@ -233,6 +233,7 @@ model Region {
 // Auth entity (login) — role taşıyıcı
 model User {
 notifications Notification[]
+  consents      Consent[]
   id           Int      @id @default(autoincrement())
   email        String   @unique
   passwordHash String
@@ -256,7 +257,6 @@ notifications Notification[]
   @@index([companyId])
   @@index([roomId])
   parentChildren ParentChild[] @relation("ParentUserChildren")
-  consents      Consent[]
 
 }
 
@@ -716,6 +716,7 @@ model GpsPoint {
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@index([vehicleId, at])
+  @@index([at])
 }
 
 // ✅ M19: learned route store (map-matched samples + canonical)
@@ -843,25 +844,21 @@ model ParentChild {
 }
 
 model Consent {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userId Int
-  role   String?
-
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  role       Role?
   docKey     String
   docVersion String
-
-  acceptedAt DateTime
+  acceptedAt DateTime @default(now())
   revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  ip        String?
-  userAgent String?
-
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, docKey, docVersion])
-  @@index([userId, createdAt])
   @@index([docKey, docVersion])
+  @@index([acceptedAt])
 }
