@@ -613,6 +613,7 @@ export default function RoomShiftsPanel() {
           <div className="muted" style={{ marginTop: 4 }}>
             <b>C→R Tutar:</b> {formatTRY(cAmt)} ₺
           </div>
+        ) : null}
         {s.companyOfferNote ? (
           <div className="muted" style={{ marginTop: 4 }}>
             {s.companyOfferNote}
@@ -1406,17 +1407,18 @@ export default function RoomShiftsPanel() {
                                   <div className="muted" style={{ marginTop: 6 }}>Pazarlık/teklif kapalı (Agreement kaynaklı).</div>
                                 </div>
                               ) : (
-                              <div style={{ marginTop: 10 }}>
-                                <b>C→R</b>
-                                <div style={{ marginTop: 6 }}>{renderCompanyOfferSummary(s)}</div>
-                              </div>
-
-                              <div style={{ marginTop: 12 }}>
-                                <b>R→C</b>
-                                <div style={{ marginTop: 6 }}>{renderRoomOfferSummary(s)}</div>
-                              </div>
-                            </div>
+                                <>
+                                  <div style={{ marginTop: 10 }}>
+                                    <b>C→R</b>
+                                    <div style={{ marginTop: 6 }}>{renderCompanyOfferSummary(s)}</div>
+                                  </div>
+                                  <div style={{ marginTop: 12 }}>
+                                    <b>R→C</b>
+                                    <div style={{ marginTop: 6 }}>{renderRoomOfferSummary(s)}</div>
+                                  </div>
+                                </>
                               )}
+                            </div>
 
                             <div className="col">
                               <div style={{ fontWeight: 800 }}>Özet</div>

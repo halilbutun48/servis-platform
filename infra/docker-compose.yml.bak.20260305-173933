@@ -47,9 +47,6 @@ services:
 
       # Container içinde kullanılacak flag
       PRISMA_DB_PUSH_FLAGS: "--accept-data-loss"
-      FEATURE_CHECKIN: ${FEATURE_CHECKIN:-0}
-      CHECKIN_DEDUPE_SEC: ${CHECKIN_DEDUPE_SEC:-60}
-
     ports:
       - "${API_PORT:-3000}:3000"
     working_dir: /app/backend
