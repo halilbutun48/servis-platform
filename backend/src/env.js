@@ -8,6 +8,13 @@ export const ENV = {
 
   // Auth
   JWT_SECRET: process.env.JWT_SECRET ?? "dev-secret",
+  ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN ?? "7d", // backward compatible default
+  REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30),
+
+  // Redis
+  REDIS_URL: process.env.REDIS_URL ?? "",
+  RATE_LIMIT_STORE: (process.env.RATE_LIMIT_STORE ?? "").toLowerCase(),
+  GPS_THROTTLE_STORE: (process.env.GPS_THROTTLE_STORE ?? "").toLowerCase(),
 
   // DB
   DATABASE_URL:

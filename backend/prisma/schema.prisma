@@ -240,6 +240,15 @@ notifications Notification[]
   role         Role
   fullName     String
   phone        String?
+
+  // ✅ M41: device binding (primarily for DRIVER)
+  deviceId         String?
+  deviceBoundAt    DateTime?
+  deviceLastSeenAt DateTime?
+
+  // ✅ M41: refresh sessions
+  refreshSessions RefreshSession[]
+
   createdAt    DateTime @default(now())
 
   // Scope bindings
@@ -861,4 +870,32 @@ model Consent {
   @@unique([userId, docKey, docVersion])
   @@index([docKey, docVersion])
   @@index([acceptedAt])
+}
+
+
+// ✅ M41: refresh token sessions (rotating)
+model RefreshSession {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // sha256(refreshTokenRaw)
+  tokenHash String  @unique
+
+  deviceId  String?
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  replacedById Int?
+  replacedBy   RefreshSession? @relation("RefreshSessionRotation", fields: [replacedById], references: [id])
+  replacedFrom RefreshSession[] @relation("RefreshSessionRotation")
+
+  ip        String?
+  userAgent String?
+
+  @@index([userId, createdAt])
+  @@index([deviceId])
+  @@index([expiresAt])
 }

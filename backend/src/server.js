@@ -49,6 +49,8 @@ import { offersRouter } from "./routes/offers.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
+import { getRedis } from "./redis/index.js";
+import { RedisRateLimitStore } from "./middleware/rateLimitRedisStore.js";
 
 import * as agreementsMod from "./routes/agreements.js";
 /**
@@ -170,12 +172,23 @@ function authKey(req) {
   return `ip:${req.ip}`;
 }
 
+// ✅ M41: distributed rate-limit store (Redis)
+const rateLimitStoreMode = String(ENV.RATE_LIMIT_STORE || process.env.RATE_LIMIT_STORE || "").toLowerCase();
+const useRedisRateLimitStore = rateLimitStoreMode === "redis";
+const _redis = useRedisRateLimitStore ? getRedis() : null;
+function rlStore(prefix, windowMs) {
+  if (!useRedisRateLimitStore || !_redis) return undefined;
+  return new RedisRateLimitStore({ redis: _redis, windowMs, prefix });
+}
+
+
 // ✅ M77: route-based buckets (login asla GPS tarafından kilitlenmez)
 const authLimiter = rateLimit({
   windowMs: ENV.AUTH_RATE_LIMIT_WINDOW_MS,
   max: ENV.AUTH_RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
+  store: rlStore("auth:", ENV.AUTH_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: (req) => {
     const email = String(req.body?.email || req.body?.username || "").trim().toLowerCase();
@@ -188,6 +201,7 @@ const readLimiter = rateLimit({
   max: ENV.READ_RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
+  store: rlStore("read:", ENV.READ_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: authKey,
 });
@@ -197,6 +211,7 @@ const writeLimiter = rateLimit({
   max: ENV.WRITE_RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
+  store: rlStore("write:", ENV.WRITE_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: authKey,
 });
@@ -206,6 +221,7 @@ const gpsLimiter = rateLimit({
   max: ENV.GPS_RATE_LIMIT_MAX,
   standardHeaders: true,
   legacyHeaders: false,
+  store: rlStore("gps:", ENV.GPS_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: authKey,
 });

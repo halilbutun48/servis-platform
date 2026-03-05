@@ -64,12 +64,28 @@ async function main() {
 
   step("create agreement for today");
   const today = new Date();
-  const startDate = ymdTR(today);
-  const endDate = startDate;
-  const weekMask = dayBitTR(today);
+  // IMPORTANT: This check must be deterministic at *any* time of day.
+  // If we use a fixed window like 00:01-00:02, approving later in the day
+  // makes agreementMonitor immediately set it to DONE and generator will skip.
+  // So we schedule a tiny window a couple minutes in the future (TR time).
+  let startDate = ymdTR(today);
+  let endDate = startDate;
+  let weekMask = dayBitTR(today);
 
-  const startMin = 1; // 00:01
-  const endMin = 2;   // 00:02
+  const tr = new Date(today.getTime() + TR_OFFSET_MS);
+  const minuteOfDay = tr.getUTCHours() * 60 + tr.getUTCMinutes();
+
+  let startMin = minuteOfDay + 2;
+  if (startMin >= 1440) {
+    // near TR midnight; push to tomorrow 00:01
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60_000);
+    startDate = ymdTR(tomorrow);
+    endDate = startDate;
+    weekMask = dayBitTR(tomorrow);
+    startMin = 1;
+  }
+
+  const endMin = (startMin + 2) % 1440;
 
   const a = await reqJson("POST", "/api/agreements", {
     token: companyToken,

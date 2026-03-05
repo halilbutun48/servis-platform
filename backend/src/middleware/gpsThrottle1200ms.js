@@ -1,12 +1,18 @@
 /**
- * M72.1 — /api/gps rate-limit
+ * M72.1 — /api/gps throttle
  * 1.2 saniyeden sık gelen istekleri server "ignore" eder:
  *   200 { ok:true, throttled:true }
  *
+ * ✅ M41: distributed mode (Redis)
+ * - When RATE_LIMIT_STORE=redis OR GPS_THROTTLE_STORE=redis, uses Redis SET NX PX.
+ * - Fallback: in-memory Map.
+ *
  * Notlar:
- * - In-memory Map kullanır (tek instance için yeterli). Çok instance varsa Redis tercih edilir.
- * - Key önceliği: body.vehicleId -> req.user.id -> IP
+ * - GreenPack (x-greenpack: 1) ve ?noThrottle=1 -> bypass (gate/check determinism).
  */
+
+import { getRedis } from "../redis/index.js";
+
 const DEFAULT_MIN_INTERVAL_MS = 1200;
 
 export function gpsThrottle1200ms(opts = {}) {
@@ -25,15 +31,15 @@ export function gpsThrottle1200ms(opts = {}) {
           return `ip:${req.ip}`;
         };
 
-  // Key -> lastSeenAtMs
+  // Key -> lastSeenAtMs (fallback)
   const lastSeenAt = new Map();
 
-  return function gpsThrottleMiddleware(req, res, next) {
+  const storePref = String(process.env.GPS_THROTTLE_STORE || process.env.RATE_LIMIT_STORE || "").toLowerCase();
+  const useRedis = storePref === "redis";
+
+  return async function gpsThrottleMiddleware(req, res, next) {
     try {
       // ✅ GreenPack / local test bypass
-      // Gate/pack scripts send x-greenpack: 1 via scripts/_harness.js.
-      // We MUST NOT throttle those requests; otherwise M4 (OVERSPEED) and similar
-      // checks can fail because they intentionally post GPS back-to-back.
       if (process.env.NODE_ENV !== "production") {
         const gp = String(req.headers?.["x-greenpack"] ?? "");
         const noThrottle = String(req.query?.noThrottle ?? "") === "1";
@@ -42,8 +48,22 @@ export function gpsThrottle1200ms(opts = {}) {
 
       const key = getKey(req);
       const now = Date.now();
-      const prev = lastSeenAt.get(key) || 0;
 
+      if (useRedis) {
+        const redis = getRedis();
+        if (redis) {
+          const rkey = `gps:throttle:${key}`;
+          // SET key 1 PX <ms> NX  -> OK if first in window, null if throttled
+          const resp = await redis.send("SET", rkey, "1", "PX", String(minIntervalMs), "NX");
+          if (resp !== "OK") {
+            return res.status(200).json({ ok: true, throttled: true });
+          }
+          return next();
+        }
+        // if redis requested but unavailable -> fallback
+      }
+
+      const prev = lastSeenAt.get(key) || 0;
       if (now - prev < minIntervalMs) {
         return res.status(200).json({ ok: true, throttled: true });
       }
@@ -59,7 +79,7 @@ export function gpsThrottle1200ms(opts = {}) {
       }
 
       return next();
-    } catch (_e) {
+    } catch {
       // Fail-open
       return next();
     }

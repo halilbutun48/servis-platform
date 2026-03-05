@@ -36,6 +36,8 @@ services:
       PORT: ${API_PORT:-3000}
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
       REDIS_URL: redis://redis:6379
+      RATE_LIMIT_STORE: "redis"
+      GPS_THROTTLE_STORE: "redis"
       DATABASE_URL: postgresql://${POSTGRES_USER:-servis}:${POSTGRES_PASSWORD:-servispass}@db:5432/${POSTGRES_DB:-servisdb}?schema=public
 
       # M19 — learned route (OSRM map-matching)

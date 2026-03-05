@@ -3,6 +3,7 @@
 
 import express from "express";
 import { prisma } from "../prisma.js";
+import { audit } from "../audit.js";
 import { authRequired } from "../auth/middleware.js";
 
 const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -690,6 +691,24 @@ export function logsRouter() {
       }
 
       const rows = (built.rows || []).slice().sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+      // ✅ M40: audit export trail
+      await audit(req, {
+        action: "LOG_EXPORT",
+        entity: "LOGS",
+        meta: {
+          endpoint: "/api/logs/export",
+          kind,
+          kindRaw,
+          targetType: targetType || null,
+          targetId: targetId || null,
+          childId: childId || null,
+          format,
+          take,
+          range: { from: from.toISOString(), to: to.toISOString() },
+          rowCount: rows.length,
+        },
+      });
 
       const filename = `logs_${kind}_${targetType || "scoped"}_${targetId || 0}_${Date.now()}.${format === "csv" ? "csv" : "txt"}`;
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);

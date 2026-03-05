@@ -1,6 +1,7 @@
 // backend/src/routes/admin_logs.js
 import express from "express";
 import { prisma } from "../prisma.js";
+import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 
 const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -231,6 +232,29 @@ export function adminLogsRouter() {
         userId,
       });
       else items = await buildAudit({ from, to, take, q: String(req.query.q || "").trim(), emailContains, userId });
+
+      // ✅ M40: audit export trail
+      await audit(req, {
+        action: "LOG_EXPORT",
+        entity: "LOGS",
+        meta: {
+          endpoint: "/api/admin/logs/export",
+          kind,
+          format,
+          take,
+          filters: {
+            from: from ? from.toISOString() : null,
+            to: to ? to.toISOString() : null,
+            q: String(req.query.q || "").trim() || null,
+            emailContains: emailContains || null,
+            userId: userId || null,
+            pathLike: String(req.query.pathLike || "").trim() || null,
+            status: String(req.query.status || "").trim() || null,
+            ipContains: String(req.query.ip || req.query.ipContains || "").trim() || null,
+          },
+          rowCount: items.length,
+        },
+      });
 
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       const filename = `admin_${kind}_${stamp}.${format}`;

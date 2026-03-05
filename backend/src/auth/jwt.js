@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
 import { ENV } from "../env.js";
 
-export function signToken(payload) {
-  return jwt.sign(payload, ENV.JWT_SECRET, { expiresIn: "7d" });
+export function signToken(payload, opts = {}) {
+  const expiresIn = opts?.expiresIn ?? ENV.ACCESS_TOKEN_EXPIRES_IN ?? "7d";
+  return jwt.sign(payload, ENV.JWT_SECRET, { expiresIn });
 }
 
 export function verifyToken(token) {

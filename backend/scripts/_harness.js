@@ -275,6 +275,10 @@ export async function loginFirst(who = "SUPER_ADMIN", pass = null) {
     superadmin: "superadmin@demo.com",
     super: "superadmin@demo.com",
 
+    // M80/M81 seeded demo accounts (School + Parent)
+    school: "school@demo.com",
+    parent: "parent@demo.com",
+
     room: "room@demo.com",
     company: "company@demo.com",
     driver: "driver@demo.com",

@@ -20,6 +20,18 @@ const lngNumber = z.number().min(-180).max(180);
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(3),
+  // ✅ M41: optional device binding fields
+  deviceId: z.string().trim().min(2).optional(),
+  deviceName: z.string().trim().min(1).optional(),
+});
+
+export const refreshSchema = z.object({
+  refreshToken: z.string().trim().min(8),
+  deviceId: z.string().trim().min(2).optional(),
+});
+
+export const logoutSchema = z.object({
+  refreshToken: z.string().trim().min(8).optional(),
 });
 
 export const createVehicleSchema = z.object({
