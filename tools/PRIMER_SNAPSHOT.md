@@ -1,90 +1,38 @@
 SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER SNAPSHOT (Yapıştır & Devam Et)
 
-Tarih: 2026-03-02 (Europe/Istanbul)
+Tarih: 2026-03-07 (Europe/Istanbul)
 
 0) Durum / Referans
 
 Repo: D:\servis-platform
 
-Gate/Pack:
-- tools/pack.ps1: default -To=0 (auto max), şu an max M36
-- Son durum: ✅ GATE PASS (M0→M36) + ✅ PACK PASS
-- Güncel doğrulama: .\tools\pack.ps1   (auto)  veya  .\tools\pack.ps1 -To 36
+Ana GREEN:
+- `tools/pack.ps1 -To 41` → ana regresyon kanıtı
+- `tools/pack_m42_optional.ps1` → M42 optional release kanıtı
 
-Not (numaralandırma):
-- “M0→M35” Gate/Pack stage’idir.
-- “OVERLAY_NOTES_Mxx” dosyalarındaki Mxx ise UI/overlay serisi olabilir; Gate/Pack ile birebir aynı olmak zorunda değil.
+Kural:
+- Ana pack zinciri M0→M41
+- M42 zorla ana zincire eklenmez
+- M42 açılınca ayrı optional pack ile doğrulanır
 
-1) V1 Amaç
+1) Ürün özeti
+- Personel servis platformu
+- COMPANY / ROOM / DRIVER / PERSONEL / SUPER_ADMIN + SCHOOL/PARENT türevleri
+- WS canlı akış + GPS + agreements + offers + audit + retention
 
-GPS tabanlı personel servis platformu:
+2) Şu an sabit kararlar
+- M41 ana GREEN çizgi
+- M42 = Check-in modülü, hazır ama opsiyonel release
+- Default OFF, flag ON ile ayrı pack
+- Sonraki büyük sıra: V1.5 → M43 → M44 → M45 → V2
 
-- Company planlama (Templates + Guided flow + Market teklifler)
-- Room operasyon (Shifts/Offers → counter/accept → approve/start → operasyon)
-- Driver operasyon (route + reached + complete)
-- Personel (request + my ride)
-- WS ile canlı güncelleme + bildirimler + dedupe
+3) M42 teknik model
+- `FEATURE_CHECKIN=0` → fail-closed
+- `FEATURE_CHECKIN=1` → credential issue/revoke + driver scan + dedupe + event list
+- Prisma tarafında check-in tabloları mevcut olmalı
+- Ana `pack.ps1` değişmeden kalır; `tools/pack_m42_optional.ps1` kullanılır
 
-2) Roller
-
-- SUPER_ADMIN: Companies/Rooms yönetimi + overview
-- COMPANY: Agreement/Shift talebi, Market ile çoklu room teklif toplama, offers yönetimi
-- ROOM: araç+sürücü, teklif inbox, approve/start, map/shift operasyonu
-- DRIVER: aktif rota + reached akışı
-- PERSONEL: request + my ride
-
-3) En kritik akış (sahada “az tık”)
-
-- Company hub + personel konumları hazır (geoStatus=OK, lat/lng dolu; 0,0 değil)
-- Company: plan → N shift → toplu teklif
-- Room: counter/accept → approve/start
-- Driver: reached → done
-
-4) Mevcut UX paketleri (elde var)
-
-M51 (overlay serisi):
-- Company Vardiyalar default: Takip → Bekleyen/Teklifler (mainTab=track, trackTab=pending)
-- “Manuel Talep Aç” kaldırıldı
-- Offers modal “Kabul Et” yalnızca COUNTERED iken aktif
-- Shift Tools: “Vardiya Toplanma/Dağıtım Yeri (Hub)” kartı + Adresten Bul (/api/geocode) + durak listesine OUTBOUND başa / INBOUND sona ekleme
-- Shift Extend (süre uzatma) modülü mevcut: company extend-request, room extend-decision + notification/WS
-
-5) Tasarım notu
-
-- Plan Builder V1: shift’e bağlı (shift seç → personel/durak üret → route preview)
-- V1.5 hedef: Shift’ten bağımsız Plan Builder (OSRM + solver) → “Uygula” → N shift create (market) → offers → accept → room approve/start
-
-6) Kurallar / Çalışma disiplini
-
-- Yanıtlarda en fazla 3 PowerShell komutu.
-- “Green” = .\tools\pack.ps1 -To <hedef> PACK PASS.
-- Değişiklikler mümkün olduğunca tek seferde overlay (zip) paket.
-- Büyük dosyalar (örn. OSRM blob) repo’ya girmez: infra/osrm-data/ ignore.
-
-7) Karar: Wizard yaklaşımı
-
-- Yeni wizard yazılmayacak.
-- Mevcut Company akışı “Guided Mode / stepper” olarak geliştirilecek.
-- “Advanced” ekranlar (Shift Tools, Templates) kalacak; guided arkadan kullanacak.
-- Pazarlık/teklif takibi guided içine gömülmeyecek:
-  - Final: “Gönderildi” + “Bekleyen Talepler’e Git (filtreli)”.
-
-8) Ürün kararı: Agreement ↔ Shift ayrımı (kafa karışıklığı sıfır)
-
-- Agreement = anlaşma takvimi + fiyat/koşul (uzun/kısa süreli)
-  - Room: “hangi firmalarla ne zaman çalışıyorum?”
-- Shift = operasyon (durak/rota/personel/maxWalk/araç-şoför)
-
-Hedef kural:
-- Agreement APPROVED → otomatik shift üretimi (rolling ufuk = 7 gün)
-- Üretilen shift’ler: APPROVED (pazarlık/offer UI kapalı) + agreementId badge
-- Room AgreementsPanel: companyOfferAmount/note görünür + agreement:update WS/notification
-- Template ekranındaki işlevsiz “Günler + Süre” kaldırılacak; kısa işler için Agreement create’de quick duration presetleri:
-  - 1 gün (default), 2/3/4 gün, 1 hafta, 1 ay
-
-9) Sonraki işler (plan — agreement stream)
-
-- AGREEMENT-A: shift generator rolling 7 gün + TR (+03) saat doğruluğu + idempotent
-- AGREEMENT-B: Room panelde company teklifi görünürlüğü + WS
-- AGREEMENT-C: Agreement’lı shiftlerde offer/counter UI kapatma + badge
-- AGREEMENT-D: Template cleanup + Agreement quick duration presetleri
+4) Çalışma kuralları
+- En fazla 3 PowerShell komutu
+- Overlay (zip) tercih
+- Tek Guided Mode/Stepper
