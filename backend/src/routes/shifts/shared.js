@@ -76,7 +76,9 @@ export function attachShiftSharedRoutes(r) {
           const scopeOr = {
             OR: [
               { roomId },
-              { offers: { some: { roomId } } },
+              // ✅ SECURITY: only treat as "offered" if there is an ACTIVE offer for this room.
+              // CANCELLED offers must NOT leak shift details to other rooms.
+              { offers: { some: { roomId, status: { in: ["OPEN", "COUNTERED"] } } } },
             ],
           };
 
@@ -203,7 +205,7 @@ export function attachShiftSharedRoutes(r) {
           if (shift.roomId !== roomId) {
             // market/offered shift: roomId null olabilir; teklif varsa erişime izin ver
             const offer = await prisma.shiftOffer.findFirst({
-              where: { shiftId: shift.id, roomId },
+              where: { shiftId: shift.id, roomId, status: { in: ["OPEN", "COUNTERED", "ACCEPTED"] } },
               select: { id: true },
             });
             if (!offer) return res.status(403).json({ error: "Forbidden" });
@@ -278,7 +280,7 @@ export function attachShiftSharedRoutes(r) {
           if (!roomId) return res.status(403).json({ error: "Forbidden" });
           if (shift.roomId !== roomId) {
             const offer = await prisma.shiftOffer.findFirst({
-              where: { shiftId: shift.id, roomId },
+              where: { shiftId: shift.id, roomId, status: { in: ["OPEN", "COUNTERED", "ACCEPTED"] } },
               select: { id: true },
             });
             if (!offer) return res.status(403).json({ error: "Forbidden" });

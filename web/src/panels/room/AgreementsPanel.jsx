@@ -4,6 +4,27 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { toHHMM, weekMaskToText } from "../../utils/agreementUi";
 
+// ✅ M59 helpers
+function daysLeftYmd(ymd) {
+  if (!ymd || String(ymd).length < 10) return null;
+  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999");
+  const diff = end.getTime() - Date.now();
+  const d = Math.ceil(diff / 86400000);
+  return Number.isFinite(d) ? d : null;
+}
+function ShiftSummary({ st }) {
+  const tTot = Number(st?.todayTotal ?? 0);
+  const tDone = Number(st?.todayDone ?? 0);
+  const h = Number(st?.horizonOpen ?? 0);
+  return (
+    <div className="muted" style={{ lineHeight: 1.2 }}>
+      <div>Bugün: {tTot ? (tDone + "/" + tTot + " DONE") : "-"}</div>
+      <div>Ufuk: {h ? (h + " APPROVED") : "-"}</div>
+    </div>
+  );
+}
+
+
 function pill(status) {
   const s = String(status || "").toUpperCase();
   return (
@@ -18,6 +39,10 @@ function moneyTry(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return String(v);
   return `₺${n}`;
+}
+
+function ymd(d) {
+  return String(d || "").slice(0, 10);
 }
 
 function parseTryInput(raw) {
@@ -81,6 +106,8 @@ export default function AgreementsPanel() {
 
   const [pending, setPending] = useState([]);
   const [others, setOthers] = useState([]);
+  const [shiftStats, setShiftStats] = useState({}); // ✅ M59
+
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
 
@@ -93,6 +120,12 @@ export default function AgreementsPanel() {
   const [counterAmount, setCounterAmount] = useState("");
   const [counterNote, setCounterNote] = useState("");
 
+  // ✅ M57: agreement extend negotiation (Room side)
+  const [extendItems, setExtendItems] = useState([]);
+  const [extendCounterId, setExtendCounterId] = useState(null);
+  const [extendCounterAmount, setExtendCounterAmount] = useState("");
+  const [extendCounterNote, setExtendCounterNote] = useState("");
+
   const approveTarget = useMemo(() => pending.find((x) => x.id === approveId), [pending, approveId]);
   const counterTarget = useMemo(() => pending.find((x) => x.id === counterId), [pending, counterId]);
 
@@ -102,6 +135,29 @@ export default function AgreementsPanel() {
     try {
       const all = await api("/api/agreements?take=200", { token });
       const items = all?.items ?? [];
+
+      // ✅ M59: shift stats (today/horizon) for UI clarity
+      try {
+        const ids = items.map((x) => x?.id).filter(Boolean);
+        if (ids.length) {
+          const st = await api("/api/agreements/shift-stats", { token, method: "POST", body: { agreementIds: ids, horizonDays: 7 } });
+          setShiftStats(st?.byId ?? {});
+        } else {
+          setShiftStats({});
+        }
+      } catch {
+        setShiftStats({});
+      }
+
+
+      // ✅ M58.3: robust extend request detection (handles older/variant field names)
+      const extend = items.filter((x) => {
+        const es = String(x?.extendStatus || "NONE").toUpperCase();
+        const reqEnd = x?.extendRequestedEndDate ?? x?.extendRequestedEndAt ?? x?.extendRequestedEnd ?? null;
+        // REQUESTED/COUNTERED are canonical. PENDING is tolerated as alias for safety.
+        return !!reqEnd && ["REQUESTED", "COUNTERED", "PENDING"].includes(es);
+      });
+      setExtendItems(extend);
       setPending(items.filter((x) => String(x.status || "").toUpperCase() === "REQUESTED"));
       setOthers(items.filter((x) => String(x.status || "").toUpperCase() !== "REQUESTED"));
 
@@ -184,12 +240,51 @@ export default function AgreementsPanel() {
     }
   }
 
+  async function extendDecision(id, decision) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${id}/extend-decision`, { token, method: "PUT", body: { decision } });
+      await loadAll();
+    } catch (e) {
+      setErr(e?.message || "Extend decision failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function extendCounter() {
+    setErr("");
+    if (!extendCounterId) return;
+    const amount = parseTryInput(extendCounterAmount);
+    if (!amount) return setErr("Uzatma karşı teklif amount gerekli");
+
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${extendCounterId}/extend-counter`, {
+        token,
+        method: "PUT",
+        body: { extendCounterAmount: amount, extendCounterNote: String(extendCounterNote || "").trim() || null },
+      });
+
+      setExtendCounterId(null);
+      setExtendCounterAmount("");
+      setExtendCounterNote("");
+      await loadAll();
+    } catch (e) {
+      setErr(e?.message || "Extend counter failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+
   return (
     <div className="card">
       <div className="topbar">
         <div>
           <div className="title">Sözleşmeler (Room)</div>
-          <div className="muted">Pending onay (REQUESTED) burada. Süre uzatma (extend) Company tarafındadır.</div>
+          <div className="muted">Pending onay (REQUESTED) • Not: Agreement ACTIVE/DONE **zaman bazlıdır** (endDate+endMin). Driver vardiyayı bitirse bile sözleşme endDate geçene kadar ACTIVE kalabilir. + Uzatma talepleri burada. Uzatma için accept/reject/counter yapabilirsin.</div>
         </div>
         <button type="button" className="btn sm ghost" disabled={busy} onClick={loadAll}>
           Yenile
@@ -198,7 +293,111 @@ export default function AgreementsPanel() {
 
       {err ? <div className="card err">{String(err)}</div> : null}
 
+      
       <div className="card">
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Uzatma Talepleri (extend)</div>
+        <div className="muted" style={{ marginBottom: 10 }}>
+          Company uzatma teklifi gönderir → Room: kabul / reddet / karşı teklif.
+        </div>
+
+        <div className="tableWrap">
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Mevcut</th>
+                <th>İstenen</th>
+                <th>Company Uzatma Teklifi</th>
+                <th>Room Counter</th>
+                <th>Durum</th>
+                <th>Aksiyon</th>
+              </tr>
+            </thead>
+            <tbody>
+              {extendItems.map((a) => {
+                const ex = String(a.extendStatus || "NONE").toUpperCase();
+                const reqEnd = ymd(a.extendRequestedEndDate);
+                return (
+                  <tr key={"ext-" + a.id}>
+                    <td>{a.id}</td>
+                    <td className="muted">{ymd(a.startDate)} → {ymd(a.endDate)}</td>
+                    <td className="muted">{reqEnd || "-"}</td>
+                    <td><OfferCell amount={a.extendOfferAmount} note={a.extendOfferNote} /></td>
+                    <td><OfferCell amount={a.extendCounterAmount} note={a.extendCounterNote} /></td>
+                    <td className="muted">{ex}</td>
+                    <td>
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                        <button type="button" className="btn sm" disabled={busy || ex !== "PENDING"} onClick={() => extendDecision(a.id, "ACCEPT")}>
+                          Kabul
+                        </button>
+                        <button type="button" className="btn sm ghost" disabled={busy || ex !== "PENDING"} onClick={() => extendDecision(a.id, "REJECT")}>
+                          Reddet
+                        </button>
+                        <button
+                          type="button"
+                          className="btn sm ghost"
+                          disabled={busy || ex !== "PENDING"}
+                          onClick={() => {
+                            setExtendCounterId(a.id);
+                            setExtendCounterAmount(String(a.extendCounterAmount ?? a.extendOfferAmount ?? a.companyOfferAmount ?? ""));
+                            setExtendCounterNote(String(a.extendCounterNote ?? ""));
+                          }}
+                        >
+                          Counter
+                        </button>
+                        {ex === "COUNTERED" ? <span className="muted" style={{ fontSize: 12 }}>Company kararı bekleniyor…</span> : null}
+                      </div>
+
+                      {extendCounterId === a.id ? (
+                        <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                          <input
+                            className="inp"
+                            placeholder="Karşı teklif (₺)"
+                            value={extendCounterAmount}
+                            onChange={(e) => setExtendCounterAmount(e.target.value)}
+                            disabled={busy}
+                          />
+                          <input
+                            className="inp"
+                            placeholder="Not (opsiyonel)"
+                            value={extendCounterNote}
+                            onChange={(e) => setExtendCounterNote(e.target.value)}
+                            disabled={busy}
+                          />
+                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                            <button type="button" className="btn sm" disabled={busy} onClick={extendCounter}>
+                              Gönder
+                            </button>
+                            <button
+                              type="button"
+                              className="btn sm ghost"
+                              disabled={busy}
+                              onClick={() => {
+                                setExtendCounterId(null);
+                                setExtendCounterAmount("");
+                                setExtendCounterNote("");
+                              }}
+                            >
+                              Vazgeç
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+              {!extendItems.length ? (
+                <tr>
+                  <td colSpan={7} className="muted">Uzatma talebi yok.</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+<div className="card">
         <div style={{ fontWeight: 900, marginBottom: 10 }}>Pending (REQUESTED)</div>
         <div className="tableWrap">
           <table className="tbl">
@@ -209,6 +408,7 @@ export default function AgreementsPanel() {
                 <th>Time</th>
                 <th>Günler</th>
                 <th>Dir/Pat</th>
+                <th>Vardiyalar</th>
                 <th>Hub</th>
                 <th>Company Teklif</th>
                 <th>Room Karşı</th>
@@ -220,7 +420,7 @@ export default function AgreementsPanel() {
                 <tr key={a.id}>
                   <td>{a.id}</td>
                   <td className="muted">
-                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}
+                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
                   </td>
                   <td className="muted">
                     {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
@@ -229,6 +429,7 @@ export default function AgreementsPanel() {
                   <td className="muted">
                     {String(a.direction || "INBOUND")}/{String(a.pattern || "ONE_WAY")}
                   </td>
+                  <td><ShiftSummary st={shiftStats?.[a.id]} /></td>
                   <td className="muted">
                     {typeof a.hubLat === "number" && typeof a.hubLng === "number" ? `${a.hubLat.toFixed(4)}, ${a.hubLng.toFixed(4)}` : "-"}
                   </td>
@@ -412,7 +613,7 @@ export default function AgreementsPanel() {
                   <td>{a.id}</td>
                   <td>{pill(a.status)}</td>
                   <td className="muted">
-                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)}
+                    {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
                   </td>
                   <td className="muted">
                     {toHHMM(a.startMin)} → {toHHMM(a.endMin)} {a.endMin < a.startMin ? <span title="midnight">🌙</span> : null}
@@ -437,3 +638,8 @@ export default function AgreementsPanel() {
     </div>
   );
 }
+
+
+
+
+

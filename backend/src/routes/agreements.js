@@ -3,6 +3,9 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createAndEmitNotification } from "../notifications/service.js";
+import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
+// ✅ M59: agreement UI shift stats helper endpoint
+
 import {
   agreementsOverlap,
   findAgreementConflictForApproval,
@@ -48,6 +51,12 @@ function parseOfferAmount(v) {
   return n;
 }
 
+function parseOfferAmountNullable(v) {
+  const raw = v == null ? "" : String(v).trim();
+  if (!raw) return null;
+  return parseOfferAmount(raw);
+}
+
 function normDirection(v) {
   const s = String(v || "INBOUND").trim().toUpperCase();
   if (s === "INBOUND" || s === "OUTBOUND") return s;
@@ -91,6 +100,55 @@ export function agreementsRouter(io) {
     res.json({ items });
   });
 
+  // ✅ M59: SHIFT STATS (for UI clarity)
+  // Body: { agreementIds: number[], horizonDays?: number }
+  // Returns: { byId: { [id]: { todayTotal, todayDone, horizonOpen } } }
+  r.post("/shift-stats", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const ids = Array.isArray(req.body?.agreementIds) ? req.body.agreementIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0) : [];
+    const horizonDays = Math.min(30, Math.max(1, Number(req.body?.horizonDays ?? 7)));
+
+    if (!ids.length) return res.json({ byId: {} });
+
+    const now = new Date();
+    const todayYmd = ymdTR(now);
+    const todayStart = atTR(todayYmd, 0);
+    const tomorrowStart = atTR(addDaysTR(todayYmd, 1), 0);
+    const horizonEnd = atTR(addDaysTR(todayYmd, horizonDays), 0);
+
+    const scope = { agreementId: { in: ids } };
+    if (req.user.role === "COMPANY") scope.companyId = req.user.companyId ?? -1;
+    if (req.user.role === "ROOM") scope.roomId = req.user.roomId ?? -1;
+
+    const todayWhere = { ...scope, startAt: { gte: todayStart, lt: tomorrowStart } };
+    const horizonWhere = { ...scope, startAt: { gte: now, lt: horizonEnd }, status: { in: ["APPROVED", "ACTIVE"] } };
+
+    const [todayTotal, todayDone, horizonOpen] = await Promise.all([
+      prisma.shift.groupBy({ by: ["agreementId"], where: todayWhere, _count: { _all: true } }),
+      prisma.shift.groupBy({ by: ["agreementId"], where: { ...todayWhere, status: "DONE" }, _count: { _all: true } }),
+      prisma.shift.groupBy({ by: ["agreementId"], where: horizonWhere, _count: { _all: true } }),
+    ]);
+
+    const byId = {};
+    for (const id of ids) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
+
+    for (const row of (todayTotal || [])) {
+      const id = Number(row.agreementId);
+      if (!byId[id]) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
+      byId[id].todayTotal = Number(row?._count?._all ?? 0);
+    }
+    for (const row of (todayDone || [])) {
+      const id = Number(row.agreementId);
+      if (!byId[id]) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
+      byId[id].todayDone = Number(row?._count?._all ?? 0);
+    }
+    for (const row of (horizonOpen || [])) {
+      const id = Number(row.agreementId);
+      if (!byId[id]) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
+      byId[id].horizonOpen = Number(row?._count?._all ?? 0);
+    }
+
+    res.json({ byId, meta: { todayStart, tomorrowStart, horizonEnd, horizonDays } });
+  });
   // GET by id (debug + checks)
   r.get("/:id", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
@@ -438,61 +496,435 @@ export function agreementsRouter(io) {
     res.json(updated);
   });
 
-  // EXTEND (COMPANY) — endDate change + conflict check
+
+  // ✅ M57: AGREEMENT EXTEND NEGOTIATION
+  // Model:
+  // - Company sends extend-request (new endDate + optional new offer amount/note)
+  // - Room can accept/reject OR counter price (then company accepts/rejects counter)
+  // - Old /extend endpoint kept for backward compatibility; it behaves like extend-request.
+
+  function ymdOfDateOnly(d) {
+    try {
+      return String(d?.toISOString?.() || "").slice(0, 10);
+    } catch {
+      return "";
+    }
+  }
+
+  async function assertNoExtendConflictOr409(ag, proposedEndDate, res) {
+    // If already assigned, extend must not create conflicts
+    if (!ag.vehicleId && !ag.driverId) return true;
+
+    const candidates = await findAgreementConflictForApproval({
+      agreementId: ag.id,
+      vehicleId: ag.vehicleId ?? undefined,
+      driverId: ag.driverId ?? undefined,
+    });
+
+    const proposed = { ...ag, endDate: proposedEndDate };
+
+    for (const c of candidates) {
+      if (ag.vehicleId && c.vehicleId === ag.vehicleId && agreementsOverlap(proposed, c)) {
+        res.status(409).json(agreementConflictResponse({ kind: "vehicle", agreement: c }));
+        return false;
+      }
+    }
+    for (const c of candidates) {
+      if (ag.driverId && c.driverId === ag.driverId && agreementsOverlap(proposed, c)) {
+        res.status(409).json(agreementConflictResponse({ kind: "driver", agreement: c }));
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function computeReactivatedStatus(ag, proposedEndDate) {
+    const now = new Date();
+    const proposed = { ...ag, endDate: proposedEndDate };
+    const firstStart = computeFirstStartAtUTC(proposed);
+    return now >= firstStart ? "ACTIVE" : "APPROVED";
+  }
+
+  // EXTEND REQUEST (COMPANY)
+  r.put("/:id/extend-request", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ag = await prisma.agreement.findUnique({ where: { id } });
+    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+
+    const st = String(ag.status || "").toUpperCase();
+    if (st === "CANCELLED" || st === "REJECTED") {
+      return res.status(409).json({ error: `invalidState:${st}`, code: "AGREEMENT_INVALID_STATE" });
+    }
+
+    const endDate = parseDateOnly(req.body.endDate);
+    if (!endDate) return res.status(400).json({ error: "endDate required (YYYY-MM-DD)" });
+    if (endDate < ag.startDate) return res.status(400).json({ error: "endDate must be >= startDate" });
+    if (endDate <= ag.endDate) return res.status(400).json({ error: "endDate must be > current endDate" });
+
+    // if room already countered, do not overwrite the negotiation
+    const ex = String(ag.extendStatus || "NONE").toUpperCase();
+    if (ex === "COUNTERED") {
+      return res.status(409).json({ error: "extendCounterPending", code: "AGREEMENT_EXTEND_COUNTER_PENDING" });
+    }
+
+    // optional offer update
+    const offerAmount = parseOfferAmountNullable(req.body.extendOfferAmount);
+    if (String(req.body.extendOfferAmount || "").trim() && offerAmount == null) {
+      return res.status(400).json({ error: "extendOfferAmount invalid (>0)" });
+    }
+    const offerNote = trimOrNull(req.body.extendOfferNote);
+
+    // if assigned, we can early-check conflicts (so room doesn't waste time)
+    const ok = await assertNoExtendConflictOr409(ag, endDate, res);
+    if (!ok) return;
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: {
+        extendStatus: "PENDING",
+        extendRequestedEndDate: endDate,
+        extendRequestedAt: new Date(),
+        extendOfferAmount: offerAmount,
+        extendOfferNote: offerNote,
+        extendCounterAmount: null,
+        extendCounterNote: null,
+        extendDecisionAt: null,
+      },
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_EXTEND_REQUESTED",
+      scope: "ROOM",
+      roomId: updated.roomId,
+      companyId: updated.companyId,
+      payload: {
+        v: 1,
+        kind: "agreement:extendRequested",
+        title: "Sözleşme uzatma teklifi",
+        message: `Agreement #${updated.id} yeni bitiş: ${ymdOfDateOnly(updated.extendRequestedEndDate)} • teklif: ${offerAmount ?? "-"}${offerNote ? " — " + offerNote : ""}`,
+      },
+      dedupeKey: `agreement:${updated.id}:extendReq:${ymdOfDateOnly(updated.extendRequestedEndDate)}`,
+    });
+
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
+
+    res.json(updated);
+  });
+
+  // EXTEND DECISION (ROOM): accept / reject company extend-request
+  r.put("/:id/extend-decision", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ag = await prisma.agreement.findUnique({ where: { id } });
+    if (!ag) return res.status(404).json({ error: "notFound" });
+
+    if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const ex = String(ag.extendStatus || "NONE").toUpperCase();
+    if (ex !== "PENDING") {
+      return res.status(409).json({ error: `extendNotPending:${ex}`, code: "AGREEMENT_EXTEND_NOT_PENDING" });
+    }
+    if (!ag.extendRequestedEndDate) return res.status(400).json({ error: "extendRequestedEndDate missing" });
+
+    const decision = String(req.body.decision || "").trim().toUpperCase();
+    if (decision !== "ACCEPT" && decision !== "REJECT") {
+      return res.status(400).json({ error: "decision must be ACCEPT|REJECT" });
+    }
+
+    if (decision === "REJECT") {
+      const updated = await prisma.agreement.update({
+        where: { id },
+        data: {
+          extendStatus: "NONE",
+          extendRequestedEndDate: null,
+          extendRequestedAt: null,
+          extendOfferAmount: null,
+          extendOfferNote: null,
+          extendCounterAmount: null,
+          extendCounterNote: null,
+          extendDecisionAt: new Date(),
+        },
+      });
+
+      await createAndEmitNotification({
+        io,
+        type: "AGREEMENT_EXTEND_REJECTED",
+        scope: "COMPANY",
+        companyId: updated.companyId,
+        roomId: updated.roomId,
+        payload: {
+          v: 1,
+          kind: "agreement:extendRejected",
+          title: "Uzatma reddedildi",
+          message: `Agreement #${updated.id} uzatma teklifi reddedildi.`,
+        },
+        dedupeKey: `agreement:${updated.id}:extendRejected:${Date.now()}`,
+      });
+
+      io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRejected" });
+      io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRejected" });
+
+      return res.json(updated);
+    }
+
+    // ACCEPT: conflict check + apply endDate (+ optional offer update), reactivate if needed
+    const proposedEndDate = ag.extendRequestedEndDate;
+    const ok = await assertNoExtendConflictOr409(ag, proposedEndDate, res);
+    if (!ok) return;
+
+    const offerAmount = ag.extendOfferAmount;
+    const offerNote = ag.extendOfferNote;
+
+    const nextStatus = String(ag.status || "").toUpperCase() === "DONE" ? computeReactivatedStatus(ag, proposedEndDate) : ag.status;
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: {
+        endDate: proposedEndDate,
+        status: nextStatus,
+        // apply offer only if provided
+        companyOfferAmount: offerAmount != null ? offerAmount : ag.companyOfferAmount,
+        companyOfferNote: offerAmount != null ? (offerNote ?? ag.companyOfferNote ?? null) : ag.companyOfferNote,
+        extendStatus: "NONE",
+        extendRequestedEndDate: null,
+        extendRequestedAt: null,
+        extendOfferAmount: null,
+        extendOfferNote: null,
+        extendCounterAmount: null,
+        extendCounterNote: null,
+        extendDecisionAt: new Date(),
+      },
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_EXTEND_ACCEPTED",
+      scope: "COMPANY",
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: {
+        v: 1,
+        kind: "agreement:extendAccepted",
+        title: "Uzatma kabul edildi",
+        message: `Agreement #${updated.id} yeni bitiş: ${ymdOfDateOnly(updated.endDate)}`,
+      },
+      dedupeKey: `agreement:${updated.id}:extendAccepted:${ymdOfDateOnly(updated.endDate)}`,
+    });
+
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendAccepted" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendAccepted" });
+
+    res.json(updated);
+  });
+
+  // EXTEND COUNTER (ROOM): counter price for extension (keeps requested endDate)
+  r.put("/:id/extend-counter", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ag = await prisma.agreement.findUnique({ where: { id } });
+    if (!ag) return res.status(404).json({ error: "notFound" });
+
+    if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const ex = String(ag.extendStatus || "NONE").toUpperCase();
+    if (ex !== "PENDING") {
+      return res.status(409).json({ error: `extendNotPending:${ex}`, code: "AGREEMENT_EXTEND_NOT_PENDING" });
+    }
+    if (!ag.extendRequestedEndDate) return res.status(400).json({ error: "extendRequestedEndDate missing" });
+
+    const amount = parseOfferAmount(req.body.extendCounterAmount);
+    if (amount == null) return res.status(400).json({ error: "extendCounterAmount required (>0)" });
+    const note = trimOrNull(req.body.extendCounterNote);
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: {
+        extendStatus: "COUNTERED",
+        extendCounterAmount: amount,
+        extendCounterNote: note,
+        extendDecisionAt: new Date(),
+      },
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_EXTEND_COUNTERED",
+      scope: "COMPANY",
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: {
+        v: 1,
+        kind: "agreement:extendCountered",
+        title: "Uzatma karşı teklifi",
+        message: `Agreement #${updated.id} • yeni bitiş: ${ymdOfDateOnly(updated.extendRequestedEndDate)} • karşı: ${updated.extendCounterAmount}${updated.extendCounterNote ? " — " + updated.extendCounterNote : ""}`,
+      },
+      dedupeKey: `agreement:${updated.id}:extendCounter:${ymdOfDateOnly(updated.extendRequestedEndDate)}:${updated.extendCounterAmount}`,
+    });
+
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCountered" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCountered" });
+
+    res.json(updated);
+  });
+
+  // EXTEND ACCEPT COUNTER (COMPANY): accept room counter -> apply endDate and new price
+  r.put("/:id/extend-accept-counter", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ag = await prisma.agreement.findUnique({ where: { id } });
+    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+
+    const ex = String(ag.extendStatus || "NONE").toUpperCase();
+    if (ex !== "COUNTERED") {
+      return res.status(409).json({ error: `extendNotCountered:${ex}`, code: "AGREEMENT_EXTEND_COUNTER_NOT_PENDING" });
+    }
+    if (!ag.extendRequestedEndDate) return res.status(400).json({ error: "extendRequestedEndDate missing" });
+    if (ag.extendCounterAmount == null) return res.status(400).json({ error: "extendCounterAmount missing" });
+
+    const proposedEndDate = ag.extendRequestedEndDate;
+    const ok = await assertNoExtendConflictOr409(ag, proposedEndDate, res);
+    if (!ok) return;
+
+    const nextStatus = String(ag.status || "").toUpperCase() === "DONE" ? computeReactivatedStatus(ag, proposedEndDate) : ag.status;
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: {
+        endDate: proposedEndDate,
+        status: nextStatus,
+        companyOfferAmount: ag.extendCounterAmount,
+        companyOfferNote: ag.extendCounterNote ?? ag.companyOfferNote ?? null,
+        extendStatus: "NONE",
+        extendRequestedEndDate: null,
+        extendRequestedAt: null,
+        extendOfferAmount: null,
+        extendOfferNote: null,
+        extendCounterAmount: null,
+        extendCounterNote: null,
+        extendDecisionAt: new Date(),
+      },
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_EXTEND_COUNTER_ACCEPTED",
+      scope: "ROOM",
+      roomId: updated.roomId,
+      companyId: updated.companyId,
+      payload: {
+        v: 1,
+        kind: "agreement:extendCounterAccepted",
+        title: "Uzatma karşı teklifi kabul edildi",
+        message: `Agreement #${updated.id} yeni bitiş: ${ymdOfDateOnly(updated.endDate)} • yeni teklif: ${updated.companyOfferAmount ?? "-"}`,
+      },
+      dedupeKey: `agreement:${updated.id}:extendCounterAccepted:${ymdOfDateOnly(updated.endDate)}:${updated.companyOfferAmount ?? "X"}`,
+    });
+
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterAccepted" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterAccepted" });
+
+    res.json(updated);
+  });
+
+  // EXTEND REJECT COUNTER (COMPANY): reject room counter -> back to pending (room can accept original offer or counter again)
+  r.put("/:id/extend-reject-counter", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ag = await prisma.agreement.findUnique({ where: { id } });
+    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+
+    const ex = String(ag.extendStatus || "NONE").toUpperCase();
+    if (ex !== "COUNTERED") {
+      return res.status(409).json({ error: `extendNotCountered:${ex}`, code: "AGREEMENT_EXTEND_COUNTER_NOT_PENDING" });
+    }
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: {
+        extendStatus: "PENDING",
+        extendCounterAmount: null,
+        extendCounterNote: null,
+        extendDecisionAt: new Date(),
+      },
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_EXTEND_COUNTER_REJECTED",
+      scope: "ROOM",
+      roomId: updated.roomId,
+      companyId: updated.companyId,
+      payload: {
+        v: 1,
+        kind: "agreement:extendCounterRejected",
+        title: "Karşı teklif reddedildi",
+        message: `Agreement #${updated.id} • uzatma teklifi hala beklemede. İstersen kabul et veya yeni counter gönder.`,
+      },
+      dedupeKey: `agreement:${updated.id}:extendCounterRejected:${Date.now()}`,
+    });
+
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterRejected" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterRejected" });
+
+    res.json(updated);
+  });
+
+  // BACKCOMPAT: EXTEND (COMPANY) behaves like extend-request (kept for older UIs)
   r.put("/:id/extend", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
     if (!ag) return res.status(404).json({ error: "notFound" });
     if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
 
-    const endDate = parseDateOnly(req.body.endDate);
-    if (!endDate) return res.status(400).json({ error: "endDate required" });
-    if (endDate < ag.startDate) return res.status(400).json({ error: "endDate must be >= startDate" });
-
-    // If already assigned, extend must not create conflicts
-    if (ag.vehicleId || ag.driverId) {
-      const candidates = await findAgreementConflictForApproval({
-        agreementId: ag.id,
-        vehicleId: ag.vehicleId ?? undefined,
-        driverId: ag.driverId ?? undefined,
-      });
-
-      const proposed = { ...ag, endDate };
-
-      for (const c of candidates) {
-        if (ag.vehicleId && c.vehicleId === ag.vehicleId && agreementsOverlap(proposed, c)) {
-          return res.status(409).json(agreementConflictResponse({ kind: "vehicle", agreement: c }));
-        }
-      }
-      for (const c of candidates) {
-        if (ag.driverId && c.driverId === ag.driverId && agreementsOverlap(proposed, c)) {
-          return res.status(409).json(agreementConflictResponse({ kind: "driver", agreement: c }));
-        }
-      }
+    const st = String(ag.status || "").toUpperCase();
+    if (st === "CANCELLED" || st === "REJECTED") {
+      return res.status(409).json({ error: `invalidState:${st}`, code: "AGREEMENT_INVALID_STATE" });
     }
 
-    const updated = await prisma.agreement.update({ where: { id }, data: { endDate } });
+    const endDate = parseDateOnly(req.body.endDate);
+    if (!endDate) return res.status(400).json({ error: "endDate required (YYYY-MM-DD)" });
+    if (endDate < ag.startDate) return res.status(400).json({ error: "endDate must be >= startDate" });
+    if (endDate <= ag.endDate) return res.status(400).json({ error: "endDate must be > current endDate" });
 
-    // ✅ M53: notify ROOM (company extended)
-    await createAndEmitNotification({
-      io,
-      type: "AGREEMENT_EXTENDED",
-      scope: "ROOM",
-      roomId: updated.roomId,
-      companyId: updated.companyId,
-      payload: {
-        v: 1,
-        kind: "agreement:extended",
-        title: "Sözleşme uzatıldı",
-        message: `Agreement #${updated.id} yeni bitiş: ${String(updated.endDate).slice(0, 10)}`,
+    const ex = String(ag.extendStatus || "NONE").toUpperCase();
+    if (ex === "COUNTERED") {
+      return res.status(409).json({ error: "extendCounterPending", code: "AGREEMENT_EXTEND_COUNTER_PENDING" });
+    }
+
+    const offerAmount = parseOfferAmountNullable(req.body.extendOfferAmount);
+    if (String(req.body.extendOfferAmount || "").trim() && offerAmount == null) {
+      return res.status(400).json({ error: "extendOfferAmount invalid (>0)" });
+    }
+    const offerNote = trimOrNull(req.body.extendOfferNote);
+
+    const ok = await assertNoExtendConflictOr409(ag, endDate, res);
+    if (!ok) return;
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: {
+        extendStatus: "PENDING",
+        extendRequestedEndDate: endDate,
+        extendRequestedAt: new Date(),
+        extendOfferAmount: offerAmount,
+        extendOfferNote: offerNote,
+        extendCounterAmount: null,
+        extendCounterNote: null,
+        extendDecisionAt: null,
       },
-      dedupeKey: `agreement:${updated.id}:extended:${String(updated.endDate).slice(0, 10)}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extended" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extended" });
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
+
     res.json(updated);
   });
+
 
   return r;
 }

@@ -1,4 +1,4 @@
-// backend/src/jobs/index.js
+﻿// backend/src/jobs/index.js
 // server.js'i şişirmeden tüm background job'ları tek yerden başlat.
 
 import { startGpsStaleMonitor } from "./gpsStaleMonitor.js";
@@ -8,6 +8,7 @@ import { startRetentionCleanup } from "./retentionCleanup.js";
 import { startAgreementMonitor } from "./agreementMonitor.js";
 import { startAgreementShiftGenerator } from "./agreementShiftGenerator.js";
 import { startRouteLearnMonitor } from "./routeLearnMonitor.js";
+import { startShiftCompletionMonitor } from "./shiftCompletionMonitor.js";
 
 /**
  * @param {import('socket.io').Server} io
@@ -22,6 +23,9 @@ export function startMonitors(io, opts = {}) {
   // ✅ M52: agreement -> rolling 7-day shift generator
   // ✅ M19: learned route monitor (optional)
   stopFns.push(startRouteLearnMonitor(io, { intervalMs: opts.routeLearnIntervalMs }));
+
+  // ✅ M58.5: reconcile shifts that are completed (progress.completedAt) but still not DONE
+  stopFns.push(startShiftCompletionMonitor(io, { intervalMs: opts.shiftCompletionIntervalMs }));
 
   stopFns.push(
     startAgreementShiftGenerator(io, {

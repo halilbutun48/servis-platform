@@ -46,6 +46,11 @@ export default function RoomOffersPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
+  // ✅ M46: bulk/package counter (select many offers -> one counter)
+  const [sel, setSel] = useState({}); // { [offerId]: true }
+  const [bulkAmount, setBulkAmount] = useState("");
+  const [bulkNote, setBulkNote] = useState("");
+
   // ✅ M30: Accepted offer -> quick approve
   // ✅ M31: Approve + Start (single click)
   const [approveModal, setApproveModal] = useState({
@@ -122,6 +127,45 @@ export default function RoomOffersPanel() {
       return hay.includes(qq);
     });
   }, [items, q]);
+
+  const selectedIds = useMemo(() => {
+    return Object.entries(sel)
+      .filter(([, v]) => !!v)
+      .map(([k]) => Number(k))
+      .filter((x) => Number.isFinite(x) && x > 0);
+  }, [sel]);
+
+  function toggleAllFiltered() {
+    const next = {};
+    for (const o of filtered) {
+      if (o.status === "CANCELLED" || o.status === "ACCEPTED") continue;
+      next[o.id] = true;
+    }
+    setSel(next);
+  }
+
+  async function onBulkCounter() {
+    const ids = selectedIds;
+    const amountRoom = bulkAmount == null || bulkAmount === "" ? undefined : Number(bulkAmount);
+    const noteRoom = String(bulkNote || "").trim() || undefined;
+
+    if (!ids.length) return setErr("Önce en az 1 teklif seç.");
+    if (!Number.isFinite(amountRoom) || amountRoom <= 0) return setErr("Paket karşı teklif amount gerekli.");
+
+    setBusy(true);
+    setErr("");
+    try {
+      await api.post(`/api/offers/bulk-counter`, { offerIds: ids, amountRoom, noteRoom });
+      setSel({});
+      setBulkAmount("");
+      setBulkNote("");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onCounter(offerId) {
     const st = counterSel[offerId] || {};
@@ -215,9 +259,29 @@ export default function RoomOffersPanel() {
               style={{ minWidth: 240 }}
             />
           </div>
-          <button className="btn" disabled={busy} onClick={load}>
-            Yenile
-          </button>
+          <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <button className="btn sm ghost" disabled={busy} onClick={toggleAllFiltered} title="OPEN+COUNTERED olanları seçer">
+              Hepsini Seç
+            </button>
+            <input
+              value={bulkAmount}
+              onChange={(e) => setBulkAmount(e.target.value)}
+              placeholder="Paket karşı teklif (₺)"
+              style={{ width: 180 }}
+            />
+            <input
+              value={bulkNote}
+              onChange={(e) => setBulkNote(e.target.value)}
+              placeholder="Paket not (ops)"
+              style={{ minWidth: 240 }}
+            />
+            <button className="btn" disabled={busy || !selectedIds.length} onClick={onBulkCounter}>
+              Pakete Counter ({selectedIds.length})
+            </button>
+            <button className="btn" disabled={busy} onClick={load}>
+              Yenile
+            </button>
+          </div>
         </div>
       </div>
 
@@ -241,6 +305,15 @@ export default function RoomOffersPanel() {
                 </div>
               </div>
               <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }} title="Pakete dahil et">
+                  <input
+                    type="checkbox"
+                    disabled={!canCounter || busy}
+                    checked={!!sel[o.id]}
+                    onChange={(e) => setSel((p) => ({ ...p, [o.id]: e.target.checked }))}
+                  />
+                  Seç
+                </label>
                 {pill(o.status)}
                 {pill(shift?.status)}
                 <button type="button" className="btn sm" disabled={busy} onClick={() => goShift(o.shiftId)}>

@@ -17,6 +17,27 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 
+// ✅ M59 helpers
+function daysLeftYmd(ymd) {
+  if (!ymd || String(ymd).length < 10) return null;
+  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999");
+  const diff = end.getTime() - Date.now();
+  const d = Math.ceil(diff / 86400000);
+  return Number.isFinite(d) ? d : null;
+}
+function ShiftSummary({ st }) {
+  const tTot = Number(st?.todayTotal ?? 0);
+  const tDone = Number(st?.todayDone ?? 0);
+  const h = Number(st?.horizonOpen ?? 0);
+  return (
+    <div className="muted" style={{ lineHeight: 1.2 }}>
+      <div>Bugün: {tTot ? (tDone + "/" + tTot + " DONE") : "-"}</div>
+      <div>Ufuk: {h ? (h + " APPROVED") : "-"}</div>
+    </div>
+  );
+}
+
+
 function todayYmd() {
   const d = new Date();
   const y = d.getFullYear();
@@ -94,6 +115,30 @@ function StatusPill({ status }) {
   );
 }
 
+
+function ExtendPill({ extendStatus, requestedEndDate }) {
+  const s = String(extendStatus || "NONE").toUpperCase();
+  if (s === "NONE" || !s) return null;
+
+  const label =
+    s === "PENDING"
+      ? "⏳ EXTEND PENDING"
+      : s === "COUNTERED"
+      ? "💬 EXTEND COUNTERED"
+      : s === "ACCEPTED"
+      ? "✅ EXTEND ACCEPTED"
+      : s === "REJECTED"
+      ? "🚫 EXTEND REJECTED"
+      : s;
+
+  const date = String(requestedEndDate || "").slice(0, 10);
+  return (
+    <span className="pill" data-status={s} title={date ? `${label} → ${date}` : label} style={{ marginLeft: 8 }}>
+      {date ? `${label} (${date})` : label}
+    </span>
+  );
+}
+
 export default function AgreementsPanel() {
   const { token } = useSession();
 
@@ -101,6 +146,8 @@ export default function AgreementsPanel() {
   const [err, setErr] = useState("");
 
   const [items, setItems] = useState([]);
+  const [shiftStats, setShiftStats] = useState({}); // ✅ M59
+
   const [take, setTake] = useState(50);
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -207,7 +254,22 @@ export default function AgreementsPanel() {
       qs.set("take", String(take));
       if (statusFilter) qs.set("status", statusFilter);
       const resp = await api(`/api/agreements?${qs.toString()}`, { token });
-      setItems(resp?.items ?? []);
+      const list = resp?.items ?? [];
+      setItems(list);
+
+      // ✅ M59: shift stats (today/horizon) for UI clarity
+      try {
+        const ids = list.map((x) => x?.id).filter(Boolean);
+        if (ids.length) {
+          const st = await api("/api/agreements/shift-stats", { token, method: "POST", body: { agreementIds: ids, horizonDays: 7 } });
+          setShiftStats(st?.byId ?? {});
+        } else {
+          setShiftStats({});
+        }
+      } catch {
+        setShiftStats({});
+      }
+
     } catch (e) {
       setErr(e?.message || "Agreements yüklenemedi.");
     }
@@ -317,32 +379,81 @@ export default function AgreementsPanel() {
     }
   }
 
-  async function extendAgreement(id, endDateYmd) {
+  async function extendRequest(id, endDateYmd, offerAmount, offerNote) {
     setErr("");
     if (!isYmd(endDateYmd)) return setErr("Bitiş tarihi YYYY-MM-DD olmalı");
 
     setBusy(true);
     try {
-      await api(`/api/agreements/${id}/extend`, { token, method: "PUT", body: { endDate: endDateYmd } });
+      await api(`/api/agreements/${id}/extend-request`, {
+        token,
+        method: "PUT",
+        body: {
+          endDate: endDateYmd,
+          extendOfferAmount: offerAmount ?? null,
+          extendOfferNote: offerNote ?? null,
+        },
+      });
       await load();
     } catch (e) {
-      setErr(e?.message || "Extend failed");
+      setErr(e?.message || "Extend request failed");
     } finally {
       setBusy(false);
     }
+  }
+
+  async function acceptExtendCounter(id) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${id}/extend-accept-counter`, { token, method: "PUT", body: {} });
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Extend counter accept failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejectExtendCounter(id) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${id}/extend-reject-counter`, { token, method: "PUT", body: {} });
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Extend counter reject failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function askExtendOfferDetails(a) {
+    const raw = prompt("Uzatma için yeni teklif (₺) — boş bırak: değişmesin", "");
+    let offerAmount = null;
+    if (raw != null && String(raw).trim() !== "") {
+      const n = Number(String(raw).replace(/[^\d]/g, ""));
+      if (!Number.isFinite(n) || n <= 0) {
+        setErr("Uzatma teklifi miktarı geçersiz");
+        return null;
+      }
+      offerAmount = Math.trunc(n);
+    }
+    const offerNote = prompt("Uzatma notu (opsiyonel):", "") || null;
+    return { offerAmount, offerNote: String(offerNote || "").trim() || null };
   }
 
   function extendByDays(a, days) {
     const base = String(a?.endDate || "").slice(0, 10);
     if (!isYmd(base)) return setErr("endDate yok/format hatalı");
     const next = addDaysISO(base, Number(days || 0));
-    extendAgreement(a.id, String(next).trim());
+    const d = askExtendOfferDetails(a); if (!d) return; extendRequest(a.id, String(next).trim(), d.offerAmount, d.offerNote);
   }
 
   function askExtend(a) {
     const next = prompt("Yeni endDate (YYYY-MM-DD):", a.endDate?.slice(0, 10) || "");
     if (!next) return;
-    extendAgreement(a.id, String(next).trim());
+    const d = askExtendOfferDetails(a); if (!d) return; extendRequest(a.id, String(next).trim(), d.offerAmount, d.offerNote);
   }
 
   const rows = useMemo(() => {
@@ -615,6 +726,7 @@ export default function AgreementsPanel() {
               <th>Dir/Pat</th>
               <th>Company Teklif</th>
               <th>Room Karşı</th>
+              <th>Vardiyalar</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -622,10 +734,10 @@ export default function AgreementsPanel() {
             {rows.map(({ a, room }) => (
               <tr key={a.id}>
                 <td className="muted">#{a.id}</td>
-                <td><StatusPill status={a.status} /></td>
+                <td><StatusPill status={a.status} /><ExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
                 <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
                 <td className="muted">
-                  {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)}
+                  {String(a.startDate || "").slice(0, 10)} → {String(a.endDate || "").slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
                 </td>
                 <td className="muted" title={`weekMask=${a.weekMask}`}>{weekMaskToText(a.weekMask)}</td>
                 <td className="muted">
@@ -640,6 +752,7 @@ export default function AgreementsPanel() {
                   {a.roomOfferAmount != null ? `₺${a.roomOfferAmount}` : "-"}
                   {a.roomOfferNote ? <span style={{ marginLeft: 6 }}>📝</span> : null}
                 </td>
+                <td><ShiftSummary st={shiftStats?.[a.id]} /></td>
                 <td>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                     {String(a.status || "").toUpperCase() === "COUNTERED" ? (
@@ -655,16 +768,28 @@ export default function AgreementsPanel() {
                     <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE"} onClick={() => cancelAgreement(a.id)}>
                       Cancel
                     </button>
-                    <button type="button" disabled={busy} onClick={() => extendByDays(a, 7)}>
+
+                    {String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED" ? (
+                      <>
+                        <button type="button" disabled={busy} onClick={() => acceptExtendCounter(a.id)}>
+                          Uzatma Counter Kabul
+                        </button>
+                        <button type="button" className="btn" disabled={busy} onClick={() => rejectExtendCounter(a.id)}>
+                          Uzatma Counter Red
+                        </button>
+                      </>
+                    ) : null}
+
+                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 7)}>
                       Uzat +7g
                     </button>
-                    <button type="button" disabled={busy} onClick={() => extendByDays(a, 30)}>
+                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 30)}>
                       Uzat +30g
                     </button>
-                    <button type="button" disabled={busy} onClick={() => extendByDays(a, 90)}>
+                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 90)}>
                       Uzat +90g
                     </button>
-                    <button type="button" disabled={busy} onClick={() => askExtend(a)}>
+                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => askExtend(a)}>
                       Tarih...
                     </button>
                   </div>
@@ -682,3 +807,5 @@ export default function AgreementsPanel() {
     </div>
   );
 }
+
+

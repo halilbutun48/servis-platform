@@ -1,4 +1,4 @@
-// backend/src/routes/driver.js
+﻿// backend/src/routes/driver.js
 // Mounted at: /api/driver
 // Purpose: DRIVER operational endpoints (today list, active route, stop actions, completion)
 // NOTE: ROOM driver CRUD lives in routes/drivers.js (mounted at /api/drivers).
@@ -101,20 +101,28 @@ async function maybeStartShiftIfApproved(shiftId) {
 async function completeShift({ shiftId, roomId, companyId, vehicleId, io }) {
   const now = new Date();
 
-  await prisma.shiftProgress.upsert({
-    where: { shiftId },
-    update: { completedAt: now },
-    create: { shiftId, lastReachedOrder: 0, completedAt: now },
-  });
+  // ✅ Atomik tamamlama: completedAt + shift.status DONE
+  // (fixes partial writes and makes behavior deterministic)
+  const [, freshShift] = await prisma.$transaction([
+    prisma.shiftProgress.upsert({
+      where: { shiftId },
+      update: { completedAt: now, pausedAt: null },
+      create: { shiftId, lastReachedOrder: 0, startedAt: now, pausedAt: null, completedAt: now },
+    }),
+    prisma.shift.update({ where: { id: shiftId }, data: { status: "DONE" } }),
+  ]);
 
-  await prisma.shift.update({ where: { id: shiftId }, data: { status: "DONE" } });
-
-  // NOTE: Kept as-is to avoid breaking clients.
+  // NOTE: route:progress retained for backward compatibility.
   const payload = { shiftId, completed: true, nextStop: null };
   io?.to(`shift:${shiftId}`).emit("route:progress", payload);
   io?.to(`room:${roomId}`).emit("route:progress", payload);
   io?.to(`company:${companyId}`).emit("route:progress", payload);
   if (vehicleId) io?.to(`vehicle:${vehicleId}`).emit("route:progress", { ...payload, vehicleId });
+
+  // ✅ Refresh panels/lists: shift:update
+  try {
+    emitShift(io, freshShift, "shift:update", { action: "complete", status: "DONE" });
+  } catch {}
 }
 
 export function driverRouter(io) {
