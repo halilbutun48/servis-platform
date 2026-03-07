@@ -4,6 +4,7 @@ import { useSession } from "../../state/session";
 import { companyBase } from "../../utils/paths";
 import { useAutoReload } from "../../live/useAutoReload";
 import FeatureFlagNotice from "../shared/FeatureFlagNotice";
+import QrCanvas from "../../components/checkin/QrCanvas";
 
 function fmt(dt) {
   try {
@@ -195,14 +196,21 @@ export default function CompanyCheckinPanel() {
 
       {lastIssued?.token ? (
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Son üretilen token</h3>
+          <h3 style={{ marginTop: 0 }}>Son üretilen credential</h3>
           <div className="muted" style={{ marginBottom: 8 }}>
             Personel #{lastIssued.personelId} • {lastIssued.type} • {fmt(lastIssued.at)}
           </div>
-          <textarea readOnly value={lastIssued.token} rows={3} style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
-          <div className="row" style={{ marginTop: 10, gap: 8 }}>
-            <button type="button" className="btn" onClick={copyToken}>Kopyala</button>
-            <button type="button" className="secondary" onClick={() => setLastIssued(null)}>Temizle</button>
+          <div className="grid" style={{ alignItems: "start" }}>
+            <div>
+              <textarea readOnly value={lastIssued.token} rows={3} style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
+              <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className="btn" onClick={copyToken}>Token kopyala</button>
+                <button type="button" className="secondary" onClick={() => setLastIssued(null)}>Temizle</button>
+              </div>
+            </div>
+            <div>
+              <QrCanvas value={lastIssued.token} size={220} />
+            </div>
           </div>
         </div>
       ) : null}
@@ -237,7 +245,7 @@ export default function CompanyCheckinPanel() {
         <div className="card" style={{ overflowX: "auto" }}>
           <h3 style={{ marginTop: 0 }}>Vardiya kişileri</h3>
           <div className="muted" style={{ marginBottom: 10 }}>
-            QR/NFC üretimi seçili vardiyadaki kişi listesiyle sınırlı tutulur. Token yalnızca üretildiği anda görünür.
+            QR/NFC üretimi seçili vardiyadaki kişi listesiyle sınırlı tutulur. Token yalnızca üretildiği anda görünür. QR çıktısı da aynı kartta gösterilir.
           </div>
           <table className="tbl" style={{ whiteSpace: "nowrap" }}>
             <thead>

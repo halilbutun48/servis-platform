@@ -37,3 +37,8 @@ Timezone: Europe/Istanbul
 - Değişiklik olursa docs aynı PR/overlay içinde güncellenir
 - “Çalışıyor” = kanıtlı pack/check PASS
 - Değişiklikleri mümkün olduğunca tek seferde overlay (zip) taşı
+
+
+## Son ekler
+- M42 UI: COMPANY/SCHOOL panelinde QR canvas, DRIVER panelinde kamera ile QR okutma
+- SCHOOL scope: self-serve parent invite link paneli + public accept akışı

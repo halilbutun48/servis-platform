@@ -47,6 +47,7 @@ import * as roomsMod from "./routes/rooms.js";
 import * as routeTemplatesMod from "./routes/routeTemplates.js";
 import { offersRouter } from "./routes/offers.js";
 import { checkinRouter } from "./routes/checkin.js";
+import { schoolParentInvitesRouter } from "./routes/schoolParentInvites.js";
 
 
 import { startMonitors } from "./jobs/index.js";
@@ -278,6 +279,7 @@ app.use("/api/company/hub", companyHubRouter());
 app.use("/api/plan-builder", planBuilderRouter());
 app.use("/api/live", liveRouter());
 app.use("/api/parent", parentRouter());
+app.use("/api/school/parent-invites", schoolParentInvitesRouter());
 app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());

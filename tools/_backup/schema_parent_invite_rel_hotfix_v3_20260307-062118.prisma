@@ -1,0 +1,1007 @@
+// PERSONEL-SERVIS V1 — Prisma schema (PostgreSQL)
+//
+// Tek kaynak doküman hedefi:
+// - docs/PROJECT_SPEC_V1.md
+// - docs/API_SPEC_V1.md
+// - docs/DB_SCHEMA_V1.md
+//
+// Not: Bu schema, kullanıcıların yapıştırdığı PRIMER + Mermaid DB şemasına göre
+// sadeleştirilmiş çekirdek veri modelidir (Milestone-0 / iskelet).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum Role {
+  SUPER_ADMIN
+  ROOM
+  COMPANY
+  DRIVER
+  PERSONEL
+  PARENT
+}
+
+enum VehicleStatus {
+  ACTIVE
+  PASSIVE
+  STALE
+}
+
+enum OfferDecision {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ShiftOfferStatus {
+  OPEN
+  COUNTERED
+  ACCEPTED
+  CANCELLED
+}
+
+enum VehicleType {
+  MINIBUS
+  MIDIBUS
+  OTOBUS
+}
+
+enum OdometerSource {
+  MANUAL
+  GPS
+}
+
+enum ShiftStatus {
+  DRAFT
+  REQUESTED
+  APPROVED
+  ACTIVE
+  REJECTED
+  DONE
+}
+
+enum StopType {
+  COMMON
+  MANUAL
+}
+
+enum StopState {
+  PENDING
+  REACHED
+  SKIPPED
+}
+
+enum PickupRequestStatus {
+  OPEN
+  CANCELLED
+  ACCEPTED
+}
+
+enum GpsLastStatus {
+  OK
+  STALE
+}
+
+enum NotificationScope {
+  ROOM
+  COMPANY
+  DRIVER
+  USER
+}
+
+// ✅ UI/WS status gate (notif dedupe/transition için)
+enum UiGpsStatus {
+  LIVE
+  STALE
+  OFFLINE
+}
+
+// ✅ M16.1: personel geocode cache
+enum GeoStatus {
+  OK
+  NEEDS_REVIEW
+  FAILED
+}
+
+
+enum CredentialType {
+  QR
+  NFC
+}
+
+enum CredentialStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum CheckinEventType {
+  BOARD
+  ALIGHT
+}
+
+enum CheckinSource {
+  QR
+  NFC
+  MANUAL
+}
+// ✅ M17
+enum AgreementStatus {
+  REQUESTED
+  COUNTERED
+  APPROVED
+  ACTIVE
+  DONE
+  CANCELLED
+  REJECTED
+}
+
+
+// ✅ M57: agreement süre uzatma pazarlığı (Company teklif → Room karşı/kabul)
+enum AgreementExtendStatus {
+  NONE
+  PENDING
+  COUNTERED
+  ACCEPTED
+  REJECTED
+}
+
+// ✅ M19: directional routing + hub
+enum ShiftDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum RoutePattern {
+  ONE_WAY
+  LOOP
+}
+
+
+// ✅ M51: shift süre uzatma akışı (Company talep → Room karar)
+enum ShiftExtendDecision {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+// --- Core Models ---
+
+enum CompanyKind {
+  COMPANY
+  SCHOOL
+}
+
+model Company {
+  kind      CompanyKind @default(COMPANY)
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String   @default("ACTIVE")
+  regionId  Int?
+  region    Region? @relation(fields: [regionId], references: [id])
+  district  String?   // ilçe (opsiyonel)
+  // ✅ M36.4: profil alanları
+  legalName    String?  // resmi ünvan (opsiyonel)
+  taxNo        String?
+  taxOffice    String?
+  addressLine  String?  // adres (detay)
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  notes        String?
+
+  hubLat    Float?   // company worksite hub (optional)
+  hubLng    Float?   // company worksite hub (optional)
+  createdAt DateTime @default(now())
+
+  users         User[]
+  shifts        Shift[]
+  personels     Personel[]
+  notifications Notification[]
+  agreements    Agreement[]
+  @@index([regionId, kind])
+
+    @@index([kind])
+
+  
+  @@index([regionId])
+  @@index([district])
+}
+
+enum PersonelKind {
+  PERSONEL
+  STUDENT
+}
+
+model Room {
+  id        Int      @id @default(autoincrement())
+  name      String
+  status    String   @default("ACTIVE")
+  regionId  Int?
+  region    Region? @relation(fields: [regionId], references: [id])
+  district  String?   // ilçe (opsiyonel)
+  // ✅ M36.4: profil alanları
+  addressLine  String?  // adres (detay)
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  notes        String?
+
+  // ✅ M19: worksite hub (company/site)
+  hubLat    Float?
+  hubLng    Float?
+  createdAt DateTime @default(now())
+
+  users          User[]
+  vehicles       Vehicle[]
+  drivers        Driver[]
+  shifts         Shift[]
+  notifications  Notification[]
+  routeTemplates RouteTemplate[]
+  agreements     Agreement[]
+
+  // ✅ M24: offers inbox (Room ↔ ShiftOffer)
+  shiftOffers    ShiftOffer[] @relation("RoomShiftOffers")
+
+  @@index([regionId])
+  @@index([district])
+}
+
+model Region {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  companies Company[]
+  rooms     Room[]
+}
+
+// Auth entity (login) — role taşıyıcı
+model User {
+notifications Notification[]
+  consents      Consent[]
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  fullName     String
+  phone        String?
+
+  // ✅ M41: device binding (primarily for DRIVER)
+  deviceId         String?
+  deviceBoundAt    DateTime?
+  deviceLastSeenAt DateTime?
+
+  // ✅ M41: refresh sessions (rotating)
+  refreshSessions  RefreshSession[]
+
+  createdAt    DateTime @default(now())
+
+  // Scope bindings
+  companyId Int?
+  roomId    Int?
+  company   Company? @relation(fields: [companyId], references: [id])
+  room      Room?    @relation(fields: [roomId], references: [id])
+
+  // Optional profile links
+  driver   Driver?
+  personel Personel?
+  // ✅ M16.1: import trail (createdBy)
+  shiftImportsCreated ShiftImport[] @relation("ShiftImportCreatedBy")
+
+  @@index([companyId])
+  @@index([roomId])
+  parentChildren ParentChild[] @relation("ParentUserChildren")
+`r`n  parentInvitesCreated  ParentInvite[] @relation("ParentInviteCreatedBy")`r`n  parentInvitesConsumed ParentInvite[] @relation("ParentInviteConsumedBy")
+}
+
+model Vehicle {
+  id            Int           @id @default(autoincrement())
+  roomId        Int
+  plate         String        @unique
+  capacity      Int
+  status        VehicleStatus @default(ACTIVE)
+  speedLimitKmh Int           @default(80)
+  agreements    Agreement[]
+
+  // Opsiyonel: bu araca bağlı varsayılan driver
+  driverId Int?
+
+  // V1 meta (araç tanımı)
+  type      VehicleType?
+  brand     String?
+  model     String?
+  modelYear Int?
+  color     String?
+  vin       String? @unique
+  note      String?
+
+  // Resmi tarihler
+  inspectionDueAt DateTime?
+  insuranceDueAt  DateTime?
+  cascoDueAt      DateTime?
+
+  // Bakım (tarih + km)
+  lastServiceAt       DateTime?
+  lastServiceKm       Int?
+  serviceIntervalKm   Int  @default(15000)
+  serviceIntervalDays Int?
+
+  // Odometer
+  odometerKm        Int?
+  odometerUpdatedAt DateTime?
+  odometerSource    OdometerSource @default(MANUAL)
+
+  // Geriye dönük uyum: eski bakım alanı (UI'da opsiyonel gösterilebilir)
+  nextMaintenanceAt DateTime?
+
+  // ✅ Archive (shift bağlıyken "sil" => archive)
+  archivedAt     DateTime?
+  archivedReason String?
+
+  createdAt DateTime @default(now())
+
+  room            Room             @relation(fields: [roomId], references: [id])
+  driver          Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  gpsLast         GpsLast?
+  gpsState        VehicleGpsState? // ✅ UI status gate state
+  gpsPoints       GpsPoint[]
+  // ✅ M19: learned route samples
+  routeLearnSamples RouteLearnSample[]
+  shifts          Shift[]
+  notifications   Notification[]
+
+  @@index([roomId])
+  @@index([roomId, archivedAt])
+}
+
+model Driver {
+  id             Int      @id @default(autoincrement())
+  roomId         Int
+  fullName       String
+  phone          String
+  deviceInfo     String
+  backupDriverId Int?
+  createdAt      DateTime @default(now())
+  agreements     Agreement[]
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  vehicles Vehicle[]
+
+  // Optional login user link (role=DRIVER)
+  userId Int?  @unique
+  user   User? @relation(fields: [userId], references: [id])
+
+  // self-reference
+  backupDriver Driver?  @relation("BackupDriver", fields: [backupDriverId], references: [id])
+  backupsFor   Driver[] @relation("BackupDriver")
+
+  shifts        Shift[]
+  notifications Notification[]
+
+  @@index([roomId])
+}
+
+model Shift {
+  id        Int         @id @default(autoincrement())
+  companyId Int
+  roomId    Int?
+  vehicleId Int?
+  driverId  Int?
+  startAt   DateTime
+  endAt     DateTime
+  status    ShiftStatus @default(DRAFT)
+
+  // ✅ M19: routing meta (worksite hub + direction/pattern)
+  hubLat    Float?
+  hubLng    Float?
+  direction ShiftDirection @default(INBOUND)
+  pattern   RoutePattern   @default(ONE_WAY)
+  createdAt DateTime       @default(now())
+
+  // COMPANY → ROOM teklif
+  companyOfferVehicleId Int?
+  companyOfferAmount    Int?
+  companyOfferNote      String?
+
+  // ROOM → COMPANY teklif
+  roomOfferVehicleId  Int?
+  roomOfferAmount     Int?
+  roomOfferNote       String?
+  roomOfferToDriver   Boolean @default(false)
+  roomOfferDriverNote String?
+
+  // COMPANY: room teklifine karar
+  roomOfferDecision     OfferDecision @default(PENDING)
+  roomOfferDecisionNote String?
+  roomOfferDecisionAt   DateTime?
+
+
+// ✅ M51: süre uzatma (Company → Room talep, Room karar)
+extendRequestedEndAt DateTime?
+extendRequestedAt    DateTime?
+extendDecision       ShiftExtendDecision @default(PENDING)
+extendNoteCompany    String?
+extendNoteRoom       String?
+extendDecisionAt     DateTime?
+
+  company Company  @relation(fields: [companyId], references: [id])
+  room    Room?    @relation(fields: [roomId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+
+  stops          Stop[]
+  pickupRequests PickupRequest[]
+  progress       ShiftProgress?
+  notifications  Notification[]
+
+  // ✅ M24: marketplace offers
+  offers ShiftOffer[]
+  checkinEvents CheckinEvent[]
+
+  // ✅ M16.1
+  people      ShiftPersonel[]
+  imports     ShiftImport[]
+  assignments StopAssignment[]
+
+  // ✅ M18: agreement kaynaklı otomatik shift
+  agreementId Int?
+  agreement   Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+
+  // ✅ M19: learned route sample (1:1, generated after shift complete)
+  routeLearnSample RouteLearnSample?
+
+  @@index([companyId])
+  @@index([roomId])
+  @@index([vehicleId])
+  @@index([driverId])
+
+  @@index([companyOfferVehicleId])
+  @@index([companyOfferAmount])
+
+  @@index([roomOfferDecision])
+  @@index([roomOfferVehicleId])
+  @@index([roomOfferAmount])
+  @@index([extendDecision])
+  @@index([agreementId])
+  @@unique([agreementId, startAt])
+}
+
+model ShiftOffer {
+  id        Int              @id @default(autoincrement())
+  shiftId   Int
+  roomId    Int
+  status    ShiftOfferStatus @default(OPEN)
+
+  // Company -> Room initial offer
+  amountCompany Int?
+  noteCompany   String?
+
+  // Room -> Company counter offer
+  amountRoom Int?
+  noteRoom   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  room  Room  @relation("RoomShiftOffers", fields: [roomId], references: [id])
+
+  @@unique([shiftId, roomId])
+  @@index([shiftId])
+  @@index([roomId])
+  @@index([status])
+}
+
+// ✅ M17
+model Agreement {
+  id        Int             @id @default(autoincrement())
+  companyId Int
+  roomId    Int
+
+  vehicleId Int?
+  driverId  Int?
+
+  // ✅ M19: routing meta (worksite hub + direction/pattern)
+  hubLat    Float?
+  hubLng    Float?
+  direction ShiftDirection @default(INBOUND)
+  pattern   RoutePattern   @default(ONE_WAY)
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  weekMask Int
+  startMin Int
+  endMin   Int
+
+  status AgreementStatus @default(REQUESTED)
+
+  companyOfferAmount Int?
+  companyOfferNote   String?
+
+  roomOfferAmount Int?
+  roomOfferNote   String?
+
+  // ✅ M57: agreement süre uzatma pazarlığı
+  extendStatus           AgreementExtendStatus @default(NONE)
+  extendRequestedEndDate DateTime? @db.Date
+  extendRequestedAt      DateTime?
+  extendOfferAmount      Int?
+  extendOfferNote        String?
+  extendCounterAmount    Int?
+  extendCounterNote      String?
+  extendDecisionAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company  @relation(fields: [companyId], references: [id])
+  room    Room     @relation(fields: [roomId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  // ✅ M18: agreement -> generated shifts
+  shifts Shift[]
+
+  @@index([companyId])
+  @@index([roomId])
+  @@index([vehicleId])
+  @@index([driverId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model Stop {
+  id     Int  @id @default(autoincrement())
+  shiftId Int
+  name   String
+  lat    Float
+  lng    Float
+  order  Int
+  type   StopType
+
+  state     StopState @default(PENDING)
+  reachedAt DateTime?
+  skippedAt DateTime?
+  updatedAt DateTime @updatedAt
+
+  shift Shift @relation(fields: [shiftId], references: [id])
+
+  // ✅ M16.1
+  assignments StopAssignment[]
+
+  @@index([shiftId, order])
+  @@index([shiftId, state, order])
+}
+
+model RouteTemplate {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  name      String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+
+  room  Room               @relation(fields: [roomId], references: [id])
+  stops RouteTemplateStop[]
+
+  @@index([roomId])
+}
+
+model RouteTemplateStop {
+  id              Int      @id @default(autoincrement())
+  routeTemplateId Int
+  name            String
+  lat             Float
+  lng             Float
+  order           Int
+  type            StopType @default(COMMON)
+
+  template RouteTemplate @relation(fields: [routeTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([routeTemplateId, order])
+  @@index([routeTemplateId, order])
+}
+
+// ✅ M16.1: Personel (geocode cache + optional lat/lng)
+model Personel {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  kind      PersonelKind @default(PERSONEL)
+  userId    Int?     @unique
+
+  // Master profile
+  fullName    String
+  phone       String?
+  homeAddress String?
+  homeLat     Float?
+  homeLng     Float?
+
+  // Geocode cache / review state
+  geoStatus         GeoStatus @default(NEEDS_REVIEW)
+  geoManualOverride Boolean   @default(false)
+  geoNote           String?
+  geoUpdatedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  pickupRequests PickupRequest[]
+
+  // ✅ M16.1
+  shiftImportRows ShiftImportRow[]
+  shiftLinks      ShiftPersonel[]
+  assignments     StopAssignment[]
+  credentials     PersonelCredential[]
+  checkinEvents   CheckinEvent[]
+  @@index([companyId, kind])
+
+  
+  @@index([companyId])
+  @@unique([companyId, phone])
+  parentLinks       ParentChild[]  @relation("ParentChildPersonel")
+  parentInviteLinks ParentInvite[] @relation("ParentInviteChild")
+
+}
+
+model ShiftPersonel {
+  id         Int      @id @default(autoincrement())
+  shiftId    Int
+  personelId Int
+  note       String?
+  createdAt  DateTime @default(now())
+
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, personelId])
+  @@index([shiftId])
+  @@index([personelId])
+}
+
+model ShiftImport {
+  id              Int      @id @default(autoincrement())
+  shiftId          Int
+  createdByUserId Int?
+  fileName        String?
+  createdAt       DateTime @default(now())
+
+  shift     Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("ShiftImportCreatedBy", fields: [createdByUserId], references: [id])
+
+  rows ShiftImportRow[]
+
+  @@index([shiftId])
+}
+
+model ShiftImportRow {
+  id         Int      @id @default(autoincrement())
+  importId   Int
+  rowNo      Int
+  rawJson    Json?
+  fullName   String?
+  phone      String?
+  address    String?
+  lat        Float?
+  lng        Float?
+  geoStatus  GeoStatus @default(NEEDS_REVIEW)
+  personelId Int?
+
+  createdAt DateTime @default(now())
+
+  import   ShiftImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  personel Personel?   @relation(fields: [personelId], references: [id])
+
+  @@index([importId])
+}
+
+model StopAssignment {
+  id         Int      @id @default(autoincrement())
+  shiftId    Int
+  stopId     Int
+  personelId Int
+  walkM      Int
+  createdAt  DateTime @default(now())
+
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  stop     Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, personelId])
+  @@index([shiftId])
+  @@index([stopId])
+}
+
+model PickupRequest {
+  id         Int                 @id @default(autoincrement())
+  shiftId    Int
+  personelId Int
+  lat        Float
+  lng        Float
+  status     PickupRequestStatus @default(OPEN)
+  createdAt  DateTime            @default(now())
+
+  shift    Shift    @relation(fields: [shiftId], references: [id])
+  personel Personel @relation(fields: [personelId], references: [id])
+
+  @@index([shiftId, status])
+  @@index([personelId])
+}
+
+model GpsLast {
+  vehicleId Int @id
+  lat       Float
+  lng       Float
+  speed     Float?
+  at        DateTime
+  status    GpsLastStatus @default(OK)
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+}
+
+// ✅ notif dedupe/transition gate için UI status state’i
+model VehicleGpsState {
+  vehicleId     Int        @id
+  lastUiStatus  UiGpsStatus
+  lastChangedAt DateTime   @default(now())
+  seenLiveAt    DateTime?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model GpsPoint {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int
+  lat       Float
+  lng       Float
+  speed     Float?
+  at        DateTime
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, at])
+  @@index([at])
+}
+
+// ✅ M19: learned route store (map-matched samples + canonical)
+model RouteLearnSample {
+  id              Int      @id @default(autoincrement())
+  routeKey        String
+  shiftId         Int
+  vehicleId       Int
+  startAt         DateTime
+  polylineMatched String // JSON string: [{lat,lng}...]
+  distanceKm      Float
+  durationMin     Int
+  qualityScore    Float
+  createdAt       DateTime @default(now())
+
+  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([routeKey, createdAt])
+  @@unique([shiftId])
+  @@index([vehicleId, startAt])
+}
+
+model RouteLearned {
+  routeKey           String   @id
+  polylineCanonical  String   // JSON string: [{lat,lng}...]
+  distanceKmLearned  Float
+  durationMinLearned Int
+  sampleCount        Int
+  updatedAt          DateTime @updatedAt
+}
+
+// Notification: scope bazlı (ROOM/COMPANY/DRIVER)
+// payloadJson: Json tipinde serbest içerik
+model Notification {
+  id          Int              @id @default(autoincrement())
+  type        String
+  scope       NotificationScope
+  payloadJson Json
+  createdAt   DateTime         @default(now())
+  dedupeKey   String?          @unique
+
+  // optional targets
+  companyId Int?
+  roomId    Int?
+  driverId  Int?
+  userId   Int?
+  vehicleId Int?
+  shiftId   Int?
+
+  company Company? @relation(fields: [companyId], references: [id])
+  room    Room?    @relation(fields: [roomId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  shift   Shift?   @relation(fields: [shiftId], references: [id])
+
+  @@index([scope, createdAt])
+  @@index([companyId, createdAt])
+  @@index([roomId, createdAt])
+  @@index([driverId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model ShiftProgress {
+  id               Int      @id @default(autoincrement())
+  shiftId          Int      @unique
+  lastReachedOrder Int      @default(0)
+  startedAt        DateTime?
+  pausedAt         DateTime?
+  completedAt      DateTime?
+  updatedAt        DateTime @updatedAt
+
+  shift Shift @relation(fields: [shiftId], references: [id])
+}
+
+model ApiRequest {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  method     String
+  path       String
+  status     Int
+  durationMs Int
+
+  ip        String?
+  userAgent String?
+
+  userId Int?
+  role   String?
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([path, createdAt])
+  @@index([role, createdAt])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  actorUserId Int?
+  actorRole   String?
+
+  action   String
+  entity   String
+  entityId Int?
+  meta     Json?
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entity, entityId])
+}
+
+
+model PersonelCredential {
+  id         Int              @id @default(autoincrement())
+  personelId Int
+  type       CredentialType
+  tokenHash  String           @unique
+  status     CredentialStatus @default(ACTIVE)
+  issuedAt   DateTime         @default(now())
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@index([personelId, status])
+  @@index([type, status])
+}
+
+model CheckinEvent {
+  id         Int              @id @default(autoincrement())
+  shiftId    Int
+  personelId Int
+  eventType  CheckinEventType
+  source     CheckinSource
+  at         DateTime
+  deviceId   String?
+  meta       Json?
+  createdAt  DateTime         @default(now())
+
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId, at])
+  @@index([shiftId, personelId, eventType, at])
+  @@index([personelId, at])
+}
+
+model ParentChild {
+  id           Int      @id @default(autoincrement())
+  parentUserId Int
+  personelId   Int
+  createdAt    DateTime @default(now())
+
+  parent User     @relation("ParentUserChildren", fields: [parentUserId], references: [id])
+  child  Personel @relation("ParentChildPersonel", fields: [personelId], references: [id])
+
+  @@unique([parentUserId, personelId])
+  @@index([personelId])
+}
+
+model ParentInvite {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  childPersonelId Int
+  parentFullName  String?
+  email           String?
+  phone           String?
+  tokenHash       String   @unique
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  consumedByUserId Int?`r`n  consumedBy User? @relation("ParentInviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
+  revokedAt       DateTime?
+  createdByUserId Int?
+`r`n`r`n  createdBy  User? @relation("ParentInviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  child   Personel @relation("ParentInviteChild", fields: [childPersonelId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([childPersonelId, createdAt])
+  @@index([expiresAt])
+}
+
+model Consent {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  role       Role?
+  docKey     String
+  docVersion String
+  acceptedAt DateTime @default(now())
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, docKey, docVersion])
+  @@index([docKey, docVersion])
+  @@index([acceptedAt])
+}
+
+// ✅ M41: refresh token sessions (rotating)
+model RefreshSession {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // sha256(refreshTokenRaw)
+  tokenHash String  @unique
+
+  deviceId  String?
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  replacedById Int?
+  replacedBy   RefreshSession? @relation("RefreshSessionRotation", fields: [replacedById], references: [id])
+  replacedFrom RefreshSession[] @relation("RefreshSessionRotation")
+
+  ip        String?
+  userAgent String?
+
+  @@index([userId, createdAt])
+  @@index([deviceId])
+  @@index([expiresAt])
+}

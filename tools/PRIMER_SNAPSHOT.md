@@ -36,3 +36,8 @@ Kural:
 - En fazla 3 PowerShell komutu
 - Overlay (zip) tercih
 - Tek Guided Mode/Stepper
+
+5) Son overlay ekleri
+- Driver Check-in: kamera ile QR okutma
+- Company/School Check-in: QR görsel üretimi
+- School Parent Invite: link üret, parent self-serve accept

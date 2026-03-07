@@ -22,3 +22,8 @@ Bu dosya repo için kısa runbook’tur.
 
 ## 4) Kritik not
 `backend/scripts/m42check.js` adıyla dosya ekleme; aksi halde auto milestone akışı yanlışlıkla M42’ye kayar.
+
+
+## Son paket notu
+- M42 UI optional: QR canvas + driver camera tarama
+- SCHOOL parent akışı: link üretimi, self-serve accept, parent id/şifre paylaşılmaz

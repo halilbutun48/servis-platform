@@ -1,4 +1,4 @@
-﻿// backend/src/routes/auth.js
+// backend/src/routes/auth.js
 
 import express from "express";
 import bcrypt from "bcryptjs";
@@ -232,6 +232,144 @@ authRouter.post("/login", async (req, res) => {
       fullName: user.fullName,
       companyId: user.companyId,
       roomId: user.roomId,
+    },
+  });
+});
+
+// Parent invite (self-serve accept)
+authRouter.get("/parent-invite/info", async (req, res) => {
+  const raw = String(req.query?.token || "").trim();
+  if (!raw) return res.status(400).json({ error: "token required" });
+
+  const invite = await prisma.parentInvite.findUnique({
+    where: { tokenHash: sha256Hex(raw) },
+    include: {
+      company: { select: { id: true, name: true, kind: true } },
+      child: { select: { id: true, fullName: true, kind: true } },
+    },
+  });
+
+  if (!invite) return res.status(404).json({ error: "INVITE_NOT_FOUND" });
+  if (invite.revokedAt) return res.status(410).json({ error: "INVITE_REVOKED" });
+  if (invite.consumedAt) return res.status(410).json({ error: "INVITE_CONSUMED" });
+  if (invite.expiresAt && new Date(invite.expiresAt).getTime() <= Date.now()) return res.status(410).json({ error: "INVITE_EXPIRED" });
+
+  return res.json({
+    ok: true,
+    invite: {
+      id: invite.id,
+      parentFullName: invite.parentFullName || null,
+      email: invite.email || null,
+      phone: invite.phone || null,
+      expiresAt: invite.expiresAt,
+      company: invite.company ? { id: invite.company.id, name: invite.company.name, kind: invite.company.kind } : null,
+      child: invite.child ? { id: invite.child.id, fullName: invite.child.fullName, kind: invite.child.kind } : null,
+    },
+  });
+});
+
+authRouter.post("/parent-invite/accept", async (req, res) => {
+  const raw = String(req.body?.token || "").trim();
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const password = String(req.body?.password || "");
+  const fullName = String(req.body?.fullName || "").trim();
+  const phone = String(req.body?.phone || "").trim() || null;
+
+  if (!raw) return res.status(400).json({ error: "token required" });
+  if (!email || !email.includes("@")) return res.status(400).json({ error: "valid email required" });
+  if (password.length < 3) return res.status(400).json({ error: "password min 3" });
+  if (!fullName) return res.status(400).json({ error: "fullName required" });
+
+  const invite = await prisma.parentInvite.findUnique({
+    where: { tokenHash: sha256Hex(raw) },
+    include: {
+      company: { select: { id: true, name: true, kind: true } },
+      child: { select: { id: true, companyId: true, fullName: true } },
+    },
+  });
+
+  if (!invite) return res.status(404).json({ error: "INVITE_NOT_FOUND" });
+  if (invite.revokedAt) return res.status(410).json({ error: "INVITE_REVOKED" });
+  if (invite.consumedAt) return res.status(410).json({ error: "INVITE_CONSUMED" });
+  if (invite.expiresAt && new Date(invite.expiresAt).getTime() <= Date.now()) return res.status(410).json({ error: "INVITE_EXPIRED" });
+  if (!invite.company || invite.company.kind !== "SCHOOL") return res.status(409).json({ error: "INVITE_SCOPE_INVALID" });
+  if (!invite.child || invite.child.companyId !== invite.company.id) return res.status(409).json({ error: "INVITE_CHILD_INVALID" });
+  if (invite.email && invite.email !== email) return res.status(403).json({ error: "INVITE_EMAIL_MISMATCH" });
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  let user = await prisma.user.findUnique({ where: { email } });
+  if (user && user.role !== "PARENT") return res.status(409).json({ error: "EMAIL_IN_USE" });
+  if (user && isDisabledHash(user.passwordHash)) return res.status(403).json({ error: "ACCOUNT_DISABLED" });
+
+  const out = await prisma.$transaction(async (tx) => {
+    let parentUser = user;
+    if (parentUser) {
+      parentUser = await tx.user.update({
+        where: { id: parentUser.id },
+        data: {
+          passwordHash,
+          fullName,
+          phone,
+          companyId: invite.company.id,
+          role: "PARENT",
+        },
+      });
+    } else {
+      parentUser = await tx.user.create({
+        data: {
+          email,
+          passwordHash,
+          role: "PARENT",
+          fullName,
+          phone,
+          companyId: invite.company.id,
+        },
+      });
+    }
+
+    const existingLink = await tx.parentChild.findFirst({
+      where: { parentUserId: parentUser.id, personelId: invite.child.id },
+      select: { id: true },
+    });
+    if (!existingLink) {
+      await tx.parentChild.create({
+        data: { parentUserId: parentUser.id, personelId: invite.child.id },
+      });
+    }
+
+    await tx.parentInvite.update({
+      where: { id: invite.id },
+      data: { consumedAt: new Date(), consumedByUserId: parentUser.id },
+    });
+
+    return parentUser;
+  });
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: out.id,
+        actorRole: out.role,
+        action: "PARENT_INVITE_ACCEPT",
+        entity: "ParentInvite",
+        entityId: invite.id,
+        meta: { email, companyId: invite.company.id, childPersonelId: invite.child.id },
+      },
+    });
+  } catch {}
+
+  const token = signToken({ userId: out.id, role: out.role });
+  return res.json({
+    ok: true,
+    token,
+    user: {
+      id: out.id,
+      email: out.email,
+      role: out.role,
+      fullName: out.fullName,
+      companyId: out.companyId,
+      roomId: out.roomId,
     },
   });
 });

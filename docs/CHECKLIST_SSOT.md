@@ -108,6 +108,8 @@ Bu dosya iki amaç taşır:
 ## ON mod doğrulaması
 - [ ] `FEATURE_CHECKIN=1` ile base M41 pack yine PASS
 - [ ] M42 optional check PASS
+- [ ] COMPANY/SCHOOL panelinde QR görseli oluşuyor
+- [ ] DRIVER panelinde kamera ile QR okutma çalışıyor (destek varsa)
 - [ ] credential issue → scan → dedupe → revoke akışı PASS
 - [ ] room/company event listesi çalışıyor
 - [ ] audit aksiyonları yazılıyor (`CREDENTIAL_ISSUE`, `CREDENTIAL_REVOKE`, `CHECKIN_SCAN`)
@@ -163,3 +165,10 @@ Bu dosya iki amaç taşır:
 - Tek Guided Mode/Stepper; diğerleri Advanced
 - Değişiklikler mümkün olduğunca tek seferde overlay (zip)
 - Yanıtlarda en fazla 3 PowerShell komutu
+
+
+## SCHOOL Parent Invite
+- [ ] `#/school/parents` paneli açılıyor
+- [ ] öğrenci seçip invite link üretilebiliyor
+- [ ] panel parent id / şifre göstermiyor
+- [ ] public invite accept akışı parent hesabı oluşturuyor

@@ -56,3 +56,9 @@ Davranış:
 - Flag kapalıysa menü gizlenir.
 - Deep link ile açılırsa panel açıklayıcı `FEATURE_CHECKIN` kapalı durumu gösterir.
 - WS `shift:checkin:update` olayları UI tarafında `checkin` invalidation konusuna düşer ve panel yeniden yüklenir.
+
+## M42 UI Güncellemesi
+
+- COMPANY / SCHOOL panelinde son üretilen credential artık **QR görseli** olarak da gösterilir.
+- DRIVER panelinde **Kamera ile tara** akışı vardır; BarcodeDetector destekleyen tarayıcılarda QR okunduğunda token otomatik `scan` endpoint'ine gönderilir.
+- Kamera desteklenmiyorsa manuel token alanı fallback olarak kalır.

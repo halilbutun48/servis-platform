@@ -36,6 +36,8 @@ import MyRidePanel from "./panels/personel/MyRidePanel";
 
 // PARENT
 import ParentLivePanel from "./panels/parent/LivePanel";
+import SchoolParentInvitePanel from "./panels/school/ParentInvitePanel";
+import AcceptParentInvitePanel from "./panels/public/AcceptParentInvitePanel";
 
 // SHARED
 import NotificationsPanel from "./panels/shared/NotificationsPanel";
@@ -129,6 +131,7 @@ function LoginCard() {
 export default function App() {
   const { token, me } = useSession();
   const { path } = useHashRoute();
+  const cleanPath = String(path || "/").split("?")[0];
 
   // ✅ WS: token geldikçe başlat, token gidince durdur
   useEffect(() => {
@@ -147,7 +150,10 @@ export default function App() {
   }, [token, me?.role]);
 
   const view = useMemo(() => {
-    if (!token) return { layout: false, node: <LoginCard /> };
+    if (!token) {
+      if (cleanPath === "/accept-parent-invite") return { layout: false, node: <AcceptParentInvitePanel path={path} /> };
+      return { layout: false, node: <LoginCard /> };
+    }
     if (!me) return { layout: false, node: <div style={{ padding: 16 }}>Loading...</div> };
 
     // Shared
@@ -182,6 +188,7 @@ export default function App() {
     if (path === "/school/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/school/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/school/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
+    if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
 
 
     // DRIVER
@@ -210,7 +217,7 @@ export default function App() {
     const def = roleDefaultPath(me);
     navigate(def);
     return { layout: true, node: <div style={{ padding: 16 }}>Redirecting...</div> };
-  }, [token, me, path]);
+  }, [token, me, path, cleanPath]);
 
   if (!view.layout) return view.node;
 
