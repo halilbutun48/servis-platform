@@ -184,6 +184,7 @@ model Company {
   personels     Personel[]
   notifications Notification[]
   agreements    Agreement[]
+  organizationPlans OrganizationPlan[]
   @@index([regionId, kind])
 
     @@index([kind])
@@ -191,6 +192,58 @@ model Company {
   
   @@index([regionId])
   @@index([district])
+}
+
+
+enum OrganizationPlanStatus {
+  DRAFT
+  SHIFT_PUBLISHED
+  AGREEMENT_REQUESTED
+  CANCELLED
+}
+
+model OrganizationPlan {
+  id                Int                    @id @default(autoincrement())
+  companyId         Int
+  title             String                 @default("Organization Plan")
+  planDate          DateTime               @default(now()) @db.Date
+  startMin          Int                    @default(480)
+  endMin            Int                    @default(1080)
+  roomId            Int?
+  notes             String?
+  status            OrganizationPlanStatus @default(DRAFT)
+  publishedShiftId  Int?
+  linkedAgreementId Int?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  company Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stops   OrganizationStop[]
+  shifts  Shift[]
+
+  @@index([companyId, status])
+  @@index([companyId, planDate])
+  @@index([roomId])
+}
+
+model OrganizationStop {
+  id             Int       @id @default(autoincrement())
+  planId         Int
+  name           String
+  address        String?
+  lat            Float
+  lng            Float
+  order          Int       @default(0)
+  passengerCount Int       @default(1)
+  windowStartMin Int?
+  windowEndMin   Int?
+  note           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  plan OrganizationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, order])
 }
 
 enum PersonelKind {
@@ -433,6 +486,9 @@ extendDecisionAt     DateTime?
   agreementId Int?
   agreement   Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
 
+  organizationPlanId Int?
+  organizationPlan   OrganizationPlan? @relation(fields: [organizationPlanId], references: [id], onDelete: SetNull)
+
   // ✅ M19: learned route sample (1:1, generated after shift complete)
   routeLearnSample RouteLearnSample?
 
@@ -449,9 +505,13 @@ extendDecisionAt     DateTime?
   @@index([roomOfferAmount])
   @@index([extendDecision])
   @@index([agreementId])
+  @@index([organizationPlanId])
   @@unique([agreementId, startAt])
   checkinEvents CheckinEvent[]
 }
+
+
+
 
 model ShiftOffer {
   id        Int              @id @default(autoincrement())

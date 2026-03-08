@@ -1,5 +1,9 @@
-Run from repo root:
-  .\tools\apply_parent_invite_relation_hotfix_v4.ps1
-Then:
-  .\tools\pack.ps1 -To 41
-  .\tools\pack_m42_optional.ps1
+Organization schema dedupe hotfix
+
+Purpose:
+- Remove duplicate OrganizationPlan / OrganizationStop model blocks from backend/prisma/schema.prisma
+- Keep the first occurrence, remove later duplicates
+- Safe backup under tools/_backup
+
+Run:
+  .\tools\apply_organization_schema_dedupe_hotfix.ps1 -RepoRoot D:\servis-platform

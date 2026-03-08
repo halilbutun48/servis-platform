@@ -79,7 +79,7 @@ export function companiesRouter() {
       ...(all ? {} : { status: { not: "DELETED" } }),
       ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
       ...(district ? { district: { contains: district, mode: "insensitive" } } : {}),
-      ...(["COMPANY", "SCHOOL", "ORGANIZATION"].includes(kind) ? { kind } : {}),
+      ...(["COMPANY","SCHOOL","ORGANIZATION"].includes(kind) ? { kind } : {}),
       ...(!Number.isNaN(regionId) && regionId != null ? { regionId } : {}),
     };
 

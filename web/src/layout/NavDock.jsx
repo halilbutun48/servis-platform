@@ -87,6 +87,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
         items: [
           { label: "Harita", path: base + "/map" },
           { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : me?.companyKind === "ORGANIZATION" ? "Organizasyon Merkezi" : "Planlama Merkezi", path: base },
+          ...(me?.companyKind === "ORGANIZATION" ? [{ label: "Yer Planları", path: base + "/plans" }] : []),
           { label: "Vardiyalar", path: base + "/shifts" },
         ],
       });

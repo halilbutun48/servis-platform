@@ -1,7 +1,10 @@
 // web/src/utils/paths.js
 
 export function companyBase(me) {
-  return me?.companyKind === "SCHOOL" ? "/school" : me?.companyKind === "ORGANIZATION" ? "/organization" : "/company";
+  const kind = String(me?.companyKind || "");
+  if (kind === "SCHOOL") return "/school";
+  if (kind === "ORGANIZATION") return "/organization";
+  return "/company";
 }
 
 export function companyPath(me, tail = "") {
@@ -15,7 +18,24 @@ export function companyPath(me, tail = "") {
 export function normalizeCompanyPath(me, path) {
   const p = String(path || "");
   const base = companyBase(me);
-  if (base === "/school" && p.startsWith("/company")) return p.replace(/^\/company/, "/school");
-  if (base === "/company" && p.startsWith("/school")) return p.replace(/^\/school/, "/company");
+
+  if (base === "/school") {
+    return p
+      .replace(/^\/company(?=\/|$)/, "/school")
+      .replace(/^\/organization(?=\/|$)/, "/school");
+  }
+
+  if (base === "/organization") {
+    return p
+      .replace(/^\/company(?=\/|$)/, "/organization")
+      .replace(/^\/school(?=\/|$)/, "/organization");
+  }
+
+  if (base === "/company") {
+    return p
+      .replace(/^\/school(?=\/|$)/, "/company")
+      .replace(/^\/organization(?=\/|$)/, "/company");
+  }
+
   return p;
 }
