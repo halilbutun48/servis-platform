@@ -103,7 +103,7 @@ function SummaryCard({
   onCreateAgreement,
 }) {
   return (
-    <div className="card" style={{ height: "100%" }}>
+    <div className="card">
       <div className="title">Özet ve Aksiyonlar</div>
       <div className="muted" style={{ marginBottom: 10 }}>
         Planın genel durumu, lokasyon sayısı ve operasyon aksiyonları.
@@ -130,6 +130,96 @@ function SummaryCard({
         <button type="button" disabled={busy || !current.id} onClick={onCreateAgreement}>
           Sözleşme Talebi Oluştur
         </button>
+      </div>
+    </div>
+  );
+}
+
+function MiniMapPreview({ stops }) {
+  const pts = (stops || [])
+    .map((s) => ({
+      name: s.name || "",
+      lat: Number(s.lat),
+      lng: Number(s.lng),
+    }))
+    .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng));
+
+  if (!pts.length) {
+    return (
+      <div className="card">
+        <div className="title">Mini Harita Önizleme</div>
+        <div className="muted">Harita önizleme için geçerli koordinatlı lokasyon ekleyin.</div>
+      </div>
+    );
+  }
+
+  const minLat = Math.min(...pts.map((p) => p.lat));
+  const maxLat = Math.max(...pts.map((p) => p.lat));
+  const minLng = Math.min(...pts.map((p) => p.lng));
+  const maxLng = Math.max(...pts.map((p) => p.lng));
+
+  const pad = 20;
+  const w = 260;
+  const h = 180;
+  const latSpan = Math.max(0.0001, maxLat - minLat);
+  const lngSpan = Math.max(0.0001, maxLng - minLng);
+
+  const scaled = pts.map((p, i) => {
+    const x = pad + ((p.lng - minLng) / lngSpan) * (w - pad * 2);
+    const y = h - pad - ((p.lat - minLat) / latSpan) * (h - pad * 2);
+    return { ...p, x, y, i };
+  });
+
+  const poly = scaled.map((p) => `${p.x},${p.y}`).join(" ");
+
+  return (
+    <div className="card">
+      <div className="title">Mini Harita Önizleme</div>
+      <div className="muted" style={{ marginBottom: 8 }}>
+        Lokasyon sırası çizgisel önizleme.
+      </div>
+
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        style={{
+          width: "100%",
+          height: 180,
+          display: "block",
+          borderRadius: 12,
+          background: "rgba(255,255,255,.03)",
+          border: "1px solid rgba(255,255,255,.08)",
+        }}
+      >
+        <polyline
+          points={poly}
+          fill="none"
+          stroke="rgba(91,140,255,.8)"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        {scaled.map((p) => (
+          <g key={`${p.name}-${p.i}`}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={p.i === 0 ? 6 : 5}
+              fill={p.i === 0 ? "#5b8cff" : "rgba(255,255,255,.92)"}
+            />
+            <text
+              x={p.x + 8}
+              y={p.y - 8}
+              fontSize="10"
+              fill="rgba(255,255,255,.82)"
+            >
+              {p.i + 1}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      <div className="muted" style={{ marginTop: 8 }}>
+        Başlangıç: {scaled[0]?.name || "-"} • Bitiş: {scaled[scaled.length - 1]?.name || "-"}
       </div>
     </div>
   );
@@ -169,9 +259,31 @@ function StopCard({
   onRemove,
   onMoveUp,
   onMoveDown,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragging,
 }) {
   return (
-    <div className="card" style={{ padding: 12, overflow: "hidden" }}>
+    <div
+      className="card"
+      draggable
+      onDragStart={() => onDragStart(index)}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver(index);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop(index);
+      }}
+      style={{
+        padding: 12,
+        overflow: "hidden",
+        opacity: isDragging ? 0.65 : 1,
+        border: isDragging ? "1px dashed rgba(91,140,255,.7)" : undefined,
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -198,6 +310,7 @@ function StopCard({
             textAlign: "left",
           }}
         >
+          <Pill>::</Pill>
           <Pill>#{index + 1}</Pill>
           <span style={{ fontWeight: 700 }}>{row.name || `Lokasyon ${index + 1}`}</span>
           <span className="muted">{row.passengerCount || 1} kişi</span>
@@ -351,6 +464,7 @@ export default function OrganizationPlansPanel() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [openStops, setOpenStops] = useState({ 0: true });
+  const [dragIndex, setDragIndex] = useState(null);
 
   async function load() {
     const data = await api.get("/api/organization/plans");
@@ -497,6 +611,7 @@ export default function OrganizationPlansPanel() {
       ...p,
       stops: p.stops.filter((_, xi) => xi !== index),
     }));
+
     setOpenStops((prev) => {
       const next = {};
       Object.keys(prev).forEach((k) => {
@@ -529,8 +644,34 @@ export default function OrganizationPlansPanel() {
     });
   }
 
+  function moveStopTo(from, to) {
+    if (from == null || to == null || from === to) return;
+
+    setCurrent((p) => {
+      const arr = [...p.stops];
+      const [moved] = arr.splice(from, 1);
+      arr.splice(to, 0, moved);
+      return { ...p, stops: arr };
+    });
+
+    setOpenStops((prev) => {
+      const arr = current.stops.map((_, i) => !!prev[i]);
+      const [moved] = arr.splice(from, 1);
+      arr.splice(to, 0, moved);
+      return Object.fromEntries(arr.map((v, i) => [i, v]));
+    });
+  }
+
   function toggleStop(index) {
     setOpenStops((prev) => ({ ...prev, [index]: !prev[index] }));
+  }
+
+  function openAllStops() {
+    setOpenStops(Object.fromEntries(current.stops.map((_, i) => [i, true])));
+  }
+
+  function closeAllStops() {
+    setOpenStops(Object.fromEntries(current.stops.map((_, i) => [i, false])));
   }
 
   const summary = useMemo(() => {
@@ -557,7 +698,7 @@ export default function OrganizationPlansPanel() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "280px minmax(0,1fr) 230px",
+          gridTemplateColumns: "280px minmax(0,1fr) 250px",
           gap: 12,
           marginTop: 12,
           alignItems: "start",
@@ -702,6 +843,7 @@ export default function OrganizationPlansPanel() {
                 gap: 8,
                 alignItems: "center",
                 marginBottom: 10,
+                flexWrap: "wrap",
               }}
             >
               <div>
@@ -711,9 +853,17 @@ export default function OrganizationPlansPanel() {
                 </div>
               </div>
 
-              <button type="button" onClick={addEmptyStop} style={{ whiteSpace: "nowrap" }}>
-                + Satır Ekle
-              </button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" onClick={openAllStops}>Tümünü Aç</button>
+                <button type="button" onClick={closeAllStops}>Tümünü Kapat</button>
+                <button type="button" onClick={addEmptyStop} style={{ whiteSpace: "nowrap" }}>
+                  + Satır Ekle
+                </button>
+              </div>
+            </div>
+
+            <div className="muted" style={{ marginBottom: 10 }}>
+              Sürükle-bırak ile lokasyon sırasını değiştirebilirsin.
             </div>
 
             <div style={{ display: "grid", gap: 10 }}>
@@ -729,6 +879,13 @@ export default function OrganizationPlansPanel() {
                   onRemove={removeStop}
                   onMoveUp={(i) => moveStop(i, -1)}
                   onMoveDown={(i) => moveStop(i, 1)}
+                  onDragStart={(i) => setDragIndex(i)}
+                  onDragOver={() => {}}
+                  onDrop={(to) => {
+                    moveStopTo(dragIndex, to);
+                    setDragIndex(null);
+                  }}
+                  isDragging={dragIndex === idx}
                 />
               ))}
               {!current.stops.length ? <div className="muted">Henüz lokasyon yok.</div> : null}
@@ -736,7 +893,7 @@ export default function OrganizationPlansPanel() {
           </div>
         </div>
 
-        <div style={{ position: "sticky", top: 12, alignSelf: "start" }}>
+        <div style={{ position: "sticky", top: 12, alignSelf: "start", display: "grid", gap: 12 }}>
           <SummaryCard
             current={current}
             summary={summary}
@@ -745,6 +902,7 @@ export default function OrganizationPlansPanel() {
             onPublishShift={publishShift}
             onCreateAgreement={createAgreement}
           />
+          <MiniMapPreview stops={current.stops} />
         </div>
       </div>
     </div>
