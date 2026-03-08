@@ -86,14 +86,15 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
         title: "Ana",
         items: [
           { label: "Harita", path: base + "/map" },
-          { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : me?.companyKind === "ORGANIZATION" ? "Organizasyon Merkezi" : "Planlama Merkezi", path: base },
+          { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
           { label: "Vardiyalar", path: base + "/shifts" },
         ],
       });
       // Sözleşmeler: Gelişmiş altında
       advanced.push({ label: "Sözleşmeler", path: base + "/agreements" });
+      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Link" : "Personel Canlı Link", path: base + "/passenger-links" });
       advanced.push({ label: "Hub", path: base + "/hub" });
-      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : me?.companyKind === "ORGANIZATION" ? "Lokasyon İncele" : "Konum İncele", path: base + "/georeview" });
+      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : "Konum İncele", path: base + "/georeview" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "DRIVER") {
@@ -148,7 +149,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
 
   return (
     <div className="navDock">
-      <div className="navDockTitle">{role === "COMPANY" && me?.companyKind === "SCHOOL" ? "SCHOOL" : role === "COMPANY" && me?.companyKind === "ORGANIZATION" ? "ORGANIZATION" : role}</div>
+      <div className="navDockTitle">{role === "COMPANY" && me?.companyKind === "SCHOOL" ? "SCHOOL" : role}</div>
 
       {cfg.sections.map((s) => (
         <Section key={s.title || "main"} title={s.title} items={s.items} path={path} />

@@ -24,7 +24,7 @@ const zOptEmail = z.preprocess(
 const createCompanySchema = z.object({
   name: z.string().trim().min(2),
   status: z.string().trim().optional(),
-  kind: z.enum(["COMPANY", "SCHOOL", "ORGANIZATION"]).optional(),
+  kind: z.enum(["COMPANY", "SCHOOL"]).optional(),
   regionId: zRegionId.optional(),
   district: zOptStr.optional(),
   // profile
@@ -42,7 +42,7 @@ const updateCompanySchema = z
   .object({
     name: z.string().trim().min(2).optional(),
     status: z.string().trim().optional(),
-    kind: z.enum(["COMPANY", "SCHOOL", "ORGANIZATION"]).optional(),
+    kind: z.enum(["COMPANY", "SCHOOL"]).optional(),
     regionId: zRegionId.optional(),
     district: zOptStr.optional(),
     // profile
@@ -67,7 +67,7 @@ export function companiesRouter() {
   // ?q=term (name contains)
   // ?regionId=1
   // ?district=...
-  // ?kind=COMPANY|SCHOOL|ORGANIZATION
+  // ?kind=COMPANY|SCHOOL
   r.get("/", async (req, res) => {
     const all = String(req.query.all ?? "") === "1";
     const q = String(req.query.q || "").trim();
@@ -79,7 +79,7 @@ export function companiesRouter() {
       ...(all ? {} : { status: { not: "DELETED" } }),
       ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
       ...(district ? { district: { contains: district, mode: "insensitive" } } : {}),
-      ...(["COMPANY", "SCHOOL", "ORGANIZATION"].includes(kind) ? { kind } : {}),
+      ...(kind === "COMPANY" || kind === "SCHOOL" ? { kind } : {}),
       ...(!Number.isNaN(regionId) && regionId != null ? { regionId } : {}),
     };
 

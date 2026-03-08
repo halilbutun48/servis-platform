@@ -78,6 +78,6 @@ Kullanım sayfaları: `docs/USAGE_GUIDE_V1.md`
 
 ---
 
-## ORGANIZATION demo note
+## Passenger Live Link
 
-- Demo tenant eklendi: `organization@demo.com` / `demo123` (`Company.kind=ORGANIZATION`). V1 uyumluluğu için lokasyon listesi mevcut Personel tablosu üzerinde etiketlenir; ayrı Destination modeli sonraki milestone.
+- Passenger Live Link (login-optional): COMPANY/SCHOOL tekil süreli canlı takip linki üretebilir; public link sadece ilgili kişi için kendi durak + ETA + navigasyon gösterir; revoke/expire desteklidir.

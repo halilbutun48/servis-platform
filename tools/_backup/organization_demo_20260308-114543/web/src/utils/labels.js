@@ -13,8 +13,3 @@ export function personLabel(me) {
 export function peopleLabel(me) {
   return isSchool(me) ? "Öğrenciler" : "Personel";
 }
-
-
-export function isOrganizationMode(me) {
-  return me?.companyKind === "ORGANIZATION";
-}

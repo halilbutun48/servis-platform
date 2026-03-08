@@ -176,67 +176,6 @@ async function main() {
     });
   }
 
-
-  // Demo Organization (Company.kind=ORGANIZATION) + Organization login
-  const organization = await prisma.company.upsert({
-    where: { id: 3 },
-    update: { name: "DemoOrganizasyon", status: "ACTIVE", region: { connect: { id: region.id } }, kind: "ORGANIZATION" },
-    create: { name: "DemoOrganizasyon", status: "ACTIVE", region: { connect: { id: region.id } }, kind: "ORGANIZATION" },
-  });
-
-  await upsertUser({
-    email: "organization@demo.com",
-    role: Role.COMPANY,
-    fullName: "Organization Operator",
-    phone: "+90 555 000 00 08",
-    companyId: organization.id,
-  });
-
-  // Demo Organization locations (stored in Personel table for V1 compatibility)
-  await prisma.personel.upsert({
-    where: { id: 3 },
-    update: {
-      companyId: organization.id,
-      fullName: "Etkinlik Giriş Kapısı",
-      homeLat: 41.028,
-      homeLng: 28.972,
-      kind: "PERSONEL",
-      geoStatus: "OK",
-      geoManualOverride: true,
-    },
-    create: {
-      companyId: organization.id,
-      fullName: "Etkinlik Giriş Kapısı",
-      homeLat: 41.028,
-      homeLng: 28.972,
-      kind: "PERSONEL",
-      geoStatus: "OK",
-      geoManualOverride: true,
-    },
-  });
-
-  await prisma.personel.upsert({
-    where: { id: 4 },
-    update: {
-      companyId: organization.id,
-      fullName: "Otel Lobi",
-      homeLat: 41.032,
-      homeLng: 28.981,
-      kind: "PERSONEL",
-      geoStatus: "OK",
-      geoManualOverride: true,
-    },
-    create: {
-      companyId: organization.id,
-      fullName: "Otel Lobi",
-      homeLat: 41.032,
-      homeLng: 28.981,
-      kind: "PERSONEL",
-      geoStatus: "OK",
-      geoManualOverride: true,
-    },
-  });
-
   // Vehicle (Room owns)
   const vehicle = await prisma.vehicle.upsert({
     where: { plate: "34ABC123" },

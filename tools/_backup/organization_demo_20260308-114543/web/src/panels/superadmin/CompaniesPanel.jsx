@@ -27,7 +27,7 @@ export default function CompaniesPanel() {
   const [q, setQ] = useState("");
   const [regionId, setRegionId] = useState("");
   const [district, setDistrict] = useState("");
-  const [kind, setKind] = useState(""); // "", COMPANY, SCHOOL, ORGANIZATION
+  const [kind, setKind] = useState(""); // "", COMPANY, SCHOOL
 
   const [newName, setNewName] = useState("");
   const [newKind, setNewKind] = useState("COMPANY");
@@ -229,7 +229,6 @@ export default function CompaniesPanel() {
             <option value="">Tümü</option>
             <option value="COMPANY">Şirket</option>
             <option value="SCHOOL">Okul</option>
-            <option value="ORGANIZATION">Organizasyon</option>
           </select>
 
           <input
@@ -246,10 +245,9 @@ export default function CompaniesPanel() {
           <select value={newKind} onChange={(e) => setNewKind(e.target.value)} style={{ minWidth: 140 }}>
             <option value="COMPANY">Şirket</option>
             <option value="SCHOOL">Okul</option>
-            <option value="ORGANIZATION">Organizasyon</option>
           </select>
 
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={newKind === "SCHOOL" ? "Yeni okul adı" : newKind === "ORGANIZATION" ? "Yeni organizasyon adı" : "Yeni şirket adı"} style={{ minWidth: 220 }} />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={newKind === "SCHOOL" ? "Yeni okul adı" : "Yeni şirket adı"} style={{ minWidth: 220 }} />
           <button className="btn primary" disabled={busy} onClick={create}>
             Oluştur
           </button>
@@ -309,10 +307,9 @@ export default function CompaniesPanel() {
                     <select value={editForm.kind} onChange={(e) => setEditForm((s) => ({ ...s, kind: e.target.value }))}>
                       <option value="COMPANY">Şirket</option>
                       <option value="SCHOOL">Okul</option>
-            <option value="ORGANIZATION">Organizasyon</option>
                     </select>
                   ) : (
-                    <div className="muted">{c.kind === "SCHOOL" ? "Okul" : c.kind === "ORGANIZATION" ? "Organizasyon" : "Şirket"}</div>
+                    <div className="muted">{c.kind === "SCHOOL" ? "Okul" : "Şirket"}</div>
                   )}
                 </div>
 

@@ -27,7 +27,6 @@ const DEMO_ACCOUNTS = [
   { email: "personel@demo.com", role: "PERSONEL", name: "Personel One", scope: "Company #1" },
   { email: "parent@demo.com", role: "PARENT", name: "DemoParent", scope: "Parent" },
   { email: "school@demo.com", role: "COMPANY", name: "School Operator", scope: "Company #2 DemoOkul (SCHOOL)" },
-  { email: "organization@demo.com", role: "COMPANY", name: "Organization Operator", scope: "Company #3 DemoOrganizasyon (ORGANIZATION)" },
 ];
 
 export default function SuperAdminPanel() {

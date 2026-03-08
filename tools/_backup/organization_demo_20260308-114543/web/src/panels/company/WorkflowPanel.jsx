@@ -92,7 +92,6 @@ export default function WorkflowPanel() {
   // School mode (Company.kind=SCHOOL) uses the same panel; copy/paste safe label.
   const who = personLabel(me);
   const school = me?.companyKind === "SCHOOL";
-  const organization = me?.companyKind === "ORGANIZATION";
 
   const [err, setErr] = useState("");
   const [rooms, setRooms] = useState([]);
@@ -274,9 +273,9 @@ export default function WorkflowPanel() {
   return (
     <div className="wrap">
       <div className="card">
-        <div className="title">{school ? "Okul — Planlama Merkezi" : organization ? "Organization — Planlama Merkezi" : "Company — Planlama Merkezi"}</div>
+        <div className="title">{school ? "Okul — Planlama Merkezi" : "Company — Planlama Merkezi"}</div>
         <div className="muted">
-          Amaç: <b>minimum tık</b>. Önce <b>Agreement</b> ile planla → gerekirse <b>Market</b> ile çoklu teklif topla → sonra <b>Shifts</b> ile operasyon. {organization ? "Organization modunda mevcut V1 uyumluluğu için lokasyonlar Personel tablosunda tutulur." : ""}
+          Amaç: <b>minimum tık</b>. Önce <b>Agreement</b> ile planla → gerekirse <b>Market</b> ile çoklu teklif topla → sonra <b>Shifts</b> ile operasyon.
         </div>
       </div>
 

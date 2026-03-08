@@ -209,7 +209,7 @@ export default function CompaniesPanel() {
       <div style={{ padding: 16 }}>
         <div className="topbar">
           <div>
-            <div className="title">Şirketler / Okullar</div>
+            <div className="title">Şirketler / Okullar / Organizasyonlar</div>
             <div className="muted">SUPER_ADMIN şirket oluşturur/listeler/günceller/siler.</div>
           </div>
           <div className="pill">{filteredCount} kayıt</div>
@@ -309,7 +309,7 @@ export default function CompaniesPanel() {
                     <select value={editForm.kind} onChange={(e) => setEditForm((s) => ({ ...s, kind: e.target.value }))}>
                       <option value="COMPANY">Şirket</option>
                       <option value="SCHOOL">Okul</option>
-            <option value="ORGANIZATION">Organizasyon</option>
+                      <option value="ORGANIZATION">Organizasyon</option>
                     </select>
                   ) : (
                     <div className="muted">{c.kind === "SCHOOL" ? "Okul" : c.kind === "ORGANIZATION" ? "Organizasyon" : "Şirket"}</div>

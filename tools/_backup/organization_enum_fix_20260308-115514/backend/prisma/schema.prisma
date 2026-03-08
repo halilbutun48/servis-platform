@@ -154,7 +154,6 @@ enum ShiftExtendDecision {
 enum CompanyKind {
   COMPANY
   SCHOOL
-  ORGANIZATION
 }
 
 model Company {
@@ -450,7 +449,6 @@ extendDecisionAt     DateTime?
   @@index([extendDecision])
   @@index([agreementId])
   @@unique([agreementId, startAt])
-  checkinEvents CheckinEvent[]
 }
 
 model ShiftOffer {
@@ -628,8 +626,6 @@ model Personel {
   @@unique([companyId, phone])
   parentLinks ParentChild[] @relation("ParentChildPersonel")
 
-  credentials PersonelCredential[]
-  checkinEvents CheckinEvent[]
 }
 
 model ShiftPersonel {
@@ -922,59 +918,3 @@ model RefreshSession {
   @@index([deviceId])
   @@index([expiresAt])
 }
-
-enum CredentialType {
-  QR
-  NFC
-}
-
-enum CredentialStatus {
-  ACTIVE
-  REVOKED
-}
-
-enum CheckinEventType {
-  BOARD
-  ALIGHT
-}
-
-enum CheckinSource {
-  QR
-  NFC
-  MANUAL
-}
-
-model PersonelCredential {
-  id         Int              @id @default(autoincrement())
-  personelId Int
-  type       CredentialType
-  tokenHash  String           @unique
-  status     CredentialStatus @default(ACTIVE)
-  issuedAt   DateTime         @default(now())
-  revokedAt  DateTime?
-  lastUsedAt DateTime?
-
-  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
-
-  @@index([personelId])
-  @@index([status])
-}
-
-model CheckinEvent {
-  id         Int              @id @default(autoincrement())
-  shiftId     Int
-  personelId Int
-  eventType  CheckinEventType
-  source     CheckinSource
-  at         DateTime         @default(now())
-  deviceId   String?
-  meta       Json?
-
-  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
-
-  @@index([shiftId, at])
-  @@index([personelId, at])
-  @@index([shiftId, personelId, eventType, at])
-}
-

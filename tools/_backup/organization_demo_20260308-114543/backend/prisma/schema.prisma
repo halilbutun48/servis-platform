@@ -154,7 +154,6 @@ enum ShiftExtendDecision {
 enum CompanyKind {
   COMPANY
   SCHOOL
-  ORGANIZATION
 }
 
 model Company {
@@ -428,6 +427,7 @@ extendDecisionAt     DateTime?
   people      ShiftPersonel[]
   imports     ShiftImport[]
   assignments StopAssignment[]
+  passengerLiveLinks PassengerLiveLink[]
 
   // ✅ M18: agreement kaynaklı otomatik shift
   agreementId Int?
@@ -627,6 +627,7 @@ model Personel {
   @@index([companyId])
   @@unique([companyId, phone])
   parentLinks ParentChild[] @relation("ParentChildPersonel")
+  passengerLiveLinks PassengerLiveLink[]
 
   credentials PersonelCredential[]
   checkinEvents CheckinEvent[]
@@ -874,6 +875,24 @@ model ParentChild {
 
   @@unique([parentUserId, personelId])
   @@index([personelId])
+}
+
+
+model PassengerLiveLink {
+  id         Int      @id @default(autoincrement())
+  shiftId     Int
+  personelId  Int
+  tokenHash   String   @unique
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  lastViewedAt DateTime?
+
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId, personelId])
+  @@index([expiresAt])
 }
 
 model Consent {

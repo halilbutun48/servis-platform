@@ -1,7 +1,7 @@
 // web/src/utils/paths.js
 
 export function companyBase(me) {
-  return me?.companyKind === "SCHOOL" ? "/school" : me?.companyKind === "ORGANIZATION" ? "/organization" : "/company";
+  return me?.companyKind === "SCHOOL" ? "/school" : "/company";
 }
 
 export function companyPath(me, tail = "") {

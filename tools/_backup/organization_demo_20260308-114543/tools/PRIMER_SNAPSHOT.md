@@ -89,6 +89,6 @@ Hedef kural:
 - AGREEMENT-C: Agreement’lı shiftlerde offer/counter UI kapatma + badge
 - AGREEMENT-D: Template cleanup + Agreement quick duration presetleri
 
-## ORGANIZATION demo note
+## Passenger Live Link
 
-- Demo tenant eklendi: `organization@demo.com` / `demo123` (`Company.kind=ORGANIZATION`). V1 uyumluluğu için lokasyon listesi mevcut Personel tablosu üzerinde etiketlenir; ayrı Destination modeli sonraki milestone.
+- Passenger Live Link (login-optional): COMPANY/SCHOOL tekil süreli canlı takip linki üretebilir; public link sadece ilgili kişi için kendi durak + ETA + navigasyon gösterir; revoke/expire desteklidir.
