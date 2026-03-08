@@ -109,28 +109,6 @@ enum GeoStatus {
   NEEDS_REVIEW
   FAILED
 }
-
-
-enum CredentialType {
-  QR
-  NFC
-}
-
-enum CredentialStatus {
-  ACTIVE
-  REVOKED
-}
-
-enum CheckinEventType {
-  BOARD
-  ALIGHT
-}
-
-enum CheckinSource {
-  QR
-  NFC
-  MANUAL
-}
 // ✅ M17
 enum AgreementStatus {
   REQUESTED
@@ -205,7 +183,6 @@ model Company {
   personels     Personel[]
   notifications Notification[]
   agreements    Agreement[]
-  parentInvites ParentInvite[]
   @@index([regionId, kind])
 
     @@index([kind])
@@ -299,8 +276,6 @@ notifications Notification[]
   @@index([companyId])
   @@index([roomId])
   parentChildren ParentChild[] @relation("ParentUserChildren")
-  parentInvitesCreated  ParentInvite[] @relation("ParentInviteCreatedBy")
-  parentInvitesConsumed ParentInvite[] @relation("ParentInviteConsumedBy")
 
 }
 
@@ -447,12 +422,12 @@ extendDecisionAt     DateTime?
 
   // ✅ M24: marketplace offers
   offers ShiftOffer[]
-  checkinEvents CheckinEvent[]
 
   // ✅ M16.1
   people      ShiftPersonel[]
   imports     ShiftImport[]
   assignments StopAssignment[]
+  passengerLiveLinks PassengerLiveLink[]
 
   // ✅ M18: agreement kaynaklı otomatik shift
   agreementId Int?
@@ -475,6 +450,7 @@ extendDecisionAt     DateTime?
   @@index([extendDecision])
   @@index([agreementId])
   @@unique([agreementId, startAt])
+  checkinEvents CheckinEvent[]
 }
 
 model ShiftOffer {
@@ -645,16 +621,16 @@ model Personel {
   shiftImportRows ShiftImportRow[]
   shiftLinks      ShiftPersonel[]
   assignments     StopAssignment[]
-  credentials     PersonelCredential[]
-  checkinEvents   CheckinEvent[]
   @@index([companyId, kind])
 
   
   @@index([companyId])
   @@unique([companyId, phone])
   parentLinks ParentChild[] @relation("ParentChildPersonel")
-  parentInvites ParentInvite[] @relation("ParentInviteChild")
+  passengerLiveLinks PassengerLiveLink[]
 
+  credentials PersonelCredential[]
+  checkinEvents CheckinEvent[]
 }
 
 model ShiftPersonel {
@@ -888,44 +864,6 @@ model AuditLog {
   @@index([actorUserId, createdAt])
   @@index([entity, entityId])
 }
-
-
-model PersonelCredential {
-  id         Int              @id @default(autoincrement())
-  personelId Int
-  type       CredentialType
-  tokenHash  String           @unique
-  status     CredentialStatus @default(ACTIVE)
-  issuedAt   DateTime         @default(now())
-  revokedAt  DateTime?
-  lastUsedAt DateTime?
-  createdAt  DateTime         @default(now())
-
-  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
-
-  @@index([personelId, status])
-  @@index([type, status])
-}
-
-model CheckinEvent {
-  id         Int              @id @default(autoincrement())
-  shiftId    Int
-  personelId Int
-  eventType  CheckinEventType
-  source     CheckinSource
-  at         DateTime
-  deviceId   String?
-  meta       Json?
-  createdAt  DateTime         @default(now())
-
-  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
-
-  @@index([shiftId, at])
-  @@index([shiftId, personelId, eventType, at])
-  @@index([personelId, at])
-}
-
 model ParentChild {
   id           Int      @id @default(autoincrement())
   parentUserId Int
@@ -940,29 +878,21 @@ model ParentChild {
 }
 
 
-model ParentInvite {
-  id               Int       @id @default(autoincrement())
-  companyId        Int
-  childPersonelId  Int
-  parentFullName   String?
-  email            String?
-  phone            String?
-  tokenHash        String    @unique
-  expiresAt        DateTime?
-  consumedAt       DateTime?
-  revokedAt        DateTime?
-  createdByUserId  Int?
-  consumedByUserId Int?
-  createdAt        DateTime  @default(now())
+model PassengerLiveLink {
+  id         Int      @id @default(autoincrement())
+  shiftId     Int
+  personelId  Int
+  tokenHash   String   @unique
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  lastViewedAt DateTime?
 
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  child      Personel @relation("ParentInviteChild", fields: [childPersonelId], references: [id], onDelete: Cascade)
-  createdBy  User?    @relation("ParentInviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  consumedBy User?    @relation("ParentInviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
 
-  @@index([companyId, createdAt])
-  @@index([childPersonelId, createdAt])
-  @@index([email])
+  @@index([shiftId, personelId])
+  @@index([expiresAt])
 }
 
 model Consent {
@@ -1011,3 +941,59 @@ model RefreshSession {
   @@index([deviceId])
   @@index([expiresAt])
 }
+
+enum CredentialType {
+  QR
+  NFC
+}
+
+enum CredentialStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum CheckinEventType {
+  BOARD
+  ALIGHT
+}
+
+enum CheckinSource {
+  QR
+  NFC
+  MANUAL
+}
+
+model PersonelCredential {
+  id         Int              @id @default(autoincrement())
+  personelId Int
+  type       CredentialType
+  tokenHash  String           @unique
+  status     CredentialStatus @default(ACTIVE)
+  issuedAt   DateTime         @default(now())
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@index([personelId])
+  @@index([status])
+}
+
+model CheckinEvent {
+  id         Int              @id @default(autoincrement())
+  shiftId     Int
+  personelId Int
+  eventType  CheckinEventType
+  source     CheckinSource
+  at         DateTime         @default(now())
+  deviceId   String?
+  meta       Json?
+
+  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId, at])
+  @@index([personelId, at])
+  @@index([shiftId, personelId, eventType, at])
+}
+

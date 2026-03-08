@@ -26,3 +26,8 @@ Okul paneli parent için **ID/şifre vermez**. Bunun yerine öğrenci bazlı tek
 ## Not
 - Invite token DB'de hash olarak tutulur.
 - Parent hesabı okul tarafından password ile açılmaz; self-serve kabul ile açılır.
+
+
+## Terminal states
+- `INVITE_REVOKED`, `INVITE_CONSUMED`, `INVITE_EXPIRED`, `INVITE_NOT_FOUND` durumlarında accept formu kapanır; yalnızca bilgilendirme gösterilir.
+- Üretilen paylaşım linki için `VITE_PUBLIC_BASE_URL` önerilir; boşsa mevcut origin kullanılır.

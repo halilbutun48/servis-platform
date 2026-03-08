@@ -62,3 +62,8 @@ Davranış:
 - COMPANY / SCHOOL panelinde son üretilen credential artık **QR görseli** olarak da gösterilir.
 - DRIVER panelinde **Kamera ile tara** akışı vardır; BarcodeDetector destekleyen tarayıcılarda QR okunduğunda token otomatik `scan` endpoint'ine gönderilir.
 - Kamera desteklenmiyorsa manuel token alanı fallback olarak kalır.
+
+
+## Kamera smoke notu
+- Desktop/uyumsuz tarayıcıda kamera scan desteklenmeyebilir; bu durumda UI fallback mod gösterir ve manuel token akışıyla devam edilir.
+- Hedef stabil ortam: Mobil Chrome + HTTPS/localhost + arka kamera izni.

@@ -3,6 +3,25 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
+import StopTimeline from "../../components/StopTimeline";
+import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
+
+
+function isReached(stop) {
+  const st = String(stop?.status || stop?.state || "").toUpperCase();
+  return st === "REACHED" || st === "DONE" || st === "COMPLETED" || st === "SKIPPED" || Boolean(stop?.reachedAt);
+}
+
+function firstPendingStop(stops) {
+  return (Array.isArray(stops) ? stops : []).find((s) => s && !isReached(s)) || null;
+}
+
+function focusStop(stop) {
+  const lat = Number(stop?.lat);
+  const lng = Number(stop?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat, lng, zoom: 17 } }));
+}
 
 export default function DriverMapPanel() {
   const { token } = useSession();
@@ -102,6 +121,8 @@ export default function DriverMapPanel() {
     () => (Array.isArray(activeShift?.stops) ? activeShift.stops : []),
     [activeShift]
   );
+  const nextStop = useMemo(() => firstPendingStop(stops), [stops]);
+  const stats = useMemo(() => routeStats(stops), [stops]);
 
   return (
     <div className="wrap wrap--fluid">
@@ -116,6 +137,38 @@ export default function DriverMapPanel() {
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
+
+      <div className="card" style={{ marginBottom: 10 }}>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontWeight: 900 }}>Canlı rota özeti</div>
+            <div className="muted">Tüm duraklar rota sırası ile, sıradaki durak highlight, canlı araç takibi</div>
+          </div>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <span className="pill">Toplam: {stats.total}</span>
+            <span className="pill" data-status="OK">Tamamlanan: {stats.completed}</span>
+            <span className="pill" data-status="REQUESTED">Kalan: {stats.remaining}</span>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          {nextStop?.name ? (
+            <>
+              <span className="muted">Sıradaki:</span>
+              <span className="pill" data-status="NEXT">{nextStop.name}</span>
+              <button type="button" onClick={() => openNextStopNavigation(nextStop, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Sonraki Durağa Navigasyon</button>
+              <button type="button" onClick={() => openFullRouteNavigation(stops, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Tam Rotayı Dış Navigasyonda Aç</button>
+            </>
+          ) : (
+            <span className="muted">Sıradaki durak yok.</span>
+          )}
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          <div className="muted" style={{ marginBottom: 6 }}>Adım adım takip</div>
+          <StopTimeline stops={stops} nextStopId={nextStop?.id ?? null} compact={false} onSelect={(s) => focusStop(s)} />
+        </div>
+      </div>
 
       <MapView
         vehicles={vehicles}

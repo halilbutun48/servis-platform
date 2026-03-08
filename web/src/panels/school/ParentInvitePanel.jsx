@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { companyPath } from "../../utils/paths";
+import { makeHashLink } from "../../utils/publicBaseUrl";
 
 function fmt(dt) {
   try {
@@ -75,7 +76,7 @@ export default function SchoolParentInvitePanel() {
         },
       });
       const raw = r?.token || "";
-      const link = raw ? `${window.location.origin}/#/accept-parent-invite?token=${encodeURIComponent(raw)}` : "";
+      const link = raw ? makeHashLink(`#/accept-parent-invite?token=${encodeURIComponent(raw)}`) : "";
       setLastLink(link);
       await loadAll();
     } catch (e2) {

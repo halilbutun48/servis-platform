@@ -288,7 +288,7 @@ export default function PersonelLivePanel() {
       <div className="topbar">
         <div>
           <div className="title">Personel • Canlı Harita</div>
-          <div className="muted">Sana atanmış araç + (varsa) duraklar/ETA</div>
+          <div className="muted">Sana ait durak + araç yaklaşımı + ETA + navigasyon</div>
         </div>
       </div>
 

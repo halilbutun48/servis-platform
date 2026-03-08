@@ -1,44 +1,70 @@
 # PERSONEL SERVİS V1 — PRIMER (SSOT)
 
-Tarih: 2026-03-07  
-Timezone: Europe/Istanbul
+Tarih: 2026-03-02  
+Timezone: Europe/Istanbul  
 
-## Repo & doğrulama
+## Repo & doğrulama (kanıt standardı)
 - Repo path: `D:\servis-platform`
-- Ana kanıt: `tools/pack.ps1 -To 41` → **PACK PASS**
-- M42 ayrı doğrulanır: `tools/pack_m42_optional.ps1`
-- Kural: `backend/scripts/m{N}check.js` zinciri ana regresyon içindir; optional modüller bu zincire zorla eklenmez.
+- Gate/Pack stage: `tools/gate.ps1` + `tools/pack.ps1`
+  - `backend/scripts/m{N}check.js` dosyaları **contiguous** ise `tools/reset-and-pack.ps1` otomatik en yüksek N’i bulur.
+  - Bu repoda en yüksek check: **M36** → canonical kanıt: `tools\pack.ps1 -To 36` → **PACK PASS**.
 
-## Milestone durumu
-- **M41:** refresh token + device binding + redis-backed rate limit → ana GREEN çizgi
-- **M42:** QR/NFC check-in modülü → **optional release**
-  - default OFF
-  - flag ON iken ayrı optional pack ile doğrulanır
-- Sonraki sıra: V1.5 → M43 → M44 → M45 → V2
+> Not: `OVERLAY_NOTES_Mxx` ve “M72/M77” gibi etiketler feature/overlay serisidir; Gate/Pack milestone ile birebir eşleşmesi şart değildir.
 
-## M42 kararı (sabit)
-- `FEATURE_CHECKIN=0` → dormant, fail-closed, ana sistem etkilenmez
-- `FEATURE_CHECKIN=1` → credential issue / revoke / scan / dedupe / events akışı aktif
-- Ana `pack.ps1` M42’ye yükseltilmez; bunun yerine `tools/pack_m42_optional.ps1` kullanılır
+---
 
-## SSOT dosyaları
+## Ürün modeli (kafa karışıklığı yok)
+- **Agreement** = anlaşma takvimi + fiyat/koşul (uzun/kısa süreli)
+- **Shift** = operasyon (durak/rota/personel/maxWalk/araç-şoför)
+
+---
+
+## Ölçek / Anti-429 (M72/M77)
+- Backend: express-rate-limit **route bazlı** kovalar (auth/read/write/gps ayrı).
+- GPS ingest throttle: ~1.2s altı update “ignore” (200 `{ ok:true, throttled:true }`).
+- Web: WS invalidate “topic guess” + dedupe + in-flight guard (self-DDOS engeli).
+
+**GreenPack (dev/test):**
+- Request header `x-greenpack: 1` → limiter/throttle skip (deterministic check).
+- Market offer’da (dev/test) agreement block bypass (pack stabilizasyonu).
+
+---
+
+## KVKK / Time-window gate
+- COMPANY/PERSONEL canlı harita “şu an aralığı” ile sınırlı:
+  - `GET /api/vehicles` COMPANY/PERSONEL → `startAt<=now<=endAt` filtresi uygular.
+  - UI: `GET /api/shifts?onlyNow=1` + harita bileşenleri parity.
+
+---
+
+## M36 — SUPER_ADMIN ops
+- Company/Room CRUD + soft delete
+- Region(İl) CRUD + Company/Room `regionId`
+- District(İlçe) alanı (opsiyonel)
+- Users panel: create (scope bind), temp password, disable/enable, reset password, email ile arama
+- Audit logs: admin aksiyonları audit’e yazılır + panel
+- Market: cross-region offer engeli (legacy `regionId=null` tolerans)
+
+---
+
+## SSOT dosyaları (değişince güncelle)
 - `docs/PROJECT_SPEC_V1.md`
 - `docs/API_SPEC_V1.md`
 - `docs/DB_SCHEMA_V1.md`
 - `docs/UI_SPEC_V1.md`
 - `docs/STARTPACK_V1.md`
-- `docs/CHECKLIST_SSOT.md`
-- `docs/OPTIONAL_CHECKIN_QR_NFC.md`
-- `docs/PRIMER_SSOT.md`
-- `tools/PRIMER_SNAPSHOT.md`
+- `docs/PRIMER_SSOT.md` (bu dosya)
+- `tools/PRIMER_SNAPSHOT.md` (yeni sohbet yapıştırmalık)
 
-## Çalışma standardı
-- Green olmadan ilerleme yok
-- Değişiklik olursa docs aynı PR/overlay içinde güncellenir
-- “Çalışıyor” = kanıtlı pack/check PASS
-- Değişiklikleri mümkün olduğunca tek seferde overlay (zip) taşı
+---
 
+## Next (taslak) — School/Parent mode
+- `Company.kind = COMPANY | SCHOOL`
+- `Personel.kind = PERSONEL | STUDENT`
+- Role: `PARENT`
+- `ParentChild` link (parent ↔ student)
+- Parent UI: live map + ETA + timeline (time-window gate zorunlu)
 
-## Son ekler
-- M42 UI: COMPANY/SCHOOL panelinde QR canvas, DRIVER panelinde kamera ile QR okutma
-- SCHOOL scope: self-serve parent invite link paneli + public accept akışı
+## Passenger Live Link
+
+- Passenger Live Link (login-optional): COMPANY/SCHOOL tekil süreli canlı takip linki üretebilir; public link sadece ilgili kişi için kendi durak + ETA + navigasyon gösterir; revoke/expire desteklidir.

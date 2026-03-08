@@ -6,6 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { ageSecFromAt, pillKeyFromUi, uiStatusFromVehicle } from "../../utils/uiStatus";
+import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
 
 function toNum(v) {
   const n = typeof v === "number" ? v : Number(v);
@@ -127,20 +128,6 @@ function focusStop(stop) {
   const c = stopCoord(stop);
   if (!c) return;
   window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat: c.lat, lng: c.lng, zoom: 17 } }));
-}
-
-function openNav(stop, originVehicle) {
-  const sc = stopCoord(stop);
-  if (!sc) {
-    window.alert("Navigasyon açılamadı: durak konumu yok.");
-    return;
-  }
-  const vc = gpsCoord(originVehicle);
-  const dest = `${sc.lat},${sc.lng}`;
-  const url = vc
-    ? `https://www.google.com/maps/dir/?api=1&origin=${vc.lat},${vc.lng}&destination=${dest}&travelmode=driving`
-    : `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
-  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 export default function RoomMapPanel() {
@@ -281,6 +268,7 @@ export default function RoomMapPanel() {
   const selectedStops = useMemo(() => (Array.isArray(selectedShift?.stops) ? selectedShift.stops : []), [selectedShift]);
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
+  const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
 
   function fitAll() {
     try { window.dispatchEvent(new Event("map:fitAll")); } catch {}
@@ -406,12 +394,19 @@ export default function RoomMapPanel() {
                 <>
                   <span className="muted">Sıradaki:</span>
                   <span className="pill" data-status="NEXT">{selectedNext.name}</span>
-                  <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNav(selectedNext, selected)}>Navigasyon Aç</button>
+                  <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNextStopNavigation(selectedNext, selected)}>Sonraki Durağa Navigasyon</button>
                   {selectedEta != null ? <span className="muted">ETA: <b>{selectedEta}dk</b></span> : null}
+                  <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)}>Tam Rotayı Dış Navigasyonda Aç</button>
                 </>
               ) : (
                 <span className="muted">Sıradaki durak yok.</span>
               )}
+            </div>
+
+            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span className="pill">Toplam: {selectedStats.total}</span>
+              <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
+              <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
             </div>
 
             <div style={{ marginTop: 10 }}>

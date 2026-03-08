@@ -60,7 +60,6 @@ export default function NavDock({ role, path, me }) {
     const advanced = [];
 
     const base = role === "COMPANY" ? companyBase(me) : "";
-    const checkinEnabled = Boolean(me?.features?.checkin);
 
     if (role === "ROOM") {
       sections.push({
@@ -80,7 +79,6 @@ export default function NavDock({ role, path, me }) {
       // Sözleşmeler: Gelişmiş altında
       advanced.push({ label: "Sözleşmeler", path: "/room/agreements" });
       advanced.push({ label: "Hub", path: "/room/hub" });
-      if (checkinEnabled) advanced.push({ label: "Check-in", path: "/room/checkin" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
 advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "COMPANY") {
@@ -94,9 +92,8 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
       });
       // Sözleşmeler: Gelişmiş altında
       advanced.push({ label: "Sözleşmeler", path: base + "/agreements" });
+      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Link" : "Personel Canlı Link", path: base + "/passenger-links" });
       advanced.push({ label: "Hub", path: base + "/hub" });
-      if (me?.companyKind === "SCHOOL") advanced.push({ label: "Parent Invite", path: "/school/parents" });
-      if (checkinEnabled) advanced.push({ label: "Check-in", path: base + "/checkin" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : "Konum İncele", path: base + "/georeview" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
@@ -107,7 +104,6 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Bugün", path: "/driver/today" },
           { label: "Rota", path: "/driver/route" },
           { label: "Harita", path: "/driver/map" },
-          ...(checkinEnabled ? [{ label: "Check-in", path: "/driver/checkin" }] : []),
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],

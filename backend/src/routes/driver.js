@@ -215,9 +215,9 @@ export function driverRouter(io) {
       };
     });
 
-    // UI icin mesafeye gore gosterim (mevcut davranis)
-    const orderedStops = [...routeStops];
-    if (last) orderedStops.sort((a, b) => a.remainingKm - b.remainingKm);
+    // Unified live route: orderedStops artık rota sırası (order asc).
+    const orderedStops = [...routeStops].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+    const proximityStops = last ? [...routeStops].sort((a, b) => a.remainingKm - b.remainingKm) : [...orderedStops];
 
     const nextStop = firstPendingStop(shift.stops ?? []);
 
@@ -253,7 +253,8 @@ export function driverRouter(io) {
         pausedAt: shift.progress?.pausedAt ?? null,
         completed: shift.status === "DONE" || !!shift.progress?.completedAt,
       },
-      orderedStops, // distance-sorted
+      orderedStops, // order-sorted
+      proximityStops, // distance-sorted fallback
       nextStop,
       routeStops, // order-sorted
     });

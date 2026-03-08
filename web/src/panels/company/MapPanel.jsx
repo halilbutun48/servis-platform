@@ -6,6 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
+import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
 
 function asNum(v) {
   const n = Number(String(v ?? "").replace(",", "."));
@@ -341,6 +342,7 @@ export default function CompanyMapPanel() {
   const selectedStops = useMemo(() => normStops(selectedShift?.stops || []), [selectedShift]);
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
+  const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
 
   function fitAll() {
     try { window.dispatchEvent(new Event("map:fitAll")); } catch {}
@@ -466,12 +468,19 @@ export default function CompanyMapPanel() {
                 <>
                   <span className="muted">Sıradaki:</span>
                   <span className="pill" data-status="NEXT">{selectedNext.name}</span>
-                  <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNav(selectedNext, selected)}>Navigasyon Aç</button>
+                  <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNextStopNavigation(selectedNext, selected)}>Sonraki Durağa Navigasyon</button>
                   {selectedEta != null ? <span className="muted">ETA: <b>{selectedEta}dk</b></span> : null}
+                  <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)}>Tam Rotayı Dış Navigasyonda Aç</button>
                 </>
               ) : (
                 <span className="muted">Sıradaki durak yok.</span>
               )}
+            </div>
+
+            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span className="pill">Toplam: {selectedStats.total}</span>
+              <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
+              <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
             </div>
 
             <div style={{ marginTop: 10 }}>

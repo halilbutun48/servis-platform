@@ -14,7 +14,6 @@ import RoomShiftsPanel from "./panels/room/ShiftsPanel";
 import RoomAgreementsPanel from "./panels/room/AgreementsPanel";
 import RoomOffersPanel from "./panels/room/OffersPanel";
 import RoomHubPanel from "./panels/room/HubPanel";
-import RoomCheckinPanel from "./panels/room/CheckinPanel";
 // COMPANY
 import CompanyWorkflowPanel from "./panels/company/WorkflowPanel";
 import CompanyMapPanel from "./panels/company/MapPanel";
@@ -22,13 +21,12 @@ import CompanyShiftsPanel from "./panels/company/ShiftsPanel";
 import CompanyAgreementsPanel from "./panels/company/AgreementsPanel";
 import GeoReviewPanel from "./panels/company/GeoReviewPanel";
 import CompanyHubPanel from "./panels/company/HubPanel";
-import CompanyCheckinPanel from "./panels/company/CheckinPanel";
+import PassengerLinksPanel from "./panels/company/PassengerLinksPanel";
 
 // DRIVER
 import DriverMapPanel from "./panels/driver/MapPanel";
 import RoutePanel from "./panels/driver/RoutePanel";
 import DriverTodayPanel from "./panels/driver/TodayPanel";
-import DriverCheckinPanel from "./panels/driver/CheckinPanel";
 
 // PERSONEL
 import PersonelLivePanel from "./panels/personel/LivePanel";
@@ -36,8 +34,7 @@ import MyRidePanel from "./panels/personel/MyRidePanel";
 
 // PARENT
 import ParentLivePanel from "./panels/parent/LivePanel";
-import SchoolParentInvitePanel from "./panels/school/ParentInvitePanel";
-import AcceptParentInvitePanel from "./panels/public/AcceptParentInvitePanel";
+import PublicPassengerLivePanel from "./panels/public/PassengerLivePanel";
 
 // SHARED
 import NotificationsPanel from "./panels/shared/NotificationsPanel";
@@ -131,7 +128,6 @@ function LoginCard() {
 export default function App() {
   const { token, me } = useSession();
   const { path } = useHashRoute();
-  const cleanPath = String(path || "/").split("?")[0];
 
   // ✅ WS: token geldikçe başlat, token gidince durdur
   useEffect(() => {
@@ -150,10 +146,8 @@ export default function App() {
   }, [token, me?.role]);
 
   const view = useMemo(() => {
-    if (!token) {
-      if (cleanPath === "/accept-parent-invite") return { layout: false, node: <AcceptParentInvitePanel path={path} /> };
-      return { layout: false, node: <LoginCard /> };
-    }
+    if (String(path || "").startsWith("/public/passenger-live")) return { layout: false, node: <PublicPassengerLivePanel /> };
+    if (!token) return { layout: false, node: <LoginCard /> };
     if (!me) return { layout: false, node: <div style={{ padding: 16 }}>Loading...</div> };
 
     // Shared
@@ -169,7 +163,6 @@ export default function App() {
     if (path === "/room/agreements") return { layout: true, node: <RoomAgreementsPanel /> };
     if (path === "/room/offers") return { layout: true, node: <RoomOffersPanel /> };
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
-    if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
 
     // COMPANY
     if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -178,7 +171,7 @@ export default function App() {
     if (path === "/company/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
-    if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
+    if (path === "/company/passenger-links") return { layout: true, node: <PassengerLinksPanel /> };
 
     // SCHOOL (Company.kind=SCHOOL)
     if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -187,15 +180,13 @@ export default function App() {
     if (path === "/school/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/school/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/school/hub") return { layout: true, node: <CompanyHubPanel /> };
-    if (path === "/school/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
-    if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
+    if (path === "/school/passenger-links") return { layout: true, node: <PassengerLinksPanel /> };
 
 
     // DRIVER
     if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
     if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
-    if (path === "/driver/checkin") return { layout: true, node: <DriverCheckinPanel /> };
 
     // PERSONEL
     if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };
@@ -217,7 +208,7 @@ export default function App() {
     const def = roleDefaultPath(me);
     navigate(def);
     return { layout: true, node: <div style={{ padding: 16 }}>Redirecting...</div> };
-  }, [token, me, path, cleanPath]);
+  }, [token, me, path]);
 
   if (!view.layout) return view.node;
 

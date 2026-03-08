@@ -3,7 +3,9 @@ import { api } from "../../api";
 import { enqueueRequest, flushQueue, getQueue, isOnline, queueSize } from "../../utils/offlineQueue";
 import MapView from "../../components/map/MapView";
 import QueueDetailTable from "../../components/QueueDetailTable";
+import StopTimeline from "../../components/StopTimeline";
 import { useSession } from "../../state/session";
+import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedStop } from "../../utils/navigation";
 
 function getQueryParam(name) {
   try {
@@ -32,17 +34,20 @@ export default function RoutePanel() {
 
   const mode = data?.mode || "";
   const shift = data?.shift || null;
-  const orderedStops = data?.orderedStops || [];
+  const orderedStops = data?.orderedStops || data?.routeStops || [];
   const nextStop = data?.nextStop || null;
   const progress = data?.progress || null;
   const paused = !!progress?.pausedAt;
   const [showStops, setShowStops] = useState(false);
+  const [selectedStopId, setSelectedStopId] = useState(null);
 
   const pct = useMemo(() => {
     if (!shift || !progress || !orderedStops.length) return 0;
     const maxOrder = Math.max(...orderedStops.map((s) => s.order || 0), 0) || 1;
     return Math.min(100, Math.round((progress.lastReachedOrder / maxOrder) * 100));
   }, [shift, progress, orderedStops]);
+
+  const routeSummary = useMemo(() => routeStats(orderedStops), [orderedStops]);
 
   const lastReachedStop = useMemo(() => {
     const ord = Number(progress?.lastReachedOrder || 0);
@@ -57,6 +62,13 @@ export default function RoutePanel() {
     const ms = Date.now() - new Date(t).getTime();
     return ms <= 120000;
   }, [lastReachedStop?.id, lastReachedStop?.reachedAt, lastReachedStop?.skippedAt]);
+
+  function focusStop(stop) {
+    const lat = Number(stop?.lat);
+    const lng = Number(stop?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat, lng, zoom: 17 } }));
+  }
 
   function showToast(msg) {
     if (!msg) return;
@@ -389,7 +401,7 @@ async function undoLast() {
           </div>
         ) : null}
         <div className="muted">
-          En az adım: <b>Sonraki durağı gör</b> → <b>Reached</b>. (Kısayol: <b>Enter</b>)
+          Faz 1/Faz 2: <b>Rota sırası</b> + <b>sıradaki durak</b> + <b>dış navigasyon</b>. (Kısayol: <b>Enter</b>)
         </div>
       </div>
 
@@ -485,6 +497,17 @@ async function undoLast() {
                 <div className="muted">order: {nextStop.order}</div>
               </div>
 
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span className="pill">Toplam: {routeSummary.total}</span>
+                <span className="pill" data-status="OK">Tamamlanan: {routeSummary.completed}</span>
+                <span className="pill" data-status="REQUESTED">Kalan: {routeSummary.remaining}</span>
+              </div>
+
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => openNextStopNavigation(nextStop, { gpsLast: data?.last })}>Sonraki Durağa Navigasyon</button>
+                <button type="button" onClick={() => openFullRouteNavigation(orderedStops, { gpsLast: data?.last })}>Tam Rotayı Dış Navigasyonda Aç</button>
+              </div>
+
               <button type="button" disabled={busy || shift?.status !== "ACTIVE" || paused} onClick={reached} style={reachedBtnStyle}>
                 {busy ? "..." : paused ? "Mola (Devam Et)" : shift?.status !== "ACTIVE" ? "Başlat (Göreve Başla)" : "Reached"}
               </button>
@@ -505,9 +528,20 @@ async function undoLast() {
         </div>
       </div>
 
+      <div className="card" style={{ marginTop: 12 }}>
+        <div className="muted" style={{ marginBottom: 6 }}>Adım adım takip</div>
+        <StopTimeline
+          stops={orderedStops}
+          nextStopId={nextStop?.id ?? null}
+          selectedStopId={selectedStopId}
+          compact={false}
+          onSelect={(s) => { setSelectedStopId(s?.id ?? null); focusStop(s); }}
+        />
+      </div>
+
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <h3>Duraklar (mesafe/ETA)</h3>
+          <h3>Duraklar (rota sırası / mesafe / ETA)</h3>
           <button type="button" onClick={() => setShowStops((p) => !p)}>
             {showStops ? "Gizle" : "Göster"}
           </button>
@@ -519,19 +553,29 @@ async function undoLast() {
               <tr>
                 <th>Order</th>
                 <th>Ad</th>
+                <th>Durum</th>
                 <th>Km</th>
                 <th>ETA (dk)</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {orderedStops.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.order}</td>
-                  <td>{s.name}</td>
-                  <td>{s.remainingKm}</td>
-                  <td>{s.etaMin}</td>
-                </tr>
-              ))}
+              {orderedStops.map((s) => {
+                const reachedState = isReachedStop(s);
+                const isNext = nextStop?.id != null && String(nextStop.id) === String(s.id);
+                return (
+                  <tr key={s.id}>
+                    <td>{s.order}</td>
+                    <td>{s.name}</td>
+                    <td>
+                      {isNext ? <span className="pill" data-status="NEXT">NEXT</span> : reachedState ? <span className="pill" data-status="OK">OK</span> : <span className="pill" data-status="REQUESTED">BEKLİYOR</span>}
+                    </td>
+                    <td>{s.remainingKm}</td>
+                    <td>{s.etaMin}</td>
+                    <td><button type="button" onClick={() => openNextStopNavigation(s, { gpsLast: data?.last })}>Nav</button></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (

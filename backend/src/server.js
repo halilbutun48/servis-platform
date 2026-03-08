@@ -37,6 +37,7 @@ import * as driverMod from "./routes/driver.js";
 import * as personelsMod from "./routes/personels.js";
 import * as companyPersonelsMod from "./routes/companyPersonels.js";
 import * as personelShiftsMod from "./routes/personelShifts.js";
+import * as passengerLinksMod from "./routes/passengerLinks.js";
 
 import { adminRouter } from "./routes/admin.js";
 import adminLogsRouter from "./routes/admin_logs.js";
@@ -47,7 +48,6 @@ import * as roomsMod from "./routes/rooms.js";
 import * as routeTemplatesMod from "./routes/routeTemplates.js";
 import { offersRouter } from "./routes/offers.js";
 import { checkinRouter } from "./routes/checkin.js";
-import { schoolParentInvitesRouter } from "./routes/schoolParentInvites.js";
 
 
 import { startMonitors } from "./jobs/index.js";
@@ -81,6 +81,8 @@ const driverRouter = pickExport(driverMod, "driverRouter");
 const personelsRouter = pickExport(personelsMod, "personelsRouter");
 const companyPersonelsRouter = pickExport(companyPersonelsMod, "companyPersonelsRouter");
 const personelShiftsRouter = pickExport(personelShiftsMod, "personelShiftsRouter");
+const passengerLinksRouter = pickExport(passengerLinksMod, "passengerLinksRouter");
+const publicPassengerLiveRouter = pickExport(passengerLinksMod, "publicPassengerLiveRouter");
 
 const companiesRouter = pickExport(companiesMod, "companiesRouter");
 const roomsRouter = pickExport(roomsMod, "roomsRouter");
@@ -96,6 +98,8 @@ for (const [name, fn] of Object.entries({
   personelsRouter,
   companyPersonelsRouter,
   personelShiftsRouter,
+  passengerLinksRouter,
+  publicPassengerLiveRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,
@@ -279,7 +283,7 @@ app.use("/api/company/hub", companyHubRouter());
 app.use("/api/plan-builder", planBuilderRouter());
 app.use("/api/live", liveRouter());
 app.use("/api/parent", parentRouter());
-app.use("/api/school/parent-invites", schoolParentInvitesRouter());
+app.use("/api/public/passenger-live", publicPassengerLiveRouter());
 app.use("/api/companies", companiesRouter());
 app.use("/api/rooms", roomsRouter());
 app.use("/api/route-templates", routeTemplatesRouter());
@@ -332,6 +336,7 @@ app.use("/api/driver", driverRouter(io));
 app.use("/api/personels", personelsRouter(io));
 app.use("/api/company/personels", companyPersonelsRouter());
 app.use("/api/personel/shifts", personelShiftsRouter());
+app.use("/api/company/passenger-links", passengerLinksRouter());
 app.use("/api/agreements", agreementsRouter(io));
 app.use("/api/offers", offersRouter(io));
 app.use("/api/checkin", checkinRouter(io));

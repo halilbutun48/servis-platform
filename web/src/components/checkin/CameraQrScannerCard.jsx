@@ -9,6 +9,16 @@ function stopStream(ref) {
   ref.current = null;
 }
 
+function supportReason() {
+  if (typeof window === "undefined") return "Bu ortam tarayıcı değil.";
+  if (!window.isSecureContext && window.location?.hostname !== "127.0.0.1" && window.location?.hostname !== "localhost") {
+    return "Kamera taraması için HTTPS veya localhost gerekir.";
+  }
+  if (!navigator?.mediaDevices?.getUserMedia) return "Tarayıcı kamera erişimi sunmuyor.";
+  if (!window.BarcodeDetector) return "Bu tarayıcı BarcodeDetector / kamera QR taramasını desteklemiyor.";
+  return "";
+}
+
 export default function CameraQrScannerCard({ open, onClose, onDetected }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -16,9 +26,8 @@ export default function CameraQrScannerCard({ open, onClose, onDetected }) {
   const [err, setErr] = useState("");
   const [status, setStatus] = useState("Hazır");
 
-  const supported = useMemo(() => {
-    return typeof window !== "undefined" && !!window.BarcodeDetector && !!navigator?.mediaDevices?.getUserMedia;
-  }, []);
+  const unsupportedReason = useMemo(() => supportReason(), []);
+  const supported = !unsupportedReason;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -27,7 +36,8 @@ export default function CameraQrScannerCard({ open, onClose, onDetected }) {
     async function start() {
       setErr("");
       if (!supported) {
-        setErr("Bu tarayıcı/cihaz kamera QR taramasını desteklemiyor. Manuel token girişi ile devam edebilirsin.");
+        setStatus("Fallback mod");
+        setErr(`${unsupportedReason} Manuel token girişi ile devam edebilirsin.`);
         return;
       }
 
@@ -79,7 +89,7 @@ export default function CameraQrScannerCard({ open, onClose, onDetected }) {
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
       stopStream(streamRef);
     };
-  }, [open, onDetected, supported]);
+  }, [open, onDetected, supported, unsupportedReason]);
 
   if (!open) return null;
 
@@ -96,7 +106,15 @@ export default function CameraQrScannerCard({ open, onClose, onDetected }) {
       {err ? <div className="card err" style={{ marginTop: 12 }}>{err}</div> : null}
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-        <video ref={videoRef} muted playsInline style={{ width: "100%", minHeight: 280, background: "#050913", borderRadius: 14, border: "1px solid #2b3d64", objectFit: "cover" }} />
+        {supported ? (
+          <video ref={videoRef} muted playsInline style={{ width: "100%", minHeight: 280, background: "#050913", borderRadius: 14, border: "1px solid #2b3d64", objectFit: "cover" }} />
+        ) : (
+          <div style={{ width: "100%", minHeight: 220, background: "#050913", borderRadius: 14, border: "1px dashed #7f8ca8", padding: 18, display: "grid", alignContent: "center", gap: 8 }}>
+            <div className="title" style={{ fontSize: 18 }}>Bu cihazda kamera scan fallback modda</div>
+            <div className="muted">En stabil kombinasyon: Mobil Chrome + HTTPS veya localhost + arka kamera izni.</div>
+            <div className="muted">Masaüstü tarayıcıda destek yoksa token alanına yapıştırıp manuel okutma ile devam et.</div>
+          </div>
+        )}
         <div className="muted">
           İpucu: Mobil Chrome + HTTPS/localhost ortamında arka kamerayla en stabil çalışır.
         </div>
