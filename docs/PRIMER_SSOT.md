@@ -1,70 +1,68 @@
-# PERSONEL SERVİS V1 — PRIMER (SSOT)
+# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER (SSOT)
 
-Tarih: 2026-03-02  
-Timezone: Europe/Istanbul  
+Tarih: 2026-03-09  
+Timezone: Europe/Istanbul
 
-## Repo & doğrulama (kanıt standardı)
-- Repo path: `D:\servis-platform`
-- Gate/Pack stage: `tools/gate.ps1` + `tools/pack.ps1`
-  - `backend/scripts/m{N}check.js` dosyaları **contiguous** ise `tools/reset-and-pack.ps1` otomatik en yüksek N’i bulur.
-  - Bu repoda en yüksek check: **M36** → canonical kanıt: `tools\pack.ps1 -To 36` → **PACK PASS**.
+## 0) Güncel durum
+- Repo: `D:\servis-platform`
+- Ana referans: **M41 PACK PASS**
+- Opsiyonel referans: **M42 OPTIONAL PACK PASS**
+- Stabil ama ayrı doğrulanan ekler: **Step 0.6**
+  - capacity gate
+  - room pool summary
+  - auto-split by real available vehicle combination
+  - split parent cleanup
+  - school parent invite restore
+  - shift preview external navigation
+  - company list click details
 
-> Not: `OVERLAY_NOTES_Mxx` ve “M72/M77” gibi etiketler feature/overlay serisidir; Gate/Pack milestone ile birebir eşleşmesi şart değildir.
+## 1) Kanonik doğrulama komutları
+- Ana regresyon: `tools\pack.ps1 -To 41`
+- Check-in optional: `tools\pack_m42_optional.ps1`
+- Step 0.6 stabil ekler: `tools\pack_step06_stabil.ps1`
 
----
+## 2) Ayrım (çok önemli)
+- **M41** = V1 ana regresyon kanıtı
+- **M42** = dormant/optional release, ayrı pack ile doğrulanır
+- **Step 0.6** = çalışan stabil eklerdir; ana M41 pack’e zorla gömülmez, ayrı mini-check set ile doğrulanır
 
-## Ürün modeli (kafa karışıklığı yok)
-- **Agreement** = anlaşma takvimi + fiyat/koşul (uzun/kısa süreli)
-- **Shift** = operasyon (durak/rota/personel/maxWalk/araç-şoför)
+## 3) Repo organizasyonu
+- `backend/` → API, jobs, ws, Prisma, runtime check scriptleri
+- `web/` → Vite/React UI
+- `infra/` → Docker compose / servisler
+- `docs/` → SSOT dokümanlar
+- `docs/overlays/` → overlay notları / tarihçe
+- `tools/` → gate/pack/runbook scriptleri
 
----
+## 4) Overlay / not organizasyonu
+- Repo root’a yeni `OVERLAY_NOTES_*` bırakılmaz
+- Overlay notları `docs/overlays/` altında tutulur
+- Step 0.6 tarihçesi: `docs/overlays/STEP06/`
+- Uygulama scriptleri `tools/` altında kalır
 
-## Ölçek / Anti-429 (M72/M77)
-- Backend: express-rate-limit **route bazlı** kovalar (auth/read/write/gps ayrı).
-- GPS ingest throttle: ~1.2s altı update “ignore” (200 `{ ok:true, throttled:true }`).
-- Web: WS invalidate “topic guess” + dedupe + in-flight guard (self-DDOS engeli).
+## 5) Step 0.6 resmi doğrulama kapsamı
+### Runtime mini-check
+- room pool summary endpoint shape / enough capacity
+- auto-split approve akışı
+- school parent invite create / info / accept akışı
 
-**GreenPack (dev/test):**
-- Request header `x-greenpack: 1` → limiter/throttle skip (deterministic check).
-- Market offer’da (dev/test) agreement block bypass (pack stabilizasyonu).
+### Repo contract smoke
+- external navigation UI metni ve route açıcı fonksiyon
+- `0,0` koordinatının navigation dışında bırakılması
+- company list click details modalı
+- school parent link nav + public accept ekranı
+- split root cleanup filtreleri
 
----
+## 6) Bir sonraki sıradaki işler
+1. Step 0.6’yı ayrı mini-check ile kalıcılaştırmak  
+2. Sonra V1.5 Minimum Security başlatmak:
+   - WAF limitleri
+   - TOTP step-up
+   - refresh reuse detection
+   - RBAC deny-by-default test harness
 
-## KVKK / Time-window gate
-- COMPANY/PERSONEL canlı harita “şu an aralığı” ile sınırlı:
-  - `GET /api/vehicles` COMPANY/PERSONEL → `startAt<=now<=endAt` filtresi uygular.
-  - UI: `GET /api/shifts?onlyNow=1` + harita bileşenleri parity.
-
----
-
-## M36 — SUPER_ADMIN ops
-- Company/Room CRUD + soft delete
-- Region(İl) CRUD + Company/Room `regionId`
-- District(İlçe) alanı (opsiyonel)
-- Users panel: create (scope bind), temp password, disable/enable, reset password, email ile arama
-- Audit logs: admin aksiyonları audit’e yazılır + panel
-- Market: cross-region offer engeli (legacy `regionId=null` tolerans)
-
----
-
-## SSOT dosyaları (değişince güncelle)
-- `docs/PROJECT_SPEC_V1.md`
-- `docs/API_SPEC_V1.md`
-- `docs/DB_SCHEMA_V1.md`
-- `docs/UI_SPEC_V1.md`
-- `docs/STARTPACK_V1.md`
-- `docs/PRIMER_SSOT.md` (bu dosya)
-- `tools/PRIMER_SNAPSHOT.md` (yeni sohbet yapıştırmalık)
-
----
-
-## Next (taslak) — School/Parent mode
-- `Company.kind = COMPANY | SCHOOL`
-- `Personel.kind = PERSONEL | STUDENT`
-- Role: `PARENT`
-- `ParentChild` link (parent ↔ student)
-- Parent UI: live map + ETA + timeline (time-window gate zorunlu)
-
-## ORGANIZATION demo note
-
-- Demo tenant eklendi: `organization@demo.com` / `demo123` (`Company.kind=ORGANIZATION`). V1 uyumluluğu için lokasyon listesi mevcut Personel tablosu üzerinde etiketlenir; ayrı Destination modeli sonraki milestone.
+## 7) Çalışma kuralları
+- Değişiklikler mümkün olduğunca tek seferde overlay (zip)
+- Yanıtlarda en fazla 3 PowerShell komutu
+- `Green` = hedef pack/check PASS kanıtı
+- Ana M41 regressions sabit tutulur; yeni stabil ekler ayrı doğrulama ile yükseltilir

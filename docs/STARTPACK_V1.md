@@ -1,83 +1,56 @@
-# STARTPACK_V1 — SERVIS-PLATFORM (PERSONEL SERVİS V1)
-Tarih: 2026-03-02  
+# STARTPACK_V1 — SERVIS-PLATFORM (PERSONEL SERVİS V1/V2)
+
+Tarih: 2026-03-09  
 Timezone: Europe/Istanbul
 
-Bu dosya repo için “tek bakışta çalışma runbook’u”dur:
-- Standartlar (SSOT)
-- Gate/Pack doğrulama
-- Kritik akışlar
-- RBAC / endpoint notları
-- Debug / sık hata rehberi
-
-> SSOT özet: `docs/PRIMER_SSOT.md`  
-> Yeni sohbet yapıştırmalık: `tools/PRIMER_SNAPSHOT.md`
-
----
+Bu dosya repo için kısa çalışma runbook’udur.
 
 ## 1) GOLDEN RULES
-1) GREEN olmadan ilerleme yok.  
-2) API/DB/UI/flow değişirse aynı PR içinde docs güncellenir.  
-3) “Çalışıyor” = **PACK PASS** kanıtı.  
-4) Değişiklikleri mümkünse tek seferde **overlay (zip)** olarak taşı.
+1. Ana referans **M41 PACK PASS**’tir.  
+2. M42 optional ayrı doğrulanır.  
+3. Step 0.6 stabil ekler ayrı mini-check ile doğrulanır.  
+4. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.  
+5. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
 
----
+## 2) Kanonik komutlar
+- Ana regresyon: `tools\pack.ps1 -To 41`
+- Optional check-in: `tools\pack_m42_optional.ps1`
+- Step 0.6 stabil ekler: `tools\pack_step06_stabil.ps1`
 
-## 2) Repo Yapısı
-- `backend/` Node(ESM)+Express+Prisma + jobs + ws
-- `web/` Vite+React
-- `infra/` docker-compose (+ OSRM profile)
-- `docs/` SSOT dokümanlar
-- `tools/` gate/pack + primer snapshot
+## 3) Step 0.6 neden ayrı?
+Bu işler stabil çalışıyor ama ana M41 regresyonunu gereksiz yere genişletmemek için ayrı tutuluyor.
 
----
+Kapsam:
+- capacity / room pool / auto-split
+- split parent cleanup
+- school parent invite restore
+- shift preview external navigation
+- company list click details
 
-## 3) Doğrulama Standardı (Gate/Pack)
+## 4) Step 0.6 doğrulama katmanları
+### Runtime
+- `backend/scripts/step06_stabil_check.js`
+- room pool summary + auto-split approve
+- school parent invite create/info/accept
 
-### Canonical (bu repo)
-- **PACK (M0→M36):** `tools\pack.ps1 -To 36`
-- **Gate/check (M0→M36):** `tools\gate.ps1 -To 36`
-- Sıfırdan temiz kurulum + OSRM + pack: `tools\reset-and-pack.ps1` (auto max milestone)
+### Repo contract
+- `tools/check_step06_repo_contract.ps1`
+- external nav UI/utility doğrulamaları
+- company click details doğrulamaları
+- school parent link/public accept doğrulamaları
+- split root cleanup filtre doğrulamaları
 
-> `tools/reset-and-pack.ps1` max milestone’ı `backend/scripts/m{N}check.js` dosyalarından otomatik bulur.
+## 5) SSOT dosyaları
+- `tools/CHECKLIST_SSOT.md`
+- `docs/CHECKLIST_SSOT.md`
+- `docs/PRIMER_SSOT.md`
+- `docs/STARTPACK_V1.md`
+- `tools/PRIMER_SNAPSHOT.md`
+- `docs/overlays/INDEX.md`
+- `docs/overlays/STEP06/README.md`
 
-### ExecutionPolicy sorunu (Windows)
-- `tools\gate.cmd` ve `tools\pack.cmd` wrapper’ları `-ExecutionPolicy Bypass` ile çalışır.
-
----
-
-## 4) En kritik akış (sahada “az tık”)
-1) Geo Review (NEEDS_REVIEW düzelt)  
-2) Agreement/Shift planı oluştur  
-3) (Ops.) Market ile çoklu Room’dan teklif topla  
-4) 1 teklifi ACCEPT et → diğerleri CANCELLED  
-5) ROOM: Onayla + Başlat → ACTIVE  
-6) DRIVER: Reached → DONE  
-
-Kullanım sayfaları: `docs/USAGE_GUIDE_V1.md`
-
----
-
-## 5) Sık Hata / Debug Kısa Rehber
-- **429 / rate-limit**:
-  - PROD: auth/read/write/gps kovaları ayrı.
-  - DEV test: `x-greenpack: 1` limiter/throttle skip (check deterministik olsun diye).
-- **409 conflict** (agreement/availability overlap):
-  - UI conflict listesine bak; start/end veya weekMask düzelt.
-- **403 RBAC**:
-  - Rol + scope mismatch; `docs/API_SPEC_V1.md` ve route dosyalarında rol kontrolünü doğrula.
-- **Notification payload hataları** (ör. `type required`):
-  - Payload standardı: `docs/NOTIFICATION_PAYLOAD_STANDARD.md`
-- **WS “gelmiyor”**:
-  - event name + scope + topic guess (client `web/src/live/ws.js`) doğrula.
-
----
-
-## 6) Notlar (numaralandırma)
-- Gate/Pack milestone = `m{N}check.js` (şu an en yüksek: **M36**).
-- `OVERLAY_NOTES_Mxx` ve “M72/M77” = feature/overlay serisi (Gate ile birebir aynı olmak zorunda değil).
-
----
-
-## ORGANIZATION demo note
-
-- Demo tenant eklendi: `organization@demo.com` / `demo123` (`Company.kind=ORGANIZATION`). V1 uyumluluğu için lokasyon listesi mevcut Personel tablosu üzerinde etiketlenir; ayrı Destination modeli sonraki milestone.
+## 6) Kısa debug notları
+- `docker logs --tail 200 personel_api`
+- gerekirse `personel_redis`
+- WS invalidate için aynı anda en az 2 panel açık tutulur
+- UI tarafı için repo contract smoke, backend tarafı için runtime mini-check kullanılır
