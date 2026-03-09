@@ -7,6 +7,7 @@ import { latLngBounds } from "leaflet";
 import { api } from "../api";
 import { apiOr404Fallback } from "../utils/apiFallback";
 import StopTimeline from "./StopTimeline";
+import { openFullRouteNavigation } from "../utils/navigation";
 
 function FitBounds({ bounds }) {
   const map = useMap();
@@ -35,6 +36,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
     summary: null,
     pathPoints: null,
     source: null,
+    shift: null,
     err: "",
   });
 
@@ -84,10 +86,11 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
             summary: data?.summary ?? null,
             pathPoints: Array.isArray(data?.path?.points) ? data.path.points : null,
             source: data?.path?.source ?? null,
+            shift: data?.shift ?? null,
             err: "",
           });
         } else {
-          setRemote((s) => ({ ...s, stops: null, people: null, summary: null, pathPoints: null, source: null }));
+          setRemote((s) => ({ ...s, stops: null, people: null, summary: null, pathPoints: null, source: null, shift: null }));
         }
       } catch (e) {
         if (!alive) return;
@@ -98,6 +101,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
           summary: null,
           pathPoints: null,
           source: null,
+          shift: null,
           err: e?.message || String(e),
         }));
       }
@@ -159,6 +163,34 @@ function scrollToStopRow(stopId) {
   const endPt = linePts.length ? linePts[linePts.length - 1] : null;
   const showEnd = endPt && startPt && (Math.abs(endPt.lat - startPt.lat) > 1e-9 || Math.abs(endPt.lng - startPt.lng) > 1e-9);
 
+  const previewNavStops = useMemo(() => {
+    const baseStops = (stopPts || []).map((s) => ({
+      ...s,
+      lat: Number(s.lat),
+      lng: Number(s.lng),
+    })).filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && !(Math.abs(s.lat) < 1e-9 && Math.abs(s.lng) < 1e-9));
+
+    const hubLat = Number(remote?.shift?.hubLat);
+    const hubLng = Number(remote?.shift?.hubLng);
+    const hasHub = Number.isFinite(hubLat) && Number.isFinite(hubLng) && !(Math.abs(hubLat) < 1e-9 && Math.abs(hubLng) < 1e-9);
+    const hubStop = hasHub ? { id: '__hub__', title: 'Hub', lat: hubLat, lng: hubLng } : null;
+
+    const direction = String(remote?.summary?.direction || remote?.shift?.direction || '').toUpperCase();
+    const pattern = String(remote?.summary?.pattern || remote?.shift?.pattern || '').toUpperCase();
+
+    if (!hubStop) return baseStops;
+    if (pattern === 'LOOP') return [hubStop, ...baseStops, hubStop];
+    if (direction === 'OUTBOUND') return [hubStop, ...baseStops];
+    return [...baseStops, hubStop];
+  }, [stopPts, remote?.shift, remote?.summary]);
+
+  const canOpenExternalNav = previewNavStops.length >= 2;
+
+  function openPreviewExternalNavigation() {
+    if (!canOpenExternalNav) return;
+    openFullRouteNavigation(previewNavStops, null);
+  }
+
   return (
     <div
       style={{
@@ -219,6 +251,18 @@ function scrollToStopRow(stopId) {
           </div>
         ) : null}
 
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+          <button
+            type="button"
+            className="btn sm"
+            onClick={openPreviewExternalNavigation}
+            disabled={!canOpenExternalNav}
+            title={!canOpenExternalNav ? "Navigasyon için en az 2 nokta gerekir." : ""}
+          >
+            Tam Rotayı Dış Navigasyonda Aç
+          </button>
+        </div>
+
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
           {/* Mini-map */}
           <div className="card" style={{ margin: 0 }}>
@@ -272,6 +316,9 @@ function scrollToStopRow(stopId) {
 
             <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>
               Leaflet mini-harita: Duraklar (1..N) ve rota çizgisi. S=Start, E=End.
+            </div>
+            <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+              Not: Bu önizleme kuş uçuşu/mini görünüm mantığındadır. Kesin rota, km ve dönüşler için “Tam Rotayı Dış Navigasyonda Aç” kullanın.
             </div>
           </div>
 

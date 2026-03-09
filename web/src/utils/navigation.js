@@ -7,6 +7,7 @@ export function stopCoord(stop) {
   const lat = asNum(stop?.lat ?? stop?.location?.lat);
   const lng = asNum(stop?.lng ?? stop?.location?.lng);
   if (lat == null || lng == null) return null;
+  if (Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9) return null;
   return { lat, lng };
 }
 
@@ -15,6 +16,7 @@ export function vehicleCoord(vehicleLike) {
   const lat = asNum(src?.lat);
   const lng = asNum(src?.lng);
   if (lat == null || lng == null) return null;
+  if (Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9) return null;
   return { lat, lng };
 }
 
@@ -66,9 +68,26 @@ export function openFullRouteNavigation(stops, originVehicle) {
     window.alert("Rota açılamadı: uygun durak yok.");
     return;
   }
-  const origin = vehicleCoord(originVehicle);
-  const destination = coords[coords.length - 1].coord;
-  const waypoints = coords.slice(0, -1).map((x) => x.coord);
+
+  const vehicleOrigin = vehicleCoord(originVehicle);
+  const stopOnlyCoords = coords.map((x) => x.coord);
+
+  let origin = vehicleOrigin;
+  let destination = stopOnlyCoords[stopOnlyCoords.length - 1] || null;
+  let waypoints = [];
+
+  if (origin) {
+    waypoints = stopOnlyCoords.slice(0, -1);
+  } else {
+    if (stopOnlyCoords.length < 2) {
+      window.alert("Rota açılamadı: navigasyon için en az 2 nokta gerekir.");
+      return;
+    }
+    origin = stopOnlyCoords[0];
+    destination = stopOnlyCoords[stopOnlyCoords.length - 1];
+    waypoints = stopOnlyCoords.slice(1, -1);
+  }
+
   const url = buildGoogleNavUrl({ origin, destination, waypoints });
   if (!url) {
     window.alert("Rota açılamadı.");
