@@ -34,6 +34,19 @@ function vehicleMetaLine(v) {
   const cap = Number.isFinite(v?.capacity) ? `${v.capacity} koltuk` : "";
   return [type, bmy, cap].filter(Boolean).join(" • ");
 }
+function clickableInfoStyle(disabled = false) {
+  return {
+    border: 0,
+    background: "transparent",
+    padding: 0,
+    margin: 0,
+    color: disabled ? "var(--muted)" : "inherit",
+    cursor: disabled ? "default" : "pointer",
+    textDecoration: disabled ? "none" : "underline dotted",
+    textUnderlineOffset: 3,
+    font: "inherit",
+  };
+}
 function roomLabel(r) {
   if (!r) return "";
   return r.name || r.title || `Room #${r.id}`;
@@ -135,6 +148,7 @@ export default function CompanyShiftsPanel() {
   // M51: Shift süre uzatma (Company → Room talep)
   const [extendModal, setExtendModal] = useState({ open: false, shift: null, endLocal: "", note: "" });
   const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null });
+  const [detailModal, setDetailModal] = useState(null); // { kind: "vehicle"|"driver", data: any }
 
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
@@ -657,6 +671,44 @@ function usePlanDraftToRequest(draft) {
     for (const v of vehicles) m.set(Number(v.id), v);
     return m;
   }, [vehicles]);
+
+  const driversById = useMemo(() => {
+    const m = new Map();
+    for (const s of items) {
+      const d = s?.driver;
+      const id = Number(d?.id || s?.driverId || 0);
+      if (id > 0) m.set(id, { ...(m.get(id) || {}), ...d, id });
+    }
+    for (const v of vehicles) {
+      const d = v?.driver;
+      const id = Number(d?.id || v?.driverId || 0);
+      if (id > 0) {
+        m.set(id, {
+          ...(m.get(id) || {}),
+          ...d,
+          id,
+          currentVehiclePlate: v?.plate || (m.get(id) || {}).currentVehiclePlate || "",
+        });
+      }
+    }
+    return m;
+  }, [items, vehicles]);
+
+  function openVehicleDetail(s) {
+    const id = Number(s?.vehicleId || s?.vehicle?.id || 0);
+    const live = id > 0 ? vehiclesById.get(id) : null;
+    const merged = { ...(s?.vehicle || {}), ...(live || {}) };
+    if (!merged?.id && !merged?.plate) return;
+    setDetailModal({ kind: "vehicle", data: merged });
+  }
+
+  function openDriverDetail(s) {
+    const id = Number(s?.driverId || s?.driver?.id || 0);
+    const live = id > 0 ? driversById.get(id) : null;
+    const merged = { ...(s?.driver || {}), ...(live || {}) };
+    if (!merged?.id && !merged?.fullName) return;
+    setDetailModal({ kind: "driver", data: merged });
+  }
 
   const seatN = useMemo(() => (seatDemand ? Number(seatDemand) : null), [seatDemand]);
 
@@ -2195,8 +2247,34 @@ function usePlanDraftToRequest(draft) {
                   <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
                   <td>{renderRoomOfferSummary(s, false)}</td>
                   <td>{renderCompanyOfferSummary(s)}</td>
-                  <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
-                  <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
+                  <td className="muted">
+                    {s.vehicle?.plate || s.vehicleId ? (
+                      <button
+                        type="button"
+                        onClick={() => openVehicleDetail(s)}
+                        style={clickableInfoStyle(!(s.vehicle?.plate || s.vehicleId))}
+                        title="Araç detayını aç"
+                      >
+                        {s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}
+                      </button>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="muted">
+                    {s.driver?.fullName || s.driverId ? (
+                      <button
+                        type="button"
+                        onClick={() => openDriverDetail(s)}
+                        style={clickableInfoStyle(!(s.driver?.fullName || s.driverId))}
+                        title="Sürücü detayını aç"
+                      >
+                        {s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}
+                      </button>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                   <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
                   <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
                 
@@ -2240,6 +2318,46 @@ function usePlanDraftToRequest(draft) {
       ) : null}
 
       
+
+{detailModal ? (
+  <div className="modal-backdrop" onClick={() => setDetailModal(null)}>
+    <div className="modal card" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <b>{detailModal.kind === "vehicle" ? "Araç Bilgileri" : "Sürücü Bilgileri"}</b>
+          <div className="muted" style={{ marginTop: 4 }}>
+            {detailModal.kind === "vehicle"
+              ? detailModal.data?.plate || "Araç"
+              : detailModal.data?.fullName || "Sürücü"}
+          </div>
+        </div>
+        <button type="button" onClick={() => setDetailModal(null)}>Kapat</button>
+      </div>
+
+      {detailModal.kind === "vehicle" ? (
+        <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+          <div><b>Plaka:</b> {detailModal.data?.plate || "-"}</div>
+          <div><b>Tip / Model:</b> {vehicleMetaLine(detailModal.data) || "-"}</div>
+          <div><b>Durum:</b> {detailModal.data?.status || "-"}</div>
+          <div><b>Kapasite:</b> {Number.isFinite(detailModal.data?.capacity) ? `${detailModal.data.capacity} koltuk` : "-"}</div>
+          <div><b>KM:</b> {Number.isFinite(detailModal.data?.odometerKm) ? `${detailModal.data.odometerKm} km` : "-"}</div>
+          <div><b>Hız limiti:</b> {Number.isFinite(detailModal.data?.speedLimitKmh) ? `${detailModal.data.speedLimitKmh} km/s` : "-"}</div>
+          <div><b>Renk:</b> {detailModal.data?.color || "-"}</div>
+          <div><b>Son km güncelleme:</b> {detailModal.data?.odometerUpdatedAt ? fmtTR(detailModal.data.odometerUpdatedAt) : "-"}</div>
+          <div><b>Not:</b> {detailModal.data?.note || "-"}</div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+          <div><b>Ad Soyad:</b> {detailModal.data?.fullName || "-"}</div>
+          <div><b>Telefon:</b> {detailModal.data?.phone || "-"}</div>
+          <div><b>E-posta:</b> {detailModal.data?.user?.email || "-"}</div>
+          <div><b>Cihaz:</b> {detailModal.data?.deviceInfo || "-"}</div>
+          <div><b>Bağlı araç:</b> {detailModal.data?.currentVehiclePlate || "-"}</div>
+        </div>
+      )}
+    </div>
+  </div>
+) : null}
 
 {/* M74.2.1: Preview modal from Company list */}
 {previewModal.open ? (
