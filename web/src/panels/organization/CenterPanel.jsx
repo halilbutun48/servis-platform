@@ -1,70 +1,152 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 
+function fmtDateOnly(v) {
+  const s = String(v || "").slice(0, 10);
+  return s || "-";
+}
+
+function statusLabel(status) {
+  const s = String(status || "DRAFT").toUpperCase();
+  if (s === "SHIFT_PUBLISHED") return "MARKETE AÇILDI";
+  if (s === "AGREEMENT_REQUESTED") return "SÖZLEŞME TALEBİ";
+  if (s === "CANCELLED") return "İPTAL";
+  return s;
+}
+
 export default function OrganizationCenterPanel() {
-  const { token } = useSession();
   const [plans, setPlans] = useState([]);
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   async function load() {
-    if (!token) return;
+    setBusy(true);
+    setErr("");
     try {
-      const r = await api('/api/organization/plans', { token });
+      const r = await api.get("/api/organization/plans");
       setPlans(Array.isArray(r?.items) ? r.items : []);
     } catch (e) {
       setErr(String(e?.message || e));
       setPlans([]);
+    } finally {
+      setBusy(false);
     }
   }
 
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const draft = plans.filter((p) => String(p.status).toUpperCase() === 'DRAFT').length;
-  const published = plans.filter((p) => String(p.status).toUpperCase() === 'PUBLISHED').length;
-  const totalStops = plans.reduce((a, p) => a + Number(p?._count?.stops || p?.stops?.length || 0), 0);
+  const stats = useMemo(() => {
+    const items = Array.isArray(plans) ? plans : [];
+    return {
+      total: items.length,
+      draft: items.filter((p) => String(p?.status || "").toUpperCase() === "DRAFT").length,
+      published: items.filter((p) => String(p?.status || "").toUpperCase() === "SHIFT_PUBLISHED").length,
+      totalStops: items.reduce((sum, p) => sum + Number(p?.stops?.length || 0), 0),
+    };
+  }, [plans]);
+
+  function openPlan(id) {
+    try {
+      sessionStorage.setItem("organization:selectedPlanId", String(id));
+    } catch {}
+    navigate("/organization/plans");
+  }
 
   return (
-    <div className="stack">
+    <div className="wrap">
       <div className="card">
-        <div className="title">Organization — Planlama Merkezi</div>
-        <div className="muted">Personel listesi yerine gidilecek yerler listesi ile çalışan organization modu. Plan oluştur → lokasyon ekle → taslak shift üret → operasyonu mevcut ROOM/DRIVER akışıyla yürüt.</div>
+        <div className="title">Organizasyon Merkezi</div>
+        <div className="muted">
+          Operasyonun asıl çalışma ekranı <b>Yer Planları</b> ekranıdır. Buradan planı açar,
+          markete çıkarır, room&apos;lara fiyatlı teklif yollar ve onay sonrası canlı haritadan takip edersin.
+        </div>
       </div>
 
-      {err ? <div className="card" style={{ color: 'crimson' }}>{err}</div> : null}
+      {err ? (
+        <div className="card err" style={{ marginTop: 12 }}>
+          {err}
+        </div>
+      ) : null}
 
-      <div className="grid cols-3">
-        <div className="card"><div className="muted">Plan sayısı</div><div className="title">{plans.length}</div></div>
-        <div className="card"><div className="muted">Taslak plan</div><div className="title">{draft}</div></div>
-        <div className="card"><div className="muted">Toplam lokasyon</div><div className="title">{totalStops}</div></div>
+      <div className="grid cols-2" style={{ marginTop: 12 }}>
+        <div className="card">
+          <div className="muted">Plan sayısı</div>
+          <div className="big">{stats.total}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Taslak plan</div>
+          <div className="big">{stats.draft}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Toplam lokasyon</div>
+          <div className="big">{stats.totalStops}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Markete açılmış plan</div>
+          <div className="big">{stats.published}</div>
+        </div>
       </div>
 
-      <div className="card">
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="card" style={{ marginTop: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <div>
-            <div className="title">Organization planları</div>
-            <div className="muted">Published planlar vardiya akışına taslak shift olarak aktarılır.</div>
+            <div className="title">Hızlı Erişim</div>
+            <div className="muted">
+              Harita ekranı organization tarafında da company canlı harita yeteneklerini kullanır:
+              rota sırası, sıradaki durak, dış navigasyon.
+            </div>
           </div>
-          <div className="row">
-            <button type="button" className="btn" onClick={() => navigate('/organization/plans')}>Yer planları</button>
-            <button type="button" className="btn" onClick={() => navigate('/organization/shifts')}>Vardiyalar</button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => navigate("/organization/plans")}>Yer Planları</button>
+            <button type="button" onClick={() => navigate("/organization/shifts")}>Vardiyalar</button>
+            <button type="button" onClick={() => navigate("/organization/map")}>Canlı Harita</button>
           </div>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div className="title">Son Planlar</div>
+            <div className="muted">Planı açınca Yer Planları ekranında otomatik seçilir.</div>
+          </div>
+          <button type="button" onClick={load} disabled={busy}>
+            {busy ? "..." : "Yenile"}
+          </button>
+        </div>
+
         <table className="table" style={{ marginTop: 12 }}>
-          <thead><tr><th>Plan</th><th>Tarih</th><th>Durum</th><th>Lokasyon</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th>Tarih</th>
+              <th>Durum</th>
+              <th>Lokasyon</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody>
             {plans.map((p) => (
               <tr key={p.id}>
-                <td>{p.name}</td>
-                <td>{String(p.eventDate || p.startAt || '').slice(0, 10) || '-'}</td>
-                <td><span className="pill">{p.status}</span></td>
-                <td>{p?._count?.stops || p?.stops?.length || 0}</td>
-                <td><button type="button" className="btn sm" onClick={() => navigate('/organization/plans?id=' + p.id)}>Aç</button></td>
+                <td>{p.title || `Plan #${p.id}`}</td>
+                <td>{fmtDateOnly(p.planDate)}</td>
+                <td><span className="pill">{statusLabel(p.status)}</span></td>
+                <td>{p?.stops?.length || 0}</td>
+                <td>
+                  <button type="button" className="btn sm" onClick={() => openPlan(p.id)}>
+                    Aç
+                  </button>
+                </td>
               </tr>
             ))}
-            {!plans.length ? <tr><td colSpan={5} className="muted">Henüz plan yok.</td></tr> : null}
+            {!plans.length ? (
+              <tr>
+                <td colSpan={5} className="muted">Henüz plan yok.</td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>

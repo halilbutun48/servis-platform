@@ -68,13 +68,14 @@ export const createVehicleSchema = z.object({
 
 
 export const createDriverSchema = z.object({
-  fullName: z.string().min(2),
-  phone: z.string().min(6),
-  deviceInfo: z.string().min(1).default(""),
+  fullName: z.string().trim().min(2),
+  phone: z.string().trim().min(6),
+  // boş bırakılabilir
+  deviceInfo: z.string().trim().optional().default(""),
   backupDriverId: z.number().int().optional(),
 
   // opsiyonel: driver login hesabı
-  email: z.string().email().optional(),
+  email: z.string().trim().email().optional(),
   password: z.string().min(3).optional(),
 });
 

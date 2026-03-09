@@ -6,9 +6,14 @@ import {
   findAgreementConflictForRange,
   agreementConflictResponse,
 } from "../services/agreementConflict.js";
+import { prisma } from "../prisma.js";
 import { findAgreementConflictsForRangeBatch } from "../services/agreementConflictBatch.js";
 import { findShiftConflictsForRangeBatch } from "../services/shiftConflictBatch.js";
-import { prisma } from "../prisma.js";
+import {
+  getShiftDemandSnapshot,
+  buildCapacityConflict,
+  buildRoomPoolSummary,
+} from "../services/roomPoolPlanner.js";
 
 const r = express.Router();
 
@@ -90,7 +95,8 @@ r.get("/", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) 
   try {
     const driverId = toIntOrNull(req.query.driverId);
     const vehicleId = toIntOrNull(req.query.vehicleId);
-    const excludeShiftId = toIntOrNull(req.query.excludeShiftId);
+    const shiftId = toIntOrNull(req.query.shiftId);
+    const excludeShiftId = toIntOrNull(req.query.excludeShiftId) ?? shiftId;
 
     const startAt = toIsoOrNull(req.query.startAt);
     const endAt = toIsoOrNull(req.query.endAt);
@@ -98,14 +104,64 @@ r.get("/", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) 
     if (!startAt || !endAt) return res.status(400).json({ error: "startAt/endAt required" });
     if (!driverId && !vehicleId) return res.status(400).json({ error: "driverId or vehicleId required" });
 
+    let demand = null;
+    let vehicle = null;
+    if (vehicleId && shiftId) {
+      [demand, vehicle] = await Promise.all([
+        getShiftDemandSnapshot(shiftId),
+        prisma.vehicle.findUnique({
+          where: { id: vehicleId },
+          select: { id: true, capacity: true },
+        }),
+      ]);
+
+      if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
+
+      const capacityConflict = buildCapacityConflict({
+        requiredPax: demand?.requiredPax ?? 0,
+        vehicleCapacity: vehicle?.capacity ?? 0,
+      });
+      if (capacityConflict) return res.status(409).json(capacityConflict);
+    }
+
     const row = await checkOne({ vehicleId, driverId, startAt, endAt, excludeShiftId });
 
     if (vehicleId && !row.vehicleOk) return res.status(409).json(row.vehicleConflict);
     if (driverId && !row.driverOk) return res.status(409).json(row.driverConflict);
 
-    return res.json({ ok: true });
+    return res.json({
+      ok: true,
+      shiftId: shiftId ?? null,
+      requiredPax: demand?.requiredPax ?? 0,
+      vehicleCapacity: vehicle?.capacity ?? null,
+    });
   } catch (e) {
     return res.status(500).json({ error: String(e?.message ?? e) });
+  }
+});
+
+
+// GET /api/availability/pool?shiftId=..
+// Room havuzundaki müsait araç/driver kombinasyonunu özetler.
+r.get("/pool", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+  try {
+    const shiftId = toIntOrNull(req.query.shiftId);
+    if (!shiftId) return res.status(400).json({ error: "shiftId required" });
+
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      select: { id: true, roomId: true },
+    });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (!shift.roomId) return res.status(400).json({ error: "Shift has no roomId" });
+    if (req.user?.role === "ROOM" && Number(req.user?.roomId || 0) !== Number(shift.roomId || 0)) {
+      return res.status(403).json({ error: "Shift is not in this room scope" });
+    }
+
+    const data = await buildRoomPoolSummary({ shiftId });
+    return res.json(data);
+  } catch (e) {
+    return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
   }
 });
 

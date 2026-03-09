@@ -61,14 +61,31 @@ export function driversRouter(io) {
     if (!u.roomId) return res.status(400).json({ code: "BAD_REQUEST", message: "ROOM must have roomId" });
 
     const parsed = createDriverSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    if (!parsed.success) {
+      const flat = parsed.error.flatten();
+      const firstFieldKey = Object.keys(flat?.fieldErrors || {}).find((k) => Array.isArray(flat.fieldErrors[k]) && flat.fieldErrors[k].length);
+      const firstFieldMsg = firstFieldKey ? flat.fieldErrors[firstFieldKey]?.[0] : null;
+      const formMsg = Array.isArray(flat?.formErrors) && flat.formErrors.length ? flat.formErrors[0] : null;
+      return res.status(400).json({
+        code: "VALIDATION_ERROR",
+        message: firstFieldMsg || formMsg || "Geçersiz sürücü verisi",
+        details: flat,
+      });
+    }
 
     const { fullName, phone, deviceInfo, email, password } = parsed.data;
+
 
     let userId = null;
 
     // optional login user create
     if (email || password) {
+      if (!email || !password) {
+        return res.status(400).json({
+          code: "BAD_REQUEST",
+          message: "Login hesabı açmak için email ve şifre birlikte girilmeli",
+        });
+      }
       if (!isValidEmail(email)) return res.status(400).json({ code: "BAD_REQUEST", message: "email geçersiz" });
       if (String(password || "").length < 4) return res.status(400).json({ code: "BAD_REQUEST", message: "password çok kısa" });
 

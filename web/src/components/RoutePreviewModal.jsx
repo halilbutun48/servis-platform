@@ -71,7 +71,9 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
               title: String(s?.title ?? s?.name ?? ""),
               lat: typeof s?.lat === "number" ? s.lat : (typeof s?.stopLat === "number" ? s.stopLat : null),
               lng: typeof s?.lng === "number" ? s.lng : (typeof s?.stopLng === "number" ? s.stopLng : null),
-              count: (s?.assignmentCount ?? s?.count ?? null),
+              count: (s?.previewCount ?? s?.assignmentCount ?? s?.passengerCount ?? s?.count ?? null),
+              assignmentCount: (s?.assignmentCount ?? null),
+              passengerCount: (s?.passengerCount ?? null),
             })),
             people: p.map((x) => ({
               id: String(x?.id ?? ""),
@@ -179,7 +181,9 @@ function scrollToStopRow(stopId) {
         {remote.err ? <div className="card err" style={{ marginTop: 12 }}>{remote.err}</div> : null}
 
         <div className="muted" style={{ marginTop: 8 }}>
-          Durak: {stopPts.length} • Personel (koordinatlı): {peoplePts.length}
+          Durak: {stopPts.length}
+          {remote.summary?.totalPassengerCount != null ? ` • Toplam Kişi: ${remote.summary.totalPassengerCount}` : ""}
+          {peoplePts.length ? ` • Personel (koordinatlı): ${peoplePts.length}` : ""}
         </div>
 
         {remote.summary ? (
@@ -194,6 +198,7 @@ function scrollToStopRow(stopId) {
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
               <div>Durak: <b>{remote.summary.stopCount ?? stopPts.length}</b></div>
+              <div>Kişi: <b>{Number(remote.summary.totalPassengerCount ?? stopPts.reduce((sum, s) => sum + Number(s.count ?? 0), 0))}</b></div>
               <div>KM (tahmini): <b>{Number(remote.summary.distanceKmEstimated || 0).toFixed(2)}</b></div>
               <div>Süre (tahmini): <b>{Number(remote.summary.durationMinEstimated || 0)}</b> dk</div>
 

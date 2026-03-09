@@ -23,59 +23,55 @@ const fieldLabelStyle = {
   color: "rgba(255,255,255,.72)",
 };
 
+const inputStyle = {
+  width: "100%",
+  minWidth: 0,
+};
+
 function minToHm(min) {
   const n = Number(min || 0);
-  const h = String(Math.floor(n / 60)).padStart(2, "0");
-  const m = String(n % 60).padStart(2, "0");
-  return `${h}:${m}`;
+  return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 }
 
 function hmToMin(v, fallback = 0) {
-  const s = String(v || "").trim();
-  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  const m = String(v || "").trim().match(/^(\d{1,2}):(\d{2})$/);
   if (!m) return fallback;
   const h = Number(m[1]);
   const mm = Number(m[2]);
-  if (h < 0 || h > 23 || mm < 0 || mm > 59) return fallback;
-  return h * 60 + mm;
+  return h < 0 || h > 23 || mm < 0 || mm > 59 ? fallback : h * 60 + mm;
 }
 
 function parseBulk(text) {
   const lines = String(text || "")
     .split(/\r?\n/)
-    .map((x) => x.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 
-  const out = [];
-  for (const line of lines) {
-    const parts = line.split(/[;,\t|]/).map((x) => x.trim());
-    if (parts.length < 4) continue;
+  return lines
+    .map((line, idx) => {
+      const [name, address, lat, lng, count, ws, we, note] = line
+        .split(/[;,\t|]/)
+        .map((s) => s.trim());
 
-    const [name, address, lat, lng, count, ws, we, note] = parts;
-    const latNum = Number(lat);
-    const lngNum = Number(lng);
-    if (!name || !Number.isFinite(latNum) || !Number.isFinite(lngNum)) continue;
-
-    out.push({
-      name,
-      address: address || "",
-      lat: latNum,
-      lng: lngNum,
-      passengerCount: Math.max(1, Number(count) || 1),
-      windowStartMin: ws ? hmToMin(ws, null) : null,
-      windowEndMin: we ? hmToMin(we, null) : null,
-      note: note || "",
-    });
-  }
-
-  return out.map((row, idx) => ({ ...row, order: idx + 1 }));
+      return {
+        order: idx + 1,
+        name,
+        address: address || "",
+        lat: Number(lat),
+        lng: Number(lng),
+        passengerCount: Math.max(1, Number(count) || 1),
+        windowStartMin: ws ? hmToMin(ws, null) : null,
+        windowEndMin: we ? hmToMin(we, null) : null,
+        note: note || "",
+      };
+    })
+    .filter((x) => x.name && Number.isFinite(x.lat) && Number.isFinite(x.lng));
 }
 
 function statusLabel(status) {
   const s = String(status || "DRAFT").toUpperCase();
-  if (s === "SHIFT_PUBLISHED") return "VARDİYA OLUŞTU";
+  if (s === "SHIFT_PUBLISHED") return "TEKLİF/VARDİYA AÇILDI";
   if (s === "AGREEMENT_REQUESTED") return "SÖZLEŞME TALEBİ";
-  if (s === "CANCELLED") return "İPTAL";
   return s;
 }
 
@@ -83,30 +79,20 @@ function Pill({ children }) {
   return (
     <span
       className="pill"
-      style={{
-        whiteSpace: "nowrap",
-        display: "inline-flex",
-        alignItems: "center",
-      }}
+      style={{ whiteSpace: "nowrap", display: "inline-flex", alignItems: "center" }}
     >
       {children}
     </span>
   );
 }
 
-function SummaryCard({
-  current,
-  summary,
-  busy,
-  onSave,
-  onPublishShift,
-  onCreateAgreement,
-}) {
+function SummaryCard({ current, summary, busy, onSave, onOpenOfferBox, onCreateAgreement }) {
   return (
     <div className="card">
       <div className="title">Özet ve Aksiyonlar</div>
       <div className="muted" style={{ marginBottom: 10 }}>
-        Planın genel durumu, lokasyon sayısı ve operasyon aksiyonları.
+        Şirketlere Teklif Gönder = fiyatlı teklif akışı. Teklifler karşı tarafta Offers ekranına
+        düşer. Sözleşme talebi için Room ID kullanılır.
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
@@ -124,10 +110,16 @@ function SummaryCard({
         <button type="button" disabled={busy} onClick={onSave}>
           {busy ? "Kaydediliyor..." : "Kaydet"}
         </button>
-        <button type="button" disabled={busy || !current.id} onClick={onPublishShift}>
-          Talep Vardiyası Oluştur
+
+        <button type="button" disabled={busy || !current.id} onClick={onOpenOfferBox}>
+          Şirketlere Teklif Gönder
         </button>
-        <button type="button" disabled={busy || !current.id} onClick={onCreateAgreement}>
+
+        <button
+          type="button"
+          disabled={busy || !current.id || !current.roomId}
+          onClick={onCreateAgreement}
+        >
           Sözleşme Talebi Oluştur
         </button>
       </div>
@@ -137,18 +129,14 @@ function SummaryCard({
 
 function MiniMapPreview({ stops }) {
   const pts = (stops || [])
-    .map((s) => ({
-      name: s.name || "",
-      lat: Number(s.lat),
-      lng: Number(s.lng),
-    }))
+    .map((s) => ({ name: s.name || "", lat: Number(s.lat), lng: Number(s.lng) }))
     .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng));
 
   if (!pts.length) {
     return (
       <div className="card">
         <div className="title">Mini Harita Önizleme</div>
-        <div className="muted">Harita önizleme için geçerli koordinatlı lokasyon ekleyin.</div>
+        <div className="muted">Koordinatlı lokasyon ekleyin.</div>
       </div>
     );
   }
@@ -158,17 +146,18 @@ function MiniMapPreview({ stops }) {
   const minLng = Math.min(...pts.map((p) => p.lng));
   const maxLng = Math.max(...pts.map((p) => p.lng));
 
-  const pad = 20;
+  const pad = 18;
   const w = 260;
   const h = 180;
   const latSpan = Math.max(0.0001, maxLat - minLat);
   const lngSpan = Math.max(0.0001, maxLng - minLng);
 
-  const scaled = pts.map((p, i) => {
-    const x = pad + ((p.lng - minLng) / lngSpan) * (w - pad * 2);
-    const y = h - pad - ((p.lat - minLat) / latSpan) * (h - pad * 2);
-    return { ...p, x, y, i };
-  });
+  const scaled = pts.map((p, i) => ({
+    ...p,
+    x: pad + ((p.lng - minLng) / lngSpan) * (w - pad * 2),
+    y: h - pad - ((p.lat - minLat) / latSpan) * (h - pad * 2),
+    i,
+  }));
 
   const poly = scaled.map((p) => `${p.x},${p.y}`).join(" ");
 
@@ -199,19 +188,9 @@ function MiniMapPreview({ stops }) {
           strokeLinecap="round"
         />
         {scaled.map((p) => (
-          <g key={`${p.name}-${p.i}`}>
-            <circle
-              cx={p.x}
-              cy={p.y}
-              r={p.i === 0 ? 6 : 5}
-              fill={p.i === 0 ? "#5b8cff" : "rgba(255,255,255,.92)"}
-            />
-            <text
-              x={p.x + 8}
-              y={p.y - 8}
-              fontSize="10"
-              fill="rgba(255,255,255,.82)"
-            >
+          <g key={p.i}>
+            <circle cx={p.x} cy={p.y} r={p.i === 0 ? 6 : 5} fill={p.i === 0 ? "#5b8cff" : "rgba(255,255,255,.92)"} />
+            <text x={p.x + 8} y={p.y - 8} fontSize="10" fill="rgba(255,255,255,.82)">
               {p.i + 1}
             </text>
           </g>
@@ -219,7 +198,7 @@ function MiniMapPreview({ stops }) {
       </svg>
 
       <div className="muted" style={{ marginTop: 8 }}>
-        Başlangıç: {scaled[0]?.name || "-"} • Bitiş: {scaled[scaled.length - 1]?.name || "-"}
+        Başlangıç: {scaled[0]?.name || "-"} • Bitiş: {scaled.at(-1)?.name || "-"}
       </div>
     </div>
   );
@@ -238,9 +217,7 @@ function PlanListItem({ item, active, onClick }) {
         background: active ? "rgba(91,140,255,.12)" : "rgba(255,255,255,.03)",
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>
-        {item.title || `Plan #${item.id}`}
-      </div>
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.title || `Plan #${item.id}`}</div>
       <div className="muted">
         {String(item.planDate || "").slice(0, 10)} • {statusLabel(item.status)}
       </div>
@@ -260,7 +237,6 @@ function StopCard({
   onMoveUp,
   onMoveDown,
   onDragStart,
-  onDragOver,
   onDrop,
   isDragging,
 }) {
@@ -269,10 +245,7 @@ function StopCard({
       className="card"
       draggable
       onDragStart={() => onDragStart(index)}
-      onDragOver={(e) => {
-        e.preventDefault();
-        onDragOver(index);
-      }}
+      onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
         onDrop(index);
@@ -314,20 +287,14 @@ function StopCard({
           <Pill>#{index + 1}</Pill>
           <span style={{ fontWeight: 700 }}>{row.name || `Lokasyon ${index + 1}`}</span>
           <span className="muted">{row.passengerCount || 1} kişi</span>
-          <span className="muted">
-            {isOpen ? "▾ Detayları gizle" : "▸ Detayları göster"}
-          </span>
+          <span className="muted">{isOpen ? "▾ Detayları gizle" : "▸ Detayları göster"}</span>
         </button>
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <button type="button" disabled={index === 0} onClick={() => onMoveUp(index)}>
             ↑
           </button>
-          <button
-            type="button"
-            disabled={index === total - 1}
-            onClick={() => onMoveDown(index)}
-          >
+          <button type="button" disabled={index === total - 1} onClick={() => onMoveDown(index)}>
             ↓
           </button>
           <button type="button" onClick={() => onRemove(index)}>
@@ -360,7 +327,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               İsim
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 value={row.name || ""}
                 onChange={(e) => onChange(index, { ...row, name: e.target.value })}
               />
@@ -369,7 +336,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               Adres
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 value={row.address || ""}
                 onChange={(e) => onChange(index, { ...row, address: e.target.value })}
               />
@@ -386,7 +353,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               Lat
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 value={row.lat ?? ""}
                 onChange={(e) => onChange(index, { ...row, lat: e.target.value })}
               />
@@ -395,7 +362,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               Lng
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 value={row.lng ?? ""}
                 onChange={(e) => onChange(index, { ...row, lng: e.target.value })}
               />
@@ -404,7 +371,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               Pencere Baş.
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 placeholder="08:30"
                 value={row.windowStartMin == null ? "" : minToHm(row.windowStartMin)}
                 onChange={(e) =>
@@ -419,7 +386,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               Pencere Bit.
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 placeholder="09:15"
                 value={row.windowEndMin == null ? "" : minToHm(row.windowEndMin)}
                 onChange={(e) =>
@@ -434,7 +401,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               Kişi
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 type="number"
                 min="1"
                 value={row.passengerCount ?? 1}
@@ -445,7 +412,7 @@ function StopCard({
             <label style={fieldLabelStyle}>
               Not
               <input
-                style={{ width: "100%", minWidth: 0 }}
+                style={inputStyle}
                 value={row.note || ""}
                 onChange={(e) => onChange(index, { ...row, note: e.target.value })}
               />
@@ -466,13 +433,36 @@ export default function OrganizationPlansPanel() {
   const [openStops, setOpenStops] = useState({ 0: true });
   const [dragIndex, setDragIndex] = useState(null);
 
+  const [rooms, setRooms] = useState([]);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [roomSearch, setRoomSearch] = useState("");
+  const [selectedRoomIds, setSelectedRoomIds] = useState([]);
+  const [offerAmount, setOfferAmount] = useState("");
+  const [offerNote, setOfferNote] = useState("");
+
   async function load() {
     const data = await api.get("/api/organization/plans");
     setItems(Array.isArray(data?.items) ? data.items : []);
+
+    const roomRes = await api.get("/api/organization/rooms").catch(() => ({ items: [] }));
+    setRooms(Array.isArray(roomRes?.items) ? roomRes.items : []);
   }
 
   useEffect(() => {
     load().catch((e) => setMsg(String(e?.message || e)));
+
+    try {
+      const pid = sessionStorage.getItem("organization:selectedPlanId");
+      if (pid) {
+        sessionStorage.removeItem("organization:selectedPlanId");
+        setTimeout(async () => {
+          try {
+            const p = await api.get(`/api/organization/plans/${pid}`);
+            pick(p);
+          } catch {}
+        }, 0);
+      }
+    } catch {}
   }, []);
 
   function pick(item) {
@@ -498,11 +488,15 @@ export default function OrganizationPlansPanel() {
     setBulk("");
     setOpenStops({ 0: true });
     setMsg("");
+    setSelectedRoomIds([]);
+    setOfferAmount("");
+    setOfferNote("");
   }
 
   async function savePlan() {
     setBusy(true);
     setMsg("");
+
     try {
       const payload = {
         title: current.title,
@@ -538,13 +532,15 @@ export default function OrganizationPlansPanel() {
     }
   }
 
-  async function publishShift() {
+  async function createAgreement() {
     if (!current.id) return;
+
     setBusy(true);
     setMsg("");
+
     try {
-      const data = await api.post(`/api/organization/plans/${current.id}/publish-shift`, {});
-      setMsg(`Talep vardiyası oluşturuldu. Shift #${data.shiftId}`);
+      const data = await api.post(`/api/organization/plans/${current.id}/create-agreement`, {});
+      setMsg(`Sözleşme talebi oluşturuldu. Agreement #${data.agreementId}`);
       await load();
     } catch (e) {
       setMsg(String(e?.message || e));
@@ -553,14 +549,30 @@ export default function OrganizationPlansPanel() {
     }
   }
 
-  async function createAgreement() {
+  async function sendOffers() {
     if (!current.id) return;
+
     setBusy(true);
     setMsg("");
+
     try {
-      const data = await api.post(`/api/organization/plans/${current.id}/create-agreement`, {});
-      setMsg(`Sözleşme talebi oluşturuldu. Agreement #${data.agreementId}`);
+      const data = await api.post(`/api/organization/plans/${current.id}/send-offers`, {
+        roomIds: selectedRoomIds,
+        amountCompany: Number(offerAmount),
+        noteCompany: offerNote || null,
+      });
+
+      setMsg(`Teklifler gönderildi. Shift #${data.shiftId} • Şirket: ${data.roomIds.length}`);
+      setOfferOpen(false);
       await load();
+
+      if (data?.shiftId) {
+        setCurrent((p) => ({
+          ...p,
+          publishedShiftId: data.shiftId,
+          status: "SHIFT_PUBLISHED",
+        }));
+      }
     } catch (e) {
       setMsg(String(e?.message || e));
     } finally {
@@ -574,6 +586,7 @@ export default function OrganizationPlansPanel() {
       setMsg("İçe aktarılacak geçerli satır bulunamadı.");
       return;
     }
+
     setCurrent((p) => ({ ...p, stops: rows }));
     setOpenStops(Object.fromEntries(rows.map((_, i) => [i, i === 0])));
     setMsg(`${rows.length} lokasyon içe aktarıldı.`);
@@ -674,24 +687,29 @@ export default function OrganizationPlansPanel() {
     setOpenStops(Object.fromEntries(current.stops.map((_, i) => [i, false])));
   }
 
-  const summary = useMemo(() => {
-    const count = (current.stops || []).length;
-    const pax = (current.stops || []).reduce(
-      (s, x) => s + Number(x.passengerCount || 0),
-      0
-    );
-    return { count, pax };
-  }, [current.stops]);
+  const summary = useMemo(
+    () => ({
+      count: (current.stops || []).length,
+      pax: (current.stops || []).reduce((s, x) => s + Number(x.passengerCount || 0), 0),
+    }),
+    [current.stops]
+  );
+
+  const filteredRooms = useMemo(
+    () =>
+      rooms.filter((r) =>
+        String(r.name || "").toLowerCase().includes(roomSearch.toLowerCase())
+      ),
+    [rooms, roomSearch]
+  );
 
   return (
-    <div
-      className="wrap"
-      style={{ maxWidth: "none", width: "100%", paddingRight: 12, overflowX: "hidden" }}
-    >
+    <div className="wrap" style={{ maxWidth: "none", width: "100%", paddingRight: 12, overflowX: "hidden" }}>
       <div className="card" style={{ width: "100%" }}>
-        <div className="title">Organizasyon Planları</div>
+        <div className="title">Yer Planları</div>
         <div className="muted">
-          Gerçek veri modeli: lokasyon listesi, saat penceresi, plan → vardiya / sözleşme.
+          Organization akışı: <b>Kaydet</b> → <b>Şirketlere Teklif Gönder</b> veya{" "}
+          <b>Sözleşme Talebi Oluştur</b> → canlı operasyon için <b>Harita</b>.
         </div>
       </div>
 
@@ -710,7 +728,10 @@ export default function OrganizationPlansPanel() {
           <div className="muted" style={{ marginBottom: 10 }}>
             Hazır planı seç veya yeni plan başlat.
           </div>
-          <button type="button" onClick={resetForm}>+ Yeni Plan</button>
+
+          <button type="button" onClick={resetForm}>
+            + Yeni Plan
+          </button>
 
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
             {items.map((it) => (
@@ -743,6 +764,7 @@ export default function OrganizationPlansPanel() {
               <label style={fieldLabelStyle}>
                 Başlık
                 <input
+                  style={inputStyle}
                   value={current.title}
                   onChange={(e) => setCurrent((p) => ({ ...p, title: e.target.value }))}
                 />
@@ -752,6 +774,7 @@ export default function OrganizationPlansPanel() {
                 Tarih
                 <input
                   type="date"
+                  style={inputStyle}
                   value={current.planDate}
                   onChange={(e) => setCurrent((p) => ({ ...p, planDate: e.target.value }))}
                 />
@@ -761,6 +784,7 @@ export default function OrganizationPlansPanel() {
                 Başlangıç
                 <input
                   type="time"
+                  style={inputStyle}
                   value={minToHm(current.startMin)}
                   onChange={(e) =>
                     setCurrent((p) => ({
@@ -775,6 +799,7 @@ export default function OrganizationPlansPanel() {
                 Bitiş
                 <input
                   type="time"
+                  style={inputStyle}
                   value={minToHm(current.endMin)}
                   onChange={(e) =>
                     setCurrent((p) => ({
@@ -794,8 +819,9 @@ export default function OrganizationPlansPanel() {
               }}
             >
               <label style={fieldLabelStyle}>
-                Room ID (opsiyonel)
+                Room ID (sadece agreement)
                 <input
+                  style={inputStyle}
                   value={current.roomId}
                   onChange={(e) => setCurrent((p) => ({ ...p, roomId: e.target.value }))}
                 />
@@ -804,13 +830,18 @@ export default function OrganizationPlansPanel() {
               <label style={fieldLabelStyle}>
                 Notlar
                 <input
+                  style={inputStyle}
                   value={current.notes}
                   onChange={(e) => setCurrent((p) => ({ ...p, notes: e.target.value }))}
                 />
               </label>
             </div>
 
-            {msg ? <div className="muted" style={{ marginTop: 10 }}>{msg}</div> : null}
+            {msg ? (
+              <div className="muted" style={{ marginTop: 10 }}>
+                {msg}
+              </div>
+            ) : null}
           </div>
 
           <div className="card">
@@ -830,8 +861,12 @@ export default function OrganizationPlansPanel() {
             />
 
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={replaceFromBulk}>Satırları İçeri Al</button>
-              <button type="button" onClick={() => setBulk("")}>Temizle</button>
+              <button type="button" onClick={replaceFromBulk}>
+                Satırları İçeri Al
+              </button>
+              <button type="button" onClick={() => setBulk("")}>
+                Temizle
+              </button>
             </div>
           </div>
 
@@ -848,14 +883,16 @@ export default function OrganizationPlansPanel() {
             >
               <div>
                 <div className="title">Lokasyonlar</div>
-                <div className="muted">
-                  Sıra, kişi sayısı ve saat pencereleri burada yönetilir.
-                </div>
+                <div className="muted">Sıra, kişi sayısı ve saat pencereleri burada yönetilir.</div>
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={openAllStops}>Tümünü Aç</button>
-                <button type="button" onClick={closeAllStops}>Tümünü Kapat</button>
+                <button type="button" onClick={openAllStops}>
+                  Tümünü Aç
+                </button>
+                <button type="button" onClick={closeAllStops}>
+                  Tümünü Kapat
+                </button>
                 <button type="button" onClick={addEmptyStop} style={{ whiteSpace: "nowrap" }}>
                   + Satır Ekle
                 </button>
@@ -880,7 +917,6 @@ export default function OrganizationPlansPanel() {
                   onMoveUp={(i) => moveStop(i, -1)}
                   onMoveDown={(i) => moveStop(i, 1)}
                   onDragStart={(i) => setDragIndex(i)}
-                  onDragOver={() => {}}
                   onDrop={(to) => {
                     moveStopTo(dragIndex, to);
                     setDragIndex(null);
@@ -891,6 +927,121 @@ export default function OrganizationPlansPanel() {
               {!current.stops.length ? <div className="muted">Henüz lokasyon yok.</div> : null}
             </div>
           </div>
+
+          {offerOpen ? (
+            <div className="card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 8,
+                  gap: 8,
+                }}
+              >
+                <div>
+                  <div className="title">Şirketlere Teklif Gönder</div>
+                  <div className="muted">
+                    Bu akış karşı tarafta <b>Offers</b> bölümüne düşer.
+                  </div>
+                </div>
+
+                <button type="button" onClick={() => setOfferOpen(false)}>
+                  Kapat
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,1fr) 180px minmax(0,1fr)",
+                  gap: 10,
+                  marginBottom: 10,
+                }}
+              >
+                <label style={fieldLabelStyle}>
+                  Şirket ara
+                  <input
+                    style={inputStyle}
+                    value={roomSearch}
+                    onChange={(e) => setRoomSearch(e.target.value)}
+                    placeholder="name contains"
+                  />
+                </label>
+
+                <label style={fieldLabelStyle}>
+                  Tutar (₺)
+                  <input
+                    style={inputStyle}
+                    value={offerAmount}
+                    onChange={(e) => setOfferAmount(e.target.value)}
+                    placeholder="örn. 25000"
+                  />
+                </label>
+
+                <label style={fieldLabelStyle}>
+                  Not
+                  <input
+                    style={inputStyle}
+                    value={offerNote}
+                    onChange={(e) => setOfferNote(e.target.value)}
+                    placeholder="örn. sabah giriş"
+                  />
+                </label>
+              </div>
+
+              <div className="muted" style={{ marginBottom: 8 }}>
+                Toplam şirket: {filteredRooms.length}
+              </div>
+
+              <div className="card" style={{ padding: 10, display: "grid", gap: 8 }}>
+                {filteredRooms.map((r) => (
+                  <label key={r.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedRoomIds.includes(r.id)}
+                      onChange={(e) =>
+                        setSelectedRoomIds((prev) =>
+                          e.target.checked ? [...prev, r.id] : prev.filter((x) => x !== r.id)
+                        )
+                      }
+                    />
+                    {r.name} #{r.id}
+                  </label>
+                ))}
+                {!filteredRooms.length ? <div className="muted">Şirket bulunamadı.</div> : null}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                  marginTop: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedRoomIds([]);
+                    setOfferAmount("");
+                    setOfferNote("");
+                  }}
+                >
+                  Temizle
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!selectedRoomIds.length || !offerAmount || busy}
+                  onClick={sendOffers}
+                >
+                  Toplu Teklifleri Gönder
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div style={{ position: "sticky", top: 12, alignSelf: "start", display: "grid", gap: 12 }}>
@@ -899,7 +1050,7 @@ export default function OrganizationPlansPanel() {
             summary={summary}
             busy={busy}
             onSave={savePlan}
-            onPublishShift={publishShift}
+            onOpenOfferBox={() => setOfferOpen((v) => !v)}
             onCreateAgreement={createAgreement}
           />
           <MiniMapPreview stops={current.stops} />

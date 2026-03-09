@@ -108,15 +108,39 @@ export function attachShiftSharedRoutes(r) {
             company: { select: { id: true, name: true } },
             room: { select: { id: true, name: true } },
             driver: { select: { id: true, fullName: true, phone: true } },
-            vehicle: { select: { id: true, plate: true, status: true } },
+            vehicle: { select: { id: true, plate: true, status: true, capacity: true } },
             stops: { orderBy: { order: "asc" } },
             offers: { select: { id: true, roomId: true, status: true } },
+            organizationPlan: { select: { stops: { select: { passengerCount: true } } } },
+            _count: { select: { assignments: true, people: true } },
           },
+        });
+
+        const mapped = items.map((s) => {
+          const assignmentCount = Number(s?._count?.assignments || 0);
+          const peopleCount = Number(s?._count?.people || 0);
+          const orgPassengerCount = Array.isArray(s?.organizationPlan?.stops)
+            ? s.organizationPlan.stops.reduce(
+                (sum, st) => sum + Math.max(0, Number(st?.passengerCount || 0)),
+                0
+              )
+            : 0;
+          const requiredPaxOverride = Math.max(0, Number(s?.requiredPaxOverride || 0));
+          const requiredPax = Math.max(assignmentCount, peopleCount, Number(orgPassengerCount || 0), requiredPaxOverride, 0);
+
+          return {
+            ...s,
+            assignmentCount,
+            peopleCount,
+            orgPassengerCount,
+            requiredPaxOverride,
+            requiredPax,
+          };
         });
 
         // IMPORTANT:
         // Prisma include => shift scalar alanlar (roomOffer*, companyOffer*, vb) otomatik gelir.
-        return res.json({ items });
+        return res.json({ items: mapped });
       } catch (e) {
         return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }

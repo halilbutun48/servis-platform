@@ -33,6 +33,25 @@ function pickCurrentNext(shifts) {
   return { current, next };
 }
 
+function getErrMsg(err) {
+  const payload = err?.payload || null;
+  if (payload?.message) return String(payload.message);
+  if (typeof payload?.error === "string") return String(payload.error);
+  if (payload?.details?.fieldErrors) {
+    for (const key of Object.keys(payload.details.fieldErrors)) {
+      const arr = payload.details.fieldErrors[key];
+      if (Array.isArray(arr) && arr.length) return String(arr[0]);
+    }
+  }
+  if (payload?.error?.fieldErrors) {
+    for (const key of Object.keys(payload.error.fieldErrors)) {
+      const arr = payload.error.fieldErrors[key];
+      if (Array.isArray(arr) && arr.length) return String(arr[0]);
+    }
+  }
+  return String(err?.message || err || "Bilinmeyen hata");
+}
+
 export default function DriversPanel() {
   const { token } = useSession();
 
@@ -86,7 +105,7 @@ export default function DriversPanel() {
 
       if (!focusDriverId && Array.isArray(d) && d.length) setFocusDriverId(Number(d[0].id));
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      setErr(getErrMsg(e));
     }
   }
 
@@ -251,7 +270,7 @@ export default function DriversPanel() {
       showToast("Sürücü eklendi");
       await load();
     } catch (e2) {
-      setErr(String(e2?.payload?.message || e2?.message || e2));
+      setErr(getErrMsg(e));
     } finally {
       setBusy(false);
     }
@@ -287,7 +306,7 @@ export default function DriversPanel() {
       showToast("Güncellendi");
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      setErr(getErrMsg(e));
     } finally {
       setBusy(false);
     }
@@ -304,7 +323,7 @@ export default function DriversPanel() {
       showToast("Silindi");
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      setErr(getErrMsg(e));
     } finally {
       setBusy(false);
     }
@@ -352,7 +371,7 @@ export default function DriversPanel() {
       showToast("Bağlandı");
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      setErr(getErrMsg(e));
     } finally {
       setBusy(false);
     }
@@ -377,7 +396,7 @@ export default function DriversPanel() {
       showToast("Bağlantı kaldırıldı", "warn");
       await load();
     } catch (e) {
-      setErr(String(e?.payload?.message || e?.message || e));
+      setErr(getErrMsg(e));
     } finally {
       setBusy(false);
     }

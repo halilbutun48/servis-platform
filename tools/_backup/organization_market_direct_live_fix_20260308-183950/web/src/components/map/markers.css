@@ -1,0 +1,419 @@
+/* =========================================================
+   web/src/components/map/markers.css
+
+/* =========================================================
+   markers.css — Servis Platformu V1 (ASCII only)
+   - School pin (pin-wrap--school)
+   - Company pin (pin-wrap--company)
+   - Stop pin   (pin-wrap--stop)
+   - Vehicle marker Style C (vmc-*)
+   - Status badge (lists + tables)
+   ========================================================= */
+
+/* Leaflet DivIcon reset */
+.leaflet-div-icon{
+  background: transparent !important;
+  border: none !important;
+}
+
+/* =========================
+   SCHOOL + COMPANY + STOP PINS (DivIcon)
+   ========================= */
+
+.pin-wrap{
+  position: relative;
+  background: transparent !important;
+  border: none !important;
+  overflow: visible;
+  pointer-events: none; /* children may override */
+}
+
+/* OKUL label — centered (fix kayma) */
+.pin-tag{
+  position:absolute;
+  left:50%;
+  top:-10px;
+  transform:translateX(-50%);
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.98);
+  color:#080808;
+  font-weight:900;
+  font-size:11px;
+  letter-spacing:.4px;
+  border:1px solid rgba(0,0,0,.10);
+  box-shadow:0 16px 34px rgba(0,0,0,.22);
+  white-space:nowrap;
+  z-index:3;
+  pointer-events:none;
+}
+
+.pin-tag__dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:#10b981;
+  box-shadow:0 0 0 4px rgba(16,185,129,.18);
+}
+
+/* base circular pin */
+.pin{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:auto;
+  z-index:2;
+
+  background:rgba(255,255,255,.96);
+  box-shadow:
+    0 12px 30px rgba(15,23,42,.22),
+    0 0 0 2px rgba(255,255,255,.70);
+}
+
+.pin__core{
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.96);
+  color:#0f172a;
+}
+
+.pin__core svg{
+  width:18px;
+  height:18px;
+  stroke: currentColor;
+}
+
+/* =========================
+   SCHOOL
+   ========================= */
+
+/* SCHOOL wrapper size matches MapView iconSize */
+.pin-wrap--school{ width:140px; height:76px; }
+
+/* SCHOOL pin */
+.pin-wrap--school .pin{
+  top:16px;
+  width:44px;
+  height:44px;
+  border:2px solid rgba(255,255,255,.92);
+  background: rgba(16,185,129,1);
+  box-shadow:
+    0 16px 36px rgba(0,0,0,.28),
+    0 0 0 5px rgba(16,185,129,.22);
+}
+
+.pin-wrap--school .pin__core{
+  width:30px;
+  height:30px;
+  background: rgba(255,255,255,.18);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.35);
+}
+
+.pin-wrap--school .pin__core svg{
+  stroke:#fff;
+}
+
+.pin-wrap--school .pin-tag__dot{
+  background:#10b981;
+  box-shadow:0 0 0 4px rgba(16,185,129,.18);
+}
+
+/* =========================
+   COMPANY
+   ========================= */
+
+/* COMPANY wrapper size matches MapView iconSize */
+.pin-wrap--company{ width:140px; height:76px; }
+
+/* COMPANY pin */
+.pin-wrap--company .pin{
+  top:16px;
+  width:44px;
+  height:44px;
+  border:2px solid rgba(255,255,255,.92);
+  background: rgba(124,58,237,1);
+  box-shadow:
+    0 16px 36px rgba(0,0,0,.28),
+    0 0 0 5px rgba(124,58,237,.22);
+}
+
+.pin-wrap--company .pin__core{
+  width:30px;
+  height:30px;
+  background: rgba(255,255,255,.18);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.35);
+}
+
+.pin-wrap--company .pin__core svg{ stroke:#fff; }
+
+.pin-wrap--company .pin-tag{
+  border-color:#c4b5fd;
+  background:rgba(124,58,237,.12);
+}
+
+.pin-wrap--company .pin-tag__dot{
+  background:#7c3aed;
+  box-shadow:0 0 0 4px rgba(124,58,237,.18);
+}
+
+/* =========================
+   STOP
+   ========================= */
+
+/* STOP wrapper size matches MapView iconSize */
+.pin-wrap--stop{ width:40px; height:54px; }
+
+/* STOP pin (numbered dot) */
+.pin-wrap--stop .pin{
+  top:10px;
+  width:34px;
+  height:34px;
+  border:2px solid rgba(255,255,255,.92);
+  background: rgba(37,99,235,1);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,.26),
+    0 0 0 5px rgba(37,99,235,.22);
+}
+
+.pin-wrap--stop .pin__core{
+  width:24px;
+  height:24px;
+  background: rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  filter: drop-shadow(0 10px 20px rgba(15,23,42,.18));
+}
+
+.pin__num{
+  font-weight:1000;
+  font-size:12px;
+  line-height:1;
+  color:#fff;
+}
+
+/* =========================
+   VEHICLE MARKER — Style C (Bus + heading nav)
+   ========================= */
+
+/* Vehicle Marker - Style C (Bus + heading nav) */
+.vmc-root{ background: transparent !important; border: none !important; }
+
+.vmc{
+  position: relative;
+  transform: translate3d(0,0,0);
+  pointer-events: none;
+}
+
+/* status colors (standard: LIVE / STALE / OFFLINE) */
+.vmc--live,
+.vmc--online  { --vmc-accent:#2563eb; --vmc-accent-dark:#1d4ed8; --vmc-glow:rgba(37,99,235,.18); }
+
+.vmc--stale   { --vmc-accent:#f59e0b; --vmc-accent-dark:#d97706; --vmc-glow:rgba(245,158,11,.18); }
+.vmc--offline { --vmc-accent:#64748b; --vmc-accent-dark:#475569; --vmc-glow:rgba(100,116,139,.18); }
+
+/* label */
+.vmc-label{
+  position:absolute;
+  left: 28px;
+  top: -18px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: 0 14px 34px rgba(15,23,42,.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.vmc-dot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background: var(--vmc-accent);
+  box-shadow: 0 0 0 4px var(--vmc-glow);
+}
+
+.vmc-plate{
+  font-weight: 850;
+  letter-spacing: .2px;
+  font-size: 13px;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.vmc-pill{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 10px;
+  border-radius: 999px;
+  font-weight: 850;
+  font-size: 12px;
+  letter-spacing:.3px;
+  color:#0f172a;
+  background: rgba(2,6,23,.04);
+  border: 1px solid rgba(2,6,23,.08);
+}
+
+.vmc-pillDot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background: var(--vmc-accent);
+}
+
+/* pin wrap */
+.vmc-pinWrap{
+  position:absolute;
+  left: 0;
+  top: 30px;
+  width: 60px;
+  height: 66px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  pointer-events: auto;
+}
+
+/* halo + pulse */
+.vmc-halo{
+  position:absolute;
+  top: 6px;
+  width: 52px;
+  height: 52px;
+  border-radius:999px;
+  background: rgba(255,255,255,.86);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.75),
+    0 18px 44px rgba(15,23,42,.20);
+  outline: 2px solid rgba(255,255,255,.55);
+}
+
+.vmc-pulse{
+  position:absolute;
+  top: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius:999px;
+  background: var(--vmc-glow);
+  animation: vmcPulse 1.6s ease-out infinite;
+  transform: scale(1);
+  opacity: .9;
+}
+
+.vmc--offline .vmc-pulse{ display:none; }
+
+@keyframes vmcPulse{
+  0%{ transform: scale(1); opacity:.75; }
+  100%{ transform: scale(1.85); opacity:0; }
+}
+
+/* main pin */
+.vmc-pin{
+  position:absolute;
+  top: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius:999px;
+  background:#fff;
+  border:2px solid var(--vmc-accent);
+  box-shadow: 0 12px 30px rgba(15,23,42,.22);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+/* heading arrow (arkada) */
+.vmc-nav{
+  position:absolute;
+  inset: -6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform-origin: 50% 50%;
+  pointer-events:none;
+  z-index: 1;
+  opacity: .90;
+}
+
+.vmc-navSvg{
+  width: 54px;
+  height: 54px;
+  filter: drop-shadow(0 2px 10px rgba(15,23,42,.20));
+}
+
+/* bus svg (ustte) */
+.vmc-busSvg{
+  position: relative;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  transform: translateY(1px);
+  filter: drop-shadow(0 2px 8px rgba(15,23,42,.18));
+}
+
+/* tip */
+.vmc-tip{
+  position:absolute;
+  top: 52px;
+  width: 14px;
+  height: 14px;
+  background:#fff;
+  border-left: 2px solid var(--vmc-accent);
+  border-bottom: 2px solid var(--vmc-accent);
+  transform: rotate(-45deg);
+  border-radius: 0 0 0 3px;
+  box-shadow: 0 10px 18px rgba(15,23,42,.12);
+}
+
+/* =========================
+   STATUS BADGE (lists + tables)
+   ========================= */
+
+.statusBadge{
+  --sb-accent:#64748b;
+  --sb-glow:rgba(100,116,139,.18);
+  --sb-bg:rgba(2,6,23,.04);
+
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-weight:850;
+  font-size:12px;
+  letter-spacing:.3px;
+  color:#0f172a;
+  background: var(--sb-bg);
+  border: 1px solid rgba(2,6,23,.10);
+}
+
+.statusBadge__dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background: var(--sb-accent);
+  box-shadow: 0 0 0 4px var(--sb-glow);
+}
+
+.statusBadge--live   { --sb-accent:#2563eb; --sb-glow:rgba(37,99,235,.18); --sb-bg:rgba(37,99,235,.10); }
+.statusBadge--stale  { --sb-accent:#f59e0b; --sb-glow:rgba(245,158,11,.18); --sb-bg:rgba(245,158,11,.12); }
+.statusBadge--offline{ --sb-accent:#64748b; --sb-glow:rgba(100,116,139,.18); --sb-bg:rgba(100,116,139,.12); }

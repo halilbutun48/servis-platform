@@ -65,6 +65,7 @@ enum ShiftStatus {
   ACTIVE
   REJECTED
   DONE
+  SPLIT
 }
 
 enum StopType {
@@ -431,6 +432,13 @@ model Shift {
   endAt     DateTime
   status    ShiftStatus @default(DRAFT)
 
+  // M85/M86: auto split / child-shift meta
+  requiredPaxOverride Int?
+  splitRootId         Int?
+  splitGroupKey       String?
+  splitIndex          Int?
+  splitTotal          Int?
+
   // ✅ M19: routing meta (worksite hub + direction/pattern)
   hubLat    Float?
   hubLng    Float?
@@ -486,6 +494,9 @@ extendDecisionAt     DateTime?
   agreementId Int?
   agreement   Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
 
+  splitRoot     Shift?  @relation("ShiftSplitTree", fields: [splitRootId], references: [id], onDelete: SetNull)
+  splitChildren Shift[] @relation("ShiftSplitTree")
+
   organizationPlanId Int?
   organizationPlan   OrganizationPlan? @relation(fields: [organizationPlanId], references: [id], onDelete: SetNull)
 
@@ -496,6 +507,8 @@ extendDecisionAt     DateTime?
   @@index([roomId])
   @@index([vehicleId])
   @@index([driverId])
+  @@index([splitRootId])
+  @@index([splitGroupKey])
 
   @@index([companyOfferVehicleId])
   @@index([companyOfferAmount])

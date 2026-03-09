@@ -439,7 +439,19 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     // include room + agreement for hub fallback, progress for time window hints
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user, {
-      include: { room: true, agreement: true, progress: true },
+      include: {
+        room: true,
+        agreement: true,
+        progress: true,
+        organizationPlan: {
+          include: {
+            stops: {
+              orderBy: { order: "asc" },
+              select: { id: true, order: true, name: true, lat: true, lng: true, passengerCount: true },
+            },
+          },
+        },
+      },
       allowRoomOfferScope: true,
     });
 
@@ -461,11 +473,35 @@ export function attachShiftPeopleRoutes(router, _io) {
       countByStopId.set(a.stopId, (countByStopId.get(a.stopId) || 0) + 1);
     }
 
-    // stops’a assignmentCount ekle
-    const stopsWithCounts = stops.map((s) => ({
-      ...s,
-      assignmentCount: countByStopId.get(s.id) || 0,
-    }));
+    const orgPlanStops = Array.isArray(shift.organizationPlan?.stops) ? shift.organizationPlan.stops : [];
+    const orgPlanStopsByOrder = new Map(orgPlanStops.map((s, i) => [Number(s.order || i + 1), s]));
+
+    function fallbackPassengerCountForStop(stop, index) {
+      const byOrder = orgPlanStopsByOrder.get(Number(stop.order || index + 1));
+      if (byOrder?.passengerCount != null) return Number(byOrder.passengerCount || 0);
+
+      const byIndex = orgPlanStops[index];
+      if (byIndex?.passengerCount != null) return Number(byIndex.passengerCount || 0);
+
+      const byMatch = orgPlanStops.find((x) =>
+        String(x.name || '').trim() === String(stop.name || '').trim() &&
+        Math.abs(Number(x.lat) - Number(stop.lat)) < 1e-6 &&
+        Math.abs(Number(x.lng) - Number(stop.lng)) < 1e-6
+      );
+      return Number(byMatch?.passengerCount || 0);
+    }
+
+    // stops’a assignmentCount + organization pax fallback ekle
+    const stopsWithCounts = stops.map((s, index) => {
+      const assignmentCount = countByStopId.get(s.id) || 0;
+      const fallbackPassengerCount = fallbackPassengerCountForStop(s, index);
+      return {
+        ...s,
+        assignmentCount,
+        passengerCount: fallbackPassengerCount,
+        previewCount: assignmentCount > 0 ? assignmentCount : fallbackPassengerCount,
+      };
+    });
 
     // ✅ M19: hub resolution (shift -> agreement -> room)
     const hubLat =
@@ -537,8 +573,14 @@ export function attachShiftPeopleRoutes(router, _io) {
     const source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
     const pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
 
+    const totalPassengerCount = stopsWithCounts.reduce(
+      (sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0),
+      0
+    );
+
     const summary = {
       stopCount: stopPoints.length,
+      totalPassengerCount,
       direction,
       pattern,
       isLoop: pattern === "LOOP",

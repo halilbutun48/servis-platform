@@ -1,5 +1,5 @@
 // web/src/panels/room/OffersPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
@@ -32,6 +32,65 @@ function pill(status) {
   );
 }
 
+function toPositiveIntOrZero(v) {
+  const n = Number(v || 0);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+}
+
+function shiftRequiredPax(shift) {
+  return Math.max(
+    toPositiveIntOrZero(shift?.requiredPax),
+    toPositiveIntOrZero(shift?.assignmentCount),
+    toPositiveIntOrZero(shift?.peopleCount),
+    toPositiveIntOrZero(shift?.orgPassengerCount),
+    0
+  );
+}
+
+function vehicleCapacityValue(vehicle) {
+  return toPositiveIntOrZero(vehicle?.capacity);
+}
+
+function buildCapacityMeta({ shift, vehicle }) {
+  const requiredPax = shiftRequiredPax(shift);
+  const vehicleCapacity = vehicleCapacityValue(vehicle);
+  const missingCapacity = requiredPax > 0 ? Math.max(0, requiredPax - vehicleCapacity) : 0;
+  const insufficient = requiredPax > 0 && vehicleCapacity < requiredPax;
+  const minVehicleCount = requiredPax > 0 && vehicleCapacity > 0 ? Math.ceil(requiredPax / vehicleCapacity) : null;
+
+  let blockMessage = "";
+  if (requiredPax > 0 && vehicle && vehicleCapacity <= 0) {
+    blockMessage = `Araç kapasitesi tanımsız. Gerekli yolcu: ${requiredPax}.`;
+  } else if (insufficient) {
+    blockMessage = `Yetersiz kapasite. Gerekli: ${requiredPax}, araç: ${vehicleCapacity}, eksik: ${missingCapacity}.`;
+  }
+
+  return {
+    requiredPax,
+    vehicleCapacity,
+    missingCapacity,
+    insufficient,
+    minVehicleCount,
+    blockMessage,
+  };
+}
+
+function poolStatusMeta(data) {
+  const reason = String(data?.limitingReason || "").toUpperCase();
+  if (data?.enoughPoolCapacity) return { key: "OK", label: "HAVUZ YETER" };
+  if (reason === "DRIVER_SHORTAGE") return { key: "CAPACITY_INSUFFICIENT", label: "DRIVER YETERSİZ" };
+  if (reason === "VEHICLE_CAPACITY") return { key: "REJECTED", label: "ARAÇ YETERSİZ" };
+  return { key: "REJECTED", label: "HAVUZ YETMEZ" };
+}
+
+function blockedDriverReasonText(d) {
+  if (!d) return "";
+  if (d.reasonMessage) return String(d.reasonMessage);
+  if (d.reasonCode === "DRIVER_SHIFT_CONFLICT") return "Başka vardiya ile çakışıyor";
+  if (d.reasonCode === "DRIVER_AGREEMENT_CONFLICT") return "Agreement ile çakışıyor";
+  return d.reasonCode ? String(d.reasonCode) : "Bloklu";
+}
+
 const FILTERS = [
   { key: "OPEN,COUNTERED", label: "Açık (OPEN+COUNTERED)" },
   { key: "OPEN", label: "Sadece OPEN" },
@@ -62,6 +121,8 @@ export default function RoomOffersPanel() {
   });
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [poolSummary, setPoolSummary] = useState({ status: "idle", data: null, error: "" });
+  const poolInflight = useRef(false);
 
   const [statusFilter, setStatusFilter] = useState("OPEN,COUNTERED");
   const [q, setQ] = useState("");
@@ -199,12 +260,41 @@ export default function RoomOffersPanel() {
     setApproveModal({ open: true, shiftId: sid, offerId: Number(o?.id) || null, vehicleId: "", driverId: "" });
   }
 
+  async function loadPoolSummary(shiftId, { force = false } = {}) {
+    const sid = Number(shiftId || approveModal.shiftId);
+    if (!sid) return null;
+    if (!force && poolSummary?.status === "ok" && Number(poolSummary?.data?.shiftId) === sid) return poolSummary.data;
+    if (poolInflight.current) return null;
+
+    poolInflight.current = true;
+    setPoolSummary((prev) => ({ ...prev, status: "loading", error: "" }));
+    try {
+      const data = await api.get(`/api/availability/pool?shiftId=${sid}`);
+      setPoolSummary({ status: "ok", data, error: "" });
+      return data;
+    } catch (e) {
+      const msg = String(e?.message || e || "Havuz özeti alınamadı.");
+      setPoolSummary({ status: "error", data: null, error: msg });
+      return null;
+    } finally {
+      poolInflight.current = false;
+    }
+  }
+
   async function doApprove({ startAfter = false } = {}) {
     const sid = Number(approveModal.shiftId);
     const vid = Number(approveModal.vehicleId);
     const did = Number(approveModal.driverId);
     if (!sid || !vid || !did) {
       setErr("Approve için vehicle + driver seçmelisin.");
+      return;
+    }
+
+    const shift = items.find((o) => Number(o?.shiftId) === sid)?.shift || null;
+    const vehicle = vehicles.find((v) => Number(v.id) === vid) || null;
+    const capacityMeta = buildCapacityMeta({ shift, vehicle });
+    if (capacityMeta.blockMessage) {
+      setErr(capacityMeta.blockMessage);
       return;
     }
 
@@ -228,6 +318,19 @@ export default function RoomOffersPanel() {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    const sid = Number(approveModal.shiftId || 0);
+    if (!approveModal.open || !sid) {
+      setPoolSummary({ status: "idle", data: null, error: "" });
+      return;
+    }
+
+    const modalShift = items.find((o) => Number(o?.shiftId) === sid)?.shift || null;
+    const modalVehicle = vehicles.find((v) => Number(v.id) === Number(approveModal.vehicleId)) || null;
+    const capacityMeta = buildCapacityMeta({ shift: modalShift, vehicle: modalVehicle });
+    if (capacityMeta.insufficient) loadPoolSummary(sid);
+  }, [approveModal.open, approveModal.shiftId, approveModal.vehicleId, items, vehicles]);
 
   return (
     <div className="wrap">
@@ -373,7 +476,12 @@ export default function RoomOffersPanel() {
       })}
 
       {/* ✅ M30/M31: Quick approve (+ optional start) modal */}
-      {approveModal.open ? (
+      {approveModal.open ? (() => {
+        const modalShift = items.find((o) => Number(o?.shiftId) === Number(approveModal.shiftId))?.shift || null;
+        const modalVehicle = vehicles.find((v) => Number(v.id) === Number(approveModal.vehicleId)) || null;
+        const capacityMeta = buildCapacityMeta({ shift: modalShift, vehicle: modalVehicle });
+        const approveBlocked = busy || capacityMeta.insufficient;
+        return (
         <div className="modal-backdrop">
           <div className="modal card">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
@@ -421,18 +529,76 @@ export default function RoomOffersPanel() {
               </select>
             </label>
 
+            {capacityMeta.requiredPax > 0 ? (
+              <div className="card" style={{ marginTop: 8, width: "100%" }}>
+                <div className="muted" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span><b>Yolcu:</b> {capacityMeta.requiredPax}</span>
+                  <span>• <b>Koltuk:</b> {capacityMeta.vehicleCapacity || "-"}</span>
+                  {capacityMeta.insufficient ? <span>• <b>Eksik:</b> {capacityMeta.missingCapacity}</span> : null}
+                  {capacityMeta.insufficient && capacityMeta.minVehicleCount ? <span>• <b>Min araç:</b> {capacityMeta.minVehicleCount}</span> : null}
+                </div>
+                {capacityMeta.blockMessage ? (
+                  <div className="muted" style={{ marginTop: 6 }}><b>Kapasite uyarısı:</b> {capacityMeta.blockMessage}</div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {capacityMeta.insufficient ? (
+              <div className="card" style={{ marginTop: 8, width: "100%" }}>
+                <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                  <div className="muted"><b>Room havuz özeti</b></div>
+                  <button type="button" className="btn sm" disabled={busy || poolSummary.status === "loading"} onClick={() => loadPoolSummary(approveModal.shiftId, { force: true })}>
+                    {poolSummary.status === "loading" ? "Yükleniyor..." : poolSummary.data ? "Yenile" : "Yükle"}
+                  </button>
+                </div>
+                {poolSummary.data ? (() => {
+                  const data = poolSummary.data;
+                  const statusMeta = poolStatusMeta(data);
+                  const blockedDrivers = Array.isArray(data?.blockedDrivers) ? data.blockedDrivers : [];
+                  return (
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      <div>
+                        <b>Durum:</b>{" "}
+                        <span className="pill" data-status={statusMeta.key}>{statusMeta.label}</span>
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        <b>Müsait araç:</b> {(data.availableVehicleCount ?? data.vehicles?.filter?.((x) => x.vehicleOk)?.length ?? 0)}/{data.roomVehicleCount ?? 0}
+                        {" • "}<b>Eşleşebilir araç:</b> {(data.pairableVehicleCount ?? data.vehicles?.filter?.((x) => x.pairOk)?.length ?? 0)}
+                        {" • "}<b>Boş driver:</b> {data.freeDriverCount || 0}
+                      </div>
+                      <div style={{ marginTop: 4 }}><b>Toplam eşleşebilir koltuk:</b> {data.totalPairCapacity || 0}{!data.enoughPoolCapacity ? ` • Eksik: ${data.missingPoolCapacity || 0}` : ""}</div>
+                      {Array.isArray(data?.suggestedCombo?.items) && data.suggestedCombo.items.length ? (
+                        <div style={{ marginTop: 4 }}><b>Öneri:</b> {data.suggestedCombo.items.map((x) => `${x.plate} (${x.capacity}${x?.allocatedPax ? ` → ${x.allocatedPax} kişi` : ""})${x?.suggestedDriver?.fullName ? ` → ${x.suggestedDriver.fullName}` : ""}`).join(" + ")}</div>
+                      ) : null}
+                      {data?.limitingReason === "DRIVER_SHORTAGE" ? (
+                        <div style={{ marginTop: 4 }}><b>Driver durumu:</b> Araç kapasitesi havuzda yeterli; ancak en az {data.driverShortageCount || 0} ek boş driver gerekiyor.</div>
+                      ) : null}
+                      {blockedDrivers.length ? (
+                        <div style={{ marginTop: 4 }}><b>Bloklu driverlar:</b> {blockedDrivers.slice(0, 3).map((d) => `${d.fullName} (${blockedDriverReasonText(d)})`).join(" • ")}{blockedDrivers.length > 3 ? ` • +${blockedDrivers.length - 3} daha` : ""}</div>
+                      ) : null}
+                    </div>
+                  );
+                })() : poolSummary.status === "error" ? (
+                  <div className="muted" style={{ marginTop: 6 }}><b>Hata:</b> {poolSummary.error}</div>
+                ) : (
+                  <div className="muted" style={{ marginTop: 6 }}>Çoklu araç/driver havuzu yüklenmedi.</div>
+                )}
+              </div>
+            ) : null}
+
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="button" className="btn" disabled={busy} onClick={() => doApprove({ startAfter: false })}>
+              <button type="button" className="btn" disabled={approveBlocked} onClick={() => doApprove({ startAfter: false })} title={capacityMeta.blockMessage || ""}>
                 {busy ? "..." : "Onayla"}
               </button>
-              <button type="button" className="btn primary" disabled={busy} onClick={() => doApprove({ startAfter: true })}>
+              <button type="button" className="btn primary" disabled={approveBlocked} onClick={() => doApprove({ startAfter: true })} title={capacityMeta.blockMessage || ""}>
                 {busy ? "..." : "Onayla + Başlat"}
               </button>
             </div>
           </div>
           </div>
         </div>
-      ) : null}
+        );
+      })() : null}
     </div>
   );
 }

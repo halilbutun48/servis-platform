@@ -1273,7 +1273,12 @@ function usePlanDraftToRequest(draft) {
   );
 
   const pendingItemsRaw = useMemo(
-    () => items.filter((s) => !FINAL_STATUSES.has(String(s.status)) && s.roomId != null && s.roomId !== ""),
+    () => items.filter((s) => {
+      const status = String(s?.status || "");
+      const isSplitRoot = status === "SPLIT" && !Number(s?.splitRootId || 0);
+      if (isSplitRoot) return false;
+      return !FINAL_STATUSES.has(status) && s.roomId != null && s.roomId !== "";
+    }),
     [items, FINAL_STATUSES]
   );
   const finalItemsRaw = useMemo(() => items.filter((s) => FINAL_STATUSES.has(String(s.status))), [items, FINAL_STATUSES]);
@@ -1951,6 +1956,14 @@ function usePlanDraftToRequest(draft) {
                   <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />
+                    {Number(s.splitRootId || 0) > 0 ? (
+                      <div className="muted" style={{ marginTop: 4 }}>
+                        Paket #{s.splitRootId}
+                        {Number(s.splitIndex || 0) > 0 && Number(s.splitTotal || 0) > 0
+                          ? ` • ${s.splitIndex}/${s.splitTotal}`
+                          : ""}
+                      </div>
+                    ) : null}
                   </td>
                   <td>
                     <span className="pill" data-status={s.status}>

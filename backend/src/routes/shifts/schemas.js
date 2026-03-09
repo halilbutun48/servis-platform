@@ -146,6 +146,7 @@ export const approveSchema = z.object({
   vehicleId: coercePosInt,
   driverId: posIntOpt,
   status: z.string().optional(),
+  requiredPax: z.coerce.number().int().positive().optional(),
 });
 
 // Backward-compatible alias
@@ -156,6 +157,7 @@ export const roomApproveShiftSchema = z
     vehicleId: posIntOpt,
     driverId: posIntOpt,
     status: z.string().optional(),
+    requiredPax: z.coerce.number().int().positive().optional(),
     roomOfferVehicleId: posIntOpt,
     roomOfferDriverId: posIntOpt,
   })
@@ -165,6 +167,7 @@ export const assignShiftSchema = z
   .object({
     vehicleId: coercePosInt,
     driverId: coercePosInt,
+    requiredPax: z.coerce.number().int().positive().optional(),
   })
   .strict();
 
@@ -267,3 +270,4 @@ export const stopPatchSchema = updateStopSchema;
 export const stopUpdateSchema = updateStopSchema;
 export const applyTemplateSchema = fromTemplateSchema;
 export const reorderStopsSchema = reorderSchema;
+

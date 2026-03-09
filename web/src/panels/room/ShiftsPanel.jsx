@@ -40,6 +40,58 @@ function roomLabel(r) {
   return r.name || r.title || `Room #${r.id}`;
 }
 
+function toPositiveIntOrZero(v) {
+  const n = Number(v || 0);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+}
+
+function shiftRequiredPax(shift) {
+  return Math.max(
+    toPositiveIntOrZero(shift?.requiredPax),
+    toPositiveIntOrZero(shift?.assignmentCount),
+    toPositiveIntOrZero(shift?.peopleCount),
+    toPositiveIntOrZero(shift?.orgPassengerCount),
+    0
+  );
+}
+
+function vehicleCapacityValue(vehicle) {
+  return toPositiveIntOrZero(vehicle?.capacity);
+}
+
+function buildCapacityMeta({ shift, vehicle, roomVehicles = [] }) {
+  const requiredPax = shiftRequiredPax(shift);
+  const vehicleCapacity = vehicleCapacityValue(vehicle);
+  const missingCapacity = requiredPax > 0 ? Math.max(0, requiredPax - vehicleCapacity) : 0;
+  const insufficient = requiredPax > 0 && vehicleCapacity < requiredPax;
+  const minVehicleCount = requiredPax > 0 && vehicleCapacity > 0 ? Math.ceil(requiredPax / vehicleCapacity) : null;
+
+  const roomCaps = (roomVehicles || []).map((v) => vehicleCapacityValue(v)).filter((n) => n > 0);
+  const roomMaxCapacity = roomCaps.length ? Math.max(...roomCaps) : 0;
+  const roomMinVehicleCount = requiredPax > 0 && roomMaxCapacity > 0 ? Math.ceil(requiredPax / roomMaxCapacity) : null;
+
+  let blockCode = null;
+  let blockMessage = "";
+  if (requiredPax > 0 && vehicle && vehicleCapacity <= 0) {
+    blockCode = "VEHICLE_CAPACITY_MISSING";
+    blockMessage = `Araç kapasitesi tanımsız. Gerekli yolcu: ${requiredPax}.`;
+  } else if (insufficient) {
+    blockCode = "CAPACITY_INSUFFICIENT";
+    blockMessage = `Yetersiz kapasite. Gerekli: ${requiredPax}, araç: ${vehicleCapacity}, eksik: ${missingCapacity}.`;
+  }
+
+  return {
+    requiredPax,
+    vehicleCapacity,
+    missingCapacity,
+    insufficient,
+    minVehicleCount,
+    roomMaxCapacity,
+    roomMinVehicleCount,
+    blockCode,
+    blockMessage,
+  };
+}
 
 function AgreementBadge({ agreementId }) {
   const id = Number(agreementId);
@@ -197,6 +249,8 @@ async function decideExtend(shiftId, decision) {
   // status: idle | checking | ok | conflict | error | missing
   const [avail, setAvail] = useState({});
   const availInflight = useRef(new Set());
+  const [poolSummary, setPoolSummary] = useState({}); // { [sid]: { status, data?, error? } }
+  const poolInflight = useRef(new Set());
 
   // M16: Haritada Önizleme (modal)
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -385,6 +439,20 @@ const offersByShiftId = useMemo(() => {
       return { status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." };
     }
 
+    const vehicle = vehiclesById.get(Number(vehicleId)) || null;
+    const capacity = buildCapacityMeta({
+      shift,
+      vehicle,
+      roomVehicles: vehiclesForRoom(shift?.roomId),
+    });
+    if (capacity.blockCode) {
+      return {
+        status: "conflict",
+        code: capacity.blockCode,
+        message: capacity.blockMessage,
+      };
+    }
+
     const dOk = isDriverAvailableForShift(driverId, shift);
     if (!dOk) {
       const conflictingShift = items.find((x) => {
@@ -434,6 +502,7 @@ const offersByShiftId = useMemo(() => {
       startAt: String(shift.startAt),
       endAt: String(shift.endAt),
       shiftId: String(shift.id),
+      excludeShiftId: String(shift.id),
     }).toString();
 
     const r = await api(`/api/availability?${qs}`, { token });
@@ -454,7 +523,7 @@ const offersByShiftId = useMemo(() => {
         };
       }
       // başka payload: {code,message,...}
-      if (r.code && (String(r.code).includes("CONFLICT") || String(r.code).includes("OVERLAP"))) {
+      if (r.code && (String(r.code).includes("CONFLICT") || String(r.code).includes("OVERLAP") || String(r.code).includes("CAPACITY"))) {
         return {
           status: "conflict",
           code: r.code,
@@ -675,7 +744,10 @@ const offersByShiftId = useMemo(() => {
     return arr;
   }, [pendingBase, pendingStatus, pendingQ, onlyAgreement]);
 
-  const listBase = useMemo(() => items.filter((s) => true), [items]);
+  const listBase = useMemo(
+    () => items.filter((s) => !(String(s?.status || "") === "SPLIT" && !Number(s?.splitRootId || 0))),
+    [items]
+  );
 
   const listFiltered = useMemo(() => {
     let arr = [...listBase];
@@ -720,6 +792,142 @@ const offersByShiftId = useMemo(() => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFiltered, assignSel, driverSel, vehiclesById]);
+
+  useEffect(() => {
+    if (!pendingFiltered?.length) return;
+    let canceled = false;
+
+    (async () => {
+      for (const s of pendingFiltered) {
+        if (canceled) return;
+        const sid = Number(s?.id);
+        const vId = assignSel[sid] ? Number(assignSel[sid]) : null;
+        const vehicle = vId ? vehiclesById.get(vId) : null;
+        const capacityMeta = buildCapacityMeta({
+          shift: s,
+          vehicle,
+          roomVehicles: vehiclesForRoom(s?.roomId),
+        });
+        if (capacityMeta.insufficient && !poolSummary[sid] && !poolInflight.current.has(sid)) {
+          await loadPoolSummary(s);
+        }
+      }
+    })();
+
+    return () => {
+      canceled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFiltered, assignSel, vehiclesById]);
+
+  async function loadPoolSummary(shift, { force = false } = {}) {
+    const sid = Number(shift?.id);
+    if (!sid) return null;
+
+    if (!force) {
+      const cached = poolSummary[sid];
+      if (cached?.status === "ok" && cached?.data) return cached.data;
+      if (poolInflight.current.has(sid)) return null;
+    }
+
+    poolInflight.current.add(sid);
+    setPoolSummary((prev) => ({
+      ...prev,
+      [sid]: { ...(prev[sid] || {}), status: "loading", error: "" },
+    }));
+
+    try {
+      const data = await api(`/api/availability/pool?shiftId=${sid}`, { token });
+      setPoolSummary((prev) => ({ ...prev, [sid]: { status: "ok", data } }));
+      return data;
+    } catch (e) {
+      const msg = String(e?.message || e || "Havuz özeti alınamadı.");
+      setPoolSummary((prev) => ({ ...prev, [sid]: { status: "error", error: msg } }));
+      return null;
+    } finally {
+      poolInflight.current.delete(sid);
+    }
+  }
+
+  function renderPoolSummary(shift, capacityMeta) {
+    const sid = Number(shift?.id);
+    const state = poolSummary[sid] || null;
+    const data = state?.data || null;
+    const comboItems = Array.isArray(data?.suggestedCombo?.items) ? data.suggestedCombo.items : [];
+
+    return (
+      <div className="card" style={{ padding: 10 }}>
+        <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <div className="muted"><b>Room havuz özeti</b></div>
+          <button
+            type="button"
+            className="btn sm"
+            disabled={busy || state?.status === "loading"}
+            onClick={() => loadPoolSummary(shift, { force: true })}
+          >
+            {state?.status === "loading" ? "Yükleniyor..." : data ? "Yenile" : "Yükle"}
+          </button>
+        </div>
+
+        {state?.status === "error" ? (
+          <div className="muted" style={{ marginTop: 8 }}>
+            <b>Hata:</b> {state.error}
+          </div>
+        ) : null}
+
+        {data ? (
+          <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+            <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span>
+                <b>Durum:</b>{" "}
+                <span className="pill" data-status={data.enoughPoolCapacity ? "OK" : "REJECTED"}>
+                  {data.enoughPoolCapacity ? "HAVUZ YETER" : "HAVUZ YETMEZ"}
+                </span>
+              </span>
+              <span>• <b>Müsait araç:</b> {data.vehicles?.filter?.((x) => x.vehicleOk)?.length || 0}/{data.roomVehicleCount || 0}</span>
+              <span>• <b>Boş driver:</b> {data.freeDriverCount || 0}</span>
+              <span>• <b>Toplam eşleşebilir koltuk:</b> {data.totalPairCapacity || 0}</span>
+              {!data.enoughPoolCapacity ? <span>• <b>Eksik:</b> {data.missingPoolCapacity || 0}</span> : null}
+            </div>
+
+            {comboItems.length ? (
+              <div className="muted">
+                <b>Önerilen kombinasyon:</b>{" "}
+                {comboItems.map((x) => `${x.plate} (${x.capacity}${x?.allocatedPax ? ` → ${x.allocatedPax} kişi` : ""})${x?.suggestedDriver?.fullName ? ` → ${x.suggestedDriver.fullName}` : ""}`).join(" + ")}
+              </div>
+            ) : (
+              <div className="muted">
+                Öneri üretilemedi. Room havuzunda bu zaman için uygun araç/driver çifti bulunamadı.
+              </div>
+            )}
+
+            <div className="muted">
+              <b>Min araç ihtiyacı:</b> {data?.suggestedCombo?.vehicleCount || capacityMeta?.roomMinVehicleCount || "-"}
+              {data?.suggestedCombo?.totalCapacity ? ` • öneri toplam koltuk: ${data.suggestedCombo.totalCapacity}` : ""}
+              {Number(data?.suggestedCombo?.overflowCapacity || 0) > 0 ? ` • taşma: ${data.suggestedCombo.overflowCapacity}` : ""}
+            </div>
+
+            {data?.enoughPoolCapacity && Number(data?.suggestedCombo?.vehicleCount || 0) > 1 ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className="btn" disabled={busy} onClick={() => autoSplitApprove(shift)}>
+                  Havuz Kombinasyonuyla Böl & Onayla
+                </button>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  Root shift SPLIT olur; havuzdaki gerçek araç+driver kombinasyonuyla child shift’ler oluşturulur.
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : state?.status === "loading" ? (
+          <div className="muted" style={{ marginTop: 8 }}>Room havuz özeti hesaplanıyor…</div>
+        ) : (
+          <div className="muted" style={{ marginTop: 8 }}>
+            Çoklu araç/driver havuzunu görmek için yükle.
+          </div>
+        )}
+      </div>
+    );
+  }
 
   function renderCompanyOfferSummary(s) {
     const ovId = s.companyOfferVehicleId ? Number(s.companyOfferVehicleId) : null;
@@ -816,6 +1024,12 @@ const offersByShiftId = useMemo(() => {
   function renderAvailLine(shift, vehicleId, driverId, autoDriverName) {
     const sid = Number(shift.id);
     const a = avail[sid] || null;
+    const selectedVehicle = vehicleId ? vehiclesById.get(Number(vehicleId)) : null;
+    const capacity = buildCapacityMeta({
+      shift,
+      vehicle: selectedVehicle,
+      roomVehicles: vehiclesForRoom(shift?.roomId),
+    });
 
     const missing = !vehicleId || !driverId;
     const conflict = a?.status === "conflict";
@@ -857,6 +1071,35 @@ const offersByShiftId = useMemo(() => {
           {msg ? <span className="muted">• {msg}</span> : null}
         </div>
 
+        {capacity.requiredPax > 0 ? (
+          <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span><b>Yolcu:</b> {capacity.requiredPax}</span>
+            <span>• <b>Koltuk:</b> {capacity.vehicleCapacity || "-"}</span>
+            {capacity.insufficient ? <span>• <b>Eksik:</b> {capacity.missingCapacity}</span> : null}
+            {capacity.insufficient && capacity.minVehicleCount ? (
+              <span>• <b>Bu araçla min:</b> {capacity.minVehicleCount} araç</span>
+            ) : null}
+            {capacity.requiredPax > 0 && capacity.roomMaxCapacity > 0 ? (
+              <span>• <b>Room max tek araç:</b> {capacity.roomMaxCapacity}</span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {capacity.insufficient ? (
+          <>
+            <div className="card" style={{ padding: 10 }}>
+              <div className="muted">
+                <b>Kapasite uyarısı:</b> tek araç yetmiyor.
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Bu seçimle en az <b>{capacity.minVehicleCount || "-"}</b> araç gerekir.
+                {capacity.roomMinVehicleCount ? ` Room havuzundaki en büyük araçla bile min ${capacity.roomMinVehicleCount} araç gerekir.` : ""}
+              </div>
+            </div>
+            {renderPoolSummary(shift, capacity)}
+          </>
+        ) : null}
+
         {conflict && csId ? (
           <div className="card" style={{ padding: 10 }}>
             <div className="muted">
@@ -876,6 +1119,35 @@ const offersByShiftId = useMemo(() => {
     );
   }
 
+  async function autoSplitApprove(shift) {
+    const sid = Number(shift?.id || 0);
+    if (!sid) return;
+
+    setBusy(true);
+    setErr("");
+    try {
+      const pool = await loadPoolSummary(shift, { force: true });
+      const comboCount = Number(pool?.suggestedCombo?.vehicleCount || 0);
+      if (!pool?.enoughPoolCapacity || comboCount < 2) {
+        setErr("Bu vardiya için çoklu araç kombinasyonu hazır değil.");
+        return;
+      }
+
+      await api(`/api/shifts/${sid}/auto-split-approve`, {
+        method: "POST",
+        token,
+        body: {},
+      });
+
+      invalidate("shifts");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function approveShift(shift) {
     const sid = Number(shift.id);
 
@@ -891,6 +1163,15 @@ const offersByShiftId = useMemo(() => {
     }
 
     const v = vehiclesById.get(vehicleId);
+    const capacityMeta = buildCapacityMeta({
+      shift,
+      vehicle: v,
+      roomVehicles: vehiclesForRoom(shift?.roomId),
+    });
+    if (capacityMeta.blockCode) {
+      setErr(capacityMeta.blockMessage || "Yetersiz kapasite.");
+      return;
+    }
 
     // Öncelik: kullanıcı seçimi → yoksa aracın bağlı driverId'si
     const driverId = manualDriverId ?? (v?.driverId ? Number(v.driverId) : null);
@@ -1273,12 +1554,18 @@ async function sendRoomOffer(shift) {
                 const selD = driverSel[sid] ?? "";
                 const manualDriverId = selD ? Number(selD) : null;
                 const effDriverId = manualDriverId ?? autoDriverId ?? null;
+                const capacityMeta = buildCapacityMeta({
+                  shift: s,
+                  vehicle: selectedVehicle,
+                  roomVehicles,
+                });
 
                 const a = avail[sid];
                 const approveDisabled =
                   busy ||
                   !vId ||
                   !effDriverId ||
+                  capacityMeta.insufficient ||
                   a?.status === "checking" ||
                   a?.status === "conflict" ||
                   a?.status === "error";
@@ -1568,6 +1855,7 @@ async function sendRoomOffer(shift) {
                         title={
                           !vId ? "Araç seç" :
                           !effDriverId ? "Driver seç (veya araç driver bağlı olsun)" :
+                          capacityMeta.blockCode ? capacityMeta.blockMessage :
                           a?.status === "checking" ? "Kontrol ediliyor" :
                           a?.status === "conflict" ? "Çakışma var" :
                           a?.status === "error" ? "Uygunluk hatası" :
@@ -1659,6 +1947,14 @@ async function sendRoomOffer(shift) {
                   <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />
+                    {Number(s.splitRootId || 0) > 0 ? (
+                      <div className="muted" style={{ marginTop: 4 }}>
+                        Paket #{s.splitRootId}
+                        {Number(s.splitIndex || 0) > 0 && Number(s.splitTotal || 0) > 0
+                          ? ` • ${s.splitIndex}/${s.splitTotal}`
+                          : ""}
+                      </div>
+                    ) : null}
                   </td>
                   <td>
                     <span className="pill" data-status={s.status}>

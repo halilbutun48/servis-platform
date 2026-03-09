@@ -67,11 +67,44 @@ export function offersRouter(io) {
           take,
           include: {
             room: true,
-            shift: { include: { company: true } },
+            shift: {
+              include: {
+                company: true,
+                organizationPlan: { select: { stops: { select: { passengerCount: true } } } },
+                _count: { select: { assignments: true, people: true } },
+              },
+            },
           },
         });
 
-        return res.json({ items });
+        const mapped = items.map((o) => {
+          const assignmentCount = Number(o?.shift?._count?.assignments || 0);
+          const peopleCount = Number(o?.shift?._count?.people || 0);
+          const orgPassengerCount = Array.isArray(o?.shift?.organizationPlan?.stops)
+            ? o.shift.organizationPlan.stops.reduce(
+                (sum, st) => sum + Math.max(0, Number(st?.passengerCount || 0)),
+                0
+              )
+            : 0;
+          const requiredPaxOverride = Math.max(0, Number(o?.shift?.requiredPaxOverride || 0));
+          const requiredPax = Math.max(assignmentCount, peopleCount, Number(orgPassengerCount || 0), requiredPaxOverride, 0);
+
+          return {
+            ...o,
+            shift: o.shift
+              ? {
+                  ...o.shift,
+                  assignmentCount,
+                  peopleCount,
+                  orgPassengerCount,
+                  requiredPaxOverride,
+                  requiredPax,
+                }
+              : o.shift,
+          };
+        });
+
+        return res.json({ items: mapped });
       } catch (e) {
         return res.status(500).json({ error: String(e?.message ?? e) });
       }
