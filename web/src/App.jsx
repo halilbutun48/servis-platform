@@ -14,6 +14,7 @@ import RoomShiftsPanel from "./panels/room/ShiftsPanel";
 import RoomAgreementsPanel from "./panels/room/AgreementsPanel";
 import RoomOffersPanel from "./panels/room/OffersPanel";
 import RoomHubPanel from "./panels/room/HubPanel";
+import RoomCheckinPanel from "./panels/room/CheckinPanel";
 // COMPANY
 import CompanyWorkflowPanel from "./panels/company/WorkflowPanel";
 import CompanyMapPanel from "./panels/company/MapPanel";
@@ -21,6 +22,7 @@ import CompanyShiftsPanel from "./panels/company/ShiftsPanel";
 import CompanyAgreementsPanel from "./panels/company/AgreementsPanel";
 import GeoReviewPanel from "./panels/company/GeoReviewPanel";
 import CompanyHubPanel from "./panels/company/HubPanel";
+import CompanyCheckinPanel from "./panels/company/CheckinPanel";
 import OrganizationCenterPanel from "./panels/organization/CenterPanel";
 import OrganizationPlansPanel from "./panels/organization/PlansPanel";
 
@@ -28,6 +30,7 @@ import OrganizationPlansPanel from "./panels/organization/PlansPanel";
 import DriverMapPanel from "./panels/driver/MapPanel";
 import RoutePanel from "./panels/driver/RoutePanel";
 import DriverTodayPanel from "./panels/driver/TodayPanel";
+import DriverCheckinPanel from "./panels/driver/CheckinPanel";
 
 // PERSONEL
 import PersonelLivePanel from "./panels/personel/LivePanel";
@@ -168,6 +171,7 @@ export default function App() {
     if (path === "/room/agreements") return { layout: true, node: <RoomAgreementsPanel /> };
     if (path === "/room/offers") return { layout: true, node: <RoomOffersPanel /> };
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
+    if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
 
     // COMPANY
     if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -176,6 +180,7 @@ export default function App() {
     if (path === "/company/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
+    if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
 
     // SCHOOL (Company.kind=SCHOOL)
     if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -184,6 +189,7 @@ export default function App() {
     if (path === "/school/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/school/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/school/hub") return { layout: true, node: <CompanyHubPanel /> };
+    if (path === "/school/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
 
 
@@ -195,11 +201,13 @@ export default function App() {
     if (path === "/organization/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/organization/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/organization/hub") return { layout: true, node: <CompanyHubPanel /> };
+    if (path === "/organization/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
 
     // DRIVER
     if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
     if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
+    if (path === "/driver/checkin") return { layout: true, node: <DriverCheckinPanel /> };
 
     // PERSONEL
     if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };
