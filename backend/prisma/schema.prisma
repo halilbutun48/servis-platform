@@ -185,6 +185,7 @@ model Company {
   personels     Personel[]
   notifications Notification[]
   agreements    Agreement[]
+  parentInvites ParentInvite[]
   organizationPlans OrganizationPlan[]
   @@index([regionId, kind])
 
@@ -331,6 +332,8 @@ notifications Notification[]
   @@index([companyId])
   @@index([roomId])
   parentChildren ParentChild[] @relation("ParentUserChildren")
+  parentInvitesCreated  ParentInvite[] @relation("ParentInviteCreatedBy")
+  parentInvitesConsumed ParentInvite[] @relation("ParentInviteConsumedBy")
 
 }
 
@@ -700,6 +703,7 @@ model Personel {
   @@index([companyId])
   @@unique([companyId, phone])
   parentLinks ParentChild[] @relation("ParentChildPersonel")
+  parentInvites ParentInvite[] @relation("ParentInviteChild")
 
   credentials PersonelCredential[]
   checkinEvents CheckinEvent[]
@@ -1051,3 +1055,28 @@ model CheckinEvent {
   @@index([shiftId, personelId, eventType, at])
 }
 
+
+model ParentInvite {
+  id               Int       @id @default(autoincrement())
+  companyId        Int
+  childPersonelId  Int
+  parentFullName   String?
+  email            String?
+  phone            String?
+  tokenHash        String    @unique
+  expiresAt        DateTime?
+  consumedAt       DateTime?
+  revokedAt        DateTime?
+  createdByUserId  Int?
+  consumedByUserId Int?
+  createdAt        DateTime  @default(now())
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  child      Personel @relation("ParentInviteChild", fields: [childPersonelId], references: [id], onDelete: Cascade)
+  createdBy  User?    @relation("ParentInviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  consumedBy User?    @relation("ParentInviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([childPersonelId, createdAt])
+  @@index([email])
+}

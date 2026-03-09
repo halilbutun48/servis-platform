@@ -94,6 +94,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
       // Sözleşmeler: Gelişmiş altında
       advanced.push({ label: "Sözleşmeler", path: base + "/agreements" });
       advanced.push({ label: "Hub", path: base + "/hub" });
+      if (me?.companyKind === "SCHOOL") advanced.push({ label: "Parent Link", path: "/school/parents" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : me?.companyKind === "ORGANIZATION" ? "Lokasyon İncele" : "Konum İncele", path: base + "/georeview" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
