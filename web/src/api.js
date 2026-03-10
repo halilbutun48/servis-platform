@@ -117,3 +117,27 @@ export async function enableTotp(token, code) {
 export async function verifyTotp(token, code) {
   return api("/api/auth/totp/verify", { method: "POST", token, body: { code } });
 }
+
+export async function googleLogin(credential, { inviteToken, deviceId, testProfile } = {}) {
+  const res = await fetch("/api/auth/google", {
+    cache: "no-store",
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credential, inviteToken, deviceId, testProfile }),
+  });
+
+  const ct = res.headers.get("content-type") || "";
+  if (!res.ok) {
+    if (ct.includes("application/json")) {
+      const json = await res.json().catch(() => null);
+      throw makeHttpError(res.status, json || { message: res.statusText });
+    }
+    const txt = await res.text().catch(() => "");
+    throw makeHttpError(res.status, txt || res.statusText);
+  }
+
+  const data = await res.json();
+  if (!data?.token) throw new Error("Google login response token yok");
+  setToken(data.token);
+  return data;
+}

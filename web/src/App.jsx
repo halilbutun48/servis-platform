@@ -41,10 +41,13 @@ import ParentLivePanel from "./panels/parent/LivePanel";
 import SchoolParentInvitePanel from "./panels/school/ParentInvitePanel";
 import AcceptParentInvitePanel from "./panels/public/AcceptParentInvitePanel";
 import PassengerLivePanel from "./panels/public/PassengerLivePanel";
+import AcceptInvitePanel from "./panels/public/AcceptInvitePanel";
 import PassengerLinksPanel from "./panels/company/PassengerLinksPanel";
 
 // SHARED
 import NotificationsPanel from "./panels/shared/NotificationsPanel";
+import AuthInvitesPanel from "./panels/shared/AuthInvitesPanel";
+import GoogleLoginButton from "./components/GoogleLoginButton";
 import LogsPanel from "./panels/shared/LogsPanel";
 
 // SUPER_ADMIN
@@ -123,6 +126,18 @@ function LoginCard() {
           ) : null}
         </form>
 
+        <div style={{ marginTop: 12 }}>
+          <div className="muted" style={{ marginBottom: 8 }}>Google Auth + Invite Gate: aktif davetin varsa Google ile de giriş yapabilirsin.</div>
+          <GoogleLoginButton
+            onSuccess={(r) => {
+              setToken(r?.token || "");
+            }}
+            onError={(e) => {
+              setErr(String(e?.message || e));
+            }}
+          />
+        </div>
+
         <hr style={{ margin: "12px 0" }} />
         <div className="muted">
           Demo kullanıcılar: room@demo.com, company@demo.com, school@demo.com, organization@demo.com, driver@demo.com, personel@demo.com (şifre: demo123)
@@ -156,6 +171,7 @@ export default function App() {
   const view = useMemo(() => {
     if (!token) {
       if (cleanPath === "/accept-parent-invite") return { layout: false, node: <AcceptParentInvitePanel path={path} /> };
+      if (cleanPath === "/accept-invite") return { layout: false, node: <AcceptInvitePanel path={path} /> };
       if (cleanPath === "/public/passenger-live" || cleanPath === "/public/personel-live") return { layout: false, node: <PassengerLivePanel path={path} /> };
       return { layout: false, node: <LoginCard /> };
     }
@@ -175,6 +191,7 @@ export default function App() {
     if (path === "/room/offers") return { layout: true, node: <RoomOffersPanel /> };
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
     if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
+    if (path === "/room/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
 
     // COMPANY
     if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -185,6 +202,7 @@ export default function App() {
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/company/access-links") return { layout: true, node: <PassengerLinksPanel /> };
+    if (path === "/company/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
 
     // SCHOOL (Company.kind=SCHOOL)
     if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -196,6 +214,7 @@ export default function App() {
     if (path === "/school/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/school/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
+    if (path === "/school/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
 
 
     // ORGANIZATION (Company.kind=ORGANIZATION)
@@ -208,6 +227,7 @@ export default function App() {
     if (path === "/organization/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/organization/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/organization/access-links") return { layout: true, node: <PassengerLinksPanel /> };
+    if (path === "/organization/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
 
     // DRIVER
     if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };

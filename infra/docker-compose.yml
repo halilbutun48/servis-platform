@@ -35,6 +35,8 @@ services:
       NODE_ENV: development
       PORT: ${API_PORT:-3000}
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
+      GOOGLE_AUTH_ENABLED: ${GOOGLE_AUTH_ENABLED:-0}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       REDIS_URL: redis://redis:6379
       RATE_LIMIT_STORE: "redis"
       GPS_THROTTLE_STORE: "redis"

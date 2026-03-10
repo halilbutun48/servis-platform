@@ -1,1 +1,0 @@
-Fixes CompanyKind enum + company kind validators/options to include ORGANIZATION. Apply with tools/apply_overlay_organization_enum_fix.ps1 -RepoRoot D:\servis-platform

@@ -157,7 +157,8 @@ authRouter.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  const { email, password } = parsed.data;
+  const email = String(parsed.data.email || "").trim().toLowerCase();
+  const password = parsed.data.password;
   const reqDeviceId = parsed.data.deviceId ? String(parsed.data.deviceId).trim() : null;
 
   const user = await prisma.user.findUnique({ where: { email } });

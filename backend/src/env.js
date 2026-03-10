@@ -13,6 +13,8 @@ export const ENV = {
   STEP_UP_REQUIRED_ROLES: process.env.STEP_UP_REQUIRED_ROLES ?? "SUPER_ADMIN,ROOM",
   STEP_UP_TOTP_WINDOW_SEC: Number(process.env.STEP_UP_TOTP_WINDOW_SEC ?? 12 * 60 * 60),
   STEP_UP_TOTP_ISSUER: process.env.STEP_UP_TOTP_ISSUER ?? "Personel-Servis V1",
+  GOOGLE_AUTH_ENABLED: (process.env.GOOGLE_AUTH_ENABLED ?? "0") === "1",
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ?? "",
 
   // Redis
   REDIS_URL: process.env.REDIS_URL ?? "",

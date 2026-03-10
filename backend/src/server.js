@@ -15,6 +15,7 @@ import { authRequired, requireStepUp, requireStepUpWrite } from "./auth/middlewa
 import { scopeRoomsForUser } from "./ws/scope.js";
 
 import { authRouter } from "./routes/auth.js";
+import { authStep2Router } from "./routes/auth_step2.js";
 import { meRouter } from "./routes/me.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { etaRouter } from "./routes/eta.js";
@@ -256,6 +257,7 @@ const exportLimiter = rateLimit({
 
 // Auth (çok sıkı)
 app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/google", authLimiter);
 
 // GPS ingest (ayrı kova)
 app.use("/api/gps", gpsLimiter);
@@ -297,6 +299,7 @@ app.get("/health", async (req, res) => {
 });
 
 // Public routes
+app.use("/api/auth", authStep2Router);
 app.use("/api/auth", authRouter);
 app.use("/api/public/passenger-live", publicPassengerLiveRouter());
 app.use("/api/public/personel-live", publicPassengerLiveRouter());

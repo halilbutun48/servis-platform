@@ -80,6 +80,7 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "Sözleşmeler", path: "/room/agreements" });
       advanced.push({ label: "Hub", path: "/room/hub" });
       advanced.push({ label: "Check-in", path: "/room/checkin" });
+      advanced.push({ label: "Giriş Davetleri", path: "/room/auth-invites" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
 advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "COMPANY") {
@@ -97,6 +98,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
       advanced.push({ label: "Hub", path: base + "/hub" });
       advanced.push({ label: "Check-in", path: base + "/checkin" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Link" : "Personel Link", path: base + "/access-links" });
+      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Hesap Davetleri" : "Giriş Davetleri", path: base + "/auth-invites" });
       if (me?.companyKind === "SCHOOL") advanced.push({ label: "Parent Link", path: "/school/parents" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : me?.companyKind === "ORGANIZATION" ? "Lokasyon İncele" : "Konum İncele", path: base + "/georeview" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });

@@ -28,6 +28,18 @@ enum Role {
   PARENT
 }
 
+enum IdentityProvider {
+  GOOGLE
+}
+
+enum InviteType {
+  PERSONEL_INVITE
+  DRIVER_INVITE
+  ROOM_USER_INVITE
+  COMPANY_USER_INVITE
+  PARENT_INVITE
+}
+
 enum VehicleStatus {
   ACTIVE
   PASSIVE
@@ -186,6 +198,7 @@ model Company {
   notifications Notification[]
   agreements    Agreement[]
   parentInvites ParentInvite[]
+  invites       Invite[]
   organizationPlans OrganizationPlan[]
   @@index([regionId, kind])
 
@@ -279,6 +292,7 @@ model Room {
   notifications  Notification[]
   routeTemplates RouteTemplate[]
   agreements     Agreement[]
+  invites        Invite[]
 
   // ✅ M24: offers inbox (Room ↔ ShiftOffer)
   shiftOffers    ShiftOffer[] @relation("RoomShiftOffers")
@@ -314,6 +328,7 @@ notifications Notification[]
 
   // ✅ M41: refresh sessions (rotating)
   refreshSessions  RefreshSession[]
+  identities       UserIdentity[]
 
   // Step 1.5: TOTP step-up (ROOM + SUPER_ADMIN)
   totpSecretBase32        String?
@@ -340,6 +355,8 @@ notifications Notification[]
   parentChildren ParentChild[] @relation("ParentUserChildren")
   parentInvitesCreated  ParentInvite[] @relation("ParentInviteCreatedBy")
   parentInvitesConsumed ParentInvite[] @relation("ParentInviteConsumedBy")
+  invitesCreated  Invite[] @relation("InviteCreatedBy")
+  invitesConsumed Invite[] @relation("InviteConsumedBy")
 
 }
 
@@ -427,6 +444,7 @@ model Driver {
 
   shifts        Shift[]
   notifications Notification[]
+  invites       Invite[]
 
   @@index([roomId])
 }
@@ -735,6 +753,8 @@ model Personel {
   credentials PersonelCredential[]
   checkinEvents CheckinEvent[]
   passengerLiveLinks PassengerLiveLink[]
+  invites Invite[] @relation("InvitePersonel")
+  childInvites Invite[] @relation("InviteChildPersonel")
 }
 
 
@@ -969,6 +989,61 @@ model AuditLog {
   @@index([actorUserId, createdAt])
   @@index([entity, entityId])
 }
+model UserIdentity {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  provider       IdentityProvider
+  providerSub    String
+  email          String?
+  emailVerifiedAt DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSub])
+  @@index([userId])
+  @@index([email])
+}
+
+model Invite {
+  id               Int        @id @default(autoincrement())
+  type             InviteType
+  role             Role
+  email            String?
+  phone            String?
+  fullName         String?
+  companyId        Int?
+  roomId           Int?
+  personelId       Int?
+  childPersonelId  Int?
+  driverId         Int?
+  tokenHash        String     @unique
+  expiresAt        DateTime?
+  consumedAt       DateTime?
+  revokedAt        DateTime?
+  createdByUserId  Int?
+  consumedByUserId Int?
+  createdAt        DateTime   @default(now())
+
+  company      Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room         Room?    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  personel     Personel? @relation("InvitePersonel", fields: [personelId], references: [id], onDelete: SetNull)
+  childPersonel Personel? @relation("InviteChildPersonel", fields: [childPersonelId], references: [id], onDelete: SetNull)
+  driver       Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  createdBy    User?    @relation("InviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  consumedBy   User?    @relation("InviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+  @@index([companyId, createdAt])
+  @@index([roomId, createdAt])
+  @@index([personelId, createdAt])
+  @@index([childPersonelId, createdAt])
+  @@index([driverId, createdAt])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
 model ParentChild {
   id           Int      @id @default(autoincrement())
   parentUserId Int

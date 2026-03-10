@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
+import GoogleLoginButton from "../../components/GoogleLoginButton";
 
 function useInviteToken(path) {
   return useMemo(() => {
@@ -123,8 +124,24 @@ export default function AcceptParentInvitePanel({ path }) {
         <div className="card" style={{ marginTop: 12 }}>
           <div className="title">Hesabını oluştur</div>
           <div className="muted" style={{ marginTop: 8, marginBottom: 12 }}>
-            Okul sana ID/şifre vermez. Bu link üzerinden parent hesabını kendin oluşturursun.
+            Okul sana ID/şifre vermez. Bu link üzerinden parent hesabını kendin oluşturursun. İstersen doğrulanmış Google hesabınla da devam edebilirsin.
           </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <GoogleLoginButton
+              inviteToken={inviteToken}
+              onSuccess={(r) => {
+                setToken(r?.token || "");
+                navigate("/parent/live");
+              }}
+              onError={(e) => {
+                const code = errCodeOf(e);
+                setInviteCode(code);
+                setErr(code || String(e?.message || e));
+              }}
+            />
+          </div>
+
           <form onSubmit={onAccept} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
             <label className="muted">
               Ad Soyad
