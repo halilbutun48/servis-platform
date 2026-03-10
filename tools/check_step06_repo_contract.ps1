@@ -4,6 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_console_status.ps1")
 
 function Must-Contain {
   param(
@@ -16,7 +17,7 @@ function Must-Contain {
   if ($raw.IndexOf($Needle, [System.StringComparison]::Ordinal) -lt 0) {
     throw "repo contract fail: $Label :: missing '$Needle' in $File"
   }
-  Write-Host "OK $Label" -ForegroundColor Green
+  Write-StatusLine "OK $Label"
 }
 
 $repo = (Resolve-Path $RepoRoot).Path
@@ -31,7 +32,7 @@ $schoolInvite = Join-Path $repo "web/src/panels/school/ParentInvitePanel.jsx"
 $acceptInvite = Join-Path $repo "web/src/panels/public/AcceptParentInvitePanel.jsx"
 
 Write-Host ""
-Write-Host "=== STEP06 REPO CONTRACT CHECK ===" -ForegroundColor Cyan
+Write-StatusLine "=== STEP06 REPO CONTRACT CHECK ==="
 Write-Host ""
 
 Must-Contain $routePreview "Tam Rotayı Dış Navigasyonda Aç" "route preview external nav button"
@@ -59,5 +60,5 @@ Must-Contain $app "AcceptParentInvitePanel" "public accept panel registered"
 Must-Contain $app '"/accept-parent-invite"' "public accept route registered"
 
 Write-Host ""
-Write-Host "=== STEP06 REPO CONTRACT PASS OK ===" -ForegroundColor Green
+Write-StatusLine "=== STEP06 REPO CONTRACT PASS OK ==="
 Write-Host ""

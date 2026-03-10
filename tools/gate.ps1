@@ -18,8 +18,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_console_status.ps1")
 
-# OK check list (milestone discipline)
 $checks = @(
   @{ n = 0;  name = "M0";  cmd = "node scripts/m0check.js" },
   @{ n = 1;  name = "M1";  cmd = "node scripts/m1check.js" },
@@ -37,12 +37,9 @@ $checks = @(
   @{ n = 13; name = "M13"; cmd = "node scripts/m13check.js" },
   @{ n = 14; name = "M14"; cmd = "node scripts/m14check.js" },
   @{ n = 15; name = "M15"; cmd = "node scripts/m15check.js" },
-
-  # Sub-milestones (still under -To 16): deterministic contract checks
   @{ n = 16; name = "M16";   file = "m16check.js";  cmd = "node scripts/m16check.js" },
   @{ n = 16; name = "M16.2"; file = "m162check.js"; cmd = "node scripts/m162check.js" },
   @{ n = 16; name = "M16.3"; file = "m163check.js"; cmd = "node scripts/m163check.js" },
-
   @{ n = 17; name = "M17"; file = "m17check.js"; cmd = "node scripts/m17check.js" },
   @{ n = 18; name = "M18"; file = "m18check.js"; cmd = "node scripts/m18check.js" },
   @{ n = 19; name = "M19"; file = "m19check.js"; cmd = "node scripts/m19check.js" },
@@ -63,7 +60,6 @@ $checks = @(
   @{ n = 34; name = "M34"; file = "m34check.js"; cmd = "node scripts/m34check.js" },
   @{ n = 35; name = "M35"; file = "m35check.js"; cmd = "node scripts/m35check.js" },
   @{ n = 36; name = "M36"; file = "m36check.js"; cmd = "node scripts/m36check.js" },
-  # OK M37: E2E School+Parent (covers M80/M81 flow)
   @{ n = 37; name = "M37"; file = "m37check.js"; cmd = "node scripts/m37check.js" },
   @{ n = 38; name = "M38"; file = "m38check.js"; cmd = "node scripts/m38check.js" },
   @{ n = 39; name = "M39"; file = "m39check.js"; cmd = "node scripts/m39check.js" },
@@ -71,12 +67,11 @@ $checks = @(
   @{ n = 41; name = "M41"; file = "m41check.js"; cmd = "node scripts/m41check.js" }
 )
 
-# OK supported max milestone (keep checks list as SSOT)
 $maxSupported = ($checks | Measure-Object -Property n -Maximum).Maximum
 
 if ($To -le 0) {
   $To = $maxSupported
-  Write-Host ("INFO Auto -To: M{0}" -f $To) -ForegroundColor Cyan
+  Write-StatusLine ("INFO Auto -To: M{0}" -f $To)
 } elseif ($To -gt $maxSupported) {
   throw ("Requested -To M{0} but gate.ps1 supports up to M{1}. Update tools/gate.ps1 check list." -f $To, $maxSupported)
 }
@@ -91,12 +86,9 @@ if (-not (Test-Path $composeFile)) { throw "compose file not found: $composeFile
 if (-not (Test-Path $backend)) { throw "backend dir not found: $backend" }
 
 Write-Host ""
-Write-Host ("=== GATE (M0→M{0}) ===" -f $To) -ForegroundColor Cyan
+Write-StatusLine ("=== GATE (M0→M{0}) ===" -f $To)
 Write-Host ""
 
-# OK Compose runner seçimi:
-# - Prefer: docker + "compose"
-# - Fallback: docker-compose
 $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
 $dockerComposeCmd = Get-Command docker-compose -ErrorAction SilentlyContinue
 
@@ -115,14 +107,12 @@ if ($dockerCmd) {
 
 function Dc {
   param([Parameter(ValueFromRemainingArguments=$true)] $Args)
-
-  & $dc @dcBaseArgs @Args
-  if ($LASTEXITCODE -ne 0) {
+  $code = Invoke-ExternalColor -FilePath $dc -ArgumentList (@($dcBaseArgs) + @($Args))
+  if ($code -ne 0) {
     throw "Docker compose command failed: $dc $($dcBaseArgs -join ' ') $($Args -join ' ')"
   }
 }
 
-# Include all checks up to -To; missing scripts are a hard error
 $runList = @()
 foreach ($c in $checks) {
   if ($c.n -gt $To) { continue }
@@ -137,29 +127,25 @@ foreach ($c in $checks) {
   $runList += $c
 }
 
-# Clean up any previous run (do NOT remove volumes)
-Write-Host "=== Docker Compose Down (safe) ===" -ForegroundColor Cyan
+Write-StatusLine "=== Docker Compose Down (safe) ==="
 try {
-  Dc -f $composeFile down --remove-orphans | Out-Host
+  Dc -f $composeFile down --remove-orphans
 } catch {
-  # down başarısız olsa bile devam edebiliriz (ilk run vs.)
-  Write-Host ("down skipped: {0}" -f ($_.Exception.Message)) -ForegroundColor DarkYellow
+  Write-StatusLine ("WARN down skipped: {0}" -f ($_.Exception.Message))
 }
 
 Write-Host ""
 
 if ($NoBuild) {
-  Write-Host "=== Docker Compose Up (NoBuild) ===" -ForegroundColor Cyan
-  # IMPORTANT: use --detach (NOT -d), because -d can be captured as PowerShell -Debug
-  Dc -f $composeFile --profile osrm up --detach --remove-orphans | Out-Host
+  Write-StatusLine "=== Docker Compose Up (NoBuild) ==="
+  Dc -f $composeFile --profile osrm up --detach --remove-orphans
 } else {
-  Write-Host "=== Docker Compose Build+Up ===" -ForegroundColor Cyan
-  Dc -f $composeFile --profile osrm up --detach --build --remove-orphans | Out-Host
+  Write-StatusLine "=== Docker Compose Build+Up ==="
+  Dc -f $composeFile --profile osrm up --detach --build --remove-orphans
 }
 
-# Wait API health
 Write-Host ""
-Write-Host "=== API Health ===" -ForegroundColor Cyan
+Write-StatusLine "=== API Health ==="
 
 $max = 60
 $ok = $false
@@ -168,31 +154,26 @@ for ($i = 0; $i -lt $max; $i++) {
     $r = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:3000/health" -TimeoutSec 3
     if ($r.StatusCode -eq 200) { $ok = $true; break }
   } catch {}
-
   Start-Sleep -Seconds 1
 }
 
 if (-not $ok) {
-  Write-Host "API health timeout. Last logs:" -ForegroundColor Red
-  try { Dc -f $composeFile logs --tail 120 $ApiService | Out-Host } catch {}
+  Write-StatusLine "FAIL API health timeout. Last logs:"
+  try { Dc -f $composeFile logs --tail 120 $ApiService } catch {}
   throw "API health timeout"
 }
 
-Write-Host "health OK" -ForegroundColor Green
+Write-StatusLine "OK health OK"
 
-# Run milestone checks inside api container
 Write-Host ""
-Write-Host "=== Milestone checks ===" -ForegroundColor Cyan
+Write-StatusLine "=== Milestone checks ==="
 
 foreach ($c in $runList) {
   Write-Host ""
-  Write-Host ("--- {0} ---" -f $c.name) -ForegroundColor Cyan
-
-  # alpine: bash yerine sh
-  Dc -f $composeFile exec -T $ApiService sh -lc ("cd /app/backend && {0}" -f $c.cmd) | Out-Host
+  Write-StatusLine ("--- {0} ---" -f $c.name)
+  Dc -f $composeFile exec -T $ApiService sh -lc ("cd /app/backend && {0}" -f $c.cmd)
 }
 
 Write-Host ""
-Write-Host ("=== GATE PASS OK (M0→M{0}) ===" -f $To) -ForegroundColor Green
+Write-StatusLine ("=== GATE PASS OK (M0→M{0}) ===" -f $To)
 Write-Host ""
-

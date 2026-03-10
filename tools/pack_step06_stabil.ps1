@@ -13,6 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_console_status.ps1")
 
 $repo = (Resolve-Path $RepoDir).Path
 $pack = Join-Path $repo "tools/pack.ps1"
@@ -41,25 +42,25 @@ if ($dockerCmd) {
 
 function Dc {
   param([Parameter(ValueFromRemainingArguments=$true)] $Args)
-  & $dc @dcBaseArgs @Args
-  if ($LASTEXITCODE -ne 0) {
+  $code = Invoke-ExternalColor -FilePath $dc -ArgumentList (@($dcBaseArgs) + @($Args))
+  if ($code -ne 0) {
     throw "Docker compose command failed: $dc $($dcBaseArgs -join ' ') $($Args -join ' ')"
   }
 }
 
 Write-Host ""
-Write-Host "=== STEP 0.6 STABIL PACK ===" -ForegroundColor Cyan
-Write-Host "Mode: base M41 pack + Step 0.6 runtime mini-check + repo contract smoke" -ForegroundColor DarkCyan
+Write-StatusLine "=== STEP 0.6 STABIL PACK ==="
+Write-StatusLine "INFO Mode: base M41 pack + Step 0.6 runtime mini-check + repo contract smoke"
 Write-Host ""
 
 & $pack -To 41 -ComposeDir $ComposeDir -RepoDir $RepoDir -ApiService $ApiService -NoBuild:$NoBuild
 
-Write-Host "=== Step 0.6 Runtime Mini-Check ===" -ForegroundColor Cyan
-Dc -f $composeFile exec -T $ApiService sh -lc "cd /app/backend && node scripts/step06_stabil_check.js" | Out-Host
+Write-StatusLine "=== Step 0.6 Runtime Mini-Check ==="
+Dc -f $composeFile exec -T $ApiService sh -lc "cd /app/backend && node scripts/step06_stabil_check.js"
 
-Write-Host "=== Step 0.6 Repo Contract ===" -ForegroundColor Cyan
+Write-StatusLine "=== Step 0.6 Repo Contract ==="
 & $repoContract -RepoRoot $RepoDir
 
 Write-Host ""
-Write-Host "=== STEP 0.6 STABIL PACK PASS OK ===" -ForegroundColor Green
+Write-StatusLine "=== STEP 0.6 STABIL PACK PASS OK ==="
 Write-Host ""

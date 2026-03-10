@@ -3,6 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_console_status.ps1")
 
 function Must-Contain {
   param(
@@ -14,11 +15,11 @@ function Must-Contain {
   if (!(Test-Path $path)) { throw "repo contract fail: $Label :: file not found $path" }
   $raw = Get-Content -Raw -LiteralPath $path
   if ($raw -notlike "*${Needle}*") { throw "repo contract fail: $Label :: missing '$Needle' in $path" }
-  Write-Host "OK $Label"
+  Write-StatusLine "OK $Label"
 }
 
 Write-Host ""
-Write-Host "=== STEP1 SECURITY FOUNDATION REPO CONTRACT CHECK ==="
+Write-StatusLine "=== STEP1 SECURITY FOUNDATION REPO CONTRACT CHECK ==="
 
 Must-Contain -File "backend/src/server.js" -Needle "const exportLimiter = rateLimit(" -Label "export limiter declared"
 Must-Contain -File "backend/src/server.js" -Needle 'app.use("/api/logs/export", exportLimiter);' -Label "scoped log export limiter mounted"
@@ -35,5 +36,4 @@ Must-Contain -File "backend/scripts/step1_security_foundation_check.js" -Needle 
 Must-Contain -File "backend/scripts/step1_security_foundation_check.js" -Needle 'parent driver today forbidden' -Label "rbac runtime harness parent deny case"
 
 Write-Host ""
-Write-Host "=== STEP1 SECURITY FOUNDATION REPO CONTRACT PASS OK ==="
-
+Write-StatusLine "=== STEP1 SECURITY FOUNDATION REPO CONTRACT PASS OK ==="

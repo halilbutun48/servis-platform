@@ -13,6 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_console_status.ps1")
 
 $repo = (Resolve-Path $RepoDir).Path
 $pack = Join-Path $repo "tools/pack.ps1"
@@ -39,8 +40,8 @@ if ($dockerCmd) {
 
 function Dc {
   param([Parameter(ValueFromRemainingArguments=$true)] $Args)
-  & $dc @dcBaseArgs @Args
-  if ($LASTEXITCODE -ne 0) {
+  $code = Invoke-ExternalColor -FilePath $dc -ArgumentList (@($dcBaseArgs) + @($Args))
+  if ($code -ne 0) {
     throw "Docker compose command failed: $dc $($dcBaseArgs -join ' ') $($Args -join ' ')"
   }
 }
@@ -53,21 +54,20 @@ try {
   if (-not $env:CHECKIN_DEDUPE_SEC) { $env:CHECKIN_DEDUPE_SEC = "60" }
 
   Write-Host ""
-  Write-Host "=== M42 OPTIONAL PACK ===" -ForegroundColor Cyan
-  Write-Host "Mode: base M41 pack + optional M42 check (FEATURE_CHECKIN=1)" -ForegroundColor DarkCyan
+  Write-StatusLine "=== M42 OPTIONAL PACK ==="
+  Write-StatusLine "INFO Mode: base M41 pack + optional M42 check (FEATURE_CHECKIN=1)"
   Write-Host ""
 
   & $pack -To 41 -ComposeDir $ComposeDir -RepoDir $RepoDir -ApiService $ApiService -NoBuild:$NoBuild
 
-  Write-Host "=== M42 Optional Check ===" -ForegroundColor Cyan
-  Dc -f $composeFile exec -T $ApiService sh -lc "cd /app/backend && node scripts/m42_optional_check.js" | Out-Host
+  Write-StatusLine "=== M42 Optional Check ==="
+  Dc -f $composeFile exec -T $ApiService sh -lc "cd /app/backend && node scripts/m42_optional_check.js"
 
   Write-Host ""
-  Write-Host "=== M42 OPTIONAL PACK PASS OK ===" -ForegroundColor Green
+  Write-StatusLine "=== M42 OPTIONAL PACK PASS OK ==="
   Write-Host ""
 }
 finally {
   if ($null -eq $prevFeature) { Remove-Item Env:FEATURE_CHECKIN -ErrorAction SilentlyContinue } else { $env:FEATURE_CHECKIN = $prevFeature }
   if ($null -eq $prevDedupe) { Remove-Item Env:CHECKIN_DEDUPE_SEC -ErrorAction SilentlyContinue } else { $env:CHECKIN_DEDUPE_SEC = $prevDedupe }
 }
-

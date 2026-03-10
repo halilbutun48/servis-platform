@@ -3,28 +3,28 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_console_status.ps1")
 Set-Location $RepoRoot
 
 Write-Host ""
-Write-Host "=== STEP 1 SECURITY FOUNDATION PACK ==="
+Write-StatusLine "=== STEP 1 SECURITY FOUNDATION PACK ==="
 
 & (Join-Path $RepoRoot "tools/pack.ps1") -To 41
 if ($LASTEXITCODE -ne 0) { throw "base M41 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"
-$dcBaseArgs = @("compose", "-f", $compose)
+$dcArgs = @("compose", "-f", $compose, "exec", "-T", "api", "sh", "-lc", "cd /app/backend && node scripts/step1_security_foundation_check.js")
 
 Write-Host ""
-Write-Host "=== Step 1 Runtime Check ==="
-& $dc $dcBaseArgs[0] $dcBaseArgs[1] $dcBaseArgs[2] "exec" "-T" "api" "sh" "-lc" "cd /app/backend && node scripts/step1_security_foundation_check.js"
-if ($LASTEXITCODE -ne 0) { throw "Docker compose command failed: $dc $($dcBaseArgs -join ' ') exec -T api sh -lc cd /app/backend && node scripts/step1_security_foundation_check.js" }
+Write-StatusLine "=== Step 1 Runtime Check ==="
+$code = Invoke-ExternalColor -FilePath $dc -ArgumentList $dcArgs
+if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' ')" }
 
 Write-Host ""
-Write-Host "=== Step 1 Repo Contract ==="
+Write-StatusLine "=== Step 1 Repo Contract ==="
 & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools/check_step1_security_foundation_repo_contract.ps1") -RepoRoot $RepoRoot
 if ($LASTEXITCODE -ne 0) { throw "repo contract check failed" }
 
 Write-Host ""
-Write-Host "=== STEP 1 SECURITY FOUNDATION PACK PASS OK ==="
-
+Write-StatusLine "=== STEP 1 SECURITY FOUNDATION PACK PASS OK ==="
