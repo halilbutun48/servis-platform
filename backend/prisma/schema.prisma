@@ -530,10 +530,31 @@ extendDecisionAt     DateTime?
   @@index([organizationPlanId])
   @@unique([agreementId, startAt])
   checkinEvents CheckinEvent[]
+  passengerLiveLinks PassengerLiveLink[]
 }
 
 
 
+
+
+model PassengerLiveLink {
+  id           Int       @id @default(autoincrement())
+  shiftId      Int
+  personelId   Int
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  lastViewedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId, createdAt])
+  @@index([personelId, createdAt])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
 
 model ShiftOffer {
   id        Int              @id @default(autoincrement())
@@ -713,7 +734,9 @@ model Personel {
 
   credentials PersonelCredential[]
   checkinEvents CheckinEvent[]
+  passengerLiveLinks PassengerLiveLink[]
 }
+
 
 model ShiftPersonel {
   id         Int      @id @default(autoincrement())

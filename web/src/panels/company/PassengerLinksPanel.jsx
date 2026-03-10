@@ -13,7 +13,19 @@ function fmtTR(iso) {
 
 function buildPublicLink(rawToken) {
   const base = String(import.meta.env.VITE_PUBLIC_BASE_URL || window.location.origin || "").replace(/\/$/, "");
-  return `${base}/#/public/passenger-live?token=${encodeURIComponent(rawToken)}`;
+  return `${base}/#/public/personel-live?token=${encodeURIComponent(rawToken)}`;
+}
+
+function isUsableLink(x) {
+  if (!x) return false;
+  if (x.revokedAt) return false;
+  const exp = x.expiresAt ? new Date(x.expiresAt).getTime() : 0;
+  if (!Number.isFinite(exp) || exp <= Date.now()) return false;
+  return true;
+}
+
+function freshKey(shiftId, personelId) {
+  return `${String(shiftId || "")}:${String(personelId || "")}`;
 }
 
 export default function PassengerLinksPanel() {
@@ -22,7 +34,7 @@ export default function PassengerLinksPanel() {
   const [shiftId, setShiftId] = useState("");
   const [people, setPeople] = useState([]);
   const [links, setLinks] = useState([]);
-  const [ttlHours, setTtlHours] = useState("12");
+  const [ttlDays, setTtlDays] = useState("7");
   const [busyId, setBusyId] = useState("");
   const [copied, setCopied] = useState("");
   const [err, setErr] = useState("");
@@ -37,7 +49,10 @@ export default function PassengerLinksPanel() {
   }
 
   async function loadPeople(sid) {
-    if (!sid) { setPeople([]); return []; }
+    if (!sid) {
+      setPeople([]);
+      return [];
+    }
     const res = await api(`/api/shifts/${sid}/people`, { token });
     const items = Array.isArray(res?.items) ? res.items : [];
     setPeople(items);
@@ -45,7 +60,10 @@ export default function PassengerLinksPanel() {
   }
 
   async function loadLinks(sid) {
-    if (!sid) { setLinks([]); return []; }
+    if (!sid) {
+      setLinks([]);
+      return [];
+    }
     const res = await api(`/api/company/passenger-links?shiftId=${encodeURIComponent(String(sid))}`, { token });
     const items = Array.isArray(res?.items) ? res.items : [];
     setLinks(items);
@@ -56,13 +74,21 @@ export default function PassengerLinksPanel() {
     await Promise.all([loadPeople(sid), loadLinks(sid)]);
   }
 
-  useEffect(() => { loadShifts().catch((e) => setErr(String(e?.message || e))); }, []); // eslint-disable-line
-  useEffect(() => { reloadAll(shiftId).catch((e) => setErr(String(e?.message || e))); }, [shiftId]); // eslint-disable-line
+  useEffect(() => {
+    loadShifts().catch((e) => setErr(String(e?.message || e)));
+  }, []); // eslint-disable-line
+
+  useEffect(() => {
+    setFreshLinks({});
+    setCopied("");
+    reloadAll(shiftId).catch((e) => setErr(String(e?.message || e)));
+  }, [shiftId]); // eslint-disable-line
 
   const linkByPersonelId = useMemo(() => {
     const map = new Map();
     for (const x of links || []) {
       if (!x?.personelId) continue;
+      if (!isUsableLink(x)) continue;
       if (map.has(x.personelId)) continue;
       map.set(x.personelId, x);
     }
@@ -76,11 +102,15 @@ export default function PassengerLinksPanel() {
       const res = await api("/api/company/passenger-links", {
         method: "POST",
         token,
-        body: { shiftId: Number(shiftId), personelId: Number(personelId), ttlHours: Number(ttlHours) || 12 },
+        body: { shiftId: Number(shiftId), personelId: Number(personelId), ttlDays: Number(ttlDays) || 7 },
       });
-      const url = buildPublicLink(res?.token || "");
-      setFreshLinks((p) => ({ ...p, [String(personelId)]: url }));
-      try { await navigator.clipboard.writeText(url); setCopied(String(personelId)); } catch {}
+      if (!res?.token) throw new Error("Token dönmedi");
+      const url = buildPublicLink(res.token);
+      setFreshLinks((p) => ({ ...p, [freshKey(shiftId, personelId)]: url }));
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(String(personelId));
+      } catch {}
       await loadLinks(shiftId);
     } catch (e) {
       setErr(String(e?.message || e));
@@ -89,11 +119,17 @@ export default function PassengerLinksPanel() {
     }
   }
 
-  async function revokeLink(id) {
+  async function revokeLink(id, personelId) {
     setBusyId(`revoke:${id}`);
     setErr("");
     try {
       await api(`/api/company/passenger-links/${id}/revoke`, { method: "POST", token });
+      setFreshLinks((p) => {
+        const next = { ...p };
+        delete next[freshKey(shiftId, personelId)];
+        return next;
+      });
+      if (copied === String(personelId)) setCopied("");
       await loadLinks(shiftId);
     } catch (e) {
       setErr(String(e?.message || e));
@@ -103,14 +139,17 @@ export default function PassengerLinksPanel() {
   }
 
   async function copyText(t, key) {
-    try { await navigator.clipboard.writeText(t); setCopied(String(key)); } catch {}
+    try {
+      await navigator.clipboard.writeText(t);
+      setCopied(String(key));
+    } catch {}
   }
 
   return (
     <div className="wrap">
       <div className="card">
         <div className="title">{me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}</div>
-        <div className="muted">Login vermeden, tek kişiye özel süreli canlı takip linki üret. Link sadece kendi durak + ETA + navigasyon bilgisini gösterir.</div>
+        <div className="muted">Login vermeden, tek kişiye özel süreli canlı takip linki üret. Link sadece kendi durak + ETA + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran ENDED/final durum olarak görünür.</div>
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
@@ -127,11 +166,11 @@ export default function PassengerLinksPanel() {
 
           <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
             Link süresi
-            <select value={ttlHours} onChange={(e) => setTtlHours(e.target.value)}>
-              <option value="6">6 saat</option>
-              <option value="12">12 saat</option>
-              <option value="24">24 saat</option>
-              <option value="48">48 saat</option>
+            <select value={ttlDays} onChange={(e) => setTtlDays(e.target.value)}>
+              <option value="7">1 hafta</option>
+              <option value="30">1 ay</option>
+              <option value="180">6 ay</option>
+              <option value="365">1 yıl</option>
             </select>
           </label>
 
@@ -157,8 +196,7 @@ export default function PassengerLinksPanel() {
               <tbody>
                 {people.map((p) => {
                   const active = linkByPersonelId.get(p.id) || null;
-                  const fresh = freshLinks[String(p.id)] || "";
-                  const share = fresh || (active ? buildPublicLink(`token-hidden-${active.id}`) : "");
+                  const fresh = freshLinks[freshKey(shiftId, p.id)] || "";
                   return (
                     <tr key={p.id}>
                       <td>#{p.id}</td>
@@ -178,6 +216,7 @@ export default function PassengerLinksPanel() {
                             Oluşturuldu: <b>{fmtTR(active.createdAt)}</b><br />
                             Biter: <b>{fmtTR(active.expiresAt)}</b>
                             {active.lastViewedAt ? <><br />Son görüntüleme: <b>{fmtTR(active.lastViewedAt)}</b></> : null}
+                            <br />Ham token güvenlik gereği tekrar gösterilmez; paylaşmak için <b>Yeniden Üret</b> kullan.
                           </div>
                         ) : (
                           <span className="muted">Link yok</span>
@@ -189,7 +228,7 @@ export default function PassengerLinksPanel() {
                             {busyId === String(p.id) ? "..." : active ? "Yeniden Üret" : "Link Üret"}
                           </button>
                           {active ? (
-                            <button type="button" disabled={busyId === `revoke:${active.id}`} onClick={() => revokeLink(active.id)}>
+                            <button type="button" disabled={busyId === `revoke:${active.id}`} onClick={() => revokeLink(active.id, p.id)}>
                               {busyId === `revoke:${active.id}` ? "..." : "Revoke"}
                             </button>
                           ) : null}

@@ -109,7 +109,7 @@ export function schoolParentInvitesRouter() {
     if (!company) return;
 
     const childPersonelId = toInt(req.body?.childPersonelId, null);
-    const expiresInDays = Math.min(30, Math.max(1, toInt(req.body?.expiresInDays, 7)));
+    const expiresInDays = Math.min(365, Math.max(1, toInt(req.body?.expiresInDays, 7)));
     const parentFullName = String(req.body?.parentFullName || "").trim() || null;
     const email = String(req.body?.email || "").trim().toLowerCase() || null;
     const phone = String(req.body?.phone || "").trim() || null;

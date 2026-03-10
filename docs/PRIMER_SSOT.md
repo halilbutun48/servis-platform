@@ -1,68 +1,125 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER (SSOT)
 
-Tarih: 2026-03-09  
+Tarih: 2026-03-10  
 Timezone: Europe/Istanbul
 
 ## 0) Güncel durum
 - Repo: `D:\servis-platform`
-- Ana referans: **M41 PACK PASS**
-- Opsiyonel referans: **M42 OPTIONAL PACK PASS**
-- Stabil ama ayrı doğrulanan ekler: **Step 0.6**
-  - capacity gate
-  - room pool summary
-  - auto-split by real available vehicle combination
-  - split parent cleanup
-  - school parent invite restore
-  - shift preview external navigation
-  - company list click details
+- Current green:
+  - **M41 PACK PASS**
+  - **M42 OPTIONAL PACK PASS**
+  - **STEP 0.6 STABIL PACK PASS**
+  - **STEP 1 SECURITY FOUNDATION PACK PASS**
+  - **STEP 1 TOTP STEP-UP PACK PASS**
+  - **M104 REPO CLEANUP CHECK PASS**
+  - **M105 TOOLS HYGIENE CHECK PASS**
+- Not: Son TOTP pack satırı logda kesilmiş olsa da runtime + repo-contract PASS görüldüğü için Step 1 green kabul edilir.
 
-## 1) Kanonik doğrulama komutları
+## 1) Resmi yeşil kapsam
+### V1 ana regresyon
+- auth / refresh / revoke / device mismatch
+- RBAC / route guard
+- agreement / offer / route / live / gps / audit / learning
+
+### M42 optional release
+- check-in modülü dormant/optional yapıdadır
+- `FEATURE_CHECKIN=0` ile kapalı, `FEATURE_CHECKIN=1` ile ayrı pack doğrulamalıdır
+
+### Step 0.6 stabil ekler
+- capacity / pool / auto-split
+- split parent cleanup
+- school parent invite + public accept
+- shift preview external navigation
+- company list click details
+
+### Step 1 security
+- refresh reuse detection
+- export limiter
+- login/gps/export limit hattı
+- RBAC deny-by-default sanity matrix
+- ROOM + SUPER_ADMIN için TOTP setup/enable/verify
+- `stepUpRequired` / `stepUpUntil` akışı
+
+### Repo hijyen
+- M104 ile stale duplicate dosyalar arşive taşındı
+- M105 ile `tools/` kökü kanonik pack/gate/check hattına indirildi
+
+## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
-- Check-in optional: `tools\pack_m42_optional.ps1`
-- Step 0.6 stabil ekler: `tools\pack_step06_stabil.ps1`
+- Optional check-in: `tools\pack_m42_optional.ps1`
+- Step 0.6 stabil: `tools\pack_step06_stabil.ps1`
+- Step 1 foundation: `tools\pack_step1_security_foundation.ps1`
+- Step 1 TOTP: `tools\pack_step1_totp_stepup.ps1`
+- Repo hijyen: `tools\check_repo_cleanup_m104.ps1 -RepoRoot D:\servis-platform`
+- Tools hijyen: `tools\check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform`
 
-## 2) Ayrım (çok önemli)
-- **M41** = V1 ana regresyon kanıtı
-- **M42** = dormant/optional release, ayrı pack ile doğrulanır
-- **Step 0.6** = çalışan stabil eklerdir; ana M41 pack’e zorla gömülmez, ayrı mini-check set ile doğrulanır
+## 3) Link erişim politikası
+### Parent invite
+- presetler: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- backend üst sınır: **365 gün**
 
-## 3) Repo organizasyonu
-- `backend/` → API, jobs, ws, Prisma, runtime check scriptleri
-- `web/` → Vite/React UI
-- `infra/` → Docker compose / servisler
-- `docs/` → SSOT dokümanlar
-- `docs/overlays/` → overlay notları / tarihçe
-- `tools/` → gate/pack/runbook scriptleri
+### Personel/öğrenci public canlı link
+- presetler: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- ham token yalnızca ilk üretimde gösterilir
+- link, vardiya bitse bile süre dolana kadar açılabilir; ekran `ENDED/final` fazını gösterebilir
+- `PassengerLiveLink.expiresAt`, vardiya `endAt` ile zorunlu clamp edilmez
 
-## 4) Overlay / not organizasyonu
-- Repo root’a yeni `OVERLAY_NOTES_*` bırakılmaz
-- Overlay notları `docs/overlays/` altında tutulur
-- Step 0.6 tarihçesi: `docs/overlays/STEP06/`
-- Uygulama scriptleri `tools/` altında kalır
+## 4) TOTP step-up özeti
+Zorunlu roller:
+- `SUPER_ADMIN`
+- `ROOM`
 
-## 5) Step 0.6 resmi doğrulama kapsamı
-### Runtime mini-check
-- room pool summary endpoint shape / enough capacity
-- auto-split approve akışı
-- school parent invite create / info / accept akışı
+Korunan alanlar:
+- `/api/admin`
+- `/api/admin/logs`
+- `/api/logs/export`
+- `/api/vehicles`
+- `/api/drivers`
+- `/api/availability`
+- `/api/shifts`
 
-### Repo contract smoke
-- external navigation UI metni ve route açıcı fonksiyon
-- `0,0` koordinatının navigation dışında bırakılması
-- company list click details modalı
-- school parent link nav + public accept ekranı
-- split root cleanup filtreleri
+UI kartı:
+- `web/src/panels/shared/TotpStepUpCard.jsx`
 
-## 6) Bir sonraki sıradaki işler
-1. Step 0.6’yı ayrı mini-check ile kalıcılaştırmak  
-2. Sonra V1.5 Minimum Security başlatmak:
-   - WAF limitleri
-   - TOTP step-up
-   - refresh reuse detection
-   - RBAC deny-by-default test harness
+## 5) SSOT / overlay düzeni
+- `tools/CHECKLIST_SSOT.md`
+- `docs/CHECKLIST_SSOT.md`
+- `docs/PRIMER_SSOT.md`
+- `docs/STARTPACK_V1.md`
+- `tools/PRIMER_SNAPSHOT.md`
+- `docs/overlays/`
+
+## 6) Sıradaki resmi iş — Step 2 / M43
+### Kapsam
+- Google Auth (GIS)
+- Invite Gate
+- role/scope güvenliği
+- runtime check + repo-contract + tek pack
+
+### M43 detay çekirdeği
+- Invite tipleri:
+  - `PARENT_INVITE`
+  - `PERSONEL_INVITE`
+  - opsiyonel `ROOM_USER_INVITE`
+- Invite alanları:
+  - `email` veya `phone`
+  - `role`
+  - `companyId` / `roomId`
+  - `personelId` veya `childPersonelId`
+  - `expiresAt`, `consumedAt`, `createdAt`, `createdByUserId`
+  - `tokenHash`
+- Backend:
+  - `POST /api/auth/google`
+  - `UserIdentity(provider, providerSub)`
+  - invite varsa create/link + role/scope bind
+  - invite yoksa `INVITE_REQUIRED`
+- UI:
+  - GIS script
+  - “Google ile giriş” butonu / One Tap
+  - invite yoksa açıklayıcı ekran
 
 ## 7) Çalışma kuralları
 - Değişiklikler mümkün olduğunca tek seferde overlay (zip)
+- Tek Guided Mode/Stepper; diğerleri Advanced
 - Yanıtlarda en fazla 3 PowerShell komutu
-- `Green` = hedef pack/check PASS kanıtı
-- Ana M41 regressions sabit tutulur; yeni stabil ekler ayrı doğrulama ile yükseltilir
+- Ana M41 regresyon sabit tutulur; yeni işler Step 0.6 / Step 1 / M43 hattında ayrı ve kanıtlı ilerler

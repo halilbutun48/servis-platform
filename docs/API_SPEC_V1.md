@@ -466,3 +466,88 @@ Body:
   "preferOrtools": true
 }
 ```
+
+
+---
+
+## M102/M104 sync — Login'siz personel/öğrenci canlı link akışı
+
+### COMPANY / SCHOOL / ORGANIZATION erişim linkleri
+
+#### GET `/api/company/passenger-links?shiftId=:shiftId`
+Belirli vardiyaya bağlı personel/öğrenci canlı linklerini listeler.
+
+Response (özet):
+```json
+{
+  "items": [
+    {
+      "id": 12,
+      "shiftId": 45,
+      "personelId": 301,
+      "expiresAt": "2026-03-10T18:00:00.000Z",
+      "revokedAt": null,
+      "lastOpenedAt": null
+    }
+  ]
+}
+```
+
+#### POST `/api/company/passenger-links`
+Tek kişiye özel, süreli canlı erişim linki üretir.
+
+Body (örnek):
+```json
+{ "shiftId": 45, "personelId": 301, "ttlDays": 30 }
+```
+
+Response (özet):
+```json
+{
+  "ok": true,
+  "item": { "id": 12, "expiresAt": "2026-03-10T18:00:00.000Z" },
+  "token": "raw_token_only_once",
+  "url": "/public/passenger-live?token=raw_token_only_once"
+}
+```
+
+Not: Ham token/URL yalnız ilk üretim cevabında döner; sonradan tekrar okunamaz.
+
+#### POST `/api/company/passenger-links/:id/revoke`
+Aktif linki revoke eder.
+
+Response:
+```json
+{ "ok": true }
+```
+
+### Public canlı ekran
+
+#### GET `/api/public/passenger-live?token=...`
+Login gerektirmeden tek kişiye özel canlı durum ekranı döner.
+
+Response (özet):
+```json
+{
+  "ok": true,
+  "personel": { "id": 301, "fullName": "Demo Personel" },
+  "shift": { "id": 45, "status": "APPROVED" },
+  "vehicle": { "id": 7, "plate": "34 ABC 123" },
+  "eta": { "minutes": 8 },
+  "navigation": { "lat": 37.77, "lng": 29.08 }
+}
+```
+
+Amaç sadece canlı takip / ETA / navigasyon bilgisidir; kalıcı profil işlemleri bu link üstünden yapılmaz.
+
+### ORGANIZATION planları
+
+Organization plan endpoint'leri `/api/organization/*` altında servis edilir.
+Kanonik plan yolları:
+- `GET /api/organization/plans`
+- `GET /api/organization/plans/:id`
+- `POST /api/organization/plans`
+- `PUT /api/organization/plans/:id`
+- `POST /api/organization/plans/:id/publish-shift`
+- `POST /api/organization/plans/:id/create-agreement`
+- `POST /api/organization/plans/:id/send-offers`

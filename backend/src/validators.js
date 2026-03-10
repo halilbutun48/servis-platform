@@ -80,12 +80,24 @@ export const createDriverSchema = z.object({
 });
 
 // (Yeni) COMPANY personel oluşturma
-export const createPersonelSchema = z.object({
-  fullName: z.string().min(2),
-  phone: z.string().min(6),
-  email: z.string().email(),
-  password: z.string().min(3),
-});
+export const createPersonelSchema = z
+  .object({
+    fullName: z.string().min(2),
+    phone: z.string().min(6),
+    email: z.string().trim().email().optional(),
+    password: z.string().min(3).optional(),
+  })
+  .superRefine((val, ctx) => {
+    const hasEmail = Boolean(String(val.email || '').trim());
+    const hasPassword = Boolean(String(val.password || '').trim());
+    if (hasEmail !== hasPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: hasEmail ? ["password"] : ["email"],
+        message: "email + password birlikte verilmeli veya ikisi de boş bırakılmalı",
+      });
+    }
+  });
 
 // Eski uyumluluk için kalabilir
 export const assignDriverSchema = z.object({

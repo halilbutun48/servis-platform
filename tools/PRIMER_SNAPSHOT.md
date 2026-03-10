@@ -11,133 +11,154 @@ Current GREEN ref:
 - ✅ `M41 PACK PASS`
 - ✅ `M42 OPTIONAL PACK PASS`
 - ✅ `STEP 0.6 STABIL PACK PASS`
+- ✅ `STEP 1 SECURITY FOUNDATION PACK PASS`
+- ✅ `STEP 1 TOTP STEP-UP PACK PASS`
+- ✅ `M104 REPO CLEANUP CHECK PASS`
+- ✅ `M105 TOOLS HYGIENE CHECK PASS`
+- ✅ `M106 REPO HYGIENE CHECK PASS`
 
-Ana kural:
-- `tools/pack.ps1 -To 41` = ana regresyon kanıtı
-- `tools/pack_m42_optional.ps1` = M42 optional kanıtı
-- `tools/pack_step06_stabil.ps1` = Step 0.6 stabil ekler kanıtı
+> Not: Son TOTP pack satırı logda kesilmişti; ancak M41 + Step1 Foundation + TOTP Runtime + TOTP Repo Contract PASS görüldüğü için Step 1 green kabul edilmiştir.
 
-Durum özeti:
-- M41 ana regresyon yeşil
-- M42 check-in modülü optional ve yeşil
-- Step 0.6’daki stabil ekler artık sadece manuel doğrulanmış değil; mini-check + repo-contract ile resmi olarak doğrulanmış durumda
-
----
-
-## 1) Step 0.6’da resmi doğrulanan kapsam
-
-Aşağıdaki başlıklar artık çalışan + kontrol edilen state’te:
-
-### 1.1 Capacity / Pool / Auto-split
-- room approve ekranında kapasite/pool summary çalışıyor
-- gerçek müsait araç kombinasyonuna göre split approve çalışıyor
-- root shift `SPLIT` oluyor
-- child shift’ler oluşuyor
-- split parent cleanup var; root/list akışını kirletmiyor
-
-### 1.2 School / Parent Invite
-- SCHOOL menüsünde parent link görünürlüğü var
-- parent invite create/list akışı çalışıyor
-- public accept-parent-invite akışı çalışıyor
-- accepted parent login olabiliyor
-- parent `/api/me` doğrulanıyor
-
-### 1.3 Shift Preview / External Navigation
-- Shift Harita Önizleme içinde dış navigasyon açma aksiyonu var
-- `0,0` koordinatı filtreleniyor
-- dış navigasyon yeni sekmede açılıyor
-- `noopener,noreferrer` kullanılıyor
-- preview açıklama notu mevcut
-
-### 1.4 Company List Click Details
-- company vardiya listesinde araç plakası tıklanınca detay açılıyor
-- sürücü adı tıklanınca detay açılıyor
-- araç/sürücü detail modal başlıkları mevcut
+Ana kanıt komutları:
+- `./tools/pack.ps1 -To 41`
+- `./tools/pack_m42_optional.ps1`
+- `./tools/pack_step06_stabil.ps1`
+- `./tools/pack_step1_security_foundation.ps1`
+- `./tools/pack_step1_totp_stepup.ps1`
+- `./tools/check_repo_cleanup_m104.ps1 -RepoRoot D:\servis-platform`
+- `./tools/check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform`
+- `./tools/check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
 
 ---
 
-## 2) SSOT / doküman durumu
+## 1) Şu an resmi olarak yeşil olan kapsam
 
-SSOT hattı güncel mantık:
-- `tools/CHECKLIST_SSOT.md` = yaşayan checklist referansı
-- `docs/CHECKLIST_SSOT.md` SSOT ile hizalanmış olmalı
+### 1.1 V1 ana regresyon
+- auth / refresh / revoke / device mismatch
+- RBAC / route guard
+- agreement
+- offer / counter / accept
+- route/stops
+- live/ws/gps
+- rate-limit mini stres
+- audit / retention
+- learning
+- hepsi `M41 PACK PASS` altında yeşil
+
+### 1.2 M42 Optional Release
+- check-in modülü optional release olarak hazır
+- `FEATURE_CHECKIN=0` iken dormant
+- `FEATURE_CHECKIN=1` iken ayrı optional pack ile doğrulanmış
+- `M42 OPTIONAL PACK PASS`
+
+### 1.3 Step 0.6 Stabil Ekler
+- capacity / pool / auto-split
+- split parent cleanup
+- school parent invite + public accept
+- shift preview external nav
+- company list click details
+- `STEP 0.6 STABIL PACK PASS`
+
+### 1.4 Step 1 Security Foundation
+- refresh reuse detection
+- export limiter
+- login/gps/export limit hattı
+- RBAC deny-by-default sanity matrix
+- `STEP 1 SECURITY FOUNDATION PACK PASS`
+
+### 1.5 Step 1 TOTP Step-up
+- `ROOM` + `SUPER_ADMIN` için TOTP setup/enable/verify
+- login response içinde `stepUpRequired`
+- setup olmadan kritik write/admin endpointler blok
+- verify sonrası geçici `stepUpUntil` ile erişim açılıyor
+- `COMPANY` ve `DRIVER` bu guard’dan etkilenmiyor
+- `STEP 1 TOTP STEP-UP CHECK PASS`
+- `STEP 1 TOTP STEP-UP REPO CONTRACT PASS`
+
+### 1.6 Repo hijyen
+- stale duplicate dosyalar arşive alındı
+- `tools/` kökü kanonik pack/gate/check hattına indirildi
+- `M104 REPO CLEANUP CHECK PASS`
+- `M105 TOOLS HYGIENE CHECK PASS`
+- `M106 REPO HYGIENE CHECK PASS`
+
+---
+
+## 2) Çalışan erişim/link politikası
+
+### Parent invite
+- SCHOOL panelinde parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- backend üst sınır: **365 gün**
+
+### Personel / öğrenci public canlı link
+- COMPANY / SCHOOL / ORGANIZATION panelinde presetler: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- ham token yalnızca ilk üretimde gösterilir
+- link, vardiya bitse bile süre dolana kadar açılabilir; ekran bu durumda `ENDED/final` fazını gösterir
+- `PassengerLiveLink.expiresAt`, vardiya `endAt` ile zorunlu clamp edilmez
+
+---
+
+## 3) TOTP step-up davranışı
+
+Zorunlu step-up rolleri:
+- `SUPER_ADMIN`
+- `ROOM`
+
+Korunan ana alanlar:
+- `/api/admin`
+- `/api/admin/logs`
+- `/api/logs/export`
+- `/api/vehicles`
+- `/api/drivers`
+- `/api/availability`
+- `/api/shifts`
+
+UI tarafı:
+- `web/src/panels/shared/TotpStepUpCard.jsx`
+
+---
+
+## 4) SSOT / çalışma düzeni
+
+SSOT hattı:
+- `tools/CHECKLIST_SSOT.md`
+- `docs/CHECKLIST_SSOT.md`
 - `docs/PRIMER_SSOT.md`
 - `docs/STARTPACK_V1.md`
 - `tools/PRIMER_SNAPSHOT.md`
 
-Overlay/dağınıklık temizliği:
-- overlay notları `docs/overlays/` altında toplanmış durumda
-- Step 0.6 izleri `docs/overlays/STEP06/` altında
+Çalışma tercihi:
+- değişiklikler mümkün olduğunca tek seferde overlay zip
+- tek Guided Mode/Stepper, diğerleri Advanced
+- yanıtlarda en fazla 3 PowerShell komutu
 
 ---
 
-## 3) Bu aşamaya gelirken yapılan kritik düzeltmeler
+## 5) Repo durumu / kalan bilinçli arşivler
 
-### 3.1 Step 0.6 runtime mini-check
-- `backend/scripts/step06_stabil_check.js` eklendi/düzeltildi
-- pool/split + school parent invite akışı gerçek runtime check ile doğrulandı
-
-### 3.2 Step 0.6 repo-contract check
-- `tools/check_step06_repo_contract.ps1`
-- `tools/pack_step06_stabil.ps1`
-- external nav, click-details, parent invite route/panel/nav bağları repo contract ile doğrulanıyor
-
-### 3.3 Hotfix notu
-- ilk Step 0.6 check fail nedeni script payload contract uyumsuzluğuydu; düzeltildi
-- repo-contract `_blank/noopener/noreferrer` kontrolü false-negative veriyordu; düzeltildi
+- `tools/_archive/` ve `tools/_backup/` altı bilinçli tarihsel arşivdir
+- `docs/_archive/` ve `docs/overlays/_archive/` altı da bilinçli tarihsel arşivdir
+- bunlar aktif runtime ile çakışan canlı dosya değildir
+- aktif ağaçta kalan kritik stale iz görünmüyor
 
 ---
 
-## 4) Şu an sistemin kanıtlı çalışma sınırı
+## 6) Bir sonraki resmi iş
 
-### V1 ana referans
-- auth / RBAC / revoke / device mismatch
-- agreement
-- offer
-- route/stops
-- live/ws/gps
-- rate-limit mini stres
-- audit/retention
-- learning
-- hepsi M41 pack içinde yeşil
+## Step 2 — M43 Google Auth + Invite Gate
+- Google Auth (GIS)
+- invite tablosu / accept akışı
+- role/scope bağlama
+- invite yoksa reject / `INVITE_REQUIRED`
+- runtime check + repo-contract + tek pack
 
-### Optional
-- M42 check-in modülü ayrı optional release olarak yeşil
-
-### Stabil ekler
-- Step 0.6 stabil pack ile yeşil
+Ardından:
+- Step 2.5 / M44 Telematics
+- Step 2.6 / M45 Retention + Backup
+- sonra V2 başlıkları
 
 ---
 
-## 5) Bundan sonraki net öncelik
+## 7) Yeni sohbet açınca ilk cümle önerisi
 
-## Step 1 — V1.5 Minimum Security
-Sıradaki iş artık burası:
-
-- WAF login/gps/export path limitleri
-- ROOM + SUPER_ADMIN zorunlu TOTP step-up
-- refresh reuse detection
-- RBAC deny-by-default test harness
-
-Amaç:
-- mevcut yeşil referansı bozmadan güvenlik katmanını resmi milestone haline getirmek
-
----
-
-## 6) Çalışma kuralları / proje tercihleri
-
-- Tek Guided Mode/Stepper; diğer araçlar Advanced
-- Değişiklikler mümkün olduğunca tek seferde overlay (zip) olarak hazırlanacak
-- Yanıtlarda en fazla 3 PowerShell komutu
-- Ana referans: M41
-- M42 optional ayrı doğrulanır
-- Step 0.6 artık resmi stabil pack ile doğrulanmıştır
-
----
-
-## 7) Hızlı doğrulama komutları
-
-```powershell
-.\tools\pack.ps1 -To 41
-.\tools\pack_m42_optional.ps1
-.\tools\pack_step06_stabil.ps1
+“Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE CHECK PASS durumunda. Parent invite ve personel public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl. Sıradaki resmi iş M43 Google Auth + Invite Gate; mevcut repoya göre tek overlay zip olarak ilerleyelim.”

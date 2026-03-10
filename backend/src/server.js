@@ -49,8 +49,8 @@ import * as routeTemplatesMod from "./routes/routeTemplates.js";
 import { offersRouter } from "./routes/offers.js";
 import { checkinRouter } from "./routes/checkin.js";
 import { organizationRouter } from "./routes/organization.js";
-import { organizationPlansRouter } from "./routes/organizationPlans.js";
 import { schoolParentInvitesRouter } from "./routes/schoolParentInvites.js";
+import { passengerLinksRouter, publicPassengerLiveRouter } from "./routes/passengerLinks.js";
 
 
 import { startMonitors } from "./jobs/index.js";
@@ -298,6 +298,8 @@ app.get("/health", async (req, res) => {
 
 // Public routes
 app.use("/api/auth", authRouter);
+app.use("/api/public/passenger-live", publicPassengerLiveRouter());
+app.use("/api/public/personel-live", publicPassengerLiveRouter());
 
 // Step 1.5: TOTP step-up guard (ROOM + SUPER_ADMIN on sensitive paths)
 app.use("/api/admin/logs", authRequired(), requireStepUp("SUPER_ADMIN"));
@@ -369,6 +371,7 @@ app.use("/api/requests", requestsRouter(io));
 app.use("/api/driver", driverRouter(io));
 app.use("/api/personels", personelsRouter(io));
 app.use("/api/company/personels", companyPersonelsRouter());
+app.use("/api/company/passenger-links", passengerLinksRouter());
 app.use("/api/personel/shifts", personelShiftsRouter());
 app.use("/api/agreements", agreementsRouter(io));
 app.use("/api/offers", offersRouter(io));

@@ -212,3 +212,40 @@ erDiagram
     datetime createdAt
     datetime updatedAt
   }
+
+---
+
+## M102/M104 sync — Public canlı link veri modeli
+
+### Personel kullanıcı hesabı opsiyoneldir
+`PERSONEL` için login desteklenir; ancak login zorunlu değildir.
+Canlı takip için süreli token bazlı erişim modeli de desteklenir.
+
+### `PassengerLiveLink`
+Tek kişiye özel, süreli public canlı erişim linkini tutar.
+
+Özet alanlar:
+- `id`
+- `shiftId`
+- `personelId`
+- `tokenHash`
+- `expiresAt`
+- `revokedAt`
+- `lastOpenedAt`
+- `createdByUserId`
+- `createdAt`
+
+İlişkiler:
+- `Shift 1 -> N PassengerLiveLink`
+- `Personel 1 -> N PassengerLiveLink`
+- `User 1 -> N PassengerLiveLink (createdBy)`
+
+Davranış:
+- ham token DB'de düz metin tutulmaz, `tokenHash` saklanır
+- revoke edilen veya süresi geçen kayıt aktif sayılmaz
+- ham URL yalnız üretim anında gösterilir
+
+
+## PassengerLiveLink TTL policy
+- UI presetleri: 7 / 30 / 180 / 365 gün
+- `expiresAt`, vardiya `endAt` ile zorunlu clamp edilmez; link TTL bağımsızdır

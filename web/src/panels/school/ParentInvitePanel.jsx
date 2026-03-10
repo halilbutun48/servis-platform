@@ -151,10 +151,10 @@ export default function SchoolParentInvitePanel() {
             <label className="col">
               <span className="muted">Geçerlilik (gün)</span>
               <select value={expiresInDays} onChange={(e) => setExpiresInDays(e.target.value)}>
-                <option value="1">1 gün</option>
-                <option value="3">3 gün</option>
-                <option value="7">7 gün</option>
-                <option value="14">14 gün</option>
+                <option value="7">1 hafta</option>
+                <option value="30">1 ay</option>
+                <option value="180">6 ay</option>
+                <option value="365">1 yıl</option>
               </select>
             </label>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>

@@ -164,3 +164,14 @@ Route preview ESTIMATED → LEARNED geçişi doğrulanır.
 Bulk availability deterministik conflict raporlar.
 M18 happy path: agreement approve → bugün shift oluşur → listede badge görünür.
 M21: SUPER_ADMIN company + room create UI’dan yapılabilir.
+
+M102/M104 sync — Personel erişim modeli
+Personel için klasik login desteklenebilir; ancak ürünün ana kullanımında login zorunlu değildir.
+Şirket/school tarafı vardiyaya bağlı olarak tek kişiye özel, süreli canlı erişim linki üretir.
+Bu link personelin sadece kendi servis/ETA/navigasyon bilgisini açar ve düşük sürtünmeli saha erişimi sağlar.
+
+
+## Login'siz erişim / süreli link politikası
+- Parent invite ve personel public live link varsayılan self-serve akışlarıdır.
+- Preset süreler: **1 hafta / 1 ay / 6 ay / 1 yıl**.
+- Personel public link, güvenlik gereği ham tokenı sadece ilk üretimde gösterir.

@@ -40,6 +40,8 @@ import MyRidePanel from "./panels/personel/MyRidePanel";
 import ParentLivePanel from "./panels/parent/LivePanel";
 import SchoolParentInvitePanel from "./panels/school/ParentInvitePanel";
 import AcceptParentInvitePanel from "./panels/public/AcceptParentInvitePanel";
+import PassengerLivePanel from "./panels/public/PassengerLivePanel";
+import PassengerLinksPanel from "./panels/company/PassengerLinksPanel";
 
 // SHARED
 import NotificationsPanel from "./panels/shared/NotificationsPanel";
@@ -154,6 +156,7 @@ export default function App() {
   const view = useMemo(() => {
     if (!token) {
       if (cleanPath === "/accept-parent-invite") return { layout: false, node: <AcceptParentInvitePanel path={path} /> };
+      if (cleanPath === "/public/passenger-live" || cleanPath === "/public/personel-live") return { layout: false, node: <PassengerLivePanel path={path} /> };
       return { layout: false, node: <LoginCard /> };
     }
     if (!me) return { layout: false, node: <div style={{ padding: 16 }}>Loading...</div> };
@@ -181,6 +184,7 @@ export default function App() {
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
+    if (path === "/company/access-links") return { layout: true, node: <PassengerLinksPanel /> };
 
     // SCHOOL (Company.kind=SCHOOL)
     if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -190,6 +194,7 @@ export default function App() {
     if (path === "/school/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/school/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/school/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
+    if (path === "/school/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
 
 
@@ -202,6 +207,7 @@ export default function App() {
     if (path === "/organization/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/organization/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/organization/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
+    if (path === "/organization/access-links") return { layout: true, node: <PassengerLinksPanel /> };
 
     // DRIVER
     if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };

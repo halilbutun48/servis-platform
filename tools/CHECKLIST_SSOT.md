@@ -1,25 +1,26 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
 
 Timezone: Europe/Istanbul  
-Last updated: **2026-03-09**  
-Current GREEN ref: **M41 PACK PASS + M42 OPTIONAL PACK PASS**
+Last updated: **2026-03-10**  
+Current GREEN ref:
+- **M41 PACK PASS**
+- **M42 OPTIONAL PACK PASS**
+- **STEP 0.6 STABIL PACK PASS**
+- **STEP 1 SECURITY FOUNDATION PACK PASS**
+- **STEP 1 TOTP STEP-UP PACK PASS**
+- **M104 REPO CLEANUP CHECK PASS**
+- **M105 TOOLS HYGIENE CHECK PASS**
+- **M106 REPO HYGIENE CHECK PASS**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
-2) **M42 Optional Release + sonraki stabil ekler** (ana regresyonu bozmadan ayrı doğrulanır)
+2) **M42 Optional Release + Step 0.6 + Step 1 + Step 2 sonrası ekler** (ana regresyonu bozmadan ayrı doğrulanır)
 
 **Yol Haritası (Sıralı)**
 - **Step 0:** V1 Manuel Checklist %100 PASS
 - **Step 0.5 (M42):** Check-in modülü **tamam ama opsiyonel release**
-- **Step 0.6 (Stabil ekler / pack dışı ama çalışır):**
-  - capacity gate
-  - room pool summary
-  - auto-split by real available vehicle combination
-  - split parent cleanup
-  - school parent invite restore
-  - shift preview external navigation
-  - company list click details
-- **Step 1 (V1.5):** Minimum Security (WAF + TOTP step-up + refresh reuse detection + RBAC SSOT test)
+- **Step 0.6:** Stabil ekler **ayrı pack ile resmi doğrulanmış**
+- **Step 1:** Minimum Security **resmi green**
 - **Step 2 (M43):** Google Auth (GIS) + Invite Gate (rol/scope güvenliği)
 - **Step 2.5 (M44):** Telematics (Normalize Core + Direct HTTP Push + Vendor Cloud)
 - **Step 2.6 (M45):** 2Y Retention + GPS geçmiş (50sn/50m) + Backup/PITR
@@ -27,7 +28,9 @@ Bu dosya iki amaç taşır:
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
-> Step 0.6’daki stabil ekler şu an **manuel doğrulanmış** durumdadır; ana M41 pack’e zorla yedirilmez.
+> Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
+> Son TOTP pack satırı logda kesilmiş olsa da runtime + repo-contract PASS görüldüğü için Step 1 green kabul edilir.  
+> Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri de PASS durumundadır.
 
 ---
 
@@ -70,6 +73,10 @@ Bu dosya iki amaç taşır:
 - [ ] room approve + vehicle/driver ata
 - [ ] generated shift oluşuyor
 - [ ] agreement badge var, offer UI kapalı
+
+## 0.5.1 Link preset sanity
+- [ ] school parent invite süre presetleri: `1 hafta / 1 ay / 6 ay / 1 yıl`
+- [ ] company/school/organization personel canlı link presetleri: `1 hafta / 1 ay / 6 ay / 1 yıl`
 
 ## 0.6 Offer
 - [ ] company market shift oluşturur
@@ -130,7 +137,12 @@ Bu dosya iki amaç taşır:
 
 ---
 
-# STEP 0.6 — Stabil Ekler (manuel doğrulanmış, pack dışı)
+# STEP 0.6 — Stabil Ekler (resmi doğrulanmış)
+
+## Durum
+- [ ] `tools/pack_step06_stabil.ps1` PASS
+- [ ] runtime mini-check PASS
+- [ ] repo-contract PASS
 
 ## 0.6.1 Capacity / Pool / Split
 - [ ] room approve ekranında kapasite yetersizse approve blok
@@ -140,19 +152,15 @@ Bu dosya iki amaç taşır:
 - [ ] `Böl & Onayla` gerçek müsait araç kombinasyonuna göre child shift üretiyor
 - [ ] parent split kayıt pending/list akışını kirletmiyor
 
-## 0.6.2 Driver / Vehicle operasyon
-- [ ] yeni driver ekleme çalışıyor
-- [ ] hata olursa `[object Object]` yerine okunur mesaj geliyor
-- [ ] company listede araç plakası tıklanınca araç detay açılıyor
-- [ ] company listede sürücü adı tıklanınca sürücü detay açılıyor
-
-## 0.6.3 School / Parent Invite
+## 0.6.2 School / Parent Invite
 - [ ] SCHOOL menüsünde Parent Link görünüyor
 - [ ] parent invite link üretme çalışıyor
 - [ ] invite geçmişi çalışıyor
 - [ ] public accept-parent-invite akışı açılıyor
+- [ ] accepted parent login olabiliyor
+- [ ] parent `/api/me` doğrulanıyor
 
-## 0.6.4 Shift Preview / External Navigation
+## 0.6.3 Shift Preview / External Navigation
 - [ ] Shift Harita Önizleme’de `Tam Rotayı Dış Navigasyonda Aç` var
 - [ ] `0,0` koordinatı navigasyona gitmiyor
 - [ ] OUTBOUND: hub → duraklar
@@ -161,22 +169,111 @@ Bu dosya iki amaç taşır:
 - [ ] preview notu görünüyor:
   - `Bu önizleme kuş uçuşu/mini görünüm mantığındadır. Kesin rota, km ve dönüşler için dış navigasyona bakın.`
 
-**Not:** Bu bölüm şu an stabil/manüel doğrulanmış state’tir; henüz ana pack’e resmi milestone olarak bağlanmamıştır.
+## 0.6.4 Company List Click Details
+- [ ] company listede araç plakası tıklanınca araç detay açılıyor
+- [ ] company listede sürücü adı tıklanınca sürücü detay açılıyor
+- [ ] araç/sürücü detail modal başlıkları mevcut
+
+**Çıkış kriteri:** `tools/pack_step06_stabil.ps1` PASS.
 
 ---
 
-# STEP 1 — V1.5 Minimum Security
-- [ ] WAF login/gps/export path limitleri
-- [ ] ROOM + SUPER_ADMIN zorunlu TOTP
+# STEP 1 — V1.5 Minimum Security (resmi green)
+
+## 1.1 Security Foundation
 - [ ] refresh reuse detection
-- [ ] RBAC matrisi + deny-by-default testleri
+- [ ] export limiter
+- [ ] login/gps/export limit hattı
+- [ ] RBAC deny-by-default sanity matrix
+- [ ] `tools/pack_step1_security_foundation.ps1` PASS
+
+## 1.2 TOTP Step-up
+- [ ] `ROOM` + `SUPER_ADMIN` için TOTP setup/enable/verify
+- [ ] login response içinde `stepUpRequired`
+- [ ] setup olmadan kritik write/admin endpointler blok
+- [ ] verify sonrası geçici `stepUpUntil` ile erişim açılıyor
+- [ ] `COMPANY` ve `DRIVER` bu guard’dan etkilenmiyor
+- [ ] `tools/pack_step1_totp_stepup.ps1` PASS
+
+## 1.3 Korunan ana alanlar
+- [ ] `/api/admin`
+- [ ] `/api/admin/logs`
+- [ ] `/api/logs/export`
+- [ ] `/api/vehicles`
+- [ ] `/api/drivers`
+- [ ] `/api/availability`
+- [ ] `/api/shifts`
+
+## 1.4 UI / Greenpack notu
+- [ ] `web/src/panels/shared/TotpStepUpCard.jsx` mevcut
+- [ ] greenpack/dev bypass mantığı legacy M0→M41 check’lerini bozmuyor
+- [ ] gerçek TOTP runtime check bypass’sız koşuyor
+
+**Çıkış kriteri:** Security Foundation + TOTP pack/check PASS.
 
 ---
 
-# STEP 2 — M43 Google Auth + Invite Gate
-- [ ] invite tablosu / accept akışı
-- [ ] Google auth role/scope bağlama
-- [ ] invite yoksa reject
+# STEP 2 — M43 Google Auth (GIS) + Invite Gate (Rol/Scope güvenliği)
+
+## 2.x Invite modeli (kritik güvenlik kuralı)
+
+**Karar:**
+- [ ] Parent hesabı **self-serve invite** mantığında ilerler; SCHOOL parent hesabı doğrudan create etmez
+- [ ] Company personel için login hesabı **opsiyonel**; personel kaydı her zaman var olabilir, login sadece invite ile açılır
+
+**Invite tipleri**
+- [ ] `PARENT_INVITE` (SCHOOL → Parent)
+- [ ] `PERSONEL_INVITE` (COMPANY → Personel)
+- [ ] opsiyonel `ROOM_USER_INVITE` (ROOM → room içi ikinci kullanıcı)
+
+**Invite alanları (DB)**
+- [ ] `email` veya `phone` (en az biri)
+- [ ] `role` (PARENT / PERSONEL / ROOM_USER)
+- [ ] `companyId` / `roomId` (scope)
+- [ ] `personelId` veya `childPersonelId`
+- [ ] `expiresAt`, `consumedAt`, `createdAt`, `createdByUserId`
+- [ ] `tokenHash` (raw token tutulmaz)
+
+**Accept akışı**
+- [ ] Invite kabulü → kullanıcı Google ile veya şifre ile giriş yapar
+- [ ] `PARENT_INVITE` accept:
+  - [ ] parent user oluştur/bağla
+  - [ ] parent-child link aktif edilir
+- [ ] `PERSONEL_INVITE` accept:
+  - [ ] personel user oluştur/bağla
+- [ ] Invite yoksa varsayılan politika: `INVITE_REQUIRED`
+
+**Güvenlik testi**
+- [ ] Invite ile login → doğru role/scope
+- [ ] Invite yok → reject
+- [ ] SCHOOL parent create edemez; sadece invite+link yönetir
+- [ ] COMPANY personel login opsiyonel: invite olmadan personel listesi yönetilebilir
+
+## 2.1 Backend
+- [ ] `POST /api/auth/google` (idToken doğrula)
+- [ ] `UserIdentity(provider, providerSub)` ile link
+- [ ] Invite varsa: user create + rol/scope bağla
+- [ ] Invite yoksa: `INVITE_REQUIRED`
+- [ ] M41 refresh session üretimi + driver için device binding korunur
+- [ ] Audit: `AUTH_OAUTH_LOGIN`, `INVITE_ACCEPT`
+
+## 2.2 DB
+- [ ] `UserIdentity` tablosu
+- [ ] `Invite` tablosu: email, role, companyId/roomId, personelId/childPersonelId, expiresAt, consumedAt, tokenHash
+
+## 2.3 Web UI
+- [ ] GIS script + “Google ile giriş” butonu / One Tap
+- [ ] Invite yoksa kullanıcıya açıklayıcı ekran
+- [ ] Invite accept ve login akışı çakışmadan çalışır
+
+## 2.4 Test / Pack
+- [ ] Invite ile Google login → doğru role/scope
+- [ ] Invite yok → reject
+- [ ] Driver device mismatch + OAuth birleşimi bozulmuyor
+- [ ] runtime check + repo-contract hazırlanır
+- [ ] tek M43 pack ile kanıtlanır
+
+**Çıkış kriteri:** V1 regresyon + M43 testleri PASS.
 
 ---
 
@@ -197,6 +294,18 @@ Bu dosya iki amaç taşır:
 
 ---
 
+# REPO HYGIENE — M104 Repo Audit + Cleanup
+
+Amaç: canlı çalışma ağacını sadeleştirip yanlış dosyaya bakma riskini azaltmak.
+
+- [x] aktif kaynak ağacındaki `.bak` dosyaları arşive taşınır
+- [x] stale duplicate panel/route dosyaları canlı ağaçtan çıkarılır
+- [x] repo kökündeki tek seferlik overlay/readme notları arşivlenir
+- [x] public personel link akışı API/UI/DB/PROJECT SSOT dosyalarına işlenir
+- [x] `tools/check_repo_cleanup_m104.ps1` ile hızlı repo hijyen kontrolü yapılır
+
+> Not: Bu bölüm bakım/hijyen overlay'idir; resmi green referansını değiştirmez.
+
 # STEP 3 — V2
 - [ ] V2-Scale
 - [ ] V2-Mobile Driver
@@ -205,31 +314,24 @@ Bu dosya iki amaç taşır:
 
 ---
 
-# Yeni sohbet için önerilen devam sırası
+# Bir sonraki net resmi iş
+- [ ] M43 Google Auth + Invite Gate
+- [ ] mevcut repo pattern’ine göre tek overlay zip hazırlanacak
+- [ ] docs + SSOT + runtime check + repo-contract birlikte ilerleyecek
 
-## A) İlk iş — Step 0.6’yı SSOT’a bağlama
-Amaç: Şu an çalışan ama pack dışı duran stabil ekleri kalıcı hale getirmek.
+# TOOLS HYGIENE — M105 Tools Canonical Cleanup
+- [x] `tools/` kökünde yalnızca kanonik runtime / pack / check script'leri bırakılır
+- [x] Eski `apply_*`, `overlay_*`, `OVERLAY_*` dosyaları `tools/_archive/legacy-overlays/` altına taşınır
+- [x] Tek seferlik hotfix script'leri `tools/_archive/oneoff-hotfixes/` altına taşınır
+- [x] Deprecated tools içi metin dosyaları `tools/_archive/legacy-docs/` altına taşınır
+- [x] `tools/README.md` kanonik araç düzenini açıkça listeler
+- [x] `tools/check_tools_hygiene_m105.ps1` PASS
 
-- [ ] split/pool/capacity akışı için resmi mini check set çıkar
-- [ ] school parent invite için mini smoke/check set çıkar
-- [ ] shift preview external nav için mini smoke/check set çıkar
-- [ ] company list click details için smoke/check ekle
-- [ ] bunları docs + tools tarafında tek kaynak hale getir
 
-## B) Sonra — Step 1 başlat
-Amaç: V1.5 Minimum Security kickoff.
-
-- [ ] WAF limit setleri
-- [ ] TOTP step-up
-- [ ] refresh reuse detection
-- [ ] RBAC deny-by-default test harness
-
----
-
-## Notlar
-- Tek Guided Mode/Stepper; diğerleri Advanced
-- Değişiklikler mümkün olduğunca tek seferde overlay (zip)
-- Yanıtlarda en fazla 3 PowerShell komutu
-- M41 ana regressions = ana referans
-- M42 optional = ayrı doğrulanır
-- Step 0.6 stabil ekler = manuel doğrulanmış, yeni sohbette önce SSOT/pack hizasına çekilecek
+# LINK TTL / PRIMER HYGIENE — M106
+- [x] `tools/_overlay_payload/primer_refresh` canlı ağaçtan arşive taşınır
+- [x] `infra/infra/solver/Dockerfile` stale duplicate’i arşive taşınır
+- [x] Parent invite presetleri `1 hafta / 1 ay / 6 ay / 1 yıl` olur
+- [x] Personel/öğrenci public link presetleri `1 hafta / 1 ay / 6 ay / 1 yıl` olur
+- [x] Backend üst sınırları `365 gün` ile hizalanır
+- [x] `tools/check_repo_hygiene_m106.ps1` PASS

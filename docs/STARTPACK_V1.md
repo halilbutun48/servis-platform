@@ -1,56 +1,90 @@
 # STARTPACK_V1 — SERVIS-PLATFORM (PERSONEL SERVİS V1/V2)
 
-Tarih: 2026-03-09  
+Tarih: 2026-03-10  
 Timezone: Europe/Istanbul
 
 Bu dosya repo için kısa çalışma runbook’udur.
 
 ## 1) GOLDEN RULES
-1. Ana referans **M41 PACK PASS**’tir.  
-2. M42 optional ayrı doğrulanır.  
-3. Step 0.6 stabil ekler ayrı mini-check ile doğrulanır.  
-4. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.  
-5. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+1. Ana referans **M41 PACK PASS**’tir.
+2. M42 optional ayrı doğrulanır.
+3. Step 0.6 stabil ekler ayrı pack ile doğrulanmıştır.
+4. Step 1 Security Foundation + TOTP Step-up resmi olarak green’dir.
+5. M104 + M105 + M106 repo/tools hijyen check’leri PASS durumundadır.
+6. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+7. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
 - Optional check-in: `tools\pack_m42_optional.ps1`
-- Step 0.6 stabil ekler: `tools\pack_step06_stabil.ps1`
+- Step 0.6 stabil: `tools\pack_step06_stabil.ps1`
+- Step 1 foundation: `tools\pack_step1_security_foundation.ps1`
+- Step 1 TOTP: `tools\pack_step1_totp_stepup.ps1`
+- Repo hijyen: `tools\check_repo_cleanup_m104.ps1 -RepoRoot D:\servis-platform`
+- Tools hijyen: `tools\check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform`
+- Link TTL + primer hijyen: `tools\check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
 
-## 3) Step 0.6 neden ayrı?
-Bu işler stabil çalışıyor ama ana M41 regresyonunu gereksiz yere genişletmemek için ayrı tutuluyor.
+## 3) Resmi green durum
+- `M41 PACK PASS`
+- `M42 OPTIONAL PACK PASS`
+- `STEP 0.6 STABIL PACK PASS`
+- `STEP 1 SECURITY FOUNDATION PACK PASS`
+- `STEP 1 TOTP STEP-UP PACK PASS`
+- `M104 REPO CLEANUP CHECK PASS`
+- `M105 TOOLS HYGIENE CHECK PASS`
+- `M106 REPO HYGIENE CHECK PASS`
 
-Kapsam:
-- capacity / room pool / auto-split
-- split parent cleanup
-- school parent invite restore
-- shift preview external navigation
-- company list click details
+## 4) Link erişim politikası
+- Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- Personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- Personel public link ham tokenı sadece ilk üretimde gösterilir
+- Personel public link TTL’i vardiya `endAt` ile zorunlu clamp edilmez
 
-## 4) Step 0.6 doğrulama katmanları
-### Runtime
-- `backend/scripts/step06_stabil_check.js`
-- room pool summary + auto-split approve
-- school parent invite create/info/accept
+## 5) Step 1 özeti
+### Security Foundation
+- refresh reuse detection
+- export limiter
+- login/gps/export limit hattı
+- RBAC deny-by-default sanity matrix
 
-### Repo contract
-- `tools/check_step06_repo_contract.ps1`
-- external nav UI/utility doğrulamaları
-- company click details doğrulamaları
-- school parent link/public accept doğrulamaları
-- split root cleanup filtre doğrulamaları
+### TOTP Step-up
+- ROOM + SUPER_ADMIN zorunlu
+- `stepUpRequired` login cevabı
+- verify sonrası `stepUpUntil`
+- korunan ana alanlar:
+  - `/api/admin`
+  - `/api/admin/logs`
+  - `/api/logs/export`
+  - `/api/vehicles`
+  - `/api/drivers`
+  - `/api/availability`
+  - `/api/shifts`
 
-## 5) SSOT dosyaları
+## 6) Sıradaki hedef — Step 2 / M43
+- Google Auth (GIS)
+- Invite Gate
+- role/scope bağlama
+- invite yoksa `INVITE_REQUIRED`
+- runtime check + repo-contract + tek pack
+
+Detay çekirdek:
+- `Invite` tablosu
+- `UserIdentity` tablosu
+- `POST /api/auth/google`
+- `PARENT_INVITE` / `PERSONEL_INVITE` / opsiyonel `ROOM_USER_INVITE`
+
+## 7) SSOT dosyaları
 - `tools/CHECKLIST_SSOT.md`
 - `docs/CHECKLIST_SSOT.md`
 - `docs/PRIMER_SSOT.md`
 - `docs/STARTPACK_V1.md`
 - `tools/PRIMER_SNAPSHOT.md`
+- `tools/README.md`
 - `docs/overlays/INDEX.md`
-- `docs/overlays/STEP06/README.md`
 
-## 6) Kısa debug notları
-- `docker logs --tail 200 personel_api`
-- gerekirse `personel_redis`
-- WS invalidate için aynı anda en az 2 panel açık tutulur
-- UI tarafı için repo contract smoke, backend tarafı için runtime mini-check kullanılır
+## 8) Repo hijyen / cleanup standardı
+- Canlı kaynak ağacında `.bak` dosyası bırakılmaz; `tools/_backup/` altına taşınır.
+- Repo kökünde geçici overlay README/TXT dosyası bırakılmaz; `docs/_archive/root-legacy/` altına alınır.
+- Aynı işi yapan stale panel/route dosyaları canlı ağaçta tutulmaz; arşive taşınır.
+- `tools/` kökünde sadece kanonik run/pack/check script’leri tutulur.
+- Eski `apply_*`, `overlay_*`, `OVERLAY_*` ve tek seferlik hotfix script’leri `tools/_archive/` altına taşınır.

@@ -81,3 +81,34 @@ Opsiyonel (bakım/operasyon):
 - API error shape: `{ error: { code, message } }` (mümkünse)
 - 401 → login’e yönlendir, token temizle
 - 409 (DUPLICATE_OPEN) → “Açık talep zaten var” toast
+
+
+## M102/M104 sync — Personel / Öğrenci erişim linki ekranı
+
+### COMPANY / SCHOOL / ORGANIZATION
+Gelişmiş menü altında erişim link ekranı bulunur:
+- şirket için `Personel Link`
+- school için `Öğrenci Link`
+- route tabanı aynı paneldir, company kind'a göre etiket değişir
+
+Panel davranışı:
+- vardiya seçimi zorunlu
+- kişi bazlı link üretimi yapılır
+- aktif link sadece `revokedAt == null` ve `expiresAt > now` ise aktif sayılır
+- ham URL sadece yeni üretimde gösterilir
+- revoke sonrası eski ham URL cache'i temizlenir
+
+### Public canlı ekran
+Route: `/public/passenger-live?token=...`
+
+Ekran sadece şu bilgileri göstermelidir:
+- kişinin adı
+- aracın plakası
+- ETA
+- durak / navigasyon bilgisi
+- gerektiğinde mini canlı harita
+
+Bu ekran login yerine geçen düşük sürtünmeli takip ekranıdır; yönetimsel CRUD içermez.
+
+- parent invite ve personel/public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- personel public link, vardiya bitse bile link süresi dolana kadar ENDED/final ekranı açabilir

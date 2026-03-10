@@ -85,7 +85,8 @@ const createSchema = z.object({
   shiftId: z.coerce.number().int().positive(),
   personelId: z.coerce.number().int().positive(),
   expiresAt: z.string().datetime().optional(),
-  ttlHours: z.coerce.number().int().min(1).max(168).optional(),
+  ttlDays: z.coerce.number().int().min(1).max(365).optional(),
+  ttlHours: z.coerce.number().int().min(1).max(8760).optional(), // backward compatible
 });
 
 export function passengerLinksRouter() {
@@ -150,13 +151,14 @@ export function passengerLinksRouter() {
       if (!exists) return res.status(404).json({ error: "Personel not linked to shift" });
 
       const now = new Date();
-      const shiftEnd = shift.endAt ? new Date(shift.endAt) : null;
       let expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
       if (!expiresAt || Number.isNaN(expiresAt.getTime())) {
-        const ttlHours = body.ttlHours && Number.isFinite(body.ttlHours) ? Number(body.ttlHours) : 12;
-        expiresAt = new Date(now.getTime() + ttlHours * 3600_000);
+        const ttlDays = body.ttlDays && Number.isFinite(body.ttlDays) ? Number(body.ttlDays) : null;
+        const ttlHours = body.ttlHours && Number.isFinite(body.ttlHours) ? Number(body.ttlHours) : null;
+        if (ttlDays) expiresAt = new Date(now.getTime() + ttlDays * 24 * 3600_000);
+        else if (ttlHours) expiresAt = new Date(now.getTime() + ttlHours * 3600_000);
+        else expiresAt = new Date(now.getTime() + 7 * 24 * 3600_000);
       }
-      if (shiftEnd && shiftEnd.getTime() < expiresAt.getTime()) expiresAt = shiftEnd;
       if (expiresAt.getTime() <= now.getTime()) return res.status(400).json({ error: "expiresAt must be in the future" });
 
       await prisma.passengerLiveLink.updateMany({
@@ -182,7 +184,7 @@ export function passengerLinksRouter() {
             action: "PASSENGER_LINK_CREATE",
             entity: "PassengerLiveLink",
             entityId: created.id,
-            meta: { shiftId: body.shiftId, personelId: body.personelId, expiresAt },
+            meta: { shiftId: body.shiftId, personelId: body.personelId, expiresAt, ttlDays: body.ttlDays ?? null, ttlHours: body.ttlHours ?? null },
           },
         });
       } catch {}
