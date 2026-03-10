@@ -386,11 +386,64 @@ authRouter.post("/refresh", async (req, res) => {
   const tokenHash = sha256Hex(refreshTokenRaw);
   const session = await prisma.refreshSession.findUnique({ where: { tokenHash } });
 
-  if (!session) return res.status(401).json({ error: "INVALID_REFRESH_TOKEN" });
-  if (session.revokedAt) return res.status(401).json({ error: "REFRESH_REVOKED" });
-  if (session.expiresAt && new Date(session.expiresAt).getTime() <= Date.now()) return res.status(401).json({ error: "REFRESH_EXPIRED" });
+  if (!session) {
+    await recordLoginAudit({ req, email: null, user: null, action: "AUTH_REFRESH_INVALID", reason: "INVALID_REFRESH_TOKEN" });
+    return res.status(401).json({ error: "INVALID_REFRESH_TOKEN" });
+  }
+
+  if (session.revokedAt) {
+    if (session.replacedById) {
+      await prisma.refreshSession.updateMany({
+        where: { userId: session.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      const reuseUser = await prisma.user.findUnique({ where: { id: session.userId } });
+      await recordLoginAudit({
+        req,
+        email: reuseUser?.email || null,
+        user: reuseUser || { id: session.userId, role: null },
+        action: "AUTH_REFRESH_REUSE_DETECTED",
+        reason: "REFRESH_REUSE_DETECTED",
+        meta: { refreshSessionId: session.id, replacedById: session.replacedById },
+      });
+      return res.status(401).json({ error: "REFRESH_REUSE_DETECTED", code: "REFRESH_REUSE_DETECTED" });
+    }
+
+    const revokedUser = await prisma.user.findUnique({ where: { id: session.userId } });
+    await recordLoginAudit({
+      req,
+      email: revokedUser?.email || null,
+      user: revokedUser || { id: session.userId, role: null },
+      action: "AUTH_REFRESH_REVOKED",
+      reason: "REFRESH_REVOKED",
+      meta: { refreshSessionId: session.id },
+    });
+    return res.status(401).json({ error: "REFRESH_REVOKED" });
+  }
+
+  if (session.expiresAt && new Date(session.expiresAt).getTime() <= Date.now()) {
+    const expiredUser = await prisma.user.findUnique({ where: { id: session.userId } });
+    await recordLoginAudit({
+      req,
+      email: expiredUser?.email || null,
+      user: expiredUser || { id: session.userId, role: null },
+      action: "AUTH_REFRESH_EXPIRED",
+      reason: "REFRESH_EXPIRED",
+      meta: { refreshSessionId: session.id },
+    });
+    return res.status(401).json({ error: "REFRESH_EXPIRED" });
+  }
 
   if (session.deviceId && reqDeviceId && String(session.deviceId) !== String(reqDeviceId)) {
+    const mismatchUser = await prisma.user.findUnique({ where: { id: session.userId } });
+    await recordLoginAudit({
+      req,
+      email: mismatchUser?.email || null,
+      user: mismatchUser || { id: session.userId, role: null },
+      action: "AUTH_REFRESH_DEVICE_MISMATCH",
+      reason: "DEVICE_MISMATCH",
+      meta: { refreshSessionId: session.id, sessionDeviceId: session.deviceId, reqDeviceId },
+    });
     return res.status(403).json({ error: "DEVICE_MISMATCH" });
   }
 
@@ -419,9 +472,26 @@ authRouter.post("/refresh", async (req, res) => {
 
     await prisma.refreshSession.update({ where: { id: session.id }, data: { revokedAt: new Date(), replacedById: created.id } });
 
+    await recordLoginAudit({
+      req,
+      email: user.email || null,
+      user,
+      action: "AUTH_REFRESH_OK",
+      reason: null,
+      meta: { oldRefreshSessionId: session.id, newRefreshSessionId: created.id },
+    });
+
     return res.json({ token: newAccess, refreshToken: newRefreshRaw });
   } catch {
     // if rotation fails, keep old
+    await recordLoginAudit({
+      req,
+      email: user.email || null,
+      user,
+      action: "AUTH_REFRESH_OK_NO_ROTATE",
+      reason: "ROTATION_CREATE_FAILED",
+      meta: { refreshSessionId: session.id },
+    });
     return res.json({ token: newAccess, refreshToken: refreshTokenRaw });
   }
 });

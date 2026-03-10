@@ -43,6 +43,10 @@ export const ENV = {
   GPS_RATE_LIMIT_WINDOW_MS: Number(process.env.GPS_RATE_LIMIT_WINDOW_MS ?? 60 * 1000),
   GPS_RATE_LIMIT_MAX: Number(process.env.GPS_RATE_LIMIT_MAX ?? 60),
 
+  // Step 1 foundation: export/download path limiter (WAF-style app guard)
+  EXPORT_RATE_LIMIT_WINDOW_MS: Number(process.env.EXPORT_RATE_LIMIT_WINDOW_MS ?? 10 * 60 * 1000),
+  EXPORT_RATE_LIMIT_MAX: Number(process.env.EXPORT_RATE_LIMIT_MAX ?? 10),
+
   // Log retention / cleanup (M10 + ops)
   // Default: keep 2 years for ApiRequest + AuditLog (spec alignment)
   LOG_RETENTION_ENABLED: (process.env.LOG_RETENTION_ENABLED ?? "1") === "1",

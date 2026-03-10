@@ -186,6 +186,13 @@ function rlStore(prefix, windowMs) {
   return new RedisRateLimitStore({ redis: _redis, windowMs, prefix });
 }
 
+function limiter429Handler(req, res) {
+  return res.status(429).json({
+    error: "RATE_LIMITED",
+    code: "RATE_LIMITED",
+    path: req.originalUrl || req.path || null,
+  });
+}
 
 // ✅ M77: route-based buckets (login asla GPS tarafından kilitlenmez)
 const authLimiter = rateLimit({
@@ -199,6 +206,7 @@ const authLimiter = rateLimit({
     const email = String(req.body?.email || req.body?.username || "").trim().toLowerCase();
     return `ip:${req.ip}|email:${email}`;
   },
+  handler: limiter429Handler,
 });
 
 const readLimiter = rateLimit({
@@ -209,6 +217,7 @@ const readLimiter = rateLimit({
   store: rlStore("read:", ENV.READ_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: authKey,
+  handler: limiter429Handler,
 });
 
 const writeLimiter = rateLimit({
@@ -219,6 +228,7 @@ const writeLimiter = rateLimit({
   store: rlStore("write:", ENV.WRITE_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: authKey,
+  handler: limiter429Handler,
 });
 
 const gpsLimiter = rateLimit({
@@ -229,6 +239,18 @@ const gpsLimiter = rateLimit({
   store: rlStore("gps:", ENV.GPS_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
+const exportLimiter = rateLimit({
+  windowMs: ENV.EXPORT_RATE_LIMIT_WINDOW_MS,
+  max: ENV.EXPORT_RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("export:", ENV.EXPORT_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
 });
 
 // Auth (çok sıkı)
@@ -236,6 +258,10 @@ app.use("/api/auth/login", authLimiter);
 
 // GPS ingest (ayrı kova)
 app.use("/api/gps", gpsLimiter);
+
+// Export/download endpoints (WAF-style ayrı kova)
+app.use("/api/logs/export", exportLimiter);
+app.use("/api/admin/logs/export", exportLimiter);
 
 // Genel API (GET / write ayrımı)
 app.use("/api", (req, res, next) => {

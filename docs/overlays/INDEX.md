@@ -17,3 +17,4 @@ Runtime’da kullanılmaz.
 - Yeni overlay notları repo root’a bırakılmaz.
 - Yeni paket/patch notu gerekiyorsa ilgili milestone klasörüne alınır.
 - Uygulama scriptleri `tools/` altında kalır; not/readme dosyaları `docs/overlays/` altında toplanır.
+- STEP1: `docs/overlays/STEP1/OVERLAY_NOTES_STEP1_SECURITY_FOUNDATION.md`
