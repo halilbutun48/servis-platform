@@ -10,7 +10,8 @@ Current GREEN ref:
 - **STEP 1 TOTP STEP-UP PACK PASS**
 - **M104 REPO CLEANUP CHECK PASS**
 - **M105 TOOLS HYGIENE CHECK PASS**
-- **M106 REPO HYGIENE CHECK PASS**
+- **M106 REPO HYGIENE + LINK TTL CHECK PASS**
+- **M43 GOOGLE AUTH + INVITE GATE PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
@@ -21,7 +22,7 @@ Bu dosya iki amaç taşır:
 - **Step 0.5 (M42):** Check-in modülü **tamam ama opsiyonel release**
 - **Step 0.6:** Stabil ekler **ayrı pack ile resmi doğrulanmış**
 - **Step 1:** Minimum Security **resmi green**
-- **Step 2 (M43):** Google Auth (GIS) + Invite Gate (rol/scope güvenliği)
+- **Step 2 (M43):** Google Auth (GIS) + Invite Gate (rol/scope güvenliği) **resmi green**
 - **Step 2.5 (M44):** Telematics (Normalize Core + Direct HTTP Push + Vendor Cloud)
 - **Step 2.6 (M45):** 2Y Retention + GPS geçmiş (50sn/50m) + Backup/PITR
 - **Step 3 (V2):** V2-Scale → V2-Mobile Driver → V2-ProdOps → V2-FieldFeatures
@@ -31,6 +32,7 @@ Bu dosya iki amaç taşır:
 > Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
 > Son TOTP pack satırı logda kesilmiş olsa da runtime + repo-contract PASS görüldüğü için Step 1 green kabul edilir.  
 > Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri de PASS durumundadır.
+> M43 Google Auth + Invite Gate hattı da runtime + repo-contract + tek pack ile PASS durumundadır.
 
 ---
 
@@ -211,71 +213,77 @@ Bu dosya iki amaç taşır:
 
 **Çıkış kriteri:** Security Foundation + TOTP pack/check PASS.
 
+> Not: Step 2 (M43) hattı bu repoda resmi olarak green kabul edilmiştir.
+
 ---
 
-# STEP 2 — M43 Google Auth (GIS) + Invite Gate (Rol/Scope güvenliği)
+# STEP 2 — M43 Google Auth (GIS) + Invite Gate (Rol/Scope güvenliği) — RESMİ GREEN
 
 ## 2.x Invite modeli (kritik güvenlik kuralı)
 
 **Karar:**
-- [ ] Parent hesabı **self-serve invite** mantığında ilerler; SCHOOL parent hesabı doğrudan create etmez
-- [ ] Company personel için login hesabı **opsiyonel**; personel kaydı her zaman var olabilir, login sadece invite ile açılır
+- [x] Parent hesabı **self-serve invite** mantığında ilerler; SCHOOL parent hesabı doğrudan create etmez
+- [x] Company personel için login hesabı **opsiyonel**; personel kaydı her zaman var olabilir, login sadece invite ile açılır
 
 **Invite tipleri**
-- [ ] `PARENT_INVITE` (SCHOOL → Parent)
-- [ ] `PERSONEL_INVITE` (COMPANY → Personel)
-- [ ] opsiyonel `ROOM_USER_INVITE` (ROOM → room içi ikinci kullanıcı)
+- [x] `PARENT_INVITE` (SCHOOL → Parent)
+- [x] `PERSONEL_INVITE` (COMPANY → Personel)
+- [x] opsiyonel `ROOM_USER_INVITE` (ROOM → room içi ikinci kullanıcı)
 
 **Invite alanları (DB)**
-- [ ] `email` veya `phone` (en az biri)
-- [ ] `role` (PARENT / PERSONEL / ROOM_USER)
-- [ ] `companyId` / `roomId` (scope)
-- [ ] `personelId` veya `childPersonelId`
-- [ ] `expiresAt`, `consumedAt`, `createdAt`, `createdByUserId`
-- [ ] `tokenHash` (raw token tutulmaz)
+- [x] `email` veya `phone` (en az biri)
+- [x] `role` (PARENT / PERSONEL / ROOM_USER)
+- [x] `companyId` / `roomId` (scope)
+- [x] `personelId` veya `childPersonelId`
+- [x] `expiresAt`, `consumedAt`, `createdAt`, `createdByUserId`
+- [x] `tokenHash` (raw token tutulmaz)
 
 **Accept akışı**
-- [ ] Invite kabulü → kullanıcı Google ile veya şifre ile giriş yapar
-- [ ] `PARENT_INVITE` accept:
-  - [ ] parent user oluştur/bağla
-  - [ ] parent-child link aktif edilir
-- [ ] `PERSONEL_INVITE` accept:
-  - [ ] personel user oluştur/bağla
-- [ ] Invite yoksa varsayılan politika: `INVITE_REQUIRED`
+- [x] Invite kabulü → kullanıcı Google ile veya şifre ile giriş yapar
+- [x] `PARENT_INVITE` accept:
+  - [x] parent user oluştur/bağla
+  - [x] parent-child link aktif edilir
+- [x] `PERSONEL_INVITE` accept:
+  - [x] personel user oluştur/bağla
+- [x] Invite yoksa varsayılan politika: `INVITE_REQUIRED`
 
 **Güvenlik testi**
-- [ ] Invite ile login → doğru role/scope
-- [ ] Invite yok → reject
-- [ ] SCHOOL parent create edemez; sadece invite+link yönetir
-- [ ] COMPANY personel login opsiyonel: invite olmadan personel listesi yönetilebilir
+- [x] Invite ile login → doğru role/scope
+- [x] Invite yok → reject
+- [x] SCHOOL parent create edemez; sadece invite+link yönetir
+- [x] COMPANY personel login opsiyonel: invite olmadan personel listesi yönetilebilir
 
 ## 2.1 Backend
-- [ ] `POST /api/auth/google` (idToken doğrula)
-- [ ] `UserIdentity(provider, providerSub)` ile link
-- [ ] Invite varsa: user create + rol/scope bağla
-- [ ] Invite yoksa: `INVITE_REQUIRED`
-- [ ] M41 refresh session üretimi + driver için device binding korunur
-- [ ] Audit: `AUTH_OAUTH_LOGIN`, `INVITE_ACCEPT`
+- [x] `POST /api/auth/google` (idToken doğrula)
+- [x] `UserIdentity(provider, providerSub)` ile link
+- [x] Invite varsa: user create + rol/scope bağla
+- [x] Invite yoksa: `INVITE_REQUIRED`
+- [x] M41 refresh session üretimi + driver için device binding korunur
+- [x] Audit: `AUTH_OAUTH_LOGIN`, `INVITE_ACCEPT`
 
 ## 2.2 DB
-- [ ] `UserIdentity` tablosu
-- [ ] `Invite` tablosu: email, role, companyId/roomId, personelId/childPersonelId, expiresAt, consumedAt, tokenHash
+- [x] `UserIdentity` tablosu
+- [x] `Invite` tablosu: email, role, companyId/roomId, personelId/childPersonelId, expiresAt, consumedAt, tokenHash
 
 ## 2.3 Web UI
-- [ ] GIS script + “Google ile giriş” butonu / One Tap
-- [ ] Invite yoksa kullanıcıya açıklayıcı ekran
-- [ ] Invite accept ve login akışı çakışmadan çalışır
+- [x] GIS script + “Google ile giriş” butonu / One Tap
+- [x] Invite yoksa kullanıcıya açıklayıcı ekran
+- [x] Invite accept ve login akışı çakışmadan çalışır
 
 ## 2.4 Test / Pack
-- [ ] Invite ile Google login → doğru role/scope
-- [ ] Invite yok → reject
-- [ ] Driver device mismatch + OAuth birleşimi bozulmuyor
-- [ ] runtime check + repo-contract hazırlanır
-- [ ] tek M43 pack ile kanıtlanır
+- [x] Invite ile Google login → doğru role/scope
+- [x] Invite yok → reject
+- [x] Driver device mismatch + OAuth birleşimi bozulmuyor
+- [x] runtime check + repo-contract hazır
+- [x] tek M43 pack ile kanıtlanır
+
+**Kanıt:**
+- [x] `tools/pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
+- [x] `tools/check_m43_google_auth_invite_gate_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- [x] `backend/scripts/m43_google_auth_invite_gate_check.js`
 
 **Çıkış kriteri:** V1 regresyon + M43 testleri PASS.
 
----
 
 # STEP 2.5 — M44 Telematics
 - [ ] normalize core
@@ -315,9 +323,9 @@ Amaç: canlı çalışma ağacını sadeleştirip yanlış dosyaya bakma riskini
 ---
 
 # Bir sonraki net resmi iş
-- [ ] M43 Google Auth + Invite Gate
+- [ ] M44 Telematics
+- [ ] mevcut GPS/live/ws hattını bozmadan telematics normalize katmanı eklemek
 - [ ] mevcut repo pattern’ine göre tek overlay zip hazırlanacak
-- [ ] docs + SSOT + runtime check + repo-contract birlikte ilerleyecek
 
 # TOOLS HYGIENE — M105 Tools Canonical Cleanup
 - [x] `tools/` kökünde yalnızca kanonik runtime / pack / check script'leri bırakılır
