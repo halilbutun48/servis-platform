@@ -14,12 +14,12 @@ function rand(n = 6) {
 
 function mustOk(r, label) {
   if (r?.ok) {
-    console.log(`✅ ${label}`);
+    console.log(`OK ${label}`);
     return;
   }
   const st = r?.status ?? 0;
   const txt = String(r?.text ?? "").slice(0, 900);
-  console.error(`❌ ${label} (status=${st})\n${txt}`);
+  console.error(`FAIL ${label} (status=${st})\n${txt}`);
   throw new Error(`ASSERT_FAIL: ${label}`);
 }
 
@@ -239,11 +239,12 @@ async function main() {
   const found = inboxItems.some((o) => Number(o?.shiftId) === shiftId);
   assertOk(found, "room inbox includes shift offer");
 
-  console.log("✅ M34CHECK PASS");
+  console.log("OK M34CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M34CHECK FAIL");
+  console.error("FAIL M34CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });
+

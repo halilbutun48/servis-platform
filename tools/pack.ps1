@@ -41,7 +41,7 @@ function Get-MaxMilestone {
 
 if ($To -le 0) {
   $To = Get-MaxMilestone -ScriptsDir $scriptsDir
-  Write-Host ("ℹ️ Auto -To: M{0}" -f $To) -ForegroundColor Cyan
+  Write-Host ("INFO Auto -To: M{0}" -f $To) -ForegroundColor Cyan
 }
 
 Write-Host ""
@@ -64,5 +64,6 @@ Write-Host "=== Gate ===" -ForegroundColor Cyan
 & $gate -To $To -ComposeDir $ComposeDir -RepoDir $RepoDir -ApiService $ApiService -NoBuild:$NoBuild
 
 Write-Host ""
-Write-Host "=== PACK PASS ✅ ===" -ForegroundColor Green
+Write-Host "=== PACK PASS OK ===" -ForegroundColor Green
 Write-Host ""
+

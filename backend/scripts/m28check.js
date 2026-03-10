@@ -87,7 +87,7 @@ async function main() {
     const ur2 = await reqJson("PUT", `/api/rooms/${room2Id}`, { token: superToken, body: { regionId: targetRegionId } });
     assertOk(ur2.ok, "room2 region aligned");
   } else {
-    console.log("ℹ️ region align skipped (no region available) — continuing");
+    console.log("INFO region align skipped (no region available) — continuing");
   }
 
   step("company creates market shift (no roomId) — tomorrow afternoon (avoid agreements)");
@@ -166,3 +166,4 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+

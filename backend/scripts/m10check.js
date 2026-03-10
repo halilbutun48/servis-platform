@@ -43,7 +43,7 @@ async function login(email, password) {
 }
 
 async function main() {
-  console.log("✅ Starting M10CHECK");
+  console.log("OK Starting M10CHECK");
   console.log("API_URL =", BASE_URL);
 
   const tCompany = await login("company@demo.com", "demo123");
@@ -91,10 +91,11 @@ async function main() {
   if (!hasApprove) throw new Error("Missing audit action SHIFT_APPROVE");
   if (!hasStart) throw new Error("Missing audit action SHIFT_START");
 
-  console.log("✅ M10CHECK PASS");
+  console.log("OK M10CHECK PASS");
 }
 
 main().catch((e) => {
   console.error("M10CHECK FAIL:", e.message || e);
   process.exit(1);
 });
+

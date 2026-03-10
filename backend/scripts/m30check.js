@@ -80,7 +80,7 @@ async function main() {
   const startAt = addMinutesIso(base, 60);
   const endAt = addMinutesIso(base, 120);
 
-  // ✅ kritik: status REQUESTED (market flow ile hizalı)
+  // OK kritik: status REQUESTED (market flow ile hizalı)
   const sh = await reqJson("POST", "/api/shifts", {
     token: companyToken,
     body: { startAt, endAt, status: "REQUESTED" },

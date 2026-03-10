@@ -235,7 +235,7 @@ await reqJson("POST", "/api/kvkk/consents/accept", {
     console.log("======================================\n");
 
     if (pulse) {
-      console.log("ℹ️ GPS pulse enabled (M37_GPS_PULSE=1): sending fresh GPS points for ~60s...");
+      console.log("INFO GPS pulse enabled (M37_GPS_PULSE=1): sending fresh GPS points for ~60s...");
       for (let i = 0; i < 15; i++) {
         await postGps(driverToken, {
           vehicleId,
@@ -258,7 +258,7 @@ await reqJson("POST", "/api/kvkk/consents/accept", {
 
         await sleep(4000);
       }
-      console.log("✅ GPS pulse done.");
+      console.log("OK GPS pulse done.");
     }
   } else {
     step("cleanup: close shift");
@@ -272,3 +272,4 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+

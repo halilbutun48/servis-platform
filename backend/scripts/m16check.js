@@ -273,7 +273,7 @@ async function main() {
     await closeShiftHard({ shiftId, driverToken, roomToken });
     ok(`cleanup shiftId=${shiftId}`);
 
-    console.log("\n✅ M16CHECK PASS");
+    console.log("\nOK M16CHECK PASS");
   } finally {
     await safeDelete(roomToken, "vehicle", vehicleId);
     await safeDelete(roomToken, "driver", driverId);
@@ -281,6 +281,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(`❌ M16CHECK FAIL: ${e?.message ?? e}`);
+  console.error(`FAIL M16CHECK FAIL: ${e?.message ?? e}`);
   process.exit(1);
 });
+

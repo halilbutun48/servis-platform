@@ -47,7 +47,7 @@ async function login(email, password){
   return j.token;
 }
 
-function ok(label){ console.log(`✅ ${label}`); }
+function ok(label){ console.log(`OK ${label}`); }
 
 async function main(){
   console.log("=== M21CHECK: SUPER_ADMIN companies + rooms ===");
@@ -93,11 +93,12 @@ async function main(){
   if (bad.status !== 403) throw new Error(`RBAC expected 403, got ${bad.status}`);
   ok("RBAC: COMPANY cannot create company (403)");
 
-  console.log("✅ M21CHECK PASS");
+  console.log("OK M21CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M21CHECK FAIL");
+  console.error("FAIL M21CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });
+

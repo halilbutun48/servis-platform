@@ -52,8 +52,8 @@ async function callAny(label, method, paths, { token, body } = {}) {
   return { ok:false, path:paths[0], r: rr };
 }
 
-function okLine(msg){ console.log(`✅ ${msg}`); }
-function badLine(msg){ console.log(`❌ ${msg}`); }
+function okLine(msg){ console.log(`OK ${msg}`); }
+function badLine(msg){ console.log(`FAIL ${msg}`); }
 
 async function main(){
   console.log(`API_URL = ${BASE_URL}`);
@@ -204,12 +204,13 @@ async function main(){
   ].filter(Boolean).length;
 
   if (fails === 0) {
-    console.log("\n✅ M1CHECK PASS (CRUD + request/approve flow OK)");
+    console.log("\nOK M1CHECK PASS (CRUD + request/approve flow OK)");
     process.exit(0);
   } else {
-    console.log(`\n❌ M1CHECK FAIL (${fails} issue) — eksik endpoint/enumları implemente edeceğiz.`);
+    console.log(`\nFAIL M1CHECK FAIL (${fails} issue) — eksik endpoint/enumları implemente edeceğiz.`);
     process.exit(1);
   }
 }
 
 main().catch((e)=>{ console.error(String(e?.stack ?? e)); process.exit(1); });
+

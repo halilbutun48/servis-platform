@@ -15,7 +15,7 @@ import {
 const nowTag = new Date().toISOString().replace(/[:.TZ-]/g, "").slice(0, 14);
 
 function ok(msg) {
-  console.log(`✅ ${msg}`);
+  console.log(`OK ${msg}`);
 }
 
 function distM(aLat, aLng, bLat, bLng) {
@@ -63,7 +63,7 @@ async function main() {
   const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
 
   const pre = await preCleanDriverShifts({ roomToken, driverToken, driverId });
-  if (pre.found) console.log(`🧹 pre-clean: found=${pre.found} cleaned=${pre.cleaned}`);
+  if (pre.found) console.log(`CLEAN pre-clean: found=${pre.found} cleaned=${pre.cleaned}`);
 
   const h = await ensureActiveShift({
     companyToken,
@@ -159,11 +159,11 @@ async function main() {
     if (!near) throw new Error("created stop not found near accepted suggestion");
     ok("stop created near suggestion");
 
-    console.log("\n✅ M7CHECK PASS");
+    console.log("\nOK M7CHECK PASS");
   } finally {
     const closed = await closeShiftHard({ shiftId: h.shiftId, driverToken, roomToken });
     if (closed) ok(`shift complete (cleanup) shiftId=${h.shiftId}`);
-    else console.log(`⚠️ cleanup failed shiftId=${h.shiftId}`);
+    else console.log(`WARN cleanup failed shiftId=${h.shiftId}`);
   }
 }
 
@@ -171,3 +171,4 @@ main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
 });
+

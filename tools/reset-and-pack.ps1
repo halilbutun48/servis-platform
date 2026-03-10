@@ -57,10 +57,10 @@ if ($To -le 0) {
   $stable = Get-StableTo -RepoRoot $repoRoot
   if ($stable -gt 0) {
     $To = [Math]::Min($stable, $max)
-    Write-Host "ℹ️ Stable cap: M$To (max found M$max)" -ForegroundColor Cyan
+    Write-Host "INFO Stable cap: M$To (max found M$max)" -ForegroundColor Cyan
   } else {
     $To = $max
-    Write-Host "ℹ️ Auto-detected max milestone: M$To" -ForegroundColor Cyan
+    Write-Host "INFO Auto-detected max milestone: M$To" -ForegroundColor Cyan
   }
 }
 
@@ -79,4 +79,5 @@ if (-not $NoBuild) {
 Write-Host "`n=== PACK: tools/pack.ps1 -To $To ==="
 & (Join-Path $repoRoot "tools\pack.ps1") -To $To
 
-Write-Host "`n✅ reset-and-pack done."
+Write-Host "`nOK reset-and-pack done."
+

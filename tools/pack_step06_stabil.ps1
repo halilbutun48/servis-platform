@@ -61,5 +61,5 @@ Write-Host "=== Step 0.6 Repo Contract ===" -ForegroundColor Cyan
 & $repoContract -RepoRoot $RepoDir
 
 Write-Host ""
-Write-Host "=== STEP 0.6 STABIL PACK PASS ✅ ===" -ForegroundColor Green
+Write-Host "=== STEP 0.6 STABIL PACK PASS OK ===" -ForegroundColor Green
 Write-Host ""

@@ -49,7 +49,7 @@ async function login(email, password) {
 }
 
 function ok(label) {
-  console.log(`✅ ${label}`);
+  console.log(`OK ${label}`);
 }
 
 function todayYmd() {
@@ -157,11 +157,12 @@ async function main() {
   await mustOk(reqJson("PUT", `/api/agreements/${a2.id}/cancel`, { token: tC, body: {} }), "agreement cancel A2");
   ok("agreement cancel (cleanup)");
 
-  console.log("✅ M27CHECK PASS");
+  console.log("OK M27CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M27CHECK FAIL");
+  console.error("FAIL M27CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });
+

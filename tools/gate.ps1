@@ -19,7 +19,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# ✅ check list (milestone discipline)
+# OK check list (milestone discipline)
 $checks = @(
   @{ n = 0;  name = "M0";  cmd = "node scripts/m0check.js" },
   @{ n = 1;  name = "M1";  cmd = "node scripts/m1check.js" },
@@ -63,7 +63,7 @@ $checks = @(
   @{ n = 34; name = "M34"; file = "m34check.js"; cmd = "node scripts/m34check.js" },
   @{ n = 35; name = "M35"; file = "m35check.js"; cmd = "node scripts/m35check.js" },
   @{ n = 36; name = "M36"; file = "m36check.js"; cmd = "node scripts/m36check.js" },
-  # ✅ M37: E2E School+Parent (covers M80/M81 flow)
+  # OK M37: E2E School+Parent (covers M80/M81 flow)
   @{ n = 37; name = "M37"; file = "m37check.js"; cmd = "node scripts/m37check.js" },
   @{ n = 38; name = "M38"; file = "m38check.js"; cmd = "node scripts/m38check.js" },
   @{ n = 39; name = "M39"; file = "m39check.js"; cmd = "node scripts/m39check.js" },
@@ -71,12 +71,12 @@ $checks = @(
   @{ n = 41; name = "M41"; file = "m41check.js"; cmd = "node scripts/m41check.js" }
 )
 
-# ✅ supported max milestone (keep checks list as SSOT)
+# OK supported max milestone (keep checks list as SSOT)
 $maxSupported = ($checks | Measure-Object -Property n -Maximum).Maximum
 
 if ($To -le 0) {
   $To = $maxSupported
-  Write-Host ("ℹ️ Auto -To: M{0}" -f $To) -ForegroundColor Cyan
+  Write-Host ("INFO Auto -To: M{0}" -f $To) -ForegroundColor Cyan
 } elseif ($To -gt $maxSupported) {
   throw ("Requested -To M{0} but gate.ps1 supports up to M{1}. Update tools/gate.ps1 check list." -f $To, $maxSupported)
 }
@@ -94,7 +94,7 @@ Write-Host ""
 Write-Host ("=== GATE (M0→M{0}) ===" -f $To) -ForegroundColor Cyan
 Write-Host ""
 
-# ✅ Compose runner seçimi:
+# OK Compose runner seçimi:
 # - Prefer: docker + "compose"
 # - Fallback: docker-compose
 $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
@@ -193,5 +193,6 @@ foreach ($c in $runList) {
 }
 
 Write-Host ""
-Write-Host ("=== GATE PASS ✅ (M0→M{0}) ===" -f $To) -ForegroundColor Green
+Write-Host ("=== GATE PASS OK (M0→M{0}) ===" -f $To) -ForegroundColor Green
 Write-Host ""
+

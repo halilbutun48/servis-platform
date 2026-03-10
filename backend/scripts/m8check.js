@@ -42,7 +42,7 @@ async function login(email, password) {
   return token;
 }
 
-function ok(msg) { console.log(`✅ ${msg}`); }
+function ok(msg) { console.log(`OK ${msg}`); }
 
 async function main() {
   console.log(`API_URL = ${BASE_URL}`);
@@ -178,7 +178,7 @@ async function main() {
 
   ok("shift stops verified (order + type + dummy removed)");
 
-  console.log("\n✅ M8CHECK PASS");
+  console.log("\nOK M8CHECK PASS");
   await prisma.$disconnect();
 }
 

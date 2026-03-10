@@ -62,10 +62,11 @@ async function main() {
   const found2 = (items2 || []).some((p) => Number(p?.id) === Number(personelId));
   assertOk(!found2, "personel removed from NEEDS_REVIEW list");
 
-  console.log("\n✅ M163CHECK PASS");
+  console.log("\nOK M163CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error(`❌ M163CHECK FAIL: ${e?.message ?? e}`);
+  console.error(`FAIL M163CHECK FAIL: ${e?.message ?? e}`);
   process.exit(1);
 });
+

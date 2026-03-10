@@ -48,10 +48,11 @@ async function main() {
   assert(typeof json.dbOk === "boolean", "dbOk must be boolean");
   assert(typeof json.dbLatencyMs === "number", "dbLatencyMs must be number");
 
-  console.log("✅ M11 check OK");
+  console.log("OK M11 check OK");
 }
 
 main().catch((e) => {
-  console.error("❌ M11 check FAIL:", e.message);
+  console.error("FAIL M11 check FAIL:", e.message);
   process.exit(1);
 });
+

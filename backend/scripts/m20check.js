@@ -39,12 +39,12 @@ function futureTRAtMs(hourTR = 10, minuteTR = 0) {
 
 function mustOk(r, label) {
   if (r?.ok) {
-    console.log(`✅ ${label}`);
+    console.log(`OK ${label}`);
     return;
   }
   const st = r?.status ?? 0;
   const txt = String(r?.text ?? "").slice(0, 800);
-  console.error(`❌ ${label} (status=${st})\n${txt}`);
+  console.error(`FAIL ${label} (status=${st})\n${txt}`);
   throw new Error(`ASSERT_FAIL: ${label}`);
 }
 
@@ -218,3 +218,4 @@ main().catch((e) => {
   console.error("M20CHECK FAIL:", e?.message || e);
   process.exit(1);
 });
+

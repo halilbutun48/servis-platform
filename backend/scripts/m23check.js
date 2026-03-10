@@ -107,7 +107,7 @@ async function main() {
   const agreementId = Number(created.json.id);
 
   await Promise.all([pCompany1, pRoom1]);
-  console.log("✅ WS create broadcast OK (company+room)");
+  console.log("OK WS create broadcast OK (company+room)");
 
   // approve agreement (room) -> needs vehicleId+driverId
   step("approve agreement (room) -> expect WS agreement:update for both");
@@ -124,7 +124,7 @@ async function main() {
   assertOk(approved.ok, "agreement approved (room)");
 
   await Promise.all([pCompany2, pRoom2]);
-  console.log("✅ WS approve broadcast OK (company+room)");
+  console.log("OK WS approve broadcast OK (company+room)");
 
   // cleanup: cancel (optional)
   step("cancel agreement (company) -> expect WS agreement:update for both");
@@ -138,16 +138,16 @@ async function main() {
   assertOk(cancelled.ok, "agreement cancelled (company)");
 
   await Promise.all([pCompany3, pRoom3]);
-  console.log("✅ WS cancel broadcast OK (company+room)");
+  console.log("OK WS cancel broadcast OK (company+room)");
 
   try { wsCompany.disconnect(); } catch {}
   try { wsRoom.disconnect(); } catch {}
 
-  console.log("✅ M23CHECK PASS");
+  console.log("OK M23CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M23CHECK FAIL");
+  console.error("FAIL M23CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });

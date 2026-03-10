@@ -212,7 +212,7 @@ async function main() {
   const startQ = iso(20 * 60 * 1000);
   const endQ   = iso(60 * 60 * 1000);
 
-  // ✅ flake önleme: en az 3 araç + 3 driver
+  // OK flake önleme: en az 3 araç + 3 driver
   const vehicleIds = await ensureMinVehicles(roomToken, 3);
   const driverIds  = await ensureMinDrivers(roomToken, 3);
 
@@ -268,13 +268,14 @@ async function main() {
     });
     assertConflict("availability vehicle conflict", a3, "VEHICLE_CONFLICT");
 
-    console.log("✅ M14CHECK PASS");
+    console.log("OK M14CHECK PASS");
   } finally {
     await rejectShift(roomToken, blockerId);
   }
 }
 
 main().catch((e) => {
-  console.error("❌ M14CHECK FAIL:", e?.message || e);
+  console.error("FAIL M14CHECK FAIL:", e?.message || e);
   process.exit(1);
 });
+

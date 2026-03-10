@@ -14,7 +14,7 @@ function Must-Contain {
   if (!(Test-Path $path)) { throw "repo contract fail: $Label :: file not found $path" }
   $raw = Get-Content -Raw -LiteralPath $path
   if ($raw -notlike "*${Needle}*") { throw "repo contract fail: $Label :: missing '$Needle' in $path" }
-  Write-Host "✅ $Label"
+  Write-Host "OK $Label"
 }
 
 Write-Host ""
@@ -35,4 +35,5 @@ Must-Contain -File "backend/scripts/step1_security_foundation_check.js" -Needle 
 Must-Contain -File "backend/scripts/step1_security_foundation_check.js" -Needle 'parent driver today forbidden' -Label "rbac runtime harness parent deny case"
 
 Write-Host ""
-Write-Host "=== STEP1 SECURITY FOUNDATION REPO CONTRACT PASS ✅ ==="
+Write-Host "=== STEP1 SECURITY FOUNDATION REPO CONTRACT PASS OK ==="
+

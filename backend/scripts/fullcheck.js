@@ -137,15 +137,15 @@ async function main() {
 
   // health
   const health = await reqJson("GET", "/health");
-  if (!health.ok || !health.json?.ok) throw new Error(`❌ /health invalid -> ${health.status}`);
-  console.log("✅ /health");
+  if (!health.ok || !health.json?.ok) throw new Error(`FAIL /health invalid -> ${health.status}`);
+  console.log("OK /health");
 
   // logins
   const driverToken = await login("driver@demo.com", "demo123");
   const roomToken = await login("room@demo.com", "demo123");
   const companyToken = await login("company@demo.com", "demo123");
   const personelToken = await login("personel@demo.com", "demo123");
-  console.log("✅ login(driver/room/company/personel)");
+  console.log("OK login(driver/room/company/personel)");
 
   // ids + cleanup + active shift harness
   const { roomId, companyId } = await getRoomCompanyIds(roomToken, companyToken);
@@ -168,14 +168,14 @@ async function main() {
   const driverWS = await connectWs(driverToken, "driver");
   const roomWS = await connectWs(roomToken, "room");
   const compWS = await connectWs(companyToken, "company");
-  console.log("✅ WS connect + ws:ready");
+  console.log("OK WS connect + ws:ready");
 
   // /api/shifts/my regression guard
   const myD = await reqJson("GET", "/api/shifts/my", { token: driverToken });
   const myP = await reqJson("GET", "/api/shifts/my", { token: personelToken });
-  if (!myD.ok || !Array.isArray(myD.json?.items)) throw new Error("❌ /api/shifts/my invalid (driver)");
-  if (!myP.ok || !Array.isArray(myP.json?.items)) throw new Error("❌ /api/shifts/my invalid (personel)");
-  console.log("✅ /api/shifts/my returns {items[]} (driver/personel)");
+  if (!myD.ok || !Array.isArray(myD.json?.items)) throw new Error("FAIL /api/shifts/my invalid (driver)");
+  if (!myP.ok || !Array.isArray(myP.json?.items)) throw new Error("FAIL /api/shifts/my invalid (personel)");
+  console.log("OK /api/shifts/my returns {items[]} (driver/personel)");
 
   const clearBags = () => {
     driverWS.bag.gps = []; driverWS.bag.vstat = []; driverWS.bag.notif = []; driverWS.bag.eta = [];
@@ -189,7 +189,7 @@ async function main() {
 
   const gotDriverGps = await waitFor(() => driverWS.bag.gps.some((x) => x.vehicleId === h.vehicleId), 5000);
   const gotDriverVs = await waitFor(() => driverWS.bag.vstat.some((x) => x.vehicleId === h.vehicleId), 5000);
-  if (!gotDriverGps || !gotDriverVs) throw new Error("❌ WS gps:update / vehicle:status missing (driver)");
+  if (!gotDriverGps || !gotDriverVs) throw new Error("FAIL WS gps:update / vehicle:status missing (driver)");
 
   const gotRoomAny = await waitFor(
     () => roomWS.bag.gps.some((x) => x.vehicleId === h.vehicleId) || roomWS.bag.vstat.some((x) => x.vehicleId === h.vehicleId),
@@ -199,16 +199,16 @@ async function main() {
     () => compWS.bag.gps.some((x) => x.vehicleId === h.vehicleId) || compWS.bag.vstat.some((x) => x.vehicleId === h.vehicleId),
     5000
   );
-  if (!gotRoomAny) throw new Error("❌ WS update missing (room)");
-  if (!gotCompAny) throw new Error("❌ WS update missing (company)");
-  console.log("✅ WS gps:update + vehicle:status (driver/room/company)");
+  if (!gotRoomAny) throw new Error("FAIL WS update missing (room)");
+  if (!gotCompAny) throw new Error("FAIL WS update missing (company)");
+  console.log("OK WS gps:update + vehicle:status (driver/room/company)");
 
   const v = await prisma.vehicle.findUnique({ where: { id: h.vehicleId }, select: { status: true } });
   const gl = await prisma.gpsLast.findUnique({ where: { vehicleId: h.vehicleId }, select: { status: true } });
   if (v?.status !== "ACTIVE" || gl?.status !== "OK") {
-    throw new Error(`❌ DB mapping wrong: Vehicle=${v?.status} GpsLast=${gl?.status}`);
+    throw new Error(`FAIL DB mapping wrong: Vehicle=${v?.status} GpsLast=${gl?.status}`);
   }
-  console.log("✅ DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
+  console.log("OK DB mapping LIVE -> Vehicle.ACTIVE + GpsLast.OK");
 
   // OVERSPEED notif (DB + WS) driver/room/company
   const d0 = await listNotifs(driverToken);
@@ -231,24 +231,24 @@ async function main() {
     timeoutMs: 15_000,
     stepMs: 1200,
   });
-  if (!overRes.ok) throw new Error("❌ OVERSPEED not created for all scopes");
+  if (!overRes.ok) throw new Error("FAIL OVERSPEED not created for all scopes");
 
   const wsD = await waitFor(() => driverWS.bag.notif.length > 0, 6000);
   const wsR = await waitFor(() => roomWS.bag.notif.length > 0, 6000);
   const wsC = await waitFor(() => compWS.bag.notif.length > 0, 6000);
-  if (!wsD || !wsR || !wsC) throw new Error("❌ WS notif:new missing for one of (driver/room/company)");
-  console.log("✅ OVERSPEED notif (DB + WS) driver/room/company");
+  if (!wsD || !wsR || !wsC) throw new Error("FAIL WS notif:new missing for one of (driver/room/company)");
+  console.log("OK OVERSPEED notif (DB + WS) driver/room/company");
 
   // ETA http + eta:update ws
   clearBags();
   const eta = await reqJson("GET", `/api/eta?vehicleId=${h.vehicleId}`, { token: driverToken });
-  if (!eta.ok || !Array.isArray(eta.json?.stops)) throw new Error("❌ /api/eta invalid (stops[])");
-  console.log(`✅ /api/eta (stops=${eta.json.stops.length})`);
+  if (!eta.ok || !Array.isArray(eta.json?.stops)) throw new Error("FAIL /api/eta invalid (stops[])");
+  console.log(`OK /api/eta (stops=${eta.json.stops.length})`);
 
   await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.0303, lng: 28.9961, speed: 25, speedKmh: 25 });
   const gotEtaWs = await waitFor(() => driverWS.bag.eta.length > 0, 6000);
-  if (!gotEtaWs) throw new Error("❌ WS eta:update missing (driver)");
-  console.log("✅ WS eta:update (driver)");
+  if (!gotEtaWs) throw new Error("FAIL WS eta:update missing (driver)");
+  console.log("OK WS eta:update (driver)");
 
   // --- STALE (deterministic) ---
   {
@@ -262,13 +262,13 @@ async function main() {
       c: markerOf(cS0.items, "GPS_STALE", h.vehicleId),
     };
 
-    // ✅ STALE threshold fix: -35s (25s bazen yetmiyor)
+    // OK STALE threshold fix: -35s (25s bazen yetmiyor)
     const staleSec = Math.max(ENV.GPS_STALE_SEC ?? 40, 5);
     const offlineSec = Math.max(ENV.GPS_OFFLINE_SEC ?? 120, staleSec + 10);
     const staleAgeMs = (staleSec + 5) * 1000;
     const offlineAgeMs = (offlineSec + 10) * 1000;
 
-    console.log(`⏳ forcing LIVE->STALE (gpsLast.at -${Math.floor(staleAgeMs/1000)}s) and waiting for monitor tick...`);
+    console.log(`WAIT forcing LIVE->STALE (gpsLast.at -${Math.floor(staleAgeMs/1000)}s) and waiting for monitor tick...`);
     await prisma.gpsLast.update({
       where: { vehicleId: h.vehicleId },
       data: { at: new Date(Date.now() - staleAgeMs) },
@@ -283,10 +283,10 @@ async function main() {
       stepMs: 1500,
     });
 
-    if (!staleRes.ok) throw new Error("❌ GPS_STALE not created for all scopes");
-    console.log("✅ LIVE->STALE notif created (driver/room/company)");
+    if (!staleRes.ok) throw new Error("FAIL GPS_STALE not created for all scopes");
+    console.log("OK LIVE->STALE notif created (driver/room/company)");
 
-    console.log("⏳ watching for STALE dedupe (no new GPS_STALE should be created)...");
+    console.log("WAIT watching for STALE dedupe (no new GPS_STALE should be created)...");
     const dedupe = await watchNoNewNotifAllScopes({
       kind: "GPS_STALE",
       vehicleId: h.vehicleId,
@@ -296,9 +296,9 @@ async function main() {
       stepMs: 6000,
     });
     if (!dedupe.ok) {
-      throw new Error(`❌ GPS_STALE dedupe FAIL (marker increased) -> ${JSON.stringify(dedupe.now)}`);
+      throw new Error(`FAIL GPS_STALE dedupe FAIL (marker increased) -> ${JSON.stringify(dedupe.now)}`);
     }
-    console.log("✅ GPS_STALE dedupe OK");
+    console.log("OK GPS_STALE dedupe OK");
   }
 
   // --- OFFLINE (deterministic) ---
@@ -313,7 +313,7 @@ async function main() {
       c: markerOf(cO0.items, "GPS_OFFLINE", h.vehicleId),
     };
 
-    console.log(`⏳ forcing STALE->OFFLINE (gpsLast.at -${Math.floor(offlineAgeMs/1000)}s) and waiting for monitor tick...`);
+    console.log(`WAIT forcing STALE->OFFLINE (gpsLast.at -${Math.floor(offlineAgeMs/1000)}s) and waiting for monitor tick...`);
     await prisma.gpsLast.update({
       where: { vehicleId: h.vehicleId },
       data: { at: new Date(Date.now() - offlineAgeMs) },
@@ -328,8 +328,8 @@ async function main() {
       stepMs: 1500,
     });
 
-    if (!offRes.ok) throw new Error("❌ GPS_OFFLINE not created for all scopes");
-    console.log("✅ STALE->OFFLINE notif created (driver/room/company)");
+    if (!offRes.ok) throw new Error("FAIL GPS_OFFLINE not created for all scopes");
+    console.log("OK STALE->OFFLINE notif created (driver/room/company)");
   }
 
   // --- RECOVERY (deterministic) ---
@@ -355,25 +355,27 @@ async function main() {
       stepMs: 1200,
     });
 
-    if (!recRes.ok) throw new Error("❌ GPS_RECOVERY not created for all scopes");
-    console.log("✅ OFFLINE->LIVE recovery notif created (driver/room/company)");
+    if (!recRes.ok) throw new Error("FAIL GPS_RECOVERY not created for all scopes");
+    console.log("OK OFFLINE->LIVE recovery notif created (driver/room/company)");
   }
 
   // cleanup
   try {
     const closed = await closeShiftHard({ shiftId: h.shiftId, driverToken, roomToken });
-    if (closed) console.log(`✅ shift complete (cleanup) shiftId=${h.shiftId}`);
-    else console.log(`⚠️ cleanup failed shiftId=${h.shiftId}`);
+    if (closed) console.log(`OK shift complete (cleanup) shiftId=${h.shiftId}`);
+    else console.log(`WARN cleanup failed shiftId=${h.shiftId}`);
   } finally {
     driverWS.sock.close();
     roomWS.sock.close();
     compWS.sock.close();
   }
 
-  console.log("\n✅ FULLCHECK PASS");
+  console.log("\nOK FULLCHECK PASS");
 }
 
 main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
 });
+
+

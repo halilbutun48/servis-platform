@@ -15,12 +15,12 @@ function isoTomorrowAtLocal(hour, minute = 0) {
 
 function mustOk(r, label) {
   if (r?.ok) {
-    console.log(`✅ ${label}`);
+    console.log(`OK ${label}`);
     return;
   }
   const st = r?.status ?? 0;
   const txt = String(r?.text ?? "").slice(0, 800);
-  console.error(`❌ ${label} (status=${st})\n${txt}`);
+  console.error(`FAIL ${label} (status=${st})\n${txt}`);
   throw new Error(`ASSERT_FAIL: ${label}`);
 }
 
@@ -101,7 +101,7 @@ async function main() {
     });
     mustOk(uRoom2, "room2 region aligned");
   } else {
-    console.log("ℹ️ region align skipped (no regions available) — continuing");
+    console.log("INFO region align skipped (no regions available) — continuing");
   }
 
   step("company creates market shift (tomorrow afternoon to avoid agreements)");
@@ -158,11 +158,12 @@ async function main() {
   assertOk(cancelledOnly.length >= 1, "cancelled list non-empty");
   assertOk(cancelledOnly.every((o) => String(o.status) === "CANCELLED"), "all are CANCELLED");
 
-  console.log("✅ M25CHECK PASS");
+  console.log("OK M25CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M25CHECK FAIL");
+  console.error("FAIL M25CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });
+

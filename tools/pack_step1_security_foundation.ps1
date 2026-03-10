@@ -26,4 +26,5 @@ Write-Host "=== Step 1 Repo Contract ==="
 if ($LASTEXITCODE -ne 0) { throw "repo contract check failed" }
 
 Write-Host ""
-Write-Host "=== STEP 1 SECURITY FOUNDATION PACK PASS ✅ ==="
+Write-Host "=== STEP 1 SECURITY FOUNDATION PACK PASS OK ==="
+

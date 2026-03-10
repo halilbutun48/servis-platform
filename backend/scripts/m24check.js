@@ -21,12 +21,12 @@ function rand(n = 6) {
 
 function mustOk(r, label) {
   if (r?.ok) {
-    console.log(`✅ ${label}`);
+    console.log(`OK ${label}`);
     return;
   }
   const st = r?.status ?? 0;
   const txt = String(r?.text ?? "").slice(0, 800);
-  console.error(`❌ ${label} (status=${st})\n${txt}`);
+  console.error(`FAIL ${label} (status=${st})\n${txt}`);
   throw new Error(`ASSERT_FAIL: ${label}`);
 }
 
@@ -144,7 +144,7 @@ async function main() {
   assertOk(String(byRoom2.get(room1Id).status) === "ACCEPTED", "room1 ACCEPTED");
   assertOk(String(byRoom2.get(room2Id).status) === "CANCELLED", "room2 CANCELLED");
 
-  // ✅ create isolated vehicle+driver to avoid conflict with other checks
+  // OK create isolated vehicle+driver to avoid conflict with other checks
   step("create isolated vehicle+driver for approve (avoid conflicts)");
   const pass = "demo1234";
   const driverId = await createDriver(roomToken, `m24d_${rand(6).toLowerCase()}@demo.com`, pass);
@@ -159,11 +159,11 @@ async function main() {
   });
   mustOk(approve, "approve ok");
 
-  console.log("✅ M24CHECK PASS");
+  console.log("OK M24CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M24CHECK FAIL");
+  console.error("FAIL M24CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });

@@ -39,8 +39,8 @@ async function login(email, password){
   return token;
 }
 
-function ok(msg){ console.log(`✅ ${msg}`); }
-function bad(msg){ console.log(`❌ ${msg}`); }
+function ok(msg){ console.log(`OK ${msg}`); }
+function bad(msg){ console.log(`FAIL ${msg}`); }
 
 async function main(){
   console.log(`API_URL = ${BASE_URL}`);
@@ -135,7 +135,8 @@ async function main(){
   if(n !== 2) throw new Error(`eta remaining expected 2, got ${n}`);
   ok("eta remaining=2 (after reached order=1)");
 
-  console.log("\n✅ M5CHECK PASS");
+  console.log("\nOK M5CHECK PASS");
 }
 
 main().catch((e)=>{ console.error(String(e?.stack ?? e)); process.exit(1); });
+

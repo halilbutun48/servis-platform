@@ -37,13 +37,13 @@ async function login(email, password){
   return r.json.token;
 }
 
-function ok(msg){ console.log(`✅ ${msg}`); }
+function ok(msg){ console.log(`OK ${msg}`); }
 
 async function main(){
   console.log(`API_URL = ${BASE_URL}`);
 
   const h = await reqJson("GET","/health");
-  if(!h.ok || !h.json?.ok) throw new Error(`❌ /health invalid -> ${h.status}\n${h.text}`);
+  if(!h.ok || !h.json?.ok) throw new Error(`FAIL /health invalid -> ${h.status}\n${h.text}`);
   ok("/health");
 
   const users = [
@@ -57,15 +57,16 @@ async function main(){
   for(const u of users){
     const token = await login(u.email, "demo123");
     const me = await reqJson("GET","/api/me",{ token });
-    if(!me.ok) throw new Error(`❌ /api/me failed for ${u.email} -> ${me.status}\n${me.text}`);
-    if(me.json?.role !== u.role) throw new Error(`❌ /api/me role mismatch for ${u.email}: got=${me.json?.role} exp=${u.role}`);
+    if(!me.ok) throw new Error(`FAIL /api/me failed for ${u.email} -> ${me.status}\n${me.text}`);
+    if(me.json?.role !== u.role) throw new Error(`FAIL /api/me role mismatch for ${u.email}: got=${me.json?.role} exp=${u.role}`);
 
-    if(u.role==="ROOM" && !me.json?.roomId) throw new Error("❌ ROOM user missing roomId");
-    if(u.role==="COMPANY" && !me.json?.companyId) throw new Error("❌ COMPANY user missing companyId");
+    if(u.role==="ROOM" && !me.json?.roomId) throw new Error("FAIL ROOM user missing roomId");
+    if(u.role==="COMPANY" && !me.json?.companyId) throw new Error("FAIL COMPANY user missing companyId");
     ok(`login + /api/me (${u.role})`);
   }
 
-  console.log("\n✅ M0CHECK PASS");
+  console.log("\nOK M0CHECK PASS");
 }
 
 main().catch((e)=>{ console.error(String(e?.stack ?? e)); process.exit(1); });
+

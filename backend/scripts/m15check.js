@@ -94,9 +94,9 @@ async function assertVehicleDriver(roomToken, vehicleId, expectedDriverIdOrNull,
 function dump(label, r) {
   try {
     const body = r?.json != null ? JSON.stringify(r.json) : String(r?.text || "");
-    console.log(`ℹ️ ${label}: status=${r?.status} body=${body.slice(0, 800)}`);
+    console.log(`INFO ${label}: status=${r?.status} body=${body.slice(0, 800)}`);
   } catch {
-    console.log(`ℹ️ ${label}: status=${r?.status}`);
+    console.log(`INFO ${label}: status=${r?.status}`);
   }
 }
 
@@ -174,7 +174,7 @@ async function main() {
     const rb = await bind(companyToken, vA, d1);
     ok("RBAC: company cannot bind-driver", rb.status === 403 || rb.status === 401);
 
-    console.log("✅ M15CHECK PASS");
+    console.log("OK M15CHECK PASS");
   } finally {
     // best-effort cleanup
     try { await bind(roomToken, vA, null); } catch {}
@@ -186,6 +186,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error("❌ M15CHECK FAIL:", e?.message || e);
+  console.error("FAIL M15CHECK FAIL:", e?.message || e);
   process.exit(1);
 });
+

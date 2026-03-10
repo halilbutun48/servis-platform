@@ -16,7 +16,7 @@ function Must-Contain {
   if ($raw.IndexOf($Needle, [System.StringComparison]::Ordinal) -lt 0) {
     throw "repo contract fail: $Label :: missing '$Needle' in $File"
   }
-  Write-Host "✅ $Label" -ForegroundColor Green
+  Write-Host "OK $Label" -ForegroundColor Green
 }
 
 $repo = (Resolve-Path $RepoRoot).Path
@@ -59,5 +59,5 @@ Must-Contain $app "AcceptParentInvitePanel" "public accept panel registered"
 Must-Contain $app '"/accept-parent-invite"' "public accept route registered"
 
 Write-Host ""
-Write-Host "=== STEP06 REPO CONTRACT PASS ✅ ===" -ForegroundColor Green
+Write-Host "=== STEP06 REPO CONTRACT PASS OK ===" -ForegroundColor Green
 Write-Host ""

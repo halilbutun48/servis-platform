@@ -16,7 +16,7 @@ async function createVehicle(roomToken, label) {
     body: { plate, capacity: 16, speedLimitKmh: 90 },
   });
   if (!(r.status === 200 || r.status === 201)) {
-    console.log("❌ Vehicle create resp:", r.status, (r.text || "").slice(0, 400));
+    console.log("FAIL Vehicle create resp:", r.status, (r.text || "").slice(0, 400));
   }
   ok(`Vehicle create (${label})`, r.status === 200 || r.status === 201);
   const id = pickId(r.json);
@@ -31,7 +31,7 @@ async function createDriver(roomToken, label) {
     body: { fullName, phone: "0000000000", deviceInfo: "m13-test" },
   });
   if (!(r.status === 200 || r.status === 201)) {
-    console.log("❌ Driver create resp:", r.status, (r.text || "").slice(0, 400));
+    console.log("FAIL Driver create resp:", r.status, (r.text || "").slice(0, 400));
   }
   ok(`Driver create (${label})`, r.status === 200 || r.status === 201);
   const id = pickId(r.json);
@@ -55,7 +55,7 @@ async function createShift(companyToken, { companyId, roomId, startAt, endAt }, 
 
   const r = await reqJson("POST", "/api/shifts", { token: companyToken, body });
   if (!(r.status === 200 || r.status === 201)) {
-    console.log("❌ Shift create resp:", r.status, (r.text || "").slice(0, 600));
+    console.log("FAIL Shift create resp:", r.status, (r.text || "").slice(0, 600));
   }
   ok(`Shift create (${label})`, r.status === 200 || r.status === 201);
 
@@ -71,7 +71,7 @@ async function approveShift(roomToken, shiftId, vehicleId, driverId, label) {
   });
 
   if (r.status !== 200) {
-    console.log(`❌ Approve ${label} resp:`, r.status, (r.text || "").slice(0, 600));
+    console.log(`FAIL Approve ${label} resp:`, r.status, (r.text || "").slice(0, 600));
   }
   ok(`Approve ${label}`, r.status === 200);
   return r;
@@ -87,7 +87,7 @@ async function rejectBestEffort(roomToken, shiftId) {
 }
 
 async function main() {
-  console.log("✅ Starting M13CHECK (overlap rules)");
+  console.log("OK Starting M13CHECK (overlap rules)");
 
   const PASS = process.env.DEMO_PASSWORD || "demo123";
   const ROOM_EMAIL = process.env.ROOM_EMAIL || "room@demo.com";
@@ -98,7 +98,7 @@ async function main() {
 
   const { roomId, companyId } = await getRoomCompanyIds(roomToken, companyToken);
 
-  // ✅ DB state’den bağımsız: her run’da test için yeni driver/vehicle
+  // OK DB state’den bağımsız: her run’da test için yeni driver/vehicle
   const v1 = await createVehicle(roomToken, "M13V1");
   const v2 = await createVehicle(roomToken, "M13V2");
   const d1 = await createDriver(roomToken, "M13D1");
@@ -126,7 +126,7 @@ async function main() {
     ok("Driver conflict -> 409", a2.status === 409);
     const code2 = String(a2.json?.code || "");
     if (!code2.includes("DRIVER")) {
-      console.log("ℹ️ Driver conflict code payload:", a2.json);
+      console.log("INFO Driver conflict code payload:", a2.json);
     }
     must("Driver conflict code", code2.includes("DRIVER"));
 
@@ -138,11 +138,11 @@ async function main() {
     ok("Vehicle conflict -> 409", a3.status === 409);
     const code3 = String(a3.json?.code || "");
     if (!code3.includes("VEHICLE")) {
-      console.log("ℹ️ Vehicle conflict code payload:", a3.json);
+      console.log("INFO Vehicle conflict code payload:", a3.json);
     }
     must("Vehicle conflict code", code3.includes("VEHICLE"));
 
-    console.log("✅ M13CHECK PASS");
+    console.log("OK M13CHECK PASS");
   } finally {
     await rejectBestEffort(roomToken, shift1);
     await rejectBestEffort(roomToken, shift2);
@@ -151,6 +151,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error("❌ M13CHECK FAIL:", e?.message || e);
+  console.error("FAIL M13CHECK FAIL:", e?.message || e);
   process.exit(1);
 });
+

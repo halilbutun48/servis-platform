@@ -16,11 +16,11 @@ const MAX_WAIT_MS = Number(process.env.HTTP_429_MAXWAIT_MS ?? 4 * 60_000);
 // Emoji/UTF-8 problemleri için: NO_EMOJI=1 -> ASCII yaz
 const USE_EMOJI = !(String(process.env.NO_EMOJI ?? "").trim() === "1");
 
-const I_OK = USE_EMOJI ? "✅" : "[OK]";
-const I_FAIL = USE_EMOJI ? "❌" : "[FAIL]";
-const I_INFO = USE_EMOJI ? "ℹ️" : "[i]";
-const I_WAIT = USE_EMOJI ? "⏳" : "[wait]";
-const I_BROOM = USE_EMOJI ? "🧹" : "[clean]";
+const I_OK = USE_EMOJI ? "OK" : "[OK]";
+const I_FAIL = USE_EMOJI ? "FAIL" : "[FAIL]";
+const I_INFO = USE_EMOJI ? "INFO" : "[i]";
+const I_WAIT = USE_EMOJI ? "WAIT" : "[wait]";
+const I_BROOM = USE_EMOJI ? "CLEAN" : "[clean]";
 
 let _lastHttpAt = 0;
 
@@ -115,7 +115,7 @@ async function reqJsonOnce(method, path, { token, body } = {}) {
 
   const headers = {
     "Content-Type": "application/json",
-    "x-greenpack": GREENPACK_HEADER, // ✅ gate traffic marker
+    "x-greenpack": GREENPACK_HEADER, // OK gate traffic marker
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -323,7 +323,7 @@ export async function ensureActiveShift({
 }) {
   const nowTag = tag + "-" + new Date().toISOString().replace(/[:.TZ-]/g, "").slice(0, 14);
 
-  // ✅ KVKK time-window gate uyumu
+  // OK KVKK time-window gate uyumu
   // Company canlı takip/notification fanout artık startAt<=now<=endAt şartına bağlı.
   // ACTIVE shift "şu an çalışıyor" demektir; bu yüzden GreenPack harness shift'i NOW aralığını kapsamalı.
   const startAt = new Date(Date.now() - 2 * 60 * 1000).toISOString(); // started ~2m ago
@@ -472,3 +472,4 @@ export async function postGps(driverToken, body) {
 
 // Küçük log helper’ları (istersen kullanırsın)
 export const ICONS = { I_OK, I_FAIL, I_INFO, I_WAIT, I_BROOM };
+

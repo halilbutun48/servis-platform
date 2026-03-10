@@ -48,7 +48,7 @@ async function login(email, password) {
 }
 
 function ok(label) {
-  console.log(`✅ ${label}`);
+  console.log(`OK ${label}`);
 }
 
 function todayYmd() {
@@ -136,11 +136,12 @@ async function main() {
   await mustOk(reqJson("PUT", `/api/agreements/${ag.id}/cancel`, { token: tC, body: {} }), "agreement cancel");
   ok("agreement cancel (cleanup)");
 
-  console.log("✅ M26CHECK PASS");
+  console.log("OK M26CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M26CHECK FAIL");
+  console.error("FAIL M26CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });
+

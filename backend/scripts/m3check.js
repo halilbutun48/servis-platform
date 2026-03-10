@@ -8,7 +8,7 @@ const nowTag = new Date().toISOString().replace(/[:.TZ-]/g, "").slice(0, 14);
 function reqJson(method, path, { token, body } = {}) {
   const url = new URL(path, BASE_URL);
   const lib = url.protocol === "https:" ? https : http;
-  // ✅ GreenPack marker: local pack/gate checks rate-limit'e takılmasın
+  // OK GreenPack marker: local pack/gate checks rate-limit'e takılmasın
   // server.js -> greenpackSkip() (NODE_ENV=development iken)
   const headers = {
     "Content-Type": "application/json",
@@ -42,8 +42,8 @@ async function login(email, password) {
   return r.json?.token;
 }
 
-function ok(msg) { console.log(`✅ ${msg}`); }
-function bad(msg) { console.log(`❌ ${msg}`); }
+function ok(msg) { console.log(`OK ${msg}`); }
+function bad(msg) { console.log(`FAIL ${msg}`); }
 function show(label, r) {
   const body = r?.json ?? r?.text ?? "";
   console.log(`${label} -> ${r?.status}\n${typeof body === "string" ? body : JSON.stringify(body)}`);
@@ -92,7 +92,7 @@ async function tryComplete({ shiftId, driverToken, roomToken }) {
       const r = await reqJson("POST", p, { token: driverToken, body });
       if (r.ok) return { ok: true, method: "POST", path: p, used: "driver", r };
       // debug için 404 olmayanları yaz
-      if (r.status && r.status !== 404) console.log(`ℹ️ complete try driver POST ${p} body=${JSON.stringify(body)} -> ${r.status}`);
+      if (r.status && r.status !== 404) console.log(`INFO complete try driver POST ${p} body=${JSON.stringify(body)} -> ${r.status}`);
     }
   }
 
@@ -101,7 +101,7 @@ async function tryComplete({ shiftId, driverToken, roomToken }) {
     for (const body of payloads) {
       const r = await reqJson("PUT", p, { token: driverToken, body });
       if (r.ok) return { ok: true, method: "PUT", path: p, used: "driver", r };
-      if (r.status && r.status !== 404) console.log(`ℹ️ complete try driver PUT ${p} body=${JSON.stringify(body)} -> ${r.status}`);
+      if (r.status && r.status !== 404) console.log(`INFO complete try driver PUT ${p} body=${JSON.stringify(body)} -> ${r.status}`);
     }
   }
 
@@ -110,7 +110,7 @@ async function tryComplete({ shiftId, driverToken, roomToken }) {
     for (const body of payloads) {
       const r = await reqJson("POST", p, { token: roomToken, body });
       if (r.ok) return { ok: true, method: "POST", path: p, used: "room", r };
-      if (r.status && r.status !== 404) console.log(`ℹ️ complete try room POST ${p} body=${JSON.stringify(body)} -> ${r.status}`);
+      if (r.status && r.status !== 404) console.log(`INFO complete try room POST ${p} body=${JSON.stringify(body)} -> ${r.status}`);
     }
   }
 
@@ -118,7 +118,7 @@ async function tryComplete({ shiftId, driverToken, roomToken }) {
     for (const body of payloads) {
       const r = await reqJson("PUT", p, { token: roomToken, body });
       if (r.ok) return { ok: true, method: "PUT", path: p, used: "room", r };
-      if (r.status && r.status !== 404) console.log(`ℹ️ complete try room PUT ${p} body=${JSON.stringify(body)} -> ${r.status}`);
+      if (r.status && r.status !== 404) console.log(`INFO complete try room PUT ${p} body=${JSON.stringify(body)} -> ${r.status}`);
     }
   }
 
@@ -141,18 +141,18 @@ async function reachOrders({ shiftId, driverToken, maxOrder = 8 }) {
   for (let ord = 1; ord <= maxOrder; ord++) {
     // önce shift tabanlı dene
     let r = await callAny("POST", shiftReached, { token: driverToken, body: { order: ord } });
-    if (r.ok) { console.log(`✅ reached order=${ord} (${r.path})`); continue; }
+    if (r.ok) { console.log(`OK reached order=${ord} (${r.path})`); continue; }
 
     // shift route yoksa driver tabanlı dene
     const maybe404 = r.r?.status === 404;
     if (maybe404) {
       r = await callAny("POST", driverReached, { token: driverToken, body: { order: ord } });
-      if (r.ok) { console.log(`✅ reached order=${ord} (${r.path})`); continue; }
+      if (r.ok) { console.log(`OK reached order=${ord} (${r.path})`); continue; }
     }
 
     // 400/403 vb: kırmadan devam (bazı shiftlerde stop sayısı daha az olabilir)
     if (r.r?.status && r.r.status !== 404) {
-      console.log(`ℹ️ reached order=${ord} -> ${r.r.status}`);
+      console.log(`INFO reached order=${ord} -> ${r.r.status}`);
     }
   }
 }
@@ -162,7 +162,7 @@ async function startShift({ shiftId, roomToken }) {
   // active ise 400 dönebilir, bu durumda logla ama fail sayma
   const r = await callAny("POST", paths, { token: roomToken, body: {} });
   if (r.ok) { ok(`shift start (${r.path})`); return true; }
-  console.log(`ℹ️ shift start attempt -> ${r.r.status}`);
+  console.log(`INFO shift start attempt -> ${r.r.status}`);
   show("shift start body", r.r);
   return false;
 }
@@ -174,7 +174,7 @@ async function getShiftStatus({ shiftId, roomToken }) {
 }
 
 async function closeShiftHard({ shiftId, driverToken, roomToken }) {
-  console.log(`🧹 closing shift id=${shiftId}`);
+  console.log(`CLEAN closing shift id=${shiftId}`);
 
   // APPROVED ise start etmeyi dene (ACTIVE değilse reached/complete çalışmayabilir)
   await startShift({ shiftId, roomToken });
@@ -194,10 +194,10 @@ async function closeShiftHard({ shiftId, driverToken, roomToken }) {
   // Status doğrula
   const s = await getShiftStatus({ shiftId, roomToken });
   if (s.ok) {
-    console.log(`ℹ️ shift status now = ${s.status}`);
+    console.log(`INFO shift status now = ${s.status}`);
     if (["DONE", "COMPLETED", "FINISHED"].includes(String(s.status))) return true;
   } else {
-    console.log("ℹ️ shift GET failed (maybe endpoint restricted).");
+    console.log("INFO shift GET failed (maybe endpoint restricted).");
   }
   // GET yoksa bile complete 2xx döndüyse true say
   return true;
@@ -217,7 +217,7 @@ async function preCleanDriverShifts({ driverToken, roomToken }) {
     return true;
   }
 
-  console.log(`🧹 pre-clean: found ${dirty.length} shift(s) to close`);
+  console.log(`CLEAN pre-clean: found ${dirty.length} shift(s) to close`);
 
   // Önce ACTIVE olanları kapat (öncelik)
   const ordered = [
@@ -323,13 +323,13 @@ async function main() {
   if (reached.ok) ok(`driver reached stop (${reached.path})`);
   else show(`driver reached stop (${reached.path})`, reached.r);
 
-  // ✅ ETA sanity (driver assigned iken)  — önce!
+  // OK ETA sanity (driver assigned iken)  — önce!
   const eta = await reqJson("GET", `/api/eta?vehicleId=${vehicleId}`, { token: driverToken });
   const etaOk = eta.ok && Array.isArray(eta.json?.stops);
   if (etaOk) ok(`eta ok (stops=${eta.json.stops.length})`);
   else show("eta", eta);
 
-  // ✅ cleanup: close this shift too (kritik) — sonra
+  // OK cleanup: close this shift too (kritik) — sonra
   let cleanupOk = false;
   if (shApprove.ok) {
     cleanupOk = await closeShiftHard({ shiftId, driverToken, roomToken });
@@ -346,10 +346,10 @@ async function main() {
   ].filter(Boolean).length;
 
   if (fails === 0) {
-    console.log("\n✅ M3CHECK PASS (pre-clean + workflow + cleanup OK)");
+    console.log("\nOK M3CHECK PASS (pre-clean + workflow + cleanup OK)");
     process.exit(0);
   }
-  console.log(`\n❌ M3CHECK FAIL (${fails} issue) — detaylar yukarıda.`);
+  console.log(`\nFAIL M3CHECK FAIL (${fails} issue) — detaylar yukarıda.`);
   process.exit(1);
 }
 
@@ -357,3 +357,4 @@ main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
 });
+

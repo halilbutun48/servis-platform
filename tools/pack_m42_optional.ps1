@@ -63,10 +63,11 @@ try {
   Dc -f $composeFile exec -T $ApiService sh -lc "cd /app/backend && node scripts/m42_optional_check.js" | Out-Host
 
   Write-Host ""
-  Write-Host "=== M42 OPTIONAL PACK PASS ✅ ===" -ForegroundColor Green
+  Write-Host "=== M42 OPTIONAL PACK PASS OK ===" -ForegroundColor Green
   Write-Host ""
 }
 finally {
   if ($null -eq $prevFeature) { Remove-Item Env:FEATURE_CHECKIN -ErrorAction SilentlyContinue } else { $env:FEATURE_CHECKIN = $prevFeature }
   if ($null -eq $prevDedupe) { Remove-Item Env:CHECKIN_DEDUPE_SEC -ErrorAction SilentlyContinue } else { $env:CHECKIN_DEDUPE_SEC = $prevDedupe }
 }
+

@@ -7,12 +7,12 @@ import { banner, step, assertOk, loginFirst, reqJson } from "./_harness.js";
 
 function mustOk(r, label) {
   if (r?.ok) {
-    console.log(`✅ ${label}`);
+    console.log(`OK ${label}`);
     return;
   }
   const st = r?.status ?? 0;
   const txt = String(r?.text ?? "").slice(0, 900);
-  console.error(`❌ ${label} (status=${st})\n${txt}`);
+  console.error(`FAIL ${label} (status=${st})\n${txt}`);
   throw new Error(`ASSERT_FAIL: ${label}`);
 }
 
@@ -110,11 +110,12 @@ async function main() {
   const delR = await reqJson("DELETE", `/api/rooms/${roomId}`, { token: superToken });
   mustOk(delR, "room delete");
 
-  console.log("✅ M36CHECK PASS");
+  console.log("OK M36CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M36CHECK FAIL");
+  console.error("FAIL M36CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });
+

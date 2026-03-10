@@ -22,12 +22,12 @@ function ymdTR(d) {
 
 function mustOk(r, label) {
   if (r?.ok) {
-    console.log(`✅ ${label}`);
+    console.log(`OK ${label}`);
     return;
   }
   const st = r?.status ?? 0;
   const txt = String(r?.text ?? "").slice(0, 1200);
-  console.error(`❌ ${label} (status=${st})\n${txt}`);
+  console.error(`FAIL ${label} (status=${st})\n${txt}`);
   throw new Error(`ASSERT_FAIL: ${label}`);
 }
 
@@ -114,11 +114,12 @@ async function main() {
   assertOk(Array.isArray(aitems), "agreements items[]");
   assertOk(aitems.some((x) => Number(x.id) === agreementId), "created agreement in list");
 
-  console.log("✅ M22CHECK PASS");
+  console.log("OK M22CHECK PASS");
 }
 
 main().catch((e) => {
-  console.error("❌ M22CHECK FAIL");
+  console.error("FAIL M22CHECK FAIL");
   console.error(e?.stack || String(e));
   process.exit(1);
 });
+

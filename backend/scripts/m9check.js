@@ -60,7 +60,7 @@ async function login(email, password) {
 }
 
 function ok(msg) {
-  console.log(`✅ ${msg}`);
+  console.log(`OK ${msg}`);
 }
 
 async function main() {
@@ -79,7 +79,7 @@ async function main() {
     const active0 = await reqJson("GET", "/api/driver/route/active", { token: driverToken });
     if (active0.ok && active0.json?.mode === "OK") return active0;
 
-    console.log(`ℹ️ M9: no active shift found (${active0.json?.mode ?? active0.status}). Creating one for test...`);
+    console.log(`INFO M9: no active shift found (${active0.json?.mode ?? active0.status}). Creating one for test...`);
 
     const companyToken = await login("company@demo.com", "demo123");
     const driversRes = await reqJson("GET", "/api/drivers", { token: roomToken });
@@ -204,10 +204,11 @@ async function main() {
   }
   ok("gps hardening 403 ok (driver not assigned vehicle)");
 
-  console.log("\n✅ M9CHECK PASS");
+  console.log("\nOK M9CHECK PASS");
 }
 
 main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
 });
+

@@ -32,7 +32,8 @@ console.log("M12 check — required files");
 for (const rel of required) {
   const abs = path.join(repoRoot, rel);
   assert(exists(abs), `Missing: ${rel}`);
-  console.log("✅", rel);
+  console.log("OK", rel);
 }
 
-console.log("✅ M12 OK");
+console.log("OK M12 OK");
+

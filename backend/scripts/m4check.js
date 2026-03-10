@@ -16,7 +16,7 @@ import { prisma } from "../src/prisma.js";
 import { ENV } from "../src/env.js";
 
 function ok(msg) {
-  console.log(`✅ ${msg}`);
+  console.log(`OK ${msg}`);
 }
 
 function upper(s) {
@@ -148,7 +148,7 @@ async function waitForNewAllScopes({ kind, vehicleId, driverToken, roomToken, co
     await sleep(stepMs);
   }
 
-  console.log(`ℹ️ waitForNewAllScopes TIMEOUT kind=${kind} label=${label} vehicleId=${vehicleId}`);
+  console.log(`INFO waitForNewAllScopes TIMEOUT kind=${kind} label=${label} vehicleId=${vehicleId}`);
   return null;
 }
 
@@ -168,7 +168,7 @@ async function watchNoNew({ kind, vehicleId, driverToken, roomToken, companyToke
     ) {
       const a = sinceSnap.map((x) => `${x.marker || 0}/${x.count}`).join(",");
       const b = cur.map((x) => `${x.marker || 0}/${x.count}`).join(",");
-      throw new Error(`❌ ${kind} dedupe FAIL (new record observed) ${a} -> ${b} (${label})`);
+      throw new Error(`FAIL ${kind} dedupe FAIL (new record observed) ${a} -> ${b} (${label})`);
     }
 
     await sleep(stepMs);
@@ -208,7 +208,7 @@ async function main() {
   const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
 
   const pre = await preCleanDriverShifts({ roomToken, driverToken, driverId });
-  if (pre.found) console.log(`🧹 pre-clean: found=${pre.found} cleaned=${pre.cleaned}`);
+  if (pre.found) console.log(`CLEAN pre-clean: found=${pre.found} cleaned=${pre.cleaned}`);
 
   const h = await ensureActiveShift({
     companyToken,
@@ -230,7 +230,7 @@ async function main() {
     // OVERSPEED (marker-based: “yeni notif geldi mi?”)
     const vInfo = await getVehicleInfo(roomToken, h.vehicleId);
     const { limit, overspeedKmh } = computeOverspeedKmh(vInfo);
-    console.log(`ℹ️ overspeed plan: vehicleId=${h.vehicleId} limit=${limit} -> speedKmh=${overspeedKmh}`);
+    console.log(`INFO overspeed plan: vehicleId=${h.vehicleId} limit=${limit} -> speedKmh=${overspeedKmh}`);
 
     const ovWait = waitForNewAllScopes({
       kind: "OVERSPEED",
@@ -252,7 +252,7 @@ async function main() {
     });
 
     const ov = await ovWait;
-    if (!ov) throw new Error("❌ OVERSPEED missing for one of (driver/room/company)");
+    if (!ov) throw new Error("FAIL OVERSPEED missing for one of (driver/room/company)");
     ok("OVERSPEED notif (driver/room/company)");
 
     // LIVE->STALE (deterministic: at -35s) + “yeni stale” bekle
@@ -261,7 +261,7 @@ async function main() {
     const staleAgeMs = (staleSec + 5) * 1000;
     const offlineAgeMs = (offlineSec + 10) * 1000;
 
-    console.log(`⏳ forcing LIVE->STALE (gpsLast.at -${Math.floor(staleAgeMs/1000)}s) and waiting for monitor tick...`);
+    console.log(`WAIT forcing LIVE->STALE (gpsLast.at -${Math.floor(staleAgeMs/1000)}s) and waiting for monitor tick...`);
     const staleWait = waitForNewAllScopes({
       kind: "GPS_STALE",
       vehicleId: h.vehicleId,
@@ -279,11 +279,11 @@ async function main() {
     });
 
     const st = await staleWait;
-    if (!st) throw new Error("❌ GPS_STALE missing for one of (driver/room/company)");
+    if (!st) throw new Error("FAIL GPS_STALE missing for one of (driver/room/company)");
     ok("LIVE->STALE notif created (driver/room/company)");
 
     // STALE dedupe: 1 tick boyunca “yeni stale daha gelmemeli”
-    console.log("⏳ watching for STALE dedupe (no new GPS_STALE should be created)...");
+    console.log("WAIT watching for STALE dedupe (no new GPS_STALE should be created)...");
     await watchNoNew({
       kind: "GPS_STALE",
       vehicleId: h.vehicleId,
@@ -298,7 +298,7 @@ async function main() {
     ok("GPS_STALE dedupe OK");
 
     // STALE->OFFLINE + “yeni offline” bekle
-    console.log(`⏳ forcing STALE->OFFLINE (gpsLast.at -${Math.floor(offlineAgeMs/1000)}s) and waiting for monitor tick...`);
+    console.log(`WAIT forcing STALE->OFFLINE (gpsLast.at -${Math.floor(offlineAgeMs/1000)}s) and waiting for monitor tick...`);
 
     const offWait = waitForNewAllScopes({
       kind: "GPS_OFFLINE",
@@ -317,7 +317,7 @@ async function main() {
     });
 
     const off = await offWait;
-    if (!off) throw new Error("❌ GPS_OFFLINE missing for one of (driver/room/company)");
+    if (!off) throw new Error("FAIL GPS_OFFLINE missing for one of (driver/room/company)");
     ok("STALE->OFFLINE notif created (driver/room/company)");
 
     // recovery + “yeni recovery” bekle
@@ -335,14 +335,14 @@ async function main() {
     await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.0312, lng: 28.9969, speed: 20, speedKmh: 20 });
 
     const rec = await recWait;
-    if (!rec) throw new Error("❌ GPS_RECOVERY missing for one of (driver/room/company)");
+    if (!rec) throw new Error("FAIL GPS_RECOVERY missing for one of (driver/room/company)");
     ok("OFFLINE->LIVE recovery notif created (driver/room/company)");
 
-    console.log("\n✅ M4CHECK PASS");
+    console.log("\nOK M4CHECK PASS");
   } finally {
     const closed = await closeShiftHard({ shiftId: h.shiftId, driverToken, roomToken });
     if (closed) ok(`shift complete (cleanup) shiftId=${h.shiftId}`);
-    else console.log(`⚠️ cleanup failed shiftId=${h.shiftId}`);
+    else console.log(`WARN cleanup failed shiftId=${h.shiftId}`);
   }
 }
 
@@ -350,3 +350,4 @@ main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
 });
+

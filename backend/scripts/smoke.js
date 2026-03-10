@@ -153,9 +153,9 @@ async function completeShiftBestEffort({ shiftId, driverToken }) {
       } catch {}
     }
     await requestJson("POST", `/api/driver/shifts/${shiftId}/complete`, { token: driverToken, body: {} });
-    console.log(`✅ shift complete (cleanup) shiftId=${shiftId}`);
+    console.log(`OK shift complete (cleanup) shiftId=${shiftId}`);
   } catch (e) {
-    console.log(`ℹ️ cleanup complete failed (ignored): ${String(e?.message ?? e).slice(0, 200)}`);
+    console.log(`INFO cleanup complete failed (ignored): ${String(e?.message ?? e).slice(0, 200)}`);
   }
 }
 
@@ -165,9 +165,9 @@ async function main() {
   const driverToken = await login("driver@demo.com", "demo123");
   const roomToken = await login("room@demo.com", "demo123");
   const companyToken = await login("company@demo.com", "demo123");
-  console.log("✅ login(driver/room/company)");
+  console.log("OK login(driver/room/company)");
 
-  // ✅ ACTIVE shift harness (GPS/ETA 403 fix)
+  // OK ACTIVE shift harness (GPS/ETA 403 fix)
   const harness = await ensureActiveShift({ companyToken, roomToken, driverToken });
   const vehicleId = harness.vehicleId;
 
@@ -176,51 +176,53 @@ async function main() {
     token: driverToken,
     body: { vehicleId, lat: 41.0302, lng: 28.996, speed: 20 },
   });
-  console.log("✅ POST /api/gps (LIVE)");
+  console.log("OK POST /api/gps (LIVE)");
 
   // overspeed
   await requestJson("POST", "/api/gps", {
     token: driverToken,
     body: { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 },
   });
-  console.log("✅ POST /api/gps (OVERSPEED)");
+  console.log("OK POST /api/gps (OVERSPEED)");
 
   const driverNotifs1 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
   if (!findKind(driverNotifs1, "OVERSPEED")) {
-    throw new Error("❌ OVERSPEED notification not found for DRIVER");
+    throw new Error("FAIL OVERSPEED notification not found for DRIVER");
   }
-  console.log("✅ notif: OVERSPEED (DRIVER)");
+  console.log("OK notif: OVERSPEED (DRIVER)");
 
   // ETA
   const eta = await requestJson("GET", `/api/eta?vehicleId=${vehicleId}`, { token: driverToken });
   if (!eta || !Array.isArray(eta.stops)) {
-    throw new Error("❌ ETA response invalid");
+    throw new Error("FAIL ETA response invalid");
   }
-  console.log(`✅ GET /api/eta (stops=${eta.stops.length})`);
+  console.log(`OK GET /api/eta (stops=${eta.stops.length})`);
 
   // GPS_STALE transition (LIVE->STALE)
-  console.log("⏳ waiting 40s for LIVE->STALE monitor tick...");
+  console.log("WAIT waiting 40s for LIVE->STALE monitor tick...");
   await sleep(40_000);
 
   const roomNotifs = await requestJson("GET", "/api/notifications/my", { token: roomToken });
   if (!findKind(roomNotifs, "GPS_STALE")) {
-    throw new Error("❌ GPS_STALE notification not found for ROOM (after 40s)");
+    throw new Error("FAIL GPS_STALE notification not found for ROOM (after 40s)");
   }
-  console.log("✅ notif: GPS_STALE (ROOM)");
+  console.log("OK notif: GPS_STALE (ROOM)");
 
   const driverNotifs2 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
   if (!findKind(driverNotifs2, "GPS_STALE")) {
-    throw new Error("❌ GPS_STALE notification not found for DRIVER (after 40s)");
+    throw new Error("FAIL GPS_STALE notification not found for DRIVER (after 40s)");
   }
-  console.log("✅ notif: GPS_STALE (DRIVER)");
+  console.log("OK notif: GPS_STALE (DRIVER)");
 
-  // ✅ cleanup (pack’te birikmesin)
+  // OK cleanup (pack’te birikmesin)
   await completeShiftBestEffort({ shiftId: harness.shiftId, driverToken });
 
-  console.log("\n✅ SMOKE PASS");
+  console.log("\nOK SMOKE PASS");
 }
 
 main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
 });
+
+

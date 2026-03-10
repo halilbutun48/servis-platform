@@ -22,11 +22,11 @@ async function resolveDriverDeviceId(email = "driver@demo.com") {
   must("driver user exists", !!user && user.role === "DRIVER");
   const deviceId = String(user?.deviceId || "").trim();
   if (deviceId) {
-    console.log(`ℹ️ reuse bound driver deviceId (${deviceId})`);
+    console.log(`INFO reuse bound driver deviceId (${deviceId})`);
     return deviceId;
   }
   const fallback = "step1-driver-device";
-  console.log(`ℹ️ driver not bound yet, using fallback deviceId (${fallback})`);
+  console.log(`INFO driver not bound yet, using fallback deviceId (${fallback})`);
   return fallback;
 }
 
