@@ -10,6 +10,9 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET ?? "dev-secret",
   ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN ?? "7d", // backward compatible default
   REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30),
+  STEP_UP_REQUIRED_ROLES: process.env.STEP_UP_REQUIRED_ROLES ?? "SUPER_ADMIN,ROOM",
+  STEP_UP_TOTP_WINDOW_SEC: Number(process.env.STEP_UP_TOTP_WINDOW_SEC ?? 12 * 60 * 60),
+  STEP_UP_TOTP_ISSUER: process.env.STEP_UP_TOTP_ISSUER ?? "Personel-Servis V1",
 
   // Redis
   REDIS_URL: process.env.REDIS_URL ?? "",

@@ -11,6 +11,7 @@ import "dotenv/config";
 import { ENV } from "./env.js";
 import { prisma } from "./prisma.js";
 import { verifyToken } from "./auth/jwt.js";
+import { authRequired, requireStepUp, requireStepUpWrite } from "./auth/middleware.js";
 import { scopeRoomsForUser } from "./ws/scope.js";
 
 import { authRouter } from "./routes/auth.js";
@@ -297,6 +298,15 @@ app.get("/health", async (req, res) => {
 
 // Public routes
 app.use("/api/auth", authRouter);
+
+// Step 1.5: TOTP step-up guard (ROOM + SUPER_ADMIN on sensitive paths)
+app.use("/api/admin/logs", authRequired(), requireStepUp("SUPER_ADMIN"));
+app.use("/api/admin", authRequired(), requireStepUp("SUPER_ADMIN"));
+app.use("/api/logs/export", authRequired(), requireStepUp("ROOM", "SUPER_ADMIN"));
+app.use("/api/vehicles", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
+app.use("/api/drivers", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
+app.use("/api/availability", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
+app.use("/api/shifts", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
 app.use("/api/me", meRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/kvkk", kvkkRouter());

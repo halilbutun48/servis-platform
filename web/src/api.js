@@ -100,3 +100,20 @@ export async function login(email, password) {
   setToken(data.token);
   return data;
 }
+
+
+export async function getTotpStatus(token) {
+  return api("/api/auth/totp/status", { token });
+}
+
+export async function setupTotp(token) {
+  return api("/api/auth/totp/setup", { method: "POST", token, body: {} });
+}
+
+export async function enableTotp(token, code) {
+  return api("/api/auth/totp/enable", { method: "POST", token, body: { code } });
+}
+
+export async function verifyTotp(token, code) {
+  return api("/api/auth/totp/verify", { method: "POST", token, body: { code } });
+}

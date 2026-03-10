@@ -109,14 +109,14 @@ function parseRateLimitResetMs(headers) {
 }
 
 // Raw request (429 retry yok)
-async function reqJsonOnce(method, path, { token, body } = {}) {
+async function reqJsonOnce(method, path, { token, body, includeGreenpack = true } = {}) {
   const url = new URL(path, BASE_URL);
   const lib = url.protocol === "https:" ? https : http;
 
   const headers = {
     "Content-Type": "application/json",
-    "x-greenpack": GREENPACK_HEADER, // OK gate traffic marker
   };
+  if (includeGreenpack) headers["x-greenpack"] = GREENPACK_HEADER; // gate traffic marker
   if (token) headers.Authorization = `Bearer ${token}`;
 
   return new Promise((resolve) => {
@@ -163,13 +163,13 @@ async function reqJsonOnce(method, path, { token, body } = {}) {
  * - 429 retry (Retry-After / RateLimit-Reset / backoff)
  * - returns: { ok, status, json, text, headers }
  */
-export async function reqJson(method, path, { token, body, maxWaitMs = MAX_WAIT_MS } = {}) {
+export async function reqJson(method, path, { token, body, maxWaitMs = MAX_WAIT_MS, includeGreenpack = true } = {}) {
   const t0 = Date.now();
   let attempt = 0;
 
   while (true) {
     await throttle();
-    const r = await reqJsonOnce(method, path, { token, body });
+    const r = await reqJsonOnce(method, path, { token, body, includeGreenpack });
 
     if (r.ok) return r;
 
@@ -196,10 +196,10 @@ export async function reqJson(method, path, { token, body, maxWaitMs = MAX_WAIT_
   }
 }
 
-export async function callAny(method, paths, { token, body } = {}) {
+export async function callAny(method, paths, { token, body, includeGreenpack = true } = {}) {
   let last = null;
   for (const p of paths) {
-    last = await reqJson(method, p, { token, body });
+    last = await reqJson(method, p, { token, body, includeGreenpack });
     if (last.ok) return { ok: true, path: p, r: last };
     if (last.status === 404) continue;
   }

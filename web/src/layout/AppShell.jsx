@@ -1,6 +1,7 @@
 //web/src/layout/AppShell.jsx
 import NavDock from "./NavDock";
 import KvkkConsentGate from "../panels/shared/KvkkConsentGate";
+import TotpStepUpCard from "../panels/shared/TotpStepUpCard";
 import { useSession } from "../state/session";
 
 export default function AppShell({ path, children }) {
@@ -28,8 +29,10 @@ export default function AppShell({ path, children }) {
           </button>
         </div>
         <div className="shellContent">
-          <div className={isFluid ? "page page--fluid" : "page"}>{children}
-      </div>
+          <div className={isFluid ? "page page--fluid" : "page"}>
+            <TotpStepUpCard />
+            {children}
+          </div>
         </div>
       </div>
     </div>

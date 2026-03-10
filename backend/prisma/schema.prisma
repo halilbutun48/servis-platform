@@ -315,6 +315,12 @@ notifications Notification[]
   // ✅ M41: refresh sessions (rotating)
   refreshSessions  RefreshSession[]
 
+  // Step 1.5: TOTP step-up (ROOM + SUPER_ADMIN)
+  totpSecretBase32        String?
+  totpPendingSecretBase32 String?
+  totpEnabledAt           DateTime?
+  totpLastVerifiedAt      DateTime?
+
   createdAt    DateTime @default(now())
 
   // Scope bindings
