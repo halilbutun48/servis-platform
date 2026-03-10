@@ -16,7 +16,7 @@ Not: Update/Delete gibi “tam CRUD” genişletmeleri sonraki milestone’lara 
 
 ### ROOM (Operasyon)
 - Dashboard: canlı araçlar + uyarılar
-- Vehicles: araç listesi, detay, bakım tarihleri, hız limiti, telematics device yönetimi
+- Vehicles: araç listesi, detay, bakım tarihleri, hız limiti
 - Drivers: sürücü listesi, cihaz eşleştirme
 - Requests: ...
 
@@ -50,14 +50,6 @@ Opsiyonel (bakım/operasyon):
 ### Liste görünümü
 - Öncelik: plaka + kapasite + araç tipi + marka/model/yıl
 - Bakım/ muayene bilgileri badge olarak gösterilebilir.
-
-### Vehicles sekmeleri (ROOM)
-- `Durum`: canlı GPS / online-stale-offline görünümü
-- `Yönetim`: create/edit/archive akışı
-- `Atamalar`: aktif/sıradaki shift görünümü
-- `Müsaitlik`: araç + sürücü conflict kontrolü
-- `Telematics`: araç bazlı GPS device create/list/update/rotate
-- `Bağlantı`: araç ↔ sürücü bind/unbind/transfer
 
 ### Filtre (V1)
 - Kapasite filtresi: `capacity >= seatDemand` (Company taleplerinde asıl karar)
