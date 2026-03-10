@@ -551,3 +551,30 @@ Kanonik plan yolları:
 - `POST /api/organization/plans/:id/publish-shift`
 - `POST /api/organization/plans/:id/create-agreement`
 - `POST /api/organization/plans/:id/send-offers`
+
+
+## M44 — Telematics
+
+Device provisioning (ROOM / SUPER_ADMIN)
+- `GET /api/telematics/devices`
+- `POST /api/telematics/devices`
+  - body: `{ "vehicleId": 1, "vendor": "GENERIC", "serial": "IMEI-001", "label": "Front Tracker" }`
+  - response: ham `token` sadece create anında döner
+- `POST /api/telematics/devices/:id/rotate`
+- `PATCH /api/telematics/devices/:id`
+  - body: `{ "status": "ACTIVE|DISABLED", "label": "..." }`
+
+Device direct push
+- `POST /api/telematics/push`
+- auth: `Authorization: Device <token>` veya `x-device-key`
+- body: `{ "lat": 41.01, "lng": 29.01, "speed": 33, "at": "2026-03-10T18:00:00.000Z" }`
+
+Vendor cloud push
+- `POST /api/telematics/vendor/:provider`
+- auth: `x-telematics-secret`
+- supported providers: `generic`, `traccar`
+- generic body: `{ "serial": "IMEI-001", "lat": 41.02, "lng": 29.02, "speed": 40, "at": "..." }`
+
+Publish
+- existing `gps:update` korunur
+- ek event: `telematics:update`

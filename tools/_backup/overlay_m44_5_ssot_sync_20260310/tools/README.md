@@ -9,10 +9,8 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_step06_stabil.ps1`
 - `tools\pack_step1_security_foundation.ps1`
 - `tools\pack_step1_totp_stepup.ps1`
-- `tools\pack_m43_google_auth_invite_gate.ps1`
-- `tools\pack_m44_telematics.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene check’leri
-- `toolseset-and-pack.ps1`
+- `tools\reset-and-pack.ps1`
 - `tools\_console_status.ps1`
 
 ## Kökte kalan doküman pointer’ları
@@ -33,8 +31,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_step06_stabil.ps1` → Step 0.6 stabil
 - `tools\pack_step1_security_foundation.ps1` → Step 1 foundation
 - `tools\pack_step1_totp_stepup.ps1` → Step 1 TOTP
-- `tools\pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform` → Step 2 / M43
-- `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform` → Step 2.5 / M44
+- `tools\pack_m44_telematics.ps1` → Step 2.5 telematics
 
 ## Windows ExecutionPolicy
 PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
@@ -45,8 +42,5 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - `tools\check_repo_cleanup_m104.ps1` → repo cleanup kontrolü
 - `tools\check_tools_hygiene_m105.ps1` → tools kök hijyen kontrolü
 - `tools\check_repo_hygiene_m106.ps1` → link TTL + primer/hygiene kontrolü
-- `tools\check_m43_google_auth_invite_gate_repo_contract.ps1` → M43 repo-contract kontrolü
-- `tools\check_m44_telematics_repo_contract.ps1` → M44 repo-contract kontrolü
 
-Kural: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
-Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.
+Kural: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.

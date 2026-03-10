@@ -12,6 +12,7 @@ Current GREEN ref:
 - **M105 TOOLS HYGIENE CHECK PASS**
 - **M106 REPO HYGIENE + LINK TTL CHECK PASS**
 - **M43 GOOGLE AUTH + INVITE GATE PACK PASS OK**
+- **M44 TELEMATICS PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
@@ -23,7 +24,7 @@ Bu dosya iki amaç taşır:
 - **Step 0.6:** Stabil ekler **ayrı pack ile resmi doğrulanmış**
 - **Step 1:** Minimum Security **resmi green**
 - **Step 2 (M43):** Google Auth (GIS) + Invite Gate (rol/scope güvenliği) **resmi green**
-- **Step 2.5 (M44):** Telematics (Normalize Core + Direct HTTP Push + Vendor Cloud)
+- **Step 2.5 (M44):** Telematics (Normalize Core + Direct HTTP Push + Vendor Cloud) **resmi green**
 - **Step 2.6 (M45):** 2Y Retention + GPS geçmiş (50sn/50m) + Backup/PITR
 - **Step 3 (V2):** V2-Scale → V2-Mobile Driver → V2-ProdOps → V2-FieldFeatures
 
@@ -31,8 +32,9 @@ Bu dosya iki amaç taşır:
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
 > Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
 > Son TOTP pack satırı logda kesilmiş olsa da runtime + repo-contract PASS görüldüğü için Step 1 green kabul edilir.  
-> Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri de PASS durumundadır.
-> M43 Google Auth + Invite Gate hattı da runtime + repo-contract + tek pack ile PASS durumundadır.
+> Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri de PASS durumundadır.  
+> M43 Google Auth + Invite Gate hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M44 Telematics hattı da runtime + repo-contract + tek pack ile PASS durumundadır.
 
 ---
 
@@ -213,7 +215,8 @@ Bu dosya iki amaç taşır:
 
 **Çıkış kriteri:** Security Foundation + TOTP pack/check PASS.
 
-> Not: Step 2 (M43) hattı bu repoda resmi olarak green kabul edilmiştir.
+> Not: Step 2 (M43) hattı bu repoda resmi olarak green kabul edilmiştir.  
+> Not 2: Step 2.5 (M44) hattı da bu repoda resmi olarak green kabul edilmiştir.
 
 ---
 
@@ -284,13 +287,51 @@ Bu dosya iki amaç taşır:
 
 **Çıkış kriteri:** V1 regresyon + M43 testleri PASS.
 
+---
 
-# STEP 2.5 — M44 Telematics
-- [ ] normalize core
-- [ ] direct push connector
-- [ ] vendor cloud connector
-- [ ] source priority + fallback
-- [ ] 1500 araç altında login/CRUD izolasyonu
+# STEP 2.5 — M44 Telematics — RESMİ GREEN
+
+## 2.5.1 Çekirdek kapsam
+- [x] normalize core
+- [x] direct HTTP push connector
+- [x] vendor cloud connector
+- [x] provider normalize katmanı
+- [x] `GpsDevice` modeli + `GpsDeviceStatus` enum
+- [x] `Vehicle -> gpsDevices` ilişkisi
+- [x] source tagging: `DEVICE` / `VENDOR`
+
+## 2.5.2 Backend davranışı
+- [x] `POST /api/telematics/push` çalışıyor
+- [x] `POST /api/telematics/vendor/:provider` çalışıyor
+- [x] telematics router server’a mount edilmiş
+- [x] telematics limiter uygulanıyor
+- [x] vendor shared secret doğrulaması var
+- [x] provision edilen cihazın `lastSeenAt` alanı güncelleniyor
+- [x] direct push sonrası `gpsLast` yazımı oluşuyor
+- [x] vendor push aynı aracı serial lookup ile bulup `gpsLast` güncelliyor
+
+## 2.5.3 Env / wiring
+- [x] `.env.example` içinde `TELEMATICS_ENABLED`
+- [x] `.env.example` içinde `TELEMATICS_VENDOR_SHARED_SECRET`
+- [x] `docker-compose` telematics env’lerini geçiriyor
+- [x] mevcut driver GPS/live/ws hattı bozulmadan korunuyor
+
+## 2.5.4 Runtime / Pack
+- [x] telematics enabled check PASS
+- [x] vendor secret configured check PASS
+- [x] runtime cihaz provision akışı PASS
+- [x] direct device push → `gpsLast` update PASS
+- [x] vendor push → aynı vehicle update PASS
+- [x] audit row oluşumu PASS
+- [x] repo-contract PASS
+- [x] tek M44 pack ile kanıtlanır
+
+**Kanıt:**
+- [x] `tools/pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
+- [x] `tools/check_m44_telematics_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- [x] `backend/scripts/m44_telematics_check.js`
+
+**Çıkış kriteri:** V1 regresyon + M43 + M44 testleri PASS.
 
 ---
 
@@ -323,8 +364,9 @@ Amaç: canlı çalışma ağacını sadeleştirip yanlış dosyaya bakma riskini
 ---
 
 # Bir sonraki net resmi iş
-- [ ] M44 Telematics
-- [ ] mevcut GPS/live/ws hattını bozmadan telematics normalize katmanı eklemek
+- [ ] M45 Retention / Backup
+- [ ] M44 ile gelen telematics kaynaklarını retention politikalarına dahil etmek
+- [ ] backup/restore + PITR kanıtını tek pack hattına bağlamak
 - [ ] mevcut repo pattern’ine göre tek overlay zip hazırlanacak
 
 # TOOLS HYGIENE — M105 Tools Canonical Cleanup

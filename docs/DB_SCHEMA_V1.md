@@ -249,3 +249,18 @@ Davranış:
 ## PassengerLiveLink TTL policy
 - UI presetleri: 7 / 30 / 180 / 365 gün
 - `expiresAt`, vardiya `endAt` ile zorunlu clamp edilmez; link TTL bağımsızdır
+
+
+## M44 — GpsDevice
+
+Telematics için araça bağlı cihaz kaydı eklenmiştir. Minimum alanlar:
+- `id`
+- `vehicleId`
+- `vendor`
+- `serial`
+- `authTokenHash`
+- `status` (`ACTIVE|DISABLED`)
+- `lastSeenAt`
+- `lastIngestAt`
+
+Amaç: driver telefon GPS hattını bozmadan, cihaz/vendor kaynaklı konumu aynı `GpsLast` / `GpsPoint` hattına normalize ederek yazmak.

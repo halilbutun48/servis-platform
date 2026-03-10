@@ -34,6 +34,7 @@ import * as vehiclesMod from "./routes/vehicles.js";
 import * as driversMod from "./routes/drivers.js";
 import * as shiftsMod from "./routes/shifts/index.js";
 import * as gpsMod from "./routes/gps.js";
+import * as telematicsMod from "./routes/telematics.js";
 import * as requestsMod from "./routes/requests.js";
 import * as driverMod from "./routes/driver.js";
 import * as personelsMod from "./routes/personels.js";
@@ -80,6 +81,7 @@ const vehiclesRouter = pickExport(vehiclesMod, "vehiclesRouter");
 const driversRouter = pickExport(driversMod, "driversRouter");
 const shiftsRouter = pickExport(shiftsMod, "shiftsRouter");
 const gpsRouter = pickExport(gpsMod, "gpsRouter");
+const telematicsRouter = pickExport(telematicsMod, "telematicsRouter");
 const requestsRouter = pickExport(requestsMod, "requestsRouter");
 const driverRouter = pickExport(driverMod, "driverRouter");
 const personelsRouter = pickExport(personelsMod, "personelsRouter");
@@ -95,6 +97,7 @@ for (const [name, fn] of Object.entries({
   driversRouter,
   shiftsRouter,
   gpsRouter,
+  telematicsRouter,
   requestsRouter,
   driverRouter,
   personelsRouter,
@@ -244,6 +247,20 @@ const gpsLimiter = rateLimit({
   handler: limiter429Handler,
 });
 
+const telematicsLimiter = rateLimit({
+  windowMs: ENV.TELEMATICS_RATE_LIMIT_WINDOW_MS,
+  max: ENV.TELEMATICS_RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("telematics:", ENV.TELEMATICS_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: (req) => {
+    const auth = String(req.get("authorization") || req.get("x-device-key") || req.get("x-telematics-secret") || "").trim();
+    return auth ? `tele:${auth.slice(0, 32)}` : `ip:${req.ip}`;
+  },
+  handler: limiter429Handler,
+});
+
 const exportLimiter = rateLimit({
   windowMs: ENV.EXPORT_RATE_LIMIT_WINDOW_MS,
   max: ENV.EXPORT_RATE_LIMIT_MAX,
@@ -261,6 +278,7 @@ app.use("/api/auth/google", authLimiter);
 
 // GPS ingest (ayrı kova)
 app.use("/api/gps", gpsLimiter);
+app.use("/api/telematics", telematicsLimiter);
 
 // Export/download endpoints (WAF-style ayrı kova)
 app.use("/api/logs/export", exportLimiter);
@@ -271,6 +289,7 @@ app.use("/api", (req, res, next) => {
   // /api/auth/* ve /api/gps/* kendi limiter'ında
   if (req.path.startsWith("/auth")) return next();
   if (req.path.startsWith("/gps")) return next();
+  if (req.path.startsWith("/telematics")) return next();
 
   if (req.method === "GET") return readLimiter(req, res, next);
   return writeLimiter(req, res, next);
@@ -370,6 +389,7 @@ app.use("/api/vehicles", vehiclesRouter(io));
 app.use("/api/drivers", driversRouter(io));
 app.use("/api/shifts", shiftsRouter(io));
 app.use("/api/gps", gpsRouter(io));
+app.use("/api/telematics", telematicsRouter(io));
 app.use("/api/requests", requestsRouter(io));
 app.use("/api/driver", driverRouter(io));
 app.use("/api/personels", personelsRouter(io));

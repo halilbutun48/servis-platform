@@ -12,10 +12,8 @@ Bu dosya repo için kısa çalışma runbook’udur.
 4. Step 1 Security Foundation + TOTP Step-up resmi olarak green’dir.
 5. M104 + M105 + M106 repo/tools hijyen check’leri PASS durumundadır.
 6. M43 Google Auth + Invite Gate hattı resmi green durumundadır.
-7. M44 Telematics hattı resmi green durumundadır.
-8. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-9. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-10. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+7. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+8. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -28,8 +26,6 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Link TTL + primer hijyen: `tools\check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
 - M43 pack: `tools\pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
 - M43 repo-contract: `tools\check_m43_google_auth_invite_gate_repo_contract.ps1 -RepoRoot D:\servis-platform`
-- M44 pack: `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
-- M44 repo-contract: `tools\check_m44_telematics_repo_contract.ps1 -RepoRoot D:\servis-platform`
 
 ## 3) Resmi green durum
 - `M41 PACK PASS`
@@ -41,7 +37,6 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M105 TOOLS HYGIENE CHECK PASS`
 - `M106 REPO HYGIENE + LINK TTL CHECK PASS`
 - `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
-- `M44 TELEMATICS PACK PASS OK`
 
 ## 4) Link erişim politikası
 - Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
@@ -82,19 +77,12 @@ Detay çekirdek:
 - `POST /api/auth/google`
 - `PARENT_INVITE` / `PERSONEL_INVITE` / opsiyonel `ROOM_USER_INVITE`
 
-## 6.1) Step 2.5 özeti — M44 resmi green
-- telematics normalize core aktif
-- direct HTTP push alımı mevcut
-- vendor cloud adapter mevcut
-- provider normalize katmanı mevcut
-- `GpsDevice` modeli + source tracking (`DEVICE` / `VENDOR`) mevcut
-- runtime check + repo-contract + tek pack PASS
-
-## 6.2) Sıradaki hedef — Step 2.6 / M45
-- 2 yıl retention hattı
-- GPS geçmiş downsample / history gate (`50sn / 50m`)
-- partition + retention job
-- base backup + restore / PITR kanıtı
+## 6.1) Sıradaki hedef — Step 2.5 / M44
+- telematics normalize core
+- direct HTTP push alımı
+- vendor cloud adapter
+- provider normalize katmanı
+- mevcut GPS/live/ws hattını bozmadan ek kaynak mimarisi
 
 ## 7) SSOT dosyaları
 - `tools/CHECKLIST_SSOT.md`

@@ -48,6 +48,14 @@ export const ENV = {
   GPS_RATE_LIMIT_WINDOW_MS: Number(process.env.GPS_RATE_LIMIT_WINDOW_MS ?? 60 * 1000),
   GPS_RATE_LIMIT_MAX: Number(process.env.GPS_RATE_LIMIT_MAX ?? 60),
 
+  // Step 2.5 / M44: telematics ingest
+  TELEMATICS_ENABLED: (process.env.TELEMATICS_ENABLED ?? "0") === "1",
+  TELEMATICS_VENDOR_SHARED_SECRET: process.env.TELEMATICS_VENDOR_SHARED_SECRET ?? "",
+  TELEMATICS_RATE_LIMIT_WINDOW_MS: Number(process.env.TELEMATICS_RATE_LIMIT_WINDOW_MS ?? 60 * 1000),
+  TELEMATICS_RATE_LIMIT_MAX: Number(process.env.TELEMATICS_RATE_LIMIT_MAX ?? 240),
+  TELEMATICS_HISTORY_MIN_SEC: Number(process.env.TELEMATICS_HISTORY_MIN_SEC ?? 30),
+  TELEMATICS_HISTORY_MIN_METERS: Number(process.env.TELEMATICS_HISTORY_MIN_METERS ?? 50),
+
   // Step 1 foundation: export/download path limiter (WAF-style app guard)
   EXPORT_RATE_LIMIT_WINDOW_MS: Number(process.env.EXPORT_RATE_LIMIT_WINDOW_MS ?? 10 * 60 * 1000),
   EXPORT_RATE_LIMIT_MAX: Number(process.env.EXPORT_RATE_LIMIT_MAX ?? 10),

@@ -102,6 +102,11 @@ enum GpsLastStatus {
   STALE
 }
 
+enum GpsDeviceStatus {
+  ACTIVE
+  DISABLED
+}
+
 enum NotificationScope {
   ROOM
   COMPANY
@@ -410,6 +415,7 @@ model Vehicle {
   driver          Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
   gpsLast         GpsLast?
   gpsState        VehicleGpsState? // ✅ UI status gate state
+  gpsDevices      GpsDevice[]
   gpsPoints       GpsPoint[]
   // ✅ M19: learned route samples
   routeLearnSamples RouteLearnSample[]
@@ -840,6 +846,27 @@ model PickupRequest {
 
   @@index([shiftId, status])
   @@index([personelId])
+}
+
+
+model GpsDevice {
+  id            Int             @id @default(autoincrement())
+  vehicleId     Int
+  vendor        String
+  serial        String
+  label         String?
+  status        GpsDeviceStatus @default(ACTIVE)
+  authTokenHash String          @unique
+  lastSeenAt    DateTime?
+  lastIngestAt  DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([vendor, serial])
+  @@index([vehicleId, status])
+  @@index([serial])
 }
 
 model GpsLast {

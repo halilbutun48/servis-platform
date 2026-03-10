@@ -1,4 +1,4 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT (Yapıştır & Devam Et)
+# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER (SSOT)
 
 Tarih: 2026-03-10  
 Timezone: Europe/Istanbul
@@ -17,7 +17,6 @@ Current GREEN ref:
 - ✅ `M105 TOOLS HYGIENE CHECK PASS`
 - ✅ `M106 REPO HYGIENE + LINK TTL CHECK PASS`
 - ✅ `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
-- ✅ `M44 TELEMATICS PACK PASS OK`
 
 Ana kanıt komutları:
 - `./tools/pack.ps1 -To 41`
@@ -29,13 +28,11 @@ Ana kanıt komutları:
 - `./tools/check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform`
 - `./tools/check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
 
 > Not: Step 1 TOTP green kabulü; M41 + Step1 Foundation + TOTP Runtime + TOTP Repo Contract PASS ile doğrulanmıştır.  
 > Not 2: M104/M105/M106 sonrası repo ağacı, tools kökü ve primer/checklist/startpack hattı hizalanmıştır.  
 > Not 3: M43 green sonrası Step 2 resmi olarak tamamlanmıştır.  
-> Not 4: M44 green sonrası Step 2.5 resmi olarak tamamlanmıştır.  
-> Not 5: Repo içinde eski/internal migration adlarında farklı etiketler görülebilir; milestone SSOT anlamı burada yazan primer/checklist üzerinden takip edilir.
+> Not 4: Repo içinde eski/internal migration adlarında farklı etiketler görülebilir; milestone SSOT anlamı burada yazan primer/checklist üzerinden takip edilir.
 
 ---
 
@@ -111,28 +108,6 @@ Kanıt:
 - `M43 GOOGLE AUTH + INVITE GATE CHECK PASS`
 - `M43 GOOGLE AUTH + INVITE GATE REPO CONTRACT PASS`
 - `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
-
-### 1.7 Step 2.5 — M44 Telematics
-Kapsam:
-- telematics normalize core
-- direct HTTP push alımı
-- vendor cloud adapter
-- provider normalize katmanı
-- provisioned `GpsDevice` modeli + serial/secret doğrulaması
-- raw/vendor payload → kanonik GPS hattına yazım
-- runtime check + repo-contract + tek pack hattı
-
-Önemli davranış:
-- mevcut driver app GPS akışı korunur; telematics ek kaynak olarak çalışır
-- direct device push kaynağı `DEVICE`, vendor cloud push kaynağı `VENDOR` olarak izlenir
-- provision edilen cihazın `lastSeenAt` alanı güncellenir
-- vendor push aynı aracı serial lookup ile bulup `gpsLast` kaydını güncelleyebilir
-- audit / limiter / router mount hattı mevcut backend pattern’iyle korunur
-
-Kanıt:
-- `M44 TELEMATICS CHECK PASS`
-- `M44 TELEMATICS REPO CONTRACT PASS`
-- `M44 TELEMATICS PACK PASS OK`
 
 ---
 
@@ -233,56 +208,53 @@ Kanonik hat:
 - `docs/DB_SCHEMA_V1.md`
 - `docs/PROJECT_SPEC_V1.md`
 
-M43 + M44 ile gelen yeni kanıt / araçlar:
+M43 ile gelen yeni kanıt / araçlar:
 - `tools/pack_m43_google_auth_invite_gate.ps1`
 - `tools/check_m43_google_auth_invite_gate_repo_contract.ps1`
 - `backend/scripts/m43_google_auth_invite_gate_check.js`
-- `tools/pack_m44_telematics.ps1`
-- `tools/check_m44_telematics_repo_contract.ps1`
-- `backend/scripts/m44_telematics_check.js`
 
 Overlay / cleanup notları:
 - `docs/overlays/OVERLAY_NOTES_M104_REPO_AUDIT_CLEANUP_2026-03-10.md`
 - `docs/overlays/OVERLAY_NOTES_M105_TOOLS_CANONICAL_CLEANUP_2026-03-10.md`
 - `docs/overlays/OVERLAY_NOTES_M106_LINK_TTL_AND_HYGIENE_2026-03-10.md`
 - `docs/overlays/OVERLAY_NOTES_M106_4_CHECKERS_RESTORE_PRIMER_SYNC_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M44_TELEMATICS_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M44_5_SSOT_SYNC_2026-03-10.md`
 
 ---
 
 ## 5) Bir sonraki net adım
 
-## Step 2.6 — M45 Retention + Backup
+## Step 2.5 — M44 Telematics
 Sıradaki resmi iş:
-- 2 yıl retention hattı
-- GPS geçmiş downsample / history gate (`50sn / 50m`)
-- partition + retention job
-- base backup + restore / PITR kanıtı
+- telematics normalize core
+- direct HTTP push alımı
+- vendor cloud adapter
+- provider normalize katmanı
+- raw/vendor payload → kanonik GPS/event hattı
 - runtime check + repo-contract + tek pack
 
 Uygulama notu:
 - mevcut live/ws/gps hattını bozma
-- M44 ile gelen telematics kaynaklarını retention politikasına dahil et
-- audit / api_requests / gps history için süre ve arşiv politikası net olsun
-- backup/restore kanıtı sadece deklarasyon değil, test edilmiş akış olsun
+- mevcut driver app GPS akışı korunmalı
+- telematics hattı ek kaynak olarak tasarlanmalı
+- room/company ekranlarında veri kaynağı farkı operasyonu bozmayacak şekilde düşünülmeli
+- audit / rate-limit / security hattı korunmalı
 
 Ardından:
-- Step 3 / V2 başlıkları
+- Step 2.6 / M45 Retention + Backup
+- sonra V2 başlıkları
 
 ---
 
-## 6) M44 sonrası dikkat edilmesi gereken kararlar
+## 6) M43 sonrası dikkat edilmesi gereken kararlar
 
 - `PERSONEL` hâlâ public link öncelikli modelde
 - Google Auth geldi diye personel için zorunlu hesap / login’e dönülmeyecek
-- telematics hattı mevcut driver GPS akışının yerine geçmez; ek kaynak olarak yaşar
-- device provisioning + vendor shared secret doğrulaması korunmalı
-- room/company ekranlarında veri kaynağı farkı operasyonu bozmayacak şekilde ele alınmalı
-- local login ile Google login birlikte yaşamaya devam eder; migration / bağlantı kuralları korunmalı
+- invite-based access kontrolü `COMPANY / ROOM / DRIVER / PERSONEL` tarafında role/scope mantığıyla kullanılacak
+- mevcut parent invite akışı bozulmamalı; M43 üzerine yeni işler yapılırken parent accept hattı korunmalı
+- local login ile Google login birlikte yaşayabiliyor; migration / bağlantı kuralları korunmalı
 
 ---
 
 ## 7) Yeni sohbet açınca ilk cümle önerisi
 
-"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK durumunda. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Step 2.5 tamamlandı; sıradaki resmi iş M45 Retention + Backup. Mevcut repoya göre tek overlay zip olarak ilerleyelim." 
+"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK durumunda. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Step 2 tamamlandı; sıradaki resmi iş M44 Telematics. Mevcut repoya göre tek overlay zip olarak ilerleyelim."
