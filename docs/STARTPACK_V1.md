@@ -111,3 +111,7 @@ Detay çekirdek:
 - Aynı işi yapan stale panel/route dosyaları canlı ağaçta tutulmaz; arşive taşınır.
 - `tools/` kökünde sadece kanonik run/pack/check script’leri tutulur.
 - Eski `apply_*`, `overlay_*`, `OVERLAY_*` ve tek seferlik hotfix script’leri `tools/_archive/` altına taşınır.
+
+## M45 Retention + Backup
+- `tools\pack_m45_retention_backup.ps1`
+- `docs\RUNBOOK_M45_RETENTION_BACKUP.md`

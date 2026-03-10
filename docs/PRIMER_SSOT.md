@@ -286,3 +286,6 @@ Ardından:
 ## 7) Yeni sohbet açınca ilk cümle önerisi
 
 "Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK durumunda. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Step 2.5 tamamlandı; sıradaki resmi iş M45 Retention + Backup. Mevcut repoya göre tek overlay zip olarak ilerleyelim." 
+
+## M45 tools
+- `tools\pack_m45_retention_backup.ps1`

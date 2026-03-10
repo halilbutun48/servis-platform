@@ -6,7 +6,9 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { prisma } from "../prisma.js";
+import { ENV } from "../env.js";
 import { runRetentionCleanupOnce } from "../jobs/retentionCleanup.js";
+import { getBackupManifestSummary, getBackupPolicySummary, getRetentionPolicySummary } from "../ops/retentionBackupPolicy.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 
@@ -108,6 +110,28 @@ r.post("/retention/run", authRequired(), requireRole("SUPER_ADMIN"), async (req,
 });
 
 
+// âœ… M45: retention policy summary (ops/readiness)
+r.get("/retention/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json({ ok: true, ...getRetentionPolicySummary() });
+});
+
+// âœ… M45: backup policy summary (ops/readiness)
+r.get("/backup/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json({ ok: true, ...getBackupPolicySummary() });
+});
+
+// âœ… M45: local backup dir manifest / latest dump visibility
+r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json({
+    ok: true,
+    env: {
+      backupLocalDir: ENV.BACKUP_LOCAL_DIR,
+      backupLocalRetentionDays: ENV.BACKUP_LOCAL_RETENTION_DAYS,
+      backupDumpFormat: ENV.BACKUP_DUMP_FORMAT,
+    },
+    ...getBackupManifestSummary(),
+  });
+});
   /**
    * SUPER_ADMIN — Overview stats
    * GET /api/admin/stats

@@ -19,6 +19,11 @@ Current GREEN ref:
 - ✅ `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
 - ✅ `M44 TELEMATICS PACK PASS OK`
 
+Post-M44 uygulanan ekler:
+- ✅ `M44.5 SSOT sync` uygulandı
+- ✅ `M44.6 ROOM > Vehicles > Telematics UI` eklendi ve render doğrulandı
+- ✅ ROOM panelden device oluşturulup demo direct push testi geçti
+
 Ana kanıt komutları:
 - `./tools/pack.ps1 -To 41`
 - `./tools/pack_m42_optional.ps1`
@@ -31,11 +36,12 @@ Ana kanıt komutları:
 - `./tools/pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
 
-> Not: Step 1 TOTP green kabulü; M41 + Step1 Foundation + TOTP Runtime + TOTP Repo Contract PASS ile doğrulanmıştır.  
-> Not 2: M104/M105/M106 sonrası repo ağacı, tools kökü ve primer/checklist/startpack hattı hizalanmıştır.  
-> Not 3: M43 green sonrası Step 2 resmi olarak tamamlanmıştır.  
-> Not 4: M44 green sonrası Step 2.5 resmi olarak tamamlanmıştır.  
-> Not 5: Repo içinde eski/internal migration adlarında farklı etiketler görülebilir; milestone SSOT anlamı burada yazan primer/checklist üzerinden takip edilir.
+Notlar:
+- Step 1 TOTP green kabulü korunuyor; setup/verify hattı çalışıyor.
+- Step 2 resmi olarak M43 ile tamamlandı.
+- Step 2.5 resmi olarak M44 ile tamamlandı.
+- M44.6 için ayrı resmi pack hattı yok; UI render + manuel demo ile doğrulandı.
+- Overlay standardı: tek zip, tek kök klasör, nested root yok.
 
 ---
 
@@ -115,24 +121,52 @@ Kanıt:
 ### 1.7 Step 2.5 — M44 Telematics
 Kapsam:
 - telematics normalize core
-- direct HTTP push alımı
-- vendor cloud adapter
+- direct device HTTP push
+- vendor cloud adapter endpoint
+- `GpsDevice` modeli + `Vehicle.gpsDevices` ilişkisi
 - provider normalize katmanı
-- provisioned `GpsDevice` modeli + serial/secret doğrulaması
-- raw/vendor payload → kanonik GPS hattına yazım
+- raw/vendor payload → kanonik GPS/event hattı
+- audit + limiter + history gate entegrasyonu
 - runtime check + repo-contract + tek pack hattı
 
+Yeni backend yetenekleri:
+- `POST /api/telematics/push`
+- `POST /api/telematics/vendor/:provider`
+- `GET /api/telematics/devices`
+- `POST /api/telematics/devices`
+- `PATCH /api/telematics/devices/:id`
+- `POST /api/telematics/devices/:id/rotate`
+
 Önemli davranış:
-- mevcut driver app GPS akışı korunur; telematics ek kaynak olarak çalışır
-- direct device push kaynağı `DEVICE`, vendor cloud push kaynağı `VENDOR` olarak izlenir
-- provision edilen cihazın `lastSeenAt` alanı güncellenir
-- vendor push aynı aracı serial lookup ile bulup `gpsLast` kaydını güncelleyebilir
-- audit / limiter / router mount hattı mevcut backend pattern’iyle korunur
+- mevcut driver app GPS akışı korunur
+- telematics ek kaynak olarak çalışır
+- device token hash mantığı kullanılır; ham token sadece create/rotate anında gösterilir
+- vendor secret gerekir
+- GPS live/history hattına entegre yazım yapılır
+- mevcut WS/room/company akışı bozulmaz
 
 Kanıt:
 - `M44 TELEMATICS CHECK PASS`
 - `M44 TELEMATICS REPO CONTRACT PASS`
 - `M44 TELEMATICS PACK PASS OK`
+
+### 1.8 M44.6 UI eki — ROOM Vehicles Telematics
+Kapsam:
+- `ROOM > Vehicles` içine `Telematics` sekmesi
+- araç bazlı device oluşturma
+- device listeleme
+- `label` / `status` güncelleme
+- token rotate
+- create/rotate sonrası ham token tek seferlik gösterim
+
+Manuel doğrulama:
+- UI render görüldü
+- ROOM panelden device oluşturuldu
+- gerçek token ile `/api/telematics/push` demo testi geçti
+- iki ayrı konum push edilerek `GpsLast/history` yazımı doğrulandı
+
+Not:
+- bu kısım için ayrı resmi pack/check hattı yok; mevcut doğrulama manuel demo + ekran doğrulaması ile yapıldı
 
 ---
 
@@ -217,6 +251,18 @@ Senkronlananlar:
 Sonuç:
 - `M106 REPO HYGIENE + LINK TTL CHECK PASS`
 
+### 3.4 M44.5 SSOT Sync
+Senkronlananlar:
+- `tools/PRIMER_SNAPSHOT.md`
+- `docs/PRIMER_SSOT.md`
+- `docs/CHECKLIST_SSOT.md`
+- `tools/CHECKLIST_SSOT.md`
+- `docs/STARTPACK_V1.md`
+- `tools/README.md`
+
+Sonuç:
+- M44 green sonrası SSOT hattı senkron
+
 ---
 
 ## 4) SSOT / doküman düzeni
@@ -233,10 +279,12 @@ Kanonik hat:
 - `docs/DB_SCHEMA_V1.md`
 - `docs/PROJECT_SPEC_V1.md`
 
-M43 + M44 ile gelen yeni kanıt / araçlar:
+M43 ile gelen araçlar:
 - `tools/pack_m43_google_auth_invite_gate.ps1`
 - `tools/check_m43_google_auth_invite_gate_repo_contract.ps1`
 - `backend/scripts/m43_google_auth_invite_gate_check.js`
+
+M44 ile gelen araçlar:
 - `tools/pack_m44_telematics.ps1`
 - `tools/check_m44_telematics_repo_contract.ps1`
 - `backend/scripts/m44_telematics_check.js`
@@ -255,20 +303,20 @@ Overlay / cleanup notları:
 
 ## Step 2.6 — M45 Retention + Backup
 Sıradaki resmi iş:
-- 2 yıl retention hattı
-- GPS geçmiş downsample / history gate (`50sn / 50m`)
-- partition + retention job
-- base backup + restore / PITR kanıtı
+- retention politikalarının netleştirilmesi
+- backup / restore runbook
+- kritik tablolar için export/restore güvenliği
+- telematics dahil yeni veri kaynakları için retention uyumu
 - runtime check + repo-contract + tek pack
 
 Uygulama notu:
-- mevcut live/ws/gps hattını bozma
-- M44 ile gelen telematics kaynaklarını retention politikasına dahil et
-- audit / api_requests / gps history için süre ve arşiv politikası net olsun
-- backup/restore kanıtı sadece deklarasyon değil, test edilmiş akış olsun
+- mevcut GPS/history/telematics hattını bozma
+- audit ve retention kuralları tek yerden yönetilsin
+- backup/restore belgeleri STARTPACK/SSOT ile senkron olsun
+- operasyonel geri dönüş senaryosu net olsun
 
 Ardından:
-- Step 3 / V2 başlıkları
+- Step 2.7 ve V2 başlıkları
 
 ---
 
@@ -276,13 +324,22 @@ Ardından:
 
 - `PERSONEL` hâlâ public link öncelikli modelde
 - Google Auth geldi diye personel için zorunlu hesap / login’e dönülmeyecek
-- telematics hattı mevcut driver GPS akışının yerine geçmez; ek kaynak olarak yaşar
-- device provisioning + vendor shared secret doğrulaması korunmalı
-- room/company ekranlarında veri kaynağı farkı operasyonu bozmayacak şekilde ele alınmalı
-- local login ile Google login birlikte yaşamaya devam eder; migration / bağlantı kuralları korunmalı
+- invite-based access kontrolü `COMPANY / ROOM / DRIVER / PERSONEL` tarafında role/scope mantığıyla kullanılacak
+- mevcut parent invite akışı bozulmamalı
+- local login ile Google login birlikte yaşamaya devam ediyor
+- telematics, mevcut driver GPS akışını ikame etmez; ek kaynak olarak çalışır
+- ROOM tarafı device provisioning sahibi olmaya devam eder
+- overlay zip standardı: tek kök klasör, nested root yok
 
 ---
 
 ## 7) Yeni sohbet açınca ilk cümle önerisi
 
-"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK durumunda. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Step 2.5 tamamlandı; sıradaki resmi iş M45 Retention + Backup. Mevcut repoya göre tek overlay zip olarak ilerleyelim." 
+"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK durumunda. M44.5 ile SSOT sync yapıldı, M44.6 ile ROOM > Vehicles içine Telematics UI eklendi ve demo device push testi geçti. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Sıradaki resmi iş M45 Retention + Backup. Mevcut repoya göre tek overlay zip olarak ilerleyelim."
+
+Kanonik M45 araÃ§larÄ±:
+- `tools\pack_m45_retention_backup.ps1`
+- `tools\check_m45_retention_backup_repo_contract.ps1`
+- `tools\backup_create_m45.ps1`
+- `tools\backup_restore_m45.ps1`
+- `docs\RUNBOOK_M45_RETENTION_BACKUP.md`

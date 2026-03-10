@@ -43,3 +43,5 @@ infra/osrm-data/
 # OSRM data (large blobs)
 infra/osrm-data/
 
+artifacts/*
+!artifacts/.gitkeep

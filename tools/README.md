@@ -50,3 +50,9 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 
 Kural: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
 Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.
+
+## M45 Retention + Backup
+- `tools\pack_m45_retention_backup.ps1`
+- `tools\backup_create_m45.ps1`
+- `tools\backup_restore_m45.ps1`
+- `tools\check_m45_retention_backup_repo_contract.ps1`

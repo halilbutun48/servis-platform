@@ -385,3 +385,6 @@ Amaç: canlı çalışma ağacını sadeleştirip yanlış dosyaya bakma riskini
 - [x] Personel/öğrenci public link presetleri `1 hafta / 1 ay / 6 ay / 1 yıl` olur
 - [x] Backend üst sınırları `365 gün` ile hizalanır
 - [x] `tools/check_repo_hygiene_m106.ps1` PASS
+
+## M45 backup tools
+- `tools\backup_restore_m45.ps1`
