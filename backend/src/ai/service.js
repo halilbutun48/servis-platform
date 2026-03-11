@@ -16,6 +16,8 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user 
   const base = buildCopilotPayload(intent, context);
   return {
     ok: true,
+    copilotVersion: "M46.1",
+    generatedAt: new Date().toISOString(),
     intent,
     entityType,
     entityId: Number(entityId),

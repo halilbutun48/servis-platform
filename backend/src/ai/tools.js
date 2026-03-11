@@ -130,6 +130,16 @@ function buildShiftRisks(shift) {
   return risks;
 }
 
+function buildShiftBlocks(shift) {
+  const blocks = [];
+  if (["APPROVED", "ACTIVE"].includes(String(shift.status || "")) && !shift.vehicle) blocks.push("VEHICLE_MISSING");
+  if (["APPROVED", "ACTIVE"].includes(String(shift.status || "")) && !shift.driver) blocks.push("DRIVER_MISSING");
+  if (!Number(shift.stopCount || 0)) blocks.push("STOPS_MISSING");
+  if (Number(shift.requiredPax || 0) > Number(shift.vehicle?.capacity || 0) && shift.vehicle?.capacity) blocks.push("CAPACITY_EXCEEDED");
+  if (shift.extendRequestedEndAt && shift.extendDecision === "PENDING") blocks.push("EXTEND_PENDING");
+  return blocks;
+}
+
 function buildShiftSuggestions(shift) {
   const suggestions = [];
   if (!shift.vehicle && ["REQUESTED", "APPROVED"].includes(String(shift.status || ""))) {
@@ -150,25 +160,46 @@ function buildShiftSuggestions(shift) {
   return nonEmpty(suggestions);
 }
 
-function buildShiftSummaryText(shift, risks) {
+function buildShiftNextChecks(shift, blocks) {
+  const checks = [];
+  if (blocks.includes("VEHICLE_MISSING")) checks.push("Araç atama ekranını ve uygun araç havuzunu aç.");
+  if (blocks.includes("DRIVER_MISSING")) checks.push("Sürücü müsaitlik ve bind ekranını kontrol et.");
+  if (blocks.includes("STOPS_MISSING")) checks.push("Durak üret/persist akışını yeniden doğrula.");
+  if (blocks.includes("CAPACITY_EXCEEDED")) checks.push("Kapasite için split veya daha büyük araç değerlendir.");
+  if (!checks.length) checks.push("Vardiya için öne çıkan bloklayıcı görünmüyor; canlı takip ve audit izini izle.");
+  return checks;
+}
+
+function buildShiftSeverity(shift, risks, blocks) {
+  if (blocks.length) return "CRITICAL";
+  if (risks.length >= 2) return "WARN";
+  if (shift.status === "ACTIVE") return "INFO";
+  return "OK";
+}
+
+function buildShiftSummaryText(shift, risks, blocks) {
   const bits = [
     `Vardiya ${shift.status} durumda.`,
     shift.vehicle?.plate ? `Araç ${shift.vehicle.plate}.` : "Araç ataması yok.",
     shift.driver?.fullName ? `Sürücü ${shift.driver.fullName}.` : "Sürücü ataması yok.",
     `Durak ${shift.stopCount || 0}, personel ${shift.peopleCount || 0}.`,
   ];
-  if (risks.length) bits.push(`Öne çıkan risk: ${risks[0]}`);
+  if (blocks.length) bits.push(`Bloklayıcı: ${blocks[0]}`);
+  else if (risks.length) bits.push(`Öne çıkan risk: ${risks[0]}`);
   return bits.join(" ");
 }
 
-function buildConflictExplainText(shift, risks) {
+function buildConflictExplainText(risks, blocks) {
+  if (blocks.length) {
+    return `Bloklayıcı durumlar: ${blocks.join(", ")}. Bu yüzden işlem akışı riskli veya eksik görünüyor.`;
+  }
   if (!risks.length) {
     return "Belirgin bir bloklayıcı çatışma görünmüyor; mevcut veri daha çok operasyon özeti veriyor.";
   }
   return `Başlıca çatışma/gerilim noktaları: ${risks.join(" ")}`;
 }
 
-function buildOpsNoteDraftText(shift, risks, suggestions) {
+function buildOpsNoteDraftText(shift, risks, suggestions, blocks) {
   const lines = [];
   lines.push(`Operasyon notu — Shift #${shift.id}`);
   lines.push(`Durum: ${shift.status}`);
@@ -176,6 +207,7 @@ function buildOpsNoteDraftText(shift, risks, suggestions) {
   lines.push(`Oda: ${shift.room?.name || "-"}`);
   lines.push(`Araç/Sürücü: ${shift.vehicle?.plate || "-"} / ${shift.driver?.fullName || "-"}`);
   lines.push(`Durak/Personel: ${shift.stopCount || 0} / ${shift.peopleCount || 0}`);
+  if (blocks.length) lines.push(`Bloklayıcılar: ${blocks.join("; ")}`);
   if (risks.length) lines.push(`Riskler: ${risks.join("; ")}`);
   if (suggestions.length) lines.push(`Önerilen aksiyonlar: ${suggestions.join("; ")}`);
   return lines.join("\n");
@@ -197,21 +229,52 @@ function buildVehicleFacts(vehicle) {
 
 function buildVehicleRisks(vehicle) {
   const risks = [];
-  if (!vehicle.activeDeviceCount) risks.push("Aktif telematics cihazı yok.");
-  if (!vehicle.gpsLast?.at) risks.push("Son GPS kaydı bulunmuyor.");
-  const ageMin = diffMinutes(vehicle.gpsLast?.at) == null ? null : Math.abs(diffMinutes(vehicle.gpsLast?.at));
-  if (ageMin != null && ageMin > 10) risks.push(`Son GPS kaydı ${ageMin} dakika önce.`);
-  if (String(vehicle.gpsState?.lastUiStatus || "") === "OFFLINE") risks.push("Araç OFFLINE görünüyor.");
-  if (Array.isArray(vehicle.devices) && vehicle.devices.some((x) => x.status === "DISABLED")) risks.push("Disabled telematics cihazı mevcut.");
+  const lastAt = vehicle.gpsLast?.at ? new Date(vehicle.gpsLast.at) : null;
+  const ageMin = lastAt && !Number.isNaN(lastAt.getTime()) ? Math.round((Date.now() - lastAt.getTime()) / 60000) : null;
+  if (!vehicle.activeDeviceCount) risks.push("Aktif telematics device görünmüyor.");
+  if (ageMin != null && ageMin >= 30) risks.push(`Son GPS akışı ${ageMin} dakikadır güncellenmedi.`);
+  if (String(vehicle.gpsState?.lastUiStatus || "") === "STALE") risks.push("GPS UI state STALE.");
+  if (vehicle.deviceCount > 0 && vehicle.activeDeviceCount === 0) risks.push("Cihaz var ama hiçbiri ACTIVE değil.");
   return risks;
+}
+
+function buildVehicleBlocks(vehicle) {
+  const blocks = [];
+  if (!vehicle.activeDeviceCount) blocks.push("NO_ACTIVE_DEVICE");
+  if (!vehicle.gpsLast?.at) blocks.push("NO_GPS_SIGNAL");
+  if (String(vehicle.gpsState?.lastUiStatus || "") === "STALE") blocks.push("GPS_STALE");
+  return blocks;
 }
 
 function buildVehicleSuggestions(vehicle) {
   const suggestions = [];
-  if (!vehicle.activeDeviceCount) suggestions.push("Cihaz oluşturma/rotate akışını kontrol et.");
-  if (String(vehicle.gpsState?.lastUiStatus || "") === "OFFLINE") suggestions.push("Canlı veri akışı ve cihaz son görünme zamanını incele.");
-  if (Array.isArray(vehicle.devices) && vehicle.devices.some((x) => x.status === "DISABLED")) suggestions.push("Disabled cihaz gerçekten pasifse bırak, değilse yeniden etkinleştir/rotate et.");
+  if (!vehicle.activeDeviceCount) suggestions.push("Device create/rotate ve ACTIVE durumunu kontrol et.");
+  if (String(vehicle.gpsState?.lastUiStatus || "") === "STALE") suggestions.push("Son ingest zamanını ve telematics push hattını doğrula.");
+  if (!vehicle.driver?.id) suggestions.push("Araç için varsayılan sürücü bağını kontrol et.");
   return nonEmpty(suggestions);
+}
+
+function buildVehicleNextChecks(vehicle, blocks) {
+  const checks = [];
+  if (blocks.includes("NO_ACTIVE_DEVICE")) checks.push("ROOM > Vehicles > Telematics sekmesinde ACTIVE device kontrolü yap.");
+  if (blocks.includes("NO_GPS_SIGNAL")) checks.push("Direct push/vendor provider son ingest denemesini doğrula.");
+  if (blocks.includes("GPS_STALE")) checks.push("gpsState, notify ve room/company canlı panelini karşılaştır.");
+  if (!checks.length) checks.push("Araç için kritik bloklayıcı görünmüyor; canlı akışı izlemeye devam et.");
+  return checks;
+}
+
+function buildVehicleSeverity(risks, blocks) {
+  if (blocks.length) return "CRITICAL";
+  if (risks.length >= 2) return "WARN";
+  if (risks.length === 1) return "INFO";
+  return "OK";
+}
+
+function buildVehicleSummaryText(vehicle, risks, blocks) {
+  if (blocks.length) {
+    return `Telematics sağlık özeti: ${vehicle.plate} için bloklayıcı durum var (${blocks[0]}).`;
+  }
+  return `Telematics sağlık özeti: ${vehicle.plate} için ${risks.length ? risks[0] : "kritik alarm görünmüyor."}`;
 }
 
 export async function getShiftContext(user, shiftId) {
@@ -318,57 +381,92 @@ export async function getVehicleContext(user, vehicleId) {
   };
 }
 
+function makeResponse({ summary, facts, risks, suggestions, noteDraft = null, severity, blocks, nextChecks, references }) {
+  return {
+    summary,
+    facts,
+    risks,
+    suggestions,
+    noteDraft,
+    severity,
+    blocks,
+    nextChecks,
+    references,
+  };
+}
+
 export function buildCopilotPayload(intent, context) {
   if (intent === "SHIFT_SUMMARY") {
     const facts = buildShiftFacts(context);
     const risks = buildShiftRisks(context);
+    const blocks = buildShiftBlocks(context);
     const suggestions = buildShiftSuggestions(context);
-    return {
-      summary: buildShiftSummaryText(context, risks),
+    const nextChecks = buildShiftNextChecks(context, blocks);
+    return makeResponse({
+      summary: buildShiftSummaryText(context, risks, blocks),
       facts,
       risks,
       suggestions,
-      noteDraft: null,
-    };
+      severity: buildShiftSeverity(context, risks, blocks),
+      blocks,
+      nextChecks,
+      references: { shiftId: context.id, vehicleId: context.vehicleId || null, driverId: context.driverId || null, roomId: context.roomId || null, companyId: context.companyId || null },
+    });
   }
 
   if (intent === "CONFLICT_EXPLAIN") {
     const facts = buildShiftFacts(context);
     const risks = buildShiftRisks(context);
+    const blocks = buildShiftBlocks(context);
     const suggestions = buildShiftSuggestions(context);
-    return {
-      summary: buildConflictExplainText(context, risks),
+    const nextChecks = buildShiftNextChecks(context, blocks);
+    return makeResponse({
+      summary: buildConflictExplainText(risks, blocks),
       facts,
       risks,
       suggestions,
-      noteDraft: null,
-    };
+      severity: buildShiftSeverity(context, risks, blocks),
+      blocks,
+      nextChecks,
+      references: { shiftId: context.id, vehicleId: context.vehicleId || null, driverId: context.driverId || null, roomId: context.roomId || null, companyId: context.companyId || null },
+    });
   }
 
   if (intent === "OPS_NOTE_DRAFT") {
     const facts = buildShiftFacts(context);
     const risks = buildShiftRisks(context);
+    const blocks = buildShiftBlocks(context);
     const suggestions = buildShiftSuggestions(context);
-    return {
+    const nextChecks = buildShiftNextChecks(context, blocks);
+    return makeResponse({
       summary: "Operasyon paylaşımı için taslak not üretildi.",
       facts,
       risks,
       suggestions,
-      noteDraft: buildOpsNoteDraftText(context, risks, suggestions),
-    };
+      noteDraft: buildOpsNoteDraftText(context, risks, suggestions, blocks),
+      severity: buildShiftSeverity(context, risks, blocks),
+      blocks,
+      nextChecks,
+      references: { shiftId: context.id, vehicleId: context.vehicleId || null, driverId: context.driverId || null, roomId: context.roomId || null, companyId: context.companyId || null },
+    });
   }
 
   if (intent === "TELEMATICS_HEALTH") {
     const facts = buildVehicleFacts(context);
     const risks = buildVehicleRisks(context);
+    const blocks = buildVehicleBlocks(context);
     const suggestions = buildVehicleSuggestions(context);
-    return {
-      summary: `Telematics sağlık özeti: ${context.plate} için ${risks.length ? risks[0] : "kritik alarm görünmüyor."}`,
+    const nextChecks = buildVehicleNextChecks(context, blocks);
+    return makeResponse({
+      summary: buildVehicleSummaryText(context, risks, blocks),
       facts,
       risks,
       suggestions,
-      noteDraft: null,
-    };
+      severity: buildVehicleSeverity(risks, blocks),
+      blocks,
+      nextChecks,
+      references: { vehicleId: context.id, roomId: context.roomId || null },
+    });
   }
 
   const e = new Error("UNSUPPORTED_INTENT");
@@ -376,3 +474,4 @@ export function buildCopilotPayload(intent, context) {
   e.code = "UNSUPPORTED_INTENT";
   throw e;
 }
+
