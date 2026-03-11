@@ -49,6 +49,7 @@ import NotificationsPanel from "./panels/shared/NotificationsPanel";
 import AuthInvitesPanel from "./panels/shared/AuthInvitesPanel";
 import GoogleLoginButton from "./components/GoogleLoginButton";
 import LogsPanel from "./panels/shared/LogsPanel";
+import CopilotPanel from "./panels/shared/CopilotPanel";
 
 // SUPER_ADMIN
 import SuperAdminPanel from "./panels/superadmin/SuperAdminPanel";
@@ -192,6 +193,7 @@ export default function App() {
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
     if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
     if (path === "/room/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
+    if (path === "/room/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // COMPANY
     if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -203,6 +205,7 @@ export default function App() {
     if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/company/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/company/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
+    if (path === "/company/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // SCHOOL (Company.kind=SCHOOL)
     if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
@@ -215,6 +218,7 @@ export default function App() {
     if (path === "/school/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
     if (path === "/school/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
+    if (path === "/school/copilot") return { layout: true, node: <CopilotPanel /> };
 
 
     // ORGANIZATION (Company.kind=ORGANIZATION)
@@ -228,6 +232,7 @@ export default function App() {
     if (path === "/organization/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/organization/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/organization/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
+    if (path === "/organization/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // DRIVER
     if (path === "/driver" || path === "/driver/today") return { layout: true, node: <DriverTodayPanel /> };
@@ -250,6 +255,7 @@ export default function App() {
     if (path === "/superadmin/regions") return { layout: true, node: <SuperRegionsPanel /> };
     if (path === "/superadmin/audit") return { layout: true, node: <SuperAuditLogsPanel /> };
     if (path === "/superadmin/logexport") return { layout: true, node: <SuperLogExportPanel /> };
+    if (path === "/superadmin/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // Unknown: go default
     const def = roleDefaultPath(me);

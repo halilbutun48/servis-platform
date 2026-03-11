@@ -53,7 +53,7 @@ import { checkinRouter } from "./routes/checkin.js";
 import { organizationRouter } from "./routes/organization.js";
 import { schoolParentInvitesRouter } from "./routes/schoolParentInvites.js";
 import { passengerLinksRouter, publicPassengerLiveRouter } from "./routes/passengerLinks.js";
-
+import { aiRouter } from "./routes/ai.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -400,6 +400,7 @@ app.use("/api/agreements", agreementsRouter(io));
 app.use("/api/offers", offersRouter(io));
 app.use("/api/checkin", checkinRouter(io));
 app.use("/api/organization", organizationRouter(io));
+app.use("/api/ai", aiRouter());
 // Background monitors
 const stopMonitors = startMonitors(io);
 

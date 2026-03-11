@@ -16,9 +16,6 @@ export const ENV = {
   GOOGLE_AUTH_ENABLED: (process.env.GOOGLE_AUTH_ENABLED ?? "0") === "1",
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ?? "",
 
-  // M46: AI Copilot Foundation
-  AI_COPILOT_ENABLED: (process.env.AI_COPILOT_ENABLED ?? "1") === "1",
-
   // Redis
   REDIS_URL: process.env.REDIS_URL ?? "",
   RATE_LIMIT_STORE: (process.env.RATE_LIMIT_STORE ?? "").toLowerCase(),
@@ -75,10 +72,7 @@ export const ENV = {
   NOTIFICATION_RETENTION_DAYS: Number(process.env.NOTIFICATION_RETENTION_DAYS ?? 0),
 
   // ✅ M39: GPS points retention (0 = disabled)
-  GPS_POINT_RETENTION_DAYS: Number(process.env.GPS_POINT_RETENTION_DAYS ?? 0),  // âœ… M45: backup policy / local dump output
-  BACKUP_LOCAL_DIR: process.env.BACKUP_LOCAL_DIR ?? "/app/artifacts/backups",
-  BACKUP_LOCAL_RETENTION_DAYS: Number(process.env.BACKUP_LOCAL_RETENTION_DAYS ?? 14),
-  BACKUP_DUMP_FORMAT: process.env.BACKUP_DUMP_FORMAT ?? "plain",
+  GPS_POINT_RETENTION_DAYS: Number(process.env.GPS_POINT_RETENTION_DAYS ?? 0),
 
   // ✅ M19: route learning (optional)
   OSRM_URL: process.env.OSRM_URL ?? "",
