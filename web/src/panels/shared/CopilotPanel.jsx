@@ -12,7 +12,7 @@ const INTENT_OPTIONS = [
   { value: "GPS_SIGNAL_DIAGNOSIS", label: "GPS Sinyal Teşhisi", helper: "Signal/ingest teşhisi", entityType: "vehicle" },
 ];
 
-const HISTORY_KEY = "copilot.history.m46_3";
+const HISTORY_KEY = "copilot.history.m46_4";
 
 function firstList(resp) {
   if (Array.isArray(resp)) return resp;
@@ -61,6 +61,13 @@ function signalStyle(state) {
   return map[state] || { color: "#344054", border: "1px solid #d0d5dd", background: "#f8fafc" };
 }
 
+function decisionTone(value) {
+  if (["OK", "READY", "FRESH", "SUFFICIENT"].includes(String(value || ""))) return signalStyle("GOOD");
+  if (["ATTENTION", "REVIEW_NEEDED", "STALE", "PARTIAL"].includes(String(value || ""))) return signalStyle("WARN");
+  if (["BLOCKED", "NOT_READY", "WEAK"].includes(String(value || ""))) return signalStyle("BLOCKED");
+  return signalStyle("INFO");
+}
+
 function confidencePct(value) {
   return typeof value === "number" ? `${Math.round(value * 100)}%` : "-";
 }
@@ -90,6 +97,15 @@ function ReferenceList({ data }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function DecisionBadge({ label, value }) {
+  return (
+    <div style={{ borderRadius: 999, padding: "6px 10px", fontWeight: 700, display: "inline-flex", gap: 6, alignItems: "center", ...decisionTone(value) }}>
+      <span>{label}</span>
+      <span>{value || "-"}</span>
+    </div>
   );
 }
 
@@ -295,6 +311,13 @@ export default function CopilotPanel() {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <DecisionBadge label="Overall" value={result.overallStatus} />
+            <DecisionBadge label="Actionability" value={result.actionability} />
+            <DecisionBadge label="Freshness" value={result.dataFreshness} />
+            <DecisionBadge label="Coverage" value={result.coverage} />
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={() => copyText(result.summary || "")}>Kopyala özet</button>
             {result.noteDraft ? <button type="button" onClick={() => copyText(result.noteDraft || "")}>Kopyala not</button> : null}
             {copyMsg ? <span className="muted">{copyMsg}</span> : null}
@@ -318,6 +341,30 @@ export default function CopilotPanel() {
             </div>
           ) : null}
 
+          <div>
+            <div className="title" style={{ fontSize: 16 }}>Recommended Actions</div>
+            {result.recommendedActions?.length ? (
+              <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+                {result.recommendedActions.map((x, i) => (
+                  <div key={`${x.title || 'action'}:${i}`} style={{ border: "1px solid #d0d5dd", borderRadius: 12, padding: 12, display: "grid", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <div style={{ fontWeight: 700 }}>{x.title || "-"}</div>
+                      <div style={{ borderRadius: 999, padding: "2px 8px", ...decisionTone(x.priority === 'HIGH' ? 'BLOCKED' : x.priority === 'MEDIUM' ? 'ATTENTION' : 'OK') }}>
+                        {x.priority || "-"}
+                      </div>
+                    </div>
+                    <div className="muted">{x.reason || "-"}</div>
+                    {x.preconditions?.length ? <div><b>Ön koşullar:</b> {x.preconditions.join(" • ")}</div> : null}
+                    {x.linkedEvidence?.length ? <div><b>Linked evidence:</b> {x.linkedEvidence.join(" • ")}</div> : null}
+                    {x.linkedReferences?.length ? <div><b>Linked references:</b> {x.linkedReferences.join(", ")}</div> : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="muted" style={{ marginTop: 8 }}>Önerilen aksiyon görünmüyor.</div>
+            )}
+          </div>
+
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
               <div className="title" style={{ fontSize: 16 }}>Facts</div>
@@ -337,9 +384,20 @@ export default function CopilotPanel() {
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Blocks</div>
-              {result.blocks?.length ? <ul>{result.blocks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Bloklayıcı görünmüyor.</div>}
+              <div className="title" style={{ fontSize: 16 }}>Blockers</div>
+              {result.blockers?.length ? <ul>{result.blockers.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Açıklanmış blocker görünmüyor.</div>}
             </div>
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Missing Data</div>
+              {result.missingData?.length ? <ul>{result.missingData.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Eksik veri görünmüyor.</div>}
+            </div>
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Blocks</div>
+              {result.blocks?.length ? <ul>{result.blocks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Kod seviyesinde block görünmüyor.</div>}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
               <div className="title" style={{ fontSize: 16 }}>Next Checks</div>
               {result.nextChecks?.length ? <ul>{result.nextChecks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Ek kontrol önerisi yok.</div>}
@@ -348,13 +406,13 @@ export default function CopilotPanel() {
               <div className="title" style={{ fontSize: 16 }}>References</div>
               <ReferenceList data={result.references} />
             </div>
-          </div>
-
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
               <div className="title" style={{ fontSize: 16 }}>Evidence</div>
               {result.evidence?.length ? <ul>{result.evidence.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Evidence görünmüyor.</div>}
             </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
               <div className="title" style={{ fontSize: 16 }}>Decision Signals</div>
               {result.decisionSignals?.length ? (
@@ -368,6 +426,21 @@ export default function CopilotPanel() {
                 </div>
               ) : (
                 <div className="muted">Decision sinyali görünmüyor.</div>
+              )}
+            </div>
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Consistency Checks</div>
+              {result.consistencyChecks?.length ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {result.consistencyChecks.map((x, i) => (
+                    <div key={`${x.label || "check"}:${i}`} style={{ borderRadius: 10, padding: 10, ...signalStyle(x.status) }}>
+                      <div style={{ fontWeight: 700 }}>{x.label || "-"}</div>
+                      <div>{x.detail || "-"}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="muted">Consistency check görünmüyor.</div>
               )}
             </div>
           </div>
@@ -402,7 +475,7 @@ export default function CopilotPanel() {
       <div className="card">
         <div className="title" style={{ fontSize: 16 }}>Kısa Not</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Bu intent expansion sürümü deterministic çalışır; structured JSON döndürür, read-only / suggestion-first kalır, audit log’a <code>AI_COPILOT_QUERY</code> yazar ve ROOM / SUPER_ADMIN için step-up çizgisini korur.
+          Bu decision consistency sürümü deterministic çalışır; structured JSON döndürür, read-only / suggestion-first kalır, audit log’a <code>AI_COPILOT_QUERY</code> yazar ve ROOM / SUPER_ADMIN için step-up çizgisini korur.
         </div>
       </div>
     </div>

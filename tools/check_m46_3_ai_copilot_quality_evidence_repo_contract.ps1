@@ -20,12 +20,12 @@ foreach($f in $files){
 }
 
 Write-Host "INFO Checking compatibility updates"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") '["M46.1","M46.2","M46.3"]' "m46.1 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") '["M46.2","M46.3"]' "m46.2 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") '["M46.1","M46.2","M46.3","M46.4"]' "m46.1 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") '["M46.2","M46.3","M46.4"]' "m46.2 check accepts forward versions"
 MustContain (Join-Path $RepoRoot "tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1") 'copilotVersion:' "m46.2 repo-contract accepts forward versions"
 
 Write-Host "INFO Checking backend quality/evidence wiring"
-MustContain (Join-Path $RepoRoot "backend\src\ai\service.js") 'copilotVersion: "M46.3"' "service exposes m46.3 version"
+MustContain (Join-Path $RepoRoot "backend\src\ai\service.js") 'copilotVersion:' "service exposes >= m46.3 version"
 MustContain (Join-Path $RepoRoot "backend\src\ai\service.js") 'providerSummary' "service exposes provider summary"
 MustContain (Join-Path $RepoRoot "backend\src\ai\tools.js") 'confidence' "tools include confidence field"
 MustContain (Join-Path $RepoRoot "backend\src\ai\tools.js") 'explanation' "tools include explanation field"

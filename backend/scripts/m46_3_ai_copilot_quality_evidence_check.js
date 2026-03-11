@@ -33,7 +33,7 @@ async function main() {
     body: { intent: "SHIFT_SUMMARY", entityType: "shift", entityId: roomShiftId },
   });
   must("shift summary ok", shiftSummary.ok && shiftSummary.json?.intent === "SHIFT_SUMMARY");
-  must("copilot version upgraded", shiftSummary.json?.copilotVersion === "M46.3");
+  must("copilot version upgraded", ["M46.3","M46.4"].includes(shiftSummary.json?.copilotVersion));
   must("confidence visible", typeof shiftSummary.json?.confidence === "number" && shiftSummary.json.confidence >= 0.5);
   must("explanation visible", typeof shiftSummary.json?.explanation === "string" && shiftSummary.json.explanation.length > 20);
   must("evidence visible", Array.isArray(shiftSummary.json?.evidence) && shiftSummary.json.evidence.length > 0);

@@ -30,7 +30,7 @@ async function main() {
     body: { intent: "SHIFT_SUMMARY", entityType: "shift", entityId: roomShiftId },
   });
   must("room shift summary ok", roomSummary.ok && roomSummary.json?.ok === true);
-  must("copilot version visible", ["M46.1","M46.2","M46.3"].includes(roomSummary.json?.copilotVersion));
+  must("copilot version visible", ["M46.1","M46.2","M46.3","M46.4"].includes(roomSummary.json?.copilotVersion));
   must("severity visible", typeof roomSummary.json?.severity === "string" && roomSummary.json.severity.length > 0);
   must("blocks array visible", Array.isArray(roomSummary.json?.blocks));
   must("next checks array visible", Array.isArray(roomSummary.json?.nextChecks));
