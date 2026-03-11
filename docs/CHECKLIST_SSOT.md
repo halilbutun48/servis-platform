@@ -1,7 +1,7 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
 
 Timezone: Europe/Istanbul  
-Last updated: **2026-03-11**  
+Last updated: **2026-03-12**  
 Current GREEN ref:
 - **M41 PACK PASS**
 - **M42 OPTIONAL PACK PASS**
@@ -17,6 +17,7 @@ Current GREEN ref:
 - **M46 AI COPILOT FOUNDATION PACK PASS OK**
 - **M46.1 AI COPILOT ENRICHMENT PACK PASS OK**
 - **M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK**
+- **M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
@@ -33,13 +34,14 @@ Bu dosya iki amaç taşır:
 - **Step 3 (M46):** AI Copilot Foundation **resmi green**
 - **Step 3.1 (M46.1):** AI Copilot Enrichment **resmi green**
 - **Step 3.2 (M46.2):** AI Copilot Intent Expansion **resmi green**
-- **Step 3.3:** Sonraki AI katmanı / M46.3 **henüz sabitlenmedi**
+- **Step 3.3 (M46.3):** AI Copilot Quality + Evidence **resmi green**
+- **Step 3.4:** Sonraki AI katmanı / M46.4 **henüz sabitlenmedi**
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
 > Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
 > Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri PASS durumundadır.  
-> M43, M44, M45, M46, M46.1 ve M46.2 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M43, M44, M45, M46, M46.1, M46.2 ve M46.3 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
 > Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
 > Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
 
@@ -240,8 +242,8 @@ Bu dosya iki amaç taşır:
 - [ ] backup policy + manifest görünürlüğü var
 - [ ] dryRun/run audit izi var
 - [ ] create/restore tool hattı çalışıyor
-- [ ] tools\backup_create_m45.ps1 mevcut
-- [ ] tools\backup_restore_m45.ps1 mevcut
+- [ ] `tools\backup_create_m45.ps1` mevcut
+- [ ] `tools\backup_restore_m45.ps1` mevcut
 
 # STEP 3 — M46 AI Copilot Foundation — RESMİ GREEN
 - [ ] `tools/pack_m46_ai_copilot.ps1` PASS
@@ -276,8 +278,26 @@ Bu dosya iki amaç taşır:
 
 ---
 
+# STEP 3.3 — M46.3 AI Copilot Quality + Evidence — RESMİ GREEN
+- [ ] `tools/pack_m46_3_ai_copilot_quality_evidence.ps1` PASS
+- [ ] `tools/check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `copilotVersion` `M46.3` olarak dönüyor
+- [ ] `confidence` üretiliyor
+- [ ] `explanation` üretiliyor
+- [ ] `evidence` üretiliyor
+- [ ] `decisionSignals` üretiliyor
+- [ ] `providerSummary` üretiliyor
+- [ ] UI’da confidence bölümü görünüyor
+- [ ] UI’da explanation bölümü görünüyor
+- [ ] UI’da evidence bölümü görünüyor
+- [ ] UI’da decision signals bölümü görünüyor
+- [ ] read-only / suggestion-first çizgisi korunuyor
+- [ ] audit ve step-up davranışı korunuyor
+- [ ] M46.1 ve M46.2 check zinciri ileri uyumlu kalıyor
+
+---
+
 ## Kapanış kuralı
 - Ana referans yine **M41 PACK PASS**’tir.
 - Üst katmanlar ayrı resmi green hatları olarak korunur.
-- Yeni AI milestone’ları M46 → M46.1 → M46.2 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
-
+- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.

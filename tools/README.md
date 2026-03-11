@@ -15,6 +15,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_ai_copilot.ps1`
 - `tools\pack_m46_1_ai_copilot_enrichment.ps1`
 - `tools\pack_m46_2_ai_copilot_intent_expansion.ps1`
+- `tools\pack_m46_3_ai_copilot_quality_evidence.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene check’leri
 - `tools\reset-and-pack.ps1`
 - `tools\_console_status.ps1`
@@ -43,6 +44,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform` → Step 3 / M46
 - `tools\pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform` → Step 3.1 / M46.1
 - `tools\pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform` → Step 3.2 / M46.2
+- `tools\pack_m46_3_ai_copilot_quality_evidence.ps1 -RepoRoot D:\servis-platform` → Step 3.3 / M46.3
 
 ## Windows ExecutionPolicy
 PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
@@ -59,6 +61,7 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - `tools\check_m46_ai_copilot_repo_contract.ps1` → M46 repo-contract kontrolü
 - `tools\check_m46_1_ai_copilot_enrichment_repo_contract.ps1` → M46.1 repo-contract kontrolü
 - `tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1` → M46.2 repo-contract kontrolü
+- `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1` → M46.3 repo-contract kontrolü
 
 Kural: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
 Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.  
@@ -84,8 +87,26 @@ Kural 3: üst milestone’lar alt milestone check uyumluluğunu bozmamalıdır.
 
 ## M46.1 AI Copilot Enrichment
 - `tools\pack_m46_1_ai_copilot_enrichment.ps1`
-- `tools\pack_m46_2_ai_copilot_intent_expansion.ps1`
 - `tools\check_m46_1_ai_copilot_enrichment_repo_contract.ps1`
 - `backend\scripts\m46_1_ai_copilot_enrichment_check.js`
 - `web\src\panels\shared\CopilotPanel.jsx`
 - `docs\RUNBOOK_M46_1_AI_COPILOT_ENRICHMENT.md`
+
+## M46.2 AI Copilot Intent Expansion
+- `tools\pack_m46_2_ai_copilot_intent_expansion.ps1`
+- `tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1`
+- `backend\scripts\m46_2_ai_copilot_intent_expansion_check.js`
+- `backend\src\ai\schemas.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_2_AI_COPILOT_INTENT_EXPANSION.md`
+
+## M46.3 AI Copilot Quality + Evidence
+- `tools\pack_m46_3_ai_copilot_quality_evidence.ps1`
+- `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1`
+- `backend\scripts\m46_3_ai_copilot_quality_evidence_check.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_3_AI_COPILOT_QUALITY_EVIDENCE.md`
