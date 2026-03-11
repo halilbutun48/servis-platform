@@ -1,6 +1,6 @@
 # STARTPACK_V1 — SERVIS-PLATFORM (PERSONEL SERVİS V1/V2)
 
-Tarih: 2026-03-10  
+Tarih: 2026-03-11  
 Timezone: Europe/Istanbul
 
 Bu dosya repo için kısa çalışma runbook’udur.
@@ -13,9 +13,10 @@ Bu dosya repo için kısa çalışma runbook’udur.
 5. M104 + M105 + M106 repo/tools hijyen check’leri PASS durumundadır.
 6. M43 Google Auth + Invite Gate hattı resmi green durumundadır.
 7. M44 Telematics hattı resmi green durumundadır.
-8. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-9. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-10. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+8. M45 Retention + Backup hattı resmi green durumundadır.
+9. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+10. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+11. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -42,6 +43,7 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M106 REPO HYGIENE + LINK TTL CHECK PASS`
 - `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
 - `M44 TELEMATICS PACK PASS OK`
+- `M45 RETENTION + BACKUP PACK PASS OK`
 
 ## 4) Link erişim politikası
 - Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
@@ -90,11 +92,18 @@ Detay çekirdek:
 - `GpsDevice` modeli + source tracking (`DEVICE` / `VENDOR`) mevcut
 - runtime check + repo-contract + tek pack PASS
 
-## 6.2) Sıradaki hedef — Step 2.6 / M45
-- 2 yıl retention hattı
-- GPS geçmiş downsample / history gate (`50sn / 50m`)
-- partition + retention job
-- base backup + restore / PITR kanıtı
+## 6.2) Step 2.6 özeti — M45 resmi green
+- retention policy görünürlüğü mevcut
+- backup policy + manifest görünürlüğü mevcut
+- yerel SQL backup create / kontrollü restore tool hattı mevcut
+- runtime check + repo-contract + tek pack PASS
+
+## 6.3) Sıradaki hedef — Step 3 / M46 AI Copilot Foundation
+- read-only / suggestion-first copilot hattı
+- role/scope kontrollü AI erişimi
+- structured JSON output
+- audit log
+- write aksiyon yok; önce read-only + suggestion
 
 ## 7) SSOT dosyaları
 - `tools/CHECKLIST_SSOT.md`
@@ -114,4 +123,9 @@ Detay çekirdek:
 
 ## M45 Retention + Backup
 - `tools\pack_m45_retention_backup.ps1`
+- `tools\check_m45_retention_backup_repo_contract.ps1`
+- `tools\backup_create_m45.ps1`
+- `tools\backup_restore_m45.ps1`
+- `backend\scripts\m45_retention_backup_check.js`
+- `backend\src\ops\retentionBackupPolicy.js`
 - `docs\RUNBOOK_M45_RETENTION_BACKUP.md`

@@ -289,6 +289,15 @@ M44 ile gelen araçlar:
 - `tools/check_m44_telematics_repo_contract.ps1`
 - `backend/scripts/m44_telematics_check.js`
 
+M45 ile gelen araçlar:
+- `tools/pack_m45_retention_backup.ps1`
+- `tools/check_m45_retention_backup_repo_contract.ps1`
+- `tools/backup_create_m45.ps1`
+- `tools/backup_restore_m45.ps1`
+- `backend/scripts/m45_retention_backup_check.js`
+- `backend/src/ops/retentionBackupPolicy.js`
+- `docs/RUNBOOK_M45_RETENTION_BACKUP.md`
+
 Overlay / cleanup notları:
 - `docs/overlays/OVERLAY_NOTES_M104_REPO_AUDIT_CLEANUP_2026-03-10.md`
 - `docs/overlays/OVERLAY_NOTES_M105_TOOLS_CANONICAL_CLEANUP_2026-03-10.md`
@@ -296,27 +305,40 @@ Overlay / cleanup notları:
 - `docs/overlays/OVERLAY_NOTES_M106_4_CHECKERS_RESTORE_PRIMER_SYNC_2026-03-10.md`
 - `docs/overlays/OVERLAY_NOTES_M44_TELEMATICS_2026-03-10.md`
 - `docs/overlays/OVERLAY_NOTES_M44_5_SSOT_SYNC_2026-03-10.md`
+- `docs/overlays/OVERLAY_NOTES_M44_6_TELEMATICS_ROOM_UI_2026-03-10.md`
+- `docs/overlays/OVERLAY_NOTES_M45_RETENTION_BACKUP_2026-03-10.md`
 
 ---
 
-## 5) Bir sonraki net adım
+## 5) Bir sonraki resmi iş
 
-## Step 2.6 — M45 Retention + Backup
-Sıradaki resmi iş:
-- retention politikalarının netleştirilmesi
-- backup / restore runbook
-- kritik tablolar için export/restore güvenliği
-- telematics dahil yeni veri kaynakları için retention uyumu
-- runtime check + repo-contract + tek pack
+## Step 3 — M46 AI Copilot Foundation
+Sıradaki resmi hedef:
+- sistem için domain AI foundation kurulması
+- read-only / suggestion-first copilot hattı
+- role/scope kontrollü AI erişimi
+- structured JSON output
+- whitelist tool / resolver yaklaşımı
+- audit log
+- mevcut operasyon verisini açıklayan yardımcı katman
+
+İlk kapsam önerisi:
+- `POST /api/ai/copilot`
+- vardiya özeti
+- conflict açıklama
+- telematics health / anomali açıklama
+- operasyon notu / bilgilendirme taslağı
+- write aksiyon yok; önce read-only + suggestion
 
 Uygulama notu:
-- mevcut GPS/history/telematics hattını bozma
-- audit ve retention kuralları tek yerden yönetilsin
-- backup/restore belgeleri STARTPACK/SSOT ile senkron olsun
-- operasyonel geri dönüş senaryosu net olsun
+- mevcut RBAC / scope / TOTP step-up davranışı korunacak
+- kritik kararları AI vermeyecek
+- AI yalnız whitelist edilmiş veri çözücüler / tool’lar üzerinden okuyacak
+- otomatik işlem yapmayacak
+- audit ve güvenlik ilk günden zorunlu olacak
 
 Ardından:
-- Step 2.7 ve V2 başlıkları
+- Step 3.1 / V2 başlıkları
 
 ---
 
@@ -335,9 +357,9 @@ Ardından:
 
 ## 7) Yeni sohbet açınca ilk cümle önerisi
 
-"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK durumunda. M44.5 ile SSOT sync yapıldı, M44.6 ile ROOM > Vehicles içine Telematics UI eklendi ve demo device push testi geçti. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Sıradaki resmi iş M45 Retention + Backup. Mevcut repoya göre tek overlay zip olarak ilerleyelim."
+"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK + M45 RETENTION + BACKUP PACK PASS OK durumunda. M44.5 ile SSOT sync yapıldı, M44.6 ile ROOM > Vehicles içine Telematics UI eklendi. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Sıradaki resmi hedef mevcut repoya göre tek overlay zip standardıyla M46 AI Copilot Foundation."
 
-Kanonik M45 araÃ§larÄ±:
+Kanonik M45 araçları:
 - `tools\pack_m45_retention_backup.ps1`
 - `tools\check_m45_retention_backup_repo_contract.ps1`
 - `tools\backup_create_m45.ps1`
