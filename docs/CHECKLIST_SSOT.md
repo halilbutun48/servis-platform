@@ -16,6 +16,7 @@ Current GREEN ref:
 - **M45 RETENTION + BACKUP PACK PASS OK**
 - **M46 AI COPILOT FOUNDATION PACK PASS OK**
 - **M46.1 AI COPILOT ENRICHMENT PACK PASS OK**
+- **M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
@@ -28,23 +29,19 @@ Bu dosya iki amaç taşır:
 - **Step 1:** Minimum Security **resmi green**
 - **Step 2 (M43):** Google Auth (GIS) + Invite Gate (rol/scope güvenliği) **resmi green**
 - **Step 2.5 (M44):** Telematics (Normalize Core + Direct HTTP Push + Vendor Cloud) **resmi green**
-- **Step 2.6 (M45):** 2Y Retention + GPS geçmiş (50sn/50m) + Backup/PITR **resmi green**
+- **Step 2.6 (M45):** 2Y Retention + GPS geçmiş + Backup/PITR **resmi green**
 - **Step 3 (M46):** AI Copilot Foundation **resmi green**
 - **Step 3.1 (M46.1):** AI Copilot Enrichment **resmi green**
-- **Step 3.2 (V2):** V2-Scale → V2-Mobile Driver → V2-ProdOps → V2-FieldFeatures
+- **Step 3.2 (M46.2):** AI Copilot Intent Expansion **resmi green**
+- **Step 3.3:** Sonraki AI katmanı / M46.3 **henüz sabitlenmedi**
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
 > Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
-> Son TOTP pack satırı logda kesilmiş olsa da runtime + repo-contract PASS görüldüğü için Step 1 green kabul edilir.  
-> Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri de PASS durumundadır.  
-> M43 Google Auth + Invite Gate hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
-> M44 Telematics hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
-> M45 Retention + Backup hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
-> M46 AI Copilot Foundation hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
-> M46.1 AI Copilot Enrichment hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
-> M45 Retention + Backup hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
-> M46 AI Copilot Foundation hattı da runtime + repo-contract + tek pack ile PASS durumundadır.
+> Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri PASS durumundadır.  
+> M43, M44, M45, M46, M46.1 ve M46.2 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
+> Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
+> Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
 
 ---
 
@@ -180,8 +177,6 @@ Bu dosya iki amaç taşır:
 - [ ] OUTBOUND: hub → duraklar
 - [ ] INBOUND: duraklar → hub
 - [ ] LOOP: hub → duraklar → hub
-- [ ] preview notu görünüyor:
-  - `Bu önizleme kuş uçuşu/mini görünüm mantığındadır. Kesin rota, km ve dönüşler için dış navigasyona bakın.`
 
 ## 0.6.4 Company List Click Details
 - [ ] company listede araç plakası tıklanınca araç detay açılıyor
@@ -218,200 +213,68 @@ Bu dosya iki amaç taşır:
 - [ ] `/api/availability`
 - [ ] `/api/shifts`
 
-## 1.4 UI / Greenpack notu
-- [ ] `web/src/panels/shared/TotpStepUpCard.jsx` mevcut
-- [ ] greenpack/dev bypass mantığı legacy M0→M41 check’lerini bozmuyor
-- [ ] gerçek TOTP runtime check bypass’sız koşuyor
-
 **Çıkış kriteri:** Security Foundation + TOTP pack/check PASS.
 
-> Not: Step 2 (M43) hattı bu repoda resmi olarak green kabul edilmiştir.  
-> Not 2: Step 2.5 (M44) hattı da bu repoda resmi olarak green kabul edilmiştir.
-
 ---
 
-# STEP 2 — M43 Google Auth (GIS) + Invite Gate (Rol/Scope güvenliği) — RESMİ GREEN
-
-## 2.x Invite modeli (kritik güvenlik kuralı)
-
-**Karar:**
-- [x] Parent hesabı **self-serve invite** mantığında ilerler; SCHOOL parent hesabı doğrudan create etmez
-- [x] Company personel için login hesabı **opsiyonel**; personel kaydı her zaman var olabilir, login sadece invite ile açılır
-
-**Invite tipleri**
-- [x] `PARENT_INVITE` (SCHOOL → Parent)
-- [x] `PERSONEL_INVITE` (COMPANY → Personel)
-- [x] opsiyonel `ROOM_USER_INVITE` (ROOM → room içi ikinci kullanıcı)
-
-**Invite alanları (DB)**
-- [x] `email` veya `phone` (en az biri)
-- [x] `role` (PARENT / PERSONEL / ROOM_USER)
-- [x] `companyId` / `roomId` (scope)
-- [x] `personelId` veya `childPersonelId`
-- [x] `expiresAt`, `consumedAt`, `createdAt`, `createdByUserId`
-- [x] `tokenHash` (raw token tutulmaz)
-
-**Accept akışı**
-- [x] Invite kabulü → kullanıcı Google ile veya şifre ile giriş yapar
-- [x] `PARENT_INVITE` accept:
-  - [x] parent user oluştur/bağla
-  - [x] parent-child link aktif edilir
-- [x] `PERSONEL_INVITE` accept:
-  - [x] personel user oluştur/bağla
-- [x] Invite yoksa varsayılan politika: `INVITE_REQUIRED`
-
-**Güvenlik testi**
-- [x] Invite ile login → doğru role/scope
-- [x] Invite yok → reject
-- [x] SCHOOL parent create edemez; sadece invite+link yönetir
-- [x] COMPANY personel login opsiyonel: invite olmadan personel listesi yönetilebilir
-
-## 2.1 Backend
-- [x] `POST /api/auth/google` (idToken doğrula)
-- [x] `UserIdentity(provider, providerSub)` ile link
-- [x] Invite varsa: user create + rol/scope bağla
-- [x] Invite yoksa: `INVITE_REQUIRED`
-- [x] M41 refresh session üretimi + driver için device binding korunur
-- [x] Audit: `AUTH_OAUTH_LOGIN`, `INVITE_ACCEPT`
-
-## 2.2 DB
-- [x] `UserIdentity` tablosu
-- [x] `Invite` tablosu: email, role, companyId/roomId, personelId/childPersonelId, expiresAt, consumedAt, tokenHash
-
-## 2.3 Web UI
-- [x] GIS script + “Google ile giriş” butonu / One Tap
-- [x] Invite yoksa kullanıcıya açıklayıcı ekran
-- [x] Invite accept ve login akışı çakışmadan çalışır
-
-## 2.4 Test / Pack
-- [x] Invite ile Google login → doğru role/scope
-- [x] Invite yok → reject
-- [x] Driver device mismatch + OAuth birleşimi bozulmuyor
-- [x] runtime check + repo-contract hazır
-- [x] tek M43 pack ile kanıtlanır
-
-**Kanıt:**
-- [x] `tools/pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
-- [x] `tools/check_m43_google_auth_invite_gate_repo_contract.ps1 -RepoRoot D:\servis-platform`
-- [x] `backend/scripts/m43_google_auth_invite_gate_check.js`
-
-**Çıkış kriteri:** V1 regresyon + M43 testleri PASS.
-
----
+# STEP 2 — M43 Google Auth + Invite Gate — RESMİ GREEN
+- [ ] `tools/pack_m43_google_auth_invite_gate.ps1` PASS
+- [ ] `tools/check_m43_google_auth_invite_gate_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `POST /api/auth/google` çalışıyor
+- [ ] `Invite` + `UserIdentity` akışı doğru
+- [ ] invite yoksa kabul yok
+- [ ] role/scope bağlı kabul korunuyor
 
 # STEP 2.5 — M44 Telematics — RESMİ GREEN
+- [ ] `tools/pack_m44_telematics.ps1` PASS
+- [ ] `tools/check_m44_telematics_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `POST /api/telematics/push` çalışıyor
+- [ ] `POST /api/telematics/vendor/:provider` çalışıyor
+- [ ] `GpsDevice` create/list/patch/rotate çalışıyor
+- [ ] ROOM > Vehicles > Telematics akışı çalışıyor
 
-## 2.5.1 Çekirdek kapsam
-- [x] normalize core
-- [x] direct HTTP push connector
-- [x] vendor cloud connector
-- [x] provider normalize katmanı
-- [x] `GpsDevice` modeli + `GpsDeviceStatus` enum
-- [x] `Vehicle -> gpsDevices` ilişkisi
-- [x] source tagging: `DEVICE` / `VENDOR`
-
-## 2.5.2 Backend davranışı
-- [x] `POST /api/telematics/push` çalışıyor
-- [x] `POST /api/telematics/vendor/:provider` çalışıyor
-- [x] telematics router server’a mount edilmiş
-- [x] telematics limiter uygulanıyor
-- [x] vendor shared secret doğrulaması var
-- [x] provision edilen cihazın `lastSeenAt` alanı güncelleniyor
-- [x] direct push sonrası `gpsLast` yazımı oluşuyor
-- [x] vendor push aynı aracı serial lookup ile bulup `gpsLast` güncelliyor
-
-## 2.5.3 Env / wiring
-- [x] `.env.example` içinde `TELEMATICS_ENABLED`
-- [x] `.env.example` içinde `TELEMATICS_VENDOR_SHARED_SECRET`
-- [x] `docker-compose` telematics env’lerini geçiriyor
-- [x] mevcut driver GPS/live/ws hattı bozulmadan korunuyor
-
-## 2.5.4 Runtime / Pack
-- [x] telematics enabled check PASS
-- [x] vendor secret configured check PASS
-- [x] runtime cihaz provision akışı PASS
-- [x] direct device push → `gpsLast` update PASS
-- [x] vendor push → aynı vehicle update PASS
-- [x] audit row oluşumu PASS
-- [x] repo-contract PASS
-- [x] tek M44 pack ile kanıtlanır
-
-**Kanıt:**
-- [x] `tools/pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
-- [x] `tools/check_m44_telematics_repo_contract.ps1 -RepoRoot D:\servis-platform`
-- [x] `backend/scripts/m44_telematics_check.js`
-
-**Çıkış kriteri:** V1 regresyon + M43 + M44 testleri PASS.
-
----
-
-# STEP 2.6 — M45 Retention / Backup — RESMİ GREEN
-- [x] `GET /api/admin/retention/policy` görünürlüğü mevcut
-- [x] `GET /api/admin/backup/policy` görünürlüğü mevcut
-- [x] `GET /api/admin/backup/manifest` görünürlüğü mevcut
-- [x] `tools\backup_create_m45.ps1` mevcut
-- [x] `tools\backup_restore_m45.ps1` mevcut
-- [x] runtime check PASS
-- [x] repo-contract PASS
-- [x] tek M45 pack ile kanıtlanır
-
-**Çıkış kriteri:** V1 regresyon + M43 + M44 + M45 testleri PASS.
-
----
+# STEP 2.6 — M45 Retention + Backup — RESMİ GREEN
+- [ ] `tools/pack_m45_retention_backup.ps1` PASS
+- [ ] `tools/check_m45_retention_backup_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] retention policy görünürlüğü var
+- [ ] backup policy + manifest görünürlüğü var
+- [ ] dryRun/run audit izi var
+- [ ] create/restore tool hattı çalışıyor
 
 # STEP 3 — M46 AI Copilot Foundation — RESMİ GREEN
-- [x] `POST /api/ai/copilot` mevcut
-- [x] `SHIFT_SUMMARY` intent çalışır
-- [x] `CONFLICT_EXPLAIN` intent çalışır
-- [x] `TELEMATICS_HEALTH` intent çalışır
-- [x] `OPS_NOTE_DRAFT` intent çalışır
-- [x] `ROOM` / `COMPANY` / `SUPER_ADMIN` scope kontrollü erişim vardır
-- [x] `ROOM` + `SUPER_ADMIN` step-up guard uygulanır
-- [x] `AI_COPILOT_QUERY` audit izi görünür
-- [x] runtime check PASS
-- [x] repo-contract PASS
-- [x] tek M46 pack ile kanıtlanır
+- [ ] `tools/pack_m46_ai_copilot.ps1` PASS
+- [ ] `tools/check_m46_ai_copilot_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `POST /api/ai/copilot` çalışıyor
+- [ ] read-only / suggestion-first davranış korunuyor
+- [ ] `AI_COPILOT_QUERY` audit izi var
+- [ ] ROOM + SUPER_ADMIN için step-up guard var
 
-**Çıkış kriteri:** V1 regresyon + M43 + M44 + M45 + M46 testleri PASS.
+# STEP 3.1 — M46.1 AI Copilot Enrichment — RESMİ GREEN
+- [ ] `tools/pack_m46_1_ai_copilot_enrichment.ps1` PASS
+- [ ] `tools/check_m46_1_ai_copilot_enrichment_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `copilotVersion` mevcut
+- [ ] `severity / blocks / nextChecks / references` üretiliyor
+- [ ] UI’da `Kopyala özet` + `Kopyala not` + `Son 5 analiz` var
+
+# STEP 3.2 — M46.2 AI Copilot Intent Expansion — RESMİ GREEN
+- [ ] `tools/pack_m46_2_ai_copilot_intent_expansion.ps1` PASS
+- [ ] `tools/check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] yeni intentler çalışıyor:
+  - [ ] `ASSIGNMENT_READINESS`
+  - [ ] `OFFER_DECISION_HELP`
+  - [ ] `GPS_SIGNAL_DIAGNOSIS`
+- [ ] `intentLabel` + `entityLabel` üretiliyor
+- [ ] `scope.summary` + `highlights` üretiliyor
+- [ ] zengin `references` + `nextChecks` korunuyor
+- [ ] UI’da hızlı seçim araması çalışıyor
+- [ ] UI’da highlights bölümü görünüyor
+- [ ] UI’da scope summary görünüyor
+- [ ] read-only / suggestion-first çizgisi korunuyor
+- [ ] audit ve step-up davranışı korunuyor
 
 ---
 
-# STEP 3.1 — V2
-- [ ] V2-Scale
-- [ ] V2-Mobile Driver
-- [ ] V2-ProdOps
-- [ ] V2-FieldFeatures
-
----
-
-# Bir sonraki net resmi iş
-- [ ] sonraki resmi milestone henüz sabit değil
-- [ ] M46 foundation read-only / suggestion-first olarak korunacak
-- [ ] bir sonraki resmi hedef ayrıca tanımlanacak
-
-# TOOLS HYGIENE — M105 Tools Canonical Cleanup
-- [x] `tools/` kökünde yalnızca kanonik runtime / pack / check script'leri bırakılır
-- [x] Eski `apply_*`, `overlay_*`, `OVERLAY_*` dosyaları `tools/_archive/legacy-overlays/` altına taşınır
-- [x] Tek seferlik hotfix script'leri `tools/_archive/oneoff-hotfixes/` altına taşınır
-- [x] Deprecated tools içi metin dosyaları `tools/_archive/legacy-docs/` altına taşınır
-- [x] `tools/README.md` kanonik araç düzenini açıkça listeler
-- [x] `tools/check_tools_hygiene_m105.ps1` PASS
-
-
-# LINK TTL / PRIMER HYGIENE — M106
-- [x] `tools/_overlay_payload/primer_refresh` canlı ağaçtan arşive taşınır
-- [x] `infra/infra/solver/Dockerfile` stale duplicate’i arşive taşınır
-- [x] Parent invite presetleri `1 hafta / 1 ay / 6 ay / 1 yıl` olur
-- [x] Personel/öğrenci public link presetleri `1 hafta / 1 ay / 6 ay / 1 yıl` olur
-- [x] Backend üst sınırları `365 gün` ile hizalanır
-- [x] `tools/check_repo_hygiene_m106.ps1` PASS
-
-## M45 backup tools
-- `toolsackup_create_m45.ps1`
-- `toolsackup_restore_m45.ps1`
-- `tools\check_m45_retention_backup_repo_contract.ps1`
-
-## M46 AI Copilot Foundation tools
-- `tools\pack_m46_ai_copilot.ps1`
-- `tools\check_m46_ai_copilot_repo_contract.ps1`
-- `backend\scripts\m46_ai_copilot_check.js`
+## Kapanış kuralı
+- Ana referans yine **M41 PACK PASS**’tir.
+- Üst katmanlar ayrı resmi green hatları olarak korunur.
+- Yeni AI milestone’ları M46 → M46.1 → M46.2 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.

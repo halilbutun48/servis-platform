@@ -16,9 +16,10 @@ Bu dosya repo için kısa çalışma runbook’udur.
 8. M45 Retention + Backup hattı resmi green durumundadır.
 9. M46 AI Copilot Foundation hattı resmi green durumundadır.
 10. M46.1 AI Copilot Enrichment hattı resmi green durumundadır.
-11. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-12. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-13. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+11. M46.2 AI Copilot Intent Expansion hattı resmi green durumundadır.
+12. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+13. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+14. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -39,6 +40,8 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - M46 repo-contract: `tools\check_m46_ai_copilot_repo_contract.ps1 -RepoRoot D:\servis-platform`
 - M46.1 pack: `tools\pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform`
 - M46.1 repo-contract: `tools\check_m46_1_ai_copilot_enrichment_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M46.2 pack: `tools\pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform`
+- M46.2 repo-contract: `tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1 -RepoRoot D:\servis-platform`
 
 ## 3) Resmi green durum
 - `M41 PACK PASS`
@@ -54,6 +57,7 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M45 RETENTION + BACKUP PACK PASS OK`
 - `M46 AI COPILOT FOUNDATION PACK PASS OK`
 - `M46.1 AI COPILOT ENRICHMENT PACK PASS OK`
+- `M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK`
 
 ## 4) Link erişim politikası
 - Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
@@ -123,9 +127,21 @@ Detay çekirdek:
 - UI: `Kopyala özet` + `Kopyala not` + `Son 5 analiz` mevcut
 - runtime check + repo-contract + tek pack PASS
 
-## 6.5) Bir sonraki resmi hedef
-- **M46.2 AI Copilot Intent Expansion**
-- M46 ve M46.1 artık sıradaki hedef değil, resmi green katmanlardır
+## 6.5) Step 3.2 özeti — M46.2 resmi green
+- yeni intentler mevcut:
+  - `ASSIGNMENT_READINESS`
+  - `OFFER_DECISION_HELP`
+  - `GPS_SIGNAL_DIAGNOSIS`
+- `intentLabel` + `entityLabel` mevcut
+- `scope.summary` + `highlights` mevcut
+- daha zengin `references` mevcut
+- UI: hızlı seçim araması + highlights + scope summary mevcut
+- runtime check + repo-contract + tek pack PASS
+
+## 6.6) Bir sonraki resmi hedef
+- **henüz sabitlenmedi**
+- çalışma adı olarak **M46.3** açılabilir
+- M46 / M46.1 / M46.2 artık sıradaki hedef değil, resmi green katmanlardır
 
 ## 7) SSOT dosyaları
 - `tools/CHECKLIST_SSOT.md`
@@ -169,3 +185,13 @@ Detay çekirdek:
 - `backend\scripts\m46_1_ai_copilot_enrichment_check.js`
 - `web\src\panels\shared\CopilotPanel.jsx`
 - `docs\RUNBOOK_M46_1_AI_COPILOT_ENRICHMENT.md`
+
+## M46.2 AI Copilot Intent Expansion
+- `tools\pack_m46_2_ai_copilot_intent_expansion.ps1`
+- `tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1`
+- `backend\scripts\m46_2_ai_copilot_intent_expansion_check.js`
+- `backend\src\ai\schemas.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_2_AI_COPILOT_INTENT_EXPANSION.md`
