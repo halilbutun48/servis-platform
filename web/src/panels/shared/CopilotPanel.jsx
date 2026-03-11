@@ -3,13 +3,16 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 
 const INTENT_OPTIONS = [
-  { value: "SHIFT_SUMMARY", label: "Vardiya Özeti", entityType: "shift" },
-  { value: "CONFLICT_EXPLAIN", label: "Conflict Açıklama", entityType: "shift" },
-  { value: "OPS_NOTE_DRAFT", label: "Operasyon Notu Taslağı", entityType: "shift" },
-  { value: "TELEMATICS_HEALTH", label: "Telematics Health", entityType: "vehicle" },
+  { value: "SHIFT_SUMMARY", label: "Vardiya Özeti", helper: "Genel operasyon özeti", entityType: "shift" },
+  { value: "CONFLICT_EXPLAIN", label: "Conflict Açıklama", helper: "Çatışma/risk odağında özet", entityType: "shift" },
+  { value: "OPS_NOTE_DRAFT", label: "Operasyon Notu Taslağı", helper: "Paylaşılabilir metin taslağı", entityType: "shift" },
+  { value: "ASSIGNMENT_READINESS", label: "Atama Hazırlık Kontrolü", helper: "Araç/sürücü/durak hazır mı", entityType: "shift" },
+  { value: "OFFER_DECISION_HELP", label: "Teklif Karar Yardımı", helper: "Offer/decision dar boğazı", entityType: "shift" },
+  { value: "TELEMATICS_HEALTH", label: "Telematics Health", helper: "Cihaz ve GPS sağlık özeti", entityType: "vehicle" },
+  { value: "GPS_SIGNAL_DIAGNOSIS", label: "GPS Sinyal Teşhisi", helper: "Signal/ingest teşhisi", entityType: "vehicle" },
 ];
 
-const HISTORY_KEY = "copilot.history.m46_1";
+const HISTORY_KEY = "copilot.history.m46_2";
 
 function firstList(resp) {
   if (Array.isArray(resp)) return resp;
@@ -48,11 +51,40 @@ function severityStyle(severity) {
   return map[severity] || { color: "#fff", background: "#667085" };
 }
 
+function optionLabel(entityType, item) {
+  if (!item) return "";
+  if (entityType === "vehicle") {
+    return `#${item.id} • ${item.plate || "plate?"} • ${item.status || "-"}`;
+  }
+  return `#${item.id} • ${item.status || "-"} • ${item.company?.name || item.room?.name || "shift"}`;
+}
+
+function filterItems(entityType, list, search) {
+  const q = String(search || "").trim().toLowerCase();
+  if (!q) return list;
+  return (Array.isArray(list) ? list : []).filter((item) => optionLabel(entityType, item).toLowerCase().includes(q));
+}
+
+function ReferenceList({ data }) {
+  const entries = Object.entries(data || {});
+  if (!entries.length) return <div className="muted">Reference görünmüyor.</div>;
+  return (
+    <ul style={{ margin: 0, paddingLeft: 18 }}>
+      {entries.map(([k, v]) => (
+        <li key={k}>
+          <b>{k}</b>: {Array.isArray(v) ? (v.length ? v.join(", ") : "-") : (v ?? "-").toString()}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function CopilotPanel() {
   const { token, me } = useSession();
   const [intent, setIntent] = useState("SHIFT_SUMMARY");
   const [entityType, setEntityType] = useState("shift");
   const [entityId, setEntityId] = useState("");
+  const [pickerSearch, setPickerSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [result, setResult] = useState(null);
@@ -69,6 +101,7 @@ export default function CopilotPanel() {
   useEffect(() => {
     const selected = INTENT_OPTIONS.find((x) => x.value === intent);
     setEntityType(selected?.entityType || "shift");
+    setPickerSearch("");
   }, [intent]);
 
   useEffect(() => {
@@ -101,7 +134,10 @@ export default function CopilotPanel() {
     };
   }, [token, me?.role]);
 
+  const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const targetOptions = useMemo(() => (entityType === "vehicle" ? vehicles : recentShifts), [entityType, vehicles, recentShifts]);
+  const filteredOptions = useMemo(() => filterItems(entityType, targetOptions, pickerSearch), [entityType, pickerSearch, targetOptions]);
+  const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
 
   async function onRun(e) {
     e?.preventDefault?.();
@@ -179,16 +215,23 @@ export default function CopilotPanel() {
             </label>
           </div>
 
-          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "1fr auto" }}>
+          <div className="muted" style={{ marginTop: -4 }}>
+            <b>{selectedIntent.label}</b> — {selectedIntent.helper}
+          </div>
+
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <label className="muted">
-              Hızlı seçim {loadingRefs ? "(yükleniyor...)" : ""}
+              Hızlı seçim arama {loadingRefs ? "(yükleniyor...)" : ""}
+              <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder={entityType === "vehicle" ? "plaka / status ara" : "status / şirket / room ara"} />
+            </label>
+
+            <label className="muted">
+              Hızlı seçim
               <select value={entityId} onChange={(e) => setEntityId(e.target.value)}>
                 <option value="">Seç...</option>
-                {targetOptions.map((x) => (
+                {filteredOptions.map((x) => (
                   <option key={x.id} value={x.id}>
-                    {entityType === "vehicle"
-                      ? `#${x.id} • ${x.plate || "plate?"}`
-                      : `#${x.id} • ${x.status || "-"} • ${x.company?.name || x.room?.name || "shift"}`}
+                    {optionLabel(entityType, x)}
                   </option>
                 ))}
               </select>
@@ -198,6 +241,12 @@ export default function CopilotPanel() {
               {busy ? "Çalışıyor..." : "Analiz Et"}
             </button>
           </div>
+
+          {selectedItem ? (
+            <div className="muted">
+              Seçili kayıt: <b>{optionLabel(entityType, selectedItem)}</b>
+            </div>
+          ) : null}
 
           <div className="muted">
             Desteklenen roller: ROOM / COMPANY / SUPER_ADMIN. ROOM ve SUPER_ADMIN için step-up gerekir.
@@ -216,8 +265,15 @@ export default function CopilotPanel() {
               <span>Mode: <b>{result.mode || "-"}</b></span>
               <span>Scope: <b>{result.scope?.role || me?.role || "-"}</b></span>
               <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
+              <span>Oluşturma: <b>{result.generatedAt ? new Date(result.generatedAt).toLocaleString("tr-TR") : "-"}</b></span>
               <span style={{ ...severityStyle(result.severity), padding: "2px 8px", borderRadius: 999, fontWeight: 700 }}>{result.severity || "-"}</span>
             </div>
+          </div>
+
+          <div className="muted" style={{ display: "grid", gap: 4 }}>
+            <div><b>{result.intentLabel || result.intent || "-"}</b></div>
+            <div>{result.entityLabel || `${result.entityType || "entity"} #${result.entityId || "-"}`}</div>
+            <div>{result.scope?.summary || "-"}</div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -227,6 +283,15 @@ export default function CopilotPanel() {
           </div>
 
           <div style={{ fontSize: 16, fontWeight: 700 }}>{result.summary || "-"}</div>
+
+          {result.highlights?.length ? (
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Highlights</div>
+              <ul>
+                {result.highlights.map((x, i) => <li key={i}>{x}</li>)}
+              </ul>
+            </div>
+          ) : null}
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
@@ -256,7 +321,7 @@ export default function CopilotPanel() {
             </div>
             <div>
               <div className="title" style={{ fontSize: 16 }}>References</div>
-              <pre style={{ whiteSpace: "pre-wrap", margin: 0 }}>{JSON.stringify(result.references || {}, null, 2)}</pre>
+              <ReferenceList data={result.references} />
             </div>
           </div>
 
@@ -290,7 +355,7 @@ export default function CopilotPanel() {
       <div className="card">
         <div className="title" style={{ fontSize: 16 }}>Kısa Not</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Bu enrichment sürümü deterministic çalışır; structured JSON döndürür, severity/blocks/nextChecks alanlarını üretir ve audit log’a <code>AI_COPILOT_QUERY</code> yazar.
+          Bu intent expansion sürümü deterministic çalışır; structured JSON döndürür, read-only / suggestion-first kalır, audit log’a <code>AI_COPILOT_QUERY</code> yazar ve ROOM / SUPER_ADMIN için step-up çizgisini korur.
         </div>
       </div>
     </div>

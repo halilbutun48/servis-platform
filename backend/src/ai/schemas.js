@@ -3,11 +3,24 @@ import { z } from "zod";
 export const AI_COPILOT_INTENTS = [
   "SHIFT_SUMMARY",
   "CONFLICT_EXPLAIN",
-  "TELEMATICS_HEALTH",
   "OPS_NOTE_DRAFT",
+  "ASSIGNMENT_READINESS",
+  "OFFER_DECISION_HELP",
+  "TELEMATICS_HEALTH",
+  "GPS_SIGNAL_DIAGNOSIS",
 ];
 
 export const AI_COPILOT_ENTITY_TYPES = ["shift", "vehicle"];
+
+const SHIFT_INTENTS = [
+  "SHIFT_SUMMARY",
+  "CONFLICT_EXPLAIN",
+  "OPS_NOTE_DRAFT",
+  "ASSIGNMENT_READINESS",
+  "OFFER_DECISION_HELP",
+];
+
+const VEHICLE_INTENTS = ["TELEMATICS_HEALTH", "GPS_SIGNAL_DIAGNOSIS"];
 
 const requestSchema = z
   .object({
@@ -17,14 +30,14 @@ const requestSchema = z
     format: z.enum(["json"]).optional().default("json"),
   })
   .superRefine((val, ctx) => {
-    if (val.intent === "TELEMATICS_HEALTH" && val.entityType !== "vehicle") {
+    if (VEHICLE_INTENTS.includes(val.intent) && val.entityType !== "vehicle") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["entityType"],
-        message: "TELEMATICS_HEALTH intent requires entityType=vehicle",
+        message: `${val.intent} intent requires entityType=vehicle`,
       });
     }
-    if (["SHIFT_SUMMARY", "CONFLICT_EXPLAIN", "OPS_NOTE_DRAFT"].includes(val.intent) && val.entityType !== "shift") {
+    if (SHIFT_INTENTS.includes(val.intent) && val.entityType !== "shift") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["entityType"],

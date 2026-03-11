@@ -15,6 +15,10 @@ function diffMinutes(a, b = new Date()) {
   return Math.round((av.getTime() - b.getTime()) / 60000);
 }
 
+function unique(list) {
+  return Array.from(new Set((Array.isArray(list) ? list : []).filter((x) => x != null)));
+}
+
 function ensureShiftScope(user, shift) {
   if (!shift) {
     const e = new Error("SHIFT_NOT_FOUND");
@@ -96,6 +100,8 @@ function buildShiftFacts(shift) {
   facts.push(`Sürücü: ${shift.driver?.fullName || "atanmamış"}`);
   facts.push(`Durak sayısı: ${Number(shift.stopCount || 0)}`);
   facts.push(`Personel sayısı: ${Number(shift.peopleCount || 0)}`);
+  facts.push(`Atama sayısı: ${Number(shift.assignmentCount || 0)}`);
+  facts.push(`Açık teklif sayısı: ${Number(shift.openOfferCount || 0)}`);
   if (shift.requiredPax != null) facts.push(`Gerekli kapasite: ${shift.requiredPax}`);
   if (shift.agreementId) facts.push(`Agreement bağlı: #${shift.agreementId}`);
   if (shift.direction) facts.push(`Yön: ${shift.direction}`);
@@ -127,6 +133,9 @@ function buildShiftRisks(shift) {
   if (shift.status === "REQUESTED" && !shift.roomId && Number(shift.openOfferCount || 0) === 0) {
     risks.push("Shift REQUESTED ama aktif oda teklifi görünmüyor.");
   }
+  if (shift.status === "APPROVED" && !shift.roomId) {
+    risks.push("Shift APPROVED ama room ataması görünmüyor.");
+  }
   return risks;
 }
 
@@ -137,7 +146,7 @@ function buildShiftBlocks(shift) {
   if (!Number(shift.stopCount || 0)) blocks.push("STOPS_MISSING");
   if (Number(shift.requiredPax || 0) > Number(shift.vehicle?.capacity || 0) && shift.vehicle?.capacity) blocks.push("CAPACITY_EXCEEDED");
   if (shift.extendRequestedEndAt && shift.extendDecision === "PENDING") blocks.push("EXTEND_PENDING");
-  return blocks;
+  return unique(blocks);
 }
 
 function buildShiftSuggestions(shift) {
@@ -157,6 +166,12 @@ function buildShiftSuggestions(shift) {
   if (!shift.stopCount) {
     suggestions.push("Durak üretimi/persist adımını kontrol et.");
   }
+  if (shift.status === "REQUESTED" && !shift.roomId && Number(shift.openOfferCount || 0) === 0) {
+    suggestions.push("Yeni room offer veya doğrudan assign hattını aç.");
+  }
+  if (shift.agreementId) {
+    suggestions.push("Agreement bağlı vardiyada pazarlık kapalı/uyumlu akışı doğrula.");
+  }
   return nonEmpty(suggestions);
 }
 
@@ -166,8 +181,10 @@ function buildShiftNextChecks(shift, blocks) {
   if (blocks.includes("DRIVER_MISSING")) checks.push("Sürücü müsaitlik ve bind ekranını kontrol et.");
   if (blocks.includes("STOPS_MISSING")) checks.push("Durak üret/persist akışını yeniden doğrula.");
   if (blocks.includes("CAPACITY_EXCEEDED")) checks.push("Kapasite için split veya daha büyük araç değerlendir.");
+  if (shift.roomOfferDecision === "PENDING") checks.push("Room offer karar panelinde bekleyen kararı netleştir.");
+  if (shift.status === "REQUESTED" && !shift.roomId && Number(shift.openOfferCount || 0) === 0) checks.push("Aktif teklif yoksa yeni oda/araç yönlendirmesini başlat.");
   if (!checks.length) checks.push("Vardiya için öne çıkan bloklayıcı görünmüyor; canlı takip ve audit izini izle.");
-  return checks;
+  return unique(checks);
 }
 
 function buildShiftSeverity(shift, risks, blocks) {
@@ -213,6 +230,79 @@ function buildOpsNoteDraftText(shift, risks, suggestions, blocks) {
   return lines.join("\n");
 }
 
+function buildAssignmentReadinessSummaryText(shift, risks, blocks) {
+  if (blocks.length) {
+    return `Atama hazırlığı tamam değil: ${blocks.join(", ")}. Shift #${shift.id} şu an start-ready görünmüyor.`;
+  }
+  if (risks.length) {
+    return `Atama hazırlığı büyük ölçüde tamam, ancak dikkat isteyen konu var: ${risks[0]}`;
+  }
+  return `Shift #${shift.id} atama/hazırlık açısından kritik eksik göstermiyor.`;
+}
+
+function buildOfferDecisionHelpSummaryText(shift, risks) {
+  if (shift.agreementId) {
+    return `Shift #${shift.id} agreement bağlı; karar akışında agreement uyumunu önce doğrula.`;
+  }
+  if (shift.roomOfferDecision === "PENDING") {
+    return `Shift #${shift.id} için room offer kararı bekliyor; fiyat/araç ve scope uyumuna göre netleştirme önerilir.`;
+  }
+  if (Number(shift.openOfferCount || 0) > 1) {
+    return `Shift #${shift.id} için birden fazla açık teklif var; araç, kapsam ve kapasiteye göre kıyas yapılmalı.`;
+  }
+  if (risks.length) {
+    return `Teklif/karar tarafında dikkat isteyen konu var: ${risks[0]}`;
+  }
+  return `Shift #${shift.id} için belirgin teklif kararı bloklayıcısı görünmüyor.`;
+}
+
+function buildOfferDecisionSuggestions(shift) {
+  const suggestions = [];
+  if (shift.agreementId) suggestions.push("Agreement bağlı akışta offer UI kapatma/uyum davranışını doğrula.");
+  if (shift.roomOfferDecision === "PENDING") suggestions.push("Room offer için onay/red/karşı teklif kararını netleştir.");
+  if (Number(shift.openOfferCount || 0) > 1) suggestions.push("Açık teklifleri araç, kapasite ve operasyon yakınlığına göre kıyasla.");
+  if (shift.status === "REQUESTED" && !shift.roomId && Number(shift.openOfferCount || 0) === 0) suggestions.push("Yeni room offer aç veya uygun room assignment hattını kullan.");
+  if (!suggestions.length) suggestions.push("Karar akışında belirgin pazarlık/offer darboğazı görünmüyor.");
+  return unique(suggestions);
+}
+
+function buildOfferDecisionNextChecks(shift) {
+  const checks = [];
+  if (shift.roomOfferDecision === "PENDING") checks.push("Room teklif kararı ekranında bekleyen alanları kapat.");
+  if (Number(shift.openOfferCount || 0) > 0) checks.push("Açık tekliflerin room/araç uygunluğunu ve response durumunu kontrol et.");
+  if (shift.companyOfferAmount != null || shift.companyOfferVehicleId != null) checks.push("Company offer alanları ile room decision alanlarını birlikte karşılaştır.");
+  if (shift.agreementId) checks.push("Agreement bağlı vardiyada offer/pazarlık UI davranışını doğrula.");
+  if (!checks.length) checks.push("Teklif karar akışında kritik ek kontrol görünmüyor.");
+  return unique(checks);
+}
+
+function buildShiftHighlights(shift, risks, blocks) {
+  const highlights = [];
+  if (blocks.length) highlights.push(`Bloklayıcı: ${blocks[0]}`);
+  if (risks.length) highlights.push(`Risk: ${risks[0]}`);
+  highlights.push(`Durum: ${shift.status}`);
+  highlights.push(`Araç/Sürücü: ${shift.vehicle?.plate || "-"} / ${shift.driver?.fullName || "-"}`);
+  return unique(highlights).slice(0, 4);
+}
+
+function buildShiftReferences(shift) {
+  return {
+    shiftId: shift.id,
+    vehicleId: shift.vehicleId || null,
+    driverId: shift.driverId || null,
+    roomId: shift.roomId || null,
+    companyId: shift.companyId || null,
+    agreementId: shift.agreementId || null,
+    offeredRoomIds: unique(shift.offeredRoomIds || []),
+    openOfferCount: Number(shift.openOfferCount || 0),
+    stopCount: Number(shift.stopCount || 0),
+    peopleCount: Number(shift.peopleCount || 0),
+    assignmentCount: Number(shift.assignmentCount || 0),
+    requiredPax: Number(shift.requiredPax || 0),
+    progressId: shift.progress?.id || null,
+  };
+}
+
 function buildVehicleFacts(vehicle) {
   const facts = [];
   facts.push(`Araç: ${vehicle.plate}`);
@@ -235,6 +325,7 @@ function buildVehicleRisks(vehicle) {
   if (ageMin != null && ageMin >= 30) risks.push(`Son GPS akışı ${ageMin} dakikadır güncellenmedi.`);
   if (String(vehicle.gpsState?.lastUiStatus || "") === "STALE") risks.push("GPS UI state STALE.");
   if (vehicle.deviceCount > 0 && vehicle.activeDeviceCount === 0) risks.push("Cihaz var ama hiçbiri ACTIVE değil.");
+  if ((vehicle.currentShiftIds || []).length > 0 && !vehicle.gpsLast?.at) risks.push("Aktif shift bağlantısı var ama GPS sinyali görünmüyor.");
   return risks;
 }
 
@@ -243,7 +334,7 @@ function buildVehicleBlocks(vehicle) {
   if (!vehicle.activeDeviceCount) blocks.push("NO_ACTIVE_DEVICE");
   if (!vehicle.gpsLast?.at) blocks.push("NO_GPS_SIGNAL");
   if (String(vehicle.gpsState?.lastUiStatus || "") === "STALE") blocks.push("GPS_STALE");
-  return blocks;
+  return unique(blocks);
 }
 
 function buildVehicleSuggestions(vehicle) {
@@ -251,6 +342,7 @@ function buildVehicleSuggestions(vehicle) {
   if (!vehicle.activeDeviceCount) suggestions.push("Device create/rotate ve ACTIVE durumunu kontrol et.");
   if (String(vehicle.gpsState?.lastUiStatus || "") === "STALE") suggestions.push("Son ingest zamanını ve telematics push hattını doğrula.");
   if (!vehicle.driver?.id) suggestions.push("Araç için varsayılan sürücü bağını kontrol et.");
+  if ((vehicle.currentShiftIds || []).length > 0 && !vehicle.gpsLast?.at) suggestions.push("Aktif vardiyalı araçta canlı konum akışını öncelikli teşhis et.");
   return nonEmpty(suggestions);
 }
 
@@ -259,8 +351,9 @@ function buildVehicleNextChecks(vehicle, blocks) {
   if (blocks.includes("NO_ACTIVE_DEVICE")) checks.push("ROOM > Vehicles > Telematics sekmesinde ACTIVE device kontrolü yap.");
   if (blocks.includes("NO_GPS_SIGNAL")) checks.push("Direct push/vendor provider son ingest denemesini doğrula.");
   if (blocks.includes("GPS_STALE")) checks.push("gpsState, notify ve room/company canlı panelini karşılaştır.");
+  if ((vehicle.currentShiftIds || []).length > 0) checks.push("Aktif shift bağlıysa canlı harita/panel ile telematics sinyalini karşılaştır.");
   if (!checks.length) checks.push("Araç için kritik bloklayıcı görünmüyor; canlı akışı izlemeye devam et.");
-  return checks;
+  return unique(checks);
 }
 
 function buildVehicleSeverity(risks, blocks) {
@@ -275,6 +368,37 @@ function buildVehicleSummaryText(vehicle, risks, blocks) {
     return `Telematics sağlık özeti: ${vehicle.plate} için bloklayıcı durum var (${blocks[0]}).`;
   }
   return `Telematics sağlık özeti: ${vehicle.plate} için ${risks.length ? risks[0] : "kritik alarm görünmüyor."}`;
+}
+
+function buildGpsSignalDiagnosisSummaryText(vehicle, risks, blocks) {
+  if (blocks.includes("NO_ACTIVE_DEVICE")) return `${vehicle.plate} için sinyal teşhisinde ilk problem active device eksikliği.`;
+  if (blocks.includes("NO_GPS_SIGNAL")) return `${vehicle.plate} için GPS sinyali görünmüyor; ingest hattı kontrol edilmeli.`;
+  if (blocks.includes("GPS_STALE")) return `${vehicle.plate} için son sinyal stale durumda; push veya state güncellemesi gecikmiş olabilir.`;
+  if (risks.length) return `${vehicle.plate} için sinyal tarafında dikkat isteyen konu var: ${risks[0]}`;
+  return `${vehicle.plate} için sinyal teşhisinde kritik alarm görünmüyor.`;
+}
+
+function buildVehicleHighlights(vehicle, risks, blocks) {
+  const highlights = [];
+  if (blocks.length) highlights.push(`Bloklayıcı: ${blocks[0]}`);
+  if (risks.length) highlights.push(`Risk: ${risks[0]}`);
+  highlights.push(`GPS UI: ${vehicle.gpsState?.lastUiStatus || "UNKNOWN"}`);
+  highlights.push(`Active devices: ${vehicle.activeDeviceCount}/${vehicle.deviceCount}`);
+  return unique(highlights).slice(0, 4);
+}
+
+function buildVehicleReferences(vehicle) {
+  return {
+    vehicleId: vehicle.id,
+    roomId: vehicle.roomId || null,
+    driverId: vehicle.driver?.id || null,
+    currentShiftIds: unique(vehicle.currentShiftIds || []),
+    currentCompanyNames: unique(vehicle.currentCompanyNames || []),
+    deviceIds: unique((vehicle.devices || []).map((x) => x.id)),
+    activeDeviceIds: unique((vehicle.devices || []).filter((x) => x.status === "ACTIVE").map((x) => x.id)),
+    gpsLastAt: vehicle.gpsLast?.at || null,
+    gpsUiState: vehicle.gpsState?.lastUiStatus || null,
+  };
 }
 
 export async function getShiftContext(user, shiftId) {
@@ -381,7 +505,7 @@ export async function getVehicleContext(user, vehicleId) {
   };
 }
 
-function makeResponse({ summary, facts, risks, suggestions, noteDraft = null, severity, blocks, nextChecks, references }) {
+function makeResponse({ summary, facts, risks, suggestions, noteDraft = null, severity, blocks, nextChecks, references, highlights = [] }) {
   return {
     summary,
     facts,
@@ -392,6 +516,7 @@ function makeResponse({ summary, facts, risks, suggestions, noteDraft = null, se
     blocks,
     nextChecks,
     references,
+    highlights,
   };
 }
 
@@ -410,7 +535,8 @@ export function buildCopilotPayload(intent, context) {
       severity: buildShiftSeverity(context, risks, blocks),
       blocks,
       nextChecks,
-      references: { shiftId: context.id, vehicleId: context.vehicleId || null, driverId: context.driverId || null, roomId: context.roomId || null, companyId: context.companyId || null },
+      references: buildShiftReferences(context),
+      highlights: buildShiftHighlights(context, risks, blocks),
     });
   }
 
@@ -428,7 +554,8 @@ export function buildCopilotPayload(intent, context) {
       severity: buildShiftSeverity(context, risks, blocks),
       blocks,
       nextChecks,
-      references: { shiftId: context.id, vehicleId: context.vehicleId || null, driverId: context.driverId || null, roomId: context.roomId || null, companyId: context.companyId || null },
+      references: buildShiftReferences(context),
+      highlights: buildShiftHighlights(context, risks, blocks),
     });
   }
 
@@ -447,7 +574,46 @@ export function buildCopilotPayload(intent, context) {
       severity: buildShiftSeverity(context, risks, blocks),
       blocks,
       nextChecks,
-      references: { shiftId: context.id, vehicleId: context.vehicleId || null, driverId: context.driverId || null, roomId: context.roomId || null, companyId: context.companyId || null },
+      references: buildShiftReferences(context),
+      highlights: buildShiftHighlights(context, risks, blocks),
+    });
+  }
+
+  if (intent === "ASSIGNMENT_READINESS") {
+    const facts = buildShiftFacts(context);
+    const risks = buildShiftRisks(context);
+    const blocks = buildShiftBlocks(context);
+    const suggestions = buildShiftSuggestions(context);
+    const nextChecks = buildShiftNextChecks(context, blocks);
+    return makeResponse({
+      summary: buildAssignmentReadinessSummaryText(context, risks, blocks),
+      facts,
+      risks,
+      suggestions,
+      severity: buildShiftSeverity(context, risks, blocks),
+      blocks,
+      nextChecks,
+      references: buildShiftReferences(context),
+      highlights: buildShiftHighlights(context, risks, blocks),
+    });
+  }
+
+  if (intent === "OFFER_DECISION_HELP") {
+    const facts = buildShiftFacts(context);
+    const risks = buildShiftRisks(context);
+    const blocks = buildShiftBlocks(context);
+    const suggestions = buildOfferDecisionSuggestions(context);
+    const nextChecks = buildOfferDecisionNextChecks(context);
+    return makeResponse({
+      summary: buildOfferDecisionHelpSummaryText(context, risks),
+      facts,
+      risks,
+      suggestions,
+      severity: buildShiftSeverity(context, risks, blocks),
+      blocks,
+      nextChecks,
+      references: buildShiftReferences(context),
+      highlights: buildShiftHighlights(context, risks, blocks),
     });
   }
 
@@ -465,7 +631,27 @@ export function buildCopilotPayload(intent, context) {
       severity: buildVehicleSeverity(risks, blocks),
       blocks,
       nextChecks,
-      references: { vehicleId: context.id, roomId: context.roomId || null },
+      references: buildVehicleReferences(context),
+      highlights: buildVehicleHighlights(context, risks, blocks),
+    });
+  }
+
+  if (intent === "GPS_SIGNAL_DIAGNOSIS") {
+    const facts = buildVehicleFacts(context);
+    const risks = buildVehicleRisks(context);
+    const blocks = buildVehicleBlocks(context);
+    const suggestions = buildVehicleSuggestions(context);
+    const nextChecks = buildVehicleNextChecks(context, blocks);
+    return makeResponse({
+      summary: buildGpsSignalDiagnosisSummaryText(context, risks, blocks),
+      facts,
+      risks,
+      suggestions,
+      severity: buildVehicleSeverity(risks, blocks),
+      blocks,
+      nextChecks,
+      references: buildVehicleReferences(context),
+      highlights: buildVehicleHighlights(context, risks, blocks),
     });
   }
 
@@ -474,4 +660,3 @@ export function buildCopilotPayload(intent, context) {
   e.code = "UNSUPPORTED_INTENT";
   throw e;
 }
-
