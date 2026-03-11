@@ -1,6 +1,6 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER (SSOT)
 
-Tarih: 2026-03-10  
+Tarih: 2026-03-11  
 Timezone: Europe/Istanbul
 
 ## 0) Mevcut durum / referans
@@ -18,6 +18,9 @@ Current GREEN ref:
 - ✅ `M106 REPO HYGIENE + LINK TTL CHECK PASS`
 - ✅ `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
 - ✅ `M44 TELEMATICS PACK PASS OK`
+- ✅ `M45 RETENTION + BACKUP PACK PASS OK`
+- ✅ `M46 AI COPILOT FOUNDATION PACK PASS OK`
+- ✅ `M46.1 AI COPILOT ENRICHMENT PACK PASS OK`
 
 Ana kanıt komutları:
 - `./tools/pack.ps1 -To 41`
@@ -30,12 +33,18 @@ Ana kanıt komutları:
 - `./tools/check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
+- `./tools/pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- `./tools/pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
+- `./tools/pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform`
 
 > Not: Step 1 TOTP green kabulü; M41 + Step1 Foundation + TOTP Runtime + TOTP Repo Contract PASS ile doğrulanmıştır.  
 > Not 2: M104/M105/M106 sonrası repo ağacı, tools kökü ve primer/checklist/startpack hattı hizalanmıştır.  
 > Not 3: M43 green sonrası Step 2 resmi olarak tamamlanmıştır.  
 > Not 4: M44 green sonrası Step 2.5 resmi olarak tamamlanmıştır.  
-> Not 5: Repo içinde eski/internal migration adlarında farklı etiketler görülebilir; milestone SSOT anlamı burada yazan primer/checklist üzerinden takip edilir.
+> Not 5: M45 green sonrası Step 2.6 resmi olarak tamamlanmıştır.  
+> Not 6: M46 green sonrası Step 3 resmi olarak tamamlanmıştır.  
+> Not 7: M46.1 green sonrası Step 3.1 resmi olarak tamamlanmıştır.  
+> Not 8: Repo içinde eski/internal migration adlarında farklı etiketler görülebilir; milestone SSOT anlamı burada yazan primer/checklist üzerinden takip edilir.
 
 ---
 
@@ -262,58 +271,107 @@ Overlay / cleanup notları:
 
 ---
 
-## 5) Bir sonraki resmi iş
+## 5) Güncel resmi iş / yeni hedef durumu
 
-## Step 3 — M46 AI Copilot Foundation
-Sıradaki resmi hedef:
-- sistem için domain AI foundation kurulması
+## Step 3 — M46 AI Copilot Foundation — RESMİ GREEN
+
+Bu katman resmi olarak green kabul edilir:
+- `M46 AI COPILOT FOUNDATION CHECK PASS`
+- `M46 AI COPILOT FOUNDATION REPO CONTRACT PASS`
+- `M46 AI COPILOT FOUNDATION PACK PASS OK`
+
+Kapsam:
+- `POST /api/ai/copilot`
 - read-only / suggestion-first copilot hattı
 - role/scope kontrollü AI erişimi
 - structured JSON output
-- whitelist tool / resolver yaklaşımı
-- audit log
-- mevcut operasyon verisini açıklayan yardımcı katman
+- whitelist resolver / tool yaklaşımı
+- `ROOM` + `SUPER_ADMIN` için step-up guard
+- `AI_COPILOT_QUERY` audit izi
+- vardiya özeti / conflict açıklama / telematics health / operasyon notu taslağı
+- write aksiyon yok; foundation katmanı yalnız açıklama ve öneri üretir
 
-İlk kapsam önerisi:
-- `POST /api/ai/copilot`
-- vardiya özeti
-- conflict açıklama
-- telematics health / anomali açıklama
-- operasyon notu / bilgilendirme taslağı
-- write aksiyon yok; önce read-only + suggestion
+Repo izi:
+- `backend/src/routes/ai.js`
+- `backend/src/ai/schemas.js`
+- `backend/src/ai/service.js`
+- `backend/src/ai/tools.js`
+- `backend/scripts/m46_ai_copilot_check.js`
+- `web/src/panels/shared/CopilotPanel.jsx`
+- `docs/RUNBOOK_M46_AI_COPILOT.md`
+- `tools/pack_m46_ai_copilot.ps1`
+- `tools/check_m46_ai_copilot_repo_contract.ps1`
 
-Uygulama notu:
-- mevcut RBAC / scope / TOTP step-up davranışı korunacak
-- kritik kararları AI vermeyecek
-- AI yalnız whitelist edilmiş veri çözücüler / tool’lar üzerinden okuyacak
-- otomatik işlem yapmayacak
-- audit ve güvenlik ilk günden zorunlu olacak
+## Step 3.1 — M46.1 AI Copilot Enrichment — RESMİ GREEN
 
-Ardından:
-- Step 3.1 / V2 başlıkları
+Bu katman da resmi olarak green kabul edilir:
+- `M46.1 AI COPILOT ENRICHMENT CHECK PASS`
+- `M46.1 AI COPILOT ENRICHMENT REPO CONTRACT PASS`
+- `M46.1 AI COPILOT ENRICHMENT PACK PASS OK`
+
+Kapsam:
+- `copilotVersion` alanı
+- `severity` üretimi
+- `blocks` üretimi
+- `nextChecks` üretimi
+- `references` üretimi
+- UI’da `Kopyala özet`
+- UI’da `Kopyala not`
+- UI’da `Son 5 analiz`
+- read-only / deterministic enrichment korunur; write aksiyon yoktur
+
+Repo izi:
+- `backend/scripts/m46_1_ai_copilot_enrichment_check.js`
+- `tools/pack_m46_1_ai_copilot_enrichment.ps1`
+- `tools/check_m46_1_ai_copilot_enrichment_repo_contract.ps1`
+- `docs/RUNBOOK_M46_1_AI_COPILOT_ENRICHMENT.md`
+- `web/src/panels/shared/CopilotPanel.jsx`
+
+Bir sonraki resmi hedef:
+- **M46.2 AI Copilot Intent Expansion**
+- intent/entity picker güçlendirme
+- daha zengin scoped explanation / references üretimi
+- foundation ve enrichment green zemini korunarak ilerleme
 
 ---
 
-## 6) M44 sonrası dikkat edilmesi gereken kararlar
+## 6) Korunacak ürün kararları
 
 - `PERSONEL` hâlâ public link öncelikli modelde
 - Google Auth geldi diye personel için zorunlu hesap / login’e dönülmeyecek
-- telematics hattı mevcut driver GPS akışının yerine geçmez; ek kaynak olarak yaşar
-- device provisioning + vendor shared secret doğrulaması korunmalı
-- room/company ekranlarında veri kaynağı farkı operasyonu bozmayacak şekilde ele alınmalı
-- local login ile Google login birlikte yaşamaya devam eder; migration / bağlantı kuralları korunmalı
+- invite-based access kontrolü role/scope mantığıyla korunacak
+- mevcut parent invite akışı bozulmayacak
+- local login ile Google login birlikte yaşamaya devam edecek
+- telematics, mevcut driver GPS akışını ikame etmez; ek kaynak olarak çalışır
+- ROOM tarafı device provisioning sahibi olmaya devam eder
+- AI hattı read-only / suggestion-first kalır; otomatik write aksiyon yapmaz
+- overlay zip standardı: tek kök klasör, nested root yok
 
 ---
 
 ## 7) Yeni sohbet açınca ilk cümle önerisi
 
-"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK + M45 RETENTION + BACKUP PACK PASS OK durumunda. M44.5 ile SSOT sync yapıldı, M44.6 ile ROOM > Vehicles içine Telematics UI eklendi. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Sıradaki resmi hedef mevcut repoya göre tek overlay zip standardıyla M46 AI Copilot Foundation." 
+"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK + M45 RETENTION + BACKUP PACK PASS OK + M46 AI COPILOT FOUNDATION PACK PASS OK + M46.1 AI COPILOT ENRICHMENT PACK PASS OK durumunda. M44.5 ile SSOT sync yapıldı, M44.6 ile ROOM > Vehicles içine Telematics UI eklendi. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Sıradaki resmi hedef M46.2 AI Copilot Intent Expansion."
 
-## M45 tools
+Kanonik M45 araçları:
 - `tools\pack_m45_retention_backup.ps1`
 - `tools\check_m45_retention_backup_repo_contract.ps1`
 - `tools\backup_create_m45.ps1`
 - `tools\backup_restore_m45.ps1`
-- `backend\scripts\m45_retention_backup_check.js`
-- `backend\src\ops\retentionBackupPolicy.js`
 - `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
+
+Kanonik M46 araçları:
+- `tools\pack_m46_ai_copilot.ps1`
+- `tools\check_m46_ai_copilot_repo_contract.ps1`
+- `backend\scripts\m46_ai_copilot_check.js`
+- `backend\src\routes\ai.js`
+- `backend\src\ai\schemas.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `docs\RUNBOOK_M46_AI_COPILOT.md`
+
+Kanonik M46.1 araçları:
+- `tools\pack_m46_1_ai_copilot_enrichment.ps1`
+- `tools\check_m46_1_ai_copilot_enrichment_repo_contract.ps1`
+- `backend\scripts\m46_1_ai_copilot_enrichment_check.js`
+- `docs\RUNBOOK_M46_1_AI_COPILOT_ENRICHMENT.md`

@@ -1,7 +1,7 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
 
 Timezone: Europe/Istanbul  
-Last updated: **2026-03-10**  
+Last updated: **2026-03-11**  
 Current GREEN ref:
 - **M41 PACK PASS**
 - **M42 OPTIONAL PACK PASS**
@@ -13,10 +13,13 @@ Current GREEN ref:
 - **M106 REPO HYGIENE + LINK TTL CHECK PASS**
 - **M43 GOOGLE AUTH + INVITE GATE PACK PASS OK**
 - **M44 TELEMATICS PACK PASS OK**
+- **M45 RETENTION + BACKUP PACK PASS OK**
+- **M46 AI COPILOT FOUNDATION PACK PASS OK**
+- **M46.1 AI COPILOT ENRICHMENT PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
-2) **M42 Optional Release + Step 0.6 + Step 1 + Step 2 sonrası ekler** (ana regresyonu bozmadan ayrı doğrulanır)
+2) **M42 Optional Release + Step 0.6 + Step 1 + Step 2 / Step 3 sonrası ekler** (ana regresyonu bozmadan ayrı doğrulanır)
 
 **Yol Haritası (Sıralı)**
 - **Step 0:** V1 Manuel Checklist %100 PASS
@@ -25,8 +28,10 @@ Bu dosya iki amaç taşır:
 - **Step 1:** Minimum Security **resmi green**
 - **Step 2 (M43):** Google Auth (GIS) + Invite Gate (rol/scope güvenliği) **resmi green**
 - **Step 2.5 (M44):** Telematics (Normalize Core + Direct HTTP Push + Vendor Cloud) **resmi green**
-- **Step 2.6 (M45):** 2Y Retention + GPS geçmiş (50sn/50m) + Backup/PITR
-- **Step 3 (V2):** V2-Scale → V2-Mobile Driver → V2-ProdOps → V2-FieldFeatures
+- **Step 2.6 (M45):** 2Y Retention + GPS geçmiş (50sn/50m) + Backup/PITR **resmi green**
+- **Step 3 (M46):** AI Copilot Foundation **resmi green**
+- **Step 3.1 (M46.1):** AI Copilot Enrichment **resmi green**
+- **Step 3.2 (V2):** V2-Scale → V2-Mobile Driver → V2-ProdOps → V2-FieldFeatures
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
@@ -34,7 +39,12 @@ Bu dosya iki amaç taşır:
 > Son TOTP pack satırı logda kesilmiş olsa da runtime + repo-contract PASS görüldüğü için Step 1 green kabul edilir.  
 > Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri de PASS durumundadır.  
 > M43 Google Auth + Invite Gate hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
-> M44 Telematics hattı da runtime + repo-contract + tek pack ile PASS durumundadır.
+> M44 Telematics hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M45 Retention + Backup hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M46 AI Copilot Foundation hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M46.1 AI Copilot Enrichment hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M45 Retention + Backup hattı da runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M46 AI Copilot Foundation hattı da runtime + repo-contract + tek pack ile PASS durumundadır.
 
 ---
 
@@ -335,27 +345,38 @@ Bu dosya iki amaç taşır:
 
 ---
 
-# STEP 2.6 — M45 Retention / Backup
-- [ ] AuditLog + ApiRequest 730 gün
-- [ ] GPS downsample 50sn/50m
-- [ ] partition + retention job
-- [ ] base backup + WAL / PITR restore testi
+# STEP 2.6 — M45 Retention / Backup — RESMİ GREEN
+- [x] `GET /api/admin/retention/policy` görünürlüğü mevcut
+- [x] `GET /api/admin/backup/policy` görünürlüğü mevcut
+- [x] `GET /api/admin/backup/manifest` görünürlüğü mevcut
+- [x] `tools\backup_create_m45.ps1` mevcut
+- [x] `tools\backup_restore_m45.ps1` mevcut
+- [x] runtime check PASS
+- [x] repo-contract PASS
+- [x] tek M45 pack ile kanıtlanır
+
+**Çıkış kriteri:** V1 regresyon + M43 + M44 + M45 testleri PASS.
 
 ---
 
-# REPO HYGIENE — M104 Repo Audit + Cleanup
+# STEP 3 — M46 AI Copilot Foundation — RESMİ GREEN
+- [x] `POST /api/ai/copilot` mevcut
+- [x] `SHIFT_SUMMARY` intent çalışır
+- [x] `CONFLICT_EXPLAIN` intent çalışır
+- [x] `TELEMATICS_HEALTH` intent çalışır
+- [x] `OPS_NOTE_DRAFT` intent çalışır
+- [x] `ROOM` / `COMPANY` / `SUPER_ADMIN` scope kontrollü erişim vardır
+- [x] `ROOM` + `SUPER_ADMIN` step-up guard uygulanır
+- [x] `AI_COPILOT_QUERY` audit izi görünür
+- [x] runtime check PASS
+- [x] repo-contract PASS
+- [x] tek M46 pack ile kanıtlanır
 
-Amaç: canlı çalışma ağacını sadeleştirip yanlış dosyaya bakma riskini azaltmak.
+**Çıkış kriteri:** V1 regresyon + M43 + M44 + M45 + M46 testleri PASS.
 
-- [x] aktif kaynak ağacındaki `.bak` dosyaları arşive taşınır
-- [x] stale duplicate panel/route dosyaları canlı ağaçtan çıkarılır
-- [x] repo kökündeki tek seferlik overlay/readme notları arşivlenir
-- [x] public personel link akışı API/UI/DB/PROJECT SSOT dosyalarına işlenir
-- [x] `tools/check_repo_cleanup_m104.ps1` ile hızlı repo hijyen kontrolü yapılır
+---
 
-> Not: Bu bölüm bakım/hijyen overlay'idir; resmi green referansını değiştirmez.
-
-# STEP 3 — V2
+# STEP 3.1 — V2
 - [ ] V2-Scale
 - [ ] V2-Mobile Driver
 - [ ] V2-ProdOps
@@ -364,10 +385,9 @@ Amaç: canlı çalışma ağacını sadeleştirip yanlış dosyaya bakma riskini
 ---
 
 # Bir sonraki net resmi iş
-- [ ] M45 Retention / Backup
-- [ ] M44 ile gelen telematics kaynaklarını retention politikalarına dahil etmek
-- [ ] backup/restore + PITR kanıtını tek pack hattına bağlamak
-- [ ] mevcut repo pattern’ine göre tek overlay zip hazırlanacak
+- [ ] sonraki resmi milestone henüz sabit değil
+- [ ] M46 foundation read-only / suggestion-first olarak korunacak
+- [ ] bir sonraki resmi hedef ayrıca tanımlanacak
 
 # TOOLS HYGIENE — M105 Tools Canonical Cleanup
 - [x] `tools/` kökünde yalnızca kanonik runtime / pack / check script'leri bırakılır
@@ -387,4 +407,11 @@ Amaç: canlı çalışma ağacını sadeleştirip yanlış dosyaya bakma riskini
 - [x] `tools/check_repo_hygiene_m106.ps1` PASS
 
 ## M45 backup tools
-- `tools\backup_restore_m45.ps1`
+- `toolsackup_create_m45.ps1`
+- `toolsackup_restore_m45.ps1`
+- `tools\check_m45_retention_backup_repo_contract.ps1`
+
+## M46 AI Copilot Foundation tools
+- `tools\pack_m46_ai_copilot.ps1`
+- `tools\check_m46_ai_copilot_repo_contract.ps1`
+- `backend\scripts\m46_ai_copilot_check.js`

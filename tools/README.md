@@ -11,9 +11,11 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_step1_totp_stepup.ps1`
 - `tools\pack_m43_google_auth_invite_gate.ps1`
 - `tools\pack_m44_telematics.ps1`
+- `tools\pack_m45_retention_backup.ps1`
+- `tools\pack_m46_ai_copilot.ps1`
+- `tools\pack_m46_1_ai_copilot_enrichment.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene check’leri
-- `tools
-eset-and-pack.ps1`
+- `tools\reset-and-pack.ps1`
 - `tools\_console_status.ps1`
 
 ## Kökte kalan doküman pointer’ları
@@ -36,6 +38,9 @@ eset-and-pack.ps1`
 - `tools\pack_step1_totp_stepup.ps1` → Step 1 TOTP
 - `tools\pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform` → Step 2 / M43
 - `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform` → Step 2.5 / M44
+- `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform` → Step 2.6 / M45
+- `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform` → Step 3 / M46
+- `tools\pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform` → Step 3.1 / M46.1
 
 ## Windows ExecutionPolicy
 PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
@@ -48,6 +53,9 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - `tools\check_repo_hygiene_m106.ps1` → link TTL + primer/hygiene kontrolü
 - `tools\check_m43_google_auth_invite_gate_repo_contract.ps1` → M43 repo-contract kontrolü
 - `tools\check_m44_telematics_repo_contract.ps1` → M44 repo-contract kontrolü
+- `tools\check_m45_retention_backup_repo_contract.ps1` → M45 repo-contract kontrolü
+- `tools\check_m46_ai_copilot_repo_contract.ps1` → M46 repo-contract kontrolü
+- `tools\check_m46_1_ai_copilot_enrichment_repo_contract.ps1` → M46.1 repo-contract kontrolü
 
 Kural: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
 Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.
@@ -57,7 +65,22 @@ Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan ap
 - `tools\backup_create_m45.ps1`
 - `tools\backup_restore_m45.ps1`
 - `tools\check_m45_retention_backup_repo_contract.ps1`
+- `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
 
 ## M46 AI Copilot Foundation
 - `tools\pack_m46_ai_copilot.ps1`
 - `tools\check_m46_ai_copilot_repo_contract.ps1`
+- `backend\scripts\m46_ai_copilot_check.js`
+- `backend\src\routes\ai.js`
+- `backend\src\ai\schemas.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_AI_COPILOT.md`
+
+## M46.1 AI Copilot Enrichment
+- `tools\pack_m46_1_ai_copilot_enrichment.ps1`
+- `tools\check_m46_1_ai_copilot_enrichment_repo_contract.ps1`
+- `backend\scripts\m46_1_ai_copilot_enrichment_check.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_1_AI_COPILOT_ENRICHMENT.md`
