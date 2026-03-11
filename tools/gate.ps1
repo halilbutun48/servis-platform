@@ -129,7 +129,7 @@ foreach ($c in $checks) {
 
 Write-StatusLine "=== Docker Compose Down (safe) ==="
 try {
-  Dc -f $composeFile down --remove-orphans
+ Dc -f $composeFile --profile osrm down --remove-orphans
 } catch {
   Write-StatusLine ("WARN down skipped: {0}" -f ($_.Exception.Message))
 }
