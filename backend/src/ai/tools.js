@@ -505,7 +505,109 @@ export async function getVehicleContext(user, vehicleId) {
   };
 }
 
-function makeResponse({ summary, facts, risks, suggestions, noteDraft = null, severity, blocks, nextChecks, references, highlights = [] }) {
+function clamp(min, value, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function evidenceLine(label, value, emptyLabel = "-") {
+  const text = Array.isArray(value) ? (value.length ? value.join(", ") : emptyLabel) : (value ?? emptyLabel);
+  return `${label}: ${text}`;
+}
+
+function signal(label, state, detail) {
+  return { label, state, detail };
+}
+
+function signalState(ok, warn = false) {
+  if (ok) return "GOOD";
+  if (warn) return "WARN";
+  return "BLOCKED";
+}
+
+function buildConfidenceScore(severity, blocks, risks, evidenceCount) {
+  let score = 0.9;
+  if (severity === "CRITICAL") score = 0.58;
+  else if (severity === "WARN") score = 0.72;
+  else if (severity === "INFO") score = 0.83;
+  else if (severity === "OK") score = 0.92;
+  score -= Math.min(0.18, (Array.isArray(blocks) ? blocks.length : 0) * 0.06);
+  score -= Math.min(0.1, (Array.isArray(risks) ? risks.length : 0) * 0.02);
+  score += Math.min(0.06, Math.max(0, Number(evidenceCount || 0) - 2) * 0.01);
+  return Number(clamp(0.51, score, 0.96).toFixed(2));
+}
+
+function buildShiftEvidence(shift) {
+  return nonEmpty([
+    evidenceLine("shiftId", shift.id),
+    evidenceLine("status", shift.status),
+    evidenceLine("vehicleId", shift.vehicleId || null),
+    evidenceLine("driverId", shift.driverId || null),
+    evidenceLine("stopCount", Number(shift.stopCount || 0)),
+    evidenceLine("assignmentCount", Number(shift.assignmentCount || 0)),
+    evidenceLine("openOfferCount", Number(shift.openOfferCount || 0)),
+    shift.progress?.id ? evidenceLine("progressId", shift.progress.id) : null,
+    shift.startAt ? evidenceLine("startAt", shift.startAt) : null,
+  ]).slice(0, 8);
+}
+
+function buildVehicleEvidence(vehicle) {
+  return nonEmpty([
+    evidenceLine("vehicleId", vehicle.id),
+    evidenceLine("plate", vehicle.plate),
+    evidenceLine("gpsUiState", vehicle.gpsState?.lastUiStatus || "UNKNOWN"),
+    evidenceLine("activeDeviceCount", `${vehicle.activeDeviceCount}/${vehicle.deviceCount}`),
+    evidenceLine("deviceIds", (vehicle.devices || []).map((x) => x.id)),
+    evidenceLine("gpsLastAt", vehicle.gpsLast?.at || null),
+    evidenceLine("currentShiftIds", vehicle.currentShiftIds || []),
+  ]).slice(0, 8);
+}
+
+function buildShiftDecisionSignals(shift, blocks, risks) {
+  return [
+    signal("Araç ataması", shift.vehicleId ? "GOOD" : "BLOCKED", shift.vehicle?.plate || "Araç atanmadı"),
+    signal("Sürücü ataması", shift.driverId ? "GOOD" : "BLOCKED", shift.driver?.fullName || "Sürücü atanmadı"),
+    signal("Durak hazırlığı", Number(shift.stopCount || 0) > 0 ? "GOOD" : "BLOCKED", `Durak sayısı ${Number(shift.stopCount || 0)}`),
+    signal("Kapasite uyumu", !(Number(shift.requiredPax || 0) > Number(shift.vehicle?.capacity || 0) && shift.vehicle?.capacity) ? "GOOD" : "WARN", shift.vehicle?.capacity ? `${shift.requiredPax}/${shift.vehicle.capacity}` : "Araç kapasitesi görünmüyor"),
+    signal("Offer baskısı", Number(shift.openOfferCount || 0) <= 1 ? "GOOD" : "WARN", `Açık teklif ${Number(shift.openOfferCount || 0)}`),
+  ].slice(0, 5);
+}
+
+function buildVehicleDecisionSignals(vehicle, blocks, risks) {
+  return [
+    signal("Active device", vehicle.activeDeviceCount > 0 ? "GOOD" : "BLOCKED", `${vehicle.activeDeviceCount}/${vehicle.deviceCount}`),
+    signal("GPS sinyali", vehicle.gpsLast?.at ? "GOOD" : "BLOCKED", vehicle.gpsLast?.at || "GPS verisi yok"),
+    signal("UI state", String(vehicle.gpsState?.lastUiStatus || "") === "STALE" ? "WARN" : "GOOD", vehicle.gpsState?.lastUiStatus || "UNKNOWN"),
+    signal("Aktif shift bağı", (vehicle.currentShiftIds || []).length > 0 ? "INFO" : "GOOD", `Shift ${((vehicle.currentShiftIds || []).length)}`),
+  ].slice(0, 5);
+}
+
+function buildShiftExplanation(intent, shift, risks, blocks, nextChecks, evidence, decisionSignals) {
+  const leadingRisk = risks?.[0] || null;
+  const leadingBlock = blocks?.[0] || null;
+  const next = nextChecks?.[0] || null;
+  const strongestSignal = (decisionSignals || []).find((x) => x.state === "BLOCKED" || x.state === "WARN") || decisionSignals?.[0] || null;
+  const intentText = {
+    SHIFT_SUMMARY: "Genel operasyon görünümü çıkarıldı.",
+    CONFLICT_EXPLAIN: "Çatışma ve bloklayıcı odaklı okuma yapıldı.",
+    OPS_NOTE_DRAFT: "Paylaşılabilir operasyon dili korundu.",
+    ASSIGNMENT_READINESS: "Atama hazırlığı araç, sürücü ve durak ekseninde değerlendirildi.",
+    OFFER_DECISION_HELP: "Offer/decision akışı pazarlık ve assignment sinyalleriyle yorumlandı.",
+  }[intent] || "Shift odaklı okuma yapıldı.";
+  return [intentText, leadingBlock ? `Öne çıkan bloklayıcı ${leadingBlock}.` : null, leadingRisk ? `İlk risk ${leadingRisk}` : null, strongestSignal ? `Kararı en çok etkileyen sinyal ${strongestSignal.label}: ${strongestSignal.detail}.` : null, next ? `Önerilen ilk kontrol: ${next}` : null, evidence?.[0] ? `Kanıt başlangıcı: ${evidence[0]}.` : null].filter(Boolean).join(" ");
+}
+
+function buildVehicleExplanation(intent, vehicle, risks, blocks, nextChecks, evidence, decisionSignals) {
+  const leadingRisk = risks?.[0] || null;
+  const leadingBlock = blocks?.[0] || null;
+  const next = nextChecks?.[0] || null;
+  const strongestSignal = (decisionSignals || []).find((x) => x.state === "BLOCKED" || x.state === "WARN") || decisionSignals?.[0] || null;
+  const intentText = intent === "GPS_SIGNAL_DIAGNOSIS"
+    ? "GPS sinyal hattı ingest, active device ve UI state üzerinden okundu."
+    : "Telematics sağlık görünümü çıkarıldı.";
+  return [intentText, leadingBlock ? `Öne çıkan bloklayıcı ${leadingBlock}.` : null, leadingRisk ? `İlk risk ${leadingRisk}` : null, strongestSignal ? `Kararı en çok etkileyen sinyal ${strongestSignal.label}: ${strongestSignal.detail}.` : null, next ? `Önerilen ilk kontrol: ${next}` : null, evidence?.[0] ? `Kanıt başlangıcı: ${evidence[0]}.` : null].filter(Boolean).join(" ");
+}
+
+function makeResponse({ summary, facts, risks, suggestions, noteDraft = null, severity, blocks, nextChecks, references, highlights = [], confidence = null, explanation = "", evidence = [], decisionSignals = [] }) {
   return {
     summary,
     facts,
@@ -514,9 +616,13 @@ function makeResponse({ summary, facts, risks, suggestions, noteDraft = null, se
     noteDraft,
     severity,
     blocks,
-    nextChecks,
+    nextChecks: unique(nextChecks || []).slice(0, 6),
     references,
-    highlights,
+    highlights: unique(highlights || []).slice(0, 5),
+    confidence,
+    explanation,
+    evidence: unique(evidence || []).slice(0, 8),
+    decisionSignals: (Array.isArray(decisionSignals) ? decisionSignals : []).slice(0, 6),
   };
 }
 
@@ -527,6 +633,9 @@ export function buildCopilotPayload(intent, context) {
     const blocks = buildShiftBlocks(context);
     const suggestions = buildShiftSuggestions(context);
     const nextChecks = buildShiftNextChecks(context, blocks);
+    const evidence = buildShiftEvidence(context);
+    const decisionSignals = buildShiftDecisionSignals(context, blocks, risks);
+    const confidence = buildConfidenceScore(buildShiftSeverity(context, risks, blocks), blocks, risks, evidence.length);
     return makeResponse({
       summary: buildShiftSummaryText(context, risks, blocks),
       facts,
@@ -537,6 +646,10 @@ export function buildCopilotPayload(intent, context) {
       nextChecks,
       references: buildShiftReferences(context),
       highlights: buildShiftHighlights(context, risks, blocks),
+      confidence,
+      explanation: buildShiftExplanation("SHIFT_SUMMARY", context, risks, blocks, nextChecks, evidence, decisionSignals),
+      evidence,
+      decisionSignals,
     });
   }
 
@@ -546,6 +659,9 @@ export function buildCopilotPayload(intent, context) {
     const blocks = buildShiftBlocks(context);
     const suggestions = buildShiftSuggestions(context);
     const nextChecks = buildShiftNextChecks(context, blocks);
+    const evidence = buildShiftEvidence(context);
+    const decisionSignals = buildShiftDecisionSignals(context, blocks, risks);
+    const confidence = buildConfidenceScore(buildShiftSeverity(context, risks, blocks), blocks, risks, evidence.length);
     return makeResponse({
       summary: buildConflictExplainText(risks, blocks),
       facts,
@@ -556,6 +672,10 @@ export function buildCopilotPayload(intent, context) {
       nextChecks,
       references: buildShiftReferences(context),
       highlights: buildShiftHighlights(context, risks, blocks),
+      confidence,
+      explanation: buildShiftExplanation("CONFLICT_EXPLAIN", context, risks, blocks, nextChecks, evidence, decisionSignals),
+      evidence,
+      decisionSignals,
     });
   }
 
@@ -565,6 +685,9 @@ export function buildCopilotPayload(intent, context) {
     const blocks = buildShiftBlocks(context);
     const suggestions = buildShiftSuggestions(context);
     const nextChecks = buildShiftNextChecks(context, blocks);
+    const evidence = buildShiftEvidence(context);
+    const decisionSignals = buildShiftDecisionSignals(context, blocks, risks);
+    const confidence = buildConfidenceScore(buildShiftSeverity(context, risks, blocks), blocks, risks, evidence.length);
     return makeResponse({
       summary: "Operasyon paylaşımı için taslak not üretildi.",
       facts,
@@ -576,6 +699,10 @@ export function buildCopilotPayload(intent, context) {
       nextChecks,
       references: buildShiftReferences(context),
       highlights: buildShiftHighlights(context, risks, blocks),
+      confidence,
+      explanation: buildShiftExplanation("OPS_NOTE_DRAFT", context, risks, blocks, nextChecks, evidence, decisionSignals),
+      evidence,
+      decisionSignals,
     });
   }
 
@@ -585,6 +712,9 @@ export function buildCopilotPayload(intent, context) {
     const blocks = buildShiftBlocks(context);
     const suggestions = buildShiftSuggestions(context);
     const nextChecks = buildShiftNextChecks(context, blocks);
+    const evidence = buildShiftEvidence(context);
+    const decisionSignals = buildShiftDecisionSignals(context, blocks, risks);
+    const confidence = buildConfidenceScore(buildShiftSeverity(context, risks, blocks), blocks, risks, evidence.length);
     return makeResponse({
       summary: buildAssignmentReadinessSummaryText(context, risks, blocks),
       facts,
@@ -595,6 +725,10 @@ export function buildCopilotPayload(intent, context) {
       nextChecks,
       references: buildShiftReferences(context),
       highlights: buildShiftHighlights(context, risks, blocks),
+      confidence,
+      explanation: buildShiftExplanation("ASSIGNMENT_READINESS", context, risks, blocks, nextChecks, evidence, decisionSignals),
+      evidence,
+      decisionSignals,
     });
   }
 
@@ -604,6 +738,9 @@ export function buildCopilotPayload(intent, context) {
     const blocks = buildShiftBlocks(context);
     const suggestions = buildOfferDecisionSuggestions(context);
     const nextChecks = buildOfferDecisionNextChecks(context);
+    const evidence = buildShiftEvidence(context);
+    const decisionSignals = buildShiftDecisionSignals(context, blocks, risks);
+    const confidence = buildConfidenceScore(buildShiftSeverity(context, risks, blocks), blocks, risks, evidence.length);
     return makeResponse({
       summary: buildOfferDecisionHelpSummaryText(context, risks),
       facts,
@@ -614,6 +751,10 @@ export function buildCopilotPayload(intent, context) {
       nextChecks,
       references: buildShiftReferences(context),
       highlights: buildShiftHighlights(context, risks, blocks),
+      confidence,
+      explanation: buildShiftExplanation("OFFER_DECISION_HELP", context, risks, blocks, nextChecks, evidence, decisionSignals),
+      evidence,
+      decisionSignals,
     });
   }
 
@@ -623,6 +764,9 @@ export function buildCopilotPayload(intent, context) {
     const blocks = buildVehicleBlocks(context);
     const suggestions = buildVehicleSuggestions(context);
     const nextChecks = buildVehicleNextChecks(context, blocks);
+    const evidence = buildVehicleEvidence(context);
+    const decisionSignals = buildVehicleDecisionSignals(context, blocks, risks);
+    const confidence = buildConfidenceScore(buildVehicleSeverity(risks, blocks), blocks, risks, evidence.length);
     return makeResponse({
       summary: buildVehicleSummaryText(context, risks, blocks),
       facts,
@@ -633,6 +777,10 @@ export function buildCopilotPayload(intent, context) {
       nextChecks,
       references: buildVehicleReferences(context),
       highlights: buildVehicleHighlights(context, risks, blocks),
+      confidence,
+      explanation: buildVehicleExplanation("TELEMATICS_HEALTH", context, risks, blocks, nextChecks, evidence, decisionSignals),
+      evidence,
+      decisionSignals,
     });
   }
 
@@ -642,6 +790,9 @@ export function buildCopilotPayload(intent, context) {
     const blocks = buildVehicleBlocks(context);
     const suggestions = buildVehicleSuggestions(context);
     const nextChecks = buildVehicleNextChecks(context, blocks);
+    const evidence = buildVehicleEvidence(context);
+    const decisionSignals = buildVehicleDecisionSignals(context, blocks, risks);
+    const confidence = buildConfidenceScore(buildVehicleSeverity(risks, blocks), blocks, risks, evidence.length);
     return makeResponse({
       summary: buildGpsSignalDiagnosisSummaryText(context, risks, blocks),
       facts,
@@ -652,6 +803,10 @@ export function buildCopilotPayload(intent, context) {
       nextChecks,
       references: buildVehicleReferences(context),
       highlights: buildVehicleHighlights(context, risks, blocks),
+      confidence,
+      explanation: buildVehicleExplanation("GPS_SIGNAL_DIAGNOSIS", context, risks, blocks, nextChecks, evidence, decisionSignals),
+      evidence,
+      decisionSignals,
     });
   }
 

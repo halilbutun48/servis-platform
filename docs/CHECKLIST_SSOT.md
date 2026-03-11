@@ -240,6 +240,8 @@ Bu dosya iki amaç taşır:
 - [ ] backup policy + manifest görünürlüğü var
 - [ ] dryRun/run audit izi var
 - [ ] create/restore tool hattı çalışıyor
+- [ ] tools\backup_create_m45.ps1 mevcut
+- [ ] tools\backup_restore_m45.ps1 mevcut
 
 # STEP 3 — M46 AI Copilot Foundation — RESMİ GREEN
 - [ ] `tools/pack_m46_ai_copilot.ps1` PASS
@@ -278,3 +280,4 @@ Bu dosya iki amaç taşır:
 - Ana referans yine **M41 PACK PASS**’tir.
 - Üst katmanlar ayrı resmi green hatları olarak korunur.
 - Yeni AI milestone’ları M46 → M46.1 → M46.2 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
+

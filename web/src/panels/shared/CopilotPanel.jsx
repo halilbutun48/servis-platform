@@ -12,7 +12,7 @@ const INTENT_OPTIONS = [
   { value: "GPS_SIGNAL_DIAGNOSIS", label: "GPS Sinyal Teşhisi", helper: "Signal/ingest teşhisi", entityType: "vehicle" },
 ];
 
-const HISTORY_KEY = "copilot.history.m46_2";
+const HISTORY_KEY = "copilot.history.m46_3";
 
 function firstList(resp) {
   if (Array.isArray(resp)) return resp;
@@ -49,6 +49,20 @@ function severityStyle(severity) {
     OK: { color: "#fff", background: "#027a48" },
   };
   return map[severity] || { color: "#fff", background: "#667085" };
+}
+
+function signalStyle(state) {
+  const map = {
+    GOOD: { color: "#027a48", border: "1px solid #12b76a", background: "#ecfdf3" },
+    WARN: { color: "#b54708", border: "1px solid #f79009", background: "#fffaeb" },
+    BLOCKED: { color: "#b42318", border: "1px solid #f04438", background: "#fef3f2" },
+    INFO: { color: "#175cd3", border: "1px solid #53b1fd", background: "#eff8ff" },
+  };
+  return map[state] || { color: "#344054", border: "1px solid #d0d5dd", background: "#f8fafc" };
+}
+
+function confidencePct(value) {
+  return typeof value === "number" ? `${Math.round(value * 100)}%` : "-";
 }
 
 function optionLabel(entityType, item) {
@@ -266,8 +280,12 @@ export default function CopilotPanel() {
               <span>Scope: <b>{result.scope?.role || me?.role || "-"}</b></span>
               <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
               <span>Oluşturma: <b>{result.generatedAt ? new Date(result.generatedAt).toLocaleString("tr-TR") : "-"}</b></span>
+              <span>Confidence: <b>{confidencePct(result.confidence)}</b></span>
               <span style={{ ...severityStyle(result.severity), padding: "2px 8px", borderRadius: 999, fontWeight: 700 }}>{result.severity || "-"}</span>
             </div>
+            {result.providerSummary ? (
+              <div className="muted" style={{ marginTop: 6 }}>{result.providerSummary}</div>
+            ) : null}
           </div>
 
           <div className="muted" style={{ display: "grid", gap: 4 }}>
@@ -283,6 +301,13 @@ export default function CopilotPanel() {
           </div>
 
           <div style={{ fontSize: 16, fontWeight: 700 }}>{result.summary || "-"}</div>
+
+          {result.explanation ? (
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Explanation</div>
+              <div className="muted" style={{ marginTop: 8 }}>{result.explanation}</div>
+            </div>
+          ) : null}
 
           {result.highlights?.length ? (
             <div>
@@ -322,6 +347,28 @@ export default function CopilotPanel() {
             <div>
               <div className="title" style={{ fontSize: 16 }}>References</div>
               <ReferenceList data={result.references} />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Evidence</div>
+              {result.evidence?.length ? <ul>{result.evidence.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Evidence görünmüyor.</div>}
+            </div>
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Decision Signals</div>
+              {result.decisionSignals?.length ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {result.decisionSignals.map((x, i) => (
+                    <div key={`${x.label || "signal"}:${i}`} style={{ borderRadius: 10, padding: 10, ...signalStyle(x.state) }}>
+                      <div style={{ fontWeight: 700 }}>{x.label || "-"}</div>
+                      <div>{x.detail || "-"}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="muted">Decision sinyali görünmüyor.</div>
+              )}
             </div>
           </div>
 

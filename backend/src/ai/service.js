@@ -32,6 +32,12 @@ function buildScopeSummary(user, entityType, entityId) {
   return `${role} scope içinde ${entityType} #${entityId} okundu${scopeBits ? ` (${scopeBits})` : ""}.`;
 }
 
+function providerSummary(base) {
+  const confidence = typeof base?.confidence === "number" ? `confidence=${Math.round(base.confidence * 100)}%` : null;
+  const evidence = Array.isArray(base?.evidence) ? `evidence=${base.evidence.length}` : null;
+  return [confidence, evidence].filter(Boolean).join(" • ");
+}
+
 export async function runCopilotFoundation({ intent, entityType, entityId, user }) {
   let context = null;
   if (entityType === "shift") {
@@ -48,7 +54,7 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user 
   const base = buildCopilotPayload(intent, context);
   return {
     ok: true,
-    copilotVersion: "M46.2",
+    copilotVersion: "M46.3",
     generatedAt: new Date().toISOString(),
     intent,
     intentLabel: intentLabel(intent),
@@ -56,6 +62,7 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user 
     entityId: Number(entityId),
     entityLabel: describeEntity(context),
     provider: "local-foundation",
+    providerSummary: providerSummary(base),
     mode: "RULE_BASED",
     scope: {
       role: String(user.role || ""),

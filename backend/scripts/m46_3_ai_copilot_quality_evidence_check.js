@@ -6,7 +6,7 @@ function firstId(resp) {
 }
 
 async function main() {
-  banner("M46.2 AI COPILOT INTENT EXPANSION CHECK");
+  banner("M46.3 AI COPILOT QUALITY + EVIDENCE CHECK");
 
   step("login demo users");
   const roomToken = await login("room@demo.com", "demo123");
@@ -27,45 +27,45 @@ async function main() {
   const vehicleId = firstId(roomVehicles);
   must("room vehicle id found", !!vehicleId);
 
-  step("assignment readiness returns expanded metadata");
-  const readiness = await reqJson("POST", "/api/ai/copilot", {
+  step("shift summary returns quality fields");
+  const shiftSummary = await reqJson("POST", "/api/ai/copilot", {
     token: roomToken,
-    body: { intent: "ASSIGNMENT_READINESS", entityType: "shift", entityId: roomShiftId },
+    body: { intent: "SHIFT_SUMMARY", entityType: "shift", entityId: roomShiftId },
   });
-  must("assignment readiness ok", readiness.ok && readiness.json?.intent === "ASSIGNMENT_READINESS");
-  must("copilot version upgraded", ["M46.2","M46.3"].includes(readiness.json?.copilotVersion));
-  must("intent label visible", typeof readiness.json?.intentLabel === "string" && readiness.json.intentLabel.length > 0);
-  must("entity label visible", typeof readiness.json?.entityLabel === "string" && readiness.json.entityLabel.length > 0);
-  must("scope summary visible", typeof readiness.json?.scope?.summary === "string" && readiness.json.scope.summary.length > 0);
-  must("highlights visible", Array.isArray(readiness.json?.highlights));
-  must("references has open offer count", typeof readiness.json?.references?.openOfferCount === "number");
+  must("shift summary ok", shiftSummary.ok && shiftSummary.json?.intent === "SHIFT_SUMMARY");
+  must("copilot version upgraded", shiftSummary.json?.copilotVersion === "M46.3");
+  must("confidence visible", typeof shiftSummary.json?.confidence === "number" && shiftSummary.json.confidence >= 0.5);
+  must("explanation visible", typeof shiftSummary.json?.explanation === "string" && shiftSummary.json.explanation.length > 20);
+  must("evidence visible", Array.isArray(shiftSummary.json?.evidence) && shiftSummary.json.evidence.length > 0);
+  must("decision signals visible", Array.isArray(shiftSummary.json?.decisionSignals) && shiftSummary.json.decisionSignals.length > 0);
 
-  step("offer decision help works for company scope");
+  step("offer decision help keeps structured reasoning");
   const offerHelp = await reqJson("POST", "/api/ai/copilot", {
     token: companyToken,
     body: { intent: "OFFER_DECISION_HELP", entityType: "shift", entityId: companyShiftId },
   });
-  must("offer decision ok", offerHelp.ok && offerHelp.json?.intent === "OFFER_DECISION_HELP");
-  must("offer next checks visible", Array.isArray(offerHelp.json?.nextChecks) && offerHelp.json.nextChecks.length > 0);
+  must("offer help ok", offerHelp.ok && offerHelp.json?.intent === "OFFER_DECISION_HELP");
+  must("offer help explanation visible", typeof offerHelp.json?.explanation === "string" && offerHelp.json.explanation.length > 20);
+  must("offer help decision signals visible", Array.isArray(offerHelp.json?.decisionSignals));
 
-  step("gps signal diagnosis works for vehicle entity");
+  step("vehicle diagnosis returns evidence");
   const gpsDiag = await reqJson("POST", "/api/ai/copilot", {
     token: roomToken,
     body: { intent: "GPS_SIGNAL_DIAGNOSIS", entityType: "vehicle", entityId: vehicleId },
   });
   must("gps diagnosis ok", gpsDiag.ok && gpsDiag.json?.intent === "GPS_SIGNAL_DIAGNOSIS");
-  must("gps diagnosis references include device ids", Array.isArray(gpsDiag.json?.references?.deviceIds));
-  must("gps diagnosis highlights visible", Array.isArray(gpsDiag.json?.highlights));
+  must("gps diagnosis confidence visible", typeof gpsDiag.json?.confidence === "number");
+  must("gps diagnosis evidence visible", Array.isArray(gpsDiag.json?.evidence) && gpsDiag.json.evidence.length > 0);
 
-  step("legacy ops note still works");
+  step("ops note still keeps note draft");
   const ops = await reqJson("POST", "/api/ai/copilot", {
     token: superToken,
     body: { intent: "OPS_NOTE_DRAFT", entityType: "shift", entityId: roomShiftId },
   });
   must("ops draft ok", ops.ok && typeof ops.json?.noteDraft === "string" && ops.json.noteDraft.length > 0);
-  must("ops response still enriched", Array.isArray(ops.json?.blocks) && Array.isArray(ops.json?.nextChecks));
+  must("ops explanation visible", typeof ops.json?.explanation === "string" && ops.json.explanation.length > 20);
 
-  banner("M46.2 AI COPILOT INTENT EXPANSION CHECK PASS");
+  banner("M46.3 AI COPILOT QUALITY + EVIDENCE CHECK PASS");
 }
 
 main().catch((e) => {
