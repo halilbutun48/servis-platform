@@ -18,6 +18,7 @@ Current GREEN ref:
 - **M46.1 AI COPILOT ENRICHMENT PACK PASS OK**
 - **M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK**
 - **M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK**
+- **M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
@@ -35,13 +36,14 @@ Bu dosya iki amaç taşır:
 - **Step 3.1 (M46.1):** AI Copilot Enrichment **resmi green**
 - **Step 3.2 (M46.2):** AI Copilot Intent Expansion **resmi green**
 - **Step 3.3 (M46.3):** AI Copilot Quality + Evidence **resmi green**
-- **Step 3.4:** Sonraki AI katmanı / M46.4 **henüz sabitlenmedi**
+- **Step 3.4 (M46.4):** AI Copilot Decision Consistency + Action Plan **resmi green**
+- **Step 3.5:** Sonraki AI katmanı / M46.5 **henüz sabitlenmedi**
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
 > Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
 > Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri PASS durumundadır.  
-> M43, M44, M45, M46, M46.1, M46.2 ve M46.3 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M43, M44, M45, M46, M46.1, M46.2, M46.3 ve M46.4 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
 > Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
 > Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
 
@@ -297,7 +299,29 @@ Bu dosya iki amaç taşır:
 
 ---
 
+# STEP 3.4 — M46.4 AI Copilot Decision Consistency + Action Plan — RESMİ GREEN
+- [ ] `tools/pack_m46_4_ai_copilot_decision_consistency.ps1` PASS
+- [ ] `tools/check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `copilotVersion` `M46.4` olarak dönüyor
+- [ ] `overallStatus` üretiliyor
+- [ ] `actionability` üretiliyor
+- [ ] `dataFreshness` üretiliyor
+- [ ] `coverage` üretiliyor
+- [ ] `recommendedActions` üretiliyor
+- [ ] `consistencyChecks` üretiliyor
+- [ ] `missingData` üretiliyor
+- [ ] `blockers` üretiliyor
+- [ ] UI’da decision badges görünüyor
+- [ ] UI’da recommended actions bölümü görünüyor
+- [ ] UI’da missing data / blockers bölümü görünüyor
+- [ ] UI’da consistency checks bölümü görünüyor
+- [ ] read-only / suggestion-first çizgisi korunuyor
+- [ ] audit ve step-up davranışı korunuyor
+- [ ] M46.1 / M46.2 / M46.3 check zinciri ileri uyumlu kalıyor
+
+---
+
 ## Kapanış kuralı
 - Ana referans yine **M41 PACK PASS**’tir.
 - Üst katmanlar ayrı resmi green hatları olarak korunur.
-- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
+- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 → M46.4 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.

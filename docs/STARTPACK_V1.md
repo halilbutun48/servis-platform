@@ -18,9 +18,10 @@ Bu dosya repo için kısa çalışma runbook’udur.
 10. M46.1 AI Copilot Enrichment hattı resmi green durumundadır.
 11. M46.2 AI Copilot Intent Expansion hattı resmi green durumundadır.
 12. M46.3 AI Copilot Quality + Evidence hattı resmi green durumundadır.
-13. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-14. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-15. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+13. M46.4 AI Copilot Decision Consistency + Action Plan hattı resmi green durumundadır.
+14. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+15. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+16. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -45,6 +46,8 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - M46.2 repo-contract: `tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1 -RepoRoot D:\servis-platform`
 - M46.3 pack: `tools\pack_m46_3_ai_copilot_quality_evidence.ps1 -RepoRoot D:\servis-platform`
 - M46.3 repo-contract: `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M46.4 pack: `tools\pack_m46_4_ai_copilot_decision_consistency.ps1 -RepoRoot D:\servis-platform`
+- M46.4 repo-contract: `tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1 -RepoRoot D:\servis-platform`
 
 ## 3) Resmi green durum
 - `M41 PACK PASS`
@@ -62,6 +65,7 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M46.1 AI COPILOT ENRICHMENT PACK PASS OK`
 - `M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK`
 - `M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK`
+- `M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN PACK PASS OK`
 
 ## 4) Link erişim politikası
 - Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
@@ -153,10 +157,24 @@ Detay çekirdek:
 - M46.1 / M46.2 check zinciri ileri uyumlu tutulur
 - runtime check + repo-contract + tek pack PASS
 
-## 6.7) Bir sonraki resmi hedef
+## 6.7) Step 3.4 özeti — M46.4 resmi green
+- yeni karar alanları mevcut:
+  - `overallStatus`
+  - `actionability`
+  - `dataFreshness`
+  - `coverage`
+  - `recommendedActions`
+  - `consistencyChecks`
+  - `missingData`
+  - `blockers`
+- UI: decision badges + recommended actions + missing data / blockers + consistency checks mevcut
+- M46.1 / M46.2 / M46.3 check zinciri ileri uyumlu tutulur
+- runtime check + repo-contract + tek pack PASS
+
+## 6.8) Bir sonraki resmi hedef
 - **henüz sabitlenmedi**
-- çalışma adı olarak **M46.4** açılabilir
-- M46 / M46.1 / M46.2 / M46.3 artık sıradaki hedef değil, resmi green katmanlardır
+- çalışma adı olarak **M46.5** açılabilir
+- M46 / M46.1 / M46.2 / M46.3 / M46.4 artık sıradaki hedef değil, resmi green katmanlardır
 
 ## 7) SSOT dosyaları
 - `tools/CHECKLIST_SSOT.md`
@@ -220,3 +238,12 @@ Detay çekirdek:
 - `backend\src\ai\tools.js`
 - `web\src\panels\shared\CopilotPanel.jsx`
 - `docs\RUNBOOK_M46_3_AI_COPILOT_QUALITY_EVIDENCE.md`
+
+## M46.4 AI Copilot Decision Consistency + Action Plan
+- `tools\pack_m46_4_ai_copilot_decision_consistency.ps1`
+- `tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1`
+- `backend\scripts\m46_4_ai_copilot_decision_consistency_check.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_4_AI_COPILOT_DECISION_CONSISTENCY.md`
