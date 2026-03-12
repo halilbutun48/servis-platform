@@ -13,6 +13,9 @@ export function adaptGuideContent(level, data) {
     out.commonMistakes = (out.commonMistakes || []).slice(0, 2);
     out.doneChecklist = (out.doneChecklist || []).slice(0, 2);
     out.simpleTerms = (out.simpleTerms || []).slice(0, 3);
+    out.beforeYouStart = (out.beforeYouStart || []).slice(0, 4);
+    out.quickActions = (out.quickActions || []).slice(0, 2);
+    out.ifStuck = (out.ifStuck || []).slice(0, 2);
   }
   if (guideLevel === "WHY") {
     out.screenExplanation = out.screenExplanation || out.jobPurpose || out.plainSummary || "Bu ekran işi doğru sırayla tamamlamak için yardımcı olur.";

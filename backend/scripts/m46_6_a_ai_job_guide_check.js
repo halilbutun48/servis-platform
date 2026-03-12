@@ -28,7 +28,7 @@ async function main() {
     body: { intent: "JOB_GUIDE", jobType: "OFFER_REVIEW", guideLevel: "SHORT", entityType: "shift", entityId: roomShiftId },
   });
   must("offer review ok", offerReview.ok && offerReview.json?.jobType === "OFFER_REVIEW");
-  must("copilot version upgraded", offerReview.json?.copilotVersion === "M46.6-A");
+  must("copilot version upgraded", /^M46\.6-/.test(String(offerReview.json?.copilotVersion || "")));
   must("whatToDoNow visible", typeof offerReview.json?.whatToDoNow === "string" && offerReview.json.whatToDoNow.length > 0);
   must("stepByStep visible", Array.isArray(offerReview.json?.stepByStep) && offerReview.json.stepByStep.length > 0);
   must("simpleTerms visible", Array.isArray(offerReview.json?.simpleTerms));

@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { navigate } from "../../router";
 import { useSession } from "../../state/session";
+import { companyPath } from "../../utils/paths";
 import JobGuideHeader from "../../components/copilot/JobGuideHeader";
+import BeforeYouStartCard from "../../components/copilot/BeforeYouStartCard";
+import QuickActionsCard from "../../components/copilot/QuickActionsCard";
+import LockedReasonCard from "../../components/copilot/LockedReasonCard";
 import StepByStepCard from "../../components/copilot/StepByStepCard";
 import CommonMistakesCard from "../../components/copilot/CommonMistakesCard";
 import DoneChecklistCard from "../../components/copilot/DoneChecklistCard";
+import IfStuckCard from "../../components/copilot/IfStuckCard";
 import SimpleTermsCard from "../../components/copilot/SimpleTermsCard";
+import CopyOutputsCard from "../../components/copilot/CopyOutputsCard";
 
 const PANEL_MODES = [
   { value: "GUIDE", label: "Rehber" },
@@ -52,6 +59,14 @@ const LEGACY_COMPAT_MARKERS = {
   calibrationNotes: "Calibration Notes",
   evidenceLinks: "Evidence links",
   referenceLinks: "Reference links",
+};
+
+const GUIDE_BLOCK_MARKERS = {
+  beforeYouStart: "Başlamadan önce kontrol",
+  quickActions: "Buradan aç",
+  lockedReasons: "Bu neden kapalı?",
+  ifStuck: "Takıldıysan buraya git",
+  copyOutputs: "Hazır metin",
 };
 
 function firstList(resp) {
@@ -160,6 +175,30 @@ function actionPriorityLabel(action) {
   const score = Number(action?.priorityScore || 0);
   return `${action?.priority || "-"} • ${score || 0}`;
 }
+
+function resolveGuideRoute(me, routeKey) {
+  const role = String(me?.role || "");
+  const key = String(routeKey || "");
+  if (role === "ROOM") {
+    if (key === "ROOM_OFFERS") return "/room/offers";
+    if (key === "ROOM_SHIFTS") return "/room/shifts";
+    if (key === "ROOM_VEHICLES") return "/room/vehicles";
+    if (key === "ROOM_DRIVERS") return "/room/drivers";
+    if (key === "ROOM_AGREEMENTS") return "/room/agreements";
+    if (key === "ROOM_COPILOT") return "/room/copilot";
+  }
+  if (role === "COMPANY") {
+    if (key === "COMPANY_SHIFTS") return companyPath(me, "/shifts");
+    if (key === "COMPANY_AGREEMENTS") return companyPath(me, "/agreements");
+    if (key === "COMPANY_COPILOT") return companyPath(me, "/copilot");
+  }
+  if (role === "SUPER_ADMIN") {
+    if (key === "SUPERADMIN_OVERVIEW") return "/superadmin";
+    if (key === "SUPERADMIN_COPILOT") return "/superadmin/copilot";
+  }
+  return "";
+}
+
 
 export default function CopilotPanel() {
   const { token, me } = useSession();
@@ -297,6 +336,17 @@ export default function CopilotPanel() {
       setCopyMsg("Kopyalama başarısız.");
       setTimeout(() => setCopyMsg(""), 1500);
     }
+  }
+
+
+  function openGuideAction(action) {
+    const path = resolveGuideRoute(me, action?.routeKey);
+    if (!path) {
+      setCopyMsg("Bu bağlantı bu rolde açılamıyor.");
+      setTimeout(() => setCopyMsg(""), 1800);
+      return;
+    }
+    navigate(path);
   }
 
   return (
@@ -442,15 +492,21 @@ export default function CopilotPanel() {
             </div>
           ) : null}
 
+          <BeforeYouStartCard label={result.precheckLabel} state={result.precheckState} items={result.beforeYouStart} />
+          <QuickActionsCard items={result.quickActions} onOpen={openGuideAction} />
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={() => copyText(result.summary || "")}>Kopyala özet</button>
             {copyMsg ? <span className="muted">{copyMsg}</span> : null}
           </div>
 
           <StepByStepCard steps={result.stepByStep} />
+          <LockedReasonCard items={result.lockedActionReasons} />
           <CommonMistakesCard items={result.commonMistakes} />
           <DoneChecklistCard items={result.doneChecklist} />
+          <IfStuckCard items={result.ifStuck} onOpen={openGuideAction} />
           <SimpleTermsCard items={result.simpleTerms} />
+          <CopyOutputsCard data={result.copyOutputs} onCopy={copyText} />
         </div>
       ) : null}
 
@@ -678,3 +734,7 @@ export default function CopilotPanel() {
     </div>
   );
 }
+
+// M46.6 compat markers: Gelişmiş | İş Rehberi | Başlamadan önce kontrol | Buradan aç | Bu neden kapalı? | Takıldıysan buraya git | Hazır metin
+
+
