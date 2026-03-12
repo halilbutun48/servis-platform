@@ -114,6 +114,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Harita", path: "/driver/map" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
+          { label: "Copilot", path: "/driver/copilot" },
         ],
       });
     } else if (role === "PERSONEL") {
@@ -124,6 +125,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Servisim", path: "/personel/my" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
+          { label: "Copilot", path: "/personel/copilot" },
         ],
       });
     } else if (role === "PARENT") {
@@ -133,6 +135,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Canlı", path: "/parent/live" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
+          { label: "Copilot", path: "/parent/copilot" },
         ],
       });
     } else if (role === "SUPER_ADMIN") {

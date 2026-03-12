@@ -5,6 +5,9 @@ import { buildVehicleDriverBindGuide } from "./jobs/vehicleDriverBind.js";
 import { buildTelematicsDeviceCreateGuide } from "./jobs/telematicsDeviceCreate.js";
 import { buildLocationSourceGuide } from "./jobs/locationSourceGuide.js";
 import { buildGpsSignalDiagnosisGuide } from "./jobs/gpsSignalDiagnosisGuide.js";
+import { buildScreenMenuGuide } from "./jobs/screenMenuGuide.js";
+import { buildButtonActionGuide } from "./jobs/buttonActionGuide.js";
+import { buildRoleHelpGuide } from "./jobs/roleHelpGuide.js";
 
 export const JOB_GUIDE_TYPES = [
   "OFFER_REVIEW",
@@ -14,6 +17,9 @@ export const JOB_GUIDE_TYPES = [
   "TELEMATICS_DEVICE_CREATE",
   "LOCATION_SOURCE_GUIDE",
   "GPS_SIGNAL_DIAGNOSIS_GUIDE",
+  "SCREEN_MENU_GUIDE",
+  "BUTTON_ACTION_GUIDE",
+  "ROLE_HELP_GUIDE",
 ];
 
 const REGISTRY = {
@@ -44,6 +50,18 @@ const REGISTRY = {
   GPS_SIGNAL_DIAGNOSIS_GUIDE: {
     entityType: "vehicle",
     builder: buildGpsSignalDiagnosisGuide,
+  },
+  SCREEN_MENU_GUIDE: {
+    entityType: "screen",
+    builder: buildScreenMenuGuide,
+  },
+  BUTTON_ACTION_GUIDE: {
+    entityType: "screen",
+    builder: buildButtonActionGuide,
+  },
+  ROLE_HELP_GUIDE: {
+    entityType: "screen",
+    builder: buildRoleHelpGuide,
   },
 };
 

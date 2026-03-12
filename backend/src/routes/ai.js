@@ -1,5 +1,5 @@
 import express from "express";
-import { authRequired, requireRole, requireStepUp } from "../auth/middleware.js";
+import { authRequired, requireStepUp } from "../auth/middleware.js";
 import { audit } from "../audit.js";
 import { parseCopilotRequest } from "../ai/schemas.js";
 import { runCopilotFoundation } from "../ai/service.js";
@@ -11,7 +11,6 @@ export function aiRouter() {
   r.post(
     "/copilot",
     authRequired(),
-    requireRole("SUPER_ADMIN", "ROOM", "COMPANY"),
     requireStepUp("SUPER_ADMIN", "ROOM"),
     async (req, res) => {
       try {
@@ -26,6 +25,16 @@ export function aiRouter() {
             code: "VALIDATION_ERROR",
             details: parsed.error.flatten(),
           });
+        }
+
+        const role = String(req.user?.role || "");
+        const isCoreRole = ["SUPER_ADMIN", "ROOM", "COMPANY"].includes(role);
+        const isSimpleGuideRole = ["DRIVER", "PERSONEL", "PARENT"].includes(role)
+          && parsed.data.intent === "JOB_GUIDE"
+          && parsed.data.entityType === "screen"
+          && ["SCREEN_MENU_GUIDE", "BUTTON_ACTION_GUIDE", "ROLE_HELP_GUIDE"].includes(String(parsed.data.jobType || ""));
+        if (!isCoreRole && !isSimpleGuideRole) {
+          return res.status(403).json({ error: "Forbidden" });
         }
 
         const payload = await runCopilotFoundation({
@@ -58,3 +67,6 @@ export function aiRouter() {
 }
 
 export default aiRouter;
+
+// M46.6-C route markers: driver | personel | parent
+

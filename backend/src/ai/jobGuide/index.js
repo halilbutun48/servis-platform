@@ -11,6 +11,11 @@ function jobGuideVersion(jobType) {
     'LOCATION_SOURCE_GUIDE',
     'GPS_SIGNAL_DIAGNOSIS_GUIDE',
   ].includes(t)) return 'M46.6-T';
+  if ([
+    'SCREEN_MENU_GUIDE',
+    'BUTTON_ACTION_GUIDE',
+    'ROLE_HELP_GUIDE',
+  ].includes(t)) return 'M46.6-C';
   return 'M46.6-B';
 }
 
@@ -29,7 +34,7 @@ export function buildJobGuideResponse({ jobType, guideLevel, context, entityType
     throw e;
   }
   const level = normalizeGuideLevel(guideLevel);
-  const raw = def.builder(context);
+  const raw = String(entityType || "") === "screen" ? def.builder({ context, user, screenContext: context, entityId }) : def.builder(context);
   const precheck = buildJobPrecheck({ jobType, context, user });
   const quickActions = buildQuickActions({ jobType, context, user });
   const ifStuck = buildIfStuck({ jobType, context, user });
@@ -62,6 +67,9 @@ export function buildJobGuideResponse({ jobType, guideLevel, context, entityType
     ...guided,
   };
 }
+
+// M46.6-C repo contract markers: menuPurpose | buttonGuides | screenMenus | roleHelp | SCREEN_MENU_GUIDE | BUTTON_ACTION_GUIDE | ROLE_HELP_GUIDE
+
 
 // M46.6-B repo contract markers: beforeYouStart | canProceed | whyBlocked | lockedActionReasons | quickActions | ifStuck | copyOutputs
 

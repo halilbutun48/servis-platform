@@ -20,6 +20,39 @@ function superAdminActions(context) {
   return [action('Genel görünümü aç', 'SUPERADMIN_OVERVIEW', 'PRIMARY', 'Önce genel yönetim ekranından kapsamı doğrula.')];
 }
 
+
+function screenAction(label, path, kind, reason) {
+  return action(label, path, kind, reason);
+}
+
+function buildScreenQuickActions(jobType, context) {
+  const out = [];
+  if (context?.path) out.push(screenAction(`${context.label || 'Bu ekran'} ekranını aç`, context.path, 'PRIMARY', 'Bu rehberin anlattığı ekranı doğrudan açar.'));
+  for (const row of Array.isArray(context?.screenMenus) ? context.screenMenus : []) {
+    if (row?.path && row.path !== context?.path) out.push(screenAction(`${row.label} ekranını aç`, row.path, out.length ? 'SECONDARY' : 'PRIMARY', row.purpose || 'İlgili ekrana geçiş sağlar.'));
+    if (out.length >= 3) break;
+  }
+  return out.slice(0, 3);
+}
+
+function buildScreenIfStuck(context) {
+  const rows = [];
+  rows.push({
+    problem: 'Hangi menüye gideceğimi bilmiyorum',
+    routeKey: context?.path || '',
+    advice: 'Önce bu ekranın amacını oku, sonra ilgili menüye geç.',
+  });
+  if ((context?.screenMenus || []).length) {
+    const first = context.screenMenus[0];
+    rows.push({
+      problem: 'Bu ekranda aradığımı bulamadım',
+      routeKey: first?.path || '',
+      advice: first?.purpose || 'İlgili yardımcı menüye geç.',
+    });
+  }
+  return rows.slice(0, 2);
+}
+
 export function buildQuickActions({ jobType, context, user }) {
   const role = String(user?.role || '');
   if (jobType === 'TELEMATICS_DEVICE_CREATE') {
@@ -72,6 +105,7 @@ export function buildQuickActions({ jobType, context, user }) {
 }
 
 export function buildIfStuck({ jobType, context, user }) {
+  if (jobType === 'SCREEN_MENU_GUIDE' || jobType === 'BUTTON_ACTION_GUIDE' || jobType === 'ROLE_HELP_GUIDE') return buildScreenIfStuck(context);
   const role = String(user?.role || '');
   if (jobType === 'TELEMATICS_DEVICE_CREATE') {
     const rows = [];

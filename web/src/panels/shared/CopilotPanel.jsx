@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { navigate } from "../../router";
+import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { companyPath } from "../../utils/paths";
 import JobGuideHeader from "../../components/copilot/JobGuideHeader";
@@ -13,6 +13,9 @@ import DoneChecklistCard from "../../components/copilot/DoneChecklistCard";
 import IfStuckCard from "../../components/copilot/IfStuckCard";
 import SimpleTermsCard from "../../components/copilot/SimpleTermsCard";
 import CopyOutputsCard from "../../components/copilot/CopyOutputsCard";
+import MenuPurposeCard from "../../components/copilot/MenuPurposeCard";
+import ButtonGuidesCard from "../../components/copilot/ButtonGuidesCard";
+import ScreenMenusCard from "../../components/copilot/ScreenMenusCard";
 
 const PANEL_MODES = [
   { value: "GUIDE", label: "Rehber" },
@@ -27,6 +30,9 @@ const GUIDE_JOB_OPTIONS = [
   { value: "TELEMATICS_DEVICE_CREATE", label: "Cihaz GPS'i ekleme", helper: "Araçtaki cihaz GPS'ini ekleme veya kontrol etme rehberi", entityType: "vehicle" },
   { value: "LOCATION_SOURCE_GUIDE", label: "Konum kaynağı rehberi", helper: "Telefon GPS'i ve cihaz GPS'i farkını sade dille açıklar", entityType: "vehicle" },
   { value: "GPS_SIGNAL_DIAGNOSIS_GUIDE", label: "GPS sinyal teşhisi", helper: "Konum neden görünmüyor veya gecikiyor sorusuna rehberlik eder", entityType: "vehicle" },
+  { value: "SCREEN_MENU_GUIDE", label: "Bu ekran ne için var?", helper: "Seçili menünün ne işe yaradığını sade dille açıklar", entityType: "screen" },
+  { value: "BUTTON_ACTION_GUIDE", label: "Bu ekrandaki butonlar", helper: "Seçili ekrandaki önemli butonların ne yaptığını açıklar", entityType: "screen" },
+  { value: "ROLE_HELP_GUIDE", label: "Bu rolde ne yapabilirim?", helper: "Bu rolde hangi menüleri kullanabileceğini gösterir", entityType: "screen" },
 ];
 
 const GUIDE_LEVEL_OPTIONS = [
@@ -71,6 +77,81 @@ const GUIDE_BLOCK_MARKERS = {
   ifStuck: "Takıldıysan buraya git",
   copyOutputs: "Hazır metin",
 };
+
+
+function screenOptionLabel(item) {
+  if (!item) return "";
+  return `${item.label || "Ekran"} • ${item.path || ""}`;
+}
+
+function normalizeRoleGuideKey(me) {
+  const role = String(me?.role || "");
+  if (role === "COMPANY") {
+    const kind = String(me?.companyKind || "").toUpperCase();
+    if (kind === "SCHOOL") return "SCHOOL";
+    if (kind === "ORGANIZATION") return "ORGANIZATION";
+    return "COMPANY";
+  }
+  return role;
+}
+
+function buildScreenOptions(me) {
+  const key = normalizeRoleGuideKey(me);
+  const defs = {
+    ROOM: [
+      { id: 1101, path: "/room/map", label: "Canlı Takip" },
+      { id: 1102, path: "/room/offers", label: "Teklifler" },
+      { id: 1103, path: "/room/shifts", label: "Vardiyalar" },
+      { id: 1104, path: "/room/vehicles", label: "Araçlar" },
+      { id: 1105, path: "/room/drivers", label: "Sürücüler" },
+      { id: 1106, path: "/room/agreements", label: "Sözleşmeler" },
+      { id: 1107, path: "/room/copilot", label: "Copilot" },
+    ],
+    COMPANY: [
+      { id: 2101, path: "/company", label: "Planlama Merkezi" },
+      { id: 2102, path: "/company/shifts", label: "Vardiyalar" },
+      { id: 2103, path: "/company/agreements", label: "Sözleşmeler" },
+      { id: 2104, path: "/company/access-links", label: "Personel Link" },
+      { id: 2105, path: "/company/copilot", label: "Copilot" },
+    ],
+    SCHOOL: [
+      { id: 2101, path: "/school", label: "Okul Merkezi" },
+      { id: 2102, path: "/school/shifts", label: "Vardiyalar" },
+      { id: 2103, path: "/school/agreements", label: "Sözleşmeler" },
+      { id: 2201, path: "/school/parents", label: "Parent Link" },
+      { id: 2105, path: "/school/copilot", label: "Copilot" },
+    ],
+    ORGANIZATION: [
+      { id: 2101, path: "/organization", label: "Organizasyon Merkezi" },
+      { id: 2301, path: "/organization/plans", label: "Yer Planları" },
+      { id: 2102, path: "/organization/shifts", label: "Vardiyalar" },
+      { id: 2103, path: "/organization/agreements", label: "Sözleşmeler" },
+      { id: 2105, path: "/organization/copilot", label: "Copilot" },
+    ],
+    DRIVER: [
+      { id: 3101, path: "/driver/today", label: "Bugün" },
+      { id: 3102, path: "/driver/route", label: "Rota" },
+      { id: 3103, path: "/driver/map", label: "Harita" },
+      { id: 3104, path: "/driver/copilot", label: "Copilot" },
+    ],
+    PERSONEL: [
+      { id: 4101, path: "/personel/live", label: "Canlı" },
+      { id: 4102, path: "/personel/my", label: "Servisim" },
+      { id: 4103, path: "/personel/copilot", label: "Copilot" },
+    ],
+    PARENT: [
+      { id: 5101, path: "/parent/live", label: "Canlı" },
+      { id: 5102, path: "/parent/copilot", label: "Copilot" },
+    ],
+    SUPER_ADMIN: [
+      { id: 6101, path: "/superadmin", label: "Overview" },
+      { id: 6102, path: "/superadmin/companies", label: "Companies" },
+      { id: 6103, path: "/superadmin/audit", label: "Audit" },
+      { id: 6104, path: "/superadmin/copilot", label: "Copilot" },
+    ],
+  };
+  return defs[key] || [];
+}
 
 function firstList(resp) {
   if (Array.isArray(resp)) return resp;
@@ -133,6 +214,7 @@ function confidencePct(value) {
 
 function optionLabel(entityType, item) {
   if (!item) return "";
+  if (entityType === "screen") return screenOptionLabel(item);
   if (entityType === "vehicle") {
     return `#${item.id} • ${item.plate || "plaka?"} • ${item.status || "-"}`;
   }
@@ -182,6 +264,7 @@ function actionPriorityLabel(action) {
 function resolveGuideRoute(me, routeKey) {
   const role = String(me?.role || "");
   const key = String(routeKey || "");
+  if (key.startsWith("/")) return key;
   if (role === "ROOM") {
     if (key === "ROOM_OFFERS") return "/room/offers";
     if (key === "ROOM_SHIFTS") return "/room/shifts";
@@ -217,6 +300,7 @@ export default function CopilotPanel() {
   const [result, setResult] = useState(null);
   const [recentShifts, setRecentShifts] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [screenOptions, setScreenOptions] = useState([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
   const [history, setHistory] = useState([]);
   const [copyMsg, setCopyMsg] = useState("");
@@ -226,11 +310,28 @@ export default function CopilotPanel() {
   }, []);
 
   useEffect(() => {
+    const opts = buildScreenOptions(me);
+    setScreenOptions(opts);
+    const current = String(getPath() || "").split("?")[0];
+    if (opts.some((x) => x.path === current) && activeEntityType === "screen") {
+      const match = opts.find((x) => x.path === current);
+      if (match) setEntityId(String(match.id));
+    }
+  }, [me?.role, me?.companyKind]);
+
+  useEffect(() => {
     if (panelMode === "GUIDE") {
       const selected = GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0];
-      setEntityType(selected?.entityType || "shift");
+      const nextType = selected?.entityType || "shift";
+      setEntityType(nextType);
       setPickerSearch("");
-      setEntityId("");
+      if (nextType === "screen") {
+        const current = String(getPath() || "").split("?")[0];
+        const match = buildScreenOptions(me).find((x) => x.path === current);
+        setEntityId(match ? String(match.id) : "");
+      } else {
+        setEntityId("");
+      }
       return;
     }
     const selected = INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0];
@@ -272,7 +373,7 @@ export default function CopilotPanel() {
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
   const activeEntityType = panelMode === "GUIDE" ? selectedJob.entityType : selectedIntent.entityType;
-  const targetOptions = useMemo(() => (activeEntityType === "vehicle" ? vehicles : recentShifts), [activeEntityType, vehicles, recentShifts]);
+  const targetOptions = useMemo(() => (activeEntityType === "vehicle" ? vehicles : activeEntityType === "screen" ? screenOptions : recentShifts), [activeEntityType, vehicles, recentShifts, screenOptions]);
   const filteredOptions = useMemo(() => filterItems(activeEntityType, targetOptions, pickerSearch), [activeEntityType, pickerSearch, targetOptions]);
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
 
@@ -290,6 +391,7 @@ export default function CopilotPanel() {
             entityId: Number(entityId),
             jobType,
             guideLevel,
+            screenContext: activeEntityType === "screen" ? { path: selectedItem?.path || String(getPath() || "").split("?")[0], label: selectedItem?.label || "Ekran", role: me?.role || "", companyKind: me?.companyKind || "" } : undefined,
             format: "json",
           }
         : {
@@ -440,7 +542,7 @@ export default function CopilotPanel() {
           <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <label className="muted">
               Hızlı seçim arama {loadingRefs ? "(yükleniyor...)" : ""}
-              <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder={activeEntityType === "vehicle" ? "plaka / durum ara" : "durum / şirket / room ara"} />
+              <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder={activeEntityType === "vehicle" ? "plaka / durum ara" : activeEntityType === "screen" ? "ekran / menü ara" : "durum / şirket / room ara"} />
             </label>
 
             <label className="muted">
@@ -467,7 +569,7 @@ export default function CopilotPanel() {
           ) : null}
 
           <div className="muted">
-            Desteklenen roller: ROOM / COMPANY / SUPER_ADMIN. ROOM ve SUPER_ADMIN için ek güvenlik doğrulaması gerekir.
+            Desteklenen roller: ROOM / COMPANY / SCHOOL / ORGANIZATION / SUPER_ADMIN. DRIVER / PERSONEL / PARENT için ekran ve buton rehberi sade modda açıktır. ROOM ve SUPER_ADMIN için ek güvenlik doğrulaması gerekir.
           </div>
 
           {err ? <div className="muted" style={{ color: "crimson" }}>{err}</div> : null}
@@ -495,6 +597,7 @@ export default function CopilotPanel() {
             </div>
           ) : null}
 
+          <MenuPurposeCard data={result.menuPurpose} />
           <BeforeYouStartCard label={result.precheckLabel} state={result.precheckState} items={result.beforeYouStart} />
           <QuickActionsCard items={result.quickActions} onOpen={openGuideAction} />
 
@@ -504,6 +607,8 @@ export default function CopilotPanel() {
           </div>
 
           <StepByStepCard steps={result.stepByStep} />
+          <ButtonGuidesCard items={result.buttonGuides} />
+          <ScreenMenusCard items={result.screenMenus} onOpen={openGuideAction} />
           <LockedReasonCard items={result.lockedActionReasons} />
           <CommonMistakesCard items={result.commonMistakes} />
           <DoneChecklistCard items={result.doneChecklist} />
@@ -743,3 +848,5 @@ export default function CopilotPanel() {
 
 
 // M46.6-T compat markers: Konum kaynağı rehberi | Cihaz GPS'i ekleme | GPS sinyal teşhisi | sürücünün telefon GPS'i | cihaz GPS'i | konum kaynağı
+
+// M46.6-C compat markers: Bu ekran ne için var? | Bu ekrandaki butonlar | Bu menü ne için var? | SCREEN_MENU_GUIDE | BUTTON_ACTION_GUIDE | ROLE_HELP_GUIDE | Copilot

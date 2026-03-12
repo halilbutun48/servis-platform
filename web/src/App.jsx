@@ -239,13 +239,16 @@ export default function App() {
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
     if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
     if (path === "/driver/checkin") return { layout: true, node: <DriverCheckinPanel /> };
+    if (path === "/driver/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // PERSONEL
     if (path === "/personel/live") return { layout: true, node: <PersonelLivePanel /> };
     if (path === "/personel/my") return { layout: true, node: <MyRidePanel /> };
+    if (path === "/personel/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // PARENT
     if (path === "/parent" || path === "/parent/live") return { layout: true, node: <ParentLivePanel /> };
+    if (path === "/parent/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // SUPER_ADMIN
     if (path === "/superadmin") return { layout: true, node: <SuperAdminPanel /> };

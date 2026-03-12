@@ -13,7 +13,7 @@ export const AI_COPILOT_INTENTS = [
   "JOB_GUIDE",
 ];
 
-export const AI_COPILOT_ENTITY_TYPES = ["shift", "vehicle"];
+export const AI_COPILOT_ENTITY_TYPES = ["shift", "vehicle", "screen"];
 
 const SHIFT_INTENTS = [
   "SHIFT_SUMMARY",
@@ -66,6 +66,13 @@ const requestSchema = z
           message: `${val.jobType} jobType requires entityType=${def.entityType}`,
         });
       }
+    }
+    if (val.entityType === "screen" && val.intent !== "JOB_GUIDE") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["entityType"],
+        message: "screen entityType only supports JOB_GUIDE",
+      });
     }
   });
 

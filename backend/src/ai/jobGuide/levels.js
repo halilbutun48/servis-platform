@@ -16,6 +16,8 @@ export function adaptGuideContent(level, data) {
     out.beforeYouStart = (out.beforeYouStart || []).slice(0, 4);
     out.quickActions = (out.quickActions || []).slice(0, 2);
     out.ifStuck = (out.ifStuck || []).slice(0, 2);
+    out.buttonGuides = (out.buttonGuides || []).slice(0, 4);
+    out.screenMenus = (out.screenMenus || []).slice(0, 4);
   }
   if (guideLevel === "WHY") {
     out.screenExplanation = out.screenExplanation || out.jobPurpose || out.plainSummary || "Bu ekran işi doğru sırayla tamamlamak için yardımcı olur.";

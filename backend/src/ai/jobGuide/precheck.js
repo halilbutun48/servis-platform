@@ -180,6 +180,23 @@ function buildVehicleDriverBindPrecheck(context) {
   return { beforeYouStart, canProceed, whyBlocked, lockedActionReasons, ...summarizeState(beforeYouStart, canProceed) };
 }
 
+
+function buildScreenGuidePrecheck(jobType, context) {
+  const hasScreen = !!context?.path;
+  const hasButtons = Array.isArray(context?.buttonGuides) && context.buttonGuides.length > 0;
+  const hasMenus = Array.isArray(context?.screenMenus) && context.screenMenus.length > 0;
+  const beforeYouStart = [
+    item('Doğru ekran seçildi mi?', hasScreen ? 'OK' : 'MISSING', hasScreen ? `${context?.label || 'Ekran'} seçili.` : 'Önce açıklanacak ekran seçilmelidir.'),
+    item('Bu ekran senin rolüne uygun mu?', hasScreen ? 'OK' : 'MISSING', hasScreen ? `${context?.roleLabel || context?.roleKey || 'Rol'} için uygun ekran görünüyor.` : 'Rolüne uygun ekran seçilmelidir.'),
+    item('Ana buton açıklamaları var mı?', hasButtons ? 'OK' : 'WARN', hasButtons ? `Açıklanan buton sayısı: ${context.buttonGuides.length}.` : 'Bu ekranda belirgin ana buton açıklaması az görünüyor.'),
+    item('İlgili menüler listelenmiş mi?', hasMenus ? 'OK' : 'WARN', hasMenus ? `İlgili menü sayısı: ${context.screenMenus.length}.` : 'Yardımcı menü listesi kısa görünüyor.'),
+  ];
+  const canProceed = hasScreen;
+  const whyBlocked = hasScreen ? [] : ['Doğru ekran seçilmeden ekran rehberi üretilemez.'];
+  const lockedActionReasons = hasScreen ? [] : [{ action: 'Rehberi aç', reason: 'Önce doğru ekran seçilmelidir.' }];
+  return { beforeYouStart, canProceed, whyBlocked, lockedActionReasons, ...summarizeState(beforeYouStart, canProceed) };
+}
+
 export function buildJobPrecheck({ jobType, context }) {
   const key = String(jobType || '');
   if (key === 'OFFER_REVIEW') return buildOfferReviewPrecheck(context);
@@ -189,6 +206,7 @@ export function buildJobPrecheck({ jobType, context }) {
   if (key === 'TELEMATICS_DEVICE_CREATE') return buildTelematicsDeviceCreatePrecheck(context);
   if (key === 'LOCATION_SOURCE_GUIDE') return buildLocationSourceGuidePrecheck(context);
   if (key === 'GPS_SIGNAL_DIAGNOSIS_GUIDE') return buildGpsSignalDiagnosisGuidePrecheck(context);
+  if (key === 'SCREEN_MENU_GUIDE' || key === 'BUTTON_ACTION_GUIDE' || key === 'ROLE_HELP_GUIDE') return buildScreenGuidePrecheck(key, context);
   return { beforeYouStart: [], canProceed: true, whyBlocked: [], lockedActionReasons: [], precheckState: 'READY', precheckLabel: 'Hazır' };
 }
 

@@ -1,5 +1,6 @@
 import { buildCopilotPayload, getShiftContext, getVehicleContext } from "./tools.js";
 import { buildJobGuideResponse } from "./jobGuide/index.js";
+import { getScreenDefinitionForUser } from "./jobGuide/screenCatalog.js";
 
 function intentLabel(intent) {
   const map = {
@@ -23,6 +24,9 @@ function describeEntity(context) {
   if (context.type === "vehicle") {
     return `Vehicle #${context.id} • ${context.plate || "plate?"} • ${context.status || "-"}`;
   }
+  if (context.type === "screen") {
+    return `${context.label || "Ekran"} • ${context.roleLabel || context.roleKey || "rol"}`;
+  }
   return `${context.type || "entity"} #${context.id || "-"}`;
 }
 
@@ -31,6 +35,7 @@ function buildScopeSummary(user, entityType, entityId) {
   const room = user?.roomId != null ? `roomId=${user.roomId}` : null;
   const company = user?.companyId != null ? `companyId=${user.companyId}` : null;
   const scopeBits = [room, company].filter(Boolean).join(", ");
+  if (entityType === "screen") return `${role} rolü için ekran rehberi okundu${scopeBits ? ` (${scopeBits})` : ""}.`;
   return `${role} scope içinde ${entityType} #${entityId} okundu${scopeBits ? ` (${scopeBits})` : ""}.`;
 }
 
@@ -487,12 +492,20 @@ function enrichDecisionLayer(intent, context, base) {
   };
 }
 
-export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel }) {
+export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel, screenContext }) {
   let context = null;
   if (entityType === "shift") {
     context = await getShiftContext(user, entityId);
   } else if (entityType === "vehicle") {
     context = await getVehicleContext(user, entityId);
+  } else if (entityType === "screen") {
+    context = getScreenDefinitionForUser(user, screenContext || {}, entityId);
+    if (!context) {
+      const e = new Error("SCREEN_CONTEXT_NOT_FOUND");
+      e.status = 400;
+      e.code = "SCREEN_CONTEXT_NOT_FOUND";
+      throw e;
+    }
   } else {
     const e = new Error("UNSUPPORTED_ENTITY_TYPE");
     e.status = 400;
@@ -509,6 +522,7 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user,
         entityType,
         entityId,
         user,
+        screenContext,
       }),
       entityLabel: describeEntity(context),
       providerSummary: `guideLevel=${String(guideLevel || "SHORT")}`,
