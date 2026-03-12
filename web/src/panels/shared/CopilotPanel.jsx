@@ -24,6 +24,9 @@ const GUIDE_JOB_OPTIONS = [
   { value: "OFFER_APPROVAL", label: "Teklifi onaylama", helper: "Onay öncesi kontrol rehberi", entityType: "shift" },
   { value: "ASSIGNMENT_READINESS_GUIDE", label: "Atamaya hazır mı", helper: "Araç, sürücü ve durak hazır mı", entityType: "shift" },
   { value: "VEHICLE_DRIVER_BIND", label: "Araç ile sürücüyü bağlama", helper: "Araç ve sürücü bağlantısı için rehber", entityType: "vehicle" },
+  { value: "TELEMATICS_DEVICE_CREATE", label: "Cihaz GPS'i ekleme", helper: "Araçtaki cihaz GPS'ini ekleme veya kontrol etme rehberi", entityType: "vehicle" },
+  { value: "LOCATION_SOURCE_GUIDE", label: "Konum kaynağı rehberi", helper: "Telefon GPS'i ve cihaz GPS'i farkını sade dille açıklar", entityType: "vehicle" },
+  { value: "GPS_SIGNAL_DIAGNOSIS_GUIDE", label: "GPS sinyal teşhisi", helper: "Konum neden görünmüyor veya gecikiyor sorusuna rehberlik eder", entityType: "vehicle" },
 ];
 
 const GUIDE_LEVEL_OPTIONS = [
@@ -738,3 +741,5 @@ export default function CopilotPanel() {
 // M46.6 compat markers: Gelişmiş | İş Rehberi | Başlamadan önce kontrol | Buradan aç | Bu neden kapalı? | Takıldıysan buraya git | Hazır metin
 
 
+
+// M46.6-T compat markers: Konum kaynağı rehberi | Cihaz GPS'i ekleme | GPS sinyal teşhisi | sürücünün telefon GPS'i | cihaz GPS'i | konum kaynağı

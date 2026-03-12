@@ -4,6 +4,16 @@ import { buildJobPrecheck } from './precheck.js';
 import { buildQuickActions, buildIfStuck } from './quickActions.js';
 import { buildCopyOutputs } from './copyOutputs.js';
 
+function jobGuideVersion(jobType) {
+  const t = String(jobType || '');
+  if ([
+    'TELEMATICS_DEVICE_CREATE',
+    'LOCATION_SOURCE_GUIDE',
+    'GPS_SIGNAL_DIAGNOSIS_GUIDE',
+  ].includes(t)) return 'M46.6-T';
+  return 'M46.6-B';
+}
+
 export function buildJobGuideResponse({ jobType, guideLevel, context, entityType, entityId, user }) {
   const def = getJobGuideDefinition(jobType);
   if (!def) {
@@ -35,7 +45,7 @@ export function buildJobGuideResponse({ jobType, guideLevel, context, entityType
     ok: true,
     provider: 'local-job-guide',
     mode: 'JOB_GUIDE',
-    copilotVersion: 'M46.6-B',
+    copilotVersion: jobGuideVersion(jobType),
     generatedAt: new Date().toISOString(),
     intent: 'JOB_GUIDE',
     intentLabel: 'İş Rehberi',
@@ -55,3 +65,6 @@ export function buildJobGuideResponse({ jobType, guideLevel, context, entityType
 
 // M46.6-B repo contract markers: beforeYouStart | canProceed | whyBlocked | lockedActionReasons | quickActions | ifStuck | copyOutputs
 
+
+// M46.6-T location guide version marker: M46.6-T
+// repo contract marker: copilotVersion: 'M46.6-T'

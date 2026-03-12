@@ -100,6 +100,66 @@ function buildAssignmentReadinessPrecheck(context) {
   return { beforeYouStart, canProceed, whyBlocked, lockedActionReasons, ...summarizeState(beforeYouStart, canProceed) };
 }
 
+
+function vehicleLocationChecks(context) {
+  const hasDriver = !!context?.driver?.id;
+  const activeDeviceCount = Number(context?.activeDeviceCount || 0);
+  const hasGpsLast = !!context?.gpsLast?.at;
+  const activeShiftCount = Number((context?.currentShiftIds || []).length || 0);
+  return {
+    hasDriver,
+    activeDeviceCount,
+    hasGpsLast,
+    activeShiftCount,
+    items: [
+      item("Araç seçili mi?", context?.id ? "OK" : "MISSING", context?.id ? `Araç ID: ${context.id}.` : "Önce araç seçilmelidir."),
+      item("Sürücünün telefon GPS'i için bağlı sürücü var mı?", hasDriver ? "OK" : "WARN", hasDriver ? "Bağlı sürücü görünüyor." : "Bağlı sürücü görünmüyor; telefon GPS'i hattı zayıf kalabilir."),
+      item("Cihaz GPS'i aktif mi?", activeDeviceCount > 0 ? "OK" : "WARN", activeDeviceCount > 0 ? `Aktif cihaz sayısı: ${activeDeviceCount}.` : "Aktif cihaz GPS'i görünmüyor."),
+      item("Son konum zamanı var mı?", hasGpsLast ? "OK" : "WARN", hasGpsLast ? "Son konum zamanı görünüyor." : "Son konum zamanı görünmüyor."),
+      item("Aktif iş var mı?", activeShiftCount > 0 ? "WARN" : "OK", activeShiftCount > 0 ? `Aktif iş sayısı: ${activeShiftCount}.` : "Aktif iş görünmüyor."),
+    ],
+  };
+}
+
+function buildTelematicsDeviceCreatePrecheck(context) {
+  const checks = vehicleLocationChecks(context);
+  const beforeYouStart = checks.items;
+  const whyBlocked = [];
+  const lockedActionReasons = [];
+  if (!context?.id) {
+    whyBlocked.push("Araç seçilmeden cihaz GPS'i ekleme adımı tamamlanamaz.");
+    lockedActionReasons.push({ action: "Cihaz kaydı aç", reason: "Önce araç seçilmelidir." });
+  }
+  const canProceed = !!context?.id;
+  return { beforeYouStart, canProceed, whyBlocked, lockedActionReasons, ...summarizeState(beforeYouStart, canProceed) };
+}
+
+function buildLocationSourceGuidePrecheck(context) {
+  const checks = vehicleLocationChecks(context);
+  const beforeYouStart = checks.items;
+  const whyBlocked = [];
+  const lockedActionReasons = [];
+  if (!context?.id) {
+    whyBlocked.push("Araç seçilmeden konum kaynağı netleştirilemez.");
+    lockedActionReasons.push({ action: "Kaynağı incele", reason: "Önce araç seçilmelidir." });
+  }
+  const canProceed = !!context?.id;
+  return { beforeYouStart, canProceed, whyBlocked, lockedActionReasons, ...summarizeState(beforeYouStart, canProceed) };
+}
+
+function buildGpsSignalDiagnosisGuidePrecheck(context) {
+  const checks = vehicleLocationChecks(context);
+  const beforeYouStart = checks.items;
+  const whyBlocked = [];
+  const lockedActionReasons = [];
+  if (!context?.id) {
+    whyBlocked.push("Araç seçilmeden GPS sinyal teşhisi yapılamaz.");
+    lockedActionReasons.push({ action: "Teşhisi çalıştır", reason: "Önce araç seçilmelidir." });
+  }
+  const canProceed = !!context?.id;
+  return { beforeYouStart, canProceed, whyBlocked, lockedActionReasons, ...summarizeState(beforeYouStart, canProceed) };
+}
+
 function buildVehicleDriverBindPrecheck(context) {
   const hasDriver = !!context?.driver?.id;
   const activeShiftCount = Number((context?.currentShiftIds || []).length || 0);
@@ -126,6 +186,9 @@ export function buildJobPrecheck({ jobType, context }) {
   if (key === 'OFFER_APPROVAL') return buildOfferApprovalPrecheck(context);
   if (key === 'ASSIGNMENT_READINESS_GUIDE') return buildAssignmentReadinessPrecheck(context);
   if (key === 'VEHICLE_DRIVER_BIND') return buildVehicleDriverBindPrecheck(context);
+  if (key === 'TELEMATICS_DEVICE_CREATE') return buildTelematicsDeviceCreatePrecheck(context);
+  if (key === 'LOCATION_SOURCE_GUIDE') return buildLocationSourceGuidePrecheck(context);
+  if (key === 'GPS_SIGNAL_DIAGNOSIS_GUIDE') return buildGpsSignalDiagnosisGuidePrecheck(context);
   return { beforeYouStart: [], canProceed: true, whyBlocked: [], lockedActionReasons: [], precheckState: 'READY', precheckLabel: 'Hazır' };
 }
 

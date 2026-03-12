@@ -22,6 +22,38 @@ function superAdminActions(context) {
 
 export function buildQuickActions({ jobType, context, user }) {
   const role = String(user?.role || '');
+  if (jobType === 'TELEMATICS_DEVICE_CREATE') {
+    if (role === 'ROOM') {
+      const out = [action("Araçlar ekranını aç", 'ROOM_VEHICLES', 'PRIMARY', "Cihaz GPS'i kaydını bu araçtan açabilir veya kontrol edebilirsin.")];
+      if (!context?.driver?.id) out.push(action('Sürücüler ekranını aç', 'ROOM_DRIVERS', 'SECONDARY', "Telefon GPS'i tarafını görmek için önce sürücü bağını kontrol et."));
+      return out.slice(0, 3);
+    }
+    if (role === 'COMPANY') return [action('Vardiyalar ekranını aç', 'COMPANY_SHIFTS', 'PRIMARY', "Araç etkisini ilgili vardiyalarda takip et.")];
+    return superAdminActions(context);
+  }
+
+  if (jobType === 'LOCATION_SOURCE_GUIDE') {
+    if (role === 'ROOM') {
+      const out = [action("Araçlar ekranını aç", 'ROOM_VEHICLES', 'PRIMARY', 'Konum kaynağını araç detayından daha net görebilirsin.')];
+      if (!context?.driver?.id) out.push(action('Sürücüler ekranını aç', 'ROOM_DRIVERS', 'SECONDARY', "Telefon GPS'i tarafı için sürücü bağını kontrol et."));
+      if ((context?.currentShiftIds || []).length) out.push(action('Vardiyalar ekranını aç', 'ROOM_SHIFTS', 'SECONDARY', 'Canlı işte hangi kaynağa güveneceğini vardiya akışında karşılaştır.'));
+      return out.slice(0, 3);
+    }
+    if (role === 'COMPANY') return [action('Vardiyalar ekranını aç', 'COMPANY_SHIFTS', 'PRIMARY', 'Konum etkisini vardiya ekranında görmen daha kolay olur.')];
+    return superAdminActions(context);
+  }
+
+  if (jobType === 'GPS_SIGNAL_DIAGNOSIS_GUIDE') {
+    if (role === 'ROOM') {
+      const out = [action("Araçlar ekranını aç", 'ROOM_VEHICLES', 'PRIMARY', 'Sinyal ve cihaz durumunu önce araç ekranından kontrol et.')];
+      if (!context?.driver?.id) out.push(action('Sürücüler ekranını aç', 'ROOM_DRIVERS', 'SECONDARY', "Telefon GPS'i akışını görmek için sürücü bağını kontrol et."));
+      if ((context?.currentShiftIds || []).length) out.push(action('Vardiyalar ekranını aç', 'ROOM_SHIFTS', 'SECONDARY', 'Aktif iş üzerindeki etkisini vardiyada karşılaştır.'));
+      return out.slice(0, 3);
+    }
+    if (role === 'COMPANY') return [action('Vardiyalar ekranını aç', 'COMPANY_SHIFTS', 'PRIMARY', 'Sinyal etkisini vardiya ekranında izle.')];
+    return superAdminActions(context);
+  }
+
   if (jobType === 'VEHICLE_DRIVER_BIND') {
     if (role === 'ROOM') {
       const out = [];
@@ -41,6 +73,48 @@ export function buildQuickActions({ jobType, context, user }) {
 
 export function buildIfStuck({ jobType, context, user }) {
   const role = String(user?.role || '');
+  if (jobType === 'TELEMATICS_DEVICE_CREATE') {
+    const rows = [];
+    rows.push({
+      problem: "Cihaz türünü bilmiyorum",
+      routeKey: role === 'ROOM' ? 'ROOM_VEHICLES' : 'COMPANY_SHIFTS',
+      advice: "Önce araç kaydı ve mevcut cihaz notlarını kontrol et.",
+    });
+    rows.push({
+      problem: "Test verisi gelmiyor",
+      routeKey: role === 'ROOM' ? 'ROOM_VEHICLES' : 'COMPANY_SHIFTS',
+      advice: "Cihaz GPS'i aktif mi ve son konum zamanı güncelleniyor mu kontrol et.",
+    });
+    return rows.slice(0, 2);
+  }
+  if (jobType === 'LOCATION_SOURCE_GUIDE') {
+    const rows = [];
+    rows.push({
+      problem: "Hangi konum kaynağına bakacağımı bilmiyorum",
+      routeKey: role === 'ROOM' ? 'ROOM_VEHICLES' : role === 'COMPANY' ? 'COMPANY_SHIFTS' : 'SUPERADMIN_COPILOT',
+      advice: "Önce sürücünün telefon GPS'i ile cihaz GPS'i ayrımını netleştir.",
+    });
+    if (!context?.driver?.id) rows.push({
+      problem: "Telefon GPS'i görünmüyor",
+      routeKey: role === 'ROOM' ? 'ROOM_DRIVERS' : role === 'COMPANY' ? 'COMPANY_SHIFTS' : 'SUPERADMIN_COPILOT',
+      advice: "Önce bu araç için bağlı sürücü var mı kontrol et.",
+    });
+    return rows.slice(0, 2);
+  }
+  if (jobType === 'GPS_SIGNAL_DIAGNOSIS_GUIDE') {
+    const rows = [];
+    rows.push({
+      problem: "Konum hiç görünmüyor",
+      routeKey: role === 'ROOM' ? 'ROOM_VEHICLES' : role === 'COMPANY' ? 'COMPANY_SHIFTS' : 'SUPERADMIN_COPILOT',
+      advice: "Önce son konum zamanı ve aktif cihaz durumunu kontrol et.",
+    });
+    rows.push({
+      problem: "Konum eski görünüyor",
+      routeKey: role === 'ROOM' ? 'ROOM_SHIFTS' : role === 'COMPANY' ? 'COMPANY_SHIFTS' : 'SUPERADMIN_COPILOT',
+      advice: "Aktif iş varsa konum kaynağını vardiya akışıyla karşılaştır.",
+    });
+    return rows.slice(0, 2);
+  }
   if (jobType === 'VEHICLE_DRIVER_BIND') {
     const rows = [];
     rows.push({
@@ -90,4 +164,3 @@ export function buildIfStuck({ jobType, context, user }) {
 }
 
 // M46.6-B quick action route marker: /room/agreements
-
