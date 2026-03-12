@@ -26,10 +26,13 @@ export default function ChatMessageBubble({ message, onOpen, onGuide }) {
           {role === 'user' ? 'Sen' : 'Copilot'}
         </div>
         <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{message?.text || '-'}</div>
-        {role !== 'user' && (message?.contextSummary || message?.replyMode || message?.followUpPrompt) ? (
-          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.85, display: 'grid', gap: 4 }}>
+        {role !== 'user' && (message?.contextSummary || message?.activeEntityLabel || message?.screenLabel || message?.replyMode || message?.followUpPrompt) ? (
+          <div style={{ marginTop: 8, fontSize: 12, opacity: 0.9, display: 'grid', gap: 4 }}>
+            {message?.screenLabel ? <div>Ekran: {message.screenLabel}</div> : null}
+            {message?.activeEntityLabel ? <div>Seçili kayıt: {message.activeEntityLabel}</div> : null}
             {message?.contextSummary ? <div>{message.contextSummary}</div> : null}
             {message?.replyMode ? <div>Yanıt biçimi: {message.replyMode}</div> : null}
+            {message?.roleMode ? <div>Mod: {message.roleMode === 'SIMPLE' ? 'Sade' : 'Operasyon'}</div> : null}
             {message?.followUpPrompt ? <div>{message.followUpPrompt}</div> : null}
           </div>
         ) : null}

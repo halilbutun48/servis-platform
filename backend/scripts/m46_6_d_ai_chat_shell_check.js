@@ -39,7 +39,7 @@ async function main() {
   });
   must('driver chat help ok', driverChat.ok && driverChat.json?.mode === 'CHAT_HELP');
   must('driver reply short exists', !!driverChat.json?.reply);
-  must('driver version upgraded', driverChat.json?.copilotVersion === 'M46.6-D1');
+  must('driver version upgraded', ['M46.6-D1','M46.6-D2'].includes(driverChat.json?.copilotVersion));
 
   banner('M46.6-D AI CHAT SHELL CHECK PASS');
 }

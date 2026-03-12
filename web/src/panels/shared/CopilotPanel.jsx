@@ -57,6 +57,15 @@ const INTENT_OPTIONS = [
 
 const HISTORY_KEY = "copilot.history.m46_6_a";
 
+function canUseEntityChat(role) {
+  return ["ROOM", "COMPANY", "SUPER_ADMIN"].includes(String(role || ""));
+}
+
+function defaultChatEntityType(role) {
+  return canUseEntityChat(role) ? "shift" : "screen";
+}
+
+
 // Legacy repo-contract compatibility markers (M46.1 → M46.5 checks)
 const LEGACY_COMPAT_MARKERS = {
   recentAnalyses: "Son 5 analiz",
@@ -309,6 +318,8 @@ export default function CopilotPanel() {
   const [history, setHistory] = useState([]);
   const [copyMsg, setCopyMsg] = useState("");
   const [chatScreenId, setChatScreenId] = useState("");
+  const [chatEntityType, setChatEntityType] = useState(defaultChatEntityType(me?.role));
+  const [chatEntityId, setChatEntityId] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [chatBusy, setChatBusy] = useState(false);
   const [chatErr, setChatErr] = useState("");
@@ -318,6 +329,13 @@ export default function CopilotPanel() {
   useEffect(() => {
     setHistory(safeHistoryLoad());
   }, []);
+
+  useEffect(() => {
+    setChatEntityType((prev) => {
+      if (canUseEntityChat(me?.role)) return prev || defaultChatEntityType(me?.role);
+      return "screen";
+    });
+  }, [me?.role]);
 
   useEffect(() => {
     const opts = buildScreenOptions(me);
@@ -340,7 +358,7 @@ export default function CopilotPanel() {
     setChatConversationState(null);
     setChatSuggestedChips([]);
     setChatErr("");
-  }, [chatScreenId]);
+  }, [chatScreenId, chatEntityType, chatEntityId]);
 
   useEffect(() => {
     if (panelMode === "GUIDE") {
@@ -393,6 +411,20 @@ export default function CopilotPanel() {
     };
   }, [token, me?.role]);
 
+  useEffect(() => {
+    if (chatEntityType === "screen") {
+      setChatEntityId("");
+      return;
+    }
+    if (chatEntityType === "shift" && !chatEntityId && recentShifts.length) {
+      setChatEntityId(String(recentShifts[0].id));
+      return;
+    }
+    if (chatEntityType === "vehicle" && !chatEntityId && vehicles.length) {
+      setChatEntityId(String(vehicles[0].id));
+    }
+  }, [chatEntityType, chatEntityId, recentShifts, vehicles]);
+
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
   const activeEntityType = panelMode === "GUIDE" ? selectedJob.entityType : selectedIntent.entityType;
@@ -400,9 +432,15 @@ export default function CopilotPanel() {
   const filteredOptions = useMemo(() => filterItems(activeEntityType, targetOptions, pickerSearch), [activeEntityType, pickerSearch, targetOptions]);
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
   const selectedChatScreen = useMemo(() => screenOptions.find((x) => String(x.id) === String(chatScreenId)) || null, [screenOptions, chatScreenId]);
+  const chatTargetOptions = useMemo(() => (chatEntityType === "vehicle" ? vehicles : chatEntityType === "shift" ? recentShifts : screenOptions), [chatEntityType, vehicles, recentShifts, screenOptions]);
+  const selectedChatItem = useMemo(() => {
+    if (chatEntityType === "screen") return selectedChatScreen;
+    return chatTargetOptions.find((x) => String(x.id) === String(chatEntityId)) || null;
+  }, [chatEntityType, chatTargetOptions, chatEntityId, selectedChatScreen]);
+  const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
 
   async function runChat(messageText = "") {
-    if (!token || !selectedChatScreen) return;
+    if (!token || !selectedChatScreen || !effectiveChatEntityId) return;
     setChatBusy(true);
     setChatErr("");
     try {
@@ -411,11 +449,12 @@ export default function CopilotPanel() {
       }
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
-        entityType: "screen",
-        entityId: Number(selectedChatScreen.id),
+        entityType: chatEntityType,
+        entityId: Number(effectiveChatEntityId),
         message: String(messageText || ""),
         conversationState: chatConversationState || undefined,
         screenContext: {
+          id: Number(selectedChatScreen.id),
           path: selectedChatScreen.path,
           label: selectedChatScreen.label,
           role: me?.role || "",
@@ -433,6 +472,9 @@ export default function CopilotPanel() {
         followUpPrompt: payload?.followUpPrompt || "",
         quickActions: payload?.quickActions || [],
         linkedGuides: payload?.linkedGuides || [],
+        activeEntityLabel: payload?.activeEntityLabel || payload?.entityLabel || "",
+        screenLabel: payload?.screenLabel || selectedChatScreen?.label || "",
+        roleMode: payload?.roleMode || "",
       }]);
     } catch (e2) {
       setChatErr(String(e2?.message || e2));
@@ -442,16 +484,16 @@ export default function CopilotPanel() {
   }
 
   useEffect(() => {
-    if (panelMode === "CHAT" && selectedChatScreen && !chatMessages.length && !chatBusy) {
+    if (panelMode === "CHAT" && selectedChatScreen && effectiveChatEntityId && !chatMessages.length && !chatBusy) {
       runChat("");
     }
-  }, [panelMode, selectedChatScreen?.id, token]);
+  }, [panelMode, selectedChatScreen?.id, effectiveChatEntityId, token]);
 
   function openChatGuide(guide) {
     setPanelMode("GUIDE");
     setJobType(guide?.jobType || "SCREEN_MENU_GUIDE");
     setGuideLevel(guide?.guideLevel || "SHORT");
-    setEntityId(String(chatScreenId || ""));
+    setEntityId(String(effectiveChatEntityId || chatScreenId || ""));
     setResult(null);
     setErr("");
   }
@@ -559,10 +601,10 @@ export default function CopilotPanel() {
         {panelMode === "CHAT" ? (
           <div style={{ display: "grid", gap: 12 }}>
             <div className="muted">
-              Sohbet modu seçtiğin ekranı bilir, kısa cevap verir ve gerekirse ilgili yere götürür.
+              Sohbet modu ekranı ve seçili kaydı bilir. Kısa cevap verir, eksiği söyler ve gerekirse ilgili yere götürür.
             </div>
 
-            <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
               <label className="muted">
                 Hangi ekran hakkında konuşalım?
                 <select value={chatScreenId} onChange={(e) => setChatScreenId(e.target.value)}>
@@ -571,8 +613,32 @@ export default function CopilotPanel() {
                   ))}
                 </select>
               </label>
+
+              {canUseEntityChat(me?.role) ? (
+                <label className="muted">
+                  Hangi kayıtla konuşalım?
+                  <select value={chatEntityType} onChange={(e) => { setChatEntityType(e.target.value); setChatEntityId(""); }}>
+                    <option value="shift">Vardiya</option>
+                    <option value="vehicle">Araç</option>
+                    <option value="screen">Sadece ekran</option>
+                  </select>
+                </label>
+              ) : null}
+
+              {chatEntityType !== "screen" ? (
+                <label className="muted">
+                  Kayıt seç
+                  <select value={chatEntityId} onChange={(e) => setChatEntityId(e.target.value)}>
+                    <option value="">Seç...</option>
+                    {chatTargetOptions.map((x) => (
+                      <option key={x.id} value={x.id}>{optionLabel(chatEntityType, x)}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
               <div className="muted" style={{ alignSelf: "end" }}>
-                Seçili bağlam: <b>{selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}</b>
+                Seçili bağlam: <b>{selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}</b>{selectedChatItem ? <> • <b>{chatEntityType === "screen" ? "Ekran odaklı" : optionLabel(chatEntityType, selectedChatItem)}</b></> : null}
               </div>
             </div>
 

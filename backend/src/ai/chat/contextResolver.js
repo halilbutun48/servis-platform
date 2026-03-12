@@ -3,8 +3,8 @@ import { getScreenDefinitionForUser } from '../jobGuide/screenCatalog.js';
 
 function describeEntity(context) {
   if (!context) return '-';
-  if (context.type === 'shift') return `Shift #${context.id} • ${context.status || '-'} • ${context.company?.name || context.room?.name || 'shift'}`;
-  if (context.type === 'vehicle') return `Vehicle #${context.id} • ${context.plate || 'plaka?'} • ${context.status || '-'}`;
+  if (context.type === 'shift') return `Vardiya #${context.id} • ${context.status || '-'} • ${context.company?.name || context.room?.name || 'vardiya'}`;
+  if (context.type === 'vehicle') return `Araç #${context.id} • ${context.plate || 'plaka?'} • ${context.status || '-'}`;
   if (context.type === 'screen') return `${context.label || 'Ekran'} • ${context.roleLabel || context.roleKey || 'rol'}`;
   return `${context.type || 'entity'} #${context.id || '-'}`;
 }
@@ -16,6 +16,10 @@ function buildScopeSummary(user, entityType, entityId) {
   const scopeBits = [room, company].filter(Boolean).join(', ');
   if (entityType === 'screen') return `${role} rolü için ekran bağlamı okundu${scopeBits ? ` (${scopeBits})` : ''}.`;
   return `${role} scope içinde ${entityType} #${entityId} okundu${scopeBits ? ` (${scopeBits})` : ''}.`;
+}
+
+function deriveRoleMode(user) {
+  return ['DRIVER', 'PERSONEL', 'PARENT'].includes(String(user?.role || '')) ? 'SIMPLE' : 'OPERATIONS';
 }
 
 export async function resolveChatContext({ entityType, entityId, user, screenContext }) {
@@ -39,14 +43,18 @@ export async function resolveChatContext({ entityType, entityId, user, screenCon
     throw e;
   }
 
+  const screenDefinition = getScreenDefinitionForUser(user, screenContext || {}, Number(screenContext?.id || 0));
+
   return {
     context,
+    screenDefinition,
     entityLabel: describeEntity(context),
     scope: {
       role: String(user?.role || ''),
       roomId: user?.roomId ?? null,
       companyId: user?.companyId ?? null,
       summary: buildScopeSummary(user, entityType, entityId),
+      roleMode: deriveRoleMode(user),
     },
   };
 }
