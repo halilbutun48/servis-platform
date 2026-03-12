@@ -24,6 +24,7 @@ Current GREEN ref:
 - ✅ `M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK`
 - ✅ `M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK`
 - ✅ `M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN PACK PASS OK`
+- ✅ `M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION PACK PASS OK`
 
 Ana kanıt komutları:
 - `./tools/pack.ps1 -To 41`
@@ -42,6 +43,7 @@ Ana kanıt komutları:
 - `./tools/pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m46_3_ai_copilot_quality_evidence.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m46_4_ai_copilot_decision_consistency.ps1 -RepoRoot D:\servis-platform`
+- `./tools/pack_m46_5_ai_copilot_action_prioritization.ps1 -RepoRoot D:\servis-platform`
 
 > Not: Step 1 TOTP green kabulü korunuyor; setup/verify hattı çalışıyor.  
 > Not 2: Step 2 resmi olarak `M43` ile tamamlandı.  
@@ -52,8 +54,9 @@ Ana kanıt komutları:
 > Not 7: Step 3.2 resmi olarak `M46.2` ile tamamlandı.  
 > Not 8: Step 3.3 resmi olarak `M46.3` ile tamamlandı.  
 > Not 9: Step 3.4 resmi olarak `M46.4` ile tamamlandı.  
-> Not 10: Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
-> Not 11: Overlay standardı tek zip, tek kök klasör, nested root yoktur.
+> Not 10: Step 3.5 resmi olarak `M46.5` ile tamamlandı.  
+> Not 11: Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
+> Not 12: Overlay standardı tek zip, tek kök klasör, nested root yoktur.
 
 ---
 
@@ -255,6 +258,29 @@ M46.3 üstüne eklenenler:
 - M46.1 / M46.2 / M46.3 check zinciri ileri uyumlu tutulur
 - karar özeti + aksiyon planı üretilir ama otomatik write davranışı eklenmez
 
+### 1.15 M46.5 AI Copilot Action Prioritization + Evidence Calibration
+M46.4 üstüne eklenenler:
+- `recommendedFirstAction`
+- `actionPlanSummary`
+- `calibrationNotes`
+- `priorityScore`
+- `whyNow`
+- `evidenceLinks`
+- `referenceLinks`
+- `blockedBy`
+- `dependsOn`
+- UI’da first action bölümü
+- UI’da calibration notes bölümü
+- UI’da priority score / whyNow / evidence-reference link görünümü
+
+Önemli davranış:
+- `copilotVersion` artık `M46.5`
+- read-only / suggestion-first çizgisi korunur
+- audit hattı korunur
+- `ROOM / SUPER_ADMIN` için step-up guard korunur
+- M46.1 / M46.2 / M46.3 / M46.4 check zinciri ileri uyumlu tutulur
+- aksiyon önceliği ve kanıt kalibrasyonu güçlenir ama otomatik write davranışı eklenmez
+
 ---
 
 ## 2) Personel ve parent link politikası
@@ -385,16 +411,17 @@ Araçlar:
 
 Sıradaki resmi hedef:
 - henüz sabitlenmedi
-- çalışma adı olarak `M46.5` açılabilir
+- çalışma adı olarak `M46.6` açılabilir
 
 Önerilen yön:
-- recommendedActions önceliklendirmesini daha da iyileştirme
-- blockers / missingData ile evidence eşleşmesini güçlendirme
-- `overallStatus / actionability / dataFreshness` kalibrasyonunu iyileştirme
+- AI Product Tutor + Contextual Help akışını ekleme
+- rol bazlı onboarding ve kullanım yardımı
+- İngilizce terim → Türkçe açıklama desteği
+- ekran bağlamına göre yardım ve takip soruları
 - mevcut read-only + audit + step-up çizgisini bozmadan ilerleme
 
 ---
 
 ## 7) Yeni sohbet açınca ilk cümle
 
-> Repo şu an `M41` ana green tabanı üzerinde; `M42 optional`, `Step 0.6 stabil`, `Step 1 Security`, `Step 1 TOTP`, `M104/M105/M106 hijyen`, `M43 Google Auth`, `M44 Telematics`, `M45 Retention + Backup`, `M46 AI Copilot Foundation`, `M46.1 AI Copilot Enrichment`, `M46.2 AI Copilot Intent Expansion` ve `M46.3 AI Copilot Quality + Evidence` ve `M46.4 AI Copilot Decision Consistency + Action Plan` ayrı pack/check hatlarıyla green durumda. Personel login zorunlu değil; public link TTL presetleri parent ve personelde `1 hafta / 1 ay / 6 ay / 1 yıl` olarak hizalı. AI katmanı şu an read-only / suggestion-first, audit’li ve step-up kurallarıyla kontrollü.
+> Repo şu an `M41` ana green tabanı üzerinde; `M42 optional`, `Step 0.6 stabil`, `Step 1 Security`, `Step 1 TOTP`, `M104/M105/M106 hijyen`, `M43 Google Auth`, `M44 Telematics`, `M45 Retention + Backup`, `M46 AI Copilot Foundation`, `M46.1 AI Copilot Enrichment`, `M46.2 AI Copilot Intent Expansion`, `M46.3 AI Copilot Quality + Evidence`, `M46.4 AI Copilot Decision Consistency + Action Plan` ve `M46.5 AI Copilot Action Prioritization + Evidence Calibration` ayrı pack/check hatlarıyla green durumda. Personel login zorunlu değil; public link TTL presetleri parent ve personelde `1 hafta / 1 ay / 6 ay / 1 yıl` olarak hizalı. AI katmanı şu an read-only / suggestion-first, audit’li ve step-up kurallarıyla kontrollü.

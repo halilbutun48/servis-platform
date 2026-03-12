@@ -19,9 +19,10 @@ Bu dosya repo için kısa çalışma runbook’udur.
 11. M46.2 AI Copilot Intent Expansion hattı resmi green durumundadır.
 12. M46.3 AI Copilot Quality + Evidence hattı resmi green durumundadır.
 13. M46.4 AI Copilot Decision Consistency + Action Plan hattı resmi green durumundadır.
-14. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-15. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-16. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+14. M46.5 AI Copilot Action Prioritization + Evidence Calibration hattı resmi green durumundadır.
+15. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+16. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+17. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -48,6 +49,8 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - M46.3 repo-contract: `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1 -RepoRoot D:\servis-platform`
 - M46.4 pack: `tools\pack_m46_4_ai_copilot_decision_consistency.ps1 -RepoRoot D:\servis-platform`
 - M46.4 repo-contract: `tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M46.5 pack: `tools\pack_m46_5_ai_copilot_action_prioritization.ps1 -RepoRoot D:\servis-platform`
+- M46.5 repo-contract: `tools\check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1 -RepoRoot D:\servis-platform`
 
 ## 3) Resmi green durum
 - `M41 PACK PASS`
@@ -171,10 +174,25 @@ Detay çekirdek:
 - M46.1 / M46.2 / M46.3 check zinciri ileri uyumlu tutulur
 - runtime check + repo-contract + tek pack PASS
 
-## 6.8) Bir sonraki resmi hedef
+## 6.8) Step 3.5 özeti — M46.5 resmi green
+- yeni aksiyon önceliklendirme alanları mevcut:
+  - `recommendedFirstAction`
+  - `actionPlanSummary`
+  - `calibrationNotes`
+  - `priorityScore`
+  - `whyNow`
+  - `evidenceLinks`
+  - `referenceLinks`
+  - `blockedBy`
+  - `dependsOn`
+- UI: first action + calibration notes + action priority details görünür
+- M46.1 / M46.2 / M46.3 / M46.4 check zinciri ileri uyumlu tutulur
+- runtime check + repo-contract + tek pack PASS
+
+## 6.9) Bir sonraki resmi hedef
 - **henüz sabitlenmedi**
-- çalışma adı olarak **M46.5** açılabilir
-- M46 / M46.1 / M46.2 / M46.3 / M46.4 artık sıradaki hedef değil, resmi green katmanlardır
+- çalışma adı olarak **M46.6** açılabilir
+- M46 / M46.1 / M46.2 / M46.3 / M46.4 / M46.5 artık sıradaki hedef değil, resmi green katmanlardır
 
 ## 7) SSOT dosyaları
 - `tools/CHECKLIST_SSOT.md`
@@ -247,3 +265,13 @@ Detay çekirdek:
 - `backend\src\ai\tools.js`
 - `web\src\panels\shared\CopilotPanel.jsx`
 - `docs\RUNBOOK_M46_4_AI_COPILOT_DECISION_CONSISTENCY.md`
+
+
+## M46.5 AI Copilot Action Prioritization + Evidence Calibration
+- `tools\pack_m46_5_ai_copilot_action_prioritization.ps1`
+- `tools\check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1`
+- `backend\scripts\m46_5_ai_copilot_action_prioritization_check.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_5_AI_COPILOT_ACTION_PRIORITIZATION.md`

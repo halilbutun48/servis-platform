@@ -17,6 +17,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_2_ai_copilot_intent_expansion.ps1`
 - `tools\pack_m46_3_ai_copilot_quality_evidence.ps1`
 - `tools\pack_m46_4_ai_copilot_decision_consistency.ps1`
+- `tools\pack_m46_5_ai_copilot_action_prioritization.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene check’leri
 - `tools\reset-and-pack.ps1`
 - `tools\_console_status.ps1`
@@ -47,6 +48,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform` → Step 3.2 / M46.2
 - `tools\pack_m46_3_ai_copilot_quality_evidence.ps1 -RepoRoot D:\servis-platform` → Step 3.3 / M46.3
 - `tools\pack_m46_4_ai_copilot_decision_consistency.ps1 -RepoRoot D:\servis-platform` → Step 3.4 / M46.4
+- `tools\pack_m46_5_ai_copilot_action_prioritization.ps1 -RepoRoot D:\servis-platform` → Step 3.5 / M46.5
 
 ## Windows ExecutionPolicy
 PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
@@ -65,6 +67,7 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - `tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1` → M46.2 repo-contract kontrolü
 - `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1` → M46.3 repo-contract kontrolü
 - `tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1` → M46.4 repo-contract kontrolü
+- `tools\check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1` → M46.5 repo-contract kontrolü
 
 Kural: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
 Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.  
@@ -107,7 +110,6 @@ Kural 3: üst milestone’lar alt milestone check uyumluluğunu bozmamalıdır.
 
 ## M46.3 AI Copilot Quality + Evidence
 - `tools\pack_m46_3_ai_copilot_quality_evidence.ps1`
-- `tools\pack_m46_4_ai_copilot_decision_consistency.ps1`
 - `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1`
 - `backend\scripts\m46_3_ai_copilot_quality_evidence_check.js`
 - `backend\src\ai\service.js`
@@ -123,4 +125,13 @@ Kural 3: üst milestone’lar alt milestone check uyumluluğunu bozmamalıdır.
 - `backend\src\ai\tools.js`
 - `web\src\panels\shared\CopilotPanel.jsx`
 - `docs\RUNBOOK_M46_4_AI_COPILOT_DECISION_CONSISTENCY.md`
+
+## M46.5 AI Copilot Action Prioritization + Evidence Calibration
+- `tools\pack_m46_5_ai_copilot_action_prioritization.ps1`
+- `tools\check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1`
+- `backend\scripts\m46_5_ai_copilot_action_prioritization_check.js`
+- `backend\src\ai\service.js`
+- `backend\src\ai\tools.js`
+- `web\src\panels\shared\CopilotPanel.jsx`
+- `docs\RUNBOOK_M46_5_AI_COPILOT_ACTION_PRIORITIZATION.md`
 

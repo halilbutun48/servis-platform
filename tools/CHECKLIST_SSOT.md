@@ -19,6 +19,7 @@ Current GREEN ref:
 - **M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK**
 - **M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK**
 - **M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN PACK PASS OK**
+- **M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
@@ -37,13 +38,14 @@ Bu dosya iki amaç taşır:
 - **Step 3.2 (M46.2):** AI Copilot Intent Expansion **resmi green**
 - **Step 3.3 (M46.3):** AI Copilot Quality + Evidence **resmi green**
 - **Step 3.4 (M46.4):** AI Copilot Decision Consistency + Action Plan **resmi green**
-- **Step 3.5:** Sonraki AI katmanı / M46.5 **henüz sabitlenmedi**
+- **Step 3.5 (M46.5):** AI Copilot Action Prioritization + Evidence Calibration **resmi green**
+- **Step 3.6:** Sonraki AI katmanı / M46.6 **henüz sabitlenmedi**
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
 > Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
 > Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri PASS durumundadır.  
-> M43, M44, M45, M46, M46.1, M46.2, M46.3 ve M46.4 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M43, M44, M45, M46, M46.1, M46.2, M46.3, M46.4 ve M46.5 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
 > Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
 > Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
 
@@ -321,7 +323,29 @@ Bu dosya iki amaç taşır:
 
 ---
 
+# STEP 3.5 — M46.5 AI Copilot Action Prioritization + Evidence Calibration — RESMİ GREEN
+- [ ] `tools/pack_m46_5_ai_copilot_action_prioritization.ps1` PASS
+- [ ] `tools/check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `copilotVersion` `M46.5` olarak dönüyor
+- [ ] `recommendedFirstAction` üretiliyor
+- [ ] `actionPlanSummary` üretiliyor
+- [ ] `calibrationNotes` üretiliyor
+- [ ] `priorityScore` üretiliyor
+- [ ] `whyNow` üretiliyor
+- [ ] `evidenceLinks` üretiliyor
+- [ ] `referenceLinks` üretiliyor
+- [ ] `blockedBy` üretiliyor
+- [ ] `dependsOn` üretiliyor
+- [ ] UI’da first action bölümü görünüyor
+- [ ] UI’da calibration notes bölümü görünüyor
+- [ ] UI’da priority score / whyNow / evidence-reference link görünümü var
+- [ ] read-only / suggestion-first çizgisi korunuyor
+- [ ] audit ve step-up davranışı korunuyor
+- [ ] M46.1 / M46.2 / M46.3 / M46.4 check zinciri ileri uyumlu kalıyor
+
+---
+
 ## Kapanış kuralı
 - Ana referans yine **M41 PACK PASS**’tir.
 - Üst katmanlar ayrı resmi green hatları olarak korunur.
-- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 → M46.4 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
+- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 → M46.4 → M46.5 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
