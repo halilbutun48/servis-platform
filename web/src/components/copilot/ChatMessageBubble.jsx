@@ -17,7 +17,7 @@ function bubbleStyle(role) {
   };
 }
 
-export default function ChatMessageBubble({ message, onOpen, onGuide }) {
+export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onCopy }) {
   const role = String(message?.role || 'assistant');
   return (
     <div style={{ display: 'grid', gap: 6 }}>
@@ -37,7 +37,8 @@ export default function ChatMessageBubble({ message, onOpen, onGuide }) {
           </div>
         ) : null}
       </div>
-      {role !== 'user' ? <ChatQuickActions actions={message?.quickActions} linkedGuides={message?.linkedGuides} onOpen={onOpen} onGuide={onGuide} /> : null}
+      {role !== 'user' && message?.actionPlanLabel ? <div style={{ fontSize: 12, color: '#475467', fontWeight: 700 }}>{message.actionPlanLabel}</div> : null}
+      {role !== 'user' ? <ChatQuickActions actions={message?.quickActions} linkedGuides={message?.linkedGuides} onOpen={onOpen} onGuide={onGuide} onAsk={onAsk} onCopy={onCopy} /> : null}
     </div>
   );
 }

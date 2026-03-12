@@ -472,6 +472,7 @@ export default function CopilotPanel() {
         followUpPrompt: payload?.followUpPrompt || "",
         quickActions: payload?.quickActions || [],
         linkedGuides: payload?.linkedGuides || [],
+        actionPlanLabel: payload?.actionPlanLabel || '',
         activeEntityLabel: payload?.activeEntityLabel || payload?.entityLabel || "",
         screenLabel: payload?.screenLabel || selectedChatScreen?.label || "",
         roleMode: payload?.roleMode || "",
@@ -565,6 +566,22 @@ export default function CopilotPanel() {
   }
 
 
+  function withRouteParams(path, params) {
+    const base = String(path || '');
+    const rows = Object.entries(params || {}).filter(([, v]) => v != null && `${v}` !== '');
+    if (!rows.length) return base;
+    const query = rows.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+    return `${base}${base.includes('?') ? '&' : '?'}${query}`;
+  }
+
+  function runAskAction(text) {
+    const message = String(text || '').trim();
+    if (!message) return;
+    runChat(message);
+  }
+
+
+
   function openGuideAction(action) {
     const path = resolveGuideRoute(me, action?.routeKey);
     if (!path) {
@@ -572,7 +589,7 @@ export default function CopilotPanel() {
       setTimeout(() => setCopyMsg(""), 1800);
       return;
     }
-    navigate(path);
+    navigate(withRouteParams(path, action?.routeParams));
   }
 
   return (
@@ -643,7 +660,7 @@ export default function CopilotPanel() {
             </div>
 
             <SuggestedChips items={chatSuggestedChips} busy={chatBusy} onPick={runChat} />
-            <ChatThread messages={chatMessages} onOpen={openGuideAction} onGuide={openChatGuide} />
+            <ChatThread messages={chatMessages} onOpen={openGuideAction} onGuide={openChatGuide} onAsk={runAskAction} onCopy={copyText} />
             <ChatInputBox busy={chatBusy} onSend={runChat} />
             {chatErr ? <div className="muted" style={{ color: "crimson" }}>{chatErr}</div> : null}
           </div>

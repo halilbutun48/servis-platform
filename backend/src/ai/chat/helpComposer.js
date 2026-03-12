@@ -1,6 +1,6 @@
 import { buildJobGuideResponse } from '../jobGuide/index.js';
 import { detectQuestionType, resolveReplyMode, selectGuideJobType, buildSuggestedChips } from './intentRouter.js';
-import { firstNonEmpty, makeLinkedGuide, makeQuickAction, mergeQuickActions, toReply, uniqueStrings } from './replyShapes.js';
+import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, toReply, uniqueStrings } from './replyShapes.js';
 
 function pickTerms(simpleTerms, limit = 3) {
   return (Array.isArray(simpleTerms) ? simpleTerms : []).slice(0, limit).map((row) => `${row.term}: ${row.meaning}`);
@@ -37,6 +37,78 @@ function roleLead(roleMode) {
 
 function screenMenuActions(screenDefinition) {
   return (Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : []).map((item) => makeQuickAction(item.label, item.path, item.purpose));
+}
+
+
+function findMenu(screenDefinition, labels = [], paths = []) {
+  const rows = Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : [];
+  return rows.find((item) => {
+    const label = normalizeText(item?.label || '');
+    const path = normalizeText(item?.path || '');
+    return labels.some((x) => label.includes(normalizeText(x))) || paths.some((x) => path.includes(normalizeText(x)));
+  }) || null;
+}
+
+function currentScreenAction(screenDefinition, context, reason = '') {
+  if (!screenDefinition?.path) return null;
+  const routeParams = {};
+  if (context?.type === 'shift' && context?.id) routeParams.focusShiftId = Number(context.id);
+  if (context?.type === 'vehicle' && context?.id) routeParams.focusVehicleId = Number(context.id);
+  return makeQuickAction(`${screenDefinition?.label || 'Bu ekran'} ekranını aç`, screenDefinition.path, reason || 'Aynı bağlamı açık ekranda sürdürür.', { routeParams, accent: 'primary' });
+}
+
+function menuAction(menu, context, reason = '', extras = {}) {
+  if (!menu?.path) return null;
+  const routeParams = { ...(extras?.routeParams && typeof extras.routeParams === 'object' ? extras.routeParams : {}) };
+  if (context?.type === 'shift' && context?.id && !routeParams.focusShiftId) routeParams.focusShiftId = Number(context.id);
+  if (context?.type === 'vehicle' && context?.id && !routeParams.focusVehicleId) routeParams.focusVehicleId = Number(context.id);
+  return makeQuickAction(menu.label || 'Buradan aç', menu.path, reason || menu.purpose || '', { routeParams, accent: extras?.accent || 'neutral' });
+}
+
+function entityActionPlan({ entityType, context, screenDefinition, roleMode, questionType, reply }) {
+  const rows = [];
+  if (entityType === 'shift') {
+    const shiftsMenu = findMenu(screenDefinition, ['vardiya'], ['/shifts']);
+    const offersMenu = findMenu(screenDefinition, ['teklif', 'offer'], ['/offers']);
+    const vehiclesMenu = findMenu(screenDefinition, ['araç', 'vehicle'], ['/vehicles']);
+    const driversMenu = findMenu(screenDefinition, ['sürücü', 'driver'], ['/drivers']);
+    const agreementsMenu = findMenu(screenDefinition, ['sözleşme', 'agreement'], ['/agreements']);
+    rows.push(currentScreenAction(screenDefinition, context, 'Aynı konuşmayı seçili vardiya ile ekranda sürdürür.'));
+    if (Number(context?.openOfferCount || 0) > 0 || ['GO_TO', 'WHY_BLOCKED'].includes(questionType)) rows.push(menuAction(offersMenu, context, 'Teklif kararını kapatmak için ilgili listeyi açar.', { accent: 'primary' }));
+    if (!context?.vehicleId || questionType === 'NEXT_STEP') rows.push(menuAction(vehiclesMenu, context, 'Araç atamasını veya araç durumunu kontrol etmek için açılır.', { routeParams: context?.vehicleId ? { focusVehicleId: Number(context.vehicleId) } : {}, accent: 'primary' }));
+    if (!context?.driverId || questionType === 'NEXT_STEP') rows.push(menuAction(driversMenu, context, 'Sürücü bağını netleştirmek için açılır.', { accent: 'warning' }));
+    if (String(context?.agreementId || '') || questionType === 'GO_TO') rows.push(menuAction(agreementsMenu, context, 'Sözleşmeye bağlı akışı kontrol etmek için açılır.'));
+    rows.push(makeGuideAction('Atamaya hazır mı rehberini aç', { jobType: 'ASSIGNMENT_READINESS_GUIDE', guideLevel: 'STEP_BY_STEP' }, 'Bu kayıt için eksikleri adım adım sıralar.'));
+    rows.push(makeAskAction('Bunu sor: Bu kayıt ne durumda?', 'bu kayıt ne durumda', 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.'));
+    rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
+  } else if (entityType === 'vehicle') {
+    const vehiclesMenu = findMenu(screenDefinition, ['araç', 'vehicle'], ['/vehicles']);
+    const mapMenu = findMenu(screenDefinition, ['canlı', 'harita', 'map'], ['/map', '/live']);
+    const driversMenu = findMenu(screenDefinition, ['sürücü', 'driver'], ['/drivers']);
+    rows.push(currentScreenAction(screenDefinition, context, 'Aynı aracı açık ekranda incelemek için açılır.'));
+    rows.push(menuAction(vehiclesMenu, context, 'Araç detayına dönmek için açılır.', { accent: 'primary' }));
+    if (!Number(context?.activeDeviceCount || 0) || ['GO_TO', 'WHY_BLOCKED', 'LOCATION_HELP'].includes(questionType)) rows.push(menuAction(mapMenu, context, 'Canlı konum tarafını tekrar görmek için açılır.', { accent: 'primary' }));
+    if (!context?.driver?.id) rows.push(menuAction(driversMenu, context, 'Sürücü bağını netleştirmek için açılır.', { accent: 'warning' }));
+    rows.push(makeGuideAction('Konum kaynağı rehberini aç', { jobType: 'LOCATION_SOURCE_GUIDE', guideLevel: 'SHORT' }, 'Telefon GPS\'i ve cihaz GPS\'i farkını açar.'));
+    rows.push(makeGuideAction('GPS teşhis rehberini aç', { jobType: 'GPS_SIGNAL_DIAGNOSIS_GUIDE', guideLevel: 'WHY' }, 'Konum neden görünmüyor sorusuna odaklanır.'));
+    rows.push(makeAskAction('Bunu sor: Konum neden görünmüyor?', 'konum neden görünmüyor', 'Aynı kayıt için hızlı teşhis sorusu gönderir.'));
+    rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
+  } else {
+    const menus = Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : [];
+    rows.push(currentScreenAction(screenDefinition, context, 'Bu ekranı tekrar açar.'));
+    for (const menu of menus.slice(0, 3)) rows.push(menuAction(menu, context, menu.purpose || 'İlgili menüye götürür.'));
+    rows.push(makeGuideAction('Ekran rehberini aç', { jobType: 'SCREEN_MENU_GUIDE', guideLevel: 'SHORT' }, 'Ekranın amacını kısa anlatır.'));
+    rows.push(makeGuideAction('Buton rehberini aç', { jobType: 'BUTTON_ACTION_GUIDE', guideLevel: 'WHY' }, 'Butonların ne yaptığını sade dille açıklar.'));
+    if (roleMode === 'SIMPLE') rows.push(makeAskAction('Bunu sor: Şimdi ne yapayım?', 'şimdi ne yapayım', 'Daha kısa bir yönlendirme sorusu gönderir.'));
+    rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
+  }
+  return rows.filter(Boolean);
+}
+
+function nextPromptByEntity(entityType, roleMode) {
+  if (entityType === 'shift') return roleMode === 'SIMPLE' ? 'İstersen sonraki adımı tek cümlede söyleyeyim.' : 'İstersen şimdi hangi ekrana gitmen gerektiğini tek tek açayım.';
+  if (entityType === 'vehicle') return roleMode === 'SIMPLE' ? 'İstersen konum tarafını daha da kısa söyleyeyim.' : 'İstersen seni araç, canlı ekran veya rehbere yönlendireyim.';
+  return roleMode === 'SIMPLE' ? 'İstersen bunu tek cümlede sadeleştireyim.' : 'İstersen ilgili menüyü veya rehberi aşağıdan aç.';
 }
 
 function guideLinksForEntity(entityType) {
@@ -216,11 +288,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const reply = composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode });
   const screenActions = screenMenuActions(screenDefinition);
   const guideActions = Array.isArray(guide.quickActions) ? guide.quickActions : [];
-  const mergedActions = mergeQuickActions(screenActions, guideActions);
+  const entityActions = entityActionPlan({ entityType, context, screenDefinition, roleMode, questionType, reply });
+  const mergedActions = mergeQuickActions(entityActions, screenActions, guideActions);
   const bestAction = findBestAction(mergedActions, message);
   const linkedGuides = guideLinksForEntity(entityType);
   const suggestedChips = buildSuggestedChips({ entityType, questionType, roleMode, screenPath, context });
   const actionList = bestAction ? [bestAction, ...mergedActions.filter((x) => x !== bestAction)] : mergedActions;
+  const actionPriority = { ASK: 0, OPEN_GUIDE: 1, OPEN_ROUTE: 2, COPY_TEXT: 3 };
+  const prioritizedActions = [...actionList].sort((a, b) => (actionPriority[String(a?.actionKind || 'OPEN_ROUTE')] ?? 9) - (actionPriority[String(b?.actionKind || 'OPEN_ROUTE')] ?? 9));
   const contextSummaryBits = [
     screenDefinition?.label ? `Ekran: ${screenDefinition.label}` : null,
     entityLabel ? `Bağlam: ${entityLabel}` : null,
@@ -231,7 +306,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     ok: true,
     provider: 'local-chat-help',
     mode: 'CHAT_HELP',
-    copilotVersion: 'M46.6-D2',
+    copilotVersion: 'M46.6-D3',
     generatedAt: new Date().toISOString(),
     intent: 'CHAT_HELP',
     intentLabel: 'Sohbet Yardımı',
@@ -248,9 +323,10 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     reply,
     replyMode,
     suggestedChips,
-    quickActions: actionList.slice(0, 4),
+    quickActions: prioritizedActions.slice(0, 5),
     linkedGuides,
-    followUpPrompt: roleMode === 'SIMPLE' ? 'İstersen bunu daha da kısa söyleyeyim.' : 'İstersen bunu adım adım da anlatayım.',
+    followUpPrompt: nextPromptByEntity(entityType, roleMode),
+    actionPlanLabel: entityType === 'screen' ? 'İlgili yere git' : 'Önerilen açılabilir adımlar',
     conversationState: {
       ...(conversationState && typeof conversationState === 'object' ? conversationState : {}),
       lastQuestionType: questionType,
@@ -261,6 +337,8 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       lastScreenPath: screenPath || null,
       lastScreenLabel: screenDefinition?.label || null,
       roleMode,
+      lastQuickActions: prioritizedActions.slice(0, 3).map((x) => ({ label: x?.label || '', actionKind: x?.actionKind || 'OPEN_ROUTE', routeKey: x?.routeKey || '', askText: x?.askText || '', guideJobType: x?.guide?.jobType || '' })),
+      lastActionPlanLabel: entityType === 'screen' ? 'İlgili yere git' : 'Önerilen açılabilir adımlar',
     },
   };
 }

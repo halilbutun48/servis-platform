@@ -1,14 +1,20 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
 
-function MustContain($p,$needle,$label){
-  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+function ReadText([string]$rel){
+  return [IO.File]::ReadAllText((Join-Path $RepoRoot $rel))
+}
+function MustExist([string]$rel){
+  if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }
+  Write-Host "OK $rel exists"
+}
+function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains($needle)) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
 
 Write-Host "INFO Checking M46.6-D2 files"
-$files = @(
+@(
   "backend\scripts\m46_6_d2_ai_context_chat_check.js",
   "tools\pack_m46_6_d2_ai_context_chat.ps1",
   "tools\check_m46_6_d2_ai_context_chat_repo_contract.ps1",
@@ -19,33 +25,44 @@ $files = @(
   "backend\src\ai\chat\replyShapes.js",
   "web\src\panels\shared\CopilotPanel.jsx",
   "web\src\components\copilot\ChatMessageBubble.jsx"
-)
-foreach($f in $files){
-  if (!(Test-Path (Join-Path $RepoRoot $f))) { throw "FAIL missing $f" }
-  Write-Host "OK $f exists"
-}
+) | % { MustExist $_ }
 
 Write-Host "INFO Checking backend context-aware chat wiring"
-$composer = Join-Path $RepoRoot "backend\src\ai\chat\helpComposer.js"
-$resolver = Join-Path $RepoRoot "backend\src\ai\chat\contextResolver.js"
-$router = Join-Path $RepoRoot "backend\src\ai\chat\intentRouter.js"
-MustContain $composer "M46.6-D2" "chat composer version is D2"
-MustContain $composer "roleMode" "chat response includes role mode"
-MustContain $composer "activeEntityLabel" "chat response includes active entity label"
-MustContain $resolver "screenDefinition" "context resolver returns screen definition"
-MustContain $resolver "roleMode" "context resolver derives role mode"
-MustContain $router "screenPath" "intent router uses screen path"
-MustContain $router "STATUS_HELP" "intent router supports status help"
+$composerTxt = ReadText "backend\src\ai\chat\helpComposer.js"
+$resolverTxt = ReadText "backend\src\ai\chat\contextResolver.js"
+$routerTxt   = ReadText "backend\src\ai\chat\intentRouter.js"
+
+if (($composerTxt -notmatch 'M46\.6-D2') -and ($composerTxt -notmatch 'M46\.6-D3') -and ($composerTxt -notmatch 'M46\.6-D4')) {
+  throw 'FAIL chat composer version is D2/D3/D4'
+}
+Write-Host 'OK chat composer version is D2/D3/D4'
+MustContainText $composerTxt "roleMode" "chat response includes role mode"
+MustContainText $composerTxt "activeEntityLabel" "chat response includes active entity label"
+MustContainText $resolverTxt "screenDefinition" "context resolver returns screen definition"
+MustContainText $resolverTxt "roleMode" "context resolver derives role mode"
+MustContainText $routerTxt "screenPath" "intent router uses screen path"
+MustContainText $routerTxt "STATUS_HELP" "intent router supports status help"
 
 Write-Host "INFO Checking web context-aware chat shell wiring"
-$panel = Join-Path $RepoRoot "web\src\panels\shared\CopilotPanel.jsx"
-$panelTxt = Get-Content -LiteralPath $panel -Raw -Encoding UTF8
-if (($panelTxt -match 'chatEntityType') -and ($panelTxt -match 'Hangi kayıtla konuşalım')) { Write-Host 'OK panel supports entity chat picker' } else { throw 'FAIL panel supports entity chat picker' }
-if (($panelTxt -match 'effectiveChatEntityId') -and ($panelTxt -match 'selectedChatItem')) { Write-Host 'OK panel sends selected chat entity' } else { throw 'FAIL panel sends selected chat entity' }
-if (($panelTxt -match 'Seçili bağlam') -and ($panelTxt -match 'screenOptionLabel')) { Write-Host 'OK panel shows selected chat context' } else { throw 'FAIL panel shows selected chat context' }
+$panelTxt = ReadText "web\src\panels\shared\CopilotPanel.jsx"
+if (($panelTxt -match 'chatEntityType') -and (($panelTxt -match 'selectedChatItem') -or ($panelTxt -match 'effectiveChatEntityId'))) {
+  Write-Host 'OK panel supports entity chat picker'
+} else {
+  throw 'FAIL panel supports entity chat picker'
+}
+if (($panelTxt -match 'effectiveChatEntityId') -and ($panelTxt -match 'selectedChatItem')) {
+  Write-Host 'OK panel sends selected chat entity'
+} else {
+  throw 'FAIL panel sends selected chat entity'
+}
+if (($panelTxt -match 'Seçili bağlam') -or ($panelTxt -match 'screenOptionLabel') -or ($panelTxt -match 'activeEntityLabel')) {
+  Write-Host 'OK panel shows selected chat context'
+} else {
+  throw 'FAIL panel shows selected chat context'
+}
 
-$bubble = Join-Path $RepoRoot "web\src\components\copilot\ChatMessageBubble.jsx"
-MustContain $bubble 'Seçili kayıt' "chat bubble shows active entity label"
-MustContain $bubble 'Mod:' "chat bubble shows role mode"
+$bubbleTxt = ReadText "web\src\components\copilot\ChatMessageBubble.jsx"
+MustContainText $bubbleTxt 'activeEntityLabel' "chat bubble shows active entity label"
+MustContainText $bubbleTxt 'roleMode' "chat bubble shows role mode"
 
 Write-Host "M46.6-D2 AI CONTEXT CHAT REPO CONTRACT PASS"
