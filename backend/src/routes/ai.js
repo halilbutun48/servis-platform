@@ -42,6 +42,8 @@ export function aiRouter() {
             entityType: parsed.data.entityType,
             provider: payload.provider,
             mode: payload.mode,
+            jobType: parsed.data.jobType || null,
+            guideLevel: parsed.data.guideLevel || null,
           },
         });
 

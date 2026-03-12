@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { GUIDE_LEVELS } from "./jobGuide/levels.js";
+import { JOB_GUIDE_TYPES, getJobGuideDefinition } from "./jobGuide/registry.js";
 
 export const AI_COPILOT_INTENTS = [
   "SHIFT_SUMMARY",
@@ -8,6 +10,7 @@ export const AI_COPILOT_INTENTS = [
   "OFFER_DECISION_HELP",
   "TELEMATICS_HEALTH",
   "GPS_SIGNAL_DIAGNOSIS",
+  "JOB_GUIDE",
 ];
 
 export const AI_COPILOT_ENTITY_TYPES = ["shift", "vehicle"];
@@ -28,6 +31,9 @@ const requestSchema = z
     entityType: z.enum(AI_COPILOT_ENTITY_TYPES),
     entityId: z.coerce.number().int().positive(),
     format: z.enum(["json"]).optional().default("json"),
+    jobType: z.enum(JOB_GUIDE_TYPES).optional(),
+    guideLevel: z.enum(GUIDE_LEVELS).optional().default("SHORT"),
+    screenContext: z.any().optional(),
   })
   .superRefine((val, ctx) => {
     if (VEHICLE_INTENTS.includes(val.intent) && val.entityType !== "vehicle") {
@@ -43,6 +49,23 @@ const requestSchema = z
         path: ["entityType"],
         message: `${val.intent} intent requires entityType=shift`,
       });
+    }
+    if (val.intent === "JOB_GUIDE") {
+      if (!val.jobType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["jobType"],
+          message: "JOB_GUIDE intent requires jobType",
+        });
+      }
+      const def = getJobGuideDefinition(val.jobType);
+      if (def && def.entityType !== val.entityType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["entityType"],
+          message: `${val.jobType} jobType requires entityType=${def.entityType}`,
+        });
+      }
     }
   });
 

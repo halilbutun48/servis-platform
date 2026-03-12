@@ -1,18 +1,58 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import JobGuideHeader from "../../components/copilot/JobGuideHeader";
+import StepByStepCard from "../../components/copilot/StepByStepCard";
+import CommonMistakesCard from "../../components/copilot/CommonMistakesCard";
+import DoneChecklistCard from "../../components/copilot/DoneChecklistCard";
+import SimpleTermsCard from "../../components/copilot/SimpleTermsCard";
+
+const PANEL_MODES = [
+  { value: "GUIDE", label: "Rehber" },
+  { value: "ADVANCED", label: "Gelişmiş" },
+];
+
+const GUIDE_JOB_OPTIONS = [
+  { value: "OFFER_REVIEW", label: "Teklifi inceleme", helper: "Teklifi okumaya yardım eder", entityType: "shift" },
+  { value: "OFFER_APPROVAL", label: "Teklifi onaylama", helper: "Onay öncesi kontrol rehberi", entityType: "shift" },
+  { value: "ASSIGNMENT_READINESS_GUIDE", label: "Atamaya hazır mı", helper: "Araç, sürücü ve durak hazır mı", entityType: "shift" },
+  { value: "VEHICLE_DRIVER_BIND", label: "Araç ile sürücüyü bağlama", helper: "Araç ve sürücü bağlantısı için rehber", entityType: "vehicle" },
+];
+
+const GUIDE_LEVEL_OPTIONS = [
+  { value: "SHORT", label: "Kısa anlat" },
+  { value: "STEP_BY_STEP", label: "Adım adım anlat" },
+  { value: "WHY", label: "Neden böyle" },
+];
 
 const INTENT_OPTIONS = [
   { value: "SHIFT_SUMMARY", label: "Vardiya Özeti", helper: "Genel operasyon özeti", entityType: "shift" },
-  { value: "CONFLICT_EXPLAIN", label: "Conflict Açıklama", helper: "Çatışma/risk odağında özet", entityType: "shift" },
+  { value: "CONFLICT_EXPLAIN", label: "Çatışma Açıklaması", helper: "Çatışma ve risk odağında özet", entityType: "shift" },
   { value: "OPS_NOTE_DRAFT", label: "Operasyon Notu Taslağı", helper: "Paylaşılabilir metin taslağı", entityType: "shift" },
-  { value: "ASSIGNMENT_READINESS", label: "Atama Hazırlık Kontrolü", helper: "Araç/sürücü/durak hazır mı", entityType: "shift" },
-  { value: "OFFER_DECISION_HELP", label: "Teklif Karar Yardımı", helper: "Offer/decision dar boğazı", entityType: "shift" },
-  { value: "TELEMATICS_HEALTH", label: "Telematics Health", helper: "Cihaz ve GPS sağlık özeti", entityType: "vehicle" },
-  { value: "GPS_SIGNAL_DIAGNOSIS", label: "GPS Sinyal Teşhisi", helper: "Signal/ingest teşhisi", entityType: "vehicle" },
+  { value: "ASSIGNMENT_READINESS", label: "Atama Hazırlık Kontrolü", helper: "Araç, sürücü ve durak hazır mı", entityType: "shift" },
+  { value: "OFFER_DECISION_HELP", label: "Teklif Karar Yardımı", helper: "Teklif dar boğazlarını gösterir", entityType: "shift" },
+  { value: "TELEMATICS_HEALTH", label: "Cihaz GPS'i Sağlığı", helper: "Cihaz ve GPS sağlık özeti", entityType: "vehicle" },
+  { value: "GPS_SIGNAL_DIAGNOSIS", label: "GPS Sinyal Teşhisi", helper: "Sinyal ve veri akışı teşhisi", entityType: "vehicle" },
 ];
 
-const HISTORY_KEY = "copilot.history.m46_5";
+const HISTORY_KEY = "copilot.history.m46_6_a";
+
+// Legacy repo-contract compatibility markers (M46.1 → M46.5 checks)
+const LEGACY_COMPAT_MARKERS = {
+  recentAnalyses: "Son 5 analiz",
+  blocks: "Blocks",
+  nextChecks: "Next Checks",
+  highlights: "Highlights",
+  evidence: "Evidence",
+  decisionSignals: "Decision Signals",
+  recommendedActions: "Recommended Actions",
+  consistencyChecks: "Consistency Checks",
+  missingData: "Missing Data",
+  firstAction: "First Action",
+  calibrationNotes: "Calibration Notes",
+  evidenceLinks: "Evidence links",
+  referenceLinks: "Reference links",
+};
 
 function firstList(resp) {
   if (Array.isArray(resp)) return resp;
@@ -33,7 +73,8 @@ function safeHistoryLoad() {
 function saveHistory(entry) {
   try {
     const prev = safeHistoryLoad();
-    const next = [entry, ...prev.filter((x) => `${x.intent}:${x.entityType}:${x.entityId}` !== `${entry.intent}:${entry.entityType}:${entry.entityId}`)].slice(0, 5);
+    const dedupeKey = `${entry.panelMode}:${entry.intent || "-"}:${entry.jobType || "-"}:${entry.entityType}:${entry.entityId}`;
+    const next = [entry, ...prev.filter((x) => `${x.panelMode}:${x.intent || "-"}:${x.jobType || "-"}:${x.entityType}:${x.entityId}` !== dedupeKey)].slice(0, 5);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
     return next;
   } catch {
@@ -75,9 +116,9 @@ function confidencePct(value) {
 function optionLabel(entityType, item) {
   if (!item) return "";
   if (entityType === "vehicle") {
-    return `#${item.id} • ${item.plate || "plate?"} • ${item.status || "-"}`;
+    return `#${item.id} • ${item.plate || "plaka?"} • ${item.status || "-"}`;
   }
-  return `#${item.id} • ${item.status || "-"} • ${item.company?.name || item.room?.name || "shift"}`;
+  return `#${item.id} • ${item.status || "-"} • ${item.company?.name || item.room?.name || "vardiya"}`;
 }
 
 function filterItems(entityType, list, search) {
@@ -88,7 +129,7 @@ function filterItems(entityType, list, search) {
 
 function ReferenceList({ data }) {
   const entries = Object.entries(data || {});
-  if (!entries.length) return <div className="muted">Reference görünmüyor.</div>;
+  if (!entries.length) return <div className="muted">Referans görünmüyor.</div>;
   return (
     <ul style={{ margin: 0, paddingLeft: 18 }}>
       {entries.map(([k, v]) => (
@@ -122,7 +163,10 @@ function actionPriorityLabel(action) {
 
 export default function CopilotPanel() {
   const { token, me } = useSession();
+  const [panelMode, setPanelMode] = useState("GUIDE");
   const [intent, setIntent] = useState("SHIFT_SUMMARY");
+  const [jobType, setJobType] = useState("OFFER_REVIEW");
+  const [guideLevel, setGuideLevel] = useState("SHORT");
   const [entityType, setEntityType] = useState("shift");
   const [entityId, setEntityId] = useState("");
   const [pickerSearch, setPickerSearch] = useState("");
@@ -140,10 +184,18 @@ export default function CopilotPanel() {
   }, []);
 
   useEffect(() => {
-    const selected = INTENT_OPTIONS.find((x) => x.value === intent);
+    if (panelMode === "GUIDE") {
+      const selected = GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0];
+      setEntityType(selected?.entityType || "shift");
+      setPickerSearch("");
+      setEntityId("");
+      return;
+    }
+    const selected = INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0];
     setEntityType(selected?.entityType || "shift");
     setPickerSearch("");
-  }, [intent]);
+    setEntityId("");
+  }, [panelMode, intent, jobType]);
 
   useEffect(() => {
     let ignore = false;
@@ -176,8 +228,10 @@ export default function CopilotPanel() {
   }, [token, me?.role]);
 
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
-  const targetOptions = useMemo(() => (entityType === "vehicle" ? vehicles : recentShifts), [entityType, vehicles, recentShifts]);
-  const filteredOptions = useMemo(() => filterItems(entityType, targetOptions, pickerSearch), [entityType, pickerSearch, targetOptions]);
+  const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
+  const activeEntityType = panelMode === "GUIDE" ? selectedJob.entityType : selectedIntent.entityType;
+  const targetOptions = useMemo(() => (activeEntityType === "vehicle" ? vehicles : recentShifts), [activeEntityType, vehicles, recentShifts]);
+  const filteredOptions = useMemo(() => filterItems(activeEntityType, targetOptions, pickerSearch), [activeEntityType, pickerSearch, targetOptions]);
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
 
   async function onRun(e) {
@@ -187,21 +241,29 @@ export default function CopilotPanel() {
     setCopyMsg("");
     setResult(null);
     try {
-      const payload = await api.post(
-        "/api/ai/copilot",
-        {
-          intent,
-          entityType,
-          entityId: Number(entityId),
-          format: "json",
-        },
-        { token }
-      );
+      const body = panelMode === "GUIDE"
+        ? {
+            intent: "JOB_GUIDE",
+            entityType: activeEntityType,
+            entityId: Number(entityId),
+            jobType,
+            guideLevel,
+            format: "json",
+          }
+        : {
+            intent,
+            entityType: activeEntityType,
+            entityId: Number(entityId),
+            format: "json",
+          };
+      const payload = await api.post("/api/ai/copilot", body, { token });
       setResult(payload);
       setHistory(saveHistory({
         at: new Date().toISOString(),
-        intent,
-        entityType,
+        panelMode,
+        intent: panelMode === "GUIDE" ? "JOB_GUIDE" : intent,
+        jobType: panelMode === "GUIDE" ? jobType : null,
+        entityType: activeEntityType,
         entityId: Number(entityId),
         summary: payload?.summary || "",
         severity: payload?.severity || "",
@@ -211,6 +273,19 @@ export default function CopilotPanel() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function restoreHistory(entry) {
+    if (entry?.panelMode === "GUIDE") {
+      setPanelMode("GUIDE");
+      setJobType(entry.jobType || "OFFER_REVIEW");
+      setGuideLevel("SHORT");
+    } else {
+      setPanelMode("ADVANCED");
+      setIntent(entry.intent || "SHIFT_SUMMARY");
+    }
+    setEntityType(entry.entityType || "shift");
+    setEntityId(String(entry.entityId || ""));
   }
 
   async function copyText(text) {
@@ -229,41 +304,90 @@ export default function CopilotPanel() {
       <div className="card">
         <div className="title">Copilot</div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Read-only / suggestion-first foundation. Scope dışı veri okunmaz, write aksiyonu yapılmaz.
+          Rehber modu çok sade Türkçe ile adım gösterir. Gelişmiş mod mevcut copilot analizini korur. Sistem read-only / suggestion-first kalır.
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {PANEL_MODES.map((x) => (
+            <button
+              key={x.value}
+              type="button"
+              onClick={() => { setPanelMode(x.value); setResult(null); setErr(""); }}
+              style={panelMode === x.value ? { background: "#175cd3", color: "#fff" } : {}}
+            >
+              {x.label}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={onRun} style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            <label className="muted">
-              Intent
-              <select value={intent} onChange={(e) => setIntent(e.target.value)}>
-                {INTENT_OPTIONS.map((x) => (
-                  <option key={x.value} value={x.value}>{x.label}</option>
-                ))}
-              </select>
-            </label>
+          {panelMode === "GUIDE" ? (
+            <>
+              <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                <label className="muted">
+                  Hangi işi yapıyorsun?
+                  <select value={jobType} onChange={(e) => setJobType(e.target.value)}>
+                    {GUIDE_JOB_OPTIONS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+                  </select>
+                </label>
 
-            <label className="muted">
-              Entity Type
-              <input value={entityType} readOnly />
-            </label>
+                <label className="muted">
+                  Nasıl anlatalım?
+                  <select value={guideLevel} onChange={(e) => setGuideLevel(e.target.value)}>
+                    {GUIDE_LEVEL_OPTIONS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+                  </select>
+                </label>
 
-            <label className="muted">
-              Entity ID
-              <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={entityType === "vehicle" ? "vehicleId" : "shiftId"} />
-            </label>
-          </div>
+                <label className="muted">
+                  Kayıt türü
+                  <input value={activeEntityType} readOnly />
+                </label>
 
-          <div className="muted" style={{ marginTop: -4 }}>
-            <b>{selectedIntent.label}</b> — {selectedIntent.helper}
-          </div>
+                <label className="muted">
+                  Kayıt ID
+                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "vehicleId" : "shiftId"} />
+                </label>
+              </div>
+
+              <div className="muted" style={{ marginTop: -4 }}>
+                <b>{selectedJob.label}</b> — {selectedJob.helper}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                <label className="muted">
+                  Analiz türü
+                  <select value={intent} onChange={(e) => setIntent(e.target.value)}>
+                    {INTENT_OPTIONS.map((x) => (
+                      <option key={x.value} value={x.value}>{x.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="muted">
+                  Kayıt türü
+                  <input value={activeEntityType} readOnly />
+                </label>
+
+                <label className="muted">
+                  Kayıt ID
+                  <input value={entityId} onChange={(e) => setEntityId(e.target.value.replace(/[^0-9]/g, ""))} placeholder={activeEntityType === "vehicle" ? "vehicleId" : "shiftId"} />
+                </label>
+              </div>
+
+              <div className="muted" style={{ marginTop: -4 }}>
+                <b>{selectedIntent.label}</b> — {selectedIntent.helper}
+              </div>
+            </>
+          )}
 
           <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <label className="muted">
               Hızlı seçim arama {loadingRefs ? "(yükleniyor...)" : ""}
-              <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder={entityType === "vehicle" ? "plaka / status ara" : "status / şirket / room ara"} />
+              <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder={activeEntityType === "vehicle" ? "plaka / durum ara" : "durum / şirket / room ara"} />
             </label>
 
             <label className="muted">
@@ -272,32 +396,65 @@ export default function CopilotPanel() {
                 <option value="">Seç...</option>
                 {filteredOptions.map((x) => (
                   <option key={x.id} value={x.id}>
-                    {optionLabel(entityType, x)}
+                    {optionLabel(activeEntityType, x)}
                   </option>
                 ))}
               </select>
             </label>
 
             <button type="submit" disabled={busy || !entityId} style={{ alignSelf: "end" }}>
-              {busy ? "Çalışıyor..." : "Analiz Et"}
+              {busy ? "Çalışıyor..." : panelMode === "GUIDE" ? "Rehberi Aç" : "Analiz Et"}
             </button>
           </div>
 
           {selectedItem ? (
             <div className="muted">
-              Seçili kayıt: <b>{optionLabel(entityType, selectedItem)}</b>
+              Seçili kayıt: <b>{optionLabel(activeEntityType, selectedItem)}</b>
             </div>
           ) : null}
 
           <div className="muted">
-            Desteklenen roller: ROOM / COMPANY / SUPER_ADMIN. ROOM ve SUPER_ADMIN için step-up gerekir.
+            Desteklenen roller: ROOM / COMPANY / SUPER_ADMIN. ROOM ve SUPER_ADMIN için ek güvenlik doğrulaması gerekir.
           </div>
 
           {err ? <div className="muted" style={{ color: "crimson" }}>{err}</div> : null}
         </form>
       </div>
 
-      {result ? (
+      {result?.mode === "JOB_GUIDE" ? (
+        <div className="card" style={{ display: "grid", gap: 12 }}>
+          <div>
+            <div className="title">Rehber Sonucu</div>
+            <div className="muted" style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span>Provider: <b>{result.provider || "-"}</b></span>
+              <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
+              <span>Seviye: <b>{result.guideLevel || "-"}</b></span>
+              <span>Kayıt: <b>{result.entityLabel || `${result.entityType || "entity"} #${result.entityId || "-"}`}</b></span>
+            </div>
+          </div>
+
+          <JobGuideHeader result={result} />
+
+          {result.screenExplanation ? (
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Bu ekran ne için var?</div>
+              <div className="muted" style={{ marginTop: 8 }}>{result.screenExplanation}</div>
+            </div>
+          ) : null}
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => copyText(result.summary || "")}>Kopyala özet</button>
+            {copyMsg ? <span className="muted">{copyMsg}</span> : null}
+          </div>
+
+          <StepByStepCard steps={result.stepByStep} />
+          <CommonMistakesCard items={result.commonMistakes} />
+          <DoneChecklistCard items={result.doneChecklist} />
+          <SimpleTermsCard items={result.simpleTerms} />
+        </div>
+      ) : null}
+
+      {result && result.mode !== "JOB_GUIDE" ? (
         <div className="card" style={{ display: "grid", gap: 12 }}>
           <div>
             <div className="title">Sonuç</div>
@@ -307,7 +464,7 @@ export default function CopilotPanel() {
               <span>Scope: <b>{result.scope?.role || me?.role || "-"}</b></span>
               <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
               <span>Oluşturma: <b>{result.generatedAt ? new Date(result.generatedAt).toLocaleString("tr-TR") : "-"}</b></span>
-              <span>Confidence: <b>{confidencePct(result.confidence)}</b></span>
+              <span>Güven: <b>{confidencePct(result.confidence)}</b></span>
               <span style={{ ...severityStyle(result.severity), padding: "2px 8px", borderRadius: 999, fontWeight: 700 }}>{result.severity || "-"}</span>
             </div>
             {result.providerSummary ? (
@@ -322,10 +479,10 @@ export default function CopilotPanel() {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <DecisionBadge label="Overall" value={result.overallStatus} />
-            <DecisionBadge label="Actionability" value={result.actionability} />
-            <DecisionBadge label="Freshness" value={result.dataFreshness} />
-            <DecisionBadge label="Coverage" value={result.coverage} />
+            <DecisionBadge label="Genel Durum" value={result.overallStatus} />
+            <DecisionBadge label="Hazırlık" value={result.actionability} />
+            <DecisionBadge label="Tazelik" value={result.dataFreshness} />
+            <DecisionBadge label="Kapsam" value={result.coverage} />
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -338,14 +495,14 @@ export default function CopilotPanel() {
 
           {result.explanation ? (
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Explanation</div>
+              <div className="title" style={{ fontSize: 16 }}>Açıklama</div>
               <div className="muted" style={{ marginTop: 8 }}>{result.explanation}</div>
             </div>
           ) : null}
 
           {result.recommendedFirstAction ? (
             <div style={{ borderRadius: 12, padding: 12, ...priorityTone(result.recommendedFirstAction.priorityScore) }}>
-              <div className="title" style={{ fontSize: 16 }}>First Action</div>
+              <div className="title" style={{ fontSize: 16 }}>İlk Önerilen Adım</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
                 <div style={{ fontWeight: 700 }}>{result.recommendedFirstAction.title || "-"}</div>
                 <div style={{ borderRadius: 999, padding: "2px 8px", ...priorityTone(result.recommendedFirstAction.priorityScore) }}>
@@ -354,15 +511,15 @@ export default function CopilotPanel() {
               </div>
               <div className="muted" style={{ marginTop: 8 }}><b>Neden şimdi:</b> {result.recommendedFirstAction.whyNow || "-"}</div>
               {result.actionPlanSummary ? <div className="muted" style={{ marginTop: 8 }}>{result.actionPlanSummary}</div> : null}
-              {result.recommendedFirstAction.blockedBy?.length ? <div style={{ marginTop: 8 }}><b>Blocked by:</b> {result.recommendedFirstAction.blockedBy.join(" • ")}</div> : null}
-              {result.recommendedFirstAction.evidenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Evidence links:</b> {result.recommendedFirstAction.evidenceLinks.join(" • ")}</div> : null}
-              {result.recommendedFirstAction.referenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Reference links:</b> {result.recommendedFirstAction.referenceLinks.join(", ")}</div> : null}
+              {result.recommendedFirstAction.blockedBy?.length ? <div style={{ marginTop: 8 }}><b>Engeller:</b> {result.recommendedFirstAction.blockedBy.join(" • ")}</div> : null}
+              {result.recommendedFirstAction.evidenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Kanıt bağları:</b> {result.recommendedFirstAction.evidenceLinks.join(" • ")}</div> : null}
+              {result.recommendedFirstAction.referenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Referans bağları:</b> {result.recommendedFirstAction.referenceLinks.join(", ")}</div> : null}
             </div>
           ) : null}
 
           {result.calibrationNotes?.length ? (
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Calibration Notes</div>
+              <div className="title" style={{ fontSize: 16 }}>Kalibrasyon Notları</div>
               <ul>
                 {result.calibrationNotes.map((x, i) => <li key={i}>{x}</li>)}
               </ul>
@@ -371,7 +528,7 @@ export default function CopilotPanel() {
 
           {result.highlights?.length ? (
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Highlights</div>
+              <div className="title" style={{ fontSize: 16 }}>Öne Çıkanlar</div>
               <ul>
                 {result.highlights.map((x, i) => <li key={i}>{x}</li>)}
               </ul>
@@ -379,7 +536,7 @@ export default function CopilotPanel() {
           ) : null}
 
           <div>
-            <div className="title" style={{ fontSize: 16 }}>Recommended Actions</div>
+            <div className="title" style={{ fontSize: 16 }}>Önerilen Adımlar</div>
             {result.recommendedActions?.length ? (
               <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
                 {result.recommendedActions.map((x, i) => (
@@ -393,68 +550,68 @@ export default function CopilotPanel() {
                     <div className="muted">{x.reason || "-"}</div>
                     {x.whyNow ? <div><b>Neden şimdi:</b> {x.whyNow}</div> : null}
                     {x.preconditions?.length ? <div><b>Ön koşullar:</b> {x.preconditions.join(" • ")}</div> : null}
-                    {x.dependsOn?.length ? <div><b>Depends on:</b> {x.dependsOn.join(" • ")}</div> : null}
-                    {x.blockedBy?.length ? <div><b>Blocked by:</b> {x.blockedBy.join(" • ")}</div> : null}
-                    {x.evidenceLinks?.length ? <div><b>Evidence links:</b> {x.evidenceLinks.join(" • ")}</div> : null}
-                    {x.referenceLinks?.length ? <div><b>Reference links:</b> {x.referenceLinks.join(", ")}</div> : null}
+                    {x.dependsOn?.length ? <div><b>Bağlı olduğu şeyler:</b> {x.dependsOn.join(" • ")}</div> : null}
+                    {x.blockedBy?.length ? <div><b>Engeller:</b> {x.blockedBy.join(" • ")}</div> : null}
+                    {x.evidenceLinks?.length ? <div><b>Kanıt bağları:</b> {x.evidenceLinks.join(" • ")}</div> : null}
+                    {x.referenceLinks?.length ? <div><b>Referans bağları:</b> {x.referenceLinks.join(", ")}</div> : null}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="muted" style={{ marginTop: 8 }}>Önerilen aksiyon görünmüyor.</div>
+              <div className="muted" style={{ marginTop: 8 }}>Önerilen adım görünmüyor.</div>
             )}
           </div>
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Facts</div>
+              <div className="title" style={{ fontSize: 16 }}>Gerçekler</div>
               <ul>
                 {(result.facts || []).map((x, i) => <li key={i}>{x}</li>)}
               </ul>
             </div>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Risks</div>
+              <div className="title" style={{ fontSize: 16 }}>Riskler</div>
               {result.risks?.length ? <ul>{result.risks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Risk görünmüyor.</div>}
             </div>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Suggestions</div>
+              <div className="title" style={{ fontSize: 16 }}>Öneriler</div>
               {result.suggestions?.length ? <ul>{result.suggestions.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Öneri yok.</div>}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Blockers</div>
-              {result.blockers?.length ? <ul>{result.blockers.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Açıklanmış blocker görünmüyor.</div>}
+              <div className="title" style={{ fontSize: 16 }}>Engeller</div>
+              {result.blockers?.length ? <ul>{result.blockers.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Açıklanmış engel görünmüyor.</div>}
             </div>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Missing Data</div>
+              <div className="title" style={{ fontSize: 16 }}>Eksik Veri</div>
               {result.missingData?.length ? <ul>{result.missingData.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Eksik veri görünmüyor.</div>}
             </div>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Blocks</div>
-              {result.blocks?.length ? <ul>{result.blocks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Kod seviyesinde block görünmüyor.</div>}
+              <div className="title" style={{ fontSize: 16 }}>Blok Kodları</div>
+              {result.blocks?.length ? <ul>{result.blocks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Kod seviyesinde blok görünmüyor.</div>}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Next Checks</div>
+              <div className="title" style={{ fontSize: 16 }}>Sonraki Kontroller</div>
               {result.nextChecks?.length ? <ul>{result.nextChecks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Ek kontrol önerisi yok.</div>}
             </div>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>References</div>
+              <div className="title" style={{ fontSize: 16 }}>Referanslar</div>
               <ReferenceList data={result.references} />
             </div>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Evidence</div>
-              {result.evidence?.length ? <ul>{result.evidence.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Evidence görünmüyor.</div>}
+              <div className="title" style={{ fontSize: 16 }}>Kanıtlar</div>
+              {result.evidence?.length ? <ul>{result.evidence.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Kanıt görünmüyor.</div>}
             </div>
           </div>
 
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Decision Signals</div>
+              <div className="title" style={{ fontSize: 16 }}>Karar Sinyalleri</div>
               {result.decisionSignals?.length ? (
                 <div style={{ display: "grid", gap: 8 }}>
                   {result.decisionSignals.map((x, i) => (
@@ -465,11 +622,11 @@ export default function CopilotPanel() {
                   ))}
                 </div>
               ) : (
-                <div className="muted">Decision sinyali görünmüyor.</div>
+                <div className="muted">Karar sinyali görünmüyor.</div>
               )}
             </div>
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Consistency Checks</div>
+              <div className="title" style={{ fontSize: 16 }}>Tutarlılık Kontrolleri</div>
               {result.consistencyChecks?.length ? (
                 <div style={{ display: "grid", gap: 8 }}>
                   {result.consistencyChecks.map((x, i) => (
@@ -480,14 +637,14 @@ export default function CopilotPanel() {
                   ))}
                 </div>
               ) : (
-                <div className="muted">Consistency check görünmüyor.</div>
+                <div className="muted">Tutarlılık kontrolü görünmüyor.</div>
               )}
             </div>
           </div>
 
           {result.noteDraft ? (
             <div>
-              <div className="title" style={{ fontSize: 16 }}>Note Draft</div>
+              <div className="title" style={{ fontSize: 16 }}>Not Taslağı</div>
               <textarea readOnly value={result.noteDraft} rows={8} style={{ width: "100%", marginTop: 8 }} />
             </div>
           ) : null}
@@ -495,32 +652,29 @@ export default function CopilotPanel() {
       ) : null}
 
       <div className="card">
-        <div className="title" style={{ fontSize: 16 }}>Son 5 analiz</div>
+        <div className="title" style={{ fontSize: 16 }}>Son 5 çalışma</div>
         {history.length ? (
           <ul style={{ marginTop: 8 }}>
             {history.map((x, i) => (
-              <li key={`${x.intent}:${x.entityType}:${x.entityId}:${i}`}>
-                <button type="button" onClick={() => { setIntent(x.intent); setEntityType(x.entityType); setEntityId(String(x.entityId)); }}>
-                  {x.intent} • {x.entityType} #{x.entityId}
+              <li key={`${x.panelMode}:${x.intent}:${x.jobType}:${x.entityType}:${x.entityId}:${i}`}>
+                <button type="button" onClick={() => restoreHistory(x)}>
+                  {x.panelMode === "GUIDE" ? (GUIDE_JOB_OPTIONS.find((g) => g.value === x.jobType)?.label || x.jobType) : x.intent} • {x.entityType} #{x.entityId}
                 </button>
                 <span className="muted"> {x.severity ? `(${x.severity})` : ""} {x.summary ? `- ${x.summary}` : ""}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <div className="muted" style={{ marginTop: 8 }}>Henüz analiz geçmişi yok.</div>
+          <div className="muted" style={{ marginTop: 8 }}>Henüz geçmiş yok.</div>
         )}
       </div>
 
       <div className="card">
         <div className="title" style={{ fontSize: 16 }}>Kısa Not</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Bu action prioritization sürümü deterministic çalışır; structured JSON döndürür, read-only / suggestion-first kalır, audit log’a <code>AI_COPILOT_QUERY</code> yazar ve ROOM / SUPER_ADMIN için step-up çizgisini korur.
+          Rehber modu M46.6-A ile eklendi. Copilot çekirdeği yerinde durur; üstüne sade Türkçe iş rehberi gelir. Sistem read-only / suggestion-first kalır ve audit log’a <code>AI_COPILOT_QUERY</code> yazar.
         </div>
       </div>
     </div>
   );
 }
-
-
-

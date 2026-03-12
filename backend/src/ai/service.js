@@ -1,4 +1,5 @@
 import { buildCopilotPayload, getShiftContext, getVehicleContext } from "./tools.js";
+import { buildJobGuideResponse } from "./jobGuide/index.js";
 
 function intentLabel(intent) {
   const map = {
@@ -9,6 +10,7 @@ function intentLabel(intent) {
     OFFER_DECISION_HELP: "Teklif Karar Yardımı",
     TELEMATICS_HEALTH: "Telematics Health",
     GPS_SIGNAL_DIAGNOSIS: "GPS Sinyal Teşhisi",
+    JOB_GUIDE: "İş Rehberi",
   };
   return map[String(intent || "")] || String(intent || "-");
 }
@@ -485,7 +487,7 @@ function enrichDecisionLayer(intent, context, base) {
   };
 }
 
-export async function runCopilotFoundation({ intent, entityType, entityId, user }) {
+export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel }) {
   let context = null;
   if (entityType === "shift") {
     context = await getShiftContext(user, entityId);
@@ -496,6 +498,27 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user 
     e.status = 400;
     e.code = "UNSUPPORTED_ENTITY_TYPE";
     throw e;
+  }
+
+  if (intent === "JOB_GUIDE") {
+    return {
+      ...buildJobGuideResponse({
+        jobType,
+        guideLevel,
+        context,
+        entityType,
+        entityId,
+        user,
+      }),
+      entityLabel: describeEntity(context),
+      providerSummary: `guideLevel=${String(guideLevel || "SHORT")}`,
+      scope: {
+        role: String(user.role || ""),
+        roomId: user.roomId ?? null,
+        companyId: user.companyId ?? null,
+        summary: buildScopeSummary(user, entityType, entityId),
+      },
+    };
   }
 
   const base = buildCopilotPayload(intent, context);
