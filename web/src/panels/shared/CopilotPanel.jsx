@@ -16,8 +16,12 @@ import CopyOutputsCard from "../../components/copilot/CopyOutputsCard";
 import MenuPurposeCard from "../../components/copilot/MenuPurposeCard";
 import ButtonGuidesCard from "../../components/copilot/ButtonGuidesCard";
 import ScreenMenusCard from "../../components/copilot/ScreenMenusCard";
+import ChatThread from "../../components/copilot/ChatThread";
+import ChatInputBox from "../../components/copilot/ChatInputBox";
+import SuggestedChips from "../../components/copilot/SuggestedChips";
 
 const PANEL_MODES = [
+  { value: "CHAT", label: "Sohbet" },
   { value: "GUIDE", label: "Rehber" },
   { value: "ADVANCED", label: "Gelişmiş" },
 ];
@@ -288,7 +292,7 @@ function resolveGuideRoute(me, routeKey) {
 
 export default function CopilotPanel() {
   const { token, me } = useSession();
-  const [panelMode, setPanelMode] = useState("GUIDE");
+  const [panelMode, setPanelMode] = useState("CHAT");
   const [intent, setIntent] = useState("SHIFT_SUMMARY");
   const [jobType, setJobType] = useState("OFFER_REVIEW");
   const [guideLevel, setGuideLevel] = useState("SHORT");
@@ -304,6 +308,12 @@ export default function CopilotPanel() {
   const [loadingRefs, setLoadingRefs] = useState(false);
   const [history, setHistory] = useState([]);
   const [copyMsg, setCopyMsg] = useState("");
+  const [chatScreenId, setChatScreenId] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatErr, setChatErr] = useState("");
+  const [chatConversationState, setChatConversationState] = useState(null);
+  const [chatSuggestedChips, setChatSuggestedChips] = useState([]);
 
   useEffect(() => {
     setHistory(safeHistoryLoad());
@@ -318,6 +328,19 @@ export default function CopilotPanel() {
       if (match) setEntityId(String(match.id));
     }
   }, [me?.role, me?.companyKind]);
+  useEffect(() => {
+    const opts = buildScreenOptions(me);
+    const current = String(getPath() || "").split("?")[0];
+    const match = opts.find((x) => x.path === current) || opts[0] || null;
+    if (match) setChatScreenId((prev) => prev || String(match.id));
+  }, [me?.role, me?.companyKind]);
+
+  useEffect(() => {
+    setChatMessages([]);
+    setChatConversationState(null);
+    setChatSuggestedChips([]);
+    setChatErr("");
+  }, [chatScreenId]);
 
   useEffect(() => {
     if (panelMode === "GUIDE") {
@@ -376,6 +399,62 @@ export default function CopilotPanel() {
   const targetOptions = useMemo(() => (activeEntityType === "vehicle" ? vehicles : activeEntityType === "screen" ? screenOptions : recentShifts), [activeEntityType, vehicles, recentShifts, screenOptions]);
   const filteredOptions = useMemo(() => filterItems(activeEntityType, targetOptions, pickerSearch), [activeEntityType, pickerSearch, targetOptions]);
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
+  const selectedChatScreen = useMemo(() => screenOptions.find((x) => String(x.id) === String(chatScreenId)) || null, [screenOptions, chatScreenId]);
+
+  async function runChat(messageText = "") {
+    if (!token || !selectedChatScreen) return;
+    setChatBusy(true);
+    setChatErr("");
+    try {
+      if (String(messageText || "").trim()) {
+        setChatMessages((prev) => [...prev, { role: "user", text: String(messageText || "").trim() }]);
+      }
+      const payload = await api.post("/api/ai/copilot", {
+        intent: "CHAT_HELP",
+        entityType: "screen",
+        entityId: Number(selectedChatScreen.id),
+        message: String(messageText || ""),
+        conversationState: chatConversationState || undefined,
+        screenContext: {
+          path: selectedChatScreen.path,
+          label: selectedChatScreen.label,
+          role: me?.role || "",
+          companyKind: me?.companyKind || "",
+        },
+        format: "json",
+      }, { token });
+      setChatConversationState(payload?.conversationState || null);
+      setChatSuggestedChips(Array.isArray(payload?.suggestedChips) ? payload.suggestedChips : []);
+      setChatMessages((prev) => [...prev, {
+        role: "assistant",
+        text: payload?.reply || payload?.summary || "Yardım metni oluşmadı.",
+        contextSummary: payload?.contextSummary || "",
+        replyMode: payload?.replyMode || "SHORT",
+        followUpPrompt: payload?.followUpPrompt || "",
+        quickActions: payload?.quickActions || [],
+        linkedGuides: payload?.linkedGuides || [],
+      }]);
+    } catch (e2) {
+      setChatErr(String(e2?.message || e2));
+    } finally {
+      setChatBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (panelMode === "CHAT" && selectedChatScreen && !chatMessages.length && !chatBusy) {
+      runChat("");
+    }
+  }, [panelMode, selectedChatScreen?.id, token]);
+
+  function openChatGuide(guide) {
+    setPanelMode("GUIDE");
+    setJobType(guide?.jobType || "SCREEN_MENU_GUIDE");
+    setGuideLevel(guide?.guideLevel || "SHORT");
+    setEntityId(String(chatScreenId || ""));
+    setResult(null);
+    setErr("");
+  }
 
   async function onRun(e) {
     e?.preventDefault?.();
@@ -459,7 +538,7 @@ export default function CopilotPanel() {
       <div className="card">
         <div className="title">Copilot</div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Rehber modu çok sade Türkçe ile adım gösterir. Gelişmiş mod mevcut copilot analizini korur. Sistem read-only / suggestion-first kalır.
+          Sohbet modu kısa cevap verir ve ilgili yere götürür. Rehber modu çok sade Türkçe ile adım gösterir. Gelişmiş mod mevcut copilot analizini korur. Sistem read-only / suggestion-first kalır.
         </div>
       </div>
 
@@ -476,6 +555,33 @@ export default function CopilotPanel() {
             </button>
           ))}
         </div>
+
+        {panelMode === "CHAT" ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div className="muted">
+              Sohbet modu seçtiğin ekranı bilir, kısa cevap verir ve gerekirse ilgili yere götürür.
+            </div>
+
+            <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+              <label className="muted">
+                Hangi ekran hakkında konuşalım?
+                <select value={chatScreenId} onChange={(e) => setChatScreenId(e.target.value)}>
+                  {screenOptions.map((x) => (
+                    <option key={x.id} value={x.id}>{screenOptionLabel(x)}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="muted" style={{ alignSelf: "end" }}>
+                Seçili bağlam: <b>{selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}</b>
+              </div>
+            </div>
+
+            <SuggestedChips items={chatSuggestedChips} busy={chatBusy} onPick={runChat} />
+            <ChatThread messages={chatMessages} onOpen={openGuideAction} onGuide={openChatGuide} />
+            <ChatInputBox busy={chatBusy} onSend={runChat} />
+            {chatErr ? <div className="muted" style={{ color: "crimson" }}>{chatErr}</div> : null}
+          </div>
+        ) : (
 
         <form onSubmit={onRun} style={{ display: "grid", gap: 12 }}>
           {panelMode === "GUIDE" ? (
@@ -574,6 +680,7 @@ export default function CopilotPanel() {
 
           {err ? <div className="muted" style={{ color: "crimson" }}>{err}</div> : null}
         </form>
+        )}
       </div>
 
       {result?.mode === "JOB_GUIDE" ? (

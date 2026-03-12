@@ -49,6 +49,10 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_3_ai_copilot_quality_evidence.ps1 -RepoRoot D:\servis-platform` → Step 3.3 / M46.3
 - `tools\pack_m46_4_ai_copilot_decision_consistency.ps1 -RepoRoot D:\servis-platform` → Step 3.4 / M46.4
 - `tools\pack_m46_5_ai_copilot_action_prioritization.ps1 -RepoRoot D:\servis-platform` → Step 3.5 / M46.5
+- `tools\pack_m46_6_a_ai_job_guide.ps1 -RepoRoot D:\servis-platform` → Step 3.6-A / M46.6-A
+- `tools\pack_m46_6_b_ai_job_guide_precheck.ps1 -RepoRoot D:\servis-platform` → Step 3.6-B / M46.6-B
+- `tools\pack_m46_6_t_ai_location_source_guide.ps1 -RepoRoot D:\servis-platform` → Step 3.6-T / M46.6-T
+- `tools\pack_m46_6_c_ai_screen_help.ps1 -RepoRoot D:\servis-platform` → Step 3.6-C / M46.6-C
 
 ## Windows ExecutionPolicy
 PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
@@ -135,3 +139,24 @@ Kural 3: üst milestone’lar alt milestone check uyumluluğunu bozmamalıdır.
 - `web\src\panels\shared\CopilotPanel.jsx`
 - `docs\RUNBOOK_M46_5_AI_COPILOT_ACTION_PRIORITIZATION.md`
 
+
+
+## M46.6-A AI Job Guide
+- `tools\pack_m46_6_a_ai_job_guide.ps1`
+- `tools\check_m46_6_a_ai_job_guide_repo_contract.ps1`
+- `backend\scripts\m46_6_a_ai_job_guide_check.js`
+
+## M46.6-B AI Job Guide Precheck
+- `tools\pack_m46_6_b_ai_job_guide_precheck.ps1`
+- `tools\check_m46_6_b_ai_job_guide_precheck_repo_contract.ps1`
+- `backend\scripts\m46_6_b_ai_job_guide_precheck_check.js`
+
+## M46.6-T AI Location Source Guide
+- `tools\pack_m46_6_t_ai_location_source_guide.ps1`
+- `tools\check_m46_6_t_ai_location_source_guide_repo_contract.ps1`
+- `backend\scripts\m46_6_t_ai_location_source_guide_check.js`
+
+## M46.6-C AI Screen Help
+- `tools\pack_m46_6_c_ai_screen_help.ps1`
+- `tools\check_m46_6_c_ai_screen_help_repo_contract.ps1`
+- `backend\scripts\m46_6_c_ai_screen_help_check.js`

@@ -2,7 +2,7 @@
 
 > Referans: `docs/PROJECT_SPEC_V1.md`  
 > Amaç: V1’de mevcut **REST endpoint’leri** ve **WS event’lerini** listeler.  
-> Durum: M0→M32 (GREEN) — M33: Plan Builder (pending)
+> Durum: M41 ana green + M42 / Step 0.6 / Step 1 / M43 / M44 / M45 / M46 / M46.1 / M46.2 / M46.3 / M46.4 / M46.5 / M46.6-A/B/T/C ek green katmanları
 
 ---
 
@@ -218,7 +218,7 @@ UI invalidate standardı: event isimleri “shift/agreement/vehicle/request/eta/
 
 > Referans: `docs/PROJECT_SPEC_V1.md`  
 > Amaç: V1’de mevcut **REST endpoint’leri** ve **WS event’lerini** listeler.  
-> Durum: M0→M32 (GREEN) — M33: Plan Builder (pending)
+> Durum: M41 ana green + M42 / Step 0.6 / Step 1 / M43 / M44 / M45 / M46 / M46.1 / M46.2 / M46.3 / M46.4 / M46.5 / M46.6-A/B/T/C ek green katmanları
 
 ---
 
@@ -578,3 +578,94 @@ Vendor cloud push
 Publish
 - existing `gps:update` korunur
 - ek event: `telematics:update`
+
+
+---
+
+## M46 → M46.6 — AI Copilot / Rehber API özeti
+
+### POST `/api/ai/copilot`
+
+Amaç:
+- mevcut Copilot analizleri
+- sade Türkçe iş rehberi
+- ekran / buton yardımı
+- konum kaynağı rehberi
+
+Genel notlar:
+- read-only / suggestion-first
+- audit: `AI_COPILOT_QUERY`
+- ROOM / SUPER_ADMIN için step-up guard korunur
+- write action yoktur
+
+Örnek request (job guide):
+```json
+{
+  "intent": "JOB_GUIDE",
+  "entityType": "shift",
+  "entityId": 42,
+  "jobType": "OFFER_APPROVAL",
+  "guideLevel": "SHORT"
+}
+```
+
+Örnek request (screen help):
+```json
+{
+  "intent": "JOB_GUIDE",
+  "entityType": "screen",
+  "entityId": "room-offers",
+  "jobType": "SCREEN_MENU_GUIDE",
+  "guideLevel": "SHORT"
+}
+```
+
+Örnek response alanları (özet):
+```json
+{
+  "copilotVersion": "M46.6-C",
+  "mode": "JOB_GUIDE",
+  "jobType": "SCREEN_MENU_GUIDE",
+  "jobTitle": "Bu ekran ne için var?",
+  "plainSummary": "Bu ekran teklifleri görmek ve yönetmek için kullanılır.",
+  "whatToDoNow": "Önce listedeki kaydı seç.",
+  "beforeYouStart": [{ "label": "Yetki uygun mu?", "status": "OK" }],
+  "quickActions": [{ "label": "Sözleşme ekranını aç", "route": "/room/agreements" }],
+  "buttonGuides": [{ "label": "Onay Ver", "purpose": "Seçili teklifi kabul eder." }],
+  "menuPurpose": "Bu ekran teklif operasyonu içindir.",
+  "screenMenus": ["Liste", "Filtre", "Detay"],
+  "simpleTerms": [{ "term": "sözleşme", "meaning": "uzun süreli anlaşmalı çalışma kaydı" }]
+}
+```
+
+### M46.6-A Job Guide jobType örnekleri
+- `OFFER_REVIEW`
+- `OFFER_APPROVAL`
+- `ASSIGNMENT_READINESS_GUIDE`
+- `VEHICLE_DRIVER_BIND`
+
+### M46.6-B precheck alanları
+- `beforeYouStart`
+- `canProceed`
+- `whyBlocked`
+- `lockedActionReasons`
+- `quickActions`
+- `ifStuck`
+- `copyOutputs`
+
+### M46.6-T konum rehberi jobType örnekleri
+- `TELEMATICS_DEVICE_CREATE`
+- `LOCATION_SOURCE_GUIDE`
+- `GPS_SIGNAL_DIAGNOSIS_GUIDE`
+
+Ürün dili:
+- **sürücünün telefon GPS'i**
+- **cihaz GPS'i**
+- **konum kaynağı**
+
+### M46.6-C screen help jobType örnekleri
+- `SCREEN_MENU_GUIDE`
+- `BUTTON_ACTION_GUIDE`
+- `ROLE_HELP_GUIDE`
+
+`entityType: "screen"` ile kullanılır. DRIVER / PERSONEL / PARENT için de izinli ekran rehberleri vardır.

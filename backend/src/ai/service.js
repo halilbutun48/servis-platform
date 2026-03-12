@@ -1,6 +1,8 @@
 import { buildCopilotPayload, getShiftContext, getVehicleContext } from "./tools.js";
 import { buildJobGuideResponse } from "./jobGuide/index.js";
 import { getScreenDefinitionForUser } from "./jobGuide/screenCatalog.js";
+import { resolveChatContext } from "./chat/contextResolver.js";
+import { buildChatHelpResponse } from "./chat/helpComposer.js";
 
 function intentLabel(intent) {
   const map = {
@@ -12,6 +14,7 @@ function intentLabel(intent) {
     TELEMATICS_HEALTH: "Telematics Health",
     GPS_SIGNAL_DIAGNOSIS: "GPS Sinyal Teşhisi",
     JOB_GUIDE: "İş Rehberi",
+    CHAT_HELP: "Sohbet Yardımı",
   };
   return map[String(intent || "")] || String(intent || "-");
 }
@@ -492,7 +495,20 @@ function enrichDecisionLayer(intent, context, base) {
   };
 }
 
-export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel, screenContext }) {
+export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel, screenContext, message, conversationState }) {
+  if (intent === "CHAT_HELP") {
+    const resolved = await resolveChatContext({ entityType, entityId, user, screenContext });
+    return buildChatHelpResponse({
+      entityType,
+      entityId,
+      user,
+      message,
+      conversationState,
+      screenContext,
+      ...resolved,
+    });
+  }
+
   let context = null;
   if (entityType === "shift") {
     context = await getShiftContext(user, entityId);
@@ -512,6 +528,7 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user,
     e.code = "UNSUPPORTED_ENTITY_TYPE";
     throw e;
   }
+
 
   if (intent === "JOB_GUIDE") {
     return {

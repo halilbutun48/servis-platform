@@ -33,7 +33,10 @@ export function aiRouter() {
           && parsed.data.intent === "JOB_GUIDE"
           && parsed.data.entityType === "screen"
           && ["SCREEN_MENU_GUIDE", "BUTTON_ACTION_GUIDE", "ROLE_HELP_GUIDE"].includes(String(parsed.data.jobType || ""));
-        if (!isCoreRole && !isSimpleGuideRole) {
+        const isSimpleChatRole = ["DRIVER", "PERSONEL", "PARENT"].includes(role)
+          && parsed.data.intent === "CHAT_HELP"
+          && parsed.data.entityType === "screen";
+        if (!isCoreRole && !isSimpleGuideRole && !isSimpleChatRole) {
           return res.status(403).json({ error: "Forbidden" });
         }
 
@@ -53,6 +56,7 @@ export function aiRouter() {
             mode: payload.mode,
             jobType: parsed.data.jobType || null,
             guideLevel: parsed.data.guideLevel || null,
+            messageLength: String(parsed.data.message || "").length || 0,
           },
         });
 

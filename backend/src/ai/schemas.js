@@ -11,6 +11,7 @@ export const AI_COPILOT_INTENTS = [
   "TELEMATICS_HEALTH",
   "GPS_SIGNAL_DIAGNOSIS",
   "JOB_GUIDE",
+  "CHAT_HELP",
 ];
 
 export const AI_COPILOT_ENTITY_TYPES = ["shift", "vehicle", "screen"];
@@ -34,6 +35,8 @@ const requestSchema = z
     jobType: z.enum(JOB_GUIDE_TYPES).optional(),
     guideLevel: z.enum(GUIDE_LEVELS).optional().default("SHORT"),
     screenContext: z.any().optional(),
+    message: z.string().trim().max(500).optional().default(""),
+    conversationState: z.any().optional(),
   })
   .superRefine((val, ctx) => {
     if (VEHICLE_INTENTS.includes(val.intent) && val.entityType !== "vehicle") {
@@ -67,11 +70,11 @@ const requestSchema = z
         });
       }
     }
-    if (val.entityType === "screen" && val.intent !== "JOB_GUIDE") {
+    if (val.entityType === "screen" && !["JOB_GUIDE", "CHAT_HELP"].includes(val.intent)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["entityType"],
-        message: "screen entityType only supports JOB_GUIDE",
+        message: "screen entityType only supports JOB_GUIDE or CHAT_HELP",
       });
     }
   });

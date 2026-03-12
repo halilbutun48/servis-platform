@@ -20,9 +20,13 @@ Bu dosya repo için kısa çalışma runbook’udur.
 12. M46.3 AI Copilot Quality + Evidence hattı resmi green durumundadır.
 13. M46.4 AI Copilot Decision Consistency + Action Plan hattı resmi green durumundadır.
 14. M46.5 AI Copilot Action Prioritization + Evidence Calibration hattı resmi green durumundadır.
-15. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-16. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-17. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+15. M46.6-A AI Job Guide hattı resmi green durumundadır.
+16. M46.6-B AI Job Guide Precheck hattı resmi green durumundadır.
+17. M46.6-T AI Location Source Guide hattı resmi green durumundadır.
+18. M46.6-C AI Screen Help hattı resmi green durumundadır.
+19. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+20. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+21. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -51,6 +55,14 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - M46.4 repo-contract: `tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1 -RepoRoot D:\servis-platform`
 - M46.5 pack: `tools\pack_m46_5_ai_copilot_action_prioritization.ps1 -RepoRoot D:\servis-platform`
 - M46.5 repo-contract: `tools\check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M46.6-A pack: `tools\pack_m46_6_a_ai_job_guide.ps1 -RepoRoot D:\servis-platform`
+- M46.6-A repo-contract: `tools\check_m46_6_a_ai_job_guide_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M46.6-B pack: `tools\pack_m46_6_b_ai_job_guide_precheck.ps1 -RepoRoot D:\servis-platform`
+- M46.6-B repo-contract: `tools\check_m46_6_b_ai_job_guide_precheck_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M46.6-T pack: `tools\pack_m46_6_t_ai_location_source_guide.ps1 -RepoRoot D:\servis-platform`
+- M46.6-T repo-contract: `tools\check_m46_6_t_ai_location_source_guide_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M46.6-C pack: `tools\pack_m46_6_c_ai_screen_help.ps1 -RepoRoot D:\servis-platform`
+- M46.6-C repo-contract: `tools\check_m46_6_c_ai_screen_help_repo_contract.ps1 -RepoRoot D:\servis-platform`
 
 ## 3) Resmi green durum
 - `M41 PACK PASS`
@@ -189,10 +201,18 @@ Detay çekirdek:
 - M46.1 / M46.2 / M46.3 / M46.4 check zinciri ileri uyumlu tutulur
 - runtime check + repo-contract + tek pack PASS
 
-## 6.9) Bir sonraki resmi hedef
+## 6.9) Step 3.6 özeti — M46.6 hattı resmi green
+- M46.6-A: Copilot üstüne Job Guide / Rehber modu eklendi
+- M46.6-B: Başlamadan önce kontrol / neden kapalı / buradan aç eklendi
+- M46.6-T: sürücünün telefon GPS'i / cihaz GPS'i / konum kaynağı rehberi eklendi
+- M46.6-C: ekran ne için var / buton ne yapar / rol bazlı ekran yardımı eklendi
+- Copilot çekirdeği korunur; Rehber + Gelişmiş birlikte yaşar
+- yeni yardım işleri: `SCREEN_MENU_GUIDE`, `BUTTON_ACTION_GUIDE`, `ROLE_HELP_GUIDE`, `LOCATION_SOURCE_GUIDE`
+
+## 6.10) Bir sonraki resmi hedef
 - **henüz sabitlenmedi**
-- çalışma adı olarak **M46.6** açılabilir
-- M46 / M46.1 / M46.2 / M46.3 / M46.4 / M46.5 artık sıradaki hedef değil, resmi green katmanlardır
+- doğal devam adayı: **M46.6-D Conversational Copilot / Chat Shell**
+- M46 / M46.1 / M46.2 / M46.3 / M46.4 / M46.5 / M46.6-* artık sıradaki hedef değil, resmi green katmanlardır
 
 ## 7) SSOT dosyaları
 - `tools/CHECKLIST_SSOT.md`
@@ -275,3 +295,52 @@ Detay çekirdek:
 - `backend\src\ai\tools.js`
 - `web\src\panels\shared\CopilotPanel.jsx`
 - `docs\RUNBOOK_M46_5_AI_COPILOT_ACTION_PRIORITIZATION.md`
+
+
+## M46.6-A AI Job Guide
+- `tools\pack_m46_6_a_ai_job_guide.ps1`
+- `tools\check_m46_6_a_ai_job_guide_repo_contract.ps1`
+- `backend\scripts\m46_6_a_ai_job_guide_check.js`
+- `backend\src\ai\jobGuide\index.js`
+- `backend\src\ai\jobGuide\jobs\offerReview.js`
+- `backend\src\ai\jobGuide\jobs\offerApproval.js`
+- `backend\src\ai\jobGuide\jobs\assignmentReadinessGuide.js`
+- `backend\src\ai\jobGuide\jobs\vehicleDriverBind.js`
+- `web\src\components\copilot\JobGuideHeader.jsx`
+- `docs\RUNBOOK_M46_6_A_AI_JOB_GUIDE.md`
+
+## M46.6-B AI Job Guide Precheck
+- `tools\pack_m46_6_b_ai_job_guide_precheck.ps1`
+- `tools\check_m46_6_b_ai_job_guide_precheck_repo_contract.ps1`
+- `backend\scripts\m46_6_b_ai_job_guide_precheck_check.js`
+- `backend\src\ai\jobGuide\precheck.js`
+- `backend\src\ai\jobGuide\quickActions.js`
+- `backend\src\ai\jobGuide\copyOutputs.js`
+- `web\src\components\copilot\BeforeYouStartCard.jsx`
+- `web\src\components\copilot\LockedReasonCard.jsx`
+- `web\src\components\copilot\QuickActionsCard.jsx`
+- `web\src\components\copilot\IfStuckCard.jsx`
+- `web\src\components\copilot\CopyOutputsCard.jsx`
+- `docs\RUNBOOK_M46_6_B_AI_JOB_GUIDE_PRECHECK.md`
+
+## M46.6-T AI Location Source Guide
+- `tools\pack_m46_6_t_ai_location_source_guide.ps1`
+- `tools\check_m46_6_t_ai_location_source_guide_repo_contract.ps1`
+- `backend\scripts\m46_6_t_ai_location_source_guide_check.js`
+- `backend\src\ai\jobGuide\jobs\telematicsDeviceCreate.js`
+- `backend\src\ai\jobGuide\jobs\locationSourceGuide.js`
+- `backend\src\ai\jobGuide\jobs\gpsSignalDiagnosisGuide.js`
+- `docs\RUNBOOK_M46_6_T_AI_LOCATION_SOURCE_GUIDE.md`
+
+## M46.6-C AI Screen Help
+- `tools\pack_m46_6_c_ai_screen_help.ps1`
+- `tools\check_m46_6_c_ai_screen_help_repo_contract.ps1`
+- `backend\scripts\m46_6_c_ai_screen_help_check.js`
+- `backend\src\ai\jobGuide\screenCatalog.js`
+- `backend\src\ai\jobGuide\jobs\screenMenuGuide.js`
+- `backend\src\ai\jobGuide\jobs\buttonActionGuide.js`
+- `backend\src\ai\jobGuide\jobs\roleHelpGuide.js`
+- `web\src\components\copilot\MenuPurposeCard.jsx`
+- `web\src\components\copilot\ButtonGuidesCard.jsx`
+- `web\src\components\copilot\ScreenMenusCard.jsx`
+- `docs\RUNBOOK_M46_6_C_AI_SCREEN_HELP.md`

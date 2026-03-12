@@ -120,3 +120,56 @@ Bu ekran login yerine geçen düşük sürtünmeli takip ekranıdır; yönetimse
 
 - parent invite ve personel/public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
 - personel public link, vardiya bitse bile link süresi dolana kadar ENDED/final ekranı açabilir
+
+
+---
+
+## M46.6 — Copilot / Rehber / Screen Help UI standardı
+
+### Copilot görünüm modu
+- **Rehber**
+- **Gelişmiş**
+
+Not:
+- Copilot çekirdeği korunur
+- varsayılan kullanıcı deneyimi sade Türkçe rehber ağırlıklıdır
+
+### Rehber blok sırası
+1. Bu iş ne?
+2. Şimdi bunu yap
+3. Sonra bunu yap
+4. Bunu yapma
+5. Başlamadan önce kontrol
+6. Buradan aç
+7. Adım adım ilerle
+8. Bu neden kapalı?
+9. Sık hata
+10. Bittiğini nasıl anlarsın?
+11. Takıldıysan buraya git
+12. Bu ne demek?
+13. Örnek doğru / yanlış
+14. Hazır metin
+
+### Screen help blokları
+- **Bu ekran ne için var?**
+- **Bu menü ne için var?**
+- **Bu ekrandaki butonlar**
+- **Bu rolde ne yapabilirim?**
+
+### Ekran / buton yardımı
+Kritik butonlarda sistem şunları açıklayabilir:
+- bu buton ne yapar
+- ne zaman kullanılır
+- basınca ne olur
+- neden kapalı olabilir
+
+### Konum kaynağı dili
+- **sürücünün telefon GPS'i**
+- **cihaz GPS'i**
+- **konum kaynağı**
+
+### Yardım tonu
+- kısa cümle
+- sade Türkçe
+- teknik terim minimum
+- düşük bilgi seviyesine uygun anlatım

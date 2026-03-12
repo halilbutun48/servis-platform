@@ -175,3 +175,36 @@ Bu link personelin sadece kendi servis/ETA/navigasyon bilgisini açar ve düşü
 - Parent invite ve personel public live link varsayılan self-serve akışlarıdır.
 - Preset süreler: **1 hafta / 1 ay / 6 ay / 1 yıl**.
 - Personel public link, güvenlik gereği ham tokenı sadece ilk üretimde gösterir.
+
+
+---
+
+## M46.6 — Yardım / Rehber / Ekran Desteği
+
+Amaç:
+- düşük bilişsel yükle çalışan Türkçe yardım katmanı
+- Copilot çekirdeğini bozmadan üstüne rehber eklemek
+- kullanıcıyı düşündürmeden doğru adıma yönlendirmek
+
+Alt parçalar:
+- **M46.6-A:** Job Guide / Rehber modu
+- **M46.6-B:** Precheck + locked reason + quick actions
+- **M46.6-T:** Konum kaynağı rehberi
+- **M46.6-C:** Screen help / button guide / role help
+
+Ürün dili kararları:
+- agreement yerine **sözleşme**
+- offer yerine **teklif**
+- assignment yerine **atama**
+- driver GPS yerine **sürücünün telefon GPS'i**
+- device GPS yerine **cihaz GPS'i**
+
+Rol bazlı yardım seviyesi:
+- Operasyon Copilot: `SUPER_ADMIN`, `ROOM`, `COMPANY`, `SCHOOL`, `ORGANIZATION`
+- Basit rehber: `DRIVER`, `PERSONEL`, `PARENT`
+
+Kural:
+- yardım katmanı read-only / suggestion-first kalır
+- scope dışı bilgi vermez
+- gerekiyorsa **Buradan aç** tarzı yönlendirme üretir
+- mevcut `POST /api/ai/copilot` hattı korunur

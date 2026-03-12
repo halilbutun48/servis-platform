@@ -20,6 +20,10 @@ Current GREEN ref:
 - **M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK**
 - **M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN PACK PASS OK**
 - **M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION PACK PASS OK**
+- **M46.6-A AI JOB GUIDE PACK PASS OK**
+- **M46.6-B AI JOB GUIDE PRECHECK PACK PASS OK**
+- **M46.6-T AI LOCATION SOURCE GUIDE PACK PASS OK**
+- **M46.6-C AI SCREEN HELP PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
@@ -39,15 +43,59 @@ Bu dosya iki amaç taşır:
 - **Step 3.3 (M46.3):** AI Copilot Quality + Evidence **resmi green**
 - **Step 3.4 (M46.4):** AI Copilot Decision Consistency + Action Plan **resmi green**
 - **Step 3.5 (M46.5):** AI Copilot Action Prioritization + Evidence Calibration **resmi green**
-- **Step 3.6:** Sonraki AI katmanı / M46.6 **henüz sabitlenmedi**
+- **Step 3.6-A (M46.6-A):** AI Job Guide **resmi green**
+- **Step 3.6-B (M46.6-B):** AI Job Guide Precheck + Quick Actions **resmi green**
+- **Step 3.6-T (M46.6-T):** AI Location Source Guide **resmi green**
+- **Step 3.6-C (M46.6-C):** AI Screen Help **resmi green**
+- **Step 3.7:** Sonraki sohbet/yardım kabuğu (örn. M46.6-D) **henüz sabitlenmedi**
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
 > Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
 > Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri PASS durumundadır.  
-> M43, M44, M45, M46, M46.1, M46.2, M46.3, M46.4 ve M46.5 hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
+> M43, M44, M45, M46, M46.1, M46.2, M46.3, M46.4, M46.5 ve M46.6-A/B/T/C hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
 > Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
 > Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
+
+---
+
+
+## Step 3.6 — M46.6 Yardım/Rehber Hattı
+
+### M46.6-A — Job Guide
+- [ ] Rehber sekmesi açılıyor
+- [ ] Gelişmiş sekmesi korunuyor
+- [ ] Teklifi inceleme rehberi dönüyor
+- [ ] Teklifi onaylama rehberi dönüyor
+- [ ] Araç ile sürücüyü bağlama rehberi dönüyor
+- [ ] Metinler sade Türkçe
+
+### M46.6-B — Precheck + Quick Actions
+- [ ] Başlamadan önce kontrol görünüyor
+- [ ] Hazır / Eksik var / Devam edemezsin durumu geliyor
+- [ ] Bu neden kapalı bölümü görünüyor
+- [ ] Buradan aç hızlı yönlendirmesi geliyor
+- [ ] Takıldıysan buraya git bölümü görünüyor
+
+### M46.6-T — Konum Kaynağı Rehberi
+- [ ] Konum kaynağı rehberi açılıyor
+- [ ] sürücünün telefon GPS'i ifadesi kullanılıyor
+- [ ] cihaz GPS'i ifadesi kullanılıyor
+- [ ] telematics create rehberi dönüyor
+- [ ] GPS sinyal teşhisi rehberi dönüyor
+
+### M46.6-C — Screen / Button / Role Help
+- [ ] Bu ekran ne için var bölümü görünüyor
+- [ ] Bu ekrandaki butonlar bölümü görünüyor
+- [ ] DRIVER role help açılıyor
+- [ ] PERSONEL role help açılıyor
+- [ ] PARENT role help açılıyor
+
+**Çıkış kriteri:**
+- [ ] `tools\pack_m46_6_a_ai_job_guide.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `tools\pack_m46_6_b_ai_job_guide_precheck.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `tools\pack_m46_6_t_ai_location_source_guide.ps1 -RepoRoot D:\servis-platform` PASS
+- [ ] `tools\pack_m46_6_c_ai_screen_help.ps1 -RepoRoot D:\servis-platform` PASS
 
 ---
 

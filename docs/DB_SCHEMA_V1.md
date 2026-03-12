@@ -263,4 +263,20 @@ Telematics için araça bağlı cihaz kaydı eklenmiştir. Minimum alanlar:
 - `lastSeenAt`
 - `lastIngestAt`
 
-Amaç: driver telefon GPS hattını bozmadan, cihaz/vendor kaynaklı konumu aynı `GpsLast` / `GpsPoint` hattına normalize ederek yazmak.
+Amaç: sürücünün telefon GPS'i hattını bozmadan, cihaz/vendor kaynaklı konumu aynı `GpsLast` / `GpsPoint` hattına normalize ederek yazmak.
+
+
+---
+
+## M46.6 notu — DB değişikliği yok
+
+M46.6-A / M46.6-B / M46.6-T / M46.6-C hatları yardım / rehber / screen-help katmanıdır.
+
+Bu hatlarda:
+- yeni Prisma model zorunlu değildir
+- yeni tablo zorunlu değildir
+- yardım içeriği mevcut entity / route / scope verileri üstünden üretilir
+
+Özet:
+- yardım katmanı uygulama mantığı ve mevcut veri modeli üstünde çalışır
+- kalıcı veritabanı şeması değişikliği gerektirmez
