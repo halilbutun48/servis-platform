@@ -6,7 +6,7 @@ function firstId(resp) {
 }
 
 async function main() {
-  banner("M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN CHECK");
+  banner("M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION CHECK");
 
   step("login demo users");
   const roomToken = await login("room@demo.com", "demo123");
@@ -27,40 +27,42 @@ async function main() {
   const vehicleId = firstId(roomVehicles);
   must("room vehicle id found", !!vehicleId);
 
-  step("shift summary returns decision consistency fields");
+  step("shift summary returns prioritized action plan");
   const summary = await reqJson("POST", "/api/ai/copilot", {
     token: roomToken,
     body: { intent: "SHIFT_SUMMARY", entityType: "shift", entityId: roomShiftId },
   });
   must("shift summary ok", summary.ok && summary.json?.intent === "SHIFT_SUMMARY");
-  must("copilot version upgraded", ["M46.4","M46.5"].includes(summary.json?.copilotVersion));
-  must("overall status visible", typeof summary.json?.overallStatus === "string" && summary.json.overallStatus.length > 0);
-  must("actionability visible", typeof summary.json?.actionability === "string" && summary.json.actionability.length > 0);
-  must("data freshness visible", typeof summary.json?.dataFreshness === "string" && summary.json.dataFreshness.length > 0);
-  must("coverage visible", typeof summary.json?.coverage === "string" && summary.json.coverage.length > 0);
-  must("recommended actions visible", Array.isArray(summary.json?.recommendedActions) && summary.json.recommendedActions.length > 0);
-  must("consistency checks visible", Array.isArray(summary.json?.consistencyChecks) && summary.json.consistencyChecks.length > 0);
-  must("missing data visible", Array.isArray(summary.json?.missingData));
-  must("blockers visible", Array.isArray(summary.json?.blockers));
+  must("copilot version upgraded", summary.json?.copilotVersion === "M46.5");
+  must("recommended first action visible", !!summary.json?.recommendedFirstAction?.title);
+  must("action plan summary visible", typeof summary.json?.actionPlanSummary === "string" && summary.json.actionPlanSummary.length > 20);
+  must("calibration notes visible", Array.isArray(summary.json?.calibrationNotes) && summary.json.calibrationNotes.length > 0);
+  must("priority score visible", typeof summary.json?.recommendedActions?.[0]?.priorityScore === "number");
+  must("whyNow visible", typeof summary.json?.recommendedActions?.[0]?.whyNow === "string" && summary.json.recommendedActions[0].whyNow.length > 0);
+  must("evidence links visible", Array.isArray(summary.json?.recommendedActions?.[0]?.evidenceLinks));
+  must("reference links visible", Array.isArray(summary.json?.recommendedActions?.[0]?.referenceLinks));
+  must("dependsOn visible", Array.isArray(summary.json?.recommendedActions?.[0]?.dependsOn));
+  must("blockedBy visible", Array.isArray(summary.json?.recommendedActions?.[0]?.blockedBy));
 
-  step("offer decision help exposes action plan");
+  step("offer decision help keeps prioritization");
   const offerHelp = await reqJson("POST", "/api/ai/copilot", {
     token: companyToken,
     body: { intent: "OFFER_DECISION_HELP", entityType: "shift", entityId: companyShiftId },
   });
   must("offer help ok", offerHelp.ok && offerHelp.json?.intent === "OFFER_DECISION_HELP");
-  must("offer actions visible", Array.isArray(offerHelp.json?.recommendedActions) && offerHelp.json.recommendedActions.length > 0);
-  must("offer consistency checks visible", Array.isArray(offerHelp.json?.consistencyChecks));
+  must("offer first action visible", !!offerHelp.json?.recommendedFirstAction?.title);
+  must("offer calibration notes visible", Array.isArray(offerHelp.json?.calibrationNotes));
+  must("offer priority score visible", typeof offerHelp.json?.recommendedActions?.[0]?.priorityScore === "number");
 
-  step("vehicle diagnosis exposes freshness and actionability");
+  step("vehicle diagnosis keeps calibration fields");
   const gpsDiag = await reqJson("POST", "/api/ai/copilot", {
     token: roomToken,
     body: { intent: "GPS_SIGNAL_DIAGNOSIS", entityType: "vehicle", entityId: vehicleId },
   });
   must("gps diagnosis ok", gpsDiag.ok && gpsDiag.json?.intent === "GPS_SIGNAL_DIAGNOSIS");
-  must("gps freshness visible", typeof gpsDiag.json?.dataFreshness === "string" && gpsDiag.json.dataFreshness.length > 0);
-  must("gps blockers visible", Array.isArray(gpsDiag.json?.blockers));
-  must("gps actions visible", Array.isArray(gpsDiag.json?.recommendedActions) && gpsDiag.json.recommendedActions.length > 0);
+  must("gps first action visible", !!gpsDiag.json?.recommendedFirstAction?.title);
+  must("gps calibration notes visible", Array.isArray(gpsDiag.json?.calibrationNotes));
+  must("gps action evidence links visible", Array.isArray(gpsDiag.json?.recommendedActions?.[0]?.evidenceLinks));
 
   step("ops note still keeps note draft");
   const ops = await reqJson("POST", "/api/ai/copilot", {
@@ -68,9 +70,9 @@ async function main() {
     body: { intent: "OPS_NOTE_DRAFT", entityType: "shift", entityId: roomShiftId },
   });
   must("ops note ok", ops.ok && typeof ops.json?.noteDraft === "string" && ops.json.noteDraft.length > 0);
-  must("ops overall status visible", typeof ops.json?.overallStatus === "string");
+  must("ops first action visible", !!ops.json?.recommendedFirstAction?.title);
 
-  banner("M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN CHECK PASS");
+  banner("M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION CHECK PASS");
 }
 
 main().catch((e) => {

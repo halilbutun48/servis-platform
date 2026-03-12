@@ -260,7 +260,121 @@ function buildVehicleActions(context, base, missingData, blockers) {
   return actions.slice(0, 4);
 }
 
-function buildConsistencyChecks(base, context, recommendedActions, overallStatus, actionability, dataFreshness, coverage, missingData, blockers) {
+function actionPriorityBase(priority) {
+  if (priority === "HIGH") return 82;
+  if (priority === "MEDIUM") return 58;
+  return 34;
+}
+
+function matchesActionTopic(text, fragments) {
+  const hay = String(text || "").toLowerCase();
+  return (Array.isArray(fragments) ? fragments : []).some((part) => hay.includes(String(part || "").toLowerCase()));
+}
+
+function deriveActionBlockedBy(actionItem, blockers, missingData) {
+  const text = `${actionItem?.title || ""} ${actionItem?.reason || ""}`;
+  return unique([...(blockers || []), ...(missingData || [])].filter((item) => {
+    const sample = String(item || "").toLowerCase();
+    if (matchesActionTopic(text, ["araç", "vehicle"])) return sample.includes("araç") || sample.includes("vehicle");
+    if (matchesActionTopic(text, ["sürücü", "driver"])) return sample.includes("sürücü") || sample.includes("driver");
+    if (matchesActionTopic(text, ["durak", "rota", "stop"])) return sample.includes("durak") || sample.includes("stop") || sample.includes("rota");
+    if (matchesActionTopic(text, ["offer", "teklif"])) return sample.includes("offer") || sample.includes("teklif") || sample.includes("karar");
+    if (matchesActionTopic(text, ["gps", "signal", "device", "ingest", "stale", "telematics"])) return sample.includes("gps") || sample.includes("device") || sample.includes("signal") || sample.includes("stale") || sample.includes("telematics");
+    return false;
+  })).slice(0, 3);
+}
+
+function deriveActionDependsOn(actionItem, context) {
+  const text = `${actionItem?.title || ""} ${actionItem?.reason || ""}`;
+  const out = [];
+  if (matchesActionTopic(text, ["sürücü", "driver"]) && !context?.vehicleId) out.push("Araç seçimi netleşmeli.");
+  if (matchesActionTopic(text, ["offer", "teklif"]) && String(context?.roomOfferDecision || "") === "PENDING") out.push("Bekleyen room offer kararı netleşmeli.");
+  if (matchesActionTopic(text, ["gps", "signal", "device", "ingest", "stale"]) && !Number(context?.activeDeviceCount || 0)) out.push("Önce ACTIVE device hattı görünür olmalı.");
+  if (matchesActionTopic(text, ["durak", "rota", "stop"]) && !context?.roomId && context?.type === "shift") out.push("Room/scope ataması görünür olmalı.");
+  for (const item of actionItem?.preconditions || []) out.push(item);
+  return unique(out).slice(0, 4);
+}
+
+function deriveActionPriorityScore(actionItem, context, overallStatus, dataFreshness, blockedBy, missingData) {
+  let score = actionPriorityBase(actionItem?.priority);
+  score += Math.min(12, (blockedBy || []).length * 6);
+  score += Math.min(8, (missingData || []).length * 2);
+  if (overallStatus === "BLOCKED" && actionItem?.priority === "HIGH") score += 8;
+  if (dataFreshness === "STALE" && matchesActionTopic(actionItem?.title, ["gps", "signal", "device", "ingest", "stale"])) score += 8;
+  if (matchesActionTopic(actionItem?.title, ["offer", "teklif"]) && Number(context?.openOfferCount || 0) > 0) score += 6;
+  if (matchesActionTopic(actionItem?.title, ["durak", "rota", "stop"]) && !Number(context?.stopCount || 0)) score += 7;
+  if (matchesActionTopic(actionItem?.title, ["araç", "vehicle"]) && !context?.vehicleId) score += 8;
+  if (matchesActionTopic(actionItem?.title, ["sürücü", "driver"]) && !context?.driverId) score += 8;
+  return Math.round(clamp(25, score, 99));
+}
+
+function deriveActionWhyNow(actionItem, overallStatus, dataFreshness, blockedBy, missingData) {
+  const notes = [];
+  if (overallStatus === "BLOCKED") notes.push("karar katmanı şu an blocked durumda");
+  else if (overallStatus === "ATTENTION") notes.push("karar katmanı dikkat istiyor");
+  if (blockedBy?.length) notes.push(`doğrudan ilişkili blocker: ${blockedBy[0]}`);
+  else if (missingData?.length) notes.push(`eksik veri baskısı: ${missingData[0]}`);
+  if (dataFreshness === "STALE") notes.push("veri güncelliği stale");
+  if (dataFreshness === "UNKNOWN") notes.push("veri güncelliği tam doğrulanamadı");
+  if (!notes.length) notes.push(actionItem?.reason || "aksiyon planı ilk sıraya alınmalı");
+  return notes.join("; ") + ".";
+}
+
+function calibrateActionPlan(recommendedActions, context, base, meta) {
+  const enriched = (Array.isArray(recommendedActions) ? recommendedActions : []).map((item, index) => {
+    const blockedBy = deriveActionBlockedBy(item, meta?.blockers, meta?.missingData);
+    const dependsOn = deriveActionDependsOn(item, context);
+    const priorityScore = deriveActionPriorityScore(item, context, meta?.overallStatus, meta?.dataFreshness, blockedBy, meta?.missingData);
+    const evidenceLinks = unique(item?.linkedEvidence || []).slice(0, 3);
+    const referenceLinks = unique(item?.linkedReferences || []).slice(0, 5);
+    return {
+      ...item,
+      blockedBy,
+      dependsOn,
+      evidenceLinks,
+      referenceLinks,
+      priorityScore,
+      whyNow: deriveActionWhyNow(item, meta?.overallStatus, meta?.dataFreshness, blockedBy, meta?.missingData),
+      sortIndex: index,
+    };
+  }).sort((a, b) => {
+    if ((b?.priorityScore || 0) !== (a?.priorityScore || 0)) return (b?.priorityScore || 0) - (a?.priorityScore || 0);
+    return (a?.sortIndex || 0) - (b?.sortIndex || 0);
+  }).map(({ sortIndex, ...rest }) => rest);
+
+  const recommendedFirstAction = enriched[0]
+    ? {
+        title: enriched[0].title,
+        priority: enriched[0].priority,
+        priorityScore: enriched[0].priorityScore,
+        whyNow: enriched[0].whyNow,
+        blockedBy: enriched[0].blockedBy,
+        evidenceLinks: enriched[0].evidenceLinks,
+        referenceLinks: enriched[0].referenceLinks,
+      }
+    : null;
+
+  const calibrationNotes = [];
+  if (meta?.dataFreshness === "STALE") calibrationNotes.push("STALE veri nedeniyle aksiyon öncelikleri canlı sinyal / ingest düzeltmelerine kaydırıldı.");
+  if (meta?.coverage === "WEAK") calibrationNotes.push("Coverage WEAK olduğu için yüksek öncelikli aksiyonlar daha fazla doğrulama adımıyla okunmalı.");
+  if (meta?.coverage === "PARTIAL") calibrationNotes.push("Coverage PARTIAL; karar özetini referans ve evidence ile birlikte okumak gerekir.");
+  if ((meta?.missingData || []).length) calibrationNotes.push(`Eksik veri sayısı ${(meta?.missingData || []).length}; öncelik puanı eksik veri baskısını da içerir.`);
+  if ((meta?.blockers || []).length) calibrationNotes.push(`Blocker sayısı ${(meta?.blockers || []).length}; ilk aksiyon blocker çözmeye daha yakın seçildi.`);
+  if ((enriched[0]?.evidenceLinks || []).length === 0) calibrationNotes.push("İlk aksiyon için linked evidence zayıf; reference ve nextChecks birlikte okunmalı.");
+
+  const actionPlanSummary = recommendedFirstAction
+    ? `İlk önerilen aksiyon: ${recommendedFirstAction.title} (score ${recommendedFirstAction.priorityScore}). ${recommendedFirstAction.whyNow}`
+    : "İlk önerilen aksiyon üretilemedi.";
+
+  return {
+    recommendedActions: enriched.slice(0, 4),
+    recommendedFirstAction,
+    calibrationNotes: unique(calibrationNotes).slice(0, 5),
+    actionPlanSummary,
+  };
+}
+
+function buildConsistencyChecks(base, context, recommendedActions, overallStatus, actionability, dataFreshness, coverage, missingData, blockers, recommendedFirstAction, calibrationNotes) {
   const checks = [];
   const confidence = roundConfidence(base?.confidence);
   const evidenceCount = Array.isArray(base?.evidence) ? base.evidence.length : 0;
@@ -289,6 +403,21 @@ function buildConsistencyChecks(base, context, recommendedActions, overallStatus
     status: actionability === "READY" && ((missingData || []).length || (blockers || []).length) ? "WARN" : "GOOD",
     detail: `actionability=${actionability}, missingData=${(missingData || []).length}, blockers=${(blockers || []).length}`,
   });
+  checks.push({
+    label: "Priority vs Evidence Links",
+    status: (recommendedActions || []).some((x) => Number(x?.priorityScore || 0) >= 80 && !(x?.evidenceLinks || []).length) ? "WARN" : "GOOD",
+    detail: `priority80+=${(recommendedActions || []).filter((x) => Number(x?.priorityScore || 0) >= 80).length}`,
+  });
+  checks.push({
+    label: "First Action Availability",
+    status: recommendedFirstAction?.title ? "GOOD" : "WARN",
+    detail: recommendedFirstAction?.title ? `first=${recommendedFirstAction.title}` : "first action missing",
+  });
+  checks.push({
+    label: "Calibration Notes",
+    status: (calibrationNotes || []).length ? "GOOD" : "WARN",
+    detail: `calibrationNotes=${(calibrationNotes || []).length}`,
+  });
   if (context?.type === "vehicle") {
     checks.push({
       label: "Vehicle Signal Context",
@@ -296,7 +425,7 @@ function buildConsistencyChecks(base, context, recommendedActions, overallStatus
       detail: `currentShiftIds=${(context?.currentShiftIds || []).length}, gpsLastAt=${context?.gpsLast?.at || '-'}`,
     });
   }
-  return checks.slice(0, 6);
+  return checks.slice(0, 8);
 }
 
 function providerSummary(base, decisionMeta) {
@@ -304,7 +433,8 @@ function providerSummary(base, decisionMeta) {
   const evidence = Array.isArray(base?.evidence) ? `evidence=${base.evidence.length}` : null;
   const overallStatus = decisionMeta?.overallStatus ? `overall=${decisionMeta.overallStatus}` : null;
   const actionability = decisionMeta?.actionability ? `actionability=${decisionMeta.actionability}` : null;
-  return [confidence, evidence, overallStatus, actionability].filter(Boolean).join(" • ");
+  const firstAction = decisionMeta?.recommendedFirstAction?.title ? `firstAction=${decisionMeta.recommendedFirstAction.title}` : null;
+  return [confidence, evidence, overallStatus, actionability, firstAction].filter(Boolean).join(" • ");
 }
 
 function enrichDecisionLayer(intent, context, base) {
@@ -313,12 +443,32 @@ function enrichDecisionLayer(intent, context, base) {
   const overallStatus = deriveOverallStatus(base, blockers, missingData);
   const dataFreshness = deriveDataFreshness(context);
   const coverage = deriveCoverage(base, missingData);
-  const recommendedActions = context?.type === "vehicle"
+  const rawActions = context?.type === "vehicle"
     ? buildVehicleActions(context, base, missingData, blockers)
     : buildShiftActions(intent, context, base, missingData, blockers);
-  const consistencyChecks = buildConsistencyChecks(base, context, recommendedActions, overallStatus, "REVIEW_NEEDED", dataFreshness, coverage, missingData, blockers);
+  const consistencyChecks = buildConsistencyChecks(base, context, rawActions, overallStatus, "REVIEW_NEEDED", dataFreshness, coverage, missingData, blockers, null, []);
   const actionability = deriveActionability(overallStatus, blockers, missingData, consistencyChecks);
-  const fixedConsistencyChecks = buildConsistencyChecks(base, context, recommendedActions, overallStatus, actionability, dataFreshness, coverage, missingData, blockers);
+  const actionPlan = calibrateActionPlan(rawActions, context, base, {
+    overallStatus,
+    actionability,
+    dataFreshness,
+    coverage,
+    missingData,
+    blockers,
+  });
+  const fixedConsistencyChecks = buildConsistencyChecks(
+    base,
+    context,
+    actionPlan.recommendedActions,
+    overallStatus,
+    actionability,
+    dataFreshness,
+    coverage,
+    missingData,
+    blockers,
+    actionPlan.recommendedFirstAction,
+    actionPlan.calibrationNotes,
+  );
 
   return {
     overallStatus,
@@ -327,7 +477,10 @@ function enrichDecisionLayer(intent, context, base) {
     coverage,
     missingData,
     blockers,
-    recommendedActions,
+    recommendedActions: actionPlan.recommendedActions,
+    recommendedFirstAction: actionPlan.recommendedFirstAction,
+    calibrationNotes: actionPlan.calibrationNotes,
+    actionPlanSummary: actionPlan.actionPlanSummary,
     consistencyChecks: fixedConsistencyChecks,
   };
 }
@@ -349,7 +502,7 @@ export async function runCopilotFoundation({ intent, entityType, entityId, user 
   const decisionMeta = enrichDecisionLayer(intent, context, base);
   return {
     ok: true,
-    copilotVersion: "M46.4",
+    copilotVersion: "M46.5",
     generatedAt: new Date().toISOString(),
     intent,
     intentLabel: intentLabel(intent),

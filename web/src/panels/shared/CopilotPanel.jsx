@@ -12,7 +12,7 @@ const INTENT_OPTIONS = [
   { value: "GPS_SIGNAL_DIAGNOSIS", label: "GPS Sinyal Teşhisi", helper: "Signal/ingest teşhisi", entityType: "vehicle" },
 ];
 
-const HISTORY_KEY = "copilot.history.m46_4";
+const HISTORY_KEY = "copilot.history.m46_5";
 
 function firstList(resp) {
   if (Array.isArray(resp)) return resp;
@@ -107,6 +107,17 @@ function DecisionBadge({ label, value }) {
       <span>{value || "-"}</span>
     </div>
   );
+}
+
+function priorityTone(score) {
+  if (Number(score || 0) >= 85) return signalStyle("BLOCKED");
+  if (Number(score || 0) >= 60) return signalStyle("WARN");
+  return signalStyle("GOOD");
+}
+
+function actionPriorityLabel(action) {
+  const score = Number(action?.priorityScore || 0);
+  return `${action?.priority || "-"} • ${score || 0}`;
 }
 
 export default function CopilotPanel() {
@@ -332,6 +343,32 @@ export default function CopilotPanel() {
             </div>
           ) : null}
 
+          {result.recommendedFirstAction ? (
+            <div style={{ borderRadius: 12, padding: 12, ...priorityTone(result.recommendedFirstAction.priorityScore) }}>
+              <div className="title" style={{ fontSize: 16 }}>First Action</div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+                <div style={{ fontWeight: 700 }}>{result.recommendedFirstAction.title || "-"}</div>
+                <div style={{ borderRadius: 999, padding: "2px 8px", ...priorityTone(result.recommendedFirstAction.priorityScore) }}>
+                  {actionPriorityLabel(result.recommendedFirstAction)}
+                </div>
+              </div>
+              <div className="muted" style={{ marginTop: 8 }}><b>Neden şimdi:</b> {result.recommendedFirstAction.whyNow || "-"}</div>
+              {result.actionPlanSummary ? <div className="muted" style={{ marginTop: 8 }}>{result.actionPlanSummary}</div> : null}
+              {result.recommendedFirstAction.blockedBy?.length ? <div style={{ marginTop: 8 }}><b>Blocked by:</b> {result.recommendedFirstAction.blockedBy.join(" • ")}</div> : null}
+              {result.recommendedFirstAction.evidenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Evidence links:</b> {result.recommendedFirstAction.evidenceLinks.join(" • ")}</div> : null}
+              {result.recommendedFirstAction.referenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Reference links:</b> {result.recommendedFirstAction.referenceLinks.join(", ")}</div> : null}
+            </div>
+          ) : null}
+
+          {result.calibrationNotes?.length ? (
+            <div>
+              <div className="title" style={{ fontSize: 16 }}>Calibration Notes</div>
+              <ul>
+                {result.calibrationNotes.map((x, i) => <li key={i}>{x}</li>)}
+              </ul>
+            </div>
+          ) : null}
+
           {result.highlights?.length ? (
             <div>
               <div className="title" style={{ fontSize: 16 }}>Highlights</div>
@@ -349,14 +386,17 @@ export default function CopilotPanel() {
                   <div key={`${x.title || 'action'}:${i}`} style={{ border: "1px solid #d0d5dd", borderRadius: 12, padding: 12, display: "grid", gap: 8 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 700 }}>{x.title || "-"}</div>
-                      <div style={{ borderRadius: 999, padding: "2px 8px", ...decisionTone(x.priority === 'HIGH' ? 'BLOCKED' : x.priority === 'MEDIUM' ? 'ATTENTION' : 'OK') }}>
-                        {x.priority || "-"}
+                      <div style={{ borderRadius: 999, padding: "2px 8px", ...priorityTone(x.priorityScore) }}>
+                        {actionPriorityLabel(x)}
                       </div>
                     </div>
                     <div className="muted">{x.reason || "-"}</div>
+                    {x.whyNow ? <div><b>Neden şimdi:</b> {x.whyNow}</div> : null}
                     {x.preconditions?.length ? <div><b>Ön koşullar:</b> {x.preconditions.join(" • ")}</div> : null}
-                    {x.linkedEvidence?.length ? <div><b>Linked evidence:</b> {x.linkedEvidence.join(" • ")}</div> : null}
-                    {x.linkedReferences?.length ? <div><b>Linked references:</b> {x.linkedReferences.join(", ")}</div> : null}
+                    {x.dependsOn?.length ? <div><b>Depends on:</b> {x.dependsOn.join(" • ")}</div> : null}
+                    {x.blockedBy?.length ? <div><b>Blocked by:</b> {x.blockedBy.join(" • ")}</div> : null}
+                    {x.evidenceLinks?.length ? <div><b>Evidence links:</b> {x.evidenceLinks.join(" • ")}</div> : null}
+                    {x.referenceLinks?.length ? <div><b>Reference links:</b> {x.referenceLinks.join(", ")}</div> : null}
                   </div>
                 ))}
               </div>
@@ -475,9 +515,12 @@ export default function CopilotPanel() {
       <div className="card">
         <div className="title" style={{ fontSize: 16 }}>Kısa Not</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          Bu decision consistency sürümü deterministic çalışır; structured JSON döndürür, read-only / suggestion-first kalır, audit log’a <code>AI_COPILOT_QUERY</code> yazar ve ROOM / SUPER_ADMIN için step-up çizgisini korur.
+          Bu action prioritization sürümü deterministic çalışır; structured JSON döndürür, read-only / suggestion-first kalır, audit log’a <code>AI_COPILOT_QUERY</code> yazar ve ROOM / SUPER_ADMIN için step-up çizgisini korur.
         </div>
       </div>
     </div>
   );
 }
+
+
+

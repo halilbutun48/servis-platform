@@ -20,8 +20,8 @@ foreach($f in $files){
 }
 
 Write-Host "INFO Checking compatibility updates"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") '["M46.1","M46.2","M46.3","M46.4"]' "m46.1 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") '["M46.2","M46.3","M46.4"]' "m46.2 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") '["M46.1","M46.2","M46.3","M46.4","M46.5"]' "m46.1 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") '["M46.2","M46.3","M46.4","M46.5"]' "m46.2 check accepts forward versions"
 MustContain (Join-Path $RepoRoot "tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1") 'copilotVersion:' "m46.2 repo-contract accepts forward versions"
 
 Write-Host "INFO Checking backend quality/evidence wiring"
@@ -42,3 +42,5 @@ MustContain $panel 'Evidence' "panel renders evidence section"
 MustContain $panel 'Decision Signals' "panel renders decision signals section"
 
 Write-Host "M46.3 AI COPILOT QUALITY + EVIDENCE REPO CONTRACT PASS"
+
+
