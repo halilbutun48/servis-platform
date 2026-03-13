@@ -1,7 +1,7 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
 
 Timezone: Europe/Istanbul  
-Last updated: **2026-03-12**  
+Last updated: **2026-03-13**  
 Current GREEN ref:
 - **M41 PACK PASS**
 - **M42 OPTIONAL PACK PASS**
@@ -24,376 +24,141 @@ Current GREEN ref:
 - **M46.6-B AI JOB GUIDE PRECHECK PACK PASS OK**
 - **M46.6-T AI LOCATION SOURCE GUIDE PACK PASS OK**
 - **M46.6-C AI SCREEN HELP PACK PASS OK**
+- **M46.6-D AI CHAT SHELL PACK PASS OK**
+- **M46.6-D2 AI CONTEXT CHAT PACK PASS OK**
+- **M46.6-D3 AI ACTIONABLE CHAT PACK PASS OK**
+- **M46.6-C2 SCREEN COVERAGE + TERMINOLOGY PACK PASS OK**
+- **M46.6-D4 SIMPLE ROLE MODE PACK PASS OK**
 
 Bu dosya iki amaç taşır:
-1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)  
-2) **M42 Optional Release + Step 0.6 + Step 1 + Step 2 / Step 3 sonrası ekler** (ana regresyonu bozmadan ayrı doğrulanır)
+1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)
+2) **M42 Optional + Step 0.6 + Step 1 + M43→M46.6-D4 üst katmanları** (ana regresyonu bozmadan ayrı doğrulanır)
 
-**Yol Haritası (Sıralı)**
+## Yol Haritası (Sıralı)
 - **Step 0:** V1 Manuel Checklist %100 PASS
-- **Step 0.5 (M42):** Check-in modülü **tamam ama opsiyonel release**
-- **Step 0.6:** Stabil ekler **ayrı pack ile resmi doğrulanmış**
-- **Step 1:** Minimum Security **resmi green**
-- **Step 2 (M43):** Google Auth (GIS) + Invite Gate (rol/scope güvenliği) **resmi green**
-- **Step 2.5 (M44):** Telematics (Normalize Core + Direct HTTP Push + Vendor Cloud) **resmi green**
-- **Step 2.6 (M45):** 2Y Retention + GPS geçmiş + Backup/PITR **resmi green**
-- **Step 3 (M46):** AI Copilot Foundation **resmi green**
-- **Step 3.1 (M46.1):** AI Copilot Enrichment **resmi green**
-- **Step 3.2 (M46.2):** AI Copilot Intent Expansion **resmi green**
-- **Step 3.3 (M46.3):** AI Copilot Quality + Evidence **resmi green**
-- **Step 3.4 (M46.4):** AI Copilot Decision Consistency + Action Plan **resmi green**
-- **Step 3.5 (M46.5):** AI Copilot Action Prioritization + Evidence Calibration **resmi green**
-- **Step 3.6-A (M46.6-A):** AI Job Guide **resmi green**
-- **Step 3.6-B (M46.6-B):** AI Job Guide Precheck + Quick Actions **resmi green**
-- **Step 3.6-T (M46.6-T):** AI Location Source Guide **resmi green**
-- **Step 3.6-C (M46.6-C):** AI Screen Help **resmi green**
-- **Step 3.7:** Sonraki sohbet/yardım kabuğu (örn. M46.6-D) **henüz sabitlenmedi**
+- **Step 0.5 (M42):** Check-in modülü tamam, optional release olarak doğrulandı
+- **Step 0.6:** Stabil ekler ayrı pack ile resmi green
+- **Step 1:** Minimum Security + TOTP Step-up resmi green
+- **Step 2 (M43):** Google Auth + Invite Gate resmi green
+- **Step 2.5 (M44):** Telematics resmi green
+- **Step 2.6 (M45):** Retention + Backup resmi green
+- **Step 3 (M46):** AI Copilot Foundation resmi green
+- **Step 3.1:** Enrichment resmi green
+- **Step 3.2:** Intent Expansion resmi green
+- **Step 3.3:** Quality + Evidence resmi green
+- **Step 3.4:** Decision Consistency + Action Plan resmi green
+- **Step 3.5:** Action Prioritization + Evidence Calibration resmi green
+- **Step 3.6-A:** AI Job Guide resmi green
+- **Step 3.6-B:** AI Job Guide Precheck resmi green
+- **Step 3.6-T:** AI Location Source Guide resmi green
+- **Step 3.6-C:** AI Screen Help resmi green
+- **Step 3.6-D:** AI Chat Shell resmi green
+- **Step 3.6-D2:** AI Context Chat resmi green
+- **Step 3.6-D3:** AI Actionable Chat resmi green
+- **Step 3.6-C2:** Screen Coverage + Terminology resmi green
+- **Step 3.6-D4:** Simple Role Mode resmi green
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
-> M42 bunun üstüne **ayrı optional pack** ile doğrulanır.  
-> Step 0.6 ve Step 1 hatları da **ayrı pack/check setleriyle resmi olarak doğrulanmıştır**.  
-> Repo hijyen tarafında M104 + M105 + M106 cleanup/check setleri PASS durumundadır.  
-> M43, M44, M45, M46, M46.1, M46.2, M46.3, M46.4, M46.5 ve M46.6-A/B/T/C hatları runtime + repo-contract + tek pack ile PASS durumundadır.  
-> Üst milestone’lar alt milestone check’lerini bozmayacak şekilde ilerletilir.  
-> Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
+> Üst katmanlar ayrı resmi pack/check hatlarıyla doğrulanır.  
+> Overlay standardı: **tek zip / tek kök klasör / nested root yok**.  
+> Üst milestone’lar alt milestone check uyumluluğunu bozmaz.
 
 ---
 
-
-## Step 3.6 — M46.6 Yardım/Rehber Hattı
+## Step 3.6 — M46.6 Yardım / Rehber / Sohbet Hattı
 
 ### M46.6-A — Job Guide
-- [ ] Rehber sekmesi açılıyor
-- [ ] Gelişmiş sekmesi korunuyor
-- [ ] Teklifi inceleme rehberi dönüyor
-- [ ] Teklifi onaylama rehberi dönüyor
-- [ ] Araç ile sürücüyü bağlama rehberi dönüyor
-- [ ] Metinler sade Türkçe
+- [x] Rehber sekmesi açılıyor
+- [x] Gelişmiş sekmesi korunuyor
+- [x] Teklif ve atama rehberleri dönüyor
+- [x] Araç / sürücü bağlama rehberi dönüyor
+- [x] Metinler sade Türkçe
 
 ### M46.6-B — Precheck + Quick Actions
-- [ ] Başlamadan önce kontrol görünüyor
-- [ ] Hazır / Eksik var / Devam edemezsin durumu geliyor
-- [ ] Bu neden kapalı bölümü görünüyor
-- [ ] Buradan aç hızlı yönlendirmesi geliyor
-- [ ] Takıldıysan buraya git bölümü görünüyor
+- [x] Başlamadan önce kontrol görünüyor
+- [x] Hazır / Eksik var / Devam edemezsin durumu geliyor
+- [x] Bu neden kapalı bölümü görünüyor
+- [x] Buradan aç hızlı yönlendirmesi geliyor
+- [x] Takıldıysan buraya git bölümü görünüyor
 
 ### M46.6-T — Konum Kaynağı Rehberi
-- [ ] Konum kaynağı rehberi açılıyor
-- [ ] sürücünün telefon GPS'i ifadesi kullanılıyor
-- [ ] cihaz GPS'i ifadesi kullanılıyor
-- [ ] telematics create rehberi dönüyor
-- [ ] GPS sinyal teşhisi rehberi dönüyor
+- [x] `sürücünün telefon GPS'i` birincil akış olarak anlatılıyor
+- [x] `cihaz GPS'i` ek kaynak olarak anlatılıyor
+- [x] Konum kaynağı / GPS teşhis rehberi dönüyor
+- [x] Terminoloji ürün diliyle uyumlu
 
-### M46.6-C — Screen / Button / Role Help
-- [ ] Bu ekran ne için var bölümü görünüyor
-- [ ] Bu ekrandaki butonlar bölümü görünüyor
-- [ ] DRIVER role help açılıyor
-- [ ] PERSONEL role help açılıyor
-- [ ] PARENT role help açılıyor
+### M46.6-C — Screen Help
+- [x] Ekran ne için var cevabı geliyor
+- [x] Buton / menü rehberi geliyor
+- [x] Rol bazlı yardım dönüyor
+- [x] DRIVER / PERSONEL / PARENT için de yardım kapsaması var
 
-**Çıkış kriteri:**
-- [ ] `tools\pack_m46_6_a_ai_job_guide.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `tools\pack_m46_6_b_ai_job_guide_precheck.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `tools\pack_m46_6_t_ai_location_source_guide.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `tools\pack_m46_6_c_ai_screen_help.ps1 -RepoRoot D:\servis-platform` PASS
+### M46.6-D — Chat Shell
+- [x] CHAT_HELP intent aktif
+- [x] Sohbet / Rehber / Gelişmiş yapısı var
+- [x] Hızlı soru chip’leri var
+- [x] Rehber cevabı chat biçiminde sarılıyor
+- [x] read-only / suggestion-first korunuyor
 
----
+### M46.6-D2 — Context Chat
+- [x] Ekran + entity + role mode birlikte taşınıyor
+- [x] selected entity ile konuşma mantığı var
+- [x] `activeEntityLabel` ve `screenDefinition` cevapta taşınıyor
 
-## 0) Test hazırlığı (ortak)
+### M46.6-D3 — Actionable Chat
+- [x] `OPEN_ROUTE` aksiyonu var
+- [x] `OPEN_GUIDE` aksiyonu var
+- [x] `ASK` aksiyonu var
+- [x] `COPY_TEXT` aksiyonu var
+- [x] `actionPlanLabel` gösteriliyor
+- [x] Room actionable chat runtime green
+- [x] Driver simple actionable chat runtime green
 
-- [ ] COMPANY / ROOM / DRIVER ayrı oturumlar açık
-- [ ] Aynı anda en az 2 panel açık (WS invalidate için)
-- [ ] Takılınca kanıt topla:
-  - [ ] ekran görüntüsü
-  - [ ] `docker logs --tail 200 personel_api`
-  - [ ] (opsiyonel) `docker logs --tail 200 personel_redis`
+### M46.6-C2 — Screen Coverage + Terminology
+- [x] Room hub / check-in / auth-invites kapsamı var
+- [x] Company hub / georeview / check-in / auth-invites kapsamı var
+- [x] Shared notifications / logs kapsamı var
+- [x] School / Organization hub kapsamı var
+- [x] Hub / Inbound / Outbound açıklanıyor
+- [x] Giriş daveti / erişim linki farkı açıklanıyor
+- [x] Bildirim / log farkı açıklanıyor
+- [x] OSRM / Matrix / Check-in açıklanıyor
 
----
-
-# STEP 0 — V1 Ana Regresyon (M0→M41)
-
-## 0.1 Smoke
-- [ ] Web açılıyor
-- [ ] `/health` → `dbOk=true`
-- [ ] temel sayfalar render oluyor
-
-## 0.2 RBAC / route guard
-- [ ] SUPER_ADMIN / ROOM / COMPANY / DRIVER / PERSONEL login
-- [ ] Yetkisiz route → 403/redirect
-- [ ] `/admin` sadece SUPER_ADMIN
-
-## 0.3 Auth – M41
-- [ ] refresh sonrası oturum düşmüyor
-- [ ] logout sonrası korumalı sayfa açılmıyor
-- [ ] revoke sonrası eski token 401
-- [ ] driver farklı cihaz → `403 DEVICE_MISMATCH`
-
-## 0.4 KVKK – M38
-- [ ] revoke iken parent live blok
-- [ ] revoke iken driver gps blok
-- [ ] accept sonrası blok kalkıyor
-
-## 0.5 Agreement
-- [ ] agreement create
-- [ ] room approve + vehicle/driver ata
-- [ ] generated shift oluşuyor
-- [ ] agreement badge var, offer UI kapalı
-
-## 0.5.1 Link preset sanity
-- [ ] school parent invite süre presetleri: `1 hafta / 1 ay / 6 ay / 1 yıl`
-- [ ] company/school/organization personel canlı link presetleri: `1 hafta / 1 ay / 6 ay / 1 yıl`
-
-## 0.6 Offer
-- [ ] company market shift oluşturur
-- [ ] room counter/accept/reject çalışır
-- [ ] company accept sonrası shift assigned kalır
-
-## 0.7 Route/Stops
-- [ ] OUTBOUND ilk nokta hub
-- [ ] INBOUND son nokta hub
-- [ ] preview/persist tutarlı
-
-## 0.8 Live / WS / GPS
-- [ ] driver start
-- [ ] gps akıyor
-- [ ] company/room canlı panel güncelleniyor
-
-## 0.9 Rate-limit mini stres
-- [ ] hızlı gps spam sistemi kilitlemiyor
-- [ ] 429 olursa UI kontrollü davranıyor
-
-## 0.10 Audit / Retention
-- [ ] log export audit izi var
-- [ ] retention dryRun/run audit izi var
-
-## 0.11 Learning – M19
-- [ ] aynı routeKey 3 koşuda LEARNED’e dönüyor
-- [ ] routeKey değişince sayaç sıfırlanıyor
-
-**Çıkış kriteri:** `tools/pack.ps1 -To 41` PASS.
+### M46.6-D4 — Simple Role Mode
+- [x] DRIVER / PERSONEL / PARENT için daha kısa cevap var
+- [x] Daha az chip gösteriliyor
+- [x] Daha az teknik yoğunluk var
+- [x] Daha çok yönlendirme veriliyor
+- [x] D3 quick action uyumluluğu korunuyor
 
 ---
 
-# STEP 0.5 — M42 Optional Release (Check-in)
-
-## Karar
-- M42 **hazır modüldür**; yarım hazırlık değildir.
-- **Default OFF:** `FEATURE_CHECKIN=0`
-- **Optional release ON:** `FEATURE_CHECKIN=1`
-- Ana regresyonu bozmaz; ayrı doğrulama ile kanıtlanır.
-
-## OFF mod doğrulaması
-- [ ] `FEATURE_CHECKIN=0` iken `tools/pack.ps1 -To 41` PASS
-- [ ] `/api/checkin/*` erişiminde fail-closed davranış var
-- [ ] UI/diğer modüllerde yan etki yok
-
-## ON mod doğrulaması
-- [ ] `FEATURE_CHECKIN=1` ile base M41 pack yine PASS
-- [ ] M42 optional check PASS
-- [ ] credential issue → scan → dedupe → revoke akışı PASS
-- [ ] room/company event listesi çalışıyor
-- [ ] audit aksiyonları yazılıyor (`CREDENTIAL_ISSUE`, `CREDENTIAL_REVOKE`, `CHECKIN_SCAN`)
-- [ ] Check-in nav görünürlüğü ilgili rollerde çalışıyor
-
-## Kanonik komut
-- [ ] `tools/pack_m42_optional.ps1` PASS
-
-**Beklenen:** M42 açılınca çalışan modül; kapalıyken ana sistemi etkilemeyen dormant feature.
-
----
-
-# STEP 0.6 — Stabil Ekler (resmi doğrulanmış)
-
-## Durum
-- [ ] `tools/pack_step06_stabil.ps1` PASS
-- [ ] runtime mini-check PASS
-- [ ] repo-contract PASS
-
-## 0.6.1 Capacity / Pool / Split
-- [ ] room approve ekranında kapasite yetersizse approve blok
-- [ ] room pool summary doğru çalışıyor
-- [ ] toplam eşleşebilir koltuk doğru hesaplanıyor
-- [ ] araç yeterli / driver yetersiz ayrımı net
-- [ ] `Böl & Onayla` gerçek müsait araç kombinasyonuna göre child shift üretiyor
-- [ ] parent split kayıt pending/list akışını kirletmiyor
-
-## 0.6.2 School / Parent Invite
-- [ ] SCHOOL menüsünde Parent Link görünüyor
-- [ ] parent invite link üretme çalışıyor
-- [ ] invite geçmişi çalışıyor
-- [ ] public accept-parent-invite akışı açılıyor
-- [ ] accepted parent login olabiliyor
-- [ ] parent `/api/me` doğrulanıyor
-
-## 0.6.3 Shift Preview / External Navigation
-- [ ] Shift Harita Önizleme’de `Tam Rotayı Dış Navigasyonda Aç` var
-- [ ] `0,0` koordinatı navigasyona gitmiyor
-- [ ] OUTBOUND: hub → duraklar
-- [ ] INBOUND: duraklar → hub
-- [ ] LOOP: hub → duraklar → hub
-
-## 0.6.4 Company List Click Details
-- [ ] company listede araç plakası tıklanınca araç detay açılıyor
-- [ ] company listede sürücü adı tıklanınca sürücü detay açılıyor
-- [ ] araç/sürücü detail modal başlıkları mevcut
-
-**Çıkış kriteri:** `tools/pack_step06_stabil.ps1` PASS.
-
----
-
-# STEP 1 — V1.5 Minimum Security (resmi green)
-
-## 1.1 Security Foundation
-- [ ] refresh reuse detection
-- [ ] export limiter
-- [ ] login/gps/export limit hattı
-- [ ] RBAC deny-by-default sanity matrix
-- [ ] `tools/pack_step1_security_foundation.ps1` PASS
-
-## 1.2 TOTP Step-up
-- [ ] `ROOM` + `SUPER_ADMIN` için TOTP setup/enable/verify
-- [ ] login response içinde `stepUpRequired`
-- [ ] setup olmadan kritik write/admin endpointler blok
-- [ ] verify sonrası geçici `stepUpUntil` ile erişim açılıyor
-- [ ] `COMPANY` ve `DRIVER` bu guard’dan etkilenmiyor
-- [ ] `tools/pack_step1_totp_stepup.ps1` PASS
-
-## 1.3 Korunan ana alanlar
-- [ ] `/api/admin`
-- [ ] `/api/admin/logs`
-- [ ] `/api/logs/export`
-- [ ] `/api/vehicles`
-- [ ] `/api/drivers`
-- [ ] `/api/availability`
-- [ ] `/api/shifts`
-
-**Çıkış kriteri:** Security Foundation + TOTP pack/check PASS.
-
----
-
-# STEP 2 — M43 Google Auth + Invite Gate — RESMİ GREEN
-- [ ] `tools/pack_m43_google_auth_invite_gate.ps1` PASS
-- [ ] `tools/check_m43_google_auth_invite_gate_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `POST /api/auth/google` çalışıyor
-- [ ] `Invite` + `UserIdentity` akışı doğru
-- [ ] invite yoksa kabul yok
-- [ ] role/scope bağlı kabul korunuyor
-
-# STEP 2.5 — M44 Telematics — RESMİ GREEN
-- [ ] `tools/pack_m44_telematics.ps1` PASS
-- [ ] `tools/check_m44_telematics_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `POST /api/telematics/push` çalışıyor
-- [ ] `POST /api/telematics/vendor/:provider` çalışıyor
-- [ ] `GpsDevice` create/list/patch/rotate çalışıyor
-- [ ] ROOM > Vehicles > Telematics akışı çalışıyor
-
-# STEP 2.6 — M45 Retention + Backup — RESMİ GREEN
-- [ ] `tools/pack_m45_retention_backup.ps1` PASS
-- [ ] `tools/check_m45_retention_backup_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] retention policy görünürlüğü var
-- [ ] backup policy + manifest görünürlüğü var
-- [ ] dryRun/run audit izi var
-- [ ] create/restore tool hattı çalışıyor
-- [ ] `tools\backup_create_m45.ps1` mevcut
-- [ ] `tools\backup_restore_m45.ps1` mevcut
-
-# STEP 3 — M46 AI Copilot Foundation — RESMİ GREEN
-- [ ] `tools/pack_m46_ai_copilot.ps1` PASS
-- [ ] `tools/check_m46_ai_copilot_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `POST /api/ai/copilot` çalışıyor
-- [ ] read-only / suggestion-first davranış korunuyor
-- [ ] `AI_COPILOT_QUERY` audit izi var
-- [ ] ROOM + SUPER_ADMIN için step-up guard var
-
-# STEP 3.1 — M46.1 AI Copilot Enrichment — RESMİ GREEN
-- [ ] `tools/pack_m46_1_ai_copilot_enrichment.ps1` PASS
-- [ ] `tools/check_m46_1_ai_copilot_enrichment_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `copilotVersion` mevcut
-- [ ] `severity / blocks / nextChecks / references` üretiliyor
-- [ ] UI’da `Kopyala özet` + `Kopyala not` + `Son 5 analiz` var
-
-# STEP 3.2 — M46.2 AI Copilot Intent Expansion — RESMİ GREEN
-- [ ] `tools/pack_m46_2_ai_copilot_intent_expansion.ps1` PASS
-- [ ] `tools/check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] yeni intentler çalışıyor:
-  - [ ] `ASSIGNMENT_READINESS`
-  - [ ] `OFFER_DECISION_HELP`
-  - [ ] `GPS_SIGNAL_DIAGNOSIS`
-- [ ] `intentLabel` + `entityLabel` üretiliyor
-- [ ] `scope.summary` + `highlights` üretiliyor
-- [ ] zengin `references` + `nextChecks` korunuyor
-- [ ] UI’da hızlı seçim araması çalışıyor
-- [ ] UI’da highlights bölümü görünüyor
-- [ ] UI’da scope summary görünüyor
-- [ ] read-only / suggestion-first çizgisi korunuyor
-- [ ] audit ve step-up davranışı korunuyor
-
----
-
-# STEP 3.3 — M46.3 AI Copilot Quality + Evidence — RESMİ GREEN
-- [ ] `tools/pack_m46_3_ai_copilot_quality_evidence.ps1` PASS
-- [ ] `tools/check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `copilotVersion` `M46.3` olarak dönüyor
-- [ ] `confidence` üretiliyor
-- [ ] `explanation` üretiliyor
-- [ ] `evidence` üretiliyor
-- [ ] `decisionSignals` üretiliyor
-- [ ] `providerSummary` üretiliyor
-- [ ] UI’da confidence bölümü görünüyor
-- [ ] UI’da explanation bölümü görünüyor
-- [ ] UI’da evidence bölümü görünüyor
-- [ ] UI’da decision signals bölümü görünüyor
-- [ ] read-only / suggestion-first çizgisi korunuyor
-- [ ] audit ve step-up davranışı korunuyor
-- [ ] M46.1 ve M46.2 check zinciri ileri uyumlu kalıyor
-
----
-
-# STEP 3.4 — M46.4 AI Copilot Decision Consistency + Action Plan — RESMİ GREEN
-- [ ] `tools/pack_m46_4_ai_copilot_decision_consistency.ps1` PASS
-- [ ] `tools/check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `copilotVersion` `M46.4` olarak dönüyor
-- [ ] `overallStatus` üretiliyor
-- [ ] `actionability` üretiliyor
-- [ ] `dataFreshness` üretiliyor
-- [ ] `coverage` üretiliyor
-- [ ] `recommendedActions` üretiliyor
-- [ ] `consistencyChecks` üretiliyor
-- [ ] `missingData` üretiliyor
-- [ ] `blockers` üretiliyor
-- [ ] UI’da decision badges görünüyor
-- [ ] UI’da recommended actions bölümü görünüyor
-- [ ] UI’da missing data / blockers bölümü görünüyor
-- [ ] UI’da consistency checks bölümü görünüyor
-- [ ] read-only / suggestion-first çizgisi korunuyor
-- [ ] audit ve step-up davranışı korunuyor
-- [ ] M46.1 / M46.2 / M46.3 check zinciri ileri uyumlu kalıyor
-
----
-
-# STEP 3.5 — M46.5 AI Copilot Action Prioritization + Evidence Calibration — RESMİ GREEN
-- [ ] `tools/pack_m46_5_ai_copilot_action_prioritization.ps1` PASS
-- [ ] `tools/check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1 -RepoRoot D:\servis-platform` PASS
-- [ ] `copilotVersion` `M46.5` olarak dönüyor
-- [ ] `recommendedFirstAction` üretiliyor
-- [ ] `actionPlanSummary` üretiliyor
-- [ ] `calibrationNotes` üretiliyor
-- [ ] `priorityScore` üretiliyor
-- [ ] `whyNow` üretiliyor
-- [ ] `evidenceLinks` üretiliyor
-- [ ] `referenceLinks` üretiliyor
-- [ ] `blockedBy` üretiliyor
-- [ ] `dependsOn` üretiliyor
-- [ ] UI’da first action bölümü görünüyor
-- [ ] UI’da calibration notes bölümü görünüyor
-- [ ] UI’da priority score / whyNow / evidence-reference link görünümü var
-- [ ] read-only / suggestion-first çizgisi korunuyor
-- [ ] audit ve step-up davranışı korunuyor
-- [ ] M46.1 / M46.2 / M46.3 / M46.4 check zinciri ileri uyumlu kalıyor
-
----
+## Kanonik komutlar
+- `tools\pack.ps1 -To 41`
+- `tools\pack_m42_optional.ps1`
+- `tools\pack_step06_stabil.ps1`
+- `tools\pack_step1_security_foundation.ps1`
+- `tools\pack_step1_totp_stepup.ps1`
+- `tools\pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_3_ai_copilot_quality_evidence.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_4_ai_copilot_decision_consistency.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_5_ai_copilot_action_prioritization.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_a_ai_job_guide.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_b_ai_job_guide_precheck.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_t_ai_location_source_guide.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_c_ai_screen_help.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_d_ai_chat_shell.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_d2_ai_context_chat.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_d3_ai_actionable_chat.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_c2_screen_coverage_terminology.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_6_d4_simple_role_mode.ps1 -RepoRoot D:\servis-platform`
 
 ## Kapanış kuralı
 - Ana referans yine **M41 PACK PASS**’tir.
 - Üst katmanlar ayrı resmi green hatları olarak korunur.
-- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 → M46.4 → M46.5 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
+- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 → M46.4 → M46.5 → M46.6-A/B/T/C/D/D2/D3/C2/D4 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.

@@ -18,8 +18,17 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_3_ai_copilot_quality_evidence.ps1`
 - `tools\pack_m46_4_ai_copilot_decision_consistency.ps1`
 - `tools\pack_m46_5_ai_copilot_action_prioritization.ps1`
+- `tools\pack_m46_6_a_ai_job_guide.ps1`
+- `tools\pack_m46_6_b_ai_job_guide_precheck.ps1`
+- `tools\pack_m46_6_t_ai_location_source_guide.ps1`
+- `tools\pack_m46_6_c_ai_screen_help.ps1`
+- `tools\pack_m46_6_d_ai_chat_shell.ps1`
+- `tools\pack_m46_6_d2_ai_context_chat.ps1`
+- `tools\pack_m46_6_d3_ai_actionable_chat.ps1`
+- `tools\pack_m46_6_c2_screen_coverage_terminology.ps1`
+- `tools\pack_m46_6_d4_simple_role_mode.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene check’leri
-- `tools\reset-and-pack.ps1`
+- `toolseset-and-pack.ps1`
 - `tools\_console_status.ps1`
 
 ## Kökte kalan doküman pointer’ları
@@ -53,6 +62,11 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_6_b_ai_job_guide_precheck.ps1 -RepoRoot D:\servis-platform` → Step 3.6-B / M46.6-B
 - `tools\pack_m46_6_t_ai_location_source_guide.ps1 -RepoRoot D:\servis-platform` → Step 3.6-T / M46.6-T
 - `tools\pack_m46_6_c_ai_screen_help.ps1 -RepoRoot D:\servis-platform` → Step 3.6-C / M46.6-C
+- `tools\pack_m46_6_d_ai_chat_shell.ps1 -RepoRoot D:\servis-platform` → Step 3.6-D / M46.6-D
+- `tools\pack_m46_6_d2_ai_context_chat.ps1 -RepoRoot D:\servis-platform` → Step 3.6-D2 / M46.6-D2
+- `tools\pack_m46_6_d3_ai_actionable_chat.ps1 -RepoRoot D:\servis-platform` → Step 3.6-D3 / M46.6-D3
+- `tools\pack_m46_6_c2_screen_coverage_terminology.ps1 -RepoRoot D:\servis-platform` → Step 3.6-C2 / M46.6-C2
+- `tools\pack_m46_6_d4_simple_role_mode.ps1 -RepoRoot D:\servis-platform` → Step 3.6-D4 / M46.6-D4
 
 ## Windows ExecutionPolicy
 PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
@@ -72,91 +86,17 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1` → M46.3 repo-contract kontrolü
 - `tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1` → M46.4 repo-contract kontrolü
 - `tools\check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1` → M46.5 repo-contract kontrolü
+- `tools\check_m46_6_a_ai_job_guide_repo_contract.ps1` → M46.6-A repo-contract kontrolü
+- `tools\check_m46_6_b_ai_job_guide_precheck_repo_contract.ps1` → M46.6-B repo-contract kontrolü
+- `tools\check_m46_6_t_ai_location_source_guide_repo_contract.ps1` → M46.6-T repo-contract kontrolü
+- `tools\check_m46_6_c_ai_screen_help_repo_contract.ps1` → M46.6-C repo-contract kontrolü
+- `tools\check_m46_6_d_ai_chat_shell_repo_contract.ps1` → M46.6-D repo-contract kontrolü
+- `tools\check_m46_6_d2_ai_context_chat_repo_contract.ps1` → M46.6-D2 repo-contract kontrolü
+- `tools\check_m46_6_d3_ai_actionable_chat_repo_contract.ps1` → M46.6-D3 repo-contract kontrolü
+- `tools\check_m46_6_c2_screen_coverage_terminology_repo_contract.ps1` → M46.6-C2 repo-contract kontrolü
+- `tools\check_m46_6_d4_simple_role_mode_repo_contract.ps1` → M46.6-D4 repo-contract kontrolü
 
-Kural: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
+Kural 1: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
 Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.  
-Kural 3: üst milestone’lar alt milestone check uyumluluğunu bozmamalıdır.
-
-## M45 Retention + Backup
-- `tools\pack_m45_retention_backup.ps1`
-- `tools\backup_create_m45.ps1`
-- `tools\backup_restore_m45.ps1`
-- `tools\check_m45_retention_backup_repo_contract.ps1`
-- `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
-
-## M46 AI Copilot Foundation
-- `tools\pack_m46_ai_copilot.ps1`
-- `tools\check_m46_ai_copilot_repo_contract.ps1`
-- `backend\scripts\m46_ai_copilot_check.js`
-- `backend\src\routes\ai.js`
-- `backend\src\ai\schemas.js`
-- `backend\src\ai\service.js`
-- `backend\src\ai\tools.js`
-- `web\src\panels\shared\CopilotPanel.jsx`
-- `docs\RUNBOOK_M46_AI_COPILOT.md`
-
-## M46.1 AI Copilot Enrichment
-- `tools\pack_m46_1_ai_copilot_enrichment.ps1`
-- `tools\check_m46_1_ai_copilot_enrichment_repo_contract.ps1`
-- `backend\scripts\m46_1_ai_copilot_enrichment_check.js`
-- `web\src\panels\shared\CopilotPanel.jsx`
-- `docs\RUNBOOK_M46_1_AI_COPILOT_ENRICHMENT.md`
-
-## M46.2 AI Copilot Intent Expansion
-- `tools\pack_m46_2_ai_copilot_intent_expansion.ps1`
-- `tools\check_m46_2_ai_copilot_intent_expansion_repo_contract.ps1`
-- `backend\scripts\m46_2_ai_copilot_intent_expansion_check.js`
-- `backend\src\ai\schemas.js`
-- `backend\src\ai\service.js`
-- `backend\src\ai\tools.js`
-- `web\src\panels\shared\CopilotPanel.jsx`
-- `docs\RUNBOOK_M46_2_AI_COPILOT_INTENT_EXPANSION.md`
-
-## M46.3 AI Copilot Quality + Evidence
-- `tools\pack_m46_3_ai_copilot_quality_evidence.ps1`
-- `tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1`
-- `backend\scripts\m46_3_ai_copilot_quality_evidence_check.js`
-- `backend\src\ai\service.js`
-- `backend\src\ai\tools.js`
-- `web\src\panels\shared\CopilotPanel.jsx`
-- `docs\RUNBOOK_M46_3_AI_COPILOT_QUALITY_EVIDENCE.md`
-
-## M46.4 AI Copilot Decision Consistency + Action Plan
-- `tools\pack_m46_4_ai_copilot_decision_consistency.ps1`
-- `tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1`
-- `backend\scripts\m46_4_ai_copilot_decision_consistency_check.js`
-- `backend\src\ai\service.js`
-- `backend\src\ai\tools.js`
-- `web\src\panels\shared\CopilotPanel.jsx`
-- `docs\RUNBOOK_M46_4_AI_COPILOT_DECISION_CONSISTENCY.md`
-
-## M46.5 AI Copilot Action Prioritization + Evidence Calibration
-- `tools\pack_m46_5_ai_copilot_action_prioritization.ps1`
-- `tools\check_m46_5_ai_copilot_action_prioritization_repo_contract.ps1`
-- `backend\scripts\m46_5_ai_copilot_action_prioritization_check.js`
-- `backend\src\ai\service.js`
-- `backend\src\ai\tools.js`
-- `web\src\panels\shared\CopilotPanel.jsx`
-- `docs\RUNBOOK_M46_5_AI_COPILOT_ACTION_PRIORITIZATION.md`
-
-
-
-## M46.6-A AI Job Guide
-- `tools\pack_m46_6_a_ai_job_guide.ps1`
-- `tools\check_m46_6_a_ai_job_guide_repo_contract.ps1`
-- `backend\scripts\m46_6_a_ai_job_guide_check.js`
-
-## M46.6-B AI Job Guide Precheck
-- `tools\pack_m46_6_b_ai_job_guide_precheck.ps1`
-- `tools\check_m46_6_b_ai_job_guide_precheck_repo_contract.ps1`
-- `backend\scripts\m46_6_b_ai_job_guide_precheck_check.js`
-
-## M46.6-T AI Location Source Guide
-- `tools\pack_m46_6_t_ai_location_source_guide.ps1`
-- `tools\check_m46_6_t_ai_location_source_guide_repo_contract.ps1`
-- `backend\scripts\m46_6_t_ai_location_source_guide_check.js`
-
-## M46.6-C AI Screen Help
-- `tools\pack_m46_6_c_ai_screen_help.ps1`
-- `tools\check_m46_6_c_ai_screen_help_repo_contract.ps1`
-- `backend\scripts\m46_6_c_ai_screen_help_check.js`
+Kural 3: üst milestone’lar alt milestone check uyumluluğunu bozmamalıdır.  
+Kural 4: PowerShell 5 / UTF-8 literal karşılaştırmalarında repo-contract checker’ları mümkünse normalize veya ASCII-safe yazılmalıdır.

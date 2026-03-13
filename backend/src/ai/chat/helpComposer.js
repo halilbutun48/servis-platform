@@ -1,4 +1,5 @@
 import { buildJobGuideResponse } from '../jobGuide/index.js';
+import { explainTermsFromText } from '../jobGuide/glossary.js';
 import { detectQuestionType, resolveReplyMode, selectGuideJobType, buildSuggestedChips } from './intentRouter.js';
 import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, toReply, uniqueStrings } from './replyShapes.js';
 
@@ -32,7 +33,83 @@ function findBestAction(list, message) {
 }
 
 function roleLead(roleMode) {
-  return roleMode === 'SIMPLE' ? 'Kısa anlatıyorum.' : 'Durumu kısa özetliyorum.';
+  return roleMode === 'SIMPLE' ? 'Kısaca:' : 'Durumu kısa özetliyorum.';
+}
+
+function simpleNowText(guide, screenDefinition, fallback = 'Önce bu ekrandaki ana bilgiyi kontrol et.') {
+  return firstNonEmpty(guide?.whatToDoNow, screenDefinition?.firstStep, fallback);
+}
+
+function simpleNextText(guide, screenDefinition) {
+  return firstNonEmpty(guide?.whatToDoNext, screenDefinition?.nextStep, '');
+}
+
+function simpleMenuList(screenDefinition, limit = 2) {
+  return (Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : []).slice(0, limit).map((x) => x?.label).filter(Boolean);
+}
+
+function composeSimpleScreenReply({ questionType, guide, message, screenDefinition }) {
+  const purpose = firstNonEmpty(guide?.plainSummary, screenDefinition?.menuPurpose, guide?.summary, 'Bu ekran yardım için kullanılır.');
+  const now = simpleNowText(guide, screenDefinition);
+  const next = simpleNextText(guide, screenDefinition);
+  const menus = simpleMenuList(screenDefinition, 2);
+  const buttons = pickButtons(guide?.buttonGuides || screenDefinition?.buttonGuides, 2);
+
+  if (questionType === 'ROLE_HELP') {
+    return `${purpose} ${menus.length ? `En çok işine yarayacak yerler: ${menus.join(', ')}.` : ''}`.trim();
+  }
+
+  if (questionType === 'TERM_HELP') {
+    const comparison = termComparisonReplyV2(message) || termComparisonReply(message);
+    if (comparison) return comparison;
+    const knownTerms = explainTermsFromText(message, 2);
+    const screenTerms = pickTerms(guide?.simpleTerms || screenDefinition?.simpleTerms, 2);
+    const terms = uniqueStrings([...(knownTerms || []), ...(screenTerms || [])]).slice(0, 2);
+    return `${terms.length ? `${terms.join(' • ')}.` : purpose} Şimdi: ${now}`.trim();
+  }
+
+  if (questionType === 'BUTTON_HELP') {
+    return `${buttons.length ? `Öne çıkanlar: ${buttons.join(' • ')}.` : purpose} Şimdi: ${now}`.trim();
+  }
+
+  if (questionType === 'WHY_BLOCKED') {
+    return `Bir şey ilerlemiyorsa önce doğru kayıt veya gerekli bilgi seçilir. Şimdi: ${now}`;
+  }
+
+  if (questionType === 'GO_TO') {
+    return `Şimdi: ${now} Aşağıdaki düğmelerden uygun olana bas.`;
+  }
+
+  if (questionType === 'NEXT_STEP') {
+    return `Şimdi: ${now}${next ? ` Sonra: ${next}` : ''}`.trim();
+  }
+
+  if (questionType === 'SCREEN_PURPOSE' || questionType === 'OPEN') {
+    return `${purpose} Şimdi: ${now}${menus[0] ? ` Gerekirse ${menus[0]} kısmına geç.` : ''}`.trim();
+  }
+
+  return `${purpose} Şimdi: ${now}`.trim();
+}
+
+function limitItemsForRoleMode(items, roleMode, limitSimple = 3, limitDefault = 5) {
+  const list = Array.isArray(items) ? items : [];
+  return roleMode === 'SIMPLE' ? list.slice(0, limitSimple) : list.slice(0, limitDefault);
+}
+
+function actionPlanLabelForRoleMode(roleMode, entityType) {
+  if (roleMode === 'SIMPLE') return 'Buradan devam et';
+  return entityType === 'screen' ? 'İlgili yere git' : 'Önerilen açılabilir adımlar';
+}
+
+function contextSummaryForRoleMode(roleMode, screenDefinition, entityLabel, scope, entityType) {
+  if (roleMode === 'SIMPLE') {
+    return entityType === 'screen' ? `Ekran: ${screenDefinition?.label || '-'}` : firstNonEmpty(entityLabel, screenDefinition?.label, scope?.summary, '');
+  }
+  return [
+    screenDefinition?.label ? `Ekran: ${screenDefinition.label}` : null,
+    entityLabel ? `Bağlam: ${entityLabel}` : null,
+    scope?.summary || null,
+  ].filter(Boolean).join(' • ');
 }
 
 function screenMenuActions(screenDefinition) {
@@ -95,20 +172,23 @@ function entityActionPlan({ entityType, context, screenDefinition, roleMode, que
     rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
   } else {
     const menus = Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : [];
-    rows.push(currentScreenAction(screenDefinition, context, 'Bu ekranı tekrar açar.'));
-    for (const menu of menus.slice(0, 3)) rows.push(menuAction(menu, context, menu.purpose || 'İlgili menüye götürür.'));
-    rows.push(makeGuideAction('Ekran rehberini aç', { jobType: 'SCREEN_MENU_GUIDE', guideLevel: 'SHORT' }, 'Ekranın amacını kısa anlatır.'));
-    rows.push(makeGuideAction('Buton rehberini aç', { jobType: 'BUTTON_ACTION_GUIDE', guideLevel: 'WHY' }, 'Butonların ne yaptığını sade dille açıklar.'));
-    if (roleMode === 'SIMPLE') rows.push(makeAskAction('Bunu sor: Şimdi ne yapayım?', 'şimdi ne yapayım', 'Daha kısa bir yönlendirme sorusu gönderir.'));
-    rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
+    rows.push(currentScreenAction(screenDefinition, context, roleMode === 'SIMPLE' ? 'Bu ekrana dönersin.' : 'Bu ekranı tekrar açar.'));
+    for (const menu of menus.slice(0, roleMode === 'SIMPLE' ? 1 : 3)) rows.push(menuAction(menu, context, menu.purpose || 'İlgili menüye götürür.', { accent: roleMode === 'SIMPLE' && rows.length <= 1 ? 'primary' : 'neutral' }));
+    if (roleMode === 'SIMPLE') {
+      rows.push(makeAskAction('Bunu sor: Şimdi ne yapayım?', 'şimdi ne yapayım', 'Daha kısa yönlendirme alırsın.'));
+    } else {
+      rows.push(makeGuideAction('Ekran rehberini aç', { jobType: 'SCREEN_MENU_GUIDE', guideLevel: 'SHORT' }, 'Ekranın amacını kısa anlatır.'));
+      rows.push(makeGuideAction('Buton rehberini aç', { jobType: 'BUTTON_ACTION_GUIDE', guideLevel: 'WHY' }, 'Butonların ne yaptığını sade dille açıklar.'));
+      rows.push(makeCopyAction('Kısa özet kopyala', reply, 'Son konuşma cevabını kopyalar.'));
+    }
   }
   return rows.filter(Boolean);
 }
 
 function nextPromptByEntity(entityType, roleMode) {
-  if (entityType === 'shift') return roleMode === 'SIMPLE' ? 'İstersen sonraki adımı tek cümlede söyleyeyim.' : 'İstersen şimdi hangi ekrana gitmen gerektiğini tek tek açayım.';
-  if (entityType === 'vehicle') return roleMode === 'SIMPLE' ? 'İstersen konum tarafını daha da kısa söyleyeyim.' : 'İstersen seni araç, canlı ekran veya rehbere yönlendireyim.';
-  return roleMode === 'SIMPLE' ? 'İstersen bunu tek cümlede sadeleştireyim.' : 'İstersen ilgili menüyü veya rehberi aşağıdan aç.';
+  if (entityType === 'shift') return roleMode === 'SIMPLE' ? 'İstersen bir sonraki adımı yine kısa söyleyeyim.' : 'İstersen şimdi hangi ekrana gitmen gerektiğini tek tek açayım.';
+  if (entityType === 'vehicle') return roleMode === 'SIMPLE' ? 'İstersen konum tarafını daha kısa söyleyeyim.' : 'İstersen seni araç, canlı ekran veya rehbere yönlendireyim.';
+  return roleMode === 'SIMPLE' ? 'Takıldığın sözü veya düğmeyi yaz.' : 'İstersen ilgili menüyü veya rehberi aşağıdan aç.';
 }
 
 function guideLinksForEntity(entityType) {
@@ -191,7 +271,29 @@ function openingReply({ entityType, context, guide, screenDefinition, roleMode }
   if (entityType === 'vehicle') {
     return `${roleLead(roleMode)} ${vehicleSourceText(context)} ${vehicleNextStep(context)}`;
   }
+  if (roleMode === 'SIMPLE') {
+    return composeSimpleScreenReply({ questionType: 'OPEN', guide, message: '', screenDefinition });
+  }
   return `${firstNonEmpty(screenDefinition?.menuPurpose, guide.plainSummary, guide.summary)} ${firstNonEmpty(screenDefinition?.firstStep, guide.whatToDoNow, 'İstersen şimdi ne yapacağını da anlatayım.')}`;
+}
+
+
+function termComparisonReply(message) {
+  const text = normalizeText(message);
+  const hasLog = /log|audit|işlem kaydı|islem kaydi/.test(text);
+  const hasNotification = /bildirim|notification/.test(text);
+  const hasInvite = /giriş daveti|giris daveti|hesap daveti|invite/.test(text);
+  const hasAccessLink = /erişim linki|erisim linki|access link|personel link/.test(text);
+  const hasInbound = /inbound|toplama yönü|toplama yonu/.test(text);
+  const hasOutbound = /outbound|dağıtım yönü|dagitim yonu|bırakma yönü|birakma yonu/.test(text);
+  const hasOsrm = /osrm|yol hesabı|rota hesabı/.test(text);
+  const hasMatrix = /matrix|matris|süre tablosu|sure tablosu/.test(text);
+  const asksDiff = /aynı şey mi|ayni sey mi|farkı ne|farki ne/.test(text);
+  if (asksDiff && hasLog && hasNotification) return 'Aynı şey değil. Bildirim kullanıcıya giden uyarıdır. İşlem kaydı ise sistemde ne olduğunun kayıt altına alınmış halidir.';
+  if (asksDiff && hasInvite && hasAccessLink) return 'Aynı şey değil. Giriş daveti hesap açtırmak içindir. Erişim linki ise hesapsız veya hızlı erişim vermek için paylaşılır.';
+  if (asksDiff && hasInbound && hasOutbound) return "Aynı yön değil. Inbound toplama yönüdür; personeli merkeze veya hub'a getirir. Outbound ise hub'dan çıkıp personeli bırakma yönüdür.";
+  if ((hasOsrm && hasMatrix) || (asksDiff && (hasOsrm || hasMatrix))) return 'OSRM yol ve süre hesabı yapan servistir. Matrix ise birden çok nokta için toplu süre ve mesafe tablosudur.';
+  return '';
 }
 
 function composeScreenLocationReply({ guide, screenDefinition }) {
@@ -206,12 +308,15 @@ function composeScreenLocationReply({ guide, screenDefinition }) {
 function roleHelpReply({ guide, screenDefinition, roleMode }) {
   const menus = Array.isArray(screenDefinition?.screenMenus) ? screenDefinition.screenMenus : guide.screenMenus || [];
   if (roleMode === 'SIMPLE') {
-    return `${firstNonEmpty(guide.plainSummary, screenDefinition?.menuPurpose, guide.summary)} ${menus.length ? `En çok işine yarayacak yerler: ${menus.slice(0, 2).map((x) => x.label).join(', ')}.` : ''}`;
+    return composeSimpleScreenReply({ questionType: 'ROLE_HELP', guide, message: '', screenDefinition });
   }
   return `${firstNonEmpty(guide.plainSummary, guide.summary)} ${menus.length ? `Bu rolde en sık kullanacağın yerler: ${menus.slice(0, 3).map((x) => x.label).join(', ')}.` : ''}`;
 }
 
 function composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode }) {
+  if (roleMode === 'SIMPLE' && entityType === 'screen' && !['LOCATION_HELP'].includes(questionType)) {
+    return toReply(composeSimpleScreenReply({ questionType, guide, message, screenDefinition }));
+  }
   if (questionType === 'OPEN') {
     return toReply(openingReply({ entityType, context, guide, screenDefinition, roleMode }));
   }
@@ -241,7 +346,11 @@ function composeReply({ questionType, replyMode, guide, message, context, entity
     return toReply(`${reasons.length ? `Bu işlem şu yüzden kapalı olabilir: ${reasons.join(' • ')}` : firstNonEmpty(guide.screenExplanation, guide.plainSummary, guide.summary)} ${guide.whatToDoNow ? `Şimdi bunu yap: ${guide.whatToDoNow}` : ''}`);
   }
   if (questionType === 'TERM_HELP') {
-    const terms = pickTerms(guide.simpleTerms || screenDefinition?.simpleTerms, 3);
+    const comparison = termComparisonReplyV2(message) || termComparisonReply(message);
+    if (comparison) return toReply(comparison);
+    const knownTerms = explainTermsFromText(message, 4);
+    const screenTerms = pickTerms(guide.simpleTerms || screenDefinition?.simpleTerms, 4);
+    const terms = uniqueStrings([...(knownTerms || []), ...(screenTerms || [])]);
     return toReply(`${terms.length ? terms.join(' • ') : firstNonEmpty(guide.screenExplanation, screenDefinition?.menuPurpose, guide.plainSummary, guide.summary)} ${guide.whatToDoNow ? `İstersen şimdi ${guide.whatToDoNow.toLowerCase()}` : ''}`);
   }
   if (questionType === 'GO_TO') {
@@ -286,27 +395,35 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   });
 
   const reply = composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode });
-  const screenActions = screenMenuActions(screenDefinition);
+  const screenActions = roleMode === 'SIMPLE' ? [] : screenMenuActions(screenDefinition);
   const guideActions = Array.isArray(guide.quickActions) ? guide.quickActions : [];
   const entityActions = entityActionPlan({ entityType, context, screenDefinition, roleMode, questionType, reply });
   const mergedActions = mergeQuickActions(entityActions, screenActions, guideActions);
   const bestAction = findBestAction(mergedActions, message);
-  const linkedGuides = guideLinksForEntity(entityType);
+  const linkedGuides = limitItemsForRoleMode(guideLinksForEntity(entityType), roleMode, 1, 3);
   const suggestedChips = buildSuggestedChips({ entityType, questionType, roleMode, screenPath, context });
   const actionList = bestAction ? [bestAction, ...mergedActions.filter((x) => x !== bestAction)] : mergedActions;
-  const actionPriority = { ASK: 0, OPEN_GUIDE: 1, OPEN_ROUTE: 2, COPY_TEXT: 3 };
-  const prioritizedActions = [...actionList].sort((a, b) => (actionPriority[String(a?.actionKind || 'OPEN_ROUTE')] ?? 9) - (actionPriority[String(b?.actionKind || 'OPEN_ROUTE')] ?? 9));
-  const contextSummaryBits = [
-    screenDefinition?.label ? `Ekran: ${screenDefinition.label}` : null,
-    entityLabel ? `Bağlam: ${entityLabel}` : null,
-    scope?.summary || null,
-  ].filter(Boolean);
+  const askFallback = makeAskAction('Bunu sor: Bu kayıt ne durumda?', entityType === 'vehicle' ? 'konum neden görünmüyor' : 'bu kayıt ne durumda', 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.');
+  const withAsk = actionList.some((x) => x?.actionKind === 'ASK') ? actionList : [askFallback, ...actionList];
+  const actionPriority = roleMode === 'SIMPLE'
+    ? { OPEN_ROUTE: 0, ASK: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 }
+    : { ASK: 0, OPEN_GUIDE: 1, OPEN_ROUTE: 2, COPY_TEXT: 3 };
+  const prioritizedActions = [...withAsk].sort((a, b) => (actionPriority[String(a?.actionKind || 'OPEN_ROUTE')] ?? 9) - (actionPriority[String(b?.actionKind || 'OPEN_ROUTE')] ?? 9));
+  const maxQuickActions = roleMode === 'SIMPLE' ? 3 : 5;
+  const supportKinds = new Set(['ASK', 'OPEN_GUIDE', 'COPY_TEXT']);
+  let finalQuickActions = prioritizedActions.slice(0, maxQuickActions);
+  if (roleMode === 'SIMPLE' && finalQuickActions.length > 0 && !finalQuickActions.some((x) => supportKinds.has(String(x?.actionKind || '')))) {
+    const supportAction = prioritizedActions.find((x) => supportKinds.has(String(x?.actionKind || '')));
+    if (supportAction) finalQuickActions = [...finalQuickActions.slice(0, Math.max(0, maxQuickActions - 1)), supportAction];
+  }
+  const contextSummary = contextSummaryForRoleMode(roleMode, screenDefinition, entityLabel, scope, entityType);
+  const actionPlanLabel = actionPlanLabelForRoleMode(roleMode, entityType);
 
   return {
     ok: true,
     provider: 'local-chat-help',
     mode: 'CHAT_HELP',
-    copilotVersion: 'M46.6-D3',
+    copilotVersion: 'M46.6-D4',
     generatedAt: new Date().toISOString(),
     intent: 'CHAT_HELP',
     intentLabel: 'Sohbet Yardımı',
@@ -319,14 +436,14 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenLabel: screenDefinition?.label || screenContext?.label || '',
     screenPath,
     summary: firstNonEmpty(guide.plainSummary, guide.summary, reply),
-    contextSummary: contextSummaryBits.join(' • '),
+    contextSummary,
     reply,
     replyMode,
     suggestedChips,
-    quickActions: prioritizedActions.slice(0, 5),
+    quickActions: finalQuickActions,
     linkedGuides,
     followUpPrompt: nextPromptByEntity(entityType, roleMode),
-    actionPlanLabel: entityType === 'screen' ? 'İlgili yere git' : 'Önerilen açılabilir adımlar',
+    actionPlanLabel,
     conversationState: {
       ...(conversationState && typeof conversationState === 'object' ? conversationState : {}),
       lastQuestionType: questionType,
@@ -337,8 +454,34 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       lastScreenPath: screenPath || null,
       lastScreenLabel: screenDefinition?.label || null,
       roleMode,
-      lastQuickActions: prioritizedActions.slice(0, 3).map((x) => ({ label: x?.label || '', actionKind: x?.actionKind || 'OPEN_ROUTE', routeKey: x?.routeKey || '', askText: x?.askText || '', guideJobType: x?.guide?.jobType || '' })),
-      lastActionPlanLabel: entityType === 'screen' ? 'İlgili yere git' : 'Önerilen açılabilir adımlar',
+      lastQuickActions: finalQuickActions.slice(0, 3).map((x) => ({ label: x?.label || '', actionKind: x?.actionKind || 'OPEN_ROUTE', routeKey: x?.routeKey || '', askText: x?.askText || '', guideJobType: x?.guide?.jobType || '' })),
+      lastActionPlanLabel: actionPlanLabel,
     },
   };
+}
+function termComparisonReplyV2(message) {
+  const text = normalizeText(message);
+  const asksDiff = /aynı şey mi|ayni sey mi|farkı ne|farki ne/.test(text);
+  const hasLog = /log|audit|işlem kaydı|islem kaydi/.test(text);
+  const hasNotification = /bildirim|notification/.test(text);
+  const hasInvite = /giriş daveti|giris daveti|hesap daveti|invite/.test(text);
+  const hasAccessLink = /erişim linki|erisim linki|access link|personel link/.test(text);
+  const hasInbound = /inbound|toplama yönü|toplama yonu/.test(text);
+  const hasOutbound = /outbound|dağıtım yönü|dagitim yonu|bırakma yönü|birakma yonu/.test(text);
+  const hasOsrm = /osrm|yol hesabı|rota hesabı/.test(text);
+  const hasMatrix = /matrix|matris|süre tablosu|sure tablosu/.test(text);
+
+  if (asksDiff && hasLog && hasNotification) {
+    return 'Aynı şey değil. Bildirim kullanıcıya giden uyarıdır. İşlem kaydı ise sistemde ne olduğunun kayıt altına alınmış halidir.';
+  }
+  if (asksDiff && hasInvite && hasAccessLink) {
+    return 'Aynı şey değil. Giriş daveti hesap açtırmak içindir. Erişim linki ise hesapsız veya hızlı erişim vermek için paylaşılır.';
+  }
+  if (asksDiff && hasInbound && hasOutbound) {
+    return "Aynı yön değil. Inbound toplama yönüdür; personeli merkeze veya hub'a getirir. Outbound ise hub'dan çıkıp personeli bırakma yönüdür.";
+  }
+  if ((hasOsrm && hasMatrix) || (asksDiff && (hasOsrm || hasMatrix))) {
+    return 'OSRM yol ve süre hesabı yapan servistir. Matrix ise birden çok nokta için toplu süre ve mesafe tablosudur.';
+  }
+  return '';
 }
