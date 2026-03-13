@@ -1,4 +1,4 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
+﻿# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
 
 Timezone: Europe/Istanbul  
 Last updated: **2026-03-13**  
@@ -162,3 +162,4 @@ Bu dosya iki amaç taşır:
 - Ana referans yine **M41 PACK PASS**’tir.
 - Üst katmanlar ayrı resmi green hatları olarak korunur.
 - Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 → M46.4 → M46.5 → M46.6-A/B/T/C/D/D2/D3/C2/D4 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
+- M45 backup restore tool: `tools\backup_restore_m45.ps1`

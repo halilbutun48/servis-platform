@@ -242,8 +242,12 @@ export async function login(email, password) {
   for (let i = 0; i < candidates.length; i++) {
     const pass = candidates[i];
 
+    const body = String(email || '').includes('@')
+      ? { email, password: pass }
+      : { identifier: email, password: pass };
+
     const r = await reqJson("POST", "/api/auth/login", {
-      body: { email, password: pass },
+      body,
     });
 
     if (r.ok && r.json?.token) return r.json.token;

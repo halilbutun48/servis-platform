@@ -77,8 +77,7 @@ export default function DriversPanel() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [deviceInfo, setDeviceInfo] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [issuedCreds, setIssuedCreds] = useState(null);
 
   // Edit modal
   const [editOpen, setEditOpen] = useState(false);
@@ -207,8 +206,9 @@ export default function DriversPanel() {
         const ph = String(d.phone || "").toLowerCase();
         const bv = boundVehicleByDriverId.get(Number(d.id)) ?? null;
         const plate = bv ? String(bv.plate || "").toLowerCase() : "";
+        const code = String(d.driverCode || "").toLowerCase();
 
-        if (qq && !(name.includes(qq) || ph.includes(qq) || plate.includes(qq))) return false;
+        if (qq && !(name.includes(qq) || ph.includes(qq) || plate.includes(qq) || code.includes(qq))) return false;
 
         const stat = driverStatus(d.id);
         const isBound = Boolean(bv);
@@ -254,26 +254,52 @@ export default function DriversPanel() {
         phone: phone.trim(),
         deviceInfo: deviceInfo.trim(),
       };
-      if (email.trim() && password.trim()) {
-        body.email = email.trim();
-        body.password = password.trim();
-      }
 
-      await api("/api/drivers", { method: "POST", token, body });
+      const created = await api("/api/drivers", { method: "POST", token, body });
 
       setFullName("");
       setPhone("");
       setDeviceInfo("");
-      setEmail("");
-      setPassword("");
+      setIssuedCreds(created?.issuedCredentials ? {
+        driverId: created?.id,
+        fullName: created?.fullName,
+        ...created.issuedCredentials,
+      } : null);
 
       showToast("Sürücü eklendi");
       await load();
     } catch (e2) {
+      setErr(getErrMsg(e2));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetPin(driver) {
+    if (!driver?.id) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api(`/api/drivers/${driver.id}/reset-pin`, { method: "POST", token, body: {} });
+      setIssuedCreds(r?.issuedCredentials ? {
+        driverId: driver.id,
+        fullName: driver.fullName,
+        ...r.issuedCredentials,
+      } : null);
+      showToast("Yeni geçici PIN üretildi", "warn");
+      await load();
+    } catch (e) {
       setErr(getErrMsg(e));
     } finally {
       setBusy(false);
     }
+  }
+
+  function copyIssuedCreds() {
+    if (!issuedCreds?.driverCode || !issuedCreds?.temporaryPin) return;
+    const text = `Sürücü Kodu: ${issuedCreds.driverCode}
+Geçici PIN: ${issuedCreds.temporaryPin}`;
+    navigator.clipboard?.writeText(text).then(() => showToast("Giriş bilgileri kopyalandı")).catch(() => showToast("Kopyalama açılamadı", "warn"));
   }
 
   function openEdit(d) {
@@ -465,8 +491,8 @@ export default function DriversPanel() {
 
         <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <div>
-            <label className="muted">Ara (ad/telefon/plaka)</label>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ali / 05xx / 34ABC..." />
+            <label className="muted">Ara (ad/telefon/plaka/kod)</label>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ali / 05xx / 34ABC / SRC-000123" />
           </div>
 
           <div>
@@ -543,12 +569,12 @@ export default function DriversPanel() {
         </div>
       ) : null}
 
-      {/* YÖNETİM */}
+            {/* YÖNETİM */}
       {tab === "manage" ? (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.45fr 1fr", // ✅ Yeni sürücü geniş
+            gridTemplateColumns: "1.45fr 1fr",
             gap: 12,
             alignItems: "start",
           }}
@@ -569,13 +595,11 @@ export default function DriversPanel() {
                 <input value={deviceInfo} onChange={(e) => setDeviceInfo(e.target.value)} placeholder="Android / iOS / tracker" />
               </div>
 
-              <div className="col">
-                <label className="muted">Login e-posta (ops.)</label>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="driver2@demo.com" />
-              </div>
-              <div className="col">
-                <label className="muted">Login şifre (ops.)</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="demo123" />
+              <div className="col" style={{ gridColumn: "1 / -1" }}>
+                <div className="muted">
+                  Kaydedince sistem sürücü için otomatik <b>Sürücü Kodu</b> ve <b>Geçici PIN</b> üretir.
+                  Sürücü girişte bunları kullanır.
+                </div>
               </div>
 
               <div className="col" style={{ justifyContent: "end" }}>
@@ -584,75 +608,95 @@ export default function DriversPanel() {
             </form>
           </div>
 
-          <div className="card" style={{ overflowX: "auto" }}>
-            <h3>Liste</h3>
-            <table className="tbl" style={{ whiteSpace: "nowrap", fontSize: 12 }}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Ad Soyad</th>
-                  <th>Telefon</th>
-                  <th>Login</th>
-                  <th>Araç</th>
-                  <th>Durum</th>
-                  <th>Vardiya</th>
-                  <th>Aksiyon</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDrivers.map((d) => {
-                  const stat = driverStatus(d.id);
-                  const bv = stat?.vehicle ?? null;
+          <div>
+            {issuedCreds ? (
+              <div className="card" style={{ marginBottom: 12, borderLeft: "5px solid #2563eb" }}>
+                <h3 style={{ marginTop: 0 }}>Giriş Bilgileri</h3>
+                <div><b>Sürücü:</b> {issuedCreds.fullName || `#${issuedCreds.driverId}`}</div>
+                <div style={{ marginTop: 8 }}><b>Sürücü Kodu:</b> {issuedCreds.driverCode || "-"}</div>
+                <div style={{ marginTop: 4 }}><b>Geçici PIN:</b> {issuedCreds.temporaryPin || "-"}</div>
+                <div className="muted" style={{ marginTop: 8 }}>
+                  İlk girişte sürücü kendi yeni PIN'ini belirler.
+                </div>
+                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" onClick={copyIssuedCreds}>Kopyala</button>
+                </div>
+              </div>
+            ) : null}
 
-                  // vardiya özet
-                  const shifts = d.currentShift || d.nextShift ? [] : (Array.isArray(bv?.shifts) ? bv.shifts : []);
-                  const curNext = d.currentShift || d.nextShift
-                    ? { current: d.currentShift ?? null, next: d.nextShift ?? null }
-                    : pickCurrentNext(shifts);
+            <div className="card" style={{ overflowX: "auto" }}>
+              <h3>Liste</h3>
+              <table className="tbl" style={{ whiteSpace: "nowrap", fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Ad Soyad</th>
+                    <th>Telefon</th>
+                    <th>Sürücü Kodu</th>
+                    <th>Araç</th>
+                    <th>Durum</th>
+                    <th>Vardiya</th>
+                    <th>Aksiyon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDrivers.map((d) => {
+                    const stat = driverStatus(d.id);
+                    const bv = stat?.vehicle ?? null;
 
-                  const line = curNext.current
-                    ? `Şimdi: ${curNext.current.company?.name || "-"} (${fmtTR(curNext.current.startAt)}–${fmtTR(curNext.current.endAt)})`
-                    : curNext.next
-                      ? `Sonra: ${curNext.next.company?.name || "-"} (${fmtTR(curNext.next.startAt)}–${fmtTR(curNext.next.endAt)})`
-                      : "-";
+                    const shifts = d.currentShift || d.nextShift ? [] : (Array.isArray(bv?.shifts) ? bv.shifts : []);
+                    const curNext = d.currentShift || d.nextShift
+                      ? { current: d.currentShift ?? null, next: d.nextShift ?? null }
+                      : pickCurrentNext(shifts);
 
-                  return (
-                    <tr key={d.id}>
-                      <td>{d.id}</td>
-                      <td><b>{d.fullName}</b></td>
-                      <td>{d.phone}</td>
-                      <td className="muted">{d.user?.email || "-"}</td>
-                      <td className="muted">{bv ? bv.plate : "-"}</td>
-                      <td>
-                        {stat ? (
-                          <span className="pill" data-status={stat.pillKey}>{stat.ui}</span>
-                        ) : (
-                          <span className="muted">-</span>
-                        )}
-                      </td>
-                      <td className="muted">{line}</td>
-                      <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button type="button" disabled={busy} onClick={() => openEdit(d)}>Düzenle</button>
-                        <button type="button" disabled={busy} onClick={() => deleteDriver(d)}>Sil</button>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setFocusDriverId(Number(d.id));
-                            setTab("link");
-                          }}
-                        >
-                          Bağlantı
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    const line = curNext.current
+                      ? `Şimdi: ${curNext.current.company?.name || "-"} (${fmtTR(curNext.current.startAt)}–${fmtTR(curNext.current.endAt)})`
+                      : curNext.next
+                        ? `Sonra: ${curNext.next.company?.name || "-"} (${fmtTR(curNext.next.startAt)}–${fmtTR(curNext.next.endAt)})`
+                        : "-";
 
-            <div className="muted" style={{ marginTop: 8 }}>
-              Not: Durum ve vardiya bilgisi “bağlı araç” üzerinden türetilir.
+                    return (
+                      <tr key={d.id}>
+                        <td>{d.id}</td>
+                        <td><b>{d.fullName}</b></td>
+                        <td>{d.phone}</td>
+                        <td className="muted">
+                          {d.driverCode || "-"}
+                          {d.pinTemporary ? <div className="muted">Geçici PIN aktif</div> : null}
+                        </td>
+                        <td className="muted">{bv ? bv.plate : "-"}</td>
+                        <td>
+                          {stat ? (
+                            <span className="pill" data-status={stat.pillKey}>{stat.ui}</span>
+                          ) : (
+                            <span className="muted">-</span>
+                          )}
+                        </td>
+                        <td className="muted">{line}</td>
+                        <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button type="button" disabled={busy} onClick={() => openEdit(d)}>Düzenle</button>
+                          <button type="button" disabled={busy} onClick={() => deleteDriver(d)}>Sil</button>
+                          <button type="button" disabled={busy} onClick={() => resetPin(d)}>PIN üret</button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              setFocusDriverId(Number(d.id));
+                              setTab("link");
+                            }}
+                          >
+                            Bağlantı
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div className="muted" style={{ marginTop: 8 }}>
+                Not: Durum ve vardiya bilgisi bağlı araç üzerinden türetilir.
+              </div>
             </div>
           </div>
         </div>
@@ -853,7 +897,7 @@ export default function DriversPanel() {
             </div>
 
             <div className="muted" style={{ marginTop: 10 }}>
-              Login email/şifre düzenleme V1’de yok (istersen ayrıca ekleriz).
+              Sürücü için giriş modeli artık Sürücü Kodu + PIN. Buradan temel bilgileri düzenlersin; yeni geçici PIN üretme listeden yapılır.
             </div>
           </div>
         </div>

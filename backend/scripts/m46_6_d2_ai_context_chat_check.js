@@ -21,7 +21,7 @@ async function main() {
     },
   });
   must('room shift chat ok', roomShiftChat.ok && roomShiftChat.json?.mode === 'CHAT_HELP');
-  must('room shift version upgraded', ['M46.6-D2','M46.6-D3'].includes(roomShiftChat.json?.copilotVersion));
+  must('room shift version upgraded', ['M46.6-D2','M46.6-D3','M46.6-D4'].includes(roomShiftChat.json?.copilotVersion));
   must('room shift context summary exists', !!roomShiftChat.json?.contextSummary);
   must('room shift quick actions visible', Array.isArray(roomShiftChat.json?.quickActions) && roomShiftChat.json.quickActions.length >= 1);
   must('room shift chips visible', Array.isArray(roomShiftChat.json?.suggestedChips) && roomShiftChat.json.suggestedChips.length >= 3);

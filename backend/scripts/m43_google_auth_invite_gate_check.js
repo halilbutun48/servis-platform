@@ -34,12 +34,16 @@ async function ensureRoomDriver(roomToken, roomUserId) {
   });
   if (driver) return driver;
 
-  const created = await reqJson("POST", "/api/drivers", {
-    token: roomToken,
-    body: { fullName: "M43 Driver", phone: `555100${String(Date.now()).slice(-4)}`, deviceInfo: "m43-device" },
+  driver = await prisma.driver.create({
+    data: {
+      roomId: roomUser?.roomId ?? -1,
+      fullName: "M43 Driver",
+      phone: `555100${String(Date.now()).slice(-4)}`,
+      deviceInfo: "m43-device",
+    },
   });
-  must("driver create fallback ok", created.ok && created.json?.id);
-  driver = await prisma.driver.findUnique({ where: { id: created.json.id } });
+  must("driver create fallback ok", !!driver?.id);
+  driver = await prisma.driver.findUnique({ where: { id: driver.id } });
   must("driver exists after create", !!driver);
   must("driver is unlinked", !driver.userId);
   return driver;

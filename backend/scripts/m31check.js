@@ -58,26 +58,26 @@ async function main() {
   must("room2Id present", room2Id > 0);
 
   step("room creates driver with login (for driver panel)");
-  const email = `m31_driver_${Math.random().toString(16).slice(2, 8)}@demo.com`;
-  const password = "demo1234";
-
   const d1 = await reqJson("POST", "/api/drivers", {
     token: roomToken,
     body: {
       fullName: "M31 Driver",
       phone: "5550003311",
       deviceInfo: "m31",
-      email,
-      password,
     },
   });
   assertOk(d1.ok, "driver create");
   const driverId = Number(d1.json?.id || 0);
   must("driverId present", driverId > 0);
 
+  const driverCode = String(d1.json?.issuedCredentials?.driverCode || "");
+  const temporaryPin = String(d1.json?.issuedCredentials?.temporaryPin || "");
+  must("driver code issued", driverCode.length >= 6);
+  must("temporary pin issued", temporaryPin.length >= 4);
+
   step("driver login");
   const dLogin = await reqJson("POST", "/api/auth/login", {
-    body: { email, password },
+    body: { identifier: driverCode, password: temporaryPin },
   });
   assertOk(dLogin.ok, "driver login ok");
   const driverToken = String(dLogin.json?.token || "");

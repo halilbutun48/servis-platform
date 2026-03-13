@@ -1,4 +1,4 @@
-# SERVIS-PLATFORM — STARTPACK V1/V2 (SSOT)
+﻿# SERVIS-PLATFORM — STARTPACK V1/V2 (SSOT)
 
 Tarih: 2026-03-13  
 Timezone: Europe/Istanbul
@@ -89,3 +89,4 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Kod green olduktan sonra docs/SSOT senki geciktirilmez.
 - Tek seferlik overlay/apply script’leri repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.
 - Repo-contract checker’ları PowerShell 5 / UTF-8 kırılganlıklarına karşı mümkünse ASCII-safe veya normalize edilmiş şekilde yazılır.
+- M45 runbook: `docs\RUNBOOK_M45_RETENTION_BACKUP.md`

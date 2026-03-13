@@ -65,6 +65,7 @@ export default function NavDock({ role, path, me }) {
       sections.push({
         title: "Ana",
         items: [
+          { label: "Rehber", path: "/room/copilot", badge: "Yeni" },
           { label: "Canlı Takip", path: "/room/map" },
           { label: "Teklifler", path: "/room/offers" },
           { label: "Vardiyalar", path: "/room/shifts" },
@@ -81,13 +82,13 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "Hub", path: "/room/hub" });
       advanced.push({ label: "Check-in", path: "/room/checkin" });
       advanced.push({ label: "Giriş Davetleri", path: "/room/auth-invites" });
-      advanced.push({ label: "Copilot", path: "/room/copilot" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
 advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "COMPANY") {
       sections.push({
         title: "Ana",
         items: [
+          { label: "Rehber", path: base + "/copilot", badge: "Yeni" },
           { label: "Harita", path: base + "/map" },
           { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : me?.companyKind === "ORGANIZATION" ? "Organizasyon Merkezi" : "Planlama Merkezi", path: base },
           ...(me?.companyKind === "ORGANIZATION" ? [{ label: "Yer Planları", path: base + "/plans" }] : []),
@@ -102,46 +103,46 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Hesap Davetleri" : "Giriş Davetleri", path: base + "/auth-invites" });
       if (me?.companyKind === "SCHOOL") advanced.push({ label: "Parent Link", path: "/school/parents" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : me?.companyKind === "ORGANIZATION" ? "Lokasyon İncele" : "Konum İncele", path: base + "/georeview" });
-      advanced.push({ label: "Copilot", path: base + "/copilot" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "DRIVER") {
       sections.push({
         title: "",
         items: [
+          { label: "Rehber", path: "/driver/copilot", badge: "Yeni" },
           { label: "Bugün", path: "/driver/today" },
           { label: "Rota", path: "/driver/route" },
           { label: "Harita", path: "/driver/map" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
-          { label: "Copilot", path: "/driver/copilot" },
         ],
       });
     } else if (role === "PERSONEL") {
       sections.push({
         title: "",
         items: [
+          { label: "Rehber", path: "/personel/copilot", badge: "Yeni" },
           { label: "Canlı", path: "/personel/live" },
           { label: "Servisim", path: "/personel/my" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
-          { label: "Copilot", path: "/personel/copilot" },
         ],
       });
     } else if (role === "PARENT") {
       sections.push({
         title: "",
         items: [
+          { label: "Rehber", path: "/parent/copilot", badge: "Yeni" },
           { label: "Canlı", path: "/parent/live" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
-          { label: "Copilot", path: "/parent/copilot" },
         ],
       });
     } else if (role === "SUPER_ADMIN") {
       sections.push({
         title: "",
         items: [
+          { label: "Rehber", path: "/superadmin/copilot", badge: "Yeni" },
           { label: "Overview", path: "/superadmin" },
           { label: "Companies", path: "/superadmin/companies" },
           { label: "Rooms", path: "/superadmin/rooms" },
@@ -149,7 +150,6 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Regions", path: "/superadmin/regions" },
           { label: "Audit", path: "/superadmin/audit" },
           { label: "Log Export", path: "/superadmin/logexport" },
-          { label: "Copilot", path: "/superadmin/copilot" },
         ],
       });
     }

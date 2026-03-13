@@ -92,9 +92,27 @@ function newRefreshToken() {
   return crypto.randomBytes(32).toString("base64url");
 }
 
+
 function pickDeviceId(req) {
   const d = String(req.body?.deviceId || "").trim();
   return d ? d : null;
+}
+
+function normalizeDriverCode(value) {
+  return String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+async function findLoginUser(identifierRaw) {
+  const identifier = String(identifierRaw || '').trim();
+  if (!identifier) return null;
+  const include = { driver: { select: { id: true, driverCode: true, pinTemporary: true } } };
+  if (identifier.includes('@')) {
+    return prisma.user.findUnique({ where: { email: identifier.toLowerCase() }, include });
+  }
+  return prisma.user.findFirst({
+    where: { role: 'DRIVER', driver: { is: { driverCode: normalizeDriverCode(identifier) } } },
+    include,
+  });
 }
 
 async function enforceDriverDeviceBinding({ req, user }) {
@@ -157,24 +175,24 @@ authRouter.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-  const email = String(parsed.data.email || "").trim().toLowerCase();
+  const identifier = String(parsed.data.identifier || parsed.data.email || '').trim();
   const password = parsed.data.password;
   const reqDeviceId = parsed.data.deviceId ? String(parsed.data.deviceId).trim() : null;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await findLoginUser(identifier);
   if (!user) {
-    await recordLoginAudit({ req, email, user: null, action: "AUTH_LOGIN_FAIL", reason: "USER_NOT_FOUND" });
+    await recordLoginAudit({ req, email: identifier, user: null, action: "AUTH_LOGIN_FAIL", reason: "USER_NOT_FOUND" });
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
   if (isDisabledHash(user.passwordHash)) {
-    await recordLoginAudit({ req, email, user, action: "AUTH_LOGIN_DISABLED", reason: "DISABLED" });
+    await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_DISABLED", reason: "DISABLED" });
     return res.status(403).json({ error: "Account disabled" });
   }
 
   const okPass = await bcrypt.compare(password, user.passwordHash);
   if (!okPass) {
-    await recordLoginAudit({ req, email, user, action: "AUTH_LOGIN_FAIL", reason: "BAD_PASSWORD" });
+    await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_FAIL", reason: "BAD_PASSWORD" });
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
@@ -186,7 +204,7 @@ authRouter.post("/login", async (req, res) => {
     if (user.deviceId && reqDeviceId && String(user.deviceId) !== String(reqDeviceId)) {
       await recordLoginAudit({
         req,
-        email,
+        email: identifier,
         user,
         action: "AUTH_LOGIN_DEVICE_MISMATCH",
         reason: "DEVICE_MISMATCH",
@@ -196,7 +214,7 @@ authRouter.post("/login", async (req, res) => {
     }
 
     if (isProd() && user.deviceId && !reqDeviceId) {
-      await recordLoginAudit({ req, email, user, action: "AUTH_LOGIN_DEVICE_REQUIRED", reason: "DEVICE_ID_REQUIRED" });
+      await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_DEVICE_REQUIRED", reason: "DEVICE_ID_REQUIRED" });
       return res.status(400).json({ error: "DEVICE_ID_REQUIRED" });
     }
 
@@ -248,7 +266,7 @@ authRouter.post("/login", async (req, res) => {
     // ignore
   }
 
-  await recordLoginAudit({ req, email, user, action: "AUTH_LOGIN_OK", reason: null, meta: { deviceId: reqDeviceId || null } });
+  await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_OK", reason: null, meta: { deviceId: reqDeviceId || null } });
 
   return res.json({
     token,
@@ -611,6 +629,36 @@ authRouter.post("/refresh", async (req, res) => {
     });
     return res.json({ token: newAccess, refreshToken: refreshTokenRaw });
   }
+});
+
+authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {
+  const user = req.user;
+  if (String(user?.role || '') !== 'DRIVER') return res.status(403).json({ error: 'Forbidden' });
+
+  const currentPin = String(req.body?.currentPin || '').trim();
+  const newPin = String(req.body?.newPin || '').trim();
+
+  if (currentPin.length < 4) return res.status(400).json({ error: 'CURRENT_PIN_REQUIRED', code: 'CURRENT_PIN_REQUIRED' });
+  if (newPin.length < 4) return res.status(400).json({ error: 'NEW_PIN_TOO_SHORT', code: 'NEW_PIN_TOO_SHORT' });
+  if (!/^\d{4,8}$/.test(newPin)) return res.status(400).json({ error: 'PIN_FORMAT_INVALID', code: 'PIN_FORMAT_INVALID' });
+
+  const authUser = await prisma.user.findUnique({ where: { id: user.id }, include: { driver: true } });
+  if (!authUser?.driver) return res.status(404).json({ error: 'DRIVER_PROFILE_NOT_FOUND', code: 'DRIVER_PROFILE_NOT_FOUND' });
+
+  const okPass = await bcrypt.compare(currentPin, authUser.passwordHash);
+  if (!okPass) {
+    await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_FAIL', reason: 'BAD_CURRENT_PIN' });
+    return res.status(401).json({ error: 'BAD_CURRENT_PIN', code: 'BAD_CURRENT_PIN' });
+  }
+
+  const passwordHash = await bcrypt.hash(newPin, 10);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: authUser.id }, data: { passwordHash } }),
+    prisma.driver.update({ where: { id: authUser.driver.id }, data: { pinTemporary: false, pinUpdatedAt: new Date() } }),
+  ]);
+
+  await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_OK', reason: null, meta: { driverId: authUser.driver.id } });
+  return res.json({ ok: true });
 });
 
 // ✅ M41: logout / revoke refresh token(s)

@@ -21,7 +21,7 @@ async function main() {
     },
   });
   must('room shift chat ok', roomShiftChat.ok && roomShiftChat.json?.mode === 'CHAT_HELP');
-  must('room shift version upgraded', roomShiftChat.json?.copilotVersion === 'M46.6-D3');
+  must('room shift version upgraded', ['M46.6-D3','M46.6-D4'].includes(roomShiftChat.json?.copilotVersion));
   must('room shift action plan label exists', !!roomShiftChat.json?.actionPlanLabel);
   must('room shift quick actions visible', Array.isArray(roomShiftChat.json?.quickActions) && roomShiftChat.json.quickActions.length >= 3);
   must('room shift route action exists', roomShiftChat.json.quickActions.some((x) => x?.actionKind === 'OPEN_ROUTE'));

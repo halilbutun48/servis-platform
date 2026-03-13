@@ -432,6 +432,9 @@ model Driver {
   fullName       String
   phone          String
   deviceInfo     String
+  driverCode     String?  @unique
+  pinTemporary   Boolean  @default(true)
+  pinUpdatedAt   DateTime?
   backupDriverId Int?
   createdAt      DateTime @default(now())
   agreements     Agreement[]

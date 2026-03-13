@@ -20,7 +20,7 @@ body { margin: 0; background: #0b0f17; color: #e7eefc; }
   .mapGrid { grid-template-columns: 1fr; }
   .mapAsideCard { height: auto; }
 }
-.muted { color:#a9b7d6; font-size: 13px; }
+.muted { color:#98a2b3; font-size: 13px; }
 .err { color:#ffb4b4; border-color:#6b1d1d; }
 .ok { color:#aef3c2; }
 .pill {

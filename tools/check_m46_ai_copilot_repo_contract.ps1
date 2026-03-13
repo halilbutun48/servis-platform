@@ -9,6 +9,14 @@ function MustContain($rel, $needle, $label){
   if (-not $txt.Contains($needle)) { throw "FAIL $label" }
   Ok $label
 }
+function MustContainAny($rel, $needles, $label){
+  $p = Join-Path $RepoRoot $rel
+  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+  foreach($needle in $needles){
+    if ($needle -and $txt.Contains($needle)) { Ok $label; return }
+  }
+  throw "FAIL $label"
+}
 
 Info 'Checking backend AI files'
 @(
@@ -37,7 +45,7 @@ MustContain 'web\src\App.jsx' 'CopilotPanel' 'App imports CopilotPanel'
 MustContain 'web\src\App.jsx' '/room/copilot' 'App routes room copilot'
 MustContain 'web\src\App.jsx' '/company/copilot' 'App routes company copilot'
 MustContain 'web\src\App.jsx' '/superadmin/copilot' 'App routes superadmin copilot'
-MustContain 'web\src\layout\NavDock.jsx' 'Copilot' 'NavDock mentions Copilot'
+MustContainAny 'web\src\layout\NavDock.jsx' @('Copilot','Rehber') 'NavDock mentions Copilot/Rehber'
 
 Info 'Checking docs/tool pointers'
 MustContain 'tools\README.md' 'pack_m46_ai_copilot.ps1' 'tools readme mentions m46 pack'

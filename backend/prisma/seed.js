@@ -73,12 +73,18 @@ async function main() {
       fullName: "Driver One",
       phone: "+90 555 000 00 04",
       deviceInfo: "Android GPS Phone (demo)",
+      driverCode: "SRC-000001",
+      pinTemporary: false,
+      pinUpdatedAt: new Date(),
     },
     create: {
       roomId: room.id,
       fullName: "Driver One",
       phone: "+90 555 000 00 04",
       deviceInfo: "Android GPS Phone (demo)",
+      driverCode: "SRC-000001",
+      pinTemporary: false,
+      pinUpdatedAt: new Date(),
     },
   });
 

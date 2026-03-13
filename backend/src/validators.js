@@ -17,13 +17,26 @@ const dateTimeString = z
 const latNumber = z.number().min(-90).max(90);
 const lngNumber = z.number().min(-180).max(180);
 
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(3),
-  // ✅ M41: optional device binding fields
-  deviceId: z.string().trim().min(2).optional(),
-  deviceName: z.string().trim().min(1).optional(),
-});
+export const loginSchema = z
+  .object({
+    email: z.string().trim().min(2).optional(),
+    identifier: z.string().trim().min(2).optional(),
+    password: z.string().min(3),
+    // ✅ M41: optional device binding fields
+    deviceId: z.string().trim().min(2).optional(),
+    deviceName: z.string().trim().min(1).optional(),
+  })
+  .superRefine((val, ctx) => {
+    const hasEmail = Boolean(String(val.email || '').trim());
+    const hasIdentifier = Boolean(String(val.identifier || '').trim());
+    if (!hasEmail && !hasIdentifier) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['identifier'],
+        message: 'email veya identifier gerekli',
+      });
+    }
+  });
 
 export const refreshSchema = z.object({
   refreshToken: z.string().trim().min(8),

@@ -9,7 +9,7 @@ meRouter.get("/", authRequired(), async (req, res) => {
   const u = req.user;
 
   const [driver, personel, company, room] = await Promise.all([
-    u.role === "DRIVER" ? prisma.driver.findFirst({ where: { userId: u.id }, select: { id: true } }) : Promise.resolve(null),
+    u.role === "DRIVER" ? prisma.driver.findFirst({ where: { userId: u.id }, select: { id: true, driverCode: true, pinTemporary: true, pinUpdatedAt: true } }) : Promise.resolve(null),
     u.role === "PERSONEL" ? prisma.personel.findFirst({ where: { userId: u.id }, select: { id: true, kind: true } }) : Promise.resolve(null),
     u.companyId
       ? prisma.company.findUnique({
@@ -51,6 +51,9 @@ meRouter.get("/", authRequired(), async (req, res) => {
     roomDistrict: room?.district ?? null,
 
     driverId: driver?.id ?? null,
+    driverCode: driver?.driverCode ?? null,
+    requirePinChange: Boolean(driver?.pinTemporary),
+    pinUpdatedAt: driver?.pinUpdatedAt ?? null,
     personelId: personel?.id ?? null,
     personelKind: personel?.kind ?? null,
 

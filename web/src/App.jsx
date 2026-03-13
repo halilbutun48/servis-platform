@@ -31,6 +31,7 @@ import DriverMapPanel from "./panels/driver/MapPanel";
 import RoutePanel from "./panels/driver/RoutePanel";
 import DriverTodayPanel from "./panels/driver/TodayPanel";
 import DriverCheckinPanel from "./panels/driver/CheckinPanel";
+import DriverPinChangePanel from "./panels/driver/PinChangePanel";
 
 // PERSONEL
 import PersonelLivePanel from "./panels/personel/LivePanel";
@@ -69,7 +70,7 @@ function roleDefaultPath(me) {
   const role = me?.role;
   if (role === "ROOM") return "/room/map";
   if (role === "COMPANY") return companyBase(me); // COMPANY or SCHOOL variant
-  if (role === "DRIVER") return "/driver/today";
+  if (role === "DRIVER") return me?.requirePinChange ? "/driver/change-pin" : "/driver/today";
   if (role === "PERSONEL") return "/personel/live";
   if (role === "PARENT") return "/parent/live";
   if (role === "SUPER_ADMIN") return "/superadmin";
@@ -78,7 +79,7 @@ function roleDefaultPath(me) {
 
 function LoginCard() {
   const { setToken } = useSession();
-  const [email, setEmail] = useState("room@demo.com");
+  const [identifier, setIdentifier] = useState("room@demo.com");
   const [password, setPassword] = useState("demo123");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -88,7 +89,7 @@ function LoginCard() {
     setBusy(true);
     setErr("");
     try {
-      const r = await login(email, password);
+      const r = await login(identifier, password);
       setToken(r.token);
     } catch (e2) {
       setErr(String(e2?.message || e2));
@@ -108,11 +109,11 @@ function LoginCard() {
         <div className="title">Login</div>
         <form onSubmit={onLogin} style={{ display: "grid", gap: 8, marginTop: 8, maxWidth: 420 }}>
           <label className="muted">
-            E-posta
-            <input value={email} onChange={(e) => setEmail(e.target.value)} />
+            E-posta veya Sürücü Kodu
+            <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="room@demo.com veya SRC-000001" />
           </label>
           <label className="muted">
-            Şifre
+            Şifre veya PIN
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
 
@@ -141,7 +142,7 @@ function LoginCard() {
 
         <hr style={{ margin: "12px 0" }} />
         <div className="muted">
-          Demo kullanıcılar: room@demo.com, company@demo.com, school@demo.com, organization@demo.com, driver@demo.com, personel@demo.com (şifre: demo123)
+          Demo kullanıcılar: room@demo.com, company@demo.com, school@demo.com, organization@demo.com, driver@demo.com, personel@demo.com (şifre: demo123). Sürücü için ayrıca Sürücü Kodu + PIN girişi de desteklenir.
         </div>
       </div>
     </div>
@@ -177,6 +178,11 @@ export default function App() {
       return { layout: false, node: <LoginCard /> };
     }
     if (!me) return { layout: false, node: <div style={{ padding: 16 }}>Loading...</div> };
+
+    if (me.role === "DRIVER" && me.requirePinChange && path !== "/driver/change-pin") {
+      navigate("/driver/change-pin");
+      return { layout: true, node: <div style={{ padding: 16 }}>PIN ekranına yönlendiriliyor...</div> };
+    }
 
     // Shared
     if (path === "/shared/notifications") return { layout: true, node: <NotificationsPanel /> };
@@ -239,6 +245,7 @@ export default function App() {
     if (path === "/driver/map") return { layout: true, node: <DriverMapPanel /> };
     if (path === "/driver/route") return { layout: true, node: <RoutePanel /> };
     if (path === "/driver/checkin") return { layout: true, node: <DriverCheckinPanel /> };
+    if (path === "/driver/change-pin") return { layout: true, node: <DriverPinChangePanel /> };
     if (path === "/driver/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // PERSONEL

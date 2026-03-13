@@ -1,12 +1,30 @@
 // backend/src/routes/drivers.js
 import express from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createDriverSchema } from "../validators.js";
 
-function isValidEmail(s) {
-  return typeof s === "string" && s.includes("@") && s.includes(".");
+function normalizeDriverCode(value) {
+  return String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+}
+
+function buildAliasEmail(driverCode) {
+  return `${String(driverCode || "").trim().toLowerCase()}@driver.local`;
+}
+
+function makeTempPin() {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+}
+
+async function generateDriverCode(db = prisma) {
+  for (let i = 0; i < 40; i += 1) {
+    const code = `SRC-${String(crypto.randomInt(0, 1_000_000)).padStart(6, "0")}`;
+    const exists = await db.driver.findFirst({ where: { driverCode: code }, select: { id: true } });
+    if (!exists) return code;
+  }
+  throw new Error("DRIVER_CODE_GENERATION_FAILED");
 }
 
 export function driversRouter(io) {
@@ -22,7 +40,7 @@ export function driversRouter(io) {
 
     const d = await prisma.driver.findUnique({
       where: { id: driverId },
-      select: { id: true, roomId: true, userId: true },
+      select: { id: true, roomId: true, userId: true, fullName: true, phone: true, driverCode: true },
     });
 
     if (!d) {
@@ -36,6 +54,49 @@ export function driversRouter(io) {
     }
 
     return d;
+  }
+
+  async function issueDriverCredentials({ db = prisma, driverId, roomId, fullName, phone, existingUserId = null, existingDriverCode = null }) {
+    const driverCode = existingDriverCode || (await generateDriverCode(db));
+    const temporaryPin = makeTempPin();
+    const passwordHash = await bcrypt.hash(temporaryPin, 10);
+
+    let userId = existingUserId || null;
+    if (userId) {
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash,
+          fullName,
+          phone,
+        },
+      });
+    } else {
+      const user = await db.user.create({
+        data: {
+          email: buildAliasEmail(driverCode),
+          passwordHash,
+          role: "DRIVER",
+          roomId,
+          fullName,
+          phone,
+        },
+        select: { id: true },
+      });
+      userId = user.id;
+    }
+
+    await db.driver.update({
+      where: { id: driverId },
+      data: {
+        userId,
+        driverCode,
+        pinTemporary: true,
+        pinUpdatedAt: new Date(),
+      },
+    });
+
+    return { driverCode, temporaryPin, userId };
   }
 
   // LIST (ROOM)
@@ -73,56 +134,92 @@ export function driversRouter(io) {
       });
     }
 
-    const { fullName, phone, deviceInfo, email, password } = parsed.data;
+    const { fullName, phone, deviceInfo } = parsed.data;
 
-
-    let userId = null;
-
-    // optional login user create
-    if (email || password) {
-      if (!email || !password) {
-        return res.status(400).json({
-          code: "BAD_REQUEST",
-          message: "Login hesabı açmak için email ve şifre birlikte girilmeli",
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const created = await tx.driver.create({
+          data: {
+            roomId: u.roomId,
+            fullName,
+            phone,
+            deviceInfo: deviceInfo ?? null,
+          },
+          select: { id: true },
         });
-      }
-      if (!isValidEmail(email)) return res.status(400).json({ code: "BAD_REQUEST", message: "email geçersiz" });
-      if (String(password || "").length < 4) return res.status(400).json({ code: "BAD_REQUEST", message: "password çok kısa" });
 
-      const exists = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-      if (exists) return res.status(400).json({ code: "BAD_REQUEST", message: "email zaten kullanılıyor" });
-
-      const passwordHash = await bcrypt.hash(password, 10);
-
-      const user = await prisma.user.create({
-        data: {
-          email,
-          passwordHash,
-          role: "DRIVER",
+        const issued = await issueDriverCredentials({
+          db: tx,
+          driverId: created.id,
           roomId: u.roomId,
           fullName,
           phone,
-        },
-        select: { id: true, email: true },
+        });
+
+        const driver = await tx.driver.findUnique({
+          where: { id: created.id },
+          include: { backupDriver: true, user: { select: { id: true, email: true } } },
+        });
+
+        return { driver, issued };
       });
 
-      userId = user.id;
+      io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: result.driver.id, action: "created" });
+
+      return res.json({
+        ...result.driver,
+        loginMode: "DRIVER_CODE_PIN",
+        issuedCredentials: {
+          driverCode: result.issued.driverCode,
+          temporaryPin: result.issued.temporaryPin,
+          temporary: true,
+        },
+      });
+    } catch (e) {
+      return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
     }
+  });
 
-    const created = await prisma.driver.create({
-      data: {
-        roomId: u.roomId,
-        fullName,
-        phone,
-        deviceInfo: deviceInfo ?? null,
-        userId,
-      },
-      include: { backupDriver: true, user: { select: { id: true, email: true } } },
-    });
+  r.post("/:id/reset-pin", authRequired(), requireRole("ROOM"), async (req, res) => {
+    const u = req.user;
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ code: "BAD_REQUEST", message: "Invalid id" });
 
-    io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: created.id, action: "created" });
+    const owner = await assertRoomDriverOwner({ user: u, driverId: id, res });
+    if (!owner) return;
 
-    return res.json(created);
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const issued = await issueDriverCredentials({
+          db: tx,
+          driverId: id,
+          roomId: u.roomId,
+          fullName: owner.fullName,
+          phone: owner.phone,
+          existingUserId: owner.userId,
+          existingDriverCode: owner.driverCode,
+        });
+
+        const driver = await tx.driver.findUnique({
+          where: { id },
+          include: { backupDriver: true, user: { select: { id: true, email: true } } },
+        });
+        return { driver, issued };
+      });
+
+      io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: id, action: "updated" });
+      return res.json({
+        ok: true,
+        driver: result.driver,
+        issuedCredentials: {
+          driverCode: result.issued.driverCode,
+          temporaryPin: result.issued.temporaryPin,
+          temporary: true,
+        },
+      });
+    } catch (e) {
+      return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
+    }
   });
 
   // UPDATE (ROOM)
@@ -185,6 +282,16 @@ export function driversRouter(io) {
       include: { backupDriver: true, user: { select: { id: true, email: true } } },
     });
 
+    if (owner.userId && (data.fullName || data.phone)) {
+      await prisma.user.update({
+        where: { id: owner.userId },
+        data: {
+          ...(data.fullName ? { fullName: data.fullName } : {}),
+          ...(data.phone ? { phone: data.phone } : {}),
+        },
+      }).catch(() => {});
+    }
+
     io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: updated.id, action: "updated" });
 
     return res.json({ ok: true, driver: updated });
@@ -218,18 +325,14 @@ export function driversRouter(io) {
       });
     }
 
-    // detach any vehicle bind (safety)
-    await prisma.vehicle.updateMany({
-      where: { roomId: u.roomId, driverId: id },
-      data: { driverId: null },
-    });
+    await prisma.vehicle.updateMany({ where: { roomId: u.roomId, driverId: id }, data: { driverId: null } });
 
     try {
       await prisma.driver.delete({ where: { id } });
       if (owner.userId) {
         try {
           await prisma.user.delete({ where: { id: owner.userId } });
-        } catch (_) {
+        } catch {
           // ignore
         }
       }

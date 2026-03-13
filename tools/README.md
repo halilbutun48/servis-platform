@@ -12,6 +12,8 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m43_google_auth_invite_gate.ps1`
 - `tools\pack_m44_telematics.ps1`
 - `tools\pack_m45_retention_backup.ps1`
+- `tools\backup_create_m45.ps1`
+- `tools\backup_restore_m45.ps1`
 - `tools\pack_m46_ai_copilot.ps1`
 - `tools\pack_m46_1_ai_copilot_enrichment.ps1`
 - `tools\pack_m46_2_ai_copilot_intent_expansion.ps1`
@@ -28,7 +30,8 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_6_c2_screen_coverage_terminology.ps1`
 - `tools\pack_m46_6_d4_simple_role_mode.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene check’leri
-- `toolseset-and-pack.ps1`
+- `tools
+eset-and-pack.ps1`
 - `tools\_console_status.ps1`
 
 ## Kökte kalan doküman pointer’ları
@@ -52,6 +55,8 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform` → Step 2 / M43
 - `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform` → Step 2.5 / M44
 - `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform` → Step 2.6 / M45
+- `tools\backup_create_m45.ps1 -RepoRoot D:\servis-platform` → M45 yedek oluşturma
+- `tools\backup_restore_m45.ps1 -RepoRoot D:\servis-platform -BackupFile <manifest-or-dump>` → M45 yedek geri yükleme
 - `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform` → Step 3 / M46
 - `tools\pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform` → Step 3.1 / M46.1
 - `tools\pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform` → Step 3.2 / M46.2

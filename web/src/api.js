@@ -75,13 +75,13 @@ api.post = (path, body, opts = {}) => api(path, { ...opts, method: "POST", body 
 api.put = (path, body, opts = {}) => api(path, { ...opts, method: "PUT", body });
 api.del = (path, opts = {}) => api(path, { ...opts, method: "DELETE" });
 
-export async function login(email, password) {
+export async function login(identifier, password) {
   // login'de token yok, o yüzden Authorization göndermiyoruz
   const res = await fetch("/api/auth/login", {
     cache: "no-store",
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ identifier, password }),
   });
 
   const ct = res.headers.get("content-type") || "";
@@ -140,4 +140,9 @@ export async function googleLogin(credential, { inviteToken, deviceId, testProfi
   if (!data?.token) throw new Error("Google login response token yok");
   setToken(data.token);
   return data;
+}
+
+
+export async function changeDriverPin(currentPin, newPin, token) {
+  return api("/api/auth/driver/change-pin", { method: "POST", token, body: { currentPin, newPin } });
 }

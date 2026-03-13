@@ -25,7 +25,7 @@ Write-Host "INFO Checking M46.6-D2 files"
   "backend\src\ai\chat\replyShapes.js",
   "web\src\panels\shared\CopilotPanel.jsx",
   "web\src\components\copilot\ChatMessageBubble.jsx"
-) | % { MustExist $_ }
+) | ForEach-Object { MustExist $_ }
 
 Write-Host "INFO Checking backend context-aware chat wiring"
 $composerTxt = ReadText "backend\src\ai\chat\helpComposer.js"
