@@ -71,6 +71,5 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 ## SSOT / plan kuralı
 - `tools\PRIMER_SNAPSHOT.md` ve checklist dosyaları mevcut green durumu + resmi sonraki rotayı taşır.
 - README yalnızca gerçekten var olan script adlarını taşır; planlanan milestone script isimleri yazılmaz.
-- Sonraki resmi odak: M47.4 mobile readiness web pass, M48 driver mobile foundation, M49 driver mobile beta hardening.
-- Kanonik token: `M47.4 MOBILE READINESS WEB PASS`
-- Daha sonraki aday faz: driver voice guidance + stop ETA.
+- Sonraki resmi odak: M47.4-R clean rerun / repro fix, M48 driver mobile app foundation, M48.5 room / company tablet readiness, M49 mobile beta hardening, M49.1 driver voice guidance + stop ETA, M50 mobile release readiness.
+- Kanonik token: `M47.4-R CLEAN RERUN REPRO FIX`

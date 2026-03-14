@@ -29,6 +29,15 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M47 KVKK NOTICE / CONSENT FRAMEWORK PACK PASS OK`
 - `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
 - `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
+- `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
+
+## Sonraki resmi rota
+- `M47.4-R — Clean Rerun / Repro Fix`
+- `M48 — Driver Mobile App Foundation`
+- `M48.5 — Room / Company Tablet Readiness`
+- `M49 — Mobile Beta Hardening`
+- `M49.1 — Driver Voice Guidance + Stop ETA`
+- `M50 — Mobile Release Readiness`
 
 ## Kanonik tools düzeni
 - `tools/` kökü sadece kanonik çalıştırma/doğrulama script’leri için kullanılır.

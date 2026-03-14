@@ -1,6 +1,6 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT (Repo-Verified, Post-M47.3)
+# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT (Repo-Verified, Post-M47.4)
 
-Tarih: 2026-03-14
+Tarih: 2026-03-15
 Timezone: Europe/Istanbul
 
 ## 0) Durum / referans
@@ -40,11 +40,13 @@ Ana resmi green durum:
 - ✅ `M47 KVKK NOTICE / CONSENT FRAMEWORK PACK PASS OK`
 - ✅ `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
 - ✅ `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
+- ✅ `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
 
 Önemli referans:
 - `tools/STABLE_TO.txt = 41`
 - ana stabil taban hâlâ `M41`
-- M47.4 henüz aday aşamadadır; resmi green değildir.
+- son resmi green commit/tag hattı: `e012d43` / `v1-m47.4-green`
+- `M47.4-R` planlı clean rerun / repro-fix işidir; green değildir.
 
 Ana kanıt komutları:
 - `./tools/pack.ps1 -To 41`
@@ -60,6 +62,9 @@ Ana kanıt komutları:
 Ürün / operasyon kararları:
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
 - İlk girişte PIN değişimi zorunludur.
+- Driver için birincil hedef telefon uygulamasıdır.
+- Room / Company için tablet güçlü hedef, telefonda temel kullanım korunur.
+- Super Admin / büyük log-rapor işleri masaüstü önceliklidir.
 - Rehber ürün içinde birincil yardımcı yüzdür.
 - AI hattı read-only / suggestion-first kalır.
 - overlay standardı: **tek zip / tek kök klasör / nested root yok**.
@@ -69,10 +74,13 @@ TTL / public link özeti:
 - Parent invite ve personel public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
 
 Sonraki doğru rota:
-- `M47.4 — Mobile Readiness Web Pass`
-- `M48 — Driver Mobile Foundation`
-- `M49 — Driver Mobile Beta Hardening`
-Kanonik next-route token: `M47.4 MOBILE READINESS WEB PASS`
+- `M47.4-R — Clean Rerun / Repro Fix`
+- `M48 — Driver Mobile App Foundation`
+- `M48.5 — Room / Company Tablet Readiness`
+- `M49 — Mobile Beta Hardening`
+- `M49.1 — Driver Voice Guidance + Stop ETA`
+- `M50 — Mobile Release Readiness`
+Kanonik next-route token: `M47.4-R CLEAN RERUN REPRO FIX`
 
 Yeni sohbet açınca ilk cümle:
-Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot zinciri, M46.7 driver code login + rehber first, M46.8 driver access hardening, M46.9 session & refresh security, M47 KVKK, M47.2 capacity baseline ve M47.3 edge security ayrı pack/check hatlarıyla green durumda. Sonraki doğru rota M47.4 — Mobile Readiness Web Pass.
+Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot zinciri, M46.7 driver code login + rehber first, M46.8 driver access hardening, M46.9 session & refresh security, M47 KVKK, M47.2 capacity baseline, M47.3 edge security ve M47.4 mobile readiness web pass ayrı pack/check hatlarıyla green durumda. Sonraki doğru rota M47.4-R — Clean Rerun / Repro Fix.
