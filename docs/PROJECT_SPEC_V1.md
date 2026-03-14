@@ -69,7 +69,7 @@ RBAC izolasyonu
 V1’de update/delete minimal tutulabilir; genişletme sonraki milestone’lara bırakılabilir.
 
 Amaç
-Öğrenci/parent yok.
+Temel odak GPS tabanlı personel servisi platformudur; ayrıca school/parent/öğrenci invite ve canlı erişim akışları da sistemde yer alır.
 GPS tabanlı personel servisi platformu:
 Canlı araç takibi
 Rota/durak planı
@@ -208,3 +208,4 @@ Kural:
 - scope dışı bilgi vermez
 - gerekiyorsa **Buradan aç** tarzı yönlendirme üretir
 - mevcut `POST /api/ai/copilot` hattı korunur
+

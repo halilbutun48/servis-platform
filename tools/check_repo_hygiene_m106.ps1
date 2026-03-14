@@ -22,9 +22,10 @@ MustContain 'web\src\panels\company\PassengerLinksPanel.jsx' '<option value="365
 MustContain 'backend\src\routes\passengerLinks.js' '.max(365)' 'personel link backend max 365'
 MustContain 'backend\src\routes\passengerLinks.js' 'ttlDays) expiresAt = new Date' 'personel link no hard shift-end clamp'
 Info 'Checking primer/docs sync'
-MustContain 'tools\PRIMER_SNAPSHOT.md' 'Parent invite ve personel public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.' 'primer ttl summary sync'
+MustContain 'tools\PRIMER_SNAPSHOT.md' 'Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.' 'primer ttl summary sync'
 MustContain 'docs\PRIMER_SSOT.md' '1 hafta / 1 ay / 6 ay / 1 yıl' 'docs primer ttl sync'
 MustContain 'docs\STARTPACK_V1.md' 'Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**' 'startpack parent ttl sync'
 MustContain 'docs\STARTPACK_V1.md' 'Personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**' 'startpack personel ttl sync'
 MustAbsent 'tools\PRIMER_SNAPSHOT_2026-03-10_M106_1.md'
 Write-Host 'REPO HYGIENE M106 CHECK PASS'
+

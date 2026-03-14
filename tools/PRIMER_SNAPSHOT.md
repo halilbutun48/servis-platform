@@ -83,7 +83,7 @@ M47.4-R ile netleşen teknik sonuç:
 - ürün dili içinde `sürücünün telefon GPS'i` ifadesi korunur.
 
 TTL / public link özeti:
-- Parent invite ve personel public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
+- Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
 
 Sonraki doğru rota:
 - `M48 — Driver Mobile App Foundation`
@@ -95,3 +95,4 @@ Kanonik next-route token: `M48 DRIVER MOBILE APP FOUNDATION`
 
 Yeni sohbet açınca ilk cümle:
 Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot zinciri, M46.7 driver code login + rehber first, M46.8 driver access hardening, M46.9 session & refresh security, M47 KVKK, M47.2 capacity baseline, M47.3 edge security, M47.4 mobile readiness web pass ve M47.4-R clean rerun / repro fix repo-verified durumda. Sonraki doğru rota M48 — Driver Mobile App Foundation.
+
