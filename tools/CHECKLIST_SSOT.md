@@ -189,6 +189,9 @@ Resmi dosyalar:
 - [x] `M46.9 — Session & Refresh Security`
 - [ ] `M47 — KVKK Notice/Consent Framework`
 - [ ] `M47.2 — Capacity & Load Baseline`
+  - admin capacity policy/snapshot endpointleri
+  - health icinde runtime capacity ozeti
+  - p95 / 429 / inflight / ws baglanti baz cizgisi
 - [ ] `M47.3 — Production Resilience + Edge Security`
 - [ ] `M47.4 — Mobile Readiness Web Pass`
 - [ ] `M48 — Driver Mobile Foundation`

@@ -106,7 +106,7 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 ## SSOT / plan kuralı
 - `tools\PRIMER_SNAPSHOT.md` ve checklist dosyaları mevcut green durumu + resmi sonraki rotayı taşır.
 - README yalnızca gerçekten var olan script adlarını taşır; planlanan milestone script isimleri yazılmaz.
-- Sonraki resmi odak: driver access hardening, session security, KVKK notice/consent, capacity baseline, production resilience, mobile readiness, driver mobile foundation.
+- Sonraki resmi odak: M47.2 capacity baseline, M47.3 production resilience, M47.4 mobile readiness, M48 driver mobile foundation.
 - Daha sonraki aday faz: driver voice guidance + stop ETA.
 
 ## M46.8 (green)

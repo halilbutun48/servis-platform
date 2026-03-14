@@ -9,6 +9,7 @@ import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { runRetentionCleanupOnce } from "../jobs/retentionCleanup.js";
 import { getBackupManifestSummary, getBackupPolicySummary, getRetentionPolicySummary } from "../ops/retentionBackupPolicy.js";
+import { getCapacityPolicySummary, getCapacitySnapshot } from "../ops/capacityLoadBaseline.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 
@@ -131,6 +132,17 @@ r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_re
     },
     ...getBackupManifestSummary(),
   });
+});
+
+
+// M47.2: capacity / load baseline policy
+r.get("/capacity/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json({ ok: true, ...getCapacityPolicySummary() });
+});
+
+// M47.2: capacity / load snapshot
+r.get("/capacity/snapshot", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json(await getCapacitySnapshot());
 });
   /**
    * SUPER_ADMIN — Overview stats

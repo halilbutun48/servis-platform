@@ -107,6 +107,8 @@ Bu dosya repo için kısa çalışma runbook’udur.
   - `/api/me` KVKK özet alanı
   - `web shell` içinde KVKK modal gate
 - `M47.2 — Capacity & Load Baseline`
+  - admin tarafinda capacity policy + snapshot
+  - health icinde capacity runtime ozeti
 - `M47.3 — Production Resilience + Edge Security`
 - `M47.4 — Mobile Readiness Web Pass`
 - `M48 — Driver Mobile Foundation`

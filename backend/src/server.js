@@ -59,6 +59,7 @@ import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
 import { getRedis } from "./redis/index.js";
 import { RedisRateLimitStore } from "./middleware/rateLimitRedisStore.js";
+import { startCapacityBaselineMonitor, capacityRequestStarted, capacityRequestFinished, capacityWsConnected, capacityWsDisconnected, getCapacityHealthSummary } from "./ops/capacityLoadBaseline.js";
 
 import * as agreementsMod from "./routes/agreements.js";
 /**
@@ -113,6 +114,7 @@ for (const [name, fn] of Object.entries({
 }
 
 const app = express();
+startCapacityBaselineMonitor();
 
 // M11: proxy / güvenlik baseline
 app.disable("x-powered-by");
@@ -149,6 +151,18 @@ if (requireHttps) {
 }
 
 app.use(express.json({ limit: "1mb" }));
+app.use((req, res, next) => {
+  capacityRequestStarted();
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    capacityRequestFinished();
+  };
+  res.on("finish", finish);
+  res.on("close", finish);
+  next();
+});
 app.use(morgan("dev"));
 
 // M10: request log (must be early)
@@ -347,6 +361,7 @@ app.get("/health", async (req, res) => {
     dbOk,
     dbLatencyMs: Date.now() - t0,
     version: ENV.APP_VERSION,
+    capacity: getCapacityHealthSummary(),
   });
 });
 
@@ -417,6 +432,8 @@ io.use(async (socket, next) => {
 });
 
 io.on("connection", (socket) => {
+  capacityWsConnected();
+  socket.on("disconnect", () => capacityWsDisconnected());
   const user = socket.user;
   const rooms = scopeRoomsForUser(user);
   rooms.forEach((r) => socket.join(r));
