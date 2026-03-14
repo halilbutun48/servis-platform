@@ -10,6 +10,7 @@ import { ENV } from "../env.js";
 import { runRetentionCleanupOnce } from "../jobs/retentionCleanup.js";
 import { getBackupManifestSummary, getBackupPolicySummary, getRetentionPolicySummary } from "../ops/retentionBackupPolicy.js";
 import { getCapacityPolicySummary, getCapacitySnapshot } from "../ops/capacityLoadBaseline.js";
+import { getEdgeSecurityPolicySummary, getEdgeSecuritySnapshot } from "../ops/edgeSecurityBaseline.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 
@@ -143,6 +144,16 @@ r.get("/capacity/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_re
 // M47.2: capacity / load snapshot
 r.get("/capacity/snapshot", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json(await getCapacitySnapshot());
+});
+
+// M47.3: edge security / resilience policy
+r.get("/edge-security/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json({ ok: true, ...getEdgeSecurityPolicySummary() });
+});
+
+// M47.3: edge security / resilience snapshot
+r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json(await getEdgeSecuritySnapshot());
 });
   /**
    * SUPER_ADMIN — Overview stats

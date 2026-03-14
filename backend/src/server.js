@@ -60,6 +60,7 @@ import { apiRequestLog } from "./middleware/apiRequestLog.js";
 import { getRedis } from "./redis/index.js";
 import { RedisRateLimitStore } from "./middleware/rateLimitRedisStore.js";
 import { startCapacityBaselineMonitor, capacityRequestStarted, capacityRequestFinished, capacityWsConnected, capacityWsDisconnected, getCapacityHealthSummary } from "./ops/capacityLoadBaseline.js";
+import { edgeRequestContext, applyEdgeSecurityHeaders, edgeSecurityGuard, getEdgeSecurityHealthSummary } from "./ops/edgeSecurityBaseline.js";
 
 import * as agreementsMod from "./routes/agreements.js";
 /**
@@ -118,7 +119,7 @@ startCapacityBaselineMonitor();
 
 // M11: proxy / güvenlik baseline
 app.disable("x-powered-by");
-app.set("trust proxy", 1);
+app.set("trust proxy", Math.max(0, Number(ENV.TRUST_PROXY_HOPS || 1)));
 
 // M38: env mode flags (needed early)
 const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
@@ -140,7 +141,7 @@ app.use(
   })
 );
 if (requireHttps) {
-  app.set("trust proxy", 1);
+  app.set("trust proxy", Math.max(0, Number(ENV.TRUST_PROXY_HOPS || 1)));
   app.use((req, res, next) => {
     const xf = String(req.headers["x-forwarded-proto"] || "").toLowerCase();
     if (req.secure || xf === "https") return next();
@@ -150,6 +151,9 @@ if (requireHttps) {
   });
 }
 
+app.use(edgeRequestContext);
+app.use(applyEdgeSecurityHeaders);
+app.use(edgeSecurityGuard);
 app.use(express.json({ limit: "1mb" }));
 app.use((req, res, next) => {
   capacityRequestStarted();
@@ -362,6 +366,7 @@ app.get("/health", async (req, res) => {
     dbLatencyMs: Date.now() - t0,
     version: ENV.APP_VERSION,
     capacity: getCapacityHealthSummary(),
+    edgeSecurity: getEdgeSecurityHealthSummary(),
   });
 });
 

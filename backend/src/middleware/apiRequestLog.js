@@ -44,7 +44,7 @@ export function apiRequestLog() {
           const user = req.user || tryUserFromReq(req);
 
           const xfwd = req.headers["x-forwarded-for"]?.toString() || "";
-          const ip = xfwd.split(",")[0]?.trim() || req.socket?.remoteAddress || null;
+          const ip = req.edgeClientIp || xfwd.split(",")[0]?.trim() || req.socket?.remoteAddress || null;
 
           await prisma.apiRequest.create({
             data: {

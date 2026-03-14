@@ -25,6 +25,17 @@ export const ENV = {
   // M46: AI Copilot Foundation
   AI_COPILOT_ENABLED: (process.env.AI_COPILOT_ENABLED ?? "1") === "1",
 
+  // M47.3: production resilience + edge security
+  EDGE_SECURITY_ENABLED: (process.env.EDGE_SECURITY_ENABLED ?? "1") === "1",
+  EDGE_SECURITY_HEADERS_ENABLED: (process.env.EDGE_SECURITY_HEADERS_ENABLED ?? "1") === "1",
+  EDGE_BLOCK_SUSPICIOUS_UA: (process.env.EDGE_BLOCK_SUSPICIOUS_UA ?? "1") === "1",
+  EDGE_BLOCK_TRACE_METHOD: (process.env.EDGE_BLOCK_TRACE_METHOD ?? "1") === "1",
+  EDGE_BLOCKED_UA_NEEDLES: process.env.EDGE_BLOCKED_UA_NEEDLES ?? "sqlmap,nikto,masscan,nmap,zgrab,acunetix,nessus",
+  EDGE_SNAPSHOT_WINDOW_MINUTES: Number(process.env.EDGE_SNAPSHOT_WINDOW_MINUTES ?? 60),
+  EDGE_WARN_5XX_RATIO_PCT: Number(process.env.EDGE_WARN_5XX_RATIO_PCT ?? 3),
+  EDGE_WARN_429_RATIO_PCT: Number(process.env.EDGE_WARN_429_RATIO_PCT ?? 5),
+  TRUST_PROXY_HOPS: Number(process.env.TRUST_PROXY_HOPS ?? 1),
+
   // M47.2: capacity / load baseline
   CAPACITY_BASELINE_ENABLED: (process.env.CAPACITY_BASELINE_ENABLED ?? "1") === "1",
   CAPACITY_BASELINE_WINDOW_MINUTES: Number(process.env.CAPACITY_BASELINE_WINDOW_MINUTES ?? 15),
