@@ -44,7 +44,8 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Link TTL + primer hijyen: `tools\check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
 - M43 pack: `tools\pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
 - M44 pack: `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
-- M45 pack: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform``r`n- M45 runbook: `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
+- M45 pack: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+`r`n- M45 runbook: `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
 - M46 pack: `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
 - M46.1 pack: `tools\pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform`
 - M46.2 pack: `tools\pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform`
@@ -99,13 +100,12 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Ürün dili Türkçedir; `sürücünün telefon GPS'i`, `cihaz GPS'i`, `sözleşme`, `teklif`, `işlem kaydı`, `Rehber`, `Sürücü Kodu`, `Geçici PIN` tercih edilir.
 
 ## 5) Sonraki resmi rota
-- `M46.8 — Driver Access Hardening`
-  - `A: Login / PIN Abuse Guard`
-  - `B: PIN Policy + Reset Hygiene`
-  - `C: Auth Audit Strengthening`
-  - `D: Device Trust Lite`
 - `M46.9 — Session & Refresh Security`
 - `M47 — KVKK Notice/Consent Framework`
+  - `rol bazlı current KVKK belge listesi`
+  - `notice + consent kabul akışı`
+  - `/api/me` KVKK özet alanı
+  - `web shell` içinde KVKK modal gate
 - `M47.2 — Capacity & Load Baseline`
 - `M47.3 — Production Resilience + Edge Security`
 - `M47.4 — Mobile Readiness Web Pass`
@@ -113,11 +113,11 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M49 — Driver Mobile Beta Hardening`
 - daha sonraki aday faz: `M49.1 — Driver Voice Guidance + Stop ETA`
 
-M46.8 scaffold dosyaları staged tutulabilir fakat bu durum resmi green anlamına gelmez:
-- `backend/scripts/m46_8_driver_access_hardening_check.js`
-- `tools/pack_m46_8_driver_access_hardening.ps1`
-- `tools/check_m46_8_driver_access_hardening_repo_contract.ps1`
-- `docs/RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md`
+M47 scaffold dosyaları staged tutulabilir fakat bu durum resmi green anlamına gelmez:
+- `backend/scripts/m47_kvkk_notice_consent_framework_check.js`
+- `tools/pack_m47_kvkk_notice_consent_framework.ps1`
+- `tools/check_m47_kvkk_notice_consent_framework_repo_contract.ps1`
+- `docs/RUNBOOK_M47_KVKK_NOTICE_CONSENT_FRAMEWORK.md`
 
 ## 6) Çalışma kuralı
 - Kod green olduktan sonra docs/SSOT senki geciktirilmez.

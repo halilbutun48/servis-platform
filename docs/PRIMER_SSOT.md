@@ -319,9 +319,9 @@ Scaffold dosyaları staged (green değil):
 - `docs/RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md`
 
 Sonraki resmi sıra:
-- `M46.9 — Session & Refresh Security`
 - `M47 — KVKK Notice/Consent Framework`
 - `M47.2 — Capacity & Load Baseline`
+- `M47.3 — Production Resilience + Edge Security`
 - `M47.3 — Production Resilience + Edge Security`
 - `M47.4 — Mobile Readiness Web Pass`
 - `M48 — Driver Mobile Foundation`
@@ -339,4 +339,4 @@ Daha sonraki aday faz:
 
 ## 9) Yeni sohbet açınca ilk cümle
 
-Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot, M46.1–M46.5 gelişmiş copilot zinciri, M46.6-A/B/T/C rehber hattı, M46.6-D chat shell, M46.6-D2 context-aware chat, M46.6-D3 actionable chat, M46.6-C2 screen coverage + terminology, M46.6-D4 simple role mode ve M46.7 driver code login + rehber first ayrı pack/check hatlarıyla green durumda. Copilot/Rehber navdock’ta ilk sıraya alındı. Driver akışı artık email/şifre yerine Sürücü Kodu + Geçici PIN ile çalışıyor; ilk girişte PIN değişimi zorunlu, room tarafında PIN reset mümkün. Sonraki doğru rota yeni auth modelini sertleştirmek, docs/SSOT’u kalıcı hale getirmek, kapasite/KVKK çizgisini netleştirmek ve ardından driver mobil foundation’a geçmektir.
+Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot, M46.1–M46.5 gelişmiş copilot zinciri, M46.6-A/B/T/C rehber hattı, M46.6-D chat shell, M46.6-D2 context-aware chat, M46.6-D3 actionable chat, M46.6-C2 screen coverage + terminology, M46.6-D4 simple role mode ve M46.7 driver code login + rehber first ayrı pack/check hatlarıyla green durumda. Copilot/Rehber navdock’ta ilk sıraya alındı. Driver akışı artık email/şifre yerine Sürücü Kodu + Geçici PIN ile çalışıyor; ilk girişte PIN değişimi zorunlu, room tarafında PIN reset mümkün. Sonraki doğru rota KVKK notice/consent çerçevesini ürün içine net yerleştirmek, ardından kapasite ve resilience çizgisine geçmek, sonra driver mobil foundation’a ilerlemektir.

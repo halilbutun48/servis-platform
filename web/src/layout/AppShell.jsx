@@ -31,6 +31,7 @@ export default function AppShell({ path, children }) {
         <div className="shellContent">
           <div className={isFluid ? "page page--fluid" : "page"}>
             <TotpStepUpCard />
+            <KvkkConsentGate />
             {children}
           </div>
         </div>

@@ -1,25 +1,17 @@
 // backend/src/middleware/consentGate.js
-// M38 — KVKK consent gate helpers
-//
-// Exports expected by routes:
-// - CONSENT_DOCS
-// - requireConsent(docKey, docVersion)
-// - upsertConsent({ userId, role, docKey, docVersion, req })
-// - revokeConsent({ userId, docKey, docVersion?, req })
-// - consentGate(...) (alias/advanced) + default export
-//
-// Notes:
-// - Fails closed with 403 KVKK_CONSENT_REQUIRED
-// - Adds optional debug detail when request header: x-greenpack=1
+// M38+M47 — KVKK consent gate helpers
 
 import { prisma } from "../prisma.js";
+import { getKvkkDocument } from "../kvkk/documents.js";
 
 export const CONSENT_DOCS = {
-  LOCATION: { docKey: "LOCATION_CONSENT", docVersion: "1" },
+  LOCATION: (() => {
+    const doc = getKvkkDocument("LOCATION_CONSENT");
+    return { docKey: doc?.docKey || "LOCATION_CONSENT", docVersion: doc?.docVersion || "1" };
+  })(),
 };
 
 function getConsentDelegate() {
-  // Prisma model: model Consent -> prisma.consent
   return prisma.consent || prisma.kvkkConsent || null;
 }
 
@@ -28,7 +20,7 @@ function kvkk403(res, { docKey, docVersion, detail }) {
     error: "KVKK_CONSENT_REQUIRED",
     docKey: String(docKey),
     docVersion: String(docVersion),
-    hint: "Open /kvkk consent screen and accept.",
+    hint: "KVKK ekranını açıp onay verin.",
     ...(detail ? { detail } : {}),
   });
 }
@@ -87,7 +79,6 @@ export function consentGate(a, b, c) {
   };
 }
 
-// Simple alias used by routes
 export function requireConsent(docKey, docVersion) {
   return consentGate({ docKey, docVersion });
 }
@@ -99,7 +90,6 @@ export async function upsertConsent({ userId, role, docKey, docVersion, req }) {
   const ip = req?.ip ? String(req.ip) : null;
   const ua = req?.get ? String(req.get("user-agent") || "") : null;
 
-  // Unique constraint: @@unique([userId, docKey, docVersion])
   await Consent.upsert({
     where: { userId_docKey_docVersion: { userId: Number(userId), docKey: String(docKey), docVersion: String(docVersion) } },
     update: {
@@ -123,7 +113,7 @@ export async function upsertConsent({ userId, role, docKey, docVersion, req }) {
   return true;
 }
 
-export async function revokeConsent({ userId, docKey, docVersion, req }) {
+export async function revokeConsent({ userId, docKey, docVersion }) {
   const Consent = getConsentDelegate();
   if (!Consent) throw new Error("consent model missing");
 

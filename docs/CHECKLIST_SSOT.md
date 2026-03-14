@@ -171,22 +171,22 @@ Resmi dosyalar:
 - [x] `tools/check_m46_8_driver_access_hardening_repo_contract.ps1`
 - [x] `docs/RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md`
 
-### M46.9 — Session & Refresh Security (next)
-- [ ] Access token `sv/sessionVersion` claim + middleware/WS doğrulaması
-- [ ] Refresh token rotasyon + reuse tespiti (mevcut) + **max aktif session** limiti
-- [ ] `GET /api/me/sessions` ile oturum görünürlüğü
-- [ ] `POST /api/me/sessions/revoke-all` ile tüm oturumları iptal
-- [ ] Driver PIN reset => refresh revoke + access token invalidation
-- [ ] Runtime + repo contract green olmuştur
+### M46.9 — Session & Refresh Security (green)
+- [x] Access token `sv/sessionVersion` claim + middleware/WS doğrulaması
+- [x] Refresh token rotasyon + reuse tespiti (mevcut) + **max aktif session** limiti
+- [x] `GET /api/me/sessions` ile oturum görünürlüğü
+- [x] `POST /api/me/sessions/revoke-all` ile tüm oturumları iptal
+- [x] Driver PIN reset => refresh revoke + access token invalidation
+- [x] Runtime + repo contract green olmuştur
 
-Scaffold staged (henüz green değil):
-- [ ] `backend/scripts/m46_9_session_refresh_security_check.js`
-- [ ] `tools/pack_m46_9_session_refresh_security.ps1`
-- [ ] `tools/check_m46_9_session_refresh_security_repo_contract.ps1`
-- [ ] `docs/RUNBOOK_M46_9_SESSION_REFRESH_SECURITY.md`
+Resmi dosyalar:
+- [x] `backend/scripts/m46_9_session_refresh_security_check.js`
+- [x] `tools/pack_m46_9_session_refresh_security.ps1`
+- [x] `tools/check_m46_9_session_refresh_security_repo_contract.ps1`
+- [x] `docs/RUNBOOK_M46_9_SESSION_REFRESH_SECURITY.md`
 
 ### Sonraki resmi sıra
-- [ ] `M46.9 — Session & Refresh Security`
+- [x] `M46.9 — Session & Refresh Security`
 - [ ] `M47 — KVKK Notice/Consent Framework`
 - [ ] `M47.2 — Capacity & Load Baseline`
 - [ ] `M47.3 — Production Resilience + Edge Security`

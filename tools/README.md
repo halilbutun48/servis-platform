@@ -115,11 +115,17 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - `backend\scripts\m46_8_driver_access_hardening_check.js` → runtime check (PIN lock/cooldown, weak PIN reject, reset hygiene, audit)
 - `docs\RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md` → kapsam / kabul kriteri / runbook
 
-## M46.9 scaffold
+## M46.9 (green)
 - `tools\pack_m46_9_session_refresh_security.ps1` → prisma sync + runtime check + repo contract
 - `tools\check_m46_9_session_refresh_security_repo_contract.ps1` → repo-contract kontrolü
 - `backend\scripts\m46_9_session_refresh_security_check.js` → runtime check (refresh rotate, reuse detect, revoke-all, pin reset invalidation)
 - `docs\RUNBOOK_M46_9_SESSION_REFRESH_SECURITY.md` → kapsam / kabul kriteri / runbook
+
+## M47 scaffold
+- `tools\pack_m47_kvkk_notice_consent_framework.ps1` → M46.9 zinciri + runtime check + repo contract
+- `tools\check_m47_kvkk_notice_consent_framework_repo_contract.ps1` → repo-contract kontrolü
+- `backend\scripts\m47_kvkk_notice_consent_framework_check.js` → runtime check (current docs, accept-many, me kvkk summary, revoke, audit)
+- `docs\RUNBOOK_M47_KVKK_NOTICE_CONSENT_FRAMEWORK.md` → kapsam / kabul kriteri / runbook
 
 
 Kural 1: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  

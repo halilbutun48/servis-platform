@@ -3,13 +3,14 @@ import express from "express";
 import { authRequired, requireStepUpWrite } from "../auth/middleware.js";
 import { prisma } from "../prisma.js";
 import { audit } from "../audit.js";
+import { getKvkkSummaryForUser } from "../kvkk/documents.js";
 
 export const meRouter = express.Router();
 
 meRouter.get("/", authRequired(), async (req, res) => {
   const u = req.user;
 
-  const [driver, personel, company, room] = await Promise.all([
+  const [driver, personel, company, room, kvkk] = await Promise.all([
     u.role === "DRIVER" ? prisma.driver.findFirst({ where: { userId: u.id }, select: { id: true, driverCode: true, pinTemporary: true, pinUpdatedAt: true } }) : Promise.resolve(null),
     u.role === "PERSONEL" ? prisma.personel.findFirst({ where: { userId: u.id }, select: { id: true, kind: true } }) : Promise.resolve(null),
     u.companyId
@@ -24,6 +25,7 @@ meRouter.get("/", authRequired(), async (req, res) => {
           select: { id: true, name: true, regionId: true, district: true },
         })
       : Promise.resolve(null),
+    getKvkkSummaryForUser({ userId: u.id, role: u.role, prismaClient: prisma }),
   ]);
 
   const features = {
@@ -57,6 +59,13 @@ meRouter.get("/", authRequired(), async (req, res) => {
     pinUpdatedAt: driver?.pinUpdatedAt ?? null,
     personelId: personel?.id ?? null,
     personelKind: personel?.kind ?? null,
+
+    kvkk: {
+      requiredCount: kvkk?.requiredCount ?? 0,
+      acceptedCount: kvkk?.acceptedCount ?? 0,
+      blocking: Boolean(kvkk?.blocking),
+      pendingDocKeys: kvkk?.pendingDocKeys ?? [],
+    },
 
     features,
   });
