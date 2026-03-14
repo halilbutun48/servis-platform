@@ -1,70 +1,68 @@
 // web/src/App.jsx
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
 import { login } from "./api";
 import { useHashRoute, navigate } from "./router";
 import { companyBase, normalizeCompanyPath } from "./utils/paths";
+import GoogleLoginButton from "./components/GoogleLoginButton";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { startLiveWs, stopLiveWs } from "./live/ws";
 
 // ROOM
-import RoomMapPanel from "./panels/room/MapPanel";
-import VehiclesPanel from "./panels/room/VehiclesPanel";
-import DriversPanel from "./panels/room/DriversPanel";
-import RoomShiftsPanel from "./panels/room/ShiftsPanel";
-import RoomAgreementsPanel from "./panels/room/AgreementsPanel";
-import RoomOffersPanel from "./panels/room/OffersPanel";
-import RoomHubPanel from "./panels/room/HubPanel";
-import RoomCheckinPanel from "./panels/room/CheckinPanel";
+const RoomMapPanel = lazy(() => import("./panels/room/MapPanel"));
+const VehiclesPanel = lazy(() => import("./panels/room/VehiclesPanel"));
+const DriversPanel = lazy(() => import("./panels/room/DriversPanel"));
+const RoomShiftsPanel = lazy(() => import("./panels/room/ShiftsPanel"));
+const RoomAgreementsPanel = lazy(() => import("./panels/room/AgreementsPanel"));
+const RoomOffersPanel = lazy(() => import("./panels/room/OffersPanel"));
+const RoomHubPanel = lazy(() => import("./panels/room/HubPanel"));
+const RoomCheckinPanel = lazy(() => import("./panels/room/CheckinPanel"));
+
 // COMPANY
-import CompanyWorkflowPanel from "./panels/company/WorkflowPanel";
-import CompanyMapPanel from "./panels/company/MapPanel";
-import CompanyShiftsPanel from "./panels/company/ShiftsPanel";
-import CompanyAgreementsPanel from "./panels/company/AgreementsPanel";
-import GeoReviewPanel from "./panels/company/GeoReviewPanel";
-import CompanyHubPanel from "./panels/company/HubPanel";
-import CompanyCheckinPanel from "./panels/company/CheckinPanel";
-import OrganizationCenterPanel from "./panels/organization/CenterPanel";
-import OrganizationPlansPanel from "./panels/organization/PlansPanel";
+const CompanyWorkflowPanel = lazy(() => import("./panels/company/WorkflowPanel"));
+const CompanyMapPanel = lazy(() => import("./panels/company/MapPanel"));
+const CompanyShiftsPanel = lazy(() => import("./panels/company/ShiftsPanel"));
+const CompanyAgreementsPanel = lazy(() => import("./panels/company/AgreementsPanel"));
+const GeoReviewPanel = lazy(() => import("./panels/company/GeoReviewPanel"));
+const CompanyHubPanel = lazy(() => import("./panels/company/HubPanel"));
+const CompanyCheckinPanel = lazy(() => import("./panels/company/CheckinPanel"));
+const OrganizationCenterPanel = lazy(() => import("./panels/organization/CenterPanel"));
+const OrganizationPlansPanel = lazy(() => import("./panels/organization/PlansPanel"));
 
 // DRIVER
-import DriverMapPanel from "./panels/driver/MapPanel";
-import RoutePanel from "./panels/driver/RoutePanel";
-import DriverTodayPanel from "./panels/driver/TodayPanel";
-import DriverCheckinPanel from "./panels/driver/CheckinPanel";
-import DriverPinChangePanel from "./panels/driver/PinChangePanel";
+const DriverMapPanel = lazy(() => import("./panels/driver/MapPanel"));
+const RoutePanel = lazy(() => import("./panels/driver/RoutePanel"));
+const DriverTodayPanel = lazy(() => import("./panels/driver/TodayPanel"));
+const DriverCheckinPanel = lazy(() => import("./panels/driver/CheckinPanel"));
+const DriverPinChangePanel = lazy(() => import("./panels/driver/PinChangePanel"));
 
 // PERSONEL
-import PersonelLivePanel from "./panels/personel/LivePanel";
-import MyRidePanel from "./panels/personel/MyRidePanel";
+const PersonelLivePanel = lazy(() => import("./panels/personel/LivePanel"));
+const MyRidePanel = lazy(() => import("./panels/personel/MyRidePanel"));
 
 // PARENT
-import ParentLivePanel from "./panels/parent/LivePanel";
-import SchoolParentInvitePanel from "./panels/school/ParentInvitePanel";
-import AcceptParentInvitePanel from "./panels/public/AcceptParentInvitePanel";
-import PassengerLivePanel from "./panels/public/PassengerLivePanel";
-import AcceptInvitePanel from "./panels/public/AcceptInvitePanel";
-import PassengerLinksPanel from "./panels/company/PassengerLinksPanel";
+const ParentLivePanel = lazy(() => import("./panels/parent/LivePanel"));
+const SchoolParentInvitePanel = lazy(() => import("./panels/school/ParentInvitePanel"));
+const AcceptParentInvitePanel = lazy(() => import("./panels/public/AcceptParentInvitePanel"));
+const PassengerLivePanel = lazy(() => import("./panels/public/PassengerLivePanel"));
+const AcceptInvitePanel = lazy(() => import("./panels/public/AcceptInvitePanel"));
+const PassengerLinksPanel = lazy(() => import("./panels/company/PassengerLinksPanel"));
 
 // SHARED
-import NotificationsPanel from "./panels/shared/NotificationsPanel";
-import AuthInvitesPanel from "./panels/shared/AuthInvitesPanel";
-import GoogleLoginButton from "./components/GoogleLoginButton";
-import LogsPanel from "./panels/shared/LogsPanel";
-import CopilotPanel from "./panels/shared/CopilotPanel";
+const NotificationsPanel = lazy(() => import("./panels/shared/NotificationsPanel"));
+const AuthInvitesPanel = lazy(() => import("./panels/shared/AuthInvitesPanel"));
+const LogsPanel = lazy(() => import("./panels/shared/LogsPanel"));
+const CopilotPanel = lazy(() => import("./panels/shared/CopilotPanel"));
 
 // SUPER_ADMIN
-import SuperAdminPanel from "./panels/superadmin/SuperAdminPanel";
-import SuperCompaniesPanel from "./panels/superadmin/CompaniesPanel";
-import SuperRoomsPanel from "./panels/superadmin/RoomsPanel";
-import SuperUsersPanel from "./panels/superadmin/UsersPanel";
-import SuperRegionsPanel from "./panels/superadmin/RegionsPanel";
-import SuperAuditLogsPanel from "./panels/superadmin/AuditLogsPanel";
-import SuperLogExportPanel from "./panels/superadmin/LogExportPanel";
-
-import ErrorBoundary from "./components/ErrorBoundary";
-
-// ✅ WS
-import { startLiveWs, stopLiveWs } from "./live/ws";
+const SuperAdminPanel = lazy(() => import("./panels/superadmin/SuperAdminPanel"));
+const SuperCompaniesPanel = lazy(() => import("./panels/superadmin/CompaniesPanel"));
+const SuperRoomsPanel = lazy(() => import("./panels/superadmin/RoomsPanel"));
+const SuperUsersPanel = lazy(() => import("./panels/superadmin/UsersPanel"));
+const SuperRegionsPanel = lazy(() => import("./panels/superadmin/RegionsPanel"));
+const SuperAuditLogsPanel = lazy(() => import("./panels/superadmin/AuditLogsPanel"));
+const SuperLogExportPanel = lazy(() => import("./panels/superadmin/LogExportPanel"));
 
 function roleDefaultPath(me) {
   const role = me?.role;
@@ -277,7 +275,9 @@ export default function App() {
 
   return (
     <AppShell path={path}>
-      <ErrorBoundary>{view.node}</ErrorBoundary>
+      <ErrorBoundary>
+        <Suspense fallback={<div style={{ padding: 16 }}>Yükleniyor...</div>}>{view.node}</Suspense>
+      </ErrorBoundary>
     </AppShell>
   );
 }

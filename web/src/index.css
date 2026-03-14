@@ -1,9 +1,12 @@
-:root { font-family: system-ui, Arial; }
-body { margin: 0; background: #0b0f17; color: #e7eefc; }
-.wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+:root { font-family: system-ui, Arial; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body { margin: 0; background: #0b0f17; color: #e7eefc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+img, svg, canvas, video { max-width: 100%; height: auto; }
+.wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; width: 100%; }
 /* For map pages inside the app shell (already padded), use full width */
 .wrap--fluid { max-width: none; margin: 0; padding: 0; }
-.card { background: #121a2a; border: 1px solid #22314f; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+.card { background: #121a2a; border: 1px solid #22314f; border-radius: 14px; padding: 16px; margin-bottom: 14px; overflow-x: auto; }
 .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
 .title { font-size: 20px; font-weight: 700; }
 .col { display:flex; flex-direction:column; gap: 8px; }
@@ -82,10 +85,10 @@ body { margin: 0; background: #0b0f17; color: #e7eefc; }
   background: rgba(239, 68, 68, .18);
   color: #fecaca;
 }
-input { padding: 10px 12px; border-radius: 10px; border: 1px solid #2b3d64; background:#0c1322; color:#e7eefc; }
-button { padding: 10px 12px; border-radius: 10px; border: 1px solid #2b3d64; background:#1b2b4b; color:#e7eefc; cursor:pointer; }
+input, textarea { padding: 10px 12px; border-radius: 10px; border: 1px solid #2b3d64; background:#0c1322; color:#e7eefc; max-width: 100%; }
+button { padding: 10px 12px; border-radius: 10px; border: 1px solid #2b3d64; background:#1b2b4b; color:#e7eefc; cursor:pointer; max-width: 100%; }
 button:disabled { opacity: .6; cursor: not-allowed; }
-select { padding: 10px 12px; border-radius: 10px; border: 1px solid #2b3d64; background:#0c1322; color:#e7eefc; }
+select { padding: 10px 12px; border-radius: 10px; border: 1px solid #2b3d64; background:#0c1322; color:#e7eefc; max-width: 100%; }
 hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .tbl { width:100%; border-collapse: collapse; }
 .tbl th, .tbl td { padding: 8px; border-bottom: 1px solid #22314f; text-align:left; font-size: 14px; }
@@ -93,10 +96,13 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .barFill { height: 100%; background: #3a66ff; }
 
 /* --- App shell + nav dock --- */
-.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; min-height: 100dvh; }
 @media (max-width: 900px){ .shell { grid-template-columns: 1fr; } .navDock { position: sticky; top: 0; z-index: 10; } }
 
 .navDock { background: #0a1020; border-right: 1px solid #22314f; padding: 14px; }
+.navSection { margin-bottom: 12px; }
+.navSectionTitle { font-size: 12px; color: #98a2b3; font-weight: 700; margin: 2px 0 8px; }
+.navToggle { width: 100%; text-align: left; min-height: 44px; }
 .navDockTitle { font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #a9b7d6; margin-bottom: 10px; }
 .navDockItems { display: flex; flex-direction: column; gap: 8px; }
 .navItem { width: 100%; display:flex; align-items:center; justify-content:space-between; background: #0c1322; border: 1px solid #22314f; }
@@ -105,8 +111,9 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .navBadge { font-size: 12px; padding: 2px 8px; border: 1px solid #31466f; border-radius: 999px; color: #a9b7d6; }
 
 .shellMain { display:flex; flex-direction:column; }
-.shellTop { display:flex; align-items:center; justify-content:space-between; padding: 14px 16px; border-bottom: 1px solid #22314f; background: rgba(11,15,23,.75); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 5; }
-.shellContent { padding: 16px; }
+.shellTop { display:flex; align-items:center; justify-content:space-between; padding: calc(12px + env(safe-area-inset-top)) 16px 12px; border-bottom: 1px solid #22314f; background: rgba(11,15,23,.75); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 5; gap: 12px; }
+.shellContent { padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.page, .page--fluid { width: 100%; min-width: 0; }
 /* M33.6b modal helpers */
 .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:16px; z-index:999; }
 .modal{ width:100%; max-height:90vh; overflow:auto; }
@@ -168,3 +175,51 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .saMeta { font-size: 12px; opacity: .85; white-space: pre-wrap; word-break: break-word; }
 .pill[data-status="DISABLED"] { border-color: #ef4444; background: rgba(239, 68, 68, .18); color: #fecaca; }
 .pill[data-status="ROLE"] { border-color: #31466f; background: rgba(49, 70, 111, .18); color: #dbeafe; }
+
+/* M47.4 — Mobile Readiness Web Pass */
+/* M47.4 - Mobile Readiness Web Pass */
+button, input, select, textarea, .btn, .secondary, .navItem {
+  min-height: 44px;
+  font: inherit;
+  font-size: 16px;
+}
+
+.row { flex-wrap: wrap; }
+.tbl { width: 100%; }
+
+@media (max-width: 900px) {
+  .wrap { margin: 14px auto; padding: 0 12px; }
+  .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .row { flex-direction: column; }
+  .shell { grid-template-columns: 1fr; }
+  .navDock {
+    position: sticky;
+    top: 0;
+    z-index: 9;
+    border-right: 0;
+    border-bottom: 1px solid #22314f;
+    padding: 10px 12px;
+    overflow-x: auto;
+  }
+  .navDockItems {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .navItem {
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .shellTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .shellContent { padding: 12px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .card { padding: 14px; }
+  .tbl { min-width: 640px; }
+  .modal-backdrop { align-items: flex-end; padding: 10px; }
+  .modal { max-height: min(88vh, 88dvh); border-radius: 16px 16px 0 0; }
+}
