@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { audit } from "../audit.js";
+import { clearDriverPinFailureState } from "../auth/driverAccessGuard.js";
 import { createDriverSchema } from "../validators.js";
 
 function normalizeDriverCode(value) {
@@ -205,6 +207,14 @@ export function driversRouter(io) {
           include: { backupDriver: true, user: { select: { id: true, email: true } } },
         });
         return { driver, issued };
+      });
+
+      await clearDriverPinFailureState(id);
+      await audit(req, {
+        action: 'AUTH_DRIVER_PIN_RESET',
+        entity: 'Driver',
+        entityId: id,
+        meta: { driverId: id, driverCode: result.issued.driverCode, roomId: u.roomId, temporary: true },
       });
 
       io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: id, action: "updated" });

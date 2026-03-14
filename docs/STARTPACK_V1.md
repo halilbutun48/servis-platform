@@ -1,6 +1,6 @@
-﻿# SERVIS-PLATFORM — STARTPACK V1/V2 (SSOT)
+# SERVIS-PLATFORM — STARTPACK V1/V2 (SSOT)
 
-Tarih: 2026-03-13  
+Tarih: 2026-03-14  
 Timezone: Europe/Istanbul
 
 Bu dosya repo için kısa çalışma runbook’udur.
@@ -17,10 +17,21 @@ Bu dosya repo için kısa çalışma runbook’udur.
 9. M46 AI Copilot Foundation hattı resmi green durumundadır.
 10. M46.1 Enrichment, M46.2 Intent Expansion, M46.3 Quality + Evidence, M46.4 Decision Consistency, M46.5 Action Prioritization hatları resmi green’dir.
 11. M46.6-A/B/T/C/D/D2/D3/C2/D4 rehber/sohbet zinciri resmi green’dir.
-12. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-13. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-14. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
-15. Üst milestone’lar alt milestone check uyumluluğunu bozmadan ilerletilir.
+12. M46.7 `Driver Code Login + Rehber First` resmi green’dir.
+13. Driver login ana modeli artık `Sürücü Kodu + PIN`’dir; ilk girişte PIN değişimi zorunludur.
+14. `Rehber` navdock’ta ürün içi birincil yardımcı yüz olarak ilk sıradadır.
+15. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+16. SSOT seti aynı değişiklikte birlikte senklenir:
+   - `tools/PRIMER_SNAPSHOT.md`
+   - `docs/PRIMER_SSOT.md`
+   - `docs/CHECKLIST_SSOT.md`
+   - `tools/CHECKLIST_SSOT.md`
+   - `docs/STARTPACK_V1.md`
+   - `tools/README.md`
+17. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+18. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+19. Üst milestone’lar alt milestone check uyumluluğunu bozmadan ilerletilir.
+20. CHECKLIST’te `[x]` yalnızca pack/check green olduktan sonra işaretlenir.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -33,7 +44,7 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Link TTL + primer hijyen: `tools\check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
 - M43 pack: `tools\pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
 - M44 pack: `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
-- M45 pack: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- M45 pack: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform``r`n- M45 runbook: `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
 - M46 pack: `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
 - M46.1 pack: `tools\pack_m46_1_ai_copilot_enrichment.ps1 -RepoRoot D:\servis-platform`
 - M46.2 pack: `tools\pack_m46_2_ai_copilot_intent_expansion.ps1 -RepoRoot D:\servis-platform`
@@ -49,6 +60,7 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - M46.6-D3 pack: `tools\pack_m46_6_d3_ai_actionable_chat.ps1 -RepoRoot D:\servis-platform`
 - M46.6-C2 pack: `tools\pack_m46_6_c2_screen_coverage_terminology.ps1 -RepoRoot D:\servis-platform`
 - M46.6-D4 pack: `tools\pack_m46_6_d4_simple_role_mode.ps1 -RepoRoot D:\servis-platform`
+- M46.7 pack: `tools\pack_m46_7_driver_code_login_rehber_first.ps1 -RepoRoot D:\servis-platform`
 
 ## 3) Resmi green durum
 - `M41 PACK PASS`
@@ -77,16 +89,39 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M46.6-D3 AI ACTIONABLE CHAT PACK PASS OK`
 - `M46.6-C2 SCREEN COVERAGE + TERMINOLOGY PACK PASS OK`
 - `M46.6-D4 SIMPLE ROLE MODE PACK PASS OK`
+- `M46.7 DRIVER CODE LOGIN + REHBER FIRST PACK PASS OK`
 
-## 4) M46.6 Yardım / Sohbet kararı
-- Copilot read-only / suggestion-first kalır.
-- Chat shell, context chat, actionable chat ve simple role mode tek zincir olarak düşünülür.
-- C2 ile ekran kapsamı ve terim sözlüğü genişletilmiştir.
-- D4 ile DRIVER / PERSONEL / PARENT için sade mod resmileştirilmiştir.
-- Ürün dili Türkçedir; `sürücünün telefon GPS'i`, `cihaz GPS'i`, `sözleşme`, `teklif`, `işlem kaydı` tercih edilir.
+## 4) M46.7 ürün kararı
+- `Rehber` navdock’ta ilk sıradadır.
+- Driver login ana akışı artık email/şifre değil, `Sürücü Kodu + PIN`’dir.
+- İlk girişte PIN değişimi zorunludur.
+- Room panelinden geçici PIN üret / reset mümkündür.
+- Ürün dili Türkçedir; `sürücünün telefon GPS'i`, `cihaz GPS'i`, `sözleşme`, `teklif`, `işlem kaydı`, `Rehber`, `Sürücü Kodu`, `Geçici PIN` tercih edilir.
 
-## 5) Sonraki iş kuralı
+## 5) Sonraki resmi rota
+- `M46.8 — Driver Access Hardening`
+  - `A: Login / PIN Abuse Guard`
+  - `B: PIN Policy + Reset Hygiene`
+  - `C: Auth Audit Strengthening`
+  - `D: Device Trust Lite`
+- `M46.9 — Session & Refresh Security`
+- `M47 — KVKK Notice/Consent Framework`
+- `M47.2 — Capacity & Load Baseline`
+- `M47.3 — Production Resilience + Edge Security`
+- `M47.4 — Mobile Readiness Web Pass`
+- `M48 — Driver Mobile Foundation`
+- `M49 — Driver Mobile Beta Hardening`
+- daha sonraki aday faz: `M49.1 — Driver Voice Guidance + Stop ETA`
+
+M46.8 scaffold dosyaları staged tutulabilir fakat bu durum resmi green anlamına gelmez:
+- `backend/scripts/m46_8_driver_access_hardening_check.js`
+- `tools/pack_m46_8_driver_access_hardening.ps1`
+- `tools/check_m46_8_driver_access_hardening_repo_contract.ps1`
+- `docs/RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md`
+
+## 6) Çalışma kuralı
 - Kod green olduktan sonra docs/SSOT senki geciktirilmez.
 - Tek seferlik overlay/apply script’leri repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.
 - Repo-contract checker’ları PowerShell 5 / UTF-8 kırılganlıklarına karşı mümkünse ASCII-safe veya normalize edilmiş şekilde yazılır.
-- M45 runbook: `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
+- README yalnızca gerçekten var olan script adlarını taşır; scaffold dosyaları varsa `not green yet` olarak ayrılır.
+

@@ -23,6 +23,19 @@ function firstValidationMessage(details) {
   return "";
 }
 
+function getOrCreateBrowserDeviceId() {
+  try {
+    const key = "personel_servis_browser_device_id";
+    const existing = String(localStorage.getItem(key) || "").trim();
+    if (existing) return existing;
+    const fresh = `web-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+    localStorage.setItem(key, fresh);
+    return fresh;
+  } catch {
+    return `web-fallback-${Date.now().toString(36)}`;
+  }
+}
+
 function makeHttpError(status, payloadOrText) {
   const isObj = payloadOrText && typeof payloadOrText === "object";
   const baseMessage = isObj
@@ -77,11 +90,12 @@ api.del = (path, opts = {}) => api(path, { ...opts, method: "DELETE" });
 
 export async function login(identifier, password) {
   // login'de token yok, o yüzden Authorization göndermiyoruz
+  const body = { identifier, password, deviceId: getOrCreateBrowserDeviceId() };
   const res = await fetch("/api/auth/login", {
     cache: "no-store",
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ identifier, password }),
+    body: JSON.stringify(body),
   });
 
   const ct = res.headers.get("content-type") || "";

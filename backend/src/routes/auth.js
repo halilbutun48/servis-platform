@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { prisma } from "../prisma.js";
 import { signToken, verifyToken } from "../auth/jwt.js";
 import { authRequired } from "../auth/middleware.js";
+import { clearDriverPinFailureState, getDriverPinLockState, registerDriverPinFailure, validateNewDriverPin } from "../auth/driverAccessGuard.js";
 import { generateSecretBase32, buildOtpauthUrl, verifyTotp, normalizeTotpToken } from "../auth/totp.js";
 import { loginSchema, refreshSchema, logoutSchema } from "../validators.js";
 import { ENV } from "../env.js";
@@ -182,7 +183,7 @@ authRouter.post("/login", async (req, res) => {
   const user = await findLoginUser(identifier);
   if (!user) {
     await recordLoginAudit({ req, email: identifier, user: null, action: "AUTH_LOGIN_FAIL", reason: "USER_NOT_FOUND" });
-    return res.status(401).json({ error: "Invalid credentials" });
+    return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS", message: "Kimlik bilgileri hatalı." });
   }
 
   if (isDisabledHash(user.passwordHash)) {
@@ -190,10 +191,62 @@ authRouter.post("/login", async (req, res) => {
     return res.status(403).json({ error: "Account disabled" });
   }
 
+  if (user.role === "DRIVER") {
+    const lock = await getDriverPinLockState(user.driver?.id || user.id);
+    if (lock.locked) {
+      await recordLoginAudit({
+        req,
+        email: identifier,
+        user,
+        action: "AUTH_DRIVER_PIN_LOCKED",
+        reason: "PIN_LOCKED",
+        meta: { driverId: user.driver?.id || null, cooldownSec: lock.cooldownSec, lockedUntil: lock.lockedUntil },
+      });
+      return res.status(423).json({
+        error: "PIN_LOCKED",
+        code: "PIN_LOCKED",
+        message: `Çok fazla hatalı PIN denemesi oldu. ${lock.cooldownSec} saniye sonra tekrar deneyin.`,
+        cooldownSec: lock.cooldownSec,
+        lockedUntil: lock.lockedUntil,
+      });
+    }
+  }
+
   const okPass = await bcrypt.compare(password, user.passwordHash);
   if (!okPass) {
-    await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_FAIL", reason: "BAD_PASSWORD" });
-    return res.status(401).json({ error: "Invalid credentials" });
+    if (user.role === "DRIVER") {
+      const failure = await registerDriverPinFailure(user.driver?.id || user.id);
+      await recordLoginAudit({
+        req,
+        email: identifier,
+        user,
+        action: failure.locked ? "AUTH_DRIVER_PIN_LOCKED" : "AUTH_LOGIN_FAIL",
+        reason: failure.locked ? "PIN_LOCKED" : "BAD_PASSWORD",
+        meta: {
+          driverId: user.driver?.id || null,
+          failCount: failure.count,
+          failLimit: failure.failLimit,
+          cooldownSec: failure.cooldownSec || 0,
+          lockedUntil: failure.lockedUntil || null,
+        },
+      });
+      if (failure.locked) {
+        return res.status(423).json({
+          error: "PIN_LOCKED",
+          code: "PIN_LOCKED",
+          message: `Çok fazla hatalı PIN denemesi oldu. ${failure.cooldownSec} saniye sonra tekrar deneyin.`,
+          cooldownSec: failure.cooldownSec,
+          lockedUntil: failure.lockedUntil,
+        });
+      }
+    } else {
+      await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_FAIL", reason: "BAD_PASSWORD" });
+    }
+    return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS", message: "Kimlik bilgileri hatalı." });
+  }
+
+  if (user.role === "DRIVER") {
+    await clearDriverPinFailureState(user.driver?.id || user.id);
   }
 
   // ✅ M41: DRIVER device binding (single-device policy)
@@ -208,14 +261,14 @@ authRouter.post("/login", async (req, res) => {
         user,
         action: "AUTH_LOGIN_DEVICE_MISMATCH",
         reason: "DEVICE_MISMATCH",
-        meta: { boundDeviceId: user.deviceId, reqDeviceId },
+        meta: { boundDeviceId: user.deviceId, reqDeviceId, driverId: user.driver?.id || null },
       });
-      return res.status(403).json({ error: "DEVICE_MISMATCH" });
+      return res.status(403).json({ error: "DEVICE_MISMATCH", code: "DEVICE_MISMATCH", message: "Bu sürücü kodu başka bir cihaza bağlı görünüyor." });
     }
 
     if (isProd() && user.deviceId && !reqDeviceId) {
-      await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_DEVICE_REQUIRED", reason: "DEVICE_ID_REQUIRED" });
-      return res.status(400).json({ error: "DEVICE_ID_REQUIRED" });
+      await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_DEVICE_REQUIRED", reason: "DEVICE_ID_REQUIRED", meta: { driverId: user.driver?.id || null } });
+      return res.status(400).json({ error: "DEVICE_ID_REQUIRED", code: "DEVICE_ID_REQUIRED", message: "Bu hesap için cihaz bilgisi gerekli." });
     }
 
     if (!user.deviceId && reqDeviceId) {
@@ -266,7 +319,7 @@ authRouter.post("/login", async (req, res) => {
     // ignore
   }
 
-  await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_OK", reason: null, meta: { deviceId: reqDeviceId || null } });
+  await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_OK", reason: null, meta: { deviceId: reqDeviceId || null, driverId: user.driver?.id || null } });
 
   return res.json({
     token,
@@ -638,17 +691,30 @@ authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {
   const currentPin = String(req.body?.currentPin || '').trim();
   const newPin = String(req.body?.newPin || '').trim();
 
-  if (currentPin.length < 4) return res.status(400).json({ error: 'CURRENT_PIN_REQUIRED', code: 'CURRENT_PIN_REQUIRED' });
-  if (newPin.length < 4) return res.status(400).json({ error: 'NEW_PIN_TOO_SHORT', code: 'NEW_PIN_TOO_SHORT' });
-  if (!/^\d{4,8}$/.test(newPin)) return res.status(400).json({ error: 'PIN_FORMAT_INVALID', code: 'PIN_FORMAT_INVALID' });
+  if (currentPin.length < 4) {
+    return res.status(400).json({ error: 'CURRENT_PIN_REQUIRED', code: 'CURRENT_PIN_REQUIRED', message: 'Mevcut PIN gerekli.' });
+  }
 
   const authUser = await prisma.user.findUnique({ where: { id: user.id }, include: { driver: true } });
   if (!authUser?.driver) return res.status(404).json({ error: 'DRIVER_PROFILE_NOT_FOUND', code: 'DRIVER_PROFILE_NOT_FOUND' });
 
+  const policy = validateNewDriverPin(newPin, { currentPin });
+  if (!policy.ok) {
+    await recordLoginAudit({
+      req,
+      email: authUser.email || authUser.driver?.driverCode || null,
+      user: authUser,
+      action: 'AUTH_DRIVER_PIN_CHANGE_FAIL',
+      reason: policy.code,
+      meta: { driverId: authUser.driver.id, policyCode: policy.code },
+    });
+    return res.status(400).json({ error: policy.code, code: policy.code, message: policy.message });
+  }
+
   const okPass = await bcrypt.compare(currentPin, authUser.passwordHash);
   if (!okPass) {
-    await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_FAIL', reason: 'BAD_CURRENT_PIN' });
-    return res.status(401).json({ error: 'BAD_CURRENT_PIN', code: 'BAD_CURRENT_PIN' });
+    await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_FAIL', reason: 'BAD_CURRENT_PIN', meta: { driverId: authUser.driver.id } });
+    return res.status(401).json({ error: 'BAD_CURRENT_PIN', code: 'BAD_CURRENT_PIN', message: 'Mevcut PIN hatalı.' });
   }
 
   const passwordHash = await bcrypt.hash(newPin, 10);
@@ -657,8 +723,9 @@ authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {
     prisma.driver.update({ where: { id: authUser.driver.id }, data: { pinTemporary: false, pinUpdatedAt: new Date() } }),
   ]);
 
+  await clearDriverPinFailureState(authUser.driver.id);
   await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_OK', reason: null, meta: { driverId: authUser.driver.id } });
-  return res.json({ ok: true });
+  return res.json({ ok: true, pinTemporary: false });
 });
 
 // ✅ M41: logout / revoke refresh token(s)
@@ -681,3 +748,4 @@ authRouter.post("/logout", authRequired(), async (req, res) => {
   await prisma.refreshSession.updateMany({ where: { userId: u.id, revokedAt: null }, data: { revokedAt: new Date() } });
   return res.json({ ok: true });
 });
+

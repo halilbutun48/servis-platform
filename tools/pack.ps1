@@ -46,7 +46,7 @@ if ($To -le 0) {
 }
 
 Write-Host ""
-Write-StatusLine ("=== PERSONEL-SERVIS V1 — PACK (M0→M{0}) ===" -f $To)
+Write-StatusLine ("=== PERSONEL-SERVIS V1 - PACK (M0->M{0}) ===" -f $To)
 Write-StatusLine ("INFO Target stage: M{0}" -f $To)
 Write-Host ""
 
@@ -54,11 +54,11 @@ if (-not (Test-Path $gate)) { throw "gate.ps1 not found: $gate" }
 if (-not (Test-Path $compose)) { throw "compose dir not found: $compose" }
 
 Write-StatusLine "=== Install (backend) ==="
-Write-StatusLine "INFO SKIP (Docker mode) — host node_modules gerekmiyor."
+Write-StatusLine "INFO SKIP (Docker mode) - host node_modules gerekmiyor."
 Write-Host ""
 
 Write-StatusLine "=== Install (web) ==="
-Write-StatusLine "INFO SKIP (Docker mode) — host node_modules gerekmiyor."
+Write-StatusLine "INFO SKIP (Docker mode) - host node_modules gerekmiyor."
 Write-Host ""
 
 Write-StatusLine "=== Gate ==="

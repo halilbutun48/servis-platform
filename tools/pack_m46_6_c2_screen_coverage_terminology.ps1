@@ -10,7 +10,7 @@ Write-Host ''
 Write-StatusLine '=== M46.6-C2 SCREEN COVERAGE + TERMINOLOGY PACK ==='
 
 & (Join-Path $RepoRoot 'tools/pack_m46_6_d3_ai_actionable_chat.ps1') -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw 'm46.6-d3 pack failed' }
+if (-not $?) { throw 'm46.6-d3 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'
@@ -27,7 +27,8 @@ if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' '
 Write-Host ''
 Write-StatusLine '=== M46.6-C2 Repo Contract ==='
 & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools/check_m46_6_c2_screen_coverage_terminology_repo_contract.ps1') -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw 'repo contract check failed' }
+if (-not $?) { throw 'repo contract check failed' }
 
 Write-Host ''
 Write-StatusLine '=== M46.6-C2 SCREEN COVERAGE + TERMINOLOGY PACK PASS OK ==='
+

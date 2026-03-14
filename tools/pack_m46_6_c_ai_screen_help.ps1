@@ -10,7 +10,7 @@ Write-Host ""
 Write-StatusLine "=== M46.6-C AI SCREEN HELP PACK ==="
 
 & (Join-Path $RepoRoot "tools/pack_m46_6_t_ai_location_source_guide.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "m46.6-t pack failed" }
+if (-not $?) { throw "m46.6-t pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"
@@ -27,7 +27,8 @@ if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' '
 Write-Host ""
 Write-StatusLine "=== M46.6-C Repo Contract ==="
 & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools/check_m46_6_c_ai_screen_help_repo_contract.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "repo contract check failed" }
+if (-not $?) { throw "repo contract check failed" }
 
 Write-Host ""
 Write-StatusLine "=== M46.6-C AI SCREEN HELP PACK PASS OK ==="
+

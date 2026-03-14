@@ -10,7 +10,7 @@ Write-Host ""
 Write-StatusLine "=== M46.3 AI COPILOT QUALITY + EVIDENCE PACK ==="
 
 & (Join-Path $RepoRoot "tools/pack_m46_2_ai_copilot_intent_expansion.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "m46.2 pack failed" }
+if (-not $?) { throw "m46.2 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"
@@ -27,7 +27,8 @@ if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' '
 Write-Host ""
 Write-StatusLine "=== M46.3 Repo Contract ==="
 & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools/check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "repo contract check failed" }
+if (-not $?) { throw "repo contract check failed" }
 
 Write-Host ""
 Write-StatusLine "=== M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK ==="
+

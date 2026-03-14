@@ -1,7 +1,7 @@
-﻿# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
+# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
 
 Timezone: Europe/Istanbul  
-Last updated: **2026-03-13**  
+Last updated: **2026-03-14**  
 Current GREEN ref:
 - **M41 PACK PASS**
 - **M42 OPTIONAL PACK PASS**
@@ -29,10 +29,11 @@ Current GREEN ref:
 - **M46.6-D3 AI ACTIONABLE CHAT PACK PASS OK**
 - **M46.6-C2 SCREEN COVERAGE + TERMINOLOGY PACK PASS OK**
 - **M46.6-D4 SIMPLE ROLE MODE PACK PASS OK**
+- **M46.7 DRIVER CODE LOGIN + REHBER FIRST PACK PASS OK**
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)
-2) **M42 Optional + Step 0.6 + Step 1 + M43→M46.6-D4 üst katmanları** (ana regresyonu bozmadan ayrı doğrulanır)
+2) **M42 Optional + Step 0.6 + Step 1 + M43→M46.7 üst katmanları** (ana regresyonu bozmadan ayrı doğrulanır)
 
 ## Yol Haritası (Sıralı)
 - **Step 0:** V1 Manuel Checklist %100 PASS
@@ -57,6 +58,7 @@ Bu dosya iki amaç taşır:
 - **Step 3.6-D3:** AI Actionable Chat resmi green
 - **Step 3.6-C2:** Screen Coverage + Terminology resmi green
 - **Step 3.6-D4:** Simple Role Mode resmi green
+- **Step 3.7:** Driver Code Login + Rehber First resmi green
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.  
 > Üst katmanlar ayrı resmi pack/check hatlarıyla doğrulanır.  
@@ -133,6 +135,62 @@ Bu dosya iki amaç taşır:
 
 ---
 
+## Step 3.7 — M46.7 Driver Code Login + Rehber First
+
+### M46.7 — Driver Code Login + Rehber First
+- [x] Rehber navdock’ta 1. sıraya alındı
+- [x] Room login doğrulandı
+- [x] Driver create → auto credentials çalışıyor
+- [x] Driver code issued doğrulandı
+- [x] Temporary PIN issued doğrulandı
+- [x] Driver login by code + PIN doğrulandı
+- [x] `me.requirePinChange` doğrulandı
+- [x] Driver PIN change doğrulandı
+- [x] Room reset PIN doğrulandı
+- [x] Repo contract pass
+
+---
+
+## Planned Next Route (Not Green Yet)
+
+### M46.8 — Driver Access Hardening
+- [ ] Login limiter `identifier` bazlı çalışır
+- [ ] Driver login için ayrı daha sıkı bucket vardır
+- [ ] `driver/change-pin` için ayrı limiter vardır
+- [ ] Hatalı PIN sayacı vardır
+- [ ] Geçici lock / cooldown davranışı vardır
+- [ ] Room reset sonrası lock/counter temizlenir
+- [ ] Minimum PIN policy + kolay PIN blokları vardır
+- [ ] Login / fail / lock / reset / change-pin audit alanları genişletilmiştir
+- [ ] Driver login `deviceId` akışı netleşmiştir
+- [ ] Runtime + repo contract green olmuştur
+
+Scaffold staged (henüz green değil):
+- [ ] `backend/scripts/m46_8_driver_access_hardening_check.js`
+- [ ] `tools/pack_m46_8_driver_access_hardening.ps1`
+- [ ] `tools/check_m46_8_driver_access_hardening_repo_contract.ps1`
+- [ ] `docs/RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md`
+
+### Sonraki resmi sıra
+- [ ] `M46.9 — Session & Refresh Security`
+- [ ] `M47 — KVKK Notice/Consent Framework`
+- [ ] `M47.2 — Capacity & Load Baseline`
+- [ ] `M47.3 — Production Resilience + Edge Security`
+- [ ] `M47.4 — Mobile Readiness Web Pass`
+- [ ] `M48 — Driver Mobile Foundation`
+- [ ] `M49 — Driver Mobile Beta Hardening`
+
+### Daha sonraki aday faz
+- [ ] `M49.1 — Driver Voice Guidance + Stop ETA`
+  - sıradaki durak / kalan km / tahmini süre
+  - navigasyon doğrulamalı sesli yönlendirme
+  - durakta binecek kişi sayısı / operasyonel sesli kılavuz
+  - rota dışı / durak kaçırma / gecikme uyarıları
+
+> Not: Planned maddeler resmi green değildir; scaffold dosyaları staged olsa bile runtime + repo-contract pack/check üretilmeden `[x]` yapılmaz.
+
+---
+
 ## Kanonik komutlar
 - `tools\pack.ps1 -To 41`
 - `tools\pack_m42_optional.ps1`
@@ -157,9 +215,13 @@ Bu dosya iki amaç taşır:
 - `tools\pack_m46_6_d3_ai_actionable_chat.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m46_6_c2_screen_coverage_terminology.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m46_6_d4_simple_role_mode.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_7_driver_code_login_rehber_first.ps1 -RepoRoot D:\servis-platform`
 
 ## Kapanış kuralı
 - Ana referans yine **M41 PACK PASS**’tir.
 - Üst katmanlar ayrı resmi green hatları olarak korunur.
-- Yeni AI milestone’ları M46 → M46.1 → M46.2 → M46.3 → M46.4 → M46.5 → M46.6-A/B/T/C/D/D2/D3/C2/D4 çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
-- M45 backup create tool: `tools\backup_create_m45.ps1`
+- Yeni AI milestone’ları `M46 → M46.1 → M46.2 → M46.3 → M46.4 → M46.5 → M46.6-A/B/T/C/D/D2/D3/C2/D4 → M46.7` çizgisini ve alt check uyumluluğunu bozmadan ilerlemelidir.
+- `M46.8+` hattı güvenlik / session / KVKK / kapasite / mobil hazırlık olarak kademeli ele alınmalıdır.
+- `M49.1` aday sesli kılavuz fazıdır; mobil foundation ve saha verisi oturmadan öne çekilmez.
+- M45 backup create tool: tools\backup_create_m45.ps1
+- M45 backup restore tool: tools\backup_restore_m45.ps1

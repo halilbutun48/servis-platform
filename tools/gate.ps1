@@ -67,7 +67,7 @@ $checks = @(
   @{ n = 41; name = "M41"; file = "m41check.js"; cmd = "node scripts/m41check.js" }
 )
 
-$maxSupported = ($checks | Measure-Object -Property n -Maximum).Maximum
+$maxSupported = ($checks | ForEach-Object { [int]$_.n } | Measure-Object -Maximum).Maximum
 
 if ($To -le 0) {
   $To = $maxSupported

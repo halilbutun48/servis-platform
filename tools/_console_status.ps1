@@ -1,4 +1,3 @@
-# tools/_console_status.ps1
 function Write-StatusLine {
   param(
     [Parameter(ValueFromPipeline=$true)]
@@ -14,11 +13,7 @@ function Write-StatusLine {
       Write-Host $s -ForegroundColor Green
       return
     }
-    if ($trim -match '^=== ') {
-      Write-Host $s -ForegroundColor Cyan
-      return
-    }
-    if ($trim -match '^--- ') {
+    if ($trim -match '^=== ' -or $trim -match '^--- ') {
       Write-Host $s -ForegroundColor Cyan
       return
     }
@@ -47,11 +42,54 @@ function Write-StatusLine {
   }
 }
 
+function ConvertTo-NativeArgumentString {
+  param(
+    [Parameter()][object[]]$ArgumentList
+  )
+
+  $parts = @()
+  foreach ($arg in @($ArgumentList)) {
+    if ($null -eq $arg) { continue }
+    $s = [string]$arg
+    if ($s -match '[\s"]') {
+      $escaped = $s -replace '(\\*)"', '$1$1\\"'
+      $escaped = $escaped -replace '(\\+)$', '$1$1'
+      $parts += '"' + $escaped + '"'
+    } else {
+      $parts += $s
+    }
+  }
+  return ($parts -join ' ')
+}
+
 function Invoke-ExternalColor {
   param(
     [Parameter(Mandatory=$true)][string]$FilePath,
     [Parameter()][object[]]$ArgumentList
   )
-  & $FilePath @ArgumentList 2>&1 | ForEach-Object { Write-StatusLine $_ }
-  return $LASTEXITCODE
+
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $FilePath
+  $psi.Arguments = ConvertTo-NativeArgumentString -ArgumentList $ArgumentList
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.CreateNoWindow = $true
+
+  $proc = New-Object System.Diagnostics.Process
+  $proc.StartInfo = $psi
+  [void]$proc.Start()
+
+  while (-not $proc.HasExited -or -not $proc.StandardOutput.EndOfStream -or -not $proc.StandardError.EndOfStream) {
+    while (-not $proc.StandardOutput.EndOfStream) {
+      Write-StatusLine $proc.StandardOutput.ReadLine()
+    }
+    while (-not $proc.StandardError.EndOfStream) {
+      Write-StatusLine $proc.StandardError.ReadLine()
+    }
+    Start-Sleep -Milliseconds 50
+  }
+
+  $proc.WaitForExit()
+  return $proc.ExitCode
 }

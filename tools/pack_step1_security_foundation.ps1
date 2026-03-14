@@ -10,7 +10,7 @@ Write-Host ""
 Write-StatusLine "=== STEP 1 SECURITY FOUNDATION PACK ==="
 
 & (Join-Path $RepoRoot "tools/pack.ps1") -To 41
-if ($LASTEXITCODE -ne 0) { throw "base M41 pack failed" }
+if (-not $?) { throw "base M41 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"
@@ -24,7 +24,8 @@ if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' '
 Write-Host ""
 Write-StatusLine "=== Step 1 Repo Contract ==="
 & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools/check_step1_security_foundation_repo_contract.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "repo contract check failed" }
+if (-not $?) { throw "repo contract check failed" }
 
 Write-Host ""
 Write-StatusLine "=== STEP 1 SECURITY FOUNDATION PACK PASS OK ==="
+

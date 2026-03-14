@@ -208,9 +208,39 @@ const authLimiter = rateLimit({
   store: rlStore("auth:", ENV.AUTH_RATE_LIMIT_WINDOW_MS),
   skip: greenpackSkip,
   keyGenerator: (req) => {
-    const email = String(req.body?.email || req.body?.username || "").trim().toLowerCase();
-    return `ip:${req.ip}|email:${email}`;
+    const identifier = String(req.body?.identifier || req.body?.email || req.body?.username || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "");
+    return `ip:${req.ip}|identifier:${identifier}`;
   },
+  handler: limiter429Handler,
+});
+
+function authActionKey(req) {
+  const token = String(req.get("x-auth-token") || "") || readBearerToken(req);
+  if (token) return authKey(req);
+
+  const refreshToken = String(req.body?.refreshToken || "").trim();
+  if (refreshToken) return `ip:${req.ip}|refresh:${refreshToken.slice(0, 24)}`;
+
+  const identifier = String(req.body?.identifier || req.body?.email || req.body?.username || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
+  const deviceId = String(req.body?.deviceId || "").trim().toLowerCase();
+  return `ip:${req.ip}|identifier:${identifier}|device:${deviceId}`;
+}
+
+const authActionWindowMs = Math.min(Number(ENV.AUTH_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000), 10 * 60 * 1000);
+const authActionLimiter = rateLimit({
+  windowMs: authActionWindowMs,
+  max: Math.max(5, Math.min(Number(ENV.AUTH_RATE_LIMIT_MAX || 10), 10)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("auth-action:", authActionWindowMs),
+  skip: greenpackSkip,
+  keyGenerator: authActionKey,
   handler: limiter429Handler,
 });
 
@@ -275,6 +305,9 @@ const exportLimiter = rateLimit({
 // Auth (çok sıkı)
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/google", authLimiter);
+app.use("/api/auth/refresh", authActionLimiter);
+app.use("/api/auth/logout", authActionLimiter);
+app.use("/api/auth/driver/change-pin", authActionLimiter);
 
 // GPS ingest (ayrı kova)
 app.use("/api/gps", gpsLimiter);

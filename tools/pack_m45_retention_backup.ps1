@@ -10,7 +10,7 @@ Write-Host ""
 Write-StatusLine "=== M45 RETENTION + BACKUP PACK ==="
 
 & (Join-Path $RepoRoot "tools/pack_m44_telematics.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "m44 pack failed" }
+if (-not $?) { throw "m44 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"
@@ -27,7 +27,8 @@ if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' '
 Write-Host ""
 Write-StatusLine "=== M45 Repo Contract ==="
 & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools/check_m45_retention_backup_repo_contract.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "repo contract check failed" }
+if (-not $?) { throw "repo contract check failed" }
 
 Write-Host ""
 Write-StatusLine "=== M45 RETENTION + BACKUP PACK PASS OK ==="
+

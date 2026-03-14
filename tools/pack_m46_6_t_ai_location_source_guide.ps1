@@ -10,7 +10,7 @@ Write-Host ""
 Write-StatusLine "=== M46.6-T AI LOCATION SOURCE GUIDE PACK ==="
 
 & (Join-Path $RepoRoot "tools/pack_m46_6_b_ai_job_guide_precheck.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "m46.6-b pack failed" }
+if (-not $?) { throw "m46.6-b pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"
@@ -27,7 +27,8 @@ if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' '
 Write-Host ""
 Write-StatusLine "=== M46.6-T Repo Contract ==="
 & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot "tools/check_m46_6_t_ai_location_source_guide_repo_contract.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) { throw "repo contract check failed" }
+if (-not $?) { throw "repo contract check failed" }
 
 Write-Host ""
 Write-StatusLine "=== M46.6-T AI LOCATION SOURCE GUIDE PACK PASS OK ==="
+

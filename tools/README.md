@@ -29,9 +29,9 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m46_6_d3_ai_actionable_chat.ps1`
 - `tools\pack_m46_6_c2_screen_coverage_terminology.ps1`
 - `tools\pack_m46_6_d4_simple_role_mode.ps1`
+- `tools\pack_m46_7_driver_code_login_rehber_first.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene check’leri
-- `tools
-eset-and-pack.ps1`
+- `tools\reset-and-pack.ps1`
 - `tools\_console_status.ps1`
 
 ## Kökte kalan doküman pointer’ları
@@ -72,6 +72,7 @@ eset-and-pack.ps1`
 - `tools\pack_m46_6_d3_ai_actionable_chat.ps1 -RepoRoot D:\servis-platform` → Step 3.6-D3 / M46.6-D3
 - `tools\pack_m46_6_c2_screen_coverage_terminology.ps1 -RepoRoot D:\servis-platform` → Step 3.6-C2 / M46.6-C2
 - `tools\pack_m46_6_d4_simple_role_mode.ps1 -RepoRoot D:\servis-platform` → Step 3.6-D4 / M46.6-D4
+- `tools\pack_m46_7_driver_code_login_rehber_first.ps1 -RepoRoot D:\servis-platform` → Step 3.7 / M46.7
 
 ## Windows ExecutionPolicy
 PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
@@ -100,6 +101,19 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - `tools\check_m46_6_d3_ai_actionable_chat_repo_contract.ps1` → M46.6-D3 repo-contract kontrolü
 - `tools\check_m46_6_c2_screen_coverage_terminology_repo_contract.ps1` → M46.6-C2 repo-contract kontrolü
 - `tools\check_m46_6_d4_simple_role_mode_repo_contract.ps1` → M46.6-D4 repo-contract kontrolü
+- `tools\check_m46_7_driver_code_login_rehber_first_repo_contract.ps1` → M46.7 repo-contract kontrolü
+
+## SSOT / plan kuralı
+- `tools\PRIMER_SNAPSHOT.md` ve checklist dosyaları mevcut green durumu + resmi sonraki rotayı taşır.
+- README yalnızca gerçekten var olan script adlarını taşır; planlanan milestone script isimleri yazılmaz.
+- Sonraki resmi odak: driver access hardening, session security, KVKK notice/consent, capacity baseline, production resilience, mobile readiness, driver mobile foundation.
+- Daha sonraki aday faz: driver voice guidance + stop ETA.
+
+## M46.8 scaffold (not green yet)
+- `tools\pack_m46_8_driver_access_hardening.ps1` → scaffold repo-contract doğrulaması; runtime implementation henüz yok
+- `tools\check_m46_8_driver_access_hardening_repo_contract.ps1` → scaffold dosyaları ve SSOT güncellemesini doğrular
+- `backend\scripts\m46_8_driver_access_hardening_check.js` → TODO runtime check; implementation gelene kadar bilerek PASS vermez
+- `docs\RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md` → kapsam / kabul kriteri / TODO runbook
 
 Kural 1: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
 Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.  
