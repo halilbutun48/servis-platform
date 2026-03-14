@@ -58,7 +58,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m47_kvkk_notice_consent_framework.ps1 -RepoRoot D:\servis-platform` → M47
 - `tools\pack_m47_2_capacity_load_baseline.ps1 -RepoRoot D:\servis-platform` → M47.2
 - `tools\pack_m47_3_production_resilience_edge_security.ps1 -RepoRoot D:\servis-platform` → M47.3
-- `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform` → M47.4 mobile readiness web pass
+- `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform` → M47.4 ve M47.4-R clean rerun doğrulaması
 
 ## Hijyen kontrolü
 - `tools\check_repo_cleanup_m104.ps1` → repo cleanup kontrolü
@@ -71,5 +71,6 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 ## SSOT / plan kuralı
 - `tools\PRIMER_SNAPSHOT.md` ve checklist dosyaları mevcut green durumu + resmi sonraki rotayı taşır.
 - README yalnızca gerçekten var olan script adlarını taşır; planlanan milestone script isimleri yazılmaz.
-- Sonraki resmi odak: M47.4-R clean rerun / repro fix, M48 driver mobile app foundation, M48.5 room / company tablet readiness, M49 mobile beta hardening, M49.1 driver voice guidance + stop ETA, M50 mobile release readiness.
-- Kanonik token: `M47.4-R CLEAN RERUN REPRO FIX`
+- `M47.4-R` ayrı script değil; clean rerun / repro uyum doğrulamasıdır.
+- `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunabilir; ana driver ürün akışı `Sürücü Kodu + PIN` kalır.
+- Sonraki resmi odak: `M48 DRIVER MOBILE APP FOUNDATION`.

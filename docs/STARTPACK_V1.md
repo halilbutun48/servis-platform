@@ -14,10 +14,10 @@ Bu dosya repo için kısa çalışma runbook’udur.
 6. M43 Google Auth + Invite Gate hattı resmi green durumundadır.
 7. M44 Telematics hattı resmi green durumundadır.
 8. M45 Retention + Backup hattı resmi green durumundadır.
-9. M46 AI Copilot Foundation hattı resmi green durumundadır.
-10. M46.1–M46.9 zinciri resmi green’dir.
-11. M47 KVKK, M47.2 Capacity Baseline, M47.3 Edge Security ve M47.4 Mobile Readiness resmi green’dir.
-12. M47.4-R clean rerun / repro-fix planlı iştir; green değildir.
+9. M46 AI Copilot Foundation hattı ve M46.1–M46.9 zinciri resmi green durumundadır.
+10. M47 KVKK, M47.2 Capacity Baseline, M47.3 Edge Security ve M47.4 Mobile Readiness resmi green’dir.
+11. M47.4-R clean rerun / repro fix güncel repo’da doğrulanmıştır; aynı M47.4 pack hattı temiz rerun’da PASS verir.
+12. Son resmi tag hâlâ `v1-m47.4-green` olabilir; docs içinde resmi tag ile güncel repo-verified durum ayrı yazılır.
 13. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
 14. SSOT seti aynı değişiklikte birlikte senklenir:
    - `tools/PRIMER_SNAPSHOT.md`
@@ -31,6 +31,7 @@ Bu dosya repo için kısa çalışma runbook’udur.
 17. Üst milestone’lar alt milestone check uyumluluğunu bozmadan ilerletilir.
 18. CHECKLIST’te `[x]` yalnızca pack/check green olduktan sonra işaretlenir.
 19. repo/tools hijyen check sürekli korunur.
+20. `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak kalabilir; ana ürün driver girişi yine `Sürücü Kodu + PIN` akışıdır.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -57,15 +58,18 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
 - `M44 TELEMATICS PACK PASS OK`
 - `M45 RETENTION + BACKUP PACK PASS OK`
-- `M46.9 SESSION & REFRESH SECURITY PACK PASS OK`
+- `M46 AI COPILOT FOUNDATION PACK PASS OK`
+- `M46.1–M46.9 zinciri green`
 - `M47 KVKK NOTICE / CONSENT FRAMEWORK PACK PASS OK`
 - `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
 - `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
 - `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
+- `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
 
 ## 4) Ürün / operasyon kararları
 - Driver login ana modeli `Sürücü Kodu + PIN`.
 - İlk girişte PIN değişimi zorunlu.
+- `driver@demo.com / demo123` yalnızca hızlı panel/smoke kontrol hesabı olarak korunur.
 - Driver için telefon uygulaması birincil hedeftir.
 - Room / Company için tablet güçlü hedef, telefonda temel kullanım korunur.
 - `sürücünün telefon GPS'i` ürün içi birincil konum dili olarak korunur.
@@ -76,10 +80,9 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
 
 ## 6) Sonraki rota
-- `M47.4-R — Clean Rerun / Repro Fix`
 - `M48 — Driver Mobile App Foundation`
 - `M48.5 — Room / Company Tablet Readiness`
 - `M49 — Mobile Beta Hardening`
 - `M49.1 — Driver Voice Guidance + Stop ETA`
 - `M50 — Mobile Release Readiness`
-- Kanonik route token: `M47.4-R CLEAN RERUN REPRO FIX`
+- Kanonik route token: `M48 DRIVER MOBILE APP FOUNDATION`

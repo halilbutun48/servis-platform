@@ -25,14 +25,19 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
 - `M44 TELEMATICS PACK PASS OK`
 - `M45 RETENTION + BACKUP PACK PASS OK`
-- `M46.9 SESSION & REFRESH SECURITY PACK PASS OK`
+- `M46 AI COPILOT FOUNDATION PACK PASS OK`
+- `M46.1–M46.9 zinciri green`
 - `M47 KVKK NOTICE / CONSENT FRAMEWORK PACK PASS OK`
 - `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
 - `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
 - `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
 
+## Güncel repo-verified ek durum
+- `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
+- Aynı `pack_m47_4_mobile_readiness_web_pass.ps1` hattı clean rerun’da PASS verir.
+- `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunur; ana ürün driver girişi `Sürücü Kodu + PIN` akışıdır.
+
 ## Sonraki resmi rota
-- `M47.4-R — Clean Rerun / Repro Fix`
 - `M48 — Driver Mobile App Foundation`
 - `M48.5 — Room / Company Tablet Readiness`
 - `M49 — Mobile Beta Hardening`
