@@ -7,7 +7,7 @@
 
 import http from "http";
 import https from "https";
-import { login as compatLogin } from "./_harness.js";
+import { resolveLoginBody } from "./_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
@@ -57,7 +57,12 @@ function requestJson(method, path, { token, body } = {}) {
 }
 
 async function login(email, password) {
-  return compatLogin(email, password);
+  const r = await requestJson("POST", "/api/auth/login", {
+    body: await resolveLoginBody(email, password),
+  });
+  const token = r?.token;
+  if (!token) throw new Error("login: token missing");
+  return token;
 }
 
 function findKind(items, kind) {

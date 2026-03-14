@@ -1,7 +1,7 @@
 // backend/scripts/m3check.js
 import http from "http";
 import https from "https";
-import { login as compatLogin } from "./_harness.js";
+import { resolveLoginBody } from "./_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 const nowTag = new Date().toISOString().replace(/[:.TZ-]/g, "").slice(0, 14);
@@ -38,7 +38,9 @@ function reqJson(method, path, { token, body } = {}) {
 }
 
 async function login(email, password) {
-  return compatLogin(email, password);
+  const r = await reqJson("POST", "/api/auth/login", { body: await resolveLoginBody(email, password) });
+  if (!r.ok) throw new Error(`login failed ${email} -> ${r.status}\n${r.text}`);
+  return r.json?.token;
 }
 
 function ok(msg) { console.log(`OK ${msg}`); }

@@ -1,7 +1,6 @@
 // backend/scripts/m0check.js
 import http from "http";
 import https from "https";
-import { login as compatLogin } from "./_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
@@ -31,8 +30,11 @@ function reqJson(method, path, { token, body } = {}) {
   });
 }
 
-async function login(email, password) {
-  return compatLogin(email, password);
+async function login(email, password){
+  const r = await reqJson("POST","/api/auth/login",{ body:{ ...(String(email).toLowerCase()==="driver@demo.com" ? { email, password, deviceId: process.env.DRIVER_DEVICE_ID ?? "greenpack-driver-device" } : { email, password }) } });
+  if(!r.ok) throw new Error(`login failed ${email} -> ${r.status}\n${r.text}`);
+  if(!r.json?.token) throw new Error(`token missing for ${email}`);
+  return r.json.token;
 }
 
 function ok(msg){ console.log(`OK ${msg}`); }

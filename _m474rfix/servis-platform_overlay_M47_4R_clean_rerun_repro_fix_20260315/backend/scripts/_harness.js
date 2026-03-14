@@ -219,28 +219,50 @@ export function itemsOf(resp) {
 /**
  * Auth helpers
  */
-async function resolveDriverDeviceIdForLogin(identifier, fallback = process.env.GREENPACK_DRIVER_DEVICE_ID ?? "greenpack-driver-device") {
+const DRIVER_COMPAT_DEVICE_ID =
+  String(process.env.DRIVER_LOGIN_COMPAT_DEVICE_ID || "driver-demo-panel-device").trim() ||
+  "driver-demo-panel-device";
+
+export async function resolveDriverCompatDeviceId(identifier = "driver@demo.com", fallback = DRIVER_COMPAT_DEVICE_ID) {
   const raw = String(identifier || "").trim();
-  if (!raw) return null;
+  if (!raw) return "";
 
-  let user = null;
-  if (raw.includes("@")) {
-    user = await prisma.user.findUnique({
-      where: { email: raw.toLowerCase() },
-      select: { role: true, deviceId: true },
-    });
-  } else {
-    user = await prisma.user.findFirst({
-      where: { driver: { is: { driverCode: raw } } },
-      select: { role: true, deviceId: true },
-    });
+  try {
+    let user = null;
+    if (raw.includes("@")) {
+      user = await prisma.user.findUnique({
+        where: { email: raw.toLowerCase() },
+        select: { role: true, deviceId: true },
+      });
+    } else {
+      user = await prisma.user.findFirst({
+        where: { role: "DRIVER", driver: { is: { driverCode: raw.toUpperCase() } } },
+        select: { role: true, deviceId: true },
+      });
+    }
+
+    if (user?.role !== "DRIVER") return "";
+
+    const deviceId = String(user?.deviceId || "").trim();
+    return deviceId || String(fallback || "").trim();
+  } catch {
+    return String(fallback || "").trim();
   }
-
-  if (!user || user.role !== "DRIVER") return null;
-  const bound = String(user.deviceId || "").trim();
-  return bound || String(fallback || "greenpack-driver-device").trim();
 }
 
+export async function resolveLoginBody(identifier, password, extra = {}) {
+  const raw = String(identifier || "").trim();
+  const body = raw.includes("@")
+    ? { email: raw, password, ...extra }
+    : { identifier: raw, password, ...extra };
+
+  const hasDeviceId = Boolean(String(body?.deviceId || "").trim());
+  if (hasDeviceId) return body;
+
+  const compatDeviceId = await resolveDriverCompatDeviceId(raw);
+  if (compatDeviceId) body.deviceId = compatDeviceId;
+  return body;
+}
 export async function login(email, password) {
   // M16 yanlış pass gönderebilir -> fallback dene (şifreyi loglamıyoruz)
   const candidates = [];
@@ -264,11 +286,8 @@ export async function login(email, password) {
 
   for (let i = 0; i < candidates.length; i++) {
     const pass = candidates[i];
-    const driverDeviceId = await resolveDriverDeviceIdForLogin(email);
 
-    const body = String(email || '').includes('@')
-      ? { email, password: pass, ...(driverDeviceId ? { deviceId: driverDeviceId } : {}) }
-      : { identifier: email, password: pass, ...(driverDeviceId ? { deviceId: driverDeviceId } : {}) };
+    const body = await resolveLoginBody(email, pass);
 
     const r = await reqJson("POST", "/api/auth/login", {
       body,

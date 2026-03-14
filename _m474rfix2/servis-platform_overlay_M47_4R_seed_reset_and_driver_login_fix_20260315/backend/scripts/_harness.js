@@ -1,7 +1,6 @@
 // backend/scripts/_harness.js
 import http from "http";
 import https from "https";
-import { prisma } from "../src/prisma.js";
 
 export const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
@@ -216,31 +215,29 @@ export function itemsOf(resp) {
   return [];
 }
 
+function isDriverIdentifier(value) {
+  const s = String(value || '').trim();
+  if (!s) return false;
+  if (s.toLowerCase() === 'driver@demo.com') return true;
+  return /^SRC-\d+$/i.test(s);
+}
+
+function buildLoginBody(identifierOrEmail, password) {
+  const raw = String(identifierOrEmail || '').trim();
+  const body = raw.includes('@')
+    ? { email: raw, password }
+    : { identifier: raw, password };
+
+  if (isDriverIdentifier(raw)) {
+    body.deviceId = process.env.DRIVER_DEVICE_ID || 'greenpack-driver-device';
+  }
+
+  return body;
+}
+
 /**
  * Auth helpers
  */
-async function resolveDriverDeviceIdForLogin(identifier, fallback = process.env.GREENPACK_DRIVER_DEVICE_ID ?? "greenpack-driver-device") {
-  const raw = String(identifier || "").trim();
-  if (!raw) return null;
-
-  let user = null;
-  if (raw.includes("@")) {
-    user = await prisma.user.findUnique({
-      where: { email: raw.toLowerCase() },
-      select: { role: true, deviceId: true },
-    });
-  } else {
-    user = await prisma.user.findFirst({
-      where: { driver: { is: { driverCode: raw } } },
-      select: { role: true, deviceId: true },
-    });
-  }
-
-  if (!user || user.role !== "DRIVER") return null;
-  const bound = String(user.deviceId || "").trim();
-  return bound || String(fallback || "greenpack-driver-device").trim();
-}
-
 export async function login(email, password) {
   // M16 yanlış pass gönderebilir -> fallback dene (şifreyi loglamıyoruz)
   const candidates = [];
@@ -264,11 +261,8 @@ export async function login(email, password) {
 
   for (let i = 0; i < candidates.length; i++) {
     const pass = candidates[i];
-    const driverDeviceId = await resolveDriverDeviceIdForLogin(email);
 
-    const body = String(email || '').includes('@')
-      ? { email, password: pass, ...(driverDeviceId ? { deviceId: driverDeviceId } : {}) }
-      : { identifier: email, password: pass, ...(driverDeviceId ? { deviceId: driverDeviceId } : {}) };
+    const body = buildLoginBody(email, pass);
 
     const r = await reqJson("POST", "/api/auth/login", {
       body,
