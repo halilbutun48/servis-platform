@@ -109,11 +109,18 @@ PowerShell imza/ExecutionPolicy engelinde wrapper kullan:
 - Sonraki resmi odak: driver access hardening, session security, KVKK notice/consent, capacity baseline, production resilience, mobile readiness, driver mobile foundation.
 - Daha sonraki aday faz: driver voice guidance + stop ETA.
 
-## M46.8 scaffold (not green yet)
-- `tools\pack_m46_8_driver_access_hardening.ps1` → scaffold repo-contract doğrulaması; runtime implementation henüz yok
-- `tools\check_m46_8_driver_access_hardening_repo_contract.ps1` → scaffold dosyaları ve SSOT güncellemesini doğrular
-- `backend\scripts\m46_8_driver_access_hardening_check.js` → TODO runtime check; implementation gelene kadar bilerek PASS vermez
-- `docs\RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md` → kapsam / kabul kriteri / TODO runbook
+## M46.8 (green)
+- `tools\pack_m46_8_driver_access_hardening.ps1` → prisma sync + runtime check + repo contract
+- `tools\check_m46_8_driver_access_hardening_repo_contract.ps1` → repo-contract kontrolü
+- `backend\scripts\m46_8_driver_access_hardening_check.js` → runtime check (PIN lock/cooldown, weak PIN reject, reset hygiene, audit)
+- `docs\RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md` → kapsam / kabul kriteri / runbook
+
+## M46.9 scaffold
+- `tools\pack_m46_9_session_refresh_security.ps1` → prisma sync + runtime check + repo contract
+- `tools\check_m46_9_session_refresh_security_repo_contract.ps1` → repo-contract kontrolü
+- `backend\scripts\m46_9_session_refresh_security_check.js` → runtime check (refresh rotate, reuse detect, revoke-all, pin reset invalidation)
+- `docs\RUNBOOK_M46_9_SESSION_REFRESH_SECURITY.md` → kapsam / kabul kriteri / runbook
+
 
 Kural 1: yeni tek seferlik overlay/apply script’i repo kalıcı araç setine eklenmez; işi bittikten sonra `tools/_archive/` altında tutulur.  
 Kural 2: overlay zip’leri nested root üretmeden extract sonrası doğrudan apply path ile çalışmalıdır.  

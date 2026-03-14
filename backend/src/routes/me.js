@@ -1,7 +1,8 @@
 //backend/src/routes/me.js
 import express from "express";
-import { authRequired } from "../auth/middleware.js";
+import { authRequired, requireStepUpWrite } from "../auth/middleware.js";
 import { prisma } from "../prisma.js";
+import { audit } from "../audit.js";
 
 export const meRouter = express.Router();
 
@@ -61,3 +62,37 @@ meRouter.get("/", authRequired(), async (req, res) => {
   });
 });
 
+
+
+// ✅ M46.9: session visibility + self revoke-all
+meRouter.get("/sessions", authRequired(), async (req, res) => {
+  const u = req.user;
+  const items = await prisma.refreshSession.findMany({
+    where: { userId: u.id },
+    select: { id: true, createdAt: true, expiresAt: true, revokedAt: true, deviceId: true, ip: true, userAgent: true },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: 50,
+  });
+  return res.json({ ok: true, items });
+});
+
+meRouter.post("/sessions/revoke-all", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"), async (req, res) => {
+  const u = req.user;
+  const now = new Date();
+
+  const out = await prisma.$transaction(async (tx) => {
+    const r = await tx.refreshSession.updateMany({ where: { userId: u.id, revokedAt: null }, data: { revokedAt: now } });
+    const updated = await tx.user.update({ where: { id: u.id }, data: { sessionVersion: { increment: 1 } } });
+    return { revokedCount: Number(r?.count || 0), sessionVersion: updated.sessionVersion };
+  });
+
+  await audit(req, {
+    action: "AUTH_SESSION_REVOKE_ALL",
+    entity: "User",
+    entityId: u.id,
+    meta: { userId: u.id, revokedCount: out.revokedCount, sessionVersion: out.sessionVersion },
+  });
+
+  // Note: current access token is invalid after bump; client must re-login.
+  return res.json({ ok: true, revokedCount: out.revokedCount, sessionVersion: out.sessionVersion });
+});

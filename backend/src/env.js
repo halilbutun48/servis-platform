@@ -9,6 +9,12 @@ export const ENV = {
   // Auth
   JWT_SECRET: process.env.JWT_SECRET ?? "dev-secret",
   ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN ?? "7d", // backward compatible default
+  // ✅ M46.9: optional tighter access token TTL for DRIVER (e.g. "12h" or "1h")
+  DRIVER_ACCESS_TOKEN_EXPIRES_IN: process.env.DRIVER_ACCESS_TOKEN_EXPIRES_IN ?? "",
+  // ✅ M46.9: cap active refresh sessions per user (0 = unlimited)
+  MAX_REFRESH_SESSIONS_PER_USER: Number(process.env.MAX_REFRESH_SESSIONS_PER_USER ?? 10),
+  // ✅ M46.9: if session/device is bound, require deviceId on refresh (prod only)
+  REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND: (process.env.REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND ?? "1") === "1",
   REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30),
   STEP_UP_REQUIRED_ROLES: process.env.STEP_UP_REQUIRED_ROLES ?? "SUPER_ADMIN,ROOM",
   STEP_UP_TOTP_WINDOW_SEC: Number(process.env.STEP_UP_TOTP_WINDOW_SEC ?? 12 * 60 * 60),

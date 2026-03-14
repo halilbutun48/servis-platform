@@ -403,6 +403,12 @@ io.use(async (socket, next) => {
     const user = await prisma.user.findUnique({ where: { id: Number(userId) } });
     if (!user) return next(new Error("invalid user"));
 
+    const tokenSv = Number(decoded?.sv ?? decoded?.sessionVersion ?? 1);
+    const userSv = Number(user?.sessionVersion ?? 1);
+    if (Number.isFinite(tokenSv) && Number.isFinite(userSv) && tokenSv !== userSv) {
+      return next(new Error("session revoked"));
+    }
+
     socket.user = user;
     return next();
   } catch {

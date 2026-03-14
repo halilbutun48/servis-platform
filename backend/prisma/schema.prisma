@@ -333,6 +333,9 @@ notifications Notification[]
 
   // ✅ M41: refresh sessions (rotating)
   refreshSessions  RefreshSession[]
+
+  // ✅ M46.9: session invalidation (access token sv claim)
+  sessionVersion   Int      @default(1)
   identities       UserIdentity[]
 
   // Step 1.5: TOTP step-up (ROOM + SUPER_ADMIN)

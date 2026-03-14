@@ -19,6 +19,25 @@ function sha256Hex(s) {
   return crypto.createHash("sha256").update(String(s || ""), "utf8").digest("hex");
 }
 
+async function enforceMaxRefreshSessions(userId) {
+  const max = Number(ENV.MAX_REFRESH_SESSIONS_PER_USER ?? 10);
+  if (!Number.isFinite(max) || max <= 0) return;
+  try {
+    const extra = await prisma.refreshSession.findMany({
+      where: { userId, revokedAt: null },
+      select: { id: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: max,
+      take: 200,
+    });
+    const ids = extra.map((x) => x.id).filter(Boolean);
+    if (!ids.length) return;
+    await prisma.refreshSession.updateMany({ where: { id: { in: ids } }, data: { revokedAt: new Date() } });
+  } catch {
+    // fail-open
+  }
+}
+
 function randomTokenHex(bytes = 32) {
   return crypto.randomBytes(bytes).toString("hex");
 }
@@ -64,6 +83,7 @@ async function recordAudit({ req, email, user, action, reason, meta }) {
         },
       },
     });
+    await enforceMaxRefreshSessions(user.id);
   } catch {
     // swallow
   }
@@ -74,7 +94,8 @@ async function createPasswordHash() {
 }
 
 async function issueAuthPayload({ req, user, action = "AUTH_OAUTH_LOGIN", meta = {} }) {
-  const token = signToken({ userId: user.id, role: user.role });
+  const sv = Number(user?.sessionVersion ?? 1);
+  const token = signToken({ userId: user.id, role: user.role, sv });
   const refreshToken = randomTokenHex(32);
   const ttlDays = Number(ENV.REFRESH_TOKEN_TTL_DAYS || 30);
   const deviceId = pickDeviceId(req);

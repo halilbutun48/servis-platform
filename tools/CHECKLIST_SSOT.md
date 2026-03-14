@@ -151,25 +151,39 @@ Bu dosya iki amaç taşır:
 
 ---
 
-## Planned Next Route (Not Green Yet)
+## Planned Next Route
 
-### M46.8 — Driver Access Hardening
-- [ ] Login limiter `identifier` bazlı çalışır
-- [ ] Driver login için ayrı daha sıkı bucket vardır
-- [ ] `driver/change-pin` için ayrı limiter vardır
-- [ ] Hatalı PIN sayacı vardır
-- [ ] Geçici lock / cooldown davranışı vardır
-- [ ] Room reset sonrası lock/counter temizlenir
-- [ ] Minimum PIN policy + kolay PIN blokları vardır
-- [ ] Login / fail / lock / reset / change-pin audit alanları genişletilmiştir
-- [ ] Driver login `deviceId` akışı netleşmiştir
+### M46.8 — Driver Access Hardening (green)
+- [x] Login limiter `identifier` bazlı çalışır
+- [x] Driver login için ayrı daha sıkı bucket vardır
+- [x] `driver/change-pin` için ayrı limiter vardır
+- [x] Hatalı PIN sayacı vardır
+- [x] Geçici lock / cooldown davranışı vardır
+- [x] Room reset sonrası lock/counter temizlenir
+- [x] Minimum PIN policy + kolay PIN blokları vardır
+- [x] Login / fail / lock / reset / change-pin audit alanları genişletilmiştir
+- [x] Driver login `deviceId` akışı netleşmiştir
+- [x] Runtime + repo contract green olmuştur
+
+Resmi dosyalar:
+- [x] `backend/scripts/m46_8_driver_access_hardening_check.js`
+- [x] `tools/pack_m46_8_driver_access_hardening.ps1`
+- [x] `tools/check_m46_8_driver_access_hardening_repo_contract.ps1`
+- [x] `docs/RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md`
+
+### M46.9 — Session & Refresh Security (next)
+- [ ] Access token `sv/sessionVersion` claim + middleware/WS doğrulaması
+- [ ] Refresh token rotasyon + reuse tespiti (mevcut) + **max aktif session** limiti
+- [ ] `GET /api/me/sessions` ile oturum görünürlüğü
+- [ ] `POST /api/me/sessions/revoke-all` ile tüm oturumları iptal
+- [ ] Driver PIN reset => refresh revoke + access token invalidation
 - [ ] Runtime + repo contract green olmuştur
 
 Scaffold staged (henüz green değil):
-- [ ] `backend/scripts/m46_8_driver_access_hardening_check.js`
-- [ ] `tools/pack_m46_8_driver_access_hardening.ps1`
-- [ ] `tools/check_m46_8_driver_access_hardening_repo_contract.ps1`
-- [ ] `docs/RUNBOOK_M46_8_DRIVER_ACCESS_HARDENING.md`
+- [ ] `backend/scripts/m46_9_session_refresh_security_check.js`
+- [ ] `tools/pack_m46_9_session_refresh_security.ps1`
+- [ ] `tools/check_m46_9_session_refresh_security_repo_contract.ps1`
+- [ ] `docs/RUNBOOK_M46_9_SESSION_REFRESH_SECURITY.md`
 
 ### Sonraki resmi sıra
 - [ ] `M46.9 — Session & Refresh Security`

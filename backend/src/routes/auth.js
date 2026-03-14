@@ -56,6 +56,25 @@ function sha256Hex(s) {
   return crypto.createHash("sha256").update(String(s || ""), "utf8").digest("hex");
 }
 
+async function enforceMaxRefreshSessions(userId) {
+  const max = Number(ENV.MAX_REFRESH_SESSIONS_PER_USER ?? 10);
+  if (!Number.isFinite(max) || max <= 0) return;
+  try {
+    const extra = await prisma.refreshSession.findMany({
+      where: { userId, revokedAt: null },
+      select: { id: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: max,
+      take: 200,
+    });
+    const ids = extra.map((x) => x.id).filter(Boolean);
+    if (!ids.length) return;
+    await prisma.refreshSession.updateMany({ where: { id: { in: ids } }, data: { revokedAt: new Date() } });
+  } catch {
+    // fail-open
+  }
+}
+
 function isProd() {
   const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
   return mode === "production";
@@ -81,8 +100,19 @@ function isStepUpRole(role) {
   return stepUpRequiredRolesSet().has(String(role || "").trim().toUpperCase());
 }
 
+function accessExpiresInForUser(user) {
+  if (String(user?.role || "") === "DRIVER") {
+    const v = String(ENV.DRIVER_ACCESS_TOKEN_EXPIRES_IN || "").trim();
+    if (v) return v;
+  }
+  return null;
+}
+
 function issueAccessToken(user, extra = {}) {
-  return signToken({ userId: user.id, role: user.role, ...extra });
+  const sv = Number(user?.sessionVersion ?? 1);
+  const payload = { userId: user.id, role: user.role, sv, ...extra };
+  const expiresIn = accessExpiresInForUser(user);
+  return signToken(payload, expiresIn ? { expiresIn } : {});
 }
 
 function hashToken(raw) {
@@ -315,6 +345,7 @@ authRouter.post("/login", async (req, res) => {
         userAgent: req.headers["user-agent"]?.toString() || null,
       },
     });
+    await enforceMaxRefreshSessions(user.id);
   } catch {
     // ignore
   }
@@ -638,6 +669,20 @@ authRouter.post("/refresh", async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return res.status(401).json({ error: "INVALID_USER" });
 
+  if (isProd() && ENV.REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND && session.deviceId && !reqDeviceId) {
+    if (String(user?.role || "") === "DRIVER") {
+      await recordLoginAudit({
+        req,
+        email: user.email || null,
+        user,
+        action: "AUTH_REFRESH_DEVICE_REQUIRED",
+        reason: "DEVICE_ID_REQUIRED",
+        meta: { refreshSessionId: session.id, sessionDeviceId: session.deviceId },
+      });
+      return res.status(400).json({ error: "DEVICE_ID_REQUIRED", code: "DEVICE_ID_REQUIRED", message: "Cihaz bilgisi gerekli." });
+    }
+  }
+
   const newAccess = issueAccessToken(user);
 
   // rotate refresh token (best-effort)
@@ -659,6 +704,8 @@ authRouter.post("/refresh", async (req, res) => {
     });
 
     await prisma.refreshSession.update({ where: { id: session.id }, data: { revokedAt: new Date(), replacedById: created.id } });
+    await enforceMaxRefreshSessions(user.id);
+
 
     await recordLoginAudit({
       req,
@@ -721,11 +768,41 @@ authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {
   await prisma.$transaction([
     prisma.user.update({ where: { id: authUser.id }, data: { passwordHash } }),
     prisma.driver.update({ where: { id: authUser.driver.id }, data: { pinTemporary: false, pinUpdatedAt: new Date() } }),
+    // ✅ M46.9: revoke refresh sessions on credential change (best-effort)
+    prisma.refreshSession.updateMany({ where: { userId: authUser.id, revokedAt: null }, data: { revokedAt: new Date() } }),
   ]);
 
+  // Issue new tokens (optional; clients may ignore)
+  let newToken = null;
+  let newRefreshToken = null;
+  try {
+    const freshUser = await prisma.user.findUnique({ where: { id: authUser.id } });
+    if (freshUser) {
+      newToken = issueAccessToken(freshUser);
+      const raw = randomTokenHex(32);
+      const tokenHash = sha256Hex(raw);
+      const ttlDays = Number(ENV.REFRESH_TOKEN_TTL_DAYS || 30);
+      const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+      await prisma.refreshSession.create({
+        data: {
+          userId: freshUser.id,
+          tokenHash,
+          deviceId: freshUser.deviceId || null,
+          expiresAt,
+          ip: getReqIp(req),
+          userAgent: req.headers["user-agent"]?.toString() || null,
+        },
+      });
+      await enforceMaxRefreshSessions(freshUser.id);
+      newRefreshToken = raw;
+    }
+  } catch {
+    // ignore
+  }
+
   await clearDriverPinFailureState(authUser.driver.id);
-  await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_OK', reason: null, meta: { driverId: authUser.driver.id } });
-  return res.json({ ok: true, pinTemporary: false });
+  await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_OK', reason: null, meta: { driverId: authUser.driver.id, refreshSessionsRevoked: true, REFRESH_SESSION_REVOKED_ON_PIN_CHANGE: true } });
+  return res.json({ ok: true, pinTemporary: false, token: newToken, refreshToken: newRefreshToken });
 });
 
 // ✅ M41: logout / revoke refresh token(s)

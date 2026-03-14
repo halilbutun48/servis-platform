@@ -202,11 +202,25 @@ export function driversRouter(io) {
           existingDriverCode: owner.driverCode,
         });
 
+        // ✅ M46.9: reset PIN => revoke refresh sessions + bump sessionVersion (invalidate access tokens)
+        let revokedSessions = 0;
+        let bumpedTo = null;
+        try {
+          if (issued?.userId) {
+            const r0 = await tx.refreshSession.updateMany({ where: { userId: issued.userId, revokedAt: null }, data: { revokedAt: new Date() } });
+            revokedSessions = Number(r0?.count || 0);
+            const uu = await tx.user.update({ where: { id: issued.userId }, data: { sessionVersion: { increment: 1 } } });
+            bumpedTo = uu?.sessionVersion ?? null;
+          }
+        } catch {
+          // ignore
+        }
+
         const driver = await tx.driver.findUnique({
           where: { id },
           include: { backupDriver: true, user: { select: { id: true, email: true } } },
         });
-        return { driver, issued };
+        return { driver, issued, revokedSessions, sessionVersionBumpedTo: bumpedTo };
       });
 
       await clearDriverPinFailureState(id);
@@ -214,7 +228,7 @@ export function driversRouter(io) {
         action: 'AUTH_DRIVER_PIN_RESET',
         entity: 'Driver',
         entityId: id,
-        meta: { driverId: id, driverCode: result.issued.driverCode, roomId: u.roomId, temporary: true },
+        meta: { driverId: id, driverCode: result.issued.driverCode, roomId: u.roomId, temporary: true, revokedSessions: result.revokedSessions ?? null, sessionVersionBumpedTo: result.sessionVersionBumpedTo ?? null, SESSION_BUMP_ON_PIN_RESET: true },
       });
 
       io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: id, action: "updated" });

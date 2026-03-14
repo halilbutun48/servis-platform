@@ -43,6 +43,16 @@ export function authRequired() {
       });
       if (!user) return res.status(401).json({ error: "Invalid token" });
 
+      const tokenSv = Number(decoded?.sv ?? decoded?.sessionVersion ?? 1);
+      const userSv = Number(user?.sessionVersion ?? 1);
+      if (Number.isFinite(tokenSv) && Number.isFinite(userSv) && tokenSv !== userSv) {
+        return res.status(401).json({
+          error: "SESSION_REVOKED",
+          code: "SESSION_REVOKED",
+          message: "Oturum süresi doldu. Lütfen tekrar giriş yapın.",
+        });
+      }
+
       req.auth = decoded;
       req.user = user;
       next();
