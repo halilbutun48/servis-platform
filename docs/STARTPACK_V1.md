@@ -19,21 +19,23 @@ Bu dosya repo için kısa çalışma runbook’udur.
 11. M47.4-R clean rerun / repro fix güncel repo’da doğrulanmıştır; aynı M47.4 pack hattı temiz rerun’da PASS verir.
 12. M48 Driver Mobile Foundation güncel repo’da green doğrulanmıştır.
 13. M48.5 Room / Company Tablet Readiness güncel repo’da green doğrulanmıştır.
-14. Son resmi tag hâlâ `v1-m47.4-green` olabilir; docs içinde resmi tag ile güncel repo-verified durum ayrı yazılır.
-15. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
-16. SSOT seti aynı değişiklikte birlikte senklenir:
+14. M49 Mobile Beta Hardening güncel repo’da green doğrulanmıştır.
+15. M49.1 Driver Voice Guidance + Stop ETA güncel repo’da green doğrulanmıştır.
+16. Son resmi tag hâlâ `v1-m47.4-green` olabilir; docs içinde resmi tag ile güncel repo-verified durum ayrı yazılır.
+17. API / DB / UI / flow değişirse aynı değişiklikte docs güncellenir.
+18. SSOT seti aynı değişiklikte birlikte senklenir:
    - `tools/PRIMER_SNAPSHOT.md`
    - `docs/PRIMER_SSOT.md`
    - `docs/CHECKLIST_SSOT.md`
    - `tools/CHECKLIST_SSOT.md`
    - `docs/STARTPACK_V1.md`
    - `tools/README.md`
-17. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
-18. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
-19. Üst milestone’lar alt milestone check uyumluluğunu bozmadan ilerletilir.
-20. CHECKLIST’te `[x]` yalnızca pack/check green olduktan sonra işaretlenir.
-21. repo/tools hijyen check sürekli korunur.
-22. `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak kalabilir; ana ürün driver girişi yine `Sürücü Kodu + PIN` akışıdır.
+19. Değişiklikler mümkünse tek seferde **overlay (zip)** paket olarak taşınır.
+20. Overlay zip’leri extract sonrası doğrudan apply path ile çalışmalı; nested root üretilmez.
+21. Üst milestone’lar alt milestone check uyumluluğunu bozmadan ilerletilir.
+22. CHECKLIST’te `[x]` yalnızca pack/check green olduktan sonra işaretlenir.
+23. repo/tools hijyen check sürekli korunur.
+24. `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak kalabilir; ana ürün driver girişi yine `Sürücü Kodu + PIN` akışıdır.
 
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -51,6 +53,10 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - M48 runbook: `docs\RUNBOOK_M48_DRIVER_MOBILE_FOUNDATION.md`
 - M48.5 pack: `tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform`
 - M48.5 runbook: `docs\RUNBOOK_M48_5_ROOM_COMPANY_TABLET_READINESS.md`
+- M49 pack: `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform`
+- M49 runbook: `docs\RUNBOOK_M49_MOBILE_BETA_HARDENING.md`
+- M49.1 pack: `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform`
+- M49.1 runbook: `docs\RUNBOOK_M49_1_DRIVER_VOICE_GUIDANCE_STOP_ETA.md`
 
 ## 3) Green durum özeti
 - `M41 PACK PASS`
@@ -73,6 +79,8 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
 - `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
 - `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
+- `M49 MOBILE BETA HARDENING PACK PASS OK`
+- `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
 
 ## 4) Ürün / operasyon kararları
 - Driver login ana modeli `Sürücü Kodu + PIN`.
@@ -81,6 +89,7 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Driver için telefon uygulaması birincil hedeftir.
 - Room / Company için tablet güçlü hedef, telefonda temel kullanım korunur.
 - Room / Company tablet hazırlığı aynı web uygulaması içinde ilerler; ayrı native tablet app henüz yoktur.
+- M49.1 ile sürücü mobilde sesli rehber ve durak ETA desteği açılmıştır.
 - `sürücünün telefon GPS'i` ürün içi birincil konum dili olarak korunur.
 - AI hattı read-only / suggestion-first kalır.
 
@@ -89,7 +98,5 @@ Bu dosya repo için kısa çalışma runbook’udur.
 - Personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
 
 ## 6) Sonraki rota
-- `M49 — Mobile Beta Hardening`
-- `M49.1 — Driver Voice Guidance + Stop ETA`
 - `M50 — Mobile Release Readiness`
-- Kanonik route token: `M49 MOBILE BETA HARDENING`
+- Kanonik route token: `M50 MOBILE RELEASE READINESS`

@@ -1,4 +1,4 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SSOT (Repo-Verified, Post-M48.5)
+# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SSOT (Repo-Verified, Post-M49.1)
 
 Tarih: 2026-03-15
 Timezone: Europe/Istanbul
@@ -43,6 +43,8 @@ Ana resmi green durum:
 - ✅ `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
 - ✅ `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
 - ✅ `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
+- ✅ `M49 MOBILE BETA HARDENING PACK PASS OK`
+- ✅ `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
 
 Güncel repo-verified ek durum:
 - ✅ `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
@@ -54,6 +56,8 @@ Güncel repo-verified ek durum:
 - güncel repo çalışma ağacında `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform` temiz rerun senaryosunda PASS vermektedir
 - güncel repo çalışma ağacında `tools\pack_m48_driver_mobile_foundation.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
 - güncel repo çalışma ağacında `tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
+- güncel repo çalışma ağacında `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
+- güncel repo çalışma ağacında `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
 - `M47.4-R` ayrı bir ürün özelliği değil; seed + driver login device binding + rerun/check uyum düzeltmesidir
 - `M47.4-R` için ayrı pack script yoktur; resmi kanıt, aynı M47.4 pack hattının artık clean rerun’da da PASS vermesidir
 
@@ -68,6 +72,9 @@ Ana kanıt komutları:
 - `./tools/pack_m47_3_production_resilience_edge_security.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
 - `./tools/pack_m48_driver_mobile_foundation.ps1 -RepoRoot D:\servis-platform`
+- `./tools/pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform`
+- `./tools/pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform`
+- `./tools/pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform`
 
 M47.4-R ile netleşen teknik sonuç:
 - demo kullanıcı seed’i rerun’da `demo123` parolasını tekrar yazabilir durumdadır
@@ -87,6 +94,18 @@ M48.5 ile netleşen teknik sonuç:
 - tablet odaklı grid ve shell düzeni `web/src/index.css` içinde tanımlanmıştır
 - ayrı native room/company tablet uygulaması henüz açılmamıştır
 
+M49 ile netleşen teknik sonuç:
+- mobil beta hardening ile foreground `active` olduğunda otomatik veri yenileme eklenmiştir
+- 30 saniyelik periyodik yenileme ve backend health pingi görünürlüğü vardır
+- `Beta durum` kartında API tabanı, `Device ID`, son senkron ve son hata bilgisi görünür
+- `Güvenli çıkış` akışı refresh session revoke denemesiyle desteklenir
+
+M49.1 ile netleşen teknik sonuç:
+- `expo-speech` tabanlı sesli rehber mobilde açılmıştır
+- sürücü `Sıradaki durağı oku` ve `ETA oku` işlemlerini mobil içinden çalıştırabilir
+- sesli rehber açık/kapalı tercihi saklanır
+- aynı durak/ETA için tekrar anonslarını azaltan temel dedupe uygulanmıştır
+
 Ürün / operasyon kararları:
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
 - İlk girişte PIN değişimi zorunludur.
@@ -103,11 +122,8 @@ TTL / public link özeti:
 - Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
 
 Sonraki doğru rota:
-- `M49 — Mobile Beta Hardening`
-- `M49.1 — Driver Voice Guidance + Stop ETA`
 - `M50 — Mobile Release Readiness`
-Kanonik next-route token: `M49 MOBILE BETA HARDENING`
+Kanonik next-route token: `M50 MOBILE RELEASE READINESS`
 
 Yeni sohbet açınca ilk cümle:
-Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot zinciri, M46.7 driver code login + rehber first, M46.8 driver access hardening, M46.9 session & refresh security, M47 KVKK, M47.2 capacity baseline, M47.3 edge security, M47.4 mobile readiness web pass, M47.4-R clean rerun / repro fix, M48 driver mobile foundation ve M48.5 room/company tablet readiness repo-verified green durumda. Sonraki doğru rota M49 — Mobile Beta Hardening.
-
+Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot zinciri, M46.7 driver code login + rehber first, M46.8 driver access hardening, M46.9 session & refresh security, M47 KVKK, M47.2 capacity baseline, M47.3 edge security, M47.4 mobile readiness web pass, M47.4-R clean rerun / repro fix, M48 driver mobile foundation, M48.5 room/company tablet readiness, M49 mobile beta hardening ve M49.1 driver voice guidance + stop ETA repo-verified green durumda. Sonraki doğru rota M50 — Mobile Release Readiness.

@@ -39,6 +39,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m48_driver_mobile_foundation.ps1`
 - `tools\pack_m48_5_room_company_tablet_readiness.ps1`
 - `tools\pack_m49_mobile_beta_hardening.ps1`
+- `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene kontrol script’leri
 - `tools\check_tools_hygiene_m105.ps1`
 - `tools\reset-and-pack.ps1`
@@ -65,6 +66,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m48_driver_mobile_foundation.ps1 -RepoRoot D:\servis-platform` → M48 driver mobile foundation
 - `tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform` → M48.5 room / company tablet readiness
 - `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform` → M49 mobile beta hardening
+- `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform` → M49.1 driver voice guidance + stop ETA
 
 ## Hijyen kontrolü
 - `tools\check_repo_cleanup_m104.ps1` → repo cleanup kontrolü
@@ -76,10 +78,11 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\check_m48_driver_mobile_foundation_repo_contract.ps1` → M48 repo-contract kontrolü
 - `tools\check_m48_5_room_company_tablet_readiness_repo_contract.ps1` → M48.5 repo-contract kontrolü
 - `tools\check_m49_mobile_beta_hardening_repo_contract.ps1` → M49 repo-contract kontrolü
+- `tools\check_m49_1_driver_voice_guidance_stop_eta_repo_contract.ps1` → M49.1 repo-contract kontrolü
 
 ## SSOT / plan kuralı
 - `tools\PRIMER_SNAPSHOT.md` ve checklist dosyaları mevcut green durumu + resmi sonraki rotayı taşır.
 - README yalnızca gerçekten var olan script adlarını taşır; planlanan milestone script isimleri yazılmaz.
 - `M47.4-R` ayrı script değil; clean rerun / repro uyum doğrulamasıdır.
 - `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunabilir; ana driver ürün akışı `Sürücü Kodu + PIN` kalır.
-- Sonraki resmi odak: `M49 MOBILE BETA HARDENING`.
+- Sonraki resmi odak: `M50 MOBILE RELEASE READINESS`.
