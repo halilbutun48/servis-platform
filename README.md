@@ -31,15 +31,18 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
 - `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
 - `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
+- `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
+- `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
 
 ## Güncel repo-verified ek durum
 - `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
+- `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
+- `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
 - Aynı `pack_m47_4_mobile_readiness_web_pass.ps1` hattı clean rerun’da PASS verir.
 - `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunur; ana ürün driver girişi `Sürücü Kodu + PIN` akışıdır.
+- Driver mobil iskeleti `mobile/` altında Expo tabanlı olarak açılmıştır.
 
 ## Sonraki resmi rota
-- `M48 — Driver Mobile App Foundation`
-- `M48.5 — Room / Company Tablet Readiness`
 - `M49 — Mobile Beta Hardening`
 - `M49.1 — Driver Voice Guidance + Stop ETA`
 - `M50 — Mobile Release Readiness`
