@@ -58,7 +58,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m47_kvkk_notice_consent_framework.ps1 -RepoRoot D:\servis-platform` → M47
 - `tools\pack_m47_2_capacity_load_baseline.ps1 -RepoRoot D:\servis-platform` → M47.2
 - `tools\pack_m47_3_production_resilience_edge_security.ps1 -RepoRoot D:\servis-platform` → M47.3
-- `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform` → M47.4 ve M47.4-R clean rerun doğrulaması
+- `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform` → M47.4 mobile readiness web pass
 
 ## Hijyen kontrolü
 - `tools\check_repo_cleanup_m104.ps1` → repo cleanup kontrolü

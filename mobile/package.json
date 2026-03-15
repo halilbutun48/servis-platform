@@ -1,0 +1,20 @@
+{
+  "name": "personel-servis-driver-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "check:m48": "node scripts/m48_driver_mobile_foundation_check.js"
+  },
+  "dependencies": {
+    "expo": "~54.0.0",
+    "expo-location": "~19.0.8",
+    "expo-secure-store": "~15.0.8",
+    "react": "19.1.0",
+    "react-native": "0.81.0"
+  }
+}

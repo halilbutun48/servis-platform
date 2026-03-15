@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Personel Servis Surucu",
+    "slug": "personel-servis-driver-mobile",
+    "scheme": "psdriver",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.personelservis.driver",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.personelservis.driver",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "extra": {
+      "appRole": "DRIVER"
+    },
+    "plugins": [
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Saklanan oturum bilgisini korumak icin biyometrik dogrulamaya izin ver."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
+          "locationAlwaysAndWhenInUsePermission": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ]
+    ]
+  }
+}
