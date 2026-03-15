@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { clearSession, getSession, saveSession } from './src/lib/storage';
+import { clearSession, getSession, getVoiceGuidanceEnabled, saveSession, saveVoiceGuidanceEnabled } from './src/lib/storage';
 import {
   changeDriverPin,
   ensureDeviceId,
@@ -12,9 +12,19 @@ import {
   loginDriver,
   logoutDriver,
 } from './src/lib/api';
+import { buildVoiceCueKey, speakNextStop, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
 import LoginScreen from './src/screens/LoginScreen';
 import PinChangeScreen from './src/screens/PinChangeScreen';
 import TodayScreen from './src/screens/TodayScreen';
+
+
+const RELEASE_INFO = Object.freeze({
+  appVersion: '0.2.0',
+  releaseTarget: 'Android ilk yayin',
+  buildProfiles: 'preview / production',
+  deliveryMode: 'EAS Build',
+  expoGoStatus: 'Gelistirme testi tamam',
+});
 
 const initialState = {
   loading: true,
@@ -28,11 +38,13 @@ const initialState = {
   lastSyncAt: '',
   lastErrorAt: '',
   error: '',
+  voiceEnabled: false,
 };
 
 export default function App() {
   const [state, setState] = useState(initialState);
   const syncBusyRef = useRef(false);
+  const lastVoiceCueRef = useRef('');
 
   async function syncSignedIn({ soft = false } = {}) {
     if (syncBusyRef.current) return;
@@ -78,12 +90,13 @@ export default function App() {
       try {
         const deviceId = await ensureDeviceId();
         const session = await getSession();
+        const voiceEnabled = await getVoiceGuidanceEnabled();
         if (!alive) return;
         if (!session?.token) {
-          setState((prev) => ({ ...prev, loading: false, session: session || null, deviceId }));
+          setState((prev) => ({ ...prev, loading: false, session: session || null, deviceId, voiceEnabled }));
           return;
         }
-        setState((prev) => ({ ...prev, session, deviceId }));
+        setState((prev) => ({ ...prev, session, deviceId, voiceEnabled }));
         await syncSignedIn({ soft: false });
       } catch (error) {
         if (!alive) return;
@@ -113,6 +126,14 @@ export default function App() {
     }, 30000);
     return () => clearInterval(timer);
   }, [state.session?.token, state.me?.requirePinChange]);
+
+  useEffect(() => {
+    if (!state.voiceEnabled) return;
+    const cueKey = buildVoiceCueKey(state.route?.nextStop);
+    if (!cueKey || cueKey === lastVoiceCueRef.current) return;
+    speakNextStop(state.route?.nextStop);
+    lastVoiceCueRef.current = cueKey;
+  }, [state.voiceEnabled, state.route?.nextStop?.id, state.route?.nextStop?.etaMin]);
 
   async function handleLogin({ identifier, password }) {
     const data = await loginDriver(identifier, password);
@@ -151,11 +172,32 @@ export default function App() {
 
   async function handleLogout() {
     try {
+      stopVoiceGuidance();
       await logoutDriver();
     } finally {
       await clearSession();
       setState({ ...initialState, loading: false, deviceId: state.deviceId });
     }
+  }
+
+  async function handleToggleVoiceGuidance() {
+    const next = !state.voiceEnabled;
+    await saveVoiceGuidanceEnabled(next);
+    if (!next) stopVoiceGuidance();
+    if (next && state.route?.nextStop) {
+      const cueKey = buildVoiceCueKey(state.route?.nextStop);
+      lastVoiceCueRef.current = cueKey;
+      speakNextStop(state.route?.nextStop);
+    }
+    setState((prev) => ({ ...prev, voiceEnabled: next }));
+  }
+
+  function handleSpeakNextStop() {
+    speakNextStop(state.route?.nextStop);
+  }
+
+  function handleSpeakEta() {
+    speakStopEta(state.route?.nextStop);
   }
 
   const content = useMemo(() => {
@@ -197,8 +239,13 @@ export default function App() {
         lastSyncAt={state.lastSyncAt}
         lastErrorAt={state.lastErrorAt}
         syncing={state.syncing}
+        voiceEnabled={state.voiceEnabled}
+        releaseInfo={RELEASE_INFO}
         onRefresh={handleRefresh}
         onLogout={handleLogout}
+        onToggleVoiceGuidance={handleToggleVoiceGuidance}
+        onSpeakNextStop={handleSpeakNextStop}
+        onSpeakEta={handleSpeakEta}
       />
     );
   }, [state]);

@@ -5,6 +5,12 @@ V1 bittiğinde (veya V1’e kontrollü şekilde “çekilecekse”) gelecek öze
 
 ---
 
+## 0) Post-M50 resmi geçiş kapısı
+- Bu backlog maddelerine geçmeden önce canlı repo içinde son resmi tag doğrulanır.
+- `M50` kanıt hattı canlı repo’da yeniden çalıştırılır ve sonuç commit/tag promotion için temel alınır.
+- Resmi tag/commit promotion tamamlandıktan sonra backlog dili “post-M50” olarak korunur.
+- Tools kökündeki tek seferlik `apply_* / overlay_*` script’leri legacy archive altında tutulur; tools kökü yalnızca kanonik runtime/pack/check alanıdır.
+
 ## A) Company Excel → Personel/Adres → Otomatik Durak & Rota
 
 ### A0) Hedef

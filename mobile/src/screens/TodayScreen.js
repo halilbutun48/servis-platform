@@ -13,8 +13,13 @@ export default function TodayScreen({
   lastSyncAt,
   lastErrorAt,
   syncing,
+  voiceEnabled,
+  releaseInfo,
   onRefresh,
   onLogout,
+  onToggleVoiceGuidance,
+  onSpeakNextStop,
+  onSpeakEta,
 }) {
   const [busyGps, setBusyGps] = useState(false);
   const [gpsInfo, setGpsInfo] = useState({ status: 'unknown', text: 'Izin durumu henuz okunmadi.' });
@@ -115,6 +120,24 @@ export default function TodayScreen({
       </Card>
 
       <Card>
+        <SectionTitle title="Sesli rehber" />
+        <Info label="Durum" value={voiceEnabled ? 'Acik' : 'Kapali'} />
+        <Info label="Siradaki durak" value={nextStop?.name || '-'} />
+        <Info label="Durak ETA" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
+        <Text style={styles.helper}>
+          M49.1 ile sesli rehber, siradaki durak ve ETA bilgisini telefonda okunabilir hale getirir.
+        </Text>
+        <View style={styles.actionsRow}>
+          <PrimaryButton
+            title={voiceEnabled ? 'Sesli rehberi kapat' : 'Sesli rehberi ac'}
+            onPress={onToggleVoiceGuidance}
+          />
+          <SecondaryButton title="Siradaki duragi oku" onPress={onSpeakNextStop} disabled={!nextStop} />
+          <SecondaryButton title="ETA oku" onPress={onSpeakEta} disabled={!nextStop} />
+        </View>
+      </Card>
+
+      <Card>
         <SectionTitle title="Gorev ozeti" />
         {activeShift ? (
           <>
@@ -141,6 +164,25 @@ export default function TodayScreen({
           <SecondaryButton title="Haritada ac" onPress={openMaps} disabled={!nextStop?.lat || !nextStop?.lng} />
         </View>
       </Card>
+
+      <Card>
+        <SectionTitle title="Release hazirligi" />
+        <Info label="Uygulama surumu" value={releaseInfo?.appVersion || '-'} />
+        <Info label="Release hedefi" value={releaseInfo?.releaseTarget || '-'} />
+        <Info label="Build profilleri" value={releaseInfo?.buildProfiles || '-'} />
+        <Info label="Dagitim modu" value={releaseInfo?.deliveryMode || '-'} />
+        <Info label="Expo Go" value={releaseInfo?.expoGoStatus || '-'} />
+        <Text style={styles.helper}>
+          M50 mobile release readiness: EAS Build profilleri, runtimeVersion, env ornegi ve Android ilk yayin hazirlik cizgisi.
+        </Text>
+        <View style={styles.rowGap}>
+          <Pill label="Surucu Kodu + PIN hazir" tone="ok" />
+          <Pill label="Sesli rehber hazir" tone="ok" />
+          <Pill label="Durak ETA hazir" tone="ok" />
+          <Pill label="EAS Build hazir" tone="ok" />
+        </View>
+      </Card>
+
 
       <Card>
         <SectionTitle title="GPS hazirligi" />
@@ -323,7 +365,9 @@ const styles = StyleSheet.create({
   secondaryButton: {
     minHeight: 46,
     borderRadius: 14,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -333,6 +377,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   disabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
 });

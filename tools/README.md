@@ -40,6 +40,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m48_5_room_company_tablet_readiness.ps1`
 - `tools\pack_m49_mobile_beta_hardening.ps1`
 - `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1`
+- `tools\pack_m50_mobile_release_readiness.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene kontrol script’leri
 - `tools\check_tools_hygiene_m105.ps1`
 - `tools\reset-and-pack.ps1`
@@ -67,6 +68,7 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform` → M48.5 room / company tablet readiness
 - `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform` → M49 mobile beta hardening
 - `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform` → M49.1 driver voice guidance + stop ETA
+- `tools\pack_m50_mobile_release_readiness.ps1 -RepoRoot D:\servis-platform` → M50 mobile release readiness
 
 ## Hijyen kontrolü
 - `tools\check_repo_cleanup_m104.ps1` → repo cleanup kontrolü
@@ -79,10 +81,17 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script’leri iç
 - `tools\check_m48_5_room_company_tablet_readiness_repo_contract.ps1` → M48.5 repo-contract kontrolü
 - `tools\check_m49_mobile_beta_hardening_repo_contract.ps1` → M49 repo-contract kontrolü
 - `tools\check_m49_1_driver_voice_guidance_stop_eta_repo_contract.ps1` → M49.1 repo-contract kontrolü
+- `tools\check_m50_mobile_release_readiness_repo_contract.ps1` → M50 repo-contract kontrolü
+
+## Post-M50 release / tag notu
+- Bu çalışma ağacı `M50` seviyesine kadar **repo-verified green** durumdadır.
+- Gerçek **resmi tag** doğrulaması ve `v1-m50-green` promotion kararı yalnızca `.git` geçmişi olan canlı repo içinde yapılır.
+- Post-M50 doğru sıra: son resmi tag doğrula → M50 kanıtını yeniden çalıştır → resmi tag/commit promotion → roadmap/backlog refresh.
 
 ## SSOT / plan kuralı
 - `tools\PRIMER_SNAPSHOT.md` ve checklist dosyaları mevcut green durumu + resmi sonraki rotayı taşır.
 - README yalnızca gerçekten var olan script adlarını taşır; planlanan milestone script isimleri yazılmaz.
+- Tek seferlik `apply_* / overlay_*` script’leri tools kökünde tutulmaz; legacy arşiv altına taşınır ve `check_tools_hygiene_m105.ps1` bu kuralı doğrular.
 - `M47.4-R` ayrı script değil; clean rerun / repro uyum doğrulamasıdır.
 - `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunabilir; ana driver ürün akışı `Sürücü Kodu + PIN` kalır.
-- Sonraki resmi odak: `M50 MOBILE RELEASE READINESS`.
+- Sonraki resmi odak: `POST-M50 RELEASE TAG ROADMAP REFRESH`.

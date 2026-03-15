@@ -42,6 +42,7 @@ Info "Checking legacy files removed from tools root"
   "tools\overlay_M58_3_apply.ps1","tools\overlay_M58_4_apply.ps1","tools\overlay_M58_5_apply.ps1","tools\overlay_M58_6_apply.ps1","tools\overlay_M59_1_apply.ps1","tools\overlay_M59_apply.ps1",
   "tools\overlay_update_checklist_ssot.ps1","tools\overlay_update_checklist_ssot_safe.ps1","tools\overlay_update_checklist_ssot_user.ps1","tools\overlay_update_primer_snapshot_safe.ps1",
   "tools\repair-schema-kind.ps1","tools\PRIMER SNAPSHOT (Yeni).md",
+  "tools\apply_overlay_m46_6_c2_d4_simple_role_mode.ps1","tools\apply_overlay_m46_6_c2_screen_coverage_terminology.ps1","tools\apply_overlay_m46_7_ssot_sync.ps1",
   "tools\OVERLAY_FIX_DRIVER_COMPLETESHIFT_README.md","tools\OVERLAY_FIX_M41_README.md","tools\OVERLAY_M42_OPTIONAL_HOTFIX_README.md","tools\OVERLAY_M42_OPTIONAL_RELEASE_README.md",
   "tools\OVERLAY_M58_3_README.md","tools\OVERLAY_M58_4_README.md","tools\OVERLAY_M58_5_README.md","tools\OVERLAY_M58_6_README.md","tools\OVERLAY_M59_1_README.md","tools\OVERLAY_M59_README.md",
   "tools\OVERLAY_UPDATE_CHECKLIST_SSOT_README.md","tools\OVERLAY_UPDATE_CHECKLIST_SSOT_SAFE_README.md","tools\OVERLAY_UPDATE_CHECKLIST_SSOT_USER_README.md","tools\OVERLAY_UPDATE_PRIMER_SNAPSHOT_README.md"

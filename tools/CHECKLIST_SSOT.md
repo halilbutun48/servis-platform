@@ -41,10 +41,13 @@ Current GREEN ref:
 - **M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK**
 - **M49 MOBILE BETA HARDENING PACK PASS OK**
 - **M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK**
+- **M50 MOBILE RELEASE READINESS PACK PASS OK**
+
+> Not: Bu checklist güncel `M50` durumunu **repo-verified green** olarak taşır. Son resmi tag doğrulaması ve olası `v1-m50-green` promotion kararı canlı repo içindeki `.git` geçmişi ile yapılmalıdır.
 
 Bu dosya iki amaç taşır:
 1) **V1 Release/Regression Manuel Checklist** (M0→M41 ana regresyon)
-2) **M42 Optional + Step 0.6 + Step 1 + M43→M49.1 üst katmanları** (ana regresyonu bozmadan ayrı doğrulanır)
+2) **M42 Optional + Step 0.6 + Step 1 + M43→M50 üst katmanları** (ana regresyonu bozmadan ayrı doğrulanır)
 
 ## Yol Haritası (Sıralı)
 - **Step 0:** V1 Manuel Checklist %100 PASS
@@ -65,7 +68,7 @@ Bu dosya iki amaç taşır:
 - **Step 4.5:** M48.5 — Room / Company Tablet Readiness resmi green
 - **Step 4.6:** M49 — Mobile Beta Hardening resmi green
 - **Step 4.7:** M49.1 — Driver Voice Guidance + Stop ETA resmi green
-- **Step 4.8:** M50 — Mobile Release Readiness (planlı)
+- **Step 4.8:** M50 — Mobile Release Readiness resmi green
 
 > Kural: `tools/pack.ps1 -To 41` ana kanıttır.
 > Üst katmanlar ayrı resmi pack/check hatlarıyla doğrulanır.
@@ -83,8 +86,9 @@ Bu dosya iki amaç taşır:
 - [x] `M48.5 — Room / Company Tablet Readiness`
 - [x] `M49 — Mobile Beta Hardening`
 - [x] `M49.1 — Driver Voice Guidance + Stop ETA`
-- [ ] `M50 — Mobile Release Readiness`
-- Kanonik route token: `M50 MOBILE RELEASE READINESS`
+- [x] `M50 — Mobile Release Readiness`
+- Post-M50 iş sırası: son resmi tag doğrula → M50 kanıt hattını canlı repo’da tekrar çalıştır → resmi tag/commit promotion → roadmap/backlog refresh
+- Kanonik route token: `POST-M50 RELEASE TAG ROADMAP REFRESH`
 
 ## Tool / SSOT notları
 - M45 backup create tool: `tools\backup_create_m45.ps1`
@@ -97,3 +101,4 @@ Bu dosya iki amaç taşır:
 - `M48.5` green kanıtı `tools\pack_m48_5_room_company_tablet_readiness.ps1` hattıdır.
 - `M49` green kanıtı `tools\pack_m49_mobile_beta_hardening.ps1` hattıdır.
 - `M49.1` green kanıtı `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1` hattıdır.
+- `M50` green kanıtı `tools\pack_m50_mobile_release_readiness.ps1` hattıdır.

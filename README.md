@@ -35,6 +35,7 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
 - `M49 MOBILE BETA HARDENING PACK PASS OK`
 - `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
+- `M50 MOBILE RELEASE READINESS PACK PASS OK`
 
 ## Güncel repo-verified ek durum
 - `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
@@ -42,16 +43,20 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
 - `M49 MOBILE BETA HARDENING PACK PASS OK`
 - `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
+- `M50 MOBILE RELEASE READINESS PACK PASS OK`
 - Aynı `pack_m47_4_mobile_readiness_web_pass.ps1` hattı clean rerun’da PASS verir.
 - `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunur; ana ürün driver girişi `Sürücü Kodu + PIN` akışıdır.
 - Driver mobil iskeleti `mobile/` altında Expo tabanlı olarak açılmıştır.
+- Mobil hat `M50` seviyesine kadar release readiness ile repo-verified green durumdadır.
 
 ## Sonraki resmi rota
-- `M50 — Mobile Release Readiness`
+- `POST-M50 — Release / Tag / Roadmap Refresh`
+- Not: bu zip içinde `.git` olmadığı için son resmi tag doğrulaması ve `v1-m50-green` promotion kararı canlı repo içinde yapılmalıdır.
 
 ## Kanonik tools düzeni
 - `tools/` kökü sadece kanonik çalıştırma/doğrulama script’leri için kullanılır.
 - Sabit komutlar: `pack.ps1`, `pack_m42_optional.ps1`, `pack_step06_stabil.ps1`, `pack_step1_security_foundation.ps1`, `pack_step1_totp_stepup.ps1`, `gate.ps1`, repo-contract `check_*.ps1` script’leri.
 - Eski tek seferlik `apply_*`, `overlay_*`, `OVERLAY_*` ve hotfix script’leri `tools/_archive/` altına taşınır.
+- M46.6-C2 / M46.6-D4 / M46.7 dönemi tek seferlik `apply_overlay_*` script’leri de legacy archive altına alınmıştır.
 - Otomatik yedekler `tools/_backup/` altında kalır; bu klasör canlı komut alanı değildir.
 - Kod değişirse aynı overlay içinde ilgili SSOT dosyaları da güncellenir.

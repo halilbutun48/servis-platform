@@ -3,7 +3,7 @@
     "name": "Personel Servis Surucu",
     "slug": "personel-servis-driver-mobile",
     "scheme": "psdriver",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -24,7 +24,8 @@
       "edgeToEdgeEnabled": true
     },
     "extra": {
-      "appRole": "DRIVER"
+      "appRole": "DRIVER",
+      "releaseStage": "mobile-release-readiness"
     },
     "plugins": [
       [
@@ -44,6 +45,13 @@
           "isAndroidForegroundServiceEnabled": false
         }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    }
   }
 }

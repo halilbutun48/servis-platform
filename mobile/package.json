@@ -1,7 +1,7 @@
 {
   "name": "personel-servis-driver-mobile",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
@@ -9,13 +9,19 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "check:m48": "node scripts/m48_driver_mobile_foundation_check.js",
-    "check:m49": "node scripts/m49_mobile_beta_hardening_check.js"
+    "check:m49": "node scripts/m49_mobile_beta_hardening_check.js",
+    "check:m49.1": "node scripts/m49_1_driver_voice_guidance_stop_eta_check.js",
+    "check:m50": "node scripts/m50_mobile_release_readiness_check.js",
+    "doctor:expo": "npx expo-doctor",
+    "build:preview:android": "npx eas-cli build --profile preview --platform android",
+    "build:production:android": "npx eas-cli build --profile production --platform android"
   },
   "dependencies": {
     "expo": "~54.0.0",
     "expo-location": "~19.0.8",
     "expo-secure-store": "~15.0.8",
     "react": "19.1.0",
-    "react-native": "0.81.0"
+    "react-native": "0.81.0",
+    "expo-speech": "~13.0.7"
   }
 }
