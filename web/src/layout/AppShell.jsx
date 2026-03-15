@@ -3,18 +3,20 @@ import NavDock from "./NavDock";
 import KvkkConsentGate from "../panels/shared/KvkkConsentGate";
 import TotpStepUpCard from "../panels/shared/TotpStepUpCard";
 import { useSession } from "../state/session";
+import TabletOpsQuickBar from "../components/TabletOpsQuickBar";
 
 export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
   const role = me?.role || "-";
   const isSchool = role === "COMPANY" && me?.companyKind === "SCHOOL";
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
+  const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
 
   // Map pages should be fluid (full width). Everything else is centered for readability.
   const isFluid = String(path || "").includes("/map");
 
   return (
-    <div className="shell">
+    <div className={isTabletOpsRole ? "shell shell--tablet-ops" : "shell"} data-role={role}>
       <NavDock role={role} path={path} me={me} />
       <div className="shellMain">
         <div className="shellTop">
@@ -32,6 +34,7 @@ export default function AppShell({ path, children }) {
           <div className={isFluid ? "page page--fluid" : "page"}>
             <TotpStepUpCard />
             <KvkkConsentGate />
+            {isTabletOpsRole ? <TabletOpsQuickBar role={role} me={me} path={path} /> : null}
             {children}
           </div>
         </div>

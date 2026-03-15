@@ -1,38 +1,90 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { clearSession, getSession, saveSession } from './src/lib/storage';
-import { apiGet, changeDriverPin, ensureDeviceId, fetchActiveRoute, fetchMe, fetchToday, loginDriver } from './src/lib/api';
+import {
+  changeDriverPin,
+  ensureDeviceId,
+  fetchActiveRoute,
+  fetchHealth,
+  fetchMe,
+  fetchToday,
+  getApiBaseUrl,
+  loginDriver,
+  logoutDriver,
+} from './src/lib/api';
 import LoginScreen from './src/screens/LoginScreen';
 import PinChangeScreen from './src/screens/PinChangeScreen';
 import TodayScreen from './src/screens/TodayScreen';
 
 const initialState = {
   loading: true,
+  syncing: false,
   session: null,
   me: null,
   today: null,
   route: null,
+  health: null,
+  deviceId: '',
+  lastSyncAt: '',
+  lastErrorAt: '',
   error: '',
 };
 
 export default function App() {
   const [state, setState] = useState(initialState);
+  const syncBusyRef = useRef(false);
+
+  async function syncSignedIn({ soft = false } = {}) {
+    if (syncBusyRef.current) return;
+    syncBusyRef.current = true;
+    if (soft) {
+      setState((prev) => ({ ...prev, syncing: true, error: '' }));
+    } else {
+      setState((prev) => ({ ...prev, loading: true, error: '' }));
+    }
+    try {
+      const health = await fetchHealth();
+      const me = await fetchMe();
+      const [today, route] = await Promise.all([fetchToday().catch(() => null), fetchActiveRoute().catch(() => null)]);
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        syncing: false,
+        me,
+        today,
+        route,
+        health,
+        error: '',
+        lastSyncAt: new Date().toISOString(),
+      }));
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        syncing: false,
+        health: prev.health,
+        error: humanize(error),
+        lastErrorAt: new Date().toISOString(),
+      }));
+      throw error;
+    } finally {
+      syncBusyRef.current = false;
+    }
+  }
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        await ensureDeviceId();
+        const deviceId = await ensureDeviceId();
         const session = await getSession();
         if (!alive) return;
         if (!session?.token) {
-          setState((prev) => ({ ...prev, loading: false, session: session || null }));
+          setState((prev) => ({ ...prev, loading: false, session: session || null, deviceId }));
           return;
         }
-        const me = await fetchMe();
-        const [today, route] = await Promise.all([fetchToday().catch(() => null), fetchActiveRoute().catch(() => null)]);
-        if (!alive) return;
-        setState({ loading: false, session, me, today, route, error: '' });
+        setState((prev) => ({ ...prev, session, deviceId }));
+        await syncSignedIn({ soft: false });
       } catch (error) {
         if (!alive) return;
         await clearSession();
@@ -44,46 +96,66 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!state.session?.token || state.me?.requirePinChange) return;
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        syncSignedIn({ soft: true }).catch(() => null);
+      }
+    });
+    return () => sub.remove();
+  }, [state.session?.token, state.me?.requirePinChange]);
+
+  useEffect(() => {
+    if (!state.session?.token || state.me?.requirePinChange) return;
+    const timer = setInterval(() => {
+      syncSignedIn({ soft: true }).catch(() => null);
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [state.session?.token, state.me?.requirePinChange]);
+
   async function handleLogin({ identifier, password }) {
     const data = await loginDriver(identifier, password);
+    const deviceId = data.deviceId || (await ensureDeviceId());
     const session = {
       token: data.token,
       refreshToken: data.refreshToken || '',
-      deviceId: data.deviceId || '',
+      deviceId,
     };
     await saveSession(session);
-    const me = await fetchMe();
-    const [today, route] = await Promise.all([fetchToday().catch(() => null), fetchActiveRoute().catch(() => null)]);
-    setState({ loading: false, session, me, today, route, error: '' });
+    setState((prev) => ({ ...prev, session, deviceId }));
+    await syncSignedIn({ soft: false });
   }
 
   async function handlePinChange({ currentPin, newPin }) {
-    await changeDriverPin(currentPin, newPin);
-    const me = await fetchMe();
-    const today = await fetchToday().catch(() => null);
-    const route = await fetchActiveRoute().catch(() => null);
-    setState((prev) => ({ ...prev, me, today, route }));
+    const changed = await changeDriverPin(currentPin, newPin);
+    if (changed?.token) {
+      const session = await getSession();
+      await saveSession({
+        ...(session || {}),
+        token: changed.token,
+        refreshToken: changed.refreshToken || session?.refreshToken || '',
+        deviceId: session?.deviceId || state.deviceId || '',
+      });
+    }
+    await syncSignedIn({ soft: false });
   }
 
   async function handleRefresh() {
-    setState((prev) => ({ ...prev, loading: true, error: '' }));
     try {
-      const me = await fetchMe();
-      const [today, route] = await Promise.all([fetchToday().catch(() => null), fetchActiveRoute().catch(() => null)]);
-      setState((prev) => ({ ...prev, loading: false, me, today, route, error: '' }));
-    } catch (error) {
-      setState((prev) => ({ ...prev, loading: false, error: humanize(error) }));
+      await syncSignedIn({ soft: true });
+    } catch {
+      // error already reflected in state
     }
   }
 
   async function handleLogout() {
     try {
-      await apiGet('/api/me');
-    } catch {
-      // no-op, foundation logout is local only
+      await logoutDriver();
+    } finally {
+      await clearSession();
+      setState({ ...initialState, loading: false, deviceId: state.deviceId });
     }
-    await clearSession();
-    setState({ ...initialState, loading: false, session: null, me: null, today: null, route: null, error: '' });
   }
 
   const content = useMemo(() => {
@@ -91,7 +163,7 @@ export default function App() {
       return (
         <View style={styles.center}>
           <ActivityIndicator size="large" />
-          <Text style={styles.muted}>Sürücü mobil hazırlanıyor...</Text>
+          <Text style={styles.muted}>Surucu mobil beta hazirlaniyor...</Text>
         </View>
       );
     }
@@ -103,8 +175,8 @@ export default function App() {
     if (String(state.me?.role || '').toUpperCase() !== 'DRIVER') {
       return (
         <View style={styles.center}>
-          <Text style={styles.title}>Bu uygulama yalnızca sürücü içindir.</Text>
-          <Text style={styles.muted}>Bu hesap {String(state.me?.role || '-')} rolünde görünüyor.</Text>
+          <Text style={styles.title}>Bu uygulama yalnizca surucu icindir.</Text>
+          <Text style={styles.muted}>Bu hesap {String(state.me?.role || '-')} rolunde gorunuyor.</Text>
         </View>
       );
     }
@@ -119,6 +191,12 @@ export default function App() {
         today={state.today}
         route={state.route}
         error={state.error}
+        health={state.health}
+        deviceId={state.deviceId}
+        apiBaseUrl={getApiBaseUrl()}
+        lastSyncAt={state.lastSyncAt}
+        lastErrorAt={state.lastErrorAt}
+        syncing={state.syncing}
         onRefresh={handleRefresh}
         onLogout={handleLogout}
       />

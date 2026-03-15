@@ -7,6 +7,10 @@ function buildUrl(path) {
   return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
+export function getApiBaseUrl() {
+  return API_BASE_URL;
+}
+
 export async function ensureDeviceId() {
   let deviceId = await getDeviceId();
   if (deviceId) return deviceId;
@@ -81,6 +85,19 @@ export async function loginDriver(identifier, password) {
   });
 }
 
+export async function fetchHealth() {
+  try {
+    const payload = await rawRequest('/health', { method: 'GET' });
+    return { ok: true, status: 'UP', payload };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 'DOWN',
+      message: String(error?.payload?.message || error?.payload?.error || error?.message || error || 'Health failed.'),
+    };
+  }
+}
+
 export async function fetchMe() {
   return request('/api/me');
 }
@@ -98,6 +115,23 @@ export async function changeDriverPin(currentPin, newPin) {
     method: 'POST',
     body: { currentPin, newPin },
   });
+}
+
+export async function logoutDriver() {
+  const session = await getSession();
+  if (!session?.refreshToken) return { ok: true, localOnly: true };
+  try {
+    return await request(
+      '/api/auth/logout',
+      {
+        method: 'POST',
+        body: { refreshToken: session.refreshToken },
+      },
+      false
+    );
+  } catch {
+    return { ok: false, localOnly: true };
+  }
 }
 
 export async function apiGet(path) {

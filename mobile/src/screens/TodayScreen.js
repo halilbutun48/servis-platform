@@ -2,7 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 
-export default function TodayScreen({ me, today, route, error, onRefresh, onLogout }) {
+export default function TodayScreen({
+  me,
+  today,
+  route,
+  error,
+  health,
+  deviceId,
+  apiBaseUrl,
+  lastSyncAt,
+  lastErrorAt,
+  syncing,
+  onRefresh,
+  onLogout,
+}) {
   const [busyGps, setBusyGps] = useState(false);
   const [gpsInfo, setGpsInfo] = useState({ status: 'unknown', text: 'Izin durumu henuz okunmadi.' });
 
@@ -17,7 +30,7 @@ export default function TodayScreen({ me, today, route, error, onRefresh, onLogo
       return;
     }
     if (current.status !== 'granted') {
-      setGpsInfo({ status: current.status, text: 'Surucunun telefon GPS'i icin izin henuz verilmedi.' });
+      setGpsInfo({ status: current.status, text: "Surucunun telefon GPS'i icin izin henuz verilmedi." });
       return;
     }
     const last = await Location.getLastKnownPositionAsync({ maxAge: 15000 }).catch(() => null);
@@ -58,10 +71,12 @@ export default function TodayScreen({ me, today, route, error, onRefresh, onLogo
     return fullName ? `${fullName}, bugun ekranin hazir.` : 'Bugun ekranin hazir.';
   }, [me?.fullName]);
 
+  const syncStateText = syncing ? 'Senkron oluyor' : 'Hazir';
+  const stale = isStale(lastSyncAt);
+
   async function openMaps() {
     if (!nextStop?.lat || !nextStop?.lng) return;
-    const label = encodeURIComponent(nextStop?.name || 'Durak');
-    const url = `https://www.google.com/maps/search/?api=1&query=${nextStop.lat},${nextStop.lng}&query_place_id=${label}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${nextStop.lat},${nextStop.lng}`;
     await Linking.openURL(url);
   }
 
@@ -69,7 +84,7 @@ export default function TodayScreen({ me, today, route, error, onRefresh, onLogo
     <ScrollView
       style={styles.wrap}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} />}
+      refreshControl={<RefreshControl refreshing={!!syncing} onRefresh={onRefresh} />}
     >
       <Card>
         <Text style={styles.title}>Bugun</Text>
@@ -78,6 +93,24 @@ export default function TodayScreen({ me, today, route, error, onRefresh, onLogo
         <View style={styles.rowGap}>
           <Pill label={`Rol: ${String(me?.role || '-')}`} />
           <Pill label={`PIN degisim: ${me?.requirePinChange ? 'Gerekli' : 'Tamam'}`} />
+          <Pill label={`Senkron: ${syncStateText}`} tone={syncing ? 'warn' : 'ok'} />
+          {stale ? <Pill label="Veri eski olabilir" tone="warn" /> : null}
+        </View>
+      </Card>
+
+      <Card>
+        <SectionTitle title="Beta durum" />
+        <Info label="Saglik" value={health?.ok ? 'UP' : health?.status || '-'} />
+        <Info label="API taban" value={apiBaseUrl || '-'} />
+        <Info label="Device ID" value={deviceId || '-'} />
+        <Info label="Son basarili senkron" value={fmt(lastSyncAt)} />
+        <Info label="Son hata" value={fmt(lastErrorAt)} />
+        <Text style={styles.helper}>
+          M49 beta hardening: app active olunca yenile, 30 sn periyodik kontrol, backend health pingi ve guvenli cikis.
+        </Text>
+        <View style={styles.actionsRow}>
+          <PrimaryButton title="Beta yenile" onPress={onRefresh} />
+          <SecondaryButton title="Guvenli cikis" onPress={onLogout} />
         </View>
       </Card>
 
@@ -116,17 +149,17 @@ export default function TodayScreen({ me, today, route, error, onRefresh, onLogo
           <PrimaryButton title={busyGps ? 'Bekleniyor...' : 'GPS izni ver / oku'} onPress={requestGps} disabled={busyGps} />
           <SecondaryButton title="Durumu tazele" onPress={loadPermissionState} />
         </View>
-        <Text style={styles.helper}>Bu adim M48 temelidir. Surekli arka plan gonderim ve gorev sirasinda otomatik publish sonraki mobil adimlarda genisletilir.</Text>
-      </Card>
-
-      <Card>
-        <SectionTitle title="Kisa islemler" />
-        <View style={styles.actionsRow}>
-          <PrimaryButton title="Cikis" onPress={onLogout} />
-        </View>
+        <Text style={styles.helper}>Bu adim M49 sertlestirmesidir. Surekli arka plan gonderim ve sesli yonlendirme sonraki mobil adimlarda genisletilir.</Text>
       </Card>
     </ScrollView>
   );
+}
+
+function isStale(value) {
+  if (!value) return false;
+  const ms = new Date(value).getTime();
+  if (!Number.isFinite(ms)) return false;
+  return Date.now() - ms > 90000;
 }
 
 function fmt(value) {
@@ -155,10 +188,10 @@ function Info({ label, value }) {
   );
 }
 
-function Pill({ label }) {
+function Pill({ label, tone = 'info' }) {
   return (
-    <View style={styles.pill}>
-      <Text style={styles.pillText}>{label}</Text>
+    <View style={[styles.pill, tone === 'warn' ? styles.pillWarn : tone === 'ok' ? styles.pillOk : null]}>
+      <Text style={[styles.pillText, tone === 'warn' ? styles.pillWarnText : tone === 'ok' ? styles.pillOkText : null]}>{label}</Text>
     </View>
   );
 }
@@ -237,10 +270,22 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
   },
+  pillOk: {
+    backgroundColor: '#ecfdf5',
+  },
+  pillWarn: {
+    backgroundColor: '#fff7ed',
+  },
   pillText: {
     color: '#4338ca',
     fontWeight: '600',
     fontSize: 12,
+  },
+  pillOkText: {
+    color: '#047857',
+  },
+  pillWarnText: {
+    color: '#c2410c',
   },
   infoRow: {
     flexDirection: 'row',

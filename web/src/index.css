@@ -187,6 +187,56 @@ button, input, select, textarea, .btn, .secondary, .navItem {
 .row { flex-wrap: wrap; }
 .tbl { width: 100%; }
 
+
+/* M48.5 — Room / Company Tablet Readiness */
+/* M48.5 - Room / Company Tablet Readiness */
+.tabletQuickBar { display: none; }
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .shell--tablet-ops {
+    grid-template-columns: 220px 1fr;
+  }
+  .shell--tablet-ops .navDock {
+    padding: 12px;
+  }
+  .shell--tablet-ops .shellContent {
+    padding: 14px;
+  }
+  .shell--tablet-ops .page {
+    max-width: 100%;
+  }
+  .tabletQuickBar {
+    display: block;
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #22314f;
+    border-radius: 16px;
+    background: rgba(14, 22, 38, 0.92);
+  }
+  .tabletQuickTitle {
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .tabletQuickGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .tabletQuickButton {
+    width: 100%;
+    justify-content: center;
+  }
+  .tabletQuickHint {
+    margin-top: 8px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 920px) {
+  .tabletQuickGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .wrap { margin: 14px auto; padding: 0 12px; }
   .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }

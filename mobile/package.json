@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "check:m48": "node scripts/m48_driver_mobile_foundation_check.js"
+    "check:m48": "node scripts/m48_driver_mobile_foundation_check.js",
+    "check:m49": "node scripts/m49_mobile_beta_hardening_check.js"
   },
   "dependencies": {
     "expo": "~54.0.0",
