@@ -263,6 +263,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [info, setInfo] = useState("");
   const [importMode, setImportMode] = useState("REPLACE");
   const [importSummary, setImportSummary] = useState(null);
+  const [importWarnings, setImportWarnings] = useState([]);
 
   // M16.2 soft-switch: backend varsa kullan; endpoint yoksa (404) localStorage fallback
   const [peopleBackend, setPeopleBackend] = useState("unknown"); // unknown | on | off
@@ -381,6 +382,27 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     });
   }
 
+  function summarizeWarnings(list) {
+    const items = Array.isArray(list) ? list : [];
+    const counts = new Map();
+    for (const item of items) {
+      const key = String(item?.code || "UNKNOWN");
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
+  }
+
+  function warningLabel(code) {
+    const c = String(code || "");
+    if (c === "MISSING_NAME") return "Ad Soyad eksik";
+    if (c === "MISSING_ADDRESS_OR_COORDS") return "Adres/koordinat eksik";
+    if (c === "INVALID_COORD") return "Koordinat geçersiz";
+    if (c === "DUPLICATE_ROW") return "Tekrar satır";
+    if (c === "GEO_NEEDS_REVIEW") return "Geo review gerekir";
+    if (c === "INVALID_ROW") return "Satır okunamadı";
+    return c || "Uyarı";
+  }
+
   async function generateStopsOnBackend(shiftId, maxWalkMValue) {
     const mw = Number(maxWalkMValue);
     return api(`/api/shifts/${shiftId}/stops/generate?mode=REPLACE&maxWalkM=${encodeURIComponent(String(mw))}`, {
@@ -438,6 +460,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setErr("");
     setInfo("");
     setImportSummary(null);
+    setImportWarnings([]);
 
     const sid = String(selectedShiftId);
 
@@ -729,23 +752,13 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setErr("");
     setInfo("");
     setImportSummary(null);
+    setImportWarnings([]);
     if (!file) return;
 
     try {
-      const name = String(file.name || "").toLowerCase();
-      let rows = [];
-
-      if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
-        rows = await importExcelFile(file);
-      } else if (name.endsWith(".csv")) {
-        rows = await importCsvFile(file);
-      } else {
-        setErr("Desteklenen dosyalar: .xlsx, .xls, .csv");
-        return;
-      }
-
+      const rows = await parsePeopleFile(file);
       if (!rows.length) {
-        setErr("Dosya boş veya okunamadı.");
+        setErr("Dosyada okunabilir satır bulunamadı.");
         return;
       }
 
@@ -777,11 +790,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
             }
           );
 
-          if (firstResp?.summary) {
-            setImportSummary(firstResp.summary);
-            const warningCount = Array.isArray(firstResp?.warnings) ? firstResp.warnings.length : 0;
-            setInfo(`Import tamamlandı: ${firstResp.summary.acceptedRows}/${firstResp.summary.totalRows} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
-          }
+          if (firstResp?.summary) setImportSummary(firstResp.summary);
+          const warnings = Array.isArray(firstResp?.warnings) ? firstResp.warnings : [];
+          setImportWarnings(warnings);
+          const warningCount = warnings.length;
+          setInfo(`Import tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
 
           const fresh = await loadPeopleFromBackend(String(sid));
           setPeople(fresh);
@@ -789,9 +802,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         } catch (e) {
           const payload = e?.payload;
           if (payload?.summary) setImportSummary(payload.summary);
-          if (Array.isArray(payload?.warnings) && payload.warnings.length) {
-            const first = payload.warnings[0];
-            setErr(`${payload?.error || e?.message || String(e)} ${first?.rowNo ? `(İlk sorun satır ${first.rowNo}: ${first.message})` : ""}`.trim());
+          const warnings = Array.isArray(payload?.warnings) ? payload.warnings : [];
+          setImportWarnings(warnings);
+          if (warnings.length) {
+            const first = warnings[0];
+            setErr(`${payload?.error || e?.message || String(e)}${first?.rowNo ? ` (İlk sorun satır ${first.rowNo}: ${first.message})` : ""}`.trim());
           } else {
             setErr(String(payload?.error || e?.message || e));
           }
@@ -809,7 +824,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           lng: typeof r.lng === "number" ? r.lng : null,
           geoStatus: computeGeoStatus({ address: r.address, lat: r.lat, lng: r.lng }),
         }))
-        .filter((x) => x.name);
+        .filter((x) => x.name && (x.address || (typeof x.lat === "number" && typeof x.lng === "number")));
 
       if (!mapped.length) {
         setErr("Dosyada geçerli satır bulunamadı (Ad Soyad zorunlu; adres veya koordinat olmalı).");
@@ -817,6 +832,19 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       }
 
       setPeople((prev) => (importMode === "REPLACE" ? mapped : [...mapped, ...(prev || [])]));
+      const localWarnings = [];
+      normalizedRows.forEach((r, index) => {
+        const rowNo = index + 1;
+        if (!r.fullName) localWarnings.push({ rowNo, code: "MISSING_NAME", message: "Ad soyad boş olduğu için satır atlandı.", level: "error" });
+        else if (!r.address && !(typeof r.lat === "number" && typeof r.lng === "number")) {
+          localWarnings.push({ rowNo, code: "MISSING_ADDRESS_OR_COORDS", message: "Adres veya geçerli koordinat olmadığı için satır atlandı.", level: "error" });
+        } else if ((r.lat == null) !== (r.lng == null)) {
+          localWarnings.push({ rowNo, code: "INVALID_COORD", message: "Enlem/boylam eksik veya geçersiz; adres varsa review akışına düşecek.", level: "warning" });
+        } else if (!(typeof r.lat === "number" && typeof r.lng === "number")) {
+          localWarnings.push({ rowNo, code: "GEO_NEEDS_REVIEW", message: "Koordinat eksik; kayıt review gerektiriyor.", level: "warning" });
+        }
+      });
+      setImportWarnings(localWarnings);
       setImportSummary({
         totalRows: normalizedRows.length,
         acceptedRows: mapped.length,
@@ -895,6 +923,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setBusy(true);
     setErr("");
     setInfo("");
+    setImportSummary(null);
+    setImportWarnings([]);
     try {
       const sid = Number(selectedShiftId);
       const resp = await api(`/api/shifts/${sid}/stops`, { token });
@@ -1111,10 +1141,13 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
               <div style={{ marginTop: 6, fontSize: 12 }}>
                 Excel başlıkları (TR) da olur: <code>ad / ad soyad / telefon / adres / enlem / boylam</code>
               </div>
+              <div style={{ marginTop: 6, fontSize: 12 }}>
+                Kural: <b>Ad Soyad</b> zorunlu; ayrıca <b>adres</b> veya birlikte <b>lat/lng</b> olmalı.
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: 8, alignItems: "end", flexWrap: "wrap", marginTop: 8 }}>
-              <div style={{ minWidth: 180 }}>
+              <div style={{ minWidth: 220 }}>
                 <label className="muted">Import modu</label>
                 <select value={importMode} onChange={(e) => setImportMode(e.target.value)} disabled={busy}>
                   <option value="REPLACE">REPLACE — mevcut listeyi değiştir</option>
@@ -1143,6 +1176,34 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
                 <div className="muted" style={{ marginTop: 4 }}>
                   Atlanan: {importSummary.skippedRows} • Failed: {importSummary.failedRows}
                 </div>
+                {importSummary.needsReviewRows > 0 ? (
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Review gerektiren kayıtlar için <a href={"#" + companyPath(me, "/georeview")}>Geo Review</a> ekranını kullan.
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {importWarnings?.length ? (
+              <div className="card" style={{ marginTop: 10 }}>
+                <div className="muted"><b>Import Uyarıları</b> — {importWarnings.length} kayıt</div>
+                <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {summarizeWarnings(importWarnings).map((item) => (
+                    <span key={item.code} className="badge">{warningLabel(item.code)}: {item.count}</span>
+                  ))}
+                </div>
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {importWarnings.slice(0, 12).map((w, idx) => (
+                    <div key={`${w.code || "warn"}-${w.rowNo || idx}-${idx}`} className="muted" style={{ fontSize: 12 }}>
+                      <b>Satır {w.rowNo || "?"}</b> • {warningLabel(w.code)} — {w.message}
+                    </div>
+                  ))}
+                </div>
+                {importWarnings.length > 12 ? (
+                  <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                    İlk 12 uyarı gösteriliyor. Daha fazla satır uyarısı backend summary/warnings içinde mevcut.
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
