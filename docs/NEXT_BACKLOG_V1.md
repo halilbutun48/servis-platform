@@ -1,124 +1,240 @@
-# PERSONEL-SERVIS V1 — NEXT / UPDATE BACKLOG (SSOT)
+# PERSONEL-SERVIS V1 — NEXT BACKLOG (POST-M50)
 
-V1 bittiğinde (veya V1’e kontrollü şekilde “çekilecekse”) gelecek özellikler.
-**Kural:** V1 PRIMER SSOT kalır (`STARTPACK_V1.md`). Buradan bir madde V1’e alınırsa V1 dokümana taşınır.
+Timezone: Europe/Istanbul  
+Last updated: **2026-03-16**  
+Current official green tag: **v1-m50-green**  
+Current direction: **Pre-Pilot Gap Closure → Final Pilot**
 
----
+Bu dosyanın amacı:
+- repoda **zaten bulunan capability** ile
+- **kısmen tamamlanmış işler**i
+- ve **gerçekten eksik / sonraki iş**leri
+birbirinden ayırmaktır.
 
-## 0) Post-M50 resmi geçiş kapısı
-- Bu backlog maddelerine geçmeden önce canlı repo içinde son resmi tag doğrulanır.
-- `M50` kanıt hattı canlı repo’da yeniden çalıştırılır ve sonuç commit/tag promotion için temel alınır.
-- Resmi tag/commit promotion tamamlandıktan sonra backlog dili “post-M50” olarak korunur.
-- Tools kökündeki tek seferlik `apply_* / overlay_*` script’leri legacy archive altında tutulur; tools kökü yalnızca kanonik runtime/pack/check alanıdır.
-
-## A) Company Excel → Personel/Adres → Otomatik Durak & Rota
-
-### A0) Hedef
-Company vardiya bazında personel listesi yükler → sistem geocode/cache yapar → yakınlığa göre durak önerir → rota taslağı üretir → ROOM’a “ShiftDraft/VehicleRequest” düşer.
-
-### A1) Temel kararlar
-- Excel kolonları: `AdSoyad` (zorunlu), `Adres` (zorunlu), `Tel` (opsiyonel), `Not` (opsiyonel)
-- Adres → `lat/lng` otomatik (geocoding)
-- Her personel için `lat/lng` **1 kez** hesaplanır + **cache**’lenir
-- Adres değişirse yeniden geocode
-- ~50m sapma kabul (grid snap opsiyon)
-- Durak yürüme kuralı: `maxWalkM = 500` (opsiyon 400 güvenlik payı)
-- Manuel override: elle girilen lat/lng otomatik tarafından ezilmez
-
-### A2) Geocode cache yaklaşımı (önerilen alanlar)
-- `Person.addressText` (raw)
-- `Person.addressNorm` (normalize key, hashlenebilir)
-- `Person.lat`, `Person.lng` (nullable)
-- `Person.geoSource` (nominatim/google/manual)
-- `Person.geoUpdatedAt`
-- `Person.geoStatus`: `OK | NEEDS_REVIEW | FAILED`
-- Opsiyon: `Person.geoAccuracyM` (tahmini)
-- Opsiyon: `Person.geoAttemptCount`, `Person.geoLastError`
-
-**Normalize standardı:**
-- TR karakter normalize + whitespace trim + “Mah.”/“Mahallesi” gibi kısaltmalar unify (dokümante edilir)
-- `addressNorm` değişmezse tekrar geocode yapılmaz
-
-### A3) Otomatik durak üretimi (clustering)
-- Aynı vardiya içindeki personeller yakınlığa göre gruplanır (Haversine / DB tarafı mesafe fonksiyonu / DBSCAN benzeri)
-- Cluster başına durak noktası: `medoid` tercih (centroid bazen “yolun ortası” olur)
-- Kural: cluster’daki herkes duraktan `<= maxWalkM` olmalı
-- Çıktı: durak listesi + durak başına kişi sayısı (`seatDemand`)
-- Edge case: dışarıda kalan tekil personel → tek kişilik durak
-
-### A4) Otomatik rota sıralama (MVP)
-- Minimal: nearest-neighbor
-- Opsiyon: 2-opt iyileştirme
-- Başlangıç: `Company HQ` veya `driver current gps`
-- Çıkış: ordered stops + tahmini km/dk (ETA hesap mantığıyla uyumlu)
-
-### A5) İş akışı (Draft → Onay)
-1) Company: Excel upload (vardiya seç + saat şablonu)
-2) Backend: import → geocode/cache → cluster → duraklar → rota taslağı
-3) ROOM’a “ShiftDraft/VehicleRequest” düşer (duraklar + kişi sayısı + rota)
-4) ROOM: araç + driver atar (1 gün/hafta/ay/yıl gibi)
-5) Driver/Personel bilgilendirme
-
-### A6) MVP için DoD (Definition of Done)
-- Excel upload idempotent (aynı dosya/aynı vardiya tekrar yüklenirse duplicate üretmez ya da “replace” moduyla çalışır)
-- Geocode cache çalışır; adres değişince only-then geocode
-- `geoStatus=NEEDS_REVIEW` listesi UI/endpoint ile görülebilir
-- Cluster sonucu her durakta `maxWalkM` garantisi var
-- ROOM taslağı görür, onaylar, araca+driver’a bağlar
-- Driver uygulamasında rota/duraklar görünür
+Ana ilke:
+- Saha testi / pilot **en son**
+- Önce repo içindeki eksik halkalar kapatılır
+- Yarım ürün akışı bırakılmaz
 
 ---
 
-## B) Log / Rapor / Export (Excel/CSV)
+## 0) REPO'DA ZATEN VAR OLANLAR
 
-### B1) Raporlar
-- Araç: günlük km, hız ihlali sayısı, sürüş süreleri
-- Durak: REACHED/SKIPPED zamanları, gecikme
-- Filtre: tarih aralığı, araç, sürücü, company/room scope
+Aşağıdaki başlıklar artık "gelecek iş" değildir; repoda temel veya güçlü karşılığı vardır.
 
-### B2) Export
-- CSV/Excel
-- Format standardı: kolon isimleri, timezone, tarih formatı (ISO önerilir)
+### 0.1 Mobil sürücü hattı
+- Sürücü Kodu + PIN girişi
+- İlk girişte PIN değişimi
+- Bugün ekranı
+- Vardiya özeti / rota özeti
+- Sonraki durak bilgisi
+- Haritada aç
+- Sesli rehber
+- ETA okuma
+- Güvenli çıkış
+- Release hazırlığı kartı
+- Preview / production build profilleri
 
-### B3) DoD
-- Scope/RBAC korunur (Company kendi verisi; Room yetkili scope)
-- Büyük veri için sayfalama / async export opsiyonu (MVP’de limit uygulanabilir)
+### 0.2 Navigasyon ve mini harita capability
+- ROOM ve COMPANY tarafında mini harita önizleme vardır
+- ROOM, COMPANY ve DRIVER web tarafında **tam rotayı dış navigasyonda açma** capability vardır
+- ROOM, COMPANY, DRIVER web, PERSONEL ve public canlı akışlarda **sonraki hedef / durak navigasyonu** capability vardır
+- Sürücü mobil tarafta **sonraki durağı haritada açma** capability vardır
+
+Not:
+Bu başlıklar artık korunması gereken çekirdek capability'dir. Backlog'da yeni iş gibi değil, mevcut sistemin parçası olarak ele alınır.
+
+### 0.3 Import / geo / stop tabanı
+- Excel / CSV import tabanı
+- Shift people import hattı
+- Geocode state alanları
+- Manual geo override
+- Geo review ekranı
+- `maxWalkM` tabanlı otomatik durak üretimi
+- Company hub başlangıç noktası desteği
+
+### 0.4 Route quality / solver tabanı
+- OSRM matrix / reorder capability
+- Fallback heuristic yaklaşımı
+- Plan builder tabanı
+
+### 0.5 Security / session / compliance tabanı
+- Auth + refresh session
+- Device binding
+- Driver PIN hardening
+- TOTP step-up
+- RBAC / scope
+- KVKK minimal canlı-konum modeli
+- Retention + backup tabanı
 
 ---
 
-## C) No-show / Görev reddi cezası
+## 1) KISMEN TAMAMLANMIŞ / ÜRÜNLEŞMESİ GEREKEN İŞLER
 
-### C1) Kural
-- Driver görevi kabul edip gitmezse **3 ay** yeni talep alamaz
-- Sayaç bildirimlerle düşer (driver + room)
-- Log + audit kaydı tutulur
+Bunlar repoda parça parça vardır ama tek, tam, net ürün akışı halinde değildir.
 
-### C2) DoD
-- Ceza state’i net: başlangıç tarihi, bitiş tarihi, gerekçe, audit trail
-- ROOM override (istisna) varsa audit şart
+### 1.1 Excel → Geocode → Durak → Rota → ROOM zinciri
+Mevcut parçalar:
+- import var
+- geocode state var
+- review var
+- stop generation var
+- OSRM capability var
+
+Eksik olan:
+- tek, sade, uçtan uca ürün akışı
+- daha net kullanıcı yönlendirmesi
+- import sonucu → review sonucu → rota taslağı → ROOM onayı zinciri
+
+### 1.2 Geocode orchestration
+- Batch geocode
+- Retry / backoff
+- `FAILED` ve `NEEDS_REVIEW` standardı
+- Cache refresh kuralı
+- Normalize adres kuralı
+
+### 1.3 Route quality productization
+- OSRM açık / kapalı davranışı
+- Fallback standardı
+- Rota kalite metriği
+- Kullanıcıya sade durum mesajı
+
+### 1.4 ETA ve navigasyon kalite iyileştirmesi
+Mevcut capability korunur; bu başlık yeni navigasyon özelliği eklemekten çok kalite yükseltme işidir.
+
+Odak:
+- ETA için navigasyon destekli daha doğru km / süre hesabı
+- Kalan durak sayısı görünürlüğü
+- Sonraki durak kalitesi ve hedef netliği
+- Durak kaçırma / yeniden yönlendirme davranışı
+- Harita üstünde aktif rota / sonraki durak vurgusu
+- Navigasyon sağlayıcısı fallback davranışı
+
+### 1.5 Log / export altyapısından business report'a geçiş
+- Genel export altyapısı var
+- Ama iş raporları eksik
+- Araç / vardiya / gecikme / operasyon raporları ürünleştirilmeli
+
+### 1.6 KVKK kapsam genişletme
+- Minimal model var
+- Ama tüm rol/panel/veri matrisi net değil
+- Web ve mobil kapsamı yazılı hale gelmeli
 
 ---
 
-## D) KVKK Onay + 2 yıl saklama politikası
+## 2) GERÇEKTEN EKSİK OLANLAR
 
-### D1) Saklama
-- Konum/log saklama: **2 yıl**
-- Onay dokümanı + audit trail
-- Retention parametreleri ENV’den yönetilir
+### 2.1 No-show / görev reddi cezası
+- Penalty modeli
+- Audit trail
+- ROOM override
+- Talep / atama etkisi
 
-### D2) DoD
-- KVKK onayı kaydı (kimin, ne zaman, hangi metne onay)
-- İlgili aksiyonlar audit log’a düşer
-- Retention job doğrulanır (zaten V1’de aktif)
+### 2.2 Full business reporting
+- Araç raporları
+- Durak gecikme raporları
+- Sürücü performans / operasyon özeti
+- CSV/Excel export V2
+
+### 2.3 Full KVKK matrix
+Rol / panel / veri bazında net tablo:
+- SUPER_ADMIN
+- ROOM
+- COMPANY
+- DRIVER
+- PERSONEL
+- Sistemde kalan parent/öğrenci scope'ları
+
+### 2.4 iOS release lane
+- iOS build/distribution hattı
+- Release disiplini
+- Mağaza / dağıtım kararı
 
 ---
-## Plan Dokümanları (archive)
-- `docs/_archive/plans/SPRINT_1_PLAN.md`
-- `docs/_archive/plans/SPRINT_2_PLAN.md`
-- `docs/_archive/plans/SPRINT_3_PLAN.md`
-- `docs/_archive/plans/SPRINT_4_PLAN.md`
 
-## Gate & Dependency Dokümanları
-- `docs/MILESTONE_GATE_MATRIX.md` (legacy)
-- `docs/DEPENDENCY_MAP.md`
+## 3) PRE-PILOT ZORUNLU İŞLER
 
+Saha testinden önce bunlar tamamlanmalıdır.
+
+### 3.1 M51 — Backlog Reset + Gap Register
+- Backlog repo gerçeğine göre temizlenir
+- Zaten var / kısmen var / eksik ayrılır
+
+### 3.2 M52 — Import & Geo Pipeline
+- Import disiplini
+- Batch geocode
+- Review standardı
+- Cache / retry kuralı
+
+### 3.3 M53 — Stop & Route Productization
+- `maxWalkM` policy standardı
+- Stop generation kalite kuralı
+- OSRM / fallback standardı
+- Route quality görünürlüğü
+
+### 3.4 M54 — ROOM Dispatch Completion
+- Draft → ROOM → atama zinciri
+- Conflict görünürlüğü
+- Operasyonel kapanış
+
+### 3.5 M55 — Reports + No-show
+- Business reports
+- Export V2
+- No-show / görev reddi cezası
+
+### 3.6 M56 — KVKK Matrix + ETA/Navigation Quality
+- Rol/panel/veri KVKK matrisi
+- Mobil KVKK gereksinimi kararı
+- ETA kalitesi
+- Navigasyon destekli km / zaman / kalan durak görünürlüğü
+- Durak kaçırma / yeniden yönlendirme davranışı
+
+### 3.7 M57 — Mobile Hardening
+- Ağ kopması / geri gelmesi
+- GPS izin durumu
+- Session toparlama
+- Hata dili
+- Android preview/internal build disiplini
+
+---
+
+## 4) EN SON YAPILACAK: SAHA TESTİ / PİLOT
+
+Pilot en son başlatılır.
+
+Pilot öncesi tamam olması gerekenler:
+- Backlog temizliği tamam
+- Import/geo/stop/route zinciri tamam
+- ROOM dispatch zinciri tamam
+- No-show politikası tamam
+- KVKK kapsam matrisi yazılı
+- ETA/navigasyon kalite boşlukları kapatılmış
+- Mobil hata/gps/session davranışı toparlanmış
+
+---
+
+## 5) POST-PILOT ADAYLARI
+
+Pilot sonrası ele alınabilecek işler:
+- iOS release lane
+- İleri mobil güvenlik sertliği
+- Daha büyük ölçek export/reporting
+- Tenant / ölçekleme iyileştirmeleri
+- Daha gelişmiş operasyon zekâsı
+
+---
+
+## 6) KANONİK DİL / KARARLAR
+
+- "driver GPS" yerine: **sürücünün telefon GPS'i**
+- "agreement" yerine: **sözleşme**
+- Sürücü ana giriş hattı: **Sürücü Kodu + PIN**
+- Driver ana hedef platformu: **telefon uygulaması**
+- ROOM / COMPANY ana güçlü hedef: **tablet + web**
+- Saha testi / pilot: **en son**
+
+---
+
+## 7) KANONİK NEXT-ROUTE TOKEN
+
+`PRE-PILOT GAP CLOSURE`

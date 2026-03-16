@@ -12,7 +12,8 @@
 - **API_QUICK_TEST.md** — hızlı manuel test notları
 - **SEED_USERS.md** — seed kullanıcılar
 - **MILESTONE_GATE_MATRIX.md** — (LEGACY) erken dönem gate notları; canonical kanıt: tools gate/pack + m*check
-- **NEXT_BACKLOG_V1.md** — kısa backlog
+- **NEXT_BACKLOG_V1.md** — post-M50 backlog; mevcut capability / eksik ayrımı
+- **MILESTONE_M51_PRE_PILOT_GAP_CLOSURE.md** — pre-pilot gap closure başlangıç milestone
 - **MILESTONE_M22.md ... MILESTONE_M32.md** — milestone açıklamaları
 
 ## Arşiv
