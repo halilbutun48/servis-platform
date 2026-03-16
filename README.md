@@ -31,32 +31,41 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
 - `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
 - `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
-- `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
-- `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
-- `M49 MOBILE BETA HARDENING PACK PASS OK`
-- `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
-- `M50 MOBILE RELEASE READINESS PACK PASS OK`
-
-## Güncel repo-verified ek durum
 - `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
 - `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
 - `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
 - `M49 MOBILE BETA HARDENING PACK PASS OK`
 - `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
 - `M50 MOBILE RELEASE READINESS PACK PASS OK`
-- Aynı `pack_m47_4_mobile_readiness_web_pass.ps1` hattı clean rerun’da PASS verir.
-- `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunur; ana ürün driver girişi `Sürücü Kodu + PIN` akışıdır.
-- Driver mobil iskeleti `mobile/` altında Expo tabanlı olarak açılmıştır.
-- Mobil hat `M50` seviyesine kadar release readiness ile repo-verified green durumdadır.
+
+## Güncel aktif ürün hattı (2026-03-17)
+- `M51` docs/backlog reset hattı işlendi; M52–M57 sırası yazılı hale getirildi.
+- `M52 Import + Geo Pipeline` ana akış olarak çalışır duruma geldi.
+- `M53 Stop & Route Productization` başladı.
+- `M53.1` stop policy contract docs tarafında işlendi.
+- `M53.2-A` stop generation summary + preset görünürlüğü test edildi.
+- `M53.3` Planlama Merkezi / Plan Builder sadeleştirme ve tek oluşturma kaynağı kararı aktif çalışma alanıdır.
+- Not: Bu satırlar resmi pack-green promotion değildir; güncel repo yönünü ve ürün kararlarını taşır.
+
+## Bugünkü resmi ürün kararları
+- Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
+- Backend hard limit `50..2000`.
+- Company tarafında oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
+- **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
+- **Organizasyon Merkezi** ikinci plan motoru gibi davranmamalı; Planlama Merkezi ile aynı üretim yönüne uyarlanmalıdır.
+- Stage-3 akışında temel kullanıcı mantığı: `Rota önerisi oluştur → Ön izle → Ayrı market teklifi oluştur`.
+- Company taslak plan / teklif hazırlar; Room gerçek araç / sürücü / kapasite kararı ile operasyonel planı tamamlar.
 
 ## Sonraki resmi rota
-- `POST-M50 — Release / Tag / Roadmap Refresh`
-- Not: bu zip içinde `.git` olmadığı için son resmi tag doğrulaması ve `v1-m50-green` promotion kararı canlı repo içinde yapılmalıdır.
+- `M53.3 — Planlama Merkezi sadeleştirme + tek oluşturma kaynağı`
+- `M54 — ROOM Dispatch Planner / draft → ROOM → atama zinciri`
+- `M55 — Reports + No-show`
+- `M56 — KVKK Matrix + Mobile Hardening`
+- `M57 — Final Pilot Readiness`
 
 ## Kanonik tools düzeni
 - `tools/` kökü sadece kanonik çalıştırma/doğrulama script’leri için kullanılır.
 - Sabit komutlar: `pack.ps1`, `pack_m42_optional.ps1`, `pack_step06_stabil.ps1`, `pack_step1_security_foundation.ps1`, `pack_step1_totp_stepup.ps1`, `gate.ps1`, repo-contract `check_*.ps1` script’leri.
 - Eski tek seferlik `apply_*`, `overlay_*`, `OVERLAY_*` ve hotfix script’leri `tools/_archive/` altına taşınır.
-- M46.6-C2 / M46.6-D4 / M46.7 dönemi tek seferlik `apply_overlay_*` script’leri de legacy archive altına alınmıştır.
 - Otomatik yedekler `tools/_backup/` altında kalır; bu klasör canlı komut alanı değildir.
 - Kod değişirse aynı overlay içinde ilgili SSOT dosyaları da güncellenir.

@@ -1,11 +1,11 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT (Repo-Verified, Post-M50)
+# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT
 
-Tarih: 2026-03-15
+Tarih: 2026-03-17
 Timezone: Europe/Istanbul
-
-## 0) Durum / referans
-
 Repo: `D:\servis-platform`
+Branch: `main`
+
+## 0) Resmi green taban
 
 Ana resmi green durum:
 - ✅ `M41 PACK PASS`
@@ -20,121 +20,124 @@ Ana resmi green durum:
 - ✅ `M44 TELEMATICS PACK PASS OK`
 - ✅ `M45 RETENTION + BACKUP PACK PASS OK`
 - ✅ `M46 AI COPILOT FOUNDATION PACK PASS OK`
-- ✅ `M46.1 AI COPILOT ENRICHMENT PACK PASS OK`
-- ✅ `M46.2 AI COPILOT INTENT EXPANSION PACK PASS OK`
-- ✅ `M46.3 AI COPILOT QUALITY + EVIDENCE PACK PASS OK`
-- ✅ `M46.4 AI COPILOT DECISION CONSISTENCY + ACTION PLAN PACK PASS OK`
-- ✅ `M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION PACK PASS OK`
-- ✅ `M46.6-A AI JOB GUIDE PACK PASS OK`
-- ✅ `M46.6-B AI JOB GUIDE PRECHECK PACK PASS OK`
-- ✅ `M46.6-T AI LOCATION SOURCE GUIDE PACK PASS OK`
-- ✅ `M46.6-C AI SCREEN HELP PACK PASS OK`
-- ✅ `M46.6-D AI CHAT SHELL PACK PASS OK`
-- ✅ `M46.6-D2 AI CONTEXT CHAT PACK PASS OK`
-- ✅ `M46.6-D3 AI ACTIONABLE CHAT PACK PASS OK`
-- ✅ `M46.6-C2 SCREEN COVERAGE + TERMINOLOGY PACK PASS OK`
-- ✅ `M46.6-D4 SIMPLE ROLE MODE PACK PASS OK`
-- ✅ `M46.7 DRIVER CODE LOGIN + REHBER FIRST PACK PASS OK`
-- ✅ `M46.8 DRIVER ACCESS HARDENING PACK PASS OK`
-- ✅ `M46.9 SESSION & REFRESH SECURITY PACK PASS OK`
+- ✅ `M46.1–M46.9 zinciri green`
 - ✅ `M47 KVKK NOTICE / CONSENT FRAMEWORK PACK PASS OK`
 - ✅ `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
 - ✅ `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
 - ✅ `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
+- ✅ `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
 - ✅ `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
 - ✅ `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
 - ✅ `M49 MOBILE BETA HARDENING PACK PASS OK`
 - ✅ `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
 - ✅ `M50 MOBILE RELEASE READINESS PACK PASS OK`
 
-Güncel repo-verified ek durum:
-- ✅ `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
+Not:
+- Son resmi pack-green çizgi hâlâ `M50` seviyesidir.
+- `M51+` satırları aşağıda aktif ürün / repo durumu olarak yazılır; pack-green promotion anlamına gelmez.
+- Bu zip içinde `.git` olmadığı için resmi tag promotion yalnızca canlı repo içinde yapılmalıdır.
 
-Önemli referans:
-- `tools/STABLE_TO.txt = 41`
-- ana stabil taban hâlâ `M41`
-- docs içinde son bilinen resmi green commit/tag hattı: `e012d43` / `v1-m47.4-green`
-- bu zip içinde `.git` olmadığı için **son resmi tag doğrulaması** ve olası `v1-m50-green` promotion kararı canlı repo içinde ayrıca yapılmalıdır
-- güncel repo çalışma ağacında `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform` temiz rerun senaryosunda PASS vermektedir
-- güncel repo çalışma ağacında `tools\pack_m48_driver_mobile_foundation.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
-- güncel repo çalışma ağacında `tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
-- güncel repo çalışma ağacında `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
-- güncel repo çalışma ağacında `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
-- güncel repo çalışma ağacında `tools\pack_m50_mobile_release_readiness.ps1 -RepoRoot D:\servis-platform` PASS vermektedir
-- `M47.4-R` ayrı bir ürün özelliği değil; seed + driver login device binding + rerun/check uyum düzeltmesidir
-- `M47.4-R` için ayrı pack script yoktur; resmi kanıt, aynı M47.4 pack hattının artık clean rerun’da da PASS vermesidir
+## 1) Güncel aktif durum
 
-Ana kanıt komutları:
-- `./tools/pack.ps1 -To 41`
-- `./tools/pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
-- `./tools/backup_create_m45.ps1 -RepoRoot D:\servis-platform`
-- `./tools/backup_restore_m45.ps1 -RepoRoot D:\servis-platform -BackupFile <manifest-or-dump>`
-- `./tools/pack_m46_9_session_refresh_security.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m47_kvkk_notice_consent_framework.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m47_2_capacity_load_baseline.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m47_3_production_resilience_edge_security.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m48_driver_mobile_foundation.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m50_mobile_release_readiness.ps1 -RepoRoot D:\servis-platform`
+- `M51` başladı ve docs/backlog tarafı işlendi.
+- `M52 Import + Geo Pipeline` ana akış olarak çalışır duruma geldi ve kod tarafı kapatıldı.
+- `M53 Stop & Route Productization` başlatıldı.
+- `M53.1` stop policy contract docs tarafında işlendi.
+- `M53.2-A` stop generation summary + preset görünürlüğü test edildi ve çalışır görüldü.
+- `M53.3` Planlama Merkezi / Plan Builder sadeleştirme çalışması aktif; en dikkat isteyen alan burasıdır.
 
-M47.4-R ile netleşen teknik sonuç:
-- demo kullanıcı seed’i rerun’da `demo123` parolasını tekrar yazabilir durumdadır
-- driver compat login hattı bound `deviceId` değerini reuse eder
-- `M41` device binding check’i rerun-uyumlu çalışır
-- `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunur; ana ürün girişi değildir
+## 2) Kesin çalışan / doğrulanan durum
 
-M48 ile netleşen teknik sonuç:
-- `mobile/` altında Expo SDK 54 tabanlı sürücü uygulama iskeleti vardır
-- mobil login hattı `Sürücü Kodu + PIN` akışını ve refresh + `deviceId` uyumunu taşır
-- `requirePinChange` varsa mobilde doğrudan PIN değişim ekranı açılır
-- `Bugün` ekranı vardiya özeti, rota özeti, sonraki durak, haritada aç ve GPS hazırlık kartını içerir
+### M52.1 — Import Contract
+Test edilip çalışan davranış:
+- Excel / CSV import
+- `REPLACE` / `MERGE`
+- import summary kartı
+- warning UI
+- eksik / hatalı satırlarda sistemin düşmemesi
+- review gerektiren kayıtların ayrılması
 
-M48.5 ile netleşen teknik sonuç:
-- Room / Company tablet hazırlığı aynı web uygulaması içinde açılmıştır
-- `TabletOpsQuickBar` ile hızlı işlem / harita / kaydırmasız erişim kabuğu eklenmiştir
-- tablet odaklı grid ve shell düzeni `web/src/index.css` içinde tanımlanmıştır
-- ayrı native room/company tablet uygulaması henüz açılmamıştır
+### M52.2 — Geo State + Geo Review
+Test edilip çalışan davranış:
+- `geoStatus` + `geoReason` / `geoReasonText`
+- satır bazlı **Adresten Bul**
+- Geo Review içinde ad / telefon / adres düzenleme
+- Geo Review içinde `lat` / `lng` düzenleme
+- `Kaydet`
+- `OK Yap`
+- toplu **Adresten Bul**
+- reason filtresi
+- bulundu / bulunamadı / hata sayaçları
 
-M49 ile netleşen teknik sonuç:
-- mobil beta hardening ile foreground `active` olduğunda otomatik veri yenileme eklenmiştir
-- 30 saniyelik periyodik yenileme ve backend health pingi görünürlüğü vardır
-- `Beta durum` kartında API tabanı, `Device ID`, son senkron ve son hata bilgisi görünür
-- `Güvenli çıkış` akışı refresh session revoke denemesiyle desteklenir
+### M52.3-A — Import Summary Quick Actions
+Test edilip çalışan davranış:
+- import summary içinden **Geo Review'a Git**
+- review kayıtlarını topluca bul
+- toplu geocode sonrası bazı kayıtların `OK` olması
+- sayaçların değişmesi
+- listenin güncellenmesi
 
-M49.1 ile netleşen teknik sonuç:
-- `expo-speech` tabanlı sesli rehber mobilde açılmıştır
-- sürücü `Sıradaki durağı oku` ve `ETA oku` işlemlerini mobil içinden çalıştırabilir
-- sesli rehber açık/kapalı tercihi saklanır
-- aynı durak/ETA için tekrar anonslarını azaltan temel dedupe uygulanmıştır
+### M53.1 — Stop Policy Contract
+Resmi kararlar:
+- Company default `maxWalkM = 250`
+- School default `maxWalkM = 50`
+- backend hard limit `50..2000`
+- resmi özet alanları: toplam kişi, durak sayısı, tekil kişi sayısı, kapsanan kişi sayısı, review sayısı, dışarıda / skip sayısı, stop başına kişi dağılımı
+- route quality minimum görünürlük: tahmini km, tahmini süre, başlangıç noktası, rota kaynağı / kalite sinyali, hub dahil / hariç stop ayrımı
 
-M50 ile netleşen teknik sonuç:
-- mobil release readiness için `runtimeVersion` ve `updates` politikası tanımlanmıştır
-- `eas.json` içinde `preview` ve `production` build profilleri eklenmiştir
-- `Release hazırlığı` kartı sürücü mobil içinde sürüm, hedef, build profilleri ve Expo Go durumunu gösterir
-- `.env.example` ve release metadata akışı mobil yayın öncesi kontrol için hazırlanmıştır
+### M53.2-A — Stop Generation Summary
+Testte görülen çalışan durum:
+- `maxWalkM` alanı var
+- Company `250` ve School `50` presetleri görünüyor
+- Stop Generation Özeti kartı görünüyor
+- kartta `maxWalkM`, durak, kapsanan, tekil, toplam kişi, review, dışarıda/skip, stop dağılım satırı görünüyor
+- hub dahil / hariç sayım farkı mevcut; bu hata değil, sayı dili / etiket netliği konusudur
 
-Ürün / operasyon kararları:
+## 3) M53.3 için net ürün kararları
+
+### Tek oluşturma kaynağı
+- Company tarafında oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
+- **Vardiyalar** ekranı takip / operasyon ekranı olarak kalmalıdır.
+- **Organizasyon Merkezi** ikinci plan motoru gibi davranmamalı; Planlama Merkezi yönüne uyarlanmalıdır.
+
+### Stage-3 temel kullanıcı akışı
+- `Rota önerisi oluştur`
+- `Ön izle`
+- `Ayrı market teklifi oluştur`
+
+### Stage-3 iş kuralları
+- Matris al ve çöz kullanıcıya ayrı teknik adım gibi sunulmamalıdır.
+- `Uygula: N market shift oluştur` ile `Ayrı market teklifi oluştur` aynı işi yapıyorsa basic akıştan tekine düşülmelidir.
+- Company tarafında araç kapasitesi operasyonel karar değildir; gerçek kapasite Room tarafında netleşmelidir.
+- Geohash precision ve benzeri teknik parametreler basic akışta baskın görünmemelidir.
+- Company veriyi hazırlar, taslak rota / cluster önerisini görür ve ayrı market tekliflerini çıkarır.
+- Room gerçek araç, sürücü, kapasite ve operasyon kararını verir.
+
+## 4) Yakın resmi rota
+- `M53.3 — Planlama Merkezi sadeleştirme + gerçek teklif akışı`
+- `M54 — ROOM Dispatch Planner / draft → ROOM → atama zinciri`
+- `M55 — Reports + No-show`
+- `M56 — KVKK Matrix + Mobile Hardening`
+- `M57 — Final Pilot Readiness`
+
+## 5) M54 için bugünkü yön
+Room tarafında hedeflenen zincir:
+- gelen teklif / draftı aç
+- boştaki araç + uygun sürücü havuzunu gör
+- personelleri yakınlık + kapasite + operasyonel uygunluğa göre araçlara böl
+- araç bazlı yeni duraklar üret
+- OSRM + solver ile durak sırasını iyileştir
+- Room preview ile onaylasın
+- child shift'ler oluşsun ve sürücü yalnızca kendi rotasını görsün
+
+## 6) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
 - İlk girişte PIN değişimi zorunludur.
-- Driver için birincil hedef telefon uygulamasıdır.
-- Room / Company için tablet güçlü hedef, telefonda temel kullanım korunur.
-- Super Admin / büyük log-rapor işleri masaüstü önceliklidir.
-- Rehber ürün içinde birincil yardımcı yüzdür.
-- AI hattı read-only / suggestion-first kalır.
-- overlay standardı: **tek zip / tek kök klasör / nested root yok**.
-- Üst milestone’lar alt milestone check uyumluluğunu bozmadan ilerler.
-- ürün dili içinde `sürücünün telefon GPS'i` ifadesi korunur.
+- `driver@demo.com / demo123` yalnızca hızlı panel / smoke kontrol hesabıdır.
+- ürün içi konum dili: `sürücünün telefon GPS'i`
+- overlay standardı: **tek zip / tek kök klasör / nested root yok**
+- değişiklikler mümkünse tek seferde overlay paket olarak taşınır
+- CHECKLIST'te `[x]` yalnızca pack/check green sonrasında işaretlenir
 
-TTL / public link özeti:
-- Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
-
-Sonraki doğru rota:
-- `POST-M50 — Release / Tag / Roadmap Refresh`
-- İş sırası: son resmi tag doğrula → M50 kanıt hattını canlı repo’da tekrar çalıştır → resmi tag/commit promotion → roadmap/backlog refresh
-Kanonik next-route token: `POST-M50 RELEASE TAG ROADMAP REFRESH`
-
-Yeni sohbet açınca ilk cümle:
-Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics, M45 Retention + Backup, M46 AI Copilot zinciri, M46.7 driver code login + rehber first, M46.8 driver access hardening, M46.9 session & refresh security, M47 KVKK, M47.2 capacity baseline, M47.3 edge security, M47.4 mobile readiness web pass, M47.4-R clean rerun / repro fix, M48 driver mobile foundation, M48.5 room/company tablet readiness, M49 mobile beta hardening, M49.1 driver voice guidance + stop ETA ve M50 mobile release readiness repo-verified green durumda. Sonraki doğru iş release/tag ve roadmap refresh.
+## 7) Yeni sohbet için ilk cümle
+Repo şu an M50'ye kadar resmi green; M51 docs/backlog işlendi, M52 import+geo hattı çalışır durumda kapatıldı, M53 başladı. Şu an en kritik aktif iş Planlama Merkezi'ni tek oluşturma kaynağına indirip Stage-3 akışını sadeleştirmek; ardından M54'te Room tarafında gelen teklifi boştaki araçlara yakınlık + OSRM/solver mantığıyla dağıtan dispatch planner'a geçilecek.
