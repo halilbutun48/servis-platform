@@ -748,6 +748,16 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return parseSheetRowsToPeople(rows2d);
   }
 
+  async function parsePeopleFile(file) {
+    const name = String(file?.name || "").toLowerCase();
+    if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+      return importExcelFile(file);
+    }
+    if (name.endsWith(".csv")) {
+      return importCsvFile(file);
+    }
+    throw new Error("Desteklenen dosyalar: .xlsx, .xls, .csv");
+  }
   async function importFile(file) {
     setErr("");
     setInfo("");
@@ -1226,3 +1236,4 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     </div>
   );
 }
+
