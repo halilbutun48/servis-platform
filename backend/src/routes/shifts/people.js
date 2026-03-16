@@ -34,10 +34,124 @@ const personelItemSchema = z.object({
   kind: z.enum(["PERSONEL", "STUDENT"]).optional(),
 });
 
+const importRawItemSchema = z
+  .object({
+    personelId: z.any().optional(),
+    fullName: z.any().optional(),
+    phone: z.any().optional(),
+    address: z.any().optional(),
+    lat: z.any().optional(),
+    lng: z.any().optional(),
+    geoManualOverride: z.any().optional(),
+    kind: z.any().optional(),
+  })
+  .passthrough();
+
 function sanitizePhone(p) {
-  const s = (p ?? "").trim();
+  const s = String(p ?? "").trim();
   if (!s) return null;
   return s;
+}
+
+function sanitizeText(v, maxLen = 240) {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  return s.slice(0, maxLen);
+}
+
+function normalizeCoord(v, kind) {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  if (kind === "lat" && Math.abs(n) > 90) return null;
+  if (kind === "lng" && Math.abs(n) > 180) return null;
+  return n;
+}
+
+function warning(rowNo, code, message, level = "warning") {
+  return { rowNo, code, message, level };
+}
+
+function buildImportFingerprint(item) {
+  const fullName = String(item.fullName || "").trim().toLowerCase();
+  const phone = String(item.phone || "").trim().toLowerCase();
+  const address = String(item.address || "").trim().toLowerCase();
+  const lat = typeof item.lat === "number" ? item.lat.toFixed(6) : "";
+  const lng = typeof item.lng === "number" ? item.lng.toFixed(6) : "";
+  return [fullName, phone, address, lat, lng].join("|");
+}
+
+function normalizeImportRows(rows) {
+  const accepted = [];
+  const warnings = [];
+  const seen = new Set();
+
+  (Array.isArray(rows) ? rows : []).forEach((raw, index) => {
+    const rowNo = index + 1;
+    const parsed = importRawItemSchema.safeParse(raw ?? {});
+    if (!parsed.success) {
+      warnings.push(warning(rowNo, "INVALID_ROW", "Satır biçimi okunamadı.", "error"));
+      return;
+    }
+
+    const value = parsed.data;
+    const personelIdRaw = value.personelId == null || value.personelId === "" ? undefined : Number(value.personelId);
+    const personelId = Number.isInteger(personelIdRaw) && personelIdRaw > 0 ? personelIdRaw : undefined;
+    const fullName = sanitizeText(value.fullName, 120);
+    const phone = sanitizePhone(value.phone);
+    const address = sanitizeText(value.address, 240);
+    const lat = normalizeCoord(value.lat, "lat");
+    const lng = normalizeCoord(value.lng, "lng");
+    const geoManualOverride = value.geoManualOverride === true || value.geoManualOverride === "true";
+    const kind = value.kind === "STUDENT" ? "STUDENT" : value.kind === "PERSONEL" ? "PERSONEL" : undefined;
+
+    if (!fullName) {
+      warnings.push(warning(rowNo, "MISSING_NAME", "Ad soyad boş olduğu için satır atlandı.", "error"));
+      return;
+    }
+
+    const hasCoords = typeof lat === "number" && typeof lng === "number";
+    const hasPartialCoords = (lat == null) !== (lng == null);
+    if (hasPartialCoords) {
+      warnings.push(
+        warning(rowNo, "INVALID_COORD", "Enlem/boylam eksik veya geçersiz; adres varsa review akışına düşecek.")
+      );
+    }
+
+    if (!address && !hasCoords) {
+      warnings.push(
+        warning(rowNo, "MISSING_ADDRESS_OR_COORDS", "Adres veya geçerli koordinat olmadığı için satır atlandı.", "error")
+      );
+      return;
+    }
+
+    const normalized = {
+      personelId,
+      fullName,
+      phone,
+      address,
+      lat: hasCoords ? lat : null,
+      lng: hasCoords ? lng : null,
+      geoManualOverride,
+      kind,
+    };
+
+    const fingerprint = buildImportFingerprint(normalized);
+    if (seen.has(fingerprint)) {
+      warnings.push(warning(rowNo, "DUPLICATE_ROW", "Aynı satır bu dosyada tekrar ettiği için atlandı."));
+      return;
+    }
+    seen.add(fingerprint);
+
+    const geoStatus = normalizeGeoStatus(normalized);
+    if (geoStatus === "NEEDS_REVIEW") {
+      warnings.push(warning(rowNo, "GEO_NEEDS_REVIEW", "Koordinat eksik; kayıt review gerektiriyor."));
+    }
+
+    accepted.push({ rowNo, item: normalized, geoStatus, rawJson: raw ?? null });
+  });
+
+  return { accepted, warnings };
 }
 
 function normalizeGeoStatus({ lat, lng, geoManualOverride }) {
@@ -70,20 +184,27 @@ async function upsertCompanyPersonel(companyId, item, defaultKind) {
     if (!existing) {
       throw Object.assign(new Error("personelId does not belong to this company"), { status: 400 });
     }
-    return prisma.personel.update({ where: { id: item.personelId }, data });
+    const personel = await prisma.personel.update({ where: { id: item.personelId }, data });
+    return { personel, action: "updated" };
   }
 
   // If phone present, upsert by (companyId, phone)
   if (phone) {
-    return prisma.personel.upsert({
+    const existing = await prisma.personel.findUnique({
+      where: { companyId_phone: { companyId, phone } },
+      select: { id: true },
+    });
+    const personel = await prisma.personel.upsert({
       where: { companyId_phone: { companyId, phone } },
       create: { companyId, ...data },
       update: data,
     });
+    return { personel, action: existing ? "updated" : "created" };
   }
 
   // Otherwise create a new record (no stable key)
-  return prisma.personel.create({ data: { companyId, ...data } });
+  const personel = await prisma.personel.create({ data: { companyId, ...data } });
+  return { personel, action: "created" };
 }
 
 async function getShiftPeople(shiftId) {
@@ -165,8 +286,8 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const createdOrUpdated = [];
     for (const it of items) {
-      const p = await upsertCompanyPersonel(req.user.companyId, it, defaultKind);
-      createdOrUpdated.push(p);
+      const result = await upsertCompanyPersonel(req.user.companyId, it, defaultKind);
+      createdOrUpdated.push(result.personel);
     }
 
     // Deduplicate by personelId
@@ -215,15 +336,55 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const bodySchema = z.object({
       fileName: z.string().max(200).optional(),
-      rows: z.array(personelItemSchema).max(2000).optional(),
-      items: z.array(personelItemSchema).max(2000).optional(),
+      rows: z.array(importRawItemSchema).max(2000).optional(),
+      items: z.array(importRawItemSchema).max(2000).optional(),
     });
 
     const body = bodySchema.parse(req.body ?? {});
-    const rows = body.rows ?? body.items ?? [];
-    if (rows.length === 0) {
-      return res.status(400).json({ ok: false, error: "rows/items required" });
+    const rawRows = body.rows ?? body.items ?? [];
+    if (rawRows.length === 0) {
+      return res.status(400).json({ ok: false, error: "rows/items required", code: "ROWS_REQUIRED" });
     }
+
+    const { accepted, warnings } = normalizeImportRows(rawRows);
+    if (accepted.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        error: "İçe aktarılacak geçerli satır bulunamadı.",
+        code: "NO_VALID_ROWS",
+        summary: {
+          totalRows: rawRows.length,
+          acceptedRows: 0,
+          createdPersonels: 0,
+          updatedPersonels: 0,
+          linkedToShift: 0,
+          skippedRows: rawRows.length,
+          needsReviewRows: 0,
+          failedRows: rawRows.length,
+        },
+        warnings,
+      });
+    }
+
+    const rowPayloads = rawRows.map((raw, idx) => {
+      const rowNo = idx + 1;
+      const acceptedRow = accepted.find((x) => x.rowNo === rowNo);
+      const fullName = sanitizeText(raw?.fullName, 120);
+      const phone = sanitizePhone(raw?.phone);
+      const address = sanitizeText(raw?.address, 240);
+      const lat = normalizeCoord(raw?.lat, "lat");
+      const lng = normalizeCoord(raw?.lng, "lng");
+      return {
+        rowNo,
+        rawJson: raw ?? null,
+        fullName,
+        phone,
+        address,
+        lat,
+        lng,
+        geoStatus: acceptedRow?.geoStatus ?? (fullName ? normalizeGeoStatus({ fullName, phone, address, lat, lng }) : "FAILED"),
+      };
+    });
 
     const imp = await prisma.shiftImport.create({
       data: {
@@ -231,34 +392,30 @@ export function attachShiftPeopleRoutes(router, _io) {
         createdByUserId: req.user.id,
         fileName: body.fileName ?? null,
         rows: {
-          create: rows.map((row, idx) => ({
-            rowNo: idx + 1,
-            rawJson: row,
-            fullName: row.fullName,
-            phone: sanitizePhone(row.phone),
-            address: row.address ?? null,
-            lat: typeof row.lat === "number" ? row.lat : null,
-            lng: typeof row.lng === "number" ? row.lng : null,
-            geoStatus: normalizeGeoStatus(row),
-          })),
+          create: rowPayloads,
         },
       },
       select: { id: true },
     });
 
+    let createdPersonels = 0;
+    let updatedPersonels = 0;
+    let needsReviewRows = 0;
     const createdOrUpdated = [];
-    for (const row of rows) {
-      const p = await upsertCompanyPersonel(req.user.companyId, row, defaultKind);
-      createdOrUpdated.push(p);
 
-      // back-link import row -> personelId for trace
+    for (const row of accepted) {
+      const result = await upsertCompanyPersonel(req.user.companyId, row.item, defaultKind);
+      createdOrUpdated.push(result.personel);
+      if (result.action === "created") createdPersonels += 1;
+      else updatedPersonels += 1;
+      if (row.geoStatus === "NEEDS_REVIEW") needsReviewRows += 1;
+
       await prisma.shiftImportRow.updateMany({
         where: {
           importId: imp.id,
-          phone: sanitizePhone(row.phone),
-          rowNo: { gt: 0 },
+          rowNo: row.rowNo,
         },
-        data: { personelId: p.id },
+        data: { personelId: result.personel.id },
       });
     }
 
@@ -285,15 +442,26 @@ export function attachShiftPeopleRoutes(router, _io) {
       await prisma.shiftPersonel.createMany({ data: toCreate, skipDuplicates: true });
     }
 
+    const summary = {
+      totalRows: rawRows.length,
+      acceptedRows: accepted.length,
+      createdPersonels,
+      updatedPersonels,
+      linkedToShift: toCreate.length,
+      skippedRows: rawRows.length - accepted.length,
+      needsReviewRows,
+      failedRows: Math.max(0, rawRows.length - accepted.length),
+    };
+
     audit(req, "SHIFT_PEOPLE_IMPORT", {
       shiftId: shift.id,
       importId: imp.id,
       mode,
-      rows: rows.length,
-      linked: toCreate.length,
+      ...summary,
+      warningCount: warnings.length,
     });
 
-    res.json({ ok: true, shiftId: shift.id, importId: imp.id, mode, inputCount: rows.length, linkedCount: toCreate.length });
+    res.json({ ok: true, shiftId: shift.id, importId: imp.id, mode, summary, warnings });
   });
 
   // COMPANY: generate stops from shift people

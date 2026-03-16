@@ -261,6 +261,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
+  const [importMode, setImportMode] = useState("REPLACE");
+  const [importSummary, setImportSummary] = useState(null);
 
   // M16.2 soft-switch: backend varsa kullan; endpoint yoksa (404) localStorage fallback
   const [peopleBackend, setPeopleBackend] = useState("unknown"); // unknown | on | off
@@ -371,6 +373,14 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     });
   }
 
+  async function importPeopleToBackend(shiftId, fileName, rows, mode) {
+    return api(`/api/shifts/${shiftId}/people/import?mode=${encodeURIComponent(String(mode || "REPLACE"))}`, {
+      method: "POST",
+      body: { fileName, rows },
+      token,
+    });
+  }
+
   async function generateStopsOnBackend(shiftId, maxWalkMValue) {
     const mw = Number(maxWalkMValue);
     return api(`/api/shifts/${shiftId}/stops/generate?mode=REPLACE&maxWalkM=${encodeURIComponent(String(mw))}`, {
@@ -427,6 +437,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setBusy(true);
     setErr("");
     setInfo("");
+    setImportSummary(null);
 
     const sid = String(selectedShiftId);
 
@@ -717,6 +728,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   async function importFile(file) {
     setErr("");
     setInfo("");
+    setImportSummary(null);
     if (!file) return;
 
     try {
@@ -737,30 +749,85 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         return;
       }
 
-      const mapped = rows
-        .map((r) => {
-          const lat = normalizeCoord(r.lat, "lat");
-          const lng = normalizeCoord(r.lng, "lng");
-          const address = String(r.address || "").trim();
-          return {
-            id: `p_${Date.now()}_${Math.random().toString(16).slice(2)}_${Math.random().toString(16).slice(2)}`,
-            name: String(r.name || "").trim(),
-            phone: String(r.phone || "").trim(),
-            address,
-            lat,
-            lng,
-            geoStatus: computeGeoStatus({ address, lat, lng }),
-          };
-        })
+      const normalizedRows = rows.map((r) => ({
+        fullName: String(r.name || "").trim(),
+        phone: String(r.phone || "").trim() || null,
+        address: String(r.address || "").trim() || null,
+        lat: normalizeCoord(r.lat, "lat"),
+        lng: normalizeCoord(r.lng, "lng"),
+      }));
+
+      if (selectedShiftId && peopleBackend !== "off") {
+        try {
+          const sid = Number(selectedShiftId);
+          const ids = mirrorIds.length ? mirrorIds : [sid];
+          let firstResp = null;
+          await apiOr404Fallback(
+            async () => {
+              for (const id of ids) {
+                const resp = await importPeopleToBackend(String(id), file.name || null, normalizedRows, importMode);
+                if (!firstResp) firstResp = resp;
+              }
+              setPeopleBackend("on");
+              return true;
+            },
+            async () => {
+              setPeopleBackend("off");
+              return false;
+            }
+          );
+
+          if (firstResp?.summary) {
+            setImportSummary(firstResp.summary);
+            const warningCount = Array.isArray(firstResp?.warnings) ? firstResp.warnings.length : 0;
+            setInfo(`Import tamamlandı: ${firstResp.summary.acceptedRows}/${firstResp.summary.totalRows} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
+          }
+
+          const fresh = await loadPeopleFromBackend(String(sid));
+          setPeople(fresh);
+          return;
+        } catch (e) {
+          const payload = e?.payload;
+          if (payload?.summary) setImportSummary(payload.summary);
+          if (Array.isArray(payload?.warnings) && payload.warnings.length) {
+            const first = payload.warnings[0];
+            setErr(`${payload?.error || e?.message || String(e)} ${first?.rowNo ? `(İlk sorun satır ${first.rowNo}: ${first.message})` : ""}`.trim());
+          } else {
+            setErr(String(payload?.error || e?.message || e));
+          }
+          return;
+        }
+      }
+
+      const mapped = normalizedRows
+        .map((r) => ({
+          id: `p_${Date.now()}_${Math.random().toString(16).slice(2)}_${Math.random().toString(16).slice(2)}`,
+          name: String(r.fullName || "").trim(),
+          phone: String(r.phone || "").trim(),
+          address: String(r.address || "").trim(),
+          lat: typeof r.lat === "number" ? r.lat : null,
+          lng: typeof r.lng === "number" ? r.lng : null,
+          geoStatus: computeGeoStatus({ address: r.address, lat: r.lat, lng: r.lng }),
+        }))
         .filter((x) => x.name);
 
       if (!mapped.length) {
-        setErr("Dosyada geçerli satır bulunamadı (name zorunlu).");
+        setErr("Dosyada geçerli satır bulunamadı (Ad Soyad zorunlu; adres veya koordinat olmalı).");
         return;
       }
 
-      setPeople((prev) => [...mapped, ...(prev || [])]);
-      setInfo(`İçe aktarıldı: ${mapped.length} kayıt`);
+      setPeople((prev) => (importMode === "REPLACE" ? mapped : [...mapped, ...(prev || [])]));
+      setImportSummary({
+        totalRows: normalizedRows.length,
+        acceptedRows: mapped.length,
+        createdPersonels: 0,
+        updatedPersonels: 0,
+        linkedToShift: mapped.length,
+        skippedRows: Math.max(0, normalizedRows.length - mapped.length),
+        needsReviewRows: mapped.filter((x) => x.geoStatus === "NEEDS_REVIEW").length,
+        failedRows: Math.max(0, normalizedRows.length - mapped.length),
+      });
+      setInfo(`İçe aktarıldı: ${mapped.length} kayıt (${peopleBackend === "off" ? "yerel mod" : "önizleme"})`);
     } catch (e) {
       setErr(String(e?.message || e));
     }
@@ -1045,6 +1112,17 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
                 Excel başlıkları (TR) da olur: <code>ad / ad soyad / telefon / adres / enlem / boylam</code>
               </div>
             </div>
+
+            <div style={{ display: "flex", gap: 8, alignItems: "end", flexWrap: "wrap", marginTop: 8 }}>
+              <div style={{ minWidth: 180 }}>
+                <label className="muted">Import modu</label>
+                <select value={importMode} onChange={(e) => setImportMode(e.target.value)} disabled={busy}>
+                  <option value="REPLACE">REPLACE — mevcut listeyi değiştir</option>
+                  <option value="MERGE">MERGE — mevcut listeyi koru, yenileri ekle</option>
+                </select>
+              </div>
+            </div>
+
             <input
               type="file"
               accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
@@ -1052,6 +1130,21 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
               onChange={(e) => importFile(e.target.files?.[0])}
               style={{ marginTop: 8 }}
             />
+
+            {importSummary ? (
+              <div className="card" style={{ marginTop: 10 }}>
+                <div className="muted"><b>Import Özeti</b></div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Toplam: {importSummary.totalRows} • Kabul: {importSummary.acceptedRows} • Shift'e bağlanan: {importSummary.linkedToShift}
+                </div>
+                <div className="muted" style={{ marginTop: 4 }}>
+                  Oluşan: {importSummary.createdPersonels} • Güncellenen: {importSummary.updatedPersonels} • Review: {importSummary.needsReviewRows}
+                </div>
+                <div className="muted" style={{ marginTop: 4 }}>
+                  Atlanan: {importSummary.skippedRows} • Failed: {importSummary.failedRows}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
