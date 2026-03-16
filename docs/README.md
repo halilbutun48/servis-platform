@@ -16,6 +16,8 @@
 - **MILESTONE_M51_PRE_PILOT_GAP_CLOSURE.md** — pre-pilot gap closure başlangıç milestone
 - **MILESTONE_M52_IMPORT_GEO_PIPELINE.md** — import + geocode pipeline milestone
 - **RUNBOOK_M52_IMPORT_CONTRACT.md** — import contract ve geo pipeline runbook
+- **MILESTONE_M53_STOP_ROUTE_PRODUCTIZATION.md** — stop generation ve route quality ürünleştirme milestone
+- **RUNBOOK_M53_STOP_ROUTE_PRODUCTIZATION.md** — stop/route productization runbook
 - **MILESTONE_M22.md ... MILESTONE_M32.md** — milestone açıklamaları
 
 ## Arşiv
