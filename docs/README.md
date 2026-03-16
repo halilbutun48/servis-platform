@@ -14,6 +14,8 @@
 - **MILESTONE_GATE_MATRIX.md** — (LEGACY) erken dönem gate notları; canonical kanıt: tools gate/pack + m*check
 - **NEXT_BACKLOG_V1.md** — post-M50 backlog; mevcut capability / eksik ayrımı
 - **MILESTONE_M51_PRE_PILOT_GAP_CLOSURE.md** — pre-pilot gap closure başlangıç milestone
+- **MILESTONE_M52_IMPORT_GEO_PIPELINE.md** — import + geocode pipeline milestone
+- **RUNBOOK_M52_IMPORT_CONTRACT.md** — import contract ve geo pipeline runbook
 - **MILESTONE_M22.md ... MILESTONE_M32.md** — milestone açıklamaları
 
 ## Arşiv
