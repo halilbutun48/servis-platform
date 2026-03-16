@@ -1,77 +1,80 @@
-# PERSONEL-SERVIS V1 — M53 STOP & ROUTE PRODUCTIZATION
+# M53 — Stop & Route Productization
 
-Last updated: **2026-03-16**  
-Depends on: **M52 import + geo pipeline**  
-Current direction: **M53 stop generation ve route quality ürünleştirme**
+Status: **STARTED**  
+Route token: **M53 STOP ROUTE PRODUCTIZATION**
 
 ## Amaç
-M52 sonunda import ve geo review hattı çalışır hale geldi.  
-M53'ün amacı, bu veriyi **daha güvenilir durak üretimi** ve **daha anlaşılır rota kalitesi** akışına çevirmektir.
+M53 içinde yeni büyük rota algoritması yazmıyoruz. Önce mevcut **durak üretimi** ve **rota önizleme** davranışını ürün kuralı haline getiriyoruz.
 
-Bu milestone'da sıfırdan route solver yazılmayacak.  
-Var olan stop generation + OSRM capability, ürün seviyesinde kurala ve görünürlüğe bağlanacaktır.
+Bu milestone ile:
+- `maxWalkM` varsayılanları resmileşir
+- durak üretimi sonrası gösterilecek özet netleşir
+- rota kalite özetinde hangi sinyallerin görüneceği yazılı hale gelir
+- preview / harita tarafında korunacak standartlar tanımlanır
 
-## Kapsam
+---
 
-### 1) Stop generation policy
-- `maxWalkM` resmi ürün kuralı
-- varsayılan değer, alt/üst sınır, UI davranışı
-- stop generation çıktısında kalite özeti
-- review gerektiren kişiler ve dışarıda kalanlar görünürlüğü
+## M53.1 — Stop Policy Contract
 
-### 2) Route quality visibility
-- rota çözümü hangi modda üretildi:
-  - OSRM
-  - fallback
-- tahmini km / süre görünürlüğü
-- stop sayısı ve kapsama bilgisi
-- route preview ve kalite notu
+### Resmi varsayılanlar
+- **Company default `maxWalkM` = 250**
+- **School default `maxWalkM` = 50**
+- **Backend hard limit = 50 .. 2000**
 
-### 3) Company → ROOM akışı için daha temiz taslak
-- stop/route üretildikten sonra bunun gerçekten operasyonel taslak gibi görünmesi
-- kullanıcıya “hazır / review gerekir / eksik veri var” netliği
+### Rol ve yetki
+- **Company** kendi vardiyası için `maxWalkM` değerini değiştirebilir
+- **School** kendi vardiyası için `maxWalkM` değerini değiştirebilir
+- **Room** sonucu görür, değerlendirir ve operasyonel olarak kullanır
+- Backend limit dışında değer kabul edilmez
 
-## M53 içinde yapılacaklar
-
-### M53.1 — Stop Policy Contract
-- `maxWalkM` ürün standardı
-- varsayılan değer
-- kabul edilen aralık
-- UI açıklaması
-
-### M53.2 — Stop Generation Summary
-- kaç kişi kapsandı
-- kaç kişi dışarıda kaldı
-- review gerektiren kayıt sayısı
+### Stop generation sonrası minimum summary
+- toplam kişi
 - üretilen durak sayısı
+- tekil kalan kişi sayısı
+- `maxWalkM` içinde kapsanan kişi sayısı
+- review gerektiren kişi sayısı
+- durak başına kişi dağılımı
 
-### M53.3 — Route Quality Summary
-- OSRM / fallback bilgisi
-- tahmini km / süre
-- stop sayısı
-- kalite notu
+### Route quality summary
+- toplam durak
+- tahmini km
+- tahmini süre
+- başlangıç noktası
+- **OSRM mi / fallback mi** kullanıldığı
+- rota sıralaması üretildi mi
 
-### M53.4 — Route Preview Hardening
-- preview daha açıklayıcı hale gelir
-- tam rota / sonraki durak capability kaybolmaz
-- route status metni sadeleşir
+### Preview standardı
+Harita önizlemede korunacak minimum standartlar:
+- stop sırası
+- stop etiketleri
+- kişi sayısı badge
+- başlangıç noktası
+- rota çizgisi
+- **Tam Rotayı Dış Navigasyonda Aç** davranışı korunur
+- **Sonraki hedef / durak navigasyonu** mantığı bozulmaz
 
-## M53 dışında
-- ileri batch geocode zekâsı
-- iOS release lane
-- no-show / penalty
-- full KVKK matrix
-- saha testi
+### Tekil kişi / dışarıda kalan mantığı
+Aşağıdaki durumlar summary veya quality alanında görünür olmalıdır:
+- tek kişi için ayrı durak açıldı mı
+- `maxWalkM` sınırı nedeniyle gruplanamayan kişi var mı
+- review bekleyen kayıt yüzünden dışarıda kalan kişi var mı
 
-## Done kriteri
-M53 tamam sayılmak için:
-- stop generation kuralları yazılı ve görünür olmalı
-- `maxWalkM` standardı net olmalı
-- stop generation sonucu summary dönmeli
-- route kalite bilgisi UI'da anlaşılır görünmeli
-- kullanıcı stop/route üretimi sonrası ne kadar güvenilir sonuç aldığını anlayabilmeli
+---
 
-## Sonraki adım
-Bu milestone sonrası doğal sıra:
-- **M54 — ROOM Dispatch Completion**
-- veya gerektiğinde küçük bir **M52.3-B batch geocode refinement**
+## Definition of Done
+M53.1 tamam sayılması için:
+- yukarıdaki varsayılanlar ve limitler dokümana işlenmiş olmalı
+- Company 250 / School 50 kararı resmi yazılmış olmalı
+- stop summary için minimum alanlar yazılı olmalı
+- route quality summary için minimum alanlar yazılı olmalı
+- preview standardı yazılı olmalı
+- M53.2 UI/backend iyileştirmesine temiz geçiş zemini oluşmalı
+
+---
+
+## M53.2 için hazırlanan işler
+- stop generation summary’yi UI’da görünür kılma
+- `maxWalkM` preset / input standardı
+- route quality summary’yi preview yanında gösterme
+- stop başına kişi dağılımını daha okunur yapma
+- tekil kişi / review kaynaklı dışarıda kalma nedenlerini kullanıcıya anlatma

@@ -1,45 +1,91 @@
-# PERSONEL-SERVIS V1 — RUNBOOK M53 STOP & ROUTE PRODUCTIZATION
+# RUNBOOK — M53 Stop & Route Productization
 
-## Amaç
-Import ve geo review sonrası oluşan personel listesini daha güvenilir durak ve rota üretimine bağlamak.
+## 1) Resmi karar
+Bu runbook M53.1 için kanonik ürün kararlarını taşır.
 
-## Mevcut taban
-- M52 ile import + geo review akışı çalışıyor
-- `maxWalkM` tabanlı stop generation var
-- OSRM / fallback capability var
-- route preview var
+### Stop policy default
+- Company: **250 m**
+- School: **50 m**
+- Backend hard limit: **50 .. 2000**
 
-## Bu runbook'ta netleştirilecekler
+Not:
+- School için `1` gibi değerler kabul edilmez
+- Varsayılan düşük / güvenli değer School için 50’dir
 
-### 1) maxWalkM kuralı
-- varsayılan değer
-- alt/üst sınırlar
-- hangi kullanıcı değiştirebilir
-- hangi ekranda görünür
+---
 
-### 2) Stop generation sonucu
-Kullanıcıya şu özet dönmeli:
-- kişi sayısı
-- review sayısı
-- kapsanan kişi sayısı
-- dışarıda kalan kişi sayısı
-- üretilen durak sayısı
+## 2) Kullanıcı tarafında beklenen davranış
 
-### 3) Route quality sonucu
-Kullanıcıya şu bilgi görünmeli:
-- çözüm tipi: OSRM / fallback
-- tahmini süre
-- tahmini km
-- durak sayısı
-- kalite notu / uyarı
+### Company / School
+Durak üretmeden önce veya üretirken:
+- kullanıcı `maxWalkM` değerini görür
+- uygun ise değiştirebilir
+- generate sonrası summary görür
 
-## Test senaryosu
-1. Personel import et
-2. Review kayıtlarını düzelt
-3. Stop generation çalıştır
-4. Üst summary doğru dönüyor mu kontrol et
-5. Route preview aç
-6. Tahmini km/süre ve çözüm tipi görünüyor mu kontrol et
+### Room
+- sonucu görür
+- operasyonel uygunluğunu değerlendirir
+- preview / rota kalitesine göre karar verir
 
-## Not
-Tam rota navigasyonu ve sonraki durak navigasyonu mevcut capability olarak korunur; M53 bunları kaldırmaz, görünürlüğünü ve güvenilirliğini güçlendirir.
+---
+
+## 3) Stop generation summary contract
+Generate sonrası minimum şu alanlar görünür olmalıdır:
+- **Toplam kişi**
+- **Durak sayısı**
+- **Tekil kişi sayısı**
+- **Kapsanan kişi sayısı** (`maxWalkM` içinde)
+- **Review bekleyen kayıt sayısı**
+- **Durak başına kişi dağılımı**
+
+Opsiyonel ama faydalı:
+- en kalabalık durak
+- boş/iptal durak var mı
+- cluster sonrası dışarıda kalan kişi sayısı
+
+---
+
+## 4) Route quality summary contract
+Preview veya route çıktısında minimum şu alanlar görünür olmalıdır:
+- **Toplam durak**
+- **Tahmini km**
+- **Tahmini süre**
+- **Başlangıç noktası**
+- **OSRM / fallback** bilgisi
+- **Rota sıralaması üretildi mi**
+
+Opsiyonel ama faydalı:
+- kişi başına ortalama yürüme
+- tahmini rota yoğunluğu
+- durak başına ortalama kişi
+
+---
+
+## 5) Preview standardı
+Preview / mini harita / rota önizleme tarafında korunacak standart:
+- stop sıra numaraları görünür
+- stop etiketleri görünür
+- stop başına kişi sayısı badge görünür
+- başlangıç noktası görünür
+- rota çizgisi görünür
+- **Tam Rotayı Dış Navigasyonda Aç** capability korunur
+- **Sonraki hedef navigasyonu** capability korunur
+
+---
+
+## 6) Tekil kişi / dışarıda kalma açıklaması
+Summary veya detail alanında kullanıcıya şu durumlar açık olmalıdır:
+- kişi tek başına durak oldu
+- `maxWalkM` sınırı nedeniyle gruba giremedi
+- review beklediği için durak planına tam alınamadı
+- koordinat / adres kalitesi nedeniyle rota dışı kaldı
+
+---
+
+## 7) M53.2 teknik hedefi
+Bir sonraki teknik adımda şu işler hedeflenir:
+- `maxWalkM` UI standardı
+- summary kartı
+- route quality kartı
+- stop dağılımı görünürlüğü
+- tekil kişi / review açıklamaları
