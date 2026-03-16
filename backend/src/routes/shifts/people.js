@@ -7,6 +7,7 @@ import { clusterStops } from "../../services/clusterStops.js";
 import { etaMinutes } from "../../geo.js";
 import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
+import { decorateGeoItem, inferGeoState } from "../../services/geoState.js";
 
 const qModeSchema = z
   .enum(["REPLACE", "MERGE"])
@@ -143,25 +144,26 @@ function normalizeImportRows(rows) {
     }
     seen.add(fingerprint);
 
-    const geoStatus = normalizeGeoStatus(normalized);
-    if (geoStatus === "NEEDS_REVIEW") {
-      warnings.push(warning(rowNo, "GEO_NEEDS_REVIEW", "Koordinat eksik; kayıt review gerektiriyor."));
+    const geoMeta = inferGeoState(normalized);
+    if (geoMeta.geoStatus === "NEEDS_REVIEW") {
+      warnings.push(
+        warning(rowNo, "GEO_NEEDS_REVIEW", `${geoMeta.geoReasonText}; kayıt review gerektiriyor.`)
+      );
     }
 
-    accepted.push({ rowNo, item: normalized, geoStatus, rawJson: raw ?? null });
+    accepted.push({ rowNo, item: normalized, geoStatus: geoMeta.geoStatus, geoReason: geoMeta.geoReason, rawJson: raw ?? null });
   });
 
   return { accepted, warnings };
 }
 
-function normalizeGeoStatus({ lat, lng, geoManualOverride }) {
-  if (geoManualOverride) return "OK";
-  if (typeof lat === "number" && typeof lng === "number") return "OK";
-  return "NEEDS_REVIEW";
+function normalizeGeoStatus(input) {
+  return inferGeoState(input).geoStatus;
 }
 
 async function upsertCompanyPersonel(companyId, item, defaultKind) {
   const phone = sanitizePhone(item.phone);
+  const geoMeta = inferGeoState(item);
   const data = {
     fullName: item.fullName,
     kind: item.kind ?? defaultKind,
@@ -170,7 +172,7 @@ async function upsertCompanyPersonel(companyId, item, defaultKind) {
     homeLat: typeof item.lat === "number" ? item.lat : null,
     homeLng: typeof item.lng === "number" ? item.lng : null,
     geoManualOverride: Boolean(item.geoManualOverride),
-    geoStatus: normalizeGeoStatus(item),
+    geoStatus: geoMeta.geoStatus,
     geoUpdatedAt:
       typeof item.lat === "number" && typeof item.lng === "number" ? new Date() : null,
   };
@@ -230,7 +232,7 @@ async function getShiftPeople(shiftId) {
   });
 
   return rows
-    .map((r) => r.personel)
+    .map((r) => decorateGeoItem(r.personel))
     .filter(Boolean);
 }
 
@@ -374,6 +376,9 @@ export function attachShiftPeopleRoutes(router, _io) {
       const address = sanitizeText(raw?.address, 240);
       const lat = normalizeCoord(raw?.lat, "lat");
       const lng = normalizeCoord(raw?.lng, "lng");
+      const geoMeta = acceptedRow
+        ? { geoStatus: acceptedRow.geoStatus, geoReason: acceptedRow.geoReason }
+        : (fullName ? inferGeoState({ fullName, phone, address, lat, lng }) : { geoStatus: "FAILED", geoReason: "MISSING_ADDRESS" });
       return {
         rowNo,
         rawJson: raw ?? null,
@@ -382,7 +387,7 @@ export function attachShiftPeopleRoutes(router, _io) {
         address,
         lat,
         lng,
-        geoStatus: acceptedRow?.geoStatus ?? (fullName ? normalizeGeoStatus({ fullName, phone, address, lat, lng }) : "FAILED"),
+        geoStatus: geoMeta.geoStatus,
       };
     });
 

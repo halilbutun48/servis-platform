@@ -28,7 +28,7 @@ function normalizeCoord(v, kind) {
   return n;
 }
 
-export default function ShiftPersonelTable({ people, onRemove, onUpdate, emptyLabel }) {
+export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeocodeAddress, geocodeBusyId, emptyLabel }) {
   const list = Array.isArray(people) ? people : [];
 
   return (
@@ -91,11 +91,28 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, emptyLa
                   placeholder="lng"
                 />
               </td>
-              <td className="muted">{p.geoStatus || "-"}</td>
+              <td className="muted" style={{ minWidth: 170 }}>
+                <div>{p.geoStatus || "-"}</div>
+                {p.geoReasonText || p.geoReason ? (
+                  <div style={{ fontSize: 12 }}>{p.geoReasonText || p.geoReason}</div>
+                ) : null}
+              </td>
               <td>
-                <button type="button" className="btn" onClick={() => onRemove?.(p.id)}>
-                  Sil
-                </button>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  {String(p.address || "").trim() && !(typeof p.lat === "number" && typeof p.lng === "number") ? (
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={geocodeBusyId === p.id}
+                      onClick={() => onGeocodeAddress?.(p.id)}
+                    >
+                      {geocodeBusyId === p.id ? "Bulunuyor..." : "Adresten Bul"}
+                    </button>
+                  ) : null}
+                  <button type="button" className="btn" onClick={() => onRemove?.(p.id)}>
+                    Sil
+                  </button>
+                </div>
               </td>
             </tr>
           ))

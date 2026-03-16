@@ -186,10 +186,27 @@ function parseSheetRowsToPeople(rows2d) {
   return out;
 }
 
+function computeGeoMeta(p) {
+  const hasCoords = typeof p?.lat === "number" && typeof p?.lng === "number";
+  const hasPartialCoords = (p?.lat == null) !== (p?.lng == null);
+  const hasAddress = Boolean(String(p?.address || "").trim());
+  if (Boolean(p?.geoManualOverride) && hasCoords) {
+    return { geoStatus: "OK", geoReason: "MANUAL_OVERRIDE", geoReasonText: "Elle doğrulandı" };
+  }
+  if (hasCoords) {
+    return { geoStatus: "OK", geoReason: "HAS_COORDS", geoReasonText: "Geçerli koordinat var" };
+  }
+  if (hasPartialCoords) {
+    return { geoStatus: "NEEDS_REVIEW", geoReason: "INVALID_COORD", geoReasonText: "Koordinat eksik veya geçersiz" };
+  }
+  if (hasAddress) {
+    return { geoStatus: "NEEDS_REVIEW", geoReason: "ADDRESS_ONLY", geoReasonText: "Adres var, koordinat yok" };
+  }
+  return { geoStatus: "FAILED", geoReason: "MISSING_ADDRESS", geoReasonText: "Adres ve koordinat yok" };
+}
+
 function computeGeoStatus(p) {
-  if (typeof p?.lat === "number" && typeof p?.lng === "number") return "OK";
-  if (String(p?.address || "").trim()) return "NEEDS_REVIEW";
-  return "FAILED";
+  return computeGeoMeta(p).geoStatus;
 }
 
 function clusterPeople(people, maxWalkM) {
@@ -264,6 +281,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [importMode, setImportMode] = useState("REPLACE");
   const [importSummary, setImportSummary] = useState(null);
   const [importWarnings, setImportWarnings] = useState([]);
+  const [rowGeocodeBusyId, setRowGeocodeBusyId] = useState("");
+  const [importQuickBusy, setImportQuickBusy] = useState(false);
+  const [importQuickStats, setImportQuickStats] = useState({ found: 0, notFound: 0, error: 0 });
 
   // M16.2 soft-switch: backend varsa kullan; endpoint yoksa (404) localStorage fallback
   const [peopleBackend, setPeopleBackend] = useState("unknown"); // unknown | on | off
@@ -315,6 +335,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           lat: typeof x?.lat === "number" ? x.lat : null,
           lng: typeof x?.lng === "number" ? x.lng : null,
           geoStatus: String(x?.geoStatus || ""),
+          geoReason: String(x?.geoReason || ""),
+          geoReasonText: String(x?.geoReasonText || ""),
         }))
         .filter((x) => x.id);
     } catch {
@@ -342,6 +364,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         lat: typeof p?.homeLat === "number" ? p.homeLat : null,
         lng: typeof p?.homeLng === "number" ? p.homeLng : null,
         geoStatus: String(p?.geoStatus ?? ""),
+        geoReason: String(p?.geoReason ?? p?.geoNote ?? ""),
+        geoReasonText: String(p?.geoReasonText ?? ""),
         geoManualOverride: Boolean(p?.geoManualOverride),
       }))
       .filter((x) => x.id);
@@ -357,6 +381,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       lat: typeof p.lat === "number" ? p.lat : null,
       lng: typeof p.lng === "number" ? p.lng : null,
       geoManualOverride: Boolean(p.geoManualOverride),
+      geoReason: String(p.geoReason || "") || null,
     }));
   }
 
@@ -461,6 +486,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo("");
     setImportSummary(null);
     setImportWarnings([]);
+    setImportQuickStats({ found: 0, notFound: 0, error: 0 });
 
     const sid = String(selectedShiftId);
 
@@ -721,7 +747,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       address,
       lat,
       lng,
-      geoStatus: computeGeoStatus({ address, lat, lng }),
+      ...computeGeoMeta({ address, lat, lng }),
     };
 
     setPeople((prev) => [row, ...(prev || [])]);
@@ -763,6 +789,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo("");
     setImportSummary(null);
     setImportWarnings([]);
+    setImportQuickStats({ found: 0, notFound: 0, error: 0 });
     if (!file) return;
 
     try {
@@ -832,7 +859,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           address: String(r.address || "").trim(),
           lat: typeof r.lat === "number" ? r.lat : null,
           lng: typeof r.lng === "number" ? r.lng : null,
-          geoStatus: computeGeoStatus({ address: r.address, lat: r.lat, lng: r.lng }),
+          ...computeGeoMeta({ address: r.address, lat: r.lat, lng: r.lng }),
         }))
         .filter((x) => x.name && (x.address || (typeof x.lat === "number" && typeof x.lng === "number")));
 
@@ -880,10 +907,118 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       (prev || []).map((p) => {
         if (p.id !== id) return p;
         const next = { ...p, ...patch };
-        next.geoStatus = computeGeoStatus(next);
+        const meta = computeGeoMeta(next);
+        next.geoStatus = meta.geoStatus;
+        next.geoReason = meta.geoReason;
+        next.geoReasonText = meta.geoReasonText;
         return next;
       })
     );
+  }
+
+  async function geocodePersonAddress(id) {
+    const target = (people || []).find((p) => p.id === id);
+    if (!target) return;
+    const query = sanitizeAddress(target.address || "");
+    if (!query) {
+      setErr("Adres boş. Önce adresi gir.");
+      return;
+    }
+
+    setErr("");
+    setInfo("");
+    setRowGeocodeBusyId(id);
+    try {
+      const resp = await api(`/api/geocode`, { method: "POST", body: { q: query, country: "tr" }, token });
+      const lat = normalizeCoord(resp?.lat, "lat");
+      const lng = normalizeCoord(resp?.lng, "lng");
+      if (typeof lat !== "number" || typeof lng !== "number") {
+        throw new Error("Adres için geçerli koordinat bulunamadı.");
+      }
+
+      setPeople((prev) =>
+        (prev || []).map((p) => {
+          if (p.id !== id) return p;
+          const next = { ...p, lat, lng };
+          const meta = computeGeoMeta(next);
+          next.geoStatus = meta.geoStatus;
+          next.geoReason = meta.geoReason;
+          next.geoReasonText = meta.geoReasonText;
+          return next;
+        })
+      );
+      setInfo("Adres bulundu. Koordinatlar satıra işlendi; devam etmeden önce Kaydet ile listeyi kaydet.");
+    } catch (e) {
+      if (e?.status === 404) {
+        setErr("Adresten Bul başarısız: Adres bulunamadı.");
+      } else if (e?.status === 400) {
+        setErr("Adresten Bul başarısız: Geocode isteği eksik veya hatalı.");
+      } else {
+        setErr(`Adresten Bul başarısız: ${String(e?.payload?.message || e?.message || e)}`);
+      }
+    } finally {
+      setRowGeocodeBusyId("");
+    }
+  }
+
+  async function runImportQuickGeocode() {
+    const candidates = (people || []).filter((p) => {
+      const reason = String(p?.geoReason || "");
+      const hasAddress = Boolean(String(p?.address || "").trim());
+      const hasCoords = typeof p?.lat === "number" && typeof p?.lng === "number";
+      return hasAddress && !hasCoords && (reason === "ADDRESS_ONLY" || reason === "INVALID_COORD");
+    });
+
+    if (!candidates.length) {
+      setInfo("Toplu geocode için uygun review kaydı yok.");
+      setImportQuickStats({ found: 0, notFound: 0, error: 0 });
+      return;
+    }
+
+    setImportQuickBusy(true);
+    setErr("");
+    setInfo("");
+    let found = 0;
+    let notFound = 0;
+    let error = 0;
+
+    let nextPeople = [...(people || [])];
+    for (const item of candidates) {
+      const q = sanitizeAddress(item.address || "");
+      if (!q) {
+        notFound += 1;
+        continue;
+      }
+      try {
+        const resp = await api(`/api/geocode`, { method: "POST", body: { q, country: "tr" }, token });
+        const lat = normalizeCoord(resp?.lat, "lat");
+        const lng = normalizeCoord(resp?.lng, "lng");
+        if (typeof lat !== "number" || typeof lng !== "number") {
+          error += 1;
+          continue;
+        }
+        nextPeople = nextPeople.map((p) => {
+          if (p.id !== item.id) return p;
+          const next = { ...p, lat, lng };
+          const meta = computeGeoMeta(next);
+          next.geoStatus = meta.geoStatus;
+          next.geoReason = meta.geoReason;
+          next.geoReasonText = meta.geoReasonText;
+          return next;
+        });
+        found += 1;
+      } catch (e) {
+        if (e?.status === 404) notFound += 1;
+        else error += 1;
+      }
+    }
+
+    setPeople(nextPeople);
+    setImportQuickStats({ found, notFound, error });
+    const remainingReview = nextPeople.filter((p) => p.geoStatus === "NEEDS_REVIEW").length;
+    setImportSummary((prev) => prev ? { ...prev, needsReviewRows: remainingReview } : prev);
+    setInfo(`Toplu geocode tamamlandı: bulundu ${found}, bulunamadı ${notFound}, hata ${error}. Değişiklikleri kalıcı yapmak için Kaydet ile listeyi kaydet.`);
+    setImportQuickBusy(false);
   }
 
   async function generateDraftStops() {
@@ -1187,9 +1322,25 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
                   Atlanan: {importSummary.skippedRows} • Failed: {importSummary.failedRows}
                 </div>
                 {importSummary.needsReviewRows > 0 ? (
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    Review gerektiren kayıtlar için <a href={"#" + companyPath(me, "/georeview")}>Geo Review</a> ekranını kullan.
-                  </div>
+                  <>
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      Review gerektiren kayıtlar için <a href={"#" + companyPath(me, "/georeview")}>Geo Review</a> ekranını kullan.
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                      <a className="btn" href={"#" + companyPath(me, "/georeview")}>Geo Review'a Git</a>
+                      <button type="button" className="btn" onClick={runImportQuickGeocode} disabled={importQuickBusy || busy}>
+                        {importQuickBusy ? "Çalışıyor..." : "Review kayıtlarını topluca bul"}
+                      </button>
+                    </div>
+                    <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                      Hızlı toplu bulma sadece <b>Adres var, koordinat yok</b> ve <b>Koordinat eksik/geçersiz</b> kayıtları dener.
+                    </div>
+                    {(importQuickStats.found || importQuickStats.notFound || importQuickStats.error) ? (
+                      <div className="muted" style={{ marginTop: 6 }}>
+                        Bulundu: <b>{importQuickStats.found}</b> • Bulunamadı: <b>{importQuickStats.notFound}</b> • Hata: <b>{importQuickStats.error}</b>
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
               </div>
             ) : null}
@@ -1223,7 +1374,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       {/* People table */}
       <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
         <h3 style={{ marginTop: 0 }}>Shift {who} Listesi</h3>
-        <ShiftPersonelTable people={people} onRemove={removePerson} onUpdate={updatePerson} emptyLabel={`Henüz ${who.toLowerCase()} yok.`} />
+        <ShiftPersonelTable people={people} onRemove={removePerson} onUpdate={updatePerson} onGeocodeAddress={geocodePersonAddress} geocodeBusyId={rowGeocodeBusyId} emptyLabel={`Henüz ${who.toLowerCase()} yok.`} />
       </div>
 
       <RoutePreviewModal
