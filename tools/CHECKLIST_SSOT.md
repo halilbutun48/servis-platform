@@ -41,7 +41,7 @@ Last updated: **2026-03-17**
 - **Step 3 (M46):** AI Copilot zinciri resmi green
 - **Step 4.0 (M47):** KVKK / Capacity / Edge Security / Mobile Web Readiness resmi green
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
-- **Active track (M51–M57):** docs/backlog reset → import+geo pipeline → stop/route productization → room dispatch planner → reports/no-show → KVKK+mobile hardening → final pilot readiness
+- **Active track (M51–M57):** docs/backlog reset → import+geo pipeline → stop/route productization → organization gezi görünürlüğü → room dispatch planner → reports/no-show → KVKK+mobile hardening → final pilot readiness
 
 ## Resmi green kutular
 - [x] `M47 — KVKK Notice / Consent Framework`
@@ -58,24 +58,12 @@ Last updated: **2026-03-17**
 ## Aktif rota notları (henüz green kutu değil)
 - [ ] `M51 — docs/backlog reset` işlendi; resmi pack promotion yok
 - [ ] `M52 — Import + Geo Pipeline` ana akış çalışır durumda; resmi pack promotion yok
-- [ ] `M53.1 — Stop Policy Contract` docs tarafında işlendi
-- [ ] `M53.2-A — Stop Generation Summary` görünürlük/preset testi görüldü
-- [ ] `M53.3 — Planlama Merkezi sadeleştirme + tek oluşturma kaynağı` aktif geliştirme alanı
-- [ ] `M54 — ROOM Dispatch Planner / draft → ROOM → atama zinciri`
-- [ ] `M55 — Reports + No-show`
-- [ ] `M56 — KVKK Matrix + Mobile Hardening`
-- [ ] `M57 — Final Pilot Readiness`
-
-## Bugünkü ürün kararları
-- Company default `maxWalkM = 250`, School default `maxWalkM = 50`, backend hard limit `50..2000`.
-- Company tarafında oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
-- **Vardiyalar** ekranı takip / operasyon ekranı olarak kalmalıdır.
-- **Organizasyon Merkezi** ikinci üretim motoru olmamalı; Planlama Merkezi yönüne uyarlanmalıdır.
-- Stage-3 basic kullanıcı sırası: `Rota önerisi oluştur → Ön izle → Ayrı market teklifi oluştur`.
-- Room tarafı gelen teklifi boştaki araçlar, yakınlık, kapasite ve OSRM/solver ile gerçek operasyona çevirmelidir.
-
-## Tool / SSOT notları
-- Ana kanıt: `tools\pack.ps1 -To 41`
-- `M47.4-R` için ayrı pack yoktur; aynı `tools\pack_m47_4_mobile_readiness_web_pass.ps1` hattının clean rerun PASS vermesi kanıttır.
-- `driver@demo.com / demo123` hızlı panel kontrol hesabı olarak korunur; ana driver ürün akışı değildir.
-- overlay standardı: **tek zip / tek kök klasör / nested root yok**
+- [ ] `M53.1 — stop policy contract` docs / ürün kararı işlendi; resmi pack promotion yok
+- [ ] `M53.2-A — stop generation summary görünürlüğü` test edildi; resmi pack promotion yok
+- [ ] `M53.3 — Planlama Merkezi tek oluşturma kaynağı` repo yönü işlendi; resmi pack promotion yok
+- [ ] `M53.4 — Organization / Gezi modu görünürlüğü` repo yönü işlendi; resmi pack promotion yok
+- [ ] `M53.5 — round-trip temeli + lat/lng fallback + map/nav + market gating` repo yönü işlendi; resmi pack promotion yok
+- [ ] `M54 — Room Dispatch Planner` sıradaki ana iş
+- [ ] `M55 — Reports + No-show` M54 sonrası güncellenecek
+- [ ] `M56 — KVKK Matrix + Mobile Hardening` M54 sonrası güncellenecek
+- [ ] `M57 — Final Pilot Readiness` son checklist / saha testi öncesi güncellenecek
