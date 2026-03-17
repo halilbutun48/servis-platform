@@ -1,357 +1,144 @@
-SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT (Repo-Verified, Post-M45)
+PERSONEL SERVİS V1 — PRIMER SNAPSHOT (2026-03-15)
 
-Tarih: 2026-03-11
-Timezone: Europe/Istanbul
+Repo: servis-platform
+Branch: main
+Current HEAD: 58afa12
 
-0) Mevcut durum / referans
+Resmi / repo-verified durum ayrımı
 
-Repo: D:\servis-platform
+Resmi son green tag doğrulandı: v1-m50-green
 
-Ana resmi green durum:
+main branch şu anda M50 sonrasındaki SSOT / roadmap refresh commit’ini de içeriyor.
 
-✅ M41 PACK PASS
+Yani resmi green referansı v1-m50-green, güncel çalışma ucu ise bunun üstünde 58afa12.
 
-✅ M42 OPTIONAL PACK PASS
+Kesin green / resmi durum
 
-✅ STEP 0.6 STABIL PACK PASS
+M41 ana green taban korunuyor
 
-✅ STEP 1 SECURITY FOUNDATION PACK PASS
+M42 optional green
 
-✅ STEP 1 TOTP STEP-UP PACK PASS
+Step 0.6 stabil green
 
-✅ M104 REPO CLEANUP CHECK PASS
+Step 1 Security green
 
-✅ M105 TOOLS HYGIENE CHECK PASS
+Step 1 TOTP green
 
-✅ M106 REPO HYGIENE + LINK TTL CHECK PASS
+M43 Google Auth + Invite Gate green
 
-✅ M43 GOOGLE AUTH + INVITE GATE PACK PASS OK
+M44 Telematics green
 
-✅ M44 TELEMATICS PACK PASS OK
+M45 Retention + Backup green
 
-✅ M45 RETENTION + BACKUP PACK PASS OK
+M46 AI Copilot zinciri green
 
-Post-M44 / Post-M45 repo durumu:
+M46.7 Driver Code Login + Rehber First green
 
-✅ M44.5 SSOT sync uygulanmış
+M46.8 Driver Access Hardening green
 
-✅ M44.6 ROOM > Vehicles > Telematics UI repoda mevcut
+M46.9 Session & Refresh Security green
 
-✅ M45 retention + backup resmi pack/check ile green
+M47 KVKK Notice / Consent Framework green
 
-✅ backup policy / manifest admin endpointleri eklendi
+M47.2 Capacity & Load Baseline green
 
-✅ backup create / restore tool hattı repoya oturdu
+M47.3 Production Resilience + Edge Security green
 
-✅ M45 runbook + SSOT senkronu tamamlandı
+M47.4 Mobile Readiness Web Pass green
 
-Ana kanıt komutları:
+M47.4-R Clean Rerun / Repro Fix green
 
-./tools/pack.ps1 -To 41
+M48 Driver Mobile Foundation green
 
-./tools/pack_m42_optional.ps1
+M48.5 Room / Company Tablet Readiness green
 
-./tools/pack_step06_stabil.ps1
+M49 Mobile Beta Hardening green
 
-./tools/pack_step1_security_foundation.ps1
+M49.1 Driver Voice Guidance + Stop ETA green
 
-./tools/pack_step1_totp_stepup.ps1
+M50 Mobile Release Readiness green
 
-./tools/check_repo_cleanup_m104.ps1 -RepoRoot D:\servis-platform
+M47.4-R ile netleşenler
 
-./tools/check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform
+Ayrı ürün özelliği değil; clean rerun / repro uyum düzeltmesidir
 
-./tools/check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform
+Demo seed rerun’da demo123 tekrar yazılabilir
 
-./tools/pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform
+Driver compat login hattı bound deviceId reuse eder
 
-./tools/pack_m44_telematics.ps1 -RepoRoot D:\servis-platform
+M41 device binding check rerun-uyumlu çalışır
 
-./tools/pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform
+M48 ile netleşenler
 
-Önemli not:
+mobile/ altında Expo SDK 54 tabanlı sürücü mobil iskeleti açık
 
-tools/STABLE_TO.txt = 41
+Mobil login hattı Sürücü Kodu + PIN
 
-Bu, ana stabil tabanın hâlâ M41 olduğunu gösterir.
+Refresh + deviceId uyumu var
 
-M42 / Step0.6 / Step1 / M43 / M44 / M45 bunun üstünde ayrı resmi pack/check hatlarıyla yeşil kabul edilen ek katmanlardır.
+requirePinChange varsa doğrudan PIN değişim ekranı açılır
 
-Overlay standardı:
+Bugün ekranı vardiya özeti, rota özeti, sonraki durak, haritada aç ve GPS hazırlık kartını içerir
 
-tek zip
+M48.5 ile netleşenler
 
-tek kök klasör
+Room / Company tablet hazırlığı ayrı native app değil, aynı web uygulaması içinde
 
-nested root yok
+TabletOpsQuickBar ile hızlı işlem / harita / kaydırmasız erişim kabuğu eklendi
 
-1) Resmi olarak yeşil kabul edilen kapsam
-1.1 V1 ana regresyon
+Tablet odaklı shell ve grid düzeni web tarafında tanımlandı
 
-M41 PACK PASS altında ana sistem yeşil:
+Ayrı native room/company tablet uygulaması henüz yok
 
-auth / refresh / revoke / device mismatch
+M49 ile netleşenler
 
-RBAC / route guard
+Foreground active olduğunda otomatik veri yenileme var
 
-agreement
+30 saniyelik periyodik yenileme var
 
-offer / counter / accept
+Backend health pingi görünürlüğü var
 
-route / stops
+Beta durum kartında API tabanı, Device ID, son senkron ve son hata görünür
 
-live / ws / gps
+Güvenli çıkış akışı refresh revoke denemesiyle desteklenir
 
-mini rate-limit stres hattı
+M49.1 ile netleşenler
 
-audit / retention temel hattı
+expo-speech tabanlı sesli rehber mobilde açık
 
-learning / route learn akışları
+Sürücü mobilde Sıradaki durağı oku ve ETA oku çalıştırabilir
 
-1.2 M42 Optional Release
+Sesli rehber açık/kapalı tercihi saklanır
 
-check-in modülü optional release olarak hazır
+Aynı durak/ETA için tekrar anonslarını azaltan temel dedupe vardır
 
-FEATURE_CHECKIN=0 iken dormant
+M50 ile netleşenler
 
-FEATURE_CHECKIN=1 iken ayrı optional hat üzerinden doğrulanmış
+Mobil release readiness için runtimeVersion ve updates politikası tanımlı
 
-resmi referans: M42 OPTIONAL PACK PASS
+eas.json içinde preview ve production build profilleri var
 
-1.3 Step 0.6 Stabil Ekler
+Release hazırlığı kartı sürüm, hedef, build profilleri ve Expo Go durumunu gösterir
 
-capacity / pool / auto-split
+.env.example ve release metadata akışı mobil yayın öncesi kontrol için hazırlandı
 
-split parent cleanup
+Ürün kararları
 
-school parent invite + public accept
+Driver ana ürün girişi: Sürücü Kodu + PIN
 
-shift preview external nav
+İlk girişte PIN değişimi zorunlu
 
-company list click details
+driver@demo.com / demo123 sadece hızlı panel / smoke hesabı olarak kalabilir
 
-Kanıt:
+Driver için birincil hedef telefon uygulaması
 
-STEP 0.6 STABIL PACK PASS
+Room / Company için tablet güçlü hedef, telefonda temel kullanım korunur
 
-1.4 Step 1 Security Foundation
+sürücünün telefon GPS'i ifadesi korunur
 
-refresh reuse detection
+Parent / öğrenci scope sistemde vardır; eski “yok” varsayımı geçerli değildir
 
-export limiter
-
-login/gps/export limit hattı
-
-RBAC deny-by-default sanity matrix
-
-Kanıt:
-
-STEP 1 SECURITY FOUNDATION PACK PASS
-
-1.5 Step 1 TOTP Step-up
-
-ROOM ve SUPER_ADMIN için TOTP setup / enable / verify
-
-login response içinde stepUpRequired
-
-setup/verify olmadan kritik write/admin endpointler kapalı
-
-verify sonrası geçici stepUpUntil ile erişim açılıyor
-
-COMPANY ve DRIVER bu guard’dan etkilenmiyor
-
-Kanıt:
-
-STEP 1 TOTP STEP-UP CHECK PASS
-
-STEP 1 TOTP STEP-UP REPO CONTRACT PASS
-
-1.6 Step 2 — M43 Google Auth + Invite Gate
-
-Kapsam:
-
-Google Auth backend hattı
-
-UserIdentity + Invite modeli
-
-generic invite / accept akışı
-
-invite yoksa kabul yok
-
-role / scope bağlı kabul
-
-Company / Room auth invite yönetimi
-
-public accept-invite paneli
-
-parent invite akışında Google ile kabul desteği
-
-local email+şifre akışı korunuyor
-
-Önemli davranış:
-
-Google login açık olsa bile erişim invite / scope / bağlama kurallarıyla sınırlı
-
-bağlı profile başka kullanıcıya tekrar bağlanamaz
-
-local login kaldırılmadı
-
-PERSONEL için zorunlu login modeli getirilmedi
-
-Kanıt:
-
-M43 GOOGLE AUTH + INVITE GATE CHECK PASS
-
-M43 GOOGLE AUTH + INVITE GATE REPO CONTRACT PASS
-
-M43 GOOGLE AUTH + INVITE GATE PACK PASS OK
-
-1.7 Step 2.5 — M44 Telematics
-
-Kapsam:
-
-telematics normalize core
-
-direct device HTTP push
-
-vendor cloud adapter endpoint
-
-GpsDevice modeli
-
-provider normalize katmanı
-
-raw/vendor payload → kanonik GPS/event hattı
-
-audit + limiter + history gate entegrasyonu
-
-Backend yetenekleri:
-
-POST /api/telematics/push
-
-POST /api/telematics/vendor/:provider
-
-GET /api/telematics/devices
-
-POST /api/telematics/devices
-
-PATCH /api/telematics/devices/:id
-
-POST /api/telematics/devices/:id/rotate
-
-Önemli davranış:
-
-mevcut driver app GPS akışı korunur
-
-telematics ek kaynak olarak çalışır
-
-device token hash mantığı vardır; ham token sadece create/rotate anında görünür
-
-vendor secret gerekir
-
-mevcut WS / room / company GPS akışı bozulmaz
-
-Kanıt:
-
-M44 TELEMATICS CHECK PASS
-
-M44 TELEMATICS REPO CONTRACT PASS
-
-M44 TELEMATICS PACK PASS OK
-
-1.8 M44.6 UI eki — ROOM > Vehicles > Telematics
-
-Kapsam:
-
-ROOM > Vehicles içinde Telematics sekmesi
-
-araç bazlı device oluşturma
-
-device listeleme
-
-label / status güncelleme
-
-token rotate
-
-create/rotate sonrası ham token tek seferlik gösterim
-
-Repo izi:
-
-web/src/panels/room/VehiclesPanel.jsx içinde telematics sekmesi ve device yönetim akışı mevcut
-
-Not:
-
-bunun için ayrı resmi pack/check hattı yok
-
-durum: UI + manuel doğrulama ile kabul edilen ek
-
-1.9 Step 2.6 — M45 Retention + Backup
-
-Kapsam:
-
-retention policy görünürlüğü
-
-backup policy görünürlüğü
-
-backup manifest görünürlüğü
-
-yerel SQL backup üretim scripti
-
-kontrollü restore scripti
-
-runbook + SSOT senkronu
-
-runtime check + repo-contract + tek pack hattı
-
-Yeni admin endpointleri:
-
-GET /api/admin/retention/policy
-
-GET /api/admin/backup/policy
-
-GET /api/admin/backup/manifest
-
-Yeni tool’lar:
-
-tools/pack_m45_retention_backup.ps1
-
-tools/check_m45_retention_backup_repo_contract.ps1
-
-tools/backup_create_m45.ps1
-
-tools/backup_restore_m45.ps1
-
-Yeni backend / docs:
-
-backend/scripts/m45_retention_backup_check.js
-
-backend/src/ops/retentionBackupPolicy.js
-
-docs/RUNBOOK_M45_RETENTION_BACKUP.md
-
-Önemli davranış:
-
-ApiRequest retention görünürlüğü var
-
-AuditLog retention görünürlüğü var
-
-GpsPoint retention görünürlüğü var
-
-telematics history değerlendirmesi GPS/history retention mantığıyla uyumlu
-
-backup local dir / retention / format bilgisi admin’den görülebilir
-
-restore destructive olduğu için kontrollü ve -Force opt-in akışta
-
-Kanıt:
-
-M45 RETENTION + BACKUP CHECK PASS
-
-M45 RETENTION + BACKUP REPO CONTRACT PASS
-
-M45 RETENTION + BACKUP PACK PASS OK
-
-2) Personel ve parent link politikası
-2.1 Parent invite TTL
+TTL / public link özeti
 
 Presetler:
 
@@ -363,112 +150,23 @@ Presetler:
 
 1 yıl
 
-Backend üst sınır:
+Ana kanıt komutları
 
-365 gün
+tools\pack.ps1 -To 41
 
-2.2 Personel public canlı link TTL
+tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform
 
-Presetler:
+tools\pack_m48_driver_mobile_foundation.ps1 -RepoRoot D:\servis-platform
 
-1 hafta
+tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform
 
-1 ay
+tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform
 
-6 ay
+tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform
 
-1 yıl
+tools\pack_m50_mobile_release_readiness.ps1 -RepoRoot D:\servis-platform
 
-Backend üst sınır:
-
-365 gün
-
-Önemli davranış:
-
-personel public link vardiya endAt ile zorunlu clamp edilmez
-
-ham token yalnızca ilk üretimde gösterilir
-
-revoke / expired link aktifmiş gibi tutulmaz
-
-2.3 Ürün kararı
-
-COMPANY / ROOM / SUPER_ADMIN / DRIVER login tabanlı kalır
-
-PERSONEL varsayılan olarak düşük sürtünmeli, süreli public link modeliyle çalışır
-
-gerekirse ileride opsiyonel account-upgrade düşünülebilir
-
-M43 bu kararı değiştirmez
-
-3) Repo ve tools hijyen durumu
-3.1 M104 Repo Cleanup
-
-Temizlenen ana başlıklar:
-
-stale duplicate route/panel dosyaları
-
-.bak artık dosyaları
-
-root stray path kalıntıları
-
-dağınık legacy README/TXT kalıntıları
-
-Sonuç:
-
-canlı ağaç korunmuş
-
-stale path’ler archive altına alınmış
-
-M104 REPO CLEANUP CHECK PASS
-
-3.2 M105 Tools Canonical Cleanup
-
-Kanonik tools/ hattı korunmuş:
-
-pack*
-
-gate*
-
-reset-and-pack.ps1
-
-check_*
-
-README.md
-
-PRIMER_SNAPSHOT.md
-
-CHECKLIST_SSOT.md
-
-STABLE_TO.txt
-
-Legacy içerik:
-
-tools/_archive/...
-
-tools/_backup/...
-
-Sonuç:
-
-M105 TOOLS HYGIENE CHECK PASS
-
-3.3 M106 Repo Hygiene + Primer / TTL Sync
-
-Senkronlanan ana başlıklar:
-
-primer / checklist / startpack
-
-parent + personel TTL politikası
-
-kanonik checker hattı
-
-Sonuç:
-
-M106 REPO HYGIENE + LINK TTL CHECK PASS
-
-3.4 M44.5 SSOT Sync
-
-Senkron hat:
+SSOT dosyaları
 
 tools/PRIMER_SNAPSHOT.md
 
@@ -480,179 +178,40 @@ tools/CHECKLIST_SSOT.md
 
 docs/STARTPACK_V1.md
 
-tools/README.md
-
-Sonuç:
-
-M44 sonrası SSOT senkronu yapılmış
-
-3.5 M45 SSOT / Runbook Sync
-
-M45 ile senkronlanan ana hat:
-
-docs/RUNBOOK_M45_RETENTION_BACKUP.md
+docs/NEXT_BACKLOG_V1.md
 
 tools/README.md
 
-docs/STARTPACK_V1.md
+Tools hijyen notu
 
-docs/PRIMER_SSOT.md
+Tek seferlik eski apply_overlay_* script’leri artık tools kökte değil
 
-tools/PRIMER_SNAPSHOT.md
+Arşiv yeri: tools/_archive/legacy-overlays/
 
-docs/CHECKLIST_SSOT.md
+tools/check_tools_hygiene_m105.ps1 bu kuralı artık denetliyor
 
-tools/CHECKLIST_SSOT.md
+Overlay / çalışma kuralı
 
-Sonuç:
+Değişiklikleri mümkün olduğunca tek seferde overlay zip ile taşı
 
-retention + backup operasyon hattı SSOT’a işlendi
+Zip açıldığında nested root olmasın
 
-4) SSOT / doküman düzeni
+Apply script doğrudan bulunup çalıştırılabilsin
 
-Kanonik hat:
+Yanıtlarda en fazla 3 PowerShell komutu ver
 
-tools/PRIMER_SNAPSHOT.md
+Post-M50 doğru durum
 
-tools/CHECKLIST_SSOT.md
+“M50 resmi tag var mı?” sorusu kapanmıştır: evet, var
 
-tools/README.md
+Post-M50 release/tag belirsizliği kapandı
 
-docs/PRIMER_SSOT.md
+Şu an doğru iş: yeni büyük rota kararı + roadmap/backlog’u o rotaya göre açmak
 
-docs/CHECKLIST_SSOT.md
+Kanonik next-route token
 
-docs/STARTPACK_V1.md
+POST-M50 NEXT ROUTE PLANNING
 
-docs/API_SPEC_V1.md
+Yeni sohbette ilk cümle
 
-docs/UI_SPEC_V1.md
-
-docs/DB_SCHEMA_V1.md
-
-docs/PROJECT_SPEC_V1.md
-
-Ek repo notu:
-
-docs/PRIMER_SNAPSHOT_2026-03-10_FINAL.md ayrıca bulunabilir
-
-kanonik çalışma hattı yine tools/PRIMER_SNAPSHOT.md + docs/PRIMER_SSOT.md
-
-M43 araçları:
-
-tools/pack_m43_google_auth_invite_gate.ps1
-
-tools/check_m43_google_auth_invite_gate_repo_contract.ps1
-
-backend/scripts/m43_google_auth_invite_gate_check.js
-
-M44 araçları:
-
-tools/pack_m44_telematics.ps1
-
-tools/check_m44_telematics_repo_contract.ps1
-
-backend/scripts/m44_telematics_check.js
-
-M45 araçları:
-
-tools/pack_m45_retention_backup.ps1
-
-tools/check_m45_retention_backup_repo_contract.ps1
-
-tools/backup_create_m45.ps1
-
-tools/backup_restore_m45.ps1
-
-backend/scripts/m45_retention_backup_check.js
-
-backend/src/ops/retentionBackupPolicy.js
-
-docs/RUNBOOK_M45_RETENTION_BACKUP.md
-
-Overlay notları:
-
-docs/overlays/OVERLAY_NOTES_M104_REPO_AUDIT_CLEANUP_2026-03-10.md
-
-docs/overlays/OVERLAY_NOTES_M105_TOOLS_CANONICAL_CLEANUP_2026-03-10.md
-
-docs/overlays/OVERLAY_NOTES_M106_LINK_TTL_AND_HYGIENE_2026-03-10.md
-
-docs/overlays/OVERLAY_NOTES_M106_4_CHECKERS_RESTORE_PRIMER_SYNC_2026-03-10.md
-
-docs/overlays/OVERLAY_NOTES_M44_TELEMATICS_2026-03-10.md
-
-docs/overlays/OVERLAY_NOTES_M44_5_SSOT_SYNC_2026-03-10.md
-
-docs/overlays/OVERLAY_NOTES_M44_6_TELEMATICS_ROOM_UI_2026-03-10.md
-
-docs/overlays/OVERLAY_NOTES_M45_RETENTION_BACKUP_2026-03-10.md
-
-5) Bir sonraki resmi iş
-Step 3 — M46 AI Copilot Foundation
-
-Sıradaki resmi hedef:
-
-sistem için domain AI foundation kurmak
-
-read-only / suggestion-first AI hattı
-
-role/scope kontrollü AI erişimi
-
-structured JSON output
-
-tool whitelist
-
-audit log
-
-mevcut operasyon verisini açıklayan copilot katmanı
-
-İlk kapsam önerisi:
-
-POST /api/ai/copilot
-
-vardiya özeti
-
-conflict açıklama
-
-telematics health/anomali açıklama
-
-operasyon notu / bilgilendirme taslağı
-
-write aksiyon yok, önce read-only + suggestion
-
-Uygulama ilkeleri:
-
-kritik kararları AI vermeyecek
-
-mevcut RBAC/scope sistemi korunacak
-
-AI yalnız whitelist tool’lar üzerinden veri okuyacak
-
-öneri üretecek, otomatik işlem yapmayacak
-
-audit ve güvenlik ilk günden zorunlu olacak
-
-6) Korunacak ürün kararları
-
-PERSONEL hâlâ public link öncelikli modelde
-
-Google Auth geldi diye personelde zorunlu hesap modeline dönülmeyecek
-
-invite-based access kontrolü role/scope mantığıyla devam edecek
-
-parent invite akışı bozulmayacak
-
-local login + Google login birlikte yaşamaya devam edecek
-
-telematics mevcut driver GPS akışının yerine geçmez; ek kaynak olarak çalışır
-
-ROOM device provisioning sahibi olmaya devam eder
-
-retention + backup hattı operasyonel görünürlükle birlikte korunacak
-
-overlay üretim standardı: tek zip, tek kök klasör, nested root yok
-
-7) Yeni sohbet açınca ilk cümle
-
-“Repo şu an M41 ana green tabanı üzerinde; M42 optional, Step 0.6 stabil, Step 1 Security, Step 1 TOTP, M104/M105/M106 hijyen, M43 Google Auth, M44 Telematics ve M45 Retention + Backup ayrı pack/check hatlarıyla yeşil durumda. M44.5 SSOT sync ve M44.6 ROOM Vehicles Telematics UI repoda mevcut. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Sıradaki resmi hedef mevcut repoya göre tek overlay zip standardıyla M46 AI Copilot Foundation.”
+Repo şu an v1-m50-green resmi green tag’i doğrulanmış durumda; main ise bunun üstünde 58afa12 commit’i ile post-M50 SSOT, roadmap refresh ve tools hijyen temizliğini içeriyor. Şu anki doğru iş yeni büyük rota kararını netleştirip backlog’u o rota üzerinden açmak.

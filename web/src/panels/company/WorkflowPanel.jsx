@@ -229,6 +229,40 @@ export default function WorkflowPanel() {
     return { geoOk, hasAgreementToday, offersOk, hasShiftToday, doneCount, total: 4 };
   }, [geoNeedsReview, stats.todayAgreements, stats.todayShiftCount, openOffersCount]);
 
+  const organizationGuideRows = useMemo(() => ([
+    {
+      done: guide.geoOk,
+      title: "1) Toplanma noktası",
+      desc: guide.geoOk ? "Toplanma noktası hazır" : "Önce toplanma noktasını kaydet",
+      actionLabel: guide.geoOk ? "Konumu kontrol et" : "Toplanma noktasını aç",
+      onAction: () => setGuidedOpen(true),
+    },
+    {
+      done: guide.hasAgreementToday,
+      title: "2) Planı oluştur",
+      desc: guide.hasAgreementToday ? "Bugün için plan/taslak var" : "Guided Mode ile gezi planını oluştur",
+      actionLabel: guide.hasAgreementToday ? "Planları gör" : "Plan oluştur",
+      onAction: () => {
+        if (guide.hasAgreementToday) navigate(companyPath(me, "/agreements"));
+        else setGuidedOpen(true);
+      },
+    },
+    {
+      done: guide.offersOk,
+      title: "3) Teklifler",
+      desc: guide.offersOk ? "Açık teklif yok" : "Açık teklif var: değerlendir",
+      actionLabel: guide.offersOk ? "" : "Teklifleri aç",
+      onAction: openOffers,
+    },
+    {
+      done: guide.hasShiftToday,
+      title: "4) Takip",
+      desc: guide.hasShiftToday ? "Bugünkü vardiyalar hazır" : "Henüz bugünkü vardiya yok",
+      actionLabel: "Vardiyalar",
+      onAction: () => navigate(companyPath(me, "/shifts")),
+    },
+  ]), [guide, me]);
+
   const offersFiltered = useMemo(() => {
     const qq = String(offersModal.q || "").trim().toLowerCase();
     const items = Array.isArray(offersModal.items) ? offersModal.items : [];
@@ -274,9 +308,17 @@ export default function WorkflowPanel() {
   return (
     <div className="wrap">
       <div className="card">
-        <div className="title">{school ? "Okul — Planlama Merkezi" : organization ? "Organization — Planlama Merkezi" : "Company — Planlama Merkezi"}</div>
+        <div className="title">{school ? "Okul — Planlama Merkezi" : organization ? "Organization — Gezi / Planlama Merkezi" : "Company — Planlama Merkezi"}</div>
         <div className="muted">
-          Amaç: <b>minimum tık</b>. Önce <b>Agreement</b> ile planla → gerekirse <b>Market</b> ile çoklu teklif topla → sonra <b>Shifts</b> ile operasyon. {organization ? "Organization modunda mevcut V1 uyumluluğu için lokasyonlar Personel tablosunda tutulur." : ""}
+          {organization ? (
+            <>
+              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>Toplanma noktası</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek yerler</b> → <b>Ön izleme / teklif</b>.
+            </>
+          ) : (
+            <>
+              Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme / teklif</b>.
+            </>
+          )}
         </div>
       </div>
 
@@ -300,17 +342,25 @@ export default function WorkflowPanel() {
       ) : null}
 
       <div className="kpiGrid" style={{ marginTop: 12 }}>
-        <KpiCard title="Bugünkü Agreements" desc="Bugün planlanan vardiyalar" right={stats.todayAgreements} onClick={() => navigate(companyPath(me, "/agreements"))} />
-        <KpiCard title="Açık Teklifler" desc="OPEN + COUNTERED" right={openOffersCount} onClick={openOffers} />
-        <KpiCard title="Market Shifts" desc="Room seçmeden talep aç" right={stats.marketShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
-        <KpiCard title="Geo Review" desc="Adres/konum sorunlarını düzelt" right={geoNeedsReview} onClick={() => navigate(companyPath(me, "/georeview"))} />
-        <KpiCard title="Bugünkü Shifts" desc="Operasyon (start/reached/complete)" right={stats.todayShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
+        <KpiCard title={organization ? "Bugünkü planlar" : "Bugünkü Agreements"} desc={organization ? "Bugün açılmış plan / taslaklar" : "Bugün planlanan vardiyalar"} right={stats.todayAgreements} onClick={() => navigate(companyPath(me, "/agreements"))} />
+        <KpiCard title="Açık Teklifler" desc={organization ? "Gezi / organizasyon teklifleri" : "OPEN + COUNTERED"} right={openOffersCount} onClick={openOffers} />
+        <KpiCard title={organization ? "Açık talepler" : "Market Shifts"} desc={organization ? "Room seçmeden açılan talepler" : "Room seçmeden talep aç"} right={stats.marketShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
+        <KpiCard title={organization ? "Konum kontrol" : "Geo Review"} desc={organization ? "Toplanma noktası / adres sorunlarını düzelt" : "Adres/konum sorunlarını düzelt"} right={geoNeedsReview} onClick={() => navigate(companyPath(me, "/georeview"))} />
+        <KpiCard title={organization ? "Bugünkü vardiyalar" : "Bugünkü Shifts"} desc={organization ? "Operasyon ve takip" : "Operasyon (start/reached/complete)"} right={stats.todayShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Guided Mode)</div>
         <div className="muted" style={{ marginTop: 4 }}>
-          Tek akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Matris/Çöz</b> → <b>Toplu teklif gönder</b>.
+          {organization ? (
+            <>
+              Sade akış: <b>Toplanma noktası</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek yerler</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
+            </>
+          ) : (
+            <>
+              Sade akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme</b> → <b>Teklif oluştur</b>.
+            </>
+          )}
         </div>
 
         <div style={{ marginTop: 10 }}>
@@ -320,7 +370,9 @@ export default function WorkflowPanel() {
         </div>
 
         <div className="muted" style={{ marginTop: 10 }}>
-          İpucu: Pazarlık/teklif takibini "Bekleyen Talepler" alanından yaparsın.
+          {organization
+            ? "İpucu: Yeni gezi/organizasyon işini burada kur. Teklif ve operasyon takibini Vardiyalar ekranından yap."
+            : "İpucu: Yeni işi burada kur, teklif ve operasyon takibini Vardiyalar ekranından yap."}
         </div>
       </div>
 
@@ -333,40 +385,55 @@ export default function WorkflowPanel() {
         </div>
 
         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-          <ChecklistRow
-            done={guide.geoOk}
-            title="1) Geo Review"
-            desc={guide.geoOk ? "Konumlar OK" : "NEEDS_REVIEW varsa düzelt"}
-            actionLabel={guide.geoOk ? "" : "Geo Review’e git"}
-            onAction={() => navigate(companyPath(me, "/georeview"))}
-          />
+          {organization ? (
+            organizationGuideRows.map((row) => (
+              <ChecklistRow
+                key={row.title}
+                done={row.done}
+                title={row.title}
+                desc={row.desc}
+                actionLabel={row.actionLabel}
+                onAction={row.onAction}
+              />
+            ))
+          ) : (
+            <>
+              <ChecklistRow
+                done={guide.geoOk}
+                title="1) Geo Review"
+                desc={guide.geoOk ? "Konumlar OK" : "NEEDS_REVIEW varsa düzelt"}
+                actionLabel={guide.geoOk ? "" : "Geo Review’e git"}
+                onAction={() => navigate(companyPath(me, "/georeview"))}
+              />
 
-          <ChecklistRow
-            done={guide.hasAgreementToday}
-            title="2) Agreement"
-            desc={guide.hasAgreementToday ? "Bugün için plan var" : "Guided Mode ile plan oluştur"}
-            actionLabel={guide.hasAgreementToday ? "Agreements" : "Plan oluştur"}
-            onAction={() => {
-              if (guide.hasAgreementToday) navigate(companyPath(me, "/agreements"));
-              else setGuidedOpen(true);
-            }}
-          />
+              <ChecklistRow
+                done={guide.hasAgreementToday}
+                title="2) Agreement"
+                desc={guide.hasAgreementToday ? "Bugün için plan var" : "Guided Mode ile plan oluştur"}
+                actionLabel={guide.hasAgreementToday ? "Agreements" : "Plan oluştur"}
+                onAction={() => {
+                  if (guide.hasAgreementToday) navigate(companyPath(me, "/agreements"));
+                  else setGuidedOpen(true);
+                }}
+              />
 
-          <ChecklistRow
-            done={guide.offersOk}
-            title="3) Teklifler"
-            desc={guide.offersOk ? "Açık teklif yok (OK)" : "Açık teklif var: değerlendir"}
-            actionLabel={guide.offersOk ? "" : "Teklifleri aç"}
-            onAction={openOffers}
-          />
+              <ChecklistRow
+                done={guide.offersOk}
+                title="3) Teklifler"
+                desc={guide.offersOk ? "Açık teklif yok (OK)" : "Açık teklif var: değerlendir"}
+                actionLabel={guide.offersOk ? "" : "Teklifleri aç"}
+                onAction={openOffers}
+              />
 
-          <ChecklistRow
-            done={guide.hasShiftToday}
-            title="4) Shifts"
-            desc={guide.hasShiftToday ? "Bugün operasyon var" : "Henüz bugünkü shift yok"}
-            actionLabel="Shifts"
-            onAction={() => navigate(companyPath(me, "/shifts"))}
-          />
+              <ChecklistRow
+                done={guide.hasShiftToday}
+                title="4) Shifts"
+                desc={guide.hasShiftToday ? "Bugün operasyon var" : "Henüz bugünkü shift yok"}
+                actionLabel="Shifts"
+                onAction={() => navigate(companyPath(me, "/shifts"))}
+              />
+            </>
+          )}
         </div>
       </div>
 

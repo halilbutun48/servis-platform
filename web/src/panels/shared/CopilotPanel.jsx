@@ -153,7 +153,7 @@ function buildScreenOptions(me) {
       { id: 2201, path: "/school/parents", label: "Parent Link" },
     ],
     ORGANIZATION: [
-      { id: 2101, path: "/organization", label: "Organizasyon Merkezi" },
+      { id: 2101, path: "/organization", label: "Gezi / Planlama Merkezi" },
       { id: 2102, path: "/organization/shifts", label: "Vardiyalar" },
       { id: 2103, path: "/organization/agreements", label: "Sözleşmeler" },
       { id: 2104, path: "/organization/access-links", label: "Personel Link" },

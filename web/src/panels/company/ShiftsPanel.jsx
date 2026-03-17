@@ -9,6 +9,8 @@ import ShiftPeopleTab from "./ShiftPeopleTab";
 import ShiftTemplatesPanel, { PRESET_TEMPLATES, DEFAULT_WEEKMASK, DEFAULT_DURATION_KEY } from "./ShiftTemplatesPanel";
 import PlanBuilderPanel from "./PlanBuilderPanel";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
+import { navigate } from "../../router";
+import { companyPath } from "../../utils/paths";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -103,6 +105,10 @@ function addDaysYmd(ymd, deltaDays) {
 export default function CompanyShiftsPanel() {
   const { token, me } = useSession();
   const who = personLabel(me);
+
+  function goPlanningCenter() {
+    navigate(companyPath(me));
+  }
 
   const LS_LAST_ROOM = "company:lastRoomId";
 
@@ -470,6 +476,7 @@ const allTemplates = useMemo(() => {
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
   const [seatDemand, setSeatDemand] = useState("");
+  const [planDraftMeta, setPlanDraftMeta] = useState(null);
   const [offerVehicleId, setOfferVehicleId] = useState("");
   const [offerAmount, setOfferAmount] = useState("");
   const [offerNote, setOfferNote] = useState("");
@@ -560,7 +567,7 @@ function useTemplateFromList(tpl, itemIndex = 0) {
 }
 
 function usePlanDraftToRequest(draft) {
-  // draft: {startAtLocal,endAtLocal,seatDemand,templateKey,marketMode}
+  // draft: {startAtLocal,endAtLocal,seatDemand,templateKey,marketMode,peopleIds,peopleNames,centroid,routeSummary}
   setMainTab("create");
   setCreateStep("request");
   setShowTemplatesMgr(false);
@@ -569,6 +576,7 @@ function usePlanDraftToRequest(draft) {
   setEndAt(String(draft?.endAtLocal || ""));
   setSeatDemand(draft?.seatDemand != null ? String(draft.seatDemand) : "");
   setMarketMode(Boolean(draft?.marketMode));
+  setPlanDraftMeta(draft || null);
 
   // Clear direct-offer fields (Plan Builder genelde market akışını hedefler)
   setOfferVehicleId("");
@@ -865,9 +873,8 @@ function usePlanDraftToRequest(draft) {
       invalidate("shifts");
       await load();
 
-      // Flow: after create, jump to Personel step
-      setMainTab("create");
-      setCreateStep("people");
+      setMainTab("track");
+      setTrackTab("pending");
       setShowTemplatesMgr(false);
       try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
 
@@ -1090,9 +1097,8 @@ function usePlanDraftToRequest(draft) {
       invalidate("shifts");
       await load();
 
-      // Flow: after create, jump to Personel step
-      setMainTab("create");
-      setCreateStep("people");
+      setMainTab("track");
+      setTrackTab("pending");
       setShowTemplatesMgr(false);
       try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
 
@@ -1123,9 +1129,8 @@ function usePlanDraftToRequest(draft) {
       invalidate("shifts");
       await load();
 
-      // Flow: after create, jump to Personel step
-      setMainTab("create");
-      setCreateStep("people");
+      setMainTab("track");
+      setTrackTab("pending");
       setShowTemplatesMgr(false);
       try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
 
@@ -1155,9 +1160,8 @@ function usePlanDraftToRequest(draft) {
       invalidate("shifts");
       await load();
 
-      // Flow: after create, jump to Personel step
-      setMainTab("create");
-      setCreateStep("people");
+      setMainTab("track");
+      setTrackTab("pending");
       setShowTemplatesMgr(false);
       try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
 
@@ -1190,9 +1194,8 @@ function usePlanDraftToRequest(draft) {
       invalidate("shifts");
       await load();
 
-      // Flow: after create, jump to Personel step
-      setMainTab("create");
-      setCreateStep("people");
+      setMainTab("track");
+      setTrackTab("pending");
       setShowTemplatesMgr(false);
       try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
 
@@ -1440,17 +1443,17 @@ function usePlanDraftToRequest(draft) {
       ) : null}
 
 
-      {/* Page Tabs: Create vs Track */}
+      {/* Page Tabs: Planning Center vs Track */}
       <div className="card">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
             type="button"
-            className={mainTab === "create" ? "btn primary" : "btn"}
+            className="btn"
             disabled={busy}
-            onClick={() => setMainTab("create")}
-            title="Manuel talep / şablon / plan builder / shift tools"
+            onClick={goPlanningCenter}
+            title="Şablon / talep / Shift Tools / plan üretimi Planlama Merkezi'nde yapılır"
           >
-            Oluştur
+            Planlama Merkezi'ne git
           </button>
           <button
             type="button"
@@ -1463,197 +1466,30 @@ function usePlanDraftToRequest(draft) {
           </button>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
-          {mainTab === "create"
-            ? "Talep oluşturma akışı (Manuel/Şablon/Plan Builder/Tools)."
-            : "Takip akışı (Hızlı filtre + Market/Bekleyen/Liste)."}
+          Oluşturma akışı bu ekrandan kaldırıldı. Şablon, talep, Shift Tools, OSRM + solver ve teklif üretimi Planlama Merkezi'nden yürür; bu ekran takip ve operasyon içindir.
         </div>
       </div>
 
             {mainTab === "create" ? (
         <>
           <div className="card">
-            <div
-              className="row"
-              style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}
-            >
-              <div>
-                <div style={{ fontWeight: 800 }}>Oluşturma Akışı</div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  1) Şablon/Talep → 2) {who} → 3) Plan &amp; Market
-                </div>
-              </div>
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className={createStep === "request" ? "btn primary" : "btn"}
-                  disabled={busy}
-                  onClick={() => setCreateStep("request")}
-                  title="Şablon seç / talep oluştur"
-                >
-                  1) Şablon / Talep
-                </button>
-                <button
-                  type="button"
-                  className={createStep === "people" ? "btn primary" : "btn"}
-                  disabled={busy}
-                  onClick={() => setCreateStep("people")}
-                  title={`${who} ekle/import + durak üret`}
-                >
-                  2) {who}
-                </button>
-                <button
-                  type="button"
-                  className={createStep === "plan" ? "btn primary" : "btn"}
-                  disabled={busy}
-                  onClick={() => setCreateStep("plan")}
-                  title="Matris → çöz → market shift üret"
-                >
-                  3) Plan &amp; Market
-                </button>
-              </div>
+            <div style={{ fontWeight: 800 }}>Oluşturma Planlama Merkezi'ne taşındı</div>
+            <div className="muted" style={{ marginTop: 8 }}>
+              Aynı işi iki farklı yerden üretmemek için bu ekrandaki oluşturma akışı pasife alındı.
+              Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver önizleme ve market teklif akışı Planlama Merkezi'nden yapılır.
+            </div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+              <button type="button" className="btn primary" disabled={busy} onClick={goPlanningCenter}>
+                Planlama Merkezi'ne git
+              </button>
+              <button type="button" className="btn" disabled={busy} onClick={() => setMainTab("track")}>
+                Takibe dön
+              </button>
             </div>
           </div>
-
-          {/* STEP 1: Şablon / Zaman */}
-          {createStep === "request" ? (
-            <>
-              <div className="card">
-                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 800 }}>Şablon &amp; Zaman</div>
-                    <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                      Ana akış: 1) Şablon/Zaman → 2) {who} (Tools) → 3) Plan Builder (Matris/Çöz/Market).
-                    </div>
-                  </div>
-                  <button type="button" className="btn" disabled={busy} onClick={() => setShowTemplatesMgr((v) => !v)}>
-                    {showTemplatesMgr ? "Kapat" : "Şablonları Yönet"}
-                  </button>
-                </div>
-              </div>
-
-              {showTemplatesMgr ? (
-                <ShiftTemplatesPanel
-                  busy={busy}
-                  allTemplates={allTemplates}
-                  customTemplates={customTemplates}
-                  setCustomTemplates={setCustomTemplates}
-                  onUseTemplate={useTemplateFromList}
-                  setErr={setErr}
-                />
-              ) : null}
-
-              <div className="card">
-                <div className="grid">
-                  <div className="col">
-                    <label className="muted">Tarih</label>
-                    <input type="date" value={pbDate} onChange={(e) => setPbDate(e.target.value)} disabled={busy} />
-                  </div>
-                  <div className="col">
-                    <label className="muted">Şablon item</label>
-                    <select value={pbTplKey} onChange={(e) => setPbTplKey(e.target.value)} disabled={busy}>
-                      <option value="">— seç —</option>
-                      {(templateOptions || []).map((o) => (
-                        <option key={o.key} value={o.key}>
-                          {o.label} ({o.item.startHHMM}–{o.item.endHHMM})
-                          {o.tpl.kind === "PRESET" ? " • PRESET" : ""}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                      Seçim sonucu: Start={pbRange?.startAtLocal || "—"} • End={pbRange?.endAtLocal || "—"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card" style={{ padding: 12 }}>
-                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                  <div className="muted">Sonraki adım: {who} ekle/import → durak üret → önizle.</div>
-                  <button type="button" className="btn primary" disabled={busy || !pbOk} onClick={() => setCreateStep("people")}>
-                    Sonraki → {who}
-                  </button>
-                </div>
-                {!pbOk ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>Devam etmek için tarih + şablon seç.</div> : null}
-              </div>
-
-              
-
-              {/* Manuel Talep kaldırıldı (M51) */}
-
-
-
-            </>
-          ) : null}
-
-{/* STEP 2: Personel */}
-          {createStep === "people" ? (
-            <>
-              <div className="card">
-                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 800 }}>{who} (Shift Tools)</div>
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      Shift seç → {who.toLowerCase()} ekle/import → durak üret (preview) → rota/durak önizleme.
-                    </div>
-                  </div>
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                    <button type="button" className="btn" disabled={busy} onClick={() => setCreateStep("request")}>
-                      ← Geri
-                    </button>
-                    <button type="button" className="btn primary" disabled={busy} onClick={() => setCreateStep("plan")}>
-                      Sonraki → Plan &amp; Market
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <ShiftPeopleTab token={token} me={me} shifts={items} roomsById={roomsById} preferredShiftId={lastCreatedShiftId} />
-            </>
-          ) : null}
-
-          {/* STEP 3: Plan & Market */}
-          {createStep === "plan" ? (
-            <>
-              <div className="card">
-                <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 800 }}>Plan Builder</div>
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      Matris → çöz → N market shift üret. Zaman aralığı Step-1’den gelir (Şablon & Zaman).
-                    </div>
-                  </div>
-                  <button type="button" className="btn" disabled={busy} onClick={() => setCreateStep("people")}>
-                    ← Geri
-                  </button>
-                </div>
-              </div>
-
-              <PlanBuilderPanel
-                token={token}
-                templateOptions={templateOptions}
-                rangeOverride={pbRange}
-                directionOverride={pbSelected?.item?.direction}
-                patternOverride={pbSelected?.item?.pattern}
-                hideDraftTransferUI
-                onAfterApply={async (created) => {
-                  const okIds = (created || [])
-                    .filter((x) => x && x.ok && x.shiftId)
-                    .map((x) => Number(x.shiftId))
-                    .filter(Boolean);
-                  if (okIds.length) {
-                    setApplyToast({ ids: okIds });
-                    setLastCreatedShiftId(okIds[0]);
-                    setShowTemplatesMgr(false);
-                  }
-                  invalidate("shifts");
-                  invalidate("offers");
-                  await load();
-                }}
-              />
-            </>
-          ) : null}
         </>
       ) : null}
+
 
 
       {mainTab === "track" ? (

@@ -1,7 +1,7 @@
 import { buildRoleHelpSummary, getScreenDefinitionForUser } from "../screenCatalog.js";
 
 export function buildRoleHelpGuide({ user, screenContext, entityId }) {
-  const roleInfo = buildRoleHelpSummary(user);
+  const roleInfo = buildRoleHelpSummary(user, screenContext || {});
   const screen = getScreenDefinitionForUser(user, screenContext, entityId);
   return {
     jobTitle: `${roleInfo.roleLabel} için yardım`,

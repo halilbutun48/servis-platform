@@ -23,6 +23,22 @@ function screen(id, path, label, cfg = {}) {
   };
 }
 
+function inferGuideKeyFromScreen(screenContext = {}) {
+  const path = String(screenContext?.path || '').split('?')[0].trim().toLowerCase();
+  const kind = String(screenContext?.companyKind || '').trim().toUpperCase();
+  if (kind === 'SCHOOL') return 'SCHOOL';
+  if (kind === 'ORGANIZATION') return 'ORGANIZATION';
+  if (path.startsWith('/organization')) return 'ORGANIZATION';
+  if (path.startsWith('/school')) return 'SCHOOL';
+  if (path.startsWith('/company')) return 'COMPANY';
+  if (path.startsWith('/room')) return 'ROOM';
+  if (path.startsWith('/driver')) return 'DRIVER';
+  if (path.startsWith('/personel')) return 'PERSONEL';
+  if (path.startsWith('/parent')) return 'PARENT';
+  if (path.startsWith('/superadmin')) return 'SUPER_ADMIN';
+  return '';
+}
+
 const ROOM = [
   screen(1101, "/room/map", "Canlı Takip", {
     menuPurpose: "Araçların ve işlerin canlı durumunu hızlıca görmek için kullanılır.",
@@ -237,41 +253,45 @@ const ROOM = [
 
 const COMPANY = [
   screen(2101, "/company", "Planlama Merkezi", {
-    menuPurpose: "Şirketin ana planlama durumunu ve günlük işleri topluca görmek için kullanılır.",
-    forWhom: "Şirket operasyonunu yöneten kullanıcı içindir.",
-    firstStep: "Önce hangi işi veya sözleşmeyi inceleyeceğine karar ver.",
-    nextStep: "Gerekirse vardiya veya sözleşme ekranına geç.",
-    doNotDo: "Ana özet ekranına bakıp detay kontrolünü atlama.",
-    stepByStep: ["Özet kartları oku.", "Gereken başlığa tıkla.", "Detay ekranda karar ver."],
-    commonMistakes: ["Özet sayıyı tek başına karar gibi görmek."],
-    doneChecklist: ["Doğru başlık seçildi.", "İlgili detay ekranına geçildi."],
+    menuPurpose: "Yeni işi kurmak için önce bu ekrana gelirsin. Burada konumu kontrol eder, plan akışını başlatır, kişileri ve durakları hazırlayıp çözümden sonra teklifi gönderirsin.",
+    forWhom: "Şirket, okul veya organizasyon tarafında yeni iş kuran kullanıcı içindir.",
+    firstStep: "Önce konum sorunu var mı bak. NEEDS_REVIEW varsa önce Konum İncele ekranını aç.",
+    nextStep: "Plan kurulduktan sonra teklif ve operasyon takibi için Vardiyalar ekranına geç.",
+    doNotDo: "Konumları düzeltmeden veya adımları atlayıp doğrudan teklif göndermeye çalışma.",
+    stepByStep: ["Konumları kontrol et; sorun varsa Konum İncele'de düzelt.", "Rehberi Başlat düğmesiyle plan akışını aç.", "Plan paketi, tarih ve günleri seç.", "Kişi ve durak tarafını kontrol et; gerekiyorsa düzenle.", "Matris/Çöz çalıştır ve teklifi gönder.", "Son takibi Vardiyalar ekranında yap."],
+    commonMistakes: ["Konum sorunu varken plan kurmaya çalışmak.", "Planlama Merkezi ile Vardiyalar ekranının görevini karıştırmak.", "Teklif gönderdikten sonra takibi bu ekranda aramak."],
+    doneChecklist: ["Konum tarafı kontrol edildi.", "Plan akışı başlatıldı.", "Teklif veya plan çıktısı üretildi.", "Takip için doğru ekrana geçildi."],
     buttonGuides: [
-      button("Kartı aç", "Özet kartın ilgili ekrana gitmesini sağlar.", "Bir sayı veya özetin detayını görmek için kullan.", "İlgili menü açılır."),
+      button("Rehberi Başlat", "Planlama akışını adım adım açar.", "Yeni iş kuracaksan kullan.", "Şirket konumu → plan paketi → kişi/durak → çözüm akışı açılır."),
+      button("Konum İncele", "Konum problemi olan kayıtları düzeltmeye götürür.", "NEEDS_REVIEW görüyorsan kullan.", "Konum inceleme ekranı açılır."),
+      button("Vardiyalar", "Kurulan işin teklif ve operasyon takibine götürür.", "Plan çıktıktan sonra kullan.", "Vardiyalar ekranı açılır."),
     ],
     screenMenus: [
-      { label: "Vardiyalar", path: "/company/shifts", purpose: "Günlük iş akışını görmek için açılır." },
-      { label: "Sözleşmeler", path: "/company/agreements", purpose: "Sözleşmeli işleri görmek için açılır." },
-      { label: "Copilot", path: "/company/copilot", purpose: "Yardım ve açıklama için açılır." },
+      { label: "Vardiyalar", path: "/company/shifts", purpose: "Kurulan işin teklif ve operasyon takibini yapmak için açılır." },
+      { label: "Sözleşmeler", path: "/company/agreements", purpose: "Sözleşmeli işleri ayrı görmek için açılır." },
+      { label: "Konum İncele", path: "/company/georeview", purpose: "Konum sorunu olan kayıtları düzeltmek için açılır." },
+      { label: "Copilot", path: "/company/copilot", purpose: "Takıldığında adım adım yardım almak için açılır." },
     ],
     simpleTerms: pickTerms(["sozlesme", "teklif", "atama"]),
   }),
   screen(2102, "/company/shifts", "Vardiyalar", {
-    menuPurpose: "Şirket işlerini ve atama akışını yönetmek için kullanılır.",
-    forWhom: "Şirket tarafında işi planlayan kullanıcı içindir.",
-    firstStep: "Önce doğru işi seç.",
-    nextStep: "Gerekirse sözleşme veya konum inceleme ekranına geç.",
-    doNotDo: "Yanlış kayda işlem yapma.",
-    stepByStep: ["İşi seç.", "Durumunu kontrol et.", "Gerekirse ilgili ekrana geç."],
-    commonMistakes: ["Yanlış iş üzerinde karar vermek."],
-    doneChecklist: ["Doğru iş seçildi.", "Durum okundu."],
+    menuPurpose: "Bu ekranın ana işi takip etmektir. Burada kurulan vardiyaları, teklifleri, bekleyen işleri ve operasyon durumunu izlersin.",
+    forWhom: "Şirket tarafında oluşmuş işi takip eden ve teklif durumunu okuyan kullanıcı içindir.",
+    firstStep: "Önce doğru vardiyayı veya takip sekmesini seç.",
+    nextStep: "Yeni iş kuracaksan Planlama Merkezi'ne dön; mevcut işin takibini burada sürdür.",
+    doNotDo: "Vardiyalar ekranını yeni plan kurmanın ana yeri sanma veya yanlış vardiyada işlem yapma.",
+    stepByStep: ["Takip edeceğin vardiyayı seç.", "Market, Bekleyen veya Liste bölümünde durumu oku.", "Gerekirse teklif, detay veya önizlemeyi aç.", "Yeni iş gerektiyse Planlama Merkezi'ne dön."],
+    commonMistakes: ["Yeni iş kurmayı bu ekrandan başlatmaya çalışmak.", "Yanlış vardiya üzerinde karar vermek.", "Takip ekranını plan kurma ekranı sanmak."],
+    doneChecklist: ["Doğru vardiya seçildi.", "Durum ve teklif tarafı okundu.", "Gerekli takip adımı açıldı."],
     buttonGuides: [
-      button("Yeni iş", "Yeni iş akışı açar.", "Yeni plan yapılacaksa kullan.", "Yeni iş formu açılır."),
-      button("Önizle", "Seçili işin kısa özetini gösterir.", "Karar öncesi özet istersen kullan.", "Özet açılır."),
-      button("Süre uzat", "İş süresini uzatma akışını açar.", "Aynı iş devam edecekse kullan.", "Uzatma alanı açılır."),
+      button("Takip", "Vardiya listelerini takip görünümünde açar.", "Mevcut işlerin durumunu izlemek istediğinde kullan.", "Market, Bekleyen ve Liste alanları görünür."),
+      button("Önizle", "Seçili vardiyanın rota ve özet bilgisini gösterir.", "Karar öncesi kısa kontrol gerektiğinde kullan.", "Vardiya özeti açılır."),
+      button("Süre uzat", "Mevcut işin süresini uzatma akışını açar.", "Aynı iş devam edecekse kullan.", "Uzatma alanı açılır."),
     ],
     screenMenus: [
+      { label: "Planlama Merkezi", path: "/company", purpose: "Yeni iş kurmak veya adım adım plan başlatmak için açılır." },
       { label: "Sözleşmeler", path: "/company/agreements", purpose: "Sözleşmeye bağlı işleri ayrı görmek için açılır." },
-      { label: "Konum İncele", path: "/company/georeview", purpose: "Konum tarafını görmek için açılır." },
+      { label: "Konum İncele", path: "/company/georeview", purpose: "Konum sorunu olan kayıtları düzeltmek için açılır." },
     ],
     simpleTerms: pickTerms(["sozlesme", "atama"]),
   }),
@@ -329,7 +349,8 @@ const COMPANY = [
       button("Analiz et", "Gelişmiş analizi çalıştırır.", "Detaylı yorum gerektiğinde kullan.", "Gelişmiş sonuç görünür."),
     ],
     screenMenus: [
-      { label: "Vardiyalar", path: "/company/shifts", purpose: "İş detaylarını görmek için açılır." },
+      { label: "Planlama Merkezi", path: "/company", purpose: "Yeni iş kurmak için açılır." },
+      { label: "Vardiyalar", path: "/company/shifts", purpose: "İş detaylarını ve takibi görmek için açılır." },
       { label: "Sözleşmeler", path: "/company/agreements", purpose: "Sözleşmeli işleri görmek için açılır." },
     ],
   }),
@@ -447,7 +468,80 @@ const SCHOOL = COMPANY.map((x) => ({
   }),
 ]);
 
-const ORGANIZATION = COMPANY.map((x) => ({ ...x, path: x.path.replace('/company', '/organization'), label: x.path === '/company/georeview' ? 'Lokasyon İncele' : x.label === 'Planlama Merkezi' ? 'Organizasyon Merkezi' : x.label })).concat([
+const ORGANIZATION = COMPANY.map((x) => {
+  const mapped = { ...x, path: x.path.replace('/company', '/organization'), label: x.path === '/company/georeview' ? 'Lokasyon İncele' : x.label === 'Planlama Merkezi' ? 'Organizasyon Merkezi' : x.label };
+
+  if (x.path === '/company') {
+    return screen(2101, '/organization', 'Gezi / Planlama Merkezi', {
+      menuPurpose: 'Yeni gezi veya organizasyon işini burada kurarsın. Toplanma noktasını, plan paketini, tahmini kişi sayısını, gidilecek yerleri ve dönüş tipini burada tamamlarsın.',
+      forWhom: 'Organizasyon tarafında gezi, tur veya toplu etkinlik işi kuran kullanıcı içindir.',
+      firstStep: 'Önce toplanma noktasını ve gidilecek yerlerin koordinat durumunu kontrol et. Eksik koordinat varsa önce tamamla.',
+      nextStep: 'Taslak plan tamam olduktan sonra ön izleme ve teklif adımına geç; takip için sonra Vardiyalar ekranını kullan.',
+      doNotDo: 'Company/School planı gibi kişi-durak çözümünü zorunlu sanma veya eksik planı markete düşürmeye çalışma.',
+      stepByStep: ['Toplanma noktasını kaydet.', 'Rehberi Başlat ile plan akışını aç.', 'Plan paketi, tarih ve günleri seç.', 'Tahmini kişi sayısını, gidilecek yerleri ve dönüş tipini gir.', 'Eksik koordinat varsa tamamla, sonra ön izleme ve rota sıralamayı kontrol et.', 'Plan tamamsa teklifi gönder; takip için Vardiyalar ekranına geç.'],
+      commonMistakes: ['Toplanma noktasını kaydetmeden devam etmek.', 'Gidilecek yerleri eksik koordinatla bırakmak.', 'Takip ekranını yeni plan kurma ekranı sanmak.'],
+      doneChecklist: ['Toplanma noktası kaydedildi.', 'Tahmini kişi sayısı girildi.', 'Gidilecek yerler ve dönüş tipi tamamlandı.', 'Teklif veya plan çıktısı üretildi.'],
+      buttonGuides: [
+        button('Rehberi Başlat', 'Gezi planlama akışını adım adım açar.', 'Yeni gezi veya organizasyon işi kuracaksan kullan.', 'Toplanma noktası → plan paketi → kişi sayısı / yerler → ön izleme akışı açılır.'),
+        button('Konum kontrol et', 'Toplanma noktası ve gidilecek yerlerin konum sorunlarını düzeltmeye yardım eder.', 'Koordinat eksik veya hatalıysa kullan.', 'Eksik konumları tamamlayıp plana geri dönersin.'),
+        button('Vardiyalar', 'Kurulan işin teklif ve operasyon takibine götürür.', 'Plan çıktıktan sonra kullan.', 'Vardiyalar ekranı açılır.'),
+      ],
+      screenMenus: [
+        { label: 'Vardiyalar', path: '/organization/shifts', purpose: 'Kurulan gezi/organizasyon işinin teklif ve operasyon takibini yapmak için açılır.' },
+        { label: 'Lokasyon İncele', path: '/organization/georeview', purpose: 'Konum sorunu olan kayıtları düzeltmek için açılır.' },
+        { label: 'Copilot', path: '/organization/copilot', purpose: 'Takıldığında organization rehberi almak için açılır.' },
+      ],
+      simpleTerms: pickTerms(['teklif', 'atama']),
+    });
+  }
+
+  if (x.path === '/company/shifts') {
+    return screen(2102, '/organization/shifts', 'Vardiyalar', {
+      menuPurpose: 'Bu ekranın ana işi takip etmektir. Burada açılmış gezi/organizasyon işlerini, teklifleri ve operasyon durumunu izlersin.',
+      forWhom: 'Organizasyon tarafında oluşturulmuş işi takip eden kullanıcı içindir.',
+      firstStep: 'Önce doğru planı veya takip sekmesini seç.',
+      nextStep: "Yeni gezi kuracaksan Gezi / Planlama Merkezi'ne dön; mevcut işin takibini burada sürdür.",
+      doNotDo: 'Vardiyalar ekranını yeni gezi planı kurmanın ana yeri sanma veya plan eksikse burada düzeltmeye çalışma.',
+      stepByStep: ["Takip edeceğin işi seç.", "Market, Bekleyen veya Liste bölümünde durumu oku.", "Gerekirse önizleme, teklif detayı veya rota ekranını aç.", "Plan eksikse Gezi / Planlama Merkezi'ne dön."],
+      commonMistakes: ['Yeni geziyi bu ekrandan kurmaya çalışmak.', 'Eksik koordinatı takip ekranında çözmeye çalışmak.', 'Takip ekranını plan kurma ekranı sanmak.'],
+      doneChecklist: ['Doğru iş seçildi.', 'Teklif ve takip durumu okundu.', 'Gerekli takip adımı açıldı.'],
+      buttonGuides: [
+        button('Takip', 'Gezi/organizasyon işlerini takip görünümünde açar.', 'Mevcut işlerin durumunu izlemek istediğinde kullan.', 'Market, Bekleyen ve Liste alanları görünür.'),
+        button('Önizle', 'Seçili işin rota ve özet bilgisini gösterir.', 'Karar öncesi kısa kontrol gerektiğinde kullan.', 'Vardiya özeti açılır.'),
+        button('Süre uzat', 'Mevcut işin süresini uzatma akışını açar.', 'Aynı iş devam edecekse kullan.', 'Uzatma alanı açılır.'),
+      ],
+      screenMenus: [
+        { label: 'Gezi / Planlama Merkezi', path: '/organization', purpose: 'Yeni gezi veya organizasyon işi kurmak için açılır.' },
+        { label: 'Lokasyon İncele', path: '/organization/georeview', purpose: 'Konum sorunu olan kayıtları düzeltmek için açılır.' },
+      ],
+      simpleTerms: pickTerms(['atama']),
+    });
+  }
+
+  if (x.path === '/company/copilot') {
+    return screen(2105, '/organization/copilot', 'Copilot', {
+      menuPurpose: 'Organizasyon ekranlarında ne yapacağını anlamadığında sade ve adım adım yardım almak için kullanılır.',
+      forWhom: 'Organizasyon kullanıcısı içindir.',
+      firstStep: 'Önce hangi ekran veya hangi iş hakkında konuşacağını seç.',
+      nextStep: 'Gerekirse hızlı geçişle Gezi / Planlama Merkezi, Vardiyalar veya Lokasyon İncele ekranına git.',
+      doNotDo: 'Company ekranı gibi kişi-durak çözümü bekleme veya organization işini company metniyle yorumlamaya çalışma.',
+      stepByStep: ["Ekranı veya kaydı seç.", "Toplanma noktası, tahmini kişi sayısı, gidilecek yerler ve dönüş tipi adımlarına göre cevabı oku.", "Plan eksikse önce Gezi / Planlama Merkezi'ne dön; plan tamamsa takip için Vardiyalar'a geç."],
+      commonMistakes: ['Planlama ve takip ekranlarını karıştırmak.', 'Eksik koordinatı tamamlamadan teklif göndermeye çalışmak.', 'Copilot seçili ekranı company sanmak.'],
+      doneChecklist: ['Doğru rehber seçildi.', 'Gerekli ekran açıldı.', 'Sıradaki adım netleşti.'],
+      buttonGuides: [
+        button('Rehberi aç', 'Seçilen organization rehberini çalıştırır.', 'Yol gösterecek sade yardım istediğinde kullan.', 'Rehber sonucu görünür.'),
+        button('Analiz et', 'Gelişmiş analizi çalıştırır.', 'Detaylı yorum gerektiğinde kullan.', 'Gelişmiş sonuç görünür.'),
+      ],
+      screenMenus: [
+        { label: 'Gezi / Planlama Merkezi', path: '/organization', purpose: 'Yeni gezi veya organizasyon işi kurmak için açılır.' },
+        { label: 'Vardiyalar', path: '/organization/shifts', purpose: 'İş detaylarını ve takibi görmek için açılır.' },
+        { label: 'Lokasyon İncele', path: '/organization/georeview', purpose: 'Konum sorunlarını düzeltmek için açılır.' },
+      ],
+    });
+  }
+
+  return mapped;
+}).concat([
   screen(2301, '/organization/plans', 'Yer Planları', {
     menuPurpose: 'Organizasyon yer ve plan kayıtlarını yönetmek için kullanılır.',
     forWhom: 'Organizasyon yönetimi içindir.',
@@ -650,7 +744,9 @@ const SUPER_ADMIN = [
 
 const SCREEN_CATALOG = { ROOM, COMPANY, SCHOOL, ORGANIZATION, DRIVER, PERSONEL, PARENT, SUPER_ADMIN };
 
-export function resolveRoleGuideKey(user) {
+export function resolveRoleGuideKey(user, screenContext = {}) {
+  const hinted = inferGuideKeyFromScreen(screenContext);
+  if (hinted) return hinted;
   const role = String(user?.role || '');
   if (role === 'COMPANY') {
     const kind = String(user?.companyKind || '').toUpperCase();
@@ -661,13 +757,13 @@ export function resolveRoleGuideKey(user) {
   return role || 'ROOM';
 }
 
-export function listScreensForUser(user) {
-  const key = resolveRoleGuideKey(user);
+export function listScreensForUser(user, screenContext = {}) {
+  const key = resolveRoleGuideKey(user, screenContext);
   return (SCREEN_CATALOG[key] || []).map((x) => ({ id: x.id, path: x.path, label: x.label }));
 }
 
 export function getScreenDefinitionForUser(user, screenContext = {}, entityId = null) {
-  const key = resolveRoleGuideKey(user);
+  const key = resolveRoleGuideKey(user, screenContext);
   const list = SCREEN_CATALOG[key] || [];
   const rawPath = String(screenContext?.path || '').split('?')[0] || '';
   let found = null;
@@ -685,8 +781,8 @@ export function getScreenDefinitionForUser(user, screenContext = {}, entityId = 
   };
 }
 
-export function buildRoleHelpSummary(user) {
-  const key = resolveRoleGuideKey(user);
+export function buildRoleHelpSummary(user, screenContext = {}) {
+  const key = resolveRoleGuideKey(user, screenContext);
   const list = SCREEN_CATALOG[key] || [];
   const first = list[0] || null;
   return {

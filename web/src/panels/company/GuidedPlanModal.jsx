@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { CircleMarker, MapContainer, TileLayer, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import { personLabel } from "../../utils/labels";
+import { buildGoogleNavUrl } from "../../utils/navigation";
 import {
   WEEKDAYS,
   DURATION_PRESETS,
@@ -150,11 +153,84 @@ const PACKS = [
   },
 ];
 
-function stepTitle(step, who) {
+
+function packTitleForMode(pack, organization) {
+  if (!organization) return pack?.title || "";
+  const map = {
+    WK_MORNING: "Sabah toplama turu",
+    WK_EVENING: "Akşam dönüş turu",
+    WK_MORNING_EVENING: "Gidiş + dönüş",
+    WK_MORNING_AFTERNOON: "Sabah + öğleden sonra turu",
+    WK_NIGHT: "Gece turu",
+    CUSTOM: "Özel plan",
+  };
+  return map[pack?.key] || pack?.title || "";
+}
+
+function packDescForMode(pack, organization) {
+  if (!organization) return pack?.desc || "";
+  const map = {
+    WK_MORNING: "Sabah tek tur. Toplanma noktasından çıkıp ziyaret akışını başlatır.",
+    WK_EVENING: "Akşam tek tur. Dönüş ya da kapanış akışı için uygundur.",
+    WK_MORNING_EVENING: "Aynı gün gidiş + dönüş için 2 taslak oluşturur.",
+    WK_MORNING_AFTERNOON: "Sabah çıkış, öğleden sonra devam / dönüş için 2 taslak oluşturur.",
+    WK_NIGHT: "Gece başlayan tur veya etkinlik çıkışı için uygundur.",
+    CUSTOM: "Saatleri ve tur tipini elle düzenle.",
+  };
+  return map[pack?.key] || pack?.desc || "";
+}
+
+function directionLabel(direction, organization) {
+  if (!organization) return direction || "-";
+  return String(direction || "").toUpperCase() === "OUTBOUND" ? "Dağıtım / dönüş" : "Toplama / gidiş";
+}
+
+function patternLabel(pattern, organization) {
+  if (!organization) return pattern || "-";
+  return String(pattern || "").toUpperCase() === "LOOP" ? "Başlangıç noktasına dön" : "Son noktada bitir";
+}
+
+function emptyDestination() {
+  return { title: "", address: "", lat: "", lng: "", status: "idle", foundText: "" };
+}
+
+function coordNum(v) {
+  const s = String(v ?? "").trim().replace(",", ".");
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function hasCoord(lat, lng) {
+  return lat != null && lng != null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9);
+}
+
+function fmtCoord(v) {
+  const n = coordNum(v);
+  return n == null ? "" : String(n);
+}
+
+function MapPickEvents({ onPick }) {
+  useMapEvents({
+    click(e) {
+      onPick?.(e.latlng?.lat, e.latlng?.lng);
+    },
+  });
+  return null;
+}
+
+function stepTitle(step, who, organization) {
+  if (organization) {
+    if (step === 0) return "1) Toplanma noktası";
+    if (step === 1) return "2) Plan paketi";
+    if (step === 2) return "3) Kişi sayısı + yerler";
+    if (step === 3) return "4) Ön izleme + teklif";
+    return "";
+  }
   if (step === 0) return "1) Şirket konumu";
   if (step === 1) return "2) Plan paketi";
   if (step === 2) return `3) ${who} + Durak`;
-  if (step === 3) return "4) Matris/Çöz + Talep gönder";
+  if (step === 3) return "4) Ön izleme + teklif";
   return "";
 }
 
@@ -168,6 +244,7 @@ export default function GuidedPlanModal({
 }) {
   const { token, me } = useSession();
   const who = personLabel(me);
+  const organization = me?.companyKind === "ORGANIZATION";
 
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -184,11 +261,15 @@ export default function GuidedPlanModal({
   const [packKey, setPackKey] = useState("WK_MORNING_EVENING");
   const pack = useMemo(() => PACKS.find((p) => p.key === packKey) || PACKS[0], [packKey]);
   const [startDate, setStartDate] = useState(todayYmd());
-  const [durationKey, setDurationKey] = useState("2d");
+  const [durationKey, setDurationKey] = useState(me?.companyKind === "ORGANIZATION" ? "1d" : "2d");
+  const durationOptions = useMemo(() => {
+    if (organization) return [{ key: "1d", label: "1 gün", days: 1 }, ...QUICK_DURATION_PRESETS];
+    return QUICK_DURATION_PRESETS;
+  }, [organization]);
   const durationDays = useMemo(() => {
-    const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS.find((x) => x.key === "2d") || DURATION_PRESETS[0];
-    return Number(p.days || 30);
-  }, [durationKey]);
+    const p = durationOptions.find((x) => x.key === durationKey) || durationOptions[0] || { days: 1 };
+    return Number(p.days || 1);
+  }, [durationKey, durationOptions]);
   const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
@@ -199,6 +280,12 @@ export default function GuidedPlanModal({
   ]);
   const [draftNote, setDraftNote] = useState("");
   const [draftAmount, setDraftAmount] = useState("");
+  const [orgEstimatedPax, setOrgEstimatedPax] = useState("");
+  const [orgGatheringName, setOrgGatheringName] = useState("");
+  const [orgReturnType, setOrgReturnType] = useState("RETURN_TO_START");
+  const [orgDestinations, setOrgDestinations] = useState([emptyDestination()]);
+  const [mapPickIdx, setMapPickIdx] = useState(null);
+  const [mapPickPoint, setMapPickPoint] = useState(null);
 
   const [draftShiftIds, setDraftShiftIds] = useState([]);
   const [draftShifts, setDraftShifts] = useState([]);
@@ -232,6 +319,262 @@ export default function GuidedPlanModal({
     return m;
   }, [rooms]);
 
+  const orgFilledDestinations = useMemo(
+    () => (orgDestinations || []).filter((d) => String(d?.title || d?.address || "").trim()),
+    [orgDestinations]
+  );
+
+  const orgDestinationAudit = useMemo(() => {
+    const items = (orgDestinations || [])
+      .map((d, idx) => {
+        const label = String(d?.title || d?.address || "").trim();
+        const lat = coordNum(d?.lat);
+        const lng = coordNum(d?.lng);
+        return {
+          idx,
+          label: label || `Yer ${idx + 1}`,
+          lat,
+          lng,
+          hasCoord: hasCoord(lat, lng),
+        };
+      })
+      .filter((x) => Boolean(x.label));
+    return {
+      total: items.length,
+      ready: items.filter((x) => x.hasCoord).length,
+      missing: items.filter((x) => !x.hasCoord),
+      ok: items.length > 0 && items.every((x) => x.hasCoord),
+    };
+  }, [orgDestinations]);
+
+  const orgDraftCompletion = useMemo(() => {
+    if (!organization) return { ready: true, reasons: [], badShiftIds: [], expectedStops: 0 };
+    const reasons = [];
+    const expectedStops = orgDestinationAudit.total;
+    if (!expectedStops) reasons.push("En az 1 gidilecek yer ekle.");
+    if (!orgDestinationAudit.ok) {
+      reasons.push(`Koordinatı eksik yerler: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}`);
+    }
+    const badShiftIds = (draftShifts || [])
+      .filter((s) => {
+        const validStops = (Array.isArray(s?.stops) ? s.stops : []).filter((st) => hasCoord(coordNum(st?.lat), coordNum(st?.lng)));
+        return validStops.length < expectedStops;
+      })
+      .map((s) => Number(s.id))
+      .filter(Number.isFinite);
+    if (draftShiftIds.length && badShiftIds.length) {
+      reasons.push(`Eksik duraklı taslak shift: ${badShiftIds.map((id) => `#${id}`).join(", ")}`);
+    }
+    return {
+      ready: reasons.length === 0 && draftShiftIds.length > 0,
+      reasons,
+      badShiftIds,
+      expectedStops,
+    };
+  }, [organization, orgDestinationAudit, draftShifts, draftShiftIds]);
+
+  function setDestinationField(idx, field, value) {
+    setOrgDestinations((prev) =>
+      (prev || []).map((item, i) =>
+        i === idx
+          ? {
+              ...item,
+              [field]: value,
+              ...((field === "title" || field === "address") ? { status: "idle", foundText: "", lat: "", lng: "" } : {}),
+            }
+          : item
+      )
+    );
+  }
+
+  function setDestinationCoordField(idx, field, value) {
+    setOrgDestinations((prev) =>
+      (prev || []).map((item, i) => {
+        if (i !== idx) return item;
+        const next = { ...item, [field]: value };
+        const lat = coordNum(field === "lat" ? value : next.lat);
+        const lng = coordNum(field === "lng" ? value : next.lng);
+        if (hasCoord(lat, lng)) {
+          return {
+            ...next,
+            lat: fmtCoord(lat),
+            lng: fmtCoord(lng),
+            status: "manual",
+            foundText: "Koordinat hazır",
+          };
+        }
+        if (String(item?.status || "") === "manual") {
+          return { ...next, status: "idle", foundText: "" };
+        }
+        return next;
+      })
+    );
+  }
+
+  function openDestinationMapPicker(idx) {
+    const item = (orgDestinations || [])[idx] || {};
+    const lat = coordNum(item?.lat);
+    const lng = coordNum(item?.lng);
+    const hubLatNum = coordNum(hubLat);
+    const hubLngNum = coordNum(hubLng);
+    const base = hasCoord(lat, lng)
+      ? [lat, lng]
+      : hasCoord(hubLatNum, hubLngNum)
+      ? [hubLatNum, hubLngNum]
+      : [41.0082, 28.9784];
+    setMapPickIdx(idx);
+    setMapPickPoint(base);
+  }
+
+  function applyDestinationMapPoint() {
+    if (mapPickIdx == null || !Array.isArray(mapPickPoint)) return;
+    const [lat, lng] = mapPickPoint;
+    setOrgDestinations((prev) =>
+      (prev || []).map((item, i) =>
+        i === mapPickIdx
+          ? {
+              ...item,
+              lat: fmtCoord(lat),
+              lng: fmtCoord(lng),
+              status: "manual",
+              foundText: "Haritadan seçildi",
+            }
+          : item
+      )
+    );
+    setMapPickIdx(null);
+    setMapPickPoint(null);
+  }
+
+  function openDestinationNavigation(dest) {
+    const lat = coordNum(dest?.lat);
+    const lng = coordNum(dest?.lng);
+    if (!hasCoord(lat, lng)) {
+      setErr("Navigasyon için yer koordinatı gerekli.");
+      return;
+    }
+    const hLat = coordNum(hubLat);
+    const hLng = coordNum(hubLng);
+    const url = buildGoogleNavUrl({
+      origin: hasCoord(hLat, hLng) ? { lat: hLat, lng: hLng } : null,
+      destination: { lat, lng },
+    });
+    if (!url) {
+      setErr("Navigasyon linki oluşturulamadı.");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function openShiftNavigation(shift) {
+    const stops = (Array.isArray(shift?.stops) ? shift.stops : [])
+      .map((s) => ({ lat: coordNum(s?.lat), lng: coordNum(s?.lng) }))
+      .filter((x) => hasCoord(x.lat, x.lng));
+    if (!stops.length) {
+      setErr("Navigasyon için en az 1 durak gerekli.");
+      return;
+    }
+    const hLat = coordNum(shift?.hubLat);
+    const hLng = coordNum(shift?.hubLng);
+    let origin = hasCoord(hLat, hLng) ? { lat: hLat, lng: hLng } : null;
+    let destination = null;
+    let waypoints = [];
+    const loop = String(shift?.pattern || "").toUpperCase() === "LOOP";
+    if (loop && origin) {
+      destination = origin;
+      waypoints = stops;
+    } else if (origin) {
+      destination = stops[stops.length - 1] || null;
+      waypoints = stops.slice(0, -1);
+    } else {
+      if (stops.length < 2) {
+        setErr("Navigasyon için hub veya en az 2 durak gerekli.");
+        return;
+      }
+      origin = stops[0];
+      destination = stops[stops.length - 1];
+      waypoints = stops.slice(1, -1);
+    }
+    const url = buildGoogleNavUrl({ origin, destination, waypoints });
+    if (!url) {
+      setErr("Navigasyon linki oluşturulamadı.");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function addDestination() {
+    setOrgDestinations((prev) => [...(prev || []), emptyDestination()]);
+  }
+
+  function removeDestination(idx) {
+    setOrgDestinations((prev) => {
+      const next = (prev || []).filter((_, i) => i !== idx);
+      return next.length ? next : [emptyDestination()];
+    });
+  }
+
+  function moveDestination(idx, dir) {
+    setOrgDestinations((prev) => {
+      const next = [...(prev || [])];
+      const to = idx + dir;
+      if (to < 0 || to >= next.length) return next;
+      const tmp = next[idx];
+      next[idx] = next[to];
+      next[to] = tmp;
+      return next;
+    });
+  }
+
+  async function geocodeDestination(idx) {
+    setErr("");
+    setInfo("");
+    if (!token) return;
+    const item = (orgDestinations || [])[idx];
+    const q = String(item?.address || item?.title || "").trim();
+    if (q.length < 3) {
+      setErr("Yer için en az 3 karakterlik ad veya adres gir.");
+      return;
+    }
+    setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "loading", foundText: "" } : x)));
+    try {
+      const r = await api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
+      if (r?.ok) {
+        setOrgDestinations((prev) =>
+          (prev || []).map((x, i) =>
+            i === idx
+              ? {
+                  ...x,
+                  lat: String(r.lat),
+                  lng: String(r.lng),
+                  status: "ok",
+                  foundText: String(r.displayName || q),
+                  title: String(x.title || "").trim() || String(r.displayName || q).split(",")[0],
+                }
+              : x
+          )
+        );
+      } else {
+        setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: "Bulunamadı" } : x)));
+      }
+    } catch (e) {
+      setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: String(e?.message || e || "Bulunamadı") } : x)));
+    }
+  }
+
+  function orgNoteSummary() {
+    const pax = String(orgEstimatedPax || "").trim();
+    const gathering = String(orgGatheringName || "").trim();
+    const places = orgFilledDestinations.map((d) => String(d.title || d.address || "").trim()).filter(Boolean);
+    const returnText = orgReturnType === "RETURN_TO_START" ? "Başlangıç noktasına dön" : "Son noktada bitir";
+    const parts = [];
+    if (gathering) parts.push(`Toplanma: ${gathering}`);
+    if (pax) parts.push(`Tahmini kişi: ${pax}`);
+    if (places.length) parts.push(`Yerler: ${places.join(" → ")}`);
+    parts.push(`Dönüş: ${returnText}`);
+    return `[Gezi planı] ${parts.join(" | ")}`;
+  }
+
   function resetAll() {
     setStep(0);
     setBusy(false);
@@ -243,12 +586,18 @@ export default function GuidedPlanModal({
     setHubLoaded(false);
     setPackKey("WK_MORNING_EVENING");
     setStartDate(todayYmd());
-    setDurationKey("2d");
+    setDurationKey(organization ? "1d" : "2d");
     setEndDate(addDaysISO(todayYmd(), 0));
     setDaysSel(selectedFromMask(62));
     setCustomSlots([{ label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" }]);
     setDraftNote("");
     setDraftAmount("");
+    setOrgEstimatedPax("");
+    setOrgGatheringName("");
+    setOrgReturnType("RETURN_TO_START");
+    setOrgDestinations([emptyDestination()]);
+    setMapPickIdx(null);
+    setMapPickPoint(null);
     setDraftShiftIds([]);
     setDraftShifts([]);
     setOsrmBatch({ running: false, done: 0, total: 0 });
@@ -287,6 +636,13 @@ export default function GuidedPlanModal({
       alive = false;
     };
   }, [open, token]);
+
+
+  useEffect(() => {
+    const keys = new Set((durationOptions || []).map((x) => x.key));
+    if (!keys.has(durationKey)) setDurationKey((durationOptions[0] || {}).key || "1d");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organization]);
 
   // Sync endDate when start/duration changes
   useEffect(() => {
@@ -332,7 +688,7 @@ export default function GuidedPlanModal({
     setBusy(true);
     try {
       await api("/api/company/hub", { token, method: "PUT", body: { hubLat: lat, hubLng: lng } });
-      setInfo("✅ Şirket konumu kaydedildi.");
+      setInfo(organization ? "✅ Toplanma noktası kaydedildi." : "✅ Şirket konumu kaydedildi.");
       setStep(1);
     } catch (e) {
       setErr(String(e?.message || e));
@@ -361,7 +717,7 @@ export default function GuidedPlanModal({
         }
         setHubLat(String(lat));
         setHubLng(String(lng));
-        setInfo("✅ Konum alındı. Kaydetmek için 'İleri'ye bas.");
+        setInfo(organization ? "✅ Toplanma noktası konumu alındı. Kaydetmek için 'İleri'ye bas." : "✅ Konum alındı. Kaydetmek için 'İleri'ye bas.");
       },
       (e) => {
         setBusy(false);
@@ -419,6 +775,20 @@ export default function GuidedPlanModal({
       setErr("Plan paketi geçersiz.");
       return;
     }
+    if (organization) {
+      if (!String(orgEstimatedPax || "").trim()) {
+        setErr("Tahmini kişi sayısını gir.");
+        return;
+      }
+      if (!orgFilledDestinations.length) {
+        setErr("En az 1 gidilecek yer ekle.");
+        return;
+      }
+      if (!orgDestinationAudit.ok) {
+        setErr(`Koordinatı eksik yerler var: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}. Adresten bul, manuel lat/lng gir veya haritadan seç.`);
+        return;
+      }
+    }
 
     setBusy(true);
     try {
@@ -447,6 +817,9 @@ export default function GuidedPlanModal({
           const startAt = ymdMinToIso(ymd, it.startMin);
           const endYmd = it.endMin < it.startMin ? addDaysISO(ymd, 1) : ymd;
           const endAt = ymdMinToIso(endYmd, it.endMin);
+          const noteParts = [];
+          if (draftNote) noteParts.push(String(draftNote).trim());
+          if (organization) noteParts.push(orgNoteSummary());
           const body = {
             // M34/M35: market shift -> roomId OMIT (roomId optional; null trips zod)
             startAt,
@@ -454,11 +827,47 @@ export default function GuidedPlanModal({
             hubLat: lat,
             hubLng: lng,
             direction: it.direction,
-            pattern: it.pattern,
+            pattern: organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern,
           };
           const amt = parseTryInput(draftAmount);
           if (amt != null) body.companyOfferAmount = amt;
-          if (draftNote) body.companyOfferNote = String(draftNote);
+          if (noteParts.length) body.companyOfferNote = noteParts.filter(Boolean).join("\n");
+          if (organization) {
+            const pax = Number(orgEstimatedPax || 0);
+            if (Number.isFinite(pax) && pax > 0) body.requiredPax = pax;
+            const stopDrafts = [];
+            for (let idx = 0; idx < orgFilledDestinations.length; idx++) {
+              const dest = orgFilledDestinations[idx];
+              let stopName = String(dest?.title || dest?.address || `Yer ${idx + 1}`).trim();
+              let stopLat = dest?.lat === "" ? null : Number(dest?.lat);
+              let stopLng = dest?.lng === "" ? null : Number(dest?.lng);
+              if (!(Number.isFinite(stopLat) && Number.isFinite(stopLng))) {
+                const q = String(dest?.address || dest?.title || "").trim();
+                if (q.length >= 3) {
+                  try {
+                    const geo = await api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
+                    if (geo?.ok) {
+                      stopLat = Number(geo.lat);
+                      stopLng = Number(geo.lng);
+                      stopName = stopName || String(geo.displayName || q).split(",")[0];
+                    }
+                  } catch {
+                    // ignore individual destination geocode errors; continue with others
+                  }
+                }
+              }
+              if (Number.isFinite(stopLat) && Number.isFinite(stopLng)) {
+                stopDrafts.push({
+                  name: stopName || `Yer ${idx + 1}`,
+                  lat: stopLat,
+                  lng: stopLng,
+                  order: stopDrafts.length + 1,
+                  type: "MANUAL",
+                });
+              }
+            }
+            if (stopDrafts.length) body.stops = stopDrafts;
+          }
 
           const s = await api("/api/shifts", { token, method: "POST", body });
           if (s?.id) {
@@ -475,9 +884,15 @@ export default function GuidedPlanModal({
                   startMin: it.startMin,
                   endMin: it.endMin,
                   direction: it.direction,
-                  pattern: it.pattern,
+                  pattern: organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern,
                   hubLat: lat,
                   hubLng: lng,
+                  organization: organization ? {
+                    gatheringName: orgGatheringName,
+                    estimatedPax: Number(orgEstimatedPax || 0) || null,
+                    returnType: orgReturnType,
+                    places: orgFilledDestinations.map((d) => ({ title: d.title, address: d.address })),
+                  } : null,
                 })
               );
             } catch {
@@ -543,7 +958,7 @@ async function osrmReorderCore(sid) {
       distancesM: t?.distancesM,
       pointIds: points.map((p) => p.id),
       depotIndex: 0,
-      returnToDepot: false,
+      returnToDepot: String(s?.pattern || "").toUpperCase() === "LOOP",
       preferOrtools: true,
     },
   });
@@ -656,6 +1071,10 @@ async function sendBulkOffers() {
       setErr("En az 1 room seç.");
       return;
     }
+    if (organization && !orgDraftCompletion.ready) {
+      setErr(`Markete göndermek için plan tamamlanmalı: ${orgDraftCompletion.reasons.join(" • ")}`);
+      return;
+    }
 
     setBusy(true);
     try {
@@ -684,12 +1103,16 @@ setSentOk(true);
 
   const planSummary = useMemo(() => {
     const items = stepItems();
-    const lines = items.map((it) => `${it.label || ""}: ${toHHMM(it.startMin)} – ${toHHMM(it.endMin)} • ${it.direction} • ${it.pattern}`);
+    const lines = items.map((it) => {
+      const p = organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern;
+      return `${it.label || ""}: ${toHHMM(it.startMin)} – ${toHHMM(it.endMin)}${organization ? ` • ${patternLabel(p, organization)}` : ` • ${directionLabel(it.direction, organization)} • ${patternLabel(p, organization)}`}`;
+    });
     return lines;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packKey, customSlots]);
+  }, [packKey, customSlots, organization, orgReturnType]);
 
   return (
+    <>
     <Modal
       open={open}
       onClose={() => {
@@ -700,7 +1123,7 @@ setSentOk(true);
       <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div>
           <div style={{ fontWeight: 900, fontSize: 18 }}>Guided Mode — Yeni Plan</div>
-          <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step, who)}</div>
+          <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step, who, organization)}</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           <button type="button" onClick={() => { onClose?.(); resetAll(); }} disabled={busy}>Kapat</button>
@@ -717,14 +1140,14 @@ setSentOk(true);
       {/* Step-0: Hub */}
       {step === 0 ? (
         <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div className="muted">1. adımda Company kendi lokasyonunu (hub) ayarlar.</div>
+          <div className="muted">{organization ? "1. adımda gezi için toplanma noktasını ayarla. Bu nokta turun başlangıç merkezi olur." : "1. adımda Company kendi lokasyonunu (hub) ayarlar."}</div>
 
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={useGeolocation} disabled={busy}>Konumumu al</button>
             <input
               value={addr}
               onChange={(e) => setAddr(e.target.value)}
-              placeholder="Adresten konum al (örn. Ankara Çankaya ...)"
+              placeholder={organization ? "Toplanma noktası adresi (örn. Denizli Forum önü)" : "Adresten konum al (örn. Ankara Çankaya ...)"}
               style={{ flex: 1, minWidth: 260 }}
               disabled={busy}
             />
@@ -733,11 +1156,11 @@ setSentOk(true);
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <label className="muted">Hub lat</label>
+              <label className="muted">{organization ? "Toplanma lat" : "Hub lat"}</label>
               <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
             </div>
             <div>
-              <label className="muted">Hub lng</label>
+              <label className="muted">{organization ? "Toplanma lng" : "Hub lng"}</label>
               <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
             </div>
           </div>
@@ -745,7 +1168,7 @@ setSentOk(true);
           {!hubLoaded ? <div className="muted">Hub okunuyor...</div> : null}
 
           <div className="row" style={{ justifyContent: "flex-end" }}>
-            <button type="button" onClick={saveHub} disabled={busy}>İleri</button>
+            <button type="button" onClick={saveHub} disabled={busy}>{organization ? "Toplanma noktasını kaydet" : "İleri"}</button>
           </div>
         </div>
       ) : null}
@@ -753,7 +1176,7 @@ setSentOk(true);
       {/* Step-1: Plan */}
       {step === 1 ? (
         <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-          <div className="muted">2. adımda plan paketi seçilir. Bu adım sadece <b>taslak</b> oluşturur; teklif göndermez.</div>
+          <div className="muted">{organization ? "2. adımda gezi akışını seçersin. Bu adım sadece taslak plan oluşturur; teklif henüz gönderilmez." : "2. adımda plan paketi seçilir. Bu adım sadece taslak oluşturur; teklif göndermez."}</div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="card">
@@ -769,8 +1192,8 @@ setSentOk(true);
                       disabled={busy}
                     />
                     <div>
-                      <div style={{ fontWeight: 700 }}>{p.title}</div>
-                      <div className="muted">{p.desc}</div>
+                      <div style={{ fontWeight: 700 }}>{packTitleForMode(p, organization)}</div>
+                      <div className="muted">{packDescForMode(p, organization)}</div>
                     </div>
                   </label>
                 ))}
@@ -863,8 +1286,8 @@ setSentOk(true);
                             }
                             disabled={busy}
                           >
-                            <option value="INBOUND">INBOUND</option>
-                            <option value="OUTBOUND">OUTBOUND</option>
+                            <option value="INBOUND">{organization ? "Toplama / gidiş" : "INBOUND"}</option>
+                            <option value="OUTBOUND">{organization ? "Dağıtım / dönüş" : "OUTBOUND"}</option>
                           </select>
                         </label>
 
@@ -877,8 +1300,8 @@ setSentOk(true);
                             }
                             disabled={busy}
                           >
-                            <option value="ONE_WAY">ONE_WAY</option>
-                            <option value="LOOP">LOOP</option>
+                            <option value="ONE_WAY">{organization ? "Son noktada bitir" : "ONE_WAY"}</option>
+                            <option value="LOOP">{organization ? "Başlangıç noktasına dön" : "LOOP"}</option>
                           </select>
                         </label>
                       </div>
@@ -915,7 +1338,7 @@ setSentOk(true);
                 <div>
                   <label className="muted">Hızlı süre</label>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                    {QUICK_DURATION_PRESETS.map((d) => (
+                    {durationOptions.map((d) => (
                       <button
                         key={d.key}
                         type="button"
@@ -928,7 +1351,7 @@ setSentOk(true);
                     ))}
                   </div>
                   <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                    Seçince bitiş otomatik hesaplanır.
+                    Varsayılan olarak aynı gün başlar; süre seçince bitiş otomatik hesaplanır.
                   </div>
                 </div>
                 <div>
@@ -952,7 +1375,7 @@ setSentOk(true);
                       </label>
                     ))}
                   </div>
-                  <div className="muted" style={{ marginTop: 6 }}>Günler: {weekMaskToText(weekMask)} • weekMask:{weekMask}</div>
+                  <div className="muted" style={{ marginTop: 6 }}>{organization ? `Seçilen günler: ${weekMaskToText(weekMask)}` : `Günler: ${weekMaskToText(weekMask)} • weekMask:${weekMask}`}</div>
 
                   {eligibleDaysCount === 0 ? (
                     <div className="card err" style={{ marginTop: 8 }}>
@@ -980,7 +1403,7 @@ setSentOk(true);
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 700 }}>Paket özeti</div>
+                <div style={{ fontWeight: 700 }}>{organization ? "Plan özeti" : "Paket özeti"}</div>
                 <ul className="muted" style={{ marginTop: 6 }}>
                   {planSummary.map((x, i) => <li key={i}>{x}</li>)}
                 </ul>
@@ -988,8 +1411,135 @@ setSentOk(true);
             </div>
           </div>
 
+          {organization ? (
+            <div className="card">
+              <div style={{ fontWeight: 800 }}>Organizasyon detayları</div>
+              <div className="muted" style={{ marginTop: 4 }}>
+                Gezi planını burada kurarsın. Tahmini kişi sayısı, toplanma noktası, gidilecek yerler ve dönüş tipi aynı yerde kalır.
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label className="muted">Tahmini kişi sayısı</label>
+                  <input
+                    value={orgEstimatedPax}
+                    onChange={(e) => setOrgEstimatedPax(e.target.value.replace(/[^\d]/g, ""))}
+                    placeholder="örn. 48"
+                    disabled={busy}
+                  />
+                </div>
+                <div>
+                  <label className="muted">Toplanma noktası adı</label>
+                  <input
+                    value={orgGatheringName}
+                    onChange={(e) => setOrgGatheringName(e.target.value)}
+                    placeholder="örn. Denizli Forum önü"
+                    disabled={busy}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontWeight: 700 }}>Gidilecek yerler</div>
+                <div className="muted" style={{ marginTop: 4 }}>
+                  Her yer ayrı satır olsun. Böylece tek tek düzeltmek, bulmak ve sırayı değiştirmek kolay olur.
+                </div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Hazır konum: <b>{orgDestinationAudit.ready}</b> / {orgDestinationAudit.total || 0}
+                  {orgDestinationAudit.missing.length ? ` • Eksik konum: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}` : ""}
+                </div>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {(orgDestinations || []).map((dest, idx) => (
+                    <div key={idx} className="card" style={{ padding: 10, border: "1px solid #223" }}>
+                      <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 700 }}>Yer {idx + 1}</div>
+                        <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                          <button type="button" className="btn sm" onClick={() => moveDestination(idx, -1)} disabled={busy || idx === 0}>Yukarı</button>
+                          <button type="button" className="btn sm" onClick={() => moveDestination(idx, 1)} disabled={busy || idx === (orgDestinations || []).length - 1}>Aşağı</button>
+                          <button type="button" className="btn sm" onClick={() => removeDestination(idx)} disabled={busy}>Sil</button>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label className="muted">Yer adı</label>
+                          <input
+                            value={dest?.title || ""}
+                            onChange={(e) => setDestinationField(idx, "title", e.target.value)}
+                            placeholder="örn. Pamukkale"
+                            disabled={busy}
+                          />
+                        </div>
+                        <div>
+                          <label className="muted">Adres / açıklama</label>
+                          <input
+                            value={dest?.address || ""}
+                            onChange={(e) => setDestinationField(idx, "address", e.target.value)}
+                            placeholder="örn. Pamukkale Travertenleri giriş"
+                            disabled={busy}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label className="muted">Lat (manuel / fallback)</label>
+                          <input
+                            value={dest?.lat || ""}
+                            onChange={(e) => setDestinationCoordField(idx, "lat", e.target.value)}
+                            placeholder="örn. 37.7765"
+                            disabled={busy}
+                          />
+                        </div>
+                        <div>
+                          <label className="muted">Lng (manuel / fallback)</label>
+                          <input
+                            value={dest?.lng || ""}
+                            onChange={(e) => setDestinationCoordField(idx, "lng", e.target.value)}
+                            placeholder="örn. 29.0864"
+                            disabled={busy}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+                        <button type="button" className="btn sm" onClick={() => geocodeDestination(idx)} disabled={busy}>Bul</button>
+                        <button type="button" className="btn sm" onClick={() => openDestinationMapPicker(idx)} disabled={busy}>Haritadan seç</button>
+                        {hasCoord(coordNum(dest?.lat), coordNum(dest?.lng)) ? (
+                          <button type="button" className="btn sm" onClick={() => openDestinationNavigation(dest)} disabled={busy}>Navigasyonda aç</button>
+                        ) : null}
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          {dest?.status === "ok"
+                            ? `✅ ${dest?.foundText || "Bulundu"}`
+                            : dest?.status === "manual"
+                            ? `📍 ${dest?.foundText || "Koordinat hazır"}`
+                            : dest?.status === "error"
+                            ? `⚠ ${dest?.foundText || "Bulunamadı"}`
+                            : dest?.status === "loading"
+                            ? "Bulunuyor..."
+                            : "Henüz aranmadı"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
+                  <button type="button" className="btn" onClick={addDestination} disabled={busy}>+ Yer ekle</button>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <label className="muted">Dönüş tipi</label>
+                <select value={orgReturnType} onChange={(e) => setOrgReturnType(e.target.value)} disabled={busy}>
+                  <option value="RETURN_TO_START">Başlangıç noktasına dön</option>
+                  <option value="END_AT_LAST_STOP">Son noktada bitir</option>
+                </select>
+              </div>
+            </div>
+          ) : null}
+
           <div className="card">
-            <div style={{ fontWeight: 800 }}>Opsiyonel ayarlar</div>
+            <div style={{ fontWeight: 800 }}>{organization ? "Ek not / bütçe" : "Opsiyonel ayarlar"}</div>
             <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div>
                 <label className="muted">Taslak not (ops.)</label>
@@ -1012,7 +1562,7 @@ setSentOk(true);
       {/* Step-2: People + stops */}
       {step === 2 ? (
         <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div className="muted">3. adım: {who} ekle/import → durak üret → önizleme.</div>
+          <div className="muted">{organization ? "3. adım: Yerleri ve kişi sayısını son kez kontrol et. Kişi/import bölümü Organization için opsiyoneldir." : `3. adım: ${who} ekle/import → durak üret → önizleme.`}</div>
           {!draftShiftIds.length ? (
             <div className="card err">Önce taslak shift oluşturmalısın.</div>
           ) : (
@@ -1022,9 +1572,32 @@ setSentOk(true);
             </div>
           )}
 
-          <div className="card">
-            <ShiftPeopleTab token={token} me={me} shifts={draftShifts} roomsById={roomsById} mirrorShiftIds={(draftShifts || []).map((s) => s.id)} />
-          </div>
+          {organization ? (
+            <>
+              <div className="card">
+                <div style={{ fontWeight: 800 }}>Plan özeti</div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Toplanma: <b>{orgGatheringName || "-"}</b> • Tahmini kişi: <b>{orgEstimatedPax || "-"}</b> • Dönüş: <b>{orgReturnType === "RETURN_TO_START" ? "Başlangıç noktasına dön" : "Son noktada bitir"}</b>
+                </div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Yerler: {orgFilledDestinations.length ? orgFilledDestinations.map((d) => d.title || d.address).join(" → ") : "Henüz yer girilmedi"}
+                </div>
+              </div>
+              <details className="card">
+                <summary style={{ cursor: "pointer", fontWeight: 800 }}>Opsiyonel kişi / import alanı</summary>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Organization için bu bölüm zorunlu değil. Sadece kişi listesi de taşımak istersen kullan.
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <ShiftPeopleTab token={token} me={me} shifts={draftShifts} roomsById={roomsById} mirrorShiftIds={(draftShifts || []).map((s) => s.id)} />
+                </div>
+              </details>
+            </>
+          ) : (
+            <div className="card">
+              <ShiftPeopleTab token={token} me={me} shifts={draftShifts} roomsById={roomsById} mirrorShiftIds={(draftShifts || []).map((s) => s.id)} />
+            </div>
+          )}
 
           <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setStep(1)} disabled={busy}>Geri</button>
@@ -1036,7 +1609,21 @@ setSentOk(true);
       {/* Step-3: Solve + offers */}
       {step === 3 ? (
         <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-          <div className="muted">4. adım: OSRM matrisi (opsiyonel) → çöz → durakları sırala → room’lara toplu teklif gönder.</div>
+          <div className="muted">{organization ? "4. adım: Ön izle, rota sırasını iyileştir ve plan tamamsa uygun room'lara teklif gönder. Eksik koordinat varsa markete düşmez." : "4. adım: Ön izleme al → rota sırasını iyileştir → uygun room'lara teklif gönder."}</div>
+
+          {organization ? (
+            <div className="card" style={{ border: orgDraftCompletion.ready ? "1px solid #2a7" : "1px solid #b85" }}>
+              <div style={{ fontWeight: 800 }}>{orgDraftCompletion.ready ? "✅ Markete gönderime hazır" : "⚠ Plan henüz tam değil"}</div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                {orgDraftCompletion.ready
+                  ? `Tahmini kişi: ${Number(orgEstimatedPax || 0) || 0} • Tüm yerler koordinatlı • Taslak shift'lerde ${orgDraftCompletion.expectedStops} ziyaret noktası hazır.`
+                  : orgDraftCompletion.reasons.join(" • ")}
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Not: Organization işlerinde plan tam oluşmadan markete düşmez.
+              </div>
+            </div>
+          ) : null}
 
           <div className="card">
             <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -1079,6 +1666,9 @@ setSentOk(true);
                         <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
   <button type="button" onClick={() => osrmReorder(s.id)} disabled={busy}>
     OSRM ile sırala
+  </button>
+  <button type="button" onClick={() => openShiftNavigation(s)} disabled={busy}>
+    Navigasyon
   </button>
   {osrmResById?.[Number(s.id)]?.ok === true ? (
     <span className="muted">✅</span>
@@ -1156,7 +1746,7 @@ setSentOk(true);
               <button type="button" onClick={() => { setSelRoomIds({}); setOfferAmount(""); setOfferNote(""); }} disabled={busy}>
                 Temizle
               </button>
-              <button type="button" onClick={sendBulkOffers} disabled={busy || !roomsSupported}>
+              <button type="button" onClick={sendBulkOffers} disabled={busy || !roomsSupported || (organization && !orgDraftCompletion.ready)}>
                 Toplu Teklifleri Gönder
               </button>
             </div>
@@ -1171,5 +1761,52 @@ setSentOk(true);
         </div>
       ) : null}
     </Modal>
+
+    <Modal
+      open={mapPickIdx != null}
+      onClose={() => {
+        setMapPickIdx(null);
+        setMapPickPoint(null);
+      }}
+    >
+      <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ fontWeight: 800 }}>Haritadan nokta seç</div>
+        <div className="muted">Haritada bir noktaya tıkla. Seçilen koordinat ilgili yer kartına yazılır.</div>
+        <div style={{ height: 360, width: "100%", border: "1px solid #223", borderRadius: 12, overflow: "hidden" }}>
+          {Array.isArray(mapPickPoint) ? (
+            <MapContainer center={mapPickPoint} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+              <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapPickEvents onPick={(lat, lng) => setMapPickPoint([lat, lng])} />
+              <CircleMarker center={mapPickPoint} radius={9} pathOptions={{ color: "#2563eb", fillColor: "#2563eb", fillOpacity: 0.7 }} />
+            </MapContainer>
+          ) : null}
+        </div>
+        <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <label className="muted">Lat</label>
+            <input value={fmtCoord(mapPickPoint?.[0])} readOnly />
+          </div>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <label className="muted">Lng</label>
+            <input value={fmtCoord(mapPickPoint?.[1])} readOnly />
+          </div>
+        </div>
+        <div className="row" style={{ justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setMapPickIdx(null);
+              setMapPickPoint(null);
+            }}
+          >
+            Vazgeç
+          </button>
+          <button type="button" onClick={applyDestinationMapPoint} disabled={!Array.isArray(mapPickPoint)}>
+            Bu noktayı kullan
+          </button>
+        </div>
+      </div>
+    </Modal>
+    </>
   );
 }

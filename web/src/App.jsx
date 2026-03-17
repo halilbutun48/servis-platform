@@ -226,7 +226,7 @@ export default function App() {
 
 
     // ORGANIZATION (Company.kind=ORGANIZATION)
-    if (path === "/organization") return { layout: true, node: <OrganizationCenterPanel /> };
+    if (path === "/organization") return { layout: true, node: <CompanyWorkflowPanel /> };
     if (path === "/organization/plans") return { layout: true, node: <OrganizationPlansPanel /> };
     if (path === "/organization/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/organization/shifts") return { layout: true, node: <CompanyShiftsPanel /> };

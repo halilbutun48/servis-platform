@@ -18,6 +18,8 @@
 - **RUNBOOK_M52_IMPORT_CONTRACT.md** — import contract ve geo pipeline runbook
 - **MILESTONE_M53_STOP_ROUTE_PRODUCTIZATION.md** — stop generation ve route quality ürünleştirme milestone
 - **RUNBOOK_M53_STOP_ROUTE_PRODUCTIZATION.md** — stop/route productization runbook
+- **MILESTONE_M53_3_PLAN_BUILDER_STAGE3.md** — Plan Builder Stage-3 reorder ve aktarım tamamlama milestone
+- **RUNBOOK_M53_3_PLAN_BUILDER_STAGE3.md** — Plan Builder Stage-3 parametreler, aktarım ve uygulama runbook
 - **MILESTONE_M22.md ... MILESTONE_M32.md** — milestone açıklamaları
 
 ## Arşiv

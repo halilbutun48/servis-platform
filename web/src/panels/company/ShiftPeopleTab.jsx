@@ -256,7 +256,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 
   const [selectedShiftId, setSelectedShiftId] = useState("");
-  const [maxWalkM, setMaxWalkM] = useState(250);
+  const [maxWalkM, setMaxWalkM] = useState(me?.companyKind === "SCHOOL" ? 50 : 250);
 
   // ✅ M51.B: Shift Hub (Toplanma/Dağıtım)
   const [hubDirection, setHubDirection] = useState("INBOUND");
@@ -274,6 +274,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [people, setPeople] = useState([]);
   const [draftStops, setDraftStops] = useState([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [stopSummary, setStopSummary] = useState(null);
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -486,6 +487,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo("");
     setImportSummary(null);
     setImportWarnings([]);
+    setStopSummary(null);
     setImportQuickStats({ found: 0, notFound: 0, error: 0 });
 
     const sid = String(selectedShiftId);
@@ -573,6 +575,33 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     }
     return { ok, review, failed, total: people.length };
   }, [people]);
+
+  function buildStopSummary(base = {}, stopsInput = draftStops, peopleInput = people) {
+    const allStops = Array.isArray(stopsInput) ? stopsInput : [];
+    const realStops = stripHubStop(allStops);
+    const hubIncluded = allStops.some((x) => String(x?.id || "") === "hub");
+    const totalPeople = Number(base.totalPeople ?? (Array.isArray(peopleInput) ? peopleInput.length : 0));
+    const reviewCount = Number(base.reviewCount ?? (Array.isArray(peopleInput) ? peopleInput.filter((p) => (p.geoStatus || computeGeoStatus(p)) === "NEEDS_REVIEW").length : 0));
+    const coveredCount = Number(base.coveredCount ?? realStops.reduce((sum, s) => sum + Number(s?.count || 0), 0));
+    const singletonCount = Number(base.singletonCount ?? realStops.filter((s) => Number(s?.count || 0) === 1).length);
+    const stopCountWithoutHub = Number(base.stopCountWithoutHub ?? base.stopCount ?? realStops.length);
+    const stopCountWithHub = Number(base.stopCountWithHub ?? (stopCountWithoutHub + (hubIncluded ? 1 : 0)));
+    const skippedCount = Number(base.skippedCount ?? Math.max(0, totalPeople - coveredCount - reviewCount));
+    const stopLoads = realStops.map((s, i) => ({ title: String(s?.title || `Durak ${i + 1}`), count: Number(s?.count || 0) }));
+    return {
+      ...base,
+      totalPeople,
+      reviewCount,
+      coveredCount,
+      singletonCount,
+      stopCount: stopCountWithoutHub,
+      stopCountWithoutHub,
+      stopCountWithHub,
+      hubIncluded,
+      skippedCount,
+      stopLoads,
+    };
+  }
 
   function stripHubStop(list) {
     const arr = Array.isArray(list) ? list : [];
@@ -1038,9 +1067,19 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         const ids = mirrorIds.length ? mirrorIds : [Number(selectedShiftId)];
         await apiOr404Fallback(
           async () => {
+            let firstResp = null;
             for (const id of ids) {
-              await generateStopsOnBackend(String(id), mw);
+              const resp = await generateStopsOnBackend(String(id), mw);
+              if (!firstResp) firstResp = resp;
             }
+            const loadedStops = await loadShiftStopsFromApi();
+            setStopSummary(buildStopSummary({
+              maxWalkM: mw,
+              stopCount: Number(firstResp?.stopCount || 0),
+              coveredCount: Number(firstResp?.assignmentCount || 0),
+              skippedCount: Number(firstResp?.skippedCount || 0),
+              hubApplied: Boolean(firstResp?.hubApplied),
+            }, loadedStops, people));
             setPeopleBackend("on");
             return true;
           },
@@ -1050,7 +1089,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           }
         );
 
-        await loadShiftStopsFromApi();
         return;
       } catch (e) {
         setErr(String(e?.payload?.message || e?.message || e));
@@ -1059,7 +1097,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
     // Fallback: UI-only preview (does not persist)
     const stops = clusterPeople(people, mw);
-    setDraftStops(withHubStop(stops, selectedShift));
+    const withHub = withHubStop(stops, selectedShift);
+    setDraftStops(withHub);
+    setStopSummary(buildStopSummary({ maxWalkM: mw, hubApplied: Boolean(selectedShift?.hubLat && selectedShift?.hubLng) }, withHub, people));
     setInfo(stops.length ? `Draft durak uretildi: ${stops.length} durak` : "OK koordinatli kayit yok - durak uretilemedi.");
   }
 
@@ -1086,7 +1126,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         }));
       const withHub = withHubStop(mapped, selectedShift);
       setDraftStops(withHub);
+      setStopSummary(buildStopSummary({}, withHub, people));
       setInfo(`Shift durakları yüklendi: ${withHub.length}`);
+      return withHub;
     } catch (e) {
       setErr(`Shift durakları yüklenemedi: ${String(e?.payload?.message || e?.message || e)}`);
     } finally {
@@ -1139,6 +1181,15 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
               <input type="number" value={maxWalkM} onChange={(e) => setMaxWalkM(e.target.value)} disabled={busy} />
             </div>
 
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM(String(me?.companyKind === "SCHOOL" ? 50 : 250))}>
+                {me?.companyKind === "SCHOOL" ? "School 50" : "Company 250"}
+              </button>
+              {me?.companyKind === "SCHOOL" ? null : (
+                <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM("50")}>School 50</button>
+              )}
+            </div>
+
             <button type="button" disabled={busy} onClick={generateDraftStops}>
               Durak Üret (Preview)
             </button>
@@ -1168,6 +1219,30 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           <div className="muted" style={{ marginTop: 6 }}>
             <b>Draft Durak:</b> {draftStops.length}
           </div>
+
+          {stopSummary ? (
+            <div className="card" style={{ marginTop: 10 }}>
+              <div className="muted"><b>Stop Generation Özeti</b></div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                maxWalkM: <b>{stopSummary.maxWalkM ?? maxWalkM}</b> • Durak (hub hariç): <b>{stopSummary.stopCountWithoutHub ?? stopSummary.stopCount}</b> • Durak (hub dahil): <b>{stopSummary.stopCountWithHub ?? stopSummary.stopCount}</b>
+              </div>
+              <div className="muted" style={{ marginTop: 4 }}>
+                Toplam kişi: <b>{stopSummary.totalPeople}</b> • Kapsanan: <b>{stopSummary.coveredCount}</b> • Tekil: <b>{stopSummary.singletonCount}</b> • Review: <b>{stopSummary.reviewCount}</b> • Dışarıda/skip: <b>{stopSummary.skippedCount}</b>
+                {stopSummary.hubApplied ? <span> • Hub uygulandı</span> : null}
+              </div>
+              {(stopSummary.stopCountWithHub ?? stopSummary.stopCount) !== (stopSummary.stopCountWithoutHub ?? stopSummary.stopCount) ? (
+                <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                  Hub sayıya ayrı eklenir: preview ve draft sayaçlarında hub dahil sayı bir fazla görünebilir.
+                </div>
+              ) : null}
+              {Array.isArray(stopSummary.stopLoads) && stopSummary.stopLoads.length ? (
+                <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                  {stopSummary.stopLoads.slice(0, 8).map((s) => `${s.title}: ${s.count}`).join(' • ')}
+                  {stopSummary.stopLoads.length > 8 ? ' • ...' : ''}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
             Not: “Durak Üret” sadece koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kullanır.

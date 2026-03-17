@@ -9,6 +9,35 @@ import { apiOr404Fallback } from "../utils/apiFallback";
 import StopTimeline from "./StopTimeline";
 import { openFullRouteNavigation } from "../utils/navigation";
 
+function routeSourceLabel(source) {
+  if (String(source || "").toUpperCase() === "LEARNED") return "Learned";
+  return "Tahmini";
+}
+
+function buildRouteQuality(summary, source, stops, people) {
+  const stopList = Array.isArray(stops) ? stops : [];
+  const peopleList = Array.isArray(people) ? people : [];
+  const stopCountWithoutHub = Number(summary?.stopCount ?? stopList.length ?? 0);
+  const hubIncluded = String(summary?.startLabel || "") === "HUB" || String(summary?.endLabel || "") === "HUB";
+  const stopCountWithHub = stopCountWithoutHub + (hubIncluded ? 1 : 0);
+  const singletonCount = stopList.filter((s) => Number(s?.count || 0) === 1).length;
+  const reviewCount = peopleList.filter((p) => String(p?.geoStatus || "") === "NEEDS_REVIEW").length;
+  const qualityNotes = [];
+  if (summary?.warning === "hubMissing") qualityNotes.push("Hub eksik; rota tahmini stop sırasına göre gösteriliyor.");
+  if (reviewCount > 0) qualityNotes.push(`${reviewCount} review kaydı rota kalitesini sınırlayabilir.`);
+  if (!qualityNotes.length) {
+    qualityNotes.push(String(source || "").toUpperCase() === "LEARNED" ? "Learned rota verisi kullanıldı." : "Tahmini rota verisi kullanıldı.");
+  }
+  return {
+    stopCountWithoutHub,
+    stopCountWithHub,
+    singletonCount,
+    reviewCount,
+    sourceLabel: routeSourceLabel(source),
+    qualityNotes,
+  };
+}
+
 function FitBounds({ bounds }) {
   const map = useMap();
 
@@ -27,7 +56,7 @@ function FitBounds({ bounds }) {
   return null;
 }
 
-export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people }) {
+export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people, previewSummary = null, previewPathPoints = null, previewSource = null, previewShift = null }) {
   if (!open) return null;
 
   const [remote, setRemote] = useState({
@@ -112,6 +141,10 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
 
   const effStops = remote.stops ?? stops ?? [];
   const effPeople = remote.people ?? people ?? [];
+  const effSummary = remote.summary ?? previewSummary ?? null;
+  const effPathPoints = remote.pathPoints ?? previewPathPoints ?? null;
+  const effSource = remote.source ?? previewSource ?? null;
+  const effShift = remote.shift ?? previewShift ?? null;
 
   const stopPts = (effStops || []).filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number");
 
@@ -138,7 +171,7 @@ function scrollToStopRow(stopId) {
     .filter((p) => typeof p?.lat === "number" && typeof p?.lng === "number")
     .map((p) => ({ lat: p.lat, lng: p.lng }));
 
-  const pathPts = (remote.pathPoints || [])
+  const pathPts = (effPathPoints || [])
     .filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number")
     .map((p) => ({ lat: p.lat, lng: p.lng }));
 
@@ -147,6 +180,26 @@ function scrollToStopRow(stopId) {
     if (stopPts.length >= 2) return stopPts.map((s) => ({ lat: s.lat, lng: s.lng }));
     return [];
   }, [pathPts, stopPts]);
+
+  const routeQuality = useMemo(
+    () => buildRouteQuality(effSummary, effSource, stopPts, effPeople),
+    [effSummary, effSource, stopPts, effPeople]
+  );
+  const allStopCountsZero = useMemo(
+    () => (stopPts || []).every((s) => Math.max(0, Number(s?.count || 0)) === 0),
+    [stopPts]
+  );
+
+  const effectiveRequiredPax = useMemo(
+    () => Math.max(0, Number(effSummary?.totalPassengerCount || 0), Number(effShift?.requiredPaxOverride || 0)),
+    [effSummary, effShift]
+  );
+
+  const organizationLikePreview = useMemo(
+    () => effectiveRequiredPax > 0 && stopPts.length > 0 && allStopCountsZero,
+    [effectiveRequiredPax, stopPts.length, allStopCountsZero]
+  );
+
 
   const bounds = useMemo(() => {
     const pts = (linePts.length ? linePts : stopPts.map((s) => ({ lat: s.lat, lng: s.lng })));
@@ -170,19 +223,19 @@ function scrollToStopRow(stopId) {
       lng: Number(s.lng),
     })).filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lng) && !(Math.abs(s.lat) < 1e-9 && Math.abs(s.lng) < 1e-9));
 
-    const hubLat = Number(remote?.shift?.hubLat);
-    const hubLng = Number(remote?.shift?.hubLng);
+    const hubLat = Number(effShift?.hubLat);
+    const hubLng = Number(effShift?.hubLng);
     const hasHub = Number.isFinite(hubLat) && Number.isFinite(hubLng) && !(Math.abs(hubLat) < 1e-9 && Math.abs(hubLng) < 1e-9);
     const hubStop = hasHub ? { id: '__hub__', title: 'Hub', lat: hubLat, lng: hubLng } : null;
 
-    const direction = String(remote?.summary?.direction || remote?.shift?.direction || '').toUpperCase();
-    const pattern = String(remote?.summary?.pattern || remote?.shift?.pattern || '').toUpperCase();
+    const direction = String(effSummary?.direction || effShift?.direction || '').toUpperCase();
+    const pattern = String(effSummary?.pattern || effShift?.pattern || '').toUpperCase();
 
     if (!hubStop) return baseStops;
     if (pattern === 'LOOP') return [hubStop, ...baseStops, hubStop];
     if (direction === 'OUTBOUND') return [hubStop, ...baseStops];
     return [...baseStops, hubStop];
-  }, [stopPts, remote?.shift, remote?.summary]);
+  }, [stopPts, effShift, effSummary]);
 
   const canOpenExternalNav = previewNavStops.length >= 2;
 
@@ -214,38 +267,57 @@ function scrollToStopRow(stopId) {
 
         <div className="muted" style={{ marginTop: 8 }}>
           Durak: {stopPts.length}
-          {remote.summary?.totalPassengerCount != null ? ` • Toplam Kişi: ${remote.summary.totalPassengerCount}` : ""}
+          {effectiveRequiredPax > 0 ? ` • ${organizationLikePreview ? "Tahmini Kişi" : "Toplam Kişi"}: ${effectiveRequiredPax}` : ""}
           {peoplePts.length ? ` • Personel (koordinatlı): ${peoplePts.length}` : ""}
+          {organizationLikePreview ? " • Ziyaret noktası önizlemesi" : ""}
         </div>
 
-        {remote.summary ? (
+        {effSummary ? (
           <div className="card" style={{ marginTop: 12, padding: 10 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <b>Özet</b>
               <span className="muted">•</span>
-              <span className="muted">Tip: {remote.summary.direction}/{remote.summary.pattern}{remote.summary.isLoop ? " (LOOP)" : ""}</span>
+              <span className="muted">Tip: {effSummary.direction}/{effSummary.pattern}{effSummary.isLoop ? " (LOOP)" : ""}</span>
               <span className="muted">•</span>
-              <span className="muted">Kaynak: {remote.source || "ESTIMATED"}</span>
+              <span className="muted">Kaynak: {routeQuality.sourceLabel}</span>
             </div>
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
-              <div>Durak: <b>{remote.summary.stopCount ?? stopPts.length}</b></div>
-              <div>Kişi: <b>{Number(remote.summary.totalPassengerCount ?? stopPts.reduce((sum, s) => sum + Number(s.count ?? 0), 0))}</b></div>
-              <div>KM (tahmini): <b>{Number(remote.summary.distanceKmEstimated || 0).toFixed(2)}</b></div>
-              <div>Süre (tahmini): <b>{Number(remote.summary.durationMinEstimated || 0)}</b> dk</div>
+              <div>Durak (hub hariç): <b>{routeQuality.stopCountWithoutHub}</b></div>
+              <div>Durak (hub dahil): <b>{routeQuality.stopCountWithHub}</b></div>
+              <div>{organizationLikePreview ? "Tahmini kişi" : "Kişi"}: <b>{effectiveRequiredPax || Number(stopPts.reduce((sum, s) => sum + Number(s.count ?? 0), 0))}</b></div>
+              <div>KM (tahmini): <b>{Number(effSummary?.distanceKmEstimated || 0).toFixed(2)}</b></div>
+              <div>Süre (tahmini): <b>{Number(effSummary?.durationMinEstimated || 0)}</b> dk</div>
 
-              {remote.summary.distanceKmLearned != null ? (
+              {effSummary?.distanceKmLearned != null ? (
                 <>
-                  <div>KM (learned): <b>{Number(remote.summary.distanceKmLearned || 0).toFixed(2)}</b></div>
-                  <div>Süre (learned): <b>{Number(remote.summary.durationMinLearned || 0)}</b> dk</div>
-                  <div className="muted">n={remote.summary.learnedSampleCount || 0}</div>
+                  <div>KM (learned): <b>{Number(effSummary?.distanceKmLearned || 0).toFixed(2)}</b></div>
+                  <div>Süre (learned): <b>{Number(effSummary?.durationMinLearned || 0)}</b> dk</div>
+                  <div className="muted">n={effSummary?.learnedSampleCount || 0}</div>
                 </>
               ) : null}
             </div>
 
-            {remote.summary.warning ? (
+            <div className="card" style={{ marginTop: 10, padding: 10 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <b>Rota Kalitesi</b>
+                <span className="muted">•</span>
+                <span className="muted">Kaynak: {routeQuality.sourceLabel}</span>
+              </div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+                <div>Tekil durak: <b>{routeQuality.singletonCount}</b></div>
+                <div>Review etkisi: <b>{routeQuality.reviewCount}</b></div>
+                <div>Başlangıç: <b>{effSummary?.startLabel || "-"}</b></div>
+                <div>Bitiş: <b>{effSummary?.endLabel || "-"}</b></div>
+              </div>
               <div className="muted" style={{ marginTop: 8 }}>
-                Uyarı: {String(remote.summary.warning)}
+                {routeQuality.qualityNotes.join(" • ")}
+              </div>
+            </div>
+
+            {effSummary?.warning ? (
+              <div className="muted" style={{ marginTop: 8 }}>
+                Uyarı: {String(effSummary?.warning)}
               </div>
             ) : null}
           </div>
@@ -348,7 +420,7 @@ function scrollToStopRow(stopId) {
                     <th>#</th>
                     <th>Başlık</th>
                     <th>Koordinat</th>
-                    <th>Kişi</th>
+                    <th>{organizationLikePreview ? "Not" : "Kişi"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -359,7 +431,7 @@ function scrollToStopRow(stopId) {
                       <td className="muted">
                         {s.lat.toFixed(5)}, {s.lng.toFixed(5)}
                       </td>
-                      <td className="muted">{s.count != null ? s.count : "-"}</td>
+                      <td className="muted">{organizationLikePreview ? "Ziyaret noktası" : (s.count != null ? s.count : "-")}</td>
                     </tr>
                   ))}
                 </tbody>

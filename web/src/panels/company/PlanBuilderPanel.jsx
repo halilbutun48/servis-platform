@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { personLabel } from "../../utils/labels";
+import RoutePreviewModal from "../../components/RoutePreviewModal";
 
 // Tiny geohash encoder (no deps)
 const GEOHASH_BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
@@ -134,6 +135,7 @@ export default function PlanBuilderPanel({
 }) {
   const { me } = useSession();
   const who = personLabel(me);
+  const companyDefaultMaxWalkM = me?.companyKind === "SCHOOL" ? 50 : 250;
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -147,6 +149,7 @@ export default function PlanBuilderPanel({
   // Stage-2: route solve (OR-Tools optional)
   const [solveBusy, setSolveBusy] = useState({}); // { [idx]: true }
   const [solveRes, setSolveRes] = useState({}); // { [idx]: { ok, solver, totalMin, totalKm, orderIds, orderNames } }
+  const [previewBusy, setPreviewBusy] = useState({}); // { [idx]: true }
 
   // Stage-3: apply (create shifts + people + stops + reorder)
   const [applyBusy, setApplyBusy] = useState(false);
@@ -282,22 +285,44 @@ export default function PlanBuilderPanel({
     }
   }
   // --- /M33.6b ---
-  const [maxWalkM, setMaxWalkM] = useState("50");
+  const [maxWalkM, setMaxWalkM] = useState(() => String(me?.companyKind === "SCHOOL" ? 50 : 250));
   const [autoReorderStops, setAutoReorderStops] = useState(true);
 
   // Inputs
   const [onlyOk, setOnlyOk] = useState(true);
-  const [capacity, setCapacity] = useState("16");
+  // Company tarafında nihai araç kapasitesi belirlenmez; Stage-3 taslak gruplama kapasite ile bölünmez.
   const [precision, setPrecision] = useState("6");
   const [baseDate, setBaseDate] = useState(() => todayYmdLocal());
   const [tplKey, setTplKey] = useState(() => (templateOptions?.[0]?.key ? String(templateOptions[0].key) : ""));
-  const [transferAsMarket, setTransferAsMarket] = useState(true);
+  const transferAsMarket = true;
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [rowOfferBusy, setRowOfferBusy] = useState({});
+  const [routePreview, setRoutePreview] = useState({
+    open: false,
+    title: "",
+    stops: [],
+    people: [],
+    previewSummary: null,
+    previewPathPoints: null,
+    previewSource: null,
+    previewShift: null,
+  });
 
   useEffect(() => {
     if (tplKey) return;
     if (templateOptions?.[0]?.key) setTplKey(String(templateOptions[0].key));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateOptions?.length]);
+
+  useEffect(() => {
+    setMaxWalkM((prev) => {
+      const current = Number(prev);
+      if (!String(prev || "").trim() || current === 50 || current === 250) {
+        return String(companyDefaultMaxWalkM);
+      }
+      return prev;
+    });
+  }, [companyDefaultMaxWalkM]);
 
   async function load() {
     setErr("");
@@ -358,7 +383,6 @@ export default function PlanBuilderPanel({
   }, [items, onlyOk]);
 
   const plan = useMemo(() => {
-    const cap = Math.max(1, Number(capacity) || 1);
     const prec = Math.max(1, Math.min(12, Number(precision) || 6));
 
     const groups = new Map(); // geohash -> people[]
@@ -370,37 +394,37 @@ export default function PlanBuilderPanel({
 
     const entries = Array.from(groups.entries()).sort((a, b) => (b[1]?.length || 0) - (a[1]?.length || 0));
 
-    const vehicles = []; // [{people:[], groupKeys:Set, centroid:{lat,lng}}]
-    for (const [key, people] of entries) {
-      const remaining = [...people];
-      while (remaining.length) {
-        let v = vehicles.find((x) => (x.people?.length || 0) < cap);
-        if (!v) {
-          v = { people: [], groupKeys: new Set() };
-          vehicles.push(v);
-        }
-        const space = cap - v.people.length;
-        const take = Math.min(space, remaining.length);
-        v.people.push(...remaining.splice(0, take));
-        v.groupKeys.add(key);
-      }
-    }
+    const vehicles = entries.map(([key, people]) => ({
+      people: [...people],
+      groupKeys: new Set([key]),
+      centroid: avgLatLng(people),
+    }));
 
-    for (const v of vehicles) {
-      v.centroid = avgLatLng(v.people);
-    }
-
-    const recommended = Math.ceil((eligible.length || 0) / cap);
+    const recommended = vehicles.length;
 
     return {
-      cap,
       prec,
       groups: entries,
       vehicles,
       recommended,
       total: eligible.length,
     };
-  }, [eligible, capacity, precision]);
+  }, [eligible, precision]);
+
+  const planVehicleSignature = useMemo(
+    () => JSON.stringify((plan?.vehicles || []).map((v) => (v?.people || []).map((p) => String(p?.id ?? "")))),
+    [plan]
+  );
+
+  useEffect(() => {
+    setMxBusy({});
+    setMxRes({});
+    setMxPayload({});
+    setSolveBusy({});
+    setSolveRes({});
+    setRowOfferBusy({});
+    setPreviewBusy({});
+  }, [planVehicleSignature, rangeOverride?.startAtLocal, rangeOverride?.endAtLocal, tplKey, baseDate, onlyOk, precision]);
 
   const selectedTpl = useMemo(() => templateOptions?.find((x) => x.key === tplKey) || null, [templateOptions, tplKey]);
 
@@ -422,16 +446,381 @@ export default function PlanBuilderPanel({
     return raw === "LOOP" ? "LOOP" : "ONE_WAY";
   }, [patternOverride, selectedTpl]);
 
-  function transferVehicleToRequest(v) {
-    if (!onUseDraft) return;
+  function normalizeMaxWalkM(rawValue) {
+    return Math.min(2000, Math.max(50, Number(rawValue) || companyDefaultMaxWalkM));
+  }
+
+  function haversineMeters(a, b) {
+    const toRad = (deg) => (Number(deg) * Math.PI) / 180;
+    const lat1 = Number(a?.lat);
+    const lng1 = Number(a?.lng);
+    const lat2 = Number(b?.lat);
+    const lng2 = Number(b?.lng);
+    if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return 0;
+    const R = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const aa =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+    return Math.round(R * c);
+  }
+
+  function clusterPreviewStops(people, maxWalkMeters) {
+    const remaining = new Map((people || []).map((p) => [String(p.id), p]));
+    const distCache = new Map();
+
+    function pairKey(a, b) {
+      return String(a.id) < String(b.id) ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+    }
+
+    function dist(a, b) {
+      const k = pairKey(a, b);
+      const hit = distCache.get(k);
+      if (hit != null) return hit;
+      const meters = haversineMeters(a, b);
+      distCache.set(k, meters);
+      return meters;
+    }
+
+    const clusters = [];
+    while (remaining.size > 0) {
+      const seed = remaining.values().next().value;
+      const candidates = [];
+      for (const p of remaining.values()) {
+        if (dist(seed, p) <= maxWalkMeters) candidates.push(p);
+      }
+
+      let bestCenter = seed;
+      let bestMembers = [seed];
+      for (const candidate of candidates) {
+        const members = [];
+        for (const p of candidates) {
+          if (dist(candidate, p) <= maxWalkMeters) members.push(p);
+        }
+        if (members.length > bestMembers.length) {
+          bestCenter = candidate;
+          bestMembers = members;
+        }
+      }
+
+      for (const member of bestMembers) {
+        remaining.delete(String(member.id));
+      }
+
+      clusters.push({ center: bestCenter, members: bestMembers });
+    }
+
+    return clusters;
+  }
+
+  function orderPreviewStops(clusters, orderIds) {
+    if (!Array.isArray(orderIds) || !orderIds.length) return clusters;
+    const pos = new Map(orderIds.map((id, i) => [String(id), i]));
+    return [...clusters].sort((a, b) => {
+      const ai = Math.min(...(a.members || []).map((m) => (pos.has(String(m.id)) ? pos.get(String(m.id)) : Number.MAX_SAFE_INTEGER)));
+      const bi = Math.min(...(b.members || []).map((m) => (pos.has(String(m.id)) ? pos.get(String(m.id)) : Number.MAX_SAFE_INTEGER)));
+      if (ai !== bi) return ai - bi;
+      return (b.members?.length || 0) - (a.members?.length || 0);
+    });
+  }
+
+  function estimatePathDistanceKm(points) {
+    const list = Array.isArray(points) ? points : [];
+    let totalMeters = 0;
+    for (let i = 1; i < list.length; i++) {
+      totalMeters += haversineMeters(list[i - 1], list[i]);
+    }
+    return Number((totalMeters / 1000).toFixed(1));
+  }
+
+  function buildPreviewPathPoints(stops, hub) {
+    const stopPoints = (stops || [])
+      .map((s) => ({ lat: Number(s?.lat), lng: Number(s?.lng) }))
+      .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+    const hubLat = Number(hub?.hubLat);
+    const hubLng = Number(hub?.hubLng);
+    const hasHub =
+      Number.isFinite(hubLat) &&
+      Number.isFinite(hubLng) &&
+      !(Math.abs(hubLat) < 1e-9 && Math.abs(hubLng) < 1e-9);
+
+    if (!hasHub) return stopPoints;
+
+    const hubPoint = { lat: hubLat, lng: hubLng };
+    if (activePattern === "LOOP") return [hubPoint, ...stopPoints, hubPoint];
+    if (activeDirection === "OUTBOUND") return [hubPoint, ...stopPoints];
+    return [...stopPoints, hubPoint];
+  }
+
+  async function loadCompanyHub() {
+    try {
+      const hub = await api("/api/company/hub", { method: "GET", token });
+      return {
+        hubLat: typeof hub?.hubLat === "number" ? hub.hubLat : null,
+        hubLng: typeof hub?.hubLng === "number" ? hub.hubLng : null,
+      };
+    } catch {
+      return { hubLat: null, hubLng: null };
+    }
+  }
+
+  function buildVehicleDraft(v, idx) {
     const seatDemand = v?.people?.length || 0;
-    onUseDraft({
+    const centroid = v?.centroid || null;
+    const sampleNames = (v?.people || []).map((p) => p.fullName).filter(Boolean);
+    const mx = mxRes?.[idx] || null;
+    const sv = solveRes?.[idx] || null;
+    return {
+      idx,
+      seatDemand,
+      centroid,
+      groupCount: v?.groupKeys?.size || 0,
+      peopleIds: (v?.people || []).map((p) => p.id).filter(Boolean),
+      peopleNames: sampleNames,
       startAtLocal: range.startAtLocal,
       endAtLocal: range.endAtLocal,
-      seatDemand,
       templateKey: tplKey,
       marketMode: transferAsMarket,
-    });
+      matrixAvgMin: mx?.ok ? mx.avgMin : null,
+      matrixAvgKm: mx?.ok ? mx.avgKm : null,
+      solver: sv?.ok ? sv.solver : null,
+      routeMin: sv?.ok ? sv.totalMin : null,
+      routeKm: sv?.ok ? sv.totalKm : null,
+      orderNames: Array.isArray(sv?.orderNames) ? sv.orderNames : [],
+    };
+  }
+
+  
+async function openVehiclePreview(v, idx) {
+    setPreviewBusy((p) => ({ ...p, [idx]: true }));
+    try {
+      const people = (v?.people || [])
+        .map((p) => ({
+          id: String(p.id),
+          name: p.fullName || String(p.id),
+          lat: Number(p.homeLat),
+          lng: Number(p.homeLng),
+          geoStatus: p.geoStatus || "",
+        }))
+        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+      const hub = await loadCompanyHub();
+      const mw = normalizeMaxWalkM(maxWalkM);
+      const personSolve = solveRes?.[idx];
+      const orderedClusters = orderPreviewStops(
+        clusterPreviewStops(people, mw),
+        Array.isArray(personSolve?.orderIds) ? personSolve.orderIds : null
+      );
+
+      let stops = orderedClusters.map((cluster, i) => ({
+        id: `preview-stop-${idx}-${i + 1}`,
+        title:
+          (cluster.members?.length || 0) > 1
+            ? `${cluster.members.length} kişi • Durak ${i + 1}`
+            : cluster.members?.[0]?.name || `Durak ${i + 1}`,
+        lat: Number(cluster.center?.lat),
+        lng: Number(cluster.center?.lng),
+        count: cluster.members?.length || 0,
+        order: i + 1,
+        state: "PENDING",
+      }));
+
+      let previewSource = "ESTIMATED";
+      let distanceKmEstimated = personSolve?.ok && Number.isFinite(Number(personSolve.totalKm))
+        ? Number(personSolve.totalKm)
+        : null;
+      let durationMinEstimated = personSolve?.ok && Number.isFinite(Number(personSolve.totalMin))
+        ? Number(personSolve.totalMin)
+        : null;
+      let previewWarning = null;
+
+      if (stops.length >= 2) {
+        const stopPoints = stops.map((s) => ({ id: s.id, lat: Number(s.lat), lng: Number(s.lng) }));
+        const stopMx = await api("/api/plan-builder/osrm-table", {
+          method: "POST",
+          token,
+          body: { points: stopPoints, profile: "driving" },
+        });
+
+        if (stopMx?.ok) {
+          const stopSolve = await api("/api/plan-builder/solve-vrp", {
+            method: "POST",
+            token,
+            body: {
+              durationsSec: stopMx.durationsSec,
+              distancesM: stopMx.distancesM,
+              pointIds: stopPoints.map((p) => p.id),
+              depotIndex: 0,
+              returnToDepot: false,
+              preferOrtools: true,
+            },
+          });
+
+          if (stopSolve?.ok && Array.isArray(stopSolve.orderPointIds) && stopSolve.orderPointIds.length === stopPoints.length) {
+            const byId = new Map(stops.map((s) => [String(s.id), s]));
+            stops = stopSolve.orderPointIds.map((id, i) => ({
+              ...(byId.get(String(id)) || byId.values().next().value),
+              order: i + 1,
+            }));
+            previewSource = stopSolve.solver === "ortools" ? "ESTIMATED" : "ESTIMATED";
+            distanceKmEstimated = fmtKm(stopSolve.totalDistanceM) ?? estimatePathDistanceKm(buildPreviewPathPoints(stops, hub));
+            durationMinEstimated = fmtMin(stopSolve.totalDurationSec) ?? Math.max(1, Math.round((Number(distanceKmEstimated || 0) / 30) * 60));
+          } else {
+            previewWarning = "OSRM/solver iyileştirmesi tamamlanamadı; temel stop sırası gösteriliyor.";
+          }
+        } else {
+          previewWarning = "OSRM tablo alınamadı; temel stop sırası gösteriliyor.";
+        }
+      }
+
+      const previewPathPoints = buildPreviewPathPoints(stops, hub);
+      if (distanceKmEstimated == null) distanceKmEstimated = estimatePathDistanceKm(previewPathPoints);
+      if (durationMinEstimated == null) durationMinEstimated = Math.max(1, Math.round((distanceKmEstimated / 30) * 60));
+
+      const hasHub =
+        Number.isFinite(Number(hub?.hubLat)) &&
+        Number.isFinite(Number(hub?.hubLng)) &&
+        !(Math.abs(Number(hub?.hubLat)) < 1e-9 && Math.abs(Number(hub?.hubLng)) < 1e-9);
+
+      setRoutePreview({
+        open: true,
+        title: `Taslak Rota Önizleme • Küme #${idx + 1}`,
+        stops,
+        people,
+        previewSummary: {
+          direction: activeDirection,
+          pattern: activePattern,
+          isLoop: activePattern === "LOOP",
+          stopCount: stops.length,
+          totalPassengerCount: people.length,
+          distanceKmEstimated,
+          durationMinEstimated,
+          startLabel: hasHub ? (activePattern === "LOOP" || activeDirection === "OUTBOUND" ? "HUB" : "STOP") : "STOP",
+          endLabel: hasHub ? (activePattern === "LOOP" || activeDirection === "INBOUND" ? "HUB" : "STOP") : "STOP",
+          warning: !hasHub ? "hubMissing" : previewWarning,
+        },
+        previewPathPoints,
+        previewSource,
+        previewShift: {
+          hubLat: hub?.hubLat ?? null,
+          hubLng: hub?.hubLng ?? null,
+          direction: activeDirection,
+          pattern: activePattern,
+        },
+      });
+    } catch (e) {
+      setErr(`Ön izleme hazırlanamadı: ${String(e?.message || e)}`);
+    } finally {
+      setPreviewBusy((p) => {
+        const nx = { ...p };
+        delete nx[idx];
+        return nx;
+      });
+    }
+  }
+
+  async function createMarketOfferForVehicle(v, idx) {
+    const startAt = istanbulLocalToUtcIso(range.startAtLocal);
+    const endAt = istanbulLocalToUtcIso(range.endAtLocal);
+    if (!startAt || !endAt) {
+      setErr("Start/End geçersiz. Şablon + tarih seç.");
+      return;
+    }
+
+    const seatDemand = v?.people?.length || 0;
+    if (!seatDemand) {
+      setErr("Aktarılacak kişi yok.");
+      return;
+    }
+
+    const mw = normalizeMaxWalkM(maxWalkM);
+    setErr("");
+    setRowOfferBusy((p) => ({ ...p, [idx]: true }));
+    try {
+      let hubLat = null;
+      let hubLng = null;
+      try {
+        const hub = await loadCompanyHub();
+        hubLat = hub.hubLat;
+        hubLng = hub.hubLng;
+      } catch {}
+
+      const shift = await api("/api/shifts", {
+        method: "POST",
+        token,
+        body: { startAt, endAt, status: "REQUESTED", hubLat, hubLng, direction: activeDirection, pattern: activePattern },
+      });
+      const shiftId = Number(shift?.id);
+      if (!shiftId) throw new Error("shiftCreateFailed");
+
+      const peopleItems = (v.people || []).map((p) => ({
+        personelId: p.id,
+        fullName: p.fullName,
+        lat: p.homeLat,
+        lng: p.homeLng,
+        geoManualOverride: true,
+      }));
+
+      await api(`/api/shifts/${shiftId}/people?mode=REPLACE`, {
+        method: "PUT",
+        token,
+        body: { items: peopleItems },
+      });
+
+      await api(`/api/shifts/${shiftId}/stops/generate?mode=REPLACE&maxWalkM=${mw}`, {
+        method: "POST",
+        token,
+        body: {},
+      });
+
+      if (autoReorderStops) {
+        const stopsResp = await api(`/api/shifts/${shiftId}/stops`, { method: "GET", token });
+        const stops = Array.isArray(stopsResp) ? stopsResp : (Array.isArray(stopsResp?.items) ? stopsResp.items : (Array.isArray(stopsResp?.stops) ? stopsResp.stops : []));
+        if (stops.length >= 2) {
+          const points = stops.map((s) => ({ id: s.id, lat: Number(s.lat), lng: Number(s.lng) }));
+          const mx = await api("/api/plan-builder/osrm-table", {
+            method: "POST",
+            token,
+            body: { points, profile: "driving" },
+          });
+          if (mx?.ok) {
+            const pointIds = points.map((x) => x.id);
+            const sv = await api("/api/plan-builder/solve-vrp", {
+              method: "POST",
+              token,
+              body: {
+                durationsSec: mx.durationsSec,
+                distancesM: mx.distancesM,
+                pointIds,
+                depotIndex: 0,
+                returnToDepot: false,
+                preferOrtools: true,
+              },
+            });
+            if (sv?.ok && Array.isArray(sv.orderPointIds) && sv.orderPointIds.length === pointIds.length) {
+              await api(`/api/shifts/${shiftId}/stops/reorder`, {
+                method: "PUT",
+                token,
+                body: { idsInOrder: sv.orderPointIds },
+              });
+            }
+          }
+        }
+      }
+
+      openBulkOfferModal([shiftId]);
+    } catch (e) {
+      setErr(`Ayrı market teklifi oluşturulamadı: ${String(e?.message || e)}`);
+    } finally {
+      setRowOfferBusy((p) => {
+        const nx = { ...p };
+        delete nx[idx];
+        return nx;
+      });
+    }
   }
 
   function summarizeMatrix(payload) {
@@ -509,8 +898,14 @@ export default function PlanBuilderPanel({
     setSolveBusy((p) => ({ ...p, [idx]: true }));
     try {
       let payload = mxPayload?.[idx];
-      if (!payload?.ok) {
-        // auto-fetch matrix if missing
+      const currentPointIds = (v?.people || []).map((p) => String(p?.id));
+      const cachedPointIds = (payload?.points || []).map((p) => String(p?.id));
+      const samePointSet =
+        currentPointIds.length === cachedPointIds.length &&
+        currentPointIds.every((id, i) => id === cachedPointIds[i]);
+
+      if (!payload?.ok || !samePointSet) {
+        // auto-fetch matrix if missing or stale for current cluster
         payload = await computeMatrixForVehicle(v, idx);
       }
       if (!payload?.ok) {
@@ -576,7 +971,7 @@ export default function PlanBuilderPanel({
       return;
     }
 
-    const mw = Math.min(2000, Math.max(10, Number(maxWalkM) || 50));
+    const mw = normalizeMaxWalkM(maxWalkM);
 
     setApplyBusy(true);
     try {
@@ -717,7 +1112,7 @@ export default function PlanBuilderPanel({
         <div>
           <h3 style={{ marginTop: 0 }}>Plan Builder (Stage-3)</h3>
           <div className="muted">
-            Stage-0: kişi sayısı + kapasite → araç sayısı, geohash/cluster → taslak dağıtım. • Stage-1: OSRM Table. • Stage-2: rota sırası (OR-Tools varsa) / fallback: basit heuristic.
+            Stage-0: kişi sayısı + kapasite → araç sayısı, geohash/cluster → taslak dağıtım. • Stage-1/2: OSRM + solver ile rota önerisi. • Stage-3: cluster bazlı ayrı market teklifi üretimi.
           </div>
         </div>
         <button type="button" onClick={load} disabled={busy} title={`${who} listesini yenile`}>
@@ -730,11 +1125,11 @@ export default function PlanBuilderPanel({
             <div className="card" style={{ marginTop: 10 }}>
         <h3 style={{ marginTop: 0 }}>İş Akışı</h3>
         <div className="muted">
-          <b>Plan Builder</b>: toplu üretim (cluster/OSRM/OR-Tools) → <b>Uygula</b> → market shift(ler).
+          <b>Plan Builder</b>: sade akış <b>Rota önerisi oluştur</b> → <b>Ön izle</b> → <b>Ayrı market teklifi oluştur</b>. Nihai araç/sürücü/kapasite kararı Room tarafında netleşir.
           <br />
-          <b>Manuel Talep</b>: tekil talep (istisna/düzeltme).
+          <b>Manuel Talep</b>: tekil talep (istisna / düzeltme).
           <br />
-          <b>Shift Tools</b>: shift sonrası personel/durak/konum düzeltme (Adresten Bul).
+          <b>Shift Tools</b>: shift sonrası personel / durak / konum düzeltme (Adresten Bul).
         </div>
       </div>
 <div className="grid" style={{ marginTop: 10 }}>
@@ -760,22 +1155,28 @@ export default function PlanBuilderPanel({
             <input type="checkbox" checked={onlyOk} onChange={(e) => setOnlyOk(e.target.checked)} />
             Sadece geoStatus=OK
           </label>
-
-          <div className="grid" style={{ gap: 10 }}>
-            <div className="col">
-              <label className="muted">Araç kapasitesi (koltuk)</label>
-              <input value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="örn. 16" />
-            </div>
-            <div className="col">
-              <label className="muted">Geohash precision</label>
-              <select value={precision} onChange={(e) => setPrecision(e.target.value)}>
-                <option value="5">5 (daha geniş)</option>
-                <option value="6">6 (öneri)</option>
-                <option value="7">7 (daha dar)</option>
-                <option value="8">8 (çok dar)</option>
-              </select>
-            </div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Taslak plan kapasiteye göre bölünmez; sistem konum kümelerine göre taslak grup çıkarır. Nihai araç kapasitesi <b>Room</b> tarafında netleşir.
           </div>
+          <div style={{ marginTop: 8 }}>
+            <button type="button" className="secondary" onClick={() => setShowAdvanced((v) => !v)}>
+              {showAdvanced ? "Gelişmiş ayarları gizle" : "Gelişmiş ayarları göster"}
+            </button>
+          </div>
+
+          {showAdvanced ? (
+            <div className="grid" style={{ gap: 10, marginTop: 10 }}>
+              <div className="col">
+                <label className="muted">Konuma göre gruplama hassasiyeti</label>
+                <select value={precision} onChange={(e) => setPrecision(e.target.value)}>
+                  <option value="5">5 (daha geniş)</option>
+                  <option value="6">6 (öneri)</option>
+                  <option value="7">7 (daha dar)</option>
+                  <option value="8">8 (çok dar)</option>
+                </select>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -784,7 +1185,7 @@ export default function PlanBuilderPanel({
       {!hideDraftTransferUI ? (
         <div className="grid">
         <div className="col">
-          <div style={{ fontWeight: 800 }}>Taslak Vardiya Zamanı (Talep ekranına aktarım için)</div>
+          <div style={{ fontWeight: 800 }}>Talep taslağı zamanı</div>
           <div className="grid" style={{ gap: 10 }}>
             <div className="col">
               <label className="muted">Tarih</label>
@@ -802,19 +1203,15 @@ export default function PlanBuilderPanel({
               </select>
             </div>
           </div>
-          <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-            <input type="checkbox" checked={transferAsMarket} onChange={(e) => setTransferAsMarket(e.target.checked)} />
-            Talep ekranına Market modunda aktar
-          </label>
           <div className="muted" style={{ marginTop: 6 }}>
-            Aktarım sonucu: Start=<b>{range.startAtLocal || "-"}</b> • End=<b>{range.endAtLocal || "-"}</b>
+            Önerilen teklif zamanı: Start=<b>{range.startAtLocal || "-"}</b> • End=<b>{range.endAtLocal || "-"}</b>
           </div>
         </div>
 
         <div className="col">
           <div style={{ fontWeight: 800 }}>Öneri</div>
           <div className="muted">
-            Eligible: <b>{plan.total}</b> kişi • Kapasite: <b>{plan.cap}</b> → Önerilen araç: <b>{plan.recommended}</b>
+            Eligible: <b>{plan.total}</b> kişi • Konum kümesi bazlı önerilen market shift: <b>{plan.recommended}</b>
           </div>
           <div className="muted" style={{ marginTop: 6 }}>
             Üretilen taslak araç sayısı: <b>{plan.vehicles.length}</b> • Geohash grup sayısı: <b>{plan.groups.length}</b>
@@ -824,35 +1221,33 @@ export default function PlanBuilderPanel({
       ) : null}
 
       <div className="card" style={{ marginTop: 12 }}>
-        <div style={{ fontWeight: 800, marginBottom: 6 }}>Araç / Cluster Önizleme</div>
+        <div style={{ fontWeight: 800, marginBottom: 6 }}>Taslak gruplar ve rota önerisi</div>
         <div className="muted" style={{ marginBottom: 8 }}>
-          OSRM matrisi için infra’da OSRM servisini çalıştırabilirsin (docker compose profile: <b>osrm</b>). OSRM yoksa buton hata döndürür ama UI bozulmaz.
+          Bu alan taslak plan ve teklif hazırlığı içindir. <b>Rota önerisi oluştur</b> matrix alma ve çözüm adımını tek akışta yapar. <b>Ön izle</b> stop kümeleri için OSRM+Solver iyileştirmesini uygulayıp modal açar.
         </div>
         <div className="grid" style={{ gap: 10, alignItems: "end", marginBottom: 10 }}>
           <div className="col">
-            <label className="muted">Stops generate maxWalkM (m)</label>
+            <label className="muted">Stop üretim maxWalkM (m)</label>
             <input value={maxWalkM} onChange={(e) => setMaxWalkM(e.target.value)} placeholder="250" />
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              <button type="button" className="btn sm" onClick={() => setMaxWalkM(String(companyDefaultMaxWalkM))}>
+                {me?.companyKind === "SCHOOL" ? "School 50" : "Company 250"}
+              </button>
+              {me?.companyKind === "SCHOOL" ? null : (
+                <button type="button" className="btn sm" onClick={() => setMaxWalkM("50")}>School 50</button>
+              )}
+            </div>
           </div>
           <div className="col">
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
               <input type="checkbox" checked={autoReorderStops} onChange={(e) => setAutoReorderStops(e.target.checked)} />
-              Stops’u OSRM+Solver ile sırala
+              Oluşan stop sırasını OSRM+Solver ile iyileştir
             </label>
             <div className="muted">
-              Uygula: Yeni Talep’e girmeden direkt market shift(ler) oluşturur; personelleri bağlar, stop üretir (COMMON) ve (opsiyonel) stop sırasını optimize eder.
+              Ayrı market teklifi oluşturulduğunda, seçiliyse stop üretimi sonrası OSRM+Solver ile sıralama iyileştirilir.
             </div>
           </div>
-          <div className="col" style={{ justifyContent: "end" }}>
-            <button type="button" disabled={applyBusy || !plan.total || !range.startAtLocal || !range.endAtLocal} onClick={applyPlanToShifts}>
-              {applyBusy ? "Uygulanıyor…" : "Uygula: N market shift oluştur"}
-            </button>
-          </div>
         </div>
-        {applyRes?.ok ? (
-          <div className="muted" style={{ marginBottom: 8 }}>
-            Oluşturulan: <b>{(applyRes.created || []).filter((x) => x.ok).length}</b> • Hata: <b>{(applyRes.created || []).filter((x) => !x.ok).length}</b>
-          </div>
-        ) : null}
         {!plan.total ? (
           <div className="muted">Uygun (lat/lng) personel bulunamadı.</div>
         ) : (
@@ -864,7 +1259,7 @@ export default function PlanBuilderPanel({
                 <th>Geohash grup</th>
                 <th>Merkez</th>
                 <th>Örnek</th>
-                <th>OSRM</th>
+                <th>Rota önerisi</th>
                 <th></th>
               </tr>
             </thead>
@@ -876,6 +1271,7 @@ export default function PlanBuilderPanel({
                 const mxIsBusy = !!mxBusy?.[idx];
                 const sv = solveRes?.[idx];
                 const svIsBusy = !!solveBusy?.[idx];
+                const pvIsBusy = !!previewBusy?.[idx];
                 return (
                   <tr key={idx}>
                     <td>{idx + 1}</td>
@@ -918,24 +1314,26 @@ export default function PlanBuilderPanel({
                         ) : null}
                       </div>
                       <div>
-                        <button type="button" onClick={() => computeMatrixForVehicle(v, idx)} disabled={mxIsBusy || (v.people?.length || 0) < 2}>
-                          Matris al
+                        <button type="button" onClick={() => solveRouteForVehicle(v, idx)} disabled={mxIsBusy || svIsBusy || (v.people?.length || 0) < 2}>
+                          {mxIsBusy || svIsBusy ? "Oluşturuluyor…" : "Rota önerisi oluştur"}
+                        </button>
+
+                      </div>
+                      <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>Matrix alma ve çözüm adımı otomatik yapılır.</div>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button type="button" onClick={() => { void openVehiclePreview(v, idx); }} disabled={pvIsBusy}>
+                          {pvIsBusy ? "Hazırlanıyor…" : "Ön izle"}
                         </button>
                         <button
                           type="button"
-                          style={{ marginLeft: 6 }}
-                          onClick={() => solveRouteForVehicle(v, idx)}
-                          disabled={svIsBusy || (v.people?.length || 0) < 2}
-                          title="Stage-2: rota sırası çöz (OR-Tools varsa)"
+                          disabled={!range.startAtLocal || !range.endAtLocal || !!rowOfferBusy?.[idx]}
+                          onClick={() => createMarketOfferForVehicle(v, idx)}
                         >
-                          Çöz
+                          {rowOfferBusy?.[idx] ? "Oluşturuluyor…" : "Ayrı market teklifi oluştur"}
                         </button>
                       </div>
-                    </td>
-                    <td>
-                      <button type="button" disabled={!range.startAtLocal || !range.endAtLocal} onClick={() => transferVehicleToRequest(v)}>
-                        Talep ekranına aktar
-                      </button>
                     </td>
                   </tr>
                 );
@@ -944,6 +1342,30 @@ export default function PlanBuilderPanel({
           </table>
         )}
       </div>
+
+      <RoutePreviewModal
+        open={routePreview.open}
+        onClose={() =>
+          setRoutePreview({
+            open: false,
+            title: "",
+            stops: [],
+            people: [],
+            previewSummary: null,
+            previewPathPoints: null,
+            previewSource: null,
+            previewShift: null,
+          })
+        }
+        title={routePreview.title}
+        stops={routePreview.stops}
+        people={routePreview.people}
+        previewSummary={routePreview.previewSummary}
+        previewPathPoints={routePreview.previewPathPoints}
+        previewSource={routePreview.previewSource}
+        previewShift={routePreview.previewShift}
+      />
+
           {/* --- M33.6b BULK OFFER MODAL UI --- */}
       {bulkOffer.open ? (
         <div className="modal-backdrop">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { navigate } from "../../router";
 
 const emptyPlan = () => ({
   id: null,
@@ -86,13 +87,14 @@ function Pill({ children }) {
   );
 }
 
-function SummaryCard({ current, summary, busy, onSave, onOpenOfferBox, onCreateAgreement }) {
+function SummaryCard({ current, summary, busy, onGoPlanning }) {
   return (
     <div className="card">
       <div className="title">Özet ve Aksiyonlar</div>
       <div className="muted" style={{ marginBottom: 10 }}>
-        Şirketlere Teklif Gönder = fiyatlı teklif akışı. Teklifler karşı tarafta Offers ekranına
-        düşer. Sözleşme talebi için Room ID kullanılır.
+        Yeni üretim akışı artık <b>Planlama Merkezi</b> içinden yürür. Bu ekran eski
+        organization planlarını incelemek için tutulur; yeni plan açma, teklif gönderme ve
+        sözleşme başlatma işlemleri Planlama Merkezi&apos;nden yapılmalıdır.
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
@@ -107,20 +109,8 @@ function SummaryCard({ current, summary, busy, onSave, onOpenOfferBox, onCreateA
       </div>
 
       <div style={{ display: "grid", gap: 8 }}>
-        <button type="button" disabled={busy} onClick={onSave}>
-          {busy ? "Kaydediliyor..." : "Kaydet"}
-        </button>
-
-        <button type="button" disabled={busy || !current.id} onClick={onOpenOfferBox}>
-          Şirketlere Teklif Gönder
-        </button>
-
-        <button
-          type="button"
-          disabled={busy || !current.id || !current.roomId}
-          onClick={onCreateAgreement}
-        >
-          Sözleşme Talebi Oluştur
+        <button type="button" onClick={onGoPlanning}>
+          Planlama Merkezi&apos;ne git
         </button>
       </div>
     </div>
@@ -706,10 +696,15 @@ export default function OrganizationPlansPanel() {
   return (
     <div className="wrap" style={{ maxWidth: "none", width: "100%", paddingRight: 12, overflowX: "hidden" }}>
       <div className="card" style={{ width: "100%" }}>
-        <div className="title">Yer Planları</div>
+        <div className="title">Yer Planları (Legacy)</div>
         <div className="muted">
-          Organization akışı: <b>Kaydet</b> → <b>Şirketlere Teklif Gönder</b> veya{" "}
-          <b>Sözleşme Talebi Oluştur</b> → canlı operasyon için <b>Harita</b>.
+          Yeni plan oluşturma akışı <b>Planlama Merkezi</b> ekranına taşındı. Bu sayfa eski
+          organization planlarını görmek için korunur. Yeni iş kurarken <b>Planlama Merkezi</b>
+          kullanılmalıdır.
+        </div>
+        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className="btn primary" onClick={() => navigate("/organization")}>Planlama Merkezi&apos;ne git</button>
+          <button type="button" className="btn" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Bu sayfada kal</button>
         </div>
       </div>
 
@@ -726,11 +721,11 @@ export default function OrganizationPlansPanel() {
         <div className="card" style={{ alignSelf: "start" }}>
           <div className="title">Kayıtlı Planlar</div>
           <div className="muted" style={{ marginBottom: 10 }}>
-            Hazır planı seç veya yeni plan başlat.
+            Eski planı seçip inceleyebilirsin. Yeni plan oluşturma artık Planlama Merkezi&apos;ndedir.
           </div>
 
-          <button type="button" onClick={resetForm}>
-            + Yeni Plan
+          <button type="button" onClick={() => navigate("/organization")}>
+            Planlama Merkezi&apos;ne git
           </button>
 
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
@@ -845,7 +840,7 @@ export default function OrganizationPlansPanel() {
           </div>
 
           <div className="card">
-            <div className="title">Toplu Lokasyon İçe Aktar</div>
+            <div className="title">Toplu Lokasyon İçe Aktar (Legacy)</div>
             <div className="muted" style={{ marginBottom: 8 }}>
               Her satır: <b>İsim;Adres;Lat;Lng;Kişi;Başlangıç(HH:mm);Bitiş(HH:mm);Not</b>
             </div>
@@ -861,9 +856,6 @@ export default function OrganizationPlansPanel() {
             />
 
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={replaceFromBulk}>
-                Satırları İçeri Al
-              </button>
               <button type="button" onClick={() => setBulk("")}>
                 Temizle
               </button>
@@ -883,7 +875,7 @@ export default function OrganizationPlansPanel() {
             >
               <div>
                 <div className="title">Lokasyonlar</div>
-                <div className="muted">Sıra, kişi sayısı ve saat pencereleri burada yönetilir.</div>
+                <div className="muted">Bu ekran eski planı okumak için tutulur. Yeni lokasyon kurgusu Planlama Merkezi&apos;nde yapılır.</div>
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -892,9 +884,6 @@ export default function OrganizationPlansPanel() {
                 </button>
                 <button type="button" onClick={closeAllStops}>
                   Tümünü Kapat
-                </button>
-                <button type="button" onClick={addEmptyStop} style={{ whiteSpace: "nowrap" }}>
-                  + Satır Ekle
                 </button>
               </div>
             </div>
@@ -1049,9 +1038,7 @@ export default function OrganizationPlansPanel() {
             current={current}
             summary={summary}
             busy={busy}
-            onSave={savePlan}
-            onOpenOfferBox={() => setOfferOpen((v) => !v)}
-            onCreateAgreement={createAgreement}
+            onGoPlanning={() => navigate("/organization")}
           />
           <MiniMapPreview stops={current.stops} />
         </div>

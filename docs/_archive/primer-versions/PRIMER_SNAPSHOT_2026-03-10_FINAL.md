@@ -1,310 +1,142 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT (Yapıştır & Devam Et)
+Post-M50 için 3 büyük rota
+1) Saha Pilot Sertleştirme — benim ana önerim
 
-Tarih: 2026-03-10  
-Timezone: Europe/Istanbul
+Amaç: sistemi gerçek sürücü ve gerçek rota ile güvenli pilot seviyesine taşımak.
 
-## 0) Mevcut durum / referans
+Odak:
 
-Repo: `D:\servis-platform`
+düşük/orta segment Android testleri
 
-Current GREEN ref:
-- ✅ `M41 PACK PASS`
-- ✅ `M42 OPTIONAL PACK PASS`
-- ✅ `STEP 0.6 STABIL PACK PASS`
-- ✅ `STEP 1 SECURITY FOUNDATION PACK PASS`
-- ✅ `STEP 1 TOTP STEP-UP PACK PASS`
-- ✅ `M104 REPO CLEANUP CHECK PASS`
-- ✅ `M105 TOOLS HYGIENE CHECK PASS`
-- ✅ `M106 REPO HYGIENE + LINK TTL CHECK PASS`
-- ✅ `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
-- ✅ `M44 TELEMATICS PACK PASS OK`
+zayıf internet / kopma / geri gelme
 
-Ana kanıt komutları:
-- `./tools/pack.ps1 -To 41`
-- `./tools/pack_m42_optional.ps1`
-- `./tools/pack_step06_stabil.ps1`
-- `./tools/pack_step1_security_foundation.ps1`
-- `./tools/pack_step1_totp_stepup.ps1`
-- `./tools/check_repo_cleanup_m104.ps1 -RepoRoot D:\servis-platform`
-- `./tools/check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform`
-- `./tools/check_repo_hygiene_m106.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m43_google_auth_invite_gate.ps1 -RepoRoot D:\servis-platform`
-- `./tools/pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
+sürücünün telefon GPS'i davranışı
 
-> Not: Step 1 TOTP green kabulü; M41 + Step1 Foundation + TOTP Runtime + TOTP Repo Contract PASS ile doğrulanmıştır.  
-> Not 2: M104/M105/M106 sonrası repo ağacı, tools kökü ve primer/checklist/startpack hattı hizalanmıştır.  
-> Not 3: M43 green sonrası Step 2 resmi olarak tamamlanmıştır.  
-> Not 4: M44 green sonrası Step 2.5 resmi olarak tamamlanmıştır.  
-> Not 5: Repo içinde eski/internal migration adlarında farklı etiketler görülebilir; milestone SSOT anlamı burada yazan primer/checklist üzerinden takip edilir.
+uygulama kapanması / yeniden açılması
 
----
+cihaz değişimi / oturum toparlama
 
-## 1) Resmi olarak yeşil olan kapsam
+pilot destek akışı ve runbook
 
-### 1.1 V1 ana regresyon
-- auth / refresh / revoke / device mismatch
-- RBAC / route guard
-- agreement
-- offer / counter / accept
-- route / stops
-- live / ws / gps
-- rate-limit mini stres
-- audit / retention
-- learning
-- hepsi `M41 PACK PASS` altında yeşil
+Çıkış kriteri:
 
-### 1.2 M42 Optional Release
-- check-in modülü optional release olarak hazır
-- `FEATURE_CHECKIN=0` iken dormant
-- `FEATURE_CHECKIN=1` iken ayrı optional pack ile doğrulanmış
-- `M42 OPTIONAL PACK PASS`
+en az 3 gerçek cihaz
 
-### 1.3 Step 0.6 Stabil Ekler
-- capacity / pool / auto-split
-- split parent cleanup
-- school parent invite + public accept
-- shift preview external nav
-- company list click details
+en az 3–5 günlük pilot
 
-Kanıt:
-- `STEP 0.6 STABIL PACK PASS`
+kritik bloklayıcı hata yok
 
-### 1.4 Step 1 Security Foundation
-- refresh reuse detection
-- export limiter
-- login / gps / export limit hattı
-- RBAC deny-by-default sanity matrix
+sürücü destek akışı yazılı ve uygulanabilir
 
-Kanıt:
-- `STEP 1 SECURITY FOUNDATION PACK PASS`
+pilot go/no-go checklist PASS
 
-### 1.5 Step 1 TOTP Step-up
-- `ROOM` + `SUPER_ADMIN` için TOTP setup / enable / verify
-- login response içinde `stepUpRequired`
-- setup olmadan kritik write/admin endpointler blok
-- verify sonrası geçici `stepUpUntil` ile erişim açılıyor
-- `COMPANY` ve `DRIVER` bu guard’dan etkilenmiyor
+Bu rota neden doğru:
 
-Kanıt:
-- `STEP 1 TOTP STEP-UP CHECK PASS`
-- `STEP 1 TOTP STEP-UP REPO CONTRACT PASS`
+sistem şu an teknik olarak pilota yakın
 
-### 1.6 Step 2 — M43 Google Auth + Invite Gate
-Kapsam:
-- Google Auth backend hattı
-- `UserIdentity` + `Invite` modeli
-- generic invite / accept akışı
-- invite yoksa kabul yok
-- role / scope bağlı kabul
-- Company / Room tarafında auth invite yönetimi
-- public `accept-invite` paneli
-- parent invite akışında Google ile kabul desteği
-- repo-contract + runtime check + tek pack hattı
+en büyük risk artık “özellik eksikliği” değil, saha dayanıklılığı
 
-Önemli davranış:
-- Google login açık olsa bile erişim invite / scope / profile bağlama kurallarıyla sınırlı
-- hali hazırda başka user’a bağlı profile tekrar bağlanamaz
-- local login modeli tamamen kaldırılmadı; var olan email+şifre akışı korunuyor
-- `PERSONEL` için login zorunluluğu getirilmedi; public link modeli korunuyor
+2) Operasyon Akışı Güçlendirme
 
-Kanıt:
-- `M43 GOOGLE AUTH + INVITE GATE CHECK PASS`
-- `M43 GOOGLE AUTH + INVITE GATE REPO CONTRACT PASS`
-- `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
+Amaç: Room / Company tarafını günlük kullanımda daha hızlı ve daha rahat hale getirmek.
 
-### 1.7 Step 2.5 — M44 Telematics
-Kapsam:
-- telematics normalize core
-- direct HTTP push alımı
-- vendor cloud adapter
-- provider normalize katmanı
-- provisioned `GpsDevice` modeli + serial/secret doğrulaması
-- raw/vendor payload → kanonik GPS hattına yazım
-- runtime check + repo-contract + tek pack hattı
+Odak:
 
-Önemli davranış:
-- mevcut driver app GPS akışı korunur; telematics ek kaynak olarak çalışır
-- direct device push kaynağı `DEVICE`, vendor cloud push kaynağı `VENDOR` olarak izlenir
-- provision edilen cihazın `lastSeenAt` alanı güncellenir
-- vendor push aynı aracı serial lookup ile bulup `gpsLast` kaydını güncelleyebilir
-- audit / limiter / router mount hattı mevcut backend pattern’iyle korunur
+tablet akışı iyileştirme
 
-Kanıt:
-- `M44 TELEMATICS CHECK PASS`
-- `M44 TELEMATICS REPO CONTRACT PASS`
-- `M44 TELEMATICS PACK PASS OK`
+vardiya atama / sürücü eşleme kolaylaştırma
 
----
+conflict görünürlüğü
 
-## 2) Personel ve parent link politikası
+canlı operasyon ekranı
 
-### 2.1 Parent invite TTL
-Presetler:
-- `1 hafta`
-- `1 ay`
-- `6 ay`
-- `1 yıl`
+daha az tıklama, daha net ekran dili
 
-Backend üst sınır:
-- `365 gün`
+yeni başlayan kullanıcı için daha basit rehber akış
 
-### 2.2 Personel public canlı link TTL
-Presetler:
-- `1 hafta`
-- `1 ay`
-- `6 ay`
-- `1 yıl`
+Çıkış kriteri:
 
-Backend üst sınır:
-- `365 gün`
+Room / Company günlük operasyonu daha az adımla yürütmeli
 
-Önemli davranış:
-- personel public link, vardiya `endAt` ile zorunlu clamp edilmez
-- ham token sadece ilk üretimde gösterilir
-- revoke / expired link ekranda aktif gibi tutulmaz
+tablet üstünde rahat kullanım kanıtı olmalı
 
-### 2.3 Ürün kararı
-- `COMPANY / ROOM / SUPER_ADMIN / DRIVER` login tabanlı kalır
-- `PERSONEL` için login zorunlu değildir; varsayılan düşük sürtünmeli model süreli public linktir
-- gerekirse ileride opsiyonel account-upgrade yapılabilir
-- M43 bu kararı değiştirmez
+destek isteği oluşturan kafa karışıklıkları azalmalı
 
----
+Bu rota ne zaman doğru:
 
-## 3) Repo ve tools hijyen durumu
+pilot çalışıyor ama operasyon ekibi zorlanıyorsa
 
-### 3.1 M104 Repo Cleanup
-Temizlenen / archivelenen ana kalemler:
-- stale duplicate route / panel dosyaları
-- `.bak` artık dosyaları
-- root stray `src/`, `scripts/`, `rlays/`
-- dağınık legacy README / TXT kalıntıları
+3) Yayın / Ölçekleme Rotası
 
-Sonuç:
-- kanonik canlı ağaç korunmuş
-- stale path’ler archive altına taşınmış
-- `M104 REPO CLEANUP CHECK PASS`
+Amaç: pilot sonrası kontrollü büyüme ve yayın disiplinini kurmak.
 
-### 3.2 M105 Tools Canonical Cleanup
-`tools/` kökünde kanonik hat:
-- `pack*`
-- `gate*`
-- `reset-and-pack.ps1`
-- kanonik `check_*`
-- `README.md`
-- `PRIMER_SNAPSHOT.md`
-- `CHECKLIST_SSOT.md`
-- `STABLE_TO.txt`
+Odak:
 
-Legacy overlay / apply / readme kalıntıları:
-- `tools/_archive/legacy-overlays/`
-- `tools/_archive/oneoff-hotfixes/`
-- `tools/_archive/legacy-docs/`
+EAS preview/production yayın disiplini
 
-Sonuç:
-- `M105 TOOLS HYGIENE CHECK PASS`
+release notu / rollback akışı
 
-### 3.3 M106 Repo Hygiene + Primer / TTL Sync
-Ek temizlenenler:
-- `tools/_overlay_payload/primer_refresh`
-- `infra/infra/solver/Dockerfile`
+sürüm politikası
 
-Senkronlananlar:
-- primer / startpack / checklist
-- parent / personel TTL politikası
-- kanonik checker hattı
+kurulum / onboarding adımları
 
-Sonuç:
-- `M106 REPO HYGIENE + LINK TTL CHECK PASS`
+tenant ve dağıtım hazırlığı
 
----
+prod izleme ve alarm disiplini
 
-## 4) SSOT / doküman düzeni
+Çıkış kriteri:
 
-Kanonik hat:
-- `tools/PRIMER_SNAPSHOT.md`
-- `tools/CHECKLIST_SSOT.md`
-- `tools/README.md`
-- `docs/PRIMER_SSOT.md`
-- `docs/CHECKLIST_SSOT.md`
-- `docs/STARTPACK_V1.md`
-- `docs/API_SPEC_V1.md`
-- `docs/UI_SPEC_V1.md`
-- `docs/DB_SCHEMA_V1.md`
-- `docs/PROJECT_SPEC_V1.md`
+düzenli release süreci
 
-M43 + M44 ile gelen yeni kanıt / araçlar:
-- `tools/pack_m43_google_auth_invite_gate.ps1`
-- `tools/check_m43_google_auth_invite_gate_repo_contract.ps1`
-- `backend/scripts/m43_google_auth_invite_gate_check.js`
-- `tools/pack_m44_telematics.ps1`
-- `tools/check_m44_telematics_repo_contract.ps1`
-- `backend/scripts/m44_telematics_check.js`
+rollback net
 
-M45 ile gelen yeni kanıt / araçlar:
-- `tools/pack_m45_retention_backup.ps1`
-- `tools/check_m45_retention_backup_repo_contract.ps1`
-- `tools/backup_create_m45.ps1`
-- `tools/backup_restore_m45.ps1`
-- `backend/scripts/m45_retention_backup_check.js`
-- `backend/src/ops/retentionBackupPolicy.js`
-- `docs/RUNBOOK_M45_RETENTION_BACKUP.md`
+dağıtım ve sürüm geçişi kontrollü
 
-Overlay / cleanup notları:
-- `docs/overlays/OVERLAY_NOTES_M104_REPO_AUDIT_CLEANUP_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M105_TOOLS_CANONICAL_CLEANUP_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M106_LINK_TTL_AND_HYGIENE_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M106_4_CHECKERS_RESTORE_PRIMER_SYNC_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M44_TELEMATICS_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M44_5_SSOT_SYNC_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M44_6_TELEMATICS_ROOM_UI_2026-03-10.md`
-- `docs/overlays/OVERLAY_NOTES_M45_RETENTION_BACKUP_2026-03-10.md`
+operasyon ekibi yayını yönetebilir durumda
 
----
+Bu rota ne zaman doğru:
 
-## 5) Bir sonraki resmi iş
+pilot kabul edilmiş ve genişlemeye geçilecekse
 
-## Step 3 — M46 AI Copilot Foundation
-Sıradaki resmi hedef:
-- sistem için domain AI foundation kurulması
-- read-only / suggestion-first copilot hattı
-- role/scope kontrollü AI erişimi
-- structured JSON output
-- whitelist tool / resolver yaklaşımı
-- audit log
-- mevcut operasyon verisini açıklayan yardımcı katman
+Benim net önerim
 
-İlk kapsam önerisi:
-- `POST /api/ai/copilot`
-- vardiya özeti
-- conflict açıklama
-- telematics health / anomali açıklama
-- operasyon notu / bilgilendirme taslağı
-- write aksiyon yok; önce read-only + suggestion
+Sıra şu olsun:
 
-Uygulama notu:
-- mevcut RBAC / scope / TOTP step-up davranışı korunacak
-- kritik kararları AI vermeyecek
-- AI yalnız whitelist edilmiş veri çözücüler / tool’lar üzerinden okuyacak
-- otomatik işlem yapmayacak
-- audit ve güvenlik ilk günden zorunlu olacak
+1 → 2 → 3
 
-Ardından:
-- Step 3.1 / V2 başlıkları
+Yani:
 
----
+önce Saha Pilot Sertleştirme
 
-## 6) M44 sonrası dikkat edilmesi gereken kararlar
+sonra Operasyon Akışı Güçlendirme
 
-- `PERSONEL` hâlâ public link öncelikli modelde
-- Google Auth geldi diye personel için zorunlu hesap / login’e dönülmeyecek
-- telematics hattı mevcut driver GPS akışının yerine geçmez; ek kaynak olarak yaşar
-- device provisioning + vendor shared secret doğrulaması korunmalı
-- room/company ekranlarında veri kaynağı farkı operasyonu bozmayacak şekilde ele alınmalı
-- local login ile Google login birlikte yaşamaya devam eder; migration / bağlantı kuralları korunmalı
+sonra Yayın / Ölçekleme
 
----
+Bu proje için şu anda en doğru next-route:
 
-## 7) Yeni sohbet açınca ilk cümle önerisi
+POST-M50 ROUTE-1 PILOT HARDENING
 
-"Repo şu an M41 PACK PASS + M42 OPTIONAL PACK PASS + STEP 0.6 STABIL PACK PASS + STEP 1 SECURITY FOUNDATION PACK PASS + STEP 1 TOTP STEP-UP PACK PASS + M104 REPO CLEANUP CHECK PASS + M105 TOOLS HYGIENE CHECK PASS + M106 REPO HYGIENE + LINK TTL CHECK PASS + M43 GOOGLE AUTH + INVITE GATE PACK PASS OK + M44 TELEMATICS PACK PASS OK + M45 RETENTION + BACKUP PACK PASS OK durumunda. M44.5 ile SSOT sync yapıldı, M44.6 ile ROOM > Vehicles içine Telematics UI eklendi. Personel login zorunlu değil; public link TTL presetleri parent ve personelde 1 hafta / 1 ay / 6 ay / 1 yıl olarak hizalı. Sıradaki resmi hedef mevcut repoya göre tek overlay zip standardıyla M46 AI Copilot Foundation." 
+İlk resmi hedef paketi
+
+Ben olsam ilk paketi şu isimle açarım:
+
+M51 — Pilot Readiness & Go/No-Go
+
+İçerik:
+
+pilot checklist
+
+gerçek cihaz test matrisi
+
+sürücü destek/runbook
+
+kopuk internet / GPS / app restart senaryoları
+
+pilot kabul ölçütleri
+
+kısa saha kanıt komut ve kayıt standardı
+
+Tek cümlelik karar
+
+Evet, yapalım; post-M50’de en doğru büyük rota Saha Pilot Sertleştirme.
+
+Bir sonraki adımda sana doğrudan M51 Pilot Readiness & Go/No-Go için net kapsamı çıkarıyorum.

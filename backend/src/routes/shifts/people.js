@@ -746,10 +746,12 @@ export function attachShiftPeopleRoutes(router, _io) {
     const source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
     const pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
 
-    const totalPassengerCount = stopsWithCounts.reduce(
+    const totalPassengerCountRaw = stopsWithCounts.reduce(
       (sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0),
       0
     );
+    const requiredPaxFallback = Math.max(0, Number(shift.requiredPaxOverride || 0));
+    const totalPassengerCount = totalPassengerCountRaw > 0 ? totalPassengerCountRaw : requiredPaxFallback;
 
     const summary = {
       stopCount: stopPoints.length,
@@ -784,6 +786,7 @@ export function attachShiftPeopleRoutes(router, _io) {
         hubLng,
         direction,
         pattern,
+        requiredPaxOverride: shift.requiredPaxOverride ?? null,
       },
       people,
       stops: stopsWithCounts,

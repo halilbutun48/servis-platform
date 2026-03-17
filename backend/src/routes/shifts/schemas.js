@@ -56,6 +56,7 @@ export const createShiftSchema = z.object({
   hubLng: z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().finite().nullable()).optional(),
   direction: z.enum(["INBOUND", "OUTBOUND"]).optional(),
   pattern: z.enum(["ONE_WAY", "LOOP"]).optional(),
+  requiredPax: z.coerce.number().int().positive().optional(),
 
   // COMPANY → ROOM teklif (shift seviyesinde)
   companyOfferVehicleId: posIntOpt,

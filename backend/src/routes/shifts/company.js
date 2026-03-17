@@ -176,6 +176,7 @@ export function attachShiftCompanyRoutes(r, io) {
             hubLng: body.hubLng ?? null,
             direction: body.direction ?? "INBOUND",
             pattern: body.pattern ?? "ONE_WAY",
+            requiredPaxOverride: body.requiredPax ?? null,
 
             companyOfferVehicleId: body.companyOfferVehicleId ?? null,
             companyOfferAmount: body.companyOfferAmount ?? null,
