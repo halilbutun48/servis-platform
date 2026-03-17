@@ -1959,7 +1959,7 @@ function usePlanDraftToRequest(draft) {
       >
         Süre Uzat
       </button>
-        <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Önizle</button>
+        <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Harita / Navigasyon Önizle</button>
     </>
 )}
   </td>
@@ -2133,7 +2133,7 @@ function usePlanDraftToRequest(draft) {
       >
         Süre Uzat
       </button>
-        <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Önizle</button>
+        <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Harita / Navigasyon Önizle</button>
     </>
 )}
   </td>

@@ -69,13 +69,15 @@ function buildCapacityMeta({ shift, vehicle, roomVehicles = [] }) {
   const roomCaps = (roomVehicles || []).map((v) => vehicleCapacityValue(v)).filter((n) => n > 0);
   const roomMaxCapacity = roomCaps.length ? Math.max(...roomCaps) : 0;
   const roomMinVehicleCount = requiredPax > 0 && roomMaxCapacity > 0 ? Math.ceil(requiredPax / roomMaxCapacity) : null;
+  const singleVehiclePossible = requiredPax > 0 && roomMaxCapacity > 0 && roomMaxCapacity >= requiredPax;
+  const dispatchRequired = requiredPax > 0 && roomMaxCapacity > 0 && roomMaxCapacity < requiredPax;
 
   let blockCode = null;
   let blockMessage = "";
   if (requiredPax > 0 && vehicle && vehicleCapacity <= 0) {
     blockCode = "VEHICLE_CAPACITY_MISSING";
     blockMessage = `Araç kapasitesi tanımsız. Gerekli yolcu: ${requiredPax}.`;
-  } else if (insufficient) {
+  } else if (vehicle && insufficient) {
     blockCode = "CAPACITY_INSUFFICIENT";
     blockMessage = `Yetersiz kapasite. Gerekli: ${requiredPax}, araç: ${vehicleCapacity}, eksik: ${missingCapacity}.`;
   }
@@ -88,6 +90,8 @@ function buildCapacityMeta({ shift, vehicle, roomVehicles = [] }) {
     minVehicleCount,
     roomMaxCapacity,
     roomMinVehicleCount,
+    singleVehiclePossible,
+    dispatchRequired,
     blockCode,
     blockMessage,
   };
@@ -257,8 +261,14 @@ async function decideExtend(shiftId, decision) {
   const [previewShift, setPreviewShift] = useState(null);
   const [previewStops, setPreviewStops] = useState([]);
   const [previewPeople, setPreviewPeople] = useState([]); // şimdilik boş (backend gelince assignment/personel eklenebilir)
+  const [previewSummary, setPreviewSummary] = useState(null);
+  const [previewPathPoints, setPreviewPathPoints] = useState(null);
+  const [previewSource, setPreviewSource] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewErr, setPreviewErr] = useState("");
+  const [dispatchPreview, setDispatchPreview] = useState({});
+  const [dispatchEditSel, setDispatchEditSel] = useState({}); // { [shiftId]: { [splitIndex]: { vehicleId, driverId } } }
+  const dispatchInflight = useRef(new Set());
 
   function toggleAvailable(shiftId) {
     setShowAvailableOnly((p) => ({ ...p, [Number(shiftId)]: !p[Number(shiftId)] }));
@@ -362,6 +372,13 @@ const offersByShiftId = useMemo(() => {
     return m;
   }, [offers]);
 
+  function effectiveShiftRoomId(shift, marketOffer = null) {
+    const shiftRoomId = Number(shift?.roomId || 0);
+    if (shiftRoomId > 0) return shiftRoomId;
+    const offerRoomId = Number(marketOffer?.roomId || 0);
+    if (offerRoomId > 0) return offerRoomId;
+    return null;
+  }
 
   function matchShift(s, qRaw) {
     const q = String(qRaw ?? "").trim().toLowerCase();
@@ -423,6 +440,140 @@ const offersByShiftId = useMemo(() => {
     return vehicles
       .filter((v) => !v?.roomId || Number(v.roomId) === rid)
       .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
+  }
+
+  function driversForRoom(roomId) {
+    const rid = Number(roomId);
+    return drivers
+      .filter((d) => !d?.roomId || Number(d.roomId) === rid)
+      .sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || "")));
+  }
+
+  function hydrateDispatchSelections(shiftId, suggestions = []) {
+    const sid = Number(shiftId || 0);
+    if (!sid) return;
+    setDispatchEditSel((prev) => {
+      const base = { ...(prev[sid] || {}) };
+      for (const part of suggestions || []) {
+        const idx = Number(part?.splitIndex || 0);
+        if (!idx) continue;
+        base[idx] = {
+          vehicleId: Number(base[idx]?.vehicleId || part?.vehicleId || 0) || "",
+          driverId: Number(base[idx]?.driverId || part?.driverId || 0) || "",
+        };
+      }
+      return { ...prev, [sid]: base };
+    });
+  }
+
+  function setDispatchSelection(shiftId, splitIndex, patch) {
+    const sid = Number(shiftId || 0);
+    const idx = Number(splitIndex || 0);
+    if (!sid || !idx) return;
+    setDispatchEditSel((prev) => ({
+      ...prev,
+      [sid]: {
+        ...(prev[sid] || {}),
+        [idx]: {
+          ...(prev[sid]?.[idx] || {}),
+          ...(patch || {}),
+        },
+      },
+    }));
+  }
+
+  function applyDispatchBulkVehicle(shiftId, suggestions = []) {
+    const sid = Number(shiftId || 0);
+    if (!sid) return;
+    setDispatchEditSel((prev) => {
+      const base = { ...(prev[sid] || {}) };
+      for (const part of suggestions || []) {
+        const idx = Number(part?.splitIndex || 0);
+        const vehicleId = Number(part?.vehicleId || part?.vehicle?.id || 0);
+        if (!idx || !vehicleId) continue;
+        base[idx] = {
+          ...(base[idx] || {}),
+          vehicleId,
+        };
+      }
+      return { ...prev, [sid]: base };
+    });
+  }
+
+  function applyDispatchBulkDriver(shiftId, suggestions = []) {
+    const sid = Number(shiftId || 0);
+    if (!sid) return;
+    setDispatchEditSel((prev) => {
+      const base = { ...(prev[sid] || {}) };
+      for (const part of suggestions || []) {
+        const idx = Number(part?.splitIndex || 0);
+        const driverId = Number(part?.driverId || part?.driver?.id || 0);
+        if (!idx || !driverId) continue;
+        base[idx] = {
+          ...(base[idx] || {}),
+          driverId,
+        };
+      }
+      return { ...prev, [sid]: base };
+    });
+  }
+
+  function selectedDispatchVehicleId(shiftId, part) {
+    const sid = Number(shiftId || 0);
+    const idx = Number(part?.splitIndex || 0);
+    const v = dispatchEditSel?.[sid]?.[idx]?.vehicleId;
+    return Number(v || part?.vehicleId || 0) || 0;
+  }
+
+  function selectedDispatchDriverId(shiftId, part) {
+    const sid = Number(shiftId || 0);
+    const idx = Number(part?.splitIndex || 0);
+    const d = dispatchEditSel?.[sid]?.[idx]?.driverId;
+    return Number(d || part?.driverId || 0) || 0;
+  }
+
+  function buildDispatchVirtualShift(shift, allocatedPax) {
+    const pax = Number(allocatedPax || 0) || 0;
+    return {
+      ...(shift || {}),
+      requiredPax: pax,
+      requiredPaxOverride: pax,
+      assignmentCount: pax,
+      peopleCount: pax,
+    };
+  }
+
+  function getDispatchSelectionStates(shift, suggestions = []) {
+    const sid = Number(shift?.id || 0);
+    const vehicleCounts = new Map();
+    const driverCounts = new Map();
+    const selRows = (suggestions || []).map((part) => ({
+      splitIndex: Number(part?.splitIndex || 0),
+      allocatedPax: Number(part?.allocatedPax || 0),
+      vehicleId: selectedDispatchVehicleId(sid, part),
+      driverId: selectedDispatchDriverId(sid, part),
+      part,
+    }));
+    for (const row of selRows) {
+      if (row.vehicleId) vehicleCounts.set(row.vehicleId, (vehicleCounts.get(row.vehicleId) || 0) + 1);
+      if (row.driverId) driverCounts.set(row.driverId, (driverCounts.get(row.driverId) || 0) + 1);
+    }
+    const result = {};
+    for (const row of selRows) {
+      const vDup = row.vehicleId && (vehicleCounts.get(row.vehicleId) || 0) > 1;
+      const dDup = row.driverId && (driverCounts.get(row.driverId) || 0) > 1;
+      if (vDup) {
+        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_VEHICLE", message: "Aynı araç başka öneride de seçili." };
+        continue;
+      }
+      if (dDup) {
+        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_DRIVER", message: "Aynı şoför başka öneride de seçili." };
+        continue;
+      }
+      const virtualShift = buildDispatchVirtualShift(shift, row.allocatedPax);
+      result[row.splitIndex] = localAvailability({ shift: virtualShift, vehicleId: row.vehicleId, driverId: row.driverId });
+    }
+    return result;
   }
 
   function makeSig({ shift, vehicleId, driverId }) {
@@ -753,7 +904,7 @@ const offersByShiftId = useMemo(() => {
     let arr = [...listBase];
 
     if (listStatus === "OPEN") {
-      arr = arr.filter((s) => !["DONE", "REJECTED"].includes(String(s.status)));
+      arr = arr.filter((s) => ["APPROVED", "ACTIVE"].includes(String(s.status)));
     } else if (listStatus !== "ALL") {
       arr = arr.filter((s) => String(s.status) === listStatus);
     }
@@ -801,14 +952,16 @@ const offersByShiftId = useMemo(() => {
       for (const s of pendingFiltered) {
         if (canceled) return;
         const sid = Number(s?.id);
+        const marketOffer = offersByShiftId.get(sid) || null;
+        const effectiveRoomId = effectiveShiftRoomId(s, marketOffer);
         const vId = assignSel[sid] ? Number(assignSel[sid]) : null;
         const vehicle = vId ? vehiclesById.get(vId) : null;
         const capacityMeta = buildCapacityMeta({
           shift: s,
           vehicle,
-          roomVehicles: vehiclesForRoom(s?.roomId),
+          roomVehicles: vehiclesForRoom(effectiveRoomId),
         });
-        if (capacityMeta.insufficient && !poolSummary[sid] && !poolInflight.current.has(sid)) {
+        if (capacityMeta.dispatchRequired && effectiveRoomId && !poolSummary[sid] && !poolInflight.current.has(sid)) {
           await loadPoolSummary(s);
         }
       }
@@ -818,7 +971,7 @@ const offersByShiftId = useMemo(() => {
       canceled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingFiltered, assignSel, vehiclesById]);
+  }, [pendingFiltered, assignSel, vehiclesById, offersByShiftId]);
 
   async function loadPoolSummary(shift, { force = false } = {}) {
     const sid = Number(shift?.id);
@@ -849,11 +1002,75 @@ const offersByShiftId = useMemo(() => {
     }
   }
 
-  function renderPoolSummary(shift, capacityMeta) {
+  async function loadDispatchPreview(shift, { force = false } = {}) {
+    const sid = Number(shift?.id);
+    if (!sid) return null;
+    if (!force) {
+      const cached = dispatchPreview[sid];
+      if (cached?.status === "ok" && cached?.data) return cached.data;
+      if (dispatchInflight.current.has(sid)) return null;
+    }
+    dispatchInflight.current.add(sid);
+    setDispatchPreview((prev) => ({
+      ...prev,
+      [sid]: { ...(prev[sid] || {}), status: "loading", error: "" },
+    }));
+    try {
+      const data = await api(`/api/shifts/${sid}/dispatch-preview`, { token });
+      setDispatchPreview((prev) => ({ ...prev, [sid]: { status: "ok", data } }));
+      hydrateDispatchSelections(sid, data?.suggestions || []);
+      return data;
+    } catch (e) {
+      const msg = String(e?.message || e || "Dispatch önizleme alınamadı.");
+      setDispatchPreview((prev) => ({ ...prev, [sid]: { status: "error", error: msg } }));
+      return null;
+    } finally {
+      dispatchInflight.current.delete(sid);
+    }
+  }
+
+  function openDispatchSuggestionPreview(shift, suggestion) {
+    if (!suggestion) return;
+    const vehicleId = selectedDispatchVehicleId(shift?.id, suggestion);
+    const driverId = selectedDispatchDriverId(shift?.id, suggestion);
+    const vehicle = vehiclesById.get(Number(vehicleId)) || suggestion?.vehicle || null;
+    const driver = driversById.get(Number(driverId)) || suggestion?.driver || null;
+    setPreviewShift({
+      ...(shift || {}),
+      id: `${shift?.id || ""}-${suggestion?.splitIndex || ""}`,
+      requiredPaxOverride: Number(suggestion?.allocatedPax || 0),
+      requiredPax: Number(suggestion?.allocatedPax || 0),
+      vehicleId: vehicleId || null,
+      driverId: driverId || null,
+      vehicle,
+      driver,
+    });
+    setPreviewStops(Array.isArray(suggestion?.stops) ? suggestion.stops : []);
+    setPreviewPeople([]);
+    setPreviewSummary(suggestion?.summary || null);
+    setPreviewPathPoints(Array.isArray(suggestion?.path?.points) ? suggestion.path.points : null);
+    setPreviewSource(suggestion?.path?.source || suggestion?.routeSource || null);
+    setPreviewErr("");
+    setPreviewLoading(false);
+    setPreviewOpen(true);
+  }
+
+  function renderPoolSummary(shift, capacityMeta, effectiveRoomId = null) {
     const sid = Number(shift?.id);
     const state = poolSummary[sid] || null;
     const data = state?.data || null;
     const comboItems = Array.isArray(data?.suggestedCombo?.items) ? data.suggestedCombo.items : [];
+    const dState = dispatchPreview[sid] || null;
+    const dData = dState?.data || null;
+    const suggestions = Array.isArray(dData?.suggestions) ? dData.suggestions : [];
+    const dispatchSelStates = getDispatchSelectionStates(shift, suggestions);
+    const roomVehicles = Array.isArray(data?.vehicles) && data.vehicles.length
+      ? data.vehicles.filter((v) => v?.vehicleOk && Number(v.capacity || 0) > 0)
+      : vehiclesForRoom(effectiveRoomId ?? shift?.roomId);
+    const roomDrivers = Array.isArray(data?.drivers) && data.drivers.length
+      ? data.drivers.filter((d) => d?.driverOk)
+      : driversForRoom(effectiveRoomId ?? shift?.roomId);
+    const dispatchCanApply = suggestions.length > 0 && suggestions.every((part) => dispatchSelStates?.[Number(part?.splitIndex || 0)]?.status === "ok");
 
     return (
       <div className="card" style={{ padding: 10 }}>
@@ -901,20 +1118,142 @@ const offersByShiftId = useMemo(() => {
               </div>
             )}
 
+            {data?.enoughPoolCapacity && Number(data?.suggestedCombo?.vehicleCount || 0) > 1 ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button
+                  type="button"
+                  className="btn sm"
+                  disabled={busy || dState?.status === "loading"}
+                  onClick={() => loadDispatchPreview(shift, { force: true })}
+                >
+                  {dState?.status === "loading" ? "Önizleme hazırlanıyor..." : suggestions.length ? "Dispatch Önizlemeyi Yenile" : "Dispatch Önizleme Oluştur"}
+                </button>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  Yakın kişileri aynı araca toplamayı dener, sonra araç bazlı durak sırasını OSRM + solver ile iyileştirir.
+                </div>
+              </div>
+            ) : null}
+
+            {dState?.status === "error" ? (
+              <div className="muted" style={{ color: "#b42318" }}>
+                <b>Dispatch önizleme hatası:</b> {dState.error}
+              </div>
+            ) : null}
+
+            {suggestions.length ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {suggestions.map((part) => {
+                  const splitIndex = Number(part?.splitIndex || 0);
+                  const selectedVehicleId = selectedDispatchVehicleId(sid, part);
+                  const selectedDriverId = selectedDispatchDriverId(sid, part);
+                  const selectedVehicle = vehiclesById.get(Number(selectedVehicleId)) || part?.vehicle || null;
+                  const selectedDriver = driversById.get(Number(selectedDriverId)) || part?.driver || null;
+                  const selectionState = dispatchSelStates?.[splitIndex] || { status: "missing", message: "Araç ve şoför seç." };
+                  const eligibleVehicles = roomVehicles.filter((v) => Number(v?.capacity || 0) >= Number(part?.allocatedPax || 0) || Number(v?.id || 0) === Number(selectedVehicleId || 0));
+                  const eligibleDrivers = roomDrivers.filter((d) => Number(d?.id || 0) === Number(selectedDriverId || 0) || d?.driverOk !== false);
+                  const capacityMeta = buildCapacityMeta({
+                    shift: buildDispatchVirtualShift(shift, Number(part?.allocatedPax || 0)),
+                    vehicle: selectedVehicle,
+                    roomVehicles,
+                  });
+                  return (
+                    <div key={`dispatch-${sid}-${part.splitIndex}`} className="card" style={{ padding: 10 }}>
+                      <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                        <div className="muted">
+                          <b>Öneri #{part.splitIndex}</b>
+                        </div>
+                        <div className="muted">
+                          <b>Yolcu:</b> {Number(part?.allocatedPax || 0)} / {Number(capacityMeta?.vehicleCapacity || part?.capacity || 0)}
+                        </div>
+                      </div>
+                      <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span><b>Durak:</b> {Number(part?.stopCount || 0)}</span>
+                        {Number(part?.totalDistanceM || 0) > 0 ? <span>• <b>Km:</b> {(Number(part.totalDistanceM) / 1000).toFixed(1)}</span> : null}
+                        {Number(part?.totalDurationSec || 0) > 0 ? <span>• <b>Süre:</b> {Math.round(Number(part.totalDurationSec) / 60)} dk</span> : null}
+                        <span>• <b>Kaynak:</b> {String(part?.routeSource || "ESTIMATED")}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8, marginTop: 8 }}>
+                        <label className="muted" style={{ display: "grid", gap: 4 }}>
+                          <span><b>Araç</b></span>
+                          <select
+                            value={selectedVehicleId || ""}
+                            onChange={(e) => setDispatchSelection(sid, splitIndex, { vehicleId: Number(e.target.value || 0) || "" })}
+                          >
+                            <option value="">Araç seç</option>
+                            {eligibleVehicles.map((v) => (
+                              <option key={`dispatch-v-${sid}-${splitIndex}-${v.id}`} value={v.id}>
+                                {v.plate} {v?.capacity ? `• ${v.capacity} koltuk` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="muted" style={{ display: "grid", gap: 4 }}>
+                          <span><b>Şoför</b></span>
+                          <select
+                            value={selectedDriverId || ""}
+                            onChange={(e) => setDispatchSelection(sid, splitIndex, { driverId: Number(e.target.value || 0) || "" })}
+                          >
+                            <option value="">Şoför seç</option>
+                            {eligibleDrivers.map((d) => (
+                              <option key={`dispatch-d-${sid}-${splitIndex}-${d.id}`} value={d.id}>
+                                {d.fullName || `#${d.id}`}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span>
+                          <b>Seçim:</b> {selectedVehicle?.plate || `#${selectedVehicleId || "-"}`}
+                          {selectedDriver?.fullName ? ` → ${selectedDriver.fullName}` : ""}
+                        </span>
+                        <span>
+                          <b>Durum:</b>{" "}
+                          {selectionState.status === "ok" ? (
+                            <span className="pill" data-status="OK">OK</span>
+                          ) : selectionState.status === "checking" ? (
+                            <span className="pill" data-status="PENDING">CHECK</span>
+                          ) : selectionState.status === "missing" ? (
+                            <span className="pill" data-status="PENDING">SEÇİM</span>
+                          ) : (
+                            <span className="pill" data-status="REJECTED">{String(selectionState.code || "CONFLICT")}</span>
+                          )}
+                        </span>
+                        {selectionState?.message ? <span>• {selectionState.message}</span> : null}
+                      </div>
+                      {Array.isArray(part?.stops) && part.stops.length ? (
+                        <div className="muted" style={{ marginTop: 6 }}>
+                          <b>Duraklar:</b> {part.stops.map((s) => `${s.title || s.name || s.id}${Number(s?.count || 0) > 0 ? ` (${Number(s.count)})` : ""}`).join(" → ")}
+                        </div>
+                      ) : (
+                        <div className="muted" style={{ marginTop: 6 }}>Durak üretilemedi; koordinatı olan kişi/durak sayısını kontrol et.</div>
+                      )}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                        <button type="button" className="btn sm" onClick={() => openDispatchSuggestionPreview(shift, part)}>Haritada Gör</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+
             <div className="muted">
               <b>Min araç ihtiyacı:</b> {data?.suggestedCombo?.vehicleCount || capacityMeta?.roomMinVehicleCount || "-"}
               {data?.suggestedCombo?.totalCapacity ? ` • öneri toplam koltuk: ${data.suggestedCombo.totalCapacity}` : ""}
               {Number(data?.suggestedCombo?.overflowCapacity || 0) > 0 ? ` • taşma: ${data.suggestedCombo.overflowCapacity}` : ""}
             </div>
 
+            
+
             {data?.enoughPoolCapacity && Number(data?.suggestedCombo?.vehicleCount || 0) > 1 ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" className="btn" disabled={busy} onClick={() => autoSplitApprove(shift)}>
-                  Havuz Kombinasyonuyla Böl & Onayla
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button type="button" className="btn" disabled={busy || !dispatchCanApply} onClick={() => autoSplitApprove(shift)}>
+                  Önizlemeyi Uygula: Böl & Onayla
                 </button>
                 <div className="muted" style={{ fontSize: 12 }}>
-                  Root shift SPLIT olur; havuzdaki gerçek araç+driver kombinasyonuyla child shift’ler oluşturulur.
+                  Dispatch önizleme ile aynı geo-temelli bölme planı uygulanır; seçtiğin araç/şoför eşleşmeleri kullanılır.
                 </div>
+                {!dispatchCanApply ? <div className="muted" style={{ color: "#b42318", fontSize: 12 }}>Önce tüm önerilerde uygun araç ve şoför seçimini tamamla.</div> : null}
               </div>
             ) : null}
           </div>
@@ -1086,18 +1425,15 @@ const offersByShiftId = useMemo(() => {
         ) : null}
 
         {capacity.insufficient ? (
-          <>
-            <div className="card" style={{ padding: 10 }}>
-              <div className="muted">
-                <b>Kapasite uyarısı:</b> tek araç yetmiyor.
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Bu seçimle en az <b>{capacity.minVehicleCount || "-"}</b> araç gerekir.
-                {capacity.roomMinVehicleCount ? ` Room havuzundaki en büyük araçla bile min ${capacity.roomMinVehicleCount} araç gerekir.` : ""}
-              </div>
+          <div className="card" style={{ padding: 10 }}>
+            <div className="muted">
+              <b>Kapasite uyarısı:</b> tek araç yetmiyor.
             </div>
-            {renderPoolSummary(shift, capacity)}
-          </>
+            <div className="muted" style={{ marginTop: 6 }}>
+              Bu seçimle en az <b>{capacity.minVehicleCount || "-"}</b> araç gerekir.
+              {capacity.roomMinVehicleCount ? ` Room havuzundaki en büyük araçla bile min ${capacity.roomMinVehicleCount} araç gerekir.` : ""}
+            </div>
+          </div>
         ) : null}
 
         {conflict && csId ? (
@@ -1133,10 +1469,18 @@ const offersByShiftId = useMemo(() => {
         return;
       }
 
+      const preview = await loadDispatchPreview(shift, { force: false });
+      const suggestions = Array.isArray(preview?.suggestions) ? preview.suggestions : [];
+      const overrides = suggestions.map((part) => ({
+        splitIndex: Number(part?.splitIndex || 0),
+        vehicleId: selectedDispatchVehicleId(sid, part),
+        driverId: selectedDispatchDriverId(sid, part),
+      })).filter((x) => x.splitIndex && x.vehicleId && x.driverId);
+
       await api(`/api/shifts/${sid}/auto-split-approve`, {
         method: "POST",
         token,
-        body: {},
+        body: { overrides },
       });
 
       invalidate("shifts");
@@ -1530,9 +1874,11 @@ async function sendRoomOffer(shift) {
             <tbody>
               {pendingFiltered.map((s) => {
                 const sid = Number(s.id);
+                const marketOffer = offersByShiftId.get(sid) || null;
+                const effectiveRoomId = effectiveShiftRoomId(s, marketOffer);
                 // Agreement shift'lerde pazarlık/offer kapalı
                 const isAgreement = Number(s?.agreementId) > 0;
-                const roomVehicles = vehiclesForRoom(s.roomId);
+                const roomVehicles = vehiclesForRoom(effectiveRoomId);
                 const selectedVehicleId = assignSel[sid] || "";
                 const vId = selectedVehicleId ? Number(selectedVehicleId) : null;
                 const selectedVehicle = vId ? vehiclesById.get(vId) : null;
@@ -1574,7 +1920,6 @@ async function sendRoomOffer(shift) {
                 const offerForm = roomOfferSel[sid] || {};
                 const offerVehList = roomVehicles;
 
-                const marketOffer = offersByShiftId.get(sid) || null;
                 const marketCanCounter = marketOffer && marketOffer.status !== "CANCELLED" && marketOffer.status !== "ACCEPTED";
                 const marketForm = marketOffer ? (marketCounterSel[Number(marketOffer.id)] || {}) : {};
 
@@ -1770,100 +2115,118 @@ async function sendRoomOffer(shift) {
                     </td>
 
                     <td>
-                      <div style={{ display: "grid", gap: 6 }}>
-                        <select
-                          value={selectedVehicleId}
-                          onChange={async (e) => {
-                            const val = e.target.value;
-                            setAssignSel((p) => ({ ...p, [sid]: val }));
-
-                            // araç değişince (driver seçilmemişse) araçtaki driver'ı otomatik seç
-                            const hadManual = Boolean(driverSel[sid]);
-                            if (!hadManual) {
-                              const vid = val ? Number(val) : null;
-                              const vv = vid ? vehiclesById.get(vid) : null;
-                              if (vv?.driverId) {
-                                setDriverSel((p) => ({ ...p, [sid]: String(vv.driverId) }));
-                              }
-                            }
-                          }}
-                          disabled={busy}
-                        >
-                          <option value="">— araç seç —</option>
-                          {dropdownVehicles.map((v) => (
-                            <option key={v.id} value={String(v.id)}>
-                              {v.plate} • {vehicleMetaLine(v)} (#{v.id})
-                            </option>
-                          ))}
-                        </select>
-
-                        <div className="row" style={{ marginTop: 6, alignItems: "center" }}>
-                          <label className="muted" style={{ minWidth: 80 }}>Driver</label>
+                      {capacityMeta.dispatchRequired ? (
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <div className="card" style={{ padding: 10 }}>
+                            <div className="muted"><b>Dispatch modu aktif</b></div>
+                            <div className="muted" style={{ marginTop: 6 }}>
+                              Bu kayıt çok araçlı plan gerektiriyor. Araç ve şoför seçimini aşağıdaki öneri kartlarından yap.
+                            </div>
+                          </div>
+                          {renderPoolSummary(s, capacityMeta, effectiveRoomId)}
+                        </div>
+                      ) : (
+                        <div style={{ display: "grid", gap: 6 }}>
                           <select
-                            value={driverSel[sid] ?? ""}
-                            onChange={(e) => setDriverSel((p) => ({ ...p, [sid]: e.target.value }))}
+                            value={selectedVehicleId}
+                            onChange={async (e) => {
+                              const val = e.target.value;
+                              setAssignSel((p) => ({ ...p, [sid]: val }));
+
+                              // araç değişince (driver seçilmemişse) araçtaki driver'ı otomatik seç
+                              const hadManual = Boolean(driverSel[sid]);
+                              if (!hadManual) {
+                                const vid = val ? Number(val) : null;
+                                const vv = vid ? vehiclesById.get(vid) : null;
+                                if (vv?.driverId) {
+                                  setDriverSel((p) => ({ ...p, [sid]: String(vv.driverId) }));
+                                }
+                              }
+                            }}
                             disabled={busy}
                           >
-                            <option value="">Seç (opsiyonel)</option>
-                            {drivers
-                              .filter((d) => !d?.roomId || Number(d.roomId) === Number(s.roomId))
-                              .map((d) => (
-                                <option key={d.id} value={String(d.id)}>
-                                  {d.fullName ||
-                                    d.name ||
-                                    `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() ||
-                                    `#${d.id}`}
-                                </option>
-                              ))}
+                            <option value="">— araç seç —</option>
+                            {dropdownVehicles.map((v) => (
+                              <option key={v.id} value={String(v.id)}>
+                                {v.plate} • {vehicleMetaLine(v)} (#{v.id})
+                              </option>
+                            ))}
                           </select>
-                        </div>
 
-                                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button
-                            type="button"
-                            disabled={busy || !selectedVehicleId}
-                            onClick={() => uiCopyVehicleToPkg(s, selectedVehicleId)}
-                            title="Seçili aracı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                          >
-                            Araç → Pakete Kopyala
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy || !(driverSel[sid] ?? "")}
-                            onClick={() => uiCopyDriverToPkg(s, driverSel[sid] ?? "")}
-                            title="Seçili driver’ı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                          >
-                            Driver → Pakete Kopyala
-                          </button>
-                        </div>
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          Not: Bu butonlar sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
-                        </div>
-<button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
-                          {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}
-                        </button>
+                          <div className="row" style={{ marginTop: 6, alignItems: "center" }}>
+                            <label className="muted" style={{ minWidth: 80 }}>Driver</label>
+                            <select
+                              value={driverSel[sid] ?? ""}
+                              onChange={(e) => setDriverSel((p) => ({ ...p, [sid]: e.target.value }))}
+                              disabled={busy}
+                            >
+                              <option value="">Seç (opsiyonel)</option>
+                              {drivers
+                                .filter((d) => !d?.roomId || Number(d.roomId) === Number(s.roomId))
+                                .map((d) => (
+                                  <option key={d.id} value={String(d.id)}>
+                                    {d.fullName ||
+                                      d.name ||
+                                      `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() ||
+                                      `#${d.id}`}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
 
-                        {renderAvailLine(s, vId, effDriverId, autoDriverName)}
-                      </div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              type="button"
+                              disabled={busy || !selectedVehicleId}
+                              onClick={() => uiCopyVehicleToPkg(s, selectedVehicleId)}
+                              title="Seçili aracı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
+                            >
+                              Araç → Pakete Kopyala
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy || !(driverSel[sid] ?? "")}
+                              onClick={() => uiCopyDriverToPkg(s, driverSel[sid] ?? "")}
+                              title="Seçili driver’ı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
+                            >
+                              Driver → Pakete Kopyala
+                            </button>
+                          </div>
+                          <div className="muted" style={{ fontSize: 12 }}>
+                            Not: Bu butonlar sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
+                          </div>
+                          <button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
+                            {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}
+                          </button>
+
+                          {renderAvailLine(s, vId, effDriverId, autoDriverName)}
+                        </div>
+                      )}
                     </td>
 
                     <td>
-                      <button
-                        type="button"
-                        disabled={approveDisabled}
-                        onClick={() => approveShift(s)}
-                        title={
-                          !vId ? "Araç seç" :
-                          !effDriverId ? "Driver seç (veya araç driver bağlı olsun)" :
-                          capacityMeta.blockCode ? capacityMeta.blockMessage :
-                          a?.status === "checking" ? "Kontrol ediliyor" :
-                          a?.status === "conflict" ? "Çakışma var" :
-                          a?.status === "error" ? "Uygunluk hatası" :
-                          ""
-                        }
-                      >
-                        {busy ? "..." : "Approve"}
-                      </button>
+                      {capacityMeta.insufficient ? (
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          Onay bu modda aşağıdaki Dispatch önizleme kartından verilir.
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={approveDisabled}
+                          onClick={() => approveShift(s)}
+                          title={
+                            !vId ? "Araç seç" :
+                            !effDriverId ? "Driver seç (veya araç driver bağlı olsun)" :
+                            capacityMeta.blockCode ? capacityMeta.blockMessage :
+                            a?.status === "checking" ? "Kontrol ediliyor" :
+                            a?.status === "conflict" ? "Çakışma var" :
+                            a?.status === "error" ? "Uygunluk hatası" :
+                            ""
+                          }
+                        >
+                          {busy ? "..." : "Approve"}
+                        </button>
+                      )}
                     </td>
 
                     <td>
@@ -1884,10 +2247,11 @@ async function sendRoomOffer(shift) {
       {/* TÜM SHIFTS */}
       <div className="card">
         <h3>Tüm Shifts</h3>
+        <div className="muted" style={{ marginBottom: 8 }}>Bekleyen Talepler üstte görünür. Bu listede varsayılan olarak sadece onaylı ve aktif işler gösterilir.</div>
 
         <div className="toolbarLeft" style={{ marginBottom: 10 }}>
           <select value={listStatus} onChange={(e) => setListStatus(e.target.value)}>
-            <option value="OPEN">Açık</option>
+            <option value="OPEN">Açık (APPROVED + ACTIVE)</option>
             <option value="ALL">Hepsi</option>
             <option value="REQUESTED">REQUESTED</option>
             <option value="DRAFT">DRAFT</option>
@@ -2044,6 +2408,9 @@ async function sendRoomOffer(shift) {
           setPreviewShift(null);
           setPreviewStops([]);
           setPreviewPeople([]);
+          setPreviewSummary(null);
+          setPreviewPathPoints(null);
+          setPreviewSource(null);
           setPreviewErr("");
           setPreviewLoading(false);
         }}
@@ -2052,9 +2419,13 @@ async function sendRoomOffer(shift) {
             ? `Shift #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
             : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
         }
-        shiftId={previewShift?.id}
+        shiftId={typeof previewShift?.id === "number" ? previewShift?.id : null}
         stops={previewStops}
         people={previewPeople}
+        previewSummary={previewSummary}
+        previewPathPoints={previewPathPoints}
+        previewSource={previewSource}
+        previewShift={previewShift}
       />
     </div>
   );

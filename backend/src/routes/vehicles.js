@@ -490,44 +490,65 @@ export function vehiclesRouter(io) {
       odometerKm,
     } = parsed.data;
 
-    const vehicle = await prisma.vehicle.create({
-      data: {
-        roomId: u.roomId,
-        plate,
-        capacity,
-        speedLimitKmh: speedLimitKmh ?? 80,
+    try {
+      const vehicle = await prisma.vehicle.create({
+        data: {
+          roomId: u.roomId,
+          plate,
+          capacity,
+          speedLimitKmh: speedLimitKmh ?? 80,
 
-        type: type ?? null,
-        brand: brand ?? null,
-        model: model ?? null,
-        modelYear: modelYear ?? null,
-        color: color ?? null,
-        vin: vin ?? null,
-        note: note ?? null,
+          type: type ?? null,
+          brand: brand ?? null,
+          model: model ?? null,
+          modelYear: modelYear ?? null,
+          color: color ?? null,
+          vin: vin ?? null,
+          note: note ?? null,
 
-        inspectionDueAt: dt(inspectionDueAt),
-        insuranceDueAt: dt(insuranceDueAt),
-        cascoDueAt: dt(cascoDueAt),
+          inspectionDueAt: dt(inspectionDueAt),
+          insuranceDueAt: dt(insuranceDueAt),
+          cascoDueAt: dt(cascoDueAt),
 
-        lastServiceAt: dt(lastServiceAt),
-        lastServiceKm: lastServiceKm ?? null,
-        serviceIntervalKm: serviceIntervalKm ?? 15000,
-        serviceIntervalDays: serviceIntervalDays ?? null,
+          lastServiceAt: dt(lastServiceAt),
+          lastServiceKm: lastServiceKm ?? null,
+          serviceIntervalKm: serviceIntervalKm ?? 15000,
+          serviceIntervalDays: serviceIntervalDays ?? null,
 
-        odometerKm: odometerKm ?? null,
-        odometerUpdatedAt: odometerKm != null ? new Date() : null,
-        odometerSource: odometerKm != null ? "MANUAL" : undefined,
+          odometerKm: odometerKm ?? null,
+          odometerUpdatedAt: odometerKm != null ? new Date() : null,
+          odometerSource: odometerKm != null ? "MANUAL" : undefined,
 
-        nextMaintenanceAt: dt(nextMaintenanceAt),
+          nextMaintenanceAt: dt(nextMaintenanceAt),
 
-        archivedAt: null,
-        archivedReason: null,
-      },
-      include: { gpsLast: true, gpsState: true, driver: true },
-    });
+          archivedAt: null,
+          archivedReason: null,
+        },
+        include: { gpsLast: true, gpsState: true, driver: true },
+      });
 
-    emitRoom(u.roomId, "vehicle:update", { vehicleId: vehicle.id, action: "created" });
-    res.json(vehicle);
+      emitRoom(u.roomId, "vehicle:update", { vehicleId: vehicle.id, action: "created" });
+      return res.json(vehicle);
+    } catch (e) {
+      if (e?.code === "P2002" && Array.isArray(e?.meta?.target)) {
+        if (e.meta.target.includes("plate")) {
+          return res.status(409).json({
+            error: "Bu plaka ile kayıtlı araç zaten var.",
+            code: "VEHICLE_PLATE_EXISTS",
+            field: "plate",
+          });
+        }
+        if (e.meta.target.includes("vin")) {
+          return res.status(409).json({
+            error: "Bu şasi numarası ile kayıtlı araç zaten var.",
+            code: "VEHICLE_VIN_EXISTS",
+            field: "vin",
+          });
+        }
+      }
+      console.error("vehicle create failed", e);
+      return res.status(500).json({ error: "Araç kaydedilemedi.", code: "VEHICLE_CREATE_FAILED" });
+    }
   });
 
   return r;

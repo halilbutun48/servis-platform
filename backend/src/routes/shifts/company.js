@@ -228,6 +228,67 @@ export function attachShiftCompanyRoutes(r, io) {
     }
   );
 
+
+  // COMPANY/SUPER_ADMIN: delete temporary guided draft before it reaches market
+  r.delete(
+    "/:id/guided-temp",
+    authRequired(),
+    requireRole("COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+
+        const shift = await prisma.shift.findUnique({
+          where: { id: shiftId },
+          select: {
+            id: true,
+            companyId: true,
+            roomId: true,
+            status: true,
+            _count: { select: { offers: true } },
+          },
+        });
+        if (!shift) return res.status(404).json({ error: "Shift not found" });
+
+        if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+
+        if (shift.status !== "DRAFT") {
+          return res.status(409).json({ error: "Only DRAFT shifts can be deleted here" });
+        }
+
+        if (shift.roomId != null || Number(shift?._count?.offers || 0) > 0) {
+          return res.status(409).json({ error: "Draft already moved beyond temp stage" });
+        }
+
+        await prisma.$transaction([
+          prisma.notification.deleteMany({ where: { shiftId } }),
+          prisma.pickupRequest.deleteMany({ where: { shiftId } }),
+          prisma.stopAssignment.deleteMany({ where: { shiftId } }),
+          prisma.shiftOffer.deleteMany({ where: { shiftId } }),
+          prisma.shiftImport.deleteMany({ where: { shiftId } }),
+          prisma.shiftPersonel.deleteMany({ where: { shiftId } }),
+          prisma.shiftProgress.deleteMany({ where: { shiftId } }),
+          prisma.stop.deleteMany({ where: { shiftId } }),
+          prisma.shift.delete({ where: { id: shiftId } }),
+        ]);
+
+        await audit(req, {
+          action: "SHIFT_DELETE_GUIDED_TEMP",
+          entity: "Shift",
+          entityId: shiftId,
+          meta: { status: "DRAFT" },
+        });
+
+        return res.json({ ok: true, deleted: true, shiftId });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
   // ✅ M24: COMPANY creates marketplace offers for a market shift
   // POST /api/shifts/:id/offers
   r.post(
@@ -258,6 +319,24 @@ export function attachShiftCompanyRoutes(r, io) {
 
         if (shift.status !== "REQUESTED" && shift.status !== "DRAFT") {
           return res.status(409).json({ error: "Shift not editable for offers" });
+        }
+
+        const pendingGeoCount = await prisma.shiftPersonel.count({
+          where: {
+            shiftId,
+            OR: [
+              { personel: { geoStatus: { in: ["NEEDS_REVIEW", "FAILED"] } } },
+              { personel: { homeLat: null } },
+              { personel: { homeLng: null } },
+            ],
+          },
+        });
+        if (pendingGeoCount > 0) {
+          return res.status(409).json({
+            error: "Shift has personel requiring geo review",
+            code: "SHIFT_GEO_REVIEW_REQUIRED",
+            pendingGeoCount,
+          });
         }
 
         // ✅ Taslak (DRAFT) shift: ilk teklif gönderiminde REQUESTED'a geçir (taslaklar sadece wizard içinde görünür)

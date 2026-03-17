@@ -88,7 +88,18 @@ function Modal({ open, onClose, children }) {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className="card" style={{ maxWidth: 1100, margin: "24px auto" }}>
+      <div
+        className="card"
+        style={{
+          width: "min(1680px, calc(100vw - 12px))",
+          maxWidth: "min(1680px, calc(100vw - 12px))",
+          height: "min(95vh, 1080px)",
+          maxHeight: "min(95vh, 1080px)",
+          margin: "6px auto",
+          overflow: "auto",
+          boxSizing: "border-box",
+        }}
+      >
         {children}
       </div>
     </div>
@@ -234,6 +245,43 @@ function stepTitle(step, who, organization) {
   return "";
 }
 
+
+const GUIDED_TEMP_STORAGE_KEY = "psv1:guidedTempShiftIds:v1";
+
+function readGuidedTempShiftIds() {
+  try {
+    const raw = localStorage.getItem(GUIDED_TEMP_STORAGE_KEY);
+    const arr = JSON.parse(raw || "[]");
+    return Array.isArray(arr) ? arr.map((x) => Number(x)).filter(Number.isFinite) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeGuidedTempShiftIds(ids) {
+  try {
+    const clean = Array.isArray(ids) ? ids.map((x) => Number(x)).filter(Number.isFinite) : [];
+    if (!clean.length) {
+      localStorage.removeItem(GUIDED_TEMP_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(GUIDED_TEMP_STORAGE_KEY, JSON.stringify(Array.from(new Set(clean))));
+  } catch {
+    // ignore local draft tracking errors
+  }
+}
+
+function clearPlanTermsForShiftIds(ids) {
+  try {
+    (Array.isArray(ids) ? ids : [])
+      .map((x) => Number(x))
+      .filter(Number.isFinite)
+      .forEach((sid) => localStorage.removeItem(`psv1:planTerms:shift:${sid}:v1`));
+  } catch {
+    // ignore local cleanup errors
+  }
+}
+
 export default function GuidedPlanModal({
   open,
   onClose,
@@ -261,11 +309,8 @@ export default function GuidedPlanModal({
   const [packKey, setPackKey] = useState("WK_MORNING_EVENING");
   const pack = useMemo(() => PACKS.find((p) => p.key === packKey) || PACKS[0], [packKey]);
   const [startDate, setStartDate] = useState(todayYmd());
-  const [durationKey, setDurationKey] = useState(me?.companyKind === "ORGANIZATION" ? "1d" : "2d");
-  const durationOptions = useMemo(() => {
-    if (organization) return [{ key: "1d", label: "1 gün", days: 1 }, ...QUICK_DURATION_PRESETS];
-    return QUICK_DURATION_PRESETS;
-  }, [organization]);
+  const [durationKey, setDurationKey] = useState("1d");
+  const durationOptions = useMemo(() => [{ key: "1d", label: "1 gün", days: 1 }, ...QUICK_DURATION_PRESETS], []);
   const durationDays = useMemo(() => {
     const p = durationOptions.find((x) => x.key === durationKey) || durationOptions[0] || { days: 1 };
     return Number(p.days || 1);
@@ -294,11 +339,12 @@ export default function GuidedPlanModal({
 
   // Step-3: offers
   const [roomQ, setRoomQ] = useState("");
-  const [onlyHubRooms, setOnlyHubRooms] = useState(true);
+  const [onlyHubRooms, setOnlyHubRooms] = useState(false);
   const [selRoomIds, setSelRoomIds] = useState({});
   const [offerAmount, setOfferAmount] = useState("");
   const [offerNote, setOfferNote] = useState("");
   const [sentOk, setSentOk] = useState(false);
+  const [companyGeoGate, setCompanyGeoGate] = useState({ blocking: false, ready: true, geoStats: { ok: 0, review: 0, failed: 0, total: 0 }, stopSummary: null });
 
   const roomsFiltered = useMemo(() => {
     const list = Array.isArray(rooms) ? rooms : [];
@@ -318,6 +364,17 @@ export default function GuidedPlanModal({
     (rooms || []).forEach((r) => m.set(Number(r.id), r));
     return m;
   }, [rooms]);
+
+  const selectedRoomIds = useMemo(
+    () =>
+      Object.keys(selRoomIds)
+        .filter((k) => selRoomIds[k])
+        .map((k) => Number(k))
+        .filter(Number.isFinite),
+    [selRoomIds]
+  );
+
+  const selectedRoomCount = selectedRoomIds.length;
 
   const orgFilledDestinations = useMemo(
     () => (orgDestinations || []).filter((d) => String(d?.title || d?.address || "").trim()),
@@ -575,7 +632,43 @@ export default function GuidedPlanModal({
     return `[Gezi planı] ${parts.join(" | ")}`;
   }
 
-  function resetAll() {
+
+  async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
+    const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
+    if (!ids.length) {
+      writeGuidedTempShiftIds([]);
+      if (!opts.keepState) {
+        setDraftShiftIds([]);
+        setDraftShifts([]);
+        setOsrmResById({});
+      }
+      return;
+    }
+
+    if (token) {
+      for (const sid of ids) {
+        try {
+          await api(`/api/shifts/${sid}/guided-temp`, { token, method: "DELETE" });
+        } catch {
+          // ignore cleanup errors; temp cleanup is best-effort
+        }
+      }
+    }
+
+    clearPlanTermsForShiftIds(ids);
+    writeGuidedTempShiftIds([]);
+
+    if (!opts.keepState) {
+      setDraftShiftIds([]);
+      setDraftShifts([]);
+      setOsrmResById({});
+    }
+  }
+
+  function resetAll(opts = {}) {
+    if (!opts.skipCleanup && !sentOk && draftShiftIds.length) {
+      void cleanupDraftShifts(draftShiftIds, { keepState: true });
+    }
     setStep(0);
     setBusy(false);
     setErr("");
@@ -586,7 +679,7 @@ export default function GuidedPlanModal({
     setHubLoaded(false);
     setPackKey("WK_MORNING_EVENING");
     setStartDate(todayYmd());
-    setDurationKey(organization ? "1d" : "2d");
+    setDurationKey("1d");
     setEndDate(addDaysISO(todayYmd(), 0));
     setDaysSel(selectedFromMask(62));
     setCustomSlots([{ label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" }]);
@@ -602,8 +695,9 @@ export default function GuidedPlanModal({
     setDraftShifts([]);
     setOsrmBatch({ running: false, done: 0, total: 0 });
     setOsrmResById({});
+    setCompanyGeoGate({ blocking: false, ready: true, geoStats: { ok: 0, review: 0, failed: 0, total: 0 }, stopSummary: null });
     setRoomQ("");
-    setOnlyHubRooms(true);
+    setOnlyHubRooms(false);
     setSelRoomIds({});
     setOfferAmount("");
     setOfferNote("");
@@ -617,9 +711,16 @@ export default function GuidedPlanModal({
     setErr("");
     setInfo("");
     setSentOk(false);
+    setSelRoomIds({});
+    setOfferAmount("");
+    setOfferNote("");
 
     let alive = true;
     (async () => {
+      const lingeringIds = readGuidedTempShiftIds();
+      if (lingeringIds.length) {
+        await cleanupDraftShifts(lingeringIds, { keepState: true });
+      }
       try {
         const h = await api("/api/company/hub", { token });
         if (!alive) return;
@@ -637,6 +738,15 @@ export default function GuidedPlanModal({
     };
   }, [open, token]);
 
+
+  useEffect(() => {
+    if (!open) return;
+    if (step !== 3) return;
+    setSelRoomIds({});
+    setOfferAmount("");
+    setOfferNote("");
+    setSentOk(false);
+  }, [open, step, draftShiftIds.join("|")]);
 
   useEffect(() => {
     const keys = new Set((durationOptions || []).map((x) => x.key));
@@ -792,7 +902,10 @@ export default function GuidedPlanModal({
 
     setBusy(true);
     try {
-            const createdIds = [];
+      if (draftShiftIds.length) {
+        await cleanupDraftShifts(draftShiftIds);
+      }
+      const createdIds = [];
 
       // Multi-day draft generation (inclusive start..end):
       // - respects weekMask (selected weekdays)
@@ -821,6 +934,7 @@ export default function GuidedPlanModal({
           if (draftNote) noteParts.push(String(draftNote).trim());
           if (organization) noteParts.push(orgNoteSummary());
           const body = {
+            status: "DRAFT",
             // M34/M35: market shift -> roomId OMIT (roomId optional; null trips zod)
             startAt,
             endAt,
@@ -902,7 +1016,8 @@ export default function GuidedPlanModal({
         }
       }
 
-setDraftShiftIds(createdIds);
+      setDraftShiftIds(createdIds);
+      writeGuidedTempShiftIds(createdIds);
       setInfo(`✅ Taslak shift oluşturuldu: ${createdIds.map((x) => "#" + x).join(", ")}`);
 
       // fetch shifts for Step-2/3
@@ -1063,16 +1178,17 @@ async function sendBulkOffers() {
       return;
     }
 
-    const roomIds = Object.keys(selRoomIds)
-      .filter((k) => selRoomIds[k])
-      .map((k) => Number(k))
-      .filter(Number.isFinite);
+    const roomIds = selectedRoomIds;
     if (!roomIds.length) {
       setErr("En az 1 room seç.");
       return;
     }
     if (organization && !orgDraftCompletion.ready) {
       setErr(`Markete göndermek için plan tamamlanmalı: ${orgDraftCompletion.reasons.join(" • ")}`);
+      return;
+    }
+    if (!organization && companyGeoGate.blocking) {
+      setErr(`Markete göndermek için tüm kişi kayıtları koordinatlı olmalı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}`);
       return;
     }
 
@@ -1092,7 +1208,8 @@ async function sendBulkOffers() {
           body: baseBody,
         });
       }
-setSentOk(true);
+      writeGuidedTempShiftIds([]);
+      setSentOk(true);
       setInfo(`✅ Gönderildi (shift sayısı: ${draftShiftIds.length}).`);
     } catch (e) {
       setErr(String(e?.message || e));
@@ -1595,13 +1712,28 @@ setSentOk(true);
             </>
           ) : (
             <div className="card">
-              <ShiftPeopleTab token={token} me={me} shifts={draftShifts} roomsById={roomsById} mirrorShiftIds={(draftShifts || []).map((s) => s.id)} />
+              <ShiftPeopleTab token={token} me={me} shifts={draftShifts} roomsById={roomsById} mirrorShiftIds={(draftShifts || []).map((s) => s.id)} guidedMode hideGeoReviewLinks onSummaryChange={setCompanyGeoGate} />
             </div>
           )}
 
+          {!organization && companyGeoGate.blocking ? (
+            <div className="card" style={{ border: "1px solid #b85" }}>
+              <div style={{ fontWeight: 800 }}>⚠ Guided Mode kilidi</div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Review veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Review: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Failed: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Düzeltmeyi bu ekranda yap. Guided Mode içinden dış Geo Review ekranına çıkış kapalı tutulur.
+              </div>
+            </div>
+          ) : null}
+
           <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setStep(1)} disabled={busy}>Geri</button>
-            <button type="button" onClick={() => { refreshDraftShifts(); setStep(3); }} disabled={busy}>İleri</button>
+            <button type="button" onClick={() => { refreshDraftShifts(); setStep(3); }} disabled={busy || (!organization && companyGeoGate.blocking)}>İleri</button>
           </div>
         </div>
       ) : null}
@@ -1621,6 +1753,20 @@ setSentOk(true);
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
                 Not: Organization işlerinde plan tam oluşmadan markete düşmez.
+              </div>
+            </div>
+          ) : null}
+
+          {!organization ? (
+            <div className="card" style={{ border: companyGeoGate.blocking ? "1px solid #b85" : "1px solid #2a7" }}>
+              <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Company planı henüz tam değil" : "✅ Company planı markete hazır"}</div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                {companyGeoGate.blocking
+                  ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift REQUESTED'a çevrilmez.`
+                  : `Kişi kayıtları koordinatlı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}`}
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Not: Guided Mode içinde dış Geo Review ekranına çıkış kapalıdır; düzeltmeyi Step-3'e geçmeden önce aynı ekranda yap.
               </div>
             </div>
           ) : null}
@@ -1712,7 +1858,7 @@ setSentOk(true);
                   <input type="checkbox" checked={onlyHubRooms} onChange={(e) => setOnlyHubRooms(e.target.checked)} disabled={busy} />
                   Sadece hub’lı
                 </label>
-                <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length}</div>
+                <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
               </div>
               <div>
                 <label className="muted">Tutar (₺) (opsiyonel)</label>
@@ -1746,7 +1892,7 @@ setSentOk(true);
               <button type="button" onClick={() => { setSelRoomIds({}); setOfferAmount(""); setOfferNote(""); }} disabled={busy}>
                 Temizle
               </button>
-              <button type="button" onClick={sendBulkOffers} disabled={busy || !roomsSupported || (organization && !orgDraftCompletion.ready)}>
+              <button type="button" onClick={sendBulkOffers} disabled={busy || !roomsSupported || selectedRoomCount < 1 || (organization && !orgDraftCompletion.ready) || (!organization && companyGeoGate.blocking)}>
                 Toplu Teklifleri Gönder
               </button>
             </div>

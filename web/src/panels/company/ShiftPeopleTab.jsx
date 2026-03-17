@@ -250,7 +250,7 @@ function clusterPeople(people, maxWalkM) {
   return clusters;
 }
 
-export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds, preferredShiftId }) {
+export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds, preferredShiftId, guidedMode = false, hideGeoReviewLinks = false, onSummaryChange = null }) {
   const who = personLabel(me);
   const whoPlural = peopleLabel(me);
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
@@ -575,6 +575,17 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     }
     return { ok, review, failed, total: people.length };
   }, [people]);
+
+  useEffect(() => {
+    if (typeof onSummaryChange !== "function") return;
+    onSummaryChange({
+      selectedShiftId: Number(selectedShiftId || 0) || null,
+      geoStats,
+      stopSummary,
+      blocking: Number(geoStats.review || 0) > 0 || Number(geoStats.failed || 0) > 0,
+      ready: Number(geoStats.review || 0) === 0 && Number(geoStats.failed || 0) === 0,
+    });
+  }, [onSummaryChange, selectedShiftId, geoStats, stopSummary]);
 
   function buildStopSummary(base = {}, stopsInput = draftStops, peopleInput = people) {
     const allStops = Array.isArray(stopsInput) ? stopsInput : [];
@@ -1211,7 +1222,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
             <b>{who}:</b> {geoStats.total} • OK: {geoStats.ok} • Review: {geoStats.review} • Failed: {geoStats.failed}
             {geoStats.review > 0 || geoStats.failed > 0 ? (
               <span style={{ marginLeft: 10 }}>
-                <a href={"#" + companyPath(me, "/georeview")}>Geo Review’e git</a>
+                {hideGeoReviewLinks ? (
+                  <span className="badge">Guided Mode: dış Geo Review çıkışı kapalı, düzeltmeyi bu ekranda yap.</span>
+                ) : (
+                  <a href={"#" + companyPath(me, "/georeview")}>Geo Review’e git</a>
+                )}
               </span>
             ) : null}
           </div>
@@ -1399,10 +1414,14 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
                 {importSummary.needsReviewRows > 0 ? (
                   <>
                     <div className="muted" style={{ marginTop: 6 }}>
-                      Review gerektiren kayıtlar için <a href={"#" + companyPath(me, "/georeview")}>Geo Review</a> ekranını kullan.
+                      {hideGeoReviewLinks ? (
+                        <>Guided Mode'da dış Geo Review ekranına geçiş kapalı. Düzeltmeyi burada satır bazlı yap veya toplu bul kullan.</>
+                      ) : (
+                        <>Review gerektiren kayıtlar için <a href={"#" + companyPath(me, "/georeview")}>Geo Review</a> ekranını kullan.</>
+                      )}
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                      <a className="btn" href={"#" + companyPath(me, "/georeview")}>Geo Review'a Git</a>
+                      {hideGeoReviewLinks ? null : <a className="btn" href={"#" + companyPath(me, "/georeview")}>Geo Review'a Git</a>}
                       <button type="button" className="btn" onClick={runImportQuickGeocode} disabled={importQuickBusy || busy}>
                         {importQuickBusy ? "Çalışıyor..." : "Review kayıtlarını topluca bul"}
                       </button>
