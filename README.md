@@ -51,8 +51,8 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - `M58 — Final Pilot Readiness` teknik readiness kapısı geçti; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` komutu tarihsel kontrat olarak korunur.
 - `M58` için `manuel pilot kabul` / manuel pilot signoff ifadesi tarihsel not olarak korunur; gerçek saha çıkış kapısı artık `M65 — Pilot Launch Gate` altında kapatılacaktır.
 - Yeni resmi saha öncesi rota: `M59 → M65`
-- Durum: **M59 green**, **M60 green**, **M61 green**, **M62 green**, **M63 green**, aktif iş **M64 — Doğal Copilot Katmanı**.
-- Kural: **M64 bitmeden M65'e geçilmez. Paralel dağınık ilerleme yok.**
+- Durum: **M59 green**, **M60 green**, **M61 green**, **M62 green**, **M63 green**, **M64 green**, aktif iş **M65 — Pilot Launch Gate**.
+- Kural: **M64 green olmadan M65 açılmaz. Paralel dağınık ilerleme yok.**
 - Kural: **M65 green olmadan sahaya çıkılmayacak.**
 
 ## Ürün kimliği
@@ -82,8 +82,8 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - `M61 — SSOT + Milestone Hizası` _(green)_
 - `M62 — Ticari Omurga Güçlendirme` _(green)_
 - `M63 — Güven + Kalite + Hizmet Değerlendirme` _(green)_
-- `M64 — Doğal Copilot Katmanı` _(aktif)_
-- `M65 — Pilot Launch Gate`
+- `M64 — Doğal Copilot Katmanı` _(green)_
+- `M65 — Pilot Launch Gate` _(aktif)_
 
 ## Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`

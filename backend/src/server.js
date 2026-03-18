@@ -1,4 +1,4 @@
-// backend/src/server.js
+﻿// backend/src/server.js
 import express from "express";
 import http from "http";
 import cors from "cors";
@@ -31,7 +31,7 @@ import penaltiesRouter from "./routes/penalties.js";
 
 import availabilityRoutes from "./routes/availability.js";
 
-// Router export tipleri karışsa bile crash etmemek için namespace import
+// Router export tipleri karÄ±ÅŸsa bile crash etmemek iÃ§in namespace import
 import * as vehiclesMod from "./routes/vehicles.js";
 import * as driversMod from "./routes/drivers.js";
 import * as shiftsMod from "./routes/shifts/index.js";
@@ -46,7 +46,7 @@ import * as personelShiftsMod from "./routes/personelShifts.js";
 import { adminRouter } from "./routes/admin.js";
 import adminLogsRouter from "./routes/admin_logs.js";
 
-// Public router’lar (io yok)
+// Public routerâ€™lar (io yok)
 import * as companiesMod from "./routes/companies.js";
 import * as roomsMod from "./routes/rooms.js";
 import * as routeTemplatesMod from "./routes/routeTemplates.js";
@@ -62,6 +62,7 @@ import { ssotAlignmentRouter } from "./routes/ssotAlignment.js";
 import { commercialCoreRouter } from "./routes/commercialCore.js";
 import { trustQualityRouter } from "./routes/trustQuality.js";
 import { naturalCopilotRouter } from "./routes/naturalCopilot.js";
+import { pilotLaunchGateRouter } from "./routes/pilotLaunchGate.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -72,13 +73,13 @@ import { edgeRequestContext, applyEdgeSecurityHeaders, edgeSecurityGuard, getEdg
 
 import * as agreementsMod from "./routes/agreements.js";
 /**
- * mod export'ları 3 tip olabilir:
+ * mod export'larÄ± 3 tip olabilir:
  * 1) export function xxxRouter(io){...}  => factory
  * 2) export default function (io){...}  => factory
  * 3) export default router               => Router objesi
  *
- * Biz server.js tarafında HER ZAMAN xxxRouter(...) çağırmak istiyoruz.
- * Bu yüzden Router objesi gelirse factory wrapper’a sarıyoruz.
+ * Biz server.js tarafÄ±nda HER ZAMAN xxxRouter(...) Ã§aÄŸÄ±rmak istiyoruz.
+ * Bu yÃ¼zden Router objesi gelirse factory wrapperâ€™a sarÄ±yoruz.
  */
 function pickExport(mod, preferredName) {
   const picked = mod?.[preferredName] ?? mod?.default;
@@ -125,7 +126,7 @@ for (const [name, fn] of Object.entries({
 const app = express();
 startCapacityBaselineMonitor();
 
-// M11: proxy / güvenlik baseline
+// M11: proxy / gÃ¼venlik baseline
 app.disable("x-powered-by");
 app.set("trust proxy", Math.max(0, Number(ENV.TRUST_PROXY_HOPS || 1)));
 
@@ -133,12 +134,12 @@ app.set("trust proxy", Math.max(0, Number(ENV.TRUST_PROXY_HOPS || 1)));
 const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
 const isProd = mode === "production";
 
-// M38: prod guard — CORS_ORIGIN must not be "*" in production
+// M38: prod guard â€” CORS_ORIGIN must not be "*" in production
 if (isProd && String(ENV.CORS_ORIGIN || "").trim() === "*") {
   throw new Error('CORS_ORIGIN must not be "*" in production');
 }
 
-// Optional prod guard — redirect http->https when behind proxy
+// Optional prod guard â€” redirect http->https when behind proxy
 const requireHttps = isProd && String(process.env.REQUIRE_HTTPS || "0") === "1";
 
 
@@ -181,7 +182,7 @@ app.use(morgan("dev"));
 app.use(apiRequestLog());
 
 // M11: Rate limit
-// GreenPack deterministic gate için (dev/test only) header bazlı skip.
+// GreenPack deterministic gate iÃ§in (dev/test only) header bazlÄ± skip.
 // PROD'DA asla skip yok.
 function greenpackSkip(req) {
   if (isProd) return false;
@@ -208,7 +209,7 @@ function authKey(req) {
   return `ip:${req.ip}`;
 }
 
-// ✅ M41: distributed rate-limit store (Redis)
+// âœ… M41: distributed rate-limit store (Redis)
 const rateLimitStoreMode = String(ENV.RATE_LIMIT_STORE || process.env.RATE_LIMIT_STORE || "").toLowerCase();
 const useRedisRateLimitStore = rateLimitStoreMode === "redis";
 const _redis = useRedisRateLimitStore ? getRedis() : null;
@@ -225,7 +226,7 @@ function limiter429Handler(req, res) {
   });
 }
 
-// ✅ M77: route-based buckets (login asla GPS tarafından kilitlenmez)
+// âœ… M77: route-based buckets (login asla GPS tarafÄ±ndan kilitlenmez)
 const authLimiter = rateLimit({
   windowMs: ENV.AUTH_RATE_LIMIT_WINDOW_MS,
   max: ENV.AUTH_RATE_LIMIT_MAX,
@@ -328,24 +329,24 @@ const exportLimiter = rateLimit({
   handler: limiter429Handler,
 });
 
-// Auth (çok sıkı)
+// Auth (Ã§ok sÄ±kÄ±)
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/google", authLimiter);
 app.use("/api/auth/refresh", authActionLimiter);
 app.use("/api/auth/logout", authActionLimiter);
 app.use("/api/auth/driver/change-pin", authActionLimiter);
 
-// GPS ingest (ayrı kova)
+// GPS ingest (ayrÄ± kova)
 app.use("/api/gps", gpsLimiter);
 app.use("/api/telematics", telematicsLimiter);
 
-// Export/download endpoints (WAF-style ayrı kova)
+// Export/download endpoints (WAF-style ayrÄ± kova)
 app.use("/api/logs/export", exportLimiter);
 app.use("/api/admin/logs/export", exportLimiter);
 
-// Genel API (GET / write ayrımı)
+// Genel API (GET / write ayrÄ±mÄ±)
 app.use("/api", (req, res, next) => {
-  // /api/auth/* ve /api/gps/* kendi limiter'ında
+  // /api/auth/* ve /api/gps/* kendi limiter'Ä±nda
   if (req.path.startsWith("/auth")) return next();
   if (req.path.startsWith("/gps")) return next();
   if (req.path.startsWith("/telematics")) return next();
@@ -367,7 +368,7 @@ app.get("/health", async (req, res) => {
   }
 
   res.json({
-    ok: true, // geriye dönük uyum
+    ok: true, // geriye dÃ¶nÃ¼k uyum
     ts: new Date().toISOString(),
     uptimeSec: Math.round(process.uptime()),
     dbOk,
@@ -408,7 +409,7 @@ app.use("/api/field-acceptance", fieldAcceptanceRouter());
 app.use("/api/ssot-alignment", ssotAlignmentRouter());
 app.use("/api/commercial-core", commercialCoreRouter());
 app.use("/api/trust-quality", trustQualityRouter());
-app.use("/api/natural-copilot", naturalCopilotRouter());
+System.Text.RegularExpressions.MatchEvaluator
 app.use("/api/parent", parentRouter());
 app.use("/api/school/parent-invites", schoolParentInvitesRouter());
 app.use("/api/companies", companiesRouter());
@@ -492,7 +493,12 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 server.listen(ENV.PORT, () => {
-  console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
+  console.log(`âœ… API listening on http://localhost:${ENV.PORT}`);
 });
 
+
+
+
+
+app.use("/api/pilot-launch-gate", pilotLaunchGateRouter());
 

@@ -14,8 +14,8 @@
 - Resmi green çizgi `M58` teknik readiness seviyesine kadar uzanır.
 - `M58 readiness contract` tarihsel olarak korunur; `manuel pilot kabul` notu artık saha çıkış kapısı olarak değil, geçmiş pilot readiness bağlamı olarak saklanır.
 - Yeni resmi saha öncesi rota `M59 -> M65` olarak acilmistir.
-- `M59 green`; `M60 green`; `M61 green`; `M62 green`; aktif hat `M63`.
-- `M63 green olmadan M64 acilmaz`.
+- `M59 green`; `M60 green`; `M61 green`; `M62 green`; `M63 green`; `M64 green`; aktif hat: M65.
+- `M64 green olmadan M65 acilmaz`.
 - SSOT seti değişikliklerde birlikte güncellenmelidir.
 - Geçici `_m*` overlay klasörleri repo içine commitlenmez.
 
@@ -57,7 +57,14 @@
 - Amaç: hizmet alan kurum değerlendirmesi, sağlayıcı kalite sinyali ve karar destek görünürlüğünü resmi ürün katmanı haline getirmek.
 
 
-## M64
-- Aktif hat M64 — Doğal Copilot Katmanı
-- Komut: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
-- Kural: M64 green olmadan M65 açılmaz.
+
+## M64 natural copilot pack
+- `tools\pack_m64_natural_copilot_layer.ps1`
+- `tools\check_m64_natural_copilot_layer_repo_contract.ps1`
+- Amaç: daha doğal Türkçe cevap, kısa hafıza, neden ilerlemiyor modu, daha basit anlat ve operasyon notu üretim iskeletini resmi katman haline getirmek.
+
+## M65 pilot launch gate pack
+- `tools\pack_m65_pilot_launch_gate.ps1`
+- `tools\check_m65_pilot_launch_gate_repo_contract.ps1`
+- Amaç: launch checklist, kritik risk listesi, acceptance özetleri, gözlemleme sağlığı ve GO / LIMITED GO / NO-GO kapısını tek yerde toplamak.
+- Kural: M65 green olmadan sahaya cikilmaz.

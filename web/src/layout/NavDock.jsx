@@ -192,3 +192,5 @@ export default function NavDock({ role, path, me }) {
   );
 }
 
+
+// M65 Pilot Launch Gate route reference: /superadmin/pilot-launch-gate

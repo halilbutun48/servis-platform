@@ -323,3 +323,8 @@ V1 başarılı sayılırsa:
 Saha testi keşif aşaması değildir; son doğrulama aşamasıdır. Bu nedenle saha öncesi sertleştirme hattı (`M59 → M65`) tamamlanmadan gerçek saha testine çıkılmaz.
 
 Bu başlıklar V1 çekirdeğini değiştirmez; ürünü daha güçlü, daha güvenilir ve daha profesyonel hale getirir.
+
+
+## 17. Pilot Launch Gate
+
+`M65 — Pilot Launch Gate`, acceptance, gözlemleme, kalite ve cihaz/build uygunluk verilerini tek GO / LIMITED GO / NO-GO kapısında toplar.

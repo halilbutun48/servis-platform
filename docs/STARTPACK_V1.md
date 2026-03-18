@@ -23,6 +23,7 @@
 - `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m65_pilot_launch_gate.ps1 -RepoRoot D:\servis-platform`
 
 ## Resmi durum
 - `M58` teknik readiness gate'i pack-green olarak geçti.

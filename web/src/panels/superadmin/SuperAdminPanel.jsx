@@ -124,6 +124,7 @@ export default function SuperAdminPanel() {
           <button className="btn sm" onClick={() => navigate("/superadmin/commercial-core")}>Ticari Omurga</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Guven + Kalite</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/natural-copilot")}>Dogal Copilot</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/pilot-launch-gate")}>Pilot Launch Gate</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Export</button>
           </div>
           {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
