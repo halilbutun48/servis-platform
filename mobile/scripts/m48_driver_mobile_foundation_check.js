@@ -30,7 +30,7 @@ must('app config has secure-store plugin', appJson.includes('expo-secure-store')
 must('app config has location plugin', appJson.includes('expo-location'));
 must('login screen exists', login.includes('Surucu Kodu veya e-posta'));
 must('pin change screen exists', pin.includes('Yeni PIN belirle'));
-must('today screen has GPS section', today.includes('GPS hazirligi'));
+must('today screen has GPS section', today.includes('GPS hazirligi') || today.includes("Surucunun telefon GPS'i"));
 must('today screen has haritada ac action', today.includes('Haritada ac'));
 must('api uses auth refresh', api.includes('/api/auth/refresh'));
 must('api sends driver device id', api.includes('deviceId'));

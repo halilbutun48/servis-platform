@@ -12,6 +12,9 @@
 - **Active track (M58):** final pilot readiness
 
 ## Resmi green kutular
+- [x] `M44 — Telematics` pack: `tools\pack_m44_telematics.ps1`
+- [x] `M45 — Retention + Backup` pack: `tools\pack_m45_retention_backup.ps1` backup: `tools\backup_create_m45.ps1` restore: `tools\backup_restore_m45.ps1`
+- [x] `M46 — AI Copilot Foundation` pack: `tools\pack_m46_ai_copilot.ps1`
 - [x] `M47 — KVKK Notice / Consent Framework`
 - [x] `M47.2 — Capacity & Load Baseline`
 - [x] `M47.3 — Production Resilience + Edge Security`

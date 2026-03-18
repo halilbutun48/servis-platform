@@ -12,6 +12,9 @@
 
 ## Kanonik komutlar
 - `tools\pack.ps1 -To 41`
+- `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
@@ -23,6 +26,16 @@
 - `M57` full pack green; scaffold komutu bilgi/kontrat doğrulama için korunur.
 - Sonraki ana urun hatti `M58 — Final Pilot Readiness` olarak devam eder.
 
+## M45 retention + backup
+- Komut: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- Runbook: `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
+- Yardımcı araçlar: `tools\backup_create_m45.ps1`, `tools\backup_restore_m45.ps1`
+
+## M46 AI Copilot foundation
+- Komut: `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
+- Repo-contract: `tools\check_m46_ai_copilot_repo_contract.ps1`
+- Runbook: `docs\RUNBOOK_M46_AI_COPILOT.md`
+
 ## M57 full pack
 - Komut: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
 - Kapsam: `M57.1` foreground GPS publish, `M57.2` offline/online toparlama, `M57.3` session + KVKK blocking, `M57.4` Android preview/internal build disiplini.
@@ -30,3 +43,5 @@
 ## M57 scaffold notu
 - Komut: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - Bu komut resmi green yerine dosya/runbook/check hazirligini hizli doğrular.
+
+- 	ools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform

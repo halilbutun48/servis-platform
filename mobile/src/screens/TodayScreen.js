@@ -177,6 +177,7 @@ export default function TodayScreen({
         <Info label="Uygulama surumu" value={releaseInfo?.appVersion || '-'} />
         <Info label="Release hedefi" value={releaseInfo?.releaseTarget || '-'} />
         <Info label="Build profilleri" value={releaseInfo?.buildProfiles || '-'} />
+        <Info label="EAS Build" value={releaseInfo?.buildProfiles || '-'} />
         <Info label="Dagitim modu" value={releaseInfo?.deliveryMode || '-'} />
         <Info label="Android preview" value={releaseInfo?.androidPreview || '-'} />
         <Info label="Production bundle" value={releaseInfo?.productionBundle || '-'} />

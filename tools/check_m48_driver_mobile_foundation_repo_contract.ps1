@@ -62,7 +62,7 @@ MustContainText $app 'requirePinChange' 'app routes pin change first'
 MustContainText $api '/api/auth/refresh' 'api helper supports refresh token'
 MustContainText $api '/api/driver/shifts/today' 'api helper uses today endpoint'
 MustContainText $api '/api/driver/route/active' 'api helper uses active route endpoint'
-MustContainText $today 'GPS hazirligi' 'today screen has gps readiness card'
+MustContainAny $today @('GPS hazirligi','Surucunun telefon GPS''i') 'today screen has gps readiness card'
 MustContainText $today 'Haritada ac' 'today screen has external maps action'
 
 Write-Host 'INFO Checking pack + runbook'

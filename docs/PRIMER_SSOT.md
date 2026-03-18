@@ -43,6 +43,9 @@ Not:
 - Resmi green çizgi artık `M57` seviyesine kadar doğrulanmıştır.
 - `M42+` pack script'leri self-only calisir; tam `M42 -> M57` green hatti ve M57 full kontrolunun kanonik komutu `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
 - `tools\pack_post_m41_to_m54_4.ps1` uyumluluk icin korunur ve yeni orchestrator'a forward eder.
+- `M44` ayri kanonik pack olarak `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
+- `M45` ayri kanonik pack olarak `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
+- `M46` ayri kanonik pack olarak `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
 - `M55` ayri kanonik pack olarak `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
 - `M56` ayri kanonik pack olarak `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
 - `M57` full implementation komutu: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`.
@@ -82,6 +85,9 @@ Not:
 ## 5) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
 - Post-M41 tam hat: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- M44: `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
+- M45: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- M46: `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
 - M55: `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
 - M56: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
 - M57 full: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
