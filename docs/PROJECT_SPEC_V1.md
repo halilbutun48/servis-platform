@@ -31,10 +31,10 @@ Servis ihtiyacı olan kurumlar ile servis sağlayıcılar arasındaki süreç ç
 Servis Platformu bu sorunu üç ana katmanda çözer:
 
 ### A. Ticari Katman
-- ihtiyaç oluşturma
+- ihtiyaç / talep kartı oluşturma
 - teklif toplama
-- pazarlık / karşı teklif
-- uzlaşma
+- karşı teklif ve pazarlık geçmişi
+- uzlaşma özeti
 - sözleşme bağlama
 - kapasite ve uygunluk kontrolü
 
@@ -107,10 +107,12 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 
 ### 7.1 Ticari / Pazaryeri Yetkinlikleri
 - talep oluşturma
-- teklif akışı
+- teklif yaşam döngüsü
 - pazarlık / karşı teklif zemini
+- pazarlık geçmişi ve uzlaşma özeti
 - sözleşme oluşturma
 - sözleşme onay / iptal / uzatma
+- tekliften sözleşmeye geçiş kapısı
 - araç / sürücü / zaman uygunluk kontrolü
 - çakışma görünürlüğü
 
@@ -307,7 +309,8 @@ V1 başarılı sayılırsa:
 - vardiya olay zaman çizgisi,
 - operasyon kalite paneli,
 - hizmet alan kurum değerlendirme sistemi,
-- sağlayıcı kalite / güven puanı.
+- sağlayıcı kalite / güven puanı,
+- ticari omurga görünürlüğü (talep kartı, teklif yaşam döngüsü, pazarlık geçmişi, uzlaşma özeti).
 
 Saha testi keşif aşaması değildir; son doğrulama aşamasıdır. Bu nedenle saha öncesi sertleştirme hattı (`M59 → M65`) tamamlanmadan gerçek saha testine çıkılmaz.
 

@@ -10,7 +10,7 @@
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
 - **Step 4.9–5.1 (M51–M54.4):** backfill verification → dispatch approve/repack → driver route delivery resmi green
 - **Hazırlık tarihi:** `M58 — Final Pilot Readiness` teknik pack-green
-- **Active track (M61):** SSOT + milestone hizası
+- **Active track (M62):** Ticari omurga güçlendirme
 
 ## Resmi green kutular
 - [x] `M44 — Telematics` pack: `tools\pack_m44_telematics.ps1`
@@ -36,10 +36,13 @@
 - [ ] `M58 — Final Pilot Readiness` pack: `tools\pack_m58_final_pilot_readiness.ps1` (M58 tarihsel pilot readiness kapısıdır; `manuel pilot kabul` ve saha çıkışı artık `M65` altında kapatılacaktır.)
 - [x] `M59 — Gözlemleme + Saha Teşhis` pack: `tools\pack_m59_observability_field_diagnostics.ps1`
 - [x] `M60 — Saha Acceptance Merkezi` pack: `tools\pack_m60_field_acceptance_center.ps1`
-- [ ] `M61 — SSOT + Milestone Hizası` pack: `tools\pack_m61_ssot_milestone_alignment.ps1`
+- [x] `M61 — SSOT + Milestone Hizası` pack: `tools\pack_m61_ssot_milestone_alignment.ps1`
+- [ ] `M62 — Ticari Omurga Güçlendirme` pack: `tools\pack_m62_commercial_core_strengthening.ps1`
 
 M58 pilot readiness marker: pack_m58_final_pilot_readiness.ps1
 M59 observability marker: pack_m59_observability_field_diagnostics.ps1
 M60 acceptance marker: pack_m60_field_acceptance_center.ps1
 
 M61 alignment marker: pack_m61_ssot_milestone_alignment.ps1
+
+M62 commercial marker: pack_m62_commercial_core_strengthening.ps1

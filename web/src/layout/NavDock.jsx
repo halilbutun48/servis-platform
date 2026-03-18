@@ -158,6 +158,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Gözlemleme", path: "/superadmin/observability" },
           { label: "Acceptance", path: "/superadmin/acceptance" },
           { label: "SSOT", path: "/superadmin/ssot-alignment" },
+          { label: "Ticari Omurga", path: "/superadmin/commercial-core" },
           { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/superadmin/logexport" },
         ],
