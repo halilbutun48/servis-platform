@@ -20,11 +20,13 @@
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 
 ## Resmi durum
 - `M51–M53`, `M54.3`, `M54.4`, `M55`, `M56`, `M57` ve dış post-M41 runner pack-green olarak geçti.
 - `M57` full pack green; scaffold komutu bilgi/kontrat doğrulama için korunur.
 - Sonraki ana urun hatti `M58 — Final Pilot Readiness` olarak devam eder.
+- `M58` paketi repo hazirligini kontrol eder; resmi green icin manuel pilot kabul de gerekir.
 
 ## M45 retention + backup
 - Komut: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
@@ -44,4 +46,7 @@
 - Komut: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - Bu komut resmi green yerine dosya/runbook/check hazirligini hizli doğrular.
 
-- 	ools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform
+## M58 hazirlik komutu
+- Komut: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- Bu komut repo hazirlik kontratini kontrol eder.
+- Resmi green icin ayrica saha kabul ve manuel pilot signoff gerekir.

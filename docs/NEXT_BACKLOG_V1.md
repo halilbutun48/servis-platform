@@ -24,11 +24,18 @@ Current direction: **M57 green -> M58 Final Pilot Readiness**
 - mobil gerçek cihaz / preview build doğrulaması
 - operasyon runbook son sadeleştirme
 - release notu / rollout kararı
+- pilot kabul formu / manuel signoff
 
 ## 4) Kanonik komutlar
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 
-## 5) Sonraki ilk cümle
-Repo su an `M57`'ye kadar resmi green; sonraki resmi odak `M58 — Final Pilot Readiness`.
+## 5) M58 kabul notu
+- M58 paketi repo hazirligini kontrol eder.
+- M58 resmi green sayimi icin ek olarak saha kabul ve manuel pilot signoff gerekir.
+- Cikis karari tek satir olmalidir: `GO`, `LIMITED GO` veya `NO-GO`.
+
+## 6) Sonraki ilk cümle
+Repo su an `M57`'ye kadar resmi green; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` ile M58 pilot hazirlik kontrati kontrol edilebilir.

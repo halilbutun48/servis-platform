@@ -30,3 +30,5 @@
 - `_archive/primer-versions/` — eski primer sürümleri
 
 - **RUNBOOK_M57_MOBILE_HARDENING.md** — M57 mobile hardening scope and scaffold runbook
+- **RUNBOOK_M58_FINAL_PILOT_READINESS.md** — final pilot checklist, saha testi ve go/no-go runbook
+- **MILESTONE_M58_FINAL_PILOT_READINESS.md** — M58 kapsamı ve resmi green için gereken manuel kabul kapısı

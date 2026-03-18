@@ -33,7 +33,8 @@
 - [x] `M57 — Mobile Hardening`
 - [x] `M57 scaffold pack` : `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - [x] `Post-M41 External Pack Runner`
-- [ ] `M58 — Final Pilot Readiness`
+- [ ] `M58 — Final Pilot Readiness` pack: `tools\pack_m58_final_pilot_readiness.ps1` (resmi green icin ek olarak saha kabul / manuel pilot signoff gerekir)
 
 M56 milestone marker: pack_m56_kvkk_eta_quality.ps1
 M57 full pack marker: pack_m57_mobile_hardening.ps1
+M58 pilot readiness marker: pack_m58_final_pilot_readiness.ps1

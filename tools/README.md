@@ -17,6 +17,7 @@
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild` (compat wrapper)
+- `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 
 ## Güncel çalışma notu
 - Resmi green çizgi `M57` seviyesine kadar uzanır.
@@ -24,6 +25,7 @@
 - `tools\pack_post_m41_to_m54_4.ps1` adi uyumluluk icin korunur ve yeni orchestrator'a forward eder.
 - `M44`, `M45`, `M46`, `M51–M53`, `M54.3`, `M54.4`, `M55`, `M56` ve `M57` resmi green kanıt setinin parçasıdır.
 - Sonraki ana urun isi `M58 — Final Pilot Readiness` olarak devam eder.
+- `M58` readiness contract pack'i repo tarafini kontrol eder; resmi green icin manuel pilot kabul gerekir.
 - SSOT seti değişikliklerde birlikte güncellenmelidir.
 - Geçici `_m*` overlay klasörleri repo içine commitlenmez.
 
@@ -32,6 +34,11 @@
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - Full komut `M57.1 -> M57.4` zincirini dogrular.
 - Scaffold komutu hizli dosya/runbook kontrolunu korur.
+
+## M58 readiness pack
+- `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- Repo hazirlik kontratini ve pilot checklist baglantisini kontrol eder.
+- Resmi green icin manuel pilot kabul gerekir.
 
 ## Mobile script alias
 - `npm run check:m57.1`

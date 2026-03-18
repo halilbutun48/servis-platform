@@ -59,6 +59,8 @@ Not:
 - `M57.4 Android preview/internal build disiplini` green.
 - Post-M41 external runner ile `M42 -> M57` green hatti tek komutla tekrar kosturulabilir.
 - Sonraki ana resmi rota `M58 — Final Pilot Readiness`.
+- `M58` hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`.
+- `M58` resmi green sayimi icin pack gecisi yanında saha kabul / manuel pilot signoff gerekir.
 
 ## 2) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -92,11 +94,14 @@ Not:
 - M56: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
 - M57 full: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
 - M57 scaffold: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
+- M58 hazirlik: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 
 ## 6) Yeni sohbet için ilk cümle
-Repo su an `M57`'ye kadar resmi green; kanonik post-M41 dis runner `tools\pack_post_m41_to_m57.ps1` ile `M42 -> M57` green hatti birlikte kosturulur. Sonraki odak `M58 — Final Pilot Readiness`; guncel repo elimde.
+Repo su an `M57`'ye kadar resmi green; kanonik post-M41 dis runner `tools\pack_post_m41_to_m57.ps1` ile `M42 -> M57` green hatti birlikte kosturulur. Sonraki odak `M58 — Final Pilot Readiness`; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` ile repo hazirlik kontrati kontrol edilebilir.
 
-## 7) M57
+## 7) M57 / M58
 - `M57 green`
 - `M57.4 Android preview/internal build disiplini green`
 - `M58 — Final Pilot Readiness`
+- `M58 hazirlik komutu`: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- `M58 resmi green` icin saha kabul gerekir

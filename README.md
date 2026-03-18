@@ -50,6 +50,7 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - Uyumluluk icin `tools\pack_post_m41_to_m54_4.ps1` dosyasi korunur; yeni orchestrator'a forward eder.
 - `M57` artik resmi green cizgiye girdi. `M57.1` foreground GPS publish, `M57.2` offline/online toparlama, `M57.3` session + KVKK blocking ve `M57.4` Android preview/internal build disiplini birlikte kapandi.
 - Sonraki ana urun hatti `M58 — Final Pilot Readiness` olarak devam eder.
+- `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` komutu repo hazirlik kontratini kontrol eder; resmi green icin manuel pilot kabul gerekir.
 
 ## Bugünkü resmi ürün kararları
 - Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
@@ -65,6 +66,7 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M56 — KVKK Matrix + ETA/Navigation Quality` ✅ green
 - `M57 — Mobile Hardening` ✅ green
 - `M58 — Final Pilot Readiness`
+- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 
 ## M57 — Mobile Hardening
 - Foreground GPS publish hattı `/api/gps` ile çalışır.
@@ -74,3 +76,8 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - Full pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
 - Scaffold pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - Post-M41 orchestrator: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+
+## M58 — Final Pilot Readiness
+- Komut: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- Amaç: final pilot checklist, saha testi akışları ve go / no-go kararını tek hatta toplamak.
+- Not: Bu komut tek basina resmi green anlamına gelmez; manuel pilot kabul gerekir.
