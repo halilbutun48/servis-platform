@@ -40,41 +40,84 @@ async function rawRequest(path, { method = 'GET', body, token } = {}) {
     );
     error.status = response.status;
     error.payload = payload;
+    error.path = path;
     throw error;
   }
 
   return payload;
 }
 
+function markSessionFailure(sourceError, reason = '') {
+  const message = String(
+    sourceError?.payload?.message ||
+    sourceError?.payload?.error ||
+    sourceError?.message ||
+    'SESSION_REFRESH_FAILED'
+  );
+  const error = new Error(message);
+  error.status = Number(sourceError?.status || 401);
+  error.payload = sourceError?.payload || null;
+  error.path = sourceError?.path || '';
+  error.sessionFailure = true;
+  error.sessionFailureReason = reason || message;
+  return error;
+}
+
 async function refreshIfNeeded() {
   const session = await getSession();
   if (!session?.refreshToken) return null;
   const deviceId = session.deviceId || (await ensureDeviceId());
-  const refreshed = await rawRequest('/api/auth/refresh', {
-    method: 'POST',
-    body: { refreshToken: session.refreshToken, deviceId },
-  });
-  const nextSession = {
-    ...session,
-    token: refreshed?.token || '',
-    refreshToken: refreshed?.refreshToken || session.refreshToken,
-    deviceId,
-  };
-  await saveSession(nextSession);
-  return nextSession;
+
+  try {
+    const refreshed = await rawRequest('/api/auth/refresh', {
+      method: 'POST',
+      body: { refreshToken: session.refreshToken, deviceId },
+    });
+
+    const nextSession = {
+      ...session,
+      token: refreshed?.token || '',
+      refreshToken: refreshed?.refreshToken || session.refreshToken,
+      deviceId,
+    };
+    await saveSession(nextSession);
+    return nextSession;
+  } catch (error) {
+    throw markSessionFailure(error, 'refresh-failed');
+  }
 }
 
 async function request(path, options = {}, allowRefresh = true) {
   const session = await getSession();
   const token = options.token || session?.token || '';
+
   try {
     return await rawRequest(path, { ...options, token });
   } catch (error) {
     if (!allowRefresh || ![401, 403].includes(Number(error?.status || 0))) throw error;
+    if (!session?.refreshToken) throw markSessionFailure(error, 'refresh-token-missing');
+
     const nextSession = await refreshIfNeeded();
-    if (!nextSession?.token) throw error;
-    return rawRequest(path, { ...options, token: nextSession.token });
+    if (!nextSession?.token) throw markSessionFailure(error, 'refresh-token-empty');
+
+    try {
+      return await rawRequest(path, { ...options, token: nextSession.token });
+    } catch (retryError) {
+      if ([401, 403].includes(Number(retryError?.status || 0))) {
+        throw markSessionFailure(retryError, 'retry-rejected-after-refresh');
+      }
+      throw retryError;
+    }
   }
+}
+
+export function isSessionFailureError(error) {
+  return Boolean(error?.sessionFailure);
+}
+
+export function isKvkkBlockingError(error) {
+  const code = String(error?.payload?.error || error?.payload?.code || '').toUpperCase();
+  return code.includes('KVKK') || code === 'CONSENT_REQUIRED';
 }
 
 export async function loginDriver(identifier, password) {
@@ -108,6 +151,17 @@ export async function fetchToday() {
 
 export async function fetchActiveRoute() {
   return request('/api/driver/route/active');
+}
+
+export async function fetchKvkkCurrent() {
+  return request('/api/kvkk/documents/current');
+}
+
+export async function acceptKvkkRequiredMany(items = []) {
+  return request('/api/kvkk/consents/accept-many', {
+    method: 'POST',
+    body: Array.isArray(items) && items.length ? { items } : {},
+  });
 }
 
 export async function changeDriverPin(currentPin, newPin) {

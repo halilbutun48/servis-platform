@@ -3,7 +3,7 @@
     "name": "Personel Servis Surucu",
     "slug": "personel-servis-driver-mobile",
     "scheme": "psdriver",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -25,7 +25,9 @@
     },
     "extra": {
       "appRole": "DRIVER",
-      "releaseStage": "mobile-release-readiness"
+      "releaseStage": "m57-mobile-hardening",
+      "androidPreviewTrack": "preview-internal",
+      "productionTrack": "production"
     },
     "plugins": [
       [

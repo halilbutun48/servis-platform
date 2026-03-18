@@ -1,7 +1,7 @@
 {
   "name": "personel-servis-driver-mobile",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
@@ -14,8 +14,12 @@
     "check:m50": "node scripts/m50_mobile_release_readiness_check.js",
     "doctor:expo": "npx expo-doctor",
     "build:preview:android": "npx eas-cli build --profile preview --platform android",
+    "build:internal:android": "npx eas-cli build --profile preview --platform android",
     "build:production:android": "npx eas-cli build --profile production --platform android",
-    "check:m57.1": "node scripts/m57_1_foreground_gps_publish_check.js"
+    "check:m57.1": "node scripts/m57_1_foreground_gps_publish_check.js",
+    "check:m57.2": "node scripts/m57_2_offline_online_recovery_check.js",
+    "check:m57.3": "node scripts/m57_3_session_kvkk_blocking_check.js",
+    "check:m57.4": "node scripts/m57_4_android_preview_internal_build_check.js"
   },
   "dependencies": {
     "expo": "~54.0.0",

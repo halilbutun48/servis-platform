@@ -9,7 +9,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://10.0.2.2:3000"
+        "EXPO_PUBLIC_API_BASE_URL": "http://10.0.2.2:3000",
+        "EXPO_PUBLIC_RELEASE_STAGE": "preview-internal"
       }
     },
     "production": {
@@ -17,7 +18,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.example.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.example.com",
+        "EXPO_PUBLIC_RELEASE_STAGE": "production"
       }
     }
   },

@@ -10,12 +10,12 @@ $ErrorActionPreference = 'Stop'
 Set-Location $RepoRoot
 
 Write-Host ''
-Write-StatusLine '=== POST-M41 EXTERNAL PACK RUNNER (M42 -> M56 + optional M57 scaffold) ==='
+Write-StatusLine '=== POST-M41 EXTERNAL PACK RUNNER (M42 -> M57) ==='
 Write-StatusLine 'INFO Packs are self-only; this script orchestrates the full post-M41 line externally.'
 if ($SkipM57Scaffold) {
   Write-StatusLine 'INFO M57 scaffold step skipped by caller.'
 } else {
-  Write-StatusLine 'INFO M57 is not green yet; scaffold/files check is included by default.'
+  Write-StatusLine 'INFO M57 resmi green oldugu icin full M57 mobile hardening packi varsayilan olarak dahildir.'
 }
 Write-Host ''
 
@@ -62,9 +62,9 @@ $steps = @(
 
 if (-not $SkipM57Scaffold) {
   $steps += @{
-    Name = 'M57 MOBILE HARDENING SCAFFOLD'
+    Name = 'M57 MOBILE HARDENING'
     Script = 'tools/pack_m57_mobile_hardening.ps1'
-    Args = @('-RepoRoot', $RepoRoot, '-ScaffoldOnly')
+    Args = @('-RepoRoot', $RepoRoot)
   }
 }
 
@@ -79,6 +79,6 @@ Write-Host ''
 if ($SkipM57Scaffold) {
   Write-StatusLine '=== POST-M41 EXTERNAL PACK RUNNER (M42 -> M56) PASS OK ==='
 } else {
-  Write-StatusLine '=== POST-M41 EXTERNAL PACK RUNNER (M42 -> M56 + M57 scaffold) PASS OK ==='
+  Write-StatusLine '=== POST-M41 EXTERNAL PACK RUNNER (M42 -> M57) PASS OK ==='
 }
 Write-Host ''

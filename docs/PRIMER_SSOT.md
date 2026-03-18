@@ -1,4 +1,4 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SSOT
+# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT
 
 Tarih: 2026-03-18
 Timezone: Europe/Istanbul
@@ -36,139 +36,61 @@ Ana resmi green durum:
 - ✅ `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
 - ✅ `M55 REPORTS + NO_SHOW PACK PASS OK`
 - ✅ `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
+- ✅ `M57 MOBILE HARDENING PACK PASS OK`
 - ✅ `POST-M41 EXTERNAL PACK RUNNER PASS OK`
 
 Not:
-- Resmi green çizgi artık `M56` seviyesine kadar doğrulanmıştır.
-- `M42+` pack script'leri self-only calisir; tam M42 -> M56 green hatti ve M57 scaffold kontrolunun kanonik komutu `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
+- Resmi green çizgi artık `M57` seviyesine kadar doğrulanmıştır.
+- `M42+` pack script'leri self-only calisir; tam `M42 -> M57` green hatti ve M57 full kontrolunun kanonik komutu `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
 - `tools\pack_post_m41_to_m54_4.ps1` uyumluluk icin korunur ve yeni orchestrator'a forward eder.
 - `M55` ayri kanonik pack olarak `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
 - `M56` ayri kanonik pack olarak `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
-- `M57.1` icin implementation komutu hazirdir: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`.
-- `M57` scaffold/files komutu da korunur: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`.
-- Bu zip içinde `.git` olmadığı için resmi tag promotion yalnızca canlı repo içinde yapılmalıdır.
+- `M57` full implementation komutu: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`.
+- `M57` scaffold/files komutu korunur: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`.
 
 ## 1) Güncel aktif durum
-- `M51–M53` backfill verification hattı runtime + repo-contract ile geçti.
-- `M52 Import + Geo Pipeline` ve `M53 Stop & Route Productization / Organization-Gezi` görünürlüğü resmi green zincirine dahil oldu.
-- `M54.1` Dispatch Preview ve `M54.2` Editable Dispatch Preview, `M54.3` pack-green sonucu ile fiilen doğrulanmış kabul edilir.
-- `M54.3` Dispatch Approve + Repack `PACK PASS OK` seviyesindedir.
-- `M54.4` Driver Route Delivery explicit shift route endpoint'i ve `Today → Route` deep link'i ile resmi verify hattından geçti.
-- `M55` Reports + Gelmedi Kaydı hattı runtime + repo-contract ile resmi green doğrulamasına eklendi.
-- Post-M41 external runner `PASS OK` oldugundan `M42 -> M56` green hatti tek komutla tekrar kosturulabilir; M57 scaffold da ayni cizgiye baglanmistir.
-- M57 genel green degildir; ancak `M57.1 foreground GPS publish + Ayarlari ac` repo implementasyonu hazirdir.
-- `M45` retention + backup kanıt araçları: `tools\pack_m45_retention_backup.ps1`, `tools\backup_create_m45.ps1`, `tools\backup_restore_m45.ps1`, `docs\RUNBOOK_M45_RETENTION_BACKUP.md`.
-- Tek araç yeterli / dispatch gerektirmeyen işlerde `Araç → Pakete Kopyala` ve `Driver → Pakete Kopyala` UI kolaylığı korunur.
-- Canlı liste satır yüksekliği / layout sıkışması düzeltilmiştir.
+- `M57` genel green oldu.
+- `M57.1 foreground GPS publish` green.
+- `M57.2 offline/online toparlama + retry` green.
+- `M57.3 session failure + KVKK blocking gorunurlugu` green.
+- `M57.4 Android preview/internal build disiplini` green.
+- Post-M41 external runner ile `M42 -> M57` green hatti tek komutla tekrar kosturulabilir.
+- Sonraki ana resmi rota `M58 — Final Pilot Readiness`.
 
-## 2) Kesin çalışan / doğrulanan durum
-
-### M52.1 — Import Contract
-- Excel / CSV import
-- `REPLACE` / `MERGE`
-- import summary kartı
-- warning UI
-- eksik / hatalı satırlarda sistemin düşmemesi
-- review gerektiren kayıtların ayrılması
-
-### M52.2 — Geo State + Geo Review
-- `geoStatus` + `geoReason` / `geoReasonText`
-- satır bazlı `Adresten Bul`
-- Geo Review içinde ad / telefon / adres düzenleme
-- lat/lng düzenleme
-- `Kaydet`, `OK Yap`, `Toplu Adresten Bul`
-- reason filtresi
-- bulundu / bulunamadı / hata sayaçları
-
-### M52.3-A — Import Summary Quick Actions
-- `Geo Review'a Git`
-- review kayıtlarını topluca bul
-- toplu geocode sonrası bazı kayıtların `OK` olması
-- sayaçların değişmesi
-- listenin güncellenmesi
-
-### M53.1 — Stop Policy Contract
-Resmi karar:
-- Company default `maxWalkM = 250`
-- School default `maxWalkM = 50`
-- backend hard limit `50..2000`
-
-Resmi görünürlük:
-- toplam kişi / durak / tekil / kapsanan / review / dışarıda-skip
-- stop başına kişi dağılımı
-- tahmini km / süre
-- başlangıç noktası
-- rota kaynağı / kalite sinyali
-- hub dahil / hariç stop ayrımı
-
-### M53.2-A — Stop Generation Summary
-- Company `250` ve School `50` presetleri görünür
-- Stop Generation Özeti kartı görünür
-- `maxWalkM / durak / kapsanan / tekil / toplam kişi / review / dışarıda-skip / stop dağılım` alanları görünür
-
-### M53.3 — Planlama Merkezi / tek oluşturma kaynağı
-- Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
-- **Vardiyalar** ekranı takip / operasyon ekranı olarak kalmalıdır.
-- Basic kullanıcı mantığı: `Rota önerisi oluştur → Ön izle → Ayrı market teklifi oluştur`.
-- Company taslak plan / teklif hazırlar; Room gerçek araç / sürücü / kapasite kararı ile operasyonel planı tamamlar.
-
-### M53.4–M53.5 — Organization / Gezi modu görünür repo durumu
-- Organization kullanıcısı için Planlama Merkezi üst kimliği ayrıştı.
-- Organization step-2 içinde `Tahmini kişi sayısı`, `Toplanma noktası adı`, `Gidilecek yerler`, `Dönüş tipi` alanları görünüyor.
-- Gidilecek yerler ayrı kart/satır mantığında giriliyor.
-- Her yer için `Bul`, manuel `lat/lng`, `Haritadan seç`, `Navigasyonda aç` destekleri bulunuyor.
-- Preview tarafında organization planı için `Tahmini kişi` fallback'i okunuyor.
-- Koordinat eksiği olan plan markete düşmeden önce durduruluyor.
-
-## 3) Bugünkü ürün kararları
-- Planlama Merkezi tek üretim merkezi olarak kalır.
-- Company ve School akışı bozulmaz.
-- Organization alanları yalnızca organization modunda görünür.
-- Organization temel akışı:
-  - `Toplanma noktası`
-  - `Plan paketi`
-  - `Tahmini kişi sayısı`
-  - `Gidilecek yerler`
-  - `Ön izleme / teklif`
-  - `Vardiyalar`
-- Gidilecek yerler tek textarea değil, ayrı yer kartları şeklinde tutulur.
-- Adres bulunamazsa manuel `lat/lng` veya haritadan seçim ile tamamlanır.
-- Koordinatlar tamam olmadan organization planı markete düşmez.
-
-## 4) Yakın resmi rota
-- `M57 — Mobile Hardening`
-- `M58 — Final Pilot Readiness`
-
-## 5) M54 için kapanan yön
-M54 mevcut repo durumunda şu şekilde kapanmıştır:
-- `M54.1` preview katmanı çalışır
-- `M54.2` room tarafı araç / şoför seçimi çalışır
-- `M54.3` preview → approve → repack zinciri pack ile kanıtlanmıştır
-- `M54.4` sürücünün Today ekranından kendi shift rotasına gitmesi explicit route endpoint ile netleştirilmiştir
-
-Kalan odak artık yeni planner yazmak değil, `M56+` hattına geçişi hazırlamaktır.
-
-## 6) Sabit ürün / repo kuralları
+## 2) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
 - İlk girişte PIN değişimi zorunludur.
-- `driver@demo.com / demo123` yalnızca hızlı panel / smoke kontrol hesabıdır.
-- ürün içi konum dili: `sürücünün telefon GPS'i`
-- overlay standardı: **tek zip / tek kök klasör / nested root yok**
-- değişiklikler mümkünse tek seferde overlay paket olarak taşınır
-- CHECKLIST'te `[x]` yalnızca pack/check green sonrasında işaretlenir
+- Ürün içi konum dili: `sürücünün telefon GPS'i`.
+- Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
+- Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
+- **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
+- Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
+- CHECKLIST'te `[x]` yalnızca pack/check green sonrası işaretlenir.
 
-## 7) Yeni sohbet için ilk cümle
-Repo su an `M56`'ya kadar resmi green; kanonik post-M41 dis runner `tools\pack_post_m41_to_m57.ps1` ile `M42 -> M56` green hatti ve `M57` scaffold kontrolu birlikte kosturulur. Sonraki odak `M57.1 foreground GPS publish + izin karti + Ayarlari ac` hattidir.
+## 3) M57 — Mobile Hardening kapanis ozeti
+- `/api/gps` foreground publish hattı mobilde görünür duruma geldi.
+- İzin yoksa `GPS iznini yenile` ve gerekirse `Ayarlari ac` akışı var.
+- Bağlantı kartı ile offline/online toparlama dili sade şekilde görünür.
+- Session refresh bozulursa uygulama `Oturum kapandi. Yeniden giris yapin.` diyerek temiz düşer.
+- KVKK eksikleri mobilde görünür ve GPS publish blok diline bağlanır.
+- Android preview/internal build disiplini `app.json`, `eas.json`, `.env.example`, Today release kartı ve `m57_4` checker ile sabitlendi.
 
+## 4) Yakın resmi rota
+- `M57 — Mobile Hardening` ✅ green
+- `M58 — Final Pilot Readiness`
 
-## M55 — Reports + Gelmedi Kaydı
-- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
-- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
-- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
+## 5) Kanonik komutlar
+- Ana regresyon: `tools\pack.ps1 -To 41`
+- Post-M41 tam hat: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- M55: `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
+- M56: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
+- M57 full: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
+- M57 scaffold: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 
+## 6) Yeni sohbet için ilk cümle
+Repo su an `M57`'ye kadar resmi green; kanonik post-M41 dis runner `tools\pack_post_m41_to_m57.ps1` ile `M42 -> M57` green hatti birlikte kosturulur. Sonraki odak `M58 — Final Pilot Readiness`; guncel repo elimde.
 
-## M57 — Mobile Hardening
-- `M57.1 foreground GPS publish` repo implementasyonu, izin karti ve `Ayarlari ac` aksiyonu ile eklendi.
-- Implementation pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
-- Scaffold pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
-- Yeni dis runner: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+## 7) M57
+- `M57 green`
+- `M57.4 Android preview/internal build disiplini green`
+- `M58 — Final Pilot Readiness`

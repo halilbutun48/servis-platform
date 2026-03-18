@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen({ onLogin, initialError = '' }) {
@@ -7,7 +7,11 @@ export default function LoginScreen({ onLogin, initialError = '' }) {
   const [error, setError] = useState(initialError);
   const [busy, setBusy] = useState(false);
 
-  const helper = useMemo(() => 'Ana akıs: Surucu Kodu + PIN. Demo kontrol icin driver@demo.com / demo123 da calısabilir.', []);
+  useEffect(() => {
+    setError(initialError || '');
+  }, [initialError]);
+
+  const helper = useMemo(() => 'Ana akis: Surucu Kodu + PIN. Demo kontrol icin driver@demo.com / demo123 da calisabilir.', []);
 
   async function handleSubmit() {
     setBusy(true);

@@ -14,7 +14,9 @@ export default function TodayScreen({
   syncing,
   voiceEnabled,
   releaseInfo,
+  net,
   gps,
+  kvkk,
   onRefresh,
   onLogout,
   onToggleVoiceGuidance,
@@ -24,6 +26,8 @@ export default function TodayScreen({
   onRefreshGpsStatus,
   onOpenGpsSettings,
   onPublishGpsNow,
+  onAcceptKvkk,
+  onRefreshKvkkStatus,
 }) {
   const activeShift = today?.active || today?.today?.[0] || today?.tomorrow?.[0] || null;
   const nextStop = route?.nextStop || null;
@@ -37,6 +41,7 @@ export default function TodayScreen({
   const gpsNeedsPermission = gps?.permissionStatus !== 'granted';
   const gpsCanOpenSettings = Boolean(gps?.canOpenSettings);
   const gpsActionTitle = gpsNeedsPermission ? 'GPS iznini yenile' : 'Konumu simdi gonder';
+  const kvkkBlocking = Boolean(kvkk?.blocking);
 
   async function openMaps() {
     if (!nextStop?.lat || !nextStop?.lng) return;
@@ -71,10 +76,53 @@ export default function TodayScreen({
         <Info label="Son hata" value={fmt(lastErrorAt)} />
         <Text style={styles.helper}>
           M49 beta hardening: app active olunca yenile, 30 sn periyodik kontrol, backend health pingi ve guvenli cikis.
+          M57.3 ile oturum kapanirsa uygulama temiz sekilde girise doner.
         </Text>
         <View style={styles.actionsRow}>
           <PrimaryButton title="Beta yenile" onPress={onRefresh} />
           <SecondaryButton title="Guvenli cikis" onPress={onLogout} />
+        </View>
+      </Card>
+
+      <Card>
+        <SectionTitle title="Baglanti" />
+        <View style={styles.rowGap}>
+          <Pill label={`Durum: ${net?.status || 'unknown'}`} tone={net?.status === 'offline' ? 'warn' : net?.status === 'online' ? 'ok' : 'info'} />
+          {isStale(lastSyncAt) ? <Pill label="Veri eski olabilir" tone="warn" /> : null}
+        </View>
+        <Info label="Mesaj" value={net?.message || '-'} />
+        <Info label="Son online" value={fmt(net?.lastOnlineAt)} />
+        <Info label="Son offline" value={fmt(net?.lastOfflineAt)} />
+        <Info label="Son toparlama" value={fmt(net?.lastRecoveryAt)} />
+        <Text style={styles.helper}>M57.2 ile baglanti gidip gelince uygulama sade mesajlarla toparlanir. Baglanti yoksa otomatik denemeler devam eder.</Text>
+      </Card>
+
+      <Card>
+        <SectionTitle title="KVKK" />
+        <View style={styles.rowGap}>
+          <Pill label={`Durum: ${kvkkBlocking ? 'Blocking' : 'Hazir'}`} tone={kvkkBlocking ? 'warn' : 'ok'} />
+          <Pill label={`Gerekli: ${kvkk?.requiredCount || 0}`} />
+          <Pill label={`Tamam: ${kvkk?.acceptedCount || 0}`} tone={!kvkkBlocking && (kvkk?.acceptedCount || 0) > 0 ? 'ok' : 'info'} />
+        </View>
+        <Info label="Mesaj" value={kvkk?.message || '-'} />
+        <Info label="Son kontrol" value={fmt(kvkk?.lastCheckedAt)} />
+        <Info label="Son onay" value={fmt(kvkk?.lastAcceptedAt)} />
+        {Array.isArray(kvkk?.items) && kvkk.items.length ? (
+          <View style={styles.docList}>
+            {kvkk.items.map((item) => (
+              <View key={`${item.docKey}-${item.docVersion}`} style={styles.docItem}>
+                <Text style={styles.docTitle}>{item.title || item.docKey}</Text>
+                <Text style={styles.docSummary}>{item.accepted ? 'Onaylandi.' : 'Onay bekleniyor.'} {item.summary || ''}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        <Text style={styles.helper}>
+          M57.3 ile KVKK onayi eksikse bu durum mobilde gizli kalmaz. KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.
+        </Text>
+        <View style={styles.actionsRow}>
+          {kvkkBlocking ? <PrimaryButton title="KVKK onayini tamamla" onPress={onAcceptKvkk} disabled={kvkk?.busy} /> : null}
+          <SecondaryButton title="KVKK durumunu yenile" onPress={onRefreshKvkkStatus} disabled={kvkk?.busy || kvkk?.loading} />
         </View>
       </Card>
 
@@ -130,15 +178,20 @@ export default function TodayScreen({
         <Info label="Release hedefi" value={releaseInfo?.releaseTarget || '-'} />
         <Info label="Build profilleri" value={releaseInfo?.buildProfiles || '-'} />
         <Info label="Dagitim modu" value={releaseInfo?.deliveryMode || '-'} />
+        <Info label="Android preview" value={releaseInfo?.androidPreview || '-'} />
+        <Info label="Production bundle" value={releaseInfo?.productionBundle || '-'} />
+        <Info label="Env asamasi" value={releaseInfo?.envStage || '-'} />
+        <Info label="Son build disiplini" value={releaseInfo?.releaseDiscipline || '-'} />
         <Info label="Expo Go" value={releaseInfo?.expoGoStatus || '-'} />
         <Text style={styles.helper}>
-          M50 mobile release readiness: EAS Build profilleri, runtimeVersion, env ornegi ve Android ilk yayin hazirlik cizgisi.
+          M50 release hazirligini M57.4 kapatir: preview APK / internal dagitim, production AAB, env ayrimi, version bump ve runbook/checker disiplini tek hatta baglanir.
         </Text>
         <View style={styles.rowGap}>
           <Pill label="Surucu Kodu + PIN hazir" tone="ok" />
           <Pill label="Sesli rehber hazir" tone="ok" />
           <Pill label="Durak ETA hazir" tone="ok" />
-          <Pill label="EAS Build hazir" tone="ok" />
+          <Pill label="Preview APK hazir" tone="ok" />
+          <Pill label="Production AAB hazir" tone="ok" />
         </View>
       </Card>
 
@@ -146,7 +199,7 @@ export default function TodayScreen({
         <SectionTitle title="Surucunun telefon GPS'i" />
         <View style={styles.rowGap}>
           <Pill label={`Izin: ${gps?.permissionStatus || 'unknown'}`} tone={gpsNeedsPermission ? 'warn' : 'ok'} />
-          <Pill label={`Gonderim: ${gps?.publishState || 'idle'}`} tone={gps?.publishState === 'ok' ? 'ok' : gps?.publishState === 'retry' || gpsNeedsPermission ? 'warn' : 'info'} />
+          <Pill label={`Gonderim: ${gps?.publishState || 'idle'}`} tone={gps?.publishState === 'ok' ? 'ok' : gps?.publishState === 'retry' || gpsNeedsPermission || kvkkBlocking ? 'warn' : 'info'} />
           <Pill label={`Aralik: ${gps?.intervalSec || 20} sn`} />
         </View>
         <Info label="Izin durumu" value={gps?.permissionText || '-'} />
@@ -161,7 +214,7 @@ export default function TodayScreen({
           Gorev yoksa gereksiz gonderim yapilmaz.
         </Text>
         <View style={styles.actionsRow}>
-          <PrimaryButton title={gpsActionTitle} onPress={gpsNeedsPermission ? onRequestGpsPermission : onPublishGpsNow} />
+          <PrimaryButton title={gpsActionTitle} onPress={gpsNeedsPermission ? onRequestGpsPermission : onPublishGpsNow} disabled={kvkkBlocking} />
           <SecondaryButton title="Durumu tazele" onPress={onRefreshGpsStatus} />
           {gpsCanOpenSettings ? <SecondaryButton title="Ayarlari ac" onPress={onOpenGpsSettings} /> : null}
         </View>
@@ -338,9 +391,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     minHeight: 46,
     borderRadius: 14,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
+    backgroundColor: '#e2e8f0',
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -351,5 +402,23 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+  },
+  docList: {
+    gap: 8,
+  },
+  docItem: {
+    borderRadius: 12,
+    backgroundColor: '#f8fafc',
+    padding: 10,
+    gap: 4,
+  },
+  docTitle: {
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  docSummary: {
+    color: '#475569',
+    lineHeight: 19,
+    fontSize: 13,
   },
 });

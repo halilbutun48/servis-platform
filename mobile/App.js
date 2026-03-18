@@ -3,13 +3,17 @@ import { ActivityIndicator, AppState, Linking, SafeAreaView, StatusBar, StyleShe
 import * as Location from 'expo-location';
 import { clearSession, getSession, getVoiceGuidanceEnabled, saveSession, saveVoiceGuidanceEnabled } from './src/lib/storage';
 import {
+  acceptKvkkRequiredMany,
   changeDriverPin,
   ensureDeviceId,
   fetchActiveRoute,
   fetchHealth,
+  fetchKvkkCurrent,
   fetchMe,
   fetchToday,
   getApiBaseUrl,
+  isKvkkBlockingError,
+  isSessionFailureError,
   loginDriver,
   logoutDriver,
   publishGps,
@@ -27,11 +31,15 @@ import PinChangeScreen from './src/screens/PinChangeScreen';
 import TodayScreen from './src/screens/TodayScreen';
 
 const RELEASE_INFO = Object.freeze({
-  appVersion: '0.2.0',
+  appVersion: '0.2.1',
   releaseTarget: 'Android ilk yayin',
   buildProfiles: 'preview / production',
-  deliveryMode: 'EAS Build',
+  deliveryMode: 'EAS Build + internal dagitim',
   expoGoStatus: 'Gelistirme testi tamam',
+  androidPreview: 'Preview APK / internal dagitim',
+  productionBundle: 'Production AAB / yayin hazirligi',
+  envStage: 'preview-internal / production',
+  releaseDiscipline: 'Version bump + env kontrolu + runbook + checker',
 });
 
 const initialState = {
@@ -47,6 +55,13 @@ const initialState = {
   lastErrorAt: '',
   error: '',
   voiceEnabled: false,
+  net: {
+    status: 'unknown',
+    message: 'Baglanti durumu henuz okunmadi.',
+    lastOnlineAt: '',
+    lastOfflineAt: '',
+    lastRecoveryAt: '',
+  },
   gps: {
     permissionStatus: 'unknown',
     permissionText: 'GPS izin durumu henuz okunmadi.',
@@ -61,6 +76,19 @@ const initialState = {
     intervalSec: Math.round(GPS_PUBLISH_INTERVAL_MS / 1000),
     canOpenSettings: false,
   },
+  kvkk: {
+    loading: false,
+    busy: false,
+    blocking: false,
+    requiredCount: 0,
+    acceptedCount: 0,
+    pendingDocKeys: [],
+    items: [],
+    message: 'KVKK durumu henuz okunmadi.',
+    lastCheckedAt: '',
+    lastAcceptedAt: '',
+    lastErrorAt: '',
+  },
 };
 
 export default function App() {
@@ -70,36 +98,83 @@ export default function App() {
   const lastVoiceCueRef = useRef('');
   const appStateRef = useRef(AppState.currentState || 'active');
 
+  async function applySessionFailure(error) {
+    try {
+      stopVoiceGuidance();
+      await clearSession();
+    } finally {
+      syncBusyRef.current = false;
+      gpsBusyRef.current = false;
+      setState((prev) => ({
+        ...initialState,
+        loading: false,
+        deviceId: prev.deviceId,
+        error: humanizeSessionFailure(error),
+        lastErrorAt: new Date().toISOString(),
+      }));
+    }
+  }
+
   async function syncSignedIn({ soft = false } = {}) {
     if (syncBusyRef.current) return;
     syncBusyRef.current = true;
+
     if (soft) {
       setState((prev) => ({ ...prev, syncing: true, error: '' }));
     } else {
       setState((prev) => ({ ...prev, loading: true, error: '' }));
     }
+
     try {
       const health = await fetchHealth();
       const me = await fetchMe();
-      const [today, route] = await Promise.all([fetchToday().catch(() => null), fetchActiveRoute().catch(() => null)]);
+      const [today, route, kvkkCurrent] = await Promise.all([
+        fetchToday().catch(() => null),
+        fetchActiveRoute().catch(() => null),
+        fetchKvkkCurrent().catch(() => null),
+      ]);
+
       setState((prev) => ({
         ...prev,
         loading: false,
         syncing: false,
+        net: {
+          status: 'online',
+          message: prev.net?.status === 'offline' ? 'Baglanti geri geldi, bilgiler yenileniyor.' : 'Baglanti var.',
+          lastOnlineAt: new Date().toISOString(),
+          lastOfflineAt: prev.net?.lastOfflineAt || '',
+          lastRecoveryAt: prev.net?.status === 'offline' ? new Date().toISOString() : (prev.net?.lastRecoveryAt || ''),
+        },
         me,
         today,
         route,
         health,
+        kvkk: nextKvkkState(kvkkCurrent || me?.kvkk, prev.kvkk),
         error: '',
         lastSyncAt: new Date().toISOString(),
       }));
     } catch (error) {
+      if (isSessionFailureError(error)) {
+        await applySessionFailure(error);
+        return;
+      }
+
+      const msg = isNetworkError(error) ? 'Baglanti yok. Veri eski olabilir.' : humanize(error);
       setState((prev) => ({
         ...prev,
         loading: false,
         syncing: false,
         health: prev.health,
-        error: humanize(error),
+        net: isNetworkError(error)
+          ? {
+              status: 'offline',
+              message: 'Baglanti yok. Veri eski olabilir.',
+              lastOnlineAt: prev.net?.lastOnlineAt || '',
+              lastOfflineAt: new Date().toISOString(),
+              lastRecoveryAt: prev.net?.lastRecoveryAt || '',
+            }
+          : prev.net,
+        error: msg,
         lastErrorAt: new Date().toISOString(),
       }));
       throw error;
@@ -158,7 +233,6 @@ export default function App() {
             publishText: permission.canAskAgain === false
               ? 'GPS izni kapali. Ayarlardan acmadan konum gonderilemez.'
               : 'GPS izni gerekli. Izin yenilenmeden konum gonderilemez.',
-            lastErrorAt: prev.gps.lastErrorAt,
             canOpenSettings: permission.canAskAgain === false,
           },
         }));
@@ -167,6 +241,22 @@ export default function App() {
 
       const lastKnown = await Location.getLastKnownPositionAsync({ maxAge: 30000 }).catch(() => null);
       const lastLocationText = formatGpsCoords(lastKnown?.coords);
+
+      if (state.kvkk?.blocking) {
+        setState((prev) => ({
+          ...prev,
+          gps: {
+            ...prev.gps,
+            permissionStatus: permission.status,
+            permissionText,
+            publishState: 'blocked',
+            publishText: 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.',
+            lastLocationText,
+            canOpenSettings: false,
+          },
+        }));
+        return;
+      }
 
       if (!target.activeShift) {
         setState((prev) => ({
@@ -220,6 +310,7 @@ export default function App() {
         accuracy: Location.Accuracy.Balanced,
         mayShowUserSettingsDialog: false,
       });
+
       const payload = buildGpsPayload(current, target.vehicleId);
       await publishGps(payload);
 
@@ -239,8 +330,38 @@ export default function App() {
         },
       }));
     } catch (error) {
+      if (isSessionFailureError(error)) {
+        await applySessionFailure(error);
+        return;
+      }
+
+      if (isKvkkBlockingError(error)) {
+        const kvkkCurrent = await fetchKvkkCurrent().catch(() => null);
+        setState((prev) => ({
+          ...prev,
+          kvkk: nextKvkkState(kvkkCurrent || { ...prev.kvkk, blocking: true }, prev.kvkk, 'KVKK onayi eksik. Konum gonderimi durduruldu.'),
+          gps: {
+            ...prev.gps,
+            publishState: 'blocked',
+            publishText: 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.',
+            lastErrorAt: new Date().toISOString(),
+          },
+        }));
+        return;
+      }
+
+      const offline = isNetworkError(error);
       setState((prev) => ({
         ...prev,
+        net: offline
+          ? {
+              status: 'offline',
+              message: 'Baglanti yok. Konum tekrar denenecek.',
+              lastOnlineAt: prev.net?.lastOnlineAt || '',
+              lastOfflineAt: new Date().toISOString(),
+              lastRecoveryAt: prev.net?.lastRecoveryAt || '',
+            }
+          : prev.net,
         gps: {
           ...prev.gps,
           publishState: 'retry',
@@ -250,6 +371,52 @@ export default function App() {
       }));
     } finally {
       gpsBusyRef.current = false;
+    }
+  }
+
+  async function refreshKvkkStatus({ accepted = false } = {}) {
+    setState((prev) => ({
+      ...prev,
+      kvkk: {
+        ...prev.kvkk,
+        loading: !accepted,
+        busy: accepted,
+        message: accepted ? 'KVKK onayi kaydediliyor.' : 'KVKK durumu yenileniyor.',
+      },
+    }));
+
+    try {
+      const kvkkCurrent = await fetchKvkkCurrent();
+      setState((prev) => ({
+        ...prev,
+        kvkk: nextKvkkState(
+          kvkkCurrent,
+          {
+            ...prev.kvkk,
+            lastAcceptedAt: accepted ? new Date().toISOString() : prev.kvkk.lastAcceptedAt,
+          },
+          accepted ? 'KVKK onayi tamamlandi. Konum gonderimi tekrar hazir.' : undefined
+        ),
+      }));
+    } catch (error) {
+      if (isSessionFailureError(error)) {
+        await applySessionFailure(error);
+        return;
+      }
+
+      const message = isNetworkError(error) ? 'Baglanti yok. KVKK durumu yenilenemedi.' : humanize(error);
+      setState((prev) => ({
+        ...prev,
+        error: message,
+        lastErrorAt: new Date().toISOString(),
+        kvkk: {
+          ...prev.kvkk,
+          loading: false,
+          busy: false,
+          message,
+          lastErrorAt: new Date().toISOString(),
+        },
+      }));
     }
   }
 
@@ -269,8 +436,12 @@ export default function App() {
         await syncSignedIn({ soft: false });
       } catch (error) {
         if (!alive) return;
+        if (isSessionFailureError(error)) {
+          await applySessionFailure(error);
+          return;
+        }
         await clearSession();
-        setState({ ...initialState, loading: false, error: humanize(error) });
+        setState((prev) => ({ ...initialState, loading: false, deviceId: prev.deviceId, error: humanize(error) }));
       }
     })();
     return () => {
@@ -288,7 +459,7 @@ export default function App() {
       }
     });
     return () => sub.remove();
-  }, [state.session?.token, state.me?.requirePinChange, state.today, state.route]);
+  }, [state.session?.token, state.me?.requirePinChange, state.today, state.route, state.kvkk?.blocking]);
 
   useEffect(() => {
     if (!state.session?.token || state.me?.requirePinChange) return;
@@ -306,7 +477,7 @@ export default function App() {
       refreshGpsStatus({ publishNow: true }).catch(() => null);
     }, GPS_PUBLISH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [state.session?.token, state.me?.requirePinChange, state.me?.role, state.today, state.route]);
+  }, [state.session?.token, state.me?.requirePinChange, state.me?.role, state.today, state.route, state.kvkk?.blocking]);
 
   useEffect(() => {
     if (!state.voiceEnabled) return;
@@ -398,6 +569,20 @@ export default function App() {
     await Linking.openSettings().catch(() => null);
   }
 
+  async function handleAcceptKvkk() {
+    try {
+      await acceptKvkkRequiredMany();
+      await refreshKvkkStatus({ accepted: true });
+      await refreshGpsStatus({ publishNow: false });
+    } catch {
+      // state already updated in helper/caller
+    }
+  }
+
+  async function handleRefreshKvkk() {
+    await refreshKvkkStatus({ accepted: false });
+  }
+
   const content = useMemo(() => {
     if (state.loading) {
       return (
@@ -439,7 +624,9 @@ export default function App() {
         syncing={state.syncing}
         voiceEnabled={state.voiceEnabled}
         releaseInfo={RELEASE_INFO}
+        net={state.net}
         gps={state.gps}
+        kvkk={state.kvkk}
         onRefresh={handleRefresh}
         onLogout={handleLogout}
         onToggleVoiceGuidance={handleToggleVoiceGuidance}
@@ -449,6 +636,8 @@ export default function App() {
         onRefreshGpsStatus={handleRefreshGpsStatus}
         onOpenGpsSettings={handleOpenGpsSettings}
         onPublishGpsNow={handlePublishGpsNow}
+        onAcceptKvkk={handleAcceptKvkk}
+        onRefreshKvkkStatus={handleRefreshKvkk}
       />
     );
   }, [state]);
@@ -461,8 +650,44 @@ export default function App() {
   );
 }
 
+function nextKvkkState(summary, prev = {}, forcedMessage) {
+  const items = Array.isArray(summary?.items) ? summary.items : Array.isArray(prev?.items) ? prev.items : [];
+  const blocking = Boolean(summary?.blocking);
+  const requiredCount = Number(summary?.requiredCount || items.length || prev?.requiredCount || 0);
+  const acceptedCount = Number(summary?.acceptedCount || prev?.acceptedCount || 0);
+  const pendingDocKeys = Array.isArray(summary?.pendingDocKeys) ? summary.pendingDocKeys : [];
+  const defaultMessage = blocking
+    ? 'KVKK onayi eksik. Konum gonderimi ve ilgili ekranlar kapali.'
+    : 'KVKK durumu uygun. Konum gonderimi acik olabilir.';
+
+  return {
+    loading: false,
+    busy: false,
+    blocking,
+    requiredCount,
+    acceptedCount,
+    pendingDocKeys,
+    items,
+    message: forcedMessage || defaultMessage,
+    lastCheckedAt: new Date().toISOString(),
+    lastAcceptedAt: prev?.lastAcceptedAt || '',
+    lastErrorAt: '',
+  };
+}
+
+function isNetworkError(error) {
+  const msg = String(error?.payload?.message || error?.payload?.error || error?.message || error || '').toLowerCase();
+  return msg.includes('network') || msg.includes('failed to fetch') || msg.includes('fetch') || msg.includes('timeout');
+}
+
 function humanize(error) {
   return String(error?.payload?.message || error?.payload?.error || error?.message || error || 'Islem basarisiz.');
+}
+
+function humanizeSessionFailure(error) {
+  const text = String(error?.payload?.message || error?.payload?.error || error?.message || '').toLowerCase();
+  if (text.includes('expired') || text.includes('token')) return 'Oturum suresi doldu. Yeniden giris yapin.';
+  return 'Oturum kapandi. Yeniden giris yapin.';
 }
 
 function humanizeGpsError(error) {
@@ -482,8 +707,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
     padding: 24,
+    gap: 10,
   },
   title: {
     fontSize: 22,
@@ -492,8 +717,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   muted: {
-    fontSize: 15,
     color: '#475569',
     textAlign: 'center',
+    lineHeight: 22,
   },
 });

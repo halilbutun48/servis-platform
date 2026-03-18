@@ -42,48 +42,35 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
 - `M55 REPORTS + NO_SHOW PACK PASS OK`
 - `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
+- `M57 MOBILE HARDENING PACK PASS OK`
 - `POST-M41 EXTERNAL PACK RUNNER PASS OK`
 
 ## Güncel aktif ürün hattı (2026-03-18)
-- Post-M41 pack script'leri self-only calisir; tam M42 -> M56 green hatti ve M57 scaffold kontrolu `tools\pack_post_m41_to_m57.ps1` ile disaridan kosturulur.
+- Post-M41 pack script'leri self-only calisir; tam `M42 -> M57` green hatti `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` ile disaridan kosturulur.
 - Uyumluluk icin `tools\pack_post_m41_to_m54_4.ps1` dosyasi korunur; yeni orchestrator'a forward eder.
-- `M52 Import + Geo Pipeline` ve `M53 Stop & Route Productization / Organization-Gezi` backfill hattı ile resmi olarak tekrar doğrulandı.
-- `M54.1` Dispatch Preview ve `M54.2` Editable Dispatch Preview, `M54.3` pack-green sonucu ile fiilen doğrulanmış kabul edilir.
-- `M54.4` Driver Route Delivery explicit shift route endpoint'i ve `Today → Route` deep link'i ile resmi verify hattından geçti.
-- Tek araç yeterli / dispatch gerektirmeyen işlerde paket-kopyala UI kolaylığı korunur.
+- `M57` artik resmi green cizgiye girdi. `M57.1` foreground GPS publish, `M57.2` offline/online toparlama, `M57.3` session + KVKK blocking ve `M57.4` Android preview/internal build disiplini birlikte kapandi.
+- Sonraki ana urun hatti `M58 — Final Pilot Readiness` olarak devam eder.
 
 ## Bugünkü resmi ürün kararları
 - Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
 - Backend hard limit `50..2000`.
 - Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
 - **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
-- **Organizasyon Merkezi** ikinci plan motoru gibi yaşamamalı; Planlama Merkezi içindeki organization/gezi moduna yönlenmelidir.
-- Organization akışı: `Toplanma noktası → Plan paketi → Tahmini kişi sayısı / gidilecek yerler → Ön izleme / teklif → Vardiyalar`.
-- Gidilecek yerler ayrı kart/satır mantığında tutulmalı; adres bulunamazsa manuel `lat/lng` ve haritadan seçim ile tamamlanmalıdır.
-- Koordinat eksiği olan organization planı markete düşmemelidir.
-- Company taslak plan / teklif hazırlar; Room gerçek araç / sürücü / kapasite kararı ile operasyonel planı tamamlar.
+- Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
+- Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
+- Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
 
 ## Sonraki resmi rota
 - `M55 — Reports + No-show` ✅ green
 - `M56 — KVKK Matrix + ETA/Navigation Quality` ✅ green
-- `M57 — Mobile Hardening` (scaffold hazir, resmi green degil)
+- `M57 — Mobile Hardening` ✅ green
 - `M58 — Final Pilot Readiness`
 
-## M55 — Reports + Gelmedi Kaydı
-- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
-- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
-- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
-
-
-## M56 — KVKK Matrix + ETA/Navigation Quality
-- KVKK matrix endpointi eklendi: `/api/kvkk/matrix`
-- Shared KVKK ekranı `/shared/kvkk` ile açılır
-- ETA payload kalite alanları eklendi: `routeProgressState`, `gpsFreshness`, `skippedStopsCount`, `remainingRouteKm`, `remainingRouteEtaMin`
-- Skip/reroute davranışı eklendi: `skippedStops`, `rerouteSuggested`, `rerouteReason`, `nextAction`, `lastResolvedStop`
-- Personel ekranlarında rota kalite durumu, kalan durak, kalan rota km/ETA ve atlanan durak özeti görünür
-
-## M57 — Mobile Hardening (scaffold)
-- Foreground GPS publish scope tanimlandi.
-- Offline/online toparlama, session clean-fail ve KVKK blocking gorunurlugu runbook seviyesinde sabitlendi.
-- M57 scaffold pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
-- Yeni post-M41 orchestrator: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+## M57 — Mobile Hardening
+- Foreground GPS publish hattı `/api/gps` ile çalışır.
+- Bağlantı kopma/toparlanma dili mobilde sade görünür.
+- Session failure temiz düşüş ve KVKK blocking görünürlüğü vardır.
+- Android preview/internal build disiplini `app.json + eas.json + .env.example + runbook + checker` hattına bağlanmıştır.
+- Full pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
+- Scaffold pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
+- Post-M41 orchestrator: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
