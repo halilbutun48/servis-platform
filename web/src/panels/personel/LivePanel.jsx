@@ -97,8 +97,27 @@ function normalizeStop(s, i) {
   return { ...s, id, order, name, lat, lng, status };
 }
 
+function etaQualityTone(eta) {
+  const q = String(eta?.routeQuality || "").toUpperCase();
+  if (q === "OFFLINE_GPS" || q === "STALE_GPS" || q === "SKIP_PRESENT" || q === "DONE_WITH_SKIPS") return "WARN";
+  if (q === "DONE") return "OK";
+  return "LIVE";
+}
+
+function etaQualityText(eta) {
+  const q = String(eta?.routeQuality || "").toUpperCase();
+  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
+  if (q === "STALE_GPS") return "GPS gecikmeli";
+  if (q === "SKIP_PRESENT") return "Atlanan durak var";
+  if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
+  if (q === "DONE") return "Rota tamamlandı";
+  if (q === "NO_SHIFT") return "Aktif rota yok";
+  return String(eta?.progressLabel || "Rota ilerliyor");
+}
+
 function etaMinGuess(vehicle, stop) {
   if (!vehicle || !stop) return null;
+
   const em = toNum(stop?.etaMin);
   if (em != null) return Math.max(0, Math.round(em));
 
@@ -250,6 +269,12 @@ export default function PersonelLivePanel() {
   const ui = vehicle ? uiStatusFromVehicle(vehicle) : "-";
   const pillKey = pillKeyFromUi(ui);
   const nextEtaMin = useMemo(() => etaMinGuess(vehicle, nextStop), [vehicle, nextStop]);
+  const remainingStopsCount = Number(eta?.remainingStopsCount || 0);
+  const remainingRouteEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
+  const remainingRouteKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
+  const skippedStopsCount = Number(eta?.skippedStopsCount || 0);
+  const routeQualityText = etaQualityText(eta);
+  const routeQualityTone = etaQualityTone(eta);
 
   const recommended = useMemo(() => {
     if (!myPos || !Number.isFinite(myPos.lat) || !Number.isFinite(myPos.lng)) return null;
@@ -330,11 +355,17 @@ export default function PersonelLivePanel() {
               <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
 
               {totalStops ? (
-                <div className="muted">
-                  İlerleme: {pct}% (reached:{reachedCount}/{totalStops})
-                  {nextStop?.name ? ` • Sıradaki: ${nextStop.name}` : ""}
-                  {nextStop?.name && nextEtaMin != null ? ` • ETA: ${nextEtaMin}dk` : ""}
-                </div>
+                <>
+                  <div className="muted">
+                    İlerleme: {pct}% (reached:{reachedCount}/{totalStops})
+                    {nextStop?.name ? ` • Sıradaki: ${nextStop.name}` : ""}
+                    {nextStop?.name && nextEtaMin != null ? ` • ETA: ${nextEtaMin}dk` : ""}{remainingStopsCount ? ` • Kalan durak: ${remainingStopsCount}` : ""}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
+                    {skippedStopsCount ? <span className="muted">Atlanan durak: <b>{skippedStopsCount}</b></span> : null}
+                  </div>
+                </>
               ) : (
                 <div className="muted">Durak bilgisi yok.</div>
               )}
@@ -391,6 +422,22 @@ export default function PersonelLivePanel() {
                   {toNum(nextStop?.remainingKm) != null ? (
                     <span className="muted">
                       Kalan: <b>{toNum(nextStop.remainingKm).toFixed(1)}km</b>
+                    </span>
+                  ) : null}
+                  {remainingRouteEtaMin != null ? (
+                    <span className="muted">
+                      Rota ETA: <b>{remainingRouteEtaMin}dk</b>
+                    </span>
+                  ) : null}
+                  {remainingRouteKm != null ? (
+                    <span className="muted">
+                      Rota km: <b>{remainingRouteKm.toFixed(1)}km</b>
+                    </span>
+                  ) : null}
+                  <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
+                  {skippedStopsCount ? (
+                    <span className="muted">
+                      Atlanan: <b>{skippedStopsCount}</b>
                     </span>
                   ) : null}
                 </>

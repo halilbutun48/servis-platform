@@ -34,11 +34,13 @@ Ana resmi green durum:
 - ✅ `M51–M53 BACKFILL VERIFICATION PACK PASS OK`
 - ✅ `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK`
 - ✅ `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
+- ✅ `M55 REPORTS + NO_SHOW PACK PASS OK`
 - ✅ `POST-M41 EXTERNAL PACK RUNNER PASS OK`
 
 Not:
-- Resmi green çizgi artık `M54.4` seviyesine kadar doğrulanmıştır.
+- Resmi green çizgi artık `M55` seviyesine kadar doğrulanmıştır.
 - `M42+` pack script'leri self-only çalışır; tam M42 → M54.4 hattının kanonik komutu `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild` şeklindedir.
+- `M55` ayrı kanonik pack olarak `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform` ile doğrulanır.
 - Bu zip içinde `.git` olmadığı için resmi tag promotion yalnızca canlı repo içinde yapılmalıdır.
 
 ## 1) Güncel aktif durum
@@ -47,6 +49,7 @@ Not:
 - `M54.1` Dispatch Preview ve `M54.2` Editable Dispatch Preview, `M54.3` pack-green sonucu ile fiilen doğrulanmış kabul edilir.
 - `M54.3` Dispatch Approve + Repack `PACK PASS OK` seviyesindedir.
 - `M54.4` Driver Route Delivery explicit shift route endpoint'i ve `Today → Route` deep link'i ile resmi verify hattından geçti.
+- `M55` Reports + Gelmedi Kaydı hattı runtime + repo-contract ile resmi green doğrulamasına eklendi.
 - Post-M41 external runner `PASS OK` olduğundan `M42 → M54.4` tam hattı tek komutla tekrar koşturulabilir.
 - `M45` retention + backup kanıt araçları: `tools\pack_m45_retention_backup.ps1`, `tools\backup_create_m45.ps1`, `tools\backup_restore_m45.ps1`, `docs\RUNBOOK_M45_RETENTION_BACKUP.md`.
 - Tek araç yeterli / dispatch gerektirmeyen işlerde `Araç → Pakete Kopyala` ve `Driver → Pakete Kopyala` UI kolaylığı korunur.
@@ -127,9 +130,9 @@ Resmi görünürlük:
 - Koordinatlar tamam olmadan organization planı markete düşmez.
 
 ## 4) Yakın resmi rota
-- `M55 — Reports + No-show`
-- `M56 — KVKK Matrix + Mobile Hardening`
-- `M57 — Final Pilot Readiness`
+- `M56 — KVKK Matrix + ETA/Navigation Quality`
+- `M57 — Mobile Hardening`
+- `M58 — Final Pilot Readiness`
 
 ## 5) M54 için kapanan yön
 M54 mevcut repo durumunda şu şekilde kapanmıştır:
@@ -138,7 +141,7 @@ M54 mevcut repo durumunda şu şekilde kapanmıştır:
 - `M54.3` preview → approve → repack zinciri pack ile kanıtlanmıştır
 - `M54.4` sürücünün Today ekranından kendi shift rotasına gitmesi explicit route endpoint ile netleştirilmiştir
 
-Kalan odak artık yeni planner yazmak değil, `M55+` hattına geçişi hazırlamaktır.
+Kalan odak artık yeni planner yazmak değil, `M56+` hattına geçişi hazırlamaktır.
 
 ## 6) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -150,7 +153,7 @@ Kalan odak artık yeni planner yazmak değil, `M55+` hattına geçişi hazırlam
 - CHECKLIST'te `[x]` yalnızca pack/check green sonrasında işaretlenir
 
 ## 7) Yeni sohbet için ilk cümle
-Repo şu an `M54.4`'e kadar resmi green; post-M41 pack script'leri self-only, tam hat `tools\pack_post_m41_to_m54_4.ps1` ile dışarıdan koşturuluyor. Sonraki odak `M55 Reports + No-show` hattına geçiştir.
+Repo şu an `M55`'e kadar resmi green; ana post-M41 dış runner `tools\pack_post_m41_to_m54_4.ps1` ile `M54.4`'e kadar gider, `M55` ise `tools\pack_m55_reports_no_show.ps1` ile ayrı kanonik pack olarak doğrulanır. Sonraki odak `M56 KVKK Matrix + ETA/Navigation Quality` hattıdır.
 
 
 ## M55 — Reports + Gelmedi Kaydı

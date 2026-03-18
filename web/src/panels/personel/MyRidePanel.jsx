@@ -17,6 +17,24 @@ function fmtTR(iso) {
   });
 }
 
+function etaQualityTone(eta) {
+  const q = String(eta?.routeQuality || "").toUpperCase();
+  if (q === "OFFLINE_GPS" || q === "STALE_GPS" || q === "SKIP_PRESENT" || q === "DONE_WITH_SKIPS") return "WARN";
+  if (q === "DONE") return "OK";
+  return "LIVE";
+}
+
+function etaQualityText(eta) {
+  const q = String(eta?.routeQuality || "").toUpperCase();
+  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
+  if (q === "STALE_GPS") return "GPS gecikmeli";
+  if (q === "SKIP_PRESENT") return "Atlanan durak var";
+  if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
+  if (q === "DONE") return "Rota tamamlandı";
+  if (q === "NO_SHIFT") return "Aktif rota yok";
+  return String(eta?.progressLabel || "Rota ilerliyor");
+}
+
 export default function MyRidePanel() {
   const { token } = useSession();
 
@@ -118,8 +136,14 @@ export default function MyRidePanel() {
     }));
   }, [eta]);
 
-  const nextStop = useMemo(() => pickNextStopByRemainingKmOrEta(etaStops), [etaStops]);
+  const nextStop = useMemo(() => eta?.nextStop || pickNextStopByRemainingKmOrEta(etaStops), [eta, etaStops]);
   const nextStopId = nextStop?.id ?? null;
+  const remainingStopsCount = Number(eta?.remainingStopsCount || etaStops.length || 0);
+  const remainingRouteEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
+  const remainingRouteKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
+  const skippedStopsCount = Number(eta?.skippedStopsCount || 0);
+  const routeQualityText = etaQualityText(eta);
+  const routeQualityTone = etaQualityTone(eta);
 
   function onSelectStop(s) {
     const id = s?.id ?? null;
@@ -247,6 +271,16 @@ export default function MyRidePanel() {
               <div className="muted">Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}</div>
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
               <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
+
+              <div className="muted" style={{ marginTop: 6 }}>
+                Kalan durak: <b>{remainingStopsCount || 0}</b>
+                {remainingRouteEtaMin != null ? <> • Rota ETA: <b>{remainingRouteEtaMin} dk</b></> : null}
+                {remainingRouteKm != null ? <> • Rota km: <b>{remainingRouteKm.toFixed(1)} km</b></> : null}
+              </div>
+              <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
+                {skippedStopsCount ? <span className="muted">Atlanan durak: <b>{skippedStopsCount}</b></span> : null}
+              </div>
 
               <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                 {vehicle ? (

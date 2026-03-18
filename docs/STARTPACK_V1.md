@@ -57,18 +57,19 @@ Bu dosya repo için kısa çalışma runbook'udur.
 - M51–M53 pack: `tools\pack_m51_53_backfill_verification.ps1 -RepoRoot D:\servis-platform`
 - M54.3 pack: `tools\pack_m54_3_dispatch_approve_repack.ps1 -RepoRoot D:\servis-platform`
 - M54.4 pack: `tools\pack_m54_4_driver_route_delivery.ps1 -RepoRoot D:\servis-platform`
+- M55 pack: `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
 - Post-M41 external orchestrator: `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild`
 
 ## 3) Güncel durum özeti
-- Resmi green çizgi `M54.4` seviyesine kadar doğrulanmıştır.
-- `M51–M53`, `M54.3`, `M54.4` ve dış post-M41 runner pack-green olarak geçmiştir.
+- Resmi green çizgi `M55` seviyesine kadar doğrulanmıştır.
+- `M51–M53`, `M54.3`, `M54.4`, `M55` ve dış post-M41 runner pack-green olarak geçmiştir.
 - Tek araç yeterli / non-dispatch işlerde paket-kopyala UI kolaylığı korunur.
-- Sonraki ana ürün hattı `M55 — Reports + No-show` olmuştur.
+- Sonraki ana ürün hattı `M56 — KVKK Matrix + ETA/Navigation Quality` olmuştur.
 
 ## 4) Yakın rota
-- `M55 — Reports + No-show`
-- `M56 — KVKK Matrix + Mobile Hardening`
-- `M57 — Final Pilot Readiness`
+- `M56 — KVKK Matrix + ETA/Navigation Quality`
+- `M57 — Mobile Hardening`
+- `M58 — Final Pilot Readiness`
 
 Ek araçlar:
 - M45 tools: `tools\backup_create_m45.ps1`, `tools\backup_restore_m45.ps1`

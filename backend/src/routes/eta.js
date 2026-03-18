@@ -80,6 +80,75 @@ async function pickShift(vehicleId, shiftId) {
   return null;
 }
 
+function firstPendingStop(stops) {
+  return (stops ?? []).find((s) => s.state === "PENDING") ?? null;
+}
+
+function buildRouteEtaStops({ last, speedKmh, remainingStops }) {
+  const items = [];
+  let prevLat = Number(last?.lat);
+  let prevLng = Number(last?.lng);
+  let cumulativeKm = 0;
+
+  for (let i = 0; i < (remainingStops ?? []).length; i += 1) {
+    const st = remainingStops[i];
+    const directKm = haversineKm(last.lat, last.lng, st.lat, st.lng);
+    const segmentKm = Number.isFinite(prevLat) && Number.isFinite(prevLng) ? haversineKm(prevLat, prevLng, st.lat, st.lng) : directKm;
+    cumulativeKm += segmentKm;
+    items.push({
+      id: st.id,
+      name: st.name,
+      order: st.order,
+      remainingKm: Number(directKm.toFixed(2)),
+      etaMin: Number(etaMinutes(directKm, speedKmh).toFixed(0)),
+      remainingRouteKm: Number(cumulativeKm.toFixed(2)),
+      remainingRouteEtaMin: Number(etaMinutes(cumulativeKm, speedKmh).toFixed(0)),
+      remainingStopsToHere: i + 1,
+    });
+    prevLat = Number(st.lat);
+    prevLng = Number(st.lng);
+  }
+
+  return items;
+}
+
+function countStopsByState(stops) {
+  const out = { totalStopsCount: 0, pendingStopsCount: 0, reachedStopsCount: 0, skippedStopsCount: 0 };
+  for (const s of stops ?? []) {
+    out.totalStopsCount += 1;
+    const st = String(s?.state || "").toUpperCase();
+    if (st === "REACHED") out.reachedStopsCount += 1;
+    else if (st === "SKIPPED") out.skippedStopsCount += 1;
+    else out.pendingStopsCount += 1;
+  }
+  return out;
+}
+
+function deriveRouteProgress({ hasShift, counts, gpsStatus }) {
+  if (!hasShift) {
+    return { routeQuality: "NO_SHIFT", routeProgressState: "NO_SHIFT", progressLabel: "Aktif rota yok" };
+  }
+
+  if ((counts?.totalStopsCount ?? 0) > 0 && (counts?.pendingStopsCount ?? 0) === 0) {
+    if ((counts?.skippedStopsCount ?? 0) > 0) {
+      return { routeQuality: "DONE_WITH_SKIPS", routeProgressState: "DONE_WITH_SKIPS", progressLabel: "Rota tamamlandı (atlanan durak var)" };
+    }
+    return { routeQuality: "DONE", routeProgressState: "DONE", progressLabel: "Rota tamamlandı" };
+  }
+
+  if (gpsStatus === "OFFLINE") {
+    return { routeQuality: "OFFLINE_GPS", routeProgressState: "GPS_OFFLINE", progressLabel: "GPS kapalı veya çok eski" };
+  }
+  if (gpsStatus === "STALE") {
+    return { routeQuality: "STALE_GPS", routeProgressState: "GPS_STALE", progressLabel: "GPS gecikmeli" };
+  }
+  if ((counts?.skippedStopsCount ?? 0) > 0) {
+    return { routeQuality: "SKIP_PRESENT", routeProgressState: "IN_PROGRESS_WITH_SKIPS", progressLabel: "İlerliyor (atlanan durak var)" };
+  }
+
+  return { routeQuality: "FOUNDATION", routeProgressState: "IN_PROGRESS", progressLabel: "Rota ilerliyor" };
+}
+
 async function computeEta(vehicleId, shiftId) {
   const last = await prisma.gpsLast.findUnique({ where: { vehicleId } });
   if (!last) return { error: "No last gps for vehicle", status: 404 };
@@ -90,23 +159,45 @@ async function computeEta(vehicleId, shiftId) {
   const { status, ageSec } = gpsStatusFromAt(last.at);
 
   const chosenShiftId = chosen?.id ?? null;
-  const remainingStops = (chosen?.stops ?? []).filter((s) => s.state === "PENDING");
-
-  const stops = remainingStops.map((st) => {
-    const km = haversineKm(last.lat, last.lng, st.lat, st.lng);
-    return {
-      id: st.id,
-      name: st.name,
-      order: st.order,
-      remainingKm: Number(km.toFixed(2)),
-      etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)),
-    };
-  });
+  const allStops = chosen?.stops ?? [];
+  const remainingStops = allStops.filter((s) => s.state === "PENDING");
+  const stops = buildRouteEtaStops({ last, speedKmh, remainingStops });
+  const nextStop = firstPendingStop(allStops);
+  const tail = stops.length ? stops[stops.length - 1] : null;
+  const counts = countStopsByState(allStops);
+  const progress = deriveRouteProgress({ hasShift: !!chosenShiftId, counts, gpsStatus: status });
 
   return {
     shiftId: chosenShiftId,
     vehicleId,
     at: new Date().toISOString(),
+    etaMode: "ROUTE_CHAIN_HAVERSINE",
+    routeQuality: progress.routeQuality,
+    routeProgressState: progress.routeProgressState,
+    progressLabel: progress.progressLabel,
+    gpsFreshness: status,
+    totalStopsCount: counts.totalStopsCount,
+    reachedStopsCount: counts.reachedStopsCount,
+    skippedStopsCount: counts.skippedStopsCount,
+    remainingStopsCount: counts.pendingStopsCount,
+    remainingRouteKm: tail?.remainingRouteKm ?? 0,
+    remainingRouteEtaMin: tail?.remainingRouteEtaMin ?? 0,
+    nextStop: nextStop
+      ? {
+          id: nextStop.id,
+          name: nextStop.name,
+          order: nextStop.order,
+          lat: nextStop.lat,
+          lng: nextStop.lng,
+        }
+      : null,
+    navigation: nextStop
+      ? {
+          lat: nextStop.lat,
+          lng: nextStop.lng,
+          label: nextStop.name || `Durak ${nextStop.order || ""}`.trim(),
+        }
+      : null,
     stops,
     last: { lat: last.lat, lng: last.lng, speed: last.speed, at: last.at, status, ageSec },
   };

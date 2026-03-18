@@ -46,7 +46,7 @@ Last updated: **2026-03-18**
 - **Step 4.0 (M47):** KVKK / Capacity / Edge Security / Mobile Web Readiness resmi green
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
 - **Step 4.9–5.1 (M51–M54.4):** backfill verification → dispatch approve/repack → driver route delivery resmi green
-- **Active track (M55–M57):** reports/no-show → KVKK+mobile hardening → final pilot readiness
+- **Active track (M56–M58):** KVKK+ETA/navigation quality → mobile hardening → final pilot readiness
 
 ## Resmi green kutular
 - [x] `M47 — KVKK Notice / Consent Framework`
@@ -63,13 +63,15 @@ Last updated: **2026-03-18**
 - [x] `M54.3 — Dispatch Approve + Repack`
 - [x] `M54.4 — Driver Route Delivery`
 - [x] `Post-M41 External Pack Runner`
+- [x] `M55 — Reports + No-show` pack: `tools\pack_m55_reports_no_show.ps1`
 
 ## Aktif rota notları
 - [x] `M54.1 — Dispatch Preview` M54.3 green hattı içinde fiilen doğrulanmış kabul edilir
 - [x] `M54.2 — Editable Dispatch Preview` M54.3 green hattı içinde fiilen doğrulanmış kabul edilir
-- [ ] `M55 — Reports + No-show` sıradaki ana ürün işi
-- [ ] `M56 — KVKK Matrix + Mobile Hardening` M55 sonrası güncellenecek
-- [ ] `M57 — Final Pilot Readiness` son checklist / saha testi öncesi güncellenecek
+- [x] `M55 — Reports + No-show` resmi pack-green doğrulandı
+- [ ] `M56 — KVKK Matrix + ETA/Navigation Quality` sıradaki ana ürün işi
+- [ ] `M57 — Mobile Hardening` M56 sonrası güncellenecek
+- [ ] `M58 — Final Pilot Readiness` son checklist / saha testi öncesi güncellenecek
 
 ## M45 kanıt araçları
 - `tools\pack_m45_retention_backup.ps1`

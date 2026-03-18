@@ -6,6 +6,7 @@ import { authRequired } from "../auth/middleware.js";
 import { upsertConsent, revokeConsent } from "../middleware/consentGate.js";
 import { audit } from "../audit.js";
 import { getKvkkDocument, getKvkkRequiredDocs, getKvkkSummaryForUser } from "../kvkk/documents.js";
+import { getKvkkMatrix } from "../kvkk/matrix.js";
 
 function canRoleUseDoc(role, doc) {
   const r = String(role || "");
@@ -37,6 +38,10 @@ export function kvkkRouter() {
     const role = String(req.user?.role || "");
     const summary = await getKvkkSummaryForUser({ userId, role, prismaClient: prisma });
     return res.json(summary);
+  });
+
+  r.get("/matrix", authRequired(), async (req, res) => {
+    return res.json(getKvkkMatrix());
   });
 
   r.get("/summary", authRequired(), async (req, res) => {

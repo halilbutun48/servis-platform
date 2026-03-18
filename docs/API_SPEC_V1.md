@@ -682,3 +682,41 @@ Genel notlar:
 - Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
 - Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
 - Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
+
+
+M56.1 FOUNDATION
+KVKK
+GET /api/kvkk/matrix
+  - version
+  - rows[] { role, panels[], dataScopes[], canView[], canWrite[], notes }
+
+ETA
+GET /api/eta/vehicle/:id
+Ek alanlar:
+  - etaMode
+  - routeQuality
+  - remainingStopsCount
+  - remainingRouteKm
+  - remainingRouteEtaMin
+  - nextStop
+  - navigation
+  - stops[].remainingRouteKm
+  - stops[].remainingRouteEtaMin
+
+M56.2 IN-PROGRESS
+KVKK UI
+GET /api/kvkk/summary
+GET /api/kvkk/required
+GET /api/kvkk/matrix
+UI route:
+  - /shared/kvkk
+
+ETA quality
+GET /api/eta/vehicle/:id
+Ek kalite alanlari:
+  - routeProgressState
+  - progressLabel
+  - gpsFreshness
+  - totalStopsCount
+  - reachedStopsCount
+  - skippedStopsCount

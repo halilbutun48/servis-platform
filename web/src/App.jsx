@@ -55,6 +55,7 @@ const AuthInvitesPanel = lazy(() => import("./panels/shared/AuthInvitesPanel"));
 const LogsPanel = lazy(() => import("./panels/shared/LogsPanel"));
 const ReportsPanel = lazy(() => import("./panels/shared/ReportsPanel"));
 const CopilotPanel = lazy(() => import("./panels/shared/CopilotPanel"));
+const KvkkPanel = lazy(() => import("./panels/shared/KvkkPanel"));
 
 // SUPER_ADMIN
 const SuperAdminPanel = lazy(() => import("./panels/superadmin/SuperAdminPanel"));
@@ -186,6 +187,7 @@ export default function App() {
     // Shared
     if (path === "/shared/notifications") return { layout: true, node: <NotificationsPanel /> };
     if (path === "/shared/logs") return { layout: true, node: <LogsPanel /> };
+    if (path === "/shared/kvkk") return { layout: true, node: <KvkkPanel /> };
     if (path === "/room/reports") return { layout: true, node: <ReportsPanel /> };
     if (path === "/company/reports") return { layout: true, node: <ReportsPanel /> };
     if (path === "/school/reports") return { layout: true, node: <ReportsPanel /> };

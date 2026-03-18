@@ -61,12 +61,23 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - Company taslak plan / teklif hazırlar; Room gerçek araç / sürücü / kapasite kararı ile operasyonel planı tamamlar.
 
 ## Sonraki resmi rota
-- `M55 — Reports + No-show`
-- `M56 — KVKK Matrix + Mobile Hardening`
-- `M57 — Final Pilot Readiness`
-
+- `M55 — Reports + No-show` ✅ green
+- `M56 — KVKK Matrix + ETA/Navigation Quality`
+- `M57 — Mobile Hardening`
+- `M58 — Final Pilot Readiness`
 
 ## M55 — Reports + Gelmedi Kaydı
 - Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
 - Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
 - Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
+
+
+## M56.1 foundation
+- KVKK matrix endpointi eklendi: `/api/kvkk/matrix`
+- ETA payload rota zinciri toplam km/süre özetini döner
+- Personel ekranlarında kalan durak / rota ETA / rota km görünürlüğü açıldı
+
+## M56.2 in-progress
+- `/shared/kvkk` ekranı ile rol bazlı KVKK görünürlüğü UI’ya taşındı
+- ETA payload artık `routeQuality`, `progressLabel`, `gpsFreshness`, `skippedStopsCount`, `reachedStopsCount`, `totalStopsCount` alanlarını döner
+- Personel ekranlarında “GPS gecikmeli / atlanan durak var / rota tamamlandı” gibi sade kalite durumu görünür oldu

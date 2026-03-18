@@ -83,8 +83,9 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "Hub", path: "/room/hub" });
       advanced.push({ label: "Check-in", path: "/room/checkin" });
       advanced.push({ label: "Giriş Davetleri", path: "/room/auth-invites" });
+      advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
-advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+      advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "COMPANY") {
       sections.push({
         title: "Ana",
@@ -104,6 +105,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Hesap Davetleri" : "Giriş Davetleri", path: base + "/auth-invites" });
       if (me?.companyKind === "SCHOOL") advanced.push({ label: "Parent Link", path: "/school/parents" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : me?.companyKind === "ORGANIZATION" ? "Lokasyon İncele" : "Konum İncele", path: base + "/georeview" });
+      advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
     } else if (role === "DRIVER") {
@@ -114,6 +116,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Bugün", path: "/driver/today" },
           { label: "Rota", path: "/driver/route" },
           { label: "Harita", path: "/driver/map" },
+          { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
@@ -125,6 +128,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Rehber", path: "/personel/copilot", badge: "Yeni" },
           { label: "Canlı", path: "/personel/live" },
           { label: "Servisim", path: "/personel/my" },
+          { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
@@ -135,6 +139,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
         items: [
           { label: "Rehber", path: "/parent/copilot", badge: "Yeni" },
           { label: "Canlı", path: "/parent/live" },
+          { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/shared/logs" },
           { label: "Bildirimler", path: "/shared/notifications" },
         ],
@@ -150,6 +155,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Users", path: "/superadmin/users" },
           { label: "Regions", path: "/superadmin/regions" },
           { label: "Audit", path: "/superadmin/audit" },
+          { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/superadmin/logexport" },
         ],
       });

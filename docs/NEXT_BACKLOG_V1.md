@@ -196,6 +196,13 @@ Saha testinden önce bunlar tamamlanmalıdır.
 - Hata dili
 - Android preview/internal build disiplini
 
+### 3.8 M58 — Final Pilot Readiness
+- KVKK matrix kararları kapalı
+- ETA / navigasyon kalite boşlukları kapalı
+- Mobil hata / GPS / session davranışı toparlanmış
+- Son checklist / saha test senaryoları net
+- Pilot başlatma kapısı tek maddede okunabilir
+
 ---
 
 ## 4) EN SON YAPILACAK: SAHA TESTİ / PİLOT
