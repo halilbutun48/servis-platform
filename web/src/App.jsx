@@ -67,6 +67,7 @@ const SuperAuditLogsPanel = lazy(() => import("./panels/superadmin/AuditLogsPane
 const SuperLogExportPanel = lazy(() => import("./panels/superadmin/LogExportPanel"));
 const SuperObservabilityPanel = lazy(() => import("./panels/superadmin/ObservabilityPanel"));
 const SuperFieldAcceptancePanel = lazy(() => import("./panels/superadmin/FieldAcceptanceCenter"));
+const SuperSsotAlignmentPanel = lazy(() => import("./panels/superadmin/SsotAlignmentPanel"));
 
 function roleDefaultPath(me) {
   const role = me?.role;
@@ -274,6 +275,7 @@ export default function App() {
     if (path === "/superadmin/logexport") return { layout: true, node: <SuperLogExportPanel /> };
     if (path === "/superadmin/observability") return { layout: true, node: <SuperObservabilityPanel /> };
     if (path === "/superadmin/acceptance") return { layout: true, node: <SuperFieldAcceptancePanel /> };
+    if (path === "/superadmin/ssot-alignment") return { layout: true, node: <SuperSsotAlignmentPanel /> };
     if (path === "/superadmin/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // Unknown: go default

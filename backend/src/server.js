@@ -58,6 +58,7 @@ import { passengerLinksRouter, publicPassengerLiveRouter } from "./routes/passen
 import { aiRouter } from "./routes/ai.js";
 import { observabilityRouter } from "./routes/observability.js";
 import { fieldAcceptanceRouter } from "./routes/fieldAcceptance.js";
+import { ssotAlignmentRouter } from "./routes/ssotAlignment.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -401,6 +402,7 @@ app.use("/api/plan-builder", planBuilderRouter());
 app.use("/api/live", liveRouter());
 app.use("/api/observability", observabilityRouter());
 app.use("/api/field-acceptance", fieldAcceptanceRouter());
+app.use("/api/ssot-alignment", ssotAlignmentRouter());
 app.use("/api/parent", parentRouter());
 app.use("/api/school/parent-invites", schoolParentInvitesRouter());
 app.use("/api/companies", companiesRouter());

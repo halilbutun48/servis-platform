@@ -19,16 +19,21 @@
 - `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
 
 ## Resmi durum
 - `M58` teknik readiness gate'i pack-green olarak geçti.
 - `M58` paketi repo hazirligini kontrol eder; `manuel pilot kabul` notu tarihsel olarak korunur.
 - `M59 — Gözlemleme + Saha Teşhis` resmi green oldu.
-- Sonraki ana ürün hattı `M60 — Saha Acceptance Merkezi` olarak açılır.
-- `M60` bitmeden `M61`e geçilmez.
+- `M60 — Saha Acceptance Merkezi` resmi green oldu.
+- Sonraki ana ürün hattı `M61 — SSOT + Milestone Hizası` olarak açılır.
+- `M61` bitmeden `M62`ye geçilmez.
 - Saha öncesi hat: `M59 → M60 → M61 → M62 → M63 → M64 → M65`.
 
-## M60 başlangıç notu
-- Komut: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
-- Kapsam: pilot test oturumu kaydı, acceptance checklist şablonu, GO / LIMITED GO / NO-GO karar seçenekleri, cihaz / build bazlı test özeti, kanıt ve not alanı iskeleti.
-- Bu milestone saha testinden önce acceptance kararını ürün içine almak için açılır.
+## M61 başlangıç notu
+- Komut: `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
+- Kapsam: milestone registry, README / PRIMER / CHECKLIST / STARTPACK hizası, tools tarafı primer/checklist/readme hizası, backend route ve super admin paneli.
+- Bu milestone resmi ürün gerçeğini tek kayıtta toplayıp drift riskini azaltmak için açılır.
+
+
+M61 kapsamında resmi milestone kaydı tek yerde tutulur; README / PRIMER / CHECKLIST / STARTPACK / runbook / pack uyumu otomatik kontrol edilir.
