@@ -51,3 +51,10 @@ Current direction: **M59 observability green -> M60 field acceptance green -> M6
 
 ## 6) Sonraki ilk cümle
 Repo su an `M62` seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak ilerliyor. Aktif iş `M63 — Güven + Kalite + Hizmet Değerlendirme`.
+
+
+## M64 — Doğal Copilot Katmanı
+- Durum: aktif
+- Komut: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
+- Hedef: doğal Türkçe cevap katmanı, kısa konuşma hafızası, neden ilerlemiyor motoru, daha basit anlat ve geri bildirim iskeleti.
+- Kural: M64 green olmadan M65 açılmaz.

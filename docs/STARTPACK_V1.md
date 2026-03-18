@@ -22,6 +22,7 @@
 - `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
 
 ## Resmi durum
 - `M58` teknik readiness gate'i pack-green olarak geçti.
@@ -53,3 +54,9 @@ M61 kapsamında resmi milestone kaydı tek yerde tutulur; README / PRIMER / CHEC
 - Komut: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
 - Kapsam: hizmet alan kurum değerlendirmesi, sağlayıcı kalite özeti, no-show / iptal / uyum görünürlüğü, ETA kalite sinyali ve karar destek yüzeyi için resmi iskelet.
 - Bu milestone ürünün güven ve kalite katmanını ölçülebilir hale getirmek için açılır.
+
+
+## M64 başlangıç notu
+- Komut: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
+- Kapsam: doğal Türkçe cevap katmanı, kısa konuşma hafızası, neden ilerlemiyor modu, şimdi ne yapayım yönlendirmesi, daha basit anlat ve geri bildirim iskeleti.
+- Bu milestone copilot'u daha insani, daha açıklayıcı ve daha takipli hale getirmek için açılır.

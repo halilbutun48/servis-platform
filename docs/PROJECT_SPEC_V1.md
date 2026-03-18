@@ -146,6 +146,10 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 - role göre sadeleştirilmiş açıklama
 - read-only / suggestion-first yardım mantığı
 - kullanıcının doğru adıma yönlendirilmesi
+- daha doğal Türkçe cevap katmanı
+- kısa konuşma hafızası ve takipli yardım akışı
+- "neden ilerlemiyor?" ve "şimdi ne yapayım?" modları
+- "daha basit anlat" seçeneği ve geri bildirim zemini
 
 ## 8. Rol Bazlı Ürün Özeti
 
@@ -272,6 +276,9 @@ Kurallar:
 - kullanıcıyı doğru ekrana ve doğru adıma yönlendirir
 - rol bazlı sade dil kullanır
 - operasyon kullanıcıları için daha derin, sürücü/personel için daha basit anlatım sunar
+- doğal Türkçe açıklama katmanı ile aynı kararı daha anlaşılır sunar
+- kısa konuşma hafızası ile aynı konuda takipli yardım verir
+- geri bildirim sinyali toplayarak iyileştirme zemini oluşturur
 
 Operasyon Copilot rolleri:
 - `SUPER_ADMIN`
@@ -304,6 +311,7 @@ V1 başarılı sayılırsa:
 - saha acceptance merkezi,
 - milestone / SSOT hizası,
 - daha doğal ve bağlamlı copilot,
+- copilot geri bildirim ve doğal dil katmanı,
 - cihaz sağlık görünürlüğü,
 - GPS güven skoru,
 - vardiya olay zaman çizgisi,

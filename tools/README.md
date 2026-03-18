@@ -55,3 +55,9 @@
 - `tools\pack_m63_trust_quality_service_evaluation.ps1`
 - `tools\check_m63_trust_quality_service_evaluation_repo_contract.ps1`
 - Amaç: hizmet alan kurum değerlendirmesi, sağlayıcı kalite sinyali ve karar destek görünürlüğünü resmi ürün katmanı haline getirmek.
+
+
+## M64
+- Aktif hat M64 — Doğal Copilot Katmanı
+- Komut: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
+- Kural: M64 green olmadan M65 açılmaz.

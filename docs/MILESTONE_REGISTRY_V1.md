@@ -25,3 +25,6 @@ Bu dosya yeni saha öncesi hattın tek resmi milestone kaydıdır.
 ## Kural
 - M63 green olmadan M64 açılmaz.
 - Checklist içinde [x] yalnızca resmi pack/check green sonrası işaretlenir.
+
+- M63 — Güven + Kalite + Hizmet Değerlendirme - green
+- M64 — Doğal Copilot Katmanı - aktif
