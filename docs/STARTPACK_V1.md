@@ -21,6 +21,7 @@
 - `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
 
 ## Resmi durum
 - `M58` teknik readiness gate'i pack-green olarak geçti.
@@ -28,8 +29,9 @@
 - `M59 — Gözlemleme + Saha Teşhis` resmi green oldu.
 - `M60 — Saha Acceptance Merkezi` resmi green oldu.
 - `M61 — SSOT + Milestone Hizası` resmi green oldu.
-- Sonraki ana ürün hattı `M62 — Ticari Omurga Güçlendirme` olarak açılır.
-- `M62` bitmeden `M63`e geçilmez.
+- `M62 — Ticari Omurga Güçlendirme` resmi green oldu.
+- Sonraki ana ürün hattı `M63 — Güven + Kalite + Hizmet Değerlendirme` olarak açılır.
+- `M63` bitmeden `M64`e geçilmez.
 - Saha öncesi hat: `M59 → M60 → M61 → M62 → M63 → M64 → M65`.
 
 ## M61 başlangıç notu
@@ -45,3 +47,9 @@ M61 kapsamında resmi milestone kaydı tek yerde tutulur; README / PRIMER / CHEC
 - Komut: `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
 - Kapsam: talep kartı, teklif yaşam döngüsü, karşı teklif, pazarlık geçmişi, uzlaşma özeti ve sözleşmeye geçiş kapısı için resmi iskelet.
 - Bu milestone ürünün pazaryeri kimliğini operasyon katmanına bağlayan ticari omurgayı güçlendirmek için açılır.
+
+
+## M63 başlangıç notu
+- Komut: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
+- Kapsam: hizmet alan kurum değerlendirmesi, sağlayıcı kalite özeti, no-show / iptal / uyum görünürlüğü, ETA kalite sinyali ve karar destek yüzeyi için resmi iskelet.
+- Bu milestone ürünün güven ve kalite katmanını ölçülebilir hale getirmek için açılır.

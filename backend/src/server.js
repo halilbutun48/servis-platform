@@ -60,6 +60,7 @@ import { observabilityRouter } from "./routes/observability.js";
 import { fieldAcceptanceRouter } from "./routes/fieldAcceptance.js";
 import { ssotAlignmentRouter } from "./routes/ssotAlignment.js";
 import { commercialCoreRouter } from "./routes/commercialCore.js";
+import { trustQualityRouter } from "./routes/trustQuality.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -405,6 +406,7 @@ app.use("/api/observability", observabilityRouter());
 app.use("/api/field-acceptance", fieldAcceptanceRouter());
 app.use("/api/ssot-alignment", ssotAlignmentRouter());
 app.use("/api/commercial-core", commercialCoreRouter());
+app.use("/api/trust-quality", trustQualityRouter());
 app.use("/api/parent", parentRouter());
 app.use("/api/school/parent-invites", schoolParentInvitesRouter());
 app.use("/api/companies", companiesRouter());

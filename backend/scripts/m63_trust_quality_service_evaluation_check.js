@@ -1,0 +1,71 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "..", "..");
+
+function banner(title) { console.log(`
+=== ${title} ===`); }
+function must(label, ok) { if (!ok) throw new Error(`FAIL ${label}`); console.log(`OK ${label}`); }
+function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
+function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
+function includesAny(text, needles) { return needles.some((needle) => text.includes(needle)); }
+
+async function main() {
+  banner("M63 GUVEN + KALITE + HIZMET DEGERLENDIRME CHECK");
+
+  const requiredFiles = [
+    "backend/scripts/m63_trust_quality_service_evaluation_check.js",
+    "backend/src/ops/trustQualityManifest.js",
+    "backend/src/routes/trustQuality.js",
+    "web/src/panels/superadmin/TrustQualityPanel.jsx",
+    "docs/RUNBOOK_M63_TRUST_QUALITY_SERVICE_EVALUATION.md",
+    "docs/MILESTONE_M63_TRUST_QUALITY_SERVICE_EVALUATION.md",
+    "tools/pack_m63_trust_quality_service_evaluation.ps1",
+    "tools/check_m63_trust_quality_service_evaluation_repo_contract.ps1",
+    "README.md",
+    "docs/PROJECT_SPEC_V1.md",
+    "docs/PRIMER_SSOT.md",
+    "docs/STARTPACK_V1.md",
+    "docs/CHECKLIST_SSOT.md"
+  ];
+
+  console.log("INFO checking required M63 files");
+  requiredFiles.forEach((rel) => must(`${rel} exists`, exists(rel)));
+
+  const readme = read("README.md");
+  const projectSpec = read("docs/PROJECT_SPEC_V1.md");
+  const primer = read("docs/PRIMER_SSOT.md");
+  const startpack = read("docs/STARTPACK_V1.md");
+  const checklist = read("docs/CHECKLIST_SSOT.md");
+  const server = read("backend/src/server.js");
+  const manifest = read("backend/src/ops/trustQualityManifest.js");
+  const route = read("backend/src/routes/trustQuality.js");
+  const panel = read("web/src/panels/superadmin/TrustQualityPanel.jsx");
+  const runbook = read("docs/RUNBOOK_M63_TRUST_QUALITY_SERVICE_EVALUATION.md");
+
+  console.log("INFO checking updated route and SSOT status");
+  must("readme points to M63 route", includesAny(readme, ["M62 green", "M63 — Güven + Kalite + Hizmet Değerlendirme", "pack_m63_trust_quality_service_evaluation.ps1"]));
+  must("project spec reflects trust and evaluation layer", includesAny(projectSpec, ["hizmet alan kurum değerlendirmesi", "sağlayıcı kalite", "karar destek"]));
+  must("primer reflects M62 green and M63 active", includesAny(primer, ["M62 — Ticari Omurga Güçlendirme` resmi green oldu", "M63 — Güven + Kalite + Hizmet Değerlendirme", "pack_m63_trust_quality_service_evaluation.ps1"]));
+  must("startpack reflects M63 opening", includesAny(startpack, ["M63 — Güven + Kalite + Hizmet Değerlendirme", "M63 başlangıç notu", "M63` bitmeden `M64"]));
+  must("checklist marks M62 green and keeps M63 open", includesAny(checklist, ["[x] `M62 — Ticari Omurga Güçlendirme`", "[ ] `M63 — Güven + Kalite + Hizmet Değerlendirme`"]));
+
+  console.log("INFO checking backend and web skeleton");
+  must("server imports trust quality router", includesAny(server, ["trustQualityRouter", "./routes/trustQuality.js"]));
+  must("server mounts /api/trust-quality", includesAny(server, ["/api/trust-quality"]));
+  must("manifest defines trust dimensions", includesAny(manifest, ["TRUST_QUALITY_DIMENSIONS", "Hizmet alan degerlendirmesi", "Karar destek yuzeyi"]));
+  must("route exposes manifest and templates", includesAny(route, ["/manifest", "/evaluation-template", "/provider-signal-template"]));
+  must("panel shows M63 cards", includesAny(panel, ["M63 Güven + Kalite + Hizmet Değerlendirme", "Hizmet alan değerlendirmesi", "Sağlayıcı kalite sinyali"]));
+  must("runbook explains M63 scope", includesAny(runbook, ["guven ve kalite katmani", "hizmet alan kurum degerlendirmesi", "M63 green olmadan M64'e gecilmez"]));
+
+  console.log();
+  console.log("OK M63 GUVEN + KALITE + HIZMET DEGERLENDIRME CHECK PASS");
+}
+
+main().catch((e) => {
+  console.error(e?.stack || String(e));
+  process.exit(1);
+});

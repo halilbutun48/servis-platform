@@ -51,8 +51,8 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - `M58 — Final Pilot Readiness` teknik readiness kapısı geçti; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` komutu tarihsel kontrat olarak korunur.
 - `M58` için `manuel pilot kabul` / manuel pilot signoff ifadesi tarihsel not olarak korunur; gerçek saha çıkış kapısı artık `M65 — Pilot Launch Gate` altında kapatılacaktır.
 - Yeni resmi saha öncesi rota: `M59 → M65`
-- Durum: **M59 green**, **M60 green**, **M61 green**, aktif iş **M62 — Ticari Omurga Güçlendirme**.
-- Kural: **M62 bitmeden M63'e geçilmez. Paralel dağınık ilerleme yok.**
+- Durum: **M59 green**, **M60 green**, **M61 green**, **M62 green**, aktif iş **M63 — Güven + Kalite + Hizmet Değerlendirme**.
+- Kural: **M63 bitmeden M64'e geçilmez. Paralel dağınık ilerleme yok.**
 - Kural: **M65 green olmadan sahaya çıkılmayacak.**
 
 ## Ürün kimliği
@@ -80,8 +80,8 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - `M59 — Gözlemleme + Saha Teşhis` _(green)_
 - `M60 — Saha Acceptance Merkezi` _(green)_
 - `M61 — SSOT + Milestone Hizası` _(green)_
-- `M62 — Ticari Omurga Güçlendirme` _(aktif)_
-- `M63 — Güven + Kalite + Hizmet Değerlendirme`
+- `M62 — Ticari Omurga Güçlendirme` _(green)_
+- `M63 — Güven + Kalite + Hizmet Değerlendirme` _(aktif)_
 - `M64 — Doğal Copilot Katmanı`
 - `M65 — Pilot Launch Gate`
 
@@ -93,6 +93,7 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - M60 pack: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 - M61 pack: `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
 - M62 pack: `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
+- M63 pack: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
 
 ## Çalışma kuralı
 - Önce SSOT güncellenir.

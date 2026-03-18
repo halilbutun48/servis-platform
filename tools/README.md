@@ -8,13 +8,14 @@
 - `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
 
 ## Güncel çalışma notu
 - Resmi green çizgi `M58` teknik readiness seviyesine kadar uzanır.
 - `M58 readiness contract` tarihsel olarak korunur; `manuel pilot kabul` notu artık saha çıkış kapısı olarak değil, geçmiş pilot readiness bağlamı olarak saklanır.
 - Yeni resmi saha öncesi rota `M59 -> M65` olarak acilmistir.
-- `M59 green`; `M60 green`; `M61 green`; aktif hat `M62`.
-- `M62 green olmadan M63 acilmaz`.
+- `M59 green`; `M60 green`; `M61 green`; `M62 green`; aktif hat `M63`.
+- `M63 green olmadan M64 acilmaz`.
 - SSOT seti değişikliklerde birlikte güncellenmelidir.
 - Geçici `_m*` overlay klasörleri repo içine commitlenmez.
 
@@ -32,6 +33,7 @@
 - `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
 - Repo-contract: `tools\check_m60_field_acceptance_center_repo_contract.ps1`
 - Runtime/check: `backend\scripts\m60_field_acceptance_center_check.js`
 - Kapsam: pilot test oturumu, acceptance checklist, karar seçenekleri ve acceptance merkezi iskeleti.
@@ -47,3 +49,9 @@
 - `tools\pack_m62_commercial_core_strengthening.ps1`
 - `tools\check_m62_commercial_core_strengthening_repo_contract.ps1`
 - Amaç: talep -> teklif -> karşı teklif -> pazarlık geçmişi -> uzlaşma -> sözleşme geçişini resmi ürün omurgası olarak görünür hale getirmek.
+
+
+## M63 trust + quality pack
+- `tools\pack_m63_trust_quality_service_evaluation.ps1`
+- `tools\check_m63_trust_quality_service_evaluation_repo_contract.ps1`
+- Amaç: hizmet alan kurum değerlendirmesi, sağlayıcı kalite sinyali ve karar destek görünürlüğünü resmi ürün katmanı haline getirmek.

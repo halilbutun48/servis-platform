@@ -159,6 +159,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Acceptance", path: "/superadmin/acceptance" },
           { label: "SSOT", path: "/superadmin/ssot-alignment" },
           { label: "Ticari Omurga", path: "/superadmin/commercial-core" },
+          { label: "Guven + Kalite", path: "/superadmin/trust-quality" },
           { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/superadmin/logexport" },
         ],

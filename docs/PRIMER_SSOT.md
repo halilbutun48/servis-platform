@@ -53,8 +53,9 @@ Not:
 - `M59 — Gözlemleme + Saha Teşhis` resmi green oldu.
 - `M60 — Saha Acceptance Merkezi` resmi green oldu.
 - `M61 — SSOT + Milestone Hizası` resmi green oldu.
-- Aktif iş `M62 — Ticari Omurga Güçlendirme`.
-- `M62` bitmeden `M63`e geçilmeyecektir.
+- `M62 — Ticari Omurga Güçlendirme` resmi green oldu.
+- Aktif iş `M63 — Güven + Kalite + Hizmet Değerlendirme`.
+- `M63` bitmeden `M64`e geçilmeyecektir.
 
 ## 2) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -72,8 +73,8 @@ Not:
 - `M59 — Gözlemleme + Saha Teşhis` _(green)_
 - `M60 — Saha Acceptance Merkezi` _(green)_
 - `M61 — SSOT + Milestone Hizası` _(green)_
-- `M62 — Ticari Omurga Güçlendirme` _(aktif)_
-- `M63 — Güven + Kalite + Hizmet Değerlendirme`
+- `M62 — Ticari Omurga Güçlendirme` _(green)_
+- `M63 — Güven + Kalite + Hizmet Değerlendirme` _(aktif)_
 - `M64 — Doğal Copilot Katmanı`
 - `M65 — Pilot Launch Gate`
 
@@ -85,6 +86,7 @@ Not:
 - M60 pack: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 - M61 pack: `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
 - M62 pack: `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
+- M63 pack: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
 
 ## 5) Yeni sohbet için ilk cümle
-Repo su an `M60` seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak ilerliyor. Aktif iş `M61 — SSOT + Milestone Hizası`; kanonik komut `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`.
+Repo su an `M62` seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak ilerliyor. Aktif iş `M63 — Güven + Kalite + Hizmet Değerlendirme`; kanonik komut `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`.

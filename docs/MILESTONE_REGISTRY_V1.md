@@ -10,8 +10,8 @@ Bu dosya yeni saha öncesi hattın tek resmi milestone kaydıdır.
 - M59 — Gözlemleme + Saha Teşhis — green
 - M60 — Saha Acceptance Merkezi — green
 - M61 — SSOT + Milestone Hizası — green
-- M62 — Ticari Omurga Güçlendirme — aktif
-- M63 — Güven + Kalite + Hizmet Değerlendirme — bekliyor
+- M62 — Ticari Omurga Güçlendirme — green
+- M63 — Güven + Kalite + Hizmet Değerlendirme — aktif
 - M64 — Doğal Copilot Katmanı — bekliyor
 - M65 — Pilot Launch Gate — bekliyor
 
@@ -20,7 +20,8 @@ Bu dosya yeni saha öncesi hattın tek resmi milestone kaydıdır.
 - tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform
 - tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform
 - tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform
+- tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform
 
 ## Kural
-- M62 green olmadan M63 açılmaz.
+- M63 green olmadan M64 açılmaz.
 - Checklist içinde [x] yalnızca resmi pack/check green sonrası işaretlenir.
