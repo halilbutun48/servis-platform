@@ -35,6 +35,15 @@ function etaQualityText(eta) {
   return String(eta?.progressLabel || "Rota ilerliyor");
 }
 
+function skippedStopsLabel(eta) {
+  const items = Array.isArray(eta?.skippedStops) ? eta.skippedStops : [];
+  if (!items.length) return "";
+  const names = items.slice(0, 2).map((s) => s?.name).filter(Boolean);
+  const extra = Math.max(0, items.length - names.length);
+  if (!names.length) return `${items.length} atlanan durak`;
+  return extra > 0 ? `${names.join(" • ")} +${extra}` : names.join(" • ");
+}
+
 export default function MyRidePanel() {
   const { token } = useSession();
 
@@ -144,6 +153,10 @@ export default function MyRidePanel() {
   const skippedStopsCount = Number(eta?.skippedStopsCount || 0);
   const routeQualityText = etaQualityText(eta);
   const routeQualityTone = etaQualityTone(eta);
+  const rerouteSuggested = !!eta?.rerouteSuggested;
+  const rerouteReason = String(eta?.rerouteReason || "");
+  const nextActionText = String(eta?.nextAction?.text || "");
+  const skippedLabel = skippedStopsLabel(eta);
 
   function onSelectStop(s) {
     const id = s?.id ?? null;
@@ -281,6 +294,9 @@ export default function MyRidePanel() {
                 <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
                 {skippedStopsCount ? <span className="muted">Atlanan durak: <b>{skippedStopsCount}</b></span> : null}
               </div>
+              {nextActionText ? <div className="muted">{nextActionText}</div> : null}
+              {rerouteSuggested && rerouteReason ? <div className="muted">{rerouteReason}</div> : null}
+              {skippedLabel ? <div className="muted">Atlananlar: {skippedLabel}</div> : null}
 
               <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                 {vehicle ? (
@@ -304,6 +320,8 @@ export default function MyRidePanel() {
                     Sıradaki:{" "}
                     {nextStop?.name ? <span className="pill" data-status="REQUESTED">{nextStop.name}</span> : <span className="muted">-</span>}
                   </div>
+                  {nextActionText ? <div className="muted" style={{ marginBottom: 6 }}>{nextActionText}</div> : null}
+                  {rerouteSuggested && rerouteReason ? <div className="muted" style={{ marginBottom: 6 }}>{rerouteReason}</div> : null}
                   <StopTimeline
                     stops={etaStops}
                     nextStopId={nextStopId}
@@ -325,6 +343,7 @@ export default function MyRidePanel() {
         <div className="card">
           <h3>ETA (approx)</h3>
           <div className="muted">vehicleId: {eta.vehicleId}</div>
+          {skippedLabel ? <div className="muted">Atlananlar: {skippedLabel}</div> : null}
           <table className="tbl">
             <thead>
               <tr>

@@ -124,6 +124,37 @@ function countStopsByState(stops) {
   return out;
 }
 
+function listStopsByState(stops, wantedState) {
+  const target = String(wantedState || "").toUpperCase();
+  return (stops ?? [])
+    .filter((s) => String(s?.state || "").toUpperCase() === target)
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      order: s.order,
+      reachedAt: s.reachedAt ?? null,
+      skippedAt: s.skippedAt ?? null,
+    }));
+}
+
+function lastResolvedStop(stops) {
+  let best = null;
+  for (const s of stops ?? []) {
+    const st = String(s?.state || "").toUpperCase();
+    if (st !== "REACHED" && st !== "SKIPPED") continue;
+    if (!best || Number(s?.order || 0) > Number(best?.order || 0)) best = s;
+  }
+  if (!best) return null;
+  return {
+    id: best.id,
+    name: best.name,
+    order: best.order,
+    state: best.state,
+    reachedAt: best.reachedAt ?? null,
+    skippedAt: best.skippedAt ?? null,
+  };
+}
+
 function deriveRouteProgress({ hasShift, counts, gpsStatus }) {
   if (!hasShift) {
     return { routeQuality: "NO_SHIFT", routeProgressState: "NO_SHIFT", progressLabel: "Aktif rota yok" };
@@ -149,6 +180,52 @@ function deriveRouteProgress({ hasShift, counts, gpsStatus }) {
   return { routeQuality: "FOUNDATION", routeProgressState: "IN_PROGRESS", progressLabel: "Rota ilerliyor" };
 }
 
+function deriveNextAction({ hasShift, counts, gpsStatus, nextStop, skippedStops, lastStop }) {
+  if (!hasShift) {
+    return { code: "NO_ACTIVE_SHIFT", text: "Aktif rota yok." };
+  }
+
+  if ((counts?.totalStopsCount ?? 0) > 0 && (counts?.pendingStopsCount ?? 0) === 0) {
+    if ((counts?.skippedStopsCount ?? 0) > 0) {
+      return {
+        code: "ROUTE_DONE_WITH_SKIPS",
+        text: "Rota tamamlandı. Atlanan duraklar için oda ile görüşün.",
+      };
+    }
+    return { code: "ROUTE_DONE", text: "Rota tamamlandı." };
+  }
+
+  if (gpsStatus === "OFFLINE") {
+    return { code: "WAIT_GPS_OFFLINE", text: "Araç GPS verisi çok eski. Konum güncellenince rota netleşir." };
+  }
+  if (gpsStatus === "STALE") {
+    return { code: "WAIT_GPS_STALE", text: "Araç GPS verisi gecikmeli. ETA yaklaşık gösteriliyor." };
+  }
+
+  if (nextStop?.name && (skippedStops?.length ?? 0) > 0) {
+    return {
+      code: "GO_NEXT_PENDING_AFTER_SKIP",
+      text: `Atlanan durak sonrası aktif hedef: ${nextStop.name}`,
+    };
+  }
+
+  if (nextStop?.name) {
+    return {
+      code: "GO_NEXT_PENDING",
+      text: `Sıradaki aktif durak: ${nextStop.name}`,
+    };
+  }
+
+  if (lastStop?.name) {
+    return {
+      code: "CHECK_LAST_COMPLETED",
+      text: `Son işlenen durak: ${lastStop.name}`,
+    };
+  }
+
+  return { code: "CHECK_ROUTE", text: "Rota bilgisi güncelleniyor." };
+}
+
 async function computeEta(vehicleId, shiftId) {
   const last = await prisma.gpsLast.findUnique({ where: { vehicleId } });
   if (!last) return { error: "No last gps for vehicle", status: 404 };
@@ -165,7 +242,19 @@ async function computeEta(vehicleId, shiftId) {
   const nextStop = firstPendingStop(allStops);
   const tail = stops.length ? stops[stops.length - 1] : null;
   const counts = countStopsByState(allStops);
+  const skippedStops = listStopsByState(allStops, "SKIPPED");
+  const lastStop = lastResolvedStop(allStops);
   const progress = deriveRouteProgress({ hasShift: !!chosenShiftId, counts, gpsStatus: status });
+  const nextAction = deriveNextAction({
+    hasShift: !!chosenShiftId,
+    counts,
+    gpsStatus: status,
+    nextStop,
+    skippedStops,
+    lastStop,
+  });
+  const rerouteSuggested = (skippedStops.length > 0) && !!nextStop;
+  const rerouteReason = rerouteSuggested ? "Atlanan durak sonrası rota bir sonraki aktif durağa göre gösteriliyor." : null;
 
   return {
     shiftId: chosenShiftId,
@@ -182,6 +271,11 @@ async function computeEta(vehicleId, shiftId) {
     remainingStopsCount: counts.pendingStopsCount,
     remainingRouteKm: tail?.remainingRouteKm ?? 0,
     remainingRouteEtaMin: tail?.remainingRouteEtaMin ?? 0,
+    lastCompletedStop: lastStop,
+    skippedStops,
+    rerouteSuggested,
+    rerouteReason,
+    nextAction,
     nextStop: nextStop
       ? {
           id: nextStop.id,
