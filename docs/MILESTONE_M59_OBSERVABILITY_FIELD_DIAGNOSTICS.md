@@ -1,7 +1,7 @@
 # MILESTONE — M59 GOZLEMLEME + SAHA TESHis
 
 Tarih: 2026-03-19
-Durum: **acik / resmi green degil**
+Durum: **resmi green**
 
 ## Scope
 M59, saha testine cikmadan once sistemin saglik ve risk gorunumunu acan milestone'dur.

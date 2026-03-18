@@ -50,8 +50,9 @@ Not:
 - Ürün kimliği artık açık şekilde **B2B servis pazaryeri + operasyon platformu** olarak yazılmıştır.
 - Saha testi en son adım olacak; `M65` green olmadan sahaya çıkılmayacaktır.
 - Yeni resmi rota `M59 → M65` olarak açıldı.
-- İlk aktif iş `M59 — Gözlemleme + Saha Teşhis`.
-- `M59` bitmeden `M60`a geçilmeyecektir.
+- `M59 — Gözlemleme + Saha Teşhis` resmi green oldu.
+- İlk aktif iş `M60 — Saha Acceptance Merkezi`.
+- `M60` bitmeden `M61`e geçilmeyecektir.
 
 ## 2) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -66,8 +67,8 @@ Not:
 - CHECKLIST'te `[x]` yalnızca pack/check green sonrası işaretlenir.
 
 ## 3) Yeni resmi saha öncesi rota
-- `M59 — Gözlemleme + Saha Teşhis`
-- `M60 — Saha Acceptance Merkezi`
+- `M59 — Gözlemleme + Saha Teşhis` _(green)_
+- `M60 — Saha Acceptance Merkezi` _(aktif)_
 - `M61 — SSOT + Milestone Hizası`
 - `M62 — Ticari Omurga Güçlendirme`
 - `M63 — Güven + Kalite + Hizmet Değerlendirme`
@@ -79,6 +80,7 @@ Not:
 - Post-M41 tam hat: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
 - M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 - M59 pack: `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
+- M60 pack: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 
 ## 5) Yeni sohbet için ilk cümle
-Repo su an `M58` teknik readiness seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak açıldı. İlk aktif iş `M59 — Gözlemleme + Saha Teşhis`; kanonik komut `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`.
+Repo su an `M59` seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak ilerliyor. Aktif iş `M60 — Saha Acceptance Merkezi`; kanonik komut `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`.

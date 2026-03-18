@@ -1,0 +1,77 @@
+param([string]$RepoRoot = (Resolve-Path ".").Path)
+$ErrorActionPreference = "Stop"
+function ReadText([string]$rel){ [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8).Normalize() }
+function MustExist([string]$rel){ if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }; Write-Host "OK $rel exists" }
+function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
+function MustContainAll([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if (-not $txt.Contains(([string]$n).Normalize())) { throw "FAIL $label" } }; Write-Host "OK $label" }
+function MustReflectServiceEvaluationLayer([string]$txt,[string]$label){
+  $t = $txt.Normalize()
+  $hasServiceConsumer = $t.Contains('hizmet alan') -or $t.Contains('kurumlarin') -or $t.Contains('kurumların')
+  $hasEvaluation = $t.Contains('degerlendirme') -or $t.Contains('değerlendirme') -or $t.Contains('geri bildirim')
+  $hasQuality = $t.Contains('kalite') -or $t.Contains('guven') -or $t.Contains('güven')
+  if (($hasServiceConsumer -and $hasEvaluation) -or ($hasServiceConsumer -and $hasQuality -and $hasEvaluation)) {
+    Write-Host "OK $label"
+    return
+  }
+  throw "FAIL $label"
+}
+
+Write-Host "INFO Checking M60 files"
+@(
+ 'backend\scripts\m60_field_acceptance_center_check.js',
+ 'backend\src\ops\fieldAcceptanceManifest.js',
+ 'backend\src\routes\fieldAcceptance.js',
+ 'mobile\src\lib\fieldAcceptance.js',
+ 'web\src\panels\superadmin\FieldAcceptanceCenter.jsx',
+ 'tools\pack_m60_field_acceptance_center.ps1',
+ 'tools\check_m60_field_acceptance_center_repo_contract.ps1',
+ 'docs\RUNBOOK_M60_FIELD_ACCEPTANCE_CENTER.md',
+ 'docs\MILESTONE_M60_FIELD_ACCEPTANCE_CENTER.md',
+ 'docs\PROJECT_SPEC_V1.md',
+ 'docs\PRIMER_SSOT.md',
+ 'docs\STARTPACK_V1.md',
+ 'docs\CHECKLIST_SSOT.md',
+ 'docs\NEXT_BACKLOG_V1.md',
+ 'tools\PRIMER_SNAPSHOT.md',
+ 'tools\CHECKLIST_SSOT.md',
+ 'tools\README.md',
+ 'README.md'
+) | ForEach-Object { MustExist $_ }
+
+$project = ReadText 'docs\PROJECT_SPEC_V1.md'
+$readme = ReadText 'README.md'
+$primer = ReadText 'docs\PRIMER_SSOT.md'
+$startpack = ReadText 'docs\STARTPACK_V1.md'
+$checklist = ReadText 'docs\CHECKLIST_SSOT.md'
+$backlog = ReadText 'docs\NEXT_BACKLOG_V1.md'
+$toolsPrimer = ReadText 'tools\PRIMER_SNAPSHOT.md'
+$toolsChecklist = ReadText 'tools\CHECKLIST_SSOT.md'
+$toolsReadme = ReadText 'tools\README.md'
+$runbook = ReadText 'docs\RUNBOOK_M60_FIELD_ACCEPTANCE_CENTER.md'
+$milestone = ReadText 'docs\MILESTONE_M60_FIELD_ACCEPTANCE_CENTER.md'
+$route = ReadText 'backend\src\routes\fieldAcceptance.js'
+$manifest = ReadText 'backend\src\ops\fieldAcceptanceManifest.js'
+$mobile = ReadText 'mobile\src\lib\fieldAcceptance.js'
+$panel = ReadText 'web\src\panels\superadmin\FieldAcceptanceCenter.jsx'
+$pack = ReadText 'tools\pack_m60_field_acceptance_center.ps1'
+$script = ReadText 'backend\scripts\m60_field_acceptance_center_check.js'
+
+MustReflectServiceEvaluationLayer $project 'project spec reflects service evaluation layer'
+MustContainAny $readme @('M59 green','M60 — Saha Acceptance Merkezi','pack_m60_field_acceptance_center.ps1') 'root readme reflects M60 route'
+MustContainAny $primer @('M59 — Gözlemleme + Saha Teşhis` resmi green oldu','M60 — Saha Acceptance Merkezi','pack_m60_field_acceptance_center.ps1') 'primer ssot reflects M59 green and M60 active'
+MustContainAny $startpack @('M60 — Saha Acceptance Merkezi','pack_m60_field_acceptance_center.ps1','M60 başlangıç notu') 'startpack reflects M60 opening'
+MustContainAny $checklist @('[x] `M59 — Gözlemleme + Saha Teşhis`','[ ] `M60 — Saha Acceptance Merkezi`','pack_m60_field_acceptance_center.ps1') 'checklist marks M59 green and keeps M60 open'
+MustContainAny $backlog @('M59 GOZLEMLEME + SAHA TESHis PACK PASS OK','M60 — Saha Acceptance Merkezi','pack_m60_field_acceptance_center.ps1') 'backlog points to M60'
+MustContainAny $toolsPrimer @('M59 — Gözlemleme + Saha Teşhis` resmi green oldu','M60 — Saha Acceptance Merkezi','pack_m60_field_acceptance_center.ps1') 'tools primer reflects M60 route'
+MustContainAny $toolsChecklist @('[x] `M59 — Gözlemleme + Saha Teşhis`','[ ] `M60 — Saha Acceptance Merkezi`','pack_m60_field_acceptance_center.ps1') 'tools checklist marks M59 green and keeps M60 open'
+MustContainAny $toolsReadme @('pack_m60_field_acceptance_center.ps1','M60 green olmadan M61 acilmaz','aktif hat `M60`') 'tools readme lists M60 pack and sequencing rule'
+MustContainAny $runbook @('M60 SAHA ACCEPTANCE MERKEZI','pilot test oturumu kaydi','GO / LIMITED GO / NO-GO') 'runbook defines M60 scope'
+MustContainAny $milestone @('M60 SAHA ACCEPTANCE MERKEZI','FieldAcceptanceCenter.jsx','pack_m60_field_acceptance_center.ps1') 'milestone documents M60 outputs'
+MustContainAny $route @('/manifest','/session-template','/decision-options') 'field acceptance route exposes manifest/template endpoints'
+MustContainAny $manifest @('FIELD_ACCEPTANCE_DECISIONS','FIELD_ACCEPTANCE_CHECKLIST','LIMITED_GO') 'manifest defines M60 decisions and checklist'
+MustContainAny $mobile @('FIELD_ACCEPTANCE_EVIDENCE_TYPES','SURUCUNUN_TELEFON_GPSI','buildMobileAcceptanceSnapshot') 'mobile helper defines acceptance evidence'
+MustContainAny $panel @('M60 Saha Acceptance Merkezi','Karar seçenekleri','Checklist özeti') 'web panel shows M60 cards'
+MustContainAny $pack @('m60_field_acceptance_center_check.js','check_m60_field_acceptance_center_repo_contract.ps1','PACK PASS OK') 'm60 pack wires runtime and repo contract'
+MustContainAny $script @('M60 SAHA ACCEPTANCE MERKEZI CHECK','FieldAcceptanceCenter.jsx','GO / LIMITED GO / NO-GO') 'm60 runtime check covers skeleton baseline'
+
+Write-Host 'M60 SAHA ACCEPTANCE MERKEZI REPO CONTRACT PASS'

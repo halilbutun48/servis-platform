@@ -51,7 +51,8 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - `M58 — Final Pilot Readiness` teknik readiness kapısı geçti; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` komutu tarihsel kontrat olarak korunur.
 - `M58` için `manuel pilot kabul` / manuel pilot signoff ifadesi tarihsel not olarak korunur; gerçek saha çıkış kapısı artık `M65 — Pilot Launch Gate` altında kapatılacaktır.
 - Yeni resmi saha öncesi rota: `M59 → M65`
-- Kural: **M59 bitmeden M60'a, M60 bitmeden M61'e geçilmez. Paralel dağınık ilerleme yok.**
+- Durum: **M59 green**, aktif iş **M60 — Saha Acceptance Merkezi**.
+- Kural: **M60 bitmeden M61'e geçilmez. Paralel dağınık ilerleme yok.**
 - Kural: **M65 green olmadan sahaya çıkılmayacak.**
 
 ## Ürün kimliği
@@ -76,8 +77,8 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 
 ## Yeni resmi rota
 - `M58 — Final Pilot Readiness` _(teknik gate geçti, saha çıkışı M65'e taşındı)_
-- `M59 — Gözlemleme + Saha Teşhis`
-- `M60 — Saha Acceptance Merkezi`
+- `M59 — Gözlemleme + Saha Teşhis` _(green)_
+- `M60 — Saha Acceptance Merkezi` _(aktif)_
 - `M61 — SSOT + Milestone Hizası`
 - `M62 — Ticari Omurga Güçlendirme`
 - `M63 — Güven + Kalite + Hizmet Değerlendirme`
@@ -89,6 +90,7 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - Post-M41 tam hat: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
 - M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 - M59 pack: `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
+- M60 pack: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 
 ## Çalışma kuralı
 - Önce SSOT güncellenir.

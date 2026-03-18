@@ -2,7 +2,7 @@
 
 Tarih: 2026-03-19
 Timezone: Europe/Istanbul
-Durum: **acik / resmi green degil**
+Durum: **resmi green**
 
 Bu runbook, saha testine cikmadan once sistemin saglik durumunu gorunur hale getirmek icin acilan **M59** milestone'unun kapsam sinirini tanimlar.
 
@@ -71,4 +71,4 @@ M59 green sayilabilmesi icin:
 - backend / mobile / web iskeleti birlikte bulunmali
 - SSOT yeni rotaya hizali olmali
 
-M59 green olmadan M60'a gecilmez.
+M59 green oldu. Siradaki resmi is M60'tir.

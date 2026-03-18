@@ -119,6 +119,7 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/superadmin/regions")}>İller</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>Audit</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/observability")}>Gözlemleme</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/acceptance")}>Acceptance Merkezi</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Export</button>
           </div>
           {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
