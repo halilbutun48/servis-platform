@@ -1,6 +1,6 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2
+# SERVIS-PLATFORM — PERSONEL SERVİS V1
 
-Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
+Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / okul / organizasyonları buluşturan teklif–pazarlık–uzlaşma pazaryeri + operasyon yönetim platformunun** canlı çalışma ağacıdır.
 
 ## Hızlı referans
 - Primer snapshot: `tools/PRIMER_SNAPSHOT.md`
@@ -43,41 +43,55 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M55 REPORTS + NO_SHOW PACK PASS OK`
 - `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
 - `M57 MOBILE HARDENING PACK PASS OK`
-- `POST-M41 EXTERNAL PACK RUNNER PASS OK`
+- `M58 FINAL PILOT READINESS PACK PASS OK`
+- `POST-M41 EXTERNAL PACK RUNNER (M42 -> M58) PASS OK`
 
-## Güncel aktif ürün hattı (2026-03-18)
-- Post-M41 pack script'leri self-only calisir; tam `M42 -> M57` green hatti `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` ile disaridan kosturulur.
-- Uyumluluk icin `tools\pack_post_m41_to_m54_4.ps1` dosyasi korunur; yeni orchestrator'a forward eder.
-- `M57` artik resmi green cizgiye girdi. `M57.1` foreground GPS publish, `M57.2` offline/online toparlama, `M57.3` session + KVKK blocking ve `M57.4` Android preview/internal build disiplini birlikte kapandi.
-- Sonraki ana urun hatti `M58 — Final Pilot Readiness` olarak devam eder.
-- `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` komutu repo hazirlik kontratini kontrol eder; resmi green icin manuel pilot kabul gerekir.
+## Güncel aktif ürün hattı (2026-03-19)
+- Post-M41 tam hat için kanonik komut: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- `M58 — Final Pilot Readiness` teknik readiness kapısı geçti; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` komutu tarihsel kontrat olarak korunur.
+- `M58` için `manuel pilot kabul` / manuel pilot signoff ifadesi tarihsel not olarak korunur; gerçek saha çıkış kapısı artık `M65 — Pilot Launch Gate` altında kapatılacaktır.
+- Yeni resmi saha öncesi rota: `M59 → M65`
+- Kural: **M59 bitmeden M60'a, M60 bitmeden M61'e geçilmez. Paralel dağınık ilerleme yok.**
+- Kural: **M65 green olmadan sahaya çıkılmayacak.**
 
-## Bugünkü resmi ürün kararları
+## Ürün kimliği
+- Ürünün ana kimliği **B2B servis pazaryeri + operasyon platformu**dur.
+- Ticari katman: ihtiyaç, teklif, pazarlık, uzlaşma, sözleşme.
+- Operasyon katmanı: vardiya, araç, sürücü, rota, canlı takip, rapor, kalite.
+- Güven katmanı: KVKK, audit, gözlemleme, acceptance, checklist, pack/check disiplini.
+
+## Bugünkü sabit ürün kararları
+- Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
+- İlk girişte PIN değişimi zorunludur.
+- Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
 - Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
-- Backend hard limit `50..2000`.
 - Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
 - **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
-- Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
-- Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
+- DRAFT / REQUESTED ayrımı korunur.
+- Room seçip teklif göndermeden iş markete düşmemelidir.
+- Guided Mode kullanıcıyı gereksiz draft mantığıyla uğraştırmamalıdır.
+- Dispatch preview shift bazlı çalışmalıdır.
+- Aktif gelmedi kaydı olan sürücü, atama / onay hattında server tarafında engellenmelidir.
 - Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
 
-## Sonraki resmi rota
-- `M55 — Reports + No-show` ✅ green
-- `M56 — KVKK Matrix + ETA/Navigation Quality` ✅ green
-- `M57 — Mobile Hardening` ✅ green
-- `M58 — Final Pilot Readiness`
+## Yeni resmi rota
+- `M58 — Final Pilot Readiness` _(teknik gate geçti, saha çıkışı M65'e taşındı)_
+- `M59 — Gözlemleme + Saha Teşhis`
+- `M60 — Saha Acceptance Merkezi`
+- `M61 — SSOT + Milestone Hizası`
+- `M62 — Ticari Omurga Güçlendirme`
+- `M63 — Güven + Kalite + Hizmet Değerlendirme`
+- `M64 — Doğal Copilot Katmanı`
+- `M65 — Pilot Launch Gate`
+
+## Kanonik komutlar
+- Ana regresyon: `tools\pack.ps1 -To 41`
+- Post-M41 tam hat: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
 - M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- M59 pack: `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
 
-## M57 — Mobile Hardening
-- Foreground GPS publish hattı `/api/gps` ile çalışır.
-- Bağlantı kopma/toparlanma dili mobilde sade görünür.
-- Session failure temiz düşüş ve KVKK blocking görünürlüğü vardır.
-- Android preview/internal build disiplini `app.json + eas.json + .env.example + runbook + checker` hattına bağlanmıştır.
-- Full pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
-- Scaffold pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
-- Post-M41 orchestrator: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
-
-## M58 — Final Pilot Readiness
-- Komut: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
-- Amaç: final pilot checklist, saha testi akışları ve go / no-go kararını tek hatta toplamak.
-- Not: Bu komut tek basina resmi green anlamına gelmez; manuel pilot kabul gerekir.
+## Çalışma kuralı
+- Önce SSOT güncellenir.
+- Sonra milestone resmi olarak açılır.
+- Her milestone için runbook + milestone + pack + check + kod iskeleti birlikte eklenir.
+- Checklist'te `[x]` yalnızca resmi pack/check green sonrası işaretlenir.

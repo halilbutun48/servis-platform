@@ -1,211 +1,314 @@
-PERSONEL-SERVIS V1 — PROJECT SPEC (SSOT)
-Ürün açıklaması (tek sayfa)
+# PERSONEL-SERVIS V1 — PROJECT SPEC (SSOT)
+Ürün tanımı ve kapsam (kanonik özet)
 
-Personel-Servis V1, şirketlerin ve servis operasyon ekiplerinin günlük personel shuttle (vardiya/shift) operasyonunu uçtan uca yönetmesi için geliştirilmiş GPS tabanlı, rol bazlı ve doğrulanabilir (GREEN disiplinli) bir platformdur.
+## 1. Ürün Tanımı
 
-Problem
-Araç/şoför/rota planlama Excel / WhatsApp / manuel yöntemlerle yürür.
-Canlı takip yoktur; gecikme, hız ihlali ve “araç kayboldu (STALE/OFFLINE)” geç fark edilir.
-Personel talepleri merkezi toplanamaz; operasyonel cluster üretilemez.
-Uzun dönem servis anlaşmaları manuel vardiyaya dökülür.
-Araç/şoför çakışmaları geç yakalanır.
-Gerçek rota ile tahmini rota arasında fark oluşur.
+Servis Platformu; servis aracı sağlayıcıları ile servis ihtiyacı olan firma, okul ve organizasyonları buluşturan; teklif, pazarlık, uzlaşma ve sözleşme süreçlerini yöneten; ardından vardiya, araç, sürücü, rota, canlı takip, kalite ve uyum süreçlerini uçtan uca yöneten bir **B2B servis pazaryeri + operasyon yönetim platformudur**.
 
-Çözüm (V1 Neler Sunar)
-🚦 Operasyon Paneli (ROOM)
-Vehicle/Driver CRUD
-Shift approve / assign / start
-Stop suggestions + from-suggestion
-Request close (ACCEPTED)
-Agreement approve + conflict yönetimi
-Availability kontrolü (shift + agreement + bulk)
+Bu ürün yalnızca araç eşleştiren bir pazar yeri değildir. Aynı zamanda:
+- hizmet ihtiyacını toplar,
+- uygun sağlayıcıları görünür hale getirir,
+- teklif ve uzlaşma sürecini kayıt altına alır,
+- sözleşme sonrası günlük operasyonu çalıştırır,
+- sahadaki hizmeti canlı olarak izler,
+- kalite, görünürlük ve güven katmanı sağlar,
+- hizmet alan kurumların gerçek hizmet sonrası değerlendirme yapabilmesini destekler.
 
-🏢 Şirket Paneli (COMPANY)
-Shift create
-Route template yönetimi (REPLACE)
-Agreement create / list / cancel / extend
-Shift list + agreement badge
+## 2. Temel Problem
 
-🚗 Şoför Akışı (DRIVER)
-Assigned vehicle ile GPS gönderimi
-Active route görüntüleme
-Stop progression (reached / skip / reopen)
-Shift complete
+Servis ihtiyacı olan kurumlar ile servis sağlayıcılar arasındaki süreç çoğu zaman dağınık ve manuel yürür:
+- ihtiyaç toplama, teklif alma ve pazarlık Excel / telefon / WhatsApp üzerinden ilerler,
+- hangi aracın, hangi sürücünün, hangi zaman aralığında uygun olduğu geç anlaşılır,
+- sözleşme sonrası operasyon elle vardiyaya çevrilir,
+- canlı takip sınırlı veya dağınıktır,
+- gecikme, hız ihlali, çevrimdışı kalma ve rota sapmaları geç fark edilir,
+- hizmet kalitesi ve saha uygunluğu ölçülebilir değildir,
+- hizmet alan kurumların memnuniyeti sistematik biçimde toplanamaz,
+- kurum ile sağlayıcı arasındaki güven ilişkisi kayıtlı ve doğrulanabilir biçimde kurulamaz.
 
-👤 Personel Akışı (PERSONEL)
-Lat/Lng zorunlu request create
-Stop suggestion üretimine veri sağlar
+## 3. Çözüm
 
-🔴 Realtime + Uyarılar
-Overspeed detection
-LIVE → STALE → OFFLINE → LIVE geçişleri
-Notification dedupe
-WebSocket auto-refresh
+Servis Platformu bu sorunu üç ana katmanda çözer:
 
-🔁 Agreement → Günlük Shift Otomasyonu (M18)
-Onaylı agreement’lardan bugünün shift’leri otomatik üretilir
-Duplicate guard ile aynı güne ikinci shift yazılmaz
-🗺 Route Preview + Route Learning (M19)
-OSRM ile estimated km/süre hesaplama
-OSRM match ile gerçek GPS polyline üretme
-Belirli örnek sonrası rota LEARNED olur
-ESTIMATED → LEARNED deterministik geçiş
+### A. Ticari Katman
+- ihtiyaç oluşturma
+- teklif toplama
+- pazarlık / karşı teklif
+- uzlaşma
+- sözleşme bağlama
+- kapasite ve uygunluk kontrolü
 
-⚡ Bulk Availability (M20)
-Tek endpoint ile tüm araçların uygunluk kontrolü
-Agreement conflict öncelikli raporlanır
-DB yükü azaltılır
-Hedef Kullanıcılar
-ROOM (Operasyon)
-COMPANY (Planlama)
-DRIVER
-PERSONEL
-SUPER_ADMIN (Kurulum + Yönetim)
-SUPER_ADMIN (M21 Güncellemesi)
-Company create/list
-Room create/list (company bağlantılı)
-Sistem kurulum & seed
-RBAC izolasyonu
-V1’de update/delete minimal tutulabilir; genişletme sonraki milestone’lara bırakılabilir.
+### B. Operasyon Katmanı
+- günlük vardiya üretimi
+- araç / sürücü atama
+- dispatch ve rota akışı
+- canlı GPS takibi
+- durak ve personel akışı
+- no-show / kalite / raporlama
+- görünür, izlenebilir ve denetlenebilir saha operasyonu
 
-Amaç
-Temel odak GPS tabanlı personel servisi platformudur; ayrıca school/parent/öğrenci invite ve canlı erişim akışları da sistemde yer alır.
-GPS tabanlı personel servisi platformu:
-Canlı araç takibi
-Rota/durak planı
-Shift lifecycle
-Notification sistemi
-Request → suggestion → stop entegrasyonu
-Agreement + çakışma yönetimi
-Agreement’tan günlük shift otomasyonu
-Route learning ile gerçek rota doğrulama
+### C. Güven ve Kalite Katmanı
+- hizmet kalitesi görünürlüğü
+- canlı operasyon sağlığı
+- hizmet alan değerlendirmesi
+- sağlayıcı güven ve kalite sinyalleri
+- uyum, kayıt ve denetlenebilirlik
 
-Mimari
-Backend: Node.js (ESM) + Express + Prisma
-DB: PostgreSQL (Docker)
-Redis: monitor + dedupe + jobs
-Realtime: Socket.IO
-OSRM: route + match
-Web: Vite + React
-Monorepo: backend/, web/, infra/, docs/, tools/
+## 4. Ürünün Ana Değeri
 
-GREEN Disiplini
-“Çalışıyor” demek:
-tools/pack.ps1 -To <hedef>
-PACK PASS almak.
+Platformun ana değeri şudur:
+- kurum tarafı doğru sağlayıcıya daha hızlı ulaşır,
+- sağlayıcı tarafı teklif ve kapasite yönetimini daha düzenli yapar,
+- uzlaşılan hizmet sahada kopmadan yürür,
+- canlı operasyon ölçülebilir hale gelir,
+- kalite, uyum ve güven görünür olur,
+- hizmet alan tarafın geri bildirimi gelecekteki ticari kararları besler.
 
-Her milestone:
-Check script (backend/scripts/mXcheck.js)
-Docs update (SSOT)
-Gate PASS zorunlu
-Kurallar (SSOT)
+## 5. Hedef Kullanıcılar
 
-1️⃣ Scope / RBAC
-Company sadece kendi scope’unu görür.
-Room sadece kendi room scope’unu yönetir.
-Driver sadece assigned vehicle/shift ile işlem yapar.
-Personel sadece kendi request’lerini görür.
+### Talep sahibi kurumlar
+- COMPANY
+- SCHOOL
+- ORGANIZATION
 
-2️⃣ Shift Overlap Kuralları
-Aynı driver aynı zaman aralığında 2 shift’e atanamaz → 409
-Aynı vehicle aynı zaman aralığında 2 shift’e atanamaz → 409
+Bu roller servis ihtiyacını oluşturur, teklifleri değerlendirir, uzlaşma ve sözleşme sürecini yürütür, hizmet tamamlandıktan sonra kalite değerlendirmesi verebilir.
 
-3️⃣ Agreement Rezervasyon Kuralları (M17)
-Aynı time window’da aynı vehicle/driver başka agreement’a verilemez → 409
-Availability hem shift hem agreement rezervasyonunu dikkate alır.
-Determinism: agreement conflict önce raporlanır.
+### Servis sağlayıcı tarafı
+- ROOM
+- servis aracı sahipleri / oda yapıları / taşıma operasyon ekipleri
 
-4️⃣ Route Learning Kuralları (M19)
-GPS history match edilir.
-Sample threshold sonrası RouteLearned kaydı oluşur.
-Preview’de:
-source = ESTIMATED | LEARNED
-LEARNED varsa estimated override edilir.
+Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, operasyonu sahaya indirir.
 
-5️⃣ Monitoring & Dedupe
-GPS state machine: LIVE → STALE → OFFLINE → LIVE
-Aynı transition tekrar tekrar notification üretmez.
-agreementMonitor: süresi dolan agreement → DONE
-M18 — Agreement → Günlük Shift Otomatik Üretimi ✅
+### Saha kullanıcıları
+- DRIVER
+- PERSONEL
+- gerektiğinde PARENT / benzeri düşük sürtünmeli canlı erişim kullanıcıları
 
-Amaç
-Onaylı agreement’lardan günlük shift üretmek.
+### Sistem yönetimi
+- SUPER_ADMIN
 
-Kurallar
-Status: APPROVED/ACTIVE
-vehicleId + driverId atanmış olmalı
-weekMask bugünü içermeli
-Midnight aşımı desteklenir
-Unique: (agreementId, startAt)
+## 6. Temel İş Akışı
 
-Conflict
-Üretimden önce shiftConflict kontrol edilir
-Conflict varsa üretim skip edilir
+Ürünün kanonik iş akışı aşağıdaki zincirdir:
 
-UI
-Agreement shift’lerde badge
-Filtre: “Agreement shifts only”
-Milestone Yol Haritası (Güncel)
+1. Kurum servis ihtiyacını oluşturur.
+2. İhtiyaç uygun sağlayıcılara görünür hale gelir.
+3. Teklif / karşı teklif / pazarlık yürütülür.
+4. Uzlaşma sağlanır ve sözleşme kaydı oluşur.
+5. Sözleşmeden günlük operasyon planı üretilir.
+6. Vardiya, araç ve sürücü atamaları yapılır.
+7. Dispatch / rota / durak akışı başlatılır.
+8. Sahada canlı takip, ETA, kalite ve istisna yönetimi çalışır.
+9. Hizmet sonuçları raporlanır.
+10. Hizmet alan kurum kalite değerlendirmesi verir.
+11. Bu sonuçlar sonraki ticari kararları ve sağlayıcı güven görünürlüğünü besler.
 
-✅ M0–M15: CRUD + shift + gps + ws + notifications + overlap/bind
-✅ M16: requests → suggestions → stops + template REPLACE
-✅ M16.2: shift people + route-preview + assignmentCount
-✅ M16.3: geo review + manual override
-✅ M17: agreements + conflict + monitor + availability
-✅ M18: agreement → daily shift generator
-✅ M19: OSRM + route learning
-✅ M20: bulk availability
-✅ M21: SUPER_ADMIN companies + rooms panel
+## 7. V1 Kapsamı
 
-DoD (Başarı Kriteri)
-Pack PASS olmadan milestone tamam sayılmaz.
-Agreement happy path çalışır.
-Route preview ESTIMATED → LEARNED geçişi doğrulanır.
-Bulk availability deterministik conflict raporlar.
-M18 happy path: agreement approve → bugün shift oluşur → listede badge görünür.
-M21: SUPER_ADMIN company + room create UI’dan yapılabilir.
+### 7.1 Ticari / Pazaryeri Yetkinlikleri
+- talep oluşturma
+- teklif akışı
+- pazarlık / karşı teklif zemini
+- sözleşme oluşturma
+- sözleşme onay / iptal / uzatma
+- araç / sürücü / zaman uygunluk kontrolü
+- çakışma görünürlüğü
 
-M102/M104 sync — Personel erişim modeli
-Personel için klasik login desteklenebilir; ancak ürünün ana kullanımında login zorunlu değildir.
-Şirket/school tarafı vardiyaya bağlı olarak tek kişiye özel, süreli canlı erişim linki üretir.
-Bu link personelin sadece kendi servis/ETA/navigasyon bilgisini açar ve düşük sürtünmeli saha erişimi sağlar.
+### 7.2 Operasyon Yetkinlikleri
+- vardiya oluşturma ve listeleme
+- sözleşmeden günlük vardiya üretimi
+- araç CRUD
+- sürücü CRUD / bağlama / erişim güvenliği
+- dispatch preview
+- rota önizleme / rota öğrenme
+- durak ilerleme akışı
+- canlı takip ve GPS durum makinesi
+- gecikme / stale / offline görünürlüğü
+- raporlar ve gelmedi kaydı yönetimi
 
+### 7.3 Güven / Kalite / Uyum Yetkinlikleri
+- rol bazlı yetki ve scope izolasyonu
+- audit ve doğrulanabilir işlem izi
+- rate limit / edge security / session güvenliği
+- KVKK notice / consent / matrix görünürlüğü
+- ETA kalite alanları
+- notification dedupe
+- retention / backup disiplini
+- GREEN pack/check doğrulaması
+- tamamlanan hizmet sonrası hizmet alan kurum değerlendirmesi
+- sağlayıcı kalite ve güven görünürlüğü için geri bildirim zemini
 
-## Login'siz erişim / süreli link politikası
-- Parent invite ve personel public live link varsayılan self-serve akışlarıdır.
-- Preset süreler: **1 hafta / 1 ay / 6 ay / 1 yıl**.
-- Personel public link, güvenlik gereği ham tokenı sadece ilk üretimde gösterir.
+### 7.4 Yardım / Copilot Katmanı
+- düşük bilişsel yükle çalışan Türkçe yardım deneyimi
+- rehber / sohbet / ekran yardımı
+- role göre sadeleştirilmiş açıklama
+- read-only / suggestion-first yardım mantığı
+- kullanıcının doğru adıma yönlendirilmesi
 
+## 8. Rol Bazlı Ürün Özeti
 
----
+### ROOM
+- operasyon paneli
+- teklif değerlendirme ve karar akışı
+- araç / sürücü yönetimi
+- vardiya onay / atama / başlatma
+- dispatch ve canlı takip
+- sözleşme conflict yönetimi
 
-## M46.6 — Yardım / Rehber / Ekran Desteği
+### COMPANY / SCHOOL / ORGANIZATION
+- servis ihtiyacı oluşturma
+- teklif ve sözleşme görünürlüğü
+- planlama ve vardiya takibi
+- ilgili canlı erişim ve kalite görünürlüğü
+- tamamlanan hizmet sonrası değerlendirme ve geri bildirim
 
-Amaç:
-- düşük bilişsel yükle çalışan Türkçe yardım katmanı
-- Copilot çekirdeğini bozmadan üstüne rehber eklemek
-- kullanıcıyı düşündürmeden doğru adıma yönlendirmek
+### DRIVER
+- sürücü kodu + PIN login
+- ilk girişte PIN değiştirme
+- Today ekranı
+- aktif rota ve görev akışı
+- sürücünün telefon GPS'i ile canlı publish
+- sesli rehber ve ETA
+- izin / KVKK / session failure akışları
 
-Alt parçalar:
-- **M46.6-A:** Job Guide / Rehber modu
-- **M46.6-B:** Precheck + locked reason + quick actions
-- **M46.6-T:** Konum kaynağı rehberi
-- **M46.6-C:** Screen help / button guide / role help
+### PERSONEL / düşük sürtünmeli erişim kullanıcıları
+- ihtiyaç / request üretimine veri sağlama
+- gerekirse süreli canlı erişim bağlantısı
+- düşük sürtünmeli saha görünürlüğü
 
-Ürün dili kararları:
+### SUPER_ADMIN
+- şirket / room kurulum ve görünürlük
+- sistem düzeyi yönetim
+- güvenlik / retention / backup / kontrol yüzeyleri
+
+## 9. Ana Ürün Kararları
+
+- Ürünün ana kimliği **B2B servis pazaryeri + operasyon platformu**dur.
+- Sadece vardiya takibi yapan dar bir uygulama olarak konumlanmaz.
+- Teklif–pazarlık–uzlaşma–sözleşme zinciri ürünün çekirdek parçasıdır.
+- Sözleşme sonrası operasyon akışı aynı platform içinde devam eder.
+- Canlı takip, kalite ve güven katmanı ürünün zorunlu bileşenidir.
+- Hizmet alan kurum değerlendirmesi güven ve kalite katmanının parçasıdır.
+- Planlama Merkezi tek oluşturma kaynağıdır.
+- Vardiyalar ekranı oluşturma değil, takip / operasyon ekranıdır.
+- DRAFT / REQUESTED ayrımı korunur.
+- Room seçip teklif göndermeden iş markete düşmez.
+- Guided Mode kullanıcıyı gereksiz draft mantığıyla uğraştırmaz.
+- Dispatch preview shift bazlı çalışır.
+- Gelmedi kaydı yalnızca yetkili akışta işlenir.
+- Aktif gelmedi kaydı olan sürücü, atama / onay hattında server tarafında engellenir.
+- Company default `maxWalkM = 250`
+- School default `maxWalkM = 50`
+
+## 10. Mimari
+
+- **Backend:** Node.js (ESM) + Express + Prisma
+- **DB:** PostgreSQL
+- **Redis:** monitor + dedupe + jobs
+- **Realtime:** Socket.IO
+- **Route engine:** OSRM
+- **Web:** Vite + React
+- **Mobile:** React Native / Expo tabanlı sürücü uygulaması
+- **Monorepo:** `backend/`, `web/`, `mobile/`, `infra/`, `docs/`, `tools/`
+
+## 11. Ana Teknik Yetkinlikler
+
+### Canlı Takip
+- GPS state machine: `LIVE → STALE → OFFLINE → LIVE`
+- dedupe edilmiş bildirimler
+- sürücünün telefon GPS'i publish hattı
+- aktif rota görünürlüğü
+
+### Uygunluk ve Çakışma
+- aynı driver aynı zaman aralığında iki shift'e atanamaz
+- aynı vehicle aynı zaman aralığında iki shift'e atanamaz
+- sözleşme rezervasyonları availability hesabına dahil edilir
+- conflict raporu deterministik biçimde üretilir
+
+### Sözleşmeden Operasyona Geçiş
+- onaylı sözleşmelerden günlük vardiya üretimi
+- duplicate guard
+- sözleşme badge görünürlüğü
+- sözleşme conflict kontrolü
+
+### Rota Yetkinliği
+- estimated route
+- learned route
+- gerçek GPS verisiyle rota doğrulama
+- preview ve operasyon görünürlüğü
+
+## 12. GREEN Disiplini
+
+Bu repoda “tamamlandı” demek yalnızca kod yazmak değildir.
+
+Bir iş ancak şu şartlarla tamam sayılır:
+- ilgili pack/check hattı geçer,
+- repo-contract doğrulanır,
+- SSOT güncellenir,
+- checklist resmi green olduktan sonra işaretlenir.
+
+Kanonik yaklaşım:
+- `tools/pack.ps1 -To <hedef>`
+- ilgili milestone pack/check script'leri
+- runbook + milestone + checklist senkronu
+
+## 13. Ürün Dili Kararları
+
 - agreement yerine **sözleşme**
 - offer yerine **teklif**
 - assignment yerine **atama**
 - driver GPS yerine **sürücünün telefon GPS'i**
-- device GPS yerine **cihaz GPS'i**
+- sade Türkçe, düşük bilişsel yük, adım adım yönlendirme
 
-Rol bazlı yardım seviyesi:
-- Operasyon Copilot: `SUPER_ADMIN`, `ROOM`, `COMPANY`, `SCHOOL`, `ORGANIZATION`
-- Basit rehber: `DRIVER`, `PERSONEL`, `PARENT`
+## 14. Yardım / Copilot İlkeleri
 
-Kural:
-- yardım katmanı read-only / suggestion-first kalır
+Copilot ve yardım katmanı ürünün çekirdeğini bozmaz; onu açıklanabilir ve kullanılabilir hale getirir.
+
+Kurallar:
+- read-only / suggestion-first kalır
 - scope dışı bilgi vermez
-- gerekiyorsa **Buradan aç** tarzı yönlendirme üretir
-- mevcut `POST /api/ai/copilot` hattı korunur
+- kullanıcıyı doğru ekrana ve doğru adıma yönlendirir
+- rol bazlı sade dil kullanır
+- operasyon kullanıcıları için daha derin, sürücü/personel için daha basit anlatım sunar
 
+Operasyon Copilot rolleri:
+- `SUPER_ADMIN`
+- `ROOM`
+- `COMPANY`
+- `SCHOOL`
+- `ORGANIZATION`
+
+Basit rehber rolleri:
+- `DRIVER`
+- `PERSONEL`
+- `PARENT`
+
+## 15. V1 Başarı Kriteri
+
+V1 başarılı sayılırsa:
+- talep sahibi kurum ile sağlayıcı arasında tekliften sözleşmeye giden akış çalışır,
+- sözleşmeden günlük operasyona geçiş kopmaz,
+- vardiya / araç / sürücü / rota zinciri sahada işletilebilir olur,
+- canlı takip ve istisna yönetimi görünürdür,
+- kalite ve güven katmanı temel seviyede çalışır,
+- hizmet alan kurum tamamlanan hizmete ilişkin temel kalite değerlendirmesi verebilir,
+- rol bazlı kullanım sade ve anlaşılırdır,
+- resmi green pack disiplini korunur.
+
+## 16. Gelecek Güçlendirme Yönü
+
+Ürünün saha öncesi profesyonelleşme yönü şu başlıklarda büyütülmelidir:
+- gözlemleme ve saha teşhis katmanı,
+- saha acceptance merkezi,
+- milestone / SSOT hizası,
+- daha doğal ve bağlamlı copilot,
+- cihaz sağlık görünürlüğü,
+- GPS güven skoru,
+- vardiya olay zaman çizgisi,
+- operasyon kalite paneli,
+- hizmet alan kurum değerlendirme sistemi,
+- sağlayıcı kalite / güven puanı.
+
+Saha testi keşif aşaması değildir; son doğrulama aşamasıdır. Bu nedenle saha öncesi sertleştirme hattı (`M59 → M65`) tamamlanmadan gerçek saha testine çıkılmaz.
+
+Bu başlıklar V1 çekirdeğini değiştirmez; ürünü daha güçlü, daha güvenilir ve daha profesyonel hale getirir.

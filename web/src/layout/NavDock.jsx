@@ -155,6 +155,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Users", path: "/superadmin/users" },
           { label: "Regions", path: "/superadmin/regions" },
           { label: "Audit", path: "/superadmin/audit" },
+          { label: "Gözlemleme", path: "/superadmin/observability" },
           { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/superadmin/logexport" },
         ],

@@ -1,6 +1,6 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT
+# SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER SNAPSHOT
 
-Tarih: 2026-03-18
+Tarih: 2026-03-19
 Timezone: Europe/Istanbul
 Repo: `D:\servis-platform`
 Branch: `main`
@@ -37,30 +37,21 @@ Ana resmi green durum:
 - ✅ `M55 REPORTS + NO_SHOW PACK PASS OK`
 - ✅ `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
 - ✅ `M57 MOBILE HARDENING PACK PASS OK`
-- ✅ `POST-M41 EXTERNAL PACK RUNNER PASS OK`
+- ✅ `M58 FINAL PILOT READINESS PACK PASS OK`
+- ✅ `POST-M41 EXTERNAL PACK RUNNER (M42 -> M58) PASS OK`
 
 Not:
-- Resmi green çizgi artık `M57` seviyesine kadar doğrulanmıştır.
-- `M42+` pack script'leri self-only calisir; tam `M42 -> M57` green hatti ve M57 full kontrolunun kanonik komutu `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
-- `tools\pack_post_m41_to_m54_4.ps1` uyumluluk icin korunur ve yeni orchestrator'a forward eder.
-- `M44` ayri kanonik pack olarak `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
-- `M45` ayri kanonik pack olarak `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
-- `M46` ayri kanonik pack olarak `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
-- `M55` ayri kanonik pack olarak `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
-- `M56` ayri kanonik pack olarak `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform` ile dogrulanir.
-- `M57` full implementation komutu: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`.
-- `M57` scaffold/files komutu korunur: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`.
+- Resmi green çizgi artık `M58` teknik readiness seviyesine kadar doğrulanmıştır.
+- Post-M41 tam hat için kanonik komut `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
+- `M58 hazirlik komutu`: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`.
+- `M58` için `resmi green` / `manuel pilot kabul` notu tarihsel olarak korunur; saha çıkış kararı artık `M65` altında kapatılacaktır.
 
 ## 1) Güncel aktif durum
-- `M57` genel green oldu.
-- `M57.1 foreground GPS publish` green.
-- `M57.2 offline/online toparlama + retry` green.
-- `M57.3 session failure + KVKK blocking gorunurlugu` green.
-- `M57.4 Android preview/internal build disiplini` green.
-- Post-M41 external runner ile `M42 -> M57` green hatti tek komutla tekrar kosturulabilir.
-- Sonraki ana resmi rota `M58 — Final Pilot Readiness`.
-- `M58` hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`.
-- `M58` resmi green sayimi icin pack gecisi yanında saha kabul / manuel pilot signoff gerekir.
+- Ürün kimliği artık açık şekilde **B2B servis pazaryeri + operasyon platformu** olarak yazılmıştır.
+- Saha testi en son adım olacak; `M65` green olmadan sahaya çıkılmayacaktır.
+- Yeni resmi rota `M59 → M65` olarak açıldı.
+- İlk aktif iş `M59 — Gözlemleme + Saha Teşhis`.
+- `M59` bitmeden `M60`a geçilmeyecektir.
 
 ## 2) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -69,39 +60,25 @@ Not:
 - Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
 - Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
 - **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
+- Room seçip teklif göndermeden iş markete düşmemelidir.
+- Guided Mode kullanıcıyı gereksiz draft mantığıyla uğraştırmamalıdır.
 - Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
 - CHECKLIST'te `[x]` yalnızca pack/check green sonrası işaretlenir.
 
-## 3) M57 — Mobile Hardening kapanis ozeti
-- `/api/gps` foreground publish hattı mobilde görünür duruma geldi.
-- İzin yoksa `GPS iznini yenile` ve gerekirse `Ayarlari ac` akışı var.
-- Bağlantı kartı ile offline/online toparlama dili sade şekilde görünür.
-- Session refresh bozulursa uygulama `Oturum kapandi. Yeniden giris yapin.` diyerek temiz düşer.
-- KVKK eksikleri mobilde görünür ve GPS publish blok diline bağlanır.
-- Android preview/internal build disiplini `app.json`, `eas.json`, `.env.example`, Today release kartı ve `m57_4` checker ile sabitlendi.
+## 3) Yeni resmi saha öncesi rota
+- `M59 — Gözlemleme + Saha Teşhis`
+- `M60 — Saha Acceptance Merkezi`
+- `M61 — SSOT + Milestone Hizası`
+- `M62 — Ticari Omurga Güçlendirme`
+- `M63 — Güven + Kalite + Hizmet Değerlendirme`
+- `M64 — Doğal Copilot Katmanı`
+- `M65 — Pilot Launch Gate`
 
-## 4) Yakın resmi rota
-- `M57 — Mobile Hardening` ✅ green
-- `M58 — Final Pilot Readiness`
-
-## 5) Kanonik komutlar
+## 4) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
-- Post-M41 tam hat: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
-- M44: `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
-- M45: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
-- M46: `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
-- M55: `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
-- M56: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
-- M57 full: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
-- M57 scaffold: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
-- M58 hazirlik: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- Post-M41 tam hat: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- M59 pack: `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
 
-## 6) Yeni sohbet için ilk cümle
-Repo su an `M57`'ye kadar resmi green; kanonik post-M41 dis runner `tools\pack_post_m41_to_m57.ps1` ile `M42 -> M57` green hatti birlikte kosturulur. Sonraki odak `M58 — Final Pilot Readiness`; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` ile repo hazirlik kontrati kontrol edilebilir.
-
-## 7) M57 / M58
-- `M57 green`
-- `M57.4 Android preview/internal build disiplini green`
-- `M58 — Final Pilot Readiness`
-- `M58 hazirlik komutu`: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
-- `M58 resmi green` icin saha kabul gerekir
+## 5) Yeni sohbet için ilk cümle
+Repo su an `M58` teknik readiness seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak açıldı. İlk aktif iş `M59 — Gözlemleme + Saha Teşhis`; kanonik komut `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`.

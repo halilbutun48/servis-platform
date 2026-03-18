@@ -65,6 +65,7 @@ const SuperUsersPanel = lazy(() => import("./panels/superadmin/UsersPanel"));
 const SuperRegionsPanel = lazy(() => import("./panels/superadmin/RegionsPanel"));
 const SuperAuditLogsPanel = lazy(() => import("./panels/superadmin/AuditLogsPanel"));
 const SuperLogExportPanel = lazy(() => import("./panels/superadmin/LogExportPanel"));
+const SuperObservabilityPanel = lazy(() => import("./panels/superadmin/ObservabilityPanel"));
 
 function roleDefaultPath(me) {
   const role = me?.role;
@@ -270,6 +271,7 @@ export default function App() {
     if (path === "/superadmin/regions") return { layout: true, node: <SuperRegionsPanel /> };
     if (path === "/superadmin/audit") return { layout: true, node: <SuperAuditLogsPanel /> };
     if (path === "/superadmin/logexport") return { layout: true, node: <SuperLogExportPanel /> };
+    if (path === "/superadmin/observability") return { layout: true, node: <SuperObservabilityPanel /> };
     if (path === "/superadmin/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // Unknown: go default
