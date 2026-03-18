@@ -6,13 +6,13 @@ Timezone: Europe/Istanbul
 Bu dosya repo için kısa çalışma runbook'udur.
 
 ## 1) GOLDEN RULES
-1. Ana resmi green referans `M50` seviyesine kadar doğrulanmış pack çizgisidir.
-2. `M51+` aktif ürün hattıdır; resmi green kutu sayılmaz.
-3. `M51–M53` için backfill verification hattı vardır; bu hat resmi green promotion değildir.
-4. `M52` import + geo pipeline runtime ile tekrar doğrulanabilir durumdadır.
-5. `M53` stop/route productization ve organization/gezi görünürlüğü backfill check kapsamındadır.
-6. `M54.1` preview, `M54.2` editable preview ve `M54.3` repack zinciri repo içinde çalışır durumdadır.
-7. `M54.4` için explicit shift route endpoint'i ve `Today → Route` deep link'i açılmıştır.
+1. Ana resmi green referans `M54.4` seviyesine kadar doğrulanmış pack çizgisidir.
+2. Post-M41 pack script'leri self-only çalışır; tam `M42 -> M54.4` hattının kanonik komutu `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild` şeklindedir.
+3. `M51–M53 BACKFILL VERIFICATION PACK PASS OK` resmi green çizgisine dahil edilmiştir.
+4. `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK` resmi green çizgisine dahildir.
+5. `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK` resmi green çizgisine dahildir.
+6. `POST-M41 EXTERNAL PACK RUNNER PASS OK` resmi tekrar-koşturma kanıtıdır.
+7. `M54.1` preview ve `M54.2` editable preview, `M54.3` green hattı içinde fiilen doğrulanmış kabul edilir.
 8. Company default `maxWalkM = 250`, School default `maxWalkM = 50`, backend hard limit `50..2000`.
 9. Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
 10. **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranıdır.
@@ -43,24 +43,34 @@ Bu dosya repo için kısa çalışma runbook'udur.
 ## 2) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
 - M45 pack: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- M45 runbook: `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
 - M46.9 pack: `tools\pack_m46_9_session_refresh_security.ps1 -RepoRoot D:\servis-platform`
 - M47 pack: `tools\pack_m47_kvkk_notice_consent_framework.ps1 -RepoRoot D:\servis-platform`
 - M47.2 pack: `tools\pack_m47_2_capacity_load_baseline.ps1 -RepoRoot D:\servis-platform`
 - M47.3 pack: `tools\pack_m47_3_production_resilience_edge_security.ps1 -RepoRoot D:\servis-platform`
-- M47.4 pack: `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
+- M47.4 — Mobile Readiness Web Pass: `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
 - M48 pack: `tools\pack_m48_driver_mobile_foundation.ps1 -RepoRoot D:\servis-platform`
 - M48.5 pack: `tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform`
 - M49 pack: `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform`
 - M49.1 pack: `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform`
 - M50 pack: `tools\pack_m50_mobile_release_readiness.ps1 -RepoRoot D:\servis-platform`
+- M51–M53 pack: `tools\pack_m51_53_backfill_verification.ps1 -RepoRoot D:\servis-platform`
+- M54.3 pack: `tools\pack_m54_3_dispatch_approve_repack.ps1 -RepoRoot D:\servis-platform`
+- M54.4 pack: `tools\pack_m54_4_driver_route_delivery.ps1 -RepoRoot D:\servis-platform`
+- Post-M41 external orchestrator: `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild`
 
 ## 3) Güncel durum özeti
-- Resmi green çizgi `M50` seviyesine kadar doğrulanmıştır.
-- `M51–M53` için backfill verification hattı eklendi.
-- `M54.3` pack kanıtı mevcut, `M54.4` explicit shift route açıldı.
+- Resmi green çizgi `M54.4` seviyesine kadar doğrulanmıştır.
+- `M51–M53`, `M54.3`, `M54.4` ve dış post-M41 runner pack-green olarak geçmiştir.
 - Tek araç yeterli / non-dispatch işlerde paket-kopyala UI kolaylığı korunur.
+- Sonraki ana ürün hattı `M55 — Reports + No-show` olmuştur.
 
 ## 4) Yakın rota
 - `M55 — Reports + No-show`
 - `M56 — KVKK Matrix + Mobile Hardening`
 - `M57 — Final Pilot Readiness`
+
+Ek araçlar:
+- M45 tools: `tools\backup_create_m45.ps1`, `tools\backup_restore_m45.ps1`
+
+

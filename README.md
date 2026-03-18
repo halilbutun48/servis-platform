@@ -37,17 +37,17 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M49 MOBILE BETA HARDENING PACK PASS OK`
 - `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
 - `M50 MOBILE RELEASE READINESS PACK PASS OK`
+- `M51–M53 BACKFILL VERIFICATION PACK PASS OK`
+- `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK`
+- `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
+- `POST-M41 EXTERNAL PACK RUNNER PASS OK`
 
 ## Güncel aktif ürün hattı (2026-03-18)
-- `M51–M53` için backfill verification hattı eklendi.
-- `M52 Import + Geo Pipeline` runtime + repo-contract ile tekrar doğrulanabilir.
-- `M53 Stop & Route Productization` ve `Organization / Gezi` görünürlüğü backfill check kapsamına alındı.
-- `M54.1` Dispatch Preview çalışır.
-- `M54.2` Editable Dispatch Preview çalışır.
-- `M54.3` Dispatch Approve + Repack `PACK PASS OK` kanıtına sahiptir.
-- `M54.4` Driver Route Delivery için explicit shift route endpoint'i ve `Today → Route` deep link'i açıldı.
+- Post-M41 pack script'leri self-only çalışır; tam M42 → M54.4 hattı `tools\pack_post_m41_to_m54_4.ps1` ile dışarıdan koşturulur.
+- `M52 Import + Geo Pipeline` ve `M53 Stop & Route Productization / Organization-Gezi` backfill hattı ile resmi olarak tekrar doğrulandı.
+- `M54.1` Dispatch Preview ve `M54.2` Editable Dispatch Preview, `M54.3` pack-green sonucu ile fiilen doğrulanmış kabul edilir.
+- `M54.4` Driver Route Delivery explicit shift route endpoint'i ve `Today → Route` deep link'i ile resmi verify hattından geçti.
 - Tek araç yeterli / dispatch gerektirmeyen işlerde paket-kopyala UI kolaylığı korunur.
-- Not: Bu satırlar resmi pack-green promotion değildir; güncel repo yönünü taşır.
 
 ## Bugünkü resmi ürün kararları
 - Company default `maxWalkM = 250`, School default `maxWalkM = 50`.

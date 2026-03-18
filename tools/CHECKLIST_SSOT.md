@@ -27,8 +27,12 @@ Last updated: **2026-03-18**
 - **M49 MOBILE BETA HARDENING PACK PASS OK**
 - **M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK**
 - **M50 MOBILE RELEASE READINESS PACK PASS OK**
+- **M51–M53 BACKFILL VERIFICATION PACK PASS OK**
+- **M54.3 DISPATCH APPROVE + REPACK PACK PASS OK**
+- **M54.4 DRIVER ROUTE DELIVERY PACK PASS OK**
+- **POST-M41 EXTERNAL PACK RUNNER PASS OK**
 
-> Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. `M51+` satırları aktif rota / ürün kararı olarak izlenir; henüz resmi green promotion değildir.
+> Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. `M42+` pack script'leri self-only çalışır; tam post-M41 hattı dış runner ile koşturulur.
 
 ## Yol haritası
 - **Step 0:** V1 Manuel Checklist %100 PASS
@@ -41,7 +45,8 @@ Last updated: **2026-03-18**
 - **Step 3 (M46):** AI Copilot zinciri resmi green
 - **Step 4.0 (M47):** KVKK / Capacity / Edge Security / Mobile Web Readiness resmi green
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
-- **Active track (M51–M57):** backfill verification → import+geo pipeline → stop/route productization → dispatch preview/approve/repack → driver route delivery → reports/no-show → KVKK+mobile hardening → final pilot readiness
+- **Step 4.9–5.1 (M51–M54.4):** backfill verification → dispatch approve/repack → driver route delivery resmi green
+- **Active track (M55–M57):** reports/no-show → KVKK+mobile hardening → final pilot readiness
 
 ## Resmi green kutular
 - [x] `M47 — KVKK Notice / Consent Framework`
@@ -54,15 +59,21 @@ Last updated: **2026-03-18**
 - [x] `M49 — Mobile Beta Hardening`
 - [x] `M49.1 — Driver Voice Guidance + Stop ETA`
 - [x] `M50 — Mobile Release Readiness`
+- [x] `M51–M53 — Backfill Verification`
+- [x] `M54.3 — Dispatch Approve + Repack`
+- [x] `M54.4 — Driver Route Delivery`
+- [x] `Post-M41 External Pack Runner`
 
-## Aktif rota notları (henüz green kutu değil)
-- [ ] `M51–M53 — backfill verification hattı` eklendi; resmi green promotion yok
-- [ ] `M52 — Import + Geo Pipeline` runtime + repo-contract ile doğrulanabilir
-- [ ] `M53 — stop/route productization + organization/gezi görünürlüğü` backfill check kapsamına alındı
-- [ ] `M54.1 — Dispatch Preview` çalışır repo durumu
-- [ ] `M54.2 — Editable Dispatch Preview` çalışır repo durumu
-- [ ] `M54.3 — Dispatch Approve + Repack` pack kanıtı mevcut; resmi green promotion ayrı tutulur
-- [ ] `M54.4 — Driver Route Delivery` explicit shift route + Today → Route deep link eklendi
+## Aktif rota notları
+- [x] `M54.1 — Dispatch Preview` M54.3 green hattı içinde fiilen doğrulanmış kabul edilir
+- [x] `M54.2 — Editable Dispatch Preview` M54.3 green hattı içinde fiilen doğrulanmış kabul edilir
 - [ ] `M55 — Reports + No-show` sıradaki ana ürün işi
 - [ ] `M56 — KVKK Matrix + Mobile Hardening` M55 sonrası güncellenecek
 - [ ] `M57 — Final Pilot Readiness` son checklist / saha testi öncesi güncellenecek
+
+## M45 kanıt araçları
+- `tools\pack_m45_retention_backup.ps1`
+- `tools\backup_create_m45.ps1`
+- `tools\backup_restore_m45.ps1`
+- `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
+

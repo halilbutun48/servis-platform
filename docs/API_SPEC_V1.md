@@ -2,7 +2,7 @@
 
 > Referans: `docs/PROJECT_SPEC_V1.md`  
 > Amaç: V1’de mevcut **REST endpoint’leri** ve **WS event’lerini** listeler.  
-> Durum: M41 ana green + M42 / Step 0.6 / Step 1 / M43 / M44 / M45 / M46 / M46.1 / M46.2 / M46.3 / M46.4 / M46.5 / M46.6-A/B/T/C ek green katmanları
+> Durum: M41 ana green + M42 / Step 0.6 / Step 1 / M43 / M44 / M45 / M46 / M46.1–M46.9 / M47 / M47.2 / M47.3 / M47.4 / M48 / M48.5 / M49 / M49.1 / M50 / M51–M53 / M54.3 / M54.4 green katmanları
 
 ---
 
@@ -219,7 +219,7 @@ UI invalidate standardı: event isimleri “shift/agreement/vehicle/request/eta/
 
 > Referans: `docs/PROJECT_SPEC_V1.md`  
 > Amaç: V1’de mevcut **REST endpoint’leri** ve **WS event’lerini** listeler.  
-> Durum: M41 ana green + M42 / Step 0.6 / Step 1 / M43 / M44 / M45 / M46 / M46.1 / M46.2 / M46.3 / M46.4 / M46.5 / M46.6-A/B/T/C ek green katmanları
+> Durum: M41 ana green + M42 / Step 0.6 / Step 1 / M43 / M44 / M45 / M46 / M46.1–M46.9 / M47 / M47.2 / M47.3 / M47.4 / M48 / M48.5 / M49 / M49.1 / M50 / M51–M53 / M54.3 / M54.4 green katmanları
 
 ---
 

@@ -31,21 +31,26 @@ Ana resmi green durum:
 - ✅ `M49 MOBILE BETA HARDENING PACK PASS OK`
 - ✅ `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
 - ✅ `M50 MOBILE RELEASE READINESS PACK PASS OK`
+- ✅ `M51–M53 BACKFILL VERIFICATION PACK PASS OK`
+- ✅ `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK`
+- ✅ `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
+- ✅ `POST-M41 EXTERNAL PACK RUNNER PASS OK`
 
 Not:
-- Son resmi pack-green çizgi hâlâ `M50` seviyesidir.
-- `M51+` satırları aktif ürün / repo durumu olarak yazılır; pack-green promotion anlamına gelmez.
+- Resmi green çizgi artık `M54.4` seviyesine kadar doğrulanmıştır.
+- `M42+` pack script'leri self-only çalışır; tam M42 → M54.4 hattının kanonik komutu `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild` şeklindedir.
 - Bu zip içinde `.git` olmadığı için resmi tag promotion yalnızca canlı repo içinde yapılmalıdır.
 
 ## 1) Güncel aktif durum
-- `M51–M53` için tek paketli backfill verification hattı eklendi (`runtime + repo-contract`).
-- `M52 Import + Geo Pipeline` runtime ile tekrar doğrulanabilir hale getirildi.
-- `M53 Stop & Route Productization` ve `Organization / Gezi` görünürlüğü resmi check hattına bağlandı.
-- `M54.1` Dispatch Preview çalışır durumdadır.
-- `M54.2` Editable Dispatch Preview çalışır durumdadır.
+- `M51–M53` backfill verification hattı runtime + repo-contract ile geçti.
+- `M52 Import + Geo Pipeline` ve `M53 Stop & Route Productization / Organization-Gezi` görünürlüğü resmi green zincirine dahil oldu.
+- `M54.1` Dispatch Preview ve `M54.2` Editable Dispatch Preview, `M54.3` pack-green sonucu ile fiilen doğrulanmış kabul edilir.
 - `M54.3` Dispatch Approve + Repack `PACK PASS OK` seviyesindedir.
-- `M54.4` Driver Route Delivery için explicit shift route endpoint'i ve `Today → Route` deep link'i eklendi.
+- `M54.4` Driver Route Delivery explicit shift route endpoint'i ve `Today → Route` deep link'i ile resmi verify hattından geçti.
+- Post-M41 external runner `PASS OK` olduğundan `M42 → M54.4` tam hattı tek komutla tekrar koşturulabilir.
+- `M45` retention + backup kanıt araçları: `tools\pack_m45_retention_backup.ps1`, `tools\backup_create_m45.ps1`, `tools\backup_restore_m45.ps1`, `docs\RUNBOOK_M45_RETENTION_BACKUP.md`.
 - Tek araç yeterli / dispatch gerektirmeyen işlerde `Araç → Pakete Kopyala` ve `Driver → Pakete Kopyala` UI kolaylığı korunur.
+- Canlı liste satır yüksekliği / layout sıkışması düzeltilmiştir.
 
 ## 2) Kesin çalışan / doğrulanan durum
 
@@ -122,19 +127,18 @@ Resmi görünürlük:
 - Koordinatlar tamam olmadan organization planı markete düşmez.
 
 ## 4) Yakın resmi rota
-- `M54.4 — Driver Route Delivery` resmi verify hattı eklendi
 - `M55 — Reports + No-show`
 - `M56 — KVKK Matrix + Mobile Hardening`
 - `M57 — Final Pilot Readiness`
 
-## 5) M54 için bugünkü yön
-M54 mevcut repo durumunda şu şekilde kabul edilir:
+## 5) M54 için kapanan yön
+M54 mevcut repo durumunda şu şekilde kapanmıştır:
 - `M54.1` preview katmanı çalışır
 - `M54.2` room tarafı araç / şoför seçimi çalışır
 - `M54.3` preview → approve → repack zinciri pack ile kanıtlanmıştır
 - `M54.4` sürücünün Today ekranından kendi shift rotasına gitmesi explicit route endpoint ile netleştirilmiştir
 
-Kalan odak artık yeni planner yazmak değil, kalan gerçek uygulama bug'larını kapatıp `M55+` hattına geçişi hazırlamaktır.
+Kalan odak artık yeni planner yazmak değil, `M55+` hattına geçişi hazırlamaktır.
 
 ## 6) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -146,4 +150,4 @@ Kalan odak artık yeni planner yazmak değil, kalan gerçek uygulama bug'ların�
 - CHECKLIST'te `[x]` yalnızca pack/check green sonrasında işaretlenir
 
 ## 7) Yeni sohbet için ilk cümle
-Repo şu an `M50`'ye kadar resmi green; `M51–M53` için backfill verification hattı eklendi, `M54.3` pack-green kanıtı var ve `M54.4` Today → Route explicit shift akışı açıldı. Sonraki odak `M55 Reports + No-show` öncesi kalan M54 bug kapatmalarıdır.
+Repo şu an `M54.4`'e kadar resmi green; post-M41 pack script'leri self-only, tam hat `tools\pack_post_m41_to_m54_4.ps1` ile dışarıdan koşturuluyor. Sonraki odak `M55 Reports + No-show` hattına geçiştir.
