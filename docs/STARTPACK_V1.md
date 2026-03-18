@@ -58,16 +58,16 @@ Bu dosya repo için kısa çalışma runbook'udur.
 - M54.3 pack: `tools\pack_m54_3_dispatch_approve_repack.ps1 -RepoRoot D:\servis-platform`
 - M54.4 pack: `tools\pack_m54_4_driver_route_delivery.ps1 -RepoRoot D:\servis-platform`
 - M55 pack: `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
+- M56 pack: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
 - Post-M41 external orchestrator: `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild`
 
 ## 3) Güncel durum özeti
-- Resmi green çizgi `M55` seviyesine kadar doğrulanmıştır.
-- `M51–M53`, `M54.3`, `M54.4`, `M55` ve dış post-M41 runner pack-green olarak geçmiştir.
+- Resmi green çizgi `M56` seviyesine kadar doğrulanmıştır.
+- `M51–M53`, `M54.3`, `M54.4`, `M55`, `M56` ve dış post-M41 runner pack-green olarak geçmiştir.
 - Tek araç yeterli / non-dispatch işlerde paket-kopyala UI kolaylığı korunur.
-- Sonraki ana ürün hattı `M56 — KVKK Matrix + ETA/Navigation Quality` olmuştur.
+- Sonraki ana ürün hattı `M57 — Mobile Hardening` olmuştur.
 
 ## 4) Yakın rota
-- `M56 — KVKK Matrix + ETA/Navigation Quality`
 - `M57 — Mobile Hardening`
 - `M58 — Final Pilot Readiness`
 

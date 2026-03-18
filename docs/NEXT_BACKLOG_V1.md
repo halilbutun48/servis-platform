@@ -1,9 +1,9 @@
 # PERSONEL-SERVIS V1 — NEXT BACKLOG (POST-M50)
 
 Timezone: Europe/Istanbul  
-Last updated: **2026-03-16**  
-Current official green tag: **v1-m50-green**  
-Current direction: **Pre-Pilot Gap Closure → Final Pilot**
+Last updated: **2026-03-18**  
+Current official green tag: **v1-m56-kvkk-eta-quality-green-20260318**  
+Current direction: **Mobile Hardening → Final Pilot**
 
 Bu dosyanın amacı:
 - repoda **zaten bulunan capability** ile
@@ -182,7 +182,7 @@ Saha testinden önce bunlar tamamlanmalıdır.
 - Export V2
 - No-show / görev reddi cezası
 
-### 3.6 M56 — KVKK Matrix + ETA/Navigation Quality
+### 3.6 M56 — KVKK Matrix + ETA/Navigation Quality ✅
 - Rol/panel/veri KVKK matrisi
 - Mobil KVKK gereksinimi kararı
 - ETA kalitesi
@@ -245,3 +245,9 @@ Pilot sonrası ele alınabilecek işler:
 ## 7) KANONİK NEXT-ROUTE TOKEN
 
 `PRE-PILOT GAP CLOSURE`
+
+
+## 9) Latest official close
+- `M56 — KVKK Matrix + ETA/Navigation Quality` resmi green oldu.
+- Kanonik komut: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
+- Sonraki odak: `M57 — Mobile Hardening`

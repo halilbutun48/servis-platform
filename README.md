@@ -62,7 +62,7 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 
 ## Sonraki resmi rota
 - `M55 — Reports + No-show` ✅ green
-- `M56 — KVKK Matrix + ETA/Navigation Quality`
+- `M56 — KVKK Matrix + ETA/Navigation Quality` ✅ green
 - `M57 — Mobile Hardening`
 - `M58 — Final Pilot Readiness`
 
@@ -72,12 +72,9 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
 
 
-## M56.1 foundation
+## M56 — KVKK Matrix + ETA/Navigation Quality
 - KVKK matrix endpointi eklendi: `/api/kvkk/matrix`
-- ETA payload rota zinciri toplam km/süre özetini döner
-- Personel ekranlarında kalan durak / rota ETA / rota km görünürlüğü açıldı
-
-## M56.2 in-progress
-- `/shared/kvkk` ekranı ile rol bazlı KVKK görünürlüğü UI’ya taşındı
-- ETA payload artık `routeQuality`, `progressLabel`, `gpsFreshness`, `skippedStopsCount`, `reachedStopsCount`, `totalStopsCount` alanlarını döner
-- Personel ekranlarında “GPS gecikmeli / atlanan durak var / rota tamamlandı” gibi sade kalite durumu görünür oldu
+- Shared KVKK ekranı `/shared/kvkk` ile açılır
+- ETA payload kalite alanları eklendi: `routeProgressState`, `gpsFreshness`, `skippedStopsCount`, `remainingRouteKm`, `remainingRouteEtaMin`
+- Skip/reroute davranışı eklendi: `skippedStops`, `rerouteSuggested`, `rerouteReason`, `nextAction`, `lastResolvedStop`
+- Personel ekranlarında rota kalite durumu, kalan durak, kalan rota km/ETA ve atlanan durak özeti görünür

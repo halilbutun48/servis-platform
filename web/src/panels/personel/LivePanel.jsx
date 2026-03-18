@@ -97,6 +97,32 @@ function normalizeStop(s, i) {
   return { ...s, id, order, name, lat, lng, status };
 }
 
+function etaQualityTone(eta) {
+  const q = String(eta?.routeQuality || "").toUpperCase();
+  if (["OFFLINE_GPS", "STALE_GPS", "SKIP_PRESENT", "DONE_WITH_SKIPS"].includes(q)) return "WARN";
+  if (q === "DONE") return "OK";
+  return "LIVE";
+}
+
+function etaQualityText(eta) {
+  const q = String(eta?.routeQuality || "").toUpperCase();
+  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
+  if (q === "STALE_GPS") return "GPS gecikmeli";
+  if (q === "SKIP_PRESENT") return "Atlanan durak var";
+  if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
+  if (q === "DONE") return "Rota tamamlandı";
+  if (q === "NO_SHIFT") return "Aktif rota yok";
+  return String(eta?.progressLabel || "Rota ilerliyor");
+}
+
+function nextActionText(eta) {
+  const act = String(eta?.nextAction || "").toUpperCase();
+  if (act === "CONTACT_ROOM") return "Rota tamamlandı; atlanan durak için oda ile görüşün.";
+  if (act === "WAIT_GPS_UPDATE") return "GPS verisi güncellenene kadar kısa süre bekleyin.";
+  if (act === "NO_ACTIVE_ROUTE") return "Şu an aktif rota görünmüyor.";
+  return "";
+}
+
 function etaMinGuess(vehicle, stop) {
   if (!vehicle || !stop) return null;
 
@@ -115,33 +141,6 @@ function etaMinGuess(vehicle, stop) {
   }
 
   return null;
-}
-
-function etaQualityTone(eta) {
-  const q = String(eta?.routeQuality || "").toUpperCase();
-  if (q === "OFFLINE_GPS" || q === "STALE_GPS" || q === "SKIP_PRESENT" || q === "DONE_WITH_SKIPS") return "WARN";
-  if (q === "DONE") return "OK";
-  return "LIVE";
-}
-
-function etaQualityText(eta) {
-  const q = String(eta?.routeQuality || "").toUpperCase();
-  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
-  if (q === "STALE_GPS") return "GPS gecikmeli";
-  if (q === "SKIP_PRESENT") return "Atlanan durak var";
-  if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
-  if (q === "DONE") return "Rota tamamlandı";
-  if (q === "NO_SHIFT") return "Aktif rota yok";
-  return String(eta?.progressLabel || "Rota ilerliyor");
-}
-
-function skippedStopsLabel(eta) {
-  const items = Array.isArray(eta?.skippedStops) ? eta.skippedStops : [];
-  if (!items.length) return "";
-  const names = items.slice(0, 2).map((s) => s?.name).filter(Boolean);
-  const extra = Math.max(0, items.length - names.length);
-  if (!names.length) return `${items.length} atlanan durak`;
-  return extra > 0 ? `${names.join(" • ")} +${extra}` : names.join(" • ");
 }
 
 export default function PersonelLivePanel() {
@@ -282,12 +281,10 @@ export default function PersonelLivePanel() {
   const remainingRouteEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
   const remainingRouteKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
   const skippedStopsCount = Number(eta?.skippedStopsCount || 0);
+  const skippedStops = Array.isArray(eta?.skippedStops) ? eta.skippedStops : [];
   const routeQualityText = etaQualityText(eta);
   const routeQualityTone = etaQualityTone(eta);
-  const rerouteSuggested = !!eta?.rerouteSuggested;
-  const rerouteReason = String(eta?.rerouteReason || "");
-  const nextActionText = String(eta?.nextAction?.text || "");
-  const skippedLabel = skippedStopsLabel(eta);
+  const nextActionTextValue = nextActionText(eta);
 
   const recommended = useMemo(() => {
     if (!myPos || !Number.isFinite(myPos.lat) || !Number.isFinite(myPos.lng)) return null;
@@ -378,9 +375,7 @@ export default function PersonelLivePanel() {
                     <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
                     {skippedStopsCount ? <span className="muted">Atlanan durak: <b>{skippedStopsCount}</b></span> : null}
                   </div>
-                  {nextActionText ? <div className="muted">{nextActionText}</div> : null}
-                  {rerouteSuggested && rerouteReason ? <div className="muted">{rerouteReason}</div> : null}
-                  {skippedLabel ? <div className="muted">Atlananlar: {skippedLabel}</div> : null}
+                  {nextActionTextValue ? <div className="muted">{nextActionTextValue}</div> : null}
                 </>
               ) : (
                 <div className="muted">Durak bilgisi yok.</div>
@@ -458,12 +453,15 @@ export default function PersonelLivePanel() {
                   ) : null}
                 </>
               ) : (
-                <>
-                  <span className="muted">{nextActionText || "Sıradaki durak yok."}</span>
-                  {skippedLabel ? <span className="muted">Atlananlar: <b>{skippedLabel}</b></span> : null}
-                </>
+                <span className="muted">Sıradaki durak yok.</span>
               )}
             </div>
+
+            {skippedStops.length ? (
+              <div className="muted" style={{ marginTop: 8 }}>
+                Atlananlar: <b>{skippedStops.map((s) => s?.name || `Durak ${s?.order || ""}`).join(", ")}</b>
+              </div>
+            ) : null}
 
             {recommended ? (
               <div className="muted" style={{ marginTop: 8 }}>

@@ -35,12 +35,14 @@ Ana resmi green durum:
 - ✅ `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK`
 - ✅ `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
 - ✅ `M55 REPORTS + NO_SHOW PACK PASS OK`
+- ✅ `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
 - ✅ `POST-M41 EXTERNAL PACK RUNNER PASS OK`
 
 Not:
-- Resmi green çizgi artık `M55` seviyesine kadar doğrulanmıştır.
+- Resmi green çizgi artık `M56` seviyesine kadar doğrulanmıştır.
 - `M42+` pack script'leri self-only çalışır; tam M42 → M54.4 hattının kanonik komutu `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild` şeklindedir.
 - `M55` ayrı kanonik pack olarak `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform` ile doğrulanır.
+- `M56` ayrı kanonik pack olarak `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform` ile doğrulanır.
 - Bu zip içinde `.git` olmadığı için resmi tag promotion yalnızca canlı repo içinde yapılmalıdır.
 
 ## 1) Güncel aktif durum
@@ -130,7 +132,6 @@ Resmi görünürlük:
 - Koordinatlar tamam olmadan organization planı markete düşmez.
 
 ## 4) Yakın resmi rota
-- `M56 — KVKK Matrix + ETA/Navigation Quality`
 - `M57 — Mobile Hardening`
 - `M58 — Final Pilot Readiness`
 
@@ -153,7 +154,7 @@ Kalan odak artık yeni planner yazmak değil, `M56+` hattına geçişi hazırlam
 - CHECKLIST'te `[x]` yalnızca pack/check green sonrasında işaretlenir
 
 ## 7) Yeni sohbet için ilk cümle
-Repo şu an `M55`'e kadar resmi green; ana post-M41 dış runner `tools\pack_post_m41_to_m54_4.ps1` ile `M54.4`'e kadar gider, `M55` ise `tools\pack_m55_reports_no_show.ps1` ile ayrı kanonik pack olarak doğrulanır. Sonraki odak `M56 KVKK Matrix + ETA/Navigation Quality` hattıdır.
+Repo şu an `M56`'ya kadar resmi green; ana post-M41 dış runner `tools\pack_post_m41_to_m54_4.ps1` ile `M54.4`'e kadar gider, `M55` ve `M56` ayrı kanonik pack'ler ile doğrulanır. Sonraki odak `M57 Mobile Hardening` hattıdır.
 
 
 ## M55 — Reports + Gelmedi Kaydı

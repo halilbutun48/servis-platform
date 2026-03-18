@@ -68,8 +68,6 @@ async function pickShift(vehicleId, shiftId) {
   });
   if (approved && (approved.stops?.length ?? 0) > 0) return approved;
 
-  // If the shift was auto-completed (DONE) after the last stop was reached,
-  // still allow ETA queries to return an empty pending list rather than 403.
   const done = await prisma.shift.findFirst({
     where: { vehicleId, status: "DONE" },
     orderBy: [{ id: "desc" }],
@@ -81,7 +79,25 @@ async function pickShift(vehicleId, shiftId) {
 }
 
 function firstPendingStop(stops) {
-  return (stops ?? []).find((s) => s.state === "PENDING") ?? null;
+  return (stops ?? []).find((s) => String(s?.state || "").toUpperCase() === "PENDING") ?? null;
+}
+
+function lastResolvedStop(stops) {
+  const resolved = (stops ?? []).filter((s) => ["REACHED", "SKIPPED"].includes(String(s?.state || "").toUpperCase()));
+  return resolved.length ? resolved[resolved.length - 1] : null;
+}
+
+function buildSkippedStops(stops) {
+  return (stops ?? [])
+    .filter((s) => String(s?.state || "").toUpperCase() === "SKIPPED")
+    .map((s) => ({
+      id: s.id,
+      order: s.order,
+      name: s.name,
+      lat: s.lat,
+      lng: s.lng,
+      skippedAt: s.skippedAt ?? null,
+    }));
 }
 
 function buildRouteEtaStops({ last, speedKmh, remainingStops }) {
@@ -124,37 +140,6 @@ function countStopsByState(stops) {
   return out;
 }
 
-function listStopsByState(stops, wantedState) {
-  const target = String(wantedState || "").toUpperCase();
-  return (stops ?? [])
-    .filter((s) => String(s?.state || "").toUpperCase() === target)
-    .map((s) => ({
-      id: s.id,
-      name: s.name,
-      order: s.order,
-      reachedAt: s.reachedAt ?? null,
-      skippedAt: s.skippedAt ?? null,
-    }));
-}
-
-function lastResolvedStop(stops) {
-  let best = null;
-  for (const s of stops ?? []) {
-    const st = String(s?.state || "").toUpperCase();
-    if (st !== "REACHED" && st !== "SKIPPED") continue;
-    if (!best || Number(s?.order || 0) > Number(best?.order || 0)) best = s;
-  }
-  if (!best) return null;
-  return {
-    id: best.id,
-    name: best.name,
-    order: best.order,
-    state: best.state,
-    reachedAt: best.reachedAt ?? null,
-    skippedAt: best.skippedAt ?? null,
-  };
-}
-
 function deriveRouteProgress({ hasShift, counts, gpsStatus }) {
   if (!hasShift) {
     return { routeQuality: "NO_SHIFT", routeProgressState: "NO_SHIFT", progressLabel: "Aktif rota yok" };
@@ -180,50 +165,27 @@ function deriveRouteProgress({ hasShift, counts, gpsStatus }) {
   return { routeQuality: "FOUNDATION", routeProgressState: "IN_PROGRESS", progressLabel: "Rota ilerliyor" };
 }
 
-function deriveNextAction({ hasShift, counts, gpsStatus, nextStop, skippedStops, lastStop }) {
-  if (!hasShift) {
-    return { code: "NO_ACTIVE_SHIFT", text: "Aktif rota yok." };
+function deriveNextAction({ progress, nextStop, skippedStopsCount }) {
+  const state = String(progress?.routeProgressState || "").toUpperCase();
+  if (state === "NO_SHIFT") {
+    return { rerouteSuggested: false, rerouteReason: null, nextAction: "NO_ACTIVE_ROUTE" };
   }
-
-  if ((counts?.totalStopsCount ?? 0) > 0 && (counts?.pendingStopsCount ?? 0) === 0) {
-    if ((counts?.skippedStopsCount ?? 0) > 0) {
-      return {
-        code: "ROUTE_DONE_WITH_SKIPS",
-        text: "Rota tamamlandı. Atlanan duraklar için oda ile görüşün.",
-      };
-    }
-    return { code: "ROUTE_DONE", text: "Rota tamamlandı." };
+  if (state === "GPS_OFFLINE" || state === "GPS_STALE") {
+    return { rerouteSuggested: false, rerouteReason: "GPS_FRESHNESS_LOW", nextAction: "WAIT_GPS_UPDATE" };
   }
-
-  if (gpsStatus === "OFFLINE") {
-    return { code: "WAIT_GPS_OFFLINE", text: "Araç GPS verisi çok eski. Konum güncellenince rota netleşir." };
+  if (state === "DONE_WITH_SKIPS") {
+    return { rerouteSuggested: true, rerouteReason: "SKIPPED_STOP_PRESENT", nextAction: "CONTACT_ROOM" };
   }
-  if (gpsStatus === "STALE") {
-    return { code: "WAIT_GPS_STALE", text: "Araç GPS verisi gecikmeli. ETA yaklaşık gösteriliyor." };
+  if (state === "DONE") {
+    return { rerouteSuggested: false, rerouteReason: null, nextAction: "ROUTE_DONE" };
   }
-
-  if (nextStop?.name && (skippedStops?.length ?? 0) > 0) {
-    return {
-      code: "GO_NEXT_PENDING_AFTER_SKIP",
-      text: `Atlanan durak sonrası aktif hedef: ${nextStop.name}`,
-    };
+  if ((skippedStopsCount ?? 0) > 0 && nextStop) {
+    return { rerouteSuggested: true, rerouteReason: "SKIPPED_STOP_PRESENT", nextAction: "CONTINUE_TO_NEXT_PENDING" };
   }
-
-  if (nextStop?.name) {
-    return {
-      code: "GO_NEXT_PENDING",
-      text: `Sıradaki aktif durak: ${nextStop.name}`,
-    };
+  if (nextStop) {
+    return { rerouteSuggested: false, rerouteReason: null, nextAction: "CONTINUE_TO_NEXT_PENDING" };
   }
-
-  if (lastStop?.name) {
-    return {
-      code: "CHECK_LAST_COMPLETED",
-      text: `Son işlenen durak: ${lastStop.name}`,
-    };
-  }
-
-  return { code: "CHECK_ROUTE", text: "Rota bilgisi güncelleniyor." };
+  return { rerouteSuggested: false, rerouteReason: null, nextAction: "WAIT_ROUTE_UPDATE" };
 }
 
 async function computeEta(vehicleId, shiftId) {
@@ -237,24 +199,28 @@ async function computeEta(vehicleId, shiftId) {
 
   const chosenShiftId = chosen?.id ?? null;
   const allStops = chosen?.stops ?? [];
-  const remainingStops = allStops.filter((s) => s.state === "PENDING");
+  const remainingStops = allStops.filter((s) => String(s?.state || "").toUpperCase() === "PENDING");
   const stops = buildRouteEtaStops({ last, speedKmh, remainingStops });
   const nextStop = firstPendingStop(allStops);
+  const resolvedStop = lastResolvedStop(allStops);
+  const skippedStops = buildSkippedStops(allStops);
   const tail = stops.length ? stops[stops.length - 1] : null;
   const counts = countStopsByState(allStops);
-  const skippedStops = listStopsByState(allStops, "SKIPPED");
-  const lastStop = lastResolvedStop(allStops);
   const progress = deriveRouteProgress({ hasShift: !!chosenShiftId, counts, gpsStatus: status });
-  const nextAction = deriveNextAction({
-    hasShift: !!chosenShiftId,
-    counts,
-    gpsStatus: status,
-    nextStop,
-    skippedStops,
-    lastStop,
-  });
-  const rerouteSuggested = (skippedStops.length > 0) && !!nextStop;
-  const rerouteReason = rerouteSuggested ? "Atlanan durak sonrası rota bir sonraki aktif durağa göre gösteriliyor." : null;
+  const next = deriveNextAction({ progress, nextStop, skippedStopsCount: counts.skippedStopsCount });
+
+  const resolvedPayload = resolvedStop
+    ? {
+        id: resolvedStop.id,
+        name: resolvedStop.name,
+        order: resolvedStop.order,
+        state: String(resolvedStop.state || "").toUpperCase(),
+        lat: resolvedStop.lat,
+        lng: resolvedStop.lng,
+        reachedAt: resolvedStop.reachedAt ?? null,
+        skippedAt: resolvedStop.skippedAt ?? null,
+      }
+    : null;
 
   return {
     shiftId: chosenShiftId,
@@ -271,11 +237,6 @@ async function computeEta(vehicleId, shiftId) {
     remainingStopsCount: counts.pendingStopsCount,
     remainingRouteKm: tail?.remainingRouteKm ?? 0,
     remainingRouteEtaMin: tail?.remainingRouteEtaMin ?? 0,
-    lastCompletedStop: lastStop,
-    skippedStops,
-    rerouteSuggested,
-    rerouteReason,
-    nextAction,
     nextStop: nextStop
       ? {
           id: nextStop.id,
@@ -285,6 +246,12 @@ async function computeEta(vehicleId, shiftId) {
           lng: nextStop.lng,
         }
       : null,
+    lastResolvedStop: resolvedPayload,
+    lastCompletedStop: resolvedPayload,
+    skippedStops,
+    rerouteSuggested: next.rerouteSuggested,
+    rerouteReason: next.rerouteReason,
+    nextAction: next.nextAction,
     navigation: nextStop
       ? {
           lat: nextStop.lat,

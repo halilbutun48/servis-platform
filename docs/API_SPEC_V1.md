@@ -684,39 +684,37 @@ Genel notlar:
 - Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
 
 
-M56.1 FOUNDATION
+
+
+## M56 — KVKK Matrix + ETA/Navigation Quality
+## M56 Contract Marker
+- M56
+- /api/kvkk/matrix
+- /api/eta/vehicle/:id
+
 KVKK
 GET /api/kvkk/matrix
-  - version
-  - rows[] { role, panels[], dataScopes[], canView[], canWrite[], notes }
+- version
+- rows[] { role, panels[], dataScopes[], canView[], canWrite[], notes }
 
 ETA
 GET /api/eta/vehicle/:id
 Ek alanlar:
-  - etaMode
-  - routeQuality
-  - remainingStopsCount
-  - remainingRouteKm
-  - remainingRouteEtaMin
-  - nextStop
-  - navigation
-  - stops[].remainingRouteKm
-  - stops[].remainingRouteEtaMin
-
-M56.2 IN-PROGRESS
-KVKK UI
-GET /api/kvkk/summary
-GET /api/kvkk/required
-GET /api/kvkk/matrix
-UI route:
-  - /shared/kvkk
-
-ETA quality
-GET /api/eta/vehicle/:id
-Ek kalite alanlari:
-  - routeProgressState
-  - progressLabel
-  - gpsFreshness
-  - totalStopsCount
-  - reachedStopsCount
-  - skippedStopsCount
+- etaMode
+- routeQuality
+- routeProgressState
+- progressLabel
+- gpsFreshness
+- totalStopsCount
+- reachedStopsCount
+- skippedStopsCount
+- remainingStopsCount
+- remainingRouteKm
+- remainingRouteEtaMin
+- nextStop
+- navigation
+- lastResolvedStop
+- skippedStops[]
+- rerouteSuggested
+- rerouteReason
+- nextAction

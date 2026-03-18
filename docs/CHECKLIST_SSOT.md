@@ -30,6 +30,8 @@ Last updated: **2026-03-18**
 - **M51–M53 BACKFILL VERIFICATION PACK PASS OK**
 - **M54.3 DISPATCH APPROVE + REPACK PACK PASS OK**
 - **M54.4 DRIVER ROUTE DELIVERY PACK PASS OK**
+- **M55 REPORTS + NO_SHOW PACK PASS OK**
+- **M56 KVKK MATRIX + ETA QUALITY PACK PASS OK**
 - **POST-M41 EXTERNAL PACK RUNNER PASS OK**
 
 > Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. `M42+` pack script'leri self-only çalışır; tam post-M41 hattı dış runner ile koşturulur.
@@ -46,7 +48,7 @@ Last updated: **2026-03-18**
 - **Step 4.0 (M47):** KVKK / Capacity / Edge Security / Mobile Web Readiness resmi green
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
 - **Step 4.9–5.1 (M51–M54.4):** backfill verification → dispatch approve/repack → driver route delivery resmi green
-- **Active track (M56–M58):** KVKK+ETA/navigation quality → mobile hardening → final pilot readiness
+- **Active track (M57–M58):** mobile hardening → final pilot readiness
 
 ## Resmi green kutular
 - [x] `M47 — KVKK Notice / Consent Framework`
@@ -69,8 +71,8 @@ Last updated: **2026-03-18**
 - [x] `M54.1 — Dispatch Preview` M54.3 green hattı içinde fiilen doğrulanmış kabul edilir
 - [x] `M54.2 — Editable Dispatch Preview` M54.3 green hattı içinde fiilen doğrulanmış kabul edilir
 - [x] `M55 — Reports + No-show` resmi pack-green doğrulandı
-- [ ] `M56 — KVKK Matrix + ETA/Navigation Quality` sıradaki ana ürün işi
-- [ ] `M57 — Mobile Hardening` M56 sonrası güncellenecek
+- [x] `M56 — KVKK Matrix + ETA/Navigation Quality` pack: `tools\pack_m56_kvkk_eta_quality.ps1`
+- [ ] `M57 — Mobile Hardening` sıradaki ana ürün işi
 - [ ] `M58 — Final Pilot Readiness` son checklist / saha testi öncesi güncellenecek
 
 ## M45 kanıt araçları
@@ -85,3 +87,6 @@ Last updated: **2026-03-18**
 - Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
 - Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
 - Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
+
+
+M56 milestone marker: pack_m56_kvkk_eta_quality.ps1

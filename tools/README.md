@@ -68,14 +68,15 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script'leri için
 - `tools\pack_m54_3_dispatch_approve_repack.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m54_4_driver_route_delivery.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_post_m41_to_m54_4.ps1 -RepoRoot D:\servis-platform -NoBuild`
 
 ## Güncel çalışma notu
-- Resmi green çizgi `M55` seviyesine kadar uzanır.
+- Resmi green çizgi `M56` seviyesine kadar uzanır.
 - Post-M41 pack scripts self-only çalışır; tam M42 -> M54.4 hattı `tools\pack_post_m41_to_m54_4.ps1` ile dışarıdan orkestre edilir.
-- `M51–M53`, `M54.3`, `M54.4` ve `M55` artık resmi green kanıt setinin parçasıdır.
+- `M51–M53`, `M54.3`, `M54.4`, `M55` ve `M56` artık resmi green kanıt setinin parçasıdır.
 - Tek araç yeterli / non-dispatch işlerde paket-kopyala UI kolaylığı korunur.
-- Sıradaki ana ürün işi `M56 — KVKK Matrix + ETA/Navigation Quality` olacaktır.
+- Sıradaki ana ürün işi `M57 — Mobile Hardening` olacaktır.
 - SSOT seti değişikliklerde birlikte güncellenmelidir.
 
 
@@ -84,3 +85,5 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script'leri için
 - Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
 - Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
 
+
+- Geçici `_m*` overlay klasörleri repo içine commitlenmez.
