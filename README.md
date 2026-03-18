@@ -64,3 +64,9 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M55 — Reports + No-show`
 - `M56 — KVKK Matrix + Mobile Hardening`
 - `M57 — Final Pilot Readiness`
+
+
+## M55 — Reports + Gelmedi Kaydı
+- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
+- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
+- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.

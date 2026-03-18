@@ -114,6 +114,16 @@ enum NotificationScope {
   USER
 }
 
+enum PenaltyType {
+  NO_SHOW
+}
+
+enum PenaltyStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 // ✅ UI/WS status gate (notif dedupe/transition için)
 enum UiGpsStatus {
   LIVE
@@ -127,6 +137,7 @@ enum GeoStatus {
   NEEDS_REVIEW
   FAILED
 }
+
 // ✅ M17
 enum AgreementStatus {
   REQUESTED
@@ -137,7 +148,6 @@ enum AgreementStatus {
   CANCELLED
   REJECTED
 }
-
 
 // ✅ M57: agreement süre uzatma pazarlığı (Company teklif → Room karşı/kabul)
 enum AgreementExtendStatus {
@@ -159,7 +169,6 @@ enum RoutePattern {
   LOOP
 }
 
-
 // ✅ M51: shift süre uzatma akışı (Company talep → Room karar)
 enum ShiftExtendDecision {
   PENDING
@@ -176,44 +185,41 @@ enum CompanyKind {
 }
 
 model Company {
-  kind      CompanyKind @default(COMPANY)
-  id        Int      @id @default(autoincrement())
-  name      String
-  status    String   @default("ACTIVE")
-  regionId  Int?
-  region    Region? @relation(fields: [regionId], references: [id])
-  district  String?   // ilçe (opsiyonel)
+  kind         CompanyKind @default(COMPANY)
+  id           Int         @id @default(autoincrement())
+  name         String
+  status       String      @default("ACTIVE")
+  regionId     Int?
+  region       Region?     @relation(fields: [regionId], references: [id])
+  district     String? // ilçe (opsiyonel)
   // ✅ M36.4: profil alanları
-  legalName    String?  // resmi ünvan (opsiyonel)
+  legalName    String? // resmi ünvan (opsiyonel)
   taxNo        String?
   taxOffice    String?
-  addressLine  String?  // adres (detay)
+  addressLine  String? // adres (detay)
   contactName  String?
   contactPhone String?
   contactEmail String?
   notes        String?
 
-  hubLat    Float?   // company worksite hub (optional)
-  hubLng    Float?   // company worksite hub (optional)
+  hubLat    Float? // company worksite hub (optional)
+  hubLng    Float? // company worksite hub (optional)
   createdAt DateTime @default(now())
 
-  users         User[]
-  shifts        Shift[]
-  personels     Personel[]
-  notifications Notification[]
-  agreements    Agreement[]
-  parentInvites ParentInvite[]
-  invites       Invite[]
+  users             User[]
+  shifts            Shift[]
+  personels         Personel[]
+  notifications     Notification[]
+  agreements        Agreement[]
+  parentInvites     ParentInvite[]
+  invites           Invite[]
   organizationPlans OrganizationPlan[]
+
   @@index([regionId, kind])
-
-    @@index([kind])
-
-  
+  @@index([kind])
   @@index([regionId])
   @@index([district])
 }
-
 
 enum OrganizationPlanStatus {
   DRAFT
@@ -247,19 +253,19 @@ model OrganizationPlan {
 }
 
 model OrganizationStop {
-  id             Int       @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   planId         Int
   name           String
   address        String?
   lat            Float
   lng            Float
-  order          Int       @default(0)
-  passengerCount Int       @default(1)
+  order          Int      @default(0)
+  passengerCount Int      @default(1)
   windowStartMin Int?
   windowEndMin   Int?
   note           String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   plan OrganizationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
@@ -272,14 +278,14 @@ enum PersonelKind {
 }
 
 model Room {
-  id        Int      @id @default(autoincrement())
-  name      String
-  status    String   @default("ACTIVE")
-  regionId  Int?
-  region    Region? @relation(fields: [regionId], references: [id])
-  district  String?   // ilçe (opsiyonel)
+  id           Int     @id @default(autoincrement())
+  name         String
+  status       String  @default("ACTIVE")
+  regionId     Int?
+  region       Region? @relation(fields: [regionId], references: [id])
+  district     String? // ilçe (opsiyonel)
   // ✅ M36.4: profil alanları
-  addressLine  String?  // adres (detay)
+  addressLine  String? // adres (detay)
   contactName  String?
   contactPhone String?
   contactEmail String?
@@ -300,7 +306,7 @@ model Room {
   invites        Invite[]
 
   // ✅ M24: offers inbox (Room ↔ ShiftOffer)
-  shiftOffers    ShiftOffer[] @relation("RoomShiftOffers")
+  shiftOffers ShiftOffer[] @relation("RoomShiftOffers")
 
   @@index([regionId])
   @@index([district])
@@ -317,14 +323,14 @@ model Region {
 
 // Auth entity (login) — role taşıyıcı
 model User {
-notifications Notification[]
+  notifications Notification[]
   consents      Consent[]
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String
-  role         Role
-  fullName     String
-  phone        String?
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  passwordHash  String
+  role          Role
+  fullName      String
+  phone         String?
 
   // ✅ M41: device binding (primarily for DRIVER)
   deviceId         String?
@@ -332,11 +338,11 @@ notifications Notification[]
   deviceLastSeenAt DateTime?
 
   // ✅ M41: refresh sessions (rotating)
-  refreshSessions  RefreshSession[]
+  refreshSessions RefreshSession[]
 
   // ✅ M46.9: session invalidation (access token sv claim)
-  sessionVersion   Int      @default(1)
-  identities       UserIdentity[]
+  sessionVersion Int            @default(1)
+  identities     UserIdentity[]
 
   // Step 1.5: TOTP step-up (ROOM + SUPER_ADMIN)
   totpSecretBase32        String?
@@ -344,7 +350,7 @@ notifications Notification[]
   totpEnabledAt           DateTime?
   totpLastVerifiedAt      DateTime?
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   // Scope bindings
   companyId Int?
@@ -353,19 +359,19 @@ notifications Notification[]
   room      Room?    @relation(fields: [roomId], references: [id])
 
   // Optional profile links
-  driver   Driver?
-  personel Personel?
+  driver                 Driver?
+  personel               Personel?
   // ✅ M16.1: import trail (createdBy)
-  shiftImportsCreated ShiftImport[] @relation("ShiftImportCreatedBy")
+  shiftImportsCreated    ShiftImport[]   @relation("ShiftImportCreatedBy")
+  createdDriverPenalties DriverPenalty[] @relation("DriverPenaltyCreatedBy")
+  parentChildren         ParentChild[]   @relation("ParentUserChildren")
+  parentInvitesCreated   ParentInvite[]  @relation("ParentInviteCreatedBy")
+  parentInvitesConsumed  ParentInvite[]  @relation("ParentInviteConsumedBy")
+  invitesCreated         Invite[]        @relation("InviteCreatedBy")
+  invitesConsumed        Invite[]        @relation("InviteConsumedBy")
 
   @@index([companyId])
   @@index([roomId])
-  parentChildren ParentChild[] @relation("ParentUserChildren")
-  parentInvitesCreated  ParentInvite[] @relation("ParentInviteCreatedBy")
-  parentInvitesConsumed ParentInvite[] @relation("ParentInviteConsumedBy")
-  invitesCreated  Invite[] @relation("InviteCreatedBy")
-  invitesConsumed Invite[] @relation("InviteConsumedBy")
-
 }
 
 model Vehicle {
@@ -386,7 +392,7 @@ model Vehicle {
   model     String?
   modelYear Int?
   color     String?
-  vin       String? @unique
+  vin       String?      @unique
   note      String?
 
   // Resmi tarihler
@@ -397,7 +403,7 @@ model Vehicle {
   // Bakım (tarih + km)
   lastServiceAt       DateTime?
   lastServiceKm       Int?
-  serviceIntervalKm   Int  @default(15000)
+  serviceIntervalKm   Int       @default(15000)
   serviceIntervalDays Int?
 
   // Odometer
@@ -414,32 +420,32 @@ model Vehicle {
 
   createdAt DateTime @default(now())
 
-  room            Room             @relation(fields: [roomId], references: [id])
-  driver          Driver?          @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  gpsLast         GpsLast?
-  gpsState        VehicleGpsState? // ✅ UI status gate state
-  gpsDevices      GpsDevice[]
-  gpsPoints       GpsPoint[]
+  room              Room               @relation(fields: [roomId], references: [id])
+  driver            Driver?            @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  gpsLast           GpsLast?
+  gpsState          VehicleGpsState? // ✅ UI status gate state
+  gpsDevices        GpsDevice[]
+  gpsPoints         GpsPoint[]
   // ✅ M19: learned route samples
   routeLearnSamples RouteLearnSample[]
-  shifts          Shift[]
-  notifications   Notification[]
+  shifts            Shift[]
+  notifications     Notification[]
 
   @@index([roomId])
   @@index([roomId, archivedAt])
 }
 
 model Driver {
-  id             Int      @id @default(autoincrement())
+  id             Int         @id @default(autoincrement())
   roomId         Int
   fullName       String
   phone          String
   deviceInfo     String
-  driverCode     String?  @unique
-  pinTemporary   Boolean  @default(true)
+  driverCode     String?     @unique
+  pinTemporary   Boolean     @default(true)
   pinUpdatedAt   DateTime?
   backupDriverId Int?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime    @default(now())
   agreements     Agreement[]
 
   room Room @relation(fields: [roomId], references: [id])
@@ -457,6 +463,7 @@ model Driver {
   shifts        Shift[]
   notifications Notification[]
   invites       Invite[]
+  penalties     DriverPenalty[]
 
   @@index([roomId])
 }
@@ -502,14 +509,13 @@ model Shift {
   roomOfferDecisionNote String?
   roomOfferDecisionAt   DateTime?
 
-
-// ✅ M51: süre uzatma (Company → Room talep, Room karar)
-extendRequestedEndAt DateTime?
-extendRequestedAt    DateTime?
-extendDecision       ShiftExtendDecision @default(PENDING)
-extendNoteCompany    String?
-extendNoteRoom       String?
-extendDecisionAt     DateTime?
+  // ✅ M51: süre uzatma (Company → Room talep, Room karar)
+  extendRequestedEndAt DateTime?
+  extendRequestedAt    DateTime?
+  extendDecision       ShiftExtendDecision @default(PENDING)
+  extendNoteCompany    String?
+  extendNoteRoom       String?
+  extendDecisionAt     DateTime?
 
   company Company  @relation(fields: [companyId], references: [id])
   room    Room?    @relation(fields: [roomId], references: [id])
@@ -540,32 +546,51 @@ extendDecisionAt     DateTime?
   organizationPlan   OrganizationPlan? @relation(fields: [organizationPlanId], references: [id], onDelete: SetNull)
 
   // ✅ M19: learned route sample (1:1, generated after shift complete)
-  routeLearnSample RouteLearnSample?
+  routeLearnSample   RouteLearnSample?
+  penalties          DriverPenalty[]
+  checkinEvents      CheckinEvent[]
+  passengerLiveLinks PassengerLiveLink[]
 
+  @@unique([agreementId, startAt])
   @@index([companyId])
   @@index([roomId])
   @@index([vehicleId])
   @@index([driverId])
   @@index([splitRootId])
   @@index([splitGroupKey])
-
   @@index([companyOfferVehicleId])
   @@index([companyOfferAmount])
-
   @@index([roomOfferDecision])
   @@index([roomOfferVehicleId])
   @@index([roomOfferAmount])
   @@index([extendDecision])
   @@index([agreementId])
   @@index([organizationPlanId])
-  @@unique([agreementId, startAt])
-  checkinEvents CheckinEvent[]
-  passengerLiveLinks PassengerLiveLink[]
 }
 
+model DriverPenalty {
+  id              Int           @id @default(autoincrement())
+  driverId        Int
+  shiftId         Int?
+  type            PenaltyType
+  status          PenaltyStatus @default(ACTIVE)
+  reason          String?
+  startsAt        DateTime      @default(now())
+  endsAt          DateTime
+  createdByUserId Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
+  driver    Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  shift     Shift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  createdBy User   @relation("DriverPenaltyCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
 
-
+  @@index([driverId])
+  @@index([shiftId])
+  @@index([status])
+  @@index([type])
+  @@index([endsAt])
+}
 
 model PassengerLiveLink {
   id           Int       @id @default(autoincrement())
@@ -587,10 +612,10 @@ model PassengerLiveLink {
 }
 
 model ShiftOffer {
-  id        Int              @id @default(autoincrement())
-  shiftId   Int
-  roomId    Int
-  status    ShiftOfferStatus @default(OPEN)
+  id      Int              @id @default(autoincrement())
+  shiftId Int
+  roomId  Int
+  status  ShiftOfferStatus @default(OPEN)
 
   // Company -> Room initial offer
   amountCompany Int?
@@ -614,7 +639,7 @@ model ShiftOffer {
 
 // ✅ M17
 model Agreement {
-  id        Int             @id @default(autoincrement())
+  id        Int @id @default(autoincrement())
   companyId Int
   roomId    Int
 
@@ -644,7 +669,7 @@ model Agreement {
 
   // ✅ M57: agreement süre uzatma pazarlığı
   extendStatus           AgreementExtendStatus @default(NONE)
-  extendRequestedEndDate DateTime? @db.Date
+  extendRequestedEndDate DateTime?             @db.Date
   extendRequestedAt      DateTime?
   extendOfferAmount      Int?
   extendOfferNote        String?
@@ -672,18 +697,18 @@ model Agreement {
 }
 
 model Stop {
-  id     Int  @id @default(autoincrement())
+  id      Int      @id @default(autoincrement())
   shiftId Int
-  name   String
-  lat    Float
-  lng    Float
-  order  Int
-  type   StopType
+  name    String
+  lat     Float
+  lng     Float
+  order   Int
+  type    StopType
 
   state     StopState @default(PENDING)
   reachedAt DateTime?
   skippedAt DateTime?
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime  @updatedAt
 
   shift Shift @relation(fields: [shiftId], references: [id])
 
@@ -701,7 +726,7 @@ model RouteTemplate {
   status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
 
-  room  Room               @relation(fields: [roomId], references: [id])
+  room  Room                @relation(fields: [roomId], references: [id])
   stops RouteTemplateStop[]
 
   @@index([roomId])
@@ -724,10 +749,10 @@ model RouteTemplateStop {
 
 // ✅ M16.1: Personel (geocode cache + optional lat/lng)
 model Personel {
-  id        Int      @id @default(autoincrement())
+  id        Int          @id @default(autoincrement())
   companyId Int
   kind      PersonelKind @default(PERSONEL)
-  userId    Int?     @unique
+  userId    Int?         @unique
 
   // Master profile
   fullName    String
@@ -754,21 +779,19 @@ model Personel {
   shiftImportRows ShiftImportRow[]
   shiftLinks      ShiftPersonel[]
   assignments     StopAssignment[]
-  @@index([companyId, kind])
+  parentLinks     ParentChild[]    @relation("ParentChildPersonel")
+  parentInvites   ParentInvite[]   @relation("ParentInviteChild")
 
-  
-  @@index([companyId])
-  @@unique([companyId, phone])
-  parentLinks ParentChild[] @relation("ParentChildPersonel")
-  parentInvites ParentInvite[] @relation("ParentInviteChild")
-
-  credentials PersonelCredential[]
-  checkinEvents CheckinEvent[]
+  credentials        PersonelCredential[]
+  checkinEvents      CheckinEvent[]
   passengerLiveLinks PassengerLiveLink[]
-  invites Invite[] @relation("InvitePersonel")
-  childInvites Invite[] @relation("InviteChildPersonel")
-}
+  invites            Invite[]             @relation("InvitePersonel")
+  childInvites       Invite[]             @relation("InviteChildPersonel")
 
+  @@unique([companyId, phone])
+  @@index([companyId, kind])
+  @@index([companyId])
+}
 
 model ShiftPersonel {
   id         Int      @id @default(autoincrement())
@@ -787,7 +810,7 @@ model ShiftPersonel {
 
 model ShiftImport {
   id              Int      @id @default(autoincrement())
-  shiftId          Int
+  shiftId         Int
   createdByUserId Int?
   fileName        String?
   createdAt       DateTime @default(now())
@@ -801,7 +824,7 @@ model ShiftImport {
 }
 
 model ShiftImportRow {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   importId   Int
   rowNo      Int
   rawJson    Json?
@@ -854,7 +877,6 @@ model PickupRequest {
   @@index([personelId])
 }
 
-
 model GpsDevice {
   id            Int             @id @default(autoincrement())
   vehicleId     Int
@@ -876,7 +898,7 @@ model GpsDevice {
 }
 
 model GpsLast {
-  vehicleId Int @id
+  vehicleId Int           @id
   lat       Float
   lng       Float
   speed     Float?
@@ -888,9 +910,9 @@ model GpsLast {
 
 // ✅ notif dedupe/transition gate için UI status state’i
 model VehicleGpsState {
-  vehicleId     Int        @id
+  vehicleId     Int         @id
   lastUiStatus  UiGpsStatus
-  lastChangedAt DateTime   @default(now())
+  lastChangedAt DateTime    @default(now())
   seenLiveAt    DateTime?
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
@@ -927,14 +949,14 @@ model RouteLearnSample {
   shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
-  @@index([routeKey, createdAt])
   @@unique([shiftId])
+  @@index([routeKey, createdAt])
   @@index([vehicleId, startAt])
 }
 
 model RouteLearned {
   routeKey           String   @id
-  polylineCanonical  String   // JSON string: [{lat,lng}...]
+  polylineCanonical  String // JSON string: [{lat,lng}...]
   distanceKmLearned  Float
   durationMinLearned Int
   sampleCount        Int
@@ -944,25 +966,25 @@ model RouteLearned {
 // Notification: scope bazlı (ROOM/COMPANY/DRIVER)
 // payloadJson: Json tipinde serbest içerik
 model Notification {
-  id          Int              @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   type        String
   scope       NotificationScope
   payloadJson Json
-  createdAt   DateTime         @default(now())
-  dedupeKey   String?          @unique
+  createdAt   DateTime          @default(now())
+  dedupeKey   String?           @unique
 
   // optional targets
   companyId Int?
   roomId    Int?
   driverId  Int?
-  userId   Int?
+  userId    Int?
   vehicleId Int?
   shiftId   Int?
 
   company Company? @relation(fields: [companyId], references: [id])
   room    Room?    @relation(fields: [roomId], references: [id])
   driver  Driver?  @relation(fields: [driverId], references: [id])
-  user    User?   @relation(fields: [userId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id])
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
   shift   Shift?   @relation(fields: [shiftId], references: [id])
 
@@ -974,13 +996,13 @@ model Notification {
 }
 
 model ShiftProgress {
-  id               Int      @id @default(autoincrement())
-  shiftId          Int      @unique
-  lastReachedOrder Int      @default(0)
+  id               Int       @id @default(autoincrement())
+  shiftId          Int       @unique
+  lastReachedOrder Int       @default(0)
   startedAt        DateTime?
   pausedAt         DateTime?
   completedAt      DateTime?
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime  @updatedAt
 
   shift Shift @relation(fields: [shiftId], references: [id])
 }
@@ -1022,15 +1044,16 @@ model AuditLog {
   @@index([actorUserId, createdAt])
   @@index([entity, entityId])
 }
+
 model UserIdentity {
-  id             Int              @id @default(autoincrement())
-  userId         Int
-  provider       IdentityProvider
-  providerSub    String
-  email          String?
+  id              Int              @id @default(autoincrement())
+  userId          Int
+  provider        IdentityProvider
+  providerSub     String
+  email           String?
   emailVerifiedAt DateTime?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1059,13 +1082,13 @@ model Invite {
   consumedByUserId Int?
   createdAt        DateTime   @default(now())
 
-  company      Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  room         Room?    @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  personel     Personel? @relation("InvitePersonel", fields: [personelId], references: [id], onDelete: SetNull)
+  company       Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room          Room?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  personel      Personel? @relation("InvitePersonel", fields: [personelId], references: [id], onDelete: SetNull)
   childPersonel Personel? @relation("InviteChildPersonel", fields: [childPersonelId], references: [id], onDelete: SetNull)
-  driver       Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  createdBy    User?    @relation("InviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  consumedBy   User?    @relation("InviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
+  driver        Driver?   @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  createdBy     User?     @relation("InviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  consumedBy    User?     @relation("InviteConsumedBy", fields: [consumedByUserId], references: [id], onDelete: SetNull)
 
   @@index([email, createdAt])
   @@index([companyId, createdAt])
@@ -1091,17 +1114,17 @@ model ParentChild {
 }
 
 model Consent {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   userId     Int
   role       Role?
   docKey     String
   docVersion String
-  acceptedAt DateTime @default(now())
+  acceptedAt DateTime  @default(now())
   revokedAt  DateTime?
   ip         String?
   userAgent  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1119,14 +1142,14 @@ model RefreshSession {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // sha256(refreshTokenRaw)
-  tokenHash String  @unique
+  tokenHash String @unique
 
   deviceId  String?
   expiresAt DateTime
   revokedAt DateTime?
 
   replacedById Int?
-  replacedBy   RefreshSession? @relation("RefreshSessionRotation", fields: [replacedById], references: [id])
+  replacedBy   RefreshSession?  @relation("RefreshSessionRotation", fields: [replacedById], references: [id])
   replacedFrom RefreshSession[] @relation("RefreshSessionRotation")
 
   ip        String?
@@ -1176,7 +1199,7 @@ model PersonelCredential {
 
 model CheckinEvent {
   id         Int              @id @default(autoincrement())
-  shiftId     Int
+  shiftId    Int
   personelId Int
   eventType  CheckinEventType
   source     CheckinSource
@@ -1184,14 +1207,13 @@ model CheckinEvent {
   deviceId   String?
   meta       Json?
 
-  shift   Shift   @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   personel Personel @relation(fields: [personelId], references: [id], onDelete: Cascade)
 
   @@index([shiftId, at])
   @@index([personelId, at])
   @@index([shiftId, personelId, eventType, at])
 }
-
 
 model ParentInvite {
   id               Int       @id @default(autoincrement())

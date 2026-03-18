@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M48 DRIVER MOBILE FOUNDATION PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m47_4_mobile_readiness_web_pass.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm47.4 pack failed' }
 
 Write-Host ''
 Write-StatusLine '=== M48 Runtime Check ==='

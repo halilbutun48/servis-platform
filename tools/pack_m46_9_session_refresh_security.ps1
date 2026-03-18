@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M46.9 SESSION & REFRESH SECURITY PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m46_8_driver_access_hardening.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm46.8 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'

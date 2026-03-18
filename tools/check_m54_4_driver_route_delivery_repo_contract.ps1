@@ -13,6 +13,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host "INFO Checking M54.4 files"
 @(
@@ -51,6 +55,8 @@ Write-Host "INFO Checking runtime + docs"
 MustContainText $runtime '/api/driver/shifts/${shiftId}/route' "runtime checks explicit shift route"
 MustContainText $runtime "/api/driver/route/active" "runtime checks active route"
 MustContainText $pack "m54_4_driver_route_delivery_check.js" "pack runs m54.4 runtime script"
+MustNotContainText $pack "tools/pack.ps1" "pack is self-only and does not run base M41"
+MustNotContainText $pack "pack_m54_3_dispatch_approve_repack.ps1" "pack is self-only and does not chain m54.3"
 MustContainText $runbook "child shift" "runbook explains child shift focus"
 MustContainText $runbook "Today -> Route" "runbook explains deep link"
 MustContainText $runbook "GET /api/driver/shifts/:shiftId/route" "runbook documents explicit route endpoint"

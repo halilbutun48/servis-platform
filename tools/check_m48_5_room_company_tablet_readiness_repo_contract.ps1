@@ -44,6 +44,10 @@ function MustContainAny([string]$txt,[string[]]$needles,[string]$label){
   }
   throw "FAIL $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ((Canon $txt).Contains((Canon $needle))) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 function MustExplainNoNativeTabletYet([string]$txt,[string]$label){
   $canonTxt = Canon $txt
   $ok = $false
@@ -95,7 +99,7 @@ MustContainText $css '@media (min-width: 768px) and (max-width: 1180px)' 'css in
 MustContainText $css '.tabletQuickGrid' 'css includes tablet quick grid'
 
 Write-Host 'INFO Checking pack + runbook'
-MustContainText $pack 'pack_m48_driver_mobile_foundation.ps1' 'pack chains m48 first'
+MustNotContainText $pack 'pack_m48_driver_mobile_foundation.ps1' 'pack is self-only and does not chain m48'
 MustContainText $pack 'm48_5_room_company_tablet_readiness_check.js' 'pack runs m48.5 static check'
 MustContainAny $runbook @(
   'aynı web uygulaması tablet kullanımında optimize edilir',

@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M46.8 DRIVER ACCESS HARDENING PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m46_7_driver_code_login_rehber_first.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm46.7 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'

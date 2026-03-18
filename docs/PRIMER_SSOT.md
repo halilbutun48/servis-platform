@@ -151,3 +151,9 @@ Kalan odak artık yeni planner yazmak değil, `M55+` hattına geçişi hazırlam
 
 ## 7) Yeni sohbet için ilk cümle
 Repo şu an `M54.4`'e kadar resmi green; post-M41 pack script'leri self-only, tam hat `tools\pack_post_m41_to_m54_4.ps1` ile dışarıdan koşturuluyor. Sonraki odak `M55 Reports + No-show` hattına geçiştir.
+
+
+## M55 — Reports + Gelmedi Kaydı
+- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
+- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
+- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.

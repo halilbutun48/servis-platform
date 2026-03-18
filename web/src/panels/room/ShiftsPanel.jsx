@@ -866,7 +866,8 @@ const offersByShiftId = useMemo(() => {
         return changed ? next : prev;
       });
     } catch (e) {
-      setErr(String(e?.message || e));
+      const ne = normalizeErr(e);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
     }
   }
 
@@ -1567,7 +1568,7 @@ const offersByShiftId = useMemo(() => {
           },
         }));
       }
-      setErr(ne.message);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
     } finally {
       setBusy(false);
     }

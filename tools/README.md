@@ -76,3 +76,12 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script'leri için
 - Tek araç yeterli / non-dispatch işlerde paket-kopyala UI kolaylığı korunur.
 - Sıradaki ana ürün işi `M55 — Reports + No-show` olacaktır.
 - SSOT seti değişikliklerde birlikte güncellenmelidir.
+
+
+## M55 — Reports + Gelmedi Kaydı
+- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
+- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
+- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.
+
+- `tools\pack_m55_reports_no_show.ps1`
+- `tools\check_m55_reports_no_show_repo_contract.ps1`

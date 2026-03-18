@@ -26,6 +26,8 @@ import { liveRouter } from "./routes/live.js";
 import { parentRouter } from "./routes/parent.js";
 import { kvkkRouter } from "./routes/kvkk.js";
 import logsRouter from "./routes/logs.js";
+import reportsRouter from "./routes/reports.js";
+import penaltiesRouter from "./routes/penalties.js";
 
 import availabilityRoutes from "./routes/availability.js";
 
@@ -388,6 +390,8 @@ app.use("/api/me", meRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/kvkk", kvkkRouter());
 app.use("/api/logs", logsRouter());
+app.use("/api/reports", reportsRouter());
+app.use("/api/penalties", penaltiesRouter());
 app.use("/api/eta", etaRouter);
 app.use("/api/geocode", geocodeRouter());
 app.use("/api/company/hub", companyHubRouter());

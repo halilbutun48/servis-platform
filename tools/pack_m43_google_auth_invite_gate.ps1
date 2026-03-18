@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== M43 GOOGLE AUTH + INVITE GATE PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack_step1_totp_stepup.ps1") -RepoRoot $RepoRoot
-if (-not $?) { throw "step1 totp pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

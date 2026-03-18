@@ -1,9 +1,8 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 
-Write-Host '=== M49 MOBILE BETA HARDENING PACK PASS OK ==='
-& (Join-Path $PSScriptRoot 'pack_m49_mobile_beta_hardening.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm49 pack failed' }
+Write-Host ''
+Write-Host '=== M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK ==='
 
 Write-Host ''
 Write-Host '=== M49.1 Runtime Check ==='

@@ -74,3 +74,9 @@ Ek araçlar:
 - M45 tools: `tools\backup_create_m45.ps1`, `tools\backup_restore_m45.ps1`
 
 
+
+
+## M55 — Reports + Gelmedi Kaydı
+- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
+- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
+- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.

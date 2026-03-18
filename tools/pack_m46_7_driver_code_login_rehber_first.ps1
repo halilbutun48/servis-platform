@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ''
 Write-StatusLine '=== M46.7 DRIVER CODE LOGIN + REHBER FIRST PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m46_6_d4_simple_role_mode.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm46.6-d4 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'

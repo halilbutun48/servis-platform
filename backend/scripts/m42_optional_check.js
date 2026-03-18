@@ -10,21 +10,38 @@ import {
   kvkkAccept,
 } from "./_harness.js";
 
-async function pickSeededVehicleId(roomToken) {
-  const vlist = await reqJson("GET", "/api/vehicles", { token: roomToken });
-  must("vehicle list ok", vlist.ok);
-  const items = vlist.json?.items ?? vlist.json ?? [];
-  const vehicleId = Number(items?.[0]?.id || 0);
-  must("vehicleId present", vehicleId > 0);
+async function createIsolatedVehicle(roomToken, uniq) {
+  const r = await reqJson("POST", "/api/vehicles", {
+    token: roomToken,
+    body: { plate: `M42-${uniq}`, capacity: 16, speedLimitKmh: 90 },
+  });
+  must("isolated vehicle create ok", r.ok);
+  const vehicleId = Number(r.json?.id || r.json?.vehicle?.id || 0);
+  must("isolated vehicleId present", vehicleId > 0);
   return vehicleId;
 }
 
-async function getDriverIdFromMe(driverToken) {
-  const me = await reqJson("GET", "/api/me", { token: driverToken });
-  must("driver /api/me ok", me.ok);
-  const driverId = Number(me.json?.driverId || 0);
-  must("driverId present on /api/me", driverId > 0);
-  return driverId;
+async function createIsolatedDriver(roomToken, uniq) {
+  const r = await reqJson("POST", "/api/drivers", {
+    token: roomToken,
+    body: { fullName: `M42 Driver ${uniq}`, phone: `90538${uniq}11`, deviceInfo: "m42-check-device" },
+  });
+  must("isolated driver create ok", r.ok);
+  const driverId = Number(r.json?.id || r.json?.driver?.id || 0);
+  const driverCode = String(r.json?.issuedCredentials?.driverCode || "");
+  const temporaryPin = String(r.json?.issuedCredentials?.temporaryPin || "");
+  must("isolated driverId present", driverId > 0);
+  must("isolated driver code issued", driverCode.length >= 6);
+  must("isolated temporary pin issued", temporaryPin.length >= 4);
+  return { driverId, driverCode, temporaryPin };
+}
+
+async function loginIsolatedDriver(driverCode, temporaryPin) {
+  const loginResp = await reqJson("POST", "/api/auth/login", {
+    body: { identifier: driverCode, password: temporaryPin },
+  });
+  must("isolated driver login ok", loginResp.ok && !!loginResp.json?.token);
+  return String(loginResp.json?.token || "");
 }
 
 async function upsertHarnessPersonel(companyToken, shiftId) {
@@ -65,13 +82,16 @@ async function main() {
   step("login seeded users");
   const companyToken = await loginFirst("company");
   const roomToken = await loginFirst("room");
-  const driverToken = await loginFirst("driver");
 
   const { companyId, roomId } = await getRoomCompanyIds(roomToken, companyToken);
-  const vehicleId = await pickSeededVehicleId(roomToken);
-  const driverId = await getDriverIdFromMe(driverToken);
+  const uniq = String(Date.now()).slice(-6);
+  const vehicleId = await createIsolatedVehicle(roomToken, uniq);
+  const isolatedDriver = await createIsolatedDriver(roomToken, uniq);
+  const driverId = isolatedDriver.driverId;
+  const driverToken = await loginIsolatedDriver(isolatedDriver.driverCode, isolatedDriver.temporaryPin);
+  must("isolated driver token present", driverToken.length > 20);
 
-  step("create ACTIVE harness shift bound to seeded driver user");
+  step("create ACTIVE harness shift bound to isolated driver user");
   const harness = await ensureActiveShift({
     companyToken,
     roomToken,

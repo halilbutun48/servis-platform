@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M49 MOBILE BETA HARDENING PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m48_5_room_company_tablet_readiness.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm48.5 pack failed' }
 
 Write-Host ''
 Write-StatusLine '=== M49 Runtime Check ==='

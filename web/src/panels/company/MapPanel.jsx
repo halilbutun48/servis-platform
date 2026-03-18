@@ -411,30 +411,38 @@ export default function CompanyMapPanel() {
                   key={`${v.id}:${s.id}`}
                   onClick={() => setSelectedVehicleId(v.id)}
                   className={isSel ? "navItem active" : "navItem"}
-                  style={{ justifyContent: "space-between", gap: 10 }}
+                  style={{
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: 12,
+                    minHeight: 96,
+                    overflow: "hidden",
+                    textAlign: "left",
+                  }}
                   title={shiftTitle(s)}
                 >
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
-                    <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 0, flex: 1 }}>
+                    <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
                       <b>{v?.plate || "-"}</b>
                       <span className="pill" data-status={c.pillKey} title={`GPS: ${c.ui}`}>{c.ui}</span>
                       <span className="pill" data-status={normShiftStatus(s?.status)}>{normShiftStatus(s?.status)}</span>
                       {!gpsOk ? <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>NO GPS</span> : null}
                     </span>
 
-                    <span className="muted" style={{ fontSize: 12 }}>
+                    <span className="muted" style={{ fontSize: 12, width: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       Sürücü: {s?.driver?.fullName || v?.driver?.fullName || "-"}
                       {v?.room?.name ? ` • ${v.room.name}` : ""}
                     </span>
 
-                    <span className="muted" style={{ fontSize: 12 }}>
+                    <span className="muted" style={{ fontSize: 12, width: "100%", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
                       İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
                       {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
                       {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${c.nextEtaMin}dk` : ""}
                     </span>
                   </span>
 
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flex: "0 0 118px", maxWidth: 118 }}>
                     <span className="muted" style={{ fontSize: 12 }}>Son GPS: {gpsAgeLabel(v)}</span>
                     <span className="muted" style={{ fontSize: 12 }}>Başlangıç: {fmtTR(s?.startAt)}</span>
                   </span>

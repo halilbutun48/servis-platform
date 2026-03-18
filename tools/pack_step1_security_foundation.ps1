@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== STEP 1 SECURITY FOUNDATION PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack.ps1") -To 41
-if (-not $?) { throw "base M41 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

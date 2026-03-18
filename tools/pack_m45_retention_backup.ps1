@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== M45 RETENTION + BACKUP PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack_m44_telematics.ps1") -RepoRoot $RepoRoot
-if (-not $?) { throw "m44 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

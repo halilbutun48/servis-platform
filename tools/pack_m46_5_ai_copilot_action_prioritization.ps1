@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack_m46_4_ai_copilot_decision_consistency.ps1") -RepoRoot $RepoRoot
-if (-not $?) { throw "m46.4 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

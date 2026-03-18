@@ -10,6 +10,7 @@ import { authRequired, requireRole } from "../../auth/middleware.js";
 import { validateWithZod } from "../../z.js";
 import { audit } from "../../audit.js";
 import { createNotification } from "../../notifications/service.js";
+import { assertDriverAssignable } from "../../lib/penalties.js";
 
 import {
   approveShiftSchema,
@@ -694,6 +695,11 @@ export function attachShiftRoomRoutes(r, io) {
         excludeShiftId: shift.id,
       });
       if (cr) return res.status(409).json(cr);
+      try {
+        await assertDriverAssignable({ driverId, shiftId: shift.id, at: shift.startAt });
+      } catch (e) {
+        return res.status(e?.status || 409).json({ error: e?.message || 'Driver blocked', code: e?.code || 'ACTIVE_NO_SHOW_PENALTY', penalty: e?.penalty || null });
+      }
 
       const updated = await prisma.shift.update({
         where: { id: shiftId },
@@ -933,6 +939,11 @@ export function attachShiftRoomRoutes(r, io) {
           });
           if (cr) {
             return res.status(409).json({ error: cr.message || "Vehicle/driver conflict", code: cr.code || "AUTO_SPLIT_CONFLICT", conflict: cr });
+          }
+          try {
+            await assertDriverAssignable({ driverId, shiftId: shift.id, at: shift.startAt });
+          } catch (e) {
+            return res.status(e?.status || 409).json({ error: e?.message || 'Driver blocked', code: e?.code || 'ACTIVE_NO_SHOW_PENALTY', penalty: e?.penalty || null });
           }
         }
 

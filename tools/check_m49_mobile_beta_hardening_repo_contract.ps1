@@ -13,6 +13,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host '=== M49 Repo Contract ==='
 Write-Host 'INFO Checking M49 files'
@@ -55,7 +59,7 @@ MustContainText $today 'Son basarili senkron' 'today screen shows last sync'
 MustContainText $today 'Guvenli cikis' 'today screen has secure logout action'
 
 Write-Host 'INFO Checking pack + runbook'
-MustContainText $pack 'pack_m48_5_room_company_tablet_readiness.ps1' 'pack chains m48.5 first'
+MustNotContainText $pack 'pack_m48_5_room_company_tablet_readiness.ps1' 'pack is self-only and does not chain m48.5'
 MustContainText $pack 'node scripts/m49_mobile_beta_hardening_check.js' 'pack runs m49 static check'
 MustContainText $runbook 'beta hardening' 'runbook explains beta hardening goal'
 MustContainText $runbook '30 sn' 'runbook explains periodic refresh'

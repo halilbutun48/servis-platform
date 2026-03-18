@@ -1,9 +1,8 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 
-Write-Host '=== M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK ==='
-& (Join-Path $PSScriptRoot 'pack_m49_1_driver_voice_guidance_stop_eta.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm49.1 pack failed' }
+Write-Host ''
+Write-Host '=== M50 MOBILE RELEASE READINESS PACK ==='
 
 Write-Host ''
 Write-Host '=== M50 Runtime Check ==='

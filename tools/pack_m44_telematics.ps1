@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== M44 TELEMATICS PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack_m43_google_auth_invite_gate.ps1") -RepoRoot $RepoRoot
-if (-not $?) { throw "m43 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

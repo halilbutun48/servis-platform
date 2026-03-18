@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== M46.6-C AI SCREEN HELP PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack_m46_6_t_ai_location_source_guide.ps1") -RepoRoot $RepoRoot
-if (-not $?) { throw "m46.6-t pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

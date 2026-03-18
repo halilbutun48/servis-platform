@@ -5,6 +5,8 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
+import DriverPenaltyBadge from "../../components/driver/DriverPenaltyBadge";
+import DriverPenaltyForm from "../../components/driver/DriverPenaltyForm";
 
 const TABS = [
   { key: "status", label: "Durum" },
@@ -67,6 +69,8 @@ export default function DriversPanel() {
 
   const [drivers, setDrivers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
+  const [penaltiesByDriverId, setPenaltiesByDriverId] = useState({});
+  const [penaltyOpenDriverId, setPenaltyOpenDriverId] = useState(0);
 
   // Filters
   const [q, setQ] = useState("");
@@ -101,6 +105,8 @@ export default function DriversPanel() {
       const [d, v] = await Promise.all([api("/api/drivers", { token }), api("/api/vehicles", { token })]);
       setDrivers(Array.isArray(d) ? d : []);
       setVehicles(Array.isArray(v) ? v : []);
+      const penaltyPairs = await Promise.all((Array.isArray(d) ? d.slice(0, 20) : []).map(async (row) => { try { const r = await api(`/api/penalties/drivers/${row.id}`, { token }); const items = Array.isArray(r?.items) ? r.items : []; return [Number(row.id), items.find((x) => x?.isActive || x?.effectiveStatus === "ACTIVE") || items[0] || null]; } catch { return [Number(row.id), null]; } }));
+      setPenaltiesByDriverId(Object.fromEntries(penaltyPairs));
 
       if (!focusDriverId && Array.isArray(d) && d.length) setFocusDriverId(Number(d[0].id));
     } catch (e) {
@@ -449,6 +455,23 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
     return Array.isArray(bv?.shifts) ? bv.shifts : [];
   }, [focusDriver, focusVehicle]);
 
+
+  async function createNoShow(driver, payload) {
+    if (!driver?.id) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await api.post('/api/penalties/no-show', { driverId: Number(driver.id), durationDays: Number(payload.durationDays || 1), reason: payload.reason || '' }, { token });
+      setPenaltyOpenDriverId(0);
+      showToast('Gelmedi kaydı eklendi', 'warn');
+      await load();
+    } catch (e) {
+      setErr(getErrMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const focusCurNext = useMemo(() => {
     // if backend already gave current/next use them
     if (focusDriver?.currentShift || focusDriver?.nextShift) {
@@ -489,7 +512,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           ))}
         </div>
 
-        <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
+        <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }>
           <div>
             <label className="muted">Ara (ad/telefon/plaka/kod)</label>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ali / 05xx / 34ABC / SRC-000123" />
@@ -520,6 +543,22 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         </div>
       </div>
 
+      <div className="card">
+        <h3>Hızlı Gelmedi Kaydı</h3>
+        <div className="muted">İlk 12 sürücü üzerinden hızlı kayıt ekleme</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+          {filteredDrivers.slice(0, 12).map((d) => (
+            <div key={`pen-${d.id}`} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", borderBottom: "1px solid var(--line, #eee)", paddingBottom: 8 }}>
+              <b>{d.fullName}</b>
+              <span className="muted">{d.phone || "-"}</span>
+              <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
+              <button type="button" className="btn" onClick={() => setPenaltyOpenDriverId((p) => p === Number(d.id) ? 0 : Number(d.id))}>Gelmedi kaydı</button>
+              {penaltyOpenDriverId === Number(d.id) ? <div style={{ width: "100%" }}><DriverPenaltyForm driver={d} busy={busy} onSubmit={(payload) => createNoShow(d, payload)} /></div> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* DURUM */}
       {tab === "status" ? (
         <div className="card">
@@ -544,7 +583,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                 return (
                   <tr key={d.id}>
                     <td>
-                      <b>{d.fullName}</b>
+                      <b>{d.fullName}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
                       <div className="muted">#{d.id}</div>
                     </td>
                     <td>{d.phone}</td>

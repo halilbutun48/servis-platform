@@ -13,6 +13,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host '=== M49.1 Repo Contract ==='
 Write-Host 'INFO Checking M49.1 files'
@@ -55,7 +59,7 @@ MustContainText $today 'ETA oku' 'today screen has eta action'
 MustContainText $today 'Durak ETA' 'today screen shows stop eta'
 
 Write-Host 'INFO Checking pack + runbook'
-MustContainText $pack 'pack_m49_mobile_beta_hardening.ps1' 'pack chains m49 first'
+MustNotContainText $pack 'pack_m49_mobile_beta_hardening.ps1' 'pack is self-only and does not chain m49'
 MustContainText $pack 'node scripts/m49_1_driver_voice_guidance_stop_eta_check.js' 'pack runs m49.1 static check'
 MustContainText $runbook 'voice guidance' 'runbook explains voice guidance goal'
 MustContainText $runbook 'stop ETA' 'runbook explains stop eta goal'

@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ''
 Write-StatusLine '=== M46.6-D4 SIMPLE ROLE MODE PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m46_6_c2_screen_coverage_terminology.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm46.6-c2 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'

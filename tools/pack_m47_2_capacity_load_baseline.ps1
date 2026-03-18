@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M47.2 CAPACITY & LOAD BASELINE PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m47_kvkk_notice_consent_framework.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm47 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'

@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M47 KVKK NOTICE / CONSENT FRAMEWORK PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m46_9_session_refresh_security.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm46.9 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'

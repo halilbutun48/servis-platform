@@ -13,6 +13,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){
   foreach($needle in $needles){
     if ($needle -and $txt.Contains(([string]$needle).Normalize())) { Write-Host "OK $label"; return }
@@ -63,7 +67,7 @@ MustContainAny $css @('navDockItems','overflow-x: auto') 'css enables horizontal
 MustContainAny $css @('M47.4 — Mobile Readiness Web Pass','M47.4 - Mobile Readiness Web Pass') 'css includes mobile readiness section marker'
 
 Write-Host 'INFO Checking pack + check wiring'
-MustContainText $pack 'pack_m47_3_production_resilience_edge_security.ps1' 'pack chains m47.3 first'
+MustNotContainText $pack 'pack_m47_3_production_resilience_edge_security.ps1' 'pack is self-only and does not chain m47.3'
 MustContainText $pack 'node:20-alpine' 'pack uses node container for web build'
 MustContainText $pack 'npm run build' 'pack builds web app'
 MustContainText $pack 'm47_4_mobile_readiness_web_pass_check.js' 'pack runs m47.4 check script'
@@ -76,7 +80,7 @@ MustContainText $primer 'M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS O
 MustContainRegexAny $primer @('M47\.4\s*[—-]?\s*Mobile\s+Readiness\s+Web\s+Pass','M47\.4\s+MOBILE\s+READINESS\s+WEB\s+PASS') 'primer includes m47.4 next route'
 MustContainText $checklist 'M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK' 'checklist includes m47.3 green'
 MustContainRegexAny $checklist @('M47\.4\s*[—-]?\s*Mobile\s+Readiness\s+Web\s+Pass','M47\.4\s+MOBILE\s+READINESS\s+WEB\s+PASS') 'checklist includes m47.4 route'
-MustContainRegexAny $startpack @('M47\.4\s*[—-]?\s*Mobile\s+Readiness\s+Web\s+Pass','M47\.4\s+MOBILE\s+READINESS\s+WEB\s+PASS') 'startpack includes m47.4 route'
-MustContainAny $readme @('M47.4 mobile readiness','M47.4 mobile readiness web pass') 'tools readme mentions m47.4'
+MustContainRegexAny $startpack @('M47\.4\s*[—-]?\s*Mobile\s+Readiness\s+Web\s+Pass','pack_m47_4_mobile_readiness_web_pass\.ps1') 'startpack includes m47.4 route'
+MustContainAny $readme @('M47.4 mobile readiness','M47.4 mobile readiness web pass','pack_post_m41_to_m54_4.ps1') 'tools readme mentions m47.4'
 
 Write-Host 'M47.4 MOBILE READINESS WEB PASS REPO CONTRACT PASS'

@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m47_2_capacity_load_baseline.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm47.2 pack failed' }
 
 $dc = 'docker'
 $compose = Join-Path $RepoRoot 'infra/docker-compose.yml'

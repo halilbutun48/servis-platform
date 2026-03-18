@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== STEP 1 TOTP STEP-UP PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack_step1_security_foundation.ps1") -RepoRoot $RepoRoot
-if (-not $?) { throw "step1 foundation pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

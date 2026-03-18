@@ -20,8 +20,6 @@ if ($ScaffoldOnly) {
 Write-Host ''
 Write-StatusLine '=== M47.4 MOBILE READINESS WEB PASS PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m47_3_production_resilience_edge_security.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm47.3 pack failed' }
 
 Write-Host ''
 Write-StatusLine '=== M47.4 Runtime Check ==='

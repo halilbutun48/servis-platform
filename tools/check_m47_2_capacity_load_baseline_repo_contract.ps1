@@ -13,6 +13,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){
   foreach($needle in $needles){
     if ($needle -and $txt.Contains(([string]$needle).Normalize())) { Write-Host "OK $label"; return }
@@ -54,7 +58,7 @@ MustContainText $server 'capacityWsConnected' 'server wires ws capacity hooks'
 MustContainText $env 'CAPACITY_BASELINE_WINDOW_MINUTES' 'env exposes capacity baseline vars'
 
 Write-Host 'INFO Checking pack/runtime/runbook'
-MustContainText $pack 'pack_m47_kvkk_notice_consent_framework.ps1' 'pack chains m47 first'
+MustNotContainText $pack 'pack_m47_kvkk_notice_consent_framework.ps1' 'pack is self-only and does not chain m47'
 MustContainText $pack 'node scripts/m47_2_capacity_load_baseline_check.js' 'pack runs m47.2 runtime check'
 MustContainAny $runtime @('/api/admin/capacity/policy','/api/admin/capacity/snapshot') 'runtime checks capacity endpoints'
 MustContainAny $runbook @('capacity','kapasite') 'runbook mentions capacity baseline'

@@ -77,3 +77,9 @@ Last updated: **2026-03-18**
 - `tools\backup_restore_m45.ps1`
 - `docs\RUNBOOK_M45_RETENTION_BACKUP.md`
 
+
+
+## M55 — Reports + Gelmedi Kaydı
+- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
+- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
+- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.

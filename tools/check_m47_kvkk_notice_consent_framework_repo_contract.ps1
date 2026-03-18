@@ -19,6 +19,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host 'INFO Checking M47 files'
 @(
@@ -59,7 +63,7 @@ MustContainText $appShell '<KvkkConsentGate />' 'app shell renders kvkk gate'
 MustContainAny $gate @('/api/kvkk/documents/current','/api/kvkk/consents/accept-many') 'kvkk gate uses new endpoints'
 
 Write-Host 'INFO Checking pack/runtime/runbook'
-MustContainText $pack 'pack_m46_9_session_refresh_security.ps1' 'pack chains m46.9 first'
+MustNotContainText $pack 'pack_m46_9_session_refresh_security.ps1' 'pack is self-only and does not chain m46.9'
 MustContainText $pack 'node scripts/m47_kvkk_notice_consent_framework_check.js' 'pack runs m47 runtime check'
 MustContainAny $runtime @('LOCATION_NOTICE','LOCATION_CONSENT','KVKK_DOC_ACCEPT') 'runtime checks kvkk docs and audit'
 MustContainAny $runbook @('Aydınlatma','KVKK') 'runbook mentions kvkk notice'

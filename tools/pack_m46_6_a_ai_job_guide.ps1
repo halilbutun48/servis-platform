@@ -9,8 +9,6 @@ Set-Location $RepoRoot
 Write-Host ""
 Write-StatusLine "=== M46.6-A AI JOB GUIDE PACK ==="
 
-& (Join-Path $RepoRoot "tools/pack_m46_5_ai_copilot_action_prioritization.ps1") -RepoRoot $RepoRoot
-if (-not $?) { throw "m46.5 pack failed" }
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"

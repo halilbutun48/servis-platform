@@ -75,6 +75,7 @@ export default function NavDock({ role, path, me }) {
         title: "Operasyon",
         items: [          { label: "Araçlar", path: "/room/vehicles" },
           { label: "Sürücüler", path: "/room/drivers" },
+          { label: "Raporlar", path: "/room/reports" },
         ],
       });
       // Sözleşmeler: Gelişmiş altında
@@ -92,6 +93,7 @@ advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
           { label: "Harita", path: base + "/map" },
           { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
           { label: "Vardiyalar", path: base + "/shifts" },
+          { label: "Raporlar", path: base + "/reports" },
         ],
       });
       // Sözleşmeler: Gelişmiş altında

@@ -4,8 +4,6 @@ $ErrorActionPreference = 'Stop'
 
 Write-StatusLine '=== M48.5 ROOM / COMPANY TABLET READINESS PACK ==='
 
-& (Join-Path $RepoRoot 'tools/pack_m48_driver_mobile_foundation.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'm48 prerequisite pack failed' }
 
 Write-StatusLine '=== M48.5 Runtime Check ==='
 $dc = 'docker'

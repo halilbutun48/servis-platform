@@ -13,6 +13,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){
   foreach($needle in $needles){
     if($txt.Contains(([string]$needle).Normalize())){
@@ -62,7 +66,7 @@ MustContainText $today 'GPS hazirligi' 'today screen has gps readiness card'
 MustContainText $today 'Haritada ac' 'today screen has external maps action'
 
 Write-Host 'INFO Checking pack + runbook'
-MustContainText $pack 'pack_m47_4_mobile_readiness_web_pass.ps1' 'pack chains m47.4 first'
+MustNotContainText $pack 'pack_m47_4_mobile_readiness_web_pass.ps1' 'pack is self-only and does not chain m47.4'
 MustContainText $pack 'node scripts/m48_driver_mobile_foundation_check.js' 'pack runs mobile static check'
 MustContainText $runbook 'EXPO_PUBLIC_API_BASE_URL' 'runbook explains base url env'
 MustContainText $runbook 'PIN' 'runbook explains driver login flow (pin)'

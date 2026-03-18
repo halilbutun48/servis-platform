@@ -19,6 +19,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host 'INFO Checking M46.8 files'
 @(
@@ -81,7 +85,7 @@ MustContainText $api 'deviceId: getOrCreateBrowserDeviceId()' 'web login sends d
 
 Write-Host 'INFO Checking pack/runtime wiring'
 MustContainText $pack 'node scripts/m46_8_driver_access_hardening_check.js' 'pack runs m46.8 runtime check'
-MustContainText $pack 'pack_m46_7_driver_code_login_rehber_first.ps1' 'pack chains m46.7 first'
+MustNotContainText $pack 'pack_m46_7_driver_code_login_rehber_first.ps1' 'pack is self-only and does not chain m46.7'
 MustContainText $runtime 'AUTH_DRIVER_PIN_RESET' 'runtime verifies reset audit'
 MustContainText $runtime 'AUTH_DRIVER_PIN_LOCKED' 'runtime verifies lock audit'
 MustContainText $runtime 'PIN_TOO_WEAK' 'runtime verifies weak pin rejection'

@@ -671,3 +671,14 @@ Genel notlar:
 - `ROLE_HELP_GUIDE`
 
 `entityType: "screen"` ile kullanılır. DRIVER / PERSONEL / PARENT için de izinli ekran rehberleri vardır.
+
+
+## M55 — Reports + Gelmedi Kaydı
+## M55 Reports Contract Marker
+- M55
+- /api/reports/shifts/summary
+- /api/penalties/no-show
+
+- Reports endpointleri ve ROOM/COMPANY rapor ekranı iskeleti eklendi.
+- Gelmedi kaydı (NO_SHOW) veri modeli ve backend guard açıldı.
+- Aktif kayıtlı sürücü approve/apply aşamasında `ACTIVE_NO_SHOW_PENALTY` ile bloklanır.

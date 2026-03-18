@@ -19,6 +19,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host 'INFO Checking M46.9 files'
 @(
@@ -74,7 +78,7 @@ Write-Host 'INFO Checking ws auth sv enforcement'
 MustContainAny $server @('tokenSv','sessionVersion','session revoked') 'ws layer validates sessionVersion'
 
 Write-Host 'INFO Checking pack/runtime wiring'
-MustContainText $pack 'pack_m46_8_driver_access_hardening.ps1' 'pack chains m46.8 first'
+MustNotContainText $pack 'pack_m46_8_driver_access_hardening.ps1' 'pack is self-only and does not chain m46.8'
 MustContainText $pack 'node scripts/m46_9_session_refresh_security_check.js' 'pack runs m46.9 runtime check'
 MustContainAny $runtime @('AUTH_SESSION_REVOKE_ALL','AUTH_REFRESH_REUSE_DETECTED','AUTH_DRIVER_PIN_RESET') 'runtime checks audit actions'
 

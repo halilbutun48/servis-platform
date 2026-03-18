@@ -13,6 +13,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function MustNotContainText([string]$txt,[string]$needle,[string]$label){
+  if ($txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host '=== M50 Repo Contract ==='
 Write-Host 'INFO Checking M50 files'
@@ -57,7 +61,7 @@ MustContainText $today 'Build profilleri' 'today screen shows build profiles'
 MustContainText $today 'EAS Build' 'today screen mentions EAS Build'
 
 Write-Host 'INFO Checking pack + runbook'
-MustContainText $pack 'pack_m49_1_driver_voice_guidance_stop_eta.ps1' 'pack chains m49.1 first'
+MustNotContainText $pack 'pack_m49_1_driver_voice_guidance_stop_eta.ps1' 'pack is self-only and does not chain m49.1'
 MustContainText $pack 'node scripts/m50_mobile_release_readiness_check.js' 'pack runs m50 static check'
 MustContainText $runbook 'mobile release readiness' 'runbook explains release readiness goal'
 MustContainText $runbook 'EAS Build' 'runbook explains EAS build'
