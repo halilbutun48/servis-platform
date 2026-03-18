@@ -512,7 +512,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           ))}
         </div>
 
-        <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }>
+        <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <div>
             <label className="muted">Ara (ad/telefon/plaka/kod)</label>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ali / 05xx / 34ABC / SRC-000123" />

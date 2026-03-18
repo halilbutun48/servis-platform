@@ -9,6 +9,12 @@ function MustContain($rel, $needle, $label){
   if (-not $txt.Contains($needle)) { throw "FAIL $label" }
   Ok $label
 }
+function MustMatch($rel, $pattern, $label){
+  $p = Join-Path $RepoRoot $rel
+  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+  if ($txt -notmatch $pattern) { throw "FAIL $label" }
+  Ok $label
+}
 
 Info 'Checking backend telematics files'
 @(
@@ -22,7 +28,7 @@ Info 'Checking backend telematics files'
 Info 'Checking prisma schema additions'
 MustContain 'backend\prisma\schema.prisma' 'enum GpsDeviceStatus {' 'schema has GpsDeviceStatus enum'
 MustContain 'backend\prisma\schema.prisma' 'model GpsDevice {' 'schema has GpsDevice model'
-MustContain 'backend\prisma\schema.prisma' 'gpsDevices      GpsDevice[]' 'vehicle has gpsDevices relation'
+MustMatch 'backend\prisma\schema.prisma' 'gpsDevices\s+GpsDevice\[\]' 'vehicle has gpsDevices relation'
 
 Info 'Checking env + compose wiring'
 MustContain '.env.example' 'TELEMATICS_ENABLED=1' '.env example has TELEMATICS_ENABLED'

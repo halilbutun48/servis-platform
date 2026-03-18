@@ -40,10 +40,13 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M51–M53 BACKFILL VERIFICATION PACK PASS OK`
 - `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK`
 - `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
+- `M55 REPORTS + NO_SHOW PACK PASS OK`
+- `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
 - `POST-M41 EXTERNAL PACK RUNNER PASS OK`
 
 ## Güncel aktif ürün hattı (2026-03-18)
-- Post-M41 pack script'leri self-only çalışır; tam M42 → M54.4 hattı `tools\pack_post_m41_to_m54_4.ps1` ile dışarıdan koşturulur.
+- Post-M41 pack script'leri self-only calisir; tam M42 -> M56 green hatti ve M57 scaffold kontrolu `tools\pack_post_m41_to_m57.ps1` ile disaridan kosturulur.
+- Uyumluluk icin `tools\pack_post_m41_to_m54_4.ps1` dosyasi korunur; yeni orchestrator'a forward eder.
 - `M52 Import + Geo Pipeline` ve `M53 Stop & Route Productization / Organization-Gezi` backfill hattı ile resmi olarak tekrar doğrulandı.
 - `M54.1` Dispatch Preview ve `M54.2` Editable Dispatch Preview, `M54.3` pack-green sonucu ile fiilen doğrulanmış kabul edilir.
 - `M54.4` Driver Route Delivery explicit shift route endpoint'i ve `Today → Route` deep link'i ile resmi verify hattından geçti.
@@ -63,7 +66,7 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 ## Sonraki resmi rota
 - `M55 — Reports + No-show` ✅ green
 - `M56 — KVKK Matrix + ETA/Navigation Quality` ✅ green
-- `M57 — Mobile Hardening`
+- `M57 — Mobile Hardening` (scaffold hazir, resmi green degil)
 - `M58 — Final Pilot Readiness`
 
 ## M55 — Reports + Gelmedi Kaydı
@@ -78,3 +81,9 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - ETA payload kalite alanları eklendi: `routeProgressState`, `gpsFreshness`, `skippedStopsCount`, `remainingRouteKm`, `remainingRouteEtaMin`
 - Skip/reroute davranışı eklendi: `skippedStops`, `rerouteSuggested`, `rerouteReason`, `nextAction`, `lastResolvedStop`
 - Personel ekranlarında rota kalite durumu, kalan durak, kalan rota km/ETA ve atlanan durak özeti görünür
+
+## M57 — Mobile Hardening (scaffold)
+- Foreground GPS publish scope tanimlandi.
+- Offline/online toparlama, session clean-fail ve KVKK blocking gorunurlugu runbook seviyesinde sabitlendi.
+- M57 scaffold pack: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
+- Yeni post-M41 orchestrator: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`

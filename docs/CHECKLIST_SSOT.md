@@ -48,7 +48,7 @@ Last updated: **2026-03-18**
 - **Step 4.0 (M47):** KVKK / Capacity / Edge Security / Mobile Web Readiness resmi green
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
 - **Step 4.9–5.1 (M51–M54.4):** backfill verification → dispatch approve/repack → driver route delivery resmi green
-- **Active track (M57–M58):** mobile hardening → final pilot readiness
+- **Active track (M57–M58):** mobile hardening (scaffold sabit) -> final pilot readiness
 
 ## Resmi green kutular
 - [x] `M47 — KVKK Notice / Consent Framework`
@@ -72,7 +72,8 @@ Last updated: **2026-03-18**
 - [x] `M54.2 — Editable Dispatch Preview` M54.3 green hattı içinde fiilen doğrulanmış kabul edilir
 - [x] `M55 — Reports + No-show` resmi pack-green doğrulandı
 - [x] `M56 — KVKK Matrix + ETA/Navigation Quality` pack: `tools\pack_m56_kvkk_eta_quality.ps1`
-- [ ] `M57 — Mobile Hardening` sıradaki ana ürün işi
+- [ ] `M57 — Mobile Hardening` siradaki ana urun isi
+- [ ] `M57 scaffold pack` : `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - [ ] `M58 — Final Pilot Readiness` son checklist / saha testi öncesi güncellenecek
 
 ## M45 kanıt araçları
@@ -90,3 +91,5 @@ Last updated: **2026-03-18**
 
 
 M56 milestone marker: pack_m56_kvkk_eta_quality.ps1
+
+M57 scaffold marker: pack_m57_mobile_hardening.ps1 -ScaffoldOnly

@@ -20,6 +20,10 @@ function MustContainAny([string]$txt,[string[]]$needles,[string]$label){
   }
   throw "FAIL $label"
 }
+function MustMatch([string]$txt,[string]$pattern,[string]$label){
+  if (-not [regex]::IsMatch($txt, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)) { throw "FAIL $label" }
+  Write-Host "OK $label"
+}
 
 Write-Host 'INFO Checking M46.7 files'
 @(
@@ -50,8 +54,8 @@ $drivers = ReadText 'backend\src\routes\drivers.js'
 $auth = ReadText 'backend\src\routes\auth.js'
 $me = ReadText 'backend\src\routes\me.js'
 $validators = ReadText 'backend\src\validators.js'
-MustContainText $schema 'driverCode     String?  @unique' 'schema has driverCode'
-MustContainText $schema 'pinTemporary   Boolean  @default(true)' 'schema has pinTemporary'
+MustMatch $schema 'driverCode\s+String\?\s+@unique' 'schema has driverCode'
+MustMatch $schema 'pinTemporary\s+Boolean\s+@default\(true\)' 'schema has pinTemporary'
 MustContainText $drivers 'loginMode: "DRIVER_CODE_PIN"' 'driver create returns login mode'
 MustContainText $drivers 'issuedCredentials' 'driver routes expose issued credentials'
 MustContainText $drivers 'reset-pin' 'driver routes include pin reset'

@@ -28,3 +28,5 @@
 - `_archive/plans/` — eski sprint/epic planları
 - `_archive/legacy-notes/` — eski notlar
 - `_archive/primer-versions/` — eski primer sürümleri
+
+- **RUNBOOK_M57_MOBILE_HARDENING.md** — M57 mobile hardening scope and scaffold runbook
