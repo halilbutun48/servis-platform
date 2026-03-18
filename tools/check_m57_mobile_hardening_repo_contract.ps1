@@ -39,7 +39,11 @@ $readme = ReadText 'README.md'
 $tools = ReadText 'tools\README.md'
 $primer = ReadText 'tools\PRIMER_SNAPSHOT.md'
 $checklist = ReadText 'docs\CHECKLIST_SSOT.md'
-$post = ReadText 'tools\pack_post_m41_to_m57.ps1'
+$postLegacy = ReadText 'tools\pack_post_m41_to_m57.ps1'
+$postM58 = $null
+if (Test-Path (Join-Path $RepoRoot 'tools\pack_post_m41_to_m58.ps1')) {
+  $postM58 = ReadText 'tools\pack_post_m41_to_m58.ps1'
+}
 
 MustContainAny $app @('GPS_PUBLISH_INTERVAL_MS','publishGps(','refreshGpsStatus(') 'mobile app has foreground gps publish flow'
 MustContainAny $app @('isNetworkError','Baglanti yok. Veri eski olabilir.','Baglanti geri geldi, bilgiler yenileniyor.') 'mobile app has offline/online recovery language'
@@ -61,6 +65,14 @@ MustContainAny $tools @('check:m57.1','check:m57.2','check:m57.3','check:m57.4',
 MustContainAny $primer @('M57 green','M57.4 Android preview/internal build disiplini green','M58 — Final Pilot Readiness') 'primer snapshot mentions M57 closure and M58 next'
 MustMatch $checklist '(?s)M57.*Mobile Hardening' 'checklist mentions M57 mobile hardening'
 MustMatch $checklist '(?s)M58.*Final Pilot Readiness' 'checklist leaves M58 open'
-MustContainAny $post @('M57 MOBILE HARDENING','pack_m57_mobile_hardening.ps1','M42 -> M57') 'post-M41 runner includes full M57 pack'
+
+$legacyForwards = $postLegacy.Contains('pack_post_m41_to_m58.ps1'.Normalize())
+$legacyHasOldFlow = $postLegacy.Contains('M57 MOBILE HARDENING'.Normalize()) -and $postLegacy.Contains('pack_m57_mobile_hardening.ps1'.Normalize())
+$newRunnerHasM57 = ($null -ne $postM58) -and $postM58.Contains('M57 MOBILE HARDENING'.Normalize()) -and $postM58.Contains('pack_m57_mobile_hardening.ps1'.Normalize()) -and $postM58.Contains('M42 -> M58'.Normalize())
+if ($legacyHasOldFlow -or ($legacyForwards -and $newRunnerHasM57)) {
+  Write-Host 'OK post-M41 runner includes full M57 pack'
+} else {
+  throw 'FAIL post-M41 runner includes full M57 pack'
+}
 
 Write-Host 'M57 MOBILE HARDENING REPO CONTRACT PASS'

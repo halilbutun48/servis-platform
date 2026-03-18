@@ -2,7 +2,7 @@
 
 ## Temel kurallar
 1. Monorepo modüler yapıda ilerler: backend / web / mobile / infra / docs / tools.
-2. Post-M41 pack script'leri self-only calisir; tam `M42 -> M57` green hatti ve kanonik komut `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
+2. Post-M41 pack script'leri self-only calisir; tam `M42 -> M58` green hatti ve kanonik komut `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir. Eski `tools\pack_post_m41_to_m57.ps1` wrapper olarak korunabilir.
 3. Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
 4. Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
 5. Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
@@ -15,11 +15,13 @@
 - `tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
-- `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild` _(wrapper)_
+- `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 
 ## Resmi durum
@@ -37,6 +39,10 @@
 - Komut: `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
 - Repo-contract: `tools\check_m46_ai_copilot_repo_contract.ps1`
 - Runbook: `docs\RUNBOOK_M46_AI_COPILOT.md`
+
+## M47.4 mobile readiness web pass
+- Komut: `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
+- Bu komut web mobil hazırlık kontratını doğrular; post-M41 zincirinde legacy kanıt olarak korunur.
 
 ## M57 full pack
 - Komut: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform`
