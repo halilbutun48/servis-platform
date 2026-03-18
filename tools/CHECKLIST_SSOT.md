@@ -1,7 +1,7 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — CHECKLIST (SSOT)
 
 Timezone: Europe/Istanbul
-Last updated: **2026-03-17**
+Last updated: **2026-03-18**
 
 ## Current official green ref
 - **M41 PACK PASS**
@@ -41,7 +41,7 @@ Last updated: **2026-03-17**
 - **Step 3 (M46):** AI Copilot zinciri resmi green
 - **Step 4.0 (M47):** KVKK / Capacity / Edge Security / Mobile Web Readiness resmi green
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
-- **Active track (M51–M57):** docs/backlog reset → import+geo pipeline → stop/route productization → organization gezi görünürlüğü → room dispatch planner → reports/no-show → KVKK+mobile hardening → final pilot readiness
+- **Active track (M51–M57):** backfill verification → import+geo pipeline → stop/route productization → dispatch preview/approve/repack → driver route delivery → reports/no-show → KVKK+mobile hardening → final pilot readiness
 
 ## Resmi green kutular
 - [x] `M47 — KVKK Notice / Consent Framework`
@@ -56,14 +56,13 @@ Last updated: **2026-03-17**
 - [x] `M50 — Mobile Release Readiness`
 
 ## Aktif rota notları (henüz green kutu değil)
-- [ ] `M51 — docs/backlog reset` işlendi; resmi pack promotion yok
-- [ ] `M52 — Import + Geo Pipeline` ana akış çalışır durumda; resmi pack promotion yok
-- [ ] `M53.1 — stop policy contract` docs / ürün kararı işlendi; resmi pack promotion yok
-- [ ] `M53.2-A — stop generation summary görünürlüğü` test edildi; resmi pack promotion yok
-- [ ] `M53.3 — Planlama Merkezi tek oluşturma kaynağı` repo yönü işlendi; resmi pack promotion yok
-- [ ] `M53.4 — Organization / Gezi modu görünürlüğü` repo yönü işlendi; resmi pack promotion yok
-- [ ] `M53.5 — round-trip temeli + lat/lng fallback + map/nav + market gating` repo yönü işlendi; resmi pack promotion yok
-- [ ] `M54 — Room Dispatch Planner` sıradaki ana iş
-- [ ] `M55 — Reports + No-show` M54 sonrası güncellenecek
-- [ ] `M56 — KVKK Matrix + Mobile Hardening` M54 sonrası güncellenecek
+- [ ] `M51–M53 — backfill verification hattı` eklendi; resmi green promotion yok
+- [ ] `M52 — Import + Geo Pipeline` runtime + repo-contract ile doğrulanabilir
+- [ ] `M53 — stop/route productization + organization/gezi görünürlüğü` backfill check kapsamına alındı
+- [ ] `M54.1 — Dispatch Preview` çalışır repo durumu
+- [ ] `M54.2 — Editable Dispatch Preview` çalışır repo durumu
+- [ ] `M54.3 — Dispatch Approve + Repack` pack kanıtı mevcut; resmi green promotion ayrı tutulur
+- [ ] `M54.4 — Driver Route Delivery` explicit shift route + Today → Route deep link eklendi
+- [ ] `M55 — Reports + No-show` sıradaki ana ürün işi
+- [ ] `M56 — KVKK Matrix + Mobile Hardening` M55 sonrası güncellenecek
 - [ ] `M57 — Final Pilot Readiness` son checklist / saha testi öncesi güncellenecek

@@ -1,4 +1,4 @@
-﻿// backend/src/routes/driver.js
+// backend/src/routes/driver.js
 // Mounted at: /api/driver
 // Purpose: DRIVER operational endpoints (today list, active route, stop actions, completion)
 // NOTE: ROOM driver CRUD lives in routes/drivers.js (mounted at /api/drivers).
@@ -98,6 +98,68 @@ async function maybeStartShiftIfApproved(shiftId) {
   });
 }
 
+function buildDriverRoutePayload(shift) {
+  const last = shift?.vehicle?.gpsLast ?? null;
+  const speedKmh = typeof last?.speed === "number" ? last.speed : 30;
+
+  const routeStops = (shift?.stops ?? []).map((s) => {
+    const km = last ? haversineKm(last.lat, last.lng, s.lat, s.lng) : 0;
+    return {
+      id: s.id,
+      name: s.name,
+      lat: s.lat,
+      lng: s.lng,
+      order: s.order,
+      type: s.type,
+      state: s.state,
+      reachedAt: s.reachedAt,
+      skippedAt: s.skippedAt,
+      remainingKm: Number(km.toFixed(2)),
+      etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)),
+    };
+  });
+
+  const orderedStops = [...routeStops].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  const proximityStops = last ? [...routeStops].sort((a, b) => a.remainingKm - b.remainingKm) : [...orderedStops];
+  const nextStop = firstPendingStop(shift?.stops ?? []);
+  const lastReachedOrder = derivedLastReachedOrder(shift?.stops ?? []);
+
+  return {
+    mode: "OK",
+    shift: {
+      id: shift.id,
+      companyId: shift.companyId,
+      roomId: shift.roomId,
+      vehicleId: shift.vehicleId,
+      driverId: shift.driverId,
+      startAt: shift.startAt,
+      endAt: shift.endAt,
+      status: shift.status,
+    },
+    vehicle: shift.vehicle
+      ? {
+          id: shift.vehicle.id,
+          plate: shift.vehicle.plate,
+          capacity: shift.vehicle.capacity,
+          speedLimitKmh: shift.vehicle.speedLimitKmh,
+          nextMaintenanceAt: shift.vehicle.nextMaintenanceAt,
+          status: shift.vehicle.status,
+        }
+      : null,
+    last,
+    progress: {
+      lastReachedOrder,
+      startedAt: shift.progress?.startedAt ?? null,
+      pausedAt: shift.progress?.pausedAt ?? null,
+      completed: shift.status === "DONE" || !!shift.progress?.completedAt,
+    },
+    orderedStops,
+    proximityStops,
+    nextStop,
+    routeStops,
+  };
+}
+
 async function completeShift({ shiftId, roomId, companyId, vehicleId, io }) {
   const now = new Date();
 
@@ -193,71 +255,36 @@ export function driverRouter(io) {
     });
 
     if (!shift) return res.json({ mode: "NO_ACTIVE_SHIFT" });
+    return res.json(buildDriverRoutePayload(shift));
+  });
 
-    const last = shift.vehicle?.gpsLast ?? null;
-    const speedKmh = typeof last?.speed === "number" ? last.speed : 30;
+  // =========================================================
+  // DRIVER: explicit assigned shift route (Today -> Route deep link)
+  // =========================================================
+  r.get("/shifts/:shiftId/route", authRequired(), requireRole("DRIVER"), async (req, res) => {
+    const shiftId = Number(req.params.shiftId);
+    if (!Number.isFinite(shiftId) || shiftId <= 0) {
+      return res.status(400).json({ error: "bad shiftId" });
+    }
 
-    // order-sorted route stops
-    const routeStops = (shift.stops ?? []).map((s) => {
-      const km = last ? haversineKm(last.lat, last.lng, s.lat, s.lng) : 0;
-      return {
-        id: s.id,
-        name: s.name,
-        lat: s.lat,
-        lng: s.lng,
-        order: s.order,
-        type: s.type,
-        state: s.state,
-        reachedAt: s.reachedAt,
-        skippedAt: s.skippedAt,
-        remainingKm: Number(km.toFixed(2)),
-        etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)),
-      };
-    });
+    const driver = await getDriverByUserId(req.user.id);
+    if (!driver) return res.status(400).json({ error: "Driver profile not found" });
 
-    // Unified live route: orderedStops artık rota sırası (order asc).
-    const orderedStops = [...routeStops].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
-    const proximityStops = last ? [...routeStops].sort((a, b) => a.remainingKm - b.remainingKm) : [...orderedStops];
-
-    const nextStop = firstPendingStop(shift.stops ?? []);
-
-    // M71: lastReachedOrder should follow stop states (undo uses reopen)
-    const lastReachedOrder = derivedLastReachedOrder(shift.stops ?? []);
-
-    return res.json({
-      mode: "OK",
-      shift: {
-        id: shift.id,
-        companyId: shift.companyId,
-        roomId: shift.roomId,
-        vehicleId: shift.vehicleId,
-        driverId: shift.driverId,
-        startAt: shift.startAt,
-        endAt: shift.endAt,
-        status: shift.status,
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      include: {
+        vehicle: { include: { gpsLast: true } },
+        stops: { orderBy: { order: "asc" } },
+        progress: true,
       },
-      vehicle: shift.vehicle
-        ? {
-            id: shift.vehicle.id,
-            plate: shift.vehicle.plate,
-            capacity: shift.vehicle.capacity,
-            speedLimitKmh: shift.vehicle.speedLimitKmh,
-            nextMaintenanceAt: shift.vehicle.nextMaintenanceAt,
-            status: shift.vehicle.status,
-          }
-        : null,
-      last,
-      progress: {
-        lastReachedOrder,
-        startedAt: shift.progress?.startedAt ?? null,
-        pausedAt: shift.progress?.pausedAt ?? null,
-        completed: shift.status === "DONE" || !!shift.progress?.completedAt,
-      },
-      orderedStops, // order-sorted
-      proximityStops, // distance-sorted fallback
-      nextStop,
-      routeStops, // order-sorted
     });
+    if (!shift) return res.status(404).json({ error: "Shift not found" });
+    if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+    if (!["APPROVED", "ACTIVE", "DONE"].includes(String(shift.status || ""))) {
+      return res.status(400).json({ error: "Shift route not available in this status", status: shift.status });
+    }
+
+    return res.json(buildDriverRoutePayload(shift));
   });
 
   // =========================================================

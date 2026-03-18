@@ -38,16 +38,15 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
 - `M50 MOBILE RELEASE READINESS PACK PASS OK`
 
-## Güncel aktif ürün hattı (2026-03-17)
-- `M51` docs/backlog reset hattı işlendi.
-- `M52 Import + Geo Pipeline` ana akış olarak çalışır duruma geldi.
-- `M53 Stop & Route Productization` aktif üründür.
-- `M53.1` stop policy contract docs tarafında işlendi.
-- `M53.2-A` stop generation summary + preset görünürlüğü test edildi.
-- `M53.3` Planlama Merkezi sadeleştirme ve tek oluşturma kaynağı kararı işlendi.
-- `M53.4` Organization / Gezi modu Planlama Merkezi içinde görünür hale getirildi.
-- `M53.5` round-trip temeli, gidilecek yer kartları, manuel lat/lng fallback, haritadan seç, navigasyon, preview pax fallback ve market öncesi plan-tamlık kontrolü repo durumuna işlendi.
-- `Organization Copilot` rehberi company kopyası olmaktan ayrıştırılmaya başlandı.
+## Güncel aktif ürün hattı (2026-03-18)
+- `M51–M53` için backfill verification hattı eklendi.
+- `M52 Import + Geo Pipeline` runtime + repo-contract ile tekrar doğrulanabilir.
+- `M53 Stop & Route Productization` ve `Organization / Gezi` görünürlüğü backfill check kapsamına alındı.
+- `M54.1` Dispatch Preview çalışır.
+- `M54.2` Editable Dispatch Preview çalışır.
+- `M54.3` Dispatch Approve + Repack `PACK PASS OK` kanıtına sahiptir.
+- `M54.4` Driver Route Delivery için explicit shift route endpoint'i ve `Today → Route` deep link'i açıldı.
+- Tek araç yeterli / dispatch gerektirmeyen işlerde paket-kopyala UI kolaylığı korunur.
 - Not: Bu satırlar resmi pack-green promotion değildir; güncel repo yönünü taşır.
 
 ## Bugünkü resmi ürün kararları
@@ -62,7 +61,6 @@ Bu repo PERSONEL SERVİS V1/V2 uygulamasının canlı çalışma ağacıdır.
 - Company taslak plan / teklif hazırlar; Room gerçek araç / sürücü / kapasite kararı ile operasyonel planı tamamlar.
 
 ## Sonraki resmi rota
-- `M54 — Room Dispatch Planner / draft → ROOM → atama zinciri`
 - `M55 — Reports + No-show`
 - `M56 — KVKK Matrix + Mobile Hardening`
 - `M57 — Final Pilot Readiness`

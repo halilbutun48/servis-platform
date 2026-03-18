@@ -1,6 +1,6 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1/V2 — PRIMER SNAPSHOT
 
-Tarih: 2026-03-17
+Tarih: 2026-03-18
 Timezone: Europe/Istanbul
 Repo: `D:\servis-platform`
 Branch: `main`
@@ -38,15 +38,14 @@ Not:
 - Bu zip içinde `.git` olmadığı için resmi tag promotion yalnızca canlı repo içinde yapılmalıdır.
 
 ## 1) Güncel aktif durum
-- `M51` docs/backlog reset hattı işlendi.
-- `M52 Import + Geo Pipeline` ana akış olarak çalışır duruma geldi ve kod tarafı kapatıldı.
-- `M53 Stop & Route Productization` başlatıldı.
-- `M53.1` stop policy contract docs tarafında işlendi.
-- `M53.2-A` stop generation summary + preset görünürlüğü test edildi ve çalışır görüldü.
-- `M53.3` Planlama Merkezi sadeleştirme ve tek oluşturma kaynağı kararı işlendi.
-- `M53.4` Organization / Gezi modu Planlama Merkezi içinde görünür hale geldi.
-- `M53.5` round-trip temeli, gidilecek yer kartları, manuel lat/lng fallback, haritadan seç, navigasyon, preview pax fallback ve market öncesi plan-tamlık kontrolü repo durumuna işlendi.
-- `Copilot` organization rehberi company kopyası olmaktan ayrışmaya başladı; son ince ayar alanı açıktır.
+- `M51–M53` için tek paketli backfill verification hattı eklendi (`runtime + repo-contract`).
+- `M52 Import + Geo Pipeline` runtime ile tekrar doğrulanabilir hale getirildi.
+- `M53 Stop & Route Productization` ve `Organization / Gezi` görünürlüğü resmi check hattına bağlandı.
+- `M54.1` Dispatch Preview çalışır durumdadır.
+- `M54.2` Editable Dispatch Preview çalışır durumdadır.
+- `M54.3` Dispatch Approve + Repack `PACK PASS OK` seviyesindedir.
+- `M54.4` Driver Route Delivery için explicit shift route endpoint'i ve `Today → Route` deep link'i eklendi.
+- Tek araç yeterli / dispatch gerektirmeyen işlerde `Araç → Pakete Kopyala` ve `Driver → Pakete Kopyala` UI kolaylığı korunur.
 
 ## 2) Kesin çalışan / doğrulanan durum
 
@@ -123,20 +122,19 @@ Resmi görünürlük:
 - Koordinatlar tamam olmadan organization planı markete düşmez.
 
 ## 4) Yakın resmi rota
-- `M54 — Room Dispatch Planner / draft → ROOM → atama zinciri`
+- `M54.4 — Driver Route Delivery` resmi verify hattı eklendi
 - `M55 — Reports + No-show`
 - `M56 — KVKK Matrix + Mobile Hardening`
 - `M57 — Final Pilot Readiness`
 
 ## 5) M54 için bugünkü yön
-Room tarafında hedeflenen zincir:
-- gelen teklif / draftı aç
-- boştaki araç + uygun sürücü havuzunu gör
-- personelleri yakınlık + kapasite + operasyonel uygunluğa göre araçlara böl
-- araç bazlı yeni duraklar üret
-- OSRM + solver ile durak sırasını iyileştir
-- Room preview ile onayla
-- child shift'ler oluşsun ve sürücü yalnızca kendi rotasını görsün
+M54 mevcut repo durumunda şu şekilde kabul edilir:
+- `M54.1` preview katmanı çalışır
+- `M54.2` room tarafı araç / şoför seçimi çalışır
+- `M54.3` preview → approve → repack zinciri pack ile kanıtlanmıştır
+- `M54.4` sürücünün Today ekranından kendi shift rotasına gitmesi explicit route endpoint ile netleştirilmiştir
+
+Kalan odak artık yeni planner yazmak değil, kalan gerçek uygulama bug'larını kapatıp `M55+` hattına geçişi hazırlamaktır.
 
 ## 6) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -148,4 +146,4 @@ Room tarafında hedeflenen zincir:
 - CHECKLIST'te `[x]` yalnızca pack/check green sonrasında işaretlenir
 
 ## 7) Yeni sohbet için ilk cümle
-Repo şu an M50'ye kadar resmi green; M51 docs/backlog işlendi, M52 import+geo hattı çalışır durumda kapatıldı, M53 başladı. Şu an en kritik aktif iş M54 Room Dispatch Planner: gelen teklif/draftı boştaki araçlara yakınlık + kapasite + OSRM/solver mantığıyla dağıtıp child shift'lere çeviren operasyonel planner kurmak.
+Repo şu an `M50`'ye kadar resmi green; `M51–M53` için backfill verification hattı eklendi, `M54.3` pack-green kanıtı var ve `M54.4` Today → Route explicit shift akışı açıldı. Sonraki odak `M55 Reports + No-show` öncesi kalan M54 bug kapatmalarıdır.

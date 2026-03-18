@@ -20,6 +20,8 @@
 - **RUNBOOK_M53_STOP_ROUTE_PRODUCTIZATION.md** — stop/route productization runbook
 - **MILESTONE_M53_3_PLAN_BUILDER_STAGE3.md** — Plan Builder Stage-3 reorder ve aktarım tamamlama milestone
 - **RUNBOOK_M53_3_PLAN_BUILDER_STAGE3.md** — Plan Builder Stage-3 parametreler, aktarım ve uygulama runbook
+- **RUNBOOK_M51_53_BACKFILL_VERIFICATION.md** — M51-M53 backfill doğrulama hattı
+- **RUNBOOK_M54_4_DRIVER_ROUTE_DELIVERY.md** — sürücü için explicit shift rota teslimi
 - **MILESTONE_M22.md ... MILESTONE_M32.md** — milestone açıklamaları
 
 ## Arşiv

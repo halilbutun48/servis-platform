@@ -119,7 +119,7 @@ useEffect(() => {
         enqueueRequest({ method: 'POST', url: `/api/driver/shifts/${shiftId}/start`, body: null, label: 'start' });
         setQLen(queueSize());
         // route ekranında da offline queue var
-        navigate('/driver/route');
+        navigate(`/driver/route?shift=${shiftId}`);
         return;
       }
       try {
@@ -128,12 +128,12 @@ useEffect(() => {
         if (!e2?.status || Number(e2.status) >= 500) {
           enqueueRequest({ method: 'POST', url: `/api/driver/shifts/${shiftId}/start`, body: null, label: 'start' });
           setQLen(queueSize());
-          navigate('/driver/route');
+          navigate(`/driver/route?shift=${shiftId}`);
           return;
         }
         throw e2;
       }
-      navigate("/driver/route");
+      navigate(`/driver/route?shift=${shiftId}`);
     } catch (e) {
       // Eğer endpoint yoksa veya yetki yoksa sürücü yine Rota ekranında manuel reached ile başlayabilir.
       setErr(String(e?.message || e));
@@ -160,7 +160,7 @@ useEffect(() => {
               {busyId === s.id ? "..." : "Göreve Başla"}
             </button>
           ) : null}
-          <button type="button" style={{ marginLeft: 8 }} onClick={() => navigate("/driver/route")}
+          <button type="button" style={{ marginLeft: 8 }} onClick={() => navigate(`/driver/route?shift=${s.id}`)}
             disabled={!isActive && s.status !== "ACTIVE"}>
             Rota
           </button>
@@ -233,7 +233,7 @@ useEffect(() => {
             </button>
           ) : null}
           {active?.status === "ACTIVE" ? (
-            <button type="button" onClick={() => navigate("/driver/route")}>Rota'ya Git</button>
+            <button type="button" onClick={() => navigate(`/driver/route?shift=${active.id}`)}>Rota'ya Git</button>
           ) : null}
         </div>
       </div>

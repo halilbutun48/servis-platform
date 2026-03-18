@@ -111,6 +111,7 @@ POST /api/shifts/:id/stops/from-template (COMPANY) → REPLACE
 
 Driver Route
 GET /api/driver/route/active (DRIVER)
+GET /api/driver/shifts/:shiftId/route (DRIVER)
 POST /api/driver/shifts/:shiftId/complete (DRIVER)
 POST /api/driver/shifts/:shiftId/stops/:stopId/skip (DRIVER)
 POST /api/driver/shifts/:shiftId/stops/:stopId/reopen (DRIVER)
@@ -327,6 +328,7 @@ POST /api/shifts/:id/stops/from-template (COMPANY) → REPLACE
 
 Driver Route
 GET /api/driver/route/active (DRIVER)
+GET /api/driver/shifts/:shiftId/route (DRIVER)
 POST /api/driver/shifts/:shiftId/complete (DRIVER)
 POST /api/driver/shifts/:shiftId/stops/:stopId/skip (DRIVER)
 POST /api/driver/shifts/:shiftId/stops/:stopId/reopen (DRIVER)

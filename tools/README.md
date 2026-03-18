@@ -39,7 +39,11 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script'leri için
 - `tools\pack_m49_mobile_beta_hardening.ps1`
 - `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1`
 - `tools\pack_m50_mobile_release_readiness.ps1`
+- `tools\pack_m51_53_backfill_verification.ps1`
+- `tools\pack_m54_4_driver_route_delivery.ps1`
 - `tools\check_*.ps1` repo-contract / hygiene kontrol script'leri
+- `tools\check_m51_53_backfill_verification_repo_contract.ps1`
+- `tools\check_m54_4_driver_route_delivery_repo_contract.ps1`
 - `tools\check_tools_hygiene_m105.ps1`
 - `tools\_console_status.ps1`
 
@@ -57,10 +61,13 @@ Bu klasörün kökü sadece **kanonik runtime / pack / check** script'leri için
 - `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m50_mobile_release_readiness.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m51_53_backfill_verification.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m54_4_driver_route_delivery.ps1 -RepoRoot D:\servis-platform`
 
 ## Güncel çalışma notu
 - Resmi green çizgi `M50` seviyesine kadardır.
-- Aktif ürün hattı `M51–M57` olarak izlenir.
-- Organization / gezi görünürlüğü, round-trip temeli, map/nav fallback ve market gating repo durumuna işlendi.
-- Sıradaki ana iş `M54 — Room Dispatch Planner`'dır.
+- `M51–M53` için backfill verification pack eklendi.
+- `M54.3` pack kanıtı vardır; `M54.4` driver route delivery pack eklendi.
+- Tek araç yeterli / non-dispatch işlerde paket-kopyala UI kolaylığı korunur.
+- Sıradaki ana ürün işi `M55 — Reports + No-show` olacaktır.
 - SSOT seti değişikliklerde birlikte güncellenmelidir.
