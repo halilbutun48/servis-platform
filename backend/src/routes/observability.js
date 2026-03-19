@@ -20,17 +20,17 @@ export function observabilityRouter() {
     });
   });
 
-  r.get("/room/summary", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
-    return res.json(buildRoomObservabilitySummary(req.user));
-  });
+r.get("/room/summary", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+  return res.json(await buildRoomObservabilitySummary(req.user));
+});
 
-  r.get("/room/drivers", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
-    return res.json({ items: buildRoomObservabilityDrivers(req.user) });
-  });
+r.get("/room/drivers", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+  return res.json({ items: await buildRoomObservabilityDrivers(req.user) });
+});
 
-  r.get("/room/issues", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
-    return res.json({ items: buildRoomObservabilityIssues(req.user) });
-  });
+r.get("/room/issues", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+  return res.json({ items: await buildRoomObservabilityIssues(req.user) });
+});
 
   return r;
 }

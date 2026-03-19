@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
@@ -70,7 +71,7 @@ function openRoomCopilotWithHint(hint) {
   try {
     sessionStorage.setItem(ENTRY_HINT_KEY, JSON.stringify(hint));
   } catch {}
-  window.location.href = "/room/copilot";
+  navigate("/room/copilot");
 }
 
 function DriverRow({ item }) {
