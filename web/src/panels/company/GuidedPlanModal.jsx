@@ -282,6 +282,32 @@ function clearPlanTermsForShiftIds(ids) {
   }
 }
 
+function ProviderScoreMini({ score }) {
+  if (!score) return null;
+  const count = Number(score.evaluationCount || 0);
+  const has = count > 0 && score.averageScore != null;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "2px 10px",
+        borderRadius: 999,
+        border: has ? "1px solid rgba(18,183,106,0.45)" : "1px solid rgba(255,255,255,0.10)",
+        background: has ? "rgba(18,183,106,0.12)" : "rgba(255,255,255,0.03)",
+        color: has ? "#d1fadf" : "#d0d5dd",
+        fontSize: 12,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+      title={has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}
+    >
+      {has ? `${Number(score.averageScore || 0).toFixed(1)} ★ (${count})` : "Puan yok"}
+    </span>
+  );
+}
+
 export default function GuidedPlanModal({
   open,
   onClose,
@@ -341,6 +367,7 @@ export default function GuidedPlanModal({
   const [roomQ, setRoomQ] = useState("");
   const [onlyHubRooms, setOnlyHubRooms] = useState(false);
   const [selRoomIds, setSelRoomIds] = useState({});
+  const [roomScores, setRoomScores] = useState({});
   const [offerAmount, setOfferAmount] = useState("");
   const [offerNote, setOfferNote] = useState("");
   const [sentOk, setSentOk] = useState(false);
@@ -364,6 +391,35 @@ export default function GuidedPlanModal({
     (rooms || []).forEach((r) => m.set(Number(r.id), r));
     return m;
   }, [rooms]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!token || !Array.isArray(rooms) || !rooms.length) {
+        if (alive) setRoomScores({});
+        return;
+      }
+      try {
+        const pairs = await Promise.all(
+          rooms.map(async (r) => {
+            try {
+              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
+              return [String(r.id), score];
+            } catch {
+              return [String(r.id), null];
+            }
+          })
+        );
+        if (!alive) return;
+        setRoomScores(Object.fromEntries(pairs));
+      } catch {
+        if (alive) setRoomScores({});
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [token, rooms]);
 
   const selectedRoomIds = useMemo(
     () =>
@@ -1869,17 +1925,27 @@ async function sendBulkOffers() {
             </div>
 
             <div className="card" style={{ marginTop: 10, maxHeight: 260, overflow: "auto" }}>
-              {(roomsFiltered || []).map((r) => (
-                <label key={r.id} className="row" style={{ gap: 8, alignItems: "center", padding: "6px 0" }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(selRoomIds[String(r.id)])}
-                    onChange={(e) => setSelRoomIds((p) => ({ ...p, [String(r.id)]: e.target.checked }))}
-                    disabled={busy}
-                  />
-                  <div className="muted">{r.name} #{r.id}</div>
-                </label>
-              ))}
+              {(roomsFiltered || []).map((r) => {
+                const score = roomScores[String(r.id)] || null;
+                return (
+                  <label
+                    key={r.id}
+                    className="row"
+                    style={{ gap: 8, alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}
+                  >
+                    <span className="row" style={{ gap: 8, alignItems: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(selRoomIds[String(r.id)])}
+                        onChange={(e) => setSelRoomIds((p) => ({ ...p, [String(r.id)]: e.target.checked }))}
+                        disabled={busy}
+                      />
+                      <div className="muted">{r.name} #{r.id}</div>
+                    </span>
+                    <ProviderScoreMini score={score} />
+                  </label>
+                );
+              })}
               {!roomsFiltered.length ? <div className="muted">Room bulunamadı.</div> : null}
             </div>
 

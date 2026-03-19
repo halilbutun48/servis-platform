@@ -139,6 +139,20 @@ function ExtendPill({ extendStatus, requestedEndDate }) {
   );
 }
 
+
+
+function ProviderScoreCard({ score }) {
+  if (!score) return null;
+  const has = Number(score.evaluationCount || 0) > 0;
+  return (
+    <div style={{ marginTop: 8, padding: 10, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, background: "rgba(255,255,255,0.02)" }}>
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>Seçili Room Puanı</div>
+      <div className="muted">{has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${score.evaluationCount} değerlendirme` : "Henüz puan yok"}</div>
+      {has && score.recommendRate != null ? <div className="muted" style={{ marginTop: 4 }}>Tekrar çalışma oranı: %{score.recommendRate}</div> : null}
+    </div>
+  );
+}
+
 export default function AgreementsPanel() {
   const { token } = useSession();
 
@@ -155,6 +169,7 @@ export default function AgreementsPanel() {
   const [rooms, setRooms] = useState([]);
   const [roomsSupported, setRoomsSupported] = useState(true);
   const [roomErr, setRoomErr] = useState("");
+  const [selectedRoomScore, setSelectedRoomScore] = useState(null);
 
   // ✅ M27: advanced create (optional)
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -197,6 +212,21 @@ export default function AgreementsPanel() {
     (rooms || []).forEach((r) => m.set(Number(r.id), r));
     return m;
   }, [rooms]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const rid = Number(roomId || 0);
+      if (!token || !rid) { setSelectedRoomScore(null); return; }
+      try {
+        const score = await api(`/api/trust-quality/provider-score/${rid}`, { token });
+        if (!cancelled) setSelectedRoomScore(score || null);
+      } catch {
+        if (!cancelled) setSelectedRoomScore(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token, roomId]);
 
   function applyTemplate(key) {
     const t = PLAN_TEMPLATES.find((x) => x.key === key) || PLAN_TEMPLATES[0];
@@ -578,6 +608,7 @@ export default function AgreementsPanel() {
                     (rooms endpoint missing)
                   </div>
                 )}
+                <ProviderScoreCard score={selectedRoomScore} />
               </label>
 
               <div>

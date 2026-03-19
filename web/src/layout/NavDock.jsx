@@ -98,6 +98,7 @@ export default function NavDock({ role, path, me }) {
           { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
           { label: "Vardiyalar", path: base + "/shifts" },
           { label: "Raporlar", path: base + "/reports" },
+          { label: "Hizmet Değerlendirme", path: base + "/service-evaluation", badge: "Yeni" },
         ],
       });
       // Sözleşmeler: Gelişmiş altında

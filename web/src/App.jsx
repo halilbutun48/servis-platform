@@ -29,6 +29,7 @@ const CompanyAgreementsPanel = lazy(() => import("./panels/company/AgreementsPan
 const GeoReviewPanel = lazy(() => import("./panels/company/GeoReviewPanel"));
 const CompanyHubPanel = lazy(() => import("./panels/company/HubPanel"));
 const CompanyCheckinPanel = lazy(() => import("./panels/company/CheckinPanel"));
+const ServiceEvaluationPanel = lazy(() => import("./panels/company/ServiceEvaluationPanel"));
 const OrganizationCenterPanel = lazy(() => import("./panels/organization/CenterPanel"));
 const OrganizationPlansPanel = lazy(() => import("./panels/organization/PlansPanel"));
 
@@ -226,6 +227,7 @@ export default function App() {
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/company/access-links") return { layout: true, node: <PassengerLinksPanel /> };
+    if (path === "/company/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
     if (path === "/company/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
     if (path === "/company/copilot") return { layout: true, node: <CopilotPanel /> };
 
@@ -238,6 +240,7 @@ export default function App() {
     if (path === "/school/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/school/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/school/access-links") return { layout: true, node: <PassengerLinksPanel /> };
+    if (path === "/school/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
     if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
     if (path === "/school/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
     if (path === "/school/copilot") return { layout: true, node: <CopilotPanel /> };
@@ -253,6 +256,7 @@ export default function App() {
     if (path === "/organization/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/organization/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/organization/access-links") return { layout: true, node: <PassengerLinksPanel /> };
+    if (path === "/organization/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
     if (path === "/organization/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
     if (path === "/organization/copilot") return { layout: true, node: <CopilotPanel /> };
 

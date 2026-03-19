@@ -57,6 +57,33 @@ function trimOrNull(s) {
   const t = String(s ?? "").trim();
   return t ? t : null;
 }
+
+
+function ProviderScoreMini({ score }) {
+  if (!score) return null;
+  const count = Number(score.evaluationCount || 0);
+  const has = count > 0 && score.averageScore != null;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "2px 10px",
+        borderRadius: 999,
+        border: has ? "1px solid rgba(18,183,106,0.45)" : "1px solid rgba(255,255,255,0.10)",
+        background: has ? "rgba(18,183,106,0.12)" : "rgba(255,255,255,0.03)",
+        color: has ? "#d1fadf" : "#d0d5dd",
+        fontSize: 12,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+      title={has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}
+    >
+      {has ? `${Number(score.averageScore || 0).toFixed(1)} ★ (${count})` : "Puan yok"}
+    </span>
+  );
+}
 function formatTRY(amount) {
   if (amount == null) return "";
   const n = Number(amount);
@@ -128,9 +155,37 @@ export default function CompanyShiftsPanel() {
   const [items, setItems] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [roomScores, setRoomScores] = useState({});
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!token || !rooms?.length) {
+        if (alive) setRoomScores({});
+        return;
+      }
+      try {
+        const pairs = await Promise.all(
+          (rooms || []).map(async (r) => {
+            try {
+              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
+              return [String(r.id), score];
+            } catch {
+              return [String(r.id), null];
+            }
+          })
+        );
+        if (!alive) return;
+        setRoomScores(Object.fromEntries(pairs));
+      } catch {
+        if (alive) setRoomScores({});
+      }
+    })();
+    return () => { alive = false; };
+  }, [token, rooms]);
 
   // ✅ M24: Market shift (room seçmeden) + multi-room offers
   const [marketMode, setMarketMode] = useState(false);
@@ -1858,7 +1913,12 @@ function usePlanDraftToRequest(draft) {
                       {s.status}
                     </span>
                   </td>
-                  <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
+                  <td className="muted">
+                    <div style={{ display: "grid", gap: 6 }}>
+                      <div>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</div>
+                      <ProviderScoreMini score={roomScores[String(r?.id || s.roomId || 0)] || null} />
+                    </div>
+                  </td>
 
                   <td>{renderRoomOfferSummary(s, canNegotiate)}</td>
                   <td>{renderCompanyOfferSummary(s)}</td>
@@ -2080,7 +2140,12 @@ function usePlanDraftToRequest(draft) {
                       {s.status}
                     </span>
                   </td>
-                  <td className="muted">{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</td>
+                  <td className="muted">
+                    <div style={{ display: "grid", gap: 6 }}>
+                      <div>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</div>
+                      <ProviderScoreMini score={roomScores[String(r?.id || s.roomId || 0)] || null} />
+                    </div>
+                  </td>
                   <td>{renderRoomOfferSummary(s, false)}</td>
                   <td>{renderCompanyOfferSummary(s)}</td>
                   <td className="muted">
@@ -2254,7 +2319,7 @@ function usePlanDraftToRequest(draft) {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontWeight: 800 }}>Teklif Gönder — Shift #{offerModal.shiftId}</div>
-              <div className="muted">Birden fazla room seçip tek seferde teklif at.</div>
+              <div className="muted">Birden fazla room seçip tek seferde teklif at. Room puanı listede üstte görünür.</div>
             </div>
             <button type="button" disabled={busy} onClick={() => setOfferModal((p) => ({ ...p, open: false }))}>
               Kapat
@@ -2288,19 +2353,24 @@ function usePlanDraftToRequest(draft) {
                 if (!q) return true;
                 return String(r?.name || "").toLowerCase().includes(q);
               })
-              .map((r) => (
-                <label key={r.id} className="muted" style={{ display: "flex", gap: 8, alignItems: "center", padding: "4px 0" }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(offerModal.roomIds?.[r.id])}
-                    onChange={() => toggleOfferRoom(r.id)}
-                  />
-                  <span>
-                    <b>{roomLabel(r)}</b> (#{r.id})
-                    {r?.hubLat != null && r?.hubLng != null ? "" : " • hub yok"}
+              .map((r) => {
+                const score = roomScores[String(r.id)] || null;
+                return (
+                <label key={r.id} className="muted" style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}>
+                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(offerModal.roomIds?.[r.id])}
+                      onChange={() => toggleOfferRoom(r.id)}
+                    />
+                    <span>
+                      <b>{roomLabel(r)}</b> (#{r.id})
+                      {r?.hubLat != null && r?.hubLng != null ? "" : " • hub yok"}
+                    </span>
                   </span>
+                  <ProviderScoreMini score={score} />
                 </label>
-              ))}
+              );})}
           </div>
 
           <hr />
@@ -2355,7 +2425,12 @@ function usePlanDraftToRequest(draft) {
             <tbody>
               {(offersModal.items || []).map((o) => (
                 <tr key={o.id}>
-                  <td className="muted">{o.room ? `${roomLabel(o.room)} (#${o.room.id})` : `#${o.roomId}`}</td>
+                  <td className="muted">
+                      <div style={{ display: "grid", gap: 6 }}>
+                        <div>{o.room ? `${roomLabel(o.room)} (#${o.room.id})` : `#${o.roomId}`}</div>
+                        <ProviderScoreMini score={roomScores[String(o.room?.id || o.roomId || 0)] || null} />
+                      </div>
+                    </td>
                   <td><span className="pill" data-status={o.status}>{o.status}</span></td>
                   <td className="muted">{formatTRY(o.amountCompany)}</td>
                   <td className="muted">{formatTRY(o.amountRoom)}</td>

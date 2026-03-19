@@ -137,6 +137,46 @@ function onlyDigits(raw) {
   return String(raw ?? "").replace(/\./g, "").replace(/[^\d]/g, "");
 }
 
+
+function ProviderScoreMini({ score }) {
+  if (!score) return null;
+  const count = Number(score.evaluationCount || 0);
+  const has = count > 0 && score.averageScore != null;
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "3px 10px",
+        borderRadius: 999,
+        border: has ? "1px solid rgba(18,183,106,0.45)" : "1px solid rgba(255,255,255,0.10)",
+        background: has ? "rgba(18,183,106,0.12)" : "rgba(255,255,255,0.03)",
+        color: has ? "#d1fadf" : "#d0d5dd",
+        fontSize: 12,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+      title={has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}
+    >
+      {has ? `${Number(score.averageScore || 0).toFixed(1)} ★ (${count})` : "Puan yok"}
+    </span>
+  );
+}
+
+function ProviderScoreCard({ score }) {
+  if (!score) return null;
+  const count = Number(score.evaluationCount || 0);
+  const has = count > 0 && score.averageScore != null;
+  return (
+    <div style={{ marginTop: 10, padding: 12, border: has ? "1px solid rgba(18,183,106,0.35)" : "1px solid rgba(255,255,255,0.08)", borderRadius: 12, background: has ? "rgba(18,183,106,0.06)" : "rgba(255,255,255,0.02)" }}>
+      <div style={{ fontWeight: 800, marginBottom: 4 }}>Seçili Room Puanı</div>
+      <div className="muted">{has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}</div>
+      {has && score.recommendRate != null ? <div className="muted" style={{ marginTop: 4 }}>Tekrar çalışma oranı: %{score.recommendRate}</div> : null}
+    </div>
+  );
+}
+
 function pickPackFirstItem(pack, { startHHMM, endHHMM, direction, pattern }) {
   let it = (pack?.items || [])[0];
   if (pack?.key === "CUSTOM") {
@@ -166,6 +206,7 @@ export default function AgreementWizard({
   // rooms (optional internal load if not passed)
   const [roomsLocal, setRoomsLocal] = useState([]);
   const roomsList = rooms != null ? rooms : roomsLocal;
+  const [roomScores, setRoomScores] = useState({});
 
   const [q, setQ] = useState("");
   const [onlyHub, setOnlyHub] = useState(true);
@@ -224,6 +265,9 @@ export default function AgreementWizard({
     return m;
   }, [roomsList]);
 
+  const selectedRoomScore = useMemo(() => roomScores[String(roomId)] || null, [roomScores, roomId]);
+  const selectedMarketRoomCount = useMemo(() => Object.values(marketRoomIds || {}).filter(Boolean).length, [marketRoomIds]);
+
   // load rooms internally if needed
   useEffect(() => {
     if (!open) return;
@@ -246,6 +290,33 @@ export default function AgreementWizard({
       alive = false;
     };
   }, [open, token, rooms]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!token || !roomsList?.length) {
+        if (alive) setRoomScores({});
+        return;
+      }
+      try {
+        const pairs = await Promise.all(
+          (roomsList || []).map(async (r) => {
+            try {
+              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
+              return [String(r.id), score];
+            } catch {
+              return [String(r.id), null];
+            }
+          })
+        );
+        if (!alive) return;
+        setRoomScores(Object.fromEntries(pairs));
+      } catch {
+        if (alive) setRoomScores({});
+      }
+    })();
+    return () => { alive = false; };
+  }, [token, roomsList]);
 
   // apply pack defaults when pack changes
   useEffect(() => {
@@ -641,30 +712,35 @@ export default function AgreementWizard({
               </div>
 
               <div style={{ marginTop: 10, maxHeight: 340, overflow: "auto", border: "1px solid #eee", borderRadius: 8 }}>
-                {(filteredMarketRooms || []).map((r) => (
+                {(filteredMarketRooms || []).map((r) => {
+                  const score = roomScores[String(r.id)] || null;
+                  return (
                   <label
                     key={r.id}
                     className="muted"
-                    style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 10px", borderBottom: "1px solid #f2f2f2" }}
+                    style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: "1px solid #f2f2f2" }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={Boolean(marketRoomIds?.[r.id])}
-                      onChange={() => toggleMarketRoom(r.id)}
-                      disabled={marketBusy}
-                    />
-                    <span>
-                      <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
-                      {r?.hubLat != null && r?.hubLng != null ? <span className="muted"> • hub</span> : null}
+                    <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(marketRoomIds?.[r.id])}
+                        onChange={() => toggleMarketRoom(r.id)}
+                        disabled={marketBusy}
+                      />
+                      <span>
+                        <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
+                        {r?.hubLat != null && r?.hubLng != null ? <span className="muted"> • hub</span> : null}
+                      </span>
                     </span>
+                    <ProviderScoreMini score={score} />
                   </label>
-                ))}
+                );})}
                 {!filteredMarketRooms.length ? <div className="muted" style={{ padding: 10 }}>Room bulunamadı.</div> : null}
               </div>
 
               <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
                 <div className="muted">
-                  Seçili: {Object.values(marketRoomIds || {}).filter(Boolean).length}
+                  Seçili: {selectedMarketRoomCount}
                 </div>
                 <button type="button" disabled={marketBusy} onClick={createMarketShiftAndSendOffers}>
                   {marketBusy ? "..." : "Shift Aç + Teklif Gönder"}
@@ -695,27 +771,33 @@ export default function AgreementWizard({
             </div>
 
             <div style={{ marginTop: 10, maxHeight: 340, overflow: "auto", border: "1px solid #eee", borderRadius: 8 }}>
-              {(filteredRooms || []).map((r) => (
+              {(filteredRooms || []).map((r) => {
+                const score = roomScores[String(r.id)] || null;
+                return (
                 <label
                   key={r.id}
                   className="muted"
-                  style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 10px", borderBottom: "1px solid #f2f2f2" }}
+                  style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: "1px solid #f2f2f2" }}
                 >
-                  <input
-                    type="radio"
-                    name="roomPick"
-                    checked={String(roomId) === String(r.id)}
-                    onChange={() => setRoomId(String(r.id))}
-                    disabled={busy}
-                  />
-                  <span>
-                    <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
-                    {r?.hubLat != null && r?.hubLng != null ? <span className="muted"> • hub</span> : null}
+                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="radio"
+                      name="roomPick"
+                      checked={String(roomId) === String(r.id)}
+                      onChange={() => setRoomId(String(r.id))}
+                      disabled={busy}
+                    />
+                    <span>
+                      <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
+                      {r?.hubLat != null && r?.hubLng != null ? <span className="muted"> • hub</span> : null}
+                    </span>
                   </span>
+                  <ProviderScoreMini score={score} />
                 </label>
-              ))}
+              );})}
               {!filteredRooms.length ? <div className="muted" style={{ padding: 10 }}>Room bulunamadı.</div> : null}
             </div>
+            <ProviderScoreCard score={selectedRoomScore} />
           </div>
 
           <div className="card">
