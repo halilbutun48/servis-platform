@@ -18,6 +18,7 @@ const RoomAgreementsPanel = lazy(() => import("./panels/room/AgreementsPanel"));
 const RoomOffersPanel = lazy(() => import("./panels/room/OffersPanel"));
 const RoomHubPanel = lazy(() => import("./panels/room/HubPanel"));
 const RoomCheckinPanel = lazy(() => import("./panels/room/CheckinPanel"));
+const OperationHealthPanel = lazy(() => import("./panels/room/OperationHealthPanel"));
 
 // COMPANY
 const CompanyWorkflowPanel = lazy(() => import("./panels/company/WorkflowPanel"));
@@ -196,6 +197,7 @@ export default function App() {
     if (path === "/shared/logs") return { layout: true, node: <LogsPanel /> };
     if (path === "/shared/kvkk") return { layout: true, node: <KvkkPanel /> };
     if (path === "/room/reports") return { layout: true, node: <ReportsPanel /> };
+    if (path === "/room/operation-health") return { layout: true, node: <OperationHealthPanel /> };
     if (path === "/company/reports") return { layout: true, node: <ReportsPanel /> };
     if (path === "/school/reports") return { layout: true, node: <ReportsPanel /> };
     if (path === "/organization/reports") return { layout: true, node: <ReportsPanel /> };

@@ -73,7 +73,9 @@ export default function NavDock({ role, path, me }) {
       });
       sections.push({
         title: "Operasyon",
-        items: [          { label: "Araçlar", path: "/room/vehicles" },
+        items: [
+          { label: "Operasyon Sağlığı", path: "/room/operation-health", badge: "Yeni" },
+          { label: "Araçlar", path: "/room/vehicles" },
           { label: "Sürücüler", path: "/room/drivers" },
           { label: "Raporlar", path: "/room/reports" },
         ],
