@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
 import { useSession } from "../../state/session";
+import { ProviderScoreBadge, ProviderScoreCard } from "../../components/ProviderScoreBadge";
 import {
   WEEKDAYS,
   DAY_PRESETS,
@@ -137,45 +138,6 @@ function onlyDigits(raw) {
   return String(raw ?? "").replace(/\./g, "").replace(/[^\d]/g, "");
 }
 
-
-function ProviderScoreMini({ score }) {
-  if (!score) return null;
-  const count = Number(score.evaluationCount || 0);
-  const has = count > 0 && score.averageScore != null;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "3px 10px",
-        borderRadius: 999,
-        border: has ? "1px solid rgba(18,183,106,0.45)" : "1px solid rgba(255,255,255,0.10)",
-        background: has ? "rgba(18,183,106,0.12)" : "rgba(255,255,255,0.03)",
-        color: has ? "#d1fadf" : "#d0d5dd",
-        fontSize: 12,
-        fontWeight: 800,
-        whiteSpace: "nowrap",
-      }}
-      title={has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}
-    >
-      {has ? `${Number(score.averageScore || 0).toFixed(1)} ★ (${count})` : "Puan yok"}
-    </span>
-  );
-}
-
-function ProviderScoreCard({ score }) {
-  if (!score) return null;
-  const count = Number(score.evaluationCount || 0);
-  const has = count > 0 && score.averageScore != null;
-  return (
-    <div style={{ marginTop: 10, padding: 12, border: has ? "1px solid rgba(18,183,106,0.35)" : "1px solid rgba(255,255,255,0.08)", borderRadius: 12, background: has ? "rgba(18,183,106,0.06)" : "rgba(255,255,255,0.02)" }}>
-      <div style={{ fontWeight: 800, marginBottom: 4 }}>Seçili Room Puanı</div>
-      <div className="muted">{has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}</div>
-      {has && score.recommendRate != null ? <div className="muted" style={{ marginTop: 4 }}>Tekrar çalışma oranı: %{score.recommendRate}</div> : null}
-    </div>
-  );
-}
 
 function pickPackFirstItem(pack, { startHHMM, endHHMM, direction, pattern }) {
   let it = (pack?.items || [])[0];
@@ -718,21 +680,32 @@ export default function AgreementWizard({
                   <label
                     key={r.id}
                     className="muted"
-                    style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: "1px solid #f2f2f2" }}
+                    style={{
+                      display: "grid",
+                      gap: 8,
+                      padding: "10px 12px",
+                      borderBottom: "1px solid #f2f2f2",
+                      background: marketRoomIds?.[r.id] ? "rgba(18,183,106,0.05)" : "transparent",
+                    }}
                   >
-                    <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(marketRoomIds?.[r.id])}
-                        onChange={() => toggleMarketRoom(r.id)}
-                        disabled={marketBusy}
-                      />
-                      <span>
-                        <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
-                        {r?.hubLat != null && r?.hubLng != null ? <span className="muted"> • hub</span> : null}
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start", justifyContent: "space-between" }}>
+                      <span style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(marketRoomIds?.[r.id])}
+                          onChange={() => toggleMarketRoom(r.id)}
+                          disabled={marketBusy}
+                          style={{ marginTop: 4 }}
+                        />
+                        <span style={{ display: "grid", gap: 4 }}>
+                          <span>
+                            <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
+                          </span>
+                          <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik"}</span>
+                        </span>
                       </span>
-                    </span>
-                    <ProviderScoreMini score={score} />
+                      <ProviderScoreBadge score={score} prominent showLabel />
+                    </div>
                   </label>
                 );})}
                 {!filteredMarketRooms.length ? <div className="muted" style={{ padding: 10 }}>Room bulunamadı.</div> : null}
@@ -777,22 +750,33 @@ export default function AgreementWizard({
                 <label
                   key={r.id}
                   className="muted"
-                  style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderBottom: "1px solid #f2f2f2" }}
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    padding: "10px 12px",
+                    borderBottom: "1px solid #f2f2f2",
+                    background: String(roomId) === String(r.id) ? "rgba(18,183,106,0.05)" : "transparent",
+                  }}
                 >
-                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input
-                      type="radio"
-                      name="roomPick"
-                      checked={String(roomId) === String(r.id)}
-                      onChange={() => setRoomId(String(r.id))}
-                      disabled={busy}
-                    />
-                    <span>
-                      <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
-                      {r?.hubLat != null && r?.hubLng != null ? <span className="muted"> • hub</span> : null}
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start", justifyContent: "space-between" }}>
+                    <span style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <input
+                        type="radio"
+                        name="roomPick"
+                        checked={String(roomId) === String(r.id)}
+                        onChange={() => setRoomId(String(r.id))}
+                        disabled={busy}
+                        style={{ marginTop: 4 }}
+                      />
+                      <span style={{ display: "grid", gap: 4 }}>
+                        <span>
+                          <b>{r.name ?? `Room #${r.id}`}</b> <span className="muted">(#{r.id})</span>
+                        </span>
+                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik"}</span>
+                      </span>
                     </span>
-                  </span>
-                  <ProviderScoreMini score={score} />
+                    <ProviderScoreBadge score={score} prominent showLabel />
+                  </div>
                 </label>
               );})}
               {!filteredRooms.length ? <div className="muted" style={{ padding: 10 }}>Room bulunamadı.</div> : null}

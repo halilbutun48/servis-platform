@@ -11,6 +11,7 @@ import PlanBuilderPanel from "./PlanBuilderPanel";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
+import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -59,31 +60,6 @@ function trimOrNull(s) {
 }
 
 
-function ProviderScoreMini({ score }) {
-  if (!score) return null;
-  const count = Number(score.evaluationCount || 0);
-  const has = count > 0 && score.averageScore != null;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "2px 10px",
-        borderRadius: 999,
-        border: has ? "1px solid rgba(18,183,106,0.45)" : "1px solid rgba(255,255,255,0.10)",
-        background: has ? "rgba(18,183,106,0.12)" : "rgba(255,255,255,0.03)",
-        color: has ? "#d1fadf" : "#d0d5dd",
-        fontSize: 12,
-        fontWeight: 800,
-        whiteSpace: "nowrap",
-      }}
-      title={has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}
-    >
-      {has ? `${Number(score.averageScore || 0).toFixed(1)} ★ (${count})` : "Puan yok"}
-    </span>
-  );
-}
 function formatTRY(amount) {
   if (amount == null) return "";
   const n = Number(amount);
@@ -1915,8 +1891,10 @@ function usePlanDraftToRequest(draft) {
                   </td>
                   <td className="muted">
                     <div style={{ display: "grid", gap: 6 }}>
-                      <div>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</div>
-                      <ProviderScoreMini score={roomScores[String(r?.id || s.roomId || 0)] || null} />
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                        <span>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</span>
+                        <ProviderScoreBadge score={roomScores[String(r?.id || s.roomId || 0)] || null} prominent />
+                      </div>
                     </div>
                   </td>
 
@@ -2142,8 +2120,10 @@ function usePlanDraftToRequest(draft) {
                   </td>
                   <td className="muted">
                     <div style={{ display: "grid", gap: 6 }}>
-                      <div>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</div>
-                      <ProviderScoreMini score={roomScores[String(r?.id || s.roomId || 0)] || null} />
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                        <span>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</span>
+                        <ProviderScoreBadge score={roomScores[String(r?.id || s.roomId || 0)] || null} prominent />
+                      </div>
                     </div>
                   </td>
                   <td>{renderRoomOfferSummary(s, false)}</td>
@@ -2356,19 +2336,32 @@ function usePlanDraftToRequest(draft) {
               .map((r) => {
                 const score = roomScores[String(r.id)] || null;
                 return (
-                <label key={r.id} className="muted" style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}>
-                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(offerModal.roomIds?.[r.id])}
-                      onChange={() => toggleOfferRoom(r.id)}
-                    />
-                    <span>
-                      <b>{roomLabel(r)}</b> (#{r.id})
-                      {r?.hubLat != null && r?.hubLng != null ? "" : " • hub yok"}
+                <label key={r.id} className="muted" style={{
+                  display: "grid",
+                  gap: 8,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: offerModal.roomIds?.[r.id] ? "rgba(18,183,106,0.05)" : "rgba(255,255,255,0.02)",
+                  marginBottom: 8,
+                }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start", justifyContent: "space-between" }}>
+                    <span style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(offerModal.roomIds?.[r.id])}
+                        onChange={() => toggleOfferRoom(r.id)}
+                        style={{ marginTop: 4 }}
+                      />
+                      <span style={{ display: "grid", gap: 4 }}>
+                        <span>
+                          <b>{roomLabel(r)}</b> (#{r.id})
+                        </span>
+                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub yok"}</span>
+                      </span>
                     </span>
-                  </span>
-                  <ProviderScoreMini score={score} />
+                    <ProviderScoreBadge score={score} prominent showLabel />
+                  </div>
                 </label>
               );})}
           </div>
@@ -2427,8 +2420,10 @@ function usePlanDraftToRequest(draft) {
                 <tr key={o.id}>
                   <td className="muted">
                       <div style={{ display: "grid", gap: 6 }}>
-                        <div>{o.room ? `${roomLabel(o.room)} (#${o.room.id})` : `#${o.roomId}`}</div>
-                        <ProviderScoreMini score={roomScores[String(o.room?.id || o.roomId || 0)] || null} />
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                          <span>{o.room ? `${roomLabel(o.room)} (#${o.room.id})` : `#${o.roomId}`}</span>
+                          <ProviderScoreBadge score={roomScores[String(o.room?.id || o.roomId || 0)] || null} prominent showLabel />
+                        </div>
                       </div>
                     </td>
                   <td><span className="pill" data-status={o.status}>{o.status}</span></td>

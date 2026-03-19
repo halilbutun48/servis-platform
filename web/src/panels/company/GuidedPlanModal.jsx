@@ -6,6 +6,7 @@ import { useSession } from "../../state/session";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import { personLabel } from "../../utils/labels";
 import { buildGoogleNavUrl } from "../../utils/navigation";
+import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import {
   WEEKDAYS,
   DURATION_PRESETS,
@@ -280,32 +281,6 @@ function clearPlanTermsForShiftIds(ids) {
   } catch {
     // ignore local cleanup errors
   }
-}
-
-function ProviderScoreMini({ score }) {
-  if (!score) return null;
-  const count = Number(score.evaluationCount || 0);
-  const has = count > 0 && score.averageScore != null;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "2px 10px",
-        borderRadius: 999,
-        border: has ? "1px solid rgba(18,183,106,0.45)" : "1px solid rgba(255,255,255,0.10)",
-        background: has ? "rgba(18,183,106,0.12)" : "rgba(255,255,255,0.03)",
-        color: has ? "#d1fadf" : "#d0d5dd",
-        fontSize: 12,
-        fontWeight: 800,
-        whiteSpace: "nowrap",
-      }}
-      title={has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${count} değerlendirme` : "Henüz puan yok"}
-    >
-      {has ? `${Number(score.averageScore || 0).toFixed(1)} ★ (${count})` : "Puan yok"}
-    </span>
-  );
 }
 
 export default function GuidedPlanModal({
@@ -1931,18 +1906,30 @@ async function sendBulkOffers() {
                   <label
                     key={r.id}
                     className="row"
-                    style={{ gap: 8, alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}
+                    style={{
+                      gap: 8,
+                      alignItems: "stretch",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: selRoomIds[String(r.id)] ? "rgba(18,183,106,0.05)" : "rgba(255,255,255,0.02)",
+                    }}
                   >
-                    <span className="row" style={{ gap: 8, alignItems: "center" }}>
+                    <span className="row" style={{ gap: 10, alignItems: "flex-start" }}>
                       <input
                         type="checkbox"
                         checked={Boolean(selRoomIds[String(r.id)])}
                         onChange={(e) => setSelRoomIds((p) => ({ ...p, [String(r.id)]: e.target.checked }))}
                         disabled={busy}
+                        style={{ marginTop: 4 }}
                       />
-                      <div className="muted">{r.name} #{r.id}</div>
+                      <span style={{ display: "grid", gap: 4 }}>
+                        <span className="muted"><b>{r.name}</b> #{r.id}</span>
+                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik"}</span>
+                      </span>
                     </span>
-                    <ProviderScoreMini score={score} />
+                    <ProviderScoreBadge score={score} prominent showLabel />
                   </label>
                 );
               })}

@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import AgreementWizard from "./AgreementWizard";
+import { ProviderScoreCard } from "../../components/ProviderScoreBadge";
 import {
   WEEKDAYS,
   DAY_PRESETS,
@@ -140,18 +141,6 @@ function ExtendPill({ extendStatus, requestedEndDate }) {
 }
 
 
-
-function ProviderScoreCard({ score }) {
-  if (!score) return null;
-  const has = Number(score.evaluationCount || 0) > 0;
-  return (
-    <div style={{ marginTop: 8, padding: 10, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, background: "rgba(255,255,255,0.02)" }}>
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>Seçili Room Puanı</div>
-      <div className="muted">{has ? `${Number(score.averageScore || 0).toFixed(1)} / 5 • ${score.evaluationCount} değerlendirme` : "Henüz puan yok"}</div>
-      {has && score.recommendRate != null ? <div className="muted" style={{ marginTop: 4 }}>Tekrar çalışma oranı: %{score.recommendRate}</div> : null}
-    </div>
-  );
-}
 
 export default function AgreementsPanel() {
   const { token } = useSession();
