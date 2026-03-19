@@ -16,6 +16,7 @@ const DriversPanel = lazy(() => import("./panels/room/DriversPanel"));
 const RoomShiftsPanel = lazy(() => import("./panels/room/ShiftsPanel"));
 const RoomAgreementsPanel = lazy(() => import("./panels/room/AgreementsPanel"));
 const RoomOffersPanel = lazy(() => import("./panels/room/OffersPanel"));
+const CommercialFlowPanel = lazy(() => import("./panels/room/CommercialFlowPanel"));
 const RoomHubPanel = lazy(() => import("./panels/room/HubPanel"));
 const RoomCheckinPanel = lazy(() => import("./panels/room/CheckinPanel"));
 const OperationHealthPanel = lazy(() => import("./panels/room/OperationHealthPanel"));
@@ -210,6 +211,7 @@ export default function App() {
     if (path === "/room/shifts") return { layout: true, node: <RoomShiftsPanel /> };
     if (path === "/room/agreements") return { layout: true, node: <RoomAgreementsPanel /> };
     if (path === "/room/offers") return { layout: true, node: <RoomOffersPanel /> };
+    if (path === "/room/commercial-flow") return { layout: true, node: <CommercialFlowPanel /> };
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
     if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
     if (path === "/room/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };

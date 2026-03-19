@@ -68,6 +68,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Rehber", path: "/room/copilot", badge: "Yeni" },
           { label: "Canlı Takip", path: "/room/map" },
           { label: "Teklifler", path: "/room/offers" },
+          { label: "Ticari Akışım", path: "/room/commercial-flow", badge: "Yeni" },
           { label: "Vardiyalar", path: "/room/shifts" },
         ],
       });

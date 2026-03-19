@@ -1,0 +1,151 @@
+﻿import { useEffect, useMemo, useState } from "react";
+import { api } from "../../api";
+import { navigate } from "../../router";
+import { useSession } from "../../state/session";
+
+function fmtTR(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function MetricCard({ title, value, note, accent = "default" }) {
+    const accentMap = {
+    default: { border: "1px solid rgba(255,255,255,0.08)", title: "#98a2b3", value: "#f8fafc" },
+    warm: { border: "1px solid rgba(247,144,9,0.35)", title: "#f7b267", value: "#ffd38a" },
+    good: { border: "1px solid rgba(18,183,106,0.35)", title: "#6ce9a6", value: "#d1fadf" },
+  };
+  const palette = accentMap[accent] || accentMap.default;
+  return (
+    <div style={{ padding: 14, border: palette.border, borderRadius: 14, flex: "1 1 180px" }}>
+      <div className="muted" style={{ marginBottom: 8, color: palette.title, fontWeight: 700 }}>{title}</div>
+      <div style={{ fontSize: 30, fontWeight: 900, color: palette.value, letterSpacing: "-0.02em" }}>{value}</div>
+      {note ? <div className="muted" style={{ marginTop: 8 }}>{note}</div> : null}
+    </div>
+  );
+}
+
+function StatusBadge({ value }) {
+  const normalized = String(value || "").trim().toUpperCase();
+  let style = { color: "#d0d5dd", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
+  if (["OPEN", "REQUESTED"].includes(normalized)) style = { color: "#fedf89", background: "rgba(247,144,9,0.16)", border: "1px solid rgba(247,144,9,0.45)" };
+  if (["COUNTERED", "PAZARLIK", "NEGOTIATION"].includes(normalized)) style = { color: "#b2ddff", background: "rgba(83,177,253,0.12)", border: "1px solid rgba(83,177,253,0.35)" };
+  if (["ACCEPTED", "APPROVED", "ACTIVE"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
+  if (["CANCELLED", "DONE", "REJECTED"].includes(normalized)) style = { color: "#fecdca", background: "rgba(240,68,56,0.12)", border: "1px solid rgba(240,68,56,0.35)" };
+  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{value || "-"}</span>;
+}
+
+export default function CommercialFlowPanel() {
+  const { token } = useSession();
+  const [summary, setSummary] = useState(null);
+  const [items, setItems] = useState([]);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [s, i] = await Promise.all([
+          api("/api/commercial-core/room/summary", { token }),
+          api("/api/commercial-core/room/items", { token }),
+        ]);
+        if (cancelled) return;
+        setSummary(s || null);
+        setItems(Array.isArray(i?.items) ? i.items : []);
+      } catch (e) {
+        if (cancelled) return;
+        setErr(e?.message || String(e));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const cards = useMemo(() => {
+    const c = summary?.cards || {};
+    return [
+      { title: "Acik Teklif", value: c.openOffers ?? "-", note: "Incelenmesi gereken teklifler" },
+      { title: "Karsi Teklifim", value: c.counteredOffers ?? "-", note: "Firma cevabi beklenen kayitlar" },
+      { title: "Kabul Edilen", value: c.acceptedOffers ?? "-", note: "Operasyona yaklasan kayitlar" },
+      { title: "Sozlesme Bekleyen", value: c.requestedAgreements ?? "-", note: "Talep edilen sozlesmeler" },
+      { title: "Aktif Sozlesme", value: c.activeAgreements ?? "-", note: "APPROVED / ACTIVE sozlesmeler" },
+      { title: "Aktif Operasyon", value: c.approvedOrActiveShifts ?? "-", note: "Sahaya inen işler" },
+    ];
+  }, [summary]);
+
+  return (
+    <div className="card">
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0 }}>Ticari Akisim</h2>
+          <div className="muted" style={{ marginTop: 6 }}>Room icin teklif, pazarlik ve sozlesmeye gecis gorunurlugu</div>
+        </div>
+        <div className="muted">Kapsam: Kendi ticari alaniniz</div>
+      </div>
+
+      {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        {cards.map((card) => <MetricCard key={card.title} {...card} />)}
+      </div>
+
+      <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+          <div style={{ fontWeight: 700 }}>Teklif / Uzlasma Listesi</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => navigate("/room/offers")}>Teklifleri ac</button>
+            <button type="button" onClick={() => navigate("/room/agreements")}>Sozlesmeleri ac</button>
+          </div>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left" }}>
+                <th>Karsi Taraf</th>
+                <th>Akis</th>
+                <th>Tutar</th>
+                <th>Durum</th>
+                <th>Son Guncelleme</th>
+                <th>Sonraki Adim</th>
+                <th>Aksiyon</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length ? items.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.counterparty || "-"}</td>
+                  <td>{item.flowLabel || "-"}</td>
+                  <td>{item.amountLabel || "-"}</td>
+                  <td><StatusBadge value={item.statusLabel || item.status} /></td>
+                  <td>{fmtTR(item.updatedAt)}</td>
+                  <td>{item.nextStep || "-"}</td>
+                  <td>
+                    {item.actionPath ? (
+                      <button type="button" onClick={() => navigate(item.actionPath)}>{item.actionLabel || "Ac"}</button>
+                    ) : "-"}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={7} className="muted" style={{ padding: "8px 0" }}>
+                    Henuz room kapsaminda dusen ticari kayit yok. Aktif Operasyon sayisi ust kartta gorunur.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
