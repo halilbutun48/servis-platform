@@ -56,6 +56,7 @@ const INTENT_OPTIONS = [
 ];
 
 const HISTORY_KEY = "copilot.history.m46_6_a";
+const ENTRY_HINT_KEY = "room:operationHealthHint";
 
 function canUseEntityChat(role) {
   return ["ROOM", "COMPANY", "SUPER_ADMIN"].includes(String(role || ""));
@@ -351,9 +352,19 @@ export default function CopilotPanel() {
   const [chatErr, setChatErr] = useState("");
   const [chatConversationState, setChatConversationState] = useState(null);
   const [chatSuggestedChips, setChatSuggestedChips] = useState([]);
+  const [entryHint, setEntryHint] = useState(null);
 
   useEffect(() => {
     setHistory(safeHistoryLoad());
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(ENTRY_HINT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && String(parsed.source || "") === "ROOM_OPERATION_HEALTH") setEntryHint(parsed);
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -618,6 +629,23 @@ export default function CopilotPanel() {
     navigate(withRouteParams(path, action?.routeParams));
   }
 
+  function clearEntryHint() {
+    try { sessionStorage.removeItem(ENTRY_HINT_KEY); } catch {}
+    setEntryHint(null);
+  }
+
+  function askEntryHint(mode = "explain") {
+    if (!entryHint) return;
+    const title = String(entryHint.title || "Operasyon sağlığı uyarısı");
+    const detail = String(entryHint.detail || "");
+    const prefix = `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}.`;
+    const prompt = mode === "next"
+      ? `${prefix} Şimdi ne yapmam gerektiğini sade Türkçe ile söyle.`
+      : `${prefix} Bunun ne anlama geldiğini sade Türkçe ile açıkla.`;
+    setPanelMode("CHAT");
+    runChat(prompt);
+  }
+
   return (
     <div className="wrap" style={{ display: "grid", gap: 12 }}>
       <div className="card">
@@ -626,6 +654,19 @@ export default function CopilotPanel() {
           Sohbet modu kısa cevap verir ve ilgili yere götürür. Rehber modu çok sade Türkçe ile adım gösterir. Gelişmiş mod mevcut copilot analizini korur. Sistem read-only / suggestion-first kalır.
         </div>
       </div>
+
+      {entryHint ? (
+        <div className="card" style={{ display: "grid", gap: 10 }}>
+          <div style={{ fontWeight: 800 }}>Operasyon Sağlığından geldin</div>
+          <div className="muted">{entryHint.title || "Operasyon sağlığı uyarısı"}</div>
+          <div>{entryHint.detail || "Kısa açıklama yok."}</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => askEntryHint("explain")}>Bunu açıkla</button>
+            <button type="button" onClick={() => askEntryHint("next")}>Şimdi ne yapayım?</button>
+            <button type="button" onClick={clearEntryHint}>Kapat</button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card" style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
