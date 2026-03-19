@@ -10,7 +10,7 @@
 - **Step 4.4–4.8 (M48–M50):** Mobil foundation → tablet readiness → beta hardening → voice ETA → release readiness resmi green
 - **Step 4.9–5.1 (M51–M54.4):** backfill verification → dispatch approve/repack → driver route delivery resmi green
 - **Hazırlık tarihi:** `M58 — Final Pilot Readiness` teknik pack-green
-- **Active track (M65):** Pilot Launch Gate
+- **Active track:** M59 -> M65 saha oncesi hatti tamamlandi
 
 ## Resmi green kutular
 - [x] `M44 — Telematics` pack: `tools\pack_m44_telematics.ps1`
@@ -40,7 +40,7 @@
 - [x] `M62 — Ticari Omurga Güçlendirme` pack: `tools\pack_m62_commercial_core_strengthening.ps1`
 - [x] `M63 — Güven + Kalite + Hizmet Değerlendirme` pack: `tools\pack_m63_trust_quality_service_evaluation.ps1`
 - [x] `M64 — Doğal Copilot Katmanı` pack: `tools\pack_m64_natural_copilot_layer.ps1`
-- [ ] `M65 — Pilot Launch Gate` pack: `tools\pack_m65_pilot_launch_gate.ps1`
+- [x] `M65 — Pilot Launch Gate` pack: `tools\pack_m65_pilot_launch_gate.ps1`
 
 M58 pilot readiness marker: pack_m58_final_pilot_readiness.ps1
 M59 observability marker: pack_m59_observability_field_diagnostics.ps1

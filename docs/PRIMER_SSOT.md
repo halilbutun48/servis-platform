@@ -56,8 +56,8 @@ Not:
 - `M62 — Ticari Omurga Güçlendirme` resmi green oldu.
 - `M63 — Güven + Kalite + Hizmet Değerlendirme` resmi green oldu.
 - `M64 — Doğal Copilot Katmanı` resmi green oldu.
-- Aktif iş `M65 — Pilot Launch Gate`.
-- `M65` green olmadan sahaya çıkılmayacaktır.
+- `M65 — Pilot Launch Gate` resmi green oldu.
+- `M65` green olmadan sahaya cikilmayacakti; M65 artik green.
 
 ## 2) Sabit ürün / repo kuralları
 - Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
@@ -78,7 +78,8 @@ Not:
 - `M62 — Ticari Omurga Güçlendirme` _(green)_
 - `M63 — Güven + Kalite + Hizmet Değerlendirme` _(green)_
 - `M64 — Doğal Copilot Katmanı` _(green)_
-- `M65 — Pilot Launch Gate` _(aktif)_
+- `M65 — Pilot Launch Gate` _(green)_
+- Saha oncesi hat tamamladi; sonraki adim kontrollu saha testi / pilot acceptance icrasi
 
 ## 4) Kanonik komutlar
 - Ana regresyon: `tools\pack.ps1 -To 41`
@@ -93,4 +94,4 @@ Not:
 - M65 pack: `tools\pack_m65_pilot_launch_gate.ps1 -RepoRoot D:\servis-platform`
 
 ## 5) Yeni sohbet için ilk cümle
-Repo su an `M62` seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak ilerliyor. Aktif iş `M64 — Doğal Copilot Katmanı`; kanonik komut `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`.
+Repo su an `M59 -> M65` saha oncesi hattini green olarak tamamladi. Siradaki asama kontrollu saha testi / pilot acceptance icrasidir. Son kanonik komut `tools\pack_m65_pilot_launch_gate.ps1 -RepoRoot D:\servis-platform`.

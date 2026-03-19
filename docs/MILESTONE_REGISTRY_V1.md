@@ -13,7 +13,7 @@ Bu dosya yeni saha öncesi hattın tek resmi milestone kaydıdır.
 - M62 - Ticari Omurga Guclendirme - green
 - M63 - Guven + Kalite + Hizmet Degerlendirme - green
 - M64 - Dogal Copilot Katmani - green
-- M65 - Pilot Launch Gate - aktif
+- M65 - Pilot Launch Gate - green
 
 ## Kanonik pack komutlari
 - tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform
@@ -26,5 +26,5 @@ Bu dosya yeni saha öncesi hattın tek resmi milestone kaydıdır.
 
 ## Kural
 - M64 green olmadan M65 acilmaz.
-- M65 green olmadan sahaya cikilmaz.
+- M65 green olmadan sahaya cikilmazdi. Bu kapandi; siradaki adim kontrollu saha testi / pilot acceptance icrasidir.
 - Checklist icinde [x] yalnizca resmi pack/check green sonrasi isaretlenir.

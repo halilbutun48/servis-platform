@@ -14,8 +14,8 @@
 - Resmi green çizgi `M58` teknik readiness seviyesine kadar uzanır.
 - `M58 readiness contract` tarihsel olarak korunur; `manuel pilot kabul` notu artık saha çıkış kapısı olarak değil, geçmiş pilot readiness bağlamı olarak saklanır.
 - Yeni resmi saha öncesi rota `M59 -> M65` olarak acilmistir.
-- `M59 green`; `M60 green`; `M61 green`; `M62 green`; `M63 green`; `M64 green`; aktif hat: M65.
-- `M64 green olmadan M65 acilmaz`.
+- `M59 green`; `M60 green`; `M61 green`; `M62 green`; `M63 green`; `M64 green`; `M65 green`; saha oncesi hat tamam.
+- `M64 green olmadan M65 acilmaz`. Bu kapandi; M65 green.
 - SSOT seti değişikliklerde birlikte güncellenmelidir.
 - Geçici `_m*` overlay klasörleri repo içine commitlenmez.
 
@@ -67,4 +67,4 @@
 - `tools\pack_m65_pilot_launch_gate.ps1`
 - `tools\check_m65_pilot_launch_gate_repo_contract.ps1`
 - Amaç: launch checklist, kritik risk listesi, acceptance özetleri, gözlemleme sağlığı ve GO / LIMITED GO / NO-GO kapısını tek yerde toplamak.
-- Kural: M65 green olmadan sahaya cikilmaz.
+- Kural: M65 green olmadan sahaya cikilmaz. Bu kapandi; siradaki adim kontrollu saha testi / pilot acceptance icrasi.

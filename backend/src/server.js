@@ -1,4 +1,4 @@
-﻿// backend/src/server.js
+// backend/src/server.js
 import express from "express";
 import http from "http";
 import cors from "cors";
@@ -409,7 +409,8 @@ app.use("/api/field-acceptance", fieldAcceptanceRouter());
 app.use("/api/ssot-alignment", ssotAlignmentRouter());
 app.use("/api/commercial-core", commercialCoreRouter());
 app.use("/api/trust-quality", trustQualityRouter());
-System.Text.RegularExpressions.MatchEvaluator
+app.use("/api/natural-copilot", naturalCopilotRouter());
+app.use("/api/pilot-launch-gate", pilotLaunchGateRouter);
 app.use("/api/parent", parentRouter());
 app.use("/api/school/parent-invites", schoolParentInvitesRouter());
 app.use("/api/companies", companiesRouter());
@@ -500,5 +501,6 @@ server.listen(ENV.PORT, () => {
 
 
 
-app.use("/api/pilot-launch-gate", pilotLaunchGateRouter());
+
+
 

@@ -161,6 +161,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Ticari Omurga", path: "/superadmin/commercial-core" },
           { label: "Guven + Kalite", path: "/superadmin/trust-quality" },
           { label: "Dogal Copilot", path: "/superadmin/natural-copilot" },
+          { label: "Pilot Launch Gate", path: "/superadmin/pilot-launch-gate" },
           { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/superadmin/logexport" },
         ],
@@ -192,5 +193,3 @@ export default function NavDock({ role, path, me }) {
   );
 }
 
-
-// M65 Pilot Launch Gate route reference: /superadmin/pilot-launch-gate

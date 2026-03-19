@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { getPilotLaunchGateManifest } from "../ops/pilotLaunchGateManifest.js";
 
 export const pilotLaunchGateRouter = Router();
@@ -14,3 +14,4 @@ pilotLaunchGateRouter.get('/decision-template', (_req, res) => {
 pilotLaunchGateRouter.get('/risk-template', (_req, res) => {
   res.json({ ok: true, risks: [{ severity: 'MEDIUM', title: 'Ornek risk', owner: 'SUPER_ADMIN' }] });
 });
+
