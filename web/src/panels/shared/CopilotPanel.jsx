@@ -311,6 +311,8 @@ function resolveGuideRoute(me, routeKey) {
     if (key === "ROOM_VEHICLES") return "/room/vehicles";
     if (key === "ROOM_DRIVERS") return "/room/drivers";
     if (key === "ROOM_AGREEMENTS") return "/room/agreements";
+    if (key === "ROOM_MAP") return "/room/map";
+    if (key === "ROOM_OPERATION_HEALTH") return "/room/operation-health";
     if (key === "ROOM_COPILOT") return "/room/copilot";
   }
   if (role === "COMPANY") {
@@ -634,16 +636,38 @@ export default function CopilotPanel() {
     setEntryHint(null);
   }
 
-  function askEntryHint(mode = "explain") {
-    if (!entryHint) return;
+  function entryHintQuickActions(hint) {
+    const actions = [];
+    const title = String(hint?.title || "");
+    if (hint?.suggestedRouteKey) {
+      actions.push({ label: "İlgili ekrana git", routeKey: hint.suggestedRouteKey });
+    }
+    if (hint?.vehicleId || /konum|canlılık/i.test(title)) {
+      actions.push({ label: "Canlı Takibi aç", routeKey: "ROOM_MAP" });
+    }
+    if (hint?.driverId || /oturum|izin/i.test(title)) {
+      actions.push({ label: "Sürücüleri aç", routeKey: "ROOM_DRIVERS" });
+    }
+    if (hint?.vehicleId) {
+      actions.push({ label: "Araçları aç", routeKey: "ROOM_VEHICLES" });
+    }
+    return actions.filter((x, idx, arr) => arr.findIndex((y) => y.routeKey === x.routeKey && y.label === x.label) === idx);
+  }
+
+  function roomHintPrompt(mode = "explain") {
+    if (!entryHint) return "";
     const title = String(entryHint.title || "Operasyon sağlığı uyarısı");
     const detail = String(entryHint.detail || "");
-    const prefix = `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}.`;
-    const prompt = mode === "next"
-      ? `${prefix} Şimdi ne yapmam gerektiğini sade Türkçe ile söyle.`
-      : `${prefix} Bunun ne anlama geldiğini sade Türkçe ile açıkla.`;
+    if (mode === "note") return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Room için paylaşılabilir kısa operasyon notu hazırla.`;
+    if (mode === "driver") return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Sürücüye sade Türkçe ile ne söylemem gerektiğini yaz.`;
+    if (mode === "next") return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Şimdi ne yapmam gerektiğini sade Türkçe ile söyle.`;
+    return `Operasyon Sağlığı ekranından geldim. Başlık: ${title}. Detay: ${detail}. Bunun ne anlama geldiğini sade Türkçe ile açıkla.`;
+  }
+
+  function askEntryHint(mode = "explain") {
+    if (!entryHint) return;
     setPanelMode("CHAT");
-    runChat(prompt);
+    runChat(roomHintPrompt(mode));
   }
 
   return (
@@ -663,7 +687,14 @@ export default function CopilotPanel() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={() => askEntryHint("explain")}>Bunu açıkla</button>
             <button type="button" onClick={() => askEntryHint("next")}>Şimdi ne yapayım?</button>
+            <button type="button" onClick={() => askEntryHint("driver")}>Sürücüye ne söyleyeyim?</button>
+            <button type="button" onClick={() => askEntryHint("note")}>Room notu hazırla</button>
             <button type="button" onClick={clearEntryHint}>Kapat</button>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {entryHintQuickActions(entryHint).map((action) => (
+              <button key={`${action.routeKey}:${action.label}`} type="button" onClick={() => openGuideAction(action)}>{action.label}</button>
+            ))}
           </div>
         </div>
       ) : null}

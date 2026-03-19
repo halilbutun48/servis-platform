@@ -63,8 +63,24 @@ function buildGuideHint(title, detail, extras = {}) {
     source: "ROOM_OPERATION_HEALTH",
     title: String(title || "Operasyon sağlığı uyarısı"),
     detail: String(detail || ""),
+    fromPath: "/room/operation-health",
     ...extras,
   };
+}
+
+function operationRouteKeyFromItem(item = {}) {
+  if (String(item.sessionState || "") === "REFRESH_NEEDED") return "ROOM_DRIVERS";
+  if (String(item.permissionState || "") !== "GRANTED") return "ROOM_DRIVERS";
+  if (["STALE", "OFFLINE"].includes(String(item.liveState || ""))) return "ROOM_MAP";
+  return "ROOM_COPILOT";
+}
+
+function issueRouteKey(issue = {}) {
+  const title = String(issue.title || "").toLowerCase();
+  if (title.includes("oturum")) return "ROOM_DRIVERS";
+  if (title.includes("izin")) return "ROOM_DRIVERS";
+  if (title.includes("canlılık") || title.includes("konum")) return "ROOM_MAP";
+  return "ROOM_COPILOT";
 }
 
 function openRoomCopilotWithHint(hint) {
@@ -97,11 +113,14 @@ function DriverRow({ item }) {
                   item.driverName ? `${item.driverName} için durum özeti` : "Sürücü durum özeti",
                   issueText,
                   {
+                    driverId: item.driverId || item.id || null,
                     driverName: item.driverName,
+                    vehicleId: item.vehicleId || null,
                     vehiclePlate: item.vehiclePlate,
                     liveState: item.liveState,
                     sessionState: item.sessionState,
                     permissionState: item.permissionState,
+                    suggestedRouteKey: operationRouteKeyFromItem(item),
                   }
                 )
               )
@@ -214,7 +233,7 @@ export default function OperationHealthPanel() {
                 <div style={{ marginTop: 10 }}>
                   <button
                     type="button"
-                    onClick={() => openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity }))}
+                    onClick={() => openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity, suggestedRouteKey: issueRouteKey(issue) }))}
                   >
                     Rehberde ne yapacağımı göster
                   </button>
