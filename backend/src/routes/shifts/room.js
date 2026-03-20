@@ -9,8 +9,9 @@ import {
 import { authRequired, requireRole } from "../../auth/middleware.js";
 import { validateWithZod } from "../../z.js";
 import { audit } from "../../audit.js";
-import { createNotification } from "../../notifications/service.js";
+import { createNotification, createAndEmitNotification } from "../../notifications/service.js";
 import { assertDriverAssignable } from "../../lib/penalties.js";
+import { buildNotifPayloadV1 } from "../../notifications/payloadV1.js";
 
 import {
   approveShiftSchema,
@@ -62,7 +63,7 @@ export function attachShiftRoomRoutes(r, io) {
   async function ensureVehicleDriverScopeOrThrow({ scopeRoomId, vehicleId, driverId }) {
     const vehicle = await prisma.vehicle.findUnique({
       where: { id: vehicleId },
-      select: { id: true, roomId: true, archivedAt: true, capacity: true },
+      select: { id: true, roomId: true, archivedAt: true, capacity: true, plate: true },
     });
     if (!vehicle || vehicle.archivedAt) {
       throw httpError(400, "Vehicle not found/archived");
@@ -77,7 +78,7 @@ export function attachShiftRoomRoutes(r, io) {
 
     const driver = await prisma.driver.findUnique({
       where: { id: driverId },
-      select: { id: true, roomId: true },
+      select: { id: true, roomId: true, fullName: true, userId: true },
     });
     if (!driver) {
       throw httpError(400, "Driver not found");
@@ -635,6 +636,107 @@ export function attachShiftRoomRoutes(r, io) {
     }
   );
 
+
+  const REASSIGN_REASON_TR = {
+    VEHICLE_BREAKDOWN: "Araç arızası",
+    VEHICLE_UNAVAILABLE: "Araç kullanılamıyor",
+    DRIVER_SICK: "Sürücü hastalandı",
+    DRIVER_UNAVAILABLE: "Sürücü müsait değil",
+    OPS_REALLOCATION: "Operasyon yeniden planlandı",
+    OTHER: "Diğer",
+  };
+
+  async function emitReassignNotifications({ before, after, reason, note }) {
+    const reasonLabel = REASSIGN_REASON_TR[String(reason || "OTHER")] || "Operasyon değişikliği";
+    const shiftLabel = `Shift #${after.id}`;
+    const vehicleBefore = before?.vehicle?.plate || (before?.vehicleId ? `#${before.vehicleId}` : "-");
+    const vehicleAfter = after?.vehicle?.plate || (after?.vehicleId ? `#${after.vehicleId}` : "-");
+    const driverBefore = before?.driver?.fullName || (before?.driverId ? `#${before.driverId}` : "-");
+    const driverAfter = after?.driver?.fullName || (after?.driverId ? `#${after.driverId}` : "-");
+    const baseMessage = `${shiftLabel}: ${reasonLabel}. Araç ${vehicleBefore} → ${vehicleAfter}, sürücü ${driverBefore} → ${driverAfter}${note ? ` • ${note}` : ""}`;
+
+    await createAndEmitNotification({
+      io,
+      type: "SHIFT_REASSIGN",
+      scope: "COMPANY",
+      companyId: after.companyId,
+      roomId: after.roomId || null,
+      shiftId: after.id,
+      vehicleId: after.vehicleId || null,
+      payload: buildNotifPayloadV1({
+        title: "Vardiya ataması değişti",
+        message: baseMessage,
+        vehicleId: after.vehicleId || null,
+        kind: "SHIFT_REASSIGN",
+      }),
+    });
+
+    if (after.roomId) {
+      await createAndEmitNotification({
+        io,
+        type: "SHIFT_REASSIGN",
+        scope: "ROOM",
+        companyId: after.companyId,
+        roomId: after.roomId,
+        shiftId: after.id,
+        vehicleId: after.vehicleId || null,
+        payload: buildNotifPayloadV1({
+          title: "Vardiya ataması güncellendi",
+          message: baseMessage,
+          vehicleId: after.vehicleId || null,
+          kind: "SHIFT_REASSIGN",
+        }),
+      });
+    }
+
+    const beforeDriverUserId = Number(before?.driver?.userId || 0) || null;
+    const afterDriverUserId = Number(after?.driver?.userId || 0) || null;
+
+    if (afterDriverUserId) {
+      await createAndEmitNotification({
+        io,
+        type: "SHIFT_REASSIGN",
+        scope: "DRIVER",
+        companyId: after.companyId,
+        roomId: after.roomId || null,
+        driverId: after.driverId || null,
+        shiftId: after.id,
+        vehicleId: after.vehicleId || null,
+        userId: afterDriverUserId,
+        payload: buildNotifPayloadV1({
+          title: "Yeni görev atandı",
+          message: `${shiftLabel}: ${vehicleAfter} aracı ve görev bilgileri size aktarıldı.${note ? ` • ${note}` : ""}`,
+          vehicleId: after.vehicleId || null,
+          kind: "SHIFT_REASSIGN",
+        }),
+      });
+      io?.to?.(`user:${afterDriverUserId}`)?.emit?.("shift:update", { shiftId: after.id, action: "reassign", kind: "shift:update" });
+      io?.to?.(`user:${afterDriverUserId}`)?.emit?.("route:plan", { shiftId: after.id, action: "reassign", kind: "route:plan" });
+    }
+
+    if (beforeDriverUserId && beforeDriverUserId !== afterDriverUserId) {
+      await createAndEmitNotification({
+        io,
+        type: "SHIFT_REASSIGN",
+        scope: "DRIVER",
+        companyId: after.companyId,
+        roomId: after.roomId || null,
+        driverId: before.driverId || null,
+        shiftId: after.id,
+        vehicleId: before.vehicleId || null,
+        userId: beforeDriverUserId,
+        payload: buildNotifPayloadV1({
+          title: "Görev sizden alındı",
+          message: `${shiftLabel}: görev başka sürücüye aktarıldı. Neden: ${reasonLabel}${note ? ` • ${note}` : ""}`,
+          vehicleId: before.vehicleId || null,
+          kind: "SHIFT_REASSIGN",
+        }),
+      });
+      io?.to?.(`user:${beforeDriverUserId}`)?.emit?.("shift:update", { shiftId: after.id, action: "reassign-removed", kind: "shift:update" });
+      io?.to?.(`user:${beforeDriverUserId}`)?.emit?.("route:plan", { shiftId: after.id, action: "reassign-removed", kind: "route:plan" });
+    }
+  }
+
   // -------------------------
   // ROOM: approve/assign helpers
   // -------------------------
@@ -734,6 +836,109 @@ export function attachShiftRoomRoutes(r, io) {
         .json({ error: String(e?.message ?? e) });
     }
   }
+
+
+  r.put(
+    "/:id/reassign",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+
+        const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user, {
+          include: { vehicle: true, driver: { include: { user: true } }, company: true, room: true },
+        });
+
+        const status = String(shift?.status || "").toUpperCase();
+        if (!["APPROVED", "ACTIVE"].includes(status)) {
+          return res.status(409).json({ error: "Only APPROVED/ACTIVE shifts can be reassigned", code: "SHIFT_REASSIGN_STATUS" });
+        }
+
+        const vehicleId = Number(req.body?.vehicleId);
+        const driverId = Number(req.body?.driverId);
+        const reason = String(req.body?.reason || "OTHER").trim().toUpperCase();
+        const note = String(req.body?.note || "").trim() || null;
+        if (!Number.isFinite(vehicleId) || !Number.isFinite(driverId)) {
+          return res.status(400).json({ error: "vehicleId/driverId required" });
+        }
+        if (!reason) return res.status(400).json({ error: "reason required" });
+        if (Number(shift.vehicleId || 0) === vehicleId && Number(shift.driverId || 0) === driverId) {
+          return res.status(400).json({ error: "No change detected", code: "SHIFT_REASSIGN_NO_CHANGE" });
+        }
+
+        const { vehicle, driver } = await ensureVehicleDriverScopeOrThrow({ scopeRoomId: Number(shift.roomId), vehicleId, driverId });
+
+        const demand = await getShiftDemandSnapshot(shift.id);
+        const capacityConflict = buildCapacityConflict({
+          requiredPax: demand?.requiredPax ?? 0,
+          vehicleCapacity: vehicle?.capacity ?? 0,
+        });
+        if (capacityConflict) return res.status(409).json(capacityConflict);
+
+        const cr = await getConflictOrNull({
+          driverId,
+          vehicleId,
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          excludeShiftId: shift.id,
+        });
+        if (cr) return res.status(409).json(cr);
+
+        try {
+          await assertDriverAssignable({ driverId, shiftId: shift.id, at: shift.startAt });
+        } catch (e) {
+          return res.status(e?.status || 409).json({ error: e?.message || 'Driver blocked', code: e?.code || 'ACTIVE_NO_SHOW_PENALTY', penalty: e?.penalty || null });
+        }
+
+        const updated = await prisma.shift.update({
+          where: { id: shiftId },
+          data: { vehicleId, driverId },
+          include: {
+            stops: { orderBy: { order: "asc" } },
+            progress: true,
+            vehicle: true,
+            driver: { include: { user: true } },
+            company: true,
+            room: true,
+          },
+        });
+
+        const meta = {
+          reason,
+          note,
+          from: {
+            vehicleId: shift.vehicleId || null,
+            vehiclePlate: shift.vehicle?.plate || null,
+            driverId: shift.driverId || null,
+            driverName: shift.driver?.fullName || null,
+          },
+          to: {
+            vehicleId: updated.vehicleId || null,
+            vehiclePlate: updated.vehicle?.plate || null,
+            driverId: updated.driverId || null,
+            driverName: updated.driver?.fullName || null,
+          },
+        };
+
+        await audit(req, {
+          action: "SHIFT_REASSIGN",
+          entity: "Shift",
+          entityId: updated.id,
+          meta,
+        });
+
+        await emitReassignNotifications({ before: shift, after: updated, reason, note });
+
+        emitShift(io, updated, "shift:update", { action: "reassign", reason });
+        emitShift(io, updated, "route:plan", { action: "reassign", reason });
+        return res.json({ ok: true, shift: updated, event: meta });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
 
   // ROOM: approve shift (bind vehicle+driver) -> sets status APPROVED
   r.put(

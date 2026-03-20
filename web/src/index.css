@@ -273,3 +273,47 @@ button, input, select, textarea, .btn, .secondary, .navItem {
   .modal-backdrop { align-items: flex-end; padding: 10px; }
   .modal { max-height: min(88vh, 88dvh); border-radius: 16px 16px 0 0; }
 }
+
+
+/* Bug-5B — Reports shifts horizontal scroll */
+.reportsCard { overflow: visible; }
+.reportsTableWrap { width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; }
+.reportsTable { width: max-content; min-width: 100%; table-layout: auto; }
+.reportsTable th, .reportsTable td { white-space: nowrap; }
+.reportsTableWrap--shifts .reportsTable th,
+.reportsTableWrap--shifts .reportsTable td { min-width: 160px; }
+.reportsTableWrap--shifts .reportsTable th:first-child,
+.reportsTableWrap--shifts .reportsTable td:first-child { min-width: 64px; }
+
+/* Bug-5E — Reports tables readable Turkish labels + real horizontal scroll */
+.reportsCard {
+  overflow: visible !important;
+}
+.reportsTableWrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+.reportsTable {
+  width: max-content !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
+}
+.reportsTable th,
+.reportsTable td {
+  white-space: nowrap !important;
+}
+.reportsTableWrap--shifts .reportsTable {
+  min-width: 1800px !important;
+}
+.reportsTableWrap--shifts .reportsTable th,
+.reportsTableWrap--shifts .reportsTable td {
+  min-width: 140px;
+}
+.reportsTableWrap--shifts .reportsTable th:first-child,
+.reportsTableWrap--shifts .reportsTable td:first-child {
+  min-width: 64px;
+}

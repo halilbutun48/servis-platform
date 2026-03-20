@@ -1,3 +1,4 @@
+import { formatDateTimeTR, nowIsoTR } from "../../utils/time";
 // web/src/panels/company/MapPanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
@@ -43,7 +44,7 @@ function hasGpsFix(vehicle) {
 function fmtTR(x) {
   if (!x) return "-";
   try {
-    return new Date(x).toLocaleString("tr-TR");
+    return formatDateTimeTR(x);
   } catch {
     return String(x);
   }
@@ -224,7 +225,7 @@ export default function CompanyMapPanel() {
     const lng = asNum(m?.lng);
     if (lat == null || lng == null) return;
 
-    const at = m?.at || new Date().toISOString();
+    const at = m?.at || nowIsoTR();
 
     setVehicles((prev) =>
       (Array.isArray(prev) ? prev : []).map((v) => {

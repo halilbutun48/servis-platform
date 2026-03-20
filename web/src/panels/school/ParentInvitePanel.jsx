@@ -3,10 +3,11 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { companyPath } from "../../utils/paths";
 import { makeHashLink } from "../../utils/publicBaseUrl";
+import { formatDateTimeTR } from "../../utils/time";
 
 function fmt(dt) {
   try {
-    return new Date(dt).toLocaleString("tr-TR");
+    return formatDateTimeTR(dt);
   } catch {
     return String(dt || "-");
   }

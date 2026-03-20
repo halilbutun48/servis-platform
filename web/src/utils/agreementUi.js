@@ -1,5 +1,7 @@
 // web/src/utils/agreementUi.js
 // Shared helpers for Agreement Wizard + Guided Mode + Templates + Shifts
+import { addDaysYmdTR, weekdayBitFromYmdTR } from "./time";
+
 
 // Bit mask mapping (stable):
 // Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64
@@ -102,22 +104,13 @@ export const DURATION_PRESETS = [
   { key: "1y", label: "1 yıl", days: 365 },
 ];
 
-// ISO YYYY-MM-DD helpers (UTC safe)
+// YYYY-MM-DD helpers (TR canonical day)
 export function addDaysISO(isoDateYmd, days) {
-  const d = new Date(`${isoDateYmd}T00:00:00.000Z`);
-  d.setUTCDate(d.getUTCDate() + Number(days || 0));
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  return addDaysYmdTR(String(isoDateYmd || "").slice(0, 10), days);
 }
 
 export function weekdayBitFromYmdUTC(isoDateYmd) {
-  const d = new Date(`${isoDateYmd}T00:00:00.000Z`);
-  const dow = d.getUTCDay(); // 0=Sun..6=Sat
-  // Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64
-  const map = { 1: 1, 2: 2, 3: 4, 4: 8, 5: 16, 6: 32, 0: 64 };
-  return map[dow] || 0;
+  return weekdayBitFromYmdTR(String(isoDateYmd || "").slice(0, 10));
 }
 
 // Inclusive count: start..end

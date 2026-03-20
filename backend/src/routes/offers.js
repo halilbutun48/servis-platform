@@ -18,6 +18,19 @@ const bulkCounterSchema = z.object({
   noteRoom: z.string().max(500).optional().nullable(),
 });
 
+const companyCounterSchema = z.object({
+  amountCompany: z.coerce.number().int().positive(),
+  noteCompany: z.string().max(500).optional().nullable(),
+});
+
+const bulkCompanyCounterSchema = z.object({
+  offerIds: z.array(z.coerce.number().int().positive()).min(1).max(100).optional(),
+  shiftIds: z.array(z.coerce.number().int().positive()).min(1).max(100).optional(),
+  roomId: z.coerce.number().int().positive(),
+  amountCompany: z.coerce.number().int().positive(),
+  noteCompany: z.string().max(500).optional().nullable(),
+});
+
 const emitShift = H.emitShift;
 
 function emitOffer(io, { companyId, roomId, shiftId, kind, offerId }) {
@@ -28,6 +41,73 @@ function emitOffer(io, { companyId, roomId, shiftId, kind, offerId }) {
 }
 
 const OFFER_STATUSES = new Set(["OPEN", "COUNTERED", "ACCEPTED", "CANCELLED"]);
+async function finalizeAcceptedOffer(io, offer) {
+  const shiftId = offer.shiftId;
+  const companyId = offer.shift.companyId;
+  const acceptedRoomId = offer.roomId;
+
+  const offerRows = await prisma.shiftOffer.findMany({
+    where: { shiftId },
+    select: { id: true, roomId: true },
+  });
+  const allRoomIds = Array.from(new Set(offerRows.map((x) => x.roomId)));
+
+  let cancelledCount = 0;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.shiftOffer.update({ where: { id: offer.id }, data: { status: "ACCEPTED" } });
+    const upd = await tx.shiftOffer.updateMany({
+      where: { shiftId, id: { not: offer.id }, status: { in: ["OPEN", "COUNTERED"] } },
+      data: { status: "CANCELLED" },
+    });
+    cancelledCount = Number(upd?.count || 0);
+
+    await tx.shift.update({
+      where: { id: shiftId },
+      data: {
+        roomId: acceptedRoomId,
+        companyOfferAmount: offer.amountCompany ?? null,
+        roomOfferAmount: offer.amountRoom ?? null,
+        roomOfferDecision: "ACCEPTED",
+        roomOfferDecisionAt: new Date(),
+      },
+    });
+  });
+
+  const shiftFull = await prisma.shift.findUnique({
+    where: { id: shiftId },
+    include: {
+      stops: { orderBy: { order: "asc" } },
+      progress: true,
+      vehicle: true,
+      driver: true,
+      company: true,
+      room: true,
+    },
+  });
+
+  io?.to?.(`company:${companyId}`)?.emit?.("offer:update", {
+    kind: "offer:accept",
+    offerId: offer.id,
+    shiftId,
+    roomId: acceptedRoomId,
+    companyId,
+  });
+  for (const rid of allRoomIds) {
+    const row = offerRows.find((x) => x.roomId === rid);
+    io?.to?.(`room:${rid}`)?.emit?.("offer:update", {
+      kind: rid === acceptedRoomId ? "offer:accepted" : "offer:cancelled",
+      offerId: row?.id ?? offer.id,
+      shiftId,
+      roomId: rid,
+      companyId,
+    });
+  }
+
+  emitShift(io, shiftFull, "shift:update");
+  return { cancelledCount, shift: shiftFull };
+}
+
 function parseStatusFilter(raw) {
   const t = String(raw ?? "").trim();
   if (!t) return null;
@@ -315,6 +395,148 @@ export function offersRouter(io) {
     }
   );
 
+  // COMPANY: counter an offer on market
+  r.put(
+    "/:id/company-counter",
+    authRequired(),
+    requireRole("COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad offerId" });
+
+        const body = validateWithZod(companyCounterSchema, req.body);
+        const offer = await prisma.shiftOffer.findUnique({
+          where: { id },
+          include: { shift: { select: { companyId: true, agreementId: true, roomId: true } } },
+        });
+        if (!offer) return res.status(404).json({ error: "Offer not found" });
+        if (req.user.role === "COMPANY" && Number(offer?.shift?.companyId || 0) !== Number(req.user.companyId || 0)) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        if (offer?.shift?.agreementId) {
+          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+        }
+        if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
+        if (offer.status === "ACCEPTED") return res.status(409).json({ error: "Offer already accepted" });
+        if (offer?.shift?.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) {
+          return res.status(409).json({ error: "Shift already assigned" });
+        }
+
+        const updated = await prisma.shiftOffer.update({
+          where: { id },
+          data: {
+            status: "COUNTERED",
+            amountCompany: body.amountCompany,
+            noteCompany: body.noteCompany ? String(body.noteCompany) : null,
+          },
+        });
+
+        emitOffer(io, {
+          kind: "offer:companyCounter",
+          offerId: id,
+          shiftId: offer.shiftId,
+          roomId: offer.roomId,
+          companyId: offer.shift.companyId,
+        });
+
+        return res.json(updated);
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e), details: e?.details });
+      }
+    }
+  );
+
+  // COMPANY: bulk counter same room/package offers on market
+  r.post(
+    "/company-counter-bulk",
+    authRequired(),
+    requireRole("COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const body = validateWithZod(bulkCompanyCounterSchema, req.body);
+        const companyId = req.user.role === "COMPANY" ? Number(req.user.companyId) : Number(req.body.companyId || 0);
+        if (!Number.isFinite(companyId) || companyId <= 0) return res.status(400).json({ error: "companyId required" });
+
+        const roomId = Number(body.roomId);
+        const shiftIds = Array.from(new Set((body.shiftIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+        let offerIds = Array.from(new Set((body.offerIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+
+        let where = { roomId };
+        if (shiftIds.length) where.shiftId = { in: shiftIds };
+        if (offerIds.length) where.id = { in: offerIds };
+
+        const rows = await prisma.shiftOffer.findMany({
+          where,
+          include: { shift: { select: { id: true, companyId: true, agreementId: true, roomId: true } } },
+        });
+        const allowed = rows.filter((row) => Number(row?.shift?.companyId || 0) === companyId);
+        if (!allowed.length) return res.status(404).json({ error: "No offers found" });
+        const blocked = allowed.find((row) => row?.shift?.agreementId);
+        if (blocked) return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+
+        const activeIds = allowed.filter((row) => ["OPEN", "COUNTERED"].includes(String(row.status || "").toUpperCase())).map((row) => row.id);
+        if (!activeIds.length) return res.status(409).json({ error: "No active offers to counter" });
+
+        await prisma.shiftOffer.updateMany({
+          where: { id: { in: activeIds } },
+          data: {
+            status: "COUNTERED",
+            amountCompany: body.amountCompany,
+            noteCompany: body.noteCompany ? String(body.noteCompany) : null,
+          },
+        });
+
+        for (const row of allowed) {
+          emitOffer(io, {
+            kind: "offer:companyCounter",
+            offerId: row.id,
+            shiftId: row.shiftId,
+            roomId: row.roomId,
+            companyId: row.shift.companyId,
+          });
+        }
+
+        return res.json({ ok: true, updatedCount: activeIds.length, total: allowed.length });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e), details: e?.details });
+      }
+    }
+  );
+
+  // ROOM: accept company counter / offer and move to pending workflow
+  r.put(
+    "/:id/room-accept",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad offerId" });
+
+        const offer = await prisma.shiftOffer.findUnique({
+          where: { id },
+          include: { shift: { select: { id: true, companyId: true, roomId: true, status: true, agreementId: true } } },
+        });
+        if (!offer) return res.status(404).json({ error: "Offer not found" });
+        if (req.user.role === "ROOM" && Number(offer.roomId) !== Number(req.user.roomId || 0)) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        if (offer?.shift?.agreementId) {
+          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+        }
+        if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
+        if (offer.status === "ACCEPTED") return res.status(409).json({ error: "Offer already accepted" });
+        if (offer.shift.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) return res.status(409).json({ error: "Shift already assigned" });
+
+        const result = await finalizeAcceptedOffer(io, offer);
+        return res.json({ ok: true, ...result });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
   // COMPANY: accept one offer -> cancel others -> bind shift.roomId
   // PUT /api/offers/:id/accept
   r.put(
@@ -349,73 +571,9 @@ export function offersRouter(io) {
 
         if (offer.shift.roomId != null) return res.status(409).json({ error: "Shift already assigned" });
 
-        const shiftId = offer.shiftId;
-        const companyId = offer.shift.companyId;
-        const acceptedRoomId = offer.roomId;
+        const result = await finalizeAcceptedOffer(io, offer);
 
-        // We need (roomId -> offerId) mapping so rooms can invalidate the correct row.
-        const offerRows = await prisma.shiftOffer.findMany({
-          where: { shiftId },
-          select: { id: true, roomId: true },
-        });
-        const allRoomIds = Array.from(new Set(offerRows.map((x) => x.roomId)));
-
-        let cancelledCount = 0;
-
-        await prisma.$transaction(async (tx) => {
-          await tx.shiftOffer.update({ where: { id }, data: { status: "ACCEPTED" } });
-          const upd = await tx.shiftOffer.updateMany({
-            // cancel only ACTIVE offers (OPEN/COUNTERED). Do not touch ACCEPTED (winner) or already CANCELLED.
-            where: { shiftId, id: { not: id }, status: { in: ["OPEN", "COUNTERED"] } },
-            data: { status: "CANCELLED" },
-          });
-          cancelledCount = Number(upd?.count || 0);
-
-          await tx.shift.update({
-            where: { id: shiftId },
-            data: {
-              roomId: acceptedRoomId,
-              companyOfferAmount: offer.amountCompany ?? null,
-              roomOfferAmount: offer.amountRoom ?? null,
-              roomOfferDecision: "ACCEPTED",
-              roomOfferDecisionAt: new Date(),
-            },
-          });
-        });
-
-        const shiftFull = await prisma.shift.findUnique({
-          where: { id: shiftId },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
-        });
-
-        io?.to?.(`company:${companyId}`)?.emit?.("offer:update", {
-          kind: "offer:accept",
-          offerId: id,
-          shiftId,
-          roomId: acceptedRoomId,
-          companyId,
-        });
-        for (const rid of allRoomIds) {
-          const row = offerRows.find((x) => x.roomId === rid);
-          io?.to?.(`room:${rid}`)?.emit?.("offer:update", {
-            kind: rid === acceptedRoomId ? "offer:accepted" : "offer:cancelled",
-            offerId: row?.id ?? id,
-            shiftId,
-            roomId: rid,
-            companyId,
-          });
-        }
-
-        emitShift(io, shiftFull, "shift:update");
-
-        return res.json({ ok: true, cancelledCount, shift: shiftFull });
+        return res.json({ ok: true, ...result });
       } catch (e) {
         return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }

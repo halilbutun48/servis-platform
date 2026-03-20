@@ -4,19 +4,16 @@
 // and comparisons.
 
 import { prisma } from "../prisma.js";
-import { addDaysTR, dayBitTRFromYmd, dateOnlyTR } from "../time/tr.js";
+import { addDaysTR, dayBitTRFromYmd, dateOnlyTR, ymdTR } from "../time/tr.js";
 
 // Bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
 export function dowMaskUTC(d) {
   // Back-compat name: returns TR day-of-week mask for the given Date.
-  const tr = new Date(new Date(d).getTime() + 180 * 60_000);
-  const dow = tr.getUTCDay();
-  if (dow === 0) return 64;
-  return 1 << (dow - 1);
+  return dayBitTRFromYmd(ymdTR(d));
 }
 
 function ymdFromDateOnlyUTC(d) {
-  return String(new Date(d).toISOString()).slice(0, 10);
+  return ymdTR(d);
 }
 
 function minutesToDtTR(ymd, min) {

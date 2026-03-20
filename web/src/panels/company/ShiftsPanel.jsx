@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { invalidate } from "../../live/bus";
 import { personLabel } from "../../utils/labels";
+import { addDaysYmdTR, isoFromTRLocalInput, toDatetimeLocalTR, ymdTR } from "../../utils/time";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import ShiftTemplatesPanel, { PRESET_TEMPLATES, DEFAULT_WEEKMASK, DEFAULT_DURATION_KEY } from "./ShiftTemplatesPanel";
 import PlanBuilderPanel from "./PlanBuilderPanel";
@@ -12,6 +13,7 @@ import RoutePreviewModal from "../../components/RoutePreviewModal";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
+import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -74,6 +76,254 @@ function parseTryInput(raw) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+function offerGapMeta(amountCompany, amountRoom) {
+  const company = Number(amountCompany);
+  const room = Number(amountRoom);
+  const hasCompany = Number.isFinite(company) && company > 0;
+  const hasRoom = Number.isFinite(room) && room > 0;
+
+  if (hasCompany && hasRoom) {
+    const diff = room - company;
+    if (diff === 0) return { label: "Fiyat farkı", value: "Hizalı", tone: "good", note: "Aynı tutar" };
+    if (diff > 0) return { label: "Fiyat farkı", value: `+${formatTRY(diff)} ₺`, tone: "warn", note: "Room daha yüksek" };
+    return { label: "Fiyat farkı", value: `-${formatTRY(Math.abs(diff))} ₺`, tone: "good", note: "Company daha yüksek" };
+  }
+
+  if (hasRoom && !hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(room)} ₺`, tone: "warn", note: "Sadece room teklifi var" };
+  if (!hasRoom && hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(company)} ₺`, tone: "neutral", note: "Room cevabı bekleniyor" };
+  return { label: "Fiyat farkı", value: "-", tone: "neutral", note: "Tutar sinyali yok" };
+}
+
+function OfferSignalPill({ label, value, tone = "neutral" }) {
+  const palette =
+    tone === "good"
+      ? { border: "1px solid rgba(18,183,106,0.35)", background: "rgba(18,183,106,0.10)", color: "#d1fadf" }
+      : tone === "warn"
+      ? { border: "1px solid rgba(242,153,74,0.35)", background: "rgba(242,153,74,0.10)", color: "#fbd5a5" }
+      : { border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "#d0d5dd" };
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "5px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        ...palette,
+      }}
+    >
+      <span style={{ opacity: 0.82 }}>{label}</span>
+      <span>{value}</span>
+    </span>
+  );
+}
+
+
+function providerAverageScore(score) {
+  const avg = Number(score?.averageScore);
+  const count = Number(score?.evaluationCount || 0);
+  return Number.isFinite(avg) && count > 0 ? avg : 0;
+}
+
+function offerDecisionPriority(status) {
+  const normalized = String(status || "").toUpperCase();
+  if (normalized === "COUNTERED") return 2;
+  if (normalized === "OPEN") return 1;
+  return 0;
+}
+
+function offerPriceSortValue(amountCompany, amountRoom) {
+  const company = Number(amountCompany);
+  const room = Number(amountRoom);
+  const hasCompany = Number.isFinite(company) && company > 0;
+  const hasRoom = Number.isFinite(room) && room > 0;
+  if (hasCompany && hasRoom) return room - company;
+  if (hasRoom && !hasCompany) return room + 1000000;
+  if (!hasRoom && hasCompany) return 500000;
+  return 999999;
+}
+
+function offerUpdatedSortValue(offer) {
+  const value = Date.parse(offer?.updatedAt || offer?.createdAt || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function compareRecommendedOffers(a, b, roomScores = {}) {
+  const aDecision = offerDecisionPriority(a?.status);
+  const bDecision = offerDecisionPriority(b?.status);
+  if (aDecision !== bDecision) return bDecision - aDecision;
+
+  const aRoomId = String(Number(a?.room?.id || a?.roomId || 0));
+  const bRoomId = String(Number(b?.room?.id || b?.roomId || 0));
+  const aScore = providerAverageScore(roomScores[aRoomId] || null);
+  const bScore = providerAverageScore(roomScores[bRoomId] || null);
+  if (aScore !== bScore) return bScore - aScore;
+
+  const aGap = offerPriceSortValue(a?.amountCompany, a?.amountRoom);
+  const bGap = offerPriceSortValue(b?.amountCompany, b?.amountRoom);
+  if (aGap !== bGap) return aGap - bGap;
+
+  return offerUpdatedSortValue(b) - offerUpdatedSortValue(a);
+}
+
+function buildRecommendationReason(offer, roomScores = {}) {
+  const parts = [];
+  const status = String(offer?.status || "").toUpperCase();
+  if (status === "COUNTERED") parts.push("karşı teklif");
+  else if (status === "OPEN") parts.push("açık teklif");
+
+  const roomId = String(Number(offer?.room?.id || offer?.roomId || 0));
+  const scoreValue = providerAverageScore(roomScores[roomId] || null);
+  if (scoreValue > 0) parts.push(`puan ${scoreValue.toFixed(1)}`);
+
+  const gap = offerGapMeta(offer?.amountCompany, offer?.amountRoom);
+  if (gap?.value && gap.value !== "-") {
+    parts.push(gap.value === "Hizalı" ? "fiyat hizalı" : `${gap.label.toLowerCase()} ${gap.value}`);
+  }
+
+  return parts.join(" • ");
+}
+
+function buildRecommendationMeta(offer, bucket = [], roomScores = {}) {
+  const reasons = [];
+  const statusPriority = offerDecisionPriority(offer?.status);
+  const bucketPriorities = bucket.map((item) => offerDecisionPriority(item?.status));
+  const bestPriority = bucketPriorities.length ? Math.max(...bucketPriorities) : statusPriority;
+  if (statusPriority === bestPriority && bucketPriorities.some((value) => value !== statusPriority)) {
+    if (String(offer?.status || "").toUpperCase() === "COUNTERED") reasons.push("Karşı teklif hazır");
+    else if (String(offer?.status || "").toUpperCase() === "OPEN") reasons.push("Açık teklif hazır");
+  }
+
+  const roomId = String(Number(offer?.room?.id || offer?.roomId || 0));
+  const scoreValue = providerAverageScore(roomScores[roomId] || null);
+  const bucketScores = bucket.map((item) => {
+    const key = String(Number(item?.room?.id || item?.roomId || 0));
+    return providerAverageScore(roomScores[key] || null);
+  });
+  const bestScore = bucketScores.length ? Math.max(...bucketScores) : scoreValue;
+  if (scoreValue > 0 && scoreValue === bestScore && bucketScores.some((value) => value < scoreValue)) {
+    reasons.push("Room puanı daha yüksek");
+  }
+
+  const gapValue = offerPriceSortValue(offer?.amountCompany, offer?.amountRoom);
+  const bucketGaps = bucket.map((item) => offerPriceSortValue(item?.amountCompany, item?.amountRoom));
+  const bestGap = bucketGaps.length ? Math.min(...bucketGaps) : gapValue;
+  if (Number.isFinite(gapValue) && gapValue === bestGap && bucketGaps.some((value) => value > gapValue)) {
+    reasons.push("Fiyat farkı daha düşük");
+  }
+
+  const updatedValue = offerUpdatedSortValue(offer);
+  const bucketUpdates = bucket.map((item) => offerUpdatedSortValue(item));
+  const latestUpdate = bucketUpdates.length ? Math.max(...bucketUpdates) : updatedValue;
+  if (!reasons.length && updatedValue === latestUpdate && bucketUpdates.some((value) => value < updatedValue)) {
+    reasons.push("Daha güncel cevap");
+  }
+
+  const fallback = buildRecommendationReason(offer, roomScores) || "Bu vardiya için otomatik öne çıktı";
+  return {
+    short: reasons[0] || fallback,
+    summary: reasons.length ? reasons.join(" • ") : fallback,
+    reasons: reasons.length ? reasons : [fallback],
+  };
+}
+
+function rankOffersWithRecommendation(items, roomScores = {}) {
+  const list = Array.isArray(items) ? [...items] : [];
+  if (!list.length) return [];
+
+  const byShift = new Map();
+  for (const offer of list) {
+    const shiftId = Number(offer?.shiftId || offer?.shift?.id || 0);
+    const key = shiftId > 0 ? `shift:${shiftId}` : `single:${offer?.id || Math.random()}`;
+    const bucket = byShift.get(key) || [];
+    bucket.push(offer);
+    byShift.set(key, bucket);
+  }
+
+  const recommendationMetaById = new Map();
+  for (const bucket of byShift.values()) {
+    if (!bucket || bucket.length < 2) continue;
+    const sorted = [...bucket].sort((a, b) => compareRecommendedOffers(a, b, roomScores));
+    const winner = sorted[0];
+    if (winner?.id != null) {
+      recommendationMetaById.set(winner.id, buildRecommendationMeta(winner, bucket, roomScores));
+    }
+  }
+
+  return list
+    .map((offer) => {
+      const meta = recommendationMetaById.get(offer.id);
+      return {
+        ...offer,
+        __recommended: Boolean(meta),
+        __recommendationReason: meta?.summary || "",
+        __recommendationShort: meta?.short || "",
+        __recommendationReasons: meta?.reasons || [],
+      };
+    })
+    .sort((a, b) => {
+      const recDiff = Number(Boolean(b.__recommended)) - Number(Boolean(a.__recommended));
+      if (recDiff) return recDiff;
+      const shiftDiff = Number(b?.shiftId || b?.shift?.id || 0) - Number(a?.shiftId || a?.shift?.id || 0);
+      if (shiftDiff) return shiftDiff;
+      return compareRecommendedOffers(a, b, roomScores);
+    });
+}
+
+function RecommendationBadge({ reason = "" }) {
+  return (
+    <span
+      title={reason || "Bu vardiya için otomatik öne çıktı"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "5px 10px",
+        borderRadius: 999,
+        border: "1px solid rgba(83,177,253,0.35)",
+        background: "rgba(83,177,253,0.12)",
+        color: "#b2ddff",
+        fontSize: 12,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      Önerilen
+    </span>
+  );
+}
+
+function RecommendationReasons({ reasons = [] }) {
+  if (!Array.isArray(reasons) || !reasons.length) return null;
+  return (
+    <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+      {reasons.slice(0, 3).map((reason, idx) => (
+        <span
+          key={`${reason}-${idx}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "4px 10px",
+            borderRadius: 999,
+            border: "1px solid rgba(83,177,253,0.20)",
+            background: "rgba(83,177,253,0.08)",
+            color: "#d6efff",
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          {reason}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -87,27 +337,21 @@ function minutesOf(hhmm) {
   return hh * 60 + mm;
 }
 function todayYmdLocal() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return ymdTR();
 }
 function addDaysYmd(ymd, deltaDays) {
-  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return todayYmdLocal();
-  const Y = Number(m[1]);
-  const M = Number(m[2]);
-  const D = Number(m[3]);
-  const dt = new Date(Y, M - 1, D, 12, 0, 0);
-  dt.setDate(dt.getDate() + Number(deltaDays || 0));
-  return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`;
+  return addDaysYmdTR(ymd, deltaDays);
 }
 
 
 
 
 
-export default function CompanyShiftsPanel() {
+export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const { token, me } = useSession();
   const who = personLabel(me);
+  const isCommercialMode = mode === "commercial";
+
 
   function goPlanningCenter() {
     navigate(companyPath(me));
@@ -117,7 +361,7 @@ export default function CompanyShiftsPanel() {
 
   // Page tabs (Create vs Track)
   const [mainTab, setMainTab] = useState("track"); // create | track
-  const [trackTab, setTrackTab] = useState("pending"); // market | pending | list
+  const [trackTab, setTrackTab] = useState(isCommercialMode ? "market" : "pending"); // market | pending | list
 
   // Create flow (no new wizard; in-page steps)
   const [createStep, setCreateStep] = useState("request"); // request | people | plan
@@ -135,6 +379,7 @@ export default function CompanyShiftsPanel() {
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
 
   useEffect(() => {
     let alive = true;
@@ -181,11 +426,22 @@ export default function CompanyShiftsPanel() {
   // M60: Paket teklif/accept desteği (Company)
   const [offerModalPkgIds, setOfferModalPkgIds] = useState([]); // number[]
   const [offersModalPkgIds, setOffersModalPkgIds] = useState([]); // number[]
+  const [offersCounterSel, setOffersCounterSel] = useState({});
+
+  const offersDecisionCards = useMemo(() => rankOffersWithRecommendation(offersModal.items || [], roomScores), [offersModal.items, roomScores]);
+  const recommendedOffer = useMemo(() => offersDecisionCards.find((offer) => offer.__recommended) || null, [offersDecisionCards]);
+  const recommendedCanAccept = String(recommendedOffer?.status || "").toUpperCase() === "COUNTERED";
 
   // M51: Shift süre uzatma (Company → Room talep)
   const [extendModal, setExtendModal] = useState({ open: false, shift: null, endLocal: "", note: "" });
   const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null });
   const [detailModal, setDetailModal] = useState(null); // { kind: "vehicle"|"driver", data: any }
+
+  useEffect(() => {
+    if (!isCommercialMode) return;
+    setMainTab("track");
+    setTrackTab((prev) => (prev === "list" ? prev : "market"));
+  }, [isCommercialMode]);
 
   // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
@@ -318,19 +574,9 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
     return d && d === ymd;
   }
 
-  // datetime-local (Istanbul local) -> UTC ISO
-  const IST_OFFSET_MIN = 180;
+  // datetime-local (Istanbul local) -> canonical ISO instant
   function istanbulLocalToUtcIso(dtLocal) {
-    if (!dtLocal) return null;
-    const [d, t] = String(dtLocal).split("T");
-    if (!d || !t) return null;
-
-    const [Y, M, D] = d.split("-").map(Number);
-    const [h, m] = t.split(":").map(Number);
-    if (![Y, M, D, h, m].every(Number.isFinite)) return null;
-
-    const utcMs = Date.UTC(Y, M - 1, D, h, m, 0) - IST_OFFSET_MIN * 60 * 1000;
-    return new Date(utcMs).toISOString();
+    return isoFromTRLocalInput(dtLocal) || null;
   }
 
 
@@ -356,11 +602,10 @@ function utcIsoToIstanbulLocalInput(iso) {
 function openExtendModal(shift) {
   if (!shift) return;
   const baseEnd = shift?.endAt ? new Date(shift.endAt).getTime() : Date.now();
-  const nextIso = new Date(baseEnd + 60 * 60 * 1000).toISOString();
   setExtendModal({
     open: true,
     shift,
-    endLocal: utcIsoToIstanbulLocalInput(nextIso),
+    endLocal: toDatetimeLocalTR(new Date(baseEnd + 60 * 60 * 1000)),
     note: "",
   });
 }
@@ -922,7 +1167,7 @@ function usePlanDraftToRequest(draft) {
     if (!ca) return null;
     const d = new Date(ca);
     if (Number.isNaN(d.getTime())) return null;
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    return toDatetimeLocalTR(d);
   }
 
   function computePackageShiftIds(seedShift) {
@@ -1020,6 +1265,7 @@ function usePlanDraftToRequest(draft) {
 
   async function openOffersModalForShift(shiftId, pkgIds = null) {
     const sid = Number(shiftId);
+    setOffersCounterSel({});
     const seed = (items || []).find((x) => Number(x.id) === sid);
     const auto = computePackageShiftIds(seed);
     const idsRaw = Array.isArray(pkgIds) && pkgIds.length ? pkgIds : auto;
@@ -1032,6 +1278,72 @@ function usePlanDraftToRequest(draft) {
     try {
       const r = await api(`/api/offers/shift/${sid}`, { method: "GET", token });
       setOffersModal({ open: true, shiftId: sid, items: r?.items || [] });
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+
+  function setOffersCounter(offerId, patch) {
+    setOffersCounterSel((prev) => ({
+      ...prev,
+      [offerId]: { ...(prev[offerId] || {}), ...(patch || {}) },
+    }));
+  }
+
+  async function companyCounterOffer(offer) {
+    const oid = Number(offer?.id);
+    if (!oid) return;
+    const st = offersCounterSel[oid] || {};
+    const amountCompany = parseTryInput(st.amountCompany);
+    const noteCompany = trimOrNull(st.noteCompany);
+    if (amountCompany == null) {
+      setErr("Karşı teklif tutarı gerekli.");
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/offers/${oid}/company-counter`, { method: "PUT", token, body: { amountCompany, noteCompany } });
+      await openOffersModalForShift(offersModal.shiftId, offersModalPkgIds);
+      invalidate("offers");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function companyCounterPackage(offer) {
+    const roomId = Number(offer?.roomId || offer?.room?.id || 0);
+    if (!roomId) return;
+    const oid = Number(offer?.id || 0);
+    const st = offersCounterSel[oid] || {};
+    const amountCompany = parseTryInput(st.amountCompany);
+    const noteCompany = trimOrNull(st.noteCompany);
+    if (amountCompany == null) {
+      setErr("Paket karşı teklif tutarı gerekli.");
+      return;
+    }
+    const baseShiftId = Number(offersModal.shiftId || 0);
+    const targetShiftIds = (offersModalPkgIds || []).length
+      ? Array.from(new Set((offersModalPkgIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)))
+      : [baseShiftId];
+    if (!targetShiftIds.includes(baseShiftId)) targetShiftIds.unshift(baseShiftId);
+    setBusy(true);
+    setErr("");
+    try {
+      await api(`/api/offers/company-counter-bulk`, {
+        method: "POST",
+        token,
+        body: { roomId, shiftIds: targetShiftIds, amountCompany, noteCompany },
+      });
+      await openOffersModalForShift(offersModal.shiftId, offersModalPkgIds);
+      invalidate("offers");
+      await load();
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -1260,7 +1572,7 @@ function usePlanDraftToRequest(draft) {
     );
   }
 
-  function renderRoomOfferSummary(s, canDecide) {
+  function renderRoomOfferSummary(s) {
     const rvId = s.roomOfferVehicleId ? Number(s.roomOfferVehicleId) : null;
     const rv = rvId ? vehiclesById.get(rvId) : null;
     const rAmt = s.roomOfferAmount != null ? Number(s.roomOfferAmount) : null;
@@ -1268,11 +1580,8 @@ function usePlanDraftToRequest(draft) {
     const has = Boolean(rvId || rAmt != null || s.roomOfferNote || s.roomOfferToDriver || s.roomOfferDriverNote);
     if (!has) return <span className="muted">-</span>;
 
-    const decision = String(s.roomOfferDecision || "PENDING");
+    const decision = String(s.roomOfferDecision || "PENDING").toUpperCase();
     const decisionAtText = s.roomOfferDecisionAt ? fmtTR(s.roomOfferDecisionAt) : "";
-
-    const sid = Number(s.id);
-    const noteVal = decisionNoteSel[sid] ?? "";
 
     return (
       <div className="muted">
@@ -1299,51 +1608,26 @@ function usePlanDraftToRequest(draft) {
         ) : null}
 
         <div style={{ marginTop: 8 }}>
-          <b>Karar:</b>{" "}
-          {decision === "PENDING" ? (
-            <span className="muted">PENDING</span>
-          ) : (
-            <span className="pill" data-status={decision}>
-              {decision}
-            </span>
-          )}
+          <b>Legacy Durum:</b>{" "}
+          <span className={decision === "PENDING" ? "muted" : "pill"} data-status={decision === "PENDING" ? undefined : decision}>
+            {decision}
+          </span>
           {decision !== "PENDING" && decisionAtText ? <span className="muted"> • {decisionAtText}</span> : null}
         </div>
 
-        {decision === "PENDING" ? (
-          canDecide ? (
-            <div style={{ marginTop: 8 }}>
-              <div className="muted" style={{ marginBottom: 6 }}>
-                <b>Karar Notu (opsiyonel)</b>
-              </div>
+        <div className="muted" style={{ marginTop: 8 }}>
+          Bu alan eski shift room-offer özetidir. Ticari karar artık Market / Teklifler ekranında verilir.
+        </div>
 
-              <input
-                value={noteVal}
-                onChange={(e) => setDecisionNote(sid, e.target.value)}
-                placeholder="örn. Uygun / Uygun değil, şu yüzden..."
-                maxLength={200}
-                disabled={busy || decidingId === sid}
-              />
-
-              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                <button type="button" disabled={busy || decidingId === sid} onClick={() => decideRoomOffer(s, "ACCEPTED", noteVal)}>
-                  {decidingId === sid ? "..." : "Kabul"}
-                </button>
-                <button type="button" disabled={busy || decidingId === sid} onClick={() => decideRoomOffer(s, "REJECTED", noteVal)}>
-                  {decidingId === sid ? "..." : "Reddet"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="muted" style={{ marginTop: 8 }}>
-              Bu status’te karar verilemez.
-            </div>
-          )
-        ) : null}
+        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+          <button type="button" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>
+            Teklifleri Aç
+          </button>
+        </div>
 
         {s.roomOfferDecisionNote ? (
           <div className="muted" style={{ marginTop: 6 }}>
-            <b>Karar Notu:</b> {s.roomOfferDecisionNote}
+            <b>Legacy Karar Notu:</b> {s.roomOfferDecisionNote}
           </div>
         ) : null}
       </div>
@@ -1443,11 +1727,15 @@ function usePlanDraftToRequest(draft) {
       .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
   }
 
+  function openOpsEvents(shiftId) {
+    setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
+  }
+
   return (
     <div>
       <div className="card">
-        <h3>Shifts (COMPANY)</h3>
-        <div className="muted">Bekleyen: DRAFT/REQUESTED • Liste: APPROVED/ACTIVE/DONE/REJECTED</div>
+        <h3>{isCommercialMode ? "Ticari Akışım (COMPANY)" : "Shifts (COMPANY)"}</h3>
+        <div className="muted">{isCommercialMode ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: APPROVED/ACTIVE/DONE/REJECTED" : "Bekleyen: DRAFT/REQUESTED • Liste: APPROVED/ACTIVE/DONE/REJECTED"}</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -1474,6 +1762,8 @@ function usePlanDraftToRequest(draft) {
       ) : null}
 
 
+      {!isCommercialMode ? (
+      <>
       {/* Page Tabs: Planning Center vs Track */}
       <div className="card">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1520,8 +1810,18 @@ function usePlanDraftToRequest(draft) {
           </div>
         </>
       ) : null}
-
-
+      </>
+      ) : (
+        <div className="card">
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Ticari Akışım</h3>
+              <div className="muted" style={{ marginTop: 6 }}>Company için teklif, karşı teklif ve pazarlık görünürlüğü</div>
+            </div>
+            <div className="muted">Kapsam: Kendi ticari alanınız</div>
+          </div>
+        </div>
+      )}
 
       {mainTab === "track" ? (
         <>
@@ -1628,7 +1928,9 @@ function usePlanDraftToRequest(draft) {
           </button>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Liste: APPROVED/ACTIVE/DONE/REJECTED
+          {isCommercialMode
+            ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: APPROVED/ACTIVE/DONE/REJECTED"
+            : "Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Liste: APPROVED/ACTIVE/DONE/REJECTED"}
         </div>
       </div>
 
@@ -1853,11 +2155,12 @@ function usePlanDraftToRequest(draft) {
               <th>Room</th>
               <th>Room Teklifi (R→C)</th>
               <th>Company Teklifi (C→R)</th>
-              <th>Karşı Teklif</th>
+              <th>Pazarlık</th>
               <th>İptal</th>
               <th>Start</th>
               <th>End</th>
               <th>Uzat</th>
+              <th>Operasyon</th>
             </tr>
           </thead>
           <tbody>
@@ -1898,75 +2201,11 @@ function usePlanDraftToRequest(draft) {
                     </div>
                   </td>
 
-                  <td>{renderRoomOfferSummary(s, canNegotiate)}</td>
+                  <td>{renderRoomOfferSummary(s)}</td>
                   <td>{renderCompanyOfferSummary(s)}</td>
 
                   <td>
-                    <button type="button" disabled={busy || !canNegotiate} onClick={() => toggleOffer(sid)}>
-                      {isOpen ? "Kapat" : "Karşı Teklif"}
-                    </button>
-
-                    {isOpen ? (
-                      <div className="card" style={{ marginTop: 8 }}>
-                        <div className="muted" style={{ marginBottom: 6 }}>
-                          Company teklifini güncelle (C→R)
-                        </div>
-
-                        <div style={{ display: "grid", gap: 8 }}>
-                          <label className="muted">
-                            <div style={{ marginBottom: 4 }}>
-                              <b>Teklif Araç (opsiyonel)</b>
-                            </div>
-                            <select
-                              value={form.companyOfferVehicleId || ""}
-                              onChange={(e) => setOfferForShift(sid, { companyOfferVehicleId: e.target.value })}
-                              disabled={busy}
-                            >
-                              <option value="">— teklif yok —</option>
-                              {roomVehicles.map((v) => (
-                                <option key={v.id} value={String(v.id)}>
-                                  {v.plate} • {vehicleMetaLine(v)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <label className="muted">
-                            <div style={{ marginBottom: 4 }}>
-                              <b>Teklif Tutar (₺) (opsiyonel)</b>
-                            </div>
-                            <input
-                              value={form.companyOfferAmount ?? ""}
-                              onChange={(e) => setOfferForShift(sid, { companyOfferAmount: e.target.value })}
-                              placeholder="örn. 25000"
-                              disabled={busy}
-                            />
-                          </label>
-
-                          <label className="muted">
-                            <div style={{ marginBottom: 4 }}>
-                              <b>Teklif Notu (opsiyonel)</b>
-                            </div>
-                            <input
-                              value={form.companyOfferNote ?? ""}
-                              onChange={(e) => setOfferForShift(sid, { companyOfferNote: e.target.value })}
-                              placeholder="örn. Yakın zamanda başlayabiliriz"
-                              maxLength={200}
-                              disabled={busy}
-                            />
-                          </label>
-
-                          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                            <button type="button" disabled={busy} onClick={() => upsertCompanyOffer(sid)}>
-                              Kaydet
-                            </button>
-                            <button type="button" disabled={busy} onClick={() => removeCompanyOffer(sid)}>
-                              Teklifi Kaldır
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
+                    <div style={{ display: "grid", gap: 8 }}><div className="muted">Pazarlık sadece Market / Teklifler ekranında yapılır.</div><button type="button" className="btn sm" disabled={busy} onClick={() => openOffersModalForShift(s.id)}>Teklifleri Aç</button></div>
                   </td>
 
                   <td>
@@ -2000,6 +2239,12 @@ function usePlanDraftToRequest(draft) {
         <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Harita / Navigasyon Önizle</button>
     </>
 )}
+  </td>
+  <td>
+    <button type="button" className="btn sm" disabled={busy} onClick={() => openOpsEvents(s.id)}>Operasyon Kaydı</button>
+  </td>
+  <td>
+    <button type="button" className="btn sm" disabled={busy} onClick={() => openOpsEvents(s.id)}>Operasyon Kaydı</button>
   </td>
 </tr>
               );
@@ -2101,6 +2346,7 @@ function usePlanDraftToRequest(draft) {
               <th>Start</th>
               <th>End</th>
               <th>Uzat</th>
+              <th>Operasyon</th>
             </tr>
           </thead>
 
@@ -2126,7 +2372,7 @@ function usePlanDraftToRequest(draft) {
                       </div>
                     </div>
                   </td>
-                  <td>{renderRoomOfferSummary(s, false)}</td>
+                  <td>{renderRoomOfferSummary(s)}</td>
                   <td>{renderCompanyOfferSummary(s)}</td>
                   <td className="muted">
                     {s.vehicle?.plate || s.vehicleId ? (
@@ -2181,6 +2427,9 @@ function usePlanDraftToRequest(draft) {
         <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: s.id })}>Harita / Navigasyon Önizle</button>
     </>
 )}
+  </td>
+  <td>
+    <button type="button" className="btn sm" disabled={busy} onClick={() => openOpsEvents(s.id)}>Operasyon Kaydı</button>
   </td>
 </tr>
               );
@@ -2239,6 +2488,12 @@ function usePlanDraftToRequest(draft) {
     </div>
   </div>
 ) : null}
+
+<ShiftOperationEventsModal
+  open={opsEventsModal.open}
+  shiftId={opsEventsModal.shiftId}
+  onClose={() => setOpsEventsModal({ open: false, shiftId: null })}
+/>
 
 {/* M74.2.1: Preview modal from Company list */}
 {previewModal.open ? (
@@ -2405,55 +2660,175 @@ function usePlanDraftToRequest(draft) {
             </button>
           </div>
 
-          <table className="tbl" style={{ marginTop: 10 }}>
-            <thead>
-              <tr>
-                <th>Room</th>
-                <th>Status</th>
-                <th>Company</th>
-                <th>Room</th>
-                <th>Accept</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(offersModal.items || []).map((o) => (
-                <tr key={o.id}>
-                  <td className="muted">
-                      <div style={{ display: "grid", gap: 6 }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                          <span>{o.room ? `${roomLabel(o.room)} (#${o.room.id})` : `#${o.roomId}`}</span>
-                          <ProviderScoreBadge score={roomScores[String(o.room?.id || o.roomId || 0)] || null} prominent showLabel />
-                        </div>
+          <div className="card" style={{ marginTop: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>Karar Özeti</div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <OfferSignalPill
+                label="Karşı teklif"
+                value={String((offersModal.items || []).filter((o) => String(o?.status || "").toUpperCase() === "COUNTERED").length)}
+                tone={(offersModal.items || []).some((o) => String(o?.status || "").toUpperCase() === "COUNTERED") ? "warn" : "neutral"}
+              />
+              <OfferSignalPill
+                label="Açık teklif"
+                value={String((offersModal.items || []).filter((o) => String(o?.status || "").toUpperCase() === "OPEN").length)}
+                tone="neutral"
+              />
+              <OfferSignalPill label="Önerilen" value={String(offersDecisionCards.filter((o) => o.__recommended).length)} tone={offersDecisionCards.some((o) => o.__recommended) ? "good" : "neutral"} />
+              <OfferSignalPill label="Toplam" value={String((offersModal.items || []).length)} tone="neutral" />
+            </div>
+            <div className="muted" style={{ marginTop: 8 }}>
+              Otomatik öneri sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Son karar yine sende.
+            </div>
+            {recommendedOffer ? (
+              <div className="row" style={{ marginTop: 10, gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+                <div className="muted">
+                  Öne çıkan teklif: {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Otomatik öneri")}
+                </div>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  {recommendedCanAccept ? (
+                    <button type="button" disabled={busy} onClick={() => acceptOffer(recommendedOffer.id)}>
+                      Önerileni Kabul Et
+                    </button>
+                  ) : null}
+                  {recommendedCanAccept && offersModalPkgIds.length > 1 ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      title={`Pakete uygula (${offersModalPkgIds.length} shift)`}
+                      onClick={() => acceptOfferPackage(recommendedOffer.roomId)}
+                    >
+                      Önerileni Pakete Uygula
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+            {offersDecisionCards.map((o) => {
+              const roomId = Number(o.room?.id || o.roomId || 0);
+              const offerStatus = String(o.status || "").toUpperCase();
+              const canAccept = offerStatus === "COUNTERED";
+              const gap = offerGapMeta(o.amountCompany, o.amountRoom);
+              const note = String(o.noteRoom || o.noteCompany || "").trim();
+              const isRecommended = !!o.__recommended;
+              const recommendationReason = String(o.__recommendationReason || "").trim();
+              const recommendationShort = String(o.__recommendationShort || recommendationReason || "").trim();
+              const recommendationReasons = Array.isArray(o.__recommendationReasons) ? o.__recommendationReasons : [];
+
+              return (
+                <div
+                  key={o.id}
+                  className="card"
+                  style={{
+                    border: isRecommended
+                      ? "1px solid rgba(83,177,253,0.40)"
+                      : canAccept
+                      ? "1px solid rgba(242,153,74,0.35)"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    background: isRecommended
+                      ? "linear-gradient(180deg, rgba(83,177,253,0.10), rgba(255,255,255,0.02))"
+                      : canAccept
+                      ? "rgba(242,153,74,0.07)"
+                      : "rgba(255,255,255,0.02)",
+                    boxShadow: isRecommended ? "0 0 0 1px rgba(83,177,253,0.08) inset" : "none",
+                  }}
+                >
+                  <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div style={{ fontWeight: 800 }}>
+                        {o.room ? `${roomLabel(o.room)} (#${o.room.id})` : `Room #${o.roomId}`}
                       </div>
-                    </td>
-                  <td><span className="pill" data-status={o.status}>{o.status}</span></td>
-                  <td className="muted">{formatTRY(o.amountCompany)}</td>
-                  <td className="muted">{formatTRY(o.amountRoom)}</td>
-                  <td>
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        {isRecommended ? <RecommendationBadge reason={recommendationReason} /> : null}
+                        <ProviderScoreBadge score={roomScores[String(roomId)] || null} prominent showLabel />
+                        <span className="pill" data-status={o.status}>{o.status}</span>
+                        <OfferSignalPill label="Karar" value={canAccept ? "Verilebilir" : "Beklemede"} tone={canAccept ? "warn" : "neutral"} />
+                      </div>
+                    </div>
+
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: Number(o.shiftId || offersModal.shiftId || 0) })}>
+                        Harita / Navigasyon Önizle
+                      </button>
                       <button
                         type="button"
-                        disabled={busy || o.status !== "COUNTERED"}
+                        disabled={busy || !canAccept}
                         onClick={() => acceptOffer(o.id)}
                       >
-                        Kabul Et
+                        {isRecommended ? "Önerileni Kabul Et" : "Kabul Et"}
                       </button>
                       {offersModalPkgIds.length > 1 ? (
                         <button
                           type="button"
-                          disabled={busy || o.status !== "COUNTERED"}
+                          disabled={busy || !canAccept}
                           title={`Pakete uygula (${offersModalPkgIds.length} shift)`}
                           onClick={() => acceptOfferPackage(o.roomId)}
                         >
-                          Paketi Kabul Et
+                          {isRecommended ? "Önerileni Pakete Uygula" : "Paketi Kabul Et"}
                         </button>
                       ) : null}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                    <OfferSignalPill label="Company" value={o.amountCompany != null ? `${formatTRY(o.amountCompany)} ₺` : "-"} tone="neutral" />
+                    <OfferSignalPill label="Room" value={o.amountRoom != null ? `${formatTRY(o.amountRoom)} ₺` : "-"} tone={canAccept ? "warn" : "neutral"} />
+                    <OfferSignalPill label={gap.label} value={gap.value} tone={gap.tone} />
+                  </div>
+
+                  <RecommendationReasons reasons={isRecommended ? recommendationReasons : []} />
+                  <div className="muted" style={{ marginTop: 8 }}>{gap.note}</div>
+                  {isRecommended ? (
+                    <div className="muted" style={{ marginTop: 6, color: "#b2ddff" }}>
+                      <b>Neden önerildi?</b> {recommendationShort || recommendationReason || "Bu vardiya için otomatik öne çıktı."}
+                    </div>
+                  ) : null}
+                  {note ? (
+                    <div className="muted" style={{ marginTop: 4 }} title={note}>
+                      <b>Not:</b> {note}
+                    </div>
+                  ) : null}
+
+                  {String(o.status || "").toUpperCase() !== "ACCEPTED" && String(o.status || "").toUpperCase() !== "CANCELLED" ? (
+                    <div className="card" style={{ marginTop: 10, border: "1px dashed rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.01)" }}>
+                      <div className="muted" style={{ marginBottom: 6 }}>
+                        {offersModalPkgIds.length > 1 ? "Bu room için pakete karşı teklif ver." : "Bu teklif için company karşı teklif ver."}
+                      </div>
+                      <div className="row" style={{ gap: 8, alignItems: "end", flexWrap: "wrap" }}>
+                        <div className="col" style={{ minWidth: 160 }}>
+                          <label className="muted">Company Karşı Teklif (₺)</label>
+                          <input
+                            value={offersCounterSel[o.id]?.amountCompany ?? ""}
+                            onChange={(e) => setOffersCounter(o.id, { amountCompany: e.target.value })}
+                            placeholder="örn 12500"
+                            disabled={busy}
+                          />
+                        </div>
+                        <div className="col" style={{ flex: 1, minWidth: 220 }}>
+                          <label className="muted">Not</label>
+                          <input
+                            value={offersCounterSel[o.id]?.noteCompany ?? ""}
+                            onChange={(e) => setOffersCounter(o.id, { noteCompany: e.target.value })}
+                            placeholder="opsiyonel"
+                            disabled={busy}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => (offersModalPkgIds.length > 1 ? companyCounterPackage(o) : companyCounterOffer(o))}
+                        >
+                          {offersModalPkgIds.length > 1 ? "Pakete Karşı Teklif Ver" : "Karşı Teklif Ver"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : null}
     </div>

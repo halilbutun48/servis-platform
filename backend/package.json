@@ -22,7 +22,8 @@
     "m9check": "node scripts/m9check.js",
     "m10check": "node scripts/m10check.js",
     "m11check": "node scripts/m11check.js",
-    "m12check": "node scripts/m12check.js"
+    "m12check": "node scripts/m12check.js",
+    "m66check": "node scripts/m66check.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

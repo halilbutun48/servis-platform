@@ -1,6 +1,7 @@
 // backend/src/routes/agreements.js
 import express from "express";
 import { prisma } from "../prisma.js";
+import { dateOnlyUTCFromYmd } from "../time/tr.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -16,7 +17,7 @@ import {
 function parseDateOnly(s) {
   const v = String(s || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
-  return new Date(v + "T00:00:00.000Z");
+  return dateOnlyUTCFromYmd(v);
 }
 function toInt(v, def = null) {
   const n = Number(v);
@@ -505,7 +506,7 @@ export function agreementsRouter(io) {
 
   function ymdOfDateOnly(d) {
     try {
-      return String(d?.toISOString?.() || "").slice(0, 10);
+      return ymdTR(d);
     } catch {
       return "";
     }

@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { normalizeNotifV1 } from "../../utils/notificationV1";
 import { pillKeyFromAny } from "../../utils/uiStatus";
+import { formatDateTimeTR } from "../../utils/time";
 
 function fmt(v) {
   if (v == null) return "";
@@ -20,13 +21,7 @@ function fmtAtCompact(v) {
   if (!v) return "";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  // DD.MM HH:mm:ss
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mi = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
-  return `${dd}.${mm} ${hh}:${mi}:${ss}`;
+  return formatDateTimeTR(d, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function fmtAge(ageSec) {

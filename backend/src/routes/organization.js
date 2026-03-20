@@ -1,6 +1,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd, ymdTR } from "../time/tr.js";
 
 function toInt(v, def = null) {
   const n = Number(v);
@@ -17,7 +18,7 @@ function trimOrNull(v) {
 function parseDateOnly(s) {
   const v = String(s || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
-  return new Date(v + "T00:00:00.000Z");
+  return dateOnlyUTCFromYmd(v);
 }
 function clampMin(v) {
   const n = toInt(v, null);
@@ -26,16 +27,10 @@ function clampMin(v) {
   return n;
 }
 function dateAtUtc(dateOnly, min) {
-  const d = new Date(dateOnly);
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCMinutes(Number(min || 0));
-  return d;
+  return atTR(ymdTR(dateOnly), Number(min || 0));
 }
 function weekdayMask(dateOnly) {
-  const d = new Date(dateOnly);
-  const day = d.getUTCDay(); // 0 sun..6 sat
-  const idx = day === 0 ? 6 : day - 1; // mon=0..sun=6
-  return 1 << idx;
+  return dayBitTRFromYmd(ymdTR(dateOnly));
 }
 function normalizeStops(rawStops) {
   const src = Array.isArray(rawStops) ? rawStops : [];

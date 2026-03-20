@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { useAutoReload } from "../../live/useAutoReload";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
+import { formatDateTimeTR, formatDateTR, formatTimeTR, isoFromTRDateInput, isoFromTRLocalInput, toDateInputTR, toDatetimeLocalTR } from "../../utils/time";
 
 const VEHICLE_TYPES = [
   { value: "", label: "Seç (opsiyonel)" },
@@ -38,16 +39,13 @@ const TABS = [
 ];
 
 function isoToDateInput(v) {
-  if (!v) return "";
-  try { return String(v).slice(0, 10); } catch { return ""; }
+  return toDateInputTR(v);
 }
 function isoToDatetimeLocal(v) {
-  if (!v) return "";
-  try { return new Date(v).toISOString().slice(0, 16); } catch { return ""; }
+  return toDatetimeLocalTR(v);
 }
 function fmtDate(v) {
-  if (!v) return "-";
-  try { return new Date(v).toISOString().slice(0, 10); } catch { return String(v); }
+  return formatDateTR(v);
 }
 function hasGpsFix(v) {
   const lat = v?.gpsLast?.lat;
@@ -58,7 +56,7 @@ function gpsAtLabel(v) {
   const at = v?.gpsLast?.at || v?.gpsLast?.ts || v?.gpsLast?.updatedAt || null;
   if (!at) return "-";
   try {
-    return new Date(at).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
+    return formatDateTimeTR(at);
   } catch {
     return String(at);
   }
@@ -100,7 +98,7 @@ function fmtDriverHuman(d) {
 function fmtTR(dt) {
   if (!dt) return "-";
   try {
-    return new Date(dt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
+    return formatDateTimeTR(dt);
   } catch {
     return String(dt);
   }
@@ -108,7 +106,7 @@ function fmtTR(dt) {
 function fmtHm(dt) {
   if (!dt) return "-";
   try {
-    return new Date(dt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Istanbul" });
+    return formatTimeTR(dt);
   } catch {
     return String(dt);
   }
@@ -281,10 +279,10 @@ const [availFilter, setAvailFilter] = useState("ALL");
 // ALL | ONLY_CONFLICT | ONLY_OK | ONLY_UNCHECKED | ONLY_WITH_DRIVER
 
 // Availability (custom window)
-const [availStartAt, setAvailStartAt] = useState(() => new Date().toISOString().slice(0, 16)); // datetime-local
+const [availStartAt, setAvailStartAt] = useState(() => toDatetimeLocalTR(new Date())); // datetime-local (TR)
 const [availEndAt, setAvailEndAt] = useState(() => {
   const d = new Date(Date.now() + 30 * 60 * 1000);
-  return d.toISOString().slice(0, 16);
+  return toDatetimeLocalTR(d);
 });
 const [availBusy, setAvailBusy] = useState(false);
 const [availMap, setAvailMap] = useState({}); // { [vehicleId]: { vehicleOk, vehicleConflict, driverOk, driverConflict } }
@@ -593,13 +591,13 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
       if (vin.trim()) body.vin = vin.trim();
       if (note.trim()) body.note = note.trim();
 
-      if (inspectionDueAt) body.inspectionDueAt = new Date(inspectionDueAt).toISOString();
-      if (lastServiceAt) body.lastServiceAt = new Date(lastServiceAt).toISOString();
+      if (inspectionDueAt) body.inspectionDueAt = isoFromTRDateInput(inspectionDueAt);
+      if (lastServiceAt) body.lastServiceAt = isoFromTRDateInput(lastServiceAt);
       if (String(lastServiceKm).trim()) body.lastServiceKm = Number(lastServiceKm);
       if (serviceIntervalKm) body.serviceIntervalKm = Number(serviceIntervalKm);
       if (String(odometerKm).trim()) body.odometerKm = Number(odometerKm);
 
-      if (nextMaintenanceAt) body.nextMaintenanceAt = new Date(nextMaintenanceAt).toISOString();
+      if (nextMaintenanceAt) body.nextMaintenanceAt = isoFromTRLocalInput(nextMaintenanceAt);
 
       await api("/api/vehicles", { method: "POST", token, body });
 
@@ -853,13 +851,13 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
         vin: editForm.vin?.trim() || null,
         note: editForm.note?.trim() || null,
 
-        inspectionDueAt: editForm.inspectionDueAt ? new Date(editForm.inspectionDueAt).toISOString() : null,
-        lastServiceAt: editForm.lastServiceAt ? new Date(editForm.lastServiceAt).toISOString() : null,
+        inspectionDueAt: editForm.inspectionDueAt ? isoFromTRDateInput(editForm.inspectionDueAt) : null,
+        lastServiceAt: editForm.lastServiceAt ? isoFromTRDateInput(editForm.lastServiceAt) : null,
         lastServiceKm: String(editForm.lastServiceKm).trim() ? Number(editForm.lastServiceKm) : null,
         serviceIntervalKm: editForm.serviceIntervalKm ? Number(editForm.serviceIntervalKm) : null,
         odometerKm: String(editForm.odometerKm).trim() ? Number(editForm.odometerKm) : null,
 
-        nextMaintenanceAt: editForm.nextMaintenanceAt ? new Date(editForm.nextMaintenanceAt).toISOString() : null,
+        nextMaintenanceAt: editForm.nextMaintenanceAt ? isoFromTRLocalInput(editForm.nextMaintenanceAt) : null,
       };
 
       await api(`/api/vehicles/${editForm.id}`, { method: "PUT", token, body });
@@ -999,8 +997,8 @@ const availRows = useMemo(() => {
 }, [items, availMap, availQuery, availFilter]);
 
 async function checkAvailabilityAll(onlySelected = false) {
-  const startIso = new Date(availStartAt).toISOString();
-  const endIso = new Date(availEndAt).toISOString();
+  const startIso = isoFromTRLocalInput(availStartAt);
+  const endIso = isoFromTRLocalInput(availEndAt);
 
   if (!startIso || !endIso) { showToast("start/end seç", "warn"); return; }
   if (new Date(endIso).getTime() <= new Date(startIso).getTime()) {

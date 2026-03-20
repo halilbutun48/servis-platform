@@ -67,8 +67,8 @@ export default function NavDock({ role, path, me }) {
         items: [
           { label: "Rehber", path: "/room/copilot", badge: "Yeni" },
           { label: "Canlı Takip", path: "/room/map" },
-          { label: "Teklifler", path: "/room/offers" },
           { label: "Ticari Akışım", path: "/room/commercial-flow", badge: "Yeni" },
+          { label: "Teklifler", path: "/room/offers" },
           { label: "Vardiyalar", path: "/room/shifts" },
         ],
       });
@@ -95,6 +95,7 @@ export default function NavDock({ role, path, me }) {
         items: [
           { label: "Rehber", path: base + "/copilot", badge: "Yeni" },
           { label: "Harita", path: base + "/map" },
+          { label: "Ticari Akışım", path: base + "/commercial-flow", badge: "Yeni" },
           { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
           { label: "Vardiyalar", path: base + "/shifts" },
           { label: "Raporlar", path: base + "/reports" },

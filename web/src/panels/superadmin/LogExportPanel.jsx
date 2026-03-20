@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { formatDateTimeTR, isoFromTRLocalInput } from "../../utils/time";
 
 function isoLocalInputToIso(s) {
-  const v = String(s || "").trim();
-  if (!v) return "";
-  // datetime-local gives "YYYY-MM-DDTHH:mm"
-  const d = new Date(v);
-  if (!Number.isFinite(d.getTime())) return "";
-  return d.toISOString();
+  return isoFromTRLocalInput(s);
 }
 
 async function downloadWithToken(url, token, filenameHint) {
@@ -36,7 +32,7 @@ async function downloadWithToken(url, token, filenameHint) {
 
 function fmt(ts) {
   try {
-    return new Date(ts).toLocaleString();
+    return formatDateTimeTR(ts);
   } catch {
     return String(ts || "");
   }

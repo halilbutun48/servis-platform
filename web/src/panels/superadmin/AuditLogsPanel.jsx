@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { formatDateTimeTR } from "../../utils/time";
 
 function fmt(ts) {
   try {
-    return new Date(ts).toLocaleString();
+    return formatDateTimeTR(ts);
   } catch {
     return String(ts || "");
   }

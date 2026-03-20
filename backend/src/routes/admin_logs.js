@@ -47,6 +47,20 @@ function fmtTR(d) {
   return `${dd}.${m}.${y} ${hh}:${mi}:${ss}`;
 }
 
+function fmtTRIso(d) {
+  if (!d) return "";
+  const dt = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(dt.getTime())) return String(d);
+  const tr = new Date(dt.getTime() + TR_OFFSET_MS);
+  const y = tr.getUTCFullYear();
+  const m = String(tr.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(tr.getUTCDate()).padStart(2, "0");
+  const hh = String(tr.getUTCHours()).padStart(2, "0");
+  const mi = String(tr.getUTCMinutes()).padStart(2, "0");
+  const ss = String(tr.getUTCSeconds()).padStart(2, "0");
+  return `${y}-${m}-${dd}T${hh}:${mi}:${ss}+03:00`;
+}
+
 function csvEscape(v) {
   const s = String(v ?? "");
   if (s.includes('"') || s.includes(",") || s.includes("\n")) return `"${s.replace(/"/g, '""')}"`;
@@ -243,8 +257,8 @@ export function adminLogsRouter() {
           format,
           take,
           filters: {
-            from: from ? from.toISOString() : null,
-            to: to ? to.toISOString() : null,
+            fromTR: from ? fmtTRIso(from) : null,
+            toTR: to ? fmtTRIso(to) : null,
             q: String(req.query.q || "").trim() || null,
             emailContains: emailContains || null,
             userId: userId || null,
@@ -256,7 +270,7 @@ export function adminLogsRouter() {
         },
       });
 
-      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const stamp = fmtTRIso(new Date()).slice(0, 19).replace(/[:T+]/g, "-");
       const filename = `admin_${kind}_${stamp}.${format}`;
       res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
 
@@ -270,7 +284,7 @@ export function adminLogsRouter() {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       const lines = items
         .map((x) => {
-          const dt = x.createdAt instanceof Date ? x.createdAt.toISOString() : String(x.createdAt);
+          const dt = fmtTRIso(x.createdAt) || String(x.createdAt);
           return `[${dt}] ${x.type} ${x.info}`;
         })
         .join("\n");

@@ -19,6 +19,8 @@ import ScreenMenusCard from "../../components/copilot/ScreenMenusCard";
 import ChatThread from "../../components/copilot/ChatThread";
 import ChatInputBox from "../../components/copilot/ChatInputBox";
 import SuggestedChips from "../../components/copilot/SuggestedChips";
+import { formatDateTimeTR } from "../../utils/time";
+import { nowIsoTR } from "../../utils/time";
 
 const PANEL_MODES = [
   { value: "CHAT", label: "Sohbet" },
@@ -564,7 +566,7 @@ export default function CopilotPanel() {
       const payload = await api.post("/api/ai/copilot", body, { token });
       setResult(payload);
       setHistory(saveHistory({
-        at: new Date().toISOString(),
+        at: nowIsoTR(),
         panelMode,
         intent: panelMode === "GUIDE" ? "JOB_GUIDE" : intent,
         jobType: panelMode === "GUIDE" ? jobType : null,
@@ -915,7 +917,7 @@ export default function CopilotPanel() {
               <span>Mode: <b>{result.mode || "-"}</b></span>
               <span>Scope: <b>{result.scope?.role || me?.role || "-"}</b></span>
               <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
-              <span>Oluşturma: <b>{result.generatedAt ? new Date(result.generatedAt).toLocaleString("tr-TR") : "-"}</b></span>
+              <span>Oluşturma: <b>{result.generatedAt ? formatDateTimeTR(result.generatedAt) : "-"}</b></span>
               <span>Güven: <b>{confidencePct(result.confidence)}</b></span>
               <span style={{ ...severityStyle(result.severity), padding: "2px 8px", borderRadius: 999, fontWeight: 700 }}>{result.severity || "-"}</span>
             </div>

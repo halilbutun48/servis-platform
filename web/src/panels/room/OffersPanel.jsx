@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
+import RoutePreviewModal from "../../components/RoutePreviewModal";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -129,6 +130,7 @@ export default function RoomOffersPanel() {
 
   // per-offer counter input
   const [counterSel, setCounterSel] = useState({}); // { [offerId]: { amountRoom, noteRoom } }
+  const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null });
 
   function setCounter(offerId, patch) {
     setCounterSel((p) => ({
@@ -228,6 +230,51 @@ export default function RoomOffersPanel() {
     }
   }
 
+
+  async function acceptCounterOffer(offerId, { navigatePending = true } = {}) {
+    const oid = Number(offerId);
+    if (!oid) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await api.put(`/api/offers/${oid}/room-accept`, {});
+      const sid = Number(res?.shift?.id || res?.shiftId || 0);
+      await load();
+      if (navigatePending && sid > 0) {
+        localStorage.setItem("room:focusPendingShiftId", String(sid));
+        navigate("/room/shifts");
+      }
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function acceptSelectedPackage() {
+    const ids = selectedIds;
+    if (!ids.length) return setErr("Önce kabul edeceğin teklifleri seç.");
+    setBusy(true);
+    setErr("");
+    try {
+      let firstShiftId = 0;
+      for (const oid of ids) {
+        const res = await api.put(`/api/offers/${oid}/room-accept`, {});
+        if (!firstShiftId) firstShiftId = Number(res?.shift?.id || res?.shiftId || 0);
+      }
+      setSel({});
+      await load();
+      if (firstShiftId > 0) {
+        localStorage.setItem("room:focusPendingShiftId", String(firstShiftId));
+        navigate("/room/shifts");
+      }
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onCounter(offerId) {
     const st = counterSel[offerId] || {};
     const amountRoom = st.amountRoom == null || st.amountRoom === "" ? undefined : Number(st.amountRoom);
@@ -249,6 +296,13 @@ export default function RoomOffersPanel() {
     const sid = Number(shiftId);
     if (!sid) return;
     localStorage.setItem("room:focusShiftId", String(sid));
+    navigate("/room/shifts");
+  }
+
+  function goPendingShift(shiftId) {
+    const sid = Number(shiftId);
+    if (!sid) return;
+    localStorage.setItem("room:focusPendingShiftId", String(sid));
     navigate("/room/shifts");
   }
 
@@ -381,6 +435,9 @@ export default function RoomOffersPanel() {
             <button className="btn" disabled={busy || !selectedIds.length} onClick={onBulkCounter}>
               Pakete Counter ({selectedIds.length})
             </button>
+            <button className="btn" disabled={busy || !selectedIds.length} onClick={acceptSelectedPackage} title="Seçili company karşı tekliflerini kabul edip ilgili bekleyen taleplere geç">
+              Paketi Kabul Et ve Bekleyen Taleplere Geç
+            </button>
             <button className="btn" disabled={busy} onClick={load}>
               Yenile
             </button>
@@ -422,10 +479,19 @@ export default function RoomOffersPanel() {
                 <button type="button" className="btn sm" disabled={busy} onClick={() => goShift(o.shiftId)}>
                   Shift’e Git
                 </button>
+                <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: Number(o.shiftId) || null })}>
+                  Harita Önizle
+                </button>
+
+                {String(o.status || "").toUpperCase() === "COUNTERED" ? (
+                  <button type="button" className="btn" disabled={busy} onClick={() => acceptCounterOffer(o.id)} title="Kabul et → ilgili bekleyen talebe geç → araç ve sürücü seç">
+                    Kabul Et ve Bekleyen Taleplere Geç
+                  </button>
+                ) : null}
 
                 {canQuickApprove ? (
-                  <button type="button" className="btn" disabled={busy} onClick={() => openApprove(o)} title="Araç+sürücü seç → Onayla (+Start)">
-                    Hızlı Onayla
+                  <button type="button" className="btn" disabled={busy} onClick={() => goPendingShift(o.shiftId)} title="Bekleyen Taleplere git → araç ve sürücü seç → approve et">
+                    Bekleyen Taleplere Git
                   </button>
                 ) : null}
               </div>
@@ -474,6 +540,15 @@ export default function RoomOffersPanel() {
           </div>
         );
       })}
+
+      {previewModal.open ? (
+        <RoutePreviewModal
+          open={previewModal.open}
+          onClose={() => setPreviewModal({ open: false, shiftId: null })}
+          title={previewModal.shiftId ? `Shift #${previewModal.shiftId} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
+          shiftId={previewModal.shiftId}
+        />
+      ) : null}
 
       {/* ✅ M30/M31: Quick approve (+ optional start) modal */}
       {approveModal.open ? (() => {

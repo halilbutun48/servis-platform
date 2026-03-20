@@ -17,11 +17,12 @@ import {
   parseHHMM,
   addDaysISO,
 } from "../../utils/agreementUi";
+import { ymdTR } from "../../utils/time";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
   if (!ymd || String(ymd).length < 10) return null;
-  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999");
+  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999+03:00");
   const diff = end.getTime() - Date.now();
   const d = Math.ceil(diff / 86400000);
   return Number.isFinite(d) ? d : null;
@@ -40,11 +41,7 @@ function ShiftSummary({ st }) {
 
 
 function todayYmd() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  return ymdTR();
 }
 
 function isYmd(s) {

@@ -5,6 +5,9 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { invalidate } from "../../live/bus";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
+import ShiftReassignModal from "../../components/ShiftReassignModal";
+import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
+import { navigate } from "../../router";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -184,6 +187,8 @@ export default function RoomShiftsPanel() {
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [reassignModal, setReassignModal] = useState({ open: false, shift: null });
+  const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
 
   // Bekleyen filtreleri
   const [pendingStatus, setPendingStatus] = useState("OPEN"); // OPEN | REQUESTED | DRAFT
@@ -194,8 +199,19 @@ export default function RoomShiftsPanel() {
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
 
-  // M28: offers inbox -> shifts focus (minimize clicks)
+  // M28/M63-R3A: offers inbox -> ilgili satira hizli gecis
   useEffect(() => {
+    const pendingRaw = localStorage.getItem("room:focusPendingShiftId");
+    if (pendingRaw) {
+      localStorage.removeItem("room:focusPendingShiftId");
+      const sid = String(pendingRaw || "").trim();
+      if (sid) {
+        setPendingStatus("REQUESTED");
+        setPendingQ(sid);
+        return;
+      }
+    }
+
     const raw = localStorage.getItem("room:focusShiftId");
     if (!raw) return;
     localStorage.removeItem("room:focusShiftId");
@@ -1809,6 +1825,32 @@ async function sendRoomOffer(shift) {
     }
   }
 
+  async function submitReassign(payload) {
+    const shift = reassignModal.shift;
+    if (!shift?.id) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await api.put(`/api/shifts/${shift.id}/reassign`, payload);
+      setReassignModal({ open: false, shift: null });
+      setOpsEventsModal({ open: true, shiftId: shift.id });
+      invalidate("shifts");
+      await load();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openReassignModal(shift) {
+    setReassignModal({ open: true, shift });
+  }
+
+  function openOpsEvents(shiftId) {
+    setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
+  }
+
   return (
     <div>
       <div className="card">
@@ -1963,7 +2005,7 @@ async function sendRoomOffer(shift) {
                         {!isAgreement ? (
                         <div>
                           {marketOffer ? (
-                            <div className="card" style={{ marginTop: 6 }} title="Market teklifleri ShiftOffer tablosundan gelir; buradan counter gönderebilirsin.">
+                            <div className="card" style={{ marginTop: 6 }} title="Market teklifleri ShiftOffer tablosundan gelir; burada teklif özeti ve rota bilgisi görünür.">
                               <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                                 <div style={{ fontWeight: 800 }}>Market Teklifi (C→R)</div>
                                 {statusPill(marketOffer.status)}
@@ -1974,41 +2016,9 @@ async function sendRoomOffer(shift) {
                               {marketOffer.noteCompany ? <div className="muted" style={{ marginTop: 6 }}>Not (Company): {marketOffer.noteCompany}</div> : null}
                               {marketOffer.noteRoom ? <div className="muted" style={{ marginTop: 4 }}>Not (Room): {marketOffer.noteRoom}</div> : null}
 
-                              {marketCanCounter ? (
-                                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                                  <div className="row" style={{ gap: 8, alignItems: "end", flexWrap: "wrap" }}>
-                                    <div className="col" style={{ minWidth: 160 }}>
-                                      <label className="muted">Karşı Teklif (₺)</label>
-                                      <input
-                                        value={marketForm.amountRoom ?? ""}
-                                        onChange={(e) => setMarketCounter(marketOffer.id, { amountRoom: e.target.value })}
-                                        placeholder="örn 25000"
-                                        disabled={busy}
-                                      />
-                                    </div>
-                                    <div className="col" style={{ flex: 1, minWidth: 220 }}>
-                                      <label className="muted">Not</label>
-                                      <input
-                                        value={marketForm.noteRoom ?? ""}
-                                        onChange={(e) => setMarketCounter(marketOffer.id, { noteRoom: e.target.value })}
-                                        placeholder="opsiyonel"
-                                        disabled={busy}
-                                      />
-                                    </div>
-                                    <button className="btn sm" disabled={busy} onClick={() => sendMarketCounter(marketOffer)}>
-  Counter Gönder
-</button>
-<button className="btn sm" disabled={busy} onClick={() => bulkMarketCounter(marketOffer, "bundle")} title="Aynı anda oluşturulmuş paket tekliflerine uygula">
-  Pakete Uygula
-</button>
-<button className="btn sm" disabled={busy} onClick={() => bulkMarketCounter(marketOffer, "company")} title="Bu company'nin tüm açık market tekliflerine uygula">
-  Şirkete Uygula
-</button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="muted" style={{ marginTop: 8 }}>Bu teklif artık değiştirilemez ({String(marketOffer.status)}).</div>
-                              )}
+                              <div className="muted" style={{ marginTop: 8 }}>
+                                Pazarlık Market / Teklifler ekranında yapılır. Burada teklif özeti ve rota önizlemesi kalır; araç + sürücü seçimi ise yalnızca bu ekranda yapılır.
+                              </div>
                             </div>
                           ) : (
                             <div>{renderCompanyOfferSummary(s)}</div>
@@ -2017,100 +2027,21 @@ async function sendRoomOffer(shift) {
                         ) : null}
 
                         {!isAgreement ? (
-                          <>
-                        <button type="button" className="btn sm" disabled={busy || !!marketOffer || isAgreement} onClick={() => toggleRoomOffer(sid)} title={marketOffer ? "Market teklifi için counter yukarıdan yapılır" : "Room → Company karşı teklif"}>
-                          {offerIsOpen ? "Room Teklifi Kapat" : "Room Teklifi (opsiyonel) Aç"}
-                        </button>
-
-                        {offerIsOpen ? (
-                          <div className="card" style={{ marginTop: 6 }}>
-                            <div className="muted" style={{ marginBottom: 6 }}>
-                              Room → Company karşı teklif (R→C)
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <div className="muted" style={{ marginTop: 6 }}>
+                              Pazarlık yalnızca Market / Teklifler ekranında yapılır. Bu ekranda rota önizleme ve operasyon hazırlığı kalır.
                             </div>
-
-                            <div style={{ display: "grid", gap: 8 }}>
-                              <label className="muted">
-                                <div style={{ marginBottom: 4 }}>
-                                  <b>Teklif Araç (opsiyonel)</b>
-                                </div>
-                                <select
-                                  value={offerForm.roomOfferVehicleId || ""}
-                                  onChange={(e) => setRoomOfferForShift(sid, { roomOfferVehicleId: e.target.value })}
-                                  disabled={busy}
-                                >
-                                  <option value="">— teklif yok —</option>
-                                  {offerVehList.map((v) => (
-                                    <option key={v.id} value={String(v.id)}>
-                                      {v.plate} • {vehicleMetaLine(v)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-
-                              <label className="muted">
-                                <div style={{ marginBottom: 4 }}>
-                                  <b>Teklif Tutar (₺) (opsiyonel)</b>
-                                </div>
-                                <input
-                                  value={offerForm.roomOfferAmount ?? ""}
-                                  onChange={(e) => setRoomOfferForShift(sid, { roomOfferAmount: e.target.value })}
-                                  placeholder="örn. 25000"
-                                  disabled={busy}
-                                />
-                              </label>
-
-                              <label className="muted">
-                                <div style={{ marginBottom: 4 }}>
-                                  <b>Teklif Notu (opsiyonel)</b>
-                                </div>
-                                <input
-                                  value={offerForm.roomOfferNote ?? ""}
-                                  onChange={(e) => setRoomOfferForShift(sid, { roomOfferNote: e.target.value })}
-                                  placeholder="örn. Şu şartla…"
-                                  disabled={busy}
-                                />
-                              </label>
-
-                              <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                <input
-                                  type="checkbox"
-                                  checked={Boolean(offerForm.notifyDriver)}
-                                  onChange={(e) => setRoomOfferForShift(sid, { notifyDriver: e.target.checked })}
-                                  disabled={busy}
-                                />
-                                <span>
-                                  <b>Driver’a ilet (opsiyonel)</b>
-                                </span>
-                              </label>
-
-                              {offerForm.notifyDriver ? (
-                                <label className="muted">
-                                  <div style={{ marginBottom: 4 }}>
-                                    <b>Driver Notu (opsiyonel)</b>
-                                  </div>
-                                  <input
-                                    value={offerForm.driverNote ?? ""}
-                                    onChange={(e) => setRoomOfferForShift(sid, { driverNote: e.target.value })}
-                                    placeholder="örn. Şu duraktan başla…"
-                                    disabled={busy}
-                                  />
-                                </label>
-                              ) : null}
-
-                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                <button type="button" className="btn" disabled={busy} onClick={() => sendRoomOffer(s)}>
-                                  {busy ? "..." : "Gönder"}
-                                </button>
-                                <button type="button" className="btn ghost" disabled={busy} onClick={() => clearRoomOffer(s)}>
-                                  Teklifi Kaldır
-                                </button>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <button type="button" className="btn sm" disabled={busy} onClick={() => navigate("/room/offers")}>
+                                Tekliflere Git
+                              </button>
+                            </div>
+                            {!marketOffer ? (
+                              <div className="muted" style={{ marginTop: 2 }}>
+                                Bu kayıtta eski doğrudan teklif alanları görünüyor olabilir; yeni karşı teklif üretimi artık Teklifler ekranında yapılır.
                               </div>
-
-                              <div style={{ marginTop: 6 }}>{renderRoomOfferSummary(s)}</div>
-                            </div>
+                            ) : null}
                           </div>
-                        ) : null}
-                          </>
                         ) : null}
                       </div>
                     </td>
@@ -2304,6 +2235,7 @@ async function sendRoomOffer(shift) {
                 <th>Start</th>
                 <th>End</th>
                 <th>Uzatma</th>
+                <th>Operasyon</th>
               </tr>
             </thead>
             <tbody>
@@ -2386,6 +2318,14 @@ async function sendRoomOffer(shift) {
       <span className="muted">-</span>
     )}
   </td>
+  <td>
+    <div style={{ display: "grid", gap: 8 }}>
+      <button type="button" className="btn sm" disabled={busy} onClick={() => openOpsEvents(s.id)}>İşlem Kaydı</button>
+      {String(s.status || "").toUpperCase() === "APPROVED" || String(s.status || "").toUpperCase() === "ACTIVE" ? (
+        <button type="button" className="btn sm primary" disabled={busy} onClick={() => openReassignModal(s)}>Atamayı Değiştir</button>
+      ) : null}
+    </div>
+  </td>
 </tr>
               ))}
             </tbody>
@@ -2401,6 +2341,22 @@ async function sendRoomOffer(shift) {
           Harita Önizleme: {previewErr}
         </div>
       ) : null}
+
+      <ShiftReassignModal
+        open={reassignModal.open}
+        shift={reassignModal.shift}
+        vehicles={vehicles}
+        drivers={drivers}
+        busy={busy}
+        onClose={() => setReassignModal({ open: false, shift: null })}
+        onSubmit={submitReassign}
+      />
+
+      <ShiftOperationEventsModal
+        open={opsEventsModal.open}
+        shiftId={opsEventsModal.shiftId}
+        onClose={() => setOpsEventsModal({ open: false, shiftId: null })}
+      />
 
       <RoutePreviewModal
         open={previewOpen}

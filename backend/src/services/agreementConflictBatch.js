@@ -4,10 +4,10 @@
 // TR-local schedule semantics (UTC+03:00).
 
 import { prisma } from "../prisma.js";
-import { addDaysTR, dayBitTRFromYmd, dateOnlyTR } from "../time/tr.js";
+import { addDaysTR, dayBitTRFromYmd, dateOnlyTR, ymdTR } from "../time/tr.js";
 
 function ymdFromDateOnlyUTC(d) {
-  return String(new Date(d).toISOString()).slice(0, 10);
+  return ymdTR(d);
 }
 
 function minutesToDtTR(ymd, min) {

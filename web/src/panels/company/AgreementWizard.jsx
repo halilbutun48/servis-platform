@@ -14,13 +14,10 @@ import {
   weekMaskToText,
   addDaysISO,
 } from "../../utils/agreementUi";
+import { isoFromTRYmdMin, ymdTR } from "../../utils/time";
 
 function todayYmd() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  return ymdTR();
 }
 
 function isYmd(s) {
@@ -45,10 +42,7 @@ function parseHHMM(s) {
 }
 
 function ymdMinToIso(ymd, min) {
-  const m = ((Number(min) % 1440) + 1440) % 1440;
-  const hh = String(Math.floor(m / 60)).padStart(2, "0");
-  const mm = String(m % 60).padStart(2, "0");
-  return new Date(ymd + "T" + hh + ":" + mm + ":00+03:00").toISOString();
+  return isoFromTRYmdMin(ymd, min);
 }
 
 function trimOrNull(s) {

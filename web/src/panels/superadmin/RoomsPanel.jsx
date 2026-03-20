@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { formatDateTimeTR } from "../../utils/time";
 
 function copyText(s) {
   const v = String(s ?? "");
@@ -301,7 +302,7 @@ export default function RoomsPanel() {
                   )}
                 </div>
 
-                <div style={{ opacity: 0.8 }}>{r.createdAt ? new Date(r.createdAt).toLocaleString() : "-"}</div>
+                <div style={{ opacity: 0.8 }}>{r.createdAt ? formatDateTimeTR(r.createdAt) : "-"}</div>
 
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
                   <button className="btn sm" disabled={busy} onClick={() => copyText(r.id)}>

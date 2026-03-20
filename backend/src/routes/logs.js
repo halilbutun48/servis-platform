@@ -65,6 +65,16 @@ function fmtTR(d) {
   )}:${pad2(tr.getUTCSeconds())}`;
 }
 
+function fmtTRIso(d) {
+  if (!d) return "";
+  const ms = d instanceof Date ? d.getTime() : new Date(d).getTime();
+  if (!Number.isFinite(ms)) return "";
+  const tr = new Date(ms + TR_OFFSET_MS);
+  return `${tr.getUTCFullYear()}-${pad2(tr.getUTCMonth() + 1)}-${pad2(tr.getUTCDate())}T${pad2(tr.getUTCHours())}:${pad2(
+    tr.getUTCMinutes()
+  )}:${pad2(tr.getUTCSeconds())}+03:00`;
+}
+
 function safeJson(x, maxLen = 400) {
   try {
     const s = JSON.stringify(x ?? {});
@@ -94,7 +104,7 @@ function rowsToCsv(rows) {
   for (const it of rows) {
     out.push(
       toCsvRow([
-        it.ts?.toISOString?.() || String(it.ts),
+        fmtTRIso(it.ts) || String(it.ts),
         it.tsTR || "",
         it.cat || "",
         it.level || "",
@@ -705,7 +715,7 @@ export function logsRouter() {
           childId: childId || null,
           format,
           take,
-          range: { from: from.toISOString(), to: to.toISOString() },
+          rangeTR: { from: fmtTRIso(from), to: fmtTRIso(to) },
           rowCount: rows.length,
         },
       });

@@ -49,10 +49,59 @@ const buildShiftsWhereFromQuery =
 
 const getDriverIdOrThrow = H.getDriverIdOrThrow;
 const getPersonelIdOrThrow = H.getPersonelIdOrThrow;
+const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 
 // Shared endpoints: list, my, detail
 export function attachShiftSharedRoutes(r) {
-  // list shifts (ROOM/COMPANY/SUPER_ADMIN) with filters
+  
+  r.get(
+    "/:id/operation-events",
+    authRequired(),
+    requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const shiftId = Number(req.params.id);
+        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+
+        await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+
+        const rows = await prisma.auditLog.findMany({
+          where: {
+            entity: "Shift",
+            entityId: shiftId,
+            action: { in: ["SHIFT_APPROVE", "SHIFT_ASSIGN", "SHIFT_REASSIGN"] },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+
+        const actorIds = Array.from(new Set(rows.map((x) => Number(x.actorUserId || 0)).filter((n) => Number.isFinite(n) && n > 0)));
+        const actors = actorIds.length
+          ? await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, email: true, fullName: true, role: true } })
+          : [];
+        const actorMap = new Map(actors.map((x) => [Number(x.id), x]));
+
+        return res.json({
+          items: rows.map((row) => {
+            const actor = actorMap.get(Number(row.actorUserId || 0)) || null;
+            return {
+              id: row.id,
+              at: row.createdAt,
+              action: row.action,
+              actorUserId: row.actorUserId,
+              actorRole: row.actorRole,
+              actorLabel: actor ? (actor.fullName || actor.email || `#${actor.id}`) : null,
+              meta: row.meta || null,
+            };
+          }),
+        });
+      } catch (e) {
+        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      }
+    }
+  );
+
+// list shifts (ROOM/COMPANY/SUPER_ADMIN) with filters
   // query: status, onlyOpen=1, roomId, companyId, driverId, vehicleId, from,to, q, take
   r.get(
     "/",

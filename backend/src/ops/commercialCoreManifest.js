@@ -110,18 +110,19 @@ export async function buildRoomCommercialItems(user) {
       : status === "COUNTERED"
         ? "Firma cevabini bekle"
         : status === "ACCEPTED"
-          ? "Sozlesme ve atama tarafini ac"
+          ? "Bekleyen taleplerde arac ve surucu sec"
           : "Kayit kapandi";
     return {
       id: `offer-${o.id}`,
       updatedAt: o.updatedAt,
+      shiftId: o.shift?.id || null,
       counterparty: o.shift?.company?.name || `Company #${o.shift?.id || o.id}`,
       flowLabel,
       amountLabel: fmtAmountLabel(o),
       statusLabel: status,
       nextStep,
-      actionPath: status === "ACCEPTED" ? "/room/agreements" : "/room/offers",
-      actionLabel: status === "ACCEPTED" ? "Sozlesmeleri ac" : "Teklifleri ac",
+      actionPath: status === "ACCEPTED" ? "/room/shifts" : "/room/offers",
+      actionLabel: status === "ACCEPTED" ? "Vardiyalari ac" : "Teklifleri ac",
     };
   });
 
@@ -136,12 +137,12 @@ export async function buildRoomCommercialItems(user) {
       id: `agreement-${a.id}`,
       updatedAt: a.updatedAt,
       counterparty: a.company?.name || `Company #${a.companyId}`,
-      flowLabel: "Sozlesme",
+      flowLabel: "Sozlesme (ayri akis)",
       amountLabel: fmtAmountLabel({ amountCompany: a.companyOfferAmount, amountRoom: a.roomOfferAmount }),
       statusLabel: status,
       nextStep,
       actionPath: "/room/agreements",
-      actionLabel: "Sozlesmeleri ac",
+      actionLabel: "Sozlesmeleri ac (ayri)",
     };
   });
 

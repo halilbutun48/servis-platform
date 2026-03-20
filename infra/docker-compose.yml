@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-servis}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-servispass}
       POSTGRES_DB: ${POSTGRES_DB:-servisdb}
+      TZ: Europe/Istanbul
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     volumes:
@@ -19,6 +20,8 @@ services:
   redis:
     image: redis:7
     container_name: personel_redis
+    environment:
+      TZ: Europe/Istanbul
     ports:
       - "6379:6379"
 
@@ -33,6 +36,7 @@ services:
         condition: service_started
     environment:
       NODE_ENV: development
+      TZ: Europe/Istanbul
       PORT: ${API_PORT:-3000}
       JWT_SECRET: ${JWT_SECRET:-dev_secret_change_me}
       GOOGLE_AUTH_ENABLED: ${GOOGLE_AUTH_ENABLED:-0}
@@ -94,6 +98,8 @@ services:
     profiles: ["osrm"]
     image: osrm/osrm-backend:latest
     container_name: personel_osrm
+    environment:
+      TZ: Europe/Istanbul
     command: osrm-routed --algorithm mld /data/turkey-latest.osrm
     ports:
       - "5000:5000"
@@ -105,6 +111,8 @@ services:
     build:
       context: ./solver
     container_name: personel_solver
+    environment:
+      TZ: Europe/Istanbul
     ports:
       - "8000:8000"
     healthcheck:

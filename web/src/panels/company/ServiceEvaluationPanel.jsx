@@ -141,6 +141,20 @@ export default function ServiceEvaluationPanel() {
   const base = companyPath(me);
   const kindLabel = me?.companyKind === "SCHOOL" ? "Okul" : me?.companyKind === "ORGANIZATION" ? "Organizasyon" : "Firma";
 
+
+  function openCompanyList(shiftId) {
+    navigate(base + "/shifts");
+    setTimeout(() => {
+      try {
+        window.dispatchEvent(
+          new CustomEvent("company:shifts:focus", {
+            detail: { section: "list", shiftIds: shiftId ? [Number(shiftId)] : [] },
+          })
+        );
+      } catch (_) {}
+    }, 60);
+  }
+
   async function submitEvaluation(payload) {
     setSaving(true);
     setErr("");
@@ -178,7 +192,7 @@ export default function ServiceEvaluationPanel() {
             <div className="muted" style={{ marginTop: 6 }}>{(evaluation?.fields || []).join(" • ") || "Henüz veri yok"}</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => navigate(base + "/shifts")}>Hizmetleri aç</button>
+            <button type="button" onClick={() => openCompanyList()}>Hizmetleri aç</button>
             <button type="button" onClick={() => navigate(base + "/agreements")}>Sözleşmeleri aç</button>
           </div>
         </div>
@@ -201,7 +215,16 @@ export default function ServiceEvaluationPanel() {
                   <td>{item.nextStep || "-"}</td>
                   <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {item.canEvaluate ? <button type="button" onClick={() => setSelected(item)}>{item.evaluation ? "Puanı güncelle" : "Değerlendir"}</button> : null}
-                    {item.actionPath ? <button type="button" onClick={() => navigate(companyPath(me, item.actionPath.replace(/^\/company/, "")))}>{item.actionLabel || "Aç"}</button> : "-"}
+                    {item.actionPath ? (
+                      <button type="button" onClick={() => {
+                        const path = companyPath(me, item.actionPath.replace(/^\/company/, ""));
+                        if (path === base + "/shifts") {
+                          openCompanyList(item.shiftId);
+                        } else {
+                          navigate(path);
+                        }
+                      }}>{item.actionLabel || "Aç"}</button>
+                    ) : "-"}
                   </td>
                 </tr>
               )) : <tr><td colSpan={8} className="muted" style={{ padding: "8px 0" }}>Henüz değerlendirme ekranına düşen tamamlanmış hizmet yok.</td></tr>}

@@ -49,3 +49,16 @@ export function dateOnlyTR(d) {
   const tr = new Date(new Date(d).getTime() + TR_OFFSET_MS);
   return new Date(Date.UTC(tr.getUTCFullYear(), tr.getUTCMonth(), tr.getUTCDate()));
 }
+
+export function isoOffsetTR(d = new Date()) {
+  const src = new Date(d);
+  if (Number.isNaN(src.getTime())) return "";
+  const tr = new Date(src.getTime() + TR_OFFSET_MS);
+  const y = tr.getUTCFullYear();
+  const m = String(tr.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(tr.getUTCDate()).padStart(2, "0");
+  const hh = String(tr.getUTCHours()).padStart(2, "0");
+  const mi = String(tr.getUTCMinutes()).padStart(2, "0");
+  const ss = String(tr.getUTCSeconds()).padStart(2, "0");
+  return `${y}-${m}-${dd}T${hh}:${mi}:${ss}+03:00`;
+}

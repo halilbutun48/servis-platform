@@ -6,6 +6,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { personLabel } from "../../utils/labels";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
+import { addDaysYmdTR, isoFromTRLocalInput, ymdTR } from "../../utils/time";
 
 // Tiny geohash encoder (no deps)
 const GEOHASH_BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
@@ -54,18 +55,10 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 function todayYmdLocal() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return ymdTR();
 }
 function addDaysYmd(ymd, deltaDays) {
-  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return todayYmdLocal();
-  const Y = Number(m[1]);
-  const M = Number(m[2]);
-  const D = Number(m[3]);
-  const dt = new Date(Y, M - 1, D, 12, 0, 0);
-  dt.setDate(dt.getDate() + Number(deltaDays || 0));
-  return `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`;
+  return addDaysYmdTR(ymd, deltaDays);
 }
 function minutesOf(hhmm) {
   const m = String(hhmm || "").match(/^(\d{2}):(\d{2})$/);
@@ -89,20 +82,9 @@ function buildLocalRangeFromItem(baseYmd, item) {
   return { startAtLocal, endAtLocal };
 }
 
-// datetime-local (Istanbul local) -> UTC ISO
-const IST_OFFSET_MIN = 180;
+// datetime-local (Istanbul local) -> canonical ISO instant
 function istanbulLocalToUtcIso(dtLocal) {
-
-  if (!dtLocal) return null;
-  const [d, t] = String(dtLocal).split("T");
-  if (!d || !t) return null;
-
-  const [Y, M, D] = d.split("-").map(Number);
-  const [h, m] = t.split(":").map(Number);
-  if (![Y, M, D, h, m].every(Number.isFinite)) return null;
-
-  const utcMs = Date.UTC(Y, M - 1, D, h, m, 0) - IST_OFFSET_MIN * 60 * 1000;
-  return new Date(utcMs).toISOString();
+  return isoFromTRLocalInput(dtLocal) || null;
 }
 
 

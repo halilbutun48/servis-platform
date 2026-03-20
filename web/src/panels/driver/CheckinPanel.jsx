@@ -6,10 +6,11 @@ import { useAutoReload } from "../../live/useAutoReload";
 import FeatureFlagNotice from "../shared/FeatureFlagNotice";
 import CameraQrScannerCard from "../../components/checkin/CameraQrScannerCard";
 import { extractCheckinToken } from "../../utils/checkinToken";
+import { formatDateTimeTR } from "../../utils/time";
 
 function fmt(dt) {
   try {
-    return new Date(dt).toLocaleString("tr-TR");
+    return formatDateTimeTR(dt);
   } catch {
     return String(dt || "-");
   }

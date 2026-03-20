@@ -2,39 +2,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import { formatDateTimeTR, isoFromTRLocalInput, toDatetimeLocalTR } from "../../utils/time";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
 function fmtTR(d) {
-  if (!d) return "";
-  const dt = new Date(d);
-  if (Number.isNaN(dt.getTime())) return String(d);
-  // local time (TR on most setups)
-  return `${pad2(dt.getDate())}.${pad2(dt.getMonth() + 1)}.${dt.getFullYear()} ${pad2(dt.getHours())}:${pad2(
-    dt.getMinutes()
-  )}:${pad2(dt.getSeconds())}`;
+  return formatDateTimeTR(d, { second: "2-digit" });
 }
 
 function toLocalInputValue(d) {
-  const dt = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(dt.getTime())) return "";
-  // yyyy-MM-ddTHH:mm (datetime-local)
-  const y = dt.getFullYear();
-  const m = pad2(dt.getMonth() + 1);
-  const dd = pad2(dt.getDate());
-  const hh = pad2(dt.getHours());
-  const mi = pad2(dt.getMinutes());
-  return `${y}-${m}-${dd}T${hh}:${mi}`;
+  return toDatetimeLocalTR(d);
 }
 
 function fromLocalInputValue(v) {
-  const s = String(v || "").trim();
-  if (!s) return null;
-  const dt = new Date(s);
-  if (Number.isNaN(dt.getTime())) return null;
-  return dt.toISOString();
+  return isoFromTRLocalInput(v) || null;
 }
 
 function safeStr(v) {

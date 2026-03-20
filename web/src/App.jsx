@@ -30,6 +30,7 @@ const GeoReviewPanel = lazy(() => import("./panels/company/GeoReviewPanel"));
 const CompanyHubPanel = lazy(() => import("./panels/company/HubPanel"));
 const CompanyCheckinPanel = lazy(() => import("./panels/company/CheckinPanel"));
 const ServiceEvaluationPanel = lazy(() => import("./panels/company/ServiceEvaluationPanel"));
+const CompanyCommercialFlowPanel = lazy(() => import("./panels/company/CommercialFlowPanel"));
 const OrganizationCenterPanel = lazy(() => import("./panels/organization/CenterPanel"));
 const OrganizationPlansPanel = lazy(() => import("./panels/organization/PlansPanel"));
 
@@ -221,6 +222,7 @@ export default function App() {
     // COMPANY
     if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
     if (path === "/company/map") return { layout: true, node: <CompanyMapPanel /> };
+    if (path === "/company/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
     if (path === "/company/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
     if (path === "/company/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
@@ -234,6 +236,7 @@ export default function App() {
     // SCHOOL (Company.kind=SCHOOL)
     if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
     if (path === "/school/map") return { layout: true, node: <CompanyMapPanel /> };
+    if (path === "/school/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
     if (path === "/school/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
     if (path === "/school/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/school/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
@@ -250,6 +253,7 @@ export default function App() {
     if (path === "/organization") return { layout: true, node: <CompanyWorkflowPanel /> };
     if (path === "/organization/plans") return { layout: true, node: <OrganizationPlansPanel /> };
     if (path === "/organization/map") return { layout: true, node: <CompanyMapPanel /> };
+    if (path === "/organization/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
     if (path === "/organization/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
     if (path === "/organization/georeview") return { layout: true, node: <GeoReviewPanel /> };
     if (path === "/organization/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };

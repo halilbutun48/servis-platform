@@ -3,11 +3,12 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { toHHMM, weekMaskToText } from "../../utils/agreementUi";
+import { ymdTR } from "../../utils/time";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
   if (!ymd || String(ymd).length < 10) return null;
-  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999");
+  const end = new Date(String(ymd).slice(0, 10) + "T23:59:59.999+03:00");
   const diff = end.getTime() - Date.now();
   const d = Math.ceil(diff / 86400000);
   return Number.isFinite(d) ? d : null;

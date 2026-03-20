@@ -19,13 +19,10 @@ import {
   weekMaskToText,
   addDaysISO,
 } from "../../utils/agreementUi";
+import { formatDateTimeTR, isoFromTRYmdMin, ymdTR } from "../../utils/time";
 
 function todayYmd() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  return ymdTR();
 }
 
 function toHHMM(min) {
@@ -46,23 +43,12 @@ function parseHHMM(s) {
 }
 
 function ymdMinToIso(ymd, min) {
-  const m = ((Number(min) % 1440) + 1440) % 1440;
-  const hh = String(Math.floor(m / 60)).padStart(2, "0");
-  const mm = String(m % 60).padStart(2, "0");
-  // Istanbul (+03) -> ISO Z
-  return new Date(`${ymd}T${hh}:${mm}:00+03:00`).toISOString();
+  return isoFromTRYmdMin(ymd, min);
 }
 
 function fmtTR(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeTR(iso);
 }
 
 function parseTryInput(raw) {
@@ -1686,20 +1672,6 @@ async function sendBulkOffers() {
             </div>
           ) : null}
 
-          <div className="card">
-            <div style={{ fontWeight: 800 }}>{organization ? "Ek not / bütçe" : "Opsiyonel ayarlar"}</div>
-            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div>
-                <label className="muted">Taslak not (ops.)</label>
-                <input value={draftNote} onChange={(e) => setDraftNote(e.target.value)} placeholder="örn. sabah giriş" disabled={busy} />
-              </div>
-              <div>
-                <label className="muted">Taslak tutar (₺) (ops.)</label>
-                <input value={draftAmount} onChange={(e) => setDraftAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
-              </div>
-            </div>
-          </div>
-
           <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setStep(0)} disabled={busy}>Geri</button>
             <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0}>Taslak shift oluştur</button>
@@ -1881,6 +1853,8 @@ async function sendBulkOffers() {
               </div>
             ) : null}
 
+            {!sentOk ? (
+            <>
             <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div>
                 <label className="muted">Room ara</label>
@@ -1937,11 +1911,13 @@ async function sendBulkOffers() {
             </div>
 
             <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-              {sentOk ? (
-                <button type="button" onClick={() => onAfterCreated?.()} disabled={busy}>
-                  Bekleyen Talepler’e Git
-                </button>
-              ) : null}
+              <button type="button" onClick={() => {
+                const next = {};
+                for (const room of roomsFiltered || []) next[String(room.id)] = true;
+                setSelRoomIds(next);
+              }} disabled={busy || !roomsFiltered.length}>
+                Hepsini Seç
+              </button>
               <button type="button" onClick={() => { setSelRoomIds({}); setOfferAmount(""); setOfferNote(""); }} disabled={busy}>
                 Temizle
               </button>
@@ -1949,10 +1925,16 @@ async function sendBulkOffers() {
                 Toplu Teklifleri Gönder
               </button>
             </div>
+            </>
+            ) : (
+              <div className="muted" style={{ marginTop: 10 }}>Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas.</div>
+            )}
           </div>
 
-          <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => setStep(2)} disabled={busy}>Geri</button>
+          <div className="row" style={{ justifyContent: sentOk ? "flex-end" : "space-between", gap: 10, flexWrap: "wrap" }}>
+            {!sentOk ? (
+              <button type="button" onClick={() => setStep(2)} disabled={busy}>Geri</button>
+            ) : null}
             <button type="button" onClick={() => { onAfterCreated?.(); onClose?.(); resetAll(); }} disabled={busy || !sentOk}>
               Bitir
             </button>

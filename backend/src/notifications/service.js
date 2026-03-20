@@ -1,5 +1,6 @@
 // backend/src/notifications/service.js
 import { prisma } from "../prisma.js";
+import { isoOffsetTR } from "../time/tr.js";
 
 /**
  * Notification payloadJson standardı (v1) — JSONB/Object
@@ -51,8 +52,8 @@ function normalizeToV1({ type, payloadObj, vehicleIdFallback = null }) {
     typeof payloadObj?.at === "string"
       ? payloadObj.at
       : payloadObj?.at?.toISOString
-        ? payloadObj.at.toISOString()
-        : new Date().toISOString();
+        ? isoOffsetTR(payloadObj.at)
+        : isoOffsetTR();
 
   const ageSec = typeof payloadObj?.ageSec === "number" ? payloadObj.ageSec : null;
   const status = typeof payloadObj?.status === "string" ? payloadObj.status : null;

@@ -1,6 +1,7 @@
 // backend/src/routes/eta.js
 import express from "express";
 import { prisma } from "../prisma.js";
+import { isoOffsetTR } from "../time/tr.js";
 import { authRequired } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
@@ -225,7 +226,7 @@ async function computeEta(vehicleId, shiftId) {
   return {
     shiftId: chosenShiftId,
     vehicleId,
-    at: new Date().toISOString(),
+    at: isoOffsetTR(),
     etaMode: "ROUTE_CHAIN_HAVERSINE",
     routeQuality: progress.routeQuality,
     routeProgressState: progress.routeProgressState,

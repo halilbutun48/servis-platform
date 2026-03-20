@@ -1,3 +1,5 @@
+import { nowIsoTR } from "./time";
+
 // web/src/utils/offlineQueue.js
 // M72.1 patch: enrich queue items with retry + lastError + lastTriedAt.
 
@@ -40,7 +42,7 @@ export function enqueueRequest({ method = "POST", url, body, label }) {
     url,
     body: body ?? null,
     label: label ?? "",
-    enqueuedAt: new Date().toISOString(),
+    enqueuedAt: nowIsoTR(),
 
     // M72.1 meta
     retryCount: 0,
@@ -80,7 +82,7 @@ export async function flushQueue({ token, apiFn }) {
 
     // stamp attempt time (so UI shows "Son Deneme" even if request fails fast)
     try {
-      item.lastTriedAt = new Date().toISOString();
+      item.lastTriedAt = nowIsoTR();
       saveQueue(q);
     } catch {}
 

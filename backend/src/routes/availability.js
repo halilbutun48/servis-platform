@@ -9,6 +9,7 @@ import {
 import { prisma } from "../prisma.js";
 import { findAgreementConflictsForRangeBatch } from "../services/agreementConflictBatch.js";
 import { findShiftConflictsForRangeBatch } from "../services/shiftConflictBatch.js";
+import { isoOffsetTR } from "../time/tr.js";
 import {
   getShiftDemandSnapshot,
   buildCapacityConflict,
@@ -25,7 +26,7 @@ function toIsoOrNull(v) {
   const s = String(v ?? "").trim();
   if (!s) return null;
   const t = new Date(s).getTime();
-  return Number.isFinite(t) ? new Date(t).toISOString() : null;
+  return Number.isFinite(t) ? isoOffsetTR(new Date(t)) : null;
 }
 
 function slimConflict(c) {

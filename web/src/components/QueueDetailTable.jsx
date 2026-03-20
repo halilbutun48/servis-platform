@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDateTimeTR } from "../utils/time";
 
 /**
  * M72.1 — Queue satırları: retry + lastError
@@ -44,7 +45,7 @@ function formatTs(v) {
   try {
     const d = typeof v === "number" ? new Date(v) : new Date(String(v));
     if (Number.isNaN(d.getTime())) return "-";
-    return d.toLocaleString();
+    return formatDateTimeTR(d);
   } catch {
     return "-";
   }

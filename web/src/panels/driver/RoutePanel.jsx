@@ -6,6 +6,7 @@ import QueueDetailTable from "../../components/QueueDetailTable";
 import StopTimeline from "../../components/StopTimeline";
 import { useSession } from "../../state/session";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedStop } from "../../utils/navigation";
+import { nowIsoTR } from "../../utils/time";
 
 function getQueryParam(name) {
   try {
@@ -205,7 +206,7 @@ useEffect(() => {
   }, [busy, shift?.id, nextStop?.id]);
   function applyOptimisticReached() {
     try {
-      const now = new Date().toISOString();
+      const now = nowIsoTR();
       setData((prev) => {
         if (!prev) return prev;
 
@@ -587,7 +588,6 @@ async function undoLast() {
     </div>
   );
 }
-
 
 
 

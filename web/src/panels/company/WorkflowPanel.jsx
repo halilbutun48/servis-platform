@@ -5,21 +5,15 @@ import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
 import { personLabel } from "../../utils/labels";
 import GuidedPlanModal from "./GuidedPlanModal";
+import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
+import { formatDateTimeTR, weekdayBitFromYmdTR, ymdTR } from "../../utils/time";
 
 function todayYmd() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  return ymdTR();
 }
 
 function todayWeekBit() {
-  // JS: 0=Sun..6=Sat -> our bits: Mon=1..Sun=64
-  const d = new Date();
-  const wd = d.getDay();
-  if (wd === 0) return 64; // Sun
-  return 1 << (wd - 1); // Mon..Sat
+  return weekdayBitFromYmdTR(todayYmd());
 }
 
 function pill(status) {
@@ -33,14 +27,7 @@ function pill(status) {
 
 function fmtTR(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeTR(iso);
 }
 
 function formatTRY(amount) {
@@ -49,6 +36,254 @@ function formatTRY(amount) {
   if (!Number.isFinite(n)) return "-";
   return new Intl.NumberFormat("tr-TR").format(n);
 }
+
+function offerGapMeta(amountCompany, amountRoom) {
+  const company = Number(amountCompany);
+  const room = Number(amountRoom);
+  const hasCompany = Number.isFinite(company) && company > 0;
+  const hasRoom = Number.isFinite(room) && room > 0;
+
+  if (hasCompany && hasRoom) {
+    const diff = room - company;
+    if (diff === 0) return { label: "Fiyat farkı", value: "Hizalı", tone: "good", note: "Aynı tutar" };
+    if (diff > 0) return { label: "Fiyat farkı", value: `+${formatTRY(diff)} ₺`, tone: "warn", note: "Room daha yüksek" };
+    return { label: "Fiyat farkı", value: `-${formatTRY(Math.abs(diff))} ₺`, tone: "good", note: "Company daha yüksek" };
+  }
+
+  if (hasRoom && !hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(room)} ₺`, tone: "warn", note: "Sadece room teklifi var" };
+  if (!hasRoom && hasCompany) return { label: "Fiyat farkı", value: `${formatTRY(company)} ₺`, tone: "neutral", note: "Room cevabı bekleniyor" };
+  return { label: "Fiyat farkı", value: "-", tone: "neutral", note: "Tutar sinyali yok" };
+}
+
+function OfferSignalPill({ label, value, tone = "neutral" }) {
+  const palette =
+    tone === "good"
+      ? { border: "1px solid rgba(18,183,106,0.35)", background: "rgba(18,183,106,0.10)", color: "#d1fadf" }
+      : tone === "warn"
+      ? { border: "1px solid rgba(242,153,74,0.35)", background: "rgba(242,153,74,0.10)", color: "#fbd5a5" }
+      : { border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,0.03)", color: "#d0d5dd" };
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "5px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        ...palette,
+      }}
+    >
+      <span style={{ opacity: 0.82 }}>{label}</span>
+      <span>{value}</span>
+    </span>
+  );
+}
+
+
+function providerAverageScore(score) {
+  const avg = Number(score?.averageScore);
+  const count = Number(score?.evaluationCount || 0);
+  return Number.isFinite(avg) && count > 0 ? avg : 0;
+}
+
+function offerDecisionPriority(status) {
+  const normalized = String(status || "").toUpperCase();
+  if (normalized === "COUNTERED") return 2;
+  if (normalized === "OPEN") return 1;
+  return 0;
+}
+
+function offerPriceSortValue(amountCompany, amountRoom) {
+  const company = Number(amountCompany);
+  const room = Number(amountRoom);
+  const hasCompany = Number.isFinite(company) && company > 0;
+  const hasRoom = Number.isFinite(room) && room > 0;
+  if (hasCompany && hasRoom) return room - company;
+  if (hasRoom && !hasCompany) return room + 1000000;
+  if (!hasRoom && hasCompany) return 500000;
+  return 999999;
+}
+
+function offerUpdatedSortValue(offer) {
+  const value = Date.parse(offer?.updatedAt || offer?.createdAt || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function compareRecommendedOffers(a, b, roomScores = {}) {
+  const aDecision = offerDecisionPriority(a?.status);
+  const bDecision = offerDecisionPriority(b?.status);
+  if (aDecision !== bDecision) return bDecision - aDecision;
+
+  const aRoomId = String(Number(a?.room?.id || a?.roomId || 0));
+  const bRoomId = String(Number(b?.room?.id || b?.roomId || 0));
+  const aScore = providerAverageScore(roomScores[aRoomId] || null);
+  const bScore = providerAverageScore(roomScores[bRoomId] || null);
+  if (aScore !== bScore) return bScore - aScore;
+
+  const aGap = offerPriceSortValue(a?.amountCompany, a?.amountRoom);
+  const bGap = offerPriceSortValue(b?.amountCompany, b?.amountRoom);
+  if (aGap !== bGap) return aGap - bGap;
+
+  return offerUpdatedSortValue(b) - offerUpdatedSortValue(a);
+}
+
+function buildRecommendationReason(offer, roomScores = {}) {
+  const parts = [];
+  const status = String(offer?.status || "").toUpperCase();
+  if (status === "COUNTERED") parts.push("karşı teklif");
+  else if (status === "OPEN") parts.push("açık teklif");
+
+  const roomId = String(Number(offer?.room?.id || offer?.roomId || 0));
+  const scoreValue = providerAverageScore(roomScores[roomId] || null);
+  if (scoreValue > 0) parts.push(`puan ${scoreValue.toFixed(1)}`);
+
+  const gap = offerGapMeta(offer?.amountCompany, offer?.amountRoom);
+  if (gap?.value && gap.value !== "-") {
+    parts.push(gap.value === "Hizalı" ? "fiyat hizalı" : `${gap.label.toLowerCase()} ${gap.value}`);
+  }
+
+  return parts.join(" • ");
+}
+
+function buildRecommendationMeta(offer, bucket = [], roomScores = {}) {
+  const reasons = [];
+  const statusPriority = offerDecisionPriority(offer?.status);
+  const bucketPriorities = bucket.map((item) => offerDecisionPriority(item?.status));
+  const bestPriority = bucketPriorities.length ? Math.max(...bucketPriorities) : statusPriority;
+  if (statusPriority === bestPriority && bucketPriorities.some((value) => value !== statusPriority)) {
+    if (String(offer?.status || "").toUpperCase() === "COUNTERED") reasons.push("Karşı teklif hazır");
+    else if (String(offer?.status || "").toUpperCase() === "OPEN") reasons.push("Açık teklif hazır");
+  }
+
+  const roomId = String(Number(offer?.room?.id || offer?.roomId || 0));
+  const scoreValue = providerAverageScore(roomScores[roomId] || null);
+  const bucketScores = bucket.map((item) => {
+    const key = String(Number(item?.room?.id || item?.roomId || 0));
+    return providerAverageScore(roomScores[key] || null);
+  });
+  const bestScore = bucketScores.length ? Math.max(...bucketScores) : scoreValue;
+  if (scoreValue > 0 && scoreValue === bestScore && bucketScores.some((value) => value < scoreValue)) {
+    reasons.push("Room puanı daha yüksek");
+  }
+
+  const gapValue = offerPriceSortValue(offer?.amountCompany, offer?.amountRoom);
+  const bucketGaps = bucket.map((item) => offerPriceSortValue(item?.amountCompany, item?.amountRoom));
+  const bestGap = bucketGaps.length ? Math.min(...bucketGaps) : gapValue;
+  if (Number.isFinite(gapValue) && gapValue === bestGap && bucketGaps.some((value) => value > gapValue)) {
+    reasons.push("Fiyat farkı daha düşük");
+  }
+
+  const updatedValue = offerUpdatedSortValue(offer);
+  const bucketUpdates = bucket.map((item) => offerUpdatedSortValue(item));
+  const latestUpdate = bucketUpdates.length ? Math.max(...bucketUpdates) : updatedValue;
+  if (!reasons.length && updatedValue === latestUpdate && bucketUpdates.some((value) => value < updatedValue)) {
+    reasons.push("Daha güncel cevap");
+  }
+
+  const fallback = buildRecommendationReason(offer, roomScores) || "Bu vardiya için otomatik öne çıktı";
+  return {
+    short: reasons[0] || fallback,
+    summary: reasons.length ? reasons.join(" • ") : fallback,
+    reasons: reasons.length ? reasons : [fallback],
+  };
+}
+
+function rankOffersWithRecommendation(items, roomScores = {}) {
+  const list = Array.isArray(items) ? [...items] : [];
+  if (!list.length) return [];
+
+  const byShift = new Map();
+  for (const offer of list) {
+    const shiftId = Number(offer?.shiftId || offer?.shift?.id || 0);
+    const key = shiftId > 0 ? `shift:${shiftId}` : `single:${offer?.id || Math.random()}`;
+    const bucket = byShift.get(key) || [];
+    bucket.push(offer);
+    byShift.set(key, bucket);
+  }
+
+  const recommendationMetaById = new Map();
+  for (const bucket of byShift.values()) {
+    if (!bucket || bucket.length < 2) continue;
+    const sorted = [...bucket].sort((a, b) => compareRecommendedOffers(a, b, roomScores));
+    const winner = sorted[0];
+    if (winner?.id != null) {
+      recommendationMetaById.set(winner.id, buildRecommendationMeta(winner, bucket, roomScores));
+    }
+  }
+
+  return list
+    .map((offer) => {
+      const meta = recommendationMetaById.get(offer.id);
+      return {
+        ...offer,
+        __recommended: Boolean(meta),
+        __recommendationReason: meta?.summary || "",
+        __recommendationShort: meta?.short || "",
+        __recommendationReasons: meta?.reasons || [],
+      };
+    })
+    .sort((a, b) => {
+      const recDiff = Number(Boolean(b.__recommended)) - Number(Boolean(a.__recommended));
+      if (recDiff) return recDiff;
+      const shiftDiff = Number(b?.shiftId || b?.shift?.id || 0) - Number(a?.shiftId || a?.shift?.id || 0);
+      if (shiftDiff) return shiftDiff;
+      return compareRecommendedOffers(a, b, roomScores);
+    });
+}
+
+function RecommendationBadge({ reason = "" }) {
+  return (
+    <span
+      title={reason || "Bu vardiya için otomatik öne çıktı"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "5px 10px",
+        borderRadius: 999,
+        border: "1px solid rgba(83,177,253,0.35)",
+        background: "rgba(83,177,253,0.12)",
+        color: "#b2ddff",
+        fontSize: 12,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+      }}
+    >
+      Önerilen
+    </span>
+  );
+}
+
+function RecommendationReasons({ reasons = [] }) {
+  if (!Array.isArray(reasons) || !reasons.length) return null;
+  return (
+    <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+      {reasons.slice(0, 3).map((reason, idx) => (
+        <span
+          key={`${reason}-${idx}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "4px 10px",
+            borderRadius: 999,
+            border: "1px solid rgba(83,177,253,0.20)",
+            background: "rgba(83,177,253,0.08)",
+            color: "#d6efff",
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          {reason}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 
 function KpiCard({ title, desc, right, onClick }) {
   return (
@@ -102,6 +337,7 @@ export default function WorkflowPanel() {
   const [shifts, setShifts] = useState([]);
   const [geoNeedsReview, setGeoNeedsReview] = useState(0);
   const [openOffersCount, setOpenOffersCount] = useState(0);
+  const [roomScores, setRoomScores] = useState({});
 
   const [offersModal, setOffersModal] = useState({
     open: false,
@@ -185,6 +421,35 @@ export default function WorkflowPanel() {
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!token || !rooms?.length) {
+        if (alive) setRoomScores({});
+        return;
+      }
+      try {
+        const pairs = await Promise.all(
+          (rooms || []).map(async (r) => {
+            try {
+              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
+              return [String(r.id), score];
+            } catch {
+              return [String(r.id), null];
+            }
+          })
+        );
+        if (!alive) return;
+        setRoomScores(Object.fromEntries(pairs));
+      } catch {
+        if (alive) setRoomScores({});
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [token, rooms]);
 
   useEffect(() => {
     if (!offersModal.open) return;
@@ -290,6 +555,25 @@ export default function WorkflowPanel() {
     });
   }, [offersModal.items, offersModal.q]);
 
+  const offersDecisionSummary = useMemo(() => {
+    const items = Array.isArray(offersFiltered) ? offersFiltered : [];
+    return items.reduce(
+      (acc, o) => {
+        const st = String(o?.status || "").toUpperCase();
+        if (st === "COUNTERED") acc.countered += 1;
+        else if (st === "OPEN") acc.open += 1;
+        else acc.other += 1;
+        return acc;
+      },
+      { countered: 0, open: 0, other: 0 }
+    );
+  }, [offersFiltered]);
+
+
+  const offersDecisionCards = useMemo(() => rankOffersWithRecommendation(offersFiltered, roomScores), [offersFiltered, roomScores]);
+  const recommendedOffer = useMemo(() => offersDecisionCards.find((offer) => offer.__recommended) || null, [offersDecisionCards]);
+  const recommendedOfferShiftId = Number(recommendedOffer?.shiftId || recommendedOffer?.shift?.id || 0);
+
   function openOffers() {
     setOffersModal((p) => ({ ...p, open: true }));
   }
@@ -341,13 +625,6 @@ export default function WorkflowPanel() {
         </div>
       ) : null}
 
-      <div className="kpiGrid" style={{ marginTop: 12 }}>
-        <KpiCard title={organization ? "Bugünkü planlar" : "Bugünkü Agreements"} desc={organization ? "Bugün açılmış plan / taslaklar" : "Bugün planlanan vardiyalar"} right={stats.todayAgreements} onClick={() => navigate(companyPath(me, "/agreements"))} />
-        <KpiCard title="Açık Teklifler" desc={organization ? "Gezi / organizasyon teklifleri" : "OPEN + COUNTERED"} right={openOffersCount} onClick={openOffers} />
-        <KpiCard title={organization ? "Açık talepler" : "Market Shifts"} desc={organization ? "Room seçmeden açılan talepler" : "Room seçmeden talep aç"} right={stats.marketShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
-        <KpiCard title={organization ? "Konum kontrol" : "Geo Review"} desc={organization ? "Toplanma noktası / adres sorunlarını düzelt" : "Adres/konum sorunlarını düzelt"} right={geoNeedsReview} onClick={() => navigate(companyPath(me, "/georeview"))} />
-        <KpiCard title={organization ? "Bugünkü vardiyalar" : "Bugünkü Shifts"} desc={organization ? "Operasyon ve takip" : "Operasyon (start/reached/complete)"} right={stats.todayShiftCount} onClick={() => navigate(companyPath(me, "/shifts"))} />
-      </div>
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Guided Mode)</div>
@@ -476,53 +753,109 @@ export default function WorkflowPanel() {
             <div className="muted">Toplam: {offersFiltered.length}</div>
           </div>
 
-          <div style={{ overflowX: "auto", marginTop: 10 }}>
-            <table className="tbl" style={{ minWidth: 980 }}>
-              <thead>
-                <tr>
-                  <th>Shift</th>
-                  <th>Shift Status</th>
-                  <th>Room</th>
-                  <th>Offer</th>
-                  <th>Tutar</th>
-                  <th>Not</th>
-                  <th>Güncelleme</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {offersFiltered.map((o) => {
-                  const shift = o.shift || {};
-                  const room = o.room || {};
-                  return (
-                    <tr key={o.id}>
-                      <td className="muted">#{o.shiftId}</td>
-                      <td>{pill(shift.status)}</td>
-                      <td className="muted">{room?.name ? `${room.name} (#${room.id})` : `#${o.roomId}`}</td>
-                      <td>{pill(o.status)}</td>
-                      <td className="muted">
-                        C: <b>{formatTRY(o.amountCompany)}</b> • R: <b>{formatTRY(o.amountRoom)}</b>
-                      </td>
-                      <td className="muted" title={(o.noteCompany || "") + " " + (o.noteRoom || "")}>
-                        {o.noteRoom || o.noteCompany || "-"}
-                      </td>
-                      <td className="muted">{fmtTR(o.updatedAt)}</td>
-                      <td>
-                        <button type="button" className="btn sm" onClick={() => goCompanyShift(o.shiftId)}>
-                          Shift’e git
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+          <div className="card" style={{ marginTop: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>Karar Özeti</div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <OfferSignalPill label="Karşı teklif" value={String(offersDecisionSummary.countered)} tone={offersDecisionSummary.countered ? "warn" : "neutral"} />
+              <OfferSignalPill label="Açık teklif" value={String(offersDecisionSummary.open)} tone={offersDecisionSummary.open ? "neutral" : "good"} />
+              <OfferSignalPill label="Önerilen" value={String(offersDecisionCards.filter((o) => o.__recommended).length)} tone={offersDecisionCards.some((o) => o.__recommended) ? "good" : "neutral"} />
+              <OfferSignalPill label="Toplam" value={String(offersFiltered.length)} tone="neutral" />
+            </div>
+            <div className="muted" style={{ marginTop: 8 }}>
+              Otomatik öneri sırası: karar verilebilirlik → room puanı → fiyat farkı → güncellik. Son kararı yine sen verirsin.
+            </div>
+            {recommendedOffer ? (
+              <div className="row" style={{ marginTop: 10, gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+                <div className="muted">
+                  Öne çıkan teklif: Shift #{recommendedOfferShiftId || "-"} • {String(recommendedOffer.__recommendationShort || recommendedOffer.__recommendationReason || "Otomatik öneri")}
+                </div>
+                <button type="button" className="btn sm" onClick={() => goCompanyShift(recommendedOfferShiftId)}>
+                  Önerilen shift’e git
+                </button>
+              </div>
+            ) : null}
+          </div>
 
-                {offersFiltered.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="muted">Kayıt yok.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+            {offersDecisionCards.map((o) => {
+              const shift = o.shift || {};
+              const room = o.room || {};
+              const roomId = Number(room?.id || o.roomId || 0);
+              const score = roomScores[String(roomId)] || null;
+              const offerStatus = String(o.status || "").toUpperCase();
+              const gap = offerGapMeta(o.amountCompany, o.amountRoom);
+              const note = String(o.noteRoom || o.noteCompany || "").trim();
+              const needsDecision = offerStatus === "COUNTERED";
+              const isRecommended = !!o.__recommended;
+              const recommendationReason = String(o.__recommendationReason || "").trim();
+              const recommendationShort = String(o.__recommendationShort || recommendationReason || "").trim();
+              const recommendationReasons = Array.isArray(o.__recommendationReasons) ? o.__recommendationReasons : [];
+
+              return (
+                <div
+                  key={o.id}
+                  className="card"
+                  style={{
+                    border: isRecommended
+                      ? "1px solid rgba(83,177,253,0.40)"
+                      : needsDecision
+                      ? "1px solid rgba(242,153,74,0.35)"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    background: isRecommended
+                      ? "linear-gradient(180deg, rgba(83,177,253,0.10), rgba(255,255,255,0.02))"
+                      : needsDecision
+                      ? "rgba(242,153,74,0.07)"
+                      : "rgba(255,255,255,0.02)",
+                    boxShadow: isRecommended ? "0 0 0 1px rgba(83,177,253,0.08) inset" : "none",
+                  }}
+                >
+                  <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div style={{ fontWeight: 800 }}>
+                        {room?.name ? `${room.name} (#${room.id})` : `Room #${o.roomId}`}
+                      </div>
+                      <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        {isRecommended ? <RecommendationBadge reason={recommendationReason} /> : null}
+                        <ProviderScoreBadge score={score} prominent showLabel />
+                        {pill(o.status)}
+                        <OfferSignalPill
+                          label="Karar"
+                          value={needsDecision ? "Bekliyor" : "Takip"}
+                          tone={needsDecision ? "warn" : "neutral"}
+                        />
+                      </div>
+                    </div>
+                    <button type="button" className="btn sm" onClick={() => goCompanyShift(o.shiftId)}>
+                      {isRecommended ? "Önerilen shift’e git" : "Shift’e git"}
+                    </button>
+                  </div>
+
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                    <OfferSignalPill label="Company" value={o.amountCompany != null ? `${formatTRY(o.amountCompany)} ₺` : "-"} tone="neutral" />
+                    <OfferSignalPill label="Room" value={o.amountRoom != null ? `${formatTRY(o.amountRoom)} ₺` : "-"} tone={offerStatus === "COUNTERED" ? "warn" : "neutral"} />
+                    <OfferSignalPill label={gap.label} value={gap.value} tone={gap.tone} />
+                  </div>
+
+                  <RecommendationReasons reasons={isRecommended ? recommendationReasons : []} />
+                  <div className="muted" style={{ marginTop: 8 }}>
+                    Shift #{o.shiftId} • Shift durumu {String(shift.status || "-")} • Güncelleme {fmtTR(o.updatedAt)}
+                  </div>
+                  <div className="muted" style={{ marginTop: 4 }}>{gap.note}</div>
+                  {isRecommended ? (
+                    <div className="muted" style={{ marginTop: 6, color: "#b2ddff" }}>
+                      <b>Neden önerildi?</b> {recommendationShort || recommendationReason || "Bu shift için otomatik öne çıktı."}
+                    </div>
+                  ) : null}
+                  {note ? (
+                    <div className="muted" style={{ marginTop: 8 }} title={note}>
+                      <b>Not:</b> {note}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            {offersDecisionCards.length === 0 ? <div className="muted">Kayıt yok.</div> : null}
           </div>
           </div>
         </div>

@@ -20,64 +20,44 @@ import {
 
 // Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
 import * as H from "./helpers.js";
+import { addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd, ymdTR } from "../../time/tr.js";
 
 const emitShift = H.emitShift;
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 
 // --- Agreement overlap helpers (used to skip market offers when a contract already exists) ---
-function dateOnlyUTC(d) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-}
-function addDaysUTC(d, n) {
-  const x = new Date(d.getTime());
-  x.setUTCDate(x.getUTCDate() + n);
-  return x;
-}
-function minutesToDtUTC(day0, min) {
-  return new Date(day0.getTime() + min * 60_000);
-}
-function dowMaskUTC(d) {
-  // JS: 0=Sun ... 6=Sat; Bitmask: Mon=1 Tue=2 Wed=4 Thu=8 Fri=16 Sat=32 Sun=64
-  const dow = d.getUTCDay();
-  if (dow == 0) return 64;
-  return 1 << (dow - 1);
-}
-function overlapsUTC(aStart, aEnd, bStart, bEnd) {
+function overlapsTR(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
-function intervalsForDayUTC(ag, day0) {
-  // week gate: only the "start day" is masked (night shift spills to next day)
-  const mask = dowMaskUTC(day0);
+
+function intervalsForDayTR(ag, ymd) {
+  const mask = dayBitTRFromYmd(ymd);
   if ((Number(ag.weekMask || 0) & mask) === 0) return [];
 
-  const start = minutesToDtUTC(day0, Number(ag.startMin || 0));
-  const endMin = Number(ag.endMin || 0);
   const startMin = Number(ag.startMin || 0);
+  const endMin = Number(ag.endMin || 0);
+  const start = atTR(ymd, startMin);
 
   if (endMin >= startMin) {
-    const end = minutesToDtUTC(day0, endMin);
-    return [[start, end]];
+    return [[start, atTR(ymd, endMin)]];
   }
 
-  // midnight cross: [start..24:00) + [00:00..endMin) next day
-  const end1 = minutesToDtUTC(day0, 1440);
-  const next0 = addDaysUTC(day0, 1);
-  const start2 = minutesToDtUTC(next0, 0);
-  const end2 = minutesToDtUTC(next0, endMin);
+  const nextYmd = addDaysTR(ymd, 1);
+  const midnightNext = atTR(nextYmd, 0);
   return [
-    [start, end1],
-    [start2, end2],
+    [start, midnightNext],
+    [midnightNext, atTR(nextYmd, endMin)],
   ];
 }
 
-function agreementOverlapsRangeUTC(ag, s, e) {
-  const s0 = dateOnlyUTC(s);
-  const e0 = dateOnlyUTC(e);
-  // iterate days in [s0..e0] + 1 for midnight spill
-  for (let day = s0; day <= addDaysUTC(e0, 1); day = addDaysUTC(day, 1)) {
-    const ints = intervalsForDayUTC(ag, day);
+function agreementOverlapsRangeTR(ag, s, e) {
+  const startYmd = ymdTR(s);
+  const endYmd = ymdTR(e);
+  const horizonEnd = addDaysTR(endYmd, 1);
+  for (let cur = startYmd; cur <= horizonEnd; cur = addDaysTR(cur, 1)) {
+    const ints = intervalsForDayTR(ag, cur);
     for (const [as, ae] of ints) {
-      if (overlapsUTC(as, ae, s, e)) return true;
+      if (overlapsTR(as, ae, s, e)) return true;
     }
   }
   return false;
@@ -86,17 +66,16 @@ function agreementOverlapsRangeUTC(ag, s, e) {
 async function findAgreementBlockedRoomIdsForShift({ companyId, roomIds, startAt, endAt }) {
   const s = new Date(startAt);
   const e = new Date(endAt);
-  const s0 = dateOnlyUTC(s);
-  const e0 = dateOnlyUTC(e);
+  const startYmd = ymdTR(s);
+  const endYmd = ymdTR(e);
 
   const candidates = await prisma.agreement.findMany({
     where: {
       companyId,
       roomId: { in: roomIds },
       status: { in: ["APPROVED", "ACTIVE"] },
-      // coarse date range filter
-      startDate: { lte: e0 },
-      endDate: { gte: s0 },
+      startDate: { lte: dateOnlyUTCFromYmd(endYmd) },
+      endDate: { gte: dateOnlyUTCFromYmd(startYmd) },
     },
     select: { id: true, roomId: true, startDate: true, endDate: true, weekMask: true, startMin: true, endMin: true, status: true },
     orderBy: { id: "asc" },
@@ -104,7 +83,7 @@ async function findAgreementBlockedRoomIdsForShift({ companyId, roomIds, startAt
 
   const blocked = new Set();
   for (const ag of candidates) {
-    if (agreementOverlapsRangeUTC(ag, s, e)) blocked.add(Number(ag.roomId));
+    if (agreementOverlapsRangeTR(ag, s, e)) blocked.add(Number(ag.roomId));
   }
   return blocked;
 }

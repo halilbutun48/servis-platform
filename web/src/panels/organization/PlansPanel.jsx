@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
+import { ymdTR } from "../../utils/time";
 
 const emptyPlan = () => ({
   id: null,
   title: "",
-  planDate: new Date().toISOString().slice(0, 10),
+  planDate: ymdTR(),
   startMin: 8 * 60,
   endMin: 18 * 60,
   roomId: "",

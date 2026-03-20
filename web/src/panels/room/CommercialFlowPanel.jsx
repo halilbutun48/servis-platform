@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
@@ -68,13 +68,21 @@ export default function CommercialFlowPanel() {
     };
   }, [token]);
 
+
+  function openAction(item) {
+    if (item?.actionPath === "/room/shifts" && Number(item?.shiftId) > 0) {
+      localStorage.setItem("room:focusPendingShiftId", String(item.shiftId));
+    }
+    navigate(item.actionPath);
+  }
+
   const cards = useMemo(() => {
     const c = summary?.cards || {};
     return [
       { title: "Acik Teklif", value: c.openOffers ?? "-", note: "Incelenmesi gereken teklifler" },
       { title: "Karsi Teklifim", value: c.counteredOffers ?? "-", note: "Firma cevabi beklenen kayitlar" },
-      { title: "Kabul Edilen", value: c.acceptedOffers ?? "-", note: "Operasyona yaklasan kayitlar" },
-      { title: "Sozlesme Bekleyen", value: c.requestedAgreements ?? "-", note: "Talep edilen sozlesmeler" },
+      { title: "Kabul Edilen", value: c.acceptedOffers ?? "-", note: "Bekleyen taleplere inen kayitlar" },
+      { title: "Sozlesme Bekleyen", value: c.requestedAgreements ?? "-", note: "Ayrica yonetilen sozlesme kayitlari" },
       { title: "Aktif Sozlesme", value: c.activeAgreements ?? "-", note: "APPROVED / ACTIVE sozlesmeler" },
       { title: "Aktif Operasyon", value: c.approvedOrActiveShifts ?? "-", note: "Sahaya inen işler" },
     ];
@@ -85,7 +93,7 @@ export default function CommercialFlowPanel() {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0 }}>Ticari Akisim</h2>
-          <div className="muted" style={{ marginTop: 6 }}>Room icin teklif, pazarlik ve sozlesmeye gecis gorunurlugu</div>
+          <div className="muted" style={{ marginTop: 6 }}>Room icin teklif/pazarlik gorunurlugu. Pazarlik markette biter; kabul edilen is bekleyen talep ve sonra vardiyaya iner</div>
         </div>
         <div className="muted">Kapsam: Kendi ticari alaniniz</div>
       </div>
@@ -98,10 +106,10 @@ export default function CommercialFlowPanel() {
 
       <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-          <div style={{ fontWeight: 700 }}>Teklif / Uzlasma Listesi</div>
+          <div style={{ fontWeight: 700 }}>Ticari Akış Listesi</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" onClick={() => navigate("/room/offers")}>Teklifleri ac</button>
-            <button type="button" onClick={() => navigate("/room/agreements")}>Sozlesmeleri ac</button>
+            <button type="button" onClick={() => navigate("/room/shifts")}>Vardiyalari ac</button>
           </div>
         </div>
         <div style={{ overflowX: "auto" }}>
@@ -128,14 +136,14 @@ export default function CommercialFlowPanel() {
                   <td>{item.nextStep || "-"}</td>
                   <td>
                     {item.actionPath ? (
-                      <button type="button" onClick={() => navigate(item.actionPath)}>{item.actionLabel || "Ac"}</button>
+                      <button type="button" onClick={() => openAction(item)}>{item.actionLabel || "Ac"}</button>
                     ) : "-"}
                   </td>
                 </tr>
               )) : (
                 <tr>
                   <td colSpan={7} className="muted" style={{ padding: "8px 0" }}>
-                    Henuz room kapsaminda dusen ticari kayit yok. Aktif Operasyon sayisi ust kartta gorunur.
+                    Henuz room kapsaminda dusen ticari kayit yok. Kural: pazarlik Market/Teklifler ekraninda, operasyon hazirligi Bekleyen Taleplerde ilerler.
                   </td>
                 </tr>
               )}

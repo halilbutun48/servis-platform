@@ -5,6 +5,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
+import { nowIsoTR } from "../../utils/time";
 
 
 function isReached(stop) {
@@ -64,11 +65,12 @@ export default function DriverMapPanel() {
     const lng = Number(m.lng);
     let atIso = null;
     try {
-      if (m.at) {
+      if (typeof m.at === "string" && m.at.trim()) {
         const dt = new Date(m.at);
-        if (!Number.isNaN(dt.getTime())) atIso = dt.toISOString();
+        if (!Number.isNaN(dt.getTime())) atIso = m.at;
       }
     } catch {}
+    if (!atIso) atIso = nowIsoTR();
     const st = String(m.status || "").toUpperCase();
 
     if (!Number.isFinite(vid) || !Number.isFinite(lat) || !Number.isFinite(lng)) return;

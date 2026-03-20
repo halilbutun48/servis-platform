@@ -5,10 +5,12 @@ import { companyBase } from "../../utils/paths";
 import { useAutoReload } from "../../live/useAutoReload";
 import FeatureFlagNotice from "../shared/FeatureFlagNotice";
 import QrCanvas from "../../components/checkin/QrCanvas";
+import { formatDateTimeTR } from "../../utils/time";
+import { nowIsoTR } from "../../utils/time";
 
 function fmt(dt) {
   try {
-    return new Date(dt).toLocaleString("tr-TR");
+    return formatDateTimeTR(dt);
   } catch {
     return String(dt || "-");
   }
@@ -136,7 +138,7 @@ export default function CompanyCheckinPanel() {
         personelId,
         type,
         token: r?.token || "",
-        at: new Date().toISOString(),
+        at: nowIsoTR(),
       });
       if (selectedShiftId) await loadShiftDetail(selectedShiftId);
     } catch (e) {
