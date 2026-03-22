@@ -10,14 +10,9 @@ $ErrorActionPreference = 'Stop'
 Set-Location $RepoRoot
 
 Write-Host ''
-Write-StatusLine '=== LEGACY RUNNER NAME (pack_post_m41_to_m54_4.ps1) ==='
-Write-StatusLine 'INFO This wrapper now forwards to tools\pack_post_m41_to_m57.ps1 for M55/M56 sync and M57 scaffold coverage.'
+Write-StatusLine '=== LEGACY WRAPPER (pack_post_m41_to_m54_4.ps1) ==='
+Write-StatusLine 'INFO Forwarding to canonical subpack tools\_packs\pack_m42_m58.ps1 with -To 54.'
 Write-Host ''
 
-& powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools\pack_post_m41_to_m57.ps1') `
-  -RepoRoot $RepoRoot `
-  -ComposeDir $ComposeDir `
-  @($(if ($NoBuild) { '-NoBuild' })) `
-  @($(if ($SkipM57Scaffold) { '-SkipM57Scaffold' }))
-
-if (-not $?) { throw 'forwarded post-M41 runner failed' }
+& powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools\_packs\pack_m42_m58.ps1') -To 54 -RepoRoot $RepoRoot -ComposeDir $ComposeDir @($(if ($NoBuild) { '-NoBuild' }))
+if (-not $?) { throw 'legacy wrapper failed' }

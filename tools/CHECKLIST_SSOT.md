@@ -11,6 +11,7 @@
 ## Resmi green kutular
 - [x] `M44 — Telematics` pack: `tools\pack_m44_telematics.ps1`
 - [x] `M45 — Retention + Backup` pack: `tools\pack_m45_retention_backup.ps1`
+- [x] `M45 — Backup restore helper`: `tools\backup_restore_m45.ps1`
 - [x] `M46 — AI Copilot Foundation` pack: `tools\pack_m46_ai_copilot.ps1`
 - [x] `M47 — KVKK Notice / Consent Framework`
 - [x] `M47.2 — Capacity & Load Baseline`
@@ -42,3 +43,11 @@
 - master pack marker: `tools\pack.ps1 -To 66`
 - repo audit marker: `tools\check_repo_audit_master.ps1`
 - M66 marker: `tools\pack_m66_operation_reassignment.ps1`
+
+## M105 Tools Canonical Cleanup
+- tools root kanonik düzen kontrolü tamamlanacak
+- tools archive ve backup yapısı doğrulanacak
+- tools/docs senkronu korunacak
+
+## M58 pack markerı
+- [ ] `M58 — Final Pilot Readiness` pack: `tools\pack_m58_final_pilot_readiness.ps1` (manuel pilot kabul / saha kabul bekliyor)

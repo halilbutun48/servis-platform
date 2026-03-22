@@ -31,3 +31,6 @@ backend/indexes/*
 !backend/indexes/README.md
 backend/data/*.json
 !backend/data/.gitkeep
+
+artifacts/*
+!artifacts/.gitkeep

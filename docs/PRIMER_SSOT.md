@@ -29,6 +29,11 @@ Branch: `main`
   - `tools/pack_m66_operation_reassignment.ps1`
   - `tools/check_m66_operation_reassignment_repo_contract.ps1`
   - `docs/RUNBOOK_M66_OPERATION_REASSIGNMENT.md`
+- `tools/pack_m45_retention_backup.ps1`
+- `docs/RUNBOOK_M45_RETENTION_BACKUP.md`
+- `tools/pack_m46_ai_copilot.ps1`
+- `tools/check_m46_ai_copilot_repo_contract.ps1`
+- `docs/RUNBOOK_M46_AI_COPILOT.md`
 
 ## 2) Dürüst saha öncesi durum
 
@@ -79,3 +84,10 @@ Audit raporu:
 ## 5) Yeni sohbet için ilk cümle
 
 Repo şu an post-M66 functional durumda. M66 operasyonel reassignment çekirdeği ve verification pack'i eklendi. Ancak M59–M66 için baştan aşağı kontrol, saha testi ve sonrasında derin repo cleanup fazına geçmemiz gerekiyor. Öncelik artık eksik fonksiyonel noktaları kapatmak, sonra canlı doğrulama ve ardından duplicate/legacy/dead code temizliği yapmak.
+
+- Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
+
+## M56 -> M58 markerları
+- M56 KVKK MATRIX + ETA QUALITY PACK PASS OK
+- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- M58 resmi green değildir; manuel pilot kabul / saha kabul gerekir.

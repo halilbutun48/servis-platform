@@ -33,3 +33,10 @@ Current direction: **post-M66 functional -> full M0-M66 rerun -> live smoke -> f
 
 ## 5) İlk cümle
 Repo şu an post-M66 functional durumda. M66 operasyonel reassignment çekirdeği ve verification pack'i eklendi. Ancak M59–M66 için baştan aşağı kontrol, saha testi ve sonrasında derin repo cleanup fazına geçmemiz gerekiyor.
+
+## M57 -> M58 geçiş markerları
+- M57 green
+- M57.4 Android preview/internal build disiplini green
+- Sonraki adım M58.
+- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- pilot kabul formu ile GO / NO-GO kararı verilir.

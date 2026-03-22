@@ -1,11 +1,33 @@
 param()
 $ErrorActionPreference = 'Stop'
 
+
+function Normalize-ComposeDirValue {
+  param([Parameter()][object]$Value)
+
+  if ($null -eq $Value) { return 'infra' }
+  if ($Value -is [string]) {
+    if ([string]::IsNullOrWhiteSpace($Value)) { return 'infra' }
+    return $Value
+  }
+  if ($Value -is [System.Collections.IEnumerable] -and -not ($Value -is [string])) {
+    foreach ($item in $Value) {
+      $norm = Normalize-ComposeDirValue -Value $item
+      if (-not [string]::IsNullOrWhiteSpace($norm)) { return $norm }
+    }
+    return 'infra'
+  }
+  $s = [string]$Value
+  if ([string]::IsNullOrWhiteSpace($s)) { return 'infra' }
+  return $s
+}
+
+
 function Get-PackManifestStages {
   param(
     [Parameter(Mandatory=$true)][string]$ManifestPath,
     [Parameter(Mandatory=$true)][string]$RepoRoot,
-    [Parameter(Mandatory=$true)][string]$ComposeDir,
+    [Parameter()]$ComposeDir,
     [Parameter()][switch]$NoBuild
   )
 
@@ -30,7 +52,7 @@ function Get-PackManifestStages {
     }
 
     if ($stage.composeParam -eq 'ComposeDir') {
-      $args += @('-ComposeDir', $ComposeDir)
+      $args += @('-ComposeDir', ([string](Normalize-ComposeDirValue -Value $ComposeDir)))
     }
 
     if ($NoBuild -and $stage.supportsNoBuild) {

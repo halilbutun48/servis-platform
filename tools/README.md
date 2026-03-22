@@ -34,3 +34,35 @@ Audit çıktısı:
 - tiny dosyalar
 - archive/live shadow çiftleri
 - temel performans kokuları
+
+## Tools hijyen check
+- script: check_tools_hygiene_m105.ps1
+- calistirma: .\tools\check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform
+
+- M44 telematics pack: tools\pack_m44_telematics.ps1 -RepoRoot D:\servis-platform
+
+- M45 retention/backup pack: tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform
+- M45 backup create helper: tools\backup_create_m45.ps1 -RepoRoot D:\servis-platform
+- M45 backup restore helper: tools\backup_restore_m45.ps1 -RepoRoot D:\servis-platform
+- M46 AI copilot foundation pack: tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform
+- M46 AI copilot repo-contract: tools\check_m46_ai_copilot_repo_contract.ps1 -RepoRoot D:\servis-platform
+
+## M47.4 -> M58 markerları
+- M47.4 mobile readiness web pass: `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
+- M48.5 tablet readiness: `tools\pack_m48_5_room_company_tablet_readiness.ps1 -RepoRoot D:\servis-platform`
+- M49 pack: `tools\pack_m49_mobile_beta_hardening.ps1 -RepoRoot D:\servis-platform`
+- M49 repo contract: `tools\check_m49_mobile_beta_hardening_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M49.1 pack: `tools\pack_m49_1_driver_voice_guidance_stop_eta.ps1 -RepoRoot D:\servis-platform`
+- M49.1 repo contract: `tools\check_m49_1_driver_voice_guidance_stop_eta_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M50 pack: `tools\pack_m50_mobile_release_readiness.ps1 -RepoRoot D:\servis-platform`
+- M50 repo contract: `tools\check_m50_mobile_release_readiness_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M51-M53 pack: `tools\pack_m51_53_backfill_verification.ps1 -RepoRoot D:\servis-platform`
+- M51-M53 repo contract: `tools\check_m51_53_backfill_verification_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M54.4 pack: `tools\pack_m54_4_driver_route_delivery.ps1 -RepoRoot D:\servis-platform`
+- M54.4 repo contract: `tools\check_m54_4_driver_route_delivery_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- M55 pack: `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
+- M56 pack: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
+- M57 — Mobile Hardening resmi green tabanı sonrasındaki komutlar: `check:m57.1`, `check:m57.2`, `check:m57.3`, `check:m57.4`
+- M57 post-M41 full pack: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- M58 — Final Pilot Readiness komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- M58 readiness contract manuel pilot kabul ile kapanır.

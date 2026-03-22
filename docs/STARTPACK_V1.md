@@ -49,3 +49,21 @@ Bu komut:
 - Yeni sürücüye görev/rota paketi gider.
 - Eski sürücü aktif görevden düşer.
 - M66 fonksiyonel olarak eklidir; tam kapanış için smoke + saha doğrulaması gerekir.
+
+- repo/tools hijyen check: tools\check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform
+
+## M45 markerları
+- pack: `tools\pack_m45_retention_backup.ps1 -RepoRoot D:\servis-platform`
+- runbook: `docs/RUNBOOK_M45_RETENTION_BACKUP.md`
+
+## M46 markerları
+- pack: `tools\pack_m46_ai_copilot.ps1 -RepoRoot D:\servis-platform`
+- repo-contract: `tools\check_m46_ai_copilot_repo_contract.ps1 -RepoRoot D:\servis-platform`
+- runbook: `docs/RUNBOOK_M46_AI_COPILOT.md`
+
+## M47.4 + M57 + M58 markerları
+- M47.4 Mobile Readiness Web Pass: `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
+- M57 full pack: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- M57 scaffold komutu: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
+- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- M58 resmi green değildir; manuel pilot kabul gerekir.

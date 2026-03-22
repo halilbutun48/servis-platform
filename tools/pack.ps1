@@ -61,20 +61,20 @@ function Get-MaxPackMilestone {
   return $max
 }
 
-function Invoke-ToolScript {
+function Invoke-PhaseScript {
   param(
-    [string]$ScriptRel,
-    [object[]]$Arguments = @()
+    [Parameter(Mandatory=$true)][string]$ScriptRel,
+    [Parameter(Mandatory=$false)][object[]]$Arguments = @()
   )
 
   $scriptPath = Join-Path $repo $ScriptRel
   if (-not (Test-Path $scriptPath)) {
-    throw "Missing tool script: $ScriptRel"
+    throw "Missing phase script: $ScriptRel"
   }
 
   & $scriptPath @Arguments
   if (-not $?) {
-    throw "Tool script failed: $ScriptRel"
+    throw ("Phase script failed: {0}" -f $ScriptRel)
   }
 }
 
@@ -125,39 +125,36 @@ if ($To -le 0) {
 
 Write-Host ""
 Write-StatusLine ("=== PERSONEL-SERVIS V1 - MASTER PACK (M0->M{0}) ===" -f $To)
+Write-StatusLine ("INFO Visible phases: M0->M41 | M42->M58 | M59->M66")
 Write-StatusLine ("INFO Gate max: M{0}" -f $gateMax)
 Write-StatusLine ("INFO Pack max: M{0}" -f $packMax)
 Write-Host ""
-
-if ($To -lt 0) { throw "Invalid -To value." }
 
 if (-not $SkipStaticRepoChecks) {
   Run-StaticRepoChecks
 }
 
-if ($To -le $gateMax) {
+$phaseArgsCommon = @('-RepoRoot', $repo, '-ComposeDir', $ComposeDir, '-ApiService', $ApiService) + @($(if ($NoBuild) { '-NoBuild' }))
+
+if ($To -ge 0) {
+  $phaseTo = [Math]::Min($To, 41)
   Write-Host ""
-  Write-StatusLine ("=== RANGE: M0 -> M{0} (gate) ===" -f $To)
-  Invoke-ToolScript -ScriptRel "tools\gate.ps1" -Arguments (@("-To", $To, "-ComposeDir", $ComposeDir, "-RepoDir", $RepoDir, "-ApiService", $ApiService) + @($(if ($NoBuild) { "-NoBuild" })))
-} else {
+  Write-StatusLine ("=== PHASE 1: M0 -> M{0} ===" -f $phaseTo)
+  Invoke-PhaseScript -ScriptRel "tools\_packs\pack_m0_m41.ps1" -Arguments (@('-To', $phaseTo) + $phaseArgsCommon)
+}
+
+if ($To -gt 41) {
+  $phaseTo = [Math]::Min($To, 58)
   Write-Host ""
-  Write-StatusLine ("=== RANGE: M0 -> M{0} (gate) ===" -f $gateMax)
-  Invoke-ToolScript -ScriptRel "tools\gate.ps1" -Arguments (@("-To", $gateMax, "-ComposeDir", $ComposeDir, "-RepoDir", $RepoDir, "-ApiService", $ApiService) + @($(if ($NoBuild) { "-NoBuild" })))
+  Write-StatusLine ("=== PHASE 2: M42 -> M{0} ===" -f $phaseTo)
+  Invoke-PhaseScript -ScriptRel "tools\_packs\pack_m42_m58.ps1" -Arguments (@('-To', $phaseTo) + $phaseArgsCommon)
+}
 
-  $manifestPath = Join-Path $toolsDir "milestone_pack_manifest.json"
-  $steps = Get-PackManifestStages -ManifestPath $manifestPath -RepoRoot $repo -ComposeDir $ComposeDir -NoBuild:$NoBuild
-
-  if (@($steps).Count -eq 0) {
-    throw "Manifest pack stages missing or empty: tools\milestone_pack_manifest.json"
-  }
-
-  foreach ($step in $steps) {
-    if ($step.Group -gt $To) { continue }
-
-    Write-Host ""
-    Write-StatusLine ("=== RUNNING: {0} ===" -f $step.Name)
-    Invoke-ToolScript -ScriptRel $step.Script -Arguments $step.Args
-  }
+if ($To -gt 58) {
+  $phaseTo = [Math]::Min($To, 66)
+  Write-Host ""
+  Write-StatusLine ("=== PHASE 3: M59 -> M{0} ===" -f $phaseTo)
+  Invoke-PhaseScript -ScriptRel "tools\_packs\pack_m59_m66.ps1" -Arguments (@('-To', $phaseTo) + $phaseArgsCommon)
 }
 
 if (-not $SkipRepoAudit) {

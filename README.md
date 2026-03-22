@@ -43,3 +43,11 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - Sonra milestone gerçek duruma göre açılır ya da kapatılır.
 - Checklist'te `[x]` yalnızca resmi pack/check green sonrası işaretlenir.
 - Green taban ile tam saha doğrulaması aynı şey değildir; saha öncesi yeniden kontrol ayrıca yapılır.
+
+## Kanonik tools düzeni
+Tools tarafinda kanonik giris tools\pack.ps1 dosyasidir. Tools hijyen kontrolu için tools\check_tools_hygiene_m105.ps1 kullanilir.
+
+## M57 / M58 durum notu
+- M57 — Mobile Hardening resmi green tabanındadır.
+- M58 — Final Pilot Readiness komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
+- M58 manuel pilot kabul / saha kabul olmadan resmi green sayılmaz.

@@ -11,6 +11,7 @@ import { haversineKm, etaMinutes } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW
 import { gpsThrottle1200ms } from "../middleware/gpsThrottle1200ms.js";
+import { isoOffsetTR } from "../time/tr.js";
 
 // M72: audit helper (must never break gps ingest)
 async function audit(prisma, { actorUserId, actorRole, action, entity, entityId, meta }) {
@@ -377,14 +378,13 @@ export function gpsRouter(io) {
           await prisma.shift.updateMany({ where: { id: sh.id, status: "APPROVED" }, data: { status: "ACTIVE" } });
 
           // ensure startedAt exists and not paused
+          const now2 = new Date();
           await prisma.shiftProgress.upsert({
             where: { shiftId: sh.id },
             update: { pausedAt: null },
             create: { shiftId: sh.id, lastReachedOrder: 0, startedAt: now2, pausedAt: null },
           });
           await prisma.shiftProgress.updateMany({ where: { shiftId: sh.id, startedAt: null }, data: { startedAt: now2 } });
-
-          const now2 = new Date();
 
           // update stop + progress
           await prisma.stop.update({
