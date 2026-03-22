@@ -136,3 +136,75 @@ function Invoke-ComposeNodePackWithScaffold {
     -ApiService $ApiService `
     -ContainerBackendDir $ContainerBackendDir
 }
+
+function Invoke-ComposeNodePackWithScaffoldAndPreShell {
+  param(
+    [Parameter(Mandatory=$true)][string]$RepoRoot,
+    [Parameter(Mandatory=$true)][bool]$ScaffoldOnly,
+    [Parameter(Mandatory=$true)][string]$ScaffoldTitle,
+    [Parameter(Mandatory=$true)][string]$FilesReadyTitle,
+    [Parameter(Mandatory=$true)][string]$PackTitle,
+    [Parameter(Mandatory=$true)][string]$PreRuntimeTitle,
+    [Parameter(Mandatory=$true)][string]$PreRuntimeShell,
+    [Parameter(Mandatory=$true)][string]$RuntimeTitle,
+    [Parameter(Mandatory=$true)][string]$RepoContractTitle,
+    [Parameter(Mandatory=$true)][string]$SuccessTitle,
+    [Parameter(Mandatory=$true)][string]$NodeScript,
+    [Parameter(Mandatory=$true)][string]$RepoContractScript,
+    [Parameter()][string]$ComposeFile,
+    [Parameter()][string]$ApiService = 'api',
+    [Parameter()][string]$ContainerBackendDir = '/app/backend'
+  )
+
+  $resolvedRepo = (Resolve-Path $RepoRoot).Path
+  if ([string]::IsNullOrWhiteSpace($ComposeFile)) {
+    $ComposeFile = Join-Path $resolvedRepo 'infra/docker-compose.yml'
+  }
+
+  $contractPath = Join-Path $resolvedRepo $RepoContractScript
+  $nodePath = Join-Path $resolvedRepo $NodeScript
+  if (-not (Test-Path $contractPath)) { throw "Missing repo contract script: $RepoContractScript" }
+  if (-not (Test-Path $nodePath)) { throw "Missing node script: $NodeScript" }
+  if (-not (Test-Path $ComposeFile)) { throw "Missing compose file: $ComposeFile" }
+
+  if ($ScaffoldOnly) {
+    Write-Host ''
+    Write-StatusLine ("=== {0} ===" -f $ScaffoldTitle)
+    & powershell -ExecutionPolicy Bypass -File $contractPath -RepoRoot $resolvedRepo
+    if (-not $?) { throw 'repo contract check failed' }
+    Write-Host ''
+    Write-StatusLine ("=== {0} ===" -f $FilesReadyTitle)
+    return
+  }
+
+  $nodeScriptName = Split-Path $nodePath -Leaf
+
+  Write-Host ''
+  Write-StatusLine ("=== {0} ===" -f $PackTitle)
+
+  Write-Host ''
+  Write-StatusLine ("=== {0} ===" -f $PreRuntimeTitle)
+  $preArgs = @(
+    'compose', '-f', $ComposeFile, 'exec', '-T', $ApiService,
+    'sh', '-lc', ("cd {0} && {1}" -f $ContainerBackendDir, $PreRuntimeShell)
+  )
+  $preCode = Invoke-ExternalColor -FilePath 'docker' -ArgumentList $preArgs
+  if ($preCode -ne 0) { throw "Docker compose command failed: docker $($preArgs -join ' ')" }
+
+  Write-Host ''
+  Write-StatusLine ("=== {0} ===" -f $RuntimeTitle)
+  $dockerArgs = @(
+    'compose', '-f', $ComposeFile, 'exec', '-T', $ApiService,
+    'sh', '-lc', ("cd {0} && node scripts/{1}" -f $ContainerBackendDir, $nodeScriptName)
+  )
+  $code = Invoke-ExternalColor -FilePath 'docker' -ArgumentList $dockerArgs
+  if ($code -ne 0) { throw "Docker compose command failed: docker $($dockerArgs -join ' ')" }
+
+  Write-Host ''
+  Write-StatusLine ("=== {0} ===" -f $RepoContractTitle)
+  & powershell -ExecutionPolicy Bypass -File $contractPath -RepoRoot $resolvedRepo
+  if (-not $?) { throw 'repo contract check failed' }
+
+  Write-Host ''
+  Write-StatusLine ("=== {0} PACK PASS OK ===" -f $SuccessTitle)
+}

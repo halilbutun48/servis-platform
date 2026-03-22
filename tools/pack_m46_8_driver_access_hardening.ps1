@@ -1,52 +1,26 @@
 param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
+  [string]$ComposeFile = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..')).Path 'infra\docker-compose.yml'),
+  [string]$ApiService = 'api',
   [switch]$ScaffoldOnly
 )
 
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '_console_status.ps1')
+. (Join-Path $PSScriptRoot '_pack_runner.ps1')
 Set-Location $RepoRoot
 
-if ($ScaffoldOnly) {
-  Write-Host ''
-  Write-StatusLine '=== M46.8 DRIVER ACCESS HARDENING PACK (SCAFFOLD/FILES ONLY) ==='
-  & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools/check_m46_8_driver_access_hardening_repo_contract.ps1') -RepoRoot $RepoRoot
-  if (-not $?) { throw 'repo contract check failed' }
-  Write-Host ''
-  Write-StatusLine '=== M46.8 DRIVER ACCESS HARDENING FILES READY ==='
-  exit 0
-}
-
-Write-Host ''
-Write-StatusLine '=== M46.8 DRIVER ACCESS HARDENING PACK ==='
-
-
-$dc = 'docker'
-$compose = Join-Path $RepoRoot 'infra/docker-compose.yml'
-
-Write-Host ''
-Write-StatusLine '=== M46.8 Prisma Sync ==='
-$syncArgs = @(
-  'compose', '-f', $compose, 'exec', '-T', 'api',
-  'sh', '-lc', 'cd /app/backend && npx prisma db push && npx prisma generate'
-)
-$syncCode = Invoke-ExternalColor -FilePath $dc -ArgumentList $syncArgs
-if ($syncCode -ne 0) { throw "Docker compose command failed: $dc $($syncArgs -join ' ')" }
-
-Write-Host ''
-Write-StatusLine '=== M46.8 Runtime Check ==='
-$dcArgs = @(
-  'compose', '-f', $compose, 'exec', '-T', 'api',
-  'sh', '-lc', 'cd /app/backend && node scripts/m46_8_driver_access_hardening_check.js'
-)
-$code = Invoke-ExternalColor -FilePath $dc -ArgumentList $dcArgs
-if ($code -ne 0) { throw "Docker compose command failed: $dc $($dcArgs -join ' ')" }
-
-Write-Host ''
-Write-StatusLine '=== M46.8 Repo Contract ==='
-& powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools/check_m46_8_driver_access_hardening_repo_contract.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'repo contract check failed' }
-
-Write-Host ''
-Write-StatusLine '=== M46.8 DRIVER ACCESS HARDENING PACK PASS OK ==='
-
+Invoke-ComposeNodePackWithScaffoldAndPreShell `
+  -RepoRoot $RepoRoot `
+  -ScaffoldOnly $ScaffoldOnly.IsPresent `
+  -ScaffoldTitle 'M46.8 DRIVER ACCESS HARDENING PACK (SCAFFOLD/FILES ONLY)' `
+  -FilesReadyTitle 'M46.8 DRIVER ACCESS HARDENING FILES READY' `
+  -PackTitle 'M46.8 DRIVER ACCESS HARDENING PACK' `
+  -PreRuntimeTitle 'M46.8 Prisma Sync' `
+  -PreRuntimeShell 'npx prisma db push && npx prisma generate' `
+  -RuntimeTitle 'M46.8 Runtime Check' `
+  -RepoContractTitle 'M46.8 Repo Contract' `
+  -SuccessTitle 'M46.8 DRIVER ACCESS HARDENING' `
+  -NodeScript 'backend/scripts/m46_8_driver_access_hardening_check.js' `
+  -RepoContractScript 'tools/check_m46_8_driver_access_hardening_repo_contract.ps1' `
+  -ComposeFile $ComposeFile `
+  -ApiService $ApiService

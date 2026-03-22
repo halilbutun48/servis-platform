@@ -84,7 +84,7 @@ MustContainText $api 'getOrCreateBrowserDeviceId' 'web api creates browser devic
 MustContainText $api 'deviceId: getOrCreateBrowserDeviceId()' 'web login sends deviceId'
 
 Write-Host 'INFO Checking pack/runtime wiring'
-MustContainText $pack 'node scripts/m46_8_driver_access_hardening_check.js' 'pack runs m46.8 runtime check'
+MustContainAny $pack @('node scripts/m46_8_driver_access_hardening_check.js','-NodeScript ''backend/scripts/m46_8_driver_access_hardening_check.js''') 'pack runs m46.8 runtime check'
 MustNotContainText $pack 'pack_m46_7_driver_code_login_rehber_first.ps1' 'pack is self-only and does not chain m46.7'
 MustContainText $runtime 'AUTH_DRIVER_PIN_RESET' 'runtime verifies reset audit'
 MustContainText $runtime 'AUTH_DRIVER_PIN_LOCKED' 'runtime verifies lock audit'

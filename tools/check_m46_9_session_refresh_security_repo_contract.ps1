@@ -79,7 +79,7 @@ MustContainAny $server @('tokenSv','sessionVersion','session revoked') 'ws layer
 
 Write-Host 'INFO Checking pack/runtime wiring'
 MustNotContainText $pack 'pack_m46_8_driver_access_hardening.ps1' 'pack is self-only and does not chain m46.8'
-MustContainText $pack 'node scripts/m46_9_session_refresh_security_check.js' 'pack runs m46.9 runtime check'
+MustContainAny $pack @('node scripts/m46_9_session_refresh_security_check.js','-NodeScript ''backend/scripts/m46_9_session_refresh_security_check.js''') 'pack runs m46.9 runtime check'
 MustContainAny $runtime @('AUTH_SESSION_REVOKE_ALL','AUTH_REFRESH_REUSE_DETECTED','AUTH_DRIVER_PIN_RESET') 'runtime checks audit actions'
 
 Write-Host 'M46.9 SESSION & REFRESH SECURITY REPO CONTRACT PASS'
