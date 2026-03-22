@@ -205,6 +205,7 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 - Aktif gelmedi kaydı olan sürücü, atama / onay hattında server tarafında engellenir.
 - Company default `maxWalkM = 250`
 - School default `maxWalkM = 50`
+- Personel / öğrenci canlı erişim linklerinde TTL presetleri: `1 hafta / 1 ay / 6 ay / 1 yıl`
 
 ## 10. Mimari
 

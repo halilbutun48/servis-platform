@@ -1,69 +1,51 @@
 # STARTPACK V1
 
 ## Temel kurallar
-1. Monorepo modüler yapıda ilerler: backend / web / mobile / infra / docs / tools.
+1. Monorepo modüler yapıda ilerler: `backend / web / mobile / infra / docs / tools`.
 2. Ürün kimliği **B2B servis pazaryeri + operasyon platformu**dur.
-3. Post-M41 tam hat için kanonik komut `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
-4. `M58 hazirlik komutu` olarak `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` korunur; `manuel pilot kabul` notu tarihsel olarak saklanır.
-5. Yeni resmi rota `M59 → M65` olarak ilerler.
-6. Saha testi en son adımdır; `M65` green olmadan sahaya çıkılmaz.
-7. Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
-8. Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
-9. Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
-10. Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
+3. Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
+4. İlk girişte PIN değişimi zorunludur.
+5. Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
+6. Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
+7. Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
+8. **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
+9. Room seçip teklif göndermeden iş markete düşmemelidir.
+10. Guided Mode kullanıcıyı gereksiz draft mantığıyla uğraştırmamalıdır.
 11. Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
-12. Checklist'te `[x]` yalnızca resmi green sonrası işaretlenir.
+12. Checklist'te `[x]` yalnızca pack/check green sonrası işaretlenir.
+
+## Güncel dürüst durum
+- `M59 -> M65` sertleştirme hattı green taban olarak vardır.
+- Ama `M59 -> M66` için tam uçtan uca yeniden kontrol, smoke ve saha testi henüz kapanmamıştır.
+- Repo şu an **post-M66 functional** durumdadır.
+- Büyük repo cleanup / duplicate cleanup / dead code cleanup / performans sadeleştirmesi sonraki ana fazdır.
 
 ## Kanonik komutlar
-- `tools\pack.ps1 -To 41`
-- `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
-- `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m65_pilot_launch_gate.ps1 -RepoRoot D:\servis-platform`
+- Tam master hat: `tools\pack.ps1 -To 66 -RepoDir D:\servis-platform -NoBuild`
+- Reset + full hat: `tools\reset-and-pack.ps1 -To 66 -NoBuild`
+- Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+- M66 özel pack: `tools\pack_m66_operation_reassignment.ps1 -RepoRoot D:\servis-platform`
 
-## Resmi durum
-- `M58` teknik readiness gate'i pack-green olarak geçti.
-- `M58` paketi repo hazirligini kontrol eder; `manuel pilot kabul` notu tarihsel olarak korunur.
-- `M59 — Gözlemleme + Saha Teşhis` resmi green oldu.
-- `M60 — Saha Acceptance Merkezi` resmi green oldu.
-- `M61 — SSOT + Milestone Hizası` resmi green oldu.
-- `M62 — Ticari Omurga Güçlendirme` resmi green oldu.
-- Sonraki ana ürün hattı `M63 — Güven + Kalite + Hizmet Değerlendirme` olarak açılır.
-- `M63` bitmeden `M64`e geçilmez.
-- Saha öncesi hat: `M59 → M60 → M61 → M62 → M63 → M64 → M65`.
+## Master pack
+`tools\pack.ps1 -To 66` artık tek çatı girişidir.
 
-## M61 başlangıç notu
-- Komut: `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
-- Kapsam: milestone registry, README / PRIMER / CHECKLIST / STARTPACK hizası, tools tarafı primer/checklist/readme hizası, backend route ve super admin paneli.
-- Bu milestone resmi ürün gerçeğini tek kayıtta toplayıp drift riskini azaltmak için açılır.
+Bu komut:
+- `M104 / M105 / M106` statik repo check'lerini çalıştırır,
+- `M0 -> M41` gate hattını koşturur,
+- `M42 -> M66` pack zincirini sırayla koşturur,
+- sonda repo audit raporu üretir.
 
+## Repo audit kapsamı
+- duplicate dosyalar
+- benzer pack/check script grupları
+- orphan / legacy adayları
+- tiny / boş dosyalar
+- archive/live shadow çiftleri
+- temel performans kokuları (`useEffect`, `setInterval`, `addEventListener`, backend `.on(`)
 
-M61 kapsamında resmi milestone kaydı tek yerde tutulur; README / PRIMER / CHECKLIST / STARTPACK / runbook / pack uyumu otomatik kontrol edilir.
-
-
-## M62 başlangıç notu
-- Komut: `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
-- Kapsam: talep kartı, teklif yaşam döngüsü, karşı teklif, pazarlık geçmişi, uzlaşma özeti ve sözleşmeye geçiş kapısı için resmi iskelet.
-- Bu milestone ürünün pazaryeri kimliğini operasyon katmanına bağlayan ticari omurgayı güçlendirmek için açılır.
-
-
-## M63 başlangıç notu
-- Komut: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
-- Kapsam: hizmet alan kurum değerlendirmesi, sağlayıcı kalite özeti, no-show / iptal / uyum görünürlüğü, ETA kalite sinyali ve karar destek yüzeyi için resmi iskelet.
-- Bu milestone ürünün güven ve kalite katmanını ölçülebilir hale getirmek için açılır.
-
-
-## M64 başlangıç notu
-- Komut: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
-- Kapsam: doğal Türkçe cevap katmanı, kısa konuşma hafızası, neden ilerlemiyor modu, şimdi ne yapayım yönlendirmesi, daha basit anlat ve geri bildirim iskeleti.
-- Bu milestone copilot'u daha insani, daha açıklayıcı ve daha takipli hale getirmek için açılır.
-
-
-## M65 kapanis notu
-- `M65` resmi green oldu.
-- `M59 -> M65` saha oncesi sertlestirme hatti tamamlandi.
-- Sonraki adim kontrollu saha testi / pilot acceptance icrasidir.
+## M66 kısa not
+- ROOM operasyon yetkisiyle araç/sürücü reassignment yapar.
+- COMPANY bunu ticari değil operasyonel olay olarak görür.
+- Yeni sürücüye görev/rota paketi gider.
+- Eski sürücü aktif görevden düşer.
+- M66 fonksiyonel olarak eklidir; tam kapanış için smoke + saha doğrulaması gerekir.

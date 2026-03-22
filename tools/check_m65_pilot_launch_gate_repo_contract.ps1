@@ -10,8 +10,7 @@ function NormalizeText([string]$s) {
     @([string][char]0x00DC,'U'), @([string][char]0x00FC,'u'),
     @([string][char]0x00D6,'O'), @([string][char]0x00F6,'o'),
     @([string][char]0x00C7,'C'), @([string][char]0x00E7,'c'),
-    @([string][char]0x2014,'-'), @([string][char]0x2013,'-'),
-    @([string][char]0x2192,'->'), @('`','')
+    @([string][char]0x2014,'-'), @([string][char]0x2013,'-')
   )
   foreach ($pair in $pairs) { $t = $t.Replace($pair[0], $pair[1]) }
   $t = $t.ToLowerInvariant()
@@ -34,6 +33,7 @@ Write-Host 'INFO Checking M65 files'
  'tools\check_m65_pilot_launch_gate_repo_contract.ps1',
  'README.md', 'docs\PROJECT_SPEC_V1.md', 'docs\PRIMER_SSOT.md', 'docs\STARTPACK_V1.md', 'docs\CHECKLIST_SSOT.md', 'docs\NEXT_BACKLOG_V1.md', 'tools\PRIMER_SNAPSHOT.md', 'tools\CHECKLIST_SSOT.md', 'tools\README.md', 'docs\MILESTONE_REGISTRY_V1.md'
 ) | ForEach-Object { MustExist $_ }
+
 $readme = ReadText 'README.md'
 $projectSpec = ReadText 'docs\PROJECT_SPEC_V1.md'
 $primer = ReadText 'docs\PRIMER_SSOT.md'
@@ -44,28 +44,25 @@ $toolsPrimer = ReadText 'tools\PRIMER_SNAPSHOT.md'
 $toolsChecklist = ReadText 'tools\CHECKLIST_SSOT.md'
 $toolsReadme = ReadText 'tools\README.md'
 $registry = ReadText 'docs\MILESTONE_REGISTRY_V1.md'
-$runbook = ReadText 'docs\RUNBOOK_M65_PILOT_LAUNCH_GATE.md'
-$milestone = ReadText 'docs\MILESTONE_M65_PILOT_LAUNCH_GATE.md'
 $route = ReadText 'backend\src\routes\pilotLaunchGate.js'
 $manifest = ReadText 'backend\src\ops\pilotLaunchGateManifest.js'
 $panel = ReadText 'web\src\panels\superadmin\PilotLaunchGatePanel.jsx'
-$pack = ReadText 'tools\pack_m65_pilot_launch_gate.ps1'
-$script = ReadText 'backend\scripts\m65_pilot_launch_gate_check.js'
-MustContainAny $readme @('m64 green','m65 - pilot launch gate','pack_m65_pilot_launch_gate.ps1') 'root readme reflects M65 route'
-MustContainAny $projectSpec @('pilot launch gate','go / limited go / no-go','m59 -> m65') 'project spec reflects launch gate layer'
-MustContainAny $primer @('m64 - dogal copilot katmani resmi green oldu','m65 - pilot launch gate','pack_m65_pilot_launch_gate.ps1') 'primer ssot reflects M64 green and M65 active'
-MustContainAny $startpack @('m65 - pilot launch gate','m65 green olmadan sahaya cikilmaz','pack_m65_pilot_launch_gate.ps1') 'startpack reflects M65 opening'
-MustContainAny $checklist @('[x] m64 - dogal copilot katmani','[ ] m65 - pilot launch gate') 'checklist marks M64 green and keeps M65 open'
-MustContainAny $backlog @('m65 - pilot launch gate','launch checklist','go / limited go / no-go') 'backlog points to M65'
-MustContainAny $toolsPrimer @('m64 - dogal copilot katmani resmi green oldu','m65 - pilot launch gate','pack_m65_pilot_launch_gate.ps1') 'tools primer reflects M65 route'
-MustContainAny $toolsChecklist @('[x] m64 - dogal copilot katmani','[ ] m65 - pilot launch gate') 'tools checklist marks M64 green and keeps M65 open'
-MustContainAny $toolsReadme @('pack_m65_pilot_launch_gate.ps1','m65 green olmadan sahaya cikilmaz','aktif hat: m65') 'tools readme lists M65 pack and sequencing rule'
-MustContainAny $registry @('m64 - dogal copilot katmani - green','m65 - pilot launch gate - aktif') 'registry lists current official route'
-MustContainAny $runbook @('m65 pilot launch gate','kritik risk listesi','sahaya cikilmaz') 'runbook defines M65 scope'
-MustContainAny $milestone @('m65 - pilot launch gate','pilotlaunchgatepanel.jsx','pack_m65_pilot_launch_gate.ps1') 'milestone documents M65 outputs'
-MustContainAny $route @('/manifest','/decision-template','/risk-template') 'pilot launch gate route exposes summary endpoints'
-MustContainAny $manifest @('pilot_launch_gate_capabilities','go / limited go / no-go','build / cihaz uygunluk matrisi') 'manifest defines M65 gate capabilities'
-MustContainAny $panel @('m65 pilot launch gate','launch checklist','go / limited go / no-go') 'web panel shows M65 cards'
-MustContainAny $pack @('m65_pilot_launch_gate_check.js','check_m65_pilot_launch_gate_repo_contract.ps1','pack pass ok') 'm65 pack wires runtime and repo contract'
-MustContainAny $script @('m65 pilot launch gate check','/api/pilot-launch-gate') 'm65 runtime check covers skeleton baseline'
+$runbook = ReadText 'docs\RUNBOOK_M65_PILOT_LAUNCH_GATE.md'
+
+MustContainAny $readme @('M65 — Pilot Launch Gate','M66','tools\pack.ps1 -To 66') 'root readme reflects M65/M66 route'
+MustContainAny $projectSpec @('Pilot Launch Gate','GO / LIMITED GO / NO-GO','M59 → M65') 'project spec reflects launch gate layer'
+MustContainAny $primer @('M65 — Pilot Launch Gate','M66','pack_m66_operation_reassignment.ps1') 'primer ssot reflects M65 green and M66 functional'
+MustContainAny $startpack @('M65 — Pilot Launch Gate','M66','tools\pack_docs_ssot.ps1') 'startpack reflects post-M65/M66 state'
+MustContainAny $checklist @('[x] `M65 — Pilot Launch Gate`','[ ] `M66 — Operasyonel Reassignment`') 'checklist marks M65 green and keeps M66 open'
+MustContainAny $backlog @('M0-M66','cleanup','saha testi') 'backlog points to rerun after M65'
+MustContainAny $toolsPrimer @('M65 — Pilot Launch Gate','M66','fonksiyonel') 'tools primer reflects M65 green and M66 functional'
+if ((NormalizeText $checklist) -ne (NormalizeText $toolsChecklist)) { throw 'FAIL tools checklist mirrors docs checklist' } else { Write-Host 'OK tools checklist mirrors docs checklist' }
+MustContainAny $toolsReadme @('tools\pack.ps1 -To 66','tools\pack_docs_ssot.ps1') 'tools readme lists master/docs pack'
+MustContainAny $registry @('M65 - Pilot Launch Gate - green-base','M65 - Pilot Launch Gate - green','M66 - Operasyonel Reassignment - functional-open','M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik') 'registry includes M65 green and M66 open'
+
+MustContainAny $route @('/manifest','/decision-template','/summary') 'pilot launch gate route exposes summary endpoints'
+MustContainAny $manifest @('PILOT_LAUNCH_GATE_CAPABILITIES','GO / LIMITED GO / NO-GO','riskMatrix') 'manifest defines M65 gate capabilities'
+MustContainAny $panel @('M65 Pilot Launch Gate','Launch checklist','GO / LIMITED GO / NO-GO') 'web panel shows M65 cards'
+MustContainAny $runbook @('Pilot Launch Gate','kritik risk listesi','M65 green olmadan sahaya çıkılmaz') 'runbook defines M65 scope'
+
 Write-Host 'M65 PILOT LAUNCH GATE REPO CONTRACT PASS'

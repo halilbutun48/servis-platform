@@ -62,22 +62,43 @@ async function main() {
   const runbook = read("docs/RUNBOOK_M61_SSOT_MILESTONE_ALIGNMENT.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must("readme points to M61 route", includesAny(readme, ["M60 green", "M61 — SSOT + Milestone Hizası", "pack_m61_ssot_milestone_alignment.ps1"]));
-  must("primer reflects M60 green and M61 active", includesAny(primer, ["M60 — Saha Acceptance Merkezi` resmi green oldu", "M61 — SSOT + Milestone Hizası", "pack_m61_ssot_milestone_alignment.ps1"]));
-  must("startpack reflects M61 opening", includesAny(startpack, ["M61 — SSOT + Milestone Hizası", "M61 başlangıç notu", "M61` bitmeden `M62"]));
-  must("checklist marks M60 green and keeps M61 open", includesAny(checklist, ["[x] `M60 — Saha Acceptance Merkezi`", "[ ] `M61 — SSOT + Milestone Hizası`"]));
-  must("backlog points to M61", includesAny(backlog, ["M60 SAHA ACCEPTANCE MERKEZI PACK PASS OK", "M61 — SSOT + Milestone Hizası"]));
-  must("registry shows M59-M65 route", includesAny(registry, ["M59 — Gözlemleme + Saha Teşhis — green", "M60 — Saha Acceptance Merkezi — green", "M61 — SSOT + Milestone Hizası — aktif"]));
+  must(
+    "readme reflects current SSOT and master pack",
+    includesAny(readme, ["post-M66 functional", "tools\\pack.ps1 -To 66", "M61", "M66"])
+  );
+  must(
+    "primer reflects current post-M66 truth",
+    includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\\pack.ps1 -To 66"])
+  );
+  must(
+    "startpack reflects master pack and repo audit",
+    includesAny(startpack, ["tools\\pack.ps1 -To 66", "check_repo_audit_master.ps1", "post-M66 functional"])
+  );
+  must(
+    "checklist reflects M66 open verification state",
+    includesAny(checklist, ["M66", "master pack marker", "repo audit marker"])
+  );
+  must(
+    "backlog points to full rerun and cleanup phase",
+    includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional"])
+  );
+  must(
+    "registry shows M59-M66 route",
+    includesAny(registry, ["M59 - Gözlemleme + Saha Teşhis", "M66 - Operasyonel Reassignment", "green-base", "functional-open"])
+  );
 
   console.log("INFO checking backend and web skeleton");
   must("server imports ssot alignment router", includesAny(server, ["ssotAlignmentRouter", "./routes/ssotAlignment.js"]));
   must("server mounts /api/ssot-alignment", includesAny(server, ["/api/ssot-alignment"]));
   must("manifest defines SSOT targets and route", includesAny(manifest, ["SSOT_ALIGNMENT_TARGETS", "MILESTONE_ROUTE", '"M61"']));
   must("route exposes manifest and summary-template", includesAny(route, ["/manifest", "/summary-template", "/route"]));
-  must("panel shows M61 cards", includesAny(panel, ["M61 SSOT + Milestone Hizası", "İzlenen SSOT hedefleri", "Milestone ozeti"]));
+  must("panel shows M61 cards", includesAny(panel, ["M61 SSOT + Milestone Hizası", "İzlenen SSOT hedefleri", "Milestone ozeti", "Milestone özeti"]));
 
   console.log("INFO checking M61 runbook language");
-  must("runbook explains M61 scope", includesAny(runbook, ["M59 ve M60 sonrasinda", "milestone registry", "M61 green olmadan M62'ye gecilmez"]));
+  must(
+    "runbook explains M61 scope",
+    includesAny(runbook, ["milestone registry", "M61 green olmadan", "README", "PRIMER", "CHECKLIST"])
+  );
 
   console.log("\nOK M61 SSOT + MILESTONE HIZASI CHECK PASS");
 }

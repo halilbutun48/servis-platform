@@ -13,91 +13,33 @@ Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / oku
 - UI spec: `docs/UI_SPEC_V1.md`
 - Overlay notları: `docs/overlays/`
 
-## Resmi green çizgisi
-- `M41 PACK PASS`
-- `M42 OPTIONAL PACK PASS`
-- `STEP 0.6 STABIL PACK PASS`
-- `STEP 1 SECURITY FOUNDATION PACK PASS`
-- `STEP 1 TOTP STEP-UP PACK PASS`
-- `M104 REPO CLEANUP CHECK PASS`
-- `M105 TOOLS HYGIENE CHECK PASS`
-- `M106 REPO HYGIENE + LINK TTL CHECK PASS`
-- `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
-- `M44 TELEMATICS PACK PASS OK`
-- `M45 RETENTION + BACKUP PACK PASS OK`
-- `M46 AI COPILOT FOUNDATION PACK PASS OK`
-- `M46.1–M46.9 zinciri green`
-- `M47 KVKK NOTICE / CONSENT FRAMEWORK PACK PASS OK`
-- `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
-- `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
-- `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
-- `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
-- `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
-- `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
-- `M49 MOBILE BETA HARDENING PACK PASS OK`
-- `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
-- `M50 MOBILE RELEASE READINESS PACK PASS OK`
-- `M51–M53 BACKFILL VERIFICATION PACK PASS OK`
-- `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK`
-- `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
-- `M55 REPORTS + NO_SHOW PACK PASS OK`
-- `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
-- `M57 MOBILE HARDENING PACK PASS OK`
-- `M58 FINAL PILOT READINESS PACK PASS OK`
-- `POST-M41 EXTERNAL PACK RUNNER (M42 -> M58) PASS OK`
+## Güncel dürüst durum (2026-03-20)
+- Repo **post-M66 functional** durumdadır.
+- `M59 -> M65` saha öncesi sertleştirme hattı green taban olarak vardır.
+- `M66` operasyonel reassignment fonksiyonel olarak eklidir.
+- Ancak `M59 -> M66` için baştan aşağı yeniden kontrol, canlı smoke ve saha testi **henüz tamamlanmış sayılmaz**.
+- Büyük repo cleanup / duplicate / dead code / performans sadeleştirmesi sonraki ana fazdır.
 
-## Güncel aktif ürün hattı (2026-03-19)
-- Post-M41 tam hat için kanonik komut: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
-- `M58 — Final Pilot Readiness` teknik readiness kapısı geçti; `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform` komutu tarihsel kontrat olarak korunur.
-- `M58` için `manuel pilot kabul` / manuel pilot signoff ifadesi tarihsel not olarak korunur; gerçek saha çıkış kapısı artık `M65 — Pilot Launch Gate` altında kapatılacaktır.
-- Yeni resmi saha öncesi rota: `M59 → M65`
-- Durum: **M59 green**, **M60 green**, **M61 green**, **M62 green**, **M63 green**, **M64 green**, **M65 — Pilot Launch Gate** green. Saha öncesi hat tamamlandı.
-- Kural: **M64 green olmadan M65 acilmaz. Paralel daginik ilerleme yok.**
-- Kural: **M65 green olmadan sahaya cikilmayacakti; M65 artik green. Siradaki adim kontrollu saha testi / pilot acceptance icrasi.**
+## Yeni tek komut
+- Tam master hat: `tools\pack.ps1 -To 66 -RepoDir D:\servis-platform -NoBuild`
+- Reset + full hat: `tools\reset-and-pack.ps1 -To 66 -NoBuild`
+- Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
 
-## Ürün kimliği
-- Ürünün ana kimliği **B2B servis pazaryeri + operasyon platformu**dur.
-- Ticari katman: ihtiyaç, teklif, pazarlık, uzlaşma, sözleşme.
-- Operasyon katmanı: vardiya, araç, sürücü, rota, canlı takip, rapor, kalite.
-- Güven katmanı: KVKK, audit, gözlemleme, acceptance, checklist, pack/check disiplini.
+## Master pack ne yapar
+- `M104 / M105 / M106` statik repo check'lerini çalıştırır.
+- `M0 -> M41` gate hattını koşturur.
+- `M42 -> M66` pack zincirini sırayla koşturur.
+- Sonunda repo audit raporu üretir: `artifacts/repo-audit/repo_audit_latest.json`.
 
-## Bugünkü sabit ürün kararları
-- Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
-- İlk girişte PIN değişimi zorunludur.
-- Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
-- Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
-- Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
-- **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
-- DRAFT / REQUESTED ayrımı korunur.
-- Room seçip teklif göndermeden iş markete düşmemelidir.
-- Guided Mode kullanıcıyı gereksiz draft mantığıyla uğraştırmamalıdır.
-- Dispatch preview shift bazlı çalışmalıdır.
-- Aktif gelmedi kaydı olan sürücü, atama / onay hattında server tarafında engellenmelidir.
-- Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
-
-## Yeni resmi rota
-- `M58 — Final Pilot Readiness` _(teknik gate geçti, saha çıkışı M65'e taşındı)_
-- `M59 — Gözlemleme + Saha Teşhis` _(green)_
-- `M60 — Saha Acceptance Merkezi` _(green)_
-- `M61 — SSOT + Milestone Hizası` _(green)_
-- `M62 — Ticari Omurga Güçlendirme` _(green)_
-- `M63 — Güven + Kalite + Hizmet Değerlendirme` _(green)_
-- `M64 — Doğal Copilot Katmanı` _(green)_
-- `M65 — Pilot Launch Gate` _(green)_
-
-## Kanonik komutlar
-- Ana regresyon: `tools\pack.ps1 -To 41`
-- Post-M41 tam hat: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
-- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
-- M59 pack: `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
-- M60 pack: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
-- M61 pack: `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
-- M62 pack: `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
-- M63 pack: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
-- M64 pack: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
+## M66 kısa özet
+- ROOM, `APPROVED/ACTIVE` vardiyada araç/sürücü reassignment yapabilir.
+- Değişiklik audit + notification + operation event olarak yazılır.
+- COMPANY bunu ticari değil operasyonel olay olarak görür.
+- Yeni sürücüye görev/rota paketi gider.
+- Eski sürücü aktif görevden düşer.
 
 ## Çalışma kuralı
 - Önce SSOT güncellenir.
-- Sonra milestone resmi olarak açılır.
-- Her milestone için runbook + milestone + pack + check + kod iskeleti birlikte eklenir.
+- Sonra milestone gerçek duruma göre açılır ya da kapatılır.
 - Checklist'te `[x]` yalnızca resmi pack/check green sonrası işaretlenir.
+- Green taban ile tam saha doğrulaması aynı şey değildir; saha öncesi yeniden kontrol ayrıca yapılır.

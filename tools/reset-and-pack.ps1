@@ -1,37 +1,45 @@
 param(
-  # If not provided (or 0), auto-detect the highest contiguous m{N}check.js starting from m0check.js.
   [int]$To = 0,
   [switch]$NoBuild
 )
 
 $ErrorActionPreference = "Stop"
 
-# Repo root = parent of /tools
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $repoRoot
 
 $composeFile = Join-Path $repoRoot "infra\docker-compose.yml"
 $composeBase = @("compose", "-f", $composeFile, "--profile", "osrm")
 
-function Get-MaxMilestone {
+function Get-MaxGateMilestone {
   param([string]$ScriptsDir)
-
-  if (-not (Test-Path $ScriptsDir)) { return 35 }
-
+  if (-not (Test-Path $ScriptsDir)) { return 41 }
   $max = -1
   for ($i = 0; $i -lt 300; $i++) {
     $p = Join-Path $ScriptsDir ("m{0}check.js" -f $i)
     if (Test-Path $p) { $max = $i } else { break }
   }
+  if ($max -lt 0) { return 41 }
+  return $max
+}
 
-  if ($max -lt 0) { return 35 }
+function Get-MaxPackMilestone {
+  param([string]$ToolsDir, [int]$GateMax)
+  $max = $GateMax
+  if (Test-Path $ToolsDir) {
+    Get-ChildItem -Path $ToolsDir -Filter "pack_m*.ps1" -File | ForEach-Object {
+      if ($_.BaseName -match '^pack_m(\d+)') {
+        $n = [int]$matches[1]
+        if ($n -gt $max) { $max = $n }
+      }
+    }
+  }
   return $max
 }
 
 function Get-StableTo {
   param([string]$RepoRoot)
 
-  # fallback: if empty, use current script's repo root
   if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     try { $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..") } catch { $RepoRoot = "" }
   }
@@ -53,8 +61,11 @@ function Get-StableTo {
 
 if ($To -le 0) {
   $scriptsDir = Join-Path $repoRoot "backend\scripts"
-  $max = Get-MaxMilestone -ScriptsDir $scriptsDir
+  $toolsDir = Join-Path $repoRoot "tools"
+  $gateMax = Get-MaxGateMilestone -ScriptsDir $scriptsDir
+  $max = Get-MaxPackMilestone -ToolsDir $toolsDir -GateMax $gateMax
   $stable = Get-StableTo -RepoRoot $repoRoot
+
   if ($stable -gt 0) {
     $To = [Math]::Min($stable, $max)
     Write-Host "INFO Stable cap: M$To (max found M$max)" -ForegroundColor Cyan
@@ -77,7 +88,6 @@ if (-not $NoBuild) {
 }
 
 Write-Host "`n=== PACK: tools/pack.ps1 -To $To ==="
-& (Join-Path $repoRoot "tools\pack.ps1") -To $To
+& (Join-Path $repoRoot "tools\pack.ps1") -To $To -NoBuild:$NoBuild
 
 Write-Host "`nOK reset-and-pack done."
-

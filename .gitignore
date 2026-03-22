@@ -1,47 +1,33 @@
-node_modules
+# Build outputs
+web/dist/
+artifacts/
+
+# Dependencies
+backend/node_modules/
+web/node_modules/
+mobile/node_modules/
+
+# Environment / local config
 .env
-dist
-backend/node_modules
-backend/prisma/dev.db
+backend/.env
+web/.env
+mobile/.env
 
-# Large / generated indexes (ETA graph, clustering, etc.)
-backend/indexes/
-backend/data/
-node_modules/
-**/node_modules/
-dist/
-build/
-.env
-.env.*
-backend/indexes/
-backend/data/
-node_modules/
-**/node_modules/
-dist/
-build/
-.env
-.env.*
-backend/indexes/
-backend/data/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# local backups
-_bak_retention_*/
+# OS/editor
+.DS_Store
+Thumbs.db
 
-
-docs/_quarantine/
-
+# Runtime/generated data
 infra/osrm-data/
-
-
-infra/osrm-data/
-
-
-# OSRM big data
-infra/osrm-data/
-
-
-# OSRM data (large blobs)
-infra/osrm-data/
-
-artifacts/*
-!artifacts/.gitkeep
+backend/indexes/*
+!backend/indexes/.gitkeep
+!backend/indexes/README.md
+backend/data/*.json
+!backend/data/.gitkeep

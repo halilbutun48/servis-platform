@@ -1,96 +1,81 @@
 # SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER SNAPSHOT
 
-Tarih: 2026-03-19
+Tarih: 2026-03-20
 Timezone: Europe/Istanbul
 Repo: `D:\servis-platform`
 Branch: `main`
 
-## 0) Resmi green taban
+## 0) Genel durum
 
-Ana resmi green durum:
-- ✅ `M41 PACK PASS`
-- ✅ `M42 OPTIONAL PACK PASS`
-- ✅ `STEP 0.6 STABIL PACK PASS`
-- ✅ `STEP 1 SECURITY FOUNDATION PACK PASS`
-- ✅ `STEP 1 TOTP STEP-UP PACK PASS`
-- ✅ `M104 REPO CLEANUP CHECK PASS`
-- ✅ `M105 TOOLS HYGIENE CHECK PASS`
-- ✅ `M106 REPO HYGIENE + LINK TTL CHECK PASS`
-- ✅ `M43 GOOGLE AUTH + INVITE GATE PACK PASS OK`
-- ✅ `M44 TELEMATICS PACK PASS OK`
-- ✅ `M45 RETENTION + BACKUP PACK PASS OK`
-- ✅ `M46 AI COPILOT FOUNDATION PACK PASS OK`
-- ✅ `M46.1–M46.9 zinciri green`
-- ✅ `M47 KVKK NOTICE / CONSENT FRAMEWORK PACK PASS OK`
-- ✅ `M47.2 CAPACITY & LOAD BASELINE PACK PASS OK`
-- ✅ `M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK`
-- ✅ `M47.4 MOBILE READINESS WEB PASS PACK PASS OK`
-- ✅ `M47.4-R CLEAN RERUN / REPRO FIX VERIFIED`
-- ✅ `M48 DRIVER MOBILE FOUNDATION PACK PASS OK`
-- ✅ `M48.5 ROOM / COMPANY TABLET READINESS PACK PASS OK`
-- ✅ `M49 MOBILE BETA HARDENING PACK PASS OK`
-- ✅ `M49.1 DRIVER VOICE GUIDANCE + STOP ETA PACK PASS OK`
-- ✅ `M50 MOBILE RELEASE READINESS PACK PASS OK`
-- ✅ `M51–M53 BACKFILL VERIFICATION PACK PASS OK`
-- ✅ `M54.3 DISPATCH APPROVE + REPACK PACK PASS OK`
-- ✅ `M54.4 DRIVER ROUTE DELIVERY PACK PASS OK`
-- ✅ `M55 REPORTS + NO_SHOW PACK PASS OK`
-- ✅ `M56 KVKK MATRIX + ETA QUALITY PACK PASS OK`
-- ✅ `M57 MOBILE HARDENING PACK PASS OK`
-- ✅ `M58 FINAL PILOT READINESS PACK PASS OK`
-- ✅ `POST-M41 EXTERNAL PACK RUNNER (M42 -> M58) PASS OK`
+- `M59 -> M65` saha öncesi sertleştirme hattı **green taban** olarak duruyor.
+- Ancak `M59 -> M65` için tam uçtan uca yeniden kontrol ve saha testi **henüz tamamlanmış sayılmaz**.
+- Şu an repo **post-M66 functional** durumdadır.
+- `M66` fonksiyonel geliştirme olarak eklendi; fakat tam milestone kapanışı için canlı smoke + saha testi + yeniden doğrulama gereklidir.
+- Repo cleanup / duplicate code cleanup / dead code cleanup / büyük performans sadeleştirmesi **henüz yapılmadı**.
 
-Not:
-- Resmi green çizgi artık `M58` teknik readiness seviyesine kadar doğrulanmıştır.
-- Post-M41 tam hat için kanonik komut `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild` seklindedir.
-- `M58 hazirlik komutu`: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`.
-- `M58` için `resmi green` / `manuel pilot kabul` notu tarihsel olarak korunur; saha çıkış kararı artık `M65` altında kapatılacaktır.
+## 1) M66 güncel durum
 
-## 1) Güncel aktif durum
-- Ürün kimliği artık açık şekilde **B2B servis pazaryeri + operasyon platformu** olarak yazılmıştır.
-- Saha testi en son adım olacak; `M65` green olmadan sahaya çıkılmayacaktır.
-- Yeni resmi rota `M59 → M65` olarak açıldı.
-- `M59 — Gözlemleme + Saha Teşhis` resmi green oldu.
-- `M60 — Saha Acceptance Merkezi` resmi green oldu.
-- `M61 — SSOT + Milestone Hizası` resmi green oldu.
-- `M62 — Ticari Omurga Güçlendirme` resmi green oldu.
-- `M63 — Güven + Kalite + Hizmet Değerlendirme` resmi green oldu.
-- `M64 — Doğal Copilot Katmanı` resmi green oldu.
-- Aktif iş `M65 — Pilot Launch Gate`.
-- `M65` green olmadan sahaya çıkılmayacaktır.
+- `M66-A1` çekirdek çalışıyor:
+  - ROOM, `APPROVED/ACTIVE` vardiyada araç/sürücü atamasını değiştirebiliyor.
+  - değişiklik audit + notification + operation event olarak yazılıyor.
+  - COMPANY tarafında Vardiyalar / Liste içinde operasyon kaydı görülebiliyor.
+- `M66-A2b` polish yapıldı:
+  - buton dili: **Değişikliği Kaydet ve Paketi Yenile**
+  - yeni sürücüye `shift:update + route:plan` zinciri
+  - eski sürücüye removal zinciri
+- operation event reason metinleri kullanıcı diliyle gösteriliyor.
+- verification katmanı eklendi:
+  - `backend/scripts/m66check.js`
+  - `tools/pack_m66_operation_reassignment.ps1`
+  - `tools/check_m66_operation_reassignment_repo_contract.ps1`
+  - `docs/RUNBOOK_M66_OPERATION_REASSIGNMENT.md`
 
-## 2) Sabit ürün / repo kuralları
-- Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
-- İlk girişte PIN değişimi zorunludur.
-- Ürün içi konum dili: `sürücünün telefon GPS'i`.
-- Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
-- Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
-- **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
-- Room seçip teklif göndermeden iş markete düşmemelidir.
-- Guided Mode kullanıcıyı gereksiz draft mantığıyla uğraştırmamalıdır.
-- Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
-- CHECKLIST'te `[x]` yalnızca pack/check green sonrası işaretlenir.
+## 2) Dürüst saha öncesi durum
 
-## 3) Yeni resmi saha öncesi rota
-- `M59 — Gözlemleme + Saha Teşhis` _(green)_
-- `M60 — Saha Acceptance Merkezi` _(green)_
-- `M61 — SSOT + Milestone Hizası` _(green)_
-- `M62 — Ticari Omurga Güçlendirme` _(green)_
-- `M63 — Güven + Kalite + Hizmet Değerlendirme` _(green)_
-- `M64 — Doğal Copilot Katmanı` _(green)_
-- `M65 — Pilot Launch Gate` _(aktif)_
+- `M59 -> M65` için green taban var.
+- Ama **"tam saha hazır ve her şey yeniden doğrulandı"** denemez.
+- Özellikle baştan aşağı kontrol gerekecek:
+  - yönlendirmeler
+  - tarih / saat akışları
+  - role-based rollout
+  - market / pazarlık / bekleyen / liste akışları
+  - bildirim ve ws zinciri
+  - operasyon görünürlüğü
+  - hizmet değerlendirme
+  - admin / observability / launch gate yüzeyleri
+  - `M66` operasyonel reassignment canlı zinciri
 
-## 4) Kanonik komutlar
-- Ana regresyon: `tools\pack.ps1 -To 41`
-- Post-M41 tam hat: `tools\pack_post_m41_to_m58.ps1 -RepoRoot D:\servis-platform -NoBuild`
-- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
-- M59 pack: `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
-- M60 pack: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
-- M61 pack: `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
-- M62 pack: `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
-- M63 pack: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
-- M64 pack: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
-- M65 pack: `tools\pack_m65_pilot_launch_gate.ps1 -RepoRoot D:\servis-platform`
+## 3) Yeni tek komut hattı
+
+Kanonik tam komut artık:
+
+- `tools\pack.ps1 -To 66 -RepoDir D:\servis-platform -NoBuild`
+
+Bu master pack:
+- statik repo check'leri koşturur,
+- `M0 -> M41` gate hattını koşturur,
+- `M42 -> M66` pack zincirini koşturur,
+- sonunda repo audit raporu üretir.
+
+Repo audit wrapper:
+- `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+
+Audit raporu:
+- `artifacts/repo-audit/repo_audit_latest.json`
+
+## 4) Büyük cleanup fazı (sonraki ana faz)
+
+1. `M0 -> M66` baştan aşağı kontrol / eksik fonksiyonel noktaları kapatma
+2. saha testi / canlı akış doğrulama
+3. büyük repo cleanup
+   - duplicate kod
+   - eski / legacy / orphan parçalar
+   - dead code
+   - ortak helper/domain grouping
+   - backend/frontend/mobile gereksiz yük üreten parçaların temizliği
+4. performans ve ölçek hazırlığı
+   - 2000 eşzamanlı kullanıcı hedefi için gereksiz render / fetch / listener / interval / paralel akışların azaltılması
 
 ## 5) Yeni sohbet için ilk cümle
-Repo su an `M62` seviyesine kadar green; yeni resmi saha öncesi rota `M59 → M65` olarak ilerliyor. Aktif iş `M64 — Doğal Copilot Katmanı`; kanonik komut `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`.
+
+Repo şu an post-M66 functional durumda. M66 operasyonel reassignment çekirdeği ve verification pack'i eklendi. Ancak M59–M66 için baştan aşağı kontrol, saha testi ve sonrasında derin repo cleanup fazına geçmemiz gerekiyor. Öncelik artık eksik fonksiyonel noktaları kapatmak, sonra canlı doğrulama ve ardından duplicate/legacy/dead code temizliği yapmak.
