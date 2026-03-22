@@ -5,27 +5,19 @@ param(
   [switch]$ScaffoldOnly
 )
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '_console_status.ps1')
+. (Join-Path $PSScriptRoot '_pack_runner.ps1')
 Set-Location $RepoRoot
-if ($ScaffoldOnly) {
-  Write-Host ''
-  Write-StatusLine '=== M56 KVKK MATRIX + ETA QUALITY (SCAFFOLD/FILES ONLY) ==='
-  & powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools/check_m56_kvkk_eta_quality_repo_contract.ps1') -RepoRoot $RepoRoot
-  if (-not $?) { throw 'repo contract check failed' }
-  Write-Host ''
-  Write-StatusLine '=== M56 KVKK MATRIX + ETA QUALITY FILES READY ==='
-  exit 0
-}
-Write-Host ''
-Write-StatusLine '=== M56 KVKK MATRIX + ETA QUALITY PACK ==='
-Write-Host ''
-Write-StatusLine '=== M56 Runtime Check ==='
-$dockerArgs = @('compose','-f',$ComposeFile,'exec','-T',$ApiService,'sh','-lc','cd /app/backend && node scripts/m56_kvkk_eta_quality_check.js')
-$code = Invoke-ExternalColor -FilePath 'docker' -ArgumentList $dockerArgs
-if ($code -ne 0) { throw 'runtime check failed' }
-Write-Host ''
-Write-StatusLine '=== M56 Repo Contract ==='
-& powershell -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools/check_m56_kvkk_eta_quality_repo_contract.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'repo contract check failed' }
-Write-Host ''
-Write-StatusLine '=== M56 KVKK MATRIX + ETA QUALITY PACK PASS OK ==='
+
+Invoke-ComposeNodePackWithScaffold `
+  -RepoRoot $RepoRoot `
+  -ScaffoldOnly $ScaffoldOnly.IsPresent `
+  -ScaffoldTitle 'M56 KVKK MATRIX + ETA QUALITY (SCAFFOLD/FILES ONLY)' `
+  -FilesReadyTitle 'M56 KVKK MATRIX + ETA QUALITY FILES READY' `
+  -PackTitle 'M56 KVKK MATRIX + ETA QUALITY PACK' `
+  -RuntimeTitle 'M56 Runtime Check' `
+  -RepoContractTitle 'M56 Repo Contract' `
+  -SuccessTitle 'M56 KVKK MATRIX + ETA QUALITY' `
+  -NodeScript 'backend/scripts/m56_kvkk_eta_quality_check.js' `
+  -RepoContractScript 'tools/check_m56_kvkk_eta_quality_repo_contract.ps1' `
+  -ComposeFile $ComposeFile `
+  -ApiService $ApiService
