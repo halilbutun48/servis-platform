@@ -1,4 +1,4 @@
-# CHECKLIST SSOT
+﻿# CHECKLIST SSOT
 
 > Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. `M42+` pack script'leri self-only çalışır; tam zincir için ana giriş artık `tools\pack.ps1 -To 66` komutudur.
 
@@ -11,6 +11,7 @@
 ## Resmi green kutular
 - [x] `M44 — Telematics` pack: `tools\pack_m44_telematics.ps1`
 - [x] `M45 — Retention + Backup` pack: `tools\pack_m45_retention_backup.ps1`
+- [x] `M45 — Backup create helper`: `tools\backup_create_m45.ps1`
 - [x] `M45 — Backup restore helper`: `tools\backup_restore_m45.ps1`
 - [x] `M46 — AI Copilot Foundation` pack: `tools\pack_m46_ai_copilot.ps1`
 - [x] `M47 — KVKK Notice / Consent Framework`
@@ -37,7 +38,7 @@
 - [x] `M63 — Güven + Kalite + Hizmet Değerlendirme`
 - [x] `M64 — Doğal Copilot Katmanı`
 - [x] `M65 — Pilot Launch Gate`
-- [ ] `M66 — Operasyonel Reassignment kapanışı` (fonksiyonel çekirdek var; canlı smoke + saha testi + yeniden doğrulama bekliyor)
+- [ ] `M66 — Operasyonel Reassignment` (fonksiyonel çekirdek var; canlı smoke + saha testi + yeniden doğrulama bekliyor)
 
 ## Markerlar
 - master pack marker: `tools\pack.ps1 -To 66`
@@ -51,3 +52,13 @@
 
 ## M58 pack markerı
 - [ ] `M58 — Final Pilot Readiness` pack: `tools\pack_m58_final_pilot_readiness.ps1` (manuel pilot kabul / saha kabul bekliyor)
+
+## M59 -> M65 repo-contract markerları
+- M59 marker: `tools\pack_m59_observability_field_diagnostics.ps1`
+- M60 marker: `tools\pack_m60_field_acceptance_center.ps1`
+- M61 marker: `tools\pack_m61_ssot_milestone_alignment.ps1`
+- docs pack marker: `tools\pack_docs_ssot.ps1`
+- M62 marker: `tools\pack_m62_commercial_core_strengthening.ps1`
+- M63 marker: `tools\pack_m63_trust_quality_service_evaluation.ps1`
+- M64 marker: `tools\pack_m64_natural_copilot_layer.ps1`
+- M65 marker: `tools\pack_m65_pilot_launch_gate.ps1`

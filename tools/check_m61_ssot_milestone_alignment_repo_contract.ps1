@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 function ReadText([string]$rel){ [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8).Normalize() }
 function MustExist([string]$rel){ if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }; Write-Host "OK $rel exists" }
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
+function MustMatch([string]$txt,[string]$pattern,[string]$label){ if ($txt -match $pattern) { Write-Host "OK $label"; return }; throw "FAIL $label" }
 
 Write-Host "INFO Checking M61 files"
 @(
@@ -50,7 +51,9 @@ $docsPackRunbook = ReadText 'docs\RUNBOOK_DOCS_SSOT_PACK.md'
 MustContainAny $readme @('tools\pack.ps1 -To 66','tools\pack_docs_ssot.ps1','M66') 'root readme reflects master/docs pack and M66'
 MustContainAny $primer @('M66','fonksiyonel','tam milestone kapanışı için') 'primer ssot reflects M66 honesty'
 MustContainAny $startpack @('tools\pack.ps1 -To 66','tools\pack_docs_ssot.ps1','M66') 'startpack reflects docs pack opening'
-MustContainAny $checklist @('[x] `M65 — Pilot Launch Gate`','[ ] `M66 — Operasyonel Reassignment`') 'checklist marks M65 green and keeps M66 open'
+MustMatch $checklist '(?mi)^\s*-\s*\[x\].*M65.*Pilot\s+Launch\s+Gate.*$' 'checklist marks M65 green'
+MustMatch $checklist '(?mi)^\s*-\s*\[\s\].*M66.*Operasyonel\s+Reassignment.*$' 'checklist keeps M66 open'
+Write-Host 'OK checklist marks M65 green and keeps M66 open'
 MustContainAny $backlog @('M0-M66','cleanup','saha testi') 'backlog points to M0-M66 rerun'
 MustContainAny $toolsPrimer @('M66','fonksiyonel','tam milestone kapanışı için') 'tools primer reflects M66 honesty'
 if ($checklist -ne $toolsChecklist) { throw 'FAIL tools checklist mirrors docs checklist' } else { Write-Host 'OK tools checklist mirrors docs checklist' }

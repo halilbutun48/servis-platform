@@ -1,4 +1,4 @@
-# SERVIS-PLATFORM — PERSONEL SERVİS V1
+﻿# SERVIS-PLATFORM — PERSONEL SERVİS V1
 
 Bu repo, **servis aracı sağlayıcıları ile servis ihtiyacı olan firma / okul / organizasyonları buluşturan teklif–pazarlık–uzlaşma pazaryeri + operasyon yönetim platformunun** canlı çalışma ağacıdır.
 
@@ -51,3 +51,17 @@ Tools tarafinda kanonik giris tools\pack.ps1 dosyasidir. Tools hijyen kontrolu i
 - M57 — Mobile Hardening resmi green tabanındadır.
 - M58 — Final Pilot Readiness komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 - M58 manuel pilot kabul / saha kabul olmadan resmi green sayılmaz.
+
+## M59 -> M65 repo-contract markerları
+- `M59 — Gözlemleme + Saha Teşhis` pack: `tools\pack_m59_observability_field_diagnostics.ps1`
+- `M59 — Gözlemleme + Saha Teşhis` resmi green oldu; aktif hat `M60`.
+- `M60 — Saha Acceptance Merkezi` pack: `tools\pack_m60_field_acceptance_center.ps1`
+- M60 green olmadan M61 acilmaz.
+- `M61 — SSOT + Milestone Hizası` pack: `tools\pack_m61_ssot_milestone_alignment.ps1`
+- Docs/SSOT pack: `tools\pack_docs_ssot.ps1`
+- M61 SSOT + Milestone Hizası PACK PASS OK.
+- `M62 — Ticari Omurga Güçlendirme` pack: `tools\pack_m62_commercial_core_strengthening.ps1`
+- M62 green olmadan M63 acilmaz.
+- `M63 — Güven + Kalite + Hizmet Değerlendirme` pack: `tools\pack_m63_trust_quality_service_evaluation.ps1`
+- `M64 — Doğal Copilot Katmanı` pack: `tools\pack_m64_natural_copilot_layer.ps1`
+- `M65 — Pilot Launch Gate` pack: `tools\pack_m65_pilot_launch_gate.ps1`

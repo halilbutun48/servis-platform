@@ -1,4 +1,4 @@
-# TOOLS README
+﻿# TOOLS README
 
 ## Kanonik komutlar
 - Tam master hat: `tools\pack.ps1 -To 66 -RepoDir D:\servis-platform -NoBuild`
@@ -66,3 +66,17 @@ Audit çıktısı:
 - M57 post-M41 full pack: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
 - M58 — Final Pilot Readiness komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 - M58 readiness contract manuel pilot kabul ile kapanır.
+
+## M59 -> M65 markerları
+- M59 pack: `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
+- aktif hat `M60`
+- M60 pack: `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
+- M60 green olmadan M61 acilmaz.
+- M61 pack: `tools\pack_m61_ssot_milestone_alignment.ps1 -RepoRoot D:\servis-platform`
+- Docs/SSOT pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
+- aktif hat M62
+- M62 pack: `tools\pack_m62_commercial_core_strengthening.ps1 -RepoRoot D:\servis-platform`
+- M62 green olmadan M63 acilmaz.
+- M63 pack: `tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot D:\servis-platform`
+- M64 pack: `tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot D:\servis-platform`
+- M65 pack: `tools\pack_m65_pilot_launch_gate.ps1 -RepoRoot D:\servis-platform`
