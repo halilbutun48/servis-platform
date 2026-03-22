@@ -53,7 +53,7 @@ Mobil tabanda bugun zaten bulunan temel capability:
 - `mobile/.env.example` release stage env ornegini gosterir
 - Today ekranindaki release karti `Android preview`, `Production bundle`, `Env asamasi` ve build disiplin satirlarini gosterir
 - `mobile/scripts/m57_4_android_preview_internal_build_check.js` bu hattin repo kanitidir
-- `tools/pack_post_m41_to_m57.ps1` varsayilan olarak full `M42 -> M57` green hattini kosar
+- `tools/_packs/pack_m42_m58.ps1 -To 57` canonical olarak full `M42 -> M57` green hattini kosar
 
 ## 4) Kanonik komutlar
 M57 full pack:
@@ -66,7 +66,7 @@ Sadece scaffold/files dogrulama:
 
 Post-M41 external orchestrator:
 
-`tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+`tools\_packs\pack_m42_m58.ps1 -To 57 -RepoRoot D:\servis-platform -NoBuild`
 
 ## 5) M57 green sayma kosulu
 M57 ancak su durumda resmi green sayilir:

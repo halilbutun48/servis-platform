@@ -25,13 +25,13 @@ konularinda sertlestirilmesidir.
 - `mobile/package.json` icine `check:m57.4` ve `build:internal:android` alias'i eklendi.
 - `Today` ekranindaki release hazirligi karti Android preview / production bundle / env asamasi satirlarini gosterir.
 - `tools/pack_m57_mobile_hardening.ps1` artik `M57.1 -> M57.4` zincirini birlikte dogrular.
-- `tools/pack_post_m41_to_m57.ps1` varsayilan olarak full M57 pack kosar.
+- `tools/_packs/pack_m42_m58.ps1 -To 57` canonical olarak full M57 phase rerun komutudur.
 
 ## Cikis artefaktlari
 - `docs/RUNBOOK_M57_MOBILE_HARDENING.md`
 - `tools/pack_m57_mobile_hardening.ps1`
 - `tools/check_m57_mobile_hardening_repo_contract.ps1`
-- `tools/pack_post_m41_to_m57.ps1`
+- `tools/_packs/pack_m42_m58.ps1 -To 57`
 - `mobile/scripts/m57_1_foreground_gps_publish_check.js`
 - `mobile/scripts/m57_2_offline_online_recovery_check.js`
 - `mobile/scripts/m57_3_session_kvkk_blocking_check.js`

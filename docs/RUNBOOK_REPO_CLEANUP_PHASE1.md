@@ -16,16 +16,9 @@ Gerekçe:
 - backend `_dmmf*` yardımcıları tek seferlik inceleme script’i gibi duruyor ve runtime hattına bağlı görünmüyor
 
 ## Bu fazda henüz silinmeyen ama inceleme listesinde kalanlar
-- `mobile/src/lib/observability.js`
-- `mobile/src/lib/fieldAcceptance.js`
-- `backend/scripts/full-smoke.js`
-- `web/src/live/useOnlineStatus.js`
-- `web/src/live/useAutoFlushOnOnline.js`
 
-Bunlar için durum:
-- aktif runtime zincirinde zayıf veya hiç bağlantı görünmüyor
-- ancak bazıları milestone check / doküman / gelecekteki milestone notlarıyla bağlı
-- bu yüzden ikinci faz kararı olmadan silinmemeleri gerekir
+Bu ilk liste temizlendi; yeni cleanup adaylari ikinci audit turunda belirlenecek.
+
 
 ## Yeni audit hattı
 - `backend/scripts/repo_deep_audit.js`

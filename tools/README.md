@@ -63,7 +63,7 @@ Audit çıktısı:
 - M55 pack: `tools\pack_m55_reports_no_show.ps1 -RepoRoot D:\servis-platform`
 - M56 pack: `tools\pack_m56_kvkk_eta_quality.ps1 -RepoRoot D:\servis-platform`
 - M57 — Mobile Hardening resmi green tabanı sonrasındaki komutlar: `check:m57.1`, `check:m57.2`, `check:m57.3`, `check:m57.4`
-- M57 post-M41 full pack: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- M57 full phase rerun: `tools\_packs\pack_m42_m58.ps1 -To 57 -RepoRoot D:\servis-platform -NoBuild`
 - M58 — Final Pilot Readiness komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 - M58 readiness contract manuel pilot kabul ile kapanır.
 

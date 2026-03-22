@@ -33,7 +33,6 @@ async function main() {
   const requiredFiles = [
     "backend/src/ops/observabilityManifest.js",
     "backend/src/routes/observability.js",
-    "mobile/src/lib/observability.js",
     "web/src/panels/superadmin/ObservabilityPanel.jsx",
     "docs/RUNBOOK_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md",
     "docs/MILESTONE_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md",
@@ -54,7 +53,6 @@ async function main() {
   const server = read("backend/src/server.js");
   const manifest = read("backend/src/ops/observabilityManifest.js");
   const route = read("backend/src/routes/observability.js");
-  const mobile = read("mobile/src/lib/observability.js");
   const panel = read("web/src/panels/superadmin/ObservabilityPanel.jsx");
   const runbook = read("docs/RUNBOOK_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md");
   const checklist = read("docs/CHECKLIST_SSOT.md");
@@ -70,8 +68,8 @@ async function main() {
   must("manifest defines widgets and event types", includesAny(manifest, ["M59_OBSERVABILITY_WIDGETS", "mobileHealthEventTypes", "gpsReliability"]));
   must("route exposes manifest and summary", includesAny(route, ["/manifest", "/health-summary", "/event-types"]));
 
-  console.log("INFO checking mobile and web skeleton");
-  must("mobile helper defines health event types", includesAny(mobile, ["MOBILE_HEALTH_EVENT_TYPES", "GPS_PUBLISH_SUCCESS", "SURUCUNUN_TELEFON_GPSI"]));
+  console.log("INFO checking canonical manifest and web skeleton");
+  must("manifest defines health event types and GPS wording", includesAny(manifest, ["MOBILE_HEALTH_EVENT_TYPES", "GPS_PUBLISH_SUCCESS", "SURUCUNUN_TELEFON_GPSI"]));
   must("panel shows M59 observability cards", includesAny(panel, ["M59 Gözlemleme Merkezi", "GPS güven skoru", "Mobil sağlık olayları"]));
 
   console.log("INFO checking M59 runbook language");

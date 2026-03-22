@@ -26,7 +26,6 @@ Write-Host "INFO Checking M59 files"
   'backend\scripts\m59_observability_field_diagnostics_check.js',
   'backend\src\ops\observabilityManifest.js',
   'backend\src\routes\observability.js',
-  'mobile\src\lib\observability.js',
   'web\src\panels\superadmin\ObservabilityPanel.jsx',
   'tools\pack_m59_observability_field_diagnostics.ps1',
   'tools\check_m59_observability_field_diagnostics_repo_contract.ps1',
@@ -56,7 +55,6 @@ $runbook = ReadText 'docs\RUNBOOK_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md'
 $milestone = ReadText 'docs\MILESTONE_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md'
 $route = ReadText 'backend\src\routes\observability.js'
 $manifest = ReadText 'backend\src\ops\observabilityManifest.js'
-$mobile = ReadText 'mobile\src\lib\observability.js'
 $panel = ReadText 'web\src\panels\superadmin\ObservabilityPanel.jsx'
 $pack = ReadText 'tools\pack_m59_observability_field_diagnostics.ps1'
 $script = ReadText 'backend\scripts\m59_observability_field_diagnostics_check.js'
@@ -74,7 +72,7 @@ MustContainAny $runbook @('M59 GOZLEMLEME','mobil saglik olaylari iskeleti','GPS
 MustContainAny $milestone @('M59 GOZLEMLEME','ObservabilityPanel.jsx','pack_m59_observability_field_diagnostics.ps1') 'milestone documents M59 outputs'
 MustContainAny $route @('/manifest','/health-summary','/event-types') 'observability route exposes manifest/summary endpoints'
 MustContainAny $manifest @('M59_OBSERVABILITY_WIDGETS','mobileHealthEventTypes','gpsReliability') 'manifest defines M59 widgets and event types'
-MustContainAny $mobile @('MOBILE_HEALTH_EVENT_TYPES','GPS_PUBLISH_SUCCESS','SURUCUNUN_TELEFON_GPSI') 'mobile helper defines health events and GPS wording'
+MustContainAny $manifest @('MOBILE_HEALTH_EVENT_TYPES','GPS_PUBLISH_SUCCESS','SURUCUNUN_TELEFON_GPSI') 'manifest defines health events and GPS wording'
 MustContainAny $panel @('M59','GPS','Mobil') 'web panel shows M59 cards'
 MustContainAny $pack @('m59_observability_field_diagnostics_check.js','check_m59_observability_field_diagnostics_repo_contract.ps1','PACK PASS OK') 'm59 pack wires runtime and repo contract'
 MustContainAny $script @('M59 GOZLEMLEME','ObservabilityPanel.jsx','GPS') 'm59 runtime check covers skeleton baseline'

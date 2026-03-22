@@ -19,7 +19,6 @@ Amaç, saha oncesi urunu kor ucus modundan cikarmaktir.
 - `backend/scripts/m59_observability_field_diagnostics_check.js`
 - `backend/src/ops/observabilityManifest.js`
 - `backend/src/routes/observability.js`
-- `mobile/src/lib/observability.js`
 - `web/src/panels/superadmin/ObservabilityPanel.jsx`
 - `tools/pack_m59_observability_field_diagnostics.ps1`
 - `tools/check_m59_observability_field_diagnostics_repo_contract.ps1`
@@ -30,5 +29,5 @@ Amaç, saha oncesi urunu kor ucus modundan cikarmaktir.
 - `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
 
 ## Green yorumu
-M59 tamam sayilmasi icin backend / mobile / web iskeleti ve SSOT birlikte dogrulanmalidir.
+M59 tamam sayilmasi icin backend manifest / route / web iskeleti ve SSOT birlikte dogrulanmalidir.
 Tek bir dosya eklenmis olmasi yeterli degildir.

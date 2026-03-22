@@ -19,7 +19,6 @@ Amac, saha uygunlugu kararini dokuman disindan cikarip urun icine tasimaktir.
 - `backend/scripts/m60_field_acceptance_center_check.js`
 - `backend/src/ops/fieldAcceptanceManifest.js`
 - `backend/src/routes/fieldAcceptance.js`
-- `mobile/src/lib/fieldAcceptance.js`
 - `web/src/panels/superadmin/FieldAcceptanceCenter.jsx`
 - `tools/pack_m60_field_acceptance_center.ps1`
 - `tools/check_m60_field_acceptance_center_repo_contract.ps1`
@@ -30,5 +29,5 @@ Amac, saha uygunlugu kararini dokuman disindan cikarip urun icine tasimaktir.
 - `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 
 ## Green yorumu
-M60 tamam sayilmasi icin backend / mobile / web iskeleti ve SSOT birlikte dogrulanmalidir.
+M60 tamam sayilmasi icin backend manifest / route / web iskeleti ve SSOT birlikte dogrulanmalidir.
 Tek bir dokuman veya tek bir endpoint eklenmis olmasi yeterli degildir.

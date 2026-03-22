@@ -171,11 +171,6 @@ const findings = {
     "web/src/panels/room/LiveProgressPanel.jsx",
   ].map((file) => ({ file, exists: exists(file) })),
   deferredReview: [
-    "mobile/src/lib/observability.js",
-    "mobile/src/lib/fieldAcceptance.js",
-    "backend/scripts/full-smoke.js",
-    "web/src/live/useOnlineStatus.js",
-    "web/src/live/useAutoFlushOnOnline.js",
   ],
 };
 

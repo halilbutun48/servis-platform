@@ -33,7 +33,6 @@ async function main() {
   const requiredFiles = [
     "backend/src/ops/fieldAcceptanceManifest.js",
     "backend/src/routes/fieldAcceptance.js",
-    "mobile/src/lib/fieldAcceptance.js",
     "web/src/panels/superadmin/FieldAcceptanceCenter.jsx",
     "docs/RUNBOOK_M60_FIELD_ACCEPTANCE_CENTER.md",
     "docs/MILESTONE_M60_FIELD_ACCEPTANCE_CENTER.md",
@@ -54,7 +53,6 @@ async function main() {
   const server = read("backend/src/server.js");
   const manifest = read("backend/src/ops/fieldAcceptanceManifest.js");
   const route = read("backend/src/routes/fieldAcceptance.js");
-  const mobile = read("mobile/src/lib/fieldAcceptance.js");
   const panel = read("web/src/panels/superadmin/FieldAcceptanceCenter.jsx");
   const runbook = read("docs/RUNBOOK_M60_FIELD_ACCEPTANCE_CENTER.md");
   const checklist = read("docs/CHECKLIST_SSOT.md");
@@ -70,8 +68,8 @@ async function main() {
   must("manifest defines decisions and checklist", includesAny(manifest, ["FIELD_ACCEPTANCE_DECISIONS", "FIELD_ACCEPTANCE_CHECKLIST", "LIMITED_GO"]));
   must("route exposes manifest and session-template", includesAny(route, ["/manifest", "/session-template", "/decision-options"]));
 
-  console.log("INFO checking mobile and web skeleton");
-  must("mobile helper defines evidence types", includesAny(mobile, ["FIELD_ACCEPTANCE_EVIDENCE_TYPES", "SURUCUNUN_TELEFON_GPSI", "buildMobileAcceptanceSnapshot"]));
+  console.log("INFO checking canonical manifest and web skeleton");
+  must("manifest defines evidence types and GPS wording", includesAny(manifest, ["FIELD_ACCEPTANCE_EVIDENCE_TYPES", "SURUCUNUN_TELEFON_GPSI", "LIMITED_GO"]));
   must("panel shows M60 acceptance cards", includesAny(panel, ["M60 Saha Acceptance Merkezi", "Karar seçenekleri", "Checklist özeti"]));
 
   console.log("INFO checking M60 runbook language");

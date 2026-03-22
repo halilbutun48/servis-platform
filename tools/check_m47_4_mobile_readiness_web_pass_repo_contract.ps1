@@ -81,6 +81,6 @@ MustContainRegexAny $primer @('M47\.4\s*[ -]?\s*Mobile\s+Readiness\s+Web\s+Pass'
 MustContainRegexAny $checklist @('M47\.3\s+PRODUCTION\s+RESILIENCE\s*\+\s*EDGE\s+SECURITY\s+PACK\s+PASS\s+OK','M47\.3.+Production\s+Resilience\s*\+\s*Edge\s+Security') 'checklist includes m47.3 green'
 MustContainRegexAny $checklist @('M47\.4\s+MOBILE\s+READINESS\s+WEB\s+PASS','M47\.4.+Mobile\s+Readiness\s+Web\s+Pass') 'checklist includes m47.4 route'
 MustContainRegexAny $startpack @('M47\.4\s*[ -]?\s*Mobile\s+Readiness\s+Web\s+Pass','pack_m47_4_mobile_readiness_web_pass\.ps1') 'startpack includes m47.4 route'
-MustContainAny $readme @('M47.4 mobile readiness','M47.4 mobile readiness web pass','pack_post_m41_to_m54_4.ps1') 'tools readme mentions m47.4'
+MustContainAny $readme @('M47.4 mobile readiness','M47.4 mobile readiness web pass','pack_m47_4_mobile_readiness_web_pass.ps1') 'tools readme mentions m47.4'
 
 Write-Host 'M47.4 MOBILE READINESS WEB PASS REPO CONTRACT PASS'

@@ -48,7 +48,7 @@ async function main() {
     "docs/MILESTONE_M58_FINAL_PILOT_READINESS.md",
     "tools/pack_m58_final_pilot_readiness.ps1",
     "tools/check_m58_final_pilot_readiness_repo_contract.ps1",
-    "tools/pack_post_m41_to_m57.ps1"
+    "tools/_packs/pack_m42_m58.ps1"
   ];
 
   console.log("INFO checking required M58 pilot files");

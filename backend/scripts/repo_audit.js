@@ -162,7 +162,6 @@ for (const p of allFiles) {
   if (
     relPath === "backend/_dmmf_shift_offer.cjs" ||
     relPath === "backend/_shift_offer_fields.cjs" ||
-    relPath === "backend/scripts/full-smoke.js" ||
     name.startsWith("_")
   ) {
     if (!basenameReferenced(relPath, textMap)) {

@@ -63,7 +63,7 @@ Bu komut:
 
 ## M47.4 + M57 + M58 markerları
 - M47.4 Mobile Readiness Web Pass: `tools\pack_m47_4_mobile_readiness_web_pass.ps1 -RepoRoot D:\servis-platform`
-- M57 full pack: `tools\pack_post_m41_to_m57.ps1 -RepoRoot D:\servis-platform -NoBuild`
+- M57 full phase rerun: `tools\_packs\pack_m42_m58.ps1 -To 57 -RepoRoot D:\servis-platform -NoBuild`
 - M57 scaffold komutu: `tools\pack_m57_mobile_hardening.ps1 -RepoRoot D:\servis-platform -ScaffoldOnly`
 - M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
 - M58 resmi green değildir; manuel pilot kabul gerekir.

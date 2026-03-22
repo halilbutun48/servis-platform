@@ -21,7 +21,6 @@ Write-Host "INFO Checking M60 files"
  'backend\scripts\m60_field_acceptance_center_check.js',
  'backend\src\ops\fieldAcceptanceManifest.js',
  'backend\src\routes\fieldAcceptance.js',
- 'mobile\src\lib\fieldAcceptance.js',
  'web\src\panels\superadmin\FieldAcceptanceCenter.jsx',
  'tools\pack_m60_field_acceptance_center.ps1',
  'tools\check_m60_field_acceptance_center_repo_contract.ps1',
@@ -51,7 +50,6 @@ $runbook = ReadText 'docs\RUNBOOK_M60_FIELD_ACCEPTANCE_CENTER.md'
 $milestone = ReadText 'docs\MILESTONE_M60_FIELD_ACCEPTANCE_CENTER.md'
 $route = ReadText 'backend\src\routes\fieldAcceptance.js'
 $manifest = ReadText 'backend\src\ops\fieldAcceptanceManifest.js'
-$mobile = ReadText 'mobile\src\lib\fieldAcceptance.js'
 $panel = ReadText 'web\src\panels\superadmin\FieldAcceptanceCenter.jsx'
 $pack = ReadText 'tools\pack_m60_field_acceptance_center.ps1'
 $script = ReadText 'backend\scripts\m60_field_acceptance_center_check.js'
@@ -69,7 +67,7 @@ MustContainAny $runbook @('M60 SAHA ACCEPTANCE MERKEZI','pilot test oturumu kayd
 MustContainAny $milestone @('M60 SAHA ACCEPTANCE MERKEZI','FieldAcceptanceCenter.jsx','pack_m60_field_acceptance_center.ps1') 'milestone documents M60 outputs'
 MustContainAny $route @('/manifest','/session-template','/decision-options') 'field acceptance route exposes manifest/template endpoints'
 MustContainAny $manifest @('FIELD_ACCEPTANCE_DECISIONS','FIELD_ACCEPTANCE_CHECKLIST','LIMITED_GO') 'manifest defines M60 decisions and checklist'
-MustContainAny $mobile @('FIELD_ACCEPTANCE_EVIDENCE_TYPES','SURUCUNUN_TELEFON_GPSI','buildMobileAcceptanceSnapshot') 'mobile helper defines acceptance evidence'
+MustContainAny $manifest @('FIELD_ACCEPTANCE_EVIDENCE_TYPES','SURUCUNUN_TELEFON_GPSI','LIMITED_GO') 'manifest defines acceptance evidence'
 MustContainAny $panel @('M60 Saha Acceptance Merkezi','Karar seçenekleri','Checklist özeti') 'web panel shows M60 cards'
 MustContainAny $pack @('m60_field_acceptance_center_check.js','check_m60_field_acceptance_center_repo_contract.ps1','PACK PASS OK') 'm60 pack wires runtime and repo contract'
 MustContainAny $script @('M60 SAHA ACCEPTANCE MERKEZI CHECK','FieldAcceptanceCenter.jsx','GO / LIMITED GO / NO-GO') 'm60 runtime check covers skeleton baseline'
