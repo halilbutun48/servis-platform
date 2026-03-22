@@ -1,16 +1,5 @@
-param([string]$RepoRoot = (Resolve-Path ".").Path)
+param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '_pack_runner.ps1')
 
-Write-Host ""
-Write-Host "=== M66 OPERATION REASSIGNMENT ==="
-Write-Host "INFO This pack verifies M66 repo contract and feature skeleton."
-
-& (Join-Path $RepoRoot 'tools\check_m66_operation_reassignment_repo_contract.ps1') -RepoRoot $RepoRoot
-if (-not $?) { throw 'repo contract check failed' }
-
-node (Join-Path $RepoRoot 'backend/scripts/m66check.js')
-if (-not $?) { throw 'backend m66 check failed' }
-
-Write-Host ""
-Write-Host "=== M66 OPERATION REASSIGNMENT PACK PASS OK ==="
-Write-Host "INFO M66 verification/smoke can run after broader repo cleanup if desired."
+Invoke-StandardPack -RepoRoot $RepoRoot -Title 'M66 OPERATION REASSIGNMENT' -Info 'This pack verifies M66 repo contract and feature skeleton.' -RepoContractScript 'tools/check_m66_operation_reassignment_repo_contract.ps1' -NodeScript 'backend/scripts/m66check.js' -SuccessTitle 'M66 OPERATION REASSIGNMENT' -SuccessInfo 'M66 verification/smoke can run after broader repo cleanup if desired.'

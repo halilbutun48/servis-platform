@@ -47,11 +47,34 @@ async function main() {
   const runbook = read("docs/RUNBOOK_M64_NATURAL_COPILOT_LAYER.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must("readme points to M64 route", includesAny(readme, ["M63 green", "M64 — Doğal Copilot Katmanı", "pack_m64_natural_copilot_layer.ps1"]));
-  must("project spec reflects natural copilot layer", includesAny(projectSpec, ["daha doğal Türkçe cevap katmanı", "kısa konuşma hafızası", "daha basit anlat"]));
-  must("primer reflects M63 green and M64 active", includesAny(primer, ["M63 — Güven + Kalite + Hizmet Değerlendirme` resmi green oldu", "M64 — Doğal Copilot Katmanı", "pack_m64_natural_copilot_layer.ps1"]));
-  must("startpack reflects M64 opening", includesAny(startpack, ["M64 — Doğal Copilot Katmanı", "M64 başlangıç notu", "M64` bitmeden `M65"]));
-  must("checklist marks M63 green and keeps M64 open", includesAny(checklist, ["[x] `M63 — Güven + Kalite + Hizmet Değerlendirme`", "[ ] `M64 — Doğal Copilot Katmanı`"]));
+  must("readme points to M64 route or later official state", includesAny(readme, [
+    "M63 green",
+    "M64 — Doğal Copilot Katmanı",
+    "pack_m64_natural_copilot_layer.ps1",
+    "post-M66 functional"
+  ]));
+  must("project spec reflects natural copilot layer", includesAny(projectSpec, [
+    "daha doğal Türkçe cevap katmanı",
+    "kısa konuşma hafızası",
+    "daha basit anlat"
+  ]));
+  must("primer reflects M64 route or later official state", includesAny(primer, [
+    "M63 — Güven + Kalite + Hizmet Değerlendirme` resmi green oldu",
+    "M64 — Doğal Copilot Katmanı",
+    "pack_m64_natural_copilot_layer.ps1",
+    "post-M66 functional"
+  ]));
+  must("startpack reflects M64 opening or later official state", includesAny(startpack, [
+    "M64 — Doğal Copilot Katmanı",
+    "M64 başlangıç notu",
+    "M64` bitmeden `M65",
+    "post-M66 functional"
+  ]));
+  must("checklist tracks M64 milestone or later official state", includesAny(checklist, [
+    "[ ] `M64 — Doğal Copilot Katmanı`",
+    "[x] `M64 — Doğal Copilot Katmanı`",
+    "M66 — Operasyonel Reassignment kapanışı"
+  ]));
 
   console.log("INFO checking backend and web skeleton");
   must("server imports natural copilot router", includesAny(server, ["naturalCopilotRouter", "./routes/naturalCopilot.js"]));

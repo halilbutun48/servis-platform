@@ -1,26 +1,6 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
-function NormalizeText([string]$s) {
-  if ($null -eq $s) { return "" }
-  $t = [string]$s
-  $pairs = @(
-    @([string][char]0x0130,'I'), @([string][char]0x0131,'i'),
-    @([string][char]0x015E,'S'), @([string][char]0x015F,'s'),
-    @([string][char]0x011E,'G'), @([string][char]0x011F,'g'),
-    @([string][char]0x00DC,'U'), @([string][char]0x00FC,'u'),
-    @([string][char]0x00D6,'O'), @([string][char]0x00F6,'o'),
-    @([string][char]0x00C7,'C'), @([string][char]0x00E7,'c'),
-    @([string][char]0x2014,'-'), @([string][char]0x2013,'-'),
-    @([string][char]0x2192,'->'), @('`','')
-  )
-  foreach ($pair in $pairs) { $t = $t.Replace($pair[0], $pair[1]) }
-  $t = $t.ToLowerInvariant()
-  $t = [regex]::Replace($t, '\s+', ' ')
-  return $t.Trim()
-}
-function ReadText([string]$rel){ [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8) }
-function MustExist([string]$rel){ if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }; Write-Host "OK $rel exists" }
-function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ $nTxt = NormalizeText $txt; foreach ($n in $needles) { if ($nTxt.Contains((NormalizeText ([string]$n)))) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
 
 Write-Host 'INFO Checking M63 files'
 @(
@@ -42,42 +22,43 @@ Write-Host 'INFO Checking M63 files'
  'tools\CHECKLIST_SSOT.md',
  'tools\README.md',
  'docs\MILESTONE_REGISTRY_V1.md'
-) | ForEach-Object { MustExist $_ }
+) | ForEach-Object { Assert-RepoContractExists -RepoRoot $RepoRoot -RelativePath $_ }
 
-$readme = ReadText 'README.md'
-$projectSpec = ReadText 'docs\PROJECT_SPEC_V1.md'
-$primer = ReadText 'docs\PRIMER_SSOT.md'
-$startpack = ReadText 'docs\STARTPACK_V1.md'
-$checklist = ReadText 'docs\CHECKLIST_SSOT.md'
-$backlog = ReadText 'docs\NEXT_BACKLOG_V1.md'
-$toolsPrimer = ReadText 'tools\PRIMER_SNAPSHOT.md'
-$toolsChecklist = ReadText 'tools\CHECKLIST_SSOT.md'
-$toolsReadme = ReadText 'tools\README.md'
-$registry = ReadText 'docs\MILESTONE_REGISTRY_V1.md'
-$runbook = ReadText 'docs\RUNBOOK_M63_TRUST_QUALITY_SERVICE_EVALUATION.md'
-$milestone = ReadText 'docs\MILESTONE_M63_TRUST_QUALITY_SERVICE_EVALUATION.md'
-$route = ReadText 'backend\src\routes\trustQuality.js'
-$manifest = ReadText 'backend\src\ops\trustQualityManifest.js'
-$panel = ReadText 'web\src\panels\superadmin\TrustQualityPanel.jsx'
-$pack = ReadText 'tools\pack_m63_trust_quality_service_evaluation.ps1'
-$script = ReadText 'backend\scripts\m63_trust_quality_service_evaluation_check.js'
+$readme = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'README.md'
+$projectSpec = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\PROJECT_SPEC_V1.md'
+$primer = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\PRIMER_SSOT.md'
+$startpack = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\STARTPACK_V1.md'
+$checklist = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\CHECKLIST_SSOT.md'
+$backlog = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\NEXT_BACKLOG_V1.md'
+$toolsPrimer = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools\PRIMER_SNAPSHOT.md'
+$toolsChecklist = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools\CHECKLIST_SSOT.md'
+$toolsReadme = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools\README.md'
+$registry = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\MILESTONE_REGISTRY_V1.md'
+$runbook = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\RUNBOOK_M63_TRUST_QUALITY_SERVICE_EVALUATION.md'
+$milestone = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\MILESTONE_M63_TRUST_QUALITY_SERVICE_EVALUATION.md'
+$route = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend\src\routes\trustQuality.js'
+$manifest = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend\src\ops\trustQualityManifest.js'
+$panel = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'web\src\panels\superadmin\TrustQualityPanel.jsx'
+$pack = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools\pack_m63_trust_quality_service_evaluation.ps1'
+$script = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend\scripts\m63_trust_quality_service_evaluation_check.js'
 
-MustContainAny $readme @('m62 green','m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1') 'root readme reflects M63 route'
-MustContainAny $projectSpec @('hizmet alan kurum degerlendirmesi','saglayici kalite','karar destek') 'project spec reflects trust and evaluation layer'
-MustContainAny $primer @('m62 - ticari omurga guclendirme','m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1') 'primer ssot reflects M62 green and M63 active'
-MustContainAny $startpack @('m63 - guven + kalite + hizmet degerlendirme','m63 baslangic notu','m63 bitmeden m64') 'startpack reflects M63 opening'
-MustContainAny $checklist @('[x] m62 - ticari omurga guclendirme','[ ] m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1') 'checklist marks M62 green and keeps M63 open'
-MustContainAny $backlog @('m62 ticari omurga guclendirme pack pass ok','m63 - guven + kalite + hizmet degerlendirme','trust quality service evaluation') 'backlog points to M63'
-MustContainAny $toolsPrimer @('m62 - ticari omurga guclendirme','m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1') 'tools primer reflects M63 route'
-MustContainAny $toolsChecklist @('[x] m62 - ticari omurga guclendirme','[ ] m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1') 'tools checklist marks M62 green and keeps M63 open'
-MustContainAny $toolsReadme @('pack_m63_trust_quality_service_evaluation.ps1','m63 green olmadan m64 acilmaz','aktif hat m63') 'tools readme lists M63 pack and sequencing rule'
-MustContainAny $registry @('m62 - ticari omurga guclendirme - green','m63 - guven + kalite + hizmet degerlendirme - aktif') 'registry lists current official route'
-MustContainAny $runbook @('m63 guven + kalite + hizmet degerlendirme','hizmet alan kurum degerlendirmesi','m63 green olmadan m64') 'runbook defines M63 scope'
-MustContainAny $milestone @('m63 guven + kalite + hizmet degerlendirme','trustqualitypanel.jsx','pack_m63_trust_quality_service_evaluation.ps1') 'milestone documents M63 outputs'
-MustContainAny $route @('/manifest','/evaluation-template','/provider-signal-template') 'trust quality route exposes summary endpoints'
-MustContainAny $manifest @('trust_quality_dimensions','hizmet alan degerlendirmesi','karar destek yuzeyi') 'manifest defines M63 trust dimensions'
-MustContainAny $panel @('m63 guven + kalite + hizmet degerlendirme','hizmet alan degerlendirmesi','saglayici kalite sinyali') 'web panel shows M63 cards'
-MustContainAny $pack @('m63_trust_quality_service_evaluation_check.js','check_m63_trust_quality_service_evaluation_repo_contract.ps1','pack pass ok') 'm63 pack wires runtime and repo contract'
-MustContainAny $script @('m63 guven + kalite + hizmet degerlendirme check','/api/trust-quality') 'm63 runtime check covers skeleton baseline'
+# forward-compatible repo state: historical M63-open OR current post-M66/green-base
+Assert-RepoContractContainsAny $readme @('m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1','post-m66 functional','m66 operasyonel reassignment') 'root readme reflects M63 route or later official state'
+Assert-RepoContractContainsAny $projectSpec @('hizmet alan kurum degerlendirmesi','saglayici kalite','karar destek') 'project spec reflects trust and evaluation layer'
+Assert-RepoContractContainsAny $primer @('m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1','post-m66 functional','m66 operasyonel reassignment') 'primer ssot reflects M63 route or later official state'
+Assert-RepoContractContainsAny $startpack @('m63 - guven + kalite + hizmet degerlendirme','m63 baslangic notu','post-m66 functional','pack_m66_operation_reassignment.ps1') 'startpack reflects M63 route or later official state'
+Assert-RepoContractContainsAny $checklist @('[ ] m63 - guven + kalite + hizmet degerlendirme','[x] m63 - guven + kalite + hizmet degerlendirme') 'checklist tracks M63 milestone'
+Assert-RepoContractContainsAny $backlog @('m63 - guven + kalite + hizmet degerlendirme','trust quality service evaluation','post-m66 functional') 'backlog points to M63 or later state'
+Assert-RepoContractContainsAny $toolsPrimer @('m63 - guven + kalite + hizmet degerlendirme','pack_m63_trust_quality_service_evaluation.ps1','post-m66 functional','m66 operasyonel reassignment') 'tools primer reflects M63 route or later official state'
+Assert-RepoContractContainsAny $toolsChecklist @('[ ] m63 - guven + kalite + hizmet degerlendirme','[x] m63 - guven + kalite + hizmet degerlendirme') 'tools checklist tracks M63 milestone'
+Assert-RepoContractContainsAny $toolsReadme @('pack_m63_trust_quality_service_evaluation.ps1','m63 green olmadan m64 acilmaz','post-m66 functional','pack_m66_operation_reassignment.ps1') 'tools readme reflects M63 route or later official state'
+Assert-RepoContractContainsAny $registry @('m63 - guven + kalite + hizmet degerlendirme - aktif','m63 - guven + kalite + hizmet degerlendirme - green','m63 - guven + kalite + hizmet degerlendirme - green-base') 'registry lists current official M63 state'
+Assert-RepoContractContainsAny $runbook @('m63 guven + kalite + hizmet degerlendirme','hizmet alan kurum degerlendirmesi','m63 green olmadan m64') 'runbook defines M63 scope'
+Assert-RepoContractContainsAny $milestone @('m63 guven + kalite + hizmet degerlendirme','trustqualitypanel.jsx','pack_m63_trust_quality_service_evaluation.ps1') 'milestone documents M63 outputs'
+Assert-RepoContractContainsAny $route @('/manifest','/evaluation-template','/provider-signal-template') 'trust quality route exposes summary endpoints'
+Assert-RepoContractContainsAny $manifest @('trust_quality_dimensions','hizmet alan degerlendirmesi','karar destek yuzeyi') 'manifest defines M63 trust dimensions'
+Assert-RepoContractContainsAny $panel @('m63 guven + kalite + hizmet degerlendirme','hizmet alan degerlendirmesi','saglayici kalite sinyali') 'web panel shows M63 cards'
+Assert-RepoContractContainsAny $pack @('m63_trust_quality_service_evaluation_check.js','check_m63_trust_quality_service_evaluation_repo_contract.ps1','pack pass ok') 'm63 pack wires runtime and repo contract'
+Assert-RepoContractContainsAny $script @('m63 guven + kalite + hizmet degerlendirme check','/api/trust-quality') 'm63 runtime check covers skeleton baseline'
 
 Write-Host 'M63 GUVEN + KALITE + HIZMET DEGERLENDIRME REPO CONTRACT PASS'
