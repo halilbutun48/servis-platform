@@ -1,7 +1,8 @@
-// web/src/layout/NavDock.jsx
+﻿// web/src/layout/NavDock.jsx
 import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
+import BrandMark from "../components/BrandMark";
 
 function Item({ label, path, active, badge }) {
   return (
@@ -180,6 +181,7 @@ export default function NavDock({ role, path, me }) {
 
   return (
     <div className="navDock">
+      <div style={{ marginBottom: 12 }}><BrandMark compact subtitle="Operasyon menüsü" /></div>
       <div className="navDockTitle">
         <div style={{ fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", opacity: 0.8 }}>Vardis</div>
         <div style={{ fontSize: 18, fontWeight: 700, marginTop: 2 }}>

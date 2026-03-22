@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import BrandMark from "../../components/BrandMark";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -115,10 +116,12 @@ export default function AuthInvitesPanel() {
 
   return (
     <div className="wrap">
+      <div className="card" style={{ marginBottom: 12 }}>
+        <BrandMark subtitle="Giriş davetleri ve erişim akışı" />
+      </div>
       <div className="card">
-        <div className="muted" style={{ letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Vardis</div>
         <div className="title">{isRoom ? "Sürücü Giriş Davetleri" : "Personel Giriş Davetleri"}</div>
-        <div className="muted">Şifre dağıtmak yerine doğrulanmış Google hesabıyla giriş aç. Vardis üzerinde davet yoksa Google login reddedilir.</div>
+        <div className="muted">Şifre dağıtmak yerine doğrulanmış Google hesabıyla giriş aç. Invite yoksa Google login reddedilir.</div>
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>

@@ -1,9 +1,10 @@
-//web/src/layout/AppShell.jsx
+﻿//web/src/layout/AppShell.jsx
 import NavDock from "./NavDock";
 import KvkkConsentGate from "../panels/shared/KvkkConsentGate";
 import TotpStepUpCard from "../panels/shared/TotpStepUpCard";
 import { useSession } from "../state/session";
 import TabletOpsQuickBar from "../components/TabletOpsQuickBar";
+import BrandMark from "../components/BrandMark";
 
 export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
@@ -20,6 +21,7 @@ export default function AppShell({ path, children }) {
       <NavDock role={role} path={path} me={me} />
       <div className="shellMain">
         <div className="shellTop">
+          <div><BrandMark compact subtitle="Operasyon paneli" /></div>
           <div>
             <div className="title">Vardis</div>
             <div className="muted">

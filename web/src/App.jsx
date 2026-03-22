@@ -1,4 +1,4 @@
-// web/src/App.jsx
+﻿// web/src/App.jsx
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
@@ -6,6 +6,7 @@ import { login } from "./api";
 import { useHashRoute, navigate } from "./router";
 import { companyBase, normalizeCompanyPath } from "./utils/paths";
 import GoogleLoginButton from "./components/GoogleLoginButton";
+import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { startLiveWs, stopLiveWs } from "./live/ws";
 
@@ -112,9 +113,7 @@ function LoginCard() {
   return (
     <div className="wrap">
       <div className="card">
-        <div className="muted" style={{ letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Vardis</div>
-        <div className="title" style={{ fontSize: 28, lineHeight: 1.15 }}>Personel servis operasyonunu sadeleştirir.</div>
-        <div className="muted" style={{ marginTop: 8 }}>Tek panel yapısı, rol bazlı akış ve sahaya uygun sade kullanım.</div>
+        <BrandMark subtitle="Personel servis operasyonunu sadeleştirir." centered />
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>

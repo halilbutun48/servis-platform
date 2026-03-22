@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import GoogleLoginButton from "../../components/GoogleLoginButton";
+import BrandMark from "../../components/BrandMark";
 
 function useInviteToken(path) {
   return useMemo(() => {
@@ -78,9 +79,11 @@ export default function AcceptInvitePanel({ path }) {
 
   return (
     <div className="wrap">
+      <div className="card" style={{ marginBottom: 12 }}>
+        <BrandMark subtitle="Giriş daveti ve hesap erişimi" />
+      </div>
       <div className="card">
-        <div className="muted" style={{ letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>Vardis</div>
-          <div className="title">Giriş Daveti</div>
+        <div className="title">Giriş Daveti</div>
         <div className="muted" style={{ marginTop: 8 }}>
           {info ? `${info.title || "Giriş Daveti"}${info.company?.name ? ` • ${info.company.name}` : info.room?.name ? ` • ${info.room.name}` : ""}` : "Davet bilgisi okunuyor..."}
         </div>
