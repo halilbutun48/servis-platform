@@ -301,6 +301,25 @@ export default function DriversPanel() {
     }
   }
 
+  async function resetDevice(driver) {
+    if (!driver?.id) return;
+    const ok = window.confirm(`${driver.fullName} için kayıtlı cihaz bağı ve aktif erişimler sıfırlansın mı?\n\nBu işlemden sonra sürücü yeni cihazda tekrar giriş yapabilir. Gerekirse ardından yeni PIN üret.`);
+    if (!ok) return;
+
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api(`/api/drivers/${driver.id}/reset-device`, { method: "POST", token, body: {} });
+      setIssuedCreds(null);
+      showToast(r?.hadDeviceBinding ? "Cihaz bağı sıfırlandı" : "Kayıtlı cihaz bağı yoktu, erişim sıfırlandı", "warn");
+      await load();
+    } catch (e) {
+      setErr(getErrMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function copyIssuedCreds() {
     if (!issuedCreds?.driverCode || !issuedCreds?.temporaryPin) return;
     const text = `Sürücü Kodu: ${issuedCreds.driverCode}
@@ -702,6 +721,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                         <td className="muted">
                           {d.driverCode || "-"}
                           {d.pinTemporary ? <div className="muted">Geçici PIN aktif</div> : null}
+                          {d.user?.deviceId ? <div className="muted">Cihaz bağlı</div> : <div className="muted">Cihaz serbest</div>}
                         </td>
                         <td className="muted">{bv ? bv.plate : "-"}</td>
                         <td>
@@ -716,6 +736,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                           <button type="button" disabled={busy} onClick={() => openEdit(d)}>Düzenle</button>
                           <button type="button" disabled={busy} onClick={() => deleteDriver(d)}>Sil</button>
                           <button type="button" disabled={busy} onClick={() => resetPin(d)}>PIN üret</button>
+                          <button type="button" disabled={busy} onClick={() => resetDevice(d)}>Cihaz sıfırla</button>
                           <button
                             type="button"
                             disabled={busy}
@@ -936,7 +957,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
             </div>
 
             <div className="muted" style={{ marginTop: 10 }}>
-              Sürücü için giriş modeli artık Sürücü Kodu + PIN. Buradan temel bilgileri düzenlersin; yeni geçici PIN üretme listeden yapılır.
+              Sürücü için giriş modeli artık Sürücü Kodu + PIN. Buradan temel bilgileri düzenlersin; yeni geçici PIN üretme ve cihaz sıfırlama listeden yapılır.
             </div>
           </div>
         </div>

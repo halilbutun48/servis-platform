@@ -33,6 +33,7 @@ export function driversRouter(io) {
   const r = express.Router();
   const ACTIVE_SHIFT_STATUSES = ["APPROVED", "ACTIVE"];
   const hasKey = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+  const DRIVER_USER_SELECT = { id: true, email: true, deviceId: true, deviceBoundAt: true, deviceLastSeenAt: true, sessionVersion: true };
 
   async function assertRoomDriverOwner({ user, driverId, res }) {
     if (!user.roomId) {
@@ -110,7 +111,7 @@ export function driversRouter(io) {
       where: { roomId: u.roomId },
       include: {
         backupDriver: true,
-        user: { select: { id: true, email: true } },
+        user: { select: DRIVER_USER_SELECT },
       },
       orderBy: { id: "asc" },
     });
@@ -160,7 +161,7 @@ export function driversRouter(io) {
 
         const driver = await tx.driver.findUnique({
           where: { id: created.id },
-          include: { backupDriver: true, user: { select: { id: true, email: true } } },
+          include: { backupDriver: true, user: { select: DRIVER_USER_SELECT } },
         });
 
         return { driver, issued };
@@ -218,7 +219,7 @@ export function driversRouter(io) {
 
         const driver = await tx.driver.findUnique({
           where: { id },
-          include: { backupDriver: true, user: { select: { id: true, email: true } } },
+          include: { backupDriver: true, user: { select: DRIVER_USER_SELECT } },
         });
         return { driver, issued, revokedSessions, sessionVersionBumpedTo: bumpedTo };
       });
@@ -240,6 +241,88 @@ export function driversRouter(io) {
           temporaryPin: result.issued.temporaryPin,
           temporary: true,
         },
+      });
+    } catch (e) {
+      return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
+    }
+  });
+
+  r.post("/:id/reset-device", authRequired(), requireRole("ROOM"), async (req, res) => {
+    const u = req.user;
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ code: "BAD_REQUEST", message: "Invalid id" });
+
+    const owner = await assertRoomDriverOwner({ user: u, driverId: id, res });
+    if (!owner) return;
+
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const currentUser = owner.userId
+          ? await tx.user.findUnique({
+              where: { id: owner.userId },
+              select: { id: true, deviceId: true, deviceBoundAt: true, deviceLastSeenAt: true, sessionVersion: true },
+            })
+          : null;
+
+        let revokedSessions = 0;
+        let bumpedTo = null;
+        const hadDeviceBinding = Boolean(currentUser?.deviceId || currentUser?.deviceBoundAt || currentUser?.deviceLastSeenAt);
+
+        if (owner.userId) {
+          const revoked = await tx.refreshSession.updateMany({
+            where: { userId: owner.userId, revokedAt: null },
+            data: { revokedAt: new Date() },
+          });
+          revokedSessions = Number(revoked?.count || 0);
+
+          const updatedUser = await tx.user.update({
+            where: { id: owner.userId },
+            data: {
+              deviceId: null,
+              deviceBoundAt: null,
+              deviceLastSeenAt: null,
+              sessionVersion: { increment: 1 },
+            },
+            select: { sessionVersion: true },
+          });
+          bumpedTo = updatedUser?.sessionVersion ?? null;
+        }
+
+        return {
+          hadDeviceBinding,
+          revokedSessions,
+          sessionVersionBumpedTo: bumpedTo,
+          noLinkedUser: !owner.userId,
+        };
+      });
+
+      await clearDriverPinFailureState(id);
+      await audit(req, {
+        action: "AUTH_DRIVER_DEVICE_RESET",
+        entity: "Driver",
+        entityId: id,
+        meta: {
+          driverId: id,
+          driverCode: owner.driverCode || null,
+          roomId: u.roomId,
+          hadDeviceBinding: result.hadDeviceBinding,
+          revokedSessions: result.revokedSessions ?? 0,
+          sessionVersionBumpedTo: result.sessionVersionBumpedTo ?? null,
+          noLinkedUser: result.noLinkedUser ?? false,
+        },
+      });
+
+      io?.to(`room:${u.roomId}`).emit("driver:update", { driverId: id, action: "updated" });
+      return res.json({
+        ok: true,
+        driverId: id,
+        hadDeviceBinding: result.hadDeviceBinding,
+        revokedSessions: result.revokedSessions ?? 0,
+        sessionVersionBumpedTo: result.sessionVersionBumpedTo ?? null,
+        noLinkedUser: result.noLinkedUser ?? false,
+        message: result.hadDeviceBinding
+          ? "Cihaz bağı ve aktif erişimler sıfırlandı."
+          : "Kayıtlı cihaz bağı yoktu. Aktif erişimler yine de sıfırlandı.",
       });
     } catch (e) {
       return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
@@ -303,7 +386,7 @@ export function driversRouter(io) {
     const updated = await prisma.driver.update({
       where: { id },
       data,
-      include: { backupDriver: true, user: { select: { id: true, email: true } } },
+      include: { backupDriver: true, user: { select: DRIVER_USER_SELECT } },
     });
 
     if (owner.userId && (data.fullName || data.phone)) {

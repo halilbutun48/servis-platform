@@ -18,6 +18,13 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
+    allowedHosts: [
+      "https://hills-appraisal-bracket-except.trycloudflare.com",
+      ...String(process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS || "")
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean),
+    ],
 
     // Windows'ta bazen dosya değişikliklerini kaçırır → HMR çalışmaz.
     // Polling ile garanti altına alıyoruz.
