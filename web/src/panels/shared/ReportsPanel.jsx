@@ -10,6 +10,32 @@ const TABS = [
   ["stops", "Duraklar"],
 ];
 
+const NON_SHIFT_LABELS = {
+  drivers: {
+    driverId: 'Sürücü ID',
+    driverName: 'Sürücü',
+    totalAssigned: 'Toplam Atama',
+    totalCompleted: 'Tamamlanan',
+    totalCancelled: 'İptal / Reddedilen',
+    noShowCount: 'Gelmedi',
+    activePenalty: 'Aktif Ceza',
+  },
+  vehicles: {
+    vehicleId: 'Araç ID',
+    plate: 'Plaka',
+    shiftCount: 'Vardiya Sayısı',
+    personelCount: 'Toplam Personel',
+    avgRequiredPax: 'Ort. Gerekli Kapasite',
+    maxRequiredPax: 'Maks. Gerekli Kapasite',
+  },
+  stops: {
+    stopId: 'Durak ID',
+    stopName: 'Durak',
+    shiftCount: 'Vardiya Sayısı',
+    passengerCount: 'Toplam Yolcu',
+  },
+};
+
 const SHIFT_COLUMNS = [
   ["id", "ID"],
   ["status", "Durum"],
@@ -82,7 +108,10 @@ export default function ReportsPanel() {
   const rows = useMemo(() => (tab === 'shifts' ? normalizeShiftRows(rawRows) : rawRows), [tab, rawRows]);
   const headers = useMemo(() => {
     if (tab === 'shifts') return SHIFT_COLUMNS.map(([key, label]) => ({ key, label }));
-    return rows.length ? Object.keys(rows[0]).map((key) => ({ key, label: key })) : [];
+    const tabLabels = NON_SHIFT_LABELS[tab] || {};
+    return rows.length
+      ? Object.keys(rows[0]).map((key) => ({ key, label: tabLabels[key] || key }))
+      : [];
   }, [tab, rows]);
   const base = me?.role === 'ROOM' ? '/room' : me?.companyKind === 'SCHOOL' ? '/school' : me?.companyKind === 'ORGANIZATION' ? '/organization' : '/company';
   const wideDataTab = tab === 'shifts';

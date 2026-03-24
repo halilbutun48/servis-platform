@@ -272,6 +272,8 @@ function clearPlanTermsForShiftIds(ids) {
 export default function GuidedPlanModal({
   open,
   onClose,
+  resumeStep = null,
+  resumeNonce = 0,
   rooms = [],
   roomsSupported = true,
   onReloadRooms = null,
@@ -333,6 +335,14 @@ export default function GuidedPlanModal({
   const [offerNote, setOfferNote] = useState("");
   const [sentOk, setSentOk] = useState(false);
   const [companyGeoGate, setCompanyGeoGate] = useState({ blocking: false, ready: true, geoStats: { ok: 0, review: 0, failed: 0, total: 0 }, stopSummary: null });
+
+  useEffect(() => {
+    if (!open) return;
+    if (resumeStep == null) return;
+    const next = Number(resumeStep);
+    if (!Number.isFinite(next)) return;
+    setStep(Math.max(0, Math.min(3, next)));
+  }, [open, resumeStep, resumeNonce]);
 
   const roomsFiltered = useMemo(() => {
     const list = Array.isArray(rooms) ? rooms : [];
@@ -735,8 +745,22 @@ export default function GuidedPlanModal({
     let alive = true;
     (async () => {
       const lingeringIds = readGuidedTempShiftIds();
-      if (lingeringIds.length) {
+      const resumeMode = resumeStep != null && Number(resumeNonce || 0) > 0;
+      if (lingeringIds.length && !resumeMode) {
         await cleanupDraftShifts(lingeringIds, { keepState: true });
+      }
+      if (resumeMode && lingeringIds.length) {
+        if (!alive) return;
+        setDraftShiftIds(lingeringIds);
+        try {
+          const list = await api("/api/shifts?take=500&includeDrafts=1&includeStops=1", { token });
+          if (!alive) return;
+          const itemsAll = Array.isArray(list?.items) ? list.items : [];
+          setDraftShifts(itemsAll.filter((x) => lingeringIds.includes(Number(x.id))));
+        } catch {
+          if (!alive) return;
+          setDraftShifts([]);
+        }
       }
       try {
         const h = await api("/api/company/hub", { token });
@@ -753,7 +777,7 @@ export default function GuidedPlanModal({
     return () => {
       alive = false;
     };
-  }, [open, token]);
+  }, [open, token, resumeStep, resumeNonce]);
 
 
   useEffect(() => {

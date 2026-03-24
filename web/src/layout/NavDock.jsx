@@ -1,4 +1,4 @@
-﻿// web/src/layout/NavDock.jsx
+// web/src/layout/NavDock.jsx
 import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
@@ -110,7 +110,7 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Link" : "Personel Link", path: base + "/access-links" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Hesap Davetleri" : "Giriş Davetleri", path: base + "/auth-invites" });
       if (me?.companyKind === "SCHOOL") advanced.push({ label: "Parent Link", path: "/school/parents" });
-      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum İncele" : me?.companyKind === "ORGANIZATION" ? "Lokasyon İncele" : "Konum İncele", path: base + "/georeview" });
+      advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Konum Seçici" : me?.companyKind === "ORGANIZATION" ? "Lokasyon Konum Seçici" : "Personel Konum Seçici", path: base + "/georeview" });
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });

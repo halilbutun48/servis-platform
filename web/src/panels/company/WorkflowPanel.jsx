@@ -8,6 +8,37 @@ import GuidedPlanModal from "./GuidedPlanModal";
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import { formatDateTimeTR, weekdayBitFromYmdTR, ymdTR } from "../../utils/time";
 
+const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
+
+function readGuidedResume(basePath) {
+  try {
+    const raw = localStorage.getItem(GUIDED_RESUME_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (String(parsed.basePath || "") !== String(basePath || "")) return null;
+    const ts = Number(parsed.ts || 0);
+    if (Number.isFinite(ts) && ts > 0 && Date.now() - ts > 1000 * 60 * 60 * 12) return null;
+    const step = Number(parsed.step);
+    return {
+      basePath: String(parsed.basePath || ""),
+      step: Number.isFinite(step) ? step : 2,
+      personId: Number(parsed.personId || 0) || null,
+      source: String(parsed.source || ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearGuidedResume() {
+  try {
+    localStorage.removeItem(GUIDED_RESUME_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 function todayYmd() {
   return ymdTR();
 }
@@ -350,6 +381,8 @@ export default function WorkflowPanel() {
   const todayBit = useMemo(() => todayWeekBit(), []);
 
   const [guidedOpen, setGuidedOpen] = useState(false);
+  const [guidedResumeStep, setGuidedResumeStep] = useState(null);
+  const [guidedResumeNonce, setGuidedResumeNonce] = useState(0);
 
   async function loadRooms() {
     if (!token) return;
@@ -588,6 +621,16 @@ export default function WorkflowPanel() {
     // Basit: Shifts'e git. (İstersen sonraki milestone'da otomatik highlight ekleriz)
     navigate(companyPath(me, "/shifts"));
   }
+
+  useEffect(() => {
+    const basePath = companyPath(me, "");
+    const resume = readGuidedResume(basePath);
+    if (!resume) return;
+    setGuidedResumeStep(Number.isFinite(Number(resume.step)) ? Number(resume.step) : 2);
+    setGuidedResumeNonce(Date.now());
+    setGuidedOpen(true);
+    clearGuidedResume();
+  }, [me?.companyId, me?.id, me?.companyKind]);
 
   return (
     <div className="wrap">
@@ -864,6 +907,8 @@ export default function WorkflowPanel() {
       <GuidedPlanModal
         open={guidedOpen}
         onClose={() => setGuidedOpen(false)}
+        resumeStep={guidedResumeStep}
+        resumeNonce={guidedResumeNonce}
         rooms={rooms}
         roomsSupported={roomsSupported}
         onReloadRooms={loadRooms}

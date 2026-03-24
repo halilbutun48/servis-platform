@@ -5,8 +5,19 @@ import { apiOr404Fallback } from "../../utils/apiFallback";
 import { useSession } from "../../state/session";
 import { personLabel, peopleLabel } from "../../utils/labels";
 import { companyPath } from "../../utils/paths";
+import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftPersonelTable from "../../components/ShiftPersonelTable";
+
+const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
+
+function writeGuidedResume(payload) {
+  try {
+    localStorage.setItem(GUIDED_RESUME_KEY, JSON.stringify({ ...payload, ts: Date.now() }));
+  } catch {
+    // ignore
+  }
+}
 
 function haversineM(a, b) {
   const R = 6371000;
@@ -254,6 +265,17 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const who = personLabel(me);
   const whoPlural = peopleLabel(me);
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
+
+  function openGuidedGeoPicker(personId = null) {
+    const basePath = companyPath(me, "");
+    writeGuidedResume({
+      basePath,
+      step: 2,
+      personId: Number(personId || 0) || null,
+      source: "shift-people-tab",
+    });
+    navigate(companyPath(me, "/georeview"));
+  }
 
   const [selectedShiftId, setSelectedShiftId] = useState("");
   const [maxWalkM, setMaxWalkM] = useState(me?.companyKind === "SCHOOL" ? 50 : 250);
@@ -1223,7 +1245,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
             {geoStats.review > 0 || geoStats.failed > 0 ? (
               <span style={{ marginLeft: 10 }}>
                 {hideGeoReviewLinks ? (
-                  <span className="badge">Guided Mode: dış Geo Review çıkışı kapalı, düzeltmeyi bu ekranda yap.</span>
+                  <button type="button" className="btn sm" onClick={() => openGuidedGeoPicker(null)}>Konum seçiciye git</button>
                 ) : (
                   <a href={"#" + companyPath(me, "/georeview")}>Geo Review’e git</a>
                 )}
@@ -1415,13 +1437,15 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
                   <>
                     <div className="muted" style={{ marginTop: 6 }}>
                       {hideGeoReviewLinks ? (
-                        <>Guided Mode'da dış Geo Review ekranına geçiş kapalı. Düzeltmeyi burada satır bazlı yap veya toplu bul kullan.</>
+                        <>Guided Mode'da tek tıkla Konum Seçici'ye geçebilir, işi bitirince aynı adıma geri dönebilirsin. İstersen burada satır bazlı da düzeltebilirsin.</>
                       ) : (
                         <>Review gerektiren kayıtlar için <a href={"#" + companyPath(me, "/georeview")}>Geo Review</a> ekranını kullan.</>
                       )}
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                      {hideGeoReviewLinks ? null : <a className="btn" href={"#" + companyPath(me, "/georeview")}>Geo Review'a Git</a>}
+                      {hideGeoReviewLinks ? (
+                        <button type="button" className="btn" onClick={() => openGuidedGeoPicker(null)}>Konum seçiciye git</button>
+                      ) : <a className="btn" href={"#" + companyPath(me, "/georeview")}>Geo Review'a Git</a>}
                       <button type="button" className="btn" onClick={runImportQuickGeocode} disabled={importQuickBusy || busy}>
                         {importQuickBusy ? "Çalışıyor..." : "Review kayıtlarını topluca bul"}
                       </button>
@@ -1468,7 +1492,15 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       {/* People table */}
       <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
         <h3 style={{ marginTop: 0 }}>Shift {who} Listesi</h3>
-        <ShiftPersonelTable people={people} onRemove={removePerson} onUpdate={updatePerson} onGeocodeAddress={geocodePersonAddress} geocodeBusyId={rowGeocodeBusyId} emptyLabel={`Henüz ${who.toLowerCase()} yok.`} />
+        <ShiftPersonelTable
+          people={people}
+          onRemove={removePerson}
+          onUpdate={updatePerson}
+          onGeocodeAddress={geocodePersonAddress}
+          onOpenGeoPicker={guidedMode ? openGuidedGeoPicker : null}
+          geocodeBusyId={rowGeocodeBusyId}
+          emptyLabel={`Henüz ${who.toLowerCase()} yok.`}
+        />
       </div>
 
       <RoutePreviewModal

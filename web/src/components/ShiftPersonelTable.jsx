@@ -28,7 +28,7 @@ function normalizeCoord(v, kind) {
   return n;
 }
 
-export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeocodeAddress, geocodeBusyId, emptyLabel }) {
+export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeocodeAddress, onOpenGeoPicker, geocodeBusyId, emptyLabel }) {
   const list = Array.isArray(people) ? people : [];
 
   return (
@@ -46,7 +46,10 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
       </thead>
       <tbody>
         {list.length ? (
-          list.map((p) => (
+          list.map((p) => {
+            const backendPersonId = Number(p?.personelId || p?.id || 0);
+            const canOpenGeoPicker = typeof onOpenGeoPicker === "function" && Number.isFinite(backendPersonId) && backendPersonId > 0;
+            return (
             <tr key={p.id}>
               <td>
                 <input
@@ -109,13 +112,19 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
                       {geocodeBusyId === p.id ? "Bulunuyor..." : "Adresten Bul"}
                     </button>
                   ) : null}
+                  {canOpenGeoPicker ? (
+                    <button type="button" className="btn" onClick={() => onOpenGeoPicker?.(backendPersonId)}>
+                      Konum Seç
+                    </button>
+                  ) : null}
                   <button type="button" className="btn" onClick={() => onRemove?.(p.id)}>
                     Sil
                   </button>
                 </div>
               </td>
             </tr>
-          ))
+          );
+          })
         ) : (
           <tr>
             <td colSpan={7} className="muted">
