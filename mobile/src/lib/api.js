@@ -1,8 +1,9 @@
 import { getDeviceId, getSession, saveDeviceId, saveSession } from './storage';
 
-const API_BASE_URL = String(process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.0.2.2:3000').trim().replace(/\/$/, '');
+const API_BASE_URL = String(process.env.EXPO_PUBLIC_API_BASE_URL || '').trim().replace(/\/$/, '');
 
 function buildUrl(path) {
+  if (!API_BASE_URL) throw new Error('EXPO_PUBLIC_API_BASE_URL is not configured.');
   if (/^https?:\/\//i.test(path)) return path;
   return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }

@@ -84,7 +84,7 @@ async function getShiftForDriver({ shiftId }) {
     where: { id: shiftId },
     include: {
       vehicle: { include: { gpsLast: true } },
-      stops: { orderBy: { order: "asc" } },
+      stops: { include: { _count: { select: { assignments: true } } }, orderBy: { order: "asc" } },
       progress: true,
     },
   });
@@ -103,7 +103,8 @@ function buildDriverRoutePayload(shift) {
   const speedKmh = typeof last?.speed === "number" ? last.speed : 30;
 
   const routeStops = (shift?.stops ?? []).map((s) => {
-    const km = last ? haversineKm(last.lat, last.lng, s.lat, s.lng) : 0;
+    const km = last ? haversineKm(last.lat, last.lng, s.lat, s.lng) : null;
+    const passengerCount = Math.max(0, Number(s?._count?.assignments || 0));
     return {
       id: s.id,
       name: s.name,
@@ -114,15 +115,19 @@ function buildDriverRoutePayload(shift) {
       state: s.state,
       reachedAt: s.reachedAt,
       skippedAt: s.skippedAt,
-      remainingKm: Number(km.toFixed(2)),
-      etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)),
+      passengerCount,
+      remainingKm: km == null ? null : Number(km.toFixed(2)),
+      etaMin: km == null ? null : Number(etaMinutes(km, speedKmh).toFixed(0)),
     };
   });
 
   const orderedStops = [...routeStops].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
-  const proximityStops = last ? [...routeStops].sort((a, b) => a.remainingKm - b.remainingKm) : [...orderedStops];
-  const nextStop = firstPendingStop(shift?.stops ?? []);
+  const proximityStops = last ? [...routeStops].sort((a, b) => Number(a.remainingKm || 0) - Number(b.remainingKm || 0)) : [...orderedStops];
+  const nextStop = orderedStops.find((s) => s.state === "PENDING") ?? null;
   const lastReachedOrder = derivedLastReachedOrder(shift?.stops ?? []);
+  const remainingStops = orderedStops.filter((s) => s.state === "PENDING");
+  const totalPassengers = orderedStops.reduce((sum, s) => sum + Math.max(0, Number(s.passengerCount || 0)), 0);
+  const remainingPassengers = remainingStops.reduce((sum, s) => sum + Math.max(0, Number(s.passengerCount || 0)), 0);
 
   return {
     mode: "OK",
@@ -152,6 +157,13 @@ function buildDriverRoutePayload(shift) {
       startedAt: shift.progress?.startedAt ?? null,
       pausedAt: shift.progress?.pausedAt ?? null,
       completed: shift.status === "DONE" || !!shift.progress?.completedAt,
+    },
+    summary: {
+      totalStops: orderedStops.length,
+      remainingStops: remainingStops.length,
+      totalPassengers,
+      remainingPassengers,
+      nextStopPassengers: nextStop ? Math.max(0, Number(nextStop.passengerCount || 0)) : 0,
     },
     orderedStops,
     proximityStops,
@@ -195,13 +207,14 @@ export function driverRouter(io) {
   // =========================================================
   r.get("/shifts/today", authRequired(), requireRole("DRIVER"), async (req, res) => {
     const driver = await prisma.driver.findFirst({ where: { userId: req.user.id }, select: { id: true } });
-    if (!driver) return res.json({ mode: "NO_DRIVER_PROFILE", today: [], tomorrow: [], active: null });
+    if (!driver) return res.json({ mode: "NO_DRIVER_PROFILE", today: [], tomorrow: [], upcoming: [], active: null, assigned: null, assignmentState: "NONE" });
 
-    const todayYmd = ymdTR(new Date());
+    const now = new Date();
+    const todayYmd = ymdTR(now);
     const tomorrowYmd = addDaysTR(todayYmd, 1);
 
     const start = atTR(todayYmd, 0);
-    const end = atTR(addDaysTR(todayYmd, 2), 0);
+    const end = atTR(addDaysTR(todayYmd, 7), 0);
 
     const rows = await prisma.shift.findMany({
       where: {
@@ -220,20 +233,41 @@ export function driverRouter(io) {
         vehicleId: true,
         driverId: true,
         agreementId: true,
+        vehicle: { select: { id: true, plate: true } },
+        company: { select: { id: true, name: true } },
       },
     });
 
     const today = [];
     const tomorrow = [];
+    const upcoming = [];
     for (const s of rows) {
       const y = ymdTR(s.startAt);
       if (y === todayYmd) today.push(s);
       else if (y === tomorrowYmd) tomorrow.push(s);
+      if (new Date(s.startAt).getTime() > now.getTime()) upcoming.push(s);
     }
 
-    const active = rows.find((s) => s.status === "ACTIVE") || today[0] || tomorrow[0] || null;
+    const active = rows.find((s) => {
+      const st = String(s.status || "").toUpperCase();
+      const startMs = new Date(s.startAt).getTime();
+      const endMs = new Date(s.endAt).getTime();
+      return st === "ACTIVE" || (Number.isFinite(startMs) && Number.isFinite(endMs) && startMs <= now.getTime() && endMs >= now.getTime());
+    }) || null;
 
-    return res.json({ mode: "OK", todayYmd, tomorrowYmd, today, tomorrow, active });
+    const assigned = active || upcoming[0] || today[0] || tomorrow[0] || null;
+
+    let assignmentState = "NONE";
+    if (assigned) {
+      const startMs = new Date(assigned.startAt).getTime();
+      const endMs = new Date(assigned.endAt).getTime();
+      const inWindow = Number.isFinite(startMs) && Number.isFinite(endMs) && startMs <= now.getTime() && endMs >= now.getTime();
+      if (!assigned.vehicleId) assignmentState = "ASSIGNED_NO_VEHICLE";
+      else if (String(assigned.status || "").toUpperCase() === "ACTIVE" || inWindow) assignmentState = "ACTIVE";
+      else assignmentState = "ASSIGNED";
+    }
+
+    return res.json({ mode: rows.length ? "OK" : "NO_ASSIGNED_SHIFT", todayYmd, tomorrowYmd, today, tomorrow, upcoming, active, assigned, assignmentState });
   });
 
   // =========================================================
@@ -248,7 +282,7 @@ export function driverRouter(io) {
       where: { driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] } },
       include: {
         vehicle: { include: { gpsLast: true } },
-        stops: { orderBy: { order: "asc" } },
+        stops: { include: { _count: { select: { assignments: true } } }, orderBy: { order: "asc" } },
         progress: true,
       },
       orderBy: { startAt: "desc" },
@@ -274,7 +308,7 @@ export function driverRouter(io) {
       where: { id: shiftId },
       include: {
         vehicle: { include: { gpsLast: true } },
-        stops: { orderBy: { order: "asc" } },
+        stops: { include: { _count: { select: { assignments: true } } }, orderBy: { order: "asc" } },
         progress: true,
       },
     });

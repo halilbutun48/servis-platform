@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { openFullRouteNavigation, openNextStopNavigation } from '../lib/navigation';
 
 export default function TodayScreen({
   me,
@@ -29,7 +30,7 @@ export default function TodayScreen({
   onAcceptKvkk,
   onRefreshKvkkStatus,
 }) {
-  const activeShift = today?.active || today?.today?.[0] || today?.tomorrow?.[0] || null;
+  const activeShift = today?.active || today?.assigned || today?.today?.[0] || today?.tomorrow?.[0] || today?.upcoming?.[0] || null;
   const nextStop = route?.nextStop || null;
   const headerText = useMemo(() => {
     const fullName = String(me?.fullName || 'Surucu').trim();
@@ -42,11 +43,27 @@ export default function TodayScreen({
   const gpsCanOpenSettings = Boolean(gps?.canOpenSettings);
   const gpsActionTitle = gpsNeedsPermission ? 'GPS iznini yenile' : 'Konumu simdi gonder';
   const kvkkBlocking = Boolean(kvkk?.blocking);
+  const assignmentState = String(today?.assignmentState || (activeShift ? 'ACTIVE' : 'NONE')).toUpperCase();
+  const assignmentTone = assignmentState === 'ACTIVE' ? 'ok' : assignmentState === 'NONE' ? 'info' : 'warn';
+  const assignmentText = assignmentState === 'ACTIVE'
+    ? 'Aktif vardiya hazir. Gorev ve arac bilgisi kullanima acik.'
+    : assignmentState === 'ASSIGNED'
+      ? 'Yaklasan vardiya var. Baslangic saati bekleniyor.'
+      : assignmentState === 'ASSIGNED_NO_VEHICLE'
+        ? 'Vardiya gorunuyor ama arac atamasi eksik.'
+        : 'Bugun veya yakin zaman icin atanmis vardiya gorunmuyor.';
+  const routeSummary = route?.summary || {};
+  const pendingStops = Array.isArray(route?.orderedStops)
+    ? route.orderedStops.filter((stop) => String(stop?.state || '').toUpperCase() === 'PENDING')
+    : [];
+  const routePreviewStops = pendingStops.slice(0, 8);
 
   async function openMaps() {
-    if (!nextStop?.lat || !nextStop?.lng) return;
-    const url = `https://www.google.com/maps/search/?api=1&query=${nextStop.lat},${nextStop.lng}`;
-    await Linking.openURL(url);
+    await openNextStopNavigation(nextStop, route?.last || route?.vehicle);
+  }
+
+  async function openFullRoute() {
+    await openFullRouteNavigation(route);
   }
 
   return (
@@ -146,16 +163,21 @@ export default function TodayScreen({
 
       <Card>
         <SectionTitle title="Gorev ozeti" />
+        <View style={styles.rowGap}>
+          <Pill label={`Durum: ${assignmentState}`} tone={assignmentTone} />
+          {activeShift?.vehicleId || activeShift?.vehicle?.id ? <Pill label={`Arac: #${activeShift?.vehicleId || activeShift?.vehicle?.id}`} tone="ok" /> : null}
+        </View>
         {activeShift ? (
           <>
-            <Info label="Aktif / siradaki vardiya" value={`#${activeShift.id} • ${String(activeShift.status || '-').toUpperCase()}`} />
+            <Info label="Aktif / atanan vardiya" value={`#${activeShift.id} • ${String(activeShift.status || '-').toUpperCase()}`} />
             <Info label="Baslangic" value={fmt(activeShift.startAt)} />
             <Info label="Bitis" value={fmt(activeShift.endAt)} />
-            <Info label="Arac" value={route?.vehicle?.plate || '-'} />
+            <Info label="Arac" value={route?.vehicle?.plate || activeShift?.vehicle?.plate || '-'} />
             <Info label="Sozlesme" value={activeShift.agreementId ? `Var (#${activeShift.agreementId})` : 'Yok'} />
+            <Text style={styles.helper}>{assignmentText}</Text>
           </>
         ) : (
-          <Text style={styles.muted}>Bugun veya yarin icin onayli vardiya gorunmuyor.</Text>
+          <Text style={styles.muted}>Bugun veya yarin icin onayli vardiya gorunmuyor. Bugun veya yakin zaman icin atanmis vardiya da bulunmuyor.</Text>
         )}
       </Card>
 
@@ -165,10 +187,19 @@ export default function TodayScreen({
         <Info label="Siradaki durak" value={nextStop?.name || '-'} />
         <Info label="Yaklasik" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
         <Info label="Kalan km" value={nextStop?.remainingKm != null ? `${nextStop.remainingKm} km` : '-'} />
-        <Info label="Toplam durak" value={Array.isArray(route?.orderedStops) ? String(route.orderedStops.length) : '-'} />
+        <Info label="Siradaki durak yolcu" value={nextStop?.passengerCount != null ? `${nextStop.passengerCount} kisi` : '-'} />
+        <Info label="Toplam durak" value={routeSummary?.totalStops != null ? String(routeSummary.totalStops) : Array.isArray(route?.orderedStops) ? String(route.orderedStops.length) : '-'} />
+        <Info label="Toplam yolcu" value={routeSummary?.totalPassengers != null ? String(routeSummary.totalPassengers) : '-'} />
+        <Info label="Kalan durak" value={routeSummary?.remainingStops != null ? String(routeSummary.remainingStops) : String(pendingStops.length || 0)} />
+        <Info label="Kalan yolcu" value={routeSummary?.remainingPassengers != null ? String(routeSummary.remainingPassengers) : '-'} />
+        <Text style={styles.helper}>
+          Tam rotayi navigasyonda ac ile bekleyen duraklarin tamami Google Haritalar yon tarifi olarak acilir. Mini onizleme ise yaklasan duraklari sira, yolcu ve mesafe ile listeler.
+        </Text>
+        {routePreviewStops.length ? <RoutePreviewList stops={routePreviewStops} /> : <Text style={styles.muted}>Bekleyen durak onizlemesi henuz yok.</Text>}
         <View style={styles.actionsRow}>
           <PrimaryButton title="Yenile" onPress={onRefresh} />
           <SecondaryButton title="Haritada ac" onPress={openMaps} disabled={!nextStop?.lat || !nextStop?.lng} />
+          <SecondaryButton title="Tam rotayi navigasyonda ac" onPress={openFullRoute} disabled={pendingStops.length < 1} />
         </View>
       </Card>
 
@@ -205,14 +236,14 @@ export default function TodayScreen({
         </View>
         <Info label="Izin durumu" value={gps?.permissionText || '-'} />
         <Info label="Gonderim durumu" value={gps?.publishText || '-'} />
-        <Info label="Vardiya" value={gps?.shiftId ? `#${gps.shiftId}` : 'Gorev yok'} />
-        <Info label="Arac" value={gps?.vehicleId ? `#${gps.vehicleId}` : '-'} />
+        <Info label="Vardiya" value={gps?.shiftId ? `#${gps.shiftId}` : activeShift?.id ? `#${activeShift.id}` : 'Gorev yok'} />
+        <Info label="Arac" value={gps?.vehicleId ? `#${gps.vehicleId}` : activeShift?.vehicleId ? `#${activeShift.vehicleId}` : '-'} />
         <Info label="Son konum" value={gps?.lastLocationText || '-'} />
         <Info label="Son gonderim" value={fmt(gps?.lastSentAt)} />
         <Info label="Son deneme" value={fmt(gps?.lastAttemptAt)} />
         <Text style={styles.helper}>
           M57.1 ile uygulama acikken, aktif/onayli vardiya ve atanmis arac varsa konum duzenli olarak /api/gps hattina gonderilir.
-          Gorev yoksa gereksiz gonderim yapilmaz.
+          Atanmis ama henuz baslamamis vardiya burada gorunur; publish ise gorev penceresi gelince baslar.
         </Text>
         <View style={styles.actionsRow}>
           <PrimaryButton title={gpsActionTitle} onPress={gpsNeedsPermission ? onRequestGpsPermission : onPublishGpsNow} disabled={kvkkBlocking} />
@@ -270,6 +301,26 @@ function PrimaryButton({ title, onPress, disabled = false }) {
     <Pressable style={[styles.primaryButton, disabled && styles.disabled]} onPress={onPress} disabled={disabled}>
       <Text style={styles.primaryButtonText}>{title}</Text>
     </Pressable>
+  );
+}
+
+function RoutePreviewList({ stops = [] }) {
+  return (
+    <View style={styles.routePreviewWrap}>
+      {stops.map((stop, index) => (
+        <View key={`${stop.id}-${index}`} style={styles.routePreviewItem}>
+          <View style={styles.routePreviewBadge}><Text style={styles.routePreviewBadgeText}>{stop.order ?? index + 1}</Text></View>
+          <View style={styles.routePreviewBody}>
+            <Text style={styles.routePreviewTitle}>{stop.name || `Durak ${index + 1}`}</Text>
+            <Text style={styles.routePreviewMeta}>
+              {stop.passengerCount != null ? `${stop.passengerCount} kisi` : 'Yolcu bilgisi yok'}
+              {stop.remainingKm != null ? ` • ${stop.remainingKm} km` : ''}
+              {stop.etaMin != null ? ` • ${stop.etaMin} dk` : ''}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -400,6 +451,44 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#0f172a',
     fontWeight: '700',
+  },
+  routePreviewWrap: {
+    gap: 10,
+  },
+  routePreviewItem: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'flex-start',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  routePreviewBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  routePreviewBadgeText: {
+    color: '#1d4ed8',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  routePreviewBody: {
+    flex: 1,
+    gap: 3,
+  },
+  routePreviewTitle: {
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  routePreviewMeta: {
+    color: '#475569',
+    lineHeight: 19,
+    fontSize: 13,
   },
   disabled: {
     opacity: 0.5,

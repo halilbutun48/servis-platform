@@ -6,6 +6,7 @@ import { audit } from "../../audit.js";
 import { clusterStops } from "../../services/clusterStops.js";
 import { etaMinutes } from "../../geo.js";
 import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
+import { osrmRoute } from "../../services/osrmRoute.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
 import { decorateGeoItem, inferGeoState } from "../../services/geoState.js";
 
@@ -743,8 +744,16 @@ export function attachShiftPeopleRoutes(router, _io) {
         ? parsePolyline(learned.polylineCanonical)
         : null;
 
-    const source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
-    const pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
+    let source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
+    let pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
+
+    if (source !== "LEARNED" && estPoints.length >= 2) {
+      const routed = await osrmRoute(estPoints);
+      if (routed?.ok && Array.isArray(routed.points) && routed.points.length >= 2) {
+        source = "OSRM";
+        pathPoints = routed.points;
+      }
+    }
 
     const totalPassengerCountRaw = stopsWithCounts.reduce(
       (sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0),
@@ -770,6 +779,12 @@ export function attachShiftPeopleRoutes(router, _io) {
       summary.distanceKmLearned = Number(Number(learned.distanceKmLearned || 0).toFixed(2));
       summary.durationMinLearned = Number(learned.durationMinLearned || 0);
       summary.learnedSampleCount = Number(learned.sampleCount || 0);
+    }
+
+    if (source === "OSRM") {
+      const distanceKmOsrm = Number(sumDistanceKm(pathPoints).toFixed(2));
+      summary.distanceKmOsrm = distanceKmOsrm;
+      summary.durationMinOsrm = Math.round(Number(etaMinutes(distanceKmOsrm, 30)));
     }
 
     res.json({

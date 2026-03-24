@@ -18,6 +18,34 @@ function readToken(req) {
   return null;
 }
 
+
+const DRIVER_PRESENCE_TOUCH_WINDOW_MS = 45 * 1000;
+const driverPresenceTouchCache = new Map();
+
+async function touchDriverPresenceIfNeeded(user) {
+  const role = String(user?.role || '').toUpperCase();
+  if (role !== 'DRIVER' || !user?.id) return;
+
+  const nowMs = Date.now();
+  const lastSeenMs = user?.deviceLastSeenAt ? new Date(user.deviceLastSeenAt).getTime() : NaN;
+  const lastTouchMs = Number(driverPresenceTouchCache.get(user.id) || 0);
+
+  if (Number.isFinite(lastSeenMs) && nowMs - lastSeenMs <= DRIVER_PRESENCE_TOUCH_WINDOW_MS) return;
+  if (Number.isFinite(lastTouchMs) && nowMs - lastTouchMs <= DRIVER_PRESENCE_TOUCH_WINDOW_MS) return;
+
+  driverPresenceTouchCache.set(user.id, nowMs);
+
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { deviceLastSeenAt: new Date(nowMs) },
+    });
+    user.deviceLastSeenAt = new Date(nowMs);
+  } catch {
+    // ignore presence touch errors
+  }
+}
+
 function isProd() {
   const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
   return mode === "production";
@@ -55,6 +83,7 @@ export function authRequired() {
 
       req.auth = decoded;
       req.user = user;
+      await touchDriverPresenceIfNeeded(user);
       next();
     } catch (e) {
       return res.status(401).json({ error: "Unauthorized" });

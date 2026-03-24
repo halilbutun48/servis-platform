@@ -70,3 +70,9 @@ Bu adım foundation içindir. `M49` ve `M49.1` içinde eklenecekler:
 - stop progress operasyon kısayolları
 - sesli yönlendirme
 - gerçek stop ETA rafinesi
+## Remote field test note (2026-03-23)
+- Remote driver field tests must use a public HTTPS API URL.
+- Applied mobile preview EXPO_PUBLIC_API_BASE_URL: https://auburn-answer-advocacy-physician.trycloudflare.com
+- A Quick Tunnel opened on localhost:5173 is only for the web/Vite panel.
+- Mobile driver app must point to the backend API tunnel opened on localhost:3000.
+

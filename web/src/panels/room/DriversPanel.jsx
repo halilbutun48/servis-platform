@@ -35,6 +35,25 @@ function pickCurrentNext(shifts) {
   return { current, next };
 }
 
+
+
+function connectionBadgeStatus(ops) {
+  return ops.connectionState === "ONLINE" ? "APPROVED" : "PASSIVE";
+}
+
+function assignmentBadgeStatus(ops) {
+  if (ops.assignmentState === "ACTIVE") return "ACTIVE";
+  if (ops.assignmentState === "NONE") return "PASSIVE";
+  if (ops.assignmentState === "ASSIGNED_NO_VEHICLE") return "REQUESTED";
+  return "APPROVED";
+}
+
+function gpsBadgeStatus(ops, stat) {
+  if (stat?.pillKey) return stat.pillKey;
+  if (ops.gpsUiState === "WAITING") return "REQUESTED";
+  if (ops.gpsUiState === "OFFLINE") return "STALE";
+  return "PASSIVE";
+}
 function getErrMsg(err) {
   const payload = err?.payload || null;
   if (payload?.message) return String(payload.message);
@@ -74,7 +93,7 @@ export default function DriversPanel() {
 
   // Filters
   const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL|LIVE|STALE|OFFLINE
+  const [statusFilter, setStatusFilter] = useState("ALL"); // ALL|LIVE|STALE|OFFLINE (GPS)
   const [boundFilter, setBoundFilter] = useState("ALL"); // ALL|BOUND|FREE
 
   // Create
@@ -117,6 +136,14 @@ export default function DriversPanel() {
   useEffect(() => {
     load();
   }, []); // eslint-disable-line
+
+  useEffect(() => {
+    if (!token) return undefined;
+    const timer = setInterval(() => {
+      load();
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [token]); // eslint-disable-line
 
   useAutoReload("drivers", load);
   useAutoReload("vehicles", (detail) => {
@@ -201,6 +228,18 @@ export default function DriversPanel() {
     return { ui, pillKey: pillKeyFromUi(ui), vehicle: bv };
   }
 
+  function driverOps(d) {
+    const ops = d?.ops || {};
+    return {
+      connectionState: String(ops.connectionState || 'OFFLINE').toUpperCase(),
+      connectionLabel: String(ops.connectionLabel || 'Bagli degil'),
+      assignmentState: String(ops.assignmentState || 'NONE').toUpperCase(),
+      assignmentLabel: String(ops.assignmentLabel || 'Gorev yok'),
+      gpsUiState: String(ops.gpsUiState || 'IDLE').toUpperCase(),
+      gpsLabel: String(ops.gpsLabel || 'GPS pasif'),
+    };
+  }
+
   const filteredDrivers = useMemo(() => {
     const qq = String(q || "").trim().toLowerCase();
 
@@ -234,20 +273,27 @@ export default function DriversPanel() {
   const counts = useMemo(() => {
     let total = drivers.length;
     let bound = 0;
-    let online = 0;
+    let connected = 0;
+    let assigned = 0;
+    let active = 0;
+    let live = 0;
     let stale = 0;
     let offline = 0;
 
     for (const d of drivers) {
       const stat = driverStatus(d.id);
       const bv = boundVehicleByDriverId.get(Number(d.id)) ?? null;
+      const ops = driverOps(d);
       if (bv) bound++;
-      if (stat?.ui === "LIVE") online++;
+      if (ops.connectionState === "ONLINE") connected++;
+      if (["ASSIGNED", "ASSIGNED_NO_VEHICLE"].includes(ops.assignmentState)) assigned++;
+      if (ops.assignmentState === "ACTIVE") active++;
+      if (stat?.ui === "LIVE") live++;
       if (stat?.ui === "STALE") stale++;
       if (stat?.ui === "OFFLINE") offline++;
     }
 
-    return { total, bound, free: total - bound, online, stale, offline };
+    return { total, bound, free: total - bound, connected, assigned, active, live, stale, offline };
   }, [drivers, boundVehicleByDriverId]);
 
   async function createDriver(e) {
@@ -538,7 +584,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
 
           <div>
-            <label className="muted">Durum</label>
+            <label className="muted">GPS</label>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} disabled={busy}>
               <option value="ALL">Hepsi</option>
               <option value="LIVE">ONLINE</option>
@@ -557,7 +603,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
 
           <div className="muted" style={{ marginLeft: "auto" }}>
-            Toplam {counts.total} • Bağlı {counts.bound} • Boşta {counts.free} • ONLINE {counts.online} • STALE {counts.stale} • OFFLINE {counts.offline}
+            Toplam {counts.total} • Araca bağlı {counts.bound} • Boşta {counts.free} • Bağlı {counts.connected} • Atanmış {counts.assigned} • Aktif {counts.active} • GPS canlı {counts.live} • STALE {counts.stale} • OFFLINE {counts.offline}
           </div>
         </div>
       </div>
@@ -587,17 +633,19 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
               <tr>
                 <th>Sürücü</th>
                 <th>Telefon</th>
+                <th>Bağlantı</th>
+                <th>Görev</th>
                 <th>Araç</th>
-                <th>Durum</th>
+                <th>GPS</th>
                 <th>Son GPS</th>
-                <th>Hız</th>
                 <th>Konum</th>
               </tr>
             </thead>
             <tbody>
               {filteredDrivers.map((d) => {
                 const stat = driverStatus(d.id);
-                const bv = stat?.vehicle ?? null;
+                const bv = stat?.vehicle ?? d?.boundVehicle ?? null;
+                const ops = driverOps(d);
 
                 return (
                   <tr key={d.id}>
@@ -606,28 +654,32 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                       <div className="muted">#{d.id}</div>
                     </td>
                     <td>{d.phone}</td>
-                    <td className="muted">{bv ? bv.plate : "-"}</td>
                     <td>
-                      {stat ? (
-                        <span className="pill" data-status={stat.pillKey}>
-                          {stat.ui}
-                        </span>
-                      ) : (
-                        <span className="muted">-</span>
-                      )}
+                      <span className="pill" data-status={connectionBadgeStatus(ops)}>{ops.connectionLabel}</span>
+                      <div className="muted">{fmtTR(d?.user?.deviceLastSeenAt)}</div>
                     </td>
-                    <td className="muted">{bv?.gpsLast?.at ? String(bv.gpsLast.at) : "-"}</td>
-                    <td className="muted">{bv?.gpsLast?.speed != null ? `${bv.gpsLast.speed} km/h` : "-"}</td>
-                    <td className="muted">{bv?.gpsLast ? `${bv.gpsLast.lat.toFixed(4)}, ${bv.gpsLast.lng.toFixed(4)}` : "-"}</td>
+                    <td>
+                      <span className="pill" data-status={assignmentBadgeStatus(ops)}>{ops.assignmentLabel}</span>
+                      <div className="muted">{d?.currentShift ? `Current #${d.currentShift.id}` : d?.nextShift ? `Next #${d.nextShift.id}` : '-'}</div>
+                    </td>
+                    <td className="muted">{bv ? bv.plate : '-'}</td>
+                    <td>
+                      <span className="pill" data-status={gpsBadgeStatus(ops, stat)}>{ops.gpsLabel}</span>
+                    </td>
+                    <td className="muted">{bv?.gpsLast?.at ? fmtTR(bv.gpsLast.at) : '-'}</td>
+                    <td className="muted">{bv?.gpsLast?.lat != null && bv?.gpsLast?.lng != null ? `${Number(bv.gpsLast.lat).toFixed(5)}, ${Number(bv.gpsLast.lng).toFixed(5)}` : '-'}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          <div className="muted" style={{ marginTop: 8 }}>
+            Not: Bağlantı, görev ve GPS durumu artık ayrı gösterilir. GPS yok olması sürücünün giriş yapmadığı anlamına gelmez.
+          </div>
         </div>
       ) : null}
 
-            {/* YÖNETİM */}
+{/* YÖNETİM */}
       {tab === "manage" ? (
         <div
           style={{
@@ -755,7 +807,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
               </table>
 
               <div className="muted" style={{ marginTop: 8 }}>
-                Not: Durum ve vardiya bilgisi bağlı araç üzerinden türetilir.
+                Not: Bağlantı ve görev bilgisi sürücü özetinden, GPS bilgisi ise araç telematiğinden türetilir.
               </div>
             </div>
           </div>

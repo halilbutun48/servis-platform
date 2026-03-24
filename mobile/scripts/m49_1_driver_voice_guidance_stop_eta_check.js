@@ -19,12 +19,17 @@ must(app.includes('getVoiceGuidanceEnabled'), 'app loads voice guidance preferen
 must(app.includes('saveVoiceGuidanceEnabled'), 'app saves voice guidance preference');
 must(app.includes('speakNextStop'), 'app can speak next stop');
 must(app.includes('speakStopEta'), 'app can speak eta');
+must(app.includes('speakShiftWelcome'), 'app can speak shift welcome summary');
+must(app.includes('speakRouteCompleted'), 'app can speak route completion');
 must(app.includes('buildVoiceCueKey'), 'app uses voice cue dedupe');
 must(storage.includes('VOICE_ENABLED_KEY'), 'storage has voice guidance key');
 must(voice.includes('expo-speech'), 'voice helper imports expo-speech');
 must(voice.includes("language: 'tr-TR'"), 'voice helper uses Turkish language');
+must(voice.includes('Sesli yardıma hoş geldiniz'), 'voice helper has welcome summary');
+must(voice.includes('Güzergâh tamamlandı'), 'voice helper has completion line');
 must(today.includes('Sesli rehber'), 'today screen has voice guidance card');
 must(today.includes('Siradaki duragi oku'), 'today screen has read next stop action');
 must(today.includes('ETA oku'), 'today screen has eta action');
 must(today.includes('Durak ETA'), 'today screen shows stop eta');
+must(today.includes('Tam rotayi navigasyonda ac'), 'today screen has full route navigation action');
 console.log('=== M49.1 DRIVER VOICE GUIDANCE + STOP ETA CHECK PASS ===');

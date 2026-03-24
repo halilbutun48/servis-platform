@@ -25,6 +25,48 @@ function markerStatus(uiStatus) {
   return "online";
 }
 
+function isReachedStop(stop) {
+  const st = String(stop?.state || stop?.status || "").toUpperCase();
+  return st === "REACHED" || st === "DONE" || st === "COMPLETED" || st === "SKIPPED" || Boolean(stop?.reachedAt) || Boolean(stop?.reached);
+}
+
+function firstPendingStop(stops) {
+  return (Array.isArray(stops) ? stops : []).find((s) => !isReachedStop(s)) || null;
+}
+
+function lastCompletedStop(stops) {
+  const arr = (Array.isArray(stops) ? stops : []).filter((s) => isReachedStop(s));
+  if (!arr.length) return null;
+  const sorted = arr.sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0));
+  return sorted[sorted.length - 1] || null;
+}
+
+function nearestIndex(points, target) {
+  if (!Array.isArray(points) || !points.length || !target) return -1;
+  let bestIdx = -1;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < points.length; i += 1) {
+    const p = points[i];
+    const dLat = Number(p[0]) - Number(target[0]);
+    const dLng = Number(p[1]) - Number(target[1]);
+    const score = (dLat * dLat) + (dLng * dLng);
+    if (score < bestScore) {
+      bestScore = score;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
+function sliceInclusive(points, fromIdx, toIdx) {
+  if (!Array.isArray(points) || points.length < 2) return [];
+  const a = Math.max(0, Number(fromIdx || 0));
+  const b = Math.max(0, Number(toIdx || 0));
+  if (a === b) return [points[a], points[b]].filter(Boolean);
+  if (a < b) return points.slice(a, b + 1);
+  return points.slice(b, a + 1).reverse();
+}
+
 const _divIconCache = new Map();
 function divIconCached(key, opts) {
   if (_divIconCache.has(key)) return _divIconCache.get(key);
@@ -33,7 +75,7 @@ function divIconCached(key, opts) {
   return icon;
 }
 
-function iconStop(label = "DURAK") {
+function iconStop(label = "DURAK", variant = "default") {
   const svg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 22s7-7.2 7-13a7 7 0 1 0-14 0c0 5.8 7 13 7 13Z" fill="white" opacity="0.2"/>
     <path d="M12 21s6-6.2 6-12a6 6 0 1 0-12 0c0 5.8 6 12 6 12Z" stroke="white" stroke-width="2"/>
@@ -41,9 +83,10 @@ function iconStop(label = "DURAK") {
   </svg>`;
 
   const html = `<div class="pin-tag"><span class="pin-tag__dot"></span><span>${label}</span></div><div class="pin"><div class="pin__core">${svg}</div></div>`;
+  const variantClass = variant === "next" ? " pin-wrap--stopNext" : variant === "done" ? " pin-wrap--stopDone" : "";
 
-  return divIconCached(`stop:${label}`, {
-    className: "pin-wrap pin-wrap--stop",
+  return divIconCached(`stop:${variant}:${label}`, {
+    className: `pin-wrap pin-wrap--stop${variantClass}`,
     html,
     iconSize: [140, 76],
     iconAnchor: [33, 56],
@@ -58,11 +101,8 @@ function FitController({ points, followPoint, followZoom, fitKey, followResetKey
   const followRef = useRef(true);
 
   useEffect(() => { followRef.current = follow; }, [follow]);
-
-  // selection change -> follow ON
   useEffect(() => { setFollow(true); }, [followResetKey]);
 
-  // Drag/Zoom => follow OFF
   useEffect(() => {
     const off = () => { if (followRef.current) setFollow(false); };
     map.on("dragstart", off);
@@ -73,7 +113,6 @@ function FitController({ points, followPoint, followZoom, fitKey, followResetKey
     };
   }, [map]);
 
-  // focus event => follow OFF
   useEffect(() => {
     const onFocus = () => { if (followRef.current) setFollow(false); };
     window.addEventListener("map:focus", onFocus);
@@ -96,12 +135,10 @@ function FitController({ points, followPoint, followZoom, fitKey, followResetKey
     if (didFitRef.current) return;
     if (!points?.length) return;
     fitAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points?.length, fitKey]);
 
   useEffect(() => {
-    if (!followRef.current) return;
-    if (!followPoint) return;
+    if (!followRef.current || !followPoint) return;
     const z = Number.isFinite(Number(followZoom)) ? Number(followZoom) : map.getZoom();
     map.setView(followPoint, z, { animate: true });
   }, [followPoint, followZoom, map]);
@@ -110,7 +147,6 @@ function FitController({ points, followPoint, followZoom, fitKey, followResetKey
     const onFit = () => fitAll();
     window.addEventListener("map:fitAll", onFit);
     return () => window.removeEventListener("map:fitAll", onFit);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points?.length]);
 
   return null;
@@ -144,8 +180,10 @@ export default function MapView({
   onSelectVehicle,
   fitKey = "default",
   height = "70vh",
+  routePath = [],
+  routeSource = "ESTIMATED",
 }) {
-  const center = useMemo(() => [41.0082, 28.9784], []); // Istanbul fallback
+  const center = useMemo(() => [41.0082, 28.9784], []);
 
   const stopPoints = useMemo(() => {
     return (stops || [])
@@ -164,15 +202,8 @@ export default function MapView({
       .filter(Boolean);
   }, [vehicles]);
 
-  const allPoints = useMemo(() => {
-    return [
-      ...vehiclePoints.map((x) => [x[0], x[1]]),
-      ...stopPoints.map((x) => [x[0], x[1]]),
-    ];
-  }, [vehiclePoints, stopPoints]);
-
   const selectedVehicle = useMemo(
-    () => (vehicles || []).find((x) => x.id === selectedVehicleId) || null,
+    () => (vehicles || []).find((x) => String(x.id) === String(selectedVehicleId)) || null,
     [vehicles, selectedVehicleId]
   );
 
@@ -184,8 +215,6 @@ export default function MapView({
     return [lat, lng];
   }, [selectedVehicle]);
 
-  const polyline = useMemo(() => stopPoints.map((x) => [x[0], x[1]]), [stopPoints]);
-
   const selectedUi = useMemo(() => (selectedVehicle ? uiStatusFromVehicle(selectedVehicle) : null), [selectedVehicle]);
   const followZoom = useMemo(() => {
     if (selectedUi === "OFFLINE") return 12;
@@ -194,9 +223,61 @@ export default function MapView({
     return null;
   }, [selectedUi]);
 
+  const routeLine = useMemo(() => {
+    const fromPath = (Array.isArray(routePath) ? routePath : [])
+      .map((p) => [toNum(p?.lat), toNum(p?.lng)])
+      .filter((x) => x[0] !== null && x[1] !== null);
+    if (fromPath.length >= 2) return fromPath;
+    return stopPoints.map((x) => [x[0], x[1]]);
+  }, [routePath, stopPoints]);
+
+  const nextStop = useMemo(() => firstPendingStop(stops), [stops]);
+  const completedStop = useMemo(() => lastCompletedStop(stops), [stops]);
+  const nextStopPoint = useMemo(() => {
+    const lat = toNum(nextStop?.lat ?? nextStop?.location?.lat);
+    const lng = toNum(nextStop?.lng ?? nextStop?.location?.lng);
+    return lat === null || lng === null ? null : [lat, lng];
+  }, [nextStop]);
+  const completedStopPoint = useMemo(() => {
+    const lat = toNum(completedStop?.lat ?? completedStop?.location?.lat);
+    const lng = toNum(completedStop?.lng ?? completedStop?.location?.lng);
+    return lat === null || lng === null ? null : [lat, lng];
+  }, [completedStop]);
+
+  const helperLeg = useMemo(() => {
+    if (!followPoint || !nextStopPoint) return [];
+    return [followPoint, nextStopPoint];
+  }, [followPoint, nextStopPoint]);
+
+  const completedRoute = useMemo(() => {
+    if (!routeLine.length || !completedStopPoint) return [];
+    const endIdx = nearestIndex(routeLine, completedStopPoint);
+    if (endIdx < 1) return [];
+    return routeLine.slice(0, endIdx + 1);
+  }, [routeLine, completedStopPoint]);
+
+  const nextLegRoute = useMemo(() => {
+    if (!routeLine.length || !nextStopPoint) return [];
+    const nextIdx = nearestIndex(routeLine, nextStopPoint);
+    if (nextIdx < 0) return [];
+    const startIdx = followPoint ? nearestIndex(routeLine, followPoint) : (completedStopPoint ? nearestIndex(routeLine, completedStopPoint) : 0);
+    if (startIdx < 0) return routeLine.slice(0, nextIdx + 1);
+    return sliceInclusive(routeLine, startIdx, nextIdx);
+  }, [routeLine, nextStopPoint, followPoint, completedStopPoint]);
+
+  const allPoints = useMemo(() => {
+    return [
+      ...vehiclePoints.map((x) => [x[0], x[1]]),
+      ...stopPoints.map((x) => [x[0], x[1]]),
+      ...routeLine,
+    ];
+  }, [vehiclePoints, stopPoints, routeLine]);
+
+  const sourceLabel = routeSource === "LEARNED" ? "Öğrenilmiş rota" : routeSource === "OSRM" ? "Yol ağına yakın rota" : "Tahmini rota";
+
   return (
     <div className="card" style={{ padding: 0 }}>
-      <div style={{ height, width: "100%" }}>
+      <div style={{ height, width: "100%", position: "relative" }}>
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <FitController
             points={allPoints}
@@ -209,21 +290,27 @@ export default function MapView({
 
           <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-          {polyline?.length >= 2 ? <Polyline positions={polyline} /> : null}
+          {routeLine?.length >= 2 ? <Polyline positions={routeLine} pathOptions={{ color: "#64748b", weight: 5, opacity: 0.5 }} /> : null}
+          {completedRoute?.length >= 2 ? <Polyline positions={completedRoute} pathOptions={{ color: "#22c55e", weight: 6, opacity: 0.65 }} /> : null}
+          {nextLegRoute?.length >= 2 ? <Polyline positions={nextLegRoute} pathOptions={{ color: "#2563eb", weight: 7, opacity: 0.9 }} /> : null}
+          {helperLeg?.length >= 2 ? <Polyline positions={helperLeg} pathOptions={{ color: "#0ea5e9", weight: 3, opacity: 0.8, dashArray: "8 8" }} /> : null}
 
-          {stopPoints.map(([lat, lng, s]) => (
-            <Marker key={`stop:${s.id ?? s.order ?? s.name}`} position={[lat, lng]} icon={iconStop(s.name || `Stop ${s.order ?? ""}`)}>
-              <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent={false}>
-                {s.name || "Stop"}
-              </Tooltip>
-            </Marker>
-          ))}
+          {stopPoints.map(([lat, lng, s]) => {
+            const variant = String(nextStop?.id) === String(s?.id) ? "next" : isReachedStop(s) ? "done" : "default";
+            return (
+              <Marker key={`stop:${s.id ?? s.order ?? s.name}`} position={[lat, lng]} icon={iconStop(s.name || `Durak ${s.order ?? ""}`, variant)}>
+                <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent={false}>
+                  {s.name || "Durak"}
+                </Tooltip>
+              </Marker>
+            );
+          })}
 
           {vehiclePoints.map(([lat, lng, v]) => {
-            const ui = uiStatusFromVehicle(v); // LIVE|STALE|OFFLINE
+            const ui = uiStatusFromVehicle(v);
             const icon = makeVehicleMarkerC({
               plate: v.plate,
-              status: markerStatus(ui), // online|stale|offline
+              status: markerStatus(ui),
               heading: typeof v?.heading === "number" ? v.heading : 0,
             });
 
@@ -232,16 +319,23 @@ export default function MapView({
             );
           })}
         </MapContainer>
+
+        <div className="map-preview-badges">
+          <span className="map-preview-pill map-preview-pill--route">{sourceLabel}</span>
+          {nextStop?.name ? <span className="map-preview-pill map-preview-pill--next">Sıradaki: {nextStop.name}</span> : null}
+          {selectedVehicle?.plate ? <span className="map-preview-pill map-preview-pill--vehicle">Araç: {selectedVehicle.plate}</span> : null}
+        </div>
       </div>
 
-      <div style={{ padding: 12, display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ padding: 12, display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <div className="muted">{selectedVehicleId ? `Seçili araç: #${selectedVehicleId}` : "Araç seç: marker'a tıkla"}</div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span className="pill" data-status="PASSIVE">Rota</span>
+          <span className="pill" data-status="OK">Geçilen kısım</span>
+          <span className="pill" data-status="NEXT">Sıradaki kısım</span>
           <button onClick={() => window.dispatchEvent(new Event("map:fitAll"))}>Tümünü Göster</button>
         </div>
       </div>
     </div>
   );
 }
-
-

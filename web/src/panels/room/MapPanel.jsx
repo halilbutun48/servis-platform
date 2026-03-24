@@ -142,6 +142,7 @@ export default function RoomMapPanel() {
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [routePreview, setRoutePreview] = useState({ points: [], source: "ESTIMATED" });
 
   async function load() {
     setErr("");
@@ -269,6 +270,25 @@ export default function RoomMapPanel() {
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
+
+  useEffect(() => {
+    let alive = true;
+    async function loadRoutePreview() {
+      if (!selectedShift?.id) {
+        if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
+        return;
+      }
+      try {
+        const r = await api(`/api/shifts/${selectedShift.id}/route-preview`, { token });
+        const pts = Array.isArray(r?.path?.points) ? r.path.points : [];
+        if (alive) setRoutePreview({ points: pts, source: String(r?.path?.source || "ESTIMATED").toUpperCase() });
+      } catch {
+        if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
+      }
+    }
+    loadRoutePreview();
+    return () => { alive = false; };
+  }, [selectedShift?.id, token]);
 
   function fitAll() {
     try { window.dispatchEvent(new Event("map:fitAll")); } catch {}
@@ -425,12 +445,14 @@ export default function RoomMapPanel() {
 
           <div className="card" style={{ marginBottom: 10 }}>
             <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
-            <div className="muted" style={{ fontSize: 12 }}>Seçili araç + (varsa) aktif vardiya durakları</div>
+            <div className="muted" style={{ fontSize: 12 }}>Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.</div>
           </div>
 
           <MapView
             vehicles={vehicles}
             stops={selectedStops}
+            routePath={routePreview.points}
+            routeSource={routePreview.source}
             selectedVehicleId={selectedVehicleId}
             onSelectVehicle={setSelectedVehicleId}
             fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}`}

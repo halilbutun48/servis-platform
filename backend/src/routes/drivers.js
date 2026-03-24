@@ -35,6 +35,41 @@ export function driversRouter(io) {
   const hasKey = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
   const DRIVER_USER_SELECT = { id: true, email: true, deviceId: true, deviceBoundAt: true, deviceLastSeenAt: true, sessionVersion: true };
 
+  const CONNECTION_ONLINE_WINDOW_MS = 5 * 60 * 1000;
+
+  function safeTs(value) {
+    const ms = value ? new Date(value).getTime() : NaN;
+    return Number.isFinite(ms) ? ms : NaN;
+  }
+
+  function deriveConnectionState(user) {
+    const lastSeenMs = safeTs(user?.deviceLastSeenAt);
+    const hasBinding = Boolean(user?.deviceId || user?.deviceBoundAt || Number.isFinite(lastSeenMs));
+    if (!hasBinding) return { connectionState: "OFFLINE", connectionLabel: "Bagli degil" };
+    if (Number.isFinite(lastSeenMs) && Date.now() - lastSeenMs <= CONNECTION_ONLINE_WINDOW_MS) {
+      return { connectionState: "ONLINE", connectionLabel: "Bagli" };
+    }
+    return { connectionState: "OFFLINE", connectionLabel: "Bagli degil" };
+  }
+
+  function deriveGpsUiState(vehicle) {
+    const atMs = safeTs(vehicle?.gpsLast?.at);
+    if (!vehicle) return { gpsUiState: "IDLE", gpsLabel: "GPS pasif" };
+    if (!Number.isFinite(atMs)) return { gpsUiState: "OFFLINE", gpsLabel: "GPS yok" };
+    const ageMs = Date.now() - atMs;
+    if (ageMs <= 90 * 1000) return { gpsUiState: "LIVE", gpsLabel: "Canli" };
+    if (ageMs <= 5 * 60 * 1000) return { gpsUiState: "STALE", gpsLabel: "Eski" };
+    return { gpsUiState: "OFFLINE", gpsLabel: "GPS yok" };
+  }
+
+  function deriveAssignmentState({ currentShift, nextShift, boundVehicle }) {
+    const base = currentShift || nextShift || null;
+    if (!base) return { assignmentState: "NONE", assignmentLabel: "Gorev yok" };
+    if (!base.vehicleId && !boundVehicle?.id) return { assignmentState: "ASSIGNED_NO_VEHICLE", assignmentLabel: "Arac bekleniyor" };
+    if (currentShift) return { assignmentState: "ACTIVE", assignmentLabel: "Aktif vardiya" };
+    return { assignmentState: "ASSIGNED", assignmentLabel: "Vardiya atandi" };
+  }
+
   async function assertRoomDriverOwner({ user, driverId, res }) {
     if (!user.roomId) {
       res.status(400).json({ code: "BAD_REQUEST", message: "ROOM must have roomId" });
@@ -116,7 +151,87 @@ export function driversRouter(io) {
       orderBy: { id: "asc" },
     });
 
-    return res.json(drivers);
+    const driverIds = drivers.map((x) => Number(x.id)).filter((x) => Number.isFinite(x));
+    const [vehicles, shifts] = await Promise.all([
+      prisma.vehicle.findMany({
+        where: { roomId: u.roomId, archivedAt: null, driverId: { in: driverIds.length ? driverIds : [-1] } },
+        select: {
+          id: true,
+          plate: true,
+          status: true,
+          driverId: true,
+          gpsLast: { select: { at: true, lat: true, lng: true, speed: true } },
+        },
+      }),
+      prisma.shift.findMany({
+        where: {
+          roomId: u.roomId,
+          driverId: { in: driverIds.length ? driverIds : [-1] },
+          status: { in: ACTIVE_SHIFT_STATUSES },
+          endAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+        orderBy: { startAt: "asc" },
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          roomId: true,
+          companyId: true,
+          vehicleId: true,
+          driverId: true,
+          agreementId: true,
+          company: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    const vehicleByDriverId = new Map();
+    for (const vehicle of vehicles) {
+      if (vehicle?.driverId != null) vehicleByDriverId.set(Number(vehicle.driverId), vehicle);
+    }
+
+    const nowMs = Date.now();
+    const shiftsByDriverId = new Map();
+    for (const shift of shifts) {
+      const key = Number(shift.driverId);
+      if (!shiftsByDriverId.has(key)) shiftsByDriverId.set(key, []);
+      shiftsByDriverId.get(key).push(shift);
+    }
+
+    const payload = drivers.map((driver) => {
+      const key = Number(driver.id);
+      const boundVehicle = vehicleByDriverId.get(key) || null;
+      const rows = shiftsByDriverId.get(key) || [];
+      const currentShift = rows.find((shift) => {
+        const startMs = safeTs(shift.startAt);
+        const endMs = safeTs(shift.endAt);
+        const status = String(shift.status || "").toUpperCase();
+        return status === "ACTIVE" || (Number.isFinite(startMs) && Number.isFinite(endMs) && startMs <= nowMs && endMs >= nowMs);
+      }) || null;
+      const nextShift = rows.find((shift) => safeTs(shift.startAt) > nowMs) || null;
+      const connection = deriveConnectionState(driver.user);
+      const assignment = deriveAssignmentState({ currentShift, nextShift, boundVehicle });
+      const gps = assignment.assignmentState === "NONE"
+        ? { gpsUiState: "IDLE", gpsLabel: "GPS pasif" }
+        : assignment.assignmentState === "ASSIGNED"
+          ? { gpsUiState: "WAITING", gpsLabel: "Bekliyor" }
+          : deriveGpsUiState(boundVehicle);
+
+      return {
+        ...driver,
+        boundVehicle,
+        currentShift,
+        nextShift,
+        ops: {
+          ...connection,
+          ...assignment,
+          ...gps,
+        },
+      };
+    });
+
+    return res.json(payload);
   });
 
   // CREATE (ROOM)

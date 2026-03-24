@@ -25,7 +25,7 @@ import {
   permissionTextFromStatus,
   resolveGpsPublishTarget,
 } from './src/lib/gps';
-import { buildVoiceCueKey, speakNextStop, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
+import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
 import LoginScreen from './src/screens/LoginScreen';
 import PinChangeScreen from './src/screens/PinChangeScreen';
 import TodayScreen from './src/screens/TodayScreen';
@@ -96,6 +96,8 @@ export default function App() {
   const syncBusyRef = useRef(false);
   const gpsBusyRef = useRef(false);
   const lastVoiceCueRef = useRef('');
+  const lastVoiceWelcomeRef = useRef('');
+  const lastVoiceCompletionRef = useRef('');
   const appStateRef = useRef(AppState.currentState || 'active');
 
   async function applySessionFailure(error) {
@@ -266,7 +268,7 @@ export default function App() {
             permissionStatus: permission.status,
             permissionText,
             publishState: 'no-shift',
-            publishText: 'Bugun aktif gorev yok. Bu yuzden konum gonderilmiyor.',
+            publishText: 'Bugun aktif gorev yok. Bugun veya yakin zaman icin atanmis vardiya yok. Bu yuzden konum gonderilmiyor.',
             lastLocationText,
             canOpenSettings: false,
           },
@@ -298,7 +300,7 @@ export default function App() {
             permissionStatus: permission.status,
             permissionText,
             publishState: 'waiting',
-            publishText: 'Gorev henuz aktif degil. Uygulama gorev hazir olunca konum gonderecek.',
+            publishText: 'Vardiya atandi. Baslangic saati bekleniyor; gorev hazir olunca konum gonderecek.',
             lastLocationText,
             canOpenSettings: false,
           },
@@ -481,11 +483,26 @@ export default function App() {
 
   useEffect(() => {
     if (!state.voiceEnabled) return;
-    const cueKey = buildVoiceCueKey(state.route?.nextStop);
-    if (!cueKey || cueKey === lastVoiceCueRef.current) return;
-    speakNextStop(state.route?.nextStop);
+    const completionKey = buildCompletionCueKey(state.route);
+    if (completionKey && completionKey !== lastVoiceCompletionRef.current) {
+      speakRouteCompleted();
+      lastVoiceCompletionRef.current = completionKey;
+      return;
+    }
+
+    const welcomeKey = buildVoiceWelcomeKey(state.today, state.route);
+    if (welcomeKey && welcomeKey !== lastVoiceWelcomeRef.current) {
+      speakShiftWelcome(state.today, state.route);
+      lastVoiceWelcomeRef.current = welcomeKey;
+      lastVoiceCueRef.current = buildVoiceCueKey(state.route);
+      return;
+    }
+
+    const cueKey = buildVoiceCueKey(state.route);
+    if (!cueKey || cueKey === lastVoiceCueRef.current || String(cueKey).startsWith('done:')) return;
+    speakNextStop(state.route);
     lastVoiceCueRef.current = cueKey;
-  }, [state.voiceEnabled, state.route?.nextStop?.id, state.route?.nextStop?.etaMin]);
+  }, [state.voiceEnabled, state.today?.active?.id, state.today?.assigned?.id, state.route?.shift?.id, state.route?.progress?.completed, state.route?.progress?.lastReachedOrder, state.route?.nextStop?.id, state.route?.nextStop?.etaMin]);
 
   async function handleLogin({ identifier, password }) {
     const data = await loginDriver(identifier, password);
@@ -538,19 +555,26 @@ export default function App() {
     await saveVoiceGuidanceEnabled(next);
     if (!next) stopVoiceGuidance();
     if (next && state.route?.nextStop) {
-      const cueKey = buildVoiceCueKey(state.route?.nextStop);
-      lastVoiceCueRef.current = cueKey;
-      speakNextStop(state.route?.nextStop);
+      const welcomeKey = buildVoiceWelcomeKey(state.today, state.route);
+      if (welcomeKey) {
+        lastVoiceWelcomeRef.current = welcomeKey;
+        lastVoiceCueRef.current = buildVoiceCueKey(state.route);
+        speakShiftWelcome(state.today, state.route);
+      } else {
+        const cueKey = buildVoiceCueKey(state.route);
+        lastVoiceCueRef.current = cueKey;
+        speakNextStop(state.route);
+      }
     }
     setState((prev) => ({ ...prev, voiceEnabled: next }));
   }
 
   function handleSpeakNextStop() {
-    speakNextStop(state.route?.nextStop);
+    speakNextStop(state.route);
   }
 
   function handleSpeakEta() {
-    speakStopEta(state.route?.nextStop);
+    speakStopEta(state.route);
   }
 
   async function handleRequestGpsPermission() {

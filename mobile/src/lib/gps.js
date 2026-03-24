@@ -1,16 +1,25 @@
 export const GPS_PUBLISH_INTERVAL_MS = 20000;
 
 export function resolveGpsPublishTarget(today, route) {
-  const activeShift = today?.active || today?.today?.[0] || today?.tomorrow?.[0] || null;
-  const shiftStatus = String(route?.shift?.status || activeShift?.status || '').toUpperCase();
-  const vehicleId = Number(route?.shift?.vehicleId || route?.vehicle?.id || activeShift?.vehicleId || 0) || null;
+  const visibleShift = today?.active || today?.assigned || today?.today?.[0] || today?.tomorrow?.[0] || today?.upcoming?.[0] || null;
+  const shiftStatus = String(route?.shift?.status || visibleShift?.status || '').toUpperCase();
+  const vehicleId = Number(route?.shift?.vehicleId || route?.vehicle?.id || visibleShift?.vehicleId || visibleShift?.vehicle?.id || 0) || null;
+  const shiftId = Number(route?.shift?.id || visibleShift?.id || 0) || null;
+  const startMs = visibleShift?.startAt ? new Date(visibleShift.startAt).getTime() : NaN;
+  const endMs = visibleShift?.endAt ? new Date(visibleShift.endAt).getTime() : NaN;
+  const nowMs = Date.now();
+  const withinWindow = Number.isFinite(startMs) && Number.isFinite(endMs) && startMs <= nowMs && endMs >= nowMs;
+  const assignmentState = visibleShift
+    ? (!vehicleId ? 'ASSIGNED_NO_VEHICLE' : (shiftStatus === 'ACTIVE' || withinWindow ? 'ACTIVE' : 'ASSIGNED'))
+    : 'NONE';
 
   return {
-    activeShift,
-    shiftId: Number(route?.shift?.id || activeShift?.id || 0) || null,
+    activeShift: visibleShift,
+    shiftId,
     vehicleId,
     shiftStatus,
-    canPublish: Boolean(activeShift && vehicleId && ['APPROVED', 'ACTIVE'].includes(shiftStatus)),
+    assignmentState,
+    canPublish: Boolean(visibleShift && vehicleId && ['APPROVED', 'ACTIVE'].includes(shiftStatus) && (shiftStatus === 'ACTIVE' || withinWindow)),
   };
 }
 
