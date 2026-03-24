@@ -317,3 +317,157 @@ button, input, select, textarea, .btn, .secondary, .navItem {
 .reportsTableWrap--shifts .reportsTable td:first-child {
   min-width: 64px;
 }
+
+
+/* M69.1b — Floating Copilot readability + resize polish */
+.copilotFab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 999px;
+  border: 1px solid #355086;
+  background: linear-gradient(180deg, #1d315d 0%, #12213f 100%);
+  box-shadow: 0 12px 30px rgba(4, 8, 20, .36);
+}
+.copilotFabDot { width: 8px; height: 8px; border-radius: 999px; background: #67e8a5; box-shadow: 0 0 0 4px rgba(103, 232, 165, .14); }
+.copilotDrawer {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid #31466f;
+  background: rgba(9, 14, 26, .96);
+  box-shadow: 0 22px 50px rgba(2, 6, 23, .5);
+  overflow: hidden;
+  min-width: 400px;
+  min-height: 500px;
+  max-width: min(92vw, 720px);
+  max-height: min(86vh, 860px);
+}
+.copilotDrawerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid #22314f;
+  background: linear-gradient(180deg, rgba(20, 34, 63, .96) 0%, rgba(12, 18, 34, .96) 100%);
+}
+.copilotDrawerTitle { font-size: 19px; font-weight: 800; }
+.copilotDrawerContext { color: #c8d6f6; font-size: 12px; margin-top: 2px; }
+.copilotDrawerTools, .copilotDrawerModeRow, .copilotComposerButtons, .copilotMsgActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.copilotDrawerModeRow {
+  padding: 10px 14px;
+  border-bottom: 1px solid #22314f;
+}
+.copilotSuggestionWrap {
+  padding: 0 14px 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #22314f;
+}
+.copilotChip {
+  padding: 8px 11px;
+  border-radius: 999px;
+  border: 1px solid #b8c6e8;
+  background: #f3f6ff;
+  color: #233557;
+  font-weight: 700;
+}
+.copilotChatSurface {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  background: linear-gradient(180deg, #eef3ff 0%, #f7faff 100%);
+}
+.copilotEmptyState {
+  border: 1px dashed #bfd0f2;
+  border-radius: 14px;
+  background: rgba(255,255,255,.88);
+  color: #213453;
+  padding: 14px;
+}
+.copilotEmptyTitle { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+.copilotEmptyText { color: #42546f; line-height: 1.5; }
+.copilotMsg {
+  border-radius: 16px;
+  padding: 12px 13px;
+  margin-bottom: 10px;
+  color: #1d2b45;
+  border: 1px solid #d3def4;
+  background: #ffffff;
+}
+.copilotMsg.user {
+  background: #dbe7ff;
+  border-color: #b3c8f3;
+}
+.copilotMsgHead { font-size: 12px; font-weight: 800; color: #4a5f86; margin-bottom: 6px; }
+.copilotMsgText { white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
+.copilotBusy, .copilotError {
+  margin-top: 8px;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.copilotBusy { background: #fff8d8; color: #624d00; border: 1px solid #e9d883; }
+.copilotError { background: #ffe3e3; color: #7f1d1d; border: 1px solid #f2b2b2; }
+.copilotComposer {
+  border-top: 1px solid #22314f;
+  background: rgba(11, 16, 30, .98);
+  padding: 12px 14px 14px;
+}
+.copilotComposer textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  background: #f9fbff;
+  color: #11203a;
+  border-color: #b8c6e8;
+  font-size: 15px;
+}
+.copilotComposerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .copilotDrawer {
+    left: 10px;
+    right: 10px;
+    width: auto !important;
+    max-width: none;
+    min-width: 0;
+    height: min(78vh, 760px) !important;
+  }
+  .copilotFab {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+
+.copilotDrawer { resize: both; }
+.copilotDrawer .btn.sm.copilotToolBtn { padding: 7px 10px; font-size: 12px; min-height: unset; }
+.copilotSuggestionWrap { padding: 8px 14px 12px; gap: 6px; }
+.copilotChip { padding: 7px 10px; font-size: 12px; font-weight: 700; border-color: #d3dcf6; background: #f7f9ff; color: #30415f; }
+.copilotChatSurface { padding: 16px; }
+.copilotMsg { padding: 14px 14px; }
+.copilotMsgText { font-size: 15px; line-height: 1.62; }
+.copilotComposer textarea { min-height: 120px; font-size: 15px; line-height: 1.5; }
+.copilotDrawerContext + .copilotDrawerContext { margin-top: 4px; }

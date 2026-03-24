@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { companyPath } from "../../utils/paths";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -127,6 +128,21 @@ export default function ServiceEvaluationPanel() {
     })();
     return () => { cancelled = true; };
   }, [token]);
+
+  useEffect(() => {
+    if (!selected) {
+      clearCopilotSelection("/company/service-evaluation");
+      return;
+    }
+    setCopilotSelection({
+      scopeKey: "/company/service-evaluation",
+      entityType: selected?.shiftId ? "shift" : "screen",
+      entityId: Number(selected?.shiftId || 2114) || 2114,
+      label: selected?.serviceLabel ? `${selected.serviceLabel}` : `Hizmet #${selected?.id || "-"}` ,
+      summary: [selected?.providerName || null, selected?.serviceLabel || null, selected?.statusLabel || null].filter(Boolean).join(" • "),
+    });
+    return () => clearCopilotSelection("/company/service-evaluation");
+  }, [selected]);
 
   const cards = useMemo(() => {
     const c = summary?.cards || {};

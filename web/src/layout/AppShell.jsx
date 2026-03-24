@@ -5,6 +5,7 @@ import TotpStepUpCard from "../panels/shared/TotpStepUpCard";
 import { useSession } from "../state/session";
 import TabletOpsQuickBar from "../components/TabletOpsQuickBar";
 import BrandMark from "../components/BrandMark";
+import FloatingCopilotDrawer from "../components/copilot/FloatingCopilotDrawer";
 
 export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
@@ -41,6 +42,7 @@ export default function AppShell({ path, children }) {
             <KvkkConsentGate />
             {isTabletOpsRole ? <TabletOpsQuickBar role={role} me={me} path={path} /> : null}
             {children}
+            <FloatingCopilotDrawer path={path} />
           </div>
         </div>
       </div>

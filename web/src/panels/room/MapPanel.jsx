@@ -31,16 +31,6 @@ function gpsAgeLabel(v) {
   return `${Math.floor(age / 3600)}sa`;
 }
 
-function gpsAtLabel(v) {
-  const at = gpsAtIso(v);
-  if (!at) return "-";
-  try {
-    return new Date(at).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
-  } catch {
-    return String(at);
-  }
-}
-
 function gpsCoord(v) {
   const lat = toNum(v?.gpsLast?.lat);
   const lng = toNum(v?.gpsLast?.lng);
@@ -68,15 +58,12 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 function etaMinGuess(vehicle, stop) {
   if (!vehicle || !stop) return null;
 
-  // 1) backend/precomputed
   const em = toNum(stop?.etaMin);
   if (em != null) return Math.max(0, Math.round(em));
 
-  // 2) remainingKm if exists (assume 35km/h)
   const km = toNum(stop?.remainingKm);
   if (km != null) return Math.max(1, Math.round((km / 35) * 60));
 
-  // 3) haversine from vehicle gpsLast -> stop
   const vc = gpsCoord(vehicle);
   const sc = stopCoord(stop);
   if (vc && sc) {
@@ -139,6 +126,7 @@ export default function RoomMapPanel() {
   const [q, setQ] = useState("");
   const [onlyActive, setOnlyActive] = useState(false);
   const [showNoGps, setShowNoGps] = useState(true);
+  const [showStops, setShowStops] = useState(true);
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -152,12 +140,16 @@ export default function RoomMapPanel() {
       const items = Array.isArray(r) ? r : [];
       setVehicles(items);
 
-      // selection sanity
-      if (selectedVehicleId && !items.some((v) => String(v.id) === String(selectedVehicleId))) setSelectedVehicleId(null);
+      if (selectedVehicleId && !items.some((v) => String(v.id) === String(selectedVehicleId))) {
+        setSelectedVehicleId(null);
+      }
       if (!selectedVehicleId) {
-        // prefer vehicles with ACTIVE/APPROVED shift
         const first =
-          items.find((v) => (Array.isArray(v?.shifts) ? v.shifts : []).some((s) => ["ACTIVE", "APPROVED"].includes(String(s?.status || "").toUpperCase()))) ||
+          items.find((v) =>
+            (Array.isArray(v?.shifts) ? v.shifts : []).some((s) =>
+              ["ACTIVE", "APPROVED"].includes(String(s?.status || "").toUpperCase())
+            )
+          ) ||
           items[0] ||
           null;
         if (first) setSelectedVehicleId(first.id);
@@ -169,7 +161,10 @@ export default function RoomMapPanel() {
     }
   }
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useAutoReload("vehicles", (detail) => {
     const m = detail?.payload?.msg;
     const ev = m?._event;
@@ -190,6 +185,7 @@ export default function RoomMapPanel() {
 
     load();
   });
+
   useAutoReload("shifts", load);
   useAutoReload("gps", load);
 
@@ -263,16 +259,21 @@ export default function RoomMapPanel() {
     const shifts = Array.isArray(selected?.shifts) ? selected.shifts : [];
     const active = shifts.find((s) => String(s?.status || "").toUpperCase() === "ACTIVE") || null;
     const approved = shifts.find((s) => String(s?.status || "").toUpperCase() === "APPROVED") || null;
-    return onlyActive ? active : (active || approved);
+    return onlyActive ? active : active || approved;
   }, [selected, onlyActive]);
 
-  const selectedStops = useMemo(() => (Array.isArray(selectedShift?.stops) ? selectedShift.stops : []), [selectedShift]);
+  const selectedStops = useMemo(
+    () => (Array.isArray(selectedShift?.stops) ? selectedShift.stops : []),
+    [selectedShift]
+  );
+
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
 
   useEffect(() => {
     let alive = true;
+
     async function loadRoutePreview() {
       if (!selectedShift?.id) {
         if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
@@ -281,17 +282,27 @@ export default function RoomMapPanel() {
       try {
         const r = await api(`/api/shifts/${selectedShift.id}/route-preview`, { token });
         const pts = Array.isArray(r?.path?.points) ? r.path.points : [];
-        if (alive) setRoutePreview({ points: pts, source: String(r?.path?.source || "ESTIMATED").toUpperCase() });
+        if (alive) {
+          setRoutePreview({
+            points: pts,
+            source: String(r?.path?.source || "ESTIMATED").toUpperCase(),
+          });
+        }
       } catch {
         if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
       }
     }
+
     loadRoutePreview();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [selectedShift?.id, token]);
 
   function fitAll() {
-    try { window.dispatchEvent(new Event("map:fitAll")); } catch {}
+    try {
+      window.dispatchEvent(new Event("map:fitAll"));
+    } catch {}
   }
 
   return (
@@ -313,6 +324,11 @@ export default function RoomMapPanel() {
             GPS olmayanları göster
           </label>
 
+          <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="checkbox" checked={showStops} onChange={(e) => setShowStops(Boolean(e.target.checked))} />
+            Durakları göster
+          </label>
+
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -328,7 +344,7 @@ export default function RoomMapPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      <div className="grid mapGrid" style={{ ["--mapH"]: "min(520px, calc(100vh - 420px))" }}>
+      <div className="grid mapGrid" style={{ ["--mapH"]: "min(700px, calc(100vh - 300px))" }}>
         <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span>Canlı Liste</span>
@@ -368,29 +384,75 @@ export default function RoomMapPanel() {
                   }}
                   title={shiftTitle(s)}
                 >
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 0, flex: 1 }}>
+                  <span
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: 4,
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                  >
                     <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
                       <b>{v?.plate || "-"}</b>
                       <span className="pill" data-status={c.pillKey} title={`GPS: ${c.ui}`}>{c.ui}</span>
-                      <span className="pill" data-status={String(s?.status || "").toUpperCase()}>{String(s?.status || "").toUpperCase()}</span>
-                      {!gpsOk ? <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>NO GPS</span> : null}
+                      <span className="pill" data-status={String(s?.status || "").toUpperCase()}>
+                        {String(s?.status || "").toUpperCase()}
+                      </span>
+                      {!gpsOk ? (
+                        <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
+                          NO GPS
+                        </span>
+                      ) : null}
                     </span>
 
-                    <span className="muted" style={{ fontSize: 12, width: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        width: "100%",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       Sürücü: {s?.driver?.fullName || v?.driver?.fullName || "-"}
                       {s?.company?.name ? ` • ${s.company.name}` : ""}
                     </span>
 
-                    <span className="muted" style={{ fontSize: 12, width: "100%", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+                    <span
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        width: "100%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "block",
+                      }}
+                    >
                       İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
                       {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
                       {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${c.nextEtaMin}dk` : ""}
                     </span>
                   </span>
 
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flex: "0 0 118px", maxWidth: 118 }}>
-                    <span className="muted" style={{ fontSize: 12 }}>Son GPS: {gpsAgeLabel(v)}</span>
-                    <span className="muted" style={{ fontSize: 12 }}>Başlangıç: {fmtTR(s?.startAt)}</span>
+                  <span
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 6,
+                      flex: "0 0 118px",
+                      maxWidth: 118,
+                    }}
+                  >
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      Son GPS: {gpsAgeLabel(v)}
+                    </span>
+                    <span className="muted" style={{ fontSize: 12 }}>
+                      Başlangıç: {fmtTR(s?.startAt)}
+                    </span>
                   </span>
                 </button>
               );
@@ -399,63 +461,131 @@ export default function RoomMapPanel() {
         </div>
 
         <div>
-          <div className="card" style={{ marginBottom: 10 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+          <div className="card" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div>
-                <div className="title" style={{ fontSize: 16 }}>Seçili Araç</div>
-                <div className="muted" style={{ fontSize: 12 }}>
+                <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
+                <div className="muted" style={{ fontSize: 12, lineHeight: 1.1 }}>
                   {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
                 </div>
               </div>
-              <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
-            </div>
 
-            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span className="muted">GPS:</span>
-              <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
-                {uiStatusFromVehicle(selected)}
-              </span>
-              <span className="muted">Son GPS:</span>
-              <span className="pill">{gpsAgeLabel(selected)}</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    minWidth: 0,
+                    flex: "1 1 780px",
+                  }}
+                >
+                  {selectedShift ? (
+                    <span className="pill" data-status={String(selectedShift?.status || "").toUpperCase()}>
+                      {String(selectedShift?.status || "").toUpperCase()}
+                    </span>
+                  ) : null}
 
-              {selectedNext?.name ? (
-                <>
-                  <span className="muted">Sıradaki:</span>
-                  <span className="pill" data-status="NEXT">{selectedNext.name}</span>
-                  <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNextStopNavigation(selectedNext, selected)}>Sonraki Durağa Navigasyon</button>
-                  {selectedEta != null ? <span className="muted">ETA: <b>{selectedEta}dk</b></span> : null}
-                  <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)}>Tam Rotayı Dış Navigasyonda Aç</button>
-                </>
-              ) : (
-                <span className="muted">Sıradaki durak yok.</span>
-              )}
-            </div>
+                  <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
+                  <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
+                    {uiStatusFromVehicle(selected)}
+                  </span>
 
-            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span className="pill">Toplam: {selectedStats.total}</span>
-              <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
-              <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
-            </div>
+                  <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>
+                  <span className="pill">{gpsAgeLabel(selected)}</span>
 
-            <div style={{ marginTop: 10 }}>
-              <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
-              <StopTimeline stops={selectedStops} nextStopId={selectedNext?.id ?? null} compact onSelect={(s) => focusStop(s)} />
+                  {selectedNext?.name ? (
+                    <>
+                      <span className="muted" style={{ fontSize: 12 }}>Sıradaki:</span>
+                      <span className="pill" data-status="NEXT">{selectedNext.name}</span>
+
+                      <button
+                        className="btn sm"
+                        onClick={() => openNextStopNavigation(selectedNext, selected)}
+                      >
+                        Sonraki Durağa Navigasyon
+                      </button>
+
+                      {selectedEta != null ? (
+                        <span className="pill">ETA: {selectedEta}dk</span>
+                      ) : null}
+
+                      <button
+                        className="btn sm"
+                        onClick={() => openFullRouteNavigation(selectedStops, selected)}
+                      >
+                        Tam Rotayı Dış Navigasyonda Aç
+                      </button>
+                    </>
+                  ) : (
+                    <span className="muted">Sıradaki durak yok.</span>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    flex: "0 1 auto",
+                    marginLeft: "auto",
+                  }}
+                >
+                  <span className="pill">Toplam Durak Sayısı: {selectedStats.total}</span>
+                  <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
+                  <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginLeft: 4,
+                    }}
+                  >
+                    <span className="muted" style={{ fontSize: 12 }}>Mini Timeline</span>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <StopTimeline
+                        stops={selectedStops}
+                        nextStopId={selectedNext?.id ?? null}
+                        compact
+                        onSelect={(s) => focusStop(s)}
+                      />
+                    </div>
+                  </div>
+
+                  <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="card" style={{ marginBottom: 10 }}>
             <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
-            <div className="muted" style={{ fontSize: 12 }}>Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.
+            </div>
           </div>
 
           <MapView
             vehicles={vehicles}
-            stops={selectedStops}
+            stops={showStops ? selectedStops : []}
             routePath={routePreview.points}
             routeSource={routePreview.source}
             selectedVehicleId={selectedVehicleId}
             onSelectVehicle={setSelectedVehicleId}
-            fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}`}
+            fitKey={`room:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}`}
             height="var(--mapH)"
           />
         </div>
@@ -463,4 +593,3 @@ export default function RoomMapPanel() {
     </div>
   );
 }
-

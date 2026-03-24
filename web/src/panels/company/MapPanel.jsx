@@ -1,5 +1,5 @@
-import { formatDateTimeTR, nowIsoTR } from "../../utils/time";
 // web/src/panels/company/MapPanel.jsx
+import { formatDateTimeTR, nowIsoTR } from "../../utils/time";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -8,6 +8,7 @@ import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function asNum(v) {
   const n = Number(String(v ?? "").replace(",", "."));
@@ -32,7 +33,7 @@ function gpsAgeLabel(vehicle) {
   const min = Math.round(sec / 60);
   if (min < 60) return `${min}dk`;
   const h = Math.round(min / 60);
-  return `${h}s`; // saat
+  return `${h}sa`;
 }
 
 function hasGpsFix(vehicle) {
@@ -77,58 +78,44 @@ function derivedLastReachedOrder(stops) {
 
 function firstPendingStop(stops) {
   const arr = Array.isArray(stops) ? stops : [];
-  const sorted = [...arr].sort((a, b) => (Number(a?.order ?? 0) - Number(b?.order ?? 0)));
+  const sorted = [...arr].sort((a, b) => Number(a?.order ?? 0) - Number(b?.order ?? 0));
   return sorted.find((s) => s && !isReached(s)) || null;
 }
 
 function etaMinGuess(vehicle, nextStop) {
-  // Backend stop.etaMin/remainingKm varsa onları kullan
   const eta = asNum(nextStop?.etaMin);
   if (eta != null) return Math.max(0, Math.round(eta));
 
   const km = asNum(nextStop?.remainingKm);
   if (km != null) {
-    // kaba tahmin: 35 km/h
     const min = Math.round((km / 35) * 60);
     return Math.max(0, min);
   }
 
-  // yoksa null
   return null;
 }
 
 function normStops(stops) {
   return (Array.isArray(stops) ? stops : []).map((x, i) => ({
     ...x,
-    order: x?.order ?? (i + 1),
+    order: x?.order ?? i + 1,
     name: x?.name ?? x?.title ?? `Durak ${i + 1}`,
     lat: x?.lat ?? x?.location?.lat,
     lng: x?.lng ?? x?.location?.lng,
   }));
 }
 
-function focusStop(stop) {
+function stopCoord(stop) {
   const lat = asNum(stop?.lat);
   const lng = asNum(stop?.lng);
-  if (lat == null || lng == null) return;
-  window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat, lng, zoom: 17 } }));
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
 }
 
-function openNav(stop, originVehicle) {
-  const dLat = asNum(stop?.lat);
-  const dLng = asNum(stop?.lng);
-  if (dLat == null || dLng == null) return;
-
-  const oLat = asNum(originVehicle?.gpsLast?.lat);
-  const oLng = asNum(originVehicle?.gpsLast?.lng);
-  const hasOrigin = oLat != null && oLng != null;
-
-  const dest = `${dLat},${dLng}`;
-  const url = hasOrigin
-    ? `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dest}&travelmode=driving`
-    : `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
-
-  window.open(url, "_blank", "noopener,noreferrer");
+function focusStop(stop) {
+  const c = stopCoord(stop);
+  if (!c) return;
+  window.dispatchEvent(new CustomEvent("map:focus", { detail: { lat: c.lat, lng: c.lng, zoom: 17 } }));
 }
 
 export default function CompanyMapPanel() {
@@ -137,11 +124,12 @@ export default function CompanyMapPanel() {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
 
-  const [shifts, setShifts] = useState([]); // APPROVED/ACTIVE
+  const [shifts, setShifts] = useState([]);
 
   const [q, setQ] = useState("");
   const [onlyActive, setOnlyActive] = useState(false);
   const [showNoGps, setShowNoGps] = useState(true);
+  const [showStops, setShowStops] = useState(true);
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -152,8 +140,9 @@ export default function CompanyMapPanel() {
     const items = Array.isArray(r) ? r : [];
     setVehicles(items);
 
-    // selection sanity (prefer first with shift)
-    if (selectedVehicleId && !items.some((v) => String(v.id) === String(selectedVehicleId))) setSelectedVehicleId(null);
+    if (selectedVehicleId && !items.some((v) => String(v.id) === String(selectedVehicleId))) {
+      setSelectedVehicleId(null);
+    }
     if (!selectedVehicleId) {
       const withShift = shifts.find((s) => s?.vehicleId != null) || null;
       const first = withShift ? items.find((v) => String(v.id) === String(withShift.vehicleId)) : null;
@@ -167,10 +156,9 @@ export default function CompanyMapPanel() {
     qs.set("onlyNow", "1");
     qs.set("take", "200");
     const r = await api(`/api/shifts?${qs.toString()}`, { token });
-    const items = Array.isArray(r?.items) ? r.items : (Array.isArray(r) ? r : []);
+    const items = Array.isArray(r?.items) ? r.items : Array.isArray(r) ? r : [];
     setShifts(items);
 
-    // selection hint: if nothing selected, pick first shift's vehicle
     if (!selectedVehicleId) {
       const first = items[0] || null;
       if (first?.vehicleId != null) setSelectedVehicleId(first.vehicleId);
@@ -189,9 +177,10 @@ export default function CompanyMapPanel() {
     }
   }
 
-  useEffect(() => { loadAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    loadAll();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ✅ WS spam guard: vehicle:status patch, gps patch; others -> reload
   useAutoReload("vehicles", (detail) => {
     const m = detail?.payload?.msg;
     const ev = m?._event;
@@ -213,7 +202,6 @@ export default function CompanyMapPanel() {
     loadVehicles().catch(() => {});
   });
 
-  // gps:update → HTTP YOK (sadece koordinat patch)
   useAutoReload("gps", (detail) => {
     const m = detail?.payload?.msg;
     const ev = m?._event;
@@ -239,12 +227,16 @@ export default function CompanyMapPanel() {
     );
   });
 
-  useAutoReload("shifts", () => { loadShifts().catch(() => {}); });
+  useAutoReload("shifts", () => {
+    loadShifts().catch(() => {});
+  });
 
-  // selection hard-guard
   useEffect(() => {
     if (!vehicles.length) return;
-    if (selectedVehicleId == null) { setSelectedVehicleId(vehicles[0].id); return; }
+    if (selectedVehicleId == null) {
+      setSelectedVehicleId(vehicles[0].id);
+      return;
+    }
     const ok = vehicles.some((v) => String(v.id) === String(selectedVehicleId));
     if (!ok) setSelectedVehicleId(vehicles[0].id);
   }, [vehicles, selectedVehicleId]);
@@ -261,7 +253,6 @@ export default function CompanyMapPanel() {
       if (s?.vehicleId == null) continue;
       const k = String(s.vehicleId);
       const prev = m.get(k);
-      // prefer ACTIVE
       if (!prev) m.set(k, s);
       else {
         const a = normShiftStatus(prev.status);
@@ -332,7 +323,11 @@ export default function CompanyMapPanel() {
     return out;
   }, [shifts, vehicleById, q, onlyActive, showNoGps]);
 
-  const selected = useMemo(() => vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null, [vehicles, selectedVehicleId]);
+  const selected = useMemo(
+    () => vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null,
+    [vehicles, selectedVehicleId]
+  );
+
   const selectedShift = useMemo(() => {
     if (!selected) return null;
     const s = shiftsByVehicleId.get(String(selected.id)) || null;
@@ -346,6 +341,36 @@ export default function CompanyMapPanel() {
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
 
+  const copilotSummary = useMemo(() => {
+    if (!selected) return null;
+    const parts = [];
+    if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
+    if (selected?.plate) parts.push(`Araç ${selected.plate}`);
+    const ui = uiStatusFromVehicle(selected);
+    if (ui) parts.push(`GPS ${ui}`);
+    if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
+    return parts.join(" • ");
+  }, [selected, selectedShift?.id, selected?.plate, selectedNext?.name]);
+
+  useEffect(() => {
+    if (!selected) {
+      clearCopilotSelection("/company/map");
+      return;
+    }
+    setCopilotSelection({
+      scopeKey: "/company/map",
+      entityType: selectedShift?.id ? "shift" : "vehicle",
+      entityId: Number(selectedShift?.id || selected?.id || 0) || null,
+      label: selectedShift?.id
+        ? `Vardiya #${selectedShift.id}`
+        : selected?.plate
+          ? `Araç ${selected.plate}`
+          : `Araç #${selected?.id || "-"}`,
+      summary: copilotSummary || "",
+    });
+    return () => clearCopilotSelection("/company/map");
+  }, [selected, selected?.id, selected?.plate, selectedShift?.id, copilotSummary]);
+
   useEffect(() => {
     let alive = true;
     async function loadRoutePreview() {
@@ -356,17 +381,26 @@ export default function CompanyMapPanel() {
       try {
         const r = await api(`/api/shifts/${selectedShift.id}/route-preview`, { token });
         const pts = Array.isArray(r?.path?.points) ? r.path.points : [];
-        if (alive) setRoutePreview({ points: pts, source: String(r?.path?.source || "ESTIMATED").toUpperCase() });
+        if (alive) {
+          setRoutePreview({
+            points: pts,
+            source: String(r?.path?.source || "ESTIMATED").toUpperCase(),
+          });
+        }
       } catch {
         if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
       }
     }
     loadRoutePreview();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [selectedShift?.id, token]);
 
   function fitAll() {
-    try { window.dispatchEvent(new Event("map:fitAll")); } catch {}
+    try {
+      window.dispatchEvent(new Event("map:fitAll"));
+    } catch {}
   }
 
   return (
@@ -388,6 +422,11 @@ export default function CompanyMapPanel() {
             GPS olmayanları göster
           </label>
 
+          <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="checkbox" checked={showStops} onChange={(e) => setShowStops(Boolean(e.target.checked))} />
+            Durakları göster
+          </label>
+
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -403,7 +442,7 @@ export default function CompanyMapPanel() {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      <div className="grid mapGrid" style={{ ["--mapH"]: "min(520px, calc(100vh - 420px))" }}>
+      <div className="grid mapGrid" style={{ ["--mapH"]: "min(700px, calc(100vh - 300px))" }}>
         <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span>Canlı Liste</span>
@@ -443,27 +482,69 @@ export default function CompanyMapPanel() {
                   }}
                   title={shiftTitle(s)}
                 >
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 0, flex: 1 }}>
+                  <span
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: 4,
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                  >
                     <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
                       <b>{v?.plate || "-"}</b>
                       <span className="pill" data-status={c.pillKey} title={`GPS: ${c.ui}`}>{c.ui}</span>
-                      <span className="pill" data-status={normShiftStatus(s?.status)}>{normShiftStatus(s?.status)}</span>
-                      {!gpsOk ? <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>NO GPS</span> : null}
+                      <span className="pill" data-status={normShiftStatus(s?.status)}>
+                        {normShiftStatus(s?.status)}
+                      </span>
+                      {!gpsOk ? (
+                        <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
+                          NO GPS
+                        </span>
+                      ) : null}
                     </span>
 
-                    <span className="muted" style={{ fontSize: 12, width: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        width: "100%",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       Sürücü: {s?.driver?.fullName || v?.driver?.fullName || "-"}
                       {v?.room?.name ? ` • ${v.room.name}` : ""}
                     </span>
 
-                    <span className="muted" style={{ fontSize: 12, width: "100%", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+                    <span
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        width: "100%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "block",
+                      }}
+                    >
                       İlerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
                       {c.nextStop?.name ? ` • Sıradaki: ${c.nextStop.name}` : ""}
                       {c.nextStop?.name && c.nextEtaMin != null ? ` • ETA: ${c.nextEtaMin}dk` : ""}
                     </span>
                   </span>
 
-                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flex: "0 0 118px", maxWidth: 118 }}>
+                  <span
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 6,
+                      flex: "0 0 118px",
+                      maxWidth: 118,
+                    }}
+                  >
                     <span className="muted" style={{ fontSize: 12 }}>Son GPS: {gpsAgeLabel(v)}</span>
                     <span className="muted" style={{ fontSize: 12 }}>Başlangıç: {fmtTR(s?.startAt)}</span>
                   </span>
@@ -474,63 +555,131 @@ export default function CompanyMapPanel() {
         </div>
 
         <div>
-          <div className="card" style={{ marginBottom: 10 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+          <div className="card" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div>
-                <div className="title" style={{ fontSize: 16 }}>Seçili Araç</div>
-                <div className="muted" style={{ fontSize: 12 }}>
+                <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Seçili Araç</div>
+                <div className="muted" style={{ fontSize: 12, lineHeight: 1.1 }}>
                   {selected?.plate || "-"} • {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
                 </div>
               </div>
-              <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
-            </div>
 
-            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span className="muted">GPS:</span>
-              <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
-                {uiStatusFromVehicle(selected)}
-              </span>
-              <span className="muted">Son GPS:</span>
-              <span className="pill">{gpsAgeLabel(selected)}</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    minWidth: 0,
+                    flex: "1 1 780px",
+                  }}
+                >
+                  {selectedShift ? (
+                    <span className="pill" data-status={String(selectedShift?.status || "").toUpperCase()}>
+                      {String(selectedShift?.status || "").toUpperCase()}
+                    </span>
+                  ) : null}
 
-              {selectedNext?.name ? (
-                <>
-                  <span className="muted">Sıradaki:</span>
-                  <span className="pill" data-status="NEXT">{selectedNext.name}</span>
-                  <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNextStopNavigation(selectedNext, selected)}>Sonraki Durağa Navigasyon</button>
-                  {selectedEta != null ? <span className="muted">ETA: <b>{selectedEta}dk</b></span> : null}
-                  <button className="btn sm" onClick={() => openFullRouteNavigation(selectedStops, selected)}>Tam Rotayı Dış Navigasyonda Aç</button>
-                </>
-              ) : (
-                <span className="muted">Sıradaki durak yok.</span>
-              )}
-            </div>
+                  <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
+                  <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
+                    {uiStatusFromVehicle(selected)}
+                  </span>
 
-            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span className="pill">Toplam: {selectedStats.total}</span>
-              <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
-              <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
-            </div>
+                  <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>
+                  <span className="pill">{gpsAgeLabel(selected)}</span>
 
-            <div style={{ marginTop: 10 }}>
-              <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
-              <StopTimeline stops={selectedStops} nextStopId={selectedNext?.id ?? null} compact onSelect={(s) => focusStop(s)} />
+                  {selectedNext?.name ? (
+                    <>
+                      <span className="muted" style={{ fontSize: 12 }}>Sıradaki:</span>
+                      <span className="pill" data-status="NEXT">{selectedNext.name}</span>
+
+                      <button
+                        className="btn sm"
+                        onClick={() => openNextStopNavigation(selectedNext, selected)}
+                      >
+                        Sonraki Durağa Navigasyon
+                      </button>
+
+                      {selectedEta != null ? (
+                        <span className="pill">ETA: {selectedEta}dk</span>
+                      ) : null}
+
+                      <button
+                        className="btn sm"
+                        onClick={() => openFullRouteNavigation(selectedStops, selected)}
+                      >
+                        Tam Rotayı Dış Navigasyonda Aç
+                      </button>
+                    </>
+                  ) : (
+                    <span className="muted">Sıradaki durak yok.</span>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    flex: "0 1 auto",
+                    marginLeft: "auto",
+                  }}
+                >
+                  <span className="pill">Toplam Durak Sayısı: {selectedStats.total}</span>
+                  <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
+                  <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginLeft: 4,
+                    }}
+                  >
+                    <span className="muted" style={{ fontSize: 12 }}>Mini Timeline</span>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <StopTimeline
+                        stops={selectedStops}
+                        nextStopId={selectedNext?.id ?? null}
+                        compact
+                        onSelect={(s) => focusStop(s)}
+                      />
+                    </div>
+                  </div>
+
+                  <button className="btn sm" onClick={fitAll}>Tümünü Göster</button>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="card" style={{ marginBottom: 10 }}>
             <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
-            <div className="muted" style={{ fontSize: 12 }}>Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Seçili araç + tüm rota. Yol ağına yakın önizleme varsa otomatik kullanılır.
+            </div>
           </div>
 
           <MapView
             vehicles={vehicles}
-            stops={selectedStops}
+            stops={showStops ? selectedStops : []}
             routePath={routePreview.points}
             routeSource={routePreview.source}
             selectedVehicleId={selectedVehicleId}
             onSelectVehicle={setSelectedVehicleId}
-            fitKey={`company:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}`}
+            fitKey={`company:${vehicles.length}:${selectedVehicleId}:${selectedStops.length}:${gpsAtIso(selected) || ""}:${showStops ? "stops" : "nostops"}`}
             height="var(--mapH)"
           />
         </div>

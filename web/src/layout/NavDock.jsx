@@ -66,7 +66,6 @@ export default function NavDock({ role, path, me }) {
       sections.push({
         title: "Ana",
         items: [
-          { label: "Rehber", path: "/room/copilot", badge: "Yeni" },
           { label: "Canlı Takip", path: "/room/map" },
           { label: "Ticari Akışım", path: "/room/commercial-flow", badge: "Yeni" },
           { label: "Teklifler", path: "/room/offers" },
@@ -90,11 +89,11 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+      advanced.push({ label: "Copilot Test", path: "/room/copilot" });
     } else if (role === "COMPANY") {
       sections.push({
         title: "Ana",
         items: [
-          { label: "Rehber", path: base + "/copilot", badge: "Yeni" },
           { label: "Harita", path: base + "/map" },
           { label: "Ticari Akışım", path: base + "/commercial-flow", badge: "Yeni" },
           { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
@@ -114,11 +113,11 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
+      advanced.push({ label: "Copilot Test", path: base + "/copilot" });
     } else if (role === "DRIVER") {
       sections.push({
         title: "",
         items: [
-          { label: "Rehber", path: "/driver/copilot", badge: "Yeni" },
           { label: "Bugün", path: "/driver/today" },
           { label: "Rota", path: "/driver/route" },
           { label: "Harita", path: "/driver/map" },
@@ -131,7 +130,6 @@ export default function NavDock({ role, path, me }) {
       sections.push({
         title: "",
         items: [
-          { label: "Rehber", path: "/personel/copilot", badge: "Yeni" },
           { label: "Canlı", path: "/personel/live" },
           { label: "Servisim", path: "/personel/my" },
           { label: "KVKK", path: "/shared/kvkk" },
@@ -143,7 +141,6 @@ export default function NavDock({ role, path, me }) {
       sections.push({
         title: "",
         items: [
-          { label: "Rehber", path: "/parent/copilot", badge: "Yeni" },
           { label: "Canlı", path: "/parent/live" },
           { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Export", path: "/shared/logs" },
@@ -154,7 +151,6 @@ export default function NavDock({ role, path, me }) {
       sections.push({
         title: "",
         items: [
-          { label: "Rehber", path: "/superadmin/copilot", badge: "Yeni" },
           { label: "Overview", path: "/superadmin" },
           { label: "Companies", path: "/superadmin/companies" },
           { label: "Rooms", path: "/superadmin/rooms" },
@@ -166,6 +162,7 @@ export default function NavDock({ role, path, me }) {
           { label: "SSOT", path: "/superadmin/ssot-alignment" },
           { label: "Ticari Omurga", path: "/superadmin/commercial-core" },
           { label: "Guven + Kalite", path: "/superadmin/trust-quality" },
+          { label: "Copilot Test", path: "/superadmin/copilot" },
           { label: "Dogal Copilot", path: "/superadmin/natural-copilot" },
           { label: "Pilot Launch Gate", path: "/superadmin/pilot-launch-gate" },
           { label: "KVKK", path: "/shared/kvkk" },

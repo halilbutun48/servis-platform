@@ -233,11 +233,13 @@ export default function MapView({
 
   const nextStop = useMemo(() => firstPendingStop(stops), [stops]);
   const completedStop = useMemo(() => lastCompletedStop(stops), [stops]);
+
   const nextStopPoint = useMemo(() => {
     const lat = toNum(nextStop?.lat ?? nextStop?.location?.lat);
     const lng = toNum(nextStop?.lng ?? nextStop?.location?.lng);
     return lat === null || lng === null ? null : [lat, lng];
   }, [nextStop]);
+
   const completedStopPoint = useMemo(() => {
     const lat = toNum(completedStop?.lat ?? completedStop?.location?.lat);
     const lng = toNum(completedStop?.lng ?? completedStop?.location?.lng);
@@ -260,7 +262,9 @@ export default function MapView({
     if (!routeLine.length || !nextStopPoint) return [];
     const nextIdx = nearestIndex(routeLine, nextStopPoint);
     if (nextIdx < 0) return [];
-    const startIdx = followPoint ? nearestIndex(routeLine, followPoint) : (completedStopPoint ? nearestIndex(routeLine, completedStopPoint) : 0);
+    const startIdx = followPoint
+      ? nearestIndex(routeLine, followPoint)
+      : (completedStopPoint ? nearestIndex(routeLine, completedStopPoint) : 0);
     if (startIdx < 0) return routeLine.slice(0, nextIdx + 1);
     return sliceInclusive(routeLine, startIdx, nextIdx);
   }, [routeLine, nextStopPoint, followPoint, completedStopPoint]);
@@ -273,7 +277,17 @@ export default function MapView({
     ];
   }, [vehiclePoints, stopPoints, routeLine]);
 
-  const sourceLabel = routeSource === "LEARNED" ? "Öğrenilmiş rota" : routeSource === "OSRM" ? "Yol ağına yakın rota" : "Tahmini rota";
+  const sourceLabel = routeSource === "LEARNED"
+    ? "Öğrenilmiş rota"
+    : routeSource === "OSRM"
+      ? "Yol ağına yakın rota"
+      : "Tahmini rota";
+
+  const selectedVehicleLabel = selectedVehicle?.plate
+    ? `Araç: ${selectedVehicle.plate}`
+    : (selectedVehicleId ? `Seçili araç: #${selectedVehicleId}` : "Araç seç: marker'a tıkla");
+
+  const nextStopLabel = nextStop?.name ? `Sıradaki: ${nextStop.name}` : "Sıradaki durak yok";
 
   return (
     <div className="card" style={{ padding: 0 }}>
@@ -288,17 +302,41 @@ export default function MapView({
           />
           <FocusController />
 
-          <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-          {routeLine?.length >= 2 ? <Polyline positions={routeLine} pathOptions={{ color: "#64748b", weight: 5, opacity: 0.5 }} /> : null}
-          {completedRoute?.length >= 2 ? <Polyline positions={completedRoute} pathOptions={{ color: "#22c55e", weight: 6, opacity: 0.65 }} /> : null}
-          {nextLegRoute?.length >= 2 ? <Polyline positions={nextLegRoute} pathOptions={{ color: "#2563eb", weight: 7, opacity: 0.9 }} /> : null}
-          {helperLeg?.length >= 2 ? <Polyline positions={helperLeg} pathOptions={{ color: "#0ea5e9", weight: 3, opacity: 0.8, dashArray: "8 8" }} /> : null}
+          {routeLine?.length >= 2 ? (
+            <Polyline positions={routeLine} pathOptions={{ color: "#64748b", weight: 5, opacity: 0.5 }} />
+          ) : null}
+
+          {completedRoute?.length >= 2 ? (
+            <Polyline positions={completedRoute} pathOptions={{ color: "#22c55e", weight: 6, opacity: 0.65 }} />
+          ) : null}
+
+          {nextLegRoute?.length >= 2 ? (
+            <Polyline positions={nextLegRoute} pathOptions={{ color: "#2563eb", weight: 7, opacity: 0.9 }} />
+          ) : null}
+
+          {helperLeg?.length >= 2 ? (
+            <Polyline positions={helperLeg} pathOptions={{ color: "#0ea5e9", weight: 3, opacity: 0.8, dashArray: "8 8" }} />
+          ) : null}
 
           {stopPoints.map(([lat, lng, s]) => {
-            const variant = String(nextStop?.id) === String(s?.id) ? "next" : isReachedStop(s) ? "done" : "default";
+            const variant =
+              String(nextStop?.id) === String(s?.id)
+                ? "next"
+                : isReachedStop(s)
+                  ? "done"
+                  : "default";
+
             return (
-              <Marker key={`stop:${s.id ?? s.order ?? s.name}`} position={[lat, lng]} icon={iconStop(s.name || `Durak ${s.order ?? ""}`, variant)}>
+              <Marker
+                key={`stop:${s.id ?? s.order ?? s.name}`}
+                position={[lat, lng]}
+                icon={iconStop(s.name || `Durak ${s.order ?? ""}`, variant)}
+              >
                 <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent={false}>
                   {s.name || "Durak"}
                 </Tooltip>
@@ -315,25 +353,48 @@ export default function MapView({
             });
 
             return (
-              <Marker key={`veh:${v.id}`} position={[lat, lng]} icon={icon} eventHandlers={{ click: () => onSelectVehicle && onSelectVehicle(v.id) }} />
+              <Marker
+                key={`veh:${v.id}`}
+                position={[lat, lng]}
+                icon={icon}
+                eventHandlers={{ click: () => onSelectVehicle && onSelectVehicle(v.id) }}
+              />
             );
           })}
         </MapContainer>
-
-        <div className="map-preview-badges">
-          <span className="map-preview-pill map-preview-pill--route">{sourceLabel}</span>
-          {nextStop?.name ? <span className="map-preview-pill map-preview-pill--next">Sıradaki: {nextStop.name}</span> : null}
-          {selectedVehicle?.plate ? <span className="map-preview-pill map-preview-pill--vehicle">Araç: {selectedVehicle.plate}</span> : null}
-        </div>
       </div>
 
-      <div style={{ padding: 12, display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
-        <div className="muted">{selectedVehicleId ? `Seçili araç: #${selectedVehicleId}` : "Araç seç: marker'a tıkla"}</div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div
+        style={{
+          padding: 12,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <div className="muted" style={{ fontSize: 12 }}>
+          {selectedVehicleLabel}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            justifyContent: "flex-end",
+            flexWrap: "wrap",
+          }}
+        >
+          <span className="pill">{sourceLabel}</span>
+          <span className="pill" data-status="NEXT">{nextStopLabel}</span>
+          {selectedVehicle?.plate ? (
+            <span className="pill">{selectedVehicleLabel}</span>
+          ) : null}
           <span className="pill" data-status="PASSIVE">Rota</span>
-          <span className="pill" data-status="OK">Geçilen kısım</span>
-          <span className="pill" data-status="NEXT">Sıradaki kısım</span>
-          <button onClick={() => window.dispatchEvent(new Event("map:fitAll"))}>Tümünü Göster</button>
+          <span className="pill" data-status="OK">Geçilen</span>
+          <span className="pill" data-status="NEXT">Sıradaki</span>
         </div>
       </div>
     </div>
