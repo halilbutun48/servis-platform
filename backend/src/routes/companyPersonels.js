@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { decorateGeoItem, inferGeoState } from "../services/geoState.js";
-import { rememberResponse } from "../utils/responseCache.js";
+import { clearResponseCache, rememberResponse } from "../utils/responseCache.js";
 
 const qGeoStatusSchema = z.string().trim().min(1).optional();
 const qKindSchema = z.enum(["PERSONEL", "STUDENT"]).optional();
@@ -38,6 +38,15 @@ const putLocationSchema = z.object({
   geoManualOverride: z.boolean().optional(),
   geoStatus: z.enum(["OK", "NEEDS_REVIEW", "FAILED"]).optional(),
 });
+
+
+function clearCompanyPersonelsCache(user) {
+  clearResponseCache(`company-personels:${user?.companyId ?? -1}:`, {
+    role: user?.role,
+    companyId: user?.companyId,
+    userId: user?.id,
+  });
+}
 
 export function companyPersonelsRouter() {
   const r = express.Router();
@@ -146,6 +155,7 @@ export function companyPersonelsRouter() {
       updatedCount += 1;
     }
 
+    clearCompanyPersonelsCache(u);
     res.json({ ok: true, updatedCount, fields, idsApplied: ids.length });
   });
   // PUT /api/company/personels/:id/location
@@ -217,6 +227,7 @@ export function companyPersonelsRouter() {
       },
     });
 
+    clearCompanyPersonelsCache(u);
     res.json({ ok: true, item: decorateGeoItem(updated) });
   });
 

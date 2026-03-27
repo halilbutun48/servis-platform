@@ -59,7 +59,7 @@ async function main() {
 
   console.log("INFO checking updated product identity and route");
   must("project spec includes hizmet alan degerlendirmesi", includesAny(project, ["hizmet alan kurum değerlendirmesi", "hizmet alan kurum kalite değerlendirmesi verir"]));
-  must("root readme points to M60 route", includesAny(readme, ["M59 green", "M60 — Saha Acceptance Merkezi", "pack_m60_field_acceptance_center.ps1"]));
+  must("root readme points to historical M60 route or later living route", includesAny(readme, ["M59 green", "M60 — Saha Acceptance Merkezi", "pack_m60_field_acceptance_center.ps1", "M75 green baseline"]));
   must("checklist marks M59 green and keeps M60 open", includesAny(checklist, ["[x] `M59 — Gözlemleme + Saha Teşhis`", "[ ] `M60 — Saha Acceptance Merkezi`"]));
 
   console.log("INFO checking backend acceptance skeleton");

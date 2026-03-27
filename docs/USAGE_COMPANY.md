@@ -4,9 +4,10 @@
 Company, personel servis ihtiyacını planlar ve market üzerinden birden fazla **ROOM**’dan teklif toplayıp en uygunu ile devam eder.
 
 ## Günlük Akış (en az adım)
-1) **Geo Review**
-   - Company panelinde **Geo Review** sekmesine gir.
-   - `NEEDS_REVIEW` olan personelleri düzelt (konum düzeltmesi + OK).
+1) **Personel Konum Seçici**
+   - Company panelinde **Personel Konum Seçici** sekmesine gir.
+   - `NEEDS_REVIEW` olan kayıtları düzelt, büyük haritada konumu seç ve `OK` yap.
+   - Adres/telefon sadece geçici girdiyse işi bitince temizle; kalıcı esas veri lat/lon'dur.
 
 2) **Agreement Wizard ile Plan Oluştur**
    - **Agreements** ekranında Wizard/preset ile hızlı plan seç.
@@ -25,5 +26,5 @@ Company, personel servis ihtiyacını planlar ve market üzerinden birden fazla 
    - Onay/başlatma operasyonu Room tarafındadır.
 
 ## İpuçları
-- “Az işlem” hedefi: önce Geo Review → sonra Agreement/Wizard → sonra Market.
+- “Az işlem” hedefi: önce Konum Seçici → sonra Agreement/Wizard → sonra Market.
 - Kabul sonrası room tarafına shift düşer; Room “Onayla (+Başlat)” ile operasyonu başlatır.

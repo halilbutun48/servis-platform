@@ -59,7 +59,7 @@ async function main() {
 
   console.log("INFO checking updated product identity and route");
   must("project spec uses B2B marketplace identity", includesAny(project, ["B2B servis pazaryeri + operasyon yönetim platformudur", "teklif, pazarlık, uzlaşma ve sözleşme süreçlerini yöneten"]));
-  must("root readme points to M59 route", includesAny(readme, ["M59 — Gözlemleme + Saha Teşhis", "M65 green olmadan sahaya çıkılmayacak", "pack_m59_observability_field_diagnostics.ps1"]));
+  must("root readme points to historical M59 route or later living route", includesAny(readme, ["M59 — Gözlemleme + Saha Teşhis", "M65 green olmadan sahaya çıkılmayacak", "M65 green olmadan sahaya çıkılmaz", "pack_m59_observability_field_diagnostics.ps1", "M75 green baseline"]));
   must("checklist keeps M59 open", includesAny(checklist, ["[ ] `M59 — Gözlemleme + Saha Teşhis`", "M59 — Gözlemleme + Saha Teşhis"]));
 
   console.log("INFO checking backend observability skeleton");

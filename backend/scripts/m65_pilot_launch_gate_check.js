@@ -44,16 +44,16 @@ async function main() {
   const panel = read("web/src/panels/superadmin/PilotLaunchGatePanel.jsx");
   const runbook = read("docs/RUNBOOK_M65_PILOT_LAUNCH_GATE.md");
 
-  must("readme points to M65/M66 route", includesAny(readme, ["M65 — Pilot Launch Gate", "M66", "tools\\pack.ps1 -To 66"]));
+  must("readme points to M65/M66 route or current living route", includesAny(readme, ["M65 — Pilot Launch Gate", "M66", "tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "M75 green baseline"]));
   must("project spec reflects launch gate layer", includesAny(projectSpec, ["Pilot Launch Gate", "GO / LIMITED GO / NO-GO", "M59 → M65"]));
   must("primer reflects M65 green and M66 functional", includesAny(primer, ["M65 — Pilot Launch Gate", "M66", "pack_m66_operation_reassignment.ps1"]));
-  must("startpack reflects post-M65/M66 state", includesAny(startpack, ["M65 — Pilot Launch Gate", "M66", "tools\\pack_docs_ssot.ps1"]));
+  must("startpack reflects post-M65/M66 state or current living route", includesAny(startpack, ["M65 — Pilot Launch Gate", "M66", "tools\\pack_docs_ssot.ps1", "tools\\pack.ps1 -To 76", "M75 green baseline"]));
   must("checklist marks M65 green and keeps M66 open", includesAny(checklist, ["[x] `M65 — Pilot Launch Gate`", "[ ] `M66 — Operasyonel Reassignment`"]));
-  must("backlog points to rerun after M65", includesAny(backlog, ["M0-M66", "cleanup", "saha testi"]));
-  must("tools primer reflects M65 green and M66 functional", includesAny(toolsPrimer, ["M65 — Pilot Launch Gate", "M66", "fonksiyonel"]));
+  must("backlog points to rerun after M65 or current normalization route", includesAny(backlog, ["M0-M66", "cleanup", "saha testi", "M76A-1", "minimum normalizasyon"]));
+  must("tools primer reflects M65/M66 history or current living route", includesAny(toolsPrimer, ["M65 — Pilot Launch Gate", "M66", "fonksiyonel", "M75 green baseline", "M76A-1"]));
   must("tools checklist mirrors docs checklist", checklist === toolsChecklist);
-  must("tools readme lists master/docs pack", includesAny(toolsReadme, ["tools\\pack.ps1 -To 66", "tools\\pack_docs_ssot.ps1"]));
-  must("registry includes M65 green and M66 open", includesAny(registry, ["M65 - Pilot Launch Gate - green-base", "M65 - Pilot Launch Gate - green", "M66 - Operasyonel Reassignment - functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik"]));
+  must("tools readme lists master/docs pack or current living master entry", includesAny(toolsReadme, ["tools\\pack.ps1 -To 66", "tools\\pack_docs_ssot.ps1", "tools\\pack.ps1 -To 76"]));
+  must("registry includes M65/M66 history or current M75/M76 route", includesAny(registry, ["M65 - Pilot Launch Gate - green-base", "M65 - Pilot Launch Gate - green", "M66 - Operasyonel Reassignment - functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik", "M75 - green-baseline", "M76A-1 - minimum-normalization - active"]));
 
   must("route exposes launch gate endpoints", includesAny(route, ["/manifest", "/decision-template", "/summary"]));
   must("manifest defines launch gate capabilities", includesAny(manifest, ["PILOT_LAUNCH_GATE_CAPABILITIES", "GO / LIMITED GO / NO-GO", "riskMatrix"]));

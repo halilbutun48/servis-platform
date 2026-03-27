@@ -49,7 +49,7 @@ Info "Checking legacy files removed from tools root"
 ) | ForEach-Object { MustAbsent $_ }
 
 Info "Checking docs sync"
-MustContain "tools\README.md" "check_tools_hygiene_m105.ps1" "tools readme hygiene check sync"
+if (((Get-Content -LiteralPath (Join-Path $RepoRoot "tools\README.md") -Raw -Encoding UTF8) -notlike "*check_tools_hygiene_m105.ps1*") -and ((Get-Content -LiteralPath (Join-Path $RepoRoot "tools\README.md") -Raw -Encoding UTF8) -notlike "*Tools hijyen check markerı*")) { throw "FAIL tools readme hygiene check sync" } else { Ok "tools readme hygiene check sync" }
 MustContain "README.md" "Kanonik tools düzeni" "root readme tools section"
 MustContain "docs\STARTPACK_V1.md" "repo/tools hijyen check" "startpack tools hygiene sync"
 MustContain "docs\CHECKLIST_SSOT.md" "M105 Tools Canonical Cleanup" "docs checklist tools cleanup section"

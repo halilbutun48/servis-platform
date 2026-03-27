@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20",
+  "generatedAt": "2026-03-27T00:00:00Z",
   "coreDocs": {
     "repoReadme": "README.md",
     "primer": "docs/PRIMER_SSOT.md",
@@ -11,7 +11,10 @@
     "backlog": "docs/NEXT_BACKLOG_V1.md",
     "toolsReadme": "tools/README.md",
     "fullRunbook": "docs/RUNBOOK_FULL_M0_M66_FIELD_TEST.md",
-    "docsPackRunbook": "docs/RUNBOOK_DOCS_SSOT_PACK.md"
+    "docsPackRunbook": "docs/RUNBOOK_DOCS_SSOT_PACK.md",
+    "livingBaseline": "docs/LIVING_BASELINE_M75.md",
+    "normalizationRunbook": "docs/RUNBOOK_M76A_1_MINIMUM_NORMALIZATION.md",
+    "normalizationMilestone": "docs/MILESTONE_M76A_1_MINIMUM_NORMALIZATION.md"
   },
   "stages": [
     {
@@ -560,6 +563,127 @@
       "check": "tools/check_docs_ssot_repo_contract.ps1",
       "runtime": "backend/scripts/docs_ssot_pack_check.js",
       "runbook": "docs/RUNBOOK_DOCS_SSOT_PACK.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M67",
+      "group": 67,
+      "kind": "pack",
+      "script": "tools/pack_m67_kurumsal_olcek_hazirlik.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m67_kurumsal_olcek_hazirlik_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M67_KURUMSAL_OLCEK_HAZIRLIK.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M68",
+      "group": 68,
+      "kind": "pack",
+      "script": "tools/pack_m68_fetch_hardening.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m68_fetch_hardening_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M68_FETCH_HARDENING.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M69",
+      "group": 69,
+      "kind": "pack",
+      "script": "tools/pack_m69_fetch_hardening_phase2.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m69_fetch_hardening_phase2_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M69_FETCH_HARDENING_PHASE2.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M70",
+      "group": 70,
+      "kind": "pack",
+      "script": "tools/pack_m70_checker_sync_hot_path.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m70_checker_sync_hot_path_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M70_CHECKER_SYNC_HOT_PATH.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M71",
+      "group": 71,
+      "kind": "pack",
+      "script": "tools/pack_m71_summary_hotpath.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m71_summary_hotpath_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M71_SUMMARY_HOTPATH.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M72",
+      "group": 72,
+      "kind": "pack",
+      "script": "tools/pack_m72_hot_endpoint_reduction.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m72_hot_endpoint_reduction_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M72_HOT_ENDPOINT_REDUCTION.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M73",
+      "group": 73,
+      "kind": "pack",
+      "script": "tools/pack_m73_hot_path_phase2.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m73_hot_path_phase2_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M73_HOT_PATH_PHASE2.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M74",
+      "group": 74,
+      "kind": "pack",
+      "script": "tools/pack_m74_hot_path_phase3.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m74_hot_path_phase3_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M74_HOT_PATH_PHASE3.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M75",
+      "group": 75,
+      "kind": "pack",
+      "script": "tools/pack_m75_hot_path_phase4.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m75_hot_path_phase4_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M75_HOT_PATH_PHASE4.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M76A-1",
+      "group": 76,
+      "kind": "pack",
+      "script": "tools/pack_m76a_1_minimum_normalization.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m76a_1_minimum_normalization_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M76A_1_MINIMUM_NORMALIZATION.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M76B",
+      "group": 76,
+      "kind": "pack",
+      "script": "tools/pack_m76b_living_matrix_tools_consolidation.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m76b_living_matrix_tools_consolidation_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M76B_LIVING_MATRIX_TOOLS_CONSOLIDATION.md",
       "checklist": "docs/CHECKLIST_SSOT.md"
     }
   ]

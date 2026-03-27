@@ -9,6 +9,7 @@ import { isSchool, personLabel } from "../../utils/labels";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildGeoReviewFacts } from "../../utils/copilotFacts";
 import { getCompanyGeoNeedsReview, getCompanyPersonels } from "../../utils/companyDataHub";
+import { clearUiDataCache } from "../../utils/uiDataCache";
 
 const GUIDED_TEMP_STORAGE_KEY = "psv1:guidedTempShiftIds:v1";
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
@@ -308,6 +309,7 @@ export default function GeoReviewPanel() {
         },
       });
       if (resp?.item) {
+        clearUiDataCache("/api/company/personels");
         patchItem(saveId, resp.item);
         if (advanceNext) moveToNextItem(saveId);
         setMsg(markOk ? "Kayıt OK yapıldı." : advanceNext ? "Konum kaydedildi. Sıradaki kayıt açıldı." : "Konum kaydedildi.");
@@ -335,6 +337,7 @@ export default function GeoReviewPanel() {
       });
       const clearedAddress = normalized.includes("address");
       const clearedPhone = normalized.includes("phone");
+      clearUiDataCache("/api/company/personels");
       setItems((prev) => prev.map((item) => {
         if (!ids.includes(Number(item?.id || 0))) return item;
         return {
@@ -394,7 +397,10 @@ export default function GeoReviewPanel() {
               geoStatus: "OK",
             },
           });
-          if (saved?.item) patchItem(item.id, saved.item);
+          if (saved?.item) {
+            clearUiDataCache("/api/company/personels");
+            patchItem(item.id, saved.item);
+          }
           found += 1;
         } catch (e) {
           if (e?.status === 404) notFound += 1;

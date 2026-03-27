@@ -1,107 +1,295 @@
-﻿# SERVIS-PLATFORM — PERSONEL SERVİS V1 — PRIMER SNAPSHOT
+﻿VARDIS / PERSONEL SERVİS V1 – FULL PRIMER SNAPSHOT (2026-03-27)
 
-Tarih: 2026-03-20
-Timezone: Europe/Istanbul
-Repo: `D:\servis-platform`
-Branch: `main`
+KİMLİK
+- Marka adı: Vardis
+- İç proje/çalışma adı: Personel Servis V1
+- Repo: D:\servis-platform
+- Branch: main
+- Durum: güncel patch uygulanmış repo
 
-## 0) Genel durum
+DOĞRU ÜRÜN TANIMI
+- Bu proje sadece “personel servisi” değildir.
+- Bu proje sadece “öğrenci/veli sistemi” de değildir.
+- Bu proje sadece “operasyon sistemi” de değildir.
+- Doğru tanım:
+  - GPS tabanlı karma servis/taşıma platformu
+  - pazar + sözleşme + operasyon + kalite/yönetim omurgası
+  - okul ve kurumsal taşıma alanlarını birlikte taşıyan çoklu domain yapı
 
-- `M59 -> M65` saha öncesi sertleştirme hattı **green taban** olarak duruyor.
-- Ancak `M59 -> M65` için tam uçtan uca yeniden kontrol ve saha testi **henüz tamamlanmış sayılmaz**.
-- Şu an repo **post-M66 functional** durumdadır.
-- `M66` fonksiyonel geliştirme olarak eklendi; fakat tam milestone kapanışı için canlı smoke + saha testi + yeniden doğrulama gereklidir.
-- Repo cleanup / duplicate code cleanup / dead code cleanup / büyük performans sadeleştirmesi **henüz yapılmadı**.
+ÜRÜNÜN BİRLİKTE YAŞAYAN ANA ALANLARI
+1) Okul alanı
+- school
+- student
+- parent
 
-## 1) M66 güncel durum
+2) Kurumsal/personel alanı
+- company
+- organization
+- personel
 
-- `M66-A1` çekirdek çalışıyor:
-  - ROOM, `APPROVED/ACTIVE` vardiyada araç/sürücü atamasını değiştirebiliyor.
-  - değişiklik audit + notification + operation event olarak yazılıyor.
-  - COMPANY tarafında Vardiyalar / Liste içinde operasyon kaydı görülebiliyor.
-- `M66-A2b` polish yapıldı:
-  - buton dili: **Değişikliği Kaydet ve Paketi Yenile**
-  - yeni sürücüye `shift:update + route:plan` zinciri
-  - eski sürücüye removal zinciri
-- operation event reason metinleri kullanıcı diliyle gösteriliyor.
-- verification katmanı eklendi:
-  - `backend/scripts/m66check.js`
-  - `tools/pack_m66_operation_reassignment.ps1`
-  - `tools/check_m66_operation_reassignment_repo_contract.ps1`
-  - `docs/RUNBOOK_M66_OPERATION_REASSIGNMENT.md`
-- `tools/pack_m45_retention_backup.ps1`
-- `docs/RUNBOOK_M45_RETENTION_BACKUP.md`
-- `tools/pack_m46_ai_copilot.ps1`
-- `tools/check_m46_ai_copilot_repo_contract.ps1`
-- `docs/RUNBOOK_M46_AI_COPILOT.md`
+3) Operasyon alanı
+- room
+- driver
+- vehicle
+- shift
+- gps
+- attendance
 
-## 2) Dürüst saha öncesi durum
+4) Ticari alan
+- market
+- teklif
+- pazarlık
+- sözleşme
+- ticari akış
 
-- `M59 -> M65` için green taban var.
-- Ama **"tam saha hazır ve her şey yeniden doğrulandı"** denemez.
-- Özellikle baştan aşağı kontrol gerekecek:
-  - yönlendirmeler
-  - tarih / saat akışları
-  - role-based rollout
-  - market / pazarlık / bekleyen / liste akışları
-  - bildirim ve ws zinciri
-  - operasyon görünürlüğü
-  - hizmet değerlendirme
-  - admin / observability / launch gate yüzeyleri
-  - `M66` operasyonel reassignment canlı zinciri
+5) Kalite / yönetim alanı
+- hizmet değerlendirme
+- trust-quality
+- provider score
+- raporlar
+- admin kontrolü
 
-## 3) Yeni tek komut hattı
+KISA ÜST ANLATIM
+- Vardis, servis taşımacılığında talep, ticari eşleşme, sözleşme, atama ve canlı operasyon süreçlerini tek sistemde birleştiren GPS tabanlı bir platformdur.
+- Sistem hem okul/öğrenci/veli hem de company/organization/personel alanlarını birlikte taşıyabilen bir omurgaya sahiptir.
+- Ürünün kritik farkı, ticari akış ile operasyonel akışı aynı ürün içinde ama bilinçli şekilde ayrı katmanlar olarak yönetmesidir.
 
-Kanonik tam komut artık:
+YATIRIMCI / WEB MESAJLAŞMA ÇERÇEVESİ
+- Dışarıya dönük marka adı: Vardis
+- Yatırımcı/web anlatısında öne çıkacak çerçeve:
+  - servis taşımacılığı için pazar + sözleşme + operasyon platformu
+- Güçlü kısa anlatım:
+  - Vardis, şirket ve kurumların taşıma ihtiyacını uygun servis sağlayıcılarla buluşturan; teklif, pazarlık, sözleşme, atama ve canlı operasyon süreçlerini tek platformda yöneten bir servis teknolojisi altyapısıdır.
+- Not:
+  - giriş pazarı personel servis taşımacılığı odağıyla anlatılabilir
+  - ama ürün altyapısı daha geniştir; okul ve kurumsal taşıma senaryolarını birlikte kaldıran çoklu domain platform mantığı korunmalıdır
 
-- `tools\pack.ps1 -To 66 -RepoDir D:\servis-platform -NoBuild`
+ÇALIŞMA TARZI / DEĞİŞMEZ KURALLAR
+- Adım adım, kontrollü ilerle.
+- Mümkün oldukça tek seferde overlay zip ver.
+- Zip açılınca nested root olmasın; tek kökten apply script çalışsın.
+- Yanıtlarda en fazla 3 PowerShell komutu ver.
+- Başlangıç düzeyi, düşük bilişsel yük, sade Türkçe kullan.
+- Gereksiz jargon ve uzun karmaşık açıklamadan kaçın.
+- Önce ölç, sonra düzelt, sonra tekrar ölç.
+- Green baseline bozulmamalı.
 
-Bu master pack:
-- statik repo check'leri koşturur,
-- `M0 -> M41` gate hattını koşturur,
-- `M42 -> M66` pack zincirini koşturur,
-- sonunda repo audit raporu üretir.
+TTL / LINK PRESETLERI
+- Parent invite ve public link presetleri: 1 hafta / 1 ay / 6 ay / 1 yıl
 
-Repo audit wrapper:
-- `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+TERİM KURALLARI
+- “agreement” yerine “sözleşme”
+- “driver GPS” yerine “sürücünün telefon GPS’i”
+- Dış metinlerde marka adı daima “Vardis”
+- Ürünü “sadece personel projesi” diye daraltma
+- Ürünü “sadece operasyon aracı” diye daraltma
 
-Audit raporu:
-- `artifacts/repo-audit/repo_audit_latest.json`
+SON GÜÇLÜ TEKNİK DURUM
+- M0 -> M41 master pack PASS
+- M42 -> M58 geçmiş baseline tamam
+- M59 -> M66 role rollout / operasyon hattı geçmiş baseline tamam
+- M67 -> M75 kurumsal ölçek hazırlık ve hot-path sertleştirme hattı çalışıldı
+- M75 sonunda kritik sert storm test profilinde:
+  - 429 = 0
+  - 5xx = 0
+  - toplam 117 adet 200
+- Bu durum “M75 green baseline” olarak kabul edilir
 
-## 4) Büyük cleanup fazı (sonraki ana faz)
+M67 -> M75 ARASINDA YAPILAN ANA İŞLER
+1) Ölçüm / teşhis katmanı
+- company_fetch_storm_check
+- scale_readiness_check
+- kurumsal ölçek runbook/check yapısı
 
-1. `M0 -> M66` baştan aşağı kontrol / eksik fonksiyonel noktaları kapatma
-2. saha testi / canlı akış doğrulama
-3. büyük repo cleanup
-   - duplicate kod
-   - eski / legacy / orphan parçalar
-   - dead code
-   - ortak helper/domain grouping
-   - backend/frontend/mobile gereksiz yük üreten parçaların temizliği
-4. performans ve ölçek hazırlığı
-   - 2000 eşzamanlı kullanıcı hedefi için gereksiz render / fetch / listener / interval / paralel akışların azaltılması
+2) Frontend fetch sertleştirme
+- ortak companyDataHub
+- kısa TTL cache
+- in-flight dedupe
+- visible-only / lazy loading
+- first-frame yük azaltma
+- search-first / selection-first yaklaşımı
+- route-preview sakinleştirme
 
-## 5) Yeni sohbet için ilk cümle
+3) Backend sıcak uç azaltma
+- workflow summary
+- commercial flow summary
+- reports summary cache
+- route-preview backend cache
+- trust-quality / provider score hafifletme
+- endpoint sınıfına göre ayrı read limiter kovaları
+- offers / people / live shift / reports / preview / directory ayrımı
 
-Repo şu an post-M66 functional durumda. M66 operasyonel reassignment çekirdeği ve verification pack'i eklendi. Ancak M59–M66 için baştan aşağı kontrol, saha testi ve sonrasında derin repo cleanup fazına geçmemiz gerekiyor. Öncelik artık eksik fonksiyonel noktaları kapatmak, sonra canlı doğrulama ve ardından duplicate/legacy/dead code temizliği yapmak.
+4) UI hotfix zinciri
+- ShiftsPanel marketItems initialization kırığı düzeltildi
+- WorkflowPanel loadSummary/loadStats kırığı düzeltildi
+- Room.title Prisma crash hattı kapatıldı
+- GeoReviewPanel token kırığı düzeltildi
+- helper / repo-contract uyumsuzlukları düzeltildi
 
-- Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
+MEVCUT TEKNİK GERÇEK
+- Runtime sonucu iyi: mevcut sert test profilinde 429 yok, 5xx yok.
+- Sistem artık daha öngörülebilir davranıyor.
+- Ancak statik tarafta hâlâ şu uyarılar kalabiliyor:
+  - ShiftsPanel initialLoadCalls=12
+  - AgreementsPanel initialLoadCalls=8
+- Bunlar şu an blocker değil.
+- Runtime green daha önemli.
+- Cleanup/refactor sırasında azaltılması hedeflenmeli.
 
-## M56 -> M58 markerları
-- M56 KVKK MATRIX + ETA QUALITY PACK PASS OK
-- M58 hazirlik komutu: `tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot D:\servis-platform`
-- M58 resmi green değildir; manuel pilot kabul / saha kabul gerekir.
+GENEL DEĞERLENDİRME
+- Genel proje puanı: yaklaşık 7.5/10
+- Teknik/altyapı yönü daha yüksek
+- Tamamlanmış ürün olgunluğu daha düşük
+- En büyük açık başlıklar:
+  - Copilot tamam değil
+  - cleanup tamam değil
+  - KVKK/uyum katmanı tamam değil
+  - checklist/operasyon doğrulama tamam değil
+  - final daha sert kabul testleri yapılmadı
+  - mobil saha sertleştirme ayrı ele alınmalı
 
-## M59 -> M65 repo-contract markerları
-- `M59 — Gözlemleme + Saha Teşhis` pack: `tools\pack_m59_observability_field_diagnostics.ps1`
-- `M59 — Gözlemleme + Saha Teşhis` resmi green oldu; aktif hat `M60`.
-- `M60 — Saha Acceptance Merkezi` pack: `tools\pack_m60_field_acceptance_center.ps1`
-- M60 green olmadan M61 acilmaz.
-- `M61 — SSOT + Milestone Hizası` pack: `tools\pack_m61_ssot_milestone_alignment.ps1`
-- Docs/SSOT pack: `tools\pack_docs_ssot.ps1`
-- M61 SSOT + Milestone Hizası PACK PASS OK.
-- `M62 — Ticari Omurga Güçlendirme` pack: `tools\pack_m62_commercial_core_strengthening.ps1`
-- M62 green olmadan M63 acilmaz.
-- `M63 — Güven + Kalite + Hizmet Değerlendirme` pack: `tools\pack_m63_trust_quality_service_evaluation.ps1`
-- `M64 — Doğal Copilot Katmanı` pack: `tools\pack_m64_natural_copilot_layer.ps1`
-- `M65 — Pilot Launch Gate` pack: `tools\pack_m65_pilot_launch_gate.ps1`
+10/10 İÇİN EKSİK ANA BAŞLIKLAR
+1) Copilot tamamlama
+2) KVKK / uyum katmanı
+3) kod cleanup
+4) checklist / operasyon doğrulama
+5) daha sert final yük testi
+6) mobil saha sertleştirme
+7) son kabul paketi
+
+CHECK / RUNBOOK TARAFINDA DOĞRU YAKLAŞIM
+- Tüm M0-M80 hattı baştan yazılmayacak.
+- Doğru yaklaşım:
+  - normalizasyon
+  - yaşayan seti ayırma
+  - ortak helper standardı
+  - aktif / legacy / archive ayrımı
+- Yani ihtiyaç:
+  - rewrite değil
+  - consolidation + standardization
+
+YENİ PLAN / MİLESTONE SIRASI
+- M76A-1: minimum check/runbook normalizasyonu
+- M76B: kod cleanup
+- M76A-2: final normalizasyon ve arşivleme
+- M77: KVKK / uyum katmanı
+- M78: checklist / operasyon doğrulama
+- M79: Copilot tamamlama
+- M80: final kabul / daha sert yük testi
+- M81: mobil saha sertleştirme ve pilot hazırlık
+
+M76A-1 AMACI
+- Cleanup başlamadan önce doğrulama hattını güvenilir hale getirmek
+- Aktif pack listesini çıkarmak
+- Helper isimlerini sabitlemek
+- Yanlış alarm üreten repo-contract kırıklarını temizlemek
+- Yaşayan seti belirlemek
+
+M76A-1 KAPSAMI
+1) aktif pack envanteri
+2) ortak helper standardı
+3) repo-contract kırık taraması
+4) minimum runbook standardı
+5) living baseline listesi
+
+M76B AMACI
+- Davranışı bozmadan kod cleanup yapmak
+- Duplicate fetch/helper temizliği
+- Eski hotfix izi gibi duran kodları toplamak
+- Company panellerini sadeleştirmek
+- Backend route/helper tekrarlarını azaltmak
+- M75 green davranışını korumak
+
+M76A-2 AMACI
+- Cleanup sonrası final runbook/pack normalizasyonu
+- Legacy/archive ayrımı
+- Primer / startpack / checklist güncellemesi
+
+M77 AMACI
+- KVKK/uyum katmanını tamamlamak
+- Aydınlatma metinleri
+- Veri görünürlük matrisi
+- Retention / silme / anonimleştirme yaklaşımı
+- Audit ve erişim izi uyumu
+
+M78 AMACI
+- Operasyon/checklist/runbook katmanını güçlendirmek
+- Release checklist
+- Saha öncesi checklist
+- Smoke test listesi
+- Backup/restore doğrulama
+- Incident runbook
+
+M79 AMACI
+- Copilot’u güvenilir operasyon rehberi haline getirmek
+- Planlama Merkezi / Vardiyalar ayrımını sabitlemek
+- Rol bazlı doğru yönlendirme
+- Temel operasyon sorularında güvenilirlik
+- Gerçek senaryo testleri
+
+M80 AMACI
+- Final sert kabul
+- 5 tur yük testi
+- Daha yüksek concurrency
+- Websocket bağlı kullanıcı profili
+- Çoklu room/company senaryosu
+- Final acceptance pack
+
+M81 AMACI
+- Mobil saha sertleştirme
+- Sürücünün telefon GPS’i kararlılığı
+- Offline/online toparlama
+- Zayıf internet testi
+- Arka plan davranışı
+- Pil/veri tüketimi
+- Mobil saha smoke test
+- Pilot hazırlık
+
+MOBİLİN KATMANI
+- Mobil yazılım bu projede saha/istemci katmanıdır.
+- Backend = sistemin beyni
+- Web = operasyon masası
+- Mobil = saha eli/ayağı
+- Bu yüzden mobil ana çekirdek ve operasyon akışları oturduktan sonra M81’de ele alınacaktır.
+
+MEVCUT GREEN BASELINE KURALI
+- Yeni iş yapılırken M75 green baseline bozulmamalı.
+- Ölçüm/check hattı güvenilir kalmalı.
+- Önce ölç, sonra düzelt, sonra tekrar ölç kuralı korunmalı.
+
+MARKA / YATIRIMCI / WEB KULLANIMI
+- Marka adı daima Vardis
+- Pitch deck kapağı mantığı:
+  - Vardis
+  - Servis taşımacılığı için pazar + sözleşme + operasyon platformu
+- Web hero mantığı:
+  - Vardis ile servis taşımacılığını uçtan uca yönetin
+- Kısa yatırımcı anlatımı:
+  - Vardis, servis taşımacılığında talep, ticari eşleşme, sözleşme, atama ve canlı operasyon süreçlerini tek sistemde birleştiren GPS tabanlı bir platformdur.
+- Ürün anlatılırken:
+  - ticari akış + operasyon birlikte
+  - ama bilinçli şekilde ayrı katmanlar olarak vurgulanmalı
+
+YENİ SOHBETTE DOĞRU BAŞLANGIÇ
+- Önce M76A-1 ile minimum check/runbook normalizasyonu yapalım.
+- Sonra M76B cleanup’a geçelim.
+- Cleanup sonrası M76A-2 ile final normalizasyon yapalım.
+- Sonra M77 -> M78 -> M79 -> M80 -> M81 sırasıyla ilerleyelim.
+
+YENİ SOHBETTE İLK BEKLENTİ
+- Güncel repo üzerinden:
+  1) aktif pack envanteri çıkar
+  2) ortak helper standardını belirle
+  3) repo-contract kırık taraması yap
+  4) M76A-1 için tek overlay hazırla
+- Yine tek zip ve sade apply akışı kullan
+- M75 green baseline’ı bozma
+
+ÖNEMLİ UYARI
+- Projeyi bundan sonra “sadece personel servisi” diye anlatma
+- “sadece okul sistemi” diye de anlatma
+- “sadece operasyon aracı” diye de anlatma
+- Doğru anlatım:
+  - çoklu domain
+  - pazar + sözleşme + operasyon
+  - karma servis/taşıma platformu

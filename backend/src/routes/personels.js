@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createPersonelSchema } from "../validators.js";
+import { clearResponseCache } from "../utils/responseCache.js";
 
 export function personelsRouter(io) {
   const r = express.Router();
@@ -78,6 +79,12 @@ export function personelsRouter(io) {
         personelId: created.id,
         action: "created",
         loginEnabled: Boolean(created?.user?.id),
+      });
+
+      clearResponseCache(`company-personels:${u.companyId ?? -1}:`, {
+        role: u?.role,
+        companyId: u?.companyId,
+        userId: u?.id,
       });
 
       return res.json({

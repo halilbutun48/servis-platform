@@ -59,7 +59,7 @@ async function main() {
   console.log("INFO checking updated route and SSOT status");
   must(
     "readme points to M62 route",
-    includesAny(readme, ["M61 green", "M62 — Ticari Omurga Güçlendirme", "pack_m62_commercial_core_strengthening.ps1"]),
+    includesAny(readme, ["M61 green", "M62 — Ticari Omurga Güçlendirme", "pack_m62_commercial_core_strengthening.ps1", "M75 green baseline"]),
   );
   must(
     "project spec reflects commercial layer",
@@ -67,15 +67,15 @@ async function main() {
   );
   must(
     "primer reflects M61 green and M62 active",
-    includesAny(primer, ["M61 — SSOT + Milestone Hizası", "M62 — Ticari Omurga Güçlendirme", "pack_m62_commercial_core_strengthening.ps1"]),
+    includesAny(primer, ["M61 — SSOT + Milestone Hizası", "M62 — Ticari Omurga Güçlendirme", "pack_m62_commercial_core_strengthening.ps1", "M75 green baseline", "M76A-1"]),
   );
   must(
     "startpack reflects M62 opening",
-    includesAny(startpack, ["M62 — Ticari Omurga Güçlendirme", "M62 başlangıç notu", "M62"]),
+    includesAny(startpack, ["M62 — Ticari Omurga Güçlendirme", "M62 başlangıç notu", "M62", "M75 green baseline", "M76A-1"]),
   );
   must(
     "checklist marks M61 green and keeps M62 open",
-    includesAny(checklist, ["[x] `M61 — SSOT + Milestone Hizası`", "[ ] `M62 — Ticari Omurga Güçlendirme`"]),
+    includesAny(checklist, ["[x] `M61 — SSOT + Milestone Hizası`", "[ ] `M62 — Ticari Omurga Güçlendirme`", "[x] `M62 — Ticari Omurga Güçlendirme`"]),
   );
 
   console.log("INFO checking backend and web skeleton");

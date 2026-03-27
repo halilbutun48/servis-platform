@@ -154,7 +154,7 @@ if ($To -le 0) {
 
 Write-Host ""
 Write-StatusLine ("=== PERSONEL-SERVIS V1 - MASTER PACK (M0->M{0}) ===" -f $To)
-Write-StatusLine ("INFO Visible phases: M0->M41 | M42->M58 | M59->M66")
+Write-StatusLine ("INFO Visible phases: M0->M41 | M42->M58 | M59->M66 | M67->M75 | M76A-1 | M76B")
 Write-StatusLine ("INFO Gate max: M{0}" -f $gateMax)
 Write-StatusLine ("INFO Pack max: M{0}" -f $packMax)
 Write-Host ""
@@ -184,6 +184,20 @@ if ($To -gt 58) {
   Write-Host ""
   Write-StatusLine ("=== PHASE 3: M59 -> M{0} ===" -f $phaseTo)
   Invoke-PhaseScript -ScriptRel "tools\_packs\pack_m59_m66.ps1" -Arguments (@('-To', $phaseTo) + $phaseArgsCommon)
+}
+
+if ($To -gt 66) {
+  $phaseTo = [Math]::Min($To, 75)
+  Write-Host ""
+  Write-StatusLine ("=== PHASE 4: M67 -> M{0} ===" -f $phaseTo)
+  Invoke-PhaseScript -ScriptRel "tools\_packs\pack_m67_m75.ps1" -Arguments (@('-To', $phaseTo) + $phaseArgsCommon)
+}
+
+if ($To -gt 75) {
+  $phaseTo = [Math]::Min($To, 81)
+  Write-Host ""
+  Write-StatusLine ("=== PHASE 5: M76 -> M{0} ===" -f $phaseTo)
+  Invoke-PhaseScript -ScriptRel "tools\_packs\pack_m76_m81.ps1" -Arguments (@('-To', $phaseTo) + $phaseArgsCommon)
 }
 
 if (-not $SkipRepoAudit) {

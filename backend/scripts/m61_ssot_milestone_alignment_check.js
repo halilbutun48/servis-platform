@@ -64,15 +64,15 @@ async function main() {
   console.log("INFO checking updated route and SSOT status");
   must(
     "readme reflects current SSOT and master pack",
-    includesAny(readme, ["post-M66 functional", "tools\\pack.ps1 -To 66", "M61", "M66"])
+    includesAny(readme, ["post-M66 functional", "tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "M61", "M66", "M75 green baseline"])
   );
   must(
     "primer reflects current post-M66 truth",
-    includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\\pack.ps1 -To 66"])
+    includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\\pack.ps1 -To 66", "M75 green baseline", "M76A-1"])
   );
   must(
     "startpack reflects master pack and repo audit",
-    includesAny(startpack, ["tools\\pack.ps1 -To 66", "check_repo_audit_master.ps1", "post-M66 functional"])
+    includesAny(startpack, ["tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "check_repo_audit_master.ps1", "post-M66 functional", "M75 green baseline"])
   );
   must(
     "checklist reflects M66 open verification state",
@@ -80,11 +80,11 @@ async function main() {
   );
   must(
     "backlog points to full rerun and cleanup phase",
-    includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional"])
+    includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional", "M76A-1", "minimum normalizasyon"])
   );
   must(
     "registry shows M59-M66 route",
-    includesAny(registry, ["M59 - Gözlemleme + Saha Teşhis", "M66 - Operasyonel Reassignment", "green-base", "functional-open"])
+    includesAny(registry, ["M59 - Gözlemleme + Saha Teşhis", "M66 - Operasyonel Reassignment", "green-base", "functional-open", "M75 - green-baseline", "M76A-1 - minimum-normalization - active"])
   );
 
   console.log("INFO checking backend and web skeleton");

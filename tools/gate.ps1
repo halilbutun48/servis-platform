@@ -39,7 +39,7 @@ $checks = @(
   @{ n = 15; name = "M15"; cmd = "node scripts/m15check.js" },
   @{ n = 16; name = "M16";   file = "m16check.js";  cmd = "node scripts/m16check.js" },
   @{ n = 16; name = "M16.2"; file = "m162check.js"; cmd = "node scripts/m162check.js" },
-  @{ n = 16; name = "M16.3"; file = "m163check.js"; cmd = "node scripts/m163check.js" },
+  @{ n = 16; name = "M16.3 Konum Secici + KVKK"; file = "m163check.js"; cmd = "node scripts/m163check.js" },
   @{ n = 17; name = "M17"; file = "m17check.js"; cmd = "node scripts/m17check.js" },
   @{ n = 18; name = "M18"; file = "m18check.js"; cmd = "node scripts/m18check.js" },
   @{ n = 19; name = "M19"; file = "m19check.js"; cmd = "node scripts/m19check.js" },

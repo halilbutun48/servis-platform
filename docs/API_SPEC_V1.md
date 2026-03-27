@@ -149,10 +149,13 @@ Route preview stop satırında:
 
 assignmentCount (duraktaki kişi sayısı)
 
-M16.3 — Geo Review (COMPANY)
+M16.3 — Personel Konum Seçici + KVKK Minimizasyonu (COMPANY)
 GET /api/company/personels?geoStatus=NEEDS_REVIEW
 PUT /api/company/personels/:id/location
 { "lat": 41.0, "lng": 29.0, "geoManualOverride": true, "geoStatus": "OK" }
+POST /api/company/personels/bulk-clear
+{ "ids": [1], "fields": ["phone", "address"] }
+Not: adres/telefon gecici olabilir; kalici esas veri lat/lon'dur.
 Availability (ROOM/SUPER_ADMIN)
 GET /api/availability?startAt=...&endAt=...&driverId=...
 
@@ -366,10 +369,13 @@ Route preview stop satırında:
 
 assignmentCount (duraktaki kişi sayısı)
 
-M16.3 — Geo Review (COMPANY)
+M16.3 — Personel Konum Seçici + KVKK Minimizasyonu (COMPANY)
 GET /api/company/personels?geoStatus=NEEDS_REVIEW
 PUT /api/company/personels/:id/location
 { "lat": 41.0, "lng": 29.0, "geoManualOverride": true, "geoStatus": "OK" }
+POST /api/company/personels/bulk-clear
+{ "ids": [1], "fields": ["phone", "address"] }
+Not: adres/telefon gecici olabilir; kalici esas veri lat/lon'dur.
 Availability (ROOM/SUPER_ADMIN)
 GET /api/availability?startAt=...&endAt=...&driverId=...
 
