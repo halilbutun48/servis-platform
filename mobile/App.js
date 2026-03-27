@@ -25,13 +25,14 @@ import {
   permissionTextFromStatus,
   resolveGpsPublishTarget,
 } from './src/lib/gps';
-import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
+import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
 import LoginScreen from './src/screens/LoginScreen';
 import PinChangeScreen from './src/screens/PinChangeScreen';
 import TodayScreen from './src/screens/TodayScreen';
+import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
 
 const RELEASE_INFO = Object.freeze({
-  appVersion: '0.2.1',
+  appVersion: '0.2.2',
   releaseTarget: 'Android ilk yayin',
   buildProfiles: 'preview / production',
   deliveryMode: 'EAS Build + internal dagitim',
@@ -103,6 +104,7 @@ export default function App() {
   async function applySessionFailure(error) {
     try {
       stopVoiceGuidance();
+      await stopDriverBackgroundLocation();
       await clearSession();
     } finally {
       syncBusyRef.current = false;
@@ -314,10 +316,28 @@ export default function App() {
       });
 
       const payload = buildGpsPayload(current, target.vehicleId);
+      const previousRoute = state.route;
       await publishGps(payload);
+
+      const [nextToday, nextRoute] = await Promise.all([
+        fetchToday().catch(() => null),
+        fetchActiveRoute().catch(() => null),
+      ]);
+
+      const transition = state.voiceEnabled ? deriveRouteTransition(previousRoute, nextRoute) : null;
+      if (transition?.type === 'complete') {
+        speakRouteCompleted();
+        lastVoiceCompletionRef.current = buildCompletionCueKey(nextRoute);
+        lastVoiceCueRef.current = '';
+      } else if (transition?.type === 'reached') {
+        speakReachedStopAndNext(transition.reachedStop, nextRoute);
+        lastVoiceCueRef.current = buildVoiceCueKey(nextRoute);
+      }
 
       setState((prev) => ({
         ...prev,
+        today: nextToday || prev.today,
+        route: nextRoute || prev.route,
         gps: {
           ...prev.gps,
           permissionStatus: permission.status,
@@ -455,13 +475,23 @@ export default function App() {
     if (!state.session?.token || state.me?.requirePinChange) return;
     const sub = AppState.addEventListener('change', (nextState) => {
       appStateRef.current = nextState;
+      syncDriverBackgroundLocation({
+        sessionToken: state.session?.token,
+        role: state.me?.role,
+        requirePinChange: state.me?.requirePinChange,
+        today: state.today,
+        route: state.route,
+        kvkkBlocking: state.kvkk?.blocking,
+        appState: nextState,
+      }).catch(() => null);
+
       if (nextState === 'active') {
         syncSignedIn({ soft: true }).catch(() => null);
         refreshGpsStatus({ publishNow: true }).catch(() => null);
       }
     });
     return () => sub.remove();
-  }, [state.session?.token, state.me?.requirePinChange, state.today, state.route, state.kvkk?.blocking]);
+  }, [state.session?.token, state.me?.requirePinChange, state.me?.role, state.today, state.route, state.kvkk?.blocking]);
 
   useEffect(() => {
     if (!state.session?.token || state.me?.requirePinChange) return;
@@ -472,7 +502,21 @@ export default function App() {
   }, [state.session?.token, state.me?.requirePinChange]);
 
   useEffect(() => {
-    if (!state.session?.token || state.me?.requirePinChange || String(state.me?.role || '').toUpperCase() !== 'DRIVER') return;
+    if (!state.session?.token || state.me?.requirePinChange || String(state.me?.role || '').toUpperCase() !== 'DRIVER') {
+      stopDriverBackgroundLocation().catch(() => null);
+      return;
+    }
+
+    syncDriverBackgroundLocation({
+      sessionToken: state.session?.token,
+      role: state.me?.role,
+      requirePinChange: state.me?.requirePinChange,
+      today: state.today,
+      route: state.route,
+      kvkkBlocking: state.kvkk?.blocking,
+      appState: appStateRef.current,
+    }).catch(() => null);
+
     refreshGpsStatus({ publishNow: false }).catch(() => null);
     const timer = setInterval(() => {
       if (appStateRef.current !== 'active') return;
@@ -543,6 +587,7 @@ export default function App() {
   async function handleLogout() {
     try {
       stopVoiceGuidance();
+      await stopDriverBackgroundLocation();
       await logoutDriver();
     } finally {
       await clearSession();
@@ -579,6 +624,25 @@ export default function App() {
 
   async function handleRequestGpsPermission() {
     await refreshGpsStatus({ requestPermission: true, publishNow: false });
+    await syncDriverBackgroundLocation({
+      sessionToken: state.session?.token,
+      role: state.me?.role,
+      requirePinChange: state.me?.requirePinChange,
+      today: state.today,
+      route: state.route,
+      kvkkBlocking: state.kvkk?.blocking,
+      requestPermission: true,
+      appState: 'background',
+    }).catch(() => null);
+    await syncDriverBackgroundLocation({
+      sessionToken: state.session?.token,
+      role: state.me?.role,
+      requirePinChange: state.me?.requirePinChange,
+      today: state.today,
+      route: state.route,
+      kvkkBlocking: state.kvkk?.blocking,
+      appState: appStateRef.current,
+    }).catch(() => null);
   }
 
   async function handlePublishGpsNow() {

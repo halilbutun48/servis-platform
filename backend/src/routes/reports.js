@@ -1,6 +1,7 @@
 import express from "express";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { getDriverSummary, getShiftSummary, getStopSummary, getVehicleSummary } from "../lib/reports.js";
+import { rememberResponse } from "../utils/responseCache.js";
 
 function toCsvRow(cols) {
   const esc = (x) => {
@@ -14,14 +15,24 @@ function rowsToCsv(headers, rows, mapper) {
   return [toCsvRow(headers), ...rows.map((row) => toCsvRow(mapper(row)))].join('\n') + '\n';
 }
 
+function userScope(user) {
+  return { role: user?.role, companyId: user?.companyId, roomId: user?.roomId, userId: user?.id };
+}
+
+function reportCacheKey(kind, query, user) {
+  const from = String(query?.from || '').slice(0, 10);
+  const to = String(query?.to || '').slice(0, 10);
+  return `reports:${kind}:${user?.role || '-'}:${user?.companyId || 0}:${user?.roomId || 0}:${from}:${to}`;
+}
+
 export function reportsRouter() {
   const r = express.Router();
   r.use(authRequired(), requireRole('ROOM', 'COMPANY', 'SUPER_ADMIN'));
 
-  r.get('/shifts/summary', async (req, res) => res.json(await getShiftSummary(req.query, req.user)));
-  r.get('/drivers/summary', async (req, res) => res.json(await getDriverSummary(req.query, req.user)));
-  r.get('/vehicles/summary', async (req, res) => res.json(await getVehicleSummary(req.query, req.user)));
-  r.get('/stops/summary', async (req, res) => res.json(await getStopSummary(req.query, req.user)));
+  r.get('/shifts/summary', async (req, res) => res.json(await rememberResponse(reportCacheKey('shifts', req.query, req.user), () => getShiftSummary(req.query, req.user), { ttlMs: 30000, scope: userScope(req.user) })));
+  r.get('/drivers/summary', async (req, res) => res.json(await rememberResponse(reportCacheKey('drivers', req.query, req.user), () => getDriverSummary(req.query, req.user), { ttlMs: 30000, scope: userScope(req.user) })));
+  r.get('/vehicles/summary', async (req, res) => res.json(await rememberResponse(reportCacheKey('vehicles', req.query, req.user), () => getVehicleSummary(req.query, req.user), { ttlMs: 30000, scope: userScope(req.user) })));
+  r.get('/stops/summary', async (req, res) => res.json(await rememberResponse(reportCacheKey('stops', req.query, req.user), () => getStopSummary(req.query, req.user), { ttlMs: 30000, scope: userScope(req.user) })));
 
   r.get('/shifts/export.csv', async (req, res) => {
     const data = await getShiftSummary(req.query, req.user);

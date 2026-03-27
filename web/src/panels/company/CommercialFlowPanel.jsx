@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
+import { getCompanyCommercialFlowSummary } from "../../utils/companyDataHub";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -58,93 +60,83 @@ function offerAmountLabel(offer) {
 
 export default function CompanyCommercialFlowPanel() {
   const { token } = useSession();
-  const [offers, setOffers] = useState([]);
-  const [shifts, setShifts] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [err, setErr] = useState("");
+  const [selectedId, setSelectedId] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const [offerRes, shiftRes] = await Promise.all([
-          api("/api/offers/company?take=400", { token }).catch(() => ({ items: [] })),
-          api("/api/shifts?take=300", { token }).catch(() => ({ items: [] })),
-        ]);
-        if (cancelled) return;
-        setOffers(Array.isArray(offerRes?.items) ? offerRes.items : []);
-        setShifts(Array.isArray(shiftRes?.items) ? shiftRes.items : Array.isArray(shiftRes) ? shiftRes : []);
-      } catch (e) {
-        if (cancelled) return;
-        setErr(String(e?.message || e));
-      }
-    })();
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      (async () => {
+        try {
+          const resp = await getCompanyCommercialFlowSummary(token, { signal: controller.signal });
+          if (cancelled) return;
+          setSummary(resp || null);
+        } catch (e) {
+          if (cancelled || e?.name === "AbortError") return;
+          setErr(String(e?.message || e));
+        }
+      })();
+    }, 320);
     return () => {
       cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
     };
   }, [token]);
 
-  const FINAL_STATUSES = useMemo(() => new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]), []);
-
-  const marketOffers = useMemo(
-    () => offers.filter((o) => ["OPEN", "COUNTERED"].includes(String(o?.status || "").toUpperCase())),
-    [offers]
-  );
-  const acceptedOffers = useMemo(
-    () => offers.filter((o) => String(o?.status || "").toUpperCase() === "ACCEPTED"),
-    [offers]
-  );
-  const finalItems = useMemo(
-    () => shifts.filter((s) => FINAL_STATUSES.has(String(s?.status || "").toUpperCase())),
-    [shifts, FINAL_STATUSES]
-  );
-
   const cards = useMemo(() => {
-    const activeOps = finalItems.filter((s) => ["APPROVED", "ACTIVE"].includes(String(s?.status || "").toUpperCase())).length;
+    const c = summary?.cards || {};
     return [
-      { title: "Market Teklifi", value: marketOffers.length, note: "Gerçek teklif / karşı teklif kayıtları", accent: marketOffers.length ? "warm" : "default" },
-      { title: "Karşı Teklif", value: marketOffers.filter((o) => String(o?.status || "").toUpperCase() === "COUNTERED").length, note: "Room cevabı bekleyen kayıtlar", accent: marketOffers.some((o) => String(o?.status || "").toUpperCase() === "COUNTERED") ? "warm" : "default" },
-      { title: "Kabul Edilen", value: acceptedOffers.length, note: "Pazarlığı bitip bekleyen taleplere inen kayıtlar", accent: acceptedOffers.length ? "good" : "default" },
-      { title: "Liste", value: finalItems.length, note: "APPROVED / ACTIVE / DONE / REJECTED" },
-      { title: "Aktif Operasyon", value: activeOps, note: "Sahaya inen işler", accent: activeOps ? "good" : "default" },
+      { title: "Market Teklifi", value: Number(c.marketOffers || 0), note: "Gerçek teklif / karşı teklif kayıtları", accent: Number(c.marketOffers || 0) ? "warm" : "default" },
+      { title: "Karşı Teklif", value: Number(c.counterOffers || 0), note: "Room cevabı bekleyen kayıtlar", accent: Number(c.counterOffers || 0) ? "warm" : "default" },
+      { title: "Kabul Edilen", value: Number(c.acceptedOffers || 0), note: "Pazarlığı bitip bekleyen taleplere inen kayıtlar", accent: Number(c.acceptedOffers || 0) ? "good" : "default" },
+      { title: "Liste", value: Number(c.listCount || 0), note: "APPROVED / ACTIVE / DONE / REJECTED" },
+      { title: "Aktif Operasyon", value: Number(c.activeOps || 0), note: "Sahaya inen işler", accent: Number(c.activeOps || 0) ? "good" : "default" },
     ];
-  }, [marketOffers, acceptedOffers, finalItems]);
+  }, [summary]);
 
-  const flowItems = useMemo(() => {
-    const offerRows = offers.map((o) => {
-      const status = String(o?.status || "").toUpperCase();
-      const flowLabel = status === "OPEN" ? "Teklif" : status === "COUNTERED" ? "Karşı teklif" : status === "ACCEPTED" ? "Kabul" : "Kapanan teklif";
-      const nextStep = status === "ACCEPTED"
-        ? "Pazarlık bitti; Bekleyen Taleplerde operasyon hazırlığını takip et"
-        : "Pazarlığı Market / Teklifler ekranında sürdür";
-      return {
-        id: `offer-${o.id}`,
-        shiftId: Number(o?.shiftId || o?.shift?.id || 0) || null,
-        counterparty: o?.room?.name || o?.room?.title || (Number(o?.roomId || 0) > 0 ? `Room #${o.roomId}` : "Room"),
-        flowLabel,
-        amountLabel: offerAmountLabel(o),
-        statusLabel: status,
-        updatedAt: o?.updatedAt || o?.createdAt || o?.shift?.updatedAt || null,
-        nextStep,
-        section: status === "ACCEPTED" ? "pending" : "market",
-      };
+  const flowItems = useMemo(() => Array.isArray(summary?.items) ? summary.items : [], [summary]);
+  const marketOffers = useMemo(() => ({ length: Number(summary?.cards?.marketOffers || 0) }), [summary]);
+  const acceptedOffers = useMemo(() => ({ length: Number(summary?.cards?.acceptedOffers || 0) }), [summary]);
+  const finalItems = useMemo(() => ({ length: Number(summary?.cards?.listCount || 0) }), [summary]);
+
+  const selectedItem = useMemo(() => flowItems.find((item) => String(item.id) === String(selectedId || '')) || null, [flowItems, selectedId]);
+
+  useEffect(() => {
+    if (!selectedItem) {
+      clearCopilotSelection('/company/commercial-flow');
+      return;
+    }
+    const facts = buildCommercialFlowFacts({
+      selectedItem,
+      marketCount: marketOffers.length,
+      acceptedCount: acceptedOffers.length,
+      listCount: finalItems.length,
     });
 
-    const finalRows = finalItems.map((s) => ({
-      id: `shift-${s.id}`,
-      shiftId: Number(s.id) || null,
-      counterparty: s?.room?.name || s?.room?.title || (Number(s?.roomId || 0) > 0 ? `Room #${s.roomId}` : "Room"),
-      flowLabel: "Operasyon",
-      amountLabel: "-",
-      statusLabel: String(s?.status || "-").toUpperCase(),
-      updatedAt: s?.updatedAt || s?.startAt || null,
-      nextStep: "Vardiya / hizmet tarafını aç",
-      section: "list",
-    }));
-
-    return [...offerRows, ...finalRows]
-      .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-      .slice(0, 12);
-  }, [offers, finalItems]);
+    setCopilotSelection({
+      scopeKey: '/company/commercial-flow',
+      entityType: selectedItem?.shiftId ? 'shift' : 'screen',
+      entityId: Number(selectedItem?.shiftId || 2115) || 2115,
+      label: `${selectedItem?.counterparty || 'Kayıt'} • ${selectedItem?.flowLabel || '-'}`,
+      summary: [selectedItem?.statusLabel || null, selectedItem?.nextStep || null].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Karşı Taraf', value: selectedItem?.counterparty || '-', help: 'Bu kaydın karşı tarafındaki oda veya operasyon birimini gösterir.' },
+        { label: 'Akış', value: selectedItem?.flowLabel || '-', help: 'Kayıdın market, kabul veya operasyon tarafında olup olmadığını gösterir.' },
+        { label: 'Tutar', value: selectedItem?.amountLabel || '-', help: 'Teklif tutarını veya ticari özet bedelini gösterir.' },
+        { label: 'Son Güncelleme', value: fmtTR(selectedItem?.updatedAt), help: 'Bu ticari kaydın en son ne zaman değiştiğini gösterir.' },
+        { label: 'Sonraki Adım', value: selectedItem?.nextStep || '-', help: 'Bu kayıttan sonra hangi operasyon veya ticari adıma geçileceğini anlatır.' },
+      ],
+      facts,
+      badges: [
+        { label: 'Durum', value: selectedItem?.statusLabel || '-', help: 'Durum rozeti kaydın anlık ticari statüsünü gösterir.' },
+        { label: 'Bölüm', value: selectedItem?.section === 'list' ? 'Liste' : selectedItem?.section === 'pending' ? 'Bekleyen' : 'Market', help: 'Kayıdın hangi alt görünümde açılacağını gösterir.' },
+      ],
+    });
+    return () => clearCopilotSelection('/company/commercial-flow');
+  }, [selectedItem, marketOffers.length, acceptedOffers.length, finalItems.length]);
 
   function openShifts(section, shiftId) {
     navigate("/company/shifts");
@@ -203,7 +195,7 @@ export default function CompanyCommercialFlowPanel() {
             </thead>
             <tbody>
               {flowItems.length ? flowItems.map((item) => (
-                <tr key={item.id}>
+                <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: 'pointer', background: String(selectedId || '') === String(item.id) ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
                   <td>{item.counterparty}</td>
                   <td>{item.flowLabel}</td>
                   <td>{item.amountLabel}</td>
@@ -211,7 +203,7 @@ export default function CompanyCommercialFlowPanel() {
                   <td>{fmtTR(item.updatedAt)}</td>
                   <td>{item.nextStep}</td>
                   <td>
-                    <button type="button" onClick={() => openShifts(item.section || "market", item.shiftId)}>
+                    <button type="button" onClick={() => { setSelectedId(item.id); openShifts(item.section || "market", item.shiftId); }}>
                       {item.section === "list" ? "Listeyi aç" : item.section === "pending" ? "Bekleyeni aç" : "Marketi aç"}
                     </button>
                   </td>

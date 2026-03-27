@@ -20,6 +20,7 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 import { formatDateTimeTR, isoFromTRYmdMin, ymdTR } from "../../utils/time";
+import { fetchProviderScoreMap } from "../../utils/providerScores";
 
 function todayYmd() {
   return ymdTR();
@@ -57,6 +58,49 @@ function parseTryInput(raw) {
   if (!cleaned) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+
+function updateStoredPeopleKvkkFields(companyKey, shiftIds, patch) {
+  try {
+    const ids = Array.isArray(shiftIds) ? shiftIds : [];
+    ids.forEach((sid) => {
+      const key = `psv1:company:${companyKey}:shift:${sid}:people:v1`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      const next = parsed.map((item) => ({
+        ...item,
+        ...(patch?.phone ? { phone: "" } : {}),
+        ...(patch?.address ? { address: "" } : {}),
+      }));
+      localStorage.setItem(key, JSON.stringify(next));
+    });
+  } catch {
+    // ignore
+  }
+}
+
+function collectGuidedSessionPersonIds(companyKey, shiftIds) {
+  const ids = new Set();
+  try {
+    const list = Array.isArray(shiftIds) ? shiftIds : [];
+    list.forEach((sid) => {
+      const key = `psv1:company:${companyKey}:shift:${sid}:people:v1`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      parsed.forEach((item) => {
+        const pid = Number(item?.personelId ?? item?.id ?? 0);
+        if (Number.isFinite(pid) && pid > 0) ids.add(pid);
+      });
+    });
+  } catch {
+    // ignore
+  }
+  return Array.from(ids);
 }
 
 function Modal({ open, onClose, children }) {
@@ -371,18 +415,9 @@ export default function GuidedPlanModal({
         return;
       }
       try {
-        const pairs = await Promise.all(
-          rooms.map(async (r) => {
-            try {
-              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
-              return [String(r.id), score];
-            } catch {
-              return [String(r.id), null];
-            }
-          })
-        );
+        const nextScores = await fetchProviderScoreMap((rooms || []).map((r) => r?.id), token);
         if (!alive) return;
-        setRoomScores(Object.fromEntries(pairs));
+        setRoomScores(nextScores);
       } catch {
         if (alive) setRoomScores({});
       }
@@ -1760,7 +1795,32 @@ async function sendBulkOffers() {
 
           <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setStep(1)} disabled={busy}>Geri</button>
-            <button type="button" onClick={() => { refreshDraftShifts(); setStep(3); }} disabled={busy || (!organization && companyGeoGate.blocking)}>İleri</button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (!organization) {
+                    const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
+                    const personIds = collectGuidedSessionPersonIds(companyKey, draftShiftIds);
+                    if (personIds.length) {
+                      await api("/api/company/personels/bulk-clear", {
+                        token,
+                        method: "POST",
+                        body: { ids: personIds, fields: ["phone", "address"] },
+                      });
+                      updateStoredPeopleKvkkFields(companyKey, draftShiftIds, { phone: true, address: true });
+                    }
+                  }
+                  refreshDraftShifts();
+                  setStep(3);
+                } catch (e) {
+                  setErr(e?.message || String(e));
+                }
+              }}
+              disabled={busy || (!organization && companyGeoGate.blocking)}
+            >
+              {organization ? "İleri" : "Adres Temizle ve İlerle"}
+            </button>
           </div>
         </div>
       ) : null}

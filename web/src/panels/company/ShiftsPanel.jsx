@@ -10,10 +10,14 @@ import ShiftPeopleTab from "./ShiftPeopleTab";
 import ShiftTemplatesPanel, { PRESET_TEMPLATES, DEFAULT_WEEKMASK, DEFAULT_DURATION_KEY } from "./ShiftTemplatesPanel";
 import PlanBuilderPanel from "./PlanBuilderPanel";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
-import { navigate } from "../../router";
+import { getPath, navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildShiftFacts } from "../../utils/copilotFacts";
+import { fetchProviderScoreMap } from "../../utils/providerScores";
+import { getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -376,37 +380,46 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const [vehicles, setVehicles] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [roomScores, setRoomScores] = useState({});
+  const [refDataReady, setRefDataReady] = useState(false);
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
+  const refLoadPromiseRef = useRef(null);
+
+  const roomScoreIds = useMemo(() => {
+    if (!shouldLoadRoomScores) return [];
+    const ids = new Set();
+    for (const offer of (offersModal?.items || [])) {
+      const rid = Number(offer?.room?.id || offer?.roomId || 0);
+      if (rid > 0) ids.add(rid);
+    }
+    if (offerModal?.open) {
+      for (const r of (rooms || [])) {
+        const rid = Number(r?.id || 0);
+        if (rid > 0) ids.add(rid);
+      }
+    }
+    return Array.from(ids);
+  }, [shouldLoadRoomScores, offersModal?.items, offerModal?.open, rooms]);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      if (!token || !rooms?.length) {
+      if (!token || !roomScoreIds.length) {
         if (alive) setRoomScores({});
         return;
       }
       try {
-        const pairs = await Promise.all(
-          (rooms || []).map(async (r) => {
-            try {
-              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
-              return [String(r.id), score];
-            } catch {
-              return [String(r.id), null];
-            }
-          })
-        );
+        const nextScores = await fetchProviderScoreMap(roomScoreIds, token);
         if (!alive) return;
-        setRoomScores(Object.fromEntries(pairs));
+        setRoomScores(nextScores);
       } catch {
         if (alive) setRoomScores({});
       }
     })();
     return () => { alive = false; };
-  }, [token, rooms]);
+  }, [token, roomScoreIds]);
 
   // ✅ M24: Market shift (room seçmeden) + multi-room offers
   const [marketMode, setMarketMode] = useState(false);
@@ -865,6 +878,11 @@ function usePlanDraftToRequest(draft) {
   const [offerSel, setOfferSel] = useState({});
 
   const isCompany = String(me?.role || "") === "COMPANY";
+  const copilotScopeKey = useMemo(() => {
+    const path = String(getPath() || "/company/shifts").split("?")[0];
+    if (path === "/school/shifts" || path === "/organization/shifts") return path;
+    return "/company/shifts";
+  }, []);
 
   function toggleOffer(shiftId) {
     setOfferOpen((p) => ({ ...p, [shiftId]: !p[shiftId] }));
@@ -876,27 +894,51 @@ function usePlanDraftToRequest(draft) {
     }));
   }
 
-  async function load() {
-    setErr("");
-    try {
-      // M22: Company can also read room directory
-      const roomsPromise = api("/api/rooms?take=500", { token }).catch(() => ({ items: [] }));
+  function needsReferenceData() {
+    if (mainTab === "create") return true;
+    if (detailModal?.kind === "vehicle") return true;
+    if (offerModal?.open || offersModal?.open) return true;
+    if (Object.values(offerOpen || {}).some(Boolean)) return true;
+    if (offerVehicleId) return true;
+    return false;
+  }
 
-      const [sh, veh, rm] = await Promise.all([
-        api("/api/shifts?take=200", { token }),
-        api("/api/vehicles", { token }),
-        roomsPromise,
+  async function ensureReferenceData(signal, { force = false } = {}) {
+    if (!token) return;
+    if (!force && refDataReady && rooms.length && vehicles.length) return;
+    if (!force && refLoadPromiseRef.current) return refLoadPromiseRef.current;
+
+    const promise = (async () => {
+      const [veh, rm] = await Promise.all([
+        getCompanyVehicles(token, { signal, force, take: 20, ttlMs: 45000 }).catch(() => []),
+        getCompanyRooms(token, { signal, force, take: 30, ttlMs: 60000 }).catch(() => ({ items: [] })),
       ]);
-
-      const list = Array.isArray(sh) ? sh : sh?.items ?? [];
+      if (signal?.aborted) return;
       const vlist = Array.isArray(veh) ? veh : veh?.items ?? [];
       const rlist = Array.isArray(rm) ? rm : rm?.items ?? [];
+      setVehicles(vlist);
+      setRooms(rlist);
+      setRefDataReady(true);
+    })();
 
+    refLoadPromiseRef.current = promise;
+    try {
+      await promise;
+    } finally {
+      if (refLoadPromiseRef.current === promise) refLoadPromiseRef.current = null;
+    }
+  }
+
+  async function load(signal, { withReferences = false, forceReferences = false } = {}) {
+    setErr("");
+    try {
+      const sh = await getCompanyShifts(token, { signal, ttlMs: 25000, take: 32 });
+      if (signal?.aborted) return;
+
+      const list = Array.isArray(sh) ? sh : sh?.items ?? [];
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
 
       setItems(list);
-      setVehicles(vlist);
-      setRooms(rlist);
 
       setDecisionNoteSel((prev) => {
         let changed = false;
@@ -910,15 +952,43 @@ function usePlanDraftToRequest(draft) {
         }
         return changed ? next : prev;
       });
+
+      if (withReferences || needsReferenceData()) {
+        await ensureReferenceData(signal, { force: forceReferences });
+      }
     } catch (e) {
+      if (e?.name === "AbortError") return;
       setErr(String(e?.message || e));
     }
   }
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) load(controller.signal, { withReferences: false });
+    }, 320);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.role]);
+  }, [me?.role, token]);
+
+  useEffect(() => {
+    if (!token || !needsReferenceData()) return;
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) ensureReferenceData(controller.signal).catch(() => {});
+    }, 140);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [token, mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, offerVehicleId, JSON.stringify(offerOpen)]);
 
   // M28: after wizard creates a market shift, open offer modal automatically
   useEffect(() => {
@@ -928,7 +998,7 @@ function usePlanDraftToRequest(draft) {
     const sid = Number(raw);
     if (!sid) return;
     openOfferModalForShift(sid);
-  }, [rooms.length]);
+  }, [token]);
 
   // ✅ M30-A: AgreementWizard market flow -> open offers list automatically
   useEffect(() => {
@@ -937,18 +1007,24 @@ function usePlanDraftToRequest(draft) {
     localStorage.removeItem("company:autoOffersListShiftId");
     const sid = Number(raw);
     if (!sid) return;
-    // delay so modal has token + room list ready
     setTimeout(() => openOffersModalForShift(sid), 120);
-  }, [rooms.length]);
+  }, [token]);
 
-  useAutoReload("shifts", load);
-  useAutoReload("rooms", load);
+  useAutoReload("shifts", () => load(undefined, { withReferences: false }), true, 650);
+  useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve()), true, 650);
 
   const roomsById = useMemo(() => {
     const m = new Map();
-    for (const r of rooms) m.set(Number(r.id), r);
+    for (const r of rooms) {
+      const rid = Number(r?.id || 0);
+      if (rid > 0) m.set(rid, r);
+    }
+    for (const s of items) {
+      const rid = Number(s?.room?.id || s?.roomId || 0);
+      if (rid > 0 && !m.has(rid)) m.set(rid, s?.room || { id: rid, name: `Room #${rid}` });
+    }
     return m;
-  }, [rooms]);
+  }, [rooms, items]);
 
   const vehiclesById = useMemo(() => {
     const m = new Map();
@@ -978,6 +1054,127 @@ function usePlanDraftToRequest(draft) {
     return m;
   }, [items, vehicles]);
 
+  const copilotShiftId = useMemo(() => {
+    const ids = [
+      previewModal?.open ? previewModal?.shiftId : null,
+      offersModal?.open ? offersModal?.shiftId : null,
+      offerModal?.open ? offerModal?.shiftId : null,
+      extendModal?.open ? extendModal?.shift?.id : null,
+      opsEventsModal?.open ? opsEventsModal?.shiftId : null,
+      Array.isArray(marketFocusIds) ? marketFocusIds[0] : null,
+      Array.isArray(pendingFocusIds) ? pendingFocusIds[0] : null,
+      lastCreatedShiftId || null,
+    ].map((x) => Number(x || 0)).filter((x) => Number.isFinite(x) && x > 0);
+
+    return ids[0] || 0;
+  }, [previewModal, offersModal, offerModal, extendModal, opsEventsModal, marketFocusIds, pendingFocusIds, lastCreatedShiftId]);
+
+  const copilotShift = useMemo(() => {
+    if (mainTab !== "track") return null;
+    if (copilotShiftId) {
+      return items.find((s) => Number(s?.id || 0) === copilotShiftId) || null;
+    }
+
+    const finalStatuses = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
+    const marketFocusSet = new Set((marketFocusIds || []).map(Number));
+    const pendingFocusSet = new Set((pendingFocusIds || []).map(Number));
+    const marketNeedle = String(marketQ || "").trim().toLowerCase();
+    const pendingNeedle = String(pendingQ || "").trim().toLowerCase();
+    const finalNeedle = String(finalQ || "").trim().toLowerCase();
+
+    const matchesDay = (shift) => (!dayYmd ? true : isSameDayIstanbul(shift?.startAt, dayYmd));
+
+    if (trackTab === "market") {
+      return items.find((s) => {
+        const status = String(s?.status || "");
+        if (finalStatuses.has(status)) return false;
+        if (!(s?.roomId == null || s?.roomId === "")) return false;
+        if (onlyAgreement && Number(s?.agreementId || 0) <= 0) return false;
+        if (!matchesDay(s)) return false;
+        if (marketFocusSet.size && !marketFocusSet.has(Number(s?.id || 0))) return false;
+        if (!marketNeedle) return true;
+        const hay = [s?.id, status, s?.companyId].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(marketNeedle);
+      }) || null;
+    }
+
+    if (trackTab === "pending") {
+      return items.find((s) => {
+        const status = String(s?.status || "");
+        const isSplitRoot = status === "SPLIT" && !Number(s?.splitRootId || 0);
+        if (isSplitRoot || finalStatuses.has(status)) return false;
+        if (s?.roomId == null || s?.roomId === "") return false;
+        if (onlyAgreement && Number(s?.agreementId || 0) <= 0) return false;
+        if (!matchesDay(s)) return false;
+        if (pendingFocusSet.size && !pendingFocusSet.has(Number(s?.id || 0))) return false;
+        if (pendingOnlyRoomOffer) {
+          const hasRoomOffer = Boolean(s?.roomOfferVehicleId) || s?.roomOfferAmount != null || Boolean(s?.roomOfferNote) || Boolean(s?.roomOfferToDriver) || Boolean(s?.roomOfferDriverNote);
+          if (!hasRoomOffer) return false;
+        }
+        if (!pendingNeedle) return true;
+        const hay = [s?.id, status, s?.roomId, s?.companyId, s?.roomOfferNote, s?.companyOfferNote].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(pendingNeedle);
+      }) || null;
+    }
+
+    return items.find((s) => {
+      const status = String(s?.status || "");
+      if (!finalStatuses.has(status)) return false;
+      if (onlyAgreement && Number(s?.agreementId || 0) <= 0) return false;
+      if (!matchesDay(s)) return false;
+      if (finalStatus === "OPEN" && !(status === "APPROVED" || status === "ACTIVE")) return false;
+      if (finalStatus !== "ALL" && finalStatus !== "OPEN" && status !== finalStatus) return false;
+      if (!finalNeedle) return true;
+      const hay = [s?.id, status, s?.roomId, s?.companyId, s?.roomOfferNote, s?.companyOfferNote, s?.vehicle?.plate, s?.driver?.fullName].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(finalNeedle);
+    }) || null;
+  }, [mainTab, trackTab, items, copilotShiftId, marketFocusIds, pendingFocusIds, marketQ, pendingQ, finalQ, onlyAgreement, dayYmd, pendingOnlyRoomOffer, finalStatus]);
+
+  const copilotShiftSummary = useMemo(() => {
+    if (!copilotShift) return "";
+    const parts = [];
+    parts.push(`Vardiya #${copilotShift.id}`);
+    if (copilotShift?.status) parts.push(`Durum ${String(copilotShift.status).toUpperCase()}`);
+    if (copilotShift?.room?.name) parts.push(`Room ${copilotShift.room.name}`);
+    if (copilotShift?.vehicle?.plate) parts.push(`Araç ${copilotShift.vehicle.plate}`);
+    else if (copilotShift?.vehicleId) parts.push(`Araç #${copilotShift.vehicleId}`);
+    if (copilotShift?.driver?.fullName) parts.push(`Sürücü ${copilotShift.driver.fullName}`);
+    const stopCount = Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0;
+    if (stopCount > 0) parts.push(`${stopCount} durak`);
+    return parts.join(" • ");
+  }, [copilotShift]);
+
+  useEffect(() => {
+    if (!copilotShift) {
+      clearCopilotSelection(copilotScopeKey);
+      return;
+    }
+
+    const facts = buildShiftFacts({ shift: copilotShift, itemCount: items.length });
+
+    setCopilotSelection({
+      scopeKey: copilotScopeKey,
+      entityType: "shift",
+      entityId: Number(copilotShift.id || 0) || null,
+      label: `Vardiya #${copilotShift.id}`,
+      summary: copilotShiftSummary,
+      fields: [
+        { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'Seçili vardiyanın sistem içindeki kimliğini gösterir.' },
+        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu room veya operasyon oda bilgisini gösterir.' },
+        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya bağlı araç bilgisini gösterir.' },
+        { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
+        { label: 'Durak Sayısı', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaç durak bulunduğunu gösterir.' },
+      ],
+      facts,
+      badges: [
+        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
+        { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya bağlı açık veya görünen teklif sayısını özetler.' },
+      ],
+    });
+
+    return () => clearCopilotSelection(copilotScopeKey);
+  }, [copilotShift, copilotShiftSummary, copilotScopeKey]);
+
   function openVehicleDetail(s) {
     const id = Number(s?.vehicleId || s?.vehicle?.id || 0);
     const live = id > 0 ? vehiclesById.get(id) : null;
@@ -997,13 +1194,15 @@ function usePlanDraftToRequest(draft) {
   const seatN = useMemo(() => (seatDemand ? Number(seatDemand) : null), [seatDemand]);
 
   const roomOptions = useMemo(() => {
-    const baseRoomsRaw =
-      rooms?.length
-        ? rooms
-        : Array.from(new Set(vehicles.map((v) => v?.roomId).filter(Boolean).map((x) => Number(x)))).map((id) => ({
-            id,
-            name: `Room #${id}`,
-          }));
+    const fallbackRooms = Array.from(roomsById.values());
+    const baseRoomsRaw = rooms?.length
+      ? rooms
+      : fallbackRooms.length
+      ? fallbackRooms
+      : Array.from(new Set(vehicles.map((v) => v?.roomId).filter(Boolean).map((x) => Number(x)))).map((id) => ({
+          id,
+          name: `Room #${id}`,
+        }));
 
     // M22: client-side search (directory)
     const q = String(roomQ || "").trim().toLowerCase();
@@ -1027,7 +1226,7 @@ function usePlanDraftToRequest(draft) {
     const filtered = seatN && !isCompany ? list.filter((r) => r.eligibleCount > 0) : list;
     filtered.sort((a, b) => Number(a.id) - Number(b.id));
     return filtered;
-  }, [rooms, vehicles, seatN, roomQ, isCompany]);
+  }, [rooms, roomsById, vehicles, seatN, roomQ, isCompany]);
 
   useEffect(() => {
     if (!roomOptions.length) return;
@@ -1184,6 +1383,7 @@ function usePlanDraftToRequest(draft) {
   }
 
   function openOfferModalForShift(shiftId, pkgIds = null) {
+    ensureReferenceData().catch(() => {});
     const sid = Number(shiftId);
     const seed = (items || []).find((x) => Number(x.id) === sid);
     const auto = computePackageShiftIds(seed);
@@ -1697,6 +1897,13 @@ function usePlanDraftToRequest(draft) {
   }, [marketItemsRaw, marketQ, onlyAgreement, marketFocusIds, dayYmd]);
 
   // Final filtre uygula
+  const shouldLoadRoomScores = useMemo(() => {
+    if (offersModal?.open) return true;
+    if (offerModal?.open) return true;
+    if (mainTab === "track" && trackTab === "market" && marketItems.length > 0) return true;
+    return false;
+  }, [offersModal?.open, offerModal?.open, mainTab, trackTab, marketItems.length]);
+
   const finalItems = useMemo(() => {
     const q = String(finalQ || "").trim().toLowerCase();
     return finalItemsRaw
@@ -1717,6 +1924,7 @@ function usePlanDraftToRequest(draft) {
         return hay.includes(q);
       });
   }, [finalItemsRaw, finalQ, finalStatus, onlyAgreement, dayYmd]);
+
 
   const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
 
@@ -2196,7 +2404,6 @@ function usePlanDraftToRequest(draft) {
                     <div style={{ display: "grid", gap: 6 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                         <span>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</span>
-                        <ProviderScoreBadge score={roomScores[String(r?.id || s.roomId || 0)] || null} prominent />
                       </div>
                     </div>
                   </td>
@@ -2368,7 +2575,6 @@ function usePlanDraftToRequest(draft) {
                     <div style={{ display: "grid", gap: 6 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
                         <span>{r ? `${roomLabel(r)} (#${r.id})` : `#${s.roomId}`}</span>
-                        <ProviderScoreBadge score={roomScores[String(r?.id || s.roomId || 0)] || null} prominent />
                       </div>
                     </div>
                   </td>

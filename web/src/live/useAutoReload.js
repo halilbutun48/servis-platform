@@ -10,37 +10,51 @@ import { on } from "./bus";
  * - Aynı topic art arda invalidate alırsa, load() concurrent çalışmaz.
  * - Sadece en son invalidate detayı saklanır; mevcut load bitince 1 kez daha çalışır.
  */
-export function useAutoReload(topic, fn, enabled = true) {
+export function useAutoReload(topic, fn, enabled = true, debounceMs = 180) {
   const fnRef = useRef(fn);
   fnRef.current = fn;
 
   const inFlightRef = useRef(false);
   const pendingRef = useRef(null);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     if (!enabled) return;
 
-    return on(topic, (detail) => {
-      pendingRef.current = detail;
-      if (inFlightRef.current) return;
-      inFlightRef.current = true;
-
-      (async () => {
-        try {
-          while (pendingRef.current) {
-            const d = pendingRef.current;
-            pendingRef.current = null;
-            try {
-              await Promise.resolve(fnRef.current?.(d));
-            } catch (e) {
-              // eslint-disable-next-line no-console
-              console.warn("useAutoReload handler error:", e);
+    function runQueued() {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        if (inFlightRef.current) return;
+        if (!pendingRef.current) return;
+        inFlightRef.current = true;
+        (async () => {
+          try {
+            while (pendingRef.current) {
+              const d = pendingRef.current;
+              pendingRef.current = null;
+              try {
+                await Promise.resolve(fnRef.current?.(d));
+              } catch (e) {
+                // eslint-disable-next-line no-console
+                console.warn("useAutoReload handler error:", e);
+              }
             }
+          } finally {
+            inFlightRef.current = false;
+            if (pendingRef.current) runQueued();
           }
-        } finally {
-          inFlightRef.current = false;
-        }
-      })();
+        })();
+      }, Math.max(0, Number(debounceMs || 0)));
+    }
+
+    const off = on(topic, (detail) => {
+      pendingRef.current = detail || {};
+      runQueued();
     });
-  }, [topic, enabled]);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      off?.();
+    };
+  }, [topic, enabled, debounceMs]);
 }

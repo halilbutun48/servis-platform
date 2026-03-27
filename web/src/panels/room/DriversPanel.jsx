@@ -700,11 +700,6 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                 <label className="muted">Telefon</label>
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xx..." />
               </div>
-              <div className="col">
-                <label className="muted">Cihaz</label>
-                <input value={deviceInfo} onChange={(e) => setDeviceInfo(e.target.value)} placeholder="Android / iOS / tracker" />
-              </div>
-
               <div className="col" style={{ gridColumn: "1 / -1" }}>
                 <div className="muted">
                   Kaydedince sistem sürücü için otomatik <b>Sürücü Kodu</b> ve <b>Geçici PIN</b> üretir.

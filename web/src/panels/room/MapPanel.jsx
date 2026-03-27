@@ -7,6 +7,8 @@ import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { ageSecFromAt, pillKeyFromUi, uiStatusFromVehicle } from "../../utils/uiStatus";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildMapFacts } from "../../utils/copilotFacts";
 
 function toNum(v) {
   const n = typeof v === "number" ? v : Number(v);
@@ -270,6 +272,62 @@ export default function RoomMapPanel() {
   const selectedNext = useMemo(() => firstPendingStop(selectedStops), [selectedStops]);
   const selectedEta = useMemo(() => etaMinGuess(selected, selectedNext), [selected, selectedNext]);
   const selectedStats = useMemo(() => routeStats(selectedStops), [selectedStops]);
+
+  const copilotSummary = useMemo(() => {
+    if (!selected) return null;
+    const parts = [];
+    if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
+    if (selected?.plate) parts.push(`Araç ${selected.plate}`);
+    const ui = uiStatusFromVehicle(selected);
+    if (ui) parts.push(`GPS ${ui}`);
+    if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
+    return parts.join(" • ");
+  }, [selected, selectedShift?.id, selected?.plate, selectedNext?.name]);
+
+  useEffect(() => {
+    if (!selected) {
+      clearCopilotSelection("/room/map");
+      return;
+    }
+
+    const facts = buildMapFacts({
+      selected,
+      selectedShift,
+      selectedNext,
+      selectedEta,
+      selectedStats,
+      gpsStatus: uiStatusFromVehicle(selected),
+      gpsAge: gpsAgeLabel(selected),
+      vehicleCount: vehicles.length,
+    });
+
+    setCopilotSelection({
+      scopeKey: "/room/map",
+      entityType: selectedShift?.id ? "shift" : "vehicle",
+      entityId: Number(selectedShift?.id || selected?.id || 0) || null,
+      label: selectedShift?.id
+        ? `Vardiya #${selectedShift.id}`
+        : selected?.plate
+          ? `Araç ${selected.plate}`
+          : `Araç #${selected?.id || "-"}`,
+      summary: copilotSummary || "",
+      fields: [
+        { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
+        { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
+        { label: 'Sıradaki Durak', value: selectedNext?.name || '-', help: 'Araç şu anda hangi durağa doğru gidiyor bilgisini gösterir.' },
+        { label: 'ETA', value: selectedEta != null ? `${selectedEta}dk` : '-', help: 'Sıradaki durağa tahmini kalan süreyi gösterir.' },
+        { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Seçili vardiyadaki toplam durak sayısını gösterir.' },
+        { label: 'Kalan', value: `${selectedStats?.remaining ?? 0}`, help: 'Henüz tamamlanmamış durak sayısını gösterir.' },
+      ],
+      facts,
+      badges: [
+        { label: 'GPS', value: uiStatusFromVehicle(selected) || '-', help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
+        { label: 'Vardiya Durumu', value: String(selectedShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
+      ],
+    });
+
+    return () => clearCopilotSelection("/room/map");
+  }, [selected, selected?.id, selected?.plate, selectedShift?.id, copilotSummary]);
 
   useEffect(() => {
     let alive = true;

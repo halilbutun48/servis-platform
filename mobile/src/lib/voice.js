@@ -65,6 +65,20 @@ function completionLine() {
   return 'Güzergâh tamamlandı. İyi günler.';
 }
 
+
+function reachedStopLine(reachedStop, route) {
+  const currentName = String(reachedStop?.name || 'isimsiz durak');
+  const parts = [`${currentName} durağına geldiniz.`, passengerLine(reachedStop?.passengerCount)];
+  const nextStop = route?.nextStop || null;
+  if (nextStop?.id) {
+    const nextName = String(nextStop.name || 'isimsiz durak');
+    parts.push(`Sonraki durak ${nextName}. ${etaDistanceLine(nextStop)} ${passengerLine(nextStop?.passengerCount)}`);
+  } else {
+    parts.push('Bu rota için sıradaki durak görünmüyor.');
+  }
+  return parts.join(' ');
+}
+
 function speak(text) {
   stopVoiceGuidance();
   Speech.speak(text, {
@@ -96,6 +110,10 @@ export function speakStopEta(route) {
 
 export function speakRouteCompleted() {
   speak(completionLine());
+}
+
+export function speakReachedStopAndNext(reachedStop, route) {
+  speak(reachedStopLine(reachedStop, route));
 }
 
 export function buildVoiceCueKey(route) {

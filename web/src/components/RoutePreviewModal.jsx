@@ -1,5 +1,5 @@
 // web/src/components/RoutePreviewModal.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from "react-leaflet";
 import { latLngBounds } from "leaflet";
@@ -60,6 +60,8 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
   if (!open) return null;
 
   const [remote, setRemote] = useState({
+    shiftId: null,
+    loadedAt: 0,
     stops: null,
     people: null,
     summary: null,
@@ -70,74 +72,88 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
   });
 
   const [selectedStopId, setSelectedStopId] = useState(null);
+  const lastRequestRef = useRef({ shiftId: null, startedAt: 0 });
 
   useEffect(() => {
     if (!open) return;
     if (!shiftId) return;
 
+    const isFresh = Number(remote?.shiftId || 0) === Number(shiftId || 0)
+      && Number(remote?.loadedAt || 0) > 0
+      && (Date.now() - Number(remote.loadedAt || 0) < 15000)
+      && !remote?.err;
+    if (isFresh) return;
+
     let alive = true;
-    setRemote((s) => ({ ...s, err: "" }));
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      setRemote((s) => ({ ...s, err: "" }));
+      lastRequestRef.current = { shiftId: Number(shiftId || 0) || null, startedAt: Date.now() };
 
-    (async () => {
-      try {
-        const data = await apiOr404Fallback(
-          async () => await api(`/api/shifts/${shiftId}/route-preview`),
-          // 404 fallback: legacy /stops endpoint
-          async () => {
-            const resp = await api(`/api/shifts/${shiftId}/stops`);
-            const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
-            return { ok: true, people: [], stops: list };
+      (async () => {
+        try {
+          const data = await apiOr404Fallback(
+            async () => await getShiftRoutePreview(token, shiftId, { signal: controller.signal, ttlMs: 30000, delayMs: 120 }),
+            async () => {
+              const resp = await api(`/api/shifts/${shiftId}/stops`, { signal: controller.signal });
+              const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
+              return { ok: true, people: [], stops: list };
+            }
+          );
+
+          if (!alive) return;
+
+          if (data && data.ok) {
+            const p = Array.isArray(data.people) ? data.people : [];
+            const st = Array.isArray(data.stops) ? data.stops : [];
+
+            setRemote({
+              shiftId: Number(shiftId || 0) || null,
+              loadedAt: Date.now(),
+              stops: st.map((s) => ({
+                id: String(s?.id ?? ""),
+                title: String(s?.title ?? s?.name ?? ""),
+                lat: typeof s?.lat === "number" ? s.lat : (typeof s?.stopLat === "number" ? s.stopLat : null),
+                lng: typeof s?.lng === "number" ? s.lng : (typeof s?.stopLng === "number" ? s.stopLng : null),
+                count: (s?.previewCount ?? s?.assignmentCount ?? s?.passengerCount ?? s?.count ?? null),
+                assignmentCount: (s?.assignmentCount ?? null),
+                passengerCount: (s?.passengerCount ?? null),
+              })),
+              people: p.map((x) => ({
+                id: String(x?.id ?? ""),
+                name: String(x?.fullName ?? ""),
+                lat: typeof x?.homeLat === "number" ? x.homeLat : null,
+                lng: typeof x?.homeLng === "number" ? x.homeLng : null,
+              })),
+              summary: data?.summary ?? null,
+              pathPoints: Array.isArray(data?.path?.points) ? data.path.points : null,
+              source: data?.path?.source ?? null,
+              shift: data?.shift ?? null,
+              err: "",
+            });
+          } else {
+            setRemote((s) => ({ ...s, shiftId: Number(shiftId || 0) || null, loadedAt: Date.now(), stops: null, people: null, summary: null, pathPoints: null, source: null, shift: null }));
           }
-        );
-
-        if (!alive) return;
-
-        if (data && data.ok) {
-          const p = Array.isArray(data.people) ? data.people : [];
-          const st = Array.isArray(data.stops) ? data.stops : [];
-
-          setRemote({
-            stops: st.map((s) => ({
-              id: String(s?.id ?? ""),
-              title: String(s?.title ?? s?.name ?? ""),
-              lat: typeof s?.lat === "number" ? s.lat : (typeof s?.stopLat === "number" ? s.stopLat : null),
-              lng: typeof s?.lng === "number" ? s.lng : (typeof s?.stopLng === "number" ? s.stopLng : null),
-              count: (s?.previewCount ?? s?.assignmentCount ?? s?.passengerCount ?? s?.count ?? null),
-              assignmentCount: (s?.assignmentCount ?? null),
-              passengerCount: (s?.passengerCount ?? null),
-            })),
-            people: p.map((x) => ({
-              id: String(x?.id ?? ""),
-              name: String(x?.fullName ?? ""),
-              lat: typeof x?.homeLat === "number" ? x.homeLat : null,
-              lng: typeof x?.homeLng === "number" ? x.homeLng : null,
-            })),
-            summary: data?.summary ?? null,
-            pathPoints: Array.isArray(data?.path?.points) ? data.path.points : null,
-            source: data?.path?.source ?? null,
-            shift: data?.shift ?? null,
-            err: "",
-          });
-        } else {
-          setRemote((s) => ({ ...s, stops: null, people: null, summary: null, pathPoints: null, source: null, shift: null }));
+        } catch (e) {
+          if (!alive) return;
+          setRemote((s) => ({
+            ...s,
+            shiftId: Number(shiftId || 0) || null,
+            loadedAt: Date.now(),
+            stops: null,
+            people: null,
+            summary: null,
+            pathPoints: null,
+            source: null,
+            shift: null,
+            err: e?.message || String(e),
+          }));
         }
-      } catch (e) {
-        if (!alive) return;
-        setRemote((s) => ({
-          ...s,
-          stops: null,
-          people: null,
-          summary: null,
-          pathPoints: null,
-          source: null,
-          shift: null,
-          err: e?.message || String(e),
-        }));
-      }
-    })();
+      })();
+    }, 220);
 
-    return () => { alive = false; };
-  }, [open, shiftId]);
+    return () => { alive = false; controller.abort(); clearTimeout(timer); };
+  }, [open, shiftId, remote?.shiftId, remote?.loadedAt, remote?.err]);
 
   const effStops = remote.stops ?? stops ?? [];
   const effPeople = remote.people ?? people ?? [];

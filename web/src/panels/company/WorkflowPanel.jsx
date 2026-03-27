@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
 import { personLabel } from "../../utils/labels";
 import GuidedPlanModal from "./GuidedPlanModal";
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
-import { formatDateTimeTR, weekdayBitFromYmdTR, ymdTR } from "../../utils/time";
+import { formatDateTimeTR } from "../../utils/time";
+import { fetchProviderScoreMap } from "../../utils/providerScores";
+import { getCompanyOffers, getCompanyRooms, getCompanyWorkflowSummary } from "../../utils/companyDataHub";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 
@@ -37,14 +38,6 @@ function clearGuidedResume() {
   } catch {
     // ignore
   }
-}
-
-function todayYmd() {
-  return ymdTR();
-}
-
-function todayWeekBit() {
-  return weekdayBitFromYmdTR(todayYmd());
 }
 
 function pill(status) {
@@ -363,11 +356,7 @@ export default function WorkflowPanel() {
   const [err, setErr] = useState("");
   const [rooms, setRooms] = useState([]);
   const [roomsSupported, setRoomsSupported] = useState(true);
-
-  const [agreements, setAgreements] = useState([]);
-  const [shifts, setShifts] = useState([]);
-  const [geoNeedsReview, setGeoNeedsReview] = useState(0);
-  const [openOffersCount, setOpenOffersCount] = useState(0);
+  const [summary, setSummary] = useState({ todayAgreements: 0, todayShiftCount: 0, marketShiftCount: 0, geoNeedsReview: 0, openOffersCount: 0 });
   const [roomScores, setRoomScores] = useState({});
 
   const [offersModal, setOffersModal] = useState({
@@ -377,18 +366,16 @@ export default function WorkflowPanel() {
     items: [],
   });
 
-  const today = useMemo(() => todayYmd(), []);
-  const todayBit = useMemo(() => todayWeekBit(), []);
-
   const [guidedOpen, setGuidedOpen] = useState(false);
   const [guidedResumeStep, setGuidedResumeStep] = useState(null);
   const [guidedResumeNonce, setGuidedResumeNonce] = useState(0);
 
-  async function loadRooms() {
+  async function loadRooms(signal) {
     if (!token) return;
     setRoomsSupported(true);
     try {
-      const resp = await api("/api/rooms?take=200", { token });
+      const resp = await getCompanyRooms(token, { signal, take: 30, ttlMs: 60000 });
+      if (signal?.aborted) return;
       const list = resp?.items ?? [];
       setRooms(Array.isArray(list) ? list : []);
     } catch {
@@ -397,49 +384,31 @@ export default function WorkflowPanel() {
     }
   }
 
-  async function loadStats() {
+  async function loadSummary(signal) {
     if (!token) return;
     setErr("");
-
     try {
-      const a = await api("/api/agreements?take=200", { token });
-      setAgreements(Array.isArray(a?.items) ? a.items : []);
-    } catch {
-      setAgreements([]);
-    }
-
-    try {
-      const s = await api("/api/shifts?take=200", { token });
-      const items = Array.isArray(s?.items) ? s.items : Array.isArray(s) ? s : [];
-      setShifts(items);
-    } catch {
-      setShifts([]);
-    }
-
-    try {
-      const kind = me?.companyKind === "SCHOOL" ? "STUDENT" : "PERSONEL";
-      const gr = await api(`/api/company/personels?geoStatus=NEEDS_REVIEW&kind=${kind}`, { token });
-      const items = Array.isArray(gr?.items) ? gr.items : [];
-      setGeoNeedsReview(items.length);
-    } catch {
-      setGeoNeedsReview(0);
-    }
-
-    // ✅ open offers summary (OPEN/COUNTERED)
-    try {
-      const oo = await api("/api/offers/company?status=OPEN,COUNTERED&take=800", { token });
-      const items = Array.isArray(oo?.items) ? oo.items : [];
-      setOpenOffersCount(items.length);
-    } catch {
-      setOpenOffersCount(0);
+      const resp = await getCompanyWorkflowSummary(token, { signal });
+      if (signal?.aborted) return;
+      const cards = resp?.cards || {};
+      setSummary({
+        todayAgreements: Number(cards?.todayAgreements || 0),
+        todayShiftCount: Number(cards?.todayShiftCount || 0),
+        marketShiftCount: Number(cards?.marketShiftCount || 0),
+        geoNeedsReview: Number(cards?.geoNeedsReview || 0),
+        openOffersCount: Number(cards?.openOffersCount || 0),
+      });
+    } catch (e) {
+      if (signal?.aborted) return;
+      setSummary({ todayAgreements: 0, todayShiftCount: 0, marketShiftCount: 0, geoNeedsReview: 0, openOffersCount: 0 });
+      setErr(String(e?.message || e));
     }
   }
 
   async function loadCompanyOffers(status = offersModal.status) {
     if (!token) return;
     try {
-      const qs = status ? `status=${encodeURIComponent(status)}&take=400` : "take=400";
-      const r = await api(`/api/offers/company?${qs}`, { token });
+      const r = await getCompanyOffers(token, { status, q: offersModal.q, ttlMs: 25000, take: 30 });
       const items = Array.isArray(r?.items) ? r.items : [];
       setOffersModal((p) => ({ ...p, items }));
     } catch (e) {
@@ -450,68 +419,51 @@ export default function WorkflowPanel() {
 
   useEffect(() => {
     if (!token) return;
-    loadRooms();
-    loadStats();
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      loadSummary(controller.signal);
+    }, 320);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      if (!token || !rooms?.length) {
-        if (alive) setRoomScores({});
-        return;
-      }
-      try {
-        const pairs = await Promise.all(
-          (rooms || []).map(async (r) => {
-            try {
-              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
-              return [String(r.id), score];
-            } catch {
-              return [String(r.id), null];
-            }
-          })
-        );
-        if (!alive) return;
-        setRoomScores(Object.fromEntries(pairs));
-      } catch {
-        if (alive) setRoomScores({});
-      }
-    })();
+    if (!token || !guidedOpen) return;
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) loadRooms(controller.signal);
+    }, 140);
     return () => {
-      alive = false;
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
     };
-  }, [token, rooms]);
+  }, [token, guidedOpen]);
 
   useEffect(() => {
     if (!offersModal.open) return;
-    loadCompanyOffers(offersModal.status);
+    const timer = setTimeout(() => {
+      loadCompanyOffers(offersModal.status);
+    }, 120);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offersModal.open, offersModal.status]);
+  }, [offersModal.open, offersModal.status, offersModal.q]);
 
-  const stats = useMemo(() => {
-    const todayAgreements = (agreements || []).filter((a) => {
-      const st = String(a?.status || "").toUpperCase();
-      if (!["REQUESTED", "APPROVED", "ACTIVE"].includes(st)) return false;
-      const sd = String(a?.startDate || "").slice(0, 10);
-      const ed = String(a?.endDate || "").slice(0, 10);
-      if (!sd || !ed) return false;
-      if (sd > today || ed < today) return false;
-      const wm = Number(a?.weekMask || 0);
-      if (!wm) return false;
-      return (wm & todayBit) !== 0;
-    }).length;
+  const stats = useMemo(() => ({
+    todayAgreements: Number(summary?.todayAgreements || 0),
+    todayShiftCount: Number(summary?.todayShiftCount || 0),
+    marketShiftCount: Number(summary?.marketShiftCount || 0),
+  }), [summary]);
 
-    const todayShiftCount = (shifts || []).filter((s) => String(s?.startAt || "").slice(0, 10) === today).length;
-    const marketShiftCount = (shifts || []).filter((s) => !s?.roomId).length;
-
-    return {
-      todayAgreements,
-      todayShiftCount,
-      marketShiftCount,
-    };
-  }, [agreements, shifts, today, todayBit]);
+  const geoNeedsReview = Number(summary?.geoNeedsReview || 0);
+  const openOffersCount = Number(summary?.openOffersCount || 0);
 
   const guide = useMemo(() => {
     const geoOk = geoNeedsReview === 0;
@@ -588,6 +540,31 @@ export default function WorkflowPanel() {
     });
   }, [offersModal.items, offersModal.q]);
 
+  const visibleOfferRoomIds = useMemo(
+    () => Array.from(new Set((offersFiltered || []).map((o) => Number(o?.room?.id || o?.roomId || 0)).filter((id) => Number.isFinite(id) && id > 0))).slice(0, 24),
+    [offersFiltered]
+  );
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!token || !offersModal.open || !visibleOfferRoomIds.length) {
+        if (alive) setRoomScores({});
+        return;
+      }
+      try {
+        const nextScores = await fetchProviderScoreMap(visibleOfferRoomIds, token);
+        if (!alive) return;
+        setRoomScores(nextScores);
+      } catch {
+        if (alive) setRoomScores({});
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [token, offersModal.open, visibleOfferRoomIds]);
+
   const offersDecisionSummary = useMemo(() => {
     const items = Array.isArray(offersFiltered) ? offersFiltered : [];
     return items.reduce(
@@ -657,7 +634,7 @@ export default function WorkflowPanel() {
           </div>
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="btn" onClick={() => navigate(companyPath(me, "/georeview"))}>Geo Review’e git</button>
-            <button type="button" className="btn" onClick={loadStats}>Yenile</button>
+            <button type="button" className="btn" onClick={() => loadSummary()}>Yenile</button>
           </div>
         </div>
       ) : null}
@@ -913,7 +890,7 @@ export default function WorkflowPanel() {
         roomsSupported={roomsSupported}
         onReloadRooms={loadRooms}
         onAfterCreated={() => {
-          loadStats();
+          loadSummary();
           navigate(companyPath(me, "/shifts"));
         }}
       />

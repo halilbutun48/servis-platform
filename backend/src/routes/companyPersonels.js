@@ -4,14 +4,24 @@ import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { decorateGeoItem, inferGeoState } from "../services/geoState.js";
+import { rememberResponse } from "../utils/responseCache.js";
 
 const qGeoStatusSchema = z.string().trim().min(1).optional();
 const qKindSchema = z.enum(["PERSONEL", "STUDENT"]).optional();
+const qSearchSchema = z.string().trim().max(120).optional();
+const qTakeSchema = z.preprocess((v) => (v == null || v === "" ? null : Number(v)), z.number().int().min(1).max(500).nullable()).optional();
 
 const nullableFiniteNumberSchema = z.preprocess(
   (v) => (v == null || v === "" ? null : Number(v)),
   z.number().finite().nullable()
 );
+
+const bulkClearSchema = z.object({
+  ids: z.array(z.coerce.number().int().positive()).max(5000).optional(),
+  fields: z.array(z.enum(["phone", "address"]))
+    .min(1)
+    .max(2),
+});
 
 const putLocationSchema = z.object({
   fullName: z.string().trim().min(1).max(120).optional(),
@@ -40,17 +50,64 @@ export function companyPersonelsRouter() {
     const u = req.user;
     const geoStatus = qGeoStatusSchema.parse(req.query.geoStatus);
     const kind = qKindSchema.parse((req.query.kind || undefined) ? String(req.query.kind).toUpperCase() : undefined);
+    const q = qSearchSchema.parse(req.query.q);
+    const take = qTakeSchema.parse(req.query.take) ?? 200;
 
     const where = { companyId: u.companyId ?? -1 };
     if (geoStatus) where.geoStatus = geoStatus;
     if (kind) where.kind = kind;
+    if (q) {
+      where.OR = [
+        { fullName: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q, mode: "insensitive" } },
+        { homeAddress: { contains: q, mode: "insensitive" } },
+      ];
+    }
 
-    const items = await prisma.personel.findMany({
+    const cacheKey = `company-personels:${u.companyId ?? -1}:${geoStatus || "all"}:${kind || "all"}:${q || "-"}:${take}`;
+    const payload = await rememberResponse(cacheKey, async () => {
+      const items = await prisma.personel.findMany({
+        where,
+        take,
+        orderBy: [{ geoStatus: "desc" }, { id: "asc" }],
+        select: {
+          id: true,
+          kind: true,
+          fullName: true,
+          phone: true,
+          homeAddress: true,
+          homeLat: true,
+          homeLng: true,
+          geoStatus: true,
+          geoManualOverride: true,
+          geoNote: true,
+          geoUpdatedAt: true,
+        },
+      });
+
+      const decorated = items.map(decorateGeoItem).filter((item) => !geoStatus || item.geoStatus === geoStatus);
+      return { ok: true, items: decorated };
+    }, { ttlMs: 20000, scope: { role: u?.role, companyId: u?.companyId, userId: u?.id } });
+    res.json(payload);
+  });
+
+
+  // POST /api/company/personels/bulk-clear
+  r.post("/bulk-clear", async (req, res) => {
+    const u = req.user;
+    const body = bulkClearSchema.parse(req.body ?? {});
+    const ids = Array.isArray(body.ids) ? [...new Set(body.ids.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0))] : [];
+    const fields = Array.from(new Set((body.fields || []).map((x) => String(x)))).filter(Boolean);
+
+    if (!fields.length) return res.status(400).json({ ok: false, error: "fieldsRequired" });
+
+    const where = { companyId: u.companyId ?? -1 };
+    if (ids.length) where.id = { in: ids };
+
+    const records = await prisma.personel.findMany({
       where,
-      orderBy: { id: "asc" },
       select: {
         id: true,
-        kind: true,
         fullName: true,
         phone: true,
         homeAddress: true,
@@ -59,14 +116,38 @@ export function companyPersonelsRouter() {
         geoStatus: true,
         geoManualOverride: true,
         geoNote: true,
-        geoUpdatedAt: true,
       },
+      orderBy: { id: "asc" },
     });
 
-    const decorated = items.map(decorateGeoItem).filter((item) => !geoStatus || item.geoStatus === geoStatus);
-    res.json({ ok: true, items: decorated });
-  });
+    let updatedCount = 0;
+    for (const item of records) {
+      const nextPhone = fields.includes("phone") ? null : item.phone;
+      const nextAddress = fields.includes("address") ? null : item.homeAddress;
+      const geoMeta = inferGeoState({
+        homeAddress: nextAddress,
+        homeLat: item.homeLat,
+        homeLng: item.homeLng,
+        geoManualOverride: item.geoManualOverride,
+        geoStatus: item.geoStatus,
+        geoNote: item.geoManualOverride ? "MANUAL_OVERRIDE" : item.geoNote,
+      });
 
+      await prisma.personel.update({
+        where: { id: item.id },
+        data: {
+          phone: nextPhone,
+          homeAddress: nextAddress,
+          geoStatus: geoMeta.geoStatus,
+          geoNote: geoMeta.geoReason,
+          geoUpdatedAt: new Date(),
+        },
+      });
+      updatedCount += 1;
+    }
+
+    res.json({ ok: true, updatedCount, fields, idsApplied: ids.length });
+  });
   // PUT /api/company/personels/:id/location
   r.put("/:id/location", async (req, res) => {
     const u = req.user;

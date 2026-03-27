@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { getPath, navigate } from "../../router";
+import { getPath, navigate, useHashRoute } from "../../router";
 import { useSession } from "../../state/session";
 import { companyPath } from "../../utils/paths";
 import JobGuideHeader from "../../components/copilot/JobGuideHeader";
@@ -19,6 +19,8 @@ import ScreenMenusCard from "../../components/copilot/ScreenMenusCard";
 import ChatThread from "../../components/copilot/ChatThread";
 import ChatInputBox from "../../components/copilot/ChatInputBox";
 import SuggestedChips from "../../components/copilot/SuggestedChips";
+import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
+import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { formatDateTimeTR } from "../../utils/time";
 import { nowIsoTR } from "../../utils/time";
 
@@ -66,6 +68,23 @@ function canUseEntityChat(role) {
 
 function defaultChatEntityType(role) {
   return canUseEntityChat(role) ? "shift" : "screen";
+}
+
+function normalizeScopePath(path) {
+  return String(path || "").split("?")[0];
+}
+
+function scopeFamily(path) {
+  return normalizeScopePath(path).split("/").filter(Boolean)[0] || "";
+}
+
+function selectionApplies(selection, path) {
+  if (!selection) return false;
+  const scope = normalizeScopePath(selection.scopeKey || "");
+  const current = normalizeScopePath(path);
+  if (!scope || scope === current) return true;
+  const entityType = String(selection?.entityType || "");
+  return ["shift", "vehicle"].includes(entityType) && scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
 }
 
 
@@ -332,6 +351,7 @@ function resolveGuideRoute(me, routeKey) {
 
 export default function CopilotPanel() {
   const { token, me } = useSession();
+  const { path: hashPath } = useHashRoute();
   const [panelMode, setPanelMode] = useState("CHAT");
   const [intent, setIntent] = useState("SHIFT_SUMMARY");
   const [jobType, setJobType] = useState("OFFER_REVIEW");
@@ -389,10 +409,10 @@ export default function CopilotPanel() {
   }, [me?.role, me?.companyKind]);
   useEffect(() => {
     const opts = buildScreenOptions(me);
-    const current = String(getPath() || "").split("?")[0];
+    const current = String(hashPath || getPath() || "").split("?")[0];
     const match = opts.find((x) => x.path === current) || opts[0] || null;
-    if (match) setChatScreenId((prev) => prev || String(match.id));
-  }, [me?.role, me?.companyKind]);
+    if (match) setChatScreenId(String(match.id));
+  }, [hashPath, me?.role, me?.companyKind]);
 
   useEffect(() => {
     setChatMessages([]);
@@ -473,11 +493,41 @@ export default function CopilotPanel() {
   const filteredOptions = useMemo(() => filterItems(activeEntityType, targetOptions, pickerSearch), [activeEntityType, pickerSearch, targetOptions]);
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
   const selectedChatScreen = useMemo(() => screenOptions.find((x) => String(x.id) === String(chatScreenId)) || null, [screenOptions, chatScreenId]);
+  const [chatSelection, setChatSelection] = useState(() => {
+    const current = readCopilotSelection();
+    const path = screenOptions.find((x) => String(x.id) === String(chatScreenId))?.path || "";
+    return selectionApplies(current, path) ? current : null;
+  });
   const chatTargetOptions = useMemo(() => (chatEntityType === "vehicle" ? vehicles : chatEntityType === "shift" ? recentShifts : screenOptions), [chatEntityType, vehicles, recentShifts, screenOptions]);
   const selectedChatItem = useMemo(() => {
     if (chatEntityType === "screen") return selectedChatScreen;
     return chatTargetOptions.find((x) => String(x.id) === String(chatEntityId)) || null;
   }, [chatEntityType, chatTargetOptions, chatEntityId, selectedChatScreen]);
+
+  useEffect(() => {
+    const path = selectedChatScreen?.path || "";
+    const sync = () => {
+      const current = readCopilotSelection();
+      const next = selectionApplies(current, path) ? current : null;
+      setChatSelection(next);
+      if (next && canUseEntityChat(me?.role)) {
+        const nextType = String(next.entityType || "");
+        const nextId = Number(next.entityId || 0);
+        if (["shift", "vehicle"].includes(nextType) && nextId > 0) {
+          setChatEntityType(nextType);
+          setChatEntityId(String(nextId));
+          return;
+        }
+      }
+      if (current == null && canUseEntityChat(me?.role)) {
+        setChatEntityType((prev) => (prev === "screen" ? defaultChatEntityType(me?.role) : prev));
+      }
+    };
+    sync();
+    const evt = copilotSelectionEventName();
+    window.addEventListener(evt, sync);
+    return () => window.removeEventListener(evt, sync);
+  }, [selectedChatScreen?.path, me?.role]);
   const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
 
   async function runChat(messageText = "") {
@@ -488,18 +538,36 @@ export default function CopilotPanel() {
       if (String(messageText || "").trim()) {
         setChatMessages((prev) => [...prev, { role: "user", text: String(messageText || "").trim() }]);
       }
+      const uiSurface = captureCopilotUiSurface();
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
         entityType: chatEntityType,
         entityId: Number(effectiveChatEntityId),
         message: String(messageText || ""),
-        conversationState: chatConversationState || undefined,
+        conversationState: {
+          ...(chatConversationState || {}),
+          recentMessages: chatMessages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) })),
+          uiSurface,
+          lastScreenPath: selectedChatScreen.path,
+          lastScreenLabel: selectedChatScreen.label,
+          selectedLabel: chatSelection?.label || "",
+          selectedEntityType: chatSelection?.entityType || "",
+          selectedEntityId: Number(chatSelection?.entityId || 0) || null,
+        },
         screenContext: {
           id: Number(selectedChatScreen.id),
           path: selectedChatScreen.path,
           label: selectedChatScreen.label,
           role: me?.role || "",
           companyKind: me?.companyKind || "",
+          selectedLabel: chatSelection?.label || "",
+          selectedSummary: chatSelection?.summary || "",
+          selectedFields: Array.isArray(chatSelection?.fields) ? chatSelection.fields : [],
+          selectedBadges: Array.isArray(chatSelection?.badges) ? chatSelection.badges : [],
+          structuredFacts: chatSelection?.facts && typeof chatSelection.facts === "object" ? chatSelection.facts : null,
+          selectedEntityType: chatSelection?.entityType || "",
+          selectedEntityId: Number(chatSelection?.entityId || 0) || null,
+          uiHints: uiSurface,
         },
         format: "json",
       }, { token });

@@ -188,7 +188,6 @@ export default function PassengerLinksPanel() {
                 <tr>
                   <th>ID</th>
                   <th>{me?.companyKind === "SCHOOL" ? "Öğrenci" : "Personel"}</th>
-                  <th>Telefon</th>
                   <th>Aktif link</th>
                   <th>İşlem</th>
                 </tr>

@@ -7,6 +7,7 @@ import express from "express";
 import { z } from "zod";
 import prisma from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { rememberResponse } from "../utils/responseCache.js";
 import { validateWithZod } from "../z.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
@@ -205,7 +206,8 @@ export function offersRouter(io) {
         if (!Number.isFinite(companyId) || companyId <= 0) return res.json({ items: [] });
 
         const statusIn = parseStatusFilter(req.query.status);
-        const take = Math.min(800, Math.max(1, Number(req.query.take || 400)));
+        const take = Math.min(400, Math.max(1, Number(req.query.take || 240)));
+        const q = String(req.query.q || "").trim();
 
         // ✅ garanti yöntem: company shiftIds -> offers shiftId IN (...)
         const shifts = await prisma.shift.findMany({
@@ -216,22 +218,37 @@ export function offersRouter(io) {
         const shiftIds = shifts.map((s) => s.id);
         if (!shiftIds.length) return res.json({ items: [] });
 
-        const items = await prisma.shiftOffer.findMany({
-          where: {
-            shiftId: { in: shiftIds },
-            ...(statusIn ? { status: { in: statusIn } } : {}),
-          },
-          orderBy: [{ updatedAt: "desc" }],
-          take,
-          include: {
-            room: true,
-            shift: {
-              include: { company: true },
-            },
-          },
-        });
+        const where = {
+          shiftId: { in: shiftIds },
+          ...(statusIn ? { status: { in: statusIn } } : {}),
+        };
+        if (q) {
+          where.OR = [
+            { noteCompany: { contains: q, mode: "insensitive" } },
+            { noteRoom: { contains: q, mode: "insensitive" } },
+            { room: { is: { name: { contains: q, mode: "insensitive" } } } },
+          ];
+          if (Number.isFinite(Number(q)) && Number(q) > 0) {
+            where.OR.push({ id: Number(q) }, { shiftId: Number(q) }, { roomId: Number(q) });
+          }
+        }
 
-        return res.json({ items });
+        const payload = await rememberResponse(`offers-company:${companyId}:${statusIn ? statusIn.join(",") : "all"}:${q || "-"}:${take}`, async () => {
+          const items = await prisma.shiftOffer.findMany({
+            where,
+            orderBy: [{ updatedAt: "desc" }],
+            take,
+            include: {
+              room: true,
+              shift: {
+                include: { company: true },
+              },
+            },
+          });
+          return { items };
+        }, { ttlMs: 15000, scope: { role: req.user?.role, companyId: req.user?.companyId, userId: req.user?.id } });
+
+        return res.json(payload);
       } catch (e) {
         return res.status(500).json({ error: String(e?.message ?? e) });
       }

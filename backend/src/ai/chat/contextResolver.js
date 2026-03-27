@@ -22,12 +22,26 @@ function deriveRoleMode(user) {
   return ['DRIVER', 'PERSONEL', 'PARENT'].includes(String(user?.role || '')) ? 'SIMPLE' : 'OPERATIONS';
 }
 
-export async function resolveChatContext({ entityType, entityId, user, screenContext }) {
+
+function pickSelectedEntity(screenContext, conversationState) {
+  const selectedEntityType = String(screenContext?.selectedEntityType || conversationState?.selectedEntityType || '').trim();
+  const selectedEntityId = Number(screenContext?.selectedEntityId || conversationState?.selectedEntityId || 0);
+  if (!['shift', 'vehicle'].includes(selectedEntityType) || !selectedEntityId) return null;
+  return { entityType: selectedEntityType, entityId: selectedEntityId };
+}
+
+
+export async function resolveChatContext({ entityType, entityId, user, screenContext, conversationState }) {
+  const screenDefinition = getScreenDefinitionForUser(user, screenContext || {}, Number(screenContext?.id || 0));
+  const selected = entityType === 'screen' ? pickSelectedEntity(screenContext, conversationState) : null;
+  const resolvedEntityType = selected?.entityType || entityType;
+  const resolvedEntityId = selected?.entityId || entityId;
+
   let context = null;
-  if (entityType === 'shift') {
-    context = await getShiftContext(user, entityId);
-  } else if (entityType === 'vehicle') {
-    context = await getVehicleContext(user, entityId);
+  if (resolvedEntityType === 'shift') {
+    context = await getShiftContext(user, resolvedEntityId);
+  } else if (resolvedEntityType === 'vehicle') {
+    context = await getVehicleContext(user, resolvedEntityId);
   } else if (entityType === 'screen') {
     context = getScreenDefinitionForUser(user, screenContext || {}, entityId);
     if (!context) {
@@ -43,8 +57,6 @@ export async function resolveChatContext({ entityType, entityId, user, screenCon
     throw e;
   }
 
-  const screenDefinition = getScreenDefinitionForUser(user, screenContext || {}, Number(screenContext?.id || 0));
-
   return {
     context,
     screenDefinition,
@@ -53,8 +65,14 @@ export async function resolveChatContext({ entityType, entityId, user, screenCon
       role: String(user?.role || ''),
       roomId: user?.roomId ?? null,
       companyId: user?.companyId ?? null,
-      summary: buildScopeSummary(user, entityType, entityId),
+      summary: buildScopeSummary(user, resolvedEntityType, resolvedEntityId),
       roleMode: deriveRoleMode(user),
     },
+    sourceEntityType: entityType,
+    sourceEntityId: entityId,
+    resolvedEntityType,
+    resolvedEntityId,
+    selectedEntityType: selected?.entityType || '',
+    selectedEntityId: selected?.entityId || null,
   };
 }

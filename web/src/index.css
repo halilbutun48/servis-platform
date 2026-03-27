@@ -1,8 +1,15 @@
-﻿:root { font-family: system-ui, Arial; color-scheme: dark; }
+:root { font-family: system-ui, Arial; color-scheme: dark; }
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
 body { margin: 0; background: #0b0f17; color: #e7eefc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 img, svg, canvas, video { max-width: 100%; height: auto; }
+
+.leaflet-container img,
+.leaflet-container svg,
+.leaflet-container canvas {
+  max-width: none !important;
+}
+
 .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; width: 100%; }
 /* For map pages inside the app shell (already padded), use full width */
 .wrap--fluid { max-width: none; margin: 0; padding: 0; }

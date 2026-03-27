@@ -84,6 +84,7 @@ export function agreementsRouter(io) {
   r.get("/", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const take = Math.min(200, Math.max(1, Number(req.query.take || 50)));
     const status = String(req.query.status || "").trim() || null;
+    const q = String(req.query.q || "").trim();
 
     const where = {};
     if (status) where.status = status;
@@ -92,10 +93,22 @@ export function agreementsRouter(io) {
     if (req.user.role === "COMPANY") where.companyId = req.user.companyId ?? -1;
     if (req.user.role === "ROOM") where.roomId = req.user.roomId ?? -1;
 
+    if (q) {
+      where.OR = [
+        { room: { is: { name: { contains: q, mode: "insensitive" } } } },
+        { companyOfferNote: { contains: q, mode: "insensitive" } },
+        { roomOfferNote: { contains: q, mode: "insensitive" } },
+      ];
+      if (Number.isFinite(Number(q)) && Number(q) > 0) {
+        where.OR.push({ id: Number(q) });
+      }
+    }
+
     const items = await prisma.agreement.findMany({
       where,
       take,
       orderBy: { id: "desc" },
+      include: q ? { room: { select: { id: true, name: true } } } : undefined,
     });
 
     res.json({ items });

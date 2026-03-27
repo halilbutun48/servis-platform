@@ -102,10 +102,24 @@ export function vehiclesRouter(io) {
       String(req.query?.archived || "") === "1" ||
       String(req.query?.archived || "").toLowerCase() === "true";
 
+    const take = Math.min(200, Math.max(1, Number(req.query?.take || 120) || 120));
+    const q = String(req.query?.q || "").trim();
+    const qWhere = q
+      ? {
+          OR: [
+            { plate: { contains: q, mode: "insensitive" } },
+            { brand: { contains: q, mode: "insensitive" } },
+            { model: { contains: q, mode: "insensitive" } },
+            { color: { contains: q, mode: "insensitive" } },
+            { note: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : {};
+
     if (u.role === "ROOM") {
       if (!u.roomId) return res.json([]);
 
-      const where = { roomId: u.roomId };
+      const where = { roomId: u.roomId, ...qWhere };
       if (onlyArchived) where.archivedAt = { not: null };
       else if (!includeArchived) where.archivedAt = null;
 
@@ -123,6 +137,7 @@ export function vehiclesRouter(io) {
           },
         },
         orderBy: { id: "asc" },
+        take,
       });
       return res.json(items);
     }
@@ -144,9 +159,10 @@ export function vehiclesRouter(io) {
       if (!vehicleIds.length) return res.json([]);
 
       const items = await prisma.vehicle.findMany({
-        where: { id: { in: vehicleIds }, archivedAt: null },
+        where: { id: { in: vehicleIds }, archivedAt: null, ...qWhere },
         include: { gpsLast: true, gpsState: true, room: true, driver: true },
         orderBy: { id: "asc" },
+        take,
       });
       return res.json(items);
     }
@@ -163,9 +179,10 @@ export function vehiclesRouter(io) {
       if (!vehicleIds.length) return res.json([]);
 
       const items = await prisma.vehicle.findMany({
-        where: { id: { in: vehicleIds }, archivedAt: null },
+        where: { id: { in: vehicleIds }, archivedAt: null, ...qWhere },
         include: { gpsLast: true, gpsState: true, room: true, driver: true },
         orderBy: { id: "asc" },
+        take,
       });
       return res.json(items);
     }
@@ -188,15 +205,16 @@ export function vehiclesRouter(io) {
       if (!vehicleIds.length) return res.json([]);
 
       const items = await prisma.vehicle.findMany({
-        where: { id: { in: vehicleIds }, archivedAt: null },
+        where: { id: { in: vehicleIds }, archivedAt: null, ...qWhere },
         include: { gpsLast: true, gpsState: true },
         orderBy: { id: "asc" },
+        take,
       });
       return res.json(items);
     }
 
     // SUPER_ADMIN: default active only (istersen query ile genişletebiliriz)
-    const where = {};
+    const where = { ...qWhere };
     if (!includeArchived && !onlyArchived) where.archivedAt = null;
     if (onlyArchived) where.archivedAt = { not: null };
 
@@ -204,6 +222,7 @@ export function vehiclesRouter(io) {
       where,
       include: { gpsLast: true, gpsState: true, room: true, driver: true },
       orderBy: { id: "asc" },
+      take,
     });
     return res.json(items);
   });

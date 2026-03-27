@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { formatDateTimeTR, ymdTR } from "../../utils/time";
+import { cachedGet } from "../../utils/uiDataCache";
 
 const TABS = [
   ["shifts", "Vardiyalar"],
@@ -94,15 +95,27 @@ export default function ReportsPanel() {
   const [err, setErr] = useState('');
   const [data, setData] = useState({});
 
-  async function load(activeTab = tab) {
+  async function load(activeTab = tab, signal) {
     setLoading(true); setErr('');
     try {
       const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-      const json = await api.get(`/api/reports/${activeTab}/summary${q}`, { token });
+      const json = await cachedGet(`/api/reports/${activeTab}/summary${q}`, { token, ttlMs: 25000, signal, delayMs: 260 });
+      if (signal?.aborted) return;
       setData((p) => ({ ...p, [activeTab]: json }));
-    } catch (e) { setErr(String(e?.message || e)); } finally { setLoading(false); }
+    } catch (e) { if (e?.name !== 'AbortError') setErr(String(e?.message || e)); } finally { if (!signal?.aborted) setLoading(false); }
   }
-  useEffect(() => { load(tab); }, [tab]); // eslint-disable-line
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) load(tab, controller.signal);
+    }, 420);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [tab, from, to, token]); // eslint-disable-line
 
   const rawRows = Array.isArray(data?.[tab]?.rows) ? data[tab].rows : [];
   const rows = useMemo(() => (tab === 'shifts' ? normalizeShiftRows(rawRows) : rawRows), [tab, rawRows]);

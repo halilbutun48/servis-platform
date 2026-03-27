@@ -36,7 +36,6 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
       <thead>
         <tr>
           <th>Ad Soyad</th>
-          <th>Tel</th>
           <th>Adres</th>
           <th>Lat</th>
           <th>Lng</th>
@@ -56,13 +55,6 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
                   value={p.name || ""}
                   onChange={(e) => onUpdate?.(p.id, { name: e.target.value })}
                   placeholder="Ad Soyad"
-                />
-              </td>
-              <td>
-                <input
-                  value={p.phone || ""}
-                  onChange={(e) => onUpdate?.(p.id, { phone: e.target.value })}
-                  placeholder="05xx..."
                 />
               </td>
               <td style={{ minWidth: 320 }}>
@@ -127,7 +119,7 @@ export default function ShiftPersonelTable({ people, onRemove, onUpdate, onGeoco
           })
         ) : (
           <tr>
-            <td colSpan={7} className="muted">
+            <td colSpan={6} className="muted">
               {emptyLabel || "Henüz personel yok."}
             </td>
           </tr>

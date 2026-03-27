@@ -58,3 +58,12 @@ function Assert-RepoContractContainsAny {
 
   throw "FAIL $Label"
 }
+
+# Backward-compat helper for older repo-contract checks.
+function Assert-FileExists {
+  param(
+    [Parameter(Mandatory=$true)][string]$RepoRoot,
+    [Parameter(Mandatory=$true)][Alias('RelPath')][string]$RelativePath
+  )
+  Assert-RepoContractExists -RepoRoot $RepoRoot -RelativePath $RelativePath
+}

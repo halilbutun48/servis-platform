@@ -498,7 +498,7 @@ function enrichDecisionLayer(intent, context, base) {
 
 export async function runCopilotFoundation({ intent, entityType, entityId, user, jobType, guideLevel, screenContext, message, conversationState }) {
   if (intent === "CHAT_HELP") {
-    const resolved = await resolveChatContext({ entityType, entityId, user, screenContext });
+    const resolved = await resolveChatContext({ entityType, entityId, user, screenContext, conversationState });
     return buildChatHelpResponse({
       entityType,
       entityId,

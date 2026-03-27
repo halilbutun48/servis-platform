@@ -87,7 +87,7 @@ function sanitizeAddress(input) {
 
 function parseCsv(text) {
   // MVP parser: virgül ayracı, ilk satır header olabilir.
-  // Beklenen kolonlar (case-insensitive): name, phone, address, lat, lng
+  // Beklenen kolonlar (case-insensitive): name, address, lat, lng (phone varsa yok sayılır)
   const lines = String(text || "")
     .split(/\r?\n/)
     .map((l) => l.trim())
@@ -126,12 +126,11 @@ function parseCsv(text) {
   for (let i = startIdx; i < lines.length; i++) {
     const row = split(lines[i]);
     const name = row[idx.name] ?? "";
-    const phone = row[idx.phone] ?? "";
     const address = row[idx.address] ?? "";
     const lat = normalizeCoord(row[idx.lat], "lat");
     const lng = normalizeCoord(row[idx.lng], "lng");
 
-    out.push({ name, phone, address, lat, lng });
+    out.push({ name, phone: "", address, lat, lng });
   }
   return out;
 }
@@ -165,8 +164,7 @@ function parseSheetRowsToPeople(rows2d) {
   const head = headRaw.map((h) => normalizeHeader(h));
   const hasHeader =
     head.some((h) => ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"].includes(h)) ||
-    head.some((h) => ["phone", "tel", "telefon", "gsm"].includes(h)) ||
-    head.some((h) => ["address", "adres"].includes(h)) ||
+        head.some((h) => ["address", "adres"].includes(h)) ||
     head.some((h) => ["lat", "enlem", "latitude"].includes(h)) ||
     head.some((h) => ["lng", "lon", "boylam", "longitude", "long"].includes(h));
 
@@ -176,7 +174,6 @@ function parseSheetRowsToPeople(rows2d) {
   if (hasHeader) {
     idx = {
       name: Math.max(0, headerIndex(head, ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"])),
-      phone: Math.max(0, headerIndex(head, ["phone", "tel", "telefon", "gsm"])),
       address: Math.max(0, headerIndex(head, ["address", "adres"])),
       lat: Math.max(0, headerIndex(head, ["lat", "enlem", "latitude"])),
       lng: Math.max(0, headerIndex(head, ["lng", "lon", "boylam", "longitude", "long"])),
@@ -188,11 +185,10 @@ function parseSheetRowsToPeople(rows2d) {
   for (let i = startIdx; i < rows.length; i++) {
     const row = rows[i] || [];
     const name = row[idx.name] ?? "";
-    const phone = row[idx.phone] ?? "";
     const address = row[idx.address] ?? "";
     const lat = normalizeCoord(row[idx.lat], "lat");
     const lng = normalizeCoord(row[idx.lng], "lng");
-    out.push({ name, phone, address, lat, lng });
+    out.push({ name, phone: "", address, lat, lng });
   }
   return out;
 }
@@ -288,7 +284,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
   // manual add form
   const [pName, setPName] = useState("");
-  const [pPhone, setPPhone] = useState("");
   const [pAddress, setPAddress] = useState("");
   const [pLat, setPLat] = useState("");
   const [pLng, setPLng] = useState("");
@@ -788,7 +783,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo("");
 
     const name = String(pName || "").trim();
-    const phone = String(pPhone || "").trim();
     const address = String(pAddress || "").trim();
     const lat = normalizeCoord(pLat, "lat");
     const lng = normalizeCoord(pLng, "lng");
@@ -805,7 +799,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const row = {
       id: `p_${Date.now()}_${Math.random().toString(16).slice(2)}`,
       name,
-      phone,
       address,
       lat,
       lng,
@@ -814,7 +807,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
     setPeople((prev) => [row, ...(prev || [])]);
     setPName("");
-    setPPhone("");
     setPAddress("");
     setPLat("");
     setPLng("");
@@ -1357,10 +1349,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
               <label className="muted">Ad Soyad</label>
               <input value={pName} onChange={(e) => setPName(e.target.value)} placeholder="örn. Ali Veli" disabled={busy} />
             </div>
-            <div className="col">
-              <label className="muted">Tel</label>
-              <input value={pPhone} onChange={(e) => setPPhone(e.target.value)} placeholder="05xx..." disabled={busy} />
-            </div>
             <div className="col" style={{ gridColumn: "1 / -1" }}>
               <label className="muted">Adres</label>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1394,9 +1382,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
           <div className="card" style={{ marginTop: 10 }}>
             <div className="muted">
-              <b>Excel/CSV Import</b> — kolonlar: <code>name,phone,address,lat,lng</code> (header opsiyonel)
+              <b>Excel/CSV Import</b> — kolonlar: <code>name,address,lat,lng</code> (header opsiyonel)
               <div style={{ marginTop: 6, fontSize: 12 }}>
-                Excel başlıkları (TR) da olur: <code>ad / ad soyad / telefon / adres / enlem / boylam</code>
+                Excel başlıkları (TR) da olur: <code>ad / ad soyad / adres / enlem / boylam</code>. Dosyada telefon kolonu olsa bile bu adımda kullanılmaz.
               </div>
               <div style={{ marginTop: 6, fontSize: 12 }}>
                 Kural: <b>Ad Soyad</b> zorunlu; ayrıca <b>adres</b> veya birlikte <b>lat/lng</b> olmalı.

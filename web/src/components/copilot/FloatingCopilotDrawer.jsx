@@ -3,6 +3,8 @@ import { api } from "../../api";
 import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
+import { companyPath, normalizeCompanyPath } from "../../utils/paths";
+import { captureCopilotUiSurface } from "./uiSurface";
 
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
 const HISTORY_KEY = "psv1:copilot:drawer:history:v4";
@@ -91,10 +93,21 @@ function loadDrawerState() {
 function saveDrawerState(next) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {} }
 function loadHistory() { try { const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
 
+function normalizeScopePath(path) {
+  return String(path || "").split("?")[0];
+}
+
+function scopeFamily(path) {
+  return normalizeScopePath(path).split("/").filter(Boolean)[0] || "";
+}
+
 function selectionApplies(selection, path) {
   if (!selection) return false;
-  const scope = String(selection.scopeKey || "");
-  return !scope || scope === path;
+  const scope = normalizeScopePath(selection.scopeKey || "");
+  const current = normalizeScopePath(path);
+  if (!scope || scope === current) return true;
+  const entityType = String(selection?.entityType || "");
+  return ["shift", "vehicle"].includes(entityType) && scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
 }
 
 function modeMeta(mode) {
@@ -125,25 +138,26 @@ function buildSuggestions(path, mode, selection) {
       ? ["Bu ekran ne için var?", "Şimdi ne yapayım?", "Kısa özet ver"]
       : ["Bu ekranda sırayla ne yaparım?", "İlk adım ne olmalı?", "Burada hangi sırayla ilerlerim?"];
   const pathExtra = [];
-  if (p.includes("/map")) pathExtra.push("Seçili araç ne durumda?", "GPS neden görünmüyor?");
-  if (p.includes("/commercial-flow")) pathExtra.push("Bu kayıt hangi aşamada?", "Buradan sonra hangi ekrana gitmeliyim?");
-  if (p.includes("/service-evaluation")) pathExtra.push("Değerlendirme ne zaman açılır?", "Bu hizmette sonraki adım ne?");
-  if (p.includes("/georeview")) pathExtra.push("Konum nasıl düzeltilir?", "Planlama akışına nasıl dönerim?");
+  if (p.includes("/room/map") || p.includes("/company/map") || p.includes("/school/map") || p.includes("/organization/map")) pathExtra.push("Seçili araç ne durumda?", "GPS neden eski görünüyor?", "Buradan sonra hangi ekrana geçeyim?");
+  else if (p.includes("/shifts")) pathExtra.push("Bu kayıtta önce neye bakayım?", "Bu iş neden ilerlemiyor?", "Kontrol listesi ver");
+  else if (p.includes("/commercial-flow")) pathExtra.push("Bu kayıt hangi aşamada?", "Bu satırı nasıl okurum?", "Bu rozet ne demek?", "Buradan sonra hangi ekrana gitmeliyim?");
+  else if (p.includes("/service-evaluation")) pathExtra.push("Değerlendirme ne zaman açılır?", "Bu hizmette sonraki adım ne?", "Bu satırı nasıl okurum?", "Bu rozet ne demek?");
+  else if (p.includes("/georeview")) pathExtra.push("Konum nasıl düzeltilir?", "Kaydet + Sonraki ne yapar?", "Planlama akışına nasıl dönerim?", "Bu satırı nasıl okurum?");
   if (selection?.label) pathExtra.unshift(`Seçili kayıt ne durumda?`);
-  return uniqueStrings([...common, ...pathExtra]).slice(0, 5);
+  if ((selection?.fields?.length || selection?.badges?.length) && !p.includes("/map")) pathExtra.push("Bu satırı nasıl okurum?", "Bu sütun ne demek?", "Bu rozet ne demek?");
+  return uniqueStrings([...common, ...pathExtra]).slice(0, 4);
 }
 
 function buildPrompt({ mode, rawText, screenContext, selection }) {
-  const meta = modeMeta(mode);
   const q = String(rawText || "").trim();
+  if (q) return q;
+  const meta = modeMeta(mode);
   const base = [
     `${meta.instruction}`,
     `Şu ekran: ${screenContext.label} (${screenContext.path}).`,
     selection?.summary ? `Seçili kayıt: ${selection.summary}.` : "Seçili kayıt yok veya okunmadı.",
   ];
-  if (q) {
-    base.push(`Kullanıcının sorusu: ${q}`);
-  } else if (mode === "DIAGNOSE") {
+  if (mode === "DIAGNOSE") {
     base.push("Kullanıcı soru yazmadı. Bu ekran için en olası takılma nedenlerini anlat.");
   } else if (mode === "SHORT") {
     base.push("Kullanıcı soru yazmadı. Bu ekranı kısa özetle ve şimdi ne yapacağını söyle.");
@@ -151,6 +165,88 @@ function buildPrompt({ mode, rawText, screenContext, selection }) {
     base.push("Kullanıcı soru yazmadı. Bu ekranı sıfırdan öğretir gibi anlat.");
   }
   return base.join(" ");
+}
+
+function actionText(action) {
+  const kind = String(action?.actionKind || "OPEN_ROUTE");
+  if (kind === "OPEN_GUIDE") return action?.label || "Rehberi aç";
+  if (kind === "ASK") return action?.label || "Sor";
+  if (kind === "COPY_TEXT") return action?.label || "Kopyala";
+  return action?.label || "İlgili yere git";
+}
+
+function withRouteParams(path, params) {
+  const base = String(path || "");
+  const rows = Object.entries(params || {}).filter(([, v]) => v != null && `${v}` !== "");
+  if (!rows.length) return base;
+  const query = rows.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+  return `${base}${base.includes("?") ? "&" : "?"}${query}`;
+}
+
+function resolveGuideRoute(me, routeKey) {
+  const role = String(me?.role || "");
+  const key = String(routeKey || "");
+  if (!key) return "";
+  if (key.startsWith("/")) {
+    if (role === "COMPANY") return normalizeCompanyPath(me, key);
+    return key;
+  }
+  if (role === "ROOM") {
+    if (key === "ROOM_OFFERS") return "/room/offers";
+    if (key === "ROOM_SHIFTS") return "/room/shifts";
+    if (key === "ROOM_VEHICLES") return "/room/vehicles";
+    if (key === "ROOM_DRIVERS") return "/room/drivers";
+    if (key === "ROOM_AGREEMENTS") return "/room/agreements";
+    if (key === "ROOM_MAP") return "/room/map";
+    if (key === "ROOM_OPERATION_HEALTH") return "/room/operation-health";
+    if (key === "ROOM_COPILOT") return "/room/copilot";
+  }
+  if (role === "COMPANY") {
+    if (key === "COMPANY_PLAN" || key === "COMPANY_WORKFLOW") return companyPath(me, "");
+    if (key === "COMPANY_SHIFTS") return companyPath(me, "/shifts");
+    if (key === "COMPANY_AGREEMENTS") return companyPath(me, "/agreements");
+    if (key === "COMPANY_COPILOT") return companyPath(me, "/copilot");
+    if (key === "COMPANY_GEOREVIEW") return companyPath(me, "/georeview");
+    if (key === "COMPANY_MAP") return companyPath(me, "/map");
+    if (key === "COMPANY_SERVICE_EVALUATION") return companyPath(me, "/service-evaluation");
+    if (key === "COMPANY_COMMERCIAL_FLOW") return companyPath(me, "/commercial-flow");
+    if (key === "COMPANY_REPORTS") return companyPath(me, "/reports");
+    if (key === "COMPANY_HUB") return companyPath(me, "/hub");
+    if (key === "COMPANY_CHECKIN") return companyPath(me, "/checkin");
+  }
+  if (role === "DRIVER") {
+    if (key === "DRIVER_TODAY") return "/driver/today";
+    if (key === "DRIVER_ROUTE") return "/driver/route";
+    if (key === "DRIVER_MAP") return "/driver/map";
+    if (key === "DRIVER_COPILOT") return "/driver/copilot";
+  }
+  if (role === "SUPER_ADMIN") {
+    if (key === "SUPERADMIN_OVERVIEW") return "/superadmin";
+    if (key === "SUPERADMIN_COPILOT") return "/superadmin/copilot";
+  }
+  return "";
+}
+
+function samePrompt(a, b) {
+  return String(a || "").trim().toLocaleLowerCase("tr-TR") === String(b || "").trim().toLocaleLowerCase("tr-TR");
+}
+
+function filterMessageActions(actions, suggestions, followUpPrompt) {
+  const rows = Array.isArray(actions) ? actions : [];
+  const visible = [];
+  for (const action of rows) {
+    const kind = String(action?.actionKind || "OPEN_ROUTE");
+    if (kind === "ASK") {
+      const askText = String(action?.askText || action?.label || "").trim();
+      if (!askText) continue;
+      if (Array.isArray(suggestions) && suggestions.some((chip) => samePrompt(chip, askText))) continue;
+      if (followUpPrompt && samePrompt(followUpPrompt, askText)) continue;
+    }
+    const key = `${kind}|${action?.label || ""}|${action?.routeKey || action?.href || action?.path || ""}|${action?.askText || ""}|${action?.guide?.jobType || ""}`;
+    if (visible.some((x) => x.__k === key)) continue;
+    visible.push({ ...action, __k: key });
+  }
+  return visible.slice(0, 2).map(({ __k, ...rest }) => rest);
 }
 
 export default function FloatingCopilotDrawer({ path: propPath = "" }) {
@@ -212,11 +308,23 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     setBusy(true);
     setErr("");
     try {
+      const uiSurface = captureCopilotUiSurface();
+      const recentMessages = messages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) }));
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
         entityType: selection?.entityType || "screen",
         entityId: Number(selection?.entityId || screenContext.screen.id),
         message: buildPrompt({ mode, rawText, screenContext, selection }),
+        conversationState: {
+          recentMessages,
+          drawerMode: mode,
+          lastScreenPath: screenContext.path,
+          lastScreenLabel: screenContext.label,
+          selectedLabel: selection?.label || "",
+          selectedEntityType: selection?.entityType || "",
+          selectedEntityId: Number(selection?.entityId || 0) || null,
+          uiSurface,
+        },
         screenContext: {
           id: Number(screenContext.screen.id),
           path: screenContext.path,
@@ -224,7 +332,17 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           role: me?.role || "",
           companyKind: me?.companyKind || "",
           selectedLabel: selection?.label || "",
+          selectedEntityType: selection?.entityType || "",
+          selectedEntityId: Number(selection?.entityId || 0) || null,
           selectedSummary: selection?.summary || "",
+          selectedFields: Array.isArray(selection?.fields) ? selection.fields : [],
+          selectedBadges: Array.isArray(selection?.badges) ? selection.badges : [],
+          structuredFacts: selection?.facts && typeof selection.facts === "object" ? selection.facts : null,
+          uiHints: {
+            drawerMode: mode,
+            visibleSuggestions: buildSuggestions(screenContext.path, mode, selection),
+            ...uiSurface,
+          },
         },
         format: "json",
       }, { token });
@@ -250,6 +368,72 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   }
 
   function openPath(path) { if (!path) return; navigate(path); setOpen(false); }
+
+  async function copyText(value) {
+    const textToCopy = String(value || "").trim();
+    if (!textToCopy) return;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setMessages((prev) => [...prev, { role: "assistant", text: "Metin panoya kopyalandı.", system: true }]);
+    } catch {
+      setErr("Kopyalama başarısız.");
+    }
+  }
+
+  async function openGuideAction(guide) {
+    if (!token || !screenContext.screen) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const payload = await api.post("/api/ai/copilot", {
+        intent: "JOB_GUIDE",
+        entityType: selection?.entityType || "screen",
+        entityId: Number(selection?.entityId || screenContext.screen.id),
+        jobType: guide?.jobType || "BUTTON_ACTION_GUIDE",
+        guideLevel: guide?.guideLevel || "SHORT",
+        screenContext: {
+          id: Number(screenContext.screen.id),
+          path: screenContext.path,
+          label: screenContext.label,
+          role: me?.role || "",
+          companyKind: me?.companyKind || "",
+        },
+        format: "json",
+      }, { token });
+      const guideText = [
+        payload?.summary || payload?.plainSummary || payload?.jobPurpose || "Rehber açıldı.",
+        payload?.whatToDoNow ? `Şimdi: ${payload.whatToDoNow}` : "",
+        payload?.whatToDoNext ? `Sonra: ${payload.whatToDoNext}` : "",
+      ].filter(Boolean).join(" ");
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        text: guideText || "Rehber açıldı.",
+        quickActions: Array.isArray(payload?.quickActions) ? payload.quickActions : [],
+        followUpPrompt: payload?.whatToDoNext ? "Peki sonra?" : "",
+      }]);
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function triggerQuickAction(action) {
+    const kind = String(action?.actionKind || "OPEN_ROUTE");
+    if (kind === "ASK") {
+      return ask(action?.askText || action?.label || "");
+    }
+    if (kind === "OPEN_GUIDE") {
+      return openGuideAction(action?.guide || action);
+    }
+    if (kind === "COPY_TEXT") {
+      return copyText(action?.copyText || "");
+    }
+    const rawPath = action?.path || action?.href || resolveGuideRoute(me, action?.routeKey || "");
+    if (!rawPath) return;
+    openPath(withRouteParams(rawPath, action?.routeParams));
+  }
+
   function speak(text, idx) {
     const t = String(text || "").trim(); if (!t) return;
     try { const synth = window.speechSynthesis; if (!synth) return; synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "tr-TR"; u.rate = 0.95; u.onend = () => setReadingIndex(-1); setReadingIndex(idx); synth.speak(u); } catch {}
@@ -294,7 +478,9 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
           {m.role === "assistant" && !m.system ? <div className="copilotMsgActions">
             <button type="button" className="btn sm copilotToolBtn" onClick={() => speak(m.text, idx)}>{readingIndex === idx ? "Okuyor..." : "Sesli oku"}</button>
             {m.followUpPrompt ? <button type="button" className="btn sm copilotToolBtn" onClick={() => ask(m.followUpPrompt)}>Devamını anlat</button> : null}
-            {Array.isArray(m.quickActions) ? m.quickActions.slice(0, 2).map((a, i) => <button key={`${idx}-${i}`} type="button" className="btn sm copilotToolBtn" onClick={() => openPath(a?.path || a?.href || "")}>{a?.label || a?.title || "İlgili yere götür"}</button>) : null}
+            {filterMessageActions(m.quickActions, suggestions, m.followUpPrompt).map((a, i) => (
+              <button key={`${idx}-${i}-${actionText(a)}`} type="button" className="btn sm copilotToolBtn" title={a?.reason || ""} onClick={() => triggerQuickAction(a)}>{actionText(a)}</button>
+            ))}
           </div> : null}
         </div>)}
         {busy ? <div className="copilotBusy">Copilot düşünüyor...</div> : null}

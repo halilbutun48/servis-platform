@@ -6,6 +6,9 @@ import { useSession } from "../../state/session";
 import GeoLocationPicker from "../../components/geo/GeoLocationPicker";
 import { companyPath } from "../../utils/paths";
 import { isSchool, personLabel } from "../../utils/labels";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildGeoReviewFacts } from "../../utils/copilotFacts";
+import { getCompanyGeoNeedsReview, getCompanyPersonels } from "../../utils/companyDataHub";
 
 const GUIDED_TEMP_STORAGE_KEY = "psv1:guidedTempShiftIds:v1";
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
@@ -104,7 +107,7 @@ function formatGeoReason(item) {
 }
 
 export default function GeoReviewPanel() {
-  const { me } = useSession();
+  const { me, token } = useSession();
   const who = personLabel(me);
   const school = isSchool(me);
   const basePath = companyPath(me, "");
@@ -118,15 +121,17 @@ export default function GeoReviewPanel() {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [reason, setReason] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("NEEDS_REVIEW");
   const [selectedId, setSelectedId] = useState(null);
   const [bulkStats, setBulkStats] = useState({ found: 0, notFound: 0, error: 0 });
   const [scopeMode, setScopeMode] = useState("ALL");
+  const [scopeAutoSeeded, setScopeAutoSeeded] = useState(false);
+  const [bulkClearBusy, setBulkClearBusy] = useState("");
 
   const [form, setForm] = useState({
     fullName: "",
-    phone: "",
     homeAddress: "",
     lat: "",
     lng: "",
@@ -136,29 +141,56 @@ export default function GeoReviewPanel() {
   const hasPlanningScope = scopedIds.length > 0;
 
   useEffect(() => {
-    setScopeMode(hasPlanningScope ? "SESSION" : "ALL");
-  }, [hasPlanningScope]);
+    const timer = setTimeout(() => setDebouncedQ(String(q || "").trim()), 260);
+    return () => clearTimeout(timer);
+  }, [q]);
 
-  async function load() {
+  useEffect(() => {
+    if (!hasPlanningScope && scopeMode !== "ALL") setScopeMode("ALL");
+  }, [hasPlanningScope, scopeMode]);
+
+  useEffect(() => {
+    if (scopeAutoSeeded) return;
+    if (!guidedResume) return;
+    if (!hasPlanningScope) return;
+    setScopeMode("SESSION");
+    setScopeAutoSeeded(true);
+  }, [guidedResume, hasPlanningScope, scopeAutoSeeded]);
+
+  async function load(signal) {
     setBusy(true);
     setErr("");
     setMsg("");
     try {
-      const kindQs = school ? "?kind=STUDENT" : "";
-      const r = await api("/api/company/personels" + kindQs);
+      const kind = school ? "STUDENT" : undefined;
+      const wantsFocusedReview = !String(debouncedQ || "").trim() && (!status || status === "NEEDS_REVIEW") && !reason;
+      const r = wantsFocusedReview
+        ? await getCompanyGeoNeedsReview(token, { signal, kind, ttlMs: 25000, delayMs: 140 })
+        : await getCompanyPersonels(token, { signal, kind, q: debouncedQ, take: debouncedQ ? 30 : 16, ttlMs: 25000, delayMs: 180 });
+      if (signal?.aborted) return;
       setItems(Array.isArray(r?.items) ? r.items : []);
       setBulkStats({ found: 0, notFound: 0, error: 0 });
     } catch (e) {
+      if (e?.name === "AbortError") return;
       setErr(e?.message || String(e));
     } finally {
-      setBusy(false);
+      if (!signal?.aborted) setBusy(false);
     }
   }
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) load(controller.signal);
+    }, 320);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [school]);
+  }, [school, debouncedQ, token, status, reason]);
 
   const filtered = useMemo(() => {
     const s = String(q || "").trim().toLowerCase();
@@ -169,7 +201,7 @@ export default function GeoReviewPanel() {
       if (status && String(p.geoStatus || "") !== status) return false;
       if (reason && String(p.geoReason || p.geoNote || "") !== reason) return false;
       if (!s) return true;
-      const t = `${p.fullName || ""} ${p.phone || ""} ${p.homeAddress || ""}`.toLowerCase();
+      const t = `${p.fullName || ""} ${p.homeAddress || ""}`.toLowerCase();
       return t.includes(s);
     });
   }, [items, q, reason, status, scopeMode, scopedIds]);
@@ -206,12 +238,11 @@ export default function GeoReviewPanel() {
 
   useEffect(() => {
     if (!selected) {
-      setForm({ fullName: "", phone: "", homeAddress: "", lat: "", lng: "" });
+      setForm({ fullName: "", homeAddress: "", lat: "", lng: "" });
       return;
     }
     setForm({
       fullName: selected.fullName || "",
-      phone: selected.phone || "",
       homeAddress: selected.homeAddress || "",
       lat: selected.homeLat == null ? "" : String(selected.homeLat),
       lng: selected.homeLng == null ? "" : String(selected.homeLng),
@@ -220,6 +251,12 @@ export default function GeoReviewPanel() {
 
   function patchItem(id, patch) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }
+
+  function moveToNextItem(currentId) {
+    const list = filtered || [];
+    const idx = list.findIndex((it) => Number(it?.id) === Number(currentId));
+    if (idx >= 0 && idx < list.length - 1) setSelectedId(list[idx + 1].id);
   }
 
   async function geocodeOne(itemLike) {
@@ -248,32 +285,79 @@ export default function GeoReviewPanel() {
     }
   }
 
-  async function saveSelected({ markOk = false } = {}) {
+  async function saveSelected({ markOk = false, advanceNext = false } = {}) {
     if (!selected) return;
+    const nextLat = normalizeCoord(form.lat, "lat");
+    const nextLng = normalizeCoord(form.lng, "lng");
+    const hasManualCoords = typeof nextLat === "number" && typeof nextLng === "number";
+    const saveId = selected.id;
+
     setBusy(true);
     setErr("");
     setMsg("");
     try {
-      const resp = await api(`/api/company/personels/${selected.id}/location`, {
+      const resp = await api(`/api/company/personels/${saveId}/location`, {
         method: "PUT",
         body: {
           fullName: String(form.fullName || "").trim(),
-          phone: String(form.phone || "").trim() || null,
           homeAddress: String(form.homeAddress || "").trim() || null,
-          lat: form.lat === "" ? null : Number(form.lat),
-          lng: form.lng === "" ? null : Number(form.lng),
-          geoManualOverride: markOk ? true : undefined,
+          lat: form.lat === "" ? null : nextLat,
+          lng: form.lng === "" ? null : nextLng,
+          geoManualOverride: markOk ? true : hasManualCoords,
           geoStatus: markOk ? "OK" : undefined,
         },
       });
       if (resp?.item) {
-        patchItem(selected.id, resp.item);
-        setMsg(markOk ? "Kayıt OK yapıldı." : "Konum kaydedildi.");
+        patchItem(saveId, resp.item);
+        if (advanceNext) moveToNextItem(saveId);
+        setMsg(markOk ? "Kayıt OK yapıldı." : advanceNext ? "Konum kaydedildi. Sıradaki kayıt açıldı." : "Konum kaydedildi.");
       }
     } catch (e) {
       setErr(e?.message || String(e));
     } finally {
       setBusy(false);
+    }
+  }
+
+
+  async function bulkClear(fields) {
+    const normalized = Array.from(new Set((Array.isArray(fields) ? fields : []).map((x) => String(x)).filter(Boolean)));
+    const ids = filtered.map((p) => Number(p?.id || 0)).filter((x) => Number.isFinite(x) && x > 0);
+    if (!normalized.length || !ids.length) return;
+    const key = normalized.slice().sort().join(",");
+    setBulkClearBusy(key);
+    setErr("");
+    setMsg("");
+    try {
+      const resp = await api(`/api/company/personels/bulk-clear`, {
+        method: "POST",
+        body: { ids, fields: normalized },
+      });
+      const clearedAddress = normalized.includes("address");
+      const clearedPhone = normalized.includes("phone");
+      setItems((prev) => prev.map((item) => {
+        if (!ids.includes(Number(item?.id || 0))) return item;
+        return {
+          ...item,
+          ...(clearedAddress ? { homeAddress: null } : {}),
+          ...(clearedPhone ? { phone: null } : {}),
+        };
+      }));
+      if (selected && ids.includes(Number(selected.id))) {
+        setForm((prev) => ({
+          ...prev,
+          ...(clearedAddress ? { homeAddress: "" } : {}),
+        }));
+      }
+      await load();
+      const labels = [];
+      if (clearedPhone) labels.push("telefon");
+      if (clearedAddress) labels.push("adres");
+      setMsg(`${labels.join(" + ")} temizlendi. Etkilenen kayıt: ${Number(resp?.updatedCount || ids.length)}.`);
+    } catch (e) {
+      setErr(e?.message || String(e));
+    } finally {
+      setBulkClearBusy("");
     }
   }
 
@@ -303,7 +387,6 @@ export default function GeoReviewPanel() {
             method: "PUT",
             body: {
               fullName: item.fullName,
-              phone: item.phone || null,
               homeAddress: item.homeAddress || null,
               lat,
               lng,
@@ -328,6 +411,44 @@ export default function GeoReviewPanel() {
 
   const selectedReason = formatGeoReason(selected);
 
+  useEffect(() => {
+    if (!selected) {
+      clearCopilotSelection("/company/georeview");
+      return;
+    }
+    const hasCoord = Number.isFinite(Number(selected?.homeLat)) && Number.isFinite(Number(selected?.homeLng));
+    const fields = [
+      { label: "Ad Soyad", value: selected?.fullName || "-", help: "Düzenlediğin kişi kaydını gösterir." },
+      { label: "Adres", value: selected?.homeAddress || "-", help: "Geçici adres bilgisidir; lat/lon üretiminden sonra temizlenebilir." },
+      { label: "Durum", value: selected?.geoStatus || "-", help: "Konum kaydının hazır mı incelemede mi olduğunu gösterir." },
+      { label: "Koordinat", value: hasCoord ? `${Number(selected.homeLat).toFixed(5)}, ${Number(selected.homeLng).toFixed(5)}` : "Yok", help: "Kalıcı olarak esas ihtiyaç duyulan lat/lon bilgisidir." },
+      { label: "Neden", value: selectedReason || "-", help: "Neden inceleme gerektiğini anlatan açıklamadır." },
+    ];
+    const facts = buildGeoReviewFacts({ selected, counts, scopeMode, hasPlanningScope });
+    const badges = [
+      { label: "Durum", value: String(selected?.geoStatus || "-").toUpperCase(), help: "Konum hazırlık veya inceleme durumunu gösterir." },
+      ...(String(selected?.geoReason || selected?.geoNote || "").toUpperCase().includes("MANUAL") ? [{ label: "MANUAL_OVERRIDE", value: "VAR", help: "Kayıt elle doğrulanmış veya düzeltilmiştir." }] : []),
+    ];
+    setCopilotSelection({
+      scopeKey: "/company/georeview",
+      entityType: "screen",
+      entityId: 2109,
+      label: selected?.fullName || `Kayıt #${selected?.id || "-"}`,
+      summary: [selected?.geoStatus || null, hasCoord ? `${Number(selected.homeLat).toFixed(5)}, ${Number(selected.homeLng).toFixed(5)}` : "Koordinat yok"].filter(Boolean).join(" • "),
+      fields,
+      badges,
+      facts,
+      snapshot: {
+        rowType: school ? "student" : "personel",
+        rowLabel: selected?.fullName || `Kayıt #${selected?.id || "-"}`,
+        rowHint: "Önce durum ve koordinat var mı bak. Sonra neden alanına göre kaydet, adresten bul veya büyük harita kararını ver.",
+        fields,
+        badges,
+      },
+    });
+    return () => clearCopilotSelection("/company/georeview");
+  }, [selected, selectedReason, school]);
+
   return (
     <div style={{ width: "100%", maxWidth: "none" }}>
       <div className="card">
@@ -335,7 +456,7 @@ export default function GeoReviewPanel() {
           <div>
             <div className="title">{school ? "Öğrenci Konum Seçici" : `${who} Konum Seçici`}</div>
             <div className="muted">
-              Liste solda, harita sağda. Adresten bul, haritada seç ve kaydet. Bu ekran company/personel ve school/öğrenci için ortak çalışır.
+              Liste solda, harita sağda. Adresi kullanıp konum üret, sonra KVKK için gereksiz verileri temizle. Bu ekran company/personel ve school/öğrenci için ortak çalışır.
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -356,7 +477,7 @@ export default function GeoReviewPanel() {
               {scopeMode === "SESSION" ? "Planlama oturumu filtresi açık" : "Planlama oturumu bulundu"}
             </div>
             <div className="muted" style={{ marginTop: 6 }}>
-              Bu ekranda varsayılan olarak sadece aktif planlama oturumundaki kayıtları görebilirsin. Böylece seed/demo kayıtlar karışmaz ve işi bitirince aynı rehberli adıma dönmek kolaylaşır.
+              Bu ekranda tüm kayıtları tek tek düzeltebilir, istersen sadece aktif planlamadakileri filtreleyebilirsin. Böylece hem genel temizlik yapılır hem de işi bitirince aynı rehberli adıma dönmek kolaylaşır.
             </div>
           </div>
         ) : null}
@@ -365,7 +486,7 @@ export default function GeoReviewPanel() {
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <input
-            placeholder="Ara: ad / tel / adres"
+            placeholder="Ara: ad / adres"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             style={{ minWidth: 240 }}
@@ -380,9 +501,12 @@ export default function GeoReviewPanel() {
               <option key={opt.value || "all"} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <button onClick={load} disabled={busy || geoBusy}>{busy ? "..." : "Yenile"}</button>
-          <button onClick={bulkGeocode} disabled={busy || geoBusy || !filtered.length}>
+          <button onClick={() => load()} disabled={busy || geoBusy}>{busy ? "..." : "Yenile"}</button>
+          <button onClick={bulkGeocode} disabled={busy || geoBusy || bulkClearBusy || !filtered.length}>
             {busy ? "Çalışıyor..." : "Toplu Adresten Bul"}
+          </button>
+          <button type="button" className="btn" onClick={() => bulkClear(["address"])} disabled={busy || geoBusy || !!bulkClearBusy || !filtered.length}>
+            {bulkClearBusy === "address" ? "Çalışıyor..." : "Tüm Adresleri Temizle"}
           </button>
           <div className="muted">
             Görünen: <b>{counts.visible}</b> / Toplam: <b>{counts.total}</b> • Hazır: <b>{counts.ok}</b> • İncelenecek: <b>{counts.review}</b> • Başarısız: <b>{counts.failed}</b> • Koordinatsız: <b>{counts.noCoord}</b>
@@ -407,7 +531,7 @@ export default function GeoReviewPanel() {
           <div className="topbar">
             <div>
               <div className="title">{school ? "Öğrenci listesi" : `${who} listesi`}</div>
-              <div className="muted">Bir kayıt seç, sağ tarafta haritadan pin ayarla.</div>
+              <div className="muted">Bir kayıt seç, sağ tarafta haritadan pin ayarla. Guided akıştan gelirsen varsayılan liste sadece o oturumdaki kişiler olur.</div>
             </div>
             <div className="muted">
               {scopeMode === "SESSION" ? "Planlama oturumu" : "Tüm şirket kayıtları"} • <b>{filtered.length}</b>
@@ -415,12 +539,11 @@ export default function GeoReviewPanel() {
           </div>
 
           <div style={{ overflowX: "auto", marginTop: 12, maxHeight: 540 }}>
-            <table className="tbl" style={{ minWidth: 920 }}>
+            <table className="tbl" style={{ minWidth: 860 }}>
               <thead>
                 <tr>
                   <th>#</th>
                   <th>Ad Soyad</th>
-                  <th>Telefon</th>
                   <th>Adres</th>
                   <th>Durum</th>
                   <th>Koordinat</th>
@@ -439,8 +562,7 @@ export default function GeoReviewPanel() {
                         <div style={{ fontWeight: 600 }}>{p.fullName || "-"}</div>
                         <div className="muted" style={{ fontSize: 12 }}>#{p.id} • {p.kind || (school ? "STUDENT" : "PERSONEL")}</div>
                       </td>
-                      <td>{p.phone || "-"}</td>
-                      <td style={{ minWidth: 260 }}>
+                      <td style={{ minWidth: 320 }}>
                         <div>{p.homeAddress || "-"}</div>
                         <div className="muted" style={{ fontSize: 12 }}>{formatGeoReason(p)}</div>
                       </td>
@@ -471,7 +593,7 @@ export default function GeoReviewPanel() {
                 })}
                 {!filtered.length ? (
                   <tr>
-                    <td colSpan={7} className="muted" style={{ padding: 12 }}>
+                    <td colSpan={6} className="muted" style={{ padding: 12 }}>
                       {scopeMode === "SESSION" && hasPlanningScope
                         ? "Bu planlama oturumunda gösterilecek kayıt bulunamadı. İstersen üstten tüm şirket kayıtlarına geçebilirsin."
                         : "Kayıt bulunamadı."}
@@ -485,15 +607,18 @@ export default function GeoReviewPanel() {
 
         <GeoLocationPicker
           title={school ? "Öğrenci konum seçici" : `${who} konum seçici`}
-          subtitle="Adresi düzelt, adresten bul veya haritada tıklayarak pimi seç. İş bitince rehberli adıma geri dönüp kaldığın yerden devam edebilirsin."
+          subtitle="Adresi düzelt, adresten bul veya haritada tıklayarak pimi seç. İstersen lat/lng alanlarını elle değiştir. İş bitince rehberli adıma geri dönüp kaldığın yerden devam edebilirsin."
           selectedName={selected?.fullName || "-"}
           address={form.homeAddress}
           onAddressChange={(value) => setForm((prev) => ({ ...prev, homeAddress: value }))}
           lat={form.lat}
           lng={form.lng}
           onPick={(lat, lng) => setForm((prev) => ({ ...prev, lat: String(lat.toFixed(6)), lng: String(lng.toFixed(6)) }))}
+          onLatChange={(value) => setForm((prev) => ({ ...prev, lat: value }))}
+          onLngChange={(value) => setForm((prev) => ({ ...prev, lng: value }))}
           onGeocode={geocodeSelected}
           onSave={() => saveSelected()}
+          onSaveNext={() => saveSelected({ advanceNext: true })}
           onMarkOk={() => saveSelected({ markOk: true })}
           onClear={() => setForm((prev) => ({ ...prev, lat: "", lng: "" }))}
           busy={busy || !selected}

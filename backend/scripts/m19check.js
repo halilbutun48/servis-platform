@@ -13,6 +13,28 @@ function mustOk(r, label) {
 function nearEq(a, b, eps = 1e-6) {
   return Math.abs(Number(a) - Number(b)) <= eps;
 }
+function haversineKm(aLat, aLng, bLat, bLng) {
+  const R = 6371;
+  const dLat = (Number(bLat) - Number(aLat)) * Math.PI / 180;
+  const dLng = (Number(bLng) - Number(aLng)) * Math.PI / 180;
+  const lat1 = Number(aLat) * Math.PI / 180;
+  const lat2 = Number(bLat) * Math.PI / 180;
+  const s1 = Math.sin(dLat / 2);
+  const s2 = Math.sin(dLng / 2);
+  const h = s1 * s1 + Math.cos(lat1) * Math.cos(lat2) * s2 * s2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function minDistanceKmToHub(points, hubLat, hubLng) {
+  const pts = Array.isArray(points) ? points : [];
+  if (!pts.length) return Number.POSITIVE_INFINITY;
+  let best = Number.POSITIVE_INFINITY;
+  for (const p of pts) {
+    if (!p || !Number.isFinite(Number(p.lat)) || !Number.isFinite(Number(p.lng))) continue;
+    const km = haversineKm(hubLat, hubLng, Number(p.lat), Number(p.lng));
+    if (km < best) best = km;
+  }
+  return best;
+}
 
 async function main() {
   banner("M19CHECK: Hub + Direction/Pattern + Route Preview summary/path");
@@ -75,14 +97,31 @@ async function main() {
   assertOk((summary.stopCount ?? 0) === 2, "stopCount=2");
   assertOk(String(summary.direction) === "OUTBOUND", "direction OUTBOUND");
   assertOk(String(summary.pattern) === "LOOP", "pattern LOOP");
+  assertOk(String(summary.startLabel || "") === "HUB", "summary startLabel HUB");
+  assertOk(String(summary.endLabel || "") === "HUB", "summary endLabel HUB");
 
-  // LOOP should start/end at hub (approx)
   const pts = path.points;
-  assertOk(pts.length >= 4, "loop points length >= 4 (hub + 2 stops + hub)");
-  const first = pts[0];
-  const last = pts[pts.length - 1];
-  assertOk(nearEq(first.lat, hubLat, 1e-3) && nearEq(first.lng, hubLng, 1e-3), "start near hub");
-  assertOk(nearEq(last.lat, hubLat, 1e-3) && nearEq(last.lng, hubLng, 1e-3), "end near hub");
+  assertOk(pts.length >= 4, "loop path has >= 4 points");
+
+  const source = String(path.source || "ESTIMATED").toUpperCase();
+  if (source === "ESTIMATED") {
+    const first = pts[0];
+    const last = pts[pts.length - 1];
+    assertOk(nearEq(first.lat, hubLat, 1e-3) && nearEq(first.lng, hubLng, 1e-3), "estimated path starts near hub");
+    assertOk(nearEq(last.lat, hubLat, 1e-3) && nearEq(last.lng, hubLng, 1e-3), "estimated path ends near hub");
+  } else {
+    const windowSize = Math.min(25, Math.max(4, Math.ceil(pts.length * 0.2)));
+    const firstWindow = pts.slice(0, windowSize);
+    const lastWindow = pts.slice(Math.max(0, pts.length - windowSize));
+    const firstMinKm = minDistanceKmToHub(firstWindow, hubLat, hubLng);
+    const lastMinKm = minDistanceKmToHub(lastWindow, hubLat, hubLng);
+    assertOk(Number.isFinite(firstMinKm), `${source} path first window finite`);
+    assertOk(Number.isFinite(lastMinKm), `${source} path last window finite`);
+    // OSRM / learned routes may snap to the road network and not include the exact hub coordinate.
+    // We keep a broader corridor check instead of exact point equality.
+    assertOk(firstMinKm <= 5, `${source} path starts within broader hub corridor`);
+    assertOk(lastMinKm <= 5, `${source} path ends within broader hub corridor`);
+  }
 
   assertOk(Number(summary.distanceKmEstimated || 0) >= 0, "distanceKmEstimated numeric");
   assertOk(Number(summary.durationMinEstimated || 0) >= 0, "durationMinEstimated numeric");

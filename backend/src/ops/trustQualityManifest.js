@@ -42,6 +42,36 @@ function formatStars(score) {
   return `${n.toFixed(1)} / 5`;
 }
 
+function buildProviderScoreMapFromEvaluations(evaluations, roomIds) {
+  const wanted = new Set((Array.isArray(roomIds) ? roomIds : []).map((x) => Number(x || 0)).filter(Boolean));
+  const grouped = new Map();
+  for (const entry of Array.isArray(evaluations) ? evaluations : []) {
+    const rid = Number(entry?.roomId || 0);
+    if (!rid || (wanted.size && !wanted.has(rid))) continue;
+    const list = grouped.get(rid) || [];
+    list.push(entry);
+    grouped.set(rid, list);
+  }
+  const out = new Map();
+  const targetIds = wanted.size ? Array.from(wanted) : Array.from(grouped.keys());
+  for (const rid of targetIds) {
+    const list = grouped.get(rid) || [];
+    const averages = list.map(evaluationAverage).filter((x) => x != null);
+    const averageScore = avg(averages);
+    const evaluationCount = list.length;
+    const recBase = list.filter((x) => x.recommendAgain !== null && x.recommendAgain !== undefined);
+    const recommendRate = recBase.length ? Math.round((recBase.filter((x) => x.recommendAgain === true).length / recBase.length) * 100) : null;
+    out.set(rid, {
+      roomId: rid,
+      averageScore,
+      evaluationCount,
+      recommendRate,
+      summaryLabel: evaluationCount ? `${formatStars(averageScore)} • ${evaluationCount} değerlendirme` : 'Henüz puan yok',
+    });
+  }
+  return out;
+}
+
 export function getTrustQualityManifest() {
   return {
     activeMilestone: "M63",
@@ -103,19 +133,8 @@ export async function buildCompanyServiceEvaluationSummary(user) {
 export async function getProviderScore(roomId) {
   const rid = Number(roomId || 0);
   if (!rid) return { roomId: 0, averageScore: null, evaluationCount: 0, recommendRate: null, summaryLabel: "Henüz puan yok" };
-  const list = (await readServiceEvaluations()).filter((x) => Number(x.roomId || 0) === rid);
-  const averages = list.map(evaluationAverage).filter((x) => x != null);
-  const averageScore = avg(averages);
-  const evaluationCount = list.length;
-  const recBase = list.filter((x) => x.recommendAgain !== null && x.recommendAgain !== undefined);
-  const recommendRate = recBase.length ? Math.round((recBase.filter((x) => x.recommendAgain === true).length / recBase.length) * 100) : null;
-  return {
-    roomId: rid,
-    averageScore,
-    evaluationCount,
-    recommendRate,
-    summaryLabel: evaluationCount ? `${formatStars(averageScore)} • ${evaluationCount} değerlendirme` : "Henüz puan yok",
-  };
+  const map = buildProviderScoreMapFromEvaluations(await readServiceEvaluations(), [rid]);
+  return map.get(rid) || { roomId: rid, averageScore: null, evaluationCount: 0, recommendRate: null, summaryLabel: "Henüz puan yok" };
 }
 
 export async function buildCompanyServiceEvaluationItems(user) {
@@ -136,8 +155,7 @@ export async function buildCompanyServiceEvaluationItems(user) {
   ]);
   const map = new Map(evaluations.filter((x) => Number(x.companyId) === companyId).map((x) => [Number(x.shiftId), x]));
   const roomIds = [...new Set(shifts.map((s) => Number(s.room?.id || s.roomId || 0)).filter(Boolean))];
-  const scoreMap = new Map();
-  for (const rid of roomIds) scoreMap.set(rid, await getProviderScore(rid));
+  const scoreMap = buildProviderScoreMapFromEvaluations(evaluations, roomIds);
   return shifts.map((s) => {
     const status = String(s.status || "").toUpperCase();
     const evaluation = map.get(Number(s.id));

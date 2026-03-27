@@ -9,6 +9,7 @@ import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/ro
 import { osrmRoute } from "../../services/osrmRoute.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
 import { decorateGeoItem, inferGeoState } from "../../services/geoState.js";
+import { rememberResponse } from "../../utils/responseCache.js";
 
 const qModeSchema = z
   .enum(["REPLACE", "MERGE"])
@@ -48,6 +49,10 @@ const importRawItemSchema = z
     kind: z.any().optional(),
   })
   .passthrough();
+
+function routePreviewScope(user) {
+  return { role: user?.role, companyId: user?.companyId, roomId: user?.roomId };
+}
 
 function sanitizePhone(p) {
   const s = String(p ?? "").trim();
@@ -610,6 +615,9 @@ export function attachShiftPeopleRoutes(router, _io) {
   // COMPANY + ROOM: route preview (M19: summary + directional hub path + learned overlay)
   r.get("/:id/route-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
+    const payload = await rememberResponse(
+      `shift-route-preview:${id}`,
+      async () => {
 
     // include room + agreement for hub fallback, progress for time window hints
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user, {
@@ -787,37 +795,42 @@ export function attachShiftPeopleRoutes(router, _io) {
       summary.durationMinOsrm = Math.round(Number(etaMinutes(distanceKmOsrm, 30)));
     }
 
-    res.json({
-      ok: true,
-      shift: {
-        id: shift.id,
-        status: shift.status,
-        startAt: shift.startAt,
-        endAt: shift.endAt,
-        roomId: shift.roomId,
-        companyId: shift.companyId,
-        agreementId: shift.agreementId ?? null,
-        hubLat,
-        hubLng,
-        direction,
-        pattern,
-        requiredPaxOverride: shift.requiredPaxOverride ?? null,
+        return {
+          ok: true,
+          shift: {
+            id: shift.id,
+            status: shift.status,
+            startAt: shift.startAt,
+            endAt: shift.endAt,
+            roomId: shift.roomId,
+            companyId: shift.companyId,
+            agreementId: shift.agreementId ?? null,
+            hubLat,
+            hubLng,
+            direction,
+            pattern,
+            requiredPaxOverride: shift.requiredPaxOverride ?? null,
+          },
+          people,
+          stops: stopsWithCounts,
+          assignments,
+          skipped: skipped.map((p) => ({
+            id: p.id,
+            fullName: p.fullName,
+            phone: p.phone,
+            geoStatus: p.geoStatus,
+            geoManualOverride: p.geoManualOverride,
+            homeLat: p.homeLat,
+            homeLng: p.homeLng,
+          })),
+          summary,
+          path: { source, points: pathPoints, routeKey },
+        };
       },
-      people,
-      stops: stopsWithCounts,
-      assignments,
-      skipped: skipped.map((p) => ({
-        id: p.id,
-        fullName: p.fullName,
-        phone: p.phone,
-        geoStatus: p.geoStatus,
-        geoManualOverride: p.geoManualOverride,
-        homeLat: p.homeLat,
-        homeLng: p.homeLng,
-      })),
-      summary,
-      path: { source, points: pathPoints, routeKey },
-    });
+      { ttlMs: 30000, scope: routePreviewScope(req.user) }
+    );
+
+    return res.json(payload);
   });
 
   router.use(r);

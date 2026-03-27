@@ -35,6 +35,13 @@ Bu komut:
 - `M42 -> M66` pack zincirini sırayla koşturur,
 - sonda repo audit raporu üretir.
 
+
+## TTL kısa not
+- Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- Personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- Parent invite backend üst sınırı: **365 gün**
+- Personel/öğrenci public canlı link backend üst sınırı: **365 gün**
+
 ## Repo audit kapsamı
 - duplicate dosyalar
 - benzer pack/check script grupları

@@ -18,6 +18,8 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 import { ymdTR } from "../../utils/time";
+import { fetchProviderScore } from "../../utils/providerScores";
+import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHub";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -148,7 +150,7 @@ export default function AgreementsPanel() {
   const [items, setItems] = useState([]);
   const [shiftStats, setShiftStats] = useState({}); // ✅ M59
 
-  const [take, setTake] = useState(50);
+  const [take, setTake] = useState(20);
   const [statusFilter, setStatusFilter] = useState("");
 
   // rooms dropdown
@@ -191,7 +193,7 @@ export default function AgreementsPanel() {
   const endMin = useMemo(() => parseHHMM(endHHMM), [endHHMM]);
 
   // ✅ live refresh
-  useAutoReload("agreements", load, !!token);
+  useAutoReload("agreements", () => load(), !!token, 650);
 
   const roomById = useMemo(() => {
     const m = new Map();
@@ -203,16 +205,16 @@ export default function AgreementsPanel() {
     let cancelled = false;
     (async () => {
       const rid = Number(roomId || 0);
-      if (!token || !rid) { setSelectedRoomScore(null); return; }
+      if (!advancedOpen || !token || !rid) { setSelectedRoomScore(null); return; }
       try {
-        const score = await api(`/api/trust-quality/provider-score/${rid}`, { token });
+        const score = await fetchProviderScore(rid, token);
         if (!cancelled) setSelectedRoomScore(score || null);
       } catch {
         if (!cancelled) setSelectedRoomScore(null);
       }
     })();
     return () => { cancelled = true; };
-  }, [token, roomId]);
+  }, [advancedOpen, token, roomId]);
 
   function applyTemplate(key) {
     const t = PLAN_TEMPLATES.find((x) => x.key === key) || PLAN_TEMPLATES[0];
@@ -247,13 +249,14 @@ export default function AgreementsPanel() {
     }
   }, [roomId, useRoomHub, roomById, hubLat, hubLng]);
 
-  async function loadRooms() {
+  async function loadRooms(signal) {
     if (!token) return;
     setRoomErr("");
     setRoomsSupported(true);
 
     try {
-      const resp = await api("/api/rooms?take=200", { token });
+      const resp = await getCompanyRooms(token, { signal, take: 30, ttlMs: 60000 });
+      if (signal?.aborted) return;
       setRooms(Array.isArray(resp?.items) ? resp.items : []);
     } catch (e) {
       setRooms([]);
@@ -262,20 +265,21 @@ export default function AgreementsPanel() {
     }
   }
 
-  async function load() {
+  async function load(signal) {
     if (!token) return;
     setErr("");
     try {
       const qs = new URLSearchParams();
       qs.set("take", String(take));
       if (statusFilter) qs.set("status", statusFilter);
-      const resp = await api(`/api/agreements?${qs.toString()}`, { token });
+      const resp = await getCompanyAgreements(token, { signal, take, status: statusFilter, ttlMs: 20000 });
+      if (signal?.aborted) return;
       const list = resp?.items ?? [];
       setItems(list);
 
       // ✅ M59: shift stats (today/horizon) for UI clarity
       try {
-        const ids = list.map((x) => x?.id).filter(Boolean);
+        const ids = list.slice(0, 12).map((x) => x?.id).filter(Boolean);
         if (ids.length) {
           const st = await api("/api/agreements/shift-stats", { token, method: "POST", body: { agreementIds: ids, horizonDays: 7 } });
           setShiftStats(st?.byId ?? {});
@@ -293,15 +297,47 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     if (!token) return;
-    loadRooms();
-    load();
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      load(controller.signal);
+    }, 320);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   useEffect(() => {
-    load();
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) load(controller.signal);
+    }, 320);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [take, statusFilter]);
+
+  useEffect(() => {
+    if (!token || !advancedOpen) return;
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) loadRooms(controller.signal);
+    }, 140);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [token, advancedOpen]);
 
   async function createAdvanced() {
     setErr("");
@@ -528,27 +564,22 @@ export default function AgreementsPanel() {
 
       {/* ✅ M27: Preset ile hızlı oluştur (Advanced) */}
       <div className="card">
-        <div style={{ fontWeight: 900 }}>Yeni Agreement (Advanced)</div>
+        <div style={{ fontWeight: 900 }}>Yeni Sözleşme (Hızlı)</div>
         <div className="muted" style={{ marginTop: 4 }}>
           Preset paket seç → room seç → tarih aralığı → oluştur. (İstersen sabah+akşam tek tıkla 2 agreement.)
         </div>
         <div style={{ marginTop: 10 }}>
           <AgreementWizard
-            rooms={rooms}
-            roomsSupported={roomsSupported}
-            onReloadRooms={loadRooms}
+            rooms={null}
+            roomsSupported={true}
+            onReloadRooms={null}
             renderTrigger={(open) => (
-              <button type="button" onClick={open} disabled={!roomsSupported || busy}>
+              <button type="button" onClick={open} disabled={busy}>
                 Aç
               </button>
             )}
             onCreated={load}
           />
-          {!roomsSupported ? (
-            <div className="muted" style={{ marginTop: 8, color: "#b85" }}>
-              (rooms endpoint missing) {roomErr ? `• ${roomErr}` : ""}
-            </div>
-          ) : null}
         </div>
       </div>
 
@@ -719,7 +750,7 @@ export default function AgreementsPanel() {
 
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <button type="button" disabled={busy || !roomsSupported} onClick={createAdvanced}>
-                {busy ? "..." : "Agreement Oluştur"}
+                {busy ? "..." : "Sözleşme Oluştur"}
               </button>
               <button type="button" disabled={busy} onClick={() => setAdvancedOpen(false)}>
                 Vazgeç

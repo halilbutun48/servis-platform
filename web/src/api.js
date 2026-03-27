@@ -53,7 +53,7 @@ function makeHttpError(status, payloadOrText) {
   return err;
 }
 
-export async function api(path, { method = "GET", body, token } = {}) {
+export async function api(path, { method = "GET", body, token, signal } = {}) {
   const headers = { "Content-Type": "application/json" };
 
   const t = ((token ?? getToken()) || "").trim();
@@ -64,6 +64,7 @@ export async function api(path, { method = "GET", body, token } = {}) {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   const ct = res.headers.get("content-type") || "";

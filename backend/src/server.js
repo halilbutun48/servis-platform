@@ -21,6 +21,7 @@ import { notificationsRouter } from "./routes/notifications.js";
 import { etaRouter } from "./routes/eta.js";
 import { geocodeRouter } from "./routes/geocode.js";
 import { companyHubRouter } from "./routes/companyHub.js";
+import { companyOverviewRouter } from "./routes/companyOverview.js";
 import { planBuilderRouter } from "./routes/planBuilder.js";
 import { liveRouter } from "./routes/live.js";
 import { parentRouter } from "./routes/parent.js";
@@ -282,6 +283,141 @@ const readLimiter = rateLimit({
   handler: limiter429Handler,
 });
 
+const readSummaryLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(180, Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-summary:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
+const readPreviewLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(180, Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-preview:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
+const readDirectoryLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(240, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.2)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-directory:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
+
+const readOfferLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.8)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-offer:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
+const readPeopleLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.8)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-people:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
+const readLiveShiftLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.8)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-live-shift:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+function isSummaryReadPath(req) {
+  const path = String(req.path || "");
+  return (
+    path === "/company/overview/workflow-summary" ||
+    path === "/company/overview/commercial-flow-summary" ||
+    path === "/trust-quality/company/summary"
+  );
+}
+
+function isReportReadPath(req) {
+  return /^\/reports\/(shifts|drivers|vehicles|stops)\/summary$/.test(String(req.path || ""));
+}
+
+function isScoreReadPath(req) {
+  return String(req.path || "") === "/trust-quality/provider-scores";
+}
+
+function isPreviewReadPath(req) {
+  return /^\/shifts\/\d+\/route-preview$/.test(String(req.path || ""));
+}
+
+function isOfferReadPath(req) {
+  return String(req.path || "") === "/offers/company";
+}
+
+function isPeopleReadPath(req) {
+  return String(req.path || "") === "/company/personels";
+}
+
+function isLiveShiftReadPath(req) {
+  const path = String(req.path || "");
+  if (path !== "/shifts") return false;
+  const onlyNow = String(req.query?.onlyNow || "0") === "1";
+  const status = String(req.query?.status || "");
+  return onlyNow || status.includes("APPROVED") || status.includes("ACTIVE");
+}
+
+function isDirectoryReadPath(req) {
+  const path = String(req.path || "");
+  return (
+    path === "/rooms" ||
+    path === "/vehicles" ||
+    path === "/agreements"
+  );
+}
+
+
+const readReportLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 3)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-report:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
+const readScoreLimiter = rateLimit({
+  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
+  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 3)),
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rlStore("read-score:", ENV.READ_RATE_LIMIT_WINDOW_MS),
+  skip: greenpackSkip,
+  keyGenerator: authKey,
+  handler: limiter429Handler,
+});
+
 const writeLimiter = rateLimit({
   windowMs: ENV.WRITE_RATE_LIMIT_WINDOW_MS,
   max: ENV.WRITE_RATE_LIMIT_MAX,
@@ -351,7 +487,17 @@ app.use("/api", (req, res, next) => {
   if (req.path.startsWith("/gps")) return next();
   if (req.path.startsWith("/telematics")) return next();
 
-  if (req.method === "GET") return readLimiter(req, res, next);
+  if (req.method === "GET") {
+    if (isSummaryReadPath(req)) return readSummaryLimiter(req, res, next);
+    if (isReportReadPath(req)) return readReportLimiter(req, res, next);
+    if (isScoreReadPath(req)) return readScoreLimiter(req, res, next);
+    if (isPreviewReadPath(req)) return readPreviewLimiter(req, res, next);
+    if (isOfferReadPath(req)) return readOfferLimiter(req, res, next);
+    if (isPeopleReadPath(req)) return readPeopleLimiter(req, res, next);
+    if (isLiveShiftReadPath(req)) return readLiveShiftLimiter(req, res, next);
+    if (isDirectoryReadPath(req)) return readDirectoryLimiter(req, res, next);
+    return readLimiter(req, res, next);
+  }
   return writeLimiter(req, res, next);
 });
 
@@ -402,6 +548,7 @@ app.use("/api/penalties", penaltiesRouter());
 app.use("/api/eta", etaRouter);
 app.use("/api/geocode", geocodeRouter());
 app.use("/api/company/hub", companyHubRouter());
+app.use("/api/company/overview", companyOverviewRouter());
 app.use("/api/plan-builder", planBuilderRouter());
 app.use("/api/live", liveRouter());
 app.use("/api/observability", observabilityRouter());

@@ -15,6 +15,8 @@ import {
   addDaysISO,
 } from "../../utils/agreementUi";
 import { isoFromTRYmdMin, ymdTR } from "../../utils/time";
+import { fetchProviderScoreMap } from "../../utils/providerScores";
+import { cachedGet } from "../../utils/uiDataCache";
 
 function todayYmd() {
   return ymdTR();
@@ -233,7 +235,7 @@ export default function AgreementWizard({
     let alive = true;
     (async () => {
       try {
-        const resp = await api("/api/rooms?take=200", { token });
+        const resp = await cachedGet("/api/rooms?take=200", { token, ttlMs: 20000, delayMs: 120 });
         if (!alive) return;
         setRoomsLocal(Array.isArray(resp?.items) ? resp.items : []);
       } catch {
@@ -255,18 +257,9 @@ export default function AgreementWizard({
         return;
       }
       try {
-        const pairs = await Promise.all(
-          (roomsList || []).map(async (r) => {
-            try {
-              const score = await api(`/api/trust-quality/provider-score/${r.id}`, { token });
-              return [String(r.id), score];
-            } catch {
-              return [String(r.id), null];
-            }
-          })
-        );
+        const nextScores = await fetchProviderScoreMap((roomsList || []).map((r) => r?.id), token);
         if (!alive) return;
-        setRoomScores(Object.fromEntries(pairs));
+        setRoomScores(nextScores);
       } catch {
         if (alive) setRoomScores({});
       }

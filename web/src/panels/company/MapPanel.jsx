@@ -1,6 +1,6 @@
 // web/src/panels/company/MapPanel.jsx
 import { formatDateTimeTR, nowIsoTR } from "../../utils/time";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -9,6 +9,11 @@ import StopTimeline from "../../components/StopTimeline";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildMapFacts } from "../../utils/copilotFacts";
+import { getPath } from "../../router";
+import { cachedGet } from "../../utils/uiDataCache";
+import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyDataHub";
+import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 
 function asNum(v) {
   const n = Number(String(v ?? "").replace(",", "."));
@@ -120,6 +125,11 @@ function focusStop(stop) {
 
 export default function CompanyMapPanel() {
   const { token } = useSession();
+  const scopeKey = useMemo(() => {
+    const path = String(getPath() || "/company/map").split("?")[0];
+    if (path === "/school/map" || path === "/organization/map") return path;
+    return "/company/map";
+  }, []);
 
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
@@ -135,8 +145,8 @@ export default function CompanyMapPanel() {
   const [err, setErr] = useState("");
   const [routePreview, setRoutePreview] = useState({ points: [], source: "ESTIMATED" });
 
-  async function loadVehicles() {
-    const r = await api("/api/vehicles", { token });
+  async function loadVehicles(signal) {
+    const r = await getCompanyVehicles(token, { signal, take: 20, onlyActive: true, ttlMs: 45000 });
     const items = Array.isArray(r) ? r : [];
     setVehicles(items);
 
@@ -150,12 +160,8 @@ export default function CompanyMapPanel() {
     }
   }
 
-  async function loadShifts() {
-    const qs = new URLSearchParams();
-    qs.set("status", "APPROVED,ACTIVE");
-    qs.set("onlyNow", "1");
-    qs.set("take", "200");
-    const r = await api(`/api/shifts?${qs.toString()}`, { token });
+  async function loadShifts(signal) {
+    const r = await getCompanyMapShifts(token, { signal, ttlMs: 9000 });
     const items = Array.isArray(r?.items) ? r.items : Array.isArray(r) ? r : [];
     setShifts(items);
 
@@ -165,11 +171,11 @@ export default function CompanyMapPanel() {
     }
   }
 
-  async function loadAll() {
+  async function loadAll(signal) {
     setErr("");
     setBusy(true);
     try {
-      await Promise.all([loadVehicles(), loadShifts()]);
+      await Promise.all([loadVehicles(signal), loadShifts(signal)]);
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -178,8 +184,20 @@ export default function CompanyMapPanel() {
   }
 
   useEffect(() => {
-    loadAll();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      if (!cancelled) loadAll(controller.signal);
+    }, 320);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reloadVehiclesTimer = useRef(null);
+  const reloadShiftsTimer = useRef(null);
 
   useAutoReload("vehicles", (detail) => {
     const m = detail?.payload?.msg;
@@ -199,7 +217,8 @@ export default function CompanyMapPanel() {
       return;
     }
 
-    loadVehicles().catch(() => {});
+    clearTimeout(reloadVehiclesTimer.current);
+    reloadVehiclesTimer.current = setTimeout(() => { loadVehicles().catch(() => {}); }, 600);
   });
 
   useAutoReload("gps", (detail) => {
@@ -228,7 +247,8 @@ export default function CompanyMapPanel() {
   });
 
   useAutoReload("shifts", () => {
-    loadShifts().catch(() => {});
+    clearTimeout(reloadShiftsTimer.current);
+    reloadShiftsTimer.current = setTimeout(() => { loadShifts().catch(() => {}); }, 600);
   });
 
   useEffect(() => {
@@ -354,11 +374,22 @@ export default function CompanyMapPanel() {
 
   useEffect(() => {
     if (!selected) {
-      clearCopilotSelection("/company/map");
+      clearCopilotSelection(scopeKey);
       return;
     }
+    const facts = buildMapFacts({
+      selected,
+      selectedShift,
+      selectedNext,
+      selectedEta,
+      selectedStats,
+      gpsStatus: uiStatusFromVehicle(selected),
+      gpsAge: gpsAgeLabel(selected),
+      vehicleCount: vehicles.length,
+    });
+
     setCopilotSelection({
-      scopeKey: "/company/map",
+      scopeKey,
       entityType: selectedShift?.id ? "shift" : "vehicle",
       entityId: Number(selectedShift?.id || selected?.id || 0) || null,
       label: selectedShift?.id
@@ -367,33 +398,51 @@ export default function CompanyMapPanel() {
           ? `Araç ${selected.plate}`
           : `Araç #${selected?.id || "-"}`,
       summary: copilotSummary || "",
+      fields: [
+        { label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Seçili aracın plakasını veya kayıt numarasını gösterir.' },
+        { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlı konum bilgisinin kaç dakika veya saniye önce geldiğini gösterir.' },
+        { label: 'Sıradaki Durak', value: selectedNext?.name || '-', help: 'Araç şu anda hangi durağa doğru gidiyor bilgisini gösterir.' },
+        { label: 'ETA', value: selectedEta != null ? `${selectedEta}dk` : '-', help: 'Sıradaki durağa tahmini kalan süreyi gösterir.' },
+        { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Seçili vardiyadaki toplam durak sayısını gösterir.' },
+        { label: 'Kalan', value: `${selectedStats?.remaining ?? 0}`, help: 'Henüz tamamlanmamış durak sayısını gösterir.' },
+      ],
+      facts,
+      badges: [
+        { label: 'GPS', value: uiStatusFromVehicle(selected) || '-', help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
+        { label: 'Vardiya Durumu', value: String(selectedShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
+      ],
     });
-    return () => clearCopilotSelection("/company/map");
-  }, [selected, selected?.id, selected?.plate, selectedShift?.id, copilotSummary]);
+    return () => clearCopilotSelection(scopeKey);
+  }, [selected, selected?.id, selected?.plate, selectedShift?.id, copilotSummary, scopeKey]);
 
   useEffect(() => {
     let alive = true;
-    async function loadRoutePreview() {
-      if (!selectedShift?.id) {
-        if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
-        return;
-      }
-      try {
-        const r = await api(`/api/shifts/${selectedShift.id}/route-preview`, { token });
-        const pts = Array.isArray(r?.path?.points) ? r.path.points : [];
-        if (alive) {
-          setRoutePreview({
-            points: pts,
-            source: String(r?.path?.source || "ESTIMATED").toUpperCase(),
-          });
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      (async () => {
+        if (!selectedShift?.id) {
+          if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
+          return;
         }
-      } catch {
-        if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
-      }
-    }
-    loadRoutePreview();
+        try {
+          const r = await getShiftRoutePreview(token, selectedShift.id, { ttlMs: 60000, delayMs: 180, signal: controller.signal });
+          const pts = Array.isArray(r?.path?.points) ? r.path.points : [];
+          if (alive) {
+            setRoutePreview({
+              points: pts,
+              source: String(r?.path?.source || "ESTIMATED").toUpperCase(),
+            });
+          }
+        } catch (e) {
+          if (e?.name === 'AbortError') return;
+          if (alive) setRoutePreview({ points: [], source: "ESTIMATED" });
+        }
+      })();
+    }, 1200);
     return () => {
       alive = false;
+      controller.abort();
+      clearTimeout(timer);
     };
   }, [selectedShift?.id, token]);
 
@@ -407,7 +456,7 @@ export default function CompanyMapPanel() {
     <div className="wrap wrap--fluid">
       <div className="topbar">
         <div>
-          <div className="title">Company • Canlı Harita</div>
+          <div className="title">{scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Organizasyon" : "Company"} • Canlı Harita</div>
           <div className="muted">Tek panel: canlı liste + seçili araç + duraklar + harita</div>
         </div>
 

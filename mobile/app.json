@@ -3,7 +3,7 @@
     "name": "Personel Servis Surucu",
     "slug": "personel-servis-driver-mobile",
     "scheme": "psdriver",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -24,7 +24,10 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "extra": {
@@ -49,9 +52,9 @@
         {
           "locationWhenInUsePermission": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
           "locationAlwaysAndWhenInUsePermission": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
-          "isIosBackgroundLocationEnabled": false,
-          "isAndroidBackgroundLocationEnabled": false,
-          "isAndroidForegroundServiceEnabled": false
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],

@@ -72,7 +72,36 @@ function Invoke-PhaseScript {
     throw "Missing phase script: $ScriptRel"
   }
 
-  & $scriptPath @Arguments
+  $namedArgs = @{}
+  $positionalArgs = @()
+  for ($i = 0; $i -lt $Arguments.Count; $i++) {
+    $arg = $Arguments[$i]
+    if (($arg -is [string]) -and $arg.StartsWith('-')) {
+      $name = $arg.TrimStart('-')
+      $hasValue = ($i + 1 -lt $Arguments.Count) -and -not (($Arguments[$i + 1] -is [string]) -and $Arguments[$i + 1].StartsWith('-'))
+      if ($hasValue) {
+        $namedArgs[$name] = $Arguments[$i + 1]
+        $i++
+      }
+      else {
+        $namedArgs[$name] = $true
+      }
+    }
+    else {
+      $positionalArgs += $arg
+    }
+  }
+
+  if ($namedArgs.Count -gt 0 -and $positionalArgs.Count -gt 0) {
+    & $scriptPath @namedArgs @positionalArgs
+  }
+  elseif ($namedArgs.Count -gt 0) {
+    & $scriptPath @namedArgs
+  }
+  else {
+    & $scriptPath @positionalArgs
+  }
+
   if (-not $?) {
     throw ("Phase script failed: {0}" -f $ScriptRel)
   }

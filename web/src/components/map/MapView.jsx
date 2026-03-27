@@ -392,10 +392,7 @@ export default function MapView({
           {selectedVehicle?.plate ? (
             <span className="pill">{selectedVehicleLabel}</span>
           ) : null}
-          <span className="pill" data-status="PASSIVE">Rota</span>
-          <span className="pill" data-status="OK">Geçilen</span>
-          <span className="pill" data-status="NEXT">Sıradaki</span>
-        </div>
+                 </div>
       </div>
     </div>
   );
