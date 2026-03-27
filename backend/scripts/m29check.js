@@ -60,7 +60,7 @@ async function main() {
   assertOk(offCreate.ok, "offers created");
 
   step("company directory includes offers and shift.status");
-  const dir = await reqJson("GET", "/api/offers/company?status=OPEN,COUNTERED&take=800", { token: companyToken });
+  const dir = await reqJson("GET", "/api/offers/company?status=OPEN,COUNTERED&take=800&fresh=1", { token: companyToken });
   assertOk(dir.ok, "offers company directory ok");
   const dirItemsAll = itemsOf(dir);
   const dirItems = byShift(dirItemsAll, shiftId);

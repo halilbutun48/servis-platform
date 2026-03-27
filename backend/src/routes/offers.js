@@ -42,6 +42,27 @@ function emitOffer(io, { companyId, roomId, shiftId, kind, offerId }) {
 }
 
 const OFFER_STATUSES = new Set(["OPEN", "COUNTERED", "ACCEPTED", "CANCELLED"]);
+
+function shouldBypassCompanyOffersCache(req) {
+  const fresh = String(req.query?.fresh || "").trim();
+  const header = String(req.headers?.["x-bypass-response-cache"] || "").trim();
+  return fresh === "1" || header === "1";
+}
+
+async function loadCompanyDirectoryItems(where, take) {
+  return prisma.shiftOffer.findMany({
+    where,
+    orderBy: [{ updatedAt: "desc" }],
+    take,
+    include: {
+      room: true,
+      shift: {
+        include: { company: true },
+      },
+    },
+  });
+}
+
 async function finalizeAcceptedOffer(io, offer) {
   const shiftId = offer.shiftId;
   const companyId = offer.shift.companyId;
@@ -233,18 +254,13 @@ export function offersRouter(io) {
           }
         }
 
+        if (shouldBypassCompanyOffersCache(req)) {
+          const items = await loadCompanyDirectoryItems(where, take);
+          return res.json({ items });
+        }
+
         const payload = await rememberResponse(`offers-company:${companyId}:${statusIn ? statusIn.join(",") : "all"}:${q || "-"}:${take}`, async () => {
-          const items = await prisma.shiftOffer.findMany({
-            where,
-            orderBy: [{ updatedAt: "desc" }],
-            take,
-            include: {
-              room: true,
-              shift: {
-                include: { company: true },
-              },
-            },
-          });
+          const items = await loadCompanyDirectoryItems(where, take);
           return { items };
         }, { ttlMs: 15000, scope: { role: req.user?.role, companyId: req.user?.companyId, userId: req.user?.id } });
 

@@ -116,7 +116,7 @@ async function main() {
   must("offers include room2", createdRoomIds.includes(Number(room2Id)));
 
   step("company directory /api/offers/company?status=OPEN,COUNTERED");
-  const dir1 = await reqJson("GET", "/api/offers/company?status=OPEN,COUNTERED&take=800", {
+  const dir1 = await reqJson("GET", "/api/offers/company?status=OPEN,COUNTERED&take=800&fresh=1", {
     token: companyToken,
   });
   assertOk(dir1.ok, "offers company directory ok");
@@ -138,13 +138,13 @@ async function main() {
   ok("shift bound", Number(acc.json?.shift?.roomId) === Number(offer1.roomId));
 
   step("company directory OPEN+COUNTERED should be empty for this shift now");
-  const dir2 = await reqJson("GET", "/api/offers/company?status=OPEN,COUNTERED&take=800", {
+  const dir2 = await reqJson("GET", "/api/offers/company?status=OPEN,COUNTERED&take=800&fresh=1", {
     token: companyToken,
   });
   assertOk(dir2.ok, "offers company directory 2 ok");
   const dirItems2All = itemsOf(dir2);
   const dirItems2 = byShift(dirItems2All, shiftId);
-  ok("open offers empty (shift scoped)", dirItems2.length === 0);
+  must("open offers empty (shift scoped)", dirItems2.length === 0);
 
   step("room2 inbox CANCELLED should include 1 item (SUPER_ADMIN + roomId)");
   const inbox2 = await reqJson(
