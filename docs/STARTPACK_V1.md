@@ -65,3 +65,7 @@ M63 guven + kalite + hizmet degerlendirme rotasi aktif. Komut: .\tools\pack_m63_
 - Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
 
 M64 dogal copilot katmani rotasi aktif. Komut: .\tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot .
+
+
+- M76A-2 final normalization ve archiving
+- Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .

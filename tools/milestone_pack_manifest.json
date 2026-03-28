@@ -685,6 +685,17 @@
       "check": "tools/check_m76b_living_matrix_tools_consolidation_repo_contract.ps1",
       "runbook": "docs/RUNBOOK_M76B_LIVING_MATRIX_TOOLS_CONSOLIDATION.md",
       "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M76A-2",
+      "group": 76,
+      "kind": "pack",
+      "script": "tools/pack_m76a_2_final_normalization_archiving.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m76a_2_final_normalization_archiving_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M76A_2_FINAL_NORMALIZATION_ARCHIVING.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
     }
   ]
 }

@@ -1,5 +1,3 @@
-param([string]$RepoRoot = (Resolve-Path ".").Path)
-$ErrorActionPreference = "Stop"
-Write-Host "=== M75 REPO CONTRACT HOTFIX PACK ==="
-& "$RepoRoot\tools\check_m75_hot_path_phase4_repo_contract.ps1" -RepoRoot $RepoRoot
-Write-Host "=== M75 REPO CONTRACT HOTFIX PACK PASS OK ==="
+param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
+$ErrorActionPreference = 'Stop'
+& (Join-Path $PSScriptRoot 'packs\living\hotfixes\pack_m75_repo_contract_hotfix.ps1') -RepoRoot $RepoRoot

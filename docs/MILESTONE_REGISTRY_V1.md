@@ -55,3 +55,7 @@ Bu dosya yaşayan milestone omurgasının tek resmi kaydıdır.
 - Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
 
 - M64 - Dogal Copilot Katmani - aktif
+
+
+- M76A-2 final normalization ve archiving
+- Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .
