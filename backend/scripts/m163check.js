@@ -83,7 +83,7 @@ async function main() {
   assertOk(cleared.ok, "bulk clear phone+address ok");
 
   banner("M16.3: verify lat/lon kept and temporary fields cleared");
-  const list3 = await reqJson("GET", "/api/company/personels?take=50", {
+  const list3 = await reqJson("GET", `/api/company/personels?q=${encodeURIComponent(fullName)}&take=20`, {
     token: companyToken,
   });
   assertOk(list3.ok, "GET company/personels ok (final)");

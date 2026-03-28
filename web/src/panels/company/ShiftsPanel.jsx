@@ -387,39 +387,6 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const [opsEventsModal, setOpsEventsModal] = useState({ open: false, shiftId: null });
   const refLoadPromiseRef = useRef(null);
 
-  const roomScoreIds = useMemo(() => {
-    if (!shouldLoadRoomScores) return [];
-    const ids = new Set();
-    for (const offer of (offersModal?.items || [])) {
-      const rid = Number(offer?.room?.id || offer?.roomId || 0);
-      if (rid > 0) ids.add(rid);
-    }
-    if (offerModal?.open) {
-      for (const r of (rooms || [])) {
-        const rid = Number(r?.id || 0);
-        if (rid > 0) ids.add(rid);
-      }
-    }
-    return Array.from(ids);
-  }, [shouldLoadRoomScores, offersModal?.items, offerModal?.open, rooms]);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      if (!token || !roomScoreIds.length) {
-        if (alive) setRoomScores({});
-        return;
-      }
-      try {
-        const nextScores = await fetchProviderScoreMap(roomScoreIds, token);
-        if (!alive) return;
-        setRoomScores(nextScores);
-      } catch {
-        if (alive) setRoomScores({});
-      }
-    })();
-    return () => { alive = false; };
-  }, [token, roomScoreIds]);
 
   // ✅ M24: Market shift (room seçmeden) + multi-room offers
   const [marketMode, setMarketMode] = useState(false);
@@ -1903,6 +1870,41 @@ function usePlanDraftToRequest(draft) {
     if (mainTab === "track" && trackTab === "market" && marketItems.length > 0) return true;
     return false;
   }, [offersModal?.open, offerModal?.open, mainTab, trackTab, marketItems.length]);
+
+
+  const roomScoreIds = useMemo(() => {
+    if (!shouldLoadRoomScores) return [];
+    const ids = new Set();
+    for (const offer of (offersModal?.items || [])) {
+      const rid = Number(offer?.room?.id || offer?.roomId || 0);
+      if (rid > 0) ids.add(rid);
+    }
+    if (offerModal?.open) {
+      for (const r of (rooms || [])) {
+        const rid = Number(r?.id || 0);
+        if (rid > 0) ids.add(rid);
+      }
+    }
+    return Array.from(ids);
+  }, [shouldLoadRoomScores, offersModal?.items, offerModal?.open, rooms]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!token || !roomScoreIds.length) {
+        if (alive) setRoomScores({});
+        return;
+      }
+      try {
+        const nextScores = await fetchProviderScoreMap(roomScoreIds, token);
+        if (!alive) return;
+        setRoomScores(nextScores);
+      } catch {
+        if (alive) setRoomScores({});
+      }
+    })();
+    return () => { alive = false; };
+  }, [token, roomScoreIds]);
 
   const finalItems = useMemo(() => {
     const q = String(finalQ || "").trim().toLowerCase();

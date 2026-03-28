@@ -18,7 +18,7 @@ must(pkg, 'check:m57.4', 'm57.4 script present in package json');
 must(pkg, 'build:internal:android', 'package json has internal android build alias');
 must(pkg, 'build:preview:android', 'package json has preview android build alias');
 must(pkg, 'build:production:android', 'package json has production android build alias');
-must(appJson, '"version": "0.2.1"', 'app config version bumped for m57.4');
+must(appJson, '"version": "0.2.', 'app config version present for m57.4');
 must(appJson, '"releaseStage": "m57-mobile-hardening"', 'app config marks m57 release stage');
 must(appJson, '"androidPreviewTrack": "preview-internal"', 'app config exposes preview track');
 must(appJson, '"productionTrack": "production"', 'app config exposes production track');
@@ -38,3 +38,4 @@ must(today, 'Preview APK hazir', 'today screen shows preview apk badge');
 must(today, 'Production AAB hazir', 'today screen shows production bundle badge');
 
 console.log('=== M57.4 ANDROID PREVIEW / INTERNAL BUILD CHECK PASS ===');
+

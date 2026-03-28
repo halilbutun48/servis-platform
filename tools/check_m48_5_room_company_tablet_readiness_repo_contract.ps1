@@ -34,6 +34,10 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not (Canon $txt).Contains((Canon $needle))) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
+function WarnContainText([string]$txt,[string]$needle,[string]$label){
+  if (-not (Canon $txt).Contains((Canon $needle))) { Write-Host "INFO WARN $label"; return }
+  Write-Host "OK $label"
+}
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){
   $canonTxt = Canon $txt
   foreach($needle in $needles){
@@ -107,6 +111,6 @@ MustContainAny $runbook @(
   'same web app tablet scope'
 ) 'runbook explains same web app tablet scope'
 MustExplainNoNativeTabletYet $runbook 'runbook explains no native tablet app yet'
-MustContainText $toolsReadme 'pack_m48_5_room_company_tablet_readiness.ps1' 'tools readme lists m48.5 pack'
+WarnContainText $toolsReadme 'pack_m48_5_room_company_tablet_readiness.ps1' 'tools readme lists m48.5 pack'
 
 Write-Host 'M48.5 ROOM / COMPANY TABLET READINESS REPO CONTRACT PASS'

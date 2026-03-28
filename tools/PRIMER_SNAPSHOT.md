@@ -44,3 +44,5 @@ Branch: `main`
 5. KVKK / uyum / branding / checklist doğrulamaları
 
 - Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
+
+M58 final pilot readiness için komut: .\tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot . Resmi green, saha/manual acceptance signoff sonrası kabul edilir.

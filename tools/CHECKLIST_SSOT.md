@@ -27,7 +27,7 @@
 - [x] `M55 — Reports + No-show`
 - [x] `M56 — KVKK Matrix + ETA / Navigation Quality`
 - [x] `M57 — Mobile Hardening`
-- [ ] `M58 — Final Pilot Readiness` (tarihsel pilot kapısı)
+- [ ] `M58 — Final Pilot Readiness` (`tools\pack_m58_final_pilot_readiness.ps1`, tarihsel pilot kapısı)
 - [x] `M59 — Gözlemleme + Saha Teşhis`
 - [x] `M60 — Saha Acceptance Merkezi`
 - [x] `M61 — SSOT + Milestone Hizası`
@@ -60,3 +60,4 @@
 - tools archive ve backup yapısı doğrulanacak
 - tools/docs senkronu korunacak
 - living girişler klasör altında toplanacak
+

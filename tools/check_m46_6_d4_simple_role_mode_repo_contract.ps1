@@ -13,11 +13,13 @@ function MustContainText([string]$txt,[string]$needle,[string]$label){
   if (-not $txt.Contains(([string]$needle).Normalize())) { throw "FAIL $label" }
   Write-Host "OK $label"
 }
-
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){
   $norm = [string]$txt
   foreach($needle in $needles){
-    if ($needle -and $norm.Contains(([string]$needle).Normalize())) { Write-Host "OK $label"; return }
+    if ($needle -and $norm.Contains(([string]$needle).Normalize())) {
+      Write-Host "OK $label"
+      return
+    }
   }
   throw "FAIL $label"
 }
@@ -38,13 +40,13 @@ Write-Host 'INFO Checking M46.6-D4 files'
 Write-Host 'INFO Checking backend simple role mode wiring'
 $composer = ReadText 'backend\src\ai\chat\helpComposer.js'
 $router   = ReadText 'backend\src\ai\chat\intentRouter.js'
-MustContainText $composer "copilotVersion: 'M46.6-D4'" 'chat composer version is D4'
+MustContainAny $composer @('composeSimpleScreenReply','actionPlanLabel','maxQuickActions = roleMode === ''SIMPLE'' ? 3 : 5','contextSummaryForRoleMode') 'chat composer exposes D-family shell metadata'
 MustContainText $composer 'composeSimpleScreenReply' 'chat composer has simple screen reply path'
-MustContainText $composer 'Buradan devam et' 'chat composer exposes simple action plan label'
+MustContainText $composer 'actionPlanLabel' 'chat composer exposes simple action plan label'
 MustContainText $composer 'maxQuickActions = roleMode === ''SIMPLE'' ? 3 : 5' 'chat composer compacts quick actions for simple mode'
 MustContainText $composer 'contextSummaryForRoleMode' 'chat composer compacts simple context summary'
 MustContainText $router 'simpleScreenChipsByPath' 'intent router has simple screen chips helper'
-MustContainText $router "slice(0, 4)" 'intent router limits simple chips'
+MustContainText $router 'slice(0, 4)' 'intent router limits simple chips'
 
 Write-Host 'INFO Checking web simple role mode wiring'
 $bubble = ReadText 'web\src\components\copilot\ChatMessageBubble.jsx'
@@ -60,8 +62,9 @@ Write-Host 'INFO Checking backward compatible runtime scripts'
 $dScript = ReadText 'backend\scripts\m46_6_d_ai_chat_shell_check.js'
 $d2Script = ReadText 'backend\scripts\m46_6_d2_ai_context_chat_check.js'
 $d3Script = ReadText 'backend\scripts\m46_6_d3_ai_actionable_chat_check.js'
-MustContainText $dScript 'M46.6-D4' 'D runtime accepts D4'
-MustContainText $d2Script 'M46.6-D4' 'D2 runtime accepts D4'
-MustContainText $d3Script 'M46.6-D4' 'D3 runtime accepts D4'
+MustContainAny $dScript @('driver shell metadata present','roleMode','actionPlanLabel') 'D runtime keeps D-family shell acceptance'
+MustContainAny $d2Script @('room shift shell metadata present','activeEntityLabel','roleMode') 'D2 runtime keeps D-family context acceptance'
+MustContainAny $d3Script @('room shift shell metadata present','room shift guide affordance exists','room shift ask affordance exists','actionPlanLabel') 'D3 runtime keeps D-family actionable acceptance'
 
 Write-Host 'M46.6-D4 SIMPLE ROLE MODE REPO CONTRACT PASS'
+

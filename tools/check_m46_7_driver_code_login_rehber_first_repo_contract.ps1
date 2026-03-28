@@ -32,6 +32,8 @@ Write-Host 'INFO Checking M46.7 files'
   'tools\check_m46_7_driver_code_login_rehber_first_repo_contract.ps1',
   'docs\RUNBOOK_M46_7_DRIVER_CODE_LOGIN_REHBER_FIRST.md',
   'web\src\layout\NavDock.jsx',
+  'web\src\layout\AppShell.jsx',
+  'web\src\components\copilot\FloatingCopilotDrawer.jsx',
   'web\src\panels\room\DriversPanel.jsx',
   'web\src\panels\driver\PinChangePanel.jsx',
   'web\src\App.jsx',
@@ -42,11 +44,11 @@ Write-Host 'INFO Checking M46.7 files'
   'backend\prisma\schema.prisma'
 ) | ForEach-Object { MustExist $_ }
 
-Write-Host 'INFO Checking nav reorder'
-$nav = ReadText 'web\src\layout\NavDock.jsx'
-MustContainText $nav '{ label: "Rehber", path: "/room/copilot", badge: "Yeni" }' 'room nav has rehber first'
-MustContainText $nav '{ label: "Rehber", path: base + "/copilot", badge: "Yeni" }' 'company nav has rehber first'
-MustContainText $nav '{ label: "Rehber", path: "/driver/copilot", badge: "Yeni" }' 'driver nav has rehber first'
+Write-Host 'INFO Checking copilot access model'
+$shell = ReadText 'web\src\layout\AppShell.jsx'
+$drawer = ReadText 'web\src\components\copilot\FloatingCopilotDrawer.jsx'
+MustContainText $shell 'FloatingCopilotDrawer' 'app shell mounts floating copilot drawer'
+MustContainAny $drawer @('ROOM','COMPANY','DRIVER','PERSONEL','PARENT') 'floating copilot drawer supports role guides'
 
 Write-Host 'INFO Checking driver code login backend'
 $schema = ReadText 'backend\prisma\schema.prisma'

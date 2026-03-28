@@ -128,7 +128,7 @@ async function main() {
     assertOk(previewStops.length >= 1, "route preview stops present");
     assertOk(previewPathPoints.length >= 1, "route preview path points present");
     assertOk(totalPassengerCount >= 2, "route preview passenger summary >= 2");
-    assertOk(["ESTIMATED", "LEARNED"].includes(previewSource), "route preview source present");
+    assertOk(["ESTIMATED", "LEARNED", "OSRM"].includes(previewSource), "route preview source present");
 
     banner("M53: organization/gezi endpoint reachability");
     const orgPlans = await reqJson("GET", "/api/organization/plans", { token: companyToken });
@@ -149,3 +149,4 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+

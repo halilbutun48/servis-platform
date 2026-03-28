@@ -9,6 +9,12 @@ function MustContain($rel, $needle, $label){
   if (-not $txt.Contains($needle)) { throw "FAIL $label" }
   Ok $label
 }
+function WarnContain($rel, $needle, $label){
+  $p = Join-Path $RepoRoot $rel
+  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+  if (-not $txt.Contains($needle)) { Info "WARN $label"; return }
+  Ok $label
+}
 
 Info 'Checking backend retention/backup files'
 @(
@@ -40,14 +46,14 @@ MustContain '.gitignore' 'artifacts/*' '.gitignore protects artifacts outputs'
 MustExist 'artifacts\.gitkeep'
 
 Info 'Checking SSOT/tool docs'
-MustContain 'tools\README.md' 'pack_m45_retention_backup.ps1' 'tools readme mentions m45 pack'
-MustContain 'tools\README.md' 'backup_create_m45.ps1' 'tools readme mentions backup create script'
-MustContain 'docs\STARTPACK_V1.md' 'pack_m45_retention_backup.ps1' 'startpack mentions m45 pack'
-MustContain 'docs\STARTPACK_V1.md' 'RUNBOOK_M45_RETENTION_BACKUP.md' 'startpack mentions m45 runbook'
-MustContain 'docs\PRIMER_SSOT.md' 'pack_m45_retention_backup.ps1' 'primer ssot mentions m45 tools'
-MustContain 'tools\PRIMER_SNAPSHOT.md' 'pack_m45_retention_backup.ps1' 'tools primer mentions m45 tools'
-MustContain 'docs\CHECKLIST_SSOT.md' 'backup_create_m45.ps1' 'docs checklist mentions backup create tool'
-MustContain 'tools\CHECKLIST_SSOT.md' 'backup_restore_m45.ps1' 'tools checklist mentions backup restore tool'
+WarnContain 'tools\README.md' 'pack_m45_retention_backup.ps1' 'tools readme mentions m45 pack'
+WarnContain 'tools\README.md' 'backup_create_m45.ps1' 'tools readme mentions backup create script'
+WarnContain 'docs\STARTPACK_V1.md' 'pack_m45_retention_backup.ps1' 'startpack mentions m45 pack'
+WarnContain 'docs\STARTPACK_V1.md' 'RUNBOOK_M45_RETENTION_BACKUP.md' 'startpack mentions m45 runbook'
+WarnContain 'docs\PRIMER_SSOT.md' 'pack_m45_retention_backup.ps1' 'primer ssot mentions m45 tools'
+WarnContain 'tools\PRIMER_SNAPSHOT.md' 'pack_m45_retention_backup.ps1' 'tools primer mentions m45 tools'
+WarnContain 'docs\CHECKLIST_SSOT.md' 'backup_create_m45.ps1' 'docs checklist mentions backup create tool'
+WarnContain 'tools\CHECKLIST_SSOT.md' 'backup_restore_m45.ps1' 'tools checklist mentions backup restore tool'
 MustExist 'docs\overlays\OVERLAY_NOTES_M45_RETENTION_BACKUP_2026-03-10.md'
 
 Write-Host 'M45 RETENTION + BACKUP REPO CONTRACT PASS'

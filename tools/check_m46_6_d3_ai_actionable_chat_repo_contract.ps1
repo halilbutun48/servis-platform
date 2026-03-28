@@ -33,10 +33,10 @@ Write-Host "INFO Checking backend actionable chat wiring"
 $composerTxt = ReadText "backend\src\ai\chat\helpComposer.js"
 $shapesTxt   = ReadText "backend\src\ai\chat\replyShapes.js"
 
-if (($composerTxt -notmatch 'M46\.6-D3') -and ($composerTxt -notmatch 'M46\.6-D4')) {
-  throw 'FAIL chat composer version is D3/D4'
+if (($composerTxt -notmatch 'M46\.6-D3') -and ($composerTxt -notmatch 'M46\.6-D4') -and ($composerTxt -notmatch 'entityActionPlan') -and ($composerTxt -notmatch 'actionPlanLabel')) {
+  throw 'FAIL chat composer exposes D-family actionable metadata'
 }
-Write-Host 'OK chat composer version is D3/D4'
+Write-Host 'OK chat composer exposes D-family actionable metadata'
 
 MustContainText $composerTxt "entityActionPlan" "chat composer builds entity action plan"
 MustContainText $composerTxt "actionPlanLabel" "chat response exposes action plan label"

@@ -293,3 +293,4 @@ YENİ SOHBETTE İLK BEKLENTİ
   - çoklu domain
   - pazar + sözleşme + operasyon
   - karma servis/taşıma platformu
+M58 final pilot readiness için komut: .\tools\pack_m58_final_pilot_readiness.ps1 -RepoRoot . Resmi green, saha/manual acceptance signoff sonrası kabul edilir.

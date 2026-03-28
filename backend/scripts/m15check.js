@@ -117,16 +117,18 @@ async function main() {
   );
 
   // Deterministik: yeni 2 araç + yeni 1 driver
-  const vA = await createVehicle(roomToken, `M15-A-${rand()}`);
-  const vB = await createVehicle(roomToken, `M15-B-${rand()}`);
+  const plateA = `M15-A-${rand()}`;
+  const vA = await createVehicle(roomToken, plateA);
+  const plateB = `M15-B-${rand()}`;
+  const vB = await createVehicle(roomToken, plateB);
   const d1 = await createDriver(roomToken, `M15 Driver ${rand(4)}`);
 
   try {
     // 1) bind ok: vA <- d1
     const b1 = await bind(roomToken, vA, d1);
     ok("Bind ok (vA<-d1)", b1.status === 200);
-    must("Bind response ok:true", b1.json?.ok === true || b1.json?.vehicle?.id === vA);
-    await assertVehicleDriver(roomToken, vA, d1, "after bind vA<-d1");
+    must("Bind response ok:true", b1.json?.ok === true || Number(b1.json?.vehicle?.id) === Number(vA));
+    await assertVehicleDriver(roomToken, vA, d1, "after bind vA<-d1", { plate: plateA });
 
     // 2) bind vB <- d1: iki olası contract
     const b2 = await bind(roomToken, vB, d1);
@@ -134,8 +136,8 @@ async function main() {
     if (b2.status === 200) {
       // MODE A: auto-unbind (200)
       ok("Bind ok (vB<-d1) auto-unbind", true);
-      await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1");
-      await assertVehicleDriver(roomToken, vA, null, "after auto-unbind vA");
+      await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1", { plate: plateB });
+      await assertVehicleDriver(roomToken, vA, null, "after auto-unbind vA", { plate: plateA });
     } else if (b2.status === 409) {
       // MODE B: conflict (409) -> önce vA unbind, sonra vB bind
       ok("Bind conflict -> 409 (driver already bound)", true);
@@ -158,8 +160,8 @@ async function main() {
       // now bind vB ok
       const b3 = await bind(roomToken, vB, d1);
       ok("Bind ok after unbind (vB<-d1)", b3.status === 200);
-      await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1 post-unbind");
-      await assertVehicleDriver(roomToken, vA, null, "after unbind vA (still null)");
+      await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1 post-unbind", { plate: plateB });
+      await assertVehicleDriver(roomToken, vA, null, "after unbind vA (still null)", { plate: plateA });
     } else {
       dump("unexpected bind vB<-d1", b2);
       must("Bind vB<-d1 should be 200 or 409", false);
@@ -168,7 +170,7 @@ async function main() {
     // 3) unbind vB ok (idempotent)
     const uB = await bind(roomToken, vB, null);
     ok("Unbind ok (vB)", uB.status === 200);
-    await assertVehicleDriver(roomToken, vB, null, "after unbind vB");
+    await assertVehicleDriver(roomToken, vB, null, "after unbind vB", { plate: plateB });
 
     // 4) RBAC: company bind denemesi 403/401 olmalı
     const rb = await bind(companyToken, vA, d1);

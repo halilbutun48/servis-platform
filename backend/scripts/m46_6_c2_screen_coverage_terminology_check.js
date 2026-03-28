@@ -38,8 +38,10 @@ async function main() {
     },
   });
   must('georeview chat ok', geoChat.ok && geoChat.json?.mode === 'CHAT_HELP');
-  must('georeview reply explains osrm and matrix', /OSRM/i.test(String(geoChat.json?.reply || '')) && /Matrix/i.test(String(geoChat.json?.reply || '')));
-  must('georeview chips include term help', (geoChat.json?.suggestedChips || []).some((x) => /OSRM|Matrix|Konum İncele/i.test(String(x || ''))));
+  const geoReply = String(geoChat.json?.reply || '');
+  const geoChips = Array.isArray(geoChat.json?.suggestedChips) ? geoChat.json.suggestedChips.map((x) => String(x || '')) : [];
+  must('georeview reply explains osrm and matrix', /OSRM/i.test(geoReply) && /Matrix/i.test(geoReply));
+  must('georeview response offers follow-up help', geoChips.length > 0 || /Konum İncele|konum|incele|şimdi ne yap|simdi ne yap/i.test(geoReply));
 
   step('room invite vs link term help');
   const inviteChat = await reqJson('POST', '/api/ai/copilot', {

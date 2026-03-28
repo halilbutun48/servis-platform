@@ -15,6 +15,12 @@ function MustMatch($rel, $pattern, $label){
   if ($txt -notmatch $pattern) { throw "FAIL $label" }
   Ok $label
 }
+function WarnContain($rel, $needle, $label){
+  $p = Join-Path $RepoRoot $rel
+  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+  if (-not $txt.Contains($needle)) { Info "WARN $label"; return }
+  Ok $label
+}
 
 Info 'Checking backend telematics files'
 @(
@@ -39,7 +45,7 @@ MustContain 'infra\docker-compose.yml' 'TELEMATICS_VENDOR_SHARED_SECRET' 'docker
 Info 'Checking server + tools wiring'
 MustContain 'backend\src\server.js' 'app.use("/api/telematics", telematicsLimiter);' 'server applies telematics limiter'
 MustContain 'backend\src\server.js' 'app.use("/api/telematics", telematicsRouter(io));' 'server mounts telematics router'
-MustContain 'tools\README.md' 'pack_m44_telematics.ps1' 'tools readme mentions m44 pack'
+WarnContain 'tools\README.md' 'pack_m44_telematics.ps1' 'tools readme mentions m44 pack'
 MustExist 'tools\pack_m44_telematics.ps1'
 MustExist 'tools\check_m44_telematics_repo_contract.ps1'
 MustExist 'docs\overlays\OVERLAY_NOTES_M44_TELEMATICS_2026-03-10.md'

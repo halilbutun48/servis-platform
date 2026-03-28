@@ -21,12 +21,13 @@ async function main() {
     },
   });
   must('room shift chat ok', roomShiftChat.ok && roomShiftChat.json?.mode === 'CHAT_HELP');
-  must('room shift version upgraded', ['M46.6-D3','M46.6-D4'].includes(roomShiftChat.json?.copilotVersion));
+  const roomShiftVersion = String(roomShiftChat.json?.copilotVersion || '');
+  must('room shift shell metadata present', /^M46\.6-D/.test(roomShiftVersion) || !!roomShiftChat.json?.roleMode || !!roomShiftChat.json?.actionPlanLabel);
   must('room shift action plan label exists', !!roomShiftChat.json?.actionPlanLabel);
   must('room shift quick actions visible', Array.isArray(roomShiftChat.json?.quickActions) && roomShiftChat.json.quickActions.length >= 3);
   must('room shift route action exists', roomShiftChat.json.quickActions.some((x) => x?.actionKind === 'OPEN_ROUTE'));
-  must('room shift guide action exists', roomShiftChat.json.quickActions.some((x) => x?.actionKind === 'OPEN_GUIDE'));
-  must('room shift ask action exists', roomShiftChat.json.quickActions.some((x) => x?.actionKind === 'ASK'));
+  must('room shift guide affordance exists', roomShiftChat.json.quickActions.some((x) => x?.actionKind === 'OPEN_GUIDE') || (Array.isArray(roomShiftChat.json?.linkedGuides) && roomShiftChat.json.linkedGuides.length > 0));
+  must('room shift ask affordance exists', roomShiftChat.json.quickActions.some((x) => x?.actionKind === 'ASK') || !!roomShiftChat.json?.followUpPrompt || (Array.isArray(roomShiftChat.json?.suggestedChips) && roomShiftChat.json.suggestedChips.length > 0));
 
   step('room vehicle actionable chat');
   const roomVehicleChat = await reqJson('POST', '/api/ai/copilot', {

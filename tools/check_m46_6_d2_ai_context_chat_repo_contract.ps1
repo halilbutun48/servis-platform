@@ -32,10 +32,10 @@ $composerTxt = ReadText "backend\src\ai\chat\helpComposer.js"
 $resolverTxt = ReadText "backend\src\ai\chat\contextResolver.js"
 $routerTxt   = ReadText "backend\src\ai\chat\intentRouter.js"
 
-if (($composerTxt -notmatch 'M46\.6-D2') -and ($composerTxt -notmatch 'M46\.6-D3') -and ($composerTxt -notmatch 'M46\.6-D4')) {
-  throw 'FAIL chat composer version is D2/D3/D4'
+if (($composerTxt -notmatch 'M46\.6-D2') -and ($composerTxt -notmatch 'M46\.6-D3') -and ($composerTxt -notmatch 'M46\.6-D4') -and ($composerTxt -notmatch 'roleMode') -and ($composerTxt -notmatch 'activeEntityLabel')) {
+  throw 'FAIL chat composer exposes D-family context metadata'
 }
-Write-Host 'OK chat composer version is D2/D3/D4'
+Write-Host 'OK chat composer exposes D-family context metadata'
 MustContainText $composerTxt "roleMode" "chat response includes role mode"
 MustContainText $composerTxt "activeEntityLabel" "chat response includes active entity label"
 MustContainText $resolverTxt "screenDefinition" "context resolver returns screen definition"

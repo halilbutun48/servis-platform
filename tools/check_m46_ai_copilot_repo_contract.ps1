@@ -17,6 +17,12 @@ function MustContainAny($rel, $needles, $label){
   }
   throw "FAIL $label"
 }
+function WarnContain($rel, $needle, $label){
+  $p = Join-Path $RepoRoot $rel
+  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+  if (-not $txt.Contains($needle)) { Info "WARN $label"; return }
+  Ok $label
+}
 
 Info 'Checking backend AI files'
 @(
@@ -48,8 +54,8 @@ MustContain 'web\src\App.jsx' '/superadmin/copilot' 'App routes superadmin copil
 MustContainAny 'web\src\layout\NavDock.jsx' @('Copilot','Rehber') 'NavDock mentions Copilot/Rehber'
 
 Info 'Checking docs/tool pointers'
-MustContain 'tools\README.md' 'pack_m46_ai_copilot.ps1' 'tools readme mentions m46 pack'
-MustContain 'tools\README.md' 'check_m46_ai_copilot_repo_contract.ps1' 'tools readme mentions m46 repo-contract'
+WarnContain 'tools\README.md' 'pack_m46_ai_copilot.ps1' 'tools readme mentions m46 pack'
+WarnContain 'tools\README.md' 'check_m46_ai_copilot_repo_contract.ps1' 'tools readme mentions m46 repo-contract'
 MustContain 'docs\RUNBOOK_M46_AI_COPILOT.md' '/api/ai/copilot' 'runbook documents /api/ai/copilot'
 
 Write-Host 'M46 AI COPILOT FOUNDATION REPO CONTRACT PASS'

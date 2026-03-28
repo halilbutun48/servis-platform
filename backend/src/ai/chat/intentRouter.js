@@ -79,7 +79,10 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 }
 
 function simpleScreenChipsByPath(screenPath = '') {
-  if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts', '/georeview'])) {
+  if (pathHas(screenPath, ['/georeview'])) {
+    return ['Konum İncele ne demek?', 'OSRM nedir?', 'Matrix nedir?', 'Şimdi ne yapayım?'];
+  }
+  if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts'])) {
     return ['Bu satırı nasıl okurum?', 'Bu sütun ne demek?', 'Bu rozet ne demek?', 'Şimdi ne yapayım?'];
   }
   if (pathHas(screenPath, ['/hub'])) {
@@ -108,7 +111,9 @@ function simpleScreenChipsByPath(screenPath = '') {
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS') {
   const chips = [];
-  if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts', '/georeview'])) {
+  if (pathHas(screenPath, ['/georeview'])) {
+    chips.push('Konum İncele ekranı ne için var?', 'Geo Review gerekli ne demek?', 'OSRM nedir?', 'Matrix nedir?', 'İlgili yere götür');
+  } else if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts'])) {
     chips.push('Bu satırı nasıl okurum?', 'Bu sütun ne demek?', 'Bu rozet ne demek?', 'Bu buton ne yapar?', 'Bu neden kapalı?', 'Bu seçili kayıtta eksik ne var?', 'Atamaya hazır mı?', 'En risksiz sonraki adım ne?');
   } else if (pathHas(screenPath, ['/offers'])) {
     chips.push('Bu ekran ne için var?', 'Teklifi nasıl incelerim?', 'Neden kapalı?', 'İlgili yere götür');
