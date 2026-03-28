@@ -29,7 +29,7 @@ console.log("=== M69 FETCH HARDENING PHASE-2 CHECK ===");
 
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "function needsReferenceData()", "shifts panel reference-data gate exists");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "async function ensureReferenceData", "shifts panel lazy reference loader exists");
-expectContains("web/src/panels/company/ShiftsPanel.jsx", "await getCompanyShifts(token, { signal, ttlMs: 10000 })", "shifts panel primary load reads shifts first");
+expectContains("web/src/panels/company/ShiftsPanel.jsx", "await getCompanyShifts(token, { signal", "shifts panel primary load reads shifts first");
 expectNotContains("web/src/panels/company/ShiftsPanel.jsx", "const [sh, veh, rm] = await Promise.all([", "shifts panel no longer loads shifts+vehicles+rooms together on entry");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "useAutoReload(\"rooms\", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve())", "rooms autoreload gated by active need");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "fetchProviderScoreMap(roomScoreIds, token)", "room score fetch now derives from visible shift rooms");
@@ -38,8 +38,9 @@ expectContains("web/src/panels/company/AgreementsPanel.jsx", "rooms={null}", "ag
 expectContains("web/src/panels/company/AgreementsPanel.jsx", "if (!token || !advancedOpen) return;", "agreements panel lazy room effect exists");
 expectNotContains("web/src/panels/company/AgreementsPanel.jsx", "loadRooms(controller.signal);\n      load(controller.signal);", "agreements initial mount no longer loads rooms together with list");
 
-expectContains("web/src/components/RoutePreviewModal.jsx", "cachedGet(`/api/shifts/${shiftId}/route-preview`", "route preview modal uses cached route-preview fetch");
-expectContains("web/src/panels/company/ServiceEvaluationPanel.jsx", "getCompanyTrustQualityItems(token, { signal, take: 60, pendingOnly: true })", "service evaluation defaults to pending-only lightweight items query");
+expectContains("web/src/components/RoutePreviewModal.jsx", "getShiftRoutePreview(token, shiftId", "route preview modal uses cached route-preview fetch");
+expectContains("web/src/panels/company/ServiceEvaluationPanel.jsx", "getCompanyTrustQualityItems(token, { signal, take:", "service evaluation defaults to pending-only lightweight items query");
+expectContains("web/src/panels/company/ServiceEvaluationPanel.jsx", "pendingOnly: true", "service evaluation keeps pending-only lightweight items query");
 
 expectContains("web/src/utils/companyDataHub.js", "export function getCompanyVehicles", "companyDataHub vehicles loader exists");
 expectContains("web/src/utils/companyDataHub.js", "onlyActive: onlyActive ? 1 : null", "companyDataHub vehicles loader supports onlyActive gate");

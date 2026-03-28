@@ -5,7 +5,9 @@ import { MapContainer, TileLayer, CircleMarker, Polyline, Tooltip, useMap } from
 import { latLngBounds } from "leaflet";
 
 import { api } from "../api";
+import { useSession } from "../state/session";
 import { apiOr404Fallback } from "../utils/apiFallback";
+import { getShiftRoutePreview } from "../utils/shiftRoutePreview";
 import StopTimeline from "./StopTimeline";
 import { openFullRouteNavigation } from "../utils/navigation";
 
@@ -57,6 +59,7 @@ function FitBounds({ bounds }) {
 }
 
 export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people, previewSummary = null, previewPathPoints = null, previewSource = null, previewShift = null }) {
+  const { token } = useSession();
   if (!open) return null;
 
   const [remote, setRemote] = useState({

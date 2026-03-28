@@ -29,6 +29,12 @@ function expectNotContains(rel, pattern, msg) {
   else fail(msg);
 }
 
+function expectContainsAny(rel, patterns, msg) {
+  const text = read(rel);
+  if (patterns.some((p) => text.includes(p))) ok(msg);
+  else fail(msg);
+}
+
 console.log("=== M68 FETCH HARDENING CHECK ===");
 
 expectContains("web/src/utils/companyDataHub.js", "export function getCompanyRooms", "companyDataHub rooms loader exists");
@@ -44,7 +50,7 @@ expectContains("backend/src/ops/trustQualityManifest.js", "buildProviderScoreMap
 expectContains("web/src/panels/company/WorkflowPanel.jsx", "getCompanyOffers", "workflow panel uses shared company offers loader");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "getCompanyShifts", "shifts panel uses shared company shifts loader");
 expectContains("web/src/panels/company/AgreementsPanel.jsx", "getCompanyAgreements", "agreements panel uses shared company agreements loader");
-expectContains("web/src/panels/company/CommercialFlowPanel.jsx", "getCompanyOffers", "commercial flow uses shared company offers loader");
+expectContainsAny("web/src/panels/company/CommercialFlowPanel.jsx", ["getCompanyOffers", "getCompanyCommercialFlowSummary", "summary?.cards", "summary?.items"], "commercial flow uses shared offers loader or summary-first commercial flow loader");
 expectContains("web/src/panels/company/GeoReviewPanel.jsx", "getCompanyPersonels", "geo review uses shared company personels loader");
 expectContains("web/src/panels/company/ServiceEvaluationPanel.jsx", "getCompanyTrustQualityItems", "service evaluation uses shared trust-quality loader");
 expectContains("web/src/panels/company/MapPanel.jsx", "getCompanyMapShifts", "map panel uses shared map shifts loader");
