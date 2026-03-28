@@ -62,3 +62,4 @@ Assert-RepoContractContainsAny $pack @('m63_trust_quality_service_evaluation_che
 Assert-RepoContractContainsAny $script @('m63 guven + kalite + hizmet degerlendirme check','/api/trust-quality') 'm63 runtime check covers skeleton baseline'
 
 Write-Host 'M63 GUVEN + KALITE + HIZMET DEGERLENDIRME REPO CONTRACT PASS'
+

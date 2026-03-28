@@ -25,3 +25,5 @@ Assert-RepoContractContainsAny $scale @('provider score backend batch endpoint y
 Assert-RepoContractContainsAny $storm @('scenario endpoint count','429 detected','READ_RATE_LIMIT_MAX=120/dk','/api/offers/company?status=OPEN,COUNTERED&take=80','/api/company/overview/workflow-summary','virtualUsers=3','M72 profile uses lower first-load takes') 'storm check covers hot paths and limiter pressure'
 
 Write-Host 'M67 KURUMSAL OLCEK HAZIRLIK REPO CONTRACT PASS'
+
+

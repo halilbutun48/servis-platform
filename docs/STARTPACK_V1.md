@@ -58,3 +58,10 @@ Bu komut:
 - M66 fonksiyonel-open / yeniden doğrulama bekleyen adımdır.
 - M67 -> M75 kurumsal ölçek ve hot-path sertleştirme hattıdır.
 - repo/tools hijyen check: `tools\check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform`
+
+M63 guven + kalite + hizmet degerlendirme rotasi aktif. Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
+
+- M63 - guven + kalite + hizmet degerlendirme - aktif
+- Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
+
+M64 dogal copilot katmani rotasi aktif. Komut: .\tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot .

@@ -41,3 +41,4 @@ Assert-RepoContractContainsAny $script @('m66 operation reassignment check','shi
 Assert-RepoContractContainsAny $pkg @('"m66check": "node scripts/m66check.js"') 'backend package exposes m66check'
 
 Write-Host 'M66 OPERATION REASSIGNMENT REPO CONTRACT PASS'
+

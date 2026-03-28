@@ -61,3 +61,7 @@
 - tools/docs senkronu korunacak
 - living girişler klasör altında toplanacak
 
+
+- [ ] `M59 — Gözlemleme + Saha Teşhis` (`tools\pack_m59_observability_field_diagnostics.ps1`)
+
+- [ ] `M64 — Doğal Copilot Katmanı` (`tools\pack_m64_natural_copilot_layer.ps1`)

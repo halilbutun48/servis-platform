@@ -38,3 +38,20 @@ Bu dosya yaşayan milestone omurgasının tek resmi kaydıdır.
 - M66 - Operasyonel Reassignment - functional-open
 - M75 - green-baseline
 - M76A-1 - minimum-normalization - active
+
+## M59-M66 uyum rotasi
+- M59 - Gozlemleme + Saha Teshis - green-base
+- M60 - Saha Acceptance Merkezi - green-base
+- M61 - SSOT + Milestone Hizasi - green-base
+- M62 - Ticari Omurga Guclendirme - aktif
+
+
+## M59-M66 uyum rotasi
+- M59 - Gozlemleme + Saha Teshis - green-base
+- M60 - Saha Acceptance Merkezi - green-base
+- M61 - SSOT + Milestone Hizasi - green-base
+- M62 - Ticari Omurga Guclendirme - green-base
+- M63 - Guven + Kalite + Hizmet Degerlendirme - aktif
+- Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
+
+- M64 - Dogal Copilot Katmani - aktif

@@ -47,3 +47,4 @@ Assert-RepoContractContainsAny $panel @('M65 Pilot Launch Gate','Launch checklis
 Assert-RepoContractContainsAny $runbook @('Pilot Launch Gate','kritik risk listesi','M65 green olmadan sahaya çıkılmaz') 'runbook defines M65 scope'
 
 Write-Host 'M65 PILOT LAUNCH GATE REPO CONTRACT PASS'
+

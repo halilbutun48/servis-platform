@@ -1,4 +1,3 @@
-// backend/scripts/m15check.js
 import { login, reqJson, ok, must } from "./_harness.js";
 
 function rand(n = 6) {
@@ -60,8 +59,9 @@ async function delDriver(roomToken, driverId) {
   ok(`Driver delete id=${driverId}`, r.status === 200 || r.status === 201);
 }
 
-async function listVehicles(roomToken) {
-  const r = await reqJson("GET", "/api/vehicles", { token: roomToken });
+async function listVehicles(roomToken, q = "") {
+  const suffix = q ? `?q=${encodeURIComponent(q)}&take=20` : "?take=200";
+  const r = await reqJson("GET", `/api/vehicles${suffix}`, { token: roomToken });
   ok("Vehicle list", r.status === 200);
   return Array.isArray(r.json) ? r.json : [];
 }
@@ -76,9 +76,12 @@ function normDriverId(v) {
   return id;
 }
 
-async function assertVehicleDriver(roomToken, vehicleId, expectedDriverIdOrNull, title) {
-  const items = await listVehicles(roomToken);
-  const v = items.find((x) => Number(x.id) === Number(vehicleId));
+async function assertVehicleDriver(roomToken, vehicleId, expectedDriverIdOrNull, title, opts = {}) {
+  const items = await listVehicles(roomToken, opts.plate || "");
+  let v = items.find((x) => Number(x.id) === Number(vehicleId));
+  if (!v && opts.plate) {
+    v = items.find((x) => String(x.plate || "").trim() === String(opts.plate).trim());
+  }
   must(`${title}: vehicle exists id=${vehicleId}`, !!v);
 
   const got = normDriverId(v);
@@ -116,7 +119,6 @@ async function main() {
     PASS
   );
 
-  // Deterministik: yeni 2 araç + yeni 1 driver
   const plateA = `M15-A-${rand()}`;
   const vA = await createVehicle(roomToken, plateA);
   const plateB = `M15-B-${rand()}`;
@@ -124,26 +126,21 @@ async function main() {
   const d1 = await createDriver(roomToken, `M15 Driver ${rand(4)}`);
 
   try {
-    // 1) bind ok: vA <- d1
     const b1 = await bind(roomToken, vA, d1);
     ok("Bind ok (vA<-d1)", b1.status === 200);
     must("Bind response ok:true", b1.json?.ok === true || Number(b1.json?.vehicle?.id) === Number(vA));
     await assertVehicleDriver(roomToken, vA, d1, "after bind vA<-d1", { plate: plateA });
 
-    // 2) bind vB <- d1: iki olası contract
     const b2 = await bind(roomToken, vB, d1);
 
     if (b2.status === 200) {
-      // MODE A: auto-unbind (200)
       ok("Bind ok (vB<-d1) auto-unbind", true);
       await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1", { plate: plateB });
       await assertVehicleDriver(roomToken, vA, null, "after auto-unbind vA", { plate: plateA });
     } else if (b2.status === 409) {
-      // MODE B: conflict (409) -> önce vA unbind, sonra vB bind
       ok("Bind conflict -> 409 (driver already bound)", true);
 
       const code = String(b2.json?.code || "");
-      // tolerans: farklı code isimleri olabilir
       must(
         "Bind conflict code (expected driver-bound type)",
         ["DRIVER_ALREADY_BOUND", "DRIVER_CONFLICT", "DRIVER_IN_USE"].includes(code) || !!b2.json?.conflictingVehicle
@@ -153,11 +150,9 @@ async function main() {
       if (cid) must("conflictingVehicle.id == vA", cid === vA);
       else dump("bind conflict body", b2);
 
-      // unbind vA
       const uA = await bind(roomToken, vA, null);
       ok("Unbind ok (vA)", uA.status === 200);
 
-      // now bind vB ok
       const b3 = await bind(roomToken, vB, d1);
       ok("Bind ok after unbind (vB<-d1)", b3.status === 200);
       await assertVehicleDriver(roomToken, vB, d1, "after bind vB<-d1 post-unbind", { plate: plateB });
@@ -167,18 +162,15 @@ async function main() {
       must("Bind vB<-d1 should be 200 or 409", false);
     }
 
-    // 3) unbind vB ok (idempotent)
     const uB = await bind(roomToken, vB, null);
     ok("Unbind ok (vB)", uB.status === 200);
     await assertVehicleDriver(roomToken, vB, null, "after unbind vB", { plate: plateB });
 
-    // 4) RBAC: company bind denemesi 403/401 olmalı
     const rb = await bind(companyToken, vA, d1);
     ok("RBAC: company cannot bind-driver", rb.status === 403 || rb.status === 401);
 
     console.log("OK M15CHECK PASS");
   } finally {
-    // best-effort cleanup
     try { await bind(roomToken, vA, null); } catch {}
     try { await bind(roomToken, vB, null); } catch {}
     try { await delVehicle(roomToken, vA); } catch {}
@@ -191,4 +183,3 @@ main().catch((e) => {
   console.error("FAIL M15CHECK FAIL:", e?.message || e);
   process.exit(1);
 });
-

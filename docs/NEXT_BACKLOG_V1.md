@@ -39,3 +39,10 @@ Repo şu an M75 living baseline üstünde duruyor. Önce yaşayan doğrulama mat
 ## Tarihsel uyumluluk notu
 - `M58 — Final Pilot Readiness` komutu: `tools\pack_m58_final_pilot_readiness.ps1`
 - M58 kapanışı tarihsel pilot kapısıdır; yaşayan rota artık M75 baseline ve M76A/B normalizasyon hattıdır.
+
+M63 guven + kalite + hizmet degerlendirme rotasi aktif. Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
+
+- m63 - guven + kalite + hizmet degerlendirme
+- komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
+
+- m64 - dogal copilot katmani

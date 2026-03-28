@@ -61,3 +61,4 @@ Assert-RepoContractContainsAny $pack @('m64_natural_copilot_layer_check.js','che
 Assert-RepoContractContainsAny $script @('m64 dogal copilot katmani check','naturalcopilot.js','feedback-template') 'm64 runtime check covers updated route baseline'
 
 Write-Host 'M64 DOGAL COPILOT KATMANI REPO CONTRACT PASS'
+

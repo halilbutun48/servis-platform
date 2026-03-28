@@ -43,3 +43,8 @@ Akış:
 
 ## Tarihsel uyumluluk notu
 - Eski ana girişlerden `tools\pack.ps1 -To 66`, `tools\pack.ps1 -To 76` ve `tools\pack_docs_ssot.ps1` referansları statik check uyumluluğu için metinlerde korunabilir.
+
+- m63 - guven + kalite + hizmet degerlendirme
+- komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
+
+- m64 - dogal copilot katmani
