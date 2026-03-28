@@ -7,6 +7,11 @@
 - M76A-2 - final normalization + archiving
 - M77 - KVKK + Uyum Katmanı - response-hardening + retention/export-trail-enforcement
 
+## Compatibility marker notu
+- M75 - green-baseline
+- M76A-1 - minimum-normalization - active
+
+
 ## M77.1 notu
 - M77.1 rol/business domain ayrımını yazılı hale getirir
 - görünürlük matrisi, aydınlatma envanteri, retention ve audit izi kanonik belge olur

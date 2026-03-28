@@ -8,6 +8,8 @@
 - Ürün: okul/öğrenci/veli ve personel/şirket/organizasyon alanlarını birlikte taşıyan karma servis platformu
 - Teknik yaşayan taban: `M75 green baseline`
 - Kanonik normalizasyon hattı: `M76A-1 + M76B + M76A-2`
+- Operasyonel master doğrulama: `tools\pack.ps1 -To 77 -RepoDir D:\servis-platform -NoBuild`
+- `tools/STABLE_TO.txt`: `77`
 - Güncel uyum hattı: `M77 response-hardening + retention/export-trail-enforcement`
 - M77.1 ile açılan ana belgeler:
   - `docs/KVKK_VERI_GORUNURLUK_MATRISI_V1.md`

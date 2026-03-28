@@ -30,15 +30,18 @@
 - Tools tarafında yeni hedef, faz girişlerini klasör altında toplamak; ama mevcut root pack/check adlarını bir anda kırmamaktır.
 
 ## Kanonik komutlar
-- Yaşayan master hat: `tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild`
-- Yaşayan tek giriş: `tools\pack_living.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
+- Operasyonel master doğrulama: `tools\pack.ps1 -To 77 -RepoDir D:\servis-platform -NoBuild`
+- Yaşayan tek giriş: `tools\pack_living.ps1 -To 77 -RepoRoot D:\servis-platform -NoBuild`
 - Yaşayan static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
-- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
+- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 77 -RepoRoot D:\servis-platform -NoBuild`
 - Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+- Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 - M77 payload-enforcement pack: `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
 
 ## Master pack
-`tools\pack.ps1 -To 75` yaşayan ana çatıdır.
+`tools\pack.ps1 -To 77` güncel operasyonel ana çatıdır.
+
+Tarihsel not: Teknik yaşayan taban kavramı hâlâ `M75 green baseline` diye anılır.
 
 Bu komut:
 - `M104 / M105 / M106` statik repo check'lerini çalıştırır,

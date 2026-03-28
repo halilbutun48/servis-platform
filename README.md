@@ -20,9 +20,10 @@ Bu repo, okul ve kurumsal taşıma alanlarını birlikte taşıyan; **pazar + s�
 - Driver/parent dışındaki roller için zorunlu consent enforcement'ı hâlâ sonraki kontrollü adımdır.
 
 ## Kanonik komutlar
-- Yaşayan master hat: `tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild`
-- Yaşayan tek giriş: `tools\pack_living.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
+- Operasyonel master doğrulama: `tools\pack.ps1 -To 77 -RepoDir D:\servis-platform -NoBuild`
+- Yaşayan tek giriş: `tools\pack_living.ps1 -To 77 -RepoRoot D:\servis-platform -NoBuild`
 - Yaşayan static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
-- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
+- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 77 -RepoRoot D:\servis-platform -NoBuild`
 - Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+- Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 - M77 payload-enforcement: `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`

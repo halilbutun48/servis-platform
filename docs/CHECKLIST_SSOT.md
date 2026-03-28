@@ -1,12 +1,15 @@
 # CHECKLIST SSOT
 
-> Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. Yaşayan ana giriş artık `tools\pack.ps1 -To 75` ve `tools\pack_living.ps1 -To 75` komutlarıdır.
+> Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. Güncel operasyonel master komutu `tools\pack.ps1 -To 77`, living giriş komutu `tools\pack_living.ps1 -To 77` olarak okunmalıdır.
+> Teknik yaşayan taban kavramı ise hâlâ `M75 green baseline` diye anılır.
+> Geçici uyumluluk notu: `M66` satırı bazı shared-doc/check fallback scriptleri nedeniyle tarihsel marker olarak açık tutulur; M78 öncesi ayrı cleanup turunda sadeleştirilecektir.
 
 ## Aktif hat
 - `M75` yaşayan teknik taban olarak kabul edilir.
-- `M76A-1` minimum normalizasyon adımı açık durumdadır.
-- `M76B` living matrix + tools consolidation adımı açık durumdadır.
-- Tam güven için living static ve living runtime doğrulaması ayrıca koşulacaktır.
+- `M76A-1` minimum normalizasyon adımı tamamlanmış kanonik giriş olarak doğrulandı.
+- `M76B` living matrix + tools consolidation adımı tamamlanmış kanonik giriş olarak doğrulandı.
+- `M76A-2` final normalization + archiving ve `M77` KVKK + uyum katmanı da green doğrulandı.
+- Tam güven için living static ve living runtime doğrulaması ayrıca koşulabilir; fakat `M0 -> M77` master hat green durumdadır.
 
 ## Resmi green kutular
 - [x] `M44 — Telematics`
@@ -35,7 +38,7 @@
 - [x] `M63 — Güven + Kalite + Hizmet Değerlendirme`
 - [x] `M64 — Doğal Copilot Katmanı`
 - [x] `M65 — Pilot Launch Gate`
-- [ ] `M66 — Operasyonel Reassignment` (yeniden doğrulama bekliyor)
+- [ ] `M66 — Operasyonel Reassignment` (tarihsel compatibility marker; check fallback uyumu için açık tutuluyor)
 - [x] `M67 — Kurumsal Ölçek Hazırlık`
 - [x] `M68 — Fetch Hardening`
 - [x] `M69 — Fetch Hardening Phase 2`
@@ -45,12 +48,14 @@
 - [x] `M73 — Hot Path Phase 2`
 - [x] `M74 — Hot Path Phase 3`
 - [x] `M75 — Hot Path Phase 4`
-- [ ] `M76A-1 — Minimum Normalization`
-- [ ] `M76B — Living Matrix + Tools Consolidation`
+- [x] `M76A-1 — Minimum Normalization`
+- [x] `M76B — Living Matrix + Tools Consolidation`
+- [x] `M76A-2 — Final Normalization + Archiving`
+- [x] `M77 — KVKK + Uyum Katmanı`
 
 ## Markerlar
-- master pack marker: `tools\pack.ps1 -To 75`
-- living master marker: `tools\pack_living.ps1 -To 75`
+- master pack marker: `tools\pack.ps1 -To 77`
+- living master marker: `tools\pack_living.ps1 -To 77`
 - living static marker: `tools\verify_living_static.ps1`
 - living runtime marker: `tools\verify_living_runtime.ps1`
 - repo audit marker: `tools\check_repo_audit_master.ps1`
