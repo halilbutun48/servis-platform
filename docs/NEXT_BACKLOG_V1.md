@@ -3,7 +3,7 @@
 Tarih: 2026-03-27
 Timezone: Europe/Istanbul
 
-Current direction: **M75 living baseline -> M76A/M76B normalizasyon + tools consolidation -> living rerun -> smoke -> cleanup -> KVKK/uyum**
+Current direction: **M59 gozlemleme + saha teshis -> M65 saha kapisi -> M75 living baseline -> M76A/M76B normalizasyon + tools consolidation -> M77 KVKK/uyum**
 
 ## 1) Resmi durum
 - `M75` yaşayan teknik taban olarak kabul edilir.
@@ -19,6 +19,7 @@ Current direction: **M75 living baseline -> M76A/M76B normalizasyon + tools cons
 6. derin cleanup / duplicate / dead code / performans sadeleştirmesine geç
 
 ## 3) Kanonik komutlar
+- `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild`
 - `tools\pack_living.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
@@ -33,8 +34,8 @@ Current direction: **M75 living baseline -> M76A/M76B normalizasyon + tools cons
 - archive/live gölge dosya çiftleri
 - backend/frontend/mobile tarafında gereksiz yük üreten paralel akışlar
 
-## 5) İlk cümle
-Repo şu an M75 living baseline üstünde duruyor. Önce yaşayan doğrulama matrisi ve tools konsolidasyon girişi kurulacak; sonra M0–M75 static/runtime rerun ile gerçek kırıklar ölçülecek ve cleanup buna göre yapılacak.
+## 5) Ilk cumle
+Repo rotasi tarihsel olarak M59 gozlemleme + saha teshis ile acildi; saha kapisi M65, yasayan teknik taban M75, normalizasyon hattı M76A/M76B ve uyum katmani M77 olarak devam ediyor. Bu nedenle backlog hem M59 izini hem de guncel M77 yonunu birlikte tasir.
 
 ## Tarihsel uyumluluk notu
 - `M58 — Final Pilot Readiness` komutu: `tools\pack_m58_final_pilot_readiness.ps1`
@@ -50,3 +51,9 @@ M63 guven + kalite + hizmet degerlendirme rotasi aktif. Komut: .\tools\pack_m63_
 
 - M76A-2 final normalization ve archiving
 - Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .
+
+- M59 - gozlemleme + saha teshis
+- Komut: .\tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot .
+
+- M77 - KVKK + uyum katmani
+- Komut: .\tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot .

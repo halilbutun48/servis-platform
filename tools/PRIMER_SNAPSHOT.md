@@ -9,13 +9,14 @@ Branch: `main`
 - Ürün sadece personel servisi değildir; okul ve kurumsal taşıma alanlarını birlikte taşıyan GPS tabanlı karma platformdur.
 - M75 sonunda kurumsal ölçek + hot-path sertleştirme hattı green baseline kabul edilir.
 - Ancak güncel repo üzerinde tam güven için living static + living runtime yeniden koşum gerekir.
-- Aktif düzenleme hedefi: `M76A-1 minimum normalizasyon` ve `M76B living matrix + tools consolidation`.
+- Aktif düzenleme hedefi: `M77 KVKK + uyum katmani iskeleti`.
 
 ## Kanonik komutlar
 - `tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild`
 - `tools\pack_living.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
 - `tools\verify_living_runtime.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
 - `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
 
 ## M75 living baseline özeti
@@ -37,11 +38,11 @@ Branch: `main`
 - tek komut static/runtime girişlerini netleştirmek
 
 ## Büyük sonraki faz
-1. living static rerun
-2. living runtime rerun
-3. çıkan gerçek kırıkları düzeltme
-4. derin cleanup / duplicate / dead code / performans sadeleştirmesi
-5. KVKK / uyum / branding / checklist doğrulamaları
+1. M77 iskelet pack çalıştır
+2. living static rerun
+3. yaşayan runtime rerun
+4. çıkan gerçek kırıkları düzeltme
+5. M77 içeriğini aydınlatma / görünürlük / retention / audit alt başlıklarıyla derinleştir
 
 - Parent invite ve personel/öğrenci public link süre presetleri 1 hafta / 1 ay / 6 ay / 1 yıl.
 

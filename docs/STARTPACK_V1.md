@@ -18,7 +18,8 @@
 
 ## Güncel dürüst durum
 - Teknik yaşayan taban **M75 green baseline** olarak kabul edilir.
-- Master hat güncel repoda `M0 -> M75` görünür olacak şekilde toparlanır.
+- M76A-1 + M76B + M76A-2 normalizasyon/konsolidasyon hattı kanonik durumda görünür.
+- M77 şu an iskelet-open durumundadır; aydınlatma metinleri, veri görünürlük matrisi, retention / silme / anonimleştirme yaklaşımı ve audit izi bu faz altında ilerleyecektir.
 - Ancak tam güven için living static + living runtime yeniden koşum gerekir.
 - Tools tarafında yeni hedef, faz girişlerini klasör altında toplamak; ama mevcut root pack/check adlarını bir anda kırmamaktır.
 
@@ -28,6 +29,7 @@
 - Yaşayan static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
 - Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
 - Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+- M77 iskelet pack: `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
 
 ## Master pack
 `tools\pack.ps1 -To 75` yaşayan ana çatıdır.
@@ -69,3 +71,6 @@ M64 dogal copilot katmani rotasi aktif. Komut: .\tools\pack_m64_natural_copilot_
 
 - M76A-2 final normalization ve archiving
 - Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .
+
+- M77 kapsami: aydinlatma metinleri, veri görünürlük matrisi, retention / silme / anonimleştirme yaklaşımı, audit ve erişim izi uyumu.
+- Komut: .\tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot .

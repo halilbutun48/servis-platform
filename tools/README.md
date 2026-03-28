@@ -9,10 +9,12 @@
 - M76A-1 pack: `tools\pack_m76a_1_minimum_normalization.ps1 -RepoRoot D:\servis-platform`
 - M76B pack: `tools\pack_m76b_living_matrix_tools_consolidation.ps1 -RepoRoot D:\servis-platform`
 - M76A-2 pack: `tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot D:\servis-platform`
+- M77 pack: `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
 
 ## Güncel çalışma notu
 - Repo şu an **M75 living baseline** üstünde durur.
-- M76A-1 minimum normalizasyon ve M76B living matrix/tools consolidation adımları açıktır.
+- M76A-1 minimum normalizasyon, M76B living matrix/tools consolidation ve M76A-2 final normalization adımları tamamlanmış kanonik girişlerdir.
+- M77 şu an iskelet-open durumundadır; aydınlatma metinleri, veri görünürlük matrisi, retention / silme / anonimleştirme ve audit izi işi bu faz altında derinleşecektir.
 - Tüm root pack/check dosyalarını tek seferde taşımak yerine, yeni living girişler klasör altında toplanır ve uyumluluk korunur.
 - Geçici `_m*` overlay klasörleri repo içine commitlenmez.
 

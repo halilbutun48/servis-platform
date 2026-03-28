@@ -13,4 +13,5 @@ finally { Pop-Location }
 
 & (Join-Path $PSScriptRoot 'checks\living\check_m67_m75_static.ps1') -RepoRoot $RepoRoot
 & (Join-Path $PSScriptRoot 'checks\living\check_living_matrix.ps1') -RepoRoot $RepoRoot
+& (Join-Path $PSScriptRoot 'checks\living\check_m76_m81_static.ps1') -RepoRoot $RepoRoot
 Write-Host 'LIVING STATIC VERIFY PASS'

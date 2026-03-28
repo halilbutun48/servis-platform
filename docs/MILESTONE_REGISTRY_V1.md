@@ -20,6 +20,8 @@ Bu dosya yaşayan milestone omurgasının tek resmi kaydıdır.
 - M75 - Hot Path Phase 4 - green-base
 - M76A-1 - Minimum Normalization - active
 - M76B - Living Matrix + Tools Consolidation - active
+- M76A-2 - Final Normalization + Archiving - active
+- M77 - KVKK + Uyum Katmanı - skeleton-open
 
 ## Kanonik komutlar
 - tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild
@@ -59,3 +61,6 @@ Bu dosya yaşayan milestone omurgasının tek resmi kaydıdır.
 
 - M76A-2 final normalization ve archiving
 - Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .
+
+- M77 KVKK + uyum katmani
+- Komut: .\tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot .

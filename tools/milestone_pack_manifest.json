@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-27T00:00:00Z",
+  "generatedAt": "2026-03-28T00:00:00Z",
   "coreDocs": {
     "repoReadme": "README.md",
     "primer": "docs/PRIMER_SSOT.md",
@@ -695,6 +695,17 @@
       "supportsNoBuild": false,
       "check": "tools/check_m76a_2_final_normalization_archiving_repo_contract.ps1",
       "runbook": "docs/RUNBOOK_M76A_2_FINAL_NORMALIZATION_ARCHIVING.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M77",
+      "group": 77,
+      "kind": "pack",
+      "script": "tools/pack_m77_kvkk_uyum_katmani.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m77_kvkk_uyum_katmani_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M77_KVKK_UYUM_KATMANI.md",
       "checklist": "docs/CHECKLIST_SSOT.md"
     }
   ]

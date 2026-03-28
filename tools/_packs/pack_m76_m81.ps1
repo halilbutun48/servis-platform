@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location $RepoRoot
 Write-Host ''
 Write-StatusLine ("=== SUBPACK: M76 -> M{0} ===" -f $To)
-Write-StatusLine 'INFO Canonical manifest-driven M76+ normalization/consolidation phase.'
+Write-StatusLine 'INFO Canonical manifest-driven M76+ living forward phase (normalization -> compliance -> acceptance).'
 Write-Host ''
 
 $manifestPath = Join-Path $RepoRoot 'tools\milestone_pack_manifest.json'
