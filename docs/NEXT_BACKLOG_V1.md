@@ -1,59 +1,36 @@
 # NEXT BACKLOG V1
 
-Tarih: 2026-03-27
+Tarih: 2026-03-28
 Timezone: Europe/Istanbul
 
-Current direction: **M59 gozlemleme + saha teshis -> M65 saha kapisi -> M75 living baseline -> M76A/M76B normalizasyon + tools consolidation -> M77 KVKK/uyum**
+Current direction: **M75 living baseline -> M76A/M76B/M76A-2 normalizasyon -> M77.1 content-foundation -> M77.2 enforcement skeleton -> M77.3 payload daraltma/redaction -> M77.4 response hardening -> M77.5 retention/export-trail -> M78**
 
 ## 1) Resmi durum
 - `M75` yaşayan teknik taban olarak kabul edilir.
-- Eski hatların tamamı güncel repo üzerinde tek tek yeniden doğrulanmış varsayılmaz.
-- Önce living matrix kurulacak, sonra kontrollü rerun yapılacaktır.
+- `M76A-1`, `M76B`, `M76A-2` kanonik normalizasyon/konsolidasyon fazlarıdır.
+- `M77` artık salt iskelet değil; `M77.1` içerik omurgası, `M77.2` enforcement skeleton, `M77.3` payload daraltma/redaction, `M77.4` response hardening ve `M77.5` retention/export-trail enforcement katmanına ulaşmıştır.
 
 ## 2) Hemen sonraki ana faz
-1. `M76A-1` minimum normalizasyonu sabitle
-2. `M76B` living matrix + tools consolidation katmanını kur
-3. `M0 -> M75` için yaşayan static doğrulamayı çalıştır
-4. `M0 -> M75` için yaşayan runtime doğrulamayı çalıştır
-5. çıkan gerçek kırıkları güncel repoya göre düzelt
-6. derin cleanup / duplicate / dead code / performans sadeleştirmesine geç
+1. `M77` pack'ini çalıştır ve retention/export-trail enforcement çıktısını doğrula
+2. DB anonymize gerektiren tabloları ayrı backlog olarak çıkar
+3. export / erişim izi için rate, alarm ve gözlem notlarını derinleştir
+4. driver/parent dışındaki consent enforcement kararını kontrollü aç
+5. sonra `M78` checklist / operasyon doğrulama fazını aç
 
 ## 3) Kanonik komutlar
-- `tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild`
-- `tools\pack_living.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\pack_living.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
-- `tools\verify_living_runtime.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\verify_living_runtime.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
 
-## 4) Cleanup fazında odak alanları
-- duplicate pack/check iskeletleri
-- legacy / orphan adayları
-- dead code
-- gereksiz listener / interval / duplicate fetch yüzeyleri
-- archive/live gölge dosya çiftleri
-- backend/frontend/mobile tarafında gereksiz yük üreten paralel akışlar
+## 4) M77.5 odak notu
+- `backend/src/kvkk/retention.js` retention ve export audit izini tek helper katmanına bağlar
+- `GET /api/kvkk/retention` policy + anonymize hedefleri görünür kılar
+- `POST /api/admin/retention/run` audit meta sanitize özet taşır
+- `GET /api/logs/export` ve `GET /api/admin/logs/export` audit meta ham email/ip filtrelerini tekrar yazmaz
+- bir sonraki doğru iş: gerçek DB anonymize backlog + M78 checklist fazı
 
-## 5) Ilk cumle
-Repo rotasi tarihsel olarak M59 gozlemleme + saha teshis ile acildi; saha kapisi M65, yasayan teknik taban M75, normalizasyon hattı M76A/M76B ve uyum katmani M77 olarak devam ediyor. Bu nedenle backlog hem M59 izini hem de guncel M77 yonunu birlikte tasir.
-
-## Tarihsel uyumluluk notu
-- `M58 — Final Pilot Readiness` komutu: `tools\pack_m58_final_pilot_readiness.ps1`
-- M58 kapanışı tarihsel pilot kapısıdır; yaşayan rota artık M75 baseline ve M76A/B normalizasyon hattıdır.
-
-M63 guven + kalite + hizmet degerlendirme rotasi aktif. Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
-
-- m63 - guven + kalite + hizmet degerlendirme
-- komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
-
-- m64 - dogal copilot katmani
-
-
-- M76A-2 final normalization ve archiving
-- Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .
-
-- M59 - gozlemleme + saha teshis
-- Komut: .\tools\pack_m59_observability_field_diagnostics.ps1 -RepoRoot .
-
-- M77 - KVKK + uyum katmani
-- Komut: .\tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot .
+## 5) İlk cümle
+Repo şu an green tabanda duruyor. Bir sonraki doğru iş, M77 altındaki retention/export-trail enforcement işini DB anonymize backlog ve kontrollü consent kararlarıyla tamamlayıp sonra M78 checklist fazını açmaktır.

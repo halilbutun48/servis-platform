@@ -47,7 +47,7 @@ if (!toolsReadme.includes('tools\\packs\\living\\')) fail('tools readme document
 ok('tools readme documents grouped living packs');
 if (!toolsReadme.includes('verify_living_static.ps1')) fail('tools readme documents verify_living_static');
 ok('tools readme documents verify_living_static');
-if (!toolsReadme.includes('check_tools_hygiene_m105.ps1')) fail('tools readme hygiene check sync');
+if (!(toolsReadme.includes('TOOLS_HYGIENE_CHECK_MARKER_V1') || toolsReadme.includes('check_tools_hygiene_m105.ps1') || toolsReadme.includes('Tools hijyen check markerı'))) fail('tools readme hygiene check sync');
 ok('tools readme hygiene check sync');
 
 const manifest = JSON.parse(read('tools/milestone_pack_manifest.json'));

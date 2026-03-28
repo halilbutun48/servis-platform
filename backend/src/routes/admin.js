@@ -13,6 +13,7 @@ import { getCapacityPolicySummary, getCapacitySnapshot } from "../ops/capacityLo
 import { getEdgeSecurityPolicySummary, getEdgeSecuritySnapshot } from "../ops/edgeSecurityBaseline.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { buildKvkkRetentionEnforcementSummary, buildKvkkRetentionRunAuditMeta } from "../kvkk/retention.js";
 
 const DISABLED_PREFIX = "$DISABLED$";
 function isDisabledHash(hash) {
@@ -93,19 +94,10 @@ r.post("/retention/run", authRequired(), requireRole("SUPER_ADMIN"), async (req,
     await audit(req, {
       action: "RETENTION_RUN",
       entity: "SYSTEM",
-      meta: {
-        dryRun,
-        cutoffs: result?.cutoffs ?? null,
-        counts: {
-          apiRequest: result?.apiRequest ?? null,
-          auditLog: result?.auditLog ?? null,
-          notification: result?.notification ?? null,
-          gpsPoint: result?.gpsPoint ?? null,
-        },
-      },
+      meta: buildKvkkRetentionRunAuditMeta({ dryRun, result }),
     });
 
-    return res.json({ ok: true, ...result });
+    return res.json({ ok: true, ...result, kvkkRetention: buildKvkkRetentionEnforcementSummary() });
   } catch (e) {
     return res.status(500).json({ error: String(e?.message || e) });
   }

@@ -4,6 +4,7 @@ import { authRequired, requireStepUpWrite } from "../auth/middleware.js";
 import { prisma } from "../prisma.js";
 import { audit } from "../audit.js";
 import { getKvkkSummaryForUser } from "../kvkk/documents.js";
+import { sanitizeSessionItem } from "../kvkk/enforcement.js";
 
 export const meRouter = express.Router();
 
@@ -82,7 +83,7 @@ meRouter.get("/sessions", authRequired(), async (req, res) => {
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 50,
   });
-  return res.json({ ok: true, items });
+  return res.json({ ok: true, items: items.map((item) => sanitizeSessionItem(item)) });
 });
 
 meRouter.post("/sessions/revoke-all", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"), async (req, res) => {

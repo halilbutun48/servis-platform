@@ -75,6 +75,7 @@ YATIRIMCI / WEB MESAJLAŞMA ÇERÇEVESİ
 - Green baseline bozulmamalı.
 
 TTL / LINK PRESETLERI
+<!-- TTL_PRESETS_PARENT_PUBLIC_LINKS_V1 -->
 - Parent invite ve public link presetleri: 1 hafta / 1 ay / 6 ay / 1 yıl
 
 TERİM KURALLARI

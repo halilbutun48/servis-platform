@@ -36,10 +36,20 @@ Assert-RepoContractContainsAny $primer @('M65 — Pilot Launch Gate','M66','pack
 Assert-RepoContractContainsAny $startpack @('M65 — Pilot Launch Gate','M66','tools\pack_docs_ssot.ps1','tools\pack.ps1 -To 76','M75 green baseline') 'startpack reflects post-M65/M66 state'
 Assert-RepoContractContainsAny $checklist @('[x] `M65 — Pilot Launch Gate`','[ ] `M66 — Operasyonel Reassignment`') 'checklist marks M65 green and keeps M66 open'
 Assert-RepoContractContainsAny $backlog @('M0-M66','cleanup','saha testi','M76A-1','minimum normalizasyon') 'backlog points to rerun after M65'
-Assert-RepoContractContainsAny $toolsPrimer @('M65 — Pilot Launch Gate','M66','fonksiyonel') 'tools primer reflects M65 green and M66 functional'
+Assert-RepoContractContainsAny $toolsPrimer @('M65 — Pilot Launch Gate','M66','fonksiyonel','M75 green baseline','M76A-1','M77') 'tools primer reflects M65/M66 history or current living route'
 if ((Normalize-RepoContractText $checklist) -ne (Normalize-RepoContractText $toolsChecklist)) { throw 'FAIL tools checklist mirrors docs checklist' } else { Write-Host 'OK tools checklist mirrors docs checklist' }
-Assert-RepoContractContainsAny $toolsReadme @('tools\pack.ps1 -To 66','tools\pack.ps1 -To 76','tools\pack_docs_ssot.ps1') 'tools readme lists master/docs pack'
-Assert-RepoContractContainsAny $registry @('M65 - Pilot Launch Gate - green-base','M65 - Pilot Launch Gate - green','M66 - Operasyonel Reassignment - functional-open','M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik','M75 - green-baseline','M76A-1 - minimum-normalization - active') 'registry includes M65 green and M66 open'
+Assert-RepoContractContainsAny $toolsReadme @('tools\pack.ps1 -To 66','tools\pack.ps1 -To 75','tools\pack.ps1 -To 76','tools\pack_docs_ssot.ps1','tools\pack_m77_kvkk_uyum_katmani.ps1') 'tools readme lists master/docs pack or current living master entry'
+Assert-RepoContractContainsAny $registry @(
+ 'M65 - Pilot Launch Gate - green-base',
+ 'M65 - Pilot Launch Gate - green',
+ 'M66 - Operasyonel Reassignment - functional-open',
+ 'M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik',
+ 'M75 - green-baseline',
+ 'M75 - living baseline',
+ 'M76A-1 - minimum-normalization - active',
+ 'M76A-1 - minimum normalization',
+ 'M77 - KVKK + Uyum Katmani'
+) 'registry includes M65/M66 history or current living route'
 
 Assert-RepoContractContainsAny $route @('/manifest','/decision-template','/summary') 'pilot launch gate route exposes summary endpoints'
 Assert-RepoContractContainsAny $manifest @('PILOT_LAUNCH_GATE_CAPABILITIES','GO / LIMITED GO / NO-GO','riskMatrix') 'manifest defines M65 gate capabilities'
@@ -47,4 +57,3 @@ Assert-RepoContractContainsAny $panel @('M65 Pilot Launch Gate','Launch checklis
 Assert-RepoContractContainsAny $runbook @('Pilot Launch Gate','kritik risk listesi','M65 green olmadan sahaya çıkılmaz') 'runbook defines M65 scope'
 
 Write-Host 'M65 PILOT LAUNCH GATE REPO CONTRACT PASS'
-

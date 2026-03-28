@@ -4,6 +4,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../auth/middleware.js";
+import { sanitizeVehicleLiveItem } from "../kvkk/enforcement.js";
 
 function uniqNums(xs) {
   return Array.from(new Set((xs || []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
@@ -44,7 +45,7 @@ export function liveRouter() {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items);
+      return res.json(items.map((item) => sanitizeVehicleLiveItem(item, { role: u.role })));
     }
 
     if (u.role === "COMPANY" || u.role === "PERSONEL") {
@@ -70,7 +71,7 @@ export function liveRouter() {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items);
+      return res.json(items.map((item) => sanitizeVehicleLiveItem(item, { role: u.role })));
     }
 
     if (u.role === "DRIVER") {
@@ -94,7 +95,7 @@ export function liveRouter() {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items);
+      return res.json(items.map((item) => sanitizeVehicleLiveItem(item, { role: u.role })));
     }
 
     // SUPER_ADMIN fallback
@@ -104,7 +105,7 @@ export function liveRouter() {
       orderBy: { id: "asc" },
       take,
     });
-    return res.json(items);
+    return res.json(items.map((item) => sanitizeVehicleLiveItem(item, { role: u.role })));
   });
 
   return r;

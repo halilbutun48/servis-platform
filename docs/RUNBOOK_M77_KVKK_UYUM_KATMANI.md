@@ -1,39 +1,63 @@
 # RUNBOOK — M77 KVKK + UYUM KATMANI
 
 ## Amaç
-Bu adımın amacı KVKK/uyum tarafını tek seferde hukuki finale taşımak değildir. Amaç, M77 için yaşayan pack/check omurgasını açmak ve bundan sonraki KVKK işlerini tek bir kanonik faz altında toplamak.
+Bu fazın amacı KVKK/uyum tarafını tek seferde hukuki finale taşımak değildir. Amaç, M77 altında yaşayan, ölçülebilir ve koda bağlanan bir omurga kurmaktır.
 
-## İlk tur kapsamı
-- aydınlatma metinleri envanteri için iskelet
-- veri görünürlük matrisi için iskelet
-- retention / silme / anonimleştirme yaklaşımı için iskelet
-- audit ve erişim izi uyumu için iskelet
-- manifest, pack, repo-contract ve living static bağları
+## M77.1 bu turda somutlaşan içerik
+- auth role ile business domain ayrımı netleştirildi
+- veri görünürlük matrisi alan bazında yazıya döküldü
+- aydınlatma envanterinde bugün aktif olan belge akışı ile planlanan belge akışı ayrıldı
+- retention / silme / anonimleştirme yaklaşımı repo gerçekleri üstünden toplandı
+- audit ve erişim izi için görünürlük + maskeleme ilkeleri yazıldı
+- `/api/kvkk/matrix` tarafında `PARENT` satırı ve domain ayrımı görünür hale getirildi
 
-## İlk turda özellikle yapılmayanlar
-- tüm ekranlarda son metin yerleşimi
-- bütün roller için final görünürlük enforcement'ı
-- tüm anonimleştirme job'larının son hali
-- hukuk/onay metninin finalleştirilmesi
+## M77.2 enforcement skeleton
+- `parent/children` yüzeyinde ham `phone` ve `homeAddress` yerine masked alanlar
+- canlı araç payload'ında role göre GPS exact / masked ayrımı
+- `me/sessions` yüzeyinde `ip` ve `userAgent` ham verilmez
+- enforcement helper omurgası `/api/kvkk/matrix` içine özet olarak bağlanır
+
+## M77.3 payload daraltma + redaction
+- school domain davet listesinde email / phone masked döner
+- `Company.kind = SCHOOL` için company personel listesinde açık iletişim alanı daraltılır
+- `GET /api/shifts/:id/operation-events` meta alanı sanitize edilir
+- `GET /api/logs/preview` ve `GET /api/logs/export` text/meta redaction uygular
+- `GET /api/admin/logs/preview` ve `GET /api/admin/logs/export` ham IP / ham email göstermez
+
+## M77.5 retention / anonymize / export trail
+- `backend/src/kvkk/retention.js` ile retention ve export audit izi tek helper katmanına bağlandı
+- `GET /api/kvkk/retention` ile policy + anonymize hedefleri görünür hale geldi
+- `POST /api/admin/retention/run` audit meta artık sanitize özet taşır
+- `GET /api/logs/export` ve `GET /api/admin/logs/export` audit izi ham filtreleri olduğu gibi tekrar yazmaz
+
+## Bu turda özellikle yapılmayanlar
+- tüm ekranlarda final metin yerleşimi
+- driver/parent dışındaki roller için zorunlu consent enforcement
+- tüm tablo ve endpoint'lerde final maskeleme kodu
+- tüm business tablolar için çalışan DB anonymize batch job
+
+## Yeni ana belgeler
+- `docs\KVKK_VERI_GORUNURLUK_MATRISI_V1.md`
+- `docs\KVKK_AYDINLATMA_ENVANTERI_V1.md`
+- `docs\KVKK_RETENTION_ANONIMLESTIRME_V1.md`
+- `docs\KVKK_AUDIT_ERISIM_IZI_V1.md`
+- `docs\KVKK_ENFORCEMENT_YUZEYI_V1.md`
+- `docs\KVKK_REDACTION_ENFORCEMENT_V1.md`
+- `docs\KVKK_RETENTION_ENFORCEMENT_V1.md`
+- `docs\KVKK_EXPORT_ERISIM_IZI_V1.md`
+
+## Repo gerçeği notu
+- Auth role seti: `SUPER_ADMIN / ROOM / COMPANY / DRIVER / PERSONEL / PARENT`
+- `SCHOOL` ve `ORGANIZATION` ayrı login role değildir; `Company.kind` üstünden business domain olarak taşınır.
+- Bugün gerçekten aktif KVKK belge enforcement'ı ağırlıklı olarak `DRIVER` ve `PARENT` için görünürdür.
+- Derin KVKK işi bundan sonra payload daraltma, export redaction ve scope enforcement ile ilerleyecektir.
 
 ## Kanonik komut
 - `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
 
-## Living bağları
-- Faz wrapper'ı zaten `tools\packs\living\pack_phase_m76_m81.ps1` üstünden çalışır.
-- Manifestte `M77` kaydı olduğu için `tools\pack.ps1 -To 77` ve `tools\verify_living_runtime.ps1 -To 77` akışları bu pack'i görür.
-- Static doğrulama tarafında `tools\verify_living_static.ps1` artık `tools\checks\living\check_m76_m81_static.ps1` çağrısı üzerinden M77 repo-contract iskeletini de kontrol eder.
-
-## Bu faz altında sonraki alt başlıklar
-1. aydınlatma metinleri taslakları
-2. veri görünürlük matrisi
-3. retention / silme / anonimleştirme policy kararı
-4. audit ve erişim izi kontrol listesi
-5. ekran/rol bazlı enforcement listesi
-
-## Çıkış ölçütü
-- M77 pack vardır
-- M77 repo-contract vardır
-- M77 milestone/runbook vardır
-- manifest M77 kaydını görür
-- living static doğrulama M77 iskeletini görür
+## Sonraki alt adım
+1. company / room / school tarafında kalan kritik payload yüzeylerini daralt
+2. admin / export / audit redaction'ı daha derin hale getir
+3. retention ve anonymize işlerini tablo bazında gerçek batch/job seviyesine indir
+4. export / erişim izi için oran, alarm ve gözlem katmanı ekle
+5. sonra M78 checklist / operasyon doğrulama fazına geç

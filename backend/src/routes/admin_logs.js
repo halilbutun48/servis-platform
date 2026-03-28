@@ -3,6 +3,8 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { maskEmail, maskIp, sanitizeLogText } from "../kvkk/enforcement.js";
+import { buildKvkkExportAuditMeta } from "../kvkk/retention.js";
 
 const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
 
@@ -94,12 +96,12 @@ async function buildLoginLogs({ from, to, take, emailContains, userId }) {
   let items = rows.map((r) => {
     const u = r.actorUserId ? um.get(r.actorUserId) : null;
     const meta = r.meta || {};
-    const email = u?.email || meta.email || "-";
+    const email = maskEmail(u?.email || meta.email || "-") || "-";
     return {
       id: r.id,
       createdAt: r.createdAt,
       type: r.action,
-      info: `email=${email} userId=${r.actorUserId || "-"} ip=${meta.ip || "-"} reason=${meta.reason || "-"}`,
+      info: sanitizeLogText(`email=${email} userId=${r.actorUserId || "-"} ip=${maskIp(meta.ip || "-") || "-"} reason=${meta.reason || "-"}`),
     };
   });
   if (emailContains) {
@@ -134,7 +136,7 @@ async function buildAudit({ from, to, take, q, emailContains, userId }) {
       id: r.id,
       createdAt: r.createdAt,
       type: r.action,
-      info: `actor=${u?.email || "-"} role=${r.actorRole || u?.role || "-"} entity=${r.entity}${r.entityId ? "#" + r.entityId : ""}`,
+      info: sanitizeLogText(`actor=${maskEmail(u?.email || "-") || "-"} role=${r.actorRole || u?.role || "-"} entity=${r.entity}${r.entityId ? "#" + r.entityId : ""}`),
     };
   });
   if (emailContains) {
@@ -167,7 +169,7 @@ async function buildApiRequests({ from, to, take, pathLike, status, ipContains, 
       id: r.id,
       createdAt: r.createdAt,
       type: `${r.method} ${r.status}`,
-      info: `actor=${u?.email || "-"} role=${r.role || u?.role || "-"} path=${r.path} dur=${r.durationMs}ms ip=${r.ip || "-"}`,
+      info: sanitizeLogText(`actor=${maskEmail(u?.email || "-") || "-"} role=${r.role || u?.role || "-"} path=${r.path} dur=${r.durationMs}ms ip=${maskIp(r.ip || "-") || "-"}`),
     };
   });
 
@@ -251,7 +253,7 @@ export function adminLogsRouter() {
       await audit(req, {
         action: "LOG_EXPORT",
         entity: "LOGS",
-        meta: {
+        meta: buildKvkkExportAuditMeta({
           endpoint: "/api/admin/logs/export",
           kind,
           format,
@@ -267,7 +269,7 @@ export function adminLogsRouter() {
             ipContains: String(req.query.ip || req.query.ipContains || "").trim() || null,
           },
           rowCount: items.length,
-        },
+        }),
       });
 
       const stamp = fmtTRIso(new Date()).slice(0, 19).replace(/[:T+]/g, "-");

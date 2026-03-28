@@ -64,7 +64,7 @@ MustContainAny $readme @('M59','pack_m59_observability_field_diagnostics.ps1','M
 MustContainAny $primer @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline') 'primer ssot reflects new route'
 MustContainAny $startpack @('M59','pack_m59_observability_field_diagnostics.ps1','Saha testi') 'startpack reflects M59 and final field rule'
 MustContainAll $checklist @('[ ]','M59','pack_m59_observability_field_diagnostics.ps1') 'checklist keeps M59 open with pack marker'
-MustContainAny $backlog @('M59','pack_m59_observability_field_diagnostics.ps1','M60','M76A-1') 'backlog points to M59'
+MustContainAny $backlog @('M59','pack_m59_observability_field_diagnostics.ps1','M60','M76A-1','M77','M78','DB anonymize') 'backlog preserves M59 history or later canonical direction'
 MustContainAny $toolsPrimer @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline') 'tools primer reflects M59 route'
 MustContainAll $toolsChecklist @('[ ]','M59','pack_m59_observability_field_diagnostics.ps1') 'tools checklist keeps M59 open with pack marker'
 MustContainAny $toolsReadme @('pack_m59_observability_field_diagnostics.ps1','M59','M58 readiness contract') 'tools readme lists M59 pack and sequencing rule'

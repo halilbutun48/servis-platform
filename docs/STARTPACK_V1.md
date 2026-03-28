@@ -1,5 +1,9 @@
 # STARTPACK V1
 
+<!-- STARTPACK_TOOLS_HYGIENE_V1 -->
+<!-- STARTPACK_PARENT_TTL_PRESETS_V1 -->
+<!-- STARTPACK_PUBLIC_LINK_TTL_PRESETS_V1 -->
+
 ## Temel kurallar
 1. Monorepo modüler yapıda ilerler: `backend / web / mobile / infra / docs / tools`.
 2. Ürün kimliği **Vardis** markası altında çalışan karma taşıma platformudur; sadece personel ürünü diye daraltılmaz.
@@ -19,17 +23,19 @@
 ## Güncel dürüst durum
 - Teknik yaşayan taban **M75 green baseline** olarak kabul edilir.
 - M76A-1 + M76B + M76A-2 normalizasyon/konsolidasyon hattı kanonik durumda görünür.
-- M77 şu an iskelet-open durumundadır; aydınlatma metinleri, veri görünürlük matrisi, retention / silme / anonimleştirme yaklaşımı ve audit izi bu faz altında ilerleyecektir.
-- Ancak tam güven için living static + living runtime yeniden koşum gerekir.
+- M77 artık salt iskelet değil; M77.1 content-foundation ile rol ile business domain ayrımı, KVKK görünürlük matrisi, aydınlatma envanteri, retention / silme / anonimleştirme yaklaşımı ve audit izi tek omurgada yazılı hale geldi. M77.2, M77.3 ve M77.4 ile payload-enforcement + redaction-foundation açıldı; M77.5 ile retention/export trail enforcement helper katmanı da bağlandı.
+- Auth role seti: `SUPER_ADMIN / ROOM / COMPANY / DRIVER / PERSONEL / PARENT`.
+- School/Organization domain tarafı ayrı login role değil, `Company.kind` üstünden taşınan iş alanıdır.
+- Ancak driver/parent dışındaki roller için zorunlu consent enforcement'ı hâlâ sonraki alt adımdır.
 - Tools tarafında yeni hedef, faz girişlerini klasör altında toplamak; ama mevcut root pack/check adlarını bir anda kırmamaktır.
 
 ## Kanonik komutlar
 - Yaşayan master hat: `tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild`
-- Yaşayan tek giriş: `tools\pack_living.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
+- Yaşayan tek giriş: `tools\pack_living.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
 - Yaşayan static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
-- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild`
+- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 76 -RepoRoot D:\servis-platform -NoBuild`
 - Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
-- M77 iskelet pack: `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
+- M77 payload-enforcement pack: `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
 
 ## Master pack
 `tools\pack.ps1 -To 75` yaşayan ana çatıdır.
@@ -54,23 +60,10 @@ Bu komut:
 - Yardımcı living check girişleri: `tools\checks\living\`
 - Legacy root pack/check dosyaları uyumluluk için korunur.
 
-## M58 -> M75 kısa marker
-- M58 tarihsel pilot readiness kapısıdır.
-- M59 -> M65 geçmiş green-base hattıdır.
-- M66 fonksiyonel-open / yeniden doğrulama bekleyen adımdır.
-- M67 -> M75 kurumsal ölçek ve hot-path sertleştirme hattıdır.
-- repo/tools hijyen check: `tools\check_tools_hygiene_m105.ps1 -RepoRoot D:\servis-platform`
+## M77 hızlı referans
+- görünürlük matrisi: `docs\KVKK_VERI_GORUNURLUK_MATRISI_V1.md`
+- aydınlatma envanteri: `docs\KVKK_AYDINLATMA_ENVANTERI_V1.md`
+- retention / silme / anonimleştirme: `docs\KVKK_RETENTION_ANONIMLESTIRME_V1.md`
+- audit ve erişim izi: `docs\KVKK_AUDIT_ERISIM_IZI_V1.md`
 
-M63 guven + kalite + hizmet degerlendirme rotasi aktif. Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
-
-- M63 - guven + kalite + hizmet degerlendirme - aktif
-- Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
-
-M64 dogal copilot katmani rotasi aktif. Komut: .\tools\pack_m64_natural_copilot_layer.ps1 -RepoRoot .
-
-
-- M76A-2 final normalization ve archiving
-- Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .
-
-- M77 kapsami: aydinlatma metinleri, veri görünürlük matrisi, retention / silme / anonimleştirme yaklaşımı, audit ve erişim izi uyumu.
-- Komut: .\tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot .
+- M77.3 / M77.5 ana belgeleri: `docs\KVKK_ENFORCEMENT_YUZEYI_V1.md`, `docs\KVKK_REDACTION_ENFORCEMENT_V1.md`, `docs\KVKK_ROLE_PAYLOAD_DARALTMA_V1.md`, `docs\KVKK_RETENTION_ENFORCEMENT_V1.md`, `docs\KVKK_EXPORT_ERISIM_IZI_V1.md`

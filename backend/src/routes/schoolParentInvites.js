@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "crypto";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { sanitizeAuditMeta, sanitizeInviteItem } from "../kvkk/enforcement.js";
 
 function sha256Hex(s) {
   return crypto.createHash("sha256").update(String(s || ""), "utf8").digest("hex");
@@ -56,8 +57,8 @@ async function assertSchoolScope(req, res) {
   return company;
 }
 
-function mapInvite(it) {
-  return {
+function mapInvite(it, role = "COMPANY") {
+  return sanitizeInviteItem({
     id: it.id,
     companyId: it.companyId,
     childPersonelId: it.childPersonelId,
@@ -72,7 +73,7 @@ function mapInvite(it) {
     createdByUserId: it.createdByUserId ?? null,
     status: inviteStatus(it),
     child: it.child ? { id: it.child.id, fullName: it.child.fullName, kind: it.child.kind } : null,
-  };
+  }, { role });
 }
 
 export function schoolParentInvitesRouter() {
@@ -99,7 +100,7 @@ export function schoolParentInvitesRouter() {
       take,
     });
 
-    let out = items.map(mapInvite);
+    let out = items.map((item) => mapInvite(item, req.user?.role));
     if (status) out = out.filter((x) => x.status === status);
     res.json({ ok: true, items: out });
   });
@@ -141,13 +142,13 @@ export function schoolParentInvitesRouter() {
     await recordAudit(req, "PARENT_INVITE_CREATE", "ParentInvite", created.id, {
       companyId: company.id,
       childPersonelId: child.id,
-      email,
-      phone,
+      email: sanitizeAuditMeta({ email }).email,
+      phone: sanitizeAuditMeta({ phone }).phone,
     });
 
     res.json({
       ok: true,
-      item: mapInvite(created),
+      item: mapInvite(created, req.user?.role),
       token: rawToken,
     });
   });
@@ -165,7 +166,7 @@ export function schoolParentInvitesRouter() {
     });
     if (!existing) return res.status(404).json({ error: "invite not found" });
     if (existing.consumedAt) return res.status(409).json({ error: "invite already accepted" });
-    if (existing.revokedAt) return res.json({ ok: true, item: mapInvite(existing) });
+    if (existing.revokedAt) return res.json({ ok: true, item: mapInvite(existing, req.user?.role) });
 
     const updated = await prisma.parentInvite.update({
       where: { id },
@@ -175,7 +176,7 @@ export function schoolParentInvitesRouter() {
 
     await recordAudit(req, "PARENT_INVITE_REVOKE", "ParentInvite", id, { companyId: company.id, childPersonelId: updated.childPersonelId });
 
-    res.json({ ok: true, item: mapInvite(updated) });
+    res.json({ ok: true, item: mapInvite(updated, req.user?.role) });
   });
 
   return r;

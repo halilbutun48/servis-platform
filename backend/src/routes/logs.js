@@ -5,6 +5,8 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { audit } from "../audit.js";
 import { authRequired } from "../auth/middleware.js";
+import { sanitizeLogRow } from "../kvkk/enforcement.js";
+import { buildKvkkExportAuditMeta } from "../kvkk/retention.js";
 
 const TR_OFFSET_MS = 3 * 60 * 60 * 1000;
 
@@ -645,7 +647,7 @@ export function logsRouter() {
         return res.status(built.status || 400).json({ error: built.error || "error" });
       }
 
-      let rows = built.rows || [];
+      let rows = (built.rows || []).map((row) => sanitizeLogRow(row));
       rows = applyFilters(rows, { onlyBad: req.query.onlyBad, cat: req.query.cat || "ALL", q: req.query.q || "" });
       rows.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 
@@ -700,13 +702,13 @@ export function logsRouter() {
         return res.status(built.status || 400).json({ error: built.error || "error" });
       }
 
-      const rows = (built.rows || []).slice().sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+      const rows = (built.rows || []).map((row) => sanitizeLogRow(row)).slice().sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 
       // ✅ M40: audit export trail
       await audit(req, {
         action: "LOG_EXPORT",
         entity: "LOGS",
-        meta: {
+        meta: buildKvkkExportAuditMeta({
           endpoint: "/api/logs/export",
           kind,
           kindRaw,
@@ -717,7 +719,12 @@ export function logsRouter() {
           take,
           rangeTR: { from: fmtTRIso(from), to: fmtTRIso(to) },
           rowCount: rows.length,
-        },
+          filters: {
+            q: String(req.query.q || "").trim() || null,
+            onlyBad: String(req.query.onlyBad || "").trim() || null,
+            cat: String(req.query.cat || "").trim() || null,
+          },
+        }),
       });
 
       const filename = `logs_${kind}_${targetType || "scoped"}_${targetId || 0}_${Date.now()}.${format === "csv" ? "csv" : "txt"}`;

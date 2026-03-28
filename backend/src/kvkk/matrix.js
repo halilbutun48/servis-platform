@@ -1,37 +1,40 @@
-export const KVKK_MATRIX_VERSION = "2026-03-18";
+export const KVKK_MATRIX_VERSION = "2026-03-28";
+
+export const KVKK_AUTH_ROLES = ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"];
+export const KVKK_BUSINESS_DOMAINS = ["COMPANY", "SCHOOL", "ORGANIZATION", "ROOM"];
 
 export const KVKK_MATRIX_ROWS = [
   {
     role: "SUPER_ADMIN",
-    panels: ["Admin", "Raporlar", "Loglar"],
-    dataScopes: ["system", "company", "room", "driver", "personel"],
-    canView: ["kvkk-summary", "consent-records", "audit-trail"],
-    canWrite: ["policy-config"],
-    notes: "Sistem geneli görünürlük; operasyonel kişisel veride amaç sınırlılığı korunur.",
+    panels: ["Admin", "Raporlar", "Loglar", "KVKK"],
+    dataScopes: ["system", "company", "school-domain", "organization-domain", "room"],
+    canView: ["kvkk-summary", "consent-records", "audit-trail", "retention-policy"],
+    canWrite: ["policy-config", "retention-run", "user-status"],
+    notes: "Sistem geneli görünürlük vardır; yine de şifre, token, TOTP secret ve ham kişisel veri export'u varsayılan olarak dışarı açılmaz.",
   },
   {
     role: "ROOM",
-    panels: ["Vardiyalar", "Sürücüler", "Raporlar", "Canlı Harita"],
-    dataScopes: ["own-room", "assigned-shifts", "own-vehicles", "own-drivers"],
-    canView: ["route-progress", "eta-summary", "penalties", "kvkk-summary"],
+    panels: ["Vardiyalar", "Sürücüler", "Araçlar", "Canlı Harita", "KVKK"],
+    dataScopes: ["own-room", "assigned-shifts", "own-vehicles", "own-drivers", "linked-company-school"],
+    canView: ["route-progress", "eta-summary", "assignment-state", "kvkk-summary"],
     canWrite: ["dispatch", "no-show", "assignment"],
-    notes: "Sadece kendi oda scope’u; canlı konum operasyon penceresiyle sınırlı.",
+    notes: "Sadece kendi room scope'u. Canlı konum ve kişi adresi operasyon penceresiyle sınırlı; tam GPS geçmişi ve gereksiz kimlik bilgisi açılmaz.",
   },
   {
     role: "COMPANY",
-    panels: ["Vardiyalar", "Raporlar", "Canlı Harita"],
-    dataScopes: ["own-company", "own-personel", "assigned-shifts"],
-    canView: ["route-progress", "eta-summary", "kvkk-summary"],
-    canWrite: ["request", "offer-response"],
-    notes: "Firma canlı veriyi sadece kendi personeli ve bağlı vardiya kapsamında görür.",
+    panels: ["Vardiyalar", "Personeller", "Raporlar", "Canlı Harita", "KVKK"],
+    dataScopes: ["own-company", "own-personel", "own-parent-links", "assigned-shifts"],
+    canView: ["route-progress", "eta-summary", "service-state", "kvkk-summary"],
+    canWrite: ["request", "offer-response", "personel-maintenance"],
+    notes: "Firma kullanıcısı yalnız kendi firma kapsamını görür. School/organization alanı Company.kind ile ayrılır; ayrı auth role değildir.",
   },
   {
     role: "DRIVER",
     panels: ["Bugün", "Rota", "Harita", "KVKK"],
     dataScopes: ["self", "assigned-shift", "vehicle-live"],
     canView: ["next-stop", "remaining-stops", "navigation-target", "kvkk-documents"],
-    canWrite: ["stop-progress", "kvkk-consent"],
-    notes: "Sürücü yalnız kendi vardiyası ve kendi canlı rota verisini görür.",
+    canWrite: ["stop-progress", "kvkk-consent", "gps-publish"],
+    notes: "Sürücü yalnız kendi vardiyası, kendi aracı ve kendi operasyon akışını görür. Başka sürücü veya başka vardiya verisi açılmaz.",
   },
   {
     role: "PERSONEL",
@@ -39,20 +42,31 @@ export const KVKK_MATRIX_ROWS = [
     dataScopes: ["self", "matched-shift", "own-stop"],
     canView: ["vehicle-approach", "eta-summary", "remaining-stops", "navigation-target", "kvkk-documents"],
     canWrite: ["ride-request", "kvkk-consent"],
-    notes: "Personel sadece kendi servis bağı ve kendi durak/ETA görünümünü alır.",
+    notes: "Personel sadece kendi servis bağı, kendi durak bilgisi ve kendisini etkileyen ETA özetini görür. Diğer personel listesi ve tam rota izi açılmaz.",
+  },
+  {
+    role: "PARENT",
+    panels: ["Canlı Takip", "Çocuk Bağlantısı", "KVKK"],
+    dataScopes: ["linked-child", "child-matched-shift", "child-eta"],
+    canView: ["vehicle-approach", "eta-summary", "remaining-stops", "child-link", "kvkk-documents"],
+    canWrite: ["kvkk-consent"],
+    notes: "Veli yalnız bağlı çocuk/personel kaydını görür. Açık adres, tam GPS geçmişi ve room/company operasyon iç notları görünmez.",
   },
 ];
 
 export function getKvkkMatrix() {
   return {
     version: KVKK_MATRIX_VERSION,
+    authRoles: [...KVKK_AUTH_ROLES],
+    businessDomains: [...KVKK_BUSINESS_DOMAINS],
     rows: KVKK_MATRIX_ROWS.map((x) => ({ ...x })),
     summary: {
       roleCount: KVKK_MATRIX_ROWS.length,
       focuses: [
         "rol/panel/veri görünürlüğü",
         "canlı konum için amaç ve zaman penceresi sınırı",
-        "mobil taraf için KVKK zorunlu ekranlar",
+        "sürücünün telefon GPS'i ve tam geçmiş için ayrı kısıt",
+        "school/organization alanının auth role değil business domain olması",
       ],
     },
   };

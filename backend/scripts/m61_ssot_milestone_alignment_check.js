@@ -83,8 +83,19 @@ async function main() {
     includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional", "M76A-1", "minimum normalizasyon"])
   );
   must(
-    "registry shows M59-M66 route",
-    includesAny(registry, ["M59 - Gözlemleme + Saha Teşhis", "M66 - Operasyonel Reassignment", "green-base", "functional-open", "M75 - green-baseline", "M76A-1 - minimum-normalization - active"])
+    "registry shows historical or current canonical route",
+    includesAny(registry, [
+      "M59 - Gözlemleme + Saha Teşhis",
+      "M66 - Operasyonel Reassignment",
+      "green-base",
+      "functional-open",
+      "M75 - green-baseline",
+      "M75 - living baseline",
+      "M76A-1 - minimum-normalization - active",
+      "M76A-1 - minimum normalization",
+      "M77 - KVKK + Uyum Katmanı",
+      "Aktif kanonik hat",
+    ])
   );
 
   console.log("INFO checking backend and web skeleton");

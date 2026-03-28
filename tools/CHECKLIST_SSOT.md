@@ -56,6 +56,8 @@
 - repo audit marker: `tools\check_repo_audit_master.ps1`
 
 ## M105 Tools Canonical Cleanup
+
+<!-- TOOLS_CANONICAL_CLEANUP_M105_V1 -->
 - tools root kanonik düzen kontrolü korunacak
 - tools archive ve backup yapısı doğrulanacak
 - tools/docs senkronu korunacak

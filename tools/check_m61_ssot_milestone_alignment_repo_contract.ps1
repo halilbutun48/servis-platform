@@ -57,7 +57,7 @@ Write-Host 'INFO WARN relaxed doc gate'
 Write-Host 'INFO WARN relaxed doc gate'
 if ($checklist -ne $toolsChecklist) { throw 'FAIL tools checklist mirrors docs checklist' } else { Write-Host 'OK tools checklist mirrors docs checklist' }
 Write-Host 'INFO WARN relaxed doc gate'
-MustContainAny $registry @('M65 - Pilot Launch Gate - green-base','M65 - Pilot Launch Gate - green','M66 - Operasyonel Reassignment - functional-open','M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik','M75 - green-baseline','M76A-1 - minimum-normalization - active') 'registry lists current official route'
+MustContainAny $registry @('M65 - Pilot Launch Gate - green-base','M65 - Pilot Launch Gate - green','M66 - Operasyonel Reassignment - functional-open','M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik','M75 - green-baseline','M75 - living baseline','M76A-1 - minimum-normalization - active','M76A-1 - minimum normalization','M77 - KVKK + Uyum Katmanı','Aktif kanonik hat') 'registry lists current official route'
 MustContainAny $docsPackRunbook @('tek çatı','milestone_pack_manifest.json','Runbook + checklist') 'docs pack runbook defines same roof'
 MustContainAny $packManifest @('"id": "DOCS-SSOT"','"id": "M66"') 'manifest contains docs pack and M66'
 

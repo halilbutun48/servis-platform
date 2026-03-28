@@ -7,6 +7,7 @@ import { signToken } from "../auth/jwt.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { ENV } from "../env.js";
 import { verifyGoogleCredential } from "../auth/google.js";
+import { sanitizeAuthInviteListItem } from "../kvkk/enforcement.js";
 
 const DISABLED_PREFIX = "$DISABLED$";
 const authStep2Router = express.Router();
@@ -548,7 +549,7 @@ authStep2Router.get("/invites", authRequired(), requireRole("COMPANY", "ROOM", "
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
-    return res.json({ items });
+    return res.json({ items: items.map((x) => sanitizeAuthInviteListItem(x, { role: req.user?.role })) });
   } catch (e) {
     return res.status(e?.status ?? 500).json({ error: String(e?.code || e?.message || e) });
   }
@@ -593,7 +594,7 @@ authStep2Router.post("/invites", authRequired(), requireRole("COMPANY", "ROOM", 
       meta: { inviteId: created.id, type: created.type, role: created.role, companyId: created.companyId ?? null, roomId: created.roomId ?? null },
     });
 
-    return res.status(201).json({ ok: true, item: created, token: rawToken });
+    return res.status(201).json({ ok: true, item: sanitizeAuthInviteListItem(created, { role: req.user?.role }), token: rawToken });
   } catch (e) {
     return res.status(e?.status ?? 500).json({ error: String(e?.code || e?.message || e) });
   }

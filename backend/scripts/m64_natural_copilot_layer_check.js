@@ -39,7 +39,10 @@ async function main() {
     "M64 — Doğal Copilot Katmanı",
     "pack_m64_natural_copilot_layer.ps1",
     "post-M66 functional",
-    "M75 green baseline"
+    "M75 green baseline",
+    "M76A-1",
+    "M77",
+    "tools\\pack_m77_kvkk_uyum_katmani.ps1"
   ]));
   must("project spec reflects natural copilot layer", includesAny(projectSpec, [
     "daha doğal Türkçe cevap katmanı",
@@ -52,7 +55,9 @@ async function main() {
     "pack_m64_natural_copilot_layer.ps1",
     "post-M66 functional",
     "M75 green baseline",
-    "M76A-1"
+    "M76A-1",
+    "M77",
+    "M78"
   ]));
   must("startpack reflects M64 opening or later official state", includesAny(startpack, [
     "M64 — Doğal Copilot Katmanı",
@@ -60,7 +65,9 @@ async function main() {
     "M64` bitmeden `M65",
     "post-M66 functional",
     "M75 green baseline",
-    "M76A-1"
+    "M76A-1",
+    "M77",
+    "M78"
   ]));
   must("checklist tracks M64 milestone or later official state", includesAny(checklist, [
     "[ ] `M64 — Doğal Copilot Katmanı`",

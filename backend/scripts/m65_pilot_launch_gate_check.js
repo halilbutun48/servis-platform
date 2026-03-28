@@ -24,7 +24,16 @@ async function main() {
     "docs/MILESTONE_M65_PILOT_LAUNCH_GATE.md",
     "tools/pack_m65_pilot_launch_gate.ps1",
     "tools/check_m65_pilot_launch_gate_repo_contract.ps1",
-    "README.md", "docs/PROJECT_SPEC_V1.md", "docs/PRIMER_SSOT.md", "docs/STARTPACK_V1.md", "docs/CHECKLIST_SSOT.md", "docs/NEXT_BACKLOG_V1.md", "tools/PRIMER_SNAPSHOT.md", "tools/CHECKLIST_SSOT.md", "tools/README.md", "docs/MILESTONE_REGISTRY_V1.md"
+    "README.md",
+    "docs/PROJECT_SPEC_V1.md",
+    "docs/PRIMER_SSOT.md",
+    "docs/STARTPACK_V1.md",
+    "docs/CHECKLIST_SSOT.md",
+    "docs/NEXT_BACKLOG_V1.md",
+    "tools/PRIMER_SNAPSHOT.md",
+    "tools/CHECKLIST_SSOT.md",
+    "tools/README.md",
+    "docs/MILESTONE_REGISTRY_V1.md",
   ];
   console.log("INFO checking required M65 files");
   requiredFiles.forEach((rel) => must(`${rel} exists`, exists(rel)));
@@ -52,15 +61,16 @@ async function main() {
   must("backlog points to rerun after M65 or current normalization route", includesAny(backlog, ["M0-M66", "cleanup", "saha testi", "M76A-1", "minimum normalizasyon"]));
   must("tools primer reflects M65/M66 history or current living route", includesAny(toolsPrimer, ["M65 — Pilot Launch Gate", "M66", "fonksiyonel", "M75 green baseline", "M76A-1"]));
   must("tools checklist mirrors docs checklist", checklist === toolsChecklist);
-  must("tools readme lists master/docs pack or current living master entry", includesAny(toolsReadme, ["tools\\pack.ps1 -To 66", "tools\\pack_docs_ssot.ps1", "tools\\pack.ps1 -To 76"]));
-  must("registry includes M65/M66 history or current M75/M76 route", includesAny(registry, ["M65 - Pilot Launch Gate - green-base", "M65 - Pilot Launch Gate - green", "M66 - Operasyonel Reassignment - functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik", "M75 - green-baseline", "M76A-1 - minimum-normalization - active"]));
+  must("tools readme lists master/docs pack or current living master entry", includesAny(toolsReadme, ["tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 75", "tools\\pack_docs_ssot.ps1", "tools\\pack.ps1 -To 76", "tools\\pack_m77_kvkk_uyum_katmani.ps1"]));
+  must("registry includes M65/M66 history or current living route", includesAny(registry, ["M65 - Pilot Launch Gate - green-base", "M65 - Pilot Launch Gate - green", "M66 - Operasyonel Reassignment - functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik", "M75 - green-baseline", "M75 - living baseline", "M76A-1 - minimum-normalization - active", "M76A-1 - minimum normalization", "M77 - KVKK + Uyum Katmanı"]));
 
   must("route exposes launch gate endpoints", includesAny(route, ["/manifest", "/decision-template", "/summary"]));
   must("manifest defines launch gate capabilities", includesAny(manifest, ["PILOT_LAUNCH_GATE_CAPABILITIES", "GO / LIMITED GO / NO-GO", "riskMatrix"]));
   must("panel shows M65 cards", includesAny(panel, ["M65 Pilot Launch Gate", "Launch checklist", "GO / LIMITED GO / NO-GO"]));
   must("runbook explains M65 scope", includesAny(runbook, ["Pilot Launch Gate", "kritik risk listesi", "M65 green olmadan sahaya çıkılmaz"]));
 
-  console.log("\nOK M65 PILOT LAUNCH GATE CHECK PASS");
+  console.log("");
+  console.log("OK M65 PILOT LAUNCH GATE CHECK PASS");
 }
 
 main().catch((e) => {

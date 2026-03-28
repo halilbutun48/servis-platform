@@ -6,6 +6,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { requireConsent, CONSENT_DOCS } from "../middleware/consentGate.js";
 import { haversineKm, etaMinutes } from "../geo.js";
+import { sanitizeParentChildItem, sanitizeVehicleLiveItem } from "../kvkk/enforcement.js";
 
 function uniqNums(xs) {
   return Array.from(new Set((xs || []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
@@ -99,7 +100,7 @@ export function parentRouter() {
     const items = links
       .map((x) => x.child)
       .filter(Boolean)
-      .map((c) => ({
+      .map((c) => sanitizeParentChildItem({
         id: c.id,
         fullName: c.fullName,
         phone: c.phone,
@@ -225,8 +226,9 @@ export function parentRouter() {
         const shiftStops = sid ? stopsByShiftId.get(Number(sid)) || [] : [];
         const progress = computeStopProgress(shiftStops, stop?.id ?? null);
 
+        const baseItem = sanitizeVehicleLiveItem(v, { role: "PARENT" });
         return {
-          ...v,
+          ...baseItem,
           childId,
           // ETA
           etaToChildMin: eta?.etaMin ?? null,
@@ -248,7 +250,7 @@ export function parentRouter() {
       return res.json(patched);
     }
 
-    return res.json(items);
+    return res.json((items || []).map((v) => sanitizeVehicleLiveItem(v, { role: "PARENT" })));
   });
 
   return r;

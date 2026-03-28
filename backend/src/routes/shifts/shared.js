@@ -4,6 +4,7 @@ import { authRequired, requireRole } from "../../auth/middleware.js";
 
 // NOTE: Avoid named-importing helpers (stale mount risk).
 import * as H from "./helpers.js";
+import { sanitizeOperationEventMeta, sanitizeShiftActorLabel, sanitizeShiftParticipantPayload } from "../../kvkk/enforcement.js";
 
 const buildShiftsWhereFromQuery =
   H.buildShiftsWhereFromQuery ??
@@ -90,8 +91,8 @@ export function attachShiftSharedRoutes(r) {
               action: row.action,
               actorUserId: row.actorUserId,
               actorRole: row.actorRole,
-              actorLabel: actor ? (actor.fullName || actor.email || `#${actor.id}`) : null,
-              meta: row.meta || null,
+              actorLabel: actor ? sanitizeShiftActorLabel(actor.fullName || actor.email || `#${actor.id}`) : null,
+              meta: sanitizeOperationEventMeta(row.meta || null),
             };
           }),
         });
@@ -213,7 +214,7 @@ export function attachShiftSharedRoutes(r) {
 
         // IMPORTANT:
         // Prisma include => shift scalar alanlar (roomOffer*, companyOffer*, vb) otomatik gelir.
-        return res.json({ items: mapped });
+        return res.json({ items: mapped.map((x) => sanitizeShiftParticipantPayload(x, { role: req.user?.role })) });
       } catch (e) {
         return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
@@ -272,7 +273,7 @@ export function attachShiftSharedRoutes(r) {
         }
 
         if (!shift) return res.json({ items: [] });
-        return res.json({ items: [shift] });
+        return res.json({ items: [sanitizeShiftParticipantPayload(shift, { role: req.user?.role })] });
       } catch (e) {
         return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }
@@ -399,7 +400,7 @@ export function attachShiftSharedRoutes(r) {
           if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
         }
 
-        return res.json(shift);
+        return res.json(sanitizeShiftParticipantPayload(shift, { role: req.user?.role }));
       } catch (e) {
         return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
       }

@@ -5,6 +5,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { decorateGeoItem, inferGeoState } from "../services/geoState.js";
 import { clearResponseCache, rememberResponse } from "../utils/responseCache.js";
+import { sanitizeCompanyPersonelItem } from "../kvkk/enforcement.js";
 
 const qGeoStatusSchema = z.string().trim().min(1).optional();
 const qKindSchema = z.enum(["PERSONEL", "STUDENT"]).optional();
@@ -73,7 +74,10 @@ export function companyPersonelsRouter() {
       ];
     }
 
-    const cacheKey = `company-personels:${u.companyId ?? -1}:${geoStatus || "all"}:${kind || "all"}:${q || "-"}:${take}`;
+    const company = u.companyId ? await prisma.company.findUnique({ where: { id: u.companyId }, select: { kind: true } }) : null;
+    const businessDomain = String(company?.kind || "COMPANY").toUpperCase();
+
+    const cacheKey = `company-personels:${u.companyId ?? -1}:${geoStatus || "all"}:${kind || "all"}:${q || "-"}:${take}:${businessDomain}`;
     const payload = await rememberResponse(cacheKey, async () => {
       const items = await prisma.personel.findMany({
         where,
@@ -94,7 +98,10 @@ export function companyPersonelsRouter() {
         },
       });
 
-      const decorated = items.map(decorateGeoItem).filter((item) => !geoStatus || item.geoStatus === geoStatus);
+      const decorated = items
+        .map(decorateGeoItem)
+        .map((item) => sanitizeCompanyPersonelItem(item, { businessDomain, role: u.role }))
+        .filter((item) => !geoStatus || item.geoStatus === geoStatus);
       return { ok: true, items: decorated };
     }, { ttlMs: 20000, scope: { role: u?.role, companyId: u?.companyId, userId: u?.id } });
     res.json(payload);
@@ -228,7 +235,9 @@ export function companyPersonelsRouter() {
     });
 
     clearCompanyPersonelsCache(u);
-    res.json({ ok: true, item: decorateGeoItem(updated) });
+    const company = u.companyId ? await prisma.company.findUnique({ where: { id: u.companyId }, select: { kind: true } }) : null;
+    const businessDomain = String(company?.kind || "COMPANY").toUpperCase();
+    res.json({ ok: true, item: sanitizeCompanyPersonelItem(decorateGeoItem(updated), { businessDomain, role: u.role }) });
   });
 
   return r;

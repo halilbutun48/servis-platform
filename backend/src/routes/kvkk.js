@@ -7,6 +7,8 @@ import { upsertConsent, revokeConsent } from "../middleware/consentGate.js";
 import { audit } from "../audit.js";
 import { getKvkkDocument, getKvkkRequiredDocs, getKvkkSummaryForUser } from "../kvkk/documents.js";
 import { getKvkkMatrix } from "../kvkk/matrix.js";
+import { buildKvkkEnforcementSummary } from "../kvkk/enforcement.js";
+import { buildKvkkRetentionEnforcementSummary } from "../kvkk/retention.js";
 
 function canRoleUseDoc(role, doc) {
   const r = String(role || "");
@@ -41,7 +43,12 @@ export function kvkkRouter() {
   });
 
   r.get("/matrix", authRequired(), async (req, res) => {
-    return res.json(getKvkkMatrix());
+    const matrix = getKvkkMatrix();
+    return res.json({ ...matrix, enforcement: buildKvkkEnforcementSummary(), retention: buildKvkkRetentionEnforcementSummary() });
+  });
+
+  r.get("/retention", authRequired(), async (_req, res) => {
+    return res.json(buildKvkkRetentionEnforcementSummary());
   });
 
   r.get("/summary", authRequired(), async (req, res) => {

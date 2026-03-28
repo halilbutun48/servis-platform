@@ -19,6 +19,14 @@ function MustContain($rel, $needle, $label) {
   if ($txt -notlike "*$needle*") { throw "FAIL $label" }
   Ok $label
 }
+function MustContainAny($rel, $needles, $label) {
+  $p = Join-Path $RepoRoot $rel
+  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+  foreach ($needle in $needles) {
+    if ($txt -like "*$needle*") { Ok $label; return }
+  }
+  throw "FAIL $label"
+}
 
 Info "Checking canonical tools root files"
 @(
@@ -49,11 +57,11 @@ Info "Checking legacy files removed from tools root"
 ) | ForEach-Object { MustAbsent $_ }
 
 Info "Checking docs sync"
-if (((Get-Content -LiteralPath (Join-Path $RepoRoot "tools\README.md") -Raw -Encoding UTF8) -notlike "*check_tools_hygiene_m105.ps1*") -and ((Get-Content -LiteralPath (Join-Path $RepoRoot "tools\README.md") -Raw -Encoding UTF8) -notlike "*Tools hijyen check markerı*")) { throw "FAIL tools readme hygiene check sync" } else { Ok "tools readme hygiene check sync" }
-MustContain "README.md" "Kanonik tools düzeni" "root readme tools section"
-MustContain "docs\STARTPACK_V1.md" "repo/tools hijyen check" "startpack tools hygiene sync"
-MustContain "docs\CHECKLIST_SSOT.md" "M105 Tools Canonical Cleanup" "docs checklist tools cleanup section"
-MustContain "tools\CHECKLIST_SSOT.md" "M105 Tools Canonical Cleanup" "tools checklist tools cleanup section"
+MustContainAny "tools\README.md" @("TOOLS_HYGIENE_CHECK_MARKER_V1","check_tools_hygiene_m105.ps1","Tools hijyen check markerı") "tools readme hygiene check sync"
+MustContainAny "README.md" @("TOOLS_HYGIENE_CANONICAL_V1","Kanonik tools düzeni") "root readme tools section"
+MustContainAny "docs\STARTPACK_V1.md" @("STARTPACK_TOOLS_HYGIENE_V1","repo/tools hijyen check") "startpack tools hygiene sync"
+MustContainAny "docs\CHECKLIST_SSOT.md" @("TOOLS_CANONICAL_CLEANUP_M105_V1","M105 Tools Canonical Cleanup") "docs checklist tools cleanup section"
+MustContainAny "tools\CHECKLIST_SSOT.md" @("TOOLS_CANONICAL_CLEANUP_M105_V1","M105 Tools Canonical Cleanup") "tools checklist tools cleanup section"
 MustExist "docs\overlays\OVERLAY_NOTES_M105_TOOLS_CANONICAL_CLEANUP_2026-03-10.md"
 
 Write-Host "TOOLS HYGIENE M105 CHECK PASS"

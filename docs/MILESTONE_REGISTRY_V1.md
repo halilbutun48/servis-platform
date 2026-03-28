@@ -1,66 +1,31 @@
 # MILESTONE REGISTRY V1
 
-Bu dosya yaşayan milestone omurgasının tek resmi kaydıdır.
+## Aktif kanonik hat
+- M75 - living baseline
+- M76A-1 - minimum normalization
+- M76B - living matrix + tools consolidation
+- M76A-2 - final normalization + archiving
+- M77 - KVKK + Uyum Katmanı - response-hardening + retention/export-trail-enforcement
 
-## Tarihsel teknik taban
-- M58 FINAL PILOT READINESS PACK PASS OK
-- POST-M41 EXTERNAL PACK RUNNER (M42 -> M58) PASS OK
-- M59 -> M65 geçmiş green-base
-- M66 functional-open
+## M77.1 notu
+- M77.1 rol/business domain ayrımını yazılı hale getirir
+- görünürlük matrisi, aydınlatma envanteri, retention ve audit izi kanonik belge olur
 
-## Güncel dürüst rota
-- M67 - Kurumsal Ölçek Hazırlık - green-base
-- M68 - Fetch Hardening - green-base
-- M69 - Fetch Hardening Phase 2 - green-base
-- M70 - Checker Sync + Hot Path - green-base
-- M71 - Summary Hot Path - green-base
-- M72 - Hot Endpoint Reduction - green-base
-- M73 - Hot Path Phase 2 - green-base
-- M74 - Hot Path Phase 3 - green-base
-- M75 - Hot Path Phase 4 - green-base
-- M76A-1 - Minimum Normalization - active
-- M76B - Living Matrix + Tools Consolidation - active
-- M76A-2 - Final Normalization + Archiving - active
-- M77 - KVKK + Uyum Katmanı - skeleton-open
+## M77.2 notu
+- M77.2 enforcement skeleton ile parent child, canlı araç ve session meta yüzeyi ilk helper katmanına bağlanır
+- live vehicle GPS masking ve me/sessions IP-UA masking burada görünür hale gelir
 
-## Kanonik komutlar
-- tools\pack.ps1 -To 75 -RepoDir D:\servis-platform -NoBuild
-- tools\pack_living.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild
-- tools\verify_living_static.ps1 -RepoRoot D:\servis-platform
-- tools\verify_living_runtime.ps1 -To 75 -RepoRoot D:\servis-platform -NoBuild
-- tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform
+## M77.3 notu
+- M77.3 payload daraltma / redaction turudur
+- school domain davet yüzeyi masked hale gelir
+- company kind SCHOOL listelerinde iletişim alanı daraltılır
+- rol/business domain çizgisi log/export redaction katmanına taşınır
 
-## Kural
-- Green-base, tam saha doğrulaması ile aynı şey değildir.
-- Önce living static, sonra living runtime, sonra cleanup uygulanır.
-- Checklist içinde [x] yalnızca resmi pack/check green sonrası işaretlenir.
+## M77.4 notu
+- M77.4 role/payload response daraltma turudur
+- auth invite, vehicle, shift ve export filtre yüzeyleri daha sert daraltılır
 
-## Uyum markerları
-- M65 - Pilot Launch Gate - green-base
-- M66 - Operasyonel Reassignment - functional-open
-- M75 - green-baseline
-- M76A-1 - minimum-normalization - active
-
-## M59-M66 uyum rotasi
-- M59 - Gozlemleme + Saha Teshis - green-base
-- M60 - Saha Acceptance Merkezi - green-base
-- M61 - SSOT + Milestone Hizasi - green-base
-- M62 - Ticari Omurga Guclendirme - aktif
-
-
-## M59-M66 uyum rotasi
-- M59 - Gozlemleme + Saha Teshis - green-base
-- M60 - Saha Acceptance Merkezi - green-base
-- M61 - SSOT + Milestone Hizasi - green-base
-- M62 - Ticari Omurga Guclendirme - green-base
-- M63 - Guven + Kalite + Hizmet Degerlendirme - aktif
-- Komut: .\tools\pack_m63_trust_quality_service_evaluation.ps1 -RepoRoot .
-
-- M64 - Dogal Copilot Katmani - aktif
-
-
-- M76A-2 final normalization ve archiving
-- Komut: .\tools\pack_m76a_2_final_normalization_archiving.ps1 -RepoRoot .
-
-- M77 KVKK + uyum katmani
-- Komut: .\tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot .
+## M77.5 notu
+- M77.5 retention / export trail enforcement turudur
+- retention run, log export ve admin log export audit izi sanitize helper üstünden yazılır
+- `GET /api/kvkk/retention` policy + anonymize hedeflerini görünür hale getirir

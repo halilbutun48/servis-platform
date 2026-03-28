@@ -3,6 +3,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createVehicleSchema } from "../validators.js";
+import { sanitizeVehicleDirectoryItem } from "../kvkk/enforcement.js";
 
 export function vehiclesRouter(io) {
   const r = express.Router();
@@ -139,7 +140,7 @@ export function vehiclesRouter(io) {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items);
+      return res.json(items.map((x) => sanitizeVehicleDirectoryItem(x, { role: u.role })));
     }
 
     if (u.role === "COMPANY") {
@@ -164,7 +165,7 @@ export function vehiclesRouter(io) {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items);
+      return res.json(items.map((x) => sanitizeVehicleDirectoryItem(x, { role: u.role })));
     }
 
     if (u.role === "DRIVER") {
@@ -184,7 +185,7 @@ export function vehiclesRouter(io) {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items);
+      return res.json(items.map((x) => sanitizeVehicleDirectoryItem(x, { role: u.role })));
     }
 
     if (u.role === "PERSONEL") {
@@ -210,7 +211,7 @@ export function vehiclesRouter(io) {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items);
+      return res.json(items.map((x) => sanitizeVehicleDirectoryItem(x, { role: u.role })));
     }
 
     // SUPER_ADMIN: default active only (istersen query ile genişletebiliriz)
@@ -224,7 +225,7 @@ export function vehiclesRouter(io) {
       orderBy: { id: "asc" },
       take,
     });
-    return res.json(items);
+    return res.json(items.map((x) => sanitizeVehicleDirectoryItem(x, { role: u.role })));
   });
 
   // ---------------------------------------------------------
@@ -260,7 +261,7 @@ export function vehiclesRouter(io) {
       });
 
       emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "unbind-driver" });
-      return res.json({ ok: true, vehicle: updated, unbound: true });
+      return res.json({ ok: true, vehicle: sanitizeVehicleDirectoryItem(updated, { role: u.role }), unbound: true });
     }
 
     // BIND (validate driver)
@@ -297,7 +298,7 @@ export function vehiclesRouter(io) {
     });
 
     emitRoom(vehicle.roomId, "vehicle:update", { vehicleId: updated.id, action: "bind-driver" });
-    return res.json({ ok: true, vehicle: updated, bound: true });
+    return res.json({ ok: true, vehicle: sanitizeVehicleDirectoryItem(updated, { role: u.role }), bound: true });
   });
 
   // ---------------------------------------------------------
@@ -384,7 +385,7 @@ export function vehiclesRouter(io) {
       });
 
       emitRoom(u.roomId, "vehicle:update", { vehicleId: updated.id, action: "updated" });
-      return res.json({ ok: true, vehicle: updated });
+      return res.json({ ok: true, vehicle: sanitizeVehicleDirectoryItem(updated, { role: u.role }) });
     } catch (e) {
       return res.status(400).json({ code: "BAD_REQUEST", message: String(e?.message || e) });
     }
@@ -470,7 +471,7 @@ export function vehiclesRouter(io) {
     });
 
     emitRoom(u.roomId, "vehicle:update", { vehicleId, action: "unarchived" });
-    return res.json({ ok: true, vehicle: updated, unarchived: true });
+    return res.json({ ok: true, vehicle: sanitizeVehicleDirectoryItem(updated, { role: u.role }), unarchived: true });
   });
 
   // ---------------------------------------------------------
@@ -547,7 +548,7 @@ export function vehiclesRouter(io) {
       });
 
       emitRoom(u.roomId, "vehicle:update", { vehicleId: vehicle.id, action: "created" });
-      return res.json(vehicle);
+      return res.json(sanitizeVehicleDirectoryItem(vehicle, { role: u.role }));
     } catch (e) {
       if (e?.code === "P2002" && Array.isArray(e?.meta?.target)) {
         if (e.meta.target.includes("plate")) {
