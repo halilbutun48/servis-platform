@@ -13,6 +13,9 @@ import { getCapacityPolicySummary, getCapacitySnapshot } from "../ops/capacityLo
 import { getEdgeSecurityPolicySummary, getEdgeSecuritySnapshot } from "../ops/edgeSecurityBaseline.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { markPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
+import { validatePasswordPolicy } from "../auth/passwordPolicy.js";
+import { buildInternalLoginEmail, getUserLoginMeta, isUsernameTaken, setStoredLogin, validateUsernameOrThrow } from "../auth/usernameDirectory.js";
 import { buildKvkkRetentionEnforcementSummary, buildKvkkRetentionRunAuditMeta } from "../kvkk/retention.js";
 
 const DISABLED_PREFIX = "$DISABLED$";
@@ -40,9 +43,30 @@ function genPassword() {
   return crypto.randomBytes(9).toString("base64url");
 }
 
+
+function deriveCompatUsername(rawUsername, email) {
+  const direct = String(rawUsername || "").trim();
+  if (direct) return validateUsernameOrThrow(direct);
+
+  const local = String(email || "").trim().toLowerCase().split("@")[0] || "";
+  const normalized = String(local)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_")
+    .replace(/[^a-z0-9_.]/g, "")
+    .replace(/[_.]{2,}/g, (m) => m[0])
+    .replace(/^[_.]+|[_.]+$/g, "");
+
+  const compact = normalized.length > 24 ? normalized.slice(0, 24).replace(/[_.]+$/g, "") : normalized;
+  if (!compact) throw new Error("Kullanıcı adı üretilemedi");
+  return validateUsernameOrThrow(compact);
+}
+
 const createUserSchema = z
   .object({
-    email: z.string().trim().toLowerCase().email(),
+    username: z.string().trim().min(4).max(24).regex(/^[a-z0-9_.]+$/).optional(),
+    email: z.string().trim().toLowerCase().optional().default(""),
     fullName: z.string().trim().min(2),
     phone: z.string().trim().optional(),
     role: z.enum(["ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"]),
@@ -51,6 +75,10 @@ const createUserSchema = z
     password: z.string().min(4).optional(),
   })
   .superRefine((v, ctx) => {
+    const email = String(v.email || "").trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      ctx.addIssue({ code: "custom", path: ["email"], message: "Geçerli bir e-posta girin veya boş bırakın." });
+    }
     if (v.role === "ROOM") {
       if (!v.roomId) ctx.addIssue({ code: "custom", message: "ROOM requires roomId" });
       if (v.companyId) ctx.addIssue({ code: "custom", message: "ROOM must not have companyId" });
@@ -65,7 +93,6 @@ const createUserSchema = z
     if (v.role === "PERSONEL") {
       if (!v.companyId) ctx.addIssue({ code: "custom", message: "PERSONEL requires companyId" });
     }
-
     if (v.role === "PARENT") {
       if (v.roomId) ctx.addIssue({ code: "custom", message: "PARENT must not have roomId" });
       if (v.companyId) ctx.addIssue({ code: "custom", message: "PARENT must not have companyId" });
@@ -74,6 +101,7 @@ const createUserSchema = z
 
 const updateUserSchema = z
   .object({
+    username: z.string().trim().min(4).max(24).regex(/^[a-z0-9_.]+$/).optional(),
     fullName: z.string().trim().min(2).optional(),
     phone: z.string().trim().optional().nullable(),
     roomId: z.number().int().positive().optional().nullable(),
@@ -249,23 +277,11 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
   // --- Users management ---
   r.get("/users", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
     const take = Math.min(500, Math.max(1, Number(req.query.take || 200)));
-    const q = String(req.query.q || "").trim();
+    const q = String(req.query.q || "").trim().toLowerCase();
     const role = String(req.query.role || "").trim().toUpperCase();
 
-    const where = {
-      ...(role ? { role } : {}),
-      ...(q
-        ? {
-            OR: [
-              { email: { contains: q, mode: "insensitive" } },
-              { fullName: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    };
-
     const items = await prisma.user.findMany({
-      where,
+      where: role ? { role } : {},
       take,
       orderBy: [{ id: "asc" }],
       select: {
@@ -281,17 +297,26 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
       },
     });
 
-    const mapped = items.map((u) => ({
-      id: u.id,
-      email: u.email,
-      role: u.role,
-      fullName: u.fullName,
-      phone: u.phone,
-      companyId: u.companyId,
-      roomId: u.roomId,
-      createdAt: u.createdAt,
-      disabled: isDisabledHash(u.passwordHash),
-    }));
+    const mapped = items
+      .map((u) => {
+        const loginMeta = getUserLoginMeta(u);
+        return {
+          id: u.id,
+          username: loginMeta.username,
+          email: loginMeta.email,
+          role: u.role,
+          fullName: u.fullName,
+          phone: u.phone,
+          companyId: u.companyId,
+          roomId: u.roomId,
+          createdAt: u.createdAt,
+          disabled: isDisabledHash(u.passwordHash),
+        };
+      })
+      .filter((u) => {
+        if (!q) return true;
+        return [u.username, u.email, u.fullName].some((x) => String(x || "").toLowerCase().includes(q));
+      });
 
     res.json({ items: mapped });
   });
@@ -300,11 +325,26 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     const parsed = createUserSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const { email, fullName, phone, role, roomId, companyId } = parsed.data;
+    const publicEmail = String(parsed.data.email || "").trim().toLowerCase();
+    const { fullName, phone, role, roomId, companyId } = parsed.data;
+    let username;
+    try {
+      username = deriveCompatUsername(parsed.data.username, publicEmail);
+    } catch {
+      return res.status(400).json({ error: { formErrors: [], fieldErrors: { username: ["Required"] } } });
+    }
     const password = parsed.data.password || genPassword();
+    const hasManualPassword = Boolean(String(parsed.data.password || "").trim());
 
-    const exists = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-    if (exists) return res.status(409).json({ error: "Email already exists" });
+    if (await isUsernameTaken(prisma, username)) {
+      return res.status(409).json({ error: "Kullanıcı adı zaten kullanılıyor" });
+    }
+
+    const email = publicEmail || buildInternalLoginEmail(username);
+    if (publicEmail) {
+      const exists = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+      if (exists) return res.status(409).json({ error: "Email already exists" });
+    }
 
     if (roomId) {
       const rr = await prisma.room.findUnique({ where: { id: Number(roomId) }, select: { id: true, status: true } });
@@ -313,6 +353,11 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     if (companyId) {
       const cc = await prisma.company.findUnique({ where: { id: Number(companyId) }, select: { id: true, status: true } });
       if (!cc || cc.status === "DELETED") return res.status(400).json({ error: "Company not found" });
+    }
+
+    if (hasManualPassword) {
+      const policy = validatePasswordPolicy(password, { email: publicEmail || null, fullName });
+      if (!policy.ok) return res.status(400).json({ error: policy.errors[0], details: policy });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -338,17 +383,25 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
       },
     });
 
-    await audit(req, { action: "ADMIN_USER_CREATE", entity: "User", entityId: created.id, meta: { email, role, roomId: created.roomId, companyId: created.companyId } });
+    await markPasswordChangeRequired(created.id, {
+      reason: "ADMIN_USER_CREATE",
+      temporaryPassword: true,
+    });
+
+    setStoredLogin({ userId: created.id, username, contactEmail: publicEmail || null });
+    const loginMeta = getUserLoginMeta(created);
+    await audit(req, { action: "ADMIN_USER_CREATE", entity: "User", entityId: created.id, meta: { email: loginMeta.email, username, role, roomId: created.roomId, companyId: created.companyId, passwordChangeRequired: true } });
 
     res.status(201).json({
-      user: { ...created, disabled: false },
+      user: { ...created, username: loginMeta.username, email: loginMeta.email, disabled: false },
       tempPassword: password,
+      passwordChangeRequired: true,
       note:
         role === "PERSONEL"
-          ? "PERSONEL user created. NOTE: Personel profile record is managed under /api/personels (COMPANY flow)."
+          ? "PERSONEL user created. NOTE: Personel profile record is managed under /api/personels (COMPANY flow). İlk girişte şifre değişimi zorunludur."
           : role === "DRIVER"
-          ? "DRIVER user created. NOTE: Driver profile record is managed under /api/drivers (ROOM flow)."
-          : undefined,
+          ? "DRIVER user created. NOTE: Driver profile record is managed under /api/drivers (ROOM flow). İlk girişte şifre değişimi zorunludur."
+          : "İlk girişte şifre değişimi zorunludur.",
     });
   });
 
@@ -360,6 +413,14 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     const data = { ...parsed.data };
+    let nextUsername = null;
+    if (Object.prototype.hasOwnProperty.call(data, "username")) {
+      nextUsername = validateUsernameOrThrow(data.username);
+      delete data.username;
+      if (await isUsernameTaken(prisma, nextUsername, id)) {
+        return res.status(409).json({ error: "Kullanıcı adı zaten kullanılıyor" });
+      }
+    }
     if (Object.prototype.hasOwnProperty.call(data, "roomId")) data.roomId = data.roomId ? Number(data.roomId) : null;
     if (Object.prototype.hasOwnProperty.call(data, "companyId")) data.companyId = data.companyId ? Number(data.companyId) : null;
     if (Object.prototype.hasOwnProperty.call(data, "phone")) data.phone = data.phone ? String(data.phone).trim() : null;
@@ -400,13 +461,18 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
       },
     });
 
-    await audit(req, { action: "ADMIN_USER_UPDATE", entity: "User", entityId: updated.id, meta: { email: updated.email, role: updated.role, roomId: updated.roomId, companyId: updated.companyId } });
+    if (nextUsername) {
+      setStoredLogin({ userId: updated.id, username: nextUsername, contactEmail: updated.email });
+    }
+    const loginMeta = getUserLoginMeta(updated);
+    await audit(req, { action: "ADMIN_USER_UPDATE", entity: "User", entityId: updated.id, meta: { email: loginMeta.email, username: loginMeta.username, role: updated.role, roomId: updated.roomId, companyId: updated.companyId } });
 
     res.json({
       ok: true,
       user: {
         id: updated.id,
-        email: updated.email,
+        username: loginMeta.username,
+        email: loginMeta.email,
         role: updated.role,
         fullName: updated.fullName,
         phone: updated.phone,
@@ -431,9 +497,15 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
       select: { id: true, email: true, role: true },
     });
 
-    await audit(req, { action: "ADMIN_USER_RESET_PASSWORD", entity: "User", entityId: updated.id, meta: { email: updated.email, role: updated.role } });
+    await markPasswordChangeRequired(updated.id, {
+      reason: "ADMIN_USER_RESET_PASSWORD",
+      temporaryPassword: true,
+    });
 
-    res.json({ ok: true, user: updated, tempPassword: nextPw });
+    const loginMeta = getUserLoginMeta(updated);
+    await audit(req, { action: "ADMIN_USER_RESET_PASSWORD", entity: "User", entityId: updated.id, meta: { email: loginMeta.email, username: loginMeta.username, role: updated.role, passwordChangeRequired: true } });
+
+    res.json({ ok: true, user: { ...updated, username: loginMeta.username, email: loginMeta.email }, tempPassword: nextPw, passwordChangeRequired: true });
   });
 
   r.post("/users/:id/disable", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
@@ -445,7 +517,7 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     if (!u) return res.status(404).json({ error: "User not found" });
 
     if (isDisabledHash(u.passwordHash)) {
-      return res.json({ ok: true, user: { id: u.id, email: u.email, role: u.role }, disabled: true });
+      return res.json({ ok: true, user: { id: u.id, ...getUserLoginMeta(u), role: u.role }, disabled: true });
     }
 
     const updated = await prisma.user.update({
@@ -454,8 +526,9 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
       select: { id: true, email: true, role: true },
     });
 
-    await audit(req, { action: "ADMIN_USER_DISABLE", entity: "User", entityId: updated.id, meta: { email: updated.email, role: updated.role } });
-    res.json({ ok: true, user: updated, disabled: true });
+    const loginMeta = getUserLoginMeta(updated);
+    await audit(req, { action: "ADMIN_USER_DISABLE", entity: "User", entityId: updated.id, meta: { email: loginMeta.email, username: loginMeta.username, role: updated.role } });
+    res.json({ ok: true, user: { ...updated, username: loginMeta.username, email: loginMeta.email }, disabled: true });
   });
 
   r.post("/users/:id/enable", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
@@ -466,7 +539,7 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     if (!u) return res.status(404).json({ error: "User not found" });
 
     if (!isDisabledHash(u.passwordHash)) {
-      return res.json({ ok: true, user: { id: u.id, email: u.email, role: u.role }, disabled: false });
+      return res.json({ ok: true, user: { id: u.id, ...getUserLoginMeta(u), role: u.role }, disabled: false });
     }
 
     const restored = enableHash(u.passwordHash);
@@ -480,8 +553,9 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
       select: { id: true, email: true, role: true },
     });
 
-    await audit(req, { action: "ADMIN_USER_ENABLE", entity: "User", entityId: updated.id, meta: { email: updated.email, role: updated.role } });
-    res.json({ ok: true, user: updated, disabled: false });
+    const loginMeta = getUserLoginMeta(updated);
+    await audit(req, { action: "ADMIN_USER_ENABLE", entity: "User", entityId: updated.id, meta: { email: loginMeta.email, username: loginMeta.username, role: updated.role } });
+    res.json({ ok: true, user: { ...updated, username: loginMeta.username, email: loginMeta.email }, disabled: false });
   });
   // --- Parent ↔ Student links (M81) ---
   // GET /api/admin/parent-children?parentUserId=

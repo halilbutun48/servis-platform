@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
-import { useSession } from "../../state/session";
 
 function Card({ title, children }) {
   return (
@@ -12,60 +11,63 @@ function Card({ title, children }) {
 }
 
 export default function NaturalCopilotPanel() {
-  const { token } = useSession();
   const [manifest, setManifest] = useState(null);
   const [replyTemplate, setReplyTemplate] = useState(null);
   const [feedbackTemplate, setFeedbackTemplate] = useState(null);
   const [err, setErr] = useState("");
 
+  async function load() {
+    setErr("");
+    try {
+      const [m, r, f] = await Promise.all([
+        api("/api/natural-copilot/manifest"),
+        api("/api/natural-copilot/reply-template"),
+        api("/api/natural-copilot/feedback-template"),
+      ]);
+      setManifest(m || null);
+      setReplyTemplate(r || null);
+      setFeedbackTemplate(f || null);
+    } catch (e2) {
+      setErr(e2?.message || String(e2));
+    }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [m, r, f] = await Promise.all([
-          api("/api/natural-copilot/manifest", { token }),
-          api("/api/natural-copilot/reply-template", { token }),
-          api("/api/natural-copilot/feedback-template", { token }),
-        ]);
-        if (cancelled) return;
-        setManifest(m || null);
-        setReplyTemplate(r || null);
-        setFeedbackTemplate(f || null);
-      } catch (e2) {
-        if (cancelled) return;
-        setErr(e2?.message || String(e2));
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [token]);
+    load();
+  }, []);
 
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>M64 Doğal Copilot Katmanı</h2>
+          <h2 style={{ margin: 0 }}>Yardımcı Altyapısı</h2>
           <div className="muted" style={{ marginTop: 6 }}>
-            Doğal cevap, kısa hafıza, daha basit anlat ve geri bildirim iskeleti
+            Yardımcı cevabının hangi bölüm yapısıyla üretildiğini ve geri bildirim seçeneklerini özetler.
           </div>
         </div>
+        <button className="btn" onClick={load}>Yenile</button>
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Aktif milestone">
-          <div>{manifest?.activeMilestone || "-"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{manifest?.title || "-"}</div>
-        </Card>
-        <Card title="Doğal cevap">
-          <div>{(replyTemplate?.sections || []).length} bölüm</div>
+        <Card title="Aktif durum">
+          <div>{manifest?.title || "Henüz yardımcı özeti yok"}</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {(replyTemplate?.sections || []).join(" • ") || "Henüz veri yok"}
+            {manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}
           </div>
         </Card>
-        <Card title="Geri bildirim">
-          <div>{(feedbackTemplate?.options || []).join(" • ") || "-"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{feedbackTemplate?.summary || "-"}</div>
+        <Card title="Cevap yapısı">
+          <div>{(replyTemplate?.sections || []).length} bölüm</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            {(replyTemplate?.sections || []).join(" • ") || "Henüz cevap yapısı yok"}
+          </div>
+        </Card>
+        <Card title="Geri bildirim seçenekleri">
+          <div>{(feedbackTemplate?.options || []).join(" • ") || "Henüz geri bildirim seçeneği yok"}</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            {feedbackTemplate?.summary || "Yardımcı için kullanılan geri bildirim mantığı burada özetlenir"}
+          </div>
         </Card>
       </div>
     </div>

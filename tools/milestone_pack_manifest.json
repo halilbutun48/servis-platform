@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-28T00:00:00Z",
+  "generatedAt": "2026-03-28T00:00:00.000Z",
   "coreDocs": {
     "repoReadme": "README.md",
     "primer": "docs/PRIMER_SSOT.md",
@@ -706,6 +706,50 @@
       "supportsNoBuild": false,
       "check": "tools/check_m77_kvkk_uyum_katmani_repo_contract.ps1",
       "runbook": "docs/RUNBOOK_M77_KVKK_UYUM_KATMANI.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M78",
+      "group": 78,
+      "kind": "pack",
+      "script": "tools/pack_m78_checklist_operasyon_dogrulama.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m78_checklist_operasyon_dogrulama_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M78_CHECKLIST_OPERASYON_DOGRULAMA.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M78.1",
+      "group": 78,
+      "kind": "pack",
+      "script": "tools/pack_m78_1_operasyon_dogrulama_yuzeyi.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m78_1_operasyon_dogrulama_yuzeyi_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M78_1_OPERASYON_DOGRULAMA_YUZEYI.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M78.2",
+      "group": 78,
+      "kind": "pack",
+      "script": "tools/pack_m78_2_operasyon_dogrulama_kayit_katmani.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m78_2_operasyon_dogrulama_kayit_katmani_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M78_2_OPERASYON_DOGRULAMA_KAYIT_KATMANI.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M78.3",
+      "group": 78,
+      "kind": "pack",
+      "script": "tools/pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "check": "tools/check_m78_3_operasyon_dogrulama_ozet_filtre_katmani_repo_contract.ps1",
+      "runbook": "docs/RUNBOOK_M78_3_OPERASYON_DOGRULAMA_OZET_FILTRE_KATMANI.md",
       "checklist": "docs/CHECKLIST_SSOT.md"
     }
   ]

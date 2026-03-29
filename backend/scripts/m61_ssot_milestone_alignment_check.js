@@ -103,7 +103,19 @@ async function main() {
   must("server mounts /api/ssot-alignment", includesAny(server, ["/api/ssot-alignment"]));
   must("manifest defines SSOT targets and route", includesAny(manifest, ["SSOT_ALIGNMENT_TARGETS", "MILESTONE_ROUTE", '"M61"']));
   must("route exposes manifest and summary-template", includesAny(route, ["/manifest", "/summary-template", "/route"]));
-  must("panel shows M61 cards", includesAny(panel, ["M61 SSOT + Milestone Hizası", "İzlenen SSOT hedefleri", "Milestone ozeti", "Milestone özeti"]));
+  must(
+    "panel shows M61 cards",
+    includesAny(panel, [
+      "M61 SSOT + Milestone Hizası",
+      "Sistem Standartları",
+      "Izlenen SSOT hedefleri",
+      "İzlenen SSOT hedefleri",
+      "Milestone ozeti",
+      "Milestone özeti",
+      "Aktif milestone",
+      "Aktif standart paketi",
+    ])
+  );
 
   console.log("INFO checking M61 runbook language");
   must(

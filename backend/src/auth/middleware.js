@@ -81,6 +81,18 @@ export function authRequired() {
         });
       }
 
+      const urlPath = String(req.originalUrl || req.url || "").split("?")[0];
+      if (decoded?.pwdChangeOnly) {
+        const allowedPaths = new Set(["/api/me", "/api/auth/change-password"]);
+        if (!allowedPaths.has(urlPath)) {
+          return res.status(403).json({
+            error: "PASSWORD_CHANGE_REQUIRED",
+            code: "PASSWORD_CHANGE_REQUIRED",
+            message: "Şifre değişmeden bu alana geçilemez.",
+          });
+        }
+      }
+
       req.auth = decoded;
       req.user = user;
       await touchDriverPresenceIfNeeded(user);

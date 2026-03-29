@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import ParentChildMiniPanel from "./ParentChildMiniPanel";
+import PanelKvkkHint from "../shared/PanelKvkkHint";
 
 function Pill({ children, status }) {
   return (
@@ -26,6 +27,7 @@ export default function UsersPanel() {
 
   const [createForm, setCreateForm] = useState({
     role: "COMPANY",
+    username: "",
     email: "",
     fullName: "",
     phone: "",
@@ -34,8 +36,8 @@ export default function UsersPanel() {
     password: "",
   });
 
-  const [edit, setEdit] = useState(null); // {id, role, fullName, phone, companyId, roomId}
-  const [lastPw, setLastPw] = useState(null); // {email, password}
+  const [edit, setEdit] = useState(null); // {id, role, username, fullName, phone, companyId, roomId}
+  const [lastPw, setLastPw] = useState(null); // {login, password}
 
   async function loadRefs() {
     const [c, r] = await Promise.all([api("/api/companies?all=0", { token }), api("/api/rooms?take=500", { token })]);
@@ -99,11 +101,14 @@ export default function UsersPanel() {
     try {
       const body = {
         role: createForm.role,
+        username: String(createForm.username || "").trim().toLowerCase(),
         email: String(createForm.email || "").trim().toLowerCase(),
         fullName: String(createForm.fullName || "").trim(),
         phone: String(createForm.phone || "").trim() || undefined,
         password: String(createForm.password || "").trim() || undefined,
       };
+
+      if (!body.username) throw new Error("Kullanıcı adı gir");
 
       if (body.role === "COMPANY") {
         const cid = Number(createForm.companyId);
@@ -118,8 +123,8 @@ export default function UsersPanel() {
       // PARENT: scope yok
 
       const r = await api("/api/admin/users", { method: "POST", body, token });
-      setLastPw({ email: r?.user?.email || body.email, password: r?.tempPassword || "" });
-      setCreateForm({ role: "COMPANY", email: "", fullName: "", phone: "", companyId: "", roomId: "", password: "" });
+      setLastPw({ login: r?.user?.username || body.username, password: r?.tempPassword || "" });
+      setCreateForm({ role: "COMPANY", username: "", email: "", fullName: "", phone: "", companyId: "", roomId: "", password: "" });
       await loadUsers();
     } catch (e) {
       setErr(e?.message || String(e));
@@ -156,14 +161,14 @@ export default function UsersPanel() {
     }
   }
 
-  async function resetPw(id) {
-    const ok = window.confirm(`#${id} için şifre resetlensin mi? Yeni şifre 1 kez gösterilecek.`);
+  async function resetPw(user) {
+    const ok = window.confirm(`#${user?.id} için şifre resetlensin mi? Yeni şifre 1 kez gösterilecek.`);
     if (!ok) return;
     setBusy(true);
     setErr("");
     try {
-      const r = await api(`/api/admin/users/${id}/reset-password`, { method: "POST", token });
-      setLastPw({ email: r?.user?.email || `#${id}`, password: r?.tempPassword || "" });
+      const r = await api(`/api/admin/users/${user.id}/reset-password`, { method: "POST", token });
+      setLastPw({ login: r?.user?.username || user?.username || `#${user.id}`, password: r?.tempPassword || "" });
       await loadUsers();
     } catch (e) {
       setErr(e?.message || String(e));
@@ -178,6 +183,7 @@ export default function UsersPanel() {
     setErr("");
     try {
       const body = {
+        username: String(edit.username || "").trim().toLowerCase(),
         fullName: String(edit.fullName || "").trim(),
         phone: String(edit.phone || "").trim() || null,
       };
@@ -204,7 +210,7 @@ export default function UsersPanel() {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
         <div>
           <h2 style={{ margin: 0, marginBottom: 6 }}>Kullanıcılar</h2>
-          <div style={{ opacity: 0.75 }}>SUPER_ADMIN → Room/Company login hesaplarını oluşturur; gerektiğinde şifre reset/disable/enable yapar.</div>
+          <div style={{ opacity: 0.75 }}>Süper yönetici kullanıcı hesabı açar, kullanıcı adı tanımlar, gerektiğinde geçici şifre üretir, hesabı pasif eder veya yeniden açar. Reset sonrası ilk girişte şifre değişimi zorunludur.</div>
         </div>
         <div className="saActions">
           <span className="pill" data-status="COUNT">
@@ -215,10 +221,12 @@ export default function UsersPanel() {
 
       {err ? <div style={{ color: "#ff7b7b", marginTop: 12, marginBottom: 12, whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
+      <PanelKvkkHint panelKey="users" />
+
       {lastPw ? (
         <div className="card" style={{ marginBottom: 12 }}>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>Yeni şifre (1 kez göster)</div>
-          <div className="muted">{lastPw.email}</div>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Geçici şifre (1 kez gösterilir)</div>
+          <div className="muted">{lastPw.login}</div>
           <div style={{ marginTop: 8 }} className="saActions">
             <code style={{ padding: "6px 10px", borderRadius: 10, background: "#111520" }}>{lastPw.password || "-"}</code>
             <button className="btn sm" onClick={() => copyText(lastPw.password || "")}>
@@ -253,6 +261,11 @@ export default function UsersPanel() {
             </select>
           </label>
 
+          <label className="muted">
+            Kullanıcı Adı
+            <input value={createForm.username} onChange={(e) => setCreateForm((x) => ({ ...x, username: e.target.value.toLowerCase() }))} placeholder="ornek: oda_merkez" />
+          </label>
+
           {createForm.role === "COMPANY" ? (
             <label className="muted">
               Company
@@ -284,15 +297,15 @@ export default function UsersPanel() {
             <input value={createForm.fullName} onChange={(e) => setCreateForm((x) => ({ ...x, fullName: e.target.value }))} />
           </label>
           <label className="muted">
-            Email
-            <input value={createForm.email} onChange={(e) => setCreateForm((x) => ({ ...x, email: e.target.value }))} />
+            E-posta (opsiyonel)
+            <input value={createForm.email} onChange={(e) => setCreateForm((x) => ({ ...x, email: e.target.value }))} placeholder="Giriş için şart değil" />
           </label>
           <label className="muted">
             Telefon (ops.)
             <input value={createForm.phone} onChange={(e) => setCreateForm((x) => ({ ...x, phone: e.target.value }))} />
           </label>
           <label className="muted">
-            Şifre (boşsa otomatik üretir)
+            Geçici şifre (boşsa otomatik üretir)
             <input type="text" value={createForm.password} onChange={(e) => setCreateForm((x) => ({ ...x, password: e.target.value }))} />
           </label>
         </div>
@@ -309,7 +322,7 @@ export default function UsersPanel() {
 
       <div className="card">
         <div className="toolbar">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ara (email / ad)" style={{ minWidth: 260 }} />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ara (kullanıcı adı / e-posta / ad)" style={{ minWidth: 260 }} />
 
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="">Tüm roller</option>
@@ -337,12 +350,12 @@ export default function UsersPanel() {
             className="saHead"
             style={{
               display: "grid",
-              gridTemplateColumns: "70px 1.2fr 120px 1fr 1fr 120px 320px",
+              gridTemplateColumns: "70px 1fr 120px 1fr 1fr 120px 320px",
               padding: "10px 12px",
             }}
           >
             <div>ID</div>
-            <div>Email</div>
+            <div>Kullanıcı Girişi</div>
             <div>Rol</div>
             <div>Ad Soyad</div>
             <div>Scope</div>
@@ -356,7 +369,7 @@ export default function UsersPanel() {
               className="saRow"
               style={{
                 display: "grid",
-                gridTemplateColumns: "70px 1.2fr 120px 1fr 1fr 120px 320px",
+                gridTemplateColumns: "70px 1fr 120px 1fr 1fr 120px 320px",
                 padding: "10px 12px",
                 alignItems: "center",
               }}
@@ -364,9 +377,10 @@ export default function UsersPanel() {
               <div style={{ opacity: 0.85 }}>{u.id}</div>
 
               <div style={{ wordBreak: "break-word" }}>
-                {u.email}
-                <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => copyText(u.email)} disabled={busy}>
-                  Kopyala
+                <div style={{ fontWeight: 700 }}>{u.username || "-"}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{u.email || "E-posta yok"}</div>
+                <button className="btn sm" style={{ marginTop: 6 }} onClick={() => copyText(u.username || "")} disabled={busy}>
+                  Kullanıcı adını kopyala
                 </button>
               </div>
 
@@ -390,7 +404,7 @@ export default function UsersPanel() {
               </div>
 
               <div className="saActions">
-                <button className="btn sm" disabled={busy} onClick={() => resetPw(u.id)}>
+                <button className="btn sm" disabled={busy} onClick={() => resetPw(u)}>
                   Reset PW
                 </button>
 
@@ -411,6 +425,7 @@ export default function UsersPanel() {
                     setEdit({
                       id: u.id,
                       role: u.role,
+                      username: u.username || "",
                       fullName: u.fullName || "",
                       phone: u.phone || "",
                       companyId: u.companyId || "",
@@ -435,7 +450,7 @@ export default function UsersPanel() {
               <div>
                 <div style={{ fontWeight: 800 }}>Kullanıcı Düzenle</div>
                 <div className="muted">
-                  #{edit.id} • {edit.role}
+                  #{edit.id} • {edit.role} • {edit.username || "-"}
                 </div>
               </div>
               <button className="btn sm" onClick={() => setEdit(null)}>
@@ -444,6 +459,10 @@ export default function UsersPanel() {
             </div>
 
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+              <label className="muted">
+                Kullanıcı Adı
+                <input value={edit.username} onChange={(e) => setEdit((x) => ({ ...x, username: e.target.value.toLowerCase() }))} />
+              </label>
               <label className="muted">
                 Ad Soyad
                 <input value={edit.fullName} onChange={(e) => setEdit((x) => ({ ...x, fullName: e.target.value }))} />
@@ -502,3 +521,5 @@ export default function UsersPanel() {
     </div>
   );
 }
+
+

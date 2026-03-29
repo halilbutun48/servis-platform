@@ -1,15 +1,15 @@
 # CHECKLIST SSOT
 
-> Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. Güncel operasyonel master komutu `tools\pack.ps1 -To 77`, living giriş komutu `tools\pack_living.ps1 -To 77` olarak okunmalıdır.
+> Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir. Güncel operasyonel master komutu `tools\pack.ps1 -To 78`, living giriş komutu `tools\pack_living.ps1 -To 78` olarak okunmalıdır.
 > Teknik yaşayan taban kavramı ise hâlâ `M75 green baseline` diye anılır.
-> Geçici uyumluluk notu: `M66` satırı bazı shared-doc/check fallback scriptleri nedeniyle tarihsel marker olarak açık tutulur; M78 öncesi ayrı cleanup turunda sadeleştirilecektir.
+> Geçici uyumluluk notu: `M66` satırı bazı shared-doc/check fallback scriptleri nedeniyle tarihsel marker olarak açık tutulur; M79 öncesi ayrı cleanup turunda sadeleştirilecektir.
 
 ## Aktif hat
 - `M75` yaşayan teknik taban olarak kabul edilir.
 - `M76A-1` minimum normalizasyon adımı tamamlanmış kanonik giriş olarak doğrulandı.
 - `M76B` living matrix + tools consolidation adımı tamamlanmış kanonik giriş olarak doğrulandı.
-- `M76A-2` final normalization + archiving ve `M77` KVKK + uyum katmanı da green doğrulandı.
-- Tam güven için living static ve living runtime doğrulaması ayrıca koşulabilir; fakat `M0 -> M77` master hat green durumdadır.
+- `M76A-2` final normalization + archiving, `M77` KVKK + uyum katmanı ve `M78` checklist + operasyon doğrulama iskeleti green doğrulandı.
+- Tam güven için living static ve living runtime doğrulaması ayrıca koşulabilir; fakat `M0 -> M78` master hat green durumdadır.
 
 ## Resmi green kutular
 - [x] `M44 — Telematics`
@@ -52,10 +52,11 @@
 - [x] `M76B — Living Matrix + Tools Consolidation`
 - [x] `M76A-2 — Final Normalization + Archiving`
 - [x] `M77 — KVKK + Uyum Katmanı`
+- [x] `M78 — Checklist + Operasyon Doğrulama`
 
 ## Markerlar
-- master pack marker: `tools\pack.ps1 -To 77`
-- living master marker: `tools\pack_living.ps1 -To 77`
+- master pack marker: `tools\pack.ps1 -To 78`
+- living master marker: `tools\pack_living.ps1 -To 78`
 - living static marker: `tools\verify_living_static.ps1`
 - living runtime marker: `tools\verify_living_runtime.ps1`
 - repo audit marker: `tools\check_repo_audit_master.ps1`

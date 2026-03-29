@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
-import { useSession } from "../../state/session";
 
 function Card({ title, children }) {
   return (
@@ -12,7 +11,6 @@ function Card({ title, children }) {
 }
 
 export default function SsotAlignmentPanel() {
-  const { token } = useSession();
   const [manifest, setManifest] = useState(null);
   const [summary, setSummary] = useState(null);
   const [err, setErr] = useState("");
@@ -22,8 +20,8 @@ export default function SsotAlignmentPanel() {
     (async () => {
       try {
         const [m, s] = await Promise.all([
-          api("/api/ssot-alignment/manifest", { token }),
-          api("/api/ssot-alignment/summary-template", { token }),
+          api("/api/ssot-alignment/manifest"),
+          api("/api/ssot-alignment/summary-template"),
         ]);
         if (cancelled) return;
         setManifest(m || null);
@@ -36,15 +34,15 @@ export default function SsotAlignmentPanel() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, []);
 
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>M61 SSOT + Milestone Hizası</h2>
+          <h2 style={{ margin: 0 }}>Sistem Standartları</h2>
           <div className="muted" style={{ marginTop: 6 }}>
-            Resmi dosyalarin ve milestone hattinin tek gercekte hizalanmasi
+            Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini özetler.
           </div>
         </div>
       </div>
@@ -52,21 +50,19 @@ export default function SsotAlignmentPanel() {
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Aktif milestone">
-          <div>{summary?.activeMilestone || "-"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{summary?.activeRule || "-"}</div>
+        <Card title="Aktif çalışma kuralı">
+          <div>{summary?.activeRule || "Çalışma hattı izleniyor"}</div>
+          <div className="muted" style={{ marginTop: 6 }}>Paket ve doküman akışı tek hat üzerinden izlenir.</div>
         </Card>
-        <Card title="Izlenen SSOT hedefleri">
-          <div>{summary?.targetCount ?? 0} dosya</div>
+        <Card title="İzlenen dosyalar">
+          <div>{summary?.targetCount ?? 0} hedef</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {(manifest?.targets || []).slice(0, 4).map((item) => item.label).join(" • ") || "Henüz veri yok"}
+            {(manifest?.targets || []).slice(0, 4).map((item) => item.label).join(" • ") || "Henüz dosya özeti yok"}
           </div>
         </Card>
-        <Card title="Milestone ozeti">
+        <Card title="Durum özeti">
           <div>Green: {summary?.greenCount ?? 0}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
-            {(manifest?.route || []).map((item) => `${item.id}:${item.status}`).join(" • ") || "Henüz veri yok"}
-          </div>
+          <div className="muted" style={{ marginTop: 6 }}>Toplam hat: {(manifest?.route || []).length || 0}</div>
         </Card>
       </div>
     </div>

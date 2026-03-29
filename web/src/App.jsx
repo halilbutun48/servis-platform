@@ -1,4 +1,4 @@
-﻿// web/src/App.jsx
+// web/src/App.jsx
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
@@ -77,6 +77,7 @@ const SuperCommercialCorePanel = lazy(() => import("./panels/superadmin/Commerci
 const SuperTrustQualityPanel = lazy(() => import("./panels/superadmin/TrustQualityPanel"));
 const SuperNaturalCopilotPanel = lazy(() => import("./panels/superadmin/NaturalCopilotPanel"));
 const SuperPilotLaunchGatePanel = lazy(() => import("./panels/superadmin/PilotLaunchGatePanel"));
+const SuperOperationVerificationPanel = lazy(() => import("./panels/superadmin/OperationVerificationPanel"));
 
 function roleDefaultPath(me) {
   const role = me?.role;
@@ -296,6 +297,7 @@ export default function App() {
     if (path === "/superadmin/trust-quality") return { layout: true, node: <SuperTrustQualityPanel /> };
     if (path === "/superadmin/natural-copilot") return { layout: true, node: <SuperNaturalCopilotPanel /> };
     if (path === "/superadmin/pilot-launch-gate") return { layout: true, node: <SuperPilotLaunchGatePanel /> };
+    if (path === "/superadmin/operation-verification") return { layout: true, node: <SuperOperationVerificationPanel /> };
     if (path === "/superadmin/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // Unknown: go default
@@ -306,10 +308,14 @@ export default function App() {
 
   if (!view.layout) return view.node;
 
+  const routeResetKey = cleanPath || path || "default";
+
   return (
     <AppShell path={path}>
-      <ErrorBoundary>
-        <Suspense fallback={<div style={{ padding: 16 }}>Yükleniyor...</div>}>{view.node}</Suspense>
+      <ErrorBoundary resetKey={routeResetKey}>
+        <Suspense key={routeResetKey} fallback={<div style={{ padding: 16 }}>Yükleniyor...</div>}>
+          {view.node}
+        </Suspense>
       </ErrorBoundary>
     </AppShell>
   );

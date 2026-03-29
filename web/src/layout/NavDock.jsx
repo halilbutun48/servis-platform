@@ -4,6 +4,18 @@ import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
 import BrandMark from "../components/BrandMark";
 
+function roleTitle(role, me) {
+  if (role === "SUPER_ADMIN") return "Süper Yönetici";
+  if (role === "ROOM") return "Operasyon Odası";
+  if (role === "DRIVER") return "Sürücü";
+  if (role === "PERSONEL") return "Personel";
+  if (role === "PARENT") return "Veli";
+  if (role === "COMPANY" && me?.companyKind === "SCHOOL") return "Okul";
+  if (role === "COMPANY" && me?.companyKind === "ORGANIZATION") return "Organizasyon";
+  if (role === "COMPANY") return "Şirket";
+  return role || "-";
+}
+
 function Item({ label, path, active, badge }) {
   return (
     <button
@@ -149,24 +161,34 @@ export default function NavDock({ role, path, me }) {
       });
     } else if (role === "SUPER_ADMIN") {
       sections.push({
-        title: "",
+        title: "Temel Yönetim",
         items: [
-          { label: "Overview", path: "/superadmin" },
-          { label: "Companies", path: "/superadmin/companies" },
-          { label: "Rooms", path: "/superadmin/rooms" },
-          { label: "Users", path: "/superadmin/users" },
-          { label: "Regions", path: "/superadmin/regions" },
-          { label: "Audit", path: "/superadmin/audit" },
-          { label: "Gözlemleme", path: "/superadmin/observability" },
-          { label: "Acceptance", path: "/superadmin/acceptance" },
-          { label: "SSOT", path: "/superadmin/ssot-alignment" },
-          { label: "Ticari Omurga", path: "/superadmin/commercial-core" },
-          { label: "Guven + Kalite", path: "/superadmin/trust-quality" },
-          { label: "Copilot Test", path: "/superadmin/copilot" },
-          { label: "Dogal Copilot", path: "/superadmin/natural-copilot" },
-          { label: "Pilot Launch Gate", path: "/superadmin/pilot-launch-gate" },
+          { label: "Genel Bakış", path: "/superadmin" },
+          { label: "Şirketler", path: "/superadmin/companies" },
+          { label: "Operasyon Odaları", path: "/superadmin/rooms" },
+          { label: "Kullanıcılar", path: "/superadmin/users" },
+          { label: "Bölgeler", path: "/superadmin/regions" },
+        ],
+      });
+      sections.push({
+        title: "Kontrol ve İzleme",
+        items: [
+          { label: "İşlem Kayıtları", path: "/superadmin/audit" },
+          { label: "Canlı İzleme", path: "/superadmin/observability" },
+          { label: "Kabul Merkezi", path: "/superadmin/acceptance" },
+          { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification", badge: "Yeni" },
+          { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" },
+        ],
+      });
+      sections.push({
+        title: "Standart ve Sistem",
+        items: [
+          { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" },
+          { label: "Ticari Akış", path: "/superadmin/commercial-core" },
+          { label: "Güven ve Kalite", path: "/superadmin/trust-quality" },
+                    { label: "Yardımcı", path: "/superadmin/copilot" },
           { label: "KVKK", path: "/shared/kvkk" },
-          { label: "Log Export", path: "/superadmin/logexport" },
+          { label: "Log Dışa Aktarımı", path: "/superadmin/logexport" },
         ],
       });
     }
@@ -182,7 +204,7 @@ export default function NavDock({ role, path, me }) {
       <div className="navDockTitle">
         <div style={{ fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", opacity: 0.8 }}>Vardis</div>
         <div style={{ fontSize: 18, fontWeight: 700, marginTop: 2 }}>
-          {role === "COMPANY" && me?.companyKind === "SCHOOL" ? "SCHOOL" : role === "COMPANY" && me?.companyKind === "ORGANIZATION" ? "ORGANIZATION" : role}
+          {roleTitle(role, me)}
         </div>
       </div>
 

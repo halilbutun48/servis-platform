@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { useSession } from "../../state/session";
 
 export default function RegionsPanel() {
-  const { token } = useSession();
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
   const [q, setQ] = useState("");
@@ -14,7 +12,7 @@ export default function RegionsPanel() {
   async function load() {
     setErr("");
     try {
-      const res = await api("/api/admin/regions", { token });
+      const res = await api("/api/admin/regions", {});
       setItems(res.items || []);
     } catch (e) {
       setErr(e?.message || String(e));
@@ -39,7 +37,7 @@ export default function RegionsPanel() {
     setBusy(true);
     setErr("");
     try {
-      await api("/api/admin/regions", { method: "POST", body: { name: n }, token });
+      await api("/api/admin/regions", { method: "POST", body: { name: n } });
       setName("");
       await load();
     } catch (e) {
@@ -57,7 +55,7 @@ export default function RegionsPanel() {
     setBusy(true);
     setErr("");
     try {
-      await api(`/api/admin/regions/${edit.id}`, { method: "PUT", body: { name: n }, token });
+      await api(`/api/admin/regions/${edit.id}`, { method: "PUT", body: { name: n } });
       setEdit(null);
       await load();
     } catch (e) {
@@ -74,7 +72,7 @@ export default function RegionsPanel() {
     setBusy(true);
     setErr("");
     try {
-      await api(`/api/admin/regions/${id}`, { method: "DELETE", token });
+      await api(`/api/admin/regions/${id}`, { method: "DELETE" });
       if (edit?.id === id) setEdit(null);
       await load();
     } catch (e) {

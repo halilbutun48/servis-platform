@@ -10,6 +10,35 @@ function copyText(s) {
   else window.prompt("Kopyala:", v);
 }
 
+function trRole(role) {
+  if (role === "SUPER_ADMIN") return "Süper Yönetici";
+  if (role === "ROOM") return "Operasyon Odası";
+  if (role === "COMPANY") return "Şirket";
+  if (role === "DRIVER") return "Sürücü";
+  if (role === "PERSONEL") return "Personel";
+  if (role === "PARENT") return "Veli";
+  return role || "-";
+}
+
+const MENU_GUIDE = [
+  { title: "Genel Bakış", desc: "İlk açılış ekranı. Genel durumu görüp doğru yere buradan geçersin." },
+  { title: "Şirketler", desc: "Şirket kayıtları, kapsam ve bağlı yapıların yönetimi." },
+  { title: "Operasyon Odaları", desc: "Operasyon odaları, araç ve sürücü omurgasının merkezi." },
+  { title: "Kullanıcılar", desc: "Kullanıcı hesapları, roller ve erişim görünümü." },
+  { title: "Bölgeler", desc: "İl ve bölge tanımlarının yönetimi." },
+  { title: "İşlem Kayıtları", desc: "Kim, ne zaman, hangi işlemi yaptı sorusunun kaydı." },
+  { title: "Canlı İzleme", desc: "Sistemin ve sahadaki akışın canlı görünümü." },
+  { title: "Kabul Merkezi", desc: "Saha kabul ve doğrulama işlerinin ana ekranı." },
+  { title: "Operasyon Doğrulama", desc: "Checklist, kanıt ve sonuç kaydı için kullanılan ekran." },
+  { title: "Sistem Standartları", desc: "Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini gösterir." },
+  { title: "Ticari Akış", desc: "Talep, teklif, pazarlık ve sözleşme adımlarını tek akışta özetler." },
+  { title: "Güven ve Kalite", desc: "Kalite, hizmet değerlendirme ve güven görünümü." },
+  { title: "Yardımcı", desc: "Yardımcı cevabın yapısını ve geri bildirim akışını gösterir." },
+  { title: "Sahaya Çıkış Kontrolü", desc: "Canlıya çıkmadan önce son kontrol kapısı." },
+  { title: "KVKK", desc: "Veri koruma ve uyum yüzeyi." },
+  { title: "Log Dışa Aktarımı", desc: "Sistem kayıtlarını dışa alma ekranı." },
+];
+
 function Pill({ children, status }) {
   return (
     <span className="pill" data-status={status || "ROLE"}>
@@ -20,14 +49,14 @@ function Pill({ children, status }) {
 
 const DEMO_PASSWORD = "demo123";
 const DEMO_ACCOUNTS = [
-  { email: "superadmin@demo.com", role: "SUPER_ADMIN", name: "Super Admin", scope: "-" },
-  { email: "company@demo.com", role: "COMPANY", name: "Company Operator", scope: "Company #1 DemoCompany" },
-  { email: "room@demo.com", role: "ROOM", name: "Room Operator", scope: "Room #1 DemoRoom" },
-  { email: "driver@demo.com", role: "DRIVER", name: "Driver One", scope: "Room #1" },
-  { email: "personel@demo.com", role: "PERSONEL", name: "Personel One", scope: "Company #1" },
-  { email: "parent@demo.com", role: "PARENT", name: "DemoParent", scope: "Parent" },
-  { email: "school@demo.com", role: "COMPANY", name: "School Operator", scope: "Company #2 DemoOkul (SCHOOL)" },
-  { email: "organization@demo.com", role: "COMPANY", name: "Organization Operator", scope: "Company #3 DemoOrganizasyon (ORGANIZATION)" },
+  { email: "superadmin@demo.com", role: "SUPER_ADMIN", name: "Süper Yönetici", scope: "-" },
+  { email: "company@demo.com", role: "COMPANY", name: "Şirket Operatörü", scope: "Şirket #1 DemoCompany" },
+  { email: "room@demo.com", role: "ROOM", name: "Operasyon Odası Operatörü", scope: "Oda #1 DemoRoom" },
+  { email: "driver@demo.com", role: "DRIVER", name: "Sürücü Bir", scope: "Oda #1" },
+  { email: "personel@demo.com", role: "PERSONEL", name: "Personel Bir", scope: "Şirket #1" },
+  { email: "parent@demo.com", role: "PARENT", name: "Demo Veli", scope: "Veli" },
+  { email: "school@demo.com", role: "COMPANY", name: "Okul Operatörü", scope: "Şirket #2 DemoOkul (Okul)" },
+  { email: "organization@demo.com", role: "COMPANY", name: "Organizasyon Operatörü", scope: "Şirket #3 DemoOrganizasyon (Organizasyon)" },
 ];
 
 export default function SuperAdminPanel() {
@@ -89,9 +118,9 @@ export default function SuperAdminPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>SUPER_ADMIN</h2>
+          <h2 style={{ margin: 0 }}>Süper Yönetici</h2>
           <div className="muted" style={{ marginTop: 6 }}>
-            {me?.email} • {me?.role}
+            {me?.email} • {trRole(me?.role)}
           </div>
         </div>
         <div className="saActions" style={{ alignSelf: "flex-start" }}>
@@ -114,18 +143,19 @@ export default function SuperAdminPanel() {
           <div style={{ fontWeight: 700, marginBottom: 8 }}>Hızlı erişim</div>
           <div className="saActions">
             <button className="btn sm" onClick={() => navigate("/superadmin/companies")}>Şirketler</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/rooms")}>Room’lar</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/rooms")}>Operasyon Odaları</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/users")}>Kullanıcılar</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/regions")}>İller</button>
-            <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>Audit</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/observability")}>Gözlemleme</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/acceptance")}>Acceptance Merkezi</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/ssot-alignment")}>SSOT Hizasi</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/commercial-core")}>Ticari Omurga</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Guven + Kalite</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/natural-copilot")}>Dogal Copilot</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/pilot-launch-gate")}>Pilot Launch Gate</button>
-          <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Export</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/regions")}>Bölgeler</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>İşlem Kayıtları</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/observability")}>Canlı İzleme</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/acceptance")}>Kabul Merkezi</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/ssot-alignment")}>Sistem Standartları</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/commercial-core")}>Ticari Akış</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Güven + Kalite</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/copilot")}>Yardımcı</button>
+                    <button className="btn sm" onClick={() => navigate("/superadmin/pilot-launch-gate")}>Sahaya Çıkış Kontrolü</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/operation-verification")}>Operasyon Doğrulama</button>
+          <button className="btn sm" onClick={() => navigate("/superadmin/logexport")}>Log Dışa Aktarımı</button>
           </div>
           {err ? <div style={{ marginTop: 10, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
         </div>
@@ -142,12 +172,41 @@ export default function SuperAdminPanel() {
           <div style={{ fontWeight: 700, marginBottom: 8 }}>Özet</div>
 
           <div style={{ opacity: 0.9 }}>Şirket (aktif/toplam): {fmtActiveTotal(stats.companies, stats.companiesTotal)}</div>
-          <div style={{ opacity: 0.9, marginTop: 6 }}>Room (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
+          <div style={{ opacity: 0.9, marginTop: 6 }}>Operasyon odası (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
           <div style={{ opacity: 0.9, marginTop: 6 }}>Araç sayısı: {stats.vehiclesTotal ?? stats.vehicles ?? "-"}</div>
           <div style={{ opacity: 0.9, marginTop: 6 }}>Şoför sayısı: {stats.driversTotal ?? stats.drivers ?? "-"}</div>
 
           <div className="muted" style={{ marginTop: 10 }}>
-            Not: Özet “aktif” sayıları DELETED (soft delete) kayıtları hariç tutar.
+            Not: Özet “aktif” sayıları silinmiş olarak işaretlenen kayıtları hariç tutar.
+          </div>
+        </div>
+
+        <div
+          style={{
+            flex: "1 1 420px",
+            padding: 14,
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 14,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>Bölüm rehberi</div>
+          <div className="muted" style={{ marginBottom: 10 }}>
+            Hangi menünün ne işe yaradığını hızlıca buradan okuyabilirsin.
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
+            {MENU_GUIDE.map((item) => (
+              <div
+                key={item.title}
+                style={{
+                  padding: "10px 12px",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 12,
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.title}</div>
+                <div className="muted" style={{ fontSize: 12 }}>{item.desc}</div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -161,7 +220,7 @@ export default function SuperAdminPanel() {
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-            <div style={{ fontWeight: 700 }}>Demo Accounts (seed)</div>
+            <div style={{ fontWeight: 700 }}>Demo hesapları</div>
             <button className="btn sm" onClick={() => copyText(DEMO_ACCOUNTS.map((a) => a.email).join("\n"))}>
               Mailleri Kopyala
             </button>
@@ -193,7 +252,7 @@ export default function SuperAdminPanel() {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <code style={{ opacity: 0.9 }}>{a.email}</code>
-                    <Pill status="ROLE">{a.role}</Pill>
+                    <Pill status="ROLE">{trRole(a.role)}</Pill>
                   </div>
                   <div className="muted" style={{ marginTop: 4, fontSize: 12, opacity: 0.85 }}>
                     {a.name} • {a.scope}
@@ -209,10 +268,11 @@ export default function SuperAdminPanel() {
           </div>
 
           <div className="muted" style={{ marginTop: 10 }}>
-            Not: Bu liste seed ile birlikte gelir. Prod ortamda demo hesapları kullanmayın.
+            Not: Bu liste örnek veri ile birlikte gelir. Canlı ortamda demo hesapları kullanmayın.
           </div>
         </div>
       </div>
     </div>
   );
 }
+

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
-import { useSession } from "../../state/session";
 
 function Card({ title, children }) {
   return (
@@ -12,57 +11,63 @@ function Card({ title, children }) {
 }
 
 export default function CommercialCorePanel() {
-  const { token } = useSession();
   const [manifest, setManifest] = useState(null);
   const [lifecycle, setLifecycle] = useState(null);
   const [err, setErr] = useState("");
 
+  async function load() {
+    setErr("");
+    try {
+      const [m, l] = await Promise.all([
+        api("/api/commercial-core/manifest"),
+        api("/api/commercial-core/lifecycle-template"),
+      ]);
+      setManifest(m || null);
+      setLifecycle(l || null);
+    } catch (e) {
+      setErr(e?.message || String(e));
+    }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [m, l] = await Promise.all([
-          api("/api/commercial-core/manifest", { token }),
-          api("/api/commercial-core/lifecycle-template", { token }),
-        ]);
-        if (cancelled) return;
-        setManifest(m || null);
-        setLifecycle(l || null);
-      } catch (e) {
-        if (cancelled) return;
-        setErr(e?.message || String(e));
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [token]);
+    load();
+  }, []);
+
+  const steps = manifest?.steps || [];
+  const route = lifecycle?.route || [];
 
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>M62 Ticari Omurga Güçlendirme</h2>
+          <h2 style={{ margin: 0 }}>Ticari Akış</h2>
           <div className="muted" style={{ marginTop: 6 }}>
-            Talep, teklif, karsi teklif, pazarlik gecmisi ve sozlesmeye gecis omurgasi
+            Talebin teklif, karşı teklif, uzlaşma ve sözleşmeye geçiş yolunu özetler.
           </div>
         </div>
+        <button className="btn" onClick={load}>Yenile</button>
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Aktif milestone">
-          <div>{manifest?.activeMilestone || "-"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{manifest?.title || "-"}</div>
-        </Card>
-        <Card title="İzlenen ticari adımlar">
-          <div>{(manifest?.steps || []).length} adim</div>
+        <Card title="Aktif durum">
+          <div>{manifest?.title || "Henüz ticari özet yok"}</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            {(manifest?.steps || []).map((item) => item.label).join(" • ") || "Henüz veri yok"}
+            {manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}
+          </div>
+        </Card>
+        <Card title="İzlenen adımlar">
+          <div>{steps.length} adım</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            {steps.map((item) => item.label).join(" • ") || "Henüz adım listesi yok"}
           </div>
         </Card>
         <Card title="Sözleşmeye geçiş">
-          <div>{(lifecycle?.route || []).join(" -> ") || "-"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{lifecycle?.summary || "-"}</div>
+          <div>{route.join(" → ") || "Henüz geçiş yolu yok"}</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            {lifecycle?.summary || "Bu ekran ticari sürecin hangi kapılardan geçtiğini anlatır"}
+          </div>
         </Card>
       </div>
     </div>

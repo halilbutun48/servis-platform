@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { formatDateTimeTR } from "../../utils/time";
+import PanelKvkkHint from "../shared/PanelKvkkHint";
 
 function copyText(s) {
   const v = String(s ?? "");
@@ -197,6 +198,8 @@ export default function RoomsPanel() {
           </div>
           <div className="pill">{filteredCount} kayıt</div>
         </div>
+
+        <PanelKvkkHint panelKey="rooms" />
 
         <div className="card toolbar">
           <select value={regionId} onChange={(e) => setRegionId(e.target.value)} style={{ minWidth: 180 }}>
@@ -395,3 +398,5 @@ export default function RoomsPanel() {
     </>
   );
 }
+
+

@@ -161,3 +161,11 @@ export async function googleLogin(credential, { inviteToken, deviceId, testProfi
 export async function changeDriverPin(currentPin, newPin, token) {
   return api("/api/auth/driver/change-pin", { method: "POST", token, body: { currentPin, newPin } });
 }
+
+export async function changePassword({ currentPassword, newPassword, confirmPassword, token }) {
+  return api("/api/auth/change-password", {
+    method: "POST",
+    token,
+    body: { currentPassword, newPassword, confirmPassword },
+  });
+}

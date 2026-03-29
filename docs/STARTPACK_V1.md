@@ -24,22 +24,30 @@
 - Teknik yaşayan taban **M75 green baseline** olarak kabul edilir.
 - M76A-1 + M76B + M76A-2 normalizasyon/konsolidasyon hattı kanonik durumda görünür.
 - M77 artık salt iskelet değil; M77.1 content-foundation ile rol ile business domain ayrımı, KVKK görünürlük matrisi, aydınlatma envanteri, retention / silme / anonimleştirme yaklaşımı ve audit izi tek omurgada yazılı hale geldi. M77.2, M77.3 ve M77.4 ile payload-enforcement + redaction-foundation açıldı; M77.5 ile retention/export trail enforcement helper katmanı da bağlandı.
+- M78 checklist / operasyon doğrulama iskeleti açıldı; saha kabul checklistleri, rol bazlı operasyon doğrulama, kanıt / proof / kontrol omurgası ve kabul / red / eksik / tekrar kontrol akışı ilk living seviyesinde tanımlandı.
+- M78.1 ile bu omurga minimum super admin ürün yüzeyine taşındı; ana living rota yine `78` olarak korunur.
+- M78.2 ile aynı yüzey ilk yazılabilir kayıt katmanına geçer; durum + kanıt tipi + kısa not + referans metni kaydı açılır ama living rota yine `78` kalır.
+- M78.3 ile aynı ekran özet + filtre katmanına geçer; son güncelleyen / son güncelleme, filtreler ve export görünürlüğü açılır ama living rota yine `78` kalır.
 - Auth role seti: `SUPER_ADMIN / ROOM / COMPANY / DRIVER / PERSONEL / PARENT`.
 - School/Organization domain tarafı ayrı login role değil, `Company.kind` üstünden taşınan iş alanıdır.
 - Ancak driver/parent dışındaki roller için zorunlu consent enforcement'ı hâlâ sonraki alt adımdır.
 - Tools tarafında yeni hedef, faz girişlerini klasör altında toplamak; ama mevcut root pack/check adlarını bir anda kırmamaktır.
 
 ## Kanonik komutlar
-- Operasyonel master doğrulama: `tools\pack.ps1 -To 77 -RepoDir D:\servis-platform -NoBuild`
-- Yaşayan tek giriş: `tools\pack_living.ps1 -To 77 -RepoRoot D:\servis-platform -NoBuild`
+- Operasyonel master doğrulama: `tools\pack.ps1 -To 78 -RepoDir D:\servis-platform -NoBuild`
+- Yaşayan tek giriş: `tools\pack_living.ps1 -To 78 -RepoRoot D:\servis-platform -NoBuild`
 - Yaşayan static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
-- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 77 -RepoRoot D:\servis-platform -NoBuild`
+- Yaşayan runtime doğrulama: `tools\verify_living_runtime.ps1 -To 78 -RepoRoot D:\servis-platform -NoBuild`
 - Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 - M77 payload-enforcement pack: `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
+- M78 checklist/operasyon doğrulama pack: `tools\pack_m78_checklist_operasyon_dogrulama.ps1 -RepoRoot D:\servis-platform`
+- M78.1 operasyon doğrulama yüzeyi pack: `tools\pack_m78_1_operasyon_dogrulama_yuzeyi.ps1 -RepoRoot D:\servis-platform`
+- M78.2 operasyon doğrulama kayıt katmanı pack: `tools\pack_m78_2_operasyon_dogrulama_kayit_katmani.ps1 -RepoRoot D:\servis-platform`
+- M78.3 operasyon doğrulama özet ve filtre katmanı pack: `tools\pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1 -RepoRoot D:\servis-platform`
 
 ## Master pack
-`tools\pack.ps1 -To 77` güncel operasyonel ana çatıdır.
+`tools\pack.ps1 -To 78` güncel operasyonel ana çatıdır.
 
 Tarihsel not: Teknik yaşayan taban kavramı hâlâ `M75 green baseline` diye anılır.
 
@@ -62,6 +70,12 @@ Bu komut:
 - Faz wrapper'ları: `tools\packs\living\`
 - Yardımcı living check girişleri: `tools\checks\living\`
 - Legacy root pack/check dosyaları uyumluluk için korunur.
+
+## M78 hızlı referans
+- saha kabul checklistleri: `docs\SAHA_KABUL_CHECKLISTLERI_V1.md`
+- rol bazlı operasyon doğrulama: `docs\ROL_BAZLI_OPERASYON_DOGRULAMA_V1.md`
+- kanıt / proof / kontrol omurgası: `docs\KANIT_PROOF_KONTROL_OMURGASI_V1.md`
+- karar akışı: `docs\KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md`
 
 ## M77 hızlı referans
 - görünürlük matrisi: `docs\KVKK_VERI_GORUNURLUK_MATRISI_V1.md`

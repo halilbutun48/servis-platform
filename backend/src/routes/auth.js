@@ -10,6 +10,9 @@ import { clearDriverPinFailureState, getDriverPinLockState, registerDriverPinFai
 import { generateSecretBase32, buildOtpauthUrl, verifyTotp, normalizeTotpToken } from "../auth/totp.js";
 import { loginSchema, refreshSchema, logoutSchema } from "../validators.js";
 import { ENV } from "../env.js";
+import { clearPasswordChangeRequired, isPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
+import { getPasswordPolicySummary, validatePasswordPolicy } from "../auth/passwordPolicy.js";
+import { getEffectiveUsername, resolveUserIdByUsername, visibleEmail } from "../auth/usernameDirectory.js";
 
 const DISABLED_PREFIX = "$DISABLED$";
 function isDisabledHash(hash) {
@@ -140,6 +143,13 @@ async function findLoginUser(identifierRaw) {
   if (identifier.includes('@')) {
     return prisma.user.findUnique({ where: { email: identifier.toLowerCase() }, include });
   }
+
+  const userId = await resolveUserIdByUsername(prisma, identifier);
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, include });
+    if (user) return user;
+  }
+
   return prisma.user.findFirst({
     where: { role: 'DRIVER', driver: { is: { driverCode: normalizeDriverCode(identifier) } } },
     include,
@@ -322,10 +332,13 @@ authRouter.post("/login", async (req, res) => {
 
   
 
+  const mustChangePassword = await isPasswordChangeRequired(user.id);
+
   const loginExtra = {};
   if (isGreenpackStepUpBypass(req) && isStepUpRole(user.role)) {
     loginExtra.stepUpUntil = Date.now() + Number(ENV.STEP_UP_TOTP_WINDOW_SEC || 43200) * 1000;
   }
+  if (mustChangePassword && !isGreenpackStepUpBypass(req)) loginExtra.pwdChangeOnly = true;
   const token = issueAccessToken(user, loginExtra);
 
   // Refresh session (always attempt; fail-open)
@@ -350,21 +363,94 @@ authRouter.post("/login", async (req, res) => {
     // ignore
   }
 
-  await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_OK", reason: null, meta: { deviceId: reqDeviceId || null, driverId: user.driver?.id || null } });
+  await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_OK", reason: null, meta: { deviceId: reqDeviceId || null, driverId: user.driver?.id || null, passwordChangeRequired: mustChangePassword } });
 
   return res.json({
     token,
     refreshToken: refreshTokenRaw,
     deviceId: reqDeviceId || user.deviceId || null,
     stepUpRequired: isStepUpRole(user.role),
+    passwordChangeRequired: mustChangePassword,
+    passwordPolicy: mustChangePassword ? getPasswordPolicySummary() : null,
     user: {
       id: user.id,
-      email: user.email,
+      username: getEffectiveUsername(user),
+      email: visibleEmail(user.email),
       role: user.role,
       fullName: user.fullName,
       companyId: user.companyId,
       roomId: user.roomId,
     },
+  });
+});
+
+authRouter.post("/change-password", authRequired(), async (req, res) => {
+  const user = req.user;
+  const forceOnly = !!req.auth?.pwdChangeOnly;
+  const currentPassword = String(req.body?.currentPassword || "");
+  const newPassword = String(req.body?.newPassword || "");
+  const confirmPassword = String(req.body?.confirmPassword || "");
+
+  if (!newPassword) return res.status(400).json({ error: "Yeni şifre gerekli." });
+  if (confirmPassword && confirmPassword !== newPassword) {
+    return res.status(400).json({ error: "Yeni şifre ve tekrar alanı eşleşmiyor." });
+  }
+
+  if (!forceOnly) {
+    if (!currentPassword) return res.status(400).json({ error: "Mevcut şifre gerekli." });
+    const okCurrent = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!okCurrent) return res.status(400).json({ error: "Mevcut şifre hatalı." });
+  }
+
+  const sameAsCurrent = await bcrypt.compare(newPassword, user.passwordHash);
+  if (sameAsCurrent) {
+    return res.status(400).json({ error: "Yeni şifre mevcut/geçici şifre ile aynı olamaz." });
+  }
+
+  const policy = validatePasswordPolicy(newPassword, { email: visibleEmail(user.email), fullName: user.fullName });
+  if (!policy.ok) {
+    return res.status(400).json({ error: policy.errors[0], details: policy });
+  }
+
+  const nextHash = await bcrypt.hash(newPassword, 10);
+  const updated = await prisma.$transaction(async (tx) => {
+    const nextUser = await tx.user.update({
+      where: { id: user.id },
+      data: { passwordHash: nextHash, sessionVersion: { increment: 1 } },
+    });
+    await tx.refreshSession.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } });
+    return nextUser;
+  });
+
+  await clearPasswordChangeRequired(user.id);
+
+  const loginExtra = {};
+  if (isGreenpackStepUpBypass(req) && isStepUpRole(updated.role)) {
+    loginExtra.stepUpUntil = Date.now() + Number(ENV.STEP_UP_TOTP_WINDOW_SEC || 43200) * 1000;
+  }
+  const token = issueAccessToken(updated, loginExtra);
+
+  await recordLoginAudit({
+    req,
+    email: updated.email,
+    user: updated,
+    action: "AUTH_PASSWORD_CHANGED",
+    reason: forceOnly ? "FORCED_AFTER_RESET" : "SELF_SERVICE",
+    meta: { passwordChangeRequiredCleared: true },
+  });
+
+  return res.json({
+    ok: true,
+    token,
+    user: {
+      id: updated.id,
+      email: updated.email,
+      role: updated.role,
+      fullName: updated.fullName,
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+    },
+    requirePasswordChange: false,
   });
 });
 
@@ -825,4 +911,5 @@ authRouter.post("/logout", authRequired(), async (req, res) => {
   await prisma.refreshSession.updateMany({ where: { userId: u.id, revokedAt: null }, data: { revokedAt: new Date() } });
   return res.json({ ok: true });
 });
+
 

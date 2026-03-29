@@ -6,30 +6,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 
-function banner(title) {
-  console.log(`\n=== ${title} ===`);
-}
-
-function must(label, ok) {
-  if (!ok) throw new Error(`FAIL ${label}`);
-  console.log(`OK ${label}`);
-}
-
-function read(rel) {
-  return fs.readFileSync(path.join(repoRoot, rel), "utf8");
-}
-
-function exists(rel) {
-  return fs.existsSync(path.join(repoRoot, rel));
-}
-
-function includesAny(text, needles) {
-  return needles.some((needle) => text.includes(needle));
-}
+function banner(title) { console.log(`\n=== ${title} ===`); }
+function must(label, ok) { if (!ok) throw new Error(`FAIL ${label}`); console.log(`OK ${label}`); }
+function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
+function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
+function includesAny(text, needles) { return needles.some((needle) => text.includes(needle)); }
 
 async function main() {
   banner("M60 SAHA ACCEPTANCE MERKEZI CHECK");
-
   const requiredFiles = [
     "backend/src/ops/fieldAcceptanceManifest.js",
     "backend/src/routes/fieldAcceptance.js",
@@ -44,7 +28,6 @@ async function main() {
     "docs/STARTPACK_V1.md",
     "docs/CHECKLIST_SSOT.md",
   ];
-
   console.log("INFO checking required M60 files");
   requiredFiles.forEach((rel) => must(`${rel} exists`, exists(rel)));
 
@@ -70,7 +53,7 @@ async function main() {
 
   console.log("INFO checking canonical manifest and web skeleton");
   must("manifest defines evidence types and GPS wording", includesAny(manifest, ["FIELD_ACCEPTANCE_EVIDENCE_TYPES", "SURUCUNUN_TELEFON_GPSI", "LIMITED_GO"]));
-  must("panel shows M60 acceptance cards", includesAny(panel, ["M60 Saha Acceptance Merkezi", "Karar seçenekleri", "Checklist özeti"]));
+  must("panel shows M60 acceptance cards", includesAny(panel, ["M60 Saha Acceptance Merkezi", "Saha Kabul Merkezi", "Karar seçenekleri", "Checklist özeti", "Test oturumu özeti"]));
 
   console.log("INFO checking M60 runbook language");
   must("runbook explains M60 scope", includesAny(runbook, ["pilot test oturumu kaydi", "GO / LIMITED GO / NO-GO", "M60 green olmadan M61'e gecilmez"]));

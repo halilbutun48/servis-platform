@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
-import { useSession } from "../../state/session";
 import { formatDateTimeTR } from "../../utils/time";
+import PanelKvkkHint from "../shared/PanelKvkkHint";
 
 function fmt(ts) {
   try {
@@ -12,7 +12,6 @@ function fmt(ts) {
 }
 
 export default function AuditLogsPanel() {
-  const { token } = useSession();
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -38,7 +37,7 @@ export default function AuditLogsPanel() {
       if (entity) qs.set("entity", entity);
       if (action.trim()) qs.set("action", action.trim());
       if (actorEmail.trim()) qs.set("actorEmail", actorEmail.trim());
-      const r = await api(`/api/admin/audit-logs?${qs.toString()}`, { token });
+      const r = await api(`/api/admin/audit-logs?${qs.toString()}`);
       setItems(r.items || []);
     } catch (e) {
       setErr(e?.message || String(e));
@@ -60,6 +59,8 @@ export default function AuditLogsPanel() {
           {items.length} kayıt
         </span>
       </div>
+
+      <PanelKvkkHint panelKey="auditLogs" />
 
       <div className="card" style={{ marginTop: 12, marginBottom: 12 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
@@ -156,3 +157,5 @@ export default function AuditLogsPanel() {
     </div>
   );
 }
+
+

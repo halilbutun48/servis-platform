@@ -1,48 +1,105 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { useSession } from "../../state/session";
+
+function SummaryCard({ title, value, note }) {
+  return (
+    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, flex: "1 1 280px" }}>
+      <div style={{ fontWeight: 700, marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 28, fontWeight: 800 }}>{value}</div>
+      <div className="muted" style={{ marginTop: 6 }}>{note}</div>
+    </div>
+  );
+}
+
+function Row({ title, text }) {
+  return (
+    <div className="card">
+      <div style={{ fontWeight: 700 }}>{title}</div>
+      <div className="muted" style={{ marginTop: 6 }}>{text}</div>
+    </div>
+  );
+}
 
 export default function PilotLaunchGatePanel() {
-  const { token } = useSession();
   const [manifest, setManifest] = useState(null);
+  const [decision, setDecision] = useState(null);
+  const [risks, setRisks] = useState([]);
+  const [acceptanceManifest, setAcceptanceManifest] = useState(null);
+  const [acceptanceSession, setAcceptanceSession] = useState(null);
+  const [healthSummary, setHealthSummary] = useState(null);
 
-  useEffect(() => {
-    api('/api/pilot-launch-gate/manifest', { token })
-      .then((r) => setManifest(r?.manifest || null))
-      .catch(() => setManifest(null));
-  }, [token]);
-
-  const sections = useMemo(() => Array.isArray(manifest?.sections) ? manifest.sections : [], [manifest]);
-
-  const descriptions = {
-    checklist: 'M59-M64 çıktısı tek yerde toplanır.',
-    risks: 'Bloklayan ve sınırlı riskler burada görünür.',
-    acceptance: 'M60 sahadan önceki kabul verilerini özetler.',
-    health: 'Gözlemleme sağlık özeti burada toplanır.',
-    deviceMatrix: 'Build / cihaz uygunluk matrisi burada görünür.',
-    decision: 'Son karar kapısı.'
+  const load = async () => {
+    const [m, d, r, am, as, hs] = await Promise.all([
+      api('/api/pilot-launch-gate/manifest').catch(() => null),
+      api('/api/pilot-launch-gate/decision-template').catch(() => null),
+      api('/api/pilot-launch-gate/risk-template').catch(() => null),
+      api('/api/field-acceptance/manifest').catch(() => null),
+      api('/api/field-acceptance/session-template').catch(() => null),
+      api('/api/observability/health-summary').catch(() => null),
+    ]);
+    setManifest(m?.manifest || null);
+    setDecision(d?.decision || null);
+    setRisks(Array.isArray(r?.risks) ? r.risks : []);
+    setAcceptanceManifest(am || null);
+    setAcceptanceSession(as || null);
+    setHealthSummary(hs || null);
   };
 
-  const fallbackCards = [
-    { key: 'checklist', title: 'Launch checklist' },
-    { key: 'risks', title: 'Kritik risk listesi' },
-    { key: 'acceptance', title: 'Acceptance özetleri' },
-    { key: 'decision', title: 'GO / LIMITED GO / NO-GO' }
-  ];
+  useEffect(() => {
+    load();
+  }, []);
 
-  const cards = sections.length ? sections : fallbackCards;
+  const totalChecklist = acceptanceManifest?.checklist?.length || 0;
+  const passChecklist = (acceptanceSession?.checklist || []).filter((x) => x.status === "PASS").length;
+  const riskCount = risks.length;
+  const sectionsCount = Array.isArray(manifest?.sections) ? manifest.sections.length : 6;
+
+  const decisionLabel = useMemo(() => {
+    const status = String(decision?.status || "LIMITED_GO").trim() || "LIMITED_GO";
+    return status;
+  }, [decision]);
+
+  const riskSummary = riskCount
+    ? risks.map((x) => `${x.title || "Risk"} (${x.severity || "-"})`).join(" • ")
+    : "Henüz kritik risk yok.";
+
+  const acceptanceSummary = totalChecklist
+    ? `${passChecklist}/${totalChecklist} madde tamam. Karar: ${acceptanceSession?.decision || "-"}.`
+    : "Henüz kabul checklist verisi yok.";
+
+  const healthSummaryText = healthSummary?.deviceHealth
+    ? `Risk: ${healthSummary.deviceHealth.risk && healthSummary.deviceHealth.risk !== "unknown" ? healthSummary.deviceHealth.risk : "Henüz risk yok"} • Son sync: ${healthSummary.deviceHealth.lastSyncAt || "Henüz veri yok"}`
+    : "Henüz canlı sağlık özeti yok.";
+
+  const buildText = acceptanceSession
+    ? `${acceptanceSession.deviceModel || "Cihaz bilgisi yok"} • Build: ${acceptanceSession.buildProfile || "-"}`
+    : "Henüz build / cihaz bilgisi yok.";
+
+  const decisionText = `${decisionLabel} • ${decision?.reason || "Karar nedeni henüz girilmedi."}`;
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>M65 Pilot Launch Gate</h2>
-      <div className="muted">Saha öncesi son karar kapısı. M65 green olmadan sahaya çıkılmaz.</div>
-      <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
-        {cards.map((section) => (
-          <div key={section.key || section.title} className="card">
-            <b>{section.title}</b>
-            <div className="muted">{descriptions[section.key] || 'Bu bölüm sahaya çıkış kararını destekler.'}</div>
-          </div>
-        ))}
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ marginTop: 0, marginBottom: 0 }}>Sahaya Çıkış Kontrolü</h2>
+          <div className="muted" style={{ marginTop: 6 }}>Sahaya çıkıştan önce son kararı ve bloklayan riskleri tek yerde toplar.</div>
+        </div>
+        <button className="btn" onClick={load}>Yenile</button>
+      </div>
+
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <SummaryCard title="Son karar" value={decisionLabel} note={decision?.reason || "Checklist tamamlanmadı"} />
+        <SummaryCard title="Risk sayısı" value={String(riskCount)} note={riskCount ? "Açık riskler izlenmeli" : "Kritik risk görünmüyor"} />
+        <SummaryCard title="Bölüm sayısı" value={String(sectionsCount)} note="Saha öncesi son karar kapısı" />
+      </div>
+
+      <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+        <Row title="Launch checklist" text={totalChecklist ? `${passChecklist}/${totalChecklist} madde tamamlandı.` : "Henüz checklist verisi yok."} />
+        <Row title="Kritik risk listesi" text={riskSummary} />
+        <Row title="Acceptance özetleri" text={acceptanceSummary} />
+        <Row title="Gözlemleme sağlık özeti" text={healthSummaryText} />
+        <Row title="Build / cihaz uygunluk özeti" text={buildText} />
+        <Row title="GO / LIMITED GO / NO-GO" text={decisionText} />
       </div>
     </div>
   );

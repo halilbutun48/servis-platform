@@ -64,6 +64,7 @@ import { commercialCoreRouter } from "./routes/commercialCore.js";
 import { trustQualityRouter } from "./routes/trustQuality.js";
 import { naturalCopilotRouter } from "./routes/naturalCopilot.js";
 import { pilotLaunchGateRouter } from "./routes/pilotLaunchGate.js";
+import { operationVerificationRouter } from "./routes/operationVerification.js";
 
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
@@ -558,6 +559,7 @@ app.use("/api/commercial-core", commercialCoreRouter());
 app.use("/api/trust-quality", trustQualityRouter());
 app.use("/api/natural-copilot", naturalCopilotRouter());
 app.use("/api/pilot-launch-gate", pilotLaunchGateRouter);
+app.use("/api/operation-verification", operationVerificationRouter());
 app.use("/api/parent", parentRouter());
 app.use("/api/school/parent-invites", schoolParentInvitesRouter());
 app.use("/api/companies", companiesRouter());
