@@ -1,7 +1,7 @@
 import { buildJobGuideResponse } from '../jobGuide/index.js';
 import { getScreenDefinitionForUser, listScreensForUser } from '../jobGuide/screenCatalog.js';
 import { explainTermsFromText } from '../jobGuide/glossary.js';
-import { detectQuestionType, resolveReplyMode, selectGuideJobType, buildSuggestedChips } from './intentRouter.js';
+import { detectQuestionIntent, resolveReplyMode, selectGuideJobType, buildSuggestedChips } from './intentRouter.js';
 import { firstNonEmpty, makeAskAction, makeCopyAction, makeGuideAction, makeLinkedGuide, makeQuickAction, mergeQuickActions, toReply, uniqueStrings } from './replyShapes.js';
 import { analyzeScreenState } from './screenStateAnalyzer.js';
 
@@ -29,6 +29,119 @@ function extractUserQuestion(message) {
   if (!raw) return '';
   const match = raw.match(/Kullanıcının sorusu:\s*([\s\S]+)$/i);
   return String(match?.[1] || raw).trim();
+}
+
+export function normalizeEverydayQuestion(message) {
+  const raw = String(message || '').trim();
+  const text = normalizeText(raw);
+  if (!text) return raw;
+  if (/(buras[iı] ne|bu taraf ne|bu kisim ne|bu k[ıi]s[ıi]m ne|bu ekran ne( icin| için)?|burda ne yap[ıi]l[ıi]yor|burada ne yap[ıi]l[ıi]yor|ne ise yariyor|ne işe yarıyor)/.test(text)) return 'Bu ekran ne için?';
+  if (/(nereye bakcam|nereye bakicam|nereye bakca[mn]|nereye bak[iı]y[ıi]m|nereye bakay[ıi]m|ilk nereyi kontrol edeyim|once nereye bakayim|önce nereye bakayım|ilk nereyi inceleyeyim)/.test(text)) return 'İlk neye bakayım?';
+  if (/(nereye g[eé]c(e|ey)im|nereye geç(e|ey)im|nereye git(sem|meliyim|ceyim|ceğim)|hangi ekrana gideyim|hangi tarafa geceyim|hangi tarafa geçeyim|sonra nereye geceyim|sonra nereye geçeyim|sonra nereye gideyim)/.test(text)) return 'Şimdi hangi ekrana gitmeliyim?';
+  if (/(niye pasif|neden pasif|basam[iı]yorum|t[ıi]klan[mıi]yor|olmadi|olmad[ıi]|olmuyor|takildi|tak[ıi]ld[ıi]|patladi|patlad[ıi]|kitlendi|ilerlemiyor|tak[ıi]l[ıi]yor)/.test(text)) return 'Bu neden olmuyor?';
+  if (/(ne eksik|eksi[gğ]i ne|eksik ne var|hazir mi|haz[ıi]r m[ıi]|atamaya hazir mi|atamaya haz[ıi]r m[ıi]|burda ne eksik|burada ne eksik)/.test(text)) return 'Hazır mı?';
+  if (/(konum niye|konum neden|konum yok|konum gozukmuyor|konum gözükmüyor|konum görünmüyor|gps yok|gps gelmiyor|telefon gps['’]i yok|haritada niye yok)/.test(text)) return 'Konum neden görünmüyor?';
+  if (/(bu rolde ne yapabilirim|ben bu rolde ne yapabilirim|burada neyi yonetebilirim|burada neyi yönetebilirim|yetkim ne|bu rolde ne yap[ıi]yoruz)/.test(text)) return 'Bu rolde ne yapabilirim?';
+  if (/(bu sat[ıi]r ne diyor|bu sat[ıi]r ne demek|bu rozet ne diyor|bu rozet ne demek|bu sat[ıi]r ne anlatiyor|bu sat[ıi]r[ıi] nasil okuyayim|bu sat[ıi]r[ıi] nasıl okuyayım)/.test(text)) return 'Bu satırı nasıl okurum?';
+  return raw;
+}
+
+
+function primaryConcernScore(normalized) {
+  const text = String(normalized || '').trim();
+  const scoreMap = {
+    'Bu neden olmuyor?': 98,
+    'Konum neden görünmüyor?': 96,
+    'Hazır mı?': 92,
+    'Şimdi hangi ekrana gitmeliyim?': 90,
+    'İlk neye bakayım?': 88,
+    'Bu rolde ne yapabilirim?': 82,
+    'Bu ekran ne için?': 78,
+    'Bu satırı nasıl okurum?': 76,
+  };
+  return Number(scoreMap[text] || 0);
+}
+
+function splitCompoundQuestion(message) {
+  const raw = String(message || '').trim();
+  if (!raw) return [];
+  return raw
+    .split(/(?:\s+(?:ama|fakat|yalnız|yalniz|ve sonra|ve bir de|bir de|ayrıca|ayrica|sonra|ve)\s+)|[\n\r]+|[;]+/i)
+    .map((row) => String(row || '').trim())
+    .filter(Boolean);
+}
+
+export function extractPrimaryConcern(message) {
+  const raw = String(message || '').trim();
+  if (!raw) return raw;
+  const parts = splitCompoundQuestion(raw);
+  if (parts.length <= 1 && raw.length < 96) return normalizeEverydayQuestion(raw);
+  const candidates = (parts.length ? parts : [raw]).map((part, idx) => {
+    const normalized = normalizeEverydayQuestion(part);
+    const changed = normalizeText(normalized) !== normalizeText(part);
+    let score = primaryConcernScore(normalized);
+    if (changed) score += 12;
+    if (/[?]/.test(part)) score += 3;
+    if (/(önce|once|şimdi|simdi|sonra|nereye|neden|niye|hazır|hazir|konum|rol)/i.test(part)) score += 2;
+    if (normalized === 'Şimdi hangi ekrana gitmeliyim?' && /(nereye|hangi ekrana|geçeyim|gideyim)/i.test(part)) score += 8;
+    if (normalized === 'Bu neden olmuyor?' && /(neden|niye|pasif|olmuyor|tak[ıi]l)/i.test(part)) score += 8;
+    if (normalized === 'Konum neden görünmüyor?' && /(konum|gps|harita)/i.test(part)) score += 8;
+    if (normalized === 'Hazır mı?' && /(haz[ıi]r|eksik|atamaya)/i.test(part)) score += 8;
+    score -= idx * 0.5;
+    return { part, normalized, score };
+  });
+  candidates.sort((a, b) => b.score - a.score);
+  const best = candidates[0] || null;
+  return String(best?.normalized || normalizeEverydayQuestion(raw)).trim();
+}
+
+
+function looksLikeShortFollowUp(message) {
+  const text = normalizeText(message);
+  if (!text) return false;
+  if (text.length > 72) return false;
+  return /(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra\??|simdi\??|şimdi\??|neden\??|niye\??|bunda\??|burada\??|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta)/.test(text);
+}
+
+function expandFollowUpMessage(message, conversationState, screenContext) {
+  const raw = String(message || '').trim();
+  const hasConversationAnchor = Boolean(conversationState?.lastQuestionType) || (Array.isArray(conversationState?.recentMessages) && conversationState.recentMessages.length > 0);
+  if (!hasConversationAnchor || !looksLikeShortFollowUp(raw)) return raw;
+  const text = normalizeText(raw);
+  const lastType = String(conversationState?.lastQuestionType || '');
+  const selectedLabel = firstNonEmpty(screenContext?.selectedLabel, conversationState?.lastSelectedLabel, conversationState?.lastEntityLabel, 'bu seçili kayıt');
+  if (/^(neden|niye)\??$/.test(text) || /(neden böyle|neden boyle|niye böyle|niye boyle)/.test(text)) {
+    return `${selectedLabel} için neden böyle görünüyor?`;
+  }
+  if (/(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra|şimdi|simdi)/.test(text)) {
+    if (['NEXT_SCREEN', 'GO_TO'].includes(lastType)) return `${selectedLabel} için hedef ekranda önce neyi kontrol etmeliyim?`;
+    return `${selectedLabel} için şimdi ne yapmalıyım?`;
+  }
+  if (/(bunda|burada|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta)/.test(text)) {
+    if (['WHY_BLOCKED'].includes(lastType)) return `${selectedLabel} için neden blokaj görünüyor?`;
+    if (['READINESS_CHECK'].includes(lastType)) return `${selectedLabel} için eksik ne var?`;
+    return `${selectedLabel} ne durumda?`;
+  }
+  return raw;
+}
+
+function buildContinuityMeta({ message, conversationState, screenContext, requestEntityType, requestEntityId, screenPath }) {
+  const currentType = String(screenContext?.selectedEntityType || requestEntityType || '');
+  const currentId = Number(screenContext?.selectedEntityId || requestEntityId || 0);
+  const lastType = String(conversationState?.lastSelectedEntityType || conversationState?.lastEntityType || '');
+  const lastId = Number(conversationState?.lastSelectedEntityId || conversationState?.lastEntityId || 0);
+  const anchorLabel = firstNonEmpty(screenContext?.selectedLabel, conversationState?.lastSelectedLabel, conversationState?.lastEntityLabel, '');
+  const isFollowUp = looksLikeShortFollowUp(message) || Boolean(conversationState?.lastQuestionType && Array.isArray(conversationState?.recentMessages) && conversationState.recentMessages.length);
+  const sameEntity = Boolean(currentType && currentId > 0 && currentType === lastType && currentId === lastId);
+  const sameScreen = Boolean(screenPath && String(conversationState?.lastScreenPath || '') === String(screenPath || ''));
+  return {
+    isFollowUp,
+    sameEntity,
+    sameScreen,
+    anchorLabel,
+    currentEntityType: currentType,
+    currentEntityId: currentId,
+  };
 }
 
 function pickScreenByKind(screens, kind) {
@@ -84,6 +197,9 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
     const planning = choose((row) => ['/', '/company', '/organization', '/school'].includes(String(row?.path || '')) || /planlama merkezi|organizasyon merkezi|okul merkezi|gezi \/ planlama merkezi/i.test(String(row?.label || '')));
     if (planning) return planning;
   }
+  const genericCurrentScreenQuestion = !explicitKind && (/(hangi\s+ekran\w*|hangi\s+men[üu]\w*|nereye\s+geç\w*|nereye\s+git\w*|buradan\s+sonra|sonraki\s+ekran|önce\s+neye\s+bakay\w*)/.test(text) || /(bu\s+ekran\s+ne\s+için|bu\s+ekran\s+ne\s+icin|bu\s+sayfa\s+ne\s+için|bu\s+sayfa\s+ne\s+icin|burada\s+ne\s+yapılır|burada\s+ne\s+yapilir|ne\s+işe\s+yarar|ne\s+ise\s+yarar)/.test(text) || /(bu\s+rolde|rolümde|rolumde|burada\s+neyi\s+yönetebilirim|burada\s+neyi\s+yonetebilirim|yetkim\s+ne|rol\s+yardımı|rol\s+yardimi)/.test(text));
+  if (genericCurrentScreenQuestion) return screenDefinition;
+
   const aliases = [
     { test: ['planlama merkezi', 'organizasyon merkezi', 'okul merkezi', 'gezi / planlama merkezi'], pick: (row) => ['/', '/company', '/organization', '/school'].includes(String(row?.path || '')) || /planlama merkezi|organizasyon merkezi|okul merkezi|gezi \/ planlama merkezi/i.test(String(row?.label || '')) },
     { test: ['vardiyalar', 'vardiya ekranı', 'vardiya ekrani'], pick: (row) => String(row?.path || '').includes('/shifts') },
@@ -98,10 +214,6 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
       const hit = choose(row.pick);
       if (hit) return hit;
     }
-  }
-
-  if (!explicitKind && /(hangi\s+ekran|ekran\s+hangisi|nereye\s+geçeyim|nereye\s+gitmeliyim|sonraki\s+ekran|önce\s+neye\s+bakayım|once\s+neye\s+bakayim)/.test(text)) {
-    return screenDefinition;
   }
 
   const scored = screens
@@ -972,7 +1084,7 @@ function composeSimpleScreenReply({ questionType, guide, message, screenDefiniti
   }
 
   if (questionType === 'ROLE_HELP') {
-    return `${purpose} ${menus.length ? `En çok işine yarayacak yerler: ${menus.join(', ')}.` : ''}`.trim();
+    return `${purpose} ${menus.length ? `En çok işine yarayacak yerler: ${menus.join(', ')}.` : ''} Şimdi: ${now}`.trim();
   }
 
   if (questionType === 'ROW_HELP') {
@@ -1553,11 +1665,16 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const roleMode = String(scope?.roleMode || 'OPERATIONS');
   const requestEntityType = String(sourceEntityType || entityType || 'screen');
   const requestEntityId = Number(sourceEntityId || entityId || 0);
-  const effectiveMessage = extractUserQuestion(message);
+  const rawMessage = extractUserQuestion(message);
+  const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext);
+  const effectiveMessage = extractPrimaryConcern(expandedMessage);
   const effectiveScreenDefinition = requestEntityType === 'screen' ? resolveReferencedScreenDefinition(user, screenContext, screenDefinition, effectiveMessage) : screenDefinition;
   const effectiveScreenContext = requestEntityType === 'screen' ? remapScreenContext(screenContext, effectiveScreenDefinition, screenDefinition) : screenContext;
   const screenPath = effectiveScreenDefinition?.path || effectiveScreenContext?.path || '';
-  const questionType = detectQuestionType(effectiveMessage, requestEntityType);
+  const continuity = buildContinuityMeta({ message: rawMessage, conversationState, screenContext: effectiveScreenContext, requestEntityType, requestEntityId, screenPath });
+  const continuityMeta = continuity;
+  const intentMeta = detectQuestionIntent(effectiveMessage, { entityType: requestEntityType, screenPath, roleMode, conversationState });
+  const questionType = intentMeta.questionType;
   const replyMode = resolveReplyMode(effectiveMessage, questionType, roleMode);
   const preferEntityContext = prefersSelectedEntity(questionType, requestEntityType, context);
   const answerEntityType = preferEntityContext ? String(resolvedEntityType || context?.type || entityType || requestEntityType) : requestEntityType;
@@ -1572,7 +1689,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     screenContext: effectiveScreenContext,
   });
 
-  const reply = composeReply({
+  const rawReply = composeReply({
     questionType,
     replyMode,
     guide,
@@ -1589,7 +1706,7 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   });
   const screenActions = roleMode === 'SIMPLE' ? [] : screenMenuActions(effectiveScreenDefinition);
   const guideActions = Array.isArray(guide.quickActions) ? guide.quickActions : [];
-  const entityActions = entityActionPlan({ entityType: answerEntityType, context, screenDefinition: effectiveScreenDefinition, roleMode, questionType, reply });
+  const entityActions = entityActionPlan({ entityType: answerEntityType, context, screenDefinition: effectiveScreenDefinition, roleMode, questionType, reply: rawReply });
   const mergedActions = mergeQuickActions(entityActions, screenActions, guideActions);
   const preferredRouteTarget = (() => {
     if (questionType === 'NEXT_SCREEN') {
@@ -1619,9 +1736,10 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const askFallback = makeAskAction('Bunu sor: Bu kayıt ne durumda?', answerEntityType === 'vehicle' ? 'konum neden görünmüyor' : 'bu kayıt ne durumda', 'Aynı kayıt için hızlı takip sorusunu tekrar gönderir.');
   const withAsk = actionList.some((x) => x?.actionKind === 'ASK') ? actionList : [askFallback, ...actionList];
   const preferRoute = questionType === 'NEXT_SCREEN' || questionType === 'GO_TO' || isDirectRouteRequest(effectiveMessage);
+  const preferOpenRoute = preferRoute || questionType === 'ROLE_HELP' || (roleMode === 'SIMPLE' && ['NEXT_STEP', 'FIRST_CONTROL'].includes(String(questionType || '')));
   const actionPriority = roleMode === 'SIMPLE'
     ? { OPEN_ROUTE: 0, ASK: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 }
-    : preferRoute
+    : preferOpenRoute
       ? { OPEN_ROUTE: 0, ASK: 1, OPEN_GUIDE: 2, COPY_TEXT: 3 }
       : { ASK: 0, OPEN_GUIDE: 1, OPEN_ROUTE: 2, COPY_TEXT: 3 };
   const prioritizedActions = [...withAsk].sort((a, b) => (actionPriority[String(a?.actionKind || 'OPEN_ROUTE')] ?? 9) - (actionPriority[String(b?.actionKind || 'OPEN_ROUTE')] ?? 9));
@@ -1632,7 +1750,30 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     const supportAction = prioritizedActions.find((x) => supportKinds.has(String(x?.actionKind || '')));
     if (supportAction) finalQuickActions = [...finalQuickActions.slice(0, Math.max(0, maxQuickActions - 1)), supportAction];
   }
-  const contextSummary = contextSummaryForRoleMode(roleMode, effectiveScreenDefinition, entityLabel, scope, answerEntityType);
+  const reply = polishReply({ reply: rawReply, questionType, screenDefinition: effectiveScreenDefinition, roleMode });
+  const qualityHints = buildQualityHints({ reply, questionType, quickActions: finalQuickActions, intentConfidence: intentMeta?.confidence, roleMode });
+  const uncertaintyMeta = buildUncertaintyMeta({ questionType, intentConfidence: intentMeta?.confidence, qualityHints, screenDefinition: effectiveScreenDefinition, quickActions: finalQuickActions, roleMode });
+  const questionLabel = questionTypeLabel(questionType);
+  const routePlan = buildRoutePlan({ questionType, quickActions: finalQuickActions, screenDefinition: effectiveScreenDefinition, continuity });
+  const responseSections = buildResponseSections({
+    questionType,
+    questionLabel,
+    quickActions: finalQuickActions,
+    suggestedChips,
+    qualityHints,
+    uncertaintyMeta,
+    screenDefinition: effectiveScreenDefinition,
+    roleMode,
+    continuity,
+    continuityMeta,
+    routePlan,
+  });
+  const baseContextSummary = contextSummaryForRoleMode(roleMode, effectiveScreenDefinition, entityLabel, scope, answerEntityType);
+  const contextSummary = continuity?.sameEntity && continuity?.anchorLabel
+    ? `Aynı kayıt üzerinde devam ediyoruz: ${continuity.anchorLabel}. ${baseContextSummary}`.trim()
+    : continuity?.isFollowUp && continuity?.sameScreen
+      ? `Aynı ekran bağlamında devam ediyoruz. ${baseContextSummary}`.trim()
+      : baseContextSummary;
   const actionPlanLabel = actionPlanLabelForRoleMode(roleMode, answerEntityType);
 
   return {
@@ -1655,9 +1796,19 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     contextSummary,
     reply,
     replyMode,
+    questionType,
+    questionLabel,
     suggestedChips,
     quickActions: finalQuickActions,
     linkedGuides,
+    intentConfidence: Number(intentMeta?.confidence || 0),
+    intentSignals: Array.isArray(intentMeta?.matchedSignals) ? intentMeta.matchedSignals : [],
+    qualityHints,
+    uncertaintyMeta,
+    responseSections,
+    continuity,
+    continuityMeta,
+    routePlan,
     followUpPrompt: nextPromptByEntity(entityType, roleMode),
     actionPlanLabel,
     conversationState: {
@@ -1673,10 +1824,260 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
       lastQuickActions: finalQuickActions.slice(0, 3).map((x) => ({ label: x?.label || '', actionKind: x?.actionKind || 'OPEN_ROUTE', routeKey: x?.routeKey || '', askText: x?.askText || '', guideJobType: x?.guide?.jobType || '' })),
       lastActionPlanLabel: actionPlanLabel,
       lastUserMessage: String(effectiveMessage || '').trim(),
+      lastPrimaryConcern: String(effectiveMessage || '').trim(),
+      lastRawUserMessage: String(rawMessage || '').trim(),
+      lastSelectedEntityType: continuity?.currentEntityType || '',
+      lastSelectedEntityId: Number(continuity?.currentEntityId || 0) || null,
+      lastSelectedLabel: continuity?.anchorLabel || '',
+      lastContinuityMeta: continuityMeta,
       recentMessages: Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages.slice(-8) : [],
     },
   };
 }
+
+function normalizeReplySurface(text) {
+  return String(text || '').replace(/\s+/g, ' ').replace(/\s+([.,!?;:])/g, '$1').trim();
+}
+
+function trimReplyLength(text, maxLength = 560) {
+  const value = normalizeReplySurface(text);
+  if (value.length <= maxLength) return value;
+  const sliced = value.slice(0, maxLength - 1);
+  const cut = Math.max(sliced.lastIndexOf('. '), sliced.lastIndexOf('! '), sliced.lastIndexOf('? '));
+  return `${(cut > 90 ? sliced.slice(0, cut + 1) : sliced).trim()}…`;
+}
+
+function openingActionForQuestionType(questionType, screenDefinition) {
+  const first = firstNonEmpty(screenDefinition?.firstStep, screenDefinition?.nextStep, 'ilgili kayıt veya alanı kontrol et');
+  const map = {
+    NEXT_STEP: `Önce ${first}.`,
+    NEXT_SCREEN: `Önce ${first}.`,
+    GO_TO: `Önce ${first}.`,
+    READINESS_CHECK: `Önce ${first}.`,
+    FIRST_CONTROL: `Önce ${first}.`,
+    WHY_BLOCKED: `Önce ${first}.`,
+    STATUS_HELP: `Önce ${first}.`,
+    SAFE_NEXT_STEP: `Önce ${first}.`,
+    ROLE_HELP: `Önce ${first}.`,
+    SCREEN_PURPOSE: `Önce ${first}.`,
+  };
+  return firstNonEmpty(map[String(questionType || '')], '');
+}
+
+function ensureActionLead(reply, questionType, screenDefinition) {
+  const value = normalizeReplySurface(reply);
+  if (!value) return value;
+  if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE'].includes(String(questionType || ''))) {
+    if (!/^(Şimdi:|Şimdi yap:|Önce:|Önce\s)/.test(value)) {
+      const lead = openingActionForQuestionType(questionType, screenDefinition);
+      return `${lead} ${value}`.trim();
+    }
+  }
+  return value;
+}
+
+function buildQualityHints({ reply, questionType, quickActions, intentConfidence, roleMode }) {
+  const text = normalizeReplySurface(reply);
+  const actionReady = /(Şimdi:|Şimdi yap:|Önce:|Önce\s)/.test(text);
+  const concise = text.length <= (roleMode === 'SIMPLE' ? 360 : 720);
+  const hasSupportAction = (Array.isArray(quickActions) ? quickActions : []).some((row) => ['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE'].includes(String(row?.actionKind || '')));
+  return {
+    concise,
+    actionable: actionReady,
+    hasSupportAction,
+    intentConfidence: Number(intentConfidence || 0),
+    questionType: String(questionType || ''),
+  };
+}
+
+function verificationHintForQuestionType(questionType, screenDefinition, quickActions) {
+  const firstControl = firstNonEmpty(...(Array.isArray(screenDefinition?.firstControls) ? screenDefinition.firstControls : []), screenDefinition?.firstStep, 'ilgili kayıt veya ilk kontrol alanı');
+  const screenLabel = String(screenDefinition?.label || 'bu ekran');
+  const routeAction = (Array.isArray(quickActions) ? quickActions : []).find((row) => String(row?.actionKind || '') === 'OPEN_ROUTE');
+  if (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))) return `${screenLabel} için önce ${firstControl} kontrolü yap; sonra yönlendirmeyi uygula.`;
+  if (questionType === 'WHY_BLOCKED') return `Blokajı kesinleştirmek için önce ${firstControl} ve pasif/kırmızı alanları kontrol et.`;
+  if (questionType === 'READINESS_CHECK') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
+  if (questionType === 'STATUS_HELP') return `Durumu netleştirmek için önce ${firstControl} ve varsa seçili kaydın son sinyallerine bak.`;
+  if (routeAction?.label) return `${routeAction.label} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
+  return `Önce ${firstControl} kontrolünü yap; sonra bu yönlendirmeyi uygula.`;
+}
+
+function buildUncertaintyMeta({ questionType, intentConfidence, qualityHints, screenDefinition, quickActions, roleMode }) {
+  const confidence = Number(intentConfidence || 0);
+  const actionable = Boolean(qualityHints?.actionable);
+  const hasSupportAction = Boolean(qualityHints?.hasSupportAction);
+  const concise = Boolean(qualityHints?.concise);
+  const needsVerification = confidence < 0.72 || !actionable || !hasSupportAction;
+  const cautionLevel = confidence >= 0.88 && actionable && hasSupportAction ? 'LOW' : (confidence >= 0.72 && actionable ? 'MEDIUM' : 'HIGH');
+  const labelMap = { LOW: 'Kararlı öneri', MEDIUM: 'Kontrollü öneri', HIGH: 'Önce kontrol et' };
+  const summaryMap = {
+    LOW: 'Bu cevap güçlü sinyallere dayanıyor.',
+    MEDIUM: 'Bu cevap iyi bir yön verir; yine de ilk kontrolü yapman güvenli olur.',
+    HIGH: 'Bu cevap temkinli okunmalı; önce ekrandaki ana kontrolü doğrula.',
+  };
+  return {
+    cautionLevel,
+    label: labelMap[cautionLevel] || 'Kontrollü öneri',
+    needsVerification,
+    concise,
+    verifyText: needsVerification ? verificationHintForQuestionType(questionType, screenDefinition, quickActions) : '',
+    summary: summaryMap[cautionLevel] || 'Bu cevap temkinli okunmalı.',
+    intentConfidence: confidence,
+    roleMode: String(roleMode || ''),
+  };
+}
+
+function questionTypeLabel(questionType) {
+  const labels = {
+    NEXT_SCREEN: 'Nereye gitmeliyim',
+    GO_TO: 'Hızlı geçiş',
+    FIRST_CONTROL: 'İlk neye bakayım',
+    STATUS_HELP: 'Şu an ne durumda',
+    READINESS_CHECK: 'Hazır mı',
+    WHY_BLOCKED: 'Neden olmuyor',
+    BUTTON_HELP: 'Bu buton ne yapar',
+    SCREEN_PURPOSE: 'Bu ekran ne için',
+    SAFE_NEXT_STEP: 'Şimdi en güvenli adım',
+    LOCATION_HELP: 'Konum neden görünmüyor',
+    ROLE_HELP: 'Bu rolde ne yapabilirim',
+  };
+  return labels[String(questionType || '')] || 'Copilot yardımı';
+}
+
+function buildRoutePlan({ questionType, quickActions, screenDefinition, continuity }) {
+  const routeActions = (Array.isArray(quickActions) ? quickActions : []).filter((row) => String(row?.actionKind || '') === 'OPEN_ROUTE' && row?.routeKey);
+  const askAction = (Array.isArray(quickActions) ? quickActions : []).find((row) => String(row?.actionKind || '') === 'ASK');
+  const guideAction = (Array.isArray(quickActions) ? quickActions : []).find((row) => String(row?.actionKind || '') === 'OPEN_GUIDE');
+  const primaryRoute = routeActions[0] || null;
+  const secondaryRoute = routeActions[1] || null;
+  const routeHeavy = ['NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'ROLE_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''));
+  if (!routeHeavy && !primaryRoute) return null;
+  const steps = [];
+  if (primaryRoute?.label) steps.push(`Önce ${primaryRoute.label}`);
+  if (continuity?.sameEntity && continuity?.anchorLabel) steps.push(`Aynı kayıtla devam et: ${continuity.anchorLabel}`);
+  const firstControl = firstNonEmpty(...(Array.isArray(screenDefinition?.firstControls) ? screenDefinition.firstControls : []), screenDefinition?.firstStep, 'ilk kontrol alanı');
+  if (firstControl) steps.push(`İçeride ilk olarak şunu kontrol et: ${firstControl}`);
+  if (secondaryRoute?.label) steps.push(`Gerekirse sonra ${secondaryRoute.label}`);
+  if (askAction?.askText || askAction?.label) steps.push(`Takılırsan bunu sor: ${firstNonEmpty(askAction?.askText, askAction?.label, '')}`);
+  else if (guideAction?.label) steps.push(`İstersen rehber aç: ${guideAction.label}`);
+  return {
+    primaryRouteLabel: firstNonEmpty(primaryRoute?.label, ''),
+    primaryRouteKey: firstNonEmpty(primaryRoute?.routeKey, ''),
+    secondaryRouteLabel: firstNonEmpty(secondaryRoute?.label, ''),
+    summary: steps.slice(0, 2).join(' • '),
+    steps: steps.slice(0, 5),
+    routeHeavy,
+  };
+}
+
+function responseWhyText(questionType, screenDefinition) {
+  const screenLabel = String(screenDefinition?.label || 'bu ekran');
+  if (questionType === 'NEXT_SCREEN' || questionType === 'GO_TO') return `${screenLabel} ekranında sonraki doğru adımı bulmaya odaklandım.`;
+  if (questionType === 'FIRST_CONTROL') return `${screenLabel} ekranında önce bakılması gereken noktayı öne çıkardım.`;
+  if (questionType === 'STATUS_HELP' || questionType === 'READINESS_CHECK') return `${screenLabel} ekranındaki durum ve eksik işaretlerine göre cevap verdim.`;
+  if (questionType === 'WHY_BLOCKED') return `${screenLabel} ekranındaki blokaj ve eksik bilgi ihtimaline göre cevap verdim.`;
+  if (questionType === 'LOCATION_HELP') return `${screenLabel} ekranındaki konum ve GPS işaretlerine göre yorum yaptım.`;
+  return `${screenLabel} ekranını ve seçili kaydı birlikte dikkate aldım.`;
+}
+
+function buildResponseSections({ questionType, questionLabel, quickActions, suggestedChips, qualityHints, uncertaintyMeta, screenDefinition, roleMode, continuity, routePlan }) {
+  const sections = [];
+  const primaryAction = Array.isArray(quickActions) ? quickActions[0] : null;
+  if (primaryAction?.label) {
+    sections.push({
+      kind: 'NEXT',
+      title: 'Şimdi bunu yap',
+      text: primaryAction.label,
+      hint: primaryAction.reason || 'Bu adım seni doğru yere götürür ya da bir sonraki işi başlatır.',
+    });
+  }
+  sections.push({
+    kind: 'WHY',
+    title: 'Bunu neden söyledim',
+    text: responseWhyText(questionType, screenDefinition),
+    hint: questionLabel || 'Copilot yardımı',
+  });
+  if (uncertaintyMeta?.needsVerification && uncertaintyMeta?.verifyText) {
+    sections.push({
+      kind: 'VERIFY',
+      title: 'Emin değilsen önce şuna bak',
+      text: uncertaintyMeta.verifyText,
+      hint: uncertaintyMeta.label || 'Kontrollü öneri',
+    });
+  }
+  if (routePlan?.steps?.length) {
+    sections.push({
+      kind: 'ROUTE_CHAIN',
+      title: 'İzlenecek yol',
+      text: routePlan.summary || routePlan.steps[0] || '',
+      hint: routePlan.primaryRouteLabel ? `Hedef ekran: ${routePlan.primaryRouteLabel}` : 'İzlenecek yol',
+      items: routePlan.steps,
+    });
+  }
+  if (continuity?.sameEntity && continuity?.anchorLabel) {
+    sections.push({
+      kind: 'THREAD',
+      title: 'Aynı kayıt',
+      text: continuity.anchorLabel,
+      hint: 'Bu cevap aynı seçili kayıt üstünden devam eder.',
+    });
+  } else if (continuity?.isFollowUp && continuity?.sameScreen) {
+    sections.push({
+      kind: 'THREAD',
+      title: 'Aynı konuşmanın devamı',
+      text: 'Önceki konuşmanın aynı ekran içindeki devamı.',
+    });
+  }
+  const followUps = Array.isArray(suggestedChips) ? suggestedChips.slice(0, roleMode === 'SIMPLE' ? 2 : 3) : [];
+  if (followUps.length) {
+    sections.push({
+      kind: 'FOLLOW_UP',
+      title: 'Sonra şunu sor',
+      items: followUps,
+    });
+  }
+  if (qualityHints && roleMode !== 'SIMPLE') {
+    const checks = [];
+    if (!qualityHints.actionable) checks.push('Daha net bir sonraki adım iste.');
+    if (!qualityHints.concise) checks.push('Daha kısa anlatmasını iste.');
+    if (!qualityHints.hasSupportAction) checks.push('İlgili ekranı açtır ya da rehber iste.');
+    if (checks.length) {
+      sections.push({
+        kind: 'CHECK',
+        title: 'Gerekirse bunu da yap',
+        items: checks,
+      });
+    }
+  }
+  return sections;
+}
+
+function applyPlainLanguage(text) {
+  return String(text || '')
+    .replace(/bağlam/gi, 'durum')
+    .replace(/blokaj/gi, 'engel')
+    .replace(/teşhis/gi, 'yorum')
+    .replace(/sinyallerine göre/gi, 'işaretlerine göre')
+    .replace(/ilgili kayıt veya alanı kontrol et/gi, 'ilgili kayıt ya da alanı kontrol et')
+    .replace(/İlgili sonraki adımı hızlı açar veya tekrar sorar\./g, 'Bu adım seni doğru yere götürür ya da aynı soruyu ilerletir.')
+    .replace(/Hangi yere gideceğini aşağıdaki düğmelerden açabilirsin\./g, 'Nereye gideceğini aşağıdaki düğmelerden açabilirsin.')
+    .replace(/Temel veri kuralları:/g, 'Önemli kural:')
+    .replace(/Temel kural:/g, 'Önemli kural:')
+    .replace(/Kritik eksik görünmüyor\./g, 'Belirgin eksik görünmüyor.')
+    .replace(/Belirgin blokaj görünmüyor\./g, 'Belirgin engel görünmüyor.')
+    .replace(/Şimdi bunu yap:/g, 'Şimdi yap:')
+    .replace(/Şimdi bunu yap /g, 'Şimdi yap ')
+    .replace(/Kaçın:/g, 'Yapma:')
+    .replace(/Takılırsan bak:/g, 'Takılırsan şuna bak:')
+    .replace(/Sonuç:/g, 'Bunu yapınca:')
+    .replace(/Dikkat isteyen konu:/g, 'Dikkat et:');
+}
+
+function polishReply({ reply, questionType, screenDefinition, roleMode }) {
+  const withLead = ensureActionLead(reply, questionType, screenDefinition);
+  return trimReplyLength(applyPlainLanguage(withLead), roleMode === 'SIMPLE' ? 260 : 560);
+}
+
 function termComparisonReplyV2(message) {
   const text = normalizeText(message);
   const asksDiff = /aynı şey mi|ayni sey mi|farkı ne|farki ne/.test(text);

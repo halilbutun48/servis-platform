@@ -30,7 +30,7 @@ KVKK prensipleri (teknik açıdan):
 - **M40:** RBAC matrisi + Log export audit trail check
 - **M41:** Refresh token + revoke + device binding + Redis rate-limit check
 
-> Not: Bu repoda STABLE_TO=37 olarak kilitli (auto pack/reset-and-pack M37’de kalır).
+> Not: Bu repoda STABLE_TO=78 olarak kilitli (auto pack/reset-and-pack M78’de kalır).
 > M38+ check’leri çalıştırmak için `tools/STABLE_TO.txt` değerini artır veya manuel `-To 38/39/40/41` kullan.
 
 ---

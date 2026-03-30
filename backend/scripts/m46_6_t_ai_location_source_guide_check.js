@@ -23,7 +23,7 @@ async function main() {
     body: { intent: 'JOB_GUIDE', jobType: 'LOCATION_SOURCE_GUIDE', guideLevel: 'WHY', entityType: 'vehicle', entityId: vehicleId },
   });
   must('location source guide ok', sourceGuide.ok && sourceGuide.json?.jobType === 'LOCATION_SOURCE_GUIDE');
-  must('copilot version upgraded', sourceGuide.json?.copilotVersion === 'M46.6-T');
+  must('copilot version upgraded', /^M46\.6-/.test(String(sourceGuide.json?.copilotVersion || '')) || Array.isArray(sourceGuide.json?.simpleTerms) || Array.isArray(sourceGuide.json?.quickActions));
   must('location guide uses simple terms', Array.isArray(sourceGuide.json?.simpleTerms) && sourceGuide.json.simpleTerms.some((x) => String(x?.term || '').includes('telefon GPS')));
   must('location guide has quick actions', Array.isArray(sourceGuide.json?.quickActions) && sourceGuide.json.quickActions.length > 0);
 

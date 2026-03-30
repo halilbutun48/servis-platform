@@ -4,6 +4,8 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { toHHMM, weekMaskToText } from "../../utils/agreementUi";
 import { ymdTR } from "../../utils/time";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -46,6 +48,13 @@ function ymd(d) {
   return String(d || "").slice(0, 10);
 }
 
+function agreementRowStyle(isSelected) {
+  return {
+    cursor: 'pointer',
+    background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'transparent',
+  };
+}
+
 function parseTryInput(raw) {
   if (raw == null) return null;
   const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
@@ -63,6 +72,54 @@ function OfferCell({ amount, note }) {
       {n ? <div className="muted" style={{ fontSize: 12 }}>{n}</div> : null}
     </div>
   );
+}
+
+
+function buildAgreementCopilotFacts(item, summary = {}) {
+  const status = String(item?.status || '').toUpperCase();
+  const hasVehicle = Boolean(item?.vehicleId);
+  const hasDriver = Boolean(item?.driverId);
+  const shiftOpen = Number(item?.shiftCount ?? summary.shiftCount ?? 0) > 0;
+  const blockers = [];
+  const missing = [];
+  if (!item?.id) blockers.push('Önce odak sözleşme seçilmeden yorum genel kalır.');
+  if (!hasVehicle) missing.push('Araç seçilmemiş');
+  if (!hasDriver) missing.push('Sürücü seçilmemiş');
+  if (["ACTIVE", "APPROVED"].includes(status) && (!hasVehicle || !hasDriver)) blockers.push('Sözleşme aktif görünse de araç veya sürücü eksikse saha için tam hazır değildir.');
+  if (["REQUESTED", "COUNTERED"].includes(status)) blockers.push('Karar bekleyen sözleşmede önce onay / karşı teklif yönü netleşmelidir.');
+  return {
+    screenType: 'AGREEMENTS',
+    stage: status || '-',
+    readiness: blockers.length ? 'REVIEW_NEEDED' : (["ACTIVE", "APPROVED"].includes(status) ? 'READY' : 'REVIEW_NEEDED'),
+    readinessScore: blockers.length ? 48 : (["ACTIVE", "APPROVED"].includes(status) ? 84 : 66),
+    blockers,
+    missing,
+    counters: {
+      pending: Number(summary.pendingCount || 0),
+      other: Number(summary.otherCount || 0),
+      extend: Number(summary.extendCount || 0),
+      shifts: Number(item?.shiftCount ?? 0),
+    },
+    evidence: [
+      `Durum: ${status || '-'}`,
+      `Tutar: ${moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-')}`,
+      `Araç: ${hasVehicle ? `#${item.vehicleId}` : 'Yok'}`,
+      `Sürücü: ${hasDriver ? `#${item.driverId}` : 'Yok'}`,
+      `Vardiya: ${shiftOpen ? 'Var' : 'Yok'}`,
+    ],
+    reasoningLead: blockers.length
+      ? 'Bu sözleşmede ana risk karar veya atama tarafında görünüyor.'
+      : 'Bu sözleşmede önce durum, sonra tarih ve araç-sürücü bağı okunmalı.',
+    nextBestAction: status === 'REQUESTED'
+      ? 'Önce sözleşmeyi onaylayacaksan araç ve sürücü seç. Karşı teklif vereceksen tutar ve notu netleştir.'
+      : status === 'COUNTERED'
+        ? 'Önce karşı teklif notunu ve tutarı tekrar kontrol et. Sonra karar yönünü netleştir.'
+        : (["ACTIVE", "APPROVED"].includes(status)
+          ? 'Önce bağlı vardiya ve ufukta üretilen iş sayısını kontrol et.'
+          : 'Önce durum ve tarih aralığını doğrula. Sonra bağlı işi görmek için vardiya tarafına geç.'),
+    safestNextStep: 'En risksiz adım, seçili sözleşmenin tarih aralığı ile araç-sürücü bağını birlikte doğrulamaktır.',
+    compareHint: 'Sözleşme onayı ile saha hazırlığı aynı şey değildir; araç ve sürücü eksikse iş hâlâ operasyona tam hazır sayılmaz.',
+  };
 }
 
 function ConflictBox({ errObj }) {
@@ -126,9 +183,62 @@ export default function AgreementsPanel() {
   const [extendCounterId, setExtendCounterId] = useState(null);
   const [extendCounterAmount, setExtendCounterAmount] = useState("");
   const [extendCounterNote, setExtendCounterNote] = useState("");
+  const [selectedAgreementId, setSelectedAgreementId] = useState(null);
+  const [filterQ, setFilterQ] = useState("");
 
   const approveTarget = useMemo(() => pending.find((x) => x.id === approveId), [pending, approveId]);
   const counterTarget = useMemo(() => pending.find((x) => x.id === counterId), [pending, counterId]);
+  const extendCounterTarget = useMemo(() => extendItems.find((x) => x.id === extendCounterId), [extendItems, extendCounterId]);
+  const selectedAgreement = useMemo(() => {
+    const wanted = Number(selectedAgreementId || 0);
+    if (!wanted) return null;
+    return pending.find((x) => Number(x.id) === wanted) || others.find((x) => Number(x.id) === wanted) || extendItems.find((x) => Number(x.id) === wanted) || null;
+  }, [selectedAgreementId, pending, others, extendItems]);
+  const copilotAgreementTarget = useMemo(() => selectedAgreement || approveTarget || counterTarget || extendCounterTarget || pending[0] || others[0] || null, [selectedAgreement, approveTarget, counterTarget, extendCounterTarget, pending, others]);
+  const filteredExtendItems = useMemo(() => extendItems.filter((a) => includesFilter([
+    a?.id, a?.status, a?.extendStatus, a?.startDate, a?.endDate, a?.extendRequestedEndDate, a?.extendRequestedEndAt,
+    a?.companyOfferAmount, a?.roomOfferAmount, a?.extendOfferAmount, a?.extendCounterAmount,
+    a?.companyOfferNote, a?.roomOfferNote, a?.extendOfferNote, a?.extendCounterNote, weekMaskToText(a?.weekMask),
+  ], filterQ)), [extendItems, filterQ]);
+  const filteredPending = useMemo(() => pending.filter((a) => includesFilter([
+    a?.id, a?.status, a?.startDate, a?.endDate, a?.companyOfferAmount, a?.roomOfferAmount, a?.companyOfferNote, a?.roomOfferNote,
+    a?.direction, a?.pattern, a?.hubLat, a?.hubLng, weekMaskToText(a?.weekMask),
+  ], filterQ)), [pending, filterQ]);
+  const filteredOthers = useMemo(() => others.filter((a) => includesFilter([
+    a?.id, a?.status, a?.startDate, a?.endDate, a?.companyOfferAmount, a?.roomOfferAmount, a?.companyOfferNote, a?.roomOfferNote,
+    a?.direction, a?.pattern, a?.hubLat, a?.hubLng, weekMaskToText(a?.weekMask),
+  ], filterQ)), [others, filterQ]);
+
+  useEffect(() => {
+    const item = copilotAgreementTarget;
+    if (!item) {
+      clearCopilotSelection('/room/agreements');
+      return;
+    }
+    const facts = buildAgreementCopilotFacts(item, { pendingCount: pending.length, otherCount: others.length, extendCount: extendItems.length, shiftCount: Number(shiftStats?.[item.id]?.todayTotal || 0) + Number(shiftStats?.[item.id]?.horizonOpen || 0) });
+    setCopilotSelection({
+      scopeKey: '/room/agreements',
+      entityType: item?.shiftId ? 'shift' : 'screen',
+      entityId: Number(item?.shiftId || 1106) || 1106,
+      label: `Sözleşme #${item.id}`,
+      summary: [String(item?.status || '').toUpperCase() || '-', ymdTR(item?.startDate), ymdTR(item?.endDate)].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Durum', value: String(item?.status || '-').toUpperCase(), help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
+        { label: 'Başlangıç', value: ymdTR(item?.startDate), help: 'Sözleşmenin başlangıç tarihini gösterir.' },
+        { label: 'Bitiş', value: ymdTR(item?.endDate), help: 'Sözleşmenin bitiş tarihini gösterir.' },
+        { label: 'Tutar', value: moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-'), help: 'Şirkete ait teklif veya sözleşme tutarını gösterir.' },
+        { label: 'Araç', value: item?.vehicleId ? `#${item.vehicleId}` : '-', help: 'Onay sırasında seçilen aracı gösterir.' },
+        { label: 'Sürücü', value: item?.driverId ? `#${item.driverId}` : '-', help: 'Onay sırasında seçilen sürücüyü gösterir.' },
+        { label: 'Bugün / Ufuk', value: `${Number(shiftStats?.[item.id]?.todayDone || 0)}/${Number(shiftStats?.[item.id]?.todayTotal || 0)} DONE • ${Number(shiftStats?.[item.id]?.horizonOpen || 0)} APPROVED`, help: 'Bugünkü ilerlemeyi ve 7 günlük ufuktaki üretilmiş vardiya sayısını gösterir.' },
+      ],
+      badges: [
+        { label: 'Liste', value: pending.some((x) => x.id === item.id) ? 'Bekleyen' : others.some((x) => x.id === item.id) ? 'Diğer' : 'Uzatma', help: 'Sözleşmenin şu an hangi bölümde göründüğünü gösterir.' },
+        { label: 'Kalan Gün', value: daysLeftYmd(item?.endDate) == null ? '-' : `${daysLeftYmd(item?.endDate)} gün`, help: 'Bitiş tarihine kaç gün kaldığını özetler.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/room/agreements');
+  }, [copilotAgreementTarget, pending, others, extendItems, shiftStats]);
 
   async function loadAll() {
     if (!token) return;
@@ -294,7 +404,14 @@ export default function AgreementsPanel() {
 
       {err ? <div className="card err">{String(err)}</div> : null}
 
-      
+      <div className="card" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
+        <div>
+          <div className="muted">Filtre</div>
+          <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="ID / durum / teklif / tarih / not" />
+        </div>
+        <div className="muted">Gösterilen: <b>{filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{pending.length + others.length + extendItems.length}</b></div>
+      </div>
+
       <div className="card">
         <div style={{ fontWeight: 900, marginBottom: 10 }}>Uzatma Talepleri (extend)</div>
         <div className="muted" style={{ marginBottom: 10 }}>
@@ -315,11 +432,11 @@ export default function AgreementsPanel() {
               </tr>
             </thead>
             <tbody>
-              {extendItems.map((a) => {
+              {filteredExtendItems.map((a) => {
                 const ex = String(a.extendStatus || "NONE").toUpperCase();
                 const reqEnd = ymd(a.extendRequestedEndDate);
                 return (
-                  <tr key={"ext-" + a.id}>
+                  <tr key={"ext-" + a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                     <td>{a.id}</td>
                     <td className="muted">{ymd(a.startDate)} → {ymd(a.endDate)}</td>
                     <td className="muted">{reqEnd || "-"}</td>
@@ -328,17 +445,18 @@ export default function AgreementsPanel() {
                     <td className="muted">{ex}</td>
                     <td>
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                        <button type="button" className="btn sm" disabled={busy || ex !== "PENDING"} onClick={() => extendDecision(a.id, "ACCEPT")}>
+                        <button type="button" className="btn sm" disabled={busy || ex !== "PENDING"} onClick={(e) => { e.stopPropagation(); extendDecision(a.id, "ACCEPT"); }}>
                           Kabul
                         </button>
-                        <button type="button" className="btn sm ghost" disabled={busy || ex !== "PENDING"} onClick={() => extendDecision(a.id, "REJECT")}>
+                        <button type="button" className="btn sm ghost" disabled={busy || ex !== "PENDING"} onClick={(e) => { e.stopPropagation(); extendDecision(a.id, "REJECT"); }}>
                           Reddet
                         </button>
                         <button
                           type="button"
                           className="btn sm ghost"
                           disabled={busy || ex !== "PENDING"}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setExtendCounterId(a.id);
                             setExtendCounterAmount(String(a.extendCounterAmount ?? a.extendOfferAmount ?? a.companyOfferAmount ?? ""));
                             setExtendCounterNote(String(a.extendCounterNote ?? ""));
@@ -388,7 +506,7 @@ export default function AgreementsPanel() {
                   </tr>
                 );
               })}
-              {!extendItems.length ? (
+              {!filteredExtendItems.length ? (
                 <tr>
                   <td colSpan={7} className="muted">Uzatma talebi yok.</td>
                 </tr>
@@ -417,8 +535,8 @@ export default function AgreementsPanel() {
               </tr>
             </thead>
             <tbody>
-              {pending.map((a) => (
-                <tr key={a.id}>
+              {filteredPending.map((a) => (
+                <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                   <td>{a.id}</td>
                   <td className="muted">
                     {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
@@ -441,7 +559,8 @@ export default function AgreementsPanel() {
                       type="button"
                       className="btn sm ghost"
                       disabled={busy}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setCounterId(a.id);
                         setApproveId(null);
                         setConflict(null);
@@ -455,7 +574,8 @@ export default function AgreementsPanel() {
                       type="button"
                       className="btn sm"
                       disabled={busy}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setApproveId(a.id);
                         setCounterId(null);
                         setConflict(null);
@@ -466,7 +586,7 @@ export default function AgreementsPanel() {
                   </td>
                 </tr>
               ))}
-              {!pending.length ? (
+              {!filteredPending.length ? (
                 <tr>
                   <td colSpan={9} className="muted">Pending yok.</td>
                 </tr>
@@ -609,8 +729,8 @@ export default function AgreementsPanel() {
               </tr>
             </thead>
             <tbody>
-              {others.map((a) => (
-                <tr key={a.id}>
+              {filteredOthers.map((a) => (
+                <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                   <td>{a.id}</td>
                   <td>{pill(a.status)}</td>
                   <td className="muted">
@@ -627,7 +747,7 @@ export default function AgreementsPanel() {
                   <td className="muted">{a.driver?.fullName ?? a.driverId ?? "-"}</td>
                 </tr>
               ))}
-              {!others.length ? (
+              {!filteredOthers.length ? (
                 <tr>
                   <td colSpan={10} className="muted">Kayıt yok.</td>
                 </tr>

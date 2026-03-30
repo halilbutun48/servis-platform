@@ -20,14 +20,14 @@ foreach($f in $files){
 }
 
 Write-Host "INFO Checking compatibility updates"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") '["M46.1","M46.2","M46.3","M46.4","M46.5"]' "m46.1 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") '["M46.2","M46.3","M46.4","M46.5"]' "m46.2 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_3_ai_copilot_quality_evidence_check.js") '["M46.3","M46.4","M46.5"]' "m46.3 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1") 'copilotVersion:' "m46.3 repo-contract accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") 'typeof roomSummary.json?.copilotVersion === "string"' "m46.1 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") 'typeof readiness.json?.copilotVersion === "string"' "m46.2 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_3_ai_copilot_quality_evidence_check.js") 'typeof shiftSummary.json?.copilotVersion === "string"' "m46.3 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "tools\check_m46_3_ai_copilot_quality_evidence_repo_contract.ps1") 'copilotVersion' "m46.3 repo-contract accepts forward versions"
 
 Write-Host "INFO Checking backend decision consistency wiring"
 $service = Join-Path $RepoRoot "backend\src\ai\service.js"
-MustContain $service 'copilotVersion:' "service exposes >= m46.4 version"
+MustContain $service 'copilotVersion' "service exposes >= m46.4 version"
 MustContain $service 'overallStatus' "service exposes overall status"
 MustContain $service 'actionability' "service exposes actionability"
 MustContain $service 'dataFreshness' "service exposes data freshness"

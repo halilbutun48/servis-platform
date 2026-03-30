@@ -1,5 +1,9 @@
 # RUNBOOK — M46.6-B AI JOB GUIDE PRECHECK
 
+> **Uyumluluk notu (M79+):** Bu M46 runbook'u artık pilot-era exact versiyon etiketi beklemek yerine, aynı davranışın modern Copilot yüzeyinde hâlâ mevcut olup olmadığını doğrulayan legacy compatibility referansı olarak okunmalıdır.
+> Exact `copilotVersion` eşitliği yerine davranışsal / yapısal doğrulama esastır.
+
+
 Amaç: M46.6-A rehber katmanının üstüne kullanıcıyı takıldığı yerde yönlendiren ön kontrol katmanını eklemek.
 
 Bu pakette gelenler:

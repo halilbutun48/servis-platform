@@ -4,6 +4,8 @@ import { api } from "../../api";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
+import { rowSelectionStyle } from "../../utils/listUi";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -50,6 +52,11 @@ function shiftRequiredPax(shift) {
 
 function vehicleCapacityValue(vehicle) {
   return toPositiveIntOrZero(vehicle?.capacity);
+}
+
+function companyName(shift) {
+  const company = shift?.company || {};
+  return company?.name || (shift?.companyId ? `Company #${shift.companyId}` : '-');
 }
 
 function buildCapacityMeta({ shift, vehicle }) {
@@ -127,6 +134,7 @@ export default function RoomOffersPanel() {
 
   const [statusFilter, setStatusFilter] = useState("OPEN,COUNTERED");
   const [q, setQ] = useState("");
+  const [focusedOfferId, setFocusedOfferId] = useState(0);
 
   // per-offer counter input
   const [counterSel, setCounterSel] = useState({}); // { [offerId]: { amountRoom, noteRoom } }
@@ -197,6 +205,37 @@ export default function RoomOffersPanel() {
       .map(([k]) => Number(k))
       .filter((x) => Number.isFinite(x) && x > 0);
   }, [sel]);
+
+  const focusedOffer = useMemo(
+    () => filtered.find((o) => Number(o?.id || 0) === Number(focusedOfferId || 0)) || filtered[0] || null,
+    [filtered, focusedOfferId]
+  );
+
+  useEffect(() => {
+    if (!focusedOffer) {
+      clearCopilotSelection('/room/offers');
+      return;
+    }
+    const shift = focusedOffer?.shift || {};
+    setCopilotSelection({
+      scopeKey: '/room/offers',
+      entityType: 'shift',
+      entityId: Number(focusedOffer?.shiftId || shift?.id || 1102) || 1102,
+      label: `Teklif #${focusedOffer.id}`,
+      summary: [String(focusedOffer?.status || '').toUpperCase(), companyName(shift), shift?.status ? `Vardiya ${String(shift.status).toUpperCase()}` : null].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Shift', value: focusedOffer?.shiftId ? `#${focusedOffer.shiftId}` : '-', help: 'Teklifin bağlı olduğu vardiya kaydını gösterir.' },
+        { label: 'Karşı taraf', value: companyName(shift), help: 'Teklifin geldiği company bilgisini gösterir.' },
+        { label: 'Teklif Durumu', value: String(focusedOffer?.status || '-').toUpperCase(), help: 'Pazarlık akışındaki teklif durumunu gösterir.' },
+        { label: 'Company', value: formatTRY(focusedOffer?.amountCompany), help: 'Company tarafından görünen tutarı gösterir.' },
+        { label: 'Room', value: formatTRY(focusedOffer?.amountRoom), help: 'Room tarafından girilen tutarı gösterir.' },
+      ],
+      badges: [
+        { label: 'Vardiya', value: String(shift?.status || '-').toUpperCase(), help: 'Bağlı vardiyanın durumunu gösterir.' },
+      ],
+      facts: { screenType: 'OFFERS', stage: String(focusedOffer?.status || '').toUpperCase(), nextBestAction: 'Önce teklif durumu ile tutarları birlikte oku. Sonra gerekiyorsa vardiyaya geç.' },
+    });
+  }, [focusedOffer]);
 
   function toggleAllFiltered() {
     const next = {};
@@ -398,7 +437,7 @@ export default function RoomOffersPanel() {
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="muted">Toplam: {filtered.length}</div>
+            <div className="muted">Toplam: {filtered.length} • Seçili: <b>{focusedOfferId || '-'}</b></div>
             <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Durum
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} disabled={busy}>
@@ -454,7 +493,7 @@ export default function RoomOffersPanel() {
         const canQuickApprove = String(o.status) === "ACCEPTED" && ["REQUESTED"].includes(String(shift?.status || ""));
 
         return (
-          <div className="card" key={o.id}>
+          <div className="card" key={o.id} onClick={() => setFocusedOfferId(Number(o.id) || 0)} style={rowSelectionStyle(Number(focusedOfferId || 0) === Number(o.id || 0))}>
             <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontWeight: 700 }}>
@@ -470,27 +509,27 @@ export default function RoomOffersPanel() {
                     type="checkbox"
                     disabled={!canCounter || busy}
                     checked={!!sel[o.id]}
-                    onChange={(e) => setSel((p) => ({ ...p, [o.id]: e.target.checked }))}
+                    onChange={(e) => { e.stopPropagation(); setSel((p) => ({ ...p, [o.id]: e.target.checked })); }}
                   />
                   Seç
                 </label>
                 {pill(o.status)}
                 {pill(shift?.status)}
-                <button type="button" className="btn sm" disabled={busy} onClick={() => goShift(o.shiftId)}>
+                <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); goShift(o.shiftId); }}>
                   Shift’e Git
                 </button>
-                <button type="button" className="btn sm" disabled={busy} onClick={() => setPreviewModal({ open: true, shiftId: Number(o.shiftId) || null })}>
+                <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); setPreviewModal({ open: true, shiftId: Number(o.shiftId) || null }); }}>
                   Harita Önizle
                 </button>
 
                 {String(o.status || "").toUpperCase() === "COUNTERED" ? (
-                  <button type="button" className="btn" disabled={busy} onClick={() => acceptCounterOffer(o.id)} title="Kabul et → ilgili bekleyen talebe geç → araç ve sürücü seç">
+                  <button type="button" className="btn" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); acceptCounterOffer(o.id); }} title="Kabul et → ilgili bekleyen talebe geç → araç ve sürücü seç">
                     Kabul Et ve Bekleyen Taleplere Geç
                   </button>
                 ) : null}
 
                 {canQuickApprove ? (
-                  <button type="button" className="btn" disabled={busy} onClick={() => goPendingShift(o.shiftId)} title="Bekleyen Taleplere git → araç ve sürücü seç → approve et">
+                  <button type="button" className="btn" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusedOfferId(Number(o.id) || 0); goPendingShift(o.shiftId); }} title="Bekleyen Taleplere git → araç ve sürücü seç → approve et">
                     Bekleyen Taleplere Git
                   </button>
                 ) : null}

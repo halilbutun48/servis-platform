@@ -37,33 +37,20 @@ export function trustQualityRouter() {
     const payload = await rememberResponse("trust-quality:company-summary", () => buildCompanyServiceEvaluationSummary(req.user), { ttlMs: 45000, scope: userScope(req.user) });
     return res.json(payload);
   });
+  function applyTakeLimit(list, take) {
+    return list.slice(0, take);
+  }
+
   r.get("/company/items", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), async (req, res) => {
     const q = String(req.query?.q || "").trim().toLowerCase();
     const take = Math.min(200, Math.max(1, Number(req.query?.take || 60) || 60));
     const pendingOnly = String(req.query?.pendingOnly || "") === "1" || String(req.query?.pendingOnly || "").toLowerCase() === "true";
 
     const cacheKey = `trust-quality:company-items:${take}:${pendingOnly ? 1 : 0}:${q}`;
-    const items = await rememberResponse(cacheKey, async () => {
-      const raw = await buildCompanyServiceEvaluationItems(req.user);
-      let list = Array.isArray(raw) ? raw : [];
-      if (pendingOnly) {
-        list = list.filter((item) => Boolean(item?.canEvaluate) || String(item?.evaluationStatus || "").toUpperCase().includes("BEK"));
-      }
-      if (q) {
-        list = list.filter((item) => {
-          const hay = [
-            item?.providerName,
-            item?.serviceLabel,
-            item?.statusLabel,
-            item?.evaluationStatus,
-            item?.nextStep,
-            item?.shiftId,
-          ].filter(Boolean).join(" " ).toLowerCase();
-          return hay.includes(q);
-        });
-      }
-      return list.slice(0, take);
+    const list = await rememberResponse(cacheKey, async () => {
+      return buildCompanyServiceEvaluationItems(req.user, { pendingOnly, q, take });
     }, { ttlMs: 45000, scope: userScope(req.user) });
+    const items = applyTakeLimit(list, take);
     return res.json({ items, meta: { take, pendingOnly, q } });
   });
   r.post("/company/evaluations", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), async (req, res) => {

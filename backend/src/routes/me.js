@@ -34,7 +34,7 @@ meRouter.get("/", authRequired(), async (req, res) => {
   ]);
 
   const features = {
-    checkin: String(process.env.FEATURE_CHECKIN || "0") === "1",
+    checkin: true,
   };
 
   res.json({

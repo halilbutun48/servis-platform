@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
-import FeatureFlagNotice from "../shared/FeatureFlagNotice";
 import { formatDateTimeTR } from "../../utils/time";
 
 function fmt(dt) {
@@ -15,7 +14,7 @@ function fmt(dt) {
 
 export default function RoomCheckinPanel() {
   const { token, me } = useSession();
-  const featureOn = Boolean(me?.features?.checkin);
+  const featureOn = true;
   const [items, setItems] = useState([]);
   const [selectedShiftId, setSelectedShiftId] = useState("");
   const [events, setEvents] = useState([]);
@@ -88,9 +87,6 @@ export default function RoomCheckinPanel() {
     if (selectedShiftId) await loadEvents(selectedShiftId);
   }, featureOn);
 
-  if (!featureOn) {
-    return <FeatureFlagNotice title="M42 Check-in izleme paneli kapalı" feature="FEATURE_CHECKIN" fallbackPath="/room/shifts" />;
-  }
 
   return (
     <div>
@@ -103,7 +99,7 @@ export default function RoomCheckinPanel() {
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="APPROVED">FEATURE_CHECKIN=1</span>
+            <span className="pill" data-status="COUNT">Opsiyonel check-in</span>
             <button type="button" className="btn" onClick={loadAll} disabled={loading}>{loading ? "..." : "Yenile"}</button>
           </div>
         </div>

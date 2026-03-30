@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function Card({ title, children }) {
   return (
@@ -14,6 +15,53 @@ export default function TrustQualityPanel() {
   const [evaluation, setEvaluation] = useState(null);
   const [providerSignal, setProviderSignal] = useState(null);
   const [err, setErr] = useState("");
+
+  useEffect(() => {
+    const fields = Array.isArray(evaluation?.fields) ? evaluation.fields : [];
+    const signals = Array.isArray(providerSignal?.signals) ? providerSignal.signals : [];
+    if (!evaluation && !providerSignal) {
+      clearCopilotSelection('/superadmin/trust-quality');
+      return;
+    }
+    const facts = {
+      screenType: 'TRUST_QUALITY',
+      stage: providerSignal?.summary ? 'ACTIVE' : 'SCAFFOLD',
+      readiness: fields.length && signals.length ? 'READY' : 'REVIEW_NEEDED',
+      readinessScore: Math.max(36, Math.min(88, (fields.length * 12) + (signals.length * 10))),
+      blockers: !signals.length ? ['Sağlayıcı kalite sinyali henüz oluşmamış veya boş görünüyor.'] : [],
+      counters: { evaluationFields: fields.length, providerSignals: signals.length },
+      evidence: [
+        `Değerlendirme alanı: ${fields.length}`,
+        `Kalite sinyali: ${signals.length}`,
+        providerSignal?.summary ? `Özet: ${providerSignal.summary}` : '',
+      ].filter(Boolean),
+      reasoningLead: 'Bu ekranda hizmet değerlendirmesi ile sağlayıcı sinyali birlikte okunur.',
+      nextBestAction: signals.length
+        ? 'Önce değerlendirme alanları ile sağlayıcı sinyal özetini birlikte oku. Sonra gerekirse hizmet ekranına in.'
+        : 'Önce hangi kalite sinyalinin eksik kaldığını netleştir. Sonra hizmet değerlendirme hattına geri dön.',
+      safestNextStep: 'En risksiz adım, değerlendirme alanları ile sağlayıcı sinyal setini aynı anda okumaktır.',
+      compareHint: 'Hizmet puanı ile sağlayıcı sinyali aynı şey değildir; karar desteği için ikisi birlikte okunur.',
+    };
+    setCopilotSelection({
+      scopeKey: '/superadmin/trust-quality',
+      entityType: 'screen',
+      entityId: 6113,
+      label: 'Güven ve kalite özeti',
+      summary: [fields.length ? `${fields.length} alan` : null, signals.length ? `${signals.length} sinyal` : null, providerSignal?.summary || null].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Değerlendirme Alanı', value: String(fields.length), help: 'Hizmet değerlendirmesinde görünen alan sayısını gösterir.' },
+        { label: 'İlk Alan', value: fields[0] || '-', help: 'Hizmet değerlendirme setindeki ilk alanı örnek odak olarak gösterir.' },
+        { label: 'Sağlayıcı Sinyali', value: String(signals.length), help: 'Sağlayıcı tarafında görünen kalite sinyali sayısını gösterir.' },
+        { label: 'İlk Sinyal', value: signals[0] || '-', help: 'Sağlayıcı kalite sinyal setindeki ilk maddeyi gösterir.' },
+        { label: 'Özet', value: providerSignal?.summary || '-', help: 'Güven ve kalite görünümünün kısa özetini gösterir.' },
+      ],
+      badges: [
+        { label: 'Durum', value: signals.length ? 'AKTİF' : 'SCAFFOLD', help: 'Kalite sinyali katmanının aktif olup olmadığını özetler.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/superadmin/trust-quality');
+  }, [evaluation, providerSignal]);
 
   useEffect(() => {
     let cancelled = false;

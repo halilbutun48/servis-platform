@@ -137,14 +137,19 @@ export async function getProviderScore(roomId) {
   return map.get(rid) || { roomId: rid, averageScore: null, evaluationCount: 0, recommendRate: null, summaryLabel: "Henüz puan yok" };
 }
 
-export async function buildCompanyServiceEvaluationItems(user) {
+export async function buildCompanyServiceEvaluationItems(user, options = {}) {
   const companyId = Number(user?.companyId || 0);
   if (!companyId) return [];
+  const pendingOnly = options?.pendingOnly === true;
+  const q = String(options?.q || "").trim().toLowerCase();
+  const take = Math.min(200, Math.max(1, Number(options?.take || 40) || 40));
+  const statuses = pendingOnly ? ["DONE"] : ["DONE", "APPROVED", "ACTIVE"];
+  const dbTake = pendingOnly ? Math.max(take * 3, 120) : Math.max(take, 40);
   const [shifts, evaluations] = await Promise.all([
     prisma.shift.findMany({
-      where: { companyId, status: { in: ["DONE", "APPROVED", "ACTIVE"] } },
+      where: { companyId, status: { in: statuses } },
       orderBy: [{ endAt: "desc" }, { startAt: "desc" }],
-      take: 40,
+      take: dbTake,
       include: {
         room: { select: { id: true, name: true } },
         vehicle: { select: { id: true, plate: true } },
@@ -156,7 +161,7 @@ export async function buildCompanyServiceEvaluationItems(user) {
   const map = new Map(evaluations.filter((x) => Number(x.companyId) === companyId).map((x) => [Number(x.shiftId), x]));
   const roomIds = [...new Set(shifts.map((s) => Number(s.room?.id || s.roomId || 0)).filter(Boolean))];
   const scoreMap = buildProviderScoreMapFromEvaluations(evaluations, roomIds);
-  return shifts.map((s) => {
+  let items = shifts.map((s) => {
     const status = String(s.status || "").toUpperCase();
     const evaluation = map.get(Number(s.id));
     const roomId = Number(s.room?.id || s.roomId || 0) || null;
@@ -184,6 +189,23 @@ export async function buildCompanyServiceEvaluationItems(user) {
       } : null,
     };
   });
+  if (pendingOnly) {
+    items = items.filter((item) => Boolean(item?.canEvaluate) && !item?.evaluation);
+  }
+  if (q) {
+    items = items.filter((item) => {
+      const hay = [
+        item?.providerName,
+        item?.serviceLabel,
+        item?.statusLabel,
+        item?.evaluationStatus,
+        item?.nextStep,
+        item?.shiftId,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  return items.slice(0, take);
 }
 
 export async function submitCompanyServiceEvaluation(user, payload) {

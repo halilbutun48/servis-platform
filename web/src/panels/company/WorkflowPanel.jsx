@@ -8,8 +8,10 @@ import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import { formatDateTimeTR } from "../../utils/time";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { getCompanyOffers, getCompanyRooms, getCompanyWorkflowSummary } from "../../utils/companyDataHub";
+import { clearUiDataCache } from "../../utils/uiDataCache";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
+const GEOREVIEW_OPEN_MODE_KEY = "psv1:georeview:openMode:v1";
 
 function readGuidedResume(basePath) {
   try {
@@ -599,6 +601,22 @@ export default function WorkflowPanel() {
     navigate(companyPath(me, "/shifts"));
   }
 
+  function openGeoReview(forceAll = true) {
+    try {
+      clearUiDataCache("/api/company/personels");
+      localStorage.setItem(
+        GEOREVIEW_OPEN_MODE_KEY,
+        JSON.stringify({
+          mode: forceAll ? "ALL" : "SESSION",
+          source: "workflow",
+          forceRefresh: true,
+          ts: Date.now(),
+        })
+      );
+    } catch {}
+    navigate(companyPath(me, "/georeview"));
+  }
+
   useEffect(() => {
     const basePath = companyPath(me, "");
     const resume = readGuidedResume(basePath);
@@ -633,7 +651,7 @@ export default function WorkflowPanel() {
             {geoNeedsReview} {who.toLowerCase()} konumu <b>NEEDS_REVIEW</b>. Planlama doğruluğu için önce düzeltmen önerilir.
           </div>
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn" onClick={() => navigate(companyPath(me, "/georeview"))}>Geo Review’e git</button>
+            <button type="button" className="btn" onClick={() => openGeoReview(true)}>Geo Review’e git</button>
             <button type="button" className="btn" onClick={() => loadSummary()}>Yenile</button>
           </div>
         </div>
@@ -700,7 +718,7 @@ export default function WorkflowPanel() {
                 title="1) Geo Review"
                 desc={guide.geoOk ? "Konumlar OK" : "NEEDS_REVIEW varsa düzelt"}
                 actionLabel={guide.geoOk ? "" : "Geo Review’e git"}
-                onAction={() => navigate(companyPath(me, "/georeview"))}
+                onAction={() => openGeoReview(true)}
               />
 
               <ChecklistRow

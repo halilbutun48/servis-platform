@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
+import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -46,6 +49,8 @@ export default function CommercialFlowPanel() {
   const [summary, setSummary] = useState(null);
   const [items, setItems] = useState([]);
   const [err, setErr] = useState("");
+  const [filterQ, setFilterQ] = useState("");
+  const [selectedId, setSelectedId] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +80,58 @@ export default function CommercialFlowPanel() {
     }
     navigate(item.actionPath);
   }
+
+  const filteredItems = useMemo(() => items.filter((item) => includesFilter([
+    item?.id,
+    item?.counterparty,
+    item?.flowLabel,
+    item?.amountLabel,
+    item?.statusLabel,
+    item?.status,
+    item?.nextStep,
+    item?.updatedAt,
+  ], filterQ)), [items, filterQ]);
+
+  useEffect(() => {
+    if (!filteredItems.length) {
+      setSelectedId("");
+      clearCopilotSelection('/room/commercial-flow');
+      return;
+    }
+    if (!filteredItems.some((item) => String(item?.id || '') === String(selectedId || ''))) {
+      setSelectedId(String(filteredItems[0].id || ''));
+    }
+  }, [filteredItems, selectedId]);
+
+  const selectedItem = useMemo(
+    () => filteredItems.find((item) => String(item?.id || '') === String(selectedId || '')) || filteredItems[0] || null,
+    [filteredItems, selectedId]
+  );
+
+  useEffect(() => {
+    if (!selectedItem) return;
+    const facts = buildCommercialFlowFacts({
+      selectedItem,
+      marketCount: summary?.cards?.openOffers || 0,
+      acceptedCount: summary?.cards?.acceptedOffers || 0,
+      listCount: items.length,
+    });
+    setCopilotSelection({
+      scopeKey: '/room/commercial-flow',
+      entityType: selectedItem?.shiftId ? 'shift' : 'commercial',
+      entityId: Number(selectedItem?.shiftId || selectedItem?.id || 1115) || 1115,
+      label: selectedItem?.counterparty || `Kayıt #${selectedItem?.id || '-'}`,
+      summary: [selectedItem?.flowLabel, selectedItem?.statusLabel, selectedItem?.nextStep].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Karşı Taraf', value: selectedItem?.counterparty || '-', help: 'Ticari akışın karşı tarafını gösterir.' },
+        { label: 'Akış', value: selectedItem?.flowLabel || '-', help: 'Kaydın hangi ticari bölümde olduğunu gösterir.' },
+        { label: 'Durum', value: selectedItem?.statusLabel || selectedItem?.status || '-', help: 'Karar veya pazarlık durumunu gösterir.' },
+        { label: 'Tutar', value: selectedItem?.amountLabel || '-', help: 'Görünen ticari tutarı gösterir.' },
+        { label: 'Sonraki Adım', value: selectedItem?.nextStep || '-', help: 'Buradan sonra önerilen adımı gösterir.' },
+      ],
+      facts,
+    });
+  }, [selectedItem, summary, items.length]);
 
   const cards = useMemo(() => {
     const c = summary?.cards || {};
@@ -107,11 +164,16 @@ export default function CommercialFlowPanel() {
       <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
           <div style={{ fontWeight: 700 }}>Ticari Akış Listesi</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+            <div>
+              <div className="muted">Filtre</div>
+              <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Karşı taraf / durum / not" />
+            </div>
             <button type="button" onClick={() => navigate("/room/offers")}>Teklifleri ac</button>
             <button type="button" onClick={() => navigate("/room/shifts")}>Vardiyalari ac</button>
           </div>
         </div>
+        <div className="muted" style={{ marginBottom: 10 }}>Gösterilen: <b>{filteredItems.length}</b> / Toplam: <b>{items.length}</b></div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -126,8 +188,8 @@ export default function CommercialFlowPanel() {
               </tr>
             </thead>
             <tbody>
-              {items.length ? items.map((item) => (
-                <tr key={item.id}>
+              {filteredItems.length ? filteredItems.map((item) => (
+                <tr key={item.id} onClick={() => setSelectedId(item.id)} style={rowSelectionStyle(String(selectedId || '') === String(item.id || ''))}>
                   <td>{item.counterparty || "-"}</td>
                   <td>{item.flowLabel || "-"}</td>
                   <td>{item.amountLabel || "-"}</td>
@@ -136,14 +198,14 @@ export default function CommercialFlowPanel() {
                   <td>{item.nextStep || "-"}</td>
                   <td>
                     {item.actionPath ? (
-                      <button type="button" onClick={() => openAction(item)}>{item.actionLabel || "Ac"}</button>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedId(item.id); openAction(item); }}>{item.actionLabel || "Ac"}</button>
                     ) : "-"}
                   </td>
                 </tr>
               )) : (
                 <tr>
                   <td colSpan={7} className="muted" style={{ padding: "8px 0" }}>
-                    Henüz oda kapsamına düşen ticari kayıt yok. Kural: pazarlık Market/Teklifler ekranında, operasyon hazırlığı Bekleyen Taleplerde ilerler.
+                    {items.length ? 'Filtreye uyan ticari kayıt yok.' : 'Henüz oda kapsamına düşen ticari kayıt yok. Kural: pazarlık Market/Teklifler ekranında, operasyon hazırlığı Bekleyen Taleplerde ilerler.'}
                   </td>
                 </tr>
               )}
@@ -154,6 +216,4 @@ export default function CommercialFlowPanel() {
     </div>
   );
 }
-
-
 

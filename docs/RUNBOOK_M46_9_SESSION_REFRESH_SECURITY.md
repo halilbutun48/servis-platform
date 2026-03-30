@@ -1,5 +1,9 @@
 # M46.9 — Session & Refresh Security
 
+> **Uyumluluk notu (M79+):** Bu M46 runbook'u artık pilot-era exact versiyon etiketi beklemek yerine, aynı davranışın modern Copilot yüzeyinde hâlâ mevcut olup olmadığını doğrulayan legacy compatibility referansı olarak okunmalıdır.
+> Exact `copilotVersion` eşitliği yerine davranışsal / yapısal doğrulama esastır.
+
+
 Tarih: 2026-03-14
 
 ## Amaç
@@ -59,4 +63,3 @@ Beklenen hata:
   - `backend/scripts/m46_9_session_refresh_security_check.js`
 - Pack:
   - `tools/pack_m46_9_session_refresh_security.ps1`
-

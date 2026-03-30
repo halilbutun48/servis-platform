@@ -3,6 +3,8 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { formatDateTimeTR, ymdTR } from "../../utils/time";
 import { cachedGet } from "../../utils/uiDataCache";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 
 const TABS = [
   ["shifts", "Vardiyalar"],
@@ -94,6 +96,8 @@ export default function ReportsPanel() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [data, setData] = useState({});
+  const [selectedRowKey, setSelectedRowKey] = useState('');
+  const [filterQ, setFilterQ] = useState('');
 
   async function load(activeTab = tab, signal) {
     setLoading(true); setErr('');
@@ -127,10 +131,37 @@ export default function ReportsPanel() {
       : [];
   }, [tab, rows]);
   const base = me?.role === 'ROOM' ? '/room' : me?.companyKind === 'SCHOOL' ? '/school' : me?.companyKind === 'ORGANIZATION' ? '/organization' : '/company';
+  const filteredRows = useMemo(() => rows.filter((row, idx) => includesFilter([
+    tab,
+    row?.id,
+    ...headers.map(({ key }) => row?.[key]),
+    idx,
+  ], filterQ)), [rows, headers, filterQ, tab]);
+  const selectedRow = useMemo(() => filteredRows.find((row, idx) => String(selectedRowKey || '') === String(row?.id || idx)) || null, [filteredRows, selectedRowKey]);
   const wideDataTab = tab === 'shifts';
   const tableMinWidth = wideDataTab
     ? Math.max(headers.length * 160, 1900)
     : Math.max(headers.length * 180, 1100);
+
+  useEffect(() => {
+    const scopeKey = `${base}/reports`;
+    if (!selectedRow) {
+      clearCopilotSelection(scopeKey);
+      return;
+    }
+    const rowLabel = tab === 'shifts' ? `Rapor satırı #${selectedRow.id || '-'}` : `${TABS.find(([k]) => k === tab)?.[1] || 'Rapor'} satırı`;
+    setCopilotSelection({
+      scopeKey,
+      entityType: 'screen',
+      entityId: Number(selectedRow?.id || 2116) || 2116,
+      label: rowLabel,
+      summary: headers.slice(0, 4).map(({ key, label }) => `${label}: ${String(selectedRow?.[key] ?? '-')}`).join(' • '),
+      fields: headers.slice(0, 6).map(({ key, label }) => ({ label, value: String(selectedRow?.[key] ?? '-'), help: 'Seçili rapor satırındaki özet bilgiyi gösterir.' })),
+      facts: { screenType: 'REPORTS', stage: String(tab || '').toUpperCase(), nextBestAction: 'Önce bu satırın neyi saydığını oku. Sonra ilgili ekranı açarak aynı kaydı operasyon tarafından doğrula.' },
+      badges: [{ label: 'Sekme', value: TABS.find(([k]) => k === tab)?.[1] || '-', help: 'Seçili satırın hangi rapor sekmesinde olduğunu gösterir.' }],
+    });
+    return () => clearCopilotSelection(scopeKey);
+  }, [base, headers, selectedRow, tab]);
 
   return (
     <div>
@@ -138,11 +169,12 @@ export default function ReportsPanel() {
         <h3>Raporlar</h3>
         <div className="muted">Operasyon özeti ve CSV dışa aktarma</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8, alignItems: 'end' }}>
-          {TABS.map(([k, label]) => <button key={k} type="button" className={tab === k ? 'btn primary' : 'btn'} onClick={() => setTab(k)}>{label}</button>)}
+          {TABS.map(([k, label]) => <button key={k} type="button" className={tab === k ? 'btn primary' : 'btn'} onClick={() => { setTab(k); setSelectedRowKey(''); }}>{label}</button>)}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'end' }}>
+            <div><label className="muted">Filtre</label><input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Satır içinde ara" /></div>
             <div><label className="muted">Başlangıç</label><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
             <div><label className="muted">Bitiş</label><input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-            <button className="btn" onClick={() => load(tab)} disabled={loading}>Yenile</button>
+            <button className="btn" onClick={() => { setSelectedRowKey(''); load(tab); }} disabled={loading}>Yenile</button>
             {(tab === 'shifts' || tab === 'drivers') ? <a className="btn" href={`/api/reports/${tab}/export.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`} target="_blank" rel="noreferrer">CSV indir</a> : null}
           </div>
         </div>
@@ -150,10 +182,10 @@ export default function ReportsPanel() {
       {err ? <div className="card err">{err}</div> : null}
       <div className="card">
         <div className="muted">Rol: {me?.role} • Ekran: {base}/reports</div>
-        <div style={{ marginTop: 8 }}>Toplam kayıt: <b>{Number(data?.[tab]?.total || 0)}</b></div>
+        <div style={{ marginTop: 8 }}>Toplam kayıt: <b>{Number(data?.[tab]?.total || 0)}</b> • Görünen: <b>{filteredRows.length}</b></div>
       </div>
       <div className="card" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        {loading ? <div>Yükleniyor...</div> : rows.length ? (
+        {loading ? <div>Yükleniyor...</div> : filteredRows.length ? (
           <div style={{ display: 'block', width: '100%', overflowX: 'auto', overflowY: 'hidden', paddingBottom: 6 }}>
             <table className="tbl" style={{ minWidth: `${tableMinWidth}px`, width: wideDataTab ? 'max-content' : '100%' }}>
               <thead>
@@ -164,19 +196,23 @@ export default function ReportsPanel() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, idx) => (
-                  <tr key={idx}>
-                    {headers.map(({ key }) => (
-                      <td key={key} style={{ whiteSpace: 'nowrap' }}>
-                        {typeof row[key] === 'boolean' ? (row[key] ? 'Evet' : 'Hayır') : String(row[key] ?? '')}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {filteredRows.map((row, idx) => {
+                  const rowKey = String(row?.id || idx);
+                  const isSelected = String(selectedRowKey || '') === rowKey;
+                  return (
+                    <tr key={rowKey} onClick={() => setSelectedRowKey(rowKey)} style={rowSelectionStyle(isSelected)}>
+                      {headers.map(({ key }) => (
+                        <td key={key} style={{ whiteSpace: 'nowrap' }}>
+                          {typeof row[key] === 'boolean' ? (row[key] ? 'Evet' : 'Hayır') : String(row[key] ?? '')}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        ) : <div className="muted">Kayıt yok.</div>}
+        ) : <div className="muted">{rows.length ? 'Filtreye uyan satır yok. Aramayı daraltma yerine biraz gevşet veya filtreyi temizle.' : 'Bu tarih aralığında kayıt yok. Tarihi genişlet, sekmeyi değiştir veya Yenile ile tekrar dene.'}</div>}
       </div>
     </div>
   );

@@ -141,6 +141,12 @@ function classifyScreenPath(path = '') {
   if (p.includes('/georeview')) return 'GEOREVIEW';
   if (p.includes('/commercial-flow')) return 'COMMERCIAL_FLOW';
   if (p.includes('/service-evaluation')) return 'SERVICE_EVALUATION';
+  if (p.includes('/agreements')) return 'AGREEMENTS';
+  if (p.includes('/operation-health')) return 'OPERATION_HEALTH';
+  if (p.includes('/operation-verification')) return 'OPERATION_VERIFICATION';
+  if (p.includes('/acceptance')) return 'FIELD_ACCEPTANCE';
+  if (p.includes('/trust-quality')) return 'TRUST_QUALITY';
+  if (p.includes('/observability')) return 'OBSERVABILITY';
   if (p.includes('/shifts')) return 'SHIFTS';
   if (p === '/company' || p === '/organization' || p === '/school') return 'PLANNING_CENTER';
   if (p.includes('/driver/today')) return 'DRIVER_TODAY';
@@ -372,6 +378,167 @@ function analyzeServiceEvaluation(screenContext, screenDefinition) {
   return finalize(result);
 }
 
+
+function analyzeAgreements(screenContext, screenDefinition) {
+  const result = makeResult('AGREEMENTS', screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const badges = selectedBadgeRows(screenContext);
+  const status = findValue(fields, ['durum']);
+  const start = findValue(fields, ['başlangıç', 'baslangic']);
+  const end = findValue(fields, ['bitiş', 'bitis']);
+  const vehicle = findValue(fields, ['araç', 'arac']);
+  const driver = findValue(fields, ['sürücü', 'surucu']);
+  const amount = findValue(fields, ['tutar']);
+  if (!result.selectedLabel) result.blockers.push('Önce sözleşme odağı seçilmeden yorum genel kalır.');
+  if (hasBlankish(vehicle)) result.missingData.push('Araç alanı boş görünüyor.');
+  if (hasBlankish(driver)) result.missingData.push('Sürücü alanı boş görünüyor.');
+  if (/requested|countered|bekleyen/.test(normalizeText(status))) result.blockers.push('Karar bekleyen sözleşmede önce onay veya karşı teklif yönü netleşmelidir.');
+  if (/active|approved/.test(normalizeText(status)) && (hasBlankish(vehicle) || hasBlankish(driver))) result.blockers.push('Sözleşme aktif görünse de araç veya sürücü eksikse saha hazırlığı tamam değildir.');
+  if (status) result.evidence.push(`Durum: ${status}`);
+  if (start || end) result.evidence.push(`Tarih: ${start || '-'} → ${end || '-'}`);
+  if (amount) result.evidence.push(`Tutar: ${amount}`);
+  if (vehicle) result.evidence.push(`Araç: ${vehicle}`);
+  if (driver) result.evidence.push(`Sürücü: ${driver}`);
+  result.reasoningLead = result.blockers.length
+    ? 'Bu sözleşmede ana dikkat noktası karar veya atama tarafında görünüyor.'
+    : 'Bu ekranda önce durum, sonra tarih ve araç-sürücü bağı okunmalıdır.';
+  result.nextBestAction = /requested|countered|bekleyen/.test(normalizeText(status))
+    ? 'Önce karar yönünü netleştir. Onay vereceksen araç ve sürücüyü kontrol et; karşı teklif vereceksen tutarı ve notu tekrar oku.'
+    : 'Önce bağlı vardiya veya ufuk bilgisini kontrol et. Sonra sözleşmenin saha etkisini değerlendir.';
+  result.safestNextStep = 'En risksiz adım, seçili sözleşmenin tarih aralığı ile araç-sürücü bağını birlikte doğrulamaktır.';
+  result.compareHint = 'Sözleşme onayı ile saha hazırlığı aynı şey değildir; araç ve sürücü eksikse iş hâlâ operasyona tam hazır sayılmaz.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
+function analyzeOperationHealth(screenContext, screenDefinition) {
+  const result = makeResult('OPERATION_HEALTH', screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const live = findValue(fields, ['stale / offline', 'stale', 'offline']);
+  const risky = findValue(fields, ['riskli cihaz']);
+  const issues = findValue(fields, ['açık sorun', 'acik sorun']);
+  const sampleDriver = findValue(fields, ['örnek sürücü', 'ornek surucu']);
+  const sampleIssue = findValue(fields, ['örnek sorun', 'ornek sorun']);
+  if (hasBlankish(live) && hasBlankish(issues) && hasBlankish(risky)) result.blockers.push('Operasyon sağlığı özeti boş görünüyor.');
+  if (!hasBlankish(issues) && Number(String(issues).replace(/[^\d]/g, '') || 0) > 0) result.blockers.push('Açık sorun sayısı sıfır değil; önce risk satırlarına inmek gerekir.');
+  if (!hasBlankish(live) && Number(String(live).replace(/[^\d]/g, '') || 0) > 0) result.blockers.push('Stale veya offline sürücü sayısı sıfır değil.');
+  if (live) result.evidence.push(`Stale/Offline: ${live}`);
+  if (risky) result.evidence.push(`Riskli cihaz: ${risky}`);
+  if (issues) result.evidence.push(`Açık sorun: ${issues}`);
+  if (sampleDriver) result.evidence.push(`Örnek sürücü: ${sampleDriver}`);
+  if (sampleIssue) result.evidence.push(`Örnek sorun: ${sampleIssue}`);
+  result.reasoningLead = result.blockers.length
+    ? 'Bu ekranda ana konu açık sorunları ve canlılık risklerini azaltmaktır.'
+    : 'Bu ekranda önce özet kartlar, sonra sorunlu sürücüler ve açık sorunlar birlikte okunur.';
+  result.nextBestAction = sampleIssue
+    ? 'Önce örnek sorunu aç. Sonra hangi ekrana gitmen gerektiğini netleştir.'
+    : sampleDriver
+      ? 'Önce örnek sürücünün canlılık, izin ve oturum durumunu birlikte kontrol et.'
+      : 'Önce özet kartlardan hangi riskin yüksek olduğunu belirle. Sonra ilgili ekrana geç.';
+  result.safestNextStep = 'En risksiz adım, açık sorun sayısı ile stale/offline sayısını birlikte okuyup önce en riskli satıra inmektir.';
+  result.compareHint = 'Operasyon Sağlığı sorun bulma ekranıdır; tek başına atama veya sözleşme kararı ekranı değildir.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
+function analyzeOperationVerification(screenContext, screenDefinition) {
+  const result = makeResult('OPERATION_VERIFICATION', screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const role = findValue(fields, ['rol']);
+  const saved = findValue(fields, ['kayıtlı kontrol', 'kayitli kontrol']);
+  const total = findValue(fields, ['toplam kontrol']);
+  const firstCheck = findValue(fields, ['ilk kontrol']);
+  const defaultDecision = findValue(fields, ['varsayılan karar', 'varsayilan karar']);
+  const savedN = Number(String(saved).replace(/[^\d]/g, '') || 0);
+  const totalN = Number(String(total).replace(/[^\d]/g, '') || 0);
+  if (totalN > 0 && savedN < totalN) result.blockers.push('Tüm kontrol maddeleri kaydedilmeden rol yüzeyi tam kapanmış sayılmaz.');
+  if (role) result.evidence.push(`Rol: ${role}`);
+  if (defaultDecision) result.evidence.push(`Varsayılan karar: ${defaultDecision}`);
+  if (saved) result.evidence.push(`Kayıtlı kontrol: ${saved}`);
+  if (total) result.evidence.push(`Toplam kontrol: ${total}`);
+  if (firstCheck) result.evidence.push(`İlk kontrol: ${firstCheck}`);
+  result.reasoningLead = 'Bu ekranda amaç rol bazlı operasyon kontrollerini kanıt ve kısa notla kayıt altına almaktır.';
+  result.nextBestAction = totalN > 0 && savedN < totalN
+    ? 'Önce kaydı eksik kalan kontrol maddelerini tamamla. Sonra role surface özetini tekrar gözden geçir.'
+    : 'Önce seçili rolde kanıt tipi ve notların tutarlı olduğunu kontrol et.';
+  result.safestNextStep = 'En risksiz adım, önce seçili rolü netleştirip kontrol maddelerini tek tek kaydetmektir.';
+  result.compareHint = 'Varsayılan karar ile manuel kayıt aynı şey değildir; manuel kayıt yapıldıysa son kaydedilen durum esas alınır.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
+function analyzeFieldAcceptance(screenContext, screenDefinition) {
+  const result = makeResult('FIELD_ACCEPTANCE', screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const decision = findValue(fields, ['karar']);
+  const checklist = findValue(fields, ['checklist']);
+  const pending = findValue(fields, ['bekleyen']);
+  const firstOpen = findValue(fields, ['ilk açık madde', 'ilk acik madde']);
+  const pendingN = Number(String(pending).replace(/[^\d]/g, '') || 0);
+  if (pendingN > 0) result.blockers.push('Checklist içinde henüz PASS olmayan maddeler var.');
+  if (decision) result.evidence.push(`Karar: ${decision}`);
+  if (checklist) result.evidence.push(`Checklist: ${checklist}`);
+  if (pending) result.evidence.push(`Bekleyen: ${pending}`);
+  if (firstOpen) result.evidence.push(`İlk açık madde: ${firstOpen}`);
+  result.reasoningLead = 'Bu ekranda saha kabul kararı checklist ve test oturumu ile birlikte okunur.';
+  result.nextBestAction = pendingN > 0
+    ? 'Önce PASS olmayan ilk maddeyi netleştir. Sonra kabul kararını tekrar değerlendir.'
+    : 'Önce test oturumu kararını ve checklist özetini birlikte doğrula.';
+  result.safestNextStep = 'En risksiz adım, PASS olmayan maddeleri kapatıp kabul kararını en son vermektir.';
+  result.compareHint = 'Checklist PASS olması ile kabul kararının ACCEPT olması aynı şey değildir; ikisi birlikte okunmalıdır.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
+function analyzeTrustQuality(screenContext, screenDefinition) {
+  const result = makeResult('TRUST_QUALITY', screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const evalCount = findValue(fields, ['değerlendirme alanı', 'degerlendirme alani']);
+  const signalCount = findValue(fields, ['sağlayıcı sinyali', 'saglayici sinyali']);
+  const firstSignal = findValue(fields, ['ilk sinyal']);
+  if (Number(String(signalCount).replace(/[^\d]/g, '') || 0) <= 0) result.blockers.push('Sağlayıcı kalite sinyali henüz oluşmamış veya boş görünüyor.');
+  if (evalCount) result.evidence.push(`Değerlendirme alanı: ${evalCount}`);
+  if (signalCount) result.evidence.push(`Sağlayıcı sinyali: ${signalCount}`);
+  if (firstSignal) result.evidence.push(`İlk sinyal: ${firstSignal}`);
+  result.reasoningLead = 'Bu ekranda hizmet değerlendirmesi ile sağlayıcı sinyali birlikte okunur.';
+  result.nextBestAction = result.blockers.length
+    ? 'Önce hangi kalite sinyalinin eksik kaldığını netleştir. Sonra hizmet değerlendirme hattına geri dön.'
+    : 'Önce değerlendirme alanları ile sağlayıcı sinyal özetini birlikte oku.';
+  result.safestNextStep = 'En risksiz adım, değerlendirme alanları ile sağlayıcı sinyal setini aynı anda okumaktır.';
+  result.compareHint = 'Hizmet puanı ile sağlayıcı sinyali aynı şey değildir; karar desteği için ikisi birlikte okunur.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
+function analyzeObservability(screenContext, screenDefinition) {
+  const result = makeResult('OBSERVABILITY', screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const live = findValue(fields, ['canlı durum', 'canli durum']);
+  const gps = findValue(fields, ['gps skoru']);
+  const risk = findValue(fields, ['cihaz riski']);
+  const lastEvent = findValue(fields, ['son olay']);
+  if (/unknown|risk|warn|high|kritik/i.test(normalizeText(risk))) result.blockers.push(`Cihaz sağlık riski dikkat istiyor: ${risk}`);
+  if (Number(String(gps).replace(/[^\d]/g, '') || 0) > 0 && Number(String(gps).replace(/[^\d]/g, '') || 0) < 60) result.blockers.push('GPS güven skoru düşük görünüyor.');
+  if (live) result.evidence.push(`Canlı durum: ${live}`);
+  if (gps) result.evidence.push(`GPS skoru: ${gps}`);
+  if (risk) result.evidence.push(`Cihaz riski: ${risk}`);
+  if (lastEvent) result.evidence.push(`Son olay: ${lastEvent}`);
+  result.reasoningLead = 'Bu ekranda canlı sağlık, GPS güveni ve son olaylar birlikte okunmalıdır.';
+  result.nextBestAction = lastEvent
+    ? 'Önce son canlı olayın önemini ve zamanını oku. Sonra cihaz sağlık notlarıyla birlikte değerlendir.'
+    : 'Önce canlı durum ile GPS güven notlarını oku. Sonra event type ve son sync alanlarını kontrol et.';
+  result.safestNextStep = 'En risksiz adım, canlı durum ile GPS skorunu birlikte okuyup sonra son olaya inmektir.';
+  result.compareHint = 'Canlı durum ile GPS güven skoru aynı şey değildir; biri saha akışını, diğeri veri kalitesini özetler.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
 function analyzePlanningCenter(screenContext, screenDefinition) {
   const result = makeResult('PLANNING_CENTER', screenContext, screenDefinition);
   const fields = selectedFieldRows(screenContext);
@@ -441,6 +608,12 @@ export function analyzeScreenState({ screenContext = null, screenDefinition = nu
   if (type === 'SHIFTS') return analyzeShifts(screenContext, screenDefinition, conversationState);
   if (type === 'COMMERCIAL_FLOW') return analyzeCommercialFlow(screenContext, screenDefinition, conversationState);
   if (type === 'SERVICE_EVALUATION') return analyzeServiceEvaluation(screenContext, screenDefinition, conversationState);
+  if (type === 'AGREEMENTS') return analyzeAgreements(screenContext, screenDefinition, conversationState);
+  if (type === 'OPERATION_HEALTH') return analyzeOperationHealth(screenContext, screenDefinition, conversationState);
+  if (type === 'OPERATION_VERIFICATION') return analyzeOperationVerification(screenContext, screenDefinition, conversationState);
+  if (type === 'FIELD_ACCEPTANCE') return analyzeFieldAcceptance(screenContext, screenDefinition, conversationState);
+  if (type === 'TRUST_QUALITY') return analyzeTrustQuality(screenContext, screenDefinition, conversationState);
+  if (type === 'OBSERVABILITY') return analyzeObservability(screenContext, screenDefinition, conversationState);
   if (type === 'PLANNING_CENTER') return analyzePlanningCenter(screenContext, screenDefinition, conversationState);
   if (type === 'DRIVER_TODAY' || type === 'DRIVER_MAP') return analyzeDriver(screenContext, screenDefinition, conversationState);
   return analyzeGeneric(screenContext, screenDefinition, conversationState);

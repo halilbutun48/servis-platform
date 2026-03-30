@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { getCompanyTrustQualityItems, getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
-import { navigate } from "../../router";
+import { getPath, navigate } from "../../router";
+import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
 import { useSession } from "../../state/session";
 import { companyPath } from "../../utils/paths";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
@@ -144,18 +145,20 @@ export default function ServiceEvaluationPanel() {
 
   const copilotItem = useMemo(() => {
     if (selected) return selected;
-    return items.find((item) => Number(item?.id || 0) === Number(focusedItemId || 0)) || null;
+    return items.find((item) => String(item?.id || '') === String(focusedItemId || '')) || null;
   }, [selected, items, focusedItemId]);
+
+  const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/service-evaluation"), []);
 
   useEffect(() => {
     if (!copilotItem) {
-      clearCopilotSelection('/company/service-evaluation');
+      clearCopilotSelection(copilotScopeKey);
       return;
     }
     const facts = buildServiceEvaluationFacts({ item: copilotItem, summary });
 
     setCopilotSelection({
-      scopeKey: '/company/service-evaluation',
+      scopeKey: copilotScopeKey,
       entityType: copilotItem?.shiftId ? 'shift' : 'screen',
       entityId: Number(copilotItem?.shiftId || 2114) || 2114,
       label: copilotItem?.serviceLabel ? `${copilotItem.serviceLabel}` : `Hizmet #${copilotItem?.id || '-'}` ,
@@ -173,8 +176,8 @@ export default function ServiceEvaluationPanel() {
         { label: 'Değerlendirme', value: copilotItem?.evaluationStatus || '-', help: 'Puan verilebilir mi, bekliyor mu, tamamlandı mı bilgisini gösterir.' },
       ],
     });
-    return () => clearCopilotSelection('/company/service-evaluation');
-  }, [copilotItem, summary]);
+    return () => clearCopilotSelection(copilotScopeKey);
+  }, [copilotItem, summary, copilotScopeKey]);
 
   useEffect(() => {
     if (!token || !selected || evaluation) return;
@@ -273,7 +276,7 @@ export default function ServiceEvaluationPanel() {
             <thead><tr style={{ textAlign: "left" }}><th>Sağlayıcı</th><th>Puan</th><th>Hizmet</th><th>Durum</th><th>Değerlendirme</th><th>Tarih</th><th>Sonraki Adım</th><th>Aksiyon</th></tr></thead>
             <tbody>
               {items.length ? items.map((item) => (
-                <tr key={item.id} onClick={() => setFocusedItemId(item.id)} style={{ cursor: 'pointer', background: Number(focusedItemId || 0) === Number(item.id || 0) ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
+                <tr key={item.id} onClick={() => setFocusedItemId(item.id)} style={{ cursor: 'pointer', background: String(focusedItemId || '') === String(item.id || '') ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
                   <td>{item.providerName || "-"}</td>
                   <td><ScorePill score={item.providerScore?.averageScore} count={item.providerScore?.evaluationCount} /></td>
                   <td>{item.serviceLabel || "-"}</td>
@@ -282,9 +285,10 @@ export default function ServiceEvaluationPanel() {
                   <td>{fmtTR(item.completedAt)}</td>
                   <td>{item.nextStep || "-"}</td>
                   <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {item.canEvaluate ? <button type="button" onClick={() => { setFocusedItemId(item.id); setSelected(item); }}>{item.evaluation ? "Puanı güncelle" : "Değerlendir"}</button> : null}
+                    {item.canEvaluate ? <button type="button" onClick={(e) => { e.stopPropagation(); setFocusedItemId(item.id); setSelected(item); }}>{item.evaluation ? "Puanı güncelle" : "Değerlendir"}</button> : null}
                     {item.actionPath ? (
-                      <button type="button" onClick={() => {
+                      <button type="button" onClick={(e) => {
+                        e.stopPropagation();
                         const path = companyPath(me, item.actionPath.replace(/^\/company/, ""));
                         if (path === base + "/shifts") {
                           setFocusedItemId(item.id);
@@ -296,7 +300,11 @@ export default function ServiceEvaluationPanel() {
                     ) : "-"}
                   </td>
                 </tr>
-              )) : <tr><td colSpan={8} className="muted" style={{ padding: "8px 0" }}>Henüz değerlendirme ekranına düşen tamamlanmış hizmet yok.</td></tr>}
+              )) : <tr><td colSpan={8} className="muted" style={{ padding: "8px 0" }}>
+                {Number(summary?.cards?.pendingEvaluation || 0) > 0
+                  ? `Özet kartında ${Number(summary?.cards?.pendingEvaluation || 0)} değerlendirme bekleyen hizmet görünüyor; bu listeyi genişletmek için Hizmetleri aç ile vardiya listesine geç veya ekranı yenile.`
+                  : 'Henüz değerlendirme ekranına düşen tamamlanmış hizmet yok.'}
+              </td></tr>}
             </tbody>
           </table>
         </div>

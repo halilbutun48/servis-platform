@@ -6,6 +6,8 @@ import { navigate } from "../../router";
 import { useAutoReload } from "../../live/useAutoReload";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { formatDateTimeTR, formatDateTR, formatTimeTR, isoFromTRDateInput, isoFromTRLocalInput, toDateInputTR, toDatetimeLocalTR } from "../../utils/time";
+import { rowSelectionStyle } from "../../utils/listUi";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 const VEHICLE_TYPES = [
   { value: "", label: "Seç (opsiyonel)" },
@@ -651,6 +653,32 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
 
   const focusHasDriver = Boolean(focusDriverId);
 
+  useEffect(() => {
+    if (!focusVehicle) {
+      clearCopilotSelection('/room/vehicles');
+      return;
+    }
+    const ui = uiStatusFromVehicle(focusVehicle) || {};
+    setCopilotSelection({
+      scopeKey: '/room/vehicles',
+      entityType: 'vehicle',
+      entityId: Number(focusVehicle?.id || 1104) || 1104,
+      label: focusVehicle?.plate || `Araç #${focusVehicle?.id || '-'}`,
+      summary: [focusVehicle?.plate, focusVehicle?.brand, focusVehicle?.model, focusVehicle?.type].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Plaka', value: focusVehicle?.plate || '-', help: 'Seçili aracın plakasını gösterir.' },
+        { label: 'Tip', value: focusVehicle?.type || '-', help: 'Araç tipini gösterir.' },
+        { label: 'Kapasite', value: String(focusVehicle?.capacity || '-'), help: 'Araç kapasitesini gösterir.' },
+        { label: 'Sürücü', value: focusDriverLabel || '-', help: 'Araca bağlı sürücüyü gösterir.' },
+        { label: 'Durum', value: ui?.label || '-', help: 'Aracın operasyon/GPS durumunu gösterir.' },
+      ],
+      badges: [
+        { label: 'Bağ', value: focusHasDriver ? 'Sürücü bağlı' : 'Sürücü yok', help: 'Araç-sürücü bağının olup olmadığını gösterir.' },
+      ],
+      facts: { screenType: 'VEHICLES', stage: pillKeyFromUi(ui), nextBestAction: focusHasDriver ? 'Önce GPS ve durum satırını oku. Sonra gerekiyorsa telematics veya atama sekmesine geç.' : 'Önce sürücü bağı var mı kontrol et. Sonra durum alanını oku.' },
+    });
+  }, [focusVehicle, focusDriverLabel, focusHasDriver]);
+
   const selectedDriverId = Number(bindSel?.[focusVehicleId] || 0);
   const selectedBound = selectedDriverId ? driverBoundMap.get(selectedDriverId) : null;
   const selectedBoundOther =
@@ -1114,7 +1142,7 @@ async function checkAvailabilityAll(onlySelected = false) {
               </select>
             </div>
             <div className="muted" style={{ marginLeft: "auto" }}>
-              Toplam: {statusRows.length}
+              Toplam: {statusRows.length} • Seçili: <b>{focusVehicle?.plate || '-'}</b>
             </div>
           </div>
 
@@ -1133,7 +1161,7 @@ async function checkAvailabilityAll(onlySelected = false) {
               {statusRows.map(({ v, ui, pillKey }) => {
                 const hasGps = hasGpsFix(v);
                 return (
-                  <tr key={v.id}>
+                  <tr key={v.id} onClick={() => setFocusVehicleId(Number(v.id) || 0)} style={rowSelectionStyle(Number(focusVehicleId || 0) === Number(v.id || 0))}>
                     <td>
                       <div>{v.plate}</div>
                       {!hasGps ? <div className="muted" style={{ fontSize: 12 }}>📡 GPS yok</div> : null}
@@ -1325,7 +1353,7 @@ async function checkAvailabilityAll(onlySelected = false) {
                     const gpsOk = hasGpsFix(v);
 
                     return (
-                      <tr key={v.id} style={isArchived ? { opacity: 0.65 } : undefined}>
+                      <tr key={v.id} onClick={() => setFocusVehicleId(Number(v.id) || 0)} style={{ ...rowSelectionStyle(Number(focusVehicleId || 0) === Number(v.id || 0)), ...(isArchived ? { opacity: 0.65 } : {}) }}>
                         <td title={!gpsOk ? "GPS verisi yok (haritada görünmez)" : ""}>
                           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                             <span>{v.plate}</span>
@@ -1383,7 +1411,7 @@ async function checkAvailabilityAll(onlySelected = false) {
                         </td>
 
                         <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button type="button" disabled={busy || isArchived} onClick={() => openEdit(v)}>
+                          <button type="button" disabled={busy || isArchived} onClick={(e) => { e.stopPropagation(); setFocusVehicleId(Number(v.id) || 0); openEdit(v); }}>
                             Düzenle
                           </button>
 
@@ -1485,7 +1513,7 @@ async function checkAvailabilityAll(onlySelected = false) {
         </thead>
         <tbody>
           {assignRows.map(({ v, cur, next }) => (
-            <tr key={v.id}>
+            <tr key={v.id} onClick={() => setFocusVehicleId(Number(v.id) || 0)} style={rowSelectionStyle(Number(focusVehicleId || 0) === Number(v.id || 0))}>
               <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <b>{v.plate}</b>
@@ -1640,7 +1668,7 @@ async function checkAvailabilityAll(onlySelected = false) {
                 : "";
 
             return (
-              <tr key={v.id}>
+              <tr key={v.id} onClick={() => setFocusVehicleId(Number(v.id) || 0)} style={rowSelectionStyle(Number(focusVehicleId || 0) === Number(v.id || 0))}>
                 <td style={{ padding: "12px 10px", verticalAlign: "top" }}>
                   <input
                     type="checkbox"

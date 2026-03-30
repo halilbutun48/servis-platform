@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function Card({ title, children, wide = false }) {
   return (
@@ -89,6 +90,57 @@ export default function ObservabilityPanel() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const firstEvent = recentEvents[0] || null;
+    const score = typeof summary?.gpsReliability?.score === 'number' ? Number(summary.gpsReliability.score) : null;
+    if (!summary && !recentEvents.length && !eventTypes.length) {
+      clearCopilotSelection('/superadmin/observability');
+      return;
+    }
+    const facts = {
+      screenType: 'OBSERVABILITY',
+      stage: String(summary?.status || '').toUpperCase() || 'SCAFFOLD',
+      readiness: /OK|LIVE|HEALTHY/.test(String(summary?.status || '').toUpperCase()) && (!summary?.deviceHealth?.risk || String(summary?.deviceHealth?.risk) === 'unknown') ? 'READY' : 'REVIEW_NEEDED',
+      readinessScore: score != null ? Math.max(24, Math.min(95, Math.round(score))) : 42,
+      blockers: [
+        ...(summary?.deviceHealth?.risk && String(summary.deviceHealth.risk) !== 'unknown' ? [`Cihaz sağlık riski: ${summary.deviceHealth.risk}`] : []),
+        ...((score != null && score < 60) ? ['GPS güven skoru düşük görünüyor.'] : []),
+      ],
+      counters: { eventTypes: eventTypes.length, recentEvents: recentEvents.length, gpsScore: score != null ? score : '-' },
+      evidence: [
+        `Canlı durum: ${liveStatusText(summary)}`,
+        `GPS skor: ${gpsScoreText(summary)}`,
+        `Son canlı olay: ${firstEvent?.label || firstEvent?.type || '-'}`,
+      ],
+      reasoningLead: 'Bu ekranda amaç canlı sağlık, GPS güveni ve son olayları aynı yerde okumaktır.',
+      nextBestAction: firstEvent
+        ? 'Önce son canlı olayın önemini ve zamanını oku. Sonra cihaz sağlık notlarıyla birlikte değerlendir.'
+        : 'Önce canlı durum ve GPS güven notlarını oku. Sonra event type ve son sync alanlarını kontrol et.',
+      safestNextStep: 'En risksiz adım, canlı durum ile GPS skorunu aynı anda okuyup sonra son olaya inmektir.',
+      compareHint: 'Canlı durum ile GPS güven skoru aynı şey değildir; biri saha akışını, diğeri veri kalitesini özetler.',
+    };
+    setCopilotSelection({
+      scopeKey: '/superadmin/observability',
+      entityType: 'screen',
+      entityId: 6107,
+      label: firstEvent?.label || 'Canlı sağlık özeti',
+      summary: [liveStatusText(summary), gpsScoreText(summary), firstEvent?.severity || null].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Canlı Durum', value: liveStatusText(summary), help: 'Saha akışının genel canlılık durumunu gösterir.' },
+        { label: 'GPS Skoru', value: gpsScoreText(summary), help: 'GPS güven katmanının skorunu gösterir.' },
+        { label: 'Cihaz Riski', value: summary?.deviceHealth?.risk || '-', help: 'Cihaz sağlığı tarafında görünen risk özetini gösterir.' },
+        { label: 'Son Sync', value: summary?.deviceHealth?.lastSyncAt || '-', help: 'Son senkron zamanını gösterir.' },
+        { label: 'Son GPS', value: summary?.deviceHealth?.lastGpsAt || '-', help: 'Son GPS zamanını gösterir.' },
+        { label: 'Son Olay', value: firstEvent?.label || firstEvent?.type || '-', help: 'En son canlı olay başlığını gösterir.' },
+      ],
+      badges: [
+        { label: 'Önem', value: firstEvent?.severity || '-', help: 'Son canlı olayın önem seviyesini gösterir.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/superadmin/observability');
+  }, [summary, eventTypes, recentEvents]);
 
   const gpsNotes = useMemo(() => {
     const raw = Array.isArray(summary?.gpsReliability?.notes) ? summary.gpsReliability.notes : [];

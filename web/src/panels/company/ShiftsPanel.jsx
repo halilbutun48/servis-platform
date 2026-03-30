@@ -521,6 +521,7 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
 
 
   const [pendingOnlyRoomOffer, setPendingOnlyRoomOffer] = useState(false);
+  const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
   const [onlyAgreement, setOnlyAgreement] = useState(false);
 
   // Final liste filtreler
@@ -1028,13 +1029,14 @@ function usePlanDraftToRequest(draft) {
       offerModal?.open ? offerModal?.shiftId : null,
       extendModal?.open ? extendModal?.shift?.id : null,
       opsEventsModal?.open ? opsEventsModal?.shiftId : null,
+      focusedTrackShiftId || null,
       Array.isArray(marketFocusIds) ? marketFocusIds[0] : null,
       Array.isArray(pendingFocusIds) ? pendingFocusIds[0] : null,
       lastCreatedShiftId || null,
     ].map((x) => Number(x || 0)).filter((x) => Number.isFinite(x) && x > 0);
 
     return ids[0] || 0;
-  }, [previewModal, offersModal, offerModal, extendModal, opsEventsModal, marketFocusIds, pendingFocusIds, lastCreatedShiftId]);
+  }, [previewModal, offersModal, offerModal, extendModal, opsEventsModal, focusedTrackShiftId, marketFocusIds, pendingFocusIds, lastCreatedShiftId]);
 
   const copilotShift = useMemo(() => {
     if (mainTab !== "track") return null;
@@ -2235,7 +2237,7 @@ function usePlanDraftToRequest(draft) {
           </thead>
           <tbody>
             {marketItems.map((s) => (
-              <tr key={s.id}>
+              <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={{ cursor: "pointer", background: Number(copilotShiftId || 0) === Number(s?.id || 0) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
                 <td>
                   {s.id}
                   <AgreementBadge agreementId={s.agreementId} />
@@ -2384,7 +2386,7 @@ function usePlanDraftToRequest(draft) {
               const roomVehicles = vehiclesForShiftRoom(s);
 
               return (
-                <tr key={s.id}>
+                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={{ cursor: "pointer", background: Number(copilotShiftId || 0) === Number(s?.id || 0) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
                   <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />
@@ -2563,7 +2565,7 @@ function usePlanDraftToRequest(draft) {
             {finalItems.map((s) => {
               const r = roomsById.get(Number(s.roomId));
               return (
-                <tr key={s.id}>
+                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={{ cursor: "pointer", background: Number(copilotShiftId || 0) === Number(s?.id || 0) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
                   <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />

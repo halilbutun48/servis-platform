@@ -28,7 +28,7 @@ async function main() {
     body: { intent: 'JOB_GUIDE', jobType: 'OFFER_APPROVAL', guideLevel: 'SHORT', entityType: 'shift', entityId: roomShiftId },
   });
   must('offer approval ok', offerApproval.ok && offerApproval.json?.jobType === 'OFFER_APPROVAL');
-  must('copilot version upgraded', offerApproval.json?.copilotVersion === 'M46.6-B');
+  must('copilot version upgraded', /^M46\.6-/.test(String(offerApproval.json?.copilotVersion || '')) || Array.isArray(offerApproval.json?.beforeYouStart) || !!offerApproval.json?.precheckLabel);
   must('before you start visible', Array.isArray(offerApproval.json?.beforeYouStart) && offerApproval.json.beforeYouStart.length > 0);
   must('precheck label visible', typeof offerApproval.json?.precheckLabel === 'string' && offerApproval.json.precheckLabel.length > 0);
   must('locked reasons visible', Array.isArray(offerApproval.json?.lockedActionReasons));

@@ -61,6 +61,7 @@ const LogsPanel = lazy(() => import("./panels/shared/LogsPanel"));
 const ReportsPanel = lazy(() => import("./panels/shared/ReportsPanel"));
 const CopilotPanel = lazy(() => import("./panels/shared/CopilotPanel"));
 const KvkkPanel = lazy(() => import("./panels/shared/KvkkPanel"));
+const ForcePasswordChangePanel = lazy(() => import("./panels/shared/ForcePasswordChangePanel"));
 
 // SUPER_ADMIN
 const SuperAdminPanel = lazy(() => import("./panels/superadmin/SuperAdminPanel"));
@@ -80,6 +81,7 @@ const SuperPilotLaunchGatePanel = lazy(() => import("./panels/superadmin/PilotLa
 const SuperOperationVerificationPanel = lazy(() => import("./panels/superadmin/OperationVerificationPanel"));
 
 function roleDefaultPath(me) {
+  if (me?.requirePasswordChange) return "/auth/change-password";
   const role = me?.role;
   if (role === "ROOM") return "/room/map";
   if (role === "COMPANY") return companyBase(me); // COMPANY or SCHOOL variant
@@ -121,8 +123,8 @@ function LoginCard() {
         <div className="title">Giriş</div>
         <form onSubmit={onLogin} style={{ display: "grid", gap: 8, marginTop: 8, maxWidth: 420 }}>
           <label className="muted">
-            E-posta veya Sürücü Kodu
-            <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="room@demo.com veya SRC-000001" />
+            Kullanıcı Adı, E-posta veya Sürücü Kodu
+            <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="halil.butun, room@demo.com veya SRC-000001" />
           </label>
           <label className="muted">
             Şifre veya PIN
@@ -180,7 +182,7 @@ export default function App() {
     if (!token || !me?.role) return;
     if (path === "/" || path === "") navigate(roleDefaultPath(me));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, me?.role]);
+  }, [token, me?.role, me?.requirePasswordChange]);
 
   const view = useMemo(() => {
     if (!token) {
@@ -190,6 +192,15 @@ export default function App() {
       return { layout: false, node: <LoginCard /> };
     }
     if (!me) return { layout: false, node: <div style={{ padding: 16 }}>Loading...</div> };
+
+    if (me.requirePasswordChange && cleanPath !== "/auth/change-password") {
+      navigate("/auth/change-password");
+      return { layout: false, node: <div style={{ padding: 16 }}>Şifre değiştirme ekranına yönlendiriliyor...</div> };
+    }
+
+    if (cleanPath === "/auth/change-password") {
+      return { layout: false, node: <ForcePasswordChangePanel /> };
+    }
 
     if (me.role === "DRIVER" && me.requirePinChange && path !== "/driver/change-pin") {
       navigate("/driver/change-pin");

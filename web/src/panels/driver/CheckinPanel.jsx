@@ -3,7 +3,6 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { useAutoReload } from "../../live/useAutoReload";
-import FeatureFlagNotice from "../shared/FeatureFlagNotice";
 import CameraQrScannerCard from "../../components/checkin/CameraQrScannerCard";
 import { extractCheckinToken } from "../../utils/checkinToken";
 import { formatDateTimeTR } from "../../utils/time";
@@ -18,7 +17,7 @@ function fmt(dt) {
 
 export default function DriverCheckinPanel() {
   const { token, me } = useSession();
-  const featureOn = Boolean(me?.features?.checkin);
+  const featureOn = true;
 
   const [shiftData, setShiftData] = useState(null);
   const [selectedShiftId, setSelectedShiftId] = useState("");
@@ -149,9 +148,6 @@ export default function DriverCheckinPanel() {
     }
   }
 
-  if (!featureOn) {
-    return <FeatureFlagNotice title="M42 Driver check-in paneli kapalı" feature="FEATURE_CHECKIN" fallbackPath="/driver/today" />;
-  }
 
   return (
     <div>
@@ -164,7 +160,7 @@ export default function DriverCheckinPanel() {
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="APPROVED">FEATURE_CHECKIN=1</span>
+            <span className="pill" data-status="COUNT">Opsiyonel check-in</span>
             <button type="button" className="btn" onClick={loadAll} disabled={loading}>{loading ? "..." : "Yenile"}</button>
           </div>
         </div>

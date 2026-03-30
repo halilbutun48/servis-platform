@@ -71,8 +71,6 @@ export default function SchoolParentInvitePanel() {
         body: {
           childPersonelId: Number(childPersonelId),
           parentFullName,
-          email,
-          phone,
           expiresInDays: Number(expiresInDays || 7),
         },
       });

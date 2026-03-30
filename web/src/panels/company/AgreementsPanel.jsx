@@ -20,6 +20,8 @@ import {
 import { ymdTR } from "../../utils/time";
 import { fetchProviderScore } from "../../utils/providerScores";
 import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHub";
+import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -152,6 +154,8 @@ export default function AgreementsPanel() {
 
   const [take, setTake] = useState(20);
   const [statusFilter, setStatusFilter] = useState("");
+  const [filterQ, setFilterQ] = useState("");
+  const [selectedAgreementId, setSelectedAgreementId] = useState(null);
 
   // rooms dropdown
   const [rooms, setRooms] = useState([]);
@@ -515,6 +519,59 @@ export default function AgreementsPanel() {
     });
   }, [items, roomById]);
 
+  const filteredRows = useMemo(() => rows.filter(({ a, room }) => includesFilter([
+    a?.id,
+    a?.status,
+    room?.name,
+    a?.roomId,
+    a?.companyOfferAmount,
+    a?.roomOfferAmount,
+    a?.companyOfferNote,
+    a?.roomOfferNote,
+    a?.direction,
+    a?.pattern,
+    a?.startDate,
+    a?.endDate,
+    weekMaskToText(a?.weekMask),
+  ], filterQ)), [rows, filterQ]);
+
+  const selectedAgreementRow = useMemo(
+    () => filteredRows.find(({ a }) => Number(a?.id || 0) === Number(selectedAgreementId || 0)) || filteredRows[0] || null,
+    [filteredRows, selectedAgreementId]
+  );
+
+  useEffect(() => {
+    const row = selectedAgreementRow;
+    if (!row?.a) {
+      clearCopilotSelection('/company/agreements');
+      return;
+    }
+    const { a, room } = row;
+    const todayTotal = Number(shiftStats?.[a.id]?.todayTotal || 0);
+    const todayDone = Number(shiftStats?.[a.id]?.todayDone || 0);
+    const horizonOpen = Number(shiftStats?.[a.id]?.horizonOpen || 0);
+    setCopilotSelection({
+      scopeKey: '/company/agreements',
+      entityType: 'agreement',
+      entityId: Number(a?.id || 2103) || 2103,
+      label: `Sözleşme #${a.id}`,
+      summary: [String(a?.status || '').toUpperCase() || '-', room?.name || `Room #${a?.roomId || '-'}`, ymdTR(a?.startDate), ymdTR(a?.endDate)].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Room', value: room?.name || `#${a?.roomId || '-'}`, help: 'Sözleşmenin bağlı olduğu operasyon odasını gösterir.' },
+        { label: 'Durum', value: String(a?.status || '-').toUpperCase(), help: 'Sözleşmenin karar veya aktiflik durumunu gösterir.' },
+        { label: 'Başlangıç', value: ymdTR(a?.startDate), help: 'Sözleşmenin başlangıç tarihini gösterir.' },
+        { label: 'Bitiş', value: ymdTR(a?.endDate), help: 'Sözleşmenin bitiş tarihini gösterir.' },
+        { label: 'Tutar', value: a?.companyOfferAmount != null ? `${new Intl.NumberFormat("tr-TR").format(Number(a.companyOfferAmount || 0))} ₺` : '-', help: 'Company teklif veya sözleşme tutarını gösterir.' },
+        { label: 'Bugün / Ufuk', value: `${todayDone}/${todayTotal} DONE • ${horizonOpen} APPROVED`, help: 'Bugünkü ilerleme ve ufuktaki vardiya sayısını özetler.' },
+      ],
+      badges: [
+        { label: 'Yön', value: String(a?.direction || '-').toUpperCase(), help: 'Sözleşmenin akış yönünü gösterir.' },
+        { label: 'Plan', value: weekMaskToText(a?.weekMask) || '-', help: 'Haftalık çalışma günlerini özetler.' },
+      ],
+      facts: { screenType: 'AGREEMENTS', stage: String(a?.status || '').toUpperCase(), nextBestAction: 'Önce durum, oda ve tarih aralığını birlikte oku. Sonra bugün/ufuk verisini kontrol et.' },
+    });
+  }, [selectedAgreementRow, shiftStats]);
+
   return (
     <div style={{ padding: 16, display: "grid", gap: 12 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -541,6 +598,10 @@ export default function AgreementsPanel() {
                 </option>
               ))}
             </select>
+          </label>
+          <label className="muted">
+            Filtre
+            <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Oda / durum / not / tarih" disabled={busy} />
           </label>
           <button type="button" disabled={busy} onClick={load}>
             Yenile
@@ -762,6 +823,7 @@ export default function AgreementsPanel() {
 
       {/* List */}
       <div className="tableWrap">
+        <div className="muted" style={{ marginBottom: 8 }}>Gösterilen: <b>{filteredRows.length}</b> / Toplam: <b>{rows.length}</b></div>
         <table className="tbl" style={{ minWidth: 980 }}>
           <thead>
             <tr>
@@ -779,8 +841,8 @@ export default function AgreementsPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ a, room }) => (
-              <tr key={a.id}>
+            {filteredRows.map(({ a, room }) => (
+              <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                 <td className="muted">#{a.id}</td>
                 <td><StatusPill status={a.status} /><ExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
                 <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
@@ -844,9 +906,9 @@ export default function AgreementsPanel() {
                 </td>
               </tr>
             ))}
-            {!rows.length ? (
+            {!filteredRows.length ? (
               <tr>
-                <td colSpan={10} className="muted">Kayıt yok.</td>
+                <td colSpan={11} className="muted">{rows.length ? 'Filtreye uyan sözleşme yok.' : 'Kayıt yok.'}</td>
               </tr>
             ) : null}
           </tbody>
@@ -855,5 +917,4 @@ export default function AgreementsPanel() {
     </div>
   );
 }
-
 

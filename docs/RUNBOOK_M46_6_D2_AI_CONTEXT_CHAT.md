@@ -1,5 +1,9 @@
 # M46.6-D2 — AI Context-Aware Chat
 
+> **Uyumluluk notu (M79+):** Bu M46 runbook'u artık pilot-era exact versiyon etiketi beklemek yerine, aynı davranışın modern Copilot yüzeyinde hâlâ mevcut olup olmadığını doğrulayan legacy compatibility referansı olarak okunmalıdır.
+> Exact `copilotVersion` eşitliği yerine davranışsal / yapısal doğrulama esastır.
+
+
 Bu adımda sohbet kabuğu ekran bağlamının üstüne seçili kayıt bağlamını da ekler.
 
 ## Gelen yeni yetenekler

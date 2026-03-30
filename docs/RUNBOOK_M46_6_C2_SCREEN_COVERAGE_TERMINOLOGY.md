@@ -1,5 +1,9 @@
 # RUNBOOK — M46.6-C2 Screen Coverage + Terminology Expansion
 
+> **Uyumluluk notu (M79+):** Bu M46 runbook'u artık pilot-era exact versiyon etiketi beklemek yerine, aynı davranışın modern Copilot yüzeyinde hâlâ mevcut olup olmadığını doğrulayan legacy compatibility referansı olarak okunmalıdır.
+> Exact `copilotVersion` eşitliği yerine davranışsal / yapısal doğrulama esastır.
+
+
 Bu adım ekran kapsamasını ve kullanıcı diliyle terim açıklamalarını genişletir.
 
 Kapsam:

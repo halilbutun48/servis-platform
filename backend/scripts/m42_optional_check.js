@@ -74,10 +74,7 @@ async function upsertHarnessPersonel(companyToken, shiftId) {
 }
 
 async function main() {
-  banner("M42 OPTIONAL CHECK: Check-in module (feature ON)");
-
-  step("feature flag should be enabled");
-  must("FEATURE_CHECKIN=1", String(process.env.FEATURE_CHECKIN || "0") === "1");
+  banner("M42 OPTIONAL CHECK: Check-in module (always-on, optional use)");
 
   step("login seeded users");
   const companyToken = await loginFirst("company");

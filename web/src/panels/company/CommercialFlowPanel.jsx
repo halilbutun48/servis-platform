@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { navigate } from "../../router";
+import { getPath, navigate } from "../../router";
+import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
 import { useSession } from "../../state/session";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
@@ -104,9 +105,11 @@ export default function CompanyCommercialFlowPanel() {
 
   const selectedItem = useMemo(() => flowItems.find((item) => String(item.id) === String(selectedId || '')) || null, [flowItems, selectedId]);
 
+  const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/commercial-flow"), []);
+
   useEffect(() => {
     if (!selectedItem) {
-      clearCopilotSelection('/company/commercial-flow');
+      clearCopilotSelection(copilotScopeKey);
       return;
     }
     const facts = buildCommercialFlowFacts({
@@ -117,7 +120,7 @@ export default function CompanyCommercialFlowPanel() {
     });
 
     setCopilotSelection({
-      scopeKey: '/company/commercial-flow',
+      scopeKey: copilotScopeKey,
       entityType: selectedItem?.shiftId ? 'shift' : 'screen',
       entityId: Number(selectedItem?.shiftId || 2115) || 2115,
       label: `${selectedItem?.counterparty || 'Kayıt'} • ${selectedItem?.flowLabel || '-'}`,
@@ -135,8 +138,8 @@ export default function CompanyCommercialFlowPanel() {
         { label: 'Bölüm', value: selectedItem?.section === 'list' ? 'Liste' : selectedItem?.section === 'pending' ? 'Bekleyen' : 'Market', help: 'Kayıdın hangi alt görünümde açılacağını gösterir.' },
       ],
     });
-    return () => clearCopilotSelection('/company/commercial-flow');
-  }, [selectedItem, marketOffers.length, acceptedOffers.length, finalItems.length]);
+    return () => clearCopilotSelection(copilotScopeKey);
+  }, [selectedItem, marketOffers.length, acceptedOffers.length, finalItems.length, copilotScopeKey]);
 
   function openShifts(section, shiftId) {
     navigate("/company/shifts");

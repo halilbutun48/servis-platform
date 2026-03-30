@@ -1,13 +1,31 @@
 import { prisma } from "../prisma.js";
 
+function parseYmdBoundary(value, boundary) {
+  const s = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const suffix = boundary === "end" ? "T23:59:59.999+03:00" : "T00:00:00.000+03:00";
+  const d = new Date(`${s}${suffix}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function toDateStart(v, fallbackDays = 7) {
   const s = String(v || "").trim();
-  if (s) { const d = new Date(s); if (!Number.isNaN(d.getTime())) return d; }
+  if (s) {
+    const ymd = parseYmdBoundary(s, "start");
+    if (ymd) return ymd;
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
   return new Date(Date.now() - fallbackDays * 24 * 60 * 60 * 1000);
 }
 function toDateEnd(v) {
   const s = String(v || "").trim();
-  if (s) { const d = new Date(s); if (!Number.isNaN(d.getTime())) return d; }
+  if (s) {
+    const ymd = parseYmdBoundary(s, "end");
+    if (ymd) return ymd;
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
   return new Date();
 }
 export function buildReportWhere(query, user) {

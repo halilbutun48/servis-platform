@@ -1,5 +1,9 @@
 # RUNBOOK — M46.6-D AI CHAT SHELL
 
+> **Uyumluluk notu (M79+):** Bu M46 runbook'u artık pilot-era exact versiyon etiketi beklemek yerine, aynı davranışın modern Copilot yüzeyinde hâlâ mevcut olup olmadığını doğrulayan legacy compatibility referansı olarak okunmalıdır.
+> Exact `copilotVersion` eşitliği yerine davranışsal / yapısal doğrulama esastır.
+
+
 Bu paket şunları ekler:
 - sohbet sekmesi
 - ekran bağlamıyla kısa cevap

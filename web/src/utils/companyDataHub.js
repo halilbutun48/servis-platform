@@ -71,8 +71,8 @@ export function getCompanyOffers(token, { signal, force = false, q, take = COMPA
   return cachedGet(withQuery('/api/offers/company', { q, take, status }), { token, signal, force, ttlMs, delayMs });
 }
 
-export function getCompanyGeoNeedsReview(token, { signal, force = false, kind = 'PERSONEL', ttlMs = COMPANY_DATA_TTL.personels, delayMs = 100 } = {}) {
-  return cachedGet(withQuery('/api/company/personels', { geoStatus: 'NEEDS_REVIEW', kind, take: COMPANY_DATA_TAKE.geoNeedsReview }), { token, signal, force, ttlMs, delayMs });
+export function getCompanyGeoNeedsReview(token, { signal, force = false, kind = 'PERSONEL', take = COMPANY_DATA_TAKE.geoNeedsReview, ttlMs = COMPANY_DATA_TTL.personels, delayMs = 100 } = {}) {
+  return cachedGet(withQuery('/api/company/personels', { geoStatus: 'NEEDS_REVIEW', kind, take }), { token, signal, force, ttlMs, delayMs });
 }
 
 export function getCompanyPersonels(token, { signal, force = false, kind, q, take = COMPANY_DATA_TAKE.personels, ttlMs = COMPANY_DATA_TTL.personels, delayMs = 100 } = {}) {

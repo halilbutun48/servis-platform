@@ -7,6 +7,8 @@ import { navigate } from "../../router";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import DriverPenaltyBadge from "../../components/driver/DriverPenaltyBadge";
 import DriverPenaltyForm from "../../components/driver/DriverPenaltyForm";
+import { rowSelectionStyle } from "../../utils/listUi";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 const TABS = [
   { key: "status", label: "Durum" },
@@ -504,6 +506,34 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
     [drivers, focusDriverId]
   );
 
+  useEffect(() => {
+    if (!focusDriver) {
+      clearCopilotSelection('/room/drivers');
+      return;
+    }
+    const stat = driverStatus(focusDriver.id);
+    const ops = stat || {};
+    const boundVehicle = focusDriver?.boundVehicle || vehicles.find((v) => Number(v?.driverId || 0) === Number(focusDriver?.id || 0)) || null;
+    setCopilotSelection({
+      scopeKey: '/room/drivers',
+      entityType: 'driver',
+      entityId: Number(focusDriver?.id || 1105) || 1105,
+      label: focusDriver?.fullName || `Sürücü #${focusDriver?.id || '-'}`,
+      summary: [focusDriver?.fullName, boundVehicle?.plate, ops?.assignmentState].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Ad Soyad', value: focusDriver?.fullName || '-', help: 'Seçili sürücüyü gösterir.' },
+        { label: 'Telefon', value: focusDriver?.phone || '-', help: 'Sürücünün telefon bilgisini gösterir.' },
+        { label: 'Bağlı Araç', value: boundVehicle?.plate || '-', help: 'Sürücüye bağlı aracı gösterir.' },
+        { label: 'Atama', value: ops?.assignmentState || '-', help: 'Sürücünün atama durumunu gösterir.' },
+        { label: 'Bağlantı', value: ops?.connectionState || '-', help: 'Sürücünün bağlantı durumunu gösterir.' },
+      ],
+      badges: [
+        { label: 'GPS', value: ops?.gpsUiState || '-', help: 'GPS görünürlüğünü gösterir.' },
+      ],
+      facts: { screenType: 'DRIVERS', stage: ops?.assignmentState || '-', nextBestAction: boundVehicle ? 'Önce bağlı araç ve atama durumunu oku. Sonra vardiya veya bağlantı sekmesine geç.' : 'Önce araca bağlı mı kontrol et. Sonra bağlantı ve GPS durumunu oku.' },
+    });
+  }, [focusDriver, vehicles]);
+
   const focusStat = focusDriver ? driverStatus(focusDriver.id) : null;
   const focusVehicle = focusStat?.vehicle ?? (focusDriver ? boundVehicleByDriverId.get(Number(focusDriver.id)) : null);
 
@@ -603,7 +633,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
 
           <div className="muted" style={{ marginLeft: "auto" }}>
-            Toplam {counts.total} • Araca bağlı {counts.bound} • Boşta {counts.free} • Bağlı {counts.connected} • Atanmış {counts.assigned} • Aktif {counts.active} • GPS canlı {counts.live} • STALE {counts.stale} • OFFLINE {counts.offline}
+            Toplam {counts.total} • Araca bağlı {counts.bound} • Boşta {counts.free} • Bağlı {counts.connected} • Atanmış {counts.assigned} • Aktif {counts.active} • GPS canlı {counts.live} • STALE {counts.stale} • OFFLINE {counts.offline} • Seçili: <b>{focusDriver?.fullName || '-'}</b>
           </div>
         </div>
       </div>
@@ -617,7 +647,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
               <b>{d.fullName}</b>
               <span className="muted">{d.phone || "-"}</span>
               <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
-              <button type="button" className="btn" onClick={() => setPenaltyOpenDriverId((p) => p === Number(d.id) ? 0 : Number(d.id))}>Gelmedi kaydı</button>
+              <button type="button" className="btn" onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); setPenaltyOpenDriverId((p) => p === Number(d.id) ? 0 : Number(d.id)); }}>Gelmedi kaydı</button>
               {penaltyOpenDriverId === Number(d.id) ? <div style={{ width: "100%" }}><DriverPenaltyForm driver={d} busy={busy} onSubmit={(payload) => createNoShow(d, payload)} /></div> : null}
             </div>
           ))}
@@ -648,7 +678,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                 const ops = driverOps(d);
 
                 return (
-                  <tr key={d.id}>
+                  <tr key={d.id} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
                     <td>
                       <b>{d.fullName}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
                       <div className="muted">#{d.id}</div>
@@ -761,7 +791,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                         : "-";
 
                     return (
-                      <tr key={d.id}>
+                      <tr key={d.id} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
                         <td>{d.id}</td>
                         <td><b>{d.fullName}</b></td>
                         <td>{d.phone}</td>
@@ -780,14 +810,15 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                         </td>
                         <td className="muted">{line}</td>
                         <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button type="button" disabled={busy} onClick={() => openEdit(d)}>Düzenle</button>
-                          <button type="button" disabled={busy} onClick={() => deleteDriver(d)}>Sil</button>
-                          <button type="button" disabled={busy} onClick={() => resetPin(d)}>PIN üret</button>
-                          <button type="button" disabled={busy} onClick={() => resetDevice(d)}>Cihaz sıfırla</button>
+                          <button type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); openEdit(d); }}>Düzenle</button>
+                          <button type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); deleteDriver(d); }}>Sil</button>
+                          <button type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); resetPin(d); }}>PIN üret</button>
+                          <button type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); resetDevice(d); }}>Cihaz sıfırla</button>
                           <button
                             type="button"
                             disabled={busy}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setFocusDriverId(Number(d.id));
                               setTab("link");
                             }}
@@ -842,7 +873,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                   : "-";
 
                 return (
-                  <tr key={d.id}>
+                  <tr key={d.id} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
                     <td><b>{d.fullName}</b></td>
                     <td className="muted">{bv ? bv.plate : "-"}</td>
                     <td className="muted">{curText}</td>

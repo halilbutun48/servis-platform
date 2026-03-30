@@ -1,7 +1,8 @@
 // web/src/panels/company/GeoReviewPanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { navigate } from "../../router";
+import { getPath, navigate } from "../../router";
+import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
 import { useSession } from "../../state/session";
 import GeoLocationPicker from "../../components/geo/GeoLocationPicker";
 import { companyPath } from "../../utils/paths";
@@ -10,9 +11,11 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildGeoReviewFacts } from "../../utils/copilotFacts";
 import { getCompanyGeoNeedsReview, getCompanyPersonels } from "../../utils/companyDataHub";
 import { clearUiDataCache } from "../../utils/uiDataCache";
+import { rowSelectionStyle } from "../../utils/listUi";
 
 const GUIDED_TEMP_STORAGE_KEY = "psv1:guidedTempShiftIds:v1";
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
+const GEOREVIEW_OPEN_MODE_KEY = "psv1:georeview:openMode:v1";
 const REASON_OPTIONS = [
   { value: "", label: "Tüm nedenler" },
   { value: "ADDRESS_ONLY", label: "Adres var, koordinat yok" },
@@ -103,6 +106,25 @@ function readSessionPersonIds(companyKey) {
   return Array.from(ids);
 }
 
+function readOpenIntent() {
+  try {
+    const raw = String(localStorage.getItem(GEOREVIEW_OPEN_MODE_KEY) || "").trim();
+    localStorage.removeItem(GEOREVIEW_OPEN_MODE_KEY);
+    if (!raw) return { mode: "", source: "", forceRefresh: false };
+    if (raw.startsWith("{")) {
+      const parsed = JSON.parse(raw);
+      return {
+        mode: String(parsed?.mode || "").trim().toUpperCase(),
+        source: String(parsed?.source || "").trim().toLowerCase(),
+        forceRefresh: parsed?.forceRefresh === true,
+      };
+    }
+    return { mode: raw.toUpperCase(), source: "", forceRefresh: false };
+  } catch {
+    return { mode: "", source: "", forceRefresh: false };
+  }
+}
+
 function formatGeoReason(item) {
   return item?.geoReasonText || item?.geoNote || "Neden yok";
 }
@@ -115,6 +137,10 @@ export default function GeoReviewPanel() {
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
   const guidedResume = useMemo(() => readGuidedResume(basePath), [basePath]);
   const preferredSelectedId = Number(guidedResume?.personId || 0) || null;
+  const [openIntent] = useState(() => readOpenIntent());
+  const openMode = String(openIntent?.mode || "").toUpperCase();
+  const openedFromWorkflow = String(openIntent?.source || "") === "workflow";
+  const prefersPlanningScope = openMode === "SESSION" || (!!guidedResume && openMode !== "ALL");
 
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -124,8 +150,9 @@ export default function GeoReviewPanel() {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [reason, setReason] = useState("");
-  const [status, setStatus] = useState("NEEDS_REVIEW");
+  const [status, setStatus] = useState(() => (prefersPlanningScope ? "" : "NEEDS_REVIEW"));
   const [selectedId, setSelectedId] = useState(null);
+  const [preferredApplied, setPreferredApplied] = useState(false);
   const [bulkStats, setBulkStats] = useState({ found: 0, notFound: 0, error: 0 });
   const [scopeMode, setScopeMode] = useState("ALL");
   const [scopeAutoSeeded, setScopeAutoSeeded] = useState(false);
@@ -139,7 +166,13 @@ export default function GeoReviewPanel() {
   });
 
   const scopedIds = useMemo(() => readSessionPersonIds(companyKey), [companyKey, busy]);
+  const scopedIdsKey = useMemo(() => scopedIds.join(','), [scopedIds]);
   const hasPlanningScope = scopedIds.length > 0;
+
+  useEffect(() => {
+    if (!openIntent?.forceRefresh) return;
+    clearUiDataCache("/api/company/personels");
+  }, [openIntent]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQ(String(q || "").trim()), 260);
@@ -151,25 +184,54 @@ export default function GeoReviewPanel() {
   }, [hasPlanningScope, scopeMode]);
 
   useEffect(() => {
+    if (openMode === "ALL") {
+      setScopeMode("ALL");
+      setScopeAutoSeeded(true);
+      return;
+    }
     if (scopeAutoSeeded) return;
     if (!guidedResume) return;
     if (!hasPlanningScope) return;
     setScopeMode("SESSION");
     setScopeAutoSeeded(true);
-  }, [guidedResume, hasPlanningScope, scopeAutoSeeded]);
+  }, [guidedResume, hasPlanningScope, openMode, scopeAutoSeeded]);
 
-  async function load(signal) {
+  async function fetchGeoReviewItemsDirect({ signal, kind, reviewOnly = true, qText = "", take = 500 } = {}) {
+    const qs = new URLSearchParams();
+    if (reviewOnly) qs.set("geoStatus", "NEEDS_REVIEW");
+    if (kind) qs.set("kind", kind);
+    if (qText) qs.set("q", qText);
+    qs.set("take", String(take));
+    const resp = await api(`/api/company/personels?${qs.toString()}`, { token, signal });
+    return Array.isArray(resp?.items) ? resp.items : [];
+  }
+
+  async function load(signal, { force = false } = {}) {
     setBusy(true);
     setErr("");
     setMsg("");
     try {
-      const kind = school ? "STUDENT" : undefined;
+      const kind = school ? "STUDENT" : "PERSONEL";
       const wantsFocusedReview = !String(debouncedQ || "").trim() && (!status || status === "NEEDS_REVIEW") && !reason;
-      const r = wantsFocusedReview
-        ? await getCompanyGeoNeedsReview(token, { signal, kind, ttlMs: 25000, delayMs: 140 })
-        : await getCompanyPersonels(token, { signal, kind, q: debouncedQ, take: debouncedQ ? 30 : 16, ttlMs: 25000, delayMs: 180 });
+      const mustHonorSessionScope = scopeMode === "SESSION" && hasPlanningScope;
+      const scopedTake = Math.min(500, Math.max(scopedIds.length * 4, 60));
+      let nextItems = [];
+      if (wantsFocusedReview) {
+        clearUiDataCache("/api/company/personels");
+        nextItems = await fetchGeoReviewItemsDirect({ signal, kind, reviewOnly: true, take: 500 });
+        if (!nextItems.length) {
+          nextItems = await fetchGeoReviewItemsDirect({ signal, kind, reviewOnly: false, qText: debouncedQ, take: mustHonorSessionScope ? scopedTake : 500 });
+        }
+      } else {
+        const primary = await getCompanyPersonels(token, { signal, force, kind, q: debouncedQ, take: mustHonorSessionScope ? scopedTake : (debouncedQ ? 30 : 120), ttlMs: 25000, delayMs: 180 });
+        nextItems = Array.isArray(primary?.items) ? primary.items : [];
+        if (!nextItems.length && !String(debouncedQ || "").trim()) {
+          const fallback = await getCompanyGeoNeedsReview(token, { signal, force: true, kind, take: 200, ttlMs: 25000, delayMs: 140 });
+          if (Array.isArray(fallback?.items) && fallback.items.length) nextItems = fallback.items;
+        }
+      }
       if (signal?.aborted) return;
-      setItems(Array.isArray(r?.items) ? r.items : []);
+      setItems(nextItems);
       setBulkStats({ found: 0, notFound: 0, error: 0 });
     } catch (e) {
       if (e?.name === "AbortError") return;
@@ -183,7 +245,7 @@ export default function GeoReviewPanel() {
     const controller = new AbortController();
     let cancelled = false;
     const timer = setTimeout(() => {
-      if (!cancelled) load(controller.signal);
+      if (!cancelled) load(controller.signal, { force: true });
     }, 320);
     return () => {
       cancelled = true;
@@ -191,7 +253,7 @@ export default function GeoReviewPanel() {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [school, debouncedQ, token, status, reason]);
+  }, [school, debouncedQ, token, status, reason, scopeMode, hasPlanningScope, scopedIdsKey]);
 
   const filtered = useMemo(() => {
     const s = String(q || "").trim().toLowerCase();
@@ -224,13 +286,26 @@ export default function GeoReviewPanel() {
       setSelectedId(null);
       return;
     }
-    if (preferredSelectedId && filtered.some((x) => Number(x.id) === Number(preferredSelectedId))) {
+    if (!preferredApplied && preferredSelectedId && filtered.some((x) => Number(x.id) === Number(preferredSelectedId))) {
       if (Number(selectedId) !== Number(preferredSelectedId)) setSelectedId(preferredSelectedId);
+      setPreferredApplied(true);
       return;
     }
     const exists = filtered.some((x) => Number(x.id) === Number(selectedId));
     if (!exists) setSelectedId(filtered[0].id);
-  }, [filtered, selectedId, preferredSelectedId]);
+  }, [filtered, selectedId, preferredSelectedId, preferredApplied]);
+
+  useEffect(() => {
+    if (scopeMode !== "SESSION" || !hasPlanningScope || busy) return;
+    if (filtered.length > 0) return;
+    if (!items.length) return;
+    if (!String(q || "").trim() && !reason && status === "NEEDS_REVIEW") {
+      setStatus("");
+      setMsg("Bu planlamadaki kayıtlar bulundu. Sadece incelemede olanlar yerine tüm durumlar gösteriliyor.");
+      return;
+    }
+    setMsg("Bu planlamadaki kayıtlar mevcut ama seçtiğin filtreyle görünmüyor. İstersen üstteki filtreleri genişlet veya tüm şirket kayıtlarına geç.");
+  }, [busy, filtered.length, hasPlanningScope, items.length, q, reason, scopeMode, status]);
 
   const selected = useMemo(
     () => filtered.find((x) => Number(x.id) === Number(selectedId)) || filtered[0] || null,
@@ -417,9 +492,11 @@ export default function GeoReviewPanel() {
 
   const selectedReason = formatGeoReason(selected);
 
+  const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/georeview"), []);
+
   useEffect(() => {
     if (!selected) {
-      clearCopilotSelection("/company/georeview");
+      clearCopilotSelection(copilotScopeKey);
       return;
     }
     const hasCoord = Number.isFinite(Number(selected?.homeLat)) && Number.isFinite(Number(selected?.homeLng));
@@ -436,7 +513,7 @@ export default function GeoReviewPanel() {
       ...(String(selected?.geoReason || selected?.geoNote || "").toUpperCase().includes("MANUAL") ? [{ label: "MANUAL_OVERRIDE", value: "VAR", help: "Kayıt elle doğrulanmış veya düzeltilmiştir." }] : []),
     ];
     setCopilotSelection({
-      scopeKey: "/company/georeview",
+      scopeKey: copilotScopeKey,
       entityType: "screen",
       entityId: 2109,
       label: selected?.fullName || `Kayıt #${selected?.id || "-"}`,
@@ -452,8 +529,8 @@ export default function GeoReviewPanel() {
         badges,
       },
     });
-    return () => clearCopilotSelection("/company/georeview");
-  }, [selected, selectedReason, school]);
+    return () => clearCopilotSelection(copilotScopeKey);
+  }, [selected, selectedReason, school, copilotScopeKey]);
 
   return (
     <div style={{ width: "100%", maxWidth: "none" }}>
@@ -467,7 +544,17 @@ export default function GeoReviewPanel() {
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             {hasPlanningScope ? (
-              <button type="button" className="btn" onClick={() => setScopeMode((p) => (p === "SESSION" ? "ALL" : "SESSION"))}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setScopeMode((p) => {
+                    const next = p === "SESSION" ? "ALL" : "SESSION";
+                    if (next === "SESSION" && !String(q || "").trim() && !reason) setStatus("");
+                    return next;
+                  });
+                }}
+              >
                 {scopeMode === "SESSION" ? "Tüm şirket kayıtlarını göster" : "Sadece bu planlamadakileri göster"}
               </button>
             ) : null}
@@ -507,7 +594,7 @@ export default function GeoReviewPanel() {
               <option key={opt.value || "all"} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <button onClick={() => load()} disabled={busy || geoBusy}>{busy ? "..." : "Yenile"}</button>
+          <button onClick={() => load(undefined, { force: true })} disabled={busy || geoBusy}>{busy ? "..." : "Yenile"}</button>
           <button onClick={bulkGeocode} disabled={busy || geoBusy || bulkClearBusy || !filtered.length}>
             {busy ? "Çalışıyor..." : "Toplu Adresten Bul"}
           </button>
@@ -537,7 +624,7 @@ export default function GeoReviewPanel() {
           <div className="topbar">
             <div>
               <div className="title">{school ? "Öğrenci listesi" : `${who} listesi`}</div>
-              <div className="muted">Bir kayıt seç, sağ tarafta haritadan pin ayarla. Guided akıştan gelirsen varsayılan liste sadece o oturumdaki kişiler olur.</div>
+              <div className="muted">Bir kayıt seç, sağ tarafta haritadan pin ayarla. Guided akıştan gelirsen varsayılan görünüm sadece o planlamadaki kayıtlar olur; istersen tek tuşla tüm şirket kayıtlarına geçebilirsin.</div>
             </div>
             <div className="muted">
               {scopeMode === "SESSION" ? "Planlama oturumu" : "Tüm şirket kayıtları"} • <b>{filtered.length}</b>
@@ -562,7 +649,7 @@ export default function GeoReviewPanel() {
                   const tone = statusTone(p.geoStatus);
                   const hasCoord = Number.isFinite(Number(p.homeLat)) && Number.isFinite(Number(p.homeLng));
                   return (
-                    <tr key={p.id} style={active ? { outline: "1px solid rgba(59,130,246,.45)", background: "rgba(37,99,235,.06)" } : undefined}>
+                    <tr key={p.id} onClick={() => setSelectedId(p.id)} style={rowSelectionStyle(active)}>
                       <td>{idx + 1}</td>
                       <td>
                         <div style={{ fontWeight: 600 }}>{p.fullName || "-"}</div>
@@ -590,7 +677,7 @@ export default function GeoReviewPanel() {
                       </td>
                       <td className="muted">{hasCoord ? `${Number(p.homeLat).toFixed(5)}, ${Number(p.homeLng).toFixed(5)}` : "Yok"}</td>
                       <td>
-                        <button type="button" className={active ? "btn sm primary" : "btn sm"} onClick={() => setSelectedId(p.id)}>
+                        <button type="button" className={active ? "btn sm primary" : "btn sm"} onClick={(e) => { e.stopPropagation(); setSelectedId(p.id); }}>
                           {active ? "Seçili" : "Seç"}
                         </button>
                       </td>
@@ -601,8 +688,10 @@ export default function GeoReviewPanel() {
                   <tr>
                     <td colSpan={6} className="muted" style={{ padding: 12 }}>
                       {scopeMode === "SESSION" && hasPlanningScope
-                        ? "Bu planlama oturumunda gösterilecek kayıt bulunamadı. İstersen üstten tüm şirket kayıtlarına geçebilirsin."
-                        : "Kayıt bulunamadı."}
+                        ? "Bu planlama oturumunda gösterilecek kayıt bulunamadı. Kartta sayı görünse bile bu ekran dar kapsamda açılmış olabilir; üstten tüm şirket kayıtlarına geçip tekrar kontrol et."
+                        : openedFromWorkflow
+                          ? "Workflow kartından açıldı ama kayıt görünmüyor. Yenile ile company/personel listesini tekrar çekip kontrol et."
+                          : "Kayıt bulunamadı."}
                     </td>
                   </tr>
                 ) : null}
@@ -636,3 +725,4 @@ export default function GeoReviewPanel() {
     </div>
   );
 }
+

@@ -8,6 +8,7 @@ import { companyPath } from "../../utils/paths";
 import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftPersonelTable from "../../components/ShiftPersonelTable";
+import { clearUiDataCache } from "../../utils/uiDataCache";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 
@@ -262,14 +263,33 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const whoPlural = peopleLabel(me);
   const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 
-  function openGuidedGeoPicker(personId = null) {
+  async function openGuidedGeoPicker(personId = null) {
     const basePath = companyPath(me, "");
+    try {
+      if (selectedShiftId && peopleBackend !== "off") {
+        const ids = (mirrorIds.length ? mirrorIds : [Number(selectedShiftId || 0)])
+          .map((x) => Number(x || 0))
+          .filter((x) => Number.isFinite(x) && x > 0);
+        for (const sid of ids) {
+          await savePeopleToBackend(String(sid), people);
+        }
+        clearUiDataCache("/api/company/personels");
+        setPeopleBackend("on");
+      }
+    } catch (e) {
+      setErr(e?.message || String(e));
+    }
     writeGuidedResume({
       basePath,
       step: 2,
       personId: Number(personId || 0) || null,
       source: "shift-people-tab",
     });
+    try {
+      localStorage.setItem("psv1:georeview:openMode:v1", JSON.stringify({ mode: "SESSION", source: "shift-people-tab", forceRefresh: true, ts: Date.now() }));
+    } catch {
+      // ignore
+    }
     navigate(companyPath(me, "/georeview"));
   }
 

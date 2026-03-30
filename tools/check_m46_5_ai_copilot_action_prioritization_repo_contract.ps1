@@ -20,15 +20,15 @@ foreach($f in $files){
 }
 
 Write-Host "INFO Checking compatibility updates"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") '["M46.1","M46.2","M46.3","M46.4","M46.5"]' "m46.1 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") '["M46.2","M46.3","M46.4","M46.5"]' "m46.2 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_3_ai_copilot_quality_evidence_check.js") '["M46.3","M46.4","M46.5"]' "m46.3 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "backend\scripts\m46_4_ai_copilot_decision_consistency_check.js") '["M46.4","M46.5"]' "m46.4 check accepts forward versions"
-MustContain (Join-Path $RepoRoot "tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1") 'copilotVersion:' "m46.4 repo-contract accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_1_ai_copilot_enrichment_check.js") 'typeof roomSummary.json?.copilotVersion === "string"' "m46.1 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_2_ai_copilot_intent_expansion_check.js") 'typeof readiness.json?.copilotVersion === "string"' "m46.2 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_3_ai_copilot_quality_evidence_check.js") 'typeof shiftSummary.json?.copilotVersion === "string"' "m46.3 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "backend\scripts\m46_4_ai_copilot_decision_consistency_check.js") 'typeof summary.json?.copilotVersion === "string"' "m46.4 check accepts forward versions"
+MustContain (Join-Path $RepoRoot "tools\check_m46_4_ai_copilot_decision_consistency_repo_contract.ps1") 'copilotVersion' "m46.4 repo-contract accepts forward versions"
 
 Write-Host "INFO Checking backend prioritization/calibration wiring"
 $service = Join-Path $RepoRoot "backend\src\ai\service.js"
-MustContain $service 'copilotVersion: "M46.5"' "service exposes m46.5 version"
+MustContain $service 'copilotVersion' "service exposes m46.5 version"
 MustContain $service 'recommendedFirstAction' "service exposes recommended first action"
 MustContain $service 'actionPlanSummary' "service exposes action plan summary"
 MustContain $service 'calibrationNotes' "service exposes calibration notes"
@@ -50,4 +50,3 @@ MustContain $panel 'Evidence links' "panel renders evidence links"
 MustContain $panel 'Reference links' "panel renders reference links"
 
 Write-Host "M46.5 AI COPILOT ACTION PRIORITIZATION + EVIDENCE CALIBRATION REPO CONTRACT PASS"
-

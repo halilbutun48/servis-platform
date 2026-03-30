@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
+import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
 
@@ -90,10 +92,10 @@ function openRoomCopilotWithHint(hint) {
   navigate("/room/copilot");
 }
 
-function DriverRow({ item }) {
+function DriverRow({ item, selected, onSelect }) {
   const issueText = String(item.issueSummary || "").trim();
   return (
-    <tr>
+    <tr onClick={() => onSelect?.(item)} style={rowSelectionStyle(selected)}>
       <td>{item.driverName}</td>
       <td>{item.vehiclePlate}</td>
       <td><StatusBadge kind="live" value={item.liveState} /></td>
@@ -107,7 +109,8 @@ function DriverRow({ item }) {
           <button
             type="button"
             style={{ marginTop: 8 }}
-            onClick={() =>
+            onClick={(e) => {
+              e.stopPropagation();
               openRoomCopilotWithHint(
                 buildGuideHint(
                   item.driverName ? `${item.driverName} için durum özeti` : "Sürücü durum özeti",
@@ -123,8 +126,8 @@ function DriverRow({ item }) {
                     suggestedRouteKey: operationRouteKeyFromItem(item),
                   }
                 )
-              )
-            }
+              );
+            }}
           >
             Rehberde aç
           </button>
@@ -140,6 +143,9 @@ export default function OperationHealthPanel() {
   const [drivers, setDrivers] = useState([]);
   const [issues, setIssues] = useState([]);
   const [err, setErr] = useState("");
+  const [filterQ, setFilterQ] = useState("");
+  const [selectedDriverId, setSelectedDriverId] = useState(0);
+  const [selectedIssueKey, setSelectedIssueKey] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -164,6 +170,73 @@ export default function OperationHealthPanel() {
     };
   }, [token]);
 
+  const filteredDrivers = useMemo(() => drivers.filter((item) => includesFilter([
+    item?.id, item?.driverName, item?.vehiclePlate, item?.liveState, item?.issueSummary, item?.permissionState, item?.sessionState,
+  ], filterQ)), [drivers, filterQ]);
+  const filteredIssues = useMemo(() => issues.filter((item) => includesFilter([
+    item?.title, item?.detail, item?.severity,
+  ], filterQ)), [issues, filterQ]);
+  const copilotDriver = useMemo(() => filteredDrivers.find((item) => Number(item?.driverId || item?.id || 0) === Number(selectedDriverId || 0)) || filteredDrivers[0] || null, [filteredDrivers, selectedDriverId]);
+  const copilotIssue = useMemo(() => filteredIssues.find((item, idx) => `${idx}:${item?.title || ''}` === String(selectedIssueKey || '')) || filteredIssues[0] || null, [filteredIssues, selectedIssueKey]);
+
+  useEffect(() => {
+    const facts = {
+      screenType: 'OPERATION_HEALTH',
+      stage: String(summary?.status || 'ROOM_VIEW').toUpperCase(),
+      readiness: Number(summary?.cards?.openIssues || 0) > 0 || Number(summary?.cards?.staleOrOffline || 0) > 0 ? 'REVIEW_NEEDED' : 'READY',
+      readinessScore: Number(summary?.cards?.openIssues || 0) > 0 ? 44 : Number(summary?.cards?.staleOrOffline || 0) > 0 ? 58 : 83,
+      blockers: [
+        ...(Number(summary?.cards?.openIssues || 0) > 0 ? ['Açık sorunlar kapatılmadan saha güveni düşer.'] : []),
+        ...(Number(summary?.cards?.staleOrOffline || 0) > 0 ? ['Stale veya offline sürücü sayısı sıfır değil.'] : []),
+      ],
+      counters: {
+        activeDrivers: Number(summary?.cards?.activeDrivers || 0),
+        riskyDevices: Number(summary?.cards?.riskyDevices || 0),
+        staleOrOffline: Number(summary?.cards?.staleOrOffline || 0),
+        openIssues: Number(summary?.cards?.openIssues || 0),
+      },
+      evidence: [
+        `Aktif sürücü: ${Number(summary?.cards?.activeDrivers || 0)}`,
+        `Riskli cihaz: ${Number(summary?.cards?.riskyDevices || 0)}`,
+        `Stale/offline: ${Number(summary?.cards?.staleOrOffline || 0)}`,
+        `Açık sorun: ${Number(summary?.cards?.openIssues || 0)}`,
+        copilotDriver?.driverName ? `İlk sorunlu sürücü: ${copilotDriver.driverName}` : '',
+        copilotIssue?.title ? `İlk açık sorun: ${copilotIssue.title}` : '',
+      ].filter(Boolean),
+      reasoningLead: Number(summary?.cards?.openIssues || 0) > 0
+        ? 'Bu ekranda ana dikkat noktası açık sorun ve canlılık risklerini kapatmaktır.'
+        : 'Bu ekranda önce canlılık, sonra izin ve oturum riskleri okunmalıdır.',
+      nextBestAction: copilotIssue?.title
+        ? 'Önce en üstteki açık sorunu aç ve hangi ekrana gitmen gerektiğini netleştir.'
+        : copilotDriver?.driverName
+          ? 'Önce ilk sürücünün canlılık, izin ve oturum durumunu birlikte kontrol et.'
+          : 'Önce özet kartlardan risk alanını belirle. Sonra sürücü veya harita tarafına geç.',
+      safestNextStep: 'En risksiz adım, açık sorun sayısı ile stale/offline sayısını birlikte okuyup önce en riskli satıra inmek olur.',
+      compareHint: 'Operasyon Sağlığı sorun bulma ekranıdır; tek başına atama veya sözleşme kararı ekranı değildir.',
+    };
+    setCopilotSelection({
+      scopeKey: '/room/operation-health',
+      entityType: 'screen',
+      entityId: 1114,
+      label: copilotIssue?.title || copilotDriver?.driverName || 'Operasyon sağlığı özeti',
+      summary: [copilotDriver?.liveState || null, copilotDriver?.issueSummary || null, copilotIssue?.severity || null].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Aktif Sürücü', value: String(summary?.cards?.activeDrivers ?? '-'), help: 'Room içinde şu an görünen aktif sürücü sayısını gösterir.' },
+        { label: 'Riskli Cihaz', value: String(summary?.cards?.riskyDevices ?? '-'), help: 'İzin, oturum veya GPS riski taşıyan cihaz sayısını gösterir.' },
+        { label: 'Stale / Offline', value: String(summary?.cards?.staleOrOffline ?? '-'), help: 'Canlı konum akışı zayıf olan sürücü sayısını gösterir.' },
+        { label: 'Açık Sorun', value: String(summary?.cards?.openIssues ?? '-'), help: 'Takip edilmesi gereken açık sorun sayısını gösterir.' },
+        { label: 'Örnek Sürücü', value: copilotDriver?.driverName || '-', help: 'İlk riskli sürücüyü örnek odak olarak gösterir.' },
+        { label: 'Örnek Sorun', value: copilotIssue?.title || '-', help: 'İlk açık sorun başlığını gösterir.' },
+      ],
+      badges: [
+        { label: 'Canlılık', value: copilotDriver?.liveState || '-', help: 'İlk sürücünün canlılık durumunu gösterir.' },
+        { label: 'Önem', value: copilotIssue?.severity || '-', help: 'İlk açık sorunun önem seviyesini gösterir.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/room/operation-health');
+  }, [summary, copilotDriver, copilotIssue]);
+
   const cards = useMemo(() => {
     const c = summary?.cards || {};
     return [
@@ -184,6 +257,14 @@ export default function OperationHealthPanel() {
           </div>
         </div>
         <div className="muted">Kapsam: Kendi operasyon alanınız</div>
+      </div>
+
+      <div className="card" style={{ marginTop: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
+        <div>
+          <div className="muted">Filtre</div>
+          <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Sürücü / araç / canlılık / sorun" />
+        </div>
+        <div className="muted">Sürücü: <b>{filteredDrivers.length}</b> / {drivers.length} • Sorun: <b>{filteredIssues.length}</b> / {issues.length}</div>
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
@@ -212,8 +293,8 @@ export default function OperationHealthPanel() {
                 </tr>
               </thead>
               <tbody>
-                {drivers.map((item) => (
-                  <DriverRow key={item.id} item={item} />
+                {filteredDrivers.map((item) => (
+                  <DriverRow key={item.id} item={item} selected={Number(selectedDriverId || 0) === Number(item?.driverId || item?.id || 0)} onSelect={(row) => setSelectedDriverId(Number(row?.driverId || row?.id || 0))} />
                 ))}
               </tbody>
             </table>
@@ -223,8 +304,11 @@ export default function OperationHealthPanel() {
         <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Açık Sorunlar</div>
           <div style={{ display: "grid", gap: 10 }}>
-            {issues.length ? issues.map((issue, idx) => (
-              <div key={idx} style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.03)" }}>
+            {filteredIssues.length ? filteredIssues.map((issue, idx) => {
+              const issueKey = `${idx}:${issue?.title || ''}`;
+              const isSelected = String(selectedIssueKey || '') === issueKey;
+              return (
+              <div key={issueKey} onClick={() => setSelectedIssueKey(issueKey)} style={{ padding: 12, borderRadius: 12, background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'rgba(255,255,255,0.03)', outline: isSelected ? '1px solid rgba(59,130,246,.35)' : undefined, cursor: 'pointer' }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 700 }}>{issue.title}</div>
                   <StatusBadge kind="severity" value={issue.severity} />
@@ -233,13 +317,14 @@ export default function OperationHealthPanel() {
                 <div style={{ marginTop: 10 }}>
                   <button
                     type="button"
-                    onClick={() => openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity, suggestedRouteKey: issueRouteKey(issue) }))}
+                    onClick={(e) => { e.stopPropagation(); openRoomCopilotWithHint(buildGuideHint(issue.title, issue.detail, { severity: issue.severity, suggestedRouteKey: issueRouteKey(issue) })); }}
                   >
                     Rehberde ne yapacağımı göster
                   </button>
                 </div>
               </div>
-            )) : <div className="muted">Açık sorun yok.</div>}
+            );
+            }) : <div className="muted">{issues.length ? 'Filtreye uyan açık sorun yok.' : 'Açık sorun yok.'}</div>}
           </div>
         </div>
       </div>

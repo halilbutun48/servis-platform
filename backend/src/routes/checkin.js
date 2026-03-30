@@ -1,6 +1,6 @@
 // backend/src/routes/checkin.js
 // OPTIONAL — QR/NFC İndi/Bindi (Check-in) Modülü
-// Default: kapalı (FEATURE_CHECKIN=0)
+// M42 standardı: panel ve API sürekli açık, kullanım opsiyonel.
 
 import express from "express";
 import crypto from "crypto";
@@ -9,7 +9,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { consentGate, CONSENT_DOCS } from "../middleware/consentGate.js";
 
 function isEnabled() {
-  return String(process.env.FEATURE_CHECKIN || "0") === "1";
+  return true;
 }
 
 function dedupeSec() {
@@ -99,7 +99,7 @@ async function buildShiftCounts(shiftId) {
 export function checkinRouter(io) {
   const r = express.Router();
 
-  // Feature gate (fail closed)
+  // Always-on optional gate: modül açık, kullanım kurala göre opsiyonel.
   r.use((req, res, next) => {
     if (!isEnabled()) return res.status(404).json({ error: "FEATURE_DISABLED" });
     return next();

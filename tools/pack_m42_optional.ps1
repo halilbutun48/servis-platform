@@ -65,16 +65,14 @@ function Wait-ApiHealth {
   throw "API health timeout on $Url"
 }
 
-$prevFeature = $env:FEATURE_CHECKIN
 $prevDedupe = $env:CHECKIN_DEDUPE_SEC
 
 try {
-  $env:FEATURE_CHECKIN = "1"
   if (-not $env:CHECKIN_DEDUPE_SEC) { $env:CHECKIN_DEDUPE_SEC = "60" }
 
   Write-Host ""
   Write-StatusLine "=== M42 OPTIONAL PACK ==="
-  Write-StatusLine "INFO Mode: self-only optional M42 check (FEATURE_CHECKIN=1)"
+  Write-StatusLine "INFO Mode: always-on optional check-in baseline"
   Write-Host ""
 
   $upArgs = @('-f', $composeFile, 'up', '-d', '--force-recreate')
@@ -85,13 +83,12 @@ try {
   Wait-ApiHealth
 
   Write-StatusLine "=== M42 Optional Check ==="
-  Dc -f $composeFile exec -T $ApiService sh -lc "cd /app/backend && FEATURE_CHECKIN=1 CHECKIN_DEDUPE_SEC=$($env:CHECKIN_DEDUPE_SEC) node scripts/m42_optional_check.js"
+  Dc -f $composeFile exec -T $ApiService sh -lc "cd /app/backend && CHECKIN_DEDUPE_SEC=$($env:CHECKIN_DEDUPE_SEC) node scripts/m42_optional_check.js"
 
   Write-Host ""
   Write-StatusLine "=== M42 OPTIONAL PACK PASS OK ==="
   Write-Host ""
 }
 finally {
-  if ($null -eq $prevFeature) { Remove-Item Env:FEATURE_CHECKIN -ErrorAction SilentlyContinue } else { $env:FEATURE_CHECKIN = $prevFeature }
   if ($null -eq $prevDedupe) { Remove-Item Env:CHECKIN_DEDUPE_SEC -ErrorAction SilentlyContinue } else { $env:CHECKIN_DEDUPE_SEC = $prevDedupe }
 }

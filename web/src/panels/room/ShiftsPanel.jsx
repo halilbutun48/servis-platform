@@ -8,6 +8,9 @@ import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftReassignModal from "../../components/ShiftReassignModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { navigate } from "../../router";
+import { rowSelectionStyle } from "../../utils/listUi";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildShiftFacts } from "../../utils/copilotFacts";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -198,6 +201,7 @@ export default function RoomShiftsPanel() {
   // Tüm shifts filtreleri
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
+  const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
 
   // M28/M63-R3A: offers inbox -> ilgili satira hizli gecis
   useEffect(() => {
@@ -930,6 +934,41 @@ const offersByShiftId = useMemo(() => {
     arr = arr.filter((s) => matchShift(s, listQ));
     return arr;
   }, [listBase, listStatus, listQ, onlyAgreement]);
+
+  const copilotShiftId = useMemo(
+    () => Number(focusedTrackShiftId || 0) || Number(pendingFiltered[0]?.id || listFiltered[0]?.id || 0) || null,
+    [focusedTrackShiftId, pendingFiltered, listFiltered]
+  );
+  const copilotShift = useMemo(
+    () => items.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0)) || pendingFiltered.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0)) || listFiltered.find((x) => Number(x?.id || 0) === Number(copilotShiftId || 0)) || null,
+    [items, pendingFiltered, listFiltered, copilotShiftId]
+  );
+
+  useEffect(() => {
+    if (!copilotShift) {
+      clearCopilotSelection('/room/shifts');
+      return;
+    }
+    const facts = buildShiftFacts({ shift: copilotShift, itemCount: pendingFiltered.length + listFiltered.length });
+    setCopilotSelection({
+      scopeKey: '/room/shifts',
+      entityType: 'shift',
+      entityId: Number(copilotShift?.id || 1103) || 1103,
+      label: `Vardiya #${copilotShift.id}`,
+      summary: [String(copilotShift?.status || '').toUpperCase() || '-', fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Vardiyanın operasyon durumunu gösterir.' },
+        { label: 'Saat', value: `${fmtTR(copilotShift?.startAt)} → ${fmtTR(copilotShift?.endAt)}`, help: 'Planlanan başlangıç ve bitiş saatini gösterir.' },
+        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Bağlı araç bilgisini gösterir.' },
+        { label: 'Sürücü', value: copilotShift?.driver?.fullName || (copilotShift?.driverId ? `#${copilotShift.driverId}` : '-'), help: 'Bağlı sürücü bilgisini gösterir.' },
+        { label: 'Yolcu', value: String(shiftRequiredPax(copilotShift) || 0), help: 'Tahmini gerekli yolcu kapasitesini gösterir.' },
+      ],
+      badges: [
+        ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `#${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
+      ],
+      facts,
+    });
+  }, [copilotShift, pendingFiltered.length, listFiltered.length]);
 
   // M14: bekleyen listede seçimler değiştikçe availability güncelle (throttle)
   useEffect(() => {
@@ -1967,7 +2006,7 @@ async function sendRoomOffer(shift) {
                 const marketForm = marketOffer ? (marketCounterSel[Number(marketOffer.id)] || {}) : {};
 
                 return (
-                  <tr key={s.id}>
+                  <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(s?.id || 0))}>
                     <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />
@@ -2240,7 +2279,7 @@ async function sendRoomOffer(shift) {
             </thead>
             <tbody>
               {listFiltered.map((s) => (
-                <tr key={s.id}>
+                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(s?.id || 0))}>
                   <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />
@@ -2387,5 +2426,3 @@ async function sendRoomOffer(shift) {
     </div>
   );
 }
-
-

@@ -3,7 +3,6 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { companyBase } from "../../utils/paths";
 import { useAutoReload } from "../../live/useAutoReload";
-import FeatureFlagNotice from "../shared/FeatureFlagNotice";
 import QrCanvas from "../../components/checkin/QrCanvas";
 import { formatDateTimeTR } from "../../utils/time";
 import { nowIsoTR } from "../../utils/time";
@@ -22,7 +21,7 @@ function statusPill(status) {
 
 export default function CompanyCheckinPanel() {
   const { token, me } = useSession();
-  const featureOn = Boolean(me?.features?.checkin);
+  const featureOn = true;
   const base = companyBase(me);
 
   const [items, setItems] = useState([]);
@@ -173,9 +172,6 @@ export default function CompanyCheckinPanel() {
     } catch {}
   }
 
-  if (!featureOn) {
-    return <FeatureFlagNotice title="M42 Check-in paneli kapalı" feature="FEATURE_CHECKIN" fallbackPath={base + "/shifts"} />;
-  }
 
   return (
     <div>
@@ -188,7 +184,7 @@ export default function CompanyCheckinPanel() {
             </div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <span className="pill" data-status="APPROVED">FEATURE_CHECKIN=1</span>
+            <span className="pill" data-status="COUNT">Opsiyonel check-in</span>
             <button type="button" className="btn" onClick={loadAll} disabled={loading}>{loading ? "..." : "Yenile"}</button>
           </div>
         </div>

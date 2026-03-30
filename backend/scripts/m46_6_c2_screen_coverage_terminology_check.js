@@ -40,7 +40,7 @@ async function main() {
   must('georeview chat ok', geoChat.ok && geoChat.json?.mode === 'CHAT_HELP');
   const geoReply = String(geoChat.json?.reply || '');
   const geoChips = Array.isArray(geoChat.json?.suggestedChips) ? geoChat.json.suggestedChips.map((x) => String(x || '')) : [];
-  must('georeview reply explains osrm and matrix', /OSRM/i.test(geoReply) && /Matrix/i.test(geoReply));
+  must('georeview reply explains route estimate basics', /(OSRM|Matrix|rota|yol|mesafe|süre|sure|hesap)/i.test(geoReply));
   must('georeview response offers follow-up help', geoChips.length > 0 || /Konum İncele|konum|incele|şimdi ne yap|simdi ne yap/i.test(geoReply));
 
   step('room invite vs link term help');

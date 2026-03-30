@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
+import { getCopilotMenuEntry } from "../copilot/screenRegistry";
 import BrandMark from "../components/BrandMark";
 
 function roleTitle(role, me) {
@@ -73,6 +74,7 @@ export default function NavDock({ role, path, me }) {
     const advanced = [];
 
     const base = role === "COMPANY" ? companyBase(me) : "";
+    const copilotEntry = getCopilotMenuEntry({ role, companyKind: me?.companyKind });
 
     if (role === "ROOM") {
       sections.push({
@@ -101,7 +103,7 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
-      advanced.push({ label: "Copilot Test", path: "/room/copilot" });
+      advanced.push({ label: copilotEntry.label, path: copilotEntry.path });
     } else if (role === "COMPANY") {
       sections.push({
         title: "Ana",
@@ -125,7 +127,7 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
-      advanced.push({ label: "Copilot Test", path: base + "/copilot" });
+      advanced.push({ label: copilotEntry.label, path: copilotEntry.path });
     } else if (role === "DRIVER") {
       sections.push({
         title: "",
@@ -186,7 +188,7 @@ export default function NavDock({ role, path, me }) {
           { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" },
           { label: "Ticari Akış", path: "/superadmin/commercial-core" },
           { label: "Güven ve Kalite", path: "/superadmin/trust-quality" },
-                    { label: "Yardımcı", path: "/superadmin/copilot" },
+                    { label: copilotEntry.label, path: copilotEntry.path },
           { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Dışa Aktarımı", path: "/superadmin/logexport" },
         ],

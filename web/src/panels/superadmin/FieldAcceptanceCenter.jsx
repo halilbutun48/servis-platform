@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function Card({ title, children }) {
   return (
@@ -29,6 +30,56 @@ export default function FieldAcceptanceCenter() {
       setErr(e?.message || String(e));
     }
   };
+
+  useEffect(() => {
+    const checklist = Array.isArray(manifest?.checklist) ? manifest.checklist : [];
+    const firstPending = checklist.find((item, idx) => String(sessionTemplate?.checklist?.[idx]?.status || 'PENDING').toUpperCase() !== 'PASS') || checklist[0] || null;
+    if (!manifest && !sessionTemplate) {
+      clearCopilotSelection('/superadmin/acceptance');
+      return;
+    }
+    const pendingCount = checklist.reduce((acc, item, idx) => acc + (String(sessionTemplate?.checklist?.[idx]?.status || 'PENDING').toUpperCase() === 'PASS' ? 0 : 1), 0);
+    const facts = {
+      screenType: 'FIELD_ACCEPTANCE',
+      stage: String(sessionTemplate?.decision || 'PENDING').toUpperCase(),
+      readiness: pendingCount === 0 && String(sessionTemplate?.decision || '').toUpperCase() === 'ACCEPT' ? 'READY' : 'REVIEW_NEEDED',
+      readinessScore: checklist.length ? Math.max(38, Math.min(92, Math.round(((checklist.length - pendingCount) / checklist.length) * 100))) : 40,
+      blockers: pendingCount > 0 ? ['Checklist içinde henüz PASS olmayan maddeler var.'] : [],
+      counters: { checklist: checklist.length, pending: pendingCount, decision: sessionTemplate?.decision || '-' },
+      evidence: [
+        `Karar: ${sessionTemplate?.decision || '-'}`,
+        `Checklist: ${checklist.length}`,
+        `Bekleyen: ${pendingCount}`,
+        firstPending?.label ? `İlk açık madde: ${firstPending.label}` : '',
+      ].filter(Boolean),
+      reasoningLead: 'Bu ekranda amaç sahaya çıkmadan önce checklist ve test oturumu kararını aynı yerde görmektir.',
+      nextBestAction: firstPending?.label
+        ? 'Önce PASS olmayan ilk maddeyi netleştir. Sonra karar alanını tekrar değerlendir.'
+        : 'Önce test oturumu kararını ve checklist maddelerini birlikte doğrula.',
+      safestNextStep: 'En risksiz adım, önce PASS olmayan maddeleri kapatıp kabul kararını en son vermektir.',
+      compareHint: 'Checklist PASS olması ile kabul kararının ACCEPT olması aynı şey değildir; ikisi birlikte okunmalıdır.',
+    };
+    setCopilotSelection({
+      scopeKey: '/superadmin/acceptance',
+      entityType: 'screen',
+      entityId: 6108,
+      label: firstPending?.label || 'Saha kabul özeti',
+      summary: [sessionTemplate?.decision || null, checklist.length ? `${checklist.length} madde` : null, pendingCount ? `${pendingCount} bekleyen` : 'hepsi PASS'].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Karar', value: sessionTemplate?.decision || '-', help: 'Test oturumu için önerilen veya seçili kabul kararını gösterir.' },
+        { label: 'Checklist', value: String(checklist.length), help: 'Toplam checklist maddesi sayısını gösterir.' },
+        { label: 'Bekleyen', value: String(pendingCount), help: 'Henüz PASS olmayan checklist maddesi sayısını gösterir.' },
+        { label: 'Cihaz', value: sessionTemplate?.deviceModel || '-', help: 'Test oturumunda kullanılan cihaz modelini gösterir.' },
+        { label: 'Build', value: sessionTemplate?.buildProfile || '-', help: 'Test edilen mobil build profilini gösterir.' },
+        { label: 'İlk Açık Madde', value: firstPending?.label || '-', help: 'Henüz tamamlanmamış ilk checklist maddesini örnek odak olarak gösterir.' },
+      ],
+      badges: [
+        { label: 'Alan', value: firstPending?.area || '-', help: 'Açık checklist maddesinin ait olduğu alanı gösterir.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/superadmin/acceptance');
+  }, [manifest, sessionTemplate]);
 
   useEffect(() => {
     let cancelled = false;

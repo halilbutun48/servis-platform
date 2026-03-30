@@ -18,11 +18,13 @@ import ButtonGuidesCard from "../../components/copilot/ButtonGuidesCard";
 import ScreenMenusCard from "../../components/copilot/ScreenMenusCard";
 import ChatThread from "../../components/copilot/ChatThread";
 import ChatInputBox from "../../components/copilot/ChatInputBox";
+import ChatQualitySummary from "../../components/copilot/ChatQualitySummary";
 import SuggestedChips from "../../components/copilot/SuggestedChips";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { formatDateTimeTR } from "../../utils/time";
 import { nowIsoTR } from "../../utils/time";
+import { getCopilotScreenOptions } from "../../copilot/screenRegistry";
 
 const PANEL_MODES = [
   { value: "CHAT", label: "Sohbet" },
@@ -83,8 +85,11 @@ function selectionApplies(selection, path) {
   const scope = normalizeScopePath(selection.scopeKey || "");
   const current = normalizeScopePath(path);
   if (!scope || scope === current) return true;
+  const sameFamily = scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
+  if (!sameFamily) return false;
+  if (/\/copilot$/.test(current)) return true;
   const entityType = String(selection?.entityType || "");
-  return ["shift", "vehicle"].includes(entityType) && scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
+  return ["shift", "vehicle"].includes(entityType);
 }
 
 
@@ -131,87 +136,7 @@ function normalizeRoleGuideKey(me) {
 }
 
 function buildScreenOptions(me) {
-  const key = normalizeRoleGuideKey(me);
-  const defs = {
-    ROOM: [
-      { id: 1101, path: "/room/map", label: "Canlı Takip" },
-      { id: 1102, path: "/room/offers", label: "Teklifler" },
-      { id: 1103, path: "/room/shifts", label: "Vardiyalar" },
-      { id: 1104, path: "/room/vehicles", label: "Araçlar" },
-      { id: 1105, path: "/room/drivers", label: "Sürücüler" },
-      { id: 1106, path: "/room/agreements", label: "Sözleşmeler" },
-      { id: 1107, path: "/room/copilot", label: "Copilot" },
-      { id: 1108, path: "/room/hub", label: "Hub" },
-      { id: 1109, path: "/room/checkin", label: "Check-in" },
-      { id: 1110, path: "/room/auth-invites", label: "Giriş Davetleri" },
-      { id: 1111, path: "/shared/notifications", label: "Bildirimler" },
-      { id: 1112, path: "/shared/logs", label: "Loglar" },
-    ],
-    COMPANY: [
-      { id: 2101, path: "/company", label: "Planlama Merkezi" },
-      { id: 2102, path: "/company/shifts", label: "Vardiyalar" },
-      { id: 2103, path: "/company/agreements", label: "Sözleşmeler" },
-      { id: 2104, path: "/company/access-links", label: "Personel Link" },
-      { id: 2105, path: "/company/copilot", label: "Copilot" },
-      { id: 2106, path: "/company/hub", label: "Hub" },
-      { id: 2107, path: "/company/checkin", label: "Check-in" },
-      { id: 2108, path: "/company/auth-invites", label: "Giriş Davetleri" },
-      { id: 2109, path: "/company/georeview", label: "Konum İncele" },
-      { id: 2110, path: "/shared/notifications", label: "Bildirimler" },
-      { id: 2111, path: "/shared/logs", label: "Loglar" },
-    ],
-    SCHOOL: [
-      { id: 2101, path: "/school", label: "Okul Merkezi" },
-      { id: 2102, path: "/school/shifts", label: "Vardiyalar" },
-      { id: 2103, path: "/school/agreements", label: "Sözleşmeler" },
-      { id: 2104, path: "/school/access-links", label: "Personel Link" },
-      { id: 2105, path: "/school/copilot", label: "Copilot" },
-      { id: 2106, path: "/school/hub", label: "Hub" },
-      { id: 2107, path: "/school/checkin", label: "Check-in" },
-      { id: 2108, path: "/school/auth-invites", label: "Hesap Davetleri" },
-      { id: 2109, path: "/school/georeview", label: "Öğrenci Konum İncele" },
-      { id: 2110, path: "/shared/notifications", label: "Bildirimler" },
-      { id: 2111, path: "/shared/logs", label: "Loglar" },
-      { id: 2201, path: "/school/parents", label: "Parent Link" },
-    ],
-    ORGANIZATION: [
-      { id: 2101, path: "/organization", label: "Gezi / Planlama Merkezi" },
-      { id: 2102, path: "/organization/shifts", label: "Vardiyalar" },
-      { id: 2103, path: "/organization/agreements", label: "Sözleşmeler" },
-      { id: 2104, path: "/organization/access-links", label: "Personel Link" },
-      { id: 2105, path: "/organization/copilot", label: "Copilot" },
-      { id: 2106, path: "/organization/hub", label: "Hub" },
-      { id: 2107, path: "/organization/checkin", label: "Check-in" },
-      { id: 2108, path: "/organization/auth-invites", label: "Giriş Davetleri" },
-      { id: 2109, path: "/organization/georeview", label: "Lokasyon İncele" },
-      { id: 2110, path: "/shared/notifications", label: "Bildirimler" },
-      { id: 2111, path: "/shared/logs", label: "Loglar" },
-      { id: 2301, path: "/organization/plans", label: "Yer Planları" },
-    ],
-    DRIVER: [
-      { id: 3101, path: "/driver/today", label: "Bugün" },
-      { id: 3102, path: "/driver/route", label: "Rota" },
-      { id: 3103, path: "/driver/map", label: "Harita" },
-      { id: 3104, path: "/driver/checkin", label: "Check-in" },
-      { id: 3105, path: "/driver/copilot", label: "Copilot" },
-    ],
-    PERSONEL: [
-      { id: 4101, path: "/personel/live", label: "Canlı" },
-      { id: 4102, path: "/personel/my", label: "Servisim" },
-      { id: 4103, path: "/personel/copilot", label: "Copilot" },
-    ],
-    PARENT: [
-      { id: 5101, path: "/parent/live", label: "Canlı" },
-      { id: 5102, path: "/parent/copilot", label: "Copilot" },
-    ],
-    SUPER_ADMIN: [
-      { id: 6101, path: "/superadmin", label: "Overview" },
-      { id: 6102, path: "/superadmin/companies", label: "Companies" },
-      { id: 6103, path: "/superadmin/audit", label: "Audit" },
-      { id: 6104, path: "/superadmin/copilot", label: "Copilot" },
-    ],
-  };
-  return defs[key] || [];
+  return getCopilotScreenOptions(me);
 }
 
 function firstList(resp) {
@@ -546,7 +471,10 @@ export default function CopilotPanel() {
         message: String(messageText || ""),
         conversationState: {
           ...(chatConversationState || {}),
-          recentMessages: chatMessages.slice(-8).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) })),
+          recentMessages: [
+            ...chatMessages.slice(-7).map((m) => ({ role: m?.role || '', text: String(m?.text || '').slice(0, 280) })),
+            ...(String(messageText || '').trim() ? [{ role: 'user', text: String(messageText || '').trim().slice(0, 280) }] : []),
+          ].slice(-8),
           uiSurface,
           lastScreenPath: selectedChatScreen.path,
           lastScreenLabel: selectedChatScreen.label,
@@ -581,9 +509,20 @@ export default function CopilotPanel() {
         followUpPrompt: payload?.followUpPrompt || "",
         quickActions: payload?.quickActions || [],
         linkedGuides: payload?.linkedGuides || [],
+        suggestedChips: payload?.suggestedChips || [],
+        questionType: payload?.questionType || "",
+        questionLabel: payload?.questionLabel || "",
+        intentConfidence: Number(payload?.intentConfidence || 0),
+        intentSignals: payload?.intentSignals || [],
+        qualityHints: payload?.qualityHints || null,
+        uncertaintyMeta: payload?.uncertaintyMeta || null,
+        responseSections: payload?.responseSections || [],
+        continuity: payload?.continuity || null,
+        routePlan: payload?.routePlan || null,
         actionPlanLabel: payload?.actionPlanLabel || '',
         activeEntityLabel: payload?.activeEntityLabel || payload?.entityLabel || "",
         screenLabel: payload?.screenLabel || selectedChatScreen?.label || "",
+        generatedAt: payload?.generatedAt || "",
         roleMode: payload?.roleMode || "",
       }]);
     } catch (e2) {
@@ -825,8 +764,14 @@ export default function CopilotPanel() {
               <div className="muted" style={{ alignSelf: "end" }}>
                 Seçili bağlam: <b>{selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}</b>{selectedChatItem ? <> • <b>{chatEntityType === "screen" ? "Ekran odaklı" : optionLabel(chatEntityType, selectedChatItem)}</b></> : null}
               </div>
+              {chatSelection?.label ? (
+                <div className="muted" style={{ alignSelf: "end" }}>
+                  Ekrandan gelen seçim: <b>{chatSelection.label}</b>{chatSelection?.summary && chatSelection.summary !== chatSelection.label ? ` • ${chatSelection.summary}` : ""}
+                </div>
+              ) : null}
             </div>
 
+            <ChatQualitySummary roleMode={me?.role} messages={chatMessages} currentScreenLabel={selectedChatScreen?.label || ""} />
             <SuggestedChips items={chatSuggestedChips} busy={chatBusy} onPick={runChat} />
             <ChatThread messages={chatMessages} onOpen={openGuideAction} onGuide={openChatGuide} onAsk={runAskAction} onCopy={copyText} />
             <ChatInputBox busy={chatBusy} onSend={runChat} />
@@ -922,6 +867,11 @@ export default function CopilotPanel() {
           {selectedItem ? (
             <div className="muted">
               Seçili kayıt: <b>{optionLabel(activeEntityType, selectedItem)}</b>
+            </div>
+          ) : null}
+          {chatSelection?.label ? (
+            <div className="muted">
+              Ekrandan gelen seçim: <b>{chatSelection.label}</b>{chatSelection?.summary && chatSelection.summary !== chatSelection.label ? ` • ${chatSelection.summary}` : ""}
             </div>
           ) : null}
 

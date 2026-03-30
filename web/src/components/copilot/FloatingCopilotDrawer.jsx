@@ -4,88 +4,12 @@ import { getPath, navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
 import { companyPath, normalizeCompanyPath } from "../../utils/paths";
+import { resolveCopilotScreenContext } from "../../copilot/screenRegistry";
 import { captureCopilotUiSurface } from "./uiSurface";
 
 const STORAGE_KEY = "psv1:copilot:drawer:v4";
 const HISTORY_KEY = "psv1:copilot:drawer:history:v4";
 const SIZE_PRESETS = { S: { width: 440, height: 560 }, M: { width: 560, height: 700 }, L: { width: 700, height: 860 } };
-
-function normalizeRoleGuideKey(me) {
-  const role = String(me?.role || "");
-  if (role === "COMPANY") {
-    const kind = String(me?.companyKind || "").toUpperCase();
-    if (kind === "SCHOOL") return "SCHOOL";
-    if (kind === "ORGANIZATION") return "ORGANIZATION";
-    return "COMPANY";
-  }
-  return role;
-}
-
-function buildScreenOptions(me) {
-  const key = normalizeRoleGuideKey(me);
-  const defs = {
-    ROOM: [
-      { id: 1101, path: "/room/map", label: "Canlı Takip" },
-      { id: 1102, path: "/room/offers", label: "Teklifler" },
-      { id: 1103, path: "/room/shifts", label: "Vardiyalar" },
-      { id: 1104, path: "/room/vehicles", label: "Araçlar" },
-      { id: 1105, path: "/room/drivers", label: "Sürücüler" },
-      { id: 1106, path: "/room/agreements", label: "Sözleşmeler" },
-      { id: 1107, path: "/room/copilot", label: "Copilot Test" },
-      { id: 1108, path: "/room/hub", label: "Hub" },
-      { id: 1109, path: "/room/checkin", label: "Check-in" },
-      { id: 1110, path: "/room/auth-invites", label: "Giriş Davetleri" },
-      { id: 1111, path: "/shared/notifications", label: "Bildirimler" },
-      { id: 1112, path: "/shared/logs", label: "Log Export" },
-      { id: 1113, path: "/shared/kvkk", label: "KVKK" },
-      { id: 1114, path: "/room/operation-health", label: "Operasyon Sağlığı" },
-    ],
-    COMPANY: [
-      { id: 2101, path: "/company", label: "Planlama Merkezi" },
-      { id: 2102, path: "/company/shifts", label: "Vardiyalar" },
-      { id: 2103, path: "/company/agreements", label: "Sözleşmeler" },
-      { id: 2104, path: "/company/access-links", label: "Personel Link" },
-      { id: 2105, path: "/company/copilot", label: "Copilot Test" },
-      { id: 2106, path: "/company/hub", label: "Hub" },
-      { id: 2107, path: "/company/checkin", label: "Check-in" },
-      { id: 2108, path: "/company/auth-invites", label: "Giriş Davetleri" },
-      { id: 2109, path: "/company/georeview", label: "Personel Konum Seçici" },
-      { id: 2110, path: "/shared/notifications", label: "Bildirimler" },
-      { id: 2111, path: "/shared/logs", label: "Log Export" },
-      { id: 2112, path: "/shared/kvkk", label: "KVKK" },
-      { id: 2113, path: "/company/map", label: "Harita" },
-      { id: 2114, path: "/company/service-evaluation", label: "Hizmet Değerlendirme" },
-      { id: 2115, path: "/company/commercial-flow", label: "Ticari Akışım" },
-      { id: 2116, path: "/company/reports", label: "Raporlar" },
-    ],
-    SCHOOL: [
-      { id: 2201, path: "/school", label: "Okul Merkezi" },
-      { id: 2202, path: "/school/shifts", label: "Vardiyalar" },
-      { id: 2203, path: "/school/agreements", label: "Sözleşmeler" },
-      { id: 2204, path: "/school/access-links", label: "Öğrenci Link" },
-      { id: 2205, path: "/school/copilot", label: "Copilot Test" },
-      { id: 2206, path: "/school/hub", label: "Hub" },
-      { id: 2207, path: "/school/checkin", label: "Check-in" },
-      { id: 2208, path: "/school/auth-invites", label: "Hesap Davetleri" },
-      { id: 2209, path: "/school/georeview", label: "Öğrenci Konum Seçici" },
-      { id: 2210, path: "/school/parents", label: "Parent Link" },
-      { id: 2211, path: "/shared/notifications", label: "Bildirimler" },
-      { id: 2212, path: "/shared/logs", label: "Log Export" },
-      { id: 2213, path: "/shared/kvkk", label: "KVKK" },
-      { id: 2214, path: "/school/map", label: "Harita" },
-      { id: 2215, path: "/school/service-evaluation", label: "Hizmet Değerlendirme" },
-      { id: 2216, path: "/school/reports", label: "Raporlar" },
-    ],
-  };
-  return defs[key] || [];
-}
-
-function resolveScreenContext(path, me) {
-  const clean = String(path || "").split("?")[0];
-  const rows = buildScreenOptions(me);
-  const current = rows.find((x) => x.path === clean) || rows[0] || null;
-  return { screen: current, label: current?.label || clean || "Ekran", path: clean };
-}
 
 function loadDrawerState() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; } catch { return {}; }
@@ -106,8 +30,11 @@ function selectionApplies(selection, path) {
   const scope = normalizeScopePath(selection.scopeKey || "");
   const current = normalizeScopePath(path);
   if (!scope || scope === current) return true;
+  const sameFamily = scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
+  if (!sameFamily) return false;
+  if (/\/copilot$/.test(current)) return true;
   const entityType = String(selection?.entityType || "");
-  return ["shift", "vehicle"].includes(entityType) && scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
+  return ["shift", "vehicle"].includes(entityType);
 }
 
 function modeMeta(mode) {
@@ -265,7 +192,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const [selection, setSelection] = useState(() => selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
   const scrollRef = useRef(null);
   const lastPathRef = useRef(currentPath);
-  const screenContext = useMemo(() => resolveScreenContext(currentPath, me), [currentPath, me?.role, me?.companyKind]);
+  const screenContext = useMemo(() => resolveCopilotScreenContext(currentPath, me), [currentPath, me?.role, me?.companyKind]);
   const suggestions = useMemo(() => buildSuggestions(currentPath, mode, selection), [currentPath, mode, selection]);
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
@@ -488,7 +415,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
       </div>
 
       <form className="copilotComposer" onSubmit={onSubmit}>
-        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={4} />
+        <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSubmit(e); } }} placeholder="Sorunu yaz. Örnek: burada neden devam edemiyorum, bu ekran ne işe yarar, seçili araç ne durumda, şimdi ne yapacağım" rows={4} />
         <div className="copilotComposerRow">
           <div className="muted">Bağlam: <b>{screenContext.label}</b>{selection?.label ? ` • ${selection.label}` : ""}</div>
           <div className="copilotComposerButtons">

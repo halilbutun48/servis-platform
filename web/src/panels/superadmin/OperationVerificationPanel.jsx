@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 
 function Card({ title, children }) {
   return (
@@ -102,6 +103,60 @@ export default function OperationVerificationPanel() {
 
   const proofMap = useMemo(() => Object.fromEntries((proofOptions || []).map((item) => [item.id, item.label])), [proofOptions]);
   const statusMap = useMemo(() => Object.fromEntries((statusOptions || []).map((item) => [item.id, item.label])), [statusOptions]);
+  const copilotCheck = useMemo(() => (surface?.checks || [])[0] || null, [surface]);
+
+  useEffect(() => {
+    if (!surface && !manifest) {
+      clearCopilotSelection('/superadmin/operation-verification');
+      return;
+    }
+    const facts = {
+      screenType: 'OPERATION_VERIFICATION',
+      stage: String(surface?.defaultStatus || '').toUpperCase() || 'TEKRAR_KONTROL',
+      readiness: Number(surface?.savedCount || 0) >= Number(surface?.checks?.length || 0) && Number(surface?.checks?.length || 0) > 0 ? 'READY' : 'REVIEW_NEEDED',
+      readinessScore: Number(surface?.checks?.length || 0) > 0 ? Math.max(42, Math.min(90, Math.round((Number(surface?.savedCount || 0) / Number(surface?.checks?.length || 1)) * 100))) : 40,
+      blockers: Number(surface?.checks?.length || 0) > Number(surface?.savedCount || 0) ? ['Tüm kontroller kayıt altına alınmadan rol yüzeyi tamam sayılmaz.'] : [],
+      counters: {
+        roles: Number(manifest?.totals?.roleCount || 0),
+        checks: Number(surface?.checks?.length || 0),
+        saved: Number(surface?.savedCount || 0),
+        defaults: String(surface?.defaultStatus || '-'),
+      },
+      evidence: [
+        `Rol: ${surface?.role?.label || selectedRole}`,
+        `Kayıtlı kontrol: ${Number(surface?.savedCount || 0)}`,
+        `Toplam kontrol: ${Number(surface?.checks?.length || 0)}`,
+        copilotCheck?.title ? `İlk kontrol: ${copilotCheck.title}` : '',
+      ].filter(Boolean),
+      reasoningLead: 'Bu ekranda amaç rol bazlı operasyon kontrolünü kanıt tipi ve kısa notla kayıt altına almaktır.',
+      nextBestAction: copilotCheck?.title
+        ? 'Önce seçili rol için ilk kontrol maddesinin durumunu, kanıt tipini ve notunu netleştir.'
+        : 'Önce rol seç. Sonra her kontrol maddesinde durum, kanıt ve not alanını tamamla.',
+      safestNextStep: 'En risksiz adım, önce seçili rolü netleştirip tek tek kontrol maddelerini kaydetmektir.',
+      compareHint: 'Varsayılan karar ile manuel kayıt aynı şey değildir; manuel kayıt yapıldıysa son kaydedilen durum esas alınır.',
+    };
+    setCopilotSelection({
+      scopeKey: '/superadmin/operation-verification',
+      entityType: 'screen',
+      entityId: 6109,
+      label: surface?.role?.label || selectedRole || 'Operasyon doğrulama',
+      summary: [statusMap[surface?.defaultStatus] || surface?.defaultStatus || null, `${Number(surface?.savedCount || 0)}/${Number(surface?.checks?.length || 0)} kayıt`, copilotCheck?.title || null].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Rol', value: surface?.role?.label || selectedRole || '-', help: 'Şu an kontrol edilen rol yüzeyini gösterir.' },
+        { label: 'Yüzey', value: surface?.role?.surface || '-', help: 'Seçili rolün operasyon yüzeyi tanımını gösterir.' },
+        { label: 'Varsayılan Karar', value: statusMap[surface?.defaultStatus] || surface?.defaultStatus || '-', help: 'Kayıt yoksa baz alınan varsayılan karar bilgisini gösterir.' },
+        { label: 'Kayıtlı Kontrol', value: String(surface?.savedCount || 0), help: 'Şu an kaydedilmiş kontrol sayısını gösterir.' },
+        { label: 'Toplam Kontrol', value: String(surface?.checks?.length || 0), help: 'Seçili rol yüzeyindeki toplam kontrol sayısını gösterir.' },
+        { label: 'İlk Kontrol', value: copilotCheck?.title || '-', help: 'Tablodaki ilk kontrol maddesini örnek odak olarak gösterir.' },
+      ],
+      badges: [
+        { label: 'Önerilen Kanıt', value: (surface?.recommendedProofs || []).slice(0, 2).map((id) => proofMap[id] || id).join(', ') || '-', help: 'Bu rol için öne çıkan kanıt tiplerini gösterir.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/superadmin/operation-verification');
+  }, [manifest, surface, selectedRole, statusMap, proofMap, copilotCheck]);
+
 
   function setDraft(checkId, patch) {
     setDrafts((prev) => ({

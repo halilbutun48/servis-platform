@@ -5,7 +5,7 @@ Bu modül **opsiyoneldir** ve default **kapalıdır**.
 ## Enable
 
 Env ile açılır:
-- `FEATURE_CHECKIN=1`
+- M42 standardı: check-in paneli ve API sürekli açık, kullanım opsiyonel.
 
 Opsiyonel tuning:
 - `CHECKIN_DEDUPE_SEC=60` (aynı personel + aynı eventType için tekrar okutmada dedupe penceresi)
@@ -54,7 +54,7 @@ Flag açıkken UI menüleri role bazlı görünür:
 
 Davranış:
 - Flag kapalıysa menü gizlenir.
-- Deep link ile açılırsa panel açıklayıcı `FEATURE_CHECKIN` kapalı durumu gösterir.
+- Deep link ile açıldığında panel doğrudan açılır; kullanım zorunlu değildir.
 - WS `shift:checkin:update` olayları UI tarafında `checkin` invalidation konusuna düşer ve panel yeniden yüklenir.
 
 ## M42 UI Güncellemesi

@@ -1,5 +1,9 @@
 # M46.6-A — AI Job Guide Runbook
 
+> **Uyumluluk notu (M79+):** Bu M46 runbook'u artık pilot-era exact versiyon etiketi beklemek yerine, aynı davranışın modern Copilot yüzeyinde hâlâ mevcut olup olmadığını doğrulayan legacy compatibility referansı olarak okunmalıdır.
+> Exact `copilotVersion` eşitliği yerine davranışsal / yapısal doğrulama esastır.
+
+
 ## Amaç
 
 M46.6-A, mevcut Copilot hattını bozmadan üstüne sade Türkçe **İş Rehberi** katmanı ekler.
