@@ -910,16 +910,11 @@ function usePlanDraftToRequest(draft) {
   async function load(signal, { withReferences = false, forceReferences = false } = {}) {
     setErr("");
     try {
-      const [sh, overview] = await Promise.all([
-        getCompanyShifts(token, { signal, ttlMs: 25000, take: 200 }),
-        getCompanyCommercialFlowSummary(token, { signal, ttlMs: 10000 }).catch(() => null),
-      ]);
+      const sh = await getCompanyShifts(token, { signal, ttlMs: 25000, take: 32 });
       if (signal?.aborted) return;
 
       const list = Array.isArray(sh) ? sh : sh?.items ?? [];
-      setCommercialSummary(overview || null);
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
-
       setItems(list);
 
       setDecisionNoteSel((prev) => {
@@ -938,6 +933,10 @@ function usePlanDraftToRequest(draft) {
       if (withReferences || needsReferenceData()) {
         await ensureReferenceData(signal, { force: forceReferences });
       }
+
+      const overview = await getCompanyCommercialFlowSummary(token, { signal, ttlMs: 10000 }).catch(() => null);
+      if (signal?.aborted) return;
+      setCommercialSummary(overview || null);
     } catch (e) {
       if (e?.name === "AbortError") return;
       setErr(String(e?.message || e));
@@ -3068,6 +3067,7 @@ function usePlanDraftToRequest(draft) {
     </div>
   );
 }
+
 
 
 

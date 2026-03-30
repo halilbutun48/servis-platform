@@ -2,7 +2,6 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
-import { inferGeoState } from "../services/geoState.js";
 import { ymdTR, addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd } from "../time/tr.js";
 
 function scopeOf(user) {
@@ -50,7 +49,7 @@ async function buildWorkflowSummary(company) {
   const todayStart = atTR(today, 0);
   const geoKind = String(company?.kind || "COMPANY").toUpperCase() === "SCHOOL" ? "STUDENT" : "PERSONEL";
 
-  const [agreementRows, todayShiftCount, marketShiftCount, geoPersonels, openOffersCount] = await Promise.all([
+  const [agreementRows, todayShiftCount, marketShiftCount, geoNeedsReview, openOffersCount] = await Promise.all([
     prisma.agreement.findMany({
       where: {
         companyId: company.id,
@@ -64,27 +63,11 @@ async function buildWorkflowSummary(company) {
     }),
     prisma.shift.count({ where: { companyId: company.id, startAt: { gte: todayStart, lt: tomorrowStart } } }),
     prisma.shift.count({ where: { companyId: company.id, roomId: null } }),
-    prisma.personel.findMany({
-      where: { companyId: company.id, kind: geoKind },
-      select: {
-        id: true,
-        homeAddress: true,
-        homeLat: true,
-        homeLng: true,
-        geoStatus: true,
-        geoManualOverride: true,
-        geoNote: true,
-      },
-      take: 5000,
-    }),
+    prisma.personel.count({ where: { companyId: company.id, kind: geoKind, geoStatus: "NEEDS_REVIEW" } }),
     prisma.shiftOffer.count({ where: { shift: { companyId: company.id }, status: "OPEN" } }),
   ]);
 
   const todayAgreements = (agreementRows || []).filter((row) => (Number(row?.weekMask || 0) & todayBit) !== 0).length;
-  const geoNeedsReview = (Array.isArray(geoPersonels) ? geoPersonels : []).reduce((acc, item) => {
-    const state = inferGeoState(item);
-    return acc + (String(state?.geoStatus || "") === "NEEDS_REVIEW" ? 1 : 0);
-  }, 0);
 
   return {
     todayYmd: today,
@@ -96,6 +79,10 @@ async function buildWorkflowSummary(company) {
       openOffersCount,
     },
   };
+}
+
+function isSplitRootShift(shift) {
+  return statusOf(shift?.status) === "SPLIT" && !Number(shift?.splitRootId || 0);
 }
 
 async function buildCommercialFlowSummary(company) {
@@ -118,7 +105,10 @@ async function buildCommercialFlowSummary(company) {
       where: {
         companyId: company.id,
         status: { notIn: Array.from(FINAL_SHIFT_STATUSES) },
-        NOT: { roomId: null },
+        NOT: [
+          { roomId: null },
+          { AND: [{ status: "SPLIT" }, { splitRootId: null }] },
+        ],
       },
     }),
     prisma.shift.count({
@@ -144,7 +134,7 @@ async function buildCommercialFlowSummary(company) {
     prisma.shift.findMany({
       where: { companyId: company.id },
       orderBy: [{ startAt: "desc" }, { id: "desc" }],
-      take: 220,
+      take: 12,
       include: {
         room: { select: { id: true, name: true } },
         offers: {
@@ -164,6 +154,7 @@ async function buildCommercialFlowSummary(company) {
   ]);
 
   const items = (Array.isArray(shiftRows) ? shiftRows : [])
+    .filter((shift) => !isSplitRootShift(shift))
     .map((shift) => {
       const shiftId = Number(shift?.id || 0) || null;
       const status = statusOf(shift?.status) || "-";
@@ -217,7 +208,7 @@ async function buildCommercialFlowSummary(company) {
       };
     })
     .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-    .slice(0, 80);
+    .slice(0, 12);
 
   return {
     cards: {
