@@ -17,7 +17,8 @@ import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModa
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
-import { getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
+import { getCompanyCommercialFlowSummary, getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
+import { rowSelectionStyle } from "../../utils/listUi";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -347,6 +348,14 @@ function addDaysYmd(ymd, deltaDays) {
   return addDaysYmdTR(ymd, deltaDays);
 }
 
+function pickCount(...values) {
+  for (const value of values) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
+}
+
 
 
 
@@ -377,6 +386,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
 
 
   const [items, setItems] = useState([]);
+  const [commercialSummary, setCommercialSummary] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [roomScores, setRoomScores] = useState({});
@@ -900,10 +910,14 @@ function usePlanDraftToRequest(draft) {
   async function load(signal, { withReferences = false, forceReferences = false } = {}) {
     setErr("");
     try {
-      const sh = await getCompanyShifts(token, { signal, ttlMs: 25000, take: 32 });
+      const [sh, overview] = await Promise.all([
+        getCompanyShifts(token, { signal, ttlMs: 25000, take: 200 }),
+        getCompanyCommercialFlowSummary(token, { signal, ttlMs: 10000 }).catch(() => null),
+      ]);
       if (signal?.aborted) return;
 
       const list = Array.isArray(sh) ? sh : sh?.items ?? [];
+      setCommercialSummary(overview || null);
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
 
       setItems(list);
@@ -1929,6 +1943,16 @@ function usePlanDraftToRequest(draft) {
       });
   }, [finalItemsRaw, finalQ, finalStatus, onlyAgreement, dayYmd]);
 
+  const canonicalCompanyCounts = useMemo(() => {
+    const cards = commercialSummary?.cards || {};
+    return {
+      market: pickCount(cards.marketShiftCount, cards.marketOffers, marketItems.length, 0),
+      pending: pickCount(cards.pendingShiftCount, cards.acceptedOffers, pendingItems.length, 0),
+      final: pickCount(cards.finalShiftCount, cards.listCount, finalItems.length, 0),
+      active: pickCount(cards.activeShiftCount, cards.activeOps, 0),
+      counter: pickCount(cards.counterShiftCount, cards.counterOffers, 0),
+    };
+  }, [commercialSummary, marketItems.length, pendingItems.length, finalItems.length]);
 
   const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
 
@@ -2130,13 +2154,13 @@ function usePlanDraftToRequest(draft) {
       <div className="card" style={{ marginTop: 10 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <button type="button" className={trackTab === "market" ? "btn primary" : "btn"} onClick={() => setTrackTab("market")}>
-            Market <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{marketItems.length}</span>
+            Market <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.market}</span>
           </button>
           <button type="button" className={trackTab === "pending" ? "btn primary" : "btn"} onClick={() => setTrackTab("pending")}>
-            Bekleyen <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{pendingItems.length}</span>
+            Bekleyen <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.pending}</span>
           </button>
           <button type="button" className={trackTab === "list" ? "btn primary" : "btn"} onClick={() => setTrackTab("list")}>
-            Liste <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{finalItems.length}</span>
+            Liste <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.final}</span>
           </button>
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
@@ -2237,7 +2261,7 @@ function usePlanDraftToRequest(draft) {
           </thead>
           <tbody>
             {marketItems.map((s) => (
-              <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={{ cursor: "pointer", background: Number(copilotShiftId || 0) === Number(s?.id || 0) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
+              <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(s?.id || 0))}>
                 <td>
                   {s.id}
                   <AgreementBadge agreementId={s.agreementId} />
@@ -2386,7 +2410,7 @@ function usePlanDraftToRequest(draft) {
               const roomVehicles = vehiclesForShiftRoom(s);
 
               return (
-                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={{ cursor: "pointer", background: Number(copilotShiftId || 0) === Number(s?.id || 0) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
+                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(s?.id || 0))}>
                   <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />
@@ -2565,7 +2589,7 @@ function usePlanDraftToRequest(draft) {
             {finalItems.map((s) => {
               const r = roomsById.get(Number(s.roomId));
               return (
-                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={{ cursor: "pointer", background: Number(copilotShiftId || 0) === Number(s?.id || 0) ? "rgba(61, 122, 255, 0.10)" : "transparent" }}>
+                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(s?.id || 0))}>
                   <td>
                     {s.id}
                     <AgreementBadge agreementId={s.agreementId} />

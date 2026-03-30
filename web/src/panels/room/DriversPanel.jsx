@@ -7,8 +7,9 @@ import { navigate } from "../../router";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import DriverPenaltyBadge from "../../components/driver/DriverPenaltyBadge";
 import DriverPenaltyForm from "../../components/driver/DriverPenaltyForm";
-import { rowSelectionStyle } from "../../utils/listUi";
+import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import ListSelectionBanner from "../../components/ListSelectionBanner";
 
 const TABS = [
   { key: "status", label: "Durum" },
@@ -97,6 +98,14 @@ export default function DriversPanel() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL"); // ALL|LIVE|STALE|OFFLINE (GPS)
   const [boundFilter, setBoundFilter] = useState("ALL"); // ALL|BOUND|FREE
+  const [statusColFilter, setStatusColFilter] = useState({
+    driver: "",
+    phone: "",
+    connection: "ALL",
+    task: "ALL",
+    vehicle: "",
+    gps: "ALL",
+  });
 
   // Create
   const [fullName, setFullName] = useState("");
@@ -117,6 +126,17 @@ export default function DriversPanel() {
   // Link tab (driver -> vehicle selection)
   const [focusDriverId, setFocusDriverId] = useState(0);
   const [selVehicleId, setSelVehicleId] = useState("");
+
+  function clearStatusColumnFilters() {
+    setStatusColFilter({
+      driver: "",
+      phone: "",
+      connection: "ALL",
+      task: "ALL",
+      vehicle: "",
+      gps: "ALL",
+    });
+  }
 
   async function load() {
     setErr("");
@@ -271,6 +291,25 @@ export default function DriversPanel() {
       })
       .sort((a, b) => Number(a.id) - Number(b.id));
   }, [drivers, q, statusFilter, boundFilter, boundVehicleByDriverId]);
+
+  const visibleStatusDrivers = useMemo(() => {
+    return filteredDrivers.filter((d) => {
+      const stat = driverStatus(d.id);
+      const bv = stat?.vehicle ?? d?.boundVehicle ?? boundVehicleByDriverId.get(Number(d.id)) ?? null;
+      const ops = driverOps(d);
+      const currentNext = d?.currentShift ? `Current #${d.currentShift.id}` : d?.nextShift ? `Next #${d.nextShift.id}` : "-";
+
+      if (!includesFilter([d?.fullName, d?.driverCode, d?.id], statusColFilter.driver)) return false;
+      if (!includesFilter([d?.phone], statusColFilter.phone)) return false;
+      if (!includesFilter([bv?.plate], statusColFilter.vehicle)) return false;
+
+      if (statusColFilter.connection !== "ALL" && String(ops.connectionState || "").toUpperCase() !== statusColFilter.connection) return false;
+      if (statusColFilter.task !== "ALL" && String(ops.assignmentState || "").toUpperCase() !== statusColFilter.task) return false;
+      if (statusColFilter.gps !== "ALL" && String(ops.gpsUiState || "").toUpperCase() !== statusColFilter.gps) return false;
+
+      return true;
+    });
+  }, [filteredDrivers, statusColFilter, boundVehicleByDriverId]);
 
   const counts = useMemo(() => {
     let total = drivers.length;
@@ -535,6 +574,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
   }, [focusDriver, vehicles]);
 
   const focusStat = focusDriver ? driverStatus(focusDriver.id) : null;
+  const focusOps = focusDriver ? driverOps(focusDriver) : null;
   const focusVehicle = focusStat?.vehicle ?? (focusDriver ? boundVehicleByDriverId.get(Number(focusDriver.id)) : null);
 
   // shifts source: backend fields or boundVehicle.shifts or empty
@@ -633,9 +673,18 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
           </div>
 
           <div className="muted" style={{ marginLeft: "auto" }}>
-            Toplam {counts.total} • Araca bağlı {counts.bound} • Boşta {counts.free} • Bağlı {counts.connected} • Atanmış {counts.assigned} • Aktif {counts.active} • GPS canlı {counts.live} • STALE {counts.stale} • OFFLINE {counts.offline} • Seçili: <b>{focusDriver?.fullName || '-'}</b>
+            Toplam {counts.total} • Araca bağlı {counts.bound} • Boşta {counts.free} • Bağlı {counts.connected} • Atanmış {counts.assigned} • Aktif {counts.active} • GPS canlı {counts.live} • STALE {counts.stale} • OFFLINE {counts.offline}
           </div>
         </div>
+        <ListSelectionBanner
+          selectedLabel={focusDriver?.fullName || ""}
+          selectedSummary={[focusVehicle?.plate, focusOps?.assignmentState, focusOps?.gpsLabel].filter(Boolean).join(" • ")}
+          visibleCount={tab === "status" ? visibleStatusDrivers.length : filteredDrivers.length}
+          totalCount={drivers.length}
+          filterValue={`${q} ${statusFilter} ${boundFilter} ${statusColFilter.driver} ${statusColFilter.phone} ${statusColFilter.connection} ${statusColFilter.task} ${statusColFilter.vehicle} ${statusColFilter.gps}`.trim()}
+          onClearFilter={() => { setQ(""); setStatusFilter("ALL"); setBoundFilter("ALL"); clearStatusColumnFilters(); }}
+          helper="Copilot seçili sürücüyü kullanır."
+        />
       </div>
 
       <div className="card">
@@ -643,7 +692,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         <div className="muted">İlk 12 sürücü üzerinden hızlı kayıt ekleme</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
           {filteredDrivers.slice(0, 12).map((d) => (
-            <div key={`pen-${d.id}`} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", borderBottom: "1px solid var(--line, #eee)", paddingBottom: 8 }}>
+            <div key={`pen-${d.id}`} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={{ ...rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0)), display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", borderBottom: "1px solid var(--line, #eee)", paddingBottom: 8, borderRadius: 10, paddingLeft: 8, paddingRight: 8 }}>
               <b>{d.fullName}</b>
               <span className="muted">{d.phone || "-"}</span>
               <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
@@ -657,7 +706,10 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       {/* DURUM */}
       {tab === "status" ? (
         <div className="card">
-          <h3>Operasyon Durumu</h3>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0 }}>Operasyon Durumu</h3>
+            <button type="button" className="btn sm ghost" onClick={clearStatusColumnFilters}>Sütun filtrelerini temizle</button>
+          </div>
           <table className="tbl">
             <thead>
               <tr>
@@ -670,15 +722,54 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                 <th>Son GPS</th>
                 <th>Konum</th>
               </tr>
+              <tr>
+                <th><input value={statusColFilter.driver} onChange={(e) => setStatusColFilter((p) => ({ ...p, driver: e.target.value }))} placeholder="Ad / kod / id" /></th>
+                <th><input value={statusColFilter.phone} onChange={(e) => setStatusColFilter((p) => ({ ...p, phone: e.target.value }))} placeholder="Telefon" /></th>
+                <th>
+                  <select value={statusColFilter.connection} onChange={(e) => setStatusColFilter((p) => ({ ...p, connection: e.target.value }))}>
+                    <option value="ALL">Hepsi</option>
+                    <option value="ONLINE">Bağlı</option>
+                    <option value="OFFLINE">Bağlı değil</option>
+                  </select>
+                </th>
+                <th>
+                  <select value={statusColFilter.task} onChange={(e) => setStatusColFilter((p) => ({ ...p, task: e.target.value }))}>
+                    <option value="ALL">Hepsi</option>
+                    <option value="ACTIVE">Aktif vardiya</option>
+                    <option value="ASSIGNED">Vardiya atandı</option>
+                    <option value="ASSIGNED_NO_VEHICLE">Araç bekleniyor</option>
+                    <option value="NONE">Görev yok</option>
+                  </select>
+                </th>
+                <th><input value={statusColFilter.vehicle} onChange={(e) => setStatusColFilter((p) => ({ ...p, vehicle: e.target.value }))} placeholder="Plaka" /></th>
+                <th>
+                  <select value={statusColFilter.gps} onChange={(e) => setStatusColFilter((p) => ({ ...p, gps: e.target.value }))}>
+                    <option value="ALL">Hepsi</option>
+                    <option value="LIVE">Canlı</option>
+                    <option value="STALE">Pasif</option>
+                    <option value="WAITING">Bekliyor</option>
+                    <option value="OFFLINE">Kapalı</option>
+                    <option value="IDLE">GPS pasif</option>
+                  </select>
+                </th>
+                <th className="muted">Görüntü</th>
+                <th className="muted">Görüntü</th>
+              </tr>
             </thead>
             <tbody>
-              {filteredDrivers.map((d) => {
+              {visibleStatusDrivers.length ? visibleStatusDrivers.map((d) => {
                 const stat = driverStatus(d.id);
                 const bv = stat?.vehicle ?? d?.boundVehicle ?? null;
                 const ops = driverOps(d);
+                const isSelected = Number(focusDriverId || 0) === Number(d.id || 0);
 
                 return (
-                  <tr key={d.id} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
+                  <tr
+                    key={d.id}
+                    data-selected={isSelected ? "true" : undefined}
+                    onClick={() => setFocusDriverId(Number(d.id) || 0)}
+                    style={rowSelectionStyle(isSelected)}
+                  >
                     <td>
                       <b>{d.fullName}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
                       <div className="muted">#{d.id}</div>
@@ -700,7 +791,11 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                     <td className="muted">{bv?.gpsLast?.lat != null && bv?.gpsLast?.lng != null ? `${Number(bv.gpsLast.lat).toFixed(5)}, ${Number(bv.gpsLast.lng).toFixed(5)}` : '-'}</td>
                   </tr>
                 );
-              })}
+              }) : (
+                <tr>
+                  <td colSpan={8} className="muted">Bu filtreye uyan sürücü görünmüyor.</td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div className="muted" style={{ marginTop: 8 }}>
@@ -791,7 +886,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                         : "-";
 
                     return (
-                      <tr key={d.id} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
+                      <tr key={d.id} data-selected={Number(focusDriverId || 0) === Number(d.id || 0) ? "true" : undefined} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
                         <td>{d.id}</td>
                         <td><b>{d.fullName}</b></td>
                         <td>{d.phone}</td>
@@ -873,7 +968,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
                   : "-";
 
                 return (
-                  <tr key={d.id} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
+                  <tr key={d.id} data-selected={Number(focusDriverId || 0) === Number(d.id || 0) ? "true" : undefined} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
                     <td><b>{d.fullName}</b></td>
                     <td className="muted">{bv ? bv.plate : "-"}</td>
                     <td className="muted">{curText}</td>

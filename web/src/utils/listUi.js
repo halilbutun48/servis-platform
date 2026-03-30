@@ -15,7 +15,9 @@ export function includesFilter(values, query) {
 export function rowSelectionStyle(isSelected) {
   return {
     cursor: 'pointer',
-    background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'transparent',
-    outline: isSelected ? '1px solid rgba(59,130,246,.35)' : undefined,
+    background: isSelected ? 'rgba(61, 122, 255, 0.12)' : 'transparent',
+    outline: isSelected ? '1px solid rgba(59,130,246,.42)' : undefined,
+    boxShadow: isSelected ? 'inset 3px 0 0 rgba(96,165,250,.95)' : undefined,
+    transition: 'background-color .15s ease, outline-color .15s ease, box-shadow .15s ease',
   };
 }

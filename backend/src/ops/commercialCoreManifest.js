@@ -1,5 +1,15 @@
 import { prisma } from "../prisma.js";
 
+const FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
+
+function statusOf(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function isFinalShiftStatus(value) {
+  return FINAL_SHIFT_STATUSES.has(statusOf(value));
+}
+
 export const COMMERCIAL_CORE_STEPS = [
   { id: "demand_card", label: "Talep karti", status: "ACTIVE" },
   { id: "offer_lifecycle", label: "Teklif yasam dongusu", status: "ACTIVE" },
@@ -59,14 +69,22 @@ export async function buildRoomCommercialSummary(user) {
   }
 
   const [offers, agreements, approvedOrActiveShifts] = await Promise.all([
-    prisma.shiftOffer.findMany({ where: { roomId }, select: { status: true, amountRoom: true } }),
+    prisma.shiftOffer.findMany({
+      where: { roomId },
+      select: {
+        status: true,
+        amountRoom: true,
+        shift: { select: { status: true } },
+      },
+    }),
     prisma.agreement.findMany({ where: { roomId }, select: { status: true } }),
     prisma.shift.count({ where: { roomId, status: { in: ["APPROVED", "ACTIVE"] } } }),
   ]);
 
-  const openOffers = offers.filter((x) => String(x.status || "") === "OPEN").length;
-  const counteredOffers = offers.filter((x) => String(x.status || "") === "COUNTERED").length;
-  const acceptedOffers = offers.filter((x) => String(x.status || "") === "ACCEPTED").length;
+  const liveOffers = offers.filter((x) => !isFinalShiftStatus(x?.shift?.status));
+  const openOffers = liveOffers.filter((x) => statusOf(x.status) === "OPEN").length;
+  const counteredOffers = liveOffers.filter((x) => statusOf(x.status) === "COUNTERED").length;
+  const acceptedOffers = liveOffers.filter((x) => statusOf(x.status) === "ACCEPTED").length;
   const requestedAgreements = agreements.filter((x) => String(x.status || "") === "REQUESTED").length;
   const activeAgreements = agreements.filter((x) => ["APPROVED", "ACTIVE"].includes(String(x.status || ""))).length;
 
@@ -92,7 +110,15 @@ export async function buildRoomCommercialItems(user) {
       where: { roomId },
       orderBy: { updatedAt: "desc" },
       take: 40,
-      include: { shift: { select: { id: true, company: { select: { name: true } } } } },
+      include: {
+        shift: {
+          select: {
+            id: true,
+            status: true,
+            company: { select: { name: true } },
+          },
+        },
+      },
     }),
     prisma.agreement.findMany({
       where: { roomId },
@@ -103,13 +129,31 @@ export async function buildRoomCommercialItems(user) {
   ]);
 
   const offerItems = offers.map((o) => {
-    const status = String(o.status || "");
-    const flowLabel = status === "OPEN" ? "Teklif" : status === "COUNTERED" ? "Pazarlik" : status === "ACCEPTED" ? "Kabul" : "Kapanan teklif";
-    const nextStep = status === "OPEN"
+    const offerStatus = statusOf(o.status);
+    const shiftStatus = statusOf(o.shift?.status);
+    const finalShift = isFinalShiftStatus(shiftStatus);
+
+    if (finalShift) {
+      return {
+        id: `offer-${o.id}`,
+        updatedAt: o.updatedAt,
+        shiftId: o.shift?.id || null,
+        counterparty: o.shift?.company?.name || `Company #${o.shift?.id || o.id}`,
+        flowLabel: "Operasyon",
+        amountLabel: fmtAmountLabel(o),
+        statusLabel: shiftStatus,
+        nextStep: "Vardiya kaydini incele",
+        actionPath: "/room/shifts",
+        actionLabel: "Vardiyalari ac",
+      };
+    }
+
+    const flowLabel = offerStatus === "OPEN" ? "Teklif" : offerStatus === "COUNTERED" ? "Pazarlik" : offerStatus === "ACCEPTED" ? "Kabul" : "Kapanan teklif";
+    const nextStep = offerStatus === "OPEN"
       ? "Teklifi incele ve cevap ver"
-      : status === "COUNTERED"
+      : offerStatus === "COUNTERED"
         ? "Firma cevabini bekle"
-        : status === "ACCEPTED"
+        : offerStatus === "ACCEPTED"
           ? "Bekleyen taleplerde arac ve surucu sec"
           : "Kayit kapandi";
     return {
@@ -119,10 +163,10 @@ export async function buildRoomCommercialItems(user) {
       counterparty: o.shift?.company?.name || `Company #${o.shift?.id || o.id}`,
       flowLabel,
       amountLabel: fmtAmountLabel(o),
-      statusLabel: status,
+      statusLabel: offerStatus,
       nextStep,
-      actionPath: status === "ACCEPTED" ? "/room/shifts" : "/room/offers",
-      actionLabel: status === "ACCEPTED" ? "Vardiyalari ac" : "Teklifleri ac",
+      actionPath: offerStatus === "ACCEPTED" ? "/room/shifts" : "/room/offers",
+      actionLabel: offerStatus === "ACCEPTED" ? "Vardiyalari ac" : "Teklifleri ac",
     };
   });
 

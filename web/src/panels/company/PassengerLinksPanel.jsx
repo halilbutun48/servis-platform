@@ -146,7 +146,7 @@ export default function PassengerLinksPanel() {
   }
 
   return (
-    <div className="wrap">
+    <div className="wrap wrap--fluid">
       <div className="card">
         <div className="title">{me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}</div>
         <div className="muted">Login vermeden, tek kişiye özel süreli canlı takip linki üret. Link sadece kendi durak + ETA + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran ENDED/final durum olarak görünür.</div>

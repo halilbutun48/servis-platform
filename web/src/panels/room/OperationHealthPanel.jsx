@@ -144,6 +144,7 @@ export default function OperationHealthPanel() {
   const [issues, setIssues] = useState([]);
   const [err, setErr] = useState("");
   const [filterQ, setFilterQ] = useState("");
+  const [driverStatusFilter, setDriverStatusFilter] = useState("");
   const [selectedDriverId, setSelectedDriverId] = useState(0);
   const [selectedIssueKey, setSelectedIssueKey] = useState("");
 
@@ -170,9 +171,25 @@ export default function OperationHealthPanel() {
     };
   }, [token]);
 
-  const filteredDrivers = useMemo(() => drivers.filter((item) => includesFilter([
-    item?.id, item?.driverName, item?.vehiclePlate, item?.liveState, item?.issueSummary, item?.permissionState, item?.sessionState,
-  ], filterQ)), [drivers, filterQ]);
+  const statusOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        drivers
+          .map((item) => String(item?.liveState || "").trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b, "tr"));
+  }, [drivers]);
+
+  const filteredDrivers = useMemo(() => drivers.filter((item) => {
+    if (!includesFilter([
+      item?.id, item?.driverName, item?.vehiclePlate, item?.liveState, item?.issueSummary, item?.permissionState, item?.sessionState,
+    ], filterQ)) return false;
+    if (String(driverStatusFilter || "").trim()) {
+      return String(item?.liveState || "").trim().toUpperCase() === String(driverStatusFilter || "").trim().toUpperCase();
+    }
+    return true;
+  }), [drivers, filterQ, driverStatusFilter]);
   const filteredIssues = useMemo(() => issues.filter((item) => includesFilter([
     item?.title, item?.detail, item?.severity,
   ], filterQ)), [issues, filterQ]);
@@ -291,11 +308,32 @@ export default function OperationHealthPanel() {
                   <th>Oturum</th>
                   <th>Özet</th>
                 </tr>
+                <tr>
+                  <th></th>
+                  <th></th>
+                  <th>
+                    <select value={driverStatusFilter} onChange={(e) => setDriverStatusFilter(e.target.value)}>
+                      <option value="">Tüm durumlar</option>
+                      {statusOptions.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                </tr>
               </thead>
               <tbody>
-                {filteredDrivers.map((item) => (
+                {filteredDrivers.length ? filteredDrivers.map((item) => (
                   <DriverRow key={item.id} item={item} selected={Number(selectedDriverId || 0) === Number(item?.driverId || item?.id || 0)} onSelect={(row) => setSelectedDriverId(Number(row?.driverId || row?.id || 0))} />
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={8} className="muted" style={{ paddingTop: 12 }}>Filtreye uyan sorunlu sürücü yok.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

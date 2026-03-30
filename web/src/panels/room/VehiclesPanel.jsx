@@ -8,6 +8,7 @@ import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { formatDateTimeTR, formatDateTR, formatTimeTR, isoFromTRDateInput, isoFromTRLocalInput, toDateInputTR, toDatetimeLocalTR } from "../../utils/time";
 import { rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import ListSelectionBanner from "../../components/ListSelectionBanner";
 
 const VEHICLE_TYPES = [
   { value: "", label: "Seç (opsiyonel)" },
@@ -652,6 +653,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
     : (focusDriverId ? `#${focusDriverId}` : "-");
 
   const focusHasDriver = Boolean(focusDriverId);
+  const focusUi = useMemo(() => uiStatusFromVehicle(focusVehicle) || {}, [focusVehicle]);
 
   useEffect(() => {
     if (!focusVehicle) {
@@ -1142,9 +1144,19 @@ async function checkAvailabilityAll(onlySelected = false) {
               </select>
             </div>
             <div className="muted" style={{ marginLeft: "auto" }}>
-              Toplam: {statusRows.length} • Seçili: <b>{focusVehicle?.plate || '-'}</b>
+              Durum görünümü
             </div>
           </div>
+
+          <ListSelectionBanner
+            selectedLabel={focusVehicle?.plate || ""}
+            selectedSummary={[focusUi?.label, focusDriverLabel, focusVehicle?.type].filter(Boolean).join(" • ")}
+            visibleCount={statusRows.length}
+            totalCount={items.filter((v) => !v.archivedAt).length}
+            filterValue={`${plateQuery} ${statusFilter}`.trim()}
+            onClearFilter={() => { setPlateQuery(""); setStatusFilter("ALL"); }}
+            helper="Copilot seçili aracı kullanır."
+          />
 
           <table className="tbl" style={{ marginTop: 10 }}>
             <thead>
@@ -1324,8 +1336,15 @@ async function checkAvailabilityAll(onlySelected = false) {
             {/* SAĞ: Liste */}
             <div className="card" style={{ overflowX: "auto" }}>
               <h3>Liste</h3>
+              <ListSelectionBanner
+                selectedLabel={focusVehicle?.plate || ""}
+                selectedSummary={[focusVehicle?.brand, focusVehicle?.model, focusDriverLabel].filter(Boolean).join(" • ")}
+                visibleCount={items.length}
+                totalCount={items.length}
+                helper="Copilot seçili araç kartını kullanır."
+              />
 
-              <table className="tbl" style={{ whiteSpace: "nowrap", fontSize: 12 }}>
+              <table className="tbl" style={{ whiteSpace: "nowrap", fontSize: 12, marginTop: 10 }}>
                 <thead>
                   <tr>
                     <th>Plaka</th>

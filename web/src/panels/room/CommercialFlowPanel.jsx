@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
+import ListSelectionBanner from "../../components/ListSelectionBanner";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -50,6 +51,11 @@ export default function CommercialFlowPanel() {
   const [items, setItems] = useState([]);
   const [err, setErr] = useState("");
   const [filterQ, setFilterQ] = useState("");
+  const [counterpartyQ, setCounterpartyQ] = useState("");
+  const [flowQ, setFlowQ] = useState("");
+  const [amountQ, setAmountQ] = useState("");
+  const [statusQ, setStatusQ] = useState("");
+  const [nextStepQ, setNextStepQ] = useState("");
   const [selectedId, setSelectedId] = useState("");
 
   useEffect(() => {
@@ -81,16 +87,28 @@ export default function CommercialFlowPanel() {
     navigate(item.actionPath);
   }
 
-  const filteredItems = useMemo(() => items.filter((item) => includesFilter([
-    item?.id,
-    item?.counterparty,
-    item?.flowLabel,
-    item?.amountLabel,
-    item?.statusLabel,
-    item?.status,
-    item?.nextStep,
-    item?.updatedAt,
-  ], filterQ)), [items, filterQ]);
+  const flowOptions = useMemo(() => Array.from(new Set(items.map((item) => String(item?.flowLabel || "").trim()).filter(Boolean))), [items]);
+  const statusOptions = useMemo(() => Array.from(new Set(items.map((item) => String(item?.statusLabel || item?.status || "").trim()).filter(Boolean))), [items]);
+
+  const filteredItems = useMemo(() => items.filter((item) => {
+    const statusValue = item?.statusLabel || item?.status || "";
+    const matchesGeneral = includesFilter([
+      item?.id,
+      item?.counterparty,
+      item?.flowLabel,
+      item?.amountLabel,
+      item?.statusLabel,
+      item?.status,
+      item?.nextStep,
+      item?.updatedAt,
+    ], filterQ);
+    const matchesCounterparty = includesFilter([item?.counterparty], counterpartyQ);
+    const matchesFlow = !flowQ || String(item?.flowLabel || "").trim() === flowQ;
+    const matchesAmount = includesFilter([item?.amountLabel], amountQ);
+    const matchesStatus = !statusQ || String(statusValue).trim() === statusQ;
+    const matchesNextStep = includesFilter([item?.nextStep], nextStepQ);
+    return matchesGeneral && matchesCounterparty && matchesFlow && matchesAmount && matchesStatus && matchesNextStep;
+  }), [items, filterQ, counterpartyQ, flowQ, amountQ, statusQ, nextStepQ]);
 
   useEffect(() => {
     if (!filteredItems.length) {
@@ -173,7 +191,15 @@ export default function CommercialFlowPanel() {
             <button type="button" onClick={() => navigate("/room/shifts")}>Vardiyalari ac</button>
           </div>
         </div>
-        <div className="muted" style={{ marginBottom: 10 }}>Gösterilen: <b>{filteredItems.length}</b> / Toplam: <b>{items.length}</b></div>
+        <ListSelectionBanner
+          selectedLabel={selectedItem?.counterparty || ""}
+          selectedSummary={[selectedItem?.flowLabel, selectedItem?.statusLabel, selectedItem?.nextStep].filter(Boolean).join(" • ")}
+          visibleCount={filteredItems.length}
+          totalCount={items.length}
+          filterValue={filterQ}
+          onClearFilter={() => setFilterQ("")}
+          helper="Copilot seçili ticari kaydı kullanır."
+        />
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -185,6 +211,46 @@ export default function CommercialFlowPanel() {
                 <th>Son Guncelleme</th>
                 <th>Sonraki Adim</th>
                 <th>Aksiyon</th>
+              </tr>
+              <tr>
+                <th>
+                  <input
+                    value={counterpartyQ}
+                    onChange={(e) => setCounterpartyQ(e.target.value)}
+                    placeholder="Karşı taraf"
+                    style={{ width: "100%", minWidth: 140 }}
+                  />
+                </th>
+                <th>
+                  <select value={flowQ} onChange={(e) => setFlowQ(e.target.value)} style={{ width: "100%", minWidth: 120 }}>
+                    <option value="">Tum akislar</option>
+                    {flowOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+                  </select>
+                </th>
+                <th>
+                  <input
+                    value={amountQ}
+                    onChange={(e) => setAmountQ(e.target.value)}
+                    placeholder="Tutar"
+                    style={{ width: "100%", minWidth: 120 }}
+                  />
+                </th>
+                <th>
+                  <select value={statusQ} onChange={(e) => setStatusQ(e.target.value)} style={{ width: "100%", minWidth: 120 }}>
+                    <option value="">Tum durumlar</option>
+                    {statusOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+                  </select>
+                </th>
+                <th></th>
+                <th>
+                  <input
+                    value={nextStepQ}
+                    onChange={(e) => setNextStepQ(e.target.value)}
+                    placeholder="Sonraki adım"
+                    style={{ width: "100%", minWidth: 180 }}
+                  />
+                </th>
+                <th></th>
               </tr>
             </thead>
             <tbody>

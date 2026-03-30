@@ -24,6 +24,14 @@ function formatTRY(value) {
   return new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n) + " ₺";
 }
 
+function pickCount(...values) {
+  for (const value of values) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return 0;
+}
+
 function MetricCard({ title, value, note, accent = "default" }) {
   const accentMap = {
     default: { border: "1px solid rgba(255,255,255,0.08)", title: "#98a2b3", value: "#f8fafc" },
@@ -64,6 +72,8 @@ export default function CompanyCommercialFlowPanel() {
   const [summary, setSummary] = useState(null);
   const [err, setErr] = useState("");
   const [selectedId, setSelectedId] = useState("");
+  const [flowFilter, setFlowFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   useEffect(() => {
     let cancelled = false;
@@ -87,23 +97,54 @@ export default function CompanyCommercialFlowPanel() {
     };
   }, [token]);
 
-  const cards = useMemo(() => {
+  const counts = useMemo(() => {
     const c = summary?.cards || {};
-    return [
-      { title: "Market Teklifi", value: Number(c.marketOffers || 0), note: "Gerçek teklif / karşı teklif kayıtları", accent: Number(c.marketOffers || 0) ? "warm" : "default" },
-      { title: "Karşı Teklif", value: Number(c.counterOffers || 0), note: "Room cevabı bekleyen kayıtlar", accent: Number(c.counterOffers || 0) ? "warm" : "default" },
-      { title: "Kabul Edilen", value: Number(c.acceptedOffers || 0), note: "Pazarlığı bitip bekleyen taleplere inen kayıtlar", accent: Number(c.acceptedOffers || 0) ? "good" : "default" },
-      { title: "Liste", value: Number(c.listCount || 0), note: "APPROVED / ACTIVE / DONE / REJECTED" },
-      { title: "Aktif Operasyon", value: Number(c.activeOps || 0), note: "Sahaya inen işler", accent: Number(c.activeOps || 0) ? "good" : "default" },
-    ];
+    return {
+      market: pickCount(c.marketShiftCount, c.marketOffers, 0),
+      counter: pickCount(c.counterShiftCount, c.counterOffers, 0),
+      pending: pickCount(c.pendingShiftCount, c.acceptedOffers, 0),
+      final: pickCount(c.finalShiftCount, c.listCount, 0),
+      active: pickCount(c.activeShiftCount, c.activeOps, 0),
+    };
   }, [summary]);
 
+  const cards = useMemo(() => {
+    return [
+      { title: "Market Teklifi", value: counts.market, note: "Room seçilmemiş, pazarlığı açık market talepleri", accent: counts.market ? "warm" : "default" },
+      { title: "Karşı Teklif", value: counts.counter, note: "Karşı teklif sinyali taşıyan aktif pazarlık kayıtları", accent: counts.counter ? "warm" : "default" },
+      { title: "Bekleyen", value: counts.pending, note: "Room atanmış, operasyon hazırlığı bekleyen talepler", accent: counts.pending ? "good" : "default" },
+      { title: "Liste", value: counts.final, note: "APPROVED / ACTIVE / DONE / REJECTED" },
+      { title: "Aktif Operasyon", value: counts.active, note: "APPROVED + ACTIVE sahaya inen işler", accent: counts.active ? "good" : "default" },
+    ];
+  }, [counts]);
+
   const flowItems = useMemo(() => Array.isArray(summary?.items) ? summary.items : [], [summary]);
-  const marketOffers = useMemo(() => ({ length: Number(summary?.cards?.marketOffers || 0) }), [summary]);
-  const acceptedOffers = useMemo(() => ({ length: Number(summary?.cards?.acceptedOffers || 0) }), [summary]);
-  const finalItems = useMemo(() => ({ length: Number(summary?.cards?.listCount || 0) }), [summary]);
+  const flowOptions = useMemo(
+    () => ["ALL", ...Array.from(new Set(flowItems.map((item) => String(item?.flowLabel || "-").trim()).filter(Boolean)))],
+    [flowItems]
+  );
+  const statusOptions = useMemo(
+    () => ["ALL", ...Array.from(new Set(flowItems.map((item) => String(item?.statusLabel || "-").trim()).filter(Boolean)))],
+    [flowItems]
+  );
+  const filteredFlowItems = useMemo(() => {
+    return flowItems.filter((item) => {
+      const flowOk = flowFilter === "ALL" || String(item?.flowLabel || "-").trim() === flowFilter;
+      const statusOk = statusFilter === "ALL" || String(item?.statusLabel || "-").trim() === statusFilter;
+      return flowOk && statusOk;
+    });
+  }, [flowItems, flowFilter, statusFilter]);
+  const marketOffers = useMemo(() => ({ length: counts.market }), [counts]);
+  const acceptedOffers = useMemo(() => ({ length: counts.pending }), [counts]);
+  const finalItems = useMemo(() => ({ length: counts.final }), [counts]);
 
   const selectedItem = useMemo(() => flowItems.find((item) => String(item.id) === String(selectedId || '')) || null, [flowItems, selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const visible = filteredFlowItems.some((item) => String(item.id) === String(selectedId));
+    if (!visible) setSelectedId("");
+  }, [filteredFlowItems, selectedId]);
 
   const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/commercial-flow"), []);
 
@@ -174,9 +215,15 @@ export default function CompanyCommercialFlowPanel() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
           <div>
             <div style={{ fontWeight: 700 }}>Ticari Akış Listesi</div>
-            <div className="muted" style={{ marginTop: 4 }}>Market, kabul ve operasyona inen kayıtların tek kanonik özeti</div>
+            <div className="muted" style={{ marginTop: 4 }}>Market, bekleyen ve operasyona inen kayıtların tek kanonik özeti</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <select value={flowFilter} onChange={(e) => setFlowFilter(e.target.value)} aria-label="Akış filtresi" title="Akış filtresi">
+              {flowOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm akışlar" : value}</option>)}
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Durum filtresi" title="Durum filtresi">
+              {statusOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm durumlar" : value}</option>)}
+            </select>
             <button type="button" onClick={() => navigate("/company/planning")}>Planlama Merkezi'ni aç</button>
             <button type="button" onClick={() => openShifts("market")}>Marketi aç</button>
             <button type="button" onClick={() => navigate("/company/service-evaluation")}>Hizmet Değerlendirme</button>
@@ -197,7 +244,7 @@ export default function CompanyCommercialFlowPanel() {
               </tr>
             </thead>
             <tbody>
-              {flowItems.length ? flowItems.map((item) => (
+              {filteredFlowItems.length ? filteredFlowItems.map((item) => (
                 <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: 'pointer', background: String(selectedId || '') === String(item.id) ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
                   <td>{item.counterparty}</td>
                   <td>{item.flowLabel}</td>
@@ -214,7 +261,7 @@ export default function CompanyCommercialFlowPanel() {
               )) : (
                 <tr>
                   <td colSpan={7} className="muted" style={{ padding: "8px 0" }}>
-                    Henüz firma kapsamına düşen ticari kayıt yok. Kural: pazarlık Market'te, operasyon hazırlığı Bekleyen Taleplerde, onaylı işler Liste'de.
+                    Bu filtrede firma kapsamına düşen ticari kayıt yok. Kural: pazarlık Market'te, operasyon hazırlığı Bekleyen Taleplerde, onaylı işler Liste'de.
                   </td>
                 </tr>
               )}
@@ -225,3 +272,6 @@ export default function CompanyCommercialFlowPanel() {
     </div>
   );
 }
+
+
+

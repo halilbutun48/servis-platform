@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import HubMapPicker from "../../components/geo/HubMapPicker";
 
 function sanitizeAddress(input) {
   let s = String(input ?? "").trim();
@@ -163,6 +164,19 @@ export default function HubPanel() {
           Kaydet
         </button>
       </div>
+
+      <HubMapPicker
+        lat={lat}
+        lng={lng}
+        busy={busy}
+        subjectLabel="Company Hub"
+        onPick={(nextLat, nextLng) => {
+          setLat(String(nextLat));
+          setLng(String(nextLng));
+          setMsg(`Haritada seçildi: ${Number(nextLat).toFixed(6)}, ${Number(nextLng).toFixed(6)}. Kaydet'e bas.`);
+          setErr("");
+        }}
+      />
 
       <div className="muted" style={{ marginTop: 10 }}>
         Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman OK).

@@ -6,6 +6,7 @@ import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import { rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import ListSelectionBanner from "../../components/ListSelectionBanner";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -426,7 +427,7 @@ export default function RoomOffersPanel() {
   }, [approveModal.open, approveModal.shiftId, approveModal.vehicleId, items, vehicles]);
 
   return (
-    <div className="wrap">
+    <div className="wrap wrap--fluid">
       <div className="card">
         <div className="title">Offers (Gelen Teklifler)</div>
         <div className="muted">Company tarafının gönderdiği market shift teklifleri.</div>
@@ -482,6 +483,15 @@ export default function RoomOffersPanel() {
             </button>
           </div>
         </div>
+        <ListSelectionBanner
+          selectedLabel={focusedOffer ? `Teklif #${focusedOffer.id}` : ""}
+          selectedSummary={focusedOffer ? [companyName(focusedOffer?.shift), focusedOffer?.status, focusedOffer?.shift?.status ? `Vardiya ${focusedOffer.shift.status}` : ""].filter(Boolean).join(" • ") : ""}
+          visibleCount={filtered.length}
+          totalCount={items.length}
+          filterValue={`${statusFilter} ${q}`.trim()}
+          onClearFilter={() => { setQ(""); setStatusFilter("OPEN,COUNTERED"); }}
+          helper="Copilot seçili teklif kartını kullanır."
+        />
       </div>
 
       {filtered.map((o) => {

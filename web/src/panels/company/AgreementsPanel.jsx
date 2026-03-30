@@ -22,6 +22,7 @@ import { fetchProviderScore } from "../../utils/providerScores";
 import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHub";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import ListSelectionBanner from "../../components/ListSelectionBanner";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -823,8 +824,16 @@ export default function AgreementsPanel() {
 
       {/* List */}
       <div className="tableWrap">
-        <div className="muted" style={{ marginBottom: 8 }}>Gösterilen: <b>{filteredRows.length}</b> / Toplam: <b>{rows.length}</b></div>
-        <table className="tbl" style={{ minWidth: 980 }}>
+        <ListSelectionBanner
+          selectedLabel={selectedAgreementRow?.a ? `Sözleşme #${selectedAgreementRow.a.id}` : ""}
+          selectedSummary={selectedAgreementRow?.a ? [String(selectedAgreementRow.a.status || '').toUpperCase(), selectedAgreementRow?.room?.name || `Room #${selectedAgreementRow.a.roomId || '-'}`, ymdTR(selectedAgreementRow.a.startDate), ymdTR(selectedAgreementRow.a.endDate)].filter(Boolean).join(" • ") : ""}
+          visibleCount={filteredRows.length}
+          totalCount={rows.length}
+          filterValue={filterQ}
+          onClearFilter={() => setFilterQ("")}
+          helper="Copilot seçili sözleşmeyi kullanır."
+        />
+        <table className="tbl" style={{ minWidth: 980, marginTop: 10 }}>
           <thead>
             <tr>
               <th>ID</th>

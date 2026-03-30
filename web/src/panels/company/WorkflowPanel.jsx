@@ -628,7 +628,7 @@ export default function WorkflowPanel() {
   }, [me?.companyId, me?.id, me?.companyKind]);
 
   return (
-    <div className="wrap">
+    <div className="wrap wrap--fluid">
       <div className="card">
         <div className="title">{school ? "Okul — Planlama Merkezi" : organization ? "Organization — Gezi / Planlama Merkezi" : "Company — Planlama Merkezi"}</div>
         <div className="muted">

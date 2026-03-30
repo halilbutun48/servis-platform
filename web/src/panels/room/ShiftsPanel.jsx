@@ -11,6 +11,7 @@ import { navigate } from "../../router";
 import { rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
+import ListSelectionBanner from "../../components/ListSelectionBanner";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -2260,6 +2261,16 @@ async function sendRoomOffer(shift) {
             Temizle
           </button>
         </div>
+
+        <ListSelectionBanner
+          selectedLabel={copilotShift ? `Vardiya #${copilotShift.id}` : ""}
+          selectedSummary={copilotShift ? [String(copilotShift?.status || "").toUpperCase() || "-", fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(" • ") : ""}
+          visibleCount={listFiltered.length}
+          totalCount={items.length}
+          filterValue={`${listQ} ${listStatus} ${onlyAgreement ? 'agreement' : ''}`.trim()}
+          onClearFilter={() => { setListQ(""); setListStatus("OPEN"); setOnlyAgreement(false); }}
+          helper="Copilot seçili vardiyayı kullanır."
+        />
 
         {listFiltered.length ? (
           <table className="tbl">

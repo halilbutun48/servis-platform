@@ -115,7 +115,7 @@ export default function AuthInvitesPanel() {
   }
 
   return (
-    <div className="wrap">
+    <div className="wrap wrap--fluid">
       <div className="card" style={{ marginBottom: 12 }}>
         <BrandMark subtitle="Giriş davetleri ve erişim akışı" />
       </div>

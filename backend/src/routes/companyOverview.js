@@ -2,6 +2,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
+import { inferGeoState } from "../services/geoState.js";
 import { ymdTR, addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd } from "../time/tr.js";
 
 function scopeOf(user) {
@@ -26,6 +27,12 @@ function statusOf(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+const FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
+
+function isFinalShiftStatus(value) {
+  return FINAL_SHIFT_STATUSES.has(statusOf(value));
+}
+
 function offerAmountLabel(offer) {
   const parts = [];
   const company = fmtTRY(offer?.amountCompany);
@@ -43,7 +50,7 @@ async function buildWorkflowSummary(company) {
   const todayStart = atTR(today, 0);
   const geoKind = String(company?.kind || "COMPANY").toUpperCase() === "SCHOOL" ? "STUDENT" : "PERSONEL";
 
-  const [agreementRows, todayShiftCount, marketShiftCount, geoNeedsReview, openOffersCount] = await Promise.all([
+  const [agreementRows, todayShiftCount, marketShiftCount, geoPersonels, openOffersCount] = await Promise.all([
     prisma.agreement.findMany({
       where: {
         companyId: company.id,
@@ -57,11 +64,27 @@ async function buildWorkflowSummary(company) {
     }),
     prisma.shift.count({ where: { companyId: company.id, startAt: { gte: todayStart, lt: tomorrowStart } } }),
     prisma.shift.count({ where: { companyId: company.id, roomId: null } }),
-    prisma.personel.count({ where: { companyId: company.id, kind: geoKind, geoStatus: "NEEDS_REVIEW" } }),
-    prisma.shiftOffer.count({ where: { shift: { companyId: company.id }, status: { in: ["OPEN", "COUNTERED"] } } }),
+    prisma.personel.findMany({
+      where: { companyId: company.id, kind: geoKind },
+      select: {
+        id: true,
+        homeAddress: true,
+        homeLat: true,
+        homeLng: true,
+        geoStatus: true,
+        geoManualOverride: true,
+        geoNote: true,
+      },
+      take: 5000,
+    }),
+    prisma.shiftOffer.count({ where: { shift: { companyId: company.id }, status: "OPEN" } }),
   ]);
 
   const todayAgreements = (agreementRows || []).filter((row) => (Number(row?.weekMask || 0) & todayBit) !== 0).length;
+  const geoNeedsReview = (Array.isArray(geoPersonels) ? geoPersonels : []).reduce((acc, item) => {
+    const state = inferGeoState(item);
+    return acc + (String(state?.geoStatus || "") === "NEEDS_REVIEW" ? 1 : 0);
+  }, 0);
 
   return {
     todayYmd: today,
@@ -76,60 +99,139 @@ async function buildWorkflowSummary(company) {
 }
 
 async function buildCommercialFlowSummary(company) {
-  const FINAL_STATUSES = ["APPROVED", "ACTIVE", "DONE", "REJECTED"];
-  const [marketOffersCount, counterOffersCount, acceptedOffersCount, listCount, activeOps, offerRows, finalRows] = await Promise.all([
-    prisma.shiftOffer.count({ where: { shift: { companyId: company.id }, status: { in: ["OPEN", "COUNTERED"] } } }),
-    prisma.shiftOffer.count({ where: { shift: { companyId: company.id }, status: "COUNTERED" } }),
-    prisma.shiftOffer.count({ where: { shift: { companyId: company.id }, status: "ACCEPTED" } }),
-    prisma.shift.count({ where: { companyId: company.id, status: { in: FINAL_STATUSES } } }),
-    prisma.shift.count({ where: { companyId: company.id, status: { in: ["APPROVED", "ACTIVE"] } } }),
-    prisma.shiftOffer.findMany({
-      where: { shift: { companyId: company.id }, status: { in: ["OPEN", "COUNTERED", "ACCEPTED"] } },
-      orderBy: { updatedAt: "desc" },
-      take: 8,
-      include: { room: { select: { id: true, name: true } }, shift: { select: { id: true, status: true, startAt: true, createdAt: true } } },
+  const [
+    marketShiftCount,
+    pendingShiftCount,
+    finalShiftCount,
+    activeShiftCount,
+    counterShiftCount,
+    shiftRows,
+  ] = await Promise.all([
+    prisma.shift.count({
+      where: {
+        companyId: company.id,
+        status: { notIn: Array.from(FINAL_SHIFT_STATUSES) },
+        roomId: null,
+      },
+    }),
+    prisma.shift.count({
+      where: {
+        companyId: company.id,
+        status: { notIn: Array.from(FINAL_SHIFT_STATUSES) },
+        NOT: { roomId: null },
+      },
+    }),
+    prisma.shift.count({
+      where: {
+        companyId: company.id,
+        status: { in: Array.from(FINAL_SHIFT_STATUSES) },
+      },
+    }),
+    prisma.shift.count({
+      where: {
+        companyId: company.id,
+        status: { in: ["APPROVED", "ACTIVE"] },
+      },
+    }),
+    prisma.shift.count({
+      where: {
+        companyId: company.id,
+        status: { notIn: Array.from(FINAL_SHIFT_STATUSES) },
+        roomId: null,
+        offers: { some: { status: "COUNTERED" } },
+      },
     }),
     prisma.shift.findMany({
-      where: { companyId: company.id, status: { in: FINAL_STATUSES } },
+      where: { companyId: company.id },
       orderBy: [{ startAt: "desc" }, { id: "desc" }],
-      take: 8,
-      include: { room: { select: { id: true, name: true } } },
+      take: 220,
+      include: {
+        room: { select: { id: true, name: true } },
+        offers: {
+          select: {
+            id: true,
+            roomId: true,
+            status: true,
+            updatedAt: true,
+            amountCompany: true,
+            amountRoom: true,
+            room: { select: { id: true, name: true } },
+          },
+          orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+        },
+      },
     }),
   ]);
 
-  const offerItems = (offerRows || []).map((o) => {
-    const status = statusOf(o?.status);
-    return {
-      id: `offer-${o.id}`,
-      shiftId: Number(o?.shiftId || o?.shift?.id || 0) || null,
-      counterparty: o?.room?.name || (Number(o?.roomId || 0) > 0 ? `Room #${o.roomId}` : "Room"),
-      flowLabel: status === "OPEN" ? "Teklif" : status === "COUNTERED" ? "Karşı teklif" : status === "ACCEPTED" ? "Kabul" : "Kapanan teklif",
-      amountLabel: offerAmountLabel(o),
-      statusLabel: status || "-",
-      updatedAt: o?.updatedAt || o?.createdAt || o?.shift?.startAt || null,
-      nextStep: status === "ACCEPTED" ? "Pazarlık bitti; Bekleyen Taleplerde operasyon hazırlığını takip et" : "Pazarlığı Market / Teklifler ekranında sürdür",
-      section: status === "ACCEPTED" ? "pending" : "market",
-    };
-  });
+  const items = (Array.isArray(shiftRows) ? shiftRows : [])
+    .map((shift) => {
+      const shiftId = Number(shift?.id || 0) || null;
+      const status = statusOf(shift?.status) || "-";
+      const isFinal = isFinalShiftStatus(status);
+      const roomId = Number(shift?.roomId || 0);
+      const offers = Array.isArray(shift?.offers) ? shift.offers : [];
+      const latestOffer = offers[0] || null;
+      const hasCounter = offers.some((offer) => statusOf(offer?.status) === "COUNTERED");
+      const amountLabel = latestOffer ? offerAmountLabel(latestOffer) : "-";
+      const updatedAt = latestOffer?.updatedAt || shift?.startAt || shift?.createdAt || null;
+      const counterparty = shift?.room?.name || (roomId > 0 ? `Room #${roomId}` : (latestOffer?.room?.name || "Market"));
 
-  const shiftItems = (finalRows || []).map((s) => ({
-    id: `shift-${s.id}`,
-    shiftId: Number(s.id) || null,
-    counterparty: s?.room?.name || (Number(s?.roomId || 0) > 0 ? `Room #${s.roomId}` : "Room"),
-    flowLabel: "Operasyon",
-    amountLabel: "-",
-    statusLabel: statusOf(s?.status) || "-",
-    updatedAt: s?.startAt || s?.createdAt || null,
-    nextStep: "Vardiya / hizmet tarafını aç",
-    section: "list",
-  }));
+      if (isFinal) {
+        return {
+          id: `shift-${shiftId}`,
+          shiftId,
+          counterparty,
+          flowLabel: "Operasyon",
+          amountLabel,
+          statusLabel: status,
+          updatedAt,
+          nextStep: "Vardiya / hizmet tarafını aç",
+          section: "list",
+        };
+      }
 
-  const items = [...offerItems, ...shiftItems]
+      if (roomId > 0) {
+        return {
+          id: `shift-${shiftId}`,
+          shiftId,
+          counterparty,
+          flowLabel: "Bekleyen",
+          amountLabel,
+          statusLabel: status,
+          updatedAt,
+          nextStep: "Pazarlık bitti; Bekleyen Taleplerde operasyon hazırlığını takip et",
+          section: "pending",
+        };
+      }
+
+      return {
+        id: `shift-${shiftId}`,
+        shiftId,
+        counterparty,
+        flowLabel: hasCounter ? "Karşı Teklif" : "Market Teklifi",
+        amountLabel,
+        statusLabel: hasCounter ? "COUNTERED" : status,
+        updatedAt,
+        nextStep: "Pazarlığı Market / Teklifler ekranında sürdür",
+        section: "market",
+      };
+    })
     .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-    .slice(0, 8);
+    .slice(0, 80);
 
   return {
-    cards: { marketOffers: marketOffersCount, counterOffers: counterOffersCount, acceptedOffers: acceptedOffersCount, listCount, activeOps },
+    cards: {
+      marketShiftCount,
+      counterShiftCount,
+      pendingShiftCount,
+      finalShiftCount,
+      activeShiftCount,
+      marketOffers: marketShiftCount,
+      counterOffers: counterShiftCount,
+      acceptedOffers: pendingShiftCount,
+      listCount: finalShiftCount,
+      activeOps: activeShiftCount,
+    },
     items,
   };
 }
