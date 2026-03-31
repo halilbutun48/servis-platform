@@ -195,7 +195,8 @@ export default function PassengerLivePanel() {
     };
   }, []); // eslint-disable-line
 
-  const vehicles = useMemo(() => (data?.vehicle ? [data.vehicle] : []), [data]);
+  const isLive = String(data?.phase || "") === "LIVE";
+  const vehicles = useMemo(() => (isLive && data?.vehicle ? [data.vehicle] : []), [data, isLive]);
   const ownStop = useMemo(() => data?.stop || null, [data]);
   const stopPoint = useMemo(() => stopCoord(ownStop), [ownStop]);
   const shiftStops = useMemo(() => extractShiftStops(data), [data]);
@@ -285,7 +286,7 @@ export default function PassengerLivePanel() {
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
               <div>{data?.personel?.fullName ? <b>{data.personel.fullName}</b> : "Kişi"}</div>
               <div className="muted">Kuruluş: <b>{data?.company?.name || "-"}</b></div>
-              <div className="muted">Araç: <b>{data?.vehicle?.plate || "Henüz atanmadı"}</b></div>
+              <div className="muted">Araç: <b>{isLive ? (data?.vehicle?.plate || "Henüz atanmadı") : "Vardiya saatinde görünür"}</b></div>
               <div className="muted">Durum: <b>{data.phase === "LIVE" ? "Canlı" : data.phase === "SCHEDULED" ? "Planlandı" : "Tamamlandı"}</b></div>
             </div>
             <div className="muted" style={{ marginTop: 6 }}>Vardiya: <b>{fmtTR(data?.shift?.startAt)}</b> → <b>{fmtTR(data?.shift?.endAt)}</b></div>
@@ -299,11 +300,15 @@ export default function PassengerLivePanel() {
                 En yakın durak: <b>{nearestStop?.name || "-"}</b>
                 {nearestStop && ownStop && sameStop(nearestStop, ownStop) ? <span className="muted"> • Kendi durağınız ile aynı</span> : null}
               </div>
-              <div className="muted">
-                Araçtan durağa ETA: <b>{data?.etaMin != null ? `${data.etaMin} dk` : "-"}</b>
-                {" • "}
-                Araçtan durağa mesafe: <b>{data?.etaKm != null ? `${data.etaKm} km` : "-"}</b>
-              </div>
+              {isLive ? (
+                <div className="muted">
+                  Araçtan durağa ETA: <b>{data?.etaMin != null ? `${data.etaMin} dk` : "-"}</b>
+                  {" • "}
+                  Araçtan durağa mesafe: <b>{data?.etaKm != null ? `${data.etaKm} km` : "-"}</b>
+                </div>
+              ) : (
+                <div className="muted">Araç bilgisi yalnız vardiya saatinde görünür.</div>
+              )}
               <div className="muted">
                 Sizden kendi durağınıza: <b>{myDistanceM != null ? `${(Number(myDistanceM) / 1000).toFixed(2)} km` : "Konum alınmadı"}</b>
                 {myWalkMin != null ? <> • Yaklaşık yürüyüş: <b>{myWalkMin} dk</b></> : null}
@@ -325,7 +330,7 @@ export default function PassengerLivePanel() {
                 {nearestNavUrl ? (
                   <button type="button" onClick={() => window.open(nearestNavUrl, "_blank", "noopener,noreferrer")}>En Yakın Durağa Navigasyon Aç</button>
                 ) : null}
-                {vehicleNavUrl ? (
+                {isLive && vehicleNavUrl ? (
                   <button type="button" onClick={() => window.open(vehicleNavUrl, "_blank", "noopener,noreferrer")}>Aracın rota yönünü aç</button>
                 ) : null}
               </div>
@@ -391,7 +396,7 @@ export default function PassengerLivePanel() {
           </div>
 
           <div className="card" style={{ marginTop: 12 }}>
-            <div className="muted" style={{ marginBottom: 8 }}>Araç yaklaşımı ve tüm duraklar</div>
+            <div className="muted" style={{ marginBottom: 8 }}>{isLive ? "Araç yaklaşımı ve tüm duraklar" : "Duraklar (araç yalnız vardiya saatinde görünür)"}</div>
             <MapView vehicles={vehicles} stops={mapStops} />
           </div>
         </>
