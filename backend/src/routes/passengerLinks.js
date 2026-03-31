@@ -264,26 +264,42 @@ export function publicPassengerLiveRouter() {
       } catch {}
 
       return res.json({
-        ok: true,
-        phase,
-        shift: { id: shift.id, status: shift.status, startAt: shift.startAt, endAt: shift.endAt },
-        company: shift.company,
-        room: shift.room,
-        personel: { id: personel.id, fullName: personel.fullName },
-        vehicle: shift.vehicle ? {
-          id: shift.vehicle.id,
-          plate: shift.vehicle.plate,
-          gpsLast: shift.vehicle.gpsLast,
-          gpsState: shift.vehicle.gpsState,
-        } : null,
-        stop: progress.myStop,
-        nextStop: progress.nextStop,
-        remainingStopsTotal: progress.remainingStopsTotal,
-        remainingStopsToMine: progress.remainingStopsToMine,
-        myStopReached: progress.myStopReached,
-        etaMin: eta?.etaMin ?? null,
-        etaKm: eta?.km ?? null,
-      });
+  ok: true,
+  phase,
+  shift: {
+    id: shift.id,
+    status: shift.status,
+    startAt: shift.startAt,
+    endAt: shift.endAt,
+  },
+  company: shift.company,
+  room: shift.room,
+  personel: { id: personel.id, fullName: personel.fullName },
+  vehicle: shift.vehicle
+    ? {
+        id: shift.vehicle.id,
+        plate: shift.vehicle.plate,
+        gpsLast: shift.vehicle.gpsLast,
+        gpsState: shift.vehicle.gpsState,
+      }
+    : null,
+  stop: progress.myStop,
+  stops: (shift.stops || []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    lat: s.lat,
+    lng: s.lng,
+    order: s.order,
+    type: s.type,
+    state: s.state,
+  })),
+  nextStop: progress.nextStop,
+  remainingStopsTotal: progress.remainingStopsTotal,
+  remainingStopsToMine: progress.remainingStopsToMine,
+  myStopReached: progress.myStopReached,
+  etaMin: eta?.etaMin ?? null,
+  etaKm: eta?.km ?? null,
+});
     } catch (e) {
       return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
     }

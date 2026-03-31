@@ -13,14 +13,115 @@ function fmtTR(iso) {
   if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
-  } catch { return String(iso); }
+  } catch {
+    return String(iso);
+  }
 }
 
-function buildNavUrl(stop, vehicle) {
-  if (!stop || typeof stop.lat !== "number" || typeof stop.lng !== "number") return "";
-  const dest = `${stop.lat},${stop.lng}`;
-  if (vehicle?.gpsLast?.lat != null && vehicle?.gpsLast?.lng != null) {
-    return `https://www.google.com/maps/dir/?api=1&origin=${vehicle.gpsLast.lat},${vehicle.gpsLast.lng}&destination=${dest}&travelmode=driving`;
+function toNum(v) {
+  const n = typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function stopCoord(stop) {
+  const lat = toNum(stop?.lat ?? stop?.location?.lat);
+  const lng = toNum(stop?.lng ?? stop?.location?.lng);
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
+
+function sameStop(a, b) {
+  const aId = Number(a?.id || 0);
+  const bId = Number(b?.id || 0);
+  if (aId > 0 && bId > 0) return aId === bId;
+
+  const ac = stopCoord(a);
+  const bc = stopCoord(b);
+  if (!ac || !bc) return false;
+
+  const dist = haversineMeters(ac.lat, ac.lng, bc.lat, bc.lng);
+  if (dist > 3) return false;
+
+  const aName = String(a?.name || "").trim().toLowerCase();
+  const bName = String(b?.name || "").trim().toLowerCase();
+  if (aName && bName) return aName === bName;
+
+  return true;
+}
+
+function stopUniqueKey(stop, idx = 0) {
+  const id = Number(stop?.id || 0);
+  if (id > 0) return `id:${id}`;
+  const coord = stopCoord(stop);
+  const order = Number(stop?.order || 0);
+  const name = String(stop?.name || "").trim().toLowerCase();
+  if (coord) return `coord:${coord.lat.toFixed(6)}:${coord.lng.toFixed(6)}:${order}:${name}`;
+  return `fallback:${order}:${name}:${idx}`;
+}
+
+function dedupeStops(list) {
+  const out = [];
+  const seen = new Set();
+  for (const [idx, item] of (Array.isArray(list) ? list : []).entries()) {
+    if (!item) continue;
+    const key = stopUniqueKey(item, idx);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+  return out;
+}
+
+function extractShiftStops(data) {
+  const raw = [
+    ...(Array.isArray(data?.shift?.stops) ? data.shift.stops : []),
+    ...(Array.isArray(data?.shift?.route?.stops) ? data.shift.route.stops : []),
+    ...(Array.isArray(data?.route?.stops) ? data.route.stops : []),
+    ...(Array.isArray(data?.stops) ? data.stops : []),
+  ];
+  const deduped = dedupeStops(raw)
+    .filter(Boolean)
+    .sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0));
+  if (data?.stop && !deduped.some((x) => sameStop(x, data.stop))) deduped.push(data.stop);
+  return deduped;
+}
+
+function stopLabel(stop, { ownStop } = {}) {
+  const base = String(stop?.name || `Durak #${stop?.id || "-"}`).trim();
+  const own = ownStop && sameStop(stop, ownStop);
+  if (own) return `Kendi durağınız • ${base}`;
+  return base;
+}
+
+function buildUserNavUrl(stop, myPos) {
+  const sc = stopCoord(stop);
+  if (!sc) return "";
+  const dest = `${sc.lat},${sc.lng}`;
+  const hasOrigin = Number.isFinite(Number(myPos?.lat)) && Number.isFinite(Number(myPos?.lng));
+  const originPart = hasOrigin ? `&origin=${Number(myPos.lat)},${Number(myPos.lng)}` : "";
+  return `https://www.google.com/maps/dir/?api=1${originPart}&destination=${dest}&travelmode=walking`;
+}
+
+function buildVehicleNavUrl(stop, vehicle) {
+  const sc = stopCoord(stop);
+  const lat = toNum(vehicle?.gpsLast?.lat);
+  const lng = toNum(vehicle?.gpsLast?.lng);
+  if (!sc) return "";
+  const dest = `${sc.lat},${sc.lng}`;
+  if (lat != null && lng != null) {
+    return `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${dest}&travelmode=driving`;
   }
   return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
 }
@@ -30,14 +131,22 @@ export default function PassengerLivePanel() {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [myPos, setMyPos] = useState(null);
+  const [geoBusy, setGeoBusy] = useState(false);
+  const [geoErr, setGeoErr] = useState("");
 
   async function load() {
     const tk = readTokenFromHash();
     setToken(tk);
-    if (!tk) { setErr("Link token bulunamadı."); setData(null); return; }
+    if (!tk) {
+      setErr("Link token bulunamadı.");
+      setData(null);
+      return;
+    }
     setBusy(true);
     try {
-      const res = await fetch(`/api/public/passenger-live?token=${encodeURIComponent(tk)}`, { cache: "no-store" });
+      const cleanPath = String(window.location.hash || "").includes("/public/personel-live") ? "personel-live" : "passenger-live";
+      const res = await fetch(`/api/public/${cleanPath}?token=${encodeURIComponent(tk)}`, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || "Link okunamadı");
       setErr("");
@@ -45,20 +154,117 @@ export default function PassengerLivePanel() {
     } catch (e) {
       setErr(String(e?.message || e));
       setData(null);
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function requestMyLocation() {
+    setGeoErr("");
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoErr("Tarayıcı konum desteği vermiyor.");
+      return;
+    }
+    setGeoBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoBusy(false);
+        setMyPos({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        });
+      },
+      (e) => {
+        setGeoBusy(false);
+        setGeoErr(String(e?.message || e));
+      },
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
+    );
   }
 
   useEffect(() => {
     load();
+    requestMyLocation();
     const onHash = () => load();
     window.addEventListener("hashchange", onHash);
     const t = window.setInterval(load, 15000);
-    return () => { window.removeEventListener("hashchange", onHash); window.clearInterval(t); };
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.clearInterval(t);
+    };
   }, []); // eslint-disable-line
 
   const vehicles = useMemo(() => (data?.vehicle ? [data.vehicle] : []), [data]);
-  const stops = useMemo(() => (data?.stop ? [data.stop] : []), [data]);
-  const navUrl = buildNavUrl(data?.stop, data?.vehicle);
+  const ownStop = useMemo(() => data?.stop || null, [data]);
+  const stopPoint = useMemo(() => stopCoord(ownStop), [ownStop]);
+  const shiftStops = useMemo(() => extractShiftStops(data), [data]);
+
+  const nearestStops = useMemo(() => {
+    if (!myPos) return [];
+    return shiftStops
+      .map((stop) => {
+        const coord = stopCoord(stop);
+        if (!coord) return null;
+        return {
+          ...stop,
+          __distanceM: haversineMeters(Number(myPos.lat), Number(myPos.lng), coord.lat, coord.lng),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => Number(a.__distanceM || 0) - Number(b.__distanceM || 0));
+  }, [shiftStops, myPos]);
+
+  const nearestStop = useMemo(() => nearestStops[0] || null, [nearestStops]);
+
+  const mapStops = useMemo(() => {
+    const arr = shiftStops
+      .map((stop, idx) => {
+        const coord = stopCoord(stop);
+        if (!coord) return null;
+        return {
+          ...stop,
+          id: stop?.id ?? `shift-stop-${idx}`,
+          name: stopLabel(stop, { ownStop }),
+          lat: coord.lat,
+          lng: coord.lng,
+          status: sameStop(stop, ownStop) ? "DONE" : "PENDING",
+        };
+      })
+      .filter(Boolean);
+    if (myPos && Number.isFinite(Number(myPos.lat)) && Number.isFinite(Number(myPos.lng))) {
+      arr.push({
+        id: "me",
+        name: "Siz",
+        lat: Number(myPos.lat),
+        lng: Number(myPos.lng),
+        status: "DONE",
+      });
+    }
+    return arr;
+  }, [shiftStops, ownStop, myPos]);
+
+  const userNavUrl = useMemo(() => buildUserNavUrl(ownStop, myPos), [ownStop, myPos]);
+  const nearestNavUrl = useMemo(() => buildUserNavUrl(nearestStop, myPos), [nearestStop, myPos]);
+  const vehicleNavUrl = useMemo(() => buildVehicleNavUrl(ownStop, data?.vehicle), [ownStop, data]);
+  const myDistanceM = useMemo(() => {
+    if (!stopPoint || !myPos) return null;
+    return haversineMeters(Number(myPos.lat), Number(myPos.lng), stopPoint.lat, stopPoint.lng);
+  }, [stopPoint, myPos]);
+  const myWalkMin = useMemo(() => {
+    if (!Number.isFinite(Number(myDistanceM))) return null;
+    return Math.max(1, Math.round(Number(myDistanceM) / 80));
+  }, [myDistanceM]);
+
+  const nearestDistanceM = useMemo(() => {
+    if (!nearestStop || !myPos) return null;
+    return Number(nearestStop.__distanceM || 0);
+  }, [nearestStop, myPos]);
+
+  const nearestWalkMin = useMemo(() => {
+    if (!Number.isFinite(Number(nearestDistanceM))) return null;
+    return Math.max(1, Math.round(Number(nearestDistanceM) / 80));
+  }, [nearestDistanceM]);
 
   return (
     <div className="wrap">
@@ -86,24 +292,107 @@ export default function PassengerLivePanel() {
           </div>
 
           <div className="card" style={{ marginTop: 12 }}>
-            <div className="title">Sizin Durağınız</div>
+            <div className="title">Sizin durağınız ve navigasyon</div>
             <div style={{ display: "grid", gap: 8 }}>
-              <div>Durak: <b>{data?.stop?.name || "-"}</b></div>
-              <div className="muted">ETA: <b>{data?.etaMin != null ? `${data.etaMin} dk` : "-"}</b> • Mesafe: <b>{data?.etaKm != null ? `${data.etaKm} km` : "-"}</b></div>
+              <div>Kendi durağınız: <b>{ownStop?.name || "-"}</b></div>
+              <div>
+                En yakın durak: <b>{nearestStop?.name || "-"}</b>
+                {nearestStop && ownStop && sameStop(nearestStop, ownStop) ? <span className="muted"> • Kendi durağınız ile aynı</span> : null}
+              </div>
+              <div className="muted">
+                Araçtan durağa ETA: <b>{data?.etaMin != null ? `${data.etaMin} dk` : "-"}</b>
+                {" • "}
+                Araçtan durağa mesafe: <b>{data?.etaKm != null ? `${data.etaKm} km` : "-"}</b>
+              </div>
+              <div className="muted">
+                Sizden kendi durağınıza: <b>{myDistanceM != null ? `${(Number(myDistanceM) / 1000).toFixed(2)} km` : "Konum alınmadı"}</b>
+                {myWalkMin != null ? <> • Yaklaşık yürüyüş: <b>{myWalkMin} dk</b></> : null}
+                {myPos && Number.isFinite(Number(myPos.accuracy)) ? <> • doğruluk ~<b>{Math.round(Number(myPos.accuracy))} m</b></> : null}
+              </div>
+              <div className="muted">
+                Sizden en yakın durağa: <b>{nearestDistanceM != null ? `${(Number(nearestDistanceM) / 1000).toFixed(2)} km` : "Konum alınmadı"}</b>
+                {nearestWalkMin != null ? <> • Yaklaşık yürüyüş: <b>{nearestWalkMin} dk</b></> : null}
+              </div>
               <div className="muted">Sonraki durak: <b>{data?.nextStop?.name || "-"}</b> • Size kalan durak: <b>{data?.remainingStopsToMine ?? "-"}</b></div>
               <div className="muted">Toplam kalan: <b>{data?.remainingStopsTotal ?? "-"}</b>{data?.myStopReached ? " • Durağınıza ulaşıldı" : ""}</div>
+              {geoErr ? <div className="muted" style={{ color: "#fca5a5" }}>Konum alınamadı: {geoErr}</div> : null}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button type="button" onClick={load} disabled={busy}>{busy ? "..." : "Yenile"}</button>
-                {navUrl ? (
-                  <button type="button" onClick={() => window.open(navUrl, "_blank", "noopener,noreferrer")}>Durağıma Navigasyon Aç</button>
+                <button type="button" onClick={requestMyLocation} disabled={geoBusy}>{geoBusy ? "..." : (myPos ? "Konumumu Yenile" : "Konumumu Al")}</button>
+                {userNavUrl ? (
+                  <button type="button" onClick={() => window.open(userNavUrl, "_blank", "noopener,noreferrer")}>Durağıma Navigasyon Aç</button>
+                ) : null}
+                {nearestNavUrl ? (
+                  <button type="button" onClick={() => window.open(nearestNavUrl, "_blank", "noopener,noreferrer")}>En Yakın Durağa Navigasyon Aç</button>
+                ) : null}
+                {vehicleNavUrl ? (
+                  <button type="button" onClick={() => window.open(vehicleNavUrl, "_blank", "noopener,noreferrer")}>Aracın rota yönünü aç</button>
                 ) : null}
               </div>
+              {nearestStops.length ? (
+                <div className="muted">
+                  En yakın 3 durak:{" "}
+                  {nearestStops.slice(0, 3).map((stop, idx) => (
+                    <span key={stop?.id ?? `${stop?.name || "stop"}-${idx}`}>
+                      {idx > 0 ? " • " : ""}
+                      <b>{stop?.name || `Durak #${stop?.id || "-"}`}</b>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
 
           <div className="card" style={{ marginTop: 12 }}>
-            <div className="muted" style={{ marginBottom: 8 }}>Araç yaklaşımı</div>
-            <MapView vehicles={vehicles} stops={stops} />
+            <div className="title">Shift durakları</div>
+            <div className="muted" style={{ marginBottom: 8 }}>
+              Haritada tüm shift durakları mavi, kendi durağınız yeşil görünür. En yakın durak ayrıca üstte ve listede belirtilir.
+            </div>
+            {shiftStops.length ? (
+              <div style={{ display: "grid", gap: 6 }}>
+                {shiftStops.map((stop, idx) => {
+                  const isOwn = ownStop && sameStop(stop, ownStop);
+                  const isNearest = nearestStop && sameStop(stop, nearestStop);
+                  const quickUrl = buildUserNavUrl(stop, myPos);
+                  return (
+                    <div
+                      key={stop?.id ?? `shift-stop-row-${idx}`}
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "8px 10px",
+                        borderRadius: 10,
+                        background: "rgba(255,255,255,0.03)",
+                      }}
+                    >
+                      <div>
+                        <b>{stop?.name || `Durak #${stop?.id || idx + 1}`}</b>
+                        <span className="muted">
+                          {isOwn ? " • Kendi durağınız" : ""}
+                          {isNearest && !isOwn ? " • En yakın durak" : ""}
+                          {!stopCoord(stop) ? " • Koordinat yok" : ""}
+                        </span>
+                      </div>
+                      {quickUrl ? (
+                        <button type="button" onClick={() => window.open(quickUrl, "_blank", "noopener,noreferrer")}>
+                          Git
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="muted">Shift durağı bulunamadı.</div>
+            )}
+          </div>
+
+          <div className="card" style={{ marginTop: 12 }}>
+            <div className="muted" style={{ marginBottom: 8 }}>Araç yaklaşımı ve tüm duraklar</div>
+            <MapView vehicles={vehicles} stops={mapStops} />
           </div>
         </>
       ) : null}
