@@ -66,6 +66,10 @@ function computeStopProgress(stops, childStopId) {
           id: childStop.id,
           name: childStop.name,
           order: childStop.order,
+          lat: childStop.lat,
+          lng: childStop.lng,
+          type: childStop.type,
+          state: childStop.state,
         }
       : null,
     remainingStopsToChild,
@@ -195,7 +199,7 @@ export function parentRouter() {
         shiftIds.length
           ? prisma.stop.findMany({
               where: { shiftId: { in: shiftIds } },
-              select: { id: true, shiftId: true, name: true, order: true, state: true, type: true },
+              select: { id: true, shiftId: true, name: true, order: true, state: true, type: true, lat: true, lng: true },
               orderBy: [{ shiftId: "asc" }, { order: "asc" }],
               take: 20000,
             })
@@ -244,6 +248,15 @@ export function parentRouter() {
           childStop: progress.childStop,
           remainingStopsToChild: progress.remainingStopsToChild,
           childStopReached: progress.childStopReached,
+          stops: (shiftStops || []).map((st) => ({
+            id: st.id,
+            name: st.name,
+            order: st.order,
+            state: st.state,
+            type: st.type,
+            lat: st.lat,
+            lng: st.lng,
+          })),
         };
       });
 

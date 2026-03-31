@@ -1,30 +1,57 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
-import StopTimeline, { pickNextStopByRemainingKmOrEta } from "../../components/StopTimeline";
 
 function fmtTR(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  try {
+    return new Date(iso).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" });
+  } catch {
+    return String(iso);
+  }
 }
 
-function etaQualityTone(eta) {
-  const q = String(eta?.routeQuality || "").toUpperCase();
-  if (q === "OFFLINE_GPS" || q === "STALE_GPS" || q === "SKIP_PRESENT" || q === "DONE_WITH_SKIPS") return "WARN";
-  if (q === "DONE") return "OK";
-  return "LIVE";
+function toNum(v) {
+  const n = typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
+  return Number.isFinite(n) ? n : null;
 }
 
-function etaQualityText(eta) {
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function stopCoord(stop) {
+  const lat = toNum(stop?.lat ?? stop?.location?.lat);
+  const lng = toNum(stop?.lng ?? stop?.location?.lng);
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
+
+function normalizeStop(s, i) {
+  const order = s?.order ?? i + 1;
+  const id = s?.id ?? `${order}`;
+  const name = s?.name ?? s?.title ?? `Durak ${order}`;
+  const statusRaw = s?.status || s?.state || (s?.reachedAt || s?.reached ? "REACHED" : "");
+  const status = String(statusRaw || "PENDING").toUpperCase();
+  return { ...s, id, order, name, status };
+}
+
+function isReachedStop(s) {
+  const st = String(s?.status || s?.state || "").toUpperCase();
+  return st === "REACHED" || st === "DONE" || st === "SKIPPED" || Boolean(s?.reachedAt) || Boolean(s?.reached);
+}
+
+function routeQualityText(eta) {
   const q = String(eta?.routeQuality || "").toUpperCase();
   if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
   if (q === "STALE_GPS") return "GPS gecikmeli";
@@ -35,57 +62,62 @@ function etaQualityText(eta) {
   return String(eta?.progressLabel || "Rota ilerliyor");
 }
 
-function nextActionText(eta) {
-  const act = String(eta?.nextAction || "").toUpperCase();
-  if (act === "CONTACT_ROOM") return "Atlanan durak için oda ile görüşün.";
-  if (act === "WAIT_GPS_UPDATE") return "GPS güncellemesi bekleniyor.";
-  if (act === "NO_ACTIVE_ROUTE") return "Aktif rota görünmüyor.";
-  return "";
+function routeQualityTone(eta) {
+  const q = String(eta?.routeQuality || "").toUpperCase();
+  if (["OFFLINE_GPS", "STALE_GPS", "SKIP_PRESENT", "DONE_WITH_SKIPS"].includes(q)) return "WARN";
+  if (q === "DONE") return "OK";
+  return "LIVE";
+}
+
+function openStopNavigation(stop, myPos) {
+  const sc = stopCoord(stop);
+  if (!sc) return;
+  const dest = `${sc.lat},${sc.lng}`;
+  const hasOrigin = Number.isFinite(Number(myPos?.lat)) && Number.isFinite(Number(myPos?.lng));
+  const originPart = hasOrigin ? `&origin=${Number(myPos.lat)},${Number(myPos.lng)}` : "";
+  const url = `https://www.google.com/maps/dir/?api=1${originPart}&destination=${dest}&travelmode=walking`;
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 export default function MyRidePanel() {
   const { token } = useSession();
 
-  const [avail, setAvail] = useState([]);
-  const [selShiftId, setSelShiftId] = useState("");
   const [myShift, setMyShift] = useState(null);
   const [eta, setEta] = useState(null);
-
-  const [showEta, setShowEta] = useState(false);
-  const [activeStopId, setActiveStopId] = useState(null);
-  const rowRefs = useRef({});
   const [notifs, setNotifs] = useState([]);
-  const [loc, setLoc] = useState({ lat: "", lng: "" });
-
+  const [myPos, setMyPos] = useState(null);
+  const [selectedStopId, setSelectedStopId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const [okMsg, setOkMsg] = useState("");
-
-  async function loadAvailable() {
-    if (!token) return;
-    try {
-      const r = await api("/api/personel/shifts?take=50", { token });
-      const items = Array.isArray(r?.items) ? r.items : [];
-      setAvail(items);
-
-      // default selection
-      if (!selShiftId) {
-        const first = items[0]?.id;
-        if (first) setSelShiftId(String(first));
-      }
-    } catch {
-      setAvail([]);
-    }
-  }
 
   async function loadMyShift() {
-    if (!token) return;
+    if (!token) return null;
     try {
       const r = await api("/api/shifts/my", { token });
       const items = Array.isArray(r?.items) ? r.items : Array.isArray(r) ? r : [];
-      setMyShift(items[0] || null);
-    } catch {
+      const s = items[0] || null;
+      setMyShift(s);
+      return s;
+    } catch (e) {
       setMyShift(null);
+      setErr(String(e?.message || e));
+      return null;
+    }
+  }
+
+  async function loadEta(shift) {
+    const vid = shift?.vehicleId || shift?.vehicle?.id || null;
+    const sid = shift?.id || null;
+    if (!token || !vid) {
+      setEta(null);
+      return;
+    }
+    try {
+      const qs = sid ? `?shiftId=${encodeURIComponent(String(sid))}` : "";
+      const r = await api(`/api/eta/vehicle/${encodeURIComponent(String(vid))}${qs}`, { token });
+      setEta(r);
+    } catch {
+      setEta(null);
     }
   }
 
@@ -99,19 +131,10 @@ export default function MyRidePanel() {
     }
   }
 
-  async function loadEtaForVehicle(vehicleId) {
-    if (!token || !vehicleId) return;
-    try {
-      const r = await api(`/api/eta/vehicle/${vehicleId}`, { token });
-      setEta(r);
-    } catch {
-      setEta(null);
-    }
-  }
-
   async function loadAll() {
     setErr("");
-    await Promise.all([loadAvailable(), loadMyShift(), loadNotifs()]);
+    const s = await loadMyShift();
+    await Promise.all([loadEta(s), loadNotifs()]);
   }
 
   useEffect(() => {
@@ -119,159 +142,123 @@ export default function MyRidePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useAutoReload("shifts", loadMyShift);
-  useAutoReload("requests", loadMyShift);
+  useAutoReload("shifts", loadAll);
+  useAutoReload("requests", loadAll);
   useAutoReload("notifications", loadNotifs);
+  useAutoReload("eta", loadAll);
 
-  const vehicle = myShift?.vehicle || null;
-
-  const selShift = useMemo(() => {
-    const sid = Number(selShiftId);
-    if (!sid) return null;
-    return (avail || []).find((s) => Number(s?.id) === sid) || null;
-  }, [avail, selShiftId]);
-
-  const etaStops = useMemo(() => {
-    const arr = Array.isArray(eta?.stops)
-      ? eta.stops
-      : Array.isArray(eta?.items?.[0]?.stops)
-      ? eta.items[0].stops
-      : [];
-    return arr.map((s, i) => ({
-      ...s,
-      order: s?.order ?? (i + 1),
-      name: s?.name ?? s?.title ?? `Durak ${i + 1}`,
-    }));
-  }, [eta]);
-
-  const nextStop = useMemo(() => eta?.nextStop || pickNextStopByRemainingKmOrEta(etaStops), [eta, etaStops]);
-  const nextStopId = nextStop?.id ?? null;
-  const remainingStopsCount = Number(eta?.remainingStopsCount || etaStops.length || 0);
-  const remainingRouteEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
-  const remainingRouteKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
-  const skippedStopsCount = Number(eta?.skippedStopsCount || 0);
-  const skippedStops = Array.isArray(eta?.skippedStops) ? eta.skippedStops : [];
-  const routeQualityText = etaQualityText(eta);
-  const routeQualityTone = etaQualityTone(eta);
-  const nextActionTextValue = nextActionText(eta);
-
-  function onSelectStop(s) {
-    const id = s?.id ?? null;
-    setActiveStopId(id);
-    if (id != null) {
-      setTimeout(() => {
-        const el = rowRefs.current[String(id)];
-        if (el?.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 0);
-    }
-  }
-
-
-  function getLocation() {
-    setOkMsg("");
+  function getMyLocation() {
     setErr("");
     if (!navigator.geolocation) {
-      setErr("Tarayıcı konum (geolocation) desteklemiyor.");
+      setErr("Tarayıcı konum desteği vermiyor.");
       return;
     }
     setBusy(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setBusy(false);
-        setLoc({ lat: String(pos.coords.latitude), lng: String(pos.coords.longitude) });
+        setMyPos({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        });
       },
       (e) => {
         setBusy(false);
         setErr(String(e?.message || e));
       },
-      { enableHighAccuracy: true, timeout: 12000 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
   }
 
-  async function createRequest() {
-    setOkMsg("");
-    setErr("");
-    const shiftId = Number(selShiftId);
-    const lat = Number(loc.lat);
-    const lng = Number(loc.lng);
-    if (!shiftId) return setErr("Vardiya seçmelisin.");
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return setErr("Konum (lat/lng) gerekli.");
+  const vehicle = myShift?.vehicle || null;
 
-    setBusy(true);
-    try {
-      await api("/api/requests", { token, method: "POST", body: { shiftId, lat, lng } });
-      setOkMsg("✅ Talebin alındı. Araç/rota bilgisi geldiğinde burada göreceksin.");
-      await loadMyShift();
+  const stops = useMemo(() => {
+    const baseStops = Array.isArray(myShift?.stops) ? myShift.stops : [];
+    const etaStops = Array.isArray(eta?.stops) ? eta.stops : [];
+    const etaById = new Map(etaStops.map((s) => [String(s?.id ?? ""), s]));
+    const etaByOrder = new Map(etaStops.map((s) => [String(s?.order ?? ""), s]));
 
-      // ETA
-      const vId = Number(myShift?.vehicleId || 0);
-      if (vId) await loadEtaForVehicle(vId);
-    } catch (e) {
-      setErr(String(e?.message || e));
-    } finally {
-      setBusy(false);
-    }
-  }
+    const merged = (baseStops.length ? baseStops : etaStops).map((s, i) => {
+      const row = normalizeStop(s, i);
+      const e = etaById.get(String(row.id)) || etaByOrder.get(String(row.order));
+      if (e) {
+        const remainingKm = toNum(e?.remainingKm);
+        const etaMin = toNum(e?.etaMin);
+        if (remainingKm != null) row.remainingKm = remainingKm;
+        if (etaMin != null) row.etaMin = etaMin;
+      }
+      const c = stopCoord(row);
+      if (c && myPos) {
+        row.distanceM = haversineMeters(Number(myPos.lat), Number(myPos.lng), c.lat, c.lng);
+      }
+      return row;
+    });
+
+    return merged.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  }, [myShift, eta, myPos]);
+
+  const nearestStop = useMemo(() => {
+    const unreached = stops.filter((s) => !isReachedStop(s) && Number.isFinite(Number(s.distanceM)));
+    const pool = unreached.length ? unreached : stops.filter((s) => Number.isFinite(Number(s.distanceM)));
+    if (!pool.length) return null;
+    const ordered = [...pool].sort((a, b) => Number(a.distanceM || Infinity) - Number(b.distanceM || Infinity));
+    return ordered[0] || null;
+  }, [stops]);
+
+  const selectedStop = useMemo(() => {
+    if (selectedStopId == null) return nearestStop;
+    return stops.find((s) => String(s.id) === String(selectedStopId)) || nearestStop || null;
+  }, [stops, selectedStopId, nearestStop]);
+
+  const remainingStopsCount = useMemo(() => stops.filter((s) => !isReachedStop(s)).length, [stops]);
+  const routeEtaMin = Number.isFinite(Number(eta?.remainingRouteEtaMin)) ? Number(eta.remainingRouteEtaMin) : null;
+  const routeKm = Number.isFinite(Number(eta?.remainingRouteKm)) ? Number(eta.remainingRouteKm) : null;
 
   return (
     <div>
       <div className="card">
         <h3>Benim Servisim</h3>
-        <div className="muted">En az adım: vardiya seç → konum al → talep oluştur</div>
+        <div className="muted">Talep ekranı yerine sana bağlı son servis, duraklar ve en yakın durağa navigasyon gösterilir.</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
-      {okMsg ? <div className="card ok">{okMsg}</div> : null}
 
       <div className="grid">
         <div className="card">
-          <h3>1) Talep Oluştur</h3>
-          <div className="col" style={{ gap: 8 }}>
-            <label className="muted">Uygun Vardiya</label>
-            <select value={selShiftId} onChange={(e) => setSelShiftId(e.target.value)} disabled={busy}>
-              <option value="">Seç…</option>
-              {(avail || []).map((s) => (
-                <option key={s.id} value={String(s.id)}>
-                  #{s.id} • {fmtTR(s.startAt)} → {fmtTR(s.endAt)} • {s.room?.name || (s.roomId ? `Room#${s.roomId}` : "-")}
-                </option>
-              ))}
-            </select>
-            {!avail?.length ? <div className="muted">Uygun vardiya yok. (Shift henüz APPROVED/ACTIVE değilse listelenmez.)</div> : null}
-
-            {selShift ? (
-              <div className="muted" style={{ marginTop: 6 }}>
-                Seçili: <b>Shift #{selShift.id}</b> • {selShift.room?.name || `Room#${selShift.roomId}`}
+          <h3>1) Konumum ve en yakın durak</h3>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+            <button type="button" disabled={busy} onClick={getMyLocation}>{busy ? "..." : (myPos ? "Konumumu Yenile" : "Konumumu Al")}</button>
+            {myPos ? (
+              <div className="muted">
+                {Number(myPos.lat).toFixed(6)}, {Number(myPos.lng).toFixed(6)}
+                {Number.isFinite(Number(myPos.accuracy)) ? <> • doğruluk ~{Math.round(Number(myPos.accuracy))} m</> : null}
               </div>
-            ) : null}
-
-            <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-              <button type="button" disabled={busy} onClick={getLocation}>
-                {busy ? "..." : "Konumumu Al"}
-              </button>
-              <input
-                value={loc.lat}
-                onChange={(e) => setLoc((p) => ({ ...p, lat: e.target.value }))}
-                placeholder="lat"
-                style={{ minWidth: 140 }}
-                disabled={busy}
-              />
-              <input
-                value={loc.lng}
-                onChange={(e) => setLoc((p) => ({ ...p, lng: e.target.value }))}
-                placeholder="lng"
-                style={{ minWidth: 140 }}
-                disabled={busy}
-              />
-            </div>
-
-            <button type="button" disabled={busy} onClick={createRequest} style={{ marginTop: 10 }}>
-              {busy ? "..." : "Talep Oluştur"}
-            </button>
+            ) : (
+              <div className="muted">En yakın durağı hesaplamak ve navigasyon için kendi konumunu al.</div>
+            )}
           </div>
+
+          {nearestStop ? (
+            <div style={{ marginTop: 14 }}>
+              <div className="muted">En yakın durak</div>
+              <div style={{ fontWeight: 700, marginTop: 4 }}>{nearestStop.name}</div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                {Number.isFinite(Number(nearestStop.distanceM)) ? <>Bana uzaklık: <b>{(Number(nearestStop.distanceM) / 1000).toFixed(2)} km</b></> : "Konum alınınca uzaklık hesaplanır."}
+                {Number.isFinite(Number(nearestStop.etaMin)) ? <> • Araç ETA: <b>{Math.round(Number(nearestStop.etaMin))} dk</b></> : null}
+              </div>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button type="button" disabled={busy} onClick={() => setSelectedStopId(nearestStop.id)}>En yakın durağı seç</button>
+                <button type="button" disabled={busy} onClick={() => openStopNavigation(nearestStop, myPos)}>Git</button>
+              </div>
+            </div>
+          ) : (
+            <div className="muted" style={{ marginTop: 14 }}>Durak listesi veya konum hazır olunca burada en yakın durak önerisi görünür.</div>
+          )}
         </div>
 
         <div className="card">
-          <h3>2) Şu anki durum</h3>
+          <h3>2) Sana atanmış servis</h3>
           {myShift ? (
             <div className="col" style={{ gap: 6 }}>
               <div>
@@ -280,124 +267,82 @@ export default function MyRidePanel() {
               <div className="muted">Room: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
               <div className="muted">Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}</div>
               <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
-              <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
-
+              <div className="muted">Başlangıç: {fmtTR(myShift.startAt)} • Bitiş: {fmtTR(myShift.endAt)}</div>
               <div className="muted" style={{ marginTop: 6 }}>
-                Kalan durak: <b>{remainingStopsCount || 0}</b>
-                {remainingRouteEtaMin != null ? <> • Rota ETA: <b>{remainingRouteEtaMin} dk</b></> : null}
-                {remainingRouteKm != null ? <> • Rota km: <b>{remainingRouteKm.toFixed(1)} km</b></> : null}
+                Kalan durak: <b>{remainingStopsCount}</b>
+                {routeEtaMin != null ? <> • Rota ETA: <b>{routeEtaMin} dk</b></> : null}
+                {routeKm != null ? <> • Rota km: <b>{routeKm.toFixed(1)} km</b></> : null}
               </div>
-              <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
-                {skippedStopsCount ? <span className="muted">Atlanan durak: <b>{skippedStopsCount}</b></span> : null}
-              </div>
-              {nextActionTextValue ? <div className="muted" style={{ marginTop: 6 }}>{nextActionTextValue}</div> : null}
-              {skippedStops.length ? (
-                <div className="muted" style={{ marginTop: 4 }}>
-                  Atlananlar: <b>{skippedStops.map((s) => s?.name || `Durak ${s?.order || ""}`).join(", ")}</b>
+              {eta ? (
+                <div style={{ marginTop: 6 }}>
+                  <span className="pill" data-status={routeQualityTone(eta)}>{routeQualityText(eta)}</span>
                 </div>
               ) : null}
-
-              <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                {vehicle ? (
-                  <button type="button" disabled={busy} onClick={async () => {
-                    const next = !showEta;
-                    setShowEta(next);
-                    if (next) {
-                      await loadEtaForVehicle(vehicle.id);
-                      setActiveStopId(null);
-                    }
-                  }}>
-                    ETA / Duraklar
-                  </button>
-                ) : null}
-                <button type="button" disabled={busy} onClick={() => navigate("/shared/notifications")}>Bildirimler</button>
-              </div>
-            
-              {showEta && etaStops.length ? (
-                <div style={{ marginTop: 10 }}>
-                  <div className="muted" style={{ marginBottom: 6 }}>
-                    Sıradaki:{" "}
-                    {nextStop?.name ? <span className="pill" data-status="REQUESTED">{nextStop.name}</span> : <span className="muted">-</span>}
-                  </div>
-                  <StopTimeline
-                    stops={etaStops}
-                    nextStopId={nextStopId}
-                    selectedStopId={activeStopId}
-                    compact
-                    onSelect={onSelectStop}
-                  />
+              {selectedStop ? (
+                <div className="muted" style={{ marginTop: 8 }}>
+                  Seçili durak: <b>{selectedStop.name}</b>
                 </div>
               ) : null}
-
             </div>
           ) : (
-            <div className="muted">Henüz eşleşmiş bir servis yok (talep oluşturduktan sonra burada görünür).</div>
+            <div className="muted">Şu an sana bağlı bir servis görünmüyor. Eşleşen son servis oluşunca burada duraklar otomatik görünür.</div>
           )}
         </div>
       </div>
 
-      {showEta && eta ? (
-        <div className="card">
-          <h3>ETA (approx)</h3>
-          <div className="muted">vehicleId: {eta.vehicleId}</div>
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Stop</th>
-                <th>Km</th>
-                <th>ETA(dk)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {etaStops.length ? (
-                etaStops.map((s) => {
-                const id = s?.id ?? null;
-                const isNext = nextStopId != null && String(nextStopId) === String(id);
-                const isSel = activeStopId != null && String(activeStopId) === String(id);
-                return (
-                  <tr
-                    key={String(id ?? s.name)}
-                    ref={(el) => {
-                      if (el && id != null) rowRefs.current[String(id)] = el;
-                    }}
-                    style={isSel ? { background: "rgba(59,130,246,.10)", outline: "1px solid rgba(59,130,246,.35)" } : undefined}
-                  >
-                    <td>
-                      {s.name}{" "}
-                      {isNext ? <span className="pill" data-status="REQUESTED" style={{ marginLeft: 6 }}>NEXT</span> : null}
-                    </td>
-                    <td>{s.remainingKm}</td>
-                    <td>{s.etaMin}</td>
-                  </tr>
-                );
-              })
-              ) : (
-                <tr>
-                  <td colSpan={3} className="muted">ETA bulunamadı (durak yok / GPS yok).</td>
+      <div className="card">
+        <h3>3) Güzergâh Durakları</h3>
+        <div className="muted" style={{ marginBottom: 8 }}>Kendi konumuna göre en yakın durağı bul ve istersen doğrudan navigasyon aç.</div>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Durak</th>
+              <th>Durum</th>
+              <th>Bana Uzaklık</th>
+              <th>Araç ETA(dk)</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stops.length ? stops.map((s) => {
+              const active = selectedStop && String(selectedStop.id) === String(s.id);
+              return (
+                <tr key={String(s.id)} style={active ? { background: "rgba(59,130,246,.10)", outline: "1px solid rgba(59,130,246,.35)" } : undefined}>
+                  <td>{s.order}</td>
+                  <td>
+                    {s.name}
+                    {nearestStop && String(nearestStop.id) === String(s.id) ? <span className="pill" data-status="REQUESTED" style={{ marginLeft: 8 }}>EN YAKIN</span> : null}
+                  </td>
+                  <td><span className="pill" data-status={String(s.status || "PENDING").toUpperCase()}>{String(s.status || "PENDING").toUpperCase()}</span></td>
+                  <td>{Number.isFinite(Number(s.distanceM)) ? `${(Number(s.distanceM) / 1000).toFixed(2)} km` : "-"}</td>
+                  <td>{Number.isFinite(Number(s.etaMin)) ? Math.round(Number(s.etaMin)) : "-"}</td>
+                  <td>
+                    <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                      <button type="button" disabled={busy} onClick={() => setSelectedStopId(s.id)}>Seç</button>
+                      <button type="button" disabled={busy} onClick={() => openStopNavigation(s, myPos)}>Git</button>
+                    </div>
+                  </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="muted" style={{ marginTop: 8 }}>
-            Not: Bu ETA haversine + speed üzerinden yaklaşık hesap.
-          </div>
-        </div>
-      ) : null}
+              );
+            }) : (
+              <tr>
+                <td colSpan={6} className="muted">Durak listesi bulunamadı.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {notifs?.length ? (
         <div className="card">
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
             <h3>Son Bildirimler</h3>
-            <button type="button" disabled={busy} onClick={() => navigate("/shared/notifications")}>
-              Tümünü Aç
-            </button>
+            <button type="button" disabled={busy} onClick={() => navigate("/shared/notifications")}>Tümünü Aç</button>
           </div>
           <ul style={{ marginTop: 8 }}>
             {notifs.map((n) => (
-              <li key={n.id} className="muted">
-                <b>{n.type}</b> • {fmtTR(n.createdAt)}
-              </li>
+              <li key={n.id} className="muted"><b>{n.type}</b> • {fmtTR(n.createdAt)}</li>
             ))}
           </ul>
         </div>
