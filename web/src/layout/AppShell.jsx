@@ -14,8 +14,9 @@ export default function AppShell({ path, children }) {
   const isOrganization = role === "COMPANY" && me?.companyKind === "ORGANIZATION";
   const isTabletOpsRole = role === "ROOM" || role === "COMPANY";
 
-  // Map pages should be fluid (full width). Everything else is centered for readability.
-  const isFluid = String(path || "").includes("/map");
+  // Map and Copilot pages should be fluid (full width). Everything else is centered for readability.
+  const fluidPath = String(path || "");
+  const isFluid = fluidPath.includes("/map") || /\/(copilot|natural-copilot)$/.test(fluidPath);
 
   return (
     <div className={isTabletOpsRole ? "shell shell--tablet-ops" : "shell"} data-role={role}>

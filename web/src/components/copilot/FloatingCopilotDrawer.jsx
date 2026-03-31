@@ -376,7 +376,8 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     <aside className="copilotDrawer" style={{ width: dims.width, height: dims.height }}>
       <div className="copilotDrawerHeader">
         <div>
-          <div className="copilotDrawerTitle">Copilot</div>
+          <div className="copilotDrawerTitle">Hızlı Yardım</div>
+          <div className="copilotDrawerContext">Bulunduğun ekrandan ayrılmadan kısa destek verir.</div>
           <div className="copilotDrawerContext">Şu an: {screenContext.label}</div>
           {selection?.label ? <div className="copilotDrawerContext">Seçili kayıt: <b>{selection.label}</b>{selection?.summary && selection.summary !== selection.label ? ` • ${selection.summary}` : ""}</div> : null}
         </div>

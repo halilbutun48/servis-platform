@@ -680,11 +680,11 @@ export default function CopilotPanel() {
   }
 
   return (
-    <div className="wrap" style={{ display: "grid", gap: 12 }}>
+    <div className="wrap wrap--fluid" style={{ display: "grid", gap: 12 }}>
       <div className="card">
-        <div className="title">Copilot</div>
+        <div className="title">Operasyon Copilot</div>
         <div className="muted" style={{ marginTop: 6 }}>
-          Sohbet modu kısa cevap verir ve ilgili yere götürür. Rehber modu çok sade Türkçe ile adım gösterir. Gelişmiş mod mevcut copilot analizini korur. Sistem read-only / suggestion-first kalır.
+          Bu sayfa detaylı inceleme içindir. Kullanıcı önce sorusunu yazar; gerekirse bağlam ve gelişmiş ayarlar sonradan açılır. Köşedeki Hızlı Yardım ise bulunduğun ekrandan ayrılmadan kısa destek verir.
         </div>
       </div>
 
@@ -725,61 +725,84 @@ export default function CopilotPanel() {
         {panelMode === "CHAT" ? (
           <div style={{ display: "grid", gap: 12 }}>
             <div className="muted">
-              Sohbet modu ekranı ve seçili kaydı bilir. Kısa cevap verir, eksiği söyler ve gerekirse ilgili yere götürür.
+              Sohbet modu önce soruyu alır. Bağlam mümkünse otomatik okunur; gerekirse aşağıdaki düğmeyle gelişmiş ayarlardan değiştirirsin.
             </div>
 
-            <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-              <label className="muted">
-                Hangi ekran hakkında konuşalım?
-                <select value={chatScreenId} onChange={(e) => setChatScreenId(e.target.value)}>
-                  {screenOptions.map((x) => (
-                    <option key={x.id} value={x.id}>{screenOptionLabel(x)}</option>
-                  ))}
-                </select>
-              </label>
-
-              {canUseEntityChat(me?.role) ? (
-                <label className="muted">
-                  Hangi kayıtla konuşalım?
-                  <select value={chatEntityType} onChange={(e) => { setChatEntityType(e.target.value); setChatEntityId(""); }}>
-                    <option value="shift">Vardiya</option>
-                    <option value="vehicle">Araç</option>
-                    <option value="screen">Sadece ekran</option>
-                  </select>
-                </label>
-              ) : null}
-
-              {chatEntityType !== "screen" ? (
-                <label className="muted">
-                  Kayıt seç
-                  <select value={chatEntityId} onChange={(e) => setChatEntityId(e.target.value)}>
-                    <option value="">Seç...</option>
-                    {chatTargetOptions.map((x) => (
-                      <option key={x.id} value={x.id}>{optionLabel(chatEntityType, x)}</option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-
-              <div className="muted" style={{ alignSelf: "end" }}>
-                Seçili bağlam: <b>{selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}</b>{selectedChatItem ? <> • <b>{chatEntityType === "screen" ? "Ekran odaklı" : optionLabel(chatEntityType, selectedChatItem)}</b></> : null}
+            <div className="card" style={{ padding: 12, display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
+              <div className="muted" style={{ display: "grid", gap: 4 }}>
+                <div><b>Bağlam:</b> {selectedChatScreen ? screenOptionLabel(selectedChatScreen) : "-"}{selectedChatItem && chatEntityType !== "screen" ? ` • ${optionLabel(chatEntityType, selectedChatItem)}` : ""}</div>
+                <div>Mevcut ekran ve seçili kayıt otomatik okunur. Gerekirse gelişmiş sekmesinden değiştir.</div>
               </div>
-              {chatSelection?.label ? (
-                <div className="muted" style={{ alignSelf: "end" }}>
-                  Ekrandan gelen seçim: <b>{chatSelection.label}</b>{chatSelection?.summary && chatSelection.summary !== chatSelection.label ? ` • ${chatSelection.summary}` : ""}
-                </div>
-              ) : null}
+              <button type="button" onClick={() => setPanelMode("ADVANCED")}>Bağlamı değiştir</button>
             </div>
 
-            <ChatQualitySummary roleMode={me?.role} messages={chatMessages} currentScreenLabel={selectedChatScreen?.label || ""} />
-            <SuggestedChips items={chatSuggestedChips} busy={chatBusy} onPick={runChat} />
             <ChatThread messages={chatMessages} onOpen={openGuideAction} onGuide={openChatGuide} onAsk={runAskAction} onCopy={copyText} />
             <ChatInputBox busy={chatBusy} onSend={runChat} />
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {chatMessages.length ? (
+                <details>
+                  <summary style={{ cursor: "pointer" }}>Kalite özeti</summary>
+                  <div style={{ marginTop: 8 }}>
+                    <ChatQualitySummary roleMode={me?.role} messages={chatMessages} currentScreenLabel={selectedChatScreen?.label || ""} />
+                  </div>
+                </details>
+              ) : null}
+              {chatSuggestedChips.length ? (
+                <details>
+                  <summary style={{ cursor: "pointer" }}>Örnek sorular</summary>
+                  <div style={{ marginTop: 8 }}>
+                    <SuggestedChips items={chatSuggestedChips} busy={chatBusy} onPick={runChat} />
+                  </div>
+                </details>
+              ) : null}
+            </div>
+
             {chatErr ? <div className="muted" style={{ color: "crimson" }}>{chatErr}</div> : null}
           </div>
         ) : (
 
         <form onSubmit={onRun} style={{ display: "grid", gap: 12 }}>
+          {panelMode === "ADVANCED" ? (
+            <div className="card" style={{ display: "grid", gap: 8 }}>
+              <div className="title" style={{ fontSize: 16 }}>Sohbet bağlamı</div>
+              <div className="muted">Sohbet sekmesi bu seçimleri otomatik kullanır. Gerekirse burada değiştir.</div>
+              <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                <label className="muted">
+                  Ekran
+                  <select value={chatScreenId} onChange={(e) => setChatScreenId(e.target.value)}>
+                    {screenOptions.map((x) => (
+                      <option key={x.id} value={x.id}>{screenOptionLabel(x)}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {canUseEntityChat(me?.role) ? (
+                  <label className="muted">
+                    Kayıt türü
+                    <select value={chatEntityType} onChange={(e) => { setChatEntityType(e.target.value); setChatEntityId(""); }}>
+                      <option value="shift">Vardiya</option>
+                      <option value="vehicle">Araç</option>
+                      <option value="screen">Sadece ekran</option>
+                    </select>
+                  </label>
+                ) : null}
+
+                {chatEntityType !== "screen" ? (
+                  <label className="muted">
+                    Kayıt
+                    <select value={chatEntityId} onChange={(e) => setChatEntityId(e.target.value)}>
+                      <option value="">Seç...</option>
+                      {chatTargetOptions.map((x) => (
+                        <option key={x.id} value={x.id}>{optionLabel(chatEntityType, x)}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           {panelMode === "GUIDE" ? (
             <>
               <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
@@ -1124,29 +1147,35 @@ export default function CopilotPanel() {
       ) : null}
 
       <div className="card">
-        <div className="title" style={{ fontSize: 16 }}>Son 5 çalışma</div>
-        {history.length ? (
-          <ul style={{ marginTop: 8 }}>
-            {history.map((x, i) => (
-              <li key={`${x.panelMode}:${x.intent}:${x.jobType}:${x.entityType}:${x.entityId}:${i}`}>
-                <button type="button" onClick={() => restoreHistory(x)}>
-                  {x.panelMode === "GUIDE" ? (GUIDE_JOB_OPTIONS.find((g) => g.value === x.jobType)?.label || x.jobType) : x.intent} • {x.entityType} #{x.entityId}
-                </button>
-                <span className="muted"> {x.severity ? `(${x.severity})` : ""} {x.summary ? `- ${x.summary}` : ""}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="muted" style={{ marginTop: 8 }}>Henüz geçmiş yok.</div>
-        )}
+        <details>
+          <summary className="title" style={{ fontSize: 16, cursor: "pointer" }}>Son 5 çalışma</summary>
+          {history.length ? (
+            <ul style={{ marginTop: 8 }}>
+              {history.map((x, i) => (
+                <li key={`${x.panelMode}:${x.intent}:${x.jobType}:${x.entityType}:${x.entityId}:${i}`}>
+                  <button type="button" onClick={() => restoreHistory(x)}>
+                    {x.panelMode === "GUIDE" ? (GUIDE_JOB_OPTIONS.find((g) => g.value === x.jobType)?.label || x.jobType) : x.intent} • {x.entityType} #{x.entityId}
+                  </button>
+                  <span className="muted"> {x.severity ? `(${x.severity})` : ""} {x.summary ? `- ${x.summary}` : ""}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="muted" style={{ marginTop: 8 }}>Henüz geçmiş yok.</div>
+          )}
+        </details>
       </div>
 
-      <div className="card">
-        <div className="title" style={{ fontSize: 16 }}>Kısa Not</div>
-        <div className="muted" style={{ marginTop: 8 }}>
-          Rehber modu M46.6-A ile eklendi. Copilot çekirdeği yerinde durur; üstüne sade Türkçe iş rehberi gelir. Sistem read-only / suggestion-first kalır ve audit log’a <code>AI_COPILOT_QUERY</code> yazar.
+      {panelMode === "ADVANCED" ? (
+        <div className="card">
+          <details>
+            <summary className="title" style={{ fontSize: 16, cursor: "pointer" }}>Kısa Not</summary>
+            <div className="muted" style={{ marginTop: 8 }}>
+              Rehber modu M46.6-A ile eklendi. Copilot çekirdeği yerinde durur; üstüne sade Türkçe iş rehberi gelir. Sistem read-only / suggestion-first kalır ve audit log’a <code>AI_COPILOT_QUERY</code> yazar.
+            </div>
+          </details>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
