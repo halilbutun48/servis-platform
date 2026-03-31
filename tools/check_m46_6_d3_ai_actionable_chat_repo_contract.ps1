@@ -56,9 +56,11 @@ $quickTxt  = ReadText "web\src\components\copilot\ChatQuickActions.jsx"
 
 MustContainText $panelTxt "quickActions" "panel passes quick actions"
 MustContainText $bubbleTxt "ChatQuickActions" "chat bubble renders quick actions"
-MustContainText $bubbleTxt "actionPlanLabel" "chat bubble shows action plan label"
+MustContainText $panelTxt "actionPlanLabel" "panel keeps action plan label for actionable chat"
 MustContainText $quickTxt "OPEN_GUIDE" "quick actions support guide action"
 MustContainText $quickTxt "COPY_TEXT" "quick actions support copy action"
 MustContainText $quickTxt "ASK" "quick actions support ask action"
 
 Write-Host "M46.6-D3 AI ACTIONABLE CHAT REPO CONTRACT PASS"
+
+

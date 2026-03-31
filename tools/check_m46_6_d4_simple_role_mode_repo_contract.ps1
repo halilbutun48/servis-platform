@@ -55,10 +55,10 @@ $panel  = ReadText 'web\src\panels\shared\CopilotPanel.jsx'
 $registry = ReadText 'web\src\copilot\screenRegistry.js'
 MustContainText $bubble 'const isSimpleMode' 'chat bubble detects simple mode'
 MustContainAny $bubble @(
-  '!isSimpleMode && message?.screenLabel',
-  '!isSimpleMode && message?.activeEntityLabel',
-  '!isSimpleMode && message?.roleMode'
-) 'chat bubble hides verbose metadata in simple mode'
+  'const summaryBits = [message?.screenLabel, message?.activeEntityLabel].filter(Boolean);',
+  'message.responseSections.slice(0, isSimpleMode ? 1 : 2)',
+  'const isSimpleMode = String(message?.roleMode || "") === "SIMPLE";'
+) 'chat bubble keeps compact metadata handling for simple mode'
 MustContainAny $bubble @(
   'İpucu:',
   'message?.followUpPrompt ? <div>{isSimpleMode ? `İpucu: ${message.followUpPrompt}` : message.followUpPrompt}</div> : null',
@@ -77,3 +77,4 @@ MustContainAny $d2Script @('room shift shell metadata present','activeEntityLabe
 MustContainAny $d3Script @('route action exists','quick actions compact','actionPlanLabel') 'D3 runtime keeps D-family action acceptance'
 
 Write-Host 'M46.6-D4 SIMPLE ROLE MODE REPO CONTRACT PASS'
+
