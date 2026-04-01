@@ -2,7 +2,8 @@
 import fs from 'fs';
 import path from 'path';
 
-const repoRoot = process.argv[2] || process.cwd();
+const cwd = process.argv[2] || process.cwd();
+const repoRoot = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 const read = (rel) => fs.readFileSync(path.join(repoRoot, rel), 'utf8');
 const ok = (msg) => console.log(`OK ${msg}`);
 const fail = (msg) => { console.error(`FAIL ${msg}`); process.exit(1); };

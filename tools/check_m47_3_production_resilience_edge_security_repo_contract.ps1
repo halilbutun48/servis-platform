@@ -29,6 +29,7 @@ Write-Host 'INFO Checking M47.3 files'
   'backend\src\ops\edgeSecurityBaseline.js',
   'backend\src\routes\admin.js',
   'backend\src\server.js',
+  'backend\src\bootstrap\rateLimits.js',
   'backend\src\env.js',
   'backend\src\middleware\apiRequestLog.js',
   'backend\scripts\m47_3_production_resilience_edge_security_check.js',

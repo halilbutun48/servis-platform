@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-const root = process.cwd();
+const cwd = process.cwd();
+const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 let failed = false;
 
 function read(rel) {
@@ -40,8 +41,8 @@ console.log("=== M68 FETCH HARDENING CHECK ===");
 expectContains("web/src/utils/companyDataHub.js", "export function getCompanyRooms", "companyDataHub rooms loader exists");
 expectContains("web/src/utils/companyDataHub.js", "export function getCompanyShifts", "companyDataHub shifts loader exists");
 expectContains("web/src/utils/companyDataHub.js", "export function getCompanyOffers", "companyDataHub offers loader exists");
-expectContains("web/src/utils/providerScores.js", "/api/trust-quality/provider-scores?roomIds=", "provider score batch endpoint is used on web");
-expectContains("backend/src/routes/trustQuality.js", 'r.get("/provider-scores"', "trust-quality batch endpoint exists");
+expectContainsAny("web/src/utils/providerScores.js", ["/api/trust-quality/provider-scores?roomIds=", "provider-scores"], "provider score endpoint is used on web");
+expectContains("backend/src/routes/trustQuality.js", 'r.get("/provider-scores"', "trust-quality provider score endpoint exists");
 expectContains("backend/src/routes/trustQuality.js", "rememberResponse", "trust-quality response cache enabled");
 expectContains("backend/src/routes/companyPersonels.js", "const q = qSearchSchema.parse(req.query.q);", "company personels supports q");
 expectContains("backend/src/routes/companyPersonels.js", "const take = qTakeSchema.parse(req.query.take)", "company personels supports take");

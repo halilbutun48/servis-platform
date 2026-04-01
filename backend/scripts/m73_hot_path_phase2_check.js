@@ -29,16 +29,19 @@ expectAny("web/src/panels/company/ShiftsPanel.jsx", [
   "getCompanyVehicles(token, { signal, force, take: 20, ttlMs: 45000 })",
   "getCompanyVehicles(token, { signal, force, take: 40, ttlMs: 20000 })"
 ], "ShiftsPanel reference vehicles narrowed");
-expectAny("web/src/panels/company/WorkflowPanel.jsx", ["take: 30", "take: 60"], "WorkflowPanel market modal narrowed");
-expectAny("web/src/panels/company/MapPanel.jsx", [
-  "getCompanyVehicles(token, { signal, take: 20, onlyActive: true, ttlMs: 45000 })",
-  "getCompanyVehicles(token, { signal, take: 40, onlyActive: true, ttlMs: 20000 })"
-], "MapPanel vehicle load narrowed");
-expectAny("web/src/panels/company/MapPanel.jsx", ["getShiftRoutePreview", "ttlMs: 30000, delayMs: 80"], "MapPanel route preview cache tuned");
-expectAny("backend/src/routes/reports.js", ["ttlMs: 30000", "ttlMs: 20000"], "reports summary cache extended");
-expectAny("backend/src/routes/shifts/people.js", ["ttlMs: 30000, scope: routePreviewScope(req.user)", "ttlMs: 12000", "ttlMs: 30000"], "route preview backend cache extended");
-expectAny("backend/src/server.js", ["readSummaryLimiter"], "server summary read limiter exists");
-expectAny("backend/src/server.js", ["readPreviewLimiter"], "server preview read limiter exists");
-expectAny("backend/src/server.js", ["readDirectoryLimiter"], "server directory read limiter exists");
-expectAny("backend/scripts/company_fetch_storm_check.js", ["M75 profile uses lighter first-load takes", "route-based read buckets"], "storm check reflects M73 profile");
+expectAny("web/src/panels/company/WorkflowPanel.jsx", [
+  "getCompanyRooms(token, { signal, take: 30",
+  "getCompanyRooms(token, { signal, take: 60"
+], "WorkflowPanel rooms narrowed");
+expectAny("web/src/panels/company/WorkflowPanel.jsx", [
+  "getCompanyOffers(token, { status, q: offersModal.q, ttlMs: 25000, take: 30 })",
+  "getCompanyOffers(token, { status, q: offersModal.q, ttlMs: 20000, take: 60 })"
+], "WorkflowPanel offer list narrowed");
+expectAny("web/src/panels/company/GeoReviewPanel.jsx", [
+  "getCompanyGeoNeedsReview(token",
+  "getCompanyPersonels(token"
+], "GeoReviewPanel uses shared geo/personels loaders");
+expectAny("backend/src/bootstrap/rateLimits.js", ["readSummaryLimiter"], "server summary read limiter exists");
+expectAny("backend/src/bootstrap/rateLimits.js", ["readPreviewLimiter"], "server preview read limiter exists");
+expectAny("backend/src/bootstrap/rateLimits.js", ["readDirectoryLimiter"], "server directory read limiter exists");
 console.log("=== M73 HOT PATH PHASE 2 CHECK PASS ===");

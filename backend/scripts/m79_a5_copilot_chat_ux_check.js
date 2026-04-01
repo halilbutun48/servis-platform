@@ -8,7 +8,8 @@ function ok(msg) { console.log(`OK ${msg}`); }
 function fail(msg) { console.error(`FAIL ${msg}`); process.exitCode = 1; }
 function has(text, needle, msg) { text.includes(needle) ? ok(msg) : fail(msg); }
 
-const repoRoot = process.argv[2] || process.cwd();
+const cwd = process.argv[2] || process.cwd();
+const repoRoot = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 console.log('=== M79 A5 COPILOT CHAT UX CHECK ===');
 const helpComposer = read(repoRoot, 'backend/src/ai/chat/helpComposer.js');
 const panel = read(repoRoot, 'web/src/panels/shared/CopilotPanel.jsx');

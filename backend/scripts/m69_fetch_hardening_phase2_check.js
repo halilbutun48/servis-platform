@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-const root = process.cwd();
+const cwd = process.cwd();
+const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 let failed = false;
 
 function read(rel) {
@@ -19,6 +20,11 @@ function expectContains(rel, pattern, msg) {
   if (text.includes(pattern)) ok(msg);
   else fail(msg);
 }
+function expectContainsAny(rel, patterns, msg) {
+  const text = read(rel);
+  if (patterns.some((p) => text.includes(p))) ok(msg);
+  else fail(msg);
+}
 function expectNotContains(rel, pattern, msg) {
   const text = read(rel);
   if (!text.includes(pattern)) ok(msg);
@@ -31,7 +37,7 @@ expectContains("web/src/panels/company/ShiftsPanel.jsx", "function needsReferenc
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "async function ensureReferenceData", "shifts panel lazy reference loader exists");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "await getCompanyShifts(token, { signal", "shifts panel primary load reads shifts first");
 expectNotContains("web/src/panels/company/ShiftsPanel.jsx", "const [sh, veh, rm] = await Promise.all([", "shifts panel no longer loads shifts+vehicles+rooms together on entry");
-expectContains("web/src/panels/company/ShiftsPanel.jsx", "useAutoReload(\"rooms\", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve())", "rooms autoreload gated by active need");
+expectContains("web/src/panels/company/ShiftsPanel.jsx", 'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve())', "rooms autoreload gated by active need");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "fetchProviderScoreMap(roomScoreIds, token)", "room score fetch now derives from visible shift rooms");
 
 expectContains("web/src/panels/company/AgreementsPanel.jsx", "rooms={null}", "agreement wizard self-loads rooms lazily");

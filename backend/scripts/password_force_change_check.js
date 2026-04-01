@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-const root = process.cwd();
+const cwd = process.cwd();
+const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 function must(rel, pattern, message) {
   const full = path.join(root, rel);
   const txt = fs.readFileSync(full, "utf8");

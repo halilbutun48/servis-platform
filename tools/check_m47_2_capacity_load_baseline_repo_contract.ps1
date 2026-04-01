@@ -29,6 +29,7 @@ Write-Host 'INFO Checking M47.2 files'
   'backend\src\ops\capacityLoadBaseline.js',
   'backend\src\routes\admin.js',
   'backend\src\server.js',
+  'backend\src\bootstrap\rateLimits.js',
   'backend\src\env.js',
   'backend\scripts\m47_2_capacity_load_baseline_check.js',
   'tools\pack_m47_2_capacity_load_baseline.ps1',

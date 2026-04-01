@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
-const repoRoot = path.resolve(process.cwd());
+const cwd = process.cwd();
+const repoRoot = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
 function read(rel) {
   return fs.readFileSync(path.join(repoRoot, rel), 'utf8');

@@ -74,6 +74,7 @@ import { startCapacityBaselineMonitor, capacityRequestStarted, capacityRequestFi
 import { edgeRequestContext, applyEdgeSecurityHeaders, edgeSecurityGuard, getEdgeSecurityHealthSummary } from "./ops/edgeSecurityBaseline.js";
 import { pickExport, assertRouteFactories } from "./bootstrap/routeFactories.js";
 import { mountCoreRoutes, mountIoRoutes } from "./bootstrap/routeMounts.js";
+import { createApiRateLimiters } from "./bootstrap/rateLimits.js";
 
 import * as agreementsMod from "./routes/agreements.js";
 
@@ -166,290 +167,24 @@ app.use(morgan("dev"));
 // M10: request log (must be early)
 app.use(apiRequestLog());
 
-// M11: Rate limit
-// GreenPack deterministic gate iÃ§in (dev/test only) header bazlÄ± skip.
-// PROD'DA asla skip yok.
-function greenpackSkip(req) {
-  if (isProd) return false;
-  const gp = String(req.get("x-greenpack") || "").toLowerCase();
-  return gp === "1" || gp === "true";
-}
-
-function readBearerToken(req) {
-  const a = String(req.get("authorization") || "");
-  const m = a.match(/^Bearer\s+(.+)$/i);
-  return m ? String(m[1] || "") : "";
-}
-
-function authKey(req) {
-  const token = String(req.get("x-auth-token") || "") || readBearerToken(req);
-  if (token) {
-    try {
-      const decoded = verifyToken(String(token));
-      const userId = decoded?.userId ?? decoded?.id;
-      if (userId) return `u:${userId}`;
-    } catch {}
-    return `t:${token.slice(0, 24)}`; // fallback (do not store full token)
-  }
-  return `ip:${req.ip}`;
-}
-
-// âœ… M41: distributed rate-limit store (Redis)
 const rateLimitStoreMode = String(ENV.RATE_LIMIT_STORE || process.env.RATE_LIMIT_STORE || "").toLowerCase();
-const useRedisRateLimitStore = rateLimitStoreMode === "redis";
-const _redis = useRedisRateLimitStore ? getRedis() : null;
-function rlStore(prefix, windowMs) {
-  if (!useRedisRateLimitStore || !_redis) return undefined;
-  return new RedisRateLimitStore({ redis: _redis, windowMs, prefix });
-}
 
-function limiter429Handler(req, res) {
-  return res.status(429).json({
-    error: "RATE_LIMITED",
-    code: "RATE_LIMITED",
-    path: req.originalUrl || req.path || null,
-  });
-}
-
-// âœ… M77: route-based buckets (login asla GPS tarafÄ±ndan kilitlenmez)
-const authLimiter = rateLimit({
-  windowMs: ENV.AUTH_RATE_LIMIT_WINDOW_MS,
-  max: ENV.AUTH_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("auth:", ENV.AUTH_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: (req) => {
-    const identifier = String(req.body?.identifier || req.body?.email || req.body?.username || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "");
-    return `ip:${req.ip}|identifier:${identifier}`;
-  },
-  handler: limiter429Handler,
+const {
+  authLimiter,
+  authActionLimiter,
+  gpsLimiter,
+  telematicsLimiter,
+  exportLimiter,
+  apiLimiterMiddleware,
+} = createApiRateLimiters({
+  ENV,
+  isProd,
+  verifyToken,
+  rateLimitStoreMode,
+  getRedis,
 });
 
-function authActionKey(req) {
-  const token = String(req.get("x-auth-token") || "") || readBearerToken(req);
-  if (token) return authKey(req);
-
-  const refreshToken = String(req.body?.refreshToken || "").trim();
-  if (refreshToken) return `ip:${req.ip}|refresh:${refreshToken.slice(0, 24)}`;
-
-  const identifier = String(req.body?.identifier || req.body?.email || req.body?.username || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "");
-  const deviceId = String(req.body?.deviceId || "").trim().toLowerCase();
-  return `ip:${req.ip}|identifier:${identifier}|device:${deviceId}`;
-}
-
-const authActionWindowMs = Math.min(Number(ENV.AUTH_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000), 10 * 60 * 1000);
-const authActionLimiter = rateLimit({
-  windowMs: authActionWindowMs,
-  max: Math.max(5, Math.min(Number(ENV.AUTH_RATE_LIMIT_MAX || 10), 10)),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("auth-action:", authActionWindowMs),
-  skip: greenpackSkip,
-  keyGenerator: authActionKey,
-  handler: limiter429Handler,
-});
-
-const readLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: ENV.READ_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const readSummaryLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(180, Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-summary:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const readPreviewLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(180, Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-preview:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const readDirectoryLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(240, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.2)),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-directory:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-
-const readOfferLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.8)),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-offer:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const readPeopleLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.8)),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-people:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const readLiveShiftLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 2.8)),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-live-shift:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-function isSummaryReadPath(req) {
-  const path = String(req.path || "");
-  return (
-    path === "/company/overview/workflow-summary" ||
-    path === "/company/overview/commercial-flow-summary" ||
-    path === "/trust-quality/company/summary"
-  );
-}
-
-function isReportReadPath(req) {
-  return /^\/reports\/(shifts|drivers|vehicles|stops)\/summary$/.test(String(req.path || ""));
-}
-
-function isScoreReadPath(req) {
-  return String(req.path || "") === "/trust-quality/provider-scores";
-}
-
-function isPreviewReadPath(req) {
-  return /^\/shifts\/\d+\/route-preview$/.test(String(req.path || ""));
-}
-
-function isOfferReadPath(req) {
-  return String(req.path || "") === "/offers/company";
-}
-
-function isPeopleReadPath(req) {
-  return String(req.path || "") === "/company/personels";
-}
-
-function isLiveShiftReadPath(req) {
-  const path = String(req.path || "");
-  if (path !== "/shifts") return false;
-  const onlyNow = String(req.query?.onlyNow || "0") === "1";
-  const status = String(req.query?.status || "");
-  return onlyNow || status.includes("APPROVED") || status.includes("ACTIVE");
-}
-
-function isDirectoryReadPath(req) {
-  const path = String(req.path || "");
-  return (
-    path === "/rooms" ||
-    path === "/vehicles" ||
-    path === "/agreements"
-  );
-}
-
-
-const readReportLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 3)),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-report:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const readScoreLimiter = rateLimit({
-  windowMs: ENV.READ_RATE_LIMIT_WINDOW_MS,
-  max: Math.max(260, Math.round(Number(ENV.READ_RATE_LIMIT_MAX || 120) * 3)),
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("read-score:", ENV.READ_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const writeLimiter = rateLimit({
-  windowMs: ENV.WRITE_RATE_LIMIT_WINDOW_MS,
-  max: ENV.WRITE_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("write:", ENV.WRITE_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const gpsLimiter = rateLimit({
-  windowMs: ENV.GPS_RATE_LIMIT_WINDOW_MS,
-  max: ENV.GPS_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("gps:", ENV.GPS_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-const telematicsLimiter = rateLimit({
-  windowMs: ENV.TELEMATICS_RATE_LIMIT_WINDOW_MS,
-  max: ENV.TELEMATICS_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("telematics:", ENV.TELEMATICS_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: (req) => {
-    const auth = String(req.get("authorization") || req.get("x-device-key") || req.get("x-telematics-secret") || "").trim();
-    return auth ? `tele:${auth.slice(0, 32)}` : `ip:${req.ip}`;
-  },
-  handler: limiter429Handler,
-});
-
-const exportLimiter = rateLimit({
-  windowMs: ENV.EXPORT_RATE_LIMIT_WINDOW_MS,
-  max: ENV.EXPORT_RATE_LIMIT_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  store: rlStore("export:", ENV.EXPORT_RATE_LIMIT_WINDOW_MS),
-  skip: greenpackSkip,
-  keyGenerator: authKey,
-  handler: limiter429Handler,
-});
-
-// Auth (Ã§ok sÄ±kÄ±)
+// Auth (cok siki)
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/google", authLimiter);
 app.use("/api/auth/parent-invite", authLimiter);
@@ -457,34 +192,16 @@ app.use("/api/auth/refresh", authActionLimiter);
 app.use("/api/auth/logout", authActionLimiter);
 app.use("/api/auth/driver/change-pin", authActionLimiter);
 
-// GPS ingest (ayrÄ± kova)
+// GPS ingest (ayri kova)
 app.use("/api/gps", gpsLimiter);
 app.use("/api/telematics", telematicsLimiter);
 
-// Export/download endpoints (WAF-style ayrÄ± kova)
+// Export/download endpoints (WAF-style ayri kova)
 app.use("/api/logs/export", exportLimiter);
 app.use("/api/admin/logs/export", exportLimiter);
 
-// Genel API (GET / write ayrÄ±mÄ±)
-app.use("/api", (req, res, next) => {
-  // /api/auth/* ve /api/gps/* kendi limiter'Ä±nda
-  if (req.path.startsWith("/auth")) return next();
-  if (req.path.startsWith("/gps")) return next();
-  if (req.path.startsWith("/telematics")) return next();
-
-  if (req.method === "GET") {
-    if (isSummaryReadPath(req)) return readSummaryLimiter(req, res, next);
-    if (isReportReadPath(req)) return readReportLimiter(req, res, next);
-    if (isScoreReadPath(req)) return readScoreLimiter(req, res, next);
-    if (isPreviewReadPath(req)) return readPreviewLimiter(req, res, next);
-    if (isOfferReadPath(req)) return readOfferLimiter(req, res, next);
-    if (isPeopleReadPath(req)) return readPeopleLimiter(req, res, next);
-    if (isLiveShiftReadPath(req)) return readLiveShiftLimiter(req, res, next);
-    if (isDirectoryReadPath(req)) return readDirectoryLimiter(req, res, next);
-    return readLimiter(req, res, next);
-  }
-  return writeLimiter(req, res, next);
-});
+// Genel API (GET / write ayrimi)
+app.use("/api", apiLimiterMiddleware);
 
 // Health (M10+M11: db ping + uptime + version)
 app.get("/health", async (req, res) => {

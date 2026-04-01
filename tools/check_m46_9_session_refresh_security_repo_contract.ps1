@@ -45,6 +45,7 @@ $mw = ReadText 'backend\src\auth\middleware.js'
 $me = ReadText 'backend\src\routes\me.js'
 $drivers = ReadText 'backend\src\routes\drivers.js'
 $server = ReadText 'backend\src\server.js'
+$mount = if (Test-Path (Join-Path $RepoRoot 'backend\src\bootstrap\routeMounts.js')) { ReadText 'backend\src\bootstrap\routeMounts.js' } else { '' }
 $pack = ReadText 'tools\pack_m46_9_session_refresh_security.ps1'
 $runtime = ReadText 'backend\scripts\m46_9_session_refresh_security_check.js'
 
@@ -75,7 +76,7 @@ MustContainAny $drivers @('sessionVersion','increment') 'driver reset bumps sess
 MustContainAny $drivers @('refreshSession.updateMany','revokedAt') 'driver reset revokes refresh sessions'
 
 Write-Host 'INFO Checking ws auth sv enforcement'
-MustContainAny $server @('tokenSv','sessionVersion','session revoked') 'ws layer validates sessionVersion'
+MustContainAny ($server + "`n" + $mount) @('tokenSv','sessionVersion','session revoked') 'ws layer validates sessionVersion'
 
 Write-Host 'INFO Checking pack/runtime wiring'
 MustNotContainText $pack 'pack_m46_8_driver_access_hardening.ps1' 'pack is self-only and does not chain m46.8'

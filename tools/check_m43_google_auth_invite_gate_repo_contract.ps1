@@ -6,6 +6,7 @@ function MustExist($rel){ $p = Join-Path $RepoRoot $rel; if (!(Test-Path -Litera
 function MustNotExist($rel){ $p = Join-Path $RepoRoot $rel; if (Test-Path -LiteralPath $p) { throw "FAIL $rel should be removed" }; Ok "$rel removed" }
 function MustContain($rel, $needle, $label){ $p = Join-Path $RepoRoot $rel; $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8; if ($txt -notlike "*$needle*") { throw "FAIL $label" }; Ok $label }
 function MustNotContain($rel, $needle, $label){ $p = Join-Path $RepoRoot $rel; $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8; if ($txt -like "*$needle*") { throw "FAIL $label" }; Ok $label }
+function MustContainAny($rels, $needle, $label){ foreach($rel in $rels){ $p = Join-Path $RepoRoot $rel; if(Test-Path -LiteralPath $p){ $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8; if($txt -like "*$needle*"){ Ok $label; return } } } throw "FAIL $label" }
 
 Info 'Checking parent access backend files'
 @(
@@ -16,7 +17,7 @@ Info 'Checking parent access backend files'
 ) | ForEach-Object { MustExist $_ }
 
 Info 'Checking backend wiring'
-MustContain 'backend\src\server.js' 'app.use("/api/auth/parent-invite", authLimiter);' 'server rate limits parent access'
+MustContainAny @('backend\src\server.js','backend\src\bootstrap\rateLimits.js') '/api/auth/parent-invite' 'server rate limits parent access'
 MustContain 'backend\src\routes\auth.js' 'authRouter.get("/parent-invite/info"' 'parent access info route exists'
 MustContain 'backend\src\routes\auth.js' 'return res.json({ ok: true, access, invite: access });' 'parent access info supports reusable access'
 MustContain 'backend\src\routes\auth.js' 'PARENT_ACCESS_LOGIN' 'parent access login audit exists'
@@ -34,6 +35,6 @@ MustNotContain 'web\src\App.jsx' 'AuthInvitesPanel' 'auth invites panel import r
 MustContain 'web\src\layout\NavDock.jsx' '/school/parents' 'school nav exposes parent access'
 MustContain 'web\src\panels\public\AcceptParentInvitePanel.jsx' 'accessCode' 'public parent access panel uses access code'
 MustContain 'web\src\panels\public\AcceptParentInvitePanel.jsx' 'pin' 'public parent access panel uses pin'
-MustContain 'web\src\panels\public\AcceptParentInvitePanel.jsx' 'finishLogin({ token: accessToken });' 'public parent access panel supports direct token login'
+MustContainAny @('web\src\panels\public\AcceptParentInvitePanel.jsx') 'finishLogin({ token: accessToken });' 'public parent access panel supports direct token login'
 
 Write-Host 'M43 PARENT ACCESS CLEANUP REPO CONTRACT PASS'

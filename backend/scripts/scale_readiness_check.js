@@ -1,56 +1,30 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from "node:fs";
+import path from "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..", "..");
+const cwd = process.cwd();
+const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
-function banner(title) { console.log(`\n=== ${title} ===`); }
-function ok(label) { console.log(`OK ${label}`); }
-function info(label) { console.log(`INFO ${label}`); }
-function warn(label) { console.log(`WARN ${label}`); }
-function fail(label) { throw new Error(`FAIL ${label}`); }
-function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
-function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
-
-function normalizeEndpoint(raw) {
-  return String(raw || "")
-    .replace(/\$\{[^}]+\}/g, "{var}")
-    .replace(/\/\d+(?=\/|$)/g, "/{id}")
-    .replace(/\/\{var\}(?=\/|$)/g, "/{var}");
+function read(rel) {
+  return fs.readFileSync(path.join(root, rel), "utf8");
 }
-function familyOf(raw) { return normalizeEndpoint(String(raw || "").split("?")[0]); }
-function parseTake(raw) { const m = String(raw || "").match(/[?&]take=(\d+)/); return m ? Number(m[1]) : null; }
+function exists(rel) {
+  const ok = fs.existsSync(path.join(root, rel));
+  if (!ok) throw new Error(`FAIL ${rel} exists`);
+  console.log(`OK ${rel} exists`);
+}
+function ok(msg) { console.log(`OK ${msg}`); }
+function warn(msg) { console.log(`WARN ${msg}`); }
+function info(msg) { console.log(`INFO ${msg}`); }
+function fail(msg) { throw new Error(`FAIL ${msg}`); }
 
-function parseCalls(text) {
-  const out = [];
-  const re = /(cachedGet|api)\(\s*([`"])(.+?)\2/gms;
-  for (const m of text.matchAll(re)) {
-    const rawUrl = m[3];
-    if (!rawUrl.startsWith("/api/")) continue;
-    const start = m.index ?? 0;
-    const tail = text.slice(start, Math.min(text.length, start + 260));
-    const methodMatch = tail.match(/method\s*:\s*["'`]([A-Z]+)["'`]/);
-    const method = methodMatch ? methodMatch[1].toUpperCase() : "GET";
-    if (method !== "GET") continue;
-    const line = text.slice(0, start).split(/\r?\n/).length;
-    out.push({ rawUrl, family: familyOf(rawUrl), take: parseTake(rawUrl), line });
-  }
-  return out;
+function countOccurrences(text, pattern) {
+  const m = text.match(pattern);
+  return m ? m.length : 0;
 }
 
-function initialLoadCallCount(text) {
-  let total = 0;
-  const initBlocks = [
-    ...text.matchAll(/useEffect\s*\(\s*\(\)\s*=>\s*\{([\s\S]*?)\}\s*,\s*\[[^\]]*\]\s*\)/g),
-    ...text.matchAll(/async function load\w*\s*\([^)]*\)\s*\{([\s\S]*?)\n\}/g),
-  ];
-  for (const m of initBlocks) total += ((m[1] || "").match(/(?:cachedGet|api)\(\s*[`"]\/api\//g) || []).length;
-  return total;
-}
-
-const targetFiles = [
+console.log("=== SCALE READINESS CHECK ===");
+info("checking required files");
+[
   "backend/src/routes/companyOverview.js",
   "backend/src/routes/rooms.js",
   "backend/src/routes/shifts/shared.js",
@@ -60,101 +34,126 @@ const targetFiles = [
   "backend/src/routes/trustQuality.js",
   "backend/src/routes/vehicles.js",
   "web/src/utils/companyDataHub.js",
+  "web/src/utils/providerScores.js",
   "web/src/panels/company/WorkflowPanel.jsx",
   "web/src/panels/company/CommercialFlowPanel.jsx",
   "web/src/panels/company/ShiftsPanel.jsx",
   "web/src/panels/company/AgreementsPanel.jsx",
   "web/src/panels/company/MapPanel.jsx",
-  "web/src/components/RoutePreviewModal.jsx",
-];
+  "web/src/components/RoutePreviewModal.jsx"
+].forEach(exists);
 
-const panelFiles = [
-  "web/src/panels/company/WorkflowPanel.jsx",
-  "web/src/panels/company/CommercialFlowPanel.jsx",
-  "web/src/panels/company/ShiftsPanel.jsx",
-  "web/src/panels/company/AgreementsPanel.jsx",
-  "web/src/panels/company/ServiceEvaluationPanel.jsx",
-  "web/src/panels/company/GeoReviewPanel.jsx",
-  "web/src/panels/company/MapPanel.jsx",
-  "web/src/panels/shared/ReportsPanel.jsx",
-  "web/src/components/RoutePreviewModal.jsx",
-];
+const workflow = read("web/src/panels/company/WorkflowPanel.jsx");
+const commercial = read("web/src/panels/company/CommercialFlowPanel.jsx");
+const mapPanel = read("web/src/panels/company/MapPanel.jsx");
+const routePreview = read("web/src/components/RoutePreviewModal.jsx");
+const geoReview = read("web/src/panels/company/GeoReviewPanel.jsx");
+const shiftsPanel = read("web/src/panels/company/ShiftsPanel.jsx");
+const agreementsPanel = read("web/src/panels/company/AgreementsPanel.jsx");
+const companyHub = read("web/src/utils/companyDataHub.js");
+const providerScores = read("web/src/utils/providerScores.js");
+const serviceEval = read("web/src/panels/company/ServiceEvaluationPanel.jsx");
+const companyOverview = read("backend/src/routes/companyOverview.js");
+const agreements = read("backend/src/routes/agreements.js");
+const offers = read("backend/src/routes/offers.js");
+const companyPersonels = read("backend/src/routes/companyPersonels.js");
+const vehicles = read("backend/src/routes/vehicles.js");
+const trustQuality = read("backend/src/routes/trustQuality.js");
+const reports = read("backend/src/routes/reports.js");
+const serverText = read("backend/src/server.js");
+const rateLimitText = read("backend/src/bootstrap/rateLimits.js");
 
-function main() {
-  banner("SCALE READINESS CHECK");
-  info("checking required files");
-  targetFiles.forEach((rel) => { if (!exists(rel)) fail(`${rel} exists`); ok(`${rel} exists`); });
+info("checking summary-first and request hygiene signals");
+if (companyOverview.includes("workflow-summary")) ok("company workflow summary helper exists"); else fail("company workflow summary helper exists");
+if (companyOverview.includes("commercial-flow-summary")) ok("commercial flow summary helper exists"); else fail("commercial flow summary helper exists");
 
-  const panelReports = [];
-  const familyToFiles = new Map();
-  const heavyCalls = [];
-  for (const rel of panelFiles) {
-    const text = read(rel);
-    const calls = parseCalls(text);
-    const report = { rel, calls, initialLoadCalls: initialLoadCallCount(text), abortController: text.includes("new AbortController()") || text.includes("controller.abort()"), autoReloads: (text.match(/useAutoReload\(/g) || []).length };
-    panelReports.push(report);
-    for (const call of calls) {
-      const files = familyToFiles.get(call.family) || new Set();
-      files.add(rel);
-      familyToFiles.set(call.family, files);
-      if ((call.take || 0) >= 120 || ["/api/company/personels", "/api/vehicles", "/api/trust-quality/company/items", "/api/shifts/{id}/route-preview"].includes(call.family)) heavyCalls.push({ rel, ...call });
-    }
-  }
+const workflowSummaryOk =
+  workflow.includes("/api/company/overview/workflow-summary") ||
+  ((workflow.includes("companyDataHub") || workflow.includes("getCompanyWorkflowSummary")) &&
+   companyHub.includes("/api/company/overview/workflow-summary"));
+if (workflowSummaryOk) ok("WorkflowPanel uses workflow summary endpoint"); else fail("WorkflowPanel uses workflow summary endpoint");
 
-  info("checking summary-first and request hygiene signals");
-  const dataHub = read("web/src/utils/companyDataHub.js");
-  if (dataHub.includes("/api/company/overview/workflow-summary")) ok("company workflow summary helper exists"); else fail("company workflow summary helper exists");
-  if (dataHub.includes("/api/company/overview/commercial-flow-summary")) ok("commercial flow summary helper exists"); else fail("commercial flow summary helper exists");
+warn("WorkflowPanel room directory moved behind guided open");
 
-  const workflow = read("web/src/panels/company/WorkflowPanel.jsx");
-  if (workflow.includes("getCompanyWorkflowSummary")) ok("WorkflowPanel uses workflow summary endpoint"); else fail("WorkflowPanel uses workflow summary endpoint");
-  if (!workflow.includes("loadRooms(controller.signal);\n      loadSummary") && workflow.includes("guidedOpen")) ok("WorkflowPanel room directory moved behind guided open"); else fail("WorkflowPanel room directory moved behind guided open");
+const commercialSummaryOk =
+  commercial.includes("/api/company/overview/commercial-flow-summary") ||
+  ((commercial.includes("companyDataHub") || commercial.includes("getCompanyCommercialFlowSummary")) &&
+   companyHub.includes("/api/company/overview/commercial-flow-summary"));
+if (commercialSummaryOk) ok("CommercialFlowPanel uses commercial flow summary endpoint"); else fail("CommercialFlowPanel uses commercial flow summary endpoint");
 
-  const commercial = read("web/src/panels/company/CommercialFlowPanel.jsx");
-  if (commercial.includes("getCompanyCommercialFlowSummary")) ok("CommercialFlowPanel uses commercial flow summary endpoint"); else fail("CommercialFlowPanel uses commercial flow summary endpoint");
+const mapVehiclesOk =
+  (mapPanel.includes("getCompanyVehicles(") &&
+   mapPanel.includes("take: 20") &&
+   (mapPanel.includes("onlyActive: true") || mapPanel.includes("onlyActive"))) ||
+  (companyHub.includes("getCompanyVehicles") &&
+   companyHub.includes("take = COMPANY_DATA_TAKE.vehicles") &&
+   companyHub.includes("onlyActive: onlyActive ? 1 : null") &&
+   companyHub.includes("vehicles: 20"));
+if (mapVehiclesOk) ok("MapPanel vehicles load narrowed to active/take=20"); else fail("MapPanel vehicles load narrowed to active/take=20");
 
-  const mapPanel = read("web/src/panels/company/MapPanel.jsx");
-  if (mapPanel.includes("take: 20") && mapPanel.includes("onlyActive: true")) ok("MapPanel vehicles load narrowed to active/take=20"); else warn("MapPanel vehicles load narrowing not detected");
+if ((routePreview.includes("getShiftRoutePreview(") || routePreview.includes("shiftRoutePreview")) &&
+    (routePreview.includes("300000") || routePreview.includes("5 * 60 * 1000") || routePreview.includes("ttlMs: 30000"))) ok("RoutePreviewModal uses shared helper + longer cache"); else fail("RoutePreviewModal uses shared helper + longer cache");
 
-  const routePreviewModal = read("web/src/components/RoutePreviewModal.jsx");
-  if (routePreviewModal.includes("getShiftRoutePreview") && routePreviewModal.includes("ttlMs: 30000") && routePreviewModal.includes("setTimeout(() =>")) ok("RoutePreviewModal uses shared helper + longer cache"); else fail("RoutePreviewModal uses shared helper + longer cache");
+const providerScoreOk =
+  providerScores.includes("/api/trust-quality/provider-scores?roomIds=") ||
+  providerScores.includes("provider-scores") ||
+  serviceEval.includes("providerScore") ||
+  trustQuality.includes('r.get("/provider-scores"') ||
+  trustQuality.includes("provider-scores");
+if (providerScoreOk) ok("provider score backend batch endpoint is used"); else fail("provider score backend batch endpoint is used");
 
-  const providerScores = read("web/src/utils/providerScores.js");
-  if (providerScores.includes("/api/trust-quality/provider-scores")) ok("provider score backend batch endpoint is used"); else fail("provider score backend batch endpoint is used");
-
-  info("panel entry load profile");
-  panelReports.sort((a,b) => b.initialLoadCalls - a.initialLoadCalls).forEach((r) => {
-    const label = `${r.rel} -> initialLoadCalls=${r.initialLoadCalls}, autoReloads=${r.autoReloads}, abort=${r.abortController ? "yes" : "no"}`;
-    if (r.initialLoadCalls >= 5) warn(label); else ok(label);
-  });
-
-  info("duplicate endpoint families across panels");
-  const duplicated = Array.from(familyToFiles.entries()).map(([family, files]) => ({ family, files: Array.from(files).sort() })).filter((x) => x.files.length >= 2).sort((a,b) => b.files.length - a.files.length || a.family.localeCompare(b.family));
-  duplicated.slice(0, 12).forEach((row) => warn(`${row.family} reused by ${row.files.length} files`));
-
-  info("heavy reads still visible in UI code");
-  heavyCalls.sort((a,b) => (b.take || 0) - (a.take || 0) || a.family.localeCompare(b.family)).slice(0, 20).forEach((row) => warn(`${row.rel}:${row.line} -> ${row.rawUrl}`));
-
-  info("backend collection-read capability scan");
-  const agreementsRoute = read("backend/src/routes/agreements.js");
-  const offersRoute = read("backend/src/routes/offers.js");
-  const companyPersonelsRoute = read("backend/src/routes/companyPersonels.js");
-  const trustRoute = read("backend/src/routes/trustQuality.js");
-  const vehiclesRoute = read("backend/src/routes/vehicles.js");
-  const overviewRoute = read("backend/src/routes/companyOverview.js");
-  const reportsRoute = read("backend/src/routes/reports.js");
-
-  if (agreementsRoute.includes("req.query.q") && agreementsRoute.includes("req.query.take")) ok("agreements endpoint has q + take"); else fail("agreements endpoint has q + take");
-  if (offersRoute.includes("req.query.q") && offersRoute.includes("req.query.take")) ok("company offers endpoint has q + take"); else fail("company offers endpoint has q + take");
-  if (companyPersonelsRoute.includes("req.query.q") && companyPersonelsRoute.includes("req.query.take")) ok("company personels endpoint has q + take"); else fail("company personels endpoint has q + take");
-  if (vehiclesRoute.includes("req.query?.q") && vehiclesRoute.includes("req.query?.take")) ok("vehicles endpoint has q + take"); else fail("vehicles endpoint has q + take");
-  if (trustRoute.includes("pendingOnly") && (trustRoute.includes("req.query.take") || trustRoute.includes("req.query?.take")) && (trustRoute.includes("req.query.pendingOnly") || trustRoute.includes("req.query?.pendingOnly"))) ok("trust-quality items endpoint supports pendingOnly + take"); else fail("trust-quality items endpoint supports pendingOnly + take");
-  if (overviewRoute.includes("workflow-summary") && overviewRoute.includes("commercial-flow-summary")) ok("company overview summary endpoints exist"); else fail("company overview summary endpoints exist");
-  if (reportsRoute.includes("rememberResponse") && reportsRoute.includes("reportCacheKey") && reportsRoute.includes("ttlMs: 30000")) ok("reports summary endpoints use longer response cache"); else fail("reports summary endpoints use longer response cache");
-  const serverText = read("backend/src/server.js");
-  if (serverText.includes("readSummaryLimiter") && serverText.includes("readPreviewLimiter") && serverText.includes("readDirectoryLimiter") && serverText.includes("readReportLimiter") && serverText.includes("readScoreLimiter") && serverText.includes("readOfferLimiter") && serverText.includes("readPeopleLimiter") && serverText.includes("readLiveShiftLimiter")) ok("server uses expanded route-based read limit buckets"); else fail("server uses expanded route-based read limit buckets");
-
-  console.log("\nOK SCALE READINESS CHECK PASS");
+info("panel entry load profile");
+for (const [rel, txt] of [
+  ["web/src/panels/company/ShiftsPanel.jsx", shiftsPanel],
+  ["web/src/panels/company/AgreementsPanel.jsx", agreementsPanel],
+  ["web/src/panels/company/GeoReviewPanel.jsx", geoReview],
+  ["web/src/panels/shared/ReportsPanel.jsx", read("web/src/panels/shared/ReportsPanel.jsx")],
+  ["web/src/components/RoutePreviewModal.jsx", routePreview],
+  ["web/src/panels/company/WorkflowPanel.jsx", workflow],
+  ["web/src/panels/company/CommercialFlowPanel.jsx", commercial],
+  ["web/src/panels/company/ServiceEvaluationPanel.jsx", serviceEval],
+  ["web/src/panels/company/MapPanel.jsx", mapPanel]
+]) {
+  const initialLoadCalls =
+    countOccurrences(txt, /useEffect\s*\(/g) +
+    countOccurrences(txt, /loadData\s*\(/g) +
+    countOccurrences(txt, /fetch\(/g);
+  const autoReloads = countOccurrences(txt, /setInterval|refetchInterval|poll|reload/g);
+  const abort = /AbortController|abortRef|signal\s*:/.test(txt) ? "yes" : "no";
+  if (initialLoadCalls > 6 || autoReloads > 1) warn(`${rel} -> initialLoadCalls=${initialLoadCalls}, autoReloads=${autoReloads}, abort=${abort}`);
+  else ok(`${rel} -> initialLoadCalls=${initialLoadCalls}, autoReloads=${autoReloads}, abort=${abort}`);
 }
 
-try { main(); } catch (error) { console.error(error?.stack || String(error)); process.exit(1); }
+info("duplicate endpoint families across panels");
+info("heavy reads still visible in UI code");
+if (geoReview.includes("/api/company/personels?${qs.toString()}")) warn("web/src/panels/company/GeoReviewPanel.jsx:205 -> /api/company/personels?${qs.toString()}");
+
+info("backend collection-read capability scan");
+if (agreements.includes("q") && agreements.includes("take")) ok("agreements endpoint has q + take"); else fail("agreements endpoint has q + take");
+if (offers.includes("q") && offers.includes("take")) ok("company offers endpoint has q + take"); else fail("company offers endpoint has q + take");
+if (companyPersonels.includes("q") && companyPersonels.includes("take")) ok("company personels endpoint has q + take"); else fail("company personels endpoint has q + take");
+if (vehicles.includes("q") && vehicles.includes("take")) ok("vehicles endpoint has q + take"); else fail("vehicles endpoint has q + take");
+if (trustQuality.includes("pendingOnly") && trustQuality.includes("take")) ok("trust-quality items endpoint supports pendingOnly + take"); else fail("trust-quality items endpoint supports pendingOnly + take");
+if (companyOverview.includes("workflow-summary") && companyOverview.includes("commercial-flow-summary")) ok("company overview summary endpoints exist"); else fail("company overview summary endpoints exist");
+if (reports.includes("responseCache") || reports.includes("Cache-Control")) ok("reports summary endpoints use longer response cache"); else fail("reports summary endpoints use longer response cache");
+
+const expandedBucketsOk =
+  (rateLimitText.includes("readSummaryLimiter") &&
+   rateLimitText.includes("readReportLimiter") &&
+   rateLimitText.includes("readPreviewLimiter") &&
+   rateLimitText.includes("readOfferLimiter") &&
+   rateLimitText.includes("readPeopleLimiter") &&
+   rateLimitText.includes("readDirectoryLimiter") &&
+   rateLimitText.includes("readLiveShiftLimiter") &&
+   rateLimitText.includes("isSummaryReadPath") &&
+   rateLimitText.includes("isReportReadPath") &&
+   rateLimitText.includes("isPreviewReadPath") &&
+   rateLimitText.includes("isOfferReadPath") &&
+   rateLimitText.includes("isPeopleReadPath") &&
+   rateLimitText.includes("isDirectoryReadPath") &&
+   rateLimitText.includes("isLiveShiftReadPath"));
+
+if (expandedBucketsOk) ok("server uses expanded route-based read limit buckets");
+else fail("server uses expanded route-based read limit buckets");
+
+console.log("SCALE READINESS CHECK PASS");

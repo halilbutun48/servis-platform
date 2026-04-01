@@ -9,6 +9,7 @@ $files = @(
   'backend\scripts\company_fetch_storm_check.js',
   'backend\scripts\scale_readiness_check.js',
   'backend\src\server.js',
+  'backend\src\bootstrap\rateLimits.js',
   'backend\src\routes\companyOverview.js',
   'backend\src\routes\reports.js',
   'backend\src\routes\trustQuality.js',
