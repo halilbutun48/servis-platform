@@ -1,36 +1,19 @@
-# Build outputs
-web/dist/
-artifacts/
+artifacts/*
+!artifacts/.gitkeep
 
-# Dependencies
-backend/node_modules/
-web/node_modules/
-mobile/node_modules/
-
-# Environment / local config
-.env
-backend/.env
-web/.env
-mobile/.env
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS/editor
-.DS_Store
-Thumbs.db
-
-# Runtime/generated data
-infra/osrm-data/
-backend/indexes/*
-!backend/indexes/.gitkeep
-!backend/indexes/README.md
 backend/data/*.json
 !backend/data/.gitkeep
 
-artifacts/*
-!artifacts/.gitkeep
+node_modules/
+dist/
+build/
+coverage/
+.next/
+_archive/
+_backup/
+
+.env
+backend/.env
+infra/.env
+infra/osrm-data/
+

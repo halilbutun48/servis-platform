@@ -11,6 +11,11 @@ import { getEffectiveUsername, visibleEmail } from "../auth/usernameDirectory.js
 
 export const meRouter = express.Router();
 
+function isSyntheticParentAccessUser(user) {
+  const email = String(user?.email || "").trim().toLowerCase();
+  return String(user?.role || "").trim().toUpperCase() === "PARENT" && /^parent-access-\d+@vardis\.local$/.test(email);
+}
+
 meRouter.get("/", authRequired(), async (req, res) => {
   const u = req.user;
 
@@ -65,7 +70,7 @@ meRouter.get("/", authRequired(), async (req, res) => {
     pinUpdatedAt: driver?.pinUpdatedAt ?? null,
     personelId: personel?.id ?? null,
     personelKind: personel?.kind ?? null,
-    requirePasswordChange: Boolean(requirePasswordChange),
+    requirePasswordChange: isSyntheticParentAccessUser(u) ? false : Boolean(requirePasswordChange),
     passwordPolicy: getPasswordPolicySummary(),
 
     kvkk: {

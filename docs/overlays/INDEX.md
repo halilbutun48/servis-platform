@@ -7,7 +7,7 @@ Runtime’da kullanılmaz.
 - [M80](M80/README.md) — School mode
 - [M81](M81/README.md) — Parent
 - [M82](M82/README.md) — KVKK harden
-- [STEP06](STEP06/README.md) — Capacity / split / school parent invite / external nav / company click details stabil ekleri
+- [STEP06](STEP06/README.md) — Capacity / split / school veli erişimi / external nav / company click details stabil ekleri
 
 ## Arşiv
 - Eski root overlay dosyaları: `_archive/root-legacy/`

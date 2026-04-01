@@ -404,7 +404,7 @@ async function consumeParentInvite({ req, invite, existingUser, email, fullName 
 }
 
 function inviteTitle(kind, row) {
-  if (kind === "PARENT") return "Parent Invite";
+  if (kind === "PARENT") return "Veli Erişimi";
   if (row?.role === "DRIVER") return "Sürücü Giriş Daveti";
   if (row?.role === "PERSONEL") return "Personel Giriş Daveti";
   if (row?.role === "ROOM") return "Room Kullanıcı Daveti";

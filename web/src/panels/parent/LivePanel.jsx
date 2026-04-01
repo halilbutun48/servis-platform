@@ -1,5 +1,5 @@
 // web/src/panels/parent/LivePanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -92,6 +92,63 @@ function buildWalkNavUrl(stop, myPos) {
   return `https://www.google.com/maps/dir/?api=1${originPart}&destination=${dest}&travelmode=walking`;
 }
 
+function stopStateText(state) {
+  const s = String(state || "PENDING").toUpperCase();
+  if (s === "REACHED") return "Ulaşıldı";
+  if (s === "DONE") return "Tamamlandı";
+  if (s === "COMPLETED") return "Tamamlandı";
+  if (s === "SKIPPED") return "Atlandı";
+  if (s === "ACTIVE") return "Aktif";
+  return "Bekliyor";
+}
+
+function distanceText(meters) {
+  const n = Number(meters);
+  if (!Number.isFinite(n)) return "—";
+  if (n < 1000) return `${Math.round(n)} m`;
+  return `${(n / 1000).toFixed(2)} km`;
+}
+
+function walkMinutesText(meters) {
+  const n = Number(meters);
+  if (!Number.isFinite(n)) return "—";
+  return `${Math.max(1, Math.round(n / 80))} dk`;
+}
+
+function timeText(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" }).format(d);
+}
+
+function timeRangeText(windowObj) {
+  if (!windowObj?.startAt || !windowObj?.endAt) return "—";
+  return `${timeText(windowObj.startAt)} - ${timeText(windowObj.endAt)}`;
+}
+
+function gpsAgeText(gpsLast) {
+  const raw = gpsLast?.at;
+  if (!raw) return "Konum gelmedi";
+  const at = new Date(raw).getTime();
+  if (!Number.isFinite(at)) return "Konum gelmedi";
+  const diffSec = Math.max(0, Math.round((Date.now() - at) / 1000));
+  if (diffSec < 15) return "Az önce";
+  if (diffSec < 60) return `${diffSec} sn önce`;
+  const min = Math.round(diffSec / 60);
+  if (min < 60) return `${min} dk önce`;
+  const hour = Math.round(min / 60);
+  return `${hour} sa önce`;
+}
+
+function hasVehiclePoint(vehicle) {
+  return Number.isFinite(Number(vehicle?.gpsLast?.lat)) && Number.isFinite(Number(vehicle?.gpsLast?.lng));
+}
+
+function infoCard(title, value, muted) {
+  return { title, value, muted };
+}
+
 export default function ParentLivePanel() {
   const { token } = useSession();
 
@@ -104,6 +161,7 @@ export default function ParentLivePanel() {
   const [geoBusy, setGeoBusy] = useState(false);
   const [geoErr, setGeoErr] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const lastRequestedChildRef = useRef("");
 
   async function loadChildren() {
     const r = await api("/api/parent/children", { token });
@@ -114,8 +172,16 @@ export default function ParentLivePanel() {
   }
 
   async function loadVehicles(cid) {
+    const resolvedChildId = String(cid || "");
+    if (!resolvedChildId) {
+      setVehicles([]);
+      setSelectedVehicleId("");
+      lastRequestedChildRef.current = "";
+      return [];
+    }
+    lastRequestedChildRef.current = resolvedChildId;
     const qs = new URLSearchParams();
-    if (cid) qs.set("childId", String(cid));
+    qs.set("childId", resolvedChildId);
     const r = await api(`/api/parent/live/vehicles?${qs.toString()}`, { token });
     const items = Array.isArray(r) ? r : Array.isArray(r?.items) ? r.items : [];
     setVehicles(items);
@@ -167,9 +233,22 @@ export default function ParentLivePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useAutoReload("gps", () => loadVehicles(childId).catch(() => {}));
-  useAutoReload("vehicles", () => loadVehicles(childId).catch(() => {}));
-  useAutoReload("shifts", () => loadVehicles(childId).catch(() => {}));
+  useEffect(() => {
+    const cid = String(childId || "");
+    if (!cid || lastRequestedChildRef.current === cid) return;
+    setBusy(true);
+    setErr("");
+    loadVehicles(cid)
+      .catch((e) => {
+        setErr(e?.message || String(e));
+        setVehicles([]);
+      })
+      .finally(() => setBusy(false));
+  }, [childId]);
+
+  useAutoReload("gps", () => loadVehicles(childId).catch(() => {}), Boolean(childId));
+  useAutoReload("vehicles", () => loadVehicles(childId).catch(() => {}), Boolean(childId));
+  useAutoReload("shifts", () => loadVehicles(childId).catch(() => {}), Boolean(childId));
 
   const selected = useMemo(() => children.find((c) => String(c.id) === String(childId)) || null, [children, childId]);
   const selectedVehicle = useMemo(() => vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || vehicles[0] || null, [vehicles, selectedVehicleId]);
@@ -190,6 +269,7 @@ export default function ParentLivePanel() {
   }, [allStops, myPos]);
 
   const nearestStop = useMemo(() => nearestStops[0] || null, [nearestStops]);
+  const nearbyStops = useMemo(() => nearestStops.slice(0, 3), [nearestStops]);
   const childNavUrl = useMemo(() => buildWalkNavUrl(childStop, myPos), [childStop, myPos]);
   const nearestNavUrl = useMemo(() => buildWalkNavUrl(nearestStop, myPos), [nearestStop, myPos]);
 
@@ -197,33 +277,37 @@ export default function ParentLivePanel() {
     if (!childStopPoint || !myPos) return null;
     return haversineMeters(Number(myPos.lat), Number(myPos.lng), childStopPoint.lat, childStopPoint.lng);
   }, [childStopPoint, myPos]);
-  const childWalkMin = useMemo(() => {
-    if (!Number.isFinite(Number(childDistanceM))) return null;
-    return Math.max(1, Math.round(Number(childDistanceM) / 80));
-  }, [childDistanceM]);
   const nearestDistanceM = useMemo(() => (nearestStop ? Number(nearestStop.__distanceM || 0) : null), [nearestStop]);
-  const nearestWalkMin = useMemo(() => {
-    if (!Number.isFinite(Number(nearestDistanceM))) return null;
-    return Math.max(1, Math.round(Number(nearestDistanceM) / 80));
-  }, [nearestDistanceM]);
 
   const mapStops = useMemo(() => {
-    const arr = allStops.map((stop, idx) => {
-      const coord = stopCoord(stop);
-      return {
-        ...stop,
-        id: stop?.id ?? `stop-${idx}`,
-        name: sameStop(stop, childStop) ? `Çocuğun durağı • ${stopTitle(stop)}` : stopTitle(stop),
-        lat: coord?.lat,
-        lng: coord?.lng,
-        status: sameStop(stop, childStop) ? "DONE" : "PENDING",
-      };
-    }).filter((x) => Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lng)));
+    const arr = allStops
+      .map((stop, idx) => {
+        const coord = stopCoord(stop);
+        return {
+          ...stop,
+          id: stop?.id ?? `stop-${idx}`,
+          name: sameStop(stop, childStop) ? `Çocuğun durağı • ${stopTitle(stop)}` : stopTitle(stop),
+          lat: coord?.lat,
+          lng: coord?.lng,
+          status: sameStop(stop, childStop) ? "DONE" : String(stop?.state || "PENDING").toUpperCase(),
+        };
+      })
+      .filter((x) => Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lng)));
     if (myPos && Number.isFinite(Number(myPos.lat)) && Number.isFinite(Number(myPos.lng))) {
       arr.push({ id: "me", name: "Siz", lat: Number(myPos.lat), lng: Number(myPos.lng), status: "DONE" });
     }
     return arr;
   }, [allStops, childStop, myPos]);
+
+  const summaryCards = useMemo(() => {
+    if (!selectedVehicle) return [];
+    return [
+      infoCard("Araç", selectedVehicle?.plate || `#${selectedVehicle?.id || "-"}`, hasVehiclePoint(selectedVehicle) ? "Canlı konum görünüyor" : "Canlı konum henüz görünmüyor"),
+      infoCard("Görünürlük aralığı", timeRangeText(selectedVehicle?.visibleWindow), "Canlı konum sadece bu vardiya aralığında görünür."),
+      infoCard("Son konum", gpsAgeText(selectedVehicle?.gpsLast), selectedVehicle?.gpsLast?.precision === "masked-2dp" ? "Konum KVKK gereği yaklaşık gösterilir." : null),
+      infoCard("Kalan durak", numText(selectedVehicle?.remainingStopsToChild), selectedVehicle?.childStopReached ? "Çocuğun durağına ulaşıldı." : "Çocuğun durağına kadar kalan durak sayısı."),
+    ];
+  }, [selectedVehicle]);
 
   return (
     <div className="wrap">
@@ -247,7 +331,7 @@ export default function ParentLivePanel() {
           <button
             type="button"
             className="btn"
-            disabled={busy}
+            disabled={busy || !childId}
             onClick={async () => {
               setBusy(true);
               setErr("");
@@ -277,34 +361,35 @@ export default function ParentLivePanel() {
         ) : null}
 
         {err ? <div className="card err" style={{ marginTop: 12 }}>{err}</div> : null}
+        {geoErr ? <div className="muted" style={{ color: "#fca5a5", marginTop: 12 }}>Konum alınamadı: {geoErr}</div> : null}
+        {!myPos ? <div className="muted" style={{ marginTop: 12 }}>Size en yakın durağı ve yürüyüş süresini görmek için <b>Konumumu Al</b> kullanın.</div> : null}
 
-        {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>Şu an canlı konum yok. (Vardiya saatinde ve araç ataması varsa görünür.)</div> : null}
+        {!vehicles.length ? <div className="muted" style={{ marginTop: 12 }}>Bu çocuk için şu an canlı araç görünmüyor. Araç sadece aktif vardiya saat aralığında ve araç ataması varsa görünür.</div> : null}
 
         {selectedVehicle ? (
           <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
+              {summaryCards.map((card) => (
+                <div key={card.title} className="card" style={{ padding: 12 }}>
+                  <div className="muted" style={{ marginBottom: 6 }}>{card.title}</div>
+                  <div style={{ fontWeight: 800 }}>{card.value}</div>
+                  {card.muted ? <div className="muted" style={{ marginTop: 6 }}>{card.muted}</div> : null}
+                </div>
+              ))}
+            </div>
+
             <div className="card" style={{ marginTop: 12, padding: 12 }}>
-              <div className="muted" style={{ marginBottom: 8 }}>Çocuk durağı ve yaklaşım</div>
-              <div style={{ display: "grid", gap: 8 }}>
-                <div>
-                  Araç <b>#{selectedVehicle.id}</b> • <b>{selectedVehicle.plate}</b>
-                </div>
-                <div>Çocuğun durağı: <b>{childStop?.name || "-"}</b></div>
-                <div>En yakın durak: <b>{nearestStop?.name || "-"}</b>{nearestStop && childStop && sameStop(nearestStop, childStop) ? <span className="muted"> • Çocuğun durağı ile aynı</span> : null}</div>
-                <div className="muted">
-                  Araçtan çocuğun durağına ETA: <b>{etaText(selectedVehicle)}</b>
-                  {selectedVehicle?.etaToChildKm != null ? <> • Mesafe: <b>{selectedVehicle.etaToChildKm} km</b></> : null}
-                </div>
-                <div className="muted">
-                  Sizden çocuğun durağına: <b>{childDistanceM != null ? `${(Number(childDistanceM) / 1000).toFixed(2)} km` : "Konum alınmadı"}</b>
-                  {childWalkMin != null ? <> • Yaklaşık yürüyüş: <b>{childWalkMin} dk</b></> : null}
-                </div>
-                <div className="muted">
-                  Sizden en yakın durağa: <b>{nearestDistanceM != null ? `${(Number(nearestDistanceM) / 1000).toFixed(2)} km` : "Konum alınmadı"}</b>
-                  {nearestWalkMin != null ? <> • Yaklaşık yürüyüş: <b>{nearestWalkMin} dk</b></> : null}
-                </div>
-                <div className="muted">Sonraki: <b>{stopTitle(selectedVehicle.nextStop)}</b> • Çocuğa kalan: <b>{numText(selectedVehicle.remainingStopsToChild)}</b> • Toplam kalan: <b>{numText(selectedVehicle.remainingStopsTotal)}</b></div>
+              <div className="title">Çocuk durağı ve yaklaşım</div>
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                <div>Araç <b>#{selectedVehicle.id}</b> • <b>{selectedVehicle.plate}</b></div>
+                <div>Çocuğun durağı: <b>{childStop ? stopTitle(childStop) : "Atanmış durak bulunamadı"}</b></div>
+                <div>En yakın durak: <b>{nearestStop ? stopTitle(nearestStop) : "Konum alınmadı"}</b>{nearestStop && childStop && sameStop(nearestStop, childStop) ? <span className="muted"> • Çocuğun durağı ile aynı</span> : null}</div>
+                <div className="muted">Araçtan çocuğun durağına ETA: <b>{etaText(selectedVehicle)}</b>{selectedVehicle?.etaToChildKm != null ? <> • Mesafe: <b>{selectedVehicle.etaToChildKm} km</b></> : null}</div>
+                <div className="muted">Sizden çocuğun durağına: <b>{distanceText(childDistanceM)}</b>{Number.isFinite(Number(childDistanceM)) ? <> • Yaklaşık yürüyüş: <b>{walkMinutesText(childDistanceM)}</b></> : null}</div>
+                <div className="muted">Sizden en yakın durağa: <b>{distanceText(nearestDistanceM)}</b>{Number.isFinite(Number(nearestDistanceM)) ? <> • Yaklaşık yürüyüş: <b>{walkMinutesText(nearestDistanceM)}</b></> : null}</div>
+                <div className="muted">Sonraki durak: <b>{stopTitle(selectedVehicle.nextStop)}</b> • Çocuğa kalan: <b>{numText(selectedVehicle.remainingStopsToChild)}</b> • Toplam kalan: <b>{numText(selectedVehicle.remainingStopsTotal)}</b></div>
                 {selectedVehicle?.childStopReached ? <div className="muted">Durum: <b>Çocuğun durağına ulaşıldı</b></div> : null}
-                {geoErr ? <div className="muted" style={{ color: "#fca5a5" }}>Konum alınamadı: {geoErr}</div> : null}
+                {!hasVehiclePoint(selectedVehicle) ? <div className="muted">Araç konumu henüz görünmüyor. Bu, sürücünün telefon GPS'i henüz gelmediği ya da canlı görünürlük anlık boş olduğu anlamına gelebilir.</div> : null}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button type="button" className="btn" onClick={() => navigate(`/shared/logs?kind=bundle_vehicle&targetType=vehicle&targetId=${selectedVehicle.id}&childId=${childId}&format=txt`)} title="Araç için TXT log export (GPS + hız + bildirim)">Log TXT</button>
                   {childNavUrl ? <button type="button" className="btn" onClick={() => window.open(childNavUrl, "_blank", "noopener,noreferrer")}>Çocuğun durağına git</button> : null}
@@ -313,21 +398,40 @@ export default function ParentLivePanel() {
               </div>
             </div>
 
+            {nearbyStops.length ? (
+              <div className="card" style={{ marginTop: 12, padding: 12 }}>
+                <div className="title">Size en yakın duraklar</div>
+                <div className="muted" style={{ marginBottom: 8 }}>İlk 3 durak mesafeye göre sıralanır.</div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {nearbyStops.map((stop, idx) => (
+                    <div key={`${stopUniqueKey(stop, idx)}:near`} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: sameStop(stop, childStop) ? "rgba(16,185,129,.10)" : "rgba(255,255,255,.03)" }}>
+                      <div><b>{stopTitle(stop)}</b></div>
+                      <div className="muted">Mesafe: <b>{distanceText(stop.__distanceM)}</b></div>
+                      <div className="muted">Yürüyüş: <b>{walkMinutesText(stop.__distanceM)}</b></div>
+                      {sameStop(stop, childStop) ? <div className="muted">• Çocuğun durağı</div> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {allStops.length ? (
               <div className="card" style={{ marginTop: 12, padding: 12 }}>
                 <div className="title">Shift durakları</div>
-                <div className="muted" style={{ marginBottom: 8 }}>Çocuğun durağı yeşil işaretli görünür. Tüm koordinatlı shift durakları listelenir.</div>
+                <div className="muted" style={{ marginBottom: 8 }}>Çocuğun durağı yeşil, size en yakın durak mavi vurgulanır. Tüm koordinatlı shift durakları listelenir.</div>
                 <div style={{ display: "grid", gap: 8 }}>
                   {allStops.map((stop, idx) => {
                     const isChild = sameStop(stop, childStop);
                     const isNearest = nearestStop && sameStop(stop, nearestStop);
                     const navUrl = buildWalkNavUrl(stop, myPos);
+                    const distanceMeters = myPos ? haversineMeters(Number(myPos.lat), Number(myPos.lng), Number(stopCoord(stop)?.lat), Number(stopCoord(stop)?.lng)) : null;
                     return (
                       <div key={stopUniqueKey(stop, idx)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 10px", borderRadius: 12, background: isChild ? "rgba(16,185,129,.10)" : isNearest ? "rgba(59,130,246,.10)" : "rgba(255,255,255,.03)" }}>
                         <div><b>{stopTitle(stop)}</b></div>
                         {isChild ? <div className="muted">• Çocuğun durağı</div> : null}
                         {isNearest ? <div className="muted">• Size en yakın</div> : null}
-                        <div className="muted">Durum: <b>{String(stop?.state || "PENDING").toUpperCase()}</b></div>
+                        <div className="muted">Durum: <b>{stopStateText(stop?.state)}</b></div>
+                        {Number.isFinite(Number(distanceMeters)) ? <div className="muted">• Mesafe: <b>{distanceText(distanceMeters)}</b></div> : null}
                         {navUrl ? <button type="button" className="btn" onClick={() => window.open(navUrl, "_blank", "noopener,noreferrer")}>Git</button> : null}
                       </div>
                     );

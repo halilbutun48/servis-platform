@@ -504,15 +504,9 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
     accessCode: req.body?.accessCode,
     pin: req.body?.pin,
   });
-  const email = String(req.body?.email || "").trim().toLowerCase();
-  const password = String(req.body?.password || "");
-  const fullName = String(req.body?.fullName || "").trim();
-  const phone = String(req.body?.phone || "").trim() || null;
-  const legacyAccountMode = false;
-
   if (!raw) return res.status(400).json({ error: "token or accessCode+pin required" });
 
-  const invite = await prisma.parentInvite.findUnique({
+  const accessRow = await prisma.parentInvite.findUnique({
     where: { tokenHash: sha256Hex(raw) },
     include: {
       company: { select: { id: true, name: true, kind: true } },
@@ -520,114 +514,58 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
     },
   });
 
-  if (!invite) return res.status(404).json({ error: "INVITE_NOT_FOUND" });
-  if (invite.revokedAt) return res.status(410).json({ error: "INVITE_REVOKED" });
-  if (invite.expiresAt && new Date(invite.expiresAt).getTime() <= Date.now()) return res.status(410).json({ error: "INVITE_EXPIRED" });
-  if (!invite.company || invite.company.kind !== "SCHOOL") return res.status(409).json({ error: "INVITE_SCOPE_INVALID" });
-  if (!invite.child || invite.child.companyId !== invite.company.id) return res.status(409).json({ error: "INVITE_CHILD_INVALID" });
+  if (!accessRow) return res.status(404).json({ error: "INVITE_NOT_FOUND" });
+  if (accessRow.revokedAt) return res.status(410).json({ error: "INVITE_REVOKED" });
+  if (accessRow.expiresAt && new Date(accessRow.expiresAt).getTime() <= Date.now()) return res.status(410).json({ error: "INVITE_EXPIRED" });
+  if (!accessRow.company || accessRow.company.kind !== "SCHOOL") return res.status(409).json({ error: "INVITE_SCOPE_INVALID" });
+  if (!accessRow.child || accessRow.child.companyId !== accessRow.company.id) return res.status(409).json({ error: "INVITE_CHILD_INVALID" });
 
-  let out = null;
-
-  if (legacyAccountMode) {
-    if (!email.includes("@")) return res.status(400).json({ error: "valid email required" });
-    if (password.length < 3) return res.status(400).json({ error: "password min 3" });
-    if (invite.email && invite.email !== email) return res.status(403).json({ error: "INVITE_EMAIL_MISMATCH" });
-    if (invite.consumedAt) return res.status(410).json({ error: "INVITE_CONSUMED" });
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    let user = await prisma.user.findUnique({ where: { email } });
-    if (user && user.role !== "PARENT") return res.status(409).json({ error: "EMAIL_IN_USE" });
-    if (user && isDisabledHash(user.passwordHash)) return res.status(403).json({ error: "ACCOUNT_DISABLED" });
-
-    out = await prisma.$transaction(async (tx) => {
-      let parentUser = user;
-      if (parentUser) {
-        parentUser = await tx.user.update({
-          where: { id: parentUser.id },
-          data: {
-            passwordHash,
-            fullName,
-            phone,
-            companyId: invite.company.id,
-            role: "PARENT",
-          },
-        });
-      } else {
-        parentUser = await tx.user.create({
-          data: {
-            email,
-            passwordHash,
-            role: "PARENT",
-            fullName,
-            phone,
-            companyId: invite.company.id,
-          },
-        });
-      }
-
-      const existingLink = await tx.parentChild.findFirst({ where: { parentUserId: parentUser.id, personelId: invite.child.id }, select: { id: true } });
-      if (!existingLink) await tx.parentChild.create({ data: { parentUserId: parentUser.id, personelId: invite.child.id } });
-      await tx.parentInvite.update({ where: { id: invite.id }, data: { consumedAt: new Date(), consumedByUserId: parentUser.id } });
-      return parentUser;
-    });
-
-    try {
-      await prisma.auditLog.create({
+  const syntheticEmail = `parent-access-${accessRow.id}@vardis.local`;
+  const out = await prisma.$transaction(async (tx) => {
+    let parentUser = await tx.user.findUnique({ where: { email: syntheticEmail } });
+    if (parentUser && isDisabledHash(parentUser.passwordHash)) return null;
+    if (!parentUser) {
+      const passwordHash = await bcrypt.hash(raw, 10);
+      parentUser = await tx.user.create({
         data: {
-          actorUserId: out.id,
-          actorRole: out.role,
-          action: "PARENT_INVITE_ACCEPT",
-          entity: "ParentInvite",
-          entityId: invite.id,
-          meta: { email, companyId: invite.company.id, childPersonelId: invite.child.id },
+          email: syntheticEmail,
+          passwordHash,
+          role: "PARENT",
+          fullName: accessRow.child?.fullName ? `${accessRow.child.fullName} velisi` : "Veli erişimi",
+          phone: null,
+          companyId: accessRow.company.id,
         },
       });
-    } catch {}
-  } else {
-    const syntheticEmail = `parent-access-${invite.id}@vardis.local`;
-    out = await prisma.$transaction(async (tx) => {
-      let parentUser = await tx.user.findUnique({ where: { email: syntheticEmail } });
-      if (parentUser && isDisabledHash(parentUser.passwordHash)) return null;
-      if (!parentUser) {
-        const passwordHash = await bcrypt.hash(raw, 10);
-        parentUser = await tx.user.create({
-          data: {
-            email: syntheticEmail,
-            passwordHash,
-            role: "PARENT",
-            fullName: invite.child?.fullName ? `${invite.child.fullName} velisi` : "Veli erişimi",
-            phone: null,
-            companyId: invite.company.id,
-          },
-        });
-      } else {
-        parentUser = await tx.user.update({
-          where: { id: parentUser.id },
-          data: {
-            role: "PARENT",
-            companyId: invite.company.id,
-            fullName: invite.child?.fullName ? `${invite.child.fullName} velisi` : parentUser.fullName,
-          },
-        });
-      }
-      const existingLink = await tx.parentChild.findFirst({ where: { parentUserId: parentUser.id, personelId: invite.child.id }, select: { id: true } });
-      if (!existingLink) await tx.parentChild.create({ data: { parentUserId: parentUser.id, personelId: invite.child.id } });
-      return parentUser;
-    });
-    if (!out) return res.status(403).json({ error: "ACCOUNT_DISABLED" });
-    try {
-      await prisma.auditLog.create({
+    } else {
+      parentUser = await tx.user.update({
+        where: { id: parentUser.id },
         data: {
-          actorUserId: out.id,
-          actorRole: out.role,
-          action: "PARENT_ACCESS_LOGIN",
-          entity: "ParentInvite",
-          entityId: invite.id,
-          meta: { companyId: invite.company.id, childPersonelId: invite.child.id },
+          role: "PARENT",
+          companyId: accessRow.company.id,
+          fullName: accessRow.child?.fullName ? `${accessRow.child.fullName} velisi` : parentUser.fullName,
         },
       });
-    } catch {}
-  }
+    }
+    const existingLink = await tx.parentChild.findFirst({ where: { parentUserId: parentUser.id, personelId: accessRow.child.id }, select: { id: true } });
+    if (!existingLink) await tx.parentChild.create({ data: { parentUserId: parentUser.id, personelId: accessRow.child.id } });
+    return parentUser;
+  });
+  if (!out) return res.status(403).json({ error: "ACCOUNT_DISABLED" });
+  try {
+    await clearPasswordChangeRequired(out.id);
+  } catch {}
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: out.id,
+        actorRole: out.role,
+        action: "PARENT_ACCESS_LOGIN",
+        entity: "ParentInvite",
+        entityId: accessRow.id,
+        meta: { companyId: accessRow.company.id, childPersonelId: accessRow.child.id },
+      },
+    });
+  } catch {}
 
   const token = issueAccessToken(out);
   return res.json({

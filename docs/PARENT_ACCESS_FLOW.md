@@ -1,4 +1,4 @@
-# SCHOOL → Veli Erişimi Akışı
+# SCHOOL → Veli Erişimi / Parent Access Akışı
 
 Bu akış artık hesap daveti değildir.
 

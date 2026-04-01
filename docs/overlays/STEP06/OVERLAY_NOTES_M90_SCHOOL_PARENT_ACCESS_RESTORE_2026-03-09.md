@@ -1,10 +1,10 @@
-# M90 — SCHOOL Parent Link Restore
+# M90 — SCHOOL Veli Erişimi Restore (tarihsel not)
 
-Bu overlay SCHOOL akışında kaybolan parent link üretme panelini geri getirir.
+Bu overlay SCHOOL akışında kaybolan Veli Erişimi panelini geri getirir.
 
 ## Dahil
 - `web/src/layout/NavDock.jsx`
-  - SCHOOL için Gelişmiş altında `Parent Link` menüsü geri geldi.
+  - SCHOOL için Gelişmiş altında `Veli Erişimi` menüsü geri geldi.
 - `web/src/App.jsx`
   - `/school/parents` route geri geldi.
   - login gerekmeden çalışan `/accept-parent-invite?...` public ekran route’u geri geldi.
@@ -12,6 +12,6 @@ Bu overlay SCHOOL akışında kaybolan parent link üretme panelini geri getirir
   - `/api/school/parent-invites` route mount geri geldi.
 
 ## Beklenen sonuç
-- SCHOOL kullanıcı menüsünde `Parent Link` görünür.
+- SCHOOL kullanıcı menüsünde `Veli Erişimi` görünür.
 - Panel açılıp link üretilebilir.
 - Üretilen link `#/accept-parent-invite?token=...` ekranına gider.

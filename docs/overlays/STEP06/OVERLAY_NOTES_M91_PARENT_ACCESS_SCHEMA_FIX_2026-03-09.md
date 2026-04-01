@@ -1,12 +1,12 @@
-# M91 — School Parent Invite schema/client drift fix
+# M91 — School Parent Access schema/client drift fix
 
-Bu overlay, SCHOOL Parent Link/Invite akışında görülen şu runtime hatasını düzeltir:
+Bu overlay, SCHOOL Veli Erişimi akışında görülen şu runtime hatasını düzeltir:
 
 - `TypeError: Cannot read properties of undefined (reading 'findMany')`
 - kaynak: `prisma.parentInvite` modelinin Prisma schema/client içinde olmaması
 
 ## Yapılan düzeltme
-- `backend/prisma/schema.prisma` içine `ParentInvite` modeli geri eklendi.
+- `backend/prisma/schema.prisma` içine `ParentInvite (ürün yüzeyinde Veli Erişimi)` modeli geri eklendi.
 - İlgili reverse relation'lar geri eklendi:
   - `Company.parentInvites`
   - `User.parentInvitesCreated`
@@ -24,6 +24,6 @@ Schema değiştiği için Prisma client yeniden üretilmeli ve veritabanı schem
 
 ## Beklenen sonuç
 - `/api/school/parent-invites` artık crash etmez
-- SCHOOL Parent Link ekranı açılır
+- SCHOOL Veli Erişimi ekranı açılır
 - link üretme / listeleme / revoke akışı çalışır
 - public accept akışı için `auth.js` tarafındaki `prisma.parentInvite` çağrıları da düzelir

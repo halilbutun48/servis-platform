@@ -60,9 +60,9 @@ Bu komut:
 - sonda repo audit raporu üretir.
 
 ## TTL kısa not
-- Parent invite presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- Veli Erişimi presetleri: **1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl**
 - Personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
-- Parent invite backend üst sınırı: **365 gün**
+- Veli Erişimi backend üst sınırı: **365 gün**
 - Personel/öğrenci public canlı link backend üst sınırı: **365 gün**
 
 ## Tools düzeni kısa not

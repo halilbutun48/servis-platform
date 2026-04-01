@@ -149,7 +149,7 @@ export function parentRouter() {
           { assignments: { some: { personelId: { in: childIds } } } },
         ],
       },
-      select: { id: true, vehicleId: true },
+      select: { id: true, vehicleId: true, startAt: true, endAt: true },
       take: 5000,
       orderBy: { id: "asc" },
     });
@@ -158,10 +158,15 @@ export function parentRouter() {
     if (!vehicleIds.length) return res.json([]);
 
     const shiftByVehicleId = new Map();
+    const shiftWindowByVehicleId = new Map();
     for (const s of shifts) {
       const vid = Number(s.vehicleId);
       if (!vid || shiftByVehicleId.has(vid)) continue;
       shiftByVehicleId.set(vid, Number(s.id));
+      shiftWindowByVehicleId.set(vid, {
+        startAt: s.startAt || null,
+        endAt: s.endAt || null,
+      });
     }
 
     const shiftIds = uniqNums(Array.from(shiftByVehicleId.values()));
@@ -229,11 +234,13 @@ export function parentRouter() {
         const sid = shiftByVehicleId.get(Number(v.id)) || null;
         const shiftStops = sid ? stopsByShiftId.get(Number(sid)) || [] : [];
         const progress = computeStopProgress(shiftStops, stop?.id ?? null);
+        const visibleWindow = shiftWindowByVehicleId.get(Number(v.id)) || null;
 
         const baseItem = sanitizeVehicleLiveItem(v, { role: "PARENT" });
         return {
           ...baseItem,
           childId,
+          visibleWindow,
           // ETA
           etaToChildMin: eta?.etaMin ?? null,
           etaToChildKm: eta?.km ?? null,

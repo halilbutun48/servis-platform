@@ -77,7 +77,7 @@ YATIRIMCI / WEB MESAJLAŞMA ÇERÇEVESİ
 
 TTL / LINK PRESETLERI
 <!-- TTL_PRESETS_PARENT_PUBLIC_LINKS_V1 -->
-- Parent invite ve public link presetleri: 1 hafta / 1 ay / 6 ay / 1 yıl
+- Veli Erişimi ve public link presetleri: 1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl
 
 TERİM KURALLARI
 - “agreement” yerine “sözleşme”
