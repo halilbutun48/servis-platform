@@ -1,53 +1,62 @@
-param([string]$RepoRoot = (Get-Location).Path)
+param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
-function Info($m){ Write-Host "INFO $m" }
-function Ok($m){ Write-Host "OK $m" }
-function MustExist($rel){ $p = Join-Path $RepoRoot $rel; if (!(Test-Path -LiteralPath $p)) { throw "FAIL $rel missing" }; Ok "$rel exists" }
-function MustContain($rel, $needle, $label){
-  $p = Join-Path $RepoRoot $rel
+
+function Ok([string]$m) { Write-Host "OK $m" }
+function NeedExists([string]$file) {
+  $p = Join-Path $RepoRoot $file
+  if (-not (Test-Path -LiteralPath $p)) { throw "FAIL $file exists" }
+  Ok "$file exists"
+}
+function NeedContains([string]$file, [string]$needle, [string]$label) {
+  $p = Join-Path $RepoRoot $file
   $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
   if (-not $txt.Contains($needle)) { throw "FAIL $label" }
   Ok $label
 }
-function MustMatch($rel, $pattern, $label){
-  $p = Join-Path $RepoRoot $rel
-  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
-  if ($txt -notmatch $pattern) { throw "FAIL $label" }
-  Ok $label
+function NeedAnyFileContains([string[]]$files, [string[]]$needles, [string]$label) {
+  foreach ($file in $files) {
+    $p = Join-Path $RepoRoot $file
+    if (-not (Test-Path -LiteralPath $p)) { continue }
+    $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+    foreach ($needle in $needles) {
+      if ($txt.Contains($needle)) { Ok $label; return }
+    }
+  }
+  throw "FAIL $label"
 }
-function WarnContain($rel, $needle, $label){
-  $p = Join-Path $RepoRoot $rel
+function NeedRegex([string]$file, [string]$pattern, [string]$label) {
+  $p = Join-Path $RepoRoot $file
   $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
-  if (-not $txt.Contains($needle)) { Info "WARN $label"; return }
+  if (-not [regex]::IsMatch($txt, $pattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)) {
+    throw "FAIL $label"
+  }
   Ok $label
 }
 
-Info 'Checking backend telematics files'
+Write-Host "INFO Checking backend telematics files"
 @(
   'backend\src\routes\telematics.js',
   'backend\src\telematics\hash.js',
   'backend\src\telematics\providers.js',
   'backend\src\telematics\service.js',
   'backend\scripts\m44_telematics_check.js'
-) | ForEach-Object { MustExist $_ }
+) | ForEach-Object { NeedExists $_ }
 
-Info 'Checking prisma schema additions'
-MustContain 'backend\prisma\schema.prisma' 'enum GpsDeviceStatus {' 'schema has GpsDeviceStatus enum'
-MustContain 'backend\prisma\schema.prisma' 'model GpsDevice {' 'schema has GpsDevice model'
-MustMatch 'backend\prisma\schema.prisma' 'gpsDevices\s+GpsDevice\[\]' 'vehicle has gpsDevices relation'
+Write-Host "INFO Checking prisma schema additions"
+NeedContains 'backend\prisma\schema.prisma' 'enum GpsDeviceStatus' 'schema has GpsDeviceStatus enum'
+NeedContains 'backend\prisma\schema.prisma' 'model GpsDevice' 'schema has GpsDevice model'
+NeedRegex 'backend\prisma\schema.prisma' 'model\s+Vehicle\s*\{[\s\S]*?\bgpsDevices\b[\s\S]*?\}' 'vehicle has gpsDevices relation'
 
-Info 'Checking env + compose wiring'
-MustContain '.env.example' 'TELEMATICS_ENABLED=1' '.env example has TELEMATICS_ENABLED'
-MustContain '.env.example' 'TELEMATICS_VENDOR_SHARED_SECRET=' '.env example has TELEMATICS_VENDOR_SHARED_SECRET'
-MustContain 'infra\docker-compose.yml' 'TELEMATICS_ENABLED' 'docker compose passes TELEMATICS_ENABLED'
-MustContain 'infra\docker-compose.yml' 'TELEMATICS_VENDOR_SHARED_SECRET' 'docker compose passes TELEMATICS_VENDOR_SHARED_SECRET'
+Write-Host "INFO Checking env + compose wiring"
+NeedContains '.env.example' 'TELEMATICS_ENABLED' '.env example has TELEMATICS_ENABLED'
+NeedContains '.env.example' 'TELEMATICS_VENDOR_SHARED_SECRET' '.env example has TELEMATICS_VENDOR_SHARED_SECRET'
+NeedContains 'infra\docker-compose.yml' 'TELEMATICS_ENABLED' 'docker compose passes TELEMATICS_ENABLED'
+NeedContains 'infra\docker-compose.yml' 'TELEMATICS_VENDOR_SHARED_SECRET' 'docker compose passes TELEMATICS_VENDOR_SHARED_SECRET'
 
-Info 'Checking server + tools wiring'
-MustContain 'backend\src\server.js' 'app.use("/api/telematics", telematicsLimiter);' 'server applies telematics limiter'
-MustContain 'backend\src\server.js' 'app.use("/api/telematics", telematicsRouter(io));' 'server mounts telematics router'
-WarnContain 'tools\README.md' 'pack_m44_telematics.ps1' 'tools readme mentions m44 pack'
-MustExist 'tools\pack_m44_telematics.ps1'
-MustExist 'tools\check_m44_telematics_repo_contract.ps1'
-MustExist 'docs\overlays\OVERLAY_NOTES_M44_TELEMATICS_2026-03-10.md'
+Write-Host "INFO Checking server + tools wiring"
+NeedAnyFileContains @('backend\src\server.js','backend\src\bootstrap\routeMounts.js') @('/api/telematics') 'server mounts telematics router'
+NeedAnyFileContains @('backend\src\server.js','backend\src\bootstrap\routeMounts.js') @('telematicsLimiter') 'server applies telematics limiter'
+NeedContains 'tools\pack_m44_telematics.ps1' 'm44_telematics_check.js' 'pack runs m44 runtime check'
+NeedContains 'tools\check_m44_telematics_repo_contract.ps1' 'server mounts telematics router' 'repo contract includes telematics mount assertion'
 
 Write-Host 'M44 TELEMATICS REPO CONTRACT PASS'

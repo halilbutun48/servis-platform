@@ -53,6 +53,7 @@ if (stableTo !== '78') fail('STABLE_TO remains 78');
 ok('STABLE_TO remains 78');
 
 const server = read('backend/src/server.js');
+const mountTxt = exists('backend/src/bootstrap/routeMounts.js') ? read('backend/src/bootstrap/routeMounts.js') : '';
 const route = read('backend/src/routes/operationVerification.js');
 const panel = read('web/src/panels/superadmin/OperationVerificationPanel.jsx');
 const app = read('web/src/App.jsx');
@@ -64,8 +65,8 @@ const toolsReadme = read('tools/README.md');
 const toolsPrimer = read('tools/PRIMER_SNAPSHOT.md');
 const registry = read('docs/MILESTONE_REGISTRY_V1.md');
 
-mustContain(server, 'operationVerificationRouter', 'server imports operation verification router');
-mustContain(server, '/api/operation-verification', 'server mounts operation verification route');
+mustContainAny(server + "\n" + mountTxt, ['operationVerificationRouter'], 'server imports operation verification router');
+mustContainAny(server + "\n" + mountTxt, ['/api/operation-verification'], 'server mounts operation verification route');
 mustContain(route, 'requireRole("SUPER_ADMIN")', 'route limited to SUPER_ADMIN');
 mustContain(route, '/role-surface', 'route exposes role-surface');
 mustContain(route, '/status-options', 'route exposes status-options');
@@ -121,4 +122,3 @@ const reportPath = path.join(artifactDir, 'm78_1_operasyon_dogrulama_yuzeyi_late
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 console.log(`INFO report => ${path.relative(repoRoot, reportPath).replace(/\\/g, '/')}`);
 console.log('=== M78.1 OPERASYON DOGRULAMA YUZEYI CHECK PASS ===');
-

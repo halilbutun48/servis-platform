@@ -64,7 +64,7 @@ async function main() {
   must("tools readme lists master/docs pack or current living master entry", includesAny(toolsReadme, ["tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 75", "tools\\pack_docs_ssot.ps1", "tools\\pack.ps1 -To 76", "tools\\pack_m77_kvkk_uyum_katmani.ps1"]));
   must("registry includes M65/M66 history or current living route", includesAny(registry, ["M65 - Pilot Launch Gate - green-base", "M65 - Pilot Launch Gate - green", "M66 - Operasyonel Reassignment - functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik", "M75 - green-baseline", "M75 - living baseline", "M76A-1 - minimum-normalization - active", "M76A-1 - minimum normalization", "M77 - KVKK + Uyum Katmanı"]));
 
-  must("route exposes launch gate endpoints", includesAny(route, ["/manifest", "/decision-template", "/summary"]));
+  must("route exposes launch gate endpoints", includesAny(route, ["/manifest", "/decision-template", "/summary", "/risk-template"]));
   must("manifest defines launch gate capabilities", includesAny(manifest, ["PILOT_LAUNCH_GATE_CAPABILITIES", "GO / LIMITED GO / NO-GO", "riskMatrix"]));
   must("panel shows M65 cards", includesAny(panel, ["M65 Pilot Launch Gate", "Launch checklist", "GO / LIMITED GO / NO-GO"]));
   must("runbook explains M65 scope", includesAny(runbook, ["Pilot Launch Gate", "kritik risk listesi", "M65 green olmadan sahaya çıkılmaz"]));

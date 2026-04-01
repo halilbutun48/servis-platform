@@ -5,6 +5,16 @@ function Ok($m){ Write-Host "OK $m" }
 function MustExist($rel){ $p = Join-Path $RepoRoot $rel; if (!(Test-Path -LiteralPath $p)) { throw "FAIL $rel missing" }; Ok "$rel exists" }
 function MustAbsent($rel){ $p = Join-Path $RepoRoot $rel; if (Test-Path -LiteralPath $p) { throw "FAIL $rel still live" }; Ok "$rel archived/removed" }
 function MustContain($rel, $needle, $label){ $p = Join-Path $RepoRoot $rel; $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8; if ($txt -notlike "*$needle*") { throw "FAIL $label" }; Ok $label }
+function MustContainAny($rels, $needle, $label){
+  foreach ($rel in $rels) {
+    $p = Join-Path $RepoRoot $rel
+    if (Test-Path -LiteralPath $p) {
+      $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+      if ($txt -like "*$needle*") { Ok $label; return }
+    }
+  }
+  throw "FAIL $label"
+}
 Info 'Checking stale live paths removed'
 @(
   'backend\src\routes\organizationPlans.js',
@@ -22,8 +32,8 @@ Info 'Checking canonical files kept'
   'docs\overlays\OVERLAY_NOTES_M104_REPO_AUDIT_CLEANUP_2026-03-10.md'
 ) | ForEach-Object { MustExist $_ }
 Info 'Checking content sync'
-MustContain 'backend\src\server.js' 'organizationRouter' 'organizationRouter import kept'
-MustContain 'backend\src\server.js' '/api/organization' 'organization router mount kept'
+MustContainAny @('backend\src\server.js','backend\src\bootstrap\routeFactories.js','backend\src\bootstrap\routeMounts.js') 'organizationRouter' 'organizationRouter import kept'
+MustContainAny @('backend\src\server.js','backend\src\bootstrap\routeMounts.js') '/api/organization' 'organization router mount kept'
 MustContain 'docs\API_SPEC_V1.md' '/api/company/passenger-links' 'API spec passenger links sync'
 MustContain 'docs\DB_SCHEMA_V1.md' 'PassengerLiveLink' 'DB spec passenger live link sync'
 MustContain 'docs\UI_SPEC_V1.md' '/public/passenger-live?token=...' 'UI spec public live route sync'

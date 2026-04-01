@@ -24,7 +24,8 @@ function includesAny(rel, needles, label) {
 banner("M71 SUMMARY + HOT PATH CHECK");
 includes("backend/src/routes/companyOverview.js", "workflow-summary", "company overview workflow summary route exists");
 includes("backend/src/routes/companyOverview.js", "commercial-flow-summary", "company overview commercial flow summary route exists");
-includes("backend/src/server.js", 'app.use("/api/company/overview", companyOverviewRouter());', "server mounts company overview router");
+const mountFiles = ["backend/src/server.js", "backend/src/bootstrap/routeMounts.js"];
+if (!mountFiles.some((rel) => read(rel).includes('app.use("/api/company/overview", companyOverviewRouter());'))) fail("server mounts company overview router"); else ok("server mounts company overview router");
 includes("web/src/utils/companyDataHub.js", "/api/company/overview/workflow-summary", "companyDataHub workflow summary helper exists");
 includes("web/src/utils/companyDataHub.js", "/api/company/overview/commercial-flow-summary", "companyDataHub commercial flow summary helper exists");
 includes("web/src/panels/company/WorkflowPanel.jsx", "getCompanyWorkflowSummary", "WorkflowPanel uses workflow summary");

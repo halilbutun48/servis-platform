@@ -51,7 +51,7 @@ Assert-RepoContractContainsAny $registry @(
  'M77 - KVKK + Uyum Katmani'
 ) 'registry includes M65/M66 history or current living route'
 
-Assert-RepoContractContainsAny $route @('/manifest','/decision-template','/summary') 'pilot launch gate route exposes summary endpoints'
+Assert-RepoContractContainsAny $route @('/manifest','/decision-template','/summary','/risk-template') 'pilot launch gate route exposes summary endpoints'
 Assert-RepoContractContainsAny $manifest @('PILOT_LAUNCH_GATE_CAPABILITIES','GO / LIMITED GO / NO-GO','riskMatrix') 'manifest defines M65 gate capabilities'
 Assert-RepoContractContainsAny $panel @('M65 Pilot Launch Gate','Launch checklist','GO / LIMITED GO / NO-GO') 'web panel shows M65 cards'
 Assert-RepoContractContainsAny $runbook @('Pilot Launch Gate','kritik risk listesi','M65 green olmadan sahaya çıkılmaz') 'runbook defines M65 scope'

@@ -72,23 +72,10 @@ import { getRedis } from "./redis/index.js";
 import { RedisRateLimitStore } from "./middleware/rateLimitRedisStore.js";
 import { startCapacityBaselineMonitor, capacityRequestStarted, capacityRequestFinished, capacityWsConnected, capacityWsDisconnected, getCapacityHealthSummary } from "./ops/capacityLoadBaseline.js";
 import { edgeRequestContext, applyEdgeSecurityHeaders, edgeSecurityGuard, getEdgeSecurityHealthSummary } from "./ops/edgeSecurityBaseline.js";
+import { pickExport, assertRouteFactories } from "./bootstrap/routeFactories.js";
+import { mountCoreRoutes, mountIoRoutes } from "./bootstrap/routeMounts.js";
 
 import * as agreementsMod from "./routes/agreements.js";
-/**
- * mod export'larÄ± 3 tip olabilir:
- * 1) export function xxxRouter(io){...}  => factory
- * 2) export default function (io){...}  => factory
- * 3) export default router               => Router objesi
- *
- * Biz server.js tarafÄ±nda HER ZAMAN xxxRouter(...) Ã§aÄŸÄ±rmak istiyoruz.
- * Bu yÃ¼zden Router objesi gelirse factory wrapperâ€™a sarÄ±yoruz.
- */
-function pickExport(mod, preferredName) {
-  const picked = mod?.[preferredName] ?? mod?.default;
-  if (!picked) return null;
-  if (typeof picked === "function") return picked;
-  return (..._args) => picked;
-}
 
 const vehiclesRouter = pickExport(vehiclesMod, "vehiclesRouter");
 const driversRouter = pickExport(driversMod, "driversRouter");
@@ -105,7 +92,7 @@ const companiesRouter = pickExport(companiesMod, "companiesRouter");
 const roomsRouter = pickExport(roomsMod, "roomsRouter");
 const routeTemplatesRouter = pickExport(routeTemplatesMod, "routeTemplatesRouter");
 const agreementsRouter = pickExport(agreementsMod, "agreementsRouter");
-for (const [name, fn] of Object.entries({
+assertRouteFactories({
   vehiclesRouter,
   driversRouter,
   shiftsRouter,
@@ -119,11 +106,7 @@ for (const [name, fn] of Object.entries({
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,
-})) {
-  if (!fn) {
-    throw new Error(`Route export missing: ${name} (check named/default export)`);
-  }
-}
+});
 
 const app = express();
 startCapacityBaselineMonitor();
@@ -527,48 +510,42 @@ app.get("/health", async (req, res) => {
   });
 });
 
-// Public routes
-app.use("/api/auth", authStep2Router);
-app.use("/api/auth", authRouter);
-app.use("/api/public/passenger-live", publicPassengerLiveRouter());
-app.use("/api/public/personel-live", publicPassengerLiveRouter());
-
-// Step 1.5: TOTP step-up guard (ROOM + SUPER_ADMIN on sensitive paths)
-app.use("/api/admin/logs", authRequired(), requireStepUp("SUPER_ADMIN"));
-app.use("/api/admin", authRequired(), requireStepUp("SUPER_ADMIN"));
-app.use("/api/logs/export", authRequired(), requireStepUp("ROOM", "SUPER_ADMIN"));
-app.use("/api/vehicles", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
-app.use("/api/drivers", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
-app.use("/api/availability", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
-app.use("/api/shifts", authRequired(), requireStepUpWrite("ROOM", "SUPER_ADMIN"));
-app.use("/api/me", meRouter);
-app.use("/api/notifications", notificationsRouter);
-app.use("/api/kvkk", kvkkRouter());
-app.use("/api/logs", logsRouter());
-app.use("/api/reports", reportsRouter());
-app.use("/api/penalties", penaltiesRouter());
-app.use("/api/eta", etaRouter);
-app.use("/api/geocode", geocodeRouter());
-app.use("/api/company/hub", companyHubRouter());
-app.use("/api/company/overview", companyOverviewRouter());
-app.use("/api/plan-builder", planBuilderRouter());
-app.use("/api/live", liveRouter());
-app.use("/api/observability", observabilityRouter());
-app.use("/api/field-acceptance", fieldAcceptanceRouter());
-app.use("/api/ssot-alignment", ssotAlignmentRouter());
-app.use("/api/commercial-core", commercialCoreRouter());
-app.use("/api/trust-quality", trustQualityRouter());
-app.use("/api/natural-copilot", naturalCopilotRouter());
-app.use("/api/pilot-launch-gate", pilotLaunchGateRouter);
-app.use("/api/operation-verification", operationVerificationRouter());
-app.use("/api/parent", parentRouter());
-app.use("/api/school/parent-invites", schoolParentInvitesRouter());
-app.use("/api/companies", companiesRouter());
-app.use("/api/rooms", roomsRouter());
-app.use("/api/route-templates", routeTemplatesRouter());
-app.use("/api/availability", availabilityRoutes);
-app.use("/api/admin/logs", adminLogsRouter());
-app.use("/api/admin", adminRouter());
+mountCoreRoutes(app, {
+  authStep2Router,
+  authRouter,
+  publicPassengerLiveRouter,
+  authRequired,
+  requireStepUp,
+  requireStepUpWrite,
+  meRouter,
+  notificationsRouter,
+  kvkkRouter,
+  logsRouter,
+  reportsRouter,
+  penaltiesRouter,
+  etaRouter,
+  geocodeRouter,
+  companyHubRouter,
+  companyOverviewRouter,
+  planBuilderRouter,
+  liveRouter,
+  observabilityRouter,
+  fieldAcceptanceRouter,
+  ssotAlignmentRouter,
+  commercialCoreRouter,
+  trustQualityRouter,
+  naturalCopilotRouter,
+  pilotLaunchGateRouter,
+  operationVerificationRouter,
+  parentRouter,
+  schoolParentInvitesRouter,
+  companiesRouter,
+  roomsRouter,
+  routeTemplatesRouter,
+  availabilityRoutes,
+  adminLogsRouter,
+  adminRouter,
+});
 
 // Server + Socket.IO
 const server = http.createServer(app);
@@ -613,23 +590,24 @@ io.on("connection", (socket) => {
   socket.emit("ws:ready", { userId: user.id, role: user.role, rooms });
 });
 
-// API routes needing io
-app.use("/api/vehicles", vehiclesRouter(io));
-app.use("/api/drivers", driversRouter(io));
-app.use("/api/shifts", shiftsRouter(io));
-app.use("/api/gps", gpsRouter(io));
-app.use("/api/telematics", telematicsRouter(io));
-app.use("/api/requests", requestsRouter(io));
-app.use("/api/driver", driverRouter(io));
-app.use("/api/personels", personelsRouter(io));
-app.use("/api/company/personels", companyPersonelsRouter());
-app.use("/api/company/passenger-links", passengerLinksRouter());
-app.use("/api/personel/shifts", personelShiftsRouter());
-app.use("/api/agreements", agreementsRouter(io));
-app.use("/api/offers", offersRouter(io));
-app.use("/api/checkin", checkinRouter(io));
-app.use("/api/organization", organizationRouter(io));
-app.use("/api/ai", aiRouter());
+mountIoRoutes(app, io, {
+  vehiclesRouter,
+  driversRouter,
+  shiftsRouter,
+  gpsRouter,
+  telematicsRouter,
+  requestsRouter,
+  driverRouter,
+  personelsRouter,
+  companyPersonelsRouter,
+  passengerLinksRouter,
+  personelShiftsRouter,
+  agreementsRouter,
+  offersRouter,
+  checkinRouter,
+  organizationRouter,
+  aiRouter,
+});
 // Background monitors
 const stopMonitors = startMonitors(io);
 

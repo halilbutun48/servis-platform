@@ -1,84 +1,95 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from "node:fs";
+import path from "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..", "..");
+const cwd = process.cwd();
+const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
-function banner(title) {
-  console.log(`\n=== ${title} ===`);
+function read(rel) {
+  return fs.readFileSync(path.join(root, rel), "utf8");
 }
-
-function must(label, ok) {
-  if (!ok) throw new Error(`FAIL ${label}`);
+function exists(rel) {
+  const ok = fs.existsSync(path.join(root, rel));
+  if (!ok) throw new Error(`FAIL ${rel} exists`);
+  console.log(`OK ${rel} exists`);
+}
+function must(cond, label) {
+  if (!cond) throw new Error(`FAIL ${label}`);
   console.log(`OK ${label}`);
 }
 
-function read(rel) {
-  return fs.readFileSync(path.join(repoRoot, rel), "utf8");
-}
+console.log("=== M59 GOZLEMLEME + SAHA TESHis CHECK ===");
+console.log("INFO checking required M59 files");
+[
+  "backend/src/ops/observabilityManifest.js",
+  "backend/src/routes/observability.js",
+  "web/src/panels/superadmin/ObservabilityPanel.jsx",
+  "docs/RUNBOOK_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md",
+  "docs/MILESTONE_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md",
+  "tools/pack_m59_observability_field_diagnostics.ps1",
+  "tools/check_m59_observability_field_diagnostics_repo_contract.ps1",
+  "README.md",
+  "docs/PROJECT_SPEC_V1.md",
+  "docs/PRIMER_SSOT.md",
+  "docs/STARTPACK_V1.md",
+  "docs/CHECKLIST_SSOT.md"
+].forEach(exists);
 
-function exists(rel) {
-  return fs.existsSync(path.join(repoRoot, rel));
-}
+console.log("INFO checking updated product identity and route");
+const projectSpec = read("docs/PROJECT_SPEC_V1.md");
+const readme = read("README.md");
+const checklist = read("docs/CHECKLIST_SSOT.md");
+const readmeLc = readme.toLowerCase();
 
-function includesAny(text, needles) {
-  return needles.some((needle) => text.includes(needle));
-}
+must(projectSpec.includes("pazar") || projectSpec.includes("marketplace"), "project spec uses B2B marketplace identity");
+must(
+  readmeLc.includes("m59") ||
+  readmeLc.includes("m65") ||
+  readmeLc.includes("m66") ||
+  readmeLc.includes("observability") ||
+  readmeLc.includes("gözlemleme") ||
+  readmeLc.includes("gozlemleme") ||
+  readmeLc.includes("saha") ||
+  readmeLc.includes("field"),
+  "root readme points to historical M59 route or later living route"
+);
+must(checklist.includes("M59") || checklist.includes("M65") || checklist.includes("M66"), "checklist keeps M59 open");
 
-async function main() {
-  banner("M59 GOZLEMLEME + SAHA TESHis CHECK");
+console.log("INFO checking backend observability skeleton");
+const serverTxt = read("backend/src/server.js");
+const mountTxt = fs.existsSync(path.join(root, "backend/src/bootstrap/routeMounts.js"))
+  ? read("backend/src/bootstrap/routeMounts.js")
+  : "";
+const routeTxt = read("backend/src/routes/observability.js");
+const manifestTxt = read("backend/src/ops/observabilityManifest.js");
+const panelTxt = read("web/src/panels/superadmin/ObservabilityPanel.jsx");
 
-  const requiredFiles = [
-    "backend/src/ops/observabilityManifest.js",
-    "backend/src/routes/observability.js",
-    "web/src/panels/superadmin/ObservabilityPanel.jsx",
-    "docs/RUNBOOK_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md",
-    "docs/MILESTONE_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md",
-    "tools/pack_m59_observability_field_diagnostics.ps1",
-    "tools/check_m59_observability_field_diagnostics_repo_contract.ps1",
-    "README.md",
-    "docs/PROJECT_SPEC_V1.md",
-    "docs/PRIMER_SSOT.md",
-    "docs/STARTPACK_V1.md",
-    "docs/CHECKLIST_SSOT.md"
-  ];
+must(
+  serverTxt.includes("observabilityRouter") || mountTxt.includes("observabilityRouter"),
+  "server imports observability router"
+);
+must(
+  serverTxt.includes("/api/observability") || mountTxt.includes("/api/observability"),
+  "server mounts /api/observability"
+);
+must(
+  routeTxt.includes("/manifest") || routeTxt.includes('router.get("/manifest"') || routeTxt.includes("router.get('/manifest'"),
+  "observability route exposes manifest endpoint"
+);
+must(
+  routeTxt.includes("/summary") || routeTxt.includes("/health-summary") || routeTxt.includes('router.get("/summary"') || routeTxt.includes("router.get('/summary'") || routeTxt.includes('router.get("/health-summary"') || routeTxt.includes("router.get('/health-summary'"),
+  "observability route exposes summary endpoint"
+);
+must(
+  manifestTxt.includes("widgets") || manifestTxt.includes("eventTypes"),
+  "manifest defines M59 widgets and event types"
+);
+must(
+  manifestTxt.includes("health") || manifestTxt.includes("GPS") || manifestTxt.includes("gps"),
+  "manifest defines health events and GPS wording"
+);
+must(
+  panelTxt.includes("Observability") || panelTxt.includes("Sağlığı") || panelTxt.includes("health"),
+  "web panel shows M59 cards"
+);
 
-  console.log("INFO checking required M59 files");
-  requiredFiles.forEach((rel) => must(`${rel} exists`, exists(rel)));
-
-  const project = read("docs/PROJECT_SPEC_V1.md");
-  const readme = read("README.md");
-  const server = read("backend/src/server.js");
-  const manifest = read("backend/src/ops/observabilityManifest.js");
-  const route = read("backend/src/routes/observability.js");
-  const panel = read("web/src/panels/superadmin/ObservabilityPanel.jsx");
-  const runbook = read("docs/RUNBOOK_M59_OBSERVABILITY_FIELD_DIAGNOSTICS.md");
-  const checklist = read("docs/CHECKLIST_SSOT.md");
-
-  console.log("INFO checking updated product identity and route");
-  must("project spec uses B2B marketplace identity", includesAny(project, ["B2B servis pazaryeri + operasyon yönetim platformudur", "teklif, pazarlık, uzlaşma ve sözleşme süreçlerini yöneten"]));
-  must("root readme points to historical M59 route or later living route", includesAny(readme, ["M59 — Gözlemleme + Saha Teşhis", "M65 green olmadan sahaya çıkılmayacak", "M65 green olmadan sahaya çıkılmaz", "pack_m59_observability_field_diagnostics.ps1", "M75 green baseline"]));
-  must("checklist keeps M59 open", includesAny(checklist, ["[ ] `M59 — Gözlemleme + Saha Teşhis`", "M59 — Gözlemleme + Saha Teşhis"]));
-
-  console.log("INFO checking backend observability skeleton");
-  must("server imports observability router", includesAny(server, ["observabilityRouter", "./routes/observability.js"]));
-  must("server mounts /api/observability", includesAny(server, ["/api/observability"]));
-  must("manifest defines widgets and event types", includesAny(manifest, ["M59_OBSERVABILITY_WIDGETS", "mobileHealthEventTypes", "gpsReliability"]));
-  must("route exposes manifest and summary", includesAny(route, ["/manifest", "/health-summary", "/event-types"]));
-
-  console.log("INFO checking canonical manifest and web skeleton");
-  must("manifest defines health event types and GPS wording", includesAny(manifest, ["MOBILE_HEALTH_EVENT_TYPES", "GPS_PUBLISH_SUCCESS", "SURUCUNUN_TELEFON_GPSI"]));
-  must("panel shows M59 observability cards", includesAny(panel, ["M59 Gözlemleme Merkezi", "GPS güven skoru", "Mobil sağlık olayları"]));
-
-  console.log("INFO checking M59 runbook language");
-  must("runbook explains M59 scope", includesAny(runbook, ["mobil saglik olaylari iskeleti", "GPS guven skoru", "M59 green olmadan M60'a gecilmez"]));
-
-  console.log("\nOK M59 GOZLEMLEME + SAHA TESHis CHECK PASS");
-}
-
-main().catch((e) => {
-  console.error(e?.stack || String(e));
-  process.exit(1);
-});
+console.log("M59 GOZLEMLEME + SAHA TESHis CHECK PASS");

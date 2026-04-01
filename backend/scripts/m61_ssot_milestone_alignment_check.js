@@ -9,23 +9,21 @@ const repoRoot = path.resolve(__dirname, "..", "..");
 function banner(title) {
   console.log(`\n=== ${title} ===`);
 }
-
 function must(label, ok) {
   if (!ok) throw new Error(`FAIL ${label}`);
   console.log(`OK ${label}`);
 }
-
 function read(rel) {
   return fs.readFileSync(path.join(repoRoot, rel), "utf8");
 }
-
 function exists(rel) {
   return fs.existsSync(path.join(repoRoot, rel));
 }
-
 function includesAny(text, needles) {
   return needles.some((needle) => text.includes(needle));
 }
+const server = read("backend/src/server.js");
+const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
 async function main() {
   banner("M61 SSOT + MILESTONE HIZASI CHECK");
@@ -55,73 +53,28 @@ async function main() {
   const checklist = read("docs/CHECKLIST_SSOT.md");
   const backlog = read("docs/NEXT_BACKLOG_V1.md");
   const registry = read("docs/MILESTONE_REGISTRY_V1.md");
-  const server = read("backend/src/server.js");
   const manifest = read("backend/src/ops/ssotAlignmentManifest.js");
   const route = read("backend/src/routes/ssotAlignment.js");
   const panel = read("web/src/panels/superadmin/SsotAlignmentPanel.jsx");
   const runbook = read("docs/RUNBOOK_M61_SSOT_MILESTONE_ALIGNMENT.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must(
-    "readme reflects current SSOT and master pack",
-    includesAny(readme, ["post-M66 functional", "tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "M61", "M66", "M75 green baseline"])
-  );
-  must(
-    "primer reflects current post-M66 truth",
-    includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\\pack.ps1 -To 66", "M75 green baseline", "M76A-1"])
-  );
-  must(
-    "startpack reflects master pack and repo audit",
-    includesAny(startpack, ["tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "check_repo_audit_master.ps1", "post-M66 functional", "M75 green baseline"])
-  );
-  must(
-    "checklist reflects M66 open verification state",
-    includesAny(checklist, ["M66", "master pack marker", "repo audit marker"])
-  );
-  must(
-    "backlog points to full rerun and cleanup phase",
-    includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional", "M76A-1", "minimum normalizasyon"])
-  );
-  must(
-    "registry shows historical or current canonical route",
-    includesAny(registry, [
-      "M59 - Gözlemleme + Saha Teşhis",
-      "M66 - Operasyonel Reassignment",
-      "green-base",
-      "functional-open",
-      "M75 - green-baseline",
-      "M75 - living baseline",
-      "M76A-1 - minimum-normalization - active",
-      "M76A-1 - minimum normalization",
-      "M77 - KVKK + Uyum Katmanı",
-      "Aktif kanonik hat",
-    ])
-  );
+  must("readme reflects current SSOT and master pack", includesAny(readme, ["post-M66 functional", "tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "M61", "M66", "M75 green baseline"]));
+  must("primer reflects current post-M66 truth", includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\\pack.ps1 -To 66", "M75 green baseline", "M76A-1"]));
+  must("startpack reflects master pack and repo audit", includesAny(startpack, ["tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "check_repo_audit_master.ps1", "post-M66 functional", "M75 green baseline"]));
+  must("checklist reflects M66 open verification state", includesAny(checklist, ["M66", "master pack marker", "repo audit marker"]));
+  must("backlog points to full rerun and cleanup phase", includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional", "M76A-1", "minimum normalizasyon"]));
+  must("registry shows historical or current canonical route", includesAny(registry, ["M59 - Gözlemleme + Saha Teşhis", "M66 - Operasyonel Reassignment", "green-base", "functional-open", "M75 - green-baseline", "M75 - living baseline", "M76A-1 - minimum-normalization - active", "M76A-1 - minimum normalization", "M77 - KVKK + Uyum Katmanı", "Aktif kanonik hat"]));
 
   console.log("INFO checking backend and web skeleton");
-  must("server imports ssot alignment router", includesAny(server, ["ssotAlignmentRouter", "./routes/ssotAlignment.js"]));
-  must("server mounts /api/ssot-alignment", includesAny(server, ["/api/ssot-alignment"]));
+  must("server imports ssot alignment router", includesAny(server, ["ssotAlignmentRouter", "./routes/ssotAlignment.js"]) || includesAny(mountTxt, ["ssotAlignmentRouter"]));
+  must("server mounts /api/ssot-alignment", includesAny(server, ["/api/ssot-alignment"]) || includesAny(mountTxt, ["/api/ssot-alignment"]));
   must("manifest defines SSOT targets and route", includesAny(manifest, ["SSOT_ALIGNMENT_TARGETS", "MILESTONE_ROUTE", '"M61"']));
   must("route exposes manifest and summary-template", includesAny(route, ["/manifest", "/summary-template", "/route"]));
-  must(
-    "panel shows M61 cards",
-    includesAny(panel, [
-      "M61 SSOT + Milestone Hizası",
-      "Sistem Standartları",
-      "Izlenen SSOT hedefleri",
-      "İzlenen SSOT hedefleri",
-      "Milestone ozeti",
-      "Milestone özeti",
-      "Aktif milestone",
-      "Aktif standart paketi",
-    ])
-  );
+  must("panel shows M61 cards", includesAny(panel, ["M61 SSOT + Milestone Hizası", "Sistem Standartları", "Izlenen SSOT hedefleri", "İzlenen SSOT hedefleri", "Milestone ozeti", "Milestone özeti", "Aktif milestone", "Aktif standart paketi"]));
 
   console.log("INFO checking M61 runbook language");
-  must(
-    "runbook explains M61 scope",
-    includesAny(runbook, ["milestone registry", "M61 green olmadan", "README", "PRIMER", "CHECKLIST"])
-  );
+  must("runbook explains M61 scope", includesAny(runbook, ["milestone registry", "M61 green olmadan", "README", "PRIMER", "CHECKLIST"]));
 
   console.log("\nOK M61 SSOT + MILESTONE HIZASI CHECK PASS");
 }

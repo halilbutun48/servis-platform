@@ -23,6 +23,7 @@ $files = @(
 foreach ($rel in $files) { Assert-RepoContractExists -RepoRoot $RepoRoot -RelativePath $rel }
 
 $server = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend\src\server.js'
+$mounts = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend\src\bootstrap\routeMounts.js'
 $route = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend\src\routes\operationVerification.js'
 $app = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'web\src\App.jsx'
 $nav = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'web\src\layout\NavDock.jsx'
@@ -37,7 +38,7 @@ $runbook = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\RUNBOOK
 $milestone = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\MILESTONE_M78_1_OPERASYON_DOGRULAMA_YUZEYI.md'
 $stable = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools\STABLE_TO.txt'
 
-Assert-RepoContractContainsAny -Text $server -Needles @('operationverificationrouter','/api/operation-verification') -Label 'server mounts operation verification route'
+Assert-RepoContractContainsAny -Text ($server + "`n" + $mounts) -Needles @('operationverificationrouter','/api/operation-verification') -Label 'server mounts operation verification route'
 Assert-RepoContractContainsAny -Text $route -Needles @('requirerole("super_admin")','/role-surface','/status-options','/proof-options') -Label 'route exposes minimal m78.1 endpoints'
 Assert-RepoContractContainsAny -Text $app -Needles @('operationverificationpanel','/superadmin/operation-verification') -Label 'app registers operation verification panel'
 Assert-RepoContractContainsAny -Text $nav -Needles @('operasyon doğrulama','/superadmin/operation-verification') -Label 'nav exposes operation verification'
