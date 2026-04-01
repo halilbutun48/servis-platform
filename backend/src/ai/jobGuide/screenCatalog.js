@@ -268,19 +268,6 @@ const ROOM = [
     screenMenus: [{ label: "Vardiyalar", path: "/room/shifts", purpose: "Check-in kaydının bağlı olduğu işi görmek için açılır." }],
     simpleTerms: pickTerms(["checkin"]),
   }),
-  screen(1110, "/room/auth-invites", "Giriş Davetleri", {
-    menuPurpose: "Hesap açtırmak için gönderilen giriş davetlerini yönetmek için kullanılır.",
-    forWhom: "Oda tarafında hesap erişimi açan kullanıcı içindir.",
-    firstStep: "Önce kime davet gideceğini seç.",
-    nextStep: "Daveti gönderip durumunu kontrol et.",
-    doNotDo: "Giriş davetini erişim linki ile aynı şey sanma.",
-    stepByStep: ["Kişiyi seç.", "Daveti oluştur.", "Durumunu kontrol et."],
-    commonMistakes: ["Davet ile linki karıştırmak."],
-    doneChecklist: ["Doğru davet üretildi."],
-    buttonGuides: [button("Davet oluştur", "Yeni giriş daveti üretir.", "Yeni hesap erişimi vermek istediğinde kullan.", "Davet oluşur.")],
-    screenMenus: [{ label: "Copilot", path: "/room/copilot", purpose: "Davet ve link farkını anlamadığında açılır." }],
-    simpleTerms: pickTerms(["girisDaveti", "erisimLinki"]),
-  }),
   screen(1114, "/room/operation-health", "Operasyon Sağlığı", {
     menuPurpose: "Room içindeki sürücü, cihaz ve canlılık risklerini toplu görmek için kullanılır.",
     forWhom: "Operasyon sağlığını izleyen oda kullanıcısı içindir.",
@@ -462,10 +449,9 @@ const COMPANY = [
       button("İptal et", "Linki pasif hale getirir.", "Artık kullanılmayacaksa kullan.", "Link pasif olur."),
     ],
     screenMenus: [
-      { label: "Giriş Davetleri", path: "/company/auth-invites", purpose: "Hesap tabanlı erişimler için açılır." },
-      { label: "Copilot", path: "/company/copilot", purpose: "Link türünü anlamıyorsan rehber için aç." },
+            { label: "Copilot", path: "/company/copilot", purpose: "Link türünü anlamıyorsan rehber için aç." },
     ],
-    simpleTerms: pickTerms(["girisDaveti", "erisimLinki"]),
+    simpleTerms: pickTerms(["veliErisimi", "erisimLinki"]),
   }),
   screen(2105, "/company/copilot", "Copilot", {
     menuPurpose: "Şirket ekranlarında ne yapacağını anlamadığında yardım almak için kullanılır.",
@@ -530,22 +516,6 @@ const COMPANY = [
     buttonGuides: [button("Kaydı aç", "Seçili check-in olayını açar.", "Detay görmek istediğinde kullan.", "Kayıt detayı açılır.")],
     screenMenus: [{ label: "Vardiyalar", path: "/company/shifts", purpose: "Check-in kaydının bağlı olduğu işi görmek için açılır." }],
     simpleTerms: pickTerms(["checkin"]),
-  }),
-  screen(2108, "/company/auth-invites", "Giriş Davetleri", {
-    menuPurpose: "Hesap tabanlı erişim vermek için giriş davetlerini yönetmek için kullanılır.",
-    forWhom: "Şirket tarafında hesap erişimi açan kullanıcı içindir.",
-    firstStep: "Önce davetin kime gideceğini seç.",
-    nextStep: "Davet durumunu ve süresini kontrol et.",
-    doNotDo: "Giriş davetini erişim linki ile aynı sanma.",
-    stepByStep: ["Kişiyi seç.", "Daveti oluştur.", "Durumunu izle."],
-    commonMistakes: ["Davet ile linki karıştırmak."],
-    doneChecklist: ["Doğru davet üretildi."],
-    buttonGuides: [button("Davet oluştur", "Yeni giriş daveti üretir.", "Yeni hesap erişimi vermek istediğinde kullan.", "Davet oluşur.")],
-    screenMenus: [
-      { label: "Personel Link", path: "/company/access-links", purpose: "Link ile davet farkını görmek için açılır." },
-      { label: "Copilot", path: "/company/copilot", purpose: "Takıldığında açıklama almak için açılır." },
-    ],
-    simpleTerms: pickTerms(["girisDaveti", "erisimLinki"]),
   }),
   screen(2109, "/company/georeview", "Konum İncele", {
     menuPurpose: "Konum verisinin neden eksik, hatalı veya tutarsız göründüğünü kontrol etmek için kullanılır.",
@@ -778,19 +748,20 @@ const COMPANY = [
 const SCHOOL = COMPANY.map((x) => ({
   ...x,
   path: x.path.replace('/company', '/school'),
-  label: x.path === '/company/auth-invites' ? 'Hesap Davetleri' : x.path === '/company/georeview' ? 'Öğrenci Konum İncele' : x.label,
+  label: x.path === '/company/georeview' ? 'Öğrenci Konum İncele' : x.label,
 })).concat([
-  screen(2201, '/school/parents', 'Parent Link', {
-    menuPurpose: 'Parent tarafı için bağlantı ve davet akışını yönetmek için kullanılır.',
+  screen(2201, '/school/parents', 'Veli Erişimi', {
+    menuPurpose: 'Veli tarafı için süreli link, erişim kodu ve PIN üretmek için kullanılır.',
     forWhom: 'Okul yönetimi içindir.',
-    firstStep: 'Önce hangi öğrenci veya veli için link gerektiğini seç.',
-    nextStep: 'Süreyi ve paylaşımı kontrol et.',
-    doNotDo: 'Yanlış veliye link gönderme.',
-    stepByStep: ['Kayıtı seç.', 'Link üret.', 'Paylaşmadan önce kontrol et.'],
-    commonMistakes: ['Yanlış öğrenci/veli eşlemesi.'],
-    doneChecklist: ['Doğru link üretildi.'],
-    buttonGuides: [button('Link oluştur', 'Yeni parent bağlantısı üretir.', 'Yeni paylaşım gerektiğinde kullan.', 'Yeni bağlantı oluşur.')],
-    screenMenus: [{ label: 'Hesap Davetleri', path: '/school/auth-invites', purpose: 'Hesap tarafı için açılır.' }],
+    firstStep: 'Önce öğrenci seçimini yap.',
+    nextStep: 'Süreyi seç ve paylaşım bilgisini kontrol et.',
+    doNotDo: 'Yanlış öğrenci için erişim üretme.',
+    stepByStep: ['Öğrenciyi seç.', 'Süreyi belirle.', 'Link, kod ve PIN üretip paylaşmadan önce kontrol et.'],
+    commonMistakes: ['Yanlış öğrenci için erişim üretmek.'],
+    doneChecklist: ['Doğru öğrenci için erişim üretildi.'],
+    buttonGuides: [button('Erişim üret', 'Yeni veli erişimi üretir.', 'Yeni paylaşım gerektiğinde kullan.', 'Yeni erişim oluşur.')],
+    screenMenus: [{ label: 'Öğrenci Link', path: '/school/access-links', purpose: 'Benzer paylaşım yüzeyini görmek için açılır.' }],
+    simpleTerms: pickTerms(["veliErisimi", "erisimLinki"]),
   }),
 ]);
 

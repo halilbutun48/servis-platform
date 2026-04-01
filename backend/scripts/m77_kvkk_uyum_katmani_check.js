@@ -136,9 +136,9 @@ for (const needle of ['sanitizeVehicleDirectoryItem', 'items.map((x) => sanitize
 }
 
 const authInvitesRoute = read('backend/src/routes/auth_step2.js');
-for (const needle of ['sanitizeAuthInviteListItem', 'items.map((x) => sanitizeAuthInviteListItem(x, { role: req.user?.role }))', 'item: sanitizeAuthInviteListItem(created, { role: req.user?.role })']) {
-  if (!authInvitesRoute.includes(needle)) fail(`auth invites route covers ${needle}`);
-  ok(`auth invites route covers ${needle}`);
+for (const needle of ['AUTH_INVITE_REMOVED']) {
+  if (!authInvitesRoute.includes(needle)) fail(`legacy auth invite route handling covers ${needle}`);
+  ok(`legacy auth invite route handling covers ${needle}`);
 }
 
 const logsRoute = read('backend/src/routes/logs.js');
@@ -184,7 +184,7 @@ for (const needle of ['ham `email` yerine `emailMasked`', 'ham `ip` yerine `ipMa
 }
 
 const rolePayloadDoc = read('docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md');
-for (const needle of ['GET /api/auth/invites', 'tokenHash', 'GET /api/vehicles', 'GET /api/shifts', 'GET /api/admin/logs/export']) {
+for (const needle of ['GET /api/auth/parent-invite/info', 'tokenHash', 'GET /api/vehicles', 'GET /api/shifts', 'GET /api/admin/logs/export']) {
   if (!rolePayloadDoc.includes(needle)) fail(`role payload doc covers ${needle}`);
   ok(`role payload doc covers ${needle}`);
 }

@@ -43,19 +43,19 @@ async function main() {
   must('georeview reply explains route estimate basics', /(OSRM|Matrix|rota|yol|mesafe|süre|sure|hesap)/i.test(geoReply));
   must('georeview response offers follow-up help', geoChips.length > 0 || /Konum İncele|konum|incele|şimdi ne yap|simdi ne yap/i.test(geoReply));
 
-  step('room invite vs link term help');
-  const inviteChat = await reqJson('POST', '/api/ai/copilot', {
-    token: roomToken,
+  step('school parent access term help');
+  const parentAccessChat = await reqJson('POST', '/api/ai/copilot', {
+    token: companyToken,
     body: {
       intent: 'CHAT_HELP',
       entityType: 'screen',
-      entityId: 1110,
-      message: 'giriş daveti ile erişim linki aynı şey mi',
-      screenContext: { id: 1110, path: '/room/auth-invites', label: 'Giriş Davetleri' },
+      entityId: 2201,
+      message: 'veli erişimi ile öğrenci linki aynı şey mi',
+      screenContext: { id: 2201, path: '/school/parents', label: 'Veli Erişimi' },
     },
   });
-  must('invite chat ok', inviteChat.ok && inviteChat.json?.mode === 'CHAT_HELP');
-  must('invite reply compares invite and link', /Aynı şey değil/i.test(String(inviteChat.json?.reply || '')));
+  must('parent access chat ok', parentAccessChat.ok && parentAccessChat.json?.mode === 'CHAT_HELP');
+  must('parent access reply compares access and link', /Aynı şey değil|Eski giriş daveti akışı kaldırıldı/i.test(String(parentAccessChat.json?.reply || '')));
 
   step('shared notifications vs logs term help');
   const notificationsChat = await reqJson('POST', '/api/ai/copilot', {

@@ -5,7 +5,6 @@ import { useSession } from "./state/session";
 import { login } from "./api";
 import { useHashRoute, navigate } from "./router";
 import { companyBase, normalizeCompanyPath } from "./utils/paths";
-import GoogleLoginButton from "./components/GoogleLoginButton";
 import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { startLiveWs, stopLiveWs } from "./live/ws";
@@ -51,12 +50,10 @@ const ParentLivePanel = lazy(() => import("./panels/parent/LivePanel"));
 const SchoolParentInvitePanel = lazy(() => import("./panels/school/ParentInvitePanel"));
 const AcceptParentInvitePanel = lazy(() => import("./panels/public/AcceptParentInvitePanel"));
 const PassengerLivePanel = lazy(() => import("./panels/public/PassengerLivePanel"));
-const AcceptInvitePanel = lazy(() => import("./panels/public/AcceptInvitePanel"));
 const PassengerLinksPanel = lazy(() => import("./panels/company/PassengerLinksPanel"));
 
 // SHARED
 const NotificationsPanel = lazy(() => import("./panels/shared/NotificationsPanel"));
-const AuthInvitesPanel = lazy(() => import("./panels/shared/AuthInvitesPanel"));
 const LogsPanel = lazy(() => import("./panels/shared/LogsPanel"));
 const ReportsPanel = lazy(() => import("./panels/shared/ReportsPanel"));
 const CopilotPanel = lazy(() => import("./panels/shared/CopilotPanel"));
@@ -142,18 +139,6 @@ function LoginCard() {
           ) : null}
         </form>
 
-        <div style={{ marginTop: 12 }}>
-          <div className="muted" style={{ marginBottom: 8 }}>Google Auth + Invite Gate: aktif davetin varsa Google ile de giriş yapabilirsin.</div>
-          <GoogleLoginButton
-            onSuccess={(r) => {
-              setToken(r?.token || "");
-            }}
-            onError={(e) => {
-              setErr(String(e?.message || e));
-            }}
-          />
-        </div>
-
         <hr style={{ margin: "12px 0" }} />
         <div className="muted">
           Demo kullanıcılar: room@demo.com, company@demo.com, school@demo.com, organization@demo.com, driver@demo.com, personel@demo.com (şifre: demo123). Sürücü için ayrıca Sürücü Kodu + PIN girişi de desteklenir.
@@ -187,7 +172,6 @@ export default function App() {
   const view = useMemo(() => {
     if (!token) {
       if (cleanPath === "/accept-parent-invite") return { layout: false, node: <AcceptParentInvitePanel path={path} /> };
-      if (cleanPath === "/accept-invite") return { layout: false, node: <AcceptInvitePanel path={path} /> };
       if (cleanPath === "/public/passenger-live" || cleanPath === "/public/personel-live") return { layout: false, node: <PassengerLivePanel path={path} /> };
       return { layout: false, node: <LoginCard /> };
     }
@@ -228,7 +212,6 @@ export default function App() {
     if (path === "/room/commercial-flow") return { layout: true, node: <CommercialFlowPanel /> };
     if (path === "/room/hub") return { layout: true, node: <RoomHubPanel /> };
     if (path === "/room/checkin") return { layout: true, node: <RoomCheckinPanel /> };
-    if (path === "/room/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
     if (path === "/room/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // COMPANY
@@ -242,7 +225,6 @@ export default function App() {
     if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/company/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/company/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
-    if (path === "/company/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
     if (path === "/company/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // SCHOOL (Company.kind=SCHOOL)
@@ -257,7 +239,6 @@ export default function App() {
     if (path === "/school/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/school/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
     if (path === "/school/parents") return { layout: true, node: <SchoolParentInvitePanel /> };
-    if (path === "/school/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
     if (path === "/school/copilot") return { layout: true, node: <CopilotPanel /> };
 
 
@@ -273,7 +254,6 @@ export default function App() {
     if (path === "/organization/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
     if (path === "/organization/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/organization/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
-    if (path === "/organization/auth-invites") return { layout: true, node: <AuthInvitesPanel /> };
     if (path === "/organization/copilot") return { layout: true, node: <CopilotPanel /> };
 
     // DRIVER

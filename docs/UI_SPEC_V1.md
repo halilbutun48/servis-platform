@@ -118,7 +118,7 @@ Ekran sadece şu bilgileri göstermelidir:
 
 Bu ekran login yerine geçen düşük sürtünmeli takip ekranıdır; yönetimsel CRUD içermez.
 
-- parent invite ve personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
+- parent access ve personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
 - personel public link, vardiya bitse bile link süresi dolana kadar ENDED/final ekranı açabilir
 
 

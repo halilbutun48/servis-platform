@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
-import { companyPath } from "../../utils/paths";
 import { makeHashLink } from "../../utils/publicBaseUrl";
 import { formatDateTimeTR } from "../../utils/time";
 
 function fmt(dt) {
-  try {
-    return formatDateTimeTR(dt);
-  } catch {
-    return String(dt || "-");
-  }
+  try { return formatDateTimeTR(dt); } catch { return String(dt || "-"); }
 }
 
 function statusPill(status) {
   return <span className="pill" data-status={status || "COUNT"}>{status || "-"}</span>;
+}
+
+function daysUntil(expiresAt) {
+  const ms = new Date(expiresAt || 0).getTime() - Date.now();
+  if (!Number.isFinite(ms)) return 7;
+  return Math.max(1, Math.ceil(ms / (24 * 3600 * 1000)));
 }
 
 export default function SchoolParentInvitePanel() {
@@ -22,11 +23,10 @@ export default function SchoolParentInvitePanel() {
   const [students, setStudents] = useState([]);
   const [items, setItems] = useState([]);
   const [childPersonelId, setChildPersonelId] = useState("");
-  const [parentFullName, setParentFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [expiresInDays, setExpiresInDays] = useState("7");
   const [lastLink, setLastLink] = useState("");
+  const [lastAccessCode, setLastAccessCode] = useState("");
+  const [lastPin, setLastPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -55,7 +55,24 @@ export default function SchoolParentInvitePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, me?.companyId, me?.companyKind]);
 
-  async function createInvite(e) {
+  async function createAccess({ childId, durationDays }) {
+    const r = await api("/api/school/parent-invites", {
+      method: "POST",
+      token,
+      body: {
+        childPersonelId: Number(childId),
+        expiresInDays: Number(durationDays || 7),
+      },
+    });
+    const raw = r?.token || "";
+    const link = raw ? makeHashLink(`#/accept-parent-invite?token=${encodeURIComponent(raw)}`) : "";
+    setLastLink(link);
+    setLastAccessCode(String(r?.accessCode || ""));
+    setLastPin(String(r?.pin || ""));
+    return r;
+  }
+
+  async function onCreateAccess(e) {
     e?.preventDefault?.();
     if (!childPersonelId) {
       setErr("Önce öğrenci seç.");
@@ -64,19 +81,10 @@ export default function SchoolParentInvitePanel() {
     setBusy(true);
     setErr("");
     setLastLink("");
+    setLastAccessCode("");
+    setLastPin("");
     try {
-      const r = await api("/api/school/parent-invites", {
-        method: "POST",
-        token,
-        body: {
-          childPersonelId: Number(childPersonelId),
-          parentFullName,
-          expiresInDays: Number(expiresInDays || 7),
-        },
-      });
-      const raw = r?.token || "";
-      const link = raw ? makeHashLink(`#/accept-parent-invite?token=${encodeURIComponent(raw)}`) : "";
-      setLastLink(link);
+      await createAccess({ childId: childPersonelId, durationDays: expiresInDays });
       await loadAll();
     } catch (e2) {
       setErr(String(e2?.message || e2));
@@ -85,14 +93,14 @@ export default function SchoolParentInvitePanel() {
     }
   }
 
-  async function copyLastLink() {
+  async function copyText(text) {
     try {
-      if (!lastLink) return;
-      await navigator.clipboard.writeText(lastLink);
+      if (!text) return;
+      await navigator.clipboard.writeText(text);
     } catch {}
   }
 
-  async function revokeInvite(id) {
+  async function revokeAccess(id) {
     try {
       await api(`/api/school/parent-invites/${id}/revoke`, { method: "POST", token, body: {} });
       await loadAll();
@@ -101,90 +109,98 @@ export default function SchoolParentInvitePanel() {
     }
   }
 
-  if (me?.companyKind !== "SCHOOL") {
-    return <div className="card err">Bu panel yalnızca SCHOOL scope için görünür.</div>;
+  async function renewAccess(item) {
+    setBusy(true);
+    setErr("");
+    setLastLink("");
+    setLastAccessCode("");
+    setLastPin("");
+    try {
+      await api(`/api/school/parent-invites/${item.id}/revoke`, { method: "POST", token, body: {} });
+      await createAccess({ childId: item.childPersonelId, durationDays: daysUntil(item.expiresAt) });
+      await loadAll();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setBusy(false);
+    }
   }
+
+  if (me?.companyKind !== "SCHOOL") return <div className="card err">Bu panel yalnızca SCHOOL scope için görünür.</div>;
 
   return (
     <div>
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ margin: 0 }}>Parent Invite Link</h3>
+            <h3 style={{ margin: 0 }}>Veli Erişimi</h3>
             <div className="muted" style={{ marginTop: 6 }}>
-              Okul paneli parent hesabı için ID/şifre vermez. Öğrenci seçilir, tek kullanımlık link üretilir; veli linkten kendi hesabını açar.
+              Öğrenci seçilir, süreli erişim linki ve aynı süre kadar geçerli Kod + PIN üretilir. Mail, telefon veya ad soyad gerekmez.
             </div>
           </div>
           <button type="button" className="btn" onClick={loadAll}>Yenile</button>
         </div>
       </div>
 
-      {err ? <div className="card err">{err}</div> : null}
+      {err ? <div className="card err" style={{ marginTop: 12 }}>{err}</div> : null}
 
-      <div className="grid">
+      <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 1.1fr) minmax(340px, 1fr)", gap: 12, marginTop: 12 }}>
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Yeni link üret</h3>
-          <form onSubmit={createInvite} style={{ display: "grid", gap: 10 }}>
-            <label className="col">
-              <span className="muted">Öğrenci</span>
+          <h3 style={{ marginTop: 0 }}>Yeni erişim üret</h3>
+          <form onSubmit={onCreateAccess} style={{ display: "grid", gap: 10, maxWidth: 620 }}>
+            <label className="muted">
+              Öğrenci
               <select value={childPersonelId} onChange={(e) => setChildPersonelId(e.target.value)}>
-                <option value="">Öğrenci seç</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>#{s.id} • {s.fullName}</option>
-                ))}
+                {students.map((s) => <option key={s.id} value={s.id}>{s.fullName || `#${s.id}`}</option>)}
               </select>
             </label>
-            {selectedStudent ? <div className="muted">Seçili öğrenci: {selectedStudent.fullName}</div> : null}
-            <label className="col">
-              <span className="muted">Veli adı (opsiyonel)</span>
-              <input value={parentFullName} onChange={(e) => setParentFullName(e.target.value)} placeholder="Ayşe Yılmaz" />
-            </label>
-            <label className="col">
-              <span className="muted">E-posta (opsiyonel kilit)</span>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="veli@example.com" />
-            </label>
-            <label className="col">
-              <span className="muted">Telefon (opsiyonel)</span>
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xx..." />
-            </label>
-            <label className="col">
-              <span className="muted">Geçerlilik (gün)</span>
+            <label className="muted">
+              Geçerlilik süresi
               <select value={expiresInDays} onChange={(e) => setExpiresInDays(e.target.value)}>
+                <option value="1">1 gün</option>
                 <option value="7">1 hafta</option>
                 <option value="30">1 ay</option>
                 <option value="180">6 ay</option>
                 <option value="365">1 yıl</option>
               </select>
             </label>
+            {selectedStudent ? <div className="muted">Seçili öğrenci: <b>{selectedStudent.fullName || `#${selectedStudent.id}`}</b></div> : null}
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="submit" className="btn primary" disabled={busy}>{busy ? "..." : "Link üret"}</button>
-              <button type="button" className="secondary" onClick={() => { setParentFullName(""); setEmail(""); setPhone(""); }}>Temizle</button>
+              <button type="submit" className="btn primary" disabled={busy}>{busy ? "..." : "Erişim üret"}</button>
+              <button type="button" className="secondary" onClick={() => { setLastLink(""); setLastAccessCode(""); setLastPin(""); }}>Temizle</button>
             </div>
           </form>
         </div>
 
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Son üretilen link</h3>
+          <h3 style={{ marginTop: 0 }}>Son üretilen erişim</h3>
           <div className="muted" style={{ marginBottom: 10 }}>
-            Link sadece oluşturulduğu anda ham token ile gösterilir. Yeniden göstermek yerine gerekiyorsa yeni link üret.
+            Link, Kod ve PIN yalnızca üretim anında ham haliyle gösterilir. Sonradan yeniden göstermek yerine yeni erişim üret veya mevcut erişimi yenile.
           </div>
-          <textarea readOnly rows={5} value={lastLink} placeholder="Henüz link üretilmedi." style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
-          <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn" onClick={copyLastLink} disabled={!lastLink}>Linki kopyala</button>
-            <button type="button" className="btn" onClick={() => window.open(lastLink || companyPath(me), "_blank")} disabled={!lastLink}>Yeni sekmede aç</button>
+          <div style={{ display: "grid", gap: 10 }}>
+            <label className="muted">Erişim Linki
+              <textarea readOnly rows={4} value={lastLink} placeholder="Henüz link üretilmedi." style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
+            </label>
+            <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <label className="muted">Erişim Kodu<input readOnly value={lastAccessCode} placeholder="-" /></label>
+              <label className="muted">PIN<input readOnly value={lastPin} placeholder="-" /></label>
+            </div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="btn" onClick={() => copyText(lastLink)} disabled={!lastLink}>Linki kopyala</button>
+              <button type="button" className="btn" onClick={() => copyText(lastAccessCode)} disabled={!lastAccessCode}>Kodu kopyala</button>
+              <button type="button" className="btn" onClick={() => copyText(lastPin)} disabled={!lastPin}>PIN kopyala</button>
+              <button type="button" className="btn" onClick={() => window.open(lastLink || "", "_blank")} disabled={!lastLink}>Yeni sekmede aç</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ overflowX: "auto" }}>
-        <h3 style={{ marginTop: 0 }}>Invite geçmişi</h3>
+      <div className="card" style={{ overflowX: "auto", marginTop: 12 }}>
+        <h3 style={{ marginTop: 0 }}>Erişim geçmişi</h3>
         <table className="tbl" style={{ whiteSpace: "nowrap" }}>
           <thead>
             <tr>
               <th>Öğrenci</th>
-              <th>Veli</th>
-              <th>E-posta</th>
-              <th>Telefon</th>
               <th>Durum</th>
               <th>Oluşturma</th>
               <th>Bitiş</th>
@@ -195,21 +211,17 @@ export default function SchoolParentInvitePanel() {
             {items.length ? items.map((it) => (
               <tr key={it.id}>
                 <td>{it.child?.fullName || `#${it.childPersonelId}`}</td>
-                <td>{it.parentFullName || "-"}</td>
-                <td>{it.email || "-"}</td>
-                <td>{it.phone || "-"}</td>
                 <td>{statusPill(it.status)}</td>
                 <td>{fmt(it.createdAt)}</td>
                 <td>{fmt(it.expiresAt)}</td>
                 <td>
-                  {it.status === "CREATED" ? (
-                    <button type="button" className="secondary" onClick={() => revokeInvite(it.id)}>Revoke</button>
-                  ) : <span className="muted">-</span>}
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    {it.status === "ACTIVE" ? <button type="button" className="secondary" onClick={() => revokeAccess(it.id)}>İptal et</button> : null}
+                    <button type="button" className="secondary" onClick={() => renewAccess(it)} disabled={busy}>Yenile</button>
+                  </div>
                 </td>
               </tr>
-            )) : (
-              <tr><td colSpan={8} className="muted">Henüz invite yok.</td></tr>
-            )}
+            )) : <tr><td colSpan={5} className="muted">Henüz erişim yok.</td></tr>}
           </tbody>
         </table>
       </div>

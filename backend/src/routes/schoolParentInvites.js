@@ -8,8 +8,26 @@ function sha256Hex(s) {
   return crypto.createHash("sha256").update(String(s || ""), "utf8").digest("hex");
 }
 
-function randomToken() {
-  return crypto.randomBytes(24).toString("base64url");
+const ACCESS_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function randomAccessCode(len = 8) {
+  const bytes = crypto.randomBytes(len);
+  let out = "";
+  for (let i = 0; i < len; i += 1) out += ACCESS_ALPHABET[bytes[i] % ACCESS_ALPHABET.length];
+  return out;
+}
+
+function randomPin(len = 6) {
+  let out = "";
+  while (out.length < len) out += String(crypto.randomInt(0, 10));
+  return out.slice(0, len);
+}
+
+function buildParentAccess() {
+  const accessCode = randomAccessCode(8);
+  const pin = randomPin(6);
+  const rawToken = `${accessCode}${pin}`;
+  return { accessCode, pin, rawToken };
 }
 
 function toInt(v, def = null) {
@@ -19,9 +37,8 @@ function toInt(v, def = null) {
 
 function inviteStatus(it) {
   if (it?.revokedAt) return "REVOKED";
-  if (it?.consumedAt) return "ACCEPTED";
   if (it?.expiresAt && new Date(it.expiresAt).getTime() <= Date.now()) return "EXPIRED";
-  return "CREATED";
+  return "ACTIVE";
 }
 
 async function recordAudit(req, action, entity, entityId, meta) {
@@ -62,14 +79,9 @@ function mapInvite(it, role = "COMPANY") {
     id: it.id,
     companyId: it.companyId,
     childPersonelId: it.childPersonelId,
-    parentFullName: it.parentFullName || null,
-    email: it.email || null,
-    phone: it.phone || null,
     createdAt: it.createdAt,
     expiresAt: it.expiresAt,
-    consumedAt: it.consumedAt,
     revokedAt: it.revokedAt,
-    consumedByUserId: it.consumedByUserId ?? null,
     createdByUserId: it.createdByUserId ?? null,
     status: inviteStatus(it),
     child: it.child ? { id: it.child.id, fullName: it.child.fullName, kind: it.child.kind } : null,
@@ -111,10 +123,6 @@ export function schoolParentInvitesRouter() {
 
     const childPersonelId = toInt(req.body?.childPersonelId, null);
     const expiresInDays = Math.min(365, Math.max(1, toInt(req.body?.expiresInDays, 7)));
-    const parentFullName = String(req.body?.parentFullName || "").trim() || null;
-    const email = String(req.body?.email || "").trim().toLowerCase() || null;
-    const phone = String(req.body?.phone || "").trim() || null;
-
     if (!childPersonelId) return res.status(400).json({ error: "childPersonelId required" });
 
     const child = await prisma.personel.findFirst({
@@ -123,15 +131,12 @@ export function schoolParentInvitesRouter() {
     });
     if (!child) return res.status(404).json({ error: "child not found" });
 
-    const rawToken = randomToken();
+    const { rawToken, accessCode, pin } = buildParentAccess();
     const tokenHash = sha256Hex(rawToken);
     const created = await prisma.parentInvite.create({
       data: {
         companyId: company.id,
         childPersonelId: child.id,
-        parentFullName,
-        email,
-        phone,
         tokenHash,
         expiresAt: new Date(Date.now() + expiresInDays * 24 * 3600 * 1000),
         createdByUserId: req.user?.id ?? null,
@@ -142,14 +147,15 @@ export function schoolParentInvitesRouter() {
     await recordAudit(req, "PARENT_INVITE_CREATE", "ParentInvite", created.id, {
       companyId: company.id,
       childPersonelId: child.id,
-      email: sanitizeAuditMeta({ email }).email,
-      phone: sanitizeAuditMeta({ phone }).phone,
+      accessCodeMasked: `${accessCode.slice(0, 4)}****`,
     });
 
     res.json({
       ok: true,
       item: mapInvite(created, req.user?.role),
       token: rawToken,
+      accessCode,
+      pin,
     });
   });
 
@@ -165,7 +171,6 @@ export function schoolParentInvitesRouter() {
       include: { child: { select: { id: true, fullName: true, kind: true } } },
     });
     if (!existing) return res.status(404).json({ error: "invite not found" });
-    if (existing.consumedAt) return res.status(409).json({ error: "invite already accepted" });
     if (existing.revokedAt) return res.json({ ok: true, item: mapInvite(existing, req.user?.role) });
 
     const updated = await prisma.parentInvite.update({

@@ -148,7 +148,7 @@ async function findStudent(companyToken, fullName) {
 }
 
 async function main() {
-  banner("STEP06 STABIL CHECK: pool/split + school parent invite");
+  banner("STEP06 STABIL CHECK: pool/split + school parent access");
 
   const superToken = await loginFirst("super");
   const roomToken = await loginFirst("room");
@@ -195,7 +195,7 @@ async function main() {
   must("root shift still queryable", !!rootShift);
   must("root shift marked SPLIT", String(rootShift?.status || "") === "SPLIT");
 
-  step("create fresh SCHOOL tenant for parent invite flow");
+  step("create fresh SCHOOL tenant for parent access flow");
   const { schoolToken } = await createSchoolTenant(superToken);
   const schoolShiftId = await createShift(schoolToken, roomId, "STEP06-SCHOOL", { direction: "INBOUND", pattern: "ONE_WAY" });
   const studentName = `Step06 Student ${Date.now()}`;
@@ -216,50 +216,49 @@ async function main() {
   const studentId = Number(student?.id || 0);
   must("studentId present", studentId > 0);
 
-  step("create parent invite");
-  const inviteEmail = `step06_parent_${Date.now()}@demo.com`;
+  step("create parent access");
   const inv = await reqJson("POST", "/api/school/parent-invites", {
     token: schoolToken,
     body: {
       childPersonelId: studentId,
-      parentFullName: "Step06 Parent",
-      email: inviteEmail,
-      phone: "+90 555 010 10 13",
       expiresInDays: 7,
     },
   });
-  must("create parent invite ok", inv.ok && inv.json?.ok === true);
-  must("invite token present", !!inv.json?.token);
+  must("create parent access ok", inv.ok && inv.json?.ok === true);
+  must("access token present", !!inv.json?.token);
+  must("access code present", !!inv.json?.accessCode);
+  must("pin present", !!inv.json?.pin);
   const inviteToken = String(inv.json.token);
   const inviteId = Number(inv.json?.item?.id || 0);
-  must("inviteId present", inviteId > 0);
+  must("accessId present", inviteId > 0);
 
-  step("invite info endpoint should resolve token");
+  step("access info endpoint should resolve token");
   const info = await reqJson("GET", `/api/auth/parent-invite/info?token=${encodeURIComponent(inviteToken)}`);
-  must("invite info ok", info.ok && info.json?.ok === true);
-  must("invite child matches", Number(info.json?.invite?.child?.id || 0) === studentId);
+  must("access info ok", info.ok && info.json?.ok === true);
+  must("access child matches", Number(info.json?.access?.child?.id || 0) === studentId);
 
-  step("accept invite self-serve");
+  step("accept access self-serve");
   const accept = await reqJson("POST", "/api/auth/parent-invite/accept", {
     body: {
       token: inviteToken,
-      email: inviteEmail,
-      password: "demo123",
-      fullName: "Step06 Parent Accepted",
-      phone: "+90 555 010 10 14",
     },
   });
-  must("invite accept ok", accept.ok && accept.json?.ok === true);
+  must("access accept ok", accept.ok && accept.json?.ok === true);
 
   const schoolInvites = await reqJson("GET", "/api/school/parent-invites?take=50", { token: schoolToken });
-  must("school invite list ok", schoolInvites.ok && schoolInvites.json?.ok === true);
-  const acceptedItem = itemsOf(schoolInvites).find((x) => Number(x?.id || 0) === inviteId);
-  must("accepted invite visible in list", !!acceptedItem);
-  must("accepted invite status=ACCEPTED", String(acceptedItem?.status || "") === "ACCEPTED");
+  must("school access list ok", schoolInvites.ok && schoolInvites.json?.ok === true);
+  const activeItem = itemsOf(schoolInvites).find((x) => Number(x?.id || 0) === inviteId);
+  must("active access visible in list", !!activeItem);
+  must("active access status=ACTIVE", String(activeItem?.status || "") === "ACTIVE");
 
-  const parentToken = await loginFirst(inviteEmail, "demo123");
-  must("accepted parent can login", !!parentToken);
-  const me = await reqJson("GET", "/api/me", { token: parentToken });
+  const parentRetry = await reqJson("POST", "/api/auth/parent-invite/accept", {
+    body: {
+      accessCode: String(inv.json?.accessCode || ""),
+      pin: String(inv.json?.pin || ""),
+    },
+  });
+  must("code + pin retry ok", parentRetry.ok && parentRetry.json?.ok === true);
+  const me = await reqJson("GET", "/api/me", { token: parentRetry.json?.token });
   must("parent /api/me ok", me.ok);
   must("parent role=PARENT", String(me.json?.role || "") === "PARENT");
 

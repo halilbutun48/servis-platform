@@ -513,110 +513,13 @@ async function assertInviteScope(req, parsed) {
   throw Object.assign(new Error("FORBIDDEN"), { status: 403, code: "FORBIDDEN" });
 }
 
-authStep2Router.get("/invite/info", async (req, res) => {
-  try {
-    const token = String(req.query?.token || "").trim();
-    if (!token) return res.status(400).json({ error: "token required" });
-    const invite = await resolveScopedInviteByToken(token);
-    if (!invite) return res.status(404).json({ error: "INVITE_NOT_FOUND" });
-    if (!isActiveWindow(invite.row)) {
-      const code = invite.row.revokedAt ? "INVITE_REVOKED" : invite.row.consumedAt ? "INVITE_CONSUMED" : "INVITE_EXPIRED";
-      return res.status(410).json({ error: code });
-    }
-    return res.json({ ok: true, invite: mapInviteInfo(invite) });
-  } catch (e) {
-    return res.status(e?.status ?? 500).json({ error: String(e?.code || e?.message || e) });
-  }
-});
+authStep2Router.get("/invite/info", async (_req, res) => res.status(410).json({ error: "AUTH_INVITE_REMOVED", message: "Hesap daveti akışı kaldırıldı." }));
 
-authStep2Router.get("/invites", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
-  try {
-    const take = Math.min(200, Math.max(1, Number(req.query.take || 100)));
-    const where = {};
-    if (req.user.role === "COMPANY") where.companyId = req.user.companyId ?? -1;
-    if (req.user.role === "ROOM") where.roomId = req.user.roomId ?? -1;
+authStep2Router.get("/invites", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (_req, res) => res.status(410).json({ error: "AUTH_INVITE_REMOVED", message: "Hesap daveti ekranı kaldırıldı." }));
 
-    const items = await prisma.invite.findMany({
-      where,
-      take,
-      include: {
-        company: { select: { id: true, name: true, kind: true } },
-        room: { select: { id: true, name: true } },
-        personel: { select: { id: true, fullName: true } },
-        driver: { select: { id: true, fullName: true } },
-        createdBy: { select: { id: true, email: true, fullName: true } },
-        consumedBy: { select: { id: true, email: true, fullName: true } },
-      },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    });
-    return res.json({ items: items.map((x) => sanitizeAuthInviteListItem(x, { role: req.user?.role })) });
-  } catch (e) {
-    return res.status(e?.status ?? 500).json({ error: String(e?.code || e?.message || e) });
-  }
-});
+authStep2Router.post("/invites", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), requireStepUpWrite("ROOM", "SUPER_ADMIN"), async (_req, res) => res.status(410).json({ error: "AUTH_INVITE_REMOVED", message: "Hesap daveti oluşturma kaldırıldı." }));
 
-authStep2Router.post("/invites", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), requireStepUpWrite("ROOM", "SUPER_ADMIN"), async (req, res) => {
-  try {
-    const parsed = createInviteSchema.safeParse(req.body || {});
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-
-    const scoped = await assertInviteScope(req, parsed.data);
-    const ttlDays = Number(parsed.data.ttlDays || 7);
-    const rawToken = randomTokenHex(24);
-    const created = await prisma.invite.create({
-      data: {
-        type: roleTypeOf(parsed.data.role),
-        role: parsed.data.role,
-        email: parsed.data.email,
-        phone: scoped.phone,
-        fullName: scoped.fullName,
-        companyId: scoped.companyId,
-        roomId: scoped.roomId,
-        personelId: scoped.personelId,
-        driverId: scoped.driverId,
-        tokenHash: sha256Hex(rawToken),
-        expiresAt: new Date(Date.now() + ttlDays * 24 * 3600_000),
-        createdByUserId: req.user.id,
-      },
-      include: {
-        company: { select: { id: true, name: true, kind: true } },
-        room: { select: { id: true, name: true } },
-        personel: { select: { id: true, fullName: true } },
-        driver: { select: { id: true, fullName: true } },
-      },
-    });
-
-    await recordAudit({
-      req,
-      email: parsed.data.email,
-      user: req.user,
-      action: "INVITE_CREATE",
-      meta: { inviteId: created.id, type: created.type, role: created.role, companyId: created.companyId ?? null, roomId: created.roomId ?? null },
-    });
-
-    return res.status(201).json({ ok: true, item: sanitizeAuthInviteListItem(created, { role: req.user?.role }), token: rawToken });
-  } catch (e) {
-    return res.status(e?.status ?? 500).json({ error: String(e?.code || e?.message || e) });
-  }
-});
-
-authStep2Router.post("/invites/:id/revoke", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), requireStepUpWrite("ROOM", "SUPER_ADMIN"), async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    if (!id) return res.status(400).json({ error: "badId" });
-
-    const row = await prisma.invite.findUnique({ where: { id }, select: { id: true, companyId: true, roomId: true, revokedAt: true, consumedAt: true } });
-    if (!row) return res.status(404).json({ error: "notFound" });
-    if (req.user.role === "COMPANY" && Number(row.companyId) !== Number(req.user.companyId ?? -1)) return res.status(403).json({ error: "FORBIDDEN" });
-    if (req.user.role === "ROOM" && Number(row.roomId) !== Number(req.user.roomId ?? -1)) return res.status(403).json({ error: "FORBIDDEN" });
-
-    await prisma.invite.update({ where: { id }, data: { revokedAt: row.revokedAt || new Date() } });
-    await recordAudit({ req, email: null, user: req.user, action: "INVITE_REVOKE", meta: { inviteId: id } });
-    return res.json({ ok: true, id });
-  } catch (e) {
-    return res.status(e?.status ?? 500).json({ error: String(e?.code || e?.message || e) });
-  }
-});
+authStep2Router.post("/invites/:id/revoke", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), requireStepUpWrite("ROOM", "SUPER_ADMIN"), async (_req, res) => res.status(410).json({ error: "AUTH_INVITE_REMOVED", message: "Hesap daveti iptal akışı kaldırıldı." }));
 
 authStep2Router.post("/google", async (req, res) => {
   try {

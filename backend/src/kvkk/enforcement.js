@@ -307,7 +307,7 @@ export function buildKvkkEnforcementSummary() {
       "GET /api/admin/logs/export",
       "GET /api/shifts/:id/operation-events",
       "GET /api/company/personels",
-      "GET /api/auth/invites",
+      "GET /api/auth/parent-invite/info",
       "GET /api/vehicles",
       "GET /api/shifts",
       "GET /api/shifts/:id"
@@ -318,7 +318,7 @@ export function buildKvkkEnforcementSummary() {
       "`ip` ve `userAgent` ham verilmez",
       "log/export text ve meta icinde email/ip/koordinat redaction",
       "school domain davet ve kisi listelerinde parent/child iletisim daraltma",
-      "auth davet listesinde ham email/phone ve tokenHash donmez",
+      "veli erisimi yuzeyinde ham iletisim bilgisi tutulmaz ve tokenHash donmez",
       "company/driver/superadmin disi shift/vehicle driver iletisim alanlari daraltilir",
       "preview/export hedef etiketleri ve admin export filtreleri redaction uygular",
       "retention/export audit izi ham filtreleri oldugu gibi yazmaz"

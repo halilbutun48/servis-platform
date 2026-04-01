@@ -164,7 +164,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     addScore(scores, signals, 'NEXT_STEP', 5, 'simple-flow-next-step');
     addScore(scores, signals, 'SCREEN_PURPOSE', -2, 'simple-flow-not-purpose');
   }
-  if (/(neden|farkı|farki|ne\s+demek)/.test(text) && pathHas(options.screenPath, ['/agreements', '/hub', '/auth-invites', '/checkin', '/notifications', '/logs', '/operation-verification', '/acceptance', '/trust-quality', '/observability'])) addScore(scores, signals, 'SCREEN_PURPOSE', 1, 'special-screen-purpose');
+  if (/(neden|farkı|farki|ne\s+demek)/.test(text) && pathHas(options.screenPath, ['/agreements', '/hub', '/school/parents', '/access-links', '/checkin', '/notifications', '/logs', '/operation-verification', '/acceptance', '/trust-quality', '/observability'])) addScore(scores, signals, 'SCREEN_PURPOSE', 1, 'special-screen-purpose');
 
   const shortFollowUp = isShortFollowUp(text);
   const prevType = lastQuestionType(options.conversationState);
@@ -272,9 +272,6 @@ function simpleScreenChipsByPath(screenPath = '') {
   if (pathHas(screenPath, ['/hub'])) {
     return ['Hub ne demek?', 'Inbound ne demek?', 'Outbound ne demek?', 'Şimdi ne yapayım?'];
   }
-  if (pathHas(screenPath, ['/auth-invites'])) {
-    return ['Giriş daveti ne demek?', 'Erişim linki ile farkı ne?', 'Bu ekran ne için var?', 'Şimdi ne yapayım?'];
-  }
   if (pathHas(screenPath, ['/notifications'])) {
     return ['Bildirim ne demek?', 'Log ile farkı ne?', 'Bu ekran ne için var?', 'Şimdi ne yapayım?'];
   }
@@ -306,8 +303,8 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS') {
     chips.push('Bu ekran ne için var?', 'Önce neyi kontrol edeyim?', 'Bu ne demek?', 'Şimdi ne yapayım?', 'İlgili yere götür');
   } else if (pathHas(screenPath, ['/hub'])) {
     chips.push('Hub ne demek?', 'Inbound ne demek?', 'Outbound ne demek?', 'Bu ekran ne için var?', 'İlgili yere götür');
-  } else if (pathHas(screenPath, ['/auth-invites'])) {
-    chips.push('Giriş daveti ne için kullanılır?', 'Erişim linki ile farkı ne?', 'Bu ekran ne için var?', 'İlgili yere götür');
+  } else if (pathHas(screenPath, ['/school/parents'])) {
+    chips.push('Veli Erişimi ne için var?', 'Kod ve PIN ne işe yarar?', 'Bu ekran ne için var?', 'İlgili yere götür');
   } else if (pathHas(screenPath, ['/notifications'])) {
     chips.push('Bildirim ne demek?', 'Log ile farkı ne?', 'Bu ekran ne için var?', 'İlgili yere götür');
   } else if (pathHas(screenPath, ['/logs'])) {

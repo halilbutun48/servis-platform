@@ -20,15 +20,13 @@ Bu belge M77.3 ile gelen payload daraltma ve redaction kurallarını toplar.
 ## School domain kuralı
 - `SCHOOL` ayrı auth role değildir
 - `Company.kind = SCHOOL` business domain olarak taşınır
-- school davet / parent contact / child contact yüzeyleri varsayılan olarak daraltılır
+- school erişimi / parent contact / child contact yüzeyleri varsayılan olarak daraltılır
 
 ## Log ve export kuralı
 - preview ve export aynı redaction helper üstünden geçmelidir
 - admin log tarafı da varsayılan olarak ham IP / ham email göstermemelidir
 - gerekiyorsa daha derin adli erişim ayrı kontrollü yüzey olarak tasarlanmalıdır
 
-
-## M77.4 ek redaction notu
-- logs preview/export hedef etiketi sanitize edilir
-- admin export filtreleri (`emailContains`, `ipContains`) sanitize edilerek audit'e yazılır
-- auth invite listesinde ham `email` yerine `emailMasked`, ham `phone` yerine `phoneMasked` öne çıkar
+## Veli erişimi notu
+- Veli Erişimi yüzeyi ham `email` veya `phone` toplamadan çalışır
+- parent access listesinde `tokenHash` response'a dönmez

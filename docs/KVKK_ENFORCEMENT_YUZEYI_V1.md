@@ -1,9 +1,9 @@
 # KVKK ENFORCEMENT YÜZEYİ V1
 
 ## Amaç
-Bu belge, M77 altında gerçekten koda inmiş olan ilk KVKK maskeleme / daraltma yüzeylerini listeler.
+Bu belge M77 altında gerçekten koda inmiş olan KVKK maskeleme ve payload daraltma yüzeylerini listeler.
 
-## M77.2 yüzeyleri
+## Temel yüzeyler
 - `GET /api/parent/children`
   - ham `phone` ve `homeAddress` verilmez
   - `phoneMasked` ve `homeAddressMasked` döner
@@ -14,14 +14,20 @@ Bu belge, M77 altında gerçekten koda inmiş olan ilk KVKK maskeleme / daraltma
 - `GET /api/me/sessions`
   - `ip` ve `userAgent` ham verilmez
   - `ipMasked` ve `userAgentMasked` döner
-- `GET /api/kvkk/matrix`
-  - enforcement özeti görünür hale gelir
+- `GET /api/admin/logs/export`
+  - text ve meta içinde email / ip / koordinat redaction uygulanır
 
-## M77.3 genişleme yüzeyleri
+## School / Veli erişimi yüzeyi
 - `GET /api/school/parent-invites`
-  - email / phone listede masked döner
+  - Veli Erişimi geçmişini döner
+  - ham email / phone tutulmaz
+- `GET /api/auth/parent-invite/info`
+  - erişimin aktif / iptal / süre dolmuş durumunu kontrollü döner
+  - iletişim verisi yerine child ve şirket özeti taşır
+
+## Ek yüzeyler
 - `GET /api/company/personels`
-  - `Company.kind = SCHOOL` ise `phone` ve `homeAddress` list yüzeyinde masked döner
+  - `Company.kind = SCHOOL` ise öğrenci iletişim alanları varsayılan olarak daraltılır
 - `GET /api/shifts/:id/operation-events`
   - audit meta redacted döner
 - `GET /api/logs/preview`
@@ -29,12 +35,3 @@ Bu belge, M77 altında gerçekten koda inmiş olan ilk KVKK maskeleme / daraltma
 - `GET /api/admin/logs/preview`
 - `GET /api/admin/logs/export`
   - text ve meta içinde email / ip / koordinat redaction uygulanır
-
-## Not
-Bu belge final hukuki yorum değil, çalışan enforcement yüzeyinin teknik envanteridir.
-
-
-## M77.4 ek yüzeyler
-- `GET /api/vehicles` role göre sanitize edilir
-- `GET /api/shifts/:id` role göre driver iletişim alanı daraltılır
-- `GET /api/auth/invites` ham invite email/phone yerine masked alanlar taşır

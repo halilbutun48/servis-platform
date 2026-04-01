@@ -10,9 +10,9 @@ Kapsam:
 - room/company/school/organization hub ekranlarının açıklaması
 - shared notifications ve shared logs açıklaması
 - company/school/organization georeview açıklaması
-- room/company/school/organization auth-invites açıklaması
+- school parent access / veli erişimi açıklaması
 - room/company check-in ve driver check-in açıklaması
-- Hub / Inbound / Outbound / Giriş Daveti / Erişim Linki / Bildirim / İşlem Kaydı / Konum İncele / OSRM / Matrix / Check-in terimleri
+- Hub / Inbound / Outbound / Erişim Linki / Veli Erişimi / Bildirim / İşlem Kaydı / Konum İncele / OSRM / Matrix / Check-in terimleri
 
 Ana ürün etkisi:
 - chat içinde terim soruları daha iyi anlaşılır

@@ -1,33 +1,34 @@
-# SCHOOL → Parent Invite Flow
+# SCHOOL → Veli Erişimi Akışı
 
-## Amaç
-Okul paneli parent için **ID/şifre vermez**. Bunun yerine öğrenci bazlı tek kullanımlık invite linki üretir.
+Bu akış artık hesap daveti değildir.
 
-## Akış
-1. SCHOOL panelinde öğrenci seçilir.
-2. Parent adı / e-posta / telefon opsiyonel girilir.
-3. Sistem tek kullanımlık invite token üretir.
-4. Panel sadece **linki** gösterir; raw şifre veya parent user id göstermez.
-5. Parent linke gider, kendi ad/e-posta/şifresini girer.
-6. Sistem `PARENT` user oluşturur veya mevcut parent hesabını günceller.
-7. `ParentChild` bağı otomatik kurulur ve parent giriş yapmış olur.
+Yeni ürün gerçeği:
 
-## Route
-- SCHOOL panel: `#/school/parents`
-- Public accept: `#/accept-parent-invite?token=...`
+- Okul ekranı: `#/school/parents`
+- Public ekran: `#/accept-parent-invite?token=...`
+- Üretim çıktısı: `erişim linki + erişim kodu + PIN`
+- Mail / telefon / ad soyad toplanmaz
+- Link ve Kod+PIN aynı süre boyunca tekrar kullanılabilir
+- İptal edildiğinde erişim anında kapanır
 
-## Backend
+## API yüzeyleri
+
 - `GET /api/school/parent-invites`
 - `POST /api/school/parent-invites`
 - `POST /api/school/parent-invites/:id/revoke`
 - `GET /api/auth/parent-invite/info?token=...`
 - `POST /api/auth/parent-invite/accept`
 
-## Not
-- Invite token DB'de hash olarak tutulur.
-- Parent hesabı okul tarafından password ile açılmaz; self-serve kabul ile açılır.
+## Güvenlik notları
 
+- Ham link verisi DB'ye yazılmaz; hash tutulur.
+- PIN ayrı sütunda tutulmuyor; erişim kombinasyonu hash üstünden doğrulanır.
+- Public accept yüzeyi auth limiter ile korunur.
+- Erişim iptal/süre bazlıdır; ilk girişte tek kullanımlık consume yapılmaz.
 
-## Terminal states
-- `INVITE_REVOKED`, `INVITE_CONSUMED`, `INVITE_EXPIRED`, `INVITE_NOT_FOUND` durumlarında accept formu kapanır; yalnızca bilgilendirme gösterilir.
-- Üretilen paylaşım linki için `VITE_PUBLIC_BASE_URL` önerilir; boşsa mevcut origin kullanılır.
+## UI beklentisi
+
+- School tarafında yalnızca öğrenci ve süre alanı görünür.
+- Public accept tarafında ana yöntem `Kod + PIN`dir.
+- Link ile gelen kullanıcı otomatik giriş dener; gerekirse Kod + PIN fallback kullanır.
+- Ayrı bir hesap daveti kartı veya mail tabanlı akış yoktur.

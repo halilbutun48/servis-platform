@@ -12,7 +12,7 @@ const TERMS = {
   hub: { term: "Hub", meaning: "Personelin toplandığı ya da bırakıldığı ana nokta", aliases: ["hub", "ana nokta", "toplama noktası", "toplanma noktası", "birakma noktasi", "bırakma noktası"] },
   inbound: { term: "Inbound", meaning: "Personeli toplayıp merkeze veya hub'a götüren yön", aliases: ["inbound", "toplama yönü", "toplama yonu"] },
   outbound: { term: "Outbound", meaning: "Hub'dan çıkıp personeli bırakma yönü", aliases: ["outbound", "dağıtım yönü", "dagitim yonu", "bırakma yönü", "birakma yonu"] },
-  girisDaveti: { term: "giriş daveti", meaning: "Hesaba giriş oluşturmak için gönderilen davet", aliases: ["giriş daveti", "giris daveti", "hesap daveti", "auth invite", "invite"] },
+  veliErisimi: { term: "Veli Erişimi", meaning: "Öğrenci için süreli link, erişim kodu ve PIN üreten okul akışı", aliases: ["veli erişimi", "veli erisimi", "parent access"] },
   erisimLinki: { term: "erişim linki", meaning: "Hesapsız veya hızlı erişim için paylaşılan bağlantı", aliases: ["erişim linki", "erisim linki", "access link", "link"] },
   konumIncele: { term: "Konum İncele", meaning: "Konum verisinin neden eksik veya hatalı göründüğünü kontrol ettiğin ekran", aliases: ["konum incele", "geo review", "georeview", "lokasyon incele", "öğrenci konum incele"] },
   osrm: { term: "OSRM", meaning: "Yol ve süre hesabı yapan servis", aliases: ["osrm", "yol hesabı", "sure hesabi servisi", "rota hesabı"] },

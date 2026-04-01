@@ -7,8 +7,7 @@ $ErrorActionPreference = "Stop"
 Set-Location $RepoRoot
 
 Write-Host ""
-Write-StatusLine "=== M43 GOOGLE AUTH + INVITE GATE PACK ==="
-
+Write-StatusLine "=== M43 PARENT ACCESS CLEANUP PACK ==="
 
 $dc = "docker"
 $compose = Join-Path $RepoRoot "infra/docker-compose.yml"
@@ -25,5 +24,4 @@ Write-StatusLine "=== M43 Repo Contract ==="
 if (-not $?) { throw "repo contract check failed" }
 
 Write-Host ""
-Write-StatusLine "=== M43 GOOGLE AUTH + INVITE GATE PACK PASS OK ==="
-
+Write-StatusLine "=== M43 PARENT ACCESS CLEANUP PACK PASS OK ==="

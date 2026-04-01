@@ -469,6 +469,7 @@ const exportLimiter = rateLimit({
 // Auth (Ã§ok sÄ±kÄ±)
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/google", authLimiter);
+app.use("/api/auth/parent-invite", authLimiter);
 app.use("/api/auth/refresh", authActionLimiter);
 app.use("/api/auth/logout", authActionLimiter);
 app.use("/api/auth/driver/change-pin", authActionLimiter);

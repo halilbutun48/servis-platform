@@ -1383,14 +1383,15 @@ function termComparisonReply(message) {
   const hasLog = /log|audit|işlem kaydı|islem kaydi/.test(text);
   const hasNotification = /bildirim|notification/.test(text);
   const hasInvite = /giriş daveti|giris daveti|hesap daveti|invite/.test(text);
-  const hasAccessLink = /erişim linki|erisim linki|access link|personel link/.test(text);
+  const hasAccessLink = /erişim linki|erisim linki|access link|personel link|öğrenci linki|ogrenci linki|veli linki|student link/.test(text);
+  const hasParentAccess = /veli erişimi|veli erisimi|parent access/.test(text);
   const hasInbound = /inbound|toplama yönü|toplama yonu/.test(text);
   const hasOutbound = /outbound|dağıtım yönü|dagitim yonu|bırakma yönü|birakma yonu/.test(text);
   const hasOsrm = /osrm|yol hesabı|rota hesabı/.test(text);
   const hasMatrix = /matrix|matris|süre tablosu|sure tablosu/.test(text);
   const asksDiff = /aynı şey mi|ayni sey mi|farkı ne|farki ne/.test(text);
   if (asksDiff && hasLog && hasNotification) return 'Aynı şey değil. Bildirim kullanıcıya giden uyarıdır. İşlem kaydı ise sistemde ne olduğunun kayıt altına alınmış halidir.';
-  if (asksDiff && hasInvite && hasAccessLink) return 'Aynı şey değil. Giriş daveti hesap açtırmak içindir. Erişim linki ise hesapsız veya hızlı erişim vermek için paylaşılır.';
+  if (asksDiff && ((hasInvite && hasAccessLink) || (hasParentAccess && hasAccessLink))) return 'Aynı şey değil. Eski giriş daveti akışı kaldırıldı. Yeni yapıda okul Veli Erişimi üretir; erişim linki, erişim kodu ve PIN aynı süre boyunca kullanılabilir.';
   if (asksDiff && hasInbound && hasOutbound) return "Aynı yön değil. Inbound toplama yönüdür; personeli merkeze veya hub'a getirir. Outbound ise hub'dan çıkıp personeli bırakma yönüdür.";
   if ((hasOsrm && hasMatrix) || (asksDiff && (hasOsrm || hasMatrix))) return 'OSRM yol ve süre hesabı yapan servistir. Matrix ise birden çok nokta için toplu süre ve mesafe tablosudur.';
   return '';
@@ -2084,7 +2085,8 @@ function termComparisonReplyV2(message) {
   const hasLog = /log|audit|işlem kaydı|islem kaydi/.test(text);
   const hasNotification = /bildirim|notification/.test(text);
   const hasInvite = /giriş daveti|giris daveti|hesap daveti|invite/.test(text);
-  const hasAccessLink = /erişim linki|erisim linki|access link|personel link/.test(text);
+  const hasAccessLink = /erişim linki|erisim linki|access link|personel link|öğrenci linki|ogrenci linki|veli linki|student link/.test(text);
+  const hasParentAccess = /veli erişimi|veli erisimi|parent access/.test(text);
   const hasInbound = /inbound|toplama yönü|toplama yonu/.test(text);
   const hasOutbound = /outbound|dağıtım yönü|dagitim yonu|bırakma yönü|birakma yonu/.test(text);
   const hasOsrm = /osrm|yol hesabı|rota hesabı/.test(text);
@@ -2093,8 +2095,8 @@ function termComparisonReplyV2(message) {
   if (asksDiff && hasLog && hasNotification) {
     return 'Aynı şey değil. Bildirim kullanıcıya giden uyarıdır. İşlem kaydı ise sistemde ne olduğunun kayıt altına alınmış halidir.';
   }
-  if (asksDiff && hasInvite && hasAccessLink) {
-    return 'Aynı şey değil. Giriş daveti hesap açtırmak içindir. Erişim linki ise hesapsız veya hızlı erişim vermek için paylaşılır.';
+  if (asksDiff && ((hasInvite && hasAccessLink) || (hasParentAccess && hasAccessLink))) {
+    return 'Aynı şey değil. Eski giriş daveti akışı kaldırıldı. Yeni yapıda okul Veli Erişimi üretir; erişim linki, erişim kodu ve PIN aynı süre boyunca kullanılabilir.';
   }
   if (asksDiff && hasInbound && hasOutbound) {
     return "Aynı yön değil. Inbound toplama yönüdür; personeli merkeze veya hub'a getirir. Outbound ise hub'dan çıkıp personeli bırakma yönüdür.";

@@ -1,11 +1,11 @@
 # KVKK ROLE PAYLOAD DARALTMA V1
 
 ## Amaç
-Bu belge M77.4 altında maskelemeden bir adım ileri gidip bazı response yüzeylerinde ham kişisel alanların hiç dönmemesini tanımlar.
+Bu belge M77.4 altında bazı response yüzeylerinde ham kişisel alanların hiç dönmemesini ve yeni Veli Erişimi akışında gereksiz iletişim verisinin tutulmamasını tanımlar.
 
 ## Kapsanan yüzeyler
-- `GET /api/auth/invites`
-- `POST /api/auth/invites`
+- `GET /api/auth/parent-invite/info`
+- `POST /api/auth/parent-invite/accept`
 - `GET /api/vehicles`
 - `GET /api/shifts`
 - `GET /api/shifts/:id`
@@ -14,31 +14,27 @@ Bu belge M77.4 altında maskelemeden bir adım ileri gidip bazı response yüzey
 - `GET /api/admin/logs/export`
 
 ## Temel kural
-- `ROOM` ve `SUPER_ADMIN` operasyon gereği bazı exact alanları görmeye devam edebilir.
+- `ROOM` ve `SUPER_ADMIN` operasyon gereği bazı exact alanları görebilir.
 - `COMPANY`, `DRIVER`, `PERSONEL`, `PARENT` ve school-domain yüzeylerinde ham kişi iletişim verisi mümkün olduğunca dönmez.
 - Mümkün olan yerde `phoneMasked`, `emailMasked` gibi türetilmiş alan verilir.
 
-## Auth invite listesi
-- ham `email` ve `phone` list yüzeyinde korunmaz
+## Veli erişimi yüzeyi
+- ham `email` ve `phone` tutulmaz
 - `tokenHash` response'a hiç dönmez
-- `createdBy.email` ve `consumedBy.email` exact yerine masked görünür
-- `SUPER_ADMIN` için exact email gerektiğinde ayrı kontrollü yüzey düşünülür; liste yüzeyi varsayılan güvenli görünüm taşır
+- link, erişim kodu ve PIN süreli erişim üretir
+- süre dolunca veya erişim iptal edilince yüzey kapanır
 
 ## Araç listesi
 - `GET /api/vehicles` role göre sanitize edilir
-- `gpsLast.lat/lng` exact / masked / hidden ayrımı aynen korunur
-- company/driver/personel tarafında `driver.phone`, `driver.user.email`, `driver.userId`, `driverCode`, `pinTemporary`, `deviceInfo` gibi alanlar taşıt listesi yüzeyinde gereksizse dönmez
-- room tarafında operasyon ihtiyacı olan exact görünüm korunabilir
+- `gpsLast.lat/lng` exact / masked / hidden ayrımı korunur
+- company/driver/personel tarafında gereksiz sürücü iletişim alanları taşınmaz
 
 ## Vardiya listesi ve detay
-- `GET /api/shifts` ve `GET /api/shifts/:id` role göre driver iletişim alanı daraltır
-- company tarafında sürücü adı görülebilir; açık telefon/e-posta response yüzeyinde zorunlu değildir
+- `GET /api/shifts` ve `GET /api/shifts/:id` role göre driver iletişim alanını daraltır
+- company tarafında sürücü adı görülebilir; açık telefon/e-posta zorunlu değildir
 - operation-events actor label email fallback ile oluşsa bile masked görünür
 
 ## Log/export sertleştirmesi
 - preview/export hedef etiketi email geçirse bile redacted görünür
 - admin export audit meta içindeki `emailContains` ve `ipContains` gibi filtreler sanitize edilerek audit'e yazılır
 - preview ve export aynı redaction mantığına bağlı kalmalıdır
-
-## Not
-Bu belge final hukuki metin değil; role/payload response yüzeyini daraltan teknik enforcement rehberidir.

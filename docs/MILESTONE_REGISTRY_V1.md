@@ -32,7 +32,7 @@
 
 ## M77.4 notu
 - M77.4 role/payload response daraltma turudur
-- auth invite, vehicle, shift ve export filtre yüzeyleri daha sert daraltılır
+- parent access, vehicle, shift ve export filtre yüzeyleri daha sert daraltılır
 
 ## M77.5 notu
 - M77.5 retention / export trail enforcement turudur
