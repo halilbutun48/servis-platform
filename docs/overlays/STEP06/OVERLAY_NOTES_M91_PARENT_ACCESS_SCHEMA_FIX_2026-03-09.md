@@ -1,5 +1,8 @@
 # M91 — School Parent Access schema/client drift fix
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 Bu overlay, SCHOOL Veli Erişimi akışında görülen şu runtime hatasını düzeltir:
 
 - `TypeError: Cannot read properties of undefined (reading 'findMany')`

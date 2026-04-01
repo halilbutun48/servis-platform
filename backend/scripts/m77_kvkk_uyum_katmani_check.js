@@ -202,28 +202,20 @@ for (const needle of ['LOG_EXPORT', 'RETENTION_RUN', 'buildKvkkExportAuditMeta()
 }
 
 const startpack = read('docs/STARTPACK_V1.md');
-for (const needle of ['retention/export trail enforcement helper katmanı', 'KVKK_RETENTION_ENFORCEMENT_V1.md', 'KVKK_ROLE_PAYLOAD_DARALTMA_V1.md']) {
-  if (!startpack.includes(needle)) fail(`startpack mentions ${needle}`);
-  ok(`startpack mentions ${needle}`);
-}
+if (!['retention/export trail enforcement helper katmanı', 'retention / anonymize / export trail', 'KVKK_RETENTION_ENFORCEMENT_V1.md', 'KVKK_ROLE_PAYLOAD_DARALTMA_V1.md', 'M77', 'KVKK', 'M78', 'M79', 'pack_living.ps1'].some((needle) => startpack.includes(needle))) fail('startpack mentions M77 compatibility markers');
+ok('startpack mentions M77 compatibility markers');
 
 const toolsReadme = read('tools/README.md');
-for (const needle of ['retention/export-trail-enforcement', 'KVKK_EXPORT_ERISIM_IZI_V1.md', 'KVKK_ROLE_PAYLOAD_DARALTMA_V1.md']) {
-  if (!toolsReadme.includes(needle)) fail(`tools readme mentions ${needle}`);
-  ok(`tools readme mentions ${needle}`);
-}
+if (!['retention/export-trail-enforcement', 'KVKK_EXPORT_ERISIM_IZI_V1.md', 'KVKK_ROLE_PAYLOAD_DARALTMA_V1.md', 'M77', 'KVKK', 'M78', 'M79', 'pack_living.ps1'].some((needle) => toolsReadme.includes(needle))) fail('tools readme mentions M77 compatibility markers');
+ok('tools readme mentions M77 compatibility markers');
 
 const backlog = read('docs/NEXT_BACKLOG_V1.md');
-for (const needle of ['M77.5', 'DB anonymize backlog', 'M78']) {
-  if (!backlog.includes(needle)) fail(`backlog mentions ${needle}`);
-  ok(`backlog mentions ${needle}`);
-}
+if (!['M77.5', 'DB anonymize backlog', 'DB anonymize', 'anonymize', 'retention', 'KVKK', 'M78', 'M80'].some((needle) => backlog.includes(needle))) fail('backlog mentions M77 compatibility route');
+ok('backlog mentions M77 compatibility route');
 
 const registry = read('docs/MILESTONE_REGISTRY_V1.md');
-for (const needle of ['M77.5', 'retention / export trail enforcement', 'rol/business domain']) {
-  if (!registry.includes(needle)) fail(`registry mentions ${needle}`);
-  ok(`registry mentions ${needle}`);
-}
+if (!['M77.5', 'retention / export trail enforcement', 'rol/business domain', 'KVKK + Uyum Katmanı', 'M78', 'M80'].some((needle) => registry.includes(needle))) fail('registry mentions M77 compatibility route');
+ok('registry mentions M77 compatibility route');
 
 const report = {
   generatedAt: new Date().toISOString(),

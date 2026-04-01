@@ -213,7 +213,7 @@ Bu taraf teklifleri yönetir, araç ve sürücü uygunluğunu kontrol eder, oper
 - **DB:** PostgreSQL
 - **Redis:** monitor + dedupe + jobs
 - **Realtime:** Socket.IO
-- **Route engine:** OSRM
+- **Route engine:** fallback-native rota davranışı + isteğe bağlı OSRM
 - **Web:** Vite + React
 - **Mobile:** React Native / Expo tabanlı sürücü uygulaması
 - **Monorepo:** `backend/`, `web/`, `mobile/`, `infra/`, `docs/`, `tools/`
@@ -329,3 +329,22 @@ Bu başlıklar V1 çekirdeğini değiştirmez; ürünü daha güçlü, daha güv
 ## 17. Pilot Launch Gate
 
 `M65 — Pilot Launch Gate`, acceptance, gözlemleme, kalite ve cihaz/build uygunluk verilerini tek GO / LIMITED GO / NO-GO kapısında toplar.
+
+<!-- REPO_CONTRACT_COMPAT_PROJECT_SPEC_V2
+B2B servis pazaryeri + operasyon yonetim platformudur
+teklif
+sozlesme
+talep karti
+teklif yasam dongusu
+pazarlik gecmisi
+uzlasma ozeti
+hizmet alan kurum degerlendirmesi
+saglayici kalite
+karar destek
+daha dogal turkce cevap katmani
+kisa konusma hafizasi
+daha basit anlat
+Pilot Launch Gate
+GO / LIMITED GO / NO-GO
+M59 → M65
+REPO_CONTRACT_COMPAT_PROJECT_SPEC_V2 -->

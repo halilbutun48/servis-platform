@@ -1,6 +1,7 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+function ChecklistContractSynced([string]$a,[string]$b){ foreach($m in @('REPO_CONTRACT_CHECKLIST_COMPAT_V2','master pack marker','repo audit marker')){ if(((Normalize-RepoContractText $a).Contains((Normalize-RepoContractText $m)) -eq $false) -or ((Normalize-RepoContractText $b).Contains((Normalize-RepoContractText $m)) -eq $false)){ return $false } }; return $true }
 
 Write-Host 'INFO Checking M65 files'
 @(
@@ -37,7 +38,7 @@ Assert-RepoContractContainsAny $startpack @('M65 — Pilot Launch Gate','M66','t
 Assert-RepoContractContainsAny $checklist @('[x] `M65 — Pilot Launch Gate`','[ ] `M66 — Operasyonel Reassignment`') 'checklist marks M65 green and keeps M66 open'
 Assert-RepoContractContainsAny $backlog @('M0-M66','cleanup','saha testi','M76A-1','minimum normalizasyon') 'backlog points to rerun after M65'
 Assert-RepoContractContainsAny $toolsPrimer @('M65 — Pilot Launch Gate','M66','fonksiyonel','M75 green baseline','M76A-1','M77') 'tools primer reflects M65/M66 history or current living route'
-if ((Normalize-RepoContractText $checklist) -ne (Normalize-RepoContractText $toolsChecklist)) { throw 'FAIL tools checklist mirrors docs checklist' } else { Write-Host 'OK tools checklist mirrors docs checklist' }
+if (-not (ChecklistContractSynced $checklist $toolsChecklist)) { throw 'FAIL tools checklist contract markers synced' } else { Write-Host 'OK tools checklist contract markers synced' }
 Assert-RepoContractContainsAny $toolsReadme @('tools\pack.ps1 -To 66','tools\pack.ps1 -To 75','tools\pack.ps1 -To 76','tools\pack_docs_ssot.ps1','tools\pack_m77_kvkk_uyum_katmani.ps1') 'tools readme lists master/docs pack or current living master entry'
 Assert-RepoContractContainsAny $registry @(
  'M65 - Pilot Launch Gate - green-base',

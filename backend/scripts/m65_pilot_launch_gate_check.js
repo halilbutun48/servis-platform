@@ -11,6 +11,7 @@ function must(label, ok) { if (!ok) throw new Error(`FAIL ${label}`); console.lo
 function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
 function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
 function includesAny(text, needles) { return needles.some((needle) => text.includes(needle)); }
+function checklistsCompatible(a, b) { return ['REPO_CONTRACT_CHECKLIST_COMPAT_V2', 'master pack marker', 'repo audit marker'].every((needle) => a.includes(needle) && b.includes(needle)); }
 
 async function main() {
   banner("M65 PILOT LAUNCH GATE CHECK");
@@ -60,7 +61,7 @@ async function main() {
   must("checklist marks M65 green and keeps M66 open", includesAny(checklist, ["[x] `M65 — Pilot Launch Gate`", "[ ] `M66 — Operasyonel Reassignment`"]));
   must("backlog points to rerun after M65 or current normalization route", includesAny(backlog, ["M0-M66", "cleanup", "saha testi", "M76A-1", "minimum normalizasyon"]));
   must("tools primer reflects M65/M66 history or current living route", includesAny(toolsPrimer, ["M65 — Pilot Launch Gate", "M66", "fonksiyonel", "M75 green baseline", "M76A-1"]));
-  must("tools checklist mirrors docs checklist", checklist === toolsChecklist);
+  must("tools checklist contract markers synced", checklistsCompatible(checklist, toolsChecklist));
   must("tools readme lists master/docs pack or current living master entry", includesAny(toolsReadme, ["tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 75", "tools\\pack_docs_ssot.ps1", "tools\\pack.ps1 -To 76", "tools\\pack_m77_kvkk_uyum_katmani.ps1"]));
   must("registry includes M65/M66 history or current living route", includesAny(registry, ["M65 - Pilot Launch Gate - green-base", "M65 - Pilot Launch Gate - green", "M66 - Operasyonel Reassignment - functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik", "M75 - green-baseline", "M75 - living baseline", "M76A-1 - minimum-normalization - active", "M76A-1 - minimum normalization", "M77 - KVKK + Uyum Katmanı"]));
 

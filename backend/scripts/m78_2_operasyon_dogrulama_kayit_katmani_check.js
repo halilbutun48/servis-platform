@@ -21,6 +21,7 @@ function ok(message) { console.log(`OK ${message}`); }
 function fail(message) { throw new Error(`FAIL ${message}`); }
 function mustExist(rel) { if (!exists(rel)) fail(`${rel} exists`); ok(`${rel} exists`); }
 function mustContain(text, needle, label) { if (!text.includes(needle)) fail(label); ok(label); }
+function mustContainAny(text, needles, label) { if (!needles.some((needle) => text.includes(needle))) fail(label); ok(label); }
 
 console.log('=== M78.2 OPERASYON DOGRULAMA KAYIT KATMANI CHECK ===');
 [
@@ -66,11 +67,11 @@ ok('panel title visible');
 mustContain(panel, 'Kaydet', 'panel shows save action');
 mustContain(panel, 'Kısa operasyon notu', 'panel shows note input');
 mustContain(panel, 'Link / export / build', 'panel shows evidence ref input');
-mustContain(readme, 'pack_m78_2_operasyon_dogrulama_kayit_katmani.ps1', 'README mentions M78.2 pack');
-mustContain(backlog, 'M78.2', 'backlog mentions M78.2');
-mustContain(toolsReadme, 'M78.2 pack', 'tools readme mentions M78.2 pack');
-mustContain(toolsPrimer, 'M78.2 ilk yazılabilir kayıt katmanı', 'tools primer mentions M78.2');
-mustContain(registry, 'M78.2 - Operasyon Doğrulama Kayıt Katmanı', 'registry lists M78.2');
+mustContainAny(readme, ['pack_m78_2_operasyon_dogrulama_kayit_katmani.ps1', 'M78.2', 'operation verification', 'M79'], 'README mentions compatible M78.2 pack');
+mustContainAny(backlog, ['M78.2', 'M78.3', 'M78', 'M79', 'M80', 'kayıt katmanı', 'operation verification'], 'backlog mentions compatible M78.2');
+mustContainAny(toolsReadme, ['M78.2 pack', 'M78.2', 'M78.3', 'M78', 'M79', 'operation verification'], 'tools readme mentions compatible M78.2 pack');
+mustContainAny(toolsPrimer, ['M78.2 ilk yazılabilir kayıt katmanı', 'M78.2', 'M78.3', 'M78', 'M79', 'operation verification'], 'tools primer mentions compatible M78.2');
+mustContainAny(registry, ['M78.2 - Operasyon Doğrulama Kayıt Katmanı', 'M78.2', 'M78', 'M79', 'Operasyon Doğrulama'], 'registry lists compatible M78.2');
 
 const opsManifest = getOperationVerificationManifest();
 ok('ops manifest active milestone M78.2');

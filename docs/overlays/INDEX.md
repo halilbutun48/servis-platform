@@ -3,18 +3,20 @@
 Bu klasör **overlay notları / patch notları / uygulama geçmişi** içindir.
 Runtime’da kullanılmaz.
 
-## Aktif seri
-- [M80](M80/README.md) — School mode
-- [M81](M81/README.md) — Parent
-- [M82](M82/README.md) — KVKK harden
-- [STEP06](STEP06/README.md) — Capacity / split / school veli erişimi / external nav / company click details stabil ekleri
+## Tarihsel seri
+- [M80](M80/README.md) — tarihsel School overlay serisi
+- [M81](M81/README.md) — tarihsel Parent overlay serisi
+- [M82](M82/README.md) — tarihsel KVKK overlay serisi
+- [STEP06](STEP06/README.md) — Step 0.6 stabil ekler / school-parent restore / public live tarihsel paketi
+
+## Kritik not
+Yukarıdaki `M80 / M81 / M82` klasörleri, **güncel aktif milestone anlamı değildir**.
+Güncel aktif milestone anlamı için:
+- `docs/PRIMER_SSOT.md`
+- `docs/MILESTONE_REGISTRY_V1.md`
+
+baz alınır.
 
 ## Arşiv
 - Eski root overlay dosyaları: `_archive/root-legacy/`
 - Eski tarihsel arşiv: `_archive/`
-
-## Kural
-- Yeni overlay notları repo root’a bırakılmaz.
-- Yeni paket/patch notu gerekiyorsa ilgili milestone klasörüne alınır.
-- Uygulama scriptleri `tools/` altında kalır; not/readme dosyaları `docs/overlays/` altında toplanır.
-- STEP1: `docs/overlays/STEP1/OVERLAY_NOTES_STEP1_SECURITY_FOUNDATION.md`

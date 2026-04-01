@@ -59,11 +59,11 @@ async function main() {
   const runbook = read("docs/RUNBOOK_M61_SSOT_MILESTONE_ALIGNMENT.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must("readme reflects current SSOT and master pack", includesAny(readme, ["post-M66 functional", "tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "M61", "M66", "M75 green baseline"]));
-  must("primer reflects current post-M66 truth", includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\\pack.ps1 -To 66", "M75 green baseline", "M76A-1"]));
-  must("startpack reflects master pack and repo audit", includesAny(startpack, ["tools\\pack.ps1 -To 66", "tools\\pack.ps1 -To 76", "check_repo_audit_master.ps1", "post-M66 functional", "M75 green baseline"]));
-  must("checklist reflects M66 open verification state", includesAny(checklist, ["M66", "master pack marker", "repo audit marker"]));
-  must("backlog points to full rerun and cleanup phase", includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional", "M76A-1", "minimum normalizasyon"]));
+  must("readme reflects current SSOT and master pack", includesAny(readme, ["post-M66 functional", "tools\pack.ps1 -To 79", "tools\pack.ps1 -To 66", "tools\pack.ps1 -To 76", "M61", "M66", "M75 green baseline", "MASTER PACK PASS OK (M0->M79)", "M79"]));
+  must("primer reflects current post-M66 truth", includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\pack.ps1 -To 79", "tools\pack.ps1 -To 66", "M75 green baseline", "M76A-1", "M79", "mobil saha"]));
+  must("startpack reflects master pack and repo audit", includesAny(startpack, ["tools\pack.ps1 -To 79", "tools\pack.ps1 -To 66", "tools\pack.ps1 -To 76", "check_repo_audit_master.ps1", "post-M66 functional", "M75 green baseline", "MASTER PACK PASS OK (M0->M79)", "M79"]));
+  must("checklist reflects active verification state", includesAny(checklist, ["M66", "master pack marker", "repo audit marker", "M77", "M78", "M79"]));
+  must("backlog points to compatible rerun/cleanup route", includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional", "M76A-1", "minimum normalizasyon", "M77", "M78", "M80"]));
   must("registry shows historical or current canonical route", includesAny(registry, ["M59 - Gözlemleme + Saha Teşhis", "M66 - Operasyonel Reassignment", "green-base", "functional-open", "M75 - green-baseline", "M75 - living baseline", "M76A-1 - minimum-normalization - active", "M76A-1 - minimum normalization", "M77 - KVKK + Uyum Katmanı", "Aktif kanonik hat"]));
 
   console.log("INFO checking backend and web skeleton");

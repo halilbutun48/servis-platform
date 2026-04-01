@@ -1,5 +1,8 @@
 # M92 — Shift Harita Önizleme: Tam Rotayı Dış Navigasyonda Aç
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 Bu overlay `web/src/components/RoutePreviewModal.jsx` içine tam rota dış navigasyon butonunu ekler.
 
 ## Ne değişti?

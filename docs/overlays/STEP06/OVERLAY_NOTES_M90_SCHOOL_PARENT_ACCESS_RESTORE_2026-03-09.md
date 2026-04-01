@@ -1,5 +1,8 @@
 # M90 — SCHOOL Veli Erişimi Restore (tarihsel not)
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 Bu overlay SCHOOL akışında kaybolan Veli Erişimi panelini geri getirir.
 
 ## Dahil

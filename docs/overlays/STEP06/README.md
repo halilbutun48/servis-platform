@@ -1,10 +1,12 @@
 # STEP 0.6 — Stabil Ekler Overlay Serisi
 
 Bu klasör, ana `M41` pack dışında çalışan ama manuel doğrulanmış stabil eklerin overlay geçmişini toplar.
-Amaç: Step 0.6 işlerini repo root’taki dağınık notlardan çıkarıp **tek yerde** tutmak.
+
+## Not
+- School parent access restore ve schema fix kayıtları burada tarihsel overlay geçmişi olarak durur.
+- Güncel aktif davranış için `docs/PARENT_ACCESS_FLOW.md`, `docs/PRIMER_SSOT.md` ve `docs/STARTPACK_V1.md` baz alınır.
 
 ## Kapsam
-
 ### Capacity / Pool / Split
 - `OVERLAY_NOTES_M83_POOL_CAPACITY_2026-03-08.md`
 - `OVERLAY_NOTES_M84_POOL_CAPACITY_FIX_2026-03-08.md`
@@ -27,19 +29,3 @@ Amaç: Step 0.6 işlerini repo root’taki dağınık notlardan çıkarıp **tek
 - `OVERLAY_NOTES_M96_COMPANY_LIST_CLICK_DETAILS_2026-03-09.md`
 - `OVERLAY_NOTES_M97_CHECKIN_NAV_RESTORE_2026-03-09.md`
 - `OVERLAY_NOTES_M98_STEP06_SSOT_MINICHECK_2026-03-09.md`
-
-## Resmi doğrulama
-Step 0.6 artık yalnızca “manuel not” değildir; aşağıdaki ayrı mini-check ile doğrulanır:
-- `tools/pack_step06_stabil.ps1`
-- `backend/scripts/step06_stabil_check.js`
-- `tools/check_step06_repo_contract.ps1`
-
-## Not
-Bu klasör overlay geçmişi / notlar içindir. Resmi SSOT davranışı için:
-- `tools/CHECKLIST_SSOT.md`
-- `docs/CHECKLIST_SSOT.md`
-- `docs/PRIMER_SSOT.md`
-- `docs/STARTPACK_V1.md`
-- `tools/PRIMER_SNAPSHOT.md`
-
-ayrı hizalanmalıdır.

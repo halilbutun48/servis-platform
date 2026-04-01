@@ -1,5 +1,8 @@
 # OVERLAY NOTES — M89 Split Parent Cleanup (2026-03-09)
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 Bu overlay, **Bol & Onayla** sonrası oluşan `SPLIT` root kaydının UI tarafında yarattığı karışıklığı temizler.
 
 ## Değişiklikler

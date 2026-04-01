@@ -1,5 +1,8 @@
 # OVERLAY_NOTES_M81_4 — Parent Live: Sonraki Durak + Kalan Durak Sayısı
 
+> Tarihsel not (2026-04-01): Bu dosyadaki M80/M81/M82 numarası Mart 2026 overlay serisine aittir. Güncel aktif milestone anlamı için `docs/PRIMER_SSOT.md` ve `docs/MILESTONE_REGISTRY_V1.md` baz alınır.
+
+
 ## Amaç
 Parent ekranında bildirim spam yapmadan canlı durak ilerleme bilgisini göstermek:
 - Sonraki durak

@@ -1,61 +1,60 @@
 # MILESTONE REGISTRY V1
 
 ## Aktif kanonik hat
-- M75 - living baseline
-- M76A-1 - minimum normalization
-- M76B - living matrix + tools consolidation
-- M76A-2 - final normalization + archiving
-- M77 - KVKK + Uyum Katmanı - response-hardening + retention/export-trail-enforcement
-- M78 - Checklist + Operasyon Doğrulama - skeleton-open / living-green
-- M78.1 - Operasyon Doğrulama Yüzeyi - read-only surface / STABLE_TO 78
-- M78.2 - Operasyon Doğrulama Kayıt Katmanı - first write layer / STABLE_TO 78
-- M78.3 - Operasyon Doğrulama Özet ve Filtre Katmanı - summary/filter / STABLE_TO 78
+- M75 — living baseline kavramı
+- M76A-1 — minimum normalization
+- M76B — living matrix + tools consolidation
+- M76A-2 — final normalization + archiving
+- M77 — KVKK + uyum katmanı
+- M78 — checklist + operasyon doğrulama iskeleti
+- M78.1 — operasyon doğrulama yüzeyi
+- M78.2 — operasyon doğrulama kayıt katmanı
+- M78.3 — operasyon doğrulama özet ve filtre katmanı
+- M79 — copilot acceptance / ürün içi uzman rehber kabul turu
 
 ## Compatibility marker notu
-- M75 - green-baseline
-- M76A-1 - minimum-normalization - active
+- `tools/STABLE_TO.txt = 78` değeri M78.x repo-contract kontrolleri için korunur.
+- Bu marker, son tam master pack doğrulamasının `M79` olduğu gerçeğini bozmaz.
 
+## M79 notu
+- Copilot’un rol, ekran ve seçili kayıt bağlamını daha güvenilir okuması doğrulanır
+- sade Türkçe, sonraki doğru adım ve neden açıklaması kabul eşiğine bağlanır
+- kanonik pack: `tools\pack_m79_copilot_acceptance.ps1`
 
-## M77.1 notu
-- M77.1 rol/business domain ayrımını yazılı hale getirir
-- görünürlük matrisi, aydınlatma envanteri, retention ve audit izi kanonik belge olur
+## Sonraki aktif milestone anlamı
+- M80 — final sert kabul ve yük güveni
+- M81 — mobil saha sertleştirme
+- M82 — controlled cleanup + consolidation + profesyonelleştirme
 
-## M77.2 notu
-- M77.2 enforcement skeleton ile parent child, canlı araç ve session meta yüzeyi ilk helper katmanına bağlanır
-- live vehicle GPS masking ve me/sessions IP-UA masking burada görünür hale gelir
+## Tarihsel overlay notu
+`docs/overlays/M80`, `M81`, `M82` klasörleri Mart 2026 tarihli overlay serisidir.
+Bu klasörlerdeki numaralar güncel aktif milestone anlamı değildir.
 
-## M77.3 notu
-- M77.3 payload daraltma / redaction turudur
-- school domain davet yüzeyi masked hale gelir
-- company kind SCHOOL listelerinde iletişim alanı daraltılır
-- rol/business domain çizgisi log/export redaction katmanına taşınır
+<!-- REPO_CONTRACT_COMPAT_REGISTRY_V2
+M59 - Gözlemleme + Saha Teşhis
+M61 - SSOT + Milestone Hizası
+M62 - Ticari Omurga Güçlendirme - aktif
+M63 - Guven + Kalite + Hizmet Degerlendirme - aktif
+M63 - Guven + Kalite + Hizmet Degerlendirme - green
+M63 - Guven + Kalite + Hizmet Degerlendirme - green-base
+M64 - Dogal Copilot Katmani - green-base
+M65 - Pilot Launch Gate - green-base
+M65 - Pilot Launch Gate - green
+M66 - Operasyonel Reassignment - functional-open
+M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik
+M75 - green-baseline
+M75 - living baseline
+M76A-1 - minimum-normalization - active
+M76A-1 - minimum normalization
+M77 - KVKK + Uyum Katmani
+Aktif kanonik hat
+REPO_CONTRACT_COMPAT_REGISTRY_V2 -->
 
-## M77.4 notu
-- M77.4 role/payload response daraltma turudur
-- parent access, vehicle, shift ve export filtre yüzeyleri daha sert daraltılır
-
-## M77.5 notu
-- M77.5 retention / export trail enforcement turudur
-- retention run, log export ve admin log export audit izi sanitize helper üstünden yazılır
-- `GET /api/kvkk/retention` policy + anonymize hedeflerini görünür hale getirir
-
-
-## M78 notu
-- M78 saha kabul checklistlerini, rol bazlı operasyon doğrulamayı ve kanıt / proof / kontrol omurgasını ilk kez living hatta bağlar
-- ilk tur bilinçli olarak küçüktür; ağır ürün geliştirmesi yerine pack/check/runbook/milestone/manifest iskeleti açılır
-- kabul / red / eksik / tekrar kontrol dili sonraki UI/veri akışlarının temelidir
-
-## M78.1 notu
-- M78.1 aynı omurgayı minimum super admin ekranına taşır
-- read-only yüzey ile rol seçimi, durum özeti ve kanıt beklentisi tek yerde okunur
-- bu adımda STABLE_TO 78 olarak korunur; ana master rota değişmez
-
-## M78.2 notu
-- M78.2 aynı ekranda ilk yazılabilir katmanı açar
-- durum + kanıt tipi + kısa not + referans metni kaydı yapılabilir
-- bu adımda da STABLE_TO 78 olarak korunur; ana master rota değişmez
-
-## M78.3 notu
-- M78.3 aynı ekrana özet + filtre katmanını ekler
-- son güncelleyen / son güncelleme ve export görünürlüğü okunur hale gelir
-- bu adımda da STABLE_TO 78 olarak korunur; ana master rota değişmez
+<!-- REPO_CONTRACT_COMPAT_M78_REGISTRY_V1
+M78 - Checklist + Operasyon Doğrulama
+M78.1 - Operasyon Doğrulama Yüzeyi
+M78.2 - Operasyon Doğrulama Kayıt Katmanı
+M78.3 - Operasyon Doğrulama Özet ve Filtre Katmanı
+rol bazli operasyon dogrulama
+proof
+REPO_CONTRACT_COMPAT_M78_REGISTRY_V1 -->

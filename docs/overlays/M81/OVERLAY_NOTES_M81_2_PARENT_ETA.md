@@ -1,5 +1,8 @@
 # OVERLAY_NOTES_M81_2 — Parent ETA
 
+> Tarihsel not (2026-04-01): Bu dosyadaki M80/M81/M82 numarası Mart 2026 overlay serisine aittir. Güncel aktif milestone anlamı için `docs/PRIMER_SSOT.md` ve `docs/MILESTONE_REGISTRY_V1.md` baz alınır.
+
+
 Tarih: 2026-03-02
 
 ## Amaç

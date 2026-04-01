@@ -1,5 +1,8 @@
 # OVERLAY M85/M86 — AUTO SPLIT BY REAL ROOM POOL COMBINATION
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 Tarih: 2026-03-08
 
 ## Amaç

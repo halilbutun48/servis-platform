@@ -1,5 +1,8 @@
 # M81.12 — M37CHECK (E2E) — School + Parent uçtan uca doğrulama
 
+> Tarihsel not (2026-04-01): Bu dosyadaki M80/M81/M82 numarası Mart 2026 overlay serisine aittir. Güncel aktif milestone anlamı için `docs/PRIMER_SSOT.md` ve `docs/MILESTONE_REGISTRY_V1.md` baz alınır.
+
+
 Bu overlay bir **check script’i** ekler: `backend/scripts/m37check.js`.
 
 Amaç: M80/M81 ile gelen **School (Company.kind=SCHOOL) + Parent (PARENT)** akışını tek senaryoda uçtan uca doğrulamak.

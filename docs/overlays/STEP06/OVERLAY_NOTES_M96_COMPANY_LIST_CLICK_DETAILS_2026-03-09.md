@@ -1,5 +1,8 @@
 # M96 — Company Liste: araç/sürücü tıklayınca detay
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 Bu overlay şunları ekler:
 - Company > Vardiyalar > Liste tablosunda **Assigned Vehicle** tıklanınca araç detay modalı
 - **Driver** tıklanınca sürücü detay modalı

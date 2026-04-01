@@ -1,5 +1,8 @@
 # M99 — STEP06 CHECK HUB TYPE HOTFIX (2026-03-10)
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 ## Sorun
 `backend/scripts/step06_stabil_check.js` içindeki test helper, `/api/shifts` create contract’ına aykırı şekilde stop listesine `type: "HUB"` gönderiyordu.
 

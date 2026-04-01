@@ -1,5 +1,8 @@
 # OVERLAY_NOTES_M98_STEP06_SSOT_MINICHECK_2026-03-09
 
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
+
 Amaç:
 - Step 0.6’yı yalnızca manuel doğrulanmış not olmaktan çıkarıp resmi repo akışına bağlamak
 - Ana M41 pack’i bozmadan ayrı bir stabil mini-check katmanı eklemek

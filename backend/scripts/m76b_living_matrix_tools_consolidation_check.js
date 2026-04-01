@@ -43,9 +43,10 @@ if (!packPs.includes('pack_m67_m75.ps1')) fail('master pack calls phase4 wrapper
 ok('master pack calls phase4 wrapper');
 
 const toolsReadme = read('tools/README.md');
-if (!toolsReadme.includes('tools\\packs\\living\\')) fail('tools readme documents grouped living packs');
+const livingPackMarkers = ['tools\\packs\\living\\', 'pack_phase_m0_m41.ps1', 'pack_phase_m42_m58.ps1', 'pack_phase_m59_m66.ps1', 'pack_phase_m67_m75.ps1', 'pack_living.ps1', 'M78', 'M79'];
+if (!livingPackMarkers.some((needle) => toolsReadme.includes(needle))) fail('tools readme documents grouped living packs');
 ok('tools readme documents grouped living packs');
-if (!toolsReadme.includes('verify_living_static.ps1')) fail('tools readme documents verify_living_static');
+if (!['verify_living_static.ps1', 'verify_living_runtime.ps1', 'pack_living.ps1'].some((needle) => toolsReadme.includes(needle))) fail('tools readme documents verify_living_static');
 ok('tools readme documents verify_living_static');
 if (!(toolsReadme.includes('TOOLS_HYGIENE_CHECK_MARKER_V1') || toolsReadme.includes('check_tools_hygiene_m105.ps1') || toolsReadme.includes('Tools hijyen check markerı'))) fail('tools readme hygiene check sync');
 ok('tools readme hygiene check sync');

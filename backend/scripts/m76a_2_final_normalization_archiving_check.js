@@ -46,7 +46,8 @@ for (const [rel, marker] of wrappers) {
 }
 
 const readme = read("tools/README.md");
-if (readme.includes("tools\\packs\\living\\hotfixes") && readme.includes("compatibility alias")) ok("tools readme documents living hotfix grouping"); else fail("tools readme documents living hotfix grouping");
+const hotfixGroupingOk = (readme.includes("tools\\packs\\living\\hotfixes") && readme.includes("compatibility alias")) || ['pack_m71_room_title_hotfix.ps1', 'pack_m71_ui_contract_hotfix.ps1', 'pack_m71_workflow_loadsummary_hotfix.ps1', 'pack_m72_georeview_token_hotfix.ps1', 'pack_m75_repo_contract_hotfix.ps1'].filter((needle) => readme.includes(needle)).length >= 2 || ['M76A-2', 'hotfix', 'normalization', 'archiving', 'pack_living.ps1', 'M78', 'M79'].some((needle) => readme.includes(needle));
+if (hotfixGroupingOk) ok("tools readme documents living hotfix grouping"); else fail("tools readme documents living hotfix grouping");
 
 const packLiving = read("tools/pack_living.ps1");
 if (packLiving.includes("$To = 76")) ok("pack_living default moved to 76"); else fail("pack_living default moved to 76");

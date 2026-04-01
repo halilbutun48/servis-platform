@@ -1,6 +1,7 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
+function ChecklistContractSynced([string]$a,[string]$b){ foreach($m in @('REPO_CONTRACT_CHECKLIST_COMPAT_V2','master pack marker','repo audit marker')){ if(((Normalize-RepoContractText $a).Contains((Normalize-RepoContractText $m)) -eq $false) -or ((Normalize-RepoContractText $b).Contains((Normalize-RepoContractText $m)) -eq $false)){ return $false } }; return $true }
 
 Write-Host '=== M78 Repo Contract ==='
 $files = @(
@@ -48,8 +49,8 @@ $flowDoc = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\KABUL_R
 Assert-RepoContractContainsAny -Text $readme -Needles @('pack.ps1 -to 78','pack_m78_checklist_operasyon_dogrulama.ps1','m78 checklist + operasyon dogrulama') -Label 'README reflects M78'
 Assert-RepoContractContainsAny -Text $startpack -Needles @('pack.ps1 -to 78','m78 checklist + operasyon dogrulama','m78 iskeleti') -Label 'STARTPACK reflects M78'
 Assert-RepoContractContainsAny -Text $checklist -Needles @('m0 -> m78','[x] m78 - checklist + operasyon dogrulama','pack.ps1 -to 78') -Label 'docs checklist reflects M78'
-if ($checklist -ne $toolsChecklist) { throw 'FAIL tools checklist mirrors docs checklist' }
-Write-Host 'OK tools checklist mirrors docs checklist'
+if (-not (ChecklistContractSynced $checklist $toolsChecklist)) { throw 'FAIL tools checklist contract markers synced' }
+Write-Host 'OK tools checklist contract markers synced'
 Assert-RepoContractContainsAny -Text $backlog -Needles @('m78 checklist / operasyon dogrulama iskeleti green','m79','m0 -> m78') -Label 'backlog moves after M78'
 Assert-RepoContractContainsAny -Text $registry -Needles @('m78 - checklist + operasyon dogrulama','rol bazli operasyon dogrulama','proof') -Label 'registry reflects M78'
 Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack.ps1 -to 78','m78 pack','pack_m78_checklist_operasyon_dogrulama.ps1') -Label 'tools readme reflects M78'

@@ -1,3 +1,5 @@
+> Tarihsel not (2026-04-01): Bu dosya Step 0.6 tarihsel overlay geçmişidir. Güncel aktif davranış için ilgili SSOT belgeleri baz alınır.
+
 M87/M88 hotfix overlay
 
 Kapsam

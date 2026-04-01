@@ -64,10 +64,10 @@ M78 green sayılabilmesi için:
 - repo-contract geçmeli
 - manifest M78 kaydı görünmeli
 - living static bağında M78 yer almalı
-- user-facing SSOT yüzeyleri `M0 -> M78` durumuna güncellenmiş olmalı
+- user-facing SSOT yüzeyleri M78 green tarihsel bağını korumalı; güncel repo gerçeğinde ana SSOT artık M79 sonrası hizayı göstermelidir
 
 ## 9) Sonraki doğru adım
 Bu iskelet green olduktan sonra sıradaki doğru iş:
-- M79 ile rol bazlı operasyon doğrulama yüzeyini ürün içine taşımak
-- M80 ile kanıt / proof kayıt ve rapor özetini derinleştirmek
-- M81 ile kabul kararlarının daha katı kural setine bağlanmasını değerlendirmek
+- M79 acceptance turunun repo gerçeğinde kapandığını not etmek
+- bir sonraki aktif ana iş olarak M80 başlangıcına geçmek
+- docs/runbook/check hizasını primer gerçeğine göre korumak

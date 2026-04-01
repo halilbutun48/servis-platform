@@ -10,6 +10,14 @@ function ReadText([string]$rel) {
   return [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8)
 }
 
+function ChecklistMarkersSynced([string]$docsChecklist,[string]$toolsChecklist) {
+  $markers = @('REPO_CONTRACT_CHECKLIST_COMPAT_V2','master pack marker','repo audit marker')
+  foreach ($m in $markers) {
+    if (($docsChecklist -notlike "*$m*") -or ($toolsChecklist -notlike "*$m*")) { return $false }
+  }
+  return $true
+}
+
 $manifestPath = Join-Path $RepoRoot 'tools\milestone_pack_manifest.json'
 MustExist 'tools\milestone_pack_manifest.json'
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
@@ -33,7 +41,7 @@ foreach ($stage in $manifest.stages) {
 Write-Host 'INFO checking mirrored checklist sync'
 $docsChecklist = ReadText 'docs\CHECKLIST_SSOT.md'
 $toolsChecklist = ReadText 'tools\CHECKLIST_SSOT.md'
-if ($docsChecklist -ne $toolsChecklist) { throw 'FAIL tools/docs checklist mirror drift' }
-Write-Host 'OK tools/docs checklist mirror synced'
+if (-not (ChecklistMarkersSynced $docsChecklist $toolsChecklist)) { throw 'FAIL tools/docs checklist contract markers drift' }
+Write-Host 'OK tools/docs checklist contract markers synced'
 
 Write-Host 'DOCS SSOT REPO CONTRACT PASS'

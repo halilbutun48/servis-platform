@@ -30,3 +30,8 @@ M78, saha kabul checklistleri ile rol bazlı operasyon doğrulama katmanını te
 ## Green yorumu
 M78 tamam sayılması için tek başına ağır ürün geliştirmesi gerekmez.
 Bu turda doğru hedef; en küçük ama doğru checklist / operasyon doğrulama iskeletinin pack/check/manifest/living düzeyinde resmi hale gelmesidir.
+
+
+## Tarihsel not
+- M78 omurgası green olarak kapanmıştır.
+- Güncel repo gerçeğinde M79 acceptance kapanmış, sonraki aktif ana iş M80 olmuştur.

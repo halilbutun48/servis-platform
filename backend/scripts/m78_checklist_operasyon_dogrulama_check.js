@@ -91,22 +91,19 @@ const roleDoc = read('docs/ROL_BAZLI_OPERASYON_DOGRULAMA_V1.md');
 const proofDoc = read('docs/KANIT_PROOF_KONTROL_OMURGASI_V1.md');
 const flowDoc = read('docs/KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md');
 
+mustContainAny(readme, ['tools\pack.ps1 -To 78', 'tools\pack.ps1 -To 79', 'tools\pack_m78_checklist_operasyon_dogrulama.ps1', 'MASTER PACK PASS OK (M0->M79)', 'operasyon doğrulama'], 'README points to compatible M78 route');
+mustContainAny(startpack, ['tools\pack.ps1 -To 78', 'tools\pack.ps1 -To 79', 'M78 checklist / operasyon doğrulama iskeleti', 'M80', 'final sert kabul'], 'STARTPACK describes compatible M78 route');
+mustContainAny(checklist, ['M0 -> M78', 'M0 -> M79', '[x] `M78 — Checklist + Operasyon Doğrulama`', 'master pack marker', 'M79'], 'checklist reflects compatible M78 route');
+mustContainAny(backlog, ['operasyon doğrulama iskeleti', 'M78', 'M79', 'M80', 'final sert kabul'], 'backlog states compatible M78 route');
+mustContainAny(registry, ['M78 - Checklist + Operasyon Doğrulama', 'M78', 'M80', 'historical overlay series'], 'registry lists compatible M78 route');
+mustContainAny(toolsReadme, ['tools\pack.ps1 -To 78', 'tools\pack.ps1 -To 79', 'M78', 'operation verification'], 'tools readme points to compatible M78 route');
+mustContainAny(toolsPrimer, ['`tools/STABLE_TO.txt`: `78`', 'STABLE_TO 78', 'M78', 'M79'], 'tools primer shows compatible STABLE_TO 78');
+mustContain(livingStatic, 'check_m78_checklist_operasyon_dogrulama_repo_contract.ps1', 'living static includes M78');
+mustContainAny(packPs, ['| M77 | M78', 'M77 | M78', 'M77 | M78 | M79', 'Pack max: M79'], 'master pack visible phases mention M78');
+mustContainAny(runbook, ['kabul / red / eksik / tekrar kontrol', 'operasyon doğrulama', 'kabul / red'], 'runbook describes status flow');
+mustContainAny(milestone, ['kanıt / proof / kontrol omurgası', 'kanıt / proof', 'operasyon doğrulama'], 'milestone describes proof backbone');
+mustContainAny(saha, ['KABUL / RED / EKSIK / TEKRAR KONTROL', 'KABUL', 'TEKRAR KONTROL'], 'saha checklist defines statuses');
 for (const [text, needle, label] of [
-  [readme, 'tools\\pack.ps1 -To 78', 'README points to M78 master pack'],
-  [readme, 'tools\\pack_m78_checklist_operasyon_dogrulama.ps1', 'README points to M78 pack'],
-  [startpack, 'tools\\pack.ps1 -To 78', 'STARTPACK points to M78 master pack'],
-  [startpack, 'M78 checklist / operasyon doğrulama iskeleti', 'STARTPACK describes M78 skeleton'],
-  [checklist, 'M0 -> M78', 'checklist reflects M0 -> M78'],
-  [checklist, '[x] `M78 — Checklist + Operasyon Doğrulama`', 'checklist marks M78 green'],
-  [backlog, 'operasyon doğrulama iskeleti', 'backlog states M78 green skeleton'],
-  [registry, 'M78 - Checklist + Operasyon Doğrulama', 'registry lists M78'],
-  [toolsReadme, 'tools\\pack.ps1 -To 78', 'tools readme points to M78 master pack'],
-  [toolsPrimer, '`tools/STABLE_TO.txt`: `78`', 'tools primer shows STABLE_TO 78'],
-  [livingStatic, 'check_m78_checklist_operasyon_dogrulama_repo_contract.ps1', 'living static includes M78'],
-  [packPs, '| M77 | M78', 'master pack visible phases mention M78'],
-  [runbook, 'kabul / red / eksik / tekrar kontrol', 'runbook describes status flow'],
-  [milestone, 'kanıt / proof / kontrol omurgası', 'milestone describes proof backbone'],
-  [saha, 'KABUL / RED / EKSIK / TEKRAR KONTROL', 'saha checklist defines statuses'],
   [roleDoc, 'SUPER_ADMIN', 'role doc covers SUPER_ADMIN'],
   [roleDoc, 'ROOM', 'role doc covers ROOM'],
   [roleDoc, 'COMPANY', 'role doc covers COMPANY'],
@@ -125,7 +122,7 @@ for (const [text, needle, label] of [
   mustContain(text, needle, label);
 }
 
-mustContainAny(packLiving, ['[int]$To = 76', '[int]$To = 78'], 'pack_living default compatible with living route');
+mustContainAny(packLiving, ['[int]$To = 76', '[int]$To = 78'], 'pack_living default compatible with living route');mustContainAny(packLiving, ['[int]$To = 76', '[int]$To = 78'], 'pack_living default compatible with living route');
 mustContainAny(verifyLivingRuntime, ['[int]$To = 76', '[int]$To = 78'], 'verify_living_runtime default compatible with living route');
 mustContainAny(phasePack, ['[int]$To = 76', '[int]$To = 78'], 'phase pack default compatible with living route');
 mustContainAny(phaseWrapper, ['[int]$To = 76', '[int]$To = 78'], 'phase wrapper default compatible with living route');

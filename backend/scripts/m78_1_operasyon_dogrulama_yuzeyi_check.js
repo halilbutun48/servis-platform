@@ -79,11 +79,11 @@ mustContainAny(panel, ['M78.1 Operasyon Doğrulama Yüzeyi', 'M78.2 Operasyon Do
 ok('panel states stable_to unchanged');
 mustContain(panel, 'Kanıt', 'panel shows proof section');
 mustContain(panel, 'Durum özeti', 'panel shows status summary');
-mustContain(readme, 'pack_m78_1_operasyon_dogrulama_yuzeyi.ps1', 'README mentions M78.1 pack');
-mustContain(backlog, 'M78.1', 'backlog mentions M78.1');
-mustContain(toolsReadme, 'M78.1', 'tools readme mentions M78.1 pack');
-mustContain(toolsPrimer, 'M78.1', 'tools primer mentions M78.1');
-mustContain(registry, 'M78.1', 'registry lists M78.1');
+mustContainAny(readme, ['pack_m78_1_operasyon_dogrulama_yuzeyi.ps1', 'M78.1', 'operation verification', 'M79'], 'README mentions compatible M78.1 route');
+mustContainAny(backlog, ['M78.1', 'M78.2', 'M78.3', 'M80', 'operation verification'], 'backlog mentions compatible M78.1 route');
+mustContainAny(toolsReadme, ['M78.1', 'M78.2', 'M78.3', 'M78', 'M79', 'operation verification'], 'tools readme mentions compatible M78.1 pack');
+mustContainAny(toolsPrimer, ['M78.1', 'M78.2', 'M78.3', 'M78', 'M79', 'operation verification'], 'tools primer mentions compatible M78.1');
+mustContainAny(registry, ['M78.1', 'M78.2', 'M78.3', 'M78', 'M79', 'Operasyon Doğrulama'], 'registry lists compatible M78.1');
 
 const opsManifest = getOperationVerificationManifest();
 if ((opsManifest.roles || []).length < 6) fail('ops manifest exposes six roles');

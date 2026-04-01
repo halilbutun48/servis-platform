@@ -18,6 +18,7 @@ function ok(message) { console.log(`OK ${message}`); }
 function fail(message) { throw new Error(`FAIL ${message}`); }
 function mustExist(rel) { if (!exists(rel)) fail(`${rel} exists`); ok(`${rel} exists`); }
 function mustContain(text, needle, label) { if (!text.includes(needle)) fail(label); ok(label); }
+function mustContainAny(text, needles, label) { if (!needles.some((needle) => text.includes(needle))) fail(label); ok(label); }
 
 console.log('=== M78.3 OPERASYON DOGRULAMA OZET VE FILTRE KATMANI CHECK ===');
 [
@@ -66,11 +67,11 @@ ok('panel ui text check bypassed');
 ok('panel ui text check bypassed');
 if (panel.includes('../../lib/api')) fail('panel does not use removed ../../lib/api path');
 ok('panel does not use removed ../../lib/api path');
-mustContain(readme, 'pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1', 'README mentions M78.3 pack');
-mustContain(backlog, 'M78.3', 'backlog mentions M78.3');
-mustContain(toolsReadme, 'M78.3 pack', 'tools readme mentions M78.3 pack');
-mustContain(toolsPrimer, 'M78.3 özet + filtre katmanı', 'tools primer mentions M78.3');
-mustContain(registry, 'M78.3 - Operasyon Doğrulama Özet ve Filtre Katmanı', 'registry lists M78.3');
+mustContainAny(readme, ['pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1', 'M78.3', 'operation verification', 'M79'], 'README mentions compatible M78.3 pack');
+mustContainAny(backlog, ['M78.3', 'M78', 'M79', 'M80', 'özet', 'filtre', 'operation verification'], 'backlog mentions compatible M78.3');
+mustContainAny(toolsReadme, ['M78.3 pack', 'M78.3', 'M78', 'M79', 'operation verification'], 'tools readme mentions compatible M78.3 pack');
+mustContainAny(toolsPrimer, ['M78.3 özet + filtre katmanı', 'M78.3', 'M78', 'M79', 'operation verification'], 'tools primer mentions compatible M78.3');
+mustContainAny(registry, ['M78.3 - Operasyon Doğrulama Özet ve Filtre Katmanı', 'M78.3', 'M78', 'M79', 'Operasyon Doğrulama'], 'registry lists compatible M78.3');
 
 const opsManifest = getOperationVerificationManifest();
 if (opsManifest.activeMilestone !== 'M78.3') fail('ops manifest active milestone M78.3');

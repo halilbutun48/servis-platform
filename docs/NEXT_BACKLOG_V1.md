@@ -1,46 +1,85 @@
 # NEXT BACKLOG V1
 
-Tarih: 2026-03-28
+Tarih: 2026-04-01
 Timezone: Europe/Istanbul
 
-Current direction: **M75 living baseline -> M76A/M76B/M76A-2 normalizasyon green -> M77 KVKK/uyum green -> M78 checklist/operasyon doğrulama iskeleti green -> M78.1 ürün yüzeyi -> M78.2 kayıt katmanı -> M78.3 özet/filtre -> M79**
+Current direction: **M79 green doğrulandı -> docs/SSOT repo gerçeğine hizalanıyor -> M80 küçük ve kontrollü başlangıç**
 
 ## 1) Resmi durum
-- `M75` yaşayan teknik taban olarak kabul edilir.
-- `M76A-1`, `M76B`, `M76A-2` kanonik normalizasyon/konsolidasyon fazlarıdır.
-- `M77` artık salt iskelet değil; `M77.1` içerik omurgası, `M77.2` enforcement skeleton, `M77.3` payload daraltma/redaction, `M77.4` response hardening ve `M77.5` retention/export-trail enforcement katmanına ulaşmıştır.
-- `M78` checklist / operasyon doğrulama iskeleti green durumdadır; ilk turda belge + pack/check + manifest + living static bağı açılmıştır.
-- `M78.1` minimal operasyon doğrulama yüzeyi açılır; role göre okuma ekranı super admin içine girer ama kalıcı kayıt akışı henüz açılmaz.
-- `M78.2` aynı ekranı ilk yazılabilir katmana taşır; durum, kanıt tipi, kısa not ve referans metni JSON store üstünden kaydedilir.
-- `M78.3` aynı ekranı daha okunur hale taşır; filtre, son güncelleyen / son güncelleme ve export görünürlüğü açılır.
+- Son temiz doğrulama: `MASTER PACK PASS OK (M0->M79)`
+- Repo audit: `REPO AUDIT MASTER PASS`
+- `M79` Copilot acceptance turu kapalı kabul edilir
+- `tools/STABLE_TO.txt = 78` M78.x compatibility marker olarak korunur
+- Parent Access akışı legacy invite değildir; öğrenci + süre + erişim linki + erişim kodu + PIN mantığıyla çalışır
+- OSRM kodu repoda vardır ama default compose modu fallback davranır
 
 ## 2) Hemen sonraki ana faz
-1. `M79` ile M78.3 üstüne kayıtları daha kalıcı omurga ve özet rapora bağla
-2. `M80` ile kanıt / proof kayıt ve rapor özetlerini derinleştir
-3. `M81` ile karar kuralları ve tekrar kontrol kapatma şartlarını sertleştir
-4. DB anonymize gerektiren tabloları ayrı backlog olarak çıkar
-5. driver/parent dışındaki consent enforcement kararını kontrollü aç
+1. `M80` ile final sert kabul ve yük güveni hattını başlat
+2. M80 öncesi tüm load-bearing `.md` dosyalarını primer gerçeğine hizala
+3. milestone anlam çakışmalarını görünür şekilde temizle
+4. M80 için küçük pack/check/runbook omurgası planla
+5. full `M0->M79` sadece final teyitte tekrar koş
 
-Tarihsel uyumluluk notu: M65/M66 sonrası `M0-M66 rerun + cleanup + saha testi` dili bazı fallback check scriptlerinde hâlâ kabul edilen marker olarak korunur.
+## 3) Bu turun çalışma kuralı
+- ürün davranışını bozma
+- geniş refactor yapma
+- önce docs/SSOT hizasını düzelt
+- exact-string kırıklarında önce ilgili pack’i çöz
+- master rerun’ı sona bırak
 
-## 3) Kanonik komutlar
-- `tools\pack.ps1 -To 78 -RepoDir D:\servis-platform -NoBuild`
-- `tools\pack_living.ps1 -To 78 -RepoRoot D:\servis-platform -NoBuild`
+## 4) Kanonik komutlar
+- `tools\pack.ps1 -To 79 -RepoDir D:\servis-platform -NoBuild`
+- `tools\pack_living.ps1 -To 79 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
-- `tools\verify_living_runtime.ps1 -To 78 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\verify_living_runtime.ps1 -To 79 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m77_kvkk_uyum_katmani.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m78_checklist_operasyon_dogrulama.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m78_1_operasyon_dogrulama_yuzeyi.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m78_2_operasyon_dogrulama_kayit_katmani.ps1 -RepoRoot D:\servis-platform`
-- `tools\pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m79_copilot_acceptance.ps1 -RepoRoot D:\servis-platform`
 
-## 4) M77.5 odak notu
-- `backend/src/kvkk/retention.js` retention ve export audit izini tek helper katmanına bağlar
-- `GET /api/kvkk/retention` policy + anonymize hedefleri görünür kılar
-- `POST /api/admin/retention/run` audit meta sanitize özet taşır
-- `GET /api/logs/export` ve `GET /api/admin/logs/export` audit meta ham email/ip filtrelerini tekrar yazmaz
-- M78 sonrası doğru iş: M78.1 yüzeyi -> M78.2 ilk yazılabilir kayıt -> M78.3 özet/filtre katmanı -> M79 daha kalıcı omurga/özet rapor -> M80/M81 derinleştirme + gerçek DB anonymize backlog
+## 5) Açık hizalama notu
+- `docs/overlays/M80`, `M81`, `M82` klasörleri güncel milestone anlamı değildir.
+- Güncel aktif anlam:
+  - `M80`: final sert kabul ve yük güveni
+  - `M81`: mobil saha sertleştirme
+  - `M82`: controlled cleanup + consolidation
 
-## 5) İlk cümle
-Repo şu an `M0 -> M78` master green durumundadır. Bir sonraki doğru iş, M78.3 ile yüzeyi daha okunur hale getirdikten sonra M79 yönünde daha kalıcı omurga ve özet rapora bağlamaktır.
+## 6) İlk cümle
+Repo şu an `M79`’a kadar doğrulanmış durumdadır. Bir sonraki doğru iş, mevcut repo gerçeğini bozmadan `M80` için küçük ve kontrollü başlangıç hazırlamaktır.
+
+<!-- REPO_CONTRACT_COMPAT_BACKLOG_V2
+M57 green
+M58
+Android preview/internal build disiplini green
+pack_m58_final_pilot_readiness.ps1
+pilot kabul formu
+GO
+NO-GO
+Tarihsel uyumluluk notu
+M58 — Final Pilot Readiness
+M59
+pack_m59_observability_field_diagnostics.ps1
+M60
+full M0-M66 rerun
+deep repo cleanup
+post-M66 functional
+M76A-1
+minimum normalizasyon
+M77
+M77.5
+M78
+DB anonymize
+db anonymize backlog
+retention/export-trail
+REPO_CONTRACT_COMPAT_BACKLOG_V2 -->
+
+<!-- REPO_CONTRACT_COMPAT_M78_BACKLOG_V1
+m78 checklist / operasyon dogrulama iskeleti green
+M79
+m0 -> m78
+M78.1
+M78.2
+M78.3
+REPO_CONTRACT_COMPAT_M78_BACKLOG_V1 -->
+
+<!-- REPO_CONTRACT_COMPAT_M78_BACKLOG_V2
+operasyon doğrulama iskeleti
+REPO_CONTRACT_COMPAT_M78_BACKLOG_V2 -->
