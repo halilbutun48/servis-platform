@@ -30,7 +30,8 @@ export function startRouteLearnMonitor(_io, opts = {}) {
   const intervalMs = Number(opts.intervalMs || ENV.ROUTE_LEARN_INTERVAL_MS || 30000);
   const maxPerTick = Number(opts.maxPerTick || 10);
 
-  const enabled = Boolean(ENV.ROUTE_LEARN_ENABLED || (ENV.OSRM_URL && String(ENV.OSRM_URL).trim()));
+  const osrmBase = String(ENV.OSRM_URL || "").trim();
+  const enabled = Boolean(ENV.ROUTE_LEARN_ENABLED && osrmBase);
   if (!enabled) {
     // disabled => no-op
     return () => {};

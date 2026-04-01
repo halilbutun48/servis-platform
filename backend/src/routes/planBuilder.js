@@ -75,23 +75,33 @@ r.get("/precheck", async (req, res) => {
   const failed = await prisma.personel.count({ where: { companyId, geoStatus: "FAILED" } });
 
   // OSRM is optional in default pack (compose profile not active)
-  let osrm = { configured: Boolean(process.env.OSRM_URL), ok: false, error: null };
-  try {
-    const out = await osrmTable(
-      [
-        { lat: 41.0082, lng: 28.9784 },
-        { lat: 41.0122, lng: 28.9760 },
-      ],
-      { profile: "driving", timeoutMs: 1200 }
-    );
-    osrm = { configured: Boolean(process.env.OSRM_URL), ok: Boolean(out?.ok), error: out?.ok ? null : out?.error, detail: out?.detail };
-  } catch (e) {
-    osrm = { configured: Boolean(process.env.OSRM_URL), ok: false, error: "osrm:exception", detail: e?.message || String(e) };
+  const osrmConfigured = Boolean(String(process.env.OSRM_URL || "").trim());
+  let osrm = { configured: osrmConfigured, reachable: false, ok: false, error: null };
+  if (osrmConfigured) {
+    try {
+      const out = await osrmTable(
+        [
+          { lat: 41.0082, lng: 28.9784 },
+          { lat: 41.0122, lng: 28.9760 },
+        ],
+        { profile: "driving", timeoutMs: 1200 }
+      );
+      osrm = {
+        configured: true,
+        reachable: Boolean(out?.ok),
+        ok: Boolean(out?.ok),
+        error: out?.ok ? null : out?.error,
+        detail: out?.detail,
+      };
+    } catch (e) {
+      osrm = { configured: true, reachable: false, ok: false, error: "osrm:exception", detail: e?.message || String(e) };
+    }
   }
 
   // Solver is optional; heuristic fallback exists
-  const solverBase = String(process.env.PLAN_SOLVER_URL || "http://solver:8000").trim().replace(/\/+$/g, "");
-  const solverPing = await pingSolver(solverBase);
+  const solverBase = String(process.env.PLAN_SOLVER_URL || "").trim().replace(/\/+$/g, "");
+  const solverConfigured = Boolean(solverBase);
+  const solverPing = solverConfigured ? await pingSolver(solverBase) : { reachable: false, ok: false, status: null };
 
   const durationsSec = [
     [0, 10, 20],
@@ -108,7 +118,7 @@ r.get("/precheck", async (req, res) => {
     personels: { total, missingLatLng: missing, zeroLatLng: zero, needsReview, failed },
     osrm,
     solver: {
-      configured: Boolean(process.env.PLAN_SOLVER_URL),
+      configured: solverConfigured,
       reachable: Boolean(solverPing.reachable),
       ok: Boolean(solverPing.ok),
       pingStatus: solverPing.status ?? null,

@@ -76,8 +76,8 @@ export async function solveTsp(durationsSec, distancesM, opts = {}) {
   const n = Array.isArray(durationsSec) ? durationsSec.length : 0;
   if (n < 2) return { ok: false, error: "notEnoughPoints" };
 
-  const base = cleanBase(ENV.PLAN_SOLVER_URL) || "http://solver:8000";
-  if (preferOrtools) {
+  const base = cleanBase(ENV.PLAN_SOLVER_URL);
+  if (preferOrtools && base) {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), timeoutMs);

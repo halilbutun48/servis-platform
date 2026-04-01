@@ -12,3 +12,8 @@ coverage
 dist
 build
 *.log
+.env
+.env.*
+data/*.json
+artifacts
+artifacts/**

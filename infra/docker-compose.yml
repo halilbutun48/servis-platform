@@ -65,9 +65,13 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-servis}:${POSTGRES_PASSWORD:-servispass}@db:5432/${POSTGRES_DB:-servisdb}?schema=public
 
       # M19 — learned route (OSRM map-matching)
-      OSRM_URL: "http://osrm:5000"
-      ROUTE_LEARN_ENABLED: "1"
-      ROUTE_LEARN_INTERVAL_MS: "2000"
+      # Optional: only set when compose --profile osrm is used
+      OSRM_URL: ${OSRM_URL:-}
+      ROUTE_LEARN_ENABLED: ${ROUTE_LEARN_ENABLED:-0}
+      ROUTE_LEARN_INTERVAL_MS: ${ROUTE_LEARN_INTERVAL_MS:-2000}
+
+      # Optional solver service (compose --profile osrm)
+      PLAN_SOLVER_URL: ${PLAN_SOLVER_URL:-}
 
       # Container içinde kullanılacak flag
       PRISMA_DB_PUSH_FLAGS: "--accept-data-loss"
