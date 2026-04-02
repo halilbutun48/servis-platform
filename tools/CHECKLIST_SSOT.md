@@ -62,7 +62,10 @@
 - repo audit marker: `tools\check_repo_audit_master.ps1`
 
 ## Sonraki aktif iş
-- `M80` — final sert kabul ve yük güveni
+- [ ] `M80` — final sert kabul ve yük güveni kapısı
+- [ ] `M80.1` — hot panel daraltma
+- [ ] `M80.2` — agreements + shifts giriş yükü daraltma
+- [ ] `M80.3` — georeview + shifts son giriş yükü daraltma
 - `M81` — mobil saha sertleştirme
 - `M82` — controlled cleanup + consolidation
 
