@@ -38,8 +38,9 @@ Bu repo, okul ve kurumsal taşıma alanlarını birlikte taşıyan; **pazar + s�
 ## Önemli hizalama notu
 - Aktif milestone anlamı için `docs/PRIMER_SSOT.md` ve `docs/MILESTONE_REGISTRY_V1.md` baz alınır.
 - `docs/overlays/M80`, `M81`, `M82` klasörleri güncel aktif milestone anlamı değil; Mart 2026 tarihli tarihsel overlay serisidir.
-- Bir sonraki aktif ana iş: `M80`.
-- Aktif alt daraltma adımı: `M80.3`.
+- Teknik kabul katmanı: `M80`, `M80.1`, `M80.2`, `M80.3` pack-pass olarak görünür.
+- İş sırası olarak sonraki ana faz: `M81` mobil saha sertleştirme.
+- `M82` controlled cleanup sonrası saha testi kullanıcı tarafından yapılacaktır.
 
 <!-- REPO_CONTRACT_COMPAT_README_V2
 M61 green

@@ -3,7 +3,7 @@
 Tarih: 2026-04-02
 Timezone: Europe/Istanbul
 
-Current direction: **M79 green doğrulandı -> M80 kabul kapısı açıldı -> M80.1 geçti -> M80.2 geçti -> M80.3 georeview/shifts son giriş yükü daraltma**
+Current direction: **M79 green doğrulandı -> M80 kabul kapısı açıldı -> M80.1 geçti -> M80.2 geçti -> M80.3 geçti**
 
 ## 1) Resmi durum
 - Son temiz doğrulama: `MASTER PACK PASS OK (M0->M79)`
@@ -14,10 +14,10 @@ Current direction: **M79 green doğrulandı -> M80 kabul kapısı açıldı -> M
 - OSRM kodu repoda vardır ama default compose modu fallback davranır
 
 ## 2) Hemen sonraki ana faz
-1. `M80` kabul kapısını ilk pack ile doğrula
-2. `M80.3` altında GeoReview/Shifts son giriş yükü daraltma işlerini küçük ve kontrollü aç
-3. final kanıt paketi ve snapshot hijyenini sert kabul diline bağla
-4. son kullanıcı / saha signoff kalemlerini netleştir
+1. `M80` kabul kapısı ile `M80.1` / `M80.2` / `M80.3` daraltma turlarını pack-pass bazında koru
+2. `M81` mobil saha sertleştirme işlerini aç
+3. `M82` controlled cleanup + consolidation turunu tamamla
+4. saha testi ve geri bildirim turunu `M82` sonrası kullanıcı koşsun
 5. full `M0->M79` referansını final teyitte ayrı koru
 
 ## 3) Bu turun çalışma kuralı
@@ -43,7 +43,7 @@ Current direction: **M79 green doğrulandı -> M80 kabul kapısı açıldı -> M
   - `M82`: controlled cleanup + consolidation
 
 ## 6) İlk cümle
-Repo şu an `M79`’a kadar doğrulanmış; `M80` kabul kapısı dosya seti açılmış durumdadır. Bir sonraki doğru iş, mevcut repo gerçeğini bozmadan `M80.3` altında GeoReview/Shifts son giriş yükünü küçük ve kontrollü daraltmaktır.
+Repo şu an `M79`’a kadar doğrulanmış; `M80` kabul kapısı ve `M80.1` / `M80.2` / `M80.3` daraltma dosya setleri pack-pass görünür durumdadır. İş sırası olarak sonraki ana faz `M81` mobil saha sertleştirmedir; saha testi `M82` sonrası kullanıcı tarafından yapılacaktır.
 
 <!-- REPO_CONTRACT_COMPAT_BACKLOG_V2
 M57 green

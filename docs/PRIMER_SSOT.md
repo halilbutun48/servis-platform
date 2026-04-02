@@ -127,10 +127,10 @@ baz alınır.
 - M80.2 komutu: `tools\pack_m80_2_agreements_shifts_giris_yuku.ps1 -RepoRoot D:\servis-platform`
 - M80.2 odak: `AgreementsPanel` giriş yükünü ve `ShiftsPanel` tekrar eden özet/intent yüklerini daraltmak.
 - M80.3 komutu: `tools\pack_m80_3_georeview_shifts_son_giris_yuku.ps1 -RepoRoot D:\servis-platform`
-- M80.3 odak: `GeoReviewPanel` çağrı yoğunluğunu ve `ShiftsPanel` effect/giriş yükünü final saha signoff öncesi bir kademe daha daraltmak.
+- M80.3 odak: `GeoReviewPanel` çağrı yoğunluğunu ve `ShiftsPanel` effect/giriş yükünü son kontrollü turda daraltmak; bu tur tamamlandı.
 
 ## Kısa karar cümlesi
-Repo şu anda “M79’a kadar doğrulanmış, ama M78.x compatibility marker’ları içeride korunmuş; M80 kabul kapısı açılmış” bir durumdadır. Bundan sonraki doğru iş, ürün davranışını bozmadan `M80.3` altında GeoReview/Shifts son giriş yükünü kontrollü daraltmaktır.
+Repo şu anda “M79’a kadar doğrulanmış, M80 kabul kapısı açılmış ve `M80.1` / `M80.2` / `M80.3` daraltma turları pack-pass ile görünür” durumdadır. Teknik state markerları compatibility için M80 tarafında kalabilir; iş sırası olarak sonraki ana faz `M81` mobil saha sertleştirmedir. `M82` controlled cleanup sonrası saha testi kullanıcı tarafından yapılacaktır.
 
 <!-- TTL_PRESETS_PARENT_PUBLIC_LINKS_V1 -->
 - Veli Erişimi ve public link presetleri: 1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl

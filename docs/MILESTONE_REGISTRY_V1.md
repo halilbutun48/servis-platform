@@ -11,10 +11,10 @@
 - M78.2 — operasyon doğrulama kayıt katmanı
 - M78.3 — operasyon doğrulama özet ve filtre katmanı
 - M79 — copilot acceptance / ürün içi uzman rehber kabul turu
-- M80 — final sert kabul ve yük güveni kapısı (aktif / resmi green değil)
-- M80.1 — hot panel daraltma
-- M80.2 — agreements + shifts giriş yükü daraltma
-- M80.3 — georeview + shifts son giriş yükü daraltma (aktif alt adım)
+- M80 — final sert kabul ve yük güveni kapısı (açık / resmi green değil)
+- M80.1 — hot panel daraltma (tamam)
+- M80.2 — agreements + shifts giriş yükü daraltma (tamam)
+- M80.3 — georeview + shifts son giriş yükü daraltma (tamam)
 
 ## Compatibility marker notu
 - `tools/STABLE_TO.txt = 78` değeri M78.x repo-contract kontrolleri için korunur.
@@ -26,11 +26,9 @@
 - kanonik pack: `tools\pack_m79_copilot_acceptance.ps1`
 
 ## Sonraki sira
-- M80.1 — hot panel daraltma
-- M80.2 — agreements + shifts giriş yükü daraltma
-- M80.3 — georeview + shifts son giriş yükü daraltma
 - M81 — mobil saha sertleştirme
 - M82 — controlled cleanup + consolidation + profesyonelleştirme
+- saha testi / geri bildirim turu — M82 sonrası kullanıcı tarafından koşulacak
 
 ## Tarihsel overlay notu
 `docs/overlays/M80`, `M81`, `M82` klasörleri Mart 2026 tarihli overlay serisidir.

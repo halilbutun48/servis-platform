@@ -20,10 +20,9 @@
 - `tools/STABLE_TO.txt = 78` değeri M78.x repo-contract kontrolleri için korunur.
 - Parent Access akışı legacy invite değildir.
 - OSRM kodu repoda kalır; default compose modu fallback çalışır.
-- Yeni ana yön `M80` kabul kapısını doğrulayıp `M80.3` GeoReview/Shifts son giriş yükü daraltmasına geçmektir.
-- M80.1 odak: `GeoReviewPanel`, `MapPanel`, `ShiftsPanel`.
-- M80.2 odak: `AgreementsPanel`, `ShiftsPanel`.
-- M80.3 odak: `GeoReviewPanel`, `ShiftsPanel`.
+- `M80`, `M80.1`, `M80.2`, `M80.3` teknik kabul/daraltma zinciri repo içinde görünür ve pack-pass durumundadır.
+- İş sırası olarak sonraki ana faz `M81` mobil saha sertleştirmedir.
+- `M82` controlled cleanup sonrası saha testi kullanıcı tarafından yapılacaktır.
 
 ## Master pack
 `tools\pack.ps1 -To 79` güncel tam master doğrulama referansıdır.

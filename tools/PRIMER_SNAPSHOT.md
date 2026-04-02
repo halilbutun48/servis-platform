@@ -15,7 +15,7 @@
 - Parent Access: öğrenci + süre + erişim linki + erişim kodu + PIN
 - Veli Erişimi TTL presetleri: `1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl`
 - Personel/öğrenci public canlı link presetleri: `1 hafta / 1 ay / 6 ay / 1 yıl`
-- Sonraki odak: `M80` kabul kapısını koş, `M80.1` ve `M80.2` daraltmalarını koru ve ardından `M80.3` GeoReview/Shifts son giriş yükü daraltmasına geç
+- Sonraki odak: `M80` kabul kapısı ile `M80.1` / `M80.2` / `M80.3` daraltmaları pack-pass olarak korunur; iş sırası olarak sonraki ana faz `M81` mobil saha sertleştirmedir
 - M80 pack komutu: `tools\pack_m80_final_sert_kabul_yuk_guveni.ps1 -RepoRoot D:\servis-platform`
 - M80.1 pack komutu: `tools\pack_m80_1_hot_panel_daraltma.ps1 -RepoRoot D:\servis-platform`
 - M80.2 pack komutu: `tools\pack_m80_2_agreements_shifts_giris_yuku.ps1 -RepoRoot D:\servis-platform`
@@ -23,7 +23,7 @@
 - M80 ilk PASS notu: kapı açılır; resmi green değildir
 - M80.1 odak: hot panel daraltma
 - M80.2 odak: Agreements/Shifts giriş yükü daraltma
-- M80.3 odak: GeoReview/Shifts son giriş yükü daraltma
+- M80.3 odak: GeoReview/Shifts son giriş yükü daraltma (tamamlandı)
 - Tarihsel not: `docs/overlays/M80`, `M81`, `M82` klasörleri aktif milestone anlamı değildir
 
 <!-- REPO_CONTRACT_COMPAT_TOOLS_PRIMER_V2
@@ -56,3 +56,5 @@ REPO_CONTRACT_COMPAT_M78_TOOLS_PRIMER_V1 -->
 <!-- REPO_CONTRACT_COMPAT_M78_TOOLS_PRIMER_V2
 `tools/STABLE_TO.txt`: `78`
 REPO_CONTRACT_COMPAT_M78_TOOLS_PRIMER_V2 -->
+
+- Saha testi M82 sonrası kullanıcı tarafından yapılacaktır.
