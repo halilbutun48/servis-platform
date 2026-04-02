@@ -126,3 +126,7 @@ REPO_CONTRACT_COMPAT_M78_STARTPACK_V2 -->
 - hot-path smoke: `npm run verify:hot`
 - docs/contract smoke: `npm run verify:docs`
 - repo audit: `npm run audit:repo`
+
+## M80 öncesi P2 hijyen
+- `backend/data` altındaki runtime `.json` ve `.json.bak` dosyaları repoda tutulmaz; uygulama gerektiğinde yeniden üretir.
+- Docs-contract ölçümü doğrudan path-ref bağımlılığına göre izlenir.

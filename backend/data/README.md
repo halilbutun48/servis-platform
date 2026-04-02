@@ -1,9 +1,12 @@
 # backend/data
 
-Bu klasör runtime JSON store dosyaları için kullanılır.
+Bu klasör runtime JSON store dosyaları için çalışma alanıdır.
 
-Kurallar:
-- runtime `.json` dosyaları repoda takip edilmez
-- uygulama yoksa dosyaları kendisi yeniden oluşturur
-- çoklu instance üretim kurulumlarında bu store modeli tek kaynak kabul edilmez
-- kalıcı/çok yazarlı state için DB tercih edilmelidir
+Kural:
+- `*.json` ve `*.json.bak` dosyaları repoda takip edilmez.
+- Gerekli dosyalar uygulama çalışırken otomatik üretilir.
+- Bu klasörde yalnızca `.gitkeep`, `.gitignore` ve bu README dosyası kalıcı olarak repoda tutulur.
+
+Not:
+- Bu yapı geçici runtime state içindir.
+- Çoklu instance / yatay ölçek senaryolarında kalıcı sistem kaynağı olarak değerlendirilmemelidir.

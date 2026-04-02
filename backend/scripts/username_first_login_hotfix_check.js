@@ -15,12 +15,13 @@ const files = [
   "backend/src/routes/me.js",
   "web/src/App.jsx",
   "web/src/panels/superadmin/UsersPanel.jsx",
-  "backend/data/username-directory.json",
+  "backend/src/auth/usernameDirectory.js",
 ];
 for (const rel of files) {
   if (fs.existsSync(path.join(root, rel))) ok(`${rel} exists`);
   else fail(`${rel} missing`);
 }
+if (!fs.existsSync(path.join(root, "backend/data/username-directory.json"))) ok("backend/data/username-directory.json runtime file not tracked (expected)");
 const auth = read("backend/src/routes/auth.js");
 if (auth.includes("resolveUserIdByUsername")) ok("auth username lookup enabled"); else fail("auth username lookup missing");
 if (auth.includes("username: getEffectiveUsername(user)")) ok("auth login response exposes username"); else fail("auth login response username missing");

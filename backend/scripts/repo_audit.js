@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,15 @@ function sha1(buf) {
 
 function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
+}
+
+function gitTrackedRelSet() {
+  try {
+    const out = execSync("git ls-files -z", { cwd: repoRoot, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    return new Set(out.split("\0").filter(Boolean).map(norm));
+  } catch {
+    return null;
+  }
 }
 
 function walk(dir, bag = []) {
@@ -121,7 +131,8 @@ function countLines(text) {
 
 function countDocContractRefs(relPath, text) {
   if (!/\.(ps1|js|cjs|mjs)$/i.test(relPath)) return 0;
-  return (String(text).match(/\.md/g) || []).length;
+  const matches = String(text).match(/(?:docs|tools)[\/][^"'`\r\n]+?\.md|README\.md/g) || [];
+  return matches.length;
 }
 
 function basenameReferenced(targetRel, textMap) {
@@ -134,22 +145,35 @@ function basenameReferenced(targetRel, textMap) {
   return false;
 }
 
+const generatedLargeFileIgnore = [
+  /(^|\/)package-lock\.json$/i,
+];
+
+function isGeneratedLargeFile(relPath) {
+  return generatedLargeFileIgnore.some((rx) => rx.test(relPath));
+}
+
 const allFiles = walk(repoRoot);
-const textFiles = allFiles.filter((p) => allowedTextExt.has(path.extname(p).toLowerCase()));
+const trackedRelSet = gitTrackedRelSet();
+const trackedFilter = (p) => !trackedRelSet || trackedRelSet.has(rel(p));
+const trackedAllFiles = allFiles.filter(trackedFilter);
+const textFiles = trackedAllFiles.filter((p) => allowedTextExt.has(path.extname(p).toLowerCase()));
 const textMap = new Map(textFiles.map((p) => [rel(p), readUtf8(p)]));
 
 const largeFiles = [...textMap.entries()]
   .map(([fileRel, text]) => ({ file: fileRel, lines: countLines(text) }))
   .filter((item) => item.lines >= 1200)
+  .filter((item) => !isGeneratedLargeFile(item.file))
   .sort((a, b) => b.lines - a.lines)
   .slice(0, 20);
 const activeDocContractRefs = [...textMap.entries()]
   .map(([fileRel, text]) => ({ file: fileRel, refs: countDocContractRefs(fileRel, text) }))
   .filter((item) => item.refs > 0 && !item.file.includes('/_archive/') && !item.file.startsWith('tools/_archive/'))
   .sort((a, b) => b.refs - a.refs);
-const runtimeJsonFiles = allFiles
+const runtimeJsonFiles = trackedAllFiles
   .map((p) => rel(p))
   .filter((p) => p.startsWith('backend/data/') && p.endsWith('.json'));
+
 
 const exactByHash = new Map();
 for (const p of textFiles) {

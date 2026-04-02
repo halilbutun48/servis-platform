@@ -118,3 +118,8 @@ REPO_CONTRACT_COMPAT_M78_TOOLS_README_V2 -->
 - hot-path smoke: `npm run verify:hot`
 - docs/contract smoke: `npm run verify:docs`
 - repo audit: `npm run audit:repo`
+
+## M80 öncesi P2 hijyen notu
+- `backend/data` altındaki runtime `.json` ve `.json.bak` dosyaları repo tarafından takip edilmez.
+- Repo audit docs-contract ölçümü ham `.md` sayımı değil, doğrudan path-ref bağımlılığını izler.
+- `tools/_repo_contract_state.ps1` ve `tools/repo_contract_state.json` state-first repo contract omurgasının kanonik girişidir.
