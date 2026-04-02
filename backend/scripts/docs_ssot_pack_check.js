@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,7 @@ function includesAny(text, needles) {
 }
 
 async function main() {
+  const state = readRepoContractState();
   banner("DOCS / SSOT PACK CHECK");
 
   const manifestRel = "tools/milestone_pack_manifest.json";
@@ -53,14 +55,13 @@ async function main() {
   const fullRunbook = read("docs/RUNBOOK_FULL_M0_M66_FIELD_TEST.md");
   const docsPackRunbook = read("docs/RUNBOOK_DOCS_SSOT_PACK.md");
 
-  must("README points to living master entry or historical docs markers", includesAny(readme, ["tools\pack.ps1 -To 79", "tools\pack.ps1 -To 76", "tools\pack.ps1 -To 66", "tools\pack_docs_ssot.ps1", "MASTER PACK PASS OK (M0->M79)"]));
-  must("primer reflects historical M66 or current M75/M76 honesty", includesAny(primer, ["M66", "fonksiyonel", "tam milestone kapanışı için", "M75 green baseline", "M76A-1"]));
-  must("tools primer reflects historical M66 or current M75/M76 honesty", includesAny(toolsPrimer, ["M66", "fonksiyonel", "tam milestone kapanışı için", "M75 green baseline", "M76A-1", "M78", "M79", "MASTER PACK PASS OK (M0->M79)"]));
-  must("startpack points to living master entry or historical docs markers", includesAny(startpack, ["tools\pack.ps1 -To 79", "tools\pack.ps1 -To 76", "tools\pack.ps1 -To 66", "tools\pack_docs_ssot.ps1", "MASTER PACK PASS OK (M0->M79)", "M79"]));
-  must("checklist reflects active route markers", includesAny(checklist, ["[x] `M65 — Pilot Launch Gate`", "[ ] `M66 — Operasyonel Reassignment`", "M77", "M78", "M79", "master pack marker"]));
-  must("tools checklist carries compatible route markers", includesAny(toolsChecklist, ["[x] `M65 — Pilot Launch Gate`", "[ ] `M66 — Operasyonel Reassignment`", "M77", "M78", "M79", "master pack marker"]));
-  must("registry lists historical M66 or current M75/M76 route", includesAny(registry, ["M66 - Operasyonel Reassignment - functional-open", "M66 — Operasyonel Reassignment — functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik", "M66 — Operasyonel Reassignment — fonksiyonel / tekrar test acik", "M75 - green-baseline", "M76A-1 - minimum-normalization - active", "M78", "M79", "Aktif kanonik hat"]));
-  must("backlog points to rerun + cleanup or current normalization route", includesAny(backlog, ["M0-M66", "cleanup", "saha testi", "M76A-1", "minimum normalizasyon"]));
+  must("state latest master pack is 79", Number(state.latestMasterPack) === 79);
+  must("state stable_to remains 78", Number(state.stableTo) === 78);
+  must("state next milestone is M80", String(state.nextMilestone || "") === "M80");
+  must("checklist reflects active route markers", includesAny(checklist, ["M77", "M78", "M79", "master pack marker"]));
+  must("tools checklist carries compatible route markers", includesAny(toolsChecklist, ["M77", "M78", "M79", "master pack marker"]));
+  must("registry lists current canonical route", includesAny(registry, ["M76A-1", "M77", "M78", "M79", "Aktif kanonik hat"]));
+  must("backlog points to M80 route", includesAny(backlog, ["M80", "final sert kabul", "yük güveni"]));
   must("tools readme lists living master entry or historical docs markers", includesAny(toolsReadme, ["tools\pack.ps1 -To 79", "tools\pack.ps1 -To 76", "tools\pack.ps1 -To 66", "tools\pack_docs_ssot.ps1", "M79", "pack_living.ps1"]));
   must("full runbook mentions historical master/docs pack", includesAny(fullRunbook, ["tools\\pack.ps1 -To 66", "pack_docs_ssot"]));
   must("docs pack runbook explains runbook/checklist same roof", includesAny(docsPackRunbook, ["Runbook + checklist", "tek çatı", "milestone_pack_manifest.json"]));

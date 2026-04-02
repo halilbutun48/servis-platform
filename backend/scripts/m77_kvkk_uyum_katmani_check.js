@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readRepoContractState } from './_repoContractState.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,8 @@ function mustExist(rel) {
   if (!exists(rel)) fail(`${rel} exists`);
   ok(`${rel} exists`);
 }
+
+const state = readRepoContractState();
 
 console.log('=== M77 KVKK + UYUM KATMANI CHECK ===');
 
@@ -201,21 +204,14 @@ for (const needle of ['LOG_EXPORT', 'RETENTION_RUN', 'buildKvkkExportAuditMeta()
   ok(`export trail doc covers ${needle}`);
 }
 
-const startpack = read('docs/STARTPACK_V1.md');
-if (!['retention/export trail enforcement helper katmanı', 'retention / anonymize / export trail', 'KVKK_RETENTION_ENFORCEMENT_V1.md', 'KVKK_ROLE_PAYLOAD_DARALTMA_V1.md', 'M77', 'KVKK', 'M78', 'M79', 'pack_living.ps1'].some((needle) => startpack.includes(needle))) fail('startpack mentions M77 compatibility markers');
-ok('startpack mentions M77 compatibility markers');
-
-const toolsReadme = read('tools/README.md');
-if (!['retention/export-trail-enforcement', 'KVKK_EXPORT_ERISIM_IZI_V1.md', 'KVKK_ROLE_PAYLOAD_DARALTMA_V1.md', 'M77', 'KVKK', 'M78', 'M79', 'pack_living.ps1'].some((needle) => toolsReadme.includes(needle))) fail('tools readme mentions M77 compatibility markers');
-ok('tools readme mentions M77 compatibility markers');
-
-const backlog = read('docs/NEXT_BACKLOG_V1.md');
-if (!['M77.5', 'DB anonymize backlog', 'DB anonymize', 'anonymize', 'retention', 'KVKK', 'M78', 'M80'].some((needle) => backlog.includes(needle))) fail('backlog mentions M77 compatibility route');
-ok('backlog mentions M77 compatibility route');
-
-const registry = read('docs/MILESTONE_REGISTRY_V1.md');
-if (!['M77.5', 'retention / export trail enforcement', 'rol/business domain', 'KVKK + Uyum Katmanı', 'M78', 'M80'].some((needle) => registry.includes(needle))) fail('registry mentions M77 compatibility route');
-ok('registry mentions M77 compatibility route');
+if (Number(state.latestMasterPack) !== 79) fail('state latest master pack is 79');
+ok('state latest master pack is 79');
+if (String(state.nextMilestone || '') !== 'M80') fail('state next milestone is M80');
+ok('state next milestone is M80');
+if (!Array.isArray(state.activeMilestones) || !state.activeMilestones.includes('M77')) fail('state keeps M77 active history');
+ok('state keeps M77 active history');
+if (!(state.runtimeJsonStores?.transactionalUpdate === true && state.runtimeJsonStores?.trackedRuntimeFiles === false)) fail('state records runtime json store policy');
+ok('state records runtime json store policy');
 
 const report = {
   generatedAt: new Date().toISOString(),

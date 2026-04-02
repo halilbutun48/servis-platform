@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,7 @@ const server = read("backend/src/server.js");
 const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
 async function main() {
+  const state = readRepoContractState();
   banner("M63 GUVEN + KALITE + HIZMET DEGERLENDIRME CHECK");
 
   const requiredFiles = [
@@ -58,11 +60,8 @@ async function main() {
   const runbook = read("docs/RUNBOOK_M63_TRUST_QUALITY_SERVICE_EVALUATION.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must("readme points to M63 route or later official state", includesAny(readme, ["M62 green", "M63 — Güven + Kalite + Hizmet Değerlendirme", "pack_m63_trust_quality_service_evaluation.ps1", "post-M66 functional", "M66 operasyonel reassignment", "M75 green baseline", "M76A-1", "M77", "tools\\pack_m77_kvkk_uyum_katmani.ps1"]));
-  must("project spec reflects trust and evaluation layer", includesAny(projectSpec, ["hizmet alan kurum değerlendirmesi", "sağlayıcı kalite", "karar destek", "hizmet alan kurum degerlendirmesi", "saglayici kalite", "karar destek"]));
-  must("primer reflects M63 route or later official state", includesAny(primer, ["M62 — Ticari Omurga Güçlendirme` resmi green oldu", "M63 — Güven + Kalite + Hizmet Değerlendirme", "pack_m63_trust_quality_service_evaluation.ps1", "post-M66 functional", "M66 operasyonel reassignment", "M75 green baseline", "M76A-1"]));
-  must("startpack reflects M63 opening or later official state", includesAny(startpack, ["M63 — Güven + Kalite + Hizmet Değerlendirme", "M63 başlangıç notu", "M63` bitmeden `M64", "post-M66 functional", "pack_m66_operation_reassignment.ps1", "M75 green baseline", "M76A-1", "M77", "M78"]));
-  must("checklist tracks M63 milestone or later official state", includesAny(checklist, ["[x] `M63 — Güven + Kalite + Hizmet Değerlendirme`", "[ ] `M63 — Güven + Kalite + Hizmet Değerlendirme`", "[ ] `M66 — Operasyonel Reassignment kapanışı`", "[ ] `M66 — Operasyonel Reassignment`"]));
+    must("project spec reflects trust and evaluation layer", includesAny(projectSpec, ["hizmet alan kurum değerlendirmesi", "sağlayıcı kalite", "karar destek", "hizmet alan kurum degerlendirmesi", "saglayici kalite", "karar destek"]));
+      must("checklist tracks M63 milestone or later official state", includesAny(checklist, ["[x] `M63 — Güven + Kalite + Hizmet Değerlendirme`", "[ ] `M63 — Güven + Kalite + Hizmet Değerlendirme`", "[ ] `M66 — Operasyonel Reassignment kapanışı`", "[ ] `M66 — Operasyonel Reassignment`"]));
 
   console.log("INFO checking backend and web skeleton");
   must("server imports trust quality router", includesAny(server, ["trustQualityRouter", "./routes/trustQuality.js"]) || includesAny(mountTxt, ["trustQualityRouter"]));

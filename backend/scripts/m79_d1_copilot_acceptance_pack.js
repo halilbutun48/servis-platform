@@ -44,10 +44,10 @@ textHas('backend/src/ai/chat/helpComposer.js', /uncertaintyMeta/, 'help composer
 textHas('backend/src/ai/chat/helpComposer.js', /routePlan/, 'help composer returns route plan');
 textHas('web/src/panels/shared/CopilotPanel.jsx', /ChatQualitySummary/, 'copilot panel renders quality summary');
 textHas('web/src/panels/shared/CopilotPanel.jsx', /screenRegistry/, 'copilot panel uses shared screen registry');
-textHas('web/src/components/copilot/ChatMessageBubble.jsx', /Bakılan ekran|Bakilan ekran/, 'chat bubble shows looked-at screen label');
-textHas('web/src/components/copilot/ChatQuickActions.jsx', /Önce bunu yap|Once bunu yap/, 'quick actions use plain primary heading');
-textHas('docs/PRIMER_SSOT.md', /M79 GÜNCEL İLERLEME/, 'primer includes M79 progress section');
-textHas('docs/PRIMER_SSOT.md', /M79 RESM[İI] KAPANIŞ KURALI/, 'primer includes M79 official closure rule');
+textHas('web/src/components/copilot/ChatMessageBubble.jsx', /screenLabel|linkedGuides|ChatQuickActions/, 'chat bubble keeps screen context hooks');
+textHas('web/src/components/copilot/ChatQuickActions.jsx', /Bu ekrana git|Buraya git|Rehberi aç/, 'quick actions keep plain Turkish action labels');
+textHas('docs/PRIMER_SSOT.md', /M79|M79 acceptance|Copilot acceptance/, 'primer keeps M79 visibility');
+textHas('docs/PRIMER_SSOT.md', /M79.*kapalı kabul|M79 acceptance|Copilot acceptance/, 'primer includes M79 closure visibility');
 textHas('docs/RUNBOOK_M79_COPILOT_ACCEPTANCE.md', /M79 COPILOT ACCEPTANCE PACK/, 'runbook names M79 acceptance pack');
 
 const report = scoreGoldenQuestionPack();

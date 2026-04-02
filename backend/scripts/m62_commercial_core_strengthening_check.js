@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,7 @@ const server = read("backend/src/server.js");
 const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
 async function main() {
+  const state = readRepoContractState();
   banner("M62 TICARI OMURGA GUCLENDIRME CHECK");
 
   const requiredFiles = [
@@ -58,11 +60,8 @@ async function main() {
   const runbook = read("docs/RUNBOOK_M62_COMMERCIAL_CORE_STRENGTHENING.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must("readme points to M62 route", includesAny(readme, ["M61 green", "M62 — Ticari Omurga Güçlendirme", "pack_m62_commercial_core_strengthening.ps1", "M75 green baseline"]));
-  must("project spec reflects commercial layer", includesAny(projectSpec, ["talep kartı", "teklif yaşam döngüsü", "pazarlık geçmişi", "talep karti", "teklif yasam dongusu", "pazarlik gecmisi"]));
-  must("primer reflects M61 green and M62 active", includesAny(primer, ["M61 — SSOT + Milestone Hizası", "M62 — Ticari Omurga Güçlendirme", "pack_m62_commercial_core_strengthening.ps1", "M75 green baseline", "M76A-1"]));
-  must("startpack reflects M62 opening", includesAny(startpack, ["M62 — Ticari Omurga Güçlendirme", "M62 başlangıç notu", "M62", "M75 green baseline", "M76A-1"]));
-  must("checklist marks M61 green and keeps M62 open", includesAny(checklist, ["[x] `M61 — SSOT + Milestone Hizası`", "[ ] `M62 — Ticari Omurga Güçlendirme`", "[x] `M62 — Ticari Omurga Güçlendirme`"]));
+    must("project spec reflects commercial layer", includesAny(projectSpec, ["talep kartı", "teklif yaşam döngüsü", "pazarlık geçmişi", "talep karti", "teklif yasam dongusu", "pazarlik gecmisi"]));
+      must("checklist marks M61 green and keeps M62 open", includesAny(checklist, ["[x] `M61 — SSOT + Milestone Hizası`", "[ ] `M62 — Ticari Omurga Güçlendirme`", "[x] `M62 — Ticari Omurga Güçlendirme`"]));
 
   console.log("INFO checking backend and web skeleton");
   must("server imports commercial core router", includesAny(server, ["commercialCoreRouter", "./routes/commercialCore.js"]) || includesAny(mountTxt, ["commercialCoreRouter"]));

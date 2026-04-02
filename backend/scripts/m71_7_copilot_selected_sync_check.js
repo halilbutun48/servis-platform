@@ -21,7 +21,10 @@ ok(copilot.includes('setChatSelection(next);'), 'CopilotPanel syncs chat selecti
 ok(copilot.includes('setChatEntityType(nextType);'), 'CopilotPanel applies selected entity type');
 ok(copilot.includes('setChatEntityId(String(nextId));'), 'CopilotPanel applies selected entity id');
 ok(copilot.includes('selectedEntityType: chatSelection?.entityType || ""'), 'CopilotPanel sends selectedEntityType');
-ok(composer.includes("if (questionType === 'STATUS_HELP') {
-    const rowReply = selectedRowReadReply(screenContext, screenDefinition);"), 'helpComposer prefers selected row status for screen context');
+ok(
+  composer.includes(`if (questionType === 'STATUS_HELP') {`) &&
+    composer.includes('selectedRowReadReply(screenContext, screenDefinition);'),
+  'helpComposer prefers selected row status for screen context',
+);
 ok(composer.includes('Hazır saymak için önce bu eksik veya blokajları kapat.'), 'helpComposer gives concrete readiness follow-up');
 console.log('=== M71.7 COPILOT SELECTED ENTITY SYNC CHECK PASS ===');

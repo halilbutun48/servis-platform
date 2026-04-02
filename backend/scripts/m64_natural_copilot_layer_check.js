@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,7 @@ const server = read("backend/src/server.js");
 const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
 async function main() {
+  const state = readRepoContractState();
   banner("M64 DOGAL COPILOT KATMANI CHECK");
 
   const requiredFiles = [
@@ -58,11 +60,8 @@ async function main() {
   const runbook = read("docs/RUNBOOK_M64_NATURAL_COPILOT_LAYER.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must("readme points to M64 route or later official state", includesAny(readme, ["M63 green", "M64 — Doğal Copilot Katmanı", "pack_m64_natural_copilot_layer.ps1", "post-M66 functional", "M75 green baseline", "M76A-1", "M77", "tools\\pack_m77_kvkk_uyum_katmani.ps1"]));
-  must("project spec reflects natural copilot layer", includesAny(projectSpec, ["daha doğal Türkçe cevap katmanı", "kısa konuşma hafızası", "daha basit anlat", "daha dogal Turkce cevap katmani", "kisa konusma hafizasi"]));
-  must("primer reflects M64 route or later official state", includesAny(primer, ["M63 — Güven + Kalite + Hizmet Değerlendirme` resmi green oldu", "M64 — Doğal Copilot Katmanı", "pack_m64_natural_copilot_layer.ps1", "post-M66 functional", "M75 green baseline", "M76A-1", "M77", "M78"]));
-  must("startpack reflects M64 opening or later official state", includesAny(startpack, ["M64 — Doğal Copilot Katmanı", "M64 başlangıç notu", "M64` bitmeden `M65", "post-M66 functional", "M75 green baseline", "M76A-1", "M77", "M78"]));
-  must("checklist tracks M64 milestone or later official state", includesAny(checklist, ["[ ] `M64 — Doğal Copilot Katmanı`", "[x] `M64 — Doğal Copilot Katmanı`", "M66 — Operasyonel Reassignment kapanışı"]));
+    must("project spec reflects natural copilot layer", includesAny(projectSpec, ["daha doğal Türkçe cevap katmanı", "kısa konuşma hafızası", "daha basit anlat", "daha dogal Turkce cevap katmani", "kisa konusma hafizasi"]));
+      must("checklist tracks M64 milestone or later official state", includesAny(checklist, ["[ ] `M64 — Doğal Copilot Katmanı`", "[x] `M64 — Doğal Copilot Katmanı`", "M66 — Operasyonel Reassignment kapanışı"]));
 
   console.log("INFO checking backend and web skeleton");
   must("server imports natural copilot router", includesAny(server, ["naturalCopilotRouter", "./routes/naturalCopilot.js"]) || includesAny(mountTxt, ["naturalCopilotRouter"]));

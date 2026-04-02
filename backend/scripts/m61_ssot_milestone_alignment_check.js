@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,7 @@ const server = read("backend/src/server.js");
 const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
 async function main() {
+  const state = readRepoContractState();
   banner("M61 SSOT + MILESTONE HIZASI CHECK");
 
   const requiredFiles = [
@@ -59,12 +61,12 @@ async function main() {
   const runbook = read("docs/RUNBOOK_M61_SSOT_MILESTONE_ALIGNMENT.md");
 
   console.log("INFO checking updated route and SSOT status");
-  must("readme reflects current SSOT and master pack", includesAny(readme, ["post-M66 functional", "tools\pack.ps1 -To 79", "tools\pack.ps1 -To 66", "tools\pack.ps1 -To 76", "M61", "M66", "M75 green baseline", "MASTER PACK PASS OK (M0->M79)", "M79"]));
-  must("primer reflects current post-M66 truth", includesAny(primer, ["post-M66 functional", "M59 -> M65", "M66", "tools\pack.ps1 -To 79", "tools\pack.ps1 -To 66", "M75 green baseline", "M76A-1", "M79", "mobil saha"]));
-  must("startpack reflects master pack and repo audit", includesAny(startpack, ["tools\pack.ps1 -To 79", "tools\pack.ps1 -To 66", "tools\pack.ps1 -To 76", "check_repo_audit_master.ps1", "post-M66 functional", "M75 green baseline", "MASTER PACK PASS OK (M0->M79)", "M79"]));
-  must("checklist reflects active verification state", includesAny(checklist, ["M66", "master pack marker", "repo audit marker", "M77", "M78", "M79"]));
-  must("backlog points to compatible rerun/cleanup route", includesAny(backlog, ["full M0-M66 rerun", "deep repo cleanup", "post-M66 functional", "M76A-1", "minimum normalizasyon", "M77", "M78", "M80"]));
-  must("registry shows historical or current canonical route", includesAny(registry, ["M59 - Gözlemleme + Saha Teşhis", "M66 - Operasyonel Reassignment", "green-base", "functional-open", "M75 - green-baseline", "M75 - living baseline", "M76A-1 - minimum-normalization - active", "M76A-1 - minimum normalization", "M77 - KVKK + Uyum Katmanı", "Aktif kanonik hat"]));
+  must("state latest master pack is 79", Number(state.latestMasterPack) === 79);
+  must("state stable_to remains 78", Number(state.stableTo) === 78);
+  must("state next milestone is M80", String(state.nextMilestone || "") === "M80");
+  must("checklist reflects active verification state", includesAny(checklist, ["master pack marker", "repo audit marker", "M77", "M78", "M79"]));
+  must("backlog points to M80 route", includesAny(backlog, ["M80", "final sert kabul", "yük güveni"]));
+  must("registry shows current canonical route", includesAny(registry, ["M76A-1", "M77", "M78", "M79", "Aktif kanonik hat"]));
 
   console.log("INFO checking backend and web skeleton");
   must("server imports ssot alignment router", includesAny(server, ["ssotAlignmentRouter", "./routes/ssotAlignment.js"]) || includesAny(mountTxt, ["ssotAlignmentRouter"]));

@@ -159,3 +159,8 @@ M78
 DB anonymize
 fonksiyonel
 REPO_CONTRACT_COMPAT_PRIMER_V2 -->
+
+
+## Repo contract state
+- Makine-okur durum özeti: `tools\repo_contract_state.json`
+- State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.

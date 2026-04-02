@@ -1,7 +1,9 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
+. (Join-Path $PSScriptRoot '_repo_contract_state.ps1')
 
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 Write-Host '=== M78.3 Repo Contract ==='
 $files = @(
   'backend\scripts\m78_3_operasyon_dogrulama_ozet_filtre_katmani_check.js',
@@ -42,14 +44,13 @@ Assert-RepoContractContainsAny -Text $store -Needles @('summarizeoperationverifi
 Write-Host 'OK panel reflects m78.3 filter/summary surface'
 Assert-RepoContractContainsAny -Text $panel -Needles @('import { api } from "../../api";') -Label 'panel imports shared api helper from ../../api'
 if ($panel.ToLowerInvariant().Contains('../../lib/api')) { throw 'FAIL panel does not use removed ../../lib/api path' } else { Write-Host 'OK panel does not use removed ../../lib/api path' }
-Assert-RepoContractContainsAny -Text $readme -Needles @('pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1','özet ve filtre katmanı','stable_to yine `78`') -Label 'README reflects M78.3'
-Assert-RepoContractContainsAny -Text $startpack -Needles @('m78.3 ile aynı ekran özet + filtre katmanına geçer','pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1','living rota yine `78`') -Label 'STARTPACK reflects M78.3'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('m78.3','m79','kalıcı omurga') -Label 'backlog moves after M78.3'
-Assert-RepoContractContainsAny -Text $registry -Needles @('m78.3 - operasyon doğrulama özet ve filtre katmanı','summary/filter','stable_to 78') -Label 'registry reflects M78.3'
-Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('m78.3 pack','pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1','stable_to 78') -Label 'tools readme reflects M78.3'
-Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @('m78.3 özet + filtre katmanı','tools/stable_to.txt`: `78`','sonraki odak: m79') -Label 'tools primer reflects M78.3'
+Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
+Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
+Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M78.3' -Label 'state keeps M78.3 active history'
 Assert-RepoContractContainsAny -Text $runbook -Needles @('filtre','son güncelleme','export görünürlüğü','stable_to') -Label 'runbook defines M78.3 scope'
 Assert-RepoContractContainsAny -Text $milestone -Needles @('summary','export-preview','son güncelleyen / son güncelleme','stable_to = 78') -Label 'milestone defines M78.3 outputs'
 Assert-RepoContractContainsAny -Text $stable -Needles @('78') -Label 'STABLE_TO remains 78'
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 Write-Host '=== M78.3 Repo Contract PASS ==='
 

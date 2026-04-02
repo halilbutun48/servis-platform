@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readRepoContractState } from './_repoContractState.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,8 @@ function exists(rel) {
   if (!fs.existsSync(abs)) fail(`${rel} exists`);
   ok(`${rel} exists`);
 }
+
+const state = readRepoContractState();
 
 console.log('=== M76B LIVING MATRIX + TOOLS CONSOLIDATION CHECK ===');
 
@@ -39,17 +42,15 @@ required.forEach(exists);
 const packPs = read('tools/pack.ps1');
 if (!packPs.includes('M67->M75') && !packPs.includes('M67 -> M{0}')) fail('master pack visible phase mentions M67-M75');
 ok('master pack visible phase mentions M67-M75');
-if (!packPs.includes('pack_m67_m75.ps1')) fail('master pack calls phase4 wrapper');
+if (!(packPs.includes('pack_phase_m67_m75.ps1') || packPs.includes('pack_m67_m75.ps1'))) fail('master pack calls phase4 wrapper');
 ok('master pack calls phase4 wrapper');
 
-const toolsReadme = read('tools/README.md');
-const livingPackMarkers = ['tools\\packs\\living\\', 'pack_phase_m0_m41.ps1', 'pack_phase_m42_m58.ps1', 'pack_phase_m59_m66.ps1', 'pack_phase_m67_m75.ps1', 'pack_living.ps1', 'M78', 'M79'];
-if (!livingPackMarkers.some((needle) => toolsReadme.includes(needle))) fail('tools readme documents grouped living packs');
-ok('tools readme documents grouped living packs');
-if (!['verify_living_static.ps1', 'verify_living_runtime.ps1', 'pack_living.ps1'].some((needle) => toolsReadme.includes(needle))) fail('tools readme documents verify_living_static');
-ok('tools readme documents verify_living_static');
-if (!(toolsReadme.includes('TOOLS_HYGIENE_CHECK_MARKER_V1') || toolsReadme.includes('check_tools_hygiene_m105.ps1') || toolsReadme.includes('Tools hijyen check markerı'))) fail('tools readme hygiene check sync');
-ok('tools readme hygiene check sync');
+if (!(state.canonicalPackHierarchy?.publicRoot === 'tools/packs/living' && state.canonicalPackHierarchy?.masterPackUsesPublicWrappers === true)) fail('state marks living wrappers as canonical');
+ok('state marks living wrappers as canonical');
+if (Number(state.latestMasterPack) !== 79) fail('state latest master pack is 79');
+ok('state latest master pack is 79');
+if (Number(state.phaseDefaults?.packLivingTo) !== 79) fail('state living defaults move to 79');
+ok('state living defaults move to 79');
 
 const manifest = JSON.parse(read('tools/milestone_pack_manifest.json'));
 const stages = (manifest.stages || []).filter((s) => s && s.kind === 'pack');

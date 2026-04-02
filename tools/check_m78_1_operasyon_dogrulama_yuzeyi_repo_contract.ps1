@@ -1,7 +1,9 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
+. (Join-Path $PSScriptRoot '_repo_contract_state.ps1')
 
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 Write-Host '=== M78.1 Repo Contract ==='
 $files = @(
   'backend\scripts\m78_1_operasyon_dogrulama_yuzeyi_check.js',
@@ -44,12 +46,12 @@ Assert-RepoContractContainsAny -Text $app -Needles @('operationverificationpanel
 Assert-RepoContractContainsAny -Text $nav -Needles @('operasyon doğrulama','/superadmin/operation-verification') -Label 'nav exposes operation verification'
 Assert-RepoContractContainsAny -Text $superPanel -Needles @('/superadmin/operation-verification','operasyon doğrulama') -Label 'super admin quick access exposes operation verification'
 Assert-RepoContractContainsAny -Text $panel -Needles @('m78.1 operasyon doğrulama yüzeyi','kanıt türleri','durum özeti','stable_to yine 78') -Label 'panel reflects m78.1 surface'
-Assert-RepoContractContainsAny -Text $readme -Needles @('pack_m78_1_operasyon_dogrulama_yuzeyi.ps1','m78.1 minimal ürün yüzeyi','stable_to yine 78') -Label 'README reflects M78.1'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('m78.1','m79','kalıcı kayıt') -Label 'backlog moves after M78.1'
-Assert-RepoContractContainsAny -Text $registry -Needles @('m78.1 - operasyon doğrulama yüzeyi','read-only yüzey','stable_to 78') -Label 'registry reflects M78.1'
-Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('m78.1 pack','pack_m78_1_operasyon_dogrulama_yuzeyi.ps1','stable_to 78') -Label 'tools readme reflects M78.1'
-Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @('m78.1 minimal operasyon doğrulama yüzeyi','stable_to.txt`: `78`','sonraki odak: m79') -Label 'tools primer reflects M78.1'
+Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
+Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
+Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M78.1' -Label 'state keeps M78.1 active history'
 Assert-RepoContractContainsAny -Text $runbook -Needles @('super admin','read-only','stable_to değeri değişmeden `78` kalmalı','m79') -Label 'runbook defines M78.1 scope'
 Assert-RepoContractContainsAny -Text $milestone -Needles @('minimum bir ekran','stable_to','rol seçimi') -Label 'milestone defines M78.1 outputs'
 Assert-RepoContractContainsAny -Text $stable -Needles @('78') -Label 'STABLE_TO remains 78'
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 Write-Host '=== M78.1 Repo Contract PASS ==='

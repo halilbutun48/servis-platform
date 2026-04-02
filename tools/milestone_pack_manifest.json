@@ -751,6 +751,16 @@
       "check": "tools/check_m78_3_operasyon_dogrulama_ozet_filtre_katmani_repo_contract.ps1",
       "runbook": "docs/RUNBOOK_M78_3_OPERASYON_DOGRULAMA_OZET_FILTRE_KATMANI.md",
       "checklist": "docs/CHECKLIST_SSOT.md"
+    },
+    {
+      "id": "M79",
+      "group": 79,
+      "kind": "pack",
+      "script": "tools/pack_m79_copilot_acceptance.ps1",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false,
+      "runbook": "docs/RUNBOOK_M79_COPILOT_ACCEPTANCE.md",
+      "checklist": "docs/CHECKLIST_SSOT.md"
     }
   ]
 }

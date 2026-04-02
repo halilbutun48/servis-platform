@@ -1,8 +1,10 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
+. (Join-Path $PSScriptRoot '_repo_contract_state.ps1')
 function ChecklistContractSynced([string]$a,[string]$b){ foreach($m in @('REPO_CONTRACT_CHECKLIST_COMPAT_V2','master pack marker','repo audit marker')){ if(((Normalize-RepoContractText $a).Contains((Normalize-RepoContractText $m)) -eq $false) -or ((Normalize-RepoContractText $b).Contains((Normalize-RepoContractText $m)) -eq $false)){ return $false } }; return $true }
 
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 Write-Host '=== M78 Repo Contract ==='
 $files = @(
   'backend\scripts\m78_checklist_operasyon_dogrulama_check.js',
@@ -46,18 +48,17 @@ $roleDoc = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\ROL_BAZ
 $proofDoc = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\KANIT_PROOF_KONTROL_OMURGASI_V1.md'
 $flowDoc = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md'
 
-Assert-RepoContractContainsAny -Text $readme -Needles @('pack.ps1 -to 78','pack_m78_checklist_operasyon_dogrulama.ps1','m78 checklist + operasyon dogrulama') -Label 'README reflects M78'
-Assert-RepoContractContainsAny -Text $startpack -Needles @('pack.ps1 -to 78','m78 checklist + operasyon dogrulama','m78 iskeleti') -Label 'STARTPACK reflects M78'
-Assert-RepoContractContainsAny -Text $checklist -Needles @('m0 -> m78','[x] m78 - checklist + operasyon dogrulama','pack.ps1 -to 78') -Label 'docs checklist reflects M78'
+Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
+Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
+Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M78' -Label 'state keeps M78 active history'
+Assert-RepoContractContainsAny -Text $checklist -Needles @('M78','M79','master pack marker') -Label 'docs checklist reflects M78 route'
 if (-not (ChecklistContractSynced $checklist $toolsChecklist)) { throw 'FAIL tools checklist contract markers synced' }
 Write-Host 'OK tools checklist contract markers synced'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('m78 checklist / operasyon dogrulama iskeleti green','m79','m0 -> m78') -Label 'backlog moves after M78'
-Assert-RepoContractContainsAny -Text $registry -Needles @('m78 - checklist + operasyon dogrulama','rol bazli operasyon dogrulama','proof') -Label 'registry reflects M78'
-Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack.ps1 -to 78','m78 pack','pack_m78_checklist_operasyon_dogrulama.ps1') -Label 'tools readme reflects M78'
-Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @('tools/stable_to.txt: 78','m78 checklist + operasyon dogrulama','sonraki odak: m79') -Label 'tools primer reflects M78'
 Assert-RepoContractContainsAny -Text $runbook -Needles @('saha kabul checklistleri','rol bazli operasyon dogrulama','kanit / proof / kontrol','kabul / red / eksik / tekrar kontrol') -Label 'runbook defines M78 scope'
 Assert-RepoContractContainsAny -Text $milestone -Needles @('saha kabul checklistleri','rol bazli operasyon dogrulama','kanit / proof / kontrol omurgasi') -Label 'milestone defines M78 outputs'
 Assert-RepoContractContainsAny -Text $roleDoc -Needles @('super_admin','room','company','driver','personel','parent') -Label 'role verification doc covers roles'
 Assert-RepoContractContainsAny -Text $proofDoc -Needles @('ekran goruntusu','log/export izi','cihaz / build bilgisi','operator notu') -Label 'proof doc covers evidence types'
 Assert-RepoContractContainsAny -Text $flowDoc -Needles @('kabul','red','eksik','tekrar kontrol') -Label 'decision flow doc covers statuses'
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 Write-Host '=== M78 Repo Contract PASS ==='

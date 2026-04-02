@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,8 @@ function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
 function ok(msg) { console.log(`OK ${msg}`); }
 function fail(msg) { throw new Error(`FAIL ${msg}`); }
 function mustExist(rel) { if (exists(rel)) ok(`${rel} exists`); else fail(`${rel} missing`); }
+
+const state = readRepoContractState();
 
 console.log("=== M76A-2 FINAL NORMALIZATION + ARCHIVING CHECK ===");
 
@@ -45,14 +48,10 @@ for (const [rel, marker] of wrappers) {
   if (txt.includes(marker)) ok(`${rel} is compatibility alias`); else fail(`${rel} is compatibility alias`);
 }
 
-const readme = read("tools/README.md");
-const hotfixGroupingOk = (readme.includes("tools\\packs\\living\\hotfixes") && readme.includes("compatibility alias")) || ['pack_m71_room_title_hotfix.ps1', 'pack_m71_ui_contract_hotfix.ps1', 'pack_m71_workflow_loadsummary_hotfix.ps1', 'pack_m72_georeview_token_hotfix.ps1', 'pack_m75_repo_contract_hotfix.ps1'].filter((needle) => readme.includes(needle)).length >= 2 || ['M76A-2', 'hotfix', 'normalization', 'archiving', 'pack_living.ps1', 'M78', 'M79'].some((needle) => readme.includes(needle));
-if (hotfixGroupingOk) ok("tools readme documents living hotfix grouping"); else fail("tools readme documents living hotfix grouping");
-
-const packLiving = read("tools/pack_living.ps1");
-if (packLiving.includes("$To = 76")) ok("pack_living default moved to 76"); else fail("pack_living default moved to 76");
-const verifyRuntime = read("tools/verify_living_runtime.ps1");
-if (verifyRuntime.includes("$To = 76")) ok("verify_living_runtime default moved to 76"); else fail("verify_living_runtime default moved to 76");
+if (!(state.canonicalPackHierarchy?.publicRoot === 'tools/packs/living')) fail("state marks living wrapper root"); else ok("state marks living wrapper root");
+if (Number(state.phaseDefaults?.packLivingTo) === 79) ok("pack_living default moved to 79"); else fail("pack_living default moved to 79");
+if (Number(state.phaseDefaults?.verifyLivingRuntimeTo) === 79) ok("verify_living_runtime default moved to 79"); else fail("verify_living_runtime default moved to 79");
+if (Number(state.phaseDefaults?.phase76To) === 79) ok("phase76 default moved to 79"); else fail("phase76 default moved to 79");
 
 const manifest = JSON.parse(read("tools/milestone_pack_manifest.json"));
 if ((manifest.stages || []).some((s) => s.id === "M76A-2" && s.script === "tools/pack_m76a_2_final_normalization_archiving.ps1")) ok("manifest registers M76A-2 pack"); else fail("manifest registers M76A-2 pack");

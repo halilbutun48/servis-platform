@@ -1,5 +1,6 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_repo_contract_state.ps1")
 function ReadText([string]$rel){ [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8).Normalize() }
 function MustExist([string]$rel){ if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }; Write-Host "OK $rel exists" }
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
@@ -41,16 +42,15 @@ $runbook = ReadText 'docs\RUNBOOK_M61_SSOT_MILESTONE_ALIGNMENT.md'
 $pack = ReadText 'tools\pack_m61_ssot_milestone_alignment.ps1'
 $script = ReadText 'backend\scripts\m61_ssot_milestone_alignment_check.js'
 $packManifest = ReadText 'tools\milestone_pack_manifest.json'
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 
-Write-Host 'INFO WARN relaxed doc gate'
-Write-Host 'INFO WARN relaxed doc gate'
-Write-Host 'INFO WARN relaxed doc gate'
-MustContainAny $checklist @('M65','M66','M77','M78','M79','master pack marker') 'checklist carries compatible route markers'
-Write-Host 'OK checklist carries compatible route markers'
-MustContainAny $toolsChecklist @('M65','M66','M77','M78','M79','master pack marker') 'tools checklist carries compatible route markers'
-MustContainAny $registry @('M61','M65','M66','M76A-1','M77','Aktif kanonik hat') 'registry lists current official route'
+Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
+MustContainAny $checklist @('M77','M78','M79','master pack marker') 'checklist carries compatible route markers'
+MustContainAny $toolsChecklist @('M77','M78','M79','master pack marker') 'tools checklist carries compatible route markers'
+MustContainAny $registry @('M76A-1','M77','M78','M79','Aktif kanonik hat') 'registry lists current official route'
 MustContainAny $docsPackRunbook @('tek çatı','milestone_pack_manifest.json','Runbook + checklist') 'docs pack runbook defines same roof'
-MustContainAny $packManifest @('"id": "DOCS-SSOT"','"id": "M66"') 'manifest contains docs pack and M66'
+MustContainAny $packManifest @('"id": "DOCS-SSOT"','"id": "M66"','"id": "M79"') 'manifest contains docs pack and latest stages'
 MustContainAny $route @('/manifest','/summary-template','/route') 'ssot alignment route exposes summary endpoints'
 MustContainAny $manifest @('SSOT_ALIGNMENT_TARGETS','MILESTONE_ROUTE','activeMilestone') 'manifest defines M61 targets and route'
 MustContainAny $panel @('Sistem Standartları','SSOT','Standart','Milestone özeti','Standart alanları','İzlenen standart alanları') 'web panel shows M61 cards'

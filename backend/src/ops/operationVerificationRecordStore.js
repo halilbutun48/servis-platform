@@ -1,26 +1,15 @@
-import { promises as fs } from "fs";
-import path from "path";
 import {
   OPERATION_VERIFICATION_PROOF_TYPES,
   OPERATION_VERIFICATION_ROLES,
   OPERATION_VERIFICATION_STATUSES,
 } from "./operationVerificationManifest.js";
+import { createJsonFileStore } from "../lib/jsonFileStore.js";
 
-const STORE_DIR = path.resolve(process.cwd(), "data");
-const STORE_PATH = path.join(STORE_DIR, "operation-verification-records.json");
+const store = createJsonFileStore("operation-verification-records.json", { defaultValue: [] });
 
 const ROLE_IDS = new Set(OPERATION_VERIFICATION_ROLES.map((item) => item.id));
 const STATUS_IDS = new Set(OPERATION_VERIFICATION_STATUSES.map((item) => item.id));
 const PROOF_IDS = new Set(OPERATION_VERIFICATION_PROOF_TYPES.map((item) => item.id));
-
-async function ensureStore() {
-  await fs.mkdir(STORE_DIR, { recursive: true });
-  try {
-    await fs.access(STORE_PATH);
-  } catch {
-    await fs.writeFile(STORE_PATH, "[]", "utf8");
-  }
-}
 
 function cleanUpper(value) {
   return String(value || "").trim().toUpperCase();
@@ -47,19 +36,12 @@ function normalizeProofType(proofType) {
 }
 
 export async function readOperationVerificationRecords() {
-  await ensureStore();
-  try {
-    const raw = await fs.readFile(STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  const parsed = await store.readAsync();
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 export async function writeOperationVerificationRecords(items) {
-  await ensureStore();
-  await fs.writeFile(STORE_PATH, JSON.stringify(Array.isArray(items) ? items : [], null, 2), "utf8");
+  return store.writeAsync(Array.isArray(items) ? items : []);
 }
 
 function sortNewest(items) {
@@ -117,24 +99,28 @@ export async function upsertOperationVerificationRecord(input, actor = null) {
   const checkId = cleanText(input?.checkId, 120);
   if (!checkId) throw new Error("checkId required");
 
-  const list = await readOperationVerificationRecords();
-  const idx = list.findIndex((item) => normalizeRoleId(item?.roleId) === roleId && String(item?.checkId || "") === checkId);
-  const now = new Date().toISOString();
-  const next = {
-    id: idx >= 0 ? list[idx].id : `${roleId}:${checkId}`,
-    roleId,
-    checkId,
-    status: normalizeStatus(input?.status),
-    proofType: normalizeProofType(input?.proofType),
-    note: cleanText(input?.note, 800),
-    evidenceRef: cleanText(input?.evidenceRef, 240),
-    updatedByUserId: Number(actor?.id || 0) || null,
-    updatedByEmail: cleanText(actor?.email, 160),
-    createdAt: idx >= 0 ? list[idx].createdAt : now,
-    updatedAt: now,
-  };
-  if (idx >= 0) list[idx] = next;
-  else list.push(next);
-  await writeOperationVerificationRecords(list);
-  return next;
+  let saved = null;
+  await store.updateAsync((current) => {
+    const list = Array.isArray(current) ? current : [];
+    const idx = list.findIndex((item) => normalizeRoleId(item?.roleId) === roleId && String(item?.checkId || "") === checkId);
+    const now = new Date().toISOString();
+    const next = {
+      id: idx >= 0 ? list[idx].id : `${roleId}:${checkId}`,
+      roleId,
+      checkId,
+      status: normalizeStatus(input?.status),
+      proofType: normalizeProofType(input?.proofType),
+      note: cleanText(input?.note, 800),
+      evidenceRef: cleanText(input?.evidenceRef, 240),
+      updatedByUserId: Number(actor?.id || 0) || null,
+      updatedByEmail: cleanText(actor?.email, 160),
+      createdAt: idx >= 0 ? list[idx].createdAt : now,
+      updatedAt: now,
+    };
+    if (idx >= 0) list[idx] = next;
+    else list.push(next);
+    saved = next;
+    return list;
+  });
+  return saved;
 }

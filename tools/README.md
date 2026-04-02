@@ -96,3 +96,25 @@ REPO_CONTRACT_COMPAT_M78_TOOLS_README_V2 -->
 - Super admin read-only operasyon doğrulama paneli
 - operation verification / kanıt tipleri / durum özeti yüzeyi
 - M78.1 pack: `tools\pack_m78_1_operasyon_dogrulama_yuzeyi.ps1`
+
+## Pre-M80 hijyen notu
+- File tabanli runtime store kullanan moduller icin atomik json yazimi uygulanir.
+- `backend/scripts/repo_js_syntax_scan.js` backend script ve src agacinda syntax taramasi yapar.
+- `npm --prefix backend run lint` artik placeholder degil; gercek syntax taramasi kosar.
+
+
+## Repo contract state
+- Makine-okur durum özeti: `tools\repo_contract_state.json`
+- State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.
+
+## Pack hierarchy
+- kanonik public pack kökü: `tools\packs\living`
+- iç engine kökü: `tools\_packs`
+- master pack public wrapper katmanını çağırır
+
+
+## Root orchestration
+- root lint: `npm run lint`
+- hot-path smoke: `npm run verify:hot`
+- docs/contract smoke: `npm run verify:docs`
+- repo audit: `npm run audit:repo`

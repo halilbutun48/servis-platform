@@ -109,3 +109,20 @@ REPO_CONTRACT_COMPAT_M78_STARTPACK_V2 -->
 - M78.3 operasyon doğrulama özet ve filtre katmanı
 - pack: `tools\pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1`
 - filtre / son güncelleme / export görünürlüğü
+
+## M80 oncesi hijyen kapisi
+- `npm --prefix backend run lint` ile backend syntax taramasi alin.
+- File store kullanan modullerde atomik json yazimi korunur.
+- Kalan cleanup once guvenli/hijyen odakli tutulur; genis refactor feature turune karistirilmaz.
+
+
+## Repo contract state
+- Makine-okur durum özeti: `tools\repo_contract_state.json`
+- State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.
+
+
+## Root orchestration
+- root lint: `npm run lint`
+- hot-path smoke: `npm run verify:hot`
+- docs/contract smoke: `npm run verify:docs`
+- repo audit: `npm run audit:repo`

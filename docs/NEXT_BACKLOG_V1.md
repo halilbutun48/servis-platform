@@ -83,3 +83,8 @@ REPO_CONTRACT_COMPAT_M78_BACKLOG_V1 -->
 <!-- REPO_CONTRACT_COMPAT_M78_BACKLOG_V2
 operasyon doğrulama iskeleti
 REPO_CONTRACT_COMPAT_M78_BACKLOG_V2 -->
+
+
+## Repo contract state
+- Makine-okur durum özeti: `tools\repo_contract_state.json`
+- State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.

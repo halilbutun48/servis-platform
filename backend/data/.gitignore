@@ -1,0 +1,5 @@
+# Runtime JSON stores are recreated automatically.
+*.json
+!README.md
+!.gitkeep
+!.gitignore

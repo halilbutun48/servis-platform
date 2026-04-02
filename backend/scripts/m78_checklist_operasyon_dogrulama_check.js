@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readRepoContractState } from './_repoContractState.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,8 @@ function mustContainAny(text, needles, label) {
   if (!needles.some((needle) => text.includes(needle))) fail(label);
   ok(label);
 }
+
+const state = readRepoContractState();
 
 console.log('=== M78 CHECKLIST + OPERASYON DOGRULAMA CHECK ===');
 
@@ -90,9 +93,13 @@ const saha = read('docs/SAHA_KABUL_CHECKLISTLERI_V1.md');
 const roleDoc = read('docs/ROL_BAZLI_OPERASYON_DOGRULAMA_V1.md');
 const proofDoc = read('docs/KANIT_PROOF_KONTROL_OMURGASI_V1.md');
 const flowDoc = read('docs/KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md');
+if (Number(state.latestMasterPack) !== 79) fail("state latest master pack is 79");
+ok("state latest master pack is 79");
+if (Number(state.stableTo) !== 78) fail("state stable_to remains 78");
+ok("state stable_to remains 78");
+if (String(state.nextMilestone || "") !== "M80") fail("state next milestone is M80");
+ok("state next milestone is M80");
 
-mustContainAny(readme, ['tools\pack.ps1 -To 78', 'tools\pack.ps1 -To 79', 'tools\pack_m78_checklist_operasyon_dogrulama.ps1', 'MASTER PACK PASS OK (M0->M79)', 'operasyon doğrulama'], 'README points to compatible M78 route');
-mustContainAny(startpack, ['tools\pack.ps1 -To 78', 'tools\pack.ps1 -To 79', 'M78 checklist / operasyon doğrulama iskeleti', 'M80', 'final sert kabul'], 'STARTPACK describes compatible M78 route');
 mustContainAny(checklist, ['M0 -> M78', 'M0 -> M79', '[x] `M78 — Checklist + Operasyon Doğrulama`', 'master pack marker', 'M79'], 'checklist reflects compatible M78 route');
 mustContainAny(backlog, ['operasyon doğrulama iskeleti', 'M78', 'M79', 'M80', 'final sert kabul'], 'backlog states compatible M78 route');
 mustContainAny(registry, ['M78 - Checklist + Operasyon Doğrulama', 'M78', 'M80', 'historical overlay series'], 'registry lists compatible M78 route');
@@ -122,10 +129,10 @@ for (const [text, needle, label] of [
   mustContain(text, needle, label);
 }
 
-mustContainAny(packLiving, ['[int]$To = 76', '[int]$To = 78'], 'pack_living default compatible with living route');mustContainAny(packLiving, ['[int]$To = 76', '[int]$To = 78'], 'pack_living default compatible with living route');
-mustContainAny(verifyLivingRuntime, ['[int]$To = 76', '[int]$To = 78'], 'verify_living_runtime default compatible with living route');
-mustContainAny(phasePack, ['[int]$To = 76', '[int]$To = 78'], 'phase pack default compatible with living route');
-mustContainAny(phaseWrapper, ['[int]$To = 76', '[int]$To = 78'], 'phase wrapper default compatible with living route');
+mustContainAny(packLiving, ['[int]$To = 79', '[int]$To = 78'], 'pack_living default compatible with living route');
+mustContainAny(verifyLivingRuntime, ['[int]$To = 79', '[int]$To = 78'], 'verify_living_runtime default compatible with living route');
+mustContainAny(phasePack, ['[int]$To = 79', '[int]$To = 78'], 'phase pack default compatible with living route');
+mustContainAny(phaseWrapper, ['[int]$To = 79', '[int]$To = 78'], 'phase wrapper default compatible with living route');
 
 const report = {
   generatedAt: new Date().toISOString(),

@@ -1,5 +1,6 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "_repo_contract_state.ps1")
 function ReadText([string]$rel){ [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8).Normalize() }
 function MustExist([string]$rel){ if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }; Write-Host "OK $rel exists" }
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
@@ -35,18 +36,17 @@ $toolsChecklist = ReadText 'tools\CHECKLIST_SSOT.md'
 $rootReadme = ReadText 'README.md'
 $script = ReadText 'backend\scripts\m58_final_pilot_readiness_check.js'
 $pack = ReadText 'tools\pack_m58_final_pilot_readiness.ps1'
+$state = Read-RepoContractState -RepoRoot $RepoRoot
 
 MustContainAny $runbook @('Final Pilot Readiness','final pilot checklist','saha testi','go / no-go') 'runbook defines M58 pilot scope'
 MustContainAny $runbook @('resmi green degildir','resmi green değildir','manuel pilot kabul','saha kabul') 'runbook explains manual signoff gate'
 MustContainAny $milestone @('M58 FINAL PILOT READINESS','pack_m58_final_pilot_readiness.ps1','manuel pilot kabul') 'milestone documents M58 scope and command'
-MustContainAny $backlog @('pack_m58_final_pilot_readiness.ps1','pilot kabul formu','GO', 'NO-GO','Tarihsel uyumluluk notu','M58 — Final Pilot Readiness','M77','M78','DB anonymize') 'backlog preserves M58 acceptance history or later canonical direction'
-MustContainAny $startpack @('pack_m58_final_pilot_readiness.ps1','M58 hazirlik komutu','manuel pilot kabul','M75 green baseline','M76A-1','M77','M78','M79') 'startpack lists M58 command and manual gate'
-MustContainAny $primer @('pack_m58_final_pilot_readiness.ps1','M58 hazirlik komutu','resmi green','M77','M78','M79','mobil saha') 'primer ssot reflects M58 command and manual gate'
+Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
 MustContainAny $checklist @('M58','Final Pilot Readiness','M77','M78','M79') 'checklist keeps M58 visible with compatibility markers'
-WarnContainAny $toolsReadme @('pack_m58_final_pilot_readiness.ps1','M58 readiness contract','manuel pilot kabul','M77','M78','M79') 'tools readme lists M58 pack'
-MustContainAny $toolsPrimer @('pack_m58_final_pilot_readiness.ps1','M58 hazirlik komutu','resmi green','M75 green baseline','M76A-1','M77','M78','M79','DB anonymize') 'tools primer reflects M58 command and gate'
+WarnContainAny $toolsReadme @('pack_living.ps1','tools
+epo_contract_state.json','M79') 'tools readme lists state-first route'
 MustContainAny $toolsChecklist @('M58','Final Pilot Readiness','M77','M78','M79') 'tools checklist keeps M58 visible with compatibility markers'
-MustContainAny $rootReadme @('M58 — Final Pilot Readiness','pack_m58_final_pilot_readiness.ps1','manuel pilot kabul','M75 green baseline','M76A-1','M77','M78','M79') 'root readme reflects M58 command and gate'
 MustContainAny $script @('Surucu Kodu + PIN','KVKK','go / no-go','go/no-go') 'm58 runtime check covers pilot readiness baseline'
 MustContainAny $pack @('m58_final_pilot_readiness_check.js','check_m58_final_pilot_readiness_repo_contract.ps1','PACK PASS OK') 'm58 pack wires runtime and repo contract'
 

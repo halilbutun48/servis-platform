@@ -114,6 +114,16 @@ function groupByNormalized(paths, normalizeFn) {
   return [...map.values()].filter((group) => group.length > 1).sort((a, b) => b.length - a.length);
 }
 
+
+function countLines(text) {
+  return String(text || "").split(/\r?\n/).length;
+}
+
+function countDocContractRefs(relPath, text) {
+  if (!/\.(ps1|js|cjs|mjs)$/i.test(relPath)) return 0;
+  return (String(text).match(/\.md/g) || []).length;
+}
+
 function basenameReferenced(targetRel, textMap) {
   const base = path.basename(targetRel);
   for (const [fileRel, text] of textMap.entries()) {
@@ -127,6 +137,19 @@ function basenameReferenced(targetRel, textMap) {
 const allFiles = walk(repoRoot);
 const textFiles = allFiles.filter((p) => allowedTextExt.has(path.extname(p).toLowerCase()));
 const textMap = new Map(textFiles.map((p) => [rel(p), readUtf8(p)]));
+
+const largeFiles = [...textMap.entries()]
+  .map(([fileRel, text]) => ({ file: fileRel, lines: countLines(text) }))
+  .filter((item) => item.lines >= 1200)
+  .sort((a, b) => b.lines - a.lines)
+  .slice(0, 20);
+const activeDocContractRefs = [...textMap.entries()]
+  .map(([fileRel, text]) => ({ file: fileRel, refs: countDocContractRefs(fileRel, text) }))
+  .filter((item) => item.refs > 0 && !item.file.includes('/_archive/') && !item.file.startsWith('tools/_archive/'))
+  .sort((a, b) => b.refs - a.refs);
+const runtimeJsonFiles = allFiles
+  .map((p) => rel(p))
+  .filter((p) => p.startsWith('backend/data/') && p.endsWith('.json'));
 
 const exactByHash = new Map();
 for (const p of textFiles) {
@@ -232,7 +255,10 @@ const summary = {
   duplicateBackendScriptGroupCount: duplicateBackendScriptGroups.length,
   orphanCandidateCount: orphanCandidates.length,
   tinyFileCount: tinyFiles.length,
-  archiveShadowPairCount: archiveShadowPairs.length
+  archiveShadowPairCount: archiveShadowPairs.length,
+  largeFileCount: largeFiles.length,
+  activeDocContractRefCount: activeDocContractRefs.length,
+  runtimeJsonFileCount: runtimeJsonFiles.length
 };
 
 const report = {
@@ -246,6 +272,9 @@ const report = {
   orphanCandidates,
   tinyFiles,
   archiveShadowPairs,
+  largeFiles,
+  activeDocContractRefs,
+  runtimeJsonFiles,
   performanceSmells
 };
 
@@ -262,6 +291,9 @@ console.log(`INFO backend script consolidation groups: ${summary.duplicateBacken
 console.log(`INFO orphan candidates: ${summary.orphanCandidateCount}`);
 console.log(`INFO tiny files: ${summary.tinyFileCount}`);
 console.log(`INFO archive/live shadow pairs: ${summary.archiveShadowPairCount}`);
+console.log(`INFO large files >=1200 lines: ${summary.largeFileCount}`);
+console.log(`INFO active docs-contract refs: ${summary.activeDocContractRefCount}`);
+console.log(`INFO runtime json files tracked: ${summary.runtimeJsonFileCount}`);
 
 if (exactDuplicates.length > 0) {
   console.log("\nDUPLICATE FILE GROUPS");

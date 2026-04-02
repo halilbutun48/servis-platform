@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,7 @@ function includesAny(text, needles) {
 }
 
 async function main() {
+  const state = readRepoContractState();
   banner("M58 FINAL PILOT READINESS CHECK");
 
   const requiredFiles = [

@@ -1,10 +1,8 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { createJsonFileStore } from "../lib/jsonFileStore.js";
 
-const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const STORE_DIR = path.resolve(MODULE_DIR, "../../data");
-const STORE_PATH = path.join(STORE_DIR, "username-directory.json");
+const store = createJsonFileStore("username-directory.json", {
+  defaultValue: () => ({ version: 1, items: {} }),
+});
 const INTERNAL_DOMAIN = "vardis.local";
 
 const CHAR_MAP = {
@@ -45,30 +43,16 @@ export function visibleEmail(email) {
   return isInternalLoginEmail(clean) ? null : clean;
 }
 
-function ensureStore() {
-  fs.mkdirSync(STORE_DIR, { recursive: true });
-  if (!fs.existsSync(STORE_PATH)) {
-    fs.writeFileSync(STORE_PATH, JSON.stringify({ version: 1, items: {} }, null, 2), "utf8");
-  }
-}
-
 function readStore() {
-  ensureStore();
-  try {
-    const raw = fs.readFileSync(STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw || "{}");
-    const items = parsed && typeof parsed === "object" && parsed.items && typeof parsed.items === "object" ? parsed.items : {};
-    return { version: 1, items };
-  } catch {
-    return { version: 1, items: {} };
-  }
+  const parsed = store.readSync();
+  const items = parsed && typeof parsed === "object" && parsed.items && typeof parsed.items === "object" ? parsed.items : {};
+  return { version: 1, items };
 }
 
-function writeStore(store) {
-  ensureStore();
-  const safe = store && typeof store === "object" ? store : { version: 1, items: {} };
+function writeStore(nextStore) {
+  const safe = nextStore && typeof nextStore === "object" ? nextStore : { version: 1, items: {} };
   if (!safe.items || typeof safe.items !== "object") safe.items = {};
-  fs.writeFileSync(STORE_PATH, JSON.stringify({ version: 1, items: safe.items }, null, 2), "utf8");
+  store.writeSync({ version: 1, items: safe.items });
 }
 
 function emailLocalPart(email) {
@@ -84,8 +68,8 @@ export function buildInternalLoginEmail(username) {
 }
 
 export function getStoredLogin(userId) {
-  const store = readStore();
-  return store.items[String(Number(userId || 0))] || null;
+  const current = readStore();
+  return current.items[String(Number(userId || 0))] || null;
 }
 
 export function setStoredLogin({ userId, username, contactEmail = null }) {
@@ -93,19 +77,24 @@ export function setStoredLogin({ userId, username, contactEmail = null }) {
   if (!id) throw new Error("userId gerekli");
   const safeUsername = validateUsernameOrThrow(username);
   const safeEmail = visibleEmail(contactEmail);
-  const store = readStore();
-  store.items[String(id)] = {
-    username: safeUsername,
-    contactEmail: safeEmail,
-    updatedAt: new Date().toISOString(),
-  };
-  writeStore(store);
-  return store.items[String(id)];
+  let saved = null;
+  store.updateSync((current) => {
+    const safeStore = current && typeof current === "object" ? current : { version: 1, items: {} };
+    if (!safeStore.items || typeof safeStore.items !== "object") safeStore.items = {};
+    safeStore.items[String(id)] = {
+      username: safeUsername,
+      contactEmail: safeEmail,
+      updatedAt: new Date().toISOString(),
+    };
+    saved = safeStore.items[String(id)];
+    return { version: 1, items: safeStore.items };
+  });
+  return saved;
 }
 
 export function getEffectiveUsername(user, opts = {}) {
-  const store = opts.store || readStore();
-  const explicit = store.items?.[String(Number(user?.id || 0))]?.username;
+  const current = opts.store || readStore();
+  const explicit = current.items?.[String(Number(user?.id || 0))]?.username;
   if (explicit) return normalizeUsername(explicit);
   const fallback = normalizeUsername(emailLocalPart(user?.email));
   if (fallback) return fallback;
@@ -113,30 +102,30 @@ export function getEffectiveUsername(user, opts = {}) {
 }
 
 export function getUserLoginMeta(user, opts = {}) {
-  const store = opts.store || readStore();
-  const item = store.items?.[String(Number(user?.id || 0))] || {};
+  const current = opts.store || readStore();
+  const item = current.items?.[String(Number(user?.id || 0))] || {};
   return {
-    username: getEffectiveUsername(user, { store }),
+    username: getEffectiveUsername(user, { store: current }),
     email: item.contactEmail || visibleEmail(user?.email),
   };
 }
 
 export async function isUsernameTaken(prisma, rawUsername, excludeUserId = null) {
   const username = validateUsernameOrThrow(rawUsername);
-  const store = readStore();
+  const current = readStore();
   const items = await prisma.user.findMany({ select: { id: true, email: true } });
-  return items.some((user) => Number(user.id) !== Number(excludeUserId || 0) && getEffectiveUsername(user, { store }) === username);
+  return items.some((user) => Number(user.id) !== Number(excludeUserId || 0) && getEffectiveUsername(user, { store: current }) === username);
 }
 
 export async function resolveUserIdByUsername(prisma, rawUsername) {
   const username = normalizeUsername(rawUsername);
   if (!username) return null;
-  const store = readStore();
+  const current = readStore();
   const items = await prisma.user.findMany({ select: { id: true, email: true } });
   let found = null;
   for (const user of items) {
-    if (getEffectiveUsername(user, { store }) !== username) continue;
-    if (found && Number(found) != Number(user.id)) return null;
+    if (getEffectiveUsername(user, { store: current }) !== username) continue;
+    if (found && Number(found) !== Number(user.id)) return null;
     found = Number(user.id);
   }
   return found;

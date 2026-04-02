@@ -67,3 +67,15 @@ REPO_CONTRACT_COMPAT_M78_README_V1 -->
 tools\pack.ps1 -To 78
 tools\pack_m78_checklist_operasyon_dogrulama.ps1
 REPO_CONTRACT_COMPAT_M78_README_V2 -->
+
+
+## Repo contract state
+- Makine-okur durum özeti: `tools\repo_contract_state.json`
+- State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.
+
+
+## Root orchestration
+- root lint: `npm run lint`
+- hot-path smoke: `npm run verify:hot`
+- docs/contract smoke: `npm run verify:docs`
+- repo audit: `npm run audit:repo`
