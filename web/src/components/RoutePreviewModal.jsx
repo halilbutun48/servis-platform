@@ -31,7 +31,9 @@ function buildRouteQuality(summary, source, stops, people) {
     qualityNotes.push(
       String(source || "").toUpperCase() === "LEARNED"
         ? "Learned rota verisi kullanıldı."
-        : "Önizleme DB stop sırası ve tahmini hat üzerinden gösteriliyor; OSRM Step-4 ve dispatch için ayrıldı."
+        : String(source || "").toUpperCase() === "SNAPSHOT"
+          ? "Kaydedilmiş rota snapshot kullanıldı; preview yeniden OSRM hesaplamadı."
+          : "Önizleme DB stop sırası ve tahmini hat üzerinden gösteriliyor; OSRM Step-4 ve dispatch için ayrıldı."
     );
   }
   return {

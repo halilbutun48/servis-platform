@@ -751,9 +751,22 @@ export function attachShiftPeopleRoutes(router, _io) {
         ? parsePolyline(learned.polylineCanonical)
         : null;
 
-    // M81 PERF: preview is DB-first. Keep OSRM for Step-4 / dispatch, not modal preview.
-    let source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
-    let pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
+    const snapshotHash = String(shift.routeSnapshotInputHash || "");
+    const snapshotPoints = parsePolyline(shift.routeSnapshotPolyline);
+    const snapshotFresh = Boolean(
+      snapshotHash &&
+      snapshotHash === routeKey &&
+      Array.isArray(snapshotPoints) &&
+      snapshotPoints.length >= 2
+    );
+
+    // M81 PERF: preview is DB-first. Prefer stored snapshot, then learned route, then estimated path.
+    let source = snapshotFresh
+      ? "SNAPSHOT"
+      : learnedPoints && learnedPoints.length >= 2
+        ? "LEARNED"
+        : "ESTIMATED";
+    let pathPoints = source === "SNAPSHOT" ? snapshotPoints : source === "LEARNED" ? learnedPoints : estPoints;
 
     const totalPassengerCountRaw = stopsWithCounts.reduce(
       (sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0),
@@ -781,7 +794,14 @@ export function attachShiftPeopleRoutes(router, _io) {
       summary.learnedSampleCount = Number(learned.sampleCount || 0);
     }
 
-    summary.previewPolicy = source === "LEARNED" ? "DB_LEARNED" : "DB_ESTIMATED";
+    if (snapshotFresh) {
+      summary.distanceKmSnapshot = Number(Number((Number(shift.routeSnapshotDistanceM || 0) / 1000)).toFixed(2));
+      summary.durationMinSnapshot = Math.round(Number(shift.routeSnapshotDurationSec || 0) / 60);
+      summary.snapshotValidatedAt = shift.routeSnapshotValidatedAt || null;
+    }
+
+    summary.previewPolicy =
+      source === "SNAPSHOT" ? "DB_SNAPSHOT" : source === "LEARNED" ? "DB_LEARNED" : "DB_ESTIMATED";
 
         return {
           ok: true,

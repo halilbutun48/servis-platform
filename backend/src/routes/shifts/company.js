@@ -21,9 +21,92 @@ import {
 // Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
 import * as H from "./helpers.js";
 import { addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd, ymdTR } from "../../time/tr.js";
+import { computeRouteKey, stringifyPolyline, sumDistanceKm } from "../../services/routeLearning.js";
+import { osrmRoute } from "../../services/osrmRoute.js";
+import { etaMinutes } from "../../geo.js";
 
 const emitShift = H.emitShift;
+
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
+
+function buildShiftServicePathPoints(shift) {
+  const hub =
+    typeof shift?.hubLat === "number" && typeof shift?.hubLng === "number"
+      ? { lat: Number(shift.hubLat), lng: Number(shift.hubLng) }
+      : null;
+  const direction = String(shift?.direction || "INBOUND").toUpperCase();
+  const pattern = String(shift?.pattern || "ONE_WAY").toUpperCase();
+  const stopPoints = Array.isArray(shift?.stops)
+    ? shift.stops
+        .filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number")
+        .sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0))
+        .map((s) => ({ lat: Number(s.lat), lng: Number(s.lng) }))
+    : [];
+
+  let servicePoints = [];
+  if (!hub) {
+    servicePoints = stopPoints.slice();
+  } else if (pattern === "LOOP") {
+    servicePoints = [hub, ...stopPoints, hub];
+  } else if (direction === "OUTBOUND") {
+    servicePoints = [hub, ...stopPoints];
+  } else {
+    servicePoints = [...stopPoints, hub];
+  }
+
+  return { hub, direction, pattern, stopPoints, servicePoints };
+}
+
+async function refreshShiftRouteSnapshot(shiftId) {
+  const shift = await prisma.shift.findUnique({
+    where: { id: Number(shiftId) },
+    include: { stops: { orderBy: { order: "asc" } } },
+  });
+  if (!shift) return null;
+
+  const { hub, direction, pattern, stopPoints, servicePoints } = buildShiftServicePathPoints(shift);
+  const routeSnapshotInputHash = computeRouteKey({ direction, pattern, hub, stops: stopPoints });
+
+  let routeSnapshotPolyline = null;
+  let routeSnapshotDistanceM = null;
+  let routeSnapshotDurationSec = null;
+  let routeSnapshotValidatedAt = null;
+
+  if (servicePoints.length >= 2) {
+    const routed = await osrmRoute(servicePoints);
+    if (routed?.ok && Array.isArray(routed.points) && routed.points.length >= 2) {
+      routeSnapshotPolyline = stringifyPolyline(routed.points);
+      const distanceM = Number.isFinite(Number(routed.distanceM))
+        ? Math.round(Number(routed.distanceM))
+        : Math.round(Number(sumDistanceKm(routed.points) * 1000));
+      const durationSec = Number.isFinite(Number(routed.durationSec))
+        ? Math.round(Number(routed.durationSec))
+        : Math.round(Number(etaMinutes(Number(distanceM || 0) / 1000, 30) * 60));
+      routeSnapshotDistanceM = Number.isFinite(distanceM) ? distanceM : null;
+      routeSnapshotDurationSec = Number.isFinite(durationSec) ? durationSec : null;
+      routeSnapshotValidatedAt = new Date();
+    }
+  }
+
+  await prisma.shift.update({
+    where: { id: shift.id },
+    data: {
+      routeSnapshotPolyline,
+      routeSnapshotDistanceM,
+      routeSnapshotDurationSec,
+      routeSnapshotValidatedAt,
+      routeSnapshotInputHash,
+    },
+  });
+
+  return {
+    routeSnapshotInputHash,
+    routeSnapshotPolyline,
+    routeSnapshotDistanceM,
+    routeSnapshotDurationSec,
+    routeSnapshotValidatedAt,
+  };
+}
 
 // --- Agreement overlap helpers (used to skip market offers when a contract already exists) ---
 function overlapsTR(aStart, aEnd, bStart, bEnd) {
@@ -1034,6 +1117,8 @@ r.put(
         await prisma.$transaction(
           stopIds.map((id, idx) => prisma.stop.update({ where: { id }, data: { order: idx + 1 } }))
         );
+
+        await refreshShiftRouteSnapshot(shiftId);
 
         await audit(req, {
           action: "SHIFT_STOPS_REORDER",

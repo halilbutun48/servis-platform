@@ -492,6 +492,14 @@ model Shift {
   pattern   RoutePattern   @default(ONE_WAY)
   createdAt DateTime       @default(now())
 
+  // M81+: DB-first route snapshot for preview
+  routeSnapshotPolyline    String?
+  routeSnapshotDistanceM   Int?
+  routeSnapshotDurationSec Int?
+  routeSnapshotValidatedAt DateTime?
+  routeSnapshotInputHash   String?
+
+
   // COMPANY → ROOM teklif
   companyOfferVehicleId Int?
   companyOfferAmount    Int?
