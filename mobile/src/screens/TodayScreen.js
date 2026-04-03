@@ -39,7 +39,7 @@ export default function TodayScreen({
 
   const syncStateText = syncing ? 'Senkron oluyor' : 'Hazir';
   const stale = isStale(lastSyncAt);
-  const gpsNeedsPermission = gps?.permissionStatus !== 'granted';
+  const gpsNeedsPermission = gps?.permissionStatus !== 'granted' || gps?.backgroundPermissionStatus !== 'granted';
   const gpsCanOpenSettings = Boolean(gps?.canOpenSettings);
   const gpsActionTitle = gpsNeedsPermission ? 'GPS iznini yenile' : 'Konumu simdi gonder';
   const kvkkBlocking = Boolean(kvkk?.blocking);
@@ -230,11 +230,18 @@ export default function TodayScreen({
       <Card>
         <SectionTitle title="Surucunun telefon GPS'i" />
         <View style={styles.rowGap}>
-          <Pill label={`Izin: ${gps?.permissionStatus || 'unknown'}`} tone={gpsNeedsPermission ? 'warn' : 'ok'} />
+          <Pill label={`Izin: ${gps?.permissionStatus || 'unknown'}`} tone={gps?.permissionStatus === 'granted' ? 'ok' : 'warn'} />
+          <Pill label={`Arka plan: ${gps?.backgroundPermissionStatus || 'unknown'}`} tone={gps?.backgroundPermissionStatus === 'granted' ? 'ok' : 'warn'} />
+          <Pill label={`Servis: ${gps?.backgroundTaskState || 'unknown'}`} tone={gps?.backgroundTaskState === 'running' ? 'ok' : 'warn'} />
           <Pill label={`Gonderim: ${gps?.publishState || 'idle'}`} tone={gps?.publishState === 'ok' ? 'ok' : gps?.publishState === 'retry' || gpsNeedsPermission || kvkkBlocking ? 'warn' : 'info'} />
           <Pill label={`Aralik: ${gps?.intervalSec || 20} sn`} />
         </View>
         <Info label="Izin durumu" value={gps?.permissionText || '-'} />
+        <Info label="Arka plan izni" value={gps?.backgroundPermissionText || '-'} />
+        <Info label="Arka plan servis" value={gps?.backgroundTaskText || '-'} />
+        <Info label="Uygulama durumu" value={gps?.appState || '-'} />
+        <Info label="Son arka plan nedeni" value={gps?.lastBackgroundReason || '-'} />
+        <Info label="Son arka plan kontrol" value={fmt(gps?.lastBackgroundSyncAt)} />
         <Info label="Gonderim durumu" value={gps?.publishText || '-'} />
         <Info label="Vardiya" value={gps?.shiftId ? `#${gps.shiftId}` : activeShift?.id ? `#${activeShift.id}` : 'Gorev yok'} />
         <Info label="Arac" value={gps?.vehicleId ? `#${gps.vehicleId}` : activeShift?.vehicleId ? `#${activeShift.vehicleId}` : '-'} />
@@ -242,8 +249,8 @@ export default function TodayScreen({
         <Info label="Son gonderim" value={fmt(gps?.lastSentAt)} />
         <Info label="Son deneme" value={fmt(gps?.lastAttemptAt)} />
         <Text style={styles.helper}>
-          M57.1 ile uygulama acikken, aktif/onayli vardiya ve atanmis arac varsa konum duzenli olarak /api/gps hattina gonderilir.
-          Atanmis ama henuz baslamamis vardiya burada gorunur; publish ise gorev penceresi gelince baslar.
+          M81.2 ile sadece uygulama acikken degil, ekran kapali / arka plan davranisi da izlenebilir hale gelir.
+          Android testini internal build ile yap; Expo Go arka plan GPS icin dogru referans degildir.
         </Text>
         <View style={styles.actionsRow}>
           <PrimaryButton title={gpsActionTitle} onPress={gpsNeedsPermission ? onRequestGpsPermission : onPublishGpsNow} disabled={kvkkBlocking} />

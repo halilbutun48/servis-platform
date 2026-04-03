@@ -1,25 +1,34 @@
 {
   "name": "personel-servis-driver-mobile",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.2.3",
   "main": "expo/AppEntry.js",
   "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
-    "check:m48": "node scripts/m48_driver_mobile_foundation_check.js",
-    "check:m49": "node scripts/m49_mobile_beta_hardening_check.js",
-    "check:m49.1": "node scripts/m49_1_driver_voice_guidance_stop_eta_check.js",
-    "check:m50": "node scripts/m50_mobile_release_readiness_check.js",
+    "build:simulator:ios": "npx eas-cli build --profile preview-simulator --platform ios",
+    "build:production:ios": "npx eas-cli build --profile production --platform ios",
     "doctor:expo": "npx expo-doctor",
-    "build:preview:android": "npx eas-cli build --profile preview --platform android",
+    "check:m49": "node scripts/m49_mobile_beta_hardening_check.js",
+    "check:m81.4": "node scripts/m81_4_release_env_discipline_check.js",
+    "check:m81.2b": "node scripts/m81_2b_bundle_chain_check.js",
+    "check:m81.2": "node scripts/m81_2_background_runtime_check.js",
     "build:internal:android": "npx eas-cli build --profile preview --platform android",
+    "check:m50": "node scripts/m50_mobile_release_readiness_check.js",
     "build:production:android": "npx eas-cli build --profile production --platform android",
+    "android": "expo run:android",
+    "check:m48": "node scripts/m48_driver_mobile_foundation_check.js",
+    "start": "expo start",
+    "doctor:mobile": "npx expo-doctor && npm run check:m81.2 && npm run check:m81.2b && npm run check:m81.3 && npm run check:m81.4",
+    "check:m81.3": "node scripts/m81_3_ios_readiness_check.js",
     "check:m57.1": "node scripts/m57_1_foreground_gps_publish_check.js",
-    "check:m57.2": "node scripts/m57_2_offline_online_recovery_check.js",
+    "check:m57.4": "node scripts/m57_4_android_preview_internal_build_check.js",
+    "build:internal:ios": "npx eas-cli build --profile preview --platform ios",
     "check:m57.3": "node scripts/m57_3_session_kvkk_blocking_check.js",
-    "check:m57.4": "node scripts/m57_4_android_preview_internal_build_check.js"
+    "build:preview:android": "npx eas-cli build --profile preview --platform android",
+    "web": "expo start --web",
+    "check:m49.1": "node scripts/m49_1_driver_voice_guidance_stop_eta_check.js",
+    "build:preview:ios": "npx eas-cli build --profile preview --platform ios",
+    "ios": "expo run:ios",
+    "check:m57.2": "node scripts/m57_2_offline_online_recovery_check.js"
   },
   "dependencies": {
     "expo": "~54.0.0",
@@ -29,6 +38,9 @@
     "expo-task-manager": "~14.0.9",
     "expo-updates": "~29.0.16",
     "react": "19.1.0",
-    "react-native": "0.81.0"
+    "react-native": "0.81.5"
+  },
+  "devDependencies": {
+    "babel-preset-expo": "^54.0.6"
   }
 }

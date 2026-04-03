@@ -14,6 +14,13 @@
       "bundleIdentifier": "com.personelservis.driver",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location"
+        ],
+        "NSLocationWhenInUseUsageDescription": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir."
       }
     },
     "android": {
@@ -32,12 +39,14 @@
     },
     "extra": {
       "appRole": "DRIVER",
-      "releaseStage": "m57-mobile-hardening",
+      "releaseStage": "m81-mobile-saha-sertlestirme",
       "androidPreviewTrack": "preview-internal",
       "productionTrack": "production",
       "eas": {
         "projectId": "e08c9aa3-26d9-4e58-88fb-8ddffa8824d9"
-      }
+      },
+      "iosPreviewTrack": "preview-internal",
+      "iosSimulatorTrack": "preview-simulator"
     },
     "plugins": [
       [
@@ -67,3 +76,4 @@
     }
   }
 }
+

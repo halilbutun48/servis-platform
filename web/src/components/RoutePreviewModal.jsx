@@ -28,7 +28,11 @@ function buildRouteQuality(summary, source, stops, people) {
   if (summary?.warning === "hubMissing") qualityNotes.push("Hub eksik; rota tahmini stop sırasına göre gösteriliyor.");
   if (reviewCount > 0) qualityNotes.push(`${reviewCount} review kaydı rota kalitesini sınırlayabilir.`);
   if (!qualityNotes.length) {
-    qualityNotes.push(String(source || "").toUpperCase() === "LEARNED" ? "Learned rota verisi kullanıldı." : "Tahmini rota verisi kullanıldı.");
+    qualityNotes.push(
+      String(source || "").toUpperCase() === "LEARNED"
+        ? "Learned rota verisi kullanıldı."
+        : "Önizleme DB stop sırası ve tahmini hat üzerinden gösteriliyor; OSRM Step-4 ve dispatch için ayrıldı."
+    );
   }
   return {
     stopCountWithoutHub,

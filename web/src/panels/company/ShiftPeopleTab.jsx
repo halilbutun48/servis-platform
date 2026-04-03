@@ -332,6 +332,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const sorted = [...list].sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
     return sorted;
   }, [shifts]);
+  const validShiftIdSet = useMemo(() => new Set(shiftOptions.map((s) => Number(s?.id || 0)).filter((x) => Number.isFinite(x) && x > 0)), [shiftOptions]);
+
 
   const selectedShiftBase = useMemo(() => {
     const sid = Number(selectedShiftId || 0);
@@ -514,9 +516,17 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     if (shiftOptions.length) setSelectedShiftId(String(shiftOptions[0].id));
   }, [shiftOptions, selectedShiftId]);
 
+  useEffect(() => {
+    if (!selectedShiftId) return;
+    const sid = Number(selectedShiftId || 0);
+    if (validShiftIdSet.has(sid)) return;
+    setSelectedShiftId(shiftOptions.length ? String(shiftOptions[0].id) : "");
+  }, [selectedShiftId, shiftOptions, validShiftIdSet]);
+
   // load people on shift change (backend first; 404 => localStorage fallback)
   useEffect(() => {
     if (!selectedShiftId) return;
+    if (!validShiftIdSet.has(Number(selectedShiftId || 0))) return;
 
     let alive = true;
     setBusy(true);
@@ -560,11 +570,12 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [peopleStorageKey]);
+  }, [peopleStorageKey, selectedShiftId, validShiftIdSet]);
 
   // keep localStorage in sync + (soft) persist to backend
   useEffect(() => {
     if (!selectedShiftId) return;
+    if (!validShiftIdSet.has(Number(selectedShiftId || 0))) return;
 
     // always keep local fallback updated
     savePeopleToStorage(people);
@@ -578,7 +589,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         await apiOr404Fallback(
           async () => {
             // Guided Mode: aynı listeyi taslak shift'lerin hepsine yaz
-            const ids = mirrorIds.length ? mirrorIds : [Number(sid)];
+            const ids = (mirrorIds.length ? mirrorIds : [Number(sid)]).filter((id) => validShiftIdSet.has(Number(id || 0)));
+            if (!ids.length) return false;
             for (const id of ids) {
               await savePeopleToBackend(String(id), people);
             }
@@ -591,6 +603,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           }
         );
       } catch (e) {
+        if (Number(e?.status || 0) === 404) {
+          setPeopleBackend("off");
+          return;
+        }
         // Do not overwrite UI; just show error
         setErr(e?.message || String(e));
       }
@@ -598,7 +614,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, selectedShiftId, peopleBackend, mirrorIds]);
+  }, [people, selectedShiftId, peopleBackend, mirrorIds, validShiftIdSet]);
 
   const geoStats = useMemo(() => {
     let ok = 0,

@@ -38,6 +38,22 @@ async function isTaskAvailable() {
   return TaskManager.isAvailableAsync().catch(() => false);
 }
 
+export async function getDriverBackgroundRuntimeStatus() {
+  const [taskAvailable, foregroundPermission, backgroundPermission, started] = await Promise.all([
+    isTaskAvailable(),
+    Location.getForegroundPermissionsAsync().catch(() => null),
+    Location.getBackgroundPermissionsAsync().catch(() => null),
+    Location.hasStartedLocationUpdatesAsync(DRIVER_BG_LOCATION_TASK).catch(() => false),
+  ]);
+
+  return {
+    taskAvailable,
+    foregroundPermission,
+    backgroundPermission,
+    started,
+  };
+}
+
 export async function stopDriverBackgroundLocation() {
   const started = await Location.hasStartedLocationUpdatesAsync(DRIVER_BG_LOCATION_TASK).catch(() => false);
   if (!started) return false;
@@ -55,54 +71,90 @@ export async function syncDriverBackgroundLocation({
   requestPermission = false,
   appState = 'active',
 } = {}) {
-  const taskAvailable = await isTaskAvailable();
+  const runtime = await getDriverBackgroundRuntimeStatus();
   const isDriver = String(role || '').toUpperCase() === 'DRIVER';
   const backgroundPreferred = String(appState || 'active') !== 'active';
   const target = resolveGpsPublishTarget(today, route);
 
-  const canRun = Boolean(
-    taskAvailable &&
+  const eligible = Boolean(
+    runtime.taskAvailable &&
     sessionToken &&
     isDriver &&
     !requirePinChange &&
     !kvkkBlocking &&
-    backgroundPreferred &&
     target.activeShift &&
     target.vehicleId &&
     target.canPublish
   );
 
-  if (!canRun) {
-    await stopDriverBackgroundLocation();
-    return { started: false, reason: 'not-eligible', target };
+  if (!eligible) {
+    if (runtime.started) await stopDriverBackgroundLocation();
+    return { started: false, reason: 'not-eligible', target, runtime: { ...runtime, started: false } };
   }
 
-  const foreground = requestPermission
+  const foregroundPermission = requestPermission
     ? await Location.requestForegroundPermissionsAsync().catch(() => null)
-    : await Location.getForegroundPermissionsAsync().catch(() => null);
+    : runtime.foregroundPermission;
 
-  if (!foreground || foreground.status !== 'granted') {
-    await stopDriverBackgroundLocation();
-    return { started: false, reason: 'foreground-permission', target, permission: foreground };
+  if (!foregroundPermission || foregroundPermission.status !== 'granted') {
+    if (runtime.started) await stopDriverBackgroundLocation();
+    return {
+      started: false,
+      reason: 'foreground-permission',
+      target,
+      permission: foregroundPermission,
+      runtime: {
+        ...runtime,
+        foregroundPermission,
+        started: false,
+      },
+    };
   }
 
-  const background = requestPermission
+  const backgroundPermission = requestPermission
     ? await Location.requestBackgroundPermissionsAsync().catch(() => null)
-    : await Location.getBackgroundPermissionsAsync().catch(() => null);
+    : runtime.backgroundPermission;
 
-  if (!background || background.status !== 'granted') {
-    await stopDriverBackgroundLocation();
-    return { started: false, reason: 'background-permission', target, permission: background };
+  if (!backgroundPermission || backgroundPermission.status !== 'granted') {
+    if (runtime.started) await stopDriverBackgroundLocation();
+    return {
+      started: false,
+      reason: 'background-permission',
+      target,
+      permission: backgroundPermission,
+      runtime: {
+        ...runtime,
+        foregroundPermission,
+        backgroundPermission,
+        started: false,
+      },
+    };
   }
 
-  const started = await Location.hasStartedLocationUpdatesAsync(DRIVER_BG_LOCATION_TASK).catch(() => false);
-  if (!started) {
+  const shouldStart = Boolean(requestPermission || backgroundPreferred || runtime.started);
+  if (!shouldStart) {
+    return {
+      started: runtime.started,
+      reason: 'armed-active',
+      target,
+      runtime: {
+        ...runtime,
+        foregroundPermission,
+        backgroundPermission,
+      },
+    };
+  }
+
+  if (!runtime.started) {
     await Location.startLocationUpdatesAsync(DRIVER_BG_LOCATION_TASK, {
       accuracy: Location.Accuracy.Balanced,
+      activityType: Location.ActivityType.AutomotiveNavigation,
       timeInterval: GPS_PUBLISH_INTERVAL_MS,
       distanceInterval: DRIVER_BG_DISTANCE_INTERVAL_M,
       deferredUpdatesDistance: 0,
       deferredUpdatesInterval: 0,
+      pausesUpdatesAutomatically: false,
+      showsBackgroundLocationIndicator: true,
       mayShowUserSettingsDialog: false,
       foregroundService: {
         notificationTitle: 'Personel Servis GPS acik',
@@ -113,7 +165,17 @@ export async function syncDriverBackgroundLocation({
     });
   }
 
-  return { started: true, reason: 'running', target };
+  return {
+    started: true,
+    reason: runtime.started ? 'running' : 'started',
+    target,
+    runtime: {
+      ...runtime,
+      foregroundPermission,
+      backgroundPermission,
+      started: true,
+    },
+  };
 }
 
 if (!TaskManager.isTaskDefined(DRIVER_BG_LOCATION_TASK)) {

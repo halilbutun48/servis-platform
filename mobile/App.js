@@ -29,18 +29,18 @@ import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNex
 import LoginScreen from './src/screens/LoginScreen';
 import PinChangeScreen from './src/screens/PinChangeScreen';
 import TodayScreen from './src/screens/TodayScreen';
-import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
+import { deriveRouteTransition, getDriverBackgroundRuntimeStatus, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
 
 const RELEASE_INFO = Object.freeze({
-  appVersion: '0.2.2',
-  releaseTarget: 'Android ilk yayin',
-  buildProfiles: 'preview / production',
+  appVersion: '0.2.3',
+  releaseTarget: 'Android + iOS M81 saha sertlestirme',
+  buildProfiles: 'preview / production / ios',
   deliveryMode: 'EAS Build + internal dagitim',
-  expoGoStatus: 'Gelistirme testi tamam',
+  expoGoStatus: 'Expo Go degil, internal build ile test et',
   androidPreview: 'Preview APK / internal dagitim',
-  productionBundle: 'Production AAB / yayin hazirligi',
+  productionBundle: 'Production AAB + iOS store hazirligi',
   envStage: 'preview-internal / production',
-  releaseDiscipline: 'Version bump + env kontrolu + runbook + checker',
+  releaseDiscipline: 'Config temizligi + background GPS + env kontrolu + checker',
 });
 
 const initialState = {
@@ -65,7 +65,14 @@ const initialState = {
   },
   gps: {
     permissionStatus: 'unknown',
-    permissionText: 'GPS izin durumu henuz okunmadi.',
+    permissionText: 'GPS izin durumu henuz okunamadi.',
+    backgroundPermissionStatus: 'unknown',
+    backgroundPermissionText: 'Arka plan izin durumu henuz okunamadi.',
+    backgroundTaskState: 'unknown',
+    backgroundTaskText: 'Arka plan GPS servisi henuz kontrol edilmedi.',
+    appState: AppState.currentState || 'active',
+    lastBackgroundReason: '',
+    lastBackgroundSyncAt: '',
     publishState: 'idle',
     publishText: 'Konum gonderimi henuz baslamadi.',
     lastLocationText: '-',
@@ -226,18 +233,26 @@ export default function App() {
       }
 
       const permissionText = permissionTextFromStatus(permission);
+      const backgroundPermission = requestPermission
+        ? await Location.requestBackgroundPermissionsAsync().catch(() => null)
+        : await Location.getBackgroundPermissionsAsync().catch(() => null);
+      const backgroundSnapshot = await readGpsRuntimeSnapshot('status-refresh', {
+        foregroundPermission: permission,
+        backgroundPermission,
+        canOpenSettings: permission?.canAskAgain === false || backgroundPermission?.canAskAgain === false,
+      });
       if (permission.status !== 'granted') {
         setState((prev) => ({
           ...prev,
           gps: {
             ...prev.gps,
+            ...backgroundSnapshot,
             permissionStatus: permission.status,
             permissionText,
             publishState: 'blocked',
             publishText: permission.canAskAgain === false
               ? 'GPS izni kapali. Ayarlardan acmadan konum gonderilemez.'
               : 'GPS izni gerekli. Izin yenilenmeden konum gonderilemez.',
-            canOpenSettings: permission.canAskAgain === false,
           },
         }));
         return;
@@ -251,6 +266,7 @@ export default function App() {
           ...prev,
           gps: {
             ...prev.gps,
+          ...backgroundSnapshot,
             permissionStatus: permission.status,
             permissionText,
             publishState: 'blocked',
@@ -267,6 +283,7 @@ export default function App() {
           ...prev,
           gps: {
             ...prev.gps,
+          ...backgroundSnapshot,
             permissionStatus: permission.status,
             permissionText,
             publishState: 'no-shift',
@@ -283,6 +300,7 @@ export default function App() {
           ...prev,
           gps: {
             ...prev.gps,
+          ...backgroundSnapshot,
             permissionStatus: permission.status,
             permissionText,
             publishState: 'no-vehicle',
@@ -299,6 +317,7 @@ export default function App() {
           ...prev,
           gps: {
             ...prev.gps,
+          ...backgroundSnapshot,
             permissionStatus: permission.status,
             permissionText,
             publishState: 'waiting',
@@ -340,6 +359,7 @@ export default function App() {
         route: nextRoute || prev.route,
         gps: {
           ...prev.gps,
+          ...backgroundSnapshot,
           permissionStatus: permission.status,
           permissionText,
           publishState: 'ok',
@@ -364,6 +384,7 @@ export default function App() {
           kvkk: nextKvkkState(kvkkCurrent || { ...prev.kvkk, blocking: true }, prev.kvkk, 'KVKK onayi eksik. Konum gonderimi durduruldu.'),
           gps: {
             ...prev.gps,
+          ...backgroundSnapshot,
             publishState: 'blocked',
             publishText: 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.',
             lastErrorAt: new Date().toISOString(),
@@ -386,6 +407,7 @@ export default function App() {
           : prev.net,
         gps: {
           ...prev.gps,
+          ...backgroundSnapshot,
           publishState: 'retry',
           publishText: humanizeGpsError(error),
           lastErrorAt: new Date().toISOString(),
@@ -394,6 +416,42 @@ export default function App() {
     } finally {
       gpsBusyRef.current = false;
     }
+  }
+
+
+  function applyGpsRuntimeSnapshot(snapshot = {}) {
+    setState((prev) => ({
+      ...prev,
+      gps: {
+        ...prev.gps,
+        ...snapshot,
+      },
+    }));
+  }
+
+  async function readGpsRuntimeSnapshot(reason = '', options = {}) {
+    const runtime = await getDriverBackgroundRuntimeStatus().catch(() => null);
+    const foregroundPermission = options.foregroundPermission ?? runtime?.foregroundPermission ?? null;
+    const backgroundPermission = options.backgroundPermission ?? runtime?.backgroundPermission ?? null;
+    const taskStarted = Boolean(runtime?.started);
+    const canOpenSettings = Boolean(
+      options.canOpenSettings ?? ((foregroundPermission?.canAskAgain === false) || (backgroundPermission?.canAskAgain === false))
+    );
+
+    return {
+      permissionStatus: foregroundPermission?.status || options.permissionStatus || 'unknown',
+      permissionText: permissionTextFromStatus(foregroundPermission),
+      backgroundPermissionStatus: backgroundPermission?.status || 'unknown',
+      backgroundPermissionText: backgroundPermissionTextFromStatus(backgroundPermission),
+      backgroundTaskState: taskStarted ? 'running' : 'stopped',
+      backgroundTaskText: taskStarted
+        ? 'Arka plan GPS servisi kayitli. Ekran kapansa da yayin devam etmeli.'
+        : 'Arka plan GPS servisi henuz devrede degil.',
+      appState: options.appState || appStateRef.current,
+      lastBackgroundReason: reason || options.reason || '',
+      lastBackgroundSyncAt: new Date().toISOString(),
+      canOpenSettings,
+    };
   }
 
   async function refreshKvkkStatus({ accepted = false } = {}) {
@@ -483,6 +541,9 @@ export default function App() {
         route: state.route,
         kvkkBlocking: state.kvkk?.blocking,
         appState: nextState,
+      }).then((runtime) => {
+        if (!runtime) return;
+        return readGpsRuntimeSnapshot(runtime.reason, { appState: nextState }).then(applyGpsRuntimeSnapshot);
       }).catch(() => null);
 
       if (nextState === 'active') {
@@ -515,6 +576,9 @@ export default function App() {
       route: state.route,
       kvkkBlocking: state.kvkk?.blocking,
       appState: appStateRef.current,
+    }).then((runtime) => {
+      if (!runtime) return;
+      return readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).then(applyGpsRuntimeSnapshot);
     }).catch(() => null);
 
     refreshGpsStatus({ publishNow: false }).catch(() => null);
@@ -624,7 +688,7 @@ export default function App() {
 
   async function handleRequestGpsPermission() {
     await refreshGpsStatus({ requestPermission: true, publishNow: false });
-    await syncDriverBackgroundLocation({
+    const runtime = await syncDriverBackgroundLocation({
       sessionToken: state.session?.token,
       role: state.me?.role,
       requirePinChange: state.me?.requirePinChange,
@@ -632,17 +696,12 @@ export default function App() {
       route: state.route,
       kvkkBlocking: state.kvkk?.blocking,
       requestPermission: true,
-      appState: 'background',
-    }).catch(() => null);
-    await syncDriverBackgroundLocation({
-      sessionToken: state.session?.token,
-      role: state.me?.role,
-      requirePinChange: state.me?.requirePinChange,
-      today: state.today,
-      route: state.route,
-      kvkkBlocking: state.kvkk?.blocking,
       appState: appStateRef.current,
     }).catch(() => null);
+    if (runtime) {
+      const snapshot = await readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).catch(() => null);
+      if (snapshot) applyGpsRuntimeSnapshot(snapshot);
+    }
   }
 
   async function handlePublishGpsNow() {
@@ -738,6 +797,13 @@ export default function App() {
   );
 }
 
+function backgroundPermissionTextFromStatus(permission) {
+  if (!permission) return 'Arka plan izin durumu okunamadi.';
+  if (permission.status === 'granted') return 'Arka plan izni hazir.';
+  if (permission.canAskAgain === false) return 'Arka plan izni kapali. Ayarlardan Her zaman izin ver secilmeli.';
+  return 'Arka plan icin Ayrica Her zaman izin ver secilmeli.';
+}
+
 function nextKvkkState(summary, prev = {}, forcedMessage) {
   const items = Array.isArray(summary?.items) ? summary.items : Array.isArray(prev?.items) ? prev.items : [];
   const blocking = Boolean(summary?.blocking);
@@ -810,3 +876,4 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 });
+

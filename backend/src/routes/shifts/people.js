@@ -6,7 +6,6 @@ import { audit } from "../../audit.js";
 import { clusterStops } from "../../services/clusterStops.js";
 import { etaMinutes } from "../../geo.js";
 import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
-import { osrmRoute } from "../../services/osrmRoute.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
 import { decorateGeoItem, inferGeoState } from "../../services/geoState.js";
 import { rememberResponse } from "../../utils/responseCache.js";
@@ -752,16 +751,9 @@ export function attachShiftPeopleRoutes(router, _io) {
         ? parsePolyline(learned.polylineCanonical)
         : null;
 
+    // M81 PERF: preview is DB-first. Keep OSRM for Step-4 / dispatch, not modal preview.
     let source = learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
     let pathPoints = source === "LEARNED" ? learnedPoints : estPoints;
-
-    if (source !== "LEARNED" && estPoints.length >= 2) {
-      const routed = await osrmRoute(estPoints);
-      if (routed?.ok && Array.isArray(routed.points) && routed.points.length >= 2) {
-        source = "OSRM";
-        pathPoints = routed.points;
-      }
-    }
 
     const totalPassengerCountRaw = stopsWithCounts.reduce(
       (sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0),
@@ -789,11 +781,7 @@ export function attachShiftPeopleRoutes(router, _io) {
       summary.learnedSampleCount = Number(learned.sampleCount || 0);
     }
 
-    if (source === "OSRM") {
-      const distanceKmOsrm = Number(sumDistanceKm(pathPoints).toFixed(2));
-      summary.distanceKmOsrm = distanceKmOsrm;
-      summary.durationMinOsrm = Math.round(Number(etaMinutes(distanceKmOsrm, 30)));
-    }
+    summary.previewPolicy = source === "LEARNED" ? "DB_LEARNED" : "DB_ESTIMATED";
 
         return {
           ok: true,

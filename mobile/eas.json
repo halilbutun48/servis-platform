@@ -9,8 +9,11 @@
       "android": {
         "buildType": "apk"
       },
+      "ios": {
+        "simulator": false
+      },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://auburn-answer-advocacy-physician.trycloudflare.com",
+        "EXPO_PUBLIC_API_BASE_URL": "https://preview-api.example.com",
         "EXPO_PUBLIC_RELEASE_STAGE": "preview-internal"
       }
     },
@@ -18,9 +21,20 @@
       "android": {
         "buildType": "app-bundle"
       },
+      "ios": {},
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://api.example.com",
         "EXPO_PUBLIC_RELEASE_STAGE": "production"
+      }
+    },
+    "preview-simulator": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://preview-api.example.com",
+        "EXPO_PUBLIC_RELEASE_STAGE": "preview-simulator"
       }
     }
   },
@@ -28,3 +42,4 @@
     "production": {}
   }
 }
+
