@@ -1014,7 +1014,7 @@ function usePlanDraftToRequest(draft) {
   }, [token]);
 
   useAutoReload("shifts", () => load(undefined, { withReferences: false }), true, 650);
-  useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve()), true, 650);
+  useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);
 
   const roomsById = useMemo(() => {
     const m = new Map();
@@ -3084,6 +3084,7 @@ function usePlanDraftToRequest(draft) {
     </div>
   );
 }
+
 
 
 

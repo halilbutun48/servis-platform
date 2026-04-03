@@ -1,4 +1,4 @@
-# MILESTONE REGISTRY V1
+﻿# MILESTONE REGISTRY V1
 
 ## Aktif kanonik hat
 - M75 — living baseline kavramı
@@ -62,3 +62,5 @@ M78.3 - Operasyon Doğrulama Özet ve Filtre Katmanı
 rol bazli operasyon dogrulama
 proof
 REPO_CONTRACT_COMPAT_M78_REGISTRY_V1 -->
+
+- M81 mobil saha sertlestirme: tools\pack_m81_mobile_saha_sertlestirme.ps1 -RepoRoot D:\servis-platform

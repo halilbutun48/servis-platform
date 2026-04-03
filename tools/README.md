@@ -1,4 +1,4 @@
-# TOOLS README
+﻿# TOOLS README
 
 <!-- TOOLS_HYGIENE_CHECK_MARKER_V1 -->
 
@@ -129,3 +129,5 @@ REPO_CONTRACT_COMPAT_M78_TOOLS_README_V2 -->
 - `backend/data` altındaki runtime `.json` ve `.json.bak` dosyaları repo tarafından takip edilmez.
 - Repo audit docs-contract ölçümü ham `.md` sayımı değil, doğrudan path-ref bağımlılığını izler.
 - `tools/_repo_contract_state.ps1` ve `tools/repo_contract_state.json` state-first repo contract omurgasının kanonik girişidir.
+
+- M81 mobil saha sertlestirme: tools\pack_m81_mobile_saha_sertlestirme.ps1 -RepoRoot D:\servis-platform

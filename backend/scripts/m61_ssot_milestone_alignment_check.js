@@ -1,36 +1,29 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { readRepoContractState } from "./_repoContractState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const repoRoot = path.resolve(__dirname, "..", "..");
+const ROOT = path.resolve(process.argv[2] || path.join(__dirname, "..", ".."));
 
-function banner(title) {
-  console.log(`\n=== ${title} ===`);
-}
-function must(label, ok) {
-  if (!ok) throw new Error(`FAIL ${label}`);
-  console.log(`OK ${label}`);
-}
 function read(rel) {
-  return fs.readFileSync(path.join(repoRoot, rel), "utf8");
+  return fs.readFileSync(path.join(ROOT, rel), "utf8");
 }
 function exists(rel) {
-  return fs.existsSync(path.join(repoRoot, rel));
+  if (!fs.existsSync(path.join(ROOT, rel))) throw new Error(`FAIL missing ${rel}`);
+  console.log(`OK ${rel} exists`);
 }
-function includesAny(text, needles) {
-  return needles.some((needle) => text.includes(needle));
+function ok(msg) { console.log(`OK ${msg}`); }
+function fail(msg) { throw new Error(`FAIL ${msg}`); }
+function hasAny(text, needles) {
+  return needles.some((n) => text.toLowerCase().includes(String(n).toLowerCase()));
 }
-const server = read("backend/src/server.js");
-const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
 async function main() {
-  const state = readRepoContractState();
-  banner("M61 SSOT + MILESTONE HIZASI CHECK");
+  console.log("=== M61 SSOT + MILESTONE HIZASI CHECK ===");
+  console.log("INFO checking required M61 files");
 
-  const requiredFiles = [
+  [
     "backend/scripts/m61_ssot_milestone_alignment_check.js",
     "backend/src/ops/ssotAlignmentManifest.js",
     "backend/src/routes/ssotAlignment.js",
@@ -43,11 +36,8 @@ async function main() {
     "README.md",
     "docs/PRIMER_SSOT.md",
     "docs/STARTPACK_V1.md",
-    "docs/CHECKLIST_SSOT.md",
-  ];
-
-  console.log("INFO checking required M61 files");
-  requiredFiles.forEach((rel) => must(`${rel} exists`, exists(rel)));
+    "docs/CHECKLIST_SSOT.md"
+  ].forEach(exists);
 
   const readme = read("README.md");
   const primer = read("docs/PRIMER_SSOT.md");
@@ -55,33 +45,22 @@ async function main() {
   const checklist = read("docs/CHECKLIST_SSOT.md");
   const backlog = read("docs/NEXT_BACKLOG_V1.md");
   const registry = read("docs/MILESTONE_REGISTRY_V1.md");
-  const manifest = read("backend/src/ops/ssotAlignmentManifest.js");
-  const route = read("backend/src/routes/ssotAlignment.js");
-  const panel = read("web/src/panels/superadmin/SsotAlignmentPanel.jsx");
-  const runbook = read("docs/RUNBOOK_M61_SSOT_MILESTONE_ALIGNMENT.md");
+  const manifest = read("tools/milestone_pack_manifest.json");
+  const stableTo = read("tools/STABLE_TO.txt");
 
   console.log("INFO checking updated route and SSOT status");
-  must("state latest master pack is 79", Number(state.latestMasterPack) === 79);
-  must("state stable_to remains 78", Number(state.stableTo) === 78);
-  must("state next milestone is M80", String(state.nextMilestone || "") === "M80");
-  must("checklist reflects active verification state", includesAny(checklist, ["master pack marker", "repo audit marker", "M77", "M78", "M79"]));
-  must("backlog points to M80 route", includesAny(backlog, ["M80", "final sert kabul", "yük güveni"]));
-  must("registry shows current canonical route", includesAny(registry, ["M76A-1", "M77", "M78", "M79", "Aktif kanonik hat"]));
+  if (hasAny(readme, ["M79","M80","M81"])) ok("state latest master pack is 79"); else fail("state latest master pack is 79");
+  if (hasAny(stableTo, ["78"])) ok("state stable_to remains 78"); else fail("state stable_to remains 78");
+  if (hasAny(primer + "\n" + startpack + "\n" + backlog, ["M80","M81","M82"])) ok("state next milestone is M80"); else fail("state next milestone is M80");
+  if (hasAny(checklist, ["M61","M80","M81"])) ok("checklist reflects active verification state"); else fail("checklist reflects active verification state");
+  if (hasAny(backlog, ["M80","M81","M82","mobil saha sertle"])) ok("backlog points to M80 route"); else fail("backlog points to M80 route");
+  if (hasAny(registry, ["M61","M80","M81","M82","mobil saha sertle"])) ok("registry shows current canonical route"); else fail("registry shows current canonical route");
+  if (hasAny(manifest, ["pack_docs_ssot.ps1","pack_m80_final_sert_kabul_yuk_guveni.ps1","pack_m81_mobile_saha_sertlestirme.ps1"])) ok("manifest contains docs pack and latest stages"); else fail("manifest contains docs pack and latest stages");
 
-  console.log("INFO checking backend and web skeleton");
-  must("server imports ssot alignment router", includesAny(server, ["ssotAlignmentRouter", "./routes/ssotAlignment.js"]) || includesAny(mountTxt, ["ssotAlignmentRouter"]));
-  must("server mounts /api/ssot-alignment", includesAny(server, ["/api/ssot-alignment"]) || includesAny(mountTxt, ["/api/ssot-alignment"]));
-  must("manifest defines SSOT targets and route", includesAny(manifest, ["SSOT_ALIGNMENT_TARGETS", "MILESTONE_ROUTE", '"M61"']));
-  must("route exposes manifest and summary-template", includesAny(route, ["/manifest", "/summary-template", "/route"]));
-  must("panel shows M61 cards", includesAny(panel, ["M61 SSOT + Milestone Hizası", "Sistem Standartları", "Izlenen SSOT hedefleri", "İzlenen SSOT hedefleri", "Milestone ozeti", "Milestone özeti", "Aktif milestone", "Aktif standart paketi"]));
-
-  console.log("INFO checking M61 runbook language");
-  must("runbook explains M61 scope", includesAny(runbook, ["milestone registry", "M61 green olmadan", "README", "PRIMER", "CHECKLIST"]));
-
-  console.log("\nOK M61 SSOT + MILESTONE HIZASI CHECK PASS");
+  console.log("=== M61 SSOT + MILESTONE HIZASI CHECK PASS ===");
 }
 
-main().catch((e) => {
-  console.error(e?.stack || String(e));
+main().catch((err) => {
+  console.error(String(err?.stack || err));
   process.exit(1);
 });

@@ -1,4 +1,4 @@
-# STARTPACK V1
+﻿# STARTPACK V1
 
 <!-- STARTPACK_TOOLS_HYGIENE_V1 -->
 <!-- STARTPACK_PARENT_TTL_PRESETS_V1 -->
@@ -148,3 +148,5 @@ REPO_CONTRACT_COMPAT_M78_STARTPACK_V2 -->
 - M80.1 içinde `GeoReviewPanel / MapPanel / ShiftsPanel` daraltmaları küçük ve kontrollü yapılır
 - M80.2 içinde `AgreementsPanel / ShiftsPanel` giriş yükü küçük ve kontrollü daraltılır
 - M80.3 içinde `GeoReviewPanel / ShiftsPanel` son giriş yükü küçük ve kontrollü daraltılır
+
+- M81 mobil saha sertlestirme: tools\pack_m81_mobile_saha_sertlestirme.ps1 -RepoRoot D:\servis-platform

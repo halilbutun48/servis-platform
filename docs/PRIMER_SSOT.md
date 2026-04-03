@@ -1,4 +1,4 @@
-# VARDIS / PERSONEL SERVİS V1 — PRIMER SSOT
+﻿# VARDIS / PERSONEL SERVİS V1 — PRIMER SSOT
 
 Tarih: 2026-04-02
 Timezone: Europe/Istanbul
@@ -170,3 +170,5 @@ REPO_CONTRACT_COMPAT_PRIMER_V2 -->
 ## Repo contract state
 - Makine-okur durum özeti: `tools\repo_contract_state.json`
 - State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.
+
+- M81 mobil saha sertlestirme: tools\pack_m81_mobile_saha_sertlestirme.ps1 -RepoRoot D:\servis-platform
