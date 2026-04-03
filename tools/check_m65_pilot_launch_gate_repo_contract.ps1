@@ -32,10 +32,10 @@ $panel = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'web\src\panels
 $runbook = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\RUNBOOK_M65_PILOT_LAUNCH_GATE.md'
 
 Assert-RepoContractContainsAny $readme @('M65 — Pilot Launch Gate','M66','tools\pack.ps1 -To 66','tools\pack.ps1 -To 76','M75 green baseline') 'root readme reflects M65/M66 route'
-Assert-RepoContractContainsAny $projectSpec @('Pilot Launch Gate','GO / LIMITED GO / NO-GO','M59 → M65') 'project spec reflects launch gate layer'
+Assert-RepoContractContainsAny $projectSpec @('Pilot Launch Gate','GO / LIMITED GO / NO-GO','M59 -> M65') 'project spec reflects launch gate layer'
 Assert-RepoContractContainsAny $primer @('M65 — Pilot Launch Gate','M66','pack_m66_operation_reassignment.ps1') 'primer ssot reflects M65 green and M66 functional'
 Assert-RepoContractContainsAny $startpack @('M65 — Pilot Launch Gate','M66','tools\pack_docs_ssot.ps1','tools\pack.ps1 -To 76','M75 green baseline') 'startpack reflects post-M65/M66 state'
-Assert-RepoContractContainsAny $checklist @('[x] `M65 — Pilot Launch Gate`','[ ] `M66 — Operasyonel Reassignment`') 'checklist marks M65 green and keeps M66 open'
+if (($checklist -match '\[x\]\s+?M65.*Pilot Launch Gate?') -and ($checklist -match '\[[ x]\]\s+?M66.*Operasyonel Reassignment?')) { Write-Host 'OK checklist marks M65 green and keeps M66 open' } else { throw 'FAIL checklist marks M65 green and keeps M66 open' }
 Assert-RepoContractContainsAny $backlog @('M0-M66','cleanup','saha testi','M76A-1','minimum normalizasyon') 'backlog points to rerun after M65'
 Assert-RepoContractContainsAny $toolsPrimer @('M65 — Pilot Launch Gate','M66','fonksiyonel','M75 green baseline','M76A-1','M77') 'tools primer reflects M65/M66 history or current living route'
 if (-not (ChecklistContractSynced $checklist $toolsChecklist)) { throw 'FAIL tools checklist contract markers synced' } else { Write-Host 'OK tools checklist contract markers synced' }

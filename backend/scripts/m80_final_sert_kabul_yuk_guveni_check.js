@@ -17,9 +17,15 @@ function exists(rel) {
 function ok(msg) { console.log(`OK ${msg}`); }
 function fail(msg) { console.error(`FAIL ${msg}`); process.exitCode = 1; }
 function must(rel) { exists(rel) ? ok(`${rel} exists`) : fail(`${rel} exists`); }
+function mustAbsent(rel, msg = `${rel} absent`) {
+  exists(rel) ? fail(msg) : ok(msg);
+}
 function textHas(rel, pattern, msg) {
   const text = read(rel);
   pattern.test(text) ? ok(msg) : fail(msg);
+}
+function textIncludes(text, needle, msg) {
+  text.includes(needle) ? ok(msg) : fail(msg);
 }
 
 console.log("=== M80 FINAL SERT KABUL VE YUK GUVENI CHECK ===");
@@ -37,7 +43,17 @@ for (const rel of [
   ".dockerignore",
   "docs/RUNBOOK_M34_STEP0.md",
   "infra/docker-compose.yml",
+  "web/src/panels/company/GuidedPlanModal.jsx",
+  "web/src/components/RoutePreviewModal.jsx",
+  "backend/src/routes/shifts/company.js",
+  "backend/src/routes/shifts/people.js",
+  "backend/src/services/osrmRoute.js",
+  "backend/prisma/schema.prisma",
+  "backend/prisma/migrations/20260403150000_m81_route_snapshot_preview/migration.sql",
+  "tools/_backup/README.md",
 ]) must(rel);
+
+mustAbsent("scripts", "legacy root scripts folder removed");
 
 const state = readRepoContractState();
 if (Number(state.latestMasterPack) === 79) ok("state latest master pack is 79"); else fail("state latest master pack is 79");
@@ -76,6 +92,46 @@ const scale = spawnSync(process.execPath, [path.join(repoRoot, "backend/scripts/
 if ((scale.stdout || "").trim()) process.stdout.write(scale.stdout);
 if ((scale.stderr || "").trim()) process.stderr.write(scale.stderr);
 if (scale.status === 0) ok("scale readiness baseline passed"); else fail("scale readiness baseline passed");
+
+console.log("INFO verifying guided step-4 and route snapshot db-first behavior");
+const guidedText = read("web/src/panels/company/GuidedPlanModal.jsx");
+const routeModal = read("web/src/components/RoutePreviewModal.jsx");
+const companyRoutes = read("backend/src/routes/shifts/company.js");
+const peopleRoutes = read("backend/src/routes/shifts/people.js");
+const osrmRouteText = read("backend/src/services/osrmRoute.js");
+const schemaText = read("backend/prisma/schema.prisma");
+
+textIncludes(guidedText, "const offerOsrmGate = useMemo(", "offerOsrmGate memo present");
+if (!guidedText.includes("Sadece hub’lı")) ok("hub-only filter removed"); else fail("hub-only filter removed");
+textIncludes(guidedText, "Company planı koordinat olarak hazır", "company wording downgraded");
+textIncludes(guidedText, "Hub konumu eksik • teklif engeli değil", "hub warning non-blocking");
+textIncludes(guidedText, "Toplam taslak: <b>{offerOsrmGate.total}</b>", "osrm prerequisite summary present");
+textIncludes(guidedText, "(!organization && offerOsrmGate.blocking)", "send gate uses offerOsrmGate");
+textIncludes(guidedText, "OSRM rota doğrulaması alınamadı.", "osrm wording strengthened");
+
+textIncludes(schemaText, "routeSnapshotPolyline", "shift schema has routeSnapshotPolyline");
+textIncludes(schemaText, "routeSnapshotDistanceM", "shift schema has routeSnapshotDistanceM");
+textIncludes(schemaText, "routeSnapshotDurationSec", "shift schema has routeSnapshotDurationSec");
+textIncludes(schemaText, "routeSnapshotValidatedAt", "shift schema has routeSnapshotValidatedAt");
+textIncludes(schemaText, "routeSnapshotInputHash", "shift schema has routeSnapshotInputHash");
+textIncludes(companyRoutes, "refreshShiftRouteSnapshot(", "company reorder refreshes route snapshot");
+textIncludes(companyRoutes, "routeSnapshotValidatedAt", "company writes validatedAt");
+textIncludes(companyRoutes, "osrmRoute(", "company uses osrmRoute for snapshot");
+textIncludes(peopleRoutes, 'source === "SNAPSHOT"', "route preview supports SNAPSHOT source");
+textIncludes(peopleRoutes, "snapshotHash === routeKey", "route preview checks snapshot hash");
+textIncludes(peopleRoutes, "DB_SNAPSHOT", "route preview policy includes DB_SNAPSHOT");
+textIncludes(osrmRouteText, "distanceM", "osrmRoute returns distance");
+textIncludes(osrmRouteText, "durationSec", "osrmRoute returns duration");
+textIncludes(routeModal, "Kaydedilmiş rota snapshot kullanıldı", "route preview modal explains snapshot source");
+if ((routeModal.match(/if \(!open\) return null;/g) || []).length === 1) ok("single open guard present"); else fail("single open guard present");
+const useSessionIdx = routeModal.indexOf("const { token } = useSession();");
+const firstStateIdx = routeModal.indexOf("const [remote, setRemote] = useState(");
+const earlyGuardIdx = routeModal.indexOf("if (!open) return null;");
+const finalReturnIdx = routeModal.lastIndexOf("return (");
+if (useSessionIdx >= 0) ok("useSession present"); else fail("useSession present");
+if (firstStateIdx > useSessionIdx) ok("useState follows useSession"); else fail("useState follows useSession");
+if (earlyGuardIdx > firstStateIdx) ok("open guard moved after hooks"); else fail("open guard moved after hooks");
+if (earlyGuardIdx < finalReturnIdx) ok("open guard remains before JSX return"); else fail("open guard remains before JSX return");
 
 if (process.exitCode) {
   process.exit(process.exitCode);

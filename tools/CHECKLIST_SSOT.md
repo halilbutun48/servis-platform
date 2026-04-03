@@ -104,3 +104,8 @@ REPO_CONTRACT_COMPAT_M78_CHECKLIST_V1 -->
 M0 -> M78
 [x] `M78 — Checklist + Operasyon Doğrulama`
 REPO_CONTRACT_COMPAT_M78_CHECKLIST_V2 -->
+[x] M65 — Pilot Launch Gate`r
+[ ] M66 — Operasyonel Reassignment`r
+
+[x] `M65 — Pilot Launch Gate`
+[ ] `M66 — Operasyonel Reassignment`

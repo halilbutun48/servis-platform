@@ -154,7 +154,7 @@ if ($To -le 0) {
 
 Write-Host ""
 Write-StatusLine ("=== PERSONEL-SERVIS V1 - MASTER PACK (M0->M{0}) ===" -f $To)
-Write-StatusLine ("INFO Visible phases: M0->M41 | M42->M58 | M59->M66 | M67->M75 | M76A-1 | M76B | M76A-2 | M77 | M78 | M79")
+Write-StatusLine ("INFO Visible phases: M0->M41 | M42->M58 | M59->M66 | M67->M75 | M76A-1 | M76B | M76A-2 | M77 | M78 | M79 | M80 | M81")
 Write-StatusLine ("INFO Gate max: M{0}" -f $gateMax)
 Write-StatusLine ("INFO Pack max: M{0}" -f $packMax)
 Write-Host ""
@@ -207,4 +207,5 @@ if (-not $SkipRepoAudit) {
 Write-Host ""
 Write-StatusLine ("=== MASTER PACK PASS OK (M0->M{0}) ===" -f $To)
 Write-Host ""
+
 

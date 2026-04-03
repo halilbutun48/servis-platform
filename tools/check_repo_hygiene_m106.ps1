@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Get-Location).Path)
+﻿param([string]$RepoRoot = (Get-Location).Path)
 $ErrorActionPreference = 'Stop'
 function Info($m){ Write-Host "INFO $m" }
 function Ok($m){ Write-Host "OK $m" }

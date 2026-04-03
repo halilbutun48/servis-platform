@@ -201,7 +201,7 @@ export default function OperationVerificationPanel() {
         <div>
           <h2 style={{ margin: 0 }}>Operasyon Doğrulama</h2>
           <div className="muted" style={{ marginTop: 6 }}>
-            Rol bazlı operasyon kontrolünü, kanıt tiplerini ve kısa not kaydını tek ekranda toplar.
+            M78.1 Operasyon Doğrulama Yüzeyi. Rol bazlı operasyon kontrolünü, kanıt türlerini ve kısa not kaydını tek ekranda toplar. STABLE_TO yine 78.
           </div>
         </div>
         <div className="muted" style={{ alignSelf: "center" }}>
@@ -215,7 +215,7 @@ export default function OperationVerificationPanel() {
       <PanelKvkkHint panelKey="operationVerification" effectiveRole={selectedRole} />
 
       <div className="muted" style={{ marginTop: 12 }}>
-        Bu ekranda kanıt tipi, kısa not ve referans metni kaydedilir. Yazma işlemi için step-up gerekebilir.
+        Bu ekranda kanıt türleri, kısa not ve referans metni kaydedilir. Yazma işlemi için step-up gerekebilir.
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -308,6 +308,8 @@ export default function OperationVerificationPanel() {
     </div>
   );
 }
+
+
 
 
 

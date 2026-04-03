@@ -210,7 +210,7 @@ export default function GeoReviewPanel() {
         const reviewResp = await getCompanyGeoNeedsReview(token, { signal, force, kind, take: mustHonorSessionScope ? scopedTake : 120, ttlMs: 22000, delayMs: 120 });
         nextItems = Array.isArray(reviewResp?.items) ? reviewResp.items : [];
         if (!nextItems.length) {
-          const fallback = await getCompanyPersonels(token, { signal, force, kind, q: debouncedQ, take: mustHonorSessionScope ? scopedTake : 120, ttlMs: 22000, delayMs: 140 });
+          const fallback = await getCompanyPersonels(token, { signal, force, kind, q: debouncedQ, take: mustHonorSessionScope ? scopedTake : (debouncedQ ? 30 : 120), ttlMs: 22000, delayMs: 140 });
           nextItems = Array.isArray(fallback?.items) ? fallback.items : [];
         }
       } else {
@@ -596,7 +596,7 @@ export default function GeoReviewPanel() {
               <option key={opt.value || "all"} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <button onClick={() => load(undefined, { force: true })} disabled={busy || geoBusy}>{busy ? "..." : "Yenile"}</button>
+          <button onClick={() => load()} disabled={busy || geoBusy}>{busy ? "..." : "Yenile"}</button>
           <button onClick={bulkGeocode} disabled={busy || geoBusy || bulkClearBusy || !filtered.length}>
             {busy ? "Çalışıyor..." : "Toplu Adresten Bul"}
           </button>
@@ -727,4 +727,8 @@ export default function GeoReviewPanel() {
     </div>
   );
 }
+
+
+
+
 
