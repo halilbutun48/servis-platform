@@ -392,14 +392,13 @@ export default function GuidedPlanModal({
     const list = Array.isArray(rooms) ? rooms : [];
     const q = String(roomQ || "").trim().toLowerCase();
     return list
-      .filter((r) => (onlyHubRooms ? Boolean(r?.hubLat && r?.hubLng) : true))
       .filter((r) => {
         if (!q) return true;
         const hay = `${r?.id ?? ""} ${r?.name ?? ""}`.toLowerCase();
         return hay.includes(q);
       })
       .slice(0, 220);
-  }, [rooms, roomQ, onlyHubRooms]);
+  }, [rooms, roomQ]);
 
   const roomsById = useMemo(() => {
     const m = new Map();
@@ -491,6 +490,42 @@ export default function GuidedPlanModal({
       expectedStops,
     };
   }, [organization, orgDestinationAudit, draftShifts, draftShiftIds]);
+
+  const offerOsrmGate = useMemo(() => {
+    const items = (draftShifts || []).map((s) => {
+      const sid = Number(s?.id || 0);
+      const stops = Array.isArray(s?.stops) ? s.stops : [];
+      const validStops = stops.filter((st) => hasCoord(coordNum(st?.lat), coordNum(st?.lng)));
+      const stopless = validStops.length < 2;
+      const osrmState = osrmResById?.[sid];
+      const ready = osrmState?.ok === true && !stopless;
+      const failed = osrmState?.ok === false;
+      const pending = !ready && !failed && !stopless;
+      return { sid, stopless, ready, failed, pending, error: osrmState?.error || "" };
+    });
+
+    const total = items.length;
+    const readyCount = items.filter((x) => x.ready).length;
+    const pendingCount = items.filter((x) => x.pending).length;
+    const errorCount = items.filter((x) => x.failed).length;
+    const stoplessCount = items.filter((x) => x.stopless).length;
+    const firstError = items.find((x) => x.failed)?.error || "";
+    const reasons = [];
+    if (!total) reasons.push("Önce taslak shift oluştur.");
+    if (!organization && companyGeoGate.blocking) reasons.push("Önce kişi koordinatlarını tamamla.");
+    if (stoplessCount > 0) reasons.push(`Duraksız taslak shift: ${stoplessCount}`);
+    if (pendingCount > 0) reasons.push(`OSRM doğrulaması bekleyen taslak: ${pendingCount}`);
+    if (errorCount > 0) reasons.push(firstError || `OSRM doğrulama hatası: ${errorCount}`);
+    return {
+      total,
+      readyCount,
+      pendingCount,
+      errorCount,
+      stoplessCount,
+      blocking: reasons.length > 0,
+      reasons,
+    };
+  }, [draftShifts, osrmResById, organization, companyGeoGate]);
 
   function setDestinationField(idx, field, value) {
     setOrgDestinations((prev) =>
@@ -1139,7 +1174,7 @@ async function osrmReorderCore(sid) {
   const points = [depot, ...stops.map((x) => ({ id: Number(x.id), lat: Number(x.lat), lng: Number(x.lng) }))];
 
   const t = await api("/api/plan-builder/osrm-table", { token, method: "POST", body: { profile: "driving", points } });
-  if (!t?.ok) return { ok: false, error: "OSRM matrisi alınamadı (opsiyonel). Solver/OSRM kapalı olabilir." };
+  if (!t?.ok) return { ok: false, error: "OSRM rota doğrulaması alınamadı. Solver/OSRM hazır değil veya bu taslak için matris üretilemedi." };
 
   const solved = await api("/api/plan-builder/solve-vrp", {
     token,
@@ -1154,7 +1189,7 @@ async function osrmReorderCore(sid) {
     },
   });
 
-  if (!solved?.ok || !Array.isArray(solved?.orderPointIds)) return { ok: false, error: "Çözüm alınamadı (solver kapalı olabilir)." };
+  if (!solved?.ok || !Array.isArray(solved?.orderPointIds)) return { ok: false, error: "Rota çözümü alınamadı. Solver hazır değil veya çözüm üretilemedi." };
 
   const orderedStopIds = solved.orderPointIds
     .filter((id) => id !== "depot")
@@ -1263,8 +1298,8 @@ async function sendBulkOffers() {
       setErr(`Markete göndermek için plan tamamlanmalı: ${orgDraftCompletion.reasons.join(" • ")}`);
       return;
     }
-    if (!organization && companyGeoGate.blocking) {
-      setErr(`Markete göndermek için tüm kişi kayıtları koordinatlı olmalı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}`);
+    if (!organization && offerOsrmGate.blocking) {
+      setErr(offerOsrmGate.reasons.join(" • ") || "OSRM rota doğrulaması tamamlanmadan teklif gönderilemez.");
       return;
     }
 
@@ -1846,14 +1881,28 @@ async function sendBulkOffers() {
 
           {!organization ? (
             <div className="card" style={{ border: companyGeoGate.blocking ? "1px solid #b85" : "1px solid #2a7" }}>
-              <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Company planı henüz tam değil" : "✅ Company planı markete hazır"}</div>
+              <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Company planı henüz tam değil" : "✅ Company planı koordinat olarak hazır"}</div>
               <div className="muted" style={{ marginTop: 6 }}>
                 {companyGeoGate.blocking
-                  ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift REQUESTED'a çevrilmez.`
-                  : `Kişi kayıtları koordinatlı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}`}
+                  ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
+                  : `Kişi kayıtları koordinatlı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
-                Not: Guided Mode içinde dış Geo Review ekranına çıkış kapalıdır; düzeltmeyi Step-3'e geçmeden önce aynı ekranda yap.
+                Not: Bu kart sadece koordinat hazırlığını gösterir. Teklif için ayrıca OSRM rota doğrulaması gerekir.
+              </div>
+            </div>
+          ) : null}
+
+          {!organization ? (
+            <div className="card" style={{ border: offerOsrmGate.blocking ? "1px solid #b85" : "1px solid #2a7" }}>
+              <div style={{ fontWeight: 800 }}>{offerOsrmGate.blocking ? "⚠ OSRM rota doğrulaması eksik" : "✅ OSRM rota doğrulaması hazır"}</div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                Toplam taslak: <b>{offerOsrmGate.total}</b> • Hazır: <b>{offerOsrmGate.readyCount}</b> • Bekleyen: <b>{offerOsrmGate.pendingCount}</b> • Hata: <b>{offerOsrmGate.errorCount}</b> • Duraksız: <b>{offerOsrmGate.stoplessCount}</b>
+              </div>
+              <div className="muted" style={{ marginTop: 6 }}>
+                {offerOsrmGate.blocking
+                  ? (offerOsrmGate.reasons.join(" • ") || "OSRM doğrulaması tamamlanmadan teklif gönderilemez.")
+                  : "Taslak shift'ler rota doğrulamasından geçti; teklif gönderimi açılabilir."}
               </div>
             </div>
           ) : null}
@@ -1943,16 +1992,13 @@ async function sendBulkOffers() {
               <div>
                 <label className="muted">Room ara</label>
                 <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="name contains" disabled={busy} />
-                <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 8 }}>
-                  <input type="checkbox" checked={onlyHubRooms} onChange={(e) => setOnlyHubRooms(e.target.checked)} disabled={busy} />
-                  Sadece hub’lı
-                </label>
                 <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
+                <div className="muted" style={{ marginTop: 6 }}>Hub konumu eksik room'lar da listelenir; hub eksikliği teklif engeli değildir.</div>
               </div>
               <div>
-                <label className="muted">Tutar (₺) (opsiyonel)</label>
+                <label className="muted">Tutar (₺) (isteğe bağlı)</label>
                 <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
-                <label className="muted" style={{ marginTop: 8 }}>Not (opsiyonel)</label>
+                <label className="muted" style={{ marginTop: 8 }}>Not (isteğe bağlı)</label>
                 <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. sabah giriş" disabled={busy} />
               </div>
             </div>
@@ -1984,7 +2030,7 @@ async function sendBulkOffers() {
                       />
                       <span style={{ display: "grid", gap: 4 }}>
                         <span className="muted"><b>{r.name}</b> #{r.id}</span>
-                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik"}</span>
+                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik • teklif engeli değil"}</span>
                       </span>
                     </span>
                     <ProviderScoreBadge score={score} prominent showLabel />
@@ -2005,7 +2051,7 @@ async function sendBulkOffers() {
               <button type="button" onClick={() => { setSelRoomIds({}); setOfferAmount(""); setOfferNote(""); }} disabled={busy}>
                 Temizle
               </button>
-              <button type="button" onClick={sendBulkOffers} disabled={busy || !roomsSupported || selectedRoomCount < 1 || (organization && !orgDraftCompletion.ready) || (!organization && companyGeoGate.blocking)}>
+              <button type="button" onClick={sendBulkOffers} disabled={busy || !roomsSupported || selectedRoomCount < 1 || (organization && !orgDraftCompletion.ready) || (!organization && offerOsrmGate.blocking)}>
                 Toplu Teklifleri Gönder
               </button>
             </div>

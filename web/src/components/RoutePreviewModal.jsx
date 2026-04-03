@@ -64,7 +64,6 @@ function FitBounds({ bounds }) {
 
 export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people, previewSummary = null, previewPathPoints = null, previewSource = null, previewShift = null }) {
   const { token } = useSession();
-  if (!open) return null;
 
   const [remote, setRemote] = useState({
     shiftId: null,
@@ -266,6 +265,8 @@ function scrollToStopRow(stopId) {
     if (!canOpenExternalNav) return;
     openFullRouteNavigation(previewNavStops, null);
   }
+
+  if (!open) return null;
 
   return (
     <div
