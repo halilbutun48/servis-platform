@@ -31,7 +31,8 @@ export async function osrmRoute(points, { profile = "driving", timeoutMs = 12000
     if (!r.ok) return { ok: false, error: `osrm:${r.status}`, detail: text.slice(0, 200) };
 
     const json = text ? JSON.parse(text) : null;
-    const coordsOut = json?.routes?.[0]?.geometry?.coordinates;
+    const route = json?.routes?.[0] || null;
+    const coordsOut = route?.geometry?.coordinates;
     if (!Array.isArray(coordsOut) || coordsOut.length < 2) return { ok: false, error: "osrm:noGeometry" };
 
     const outPts = coordsOut
@@ -39,7 +40,13 @@ export async function osrmRoute(points, { profile = "driving", timeoutMs = 12000
       .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
       .map((p) => ({ lat: p.lat, lng: p.lng }));
 
-    return { ok: true, points: outPts, profile };
+    return {
+      ok: true,
+      points: outPts,
+      profile,
+      distanceM: Number.isFinite(Number(route?.distance)) ? Number(route.distance) : null,
+      durationSec: Number.isFinite(Number(route?.duration)) ? Number(route.duration) : null,
+    };
   } catch (e) {
     return { ok: false, error: "osrm:fetchFailed", detail: e?.message || String(e) };
   } finally {

@@ -31,7 +31,9 @@ function buildRouteQuality(summary, source, stops, people) {
     qualityNotes.push(
       String(source || "").toUpperCase() === "LEARNED"
         ? "Learned rota verisi kullanıldı."
-        : "Önizleme DB stop sırası ve tahmini hat üzerinden gösteriliyor; OSRM Step-4 ve dispatch için ayrıldı."
+        : String(source || "").toUpperCase() === "SNAPSHOT"
+          ? "Kaydedilmiş rota snapshot kullanıldı; preview yeniden OSRM hesaplamadı."
+          : "Önizleme DB stop sırası ve tahmini hat üzerinden gösteriliyor; OSRM Step-4 ve dispatch için ayrıldı."
     );
   }
   return {
@@ -64,7 +66,6 @@ function FitBounds({ bounds }) {
 
 export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people, previewSummary = null, previewPathPoints = null, previewSource = null, previewShift = null }) {
   const { token } = useSession();
-  if (!open) return null;
 
   const [remote, setRemote] = useState({
     shiftId: null,
@@ -266,6 +267,8 @@ function scrollToStopRow(stopId) {
     if (!canOpenExternalNav) return;
     openFullRouteNavigation(previewNavStops, null);
   }
+
+  if (!open) return null;
 
   return (
     <div
