@@ -1,3 +1,28 @@
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 #!/usr/bin/env node
 /*
   run_m0_m66.js
@@ -121,30 +146,30 @@ function cmpKeys(a, b) {
 function classifyScript(file) {
   const txt = fs.readFileSync(file, 'utf8');
   const isIntegration =
-    txt.includes('process.env.API_URL') ||
-    txt.includes('BASE_URL') ||
-    txt.includes('socket.io-client') ||
-    txt.includes('from "./_harness.js"') ||
-    txt.includes("from './_harness.js'") ||
-    txt.includes('http') && txt.includes('https');
+    includesText(txt, 'process.env.API_URL') ||
+    includesText(txt, 'BASE_URL') ||
+    includesText(txt, 'socket.io-client') ||
+    includesText(txt, 'from "./_harness.js"') ||
+    includesText(txt, "from './_harness.js'") ||
+    includesText(txt, 'http') && includesText(txt, 'https');
 
   // Most repo-contract checks are filesystem-only.
 // Heuristics:
 // - uses fs (readFileSync/existsSync/accessSync) or explicit required[] listing
 // - does not use API_URL/BASE_URL, socket.io, or _harness
 const isStatic =
-  (txt.includes('from "fs"') || txt.includes("from 'fs'") || txt.includes('import fs') ||
-   txt.includes('fs.readFileSync') || txt.includes('fs.existsSync') || txt.includes('accessSync') ||
-   txt.includes('required =') || txt.includes('requiredFiles')) &&
-  !txt.includes('process.env.API_URL') &&
-  !txt.includes('BASE_URL') &&
-  !txt.includes('socket.io-client') &&
-  !txt.includes('_harness.js');
+  (includesText(txt, 'from "fs"') || includesText(txt, "from 'fs'") || includesText(txt, 'import fs') ||
+   includesText(txt, 'fs.readFileSync') || includesText(txt, 'fs.existsSync') || includesText(txt, 'accessSync') ||
+   includesText(txt, 'required =') || includesText(txt, 'requiredFiles')) &&
+  !includesText(txt, 'process.env.API_URL') &&
+  !includesText(txt, 'BASE_URL') &&
+  !includesText(txt, 'socket.io-client') &&
+  !includesText(txt, '_harness.js');
 
 if (isStatic) return 'static';
   if (isIntegration) return 'integration';
   // fallback: if it imports http/https, treat as integration.
-  if (txt.includes('from "http"') || txt.includes("from 'http'")) return 'integration';
+  if (includesText(txt, 'from "http"') || includesText(txt, "from 'http'")) return 'integration';
   return 'unknown';
 }
 

@@ -124,7 +124,7 @@ async function main() {
       body: { vehicleId: v2, driverId: d1 },
     });
     ok("Driver conflict -> 409", a2.status === 409);
-    const code2 = String(a2.json?.code || "");
+    const code2 = String(a2.json?.code || a2.json?.error?.code || a2.json?.error?.details?.code || "");
     if (!code2.includes("DRIVER")) {
       console.log("INFO Driver conflict code payload:", a2.json);
     }
@@ -136,7 +136,7 @@ async function main() {
       body: { vehicleId: v1, driverId: d2 },
     });
     ok("Vehicle conflict -> 409", a3.status === 409);
-    const code3 = String(a3.json?.code || "");
+    const code3 = String(a3.json?.code || a3.json?.error?.code || a3.json?.error?.details?.code || "");
     if (!code3.includes("VEHICLE")) {
       console.log("INFO Vehicle conflict code payload:", a3.json);
     }

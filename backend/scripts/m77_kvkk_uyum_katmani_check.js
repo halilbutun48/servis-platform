@@ -6,6 +6,32 @@ import { readRepoContractState } from './_repoContractState.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const artifactDir = path.join(repoRoot, 'artifacts', 'compliance');
 
 function read(rel) {
@@ -79,128 +105,128 @@ ok('manifest check points to M77 repo contract');
 
 const matrixJs = read('backend/src/kvkk/matrix.js');
 for (const needle of ['PARENT', 'KVKK_BUSINESS_DOMAINS', 'school-domain', "sürücünün telefon GPS'i"]) {
-  if (!matrixJs.includes(needle)) fail(`matrix covers ${needle}`);
+  if (!includesText(matrixJs, needle)) fail(`matrix covers ${needle}`);
   ok(`matrix covers ${needle}`);
 }
 
 const enforcement = read('backend/src/kvkk/enforcement.js');
 for (const needle of ['KVKK_ENFORCEMENT_VERSION', 'KVKK_EXACT_GPS_ROLES', 'KVKK_MASKED_GPS_ROLES', 'sanitizeVehicleLiveItem', 'sanitizeParentChildItem', 'sanitizeSessionItem', 'sanitizeInviteItem', 'sanitizeCompanyPersonelItem', 'sanitizeOperationEventMeta', 'sanitizeLogRow', 'sanitizeShiftActorLabel', 'sanitizeAuthInviteListItem', 'sanitizeShiftParticipantPayload', 'sanitizeVehicleDirectoryItem', 'trackedAuditEvents', 'buildKvkkEnforcementSummary']) {
-  if (!enforcement.includes(needle)) fail(`enforcement helper covers ${needle}`);
+  if (!includesText(enforcement, needle)) fail(`enforcement helper covers ${needle}`);
   ok(`enforcement helper covers ${needle}`);
 }
 
 
 const retention = read('backend/src/kvkk/retention.js');
 for (const needle of ['KVKK_RETENTION_VERSION', 'KVKK_ANONYMIZE_TARGETS', 'buildKvkkRetentionEnforcementSummary', 'buildKvkkRetentionRunAuditMeta', 'buildKvkkExportAuditMeta', 'ApiRequest', 'AuditLog', 'GpsPoint', 'LOG_EXPORT', 'RETENTION_RUN']) {
-  if (!retention.includes(needle)) fail(`retention helper covers ${needle}`);
+  if (!includesText(retention, needle)) fail(`retention helper covers ${needle}`);
   ok(`retention helper covers ${needle}`);
 }
 
 const kvkkRoute = read('backend/src/routes/kvkk.js');
 for (const needle of ['buildKvkkEnforcementSummary', 'enforcement: buildKvkkEnforcementSummary()', 'buildKvkkRetentionEnforcementSummary', 'retention: buildKvkkRetentionEnforcementSummary()', 'r.get("/retention"']) {
-  if (!kvkkRoute.includes(needle)) fail(`kvkk route covers ${needle}`);
+  if (!includesText(kvkkRoute, needle)) fail(`kvkk route covers ${needle}`);
   ok(`kvkk route covers ${needle}`);
 }
 
 const liveRoute = read('backend/src/routes/live.js');
 for (const needle of ['sanitizeVehicleLiveItem', 'role: u.role']) {
-  if (!liveRoute.includes(needle)) fail(`live route covers ${needle}`);
+  if (!includesText(liveRoute, needle)) fail(`live route covers ${needle}`);
   ok(`live route covers ${needle}`);
 }
 
 const parentRoute = read('backend/src/routes/parent.js');
 for (const needle of ['sanitizeParentChildItem', 'sanitizeVehicleLiveItem(v, { role: "PARENT" })']) {
-  if (!parentRoute.includes(needle)) fail(`parent route covers ${needle}`);
+  if (!includesText(parentRoute, needle)) fail(`parent route covers ${needle}`);
   ok(`parent route covers ${needle}`);
 }
 
 const meRoute = read('backend/src/routes/me.js');
 for (const needle of ['sanitizeSessionItem']) {
-  if (!meRoute.includes(needle)) fail(`me route covers ${needle}`);
+  if (!includesText(meRoute, needle)) fail(`me route covers ${needle}`);
   ok(`me route covers ${needle}`);
 }
 
 const schoolInvites = read('backend/src/routes/schoolParentInvites.js');
 for (const needle of ['sanitizeInviteItem', 'sanitizeAuditMeta']) {
-  if (!schoolInvites.includes(needle)) fail(`school invite route covers ${needle}`);
+  if (!includesText(schoolInvites, needle)) fail(`school invite route covers ${needle}`);
   ok(`school invite route covers ${needle}`);
 }
 
 const companyPersonels = read('backend/src/routes/companyPersonels.js');
 for (const needle of ['sanitizeCompanyPersonelItem', 'businessDomain']) {
-  if (!companyPersonels.includes(needle)) fail(`company personels route covers ${needle}`);
+  if (!includesText(companyPersonels, needle)) fail(`company personels route covers ${needle}`);
   ok(`company personels route covers ${needle}`);
 }
 
 const vehiclesRoute = read('backend/src/routes/vehicles.js');
 for (const needle of ['sanitizeVehicleDirectoryItem', 'items.map((x) => sanitizeVehicleDirectoryItem(x, { role: u.role }))', 'vehicle: sanitizeVehicleDirectoryItem(updated, { role: u.role })']) {
-  if (!vehiclesRoute.includes(needle)) fail(`vehicles route covers ${needle}`);
+  if (!includesText(vehiclesRoute, needle)) fail(`vehicles route covers ${needle}`);
   ok(`vehicles route covers ${needle}`);
 }
 
 const authInvitesRoute = read('backend/src/routes/auth_step2.js');
 for (const needle of ['AUTH_INVITE_REMOVED']) {
-  if (!authInvitesRoute.includes(needle)) fail(`legacy auth invite route handling covers ${needle}`);
+  if (!includesText(authInvitesRoute, needle)) fail(`legacy auth invite route handling covers ${needle}`);
   ok(`legacy auth invite route handling covers ${needle}`);
 }
 
 const logsRoute = read('backend/src/routes/logs.js');
 for (const needle of ['sanitizeLogRow', 'GET /api/logs/export', 'rowsToTxt', 'buildKvkkExportAuditMeta']) {
-  if (!logsRoute.includes(needle)) fail(`logs route covers ${needle}`);
+  if (!includesText(logsRoute, needle)) fail(`logs route covers ${needle}`);
   ok(`logs route covers ${needle}`);
 }
 
 const adminLogsRoute = read('backend/src/routes/admin_logs.js');
 for (const needle of ['maskEmail', 'maskIp', 'sanitizeLogText', 'buildKvkkExportAuditMeta']) {
-  if (!adminLogsRoute.includes(needle)) fail(`admin logs route covers ${needle}`);
+  if (!includesText(adminLogsRoute, needle)) fail(`admin logs route covers ${needle}`);
   ok(`admin logs route covers ${needle}`);
 }
 
 const adminRoute = read('backend/src/routes/admin.js');
 for (const needle of ['buildKvkkRetentionRunAuditMeta', 'buildKvkkRetentionEnforcementSummary()', 'action: "RETENTION_RUN"', 'kvkkRetention: buildKvkkRetentionEnforcementSummary()']) {
-  if (!adminRoute.includes(needle)) fail(`admin route covers ${needle}`);
+  if (!includesText(adminRoute, needle)) fail(`admin route covers ${needle}`);
   ok(`admin route covers ${needle}`);
 }
 
 const shiftsShared = read('backend/src/routes/shifts/shared.js');
 for (const needle of ['sanitizeOperationEventMeta', 'operation-events']) {
-  if (!shiftsShared.includes(needle)) fail(`shift shared route covers ${needle}`);
+  if (!includesText(shiftsShared, needle)) fail(`shift shared route covers ${needle}`);
   ok(`shift shared route covers ${needle}`);
 }
 
 const runbook = read('docs/RUNBOOK_M77_KVKK_UYUM_KATMANI.md');
 for (const needle of ['M77.2 enforcement skeleton', 'M77.3 payload daraltma + redaction', 'M77.5 retention / anonymize / export trail', 'driver/parent dışındaki roller için zorunlu consent enforcement']) {
-  if (!runbook.includes(needle)) fail(`runbook covers ${needle}`);
+  if (!includesText(runbook, needle)) fail(`runbook covers ${needle}`);
   ok(`runbook covers ${needle}`);
 }
 
 const enforcementDoc = read('docs/KVKK_ENFORCEMENT_YUZEYI_V1.md');
 for (const needle of ['GET /api/parent/children', 'phoneMasked', 'GET /api/live/vehicles', 'gpsLast.lat/lng', 'GET /api/me/sessions', 'GET /api/admin/logs/export']) {
-  if (!enforcementDoc.includes(needle)) fail(`enforcement doc covers ${needle}`);
+  if (!includesText(enforcementDoc, needle)) fail(`enforcement doc covers ${needle}`);
   ok(`enforcement doc covers ${needle}`);
 }
 
 const redactionDoc = read('docs/KVKK_REDACTION_ENFORCEMENT_V1.md');
 for (const needle of ['ham `email` yerine `emailMasked`', 'ham `ip` yerine `ipMasked`', 'SUPER_ADMIN`, `ROOM`, `DRIVER`', 'Company.kind = SCHOOL', 'preview ve export aynı redaction helper']) {
-  if (!redactionDoc.includes(needle)) fail(`redaction doc covers ${needle}`);
+  if (!includesText(redactionDoc, needle)) fail(`redaction doc covers ${needle}`);
   ok(`redaction doc covers ${needle}`);
 }
 
 const rolePayloadDoc = read('docs/KVKK_ROLE_PAYLOAD_DARALTMA_V1.md');
 for (const needle of ['GET /api/auth/parent-invite/info', 'tokenHash', 'GET /api/vehicles', 'GET /api/shifts', 'GET /api/admin/logs/export']) {
-  if (!rolePayloadDoc.includes(needle)) fail(`role payload doc covers ${needle}`);
+  if (!includesText(rolePayloadDoc, needle)) fail(`role payload doc covers ${needle}`);
   ok(`role payload doc covers ${needle}`);
 }
 
 const retentionDoc = read('docs/KVKK_RETENTION_ENFORCEMENT_V1.md');
 for (const needle of ['API_REQUEST_RETENTION_DAYS = 730', 'AUDIT_LOG_RETENTION_DAYS = 730', 'GPS_POINT_RETENTION_DAYS = 0', 'GET /api/kvkk/retention', 'buildKvkkRetentionRunAuditMeta()']) {
-  if (!retentionDoc.includes(needle)) fail(`retention doc covers ${needle}`);
+  if (!includesText(retentionDoc, needle)) fail(`retention doc covers ${needle}`);
   ok(`retention doc covers ${needle}`);
 }
 
 const exportTrailDoc = read('docs/KVKK_EXPORT_ERISIM_IZI_V1.md');
 for (const needle of ['LOG_EXPORT', 'RETENTION_RUN', 'buildKvkkExportAuditMeta()', 'GET /api/logs/export', 'GET /api/admin/logs/export']) {
-  if (!exportTrailDoc.includes(needle)) fail(`export trail doc covers ${needle}`);
+  if (!includesText(exportTrailDoc, needle)) fail(`export trail doc covers ${needle}`);
   ok(`export trail doc covers ${needle}`);
 }
 

@@ -1,5 +1,8 @@
 param([string]$RepoRoot = (Resolve-Path '.').Path)
 $ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function Must-Exist([string]$rel,[string]$label){
   $p = Join-Path $RepoRoot $rel
   if (!(Test-Path -LiteralPath $p)) { throw "FAIL $label" }

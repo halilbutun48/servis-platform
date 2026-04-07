@@ -1,6 +1,9 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
 
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function ReadText([string]$rel){
   return [IO.File]::ReadAllText((Join-Path $RepoRoot $rel))
 }

@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M63 slug=trust-quality-service-evaluation -->
+
 # MILESTONE — M63 GUVEN + KALITE + HIZMET DEGERLENDIRME
 
 ## Hedef

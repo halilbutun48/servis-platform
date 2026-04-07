@@ -1,66 +1,62 @@
-﻿# MILESTONE REGISTRY V1
+# MILESTONE REGISTRY V1
 
-## Aktif kanonik hat
-- M75 — living baseline kavramı
-- M76A-1 — minimum normalization
-- M76B — living matrix + tools consolidation
-- M76A-2 — final normalization + archiving
-- M77 — KVKK + uyum katmanı
-- M78 — checklist + operasyon doğrulama iskeleti
-- M78.1 — operasyon doğrulama yüzeyi
-- M78.2 — operasyon doğrulama kayıt katmanı
-- M78.3 — operasyon doğrulama özet ve filtre katmanı
-- M79 — copilot acceptance / ürün içi uzman rehber kabul turu
-- M80 — final sert kabul ve yük güveni kapısı (açık / resmi green değil)
-- M80.1 — hot panel daraltma (tamam)
-- M80.2 — agreements + shifts giriş yükü daraltma (tamam)
-- M80.3 — georeview + shifts son giriş yükü daraltma (tamam)
+## 1) Tarihsel kapatilan resmi hatlar
+- `M59 - gozlemleme + saha teshis - green`
+- `M60 - saha acceptance merkezi - green`
+- `M61 - ssot + milestone hizasi - green`
+- `M62 - ticari omurga guclendirme - green`
+- `M63 - guven + kalite + hizmet degerlendirme - green-base`
+- `M64 - dogal copilot katmani - green`
+- `M65 - pilot launch gate - green`
+- `M67->M75 - living baseline / hot-path daraltma hatti - green`
+- `M78 - operasyon dogrulama living hatti - green-base`
+- `M78.1 - operasyon dogrulama yuzeyi - active-history`
+- `M78.2 - operasyon dogrulama kayit katmani - active-history`
+- `M78.3 - operasyon dogrulama ozet ve filtre katmani - active-history`
+- `M79 - living verification toplama hatti - green`
 
-## Compatibility marker notu
-- `tools/STABLE_TO.txt = 78` değeri M78.x repo-contract kontrolleri için korunur.
-- Bu marker, son tam master pack doğrulamasının `M79` olduğu gerçeğini bozmaz.
+## 2) Guncel aktif sertlestirme hatti
+- `M80 - final sert kabul ve yuk guveni kapisi (resmi green degil)`
+- `M80.1 - hot panel daraltma`
+- `M80.2 - agreements + shifts giris yuku`
+- `M80.3 - georeview + shifts son giris yuku`
+- `M80.final - final sert kabul ve yuk guveni`
+- `M81 - mobil saha sertlestirme`
+- `M82 - saha oncesi cekirdek sertlestirme + controlled cleanup`
+- `M82.1 - backend correctness kilidi`
+- `M82.2 - web ui + api kontrat sertlestirme + buyuk dosyalari parcalama`
+- `M82.3 - mobil gercek kullanim tamamlama`
+- `M82.4 - mobil background gps / offline davranis sertlestirme`
+- `M82.5 - canli konum kaynak onceligi`
+- `M82.6 - release / env / acceptance sertlestirme`
+- `M82.7 - repo hygiene + controlled cleanup`
+- `M82.8 - verification 2.0`
+- `M82.9 - dormant payment backbone`
+- `M82.10 - super admin ticari ayarlar`
+- `M82.11 - payment readonly ticari yuzey`
 
-## M79 notu
-- Copilot’un rol, ekran ve seçili kayıt bağlamını daha güvenilir okuması doğrulanır
-- sade Türkçe, sonraki doğru adım ve neden açıklaması kabul eşiğine bağlanır
-- kanonik pack: `tools\pack_m79_copilot_acceptance.ps1`
+## 3) Sonraki resmi sira
+- `M83 - saha test hazirlik paketi`
+- `M84 - saha gozlem / geri bildirim dongusu`
+- `M85 - odeme opsiyonel pilot`
+- `M86 - odeme zorunlu rollout`
+- `M87 - odeme hesabi hazirligi`
+- `M88 - settlement operasyon masasi`
+- `M89 - settlement mutabakat masasi`
 
-## Sonraki sira
-- M81 — mobil saha sertleştirme
-- M82 — controlled cleanup + consolidation + profesyonelleştirme
-- saha testi / geri bildirim turu — M82 sonrası kullanıcı tarafından koşulacak
+## 4) Living verification convergence note
+- `M90 - living verification & acceptance convergence (hazirlik / takip notu)`
+  - amac: yasayan repo gercegi ile check / pack / acceptance / ssot hattini hizalamak
+  - kural: yeni urun ozelligi degil, dogrulama ve kabul hizasi onceliklidir
 
-## Tarihsel overlay notu
-`docs/overlays/M80`, `M81`, `M82` klasörleri Mart 2026 tarihli overlay serisidir.
-Bu klasörlerdeki numaralar güncel aktif milestone anlamı değildir.
+## 5) Ticari omurga notu
+- Ticari kaynak yalniz agreement degildir.
+- Kisa sureli isler icin `SHIFT_SERIES` de ticari kaynak olabilir.
+- Komisyon snapshot'i ticari kaynak olusturuldugu anda alinir.
+- Oda bazli override, global varsayilanin ustunde calisir.
 
-<!-- REPO_CONTRACT_COMPAT_REGISTRY_V2
-M59 - Gözlemleme + Saha Teşhis
-M61 - SSOT + Milestone Hizası
-M62 - Ticari Omurga Güçlendirme - aktif
-M63 - Guven + Kalite + Hizmet Degerlendirme - aktif
-M63 - Guven + Kalite + Hizmet Degerlendirme - green
-M63 - Guven + Kalite + Hizmet Degerlendirme - green-base
-M64 - Dogal Copilot Katmani - green-base
-M65 - Pilot Launch Gate - green-base
-M65 - Pilot Launch Gate - green
-M66 - Operasyonel Reassignment - functional-open
-M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik
-M75 - green-baseline
-M75 - living baseline
-M76A-1 - minimum-normalization - active
-M76A-1 - minimum normalization
-M77 - KVKK + Uyum Katmani
-Aktif kanonik hat
-REPO_CONTRACT_COMPAT_REGISTRY_V2 -->
-
-<!-- REPO_CONTRACT_COMPAT_M78_REGISTRY_V1
-M78 - Checklist + Operasyon Doğrulama
-M78.1 - Operasyon Doğrulama Yüzeyi
-M78.2 - Operasyon Doğrulama Kayıt Katmanı
-M78.3 - Operasyon Doğrulama Özet ve Filtre Katmanı
-rol bazli operasyon dogrulama
-proof
-REPO_CONTRACT_COMPAT_M78_REGISTRY_V1 -->
-
-- M81 mobil saha sertlestirme: tools\pack_m81_mobile_saha_sertlestirme.ps1 -RepoRoot D:\servis-platform
+## 6) Bu dosyanin okuma yonu
+- Once bu dosya okunur.
+- Sonra `PRIMER_SSOT.md`.
+- Sonra `STARTPACK_V1.md`.
+- Sonra detay icin `SCRIPT_KILAVUZU_MILESTONE_HARITASI_V2_UPDATED.md`.

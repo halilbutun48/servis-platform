@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory=$true)][string]$RepoRoot
 )
 $ErrorActionPreference = 'Stop'
-Write-Host '=== M37 PWD-ONLY GREENPACK COMPAT CHECK ==='
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host '=== M37 PWD-ONLY GREENPACK COMPAT CHECK ==='
 $authPath = Join-Path $RepoRoot 'backend\src\routes\auth.js'
 if (-not (Test-Path $authPath)) { throw 'auth.js missing' }
 $text = Get-Content $authPath -Raw -Encoding UTF8

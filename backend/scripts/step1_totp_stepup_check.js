@@ -2,6 +2,10 @@ import { banner, step, must, reqJson } from "./_harness.js";
 import { totpToken } from "../src/auth/totp.js";
 import { prisma } from "../src/prisma.js";
 
+function errorCodeOf(json) {
+  return String(json?.code || json?.error?.code || json?.error || "");
+}
+
 async function loginRaw(email, password, extra = {}) {
   const r = await reqJson("POST", "/api/auth/login", { body: { email, password, ...extra }, includeGreenpack: false });
   must(`login ok ${email}`, r.ok && !!r.json?.token);
@@ -45,7 +49,7 @@ async function main() {
     body: driverPayload("RoomPre"),
   });
   must("room sensitive write blocked before setup", roomPre.status === 403);
-  must("room sensitive write code setup required", String(roomPre.json?.code || roomPre.json?.error || "") === "TOTP_SETUP_REQUIRED");
+  must("room sensitive write code setup required", errorCodeOf(roomPre.json) === "TOTP_SETUP_REQUIRED");
 
   const roomSetup = await reqJson("POST", "/api/auth/totp/setup", { token: roomLogin.token, includeGreenpack: false, body: {} });
   must("room totp setup ok", roomSetup.ok && !!roomSetup.json?.secretBase32);
@@ -63,7 +67,7 @@ async function main() {
     body: driverPayload("RoomNoStepUp"),
   });
   must("room sensitive write blocked until verify", roomNoStepUp.status === 403);
-  must("room sensitive write code step up required", String(roomNoStepUp.json?.code || roomNoStepUp.json?.error || "") === "STEP_UP_REQUIRED");
+  must("room sensitive write code step up required", errorCodeOf(roomNoStepUp.json) === "STEP_UP_REQUIRED");
 
   const roomVerify = await reqJson("POST", "/api/auth/totp/verify", {
     token: roomLogin.token,
@@ -89,7 +93,7 @@ async function main() {
 
   const adminPre = await reqJson("GET", "/api/admin/stats", { token: superLogin.token, includeGreenpack: false });
   must("super admin stats blocked before setup", adminPre.status === 403);
-  must("super admin stats code setup required", String(adminPre.json?.code || adminPre.json?.error || "") === "TOTP_SETUP_REQUIRED");
+  must("super admin stats code setup required", errorCodeOf(adminPre.json) === "TOTP_SETUP_REQUIRED");
 
   const superSetup = await reqJson("POST", "/api/auth/totp/setup", { token: superLogin.token, includeGreenpack: false, body: {} });
   must("super totp setup ok", superSetup.ok && !!superSetup.json?.secretBase32);
@@ -102,7 +106,7 @@ async function main() {
 
   const adminNoStepUp = await reqJson("GET", "/api/admin/stats", { token: superLogin.token, includeGreenpack: false });
   must("super admin stats blocked until verify", adminNoStepUp.status === 403);
-  must("super admin stats code step up required", String(adminNoStepUp.json?.code || adminNoStepUp.json?.error || "") === "STEP_UP_REQUIRED");
+  must("super admin stats code step up required", errorCodeOf(adminNoStepUp.json) === "STEP_UP_REQUIRED");
 
   const superVerify = await reqJson("POST", "/api/auth/totp/verify", {
     token: superLogin.token,
@@ -119,7 +123,7 @@ async function main() {
   const driverDeviceId = await resolveDriverDeviceId();
   const driverLogin = await loginRaw("driver@demo.com", "demo123", { deviceId: driverDeviceId });
   const today = await reqJson("GET", "/api/driver/shifts/today", { token: driverLogin.token, includeGreenpack: false });
-  must("driver endpoint still responds without step-up", today.status !== 403 || String(today.json?.code || "") !== "STEP_UP_REQUIRED");
+  must("driver endpoint still responds without step-up", today.status !== 403 || errorCodeOf(today.json) !== "STEP_UP_REQUIRED");
 
   console.log("\n=== STEP1 TOTP STEP-UP CHECK PASS ===");
 }

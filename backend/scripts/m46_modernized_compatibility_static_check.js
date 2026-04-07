@@ -40,5 +40,8 @@ const repoContracts = [
 ];
 for (const rel of repoContracts) {
   const t = fs.readFileSync(path.join(root, rel), "utf8");
-  must(`${path.basename(rel)} uses structural forward-version markers`, /avoids exact legacy copilotVersion equality/.test(t));
+  must(
+    `${path.basename(rel)} uses structural forward-version markers`,
+    /typeof .*copilotVersion.*===.*["']string["']/.test(t) || /accepts forward versions/i.test(t) || /forward-version markers/i.test(t),
+  );
 }

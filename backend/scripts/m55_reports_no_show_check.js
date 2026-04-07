@@ -1,5 +1,17 @@
 import { banner, assertOk, must, reqJson, loginFirst } from "./_harness.js";
 
+async function cleanupM55TestPenalties(roomToken, driverId) {
+  const penalties = await reqJson("GET", `/api/penalties/drivers/${driverId}`, { token: roomToken });
+  if (!penalties.ok) return;
+  const items = penalties.json?.items || [];
+  for (const row of items) {
+    const active = String(row?.status || "").toUpperCase() === "ACTIVE";
+    const reason = String(row?.reason || "").trim();
+    if (!active || reason !== "M55 test") continue;
+    await reqJson("POST", `/api/penalties/${row.id}/cancel`, { token: roomToken, body: {} });
+  }
+}
+
 async function main() {
   banner("M55 REPORTS + NO_SHOW CHECK");
   const roomToken = await loginFirst("room");
@@ -31,6 +43,7 @@ async function main() {
   if (shiftId) {
     const createPenalty = await reqJson("POST", "/api/penalties/no-show", { token: roomToken, body: { driverId, shiftId, durationDays: 1, reason: 'M55 test' } });
     assertOk(createPenalty.ok || createPenalty.status === 409, "no-show create or duplicate ok");
+    await cleanupM55TestPenalties(roomToken, driverId);
   }
 
   console.log("\nOK M55 REPORTS + NO_SHOW CHECK PASS");

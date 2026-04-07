@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M65 slug=pilot-launch-gate -->
+
 # M65 — PILOT LAUNCH GATE
 
 ## Çıktı seti

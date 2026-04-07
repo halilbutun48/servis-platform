@@ -1,10 +1,13 @@
 // backend/src/routes/shifts/shared.js
 import prisma from "../../prisma.js";
 import { authRequired, requireRole } from "../../auth/middleware.js";
+import { asyncHandler } from "../../middleware/asyncHandler.js";
+import { httpError } from "../../errors/http.js";
 
 // NOTE: Avoid named-importing helpers (stale mount risk).
 import * as H from "./helpers.js";
 import { sanitizeOperationEventMeta, sanitizeShiftActorLabel, sanitizeShiftParticipantPayload } from "../../kvkk/enforcement.js";
+import { buildShiftCommercialBackboneMap } from "../../services/paymentBackbone.js";
 
 const buildShiftsWhereFromQuery =
   H.buildShiftsWhereFromQuery ??
@@ -59,47 +62,43 @@ export function attachShiftSharedRoutes(r) {
     "/:id/operation-events",
     authRequired(),
     requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
-        const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+    asyncHandler(async (req, res) => {
+      const shiftId = Number(req.params.id);
+      if (!Number.isFinite(shiftId)) throw httpError(400, "BAD_SHIFT_ID", "bad shiftId");
 
-        await getShiftAndCheckScopeOrThrow(shiftId, req.user);
+      await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
-        const rows = await prisma.auditLog.findMany({
-          where: {
-            entity: "Shift",
-            entityId: shiftId,
-            action: { in: ["SHIFT_APPROVE", "SHIFT_ASSIGN", "SHIFT_REASSIGN"] },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        });
+      const rows = await prisma.auditLog.findMany({
+        where: {
+          entity: "Shift",
+          entityId: shiftId,
+          action: { in: ["SHIFT_APPROVE", "SHIFT_ASSIGN", "SHIFT_REASSIGN"] },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
 
-        const actorIds = Array.from(new Set(rows.map((x) => Number(x.actorUserId || 0)).filter((n) => Number.isFinite(n) && n > 0)));
-        const actors = actorIds.length
-          ? await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, email: true, fullName: true, role: true } })
-          : [];
-        const actorMap = new Map(actors.map((x) => [Number(x.id), x]));
+      const actorIds = Array.from(new Set(rows.map((x) => Number(x.actorUserId || 0)).filter((n) => Number.isFinite(n) && n > 0)));
+      const actors = actorIds.length
+        ? await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, email: true, fullName: true, role: true } })
+        : [];
+      const actorMap = new Map(actors.map((x) => [Number(x.id), x]));
 
-        return res.json({
-          items: rows.map((row) => {
-            const actor = actorMap.get(Number(row.actorUserId || 0)) || null;
-            return {
-              id: row.id,
-              at: row.createdAt,
-              action: row.action,
-              actorUserId: row.actorUserId,
-              actorRole: row.actorRole,
-              actorLabel: actor ? sanitizeShiftActorLabel(actor.fullName || actor.email || `#${actor.id}`) : null,
-              meta: sanitizeOperationEventMeta(row.meta || null),
-            };
-          }),
-        });
-      } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
-      }
-    }
+      return res.json({
+        items: rows.map((row) => {
+          const actor = actorMap.get(Number(row.actorUserId || 0)) || null;
+          return {
+            id: row.id,
+            at: row.createdAt,
+            action: row.action,
+            actorUserId: row.actorUserId,
+            actorRole: row.actorRole,
+            actorLabel: actor ? sanitizeShiftActorLabel(actor.fullName || actor.email || `#${actor.id}`) : null,
+            meta: sanitizeOperationEventMeta(row.meta || null),
+          };
+        }),
+      });
+    })
   );
 
 // list shifts (ROOM/COMPANY/SUPER_ADMIN) with filters
@@ -108,8 +107,7 @@ export function attachShiftSharedRoutes(r) {
     "/",
     authRequired(),
     requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
+    asyncHandler(async (req, res) => {
         let where = buildShiftsWhereFromQuery(req.query, req.user);
 
         // ✅ ROOM: market/offered shift'leri listeye dahil et (roomId null olsa bile)
@@ -190,7 +188,7 @@ export function attachShiftSharedRoutes(r) {
           },
         });
 
-        const mapped = items.map((s) => {
+        const mappedBase = items.map((s) => {
           const assignmentCount = Number(s?._count?.assignments || 0);
           const peopleCount = Number(s?._count?.people || 0);
           const orgPassengerCount = Array.isArray(s?.organizationPlan?.stops)
@@ -212,13 +210,16 @@ export function attachShiftSharedRoutes(r) {
           };
         });
 
+        const commercialBackboneByShiftId = await buildShiftCommercialBackboneMap(mappedBase);
+        const mapped = mappedBase.map((shift) => ({
+          ...shift,
+          commercialBackbone: commercialBackboneByShiftId[Number(shift.id)] || null,
+        }));
+
         // IMPORTANT:
         // Prisma include => shift scalar alanlar (roomOffer*, companyOffer*, vb) otomatik gelir.
         return res.json({ items: mapped.map((x) => sanitizeShiftParticipantPayload(x, { role: req.user?.role })) });
-      } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
-      }
-    }
+    })
   );
 
   // DRIVER/PERSONEL: my shift (current/next) + stops + progress
@@ -226,8 +227,7 @@ export function attachShiftSharedRoutes(r) {
     "/my",
     authRequired(),
     requireRole("DRIVER", "PERSONEL"),
-    async (req, res) => {
-      try {
+    asyncHandler(async (req, res) => {
         const now = new Date();
         let shift = null;
 
@@ -274,10 +274,7 @@ export function attachShiftSharedRoutes(r) {
 
         if (!shift) return res.json({ items: [] });
         return res.json({ items: [sanitizeShiftParticipantPayload(shift, { role: req.user?.role })] });
-      } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
-      }
-    }
+    })
   );
 
     // Shift stops (Shift Tools): list stops + assignmentCount
@@ -285,8 +282,7 @@ export function attachShiftSharedRoutes(r) {
     "/:id/stops",
     authRequired(),
     requireRole("ROOM", "COMPANY", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
+    asyncHandler(async (req, res) => {
         const id = Number(req.params.id);
 
         const shift = await prisma.shift.findUnique({
@@ -294,25 +290,25 @@ export function attachShiftSharedRoutes(r) {
           select: { id: true, roomId: true, companyId: true },
         });
 
-        if (!shift) return res.status(404).json({ error: "Shift not found" });
+        if (!shift) throw httpError(404, "SHIFT_NOT_FOUND", "Shift not found");
 
         // scope check
         if (req.user.role === "ROOM") {
           const roomId = req.user.roomId;
-          if (!roomId) return res.status(403).json({ error: "Forbidden" });
+          if (!roomId) throw httpError(403, "FORBIDDEN", "Forbidden");
           if (shift.roomId !== roomId) {
             // market/offered shift: roomId null olabilir; teklif varsa erişime izin ver
             const offer = await prisma.shiftOffer.findFirst({
               where: { shiftId: shift.id, roomId, status: { in: ["OPEN", "COUNTERED", "ACCEPTED"] } },
               select: { id: true },
             });
-            if (!offer) return res.status(403).json({ error: "Forbidden" });
+            if (!offer) throw httpError(403, "FORBIDDEN", "Forbidden");
           }
         }
 
         if (req.user.role === "COMPANY") {
           if (!req.user.companyId || req.user.companyId !== shift.companyId) {
-            return res.status(403).json({ error: "Forbidden" });
+            throw httpError(403, "FORBIDDEN", "Forbidden");
           }
         }
 
@@ -344,18 +340,14 @@ export function attachShiftSharedRoutes(r) {
             assignmentCount: s._count?.assignments ?? 0,
           })),
         });
-      } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
-      }
-    }
+    })
   );
 // Shift detail (include stops)
   r.get(
     "/:id(\\d+)",
     authRequired(),
     requireRole("ROOM", "COMPANY", "DRIVER", "SUPER_ADMIN"),
-    async (req, res) => {
-      try {
+    asyncHandler(async (req, res) => {
         const id = Number(req.params.id);
 
         const shift = await prisma.shift.findUnique({
@@ -370,24 +362,24 @@ export function attachShiftSharedRoutes(r) {
           },
         });
 
-        if (!shift) return res.status(404).json({ error: "Shift not found" });
+        if (!shift) throw httpError(404, "SHIFT_NOT_FOUND", "Shift not found");
 
         // scope check
         if (req.user.role === "ROOM") {
           const roomId = req.user.roomId;
-          if (!roomId) return res.status(403).json({ error: "Forbidden" });
+          if (!roomId) throw httpError(403, "FORBIDDEN", "Forbidden");
           if (shift.roomId !== roomId) {
             const offer = await prisma.shiftOffer.findFirst({
               where: { shiftId: shift.id, roomId, status: { in: ["OPEN", "COUNTERED", "ACCEPTED"] } },
               select: { id: true },
             });
-            if (!offer) return res.status(403).json({ error: "Forbidden" });
+            if (!offer) throw httpError(403, "FORBIDDEN", "Forbidden");
           }
         }
 
         if (req.user.role === "COMPANY") {
           if (!req.user.companyId || req.user.companyId !== shift.companyId) {
-            return res.status(403).json({ error: "Forbidden" });
+            throw httpError(403, "FORBIDDEN", "Forbidden");
           }
         }
 
@@ -396,14 +388,11 @@ export function attachShiftSharedRoutes(r) {
             where: { userId: req.user.id },
             select: { id: true },
           });
-          if (!driver) return res.status(400).json({ error: "Driver profile missing" });
-          if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
+          if (!driver) throw httpError(400, "DRIVER_PROFILE_MISSING", "Driver profile missing");
+          if (shift.driverId !== driver.id) throw httpError(403, "FORBIDDEN", "Forbidden");
         }
 
         return res.json(sanitizeShiftParticipantPayload(shift, { role: req.user?.role }));
-      } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
-      }
-    }
+    })
   );
 }

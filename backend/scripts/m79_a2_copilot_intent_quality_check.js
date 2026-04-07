@@ -6,6 +6,32 @@ import { buildChatHelpResponse } from '../src/ai/chat/helpComposer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const fails = [];
 
 function ok(msg) { console.log(`OK ${msg}`); }
@@ -23,13 +49,13 @@ console.log('=== M79 A2 COPILOT INTENT QUALITY CHECK ===');
 const intentRouter = read('backend/src/ai/chat/intentRouter.js');
 const helpComposer = read('backend/src/ai/chat/helpComposer.js');
 
-must(intentRouter.includes('export function detectQuestionIntent'), 'intent router exports detectQuestionIntent');
-must(intentRouter.includes('const BASE_RULES = ['), 'intent router has scored base rules');
-must(intentRouter.includes('confidence:'), 'intent router returns intent confidence');
-must(helpComposer.includes('const intentMeta = detectQuestionIntent'), 'help composer uses detectQuestionIntent');
-must(helpComposer.includes('intentConfidence: Number(intentMeta?.confidence || 0)'), 'help composer exposes intent confidence');
-must(helpComposer.includes('intentSignals: Array.isArray(intentMeta?.matchedSignals)'), 'help composer exposes intent signals');
-must(helpComposer.includes('questionType,'), 'help composer returns question type');
+must(includesText(intentRouter, 'export function detectQuestionIntent'), 'intent router exports detectQuestionIntent');
+must(includesText(intentRouter, 'const BASE_RULES = ['), 'intent router has scored base rules');
+must(includesText(intentRouter, 'confidence:'), 'intent router returns intent confidence');
+must(includesText(helpComposer, 'const intentMeta = detectQuestionIntent'), 'help composer uses detectQuestionIntent');
+must(includesText(helpComposer, 'intentConfidence: Number(intentMeta?.confidence || 0)'), 'help composer exposes intent confidence');
+must(includesText(helpComposer, 'intentSignals: Array.isArray(intentMeta?.matchedSignals)'), 'help composer exposes intent signals');
+must(includesText(helpComposer, 'questionType,'), 'help composer returns question type');
 
 expectIntent('konum inceleden sonra nereye geçeyim?', { entityType: 'screen', screenPath: '/company/georeview' }, 'NEXT_SCREEN', 'georeview next screen');
 expectIntent('hangi ekrana geçeyim?', { entityType: 'screen', screenPath: '/company/map' }, 'NEXT_SCREEN', 'generic route steer');

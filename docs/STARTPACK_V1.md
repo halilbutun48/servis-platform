@@ -1,152 +1,96 @@
-﻿# STARTPACK V1
+# STARTPACK V1
 
-<!-- STARTPACK_TOOLS_HYGIENE_V1 -->
-<!-- STARTPACK_PARENT_TTL_PRESETS_V1 -->
-<!-- STARTPACK_PUBLIC_LINK_TTL_PRESETS_V1 -->
+Tarih: 2026-04-07  
+Repo: `servis-platform`  
+Amaç: Bu dosya, projenin güncel çalışma kurallarını, aktif milestone hattını ve değişmez mimari kararlarını tek yerde toplar.
 
-## Temel kurallar
-1. Monorepo modüler yapıda ilerler: `backend / web / mobile / infra / docs / tools`.
-2. Ürün kimliği **Vardis** markası altında çalışan karma taşıma platformudur; sadece personel ürünü diye daraltılmaz.
-3. Ticari akış ile operasyon akışı aynı ürün içinde ama ayrı katmanlar olarak korunur.
-4. Driver login ana akışı `Sürücü Kodu + PIN` olarak korunur.
-5. İlk girişte PIN değişimi zorunludur.
-6. Ürün içi konum dili `sürücünün telefon GPS'i` olarak korunur.
-7. Company default `maxWalkM = 250`, School default `maxWalkM = 50`.
-8. Parent Access akışı hesap daveti değildir; öğrenci + süre + erişim linki + erişim kodu + PIN mantığıyla çalışır.
-9. Oluşturma için tek kaynak **Planlama Merkezi** olmalıdır.
-10. **Vardiyalar** ekranı oluşturma değil, takip / operasyon ekranı olarak kalmalıdır.
-11. Ürün kodu geri alınmaz; pack/check/runbook/doc yeni gerçeğe uydurulur.
-12. Overlay standardı: **tek zip / tek kök klasör / nested root yok**.
-13. Checklist’te `[x]` yalnızca pack/check green sonrası işaretlenir.
-14. Önce ölç, sonra düzelt, sonra tekrar ölç.
+## 1) Güncel resmi durum
+- Tarihsel saha hazırlık / go-no-go hattında `M59` gozlemleme ile baslar, `M65` launch gate ile saha oncesi karar verilir.
+- Bu hatta kanonik girislerden biri `tools\pack_m59_observability_field_diagnostics.ps1` komutudur.
+- Saha testi prensibi: **Saha testi M65 ve sonraki green kapilar gorulmeden acilmaz; son karar kullanicidadir.**
+- Tarihsel son tam master referansı: `M0→M79`.
+- Repo üstünde bunun üstüne gelen yaşayan hat mevcut:
+  - `M80`, `M80.1`, `M80.2`, `M80.3`
+  - `M81`
+  - `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`
+  - `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`
+- Bu üst hat için pack/check/runbook dosyaları repo içindedir.
+- Living static/runtime/master doğrulama zinciri bu yaşayan hat için yeniden koşturulmaktadır.
 
-## Güncel dürüst durum
-- Son temiz doğrulama: `MASTER PACK PASS OK (M0->M79)`
-- Repo audit: `REPO AUDIT MASTER PASS`
-- `M79` acceptance kapalıdır.
-- `tools/STABLE_TO.txt = 78` değeri M78.x compatibility marker olarak korunur.
-- Parent Access / public live / personel public live yüzeyleri güncel ürün gerçeğine hizalıdır.
-- OSRM kodu repoda kalır; default compose modu fallback çalışır.
-- Bundan sonraki aktif ana iş `M80`’dir.
-- M80 altındaki ilk kontrollü daraltma adımı `M80.1` olarak açılır.
-- M80 altındaki ikinci kontrollü daraltma adımı `M80.2` olarak açılır.
-- M80 altındaki üçüncü kontrollü daraltma adımı `M80.3` olarak açılır.
+## 2) Değişmez ürün ve mimari kuralları
+1. Backend tek kaynak gerçekliktir.
+2. Web ve mobile, backend kontratına bağlı istemci katmanlarıdır.
+3. Ürün yalnız personel servisi değildir; okul/öğrenci/veli ve company/organization/personel alanlarını birlikte taşır.
+4. Marka dili dış anlatımda **Vardis** olarak korunur.
+5. Ticari akış ile operasyon akışı aynı omurgada ama ayrı bilinçli katmanlar olarak ele alınır.
+6. Araç GPS'i varsa birinci kaynak, sürücünün telefon GPS'i fallback kaynağıdır.
+7. Ürün kodu geri alınmaz; check/pack/runbook/docs yeni gerçeğe uydurulur.
+8. Overlay standardı tek zip / tek kök / nested root yok şeklinde korunur.
+9. Büyük dosyalar kontrollü biçimde bölünür; modülerlik ertelenen kozmetik iş değil, sürdürülebilirlik işidir.
+10. Repo hijyen hattı dosya silme aracı değil; kanonik düzen ve senkron denetim hattıdır.
 
-## Kanonik komutlar
-- Son tam master doğrulama: `tools\pack.ps1 -To 79 -RepoDir D:\servis-platform -NoBuild`
-- Living master doğrulama: `tools\pack_living.ps1 -To 79 -RepoRoot D:\servis-platform -NoBuild`
-- Living static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
-- Living runtime doğrulama: `tools\verify_living_runtime.ps1 -To 79 -RepoRoot D:\servis-platform -NoBuild`
-- Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
-- Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
-- M79 acceptance: `tools\pack_m79_copilot_acceptance.ps1 -RepoRoot D:\servis-platform`
-- M80 kabul kapısı: `tools\pack_m80_final_sert_kabul_yuk_guveni.ps1 -RepoRoot D:\servis-platform`
-- M80.1 hot panel daraltma: `tools\pack_m80_1_hot_panel_daraltma.ps1 -RepoRoot D:\servis-platform`
-- M80.2 agreements + shifts giriş yükü: `tools\pack_m80_2_agreements_shifts_giris_yuku.ps1 -RepoRoot D:\servis-platform`
-- M80.3 georeview + shifts son giriş yükü: `tools\pack_m80_3_georeview_shifts_son_giris_yuku.ps1 -RepoRoot D:\servis-platform`
-
-## Master pack notu
-`tools\pack.ps1 -To 79` güncel tam master doğrulama referansıdır.
-
-Ek not:
-- `M78.1`, `M78.2`, `M78.3` repo-contract kontrolleri içinde `STABLE_TO = 78` beklentisi bilinçli olarak korunur.
-- Bu yüzden `STABLE_TO 78` ile `MASTER PACK PASS OK (M0->M79)` birlikte doğru olabilir.
-
-## TTL kısa not
+## 3) Link TTL / preset senkronu
+- `STARTPACK_PARENT_TTL_PRESETS_V1`
 - Veli Erişimi presetleri: **1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl**
+- Veli Erişimi backend üst sınırı: **365 gün**
+- `STARTPACK_PUBLIC_LINK_TTL_PRESETS_V1`
 - Personel/öğrenci public canlı link presetleri: **1 hafta / 1 ay / 6 ay / 1 yıl**
-- Backend üst sınırı: **365 gün**
+- Personel/öğrenci public canlı link backend üst sınırı: **365 gün**
+- Personel/öğrenci public canlı linklerinde hard shift-end clamp zorlaması yoktur.
 
-## Tarihsel overlay notu
-- `docs/overlays/M80`, `M81`, `M82` klasörleri aktif milestone anlamı değildir.
-- Güncel aktif anlam için `PRIMER_SSOT.md` ve `MILESTONE_REGISTRY_V1.md` baz alınır.
+## 4) Ticari omurga kuralları
+1. Ödeme omurgası yalnız agreement'e kilitlenmez.
+2. İlk ticari kaynak tipleri:
+   - `AGREEMENT`
+   - `SHIFT_SERIES`
+3. Kısa süreli 5 günlük iş gibi durumlarda ticari kaynak `SHIFT_SERIES` olabilir.
+4. Payment mode üç kademelidir:
+   - `OFF`
+   - `OPTIONAL`
+   - `REQUIRED`
+5. Komisyon oranı Super Admin tarafından yönetilir.
+6. Komisyon ilk aşamada:
+   - global varsayılan
+   - oda bazlı override
+   mantığında çalışır.
+7. Ticari kaynak oluşturulduğu anda payment/commission snapshot alınır.
+8. Sonradan oran değişse bile eski ticari kayıt bozulmaz.
 
-## M58 final pilot readiness
-- Komut: `tools\pack_m58_final_pilot_readiness.ps1`
-- M58 final pilot readiness paketi repo hazırlığını doğrular.
-- Official green still requires manual pilot acceptance / field signoff.
-- Manual pilot acceptance gate korunur.
+## 5) Güncel aktif sıra
+- Tarihsel kalite kapisi referansi: `M59` gozlemleme -> `M60` saha kabul merkezi -> `M63` guven + kalite + hizmet degerlendirme -> `M65` pilot launch gate
+- Tarihsel rota notu: `M63 baslangic notu` sonrasinda `M66 operasyonel reassignment`, daha sonra `M75 green baseline` referansi ayni omurganin ileriki kapilaridir.
+- `M82.1` Backend correctness kilidi
+- `M82.8` Verification 2.0
+- `M82.9` Dormant payment backbone (`AGREEMENT | SHIFT_SERIES`)
+- `M82.10` Super Admin ticari ayarlar
+- `M82.11` Payment readonly ticari yüzey
+- `M83` Saha hazırlık paketi
+- `M84` Saha gözlem / geri bildirim döngüsü
+- `M85` Ödeme opsiyonel pilot
+- `M86` Ödeme zorunlu rollout
+- `M87` Ödeme hesabı hazırlığı
+- `M88` Settlement operasyon masası
+- `M89` Settlement mutabakat masası
 
-<!-- REPO_CONTRACT_COMPAT_STARTPACK_V2
-pack_m58_final_pilot_readiness.ps1
-M58 hazirlik komutu
-manuel pilot kabul
-M59
-pack_m59_observability_field_diagnostics.ps1
-Saha testi
-M62 — Ticari Omurga Güçlendirme
-M62 başlangıç notu
-M63 — Güven + Kalite + Hizmet Değerlendirme
-M63 başlangıç notu
-M63` bitmeden `M64
-M64 — Doğal Copilot Katmanı
-M64 başlangıç notu
-M64` bitmeden `M65
-M65 — Pilot Launch Gate
-M66
-tools\pack_docs_ssot.ps1
-pack_m66_operation_reassignment.ps1
-tools\pack.ps1 -To 66
-tools\pack.ps1 -To 76
-check_repo_audit_master.ps1
-post-M66 functional
-M75 green baseline
-M76A-1
-M77
-M78
-REPO_CONTRACT_COMPAT_STARTPACK_V2 -->
+## 6) Kanonik komut yaklaşımı
+Not: Tarihsel pack komutları repo içinde korunur; yaşayan repo hattı için kanonik üst komutlar artık 89 tavanına göre okunur.
+- `tools\pack.ps1 -To 89`
+- `tools\pack_living.ps1 -To 89`
+- `tools\verify_living_static.ps1`
+- `tools\verify_living_runtime.ps1 -To 89`
+- milestone bazlı kontrollü pack
 
-<!-- REPO_CONTRACT_COMPAT_M78_STARTPACK_V1
-pack.ps1 -to 78
-M78 checklist + operasyon dogrulama
-M78 iskeleti
-REPO_CONTRACT_COMPAT_M78_STARTPACK_V1 -->
+## 7) Bu dosya ile birlikte okunacak ana belgeler
+- `docs/PRIMER_SSOT.md`
+- `docs/MILESTONE_REGISTRY_V1.md`
+- `docs/KABUL_KRITERLERI_10_10_VARDIS.md`
+- `tools/PRIMER_SNAPSHOT.md`
+- `tools/CHECKLIST_SSOT.md`
 
-<!-- REPO_CONTRACT_COMPAT_M78_STARTPACK_V2
-tools\pack.ps1 -To 78
-M78 checklist / operasyon doğrulama iskeleti
-REPO_CONTRACT_COMPAT_M78_STARTPACK_V2 -->
-
-## M77 KVKK enforcement özeti
-- retention/export trail enforcement helper katmanı
-- Referans: `KVKK_RETENTION_ENFORCEMENT_V1.md`
-- Referans: `KVKK_ROLE_PAYLOAD_DARALTMA_V1.md`
-
-## M78.3 operasyon doğrulama özet ve filtre katmanı
-- M78.3 operasyon doğrulama özet ve filtre katmanı
-- pack: `tools\pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1`
-- filtre / son güncelleme / export görünürlüğü
-
-## M80 final sert kabul ve yuk guveni kapisi
-- Komut: `tools\pack_m80_final_sert_kabul_yuk_guveni.ps1`
-- Ilk turda yeni feature acmaz; kabul kapisini resmi hale getirir.
-- Hot panel gorunurlugu: `ShiftsPanel`, `AgreementsPanel`, `GeoReviewPanel`, `MapPanel`.
-- Bu pack PASS verse bile resmi final green icin ek yuk/saha signoff gerekir.
-
-## M80 oncesi hijyen kapisi
-- `npm --prefix backend run lint` ile backend syntax taramasi alin.
-- File store kullanan modullerde atomik json yazimi korunur.
-- Kalan cleanup once guvenli/hijyen odakli tutulur; genis refactor feature turune karistirilmaz.
+## 8) Tools hijyen ve verify notu
+- `STARTPACK_TOOLS_HYGIENE_V1` markerı bu dosyada bilinçli olarak tutulur.
+- `repo/tools` hijyen check zinciri, kanonik tools kökü ile STARTPACK metninin senkron kalmasını bekler.
+- Ana doğrulama akışında `tools/check_tools_hygiene_m105.ps1`, `tools/check_repo_hygiene_m106.ps1`, `tools/verify_living_static.ps1` ve `tools/verify_living_runtime.ps1` birlikte okunmalıdır.
 
 
-## Repo contract state
-- Makine-okur durum özeti: `tools\repo_contract_state.json`
-- State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.
-
-
-## Root orchestration
-- root lint: `npm run lint`
-- hot-path smoke: `npm run verify:hot`
-- docs/contract smoke: `npm run verify:docs`
-- repo audit: `npm run audit:repo`
-
-## M80 öncesi P2 hijyen
-- `backend/data` altındaki runtime `.json` ve `.json.bak` dosyaları repoda tutulmaz; uygulama gerektiğinde yeniden üretir.
-- Docs-contract ölçümü doğrudan path-ref bağımlılığına göre izlenir.
-
-- yük sıcak noktaları görünür tutulur
-- M80.1 içinde `GeoReviewPanel / MapPanel / ShiftsPanel` daraltmaları küçük ve kontrollü yapılır
-- M80.2 içinde `AgreementsPanel / ShiftsPanel` giriş yükü küçük ve kontrollü daraltılır
-- M80.3 içinde `GeoReviewPanel / ShiftsPanel` son giriş yükü küçük ve kontrollü daraltılır
-
-- M81 mobil saha sertlestirme: tools\pack_m81_mobile_saha_sertlestirme.ps1 -RepoRoot D:\servis-platform
+- M90 — Living Verification & Acceptance Convergence (hazırlık / check-pack-acceptance hizası)

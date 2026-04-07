@@ -8,176 +8,26 @@ import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftReassignModal from "../../components/ShiftReassignModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { navigate } from "../../router";
-import { rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
-import ListSelectionBanner from "../../components/ListSelectionBanner";
-
-const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
-
-function trimOrNull(s) {
-  const t = String(s ?? "").trim();
-  return t ? t : null;
-}
-
-function formatTRY(amount) {
-  if (amount == null) return "";
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return "";
-  return new Intl.NumberFormat("tr-TR").format(n);
-}
-
-function parseTryInput(raw) {
-  if (raw == null) return null;
-  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-function vehicleMetaLine(v) {
-  const type = TYPE_TR[v?.type] || (v?.type ? String(v.type) : "");
-  const bmy = [v?.brand, v?.model, v?.modelYear].filter(Boolean).join(" ");
-  const cap = Number.isFinite(v?.capacity) ? `${v.capacity} koltuk` : "";
-  return [type, bmy, cap].filter(Boolean).join(" • ");
-}
-
-function roomLabel(r) {
-  if (!r) return "";
-  return r.name || r.title || `Room #${r.id}`;
-}
-
-function toPositiveIntOrZero(v) {
-  const n = Number(v || 0);
-  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
-}
-
-function shiftRequiredPax(shift) {
-  return Math.max(
-    toPositiveIntOrZero(shift?.requiredPax),
-    toPositiveIntOrZero(shift?.assignmentCount),
-    toPositiveIntOrZero(shift?.peopleCount),
-    toPositiveIntOrZero(shift?.orgPassengerCount),
-    0
-  );
-}
-
-function vehicleCapacityValue(vehicle) {
-  return toPositiveIntOrZero(vehicle?.capacity);
-}
-
-function buildCapacityMeta({ shift, vehicle, roomVehicles = [] }) {
-  const requiredPax = shiftRequiredPax(shift);
-  const vehicleCapacity = vehicleCapacityValue(vehicle);
-  const missingCapacity = requiredPax > 0 ? Math.max(0, requiredPax - vehicleCapacity) : 0;
-  const insufficient = requiredPax > 0 && vehicleCapacity < requiredPax;
-  const minVehicleCount = requiredPax > 0 && vehicleCapacity > 0 ? Math.ceil(requiredPax / vehicleCapacity) : null;
-
-  const roomCaps = (roomVehicles || []).map((v) => vehicleCapacityValue(v)).filter((n) => n > 0);
-  const roomMaxCapacity = roomCaps.length ? Math.max(...roomCaps) : 0;
-  const roomMinVehicleCount = requiredPax > 0 && roomMaxCapacity > 0 ? Math.ceil(requiredPax / roomMaxCapacity) : null;
-  const singleVehiclePossible = requiredPax > 0 && roomMaxCapacity > 0 && roomMaxCapacity >= requiredPax;
-  const dispatchRequired = requiredPax > 0 && roomMaxCapacity > 0 && roomMaxCapacity < requiredPax;
-
-  let blockCode = null;
-  let blockMessage = "";
-  if (requiredPax > 0 && vehicle && vehicleCapacity <= 0) {
-    blockCode = "VEHICLE_CAPACITY_MISSING";
-    blockMessage = `Araç kapasitesi tanımsız. Gerekli yolcu: ${requiredPax}.`;
-  } else if (vehicle && insufficient) {
-    blockCode = "CAPACITY_INSUFFICIENT";
-    blockMessage = `Yetersiz kapasite. Gerekli: ${requiredPax}, araç: ${vehicleCapacity}, eksik: ${missingCapacity}.`;
-  }
-
-  return {
-    requiredPax,
-    vehicleCapacity,
-    missingCapacity,
-    insufficient,
-    minVehicleCount,
-    roomMaxCapacity,
-    roomMinVehicleCount,
-    singleVehiclePossible,
-    dispatchRequired,
-    blockCode,
-    blockMessage,
-  };
-}
-
-function AgreementBadge({ agreementId }) {
-  const id = Number(agreementId);
-  if (!Number.isFinite(id) || id <= 0) return null;
-  return (
-    <span
-      className="pill"
-      data-status="AGREEMENT"
-      title="Agreement kaynaklı otomatik shift"
-      style={{ marginLeft: 8 }}
-    >
-      Agreement #{id}
-    </span>
-  );
-}
-
-function statusPill(s) {
-  const v = String(s || "").toUpperCase();
-  return (
-    <span className="pill" data-status={v} title={v}>
-      {v}
-    </span>
-  );
-}
-
-// Istanbul local gösterim
-const fmtTR = (iso) => {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleString("tr-TR", {
-    timeZone: "Europe/Istanbul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-function overlaps(aStart, aEnd, bStart, bEnd) {
-  const a0 = new Date(aStart).getTime();
-  const a1 = new Date(aEnd).getTime();
-  const b0 = new Date(bStart).getTime();
-  const b1 = new Date(bEnd).getTime();
-  if (![a0, a1, b0, b1].every(Number.isFinite)) return false;
-  return a0 < b1 && b0 < a1; // [a0,a1) with [b0,b1)
-}
-
-// api wrapper bazen JSON string message fırlatıyor; normalize edelim
-function parsePossibleJson(text) {
-  try {
-    if (!text) return null;
-    const t = String(text).trim();
-    if (!t) return null;
-    if (t.startsWith("{") || t.startsWith("[")) return JSON.parse(t);
-  } catch {}
-  return null;
-}
-
-function normalizeErr(e) {
-  const msg = String(e?.message || e || "");
-  const j = parsePossibleJson(msg);
-  if (j && typeof j === "object") {
-    // {code,message,conflictingShift} veya {error:{...}}
-    if (j.code || j.message) return { code: j.code, message: j.message || msg, data: j };
-    if (j.error && typeof j.error === "object") {
-      return { code: j.error.code, message: j.error.message || msg, data: j.error };
-    }
-    if (j.error && typeof j.error === "string") {
-      const jj = parsePossibleJson(j.error);
-      if (jj && typeof jj === "object") return { code: jj.code, message: jj.message || msg, data: jj };
-      return { code: null, message: j.error, data: j };
-    }
-  }
-  return { code: null, message: msg, data: null };
-}
+import { getApiErrorMessage } from "../../utils/apiContract";
+import {
+  buildCapacityMeta,
+  formatShiftDateTimeTR as fmtTR,
+  formatTRY,
+  normalizeRoomShiftError as normalizeErr,
+  overlaps,
+  parseTryInput,
+  roomLabel,
+  shiftRequiredPax,
+  trimOrNull,
+  vehicleMetaLine,
+} from "./roomShiftsPanelUtils";
+import {
+  RoomDispatchPoolSummary,
+  RoomPendingSection,
+  RoomFinalListSection,
+} from "./roomShiftsPanelSections";
 
 export default function RoomShiftsPanel() {
   const { token } = useSession();
@@ -263,7 +113,7 @@ async function decideExtend(shiftId, decision) {
     setExtendNoteSel((p) => ({ ...p, [sid]: "" }));
     invalidate("shift:list");
   } catch (e) {
-    setErr(String(e?.message || e));
+    setErr(getApiErrorMessage(e, "İşlem başarısız."));
   } finally {
     setBusy(false);
   }
@@ -1078,7 +928,7 @@ const offersByShiftId = useMemo(() => {
       hydrateDispatchSelections(sid, data?.suggestions || []);
       return data;
     } catch (e) {
-      const msg = String(e?.message || e || "Dispatch önizleme alınamadı.");
+      const msg = getApiErrorMessage(e, "Dispatch önizleme alınamadı.");
       setDispatchPreview((prev) => ({ ...prev, [sid]: { status: "error", error: msg } }));
       return null;
     } finally {
@@ -1113,404 +963,33 @@ const offersByShiftId = useMemo(() => {
   }
 
   function renderPoolSummary(shift, capacityMeta, effectiveRoomId = null) {
-    const sid = Number(shift?.id);
-    const state = poolSummary[sid] || null;
-    const data = state?.data || null;
-    const comboItems = Array.isArray(data?.suggestedCombo?.items) ? data.suggestedCombo.items : [];
-    const dState = dispatchPreview[sid] || null;
-    const dData = dState?.data || null;
-    const suggestions = Array.isArray(dData?.suggestions) ? dData.suggestions : [];
-    const dispatchSelStates = getDispatchSelectionStates(shift, suggestions);
-    const roomVehicles = Array.isArray(data?.vehicles) && data.vehicles.length
-      ? data.vehicles.filter((v) => v?.vehicleOk && Number(v.capacity || 0) > 0)
-      : vehiclesForRoom(effectiveRoomId ?? shift?.roomId);
-    const roomDrivers = Array.isArray(data?.drivers) && data.drivers.length
-      ? data.drivers.filter((d) => d?.driverOk)
-      : driversForRoom(effectiveRoomId ?? shift?.roomId);
-    const dispatchCanApply = suggestions.length > 0 && suggestions.every((part) => dispatchSelStates?.[Number(part?.splitIndex || 0)]?.status === "ok");
-
     return (
-      <div className="card" style={{ padding: 10 }}>
-        <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-          <div className="muted"><b>Room havuz özeti</b></div>
-          <button
-            type="button"
-            className="btn sm"
-            disabled={busy || state?.status === "loading"}
-            onClick={() => loadPoolSummary(shift, { force: true })}
-          >
-            {state?.status === "loading" ? "Yükleniyor..." : data ? "Yenile" : "Yükle"}
-          </button>
-        </div>
-
-        {state?.status === "error" ? (
-          <div className="muted" style={{ marginTop: 8 }}>
-            <b>Hata:</b> {state.error}
-          </div>
-        ) : null}
-
-        {data ? (
-          <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
-            <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <span>
-                <b>Durum:</b>{" "}
-                <span className="pill" data-status={data.enoughPoolCapacity ? "OK" : "REJECTED"}>
-                  {data.enoughPoolCapacity ? "HAVUZ YETER" : "HAVUZ YETMEZ"}
-                </span>
-              </span>
-              <span>• <b>Müsait araç:</b> {data.vehicles?.filter?.((x) => x.vehicleOk)?.length || 0}/{data.roomVehicleCount || 0}</span>
-              <span>• <b>Boş driver:</b> {data.freeDriverCount || 0}</span>
-              <span>• <b>Toplam eşleşebilir koltuk:</b> {data.totalPairCapacity || 0}</span>
-              {!data.enoughPoolCapacity ? <span>• <b>Eksik:</b> {data.missingPoolCapacity || 0}</span> : null}
-            </div>
-
-            {comboItems.length ? (
-              <div className="muted">
-                <b>Önerilen kombinasyon:</b>{" "}
-                {comboItems.map((x) => `${x.plate} (${x.capacity}${x?.allocatedPax ? ` → ${x.allocatedPax} kişi` : ""})${x?.suggestedDriver?.fullName ? ` → ${x.suggestedDriver.fullName}` : ""}`).join(" + ")}
-              </div>
-            ) : (
-              <div className="muted">
-                Öneri üretilemedi. Room havuzunda bu zaman için uygun araç/driver çifti bulunamadı.
-              </div>
-            )}
-
-            {data?.enoughPoolCapacity && Number(data?.suggestedCombo?.vehicleCount || 0) > 1 ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <button
-                  type="button"
-                  className="btn sm"
-                  disabled={busy || dState?.status === "loading"}
-                  onClick={() => loadDispatchPreview(shift, { force: true })}
-                >
-                  {dState?.status === "loading" ? "Önizleme hazırlanıyor..." : suggestions.length ? "Dispatch Önizlemeyi Yenile" : "Dispatch Önizleme Oluştur"}
-                </button>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Yakın kişileri aynı araca toplamayı dener, sonra araç bazlı durak sırasını OSRM + solver ile iyileştirir.
-                </div>
-              </div>
-            ) : null}
-
-            {dState?.status === "error" ? (
-              <div className="muted" style={{ color: "#b42318" }}>
-                <b>Dispatch önizleme hatası:</b> {dState.error}
-              </div>
-            ) : null}
-
-            {suggestions.length ? (
-              <div style={{ display: "grid", gap: 8 }}>
-                {suggestions.map((part) => {
-                  const splitIndex = Number(part?.splitIndex || 0);
-                  const selectedVehicleId = selectedDispatchVehicleId(sid, part);
-                  const selectedDriverId = selectedDispatchDriverId(sid, part);
-                  const selectedVehicle = vehiclesById.get(Number(selectedVehicleId)) || part?.vehicle || null;
-                  const selectedDriver = driversById.get(Number(selectedDriverId)) || part?.driver || null;
-                  const selectionState = dispatchSelStates?.[splitIndex] || { status: "missing", message: "Araç ve şoför seç." };
-                  const eligibleVehicles = roomVehicles.filter((v) => Number(v?.capacity || 0) >= Number(part?.allocatedPax || 0) || Number(v?.id || 0) === Number(selectedVehicleId || 0));
-                  const eligibleDrivers = roomDrivers.filter((d) => Number(d?.id || 0) === Number(selectedDriverId || 0) || d?.driverOk !== false);
-                  const capacityMeta = buildCapacityMeta({
-                    shift: buildDispatchVirtualShift(shift, Number(part?.allocatedPax || 0)),
-                    vehicle: selectedVehicle,
-                    roomVehicles,
-                  });
-                  return (
-                    <div key={`dispatch-${sid}-${part.splitIndex}`} className="card" style={{ padding: 10 }}>
-                      <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                        <div className="muted">
-                          <b>Öneri #{part.splitIndex}</b>
-                        </div>
-                        <div className="muted">
-                          <b>Yolcu:</b> {Number(part?.allocatedPax || 0)} / {Number(capacityMeta?.vehicleCapacity || part?.capacity || 0)}
-                        </div>
-                      </div>
-                      <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span><b>Durak:</b> {Number(part?.stopCount || 0)}</span>
-                        {Number(part?.totalDistanceM || 0) > 0 ? <span>• <b>Km:</b> {(Number(part.totalDistanceM) / 1000).toFixed(1)}</span> : null}
-                        {Number(part?.totalDurationSec || 0) > 0 ? <span>• <b>Süre:</b> {Math.round(Number(part.totalDurationSec) / 60)} dk</span> : null}
-                        <span>• <b>Kaynak:</b> {String(part?.routeSource || "ESTIMATED")}</span>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8, marginTop: 8 }}>
-                        <label className="muted" style={{ display: "grid", gap: 4 }}>
-                          <span><b>Araç</b></span>
-                          <select
-                            value={selectedVehicleId || ""}
-                            onChange={(e) => setDispatchSelection(sid, splitIndex, { vehicleId: Number(e.target.value || 0) || "" })}
-                          >
-                            <option value="">Araç seç</option>
-                            {eligibleVehicles.map((v) => (
-                              <option key={`dispatch-v-${sid}-${splitIndex}-${v.id}`} value={v.id}>
-                                {v.plate} {v?.capacity ? `• ${v.capacity} koltuk` : ""}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="muted" style={{ display: "grid", gap: 4 }}>
-                          <span><b>Şoför</b></span>
-                          <select
-                            value={selectedDriverId || ""}
-                            onChange={(e) => setDispatchSelection(sid, splitIndex, { driverId: Number(e.target.value || 0) || "" })}
-                          >
-                            <option value="">Şoför seç</option>
-                            {eligibleDrivers.map((d) => (
-                              <option key={`dispatch-d-${sid}-${splitIndex}-${d.id}`} value={d.id}>
-                                {d.fullName || `#${d.id}`}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                      <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span>
-                          <b>Seçim:</b> {selectedVehicle?.plate || `#${selectedVehicleId || "-"}`}
-                          {selectedDriver?.fullName ? ` → ${selectedDriver.fullName}` : ""}
-                        </span>
-                        <span>
-                          <b>Durum:</b>{" "}
-                          {selectionState.status === "ok" ? (
-                            <span className="pill" data-status="OK">OK</span>
-                          ) : selectionState.status === "checking" ? (
-                            <span className="pill" data-status="PENDING">CHECK</span>
-                          ) : selectionState.status === "missing" ? (
-                            <span className="pill" data-status="PENDING">SEÇİM</span>
-                          ) : (
-                            <span className="pill" data-status="REJECTED">{String(selectionState.code || "CONFLICT")}</span>
-                          )}
-                        </span>
-                        {selectionState?.message ? <span>• {selectionState.message}</span> : null}
-                      </div>
-                      {Array.isArray(part?.stops) && part.stops.length ? (
-                        <div className="muted" style={{ marginTop: 6 }}>
-                          <b>Duraklar:</b> {part.stops.map((s) => `${s.title || s.name || s.id}${Number(s?.count || 0) > 0 ? ` (${Number(s.count)})` : ""}`).join(" → ")}
-                        </div>
-                      ) : (
-                        <div className="muted" style={{ marginTop: 6 }}>Durak üretilemedi; koordinatı olan kişi/durak sayısını kontrol et.</div>
-                      )}
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                        <button type="button" className="btn sm" onClick={() => openDispatchSuggestionPreview(shift, part)}>Haritada Gör</button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            <div className="muted">
-              <b>Min araç ihtiyacı:</b> {data?.suggestedCombo?.vehicleCount || capacityMeta?.roomMinVehicleCount || "-"}
-              {data?.suggestedCombo?.totalCapacity ? ` • öneri toplam koltuk: ${data.suggestedCombo.totalCapacity}` : ""}
-              {Number(data?.suggestedCombo?.overflowCapacity || 0) > 0 ? ` • taşma: ${data.suggestedCombo.overflowCapacity}` : ""}
-            </div>
-
-            
-
-            {data?.enoughPoolCapacity && Number(data?.suggestedCombo?.vehicleCount || 0) > 1 ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <button type="button" className="btn" disabled={busy || !dispatchCanApply} onClick={() => autoSplitApprove(shift)}>
-                  Önizlemeyi Uygula: Böl & Onayla
-                </button>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Dispatch önizleme ile aynı geo-temelli bölme planı uygulanır; seçtiğin araç/şoför eşleşmeleri kullanılır.
-                </div>
-                {!dispatchCanApply ? <div className="muted" style={{ color: "#b42318", fontSize: 12 }}>Önce tüm önerilerde uygun araç ve şoför seçimini tamamla.</div> : null}
-              </div>
-            ) : null}
-          </div>
-        ) : state?.status === "loading" ? (
-          <div className="muted" style={{ marginTop: 8 }}>Room havuz özeti hesaplanıyor…</div>
-        ) : (
-          <div className="muted" style={{ marginTop: 8 }}>
-            Çoklu araç/driver havuzunu görmek için yükle.
-          </div>
-        )}
-      </div>
+      <RoomDispatchPoolSummary
+        shift={shift}
+        capacityMeta={capacityMeta}
+        effectiveRoomId={effectiveRoomId}
+        poolSummary={poolSummary}
+        dispatchPreview={dispatchPreview}
+        getDispatchSelectionStates={getDispatchSelectionStates}
+        vehiclesForRoom={vehiclesForRoom}
+        driversForRoom={driversForRoom}
+        selectedDispatchVehicleId={selectedDispatchVehicleId}
+        selectedDispatchDriverId={selectedDispatchDriverId}
+        vehiclesById={vehiclesById}
+        driversById={driversById}
+        buildDispatchVirtualShift={buildDispatchVirtualShift}
+        setDispatchSelection={setDispatchSelection}
+        openDispatchSuggestionPreview={openDispatchSuggestionPreview}
+        loadPoolSummary={loadPoolSummary}
+        loadDispatchPreview={loadDispatchPreview}
+        autoSplitApprove={autoSplitApprove}
+        busy={busy}
+      />
     );
   }
 
-  function renderCompanyOfferSummary(s) {
-    const ovId = s.companyOfferVehicleId ? Number(s.companyOfferVehicleId) : null;
-    const ov = ovId ? vehiclesById.get(ovId) : null;
-    const cAmt = s.companyOfferAmount != null ? Number(s.companyOfferAmount) : null;
 
-    const has = Boolean(ovId || cAmt != null || s.companyOfferNote);
-    if (!has) return <span className="muted">-</span>;
 
-    return (
-      <div className="muted" title={s.companyOfferNote || ""}>
-        <div>
-          <b>C→R Araç:</b>{" "}
-          {ovId ? (ov ? `${ov.plate} • ${vehicleMetaLine(ov)}` : `#${ovId}`) : "-"}
-        </div>
-        {cAmt != null ? (
-          <div className="muted" style={{ marginTop: 4 }}>
-            <b>C→R Tutar:</b> {formatTRY(cAmt)} ₺
-          </div>
-        ) : null}
-        {s.companyOfferNote ? (
-          <div className="muted" style={{ marginTop: 4 }}>
-            {s.companyOfferNote}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
-  function renderRoomOfferSummary(s) {
-    const rvId = s.roomOfferVehicleId ? Number(s.roomOfferVehicleId) : null;
-    const rv = rvId ? vehiclesById.get(rvId) : null;
-    const rAmt = s.roomOfferAmount != null ? Number(s.roomOfferAmount) : null;
-
-    const has = Boolean(
-      rvId ||
-        rAmt != null ||
-        s.roomOfferNote ||
-        s.roomOfferToDriver ||
-        s.roomOfferDriverNote ||
-        s.roomOfferDecision ||
-        s.roomOfferDecisionNote
-    );
-    if (!has) return <span className="muted">-</span>;
-
-    const decision = String(s.roomOfferDecision || "PENDING");
-    const decisionAtText = s.roomOfferDecisionAt ? fmtTR(s.roomOfferDecisionAt) : "";
-
-    return (
-      <div className="muted">
-        <div>
-          <b>R→C Araç:</b>{" "}
-          {rvId ? (rv ? `${rv.plate} • ${vehicleMetaLine(rv)}` : `#${rvId}`) : "-"}
-        </div>
-        {rAmt != null ? (
-          <div className="muted" style={{ marginTop: 4 }}>
-            <b>R→C Tutar:</b> {formatTRY(rAmt)} ₺
-          </div>
-        ) : null}
-        {s.roomOfferNote ? (
-          <div className="muted" style={{ marginTop: 4 }}>
-            <b>R→C Not:</b> {s.roomOfferNote}
-          </div>
-        ) : null}
-        {s.roomOfferToDriver ? (
-          <div className="muted" style={{ marginTop: 4 }}>
-            <b>R→D:</b> evet{s.roomOfferDriverNote ? ` • ${s.roomOfferDriverNote}` : ""}
-          </div>
-        ) : null}
-
-        <div style={{ marginTop: 8 }}>
-          <b>Karar:</b>{" "}
-          {decision === "PENDING" ? (
-            <span className="muted">PENDING</span>
-          ) : (
-            <span className="pill" data-status={decision}>
-              {decision}
-            </span>
-          )}
-          {decision !== "PENDING" && decisionAtText ? (
-            <span className="muted"> • {decisionAtText}</span>
-          ) : null}
-        </div>
-
-        {s.roomOfferDecisionNote ? (
-          <div className="muted" style={{ marginTop: 6 }}>
-            <b>Karar Notu:</b> {s.roomOfferDecisionNote}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
-  function renderAvailLine(shift, vehicleId, driverId, autoDriverName) {
-    const sid = Number(shift.id);
-    const a = avail[sid] || null;
-    const selectedVehicle = vehicleId ? vehiclesById.get(Number(vehicleId)) : null;
-    const capacity = buildCapacityMeta({
-      shift,
-      vehicle: selectedVehicle,
-      roomVehicles: vehiclesForRoom(shift?.roomId),
-    });
-
-    const missing = !vehicleId || !driverId;
-    const conflict = a?.status === "conflict";
-    const ok = a?.status === "ok";
-    const checking = a?.status === "checking";
-
-    const code = a?.code || (missing ? "SELECT_REQUIRED" : null);
-    const msg = a?.message || (missing ? "Araç ve driver seç." : "");
-
-    // conflict details
-    const cs = a?.conflictingShift || null;
-    const csId = cs?.id ? Number(cs.id) : null;
-    const csRoom = cs?.roomId ? roomsById.get(Number(cs.roomId)) : null;
-    const csCompanyName = cs?.company?.name || (cs?.companyId ? `#${cs.companyId}` : null);
-    const csRoomName = csRoom ? roomLabel(csRoom) : (cs?.roomId ? `Room #${cs.roomId}` : null);
-
-    return (
-      <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
-        <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <span>
-            <b>Uygunluk:</b>{" "}
-            {checking ? (
-              <span className="pill" data-status="PENDING">CHECK</span>
-            ) : ok ? (
-              <span className="pill" data-status="OK">OK</span>
-            ) : conflict ? (
-              <span className="pill" data-status="REJECTED">{String(code || "CONFLICT")}</span>
-            ) : missing ? (
-              <span className="pill" data-status="PENDING">SEÇİM</span>
-            ) : (
-              <span className="pill" data-status="REJECTED">ERROR</span>
-            )}
-          </span>
-
-          <span className="muted">
-            (Araç driver: {autoDriverName})
-          </span>
-
-          {msg ? <span className="muted">• {msg}</span> : null}
-        </div>
-
-        {capacity.requiredPax > 0 ? (
-          <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <span><b>Yolcu:</b> {capacity.requiredPax}</span>
-            <span>• <b>Koltuk:</b> {capacity.vehicleCapacity || "-"}</span>
-            {capacity.insufficient ? <span>• <b>Eksik:</b> {capacity.missingCapacity}</span> : null}
-            {capacity.insufficient && capacity.minVehicleCount ? (
-              <span>• <b>Bu araçla min:</b> {capacity.minVehicleCount} araç</span>
-            ) : null}
-            {capacity.requiredPax > 0 && capacity.roomMaxCapacity > 0 ? (
-              <span>• <b>Room max tek araç:</b> {capacity.roomMaxCapacity}</span>
-            ) : null}
-          </div>
-        ) : null}
-
-        {capacity.insufficient ? (
-          <div className="card" style={{ padding: 10 }}>
-            <div className="muted">
-              <b>Kapasite uyarısı:</b> tek araç yetmiyor.
-            </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              Bu seçimle en az <b>{capacity.minVehicleCount || "-"}</b> araç gerekir.
-              {capacity.roomMinVehicleCount ? ` Room havuzundaki en büyük araçla bile min ${capacity.roomMinVehicleCount} araç gerekir.` : ""}
-            </div>
-          </div>
-        ) : null}
-
-        {conflict && csId ? (
-          <div className="card" style={{ padding: 10 }}>
-            <div className="muted">
-              <b>Çakışan vardiya:</b> #{csId}{" "}
-              {cs?.status ? <span className="pill" data-status={cs.status} style={{ marginLeft: 6 }}>{cs.status}</span> : null}
-            </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              {csCompanyName ? <span><b>Company:</b> {csCompanyName}</span> : null}
-              {csRoomName ? <span>{" "}• <b>Room:</b> {csRoomName}</span> : null}
-            </div>
-            <div className="muted" style={{ marginTop: 6 }}>
-              <b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    );
-  }
 
   async function autoSplitApprove(shift) {
     const sid = Number(shift?.id || 0);
@@ -1543,7 +1022,7 @@ const offersByShiftId = useMemo(() => {
       invalidate("shifts");
       await load();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem başarısız."));
     } finally {
       setBusy(false);
     }
@@ -1639,7 +1118,7 @@ const offersByShiftId = useMemo(() => {
       invalidate("shifts");
       await load();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem başarısız."));
     } finally {
       setBusy(false);
     }
@@ -1660,7 +1139,7 @@ const offersByShiftId = useMemo(() => {
       invalidate("offers");
       await load();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem başarısız."));
     } finally {
       setBusy(false);
     }
@@ -1746,7 +1225,7 @@ const offersByShiftId = useMemo(() => {
       await load();
       if (fail) setErr(`Toplu counter: ${ok} başarılı, ${fail} hata.`);
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem başarısız."));
     } finally {
       setBusy(false);
     }
@@ -1828,7 +1307,7 @@ async function sendRoomOffer(shift) {
       invalidate("shifts");
       await load();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem başarısız."));
     } finally {
       setBusy(false);
     }
@@ -1859,7 +1338,7 @@ async function sendRoomOffer(shift) {
       invalidate("shifts");
       await load();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem başarısız."));
     } finally {
       setBusy(false);
     }
@@ -1877,7 +1356,7 @@ async function sendRoomOffer(shift) {
       invalidate("shifts");
       await load();
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e, "İşlem başarısız."));
     } finally {
       setBusy(false);
     }
@@ -1900,490 +1379,61 @@ async function sendRoomOffer(shift) {
 
       {err ? <div className="card err">{err}</div> : null}
 
-      {/* BEKLEYEN TALEPLER */}
-      <div className="card">
-        <h3>Bekleyen Talepler</h3>
+      <RoomPendingSection
+        pendingStatus={pendingStatus}
+        setPendingStatus={setPendingStatus}
+        pendingQ={pendingQ}
+        setPendingQ={setPendingQ}
+        onlyAgreement={onlyAgreement}
+        setOnlyAgreement={setOnlyAgreement}
+        pendingFiltered={pendingFiltered}
+        offersByShiftId={offersByShiftId}
+        effectiveShiftRoomId={effectiveShiftRoomId}
+        vehiclesForRoom={vehiclesForRoom}
+        assignSel={assignSel}
+        vehiclesById={vehiclesById}
+        showAvailableOnly={showAvailableOnly}
+        isVehicleAvailableForShift={isVehicleAvailableForShift}
+        driversById={driversById}
+        driverSel={driverSel}
+        avail={avail}
+        busy={busy}
+        openRoutePreview={openRoutePreview}
+        renderPoolSummary={renderPoolSummary}
+        setAssignSel={setAssignSel}
+        setDriverSel={setDriverSel}
+        drivers={drivers}
+        uiCopyVehicleToPkg={uiCopyVehicleToPkg}
+        uiCopyDriverToPkg={uiCopyDriverToPkg}
+        toggleAvailable={toggleAvailable}
+        roomsById={roomsById}
+        approveShift={approveShift}
+        rejectShift={rejectShift}
+        setFocusedTrackShiftId={setFocusedTrackShiftId}
+        copilotShiftId={copilotShiftId}
+      />
 
-        <div className="toolbarLeft" style={{ marginBottom: 10 }}>
-          <select value={pendingStatus} onChange={(e) => setPendingStatus(e.target.value)}>
-            <option value="OPEN">Açık (DRAFT + REQUESTED)</option>
-            <option value="REQUESTED">REQUESTED</option>
-            <option value="DRAFT">DRAFT</option>
-          </select>
-
-          <input
-            value={pendingQ}
-            onChange={(e) => setPendingQ(e.target.value)}
-            placeholder="Ara (id / company / plate / driver / not)"
-            style={{ minWidth: 280 }}
-          />
-
-          <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={onlyAgreement}
-              onChange={(e) => setOnlyAgreement(e.target.checked)}
-            />
-            Sadece Agreement shiftleri
-          </label>
-
-          <button
-            type="button"
-            className="btn sm"
-            onClick={() => {
-              setPendingQ("");
-              setOnlyAgreement(false);
-            }}
-          >
-            Temizle
-          </button>
-        </div>
-
-        {pendingFiltered.length ? (
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Company</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Harita</th>
-                <th>Teklif / Pazarlık</th>
-                <th>Vehicle + Driver</th>
-                <th>Approve</th>
-                <th>Reddet</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingFiltered.map((s) => {
-                const sid = Number(s.id);
-                const marketOffer = offersByShiftId.get(sid) || null;
-                const effectiveRoomId = effectiveShiftRoomId(s, marketOffer);
-                // Agreement shift'lerde pazarlık/offer kapalı
-                const isAgreement = Number(s?.agreementId) > 0;
-                const roomVehicles = vehiclesForRoom(effectiveRoomId);
-                const selectedVehicleId = assignSel[sid] || "";
-                const vId = selectedVehicleId ? Number(selectedVehicleId) : null;
-                const selectedVehicle = vId ? vehiclesById.get(vId) : null;
-
-                const onlyAvail = Boolean(showAvailableOnly[sid]);
-                const availVehicles = roomVehicles.filter((v) => isVehicleAvailableForShift(v.id, s));
-                const dropdownVehicles = onlyAvail ? availVehicles : roomVehicles;
-
-                const availCount = availVehicles.length;
-
-                const autoDriverId = selectedVehicle?.driverId ? Number(selectedVehicle.driverId) : null;
-                const autoDriverName =
-                  autoDriverId && driversById.get(autoDriverId)
-                    ? driversById.get(autoDriverId).fullName
-                    : autoDriverId
-                    ? `#${autoDriverId}`
-                    : "-";
-
-                const selD = driverSel[sid] ?? "";
-                const manualDriverId = selD ? Number(selD) : null;
-                const effDriverId = manualDriverId ?? autoDriverId ?? null;
-                const capacityMeta = buildCapacityMeta({
-                  shift: s,
-                  vehicle: selectedVehicle,
-                  roomVehicles,
-                });
-
-                const a = avail[sid];
-                const approveDisabled =
-                  busy ||
-                  !vId ||
-                  !effDriverId ||
-                  capacityMeta.insufficient ||
-                  a?.status === "checking" ||
-                  a?.status === "conflict" ||
-                  a?.status === "error";
-
-                const offerIsOpen = Boolean(roomOfferOpen[sid]);
-                const offerForm = roomOfferSel[sid] || {};
-                const offerVehList = roomVehicles;
-
-                const marketCanCounter = marketOffer && marketOffer.status !== "CANCELLED" && marketOffer.status !== "ACCEPTED";
-                const marketForm = marketOffer ? (marketCounterSel[Number(marketOffer.id)] || {}) : {};
-
-                return (
-                  <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(s?.id || 0))}>
-                    <td>
-                    {s.id}
-                    <AgreementBadge agreementId={s.agreementId} />
-                  </td>
-                    <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
-                    <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                    <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-
-                    <td>
-                      <div style={{ display: "grid", gap: 6 }}>
-                        <button
-                          type="button"
-                          className="btn sm"
-                          disabled={busy}
-                          onClick={() => openRoutePreview(s)}
-                          title="Rota/Durakları haritada önizle"
-                        >
-                          Haritada Önizle
-                        </button>
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          Önizleme: API <code>/api/shifts/{sid}/route-preview</code>
-                        </div>
-                    </div>
-                  </td>
-
-                    <td>
-                      <div style={{ display: "grid", gap: 6 }}>
-                        {isAgreement ? (
-                          <div className="card" style={{ marginTop: 6 }} title={Number(s?.agreementId) > 0 ? `Agreement #${s.agreementId}` : ""}>
-                            <div style={{ fontWeight: 800 }}>Agreement shift</div>
-                            <div className="muted" style={{ marginTop: 6 }}>Agreement shift — pazarlık kapalı.</div>
-                          </div>
-                        ) : null}
-
-                        {!isAgreement ? (
-                        <div>
-                          {marketOffer ? (
-                            <div className="card" style={{ marginTop: 6 }} title="Market teklifleri ShiftOffer tablosundan gelir; burada teklif özeti ve rota bilgisi görünür.">
-                              <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                                <div style={{ fontWeight: 800 }}>Market Teklifi (C→R)</div>
-                                {statusPill(marketOffer.status)}
-                              </div>
-                              <div className="muted" style={{ marginTop: 6 }}>
-                                Company: <b>{formatTRY(marketOffer.amountCompany)} ₺</b> • Room: <b>{formatTRY(marketOffer.amountRoom)} ₺</b>
-                              </div>
-                              {marketOffer.noteCompany ? <div className="muted" style={{ marginTop: 6 }}>Not (Company): {marketOffer.noteCompany}</div> : null}
-                              {marketOffer.noteRoom ? <div className="muted" style={{ marginTop: 4 }}>Not (Room): {marketOffer.noteRoom}</div> : null}
-
-                              <div className="muted" style={{ marginTop: 8 }}>
-                                Pazarlık Market / Teklifler ekranında yapılır. Burada teklif özeti ve rota önizlemesi kalır; araç + sürücü seçimi ise yalnızca bu ekranda yapılır.
-                              </div>
-                            </div>
-                          ) : (
-                            <div>{renderCompanyOfferSummary(s)}</div>
-                          )}
-                        </div>
-                        ) : null}
-
-                        {!isAgreement ? (
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <div className="muted" style={{ marginTop: 6 }}>
-                              Pazarlık yalnızca Market / Teklifler ekranında yapılır. Bu ekranda rota önizleme ve operasyon hazırlığı kalır.
-                            </div>
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <button type="button" className="btn sm" disabled={busy} onClick={() => navigate("/room/offers")}>
-                                Tekliflere Git
-                              </button>
-                            </div>
-                            {!marketOffer ? (
-                              <div className="muted" style={{ marginTop: 2 }}>
-                                Bu kayıtta eski doğrudan teklif alanları görünüyor olabilir; yeni karşı teklif üretimi artık Teklifler ekranında yapılır.
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </div>
-                    </td>
-
-                    <td>
-                      {capacityMeta.dispatchRequired ? (
-                        <div style={{ display: "grid", gap: 8 }}>
-                          <div className="card" style={{ padding: 10 }}>
-                            <div className="muted"><b>Dispatch modu aktif</b></div>
-                            <div className="muted" style={{ marginTop: 6 }}>
-                              Bu kayıt çok araçlı plan gerektiriyor. Araç ve şoför seçimini aşağıdaki öneri kartlarından yap.
-                            </div>
-                          </div>
-                          {renderPoolSummary(s, capacityMeta, effectiveRoomId)}
-                        </div>
-                      ) : (
-                        <div style={{ display: "grid", gap: 6 }}>
-                          <select
-                            value={selectedVehicleId}
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              setAssignSel((p) => ({ ...p, [sid]: val }));
-
-                              // araç değişince (driver seçilmemişse) araçtaki driver'ı otomatik seç
-                              const hadManual = Boolean(driverSel[sid]);
-                              if (!hadManual) {
-                                const vid = val ? Number(val) : null;
-                                const vv = vid ? vehiclesById.get(vid) : null;
-                                if (vv?.driverId) {
-                                  setDriverSel((p) => ({ ...p, [sid]: String(vv.driverId) }));
-                                }
-                              }
-                            }}
-                            disabled={busy}
-                          >
-                            <option value="">— araç seç —</option>
-                            {dropdownVehicles.map((v) => (
-                              <option key={v.id} value={String(v.id)}>
-                                {v.plate} • {vehicleMetaLine(v)} (#{v.id})
-                              </option>
-                            ))}
-                          </select>
-
-                          <div className="row" style={{ marginTop: 6, alignItems: "center" }}>
-                            <label className="muted" style={{ minWidth: 80 }}>Driver</label>
-                            <select
-                              value={driverSel[sid] ?? ""}
-                              onChange={(e) => setDriverSel((p) => ({ ...p, [sid]: e.target.value }))}
-                              disabled={busy}
-                            >
-                              <option value="">Seç (opsiyonel)</option>
-                              {drivers
-                                .filter((d) => !d?.roomId || Number(d.roomId) === Number(s.roomId))
-                                .map((d) => (
-                                  <option key={d.id} value={String(d.id)}>
-                                    {d.fullName ||
-                                      d.name ||
-                                      `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim() ||
-                                      `#${d.id}`}
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <button
-                              type="button"
-                              disabled={busy || !selectedVehicleId}
-                              onClick={() => uiCopyVehicleToPkg(s, selectedVehicleId)}
-                              title="Seçili aracı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                            >
-                              Araç → Pakete Kopyala
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busy || !(driverSel[sid] ?? "")}
-                              onClick={() => uiCopyDriverToPkg(s, driverSel[sid] ?? "")}
-                              title="Seçili driver’ı aynı paket içindeki diğer satırlara kopyalar (sadece UI)"
-                            >
-                              Driver → Pakete Kopyala
-                            </button>
-                          </div>
-                          <div className="muted" style={{ fontSize: 12 }}>
-                            Not: Bu butonlar sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
-                          </div>
-                          <button type="button" disabled={busy} onClick={() => toggleAvailable(sid)}>
-                            {onlyAvail ? `Tüm Araçları Göster (${roomVehicles.length})` : `Müsait Araçları Göster (${availCount})`}
-                          </button>
-
-                          {renderAvailLine(s, vId, effDriverId, autoDriverName)}
-                        </div>
-                      )}
-                    </td>
-
-                    <td>
-                      {capacityMeta.insufficient ? (
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          Onay bu modda aşağıdaki Dispatch önizleme kartından verilir.
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={approveDisabled}
-                          onClick={() => approveShift(s)}
-                          title={
-                            !vId ? "Araç seç" :
-                            !effDriverId ? "Driver seç (veya araç driver bağlı olsun)" :
-                            capacityMeta.blockCode ? capacityMeta.blockMessage :
-                            a?.status === "checking" ? "Kontrol ediliyor" :
-                            a?.status === "conflict" ? "Çakışma var" :
-                            a?.status === "error" ? "Uygunluk hatası" :
-                            ""
-                          }
-                        >
-                          {busy ? "..." : "Approve"}
-                        </button>
-                      )}
-                    </td>
-
-                    <td>
-                      <button type="button" disabled={busy} onClick={() => rejectShift(s)}>
-                        {busy ? "..." : "Reddet"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <div className="muted">Bekleyen talep yok.</div>
-        )}
-      </div>
-
-      {/* TÜM SHIFTS */}
-      <div className="card">
-        <h3>Tüm Shifts</h3>
-        <div className="muted" style={{ marginBottom: 8 }}>Bekleyen Talepler üstte görünür. Bu listede varsayılan olarak sadece onaylı ve aktif işler gösterilir.</div>
-
-        <div className="toolbarLeft" style={{ marginBottom: 10 }}>
-          <select value={listStatus} onChange={(e) => setListStatus(e.target.value)}>
-            <option value="OPEN">Açık (APPROVED + ACTIVE)</option>
-            <option value="ALL">Hepsi</option>
-            <option value="REQUESTED">REQUESTED</option>
-            <option value="DRAFT">DRAFT</option>
-            <option value="APPROVED">APPROVED</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="DONE">DONE</option>
-            <option value="REJECTED">REJECTED</option>
-          </select>
-
-          <input
-            value={listQ}
-            onChange={(e) => setListQ(e.target.value)}
-            placeholder="Ara (id / company / plate / driver / not)"
-            style={{ minWidth: 320 }}
-          />
-
-          <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={onlyAgreement}
-              onChange={(e) => setOnlyAgreement(e.target.checked)}
-            />
-            Sadece Agreement shiftleri
-          </label>
-
-          <button
-            type="button"
-            className="btn sm"
-            onClick={() => {
-              setListQ("");
-              setListStatus("OPEN");
-              setOnlyAgreement(false);
-            }}
-          >
-            Temizle
-          </button>
-        </div>
-
-        <ListSelectionBanner
-          selectedLabel={copilotShift ? `Vardiya #${copilotShift.id}` : ""}
-          selectedSummary={copilotShift ? [String(copilotShift?.status || "").toUpperCase() || "-", fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(" • ") : ""}
-          visibleCount={listFiltered.length}
-          totalCount={items.length}
-          filterValue={`${listQ} ${listStatus} ${onlyAgreement ? 'agreement' : ''}`.trim()}
-          onClearFilter={() => { setListQ(""); setListStatus("OPEN"); setOnlyAgreement(false); }}
-          helper="Copilot seçili vardiyayı kullanır."
-        />
-
-        {listFiltered.length ? (
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Company</th>
-                <th>Teklifler</th>
-                <th>Vehicle</th>
-                <th>Driver</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Uzatma</th>
-                <th>Operasyon</th>
-              </tr>
-            </thead>
-            <tbody>
-              {listFiltered.map((s) => (
-                <tr key={s.id} onClick={() => setFocusedTrackShiftId(Number(s?.id || 0) || null)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(s?.id || 0))}>
-                  <td>
-                    {s.id}
-                    <AgreementBadge agreementId={s.agreementId} />
-                    {Number(s.splitRootId || 0) > 0 ? (
-                      <div className="muted" style={{ marginTop: 4 }}>
-                        Paket #{s.splitRootId}
-                        {Number(s.splitIndex || 0) > 0 && Number(s.splitTotal || 0) > 0
-                          ? ` • ${s.splitIndex}/${s.splitTotal}`
-                          : ""}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td>
-                    <span className="pill" data-status={s.status}>
-                      {s.status}
-                    </span>
-                  </td>
-                  <td className="muted">{s.company?.name || `#${s.companyId}`}</td>
-
-                  <td>
-                    {Number(s?.agreementId) > 0 ? (
-                      <div className="card" style={{ marginTop: 0 }}>
-                        <div style={{ fontWeight: 800 }}>Agreement shift</div>
-                        <div className="muted" style={{ marginTop: 6 }}>Pazarlık/teklif kapalı (Agreement kaynaklı).</div>
-                      </div>
-                    ) : (
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {(() => {
-                        const mo = offersByShiftId.get(Number(s.id));
-                        if (!mo) return null;
-                        return (
-                          <div className="card" style={{ marginTop: 0 }} title="Market teklifi (ShiftOffer)">
-                            <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                              <div style={{ fontWeight: 800 }}>Market Teklifi</div>
-                              {statusPill(mo.status)}
-                            </div>
-                            <div className="muted" style={{ marginTop: 6 }}>Company: <b>{formatTRY(mo.amountCompany)} ₺</b> • Room: <b>{formatTRY(mo.amountRoom)} ₺</b></div>
-                          </div>
-                        );
-                      })()}
-                      <div>
-                        <b>C→R</b>
-                        <div style={{ marginTop: 4 }}>{renderCompanyOfferSummary(s)}</div>
-                      </div>
-                      <div>
-                        <b>R→C</b>
-                        <div style={{ marginTop: 4 }}>{renderRoomOfferSummary(s)}</div>
-                      </div>
-                    </div>
-                    )}
-                  </td>
-
-                  <td className="muted">{s.vehicle?.plate || (s.vehicleId ? `#${s.vehicleId}` : "-")}</td>
-                  <td className="muted">{s.driver?.fullName || (s.driverId ? `#${s.driverId}` : "-")}</td>
-                  <td className="muted" title={String(s.startAt)}>{fmtTR(s.startAt)}</td>
-                  <td className="muted" title={String(s.endAt)}>{fmtTR(s.endAt)}</td>
-                
-  <td>
-    {s.extendRequestedEndAt && String(s.extendDecision || "PENDING") === "PENDING" ? (
-      <div style={{ display: "grid", gap: 6 }}>
-        <div className="muted" title={String(s.extendRequestedEndAt)}>
-          Talep: <b>{fmtTR(s.extendRequestedEndAt)}</b>
-        </div>
-        <input
-          placeholder="Not (opsiyonel)"
-          value={extendNoteSel[Number(s.id)] || ""}
-          onChange={(e) => setExtendNote(s.id, e.target.value)}
-        />
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <button type="button" disabled={busy} onClick={() => decideExtend(s.id, "ACCEPTED")}>Kabul</button>
-          <button type="button" disabled={busy} onClick={() => decideExtend(s.id, "REJECTED")}>Reddet</button>
-        </div>
-      </div>
-    ) : (
-      <span className="muted">-</span>
-    )}
-  </td>
-  <td>
-    <div style={{ display: "grid", gap: 8 }}>
-      <button type="button" className="btn sm" disabled={busy} onClick={() => openOpsEvents(s.id)}>İşlem Kaydı</button>
-      {String(s.status || "").toUpperCase() === "APPROVED" || String(s.status || "").toUpperCase() === "ACTIVE" ? (
-        <button type="button" className="btn sm primary" disabled={busy} onClick={() => openReassignModal(s)}>Atamayı Değiştir</button>
-      ) : null}
-    </div>
-  </td>
-</tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="muted">Kayıt yok.</div>
-        )}
-      </div>
+      <RoomFinalListSection
+        listStatus={listStatus}
+        setListStatus={setListStatus}
+        listQ={listQ}
+        setListQ={setListQ}
+        onlyAgreement={onlyAgreement}
+        setOnlyAgreement={setOnlyAgreement}
+        copilotShift={copilotShift}
+        listFiltered={listFiltered}
+        items={items}
+        offersByShiftId={offersByShiftId}
+        vehiclesById={vehiclesById}
+        extendNoteSel={extendNoteSel}
+        setExtendNote={setExtendNote}
+        busy={busy}
+        decideExtend={decideExtend}
+        openOpsEvents={openOpsEvents}
+        openReassignModal={openReassignModal}
+        setFocusedTrackShiftId={setFocusedTrackShiftId}
+        copilotShiftId={copilotShiftId}
+      />
 
       {/* Preview error/info (modal dışında küçük banner) */}
       {previewOpen && previewErr ? (

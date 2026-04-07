@@ -55,7 +55,8 @@ async function main() {
     body: { refreshToken: refresh1, deviceId },
   });
   must('reuse returns 401', reuse.status === 401);
-  must('reuse detected code ok', String(reuse.json?.code || reuse.json?.error || '') === 'REFRESH_REUSE_DETECTED');
+  const reuseCode = String(reuse.json?.code || reuse.json?.error?.code || reuse.json?.error || '');
+  must('reuse detected code ok', reuseCode === 'REFRESH_REUSE_DETECTED');
 
   step('session list visible');
   const sessions = await reqJson('GET', '/api/me/sessions', { token: token2 });

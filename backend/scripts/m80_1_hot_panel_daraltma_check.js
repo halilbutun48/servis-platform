@@ -8,6 +8,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
 function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
 function ok(msg) { console.log(`OK ${msg}`); }
@@ -47,17 +73,17 @@ const geo = read("web/src/panels/company/GeoReviewPanel.jsx");
 const map = read("web/src/panels/company/MapPanel.jsx");
 const shifts = read("web/src/panels/company/ShiftsPanel.jsx");
 
-if (!geo.includes("/api/company/personels?${qs.toString()}")) ok("GeoReviewPanel raw personels query removed"); else fail("GeoReviewPanel raw personels query removed");
-if (geo.includes("needsExpandedDataset")) ok("GeoReviewPanel keeps expanded dataset guard"); else fail("GeoReviewPanel keeps expanded dataset guard");
-if (geo.includes("force: !!openIntent?.forceRefresh")) ok("GeoReviewPanel only force refreshes from explicit open intent"); else fail("GeoReviewPanel only force refreshes from explicit open intent");
-if (geo.includes("getCompanyGeoNeedsReview(") && geo.includes("getCompanyPersonels(")) ok("GeoReviewPanel uses companyDataHub helpers for list loading"); else fail("GeoReviewPanel uses companyDataHub helpers for list loading");
+if (!includesText(geo, "/api/company/personels?${qs.toString()}")) ok("GeoReviewPanel raw personels query removed"); else fail("GeoReviewPanel raw personels query removed");
+if (includesText(geo, "needsExpandedDataset")) ok("GeoReviewPanel keeps expanded dataset guard"); else fail("GeoReviewPanel keeps expanded dataset guard");
+if (includesText(geo, "force: !!openIntent?.forceRefresh")) ok("GeoReviewPanel only force refreshes from explicit open intent"); else fail("GeoReviewPanel only force refreshes from explicit open intent");
+if (includesText(geo, "getCompanyGeoNeedsReview(") && includesText(geo, "getCompanyPersonels(")) ok("GeoReviewPanel uses companyDataHub helpers for list loading"); else fail("GeoReviewPanel uses companyDataHub helpers for list loading");
 
-if (map.includes("const scheduleRefresh = useCallback")) ok("MapPanel keeps coalesced refresh helper"); else fail("MapPanel keeps coalesced refresh helper");
-if (map.includes("refreshTimersRef")) ok("MapPanel stores refresh timers in shared ref"); else fail("MapPanel stores refresh timers in shared ref");
-if (!map.includes("reloadVehiclesTimer") && !map.includes("reloadShiftsTimer")) ok("MapPanel legacy reload timer names removed"); else fail("MapPanel legacy reload timer names removed");
+if (includesText(map, "const scheduleRefresh = useCallback")) ok("MapPanel keeps coalesced refresh helper"); else fail("MapPanel keeps coalesced refresh helper");
+if (includesText(map, "refreshTimersRef")) ok("MapPanel stores refresh timers in shared ref"); else fail("MapPanel stores refresh timers in shared ref");
+if (!includesText(map, "reloadVehiclesTimer") && !includesText(map, "reloadShiftsTimer")) ok("MapPanel legacy reload timer names removed"); else fail("MapPanel legacy reload timer names removed");
 
-if (shifts.includes('useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);')) ok("ShiftsPanel rooms auto reload no longer forces reference refresh"); else fail("ShiftsPanel rooms auto reload no longer forces reference refresh");
-if (shifts.includes("loadCommercialSummary(") || shifts.includes("ttlMs: 15000") || shifts.includes("ttlMs: 30000")) ok("ShiftsPanel commercial summary path remains narrowed"); else fail("ShiftsPanel commercial summary path remains narrowed");
+if (includesText(shifts, 'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);')) ok("ShiftsPanel rooms auto reload no longer forces reference refresh"); else fail("ShiftsPanel rooms auto reload no longer forces reference refresh");
+if (includesText(shifts, "loadCommercialSummary(") || includesText(shifts, "ttlMs: 15000") || includesText(shifts, "ttlMs: 30000")) ok("ShiftsPanel commercial summary path remains narrowed"); else fail("ShiftsPanel commercial summary path remains narrowed");
 
 console.log("INFO running scale readiness baseline");
 const scale = spawnSync(process.execPath, [path.join(repoRoot, "backend/scripts/scale_readiness_check.js")], { cwd: repoRoot, encoding: "utf8" });

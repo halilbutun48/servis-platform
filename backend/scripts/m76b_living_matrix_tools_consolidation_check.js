@@ -6,6 +6,32 @@ import { readRepoContractState } from './_repoContractState.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const artifactDir = path.join(repoRoot, 'artifacts', 'consolidation');
 
 function read(rel) {
@@ -40,9 +66,9 @@ const required = [
 required.forEach(exists);
 
 const packPs = read('tools/pack.ps1');
-if (!packPs.includes('M67->M75') && !packPs.includes('M67 -> M{0}')) fail('master pack visible phase mentions M67-M75');
+if (!includesText(packPs, 'M67->M75') && !includesText(packPs, 'M67 -> M{0}')) fail('master pack visible phase mentions M67-M75');
 ok('master pack visible phase mentions M67-M75');
-if (!(packPs.includes('pack_phase_m67_m75.ps1') || packPs.includes('pack_m67_m75.ps1'))) fail('master pack calls phase4 wrapper');
+if (!(includesText(packPs, 'pack_phase_m67_m75.ps1') || includesText(packPs, 'pack_m67_m75.ps1'))) fail('master pack calls phase4 wrapper');
 ok('master pack calls phase4 wrapper');
 
 if (!(state.canonicalPackHierarchy?.publicRoot === 'tools/packs/living' && state.canonicalPackHierarchy?.masterPackUsesPublicWrappers === true)) fail('state marks living wrappers as canonical');

@@ -21,91 +21,33 @@ import {
 // Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
 import * as H from "./helpers.js";
 import { addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd, ymdTR } from "../../time/tr.js";
-import { computeRouteKey, stringifyPolyline, sumDistanceKm } from "../../services/routeLearning.js";
-import { osrmRoute } from "../../services/osrmRoute.js";
-import { etaMinutes } from "../../geo.js";
+import { httpError, sendErrorResponse } from "../../errors/http.js";
+import { rebuildShiftRouteStateBestEffort, clearShiftRoutePreviewCache } from "../../services/shiftRouteState.js";
+import { upsertShiftSeriesCommercialBackboneByShiftId } from "../../services/paymentBackbone.js";
 
 const emitShift = H.emitShift;
 
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 
-function buildShiftServicePathPoints(shift) {
-  const hub =
-    typeof shift?.hubLat === "number" && typeof shift?.hubLng === "number"
-      ? { lat: Number(shift.hubLat), lng: Number(shift.hubLng) }
-      : null;
-  const direction = String(shift?.direction || "INBOUND").toUpperCase();
-  const pattern = String(shift?.pattern || "ONE_WAY").toUpperCase();
-  const stopPoints = Array.isArray(shift?.stops)
-    ? shift.stops
-        .filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number")
-        .sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0))
-        .map((s) => ({ lat: Number(s.lat), lng: Number(s.lng) }))
-    : [];
-
-  let servicePoints = [];
-  if (!hub) {
-    servicePoints = stopPoints.slice();
-  } else if (pattern === "LOOP") {
-    servicePoints = [hub, ...stopPoints, hub];
-  } else if (direction === "OUTBOUND") {
-    servicePoints = [hub, ...stopPoints];
-  } else {
-    servicePoints = [...stopPoints, hub];
-  }
-
-  return { hub, direction, pattern, stopPoints, servicePoints };
+function isRouteShapePatch(body) {
+  return Object.prototype.hasOwnProperty.call(body || {}, 'hubLat')
+    || Object.prototype.hasOwnProperty.call(body || {}, 'hubLng')
+    || Object.prototype.hasOwnProperty.call(body || {}, 'direction')
+    || Object.prototype.hasOwnProperty.call(body || {}, 'pattern');
 }
 
-async function refreshShiftRouteSnapshot(shiftId) {
-  const shift = await prisma.shift.findUnique({
+async function loadFullShift(shiftId) {
+  return prisma.shift.findUnique({
     where: { id: Number(shiftId) },
-    include: { stops: { orderBy: { order: "asc" } } },
-  });
-  if (!shift) return null;
-
-  const { hub, direction, pattern, stopPoints, servicePoints } = buildShiftServicePathPoints(shift);
-  const routeSnapshotInputHash = computeRouteKey({ direction, pattern, hub, stops: stopPoints });
-
-  let routeSnapshotPolyline = null;
-  let routeSnapshotDistanceM = null;
-  let routeSnapshotDurationSec = null;
-  let routeSnapshotValidatedAt = null;
-
-  if (servicePoints.length >= 2) {
-    const routed = await osrmRoute(servicePoints);
-    if (routed?.ok && Array.isArray(routed.points) && routed.points.length >= 2) {
-      routeSnapshotPolyline = stringifyPolyline(routed.points);
-      const distanceM = Number.isFinite(Number(routed.distanceM))
-        ? Math.round(Number(routed.distanceM))
-        : Math.round(Number(sumDistanceKm(routed.points) * 1000));
-      const durationSec = Number.isFinite(Number(routed.durationSec))
-        ? Math.round(Number(routed.durationSec))
-        : Math.round(Number(etaMinutes(Number(distanceM || 0) / 1000, 30) * 60));
-      routeSnapshotDistanceM = Number.isFinite(distanceM) ? distanceM : null;
-      routeSnapshotDurationSec = Number.isFinite(durationSec) ? durationSec : null;
-      routeSnapshotValidatedAt = new Date();
-    }
-  }
-
-  await prisma.shift.update({
-    where: { id: shift.id },
-    data: {
-      routeSnapshotPolyline,
-      routeSnapshotDistanceM,
-      routeSnapshotDurationSec,
-      routeSnapshotValidatedAt,
-      routeSnapshotInputHash,
+    include: {
+      stops: { orderBy: { order: "asc" } },
+      progress: true,
+      vehicle: true,
+      driver: true,
+      company: true,
+      room: true,
     },
   });
-
-  return {
-    routeSnapshotInputHash,
-    routeSnapshotPolyline,
-    routeSnapshotDistanceM,
-    routeSnapshotDurationSec,
-    routeSnapshotValidatedAt,
-  };
 }
 
 // --- Agreement overlap helpers (used to skip market offers when a contract already exists) ---
@@ -190,7 +132,7 @@ export function attachShiftCompanyRoutes(r, io) {
           req.user.role === "COMPANY" ? req.user.companyId : body.companyId;
 
         if (!effectiveCompanyId) {
-          return res.status(400).json({ error: "companyId required" });
+          return sendErrorResponse(res, httpError(400, "companyId required"));
         }
         // ✅ COMPANY: wizard için DRAFT destekle (taslaklar UI'da gizli, sadece wizard includeDrafts=1 ile görür)
         const reqStatus = String(body.status ?? "").toUpperCase();
@@ -204,7 +146,7 @@ export function attachShiftCompanyRoutes(r, io) {
         const hasHubLat = body.hubLat != null;
         const hasHubLng = body.hubLng != null;
         if (hasHubLat !== hasHubLng) {
-          return res.status(400).json({ error: "hubLat+hubLng together" });
+          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
         }
 
         // Optional: companyOfferVehicleId verildiyse araç var mı ve aynı room mu?
@@ -214,64 +156,57 @@ export function attachShiftCompanyRoutes(r, io) {
             select: { id: true, roomId: true },
           });
           if (!v) {
-            return res.status(400).json({ error: "companyOfferVehicleId not found" });
+            return sendErrorResponse(res, httpError(400, "companyOfferVehicleId not found"));
           }
           if (v.roomId && body.roomId && Number(v.roomId) !== Number(body.roomId)) {
-            return res
-              .status(400)
-              .json({ error: "companyOfferVehicleId must belong to the same room" });
+            return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "companyOfferVehicleId must belong to the same room"));
           }
         }
 
-        const shift = await prisma.shift.create({
-          data: {
-            companyId: effectiveCompanyId,
-            // ✅ M24: roomId optional (market shift)
-            roomId: body.roomId ?? null,
-            startAt: body.startAt,
-            endAt: body.endAt,
+        const shift = await prisma.$transaction(async (tx) => {
+          const created = await tx.shift.create({
+            data: {
+              companyId: effectiveCompanyId,
+              // ✅ M24: roomId optional (market shift)
+              roomId: body.roomId ?? null,
+              startAt: body.startAt,
+              endAt: body.endAt,
 
-            status: effectiveStatus,
+              status: effectiveStatus,
 
-            // ✅ M19: routing meta
-            hubLat: body.hubLat ?? null,
-            hubLng: body.hubLng ?? null,
-            direction: body.direction ?? "INBOUND",
-            pattern: body.pattern ?? "ONE_WAY",
-            requiredPaxOverride: body.requiredPax ?? null,
+              // ✅ M19: routing meta
+              hubLat: body.hubLat ?? null,
+              hubLng: body.hubLng ?? null,
+              direction: body.direction ?? "INBOUND",
+              pattern: body.pattern ?? "ONE_WAY",
+              requiredPaxOverride: body.requiredPax ?? null,
 
-            companyOfferVehicleId: body.companyOfferVehicleId ?? null,
-            companyOfferAmount: body.companyOfferAmount ?? null,
-            companyOfferNote: body.companyOfferNote ?? null,
-          },
-          include: { company: true, room: true, stops: true },
-        });
-
-        // stops (optional)
-        if (Array.isArray(body.stops) && body.stops.length) {
-          await prisma.stop.createMany({
-            data: body.stops.map((s) => ({
-              shiftId: shift.id,
-              name: s.name,
-              lat: s.lat,
-              lng: s.lng,
-              order: s.order,
-              type: s.type ?? "MANUAL",
-            })),
+              companyOfferVehicleId: body.companyOfferVehicleId ?? null,
+              companyOfferAmount: body.companyOfferAmount ?? null,
+              companyOfferNote: body.companyOfferNote ?? null,
+            },
+            include: { company: true, room: true, stops: true },
           });
-        }
 
-        const full = await prisma.shift.findUnique({
-          where: { id: shift.id },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
+          if (Array.isArray(body.stops) && body.stops.length) {
+            await tx.stop.createMany({
+              data: body.stops.map((s) => ({
+                shiftId: created.id,
+                name: s.name,
+                lat: s.lat,
+                lng: s.lng,
+                order: s.order,
+                type: s.type ?? "MANUAL",
+              })),
+            });
+          }
+
+          return created;
         });
+
+        await rebuildShiftRouteStateBestEffort(shift.id);
+        await upsertShiftSeriesCommercialBackboneByShiftId(shift.id).catch(() => null);
+        const full = await loadFullShift(shift.id);
 
         await audit(req, {
           action: "SHIFT_CREATE",
@@ -283,9 +218,7 @@ export function attachShiftCompanyRoutes(r, io) {
         emitShift(io, full, "shift:list");
         return res.json(full);
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -299,7 +232,7 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const shift = await prisma.shift.findUnique({
           where: { id: shiftId },
@@ -311,18 +244,18 @@ export function attachShiftCompanyRoutes(r, io) {
             _count: { select: { offers: true } },
           },
         });
-        if (!shift) return res.status(404).json({ error: "Shift not found" });
+        if (!shift) return sendErrorResponse(res, httpError(404, "Shift not found"));
 
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         if (shift.status !== "DRAFT") {
-          return res.status(409).json({ error: "Only DRAFT shifts can be deleted here" });
+          return sendErrorResponse(res, httpError(409, "Only DRAFT shifts can be deleted here"));
         }
 
         if (shift.roomId != null || Number(shift?._count?.offers || 0) > 0) {
-          return res.status(409).json({ error: "Draft already moved beyond temp stage" });
+          return sendErrorResponse(res, httpError(409, "Draft already moved beyond temp stage"));
         }
 
         await prisma.$transaction([
@@ -346,7 +279,7 @@ export function attachShiftCompanyRoutes(r, io) {
 
         return res.json({ ok: true, deleted: true, shiftId });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -360,7 +293,7 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const body = validateWithZod(createShiftOffersSchema, req.body);
 
@@ -368,19 +301,19 @@ export function attachShiftCompanyRoutes(r, io) {
           where: { id: shiftId },
           select: { id: true, companyId: true, roomId: true, status: true, startAt: true, endAt: true },
         });
-        if (!shift) return res.status(404).json({ error: "Shift not found" });
+        if (!shift) return sendErrorResponse(res, httpError(404, "Shift not found"));
 
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         // Market shift only: roomId must be null
         if (shift.roomId != null) {
-          return res.status(400).json({ error: "Shift already assigned to a room" });
+          return sendErrorResponse(res, httpError(400, "Shift already assigned to a room"));
         }
 
         if (shift.status !== "REQUESTED" && shift.status !== "DRAFT") {
-          return res.status(409).json({ error: "Shift not editable for offers" });
+          return sendErrorResponse(res, httpError(409, "Shift not editable for offers"));
         }
 
         const pendingGeoCount = await prisma.shiftPersonel.count({
@@ -394,22 +327,13 @@ export function attachShiftCompanyRoutes(r, io) {
           },
         });
         if (pendingGeoCount > 0) {
-          return res.status(409).json({
-            error: "Shift has personel requiring geo review",
-            code: "SHIFT_GEO_REVIEW_REQUIRED",
-            pendingGeoCount,
-          });
+          return sendErrorResponse(res, httpError(409, "SHIFT_GEO_REVIEW_REQUIRED", "Shift has personel requiring geo review", { pendingGeoCount }));
         }
 
-        // ✅ Taslak (DRAFT) shift: ilk teklif gönderiminde REQUESTED'a geçir (taslaklar sadece wizard içinde görünür)
-        if (shift.status === "DRAFT") {
-          await prisma.shift.update({ where: { id: shiftId }, data: { status: "REQUESTED" } });
-        }
-
-                const roomIds = Array.from(
+        const roomIds = Array.from(
           new Set((body.roomIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x)))
         );
-        if (!roomIds.length) return res.status(400).json({ error: "roomIds required" });
+        if (!roomIds.length) return sendErrorResponse(res, httpError(400, "roomIds required"));
 
         // COMPANY: region gate (ops/KVKK) — offers can be sent only to rooms in the same region.
         let companyRegionId = null;
@@ -426,7 +350,7 @@ export function attachShiftCompanyRoutes(r, io) {
           select: { id: true, regionId: true },
         });
         if (rooms.length !== roomIds.length) {
-          return res.status(400).json({ error: "Some roomIds not found" });
+          return sendErrorResponse(res, httpError(400, "Some roomIds not found"));
         }
 
         if (companyRegionId != null) {
@@ -434,11 +358,7 @@ export function attachShiftCompanyRoutes(r, io) {
             .filter((r) => r.regionId != null && Number(r.regionId) !== Number(companyRegionId))
             .map((r) => Number(r.id));
           if (cross.length) {
-            return res.status(409).json({
-              error: "Cross-region offer not allowed",
-              companyRegionId,
-              crossRoomIds: cross,
-            });
+            return sendErrorResponse(res, httpError(409, "CROSS_REGION_OFFER_NOT_ALLOWED", "Cross-region offer not allowed", { companyRegionId, crossRoomIds: cross }));
           }
         }
 
@@ -454,15 +374,15 @@ export function attachShiftCompanyRoutes(r, io) {
         const skippedRoomIds = roomIds.filter((rid) => blockedRoomIdsSet.has(Number(rid)));
         const effectiveRoomIds = roomIds.filter((rid) => !blockedRoomIdsSet.has(Number(rid)));
         if (!effectiveRoomIds.length) {
-          return res.status(409).json({
-            error: "All selected rooms are already covered by an active agreement in this time window",
-            skippedRoomIds,
-          });
+          return sendErrorResponse(res, httpError(409, "AGREEMENT_BLOCKED_ROOMS", "All selected rooms are already covered by an active agreement in this time window", { skippedRoomIds }));
         }
 
-        await prisma.$transaction(
-          effectiveRoomIds.map((rid) =>
-            prisma.shiftOffer.upsert({
+        await prisma.$transaction(async (tx) => {
+          if (shift.status === "DRAFT") {
+            await tx.shift.update({ where: { id: shiftId }, data: { status: "REQUESTED" } });
+          }
+          for (const rid of effectiveRoomIds) {
+            await tx.shiftOffer.upsert({
               where: { shiftId_roomId: { shiftId, roomId: rid } },
               create: {
                 shiftId,
@@ -472,14 +392,13 @@ export function attachShiftCompanyRoutes(r, io) {
                 noteCompany: body.noteCompany ?? null,
               },
               update: {
-                // idempotent bulk: refresh company amount/note and reopen unless accepted/cancelled
                 status: "OPEN",
                 amountCompany: body.amountCompany ?? null,
                 noteCompany: body.noteCompany ?? null,
               },
-            })
-          )
-        );
+            });
+          }
+        });
 
         const items = await prisma.shiftOffer.findMany({
           where: { shiftId },
@@ -503,7 +422,7 @@ export function attachShiftCompanyRoutes(r, io) {
 
         return res.json({ ok: true, items, skippedRoomIds });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -516,31 +435,29 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const body = validateWithZod(updateShiftSchema, req.body);
 
         const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         // ✅ M54: Agreement kaynaklı shiftlerde pazarlık/offer kapalı
         if (shift?.agreementId) {
-          return res.status(409).json({
-            error: "Agreement shift: offers disabled",
-            code: "AGREEMENT_NO_OFFERS",
-          });
+          return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
 
         // ✅ M19: hub pair validation (update)
         const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
         const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
         if (updHasHubLat !== updHasHubLng) {
-          return res.status(400).json({ error: "hubLat+hubLng together" });
+          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
         }
 
+        const routeShapeChanged = isRouteShapePatch(body);
         const updated = await prisma.shift.update({
           where: { id },
           data: {
@@ -563,18 +480,20 @@ export function attachShiftCompanyRoutes(r, io) {
           },
         });
 
+        if (routeShapeChanged) await rebuildShiftRouteStateBestEffort(id);
+        else clearShiftRoutePreviewCache(id);
+
         await audit(req, {
           action: "SHIFT_UPDATE",
           entity: "Shift",
           entityId: id,
         });
 
+        await upsertShiftSeriesCommercialBackboneByShiftId(updated.id).catch(() => null);
         emitShift(io, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -587,25 +506,25 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const body = validateWithZod(updateCompanyOfferSchema, req.body);
 
         const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         // ✅ M19: hub pair validation (update)
         const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
         const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
         if (updHasHubLat !== updHasHubLng) {
-          return res.status(400).json({ error: "hubLat+hubLng together" });
+          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
         }
 
         // only allow negotiate in DRAFT/REQUESTED (optional rule)
         if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
-          return res.status(400).json({ error: `Offer not allowed for status=${shift.status}` });
+          return sendErrorResponse(res, httpError(400, "BAD_REQUEST", `Offer not allowed for status=${shift.status}`));
         }
 
         if (body.companyOfferVehicleId != null) {
@@ -613,11 +532,9 @@ export function attachShiftCompanyRoutes(r, io) {
             where: { id: body.companyOfferVehicleId },
             select: { id: true, roomId: true },
           });
-          if (!v) return res.status(400).json({ error: "companyOfferVehicleId not found" });
+          if (!v) return sendErrorResponse(res, httpError(400, "companyOfferVehicleId not found"));
           if (v.roomId && shift.roomId && Number(v.roomId) !== Number(shift.roomId)) {
-            return res.status(400).json({
-              error: "companyOfferVehicleId must belong to the same room",
-            });
+            return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "companyOfferVehicleId must belong to the same room"));
           }
         }
 
@@ -644,12 +561,11 @@ export function attachShiftCompanyRoutes(r, io) {
           entityId: id,
         });
 
+        await upsertShiftSeriesCommercialBackboneByShiftId(updated.id).catch(() => null);
         emitShift(io, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -662,20 +578,20 @@ export function attachShiftCompanyRoutes(r, io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const body = validateWithZod(updateRoomOfferDecisionSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         // ✅ M19: hub pair validation (update)
         const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
         const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
         if (updHasHubLat !== updHasHubLng) {
-          return res.status(400).json({ error: "hubLat+hubLng together" });
+          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
         }
 
         const updated = await prisma.shift.update({
@@ -720,12 +636,11 @@ if (updated?.roomId) {
   });
 }
 
+        await upsertShiftSeriesCommercialBackboneByShiftId(updated.id).catch(() => null);
         emitShift(io, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
-        return res
-          .status(e?.status ?? 500)
-          .json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -740,35 +655,35 @@ r.put(
   async (req, res) => {
     try {
       const id = Number(req.params.id);
-      if (!Number.isFinite(id)) return res.status(400).json({ error: "bad shiftId" });
+      if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
       const body = validateWithZod(extendShiftRequestSchema, req.body);
       const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
       if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-        return res.status(403).json({ error: "Forbidden" });
+        return sendErrorResponse(res, httpError(403, "Forbidden"));
       }
 
       if (!shift.roomId) {
-        return res.status(409).json({ error: "Shift has no room (assign first)" });
+        return sendErrorResponse(res, httpError(409, "Shift has no room (assign first)"));
       }
 
       const st = String(shift.status || "").toUpperCase();
       if (!["APPROVED", "ACTIVE"].includes(st)) {
-        return res.status(409).json({ error: "Shift must be APPROVED/ACTIVE" });
+        return sendErrorResponse(res, httpError(409, "Shift must be APPROVED/ACTIVE"));
       }
 
       if (shift.extendDecision === "PENDING" && shift.extendRequestedEndAt) {
-        return res.status(409).json({ error: "There is already a pending extension request" });
+        return sendErrorResponse(res, httpError(409, "There is already a pending extension request"));
       }
 
       const cur = new Date(shift.endAt);
       const next = new Date(body.requestedEndAt);
       if (!Number.isFinite(cur.getTime()) || !Number.isFinite(next.getTime())) {
-        return res.status(400).json({ error: "Invalid date" });
+        return sendErrorResponse(res, httpError(400, "Invalid date"));
       }
       if (!(next.getTime() > cur.getTime())) {
-        return res.status(400).json({ error: "requestedEndAt must be > endAt" });
+        return sendErrorResponse(res, httpError(400, "requestedEndAt must be > endAt"));
       }
 
       const updated = await prisma.shift.update({
@@ -816,7 +731,7 @@ r.put(
       emitShift(io, updated, "shift:list");
       return res.json(updated);
     } catch (e) {
-      return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+      return sendErrorResponse(res, e);
     }
   }
 );
@@ -830,13 +745,13 @@ r.put(
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const body = validateWithZod(addStopSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res.status(400).json({ error: "Cannot add stop while shift is ACTIVE" });
+          return sendErrorResponse(res, httpError(400, "Cannot add stop while shift is ACTIVE"));
         }
 
         const maxAgg = await prisma.stop.aggregate({
@@ -856,6 +771,8 @@ r.put(
           },
         });
 
+        await rebuildShiftRouteStateBestEffort(shiftId);
+
         await audit(req, {
           action: "SHIFT_STOP_ADD",
           entity: "Shift",
@@ -863,22 +780,12 @@ r.put(
           meta: { stopId: stop.id, order: stop.order },
         });
 
-        const full = await prisma.shift.findUnique({
-          where: { id: shiftId },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
-        });
+        const full = await loadFullShift(shiftId);
 
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, stop, shift: full });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -892,18 +799,18 @@ r.put(
         const shiftId = Number(req.params.id);
         const stopId = Number(req.params.stopId);
         if (!Number.isFinite(shiftId) || !Number.isFinite(stopId)) {
-          return res.status(400).json({ error: "bad ids" });
+          return sendErrorResponse(res, httpError(400, "bad ids"));
         }
 
         const body = validateWithZod(updateStopSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res.status(400).json({ error: "Cannot update stop while shift is ACTIVE" });
+          return sendErrorResponse(res, httpError(400, "Cannot update stop while shift is ACTIVE"));
         }
 
         const stop = await prisma.stop.findUnique({ where: { id: stopId } });
-        if (!stop || stop.shiftId !== shiftId) return res.status(404).json({ error: "Stop not found" });
+        if (!stop || stop.shiftId !== shiftId) return sendErrorResponse(res, httpError(404, "Stop not found"));
 
         const updatedStop = await prisma.stop.update({
           where: { id: stopId },
@@ -916,6 +823,8 @@ r.put(
           },
         });
 
+        await rebuildShiftRouteStateBestEffort(shiftId);
+
         await audit(req, {
           action: "SHIFT_STOP_UPDATE",
           entity: "Shift",
@@ -923,22 +832,12 @@ r.put(
           meta: { stopId: updatedStop.id },
         });
 
-        const full = await prisma.shift.findUnique({
-          where: { id: shiftId },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
-        });
+        const full = await loadFullShift(shiftId);
 
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, stop: updatedStop, shift: full });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -952,19 +851,20 @@ r.put(
         const shiftId = Number(req.params.id);
         const stopId = Number(req.params.stopId);
         if (!Number.isFinite(shiftId) || !Number.isFinite(stopId)) {
-          return res.status(400).json({ error: "bad ids" });
+          return sendErrorResponse(res, httpError(400, "bad ids"));
         }
 
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res.status(400).json({ error: "Cannot delete stop while shift is ACTIVE" });
+          return sendErrorResponse(res, httpError(400, "Cannot delete stop while shift is ACTIVE"));
         }
 
         const stop = await prisma.stop.findUnique({ where: { id: stopId } });
-        if (!stop || stop.shiftId !== shiftId) return res.status(404).json({ error: "Stop not found" });
+        if (!stop || stop.shiftId !== shiftId) return sendErrorResponse(res, httpError(404, "Stop not found"));
 
         await prisma.stop.delete({ where: { id: stopId } });
+        await rebuildShiftRouteStateBestEffort(shiftId);
 
         await audit(req, {
           action: "SHIFT_STOP_DELETE",
@@ -973,22 +873,12 @@ r.put(
           meta: { stopId },
         });
 
-        const full = await prisma.shift.findUnique({
-          where: { id: shiftId },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
-        });
+        const full = await loadFullShift(shiftId);
 
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, shift: full });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -1000,12 +890,12 @@ r.put(
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res.status(400).json({ error: "Cannot add stops while shift is ACTIVE" });
+          return sendErrorResponse(res, httpError(400, "Cannot add stops while shift is ACTIVE"));
         }
 
         const body = validateWithZod(applyTemplateSchema, req.body);
@@ -1014,37 +904,42 @@ r.put(
           where: { id: body.templateId },
           include: { stops: { orderBy: { order: "asc" } } },
         });
-        if (!tpl) return res.status(404).json({ error: "Template not found" });
+        if (!tpl) return sendErrorResponse(res, httpError(404, "Template not found"));
 
         if (req.user.role === "ROOM") {
-          if (tpl.roomId && tpl.roomId !== req.user.roomId) return res.status(403).json({ error: "Forbidden" });
+          if (tpl.roomId && tpl.roomId !== req.user.roomId) return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
         if (req.user.role === "COMPANY") {
-          if (tpl.companyId && tpl.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+          if (tpl.companyId && tpl.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         const mode = body.mode ?? "REPLACE";
 
-        let baseOrder = 1;
-        if (mode === "REPLACE") {
-          await prisma.stop.deleteMany({ where: { shiftId } });
-          await prisma.shiftProgress.deleteMany({ where: { shiftId } });
-          baseOrder = 1;
-        } else {
-          const maxAgg = await prisma.stop.aggregate({ where: { shiftId }, _max: { order: true } });
-          baseOrder = (maxAgg?._max?.order ?? 0) + 1;
-        }
+        const data = await prisma.$transaction(async (tx) => {
+          let baseOrder = 1;
+          if (mode === "REPLACE") {
+            await tx.stop.deleteMany({ where: { shiftId } });
+            await tx.shiftProgress.deleteMany({ where: { shiftId } });
+            baseOrder = 1;
+          } else {
+            const maxAgg = await tx.stop.aggregate({ where: { shiftId }, _max: { order: true } });
+            baseOrder = (maxAgg?._max?.order ?? 0) + 1;
+          }
 
-        const data = (tpl.stops ?? []).map((s, idx) => ({
-          shiftId,
-          name: s.name,
-          lat: s.lat,
-          lng: s.lng,
-          type: s.type ?? "COMMON",
-          order: baseOrder + idx,
-        }));
+          const nextData = (tpl.stops ?? []).map((s, idx) => ({
+            shiftId,
+            name: s.name,
+            lat: s.lat,
+            lng: s.lng,
+            type: s.type ?? "COMMON",
+            order: baseOrder + idx,
+          }));
 
-        if (data.length) await prisma.stop.createMany({ data });
+          if (nextData.length) await tx.stop.createMany({ data: nextData });
+          return nextData;
+        });
+
+        await rebuildShiftRouteStateBestEffort(shiftId);
 
         await audit(req, {
           action: "SHIFT_STOPS_FROM_TEMPLATE",
@@ -1053,22 +948,12 @@ r.put(
           meta: { templateId: tpl.id, count: data.length, mode },
         });
 
-        const full = await prisma.shift.findUnique({
-          where: { id: shiftId },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
-        });
+        const full = await loadFullShift(shiftId);
 
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, shift: full });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -1080,13 +965,13 @@ r.put(
     async (req, res) => {
       try {
         const shiftId = Number(req.params.id);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const body = validateWithZod(reorderStopsSchema, req.body);
         const shift = await getShiftAndCheckScopeOrThrow(shiftId, req.user);
 
         if (shift.status === "ACTIVE") {
-          return res.status(400).json({ error: "Cannot reorder stops while shift is ACTIVE" });
+          return sendErrorResponse(res, httpError(400, "Cannot reorder stops while shift is ACTIVE"));
         }
 
         let stopIds = [];
@@ -1103,22 +988,22 @@ r.put(
         }
 
         stopIds = stopIds.map((x) => Number(x)).filter(Number.isFinite);
-        if (!stopIds.length) return res.status(400).json({ error: "stopIds required" });
+        if (!stopIds.length) return sendErrorResponse(res, httpError(400, "stopIds required"));
 
         const totalStops = await prisma.stop.count({ where: { shiftId } });
-        if (totalStops !== stopIds.length) return res.status(400).json({ error: "Stop ids mismatch" });
+        if (totalStops !== stopIds.length) return sendErrorResponse(res, httpError(400, "Stop ids mismatch"));
 
         const stops = await prisma.stop.findMany({
           where: { shiftId, id: { in: stopIds } },
           select: { id: true },
         });
-        if (stops.length !== stopIds.length) return res.status(400).json({ error: "Stop ids mismatch" });
+        if (stops.length !== stopIds.length) return sendErrorResponse(res, httpError(400, "Stop ids mismatch"));
 
         await prisma.$transaction(
           stopIds.map((id, idx) => prisma.stop.update({ where: { id }, data: { order: idx + 1 } }))
         );
 
-        await refreshShiftRouteSnapshot(shiftId);
+        await rebuildShiftRouteStateBestEffort(shiftId);
 
         await audit(req, {
           action: "SHIFT_STOPS_REORDER",
@@ -1127,22 +1012,12 @@ r.put(
           meta: { count: stopIds.length },
         });
 
-        const full = await prisma.shift.findUnique({
-          where: { id: shiftId },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
-        });
+        const full = await loadFullShift(shiftId);
 
         emitShift(io, full, "route:plan");
         return res.json({ ok: true, shift: full });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );

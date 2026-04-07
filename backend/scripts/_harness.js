@@ -333,8 +333,34 @@ export async function pickVehicleDriver(roomToken) {
   const vlist = await reqJson("GET", "/api/vehicles", { token: roomToken });
   const dlist = await reqJson("GET", "/api/drivers", { token: roomToken });
 
-  const vehicleId = vlist.json?.items?.[0]?.id ?? vlist.json?.[0]?.id ?? 1;
-  const driverId = dlist.json?.items?.[0]?.id ?? dlist.json?.[0]?.id ?? 1;
+  const vehicles = itemsOf(vlist);
+  const drivers = itemsOf(dlist);
+
+  const vehicleId = vehicles?.[0]?.id ?? vlist.json?.items?.[0]?.id ?? vlist.json?.[0]?.id ?? 1;
+
+  let driverId = null;
+  for (const d of drivers) {
+    const did = Number(d?.id || 0);
+    if (!did) continue;
+    const activePenalty = await prisma.driverPenalty.findFirst({
+      where: {
+        driverId: did,
+        type: "NO_SHOW",
+        status: "ACTIVE",
+        startsAt: { lte: new Date() },
+        endsAt: { gte: new Date() },
+      },
+      select: { id: true },
+    });
+    if (!activePenalty) {
+      driverId = did;
+      break;
+    }
+  }
+
+  if (!driverId) {
+    driverId = drivers?.[0]?.id ?? dlist.json?.items?.[0]?.id ?? dlist.json?.[0]?.id ?? 1;
+  }
 
   return { vehicleId: Number(vehicleId), driverId: Number(driverId) };
 }

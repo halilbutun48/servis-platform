@@ -3,6 +3,32 @@ import path from "path";
 
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 let failed = false;
 
 function read(rel) {
@@ -20,19 +46,19 @@ function fail(msg) {
 
 function expectContains(rel, pattern, msg) {
   const text = read(rel);
-  if (text.includes(pattern)) ok(msg);
+  if (includesText(text, pattern)) ok(msg);
   else fail(msg);
 }
 
 function expectNotContains(rel, pattern, msg) {
   const text = read(rel);
-  if (!text.includes(pattern)) ok(msg);
+  if (!includesText(text, pattern)) ok(msg);
   else fail(msg);
 }
 
 function expectContainsAny(rel, patterns, msg) {
   const text = read(rel);
-  if (patterns.some((p) => text.includes(p))) ok(msg);
+  if (patterns.some((p) => includesText(text, p))) ok(msg);
   else fail(msg);
 }
 

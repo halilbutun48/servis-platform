@@ -3,6 +3,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function Ok($m){ Write-Host "OK $m" }
 function Fail($m){ throw "FAIL $m" }
 

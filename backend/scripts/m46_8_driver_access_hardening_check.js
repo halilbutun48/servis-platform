@@ -53,7 +53,8 @@ async function main() {
     token: driverToken,
     body: { currentPin: tempPin, newPin: '111111' },
   });
-  must('weak pin rejected', weak.status === 400 && String(weak.json?.code || '') === 'PIN_TOO_WEAK');
+  const weakCode = String(weak.json?.code || weak.json?.error?.code || weak.json?.error || '');
+  must('weak pin rejected', weak.status === 400 && weakCode === 'PIN_TOO_WEAK');
 
   step('good pin accepted');
   const changed = await reqJson('POST', '/api/auth/driver/change-pin', {
@@ -78,7 +79,8 @@ async function main() {
     }
   }
   must('pin locked response seen', !!lockResp);
-  must('pin locked code ok', String(lockResp?.json?.code || '') === 'PIN_LOCKED');
+  const lockCode = String(lockResp?.json?.code || lockResp?.json?.error?.code || lockResp?.json?.error || '');
+  must('pin locked code ok', lockCode === 'PIN_LOCKED');
   must('pin locked cooldown present', Number(lockResp?.json?.cooldownSec || 0) > 0);
 
   step('room reset pin clears lock');

@@ -2,12 +2,38 @@ import fs from "fs";
 import path from "path";
 
 const repoRoot = path.resolve(process.argv[2] || path.join(process.cwd(), ".."));
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const copilotPath = path.join(repoRoot, "web", "src", "panels", "shared", "CopilotPanel.jsx");
 const composerPath = path.join(repoRoot, "backend", "src", "ai", "chat", "helpComposer.js");
 
 function ok(label) { console.log(`OK ${label}`); }
 function fail(label) { console.error(`FAIL ${label}`); process.exitCode = 1; }
-function has(text, needle) { return text.includes(needle); }
+function has(text, needle) { return includesText(text, needle); }
 
 const copilot = fs.readFileSync(copilotPath, "utf8");
 const composer = fs.readFileSync(composerPath, "utf8");

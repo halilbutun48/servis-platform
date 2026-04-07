@@ -6,11 +6,8 @@ import { useSession } from "../../state/session";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import { personLabel } from "../../utils/labels";
 import { buildGoogleNavUrl } from "../../utils/navigation";
-import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import {
   WEEKDAYS,
-  DURATION_PRESETS,
-  QUICK_DURATION_PRESETS,
   weekdayBitFromYmdUTC,
   countMatchingDaysInRange,
   nextYmdMatchingMask,
@@ -19,89 +16,48 @@ import {
   weekMaskToText,
   addDaysISO,
 } from "../../utils/agreementUi";
-import { formatDateTimeTR, isoFromTRYmdMin, ymdTR } from "../../utils/time";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
-
-function todayYmd() {
-  return ymdTR();
-}
-
-function toHHMM(min) {
-  const m = ((Number(min) % 1440) + 1440) % 1440;
-  const hh = String(Math.floor(m / 60)).padStart(2, "0");
-  const mm = String(m % 60).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
-function parseHHMM(s) {
-  const t = String(s || "").trim();
-  const m = /^(\d{2}):(\d{2})$/.exec(t);
-  if (!m) return null;
-  const hh = Number(m[1]);
-  const mm = Number(m[2]);
-  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
-  return hh * 60 + mm;
-}
-
-function ymdMinToIso(ymd, min) {
-  return isoFromTRYmdMin(ymd, min);
-}
-
-function fmtTR(iso) {
-  if (!iso) return "-";
-  return formatDateTimeTR(iso);
-}
-
-function parseTryInput(raw) {
-  if (raw == null) return null;
-  const cleaned = String(raw).replace(/\./g, "").replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-
-function updateStoredPeopleKvkkFields(companyKey, shiftIds, patch) {
-  try {
-    const ids = Array.isArray(shiftIds) ? shiftIds : [];
-    ids.forEach((sid) => {
-      const key = `psv1:company:${companyKey}:shift:${sid}:people:v1`;
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-      const next = parsed.map((item) => ({
-        ...item,
-        ...(patch?.phone ? { phone: "" } : {}),
-        ...(patch?.address ? { address: "" } : {}),
-      }));
-      localStorage.setItem(key, JSON.stringify(next));
-    });
-  } catch {
-    // ignore
-  }
-}
-
-function collectGuidedSessionPersonIds(companyKey, shiftIds) {
-  const ids = new Set();
-  try {
-    const list = Array.isArray(shiftIds) ? shiftIds : [];
-    list.forEach((sid) => {
-      const key = `psv1:company:${companyKey}:shift:${sid}:people:v1`;
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-      parsed.forEach((item) => {
-        const pid = Number(item?.personelId ?? item?.id ?? 0);
-        if (Number.isFinite(pid) && pid > 0) ids.add(pid);
-      });
-    });
-  } catch {
-    // ignore
-  }
-  return Array.from(ids);
-}
+import { getApiErrorMessage } from "../../utils/apiContract";
+import {
+  PACKS,
+  clearPlanTermsForShiftIds,
+  collectGuidedSessionPersonIds,
+  coordNum,
+  createAdditionalCustomSlot,
+  createDefaultCustomSlots,
+  createDurationOptions,
+  createFallbackCustomSlots,
+  createInitialEndDate,
+  directionLabel,
+  emptyDestination,
+  fmtCoord,
+  fmtTR,
+  hasCoord,
+  packDescForMode,
+  packTitleForMode,
+  parseHHMM,
+  parseTryInput,
+  patternLabel,
+  readGuidedTempShiftIds,
+  stepTitle,
+  toHHMM,
+  todayYmd,
+  updateStoredPeopleKvkkFields,
+  writeGuidedTempShiftIds,
+  ymdMinToIso,
+} from "./guidedPlanModalUtils";
+import { GuidedHubStep, GuidedPlanSetupStep, GuidedSolveOffersStep } from "./guidedPlanModalSections";
+import {
+  cleanupGuidedDraftShifts,
+  createGuidedDraftShiftsAction,
+  geocodeGuidedLocation,
+  loadGuidedCompanyHub,
+  loadGuidedResumeDraftShifts,
+  osrmReorderGuidedCore,
+  refreshGuidedDraftShiftsAction,
+  saveGuidedCompanyHub,
+  sendGuidedBulkOffersAction,
+} from "./guidedPlanModalActions";
 
 function Modal({ open, onClose, children }) {
   if (!open) return null;
@@ -137,121 +93,6 @@ function Modal({ open, onClose, children }) {
   );
 }
 
-// Plan paketleri (tek akış için)
-const PACKS = [
-  {
-    key: "WK_MORNING",
-    title: "Hafta içi • Sabah",
-    desc: "07:00 → 09:00 (Toplama → Hub)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
-  },
-  {
-    key: "WK_EVENING",
-    title: "Hafta içi • Akşam",
-    desc: "17:00 → 19:00 (Hub → Dağıtım)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" }],
-  },
-  {
-    key: "WK_MORNING_EVENING",
-    title: "Hafta içi • Sabah + Akşam",
-    desc: "2 vardiya taslağı oluşturur (07-09 + 17-19)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [
-      { label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
-      { label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
-    ],
-  },
-   {
-    key: "WK_MORNING_AFTERNOON",
-    title: "Hafta içi • Sabah + Öğleden sonra",
-    desc: "2 vardiya taslağı oluşturur (06-08 + 15-17)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [
-      { label: "Sabah", startMin: 6 * 60, endMin: 8 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
-      { label: "Öğleden sonra", startMin: 15 * 60, endMin: 17 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
-    ],
-  },
-  {
-    key: "WK_NIGHT",
-    title: "Hafta içi • Gece",
-    desc: "23:00 → 01:00 (midnight-cross)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Gece", startMin: 23 * 60, endMin: 1 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
-  },
-  {
-    key: "CUSTOM",
-    title: "Özel",
-    desc: "Elle ayarla",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Özel", startMin: 8 * 60, endMin: 10 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
-  },
-];
-
-
-function packTitleForMode(pack, organization) {
-  if (!organization) return pack?.title || "";
-  const map = {
-    WK_MORNING: "Sabah toplama turu",
-    WK_EVENING: "Akşam dönüş turu",
-    WK_MORNING_EVENING: "Gidiş + dönüş",
-    WK_MORNING_AFTERNOON: "Sabah + öğleden sonra turu",
-    WK_NIGHT: "Gece turu",
-    CUSTOM: "Özel plan",
-  };
-  return map[pack?.key] || pack?.title || "";
-}
-
-function packDescForMode(pack, organization) {
-  if (!organization) return pack?.desc || "";
-  const map = {
-    WK_MORNING: "Sabah tek tur. Toplanma noktasından çıkıp ziyaret akışını başlatır.",
-    WK_EVENING: "Akşam tek tur. Dönüş ya da kapanış akışı için uygundur.",
-    WK_MORNING_EVENING: "Aynı gün gidiş + dönüş için 2 taslak oluşturur.",
-    WK_MORNING_AFTERNOON: "Sabah çıkış, öğleden sonra devam / dönüş için 2 taslak oluşturur.",
-    WK_NIGHT: "Gece başlayan tur veya etkinlik çıkışı için uygundur.",
-    CUSTOM: "Saatleri ve tur tipini elle düzenle.",
-  };
-  return map[pack?.key] || pack?.desc || "";
-}
-
-function directionLabel(direction, organization) {
-  if (!organization) return direction || "-";
-  return String(direction || "").toUpperCase() === "OUTBOUND" ? "Dağıtım / dönüş" : "Toplama / gidiş";
-}
-
-function patternLabel(pattern, organization) {
-  if (!organization) return pattern || "-";
-  return String(pattern || "").toUpperCase() === "LOOP" ? "Başlangıç noktasına dön" : "Son noktada bitir";
-}
-
-function emptyDestination() {
-  return { title: "", address: "", lat: "", lng: "", status: "idle", foundText: "" };
-}
-
-function coordNum(v) {
-  const s = String(v ?? "").trim().replace(",", ".");
-  if (!s) return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-
-function hasCoord(lat, lng) {
-  return lat != null && lng != null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(Math.abs(lat) < 1e-9 && Math.abs(lng) < 1e-9);
-}
-
-function fmtCoord(v) {
-  const n = coordNum(v);
-  return n == null ? "" : String(n);
-}
-
 function MapPickEvents({ onPick }) {
   useMapEvents({
     click(e) {
@@ -259,58 +100,6 @@ function MapPickEvents({ onPick }) {
     },
   });
   return null;
-}
-
-function stepTitle(step, who, organization) {
-  if (organization) {
-    if (step === 0) return "1) Toplanma noktası";
-    if (step === 1) return "2) Plan paketi";
-    if (step === 2) return "3) Kişi sayısı + yerler";
-    if (step === 3) return "4) Ön izleme + teklif";
-    return "";
-  }
-  if (step === 0) return "1) Şirket konumu";
-  if (step === 1) return "2) Plan paketi";
-  if (step === 2) return `3) ${who} + Durak`;
-  if (step === 3) return "4) Ön izleme + teklif";
-  return "";
-}
-
-
-const GUIDED_TEMP_STORAGE_KEY = "psv1:guidedTempShiftIds:v1";
-
-function readGuidedTempShiftIds() {
-  try {
-    const raw = localStorage.getItem(GUIDED_TEMP_STORAGE_KEY);
-    const arr = JSON.parse(raw || "[]");
-    return Array.isArray(arr) ? arr.map((x) => Number(x)).filter(Number.isFinite) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeGuidedTempShiftIds(ids) {
-  try {
-    const clean = Array.isArray(ids) ? ids.map((x) => Number(x)).filter(Number.isFinite) : [];
-    if (!clean.length) {
-      localStorage.removeItem(GUIDED_TEMP_STORAGE_KEY);
-      return;
-    }
-    localStorage.setItem(GUIDED_TEMP_STORAGE_KEY, JSON.stringify(Array.from(new Set(clean))));
-  } catch {
-    // ignore local draft tracking errors
-  }
-}
-
-function clearPlanTermsForShiftIds(ids) {
-  try {
-    (Array.isArray(ids) ? ids : [])
-      .map((x) => Number(x))
-      .filter(Number.isFinite)
-      .forEach((sid) => localStorage.removeItem(`psv1:planTerms:shift:${sid}:v1`));
-  } catch {
-    // ignore local cleanup errors
-  }
 }
 
 export default function GuidedPlanModal({
@@ -343,19 +132,17 @@ export default function GuidedPlanModal({
   const pack = useMemo(() => PACKS.find((p) => p.key === packKey) || PACKS[0], [packKey]);
   const [startDate, setStartDate] = useState(todayYmd());
   const [durationKey, setDurationKey] = useState("1d");
-  const durationOptions = useMemo(() => [{ key: "1d", label: "1 gün", days: 1 }, ...QUICK_DURATION_PRESETS], []);
+  const durationOptions = useMemo(() => createDurationOptions(), []);
   const durationDays = useMemo(() => {
     const p = durationOptions.find((x) => x.key === durationKey) || durationOptions[0] || { days: 1 };
     return Number(p.days || 1);
   }, [durationKey, durationOptions]);
-  const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
+  const [endDate, setEndDate] = useState(createInitialEndDate());
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
   const eligibleDaysCount = useMemo(() => countMatchingDaysInRange(startDate, endDate, weekMask), [startDate, endDate, weekMask]);
   const nextValidStart = useMemo(() => nextYmdMatchingMask(startDate, weekMask, 31), [startDate, weekMask]);
-  const [customSlots, setCustomSlots] = useState(() => [
-    { label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" },
-  ]);
+  const [customSlots, setCustomSlots] = useState(() => createDefaultCustomSlots());
   const [draftNote, setDraftNote] = useState("");
   const [draftAmount, setDraftAmount] = useState("");
   const [orgEstimatedPax, setOrgEstimatedPax] = useState("");
@@ -692,7 +479,7 @@ export default function GuidedPlanModal({
     }
     setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "loading", foundText: "" } : x)));
     try {
-      const r = await api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
+      const r = await geocodeGuidedLocation({ token, q });
       if (r?.ok) {
         setOrgDestinations((prev) =>
           (prev || []).map((x, i) =>
@@ -712,7 +499,7 @@ export default function GuidedPlanModal({
         setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: "Bulunamadı" } : x)));
       }
     } catch (e) {
-      setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: String(e?.message || e || "Bulunamadı") } : x)));
+      setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: getApiErrorMessage(e, "Bulunamadı") } : x)));
     }
   }
 
@@ -732,29 +519,7 @@ export default function GuidedPlanModal({
 
   async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
     const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
-    if (!ids.length) {
-      writeGuidedTempShiftIds([]);
-      if (!opts.keepState) {
-        setDraftShiftIds([]);
-        setDraftShifts([]);
-        setOsrmResById({});
-      }
-      return;
-    }
-
-    if (token) {
-      for (const sid of ids) {
-        try {
-          await api(`/api/shifts/${sid}/guided-temp`, { token, method: "DELETE" });
-        } catch {
-          // ignore cleanup errors; temp cleanup is best-effort
-        }
-      }
-    }
-
-    clearPlanTermsForShiftIds(ids);
-    writeGuidedTempShiftIds([]);
-
+    await cleanupGuidedDraftShifts({ token, ids });
     if (!opts.keepState) {
       setDraftShiftIds([]);
       setDraftShifts([]);
@@ -777,9 +542,9 @@ export default function GuidedPlanModal({
     setPackKey("WK_MORNING_EVENING");
     setStartDate(todayYmd());
     setDurationKey("1d");
-    setEndDate(addDaysISO(todayYmd(), 0));
+    setEndDate(createInitialEndDate());
     setDaysSel(selectedFromMask(62));
-    setCustomSlots([{ label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" }]);
+    setCustomSlots(createDefaultCustomSlots());
     setDraftNote("");
     setDraftAmount("");
     setOrgEstimatedPax("");
@@ -823,17 +588,16 @@ export default function GuidedPlanModal({
         if (!alive) return;
         setDraftShiftIds(lingeringIds);
         try {
-          const list = await api("/api/shifts?take=500&includeDrafts=1&includeStops=1", { token });
+          const items = await loadGuidedResumeDraftShifts({ token, ids: lingeringIds });
           if (!alive) return;
-          const itemsAll = Array.isArray(list?.items) ? list.items : [];
-          setDraftShifts(itemsAll.filter((x) => lingeringIds.includes(Number(x.id))));
+          setDraftShifts(items);
         } catch {
           if (!alive) return;
           setDraftShifts([]);
         }
       }
       try {
-        const h = await api("/api/company/hub", { token });
+        const h = await loadGuidedCompanyHub({ token });
         if (!alive) return;
         setHubLat(h?.hubLat == null ? "" : String(h.hubLat));
         setHubLng(h?.hubLng == null ? "" : String(h.hubLng));
@@ -908,11 +672,11 @@ export default function GuidedPlanModal({
 
     setBusy(true);
     try {
-      await api("/api/company/hub", { token, method: "PUT", body: { hubLat: lat, hubLng: lng } });
+      await saveGuidedCompanyHub({ token, hubLat: lat, hubLng: lng });
       setInfo(organization ? "✅ Toplanma noktası kaydedildi." : "✅ Şirket konumu kaydedildi.");
       setStep(1);
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -942,7 +706,7 @@ export default function GuidedPlanModal({
       },
       (e) => {
         setBusy(false);
-        setErr(String(e?.message || e || "Konum izni reddedildi"));
+        setErr(getApiErrorMessage(e, "Konum izni reddedildi"));
       },
       { enableHighAccuracy: true, timeout: 9000 }
     );
@@ -959,7 +723,7 @@ export default function GuidedPlanModal({
     }
     setBusy(true);
     try {
-      const r = await api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
+      const r = await geocodeGuidedLocation({ token, q });
       if (r?.ok) {
         setHubLat(String(r.lat));
         setHubLng(String(r.lng));
@@ -968,7 +732,7 @@ export default function GuidedPlanModal({
         setErr("Adres bulunamadı.");
       }
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -1013,133 +777,35 @@ export default function GuidedPlanModal({
 
     setBusy(true);
     try {
-      if (draftShiftIds.length) {
-        await cleanupDraftShifts(draftShiftIds);
-      }
-      const createdIds = [];
-
-      // Multi-day draft generation (inclusive start..end):
-      // - respects weekMask (selected weekdays)
-      // - creates one shift per (day x slot)
-      const ymds = [];
-      let cur = String(startDate);
-      for (let i = 0; i <= 370; i++) {
-        const bit = weekdayBitFromYmdUTC(cur);
-        if ((weekMask & bit) !== 0) ymds.push(cur);
-
-        if (cur === endDate) break;
-        cur = addDaysISO(cur, 1);
-      }
-
-      if (!ymds.length) {
+      const created = await createGuidedDraftShiftsAction({
+        token,
+        existingDraftShiftIds: draftShiftIds,
+        cleanupDraftShifts,
+        stepItems: items,
+        startDate,
+        endDate,
+        weekMask,
+        draftNote,
+        draftAmount,
+        organization,
+        orgNoteSummaryText: organization ? orgNoteSummary() : "",
+        orgReturnType,
+        orgEstimatedPax,
+        orgFilledDestinations,
+        orgGatheringName,
+        hubLat,
+        hubLng,
+      });
+      if (!created.createdIds.length) {
         setErr("Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.");
         return;
       }
-
-      for (const ymd of ymds) {
-        for (const it of items) {
-          const startAt = ymdMinToIso(ymd, it.startMin);
-          const endYmd = it.endMin < it.startMin ? addDaysISO(ymd, 1) : ymd;
-          const endAt = ymdMinToIso(endYmd, it.endMin);
-          const noteParts = [];
-          if (draftNote) noteParts.push(String(draftNote).trim());
-          if (organization) noteParts.push(orgNoteSummary());
-          const body = {
-            status: "DRAFT",
-            // M34/M35: market shift -> roomId OMIT (roomId optional; null trips zod)
-            startAt,
-            endAt,
-            hubLat: lat,
-            hubLng: lng,
-            direction: it.direction,
-            pattern: organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern,
-          };
-          const amt = parseTryInput(draftAmount);
-          if (amt != null) body.companyOfferAmount = amt;
-          if (noteParts.length) body.companyOfferNote = noteParts.filter(Boolean).join("\n");
-          if (organization) {
-            const pax = Number(orgEstimatedPax || 0);
-            if (Number.isFinite(pax) && pax > 0) body.requiredPax = pax;
-            const stopDrafts = [];
-            for (let idx = 0; idx < orgFilledDestinations.length; idx++) {
-              const dest = orgFilledDestinations[idx];
-              let stopName = String(dest?.title || dest?.address || `Yer ${idx + 1}`).trim();
-              let stopLat = dest?.lat === "" ? null : Number(dest?.lat);
-              let stopLng = dest?.lng === "" ? null : Number(dest?.lng);
-              if (!(Number.isFinite(stopLat) && Number.isFinite(stopLng))) {
-                const q = String(dest?.address || dest?.title || "").trim();
-                if (q.length >= 3) {
-                  try {
-                    const geo = await api("/api/geocode", { token, method: "POST", body: { q, country: "tr" } });
-                    if (geo?.ok) {
-                      stopLat = Number(geo.lat);
-                      stopLng = Number(geo.lng);
-                      stopName = stopName || String(geo.displayName || q).split(",")[0];
-                    }
-                  } catch {
-                    // ignore individual destination geocode errors; continue with others
-                  }
-                }
-              }
-              if (Number.isFinite(stopLat) && Number.isFinite(stopLng)) {
-                stopDrafts.push({
-                  name: stopName || `Yer ${idx + 1}`,
-                  lat: stopLat,
-                  lng: stopLng,
-                  order: stopDrafts.length + 1,
-                  type: "MANUAL",
-                });
-              }
-            }
-            if (stopDrafts.length) body.stops = stopDrafts;
-          }
-
-          const s = await api("/api/shifts", { token, method: "POST", body });
-          if (s?.id) {
-            createdIds.push(Number(s.id));
-            // Persist plan terms per shift (for later negotiation screens)
-            try {
-              localStorage.setItem(
-                `psv1:planTerms:shift:${Number(s.id)}:v1`,
-                JSON.stringify({
-                  planStartDate: startDate,
-                  planEndDate: endDate,
-                  ymd,
-                  weekMask,
-                  startMin: it.startMin,
-                  endMin: it.endMin,
-                  direction: it.direction,
-                  pattern: organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern,
-                  hubLat: lat,
-                  hubLng: lng,
-                  organization: organization ? {
-                    gatheringName: orgGatheringName,
-                    estimatedPax: Number(orgEstimatedPax || 0) || null,
-                    returnType: orgReturnType,
-                    places: orgFilledDestinations.map((d) => ({ title: d.title, address: d.address })),
-                  } : null,
-                })
-              );
-            } catch {
-              // ignore
-            }
-          }
-        }
-      }
-
-      setDraftShiftIds(createdIds);
-      writeGuidedTempShiftIds(createdIds);
-      setInfo(`✅ Taslak shift oluşturuldu: ${createdIds.map((x) => "#" + x).join(", ")}`);
-
-      // fetch shifts for Step-2/3
-      const list = await api("/api/shifts?take=500&includeDrafts=1&includeStops=1", { token });
-      const itemsAll = Array.isArray(list?.items) ? list.items : [];
-      const filtered = itemsAll.filter((x) => createdIds.includes(Number(x.id)));
-      setDraftShifts(filtered);
-
+      setDraftShiftIds(created.createdIds);
+      setDraftShifts(created.draftShifts);
+      setInfo(`✅ Taslak shift oluşturuldu: ${created.createdIds.map((x) => "#" + x).join(", ")}`);
       setStep(2);
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -1149,58 +815,15 @@ export default function GuidedPlanModal({
     if (!token) return;
     if (!draftShiftIds.length) return;
     try {
-      const list = await api("/api/shifts?take=500&includeDrafts=1&includeStops=1", { token });
-      const itemsAll = Array.isArray(list?.items) ? list.items : [];
-      setDraftShifts(itemsAll.filter((x) => draftShiftIds.includes(Number(x.id))));
+      const items = await refreshGuidedDraftShiftsAction({ token, draftShiftIds });
+      setDraftShifts(items);
     } catch {
       // ignore
     }
   }
 
-  
 async function osrmReorderCore(sid) {
-  const s = (draftShifts || []).find((x) => Number(x.id) === Number(sid));
-  if (!s) return { ok: false, error: "Shift bulunamadı." };
-
-  const stops = Array.isArray(s?.stops) ? s.stops : [];
-  if (stops.length < 2) return { ok: false, error: "Sıralama için en az 2 durak gerekir." };
-
-  const hubOk = s?.hubLat != null && s?.hubLng != null;
-
-  const depot = hubOk
-    ? { id: "depot", lat: Number(s.hubLat), lng: Number(s.hubLng) }
-    : { id: "depot", lat: Number(stops[0].lat), lng: Number(stops[0].lng) };
-
-  const points = [depot, ...stops.map((x) => ({ id: Number(x.id), lat: Number(x.lat), lng: Number(x.lng) }))];
-
-  const t = await api("/api/plan-builder/osrm-table", { token, method: "POST", body: { profile: "driving", points } });
-  if (!t?.ok) return { ok: false, error: "OSRM rota doğrulaması alınamadı. Solver/OSRM hazır değil veya bu taslak için matris üretilemedi." };
-
-  const solved = await api("/api/plan-builder/solve-vrp", {
-    token,
-    method: "POST",
-    body: {
-      durationsSec: t?.durationsSec,
-      distancesM: t?.distancesM,
-      pointIds: points.map((p) => p.id),
-      depotIndex: 0,
-      returnToDepot: String(s?.pattern || "").toUpperCase() === "LOOP",
-      preferOrtools: true,
-    },
-  });
-
-  if (!solved?.ok || !Array.isArray(solved?.orderPointIds)) return { ok: false, error: "Rota çözümü alınamadı. Solver hazır değil veya çözüm üretilemedi." };
-
-  const orderedStopIds = solved.orderPointIds
-    .filter((id) => id !== "depot")
-    .map((id) => Number(id))
-    .filter(Number.isFinite);
-
-  if (orderedStopIds.length !== stops.length) return { ok: false, error: "Sıralama uyuşmadı (durak sayısı)." };
-
-  await api(`/api/shifts/${Number(sid)}/stops/reorder`, { token, method: "PUT", body: { idsInOrder: orderedStopIds } });
-
-  return { ok: true, solver: solved.solver || null };
+  return osrmReorderGuidedCore({ token, draftShifts, shiftId: sid });
 }
 
 async function osrmReorder(shiftId) {
@@ -1223,7 +846,7 @@ async function osrmReorder(shiftId) {
     setInfo(`✅ Rota sıralandı (solver: ${res.solver || "-"}).`);
     await refreshDraftShifts();
   } catch (e) {
-    setErr(String(e?.message || e));
+    setErr(getApiErrorMessage(e));
   } finally {
     setBusy(false);
   }
@@ -1264,7 +887,7 @@ async function osrmReorderAll() {
         }
       } catch (e) {
         errCount++;
-        setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: String(e?.message || e) } }));
+        setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: getApiErrorMessage(e) } }));
       }
 
       setOsrmBatch({ running: true, done: i + 1, total: ids.length });
@@ -1273,7 +896,7 @@ async function osrmReorderAll() {
     await refreshDraftShifts();
     setInfo(`✅ Hepsi işlendi. OK: ${okCount}, Hata: ${errCount}.`);
   } catch (e) {
-    setErr(String(e?.message || e));
+    setErr(getApiErrorMessage(e));
   } finally {
     setOsrmBatch((p) => ({ ...p, running: false }));
     setBusy(false);
@@ -1305,25 +928,11 @@ async function sendBulkOffers() {
 
     setBusy(true);
     try {
-      const amountCompany = parseTryInput(offerAmount);
-      const noteStr = String(offerNote || "").trim();
-
-      const baseBody = { roomIds };
-      if (amountCompany != null) baseBody.amountCompany = amountCompany;
-      if (noteStr) baseBody.noteCompany = noteStr;
-
-      for (const sid of draftShiftIds) {
-        await api(`/api/shifts/${sid}/offers`, {
-          token,
-          method: "POST",
-          body: baseBody,
-        });
-      }
-      writeGuidedTempShiftIds([]);
+      const result = await sendGuidedBulkOffersAction({ token, draftShiftIds, selectedRoomIds: roomIds, offerAmount, offerNote });
       setSentOk(true);
-      setInfo(`✅ Gönderildi (shift sayısı: ${draftShiftIds.length}).`);
+      setInfo(`✅ Gönderildi (shift sayısı: ${result.sentCount}).`);
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -1367,410 +976,66 @@ async function sendBulkOffers() {
 
       {/* Step-0: Hub */}
       {step === 0 ? (
-        <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div className="muted">{organization ? "1. adımda gezi için toplanma noktasını ayarla. Bu nokta turun başlangıç merkezi olur." : "1. adımda Company kendi lokasyonunu (hub) ayarlar."}</div>
-
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={useGeolocation} disabled={busy}>Konumumu al</button>
-            <input
-              value={addr}
-              onChange={(e) => setAddr(e.target.value)}
-              placeholder={organization ? "Toplanma noktası adresi (örn. Denizli Forum önü)" : "Adresten konum al (örn. Ankara Çankaya ...)"}
-              style={{ flex: 1, minWidth: 260 }}
-              disabled={busy}
-            />
-            <button type="button" onClick={geocodeAddress} disabled={busy}>Adresten bul</button>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div>
-              <label className="muted">{organization ? "Toplanma lat" : "Hub lat"}</label>
-              <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} disabled={busy} />
-            </div>
-            <div>
-              <label className="muted">{organization ? "Toplanma lng" : "Hub lng"}</label>
-              <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} disabled={busy} />
-            </div>
-          </div>
-
-          {!hubLoaded ? <div className="muted">Hub okunuyor...</div> : null}
-
-          <div className="row" style={{ justifyContent: "flex-end" }}>
-            <button type="button" onClick={saveHub} disabled={busy}>{organization ? "Toplanma noktasını kaydet" : "İleri"}</button>
-          </div>
-        </div>
+        <GuidedHubStep
+          organization={organization}
+          busy={busy}
+          useGeolocation={useGeolocation}
+          addr={addr}
+          setAddr={setAddr}
+          geocodeAddress={geocodeAddress}
+          hubLat={hubLat}
+          setHubLat={setHubLat}
+          hubLng={hubLng}
+          setHubLng={setHubLng}
+          hubLoaded={hubLoaded}
+          saveHub={saveHub}
+        />
       ) : null}
 
       {/* Step-1: Plan */}
       {step === 1 ? (
-        <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-          <div className="muted">{organization ? "2. adımda gezi akışını seçersin. Bu adım sadece taslak plan oluşturur; teklif henüz gönderilmez." : "2. adımda plan paketi seçilir. Bu adım sadece taslak oluşturur; teklif göndermez."}</div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="card">
-              <div style={{ fontWeight: 800 }}>Plan paketi</div>
-              <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                {PACKS.map((p) => (
-                  <label key={p.key} className="row" style={{ gap: 8, alignItems: "center" }}>
-                    <input
-                      type="radio"
-                      name="pack"
-                      checked={packKey === p.key}
-                      onChange={() => setPackKey(p.key)}
-                      disabled={busy}
-                    />
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{packTitleForMode(p, organization)}</div>
-                      <div className="muted">{packDescForMode(p, organization)}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-
-              <div className="row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
-                {pack.key !== "CUSTOM" ? (
-                  <button
-                    type="button"
-                    className="btn"
-                    disabled={busy}
-                    onClick={() => {
-                      const src = Array.isArray(pack?.items) ? pack.items : [];
-                      const slots = src.map((it, idx) => ({
-                        label: String(it?.label || `Vardiya ${idx + 1}`),
-                        startHHMM: toHHMM(it.startMin),
-                        endHHMM: toHHMM(it.endMin),
-                        direction: it?.direction || "INBOUND",
-                        pattern: it?.pattern || "ONE_WAY",
-                      }));
-                      setCustomSlots(slots.length ? slots : [{ label: "Vardiya 1", startHHMM: "08:00", endHHMM: "10:00", direction: "INBOUND", pattern: "ONE_WAY" }]);
-                      setPackKey("CUSTOM");
-                    }}
-                  >
-                    Özele çevir (düzenle)
-                  </button>
-                ) : null}
-              </div>
-
-              {pack.key === "CUSTOM" ? (
-                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    İpucu: End, Start’tan küçükse “gece vardiyası” sayılır (bir sonraki güne taşar).
-                  </div>
-
-                  {(customSlots || []).map((slot, idx) => (
-                    <div key={idx} className="card" style={{ padding: 10, border: "1px solid #223" }}>
-                      <div className="row" style={{ justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                        <input
-                          value={slot?.label || ""}
-                          onChange={(e) =>
-                            setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, label: e.target.value } : x)))
-                          }
-                          placeholder={`Vardiya ${idx + 1}`}
-                          style={{ minWidth: 160, flex: 1 }}
-                          disabled={busy}
-                        />
-                        {(customSlots || []).length > 1 ? (
-                          <button
-                            type="button"
-                            className="btn"
-                            onClick={() => setCustomSlots((p) => (p || []).filter((_, i) => i !== idx))}
-                            disabled={busy}
-                          >
-                            Kaldır
-                          </button>
-                        ) : null}
-                      </div>
-
-                      <div className="row" style={{ gap: 10, flexWrap: "wrap", marginTop: 8 }}>
-                        <label className="muted">
-                          Start{" "}
-                          <input
-                            value={slot?.startHHMM || ""}
-                            onChange={(e) =>
-                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, startHHMM: e.target.value } : x)))
-                            }
-                            style={{ width: 120 }}
-                            disabled={busy}
-                          />
-                        </label>
-                        <label className="muted">
-                          End{" "}
-                          <input
-                            value={slot?.endHHMM || ""}
-                            onChange={(e) =>
-                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, endHHMM: e.target.value } : x)))
-                            }
-                            style={{ width: 120 }}
-                            disabled={busy}
-                          />
-                        </label>
-
-                        <label className="muted">
-                          Direction{" "}
-                          <select
-                            value={slot?.direction || "INBOUND"}
-                            onChange={(e) =>
-                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, direction: e.target.value } : x)))
-                            }
-                            disabled={busy}
-                          >
-                            <option value="INBOUND">{organization ? "Toplama / gidiş" : "INBOUND"}</option>
-                            <option value="OUTBOUND">{organization ? "Dağıtım / dönüş" : "OUTBOUND"}</option>
-                          </select>
-                        </label>
-
-                        <label className="muted">
-                          Pattern{" "}
-                          <select
-                            value={slot?.pattern || "ONE_WAY"}
-                            onChange={(e) =>
-                              setCustomSlots((p) => (p || []).map((x, i) => (i === idx ? { ...x, pattern: e.target.value } : x)))
-                            }
-                            disabled={busy}
-                          >
-                            <option value="ONE_WAY">{organization ? "Son noktada bitir" : "ONE_WAY"}</option>
-                            <option value="LOOP">{organization ? "Başlangıç noktasına dön" : "LOOP"}</option>
-                          </select>
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() =>
-                        setCustomSlots((p) => [
-                          ...(p || []),
-                          { label: `Vardiya ${(p || []).length + 1}`, startHHMM: "17:00", endHHMM: "19:00", direction: "OUTBOUND", pattern: "ONE_WAY" },
-                        ])
-                      }
-                      disabled={busy || (customSlots || []).length >= 3}
-                      title={(customSlots || []).length >= 3 ? "Maksimum 3 vardiya" : "Yeni vardiya ekle"}
-                    >
-                      + Vardiya ekle
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="card">
-              <div style={{ fontWeight: 800 }}>Tarih + günler</div>
-              <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label className="muted">Başlangıç</label>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} />
-                </div>
-                <div>
-                  <label className="muted">Hızlı süre</label>
-                  <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                    {durationOptions.map((d) => (
-                      <button
-                        key={d.key}
-                        type="button"
-                        className={durationKey === d.key ? "" : "btn"}
-                        disabled={busy}
-                        onClick={() => setDurationKey(d.key)}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                    Varsayılan olarak aynı gün başlar; süre seçince bitiş otomatik hesaplanır.
-                  </div>
-                </div>
-                <div>
-                  <label className="muted">Bitiş (otomatik)</label>
-                  <input type="date" value={endDate} readOnly disabled />
-                </div>
-                <div>
-                  <label className="muted">Günler</label>
-                  <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                    {WEEKDAYS.map((w) => (
-                      <label key={w.k} className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        <input
-                          type="checkbox"
-                          checked={!!daysSel[w.k]}
-                          onChange={() => {
-                            setDaysSel((p) => ({ ...p, [w.k]: !p[w.k] }));
-                          }}
-                          disabled={busy}
-                        />
-                        {w.label}
-                      </label>
-                    ))}
-                  </div>
-                  <div className="muted" style={{ marginTop: 6 }}>{organization ? `Seçilen günler: ${weekMaskToText(weekMask)}` : `Günler: ${weekMaskToText(weekMask)} • weekMask:${weekMask}`}</div>
-
-                  {eligibleDaysCount === 0 ? (
-                    <div className="card err" style={{ marginTop: 8 }}>
-                      Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.
-                      {nextValidStart ? (
-                        <div style={{ marginTop: 8 }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setStartDate(nextValidStart);
-                            }}
-                            disabled={busy}
-                          >
-                            Başlangıcı {nextValidStart} yap
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      Uygun gün sayısı: {eligibleDaysCount}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 700 }}>{organization ? "Plan özeti" : "Paket özeti"}</div>
-                <ul className="muted" style={{ marginTop: 6 }}>
-                  {planSummary.map((x, i) => <li key={i}>{x}</li>)}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {organization ? (
-            <div className="card">
-              <div style={{ fontWeight: 800 }}>Organizasyon detayları</div>
-              <div className="muted" style={{ marginTop: 4 }}>
-                Gezi planını burada kurarsın. Tahmini kişi sayısı, toplanma noktası, gidilecek yerler ve dönüş tipi aynı yerde kalır.
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label className="muted">Tahmini kişi sayısı</label>
-                  <input
-                    value={orgEstimatedPax}
-                    onChange={(e) => setOrgEstimatedPax(e.target.value.replace(/[^\d]/g, ""))}
-                    placeholder="örn. 48"
-                    disabled={busy}
-                  />
-                </div>
-                <div>
-                  <label className="muted">Toplanma noktası adı</label>
-                  <input
-                    value={orgGatheringName}
-                    onChange={(e) => setOrgGatheringName(e.target.value)}
-                    placeholder="örn. Denizli Forum önü"
-                    disabled={busy}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 700 }}>Gidilecek yerler</div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  Her yer ayrı satır olsun. Böylece tek tek düzeltmek, bulmak ve sırayı değiştirmek kolay olur.
-                </div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Hazır konum: <b>{orgDestinationAudit.ready}</b> / {orgDestinationAudit.total || 0}
-                  {orgDestinationAudit.missing.length ? ` • Eksik konum: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}` : ""}
-                </div>
-                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                  {(orgDestinations || []).map((dest, idx) => (
-                    <div key={idx} className="card" style={{ padding: 10, border: "1px solid #223" }}>
-                      <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 700 }}>Yer {idx + 1}</div>
-                        <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                          <button type="button" className="btn sm" onClick={() => moveDestination(idx, -1)} disabled={busy || idx === 0}>Yukarı</button>
-                          <button type="button" className="btn sm" onClick={() => moveDestination(idx, 1)} disabled={busy || idx === (orgDestinations || []).length - 1}>Aşağı</button>
-                          <button type="button" className="btn sm" onClick={() => removeDestination(idx)} disabled={busy}>Sil</button>
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label className="muted">Yer adı</label>
-                          <input
-                            value={dest?.title || ""}
-                            onChange={(e) => setDestinationField(idx, "title", e.target.value)}
-                            placeholder="örn. Pamukkale"
-                            disabled={busy}
-                          />
-                        </div>
-                        <div>
-                          <label className="muted">Adres / açıklama</label>
-                          <input
-                            value={dest?.address || ""}
-                            onChange={(e) => setDestinationField(idx, "address", e.target.value)}
-                            placeholder="örn. Pamukkale Travertenleri giriş"
-                            disabled={busy}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <div>
-                          <label className="muted">Lat (manuel / fallback)</label>
-                          <input
-                            value={dest?.lat || ""}
-                            onChange={(e) => setDestinationCoordField(idx, "lat", e.target.value)}
-                            placeholder="örn. 37.7765"
-                            disabled={busy}
-                          />
-                        </div>
-                        <div>
-                          <label className="muted">Lng (manuel / fallback)</label>
-                          <input
-                            value={dest?.lng || ""}
-                            onChange={(e) => setDestinationCoordField(idx, "lng", e.target.value)}
-                            placeholder="örn. 29.0864"
-                            disabled={busy}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
-                        <button type="button" className="btn sm" onClick={() => geocodeDestination(idx)} disabled={busy}>Bul</button>
-                        <button type="button" className="btn sm" onClick={() => openDestinationMapPicker(idx)} disabled={busy}>Haritadan seç</button>
-                        {hasCoord(coordNum(dest?.lat), coordNum(dest?.lng)) ? (
-                          <button type="button" className="btn sm" onClick={() => openDestinationNavigation(dest)} disabled={busy}>Navigasyonda aç</button>
-                        ) : null}
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          {dest?.status === "ok"
-                            ? `✅ ${dest?.foundText || "Bulundu"}`
-                            : dest?.status === "manual"
-                            ? `📍 ${dest?.foundText || "Koordinat hazır"}`
-                            : dest?.status === "error"
-                            ? `⚠ ${dest?.foundText || "Bulunamadı"}`
-                            : dest?.status === "loading"
-                            ? "Bulunuyor..."
-                            : "Henüz aranmadı"}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
-                  <button type="button" className="btn" onClick={addDestination} disabled={busy}>+ Yer ekle</button>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <label className="muted">Dönüş tipi</label>
-                <select value={orgReturnType} onChange={(e) => setOrgReturnType(e.target.value)} disabled={busy}>
-                  <option value="RETURN_TO_START">Başlangıç noktasına dön</option>
-                  <option value="END_AT_LAST_STOP">Son noktada bitir</option>
-                </select>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => setStep(0)} disabled={busy}>Geri</button>
-            <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0}>Taslak shift oluştur</button>
-          </div>
-        </div>
+        <GuidedPlanSetupStep
+          organization={organization}
+          busy={busy}
+          PACKS={PACKS}
+          packKey={packKey}
+          setPackKey={setPackKey}
+          pack={pack}
+          customSlots={customSlots}
+          setCustomSlots={setCustomSlots}
+          createAdditionalCustomSlot={createAdditionalCustomSlot}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          durationOptions={durationOptions}
+          durationKey={durationKey}
+          setDurationKey={setDurationKey}
+          endDate={endDate}
+          WEEKDAYS={WEEKDAYS}
+          daysSel={daysSel}
+          setDaysSel={setDaysSel}
+          weekMask={weekMask}
+          eligibleDaysCount={eligibleDaysCount}
+          nextValidStart={nextValidStart}
+          planSummary={planSummary}
+          orgEstimatedPax={orgEstimatedPax}
+          setOrgEstimatedPax={setOrgEstimatedPax}
+          orgGatheringName={orgGatheringName}
+          setOrgGatheringName={setOrgGatheringName}
+          orgDestinationAudit={orgDestinationAudit}
+          orgDestinations={orgDestinations}
+          moveDestination={moveDestination}
+          removeDestination={removeDestination}
+          setDestinationField={setDestinationField}
+          setDestinationCoordField={setDestinationCoordField}
+          geocodeDestination={geocodeDestination}
+          openDestinationMapPicker={openDestinationMapPicker}
+          openDestinationNavigation={openDestinationNavigation}
+          addDestination={addDestination}
+          orgReturnType={orgReturnType}
+          setOrgReturnType={setOrgReturnType}
+          setStep={setStep}
+          createDraftShifts={createDraftShifts}
+        />
       ) : null}
 
       {/* Step-2: People + stops */}
@@ -1849,7 +1114,7 @@ async function sendBulkOffers() {
                   refreshDraftShifts();
                   setStep(3);
                 } catch (e) {
-                  setErr(e?.message || String(e));
+                  setErr(getApiErrorMessage(e));
                 }
               }}
               disabled={busy || (!organization && companyGeoGate.blocking)}
@@ -1862,215 +1127,42 @@ async function sendBulkOffers() {
 
       {/* Step-3: Solve + offers */}
       {step === 3 ? (
-        <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
-          <div className="muted">{organization ? "4. adım: Ön izle, rota sırasını iyileştir ve plan tamamsa uygun room'lara teklif gönder. Eksik koordinat varsa markete düşmez." : "4. adım: Ön izleme al → rota sırasını iyileştir → uygun room'lara teklif gönder."}</div>
-
-          {organization ? (
-            <div className="card" style={{ border: orgDraftCompletion.ready ? "1px solid #2a7" : "1px solid #b85" }}>
-              <div style={{ fontWeight: 800 }}>{orgDraftCompletion.ready ? "✅ Markete gönderime hazır" : "⚠ Plan henüz tam değil"}</div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                {orgDraftCompletion.ready
-                  ? `Tahmini kişi: ${Number(orgEstimatedPax || 0) || 0} • Tüm yerler koordinatlı • Taslak shift'lerde ${orgDraftCompletion.expectedStops} ziyaret noktası hazır.`
-                  : orgDraftCompletion.reasons.join(" • ")}
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Not: Organization işlerinde plan tam oluşmadan markete düşmez.
-              </div>
-            </div>
-          ) : null}
-
-          {!organization ? (
-            <div className="card" style={{ border: companyGeoGate.blocking ? "1px solid #b85" : "1px solid #2a7" }}>
-              <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Company planı henüz tam değil" : "✅ Company planı koordinat olarak hazır"}</div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                {companyGeoGate.blocking
-                  ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
-                  : `Kişi kayıtları koordinatlı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Not: Bu kart sadece koordinat hazırlığını gösterir. Teklif için ayrıca OSRM rota doğrulaması gerekir.
-              </div>
-            </div>
-          ) : null}
-
-          {!organization ? (
-            <div className="card" style={{ border: offerOsrmGate.blocking ? "1px solid #b85" : "1px solid #2a7" }}>
-              <div style={{ fontWeight: 800 }}>{offerOsrmGate.blocking ? "⚠ OSRM rota doğrulaması eksik" : "✅ OSRM rota doğrulaması hazır"}</div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Toplam taslak: <b>{offerOsrmGate.total}</b> • Hazır: <b>{offerOsrmGate.readyCount}</b> • Bekleyen: <b>{offerOsrmGate.pendingCount}</b> • Hata: <b>{offerOsrmGate.errorCount}</b> • Duraksız: <b>{offerOsrmGate.stoplessCount}</b>
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                {offerOsrmGate.blocking
-                  ? (offerOsrmGate.reasons.join(" • ") || "OSRM doğrulaması tamamlanmadan teklif gönderilemez.")
-                  : "Taslak shift'ler rota doğrulamasından geçti; teklif gönderimi açılabilir."}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="card">
-            <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-  <div style={{ fontWeight: 800 }}>Taslak shift’ler</div>
-  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-    <button type="button" onClick={osrmReorderAll} disabled={busy || !(draftShifts || []).length}>
-      Hepsini OSRM ile sırala
-    </button>
-  </div>
-</div>
-{osrmBatch?.running ? (
-  <div className="muted" style={{ marginTop: 6 }}>Sıralanıyor: {osrmBatch.done}/{osrmBatch.total}</div>
-) : null}
-
-            <div style={{ overflowX: "auto", marginTop: 10 }}>
-              <table className="tbl" style={{ minWidth: 820 }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Durak</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(draftShifts || []).map((s) => (
-                    <tr key={s.id}>
-                      <td className="muted">#{s.id}</td>
-                      <td className="muted">{fmtTR(s.startAt)}</td>
-                      <td className="muted">{fmtTR(s.endAt)}</td>
-                      <td className="muted">
-                        {(() => {
-                          const base = Array.isArray(s?.stops) ? s.stops.length : 0;
-                          const hasHub = typeof s?.hubLat === "number" && typeof s?.hubLng === "number";
-                          return base + (hasHub ? 1 : 0);
-                        })()}
-                      </td>
-                      <td>
-                        <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-  <button type="button" onClick={() => osrmReorder(s.id)} disabled={busy}>
-    OSRM ile sırala
-  </button>
-  <button type="button" onClick={() => openShiftNavigation(s)} disabled={busy}>
-    Navigasyon
-  </button>
-  {osrmResById?.[Number(s.id)]?.ok === true ? (
-    <span className="muted">✅</span>
-  ) : osrmResById?.[Number(s.id)]?.ok === false ? (
-    <span className="muted" title={osrmResById?.[Number(s.id)]?.error || ""}>⚠️</span>
-  ) : null}
-</div>
-                      </td>
-                    </tr>
-                  ))}
-                  {!draftShifts?.length ? (
-                    <tr><td colSpan={5} className="muted">Kayıt yok.</td></tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <div>
-                <div style={{ fontWeight: 800 }}>Toplu teklif gönder</div>
-                <div className="muted">Seçili room’lara tüm taslak shift’ler için teklif gider.</div>
-              </div>
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => onReloadRooms?.()} disabled={busy || !roomsSupported}>Room’ları yenile</button>
-              </div>
-            </div>
-
-            {!roomsSupported ? (
-              <div className="muted" style={{ marginTop: 8, color: "#b85" }}>
-                /api/rooms endpoint bulunamadı. Önce Room directory (M22+) çalışmalı.
-              </div>
-            ) : null}
-
-            {!sentOk ? (
-            <>
-            <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div>
-                <label className="muted">Room ara</label>
-                <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="name contains" disabled={busy} />
-                <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
-                <div className="muted" style={{ marginTop: 6 }}>Hub konumu eksik room'lar da listelenir; hub eksikliği teklif engeli değildir.</div>
-              </div>
-              <div>
-                <label className="muted">Tutar (₺) (isteğe bağlı)</label>
-                <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
-                <label className="muted" style={{ marginTop: 8 }}>Not (isteğe bağlı)</label>
-                <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. sabah giriş" disabled={busy} />
-              </div>
-            </div>
-
-            <div className="card" style={{ marginTop: 10, maxHeight: 260, overflow: "auto" }}>
-              {(roomsFiltered || []).map((r) => {
-                const score = roomScores[String(r.id)] || null;
-                return (
-                  <label
-                    key={r.id}
-                    className="row"
-                    style={{
-                      gap: 8,
-                      alignItems: "stretch",
-                      justifyContent: "space-between",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      background: selRoomIds[String(r.id)] ? "rgba(18,183,106,0.05)" : "rgba(255,255,255,0.02)",
-                    }}
-                  >
-                    <span className="row" style={{ gap: 10, alignItems: "flex-start" }}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(selRoomIds[String(r.id)])}
-                        onChange={(e) => setSelRoomIds((p) => ({ ...p, [String(r.id)]: e.target.checked }))}
-                        disabled={busy}
-                        style={{ marginTop: 4 }}
-                      />
-                      <span style={{ display: "grid", gap: 4 }}>
-                        <span className="muted"><b>{r.name}</b> #{r.id}</span>
-                        <span className="muted">{r?.hubLat != null && r?.hubLng != null ? "Hub konumu hazır" : "Hub konumu eksik • teklif engeli değil"}</span>
-                      </span>
-                    </span>
-                    <ProviderScoreBadge score={score} prominent showLabel />
-                  </label>
-                );
-              })}
-              {!roomsFiltered.length ? <div className="muted">Room bulunamadı.</div> : null}
-            </div>
-
-            <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-              <button type="button" onClick={() => {
-                const next = {};
-                for (const room of roomsFiltered || []) next[String(room.id)] = true;
-                setSelRoomIds(next);
-              }} disabled={busy || !roomsFiltered.length}>
-                Hepsini Seç
-              </button>
-              <button type="button" onClick={() => { setSelRoomIds({}); setOfferAmount(""); setOfferNote(""); }} disabled={busy}>
-                Temizle
-              </button>
-              <button type="button" onClick={sendBulkOffers} disabled={busy || !roomsSupported || selectedRoomCount < 1 || (organization && !orgDraftCompletion.ready) || (!organization && offerOsrmGate.blocking)}>
-                Toplu Teklifleri Gönder
-              </button>
-            </div>
-            </>
-            ) : (
-              <div className="muted" style={{ marginTop: 10 }}>Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas.</div>
-            )}
-          </div>
-
-          <div className="row" style={{ justifyContent: sentOk ? "flex-end" : "space-between", gap: 10, flexWrap: "wrap" }}>
-            {!sentOk ? (
-              <button type="button" onClick={() => setStep(2)} disabled={busy}>Geri</button>
-            ) : null}
-            <button type="button" onClick={() => { onAfterCreated?.(); onClose?.(); resetAll(); }} disabled={busy || !sentOk}>
-              Bitir
-            </button>
-          </div>
-        </div>
+        <GuidedSolveOffersStep
+          organization={organization}
+          busy={busy}
+          orgDraftCompletion={orgDraftCompletion}
+          orgEstimatedPax={orgEstimatedPax}
+          companyGeoGate={companyGeoGate}
+          offerOsrmGate={offerOsrmGate}
+          draftShifts={draftShifts}
+          osrmBatch={osrmBatch}
+          osrmReorderAll={osrmReorderAll}
+          osrmReorder={osrmReorder}
+          openShiftNavigation={openShiftNavigation}
+          osrmResById={osrmResById}
+          onReloadRooms={onReloadRooms}
+          roomsSupported={roomsSupported}
+          sentOk={sentOk}
+          roomQ={roomQ}
+          setRoomQ={setRoomQ}
+          rooms={rooms}
+          selectedRoomCount={selectedRoomCount}
+          offerAmount={offerAmount}
+          setOfferAmount={setOfferAmount}
+          offerNote={offerNote}
+          setOfferNote={setOfferNote}
+          roomsFiltered={roomsFiltered}
+          roomScores={roomScores}
+          selRoomIds={selRoomIds}
+          setSelRoomIds={setSelRoomIds}
+          sendBulkOffers={sendBulkOffers}
+          setStep={setStep}
+          onAfterCreated={onAfterCreated}
+          onClose={onClose}
+          resetAll={resetAll}
+        />
       ) : null}
+
     </Modal>
 
     <Modal

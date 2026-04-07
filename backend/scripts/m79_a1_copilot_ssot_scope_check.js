@@ -4,6 +4,32 @@ import path from 'path';
 const cwd = process.cwd();
 const repoRoot = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function read(rel) {
   return fs.readFileSync(path.join(repoRoot, rel), 'utf8');
 }
@@ -16,10 +42,10 @@ function exists(rel) {
   if (fs.existsSync(full)) ok(`${rel} exists`); else fail(`${rel} missing`);
 }
 function includes(text, needle, msg) {
-  if (text.includes(needle)) ok(msg); else fail(msg);
+  if (includesText(text, needle)) ok(msg); else fail(msg);
 }
 function notIncludes(text, needle, msg) {
-  if (!text.includes(needle)) ok(msg); else fail(msg);
+  if (!includesText(text, needle)) ok(msg); else fail(msg);
 }
 
 console.log('=== M79 A1 COPILOT SSOT + SCOPE CHECK ===');

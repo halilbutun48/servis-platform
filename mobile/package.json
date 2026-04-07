@@ -9,6 +9,8 @@
     "doctor:expo": "npx expo-doctor",
     "check:m49": "node scripts/m49_mobile_beta_hardening_check.js",
     "check:m81.4": "node scripts/m81_4_release_env_discipline_check.js",
+    "check:m82.4": "node scripts/m82_4_bg_offline_hardening_check.js",
+    "check:m82.5": "node scripts/m82_5_live_location_source_priority_check.js",
     "check:m81.2b": "node scripts/m81_2b_bundle_chain_check.js",
     "check:m81.2": "node scripts/m81_2_background_runtime_check.js",
     "build:internal:android": "npx eas-cli build --profile preview --platform android",
@@ -17,7 +19,7 @@
     "android": "expo run:android",
     "check:m48": "node scripts/m48_driver_mobile_foundation_check.js",
     "start": "expo start",
-    "doctor:mobile": "npx expo-doctor && npm run check:m81.2 && npm run check:m81.2b && npm run check:m81.3 && npm run check:m81.4",
+    "doctor:mobile": "npx expo-doctor && npm run check:m81.2 && npm run check:m81.2b && npm run check:m81.3 && npm run check:m81.4 && npm run check:m82.4 && npm run check:m82.5 && npm run check:m82.6 && npm run check:m82.7 && npm run check:m82.8",
     "check:m81.3": "node scripts/m81_3_ios_readiness_check.js",
     "check:m57.1": "node scripts/m57_1_foreground_gps_publish_check.js",
     "check:m57.4": "node scripts/m57_4_android_preview_internal_build_check.js",
@@ -28,7 +30,11 @@
     "check:m49.1": "node scripts/m49_1_driver_voice_guidance_stop_eta_check.js",
     "build:preview:ios": "npx eas-cli build --profile preview --platform ios",
     "ios": "expo run:ios",
-    "check:m57.2": "node scripts/m57_2_offline_online_recovery_check.js"
+    "check:m57.2": "node scripts/m57_2_offline_online_recovery_check.js",
+    "check:m82.6": "node scripts/m82_6_release_env_acceptance_check.js",
+    "acceptance:mobile": "npm run check:m57.2 && npm run check:m81.2 && npm run check:m82.4 && npm run check:m82.5 && npm run check:m82.6 && npm run check:m82.7 && npm run check:m82.8",
+    "check:m82.7": "node scripts/m82_7_repo_hygiene_cleanup_check.js",
+    "check:m82.8": "node scripts/m82_8_verification_2_0_check.js"
   },
   "dependencies": {
     "expo": "~54.0.0",

@@ -1,13 +1,16 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function ReadText([string]$rel){ [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8).Normalize() }
 function MustExist([string]$rel){ if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }; Write-Host "OK $rel exists" }
-function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
+function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ((Test-RepoContractContainsAny -Text $txt -Needles @([string]$n))) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
 function MustReflectServiceEvaluationLayer([string]$txt,[string]$label){
-  $t = $txt.Normalize()
-  $hasServiceConsumer = $t.Contains('hizmet alan') -or $t.Contains('kurumlarin') -or $t.Contains('kurumların')
-  $hasEvaluation = $t.Contains('degerlendirme') -or $t.Contains('değerlendirme') -or $t.Contains('geri bildirim')
-  $hasQuality = $t.Contains('kalite') -or $t.Contains('guven') -or $t.Contains('güven')
+  $t = Normalize-RepoContractText $txt
+  $hasServiceConsumer = (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'hizmet alan')) -or (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'kurumlarin')) -or (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'kurumların'))
+  $hasEvaluation = (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'degerlendirme')) -or (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'değerlendirme')) -or (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'geri bildirim'))
+  $hasQuality = (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'kalite')) -or (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'guven')) -or (Normalize-RepoContractText $t).Contains((Normalize-RepoContractText 'güven'))
   if (($hasServiceConsumer -and $hasEvaluation) -or ($hasServiceConsumer -and $hasQuality -and $hasEvaluation)) { Write-Host "OK $label"; return }
   throw "FAIL $label"
 }

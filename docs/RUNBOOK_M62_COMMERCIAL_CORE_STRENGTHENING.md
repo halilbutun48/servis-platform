@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M62 slug=commercial-core-strengthening -->
+
 # RUNBOOK — M62 TICARI OMURGA GUCLENDIRME
 
 ## Amaç

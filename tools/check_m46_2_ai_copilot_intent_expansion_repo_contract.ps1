@@ -1,6 +1,9 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
 
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function MustContain($p,$needle,$label){
   $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
   if (-not $txt.Contains($needle)) { throw "FAIL $label" }

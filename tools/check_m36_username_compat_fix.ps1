@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory = $true)][string]$RepoRoot
 )
 $ErrorActionPreference = 'Stop'
-Write-Host '=== M36 USERNAME COMPAT FIX CHECK ==='
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host '=== M36 USERNAME COMPAT FIX CHECK ==='
 $backend = Join-Path $RepoRoot 'backend/src/routes/admin.js'
 if (-not (Test-Path $backend)) { throw 'admin.js missing' }
 $text = Get-Content $backend -Raw

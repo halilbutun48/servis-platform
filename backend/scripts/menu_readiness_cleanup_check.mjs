@@ -1,3 +1,28 @@
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 import fs from "fs";
 const checks = [
   ["web/src/layout/NavDock.jsx", ["Sistem Standartları", "Ticari Akış"]],
@@ -13,7 +38,7 @@ let ok = true;
 for (const [rel, needles] of checks) {
   const txt = fs.readFileSync(rel, "utf8");
   for (const needle of needles) {
-    if (!txt.includes(needle)) {
+    if (!includesText(txt, needle)) {
       console.error(`MISSING ${needle} in ${rel}`);
       ok = false;
     }
@@ -26,7 +51,7 @@ for (const rel of [
   "web/src/panels/superadmin/NaturalCopilotPanel.jsx",
 ]) {
   const txt = fs.readFileSync(rel, "utf8");
-  if (txt.includes("useSession")) {
+  if (includesText(txt, "useSession")) {
     console.error(`STILL_HAS_useSession ${rel}`);
     ok = false;
   }

@@ -2,6 +2,9 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd, ymdTR } from "../time/tr.js";
+import { rebuildShiftRouteStateBestEffort } from "../services/shiftRouteState.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import { httpError } from "../errors/http.js";
 
 function toInt(v, def = null) {
   const n = Number(v);
@@ -81,8 +84,8 @@ async function ensureMarketShiftFromPlan(company, plan) {
   }
   const startAt = dateAtUtc(plan.planDate, plan.startMin);
   const endAt = dateAtUtc(plan.planDate, plan.endMin);
-  return prisma.$transaction(async (tx) => {
-    const shift = await tx.shift.create({
+  const shift = await prisma.$transaction(async (tx) => {
+    const created = await tx.shift.create({
       data: {
         companyId: company.id,
         roomId: null,
@@ -97,11 +100,13 @@ async function ensureMarketShiftFromPlan(company, plan) {
       },
     });
     await tx.stop.createMany({
-      data: plan.stops.map((s, idx) => ({ shiftId: shift.id, name: s.name, lat: s.lat, lng: s.lng, order: idx + 1, type: "MANUAL" })),
+      data: plan.stops.map((s, idx) => ({ shiftId: created.id, name: s.name, lat: s.lat, lng: s.lng, order: idx + 1, type: "MANUAL" })),
     });
-    await tx.organizationPlan.update({ where: { id: plan.id }, data: { status: "SHIFT_PUBLISHED", publishedShiftId: shift.id } });
-    return shift;
+    await tx.organizationPlan.update({ where: { id: plan.id }, data: { status: "SHIFT_PUBLISHED", publishedShiftId: created.id } });
+    return created;
   });
+  await rebuildShiftRouteStateBestEffort(shift.id);
+  return shift;
 }
 
 export function organizationRouter(io) {
@@ -109,16 +114,16 @@ export function organizationRouter(io) {
 
   r.use(authRequired(), requireRole("COMPANY"));
 
-  r.get("/rooms", async (req, res) => {
+  r.get("/rooms", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
     const items = await loadEligibleRooms(company);
     res.json({ items });
-  });
+  }));
 
-  r.get("/plans", async (req, res) => {
+  r.get("/plans", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const items = await prisma.organizationPlan.findMany({
       where: { companyId: company.id },
@@ -126,24 +131,24 @@ export function organizationRouter(io) {
       include: { stops: { orderBy: { order: "asc" } } },
     });
     res.json({ items });
-  });
+  }));
 
-  r.get("/plans/:id", async (req, res) => {
+  r.get("/plans/:id", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const id = Number(req.params.id);
     const item = await prisma.organizationPlan.findFirst({
       where: { id, companyId: company.id },
       include: { stops: { orderBy: { order: "asc" } } },
     });
-    if (!item) return res.status(404).json({ error: "notFound" });
+    if (!item) throw httpError(404, "NOT_FOUND", "notFound");
     res.json(item);
-  });
+  }));
 
-  r.post("/plans", async (req, res) => {
+  r.post("/plans", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const title = String(req.body?.title || "").trim();
     const planDate = parseDateOnly(req.body?.planDate);
@@ -153,10 +158,10 @@ export function organizationRouter(io) {
     const notes = trimOrNull(req.body?.notes);
     const stops = normalizeStops(req.body?.stops);
 
-    if (!title) return res.status(400).json({ error: "titleRequired" });
-    if (!planDate) return res.status(400).json({ error: "planDateRequired" });
-    if (startMin == null || endMin == null) return res.status(400).json({ error: "startEndMinRequired" });
-    if (!stops.length) return res.status(400).json({ error: "stopsRequired" });
+    if (!title) throw httpError(400, "TITLE_REQUIRED", "titleRequired");
+    if (!planDate) throw httpError(400, "PLAN_DATE_REQUIRED", "planDateRequired");
+    if (startMin == null || endMin == null) throw httpError(400, "START_END_MIN_REQUIRED", "startEndMinRequired");
+    if (!stops.length) throw httpError(400, "STOPS_REQUIRED", "stopsRequired");
 
     const created = await prisma.$transaction(async (tx) => {
       const plan = await tx.organizationPlan.create({
@@ -181,15 +186,15 @@ export function organizationRouter(io) {
     });
 
     res.status(201).json(created);
-  });
+  }));
 
-  r.put("/plans/:id", async (req, res) => {
+  r.put("/plans/:id", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const id = Number(req.params.id);
     const existing = await prisma.organizationPlan.findFirst({ where: { id, companyId: company.id } });
-    if (!existing) return res.status(404).json({ error: "notFound" });
+    if (!existing) throw httpError(404, "NOT_FOUND", "notFound");
 
     const title = String(req.body?.title || "").trim();
     const planDate = parseDateOnly(req.body?.planDate);
@@ -199,10 +204,10 @@ export function organizationRouter(io) {
     const notes = trimOrNull(req.body?.notes);
     const stops = normalizeStops(req.body?.stops);
 
-    if (!title) return res.status(400).json({ error: "titleRequired" });
-    if (!planDate) return res.status(400).json({ error: "planDateRequired" });
-    if (startMin == null || endMin == null) return res.status(400).json({ error: "startEndMinRequired" });
-    if (!stops.length) return res.status(400).json({ error: "stopsRequired" });
+    if (!title) throw httpError(400, "TITLE_REQUIRED", "titleRequired");
+    if (!planDate) throw httpError(400, "PLAN_DATE_REQUIRED", "planDateRequired");
+    if (startMin == null || endMin == null) throw httpError(400, "START_END_MIN_REQUIRED", "startEndMinRequired");
+    if (!stops.length) throw httpError(400, "STOPS_REQUIRED", "stopsRequired");
 
     const updated = await prisma.$transaction(async (tx) => {
       await tx.organizationPlan.update({
@@ -225,15 +230,15 @@ export function organizationRouter(io) {
     });
 
     res.json(updated);
-  });
+  }));
 
-  r.delete("/plans/:id", async (req, res) => {
+  r.delete("/plans/:id", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const id = Number(req.params.id);
     const existing = await prisma.organizationPlan.findFirst({ where: { id, companyId: company.id } });
-    if (!existing) return res.status(404).json({ error: "notFound" });
+    if (!existing) throw httpError(404, "NOT_FOUND", "notFound");
 
     const item = await prisma.organizationPlan.update({
       where: { id },
@@ -241,45 +246,45 @@ export function organizationRouter(io) {
       include: { stops: { orderBy: { order: "asc" } } },
     });
     res.json(item);
-  });
+  }));
 
-  r.post("/plans/:id/publish-shift", async (req, res) => {
+  r.post("/plans/:id/publish-shift", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const id = Number(req.params.id);
     const plan = await prisma.organizationPlan.findFirst({
       where: { id, companyId: company.id },
       include: { stops: { orderBy: { order: "asc" } } },
     });
-    if (!plan) return res.status(404).json({ error: "notFound" });
-    if (!plan.stops?.length) return res.status(400).json({ error: "stopsRequired" });
+    if (!plan) throw httpError(404, "NOT_FOUND", "notFound");
+    if (!plan.stops?.length) throw httpError(400, "STOPS_REQUIRED", "stopsRequired");
 
     const shift = await ensureMarketShiftFromPlan(company, plan);
     io?.to?.(`company:${company.id}`)?.emit?.("organization:plan:update", { id: plan.id, kind: "marketOpened", shiftId: shift.id });
     res.json({ ok: true, shiftId: shift.id, mode: "MARKET" });
-  });
+  }));
 
-  r.post("/plans/:id/send-offers", async (req, res) => {
+  r.post("/plans/:id/send-offers", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const id = Number(req.params.id);
     const plan = await prisma.organizationPlan.findFirst({
       where: { id, companyId: company.id },
       include: { stops: { orderBy: { order: "asc" } } },
     });
-    if (!plan) return res.status(404).json({ error: "notFound" });
-    if (!plan.stops?.length) return res.status(400).json({ error: "stopsRequired" });
+    if (!plan) throw httpError(404, "NOT_FOUND", "notFound");
+    if (!plan.stops?.length) throw httpError(400, "STOPS_REQUIRED", "stopsRequired");
 
     const roomIds = Array.from(new Set((Array.isArray(req.body?.roomIds) ? req.body.roomIds : []).map((x) => Number(x)).filter((x) => Number.isFinite(x))));
-    if (!roomIds.length) return res.status(400).json({ error: "roomIdsRequired" });
+    if (!roomIds.length) throw httpError(400, "ROOM_IDS_REQUIRED", "roomIdsRequired");
     const amountCompany = toInt(req.body?.amountCompany, null);
-    if (amountCompany == null || amountCompany <= 0) return res.status(400).json({ error: "amountCompanyRequired" });
+    if (amountCompany == null || amountCompany <= 0) throw httpError(400, "AMOUNT_COMPANY_REQUIRED", "amountCompanyRequired");
     const noteCompany = trimOrNull(req.body?.noteCompany);
 
     const rooms = await prisma.room.findMany({ where: { id: { in: roomIds }, status: "ACTIVE" }, select: { id: true, name: true } });
-    if (rooms.length !== roomIds.length) return res.status(400).json({ error: "someRoomsNotFound" });
+    if (rooms.length !== roomIds.length) throw httpError(400, "SOME_ROOMS_NOT_FOUND", "someRoomsNotFound");
 
     const shift = await ensureMarketShiftFromPlan(company, plan);
     await prisma.$transaction(roomIds.map((roomId) => prisma.shiftOffer.upsert({
@@ -294,19 +299,19 @@ export function organizationRouter(io) {
     }
 
     res.json({ ok: true, shiftId: shift.id, roomIds, amountCompany, mode: "DIRECT_OFFERS" });
-  });
+  }));
 
-  r.post("/plans/:id/create-agreement", async (req, res) => {
+  r.post("/plans/:id/create-agreement", asyncHandler(async (req, res) => {
     const company = await assertOrganization(req);
-    if (!company) return res.status(403).json({ error: "organizationOnly" });
+    if (!company) throw httpError(403, "ORGANIZATION_ONLY", "organizationOnly");
 
     const id = Number(req.params.id);
     const plan = await prisma.organizationPlan.findFirst({
       where: { id, companyId: company.id },
       include: { stops: { orderBy: { order: "asc" } } },
     });
-    if (!plan) return res.status(404).json({ error: "notFound" });
-    if (!plan.roomId) return res.status(400).json({ error: "roomIdRequired" });
+    if (!plan) throw httpError(404, "NOT_FOUND", "notFound");
+    if (!plan.roomId) throw httpError(400, "ROOM_ID_REQUIRED", "roomIdRequired");
 
     const agreement = await prisma.agreement.create({
       data: {
@@ -336,7 +341,7 @@ export function organizationRouter(io) {
     io?.to?.(`room:${plan.roomId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "created" });
 
     res.json({ ok: true, agreementId: agreement.id });
-  });
+  }));
 
   return r;
 }

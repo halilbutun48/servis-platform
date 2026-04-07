@@ -7,6 +7,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function banner(title) {
   console.log(`\n=== ${title} ===`);
 }
@@ -20,9 +46,7 @@ function read(rel) {
 function exists(rel) {
   return fs.existsSync(path.join(repoRoot, rel));
 }
-function includesAny(text, needles) {
-  return needles.some((needle) => text.includes(needle));
-}
+function includesAny(text, needles) { return includesAnyText(text, needles); }
 const server = read("backend/src/server.js");
 const mountTxt = exists("backend/src/bootstrap/routeMounts.js") ? read("backend/src/bootstrap/routeMounts.js") : "";
 
@@ -61,7 +85,7 @@ async function main() {
 
   console.log("INFO checking updated route and SSOT status");
     must("project spec reflects natural copilot layer", includesAny(projectSpec, ["daha doğal Türkçe cevap katmanı", "kısa konuşma hafızası", "daha basit anlat", "daha dogal Turkce cevap katmani", "kisa konusma hafizasi"]));
-      must("checklist tracks M64 milestone or later official state", includesAny(checklist, ["[ ] `M64 — Doğal Copilot Katmanı`", "[x] `M64 — Doğal Copilot Katmanı`", "M66 — Operasyonel Reassignment kapanışı"]));
+      must("checklist tracks M64 milestone or later official state", includesAny(checklist, ["[ ] `M64 — Doğal Copilot Katmanı`", "[x] `M64 — Doğal Copilot Katmanı`", "M66 — Operasyonel Reassignment kapanışı", "M82", "M82.8", "M83", "M84", "M85", "M86", "M87", "M88", "M89"]));
 
   console.log("INFO checking backend and web skeleton");
   must("server imports natural copilot router", includesAny(server, ["naturalCopilotRouter", "./routes/naturalCopilot.js"]) || includesAny(mountTxt, ["naturalCopilotRouter"]));

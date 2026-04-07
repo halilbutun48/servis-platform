@@ -8,6 +8,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
 function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
 function ok(msg) { console.log(`OK ${msg}`); }
@@ -47,13 +73,13 @@ const geo = read("web/src/panels/company/GeoReviewPanel.jsx");
 const shifts = read("web/src/panels/company/ShiftsPanel.jsx");
 
 const geoUseEffects = count(geo, /useEffect\s*\(/g);
-if (geo.includes('clearUiDataCache("/api/company/personels")') && geo.includes('setDebouncedQ')) ok("GeoReviewPanel merged cache-clear and debounce flow"); else fail("GeoReviewPanel merged cache-clear and debounce flow");
-if (geo.includes('scopeAutoSeeded') && geo.includes('hasPlanningScope') && geo.includes('openMode === "ALL"')) ok("GeoReviewPanel keeps unified scope seeding guard"); else fail("GeoReviewPanel keeps unified scope seeding guard");
+if (includesText(geo, 'clearUiDataCache("/api/company/personels")') && includesText(geo, 'setDebouncedQ')) ok("GeoReviewPanel merged cache-clear and debounce flow"); else fail("GeoReviewPanel merged cache-clear and debounce flow");
+if (includesText(geo, 'scopeAutoSeeded') && includesText(geo, 'hasPlanningScope') && includesText(geo, 'openMode === "ALL"')) ok("GeoReviewPanel keeps unified scope seeding guard"); else fail("GeoReviewPanel keeps unified scope seeding guard");
 if (geoUseEffects <= 7) ok(`GeoReviewPanel useEffect count reduced to ${geoUseEffects}`); else fail(`GeoReviewPanel useEffect count reduced to <=7 (actual ${geoUseEffects})`);
 
 const shiftsUseEffects = count(shifts, /useEffect\s*\(/g);
-if (shifts.includes('if (isCommercialMode)') && shifts.includes('if (mainTab !== "track") return;')) ok("ShiftsPanel merges commercial mode and accordion sync flow"); else fail("ShiftsPanel merges commercial mode and accordion sync flow");
-if (shifts.includes('localStorage.setItem(LS_LAST_ROOM') && shifts.includes('vehiclesById.get(Number(offerVehicleId))')) ok("ShiftsPanel keeps merged room persist and vehicle validity flow"); else fail("ShiftsPanel keeps merged room persist and vehicle validity flow");
+if (includesText(shifts, 'if (isCommercialMode)') && includesText(shifts, 'if (mainTab !== "track") return;')) ok("ShiftsPanel merges commercial mode and accordion sync flow"); else fail("ShiftsPanel merges commercial mode and accordion sync flow");
+if (includesText(shifts, 'localStorage.setItem(LS_LAST_ROOM') && includesText(shifts, 'vehiclesById.get(Number(offerVehicleId))')) ok("ShiftsPanel keeps merged room persist and vehicle validity flow"); else fail("ShiftsPanel keeps merged room persist and vehicle validity flow");
 if (shiftsUseEffects <= 12) ok(`ShiftsPanel useEffect count reduced to ${shiftsUseEffects}`); else fail(`ShiftsPanel useEffect count reduced to <=12 (actual ${shiftsUseEffects})`);
 
 console.log("INFO running scale readiness baseline");

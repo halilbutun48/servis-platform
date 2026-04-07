@@ -1,12 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-export default function PinChangeScreen({ onSubmit }) {
+function normalizePinError(error, fallback = 'PIN degistirilemedi.') {
+  const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
+  if (error?.userMessage) return error.userMessage;
+  if (code === 'BAD_CURRENT_PIN') return 'Mevcut PIN hatali.';
+  if (code === 'CURRENT_PIN_REQUIRED') return 'Mevcut PIN gerekli.';
+  if (code === 'DEVICE_MISMATCH') return 'Bu cihaz eslesmesi dogrulanamadi. Guvenli cikis yapip tekrar giris deneyin.';
+  if (code === 'NETWORK_TIMEOUT') return 'Sunucu gec cevap verdi. Tekrar deneyin.';
+  if (code === 'NETWORK_ERROR') return 'Baglanti kurulamadı. Interneti kontrol edin.';
+  return String(error?.payload?.message || error?.payload?.error || error?.message || error || fallback);
+}
+
+export default function PinChangeScreen({ onSubmit, onLogout, initialError = '' }) {
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [newPin2, setNewPin2] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
+
+  useEffect(() => {
+    setError(initialError || '');
+  }, [initialError]);
 
   async function handleSubmit() {
     setError('');
@@ -16,7 +31,17 @@ export default function PinChangeScreen({ onSubmit }) {
     try {
       await onSubmit({ currentPin, newPin });
     } catch (err) {
-      setError(String(err?.payload?.message || err?.payload?.error || err?.message || err || 'PIN degistirilemedi.'));
+      setError(normalizePinError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLogout() {
+    if (!onLogout) return;
+    setBusy(true);
+    try {
+      await onLogout();
     } finally {
       setBusy(false);
     }
@@ -26,7 +51,7 @@ export default function PinChangeScreen({ onSubmit }) {
     <ScrollView contentContainerStyle={styles.wrap}>
       <View style={styles.card}>
         <Text style={styles.title}>Yeni PIN belirle</Text>
-        <Text style={styles.subtitle}>Ilk giriste gecici PIN yerine sana ait yeni bir PIN belirlemelisin.</Text>
+        <Text style={styles.subtitle}>Ilk giriste gecici PIN yerine size ait yeni bir PIN belirlemelisiniz.</Text>
 
         <Field label="Gecici PIN" value={currentPin} onChangeText={setCurrentPin} />
         <Field label="Yeni PIN" value={newPin} onChangeText={setNewPin} />
@@ -37,6 +62,17 @@ export default function PinChangeScreen({ onSubmit }) {
         </Pressable>
 
         {!!error && <Text style={styles.error}>{error}</Text>}
+
+        <View style={styles.helpBox}>
+          <Text style={styles.helpTitle}>Sorun olursa</Text>
+          <Text style={styles.helpText}>Mevcut PIN hataliysa once dogru gecici PIN ile tekrar deneyin. Cihaz eslesme veya oturum sorunu varsa guvenli cikis yapip yeniden giris acin.</Text>
+        </View>
+
+        {!!onLogout && (
+          <Pressable style={[styles.secondaryButton, busy && styles.buttonDisabled]} onPress={handleLogout} disabled={busy}>
+            <Text style={styles.secondaryButtonText}>Guvenli cikis yap</Text>
+          </Pressable>
+        )}
       </View>
     </ScrollView>
   );
@@ -96,14 +132,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 6,
   },
+  secondaryButton: {
+    minHeight: 46,
+    borderRadius: 14,
+    backgroundColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonDisabled: { opacity: 0.7 },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },
+  secondaryButtonText: {
+    color: '#0f172a',
+    fontSize: 15,
+    fontWeight: '700',
+  },
   error: {
     color: '#b91c1c',
+    lineHeight: 20,
+  },
+  helpBox: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 14,
+    padding: 14,
+    gap: 6,
+  },
+  helpTitle: {
+    color: '#1d4ed8',
+    fontWeight: '700',
+  },
+  helpText: {
+    color: '#1e3a8a',
     lineHeight: 20,
   },
 });

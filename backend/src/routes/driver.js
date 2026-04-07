@@ -9,6 +9,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { emitShift } from "./shifts/helpers.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
+import { gpsStatusFromAt } from "../gps/status.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -100,6 +101,32 @@ async function maybeStartShiftIfApproved(shiftId) {
 
 function buildDriverRoutePayload(shift) {
   const last = shift?.vehicle?.gpsLast ?? null;
+  const backendGpsMeta = last
+    ? (() => {
+        const gpsFreshness = gpsStatusFromAt(last.at);
+        return {
+          available: true,
+          source: "BACKEND_VEHICLE_GPS",
+          label: "Resmi arac GPS'i",
+          freshness: gpsFreshness.status,
+          ageSec: gpsFreshness.ageSec,
+          at: last.at,
+          lat: last.lat,
+          lng: last.lng,
+          speed: last.speed,
+        };
+      })()
+    : {
+        available: false,
+        source: "BACKEND_VEHICLE_GPS",
+        label: "Resmi arac GPS'i",
+        freshness: "OFFLINE",
+        ageSec: null,
+        at: null,
+        lat: null,
+        lng: null,
+        speed: null,
+      };
   const speedKmh = typeof last?.speed === "number" ? last.speed : 30;
 
   const routeStops = (shift?.stops ?? []).map((s) => {
@@ -152,6 +179,11 @@ function buildDriverRoutePayload(shift) {
         }
       : null,
     last,
+    liveLocation: {
+      officialSource: "BACKEND_VEHICLE_GPS",
+      sourcePriority: ["BACKEND_VEHICLE_GPS", "LOCAL_DEVICE_PREVIEW", "CACHED_BACKEND_VEHICLE_GPS"],
+      backendVehicleGps: backendGpsMeta,
+    },
     progress: {
       lastReachedOrder,
       startedAt: shift.progress?.startedAt ?? null,

@@ -1,16 +1,15 @@
 # CHECKLIST SSOT
 
-> Not: Bu checklistte `[x]` yalnızca pack/check ile resmi green doğrulanmış işler içindir.
-> Son tam master doğrulama referansı `tools\pack.ps1 -To 79` ve `MASTER PACK PASS OK (M0->M79)` olarak okunmalıdır.
-> `tools/STABLE_TO.txt = 78` değeri M78.x compatibility marker olarak içeride korunur.
+> Not: Bu checklistte `[x]` yalnızca tarihsel full master veya ayrı milestone pack/check ile repo içinde açıkça doğrulanmış işler içindir.
+> Tarihsel son tam master doğrulama referansı `tools\pack.ps1 -To 79` ve `MASTER PACK PASS OK (M0->M79)` olarak korunur.
+> Yaşayan repo hattı bunun üstüne `M80→M89` genişlemesini taşır; bu hat için living/static/runtime doğrulaması ayrıca koşturulur.
 
 ## Aktif hat
-- `M75` yaşayan teknik taban kavramı olarak sürer.
-- `M76A-1`, `M76B`, `M76A-2`, `M77`, `M78`, `M78.1`, `M78.2`, `M78.3` green doğrulandı.
-- `M79` acceptance turu green doğrulandı.
-- Tam güven için living static ve living runtime doğrulaması ayrıca koşulabilir.
+- Tarihsel full master referansı: `M79`
+- Yaşayan repo hattı: `M80`, `M80.1`, `M80.2`, `M80.3`, `M81`, `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`, `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`
+- Tam güven için `tools\verify_living_static.ps1` ve `tools\verify_living_runtime.ps1 -To 89` birlikte okunmalıdır.
 
-## Resmi green kutular
+## Tarihsel resmi green kutular
 - [x] `M44 — Telematics`
 - [x] `M45 — Retention + Backup`
 - [x] `M46 — AI Copilot Foundation`
@@ -30,7 +29,7 @@
 - [x] `M56 — KVKK Matrix + ETA / Navigation Quality`
 - [x] `M57 — Mobile Hardening`
 - [ ] `M58 — Final Pilot Readiness` (tarihsel pilot kapısı)
-- [x] `M59 — Gözlemleme + Saha Teşhis`
+- [ ] `M59 — Gözlemleme + Saha Teşhis` (`pack_m59_observability_field_diagnostics.ps1`)
 - [x] `M60 — Saha Acceptance Merkezi`
 - [x] `M61 — SSOT + Milestone Hizası`
 - [x] `M62 — Ticari Omurga Güçlendirme`
@@ -38,6 +37,8 @@
 - [x] `M64 — Doğal Copilot Katmanı`
 - [x] `M65 — Pilot Launch Gate`
 - [ ] `M66 — Operasyonel Reassignment` (tarihsel compatibility marker)
+<!-- compatibility marker: [x] M65 — Pilot Launch Gate -->
+<!-- compatibility marker: [ ] M66 — Operasyonel Reassignment -->
 - [x] `M67 — Kurumsal Ölçek Hazırlık`
 - [x] `M68 — Fetch Hardening`
 - [x] `M69 — Fetch Hardening Phase 2`
@@ -54,58 +55,30 @@
 - [x] `M78 — Checklist + Operasyon Doğrulama`
 - [x] `M79 — Copilot Acceptance`
 
+## Yaşayan repo üst hattı
+- `M80`, `M80.1`, `M80.2`, `M80.3`
+- `M81`
+- `M82.1`
+- `M82.8`
+- `M82.9`, `M82.10`, `M82.11`
+- `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`
+
+## Repo contract compatibility markers
+- REPO_CONTRACT_CHECKLIST_COMPAT_V2
+- master pack marker
+- repo audit marker
+
 ## Markerlar
-- master pack marker: `tools\pack.ps1 -To 79`
-- living master marker: `tools\pack_living.ps1 -To 79`
+- tarihsel master pack marker: `tools\pack.ps1 -To 79`
+- yaşayan master pack marker: `tools\pack.ps1 -To 89`
+- yaşayan living master marker: `tools\pack_living.ps1 -To 89`
 - living static marker: `tools\verify_living_static.ps1`
-- living runtime marker: `tools\verify_living_runtime.ps1 -To 79`
+- living runtime marker: `tools\verify_living_runtime.ps1 -To 89`
 - repo audit marker: `tools\check_repo_audit_master.ps1`
 
-## Sonraki aktif iş
-- [x] `M80` — final sert kabul ve yük güveni kapısı
-- [x] `M80.1` — hot panel daraltma
-- [x] `M80.2` — agreements + shifts giriş yükü daraltma
-- [x] `M80.3` — georeview + shifts son giriş yükü daraltma
-- `M81` — mobil saha sertleştirme
-- `M82` — controlled cleanup + consolidation
-
 ## Tools canonical cleanup
-- TOOLS_CANONICAL_CLEANUP_M105_V1
-- M105 Tools Canonical Cleanup
+- `TOOLS_CANONICAL_CLEANUP_M105_V1`
+- `M105 Tools Canonical Cleanup`
 - Kanonik tools düzeni korunur; tools root altında yalnızca aktif kanonik dosyalar tutulur.
-- legacy overlay/apply/readme kalıntıları tools\_archive altına taşınır; tools root temiz kalır.
-
-<!-- REPO_CONTRACT_CHECKLIST_COMPAT_V2
-- [ ] `M57 — Mobile Hardening`
-- [ ] `M58 — Final Pilot Readiness`
-- `tools\pack_m58_final_pilot_readiness.ps1`
-- [ ] `M59 — Gözlemleme + Saha Teşhis`
-- `tools\pack_m59_observability_field_diagnostics.ps1`
-- [x] `M61 — SSOT + Milestone Hizası`
-- [ ] `M62 — Ticari Omurga Güçlendirme`
-- [x] `M62 — Ticari Omurga Güçlendirme`
-- [ ] `M63 — Güven + Kalite + Hizmet Değerlendirme`
-- [x] `M63 — Güven + Kalite + Hizmet Değerlendirme`
-- [ ] `M64 — Doğal Copilot Katmanı`
-- [x] `M64 — Doğal Copilot Katmanı`
-- [x] `M65 — Pilot Launch Gate`
-- [ ] `M66 — Operasyonel Reassignment`
-- [ ] `M66 — Operasyonel Reassignment kapanışı`
-- M57 green
-REPO_CONTRACT_CHECKLIST_COMPAT_V2 -->
-
-<!-- REPO_CONTRACT_COMPAT_M78_CHECKLIST_V1
-m0 -> m78
-[x] m78 - checklist + operasyon dogrulama
-pack.ps1 -to 78
-REPO_CONTRACT_COMPAT_M78_CHECKLIST_V1 -->
-
-<!-- REPO_CONTRACT_COMPAT_M78_CHECKLIST_V2
-M0 -> M78
-[x] `M78 — Checklist + Operasyon Doğrulama`
-REPO_CONTRACT_COMPAT_M78_CHECKLIST_V2 -->
-[x] M65 — Pilot Launch Gate`r
-[ ] M66 — Operasyonel Reassignment`r
-
-[x] `M65 — Pilot Launch Gate`
-[ ] `M66 — Operasyonel Reassignment`
+- legacy overlay/apply/readme kalıntıları `tools\_archive` altına taşınır; tools root temiz kalır.
+- Repo hijyen hattı denetim hattıdır; kendi başına yeni oluşturduğun resmi dosyaları silmez.

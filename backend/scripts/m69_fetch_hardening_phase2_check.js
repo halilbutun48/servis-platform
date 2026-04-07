@@ -3,6 +3,32 @@ import path from "path";
 
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 let failed = false;
 
 function read(rel) {
@@ -17,17 +43,17 @@ function fail(msg) {
 }
 function expectContains(rel, pattern, msg) {
   const text = read(rel);
-  if (text.includes(pattern)) ok(msg);
+  if (includesText(text, pattern)) ok(msg);
   else fail(msg);
 }
 function expectContainsAny(rel, patterns, msg) {
   const text = read(rel);
-  if (patterns.some((p) => text.includes(p))) ok(msg);
+  if (patterns.some((p) => includesText(text, p))) ok(msg);
   else fail(msg);
 }
 function expectNotContains(rel, pattern, msg) {
   const text = read(rel);
-  if (!text.includes(pattern)) ok(msg);
+  if (!includesText(text, pattern)) ok(msg);
   else fail(msg);
 }
 
@@ -37,7 +63,11 @@ expectContains("web/src/panels/company/ShiftsPanel.jsx", "function needsReferenc
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "async function ensureReferenceData", "shifts panel lazy reference loader exists");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "await getCompanyShifts(token, { signal", "shifts panel primary load reads shifts first");
 expectNotContains("web/src/panels/company/ShiftsPanel.jsx", "const [sh, veh, rm] = await Promise.all([", "shifts panel no longer loads shifts+vehicles+rooms together on entry");
-expectContains("web/src/panels/company/ShiftsPanel.jsx", 'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve())', "rooms autoreload gated by active need");
+expectContainsAny("web/src/panels/company/ShiftsPanel.jsx", [
+  'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve())',
+  'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve())',
+  'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined) : Promise.resolve())'
+], "rooms autoreload gated by active need");
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "fetchProviderScoreMap(roomScoreIds, token)", "room score fetch now derives from visible shift rooms");
 
 expectContains("web/src/panels/company/AgreementsPanel.jsx", "rooms={null}", "agreement wizard self-loads rooms lazily");

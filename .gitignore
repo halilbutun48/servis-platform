@@ -17,3 +17,12 @@ backend/.env
 infra/.env
 infra/osrm-data/
 
+
+# M82.7 repo hygiene
+mobile/dist/
+*.bak
+*.zip
+apply_overlay.ps1
+_m81_ssot_wireup.ps1
+PATCH_NOTES_M82_*.txt
+README_M82_*_PATCH_*.txt

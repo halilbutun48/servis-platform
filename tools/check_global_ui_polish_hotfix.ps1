@@ -4,7 +4,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Write-Host '=== GLOBAL UI POLISH HOTFIX CHECK ==='
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host '=== GLOBAL UI POLISH HOTFIX CHECK ==='
 
 $checks = @(
   @{ Path = 'web/src/panels/superadmin/ObservabilityPanel.jsx'; Needle = 'Canlı Sağlık ve Risk Özeti'; Msg = 'observability title' },

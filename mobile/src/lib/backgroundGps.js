@@ -1,12 +1,13 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { fetchActiveRoute, fetchToday, publishGps } from './api';
+import { fetchActiveRoute, fetchShiftRoute, isSessionFailureError, publishGps } from './api';
 import { buildGpsPayload, GPS_PUBLISH_INTERVAL_MS, resolveGpsPublishTarget } from './gps';
-import { getVoiceGuidanceEnabled } from './storage';
+import { getLastMobileSnapshot, getSelectedShiftId, getVoiceGuidanceEnabled, savePendingSessionEvent } from './storage';
 import { speakReachedStopAndNext, speakRouteCompleted } from './voice';
 
 export const DRIVER_BG_LOCATION_TASK = 'ps-driver-bg-location';
 const DRIVER_BG_DISTANCE_INTERVAL_M = 20;
+const BACKGROUND_ROUTE_CACHE_MAX_AGE_MS = 120000;
 
 export function deriveRouteTransition(prevRoute, nextRoute) {
   const previousStop = prevRoute?.nextStop || null;
@@ -36,6 +37,37 @@ export function deriveRouteTransition(prevRoute, nextRoute) {
 
 async function isTaskAvailable() {
   return TaskManager.isAvailableAsync().catch(() => false);
+}
+
+function pickSnapshotRoute(snapshot, selectedShiftId = null) {
+  const snapshotAt = new Date(snapshot?.snapshotAt || snapshot?.lastSyncAt || 0).getTime();
+  const freshEnough = Number.isFinite(snapshotAt) && snapshotAt > 0 && (Date.now() - snapshotAt) <= BACKGROUND_ROUTE_CACHE_MAX_AGE_MS;
+  if (!freshEnough) return null;
+
+  const route = snapshot?.route || null;
+  const routeShiftId = Number(route?.shift?.id || 0) || null;
+  if (!routeShiftId) return null;
+  if (selectedShiftId && routeShiftId !== Number(selectedShiftId)) return null;
+  return route;
+}
+
+async function loadBackgroundRoute(selectedShiftId) {
+  const snapshot = await getLastMobileSnapshot().catch(() => null);
+  const snapshotRoute = pickSnapshotRoute(snapshot, selectedShiftId);
+  if (snapshotRoute) {
+    return { route: snapshotRoute, target: resolveGpsPublishTarget(snapshot?.today || null, snapshotRoute, selectedShiftId) };
+  }
+
+  if (selectedShiftId) {
+    const route = await fetchShiftRoute(selectedShiftId).catch(() => null);
+    if (route) return { route, target: resolveGpsPublishTarget(snapshot?.today || null, route, selectedShiftId) };
+  }
+
+  const activeRoute = await fetchActiveRoute().catch(() => null);
+  if (activeRoute) return { route: activeRoute, target: resolveGpsPublishTarget(snapshot?.today || null, activeRoute, selectedShiftId) };
+
+  const fallbackRoute = pickSnapshotRoute(snapshot, null);
+  return { route: fallbackRoute, target: resolveGpsPublishTarget(snapshot?.today || null, fallbackRoute, selectedShiftId) };
 }
 
 export async function getDriverBackgroundRuntimeStatus() {
@@ -70,11 +102,12 @@ export async function syncDriverBackgroundLocation({
   kvkkBlocking,
   requestPermission = false,
   appState = 'active',
+  selectedShiftId = null,
 } = {}) {
   const runtime = await getDriverBackgroundRuntimeStatus();
   const isDriver = String(role || '').toUpperCase() === 'DRIVER';
   const backgroundPreferred = String(appState || 'active') !== 'active';
-  const target = resolveGpsPublishTarget(today, route);
+  const target = resolveGpsPublishTarget(today, route, selectedShiftId);
 
   const eligible = Boolean(
     runtime.taskAvailable &&
@@ -187,19 +220,19 @@ if (!TaskManager.isTaskDefined(DRIVER_BG_LOCATION_TASK)) {
     if (!latest?.coords) return;
 
     try {
-      const [today, previousRoute] = await Promise.all([
-        fetchToday().catch(() => null),
-        fetchActiveRoute().catch(() => null),
-      ]);
-
-      const target = resolveGpsPublishTarget(today, previousRoute);
+      const selectedShiftId = await getSelectedShiftId().catch(() => null);
+      const { route: previousRoute, target } = await loadBackgroundRoute(selectedShiftId);
       if (!target.activeShift || !target.vehicleId || !target.canPublish) return;
 
       await publishGps(buildGpsPayload(latest, target.vehicleId));
 
-      const nextRoute = await fetchActiveRoute().catch(() => null);
       const voiceEnabled = await getVoiceGuidanceEnabled().catch(() => false);
-      const transition = voiceEnabled ? deriveRouteTransition(previousRoute, nextRoute) : null;
+      if (!voiceEnabled) return;
+
+      const nextRoute = target.shiftId
+        ? await fetchShiftRoute(target.shiftId).catch(() => null)
+        : await fetchActiveRoute().catch(() => null);
+      const transition = deriveRouteTransition(previousRoute, nextRoute);
 
       if (transition?.type === 'complete') {
         speakRouteCompleted();
@@ -207,6 +240,16 @@ if (!TaskManager.isTaskDefined(DRIVER_BG_LOCATION_TASK)) {
         speakReachedStopAndNext(transition.reachedStop, nextRoute);
       }
     } catch (taskError) {
+      if (isSessionFailureError(taskError)) {
+        await savePendingSessionEvent({
+          type: 'SESSION_FAILURE',
+          reason: taskError?.sessionFailureReason || taskError?.code || 'session-failure',
+          code: taskError?.code || '',
+          message: taskError?.userMessage || taskError?.message || 'Oturum süresi doldu. Yeniden giriş yapın.',
+        }).catch(() => null);
+        await stopDriverBackgroundLocation().catch(() => null);
+        return;
+      }
       console.log('driver background gps task error', String(taskError?.message || taskError || 'unknown'));
     }
   });

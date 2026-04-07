@@ -1,6 +1,7 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = "Stop"
-Write-Host "=== FINAL MILESTONE CLEANUP CHECK ==="
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host "=== FINAL MILESTONE CLEANUP CHECK ==="
 Push-Location $RepoRoot
 try {
   $ssotPath = Join-Path $RepoRoot 'web\src\panels\superadmin\SsotAlignmentPanel.jsx'

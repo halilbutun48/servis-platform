@@ -10,253 +10,22 @@ import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftPersonelTable from "../../components/ShiftPersonelTable";
 import { clearUiDataCache } from "../../utils/uiDataCache";
 
-const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
-
-function writeGuidedResume(payload) {
-  try {
-    localStorage.setItem(GUIDED_RESUME_KEY, JSON.stringify({ ...payload, ts: Date.now() }));
-  } catch {
-    // ignore
-  }
-}
-
-function haversineM(a, b) {
-  const R = 6371000;
-  const toRad = (x) => (x * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-
-  const s =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
-  return R * c;
-}
-
-function safeNum(x) {
-  const n = Number(x);
-  return Number.isFinite(n) ? n : null;
-}
-
-function normalizeCoord(v, kind) {
-  if (v === null || v === undefined) return null;
-  let n = null;
-
-  if (typeof v === "number") {
-    n = v;
-  } else {
-    const s0 = String(v).trim();
-    if (!s0) return null;
-    const s = s0.replace(",", ".");
-    const nn = Number(s);
-    if (Number.isFinite(nn)) n = nn;
-    else {
-      const pf = parseFloat(s);
-      if (Number.isFinite(pf)) n = pf;
-    }
-  }
-
-  if (!Number.isFinite(n)) return null;
-
-  // Excel/CSV bazen lat/lng'yi "mikro derece" (örn 37755276) olarak verir.
-  // Heuristik: büyük sayıysa ölçekle.
-  const abs = Math.abs(n);
-  if (abs > 1000) {
-    // dene 1e6
-    let scaled = n / 1e6;
-    if (Math.abs(scaled) > 180) scaled = n / 1e5;
-    if (Math.abs(scaled) > 180) scaled = n / 1e4;
-    n = scaled;
-  }
-
-  if (kind === "lat" && Math.abs(n) > 90) return null;
-  if (kind === "lng" && Math.abs(n) > 180) return null;
-  return n;
-}
-
-function sanitizeAddress(input) {
-  let s = String(input ?? "").trim();
-  if (!s) return "";
-  s = s.replace(/[\/]+/g, " ");
-  s = s.replace(/\b(no|no\.|numara|daire|apt|kat)\b\s*[:#-]?\s*\S+/gi, " ");
-  s = s.replace(/\s+/g, " ").trim();
-  if (!/türkiye|turkiye|tr\b/i.test(s)) s = s + " Türkiye";
-  return s;
-}
-
-function parseCsv(text) {
-  // MVP parser: virgül ayracı, ilk satır header olabilir.
-  // Beklenen kolonlar (case-insensitive): name, address, lat, lng (phone varsa yok sayılır)
-  const lines = String(text || "")
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  if (!lines.length) return [];
-
-  const split = (line) => {
-    // basit split: quoted alan yok (MVP)
-    return line.split(",").map((x) => x.trim());
-  };
-
-  const head = split(lines[0]).map((h) => h.toLowerCase());
-  const hasHeader =
-    head.includes("name") ||
-    head.includes("phone") ||
-    head.includes("address") ||
-    head.includes("lat") ||
-    head.includes("lng");
-
-  let startIdx = 0;
-  let idx = { name: 0, phone: 1, address: 2, lat: 3, lng: 4 };
-
-  if (hasHeader) {
-    idx = {
-      name: Math.max(0, head.indexOf("name")),
-      phone: Math.max(0, head.indexOf("phone")),
-      address: Math.max(0, head.indexOf("address")),
-      lat: Math.max(0, head.indexOf("lat")),
-      lng: Math.max(0, head.indexOf("lng")),
-    };
-    startIdx = 1;
-  }
-
-  const out = [];
-  for (let i = startIdx; i < lines.length; i++) {
-    const row = split(lines[i]);
-    const name = row[idx.name] ?? "";
-    const address = row[idx.address] ?? "";
-    const lat = normalizeCoord(row[idx.lat], "lat");
-    const lng = normalizeCoord(row[idx.lng], "lng");
-
-    out.push({ name, phone: "", address, lat, lng });
-  }
-  return out;
-}
-
-function normalizeHeader(h) {
-  return String(h || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/ı/g, "i")
-    .replace(/ğ/g, "g")
-    .replace(/ş/g, "s")
-    .replace(/ö/g, "o")
-    .replace(/ü/g, "u")
-    .replace(/ç/g, "c");
-}
-
-function headerIndex(head, keys) {
-  for (const k of keys) {
-    const i = head.indexOf(k);
-    if (i >= 0) return i;
-  }
-  return -1;
-}
-
-function parseSheetRowsToPeople(rows2d) {
-  const rows = Array.isArray(rows2d) ? rows2d : [];
-  if (!rows.length) return [];
-
-  const headRaw = rows[0] || [];
-  const head = headRaw.map((h) => normalizeHeader(h));
-  const hasHeader =
-    head.some((h) => ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"].includes(h)) ||
-        head.some((h) => ["address", "adres"].includes(h)) ||
-    head.some((h) => ["lat", "enlem", "latitude"].includes(h)) ||
-    head.some((h) => ["lng", "lon", "boylam", "longitude", "long"].includes(h));
-
-  let startIdx = 0;
-  let idx = { name: 0, phone: 1, address: 2, lat: 3, lng: 4 };
-
-  if (hasHeader) {
-    idx = {
-      name: Math.max(0, headerIndex(head, ["name", "ad", "ad soyad", "adsoyad", "full name", "fullname"])),
-      address: Math.max(0, headerIndex(head, ["address", "adres"])),
-      lat: Math.max(0, headerIndex(head, ["lat", "enlem", "latitude"])),
-      lng: Math.max(0, headerIndex(head, ["lng", "lon", "boylam", "longitude", "long"])),
-    };
-    startIdx = 1;
-  }
-
-  const out = [];
-  for (let i = startIdx; i < rows.length; i++) {
-    const row = rows[i] || [];
-    const name = row[idx.name] ?? "";
-    const address = row[idx.address] ?? "";
-    const lat = normalizeCoord(row[idx.lat], "lat");
-    const lng = normalizeCoord(row[idx.lng], "lng");
-    out.push({ name, phone: "", address, lat, lng });
-  }
-  return out;
-}
-
-function computeGeoMeta(p) {
-  const hasCoords = typeof p?.lat === "number" && typeof p?.lng === "number";
-  const hasPartialCoords = (p?.lat == null) !== (p?.lng == null);
-  const hasAddress = Boolean(String(p?.address || "").trim());
-  if (Boolean(p?.geoManualOverride) && hasCoords) {
-    return { geoStatus: "OK", geoReason: "MANUAL_OVERRIDE", geoReasonText: "Elle doğrulandı" };
-  }
-  if (hasCoords) {
-    return { geoStatus: "OK", geoReason: "HAS_COORDS", geoReasonText: "Geçerli koordinat var" };
-  }
-  if (hasPartialCoords) {
-    return { geoStatus: "NEEDS_REVIEW", geoReason: "INVALID_COORD", geoReasonText: "Koordinat eksik veya geçersiz" };
-  }
-  if (hasAddress) {
-    return { geoStatus: "NEEDS_REVIEW", geoReason: "ADDRESS_ONLY", geoReasonText: "Adres var, koordinat yok" };
-  }
-  return { geoStatus: "FAILED", geoReason: "MISSING_ADDRESS", geoReasonText: "Adres ve koordinat yok" };
-}
-
-function computeGeoStatus(p) {
-  return computeGeoMeta(p).geoStatus;
-}
-
-function clusterPeople(people, maxWalkM) {
-  const pts = (people || []).filter((p) => typeof p.lat === "number" && typeof p.lng === "number");
-  if (!pts.length) return [];
-
-  // greedy clustering (MVP): sırayla yeni cluster, radius içinde ekle
-  const used = new Set();
-  const clusters = [];
-
-  for (let i = 0; i < pts.length; i++) {
-    const p = pts[i];
-    if (used.has(p.id)) continue;
-
-    const members = [p];
-    used.add(p.id);
-
-    for (let j = i + 1; j < pts.length; j++) {
-      const q = pts[j];
-      if (used.has(q.id)) continue;
-      const d = haversineM({ lat: p.lat, lng: p.lng }, { lat: q.lat, lng: q.lng });
-      if (d <= maxWalkM) {
-        members.push(q);
-        used.add(q.id);
-      }
-    }
-
-    const lat = members.reduce((s, x) => s + x.lat, 0) / members.length;
-    const lng = members.reduce((s, x) => s + x.lng, 0) / members.length;
-
-    clusters.push({
-      id: `stop_${i}_${Math.random().toString(16).slice(2)}`,
-      title: `Durak ${clusters.length + 1}`,
-      lat,
-      lng,
-      count: members.length,
-      memberIds: members.map((m) => m.id),
-    });
-  }
-
-  return clusters;
-}
+import { getApiErrorMessage } from "../../utils/apiContract";
+import {
+  writeGuidedResume,
+  parseCsv,
+  parseSheetRowsToPeople,
+  sanitizeAddress,
+  safeNum,
+  computeGeoMeta,
+  computeGeoStatus,
+  clusterPeople,
+} from "./shiftPeopleTabUtils";
+import {
+  ShiftPeopleSummarySection,
+  ShiftPeopleHubSection,
+  ShiftPeopleImportSection,
+} from "./shiftPeopleTabSections";
 
 export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds, preferredShiftId, guidedMode = false, hideGeoReviewLinks = false, onSummaryChange = null }) {
   const who = personLabel(me);
@@ -277,7 +46,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         setPeopleBackend("on");
       }
     } catch (e) {
-      setErr(e?.message || String(e));
+      setErr(getApiErrorMessage(e));
     }
     writeGuidedResume({
       basePath,
@@ -559,7 +328,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         setInfo("");
       } catch (e) {
         if (!alive) return;
-        setErr(e?.message || String(e));
+        setErr(getApiErrorMessage(e));
         setPeople(loadPeopleFromStorage());
       } finally {
         if (alive) setBusy(false);
@@ -608,7 +377,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           return;
         }
         // Do not overwrite UI; just show error
-        setErr(e?.message || String(e));
+        setErr(getApiErrorMessage(e));
       }
     }, 500);
 
@@ -984,7 +753,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       });
       setInfo(`İçe aktarıldı: ${mapped.length} kayıt (${peopleBackend === "off" ? "yerel mod" : "önizleme"})`);
     } catch (e) {
-      setErr(String(e?.message || e));
+      setErr(getApiErrorMessage(e));
     }
   }
 
@@ -1044,7 +813,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       } else if (e?.status === 400) {
         setErr("Adresten Bul başarısız: Geocode isteği eksik veya hatalı.");
       } else {
-        setErr(`Adresten Bul başarısız: ${String(e?.payload?.message || e?.message || e)}`);
+        setErr(`Adresten Bul başarısız: ${getApiErrorMessage(e)}`);
       }
     } finally {
       setRowGeocodeBusyId("");
@@ -1152,7 +921,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
         return;
       } catch (e) {
-        setErr(String(e?.payload?.message || e?.message || e));
+        setErr(getApiErrorMessage(e));
       }
     }
 
@@ -1191,7 +960,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       setInfo(`Shift durakları yüklendi: ${withHub.length}`);
       return withHub;
     } catch (e) {
-      setErr(`Shift durakları yüklenemedi: ${String(e?.payload?.message || e?.message || e)}`);
+      setErr(`Shift durakları yüklenemedi: ${getApiErrorMessage(e)}`);
     } finally {
       setBusy(false);
     }
@@ -1202,6 +971,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const r = roomsById?.get ? roomsById.get(Number(selectedShift.roomId)) : null;
     return r ? `${r.name || r.title || `Room #${r.id}`} (#${r.id})` : `#${selectedShift.roomId}`;
   }, [selectedShift, roomsById]);
+
+  const importWarningSummary = useMemo(() => summarizeWarnings(importWarnings), [importWarnings]);
+  const geoReviewPath = companyPath(me, "/georeview");
 
   return (
     <div className="card">
@@ -1222,295 +994,78 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
-        {/* Shift selector + summary */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="card" style={{ margin: 0 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" }}>
-            <div style={{ minWidth: 280, flex: 1 }}>
-              <label className="muted">Shift</label>
-              <select value={String(selectedShiftId || "")} onChange={(e) => setSelectedShiftId(e.target.value)} disabled={busy}>
-                {shiftOptions.map((s) => (
-                  <option key={s.id} value={String(s.id)}>
-                    #{s.id} • {String(s.status)} • Room {s.roomId} • {new Date(s.startAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <ShiftPeopleSummarySection
+            busy={busy}
+            selectedShiftId={selectedShiftId}
+            setSelectedShiftId={setSelectedShiftId}
+            shiftOptions={shiftOptions}
+            maxWalkM={maxWalkM}
+            setMaxWalkM={setMaxWalkM}
+            companyKind={me?.companyKind}
+            onGenerateDraftStops={generateDraftStops}
+            onOpenPreview={() => setPreviewOpen(true)}
+            onLoadShiftStops={loadShiftStopsFromApi}
+            roomText={roomText}
+            who={who}
+            geoStats={geoStats}
+            hideGeoReviewLinks={hideGeoReviewLinks}
+            onOpenGuidedGeoPicker={openGuidedGeoPicker}
+            geoReviewPath={geoReviewPath}
+            draftStopsLength={draftStops.length}
+            stopSummary={stopSummary}
+            maxWalkMValue={maxWalkM}
+            whoPlural={whoPlural}
+          />
 
-            <div style={{ minWidth: 140 }}>
-              <label className="muted">maxWalkM</label>
-              <input type="number" value={maxWalkM} onChange={(e) => setMaxWalkM(e.target.value)} disabled={busy} />
-            </div>
-
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-              <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM(String(me?.companyKind === "SCHOOL" ? 50 : 250))}>
-                {me?.companyKind === "SCHOOL" ? "School 50" : "Company 250"}
-              </button>
-              {me?.companyKind === "SCHOOL" ? null : (
-                <button type="button" className="btn" disabled={busy} onClick={() => setMaxWalkM("50")}>School 50</button>
-              )}
-            </div>
-
-            <button type="button" disabled={busy} onClick={generateDraftStops}>
-              Durak Üret (Preview)
-            </button>
-
-            <button type="button" disabled={busy || !selectedShiftId} onClick={() => setPreviewOpen(true)}>
-              Önizle
-            </button>
-
-            <button type="button" className="btn" disabled={busy || !selectedShiftId} onClick={loadShiftStopsFromApi}>
-              Shift’ten Durakları Çek
-            </button>
-          </div>
-
-          <div className="muted" style={{ marginTop: 10 }}>
-            <b>Room:</b> {roomText}
-          </div>
-
-          <div className="muted" style={{ marginTop: 6 }}>
-            <b>{who}:</b> {geoStats.total} • OK: {geoStats.ok} • Review: {geoStats.review} • Failed: {geoStats.failed}
-            {geoStats.review > 0 || geoStats.failed > 0 ? (
-              <span style={{ marginLeft: 10 }}>
-                {hideGeoReviewLinks ? (
-                  <button type="button" className="btn sm" onClick={() => openGuidedGeoPicker(null)}>Konum seçiciye git</button>
-                ) : (
-                  <a href={"#" + companyPath(me, "/georeview")}>Geo Review’e git</a>
-                )}
-              </span>
-            ) : null}
-          </div>
-
-          <div className="muted" style={{ marginTop: 6 }}>
-            <b>Draft Durak:</b> {draftStops.length}
-          </div>
-
-          {stopSummary ? (
-            <div className="card" style={{ marginTop: 10 }}>
-              <div className="muted"><b>Stop Generation Özeti</b></div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                maxWalkM: <b>{stopSummary.maxWalkM ?? maxWalkM}</b> • Durak (hub hariç): <b>{stopSummary.stopCountWithoutHub ?? stopSummary.stopCount}</b> • Durak (hub dahil): <b>{stopSummary.stopCountWithHub ?? stopSummary.stopCount}</b>
-              </div>
-              <div className="muted" style={{ marginTop: 4 }}>
-                Toplam kişi: <b>{stopSummary.totalPeople}</b> • Kapsanan: <b>{stopSummary.coveredCount}</b> • Tekil: <b>{stopSummary.singletonCount}</b> • Review: <b>{stopSummary.reviewCount}</b> • Dışarıda/skip: <b>{stopSummary.skippedCount}</b>
-                {stopSummary.hubApplied ? <span> • Hub uygulandı</span> : null}
-              </div>
-              {(stopSummary.stopCountWithHub ?? stopSummary.stopCount) !== (stopSummary.stopCountWithoutHub ?? stopSummary.stopCount) ? (
-                <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
-                  Hub sayıya ayrı eklenir: preview ve draft sayaçlarında hub dahil sayı bir fazla görünebilir.
-                </div>
-              ) : null}
-              {Array.isArray(stopSummary.stopLoads) && stopSummary.stopLoads.length ? (
-                <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                  {stopSummary.stopLoads.slice(0, 8).map((s) => `${s.title}: ${s.count}`).join(' • ')}
-                  {stopSummary.stopLoads.length > 8 ? ' • ...' : ''}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-            Not: “Durak Üret” sadece koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kullanır.
-          </div>
-          </div>
-
-          {/* Hub (Toplanma/Dağıtım) */}
-          <div className="card" style={{ margin: 0 }}>
-            <h3 style={{ marginTop: 0 }}>Vardiya Toplanma / Dağıtım Yeri</h3>
-            <div className="muted" style={{ marginTop: -6 }}>
-              INBOUND: hub <b>son durak</b> olur. OUTBOUND: hub <b>1. durak</b> olur.
-            </div>
-
-            <div className="grid" style={{ marginTop: 8 }}>
-              <div className="col">
-                <label className="muted">Yön</label>
-                <select value={hubDirection} onChange={(e) => setHubDirection(e.target.value)} disabled={busy}>
-                  <option value="INBOUND">INBOUND (Toplama → Hub)</option>
-                  <option value="OUTBOUND">OUTBOUND (Hub → Dağıtım)</option>
-                </select>
-              </div>
-
-              <div className="col" style={{ gridColumn: "1 / -1" }}>
-                <label className="muted">Adres</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input
-                    value={hubAddress}
-                    onChange={(e) => setHubAddress(e.target.value)}
-                    placeholder="örn. Fabrika / Ofis / Toplanma noktası"
-                    disabled={busy}
-                    style={{ flex: 1 }}
-                  />
-                  <button type="button" className="btn sm" onClick={geocodeHubAddress} disabled={busy || !String(hubAddress || "").trim()}>
-                    Adresten Bul
-                  </button>
-                </div>
-              </div>
-
-              <div className="col">
-                <label className="muted">Hub Lat</label>
-                <input value={hubLat} onChange={(e) => setHubLat(e.target.value)} placeholder="41.0..." disabled={busy} />
-              </div>
-              <div className="col">
-                <label className="muted">Hub Lng</label>
-                <input value={hubLng} onChange={(e) => setHubLng(e.target.value)} placeholder="29.0..." disabled={busy} />
-              </div>
-
-              <div className="col" style={{ justifyContent: "end", display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" disabled={busy || !selectedShiftId} onClick={saveHubToShift}>
-                  Kaydet
-                </button>
-                <button type="button" className="btn" disabled={busy || (!hubLat && !hubLng)} onClick={clearHubOnShift}>
-                  Temizle
-                </button>
-              </div>
-            </div>
-
-            <div className="muted" style={{ marginTop: 8 }}>
-              <b>Liste pozisyonu:</b> {hubPosLabel}
-              {selectedShift?.hubLat != null && selectedShift?.hubLng != null ? (
-                <span style={{ marginLeft: 10 }}>
-                  <b>Mevcut Hub:</b> {Number(selectedShift.hubLat).toFixed(6)}, {Number(selectedShift.hubLng).toFixed(6)}
-                </span>
-              ) : null}
-            </div>
-          </div>
+          <ShiftPeopleHubSection
+            busy={busy}
+            hubDirection={hubDirection}
+            setHubDirection={setHubDirection}
+            hubAddress={hubAddress}
+            setHubAddress={setHubAddress}
+            onGeocodeHubAddress={geocodeHubAddress}
+            hubLat={hubLat}
+            setHubLat={setHubLat}
+            hubLng={hubLng}
+            setHubLng={setHubLng}
+            selectedShiftId={selectedShiftId}
+            onSaveHubToShift={saveHubToShift}
+            onClearHubOnShift={clearHubOnShift}
+            hubPosLabel={hubPosLabel}
+            selectedShift={selectedShift}
+          />
         </div>
 
         {/* Manual add / import */}
-        <div className="card" style={{ margin: 0 }}>
-          <h3 style={{ marginTop: 0 }}>{who} Ekle / Import</h3>
-
-          <form onSubmit={addPersonManual} className="grid">
-            <div className="col">
-              <label className="muted">Ad Soyad</label>
-              <input value={pName} onChange={(e) => setPName(e.target.value)} placeholder="örn. Ali Veli" disabled={busy} />
-            </div>
-            <div className="col" style={{ gridColumn: "1 / -1" }}>
-              <label className="muted">Adres</label>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  value={pAddress}
-                  onChange={(e) => setPAddress(e.target.value)}
-                  placeholder="örn. Mahalle / Sokak / İlçe"
-                  disabled={busy}
-                  style={{ flex: 1 }}
-                />
-                <button type="button" className="btn sm" onClick={geocodeManualAddress} disabled={busy || !String(pAddress || "").trim()}>
-                  Adresten Bul
-                </button>
-              </div>
-            </div>
-            <div className="col">
-              <label className="muted">Lat (ops.)</label>
-              <input value={pLat} onChange={(e) => setPLat(e.target.value)} placeholder="41.0..." disabled={busy} />
-            </div>
-            <div className="col">
-              <label className="muted">Lng (ops.)</label>
-              <input value={pLng} onChange={(e) => setPLng(e.target.value)} placeholder="29.0..." disabled={busy} />
-            </div>
-
-            <div className="col" style={{ justifyContent: "end" }}>
-              <button type="submit" disabled={busy}>
-                Ekle
-              </button>
-            </div>
-          </form>
-
-          <div className="card" style={{ marginTop: 10 }}>
-            <div className="muted">
-              <b>Excel/CSV Import</b> — kolonlar: <code>name,address,lat,lng</code> (header opsiyonel)
-              <div style={{ marginTop: 6, fontSize: 12 }}>
-                Excel başlıkları (TR) da olur: <code>ad / ad soyad / adres / enlem / boylam</code>. Dosyada telefon kolonu olsa bile bu adımda kullanılmaz.
-              </div>
-              <div style={{ marginTop: 6, fontSize: 12 }}>
-                Kural: <b>Ad Soyad</b> zorunlu; ayrıca <b>adres</b> veya birlikte <b>lat/lng</b> olmalı.
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, alignItems: "end", flexWrap: "wrap", marginTop: 8 }}>
-              <div style={{ minWidth: 220 }}>
-                <label className="muted">Import modu</label>
-                <select value={importMode} onChange={(e) => setImportMode(e.target.value)} disabled={busy}>
-                  <option value="REPLACE">REPLACE — mevcut listeyi değiştir</option>
-                  <option value="MERGE">MERGE — mevcut listeyi koru, yenileri ekle</option>
-                </select>
-              </div>
-            </div>
-
-            <input
-              type="file"
-              accept=".csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-              disabled={busy}
-              onChange={(e) => importFile(e.target.files?.[0])}
-              style={{ marginTop: 8 }}
-            />
-
-            {importSummary ? (
-              <div className="card" style={{ marginTop: 10 }}>
-                <div className="muted"><b>Import Özeti</b></div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Toplam: {importSummary.totalRows} • Kabul: {importSummary.acceptedRows} • Shift'e bağlanan: {importSummary.linkedToShift}
-                </div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  Oluşan: {importSummary.createdPersonels} • Güncellenen: {importSummary.updatedPersonels} • Review: {importSummary.needsReviewRows}
-                </div>
-                <div className="muted" style={{ marginTop: 4 }}>
-                  Atlanan: {importSummary.skippedRows} • Failed: {importSummary.failedRows}
-                </div>
-                {importSummary.needsReviewRows > 0 ? (
-                  <>
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      {hideGeoReviewLinks ? (
-                        <>Guided Mode'da tek tıkla Konum Seçici'ye geçebilir, işi bitirince aynı adıma geri dönebilirsin. İstersen burada satır bazlı da düzeltebilirsin.</>
-                      ) : (
-                        <>Review gerektiren kayıtlar için <a href={"#" + companyPath(me, "/georeview")}>Geo Review</a> ekranını kullan.</>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                      {hideGeoReviewLinks ? (
-                        <button type="button" className="btn" onClick={() => openGuidedGeoPicker(null)}>Konum seçiciye git</button>
-                      ) : <a className="btn" href={"#" + companyPath(me, "/georeview")}>Geo Review'a Git</a>}
-                      <button type="button" className="btn" onClick={runImportQuickGeocode} disabled={importQuickBusy || busy}>
-                        {importQuickBusy ? "Çalışıyor..." : "Review kayıtlarını topluca bul"}
-                      </button>
-                    </div>
-                    <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                      Hızlı toplu bulma sadece <b>Adres var, koordinat yok</b> ve <b>Koordinat eksik/geçersiz</b> kayıtları dener.
-                    </div>
-                    {(importQuickStats.found || importQuickStats.notFound || importQuickStats.error) ? (
-                      <div className="muted" style={{ marginTop: 6 }}>
-                        Bulundu: <b>{importQuickStats.found}</b> • Bulunamadı: <b>{importQuickStats.notFound}</b> • Hata: <b>{importQuickStats.error}</b>
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
-            ) : null}
-
-            {importWarnings?.length ? (
-              <div className="card" style={{ marginTop: 10 }}>
-                <div className="muted"><b>Import Uyarıları</b> — {importWarnings.length} kayıt</div>
-                <div className="muted" style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {summarizeWarnings(importWarnings).map((item) => (
-                    <span key={item.code} className="badge">{warningLabel(item.code)}: {item.count}</span>
-                  ))}
-                </div>
-                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                  {importWarnings.slice(0, 12).map((w, idx) => (
-                    <div key={`${w.code || "warn"}-${w.rowNo || idx}-${idx}`} className="muted" style={{ fontSize: 12 }}>
-                      <b>Satır {w.rowNo || "?"}</b> • {warningLabel(w.code)} — {w.message}
-                    </div>
-                  ))}
-                </div>
-                {importWarnings.length > 12 ? (
-                  <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-                    İlk 12 uyarı gösteriliyor. Daha fazla satır uyarısı backend summary/warnings içinde mevcut.
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <ShiftPeopleImportSection
+          who={who}
+          whoPlural={whoPlural}
+          busy={busy}
+          pName={pName}
+          setPName={setPName}
+          pAddress={pAddress}
+          setPAddress={setPAddress}
+          pLat={pLat}
+          setPLat={setPLat}
+          pLng={pLng}
+          setPLng={setPLng}
+          onAddPersonManual={addPersonManual}
+          onGeocodeManualAddress={geocodeManualAddress}
+          importMode={importMode}
+          setImportMode={setImportMode}
+          onImportFile={importFile}
+          importSummary={importSummary}
+          hideGeoReviewLinks={hideGeoReviewLinks}
+          geoReviewPath={geoReviewPath}
+          onOpenGuidedGeoPicker={openGuidedGeoPicker}
+          onRunImportQuickGeocode={runImportQuickGeocode}
+          importQuickBusy={importQuickBusy}
+          importQuickStats={importQuickStats}
+          importWarnings={importWarnings}
+          importWarningSummary={importWarningSummary}
+          warningLabel={warningLabel}
+        />
       </div>
 
       {/* People table */}

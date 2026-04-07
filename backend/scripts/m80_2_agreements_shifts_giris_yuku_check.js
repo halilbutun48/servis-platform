@@ -8,6 +8,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
 function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
 function ok(msg) { console.log(`OK ${msg}`); }
@@ -45,17 +71,17 @@ if (stage?.runtime === "backend/scripts/m80_2_agreements_shifts_giris_yuku_check
 const agreements = read("web/src/panels/company/AgreementsPanel.jsx");
 const shifts = read("web/src/panels/company/ShiftsPanel.jsx");
 
-if (agreements.includes("shiftStatsCacheRef")) ok("AgreementsPanel keeps shift stats cache ref"); else fail("AgreementsPanel keeps shift stats cache ref");
-if (agreements.includes("ttlMs: 30000")) ok("AgreementsPanel widens agreement list ttl"); else fail("AgreementsPanel widens agreement list ttl");
-if (agreements.includes("shiftStatsCacheRef.current.has(statsKey)")) ok("AgreementsPanel reuses cached shift stats"); else fail("AgreementsPanel reuses cached shift stats");
-if (agreements.includes("}, [token, take, statusFilter]);")) ok("AgreementsPanel load effect is unified"); else fail("AgreementsPanel load effect is unified");
+if (includesText(agreements, "shiftStatsCacheRef")) ok("AgreementsPanel keeps shift stats cache ref"); else fail("AgreementsPanel keeps shift stats cache ref");
+if (includesText(agreements, "ttlMs: 30000")) ok("AgreementsPanel widens agreement list ttl"); else fail("AgreementsPanel widens agreement list ttl");
+if (includesText(agreements, "shiftStatsCacheRef.current.has(statsKey)")) ok("AgreementsPanel reuses cached shift stats"); else fail("AgreementsPanel reuses cached shift stats");
+if (includesText(agreements, "}, [token, take, statusFilter]);")) ok("AgreementsPanel load effect is unified"); else fail("AgreementsPanel load effect is unified");
 const agreementUseEffects = count(agreements, /useEffect\s*\(/g);
 if (agreementUseEffects <= 6) ok(`AgreementsPanel useEffect count reduced to ${agreementUseEffects}`); else fail(`AgreementsPanel useEffect count reduced to <=6 (actual ${agreementUseEffects})`);
 
-if (shifts.includes("commercialSummaryCacheRef") && shifts.includes("commercialSummaryPromiseRef")) ok("ShiftsPanel keeps summary cache refs"); else fail("ShiftsPanel keeps summary cache refs");
-if (shifts.includes("async function loadCommercialSummary")) ok("ShiftsPanel uses dedicated commercial summary loader"); else fail("ShiftsPanel uses dedicated commercial summary loader");
-if (shifts.includes("company:autoOfferShiftId") && shifts.includes("company:autoOffersListShiftId")) ok("ShiftsPanel keeps unified post-wizard offer intents"); else fail("ShiftsPanel keeps unified post-wizard offer intents");
-if (shifts.includes("localStorage.setItem(LS_LAST_ROOM")) ok("ShiftsPanel keeps merged room persist flow"); else fail("ShiftsPanel keeps merged room persist flow");
+if (includesText(shifts, "commercialSummaryCacheRef") && includesText(shifts, "commercialSummaryPromiseRef")) ok("ShiftsPanel keeps summary cache refs"); else fail("ShiftsPanel keeps summary cache refs");
+if (includesText(shifts, "async function loadCommercialSummary")) ok("ShiftsPanel uses dedicated commercial summary loader"); else fail("ShiftsPanel uses dedicated commercial summary loader");
+if (includesText(shifts, "company:autoOfferShiftId") && includesText(shifts, "company:autoOffersListShiftId")) ok("ShiftsPanel keeps unified post-wizard offer intents"); else fail("ShiftsPanel keeps unified post-wizard offer intents");
+if (includesText(shifts, "localStorage.setItem(LS_LAST_ROOM")) ok("ShiftsPanel keeps merged room persist flow"); else fail("ShiftsPanel keeps merged room persist flow");
 const shiftsUseEffects = count(shifts, /useEffect\s*\(/g);
 if (shiftsUseEffects <= 14) ok(`ShiftsPanel useEffect count reduced to ${shiftsUseEffects}`); else fail(`ShiftsPanel useEffect count reduced to <=14 (actual ${shiftsUseEffects})`);
 

@@ -1,6 +1,7 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
-$srcRoot = Join-Path $RepoRoot 'backend\src'
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")$srcRoot = Join-Path $RepoRoot 'backend\src'
 
 function Ok([string]$m){ Write-Host "OK $m" }
 function NeedExists([string]$file){ $p = Join-Path $RepoRoot $file; if (-not (Test-Path -LiteralPath $p)) { throw "repo contract fail: $file exists" }; Ok "$file exists" }

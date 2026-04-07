@@ -1,8 +1,10 @@
 // backend/src/routes/agreements.js
 import express from "express";
 import { prisma } from "../prisma.js";
+import { buildAgreementCommercialBackboneMap, upsertAgreementCommercialBackbone } from "../services/paymentBackbone.js";
 import { dateOnlyUTCFromYmd } from "../time/tr.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { httpError, sendErrorResponse } from "../errors/http.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
 // ✅ M59: agreement UI shift stats helper endpoint
@@ -111,7 +113,13 @@ export function agreementsRouter(io) {
       include: q ? { room: { select: { id: true, name: true } } } : undefined,
     });
 
-    res.json({ items });
+    const commercialBackboneByAgreementId = await buildAgreementCommercialBackboneMap(items.map((item) => item.id));
+    const mapped = items.map((item) => ({
+      ...item,
+      commercialBackbone: commercialBackboneByAgreementId[Number(item.id)] || null,
+    }));
+
+    res.json({ items: mapped });
   });
 
   // ✅ M59: SHIFT STATS (for UI clarity)
@@ -167,13 +175,13 @@ export function agreementsRouter(io) {
   r.get("/:id", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
 
     if (req.user.role === "COMPANY" && ag.companyId !== req.user.companyId) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
     }
     if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
     }
 
     res.json(ag);
@@ -182,11 +190,11 @@ export function agreementsRouter(io) {
   // CREATE (COMPANY)
   r.post("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const companyId = req.user.companyId;
-    if (!companyId) return res.status(400).json({ error: "companyId required" });
+    if (!companyId) return sendErrorResponse(res, httpError(400, "companyId required"));
 
     const roomId = Number(req.body.roomId);
     const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true, status: true } });
-    if (!room || room.status === "DELETED") return res.status(400).json({ error: "invalidRoomId" });
+    if (!room || room.status === "DELETED") return sendErrorResponse(res, httpError(400, "invalidRoomId"));
 
     const startDate = parseDateOnly(req.body.startDate);
     const endDate = parseDateOnly(req.body.endDate);
@@ -194,18 +202,18 @@ export function agreementsRouter(io) {
     const startMin = clampMin(req.body.startMin);
     const endMin = clampMin(req.body.endMin);
 
-    if (!startDate || !endDate) return res.status(400).json({ error: "startDate/endDate required" });
-    if (endDate < startDate) return res.status(400).json({ error: "endDate must be >= startDate" });
-    if (weekMask == null) return res.status(400).json({ error: "weekMask required (1..127)" });
-    if (startMin == null || endMin == null) return res.status(400).json({ error: "startMin/endMin required (0..1439)" });
+    if (!startDate || !endDate) return sendErrorResponse(res, httpError(400, "startDate/endDate required"));
+    if (endDate < startDate) return sendErrorResponse(res, httpError(400, "endDate must be >= startDate"));
+    if (weekMask == null) return sendErrorResponse(res, httpError(400, "weekMask required (1..127)"));
+    if (startMin == null || endMin == null) return sendErrorResponse(res, httpError(400, "startMin/endMin required (0..1439)"));
 
     // ✅ M19: routing meta
     const direction = normDirection(req.body.direction);
     const pattern = normPattern(req.body.pattern);
-    if (!direction) return res.status(400).json({ error: "direction invalid (INBOUND|OUTBOUND)" });
-    if (!pattern) return res.status(400).json({ error: "pattern invalid (ONE_WAY|LOOP)" });
+    if (!direction) return sendErrorResponse(res, httpError(400, "direction invalid (INBOUND|OUTBOUND)"));
+    if (!pattern) return sendErrorResponse(res, httpError(400, "pattern invalid (ONE_WAY|LOOP)"));
     const hub = parseHub(req.body);
-    if (hub?.error) return res.status(400).json({ error: hub.error });
+    if (hub?.error) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", hub.error));
 
     const created = await prisma.agreement.create({
       data: {
@@ -225,6 +233,8 @@ export function agreementsRouter(io) {
         companyOfferNote: req.body.companyOfferNote ? String(req.body.companyOfferNote) : null,
       },
     });
+
+    await upsertAgreementCommercialBackbone(created.id).catch(() => null);
 
     // ✅ M53: notify ROOM (company offer visible)
     await createAndEmitNotification({
@@ -252,10 +262,10 @@ export function agreementsRouter(io) {
   r.put("/:id/approve", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
 
     if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
     }
 
     const st = String(ag.status || "").toUpperCase();
@@ -274,7 +284,7 @@ export function agreementsRouter(io) {
 
     const vehicleId = Number(req.body.vehicleId);
     const driverId = Number(req.body.driverId);
-    if (!vehicleId || !driverId) return res.status(400).json({ error: "vehicleId+driverId required" });
+    if (!vehicleId || !driverId) return sendErrorResponse(res, httpError(400, "vehicleId+driverId required"));
 
     // Fetch candidates reserved
     const candidates = await findAgreementConflictForApproval({ agreementId: ag.id, vehicleId, driverId });
@@ -332,6 +342,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "approved" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "approved" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -339,22 +350,22 @@ export function agreementsRouter(io) {
   r.put("/:id/counter", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
 
     if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
     }
 
     const st = String(ag.status || "").toUpperCase();
     if (st === "CANCELLED" || st === "REJECTED" || st === "DONE") {
-      return res.status(409).json({ error: `invalidState:${st}`, code: "AGREEMENT_INVALID_STATE" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_INVALID_STATE", `invalidState:${st}`));
     }
     if (st === "APPROVED" || st === "ACTIVE") {
-      return res.status(409).json({ error: `alreadyApproved:${st}`, code: "AGREEMENT_ALREADY_APPROVED" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_ALREADY_APPROVED", `alreadyApproved:${st}`));
     }
 
     const roomOfferAmount = parseOfferAmount(req.body.roomOfferAmount);
-    if (roomOfferAmount == null) return res.status(400).json({ error: "roomOfferAmount required (>0)" });
+    if (roomOfferAmount == null) return sendErrorResponse(res, httpError(400, "roomOfferAmount required (>0)"));
 
     const roomOfferNote = trimOrNull(req.body.roomOfferNote);
 
@@ -386,6 +397,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "countered" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "countered" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -393,14 +405,14 @@ export function agreementsRouter(io) {
   r.put("/:id/accept-counter", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
-    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
 
     const st = String(ag.status || "").toUpperCase();
     if (st !== "COUNTERED") {
-      return res.status(409).json({ error: `notCountered:${st}`, code: "AGREEMENT_COUNTER_NOT_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_COUNTER_NOT_PENDING", `notCountered:${st}`));
     }
-    if (ag.roomOfferAmount == null) return res.status(400).json({ error: "roomOfferAmount missing" });
+    if (ag.roomOfferAmount == null) return sendErrorResponse(res, httpError(400, "roomOfferAmount missing"));
 
     const updated = await prisma.agreement.update({
       where: { id },
@@ -430,6 +442,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterAccepted" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterAccepted" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -437,12 +450,12 @@ export function agreementsRouter(io) {
   r.put("/:id/reject-counter", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
-    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
 
     const st = String(ag.status || "").toUpperCase();
     if (st !== "COUNTERED") {
-      return res.status(409).json({ error: `notCountered:${st}`, code: "AGREEMENT_COUNTER_NOT_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_COUNTER_NOT_PENDING", `notCountered:${st}`));
     }
 
     const updated = await prisma.agreement.update({
@@ -472,6 +485,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterRejected" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterRejected" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -479,8 +493,8 @@ export function agreementsRouter(io) {
   r.put("/:id/cancel", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
-    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
 
     const updated = await prisma.agreement.update({
       where: { id },
@@ -507,6 +521,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "cancelled" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "cancelled" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -563,29 +578,29 @@ export function agreementsRouter(io) {
   r.put("/:id/extend-request", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
-    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
 
     const st = String(ag.status || "").toUpperCase();
     if (st === "CANCELLED" || st === "REJECTED") {
-      return res.status(409).json({ error: `invalidState:${st}`, code: "AGREEMENT_INVALID_STATE" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_INVALID_STATE", `invalidState:${st}`));
     }
 
     const endDate = parseDateOnly(req.body.endDate);
-    if (!endDate) return res.status(400).json({ error: "endDate required (YYYY-MM-DD)" });
-    if (endDate < ag.startDate) return res.status(400).json({ error: "endDate must be >= startDate" });
-    if (endDate <= ag.endDate) return res.status(400).json({ error: "endDate must be > current endDate" });
+    if (!endDate) return sendErrorResponse(res, httpError(400, "endDate required (YYYY-MM-DD)"));
+    if (endDate < ag.startDate) return sendErrorResponse(res, httpError(400, "endDate must be >= startDate"));
+    if (endDate <= ag.endDate) return sendErrorResponse(res, httpError(400, "endDate must be > current endDate"));
 
     // if room already countered, do not overwrite the negotiation
     const ex = String(ag.extendStatus || "NONE").toUpperCase();
     if (ex === "COUNTERED") {
-      return res.status(409).json({ error: "extendCounterPending", code: "AGREEMENT_EXTEND_COUNTER_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_EXTEND_COUNTER_PENDING", "extendCounterPending"));
     }
 
     // optional offer update
     const offerAmount = parseOfferAmountNullable(req.body.extendOfferAmount);
     if (String(req.body.extendOfferAmount || "").trim() && offerAmount == null) {
-      return res.status(400).json({ error: "extendOfferAmount invalid (>0)" });
+      return sendErrorResponse(res, httpError(400, "extendOfferAmount invalid (>0)"));
     }
     const offerNote = trimOrNull(req.body.extendOfferNote);
 
@@ -625,6 +640,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -632,21 +648,21 @@ export function agreementsRouter(io) {
   r.put("/:id/extend-decision", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
 
     if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
     }
 
     const ex = String(ag.extendStatus || "NONE").toUpperCase();
     if (ex !== "PENDING") {
-      return res.status(409).json({ error: `extendNotPending:${ex}`, code: "AGREEMENT_EXTEND_NOT_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_EXTEND_NOT_PENDING", `extendNotPending:${ex}`));
     }
-    if (!ag.extendRequestedEndDate) return res.status(400).json({ error: "extendRequestedEndDate missing" });
+    if (!ag.extendRequestedEndDate) return sendErrorResponse(res, httpError(400, "extendRequestedEndDate missing"));
 
     const decision = String(req.body.decision || "").trim().toUpperCase();
     if (decision !== "ACCEPT" && decision !== "REJECT") {
-      return res.status(400).json({ error: "decision must be ACCEPT|REJECT" });
+      return sendErrorResponse(res, httpError(400, "decision must be ACCEPT|REJECT"));
     }
 
     if (decision === "REJECT") {
@@ -732,6 +748,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendAccepted" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendAccepted" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -739,20 +756,20 @@ export function agreementsRouter(io) {
   r.put("/:id/extend-counter", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
 
     if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
-      return res.status(403).json({ error: "Forbidden" });
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
     }
 
     const ex = String(ag.extendStatus || "NONE").toUpperCase();
     if (ex !== "PENDING") {
-      return res.status(409).json({ error: `extendNotPending:${ex}`, code: "AGREEMENT_EXTEND_NOT_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_EXTEND_NOT_PENDING", `extendNotPending:${ex}`));
     }
-    if (!ag.extendRequestedEndDate) return res.status(400).json({ error: "extendRequestedEndDate missing" });
+    if (!ag.extendRequestedEndDate) return sendErrorResponse(res, httpError(400, "extendRequestedEndDate missing"));
 
     const amount = parseOfferAmount(req.body.extendCounterAmount);
-    if (amount == null) return res.status(400).json({ error: "extendCounterAmount required (>0)" });
+    if (amount == null) return sendErrorResponse(res, httpError(400, "extendCounterAmount required (>0)"));
     const note = trimOrNull(req.body.extendCounterNote);
 
     const updated = await prisma.agreement.update({
@@ -783,6 +800,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCountered" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCountered" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -790,15 +808,15 @@ export function agreementsRouter(io) {
   r.put("/:id/extend-accept-counter", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
-    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
 
     const ex = String(ag.extendStatus || "NONE").toUpperCase();
     if (ex !== "COUNTERED") {
-      return res.status(409).json({ error: `extendNotCountered:${ex}`, code: "AGREEMENT_EXTEND_COUNTER_NOT_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_EXTEND_COUNTER_NOT_PENDING", `extendNotCountered:${ex}`));
     }
-    if (!ag.extendRequestedEndDate) return res.status(400).json({ error: "extendRequestedEndDate missing" });
-    if (ag.extendCounterAmount == null) return res.status(400).json({ error: "extendCounterAmount missing" });
+    if (!ag.extendRequestedEndDate) return sendErrorResponse(res, httpError(400, "extendRequestedEndDate missing"));
+    if (ag.extendCounterAmount == null) return sendErrorResponse(res, httpError(400, "extendCounterAmount missing"));
 
     const proposedEndDate = ag.extendRequestedEndDate;
     const ok = await assertNoExtendConflictOr409(ag, proposedEndDate, res);
@@ -842,6 +860,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterAccepted" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterAccepted" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -849,12 +868,12 @@ export function agreementsRouter(io) {
   r.put("/:id/extend-reject-counter", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
-    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
 
     const ex = String(ag.extendStatus || "NONE").toUpperCase();
     if (ex !== "COUNTERED") {
-      return res.status(409).json({ error: `extendNotCountered:${ex}`, code: "AGREEMENT_EXTEND_COUNTER_NOT_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_EXTEND_COUNTER_NOT_PENDING", `extendNotCountered:${ex}`));
     }
 
     const updated = await prisma.agreement.update({
@@ -885,6 +904,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterRejected" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterRejected" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 
@@ -892,27 +912,27 @@ export function agreementsRouter(io) {
   r.put("/:id/extend", authRequired(), requireRole("COMPANY"), async (req, res) => {
     const id = Number(req.params.id);
     const ag = await prisma.agreement.findUnique({ where: { id } });
-    if (!ag) return res.status(404).json({ error: "notFound" });
-    if (ag.companyId !== req.user.companyId) return res.status(403).json({ error: "Forbidden" });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
 
     const st = String(ag.status || "").toUpperCase();
     if (st === "CANCELLED" || st === "REJECTED") {
-      return res.status(409).json({ error: `invalidState:${st}`, code: "AGREEMENT_INVALID_STATE" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_INVALID_STATE", `invalidState:${st}`));
     }
 
     const endDate = parseDateOnly(req.body.endDate);
-    if (!endDate) return res.status(400).json({ error: "endDate required (YYYY-MM-DD)" });
-    if (endDate < ag.startDate) return res.status(400).json({ error: "endDate must be >= startDate" });
-    if (endDate <= ag.endDate) return res.status(400).json({ error: "endDate must be > current endDate" });
+    if (!endDate) return sendErrorResponse(res, httpError(400, "endDate required (YYYY-MM-DD)"));
+    if (endDate < ag.startDate) return sendErrorResponse(res, httpError(400, "endDate must be >= startDate"));
+    if (endDate <= ag.endDate) return sendErrorResponse(res, httpError(400, "endDate must be > current endDate"));
 
     const ex = String(ag.extendStatus || "NONE").toUpperCase();
     if (ex === "COUNTERED") {
-      return res.status(409).json({ error: "extendCounterPending", code: "AGREEMENT_EXTEND_COUNTER_PENDING" });
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_EXTEND_COUNTER_PENDING", "extendCounterPending"));
     }
 
     const offerAmount = parseOfferAmountNullable(req.body.extendOfferAmount);
     if (String(req.body.extendOfferAmount || "").trim() && offerAmount == null) {
-      return res.status(400).json({ error: "extendOfferAmount invalid (>0)" });
+      return sendErrorResponse(res, httpError(400, "extendOfferAmount invalid (>0)"));
     }
     const offerNote = trimOrNull(req.body.extendOfferNote);
 
@@ -936,6 +956,7 @@ export function agreementsRouter(io) {
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
 
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
   });
 

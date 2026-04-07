@@ -6,6 +6,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function ok(msg) { console.log(`OK ${msg}`); }
 function fail(msg) { console.error(`FAIL ${msg}`); process.exit(1); }
 function ensure(cond, msg) { if (!cond) fail(msg); ok(msg); }
@@ -21,13 +47,13 @@ const helpComposerText = read('backend/src/ai/chat/helpComposer.js');
 const panelText = read('web/src/panels/shared/CopilotPanel.jsx');
 const bubbleText = read('web/src/components/copilot/ChatMessageBubble.jsx');
 
-ensure(helpComposerText.includes('buildUncertaintyMeta'), 'help composer builds uncertainty meta');
-ensure(helpComposerText.includes('verificationHintForQuestionType'), 'help composer builds verification hint');
-ensure(helpComposerText.includes('Emin değilsen önce bunu kontrol et'), 'help composer adds verify response section');
-ensure(helpComposerText.includes('uncertaintyMeta'), 'help composer returns uncertainty meta');
-ensure(panelText.includes('uncertaintyMeta: payload?.uncertaintyMeta || null'), 'copilot panel stores uncertainty meta on assistant message');
-ensure(bubbleText.includes('uncertaintyTone'), 'chat bubble renders uncertainty tone');
-ensure(bubbleText.includes('message?.uncertaintyMeta?.label'), 'chat bubble renders uncertainty badge label');
+ensure(includesText(helpComposerText, 'buildUncertaintyMeta'), 'help composer builds uncertainty meta');
+ensure(includesText(helpComposerText, 'verificationHintForQuestionType'), 'help composer builds verification hint');
+ensure(includesText(helpComposerText, 'Emin değilsen önce bunu kontrol et'), 'help composer adds verify response section');
+ensure(includesText(helpComposerText, 'uncertaintyMeta'), 'help composer returns uncertainty meta');
+ensure(includesText(panelText, 'uncertaintyMeta: payload?.uncertaintyMeta || null'), 'copilot panel stores uncertainty meta on assistant message');
+ensure(includesText(bubbleText, 'uncertaintyTone'), 'chat bubble renders uncertainty tone');
+ensure(includesText(bubbleText, 'message?.uncertaintyMeta?.label'), 'chat bubble renders uncertainty badge label');
 
 const helpComposerModule = await import(pathToFileURL(path.join(repoRoot, 'backend/src/ai/chat/helpComposer.js')).href);
 const screenCatalogModule = await import(pathToFileURL(path.join(repoRoot, 'backend/src/ai/jobGuide/screenCatalog.js')).href);

@@ -1,6 +1,7 @@
 import { verifyToken } from "./jwt.js";
 import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
+import { httpError, sendErrorResponse } from "../errors/http.js";
 
 function readToken(req) {
   const header = req.headers["authorization"] || "";
@@ -62,34 +63,26 @@ export function authRequired() {
     try {
       if (req.user) return next();
       const token = readToken(req);
-      if (!token) return res.status(401).json({ error: "Missing token" });
+      if (!token) return sendErrorResponse(res, httpError(401, "MISSING_TOKEN", "Missing token"));
 
       const decoded = verifyToken(token);
 
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
       });
-      if (!user) return res.status(401).json({ error: "Invalid token" });
+      if (!user) return sendErrorResponse(res, httpError(401, "INVALID_TOKEN", "Invalid token"));
 
       const tokenSv = Number(decoded?.sv ?? decoded?.sessionVersion ?? 1);
       const userSv = Number(user?.sessionVersion ?? 1);
       if (Number.isFinite(tokenSv) && Number.isFinite(userSv) && tokenSv !== userSv) {
-        return res.status(401).json({
-          error: "SESSION_REVOKED",
-          code: "SESSION_REVOKED",
-          message: "Oturum süresi doldu. Lütfen tekrar giriş yapın.",
-        });
+        return sendErrorResponse(res, httpError(401, "SESSION_REVOKED", "Oturum süresi doldu. Lütfen tekrar giriş yapın."));
       }
 
       const urlPath = String(req.originalUrl || req.url || "").split("?")[0];
       if (decoded?.pwdChangeOnly) {
         const allowedPaths = new Set(["/api/me", "/api/auth/change-password"]);
         if (!allowedPaths.has(urlPath)) {
-          return res.status(403).json({
-            error: "PASSWORD_CHANGE_REQUIRED",
-            code: "PASSWORD_CHANGE_REQUIRED",
-            message: "Şifre değişmeden bu alana geçilemez.",
-          });
+          return sendErrorResponse(res, httpError(403, "PASSWORD_CHANGE_REQUIRED", "Şifre değişmeden bu alana geçilemez."));
         }
       }
 
@@ -98,15 +91,15 @@ export function authRequired() {
       await touchDriverPresenceIfNeeded(user);
       next();
     } catch (e) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return sendErrorResponse(res, httpError(401, "UNAUTHORIZED", "Unauthorized"));
     }
   };
 }
 
 export function requireRole(...roles) {
   return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    if (!roles.includes(req.user.role)) return res.status(403).json({ error: "Forbidden" });
+    if (!req.user) return sendErrorResponse(res, httpError(401, "UNAUTHORIZED", "Unauthorized"));
+    if (!roles.includes(req.user.role)) return sendErrorResponse(res, httpError(403, "FORBIDDEN", "Forbidden"));
     next();
   };
 }
@@ -117,7 +110,7 @@ function stepUpRequiredForRole(role) {
 
 export function requireStepUp(...roles) {
   return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    if (!req.user) return sendErrorResponse(res, httpError(401, "UNAUTHORIZED", "Unauthorized"));
     const role = String(req.user.role || "");
     if (!roles.includes(role)) return next();
 
@@ -127,12 +120,12 @@ export function requireStepUp(...roles) {
 
     const hasTotp = !!(req.user.totpSecretBase32 && req.user.totpEnabledAt);
     if (!hasTotp) {
-      return res.status(403).json({ error: "TOTP_SETUP_REQUIRED", code: "TOTP_SETUP_REQUIRED" });
+      return sendErrorResponse(res, httpError(403, "TOTP_SETUP_REQUIRED", "TOTP_SETUP_REQUIRED"));
     }
 
     const until = Number(req.auth?.stepUpUntil || 0);
     if (!Number.isFinite(until) || until < Date.now()) {
-      return res.status(403).json({ error: "STEP_UP_REQUIRED", code: "STEP_UP_REQUIRED" });
+      return sendErrorResponse(res, httpError(403, "STEP_UP_REQUIRED", "STEP_UP_REQUIRED"));
     }
     return next();
   };

@@ -6,6 +6,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function ok(msg) { console.log(`OK ${msg}`); }
 function fail(msg) { console.error(`FAIL ${msg}`); process.exit(1); }
 function ensure(cond, msg) { if (!cond) fail(msg); ok(msg); }
@@ -23,18 +49,18 @@ const intentRouterText = read('backend/src/ai/chat/intentRouter.js');
 const panelText = read('web/src/panels/shared/CopilotPanel.jsx');
 const bubbleText = read('web/src/components/copilot/ChatMessageBubble.jsx');
 
-ensure(helpComposerText.includes('expandFollowUpMessage'), 'help composer expands short follow-up prompts');
-ensure(helpComposerText.includes('buildContinuityMeta'), 'help composer builds continuity meta');
-ensure(helpComposerText.includes('Aynı kayıt üstünde devam'), 'help composer adds same-record response section');
-ensure(helpComposerText.includes('lastSelectedEntityType'), 'help composer stores last selected entity type');
-ensure(helpComposerText.includes('lastSelectedLabel'), 'help composer stores last selected label');
-ensure(intentRouterText.includes('isShortFollowUp'), 'intent router detects short follow-up prompts');
-ensure(intentRouterText.includes('follow-up-next'), 'intent router scores next-step follow-up prompts');
-ensure(intentRouterText.includes('follow-up-why'), 'intent router scores why follow-up prompts');
-ensure(panelText.includes('recentMessages: ['), 'copilot panel sends bounded recent message history including current prompt');
-ensure(panelText.includes('continuity: payload?.continuity || null'), 'copilot panel stores continuity on assistant message');
-ensure(bubbleText.includes('Aynı kayıt'), 'chat bubble shows same-record badge');
-ensure(bubbleText.includes('Devam sorusu'), 'chat bubble shows follow-up badge');
+ensure(includesText(helpComposerText, 'expandFollowUpMessage'), 'help composer expands short follow-up prompts');
+ensure(includesText(helpComposerText, 'buildContinuityMeta'), 'help composer builds continuity meta');
+ensure(includesText(helpComposerText, 'Aynı kayıt üstünde devam'), 'help composer adds same-record response section');
+ensure(includesText(helpComposerText, 'lastSelectedEntityType'), 'help composer stores last selected entity type');
+ensure(includesText(helpComposerText, 'lastSelectedLabel'), 'help composer stores last selected label');
+ensure(includesText(intentRouterText, 'isShortFollowUp'), 'intent router detects short follow-up prompts');
+ensure(includesText(intentRouterText, 'follow-up-next'), 'intent router scores next-step follow-up prompts');
+ensure(includesText(intentRouterText, 'follow-up-why'), 'intent router scores why follow-up prompts');
+ensure(includesText(panelText, 'recentMessages: ['), 'copilot panel sends bounded recent message history including current prompt');
+ensure(includesText(panelText, 'continuity: payload?.continuity || null'), 'copilot panel stores continuity on assistant message');
+ensure(includesText(bubbleText, 'Aynı kayıt'), 'chat bubble shows same-record badge');
+ensure(includesText(bubbleText, 'Devam sorusu'), 'chat bubble shows follow-up badge');
 
 const helpComposerModule = await import(pathToFileURL(path.join(repoRoot, 'backend/src/ai/chat/helpComposer.js')).href);
 const screenCatalogModule = await import(pathToFileURL(path.join(repoRoot, 'backend/src/ai/jobGuide/screenCatalog.js')).href);

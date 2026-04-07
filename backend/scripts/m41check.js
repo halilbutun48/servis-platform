@@ -51,7 +51,8 @@ async function main() {
   });
   must(
     "loginB rejected with device mismatch",
-    loginB.status === 403 && String(loginB.json?.code || loginB.json?.error || "") === "DEVICE_MISMATCH"
+    loginB.status === 403 &&
+      String(loginB.json?.code || loginB.json?.error?.code || loginB.json?.error || "") === "DEVICE_MISMATCH"
   );
 
   step("Rate limit store should be redis in multi-instance setups");

@@ -13,8 +13,9 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://preview-api.example.com",
-        "EXPO_PUBLIC_RELEASE_STAGE": "preview-internal"
+        "EXPO_PUBLIC_API_BASE_URL": "__SET_PREVIEW_HTTPS_API_BASE_URL__",
+        "EXPO_PUBLIC_RELEASE_STAGE": "preview-internal",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "12000"
       }
     },
     "production": {
@@ -23,8 +24,9 @@
       },
       "ios": {},
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.example.com",
-        "EXPO_PUBLIC_RELEASE_STAGE": "production"
+        "EXPO_PUBLIC_API_BASE_URL": "__SET_PRODUCTION_HTTPS_API_BASE_URL__",
+        "EXPO_PUBLIC_RELEASE_STAGE": "production",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "12000"
       }
     },
     "preview-simulator": {
@@ -33,8 +35,9 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://preview-api.example.com",
-        "EXPO_PUBLIC_RELEASE_STAGE": "preview-simulator"
+        "EXPO_PUBLIC_API_BASE_URL": "__SET_PREVIEW_SIMULATOR_HTTPS_API_BASE_URL__",
+        "EXPO_PUBLIC_RELEASE_STAGE": "preview-simulator",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "12000"
       }
     }
   },
@@ -42,4 +45,3 @@
     "production": {}
   }
 }
-

@@ -4,6 +4,8 @@ import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import { httpError } from "../errors/http.js";
 
 function companyIdOf(req) {
   const v = req.user?.companyId ?? req.me?.companyId ?? req.auth?.companyId;
@@ -32,20 +34,20 @@ export function companyHubRouter() {
   const r = express.Router();
   r.use(authRequired(), requireRole("COMPANY"));
 
-  r.get("/", async (req, res) => {
+  r.get("/", asyncHandler(async (req, res) => {
     const companyId = companyIdOf(req);
-    if (!companyId) return res.status(400).json({ error: "companyId missing" });
+    if (!companyId) throw httpError(400, "COMPANY_ID_MISSING", "companyId missing");
     const c = await prisma.company.findUnique({ where: { id: companyId }, select: { id: true, hubLat: true, hubLng: true, name: true } });
-    if (!c) return res.status(404).json({ error: "Company not found" });
+    if (!c) throw httpError(404, "COMPANY_NOT_FOUND", "Company not found");
     return res.json({ ok: true, companyId: c.id, name: c.name, hubLat: c.hubLat, hubLng: c.hubLng });
-  });
+  }));
 
-  r.put("/", async (req, res) => {
+  r.put("/", asyncHandler(async (req, res) => {
     const companyId = companyIdOf(req);
-    if (!companyId) return res.status(400).json({ error: "companyId missing" });
+    if (!companyId) throw httpError(400, "COMPANY_ID_MISSING", "companyId missing");
 
     const parsed = hubSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    if (!parsed.success) throw httpError(400, "VALIDATION_ERROR", "Validation failed", parsed.error.flatten());
 
     const updated = await prisma.company.update({
       where: { id: companyId },
@@ -54,7 +56,7 @@ export function companyHubRouter() {
     });
 
     return res.json({ ok: true, companyId: updated.id, hubLat: updated.hubLat, hubLng: updated.hubLng });
-  });
+  }));
 
   return r;
 }

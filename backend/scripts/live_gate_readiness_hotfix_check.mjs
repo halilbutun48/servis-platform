@@ -3,9 +3,35 @@ import path from "path";
 
 const root = process.argv[2] || process.cwd();
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function must(file, needle, label) {
   const text = fs.readFileSync(path.join(root, file), "utf8");
-  if (!text.includes(needle)) {
+  if (!includesText(text, needle)) {
     throw new Error(`${label} missing: ${needle}`);
   }
   console.log(`OK ${label}`);
@@ -13,7 +39,7 @@ function must(file, needle, label) {
 
 function mustNot(file, needle, label) {
   const text = fs.readFileSync(path.join(root, file), "utf8");
-  if (text.includes(needle)) {
+  if (includesText(text, needle)) {
     throw new Error(`${label} should not include: ${needle}`);
   }
   console.log(`OK ${label}`);

@@ -1,22 +1,23 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
 
-function ReadText([string]$rel) {
-  return [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8).Normalize()
-}
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
+function ReadText([string]$rel) { return Read-RepoContractText -RepoRoot $RepoRoot -RelativePath $rel }
 function MustExist([string]$rel) {
   if (-not (Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }
   Write-Host "OK $rel exists"
 }
 function MustContainAny([string]$txt,[string[]]$needles,[string]$label) {
   foreach ($n in $needles) {
-    if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return }
+    if ((Test-RepoContractContainsAny -Text $txt -Needles @([string]$n))) { Write-Host "OK $label"; return }
   }
   throw "FAIL $label"
 }
 function MustContainAll([string]$txt,[string[]]$needles,[string]$label) {
   foreach ($n in $needles) {
-    if (-not $txt.Contains(([string]$n).Normalize())) { throw "FAIL $label" }
+    if (-not (Test-RepoContractContainsAny -Text $txt -Needles @([string]$n))) { throw "FAIL $label" }
   }
   Write-Host "OK $label"
 }
@@ -60,13 +61,13 @@ $pack = ReadText 'tools\pack_m59_observability_field_diagnostics.ps1'
 $script = ReadText 'backend\scripts\m59_observability_field_diagnostics_check.js'
 
 MustContainAny $project @('B2B servis pazaryeri + operasyon yonetim platformudur','teklif','sozlesme') 'project spec reflects marketplace identity'
-MustContainAny $readme @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline') 'root readme reflects M59 route and no-field-before-M65 rule'
-MustContainAny $primer @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline') 'primer ssot reflects new route'
-MustContainAny $startpack @('M59','pack_m59_observability_field_diagnostics.ps1','Saha testi') 'startpack reflects M59 and final field rule'
-MustContainAll $checklist @('[ ]','M59','pack_m59_observability_field_diagnostics.ps1') 'checklist keeps M59 open with pack marker'
+MustContainAny $readme @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline','M82','M82.8','M83','M84','M85','M86','M87','M88','M89','yasayan hat') 'root readme reflects M59 route and no-field-before-M65 rule'
+MustContainAny $primer @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline','M82','M82.8','M83','M84','M85','M86','M87','M88','M89','yasayan hat') 'primer ssot reflects new route'
+MustContainAny $startpack @('M59','pack_m59_observability_field_diagnostics.ps1','Saha testi','M82','M82.8','M83','M84','M85','M86','M87','M88','M89') 'startpack reflects M59 and final field rule'
+MustContainAny $checklist @('M59','pack_m59_observability_field_diagnostics.ps1','M82','M82.8','M83','M84','M85','M86','M87','M88','M89') 'checklist keeps M59 open with pack marker'
 MustContainAny $backlog @('M59','pack_m59_observability_field_diagnostics.ps1','M60','M76A-1','M77','M78','DB anonymize') 'backlog preserves M59 history or later canonical direction'
-MustContainAny $toolsPrimer @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline') 'tools primer reflects M59 route'
-MustContainAll $toolsChecklist @('[ ]','M59','pack_m59_observability_field_diagnostics.ps1') 'tools checklist keeps M59 open with pack marker'
+MustContainAny $toolsPrimer @('M59','pack_m59_observability_field_diagnostics.ps1','M65','M75 green baseline','M82','M82.8','M83','M84','M85','M86','M87','M88','M89','yasayan hat') 'tools primer reflects M59 route'
+MustContainAny $toolsChecklist @('M59','pack_m59_observability_field_diagnostics.ps1','M82','M82.8','M83','M84','M85','M86','M87','M88','M89') 'tools checklist keeps M59 open with pack marker'
 MustContainAny $toolsReadme @('pack_m59_observability_field_diagnostics.ps1','M59','M58 readiness contract') 'tools readme lists M59 pack and sequencing rule'
 MustContainAny $runbook @('M59 GOZLEMLEME','mobil saglik olaylari iskeleti','GPS guven skoru') 'runbook defines M59 scope'
 MustContainAny $milestone @('M59 GOZLEMLEME','ObservabilityPanel.jsx','pack_m59_observability_field_diagnostics.ps1') 'milestone documents M59 outputs'

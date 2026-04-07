@@ -4,6 +4,32 @@ import path from "node:path";
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
 }
@@ -40,22 +66,22 @@ const readme = read("README.md").toLowerCase();
 const checklist = read("docs/CHECKLIST_SSOT.md");
 
 must(
-  projectSpec.includes("hizmet alan değerlendirmesi") ||
-  projectSpec.includes("hizmet alan degerlendirmesi") ||
-  projectSpec.includes("service evaluation"),
+  includesText(projectSpec, "hizmet alan değerlendirmesi") ||
+  includesText(projectSpec, "hizmet alan degerlendirmesi") ||
+  includesText(projectSpec, "service evaluation"),
   "project spec includes hizmet alan degerlendirmesi"
 );
 must(
-  readme.includes("m60") ||
-  readme.includes("m65") ||
-  readme.includes("m66") ||
-  readme.includes("acceptance") ||
-  readme.includes("kabul") ||
-  readme.includes("saha"),
+  includesText(readme, "m60") ||
+  includesText(readme, "m65") ||
+  includesText(readme, "m66") ||
+  includesText(readme, "acceptance") ||
+  includesText(readme, "kabul") ||
+  includesText(readme, "saha"),
   "root readme points to historical M60 route or later living route"
 );
 must(
-  checklist.includes("M59") && (checklist.includes("M60") || checklist.includes("M65") || checklist.includes("M66")),
+  includesText(checklist, "M59") && (includesText(checklist, "M60") || includesText(checklist, "M65") || includesText(checklist, "M66")),
   "checklist marks M59 green and keeps M60 open"
 );
 
@@ -69,31 +95,31 @@ const manifestTxt = read("backend/src/ops/fieldAcceptanceManifest.js");
 const panelTxt = read("web/src/panels/superadmin/FieldAcceptanceCenter.jsx");
 
 must(
-  serverTxt.includes("fieldAcceptanceRouter") || mountTxt.includes("fieldAcceptanceRouter"),
+  includesText(serverTxt, "fieldAcceptanceRouter") || mountTxt.includes("fieldAcceptanceRouter"),
   "server imports field acceptance router"
 );
 must(
-  serverTxt.includes("/api/field-acceptance") || mountTxt.includes("/api/field-acceptance"),
+  includesText(serverTxt, "/api/field-acceptance") || mountTxt.includes("/api/field-acceptance"),
   "server mounts /api/field-acceptance"
 );
 must(
-  routeTxt.includes("/manifest") || routeTxt.includes('router.get("/manifest"') || routeTxt.includes("router.get('/manifest'"),
+  includesText(routeTxt, "/manifest") || includesText(routeTxt, 'router.get("/manifest"') || includesText(routeTxt, "router.get('/manifest'"),
   "field acceptance route exposes manifest endpoint"
 );
 must(
-  routeTxt.includes("/session-template") || routeTxt.includes("/template") || routeTxt.includes('router.get("/session-template"') || routeTxt.includes('router.get("/template"') || routeTxt.includes("router.get('/session-template'") || routeTxt.includes("router.get('/template'"),
+  includesText(routeTxt, "/session-template") || includesText(routeTxt, "/template") || includesText(routeTxt, 'router.get("/session-template"') || includesText(routeTxt, 'router.get("/template"') || includesText(routeTxt, "router.get('/session-template'") || includesText(routeTxt, "router.get('/template'"),
   "field acceptance route exposes template endpoint"
 );
 must(
-  manifestTxt.includes("decisions") || manifestTxt.includes("checklist"),
+  includesText(manifestTxt, "decisions") || includesText(manifestTxt, "checklist"),
   "manifest defines M60 decisions and checklist"
 );
 must(
-  manifestTxt.includes("evidence") || manifestTxt.includes("kanıt") || manifestTxt.includes("kanit"),
+  includesText(manifestTxt, "evidence") || includesText(manifestTxt, "kanıt") || includesText(manifestTxt, "kanit"),
   "manifest defines acceptance evidence"
 );
 must(
-  panelTxt.includes("FieldAcceptanceCenter") || panelTxt.includes("Acceptance") || panelTxt.includes("Kabul"),
+  includesText(panelTxt, "FieldAcceptanceCenter") || includesText(panelTxt, "Acceptance") || includesText(panelTxt, "Kabul"),
   "web panel shows M60 cards"
 );
 

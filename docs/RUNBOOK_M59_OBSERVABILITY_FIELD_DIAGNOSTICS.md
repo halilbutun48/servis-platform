@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M59 slug=observability-field-diagnostics -->
+
 # RUNBOOK — M59 GOZLEMLEME + SAHA TESHis
 
 Tarih: 2026-03-19

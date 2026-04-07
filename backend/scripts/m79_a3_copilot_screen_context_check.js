@@ -6,6 +6,32 @@ import { getScreenDefinitionForUser, listScreensForUser } from '../src/ai/jobGui
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const fails = [];
 
 function ok(msg) { console.log(`OK ${msg}`); }
@@ -25,36 +51,36 @@ const observabilityPanel = read('web/src/panels/superadmin/ObservabilityPanel.js
 const analyzer = read('backend/src/ai/chat/screenStateAnalyzer.js');
 const catalog = read('backend/src/ai/jobGuide/screenCatalog.js');
 
-must(copilotPanel.includes('import { getCopilotScreenOptions } from "../../copilot/screenRegistry";'), 'CopilotPanel imports shared screen registry');
-must(copilotPanel.includes('return getCopilotScreenOptions(me);'), 'CopilotPanel uses shared screen options');
-must(!copilotPanel.includes('const defs = {\n    ROOM:'), 'CopilotPanel local screen option table removed');
+must(includesText(copilotPanel, 'import { getCopilotScreenOptions } from "../../copilot/screenRegistry";'), 'CopilotPanel imports shared screen registry');
+must(includesText(copilotPanel, 'return getCopilotScreenOptions(me);'), 'CopilotPanel uses shared screen options');
+must(!includesText(copilotPanel, 'const defs = {\n    ROOM:'), 'CopilotPanel local screen option table removed');
 
-must(agreementsPanel.includes("scopeKey: '/room/agreements'"), 'room agreements writes copilot selection');
-must(agreementsPanel.includes('buildAgreementCopilotFacts'), 'room agreements builds copilot facts');
-must(operationHealthPanel.includes("scopeKey: '/room/operation-health'"), 'operation health writes copilot selection');
-must(operationVerificationPanel.includes("scopeKey: '/superadmin/operation-verification'"), 'operation verification writes copilot selection');
-must(acceptancePanel.includes("scopeKey: '/superadmin/acceptance'"), 'field acceptance writes copilot selection');
-must(trustPanel.includes("scopeKey: '/superadmin/trust-quality'"), 'trust quality writes copilot selection');
-must(observabilityPanel.includes("scopeKey: '/superadmin/observability'"), 'observability writes copilot selection');
+must(includesText(agreementsPanel, "scopeKey: '/room/agreements'"), 'room agreements writes copilot selection');
+must(includesText(agreementsPanel, 'buildAgreementCopilotFacts'), 'room agreements builds copilot facts');
+must(includesText(operationHealthPanel, "scopeKey: '/room/operation-health'"), 'operation health writes copilot selection');
+must(includesText(operationVerificationPanel, "scopeKey: '/superadmin/operation-verification'"), 'operation verification writes copilot selection');
+must(includesText(acceptancePanel, "scopeKey: '/superadmin/acceptance'"), 'field acceptance writes copilot selection');
+must(includesText(trustPanel, "scopeKey: '/superadmin/trust-quality'"), 'trust quality writes copilot selection');
+must(includesText(observabilityPanel, "scopeKey: '/superadmin/observability'"), 'observability writes copilot selection');
 
-must(analyzer.includes("if (p.includes('/agreements')) return 'AGREEMENTS';"), 'screen analyzer classifies agreements');
-must(analyzer.includes("if (p.includes('/operation-health')) return 'OPERATION_HEALTH';"), 'screen analyzer classifies operation health');
-must(analyzer.includes("if (p.includes('/operation-verification')) return 'OPERATION_VERIFICATION';"), 'screen analyzer classifies operation verification');
-must(analyzer.includes("if (p.includes('/acceptance')) return 'FIELD_ACCEPTANCE';"), 'screen analyzer classifies field acceptance');
-must(analyzer.includes("if (p.includes('/trust-quality')) return 'TRUST_QUALITY';"), 'screen analyzer classifies trust quality');
-must(analyzer.includes("if (p.includes('/observability')) return 'OBSERVABILITY';"), 'screen analyzer classifies observability');
-must(analyzer.includes('function analyzeAgreements('), 'screen analyzer exports agreements reasoning');
-must(analyzer.includes('function analyzeOperationHealth('), 'screen analyzer exports operation health reasoning');
-must(analyzer.includes('function analyzeOperationVerification('), 'screen analyzer exports operation verification reasoning');
-must(analyzer.includes('function analyzeFieldAcceptance('), 'screen analyzer exports field acceptance reasoning');
-must(analyzer.includes('function analyzeTrustQuality('), 'screen analyzer exports trust quality reasoning');
-must(analyzer.includes('function analyzeObservability('), 'screen analyzer exports observability reasoning');
+must(includesText(analyzer, "if (p.includes('/agreements')) return 'AGREEMENTS';"), 'screen analyzer classifies agreements');
+must(includesText(analyzer, "if (p.includes('/operation-health')) return 'OPERATION_HEALTH';"), 'screen analyzer classifies operation health');
+must(includesText(analyzer, "if (p.includes('/operation-verification')) return 'OPERATION_VERIFICATION';"), 'screen analyzer classifies operation verification');
+must(includesText(analyzer, "if (p.includes('/acceptance')) return 'FIELD_ACCEPTANCE';"), 'screen analyzer classifies field acceptance');
+must(includesText(analyzer, "if (p.includes('/trust-quality')) return 'TRUST_QUALITY';"), 'screen analyzer classifies trust quality');
+must(includesText(analyzer, "if (p.includes('/observability')) return 'OBSERVABILITY';"), 'screen analyzer classifies observability');
+must(includesText(analyzer, 'function analyzeAgreements('), 'screen analyzer exports agreements reasoning');
+must(includesText(analyzer, 'function analyzeOperationHealth('), 'screen analyzer exports operation health reasoning');
+must(includesText(analyzer, 'function analyzeOperationVerification('), 'screen analyzer exports operation verification reasoning');
+must(includesText(analyzer, 'function analyzeFieldAcceptance('), 'screen analyzer exports field acceptance reasoning');
+must(includesText(analyzer, 'function analyzeTrustQuality('), 'screen analyzer exports trust quality reasoning');
+must(includesText(analyzer, 'function analyzeObservability('), 'screen analyzer exports observability reasoning');
 
-must(catalog.includes("screen(1114, \"/room/operation-health\""), 'screen catalog includes room operation health');
-must(catalog.includes("screen(6107, '/superadmin/observability'"), 'screen catalog includes observability');
-must(catalog.includes("screen(6108, '/superadmin/acceptance'"), 'screen catalog includes acceptance');
-must(catalog.includes("screen(6109, '/superadmin/operation-verification'"), 'screen catalog includes operation verification');
-must(catalog.includes("screen(6113, '/superadmin/trust-quality'"), 'screen catalog includes trust quality');
+must(includesText(catalog, "screen(1114, \"/room/operation-health\""), 'screen catalog includes room operation health');
+must(includesText(catalog, "screen(6107, '/superadmin/observability'"), 'screen catalog includes observability');
+must(includesText(catalog, "screen(6108, '/superadmin/acceptance'"), 'screen catalog includes acceptance');
+must(includesText(catalog, "screen(6109, '/superadmin/operation-verification'"), 'screen catalog includes operation verification');
+must(includesText(catalog, "screen(6113, '/superadmin/trust-quality'"), 'screen catalog includes trust quality');
 
 const superAdminScreens = listScreensForUser({ role: 'SUPER_ADMIN' }, {});
 must(superAdminScreens.some((x) => x.path === '/superadmin/observability'), 'super admin screen list exposes observability');

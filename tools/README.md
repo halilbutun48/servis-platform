@@ -1,4 +1,4 @@
-﻿# TOOLS README
+# TOOLS README
 
 <!-- TOOLS_HYGIENE_CHECK_MARKER_V1 -->
 
@@ -14,6 +14,11 @@
 - M80.1 hot panel daraltma: `tools\pack_m80_1_hot_panel_daraltma.ps1 -RepoRoot D:\servis-platform`
 - M80.2 agreements + shifts giriş yükü: `tools\pack_m80_2_agreements_shifts_giris_yuku.ps1 -RepoRoot D:\servis-platform`
 - M80.3 georeview + shifts son giriş yükü: `tools\pack_m80_3_georeview_shifts_son_giris_yuku.ps1 -RepoRoot D:\servis-platform`
+- M82.1 backend correctness paketi: `tools\pack_m82_1_backend_correctness.ps1 -RepoRoot D:\servis-platform`
+- M82.8 verification 2.0 paketi: `tools\pack_m82_8_verification_2_0.ps1 -RepoRoot D:\servis-platform`
+- M82.9 dormant payment backbone paketi: `tools\pack_m82_9_dormant_payment_backbone.ps1 -RepoRoot D:\servis-platform`
+- M82.10 super admin ticari ayarlar paketi: `tools\pack_m82_10_super_admin_commercial_settings.ps1 -RepoRoot D:\servis-platform`
+- M83 saha hazırlık paketi: `tools\pack_m83_field_prep_packet.ps1 -RepoRoot D:\servis-platform`
 
 ## Güncel çalışma notu
 - Repo şu an `M79`’a kadar doğrulanmış kabul edilir.
@@ -21,11 +26,14 @@
 - Parent Access akışı legacy invite değildir.
 - OSRM kodu repoda kalır; default compose modu fallback çalışır.
 - `M80`, `M80.1`, `M80.2`, `M80.3` teknik kabul/daraltma zinciri repo içinde görünür ve pack-pass durumundadır.
-- İş sırası olarak sonraki ana faz `M81` mobil saha sertleştirmedir.
+- `M81` resmi hatta bağlandı; aktif correctness kilidi `M82.1`dir.
 - `M82` controlled cleanup sonrası saha testi kullanıcı tarafından yapılacaktır.
+- M82.1 guard/master route: `tools\pack.ps1 -To 82`
 
 ## Master pack
-`tools\pack.ps1 -To 79` güncel tam master doğrulama referansıdır.
+`tools\pack.ps1 -To 79` son temiz historical master referansıdır.
+
+`tools\pack.ps1 -To 82` aktif living correctness route olarak kullanılır.
 
 Akış:
 1. `M104 / M105 / M106` statik repo check'leri
@@ -131,3 +139,46 @@ REPO_CONTRACT_COMPAT_M78_TOOLS_README_V2 -->
 - `tools/_repo_contract_state.ps1` ve `tools/repo_contract_state.json` state-first repo contract omurgasının kanonik girişidir.
 
 - M81 mobil saha sertlestirme: tools\pack_m81_mobile_saha_sertlestirme.ps1 -RepoRoot D:\servis-platform
+
+
+## M82.11 Payment readonly ticari yüzey
+- pack: `tools\pack_m82_11_payment_readonly_surface.ps1`
+- check: `cd backend && npm run m82_11check`
+- yüzey: agreement ve vardiya/vardiya serisi readonly ticari özet
+
+
+## M83 saha hazırlık paketi
+- pack: `tools\pack_m83_field_prep_packet.ps1`
+- check: `cd backend && npm run m83check`
+- yüzey: `/superadmin/pilot-launch-gate` içinde env, senaryo, rol/cihaz ve operatör sırası
+
+
+## M84 saha gözlem / geri bildirim döngüsü
+- pack: `tools\pack_m84_field_feedback_loop.ps1`
+- check: `cd backend && npm run m84check`
+- yüzey: `/superadmin/pilot-launch-gate` içinde saha kayıtları, durum akışı ve rol/yüzey kapsaması
+
+
+## M85 opsiyonel ödeme pilotu
+- pack: `tools\pack_m85_optional_payment_pilot.ps1`
+- check: `cd backend && npm run m85check`
+- yüzey: `/superadmin/commercial-core` içinde OPTIONAL kaynak pilot listesi ve READY/DORMANT geçişi
+
+
+## M86 zorunlu ödeme rollout
+- `pack_m86_required_payment_rollout.ps1`
+
+## M87 ödeme hesabı hazırlığı
+- `pack_m87_payment_account_readiness.ps1`
+
+## M88 settlement operasyon masası
+
+## M89 settlement mutabakat masası
+- pack: `tools\pack_m89_settlement_reconciliation_desk.ps1`
+- check: `cd backend && npm run m89check`
+- yüzey: `/superadmin/commercial-core`
+- `pack_m88_settlement_operations_console.ps1`
+
+- pack: `tools\pack_m86_required_payment_rollout.ps1`
+- check: `cd backend && npm run m86check`
+- yüzey: `/superadmin/commercial-core` içinde REQUIRED kaynak rollout listesi ve ACTIVE/DISABLED geçişi

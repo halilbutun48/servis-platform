@@ -5,7 +5,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host ""
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host ""
 Write-Host "=== REPO AUDIT MASTER ==="
 
 $scriptPath = Join-Path $RepoRoot "backend\scripts\repo_audit.js"

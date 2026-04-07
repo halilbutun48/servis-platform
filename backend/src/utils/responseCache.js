@@ -16,6 +16,10 @@ function makeKey(key, scope) {
   return `${getScopeKey(scope)}:${String(key || '')}`;
 }
 
+function getUnscopedKey(compositeKey) {
+  return String(compositeKey || '').split(':').slice(4).join(':');
+}
+
 export function readResponseCache(key, scope = {}) {
   const entry = store.get(makeKey(key, scope));
   if (!entry) return null;
@@ -45,6 +49,18 @@ export function clearResponseCache(prefix = '', scope = null) {
   const scopedPrefix = scope ? `${getScopeKey(scope)}:` : '';
   for (const key of Array.from(store.keys())) {
     if (scope && !key.startsWith(scopedPrefix)) continue;
-    if (!needle || key.includes(needle)) store.delete(key);
+    const unscopedKey = scope ? key.slice(scopedPrefix.length) : getUnscopedKey(key);
+    if (!needle || unscopedKey.startsWith(needle)) store.delete(key);
+  }
+}
+
+export function clearResponseCacheExact(keyToClear = '', scope = null) {
+  const needle = String(keyToClear || '');
+  if (!needle) return;
+  const scopedPrefix = scope ? `${getScopeKey(scope)}:` : '';
+  for (const key of Array.from(store.keys())) {
+    if (scope && !key.startsWith(scopedPrefix)) continue;
+    const unscopedKey = scope ? key.slice(scopedPrefix.length) : getUnscopedKey(key);
+    if (unscopedKey === needle) store.delete(key);
   }
 }

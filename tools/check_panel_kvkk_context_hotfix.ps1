@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory=$true)][string]$RepoRoot
 )
 $ErrorActionPreference = 'Stop'
-Write-Host '=== PANEL KVKK CONTEXT HOTFIX CHECK ==='
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host '=== PANEL KVKK CONTEXT HOTFIX CHECK ==='
 $files = @(
   'web/src/panels/shared/PanelKvkkHint.jsx',
   'web/src/panels/superadmin/UsersPanel.jsx',

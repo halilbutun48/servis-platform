@@ -1,6 +1,9 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function Ok([string]$m){ Write-Host "OK $m" }
 function NeedExists([string]$file){ $p = Join-Path $RepoRoot $file; if (-not (Test-Path -LiteralPath $p)) { throw "FAIL $file exists" }; Ok "$file exists" }
 function NeedContains([string]$file, [string]$needle, [string]$label){ $p = Join-Path $RepoRoot $file; $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8; if (-not $txt.Contains($needle)) { throw "FAIL $label" }; Ok $label }

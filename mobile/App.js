@@ -1,22 +1,47 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Linking, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
-import { clearSession, getSession, getVoiceGuidanceEnabled, saveSession, saveVoiceGuidanceEnabled } from './src/lib/storage';
+import {
+  clearLastMobileSnapshot,
+  clearPendingSessionEvent,
+  clearSelectedShiftId,
+  clearSession,
+  getLastMobileSnapshot,
+  getPendingSessionEvent,
+  getSelectedShiftId,
+  getSession,
+  getVoiceGuidanceEnabled,
+  saveLastMobileSnapshot,
+  saveSelectedShiftId,
+  saveSession,
+  saveVoiceGuidanceEnabled,
+} from './src/lib/storage';
 import {
   acceptKvkkRequiredMany,
   changeDriverPin,
+  completeDriverShift,
   ensureDeviceId,
   fetchActiveRoute,
   fetchHealth,
   fetchKvkkCurrent,
   fetchMe,
+  fetchShiftRoute,
   fetchToday,
   getApiBaseUrl,
+  humanizeApiError,
   isKvkkBlockingError,
+  isNetworkLikeError,
   isSessionFailureError,
   loginDriver,
   logoutDriver,
+  markDriverStopReached,
+  pauseDriverShift,
   publishGps,
+  reopenDriverStop,
+  resumeDriverShift,
+  skipDriverStop,
+  startDriverShift,
+  undoDriverStop,
 } from './src/lib/api';
 import {
   buildGpsPayload,
@@ -24,29 +49,32 @@ import {
   GPS_PUBLISH_INTERVAL_MS,
   permissionTextFromStatus,
   resolveGpsPublishTarget,
+  resolveLiveLocationState,
+  resolveVisibleShift,
 } from './src/lib/gps';
 import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
 import LoginScreen from './src/screens/LoginScreen';
 import PinChangeScreen from './src/screens/PinChangeScreen';
 import TodayScreen from './src/screens/TodayScreen';
+import RouteScreen from './src/screens/RouteScreen';
+import LiveScreen from './src/screens/LiveScreen';
 import { deriveRouteTransition, getDriverBackgroundRuntimeStatus, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
+import { buildReleaseInfo } from './src/lib/release';
 
+const RAW_RELEASE_INFO = buildReleaseInfo();
 const RELEASE_INFO = Object.freeze({
-  appVersion: '0.2.3',
-  releaseTarget: 'Android + iOS M81 saha sertlestirme',
-  buildProfiles: 'preview / production / ios',
-  deliveryMode: 'EAS Build + internal dagitim',
-  expoGoStatus: 'Expo Go degil, internal build ile test et',
-  androidPreview: 'Preview APK / internal dagitim',
-  productionBundle: 'Production AAB + iOS store hazirligi',
-  envStage: 'preview-internal / production',
-  releaseDiscipline: 'Config temizligi + background GPS + env kontrolu + checker',
+  ...RAW_RELEASE_INFO,
+  androidPreview: RAW_RELEASE_INFO.androidPreview || 'Preview APK hazir',
+  productionBundle: RAW_RELEASE_INFO.productionBundle || 'Production AAB hazir',
+  releaseDiscipline: RAW_RELEASE_INFO.releaseDiscipline || 'Env asamasi',
 });
 
 const initialState = {
   loading: true,
   syncing: false,
   session: null,
+  selectedShiftId: null,
+  usingCachedData: false,
   me: null,
   today: null,
   route: null,
@@ -62,6 +90,8 @@ const initialState = {
     lastOnlineAt: '',
     lastOfflineAt: '',
     lastRecoveryAt: '',
+    retryCount: 0,
+    nextRetryAt: '',
   },
   gps: {
     permissionStatus: 'unknown',
@@ -83,6 +113,25 @@ const initialState = {
     vehicleId: null,
     intervalSec: Math.round(GPS_PUBLISH_INTERVAL_MS / 1000),
     canOpenSettings: false,
+    retryCount: 0,
+    nextRetryAt: '',
+    sourcePriorityText: "Resmi arac GPS'i > yerel telefon onizlemesi > onbellek",
+    officialSourceKey: 'BACKEND_VEHICLE_GPS',
+    officialSourceText: "Resmi arac GPS'i",
+    officialCoordsText: '-',
+    officialAt: '',
+    officialFreshness: 'OFFLINE',
+    officialFreshnessText: 'GPS yok veya bekleniyor',
+    displaySourceKey: 'NONE',
+    displaySourceText: 'Canli konum bekleniyor',
+    displayCoordsText: '-',
+    displayAt: '',
+    localPreviewText: '-',
+    localPreviewAt: '',
+    localPreviewSourceText: 'Yerel telefon onizlemesi yok',
+    localPreviewKind: '',
+    localPreviewShiftId: null,
+    localPreviewVehicleId: null,
   },
   kvkk: {
     loading: false,
@@ -101,21 +150,111 @@ const initialState = {
 
 export default function App() {
   const [state, setState] = useState(initialState);
+  const [screen, setScreen] = useState('today');
+  const [routeOps, setRouteOps] = useState({ busy: false, message: '' });
   const syncBusyRef = useRef(false);
   const gpsBusyRef = useRef(false);
   const lastVoiceCueRef = useRef('');
   const lastVoiceWelcomeRef = useRef('');
   const lastVoiceCompletionRef = useRef('');
   const appStateRef = useRef(AppState.currentState || 'active');
+  const syncRetryCountRef = useRef(0);
+  const syncNextRetryAtRef = useRef(0);
+  const gpsRetryCountRef = useRef(0);
+  const gpsNextRetryAtRef = useRef(0);
+  const lastTodayRefreshAtRef = useRef(0);
+
+  function canRunRetryWindow(nextAt, force = false) {
+    return force || !nextAt || Date.now() >= nextAt;
+  }
+
+  function buildRetryMeta(count, baseMs = 15000, capMs = 180000) {
+    const safeCount = Math.max(1, Number(count || 1));
+    const waitMs = Math.min(capMs, baseMs * (2 ** Math.max(0, safeCount - 1)));
+    return {
+      retryCount: safeCount,
+      nextRetryAt: new Date(Date.now() + waitMs).toISOString(),
+      waitMs,
+    };
+  }
+
+  function resetSyncRetryState() {
+    syncRetryCountRef.current = 0;
+    syncNextRetryAtRef.current = 0;
+  }
+
+  function resetGpsRetryState() {
+    gpsRetryCountRef.current = 0;
+    gpsNextRetryAtRef.current = 0;
+  }
+
+  function buildLocalPreviewSnapshot(position, target, kind = 'last-known') {
+    const text = position?.coords ? formatGpsCoords(position.coords) : '-';
+    return {
+      localPreviewText: text,
+      localPreviewAt: position ? new Date(position.timestamp || Date.now()).toISOString() : '',
+      localPreviewKind: kind,
+      localPreviewShiftId: Number(target?.shiftId || 0) || null,
+      localPreviewVehicleId: Number(target?.vehicleId || 0) || null,
+      localPreviewSourceText: kind === 'published' ? 'Yerel telefon son gonderim onizlemesi' : 'Yerel telefon onizlemesi',
+    };
+  }
+
+  function decorateGpsState(baseGps, route, { usingCachedData = false, netStatus = 'unknown', selectedShiftId = null } = {}) {
+    return {
+      ...baseGps,
+      ...resolveLiveLocationState({
+        route,
+        gps: baseGps,
+        usingCachedData,
+        netStatus,
+        selectedShiftId,
+      }),
+    };
+  }
+
+  async function refreshRouteAfterGpsPublish(shiftId, fallbackToday = null) {
+    const now = Date.now();
+    const shouldRefreshToday = !state.today || !lastTodayRefreshAtRef.current || (now - lastTodayRefreshAtRef.current) >= 120000;
+    const nextToday = shouldRefreshToday
+      ? await fetchToday().catch(() => null)
+      : (fallbackToday || state.today || null);
+
+    if (nextToday && shouldRefreshToday) lastTodayRefreshAtRef.current = now;
+
+    const preferredShiftId = Number(shiftId || state.selectedShiftId || 0) || null;
+    if (preferredShiftId) {
+      const nextRoute = await fetchShiftRoute(preferredShiftId).catch(() => null);
+      if (nextRoute) {
+        return {
+          today: nextToday || fallbackToday || state.today || null,
+          route: nextRoute,
+          selectedShiftId: Number(nextRoute?.shift?.id || preferredShiftId || 0) || null,
+        };
+      }
+    }
+
+    return loadRouteBundle(nextToday || fallbackToday || state.today, preferredShiftId);
+  }
 
   async function applySessionFailure(error) {
     try {
       stopVoiceGuidance();
       await stopDriverBackgroundLocation();
-      await clearSession();
+      await Promise.all([
+        clearSession(),
+        clearLastMobileSnapshot(),
+        clearSelectedShiftId(),
+        clearPendingSessionEvent(),
+      ]);
     } finally {
       syncBusyRef.current = false;
       gpsBusyRef.current = false;
+      resetSyncRetryState();
+      resetGpsRetryState();
+      lastTodayRefreshAtRef.current = 0;
+      setScreen('today');
+      setRouteOps({ busy: false, message: '' });
       setState((prev) => ({
         ...initialState,
         loading: false,
@@ -126,8 +265,46 @@ export default function App() {
     }
   }
 
-  async function syncSignedIn({ soft = false } = {}) {
+  async function consumePendingSessionEvent({ hasSession = Boolean(state.session?.token) } = {}) {
+    const pendingEvent = await getPendingSessionEvent().catch(() => null);
+    if (!pendingEvent) return false;
+    await clearPendingSessionEvent().catch(() => null);
+    if (hasSession) {
+      await applySessionFailure(pendingEvent);
+    } else {
+      setState((prev) => ({
+        ...prev,
+        error: humanizeSessionFailure(pendingEvent),
+        lastErrorAt: new Date().toISOString(),
+      }));
+    }
+    return true;
+  }
+
+  async function loadRouteBundle(todayValue, preferredShiftId = null) {
+    const selectedShift = resolveVisibleShift(todayValue, preferredShiftId, null);
+    const selectedShiftId = Number(selectedShift?.id || 0) || null;
+    const route = selectedShiftId
+      ? await fetchShiftRoute(selectedShiftId).catch(() => null)
+      : await fetchActiveRoute().catch(() => null);
+    const finalShiftId = Number(route?.shift?.id || selectedShiftId || 0) || null;
+
+    if (finalShiftId) await saveSelectedShiftId(finalShiftId);
+    else await clearSelectedShiftId();
+
+    return {
+      route,
+      selectedShiftId: finalShiftId,
+    };
+  }
+
+  function resolveCurrentShiftId() {
+    return Number(state.selectedShiftId || state.route?.shift?.id || state.today?.active?.id || state.today?.assigned?.id || 0) || null;
+  }
+
+  async function syncSignedIn({ soft = false, preferredShiftIdOverride = null, force = false } = {}) {
     if (syncBusyRef.current) return;
+    if (soft && !canRunRetryWindow(syncNextRetryAtRef.current, force)) return;
     syncBusyRef.current = true;
 
     if (soft) {
@@ -137,32 +314,68 @@ export default function App() {
     }
 
     try {
+      const preferredShiftId = preferredShiftIdOverride || state.selectedShiftId || (await getSelectedShiftId().catch(() => null));
       const health = await fetchHealth();
       const me = await fetchMe();
-      const [today, route, kvkkCurrent] = await Promise.all([
+      const [today, kvkkCurrent] = await Promise.all([
         fetchToday().catch(() => null),
-        fetchActiveRoute().catch(() => null),
         fetchKvkkCurrent().catch(() => null),
+      ]);
+      const routeBundle = await loadRouteBundle(today, preferredShiftId);
+      const lastSyncAt = new Date().toISOString();
+      lastTodayRefreshAtRef.current = Date.now();
+      resetSyncRetryState();
+      const nextKvkk = nextKvkkState(kvkkCurrent || me?.kvkk, state.kvkk);
+      const nextNet = {
+        status: 'online',
+        message: state.net?.status === 'offline' ? 'Baglanti geri geldi, bilgiler yenileniyor.' : 'Baglanti var.',
+        lastOnlineAt: lastSyncAt,
+        lastOfflineAt: state.net?.lastOfflineAt || '',
+        lastRecoveryAt: state.net?.status === 'offline' ? lastSyncAt : (state.net?.lastRecoveryAt || ''),
+        retryCount: 0,
+        nextRetryAt: '',
+      };
+      const nextGps = decorateGpsState({
+        ...state.gps,
+        shiftId: Number(routeBundle.selectedShiftId || state.gps?.shiftId || 0) || null,
+        vehicleId: Number(routeBundle.route?.shift?.vehicleId || routeBundle.route?.vehicle?.id || state.gps?.vehicleId || 0) || null,
+      }, routeBundle.route, {
+        usingCachedData: false,
+        netStatus: nextNet.status,
+        selectedShiftId: routeBundle.selectedShiftId,
+      });
+
+      await Promise.all([
+        saveLastMobileSnapshot(buildMobileSnapshot({
+          me,
+          today,
+          route: routeBundle.route,
+          health,
+          kvkk: nextKvkk,
+          net: nextNet,
+          lastSyncAt,
+          lastErrorAt: '',
+          gps: nextGps,
+          selectedShiftId: routeBundle.selectedShiftId,
+        })),
+        clearPendingSessionEvent().catch(() => null),
       ]);
 
       setState((prev) => ({
         ...prev,
         loading: false,
         syncing: false,
-        net: {
-          status: 'online',
-          message: prev.net?.status === 'offline' ? 'Baglanti geri geldi, bilgiler yenileniyor.' : 'Baglanti var.',
-          lastOnlineAt: new Date().toISOString(),
-          lastOfflineAt: prev.net?.lastOfflineAt || '',
-          lastRecoveryAt: prev.net?.status === 'offline' ? new Date().toISOString() : (prev.net?.lastRecoveryAt || ''),
-        },
+        usingCachedData: false,
+        net: nextNet,
         me,
         today,
-        route,
+        route: routeBundle.route,
         health,
-        kvkk: nextKvkkState(kvkkCurrent || me?.kvkk, prev.kvkk),
+        selectedShiftId: routeBundle.selectedShiftId,
+        kvkk: nextKvkk,
+        gps: nextGps,
         error: '',
-        lastSyncAt: new Date().toISOString(),
+        lastSyncAt,
       }));
     } catch (error) {
       if (isSessionFailureError(error)) {
@@ -170,45 +383,68 @@ export default function App() {
         return;
       }
 
-      const msg = isNetworkError(error) ? 'Baglanti yok. Veri eski olabilir.' : humanize(error);
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        syncing: false,
-        health: prev.health,
-        net: isNetworkError(error)
+      const offline = isNetworkError(error);
+      const retryMeta = offline ? buildRetryMeta(syncRetryCountRef.current + 1, 15000, 180000) : null;
+      if (retryMeta) {
+        syncRetryCountRef.current = retryMeta.retryCount;
+        syncNextRetryAtRef.current = Date.now() + retryMeta.waitMs;
+      }
+      const msg = offline ? 'Baglanti yok. Veri eski olabilir.' : humanize(error);
+      setState((prev) => {
+        const nextNet = offline
           ? {
               status: 'offline',
               message: 'Baglanti yok. Veri eski olabilir.',
               lastOnlineAt: prev.net?.lastOnlineAt || '',
               lastOfflineAt: new Date().toISOString(),
               lastRecoveryAt: prev.net?.lastRecoveryAt || '',
+              retryCount: retryMeta?.retryCount || prev.net?.retryCount || 0,
+              nextRetryAt: retryMeta?.nextRetryAt || prev.net?.nextRetryAt || '',
             }
-          : prev.net,
-        error: msg,
-        lastErrorAt: new Date().toISOString(),
-      }));
+          : prev.net;
+        return {
+          ...prev,
+          loading: false,
+          syncing: false,
+          usingCachedData: Boolean(prev.today || prev.route),
+          health: prev.health,
+          net: nextNet,
+          gps: decorateGpsState(prev.gps, prev.route, {
+            usingCachedData: Boolean(prev.today || prev.route),
+            netStatus: nextNet?.status || prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
+          error: msg,
+          lastErrorAt: new Date().toISOString(),
+        };
+      });
       throw error;
     } finally {
       syncBusyRef.current = false;
     }
   }
 
-  async function refreshGpsStatus({ requestPermission = false, publishNow = false } = {}) {
+  async function refreshGpsStatus({ requestPermission = false, publishNow = false, force = false } = {}) {
     if (gpsBusyRef.current) return;
+    if (publishNow && !requestPermission && !canRunRetryWindow(gpsNextRetryAtRef.current, force)) return;
     gpsBusyRef.current = true;
 
-    const target = resolveGpsPublishTarget(state.today, state.route);
+    let backgroundSnapshot = {};
+    const target = resolveGpsPublishTarget(state.today, state.route, state.selectedShiftId);
     setState((prev) => ({
       ...prev,
-      gps: {
+      gps: decorateGpsState({
         ...prev.gps,
         shiftId: target.shiftId,
         vehicleId: target.vehicleId,
         lastAttemptAt: new Date().toISOString(),
         publishState: publishNow ? 'publishing' : prev.gps.publishState,
         publishText: publishNow ? 'Konum gonderiliyor.' : prev.gps.publishText,
-      },
+      }, prev.route, {
+        usingCachedData: prev.usingCachedData,
+        netStatus: prev.net?.status || 'unknown',
+        selectedShiftId: prev.selectedShiftId,
+      }),
     }));
 
     try {
@@ -236,7 +472,7 @@ export default function App() {
       const backgroundPermission = requestPermission
         ? await Location.requestBackgroundPermissionsAsync().catch(() => null)
         : await Location.getBackgroundPermissionsAsync().catch(() => null);
-      const backgroundSnapshot = await readGpsRuntimeSnapshot('status-refresh', {
+      backgroundSnapshot = await readGpsRuntimeSnapshot('status-refresh', {
         foregroundPermission: permission,
         backgroundPermission,
         canOpenSettings: permission?.canAskAgain === false || backgroundPermission?.canAskAgain === false,
@@ -244,7 +480,7 @@ export default function App() {
       if (permission.status !== 'granted') {
         setState((prev) => ({
           ...prev,
-          gps: {
+          gps: decorateGpsState({
             ...prev.gps,
             ...backgroundSnapshot,
             permissionStatus: permission.status,
@@ -253,7 +489,11 @@ export default function App() {
             publishText: permission.canAskAgain === false
               ? 'GPS izni kapali. Ayarlardan acmadan konum gonderilemez.'
               : 'GPS izni gerekli. Izin yenilenmeden konum gonderilemez.',
-          },
+          }, prev.route, {
+            usingCachedData: prev.usingCachedData,
+            netStatus: prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
         }));
         return;
       }
@@ -264,16 +504,23 @@ export default function App() {
       if (state.kvkk?.blocking) {
         setState((prev) => ({
           ...prev,
-          gps: {
+          gps: decorateGpsState({
             ...prev.gps,
-          ...backgroundSnapshot,
+            ...backgroundSnapshot,
+            ...buildLocalPreviewSnapshot(lastKnown, target, 'last-known'),
             permissionStatus: permission.status,
             permissionText,
             publishState: 'blocked',
             publishText: 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.',
             lastLocationText,
             canOpenSettings: false,
-          },
+            retryCount: 0,
+            nextRetryAt: '',
+          }, prev.route, {
+            usingCachedData: prev.usingCachedData,
+            netStatus: prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
         }));
         return;
       }
@@ -281,16 +528,23 @@ export default function App() {
       if (!target.activeShift) {
         setState((prev) => ({
           ...prev,
-          gps: {
+          gps: decorateGpsState({
             ...prev.gps,
-          ...backgroundSnapshot,
+            ...backgroundSnapshot,
+            ...buildLocalPreviewSnapshot(lastKnown, target, 'last-known'),
             permissionStatus: permission.status,
             permissionText,
             publishState: 'no-shift',
             publishText: 'Bugun aktif gorev yok. Bugun veya yakin zaman icin atanmis vardiya yok. Bu yuzden konum gonderilmiyor.',
             lastLocationText,
             canOpenSettings: false,
-          },
+            retryCount: 0,
+            nextRetryAt: '',
+          }, prev.route, {
+            usingCachedData: prev.usingCachedData,
+            netStatus: prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
         }));
         return;
       }
@@ -298,16 +552,23 @@ export default function App() {
       if (!target.vehicleId) {
         setState((prev) => ({
           ...prev,
-          gps: {
+          gps: decorateGpsState({
             ...prev.gps,
-          ...backgroundSnapshot,
+            ...backgroundSnapshot,
+            ...buildLocalPreviewSnapshot(lastKnown, target, 'last-known'),
             permissionStatus: permission.status,
             permissionText,
             publishState: 'no-vehicle',
             publishText: 'Gorev var ama arac atamasi gorunmuyor. Bu yuzden konum gonderilmiyor.',
             lastLocationText,
             canOpenSettings: false,
-          },
+            retryCount: 0,
+            nextRetryAt: '',
+          }, prev.route, {
+            usingCachedData: prev.usingCachedData,
+            netStatus: prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
         }));
         return;
       }
@@ -315,16 +576,23 @@ export default function App() {
       if (!target.canPublish) {
         setState((prev) => ({
           ...prev,
-          gps: {
+          gps: decorateGpsState({
             ...prev.gps,
-          ...backgroundSnapshot,
+            ...backgroundSnapshot,
+            ...buildLocalPreviewSnapshot(lastKnown, target, 'last-known'),
             permissionStatus: permission.status,
             permissionText,
             publishState: 'waiting',
             publishText: 'Vardiya atandi. Baslangic saati bekleniyor; gorev hazir olunca konum gonderecek.',
             lastLocationText,
             canOpenSettings: false,
-          },
+            retryCount: 0,
+            nextRetryAt: '',
+          }, prev.route, {
+            usingCachedData: prev.usingCachedData,
+            netStatus: prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
         }));
         return;
       }
@@ -338,10 +606,10 @@ export default function App() {
       const previousRoute = state.route;
       await publishGps(payload);
 
-      const [nextToday, nextRoute] = await Promise.all([
-        fetchToday().catch(() => null),
-        fetchActiveRoute().catch(() => null),
-      ]);
+      resetGpsRetryState();
+      const nextRouteBundle = await refreshRouteAfterGpsPublish(target.shiftId, state.today);
+      const nextToday = nextRouteBundle.today || state.today;
+      const nextRoute = nextRouteBundle.route;
 
       const transition = state.voiceEnabled ? deriveRouteTransition(previousRoute, nextRoute) : null;
       if (transition?.type === 'complete') {
@@ -353,23 +621,57 @@ export default function App() {
         lastVoiceCueRef.current = buildVoiceCueKey(nextRoute);
       }
 
+      const nextGpsState = decorateGpsState({
+        ...state.gps,
+        ...backgroundSnapshot,
+        ...buildLocalPreviewSnapshot(current, target, 'published'),
+        permissionStatus: permission.status,
+        permissionText,
+        publishState: 'ok',
+        publishText: "Konum gonderildi. Gosterilen resmi konum backend arac GPS'inden okunur.",
+        lastLocationText: formatGpsCoords(current?.coords),
+        lastSentAt: new Date().toISOString(),
+        shiftId: nextRouteBundle?.selectedShiftId || target.shiftId,
+        vehicleId: target.vehicleId,
+        canOpenSettings: false,
+        retryCount: 0,
+        nextRetryAt: '',
+      }, nextRoute || state.route, {
+        usingCachedData: false,
+        netStatus: 'online',
+        selectedShiftId: nextRouteBundle?.selectedShiftId || state.selectedShiftId,
+      });
+
+      await saveLastMobileSnapshot(buildMobileSnapshot({
+        me: state.me,
+        today: nextToday || state.today,
+        route: nextRoute || state.route,
+        health: state.health,
+        kvkk: state.kvkk,
+        net: state.net,
+        lastSyncAt: state.lastSyncAt,
+        lastErrorAt: state.lastErrorAt,
+        gps: nextGpsState,
+        selectedShiftId: nextRouteBundle?.selectedShiftId || state.selectedShiftId,
+      }));
+
       setState((prev) => ({
         ...prev,
         today: nextToday || prev.today,
         route: nextRoute || prev.route,
-        gps: {
-          ...prev.gps,
-          ...backgroundSnapshot,
-          permissionStatus: permission.status,
-          permissionText,
-          publishState: 'ok',
-          publishText: 'Konum gonderiliyor.',
-          lastLocationText: formatGpsCoords(current?.coords),
-          lastSentAt: new Date().toISOString(),
-          shiftId: target.shiftId,
-          vehicleId: target.vehicleId,
-          canOpenSettings: false,
-        },
+        selectedShiftId: nextRouteBundle?.selectedShiftId || prev.selectedShiftId,
+        net: prev.net?.status === 'offline'
+          ? {
+              ...prev.net,
+              status: 'online',
+              message: 'Baglanti geri geldi, bilgiler yenileniyor.',
+              lastOnlineAt: new Date().toISOString(),
+              lastRecoveryAt: new Date().toISOString(),
+              retryCount: 0,
+              nextRetryAt: '',
+            }
+          : { ...prev.net, retryCount: 0, nextRetryAt: '' },
+        gps: nextGpsState,
       }));
     } catch (error) {
       if (isSessionFailureError(error)) {
@@ -382,37 +684,59 @@ export default function App() {
         setState((prev) => ({
           ...prev,
           kvkk: nextKvkkState(kvkkCurrent || { ...prev.kvkk, blocking: true }, prev.kvkk, 'KVKK onayi eksik. Konum gonderimi durduruldu.'),
-          gps: {
+          gps: decorateGpsState({
             ...prev.gps,
-          ...backgroundSnapshot,
+            ...backgroundSnapshot,
             publishState: 'blocked',
             publishText: 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.',
             lastErrorAt: new Date().toISOString(),
-          },
+            retryCount: 0,
+            nextRetryAt: '',
+          }, prev.route, {
+            usingCachedData: prev.usingCachedData,
+            netStatus: prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
         }));
         return;
       }
 
       const offline = isNetworkError(error);
-      setState((prev) => ({
-        ...prev,
-        net: offline
+      const retryMeta = (offline || error?.retryable) ? buildRetryMeta(gpsRetryCountRef.current + 1, GPS_PUBLISH_INTERVAL_MS, 180000) : null;
+      if (retryMeta) {
+        gpsRetryCountRef.current = retryMeta.retryCount;
+        gpsNextRetryAtRef.current = Date.now() + retryMeta.waitMs;
+      }
+      setState((prev) => {
+        const nextNet = offline
           ? {
               status: 'offline',
               message: 'Baglanti yok. Konum tekrar denenecek.',
               lastOnlineAt: prev.net?.lastOnlineAt || '',
               lastOfflineAt: new Date().toISOString(),
               lastRecoveryAt: prev.net?.lastRecoveryAt || '',
+              retryCount: retryMeta?.retryCount || prev.net?.retryCount || 0,
+              nextRetryAt: retryMeta?.nextRetryAt || prev.net?.nextRetryAt || '',
             }
-          : prev.net,
-        gps: {
-          ...prev.gps,
-          ...backgroundSnapshot,
-          publishState: 'retry',
-          publishText: humanizeGpsError(error),
-          lastErrorAt: new Date().toISOString(),
-        },
-      }));
+          : prev.net;
+        return {
+          ...prev,
+          net: nextNet,
+          gps: decorateGpsState({
+            ...prev.gps,
+            ...backgroundSnapshot,
+            publishState: 'retry',
+            publishText: humanizeGpsError(error),
+            lastErrorAt: new Date().toISOString(),
+            retryCount: retryMeta?.retryCount || prev.gps?.retryCount || 0,
+            nextRetryAt: retryMeta?.nextRetryAt || prev.gps?.nextRetryAt || '',
+          }, prev.route, {
+            usingCachedData: Boolean(offline || prev.usingCachedData),
+            netStatus: nextNet?.status || prev.net?.status || 'unknown',
+            selectedShiftId: prev.selectedShiftId,
+          }),
+        };
+      });
     } finally {
       gpsBusyRef.current = false;
     }
@@ -504,24 +828,78 @@ export default function App() {
     let alive = true;
     (async () => {
       try {
-        const deviceId = await ensureDeviceId();
-        const session = await getSession();
-        const voiceEnabled = await getVoiceGuidanceEnabled();
+        const [deviceId, session, voiceEnabled, selectedShiftId, snapshot, pendingSessionEvent] = await Promise.all([
+          ensureDeviceId(),
+          getSession(),
+          getVoiceGuidanceEnabled(),
+          getSelectedShiftId().catch(() => null),
+          getLastMobileSnapshot().catch(() => null),
+          getPendingSessionEvent().catch(() => null),
+        ]);
         if (!alive) return;
-        if (!session?.token) {
-          setState((prev) => ({ ...prev, loading: false, session: session || null, deviceId, voiceEnabled }));
+
+        if (snapshot) {
+          setState(hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId }));
+          if (snapshot?.lastSyncAt) lastTodayRefreshAtRef.current = new Date(snapshot.lastSyncAt).getTime() || 0;
+        }
+
+        if (pendingSessionEvent && session?.token) {
+          await clearPendingSessionEvent().catch(() => null);
+          await applySessionFailure(pendingSessionEvent);
           return;
         }
-        setState((prev) => ({ ...prev, session, deviceId, voiceEnabled }));
-        await syncSignedIn({ soft: false });
+
+        if (!session?.token) {
+          if (pendingSessionEvent) {
+            await clearPendingSessionEvent().catch(() => null);
+          }
+          setState((prev) => ({
+            ...(snapshot ? prev : initialState),
+            loading: false,
+            session: session || null,
+            deviceId,
+            voiceEnabled,
+            selectedShiftId: selectedShiftId || snapshot?.selectedShiftId || null,
+          }));
+          return;
+        }
+
+        if (!snapshot) {
+          setState((prev) => ({ ...prev, session, deviceId, voiceEnabled, selectedShiftId: selectedShiftId || null }));
+        }
+        await syncSignedIn({ soft: Boolean(snapshot) });
       } catch (error) {
         if (!alive) return;
         if (isSessionFailureError(error)) {
           await applySessionFailure(error);
           return;
         }
-        await clearSession();
-        setState((prev) => ({ ...initialState, loading: false, deviceId: prev.deviceId, error: humanize(error) }));
+        const message = isNetworkError(error) ? 'Baglanti yok. Veri eski olabilir.' : humanize(error);
+        setState((prev) => {
+          const nextNet = isNetworkError(error)
+            ? {
+                status: 'offline',
+                message: 'Baglanti yok. Veri eski olabilir.',
+                lastOnlineAt: prev.net?.lastOnlineAt || '',
+                lastOfflineAt: new Date().toISOString(),
+                lastRecoveryAt: prev.net?.lastRecoveryAt || '',
+              }
+            : prev.net;
+          return {
+            ...prev,
+            loading: false,
+            syncing: false,
+            usingCachedData: Boolean(prev.today || prev.route),
+            error: message,
+            lastErrorAt: new Date().toISOString(),
+            net: nextNet,
+            gps: decorateGpsState(prev.gps, prev.route, {
+              usingCachedData: Boolean(prev.today || prev.route),
+              netStatus: nextNet?.status || prev.net?.status || 'unknown',
+              selectedShiftId: prev.selectedShiftId,
+            }),
+          };
+        });
       }
     })();
     return () => {
@@ -541,18 +919,22 @@ export default function App() {
         route: state.route,
         kvkkBlocking: state.kvkk?.blocking,
         appState: nextState,
+        selectedShiftId: state.selectedShiftId,
       }).then((runtime) => {
         if (!runtime) return;
         return readGpsRuntimeSnapshot(runtime.reason, { appState: nextState }).then(applyGpsRuntimeSnapshot);
       }).catch(() => null);
 
       if (nextState === 'active') {
-        syncSignedIn({ soft: true }).catch(() => null);
-        refreshGpsStatus({ publishNow: true }).catch(() => null);
+        consumePendingSessionEvent({ hasSession: Boolean(state.session?.token) }).then((handled) => {
+          if (handled) return;
+          syncSignedIn({ soft: true, force: true }).catch(() => null);
+          refreshGpsStatus({ publishNow: true, force: true }).catch(() => null);
+        }).catch(() => null);
       }
     });
     return () => sub.remove();
-  }, [state.session?.token, state.me?.requirePinChange, state.me?.role, state.today, state.route, state.kvkk?.blocking]);
+  }, [state.session?.token, state.me?.requirePinChange, state.me?.role, state.today, state.route, state.kvkk?.blocking, state.selectedShiftId]);
 
   useEffect(() => {
     if (!state.session?.token || state.me?.requirePinChange) return;
@@ -560,7 +942,7 @@ export default function App() {
       syncSignedIn({ soft: true }).catch(() => null);
     }, 30000);
     return () => clearInterval(timer);
-  }, [state.session?.token, state.me?.requirePinChange]);
+  }, [state.session?.token, state.me?.requirePinChange, state.selectedShiftId]);
 
   useEffect(() => {
     if (!state.session?.token || state.me?.requirePinChange || String(state.me?.role || '').toUpperCase() !== 'DRIVER') {
@@ -576,6 +958,7 @@ export default function App() {
       route: state.route,
       kvkkBlocking: state.kvkk?.blocking,
       appState: appStateRef.current,
+      selectedShiftId: state.selectedShiftId,
     }).then((runtime) => {
       if (!runtime) return;
       return readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).then(applyGpsRuntimeSnapshot);
@@ -587,7 +970,7 @@ export default function App() {
       refreshGpsStatus({ publishNow: true }).catch(() => null);
     }, GPS_PUBLISH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [state.session?.token, state.me?.requirePinChange, state.me?.role, state.today, state.route, state.kvkk?.blocking]);
+  }, [state.session?.token, state.me?.requirePinChange, state.me?.role, state.today, state.route, state.kvkk?.blocking, state.selectedShiftId]);
 
   useEffect(() => {
     if (!state.voiceEnabled) return;
@@ -612,6 +995,91 @@ export default function App() {
     lastVoiceCueRef.current = cueKey;
   }, [state.voiceEnabled, state.today?.active?.id, state.today?.assigned?.id, state.route?.shift?.id, state.route?.progress?.completed, state.route?.progress?.lastReachedOrder, state.route?.nextStop?.id, state.route?.nextStop?.etaMin]);
 
+
+  function handleOpenToday() {
+    setScreen('today');
+  }
+
+  function handleOpenRoute() {
+    setScreen('route');
+  }
+
+  function handleOpenLive() {
+    setScreen('live');
+  }
+
+  async function handleSelectShift(shiftId) {
+    const nextShiftId = Number(shiftId || 0) || null;
+    if (!nextShiftId) return;
+    await saveSelectedShiftId(nextShiftId);
+    setState((prev) => ({ ...prev, selectedShiftId: nextShiftId, gps: decorateGpsState(prev.gps, prev.route, { usingCachedData: prev.usingCachedData, netStatus: prev.net?.status || 'unknown', selectedShiftId: nextShiftId }), error: '' }));
+    try {
+      await syncSignedIn({ soft: true, preferredShiftIdOverride: nextShiftId, force: true });
+      await refreshGpsStatus({ publishNow: false, force: true });
+    } catch {
+      // state already updated by sync/gps helpers
+    }
+  }
+
+  async function runRouteAction(label, runner) {
+    const shiftId = resolveCurrentShiftId();
+    if (!shiftId) {
+      setState((prev) => ({ ...prev, error: 'Seçili vardiya yok.', lastErrorAt: new Date().toISOString() }));
+      return;
+    }
+
+    setRouteOps({ busy: true, message: `${label} çalışıyor...` });
+    try {
+      await runner(shiftId);
+      await syncSignedIn({ soft: true, preferredShiftIdOverride: shiftId });
+      await refreshGpsStatus({ publishNow: false, force: true }).catch(() => null);
+      setRouteOps({ busy: false, message: `${label} tamamlandı.` });
+    } catch (error) {
+      if (isSessionFailureError(error)) {
+        await applySessionFailure(error);
+        return;
+      }
+      setRouteOps({ busy: false, message: '' });
+      setState((prev) => ({
+        ...prev,
+        error: humanize(error),
+        lastErrorAt: new Date().toISOString(),
+      }));
+    }
+  }
+
+  async function handleStartShift() {
+    await runRouteAction('Vardiya başlatma', (shiftId) => startDriverShift(shiftId));
+  }
+
+  async function handlePauseShift() {
+    await runRouteAction('Vardiya duraklatma', (shiftId) => pauseDriverShift(shiftId));
+  }
+
+  async function handleResumeShift() {
+    await runRouteAction('Vardiya devam', (shiftId) => resumeDriverShift(shiftId));
+  }
+
+  async function handleCompleteShift() {
+    await runRouteAction('Vardiya tamamlama', (shiftId) => completeDriverShift(shiftId));
+  }
+
+  async function handleMarkReached(stopId) {
+    await runRouteAction('Durak ulaşıldı', (shiftId) => markDriverStopReached(shiftId, stopId));
+  }
+
+  async function handleSkipStop(stopId) {
+    await runRouteAction('Durak atlama', (shiftId) => skipDriverStop(shiftId, stopId));
+  }
+
+  async function handleReopenStop(stopId) {
+    await runRouteAction('Durak yeniden açma', (shiftId) => reopenDriverStop(shiftId, stopId));
+  }
+
+  async function handleUndoStop(stopId) {
+    await runRouteAction('Durak geri alma', (shiftId) => undoDriverStop(shiftId, stopId));
+  }
+
   async function handleLogin({ identifier, password }) {
     const data = await loginDriver(identifier, password);
     const deviceId = data.deviceId || (await ensureDeviceId());
@@ -620,8 +1088,11 @@ export default function App() {
       refreshToken: data.refreshToken || '',
       deviceId,
     };
-    await saveSession(session);
-    setState((prev) => ({ ...prev, session, deviceId }));
+    await Promise.all([saveSession(session), clearSelectedShiftId(), clearPendingSessionEvent().catch(() => null)]);
+    resetSyncRetryState();
+    resetGpsRetryState();
+    setScreen('today');
+    setState((prev) => ({ ...prev, session, deviceId, selectedShiftId: null }));
     await syncSignedIn({ soft: false });
   }
 
@@ -629,20 +1100,23 @@ export default function App() {
     const changed = await changeDriverPin(currentPin, newPin);
     if (changed?.token) {
       const session = await getSession();
-      await saveSession({
-        ...(session || {}),
-        token: changed.token,
-        refreshToken: changed.refreshToken || session?.refreshToken || '',
-        deviceId: session?.deviceId || state.deviceId || '',
-      });
+      await Promise.all([
+        saveSession({
+          ...(session || {}),
+          token: changed.token,
+          refreshToken: changed.refreshToken || session?.refreshToken || '',
+          deviceId: session?.deviceId || state.deviceId || '',
+        }),
+        clearPendingSessionEvent().catch(() => null),
+      ]);
     }
     await syncSignedIn({ soft: false });
   }
 
   async function handleRefresh() {
     try {
-      await syncSignedIn({ soft: true });
-      await refreshGpsStatus({ publishNow: false });
+      await syncSignedIn({ soft: true, force: true });
+      await refreshGpsStatus({ publishNow: false, force: true });
     } catch {
       // error already reflected in state
     }
@@ -654,7 +1128,12 @@ export default function App() {
       await stopDriverBackgroundLocation();
       await logoutDriver();
     } finally {
-      await clearSession();
+      await Promise.all([clearSession(), clearLastMobileSnapshot(), clearSelectedShiftId(), clearPendingSessionEvent().catch(() => null)]);
+      resetSyncRetryState();
+      resetGpsRetryState();
+      lastTodayRefreshAtRef.current = 0;
+      setScreen('today');
+      setRouteOps({ busy: false, message: '' });
       setState({ ...initialState, loading: false, deviceId: state.deviceId });
     }
   }
@@ -687,7 +1166,7 @@ export default function App() {
   }
 
   async function handleRequestGpsPermission() {
-    await refreshGpsStatus({ requestPermission: true, publishNow: false });
+    await refreshGpsStatus({ requestPermission: true, publishNow: false, force: true });
     const runtime = await syncDriverBackgroundLocation({
       sessionToken: state.session?.token,
       role: state.me?.role,
@@ -697,6 +1176,7 @@ export default function App() {
       kvkkBlocking: state.kvkk?.blocking,
       requestPermission: true,
       appState: appStateRef.current,
+      selectedShiftId: state.selectedShiftId,
     }).catch(() => null);
     if (runtime) {
       const snapshot = await readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).catch(() => null);
@@ -705,11 +1185,11 @@ export default function App() {
   }
 
   async function handlePublishGpsNow() {
-    await refreshGpsStatus({ publishNow: true });
+    await refreshGpsStatus({ publishNow: true, force: true });
   }
 
   async function handleRefreshGpsStatus() {
-    await refreshGpsStatus({ publishNow: false });
+    await refreshGpsStatus({ publishNow: false, force: true });
   }
 
   async function handleOpenGpsSettings() {
@@ -720,7 +1200,7 @@ export default function App() {
     try {
       await acceptKvkkRequiredMany();
       await refreshKvkkStatus({ accepted: true });
-      await refreshGpsStatus({ publishNow: false });
+      await refreshGpsStatus({ publishNow: false, force: true });
     } catch {
       // state already updated in helper/caller
     }
@@ -735,26 +1215,79 @@ export default function App() {
       return (
         <View style={styles.center}>
           <ActivityIndicator size="large" />
-          <Text style={styles.muted}>Surucu mobil beta hazirlaniyor...</Text>
+          <Text style={styles.muted}>Sürücü mobil beta hazırlanıyor...</Text>
         </View>
       );
     }
 
     if (!state.session?.token || !state.me) {
-      return <LoginScreen onLogin={handleLogin} initialError={state.error} />;
+      return <LoginScreen onLogin={handleLogin} initialError={state.error} apiBaseUrl={getApiBaseUrl()} deviceId={state.deviceId} releaseInfo={RELEASE_INFO} />;
     }
 
     if (String(state.me?.role || '').toUpperCase() !== 'DRIVER') {
       return (
         <View style={styles.center}>
-          <Text style={styles.title}>Bu uygulama yalnizca surucu icindir.</Text>
-          <Text style={styles.muted}>Bu hesap {String(state.me?.role || '-')} rolunde gorunuyor.</Text>
+          <Text style={styles.title}>Bu uygulama yalnızca sürücü içindir.</Text>
+          <Text style={styles.muted}>Bu hesap {String(state.me?.role || '-')} rolünde görünüyor.</Text>
         </View>
       );
     }
 
     if (state.me?.requirePinChange) {
-      return <PinChangeScreen onSubmit={handlePinChange} />;
+      return <PinChangeScreen onSubmit={handlePinChange} onLogout={handleLogout} initialError={state.error} />;
+    }
+
+    if (screen === 'route') {
+      return (
+        <RouteScreen
+          today={state.today}
+          route={state.route}
+          error={state.error}
+          syncing={state.syncing}
+          selectedShiftId={state.selectedShiftId}
+          routeOpsBusy={routeOps.busy}
+          routeOpsText={routeOps.message}
+          onRefresh={handleRefresh}
+          onOpenToday={handleOpenToday}
+          onOpenLive={handleOpenLive}
+          onSelectShift={handleSelectShift}
+          onStartShift={handleStartShift}
+          onPauseShift={handlePauseShift}
+          onResumeShift={handleResumeShift}
+          onCompleteShift={handleCompleteShift}
+          onMarkReached={handleMarkReached}
+          onSkipStop={handleSkipStop}
+          onReopenStop={handleReopenStop}
+          onUndoStop={handleUndoStop}
+        />
+      );
+    }
+
+    if (screen === 'live') {
+      return (
+        <LiveScreen
+          today={state.today}
+          route={state.route}
+          lastSyncAt={state.lastSyncAt}
+          net={state.net}
+          gps={state.gps}
+          kvkk={state.kvkk}
+          voiceEnabled={state.voiceEnabled}
+          selectedShiftId={state.selectedShiftId}
+          onOpenToday={handleOpenToday}
+          onOpenRoute={handleOpenRoute}
+          onToggleVoiceGuidance={handleToggleVoiceGuidance}
+          onSpeakNextStop={handleSpeakNextStop}
+          onSpeakEta={handleSpeakEta}
+          onRequestGpsPermission={handleRequestGpsPermission}
+          onRefreshGpsStatus={handleRefreshGpsStatus}
+          onOpenGpsSettings={handleOpenGpsSettings}
+          onPublishGpsNow={handlePublishGpsNow}
+          onAcceptKvkk={handleAcceptKvkk}
+          onRefreshKvkkStatus={handleRefreshKvkk}
+          releaseInfo={RELEASE_INFO}
+        />
+      );
     }
 
     return (
@@ -769,25 +1302,22 @@ export default function App() {
         lastSyncAt={state.lastSyncAt}
         lastErrorAt={state.lastErrorAt}
         syncing={state.syncing}
-        voiceEnabled={state.voiceEnabled}
+        usingCachedData={state.usingCachedData}
         releaseInfo={RELEASE_INFO}
         net={state.net}
         gps={state.gps}
         kvkk={state.kvkk}
+        selectedShiftId={state.selectedShiftId}
         onRefresh={handleRefresh}
         onLogout={handleLogout}
-        onToggleVoiceGuidance={handleToggleVoiceGuidance}
-        onSpeakNextStop={handleSpeakNextStop}
-        onSpeakEta={handleSpeakEta}
-        onRequestGpsPermission={handleRequestGpsPermission}
-        onRefreshGpsStatus={handleRefreshGpsStatus}
-        onOpenGpsSettings={handleOpenGpsSettings}
+        onOpenRoute={handleOpenRoute}
+        onOpenLive={handleOpenLive}
+        onSelectShift={handleSelectShift}
+        onOpenSettings={handleOpenGpsSettings}
         onPublishGpsNow={handlePublishGpsNow}
-        onAcceptKvkk={handleAcceptKvkk}
-        onRefreshKvkkStatus={handleRefreshKvkk}
       />
     );
-  }, [state]);
+  }, [state, screen, routeOps]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -795,6 +1325,55 @@ export default function App() {
       {content}
     </SafeAreaView>
   );
+}
+
+
+function buildMobileSnapshot({ me, today, route, health, net, kvkk, lastSyncAt, lastErrorAt, gps, selectedShiftId }) {
+  return {
+    me: me || null,
+    today: today || null,
+    route: route || null,
+    health: health || null,
+    net: net || initialState.net,
+    kvkk: kvkk || initialState.kvkk,
+    gps: gps || initialState.gps,
+    lastSyncAt: lastSyncAt || '',
+    lastErrorAt: lastErrorAt || '',
+    selectedShiftId: Number(selectedShiftId || 0) || null,
+    snapshotAt: new Date().toISOString(),
+  };
+}
+
+function hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId } = {}) {
+  return {
+    ...initialState,
+    loading: false,
+    syncing: false,
+    session: session || null,
+    selectedShiftId: Number(selectedShiftId || snapshot?.selectedShiftId || 0) || null,
+    usingCachedData: Boolean(snapshot?.today || snapshot?.route),
+    me: snapshot?.me || null,
+    today: snapshot?.today || null,
+    route: snapshot?.route || null,
+    health: snapshot?.health || null,
+    deviceId: deviceId || '',
+    lastSyncAt: snapshot?.lastSyncAt || '',
+    lastErrorAt: snapshot?.lastErrorAt || '',
+    error: '',
+    voiceEnabled: Boolean(voiceEnabled),
+    net: {
+      ...initialState.net,
+      ...(snapshot?.net || {}),
+    },
+    gps: {
+      ...initialState.gps,
+      ...(snapshot?.gps || {}),
+    },
+    kvkk: {
+      ...initialState.kvkk,
+      ...(snapshot?.kvkk || {}),
+    },
+  };
 }
 
 function backgroundPermissionTextFromStatus(permission) {
@@ -830,26 +1409,26 @@ function nextKvkkState(summary, prev = {}, forcedMessage) {
 }
 
 function isNetworkError(error) {
-  const msg = String(error?.payload?.message || error?.payload?.error || error?.message || error || '').toLowerCase();
-  return msg.includes('network') || msg.includes('failed to fetch') || msg.includes('fetch') || msg.includes('timeout');
+  return isNetworkLikeError(error);
 }
 
 function humanize(error) {
-  return String(error?.payload?.message || error?.payload?.error || error?.message || error || 'Islem basarisiz.');
+  return humanizeApiError(error, 'Islem basarisiz.');
 }
 
 function humanizeSessionFailure(error) {
-  const text = String(error?.payload?.message || error?.payload?.error || error?.message || '').toLowerCase();
-  if (text.includes('expired') || text.includes('token')) return 'Oturum suresi doldu. Yeniden giris yapin.';
+  const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
+  if (error?.userMessage) return error.userMessage;
+  if (code === 'DEVICE_MISMATCH') return 'Bu cihaz bu surucu hesabi ile eslesmiyor. Operasyon ile cihaz eslesmesini kontrol edin.';
+  if (code.includes('REFRESH') || code.includes('TOKEN')) return 'Oturum suresi doldu. Yeniden giris yapin.';
   return 'Oturum kapandi. Yeniden giris yapin.';
 }
 
 function humanizeGpsError(error) {
-  const text = String(error?.payload?.message || error?.payload?.error || error?.message || error || '').toLowerCase();
-  if (text.includes('network') || text.includes('fetch')) return 'Baglanti yok. Konum tekrar denenecek.';
+  if (isNetworkLikeError(error)) return 'Baglanti yok. Konum tekrar denenecek.';
   if (Number(error?.status || 0) === 403) return 'Gorev ve arac bilgisi guncelleniyor. Konum tekrar denenecek.';
   if (Number(error?.status || 0) === 401) return 'Oturum yenilenemedi. Konum tekrar denenecek.';
-  return 'Konum gonderilemedi, tekrar denenecek.';
+  return humanizeApiError(error, 'Konum gonderilemedi, tekrar denenecek.');
 }
 
 const styles = StyleSheet.create({

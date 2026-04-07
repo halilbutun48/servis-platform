@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M64 slug=natural-copilot-layer -->
+
 # M64 — DOĞAL COPILOT KATMANI
 
 ## Hedef

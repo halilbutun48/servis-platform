@@ -1,6 +1,9 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = 'Stop'
 
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function NormalizeText([string]$s) {
   if ($null -eq $s) { return '' }
   $t = [string]$s

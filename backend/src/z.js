@@ -1,3 +1,5 @@
+import { httpError } from "./errors/http.js";
+
 // backend/src/z.js
 // Small Zod helper(s) shared by route modules.
 // Keeping this in a tiny file avoids repeating safeParse boilerplate.
@@ -10,23 +12,17 @@
  */
 export function validateWithZod(schema, input) {
   if (!schema || typeof schema.safeParse !== "function") {
-    const e = new Error("Zod schema missing");
-    e.status = 500;
-    throw e;
+    throw httpError(500, "ZOD_SCHEMA_MISSING", "Zod schema missing");
   }
 
   const parsed = schema.safeParse(input ?? {});
   if (parsed.success) return parsed.data;
 
-  const e = new Error("Validation failed");
-  e.status = 400;
-  // Keep details handy (some routes stringify e.message; others may inspect e.details).
+  let details = undefined;
   try {
-    e.details = parsed.error.flatten();
-    // Make message at least slightly informative for current catch blocks.
-    e.message = JSON.stringify(e.details);
+    details = parsed.error.flatten();
   } catch {
-    // ignore
+    details = undefined;
   }
-  throw e;
+  throw httpError(400, "VALIDATION_ERROR", "Validation failed", details);
 }

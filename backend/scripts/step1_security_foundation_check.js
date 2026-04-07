@@ -48,7 +48,12 @@ async function main() {
   must("old refresh reuse rejected", secondUseOld.status === 401);
   must(
     "old refresh reuse code detected",
-    String(secondUseOld.json?.code || secondUseOld.json?.error || "") === "REFRESH_REUSE_DETECTED"
+    String(
+      secondUseOld.json?.code ||
+        secondUseOld.json?.error?.code ||
+        secondUseOld.json?.error ||
+        ""
+    ) === "REFRESH_REUSE_DETECTED"
   );
 
   const newestRefresh = String(firstRefresh.json?.refreshToken || "");

@@ -1,0 +1,207 @@
+import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
+import { rowSelectionStyle } from "../../utils/listUi";
+import { roomLabel } from "./shiftsPanelOfferUtils";
+
+export function AgreementBadge({ agreementId }) {
+  const id = Number(agreementId);
+  if (!Number.isFinite(id) || id <= 0) return null;
+  return (
+    <span
+      className="pill"
+      data-status="AGREEMENT"
+      title="Agreement kaynaklı otomatik shift"
+      style={{ marginLeft: 8 }}
+    >
+      Agreement #{id}
+    </span>
+  );
+}
+
+function clickableInfoStyle(disabled = false) {
+  return {
+    padding: 0,
+    border: 0,
+    background: "transparent",
+    color: disabled ? "inherit" : "#9ecbff",
+    cursor: disabled ? "default" : "pointer",
+    textDecoration: disabled ? "none" : "underline",
+    font: "inherit",
+  };
+}
+
+function CompanyRoomCell({ shift, room }) {
+  return (
+    <td className="muted">
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+          <span>{room ? `${roomLabel(room)} (#${room.id})` : `#${shift.roomId}`}</span>
+        </div>
+      </div>
+    </td>
+  );
+}
+
+function CompanyExtendCell({ shift, busy, fmtTR, onOpenExtendModal, onOpenPreview }) {
+  const status = String(shift.status || "").toUpperCase();
+  const canExtend = status === "APPROVED" || status === "ACTIVE";
+  return (
+    <td>
+      {shift.extendRequestedEndAt ? (
+        <div style={{ display: "grid", gap: 6 }}>
+          <span className="pill" data-status={shift.extendDecision || "PENDING"}>{String(shift.extendDecision || "PENDING")}</span>
+          <div className="muted" title={String(shift.extendRequestedEndAt)}>Talep: {fmtTR(shift.extendRequestedEndAt)}</div>
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled={busy || !canExtend}
+            onClick={() => onOpenExtendModal(shift)}
+          >
+            Süre Uzat
+          </button>
+          <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenPreview(shift.id)}>Harita / Navigasyon Önizle</button>
+        </>
+      )}
+    </td>
+  );
+}
+
+function CompanyOpsCell({ busy, shiftId, onOpenOpsEvents }) {
+  return (
+    <td>
+      <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenOpsEvents(shiftId)}>Operasyon Kaydı</button>
+    </td>
+  );
+}
+
+export function CompanyMarketRow({
+  shift,
+  busy,
+  fmtTR,
+  copilotShiftId,
+  onFocusShift,
+  onOpenOfferModal,
+  onOpenOffersModal,
+  computePackageShiftIds,
+}) {
+  const packageIds = computePackageShiftIds(shift);
+  return (
+    <tr key={shift.id} onClick={() => onFocusShift(shift?.id)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
+      <td>{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact /></td>
+      <td><span className="pill" data-status={shift.status}>{shift.status}</span></td>
+      <td className="muted">{fmtTR(shift.startAt)}</td>
+      <td className="muted">{fmtTR(shift.endAt)}</td>
+      <td>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" disabled={busy} onClick={() => onOpenOfferModal(shift.id)}>Teklif Gönder</button>
+          <button
+            type="button"
+            disabled={busy || packageIds.length < 2}
+            title={packageIds.length < 2 ? "Paket bulunamadı" : `Pakete uygula (${packageIds.length} shift)`}
+            onClick={() => onOpenOfferModal(shift.id, packageIds)}
+          >
+            Paket Teklif
+          </button>
+          <button type="button" disabled={busy} onClick={() => onOpenOffersModal(shift.id)}>Teklifler</button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+export function CompanyPendingRow({
+  shift,
+  busy,
+  fmtTR,
+  copilotShiftId,
+  onFocusShift,
+  roomsById,
+  renderRoomOfferSummary,
+  renderCompanyOfferSummary,
+  onOpenOffersModal,
+  onCancelMyRequest,
+  onOpenExtendModal,
+  onOpenPreview,
+  onOpenOpsEvents,
+}) {
+  const room = roomsById.get(Number(shift.roomId));
+  const canNegotiate = ["DRAFT", "REQUESTED"].includes(String(shift.status));
+  return (
+    <tr key={shift.id} onClick={() => onFocusShift(shift?.id)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
+      <td>
+        {shift.id}
+        <AgreementBadge agreementId={shift.agreementId} />
+        <CommercialReadonlySummary item={shift.commercialBackbone} compact />
+        {Number(shift.splitRootId || 0) > 0 ? (
+          <div className="muted" style={{ marginTop: 4 }}>
+            Paket #{shift.splitRootId}
+            {Number(shift.splitIndex || 0) > 0 && Number(shift.splitTotal || 0) > 0 ? ` • ${shift.splitIndex}/${shift.splitTotal}` : ""}
+          </div>
+        ) : null}
+      </td>
+      <td><span className="pill" data-status={shift.status}>{shift.status}</span></td>
+      <CompanyRoomCell shift={shift} room={room} />
+      <td>{renderRoomOfferSummary(shift)}</td>
+      <td>{renderCompanyOfferSummary(shift)}</td>
+      <td>
+        <div style={{ display: "grid", gap: 8 }}>
+          <div className="muted">Pazarlık sadece Market / Teklifler ekranında yapılır.</div>
+          <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenOffersModal(shift.id)}>Teklifleri Aç</button>
+        </div>
+      </td>
+      <td><button type="button" disabled={busy || !canNegotiate} onClick={() => onCancelMyRequest(shift)}>Talebi İptal Et</button></td>
+      <td className="muted" title={String(shift.startAt)}>{fmtTR(shift.startAt)}</td>
+      <td className="muted" title={String(shift.endAt)}>{fmtTR(shift.endAt)}</td>
+      <CompanyExtendCell shift={shift} busy={busy} fmtTR={fmtTR} onOpenExtendModal={onOpenExtendModal} onOpenPreview={onOpenPreview} />
+      <CompanyOpsCell busy={busy} shiftId={shift.id} onOpenOpsEvents={onOpenOpsEvents} />
+    </tr>
+  );
+}
+
+export function CompanyFinalListRow({
+  shift,
+  busy,
+  fmtTR,
+  copilotShiftId,
+  onFocusShift,
+  roomsById,
+  renderRoomOfferSummary,
+  renderCompanyOfferSummary,
+  onOpenVehicleDetail,
+  onOpenDriverDetail,
+  onOpenExtendModal,
+  onOpenPreview,
+  onOpenOpsEvents,
+}) {
+  const room = roomsById.get(Number(shift.roomId));
+  const hasVehicle = !!(shift.vehicle?.plate || shift.vehicleId);
+  const hasDriver = !!(shift.driver?.fullName || shift.driverId);
+  return (
+    <tr key={shift.id} onClick={() => onFocusShift(shift?.id)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
+      <td>{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact /></td>
+      <td><span className="pill" data-status={shift.status}>{shift.status}</span></td>
+      <CompanyRoomCell shift={shift} room={room} />
+      <td>{renderRoomOfferSummary(shift)}</td>
+      <td>{renderCompanyOfferSummary(shift)}</td>
+      <td className="muted">
+        {hasVehicle ? (
+          <button type="button" onClick={() => onOpenVehicleDetail(shift)} style={clickableInfoStyle(!hasVehicle)} title="Araç detayını aç">
+            {shift.vehicle?.plate || (shift.vehicleId ? `#${shift.vehicleId}` : "-")}
+          </button>
+        ) : "-"}
+      </td>
+      <td className="muted">
+        {hasDriver ? (
+          <button type="button" onClick={() => onOpenDriverDetail(shift)} style={clickableInfoStyle(!hasDriver)} title="Sürücü detayını aç">
+            {shift.driver?.fullName || (shift.driverId ? `#${shift.driverId}` : "-")}
+          </button>
+        ) : "-"}
+      </td>
+      <td className="muted" title={String(shift.startAt)}>{fmtTR(shift.startAt)}</td>
+      <td className="muted" title={String(shift.endAt)}>{fmtTR(shift.endAt)}</td>
+      <CompanyExtendCell shift={shift} busy={busy} fmtTR={fmtTR} onOpenExtendModal={onOpenExtendModal} onOpenPreview={onOpenPreview} />
+      <CompanyOpsCell busy={busy} shiftId={shift.id} onOpenOpsEvents={onOpenOpsEvents} />
+    </tr>
+  );
+}

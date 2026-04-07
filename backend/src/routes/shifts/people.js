@@ -7,22 +7,31 @@ import { clusterStops } from "../../services/clusterStops.js";
 import { etaMinutes } from "../../geo.js";
 import { computeRouteKey, parsePolyline, sumDistanceKm } from "../../services/routeLearning.js";
 import { getShiftAndCheckScopeOrThrow } from "./helpers.js";
+import { validateWithZod } from "../../z.js";
+import { asyncHandler } from "../../middleware/asyncHandler.js";
+import { httpError } from "../../errors/http.js";
+import { clearShiftRoutePreviewCache, rebuildShiftRouteStateBestEffort } from "../../services/shiftRouteState.js";
 import { decorateGeoItem, inferGeoState } from "../../services/geoState.js";
 import { rememberResponse } from "../../utils/responseCache.js";
 
 const qModeSchema = z
-  .enum(["REPLACE", "MERGE"])
-  .optional()
+  .preprocess((v) => {
+    if (v == null) return undefined;
+    if (typeof v === "object") return undefined;
+    const s = String(v).trim();
+    if (!s) return undefined;
+    return s;
+  }, z.enum(["REPLACE", "MERGE"]).optional())
   .transform((v) => v ?? "REPLACE");
 
 const qMaxWalkSchema = z
   .preprocess((v) => {
     if (v == null) return undefined;
+    if (typeof v === "object") return undefined;
     const s = String(v).trim();
     if (!s) return undefined;
     return Number(s);
-  }, z.number().int().min(50).max(2000))
-  .optional()
+  }, z.number().int().min(50).max(2000).optional())
   .transform((v) => v ?? 250);
 
 const personelItemSchema = z.object({
@@ -264,26 +273,25 @@ function pickEligiblePoints(personels) {
 
 function parseItemArray(req) {
   const items = req.body?.items ?? req.body?.rows ?? [];
-  const parsed = z.array(personelItemSchema).max(500).parse(items);
-  return parsed;
+  return validateWithZod(z.array(personelItemSchema).max(500), items);
 }
 
 export function attachShiftPeopleRoutes(router, _io) {
   const r = Router();
 
   // COMPANY: get shift people
-  r.get("/:id/people", authRequired(), requireRole("COMPANY"), async (req, res) => {
+  r.get("/:id/people", authRequired(), requireRole("COMPANY"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
     const items = await getShiftPeople(shift.id);
     res.json({ ok: true, items });
-  });
+  }));
 
   // COMPANY: replace/merge shift people
-  r.put("/:id/people", authRequired(), requireRole("COMPANY"), async (req, res) => {
+  r.put("/:id/people", authRequired(), requireRole("COMPANY"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const mode = qModeSchema.parse(req.query.mode);
+    const mode = validateWithZod(qModeSchema, req.query.mode);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
     const company = await prisma.company.findUnique({ where: { id: req.user.companyId }, select: { kind: true } });
@@ -322,20 +330,25 @@ export function attachShiftPeopleRoutes(router, _io) {
       await prisma.shiftPersonel.createMany({ data: toCreate, skipDuplicates: true });
     }
 
-    audit(req, "SHIFT_PEOPLE_UPSERT", {
-      shiftId: shift.id,
-      mode,
-      count: items.length,
-      linked: toCreate.length,
+    clearShiftRoutePreviewCache(shift.id);
+    await audit(req, {
+      action: "SHIFT_PEOPLE_UPSERT",
+      entity: "Shift",
+      entityId: shift.id,
+      meta: {
+        mode,
+        count: items.length,
+        linked: toCreate.length,
+      },
     });
 
     res.json({ ok: true, shiftId: shift.id, mode, inputCount: items.length, linkedCount: toCreate.length });
-  });
+  }));
 
   // COMPANY: import people + write import trail
-  r.post("/:id/people/import", authRequired(), requireRole("COMPANY"), async (req, res) => {
+  r.post("/:id/people/import", authRequired(), requireRole("COMPANY"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const mode = qModeSchema.parse(req.query.mode);
+    const mode = validateWithZod(qModeSchema, req.query.mode);
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
 
     const company = await prisma.company.findUnique({ where: { id: req.user.companyId }, select: { kind: true } });
@@ -347,18 +360,15 @@ export function attachShiftPeopleRoutes(router, _io) {
       items: z.array(importRawItemSchema).max(2000).optional(),
     });
 
-    const body = bodySchema.parse(req.body ?? {});
+    const body = validateWithZod(bodySchema, req.body ?? {});
     const rawRows = body.rows ?? body.items ?? [];
     if (rawRows.length === 0) {
-      return res.status(400).json({ ok: false, error: "rows/items required", code: "ROWS_REQUIRED" });
+      throw httpError(400, "ROWS_REQUIRED", "rows/items required");
     }
 
     const { accepted, warnings } = normalizeImportRows(rawRows);
     if (accepted.length === 0) {
-      return res.status(400).json({
-        ok: false,
-        error: "İçe aktarılacak geçerli satır bulunamadı.",
-        code: "NO_VALID_ROWS",
+      throw httpError(400, "NO_VALID_ROWS", "İçe aktarılacak geçerli satır bulunamadı.", {
         summary: {
           totalRows: rawRows.length,
           acceptedRows: 0,
@@ -463,104 +473,110 @@ export function attachShiftPeopleRoutes(router, _io) {
       failedRows: Math.max(0, rawRows.length - accepted.length),
     };
 
-    audit(req, "SHIFT_PEOPLE_IMPORT", {
-      shiftId: shift.id,
-      importId: imp.id,
-      mode,
-      ...summary,
-      warningCount: warnings.length,
+    clearShiftRoutePreviewCache(shift.id);
+    await audit(req, {
+      action: "SHIFT_PEOPLE_IMPORT",
+      entity: "Shift",
+      entityId: shift.id,
+      meta: {
+        importId: imp.id,
+        mode,
+        ...summary,
+        warningCount: warnings.length,
+      },
     });
 
     res.json({ ok: true, shiftId: shift.id, importId: imp.id, mode, summary, warnings });
-  });
+  }));
 
   // COMPANY: generate stops from shift people
-  r.post("/:id/stops/generate", authRequired(), requireRole("COMPANY"), async (req, res) => {
-    try {
-
+  r.post("/:id/stops/generate", authRequired(), requireRole("COMPANY"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const mode = qModeSchema.parse(req.query.mode);
-    const maxWalkM = qMaxWalkSchema.parse(req.query.maxWalkM);
+    const mode = validateWithZod(qModeSchema, req.query.mode);
+    const maxWalkM = validateWithZod(qMaxWalkSchema, req.query.maxWalkM);
 
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
-
-    // ✅ Hub auto-fill: shift.hub yoksa Company Hub'dan kopyala (rota önizleme başlangıç/bitiş ankrajı)
-    let hubApplied = false;
-    if (shift.hubLat == null || shift.hubLng == null) {
-      const c = await prisma.company.findUnique({
-        where: { id: shift.companyId },
-        select: { hubLat: true, hubLng: true },
-      });
-      if (c?.hubLat != null && c?.hubLng != null) {
-        await prisma.shift.update({
-          where: { id: shift.id },
-          data: { hubLat: c.hubLat, hubLng: c.hubLng },
-        });
-        hubApplied = true;
-      }
-    }
+    const companyHub = (shift.hubLat == null || shift.hubLng == null)
+      ? await prisma.company.findUnique({ where: { id: shift.companyId }, select: { hubLat: true, hubLng: true } })
+      : null;
 
     const people = await getShiftPeople(shift.id);
     const { ok: points, skipped } = pickEligiblePoints(people);
 
     if (points.length === 0) {
-      return res.status(400).json({
-        ok: false,
-        error: "No eligible personel points (need geoStatus OK or manual override + lat/lng)",
+      throw httpError(400, "NO_ELIGIBLE_POINTS", "No eligible personel points (need geoStatus OK or manual override + lat/lng)", {
         skippedCount: skipped.length,
-        hubApplied,
+        hubApplied: false,
       });
-    }
-
-    if (mode === "REPLACE") {
-      // Remove old route artifacts
-      await prisma.stopAssignment.deleteMany({ where: { shiftId: shift.id } });
-      await prisma.shiftProgress.deleteMany({ where: { shiftId: shift.id } });
-      await prisma.stop.deleteMany({ where: { shiftId: shift.id } });
     }
 
     const clusters = clusterStops(points, maxWalkM);
-
     const namePrefix = String(shift?.direction || "INBOUND").toUpperCase() === "OUTBOUND" ? "Dropoff" : "Pickup";
 
-    // Create stops in order
-    const createdStops = [];
-    for (let i = 0; i < clusters.length; i++) {
-      const c = clusters[i];
-      const stop = await prisma.stop.create({
-        data: {
+    let hubApplied = false;
+    let createdStops = [];
+    let assignmentCount = 0;
+
+    await prisma.$transaction(async (tx) => {
+      if ((shift.hubLat == null || shift.hubLng == null) && companyHub?.hubLat != null && companyHub?.hubLng != null) {
+        await tx.shift.update({
+          where: { id: shift.id },
+          data: { hubLat: companyHub.hubLat, hubLng: companyHub.hubLng },
+        });
+        hubApplied = true;
+      }
+
+      if (mode === "REPLACE") {
+        await tx.stopAssignment.deleteMany({ where: { shiftId: shift.id } });
+        await tx.shiftProgress.deleteMany({ where: { shiftId: shift.id } });
+        await tx.stop.deleteMany({ where: { shiftId: shift.id } });
+      }
+
+      const nextStops = [];
+      for (let i = 0; i < clusters.length; i++) {
+        const c = clusters[i];
+        const stop = await tx.stop.create({
+          data: {
+            shiftId: shift.id,
+            name: `${namePrefix} ${i + 1}`,
+            order: i + 1,
+            lat: c.center.lat,
+            lng: c.center.lng,
+            type: "COMMON",
+            state: "PENDING",
+          },
+        });
+        nextStops.push(stop);
+
+        const assignments = c.members.map((m) => ({
           shiftId: shift.id,
-          name: `${namePrefix} ${i + 1}`,
-          order: i + 1,
-          lat: c.center.lat,
-          lng: c.center.lng,
-          type: "COMMON",
-          state: "PENDING",
-        },
-      });
-      createdStops.push(stop);
+          stopId: stop.id,
+          personelId: m.personelId,
+          walkM: c.walkMByPersonelId.get(m.personelId) ?? 0,
+        }));
 
-      // Assign members to the stop
-      const assignments = c.members.map((m) => ({
-        shiftId: shift.id,
-        stopId: stop.id,
-        personelId: m.personelId,
-        walkM: c.walkMByPersonelId.get(m.personelId) ?? 0,
-      }));
+        if (assignments.length > 0) {
+          await tx.stopAssignment.createMany({ data: assignments, skipDuplicates: true });
+        }
+      }
 
-      await prisma.stopAssignment.createMany({ data: assignments, skipDuplicates: true });
-    }
+      createdStops = nextStops;
+      assignmentCount = await tx.stopAssignment.count({ where: { shiftId: shift.id } });
+    });
 
-    const assignmentCount = await prisma.stopAssignment.count({ where: { shiftId: shift.id } });
-
-    audit(req, "SHIFT_STOPS_GENERATE", {
-      shiftId: shift.id,
-      mode,
-      maxWalkM,
-      stops: createdStops.length,
-      assignments: assignmentCount,
-      skipped: skipped.length,
-      hubApplied,
+    await rebuildShiftRouteStateBestEffort(shift.id);
+    await audit(req, {
+      action: "SHIFT_STOPS_GENERATE",
+      entity: "Shift",
+      entityId: shift.id,
+      meta: {
+        mode,
+        maxWalkM,
+        stops: createdStops.length,
+        assignments: assignmentCount,
+        skipped: skipped.length,
+        hubApplied,
+      },
     });
 
     res.json({
@@ -572,18 +588,10 @@ export function attachShiftPeopleRoutes(router, _io) {
       skippedCount: skipped.length,
       hubApplied,
     });
-  
+  }));
 
-} catch (e) {
-  // Never crash the server on bad query params (e.g., maxWalkM=)
-  const msg = String(e?.message ?? e);
-  return res.status(400).json({ ok: false, error: msg });
-}
-});
-
-  
   // COMPANY + ROOM: list stops (used by Shift Tools "Shift’ten Durakları Çek")
-  r.get("/:id/stops", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+  r.get("/:id/stops", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
 
     await getShiftAndCheckScopeOrThrow(id, req.user, { include: { room: true, agreement: true }, allowRoomOfferScope: true });
@@ -609,16 +617,11 @@ export function attachShiftPeopleRoutes(router, _io) {
     }));
 
     return res.json({ ok: true, stops: items });
-  });
+  }));
 
   // COMPANY + ROOM: route preview (M19: summary + directional hub path + learned overlay)
-  r.get("/:id/route-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+  r.get("/:id/route-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const payload = await rememberResponse(
-      `shift-route-preview:${id}`,
-      async () => {
-
-    // include room + agreement for hub fallback, progress for time window hints
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user, {
       include: {
         room: true,
@@ -636,172 +639,126 @@ export function attachShiftPeopleRoutes(router, _io) {
       allowRoomOfferScope: true,
     });
 
-    const people = await getShiftPeople(shift.id);
-    const stops = await prisma.stop.findMany({
-      where: { shiftId: shift.id },
-      orderBy: { order: "asc" },
-    });
-    const assignments = await prisma.stopAssignment.findMany({
-      where: { shiftId: shift.id },
-      select: { stopId: true, personelId: true, walkM: true },
-    });
+    const payload = await rememberResponse(
+      `shift-route-preview:${id}`,
+      async () => {
+        const people = await getShiftPeople(shift.id);
+        const stops = await prisma.stop.findMany({
+          where: { shiftId: shift.id },
+          orderBy: { order: "asc" },
+        });
+        const assignments = await prisma.stopAssignment.findMany({
+          where: { shiftId: shift.id },
+          select: { stopId: true, personelId: true, walkM: true },
+        });
 
-    const { skipped } = pickEligiblePoints(people);
+        const { skipped } = pickEligiblePoints(people);
 
-    // stopId -> kişi sayısı
-    const countByStopId = new Map();
-    for (const a of assignments) {
-      countByStopId.set(a.stopId, (countByStopId.get(a.stopId) || 0) + 1);
-    }
+        const countByStopId = new Map();
+        for (const a of assignments) countByStopId.set(a.stopId, (countByStopId.get(a.stopId) || 0) + 1);
 
-    const orgPlanStops = Array.isArray(shift.organizationPlan?.stops) ? shift.organizationPlan.stops : [];
-    const orgPlanStopsByOrder = new Map(orgPlanStops.map((s, i) => [Number(s.order || i + 1), s]));
+        const orgPlanStops = Array.isArray(shift.organizationPlan?.stops) ? shift.organizationPlan.stops : [];
+        const orgPlanStopsByOrder = new Map(orgPlanStops.map((s, i) => [Number(s.order || i + 1), s]));
 
-    function fallbackPassengerCountForStop(stop, index) {
-      const byOrder = orgPlanStopsByOrder.get(Number(stop.order || index + 1));
-      if (byOrder?.passengerCount != null) return Number(byOrder.passengerCount || 0);
+        function fallbackPassengerCountForStop(stop, index) {
+          const byOrder = orgPlanStopsByOrder.get(Number(stop.order || index + 1));
+          if (byOrder?.passengerCount != null) return Number(byOrder.passengerCount || 0);
+          const byIndex = orgPlanStops[index];
+          if (byIndex?.passengerCount != null) return Number(byIndex.passengerCount || 0);
+          const byMatch = orgPlanStops.find((x) =>
+            String(x.name || '').trim() === String(stop.name || '').trim() &&
+            Math.abs(Number(x.lat) - Number(stop.lat)) < 1e-6 &&
+            Math.abs(Number(x.lng) - Number(stop.lng)) < 1e-6
+          );
+          return Number(byMatch?.passengerCount || 0);
+        }
 
-      const byIndex = orgPlanStops[index];
-      if (byIndex?.passengerCount != null) return Number(byIndex.passengerCount || 0);
+        const stopsWithCounts = stops.map((s, index) => {
+          const assignmentCount = countByStopId.get(s.id) || 0;
+          const fallbackPassengerCount = fallbackPassengerCountForStop(s, index);
+          return {
+            ...s,
+            assignmentCount,
+            passengerCount: fallbackPassengerCount,
+            previewCount: assignmentCount > 0 ? assignmentCount : fallbackPassengerCount,
+          };
+        });
 
-      const byMatch = orgPlanStops.find((x) =>
-        String(x.name || '').trim() === String(stop.name || '').trim() &&
-        Math.abs(Number(x.lat) - Number(stop.lat)) < 1e-6 &&
-        Math.abs(Number(x.lng) - Number(stop.lng)) < 1e-6
-      );
-      return Number(byMatch?.passengerCount || 0);
-    }
+        const hubLat = typeof shift.hubLat === "number" ? shift.hubLat : typeof shift.agreement?.hubLat === "number" ? shift.agreement.hubLat : typeof shift.room?.hubLat === "number" ? shift.room.hubLat : null;
+        const hubLng = typeof shift.hubLng === "number" ? shift.hubLng : typeof shift.agreement?.hubLng === "number" ? shift.agreement.hubLng : typeof shift.room?.hubLng === "number" ? shift.room.hubLng : null;
+        const hub = typeof hubLat === "number" && typeof hubLng === "number" ? { lat: hubLat, lng: hubLng } : null;
+        const direction = String(shift.direction || shift.agreement?.direction || "INBOUND").toUpperCase();
+        const pattern = String(shift.pattern || shift.agreement?.pattern || "ONE_WAY").toUpperCase();
 
-    // stops’a assignmentCount + organization pax fallback ekle
-    const stopsWithCounts = stops.map((s, index) => {
-      const assignmentCount = countByStopId.get(s.id) || 0;
-      const fallbackPassengerCount = fallbackPassengerCountForStop(s, index);
-      return {
-        ...s,
-        assignmentCount,
-        passengerCount: fallbackPassengerCount,
-        previewCount: assignmentCount > 0 ? assignmentCount : fallbackPassengerCount,
-      };
-    });
+        const stopPoints = stopsWithCounts.filter((s) => typeof s.lat === "number" && typeof s.lng === "number").map((s) => ({ lat: s.lat, lng: s.lng }));
 
-    // ✅ M19: hub resolution (shift -> agreement -> room)
-    const hubLat =
-      typeof shift.hubLat === "number"
-        ? shift.hubLat
-        : typeof shift.agreement?.hubLat === "number"
-          ? shift.agreement.hubLat
-          : typeof shift.room?.hubLat === "number"
-            ? shift.room.hubLat
-            : null;
+        let estPoints = [];
+        let startLabel = "";
+        let endLabel = "";
+        let warning = null;
 
-    const hubLng =
-      typeof shift.hubLng === "number"
-        ? shift.hubLng
-        : typeof shift.agreement?.hubLng === "number"
-          ? shift.agreement.hubLng
-          : typeof shift.room?.hubLng === "number"
-            ? shift.room.hubLng
-            : null;
+        if (!hub) {
+          warning = "hubMissing";
+          estPoints = stopPoints.slice();
+          startLabel = stopPoints.length ? "FIRST_STOP" : "";
+          endLabel = stopPoints.length ? "LAST_STOP" : "";
+        } else if (pattern === "LOOP") {
+          estPoints = [hub, ...stopPoints, hub];
+          startLabel = "HUB";
+          endLabel = "HUB";
+        } else if (direction === "OUTBOUND") {
+          estPoints = [hub, ...stopPoints];
+          startLabel = "HUB";
+          endLabel = stopPoints.length ? "LAST_STOP" : "HUB";
+        } else {
+          estPoints = [...stopPoints, hub];
+          startLabel = stopPoints.length ? "FIRST_STOP" : "HUB";
+          endLabel = "HUB";
+        }
 
-    const hub = typeof hubLat === "number" && typeof hubLng === "number" ? { lat: hubLat, lng: hubLng } : null;
+        const distanceKmEstimated = Number(sumDistanceKm(estPoints).toFixed(2));
+        const durationMinEstimated = Math.round(Number(etaMinutes(distanceKmEstimated, 30)));
 
-    const direction = String(shift.direction || shift.agreement?.direction || "INBOUND").toUpperCase();
-    const pattern = String(shift.pattern || shift.agreement?.pattern || "ONE_WAY").toUpperCase();
+        const routeKey = computeRouteKey({ direction, pattern, hub, stops: stopPoints });
+        const learned = await prisma.routeLearned.findUnique({ where: { routeKey } });
+        const learnedPoints = learned && Number(learned.sampleCount || 0) >= 3 ? parsePolyline(learned.polylineCanonical) : null;
+        const snapshotHash = String(shift.routeSnapshotInputHash || "");
+        const snapshotPoints = parsePolyline(shift.routeSnapshotPolyline);
+        const snapshotFresh = Boolean(snapshotHash && snapshotHash === routeKey && Array.isArray(snapshotPoints) && snapshotPoints.length >= 2);
 
-    const stopPoints = stopsWithCounts
-      .filter((s) => typeof s.lat === "number" && typeof s.lng === "number")
-      .map((s) => ({ lat: s.lat, lng: s.lng }));
+        const source = snapshotFresh ? "SNAPSHOT" : learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
+        const pathPoints = source === "SNAPSHOT" ? snapshotPoints : source === "LEARNED" ? learnedPoints : estPoints;
 
-    // ✅ M19: build service path points (driver home/depot is out of scope)
-    let estPoints = [];
-    let startLabel = "";
-    let endLabel = "";
-    let warning = null;
+        const totalPassengerCountRaw = stopsWithCounts.reduce((sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0), 0);
+        const requiredPaxFallback = Math.max(0, Number(shift.requiredPaxOverride || 0));
+        const totalPassengerCount = totalPassengerCountRaw > 0 ? totalPassengerCountRaw : requiredPaxFallback;
 
-    if (!hub) {
-      warning = "hubMissing";
-      estPoints = stopPoints.slice();
-      startLabel = stopPoints.length ? "FIRST_STOP" : "";
-      endLabel = stopPoints.length ? "LAST_STOP" : "";
-    } else if (pattern === "LOOP") {
-      estPoints = [hub, ...stopPoints, hub];
-      startLabel = "HUB";
-      endLabel = "HUB";
-    } else if (direction === "OUTBOUND") {
-      estPoints = [hub, ...stopPoints];
-      startLabel = "HUB";
-      endLabel = stopPoints.length ? "LAST_STOP" : "HUB";
-    } else {
-      // INBOUND default
-      estPoints = [...stopPoints, hub];
-      startLabel = stopPoints.length ? "FIRST_STOP" : "HUB";
-      endLabel = "HUB";
-    }
+        const summary = {
+          stopCount: stopPoints.length,
+          totalPassengerCount,
+          direction,
+          pattern,
+          isLoop: pattern === "LOOP",
+          startLabel,
+          endLabel,
+          distanceKmEstimated,
+          durationMinEstimated,
+          warning,
+        };
 
-    // estimated km/süre (haversine)
-    const distanceKmEstimated = Number(sumDistanceKm(estPoints).toFixed(2));
-    const durationMinEstimated = Math.round(Number(etaMinutes(distanceKmEstimated, 30)));
+        if (learned) {
+          summary.distanceKmLearned = Number(Number(learned.distanceKmLearned || 0).toFixed(2));
+          summary.durationMinLearned = Number(learned.durationMinLearned || 0);
+          summary.learnedSampleCount = Number(learned.sampleCount || 0);
+        }
 
-    // learned overlay (if exists and stable)
-    const routeKey = computeRouteKey({ direction, pattern, hub, stops: stopPoints });
-    const learned = await prisma.routeLearned.findUnique({ where: { routeKey } });
+        if (snapshotFresh) {
+          summary.distanceKmSnapshot = Number(Number((Number(shift.routeSnapshotDistanceM || 0) / 1000)).toFixed(2));
+          summary.durationMinSnapshot = Math.round(Number(shift.routeSnapshotDurationSec || 0) / 60);
+          summary.snapshotValidatedAt = shift.routeSnapshotValidatedAt || null;
+        }
 
-    const learnedPoints =
-      learned && Number(learned.sampleCount || 0) >= 3
-        ? parsePolyline(learned.polylineCanonical)
-        : null;
-
-    const snapshotHash = String(shift.routeSnapshotInputHash || "");
-    const snapshotPoints = parsePolyline(shift.routeSnapshotPolyline);
-    const snapshotFresh = Boolean(
-      snapshotHash &&
-      snapshotHash === routeKey &&
-      Array.isArray(snapshotPoints) &&
-      snapshotPoints.length >= 2
-    );
-
-    // M81 PERF: preview is DB-first. Prefer stored snapshot, then learned route, then estimated path.
-    let source = snapshotFresh
-      ? "SNAPSHOT"
-      : learnedPoints && learnedPoints.length >= 2
-        ? "LEARNED"
-        : "ESTIMATED";
-    let pathPoints = source === "SNAPSHOT" ? snapshotPoints : source === "LEARNED" ? learnedPoints : estPoints;
-
-    const totalPassengerCountRaw = stopsWithCounts.reduce(
-      (sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0),
-      0
-    );
-    const requiredPaxFallback = Math.max(0, Number(shift.requiredPaxOverride || 0));
-    const totalPassengerCount = totalPassengerCountRaw > 0 ? totalPassengerCountRaw : requiredPaxFallback;
-
-    const summary = {
-      stopCount: stopPoints.length,
-      totalPassengerCount,
-      direction,
-      pattern,
-      isLoop: pattern === "LOOP",
-      startLabel,
-      endLabel,
-      distanceKmEstimated,
-      durationMinEstimated,
-      warning,
-    };
-
-    if (learned) {
-      summary.distanceKmLearned = Number(Number(learned.distanceKmLearned || 0).toFixed(2));
-      summary.durationMinLearned = Number(learned.durationMinLearned || 0);
-      summary.learnedSampleCount = Number(learned.sampleCount || 0);
-    }
-
-    if (snapshotFresh) {
-      summary.distanceKmSnapshot = Number(Number((Number(shift.routeSnapshotDistanceM || 0) / 1000)).toFixed(2));
-      summary.durationMinSnapshot = Math.round(Number(shift.routeSnapshotDurationSec || 0) / 60);
-      summary.snapshotValidatedAt = shift.routeSnapshotValidatedAt || null;
-    }
-
-    summary.previewPolicy =
-      source === "SNAPSHOT" ? "DB_SNAPSHOT" : source === "LEARNED" ? "DB_LEARNED" : "DB_ESTIMATED";
+        summary.previewPolicy = source === "SNAPSHOT" ? "DB_SNAPSHOT" : source === "LEARNED" ? "DB_LEARNED" : "DB_ESTIMATED";
 
         return {
           ok: true,
@@ -839,7 +796,7 @@ export function attachShiftPeopleRoutes(router, _io) {
     );
 
     return res.json(payload);
-  });
+  }));
 
   router.use(r);
 }

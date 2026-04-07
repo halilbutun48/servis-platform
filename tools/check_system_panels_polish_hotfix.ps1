@@ -1,6 +1,7 @@
 param([string]$RepoRoot = ".")
 $ErrorActionPreference = "Stop"
-Write-Host "=== SYSTEM PANELS POLISH HOTFIX CHECK ==="
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host "=== SYSTEM PANELS POLISH HOTFIX CHECK ==="
 
 $checks = @(
   @{ Path = "web/src/panels/superadmin/SsotAlignmentPanel.jsx"; Needle = "<h2 style={{ margin: 0 }}>Sistem Standartları</h2>"; Msg = "ssot title missing" },

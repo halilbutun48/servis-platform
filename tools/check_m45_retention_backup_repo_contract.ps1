@@ -1,20 +1,13 @@
 param([string]$RepoRoot = (Get-Location).Path)
 $ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function Info($m){ Write-Host "INFO $m" }
 function Ok($m){ Write-Host "OK $m" }
 function MustExist($rel){ $p = Join-Path $RepoRoot $rel; if (!(Test-Path -LiteralPath $p)) { throw "FAIL $rel missing" }; Ok "$rel exists" }
-function MustContain($rel, $needle, $label){
-  $p = Join-Path $RepoRoot $rel
-  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
-  if (-not $txt.Contains($needle)) { throw "FAIL $label" }
-  Ok $label
-}
-function WarnContain($rel, $needle, $label){
-  $p = Join-Path $RepoRoot $rel
-  $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8
-  if (-not $txt.Contains($needle)) { Info "WARN $label"; return }
-  Ok $label
-}
+function MustContain($rel, $needle, $label){ $p = Join-Path $RepoRoot $rel; $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8; if (-not (Test-RepoContractContainsAny -Text $txt -Needles @([string]$needle))) { throw "FAIL $label" }; Ok $label }
+function WarnContain($rel, $needle, $label){ $p = Join-Path $RepoRoot $rel; $txt = Get-Content -LiteralPath $p -Raw -Encoding UTF8; if (-not (Test-RepoContractContainsAny -Text $txt -Needles @([string]$needle))) { Info "WARN $label"; return }; Ok $label }
 
 Info 'Checking backend retention/backup files'
 @(

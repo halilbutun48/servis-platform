@@ -1,9 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-export default function LoginScreen({ onLogin, initialError = '' }) {
-  const [identifier, setIdentifier] = useState('SRC-000001');
-  const [password, setPassword] = useState('123456');
+function normalizeLoginError(error, fallback = 'Giris basarisiz.') {
+  const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
+  const cooldownSec = Number(error?.payload?.cooldownSec || 0) || 0;
+  if (error?.userMessage) return error.userMessage;
+  if (code === 'INVALID_CREDENTIALS') return 'Surucu kodu veya PIN hatali.';
+  if (code === 'PIN_LOCKED') {
+    return cooldownSec > 0
+      ? `Cok fazla hatali PIN denemesi oldu. ${cooldownSec} saniye sonra tekrar deneyin.`
+      : 'Cok fazla hatali PIN denemesi oldu. Bir sure sonra tekrar deneyin.';
+  }
+  if (code === 'DEVICE_MISMATCH') return 'Bu cihaz bu surucu hesabi ile eslesmiyor. Operasyon ile cihaz eslesmesini kontrol edin.';
+  if (code === 'DEVICE_ID_REQUIRED') return 'Bu hesap icin cihaz dogrulamasi gerekli.';
+  if (code === 'NETWORK_TIMEOUT') return 'Sunucu gec cevap verdi. Tekrar deneyin.';
+  if (code === 'NETWORK_ERROR') return 'Baglanti kurulamadı. Interneti kontrol edin.';
+  return String(error?.payload?.message || error?.payload?.error || error?.message || error || fallback);
+}
+
+export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '', deviceId = '', releaseInfo = null }) {
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(initialError);
   const [busy, setBusy] = useState(false);
 
@@ -11,7 +28,11 @@ export default function LoginScreen({ onLogin, initialError = '' }) {
     setError(initialError || '');
   }, [initialError]);
 
-  const helper = useMemo(() => 'Ana akis: Surucu Kodu + PIN. Demo kontrol icin driver@demo.com / demo123 da calisabilir.', []);
+  const helper = useMemo(() => {
+    if (releaseInfo?.acceptanceBlocking) return releaseInfo.acceptanceSummary || 'Release / env kabul kontrolu blokluyor.';
+    if (!apiBaseUrl) return 'Uygulama sunucu adresi ayarli degil. Teknik ekip EXPO_PUBLIC_API_BASE_URL degerini kontrol etmelidir.';
+    return 'Gercek akis: Surucu kodunuzu ve PIN bilginizi girin. Cihaz eslesme hatasinda operasyon ile iletisime gecin.';
+  }, [apiBaseUrl, releaseInfo]);
 
   async function handleSubmit() {
     setBusy(true);
@@ -19,7 +40,7 @@ export default function LoginScreen({ onLogin, initialError = '' }) {
     try {
       await onLogin({ identifier: identifier.trim(), password: password.trim() });
     } catch (err) {
-      setError(String(err?.payload?.message || err?.payload?.error || err?.message || err || 'Giris basarisiz.'));
+      setError(normalizeLoginError(err));
     } finally {
       setBusy(false);
     }
@@ -29,27 +50,51 @@ export default function LoginScreen({ onLogin, initialError = '' }) {
     <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
         <Text style={styles.title}>Surucu Mobil</Text>
-        <Text style={styles.subtitle}>Telefondan kolay giris, bugun gorev, rota ozeti ve GPS hazirligi.</Text>
+        <Text style={styles.subtitle}>Bugunun gorevini ac, rotayi takip et ve surucunun telefon GPS'i hazirligini kontrol et.</Text>
 
         <View style={styles.field}>
           <Text style={styles.label}>Surucu Kodu veya e-posta</Text>
-          <TextInput value={identifier} onChangeText={setIdentifier} autoCapitalize="none" style={styles.input} placeholder="SRC-000001" />
+          <TextInput
+            value={identifier}
+            onChangeText={setIdentifier}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+            placeholder="SRC-000001"
+          />
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>PIN veya sifre</Text>
-          <TextInput value={password} onChangeText={setPassword} secureTextEntry style={styles.input} placeholder="123456" />
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.input}
+            placeholder="PIN girin"
+          />
         </View>
 
-        <Pressable style={[styles.button, busy && styles.buttonDisabled]} onPress={handleSubmit} disabled={busy}>
+        <Pressable style={[styles.button, busy && styles.buttonDisabled]} onPress={handleSubmit} disabled={busy || !apiBaseUrl || !!releaseInfo?.acceptanceBlocking}>
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Girisi ac</Text>}
         </Pressable>
 
         {!!error && <Text style={styles.error}>{error}</Text>}
 
         <View style={styles.noteBox}>
-          <Text style={styles.noteTitle}>Not</Text>
+          <Text style={styles.noteTitle}>Baglanti ve cihaz</Text>
           <Text style={styles.noteText}>{helper}</Text>
+          <Text style={styles.meta}>API: {apiBaseUrl || 'AYARSIZ'}</Text>
+          <Text style={styles.meta}>Cihaz: {deviceId || '-'}</Text>
+        </View>
+
+        <View style={[styles.noteBox, releaseInfo?.acceptanceBlocking ? styles.acceptanceBoxDanger : null]}>
+          <Text style={[styles.noteTitle, releaseInfo?.acceptanceBlocking ? styles.acceptanceTitleDanger : null]}>Release / env kabul kontrolu</Text>
+          <Text style={[styles.noteText, releaseInfo?.acceptanceBlocking ? styles.acceptanceTextDanger : null]}>{releaseInfo?.acceptanceStatusText || 'READY'}</Text>
+          <Text style={[styles.noteText, releaseInfo?.acceptanceBlocking ? styles.acceptanceTextDanger : null]}>{releaseInfo?.acceptanceSummary || 'Release / env kabul kontrolu hazir.'}</Text>
+          <Text style={styles.meta}>Stage: {releaseInfo?.envStage || '-'}</Text>
+          <Text style={styles.meta}>Host: {releaseInfo?.apiHost || '-'}</Text>
+          <Text style={styles.meta}>Timeout: {releaseInfo?.timeoutMs != null ? `${releaseInfo.timeoutMs} ms` : '-'}</Text>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -133,5 +178,19 @@ const styles = StyleSheet.create({
   noteText: {
     color: '#1e3a8a',
     lineHeight: 20,
+  },
+  meta: {
+    color: '#334155',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  acceptanceBoxDanger: {
+    backgroundColor: '#fef2f2',
+  },
+  acceptanceTitleDanger: {
+    color: '#b91c1c',
+  },
+  acceptanceTextDanger: {
+    color: '#991b1b',
   },
 });

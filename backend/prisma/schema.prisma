@@ -214,6 +214,8 @@ model Company {
   parentInvites     ParentInvite[]
   invites           Invite[]
   organizationPlans OrganizationPlan[]
+  paymentAccounts   PaymentAccount[]
+  commercialSources CommercialSource[]
 
   @@index([regionId, kind])
   @@index([kind])
@@ -307,6 +309,9 @@ model Room {
 
   // ✅ M24: offers inbox (Room ↔ ShiftOffer)
   shiftOffers ShiftOffer[] @relation("RoomShiftOffers")
+  commissionRules CommissionRule[]
+  paymentAccounts PaymentAccount[]
+  commercialSources CommercialSource[]
 
   @@index([regionId])
   @@index([district])
@@ -558,6 +563,7 @@ model Shift {
   penalties          DriverPenalty[]
   checkinEvents      CheckinEvent[]
   passengerLiveLinks PassengerLiveLink[]
+  commercialSourcesRoot CommercialSource[] @relation("CommercialSourceShiftRoot")
 
   @@unique([agreementId, startAt])
   @@index([companyId])
@@ -695,6 +701,7 @@ model Agreement {
 
   // ✅ M18: agreement -> generated shifts
   shifts Shift[]
+  commercialSources CommercialSource[]
 
   @@index([companyId])
   @@index([roomId])
@@ -702,6 +709,168 @@ model Agreement {
   @@index([driverId])
   @@index([status])
   @@index([startDate, endDate])
+}
+
+
+enum PaymentMode {
+  OFF
+  OPTIONAL
+  REQUIRED
+}
+
+enum CommercialSourceType {
+  AGREEMENT
+  SHIFT_SERIES
+}
+
+enum CommissionScopeType {
+  GLOBAL
+  ROOM
+}
+
+enum SettlementPlanStatus {
+  DORMANT
+  READY
+  ACTIVE
+  DISABLED
+}
+
+enum SettlementEntryKind {
+  COMPANY_CHARGE
+  PLATFORM_COMMISSION
+  PROVIDER_PAYOUT
+}
+
+enum SettlementEntryStatus {
+  DORMANT
+  PLANNED
+  READY
+  EXECUTED
+  CANCELLED
+}
+
+enum PaymentAccountOwnerType {
+  PLATFORM
+  COMPANY
+  ROOM
+}
+
+enum PaymentAccountStatus {
+  INACTIVE
+  ACTIVE
+  VERIFIED
+  ERROR
+}
+
+model CommissionRule {
+  id            Int                 @id @default(autoincrement())
+  scopeType     CommissionScopeType @default(GLOBAL)
+  roomId        Int?
+  paymentMode   PaymentMode         @default(OFF)
+  commissionBps Int                 @default(0)
+  isActive      Boolean             @default(true)
+  note          String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  room Room? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([scopeType, isActive])
+  @@index([roomId, isActive])
+}
+
+model PaymentAccount {
+  id         Int                     @id @default(autoincrement())
+  ownerType  PaymentAccountOwnerType
+  companyId  Int?
+  roomId     Int?
+  providerKey String                 @default("DORMANT")
+  status     PaymentAccountStatus    @default(INACTIVE)
+  label      String?
+  maskedIban String?
+  accountRef String?
+  metaJson   Json?
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  room    Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([ownerType, status])
+  @@index([companyId])
+  @@index([roomId])
+}
+
+model CommercialSource {
+  id                    Int                  @id @default(autoincrement())
+  sourceType            CommercialSourceType
+  sourceKey             String               @unique
+  agreementId           Int?
+  shiftRootId           Int?
+  shiftGroupKey         String?
+  companyId             Int
+  roomId                Int?
+  paymentModeSnapshot   PaymentMode          @default(OFF)
+  commissionBpsSnapshot Int                  @default(0)
+  amountCompanySnapshot Int?
+  amountProviderSnapshot Int?
+  currencyCode          String               @default("TRY")
+  providerAdapterKey    String               @default("DORMANT")
+  settlementStatus      SettlementPlanStatus @default(DORMANT)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  agreement Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+  shiftRoot Shift?     @relation("CommercialSourceShiftRoot", fields: [shiftRootId], references: [id], onDelete: SetNull)
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  room      Room?      @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  settlementPlans SettlementPlan[]
+
+  @@index([sourceType, createdAt])
+  @@index([agreementId])
+  @@index([shiftRootId])
+  @@index([companyId, createdAt])
+  @@index([roomId, createdAt])
+}
+
+model SettlementPlan {
+  id                    Int                  @id @default(autoincrement())
+  commercialSourceId    Int
+  status                SettlementPlanStatus @default(DORMANT)
+  paymentModeSnapshot   PaymentMode          @default(OFF)
+  commissionBpsSnapshot Int                  @default(0)
+  providerAdapterKey    String               @default("DORMANT")
+  grossAmount           Int                  @default(0)
+  commissionAmount      Int                  @default(0)
+  providerNetAmount     Int                  @default(0)
+  currencyCode          String               @default("TRY")
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  commercialSource CommercialSource @relation(fields: [commercialSourceId], references: [id], onDelete: Cascade)
+  entries          SettlementEntry[]
+
+  @@index([commercialSourceId])
+  @@index([status, createdAt])
+}
+
+model SettlementEntry {
+  id               Int                   @id @default(autoincrement())
+  settlementPlanId Int
+  kind             SettlementEntryKind
+  status           SettlementEntryStatus @default(DORMANT)
+  amount           Int                   @default(0)
+  currencyCode     String                @default("TRY")
+  providerRef      String?
+  note             String?
+  dueAt            DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  settlementPlan SettlementPlan @relation(fields: [settlementPlanId], references: [id], onDelete: Cascade)
+
+  @@index([settlementPlanId, kind])
+  @@index([status, dueAt])
 }
 
 model Stop {

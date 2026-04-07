@@ -5,6 +5,32 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const read = (rel) => fs.readFileSync(path.join(repoRoot, rel), "utf8");
 const ok = (msg) => console.log(`OK ${msg}`);
 const fail = (msg) => { throw new Error(`FAIL ${msg}`); };
@@ -17,7 +43,7 @@ function includes(rel, needle, label) {
 
 function includesAny(rel, needles, label) {
   const txt = read(rel);
-  if (!needles.some((n) => txt.includes(n))) fail(label);
+  if (!needles.some((n) => includesText(txt, n))) fail(label);
   ok(label);
 }
 

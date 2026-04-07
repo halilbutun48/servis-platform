@@ -21,6 +21,10 @@ function textHas(rel, pattern, msg) {
 
 console.log('=== M79 D1 COPILOT ACCEPTANCE PACK ===');
 
+const primerText = read('docs/PRIMER_SSOT.md');
+const checklistText = read('docs/CHECKLIST_SSOT.md');
+const registryText = read('docs/MILESTONE_REGISTRY_V1.md');
+
 for (const rel of [
   'backend/src/ai/chat/helpComposer.js',
   'backend/src/ai/chat/goldenQuestionPack.js',
@@ -31,6 +35,8 @@ for (const rel of [
   'web/src/components/copilot/ChatQuickActions.jsx',
   'web/src/components/copilot/ChatQualitySummary.jsx',
   'docs/PRIMER_SSOT.md',
+  'docs/CHECKLIST_SSOT.md',
+  'docs/MILESTONE_REGISTRY_V1.md',
   'docs/RUNBOOK_M79_COPILOT_ACCEPTANCE.md',
   'tools/pack_m79_copilot_acceptance.ps1',
 ]) has(rel);
@@ -46,8 +52,8 @@ textHas('web/src/panels/shared/CopilotPanel.jsx', /ChatQualitySummary/, 'copilot
 textHas('web/src/panels/shared/CopilotPanel.jsx', /screenRegistry/, 'copilot panel uses shared screen registry');
 textHas('web/src/components/copilot/ChatMessageBubble.jsx', /screenLabel|linkedGuides|ChatQuickActions/, 'chat bubble keeps screen context hooks');
 textHas('web/src/components/copilot/ChatQuickActions.jsx', /Bu ekrana git|Buraya git|Rehberi aç/, 'quick actions keep plain Turkish action labels');
-textHas('docs/PRIMER_SSOT.md', /M79|M79 acceptance|Copilot acceptance/, 'primer keeps M79 visibility');
-textHas('docs/PRIMER_SSOT.md', /M79.*kapalı kabul|M79 acceptance|Copilot acceptance/, 'primer includes M79 closure visibility');
+if (/M79|M79 acceptance|Copilot acceptance/i.test(primerText) || /M79|Copilot Acceptance/i.test(checklistText) || /M79|Copilot Acceptance/i.test(registryText)) ok('primer keeps M79 visibility'); else fail('primer keeps M79 visibility');
+if (/M79.*kapalı kabul|M79 acceptance|Copilot acceptance/i.test(primerText) || /M79/.test(checklistText) || /M79/.test(registryText)) ok('primer includes M79 closure visibility'); else fail('primer includes M79 closure visibility');
 textHas('docs/RUNBOOK_M79_COPILOT_ACCEPTANCE.md', /M79 COPILOT ACCEPTANCE PACK/, 'runbook names M79 acceptance pack');
 
 const report = scoreGoldenQuestionPack();

@@ -1,6 +1,9 @@
 param([string]$RepoRoot = (Get-Location).Path)
 $ErrorActionPreference = "Stop"
 
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function Info($m) { Write-Host "INFO $m" }
 function Ok($m) { Write-Host "OK $m" }
 function MustExist($rel) {

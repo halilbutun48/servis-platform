@@ -1,6 +1,7 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = "Stop"
-Write-Host "=== MENU READINESS CLEANUP HOTFIX CHECK ==="
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host "=== MENU READINESS CLEANUP HOTFIX CHECK ==="
 Push-Location $RepoRoot
 try {
   $script = Join-Path $RepoRoot 'backend\scripts\menu_readiness_cleanup_check.mjs'

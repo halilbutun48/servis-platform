@@ -1,6 +1,7 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = "Stop"
-Write-Host "=== M36 USERNAME SOCKET HANGUP FIX CHECK ==="
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host "=== M36 USERNAME SOCKET HANGUP FIX CHECK ==="
 Push-Location $RepoRoot
 try {
   $admin = Get-Content (Join-Path $RepoRoot 'backend\src\routes\admin.js') -Raw

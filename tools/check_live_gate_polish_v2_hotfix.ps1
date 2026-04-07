@@ -4,7 +4,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Write-Host '=== LIVE GATE POLISH V2 HOTFIX CHECK ==='
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host '=== LIVE GATE POLISH V2 HOTFIX CHECK ==='
 
 $checks = @(
   @{ Path = 'backend/src/routes/observability.js'; Needle = '/recent-events'; Msg = 'observability recent-events route missing' },

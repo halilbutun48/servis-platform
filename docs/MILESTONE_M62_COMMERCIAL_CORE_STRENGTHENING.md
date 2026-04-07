@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M62 slug=commercial-core-strengthening -->
+
 # MILESTONE — M62 TICARI OMURGA GUCLENDIRME
 
 ## Hedef

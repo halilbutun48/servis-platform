@@ -7,6 +7,32 @@ function fail(msg){ console.error(`FAIL ${msg}`); process.exitCode = 1; }
 function assert(cond,msg){ if(cond) ok(msg); else fail(msg); }
 
 const repoRoot = process.cwd();
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const helpPath = path.join(repoRoot, 'backend/src/ai/chat/helpComposer.js');
 const panelPath = path.join(repoRoot, 'web/src/panels/shared/CopilotPanel.jsx');
 const bubblePath = path.join(repoRoot, 'web/src/components/copilot/ChatMessageBubble.jsx');
@@ -17,13 +43,13 @@ const help = fs.readFileSync(helpPath, 'utf8');
 const panel = fs.readFileSync(panelPath, 'utf8');
 const bubble = fs.readFileSync(bubblePath, 'utf8');
 const qa = fs.readFileSync(qaPath, 'utf8');
-assert(help.includes('function buildRoutePlan('), 'help composer builds route plan');
-assert(help.includes("kind: 'ROUTE_CHAIN'"), 'help composer adds route chain response section');
-assert(help.includes('routePlan,'), 'help composer returns route plan');
-assert(panel.includes('routePlan: payload?.routePlan || null'), 'copilot panel stores route plan');
-assert(bubble.includes('Hedef ekran:'), 'chat bubble renders route plan badge');
-assert(qa.includes('Hedef yol:'), 'quick actions render primary route hint');
-assert(qa.includes('Yol: {action.routeKey}'), 'quick actions render secondary route hint');
+assert(includesText(help, 'function buildRoutePlan('), 'help composer builds route plan');
+assert(includesText(help, "kind: 'ROUTE_CHAIN'"), 'help composer adds route chain response section');
+assert(includesText(help, 'routePlan,'), 'help composer returns route plan');
+assert(includesText(panel, 'routePlan: payload?.routePlan || null'), 'copilot panel stores route plan');
+assert(includesText(bubble, 'Hedef ekran:'), 'chat bubble renders route plan badge');
+assert(includesText(qa, 'Hedef yol:'), 'quick actions render primary route hint');
+assert(includesText(qa, 'Yol: {action.routeKey}'), 'quick actions render secondary route hint');
 
 const resp = buildChatHelpResponse({
   entityType: 'screen',

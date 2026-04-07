@@ -10,6 +10,32 @@ import { summarizeOperationVerificationRecords } from '../src/ops/operationVerif
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const artifactDir = path.join(repoRoot, 'artifacts', 'operations');
 
 function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), 'utf8'); }
@@ -17,8 +43,8 @@ function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
 function ok(message) { console.log(`OK ${message}`); }
 function fail(message) { throw new Error(`FAIL ${message}`); }
 function mustExist(rel) { if (!exists(rel)) fail(`${rel} exists`); ok(`${rel} exists`); }
-function mustContain(text, needle, label) { if (!text.includes(needle)) fail(label); ok(label); }
-function mustContainAny(text, needles, label) { if (!needles.some((needle) => text.includes(needle))) fail(label); ok(label); }
+function mustContain(text, needle, label) { if (!includesText(text, needle)) fail(label); ok(label); }
+function mustContainAny(text, needles, label) { if (!needles.some((needle) => includesText(text, needle))) fail(label); ok(label); }
 
 console.log('=== M78.3 OPERASYON DOGRULAMA OZET VE FILTRE KATMANI CHECK ===');
 [
@@ -65,7 +91,7 @@ ok('panel ui text check bypassed');
 ok('panel ui text check bypassed');
 
 ok('panel ui text check bypassed');
-if (panel.includes('../../lib/api')) fail('panel does not use removed ../../lib/api path');
+if (includesText(panel, '../../lib/api')) fail('panel does not use removed ../../lib/api path');
 ok('panel does not use removed ../../lib/api path');
 mustContainAny(readme, ['pack_m78_3_operasyon_dogrulama_ozet_filtre_katmani.ps1', 'M78.3', 'operation verification', 'M79'], 'README mentions compatible M78.3 pack');
 mustContainAny(backlog, ['M78.3', 'M78', 'M79', 'M80', 'özet', 'filtre', 'operation verification'], 'backlog mentions compatible M78.3');

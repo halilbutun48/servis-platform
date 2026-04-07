@@ -1,11 +1,13 @@
 param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
 . (Join-Path $PSScriptRoot "_repo_contract_state.ps1")
 function ReadText([string]$rel){ [IO.File]::ReadAllText((Join-Path $RepoRoot $rel), [System.Text.Encoding]::UTF8).Normalize() }
 function MustExist([string]$rel){ if (!(Test-Path (Join-Path $RepoRoot $rel))) { throw "FAIL missing $rel" }; Write-Host "OK $rel exists" }
-function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
-function WarnContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ($txt.Contains(([string]$n).Normalize())) { Write-Host "OK $label"; return } }; Write-Host "INFO WARN $label" }
-function MustContainAll([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if (-not $txt.Contains(([string]$n).Normalize())) { throw "FAIL $label" } }; Write-Host "OK $label" }
+function MustContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ((Test-RepoContractContainsAny -Text $txt -Needles @([string]$n))) { Write-Host "OK $label"; return } }; throw "FAIL $label" }
+function WarnContainAny([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if ((Test-RepoContractContainsAny -Text $txt -Needles @([string]$n))) { Write-Host "OK $label"; return } }; Write-Host "INFO WARN $label" }
+function MustContainAll([string]$txt,[string[]]$needles,[string]$label){ foreach ($n in $needles) { if (-not (Test-RepoContractContainsAny -Text $txt -Needles @([string]$n))) { throw "FAIL $label" } }; Write-Host "OK $label" }
 
 Write-Host "INFO Checking M58 files"
 @(

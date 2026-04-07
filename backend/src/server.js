@@ -75,6 +75,7 @@ import { edgeRequestContext, applyEdgeSecurityHeaders, edgeSecurityGuard, getEdg
 import { pickExport, assertRouteFactories } from "./bootstrap/routeFactories.js";
 import { mountCoreRoutes, mountIoRoutes } from "./bootstrap/routeMounts.js";
 import { createApiRateLimiters } from "./bootstrap/rateLimits.js";
+import { expressErrorHandler } from "./errors/http.js";
 
 import * as agreementsMod from "./routes/agreements.js";
 
@@ -325,6 +326,8 @@ mountIoRoutes(app, io, {
   organizationRouter,
   aiRouter,
 });
+
+app.use(expressErrorHandler);
 // Background monitors
 const stopMonitors = startMonitors(io);
 

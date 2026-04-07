@@ -2,11 +2,37 @@ import fs from 'fs';
 import path from 'path';
 
 const repoRoot = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve(process.cwd(), '..');
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const copilotPanelPath = path.join(repoRoot, 'web', 'src', 'panels', 'shared', 'CopilotPanel.jsx');
 const helpComposerPath = path.join(repoRoot, 'backend', 'src', 'ai', 'chat', 'helpComposer.js');
 
 function must(text, needle, label) {
-  if (!text.includes(needle)) {
+  if (!includesText(text, needle)) {
     console.error(`FAIL ${label}`);
     process.exit(1);
   }

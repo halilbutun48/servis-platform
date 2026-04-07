@@ -1,6 +1,7 @@
 param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = "Stop"
-Write-Host "=== USERNAME-FIRST LOGIN HOTFIX CHECK ==="
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Write-Host "=== USERNAME-FIRST LOGIN HOTFIX CHECK ==="
 Push-Location $RepoRoot
 try {
   node .\backend\scripts\username_first_login_hotfix_check.js

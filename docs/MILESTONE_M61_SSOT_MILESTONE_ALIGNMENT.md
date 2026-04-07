@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M61 slug=ssot-milestone-alignment -->
+
 # MILESTONE — M61 SSOT + MILESTONE HIZASI
 
 ## Hedef

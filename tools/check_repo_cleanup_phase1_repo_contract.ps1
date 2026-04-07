@@ -4,6 +4,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
+
 function MustExist([string]$Rel) {
   $p = Join-Path $RepoRoot $Rel
   if (!(Test-Path $p)) { throw "Missing required file: $Rel" }

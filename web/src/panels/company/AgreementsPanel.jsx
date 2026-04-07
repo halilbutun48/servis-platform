@@ -23,6 +23,7 @@ import { getCompanyAgreements, getCompanyRooms } from "../../utils/companyDataHu
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
+import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -843,7 +844,10 @@ export default function AgreementsPanel() {
           <tbody>
             {filteredRows.map(({ a, room }) => (
               <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
-                <td className="muted">#{a.id}</td>
+                <td className="muted">
+                  <div>#{a.id}</div>
+                  <CommercialReadonlySummary item={a.commercialBackbone} compact />
+                </td>
                 <td><StatusPill status={a.status} /><ExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
                 <td className="muted">{room ? `${room.name} (#${room.id})` : a.roomId ? `#${a.roomId}` : "-"}</td>
                 <td className="muted">

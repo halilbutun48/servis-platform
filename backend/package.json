@@ -23,7 +23,20 @@
     "m10check": "node scripts/m10check.js",
     "m11check": "node scripts/m11check.js",
     "m12check": "node scripts/m12check.js",
-    "m66check": "node scripts/m66check.js"
+    "m66check": "node scripts/m66check.js",
+    "m82_1check": "node scripts/m82_1_correctness_guard_check.js",
+    "m82_1accept": "node scripts/m82_1_acceptance_contract_check.js",
+    "m82_2check": "node scripts/m82_2_web_contract_cache_check.js",
+    "m82_9check": "node scripts/m82_9_dormant_payment_backbone_check.js",
+    "m82_10check": "node scripts/m82_10_super_admin_commercial_settings_check.js",
+    "m82_11check": "node scripts/m82_11_payment_readonly_surface_check.js",
+    "m83check": "node scripts/m83_field_prep_packet_check.js",
+    "m84check": "node scripts/m84_field_feedback_loop_check.js",
+    "m85check": "node scripts/m85_optional_payment_pilot_check.js",
+    "m86check": "node scripts/m86_required_payment_rollout_check.js",
+    "m87check": "node scripts/m87_payment_account_readiness_check.js",
+    "m88check": "node scripts/m88_settlement_operations_console_check.js",
+    "m89check": "node scripts/m89_settlement_reconciliation_desk_check.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

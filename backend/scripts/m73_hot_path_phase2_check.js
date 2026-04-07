@@ -6,6 +6,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function read(rel) {
   return fs.readFileSync(path.join(repoRoot, rel), "utf8");
 }
@@ -13,7 +39,7 @@ function ok(msg) { console.log(`OK ${msg}`); }
 function fail(msg) { throw new Error(`FAIL ${msg}`); }
 function expectAny(rel, needles, label) {
   const text = read(rel);
-  if (!needles.some((needle) => text.includes(needle))) fail(label);
+  if (!needles.some((needle) => includesText(text, needle))) fail(label);
   ok(label);
 }
 

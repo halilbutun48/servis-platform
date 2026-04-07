@@ -4,6 +4,32 @@ import path from "node:path";
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
+
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
 }
@@ -64,42 +90,42 @@ const serverText = read("backend/src/server.js");
 const rateLimitText = read("backend/src/bootstrap/rateLimits.js");
 
 info("checking summary-first and request hygiene signals");
-if (companyOverview.includes("workflow-summary")) ok("company workflow summary helper exists"); else fail("company workflow summary helper exists");
-if (companyOverview.includes("commercial-flow-summary")) ok("commercial flow summary helper exists"); else fail("commercial flow summary helper exists");
+if (includesText(companyOverview, "workflow-summary")) ok("company workflow summary helper exists"); else fail("company workflow summary helper exists");
+if (includesText(companyOverview, "commercial-flow-summary")) ok("commercial flow summary helper exists"); else fail("commercial flow summary helper exists");
 
 const workflowSummaryOk =
-  workflow.includes("/api/company/overview/workflow-summary") ||
-  ((workflow.includes("companyDataHub") || workflow.includes("getCompanyWorkflowSummary")) &&
-   companyHub.includes("/api/company/overview/workflow-summary"));
+  includesText(workflow, "/api/company/overview/workflow-summary") ||
+  ((includesText(workflow, "companyDataHub") || includesText(workflow, "getCompanyWorkflowSummary")) &&
+   includesText(companyHub, "/api/company/overview/workflow-summary"));
 if (workflowSummaryOk) ok("WorkflowPanel uses workflow summary endpoint"); else fail("WorkflowPanel uses workflow summary endpoint");
 
 warn("WorkflowPanel room directory moved behind guided open");
 
 const commercialSummaryOk =
-  commercial.includes("/api/company/overview/commercial-flow-summary") ||
-  ((commercial.includes("companyDataHub") || commercial.includes("getCompanyCommercialFlowSummary")) &&
-   companyHub.includes("/api/company/overview/commercial-flow-summary"));
+  includesText(commercial, "/api/company/overview/commercial-flow-summary") ||
+  ((includesText(commercial, "companyDataHub") || includesText(commercial, "getCompanyCommercialFlowSummary")) &&
+   includesText(companyHub, "/api/company/overview/commercial-flow-summary"));
 if (commercialSummaryOk) ok("CommercialFlowPanel uses commercial flow summary endpoint"); else fail("CommercialFlowPanel uses commercial flow summary endpoint");
 
 const mapVehiclesOk =
-  (mapPanel.includes("getCompanyVehicles(") &&
-   mapPanel.includes("take: 20") &&
-   (mapPanel.includes("onlyActive: true") || mapPanel.includes("onlyActive"))) ||
-  (companyHub.includes("getCompanyVehicles") &&
-   companyHub.includes("take = COMPANY_DATA_TAKE.vehicles") &&
-   companyHub.includes("onlyActive: onlyActive ? 1 : null") &&
-   companyHub.includes("vehicles: 20"));
+  (includesText(mapPanel, "getCompanyVehicles(") &&
+   includesText(mapPanel, "take: 20") &&
+   (includesText(mapPanel, "onlyActive: true") || includesText(mapPanel, "onlyActive"))) ||
+  (includesText(companyHub, "getCompanyVehicles") &&
+   includesText(companyHub, "take = COMPANY_DATA_TAKE.vehicles") &&
+   includesText(companyHub, "onlyActive: onlyActive ? 1 : null") &&
+   includesText(companyHub, "vehicles: 20"));
 if (mapVehiclesOk) ok("MapPanel vehicles load narrowed to active/take=20"); else fail("MapPanel vehicles load narrowed to active/take=20");
 
-if ((routePreview.includes("getShiftRoutePreview(") || routePreview.includes("shiftRoutePreview")) &&
-    (routePreview.includes("300000") || routePreview.includes("5 * 60 * 1000") || routePreview.includes("ttlMs: 30000"))) ok("RoutePreviewModal uses shared helper + longer cache"); else fail("RoutePreviewModal uses shared helper + longer cache");
+if ((includesText(routePreview, "getShiftRoutePreview(") || includesText(routePreview, "shiftRoutePreview")) &&
+    (includesText(routePreview, "300000") || includesText(routePreview, "5 * 60 * 1000") || includesText(routePreview, "ttlMs: 30000"))) ok("RoutePreviewModal uses shared helper + longer cache"); else fail("RoutePreviewModal uses shared helper + longer cache");
 
 const providerScoreOk =
-  providerScores.includes("/api/trust-quality/provider-scores?roomIds=") ||
-  providerScores.includes("provider-scores") ||
-  serviceEval.includes("providerScore") ||
-  trustQuality.includes('r.get("/provider-scores"') ||
-  trustQuality.includes("provider-scores");
+  includesText(providerScores, "/api/trust-quality/provider-scores?roomIds=") ||
+  includesText(providerScores, "provider-scores") ||
+  includesText(serviceEval, "providerScore") ||
+  includesText(trustQuality, 'r.get("/provider-scores"') ||
+  includesText(trustQuality, "provider-scores");
 if (providerScoreOk) ok("provider score backend batch endpoint is used"); else fail("provider score backend batch endpoint is used");
 
 info("panel entry load profile");
@@ -126,32 +152,32 @@ for (const [rel, txt] of [
 
 info("duplicate endpoint families across panels");
 info("heavy reads still visible in UI code");
-if (geoReview.includes("/api/company/personels?${qs.toString()}")) warn("web/src/panels/company/GeoReviewPanel.jsx:205 -> /api/company/personels?${qs.toString()}");
+if (includesText(geoReview, "/api/company/personels?${qs.toString()}")) warn("web/src/panels/company/GeoReviewPanel.jsx:205 -> /api/company/personels?${qs.toString()}");
 
 info("backend collection-read capability scan");
-if (agreements.includes("q") && agreements.includes("take")) ok("agreements endpoint has q + take"); else fail("agreements endpoint has q + take");
-if (offers.includes("q") && offers.includes("take")) ok("company offers endpoint has q + take"); else fail("company offers endpoint has q + take");
-if (companyPersonels.includes("q") && companyPersonels.includes("take")) ok("company personels endpoint has q + take"); else fail("company personels endpoint has q + take");
-if (vehicles.includes("q") && vehicles.includes("take")) ok("vehicles endpoint has q + take"); else fail("vehicles endpoint has q + take");
-if (trustQuality.includes("pendingOnly") && trustQuality.includes("take")) ok("trust-quality items endpoint supports pendingOnly + take"); else fail("trust-quality items endpoint supports pendingOnly + take");
-if (companyOverview.includes("workflow-summary") && companyOverview.includes("commercial-flow-summary")) ok("company overview summary endpoints exist"); else fail("company overview summary endpoints exist");
-if (reports.includes("responseCache") || reports.includes("Cache-Control")) ok("reports summary endpoints use longer response cache"); else fail("reports summary endpoints use longer response cache");
+if (includesText(agreements, "q") && includesText(agreements, "take")) ok("agreements endpoint has q + take"); else fail("agreements endpoint has q + take");
+if (includesText(offers, "q") && includesText(offers, "take")) ok("company offers endpoint has q + take"); else fail("company offers endpoint has q + take");
+if (includesText(companyPersonels, "q") && includesText(companyPersonels, "take")) ok("company personels endpoint has q + take"); else fail("company personels endpoint has q + take");
+if (includesText(vehicles, "q") && includesText(vehicles, "take")) ok("vehicles endpoint has q + take"); else fail("vehicles endpoint has q + take");
+if (includesText(trustQuality, "pendingOnly") && includesText(trustQuality, "take")) ok("trust-quality items endpoint supports pendingOnly + take"); else fail("trust-quality items endpoint supports pendingOnly + take");
+if (includesText(companyOverview, "workflow-summary") && includesText(companyOverview, "commercial-flow-summary")) ok("company overview summary endpoints exist"); else fail("company overview summary endpoints exist");
+if (includesText(reports, "responseCache") || includesText(reports, "Cache-Control")) ok("reports summary endpoints use longer response cache"); else fail("reports summary endpoints use longer response cache");
 
 const expandedBucketsOk =
-  (rateLimitText.includes("readSummaryLimiter") &&
-   rateLimitText.includes("readReportLimiter") &&
-   rateLimitText.includes("readPreviewLimiter") &&
-   rateLimitText.includes("readOfferLimiter") &&
-   rateLimitText.includes("readPeopleLimiter") &&
-   rateLimitText.includes("readDirectoryLimiter") &&
-   rateLimitText.includes("readLiveShiftLimiter") &&
-   rateLimitText.includes("isSummaryReadPath") &&
-   rateLimitText.includes("isReportReadPath") &&
-   rateLimitText.includes("isPreviewReadPath") &&
-   rateLimitText.includes("isOfferReadPath") &&
-   rateLimitText.includes("isPeopleReadPath") &&
-   rateLimitText.includes("isDirectoryReadPath") &&
-   rateLimitText.includes("isLiveShiftReadPath"));
+  (includesText(rateLimitText, "readSummaryLimiter") &&
+   includesText(rateLimitText, "readReportLimiter") &&
+   includesText(rateLimitText, "readPreviewLimiter") &&
+   includesText(rateLimitText, "readOfferLimiter") &&
+   includesText(rateLimitText, "readPeopleLimiter") &&
+   includesText(rateLimitText, "readDirectoryLimiter") &&
+   includesText(rateLimitText, "readLiveShiftLimiter") &&
+   includesText(rateLimitText, "isSummaryReadPath") &&
+   includesText(rateLimitText, "isReportReadPath") &&
+   includesText(rateLimitText, "isPreviewReadPath") &&
+   includesText(rateLimitText, "isOfferReadPath") &&
+   includesText(rateLimitText, "isPeopleReadPath") &&
+   includesText(rateLimitText, "isDirectoryReadPath") &&
+   includesText(rateLimitText, "isLiveShiftReadPath"));
 
 if (expandedBucketsOk) ok("server uses expanded route-based read limit buckets");
 else fail("server uses expanded route-based read limit buckets");

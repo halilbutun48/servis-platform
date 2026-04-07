@@ -6,6 +6,7 @@ import { toHHMM, weekMaskToText } from "../../utils/agreementUi";
 import { ymdTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
+import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -437,7 +438,7 @@ export default function AgreementsPanel() {
                 const reqEnd = ymd(a.extendRequestedEndDate);
                 return (
                   <tr key={"ext-" + a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
-                    <td>{a.id}</td>
+                    <td><div>{a.id}</div><CommercialReadonlySummary item={a.commercialBackbone} compact /></td>
                     <td className="muted">{ymd(a.startDate)} → {ymd(a.endDate)}</td>
                     <td className="muted">{reqEnd || "-"}</td>
                     <td><OfferCell amount={a.extendOfferAmount} note={a.extendOfferNote} /></td>
@@ -537,7 +538,7 @@ export default function AgreementsPanel() {
             <tbody>
               {filteredPending.map((a) => (
                 <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
-                  <td>{a.id}</td>
+                  <td><div>{a.id}</div><CommercialReadonlySummary item={a.commercialBackbone} compact /></td>
                   <td className="muted">
                     {String(a.startDate).slice(0, 10)} → {String(a.endDate).slice(0, 10)} {(() => { const endYmd = String(a.endDate || "").slice(0,10); const left = daysLeftYmd(endYmd); return Number.isFinite(left) ? ` (kalan ${left}g)` : ""; })()}
                   </td>

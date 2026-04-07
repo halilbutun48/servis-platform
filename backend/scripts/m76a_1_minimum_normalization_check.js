@@ -5,6 +5,32 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..', '..');
+
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[İI]/g, "i")
+    .replace(/[ı]/g, "i")
+    .replace(/[Şş]/g, "s")
+    .replace(/[Ğğ]/g, "g")
+    .replace(/[Üü]/g, "u")
+    .replace(/[Öö]/g, "o")
+    .replace(/[Çç]/g, "c")
+    .replace(/[’‘`]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\\/g, "/")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function includesText(text, needle) {
+  return normalizeText(text).includes(normalizeText(needle));
+}
+function includesAnyText(text, needles) {
+  return (needles || []).some((needle) => includesText(text, needle));
+}
 const toolsDir = path.join(repoRoot, 'tools');
 const artifactDir = path.join(repoRoot, 'artifacts', 'normalization');
 
@@ -82,15 +108,15 @@ for (const rel of expectedManifestScripts) {
 }
 
 const packPs1 = read('tools/pack.ps1');
-if (!packPs1.includes('M67 -> M{0}') || !packPs1.includes('pack_m67_m75.ps1')) {
+if (!includesText(packPs1, 'M67 -> M{0}') || !includesText(packPs1, 'pack_m67_m75.ps1')) {
   fail('master pack includes M67-M75 phase');
 }
 ok('master pack includes M67-M75 phase');
-if (!packPs1.includes('M76 -> M{0}') || !packPs1.includes('pack_m76_m81.ps1')) {
+if (!includesText(packPs1, 'M76 -> M{0}') || !includesText(packPs1, 'pack_m76_m81.ps1')) {
   fail('master pack includes M76+ phase');
 }
 ok('master pack includes M76+ phase');
-if (!packPs1.includes('M76A-1')) {
+if (!includesText(packPs1, 'M76A-1')) {
   fail('master pack visible phase note mentions M76A-1');
 }
 ok('master pack visible phase note mentions M76A-1');
@@ -118,7 +144,7 @@ const targetedHotfixes = [
   'pack_m75_repo_contract_hotfix.ps1'
 ];
 for (const file of targetedHotfixes) {
-  if (!livingBaseline.includes(file)) {
+  if (!includesText(livingBaseline, file)) {
     fail(`living baseline lists ${file}`);
   }
   ok(`living baseline lists ${file}`);

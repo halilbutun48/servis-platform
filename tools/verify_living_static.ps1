@@ -1,9 +1,14 @@
 param(
-  [Parameter(Mandatory=$false)][string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+  [Parameter(Mandatory=$false)][string]$RepoRoot = ''
 )
 $ErrorActionPreference = 'Stop'
+$ScriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+  $RepoRoot = (Resolve-Path (Join-Path $ScriptRoot '..')).Path
+}
 
-& (Join-Path $PSScriptRoot 'checks\living\check_static_repo.ps1') -RepoRoot $RepoRoot
+
+& (Join-Path $ScriptRoot 'checks\living\check_static_repo.ps1') -RepoRoot $RepoRoot
 Push-Location $RepoRoot
 try {
   node .\backend\scripts\run_m0_m66.js --static-only --to M66 --continue
@@ -11,7 +16,7 @@ try {
 }
 finally { Pop-Location }
 
-& (Join-Path $PSScriptRoot 'checks\living\check_m67_m75_static.ps1') -RepoRoot $RepoRoot
-& (Join-Path $PSScriptRoot 'checks\living\check_living_matrix.ps1') -RepoRoot $RepoRoot
-& (Join-Path $PSScriptRoot 'checks\living\check_m76_m81_static.ps1') -RepoRoot $RepoRoot
+& (Join-Path $ScriptRoot 'checks\living\check_m67_m75_static.ps1') -RepoRoot $RepoRoot
+& (Join-Path $ScriptRoot 'checks\living\check_living_matrix.ps1') -RepoRoot $RepoRoot
+& (Join-Path $ScriptRoot 'checks\living\check_m76_m81_static.ps1') -RepoRoot $RepoRoot
 Write-Host 'LIVING STATIC VERIFY PASS'

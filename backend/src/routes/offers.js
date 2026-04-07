@@ -8,6 +8,7 @@ import { z } from "zod";
 import prisma from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
+import { httpError, sendErrorResponse } from "../errors/http.js";
 import { validateWithZod } from "../z.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
@@ -208,7 +209,7 @@ export function offersRouter(io) {
 
         return res.json({ items: mapped });
       } catch (e) {
-        return res.status(500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -266,7 +267,7 @@ export function offersRouter(io) {
 
         return res.json(payload);
       } catch (e) {
-        return res.status(500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -280,15 +281,15 @@ export function offersRouter(io) {
     async (req, res) => {
       try {
         const shiftId = Number(req.params.shiftId);
-        if (!Number.isFinite(shiftId)) return res.status(400).json({ error: "bad shiftId" });
+        if (!Number.isFinite(shiftId)) return sendErrorResponse(res, httpError(400, "bad shiftId"));
 
         const shift = await prisma.shift.findUnique({
           where: { id: shiftId },
           select: { id: true, companyId: true },
         });
-        if (!shift) return res.status(404).json({ error: "Shift not found" });
+        if (!shift) return sendErrorResponse(res, httpError(404, "Shift not found"));
         if (req.user.role === "COMPANY" && shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         const statusIn = parseStatusFilter(req.query.status);
@@ -304,7 +305,7 @@ export function offersRouter(io) {
 
         return res.json({ items });
       } catch (e) {
-        return res.status(500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -318,7 +319,7 @@ export function offersRouter(io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad offerId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad offerId"));
 
         const body = validateWithZod(counterShiftOfferSchema, req.body);
 
@@ -326,18 +327,18 @@ export function offersRouter(io) {
           where: { id },
           include: { shift: { select: { id: true, companyId: true, agreementId: true } } },
         });
-        if (!offer) return res.status(404).json({ error: "Offer not found" });
+        if (!offer) return sendErrorResponse(res, httpError(404, "Offer not found"));
 
         if (req.user.role === "ROOM" && offer.roomId !== req.user.roomId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
-        if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
-        if (offer.status === "ACCEPTED") return res.status(409).json({ error: "Offer already accepted" });
+        if (offer.status === "CANCELLED") return sendErrorResponse(res, httpError(409, "Offer cancelled"));
+        if (offer.status === "ACCEPTED") return sendErrorResponse(res, httpError(409, "Offer already accepted"));
 
         // ✅ M54: Agreement kaynaklı shiftlerde market offers kapalı
         if (offer?.shift?.agreementId) {
-          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+          return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
 
         const updated = await prisma.shiftOffer.update({
@@ -360,7 +361,7 @@ export function offersRouter(io) {
 
         return res.json(updated);
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -375,11 +376,11 @@ export function offersRouter(io) {
       try {
         const roomId =
           req.user.role === "ROOM" ? Number(req.user.roomId) : Number(req.body.roomId || 0);
-        if (!Number.isFinite(roomId) || roomId <= 0) return res.status(400).json({ error: "roomId required" });
+        if (!Number.isFinite(roomId) || roomId <= 0) return sendErrorResponse(res, httpError(400, "roomId required"));
 
         const { offerIds, amountRoom, noteRoom } = validateWithZod(bulkCounterSchema, req.body);
         const ids = Array.from(new Set(offerIds.map((x) => Number(x)).filter((x) => Number.isFinite(x))));
-        if (!ids.length) return res.status(400).json({ error: "offerIds required" });
+        if (!ids.length) return sendErrorResponse(res, httpError(400, "offerIds required"));
 
         const rows = await prisma.shiftOffer.findMany({
           where: { id: { in: ids }, roomId },
@@ -388,7 +389,7 @@ export function offersRouter(io) {
 
         // security: caller cannot counter offers outside their room
         if (rows.length !== ids.length) {
-          return res.status(404).json({ error: "Some offers not found for this room" });
+          return sendErrorResponse(res, httpError(404, "Some offers not found for this room"));
         }
 
         // Agreement shifts: offers are disabled
@@ -423,7 +424,7 @@ export function offersRouter(io) {
 
         return res.json({ ok: true, updatedCount: Number(upd?.count || 0), total: ids.length });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e), details: e?.details });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -436,24 +437,24 @@ export function offersRouter(io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad offerId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad offerId"));
 
         const body = validateWithZod(companyCounterSchema, req.body);
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
           include: { shift: { select: { companyId: true, agreementId: true, roomId: true } } },
         });
-        if (!offer) return res.status(404).json({ error: "Offer not found" });
+        if (!offer) return sendErrorResponse(res, httpError(404, "Offer not found"));
         if (req.user.role === "COMPANY" && Number(offer?.shift?.companyId || 0) !== Number(req.user.companyId || 0)) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
         if (offer?.shift?.agreementId) {
-          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+          return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
-        if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
-        if (offer.status === "ACCEPTED") return res.status(409).json({ error: "Offer already accepted" });
+        if (offer.status === "CANCELLED") return sendErrorResponse(res, httpError(409, "Offer cancelled"));
+        if (offer.status === "ACCEPTED") return sendErrorResponse(res, httpError(409, "Offer already accepted"));
         if (offer?.shift?.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) {
-          return res.status(409).json({ error: "Shift already assigned" });
+          return sendErrorResponse(res, httpError(409, "Shift already assigned"));
         }
 
         const updated = await prisma.shiftOffer.update({
@@ -475,7 +476,7 @@ export function offersRouter(io) {
 
         return res.json(updated);
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e), details: e?.details });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -489,7 +490,7 @@ export function offersRouter(io) {
       try {
         const body = validateWithZod(bulkCompanyCounterSchema, req.body);
         const companyId = req.user.role === "COMPANY" ? Number(req.user.companyId) : Number(req.body.companyId || 0);
-        if (!Number.isFinite(companyId) || companyId <= 0) return res.status(400).json({ error: "companyId required" });
+        if (!Number.isFinite(companyId) || companyId <= 0) return sendErrorResponse(res, httpError(400, "companyId required"));
 
         const roomId = Number(body.roomId);
         const shiftIds = Array.from(new Set((body.shiftIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
@@ -504,12 +505,12 @@ export function offersRouter(io) {
           include: { shift: { select: { id: true, companyId: true, agreementId: true, roomId: true } } },
         });
         const allowed = rows.filter((row) => Number(row?.shift?.companyId || 0) === companyId);
-        if (!allowed.length) return res.status(404).json({ error: "No offers found" });
+        if (!allowed.length) return sendErrorResponse(res, httpError(404, "No offers found"));
         const blocked = allowed.find((row) => row?.shift?.agreementId);
-        if (blocked) return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+        if (blocked) return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
 
         const activeIds = allowed.filter((row) => ["OPEN", "COUNTERED"].includes(String(row.status || "").toUpperCase())).map((row) => row.id);
-        if (!activeIds.length) return res.status(409).json({ error: "No active offers to counter" });
+        if (!activeIds.length) return sendErrorResponse(res, httpError(409, "No active offers to counter"));
 
         await prisma.shiftOffer.updateMany({
           where: { id: { in: activeIds } },
@@ -532,7 +533,7 @@ export function offersRouter(io) {
 
         return res.json({ ok: true, updatedCount: activeIds.length, total: allowed.length });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e), details: e?.details });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -545,27 +546,27 @@ export function offersRouter(io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad offerId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad offerId"));
 
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
           include: { shift: { select: { id: true, companyId: true, roomId: true, status: true, agreementId: true } } },
         });
-        if (!offer) return res.status(404).json({ error: "Offer not found" });
+        if (!offer) return sendErrorResponse(res, httpError(404, "Offer not found"));
         if (req.user.role === "ROOM" && Number(offer.roomId) !== Number(req.user.roomId || 0)) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
         if (offer?.shift?.agreementId) {
-          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+          return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
-        if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
-        if (offer.status === "ACCEPTED") return res.status(409).json({ error: "Offer already accepted" });
-        if (offer.shift.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) return res.status(409).json({ error: "Shift already assigned" });
+        if (offer.status === "CANCELLED") return sendErrorResponse(res, httpError(409, "Offer cancelled"));
+        if (offer.status === "ACCEPTED") return sendErrorResponse(res, httpError(409, "Offer already accepted"));
+        if (offer.shift.roomId != null && Number(offer.shift.roomId) !== Number(offer.roomId)) return sendErrorResponse(res, httpError(409, "Shift already assigned"));
 
         const result = await finalizeAcceptedOffer(io, offer);
         return res.json({ ok: true, ...result });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -579,36 +580,36 @@ export function offersRouter(io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad offerId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad offerId"));
 
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
           include: { shift: { select: { id: true, companyId: true, roomId: true, status: true, agreementId: true } } },
         });
-        if (!offer) return res.status(404).json({ error: "Offer not found" });
+        if (!offer) return sendErrorResponse(res, httpError(404, "Offer not found"));
 
         if (req.user.role === "COMPANY" && offer.shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
 
         // ✅ M54: Agreement kaynaklı shiftlerde market offers kapalı
         if (offer?.shift?.agreementId) {
-          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+          return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
-        if (offer.status === "CANCELLED") return res.status(409).json({ error: "Offer cancelled" });
+        if (offer.status === "CANCELLED") return sendErrorResponse(res, httpError(409, "Offer cancelled"));
 
         // ✅ M54: Agreement kaynaklı shiftlerde market offers kapalı
         if (offer?.shift?.agreementId) {
-          return res.status(409).json({ error: "Agreement shift: offers disabled", code: "AGREEMENT_NO_OFFERS" });
+          return sendErrorResponse(res, httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled"));
         }
 
-        if (offer.shift.roomId != null) return res.status(409).json({ error: "Shift already assigned" });
+        if (offer.shift.roomId != null) return sendErrorResponse(res, httpError(409, "Shift already assigned"));
 
         const result = await finalizeAcceptedOffer(io, offer);
 
         return res.json({ ok: true, ...result });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );
@@ -622,19 +623,19 @@ export function offersRouter(io) {
     async (req, res) => {
       try {
         const id = Number(req.params.id);
-        if (!Number.isFinite(id)) return res.status(400).json({ error: "bad offerId" });
+        if (!Number.isFinite(id)) return sendErrorResponse(res, httpError(400, "bad offerId"));
 
         const offer = await prisma.shiftOffer.findUnique({
           where: { id },
           include: { shift: { select: { companyId: true, agreementId: true } } },
         });
-        if (!offer) return res.status(404).json({ error: "Offer not found" });
+        if (!offer) return sendErrorResponse(res, httpError(404, "Offer not found"));
 
         if (req.user.role === "COMPANY" && offer.shift.companyId !== req.user.companyId) {
-          return res.status(403).json({ error: "Forbidden" });
+          return sendErrorResponse(res, httpError(403, "Forbidden"));
         }
         if (offer.status === "ACCEPTED") {
-          return res.status(409).json({ error: "Accepted offer cannot be cancelled" });
+          return sendErrorResponse(res, httpError(409, "Accepted offer cannot be cancelled"));
         }
 
         const updated = await prisma.shiftOffer.update({ where: { id }, data: { status: "CANCELLED" } });
@@ -649,7 +650,7 @@ export function offersRouter(io) {
 
         return res.json({ ok: true, offer: updated });
       } catch (e) {
-        return res.status(e?.status ?? 500).json({ error: String(e?.message ?? e) });
+        return sendErrorResponse(res, e);
       }
     }
   );

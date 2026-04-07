@@ -1,4 +1,6 @@
 //web/src/api.js
+import { makeHttpError } from "./utils/apiContract";
+
 export function getToken() {
   return (localStorage.getItem("token") || "").trim();
 }
@@ -9,18 +11,6 @@ export function setToken(t) {
 
 export function clearToken() {
   localStorage.removeItem("token");
-}
-
-function firstValidationMessage(details) {
-  if (!details || typeof details !== "object") return "";
-  const formMsg = Array.isArray(details.formErrors) && details.formErrors.length ? details.formErrors[0] : "";
-  if (formMsg) return String(formMsg);
-  const fieldErrors = details.fieldErrors && typeof details.fieldErrors === "object" ? details.fieldErrors : {};
-  for (const key of Object.keys(fieldErrors)) {
-    const arr = fieldErrors[key];
-    if (Array.isArray(arr) && arr.length) return String(arr[0]);
-  }
-  return "";
 }
 
 function getOrCreateBrowserDeviceId() {
@@ -34,23 +24,6 @@ function getOrCreateBrowserDeviceId() {
   } catch {
     return `web-fallback-${Date.now().toString(36)}`;
   }
-}
-
-function makeHttpError(status, payloadOrText) {
-  const isObj = payloadOrText && typeof payloadOrText === "object";
-  const baseMessage = isObj
-    ? payloadOrText.message ||
-      (typeof payloadOrText.error === "string" ? payloadOrText.error : "") ||
-      firstValidationMessage(payloadOrText.details) ||
-      firstValidationMessage(payloadOrText.error) ||
-      ""
-    : String(payloadOrText || "");
-
-  const err = new Error(baseMessage || `HTTP ${status}`);
-  err.status = status;
-  if (isObj) err.payload = payloadOrText;
-  else err.text = baseMessage;
-  return err;
 }
 
 export async function api(path, { method = "GET", body, token, signal } = {}) {

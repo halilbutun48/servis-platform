@@ -2,7 +2,8 @@ param(
   [string]$RepoRoot = (Get-Location).Path
 )
 $ErrorActionPreference = "Stop"
-Push-Location $RepoRoot
+
+. (Join-Path $PSScriptRoot "_repo_contract_common.ps1")Push-Location $RepoRoot
 try {
   Write-Host "=== PASSWORD FORCE CHANGE HOTFIX CHECK ==="
   node .\backend\scripts\password_force_change_check.js

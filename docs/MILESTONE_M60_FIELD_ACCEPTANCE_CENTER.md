@@ -1,3 +1,5 @@
+<!-- REPO_CONTRACT_MARKER milestone=M60 slug=field-acceptance-center -->
+
 # MILESTONE — M60 SAHA ACCEPTANCE MERKEZI
 
 Tarih: 2026-03-19

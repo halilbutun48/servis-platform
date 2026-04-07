@@ -128,13 +128,15 @@ async function main() {
     assertOk(previewStops.length >= 1, "route preview stops present");
     assertOk(previewPathPoints.length >= 1, "route preview path points present");
     assertOk(totalPassengerCount >= 2, "route preview passenger summary >= 2");
-    assertOk(["ESTIMATED", "LEARNED", "OSRM"].includes(previewSource), "route preview source present");
+    assertOk(["ESTIMATED", "LEARNED", "OSRM", "SNAPSHOT"].includes(previewSource), "route preview source present");
 
     banner("M53: organization/gezi endpoint reachability");
     const orgPlans = await reqJson("GET", "/api/organization/plans", { token: companyToken });
     const orgRooms = await reqJson("GET", "/api/organization/rooms", { token: companyToken });
-    const orgPlansOk = orgPlans.ok || (orgPlans.status === 403 && String(orgPlans.json?.error || "") === "organizationOnly");
-    const orgRoomsOk = orgRooms.ok || (orgRooms.status === 403 && String(orgRooms.json?.error || "") === "organizationOnly");
+    const orgPlansError = String(orgPlans.json?.code || orgPlans.json?.error?.code || orgPlans.json?.error || orgPlans.json?.error?.message || "");
+    const orgRoomsError = String(orgRooms.json?.code || orgRooms.json?.error?.code || orgRooms.json?.error || orgRooms.json?.error?.message || "");
+    const orgPlansOk = orgPlans.ok || (orgPlans.status === 403 && ["organizationOnly", "ORGANIZATION_ONLY"].includes(orgPlansError));
+    const orgRoomsOk = orgRooms.ok || (orgRooms.status === 403 && ["organizationOnly", "ORGANIZATION_ONLY"].includes(orgRoomsError));
     assertOk(orgPlansOk, "organization plans endpoint reachable or gated");
     assertOk(orgRoomsOk, "organization rooms endpoint reachable or gated");
 

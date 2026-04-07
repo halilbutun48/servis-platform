@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { prisma } from "../prisma.js";
 import { signToken, verifyToken } from "../auth/jwt.js";
 import { authRequired } from "../auth/middleware.js";
+import { httpError, sendErrorResponse } from "../errors/http.js";
 import { clearDriverPinFailureState, getDriverPinLockState, registerDriverPinFailure, validateNewDriverPin } from "../auth/driverAccessGuard.js";
 import { generateSecretBase32, buildOtpauthUrl, verifyTotp, normalizeTotpToken } from "../auth/totp.js";
 import { loginSchema, refreshSchema, logoutSchema } from "../validators.js";
@@ -214,7 +215,7 @@ export const authRouter = express.Router();
 // Backward compatible: existing clients can still ignore refreshToken/deviceId.
 authRouter.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "Validation failed", parsed.error.flatten()));
 
   const identifier = String(parsed.data.identifier || parsed.data.email || '').trim();
   const password = parsed.data.password;
@@ -223,12 +224,12 @@ authRouter.post("/login", async (req, res) => {
   const user = await findLoginUser(identifier);
   if (!user) {
     await recordLoginAudit({ req, email: identifier, user: null, action: "AUTH_LOGIN_FAIL", reason: "USER_NOT_FOUND" });
-    return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS", message: "Kimlik bilgileri hatalı." });
+    return sendErrorResponse(res, httpError(401, "INVALID_CREDENTIALS", "Kimlik bilgileri hatalı."));
   }
 
   if (isDisabledHash(user.passwordHash)) {
     await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_DISABLED", reason: "DISABLED" });
-    return res.status(403).json({ error: "Account disabled" });
+    return sendErrorResponse(res, httpError(403, "Account disabled"));
   }
 
   if (user.role === "DRIVER") {
@@ -282,7 +283,7 @@ authRouter.post("/login", async (req, res) => {
     } else {
       await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_FAIL", reason: "BAD_PASSWORD" });
     }
-    return res.status(401).json({ error: "Invalid credentials", code: "INVALID_CREDENTIALS", message: "Kimlik bilgileri hatalı." });
+    return sendErrorResponse(res, httpError(401, "INVALID_CREDENTIALS", "Kimlik bilgileri hatalı."));
   }
 
   if (user.role === "DRIVER") {
@@ -303,12 +304,12 @@ authRouter.post("/login", async (req, res) => {
         reason: "DEVICE_MISMATCH",
         meta: { boundDeviceId: user.deviceId, reqDeviceId, driverId: user.driver?.id || null },
       });
-      return res.status(403).json({ error: "DEVICE_MISMATCH", code: "DEVICE_MISMATCH", message: "Bu sürücü kodu başka bir cihaza bağlı görünüyor." });
+      return sendErrorResponse(res, httpError(403, "DEVICE_MISMATCH", "Bu sürücü kodu başka bir cihaza bağlı görünüyor."));
     }
 
     if (isProd() && user.deviceId && !reqDeviceId) {
       await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_DEVICE_REQUIRED", reason: "DEVICE_ID_REQUIRED", meta: { driverId: user.driver?.id || null } });
-      return res.status(400).json({ error: "DEVICE_ID_REQUIRED", code: "DEVICE_ID_REQUIRED", message: "Bu hesap için cihaz bilgisi gerekli." });
+      return sendErrorResponse(res, httpError(400, "DEVICE_ID_REQUIRED", "Bu hesap için cihaz bilgisi gerekli."));
     }
 
     if (!user.deviceId && reqDeviceId) {
@@ -391,25 +392,25 @@ authRouter.post("/change-password", authRequired(), async (req, res) => {
   const newPassword = String(req.body?.newPassword || "");
   const confirmPassword = String(req.body?.confirmPassword || "");
 
-  if (!newPassword) return res.status(400).json({ error: "Yeni şifre gerekli." });
+  if (!newPassword) return sendErrorResponse(res, httpError(400, "Yeni şifre gerekli."));
   if (confirmPassword && confirmPassword !== newPassword) {
-    return res.status(400).json({ error: "Yeni şifre ve tekrar alanı eşleşmiyor." });
+    return sendErrorResponse(res, httpError(400, "Yeni şifre ve tekrar alanı eşleşmiyor."));
   }
 
   if (!forceOnly) {
-    if (!currentPassword) return res.status(400).json({ error: "Mevcut şifre gerekli." });
+    if (!currentPassword) return sendErrorResponse(res, httpError(400, "Mevcut şifre gerekli."));
     const okCurrent = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!okCurrent) return res.status(400).json({ error: "Mevcut şifre hatalı." });
+    if (!okCurrent) return sendErrorResponse(res, httpError(400, "Mevcut şifre hatalı."));
   }
 
   const sameAsCurrent = await bcrypt.compare(newPassword, user.passwordHash);
   if (sameAsCurrent) {
-    return res.status(400).json({ error: "Yeni şifre mevcut/geçici şifre ile aynı olamaz." });
+    return sendErrorResponse(res, httpError(400, "Yeni şifre mevcut/geçici şifre ile aynı olamaz."));
   }
 
   const policy = validatePasswordPolicy(newPassword, { email: visibleEmail(user.email), fullName: user.fullName });
   if (!policy.ok) {
-    return res.status(400).json({ error: policy.errors[0], details: policy });
+    return sendErrorResponse(res, httpError(400, "PASSWORD_POLICY_INVALID", policy.errors[0], policy));
   }
 
   const nextHash = await bcrypt.hash(newPassword, 10);
@@ -474,7 +475,7 @@ function rawParentAccessToken({ token, accessCode, pin }) {
 // Parent access info (link or code+PIN fallback)
 authRouter.get("/parent-invite/info", async (req, res) => {
   const raw = String(req.query?.token || "").trim();
-  if (!raw) return res.status(400).json({ error: "token required" });
+  if (!raw) return sendErrorResponse(res, httpError(400, "token required"));
 
   const invite = await prisma.parentInvite.findUnique({
     where: { tokenHash: sha256Hex(raw) },
@@ -484,9 +485,9 @@ authRouter.get("/parent-invite/info", async (req, res) => {
     },
   });
 
-  if (!invite) return res.status(404).json({ error: "INVITE_NOT_FOUND" });
-  if (invite.revokedAt) return res.status(410).json({ error: "INVITE_REVOKED" });
-  if (invite.expiresAt && new Date(invite.expiresAt).getTime() <= Date.now()) return res.status(410).json({ error: "INVITE_EXPIRED" });
+  if (!invite) return sendErrorResponse(res, httpError(404, "INVITE_NOT_FOUND"));
+  if (invite.revokedAt) return sendErrorResponse(res, httpError(410, "INVITE_REVOKED"));
+  if (invite.expiresAt && new Date(invite.expiresAt).getTime() <= Date.now()) return sendErrorResponse(res, httpError(410, "INVITE_EXPIRED"));
 
   const access = {
     id: invite.id,
@@ -504,7 +505,7 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
     accessCode: req.body?.accessCode,
     pin: req.body?.pin,
   });
-  if (!raw) return res.status(400).json({ error: "token or accessCode+pin required" });
+  if (!raw) return sendErrorResponse(res, httpError(400, "token or accessCode+pin required"));
 
   const accessRow = await prisma.parentInvite.findUnique({
     where: { tokenHash: sha256Hex(raw) },
@@ -514,11 +515,11 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
     },
   });
 
-  if (!accessRow) return res.status(404).json({ error: "INVITE_NOT_FOUND" });
-  if (accessRow.revokedAt) return res.status(410).json({ error: "INVITE_REVOKED" });
-  if (accessRow.expiresAt && new Date(accessRow.expiresAt).getTime() <= Date.now()) return res.status(410).json({ error: "INVITE_EXPIRED" });
-  if (!accessRow.company || accessRow.company.kind !== "SCHOOL") return res.status(409).json({ error: "INVITE_SCOPE_INVALID" });
-  if (!accessRow.child || accessRow.child.companyId !== accessRow.company.id) return res.status(409).json({ error: "INVITE_CHILD_INVALID" });
+  if (!accessRow) return sendErrorResponse(res, httpError(404, "INVITE_NOT_FOUND"));
+  if (accessRow.revokedAt) return sendErrorResponse(res, httpError(410, "INVITE_REVOKED"));
+  if (accessRow.expiresAt && new Date(accessRow.expiresAt).getTime() <= Date.now()) return sendErrorResponse(res, httpError(410, "INVITE_EXPIRED"));
+  if (!accessRow.company || accessRow.company.kind !== "SCHOOL") return sendErrorResponse(res, httpError(409, "INVITE_SCOPE_INVALID"));
+  if (!accessRow.child || accessRow.child.companyId !== accessRow.company.id) return sendErrorResponse(res, httpError(409, "INVITE_CHILD_INVALID"));
 
   const syntheticEmail = `parent-access-${accessRow.id}@vardis.local`;
   const out = await prisma.$transaction(async (tx) => {
@@ -550,7 +551,7 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
     if (!existingLink) await tx.parentChild.create({ data: { parentUserId: parentUser.id, personelId: accessRow.child.id } });
     return parentUser;
   });
-  if (!out) return res.status(403).json({ error: "ACCOUNT_DISABLED" });
+  if (!out) return sendErrorResponse(res, httpError(403, "ACCOUNT_DISABLED"));
   try {
     await clearPasswordChangeRequired(out.id);
   } catch {}
@@ -602,7 +603,7 @@ authRouter.get("/totp/status", authRequired(), async (req, res) => {
 
 authRouter.post("/totp/setup", authRequired(), async (req, res) => {
   const user = req.user;
-  if (!isStepUpRole(user.role)) return res.status(403).json({ error: "STEP_UP_NOT_APPLICABLE", code: "STEP_UP_NOT_APPLICABLE" });
+  if (!isStepUpRole(user.role)) return sendErrorResponse(res, httpError(403, "STEP_UP_NOT_APPLICABLE", "STEP_UP_NOT_APPLICABLE"));
 
   const secretBase32 = generateSecretBase32(20);
   await prisma.user.update({
@@ -621,16 +622,16 @@ authRouter.post("/totp/setup", authRequired(), async (req, res) => {
 
 authRouter.post("/totp/enable", authRequired(), async (req, res) => {
   const user = req.user;
-  if (!isStepUpRole(user.role)) return res.status(403).json({ error: "STEP_UP_NOT_APPLICABLE", code: "STEP_UP_NOT_APPLICABLE" });
+  if (!isStepUpRole(user.role)) return sendErrorResponse(res, httpError(403, "STEP_UP_NOT_APPLICABLE", "STEP_UP_NOT_APPLICABLE"));
   const code = normalizeTotpToken(req.body?.code);
-  if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: "TOTP_CODE_REQUIRED", code: "TOTP_CODE_REQUIRED" });
+  if (!/^\d{6}$/.test(code)) return sendErrorResponse(res, httpError(400, "TOTP_CODE_REQUIRED", "TOTP_CODE_REQUIRED"));
 
   const fresh = await prisma.user.findUnique({ where: { id: user.id } });
   const pendingSecret = String(fresh?.totpPendingSecretBase32 || "");
-  if (!pendingSecret) return res.status(409).json({ error: "TOTP_SETUP_PENDING_NOT_FOUND", code: "TOTP_SETUP_PENDING_NOT_FOUND" });
+  if (!pendingSecret) return sendErrorResponse(res, httpError(409, "TOTP_SETUP_PENDING_NOT_FOUND", "TOTP_SETUP_PENDING_NOT_FOUND"));
   if (!verifyTotp(pendingSecret, code)) {
     await recordLoginAudit({ req, email: user.email, user, action: "AUTH_TOTP_ENABLE_FAIL", reason: "BAD_TOTP_CODE" });
-    return res.status(401).json({ error: "BAD_TOTP_CODE", code: "BAD_TOTP_CODE" });
+    return sendErrorResponse(res, httpError(401, "BAD_TOTP_CODE", "BAD_TOTP_CODE"));
   }
 
   await prisma.user.update({
@@ -648,18 +649,18 @@ authRouter.post("/totp/enable", authRequired(), async (req, res) => {
 
 authRouter.post("/totp/verify", authRequired(), async (req, res) => {
   const user = req.user;
-  if (!isStepUpRole(user.role)) return res.status(403).json({ error: "STEP_UP_NOT_APPLICABLE", code: "STEP_UP_NOT_APPLICABLE" });
+  if (!isStepUpRole(user.role)) return sendErrorResponse(res, httpError(403, "STEP_UP_NOT_APPLICABLE", "STEP_UP_NOT_APPLICABLE"));
   const code = normalizeTotpToken(req.body?.code);
-  if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: "TOTP_CODE_REQUIRED", code: "TOTP_CODE_REQUIRED" });
+  if (!/^\d{6}$/.test(code)) return sendErrorResponse(res, httpError(400, "TOTP_CODE_REQUIRED", "TOTP_CODE_REQUIRED"));
 
   const fresh = await prisma.user.findUnique({ where: { id: user.id } });
   const secretBase32 = String(fresh?.totpSecretBase32 || "");
   if (!secretBase32 || !fresh?.totpEnabledAt) {
-    return res.status(403).json({ error: "TOTP_SETUP_REQUIRED", code: "TOTP_SETUP_REQUIRED" });
+    return sendErrorResponse(res, httpError(403, "TOTP_SETUP_REQUIRED", "TOTP_SETUP_REQUIRED"));
   }
   if (!verifyTotp(secretBase32, code)) {
     await recordLoginAudit({ req, email: user.email, user, action: "AUTH_STEP_UP_FAIL", reason: "BAD_TOTP_CODE" });
-    return res.status(401).json({ error: "BAD_TOTP_CODE", code: "BAD_TOTP_CODE" });
+    return sendErrorResponse(res, httpError(401, "BAD_TOTP_CODE", "BAD_TOTP_CODE"));
   }
 
   const stepUpUntil = Date.now() + Number(ENV.STEP_UP_TOTP_WINDOW_SEC || 43200) * 1000;
@@ -673,7 +674,7 @@ authRouter.post("/totp/verify", authRequired(), async (req, res) => {
 // Note: returns 401 for invalid tokens; m41check only asserts endpoint != 404.
 authRouter.post("/refresh", async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "Validation failed", parsed.error.flatten()));
 
   const refreshTokenRaw = String(parsed.data.refreshToken || "");
   const reqDeviceId = parsed.data.deviceId ? String(parsed.data.deviceId).trim() : null;
@@ -683,7 +684,7 @@ authRouter.post("/refresh", async (req, res) => {
 
   if (!session) {
     await recordLoginAudit({ req, email: null, user: null, action: "AUTH_REFRESH_INVALID", reason: "INVALID_REFRESH_TOKEN" });
-    return res.status(401).json({ error: "INVALID_REFRESH_TOKEN" });
+    return sendErrorResponse(res, httpError(401, "INVALID_REFRESH_TOKEN"));
   }
 
   if (session.revokedAt) {
@@ -701,7 +702,7 @@ authRouter.post("/refresh", async (req, res) => {
         reason: "REFRESH_REUSE_DETECTED",
         meta: { refreshSessionId: session.id, replacedById: session.replacedById },
       });
-      return res.status(401).json({ error: "REFRESH_REUSE_DETECTED", code: "REFRESH_REUSE_DETECTED" });
+      return sendErrorResponse(res, httpError(401, "REFRESH_REUSE_DETECTED", "REFRESH_REUSE_DETECTED"));
     }
 
     const revokedUser = await prisma.user.findUnique({ where: { id: session.userId } });
@@ -713,7 +714,7 @@ authRouter.post("/refresh", async (req, res) => {
       reason: "REFRESH_REVOKED",
       meta: { refreshSessionId: session.id },
     });
-    return res.status(401).json({ error: "REFRESH_REVOKED" });
+    return sendErrorResponse(res, httpError(401, "REFRESH_REVOKED"));
   }
 
   if (session.expiresAt && new Date(session.expiresAt).getTime() <= Date.now()) {
@@ -726,7 +727,7 @@ authRouter.post("/refresh", async (req, res) => {
       reason: "REFRESH_EXPIRED",
       meta: { refreshSessionId: session.id },
     });
-    return res.status(401).json({ error: "REFRESH_EXPIRED" });
+    return sendErrorResponse(res, httpError(401, "REFRESH_EXPIRED"));
   }
 
   if (session.deviceId && reqDeviceId && String(session.deviceId) !== String(reqDeviceId)) {
@@ -739,11 +740,11 @@ authRouter.post("/refresh", async (req, res) => {
       reason: "DEVICE_MISMATCH",
       meta: { refreshSessionId: session.id, sessionDeviceId: session.deviceId, reqDeviceId },
     });
-    return res.status(403).json({ error: "DEVICE_MISMATCH" });
+    return sendErrorResponse(res, httpError(403, "DEVICE_MISMATCH"));
   }
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) return res.status(401).json({ error: "INVALID_USER" });
+  if (!user) return sendErrorResponse(res, httpError(401, "INVALID_USER"));
 
   if (isProd() && ENV.REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND && session.deviceId && !reqDeviceId) {
     if (String(user?.role || "") === "DRIVER") {
@@ -755,7 +756,7 @@ authRouter.post("/refresh", async (req, res) => {
         reason: "DEVICE_ID_REQUIRED",
         meta: { refreshSessionId: session.id, sessionDeviceId: session.deviceId },
       });
-      return res.status(400).json({ error: "DEVICE_ID_REQUIRED", code: "DEVICE_ID_REQUIRED", message: "Cihaz bilgisi gerekli." });
+      return sendErrorResponse(res, httpError(400, "DEVICE_ID_REQUIRED", "Cihaz bilgisi gerekli."));
     }
   }
 
@@ -809,17 +810,17 @@ authRouter.post("/refresh", async (req, res) => {
 
 authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {
   const user = req.user;
-  if (String(user?.role || '') !== 'DRIVER') return res.status(403).json({ error: 'Forbidden' });
+  if (String(user?.role || '') !== 'DRIVER') return sendErrorResponse(res, httpError(403, 'FORBIDDEN', 'Forbidden'));
 
   const currentPin = String(req.body?.currentPin || '').trim();
   const newPin = String(req.body?.newPin || '').trim();
 
   if (currentPin.length < 4) {
-    return res.status(400).json({ error: 'CURRENT_PIN_REQUIRED', code: 'CURRENT_PIN_REQUIRED', message: 'Mevcut PIN gerekli.' });
+    return sendErrorResponse(res, httpError(400, 'CURRENT_PIN_REQUIRED', 'Mevcut PIN gerekli.'));
   }
 
   const authUser = await prisma.user.findUnique({ where: { id: user.id }, include: { driver: true } });
-  if (!authUser?.driver) return res.status(404).json({ error: 'DRIVER_PROFILE_NOT_FOUND', code: 'DRIVER_PROFILE_NOT_FOUND' });
+  if (!authUser?.driver) return sendErrorResponse(res, httpError(404, 'DRIVER_PROFILE_NOT_FOUND', 'DRIVER_PROFILE_NOT_FOUND'));
 
   const policy = validateNewDriverPin(newPin, { currentPin });
   if (!policy.ok) {
@@ -831,13 +832,13 @@ authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {
       reason: policy.code,
       meta: { driverId: authUser.driver.id, policyCode: policy.code },
     });
-    return res.status(400).json({ error: policy.code, code: policy.code, message: policy.message });
+    return sendErrorResponse(res, httpError(400, policy.code, policy.message));
   }
 
   const okPass = await bcrypt.compare(currentPin, authUser.passwordHash);
   if (!okPass) {
     await recordLoginAudit({ req, email: authUser.email || authUser.driver?.driverCode || null, user: authUser, action: 'AUTH_DRIVER_PIN_CHANGE_FAIL', reason: 'BAD_CURRENT_PIN', meta: { driverId: authUser.driver.id } });
-    return res.status(401).json({ error: 'BAD_CURRENT_PIN', code: 'BAD_CURRENT_PIN', message: 'Mevcut PIN hatalı.' });
+    return sendErrorResponse(res, httpError(401, 'BAD_CURRENT_PIN', 'Mevcut PIN hatalı.'));
   }
 
   const passwordHash = await bcrypt.hash(newPin, 10);
@@ -887,7 +888,7 @@ authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {
 
 authRouter.post("/logout", authRequired(), async (req, res) => {
   const parsed = logoutSchema.safeParse(req.body || {});
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  if (!parsed.success) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "Validation failed", parsed.error.flatten()));
 
   const u = req.user;
   const raw = parsed.data.refreshToken ? String(parsed.data.refreshToken) : null;
