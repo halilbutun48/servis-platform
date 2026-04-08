@@ -1,14 +1,20 @@
 {
-  "version": 1,
-  "latestMasterPack": 79,
+  "version": 2,
+  "latestMasterPack": 89,
+  "latestHistoricalMasterPack": 79,
   "stableTo": 78,
-  "nextMilestone": "M80",
-  "latestManifestStage": "M79",
-  "docsContractMode": "state-first-path-ref",
+  "historicalStableTo": 78,
+  "nextMilestone": "M90",
+  "historicalNextMilestone": "M80",
+  "livingUpperRouteFrom": 80,
+  "livingUpperRouteTo": 89,
+  "latestManifestStage": "M89",
+  "docsContractMode": "state-first-canonical-history-split",
   "canonicalPackHierarchy": {
     "publicRoot": "tools/packs/living",
     "internalRoot": "tools/_packs",
-    "masterPackUsesPublicWrappers": true
+    "masterPackUsesPublicWrappers": true,
+    "upperRouteSubpack": "tools/_packs/pack_m82.ps1"
   },
   "runtimeJsonStores": {
     "backendDataDir": "backend/data",
@@ -19,9 +25,11 @@
     "trackedBackupFiles": false
   },
   "phaseDefaults": {
-    "packLivingTo": 79,
-    "verifyLivingRuntimeTo": 79,
-    "phase76To": 79
+    "packLivingTo": 89,
+    "verifyLivingRuntimeTo": 89,
+    "phase76To": 81,
+    "upperRouteFrom": 82,
+    "upperRouteTo": 89
   },
   "activeMilestones": [
     "M76A-1",
@@ -36,6 +44,34 @@
     "M80",
     "M80.1",
     "M80.2",
-    "M80.3"
+    "M80.3",
+    "M81",
+    "M82.1",
+    "M82.8",
+    "M82.9",
+    "M82.10",
+    "M82.11",
+    "M83",
+    "M84",
+    "M85",
+    "M86",
+    "M87",
+    "M88",
+    "M89",
+    "M90"
+  ],
+  "canonicalDocs": [
+    "README.md",
+    "docs/README.md",
+    "docs/PRIMER_SSOT.md",
+    "docs/STARTPACK_V1.md",
+    "docs/CHECKLIST_SSOT.md",
+    "docs/MILESTONE_REGISTRY_V1.md",
+    "docs/NEXT_BACKLOG_V1.md",
+    "docs/KABUL_KRITERLERI_10_10_VARDIS.md",
+    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+    "tools/README.md",
+    "tools/PRIMER_SNAPSHOT.md",
+    "tools/CHECKLIST_SSOT.md"
   ]
 }

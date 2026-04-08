@@ -1,6 +1,6 @@
 # SAHA KABUL CHECKLISTLERI V1
 
-Bu belge, M78 ile açılan saha kabul checklist omurgasının ilk sürümüdür.
+Bu belge, M78 ile açılan saha kabul checklist omurgasının güncel sürümüdür.
 
 ## Ortak karar alanı
 Her checklist satırı şu sonuçlardan biriyle kapanır:
@@ -11,8 +11,9 @@ Her checklist satırı şu sonuçlardan biriyle kapanır:
 2. ekran / akış görünürlüğü
 3. veri doğruluğu
 4. canlılık ve zamanlama
-5. kanıt / proof ekleri
-6. kısa operatör notu
+5. ana kanıt / proof ekleri
+6. destekleyici görsel kanıt
+7. kısa operatör notu
 
 ## Saha kabul başlıkları
 - giriş ve oturum doğrulaması
@@ -29,3 +30,9 @@ Her checklist satırı şu sonuçlardan biriyle kapanır:
 - cihaz / build bilgisi
 - kısa özet
 - sonuç
+- ana kanıt türü
+- gerekiyorsa ekran görüntüsü referansı
+
+## Proof notu
+- Ana kanıt mümkünse check çıktısı, log/export, state marker veya panel manifest izidir.
+- Ekran görüntüsü destekleyici katmandır; tek başına kabul kararı üretmez.

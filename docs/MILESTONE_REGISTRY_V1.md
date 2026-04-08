@@ -1,7 +1,7 @@
 # MILESTONE REGISTRY V1
 
-## 1) Tarihsel kapatilan resmi hatlar
-- `M59 - gozlemleme + saha teshis - green`
+## 1) Tarihsel kapatılan resmi hatlar
+- `M59 - gozlemleme + saha teshis - open historical gate`
 - `M60 - saha acceptance merkezi - green`
 - `M61 - ssot + milestone hizasi - green`
 - `M62 - ticari omurga guclendirme - green`
@@ -15,48 +15,43 @@
 - `M78.3 - operasyon dogrulama ozet ve filtre katmani - active-history`
 - `M79 - living verification toplama hatti - green`
 
-## 2) Guncel aktif sertlestirme hatti
-- `M80 - final sert kabul ve yuk guveni kapisi (resmi green degil)`
-- `M80.1 - hot panel daraltma`
-- `M80.2 - agreements + shifts giris yuku`
-- `M80.3 - georeview + shifts son giris yuku`
-- `M80.final - final sert kabul ve yuk guveni`
-- `M81 - mobil saha sertlestirme`
-- `M82 - saha oncesi cekirdek sertlestirme + controlled cleanup`
-- `M82.1 - backend correctness kilidi`
-- `M82.2 - web ui + api kontrat sertlestirme + buyuk dosyalari parcalama`
-- `M82.3 - mobil gercek kullanim tamamlama`
-- `M82.4 - mobil background gps / offline davranis sertlestirme`
-- `M82.5 - canli konum kaynak onceligi`
-- `M82.6 - release / env / acceptance sertlestirme`
-- `M82.7 - repo hygiene + controlled cleanup`
-- `M82.8 - verification 2.0`
-- `M82.9 - dormant payment backbone`
-- `M82.10 - super admin ticari ayarlar`
-- `M82.11 - payment readonly ticari yuzey`
+## 2) Güncel kapalı upper route
+- `M80 - final sert kabul ve yuk guveni - green`
+- `M80.1 - hot panel daraltma - green`
+- `M80.2 - agreements + shifts giris yuku - green`
+- `M80.3 - georeview + shifts son giris yuku - green`
+- `M81 - mobil saha sertlestirme - green`
+- `M82.1 - backend correctness kilidi - green`
+- `M82.8 - verification 2.0 - green`
+- `M82.9 - dormant payment backbone - green`
+- `M82.10 - super admin ticari ayarlar - green`
+- `M82.11 - payment readonly ticari yuzey - green`
+- `M83 - saha test hazirlik paketi - green`
+- `M84 - saha gozlem / geri bildirim dongusu - green`
+- `M85 - odeme opsiyonel pilot - green`
+- `M86 - odeme zorunlu rollout - green`
+- `M87 - odeme hesabi hazirligi - green`
+- `M88 - settlement operasyon masasi - green`
+- `M89 - settlement mutabakat masasi - green`
 
 ## 3) Sonraki resmi sira
-- `M83 - saha test hazirlik paketi`
-- `M84 - saha gozlem / geri bildirim dongusu`
-- `M85 - odeme opsiyonel pilot`
-- `M86 - odeme zorunlu rollout`
-- `M87 - odeme hesabi hazirligi`
-- `M88 - settlement operasyon masasi`
-- `M89 - settlement mutabakat masasi`
+- `M90 - canonical closure / 10-10 kapanis paketi`
+  - amac: canonical markdown, state, script-guide, proof-politikasi ve verification orkestrasyonunu tek gercekte toplamak
+  - kural: yeni urun ozelligi degil; docs/verify/hijyen hizasi onceliklidir
 
-## 4) Living verification convergence note
-- `M90 - living verification & acceptance convergence (hazirlik / takip notu)`
-  - amac: yasayan repo gercegi ile check / pack / acceptance / ssot hattini hizalamak
-  - kural: yeni urun ozelligi degil, dogrulama ve kabul hizasi onceliklidir
-
-## 5) Ticari omurga notu
-- Ticari kaynak yalniz agreement degildir.
+## 4) Ticari omurga notu
+- Ticari kaynak yalniz sozlesme degildir.
 - Kisa sureli isler icin `SHIFT_SERIES` de ticari kaynak olabilir.
 - Komisyon snapshot'i ticari kaynak olusturuldugu anda alinir.
 - Oda bazli override, global varsayilanin ustunde calisir.
 
-## 6) Bu dosyanin okuma yonu
-- Once bu dosya okunur.
-- Sonra `PRIMER_SSOT.md`.
-- Sonra `STARTPACK_V1.md`.
-- Sonra detay icin `SCRIPT_KILAVUZU_MILESTONE_HARITASI_V2_UPDATED.md`.
+## 5) Bu dosyanin okuma yonu
+- Once `tools/repo_contract_state.json` okunur.
+- Sonra bu dosya okunur.
+- Sonra `docs/PRIMER_SSOT.md` okunur.
+- Sonra `docs/STARTPACK_V1.md` okunur.
+- Sonra detay icin `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md` okunur.
+
+## REPO_CONTRACT_MARKERS_V1
+- REGISTRY_ROUTE_M63_M65_V1
+- REGISTRY_ROUTE_M80_M89_V1

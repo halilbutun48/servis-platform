@@ -46,9 +46,9 @@ $compose = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'infra\docker
 $manifest = Get-Content (Join-Path $RepoRoot 'tools\milestone_pack_manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $stageIds = @($manifest.stages | ForEach-Object { [string]$_.id })
 
-Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'latestHistoricalMasterPack' -Expected 79 -Label 'state latest historical master pack is 79'
 Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
-Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
+Assert-RepoContractStateValue -State $state -Property 'historicalNextMilestone' -Expected 'M80' -Label 'state historical next milestone is M80'
 Assert-RepoContractStateValue -State $state -Property 'latestManifestStage' -Expected 'M79' -Label 'state latest manifest stage stays M79'
 Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M80' -Label 'state marks M80 active'
 if (-not ($stageIds -contains 'M80')) { throw 'FAIL manifest contains M80' }

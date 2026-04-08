@@ -44,9 +44,9 @@ Assert-RepoContractContainsAny -Text $store -Needles @('summarizeoperationverifi
 Write-Host 'OK panel reflects m78.3 filter/summary surface'
 Assert-RepoContractContainsAny -Text $panel -Needles @('import { api } from "../../api";') -Label 'panel imports shared api helper from ../../api'
 if ($panel.ToLowerInvariant().Contains('../../lib/api')) { throw 'FAIL panel does not use removed ../../lib/api path' } else { Write-Host 'OK panel does not use removed ../../lib/api path' }
-Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'latestHistoricalMasterPack' -Expected 79 -Label 'state latest historical master pack is 79'
 Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
-Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
+Assert-RepoContractStateValue -State $state -Property 'historicalNextMilestone' -Expected 'M80' -Label 'state historical next milestone is M80'
 Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M78.3' -Label 'state keeps M78.3 active history'
 Assert-RepoContractContainsAny -Text $runbook -Needles @('filtre','son güncelleme','export görünürlüğü','stable_to') -Label 'runbook defines M78.3 scope'
 Assert-RepoContractContainsAny -Text $milestone -Needles @('summary','export-preview','son güncelleyen / son güncelleme','stable_to = 78') -Label 'milestone defines M78.3 outputs'

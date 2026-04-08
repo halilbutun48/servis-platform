@@ -43,12 +43,11 @@ $state = Read-RepoContractState -RepoRoot $RepoRoot
 MustContainAny $runbook @('Final Pilot Readiness','final pilot checklist','saha testi','go / no-go') 'runbook defines M58 pilot scope'
 MustContainAny $runbook @('resmi green degildir','resmi green değildir','manuel pilot kabul','saha kabul') 'runbook explains manual signoff gate'
 MustContainAny $milestone @('M58 FINAL PILOT READINESS','pack_m58_final_pilot_readiness.ps1','manuel pilot kabul') 'milestone documents M58 scope and command'
-Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
-Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
-MustContainAny $checklist @('M58','Final Pilot Readiness','M77','M78','M79') 'checklist keeps M58 visible with compatibility markers'
-WarnContainAny $toolsReadme @('pack_living.ps1','tools
-epo_contract_state.json','M79') 'tools readme lists state-first route'
-MustContainAny $toolsChecklist @('M58','Final Pilot Readiness','M77','M78','M79') 'tools checklist keeps M58 visible with compatibility markers'
+Assert-RepoContractStateValue -State $state -Property 'latestHistoricalMasterPack' -Expected 79 -Label 'state latest historical master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'historicalNextMilestone' -Expected 'M80' -Label 'state historical next milestone is M80'
+MustContainAny $checklist @('CHECKLIST_M57_M58_COMPAT_V1','M58','Final Pilot Readiness','M77','M78','M79') 'checklist keeps M58 visible with compatibility markers'
+WarnContainAny $toolsReadme @('TOOLS_README_STATE_FIRST_ROUTE_V1','pack_living.ps1','tools/repo_contract_state.json','M79') 'tools readme lists state-first route'
+MustContainAny $toolsChecklist @('TOOLS_CHECKLIST_M57_M58_COMPAT_V1','M58','Final Pilot Readiness','M77','M78','M79') 'tools checklist keeps M58 visible with compatibility markers'
 MustContainAny $script @('Surucu Kodu + PIN','KVKK','go / no-go','go/no-go') 'm58 runtime check covers pilot readiness baseline'
 MustContainAny $pack @('m58_final_pilot_readiness_check.js','check_m58_final_pilot_readiness_repo_contract.ps1','PACK PASS OK') 'm58 pack wires runtime and repo contract'
 
