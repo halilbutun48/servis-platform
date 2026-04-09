@@ -194,7 +194,9 @@ function closeSocket() {
     socket?.offAny?.();
     socket?.removeAllListeners?.();
     socket?.disconnect?.();
-  } catch {}
+  } catch {
+    // best effort: socket teardown should never block reconnect flow
+  }
   socket = null;
 }
 

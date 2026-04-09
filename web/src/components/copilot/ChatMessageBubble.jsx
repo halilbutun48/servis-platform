@@ -49,7 +49,7 @@ function writeFeedbackLog(entry) {
   try {
     window.localStorage.setItem(FEEDBACK_LOG_KEY, JSON.stringify(next));
     window.dispatchEvent(new CustomEvent(FEEDBACK_EVENT, { detail: { count: next.length } }));
-  } catch {}
+  } catch { /* no-op: feedback persistence is best-effort */ }
 }
 
 function SectionCard({ section }) {
@@ -81,7 +81,7 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
     current[messageId] = value;
     try {
       window.localStorage.setItem(FEEDBACK_KEY, JSON.stringify(current));
-    } catch {}
+    } catch { /* no-op: local feedback cache is best-effort */ }
     writeFeedbackLog({
       messageId,
       value,

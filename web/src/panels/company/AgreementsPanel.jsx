@@ -163,7 +163,7 @@ export default function AgreementsPanel() {
   // rooms dropdown
   const [rooms, setRooms] = useState([]);
   const [roomsSupported, setRoomsSupported] = useState(true);
-  const [roomErr, setRoomErr] = useState("");
+  const [_roomErr, setRoomErr] = useState("");
   const [selectedRoomScore, setSelectedRoomScore] = useState(null);
 
   // ✅ M27: advanced create (optional)
@@ -477,7 +477,7 @@ export default function AgreementsPanel() {
     }
   }
 
-  function askExtendOfferDetails(a) {
+  function askExtendOfferDetails() {
     const raw = prompt("Uzatma için yeni teklif (₺) — boş bırak: değişmesin", "");
     let offerAmount = null;
     if (raw != null && String(raw).trim() !== "") {

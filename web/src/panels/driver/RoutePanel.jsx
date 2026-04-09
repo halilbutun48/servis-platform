@@ -245,7 +245,7 @@ useEffect(() => {
           nextStop: next,
         };
       });
-    } catch {}
+    } catch { /* no-op: stop progress update is best effort */ }
   }
 
 

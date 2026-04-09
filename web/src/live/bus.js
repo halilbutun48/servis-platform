@@ -25,13 +25,17 @@ export function invalidate(topic, payload) {
 
     // sliding: reset timer
     if (rec.timer) {
-      try { clearTimeout(rec.timer); } catch {}
+      try { clearTimeout(rec.timer); } catch {
+        // best effort: stale debounce timer cleanup
+      }
       rec.timer = null;
     }
 
     rec.lastPayload = payload ?? null;
     rec.timer = window.setTimeout(() => {
-      try { deb.delete(t); } catch {}
+      try { deb.delete(t); } catch {
+        // best effort: debounce map cleanup
+      }
 
       et.dispatchEvent(
         new CustomEvent(t, {

@@ -1,5 +1,5 @@
 // web/src/layout/NavDock.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
 import { getCopilotMenuEntry } from "../copilot/screenRegistry";
@@ -48,23 +48,20 @@ function Section({ title, items, path }) {
 
 export default function NavDock({ role, path, me }) {
   const LS_ADV = "psv1:nav:advanced";
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
-  useEffect(() => {
+  const [showAdvanced, setShowAdvanced] = useState(() => {
     try {
-      const raw = localStorage.getItem(LS_ADV);
-      setShowAdvanced(raw === "1");
+      return localStorage.getItem(LS_ADV) === "1";
     } catch {
-      setShowAdvanced(false);
+      return false;
     }
-  }, []);
+  });
 
   function toggleAdvanced() {
     setShowAdvanced((p) => {
       const next = !p;
       try {
         localStorage.setItem(LS_ADV, next ? "1" : "0");
-      } catch {}
+      } catch { /* no-op: advanced mode preference is best-effort */ }
       return next;
     });
   }

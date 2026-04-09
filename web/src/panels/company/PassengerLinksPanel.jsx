@@ -110,7 +110,7 @@ export default function PassengerLinksPanel() {
       try {
         await navigator.clipboard.writeText(url);
         setCopied(String(personelId));
-      } catch {}
+      } catch { /* no-op: clipboard copy is best-effort */ }
       await loadLinks(shiftId);
     } catch (e) {
       setErr(String(e?.message || e));
@@ -142,7 +142,7 @@ export default function PassengerLinksPanel() {
     try {
       await navigator.clipboard.writeText(t);
       setCopied(String(key));
-    } catch {}
+    } catch { /* no-op: clipboard copy is best-effort */ }
   }
 
   return (

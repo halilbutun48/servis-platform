@@ -18,7 +18,7 @@ export default class ErrorBoundary extends React.Component {
     return null;
   }
 
-  componentDidCatch(error, info) {
+  componentDidCatch() {
     // İstersen log:
     // console.error("UI crashed:", error, info);
   }

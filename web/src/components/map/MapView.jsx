@@ -94,14 +94,13 @@ function iconStop(label = "DURAK", variant = "default") {
   });
 }
 
-function FitController({ points, followPoint, followZoom, fitKey, followResetKey }) {
+function FitController({ points, followPoint, followZoom, fitKey }) {
   const map = useMap();
   const didFitRef = useRef(false);
   const [follow, setFollow] = useState(true);
   const followRef = useRef(true);
 
   useEffect(() => { followRef.current = follow; }, [follow]);
-  useEffect(() => { setFollow(true); }, [followResetKey]);
 
   useEffect(() => {
     const off = () => { if (followRef.current) setFollow(false); };
@@ -294,11 +293,11 @@ export default function MapView({
       <div style={{ height, width: "100%", position: "relative" }}>
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <FitController
+            key={`fit:${fitKey}:${selectedVehicleId ?? "none"}`}
             points={allPoints}
             followPoint={followPoint}
             followZoom={followZoom}
             fitKey={fitKey}
-            followResetKey={selectedVehicleId}
           />
           <FocusController />
 

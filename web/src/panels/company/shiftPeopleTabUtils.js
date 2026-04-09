@@ -67,7 +67,7 @@ function normalizeCoord(v, kind) {
 export function sanitizeAddress(input) {
   let s = String(input ?? "").trim();
   if (!s) return "";
-  s = s.replace(/[\/]+/g, " ");
+  s = s.replace(/[/]+/g, " ");
   s = s.replace(/\b(no|no\.|numara|daire|apt|kat)\b\s*[:#-]?\s*\S+/gi, " ");
   s = s.replace(/\s+/g, " ").trim();
   if (!/türkiye|turkiye|tr\b/i.test(s)) s = s + " Türkiye";

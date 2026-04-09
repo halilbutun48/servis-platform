@@ -18,11 +18,6 @@ function fmtTR(iso) {
   });
 }
 
-function formatTRY(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return "-";
-  return new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(n) + " ₺";
-}
 
 function pickCount(...values) {
   for (const value of values) {
@@ -58,14 +53,6 @@ function StatusBadge({ value }) {
   return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{value || "-"}</span>;
 }
 
-function offerAmountLabel(offer) {
-  const parts = [];
-  const company = formatTRY(offer?.amountCompany);
-  const room = formatTRY(offer?.amountRoom);
-  if (company !== "-") parts.push(`Firma: ${company}`);
-  if (room !== "-") parts.push(`Oda: ${room}`);
-  return parts.length ? parts.join(" / ") : "-";
-}
 
 export default function CompanyCommercialFlowPanel() {
   const { token } = useSession();
@@ -189,7 +176,7 @@ export default function CompanyCommercialFlowPanel() {
         window.dispatchEvent(new CustomEvent("company:shifts:focus", {
           detail: { section, shiftIds: shiftId ? [Number(shiftId)] : [] },
         }));
-      } catch (_) {}
+      } catch { /* no-op: focus event is best effort */ }
     }, 60);
   }
 

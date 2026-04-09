@@ -51,7 +51,7 @@ export default function OrganizationCenterPanel() {
   function openPlan(id) {
     try {
       sessionStorage.setItem("organization:selectedPlanId", String(id));
-    } catch {}
+    } catch { /* no-op: remembered selection is best-effort */ }
     navigate("/organization/plans");
   }
 

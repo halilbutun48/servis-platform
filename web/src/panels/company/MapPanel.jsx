@@ -1,7 +1,6 @@
 // web/src/panels/company/MapPanel.jsx
 import { formatDateTimeTR, nowIsoTR } from "../../utils/time";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
@@ -11,7 +10,6 @@ import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
 import { getPath } from "../../router";
-import { cachedGet } from "../../utils/uiDataCache";
 import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 
@@ -458,7 +456,7 @@ export default function CompanyMapPanel() {
   function fitAll() {
     try {
       window.dispatchEvent(new Event("map:fitAll"));
-    } catch {}
+    } catch { /* no-op: fitAll event dispatch is best effort */ }
   }
 
   return (

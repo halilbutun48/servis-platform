@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
-import { companyBase } from "../../utils/paths";
 import { useAutoReload } from "../../live/useAutoReload";
 import QrCanvas from "../../components/checkin/QrCanvas";
 import { formatDateTimeTR } from "../../utils/time";
@@ -22,7 +21,6 @@ function statusPill(status) {
 export default function CompanyCheckinPanel() {
   const { token, me } = useSession();
   const featureOn = true;
-  const base = companyBase(me);
 
   const [items, setItems] = useState([]);
   const [selectedShiftId, setSelectedShiftId] = useState("");
@@ -169,7 +167,7 @@ export default function CompanyCheckinPanel() {
     try {
       if (!lastIssued?.token) return;
       await navigator.clipboard.writeText(lastIssued.token);
-    } catch {}
+    } catch { /* no-op: clipboard copy is best-effort */ }
   }
 
 

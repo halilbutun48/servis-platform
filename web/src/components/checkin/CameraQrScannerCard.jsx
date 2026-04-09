@@ -5,7 +5,7 @@ function stopStream(ref) {
   if (!stream) return;
   try {
     for (const tr of stream.getTracks?.() || []) tr.stop();
-  } catch {}
+  } catch { /* no-op: stream may already be stopped */ }
   ref.current = null;
 }
 

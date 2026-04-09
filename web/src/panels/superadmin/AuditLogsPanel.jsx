@@ -24,7 +24,7 @@ export default function AuditLogsPanel() {
   function copyText(t) {
     try {
       navigator.clipboard.writeText(String(t || ""));
-    } catch {}
+    } catch { /* no-op: clipboard copy is best-effort */ }
   }
 
   async function load() {

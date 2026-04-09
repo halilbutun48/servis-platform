@@ -1,7 +1,6 @@
 // web/src/panels/personel/LivePanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
-import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
@@ -315,7 +314,7 @@ export default function PersonelLivePanel() {
   function fitAll() {
     try {
       window.dispatchEvent(new Event("map:fitAll"));
-    } catch {}
+    } catch { /* no-op: fitAll event dispatch is best effort */ }
   }
 
   return (

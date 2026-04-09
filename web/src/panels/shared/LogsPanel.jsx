@@ -84,7 +84,7 @@ function badgeClass(v) {
 }
 
 export default function LogsPanel() {
-  const { token, me } = useSession();
+  const { token } = useSession();
 
   // defaults
   const [kind, setKind] = useState("requests"); // start with global

@@ -6,7 +6,9 @@ export function setCopilotSelection(detail) {
     const next = detail && typeof detail === "object" ? detail : null;
     window[KEY] = next;
     window.dispatchEvent(new CustomEvent(EVT, { detail: next }));
-  } catch {}
+  } catch {
+    // best effort: selection sync is non-critical
+  }
 }
 
 export function clearCopilotSelection(scopeKey = "") {
@@ -16,7 +18,9 @@ export function clearCopilotSelection(scopeKey = "") {
       window[KEY] = null;
       window.dispatchEvent(new CustomEvent(EVT, { detail: null }));
     }
-  } catch {}
+  } catch {
+    // best effort: selection clear is non-critical
+  }
 }
 
 export function readCopilotSelection() {

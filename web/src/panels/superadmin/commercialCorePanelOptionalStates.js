@@ -1,3 +1,5 @@
+import { api } from "../../api";
+
 function buildOptionalEndpointState(kind, status) {
   const baseCards = { commercialSources: 0, agreementSources: 0, shiftSeriesSources: 0, settlementPlans: 0, paymentAccounts: 0, commissionRules: 0 };
   if (kind === "paymentBackbone") {
@@ -240,7 +242,7 @@ function buildOptionalEndpointState(kind, status) {
   };
 }
 
-async function readOptional(path, fallbackKind) {
+export async function readOptional(path, fallbackKind) {
   try {
     const result = await api(path);
     return { ok: true, data: result };

@@ -97,7 +97,7 @@ export default function SchoolParentInvitePanel() {
     try {
       if (!text) return;
       await navigator.clipboard.writeText(text);
-    } catch {}
+    } catch { /* no-op: clipboard copy is best-effort */ }
   }
 
   async function revokeAccess(id) {

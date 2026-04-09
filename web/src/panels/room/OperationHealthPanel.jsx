@@ -88,7 +88,7 @@ function issueRouteKey(issue = {}) {
 function openRoomCopilotWithHint(hint) {
   try {
     sessionStorage.setItem(ENTRY_HINT_KEY, JSON.stringify(hint));
-  } catch {}
+  } catch { /* no-op: session storage may be unavailable */ }
   navigate("/room/copilot");
 }
 

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
-import { navigate } from "../../router";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import DriverPenaltyBadge from "../../components/driver/DriverPenaltyBadge";
 import DriverPenaltyForm from "../../components/driver/DriverPenaltyForm";
@@ -297,7 +296,6 @@ export default function DriversPanel() {
       const stat = driverStatus(d.id);
       const bv = stat?.vehicle ?? d?.boundVehicle ?? boundVehicleByDriverId.get(Number(d.id)) ?? null;
       const ops = driverOps(d);
-      const currentNext = d?.currentShift ? `Current #${d.currentShift.id}` : d?.nextShift ? `Next #${d.nextShift.id}` : "-";
 
       if (!includesFilter([d?.fullName, d?.driverCode, d?.id], statusColFilter.driver)) return false;
       if (!includesFilter([d?.phone], statusColFilter.phone)) return false;

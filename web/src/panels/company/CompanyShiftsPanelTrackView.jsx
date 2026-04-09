@@ -76,6 +76,7 @@ export default function CompanyShiftsPanelTrackView(props) {
     rooms,
     roomScores,
     setOfferModal,
+    setOffersModal,
     toggleOfferRoom,
     submitOfferModal,
     offersModal,
@@ -127,7 +128,7 @@ export default function CompanyShiftsPanelTrackView(props) {
                 setTrackTab("list");
                 setFinalStatus("OPEN");
                 setTimeout(() => {
-                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op: scrolling is best effort */ }
                 }, 0);
               }}
               title="Liste: APPROVED + ACTIVE"
@@ -142,7 +143,7 @@ export default function CompanyShiftsPanelTrackView(props) {
                 setTrackTab("list");
                 setFinalStatus("ACTIVE");
                 setTimeout(() => {
-                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op: scrolling is best effort */ }
                 }, 0);
               }}
             >

@@ -52,10 +52,10 @@ function FitBounds({ bounds }) {
   useEffect(() => {
     // Map is in a modal; make sure Leaflet measures size correctly.
     const t = setTimeout(() => {
-      try { map.invalidateSize(); } catch {}
+      try { map.invalidateSize(); } catch { /* no-op: map may be unmounted */ }
       try {
         if (bounds) map.fitBounds(bounds, { padding: [24, 24] });
-      } catch {}
+      } catch { /* no-op: bounds may be incomplete during modal open */ }
     }, 50);
 
     return () => clearTimeout(t);
@@ -189,7 +189,7 @@ function scrollToStopRow(stopId) {
     const el = document.getElementById(id);
     if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
     setSelectedStopId(stopId);
-  } catch {}
+  } catch { /* no-op: selected stop may not exist in DOM yet */ }
 }
   const peoplePts = (effPeople || [])
     .filter((p) => typeof p?.lat === "number" && typeof p?.lng === "number")

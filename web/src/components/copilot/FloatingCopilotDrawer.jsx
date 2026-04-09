@@ -14,8 +14,8 @@ const SIZE_PRESETS = { S: { width: 440, height: 560 }, M: { width: 560, height: 
 function loadDrawerState() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; } catch { return {}; }
 }
-function saveDrawerState(next) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {} }
-function loadHistory() { try { const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
+function saveDrawerState(next) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* no-op: storage may be unavailable */ } }
+function loadHistory() { try { const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); return Array.isArray(parsed) ? parsed : []; } catch { /* no-op: history may be unreadable */ return []; } }
 
 function normalizeScopePath(path) {
   return String(path || "").split("?")[0];
@@ -173,7 +173,11 @@ function filterMessageActions(actions, suggestions, followUpPrompt) {
     if (visible.some((x) => x.__k === key)) continue;
     visible.push({ ...action, __k: key });
   }
-  return visible.slice(0, 2).map(({ __k, ...rest }) => rest);
+  return visible.slice(0, 2).map((item) => {
+    const rest = { ...item };
+    delete rest.__k;
+    return rest;
+  });
 }
 
 export default function FloatingCopilotDrawer({ path: propPath = "" }) {
@@ -198,8 +202,8 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;
 
   useEffect(() => { saveDrawerState({ open, mode, size }); }, [open, mode, size]);
-  useEffect(() => { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-20))); } catch {} if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
-  useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch {} }, []);
+  useEffect(() => { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-20))); } catch { /* no-op: history persistence is best effort */ } if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
+  useEffect(() => () => { try { window.speechSynthesis?.cancel(); } catch { /* no-op: speech synthesis may be unavailable */ } }, []);
 
   useEffect(() => {
     const evt = copilotSelectionEventName();
@@ -363,7 +367,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
 
   function speak(text, idx) {
     const t = String(text || "").trim(); if (!t) return;
-    try { const synth = window.speechSynthesis; if (!synth) return; synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "tr-TR"; u.rate = 0.95; u.onend = () => setReadingIndex(-1); setReadingIndex(idx); synth.speak(u); } catch {}
+    try { const synth = window.speechSynthesis; if (!synth) return; synth.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "tr-TR"; u.rate = 0.95; u.onend = () => setReadingIndex(-1); setReadingIndex(idx); synth.speak(u); } catch { /* no-op: speech synthesis may fail */ }
   }
 
   if (!token || !me || isCopilotPage) return null;

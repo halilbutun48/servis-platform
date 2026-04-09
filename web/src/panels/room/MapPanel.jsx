@@ -360,7 +360,7 @@ export default function RoomMapPanel() {
   function fitAll() {
     try {
       window.dispatchEvent(new Event("map:fitAll"));
-    } catch {}
+    } catch { /* no-op: fitAll event dispatch is best effort */ }
   }
 
   return (

@@ -12,7 +12,9 @@ export function extractCheckinToken(raw) {
       const m = String(nested).match(/psv1:[A-Za-z0-9_-]+/);
       if (m?.[0]) return m[0];
     }
-  } catch {}
+  } catch {
+    // best effort: plain text may not be valid JSON
+  }
 
   try {
     const u = new URL(txt);
@@ -21,7 +23,9 @@ export function extractCheckinToken(raw) {
       const m = String(q).match(/psv1:[A-Za-z0-9_-]+/);
       if (m?.[0]) return m[0];
     }
-  } catch {}
+  } catch {
+    // best effort: input may not be a valid URL
+  }
 
   return txt.startsWith("psv1:") ? txt : "";
 }

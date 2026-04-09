@@ -6,7 +6,6 @@ import {
   VEHICLE_TYPES,
   fmtDate,
   fmtDriverHuman,
-  fmtTR,
   gpsAtLabel,
   hasGpsFix,
   setSelMany,

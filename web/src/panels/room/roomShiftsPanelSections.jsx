@@ -1,5 +1,5 @@
 import ListSelectionBanner from "../../components/ListSelectionBanner";
-import { buildCapacityMeta, formatShiftDateTimeTR as fmtTR } from "./roomShiftsPanelUtils";
+import { formatShiftDateTimeTR as fmtTR } from "./roomShiftsPanelUtils";
 import { RoomPendingShiftRow, RoomAllShiftRow } from "./roomShiftsPanelRows";
 import {
   AgreementBadge,

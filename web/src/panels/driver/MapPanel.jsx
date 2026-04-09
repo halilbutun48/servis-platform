@@ -69,7 +69,7 @@ export default function DriverMapPanel() {
         const dt = new Date(m.at);
         if (!Number.isNaN(dt.getTime())) atIso = m.at;
       }
-    } catch {}
+    } catch { /* no-op: malformed GPS timestamp falls back to now */ }
     if (!atIso) atIso = nowIsoTR();
     const st = String(m.status || "").toUpperCase();
 

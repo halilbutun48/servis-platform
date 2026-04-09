@@ -84,7 +84,9 @@ export async function flushQueue({ token, apiFn }) {
     try {
       item.lastTriedAt = nowIsoTR();
       saveQueue(q);
-    } catch {}
+    } catch {
+      // best effort: retry metadata stamp should not block flush
+    }
 
     try {
       await apiFn(item.url, { method: item.method, body: item.body ?? undefined, token });

@@ -4,7 +4,7 @@ import AppShell from "./layout/AppShell";
 import { useSession } from "./state/session";
 import { login } from "./api";
 import { useHashRoute, navigate } from "./router";
-import { companyBase, normalizeCompanyPath } from "./utils/paths";
+import { companyBase } from "./utils/paths";
 import BrandMark from "./components/BrandMark";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { startLiveWs, stopLiveWs } from "./live/ws";

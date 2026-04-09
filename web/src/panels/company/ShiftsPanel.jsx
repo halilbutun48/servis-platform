@@ -1173,6 +1173,7 @@ function usePlanDraftToRequest(draft) {
           rooms={rooms}
           roomScores={roomScores}
           setOfferModal={setOfferModal}
+          setOffersModal={setOffersModal}
           toggleOfferRoom={toggleOfferRoom}
           submitOfferModal={submitOfferModal}
           offersModal={offersModal}

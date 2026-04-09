@@ -49,12 +49,6 @@ function ymd(d) {
   return String(d || "").slice(0, 10);
 }
 
-function agreementRowStyle(isSelected) {
-  return {
-    cursor: 'pointer',
-    background: isSelected ? 'rgba(61, 122, 255, 0.10)' : 'transparent',
-  };
-}
 
 function parseTryInput(raw) {
   if (raw == null) return null;

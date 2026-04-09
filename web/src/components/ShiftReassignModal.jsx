@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const REASONS = [
   ["VEHICLE_BREAKDOWN", "Araç arızası"],
@@ -9,24 +9,14 @@ const REASONS = [
   ["OTHER", "Diğer"],
 ];
 
-export default function ShiftReassignModal({ open, shift, vehicles = [], drivers = [], busy = false, onClose, onSubmit }) {
-  const [vehicleId, setVehicleId] = useState("");
-  const [driverId, setDriverId] = useState("");
+function ShiftReassignModalBody({ shift, vehicles, drivers, busy, onClose, onSubmit }) {
+  const [vehicleId, setVehicleId] = useState(() => (shift?.vehicleId ? String(shift.vehicleId) : ""));
+  const [driverId, setDriverId] = useState(() => (shift?.driverId ? String(shift.driverId) : ""));
   const [reason, setReason] = useState("VEHICLE_BREAKDOWN");
   const [note, setNote] = useState("");
 
-  useEffect(() => {
-    if (!open || !shift) return;
-    setVehicleId(shift?.vehicleId ? String(shift.vehicleId) : "");
-    setDriverId(shift?.driverId ? String(shift.driverId) : "");
-    setReason("VEHICLE_BREAKDOWN");
-    setNote("");
-  }, [open, shift]);
-
   const currentVehicle = useMemo(() => vehicles.find((v) => Number(v.id) === Number(shift?.vehicleId)) || null, [vehicles, shift]);
   const currentDriver = useMemo(() => drivers.find((d) => Number(d.id) === Number(shift?.driverId)) || null, [drivers, shift]);
-
-  if (!open || !shift) return null;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -95,5 +85,23 @@ export default function ShiftReassignModal({ open, shift, vehicles = [], drivers
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ShiftReassignModal({ open, shift, vehicles = [], drivers = [], busy = false, onClose, onSubmit }) {
+  if (!open || !shift) return null;
+
+  const modalKey = `${shift.id || "new"}:${shift.vehicleId || "none"}:${shift.driverId || "none"}`;
+
+  return (
+    <ShiftReassignModalBody
+      key={modalKey}
+      shift={shift}
+      vehicles={vehicles}
+      drivers={drivers}
+      busy={busy}
+      onClose={onClose}
+      onSubmit={onSubmit}
+    />
   );
 }

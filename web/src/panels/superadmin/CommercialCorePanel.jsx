@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { Card, fmtBps, fmtDateTime, InputRow, promptMaybe, stripHtmlNoise } from "./commercialCorePanelShared";
-import { buildOptionalEndpointState } from "./commercialCorePanelOptionalStates";
+import { readOptional } from "./commercialCorePanelOptionalStates";
 
 export default function CommercialCorePanel() {
   const [manifest, setManifest] = useState(null);

@@ -172,6 +172,7 @@ export default function RoomOffersPanel() {
 
   useEffect(() => {
     load();
+    loadAssets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
@@ -346,13 +347,6 @@ export default function RoomOffersPanel() {
     navigate("/room/shifts");
   }
 
-  async function openApprove(o) {
-    const sid = Number(o?.shiftId);
-    if (!sid) return;
-    setErr("");
-    await loadAssets();
-    setApproveModal({ open: true, shiftId: sid, offerId: Number(o?.id) || null, vehicleId: "", driverId: "" });
-  }
 
   async function loadPoolSummary(shiftId, { force = false } = {}) {
     const sid = Number(shiftId || approveModal.shiftId);
