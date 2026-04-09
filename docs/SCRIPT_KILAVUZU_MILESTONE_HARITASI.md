@@ -19,7 +19,7 @@ Kapsam: Bu doküman, M0'dan M89'a kadar milestone ve script ilişkisini **tek re
 
 ## 3) Tek rehber kuralı
 - Bu dosya aktif script rehberidir.
-- `SCRIPT_KILAVUZU_MILESTONE_HARITASI_V1.md`, `V2_UPDATED.md`, `V3_2026-04-07.md` artık tarihsel yönlendirme dosyasıdır.
+- `docs/_archive/legacy-notes/script-guide-redirects/` altındaki tarihsel yönlendirme dosyaları artık aktif rehber değildir.
 - Güncel rota için yalnız bu dosya, `PRIMER_SSOT`, `MILESTONE_REGISTRY` ve `CHECKLIST_SSOT` birlikte okunur.
 
 ## 4) Master orchestration

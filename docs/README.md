@@ -30,6 +30,6 @@
 - Güncel aktif anlam için her zaman `PRIMER_SSOT.md`, `MILESTONE_REGISTRY_V1.md` ve `SCRIPT_KILAVUZU_MILESTONE_HARITASI.md` baz alınır.
 
 ## Arşiv
-- `_archive/plans/` — eski sprint/epic planları
-- `_archive/legacy-notes/` — eski notlar
-- `_archive/primer-versions/` — eski primer sürümleri
+- `docs/_archive/plans/` — eski sprint/epic planları
+- `docs/_archive/legacy-notes/` — eski notlar
+- `docs/_archive/primer-versions/` — eski primer sürümleri
