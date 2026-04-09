@@ -1,0 +1,59 @@
+name: Vardis Verification Visibility
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: vardis-verification-visibility-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repo-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Canonical verification chain
+        run: npm run verify:ci
+
+      - name: Upload repo audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-audit-latest
+          path: artifacts/repo-audit/repo_audit_latest.json
+          if-no-files-found: error
+
+  shareable-export:
+    needs: repo-verification
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Export hygiene pack
+        shell: pwsh
+        run: ./tools/pack_m90_c7_export_package_hygiene.ps1 -RepoRoot ${{ github.workspace }}
+
+      - name: Upload shareable export evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shareable-export-evidence
+          path: |
+            artifacts/repo-audit/repo_audit_latest.json
+            artifacts/shareable-export/servis-platform_shareable_*.zip
+          if-no-files-found: error

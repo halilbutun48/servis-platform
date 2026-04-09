@@ -18,10 +18,10 @@ $policy = $state.shareablePackageHygiene
 if (-not $policy) { throw "shareablePackageHygiene policy missing in repo_contract_state.json" }
 
 function Normalize-Rel([string]$Base, [string]$Full) {
-  $baseNorm = [System.IO.Path]::GetFullPath($Base).TrimEnd('\','/')
+  $baseNorm = [System.IO.Path]::GetFullPath($Base).TrimEnd('\\','/')
   $fullNorm = [System.IO.Path]::GetFullPath($Full)
   if ($fullNorm.StartsWith($baseNorm, [System.StringComparison]::OrdinalIgnoreCase)) {
-    $rel = $fullNorm.Substring($baseNorm.Length).TrimStart('\','/')
+    $rel = $fullNorm.Substring($baseNorm.Length).TrimStart('\\','/')
   } else {
     $rel = $fullNorm
   }
@@ -83,9 +83,3 @@ if ($tarCmd) {
 Write-Host ("INFO shareable export copied files: " + $copied)
 Write-Host ("INFO shareable export zip: " + $zipPath)
 $zipPath
-
-
-
-
-
-

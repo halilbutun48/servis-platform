@@ -15,6 +15,7 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - `M90B.1` executable closure gate
 - `M90C.6` hot-file queue policy
 - `M90C.7` export / package hygiene closure
+- `M90C.8` CI / verification visibility
 - `M90C` proof reformu
 - `M90D` tek parça script rehberi
 - `M90E` repo hijyen kapanışı
@@ -34,6 +35,13 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - Komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Shareable export: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
 - Beklenen sonuç: env/build/runtime-json/overlay kalıntısı taşımayan shareable export zip üretilir; satır azaltma hâlâ en sona bırakılır.
+
+## M90C.8 çalışma mantığı
+- Bu adım kanonik doğrulama zincirini repo-native görünür hale getirir.
+- Root verify komutu: `npm run verify:ci`
+- Komut: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
+- Workflow: `.github/workflows/vardis_verification_visibility.yml`
+- Beklenen sonuç: `repo-verification` ve `shareable-export` işleri repo audit ile sanitized shareable export artefaktlarını görünür kılar; satır azaltma hâlâ en sona bırakılır.
 
 ## Değişmez kural
 - yeni ürün özelliği açılmaz

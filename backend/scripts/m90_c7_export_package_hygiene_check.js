@@ -78,7 +78,7 @@ const preflightBundle = preflight + "\n" + preflightInternal;
 expect(includesText(preflightBundle, "web\\dist") && includesText(preflightBundle, "mobile\\dist"), "repo hygiene preflight removes web/mobile dist residues");
 expect(includesText(preflightBundle, "pack_living_final.log") && includesText(preflightBundle, "README_M*_OVERLAY*.txt"), "repo hygiene preflight removes pack log and overlay readme residues");
 
-expect(includesText(exportTool, "Compress-Archive"), "shareable export tool creates sanitized zip output");
+expect(includesText(exportTool, "Compress-Archive") || includesText(exportTool, "tar.exe") || includesText(exportTool, "CreateFromDirectory"), "shareable export tool creates sanitized zip output");
 expect(includesText(exportTool, "backend/data/*.json") && includesText(exportTool, "README_M*_OVERLAY*.txt"), "shareable export tool excludes runtime json and overlay residue globs");
 expect(includesText(exportTool, "artifacts/") && includesText(exportTool, "web/dist/") && includesText(exportTool, "mobile/dist/"), "shareable export tool excludes artifacts and dist trees");
 expect(includesText(exportTool, "pack_living_final.log") && includesText(exportTool, "pack_living_latest.log"), "shareable export tool excludes pack logs");
@@ -87,7 +87,7 @@ const docsBundle = [primer, backlog, toolsPrimer, toolsReadme, scriptGuide, mile
 expect(includesText(docsBundle, "M90C.7"), "canonical docs mention M90C.7");
 expect(includesText(docsBundle, "export / package hygiene closure") || includesText(docsBundle, "export-package hygiene closure"), "canonical docs mention export/package hygiene closure");
 expect(includesText(docsBundle, "satır azaltma") || includesText(docsBundle, "line-count reduction stays deferred"), "canonical docs preserve deferred line-count policy");
-expect(includesText(primer, "M90C.7") && includesText(primer, "export / package hygiene closure"), "primer points to M90C.7 as current official work");
+expect(includesText(primer, "M90C.7") && includesText(primer, "export / package hygiene closure"), "primer preserves M90C.7 export hygiene record");
 expect(includesText(toolsReadme, "pack_m90_c7_export_package_hygiene.ps1"), "tools readme exposes M90C.7 pack command");
 expect(includesText(scriptGuide, "RUNBOOK_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE.md"), "script guide exposes M90C.7 runbook");
 

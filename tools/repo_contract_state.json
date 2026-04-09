@@ -4,7 +4,7 @@
   "latestHistoricalMasterPack": 79,
   "stableTo": 78,
   "historicalStableTo": 78,
-  "nextMilestone": "M90",
+  "nextMilestone": "M90C.8",
   "historicalNextMilestone": "M80",
   "livingUpperRouteFrom": 80,
   "livingUpperRouteTo": 89,
@@ -61,7 +61,8 @@
     "M90",
     "M90B.1",
     "M90C.6",
-    "M90C.7"
+    "M90C.7",
+    "M90C.8"
   ],
   "canonicalDocs": [
     "README.md",
@@ -189,5 +190,19 @@
       "README_M*_OVERLAY*.txt"
     ],
     "exportTool": "tools/export_shareable_repo_bundle.ps1"
+  },
+  "ciVerificationVisibility": {
+    "goal": "repo-native-ci-verification-visibility",
+    "workflowPath": ".github/workflows/vardis_verification_visibility.yml",
+    "primaryCommand": "npm run verify:ci",
+    "exportPack": "tools/pack_m90_c7_export_package_hygiene.ps1",
+    "jobs": [
+      "repo-verification",
+      "shareable-export"
+    ],
+    "artifacts": [
+      "artifacts/repo-audit/repo_audit_latest.json",
+      "artifacts/shareable-export/servis-platform_shareable_*.zip"
+    ]
   }
 }

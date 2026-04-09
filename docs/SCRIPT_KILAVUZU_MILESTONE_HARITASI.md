@@ -351,6 +351,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Shareable export: `tools/export_shareable_repo_bundle.ps1`
 - Ana konu: env/build/runtime-json/overlay kalıntısı taşımayan temiz shareable repo zip üretmek.
 
+### M90C.8 — CI / verification visibility [PACK]
+- Pack: `tools/pack_m90_c8_ci_verification_visibility.ps1`
+- Runbook: `docs/RUNBOOK_M90C_8_CI_VERIFICATION_VISIBILITY.md`
+- Root verify: `npm run verify:ci`
+- Workflow: `.github/workflows/vardis_verification_visibility.yml`
+- Ana konu: kanonik doğrulama zincirini repo-native görünür hale getirmek ve repo audit + sanitized export artifact'larını CI içinde görünür kılmak.
+
 ## 11) Hızlı okuma özeti
 - `M0→M41`: çekirdek temel hat
 - `M42→M58`: mobil / KVKK / hazırlık ön bant

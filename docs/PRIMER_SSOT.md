@@ -9,7 +9,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
-- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 kapanmıştır; sıradaki resmi iş: `M90C.7 — export / package hygiene closure`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 kapanmıştır; sıradaki resmi iş: `M90C.8 — CI / verification visibility`
 
 ## Güncel yaşayan sıra
 - `M80` — final sert kabul ve yük güveni
@@ -83,6 +83,13 @@ Bu primer yaşayan hattın resmi özetidir.
 - `.env`, build/dist artıkları, runtime JSON store dosyaları ve overlay/log kalıntıları shareable pakete giremez.
 - Kanonik komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Shareable zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`.
+
+## CI / verification visibility
+- Repo-native görünür doğrulama zinciri: `npm run verify:ci`.
+- Workflow: `.github/workflows/vardis_verification_visibility.yml`.
+- `repo-verification` işi root verify chain çalıştırır; `shareable-export` işi M90C.7 export hygiene pack çalıştırır.
+- Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
+- Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.
 
 ## REPO_CONTRACT_MARKERS_V1
 - PRIMER_LIVING_ROUTE_M59_M89_V1

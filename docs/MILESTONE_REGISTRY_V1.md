@@ -47,6 +47,9 @@
 - `M90C.7 - export / package hygiene closure`
   - amac: shareable repo exportunu env/build/runtime-json/overlay artigi tasimayan temiz zip olarak kilitlemek
   - komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
+- `M90C.8 - CI / verification visibility`
+  - amac: yereldeki kanonik verify zincirini repo-native workflow ile görünür hale getirmek
+  - komut: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

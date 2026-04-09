@@ -81,7 +81,7 @@ async function main() {
   if (Number(state.latestMasterPack) === 89) ok("state latest master pack is 89"); else fail("state latest master pack is 89");
   if (Number(state.latestHistoricalMasterPack) === 79) ok("state latest historical master pack is 79"); else fail("state latest historical master pack is 79");
   if (String(stableTo).includes("78")) ok("state stable_to remains 78"); else fail("state stable_to remains 78");
-  if (String(state.nextMilestone || "") === "M90") ok("state next milestone is M90"); else fail("state next milestone is M90");
+  if (String(state.nextMilestone || "").startsWith("M90")) ok("state next milestone stays inside M90 route"); else fail("state next milestone stays inside M90 route");
   if (String(state.historicalNextMilestone || "") === "M80") ok("state historical next milestone is M80"); else fail("state historical next milestone is M80");
 
   const routeText = [readme, primer, startpack, backlog, registry].join("\n");

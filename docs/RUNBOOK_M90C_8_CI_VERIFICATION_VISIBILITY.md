@@ -1,0 +1,21 @@
+# RUNBOOK — M90C.8 CI / VERIFICATION VISIBILITY
+
+## Yerel yürütme
+1. `Set-Location D:\servis-platform`
+2. `npm run verify:ci`
+3. `powershell -ExecutionPolicy Bypass -File .\tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
+
+## Workflow yolu
+- Dosya: `.github/workflows/vardis_verification_visibility.yml`
+- İşler:
+  - `repo-verification` -> `npm run verify:ci`
+  - `shareable-export` -> `tools/pack_m90_c7_export_package_hygiene.ps1`
+
+## Beklenen görünür kanıt
+- `artifacts/repo-audit/repo_audit_latest.json`
+- `artifacts/shareable-export/servis-platform_shareable_*.zip`
+- job isimleri: `repo-verification`, `shareable-export`
+
+## Not
+- M90C.8 yeni ürün davranışı açmaz; mevcut closure zincirini repo-native görünür yapar.
+- Satır azaltma hâlâ sona bırakılır.

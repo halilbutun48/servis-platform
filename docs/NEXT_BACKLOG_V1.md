@@ -3,7 +3,7 @@
 Tarih: 2026-04-09
 Timezone: Europe/Istanbul
 
-Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 kapandi -> siradaki resmi is M90C.7 export / package hygiene closure**
+Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 kapandi -> siradaki resmi is M90C.8 CI / verification visibility**
 
 ## 1) Resmi durum
 - Güncel doğrulanmış baz: `MASTER PACK PASS OK (M0->M89)`
@@ -14,7 +14,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - OSRM kodu repoda vardır ama default compose modu fallback davranır
 
 ## 2) Hemen sonraki ana faz
-1. `M90C.7` — export / package hygiene closure
+1. `M90C.8` — CI / verification visibility
 2. `M90A` — canonical markdown hizası
 3. `M90B` — `repo_contract_state` + pack/verify convergence
 4. `M90C` — screenshot bağımlılığını azaltan proof reformu
@@ -24,7 +24,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 ## 2.0) Closure gate visibility
 - `M90B.1` executable closure gate kanonik kapanis hattinin immediate gate'i olarak korunur.
 - `M90C.3` kapanmistir; M90B.1 gorunurlugu backlog icinde devam eder.
-- `M90C.5` schema için resmi karar kapisidir; `M90C.6` hot-file queue policy kapanmıştır ve `M90C.7` export/package hijyen kapısını açar.
+- `M90C.5` schema için resmi karar kapisidir; `M90C.6` hot-file queue policy ve `M90C.7` export/package hygiene closure kapanmıştır; sıradaki kapı `M90C.8` CI / verification visibility'dir.
 
 ## 2.1) helpComposer exception policy
 - `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
@@ -40,7 +40,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - Gerekçe: migration, seed, Prisma client ve repo-contract/check yüzeyleri tek path üzerinden bağlanmıştır.
 - M90 kapanış hattında split refactor acceptance değeri üretmez; yapısal risk üretir.
 - İzin verilen değişiklikler: migration-safe alan/model/enum ekleri, relation/index/constraint tamiri, acceptance-safe lokal düzeltme.
-- Bu karar kapanmıştır; hot-file queue policy de kapanmıştır; sıradaki gerçek iş: `M90C.7 — export / package hygiene closure`.
+- Bu karar kapanmıştır; hot-file queue policy ve export/package hygiene closure da kapanmıştır; sıradaki gerçek iş: `M90C.8 — CI / verification visibility`.
 
 ## 2.3) M90C.6 — hot-file queue policy
 - Hot/large file listesi artık sadece rapor değildir; resmi sınıflı queue olarak takip edilir.
@@ -56,6 +56,14 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - Satır azaltma en sona bırakılır; bu adım davranış refactor'u değildir.
 - Kanonik komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Shareable zip komutu: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`.
+
+## 2.5) M90C.8 — CI / verification visibility
+- Yerelde çalışan verify hattı repo-native görünür hale getirilecektir.
+- Kök komut: `npm run verify:ci`.
+- Workflow: `.github/workflows/vardis_verification_visibility.yml`.
+- `repo-verification` işi root verify chain'i, `shareable-export` işi M90C.7 export hygiene pack'i çalıştırır.
+- Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
+- Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.
 
 ## 3) Bu turun çalışma kuralı
 - ürün davranışını bozma
@@ -90,7 +98,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - M90, yeni ürün modülü değil; repo gerçeğinin tekleştirilmesi işidir.
 
 ## 6) İlk cümle
-Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90C.2`, `M90C.3`, `M90C.4`, `M90C.5` ve `M90C.6` kapanmıştır; bu turdaki resmi iş `M90C.7 export / package hygiene closure`dir.
+Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90C.2`, `M90C.3`, `M90C.4`, `M90C.5`, `M90C.6` ve `M90C.7` kapanmıştır; bu turdaki resmi iş `M90C.8 CI / verification visibility`dir.
 
 ## Repo contract state
 - Makine-okur durum özeti: `tools/repo_contract_state.json`

@@ -85,7 +85,7 @@ async function main() {
   must("state latest master pack is 89", Number(state.latestMasterPack) === 89);
   must("state latest historical master pack is 79", Number(state.latestHistoricalMasterPack) === 79);
   must("state stable_to remains 78", Number(state.stableTo) === 78);
-  must("state next milestone is M90", String(state.nextMilestone || "") === "M90");
+  must("state next milestone stays inside M90 route", String(state.nextMilestone || "").startsWith("M90"));
   must("state historical next milestone is M80", String(state.historicalNextMilestone || "") === "M80");
   must("state docs contract mode is split", String(state.docsContractMode || "") === "state-first-canonical-history-split");
   must("state upper route is M80 to M89", Number(state.livingUpperRouteFrom) === 80 && Number(state.livingUpperRouteTo) === 89);

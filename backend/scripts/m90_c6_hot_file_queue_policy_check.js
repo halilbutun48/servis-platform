@@ -105,8 +105,8 @@ expect(includesText(docsBundle, "hot-file queue policy"), "canonical docs mentio
 expect(includesText(docsBundle, "justified exception"), "canonical docs mention justified exception class");
 expect(includesText(docsBundle, "safe candidate review"), "canonical docs mention safe candidate review class");
 expect(includesText(docsBundle, "acceptance-sensitive / later") || includesText(docsBundle, "acceptance-sensitive-later"), "canonical docs mention acceptance-sensitive later class");
-expect(includesText(backlog, "M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapandi") || includesText(backlog, "M90C.1, M90C.2, M90C.3, M90C.4 ve M90C.5 kapanmistir"), "backlog reflects M90C.1-M90C.5 closure before M90C.6");
-expect(includesText(primer, "M90C.6") && includesText(primer, "hot-file queue policy"), "primer points to M90C.6 as current official work");
+expect((includesText(backlog, "M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapandi") || includesText(backlog, "M90C.1, M90C.2, M90C.3, M90C.4 ve M90C.5 kapanmistir") || includesText(backlog, "M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 kapandi")), "backlog preserves closure chain before and after M90C.6");
+expect(includesText(primer, "M90C.6") && includesText(primer, "hot-file queue policy"), "primer preserves M90C.6 hot-file queue policy record");
 expect(includesText(toolsReadme, "pack_m90_c6_hot_file_queue_policy.ps1"), "tools readme exposes M90C.6 pack command");
 expect(includesText(scriptGuide, "RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md"), "script guide exposes M90C.6 runbook");
 

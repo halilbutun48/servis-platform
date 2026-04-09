@@ -34,7 +34,7 @@ Amaç: `M0->M89 green` bazının üstüne yeni özellik eklemek değil; repo ger
 - Karar: schema bu hatta justified exception olarak korunur; split refactor M90 dışında kalır.
 - Gerekçe: schema migration/seed/client/check hattının ortak path sözleşmesidir; M90 kapanış hattında split yüksek risk, düşük acceptance değeridir.
 - İzin verilen değişiklikler: migration-safe şema ekleri, relation/index/constraint tamiri, acceptance-safe lokal düzeltme.
-- Sonraki iş: `M90C.7 — export / package hygiene closure`.
+- Sonraki iş: `M90C.8 — CI / verification visibility`.
 
 ## M90C.6 — hot-file queue policy
 - Amaç: repo-audit large/hot file listesini yalnız uyarı çıktısı olmaktan çıkarıp resmi sınıflı queue'ya çevirmek.
@@ -47,3 +47,10 @@ Amaç: `M0->M89 green` bazının üstüne yeni özellik eklemek değil; repo ger
 - Amaç: shareable repo exportunu env/build/runtime-json/overlay artıklarından arındırmak ve bunu state-first policy ile yürütülebilir hale getirmek.
 - Kural: satır azaltma en sona bırakılır; bu adım davranış refactor'u değildir.
 - Yürütülebilir kapı: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
+
+## M90C.8 — CI / verification visibility
+- Amaç: yerelde çalışan doğrulama zincirini repo-native görünür hale getirmek.
+- Kök komut: `npm run verify:ci`.
+- Workflow: `.github/workflows/vardis_verification_visibility.yml`.
+- `repo-verification` ve `shareable-export` işleri repo audit + sanitized export artifact görünürlüğünü korur.
+- Yürütülebilir kapı: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`.

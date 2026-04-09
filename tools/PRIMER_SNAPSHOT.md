@@ -5,7 +5,7 @@
 - Branch: `main`
 - Güncel doğrulanmış baz: `M0->M89 green`
 - Tarihsel anchor: `M0->M79`
-- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 kapanmıştır; sıradaki resmi iş: `M90C.7 export / package hygiene closure`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 kapanmıştır; sıradaki resmi iş: `M90C.8 CI / verification visibility`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 executable closure gate`
 
 ## Repo üstünde yaşayan hat
@@ -63,6 +63,8 @@
 - Hot/large file queue resmi sınıflıdır; doğrulama komutu: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`.
 - Satır azaltma en sona bırakılır; önce export/package hijyeni kapanır.
 - Yeni resmi hijyen komutu: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
+- Yeni resmi CI görünürlük komutu: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`.
+- Root verify chain: `npm run verify:ci`.
 
 ## hot-file queue policy
 - `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` justified exception olarak korunur.
