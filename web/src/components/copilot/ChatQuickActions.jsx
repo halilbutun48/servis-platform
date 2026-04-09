@@ -52,6 +52,12 @@ export default function ChatQuickActions({ actions = [], linkedGuides = [], onOp
             ))}
           </div>
         ) : null}
+        {visibleActions[0]?.routeKey ? <div style={{ fontSize: 12, color: "#475467" }}>Hedef yol: {visibleActions[0].routeKey}</div> : null}
+        {visibleActions.length > 1 ? (
+          <div style={{ display: "grid", gap: 4 }}>
+            {visibleActions.slice(1).map((action, i) => action?.routeKey ? <div key={`route:${action.routeKey}:${i}`} style={{ fontSize: 12, color: "#475467" }}>Yol: {action.routeKey}</div> : null)}
+          </div>
+        ) : null}
         {visibleActions[0]?.reason ? <div style={{ fontSize: 12, color: "#475467" }}>{visibleActions[0].reason}</div> : null}
       </div>
     </details>

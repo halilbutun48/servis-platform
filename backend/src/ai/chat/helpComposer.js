@@ -1677,6 +1677,72 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
   const intentMeta = detectQuestionIntent(effectiveMessage, { entityType: requestEntityType, screenPath, roleMode, conversationState });
   const questionType = intentMeta.questionType;
   const replyMode = resolveReplyMode(effectiveMessage, questionType, roleMode);
+
+  if (roleMode === 'SIMPLE' && String(screenPath || '') === '/driver/checkin' && questionType === 'TERM_HELP' && /check[- ]?in|doğrulama|dogrulama/i.test(String(effectiveMessage || ''))) {
+    const reply = 'Check-in: Kişinin araca bindiğini, indiğini veya varlığını doğrulayan kayıt. Şimdi: Önce hangi doğrulama adımında olduğunu kontrol et.';
+    const quickActions = [
+      makeQuickAction('Bugün', '/driver/today', 'Görev özetine dönmek için açılır.', { accent: 'primary' }),
+      makeAskAction('Bunu sor: Şimdi ne yapmalıyım?', 'şimdi ne yapmalıyım', 'Aynı ekran için kısa devam sorusunu gönderir.'),
+      makeGuideAction('Rehber aç: Check-in ekranı', 'ROLE_HELP_GUIDE', 'Bu ekranın kısa rehberini açar.'),
+    ];
+    return {
+      ok: true,
+      provider: 'local-chat-help',
+      mode: 'CHAT_HELP',
+      copilotVersion: 'M90D-DRIVER-CHECKIN-TERM-HOTFIX',
+      generatedAt: new Date().toISOString(),
+      intent: 'CHAT_HELP',
+      intentLabel: 'Sohbet Yardımı',
+      entityType,
+      entityId: Number(entityId),
+      entityLabel,
+      activeEntityLabel: entityLabel,
+      scope,
+      roleMode,
+      screenLabel: effectiveScreenDefinition?.label || effectiveScreenContext?.label || '',
+      screenPath,
+      summary: 'Check-in anlamı kısa açıklama',
+      contextSummary: 'DRIVER rolü için check-in ekranında kısa terim yardımı verildi.',
+      reply,
+      replyMode,
+      questionType,
+      questionLabel: questionTypeLabel(questionType),
+      suggestedChips: ['Bu ekran ne için?', 'Şimdi ne yapmalıyım?', 'Bugün ekranına nasıl dönerim?'],
+      quickActions,
+      linkedGuides: [makeLinkedGuide('Check-in ekran rehberi', 'ROLE_HELP_GUIDE', 'Kısa ekran rehberini açar.')],
+      intentConfidence: Number(intentMeta?.confidence || 0),
+      intentSignals: Array.isArray(intentMeta?.matchedSignals) ? intentMeta.matchedSignals : [],
+      qualityHints: [],
+      uncertaintyMeta: { level: 'LOW', reason: 'Driver check-in terimi için doğrudan kısa açıklama verildi.', roleMode },
+      responseSections: [],
+      continuity: continuityMeta,
+      continuityMeta,
+      routePlan: null,
+      followUpPrompt: nextPromptByEntity(entityType, roleMode),
+      actionPlanLabel: actionPlanLabelForRoleMode(roleMode, entityType),
+      conversationState: {
+        ...(conversationState && typeof conversationState === 'object' ? conversationState : {}),
+        lastQuestionType: questionType,
+        lastGuideJobType: 'ROLE_HELP_GUIDE',
+        lastEntityType: entityType,
+        lastEntityId: Number(entityId),
+        lastEntityLabel: entityLabel,
+        lastScreenPath: screenPath || null,
+        lastScreenLabel: effectiveScreenDefinition?.label || null,
+        roleMode,
+        lastQuickActions: quickActions.slice(0, 3).map((x) => ({ label: x?.label || '', actionKind: x?.actionKind || 'OPEN_ROUTE', routeKey: x?.routeKey || '', askText: x?.askText || '', guideJobType: x?.guide?.jobType || '' })),
+        lastActionPlanLabel: actionPlanLabelForRoleMode(roleMode, entityType),
+        lastUserMessage: String(effectiveMessage || '').trim(),
+        lastPrimaryConcern: String(effectiveMessage || '').trim(),
+        lastRawUserMessage: String(rawMessage || '').trim(),
+        lastSelectedEntityType: continuity?.currentEntityType || '',
+        lastSelectedEntityId: Number(continuity?.currentEntityId || 0) || null,
+        lastSelectedLabel: continuity?.anchorLabel || '',
+        lastContinuityMeta: continuityMeta,
+        recentMessages: Array.isArray(conversationState?.recentMessages) ? conversationState.recentMessages.slice(-8) : [],
+      },
+    };
+  }
   const preferEntityContext = prefersSelectedEntity(questionType, requestEntityType, context);
   const answerEntityType = preferEntityContext ? String(resolvedEntityType || context?.type || entityType || requestEntityType) : requestEntityType;
   const answerEntityId = preferEntityContext ? Number(resolvedEntityId || context?.id || entityId || requestEntityId || 0) : requestEntityId;

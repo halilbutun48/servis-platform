@@ -73,6 +73,7 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
   const isSimpleMode = String(message?.roleMode || "") === "SIMPLE";
   const messageId = useMemo(() => feedbackId(message), [message]);
   const [feedback, setFeedback] = useState(() => safeReadFeedback()[messageId] || "");
+  const uncertaintyTone = String(message?.uncertaintyMeta?.cautionLevel || "");
 
   const handleFeedback = (value) => {
     if (role === "user") return;
@@ -104,11 +105,33 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
           {role === "user" ? "Sen" : "Copilot"}
         </div>
 
-        {role !== "user" && message?.questionLabel ? (
+        {role !== "user" && (message?.questionLabel || message?.uncertaintyMeta?.label || message?.routePlan?.primaryRouteLabel || message?.continuity?.sameEntity || message?.continuity?.isFollowUp) ? (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-            <span style={{ borderRadius: 999, padding: "2px 8px", background: "#eef4ff", color: "#3538cd", border: "1px solid #c7d7fe", fontSize: 12, fontWeight: 700 }}>
-              {message.questionLabel}
-            </span>
+            {message?.questionLabel ? (
+              <span style={{ borderRadius: 999, padding: "2px 8px", background: "#eef4ff", color: "#3538cd", border: "1px solid #c7d7fe", fontSize: 12, fontWeight: 700 }}>
+                {message.questionLabel}
+              </span>
+            ) : null}
+            {message?.uncertaintyMeta?.label ? (
+              <span style={{ borderRadius: 999, padding: "2px 8px", background: uncertaintyTone === "HIGH" ? "#fef3f2" : "#fffaeb", color: uncertaintyTone === "HIGH" ? "#b42318" : "#b54708", border: uncertaintyTone === "HIGH" ? "1px solid #fecdca" : "1px solid #fcd34d", fontSize: 12, fontWeight: 700 }}>
+                {message?.uncertaintyMeta?.label}
+              </span>
+            ) : null}
+            {message?.routePlan?.primaryRouteLabel ? (
+              <span style={{ borderRadius: 999, padding: "2px 8px", background: "#f2f4f7", color: "#344054", border: "1px solid #d0d5dd", fontSize: 12, fontWeight: 700 }}>
+                Hedef ekran: {message.routePlan.primaryRouteLabel}
+              </span>
+            ) : null}
+            {message?.continuity?.sameEntity ? (
+              <span style={{ borderRadius: 999, padding: "2px 8px", background: "#ecfdf3", color: "#027a48", border: "1px solid #a6f4c5", fontSize: 12, fontWeight: 700 }}>
+                Aynı kayıt
+              </span>
+            ) : null}
+            {message?.continuity?.isFollowUp ? (
+              <span style={{ borderRadius: 999, padding: "2px 8px", background: "#eef4ff", color: "#3538cd", border: "1px solid #c7d7fe", fontSize: 12, fontWeight: 700 }}>
+                Devam sorusu
+              </span>
+            ) : null}
           </div>
         ) : null}
 
