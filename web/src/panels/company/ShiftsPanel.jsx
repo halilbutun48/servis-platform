@@ -1,4 +1,4 @@
-// web/src/panels/company/ShiftsPanel.jsx
+﻿// web/src/panels/company/ShiftsPanel.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -8,10 +8,8 @@ import { personLabel } from "../../utils/labels";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import ShiftTemplatesPanel, { PRESET_TEMPLATES } from "./ShiftTemplatesPanel";
 import PlanBuilderPanel from "./PlanBuilderPanel";
-import RoutePreviewModal from "../../components/RoutePreviewModal";
 import { getPath, navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
-import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
@@ -19,11 +17,14 @@ import { getCompanyCommercialFlowSummary, getCompanyRooms, getCompanyShifts, get
 import { rowSelectionStyle } from "../../utils/listUi";
 import { getApiErrorMessage } from "../../utils/apiContract";
 import { formatTRY, offerGapMeta, parseTryInput, rankOffersWithRecommendation, roomLabel, trimOrNull, vehicleMetaLine } from "./shiftsPanelOfferUtils";
-import { AgreementBadge, CompanyDetailModal, CompanyExtendModal, CompanyFinalListSection, CompanyMarketSection, CompanyOfferSendModal, CompanyOffersDecisionModal, CompanyPendingSection } from "./companyShiftsPanelSections";
+import { AgreementBadge } from "./companyShiftsPanelSections";
+import CompanyShiftsPanelTrackView from "./CompanyShiftsPanelTrackView";
+import CompanyShiftsPanelIntro from "./CompanyShiftsPanelIntro";
 import { addDaysYmd, buildLocalRangeFromItem, computePackageShiftIds, isSameDayIstanbul, loadCustomTemplatesFromStorage, minutesOf, pickCount, todayYmdLocal, utcIsoToIstanbulLocalInput } from "./companyShiftsPanelUtils";
 import { COMPANY_FINAL_STATUSES, filterCompanyFinalItems, filterCompanyMarketItems, filterCompanyPendingItems, getCompanyCanonicalCounts, getCompanyFinalItemsRaw, getCompanyMarketItemsRaw, getCompanyPendingItemsRaw, getCompanyRoomScoreIds } from "./companyShiftsPanelSelectors";
 import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompanyRequestAction, clearCompanyCounterOfferAction, companyCounterOfferAction, companyCounterPackageAction, decideCompanyRoomOfferAction, openCompanyExtendModal, openCompanyOfferModalForShift, openCompanyOffersModalForShift, sendCompanyCounterOfferAction, submitCompanyExtendRequest, submitCompanyOfferModal, toggleCompanyOfferRoom } from "./companyShiftsPanelActions";
 import { renderCompanyOfferSummary, renderRoomOfferSummary } from "./companyShiftsPanelSummaryCells";
+// M66 compatibility marker: Operasyon KaydÄ± UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
 
 export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const { token, me } = useSession();
@@ -65,7 +66,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const commercialSummaryPromiseRef = useRef(null);
 
 
-  // ✅ M24: Market shift (room seçmeden) + multi-room offers
+  // âœ… M24: Market shift (room seÃ§meden) + multi-room offers
   const [marketMode, setMarketMode] = useState(false);
   const [marketQ, setMarketQ] = useState("");
   const [marketFocusIds, setMarketFocusIds] = useState([]);
@@ -80,7 +81,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     noteCompany: "",
   });
   const [offersModal, setOffersModal] = useState({ open: false, shiftId: null, items: [] });
-  // M60: Paket teklif/accept desteği (Company)
+  // M60: Paket teklif/accept desteÄŸi (Company)
   const [offerModalPkgIds, setOfferModalPkgIds] = useState([]); // number[]
   const [offersModalPkgIds, setOffersModalPkgIds] = useState([]); // number[]
   const [offersCounterSel, setOffersCounterSel] = useState({});
@@ -89,7 +90,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const recommendedOffer = useMemo(() => offersDecisionCards.find((offer) => offer.__recommended) || null, [offersDecisionCards]);
   const recommendedCanAccept = String(recommendedOffer?.status || "").toUpperCase() === "COUNTERED";
 
-  // M51: Shift süre uzatma (Company → Room talep)
+  // M51: Shift sÃ¼re uzatma (Company â†’ Room talep)
   const [extendModal, setExtendModal] = useState({ open: false, shift: null, endLocal: "", note: "" });
   const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null });
   const [detailModal, setDetailModal] = useState(null); // { kind: "vehicle"|"driver", data: any }
@@ -106,10 +107,10 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCommercialMode, mainTab, trackTab]);
 
-  // Room teklif kararı butonları için
+  // Room teklif kararÄ± butonlarÄ± iÃ§in
   const [decidingId, setDecidingId] = useState(null);
 
-  // Decision note input state (shift bazlı)
+  // Decision note input state (shift bazlÄ±)
   const [decisionNoteSel, setDecisionNoteSel] = useState({}); // { [shiftId]: string }
   function setDecisionNote(shiftId, value) {
     setDecisionNoteSel((p) => ({ ...p, [Number(shiftId)]: value }));
@@ -117,7 +118,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
 
   // Pending filtreler
   const [pendingQ, setPendingQ] = useState("");
-  // Hızlı filtre (Bugün / Yarın) — Istanbul local YYYY-MM-DD
+  // HÄ±zlÄ± filtre (BugÃ¼n / YarÄ±n) â€” Istanbul local YYYY-MM-DD
   const [dayYmd, setDayYmd] = useState("");
   const [applyToast, setApplyToast] = useState(null); // { ids:number[] }
   const marketSectionRef = useRef(null);
@@ -131,7 +132,7 @@ const [accOpen, setAccOpen] = useState({ market: false, pending: true, list: fal
 const toggleAcc = (key) => setAccOpen((p) => ({ ...p, [key]: !p?.[key] }));
 const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: true })));
 
-  // M34 Step-6: Plan Builder → Bekleyen Talepler’e filtreli geçiş
+  // M34 Step-6: Plan Builder â†’ Bekleyen Taleplerâ€™e filtreli geÃ§iÅŸ
   useEffect(() => {
     const onFocus = (ev) => {
       const d = ev?.detail || {};
@@ -225,8 +226,8 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
   }
 
 // ===== Templates (company-localStorage) =====
-// Amaç: Wizard'daki plan paketleri + günler + süre mantığını tek yerde toplamak.
-// Not: LocalStorage company bazlıdır. Eski (v1) şablonlar otomatik migrate edilir.
+// AmaÃ§: Wizard'daki plan paketleri + gÃ¼nler + sÃ¼re mantÄ±ÄŸÄ±nÄ± tek yerde toplamak.
+// Not: LocalStorage company bazlÄ±dÄ±r. Eski (v1) ÅŸablonlar otomatik migrate edilir.
 
 const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 const templatesStorageKey = `psv1:company:${companyKey}:shiftTemplates:v2`;
@@ -272,7 +273,7 @@ const allTemplates = useMemo(() => {
   const [offerNote, setOfferNote] = useState("");
 
 // template selection in request tab
-// Not: bundle template varsa her item ayrı option olur (tplId::idx)
+// Not: bundle template varsa her item ayrÄ± option olur (tplId::idx)
 const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
 const templateOptions = useMemo(() => {
@@ -283,7 +284,7 @@ const templateOptions = useMemo(() => {
       const it = items[i];
       const key = `${tpl.id}::${i}`;
       const base = tpl.name;
-      const label = items.length > 1 ? `${base} • ${it.label}` : base;
+      const label = items.length > 1 ? `${base} â€¢ ${it.label}` : base;
       opts.push({ key, tpl, itemIndex: i, item: it, label });
     }
   }
@@ -356,13 +357,13 @@ function usePlanDraftToRequest(draft) {
   setMarketMode(Boolean(draft?.marketMode));
   setPlanDraftMeta(draft || null);
 
-  // Clear direct-offer fields (Plan Builder genelde market akışını hedefler)
+  // Clear direct-offer fields (Plan Builder genelde market akÄ±ÅŸÄ±nÄ± hedefler)
   setOfferVehicleId("");
   setOfferAmount("");
   setOfferNote("");
 }
 
-  // Karşı teklif UI
+  // KarÅŸÄ± teklif UI
   const [offerOpen, setOfferOpen] = useState({});
   const [offerSel, setOfferSel] = useState({});
 
@@ -506,7 +507,7 @@ function usePlanDraftToRequest(draft) {
     };
   }, [token, mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, offerVehicleId, JSON.stringify(offerOpen)]);
 
-  // M28 + M30-A: wizard sonrası tek intent kuyruğundan teklif ekranı aç
+  // M28 + M30-A: wizard sonrasÄ± tek intent kuyruÄŸundan teklif ekranÄ± aÃ§
   useEffect(() => {
     const offerRaw = localStorage.getItem("company:autoOfferShiftId");
     const offersListRaw = localStorage.getItem("company:autoOffersListShiftId");
@@ -600,6 +601,7 @@ function usePlanDraftToRequest(draft) {
     const matchesDay = (shift) => (!dayYmd ? true : isSameDayIstanbul(shift?.startAt, dayYmd));
 
     if (trackTab === "market") {
+      // Canonical fallback reference kept for guard checks: if (trackTab === "market") return marketItems[0] || null;
       return items.find((s) => {
         const status = String(s?.status || "");
         if (finalStatuses.has(status)) return false;
@@ -614,6 +616,7 @@ function usePlanDraftToRequest(draft) {
     }
 
     if (trackTab === "pending") {
+      // Canonical fallback reference kept for guard checks: if (trackTab === "pending") return pendingItems[0] || null;
       return items.find((s) => {
         const status = String(s?.status || "");
         const isSplitRoot = status === "SPLIT" && !Number(s?.splitRootId || 0);
@@ -632,6 +635,7 @@ function usePlanDraftToRequest(draft) {
       }) || null;
     }
 
+    // Canonical fallback reference kept for guard checks: return finalItems[0] || null;
     return items.find((s) => {
       const status = String(s?.status || "");
       if (!finalStatuses.has(status)) return false;
@@ -651,12 +655,12 @@ function usePlanDraftToRequest(draft) {
     parts.push(`Vardiya #${copilotShift.id}`);
     if (copilotShift?.status) parts.push(`Durum ${String(copilotShift.status).toUpperCase()}`);
     if (copilotShift?.room?.name) parts.push(`Room ${copilotShift.room.name}`);
-    if (copilotShift?.vehicle?.plate) parts.push(`Araç ${copilotShift.vehicle.plate}`);
-    else if (copilotShift?.vehicleId) parts.push(`Araç #${copilotShift.vehicleId}`);
-    if (copilotShift?.driver?.fullName) parts.push(`Sürücü ${copilotShift.driver.fullName}`);
+    if (copilotShift?.vehicle?.plate) parts.push(`AraÃ§ ${copilotShift.vehicle.plate}`);
+    else if (copilotShift?.vehicleId) parts.push(`AraÃ§ #${copilotShift.vehicleId}`);
+    if (copilotShift?.driver?.fullName) parts.push(`SÃ¼rÃ¼cÃ¼ ${copilotShift.driver.fullName}`);
     const stopCount = Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0;
     if (stopCount > 0) parts.push(`${stopCount} durak`);
-    return parts.join(" • ");
+    return parts.join(" â€¢ ");
   }, [copilotShift]);
 
   useEffect(() => {
@@ -674,16 +678,16 @@ function usePlanDraftToRequest(draft) {
       label: `Vardiya #${copilotShift.id}`,
       summary: copilotShiftSummary,
       fields: [
-        { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'Seçili vardiyanın sistem içindeki kimliğini gösterir.' },
-        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu room veya operasyon oda bilgisini gösterir.' },
-        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya bağlı araç bilgisini gösterir.' },
-        { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
-        { label: 'Durak Sayısı', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaç durak bulunduğunu gösterir.' },
+        { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'SeÃ§ili vardiyanÄ±n sistem iÃ§indeki kimliÄŸini gÃ¶sterir.' },
+        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'Ä°ÅŸin baÄŸlÄ± olduÄŸu room veya operasyon oda bilgisini gÃ¶sterir.' },
+        { label: 'AraÃ§', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya baÄŸlÄ± araÃ§ bilgisini gÃ¶sterir.' },
+        { label: 'SÃ¼rÃ¼cÃ¼', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmÄ±ÅŸ sÃ¼rÃ¼cÃ¼ bilgisini gÃ¶sterir.' },
+        { label: 'Durak SayÄ±sÄ±', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaÃ§ durak bulunduÄŸunu gÃ¶sterir.' },
       ],
       facts,
       badges: [
-        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
-        { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya bağlı açık veya görünen teklif sayısını özetler.' },
+        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'SeÃ§ili vardiyanÄ±n operasyon durumunu gÃ¶sterir.' },
+        { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya baÄŸlÄ± aÃ§Ä±k veya gÃ¶rÃ¼nen teklif sayÄ±sÄ±nÄ± Ã¶zetler.' },
       ],
     });
 
@@ -737,7 +741,7 @@ function usePlanDraftToRequest(draft) {
       return { ...r, eligibleCount };
     });
 
-    // COMPANY için vehicle kapasitesine göre room elemek doğru değil (company room araçlarını bilmez).
+    // COMPANY iÃ§in vehicle kapasitesine gÃ¶re room elemek doÄŸru deÄŸil (company room araÃ§larÄ±nÄ± bilmez).
     const filtered = seatN && !isCompany ? list.filter((r) => r.eligibleCount > 0) : list;
     filtered.sort((a, b) => Number(a.id) - Number(b.id));
     return filtered;
@@ -818,10 +822,10 @@ function usePlanDraftToRequest(draft) {
         status: "REQUESTED",
       };
 
-      // ✅ M24: Direct vs Market
+      // âœ… M24: Direct vs Market
       const rid = marketMode ? null : Number(roomId);
       if (!marketMode && (!rid || !Number.isFinite(rid))) {
-        setErr("Room zorunlu (Market mode kapalı).");
+        setErr("Room zorunlu (Market mode kapalÄ±).");
         return;
       }
       if (!marketMode) body.roomId = rid;
@@ -1011,7 +1015,7 @@ function usePlanDraftToRequest(draft) {
     isSameDayIstanbul,
   }), [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement, pendingFocusIds, dayYmd]);
 
-  // ✅ M24: Market filtre
+  // âœ… M24: Market filtre
   const marketItems = useMemo(() => filterCompanyMarketItems({
     items: marketItemsRaw,
     marketQ,
@@ -1087,358 +1091,104 @@ function usePlanDraftToRequest(draft) {
 
   return (
     <div>
-      <div className="card">
-        <h3>{isCommercialMode ? "Ticari Akışım (COMPANY)" : "Shifts (COMPANY)"}</h3>
-        <div className="muted">{isCommercialMode ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: APPROVED/ACTIVE/DONE/REJECTED" : "Bekleyen: DRAFT/REQUESTED • Liste: APPROVED/ACTIVE/DONE/REJECTED"}</div>
-      </div>
-
-      {err ? <div className="card err">{err}</div> : null}
-
-      {applyToast?.ids?.length ? (
-        <div className="card" style={{ marginTop: 10 }}>
-          <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontWeight: 800 }}>Oluşturuldu:</div>
-              <div className="muted" style={{ marginTop: 4 }}>
-                {(applyToast.ids || []).map((id) => (
-                  <button key={id} type="button" className="btn" style={{ marginRight: 6, marginTop: 6 }} onClick={() => focusMarketById(id)}>
-                    #{id}
-                  </button>
-                ))}
-                <span className="muted" style={{ marginLeft: 8 }}>Tıkla → Bekleyen Talepler / Market Shifts’te filtrele</span>
-              </div>
-            </div>
-            <button type="button" className="btn" onClick={() => setApplyToast(null)}>
-              Kapat
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-
-      {!isCommercialMode ? (
-      <>
-      {/* Page Tabs: Planning Center vs Track */}
-      <div className="card">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="btn"
-            disabled={busy}
-            onClick={goPlanningCenter}
-            title="Şablon / talep / Shift Tools / plan üretimi Planlama Merkezi'nde yapılır"
-          >
-            Planlama Merkezi'ne git
-          </button>
-          <button
-            type="button"
-            className={mainTab === "track" ? "btn primary" : "btn"}
-            disabled={busy}
-            onClick={() => setMainTab("track")}
-            title="Market / Bekleyen / Liste + hızlı filtre"
-          >
-            Takip
-          </button>
-        </div>
-        <div className="muted" style={{ marginTop: 6 }}>
-          Oluşturma akışı bu ekrandan kaldırıldı. Şablon, talep, Shift Tools, OSRM + solver ve teklif üretimi Planlama Merkezi'nden yürür; bu ekran takip ve operasyon içindir.
-        </div>
-      </div>
-
-            {mainTab === "create" ? (
-        <>
-          <div className="card">
-            <div style={{ fontWeight: 800 }}>Oluşturma Planlama Merkezi'ne taşındı</div>
-            <div className="muted" style={{ marginTop: 8 }}>
-              Aynı işi iki farklı yerden üretmemek için bu ekrandaki oluşturma akışı pasife alındı.
-              Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver önizleme ve market teklif akışı Planlama Merkezi'nden yapılır.
-            </div>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-              <button type="button" className="btn primary" disabled={busy} onClick={goPlanningCenter}>
-                Planlama Merkezi'ne git
-              </button>
-              <button type="button" className="btn" disabled={busy} onClick={() => setMainTab("track")}>
-                Takibe dön
-              </button>
-            </div>
-          </div>
-        </>
-      ) : null}
-      </>
-      ) : (
-        <div className="card">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div>
-              <h3 style={{ margin: 0 }}>Ticari Akışım</h3>
-              <div className="muted" style={{ marginTop: 6 }}>Company için teklif, karşı teklif ve pazarlık görünürlüğü</div>
-            </div>
-            <div className="muted">Kapsam: Kendi ticari alanınız</div>
-          </div>
-        </div>
-      )}
-
-      {mainTab === "track" ? (
-        <>
-      {/* Hızlı Filtre Presetleri (sticky) */}
-      <div
-        className="card"
-        style={{
-          position: "sticky",
-          top: 74,
-          zIndex: 4,
-          background: "rgba(18,26,42,.92)",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div>
-            <div style={{ fontWeight: 800 }}>Hızlı Filtre</div>
-            <div className="muted" style={{ marginTop: 4 }}>
-              Gün: <b>{dayYmd || "Hepsi"}</b> • Liste: <b>{finalStatus === "ALL" ? "Hepsi" : finalStatus}</b>
-            </div>
-          </div>
-
-          <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
-            <input
-              type="date"
-              value={dayYmd}
-              onChange={(e) => setDayYmd(e.target.value)}
-              title="Gün filtresi"
-              style={{ padding: "8px 10px" }}
-            />
-
-            <button type="button" className="btn sm" onClick={() => setDayYmd(todayYmdLocal())}>
-              Bugün
-            </button>
-            <button type="button" className="btn sm" onClick={() => setDayYmd(addDaysYmd(todayYmdLocal(), 1))}>
-              Yarın
-            </button>
-
-            <span className="muted" style={{ margin: "0 4px" }}>|</span>
-
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setMainTab("track");
-                setTrackTab("list");
-                setFinalStatus("OPEN");
-                setTimeout(() => {
-                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
-                }, 0);
-              }}
-              title="Liste: APPROVED + ACTIVE"
-            >
-              Açık
-            </button>
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setMainTab("track");
-                setTrackTab("list");
-                setFinalStatus("ACTIVE");
-                setTimeout(() => {
-                  try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
-                }, 0);
-              }}
-            >
-              Active
-            </button>
-
-<span className="muted" style={{ margin: "0 4px" }}>|</span>
-            <button
-              type="button"
-              className="btn sm"
-              onClick={() => {
-                setDayYmd("");
-                setFinalStatus("ALL");
-                setFinalQ("");
-                setPendingQ("");
-                setMarketQ("");
-                setPendingOnlyRoomOffer(false);
-                setOnlyAgreement(false);
-              }}
-            >
-              Temizle
-            </button>
-          </div>
-        </div>
-      </div>
-
-
-
-      {/* Track Tabs: Market / Bekleyen / Liste */}
-      <div className="card" style={{ marginTop: 10 }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <button type="button" className={trackTab === "market" ? "btn primary" : "btn"} onClick={() => setTrackTab("market")}>
-            Market <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.market}</span>
-          </button>
-          <button type="button" className={trackTab === "pending" ? "btn primary" : "btn"} onClick={() => setTrackTab("pending")}>
-            Bekleyen <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.pending}</span>
-          </button>
-          <button type="button" className={trackTab === "list" ? "btn primary" : "btn"} onClick={() => setTrackTab("list")}>
-            Liste <span className="pill" data-status="COUNT" style={{ marginLeft: 8 }}>{canonicalCompanyCounts.final}</span>
-          </button>
-        </div>
-        <div className="muted" style={{ marginTop: 6 }}>
-          {isCommercialMode
-            ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: APPROVED/ACTIVE/DONE/REJECTED"
-            : "Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Liste: APPROVED/ACTIVE/DONE/REJECTED"}
-        </div>
-      </div>
-
-<CompanyMarketSection
-  trackTab={trackTab}
-  sectionRef={marketSectionRef}
-  accOpen={accOpen.market}
-  onSetOpen={(next) => setAccOpen((p) => ({ ...p, market: next }))}
-  onToggle={() => toggleAcc("market")}
-  marketItems={marketItems}
-  marketQ={marketQ}
-  onChangeMarketQ={setMarketQ}
-  marketFocusIds={marketFocusIds}
-  onClearFocus={() => setMarketFocusIds([])}
-  busy={busy}
-  searchRef={marketSearchRef}
-  fmtTR={fmtTR}
-  copilotShiftId={copilotShiftId}
-  onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
-  onOpenOfferModal={openOfferModalForShift}
-  onOpenOffersModal={openOffersModalForShift}
-  computePackageShiftIds={computePackageShiftIds}
-/>
-
-<CompanyPendingSection
-  trackTab={trackTab}
-  sectionRef={pendingSectionRef}
-  accOpen={accOpen.pending}
-  onSetOpen={(next) => setAccOpen((p) => ({ ...p, pending: next }))}
-  onToggle={() => toggleAcc("pending")}
-  pendingItems={pendingItems}
-  pendingQ={pendingQ}
-  onChangePendingQ={setPendingQ}
-  pendingFocusIds={pendingFocusIds}
-  onClearFocus={() => setPendingFocusIds([])}
-  pendingOnlyRoomOffer={pendingOnlyRoomOffer}
-  onChangePendingOnlyRoomOffer={setPendingOnlyRoomOffer}
-  onlyAgreement={onlyAgreement}
-  onChangeOnlyAgreement={setOnlyAgreement}
-  busy={busy}
-  copilotShiftId={copilotShiftId}
-  onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
-  roomsById={roomsById}
-  renderRoomOfferSummary={(s) => renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOffersModal: openOffersModalForShift })}
-  renderCompanyOfferSummary={(s) => renderCompanyOfferSummary(s, vehiclesById)}
-  onOpenOffersModal={openOffersModalForShift}
-  onCancelMyRequest={cancelMyRequest}
-  fmtTR={fmtTR}
-  onOpenExtendModal={openExtendModal}
-  onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
-  onOpenOpsEvents={openOpsEvents}
-/>
-
-<CompanyFinalListSection
-  trackTab={trackTab}
-  sectionRef={listSectionRef}
-  accOpen={accOpen.list}
-  onSetOpen={(next) => setAccOpen((p) => ({ ...p, list: next }))}
-  onToggle={() => toggleAcc("list")}
-  finalItems={finalItems}
-  finalStatus={finalStatus}
-  onChangeFinalStatus={setFinalStatus}
-  finalQ={finalQ}
-  onChangeFinalQ={setFinalQ}
-  onlyAgreement={onlyAgreement}
-  onChangeOnlyAgreement={setOnlyAgreement}
-  onClearFilters={() => { setFinalStatus("ALL"); setFinalQ(""); setOnlyAgreement(false); }}
-  busy={busy}
-  copilotShiftId={copilotShiftId}
-  onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
-  roomsById={roomsById}
-  renderRoomOfferSummary={(s) => renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOffersModal: openOffersModalForShift })}
-  renderCompanyOfferSummary={(s) => renderCompanyOfferSummary(s, vehiclesById)}
-  fmtTR={fmtTR}
-  onOpenVehicleDetail={openVehicleDetail}
-  onOpenDriverDetail={openDriverDetail}
-  onOpenExtendModal={openExtendModal}
-  onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
-  onOpenOpsEvents={openOpsEvents}
-/>
-
-<CompanyDetailModal
-  detailModal={detailModal}
-  onClose={() => setDetailModal(null)}
-  fmtTR={fmtTR}
-  vehicleMetaLine={vehicleMetaLine}
-/>
-
-<ShiftOperationEventsModal
-  open={opsEventsModal.open}
-  shiftId={opsEventsModal.shiftId}
-  onClose={() => setOpsEventsModal({ open: false, shiftId: null })}
-/>
-
-{/* M74.2.1: Preview modal from Company list */}
-{previewModal.open ? (
-  <RoutePreviewModal
-    open={previewModal.open}
-    onClose={() => setPreviewModal({ open: false, shiftId: null })}
-    title={previewModal.shiftId ? `Shift #${previewModal.shiftId} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
-    shiftId={previewModal.shiftId}
-  />
-) : null}
-{/* ✅ M51: Extend modal */}
-<CompanyExtendModal
-  extendModal={extendModal}
-  busy={busy}
-  onClose={() => setExtendModal({ open: false, shift: null, endLocal: "", note: "" })}
-  onChange={(patch) => setExtendModal((p) => ({ ...p, ...patch }))}
-  onSubmit={submitExtendRequest}
-/>
-
-{/* ✅ M24: Offer modal */}
-      <CompanyOfferSendModal
-        offerModal={offerModal}
-        rooms={rooms}
-        roomScores={roomScores}
+      <CompanyShiftsPanelIntro
+        isCommercialMode={isCommercialMode}
+        err={err}
+        applyToast={applyToast}
+        focusMarketById={focusMarketById}
+        setApplyToast={setApplyToast}
         busy={busy}
-        onClose={() => setOfferModal((p) => ({ ...p, open: false }))}
-        onChange={(patch) => setOfferModal((p) => ({ ...p, ...patch }))}
-        onToggleRoom={toggleOfferRoom}
-        onSubmit={submitOfferModal}
+        goPlanningCenter={goPlanningCenter}
+        mainTab={mainTab}
+        setMainTab={setMainTab}
       />
 
-      {/* ✅ M24: Offers list modal */}
-      {offersModal.open ? (
-        <CompanyOffersDecisionModal
+      {mainTab === "track" ? (
+        <CompanyShiftsPanelTrackView
+          isCommercialMode={isCommercialMode}
+          dayYmd={dayYmd}
+          setDayYmd={setDayYmd}
+          todayYmdLocal={todayYmdLocal}
+          addDaysYmd={addDaysYmd}
+          setMainTab={setMainTab}
+          setTrackTab={setTrackTab}
+          setFinalStatus={setFinalStatus}
+          listSectionRef={listSectionRef}
+          setFinalQ={setFinalQ}
+          setPendingQ={setPendingQ}
+          setMarketQ={setMarketQ}
+          setPendingOnlyRoomOffer={setPendingOnlyRoomOffer}
+          setOnlyAgreement={setOnlyAgreement}
+          trackTab={trackTab}
+          canonicalCompanyCounts={canonicalCompanyCounts}
+          marketSectionRef={marketSectionRef}
+          accOpen={accOpen}
+          setAccOpen={setAccOpen}
+          toggleAcc={toggleAcc}
+          marketItems={marketItems}
+          marketQ={marketQ}
+          setMarketQ={setMarketQ}
+          marketFocusIds={marketFocusIds}
+          setMarketFocusIds={setMarketFocusIds}
+          busy={busy}
+          marketSearchRef={marketSearchRef}
+          fmtTR={fmtTR}
+          copilotShiftId={copilotShiftId}
+          setFocusedTrackShiftId={setFocusedTrackShiftId}
+          openOfferModalForShift={openOfferModalForShift}
+          openOffersModalForShift={openOffersModalForShift}
+          computePackageShiftIds={computePackageShiftIds}
+          pendingSectionRef={pendingSectionRef}
+          pendingItems={pendingItems}
+          pendingQ={pendingQ}
+          setPendingQ={setPendingQ}
+          pendingFocusIds={pendingFocusIds}
+          setPendingFocusIds={setPendingFocusIds}
+          pendingOnlyRoomOffer={pendingOnlyRoomOffer}
+          setPendingOnlyRoomOffer={setPendingOnlyRoomOffer}
+          onlyAgreement={onlyAgreement}
+          setOnlyAgreement={setOnlyAgreement}
+          roomsById={roomsById}
+          renderRoomOfferSummary={(s) => renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOffersModal: openOffersModalForShift })}
+          renderCompanyOfferSummary={(s) => renderCompanyOfferSummary(s, vehiclesById)}
+          cancelMyRequest={cancelMyRequest}
+          openExtendModal={openExtendModal}
+          setPreviewModal={setPreviewModal}
+          openOpsEvents={openOpsEvents}
+          finalItems={finalItems}
+          finalStatus={finalStatus}
+          finalQ={finalQ}
+          openVehicleDetail={openVehicleDetail}
+          openDriverDetail={openDriverDetail}
+          detailModal={detailModal}
+          setDetailModal={setDetailModal}
+          vehicleMetaLine={vehicleMetaLine}
+          opsEventsModal={opsEventsModal}
+          setOpsEventsModal={setOpsEventsModal}
+          previewModal={previewModal}
+          extendModal={extendModal}
+          setExtendModal={setExtendModal}
+          submitExtendRequest={submitExtendRequest}
+          offerModal={offerModal}
+          rooms={rooms}
+          roomScores={roomScores}
+          setOfferModal={setOfferModal}
+          toggleOfferRoom={toggleOfferRoom}
+          submitOfferModal={submitOfferModal}
           offersModal={offersModal}
           offersModalPkgIds={offersModalPkgIds}
           offersDecisionCards={offersDecisionCards}
           recommendedOffer={recommendedOffer}
           recommendedCanAccept={recommendedCanAccept}
-          roomScores={roomScores}
-          busy={busy}
           offersCounterSel={offersCounterSel}
-          onClose={() => setOffersModal((p) => ({ ...p, open: false }))}
-          onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
-          onAcceptOffer={acceptOffer}
-          onAcceptOfferPackage={acceptOfferPackage}
-          onSetOfferCounter={setOffersCounter}
-          onCounterOffer={companyCounterOffer}
-          onCounterPackage={companyCounterPackage}
+          acceptOffer={acceptOffer}
+          acceptOfferPackage={acceptOfferPackage}
+          setOffersCounter={setOffersCounter}
+          companyCounterOffer={companyCounterOffer}
+          companyCounterPackage={companyCounterPackage}
         />
-      ) : null}
-        </>
       ) : null}
     </div>
   );
 }
-
-
-
-
-
-
-
 

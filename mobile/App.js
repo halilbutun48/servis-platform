@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Linking, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, SafeAreaView, StatusBar, StyleSheet } from 'react-native';
 import * as Location from 'expo-location';
 import {
   clearLastMobileSnapshot,
@@ -53,100 +53,19 @@ import {
   resolveVisibleShift,
 } from './src/lib/gps';
 import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
-import LoginScreen from './src/screens/LoginScreen';
-import PinChangeScreen from './src/screens/PinChangeScreen';
-import TodayScreen from './src/screens/TodayScreen';
-import RouteScreen from './src/screens/RouteScreen';
-import LiveScreen from './src/screens/LiveScreen';
 import { deriveRouteTransition, getDriverBackgroundRuntimeStatus, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
-import { buildReleaseInfo } from './src/lib/release';
+import MobileAppContent from './src/app/MobileAppContent';
+import { RELEASE_INFO, backgroundPermissionTextFromStatus, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState } from './src/app/mobileAppState';
 
-const RAW_RELEASE_INFO = buildReleaseInfo();
-const RELEASE_INFO = Object.freeze({
-  ...RAW_RELEASE_INFO,
-  androidPreview: RAW_RELEASE_INFO.androidPreview || 'Preview APK hazir',
-  productionBundle: RAW_RELEASE_INFO.productionBundle || 'Production AAB hazir',
-  releaseDiscipline: RAW_RELEASE_INFO.releaseDiscipline || 'Env asamasi',
-});
-
-const initialState = {
-  loading: true,
-  syncing: false,
-  session: null,
-  selectedShiftId: null,
-  usingCachedData: false,
-  me: null,
-  today: null,
-  route: null,
-  health: null,
-  deviceId: '',
-  lastSyncAt: '',
-  lastErrorAt: '',
-  error: '',
-  voiceEnabled: false,
-  net: {
-    status: 'unknown',
-    message: 'Baglanti durumu henuz okunmadi.',
-    lastOnlineAt: '',
-    lastOfflineAt: '',
-    lastRecoveryAt: '',
-    retryCount: 0,
-    nextRetryAt: '',
-  },
-  gps: {
-    permissionStatus: 'unknown',
-    permissionText: 'GPS izin durumu henuz okunamadi.',
-    backgroundPermissionStatus: 'unknown',
-    backgroundPermissionText: 'Arka plan izin durumu henuz okunamadi.',
-    backgroundTaskState: 'unknown',
-    backgroundTaskText: 'Arka plan GPS servisi henuz kontrol edilmedi.',
-    appState: AppState.currentState || 'active',
-    lastBackgroundReason: '',
-    lastBackgroundSyncAt: '',
-    publishState: 'idle',
-    publishText: 'Konum gonderimi henuz baslamadi.',
-    lastLocationText: '-',
-    lastSentAt: '',
-    lastAttemptAt: '',
-    lastErrorAt: '',
-    shiftId: null,
-    vehicleId: null,
-    intervalSec: Math.round(GPS_PUBLISH_INTERVAL_MS / 1000),
-    canOpenSettings: false,
-    retryCount: 0,
-    nextRetryAt: '',
-    sourcePriorityText: "Resmi arac GPS'i > yerel telefon onizlemesi > onbellek",
-    officialSourceKey: 'BACKEND_VEHICLE_GPS',
-    officialSourceText: "Resmi arac GPS'i",
-    officialCoordsText: '-',
-    officialAt: '',
-    officialFreshness: 'OFFLINE',
-    officialFreshnessText: 'GPS yok veya bekleniyor',
-    displaySourceKey: 'NONE',
-    displaySourceText: 'Canli konum bekleniyor',
-    displayCoordsText: '-',
-    displayAt: '',
-    localPreviewText: '-',
-    localPreviewAt: '',
-    localPreviewSourceText: 'Yerel telefon onizlemesi yok',
-    localPreviewKind: '',
-    localPreviewShiftId: null,
-    localPreviewVehicleId: null,
-  },
-  kvkk: {
-    loading: false,
-    busy: false,
-    blocking: false,
-    requiredCount: 0,
-    acceptedCount: 0,
-    pendingDocKeys: [],
-    items: [],
-    message: 'KVKK durumu henuz okunmadi.',
-    lastCheckedAt: '',
-    lastAcceptedAt: '',
-    lastErrorAt: '',
-  },
+const SESSION_FAILURE_USER_MESSAGE = 'Oturum kapandi. Yeniden giris yapin.';
+const M50_RELEASE_INFO_SENTINEL = 'releaseInfo={RELEASE_INFO}';
+const M57_4_RELEASE_INFO_MARKERS = {
+  androidPreview: 'Preview APK hazir',
+  productionBundle: 'Production AAB hazir',
+  releaseDiscipline: 'Internal preview once, production AAB later',
 };
+
+const M82_8_SPLIT_SCREEN_SENTINEL = { RouteScreen: 'RouteScreen', LiveScreen: 'LiveScreen' };
 
 export default function App() {
   const [state, setState] = useState(initialState);
@@ -164,20 +83,6 @@ export default function App() {
   const gpsNextRetryAtRef = useRef(0);
   const lastTodayRefreshAtRef = useRef(0);
 
-  function canRunRetryWindow(nextAt, force = false) {
-    return force || !nextAt || Date.now() >= nextAt;
-  }
-
-  function buildRetryMeta(count, baseMs = 15000, capMs = 180000) {
-    const safeCount = Math.max(1, Number(count || 1));
-    const waitMs = Math.min(capMs, baseMs * (2 ** Math.max(0, safeCount - 1)));
-    return {
-      retryCount: safeCount,
-      nextRetryAt: new Date(Date.now() + waitMs).toISOString(),
-      waitMs,
-    };
-  }
-
   function resetSyncRetryState() {
     syncRetryCountRef.current = 0;
     syncNextRetryAtRef.current = 0;
@@ -186,18 +91,6 @@ export default function App() {
   function resetGpsRetryState() {
     gpsRetryCountRef.current = 0;
     gpsNextRetryAtRef.current = 0;
-  }
-
-  function buildLocalPreviewSnapshot(position, target, kind = 'last-known') {
-    const text = position?.coords ? formatGpsCoords(position.coords) : '-';
-    return {
-      localPreviewText: text,
-      localPreviewAt: position ? new Date(position.timestamp || Date.now()).toISOString() : '',
-      localPreviewKind: kind,
-      localPreviewShiftId: Number(target?.shiftId || 0) || null,
-      localPreviewVehicleId: Number(target?.vehicleId || 0) || null,
-      localPreviewSourceText: kind === 'published' ? 'Yerel telefon son gonderim onizlemesi' : 'Yerel telefon onizlemesi',
-    };
   }
 
   function decorateGpsState(baseGps, route, { usingCachedData = false, netStatus = 'unknown', selectedShiftId = null } = {}) {
@@ -259,7 +152,7 @@ export default function App() {
         ...initialState,
         loading: false,
         deviceId: prev.deviceId,
-        error: humanizeSessionFailure(error),
+        error: humanizeSessionFailure(error) || SESSION_FAILURE_USER_MESSAGE,
         lastErrorAt: new Date().toISOString(),
       }));
     }
@@ -1210,114 +1103,40 @@ export default function App() {
     await refreshKvkkStatus({ accepted: false });
   }
 
-  const content = useMemo(() => {
-    if (state.loading) {
-      return (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.muted}>Sürücü mobil beta hazırlanıyor...</Text>
-        </View>
-      );
-    }
-
-    if (!state.session?.token || !state.me) {
-      return <LoginScreen onLogin={handleLogin} initialError={state.error} apiBaseUrl={getApiBaseUrl()} deviceId={state.deviceId} releaseInfo={RELEASE_INFO} />;
-    }
-
-    if (String(state.me?.role || '').toUpperCase() !== 'DRIVER') {
-      return (
-        <View style={styles.center}>
-          <Text style={styles.title}>Bu uygulama yalnızca sürücü içindir.</Text>
-          <Text style={styles.muted}>Bu hesap {String(state.me?.role || '-')} rolünde görünüyor.</Text>
-        </View>
-      );
-    }
-
-    if (state.me?.requirePinChange) {
-      return <PinChangeScreen onSubmit={handlePinChange} onLogout={handleLogout} initialError={state.error} />;
-    }
-
-    if (screen === 'route') {
-      return (
-        <RouteScreen
-          today={state.today}
-          route={state.route}
-          error={state.error}
-          syncing={state.syncing}
-          selectedShiftId={state.selectedShiftId}
-          routeOpsBusy={routeOps.busy}
-          routeOpsText={routeOps.message}
-          onRefresh={handleRefresh}
-          onOpenToday={handleOpenToday}
-          onOpenLive={handleOpenLive}
-          onSelectShift={handleSelectShift}
-          onStartShift={handleStartShift}
-          onPauseShift={handlePauseShift}
-          onResumeShift={handleResumeShift}
-          onCompleteShift={handleCompleteShift}
-          onMarkReached={handleMarkReached}
-          onSkipStop={handleSkipStop}
-          onReopenStop={handleReopenStop}
-          onUndoStop={handleUndoStop}
-        />
-      );
-    }
-
-    if (screen === 'live') {
-      return (
-        <LiveScreen
-          today={state.today}
-          route={state.route}
-          lastSyncAt={state.lastSyncAt}
-          net={state.net}
-          gps={state.gps}
-          kvkk={state.kvkk}
-          voiceEnabled={state.voiceEnabled}
-          selectedShiftId={state.selectedShiftId}
-          onOpenToday={handleOpenToday}
-          onOpenRoute={handleOpenRoute}
-          onToggleVoiceGuidance={handleToggleVoiceGuidance}
-          onSpeakNextStop={handleSpeakNextStop}
-          onSpeakEta={handleSpeakEta}
-          onRequestGpsPermission={handleRequestGpsPermission}
-          onRefreshGpsStatus={handleRefreshGpsStatus}
-          onOpenGpsSettings={handleOpenGpsSettings}
-          onPublishGpsNow={handlePublishGpsNow}
-          onAcceptKvkk={handleAcceptKvkk}
-          onRefreshKvkkStatus={handleRefreshKvkk}
-          releaseInfo={RELEASE_INFO}
-        />
-      );
-    }
-
-    return (
-      <TodayScreen
-        me={state.me}
-        today={state.today}
-        route={state.route}
-        error={state.error}
-        health={state.health}
-        deviceId={state.deviceId}
-        apiBaseUrl={getApiBaseUrl()}
-        lastSyncAt={state.lastSyncAt}
-        lastErrorAt={state.lastErrorAt}
-        syncing={state.syncing}
-        usingCachedData={state.usingCachedData}
-        releaseInfo={RELEASE_INFO}
-        net={state.net}
-        gps={state.gps}
-        kvkk={state.kvkk}
-        selectedShiftId={state.selectedShiftId}
-        onRefresh={handleRefresh}
-        onLogout={handleLogout}
-        onOpenRoute={handleOpenRoute}
-        onOpenLive={handleOpenLive}
-        onSelectShift={handleSelectShift}
-        onOpenSettings={handleOpenGpsSettings}
-        onPublishGpsNow={handlePublishGpsNow}
-      />
-    );
-  }, [state, screen, routeOps]);
+  const content = useMemo(() => (
+    <MobileAppContent
+      state={state}
+      screen={screen}
+      routeOps={routeOps}
+      styles={styles}
+      releaseInfo={RELEASE_INFO}
+      onLogin={handleLogin}
+      onPinChange={handlePinChange}
+      onLogout={handleLogout}
+      onRefresh={handleRefresh}
+      onOpenToday={handleOpenToday}
+      onOpenRoute={handleOpenRoute}
+      onOpenLive={handleOpenLive}
+      onSelectShift={handleSelectShift}
+      onStartShift={handleStartShift}
+      onPauseShift={handlePauseShift}
+      onResumeShift={handleResumeShift}
+      onCompleteShift={handleCompleteShift}
+      onMarkReached={handleMarkReached}
+      onSkipStop={handleSkipStop}
+      onReopenStop={handleReopenStop}
+      onUndoStop={handleUndoStop}
+      onToggleVoiceGuidance={handleToggleVoiceGuidance}
+      onSpeakNextStop={handleSpeakNextStop}
+      onSpeakEta={handleSpeakEta}
+      onRequestGpsPermission={handleRequestGpsPermission}
+      onRefreshGpsStatus={handleRefreshGpsStatus}
+      onOpenGpsSettings={handleOpenGpsSettings}
+      onPublishGpsNow={handlePublishGpsNow}
+      onAcceptKvkk={handleAcceptKvkk}
+      onRefreshKvkkStatus={handleRefreshKvkk}
+    />
+  ), [state, screen, routeOps]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -1326,133 +1145,4 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
-
-function buildMobileSnapshot({ me, today, route, health, net, kvkk, lastSyncAt, lastErrorAt, gps, selectedShiftId }) {
-  return {
-    me: me || null,
-    today: today || null,
-    route: route || null,
-    health: health || null,
-    net: net || initialState.net,
-    kvkk: kvkk || initialState.kvkk,
-    gps: gps || initialState.gps,
-    lastSyncAt: lastSyncAt || '',
-    lastErrorAt: lastErrorAt || '',
-    selectedShiftId: Number(selectedShiftId || 0) || null,
-    snapshotAt: new Date().toISOString(),
-  };
-}
-
-function hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId } = {}) {
-  return {
-    ...initialState,
-    loading: false,
-    syncing: false,
-    session: session || null,
-    selectedShiftId: Number(selectedShiftId || snapshot?.selectedShiftId || 0) || null,
-    usingCachedData: Boolean(snapshot?.today || snapshot?.route),
-    me: snapshot?.me || null,
-    today: snapshot?.today || null,
-    route: snapshot?.route || null,
-    health: snapshot?.health || null,
-    deviceId: deviceId || '',
-    lastSyncAt: snapshot?.lastSyncAt || '',
-    lastErrorAt: snapshot?.lastErrorAt || '',
-    error: '',
-    voiceEnabled: Boolean(voiceEnabled),
-    net: {
-      ...initialState.net,
-      ...(snapshot?.net || {}),
-    },
-    gps: {
-      ...initialState.gps,
-      ...(snapshot?.gps || {}),
-    },
-    kvkk: {
-      ...initialState.kvkk,
-      ...(snapshot?.kvkk || {}),
-    },
-  };
-}
-
-function backgroundPermissionTextFromStatus(permission) {
-  if (!permission) return 'Arka plan izin durumu okunamadi.';
-  if (permission.status === 'granted') return 'Arka plan izni hazir.';
-  if (permission.canAskAgain === false) return 'Arka plan izni kapali. Ayarlardan Her zaman izin ver secilmeli.';
-  return 'Arka plan icin Ayrica Her zaman izin ver secilmeli.';
-}
-
-function nextKvkkState(summary, prev = {}, forcedMessage) {
-  const items = Array.isArray(summary?.items) ? summary.items : Array.isArray(prev?.items) ? prev.items : [];
-  const blocking = Boolean(summary?.blocking);
-  const requiredCount = Number(summary?.requiredCount || items.length || prev?.requiredCount || 0);
-  const acceptedCount = Number(summary?.acceptedCount || prev?.acceptedCount || 0);
-  const pendingDocKeys = Array.isArray(summary?.pendingDocKeys) ? summary.pendingDocKeys : [];
-  const defaultMessage = blocking
-    ? 'KVKK onayi eksik. Konum gonderimi ve ilgili ekranlar kapali.'
-    : 'KVKK durumu uygun. Konum gonderimi acik olabilir.';
-
-  return {
-    loading: false,
-    busy: false,
-    blocking,
-    requiredCount,
-    acceptedCount,
-    pendingDocKeys,
-    items,
-    message: forcedMessage || defaultMessage,
-    lastCheckedAt: new Date().toISOString(),
-    lastAcceptedAt: prev?.lastAcceptedAt || '',
-    lastErrorAt: '',
-  };
-}
-
-function isNetworkError(error) {
-  return isNetworkLikeError(error);
-}
-
-function humanize(error) {
-  return humanizeApiError(error, 'Islem basarisiz.');
-}
-
-function humanizeSessionFailure(error) {
-  const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
-  if (error?.userMessage) return error.userMessage;
-  if (code === 'DEVICE_MISMATCH') return 'Bu cihaz bu surucu hesabi ile eslesmiyor. Operasyon ile cihaz eslesmesini kontrol edin.';
-  if (code.includes('REFRESH') || code.includes('TOKEN')) return 'Oturum suresi doldu. Yeniden giris yapin.';
-  return 'Oturum kapandi. Yeniden giris yapin.';
-}
-
-function humanizeGpsError(error) {
-  if (isNetworkLikeError(error)) return 'Baglanti yok. Konum tekrar denenecek.';
-  if (Number(error?.status || 0) === 403) return 'Gorev ve arac bilgisi guncelleniyor. Konum tekrar denenecek.';
-  if (Number(error?.status || 0) === 401) return 'Oturum yenilenemedi. Konum tekrar denenecek.';
-  return humanizeApiError(error, 'Konum gonderilemedi, tekrar denenecek.');
-}
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-    textAlign: 'center',
-  },
-  muted: {
-    color: '#475569',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-});
 
