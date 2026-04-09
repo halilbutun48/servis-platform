@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory=$false)][ValidateRange(82,89)][int]$To = 89,
   [Parameter(Mandatory=$false)][string]$RepoRoot = '',
   [Parameter(Mandatory=$false)]$ComposeDir = 'infra',
@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+& (Join-Path $PSScriptRoot '_repo_hygiene_preflight.ps1')
 $ScriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
   $RepoRoot = (Resolve-Path (Join-Path $ScriptRoot '..\..')).Path
@@ -39,3 +40,4 @@ if ($To -ge 86) { Invoke-UpperRoutePack -ScriptRel 'tools\pack_m86_required_paym
 if ($To -ge 87) { Invoke-UpperRoutePack -ScriptRel 'tools\pack_m87_payment_account_readiness.ps1' -FailMessage 'm87 pack failed' }
 if ($To -ge 88) { Invoke-UpperRoutePack -ScriptRel 'tools\pack_m88_settlement_operations_console.ps1' -FailMessage 'm88 pack failed' }
 if ($To -ge 89) { Invoke-UpperRoutePack -ScriptRel 'tools\pack_m89_settlement_reconciliation_desk.ps1' -FailMessage 'm89 pack failed' }
+

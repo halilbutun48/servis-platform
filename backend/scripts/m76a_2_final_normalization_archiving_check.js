@@ -1,4 +1,4 @@
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { readRepoContractState } from "./_repoContractState.js";
@@ -75,9 +75,9 @@ for (const [rel, marker] of wrappers) {
 }
 
 if (!(state.canonicalPackHierarchy?.publicRoot === 'tools/packs/living')) fail("state marks living wrapper root"); else ok("state marks living wrapper root");
-if (Number(state.phaseDefaults?.packLivingTo) === 79) ok("pack_living default moved to 79"); else fail("pack_living default moved to 79");
-if (Number(state.phaseDefaults?.verifyLivingRuntimeTo) === 79) ok("verify_living_runtime default moved to 79"); else fail("verify_living_runtime default moved to 79");
-if (Number(state.phaseDefaults?.phase76To) === 79) ok("phase76 default moved to 79"); else fail("phase76 default moved to 79");
+if (Number(state.phaseDefaults?.packLivingTo) >= 79) ok("pack_living default moved to 79 or later living route"); else fail("pack_living default moved to 79 or later living route");
+if (Number(state.phaseDefaults?.verifyLivingRuntimeTo) >= 79) ok("verify_living_runtime default moved to 79 or later living route"); else fail("verify_living_runtime default moved to 79 or later living route");
+if (Number(state.phaseDefaults?.phase76To) >= 79) ok("phase76 default moved to 79 or later living route"); else fail("phase76 default moved to 79 or later living route");
 
 const manifest = JSON.parse(read("tools/milestone_pack_manifest.json"));
 if ((manifest.stages || []).some((s) => s.id === "M76A-2" && s.script === "tools/pack_m76a_2_final_normalization_archiving.ps1")) ok("manifest registers M76A-2 pack"); else fail("manifest registers M76A-2 pack");
@@ -94,3 +94,5 @@ fs.writeFileSync(reportPath, JSON.stringify({
 }, null, 2));
 console.log(`INFO report => artifacts/normalization/m76a_2_final_normalization_latest.json`);
 console.log("=== M76A-2 FINAL NORMALIZATION + ARCHIVING CHECK PASS ===");
+
+

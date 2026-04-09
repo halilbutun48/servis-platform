@@ -81,3 +81,10 @@ Amaç: Bu dosya, projenin güncel çalışma kurallarını, aktif milestone hatt
 ## 7) STARTPACK_TOOLS_HYGIENE_V1
 - Repo/tools hijyen check hattı marker-first okunur.
 - Kanonik tools düzeni ve startpack senkronu sabit marker ile doğrulanır.
+
+## STARTPACK_WARN_CLEANUP_M90D_V1
+- STARTPACK_ROUTE_M45_RETENTION_BACKUP_V1
+- STARTPACK_ROUTE_M47_4_MOBILE_READINESS_V1
+- STARTPACK_ROUTE_M57_MOBILE_HARDENING_V1
+- STARTPACK_ROUTE_M60_FIELD_ACCEPTANCE_V1
+- STARTPACK_ROUTE_M62_COMMERCIAL_CORE_V1

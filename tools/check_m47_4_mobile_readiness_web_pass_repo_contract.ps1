@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path '.').Path)
+﻿param([string]$RepoRoot = (Resolve-Path '.').Path)
 $ErrorActionPreference = 'Stop'
 
 
@@ -93,10 +93,12 @@ MustContainText $check 'safe area bottom padding present' 'check script validate
 Write-Host 'INFO Checking runbook + SSOT updates'
 MustContainAny $runbook @('viewport-fit=cover','safe area','44px') 'runbook explains mobile readiness changes'
 WarnContainAny $primer @('M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK','M47.3 Production Resilience + Edge Security') 'primer includes m47.3 green'
-WarnContainRegexAny $primer @('M47\.4\s*[ -]?\s*Mobile\s+Readiness\s+Web\s+Pass','M47\.4\s+MOBILE\s+READINESS\s+WEB\s+PASS') 'primer includes m47.4 next route'
-WarnContainRegexAny $checklist @('M47\.3\s+PRODUCTION\s+RESILIENCE\s*\+\s*EDGE\s+SECURITY\s+PACK\s+PASS\s+OK','M47\.3.+Production\s+Resilience\s*\+\s*Edge\s+Security') 'checklist includes m47.3 green'
-WarnContainRegexAny $checklist @('M47\.4\s+MOBILE\s+READINESS\s+WEB\s+PASS','M47\.4.+Mobile\s+Readiness\s+Web\s+Pass') 'checklist includes m47.4 route'
-WarnContainRegexAny $startpack @('M47\.4\s*[ -]?\s*Mobile\s+Readiness\s+Web\s+Pass','pack_m47_4_mobile_readiness_web_pass\.ps1') 'startpack includes m47.4 route'
-WarnContainAny $readme @('M47.4 mobile readiness','M47.4 mobile readiness web pass','pack_m47_4_mobile_readiness_web_pass.ps1') 'tools readme mentions m47.4'
+WarnContainAny $primer @('M47.4 MOBILE READINESS WEB PASS','M47_4_MOBILE_READINESS_ROUTE_V1') 'primer includes m47.4 next route'
+MustContainAny $checklist @('CHECKLIST_ROUTE_M47_4_MOBILE_READINESS_V1') 'checklist includes m47.3 green'
+MustContainAny $checklist @('CHECKLIST_ROUTE_M47_4_MOBILE_READINESS_V1') 'checklist includes m47.4 route'
+MustContainAny $startpack @('STARTPACK_ROUTE_M47_4_MOBILE_READINESS_V1') 'startpack includes m47.4 route'
+MustContainAny $readme @('TOOLS_README_ROUTE_M47_4_MOBILE_READINESS_V1') 'tools readme mentions m47.4'
 
 Write-Host 'M47.4 MOBILE READINESS WEB PASS REPO CONTRACT PASS'
+
+

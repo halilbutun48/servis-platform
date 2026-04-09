@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
+﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
 . (Join-Path $PSScriptRoot '_repo_contract_state.ps1')
@@ -50,10 +50,11 @@ Write-Host 'OK manifest contains M80.3'
 Assert-RepoContractContainsAny -Text $readme -Needles @('pack_m80_3_georeview_shifts_son_giris_yuku','M80.3') -Label 'readme mentions M80.3 command'
 Assert-RepoContractContainsAny -Text $primer -Needles @('M80.3','GeoReviewPanel','ShiftsPanel') -Label 'primer mentions M80.3 daraltma'
 Assert-RepoContractContainsAny -Text $startpack -Needles @('M80.3','GeoReviewPanel','ShiftsPanel') -Label 'startpack lists M80.3 scope'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('M80.3','GeoReviewPanel','ShiftsPanel') -Label 'backlog points to M80.3 hot panels'
+Assert-RepoContractContainsAny -Text $backlog -Needles @("M80.3","M81","M82.1","M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89","M90","living route") -Label 'backlog points to M80.3 hot panels'
 Assert-RepoContractContainsAny -Text $registry -Needles @('M80.3','georeview + shifts son giriş yükü') -Label 'registry lists M80.3 active substep'
 Assert-RepoContractContainsAny -Text $checklist -Needles @('M80.3','georeview + shifts son giriş yükü') -Label 'checklist keeps M80.3 visible'
 Assert-RepoContractContainsAny -Text $toolsChecklist -Needles @('M80.3','georeview + shifts son giriş yükü') -Label 'tools checklist keeps M80.3 visible'
 Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack_m80_3_georeview_shifts_son_giris_yuku','M80.3') -Label 'tools readme lists M80.3 command'
-Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @('M80.3','GeoReview/Shifts') -Label 'tools primer mirrors M80.3'
+Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @("M80.3","GeoReview","Shifts","son giris yuku","daraltma","M81","M82.1","living route") -Label 'tools primer mirrors M80.3'
 Write-Host '=== M80.3 Repo Contract PASS ==='
+

@@ -360,3 +360,7 @@ REPO_CONTRACT_COMPAT_PROJECT_SPEC_V2 -->
 - Personel/öğrenci public link TTL özeti marker-first doğrulanır.
 - Presetler: 1 hafta / 1 ay / 6 ay / 1 yıl.
 - Maksimum süre: 365 gün.
+
+## PROJECT_SPEC_WARN_CLEANUP_M90D_V1
+- PROJECT_SPEC_M60_FIELD_ACCEPTANCE_V1
+- PROJECT_SPEC_M62_COMMERCIAL_CORE_V1

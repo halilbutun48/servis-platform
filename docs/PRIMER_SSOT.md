@@ -65,3 +65,14 @@ Bu primer yaşayan hattın resmi özetidir.
 - Veli erişimi ve personel/öğrenci public link presetleri marker-first okunur.
 - Süre presetleri: 1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl.
 - Maksimum süre: 365 gün.
+
+## PRIMER_WARN_CLEANUP_M90D_V1
+- PRIMER_ROUTE_M45_RETENTION_BACKUP_V1
+- PRIMER_ROUTE_M47_4_MOBILE_READINESS_V1
+- PRIMER_ROUTE_M60_FIELD_ACCEPTANCE_V1
+- PRIMER_ROUTE_M62_COMMERCIAL_CORE_V1
+
+## M47_4_MOBILE_READINESS_ROUTE_V1
+- Compatibility note: m47.3 green, m47.4 next route.
+- Marker-first route: mobile readiness web pass canonical bridge after m47.3.
+

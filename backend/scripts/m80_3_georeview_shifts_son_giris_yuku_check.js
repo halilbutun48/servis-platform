@@ -1,4 +1,4 @@
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
@@ -57,9 +57,9 @@ for (const rel of [
 ]) must(rel);
 
 const state = readRepoContractState();
-if (Number(state.latestMasterPack) === 79) ok("state latest master pack is 79"); else fail("state latest master pack is 79");
+if (Number(state.latestHistoricalMasterPack || state.latestMasterPack) === 79) ok("state latest historical master pack is 79"); else fail("state latest historical master pack is 79");
 if (Number(state.stableTo) === 78) ok("state stable_to remains 78"); else fail("state stable_to remains 78");
-if (String(state.nextMilestone || "") === "M80") ok("state next milestone stays M80 main gate"); else fail("state next milestone stays M80 main gate");
+if (String(state.historicalNextMilestone || state.nextMilestone || "") === "M80") ok("state historical next milestone stays M80 main gate"); else fail("state historical next milestone stays M80 main gate");
 if (Array.isArray(state.activeMilestones) && state.activeMilestones.includes("M80.3")) ok("state marks M80.3 active"); else fail("state marks M80.3 active");
 
 const manifest = JSON.parse(read("tools/milestone_pack_manifest.json"));
@@ -95,3 +95,4 @@ if (!scaleText.includes("WARN web/src/panels/company/AgreementsPanel.jsx ->")) o
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("M80.3 GEOREVIEW + SHIFTS SON GIRIS YUKU CHECK PASS");
+

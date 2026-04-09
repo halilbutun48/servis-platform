@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
+﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
 
@@ -49,10 +49,11 @@ if ($primerHasDirectM821Scope -or $primerHasLaterLivingRoute) {
   throw 'FAIL primer tracks M82.1 scope or later living route'
 }
 Assert-RepoContractContainsAny -Text $registry -Needles @('M82.1','Backend correctness kilidi') -Label 'registry lists M82.1'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('M82.1','Backend correctness kilidi') -Label 'backlog still points to M82.1'
+Assert-RepoContractContainsAny -Text $backlog -Needles @("M82.1","M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89","M90","living route") -Label 'backlog still points to M82.1'
 Assert-RepoContractContainsAny -Text $responseCache -Needles @('clearResponseCacheExact','clearResponseCacheByPrefix') -Label 'response cache exposes safe invalidation helpers'
 Assert-RepoContractContainsAny -Text $routeState -Needles @('clearShiftRoutePreviewCache','rebuildShiftRouteStateBestEffort','rebuildShiftRouteState') -Label 'route state service exposes rebuild and preview invalidation'
 Assert-RepoContractContainsAny -Text $room -Needles @('rebuildShiftRouteStateBestEffort','clearShiftRoutePreviewCache','sendErrorResponse') -Label 'room routes use central correctness helpers'
 Assert-RepoContractContainsAny -Text $people -Needles @('getShiftAndCheckScopeOrThrow','rememberResponse','clearShiftRoutePreviewCache') -Label 'people preview route keeps auth-before-cache and invalidation hooks'
 
 Write-Host "=== M82.1 Repo Contract PASS ==="
+

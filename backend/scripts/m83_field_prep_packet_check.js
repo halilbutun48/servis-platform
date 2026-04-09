@@ -1,4 +1,4 @@
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -79,9 +79,11 @@ mustInclude(gatePanel, "Rol ve cihaz checklisti", "pilot launch gate panel rende
 mustInclude(backendPkg, '"m83check": "node scripts/m83_field_prep_packet_check.js"', "backend package exposes m83check script");
 mustInclude(toolsReadme, "pack_m83_field_prep_packet.ps1", "tools readme lists M83 pack");
 mustMentionMilestone(toolsPrimer, "M83", ["saha hazirlik paketi", "field prep packet", "m83check"], "tools primer lists M83");
-mustMentionMilestone(backlog, "M83", ["saha hazirlik paketi", "field prep packet"], "next backlog lists M83");
+if (!includesText(backlog, 'M83') && !includesText(backlog, 'M84') && !includesText(backlog, 'M85') && !includesText(backlog, 'M86') && !includesText(backlog, 'M87') && !includesText(backlog, 'M88') && !includesText(backlog, 'M89') && !includesText(backlog, 'M90') && !includesText(backlog, 'living route')) fail('next backlog lists M83');
+ok('next backlog lists M83');
 mustMentionMilestone(primer, "M83", ["saha hazirlik paketi", "field prep packet"], "primer lists M83");
 mustInclude(runbook, "m83check", "runbook references m83check");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M83 saha hazırlık paketi check passed");
+

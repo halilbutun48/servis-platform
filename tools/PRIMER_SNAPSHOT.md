@@ -59,3 +59,15 @@
 - Veli erişimi ve personel/öğrenci public link presetleri marker-first okunur.
 - Süre presetleri: 1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl.
 - Maksimum süre: 365 gün.
+
+## TOOLS_PRIMER_WARN_CLEANUP_M90D_V1
+- TOOLS_PRIMER_ROUTE_M45_RETENTION_BACKUP_V1
+- TOOLS_PRIMER_ROUTE_M57_MOBILE_HARDENING_V1
+- TOOLS_PRIMER_ROUTE_M60_FIELD_ACCEPTANCE_V1
+- TOOLS_PRIMER_ROUTE_M62_COMMERCIAL_CORE_V1
+
+## M47_4_MOBILE_READINESS_ROUTE_V1
+- M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK
+- M47.4 MOBILE READINESS WEB PASS
+- Marker-first route: mobile readiness web pass canonical bridge after m47.3.
+

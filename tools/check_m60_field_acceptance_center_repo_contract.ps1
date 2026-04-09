@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path ".").Path)
+﻿param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
@@ -37,6 +37,14 @@ Write-Host "INFO Checking M60 files"
 ) | ForEach-Object { MustExist $_ }
 
 $project = ReadText 'docs\PROJECT_SPEC_V1.md'
+$readme = ReadText 'README.md'
+$primer = ReadText 'docs\PRIMER_SSOT.md'
+$startpack = ReadText 'docs\STARTPACK_V1.md'
+$checklist = ReadText 'docs\CHECKLIST_SSOT.md'
+$backlog = ReadText 'docs\NEXT_BACKLOG_V1.md'
+$toolsPrimer = ReadText 'tools\PRIMER_SNAPSHOT.md'
+$toolsChecklist = ReadText 'tools\CHECKLIST_SSOT.md'
+$toolsReadme = ReadText 'tools\README.md'
 $runbook = ReadText 'docs\RUNBOOK_M60_FIELD_ACCEPTANCE_CENTER.md'
 $milestone = ReadText 'docs\MILESTONE_M60_FIELD_ACCEPTANCE_CENTER.md'
 $route = ReadText 'backend\src\routes\fieldAcceptance.js'
@@ -46,7 +54,14 @@ $pack = ReadText 'tools\pack_m60_field_acceptance_center.ps1'
 $script = ReadText 'backend\scripts\m60_field_acceptance_center_check.js'
 
 MustReflectServiceEvaluationLayer $project 'project spec reflects service evaluation layer'
-1..8 | ForEach-Object { Write-Host 'INFO WARN relaxed doc gate' }
+MustContainAny $readme @('README_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'root readme reflects m60 route'
+MustContainAny $primer @('PRIMER_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'primer reflects m60 route'
+MustContainAny $startpack @('STARTPACK_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'startpack reflects m60 route'
+MustContainAny $checklist @('CHECKLIST_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'checklist reflects m60 route'
+MustContainAny $backlog @('BACKLOG_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'backlog reflects m60 route'
+MustContainAny $toolsPrimer @('TOOLS_PRIMER_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'tools primer reflects m60 route'
+MustContainAny $toolsChecklist @('TOOLS_CHECKLIST_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'tools checklist reflects m60 route'
+MustContainAny $toolsReadme @('TOOLS_README_ROUTE_M60_FIELD_ACCEPTANCE_V1') 'tools readme reflects m60 route'
 MustContainAny $runbook @('M60 SAHA ACCEPTANCE MERKEZI','pilot test oturumu kaydi','GO / LIMITED GO / NO-GO') 'runbook defines M60 scope'
 MustContainAny $milestone @('M60 SAHA ACCEPTANCE MERKEZI','FieldAcceptanceCenter.jsx','pack_m60_field_acceptance_center.ps1') 'milestone documents M60 outputs'
 MustContainAny $route @('/manifest','/session-template','/decision-options') 'field acceptance route exposes manifest/template endpoints'
@@ -57,3 +72,5 @@ MustContainAny $pack @('m60_field_acceptance_center_check.js','check_m60_field_a
 MustContainAny $script @('M60 SAHA ACCEPTANCE MERKEZI CHECK','FieldAcceptanceCenter.jsx','GO / LIMITED GO / NO-GO','Saha Kabul Merkezi') 'm60 runtime check covers skeleton baseline'
 
 Write-Host 'M60 SAHA ACCEPTANCE MERKEZI REPO CONTRACT PASS'
+
+

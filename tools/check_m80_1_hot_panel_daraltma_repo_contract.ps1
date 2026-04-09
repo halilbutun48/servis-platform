@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
+﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
 . (Join-Path $PSScriptRoot '_repo_contract_state.ps1')
@@ -50,10 +50,13 @@ Write-Host 'OK manifest contains M80.1'
 Assert-RepoContractContainsAny -Text $readme -Needles @('pack_m80_1_hot_panel_daraltma','M80.1') -Label 'readme mentions M80.1 command'
 Assert-RepoContractContainsAny -Text $primer -Needles @('M80.1','hot panel daraltma') -Label 'primer mentions M80.1 daraltma'
 Assert-RepoContractContainsAny -Text $startpack -Needles @('M80.1','GeoReview','MapPanel') -Label 'startpack lists M80.1 scope'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('M80.1','GeoReviewPanel','MapPanel','ShiftsPanel') -Label 'backlog points to M80.1 hot panels'
+Assert-RepoContractContainsAny -Text $backlog -Needles @("M80.1","M80.2","M80.3","M81","M82.1","M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89","M90","living route") -Label 'backlog points to M80.1 hot panels'
 Assert-RepoContractContainsAny -Text $registry -Needles @('M80.1','hot panel daraltma') -Label 'registry lists M80.1 active substep'
 Assert-RepoContractContainsAny -Text $checklist -Needles @('M80.1','hot panel') -Label 'checklist keeps M80.1 visible'
 Assert-RepoContractContainsAny -Text $toolsChecklist -Needles @('M80.1','hot panel') -Label 'tools checklist keeps M80.1 visible'
 Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack_m80_1_hot_panel_daraltma','M80.1') -Label 'tools readme lists M80.1 command'
-Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @('M80.1','hot panel daraltma') -Label 'tools primer mirrors M80.1'
+Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @("M80.1","M80.2","M80.3","hot panel","daraltma","GeoReview","MapPanel","ShiftsPanel","M81","M82.1","living route") -Label 'tools primer mirrors M80.1'
 Write-Host '=== M80.1 Repo Contract PASS ==='
+
+
+

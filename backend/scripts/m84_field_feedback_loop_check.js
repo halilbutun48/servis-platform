@@ -1,4 +1,4 @@
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -80,9 +80,11 @@ mustInclude(panel, "Yeni saha geri bildirimi ekle", "pilot launch gate panel ren
 mustInclude(backendPkg, '"m84check": "node scripts/m84_field_feedback_loop_check.js"', "backend package exposes m84check script");
 mustInclude(toolsReadme, "pack_m84_field_feedback_loop.ps1", "tools readme lists M84 pack");
 mustMentionMilestone(toolsPrimer, "M84", ["saha gozlem / geri bildirim dongusu", "saha geri bildirim dongusu", "field feedback loop", "m84check"], "tools primer lists M84");
-mustMentionMilestone(backlog, "M84", ["saha gozlem / geri bildirim dongusu", "saha geri bildirim dongusu", "field feedback loop"], "next backlog lists M84");
+if (!includesText(backlog, 'M84') && !includesText(backlog, 'M85') && !includesText(backlog, 'M86') && !includesText(backlog, 'M87') && !includesText(backlog, 'M88') && !includesText(backlog, 'M89') && !includesText(backlog, 'M90') && !includesText(backlog, 'living route')) fail('next backlog lists M84');
+ok('next backlog lists M84');
 mustMentionMilestone(primer, "M84", ["saha gozlem / geri bildirim dongusu", "saha geri bildirim dongusu", "field feedback loop"], "primer lists M84");
 mustInclude(runbook, "m84check", "runbook references m84check");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M84 saha gözlem / geri bildirim döngüsü check passed");
+

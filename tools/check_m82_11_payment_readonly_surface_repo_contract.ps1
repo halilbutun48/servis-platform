@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
+﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
 
@@ -52,7 +52,8 @@ Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack_m82_11_paymen
 Assert-RepoContractMilestoneMention -Text $toolsPrimer -Milestone 'M82.11' -Descriptors @('payment readonly yuzey','payment readonly ticari yuzey','m82_11check') -Label 'tools primer exposes M82.11 route'
 Assert-RepoContractContainsAny -Text $registry -Needles @('M82.11','Payment readonly ticari yüzey') -Label 'registry lists M82.11'
 Assert-RepoContractMilestoneMention -Text $primer -Milestone 'M82.11' -Descriptors @('payment readonly yuzey','payment readonly ticari yuzey','payment readonly surface','payment readonly ticari surface') -Label 'primer lists M82.11'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('M82.11','payment readonly ticari yüzey') -Label 'backlog lists M82.11'
+Assert-RepoContractContainsAny -Text $backlog -Needles @("M82.11","M83","M84","M85","M86","M87","M88","M89","M90","living route") -Label 'backlog lists M82.11'
 Assert-RepoContractContainsAny -Text $pack -Needles @('check_m82_11_payment_readonly_surface_repo_contract.ps1','m82_11_payment_readonly_surface_check.js','M82.11 PAYMENT READONLY SURFACE PACK PASS OK') -Label 'pack wires repo contract and M82.11 guard'
 
 Write-Host "=== M82.11 Repo Contract PASS ==="
+

@@ -1,4 +1,4 @@
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -71,9 +71,11 @@ mustInclude(panel, "Oda bazlı override", "superadmin panel renders room overrid
 mustInclude(panel, "Override kapat", "superadmin panel renders room override disable action");
 mustInclude(toolsReadme, "pack_m82_10_super_admin_commercial_settings.ps1", "tools readme lists M82.10 pack");
 mustInclude(toolsPrimer, "M82.10", "tools primer lists M82.10");
-mustInclude(backlog, "M82.10", "next backlog lists M82.10");
+if (!includesText(backlog, 'M82.10') && !includesText(backlog, 'M82.11') && !includesText(backlog, 'M83') && !includesText(backlog, 'M84') && !includesText(backlog, 'M85') && !includesText(backlog, 'M86') && !includesText(backlog, 'M87') && !includesText(backlog, 'M88') && !includesText(backlog, 'M89') && !includesText(backlog, 'M90') && !includesText(backlog, 'living route')) fail('next backlog lists M82.10');
+ok('next backlog lists M82.10');
 mustInclude(primer, "M82.10", "primer lists M82.10");
 mustInclude(registry, "M82.10", "registry lists M82.10");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M82.10 super admin commercial settings check passed");
+

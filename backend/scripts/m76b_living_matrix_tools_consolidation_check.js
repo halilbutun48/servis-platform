@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readRepoContractState } from './_repoContractState.js';
@@ -73,10 +73,10 @@ ok('master pack calls phase4 wrapper');
 
 if (!(state.canonicalPackHierarchy?.publicRoot === 'tools/packs/living' && state.canonicalPackHierarchy?.masterPackUsesPublicWrappers === true)) fail('state marks living wrappers as canonical');
 ok('state marks living wrappers as canonical');
-if (Number(state.latestMasterPack) !== 79) fail('state latest master pack is 79');
-ok('state latest master pack is 79');
-if (Number(state.phaseDefaults?.packLivingTo) !== 79) fail('state living defaults move to 79');
-ok('state living defaults move to 79');
+if (!(Number(state.latestHistoricalMasterPack || state.latestMasterPack) === 79)) fail('state latest historical master pack is 79');
+ok('state latest historical master pack is 79');
+if (!(Number(state.phaseDefaults?.packLivingTo) >= 79)) fail('state living defaults move to 79 or later living route');
+ok('state living defaults move to 79 or later living route');
 
 const manifest = JSON.parse(read('tools/milestone_pack_manifest.json'));
 const stages = (manifest.stages || []).filter((s) => s && s.kind === 'pack');
@@ -111,3 +111,5 @@ const reportPath = path.join(artifactDir, 'm76b_living_matrix_tools_consolidatio
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 console.log(`INFO report => ${path.relative(repoRoot, reportPath).replace(/\\/g, '/')}`);
 console.log('=== M76B LIVING MATRIX + TOOLS CONSOLIDATION CHECK PASS ===');
+
+

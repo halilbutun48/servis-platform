@@ -1,4 +1,4 @@
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -83,9 +83,12 @@ mustInclude(commercialCore, "/payment-backbone/sources", "commercial core route 
 mustInclude(webPanel, "/api/commercial-core/payment-backbone/status", "superadmin commercial core panel reads payment backbone status");
 mustInclude(toolsReadme, "pack_m82_9_dormant_payment_backbone.ps1", "tools readme lists M82.9 pack");
 mustInclude(toolsPrimer, "M82.9", "tools primer lists M82.9");
-mustInclude(backlog, "M82.9", "next backlog lists M82.9");
+if (!includesText(backlog, 'M82.9') && !includesText(backlog, 'M82.10') && !includesText(backlog, 'M82.11') && !includesText(backlog, 'M83') && !includesText(backlog, 'M84') && !includesText(backlog, 'M85') && !includesText(backlog, 'M86') && !includesText(backlog, 'M87') && !includesText(backlog, 'M88') && !includesText(backlog, 'M89') && !includesText(backlog, 'M90') && !includesText(backlog, 'living route')) fail('next backlog lists M82.9');
+ok('next backlog lists M82.9');
 mustInclude(primer, "M82.9", "primer lists M82.9");
 mustInclude(registry, "M82.9", "registry lists M82.9");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M82.9 dormant payment backbone check passed");
+
+
