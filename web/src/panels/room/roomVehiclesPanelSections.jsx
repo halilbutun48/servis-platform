@@ -214,7 +214,7 @@ export function RoomVehicleManageSection({
                 <th>Muayene</th>
                 <th>Km / Bakım</th>
                 <th>Not</th>
-                <th>Aktif sürücü</th>
+                <th>Bağlı sürücü</th>
                 <th>Aksiyon</th>
               </tr>
             </thead>
@@ -401,7 +401,7 @@ export function RoomVehicleAssignmentsSection({
     <div className="card">
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h3 style={{ marginBottom: 0 }}>Atamalar</h3>
+          <h3 style={{ marginBottom: 0 }}>Atama görünümü</h3>
           <div className="muted" style={{ marginTop: 6 }}>
             Araç bazlı <b>mevcut</b> ve <b>sıradaki</b> shift özeti. (Kaynak: <code>/api/vehicles</code> içindeki APPROVED/ACTIVE shifts)
           </div>
@@ -511,7 +511,7 @@ export function RoomVehicleAvailabilitySection({
     <div className="card">
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h3 style={{ marginBottom: 0 }}>Müsaitlik</h3>
+          <h3 style={{ marginBottom: 0 }}>Uygunluk</h3>
           <div className="muted" style={{ marginTop: 6 }}>
             Seçilen zaman penceresinde araç/sürücü uygunluğu. (Kaynak: <code>/api/availability/bulk</code> — agreement-first)
           </div>
@@ -639,7 +639,7 @@ export function RoomVehicleTelematicsSection({
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1.45fr", gap: 12, alignItems: "start" }}>
       <div className="card">
-        <h3>Telematics Device Yönetimi</h3>
+        <h3>Telematics cihaz yönetimi</h3>
         <div className="muted">ROOM &gt; Vehicles içinde araç bazlı GPS cihazı yönetimi</div>
         <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
           <div>

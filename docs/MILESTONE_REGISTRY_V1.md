@@ -41,6 +41,9 @@
 - `M90B.1 - executable closure gate`
   - amac: `M0->M89 green` bazinin ustune docs/state/pack/verify convergence icin calisan resmi kapanis kapisi koymak
   - komut: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
+- `M90C.6 - hot-file queue policy`
+  - amac: repo-audit large/hot file listesini resmi sinifli queue olarak kilitlemek; justified exception / safe candidate review / acceptance-sensitive-later dagilimini state-first policy ile dogrulamak
+  - komut: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

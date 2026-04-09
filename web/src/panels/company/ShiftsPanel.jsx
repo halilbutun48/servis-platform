@@ -24,7 +24,7 @@ import { addDaysYmd, buildLocalRangeFromItem, computePackageShiftIds, isSameDayI
 import { COMPANY_FINAL_STATUSES, filterCompanyFinalItems, filterCompanyMarketItems, filterCompanyPendingItems, getCompanyCanonicalCounts, getCompanyFinalItemsRaw, getCompanyMarketItemsRaw, getCompanyPendingItemsRaw, getCompanyRoomScoreIds } from "./companyShiftsPanelSelectors";
 import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompanyRequestAction, clearCompanyCounterOfferAction, companyCounterOfferAction, companyCounterPackageAction, decideCompanyRoomOfferAction, openCompanyExtendModal, openCompanyOfferModalForShift, openCompanyOffersModalForShift, sendCompanyCounterOfferAction, submitCompanyExtendRequest, submitCompanyOfferModal, toggleCompanyOfferRoom } from "./companyShiftsPanelActions";
 import { renderCompanyOfferSummary, renderRoomOfferSummary } from "./companyShiftsPanelSummaryCells";
-// M66 compatibility marker: Operasyon KaydÄ± UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
+// M66 compatibility marker: Operasyon Kaydı UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
 
 export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const { token, me } = useSession();
@@ -66,7 +66,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const commercialSummaryPromiseRef = useRef(null);
 
 
-  // âœ… M24: Market shift (room seÃ§meden) + multi-room offers
+  // ✅ M24: Market shift (room seçmeden) + multi-room offers
   const [marketMode, setMarketMode] = useState(false);
   const [marketQ, setMarketQ] = useState("");
   const [marketFocusIds, setMarketFocusIds] = useState([]);
@@ -81,7 +81,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     noteCompany: "",
   });
   const [offersModal, setOffersModal] = useState({ open: false, shiftId: null, items: [] });
-  // M60: Paket teklif/accept desteÄŸi (Company)
+  // M60: Paket teklif/accept desteği (Company)
   const [offerModalPkgIds, setOfferModalPkgIds] = useState([]); // number[]
   const [offersModalPkgIds, setOffersModalPkgIds] = useState([]); // number[]
   const [offersCounterSel, setOffersCounterSel] = useState({});
@@ -90,7 +90,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const recommendedOffer = useMemo(() => offersDecisionCards.find((offer) => offer.__recommended) || null, [offersDecisionCards]);
   const recommendedCanAccept = String(recommendedOffer?.status || "").toUpperCase() === "COUNTERED";
 
-  // M51: Shift sÃ¼re uzatma (Company â†’ Room talep)
+  // M51: Shift süre uzatma (Company → Room talep)
   const [extendModal, setExtendModal] = useState({ open: false, shift: null, endLocal: "", note: "" });
   const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null });
   const [detailModal, setDetailModal] = useState(null); // { kind: "vehicle"|"driver", data: any }
@@ -107,10 +107,10 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCommercialMode, mainTab, trackTab]);
 
-  // Room teklif kararÄ± butonlarÄ± iÃ§in
+  // Room teklif kararı butonları için
   const [decidingId, setDecidingId] = useState(null);
 
-  // Decision note input state (shift bazlÄ±)
+  // Decision note input state (shift bazlı)
   const [decisionNoteSel, setDecisionNoteSel] = useState({}); // { [shiftId]: string }
   function setDecisionNote(shiftId, value) {
     setDecisionNoteSel((p) => ({ ...p, [Number(shiftId)]: value }));
@@ -118,7 +118,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
 
   // Pending filtreler
   const [pendingQ, setPendingQ] = useState("");
-  // HÄ±zlÄ± filtre (BugÃ¼n / YarÄ±n) â€” Istanbul local YYYY-MM-DD
+  // Hızlı filtre (Bugün / Yarın) — Istanbul local YYYY-MM-DD
   const [dayYmd, setDayYmd] = useState("");
   const [applyToast, setApplyToast] = useState(null); // { ids:number[] }
   const marketSectionRef = useRef(null);
@@ -132,7 +132,7 @@ const [accOpen, setAccOpen] = useState({ market: false, pending: true, list: fal
 const toggleAcc = (key) => setAccOpen((p) => ({ ...p, [key]: !p?.[key] }));
 const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: true })));
 
-  // M34 Step-6: Plan Builder â†’ Bekleyen Taleplerâ€™e filtreli geÃ§iÅŸ
+  // M34 Step-6: Plan Builder → Bekleyen Talepler’e filtreli geçiş
   useEffect(() => {
     const onFocus = (ev) => {
       const d = ev?.detail || {};
@@ -226,8 +226,8 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
   }
 
 // ===== Templates (company-localStorage) =====
-// AmaÃ§: Wizard'daki plan paketleri + gÃ¼nler + sÃ¼re mantÄ±ÄŸÄ±nÄ± tek yerde toplamak.
-// Not: LocalStorage company bazlÄ±dÄ±r. Eski (v1) ÅŸablonlar otomatik migrate edilir.
+// Amaç: Wizard'daki plan paketleri + günler + süre mantığını tek yerde toplamak.
+// Not: LocalStorage company bazlıdır. Eski (v1) şablonlar otomatik migrate edilir.
 
 const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
 const templatesStorageKey = `psv1:company:${companyKey}:shiftTemplates:v2`;
@@ -273,7 +273,7 @@ const allTemplates = useMemo(() => {
   const [offerNote, setOfferNote] = useState("");
 
 // template selection in request tab
-// Not: bundle template varsa her item ayrÄ± option olur (tplId::idx)
+// Not: bundle template varsa her item ayrı option olur (tplId::idx)
 const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
 const templateOptions = useMemo(() => {
@@ -284,7 +284,7 @@ const templateOptions = useMemo(() => {
       const it = items[i];
       const key = `${tpl.id}::${i}`;
       const base = tpl.name;
-      const label = items.length > 1 ? `${base} â€¢ ${it.label}` : base;
+      const label = items.length > 1 ? `${base} • ${it.label}` : base;
       opts.push({ key, tpl, itemIndex: i, item: it, label });
     }
   }
@@ -357,13 +357,13 @@ function usePlanDraftToRequest(draft) {
   setMarketMode(Boolean(draft?.marketMode));
   setPlanDraftMeta(draft || null);
 
-  // Clear direct-offer fields (Plan Builder genelde market akÄ±ÅŸÄ±nÄ± hedefler)
+  // Clear direct-offer fields (Plan Builder genelde market akışını hedefler)
   setOfferVehicleId("");
   setOfferAmount("");
   setOfferNote("");
 }
 
-  // KarÅŸÄ± teklif UI
+  // Karşı teklif UI
   const [offerOpen, setOfferOpen] = useState({});
   const [offerSel, setOfferSel] = useState({});
 
@@ -507,7 +507,7 @@ function usePlanDraftToRequest(draft) {
     };
   }, [token, mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, offerVehicleId, JSON.stringify(offerOpen)]);
 
-  // M28 + M30-A: wizard sonrasÄ± tek intent kuyruÄŸundan teklif ekranÄ± aÃ§
+  // M28 + M30-A: wizard sonrası tek intent kuyruğundan teklif ekranı aç
   useEffect(() => {
     const offerRaw = localStorage.getItem("company:autoOfferShiftId");
     const offersListRaw = localStorage.getItem("company:autoOffersListShiftId");
@@ -655,12 +655,12 @@ function usePlanDraftToRequest(draft) {
     parts.push(`Vardiya #${copilotShift.id}`);
     if (copilotShift?.status) parts.push(`Durum ${String(copilotShift.status).toUpperCase()}`);
     if (copilotShift?.room?.name) parts.push(`Room ${copilotShift.room.name}`);
-    if (copilotShift?.vehicle?.plate) parts.push(`AraÃ§ ${copilotShift.vehicle.plate}`);
-    else if (copilotShift?.vehicleId) parts.push(`AraÃ§ #${copilotShift.vehicleId}`);
-    if (copilotShift?.driver?.fullName) parts.push(`SÃ¼rÃ¼cÃ¼ ${copilotShift.driver.fullName}`);
+    if (copilotShift?.vehicle?.plate) parts.push(`Araç ${copilotShift.vehicle.plate}`);
+    else if (copilotShift?.vehicleId) parts.push(`Araç #${copilotShift.vehicleId}`);
+    if (copilotShift?.driver?.fullName) parts.push(`Sürücü ${copilotShift.driver.fullName}`);
     const stopCount = Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0;
     if (stopCount > 0) parts.push(`${stopCount} durak`);
-    return parts.join(" â€¢ ");
+    return parts.join(" • ");
   }, [copilotShift]);
 
   useEffect(() => {
@@ -678,16 +678,16 @@ function usePlanDraftToRequest(draft) {
       label: `Vardiya #${copilotShift.id}`,
       summary: copilotShiftSummary,
       fields: [
-        { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'SeÃ§ili vardiyanÄ±n sistem iÃ§indeki kimliÄŸini gÃ¶sterir.' },
-        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'Ä°ÅŸin baÄŸlÄ± olduÄŸu room veya operasyon oda bilgisini gÃ¶sterir.' },
-        { label: 'AraÃ§', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya baÄŸlÄ± araÃ§ bilgisini gÃ¶sterir.' },
-        { label: 'SÃ¼rÃ¼cÃ¼', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmÄ±ÅŸ sÃ¼rÃ¼cÃ¼ bilgisini gÃ¶sterir.' },
-        { label: 'Durak SayÄ±sÄ±', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaÃ§ durak bulunduÄŸunu gÃ¶sterir.' },
+        { label: 'Vardiya', value: `#${copilotShift.id}`, help: 'Seçili vardiyanın sistem içindeki kimliğini gösterir.' },
+        { label: 'Room', value: copilotShift?.room?.name || '-', help: 'İşin bağlı olduğu room veya operasyon oda bilgisini gösterir.' },
+        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Vardiyaya bağlı araç bilgisini gösterir.' },
+        { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
+        { label: 'Durak Sayısı', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaç durak bulunduğunu gösterir.' },
       ],
       facts,
       badges: [
-        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'SeÃ§ili vardiyanÄ±n operasyon durumunu gÃ¶sterir.' },
-        { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya baÄŸlÄ± aÃ§Ä±k veya gÃ¶rÃ¼nen teklif sayÄ±sÄ±nÄ± Ã¶zetler.' },
+        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
+        { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya bağlı açık veya görünen teklif sayısını özetler.' },
       ],
     });
 
@@ -741,7 +741,7 @@ function usePlanDraftToRequest(draft) {
       return { ...r, eligibleCount };
     });
 
-    // COMPANY iÃ§in vehicle kapasitesine gÃ¶re room elemek doÄŸru deÄŸil (company room araÃ§larÄ±nÄ± bilmez).
+    // COMPANY için vehicle kapasitesine göre room elemek doğru değil (company room araçlarını bilmez).
     const filtered = seatN && !isCompany ? list.filter((r) => r.eligibleCount > 0) : list;
     filtered.sort((a, b) => Number(a.id) - Number(b.id));
     return filtered;
@@ -822,10 +822,10 @@ function usePlanDraftToRequest(draft) {
         status: "REQUESTED",
       };
 
-      // âœ… M24: Direct vs Market
+      // ✅ M24: Direct vs Market
       const rid = marketMode ? null : Number(roomId);
       if (!marketMode && (!rid || !Number.isFinite(rid))) {
-        setErr("Room zorunlu (Market mode kapalÄ±).");
+        setErr("Room zorunlu (Market mode kapalı).");
         return;
       }
       if (!marketMode) body.roomId = rid;
@@ -1015,7 +1015,7 @@ function usePlanDraftToRequest(draft) {
     isSameDayIstanbul,
   }), [pendingItemsRaw, pendingQ, pendingOnlyRoomOffer, onlyAgreement, pendingFocusIds, dayYmd]);
 
-  // âœ… M24: Market filtre
+  // ✅ M24: Market filtre
   const marketItems = useMemo(() => filterCompanyMarketItems({
     items: marketItemsRaw,
     marketQ,

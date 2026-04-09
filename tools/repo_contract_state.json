@@ -59,7 +59,8 @@
     "M88",
     "M89",
     "M90",
-    "M90B.1"
+    "M90B.1",
+    "M90C.6"
   ],
   "canonicalDocs": [
     "README.md",
@@ -74,5 +75,74 @@
     "tools/README.md",
     "tools/PRIMER_SNAPSHOT.md",
     "tools/CHECKLIST_SSOT.md"
-  ]
+  ],
+  "hotFileQueuePolicy": {
+    "policyVersion": 1,
+    "warningThreshold": 1000,
+    "blockThreshold": 1200,
+    "principles": [
+      "line-count dusurmek icin kor refactor yok",
+      "once acceptance sonra kontrollu temizlik",
+      "justified exception dosyalarinda agresif split yok",
+      "acceptance-sensitive dosyalar explicit gerekce olmadan acilmaz"
+    ],
+    "classifications": {
+      "backend/src/ai/chat/helpComposer.js": {
+        "class": "justified-exception",
+        "note": "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
+      },
+      "backend/prisma/schema.prisma": {
+        "class": "justified-exception",
+        "note": "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
+      },
+      "backend/src/ai/jobGuide/screenCatalog.js": {
+        "class": "safe-candidate-review",
+        "note": "katalog/yuzey ayrimi icin kontrollu extraction adayi"
+      },
+      "web/src/panels/company/ShiftsPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "davranis degistirmeden section/state extraction adayi"
+      },
+      "web/src/panels/room/ShiftsPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "davranis degistirmeden section/state extraction adayi"
+      },
+      "web/src/panels/company/GuidedPlanModal.jsx": {
+        "class": "safe-candidate-review",
+        "note": "modal ic mantigi kontrollu parcaya ayrilabilir"
+      },
+      "web/src/panels/room/DriversPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "liste/toolbar/dialog extraction icin uygun aday"
+      },
+      "web/src/panels/room/VehiclesPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "contract korunarak section extraction adayi"
+      },
+      "web/src/panels/company/ShiftPeopleTab.jsx": {
+        "class": "safe-candidate-review",
+        "note": "yardimci tablo/filtre extraction adayi"
+      },
+      "web/src/panels/organization/PlansPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "liste ve dialog parcalama icin uygun"
+      },
+      "backend/src/routes/shifts/room.js": {
+        "class": "acceptance-sensitive-later",
+        "note": "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
+      },
+      "backend/src/routes/shifts/company.js": {
+        "class": "acceptance-sensitive-later",
+        "note": "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
+      },
+      "web/src/panels/shared/CopilotPanel.jsx": {
+        "class": "acceptance-sensitive-later",
+        "note": "gorunur acceptance yuzeyi; yalniz explicit gerekceyle ele alinir"
+      },
+      "mobile/App.js": {
+        "class": "acceptance-sensitive-later",
+        "note": "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
+      }
+    }
+  }
 }

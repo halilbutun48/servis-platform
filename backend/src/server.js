@@ -32,7 +32,7 @@ import penaltiesRouter from "./routes/penalties.js";
 
 import availabilityRoutes from "./routes/availability.js";
 
-// Router export tipleri karÄ±ÅŸsa bile crash etmemek iÃ§in namespace import
+// Router export tipleri karışsa bile crash etmemek için namespace import
 import * as vehiclesMod from "./routes/vehicles.js";
 import * as driversMod from "./routes/drivers.js";
 import * as shiftsMod from "./routes/shifts/index.js";
@@ -47,7 +47,7 @@ import * as personelShiftsMod from "./routes/personelShifts.js";
 import { adminRouter } from "./routes/admin.js";
 import adminLogsRouter from "./routes/admin_logs.js";
 
-// Public routerâ€™lar (io yok)
+// Public router’lar (io yok)
 import * as companiesMod from "./routes/companies.js";
 import * as roomsMod from "./routes/rooms.js";
 import * as routeTemplatesMod from "./routes/routeTemplates.js";
@@ -113,7 +113,7 @@ assertRouteFactories({
 const app = express();
 startCapacityBaselineMonitor();
 
-// M11: proxy / gÃ¼venlik baseline
+// M11: proxy / güvenlik baseline
 app.disable("x-powered-by");
 app.set("trust proxy", Math.max(0, Number(ENV.TRUST_PROXY_HOPS || 1)));
 
@@ -121,12 +121,12 @@ app.set("trust proxy", Math.max(0, Number(ENV.TRUST_PROXY_HOPS || 1)));
 const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
 const isProd = mode === "production";
 
-// M38: prod guard â€” CORS_ORIGIN must not be "*" in production
+// M38: prod guard — CORS_ORIGIN must not be "*" in production
 if (isProd && String(ENV.CORS_ORIGIN || "").trim() === "*") {
   throw new Error('CORS_ORIGIN must not be "*" in production');
 }
 
-// Optional prod guard â€” redirect http->https when behind proxy
+// Optional prod guard — redirect http->https when behind proxy
 const requireHttps = isProd && String(process.env.REQUIRE_HTTPS || "0") === "1";
 
 
@@ -217,7 +217,7 @@ app.get("/health", async (req, res) => {
   }
 
   res.json({
-    ok: true, // geriye dÃ¶nÃ¼k uyum
+    ok: true, // geriye dönük uyum
     ts: new Date().toISOString(),
     uptimeSec: Math.round(process.uptime()),
     dbOk,
@@ -342,7 +342,7 @@ process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 server.listen(ENV.PORT, () => {
-  console.log(`âœ… API listening on http://localhost:${ENV.PORT}`);
+  console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
 
 

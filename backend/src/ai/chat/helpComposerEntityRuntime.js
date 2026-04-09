@@ -146,6 +146,7 @@ export function createEntityRuntimeHelpers({
     shiftScreenNoSelectionReply,
     openingReply,
     termComparisonReply,
+    analyzerEvidenceText,
     analyzerReply,
     composeScreenLocationReply,
     roleHelpReply,

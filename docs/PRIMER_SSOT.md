@@ -9,6 +9,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapanmıştır; sıradaki resmi iş: `M90C.6 — hot-file queue policy`
 
 ## Güncel yaşayan sıra
 - `M80` — final sert kabul ve yük güveni
@@ -52,6 +53,30 @@ Bu primer yaşayan hattın resmi özetidir.
 - tek parça script rehberi
 - screenshot bağımlılığını azaltan proof reformu
 - repo hijyen kapanışı
+
+## helpComposer exception policy
+- `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
+- Bu dosyada line-count reduction hedefi yoktur.
+- Agresif küçültme/refactor yapılmaz.
+- Yalnız acceptance-safe lokal düzeltme yapılabilir.
+- M90C.1, M90C.2 ve M90C.3 kapanmıştır; helpComposer policy canonical docs içine işlenmiştir.
+
+## schema.prisma decision
+- `backend/prisma/schema.prisma` bu M90 hattında **justified exception** olarak korunur.
+- Bu dosyada sırf line-count düşsün diye path/split refactor yapılmayacaktır.
+- Gerekçe: schema tek dosyada migration + seed + Prisma client + repo-contract check hattının ortak referansıdır.
+- M90 kapanış hattında schema split yapmak acceptance değeri üretmez; yüksek araçlama / migration / contract riski üretir.
+- İzin verilen değişiklikler: migration-safe alan/model/enumeration ekleri, relation/index/constraint düzeltmeleri, acceptance-safe lokal şema tamiri.
+- Bu karar, schema üzerinde çalışma yasağı değildir; yalnız line-count odaklı yapısal bölmeyi M90 dışında bırakır.
+- Yeniden değerlendirme tetikleyicisi: M90 sonrası planlı tooling hazırlığı + explicit split ihtiyacı + contract/check hattının buna göre tasarlanması.
+
+## hot-file queue policy
+- Hot/large file kuyruğu yalnız sayısal repo-audit çıktısı değildir; resmi sınıflı queue olarak yönetilir.
+- Kör line-count düşürme yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
+- `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue içinde **justified exception** olarak kalır.
+- `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
+- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/company/ShiftsPanel.jsx`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` **safe candidate review** kuyruğundadır.
+- Bu queue, `tools/repo_contract_state.json` içindeki `hotFileQueuePolicy` alanı ve `repo_audit` çıktısı ile birlikte doğrulanır.
 
 ## REPO_CONTRACT_MARKERS_V1
 - PRIMER_LIVING_ROUTE_M59_M89_V1

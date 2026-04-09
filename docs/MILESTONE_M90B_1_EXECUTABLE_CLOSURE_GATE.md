@@ -11,8 +11,10 @@ Amaç: `M0->M89 green` bazının üstüne, M90 kapanış yönünü laf seviyesin
 
 ## Dışında kalanlar
 - yeni ürün özelliği
-- `helpComposer.js` final küçültme işi
-- `schema.prisma` için sonraki karar
+- `helpComposer.js` için justified exception policy
+- `schema.prisma` justified exception kararı (M90C.5)
+- `hot-file queue policy` siniflamasi (M90C.6)
+- `helpComposer.js` içinde line-count reduction hedefi
 
 ## Komut
 - `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
@@ -23,3 +25,4 @@ Amaç: `M0->M89 green` bazının üstüne, M90 kapanış yönünü laf seviyesin
 - `npm run m90b1check` PASS verir
 - state/pack/verify/audit/script-guide/primer hattı tek resmi gerçeği anlatır
 - `helpComposerFlowSupport.js`, `helpComposerEntitySupport.js`, `helpComposerSelectedSupport.js` source içinde geri dönmez
+- `helpComposer.js` yalnız acceptance-safe lokal düzeltme alanı olarak kalır

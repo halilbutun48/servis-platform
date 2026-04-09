@@ -20,4 +20,4 @@ Amaç: M90 kapanış yönünü çalışan resmi kapıya bağlamak.
 - başarısız `helpComposer` split kalıntıları source içine geri dönmüş mü?
 
 ## Not
-Bu gate yeni ürün davranışı doğrulaması değildir. `helpComposer.js` final küçültme işi bunun bir sonraki kontrollü adımıdır.
+Bu gate yeni ürün davranışı doğrulaması değildir. `helpComposer.js` justified exception dosyasıdır; bu dosyada line-count reduction hedefi yoktur ve yalnız acceptance-safe lokal düzeltme yapılabilir.

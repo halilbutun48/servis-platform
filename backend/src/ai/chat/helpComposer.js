@@ -304,7 +304,7 @@ const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFiel
   dataRules,
 });
 
-const { vehicleReadinessReply, vehicleMissingDataReply, prefersSelectedEntity, isShiftTrackingScreen, shiftScreenNoSelectionReply, openingReply, termComparisonReply, analyzerReply, composeScreenLocationReply, roleHelpReply } = createEntityRuntimeHelpers({
+const { vehicleReadinessReply, vehicleMissingDataReply, prefersSelectedEntity, isShiftTrackingScreen, shiftScreenNoSelectionReply, openingReply, termComparisonReply, analyzerEvidenceText, analyzerReply, composeScreenLocationReply, roleHelpReply } = createEntityRuntimeHelpers({
   firstNonEmpty,
   normalizeText,
   pickTerms,

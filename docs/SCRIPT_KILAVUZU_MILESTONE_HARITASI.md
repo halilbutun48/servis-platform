@@ -340,6 +340,11 @@ Bu bant güncel doğrulanmış üst hattır.
 - Runbook: `docs/RUNBOOK_M90B_1_EXECUTABLE_CLOSURE_GATE.md`
 - Ana konu: `M0->M89 green` bazı üstünde docs/state/pack/verify convergence hattını çalışan resmi kapıya bağlamak.
 
+### M90C.6 — hot-file queue policy [PACK]
+- Pack: `tools/pack_m90_c6_hot_file_queue_policy.ps1`
+- Runbook: `docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md`
+- Ana konu: large/hot file listesini resmi sınıflı queue'ya çevirmek; justified exception, safe candidate review ve acceptance-sensitive / later sınıflarını repo-audit ile doğrulamak.
+
 ## 11) Hızlı okuma özeti
 - `M0→M41`: çekirdek temel hat
 - `M42→M58`: mobil / KVKK / hazırlık ön bant

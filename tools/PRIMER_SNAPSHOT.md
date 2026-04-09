@@ -5,7 +5,7 @@
 - Branch: `main`
 - Güncel doğrulanmış baz: `M0->M89 green`
 - Tarihsel anchor: `M0->M79`
-- Sonraki kontrollü iş: `M90 canonical closure`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapanmıştır; sıradaki resmi iş: `M90C.6 hot-file queue policy`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 executable closure gate`
 
 ## Repo üstünde yaşayan hat
@@ -47,6 +47,26 @@
 - tek parça script rehberi
 - screenshot bağımlılığını azaltan proof reformu
 - repo hijyen kapanışı
+
+## helpComposer exception policy
+- `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
+- Bu dosyada line-count reduction hedefi yoktur.
+- Agresif küçültme/refactor yapılmayacaktır.
+- Sadece acceptance-safe lokal düzeltme yapılabilir.
+- M90C.1, M90C.2 ve M90C.3 kapanmıştır; helpComposer policy canonical docs içine işlenmiştir.
+
+## schema.prisma decision
+- `backend/prisma/schema.prisma` M90 hattında justified exception olarak korunur.
+- Bu dosya sırf satır sayısı için bölünmeyecektir.
+- Migration + seed + Prisma client + repo-contract yüzeyleri tek path üzerinden bağlı kaldığı için split refactor bu hatta alınmaz.
+- İzin verilen değişiklikler: migration-safe alan/model/enum ekleri ve acceptance-safe lokal tamirler.
+- Hot/large file queue resmi sınıflıdır; doğrulama komutu: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`.
+
+## hot-file queue policy
+- `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` justified exception olarak korunur.
+- `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` acceptance-sensitive / later sınıfındadır.
+- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/company/ShiftsPanel.jsx`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` safe candidate review kuyruğundadır.
+- Kör line-count düşürme yoktur; önce acceptance, sonra kontrollü temizlik uygulanır.
 
 ## REPO_CONTRACT_MARKERS_V1
 - TOOLS_PRIMER_LIVING_ROUTE_M59_M89_V1

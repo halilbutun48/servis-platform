@@ -37,7 +37,8 @@
     "m87check": "node scripts/m87_payment_account_readiness_check.js",
     "m88check": "node scripts/m88_settlement_operations_console_check.js",
     "m89check": "node scripts/m89_settlement_reconciliation_desk_check.js",
-    "m90b1check": "node scripts/m90_b1_canonical_closure_gate_check.js"
+    "m90b1check": "node scripts/m90_b1_canonical_closure_gate_check.js",
+    "m90c6check": "node scripts/m90_c6_hot_file_queue_policy_check.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
