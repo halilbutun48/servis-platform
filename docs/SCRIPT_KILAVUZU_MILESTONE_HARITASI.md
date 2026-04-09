@@ -358,6 +358,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`
 - Ana konu: kanonik doğrulama zincirini repo-native görünür hale getirmek ve repo audit + sanitized export artifact'larını CI içinde görünür kılmak.
 
+### M90C.9 — güvenli kapanış / final hygiene checklist [PACK]
+- Pack: `tools/pack_m90_c9_safe_closure_final_hygiene.ps1`
+- Runbook: `docs/RUNBOOK_M90C_9_SAFE_CLOSURE_FINAL_HYGIENE_CHECKLIST.md`
+- Final verify: `npm run verify:final`
+- Export/hijyen shell tercihi: `pwsh`
+- Ana konu: release/shareable/export/verify sırasını tek resmi checklist altında sabitlemek ve PS5 uyum dersini kalıcı kurala çevirmek.
+
 ## 11) Hızlı okuma özeti
 - `M0→M41`: çekirdek temel hat
 - `M42→M58`: mobil / KVKK / hazırlık ön bant

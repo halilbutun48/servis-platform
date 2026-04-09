@@ -3,7 +3,7 @@
 Tarih: 2026-04-09
 Timezone: Europe/Istanbul
 
-Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 kapandi -> siradaki resmi is M90C.8 CI / verification visibility**
+Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapandi -> siradaki resmi is M90C.9 safe closure / final hygiene checklist**
 
 ## 1) Resmi durum
 - Güncel doğrulanmış baz: `MASTER PACK PASS OK (M0->M89)`
@@ -14,7 +14,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - OSRM kodu repoda vardır ama default compose modu fallback davranır
 
 ## 2) Hemen sonraki ana faz
-1. `M90C.8` — CI / verification visibility
+1. `M90C.9` — güvenli kapanış / final hygiene checklist
 2. `M90A` — canonical markdown hizası
 3. `M90B` — `repo_contract_state` + pack/verify convergence
 4. `M90C` — screenshot bağımlılığını azaltan proof reformu
@@ -24,7 +24,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 ## 2.0) Closure gate visibility
 - `M90B.1` executable closure gate kanonik kapanis hattinin immediate gate'i olarak korunur.
 - `M90C.3` kapanmistir; M90B.1 gorunurlugu backlog icinde devam eder.
-- `M90C.5` schema için resmi karar kapisidir; `M90C.6` hot-file queue policy ve `M90C.7` export/package hygiene closure kapanmıştır; sıradaki kapı `M90C.8` CI / verification visibility'dir.
+- `M90C.5` schema için resmi karar kapisidir; `M90C.6` hot-file queue policy, `M90C.7` export/package hygiene closure ve `M90C.8` CI / verification visibility kapanmıştır; sıradaki kapı `M90C.9` safe closure / final hygiene checklist'tir.
 
 ## 2.1) helpComposer exception policy
 - `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
@@ -40,7 +40,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - Gerekçe: migration, seed, Prisma client ve repo-contract/check yüzeyleri tek path üzerinden bağlanmıştır.
 - M90 kapanış hattında split refactor acceptance değeri üretmez; yapısal risk üretir.
 - İzin verilen değişiklikler: migration-safe alan/model/enum ekleri, relation/index/constraint tamiri, acceptance-safe lokal düzeltme.
-- Bu karar kapanmıştır; hot-file queue policy ve export/package hygiene closure da kapanmıştır; sıradaki gerçek iş: `M90C.8 — CI / verification visibility`.
+- Bu karar kapanmıştır; hot-file queue policy, export/package hygiene closure ve CI / verification visibility de kapanmıştır; sıradaki gerçek iş: `M90C.9 — güvenli kapanış / final hygiene checklist`.
 
 ## 2.3) M90C.6 — hot-file queue policy
 - Hot/large file listesi artık sadece rapor değildir; resmi sınıflı queue olarak takip edilir.
@@ -115,3 +115,26 @@ Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90
 ## BACKLOG_WARN_CLEANUP_M90D_V1
 - BACKLOG_ROUTE_M60_FIELD_ACCEPTANCE_V1
 - BACKLOG_ROUTE_M62_COMMERCIAL_CORE_V1
+
+
+## 2.6) M90C.9 — güvenli kapanış / final hygiene checklist
+- Kanonik final giriş komutu: `npm run verify:final`.
+- Windows tarafında export/hijyen kapanışı için tercih edilen kabuk `pwsh` olacaktır.
+- Final closure sırası: `verify:final` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
+- `tools/export_shareable_repo_bundle.ps1` PS5 uyumsuz API çağrılarını geri getirmeyecek; `tar.exe` / `.NET ZipFile` fallback korunacaktır.
+- Satır azaltma hâlâ en sona bırakılır; bu adım release/shareable/export/verify kapanış emniyetidir.
+
+## M90C.6 historical closure chain
+- M90C.1-M90C.5 closed before M90C.6 hot-file queue policy.
+- M90C.7 export/package hygiene, M90C.8 CI/verification visibility, and M90C.9 safe closure/final hygiene follow after M90C.6.
+
+
+## M90C.6 exact closure chain markers
+- M90C.1-M90C.5 closure before M90C.6
+- M90C.7 export/package hygiene after M90C.6
+- M90C.8 CI/verification visibility after M90C.6
+- M90C.9 safe closure/final hygiene after M90C.6
+
+
+M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapandi
+

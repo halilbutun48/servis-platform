@@ -50,6 +50,9 @@
 - `M90C.8 - CI / verification visibility`
   - amac: yereldeki kanonik verify zincirini repo-native workflow ile görünür hale getirmek
   - komut: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
+- `M90C.9 - safe closure / final hygiene checklist`
+  - amac: release/shareable/export/verify siralamasini tek resmi checklist altinda sabitlemek ve Windows tarafinda pwsh tercih kuralini yazili hale getirmek
+  - komut: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

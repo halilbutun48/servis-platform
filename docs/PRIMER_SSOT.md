@@ -9,7 +9,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
-- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 kapanmıştır; sıradaki resmi iş: `M90C.8 — CI / verification visibility`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapanmıştır; sıradaki resmi iş: `M90C.9 — güvenli kapanış / final hygiene checklist`
 
 ## Güncel yaşayan sıra
 - `M80` — final sert kabul ve yük güveni
@@ -90,6 +90,14 @@ Bu primer yaşayan hattın resmi özetidir.
 - `repo-verification` işi root verify chain çalıştırır; `shareable-export` işi M90C.7 export hygiene pack çalıştırır.
 - Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
 - Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.
+
+
+## safe closure / final hygiene checklist
+- Kanonik final doğrulama girişi: `npm run verify:final`.
+- Windows tarafında export/hijyen komutlarında tercih edilen kabuk: `pwsh`.
+- Final closure sırası: `npm run verify:final` -> `pwsh -ExecutionPolicy Bypass -File .\tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform` -> `pwsh -ExecutionPolicy Bypass -File .\tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform` -> `git status --short`.
+- `tools/export_shareable_repo_bundle.ps1` içinde `tar.exe` / `.NET ZipFile` fallback korunur; `GetRelativePath` ve `ConvertFrom-Json -Depth` gibi PS5 uyumsuzlukları geri gelmez.
+- Satır azaltma en sona bırakılır; bu adım yalnız güvenli kapanış ve hijyen checklist'idir.
 
 ## REPO_CONTRACT_MARKERS_V1
 - PRIMER_LIVING_ROUTE_M59_M89_V1

@@ -16,6 +16,7 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - `M90C.6` hot-file queue policy
 - `M90C.7` export / package hygiene closure
 - `M90C.8` CI / verification visibility
+- `M90C.9` güvenli kapanış / final hygiene checklist
 - `M90C` proof reformu
 - `M90D` tek parça script rehberi
 - `M90E` repo hijyen kapanışı
@@ -48,3 +49,11 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - ticari omurgaya yeni domain eklenmez
 - odak yalnızca doğrulama / kabul / SSOT / hijyen hizasıdır
 - screenshot ana kanıt olarak kullanılmaz
+
+
+## M90C.9 çalışma mantığı
+- Bu adım final release/shareable/export/verify sırasını tek checklist altında sabitler.
+- Root verify girişi: `npm run verify:final`
+- Komut: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
+- Windows notu: export/hijyen kapanışında `pwsh` tercih edilir; script yine de PowerShell 5.1 fallback güvenini korur.
+- Beklenen sonuç: `verify:final` zinciri, sanitized export pack, shareable bundle üretimi ve temiz `git status` sırası resmi kapanış checklisti olarak görünür olur; satır azaltma hâlâ en sona bırakılır.

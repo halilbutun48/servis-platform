@@ -62,7 +62,8 @@
     "M90B.1",
     "M90C.6",
     "M90C.7",
-    "M90C.8"
+    "M90C.8",
+    "M90C.9"
   ],
   "canonicalDocs": [
     "README.md",
@@ -203,6 +204,25 @@
     "artifacts": [
       "artifacts/repo-audit/repo_audit_latest.json",
       "artifacts/shareable-export/servis-platform_shareable_*.zip"
+    ]
+  },
+  "safeClosureFinalHygiene": {
+    "goal": "safe-closure-final-hygiene-checklist",
+    "primaryCommand": "npm run verify:final",
+    "windowsPreferredShell": "pwsh",
+    "exportPack": "tools/pack_m90_c7_export_package_hygiene.ps1",
+    "exportTool": "tools/export_shareable_repo_bundle.ps1",
+    "orderedSteps": [
+      "npm run verify:final",
+      "pwsh -ExecutionPolicy Bypass -File .\\tools\\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\\servis-platform",
+      "pwsh -ExecutionPolicy Bypass -File .\\tools\\export_shareable_repo_bundle.ps1 -RepoRoot D:\\servis-platform",
+      "git status --short",
+      "git add -A && git commit / tag / push only after expected diff is confirmed"
+    ],
+    "compatibilityNotes": [
+      "On Windows, prefer pwsh for export-related packs and shareable bundle generation",
+      "export_shareable_repo_bundle.ps1 must stay compatible with Windows PowerShell 5.1 fallback semantics even when pwsh is preferred",
+      "line-count reduction stays deferred until after acceptance, hygiene, export, and CI closure work"
     ]
   }
 }

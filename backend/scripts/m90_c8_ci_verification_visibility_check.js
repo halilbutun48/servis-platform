@@ -76,7 +76,7 @@ const docsBundle = [primer, backlog, toolsPrimer, toolsReadme, scriptGuide, mile
 expect(includesText(docsBundle, "M90C.8"), "canonical docs mention M90C.8");
 expect(includesText(docsBundle, "CI / verification visibility") || includesText(docsBundle, "ci / verification visibility"), "canonical docs mention CI / verification visibility");
 expect(includesText(docsBundle, "satır azaltma en sona") || includesText(docsBundle, "line-count reduction stays deferred"), "canonical docs keep deferred line-count policy");
-expect(includesText(primer, "M90C.8") && includesText(primer, "CI / verification visibility"), "primer points to M90C.8 as current official work");
+expect(includesText(primer, "M90C.8") && includesText(primer, "CI / verification visibility"), "primer preserves M90C.8 CI visibility record");
 expect(includesText(toolsReadme, "pack_m90_c8_ci_verification_visibility.ps1") && includesText(toolsReadme, "npm run verify:ci"), "tools readme exposes M90C.8 pack and root verify command");
 expect(includesText(scriptGuide, "RUNBOOK_M90C_8_CI_VERIFICATION_VISIBILITY.md"), "script guide exposes M90C.8 runbook");
 

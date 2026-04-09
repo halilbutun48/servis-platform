@@ -60,12 +60,12 @@ Assert-RepoContractContainsAny -Text $runbook -Needles @(
 Assert-RepoContractContainsAny -Text $primer -Needles @(
   'M90C.6',
   'hot-file queue policy'
-) -Label 'primer tracks M90C.6 as current work'
+) -Label 'primer preserves M90C.6 hot-file queue policy record'
 Assert-RepoContractContainsAny -Text $backlog -Needles @(
   'M90C.6',
   'hot-file queue policy',
   'pack_m90_c6_hot_file_queue_policy.ps1'
-) -Label 'backlog prioritizes M90C.6 route'
+) -Label 'backlog preserves M90C.6 route record'
 Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @(
   'M90C.6',
   'pack_m90_c6_hot_file_queue_policy.ps1'

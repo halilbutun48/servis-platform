@@ -81,12 +81,12 @@ Assert-RepoContractContainsAny -Text $runbook -Needles @(
 Assert-RepoContractContainsAny -Text $primer -Needles @(
   'M90C.7',
   'export / package hygiene closure'
-) -Label 'primer tracks M90C.7 as current work'
+) -Label 'primer preserves M90C.7 export hygiene record'
 Assert-RepoContractContainsAny -Text $backlog -Needles @(
   'M90C.7',
   'export / package hygiene closure',
   'pack_m90_c7_export_package_hygiene.ps1'
-) -Label 'backlog prioritizes M90C.7 route'
+) -Label 'backlog preserves M90C.7 route record'
 Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @(
   'M90C.7',
   'pack_m90_c7_export_package_hygiene.ps1'

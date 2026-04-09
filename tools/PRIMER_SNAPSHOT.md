@@ -5,7 +5,7 @@
 - Branch: `main`
 - Güncel doğrulanmış baz: `M0->M89 green`
 - Tarihsel anchor: `M0->M79`
-- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 kapanmıştır; sıradaki resmi iş: `M90C.8 CI / verification visibility`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapanmıştır; sıradaki resmi iş: `M90C.9 güvenli kapanış / final hygiene checklist`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 executable closure gate`
 
 ## Repo üstünde yaşayan hat
@@ -64,7 +64,9 @@
 - Satır azaltma en sona bırakılır; önce export/package hijyeni kapanır.
 - Yeni resmi hijyen komutu: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Yeni resmi CI görünürlük komutu: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`.
+- Yeni resmi final closure komutu: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Root verify chain: `npm run verify:ci`.
+- Kanonik final verify girişi: `npm run verify:final`.
 
 ## hot-file queue policy
 - `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` justified exception olarak korunur.
@@ -97,3 +99,10 @@
 - M47.4 MOBILE READINESS WEB PASS
 - Marker-first route: mobile readiness web pass canonical bridge after m47.3.
 
+
+
+## safe closure / final hygiene checklist
+- Windows tarafında export/hijyen kapanışı için tercih edilen shell `pwsh` olur.
+- Final sıra: `npm run verify:final` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
+- `tools/export_shareable_repo_bundle.ps1` PS5 uyumlu fallback mantığını korur; `GetRelativePath` ve `ConvertFrom-Json -Depth` gibi kırıklar geri gelmez.
+- Satır azaltma en sona bırakılır.

@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 # shareable export excludes: artifacts/, web/dist/, mobile/dist/
 # shareable export excludes: pack_living_final.log, pack_living_latest.log
 # legacy note: Compress-Archive fallback was replaced for Windows PowerShell 5.1 compatibility
+# Windows note: prefer pwsh for export-related packs; keep PowerShell 5.1 fallback compatibility in this script
 
 if ([string]::IsNullOrWhiteSpace($OutputDir)) {
   $OutputDir = Join-Path $RepoRoot "artifacts\shareable-export"
@@ -18,10 +19,10 @@ $policy = $state.shareablePackageHygiene
 if (-not $policy) { throw "shareablePackageHygiene policy missing in repo_contract_state.json" }
 
 function Normalize-Rel([string]$Base, [string]$Full) {
-  $baseNorm = [System.IO.Path]::GetFullPath($Base).TrimEnd('\\','/')
+  $baseNorm = [System.IO.Path]::GetFullPath($Base).TrimEnd('\','/')
   $fullNorm = [System.IO.Path]::GetFullPath($Full)
   if ($fullNorm.StartsWith($baseNorm, [System.StringComparison]::OrdinalIgnoreCase)) {
-    $rel = $fullNorm.Substring($baseNorm.Length).TrimStart('\\','/')
+    $rel = $fullNorm.Substring($baseNorm.Length).TrimStart('\','/')
   } else {
     $rel = $fullNorm
   }
@@ -83,3 +84,6 @@ if ($tarCmd) {
 Write-Host ("INFO shareable export copied files: " + $copied)
 Write-Host ("INFO shareable export zip: " + $zipPath)
 $zipPath
+
+
+
