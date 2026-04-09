@@ -184,12 +184,6 @@ export default function GeoLocationPicker({
   const [draftLat, setDraftLat] = useState(valid ? latNum : null);
   const [draftLng, setDraftLng] = useState(valid ? lngNum : null);
 
-  useEffect(() => {
-    if (!pickerOpen) {
-      setDraftLat(valid ? latNum : null);
-      setDraftLng(valid ? lngNum : null);
-    }
-  }, [pickerOpen, valid, latNum, lngNum]);
 
   const draftValid = draftLat != null && draftLng != null;
   const draftCenter = useMemo(

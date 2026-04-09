@@ -163,12 +163,6 @@ export default function HubMapPicker({
   const [draftLat, setDraftLat] = useState(valid ? latNum : null);
   const [draftLng, setDraftLng] = useState(valid ? lngNum : null);
 
-  useEffect(() => {
-    if (!pickerOpen) {
-      setDraftLat(valid ? latNum : null);
-      setDraftLng(valid ? lngNum : null);
-    }
-  }, [pickerOpen, valid, latNum, lngNum]);
 
   const draftValid = draftLat != null && draftLng != null;
   const draftCenter = useMemo(() => (draftValid ? [draftLat, draftLng] : center), [draftValid, draftLat, draftLng, center]);

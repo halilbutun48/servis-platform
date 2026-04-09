@@ -125,13 +125,16 @@ export default function CompanyCommercialFlowPanel() {
   const acceptedOffers = useMemo(() => ({ length: counts.pending }), [counts]);
   const finalItems = useMemo(() => ({ length: counts.final }), [counts]);
 
-  const selectedItem = useMemo(() => flowItems.find((item) => String(item.id) === String(selectedId || '')) || null, [flowItems, selectedId]);
-
-  useEffect(() => {
-    if (!selectedId) return;
-    const visible = filteredFlowItems.some((item) => String(item.id) === String(selectedId));
-    if (!visible) setSelectedId("");
+  const effectiveSelectedId = useMemo(() => {
+    const rawSelectedId = String(selectedId || "");
+    if (!rawSelectedId) return "";
+    return filteredFlowItems.some((item) => String(item.id) === rawSelectedId) ? rawSelectedId : "";
   }, [filteredFlowItems, selectedId]);
+
+  const selectedItem = useMemo(
+    () => flowItems.find((item) => String(item.id) === effectiveSelectedId) || null,
+    [flowItems, effectiveSelectedId]
+  );
 
   const copilotScopeKey = useMemo(() => resolveRuntimeScopeKey(getPath(), "/company/commercial-flow"), []);
 
@@ -232,7 +235,7 @@ export default function CompanyCommercialFlowPanel() {
             </thead>
             <tbody>
               {filteredFlowItems.length ? filteredFlowItems.map((item) => (
-                <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: 'pointer', background: String(selectedId || '') === String(item.id) ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
+                <tr key={item.id} onClick={() => setSelectedId(item.id)} style={{ cursor: 'pointer', background: String(effectiveSelectedId || '') === String(item.id) ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
                   <td>{item.counterparty}</td>
                   <td>{item.flowLabel}</td>
                   <td>{item.amountLabel}</td>
