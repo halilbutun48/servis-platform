@@ -3,7 +3,7 @@
 Tarih: 2026-04-09
 Timezone: Europe/Istanbul
 
-Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapandi -> siradaki resmi is M90C.6 hot-file queue policy**
+Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 kapandi -> siradaki resmi is M90C.7 export / package hygiene closure**
 
 ## 1) Resmi durum
 - Güncel doğrulanmış baz: `MASTER PACK PASS OK (M0->M89)`
@@ -14,7 +14,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - OSRM kodu repoda vardır ama default compose modu fallback davranır
 
 ## 2) Hemen sonraki ana faz
-1. `M90C.6` — hot-file queue policy
+1. `M90C.7` — export / package hygiene closure
 2. `M90A` — canonical markdown hizası
 3. `M90B` — `repo_contract_state` + pack/verify convergence
 4. `M90C` — screenshot bağımlılığını azaltan proof reformu
@@ -24,7 +24,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 ## 2.0) Closure gate visibility
 - `M90B.1` executable closure gate kanonik kapanis hattinin immediate gate'i olarak korunur.
 - `M90C.3` kapanmistir; M90B.1 gorunurlugu backlog icinde devam eder.
-- `M90C.5` schema için resmi karar kapisidir; M90C.6 hot-file queue policy bunun üstüne kapanış sınıflamasını getirir.
+- `M90C.5` schema için resmi karar kapisidir; `M90C.6` hot-file queue policy kapanmıştır ve `M90C.7` export/package hijyen kapısını açar.
 
 ## 2.1) helpComposer exception policy
 - `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
@@ -40,7 +40,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - Gerekçe: migration, seed, Prisma client ve repo-contract/check yüzeyleri tek path üzerinden bağlanmıştır.
 - M90 kapanış hattında split refactor acceptance değeri üretmez; yapısal risk üretir.
 - İzin verilen değişiklikler: migration-safe alan/model/enum ekleri, relation/index/constraint tamiri, acceptance-safe lokal düzeltme.
-- Bu karar kapanmıştır; sıradaki gerçek iş: `M90C.6 — hot-file queue policy`.
+- Bu karar kapanmıştır; hot-file queue policy de kapanmıştır; sıradaki gerçek iş: `M90C.7 — export / package hygiene closure`.
 
 ## 2.3) M90C.6 — hot-file queue policy
 - Hot/large file listesi artık sadece rapor değildir; resmi sınıflı queue olarak takip edilir.
@@ -49,6 +49,13 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
 - `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/company/ShiftsPanel.jsx`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` **safe candidate review** kuyruğundadır.
 - Kanonik komut: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`.
+
+## 2.4) M90C.7 — export / package hygiene closure
+- Shareable repo paketi çalışma alanı artığı taşımayacaktır.
+- `.env`, `web/dist`, `mobile/dist`, `backend/data/*.json`, overlay readme/log kalıntıları ve mevcut zip arşivleri export dışında kalır.
+- Satır azaltma en sona bırakılır; bu adım davranış refactor'u değildir.
+- Kanonik komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
+- Shareable zip komutu: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`.
 
 ## 3) Bu turun çalışma kuralı
 - ürün davranışını bozma
@@ -83,7 +90,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - M90, yeni ürün modülü değil; repo gerçeğinin tekleştirilmesi işidir.
 
 ## 6) İlk cümle
-Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90C.2`, `M90C.3`, `M90C.4` ve `M90C.5` kapanmıştır; bu turdaki resmi iş `M90C.6 hot-file queue policy`dir.
+Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90C.2`, `M90C.3`, `M90C.4`, `M90C.5` ve `M90C.6` kapanmıştır; bu turdaki resmi iş `M90C.7 export / package hygiene closure`dir.
 
 ## Repo contract state
 - Makine-okur durum özeti: `tools/repo_contract_state.json`

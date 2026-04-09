@@ -345,6 +345,12 @@ Bu bant güncel doğrulanmış üst hattır.
 - Runbook: `docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md`
 - Ana konu: large/hot file listesini resmi sınıflı queue'ya çevirmek; justified exception, safe candidate review ve acceptance-sensitive / later sınıflarını repo-audit ile doğrulamak.
 
+### M90C.7 — export / package hygiene closure [PACK]
+- Pack: `tools/pack_m90_c7_export_package_hygiene.ps1`
+- Runbook: `docs/RUNBOOK_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE.md`
+- Shareable export: `tools/export_shareable_repo_bundle.ps1`
+- Ana konu: env/build/runtime-json/overlay kalıntısı taşımayan temiz shareable repo zip üretmek.
+
 ## 11) Hızlı okuma özeti
 - `M0→M41`: çekirdek temel hat
 - `M42→M58`: mobil / KVKK / hazırlık ön bant

@@ -26,3 +26,6 @@ apply_overlay.ps1
 _m81_ssot_wireup.ps1
 PATCH_NOTES_M82_*.txt
 README_M82_*_PATCH_*.txt
+web/dist/
+pack_living_*.log
+README_M*_OVERLAY*.txt

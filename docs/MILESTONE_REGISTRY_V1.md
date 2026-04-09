@@ -44,6 +44,9 @@
 - `M90C.6 - hot-file queue policy`
   - amac: repo-audit large/hot file listesini resmi sinifli queue olarak kilitlemek; justified exception / safe candidate review / acceptance-sensitive-later dagilimini state-first policy ile dogrulamak
   - komut: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
+- `M90C.7 - export / package hygiene closure`
+  - amac: shareable repo exportunu env/build/runtime-json/overlay artigi tasimayan temiz zip olarak kilitlemek
+  - komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

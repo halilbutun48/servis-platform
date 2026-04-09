@@ -14,6 +14,7 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - `M90B` state + pack/verify convergence
 - `M90B.1` executable closure gate
 - `M90C.6` hot-file queue policy
+- `M90C.7` export / package hygiene closure
 - `M90C` proof reformu
 - `M90D` tek parça script rehberi
 - `M90E` repo hijyen kapanışı
@@ -27,6 +28,12 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - Bu adım repo-audit sıcaklık listesini state-first policy ile bağlar.
 - Komut: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
 - Beklenen sonuç: large/hot file seti ile policy sınıflaması birebir eşleşir; justified exception ve acceptance-sensitive dosyalar net adlandırılır; safe candidate review kuyruğu resmi hale gelir.
+
+## M90C.7 çalışma mantığı
+- Bu adım shareable repo exportunu temiz zip olarak kilitler.
+- Komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
+- Shareable export: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
+- Beklenen sonuç: env/build/runtime-json/overlay kalıntısı taşımayan shareable export zip üretilir; satır azaltma hâlâ en sona bırakılır.
 
 ## Değişmez kural
 - yeni ürün özelliği açılmaz

@@ -10,6 +10,7 @@
 - Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
 - M90B.1 executable closure gate: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 - M90C.6 hot-file queue policy: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
+- M90C.7 export / package hygiene closure: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 
 ## Tarihsel anchor / compatibility marker
@@ -40,7 +41,9 @@
 - M90 yeni ürün modülü değildir.
 - Amaç: docs/state/pack/verify/proof sistemini tek canonical gerçeğe toplamak.
 - İlk yürütülebilir kapanış kapısı: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
-- Sıradaki resmi kapanış kuyruğu: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
+- Sıradaki resmi kapanış kuyruğu: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
+- Shareable repo zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
+- Satır azaltma en sona bırakılır; önce acceptance + export/package hijyeni kapanır.
 - Tek rehber: `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`
 
 ## REPO_CONTRACT_MARKERS_V1
