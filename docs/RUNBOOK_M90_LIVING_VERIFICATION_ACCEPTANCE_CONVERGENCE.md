@@ -1,14 +1,22 @@
-# RUNBOOK — M90 LIVING VERIFICATION & ACCEPTANCE CONVERGENCE
+# RUNBOOK — M90 CANONICAL CLOSURE / 10-10 KAPANIŞ PAKETİ
 
-Öncelik sırası:
+Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verification hattını tek resmi davranışta buluşturmak.
+
+## Öncelik sırası
 1. `tools\pack.ps1 -To 89`
 2. `tools\verify_living_static.ps1`
-3. `tools\verify_living_runtime.ps1`
+3. `tools\verify_living_runtime.ps1 -To 89`
+4. `tools\check_repo_audit_master.ps1`
 
-Bu blokta ilk resmi hedef, yaşayan doğrulama zincirini green'e taşımaktır.
+## M90 alt blokları
+- `M90A` canonical markdown hizası
+- `M90B` state + pack/verify convergence
+- `M90C` proof reformu
+- `M90D` tek parça script rehberi
+- `M90E` repo hijyen kapanışı
 
-İlk odak kırıkları:
-- M13 conflict payload / check hizası
-- M46 static forward-version markers
-- M58 mobil acceptance metin bağımlılığı
-- M65 checklist / launch gate contract marker hizası
+## Değişmez kural
+- yeni ürün özelliği açılmaz
+- ticari omurgaya yeni domain eklenmez
+- odak yalnızca doğrulama / kabul / SSOT / hijyen hizasıdır
+- screenshot ana kanıt olarak kullanılmaz

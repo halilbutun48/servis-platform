@@ -60,11 +60,11 @@ Info "Checking legacy files removed from tools root"
 ) | ForEach-Object { MustAbsent $_ }
 
 Info "Checking docs sync"
-MustContainAny "tools\README.md" @("TOOLS_HYGIENE_CHECK_MARKER_V1","check_tools_hygiene_m105.ps1","Tools hijyen check markerı") "tools readme hygiene check sync"
-MustContainAny "README.md" @("TOOLS_HYGIENE_CANONICAL_V1","Kanonik tools düzeni") "root readme tools section"
-MustContainAny "docs\STARTPACK_V1.md" @("STARTPACK_TOOLS_HYGIENE_V1","repo/tools hijyen check") "startpack tools hygiene sync"
-MustContainAny "docs\CHECKLIST_SSOT.md" @("TOOLS_CANONICAL_CLEANUP_M105_V1","M105 Tools Canonical Cleanup","M76B","Tools Consolidation","Kanonik tools") "docs checklist tools cleanup section"
-MustContainAny "tools\CHECKLIST_SSOT.md" @("TOOLS_CANONICAL_CLEANUP_M105_V1","M105 Tools Canonical Cleanup","M76B","Tools Consolidation","Kanonik tools") "tools checklist tools cleanup section"
+MustContain "tools\README.md" "TOOLS_HYGIENE_CHECK_MARKER_V1" "tools readme hygiene check sync"
+MustContain "README.md" "TOOLS_HYGIENE_CANONICAL_V1" "root readme tools section"
+MustContain "docs\STARTPACK_V1.md" "STARTPACK_TOOLS_HYGIENE_V1" "startpack tools hygiene sync"
+MustContain "docs\CHECKLIST_SSOT.md" "TOOLS_CANONICAL_CLEANUP_M105_V1" "docs checklist tools cleanup section"
+MustContain "tools\CHECKLIST_SSOT.md" "TOOLS_CANONICAL_CLEANUP_M105_V1" "tools checklist tools cleanup section"
 MustExist "docs\overlays\OVERLAY_NOTES_M105_TOOLS_CANONICAL_CLEANUP_2026-03-10.md"
 
 Write-Host "TOOLS HYGIENE M105 CHECK PASS"

@@ -2,7 +2,7 @@
 
 <!-- TOOLS_HYGIENE_CANONICAL_V1 -->
 
-Bu repo, okul ve kurumsal taşıma alanlarını birlikte taşıyan; **pazar + sözleşme + operasyon** omurgasında çalışan canlı ürün ağacıdır.
+Bu repo, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı omurgada birleştiren; **pazar + sözleşme + operasyon** yaklaşımıyla çalışan canlı ürün ağacıdır.
 
 ## Hızlı referans
 - Primer snapshot: `tools/PRIMER_SNAPSHOT.md`
@@ -10,24 +10,22 @@ Bu repo, okul ve kurumsal taşıma alanlarını birlikte taşıyan; **pazar + s�
 - Checklist SSOT: `docs/CHECKLIST_SSOT.md`
 - Startpack: `docs/STARTPACK_V1.md`
 - Milestone registry: `docs/MILESTONE_REGISTRY_V1.md`
+- Tek rehber: `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`
+- 10/10 kabul kapısı: `docs/KABUL_KRITERLERI_10_10_VARDIS.md`
 - Parent access akışı: `docs/PARENT_ACCESS_FLOW.md`
 - Overlay geçmişi: `docs/overlays/`
 
-## Güncel dürüst durum (2026-04-07)
-- Baz alınacak gerçek: kullanıcının verdiği en güncel repo snapshot’ı.
-- Tarihsel son tam master referansı: `MASTER PACK PASS OK (M0->M79)`.
-- Repo üstünde bunun üstüne gelen yaşayan hat mevcut:
-  - `M80`, `M80.1`, `M80.2`, `M80.3`
-  - `M81`
-  - `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`
-  - `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`
-- Bu üst hat için pack/check/runbook dosyaları repo içinde vardır; living verify zinciri yeniden koşturulmaktadır.
-- `tools/STABLE_TO.txt` değeri tarihsel uyumluluk marker’ı olarak içeride ayrı tutulabilir; bu, repo üstündeki yaşayan hattı inkâr etmez.
-- Parent Access / Veli Erişimi akışı artık hesap daveti değildir; öğrenci + süre + erişim linki + erişim kodu + PIN mantığıyla çalışır.
-- Legacy auth invite ürün yüzeyinden kaldırılmıştır.
-- OSRM kodu repoda durur ama default compose modu bilinçli olarak sade/fallback çalışır.
-- Ürün kodu geri alınmaz; pack/check/runbook/doc yeni gerçeğe uydurulur.
-- Tarihsel kalite rotasında M59 gözlemleme hattı ve M65 launch gate kuralı korunur; saha testi M65 öncesi açılmaz ve M75 green baseline sonrası kullanıcı kararıyla ilerlenir.
+## Güncel dürüst durum (2026-04-08)
+- Repo: `servis-platform`
+- Branch: `main`
+- Güncel doğrulanmış baz: `MASTER PACK PASS OK (M0->M89)`
+- Tarihsel temiz anchor korunur: `MASTER PACK PASS OK (M0->M79)`
+- Tarihsel anchor ile yaşayan üst hat aynı repo üzerinde birlikte taşınır.
+- Güncel üst hat: `M80`, `M80.1`, `M80.2`, `M80.3`, `M81`, `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`, `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`
+- Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
+- State-first kuralı geçerlidir: önce `tools/repo_contract_state.json`, sonra markdown anlatımı okunur.
+- Parent Access / Veli Erişimi akışı artık legacy auth invite değildir; öğrenci + süre + erişim linki + erişim kodu + PIN mantığıyla çalışır.
+- Ürün kodu geri alınmaz; pack/check/runbook/docs yeni canonical gerçeğe uydurulur.
 
 ## Kanonik komutlar
 - Master pack: `tools\pack.ps1 -To 89 -RepoDir D:\servis-platform -NoBuild`
@@ -35,7 +33,8 @@ Bu repo, okul ve kurumsal taşıma alanlarını birlikte taşıyan; **pazar + s�
 - Living static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
 - Living runtime doğrulama: `tools\verify_living_runtime.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
 - Repo audit: `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
-- M82.8 verification: `tools\pack_m82_8_verification_2_0.ps1 -RepoRoot D:\servis-platform`
+- M82.1 backend correctness: `tools\pack_m82_1_backend_correctness.ps1 -RepoRoot D:\servis-platform`
+- M82.8 verification 2.0: `tools\pack_m82_8_verification_2_0.ps1 -RepoRoot D:\servis-platform`
 - M83 saha hazırlık paketi: `tools\pack_m83_field_prep_packet.ps1 -RepoRoot D:\servis-platform`
 - M84 saha geri bildirim döngüsü: `tools\pack_m84_field_feedback_loop.ps1 -RepoRoot D:\servis-platform`
 - M85 opsiyonel ödeme pilotu: `tools\pack_m85_optional_payment_pilot.ps1 -RepoRoot D:\servis-platform`
@@ -44,19 +43,31 @@ Bu repo, okul ve kurumsal taşıma alanlarını birlikte taşıyan; **pazar + s�
 - M88 settlement operasyon masası: `tools\pack_m88_settlement_operations_console.ps1 -RepoRoot D:\servis-platform`
 - M89 settlement mutabakat masası: `tools\pack_m89_settlement_reconciliation_desk.ps1 -RepoRoot D:\servis-platform`
 
-## Önemli hizalama notu
-- Aktif milestone anlamı için `docs/PRIMER_SSOT.md` ve `docs/MILESTONE_REGISTRY_V1.md` baz alınır.
-- `docs/overlays/M80`, `M81`, `M82` klasörleri güncel aktif milestone anlamı değil; Mart/Nisan 2026 tarihli tarihsel overlay serisidir.
-- Tarihsel full master referansı `M79` olarak korunur; yaşayan repo hattı bunun üstünde `M80→M89` genişlemesini taşır.
-- Teknik kabul katmanı ve ticari/finans omurgası artık aynı repo üzerinde birlikte yaşar.
-- Saha testleri ve finans rollout’ları kullanıcı kararıyla kontrollü yapılacaktır.
+## Kanonik / tarihsel ayrımı
+- `README.md`, `docs/README.md`, `docs/PRIMER_SSOT.md`, `docs/STARTPACK_V1.md`, `docs/CHECKLIST_SSOT.md`, `docs/MILESTONE_REGISTRY_V1.md`, `docs/NEXT_BACKLOG_V1.md`, `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`, `tools/README.md`, `tools/PRIMER_SNAPSHOT.md`, `tools/CHECKLIST_SSOT.md` güncel canonical yüzeydir.
+- `docs/overlays/` ve `docs/_archive/` tarihsel kayıttır; güncel milestone anlamı bu klasörlerden okunmaz.
+- Eski script guide sürümleri tarihsel yönlendirme dosyasına çevrilmiştir; aktif rehber tek dosyadır.
 
-## Repo contract state
-- Makine-okur durum özeti: `tools\repo_contract_state.json`
-- State-first docs-contract kuralı: önce `repo_contract_state.json`, sonra markdown anlatımı okunur.
+## Proof / kabul ilkesi
+- Screenshot ana kanıt değildir.
+- Ana kanıt sırası: state/marker -> check çıktısı -> log/export -> panel manifest izi -> screenshot.
+- Screenshot yalnızca görsel destek ve düzen/regresyon kanıtı olarak kullanılır.
 
 ## Root orchestration
 - root lint: `npm run lint`
 - hot-path smoke: `npm run verify:hot`
-- docs/contract smoke: `npm run verify:docs`
-- repo audit: `npm run audit:repo`
+- mobile acceptance: `npm run acceptance:mobile` (mobile klasörü içinde)
+
+## REPO_CONTRACT_MARKERS_V1
+- README_LIVING_ROUTE_M59_M89_V1
+- README_ROUTE_M63_V1
+- README_ROUTE_M64_V1
+- README_ROUTE_M65_V1
+- M75_GREEN_BASELINE_MARKER_V1
+- LIVING_ROUTE_M82_TO_M89_MARKER_V1
+- NO_FIELD_TEST_BEFORE_CONTROLLED_SIGNOFF_V1
+
+## README_WARN_CLEANUP_M90D_V1
+- README_ROUTE_M57_MOBILE_HARDENING_V1
+- README_ROUTE_M60_FIELD_ACCEPTANCE_V1
+- README_ROUTE_M62_COMMERCIAL_CORE_V1

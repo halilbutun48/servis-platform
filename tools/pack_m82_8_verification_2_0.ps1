@@ -1,8 +1,9 @@
-param(
+﻿param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
   [switch]$NoBuild
 )
 $ErrorActionPreference = "Stop"
+& (Join-Path $PSScriptRoot '_repo_hygiene_preflight.ps1')
 . (Join-Path $PSScriptRoot "_shared_functions.ps1")
 
 Write-StatusLine "=== M82.8 VERIFICATION 2.0 ==="
@@ -27,3 +28,4 @@ if (-not $?) { throw "M82.8 company shifts runtime guard failed." }
 
 Write-StatusLine "=== M82.8 VERIFICATION 2.0 PACK PASS OK ==="
 Write-StatusLine "INFO M82.4->M82.8 mobil acceptance zinciri ve company vardiyalar runtime guard'i tek resmi verification hattinda toplandi."
+

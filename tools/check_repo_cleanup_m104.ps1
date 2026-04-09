@@ -40,5 +40,5 @@ MustContainAny @('backend\src\server.js','backend\src\bootstrap\routeMounts.js')
 MustContain 'docs\API_SPEC_V1.md' '/api/company/passenger-links' 'API spec passenger links sync'
 MustContain 'docs\DB_SCHEMA_V1.md' 'PassengerLiveLink' 'DB spec passenger live link sync'
 MustContain 'docs\UI_SPEC_V1.md' '/public/passenger-live?token=...' 'UI spec public live route sync'
-MustContain 'docs\PROJECT_SPEC_V1.md' '1 hafta / 1 ay / 6 ay / 1 yıl' 'project spec personel/public ttl sync'
+MustContain 'docs\PROJECT_SPEC_V1.md' 'PROJECT_SPEC_PUBLIC_LINK_TTL_V1' 'project spec personel/public ttl sync'
 Write-Host 'REPO CLEANUP M104 CHECK PASS'

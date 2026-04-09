@@ -114,6 +114,6 @@ MustContainAny $runbook @(
   'same web app tablet scope'
 ) 'runbook explains same web app tablet scope'
 MustExplainNoNativeTabletYet $runbook 'runbook explains no native tablet app yet'
-WarnContainText $toolsReadme 'pack_m48_5_room_company_tablet_readiness.ps1' 'tools readme lists m48.5 pack'
+MustContainAny $toolsReadme @('TOOLS_README_ROUTE_M48_5_TABLET_READINESS_V1') 'tools readme lists m48.5 pack'
 
 Write-Host 'M48.5 ROOM / COMPANY TABLET READINESS REPO CONTRACT PASS'

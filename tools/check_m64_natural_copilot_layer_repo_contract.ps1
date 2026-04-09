@@ -86,25 +86,25 @@ $script = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend\scrip
 
 
 
-Assert-RepoContractContainsAny $readme @('m63 green','m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m77','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'root readme reflects M64 route or later official state'
+Assert-RepoContractContainsAny $readme @('README_ROUTE_M64_V1','m63 green','m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m77','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'root readme reflects M64 route or later official state'
 
-Assert-RepoContractContainsAny $projectSpec @('daha dogal turkce cevap katmani','kisa konusma hafizasi','daha basit anlat') 'project spec reflects natural copilot layer'
+Assert-RepoContractContainsAny $projectSpec @('PROJECT_SPEC_M64_NATURAL_LAYER_V1','daha dogal turkce cevap katmani','kisa konusma hafizasi','daha basit anlat') 'project spec reflects natural copilot layer'
 
-Assert-RepoContractContainsAny $primer @('m63 - guven + kalite + hizmet degerlendirme','m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m77','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'primer ssot reflects M64 route or later official state'
+Assert-RepoContractContainsAny $primer @('PRIMER_ROUTE_M64_V1','m63 - guven + kalite + hizmet degerlendirme','m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m77','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'primer ssot reflects M64 route or later official state'
 
-Assert-RepoContractContainsAny $startpack @('m64 - dogal copilot katmani','m64 baslangic notu','m64 bitmeden m65','post-m66 functional','m75 green baseline','m76a-1','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'startpack reflects M64 opening or later official state'
+Assert-RepoContractContainsAny $startpack @('STARTPACK_ROUTE_M64_V1','m64 - dogal copilot katmani','m64 baslangic notu','m64 bitmeden m65','post-m66 functional','m75 green baseline','m76a-1','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'startpack reflects M64 opening or later official state'
 
-Assert-RepoContractContainsAny $checklist @('[ ] m64 - dogal copilot katmani','[x] m64 - dogal copilot katmani','m66 - operasyonel reassignment kapanisi') 'checklist tracks M64 milestone or later official state'
+Assert-RepoContractContainsAny $checklist @('CHECKLIST_ROUTE_M64_V1','[ ] m64 - dogal copilot katmani','[x] m64 - dogal copilot katmani','m66 - operasyonel reassignment kapanisi') 'checklist tracks M64 milestone or later official state'
 
-Assert-RepoContractContainsAny $backlog @('m64 - dogal copilot katmani','dogal turkce cevap katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m77.5','m78','db anonymize backlog') 'backlog points to M64 or later state'
+Assert-RepoContractContainsAny $backlog @('BACKLOG_ROUTE_M64_V1','m64 - dogal copilot katmani','dogal turkce cevap katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m77.5','m78','db anonymize backlog') 'backlog points to M64 or later state'
 
-Assert-RepoContractContainsAny $toolsPrimer @('m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'tools primer reflects M64 route or later official state'
+Assert-RepoContractContainsAny $toolsPrimer @('TOOLS_PRIMER_ROUTE_M64_V1','m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'tools primer reflects M64 route or later official state'
 
-Assert-RepoContractContainsAny $toolsChecklist @('[ ] m64 - dogal copilot katmani','[x] m64 - dogal copilot katmani','m66 - operasyonel reassignment kapanisi') 'tools checklist tracks M64 milestone or later official state'
+Assert-RepoContractContainsAny $toolsChecklist @('TOOLS_CHECKLIST_ROUTE_M64_V1','[ ] m64 - dogal copilot katmani','[x] m64 - dogal copilot katmani','m66 - operasyonel reassignment kapanisi') 'tools checklist tracks M64 milestone or later official state'
 
-Assert-RepoContractContainsAny $toolsReadme @('m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'tools readme reflects M64 route or later official state'
+Assert-RepoContractContainsAny $toolsReadme @('TOOLS_README_ROUTE_M64_V1','m64 - dogal copilot katmani','pack_m64_natural_copilot_layer.ps1','post-m66 functional','m75 green baseline','m76a-1','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'tools readme reflects M64 route or later official state'
 
-Assert-RepoContractContainsAny $registry @('m64 - dogal copilot katmani - green-base','m64 - dogal copilot katmani','m66 - operasyonel reassignment - functional-open','m75 green baseline','m76a-1','m77.5','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'registry lists current official M64 state'
+Assert-RepoContractContainsAny $registry @('REGISTRY_ROUTE_M63_M65_V1','m64 - dogal copilot katmani - green-base','m64 - dogal copilot katmani','m66 - operasyonel reassignment - functional-open','m75 green baseline','m76a-1','m77.5','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'registry lists current official M64 state'
 
 Assert-RepoContractContainsAny $runbook @('dogal copilot katmani','kisa konusma hafizasi','m64 green olmadan m65') 'runbook defines M64 scope'
 

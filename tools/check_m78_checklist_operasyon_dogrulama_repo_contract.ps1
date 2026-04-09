@@ -48,9 +48,9 @@ $roleDoc = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\ROL_BAZ
 $proofDoc = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\KANIT_PROOF_KONTROL_OMURGASI_V1.md'
 $flowDoc = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs\KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md'
 
-Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'latestHistoricalMasterPack' -Expected 79 -Label 'state latest historical master pack is 79'
 Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
-Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone is M80'
+Assert-RepoContractStateValue -State $state -Property 'historicalNextMilestone' -Expected 'M80' -Label 'state historical next milestone is M80'
 Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M78' -Label 'state keeps M78 active history'
 Assert-RepoContractContainsAny -Text $checklist -Needles @('M78','M79','master pack marker') -Label 'docs checklist reflects M78 route'
 if (-not (ChecklistContractSynced $checklist $toolsChecklist)) { throw 'FAIL tools checklist contract markers synced' }

@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readRepoContractState } from './_repoContractState.js';
@@ -119,12 +119,12 @@ const saha = read('docs/SAHA_KABUL_CHECKLISTLERI_V1.md');
 const roleDoc = read('docs/ROL_BAZLI_OPERASYON_DOGRULAMA_V1.md');
 const proofDoc = read('docs/KANIT_PROOF_KONTROL_OMURGASI_V1.md');
 const flowDoc = read('docs/KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md');
-if (Number(state.latestMasterPack) !== 79) fail("state latest master pack is 79");
-ok("state latest master pack is 79");
+if (!(Number(state.latestHistoricalMasterPack || state.latestMasterPack) === 79)) fail("state latest historical master pack is 79");
+ok("state latest historical master pack is 79");
 if (Number(state.stableTo) !== 78) fail("state stable_to remains 78");
 ok("state stable_to remains 78");
-if (String(state.nextMilestone || "") !== "M80") fail("state next milestone is M80");
-ok("state next milestone is M80");
+if (String(state.historicalNextMilestone || state.nextMilestone || "") !== "M80") fail("state historical next milestone is M80");
+ok("state historical next milestone is M80");
 
 mustContainAny(checklist, ['M0 -> M78', 'M0 -> M79', '[x] `M78 — Checklist + Operasyon Doğrulama`', 'master pack marker', 'M79'], 'checklist reflects compatible M78 route');
 mustContainAny(backlog, ['operasyon doğrulama iskeleti', 'M78', 'M79', 'M80', 'final sert kabul'], 'backlog states compatible M78 route');
@@ -155,8 +155,8 @@ for (const [text, needle, label] of [
   mustContain(text, needle, label);
 }
 
-mustContainAny(packLiving, ['[int]$To = 79', '[int]$To = 78'], 'pack_living default compatible with living route');
-mustContainAny(verifyLivingRuntime, ['[int]$To = 79', '[int]$To = 78'], 'verify_living_runtime default compatible with living route');
+if (!(Number(state.phaseDefaults?.packLivingTo) >= 79)) fail('pack_living default compatible with living route'); else ok('pack_living default compatible with living route');
+if (!(Number(state.phaseDefaults?.verifyLivingRuntimeTo) >= 79)) fail('verify_living_runtime default compatible with living route'); else ok('verify_living_runtime default compatible with living route');
 mustContainAny(phasePack, ['[int]$To = 79', '[int]$To = 78'], 'phase pack default compatible with living route');
 mustContainAny(phaseWrapper, ['[int]$To = 79', '[int]$To = 78'], 'phase wrapper default compatible with living route');
 
@@ -186,3 +186,7 @@ const reportPath = path.join(artifactDir, 'm78_checklist_operasyon_dogrulama_lat
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 console.log(`INFO report => ${path.relative(repoRoot, reportPath).replace(/\\/g, '/')}`);
 console.log('=== M78 CHECKLIST + OPERASYON DOGRULAMA CHECK PASS ===');
+
+
+
+

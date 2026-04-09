@@ -1,16 +1,18 @@
-# M90 — LIVING VERIFICATION & ACCEPTANCE CONVERGENCE
+# M90 — CANONICAL CLOSURE / 10-10 KAPANIŞ PAKETİ
 
-Amaç: yaşayan repo gerçeği ile check / pack / acceptance / SSOT hattını tek resmi davranışta buluşturmak.
+Amaç: `M0->M89 green` bazının üstüne yeni özellik eklemek değil; repo gerçeğini tek canonical çizgide toplamak.
 
-Kapsam:
-- M13 conflict contract hizası
-- M46 forward-version static contract cleanup
-- M58 final pilot readiness acceptance update
-- M65 launch gate checklist contract hizası
-- living verify standardizasyonu
-- acceptance language normalization
+## Kapsam
+- kanonik markdown hizası
+- `tools/repo_contract_state.json` güncellemesi
+- `pack.ps1`, `pack_living.ps1`, `verify_living_runtime.ps1` üst hat hizası
+- `SCRIPT_KILAVUZU_MILESTONE_HARITASI.md` tek resmi rehberi
+- screenshot bağımlılığını azaltan proof reformu
+- repo hijyen kapanışı
 
-Değişmez kural:
-- yeni ürün özelliği açılmaz
-- ticari omurgaya yeni domain eklenmez
-- odak yalnızca doğrulama / kabul / SSOT hizasıdır
+## Çıkış ölçütleri
+- canonical docs aynı resmi anlatır
+- tek rehber kuralı uygulanır
+- `pack.ps1 -To 89` orkestrasyonu upper-route'ı çağırır
+- state-first kuralı ile markdown çelişmez
+- proof modelinde screenshot destekleyici kanıt seviyesine iner

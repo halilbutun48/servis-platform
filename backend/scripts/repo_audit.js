@@ -179,6 +179,16 @@ function isGeneratedLargeFile(relPath) {
   return generatedLargeFileIgnore.some((rx) => rx.test(relPath));
 }
 
+const intentionalTinyFileIgnore = [
+  /^infra\/\.env$/i,
+  /^tools\/STABLE_TO\.txt$/i,
+  /^backend\/data\/[^/]+\.json$/i,
+];
+
+function isIntentionalTinyFile(relPath) {
+  return intentionalTinyFileIgnore.some((rx) => rx.test(relPath));
+}
+
 const allFiles = walk(repoRoot);
 const trackedRelSet = gitTrackedRelSet();
 const trackedFilter = (p) => !trackedRelSet || trackedRelSet.has(rel(p));
@@ -210,6 +220,7 @@ for (const p of textFiles) {
 
 const exactDuplicates = [...exactByHash.values()]
   .filter((group) => group.length > 1)
+  .filter((group) => !group.every((file) => file.startsWith("backend/data/") && file.endsWith(".json")))
   .filter((group) => {
     const sorted = [...group].sort();
     const pairKey = sorted.join("||");
@@ -246,7 +257,7 @@ orphanCandidates.sort();
 
 const tinyFiles = allFiles
   .map((p) => ({ file: rel(p), size: fs.statSync(p).size }))
-  .filter((x) => x.size <= 20 && !x.file.endsWith(".gitkeep"))
+  .filter((x) => x.size <= 20 && !x.file.endsWith(".gitkeep") && !isIntentionalTinyFile(x.file))
   .sort((a, b) => a.size - b.size);
 
 const archiveShadowPairs = [];

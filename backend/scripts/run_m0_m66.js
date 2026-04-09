@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 
 function normalizeText(value) {
   return String(value || "")
@@ -23,7 +24,6 @@ function includesText(text, needle) {
 function includesAnyText(text, needles) {
   return (needles || []).some((needle) => includesText(text, needle));
 }
-#!/usr/bin/env node
 /*
   run_m0_m66.js
   Cross-platform milestone check runner for PERSONEL-SERVIS V1.

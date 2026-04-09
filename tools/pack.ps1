@@ -201,7 +201,7 @@ if ($To -gt 75) {
 }
 
 if ($To -gt 81) {
-  $phaseTo = [Math]::Min($To, 82)
+  $phaseTo = [Math]::Min($To, 89)
   Write-Host ""
   Write-StatusLine ("=== PHASE 6: M82 -> M{0} ===" -f $phaseTo)
   Invoke-PhaseScript -ScriptRel "tools\_packs\pack_m82.ps1" -Arguments (@('-To', $phaseTo) + $phaseArgsCommon)

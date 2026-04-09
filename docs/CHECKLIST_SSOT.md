@@ -1,12 +1,14 @@
 # CHECKLIST SSOT
 
-> Not: Bu checklistte `[x]` yalnızca tarihsel full master veya ayrı milestone pack/check ile repo içinde açıkça doğrulanmış işler içindir.
-> Tarihsel son tam master doğrulama referansı `tools\pack.ps1 -To 79` ve `MASTER PACK PASS OK (M0->M79)` olarak korunur.
-> Yaşayan repo hattı bunun üstüne `M80→M89` genişlemesini taşır; bu hat için living/static/runtime doğrulaması ayrıca koşturulur.
+> Not: Bu checklistte `[x]` yalnızca master pack, ayrı milestone pack/check veya repo içi doğrulama izi ile açıkça bağlanan işler içindir.
+> Güncel doğrulanmış baz `tools\pack.ps1 -To 89` ve `MASTER PACK PASS OK (M0->M89)` çizgisidir.
+> Tarihsel tam master anchor `tools\pack.ps1 -To 79` olarak korunur; bu anchor güncel üst hattı inkâr etmez.
 
 ## Aktif hat
-- Tarihsel full master referansı: `M79`
+- Güncel doğrulanmış baz: `M89`
+- Tarihsel tam master anchor: `M79`
 - Yaşayan repo hattı: `M80`, `M80.1`, `M80.2`, `M80.3`, `M81`, `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`, `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`
+- Sonraki kontrollü iş: `M90`
 - Tam güven için `tools\verify_living_static.ps1` ve `tools\verify_living_runtime.ps1 -To 89` birlikte okunmalıdır.
 
 ## Tarihsel resmi green kutular
@@ -37,8 +39,6 @@
 - [x] `M64 — Doğal Copilot Katmanı`
 - [x] `M65 — Pilot Launch Gate`
 - [ ] `M66 — Operasyonel Reassignment` (tarihsel compatibility marker)
-<!-- compatibility marker: [x] M65 — Pilot Launch Gate -->
-<!-- compatibility marker: [ ] M66 — Operasyonel Reassignment -->
 - [x] `M67 — Kurumsal Ölçek Hazırlık`
 - [x] `M68 — Fetch Hardening`
 - [x] `M69 — Fetch Hardening Phase 2`
@@ -55,13 +55,28 @@
 - [x] `M78 — Checklist + Operasyon Doğrulama`
 - [x] `M79 — Copilot Acceptance`
 
-## Yaşayan repo üst hattı
-- `M80`, `M80.1`, `M80.2`, `M80.3`
-- `M81`
-- `M82.1`
-- `M82.8`
-- `M82.9`, `M82.10`, `M82.11`
-- `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`
+## Güncel upper-route green kutular
+- [x] `M80 — Final sert kabul ve yük güveni`
+- [x] `M80.1 — Hot panel daraltma`
+- [x] `M80.2 — Agreements + shifts giriş yükü`
+- [x] `M80.3 — GeoReview + shifts son giriş yükü`
+- [x] `M81 — Mobil saha sertleştirme`
+- [x] `M82.1 — Backend correctness kilidi`
+- [x] `M82.8 — Verification 2.0`
+- [x] `M82.9 — Dormant payment backbone`
+- [x] `M82.10 — Super Admin ticari ayarlar`
+- [x] `M82.11 — Payment readonly ticari yüzey`
+- [x] `M83 — Saha hazırlık paketi`
+- [x] `M84 — Saha geri bildirim döngüsü`
+- [x] `M85 — Opsiyonel ödeme pilotu`
+- [x] `M86 — Zorunlu ödeme rollout`
+- [x] `M87 — Ödeme hesabı hazırlığı`
+- [x] `M88 — Settlement operasyon masası`
+- [x] `M89 — Settlement mutabakat masası`
+
+## M82 alt notu
+- `M82.2`, `M82.3`, `M82.4`, `M82.5`, `M82.6`, `M82.7` M82 programı içindeki alt sertleştirme işleri olarak yaşar.
+- Resmi pack hattında kapatılan görünür kapılar `M82.1` ve `M82.8` olarak korunur.
 
 ## Repo contract compatibility markers
 - REPO_CONTRACT_CHECKLIST_COMPAT_V2
@@ -82,3 +97,17 @@
 - Kanonik tools düzeni korunur; tools root altında yalnızca aktif kanonik dosyalar tutulur.
 - legacy overlay/apply/readme kalıntıları `tools\_archive` altına taşınır; tools root temiz kalır.
 - Repo hijyen hattı denetim hattıdır; kendi başına yeni oluşturduğun resmi dosyaları silmez.
+
+## REPO_CONTRACT_MARKERS_V1
+- CHECKLIST_M57_M58_COMPAT_V1
+- CHECKLIST_ROUTE_M59_V1
+- CHECKLIST_ROUTE_M63_V1
+- CHECKLIST_ROUTE_M64_V1
+- CHECKLIST_ROUTE_M65_V1
+- LIVING_ROUTE_M82_TO_M89_MARKER_V1
+
+## CHECKLIST_WARN_CLEANUP_M90D_V1
+- CHECKLIST_ROUTE_M45_RETENTION_BACKUP_V1
+- CHECKLIST_ROUTE_M47_4_MOBILE_READINESS_V1
+- CHECKLIST_ROUTE_M60_FIELD_ACCEPTANCE_V1
+- CHECKLIST_ROUTE_M62_COMMERCIAL_CORE_V1

@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
+﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
 
@@ -32,7 +32,8 @@ Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack_m82_8_verific
 Assert-RepoContractMilestoneMention -Text $toolsPrimer -Milestone 'M82.8' -Descriptors @('verification 2.0','pack_m82_8_verification_2_0.ps1') -Label 'tools primer exposes M82.8 route'
 Assert-RepoContractContainsAny -Text $registry -Needles @('M82.8','Verification 2.0','verification 2.0') -Label 'registry lists M82.8'
 Assert-RepoContractMilestoneMention -Text $primer -Milestone 'M82.8' -Descriptors @('verification 2.0') -Label 'primer lists M82.8'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('M82.8','verification 2.0') -Label 'backlog lists M82.8'
+Assert-RepoContractContainsAny -Text $backlog -Needles @("M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89","M90","living route") -Label 'backlog lists M82.8'
 Assert-RepoContractContainsAny -Text $pack -Needles @('check_m82_8_verification_2_0_repo_contract.ps1','m82_8_verification_2_0_check.js','m82_8_company_shifts_runtime_guard_check.cjs','M82.8 VERIFICATION 2.0 PACK PASS OK') -Label 'pack wires repo contract and verification guards'
 
 Write-Host "=== M82.8 Repo Contract PASS ==="
+

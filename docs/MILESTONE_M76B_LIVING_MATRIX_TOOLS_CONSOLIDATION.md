@@ -1,5 +1,7 @@
 # M76B — LIVING MATRIX + TOOLS CONSOLIDATION
 
+> Tarihsel not: Bu belge M76B teslim anini anlatir; guncel living upper-route varsayilanlari için kullanilmaz.
+
 ## Hedef
 - yaşayan doğrulama matrisini tek raporda görünür kılmak
 - tools girişlerini klasör altında toplamak

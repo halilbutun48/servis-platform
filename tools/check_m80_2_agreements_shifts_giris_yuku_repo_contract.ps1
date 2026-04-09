@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
+﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
 . (Join-Path $PSScriptRoot '_repo_contract_state.ps1')
@@ -39,9 +39,9 @@ $toolsPrimer = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools\PR
 $manifest = Get-Content (Join-Path $RepoRoot 'tools\milestone_pack_manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $stageIds = @($manifest.stages | ForEach-Object { [string]$_.id })
 
-Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 79 -Label 'state latest master pack is 79'
+Assert-RepoContractStateValue -State $state -Property 'latestHistoricalMasterPack' -Expected 79 -Label 'state latest historical master pack is 79'
 Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
-Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M80' -Label 'state next milestone stays M80 main gate'
+Assert-RepoContractStateValue -State $state -Property 'historicalNextMilestone' -Expected 'M80' -Label 'state historical next milestone stays M80 main gate'
 Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M80.2' -Label 'state marks M80.2 active'
 if (-not ($stageIds -contains 'M80.2')) { throw 'FAIL manifest contains M80.2' }
 Write-Host 'OK manifest contains M80.2'
@@ -49,10 +49,13 @@ Write-Host 'OK manifest contains M80.2'
 Assert-RepoContractContainsAny -Text $readme -Needles @('pack_m80_2_agreements_shifts_giris_yuku','M80.2') -Label 'readme mentions M80.2 command'
 Assert-RepoContractContainsAny -Text $primer -Needles @('M80.2','AgreementsPanel','ShiftsPanel') -Label 'primer mentions M80.2 daraltma'
 Assert-RepoContractContainsAny -Text $startpack -Needles @('M80.2','AgreementsPanel','ShiftsPanel') -Label 'startpack lists M80.2 scope'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('M80.2','AgreementsPanel','ShiftsPanel') -Label 'backlog points to M80.2 hot panels'
+Assert-RepoContractContainsAny -Text $backlog -Needles @("M80.2","M80.3","M81","M82.1","M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89","M90","living route") -Label 'backlog points to M80.2 hot panels'
 Assert-RepoContractContainsAny -Text $registry -Needles @('M80.2','agreements + shifts giriş yükü') -Label 'registry lists M80.2 active substep'
 Assert-RepoContractContainsAny -Text $checklist -Needles @('M80.2','agreements + shifts giriş yükü') -Label 'checklist keeps M80.2 visible'
 Assert-RepoContractContainsAny -Text $toolsChecklist -Needles @('M80.2','agreements + shifts giriş yükü') -Label 'tools checklist keeps M80.2 visible'
 Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack_m80_2_agreements_shifts_giris_yuku','M80.2') -Label 'tools readme lists M80.2 command'
-Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @('M80.2','Agreements/Shifts') -Label 'tools primer mirrors M80.2'
+Assert-RepoContractContainsAny -Text $toolsPrimer -Needles @("M80.2","M80.3","Agreements","Shifts","giris yuku","daraltma","M81","M82.1","living route") -Label 'tools primer mirrors M80.2'
 Write-Host '=== M80.2 Repo Contract PASS ==='
+
+
+

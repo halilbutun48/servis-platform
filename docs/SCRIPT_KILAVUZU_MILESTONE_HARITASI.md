@@ -1,0 +1,342 @@
+# SCRIPT KILAVUZU / MILESTONE HARITASI
+
+Tarih: 2026-04-08  
+Repo: `servis-platform`  
+Kapsam: Bu doküman, M0'dan M89'a kadar milestone ve script ilişkisini **tek resmi rehberde** toplar.
+
+## 1) Bu dosya nasıl okunmalı?
+- Önce `tools/repo_contract_state.json` okunur.
+- Sonra bu dosya okunur.
+- Tarihsel ve canonical bilgi karıştırılmaz.
+- Bir milestone için mümkün olan en güçlü kanıt sırası: state/marker -> pack/check -> runbook -> ilgili ekran/route.
+
+## 2) Kanıt seviyesi sözlüğü
+- **[CANONICAL]**: Güncel canlı anlatının parçası.
+- **[HISTORICAL]**: Tarihsel anchor veya compatibility alanı.
+- **[PACK]**: Resmi pack komutu bulunan alan.
+- **[CHECK]**: Repo contract veya node check izi bulunan alan.
+- **[RUNBOOK]**: Operasyon veya kabul anlatımı olan alan.
+
+## 3) Tek rehber kuralı
+- Bu dosya aktif script rehberidir.
+- `docs/_archive/legacy-notes/script-guide-redirects/` altındaki tarihsel yönlendirme dosyaları artık aktif rehber değildir.
+- Güncel rota için yalnız bu dosya, `PRIMER_SSOT`, `MILESTONE_REGISTRY` ve `CHECKLIST_SSOT` birlikte okunur.
+
+## 4) Master orchestration
+### Ana komutlar
+- `tools\pack.ps1 -To 89 -RepoDir D:\servis-platform -NoBuild`
+- `tools\pack_living.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
+- `tools\verify_living_runtime.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+
+### Orchestration mantığı
+- `pack.ps1` ana üst kapıdır.
+- `pack_living.ps1`, master pack'i living girişinden çağırır.
+- `verify_living_static.ps1`, statik repo ve alt bant kontrollerini koşturur.
+- `verify_living_runtime.ps1`, living runtime doğrulamasını master pack üzerinden yürütür.
+- `tools/_packs/pack_m82.ps1`, upper-route bandını M82.1'den M89'a kadar sırayla bağlar.
+
+## 5) Faz haritası
+### Faz A — M0→M41 çekirdek temel hat [HISTORICAL]
+Bu bant tek tek ayrı pack rehberinden çok `run_m0_m66.js` ve legacy milestone check zinciri ile yaşar.
+Ana kapsama örnekleri:
+- iskelet / auth / role / seed
+- temel REST/WS omurgası
+- okul, öğrenci, veli ve personel çekirdek veri akışları
+- GPS live/history temel ayrımı
+- ilk panel ve kayıt omurgası
+
+### Faz B — M42→M58 hazırlık ve mobil ön bant [HISTORICAL + PACK]
+Bu bantta milestone bazlı pack komutları görünür hale gelir.
+
+### Faz C — M59→M79 operasyon / SSOT / hot-path / acceptance [HISTORICAL + CANONICAL ANCHOR]
+Bu bant tarihsel anchor ve repo karakterini belirleyen orta omurgadır.
+
+### Faz D — M80→M89 upper route [CANONICAL]
+Bu bant güncel doğrulanmış üst hattır.
+
+## 6) Milestone haritası — M0→M41
+### M0→M5 [HISTORICAL]
+- Amaç: repo iskeleti, auth, role ve seed tabanı.
+- Ana yürütücü: `backend/scripts/m0check.js` ve ilgili legacy zincir.
+- Durum: çekirdek tarihi omurga; ayrı tekil pack değil, faz runner mantığıyla ele alınır.
+
+### M6→M11 [HISTORICAL]
+- Amaç: okul/öğrenci/veli çekirdek CRUD ve ilk ekran bağları.
+- Ana yürütücü: legacy `mXcheck.js` zinciri.
+- Durum: tarihsel temel ürün hattı.
+
+### M12→M17 [HISTORICAL]
+- Amaç: GPS, attendance, canlı publish ve temel WS room yapısı.
+- Not: bu bant proje hafızasında canlı operasyonun ilk büyük eşiğidir.
+
+### M18→M23 [HISTORICAL]
+- Amaç: parent/public erişim, görünürlük ve ürün yüzeyi derinleşmesi.
+- Not: güncel Parent Access akışı legacy invite değildir; bu fark daha yeni docs'ta açıklanır.
+
+### M24→M29 [HISTORICAL]
+- Amaç: teklif, atama, rota ve organizasyonel akışların genişlemesi.
+- Durum: legacy çekirdek.
+
+### M30→M35 [HISTORICAL]
+- Amaç: harita, operasyon, görünürlük ve panel birikimi.
+- Durum: tek tek değil faz runner ile okunur.
+
+### M36→M41 [HISTORICAL]
+- Amaç: M42 öncesi çekirdek kapanış ve pack'li döneme hazırlık.
+- Ana komut: `tools/packs/living/pack_phase_m0_m41.ps1`
+
+## 7) Milestone haritası — M42→M58
+### M42 — Optional gate [PACK]
+- Pack: `tools/pack_m42_optional.ps1`
+- Anlam: M42 sonrası paketli doğrulama bandının başlangıcı.
+
+### M43 — Google Auth Invite Gate [PACK]
+- Pack: `tools/pack_m43_google_auth_invite_gate.ps1`
+- Not: güncel üründe legacy invite davranışı tarihsel bilgi olarak kalır.
+
+### M44 — Telematics [PACK]
+- Pack: `tools/pack_m44_telematics.ps1`
+- Amaç: araç GPS/telematics temel omurgası.
+
+### M45 — Retention + Backup [PACK]
+- Pack: `tools/pack_m45_retention_backup.ps1`
+- Amaç: retention/backup altyapısı.
+
+### M46 — AI Copilot Foundation [PACK]
+- Ana pack: `tools/pack_m46_ai_copilot.ps1`
+- Alt packler: `m46.1`...`m46.9`, `m46.6_*`, `m46.7`, `m46.8`, `m46.9`
+- Amaç: AI copilot, screen help, job guide, context chat ve role mode bandı.
+
+### M47 — KVKK Notice / Consent Framework [PACK]
+- Pack: `tools/pack_m47_kvkk_notice_consent_framework.ps1`
+- Amaç: KVKK notice/consent temeli.
+
+### M47.2 — Capacity & Load Baseline [PACK]
+- Pack: `tools/pack_m47_2_capacity_load_baseline.ps1`
+
+### M47.3 — Production Resilience + Edge Security [PACK]
+- Pack: `tools/pack_m47_3_production_resilience_edge_security.ps1`
+
+### M47.4 — Mobile Readiness Web Pass [PACK]
+- Pack: `tools/pack_m47_4_mobile_readiness_web_pass.ps1`
+
+### M48 — Driver Mobile App Foundation [PACK]
+- Pack: `tools/pack_m48_driver_mobile_foundation.ps1`
+
+### M48.5 — Room / Company Tablet Readiness [PACK]
+- Pack: `tools/pack_m48_5_room_company_tablet_readiness.ps1`
+
+### M49 — Mobile Beta Hardening [PACK]
+- Pack: `tools/pack_m49_mobile_beta_hardening.ps1`
+
+### M49.1 — Driver Voice Guidance + Stop ETA [PACK]
+- Pack: `tools/pack_m49_1_driver_voice_guidance_stop_eta.ps1`
+
+### M50 — Mobile Release Readiness [PACK]
+- Pack: `tools/pack_m50_mobile_release_readiness.ps1`
+
+### M51→M53 — Backfill Verification [PACK]
+- Pack: `tools/pack_m51_53_backfill_verification.ps1`
+- Amaç: veri/rota/backfill doğrulaması.
+
+### M54.3 — Dispatch Approve + Repack [PACK]
+- Pack: `tools/pack_m54_3_dispatch_approve_repack.ps1`
+
+### M54.4 — Driver Route Delivery [PACK]
+- Pack: `tools/pack_m54_4_driver_route_delivery.ps1`
+
+### M55 — Reports + No-show [PACK]
+- Pack: `tools/pack_m55_reports_no_show.ps1`
+
+### M56 — KVKK Matrix + ETA / Navigation Quality [PACK]
+- Pack: `tools/pack_m56_kvkk_eta_quality.ps1`
+
+### M57 — Mobile Hardening [PACK]
+- Pack: `tools/pack_m57_mobile_hardening.ps1`
+
+### M58 — Final Pilot Readiness [PACK / HISTORICAL OPEN GATE]
+- Pack: `tools/pack_m58_final_pilot_readiness.ps1`
+- Durum: tarihsel pilot kapısı; checklistte açık marker olarak yaşar.
+
+## 8) Milestone haritası — M59→M79
+### M59 — Gözlemleme + Saha Teşhis [PACK / HISTORICAL OPEN GATE]
+- Pack: `tools/pack_m59_observability_field_diagnostics.ps1`
+- Rolü: saha öncesi gözlemleme, teşhis ve karar desteği.
+
+### M60 — Saha Acceptance Merkezi [PACK]
+- Pack: `tools/pack_m60_field_acceptance_center.ps1`
+
+### M61 — SSOT + Milestone Hizası [PACK]
+- Pack: `tools/pack_m61_ssot_milestone_alignment.ps1`
+- Rolü: docs ve milestone anlamlarını bir çizgiye oturtmak.
+
+### M62 — Ticari Omurga Güçlendirme [PACK]
+- Pack: `tools/pack_m62_commercial_core_strengthening.ps1`
+
+### M63 — Güven + Kalite + Hizmet Değerlendirme [PACK]
+- Pack: `tools/pack_m63_trust_quality_service_evaluation.ps1`
+
+### M64 — Doğal Copilot Katmanı [PACK]
+- Pack: `tools/pack_m64_natural_copilot_layer.ps1`
+
+### M65 — Pilot Launch Gate [PACK]
+- Pack: `tools/pack_m65_pilot_launch_gate.ps1`
+- Not: saha açılımı için tarihsel güven kapısıdır.
+
+### M66 — Operasyonel Reassignment [PACK / HISTORICAL COMPAT]
+- Pack: `tools/pack_m66_operation_reassignment.ps1`
+- Durum: compatibility marker.
+
+### M67 — Kurumsal Ölçek Hazırlık [PACK]
+- Pack: `tools/pack_m67_kurumsal_olcek_hazirlik.ps1`
+
+### M68 — Fetch Hardening [PACK]
+- Pack: `tools/pack_m68_fetch_hardening.ps1`
+
+### M69 — Fetch Hardening Phase 2 [PACK]
+- Pack: `tools/pack_m69_fetch_hardening_phase2.ps1`
+
+### M70 — Checker Sync + Hot Path [PACK]
+- Pack: `tools/pack_m70_checker_sync_hot_path.ps1`
+
+### M71 — Summary Hot Path [PACK]
+- Pack: `tools/pack_m71_summary_hotpath.ps1`
+- Ek hotfix packleri: `pack_m71_room_title_hotfix.ps1`, `pack_m71_ui_contract_hotfix.ps1`, `pack_m71_workflow_loadsummary_hotfix.ps1`
+
+### M72 — Hot Endpoint Reduction [PACK]
+- Pack: `tools/pack_m72_hot_endpoint_reduction.ps1`
+- Ek hotfix: `tools/pack_m72_georeview_token_hotfix.ps1`
+
+### M73 — Hot Path Phase 2 [PACK]
+- Pack: `tools/pack_m73_hot_path_phase2.ps1`
+
+### M74 — Hot Path Phase 3 [PACK]
+- Pack: `tools/pack_m74_hot_path_phase3.ps1`
+
+### M75 — Hot Path Phase 4 [PACK]
+- Pack: `tools/pack_m75_hot_path_phase4.ps1`
+- Ek hotfix: `tools/pack_m75_repo_contract_hotfix.ps1`
+
+### M76A-1 — Minimum Normalization [PACK]
+- Pack: `tools/pack_m76a_1_minimum_normalization.ps1`
+
+### M76B — Living Matrix + Tools Consolidation [PACK]
+- Pack: `tools/pack_m76b_living_matrix_tools_consolidation.ps1`
+
+### M76A-2 — Final Normalization + Archiving [PACK]
+- Pack: `tools/pack_m76a_2_final_normalization_archiving.ps1`
+
+### M77 — KVKK + Uyum Katmanı [PACK]
+- Pack: `tools/pack_m77_kvkk_uyum_katmani.ps1`
+
+### M78 — Checklist + Operasyon Doğrulama [PACK]
+- Ana pack: `tools/pack_m78_checklist_operasyon_dogrulama.ps1`
+- Alt packler: `M78.1`, `M78.2`, `M78.3`
+- İlgili rehberler:
+  - `docs/SAHA_KABUL_CHECKLISTLERI_V1.md`
+  - `docs/ROL_BAZLI_OPERASYON_DOGRULAMA_V1.md`
+  - `docs/KANIT_PROOF_KONTROL_OMURGASI_V1.md`
+  - `docs/KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md`
+
+### M79 — Copilot Acceptance [PACK]
+- Pack: `tools/pack_m79_copilot_acceptance.ps1`
+- Rolü: tarihsel tam master anchor öncesi kabul kapısı.
+
+## 9) Milestone haritası — M80→M89 upper route
+### M80 — Final sert kabul ve yük güveni [CANONICAL / PACK]
+- Pack: `tools/pack_m80_final_sert_kabul_yuk_guveni.ps1`
+- Amaç: sıcak paneller, yük davranışı ve sert kabul kapısı.
+
+### M80.1 — Hot panel daraltma [PACK]
+- Pack: `tools/pack_m80_1_hot_panel_daraltma.ps1`
+- Amaç: sıcak panellerde yük azaltma ve sadeleştirme.
+
+### M80.2 — Agreements + Shifts giriş yükü [PACK]
+- Pack: `tools/pack_m80_2_agreements_shifts_giris_yuku.ps1`
+- Amaç: ilk giriş yükünü düşürmek.
+
+### M80.3 — GeoReview + Shifts son giriş yükü [PACK]
+- Pack: `tools/pack_m80_3_georeview_shifts_son_giris_yuku.ps1`
+- Amaç: son kalan giriş yükü sıcak noktalarını kapatmak.
+
+### M81 — Mobil saha sertleştirme [PACK]
+- Pack: `tools/pack_m81_mobile_saha_sertlestirme.ps1`
+- Amaç: mobil omurgayı resmi tools/docs hattına bağlamak.
+
+### M82 — Saha öncesi çekirdek sertleştirme programı [CANONICAL UMBRELLA]
+- Alt görünür kapılar: `M82.1`, `M82.8`, `M82.9`, `M82.10`, `M82.11`
+- Alt çalışma notları: `M82.2`, `M82.3`, `M82.4`, `M82.5`, `M82.6`, `M82.7`
+
+### M82.1 — Backend correctness kilidi [PACK]
+- Pack: `tools/pack_m82_1_backend_correctness.ps1`
+- Ana konu: route snapshot, preview cache, error contract ve correctness guard.
+
+### M82.8 — Verification 2.0 [PACK]
+- Pack: `tools/pack_m82_8_verification_2_0.ps1`
+- Ana konu: mobil acceptance zinciri + company shifts runtime guard.
+
+### M82.9 — Dormant payment backbone [PACK]
+- Pack: `tools/pack_m82_9_dormant_payment_backbone.ps1`
+- Ana konu: `AGREEMENT | SHIFT_SERIES` ticari kaynak, dormant payment omurgası.
+
+### M82.10 — Super Admin ticari ayarlar [PACK]
+- Pack: `tools/pack_m82_10_super_admin_commercial_settings.ps1`
+- Ana konu: payment mode / commission / override yönetimi.
+
+### M82.11 — Payment readonly ticari yüzey [PACK]
+- Pack: `tools/pack_m82_11_payment_readonly_surface.ps1`
+- Ana konu: agreement ve shift series tarafında readonly ticari özet görünürlüğü.
+
+### M83 — Saha hazırlık paketi [PACK]
+- Pack: `tools/pack_m83_field_prep_packet.ps1`
+- Runbook: `docs/RUNBOOK_M83_FIELD_PREP_PACKET.md`
+- Ana konu: operatör sırası, senaryo listesi, role/device checklist.
+
+### M84 — Saha geri bildirim döngüsü [PACK]
+- Pack: `tools/pack_m84_field_feedback_loop.ps1`
+- Runbook: `docs/RUNBOOK_M84_FIELD_FEEDBACK_LOOP.md`
+- Ana konu: saha günü kayıtları, kapanış takibi, Super Admin geri bildirim yüzeyi.
+
+### M85 — Opsiyonel ödeme pilotu [PACK]
+- Pack: `tools/pack_m85_optional_payment_pilot.ps1`
+- Runbook: `docs/RUNBOOK_M85_OPTIONAL_PAYMENT_PILOT.md`
+- Ana konu: OPTIONAL mod READY/DORMANT pilot listesi.
+
+### M86 — Zorunlu ödeme rollout [PACK]
+- Pack: `tools/pack_m86_required_payment_rollout.ps1`
+- Runbook: `docs/RUNBOOK_M86_REQUIRED_PAYMENT_ROLLOUT.md`
+- Ana konu: REQUIRED mod ACTIVE/DISABLED rollout akışı.
+
+### M87 — Ödeme hesabı hazırlığı [PACK]
+- Pack: `tools/pack_m87_payment_account_readiness.ps1`
+- Runbook: `docs/RUNBOOK_M87_PAYMENT_ACCOUNT_READINESS.md`
+- Ana konu: payment account metadata/readiness görünürlüğü.
+
+### M88 — Settlement operasyon masası [PACK]
+- Pack: `tools/pack_m88_settlement_operations_console.ps1`
+- Runbook: `docs/RUNBOOK_M88_SETTLEMENT_OPERATIONS_CONSOLE.md`
+- Ana konu: READY/PLANNED/EXECUTED settlement entry satırlarının operasyon görünürlüğü.
+
+### M89 — Settlement mutabakat masası [PACK]
+- Pack: `tools/pack_m89_settlement_reconciliation_desk.ps1`
+- Runbook: `docs/RUNBOOK_M89_SETTLEMENT_RECONCILIATION_DESK.md`
+- Ana konu: eşleşti / inceleme gerekli / uyuşmazlık / kapandı akışı.
+
+## 10) M90 yönü
+### M90 — Canonical Closure / 10-10 kapanış paketi [PLAN]
+- Amaç: yeni ürün modülü açmak değil.
+- Hedefler:
+  - kanonik markdown hizası
+  - state/pack/verify convergence
+  - proof reformu
+  - repo hijyen kapanışı
+  - tek rehber kuralı
+
+## 11) Hızlı okuma özeti
+- `M0→M41`: çekirdek temel hat
+- `M42→M58`: mobil / KVKK / hazırlık ön bant
+- `M59→M79`: operasyon / SSOT / hot-path / acceptance anchor
+- `M80→M89`: güncel canonical upper route
+- `M90`: 10/10 kapanış ve canonical convergence

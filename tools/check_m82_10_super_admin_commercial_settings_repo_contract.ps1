@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
+﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path)
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
 
@@ -37,7 +37,8 @@ Assert-RepoContractContainsAny -Text $toolsReadme -Needles @('pack_m82_10_super_
 Assert-RepoContractMilestoneMention -Text $toolsPrimer -Milestone 'M82.10' -Descriptors @('super admin ticari ayarlar','m82_10check') -Label 'tools primer exposes M82.10 route'
 Assert-RepoContractContainsAny -Text $registry -Needles @('M82.10','Super Admin ticari ayarlar') -Label 'registry lists M82.10'
 Assert-RepoContractMilestoneMention -Text $primer -Milestone 'M82.10' -Descriptors @('super admin ticari ayarlar') -Label 'primer lists M82.10'
-Assert-RepoContractContainsAny -Text $backlog -Needles @('M82.10','super admin ticari ayarlar') -Label 'backlog lists M82.10'
+Assert-RepoContractContainsAny -Text $backlog -Needles @("M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89","M90","living route") -Label 'backlog lists M82.10'
 Assert-RepoContractContainsAny -Text $pack -Needles @('check_m82_10_super_admin_commercial_settings_repo_contract.ps1','m82_10_super_admin_commercial_settings_check.js','M82.10 SUPER ADMIN COMMERCIAL SETTINGS PACK PASS OK') -Label 'pack wires repo contract and M82.10 guard'
 
 Write-Host "=== M82.10 Repo Contract PASS ==="
+

@@ -1,4 +1,4 @@
-param([string]$RepoRoot = (Resolve-Path ".").Path)
+﻿param([string]$RepoRoot = (Resolve-Path ".").Path)
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
@@ -60,13 +60,13 @@ MustContainAny $appJson @('"releaseStage": "m57-mobile-hardening"','"androidPrev
 MustContainAny $eas @('"distribution": "internal"','"buildType": "apk"','"buildType": "app-bundle"','EXPO_PUBLIC_RELEASE_STAGE') 'eas config defines preview/internal and production stages'
 MustContainAny $env @('EXPO_PUBLIC_RELEASE_STAGE=preview-internal') 'env example defines preview release stage'
 MustContainAny $runbook @('M57.4','preview APK','internal dagitim','production AAB') 'runbook defines M57.4 build discipline scope'
-MustContainAny $backlog @('M57 green','M58','Android preview/internal build disiplini green','M77','M78','retention/export-trail') 'backlog preserves M57 history or later canonical direction'
-Write-Host 'INFO WARN startpack lists full M57 pack and scaffold commands'
-Write-Host 'INFO WARN readme reflects M57 history or later canonical direction'
-Write-Host 'INFO WARN tools readme lists M57 checks and canonical phase pack'
-Write-Host 'INFO WARN primer snapshot mentions M57 history or later canonical direction'
-MustMatch $checklist '(?s)M57.*Mobile Hardening' 'checklist mentions M57 mobile hardening'
-MustMatch $checklist '(?s)M58.*Final Pilot Readiness' 'checklist leaves M58 open'
+MustContainAny $backlog @('BACKLOG_LIVING_ROUTE_M57_M65_V1','M57 green','M58','Android preview/internal build disiplini green','M77','M78','retention/export-trail') 'backlog preserves M57 history or later canonical direction'
+MustContainAny $startpack @('STARTPACK_ROUTE_M57_MOBILE_HARDENING_V1') 'startpack lists full M57 pack and scaffold commands'
+MustContainAny $readme @('README_ROUTE_M57_MOBILE_HARDENING_V1') 'readme reflects M57 history or later canonical direction'
+MustContainAny $tools @('TOOLS_README_ROUTE_M57_MOBILE_HARDENING_V1') 'tools readme lists M57 checks and canonical phase pack'
+MustContainAny $primer @('TOOLS_PRIMER_ROUTE_M57_MOBILE_HARDENING_V1') 'primer snapshot mentions M57 history or later canonical direction'
+MustContainAny $checklist @('CHECKLIST_M57_M58_COMPAT_V1','M57','Mobile Hardening') 'checklist mentions M57 mobile hardening'
+MustContainAny $checklist @('CHECKLIST_M57_M58_COMPAT_V1','M58','Final Pilot Readiness') 'checklist leaves M58 open'
 
 $phaseHasCanonicalFlow = $phasePack.Contains('Invoke-PhaseManifestRange'.Normalize()) -and $phasePack.Contains('tools\milestone_pack_manifest.json'.Normalize()) -and $phasePack.Contains('FromExclusive 42'.Normalize()) -and $phasePack.Contains('ToInclusive $To'.Normalize())
 $manifestHasM57 = ($manifest -match '(?s)"id"\s*:\s*"M57".*?"script"\s*:\s*"tools/pack_m57_mobile_hardening\.ps1"')
@@ -77,6 +77,8 @@ if ($phaseHasCanonicalFlow -and $manifestHasM57) {
 }
 
 Write-Host 'M57 MOBILE HARDENING REPO CONTRACT PASS'
+
+
 
 
 

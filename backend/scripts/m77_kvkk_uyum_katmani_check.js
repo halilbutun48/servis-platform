@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readRepoContractState } from './_repoContractState.js';
@@ -230,10 +230,10 @@ for (const needle of ['LOG_EXPORT', 'RETENTION_RUN', 'buildKvkkExportAuditMeta()
   ok(`export trail doc covers ${needle}`);
 }
 
-if (Number(state.latestMasterPack) !== 79) fail('state latest master pack is 79');
-ok('state latest master pack is 79');
-if (String(state.nextMilestone || '') !== 'M80') fail('state next milestone is M80');
-ok('state next milestone is M80');
+if (!(Number(state.latestHistoricalMasterPack || state.latestMasterPack) === 79)) fail('state latest historical master pack is 79');
+ok('state latest historical master pack is 79');
+if (String(state.historicalNextMilestone || state.nextMilestone || '') !== 'M80') fail('state historical next milestone is M80');
+ok('state historical next milestone is M80');
 if (!Array.isArray(state.activeMilestones) || !state.activeMilestones.includes('M77')) fail('state keeps M77 active history');
 ok('state keeps M77 active history');
 if (!(state.runtimeJsonStores?.transactionalUpdate === true && state.runtimeJsonStores?.trackedRuntimeFiles === false)) fail('state records runtime json store policy');
@@ -266,3 +266,6 @@ const reportPath = path.join(artifactDir, 'm77_kvkk_uyum_katmani_latest.json');
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 console.log(`INFO report => ${path.relative(repoRoot, reportPath).replace(/\\/g, '/')}`);
 console.log('=== M77 KVKK + UYUM KATMANI CHECK PASS ===');
+
+
+

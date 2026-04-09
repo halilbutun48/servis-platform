@@ -1,4 +1,4 @@
-param()
+﻿param()
 $ErrorActionPreference = 'Stop'
 
 function Normalize-RepoContractText {
@@ -48,7 +48,7 @@ function Assert-RepoContractExists {
 
 function Test-RepoContractContainsAny {
   param(
-    [Parameter(Mandatory=$true)][string]$Text,
+    [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Text,
     [Parameter(Mandatory=$true)][string[]]$Needles
   )
   $normalizedText = Normalize-RepoContractText $Text
@@ -62,7 +62,7 @@ function Test-RepoContractContainsAny {
 
 function Assert-RepoContractContainsAll {
   param(
-    [Parameter(Mandatory=$true)][string]$Text,
+    [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Text,
     [Parameter(Mandatory=$true)][string[]]$Needles,
     [Parameter(Mandatory=$true)][string]$Label
   )
@@ -77,7 +77,7 @@ function Assert-RepoContractContainsAll {
 
 function Assert-RepoContractContainsAny {
   param(
-    [Parameter(Mandatory=$true)][string]$Text,
+    [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Text,
     [Parameter(Mandatory=$true)][string[]]$Needles,
     [Parameter(Mandatory=$true)][string]$Label
   )
@@ -105,7 +105,7 @@ function Assert-FileExists {
 
 function Assert-RepoContractMilestoneMention {
   param(
-    [Parameter(Mandatory=$true)][string]$Text,
+    [Parameter(Mandatory=$true)][AllowEmptyString()][string]$Text,
     [Parameter(Mandatory=$true)][string]$Milestone,
     [string[]]$Descriptors = @(),
     [Parameter(Mandatory=$true)][string]$Label
@@ -132,3 +132,5 @@ function Assert-RepoContractMilestoneMention {
 
   throw "FAIL $Label"
 }
+
+

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, MapContainer, TileLayer, useMapEvents } from "react-leaflet";
+import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -47,6 +47,7 @@ import {
   ymdMinToIso,
 } from "./guidedPlanModalUtils";
 import { GuidedHubStep, GuidedPlanSetupStep, GuidedSolveOffersStep } from "./guidedPlanModalSections";
+import { MapPickEvents, Modal } from "./guidedPlanModalShell";
 import {
   cleanupGuidedDraftShifts,
   createGuidedDraftShiftsAction,
@@ -58,49 +59,6 @@ import {
   saveGuidedCompanyHub,
   sendGuidedBulkOffersAction,
 } from "./guidedPlanModalActions";
-
-function Modal({ open, onClose, children }) {
-  if (!open) return null;
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.35)",
-        zIndex: 60,
-        padding: 16,
-        overflow: "auto",
-      }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
-      <div
-        className="card"
-        style={{
-          width: "min(1680px, calc(100vw - 12px))",
-          maxWidth: "min(1680px, calc(100vw - 12px))",
-          height: "min(95vh, 1080px)",
-          maxHeight: "min(95vh, 1080px)",
-          margin: "6px auto",
-          overflow: "auto",
-          boxSizing: "border-box",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function MapPickEvents({ onPick }) {
-  useMapEvents({
-    click(e) {
-      onPick?.(e.latlng?.lat, e.latlng?.lng);
-    },
-  });
-  return null;
-}
 
 export default function GuidedPlanModal({
   open,

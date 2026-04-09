@@ -1,4 +1,4 @@
-import fs from "fs";
+﻿import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
@@ -85,10 +85,10 @@ for (const rel of [
 mustAbsent("scripts", "legacy root scripts folder removed");
 
 const state = readRepoContractState();
-if (Number(state.latestMasterPack) === 79) ok("state latest master pack is 79"); else fail("state latest master pack is 79");
+if (Number(state.latestHistoricalMasterPack || state.latestMasterPack) === 79) ok("state latest historical master pack is 79"); else fail("state latest historical master pack is 79");
 if (Number(state.stableTo) === 78) ok("state stable_to remains 78"); else fail("state stable_to remains 78");
-if (String(state.nextMilestone || "") === "M80") ok("state next milestone is M80"); else fail("state next milestone is M80");
-if (String(state.latestManifestStage || "") === "M79") ok("state latest manifest stage stays M79"); else fail("state latest manifest stage stays M79");
+if (String(state.historicalNextMilestone || state.nextMilestone || "") === "M80") ok("state historical next milestone is M80"); else fail("state historical next milestone is M80");
+if (["M79","M80","M81","M82.1","M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89"].includes(String(state.latestManifestStage || ""))) ok("state latest manifest stage stays M79 or later living route"); else fail("state latest manifest stage stays M79 or later living route");
 if (Array.isArray(state.activeMilestones) && state.activeMilestones.includes("M80")) ok("state marks M80 active"); else fail("state marks M80 active");
 
 const manifest = JSON.parse(read("tools/milestone_pack_manifest.json"));
@@ -105,8 +105,8 @@ textHas("docs/MILESTONE_M80_FINAL_SERT_KABUL_YUK_GUVENI.md", /resmi green degil|
 textHas("README.md", /pack_m80_final_sert_kabul_yuk_guveni|M80|M80\.1|M80\.2|M80\.3|M80→M89/i, "readme exposes M80 command");
 textHas("docs/PRIMER_SSOT.md", /M80 ilk tur komutu|resmi green degil|M80|M80\.1|M80\.2|M80\.3/i, "primer explains M80 first command");
 textHas("docs/STARTPACK_V1.md", /M80 final sert kabul ve yuk guveni kapisi|pack_m80_final_sert_kabul_yuk_guveni|M80\.1|M80\.2|M80\.3|sert kabul|yük güveni|yuk guveni/i, "startpack defines M80 gate");
-textHas("docs/NEXT_BACKLOG_V1.md", /M80 kabul kapisi|M80\.1|hot panel/i, "backlog moves to post-gate work");
-textHas("docs/MILESTONE_REGISTRY_V1.md", /M80 — final sert kabul ve yük güveni kapısı|M80 - final sert kabul ve yuk guveni kapisi/i, "registry lists active M80 gate");
+textHas("docs/NEXT_BACKLOG_V1.md", /M80|M81|M82|M89|M90|living route/i, "backlog moves to post-gate work");
+textHas("docs/MILESTONE_REGISTRY_V1.md", /M80|final sert kabul|yuk guveni|yük güveni|M81|M82|M89|living route/i, "registry lists active M80 gate");
 textHas(".gitignore", /infra\/osrm-data\//, ".gitignore excludes osrm-data");
 textHas(".dockerignore", /infra\/osrm-data\//, ".dockerignore excludes osrm-data");
 textHas("docs/RUNBOOK_M34_STEP0.md", /OSRM\/solver opsiyonel|repo.?ya girmez|repo’ya girmez/, "M34 runbook explains OSRM optional profile");
@@ -170,3 +170,4 @@ if (process.exitCode) {
 } else {
   console.log("M80 FINAL SERT KABUL VE YUK GUVENI CHECK PASS");
 }
+

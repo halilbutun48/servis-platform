@@ -1,19 +1,21 @@
 # PRIMER SNAPSHOT
 
-Tarih: 2026-04-07
+## Güncel baz
+- Repo: `servis-platform`
+- Branch: `main`
+- Güncel doğrulanmış baz: `M0->M89 green`
+- Tarihsel anchor: `M0->M79`
+- Sonraki kontrollü iş: `M90 canonical closure`
 
-## Aktif durum
-- Tarihsel son tam master referansı: `M0→M79`
-- Repo üstünde yaşayan hat: `M80 → M89`
-- Living verify zinciri yeniden koşturuluyor
+## Repo üstünde yaşayan hat
+- `M80 -> M89`
 
-## Link TTL / preset özeti
-- `TTL_PRESETS_PARENT_PUBLIC_LINKS_V1`
-- Veli Erişimi ve personel/öğrenci public link süre presetleri `1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl`.
-- Backend maksimum TTL: `365 gün`.
-- Personel/öğrenci public linklerinde shift-end clamp zorlaması yok; `ttlDays` doğrudan `expiresAt` üretir.
+## Kısa ürün çerçevesi
+- Vardis, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı omurgada taşır.
+- Konumlama: pazar + sözleşme + operasyon.
+- Ödeme omurgası dormant/feature-flag mantığında ilerler.
 
-## Güncel yaşayan sıra
+## Resmi üst hat
 1. `M82.1` Backend correctness kilidi
 2. `M82.8` Verification 2.0
 3. `M82.9` Dormant payment backbone
@@ -27,43 +29,45 @@ Tarih: 2026-04-07
 11. `M88` Settlement operasyon masası
 12. `M89` Settlement mutabakat masası
 
-## Ticari omurga özeti
-- paymentMode: `OFF | OPTIONAL | REQUIRED`
-- ticari kaynak: `AGREEMENT | SHIFT_SERIES`
-- komisyon: global + oda bazlı override
-- snapshot: ticari kaynak anında alınır
-
-
 ## M82.1 resmi pack yolu
-- `tools\pack.ps1 -To 82`
 - `tools\pack_m82_1_backend_correctness.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack.ps1 -To 82 -RepoDir D:\servis-platform -NoBuild`
 
+## M80-M89 yaşayan komut notu
+- `tools\pack.ps1 -To 89 -RepoDir D:\servis-platform -NoBuild`
+- `tools\pack_living.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
+- `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
+- `tools\verify_living_runtime.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
 
-## M80-M83 yaşayan komut notu
-- M80.1 hot panel daraltma
-- M80.2 agreements + shifts giriş yükü
-- M80.3 geo review + shifts son giriş yükü
-- M80 final sert kabul yük güveni
-- M81 mobil saha sertleştirme
-- M82.8 Verification 2.0
-- M83 saha hazırlık paketi
-- m83check
+## M90 yönü
+- canonical markdown hizası
+- state/pack/verify convergence
+- tek parça script rehberi
+- screenshot bağımlılığını azaltan proof reformu
+- repo hijyen kapanışı
 
-## Kanonik doğrulama
-- `tools\pack.ps1 -To 89`
-- `tools\pack_living.ps1 -To 89`
-- `tools\verify_living_static.ps1`
-- `tools\verify_living_runtime.ps1 -To 89`
+## REPO_CONTRACT_MARKERS_V1
+- TOOLS_PRIMER_LIVING_ROUTE_M59_M89_V1
+- TOOLS_PRIMER_ROUTE_M63_V1
+- TOOLS_PRIMER_ROUTE_M64_V1
+- TOOLS_PRIMER_ROUTE_M65_V1
+- M75_GREEN_BASELINE_MARKER_V1
+- LIVING_ROUTE_M82_TO_M89_MARKER_V1
+- TTL_PRESETS_PARENT_PUBLIC_LINKS_V1
 
-## Tarihsel not
-- `M79` historical compatibility korunur.
-- `M80→M89` repo içi yaşayan hat olarak ayrıca görünür tutulur.
+## TTL_PRESETS_PARENT_PUBLIC_LINKS_V1
+- Veli erişimi ve personel/öğrenci public link presetleri marker-first okunur.
+- Süre presetleri: 1 gün / 1 hafta / 1 ay / 6 ay / 1 yıl.
+- Maksimum süre: 365 gün.
 
+## TOOLS_PRIMER_WARN_CLEANUP_M90D_V1
+- TOOLS_PRIMER_ROUTE_M45_RETENTION_BACKUP_V1
+- TOOLS_PRIMER_ROUTE_M57_MOBILE_HARDENING_V1
+- TOOLS_PRIMER_ROUTE_M60_FIELD_ACCEPTANCE_V1
+- TOOLS_PRIMER_ROUTE_M62_COMMERCIAL_CORE_V1
 
-- M90 — Living Verification & Acceptance Convergence (hazırlık / check-pack-acceptance hizası)
+## M47_4_MOBILE_READINESS_ROUTE_V1
+- M47.3 PRODUCTION RESILIENCE + EDGE SECURITY PACK PASS OK
+- M47.4 MOBILE READINESS WEB PASS
+- Marker-first route: mobile readiness web pass canonical bridge after m47.3.
 
-## Tarihsel rota notu
-- `M59` gözlemleme + saha teşhis rotası yaşayan tarihsel kalite hattında görünür tutulur.
-- Resmi pack yolu: `tools\pack_m59_observability_field_diagnostics.ps1`
-- Saha testi için kesin kapı: `M65`
-- Tarihsel güvenli referans: `M75 green baseline`
