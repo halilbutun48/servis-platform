@@ -1,8 +1,11 @@
 import ListSelectionBanner from "../../components/ListSelectionBanner";
+import { navigate } from "../../router";
 import { rowSelectionStyle } from "../../utils/listUi";
 import {
   VEHICLE_TEMPLATES_TR,
   VEHICLE_TYPES,
+  fmtDate,
+  fmtDriverHuman,
   fmtTR,
   gpsAtLabel,
   hasGpsFix,
@@ -18,6 +21,276 @@ import {
   RoomVehicleEditModal,
   RoomVehicleLinkSection,
 } from "./roomVehiclesPanelCards";
+
+
+export function RoomVehicleManageSection({
+  showArchived,
+  setShowArchived,
+  templateId,
+  applyTemplate,
+  plate,
+  setPlate,
+  capacity,
+  setCapacity,
+  type,
+  setType,
+  speedLimitKmh,
+  setSpeedLimitKmh,
+  inspectionDueAt,
+  setInspectionDueAt,
+  odometerKm,
+  setOdometerKm,
+  brand,
+  setBrand,
+  model,
+  setModel,
+  modelYear,
+  setModelYear,
+  lastServiceAt,
+  setLastServiceAt,
+  lastServiceKm,
+  setLastServiceKm,
+  serviceIntervalKm,
+  setServiceIntervalKm,
+  color,
+  setColor,
+  vin,
+  setVin,
+  note,
+  setNote,
+  createVehicle,
+  busy,
+  items,
+  focusVehicle,
+  focusDriverLabel,
+  focusVehicleId,
+  setFocusVehicleId,
+  setTab,
+  setErr,
+  openEdit,
+  deleteVehicle,
+  unbindDriver,
+  driversById,
+}) {
+  return (
+    <div>
+      <div className="card">
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(Boolean(e.target.checked))}
+            disabled={busy}
+          />
+          <span>Arşivi göster</span>
+        </label>
+        <div className="muted" style={{ marginTop: 6 }}>
+          Kapalıyken arşivli araçlar listelenmez. Açınca arşiv dahil tüm araçlar gelir.
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "0.95fr 1.75fr", gap: 12, alignItems: "start" }}>
+        <div className="card">
+          <h3>Yeni Araç</h3>
+          <form onSubmit={createVehicle} className="grid">
+            <div className="col" style={{ gridColumn: "1 / -1" }}>
+              <label className="muted">Hazır Şablon (TR)</label>
+              <select value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
+                <option value="">— Şablon seç (opsiyonel) —</option>
+                {VEHICLE_TEMPLATES_TR.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label} • {t.type} • {t.capacity}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col">
+              <label className="muted">Plaka</label>
+              <input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="34 ABC 123" />
+            </div>
+
+            <div className="col">
+              <label className="muted">Kapasite</label>
+              <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+            </div>
+
+            <div className="col">
+              <label className="muted">Tip</label>
+              <select value={type} onChange={(e) => setType(e.target.value)}>
+                {VEHICLE_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col">
+              <label className="muted">Hız limit</label>
+              <input type="number" value={speedLimitKmh} onChange={(e) => setSpeedLimitKmh(e.target.value)} />
+            </div>
+
+            <div className="col">
+              <label className="muted">Muayene</label>
+              <input type="date" value={inspectionDueAt} onChange={(e) => setInspectionDueAt(e.target.value)} />
+            </div>
+
+            <div className="col">
+              <label className="muted">Km</label>
+              <input type="number" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} placeholder="123456" />
+            </div>
+
+            <div className="col">
+              <label className="muted">Marka</label>
+              <input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Ford" />
+            </div>
+
+            <div className="col">
+              <label className="muted">Model</label>
+              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Transit" />
+            </div>
+
+            <div className="col">
+              <label className="muted">Model yılı</label>
+              <input type="number" value={modelYear} onChange={(e) => setModelYear(e.target.value)} placeholder="2021" />
+            </div>
+
+            <div className="col">
+              <label className="muted">Son bakım</label>
+              <input type="date" value={lastServiceAt} onChange={(e) => setLastServiceAt(e.target.value)} />
+            </div>
+
+            <div className="col">
+              <label className="muted">Son bakım km</label>
+              <input type="number" value={lastServiceKm} onChange={(e) => setLastServiceKm(e.target.value)} placeholder="110000" />
+            </div>
+
+            <div className="col">
+              <label className="muted">Bakım periyodu</label>
+              <input type="number" value={serviceIntervalKm} onChange={(e) => setServiceIntervalKm(e.target.value)} />
+            </div>
+
+            <div className="col">
+              <label className="muted">Renk</label>
+              <input value={color} onChange={(e) => setColor(e.target.value)} placeholder="Beyaz" />
+            </div>
+
+            <div className="col">
+              <label className="muted">VIN</label>
+              <input value={vin} onChange={(e) => setVin(e.target.value)} placeholder="Şasi No" />
+            </div>
+
+            <div className="col" style={{ gridColumn: "1 / -1" }}>
+              <label className="muted">Not</label>
+              <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Araçla ilgili not..." />
+            </div>
+
+            <div className="col" style={{ justifyContent: "end" }}>
+              <button disabled={busy} type="submit">
+                {busy ? "..." : "Ekle"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div className="card" style={{ overflowX: "auto" }}>
+          <h3>Liste</h3>
+          <ListSelectionBanner
+            selectedLabel={focusVehicle?.plate || ""}
+            selectedSummary={[focusVehicle?.brand, focusVehicle?.model, focusDriverLabel].filter(Boolean).join(" • ")}
+            visibleCount={items.length}
+            totalCount={items.length}
+            helper="Copilot seçili araç kartını kullanır."
+          />
+
+          <table className="tbl" style={{ whiteSpace: "nowrap", fontSize: 12, marginTop: 10 }}>
+            <thead>
+              <tr>
+                <th>Plaka</th>
+                <th>Kapasite</th>
+                <th>Tip</th>
+                <th>Hız limit</th>
+                <th>Muayene</th>
+                <th>Km / Bakım</th>
+                <th>Not</th>
+                <th>Aktif sürücü</th>
+                <th>Aksiyon</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((v) => {
+                const nextKm = v.lastServiceKm != null && v.serviceIntervalKm != null ? v.lastServiceKm + v.serviceIntervalKm : null;
+                const remainingKm = nextKm != null && v.odometerKm != null ? nextKm - v.odometerKm : null;
+                const drvId = Number(v.driver?.id || v.driverId || 0);
+                const drvObj = v.driver || (drvId ? driversById.get(drvId) : null);
+                const driverLabel = drvObj ? fmtDriverHuman(drvObj) : (drvId ? `#${drvId}` : "-");
+                const isArchived = Boolean(v.archivedAt);
+                const hasDriver = Boolean(drvId);
+                const gpsOk = hasGpsFix(v);
+
+                return (
+                  <tr key={v.id} onClick={() => setFocusVehicleId(Number(v.id) || 0)} style={{ ...rowSelectionStyle(Number(focusVehicleId || 0) === Number(v.id || 0)), ...(isArchived ? { opacity: 0.65 } : {}) }}>
+                    <td title={!gpsOk ? "GPS verisi yok (haritada görünmez)" : ""}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <span>{v.plate}</span>
+                        {isArchived ? <span className="pill" data-status="PASSIVE">ARCHIVED</span> : null}
+                      </div>
+                      {!gpsOk ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>📡 GPS yok</div> : null}
+                    </td>
+                    <td className="muted">{v.capacity}</td>
+                    <td className="muted">{v.type ?? "-"}</td>
+                    <td className="muted">{v.speedLimitKmh ?? "-"}</td>
+                    <td className="muted">{fmtDate(v.inspectionDueAt)}</td>
+                    <td className="muted">{v.odometerKm != null ? `${v.odometerKm} km` : "-"}{remainingKm != null ? ` • kalan ${remainingKm} km` : ""}</td>
+                    <td className="muted">{v.note ? String(v.note) : "-"}</td>
+                    <td>
+                      <div className="muted">{driverLabel}{drvId ? ` (id=${drvId})` : ""}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                        <button
+                          type="button"
+                          disabled={busy || isArchived}
+                          onClick={() => {
+                            setFocusVehicleId(Number(v.id));
+                            setTab("link");
+                            setErr("");
+                          }}
+                        >
+                          Bağlantı
+                        </button>
+
+                        <button type="button" disabled={busy || isArchived || !hasDriver} onClick={() => unbindDriver(v.id)} title="Bağlantıyı kaldır">
+                          Ayır
+                        </button>
+                      </div>
+                    </td>
+
+                    <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button type="button" disabled={busy || isArchived} onClick={(e) => { e.stopPropagation(); setFocusVehicleId(Number(v.id) || 0); openEdit(v); }}>
+                        Düzenle
+                      </button>
+
+                      <button type="button" disabled={busy || isArchived} onClick={() => deleteVehicle(v)}>
+                        Sil/Arşivle
+                      </button>
+                      <button type="button" disabled={busy} onClick={() => navigate(`/shared/logs?kind=bundle_vehicle&targetType=vehicle&targetId=${v.id}&format=txt`)}>
+                        Log TXT
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div className="muted" style={{ marginTop: 8 }}>
+            “Sil/Arşivle”: Shift bağlıysa backend arşivler, değilse siler.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function RoomVehicleStatusSection({
   plateQuery,
