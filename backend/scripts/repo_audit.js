@@ -47,7 +47,7 @@ const reportDir = path.resolve(repoRoot, argValue("--report-dir", path.join("art
 const reportPath = path.resolve(reportDir, argValue("--json-out", "repo_audit_latest.json"));
 
 const allowedTextExt = new Set([
-  ".ps1", ".js", ".cjs", ".mjs", ".jsx", ".ts", ".tsx", ".md", ".json", ".yml", ".yaml", ".html", ".css"
+  ".ps1", ".js", ".cjs", ".mjs", ".jsx", ".ts", ".tsx", ".md", ".json", ".yml", ".yaml", ".html", ".css", ".prisma", ".sql"
 ]);
 
 const skipDirNames = new Set([
@@ -196,11 +196,20 @@ const trackedAllFiles = allFiles.filter(trackedFilter);
 const textFiles = trackedAllFiles.filter((p) => allowedTextExt.has(path.extname(p).toLowerCase()));
 const textMap = new Map(textFiles.map((p) => [rel(p), readUtf8(p)]));
 
-const largeFiles = [...textMap.entries()]
+const largeFileWarnThreshold = 1000;
+const largeFileBlockThreshold = 1200;
+
+const fileLineStats = [...textMap.entries()]
   .map(([fileRel, text]) => ({ file: fileRel, lines: countLines(text) }))
-  .filter((item) => item.lines >= 1200)
   .filter((item) => !isGeneratedLargeFile(item.file))
-  .sort((a, b) => b.lines - a.lines)
+  .sort((a, b) => b.lines - a.lines);
+
+const largeFiles = fileLineStats
+  .filter((item) => item.lines >= largeFileBlockThreshold)
+  .slice(0, 20);
+
+const warningHotFiles = fileLineStats
+  .filter((item) => item.lines >= largeFileWarnThreshold && item.lines < largeFileBlockThreshold)
   .slice(0, 20);
 const activeDocContractRefs = [...textMap.entries()]
   .map(([fileRel, text]) => ({ file: fileRel, refs: countDocContractRefs(fileRel, text) }))
@@ -318,6 +327,7 @@ const summary = {
   tinyFileCount: tinyFiles.length,
   archiveShadowPairCount: archiveShadowPairs.length,
   largeFileCount: largeFiles.length,
+  largeFileWarningCount: warningHotFiles.length,
   activeDocContractRefCount: activeDocContractRefs.length,
   runtimeJsonFileCount: runtimeJsonFiles.length
 };
@@ -334,6 +344,7 @@ const report = {
   tinyFiles,
   archiveShadowPairs,
   largeFiles,
+  warningHotFiles,
   activeDocContractRefs,
   runtimeJsonFiles,
   performanceSmells
@@ -352,7 +363,8 @@ console.log(`INFO backend script consolidation groups: ${summary.duplicateBacken
 console.log(`INFO orphan candidates: ${summary.orphanCandidateCount}`);
 console.log(`INFO tiny files: ${summary.tinyFileCount}`);
 console.log(`INFO archive/live shadow pairs: ${summary.archiveShadowPairCount}`);
-console.log(`INFO large files >=1200 lines: ${summary.largeFileCount}`);
+console.log(`INFO hot files >=${largeFileWarnThreshold} and <${largeFileBlockThreshold} lines: ${summary.largeFileWarningCount}`);
+console.log(`INFO large files >=${largeFileBlockThreshold} lines: ${summary.largeFileCount}`);
 console.log(`INFO active docs-contract refs: ${summary.activeDocContractRefCount}`);
 console.log(`INFO runtime json files tracked: ${summary.runtimeJsonFileCount}`);
 

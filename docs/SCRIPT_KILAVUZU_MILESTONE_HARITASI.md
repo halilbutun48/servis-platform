@@ -29,6 +29,7 @@ Kapsam: Bu doküman, M0'dan M89'a kadar milestone ve script ilişkisini **tek re
 - `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
 - `tools\verify_living_runtime.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 
 ### Orchestration mantığı
 - `pack.ps1` ana üst kapıdır.
@@ -333,6 +334,11 @@ Bu bant güncel doğrulanmış üst hattır.
   - proof reformu
   - repo hijyen kapanışı
   - tek rehber kuralı
+
+### M90B.1 — executable closure gate [PACK]
+- Pack: `tools/pack_m90_b1_canonical_closure_gate.ps1`
+- Runbook: `docs/RUNBOOK_M90B_1_EXECUTABLE_CLOSURE_GATE.md`
+- Ana konu: `M0->M89 green` bazı üstünde docs/state/pack/verify convergence hattını çalışan resmi kapıya bağlamak.
 
 ## 11) Hızlı okuma özeti
 - `M0→M41`: çekirdek temel hat

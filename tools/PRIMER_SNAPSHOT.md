@@ -6,6 +6,7 @@
 - Güncel doğrulanmış baz: `M0->M89 green`
 - Tarihsel anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 canonical closure`
+- İlk yürütülebilir kapanış kapısı: `M90B.1 executable closure gate`
 
 ## Repo üstünde yaşayan hat
 - `M80 -> M89`
@@ -42,6 +43,7 @@
 ## M90 yönü
 - canonical markdown hizası
 - state/pack/verify convergence
+- ilk yürütülebilir kapanış kapısı: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 - tek parça script rehberi
 - screenshot bağımlılığını azaltan proof reformu
 - repo hijyen kapanışı

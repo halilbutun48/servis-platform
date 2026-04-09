@@ -8,6 +8,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Güncel doğrulanmış baz: `M0->M89 green`
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
+- İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
 
 ## Güncel yaşayan sıra
 - `M80` — final sert kabul ve yük güveni
@@ -47,6 +48,7 @@ Bu primer yaşayan hattın resmi özetidir.
 ## M90 odak noktası
 - kanonik markdown hizası
 - state/pack/verify uyumu
+- ilk yürütülebilir kapanış kapısı: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 - tek parça script rehberi
 - screenshot bağımlılığını azaltan proof reformu
 - repo hijyen kapanışı

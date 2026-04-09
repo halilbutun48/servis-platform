@@ -38,6 +38,9 @@
 - `M90 - canonical closure / 10-10 kapanis paketi`
   - amac: canonical markdown, state, script-guide, proof-politikasi ve verification orkestrasyonunu tek gercekte toplamak
   - kural: yeni urun ozelligi degil; docs/verify/hijyen hizasi onceliklidir
+- `M90B.1 - executable closure gate`
+  - amac: `M0->M89 green` bazinin ustune docs/state/pack/verify convergence icin calisan resmi kapanis kapisi koymak
+  - komut: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

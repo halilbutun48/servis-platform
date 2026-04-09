@@ -14,15 +14,18 @@ Current direction: **servis-platform main -> M0->M89 green -> siradaki kontrollu
 - OSRM kodu repoda vardır ama default compose modu fallback davranır
 
 ## 2) Hemen sonraki ana faz
-1. `M90A` — canonical markdown hizası
-2. `M90B` — `repo_contract_state` + pack/verify convergence
-3. `M90C` — screenshot bağımlılığını azaltan proof reformu
-4. `M90D` — `SCRIPT_KILAVUZU_MILESTONE_HARITASI` tek dosya standardı
-5. `M90E` — repo hijyen kapanışı
+1. `M90B.1` — executable closure gate
+2. `M90A` — canonical markdown hizası
+3. `M90B` — `repo_contract_state` + pack/verify convergence
+4. `M90C` — screenshot bağımlılığını azaltan proof reformu
+5. `M90D` — `SCRIPT_KILAVUZU_MILESTONE_HARITASI` tek dosya standardı
+6. `M90E` — repo hijyen kapanışı
 
 ## 3) Bu turun çalışma kuralı
 - ürün davranışını bozma
 - yeni özellik açma
+- önce `tools\pack.ps1 -To 89` ile green baz korunur
+- sonra `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform` ile closure gate doğrulanır
 - önce canonical docs/state hizasını düzelt
 - script/check sistemini yeni canonical duruma göre güncelle
 - screenshot metin bağımlılığını azalt

@@ -65,3 +65,4 @@ Bu doküman, projeye 10/10 denebilmesi için gerekli kalite kapılarını tanım
 - repo kanonik ve temiz
 - proof/verify sistemi dürüst
 - dokümantasyon tek gerçekliği anlatıyor
+- `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform` geçer durumda olmalıdır
