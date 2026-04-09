@@ -1,7 +1,6 @@
 param([string]$RepoRoot = (Resolve-Path '.').Path)
 $ErrorActionPreference = 'Stop'
 
-
 . (Join-Path $PSScriptRoot "_repo_contract_common.ps1")
 
 function ReadText([string]$rel){
@@ -26,6 +25,7 @@ Write-Host 'INFO Checking M54.3 files'
 @(
   'backend\src\services\dispatchRepack.js',
   'backend\src\routes\shifts\room.js',
+  'backend\src\routes\shifts\roomShared.js',
   'backend\scripts\m54_3_dispatch_approve_repack_check.js',
   'tools\pack_m54_3_dispatch_approve_repack.ps1',
   'tools\check_m54_3_dispatch_approve_repack_repo_contract.ps1',
@@ -34,6 +34,7 @@ Write-Host 'INFO Checking M54.3 files'
 
 $svc = ReadText 'backend\src\services\dispatchRepack.js'
 $route = ReadText 'backend\src\routes\shifts\room.js'
+$routeShared = ReadText 'backend\src\routes\shifts\roomShared.js'
 $check = ReadText 'backend\scripts\m54_3_dispatch_approve_repack_check.js'
 $pack = ReadText 'tools\pack_m54_3_dispatch_approve_repack.ps1'
 $runbook = ReadText 'docs\RUNBOOK_M54_3_DISPATCH_APPROVE_REPACK.md'
@@ -46,10 +47,11 @@ MustContainText $svc 'osrmRoute' 'service uses osrmRoute for path generation'
 MustContainText $svc 'estimateOrderedRouteMetrics' 'service computes fallback metrics'
 
 Write-Host 'INFO Checking room route uses shared child plan pipeline'
-MustContainText $route 'from "../../services/dispatchRepack.js"' 'room route imports dispatchRepack service'
-MustContainText $route 'return buildChildPlanFromSlice({ slice, shift, coordMap });' 'preview uses shared child plan builder'
-MustContainText $route 'await persistChildPlan(tx, { childShiftId: child.id, plan });' 'approve persists preview plan'
-MustContainText $route 'return loadFullChildShift(tx, child.id);' 'approve reloads full child shift'
+MustContainText $route 'from "./roomShared.js"' 'room route imports roomShared helpers'
+MustContainText $routeShared 'from "../../services/dispatchRepack.js"' 'roomShared imports dispatchRepack service'
+MustContainText $routeShared 'return buildChildPlanFromSlice({ slice, shift, coordMap });' 'preview uses shared child plan builder'
+MustContainText $routeShared 'await persistChildPlan(tx, { childShiftId: child.id, plan });' 'approve persists preview plan'
+MustContainText $routeShared 'return loadFullChildShift(tx, child.id);' 'approve reloads full child shift'
 MustContainText $route 'const groupKey = splitPlan?.[0]?.groupKey || buildSplitGroupKey(shift.id);' 'groupKey bug fixed'
 MustContainRegex $route 'splitPlan:\s*splitPlan\.map\(' 'approve response includes splitPlan mapping'
 MustContainText $route 'totalDistanceM: x?.preview?.totalDistanceM ?? null' 'approve response carries preview metrics'
