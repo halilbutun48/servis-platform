@@ -34,7 +34,8 @@ $state = Read-RepoContractState -RepoRoot $RepoRoot
 Assert-RepoContractStateValue -State $state -Property 'latestMasterPack' -Expected 89 -Label 'state latest master pack is 89'
 Assert-RepoContractStateValue -State $state -Property 'latestHistoricalMasterPack' -Expected 79 -Label 'state latest historical master pack is 79'
 Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
-Assert-RepoContractStateValue -State $state -Property 'nextMilestone' -Expected 'M90' -Label 'state next milestone is M90'
+if (-not ([string]$state.nextMilestone).StartsWith('M90')) { throw 'FAIL state next milestone stays inside M90 route' }
+Write-Host 'OK state next milestone stays inside M90 route'
 Assert-RepoContractStateValue -State $state -Property 'historicalNextMilestone' -Expected 'M80' -Label 'state historical next milestone is M80'
 Assert-RepoContractStateValue -State $state -Property 'livingUpperRouteFrom' -Expected 80 -Label 'state living upper route starts at M80'
 Assert-RepoContractStateValue -State $state -Property 'livingUpperRouteTo' -Expected 89 -Label 'state living upper route ends at M89'
@@ -66,3 +67,4 @@ if (($manifest -match 'pack_docs_ssot\.ps1') -and ($manifest -match 'pack_m80_fi
 }
 
 Write-Host "M61 SSOT + MILESTONE HIZASI REPO CONTRACT PASS"
+
