@@ -51,8 +51,9 @@ Amaç: `M0->M89 green` bazının üstüne yeni özellik eklemek değil; repo ger
 ## M90C.8 — CI / verification visibility
 - Amaç: yerelde çalışan doğrulama zincirini repo-native görünür hale getirmek.
 - Kök komut: `npm run verify:ci`.
+- Kök zincir backend + web lint çalıştırır; web lint kanonik kanıtı `artifacts/lint/web_lint_latest.txt`.
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`.
-- `repo-verification` ve `shareable-export` işleri repo audit + sanitized export artifact görünürlüğünü korur.
+- `repo-verification` ve `shareable-export` işleri repo audit + web lint + sanitized export artifact görünürlüğünü korur.
 - Yürütülebilir kapı: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`.
 
 
@@ -60,6 +61,6 @@ Amaç: `M0->M89 green` bazının üstüne yeni özellik eklemek değil; repo ger
 - Amaç: release/shareable/export/verify sırasını tek resmi checklist altında kilitlemek.
 - Kök komut: `npm run verify:final`.
 - Windows tercih edilen shell: `pwsh`.
-- Final sıra: `verify:final` -> `pack_m90_c7_export_package_hygiene.ps1` -> `export_shareable_repo_bundle.ps1` -> `git status --short`.
+- Final sıra: `verify:final` -> `artifacts/lint/web_lint_latest.txt` -> `pack_m90_c7_export_package_hygiene.ps1` -> `export_shareable_repo_bundle.ps1` -> `git status --short`.
 - `tools/export_shareable_repo_bundle.ps1` içinde `tar.exe` / `.NET ZipFile` fallback korunur; PowerShell 5.1 uyumsuz API kullanımı geri dönmez.
 - Yürütülebilir kapı: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`.

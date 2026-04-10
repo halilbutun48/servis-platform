@@ -60,9 +60,10 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 ## 2.5) M90C.8 — CI / verification visibility
 - Yerelde çalışan verify hattı repo-native görünür hale getirilecektir.
 - Kök komut: `npm run verify:ci`.
+- Kök zincir backend + web lint çalıştırır; web lint kanonik kanıt dosyası: `artifacts/lint/web_lint_latest.txt`.
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`.
 - `repo-verification` işi root verify chain'i, `shareable-export` işi M90C.7 export hygiene pack'i çalıştırır.
-- Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
+- Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json`, `artifacts/lint/web_lint_latest.txt` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
 - Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.
 
 ## 3) Bu turun çalışma kuralı
@@ -98,7 +99,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - M90, yeni ürün modülü değil; repo gerçeğinin tekleştirilmesi işidir.
 
 ## 6) İlk cümle
-Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90C.2`, `M90C.3`, `M90C.4`, `M90C.5`, `M90C.6` ve `M90C.7` kapanmıştır; bu turdaki resmi iş `M90C.8 CI / verification visibility`dir.
+Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90C.2`, `M90C.3`, `M90C.4`, `M90C.5`, `M90C.6`, `M90C.7` ve `M90C.8` kapanmıştır; sıradaki resmi iş `M90C.9 güvenli kapanış / final hygiene checklist`tir.
 
 ## Repo contract state
 - Makine-okur durum özeti: `tools/repo_contract_state.json`
@@ -119,8 +120,9 @@ Güncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M90
 
 ## 2.6) M90C.9 — güvenli kapanış / final hygiene checklist
 - Kanonik final giriş komutu: `npm run verify:final`.
+- `verify:final`, root lint zinciri üzerinden backend + web lint çalıştırır ve web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
 - Windows tarafında export/hijyen kapanışı için tercih edilen kabuk `pwsh` olacaktır.
-- Final closure sırası: `verify:final` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
+- Final closure sırası: `verify:final` -> `type artifacts\lint\web_lint_latest.txt` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
 - `tools/export_shareable_repo_bundle.ps1` PS5 uyumsuz API çağrılarını geri getirmeyecek; `tar.exe` / `.NET ZipFile` fallback korunacaktır.
 - Satır azaltma hâlâ en sona bırakılır; bu adım release/shareable/export/verify kapanış emniyetidir.
 

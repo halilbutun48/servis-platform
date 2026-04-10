@@ -86,14 +86,16 @@ Bu primer yaşayan hattın resmi özetidir.
 
 ## CI / verification visibility
 - Repo-native görünür doğrulama zinciri: `npm run verify:ci`.
+- Root verify zinciri backend + web lint çalıştırır; web lint kanonik kanıtı: `artifacts/lint/web_lint_latest.txt`.
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`.
 - `repo-verification` işi root verify chain çalıştırır; `shareable-export` işi M90C.7 export hygiene pack çalıştırır.
-- Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
+- Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json`, `artifacts/lint/web_lint_latest.txt` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
 - Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.
 
 
 ## safe closure / final hygiene checklist
 - Kanonik final doğrulama girişi: `npm run verify:final`.
+- `verify:final`, root lint zinciri üzerinden backend + web lint çalıştırır ve web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
 - Windows tarafında export/hijyen komutlarında tercih edilen kabuk: `pwsh`.
 - Final closure sırası: `npm run verify:final` -> `pwsh -ExecutionPolicy Bypass -File .\tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform` -> `pwsh -ExecutionPolicy Bypass -File .\tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform` -> `git status --short`.
 - `tools/export_shareable_repo_bundle.ps1` içinde `tar.exe` / `.NET ZipFile` fallback korunur; `GetRelativePath` ve `ConvertFrom-Json -Depth` gibi PS5 uyumsuzlukları geri gelmez.

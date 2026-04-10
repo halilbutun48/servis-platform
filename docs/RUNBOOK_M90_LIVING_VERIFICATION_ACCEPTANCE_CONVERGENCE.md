@@ -40,9 +40,10 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 ## M90C.8 çalışma mantığı
 - Bu adım kanonik doğrulama zincirini repo-native görünür hale getirir.
 - Root verify komutu: `npm run verify:ci`
+- Web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - Komut: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`
-- Beklenen sonuç: `repo-verification` ve `shareable-export` işleri repo audit ile sanitized shareable export artefaktlarını görünür kılar; satır azaltma hâlâ en sona bırakılır.
+- Beklenen sonuç: `repo-verification` ve `shareable-export` işleri repo audit + web lint + sanitized shareable export artefaktlarını görünür kılar; satır azaltma hâlâ en sona bırakılır.
 
 ## Değişmez kural
 - yeni ürün özelliği açılmaz
@@ -54,6 +55,7 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 ## M90C.9 çalışma mantığı
 - Bu adım final release/shareable/export/verify sırasını tek checklist altında sabitler.
 - Root verify girişi: `npm run verify:final`
+- Web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - Komut: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Windows notu: export/hijyen kapanışında `pwsh` tercih edilir; script yine de PowerShell 5.1 fallback güvenini korur.
-- Beklenen sonuç: `verify:final` zinciri, sanitized export pack, shareable bundle üretimi ve temiz `git status` sırası resmi kapanış checklisti olarak görünür olur; satır azaltma hâlâ en sona bırakılır.
+- Beklenen sonuç: `verify:final` zinciri, web lint kanıtı, sanitized export pack, shareable bundle üretimi ve temiz `git status` sırası resmi kapanış checklisti olarak görünür olur; satır azaltma hâlâ en sona bırakılır.

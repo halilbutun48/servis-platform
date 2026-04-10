@@ -3,7 +3,8 @@
 ## Yerel yürütme
 1. `Set-Location D:\servis-platform`
 2. `npm run verify:ci`
-3. `powershell -ExecutionPolicy Bypass -File .\tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
+3. `type artifacts\lint\web_lint_latest.txt`
+4. `powershell -ExecutionPolicy Bypass -File .\tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 
 ## Workflow yolu
 - Dosya: `.github/workflows/vardis_verification_visibility.yml`
@@ -13,6 +14,7 @@
 
 ## Beklenen görünür kanıt
 - `artifacts/repo-audit/repo_audit_latest.json`
+- `artifacts/lint/web_lint_latest.txt`
 - `artifacts/shareable-export/servis-platform_shareable_*.zip`
 - job isimleri: `repo-verification`, `shareable-export`
 

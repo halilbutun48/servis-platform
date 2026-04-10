@@ -32,6 +32,14 @@ jobs:
           path: artifacts/repo-audit/repo_audit_latest.json
           if-no-files-found: error
 
+      - name: Upload web lint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-lint-latest
+          path: artifacts/lint/web_lint_latest.txt
+          if-no-files-found: error
+
   shareable-export:
     needs: repo-verification
     runs-on: windows-latest

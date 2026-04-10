@@ -355,13 +355,15 @@ Bu bant güncel doğrulanmış üst hattır.
 - Pack: `tools/pack_m90_c8_ci_verification_visibility.ps1`
 - Runbook: `docs/RUNBOOK_M90C_8_CI_VERIFICATION_VISIBILITY.md`
 - Root verify: `npm run verify:ci`
+- Web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`
-- Ana konu: kanonik doğrulama zincirini repo-native görünür hale getirmek ve repo audit + sanitized export artifact'larını CI içinde görünür kılmak.
+- Ana konu: kanonik doğrulama zincirini repo-native görünür hale getirmek ve repo audit + web lint + sanitized export artifact'larını CI içinde görünür kılmak.
 
 ### M90C.9 — güvenli kapanış / final hygiene checklist [PACK]
 - Pack: `tools/pack_m90_c9_safe_closure_final_hygiene.ps1`
 - Runbook: `docs/RUNBOOK_M90C_9_SAFE_CLOSURE_FINAL_HYGIENE_CHECKLIST.md`
 - Final verify: `npm run verify:final`
+- Final verify sonrası web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - Export/hijyen shell tercihi: `pwsh`
 - Ana konu: release/shareable/export/verify sırasını tek resmi checklist altında sabitlemek ve PS5 uyum dersini kalıcı kurala çevirmek.
 

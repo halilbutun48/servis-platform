@@ -4,14 +4,14 @@
   "version": "0.1.0",
   "scripts": {
     "lint:backend": "npm --prefix backend run lint",
-    "lint:web": "npm --prefix web run lint",
+    "lint:web": "node backend/scripts/run_web_lint_with_evidence.js",
     "lint": "npm run lint:backend && npm run lint:web",
     "audit:repo": "node backend/scripts/repo_audit.js",
     "verify:docs": "node backend/scripts/docs_ssot_pack_check.js && node backend/scripts/m61_ssot_milestone_alignment_check.js",
     "verify:hot": "node backend/scripts/m58_final_pilot_readiness_check.js && node backend/scripts/m76b_living_matrix_tools_consolidation_check.js && node backend/scripts/m76a_2_final_normalization_archiving_check.js && node backend/scripts/m77_kvkk_uyum_katmani_check.js && node backend/scripts/m78_checklist_operasyon_dogrulama_check.js && node backend/scripts/m79_d1_copilot_acceptance_pack.js && node backend/scripts/m82_1_correctness_guard_check.js && node backend/scripts/m82_1_acceptance_contract_check.js",
     "verify:web-contract": "node backend/scripts/m82_2_web_contract_cache_check.js",
     "verify:closure": "npm --prefix backend run m90b1check && npm run audit:repo && npm --prefix backend run m90c6check && npm --prefix backend run m90c7check && npm --prefix backend run m90c8check && npm --prefix backend run m90c9check",
-    "verify:ci": "npm --prefix backend run lint && npm run verify:docs && npm run verify:hot && npm run verify:web-contract && npm run verify:closure",
+    "verify:ci": "npm run lint && npm run verify:docs && npm run verify:hot && npm run verify:web-contract && npm run verify:closure",
     "verify:final": "npm run verify:ci"
   }
 }

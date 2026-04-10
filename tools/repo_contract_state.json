@@ -4,7 +4,7 @@
   "latestHistoricalMasterPack": 79,
   "stableTo": 78,
   "historicalStableTo": 78,
-  "nextMilestone": "M90C.8",
+  "nextMilestone": "M90C.9",
   "historicalNextMilestone": "M80",
   "livingUpperRouteFrom": 80,
   "livingUpperRouteTo": 89,
@@ -199,8 +199,11 @@
     ],
     "artifacts": [
       "artifacts/repo-audit/repo_audit_latest.json",
+      "artifacts/lint/web_lint_latest.txt",
       "artifacts/shareable-export/servis-platform_shareable_*.zip"
-    ]
+    ],
+    "lintCommand": "npm run lint:web",
+    "lintEvidence": "artifacts/lint/web_lint_latest.txt"
   },
   "safeClosureFinalHygiene": {
     "goal": "safe-closure-final-hygiene-checklist",
@@ -219,6 +222,7 @@
       "On Windows, prefer pwsh for export-related packs and shareable bundle generation",
       "export_shareable_repo_bundle.ps1 must stay compatible with Windows PowerShell 5.1 fallback semantics even when pwsh is preferred",
       "line-count reduction stays deferred until after acceptance, hygiene, export, and CI closure work"
-    ]
+    ],
+    "lintEvidence": "artifacts/lint/web_lint_latest.txt"
   }
 }

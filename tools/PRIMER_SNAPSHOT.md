@@ -66,6 +66,7 @@
 - Yeni resmi CI görünürlük komutu: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`.
 - Yeni resmi final closure komutu: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Root verify chain: `npm run verify:ci`.
+- Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
 - Kanonik final verify girişi: `npm run verify:final`.
 
 ## hot-file queue policy
@@ -103,6 +104,6 @@
 
 ## safe closure / final hygiene checklist
 - Windows tarafında export/hijyen kapanışı için tercih edilen shell `pwsh` olur.
-- Final sıra: `npm run verify:final` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
+- Final sıra: `npm run verify:final` -> `type artifacts\lint\web_lint_latest.txt` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
 - `tools/export_shareable_repo_bundle.ps1` PS5 uyumlu fallback mantığını korur; `GetRelativePath` ve `ConvertFrom-Json -Depth` gibi kırıklar geri gelmez.
 - Satır azaltma en sona bırakılır.

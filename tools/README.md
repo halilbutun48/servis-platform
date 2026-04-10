@@ -14,6 +14,7 @@
 - M90C.8 CI / verification visibility: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 - M90C.9 güvenli kapanış / final hygiene checklist: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Root verify chain: `npm run verify:ci`
+- Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 
@@ -47,7 +48,9 @@
 - İlk yürütülebilir kapanış kapısı: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 - Sıradaki resmi kapanış kuyruğu: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Root verify chain: `npm run verify:ci`
+- Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
+- Kanonik web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - CI workflow: `.github/workflows/vardis_verification_visibility.yml`
 - Shareable repo zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
 - Windows tarafinda export/hijyen kapanisinda `pwsh` tercih edilir.

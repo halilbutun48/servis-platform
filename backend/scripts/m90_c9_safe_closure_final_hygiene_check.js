@@ -57,6 +57,7 @@ const policy = state.safeClosureFinalHygiene || {};
 expect((state.activeMilestones || []).includes("M90C.9"), "state active milestones include M90C.9");
 expect(policy.goal === "safe-closure-final-hygiene-checklist", "state policy goal tracks final hygiene checklist");
 expect((policy.primaryCommand || "") === "npm run verify:final", "state policy points to root verify:final command");
+expect((policy.lintEvidence || "") === "artifacts/lint/web_lint_latest.txt", "state policy records canonical web lint evidence path");
 expect((policy.windowsPreferredShell || "") === "pwsh", "state policy records pwsh as windows preferred shell");
 expect((policy.exportPack || "") === "tools/pack_m90_c7_export_package_hygiene.ps1", "state policy points to export hygiene pack");
 expect((policy.exportTool || "") === "tools/export_shareable_repo_bundle.ps1", "state policy points to shareable export tool");
@@ -74,6 +75,7 @@ const docsBundle = [primer, backlog, toolsPrimer, toolsReadme, scriptGuide, mile
 expect(includesText(docsBundle, "M90C.9"), "canonical docs mention M90C.9");
 expect(includesText(docsBundle, "safe closure") || includesText(docsBundle, "guvenli kapanis"), "canonical docs mention safe closure / final hygiene checklist");
 expect(includesText(docsBundle, "npm run verify:final"), "canonical docs mention root verify:final command");
+expect(includesText(docsBundle, "artifacts/lint/web_lint_latest.txt"), "canonical docs mention canonical web lint evidence path");
 expect(includesText(docsBundle, "pwsh"), "canonical docs mention pwsh preference");
 expect(includesText(docsBundle, "satır azaltma en sona") || includesText(docsBundle, "line-count reduction stays deferred"), "canonical docs preserve deferred line-count policy");
 expect(includesText(primer, "M90C.9") && (includesText(primer, "guvenli kapanis") || includesText(primer, "final hygiene checklist")), "primer points to M90C.9 as current official work");

@@ -58,11 +58,14 @@ expect((state.activeMilestones || []).includes("M90C.8"), "state active mileston
 expect(policy.goal === "repo-native-ci-verification-visibility", "state policy goal tracks repo-native CI visibility");
 expect((policy.workflowPath || "") === ".github/workflows/vardis_verification_visibility.yml", "state policy points to workflow path");
 expect((policy.primaryCommand || "") === "npm run verify:ci", "state policy points to root verify:ci command");
+expect((policy.lintCommand || "") === "npm run lint:web", "state policy records canonical web lint command");
+expect((policy.lintEvidence || "") === "artifacts/lint/web_lint_latest.txt", "state policy records canonical web lint evidence path");
 expect((policy.exportPack || "") === "tools/pack_m90_c7_export_package_hygiene.ps1", "state policy points to export hygiene pack");
 expect(Array.isArray(policy.jobs) && policy.jobs.includes("repo-verification") && policy.jobs.includes("shareable-export"), "state policy lists repo-verification and shareable-export jobs");
 
 expect((rootPackage.scripts || {})["verify:closure"]?.includes("m90b1check") && (rootPackage.scripts || {})["verify:closure"]?.includes("audit:repo") && (rootPackage.scripts || {})["verify:closure"]?.includes("m90c6check") && (rootPackage.scripts || {})["verify:closure"]?.includes("m90c7check") && (rootPackage.scripts || {})["verify:closure"]?.includes("m90c8check"), "root verify:closure chains closure gates and repo audit");
-expect((rootPackage.scripts || {})["verify:ci"]?.includes("npm --prefix backend run lint") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:docs") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:hot") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:web-contract") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:closure"), "root verify:ci exposes canonical verification chain");
+expect((rootPackage.scripts || {})["verify:ci"]?.includes("npm run lint") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:docs") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:hot") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:web-contract") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:closure"), "root verify:ci exposes canonical verification chain");
+expect((rootPackage.scripts || {})["lint:web"] === "node backend/scripts/run_web_lint_with_evidence.js", "root lint:web writes canonical web lint evidence");
 expect((backendPackage.scripts || {})["m90c8check"] === "node scripts/m90_c8_ci_verification_visibility_check.js", "backend package exposes m90c8check script");
 
 expect(includesText(workflow, "push") && includesText(workflow, "pull_request") && includesText(workflow, "workflow_dispatch"), "workflow listens to push, pull_request and workflow_dispatch");
@@ -70,7 +73,7 @@ expect(includesText(workflow, "repo-verification") && includesText(workflow, "sh
 expect(includesText(workflow, "ubuntu-latest") && includesText(workflow, "windows-latest"), "workflow spans ubuntu and windows runners");
 expect(includesText(workflow, "npm run verify:ci"), "workflow runs root verify:ci command");
 expect(includesText(workflow, "pack_m90_c7_export_package_hygiene.ps1"), "workflow runs export hygiene pack in shareable-export job");
-expect(includesText(workflow, "upload-artifact@v4") && includesText(workflow, "repo_audit_latest.json") && includesText(workflow, "servis-platform_shareable_*.zip"), "workflow uploads repo audit and shareable export artifacts");
+expect(includesText(workflow, "upload-artifact@v4") && includesText(workflow, "repo_audit_latest.json") && includesText(workflow, "web_lint_latest.txt") && includesText(workflow, "servis-platform_shareable_*.zip"), "workflow uploads repo audit, web lint and shareable export artifacts");
 
 const docsBundle = [primer, backlog, toolsPrimer, toolsReadme, scriptGuide, milestone, runbook, livingMilestone, livingRunbook].join("\n");
 expect(includesText(docsBundle, "M90C.8"), "canonical docs mention M90C.8");
