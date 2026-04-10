@@ -1,5 +1,5 @@
 // web/src/panels/room/DriversPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -137,7 +137,7 @@ export default function DriversPanel() {
     });
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     setErr("");
     try {
       // Drivers router now returns boundVehicle/currentShift/nextShift too,
@@ -152,11 +152,11 @@ export default function DriversPanel() {
     } catch (e) {
       setErr(getErrMsg(e));
     }
-  }
+  }, [token, focusDriverId]);
 
   useEffect(() => {
     load();
-  }, []); // eslint-disable-line
+  }, [load]);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -164,7 +164,7 @@ export default function DriversPanel() {
       load();
     }, 30000);
     return () => clearInterval(timer);
-  }, [token]); // eslint-disable-line
+  }, [token, load]);
 
   useAutoReload("drivers", load);
   useAutoReload("vehicles", (detail) => {
@@ -242,12 +242,12 @@ export default function DriversPanel() {
     return m;
   }, [drivers, vehicles]);
 
-  function driverStatus(driverId) {
+  const driverStatus = useCallback((driverId) => {
     const bv = boundVehicleByDriverId.get(Number(driverId)) ?? null;
     if (!bv) return null;
     const ui = uiStatusFromVehicle(bv);
     return { ui, pillKey: pillKeyFromUi(ui), vehicle: bv };
-  }
+  }, [boundVehicleByDriverId]);
 
   function driverOps(d) {
     const ops = d?.ops || {};
@@ -289,7 +289,7 @@ export default function DriversPanel() {
         return true;
       })
       .sort((a, b) => Number(a.id) - Number(b.id));
-  }, [drivers, q, statusFilter, boundFilter, boundVehicleByDriverId]);
+  }, [drivers, q, statusFilter, boundFilter, boundVehicleByDriverId, driverStatus]);
 
   const visibleStatusDrivers = useMemo(() => {
     return filteredDrivers.filter((d) => {
@@ -307,7 +307,7 @@ export default function DriversPanel() {
 
       return true;
     });
-  }, [filteredDrivers, statusColFilter, boundVehicleByDriverId]);
+  }, [filteredDrivers, statusColFilter, boundVehicleByDriverId, driverStatus]);
 
   const counts = useMemo(() => {
     let total = drivers.length;
@@ -333,7 +333,7 @@ export default function DriversPanel() {
     }
 
     return { total, bound, free: total - bound, connected, assigned, active, live, stale, offline };
-  }, [drivers, boundVehicleByDriverId]);
+  }, [drivers, boundVehicleByDriverId, driverStatus]);
 
   async function createDriver(e) {
     e.preventDefault();
@@ -569,7 +569,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       ],
       facts: { screenType: 'DRIVERS', stage: ops?.assignmentState || '-', nextBestAction: boundVehicle ? 'Önce bağlı araç ve atama durumunu oku. Sonra vardiya veya bağlantı sekmesine geç.' : 'Önce araca bağlı mı kontrol et. Sonra bağlantı ve GPS durumunu oku.' },
     });
-  }, [focusDriver, vehicles]);
+  }, [focusDriver, vehicles, driverStatus]);
 
   const focusStat = focusDriver ? driverStatus(focusDriver.id) : null;
   const focusOps = focusDriver ? driverOps(focusDriver) : null;

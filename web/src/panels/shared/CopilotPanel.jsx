@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate, useHashRoute } from "../../router";
 import { useSession } from "../../state/session";
@@ -290,6 +290,7 @@ export default function CopilotPanel() {
   const [recentShifts, setRecentShifts] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [screenOptions, setScreenOptions] = useState([]);
+  const screenOptionsFromMe = useMemo(() => buildScreenOptions({ role: me?.role, companyKind: me?.companyKind }), [me?.role, me?.companyKind]);
   const [loadingRefs, setLoadingRefs] = useState(false);
   const [history, setHistory] = useState([]);
   const [copyMsg, setCopyMsg] = useState("");
@@ -302,6 +303,10 @@ export default function CopilotPanel() {
   const [chatConversationState, setChatConversationState] = useState(null);
   const [chatSuggestedChips, setChatSuggestedChips] = useState([]);
   const [entryHint, setEntryHint] = useState(null);
+
+  const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
+  const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
+  const activeEntityType = panelMode === "GUIDE" ? selectedJob.entityType : selectedIntent.entityType;
 
   useEffect(() => {
     setHistory(safeHistoryLoad());
@@ -324,20 +329,18 @@ export default function CopilotPanel() {
   }, [me?.role]);
 
   useEffect(() => {
-    const opts = buildScreenOptions(me);
-    setScreenOptions(opts);
+    setScreenOptions(screenOptionsFromMe);
     const current = String(getPath() || "").split("?")[0];
-    if (opts.some((x) => x.path === current) && activeEntityType === "screen") {
-      const match = opts.find((x) => x.path === current);
+    if (screenOptionsFromMe.some((x) => x.path === current) && activeEntityType === "screen") {
+      const match = screenOptionsFromMe.find((x) => x.path === current);
       if (match) setEntityId(String(match.id));
     }
-  }, [me?.role, me?.companyKind]);
+  }, [screenOptionsFromMe, activeEntityType]);
   useEffect(() => {
-    const opts = buildScreenOptions(me);
     const current = String(hashPath || getPath() || "").split("?")[0];
-    const match = opts.find((x) => x.path === current) || opts[0] || null;
+    const match = screenOptionsFromMe.find((x) => x.path === current) || screenOptionsFromMe[0] || null;
     if (match) setChatScreenId(String(match.id));
-  }, [hashPath, me?.role, me?.companyKind]);
+  }, [hashPath, screenOptionsFromMe]);
 
   useEffect(() => {
     setChatMessages([]);
@@ -354,7 +357,7 @@ export default function CopilotPanel() {
       setPickerSearch("");
       if (nextType === "screen") {
         const current = String(getPath() || "").split("?")[0];
-        const match = buildScreenOptions(me).find((x) => x.path === current);
+        const match = screenOptionsFromMe.find((x) => x.path === current);
         setEntityId(match ? String(match.id) : "");
       } else {
         setEntityId("");
@@ -365,7 +368,7 @@ export default function CopilotPanel() {
     setEntityType(selected?.entityType || "shift");
     setPickerSearch("");
     setEntityId("");
-  }, [panelMode, intent, jobType]);
+  }, [panelMode, intent, jobType, screenOptionsFromMe]);
 
   useEffect(() => {
     let ignore = false;
@@ -411,9 +414,6 @@ export default function CopilotPanel() {
     }
   }, [chatEntityType, chatEntityId, recentShifts, vehicles]);
 
-  const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
-  const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
-  const activeEntityType = panelMode === "GUIDE" ? selectedJob.entityType : selectedIntent.entityType;
   const targetOptions = useMemo(() => (activeEntityType === "vehicle" ? vehicles : activeEntityType === "screen" ? screenOptions : recentShifts), [activeEntityType, vehicles, recentShifts, screenOptions]);
   const filteredOptions = useMemo(() => filterItems(activeEntityType, targetOptions, pickerSearch), [activeEntityType, pickerSearch, targetOptions]);
   const selectedItem = useMemo(() => targetOptions.find((x) => String(x.id) === String(entityId)) || null, [targetOptions, entityId]);
@@ -455,7 +455,7 @@ export default function CopilotPanel() {
   }, [selectedChatScreen?.path, me?.role]);
   const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
 
-  async function runChat(messageText = "") {
+  const runChat = useCallback(async (messageText = "") => {
     if (!token || !selectedChatScreen || !effectiveChatEntityId) return;
     setChatBusy(true);
     setChatErr("");
@@ -530,13 +530,15 @@ export default function CopilotPanel() {
     } finally {
       setChatBusy(false);
     }
-  }
+  }, [token, selectedChatScreen, effectiveChatEntityId, chatEntityType, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind]);
+
+  const shouldAutoRunChat = panelMode === "CHAT" && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy;
 
   useEffect(() => {
-    if (panelMode === "CHAT" && selectedChatScreen && effectiveChatEntityId && !chatMessages.length && !chatBusy) {
+    if (shouldAutoRunChat) {
       runChat("");
     }
-  }, [panelMode, selectedChatScreen?.id, effectiveChatEntityId, token]);
+  }, [shouldAutoRunChat, runChat]);
 
   function openChatGuide(guide) {
     setPanelMode("GUIDE");
