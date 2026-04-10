@@ -56,7 +56,7 @@ export default function CommercialFlowPanel() {
   const [amountQ, setAmountQ] = useState("");
   const [statusQ, setStatusQ] = useState("");
   const [nextStepQ, setNextStepQ] = useState("");
-  const [selectedId, setSelectedId] = useState("");
+  const [preferredId, setPreferredId] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -110,24 +110,16 @@ export default function CommercialFlowPanel() {
     return matchesGeneral && matchesCounterparty && matchesFlow && matchesAmount && matchesStatus && matchesNextStep;
   }), [items, filterQ, counterpartyQ, flowQ, amountQ, statusQ, nextStepQ]);
 
+  const selectedItem = useMemo(() => {
+    if (!filteredItems.length) return null;
+    return filteredItems.find((item) => String(item?.id || '') === String(preferredId || '')) || filteredItems[0] || null;
+  }, [filteredItems, preferredId]);
+
   useEffect(() => {
-    if (!filteredItems.length) {
-      setSelectedId("");
+    if (!selectedItem) {
       clearCopilotSelection('/room/commercial-flow');
       return;
     }
-    if (!filteredItems.some((item) => String(item?.id || '') === String(selectedId || ''))) {
-      setSelectedId(String(filteredItems[0].id || ''));
-    }
-  }, [filteredItems, selectedId]);
-
-  const selectedItem = useMemo(
-    () => filteredItems.find((item) => String(item?.id || '') === String(selectedId || '')) || filteredItems[0] || null,
-    [filteredItems, selectedId]
-  );
-
-  useEffect(() => {
-    if (!selectedItem) return;
     const facts = buildCommercialFlowFacts({
       selectedItem,
       marketCount: summary?.cards?.openOffers || 0,
@@ -255,7 +247,7 @@ export default function CommercialFlowPanel() {
             </thead>
             <tbody>
               {filteredItems.length ? filteredItems.map((item) => (
-                <tr key={item.id} onClick={() => setSelectedId(item.id)} style={rowSelectionStyle(String(selectedId || '') === String(item.id || ''))}>
+                <tr key={item.id} onClick={() => setPreferredId(String(item.id || ''))} style={rowSelectionStyle(String(selectedItem?.id || '') === String(item.id || ''))}>
                   <td>{item.counterparty || "-"}</td>
                   <td>{item.flowLabel || "-"}</td>
                   <td>{item.amountLabel || "-"}</td>
@@ -264,7 +256,7 @@ export default function CommercialFlowPanel() {
                   <td>{item.nextStep || "-"}</td>
                   <td>
                     {item.actionPath ? (
-                      <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedId(item.id); openAction(item); }}>{item.actionLabel || "Ac"}</button>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setPreferredId(String(item.id || '')); openAction(item); }}>{item.actionLabel || "Ac"}</button>
                     ) : "-"}
                   </td>
                 </tr>

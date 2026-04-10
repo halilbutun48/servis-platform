@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { getCompanyTrustQualityItems, getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { getPath, navigate } from "../../router";
@@ -42,21 +42,21 @@ function ScorePill({ score, count }) {
   return <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" }}>{Number(score || 0).toFixed(1)} ★ <span className="muted">({count})</span></span>;
 }
 
+function buildInitialEvaluationForm(item) {
+  return {
+    timeliness: item?.evaluation?.ratings?.timeliness ?? 0,
+    vehicleSuitability: item?.evaluation?.ratings?.vehicleSuitability ?? 0,
+    driverBehavior: item?.evaluation?.ratings?.driverBehavior ?? 0,
+    operationOrder: item?.evaluation?.ratings?.operationOrder ?? 0,
+    liveTrackingConfidence: item?.evaluation?.ratings?.liveTrackingConfidence ?? 0,
+    overallSatisfaction: item?.evaluation?.ratings?.overallSatisfaction ?? 0,
+    note: item?.evaluation?.note || "",
+    recommendAgain: item?.evaluation?.recommendAgain === false ? "false" : "true",
+  };
+}
+
 function EvaluationModal({ open, item, busy, onClose, onSubmit }) {
-  const [form, setForm] = useState(null);
-  useEffect(() => {
-    if (!open || !item) return;
-    setForm({
-      timeliness: item?.evaluation?.ratings?.timeliness ?? 0,
-      vehicleSuitability: item?.evaluation?.ratings?.vehicleSuitability ?? 0,
-      driverBehavior: item?.evaluation?.ratings?.driverBehavior ?? 0,
-      operationOrder: item?.evaluation?.ratings?.operationOrder ?? 0,
-      liveTrackingConfidence: item?.evaluation?.ratings?.liveTrackingConfidence ?? 0,
-      overallSatisfaction: item?.evaluation?.ratings?.overallSatisfaction ?? 0,
-      note: item?.evaluation?.note || "",
-      recommendAgain: item?.evaluation?.recommendAgain === false ? "false" : "true",
-    });
-  }, [open, item]);
+  const [form, setForm] = useState(() => buildInitialEvaluationForm(item));
   if (!open || !item || !form) return null;
   const fields = [
     ["timeliness", "Zamanında başlama"],
@@ -222,7 +222,7 @@ export default function ServiceEvaluationPanel() {
             detail: { section: "list", shiftIds: shiftId ? [Number(shiftId)] : [] },
           })
         );
-      } catch (_) {}
+      } catch { /* no-op */ }
     }, 60);
   }
 
@@ -309,7 +309,7 @@ export default function ServiceEvaluationPanel() {
           </table>
         </div>
       </div>
-      <EvaluationModal open={!!selected} item={selected} busy={saving} onClose={() => setSelected(null)} onSubmit={submitEvaluation} />
+      <EvaluationModal key={selected ? `eval-${selected.id || selected.shiftId || "x"}-${selected.evaluation?.updatedAt || selected.evaluation?.note || "new"}` : "eval-empty"} open={!!selected} item={selected} busy={saving} onClose={() => setSelected(null)} onSubmit={submitEvaluation} />
     </div>
   );
 }

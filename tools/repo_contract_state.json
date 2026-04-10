@@ -102,10 +102,6 @@
         "class": "safe-candidate-review",
         "note": "katalog/yuzey ayrimi icin kontrollu extraction adayi"
       },
-      "web/src/panels/company/ShiftsPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "davranis degistirmeden section/state extraction adayi"
-      },
       "web/src/panels/room/ShiftsPanel.jsx": {
         "class": "safe-candidate-review",
         "note": "davranis degistirmeden section/state extraction adayi"

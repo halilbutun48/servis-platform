@@ -7,7 +7,7 @@ Amaç: large/hot file listesini resmi queue politikasına bağlamak ve her dosya
 2. `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
 
 ## Beklenen sonuç
-- `largeFiles = 2` ve `warningHotFiles = 12` mevcut bazda görünür kalır.
+- `largeFiles = 2` korunur; hot-file sayısı güncel bazda policy seti ile birebir eşleşir.
 - Policy sınıfları `tools/repo_contract_state.json` içinde bulunur.
 - Policy seti ile `repo_audit` seti birebir eşleşir.
 - Justified exception dosyaları acceptance-safe lokal düzeltme dışında zorlanmaz.

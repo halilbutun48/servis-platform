@@ -252,10 +252,10 @@ function afterCompanyPendingAction({ setMainTab, setTrackTab, setShowTemplatesMg
   setMainTab("track");
   setTrackTab("pending");
   setShowTemplatesMgr(false);
-  try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
+  try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* no-op */ }
 }
 
-export async function sendCompanyCounterOfferAction({ shift, offerSel, vehiclesById, token, setBusy, setErr, setOfferOpen, setMainTab, setTrackTab, setShowTemplatesMgr, load, setOfferSel }) {
+export async function sendCompanyCounterOfferAction({ shift, offerSel, vehiclesById, token, setBusy, setErr, setOfferOpen, setMainTab, setTrackTab, setShowTemplatesMgr, load }) {
   const sid = Number(shift.id);
   const form = offerSel[sid] || {};
   const vRaw = form.companyOfferVehicleId;

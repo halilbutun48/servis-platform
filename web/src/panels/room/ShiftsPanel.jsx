@@ -7,28 +7,22 @@ import { invalidate } from "../../live/bus";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import ShiftReassignModal from "../../components/ShiftReassignModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
-import { navigate } from "../../router";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { getApiErrorMessage } from "../../utils/apiContract";
 import {
   buildCapacityMeta,
   formatShiftDateTimeTR as fmtTR,
-  formatTRY,
   normalizeRoomShiftError as normalizeErr,
   overlaps,
-  parseTryInput,
-  roomLabel,
   shiftRequiredPax,
   trimOrNull,
-  vehicleMetaLine,
 } from "./roomShiftsPanelUtils";
 import {
   RoomDispatchPoolSummary,
   RoomPendingSection,
-  RoomFinalListSection,
-} from "./roomShiftsPanelSections";
-import { autoSplitApproveAction, approveShiftAction, bulkMarketCounterAction, clearRoomOfferAction, offerBundleKey, rejectShiftAction, sendMarketCounterAction, sendRoomOfferAction, submitReassignAction } from "./roomShiftsPanelActions";
+  RoomFinalListSection } from "./roomShiftsPanelSections";
+import { autoSplitApproveAction, approveShiftAction, rejectShiftAction, submitReassignAction } from "./roomShiftsPanelActions";
 
 export default function RoomShiftsPanel() {
   const { token } = useSession();
@@ -82,24 +76,13 @@ export default function RoomShiftsPanel() {
   const [driverSel, setDriverSel] = useState({}); // { [shiftId]: driverIdStr }
   const [showAvailableOnly, setShowAvailableOnly] = useState({}); // { [shiftId]: bool }
 
-  // Room karşı teklif UI
-  const [roomOfferOpen, setRoomOfferOpen] = useState({}); // { [shiftId]: bool }
-  const [roomOfferSel, setRoomOfferSel] = useState({}); // { [shiftId]: { roomOfferVehicleId, roomOfferAmount, roomOfferNote, notifyDriver, driverNote } }
-
-  // Market offer (ShiftOffer) counter UI
-  const [marketCounterSel, setMarketCounterSel] = useState({});
+  // Room karşı teklif verisi, sadece init için tutuluyor
+  const [, setRoomOfferSel] = useState({});
 
   // M51: Shift süre uzatma (Room karar)
   const [extendNoteSel, setExtendNoteSel] = useState({}); // { [shiftId]: string }
   const setExtendNote = (shiftId, v) => setExtendNoteSel((p) => ({ ...p, [Number(shiftId)]: v }));
  // { [offerId]: { amountRoom, noteRoom } }
-  function setMarketCounter(offerId, patch) {
-    setMarketCounterSel((p) => ({
-      ...p,
-      [Number(offerId)]: { ...(p[Number(offerId)] || {}), ...(patch || {}) },
-    }));
-  }
-
 
 async function decideExtend(shiftId, decision) {
   const sid = Number(shiftId);
@@ -109,8 +92,7 @@ async function decideExtend(shiftId, decision) {
   try {
     await api.put(`/api/shifts/${sid}/extend-decision`, {
       decision,
-      noteRoom: trimOrNull(extendNoteSel[sid]),
-    }, { token });
+      noteRoom: trimOrNull(extendNoteSel[sid]) }, { token });
     setExtendNoteSel((p) => ({ ...p, [sid]: "" }));
     invalidate("shift:list");
   } catch (e) {
@@ -144,17 +126,6 @@ async function decideExtend(shiftId, decision) {
 
   function toggleAvailable(shiftId) {
     setShowAvailableOnly((p) => ({ ...p, [Number(shiftId)]: !p[Number(shiftId)] }));
-  }
-
-  function toggleRoomOffer(shiftId) {
-    setRoomOfferOpen((p) => ({ ...p, [Number(shiftId)]: !p[Number(shiftId)] }));
-  }
-
-  function setRoomOfferForShift(shiftId, patch) {
-    setRoomOfferSel((prev) => ({
-      ...prev,
-      [Number(shiftId)]: { ...(prev[Number(shiftId)] || {}), ...patch },
-    }));
   }
 
   const roomsById = useMemo(() => {
@@ -331,8 +302,7 @@ const offersByShiftId = useMemo(() => {
         if (!idx) continue;
         base[idx] = {
           vehicleId: Number(base[idx]?.vehicleId || part?.vehicleId || 0) || "",
-          driverId: Number(base[idx]?.driverId || part?.driverId || 0) || "",
-        };
+          driverId: Number(base[idx]?.driverId || part?.driverId || 0) || "" };
       }
       return { ...prev, [sid]: base };
     });
@@ -348,46 +318,7 @@ const offersByShiftId = useMemo(() => {
         ...(prev[sid] || {}),
         [idx]: {
           ...(prev[sid]?.[idx] || {}),
-          ...(patch || {}),
-        },
-      },
-    }));
-  }
-
-  function applyDispatchBulkVehicle(shiftId, suggestions = []) {
-    const sid = Number(shiftId || 0);
-    if (!sid) return;
-    setDispatchEditSel((prev) => {
-      const base = { ...(prev[sid] || {}) };
-      for (const part of suggestions || []) {
-        const idx = Number(part?.splitIndex || 0);
-        const vehicleId = Number(part?.vehicleId || part?.vehicle?.id || 0);
-        if (!idx || !vehicleId) continue;
-        base[idx] = {
-          ...(base[idx] || {}),
-          vehicleId,
-        };
-      }
-      return { ...prev, [sid]: base };
-    });
-  }
-
-  function applyDispatchBulkDriver(shiftId, suggestions = []) {
-    const sid = Number(shiftId || 0);
-    if (!sid) return;
-    setDispatchEditSel((prev) => {
-      const base = { ...(prev[sid] || {}) };
-      for (const part of suggestions || []) {
-        const idx = Number(part?.splitIndex || 0);
-        const driverId = Number(part?.driverId || part?.driver?.id || 0);
-        if (!idx || !driverId) continue;
-        base[idx] = {
-          ...(base[idx] || {}),
-          driverId,
-        };
-      }
-      return { ...prev, [sid]: base };
-    });
+          ...(patch || {}) } } }));
   }
 
   function selectedDispatchVehicleId(shiftId, part) {
@@ -411,8 +342,7 @@ const offersByShiftId = useMemo(() => {
       requiredPax: pax,
       requiredPaxOverride: pax,
       assignmentCount: pax,
-      peopleCount: pax,
-    };
+      peopleCount: pax };
   }
 
   function getDispatchSelectionStates(shift, suggestions = []) {
@@ -424,8 +354,7 @@ const offersByShiftId = useMemo(() => {
       allocatedPax: Number(part?.allocatedPax || 0),
       vehicleId: selectedDispatchVehicleId(sid, part),
       driverId: selectedDispatchDriverId(sid, part),
-      part,
-    }));
+      part }));
     for (const row of selRows) {
       if (row.vehicleId) vehicleCounts.set(row.vehicleId, (vehicleCounts.get(row.vehicleId) || 0) + 1);
       if (row.driverId) driverCounts.set(row.driverId, (driverCounts.get(row.driverId) || 0) + 1);
@@ -466,14 +395,12 @@ const offersByShiftId = useMemo(() => {
     const capacity = buildCapacityMeta({
       shift,
       vehicle,
-      roomVehicles: vehiclesForRoom(shift?.roomId),
-    });
+      roomVehicles: vehiclesForRoom(shift?.roomId) });
     if (capacity.blockCode) {
       return {
         status: "conflict",
         code: capacity.blockCode,
-        message: capacity.blockMessage,
-      };
+        message: capacity.blockMessage };
     }
 
     const dOk = isDriverAvailableForShift(driverId, shift);
@@ -491,8 +418,7 @@ const offersByShiftId = useMemo(() => {
         status: "conflict",
         code: "DRIVER_CONFLICT",
         message: "Driver aynı zaman aralığında başka bir vardiyada.",
-        conflictingShift: conflictingShift || null,
-      };
+        conflictingShift: conflictingShift || null };
     }
 
     const vOk = isVehicleAvailableForShift(vehicleId, shift);
@@ -510,8 +436,7 @@ const offersByShiftId = useMemo(() => {
         status: "conflict",
         code: "VEHICLE_CONFLICT",
         message: "Araç aynı zaman aralığında başka bir vardiyada.",
-        conflictingShift: conflictingShift || null,
-      };
+        conflictingShift: conflictingShift || null };
     }
 
     return { status: "ok", code: "OK", message: "Uygun." };
@@ -525,8 +450,7 @@ const offersByShiftId = useMemo(() => {
       startAt: String(shift.startAt),
       endAt: String(shift.endAt),
       shiftId: String(shift.id),
-      excludeShiftId: String(shift.id),
-    }).toString();
+      excludeShiftId: String(shift.id) }).toString();
 
     const r = await api(`/api/availability?${qs}`, { token });
 
@@ -542,8 +466,7 @@ const offersByShiftId = useMemo(() => {
           code: r.code || "CONFLICT",
           message: r.message || "Çakışma.",
           conflictingShift: r.conflictingShift || r.conflict || null,
-          source: "remote",
-        };
+          source: "remote" };
       }
       // başka payload: {code,message,...}
       if (r.code && (String(r.code).includes("CONFLICT") || String(r.code).includes("OVERLAP") || String(r.code).includes("CAPACITY"))) {
@@ -552,16 +475,14 @@ const offersByShiftId = useMemo(() => {
           code: r.code,
           message: r.message || "Çakışma.",
           conflictingShift: r.conflictingShift || null,
-          source: "remote",
-        };
+          source: "remote" };
       }
       if (r.code || r.message) {
         return {
           status: "error",
           code: r.code || "REMOTE_ERROR",
           message: r.message || "Availability hata.",
-          source: "remote",
-        };
+          source: "remote" };
       }
     }
 
@@ -580,8 +501,7 @@ const offersByShiftId = useMemo(() => {
     if (!vehicleId || !driverId) {
       setAvail((p) => ({
         ...p,
-        [sid]: { sig, status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." },
-      }));
+        [sid]: { sig, status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." } }));
       return;
     }
 
@@ -592,8 +512,7 @@ const offersByShiftId = useMemo(() => {
 
     setAvail((p) => ({
       ...p,
-      [sid]: { sig, status: "checking", code: "CHECKING", message: "Kontrol ediliyor..." },
-    }));
+      [sid]: { sig, status: "checking", code: "CHECKING", message: "Kontrol ediliyor..." } }));
 
     try {
       // önce remote dene; 404 vb. olursa local fallback
@@ -622,26 +541,10 @@ const offersByShiftId = useMemo(() => {
           code: out.code || null,
           message: out.message || "",
           conflictingShift: out.conflictingShift || null,
-          source: out.source || "local",
-        },
-      }));
+          source: out.source || "local" } }));
     } finally {
       availInflight.current.delete(inflightKey);
     }
-  }
-
-  function mapStopsResponse(resp) {
-    const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
-    return (list || [])
-      .filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number")
-      .map((s, i) => ({
-        id: String(s.id ?? `stop_${i}`),
-        title: String(s.title || s.name || `Durak ${i + 1}`),
-        lat: s.lat,
-        lng: s.lng,
-        count: s.assignmentCount ?? s.count ?? null,
-        memberIds: [],
-      }));
   }
 
   async function openRoutePreview(shift) {
@@ -731,8 +634,7 @@ const offersByShiftId = useMemo(() => {
             roomOfferAmount: s.roomOfferAmount != null ? String(s.roomOfferAmount) : "",
             roomOfferNote: s.roomOfferNote ?? "",
             notifyDriver: Boolean(s.roomOfferToDriver),
-            driverNote: s.roomOfferDriverNote ?? "",
-          };
+            driverNote: s.roomOfferDriverNote ?? "" };
           changed = true;
         }
         return changed ? next : prev;
@@ -818,8 +720,7 @@ const offersByShiftId = useMemo(() => {
       badges: [
         ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `#${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
       ],
-      facts,
-    });
+      facts });
   }, [copilotShift, pendingFiltered.length, listFiltered.length]);
 
   // M14: bekleyen listede seçimler değiştikçe availability güncelle (throttle)
@@ -867,8 +768,7 @@ const offersByShiftId = useMemo(() => {
         const capacityMeta = buildCapacityMeta({
           shift: s,
           vehicle,
-          roomVehicles: vehiclesForRoom(effectiveRoomId),
-        });
+          roomVehicles: vehiclesForRoom(effectiveRoomId) });
         if (capacityMeta.dispatchRequired && effectiveRoomId && !poolSummary[sid] && !poolInflight.current.has(sid)) {
           await loadPoolSummary(s);
         }
@@ -894,8 +794,7 @@ const offersByShiftId = useMemo(() => {
     poolInflight.current.add(sid);
     setPoolSummary((prev) => ({
       ...prev,
-      [sid]: { ...(prev[sid] || {}), status: "loading", error: "" },
-    }));
+      [sid]: { ...(prev[sid] || {}), status: "loading", error: "" } }));
 
     try {
       const data = await api(`/api/availability/pool?shiftId=${sid}`, { token });
@@ -921,8 +820,7 @@ const offersByShiftId = useMemo(() => {
     dispatchInflight.current.add(sid);
     setDispatchPreview((prev) => ({
       ...prev,
-      [sid]: { ...(prev[sid] || {}), status: "loading", error: "" },
-    }));
+      [sid]: { ...(prev[sid] || {}), status: "loading", error: "" } }));
     try {
       const data = await api(`/api/shifts/${sid}/dispatch-preview`, { token });
       setDispatchPreview((prev) => ({ ...prev, [sid]: { status: "ok", data } }));
@@ -951,8 +849,7 @@ const offersByShiftId = useMemo(() => {
       vehicleId: vehicleId || null,
       driverId: driverId || null,
       vehicle,
-      driver,
-    });
+      driver });
     setPreviewStops(Array.isArray(suggestion?.stops) ? suggestion.stops : []);
     setPreviewPeople([]);
     setPreviewSummary(suggestion?.summary || null);
@@ -1003,8 +900,7 @@ const offersByShiftId = useMemo(() => {
       token,
       invalidate,
       load,
-      getApiErrorMessage,
-    }, shift);
+      getApiErrorMessage }, shift);
   }
 
   async function approveShift(shift) {
@@ -1024,28 +920,11 @@ const offersByShiftId = useMemo(() => {
       load,
       setAvail,
       normalizeErr,
-      makeSig,
-    }, shift);
+      makeSig }, shift);
   }
 
   async function rejectShift(shift) {
     return rejectShiftAction({ setBusy, setErr, api, token, invalidate, load, getApiErrorMessage }, shift);
-  }
-
-  async function sendMarketCounter(offer) {
-    return sendMarketCounterAction({ marketCounterSel, parseTryInput, setBusy, setErr, api, token, invalidate, load, getApiErrorMessage }, offer);
-  }
-
-  async function bulkMarketCounter(refOffer, mode) {
-    return bulkMarketCounterAction({ offers, marketCounterSel, parseTryInput, setErr, setBusy, api, token, invalidate, load, getApiErrorMessage }, refOffer, mode);
-  }
-
-  async function sendRoomOffer(shift) {
-    return sendRoomOfferAction({ roomOfferSel, parseTryInput, trimOrNull, setErr, setBusy, api, token, invalidate, load, getApiErrorMessage, setRoomOfferOpen, setRoomOfferSel }, shift);
-  }
-
-  async function clearRoomOffer(shift) {
-    return clearRoomOfferAction({ setBusy, setErr, api, token, invalidate, load, getApiErrorMessage, setRoomOfferOpen, setRoomOfferSel }, shift);
   }
 
   async function submitReassign(payload) {

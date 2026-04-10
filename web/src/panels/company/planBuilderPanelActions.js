@@ -31,7 +31,7 @@ export async function ensurePlanBuilderRoomsLoaded({ api, token, pbRooms, setPbR
 
 export async function sendPlanBuilderBulkOffers({ api, token, bulkOffer, setBulkOffer, dispatchWindow, closeDelayMs = 150 }) {
   const roomIds = Object.entries(bulkOffer.roomsSel || {})
-    .filter(([_, v]) => !!v)
+    .filter(([, v]) => !!v)
     .map(([k]) => Number(k))
     .filter((n) => Number.isFinite(n) && n > 0);
 
@@ -88,7 +88,7 @@ export async function sendPlanBuilderBulkOffers({ api, token, bulkOffer, setBulk
           detail: { section: "market", shiftIds: bulkOffer.shiftIds },
         })
       );
-    } catch {}
+    } catch { /* no-op */ }
 
     setTimeout(() => {
       setBulkOffer((p) => ({ ...p, open: false }));
@@ -567,7 +567,7 @@ export async function applyPlanBuilderToShifts({
     try {
       const okShiftIds = (created || []).filter((x) => x && x.ok && x.shiftId).map((x) => x.shiftId);
       openBulkOfferModal(okShiftIds);
-    } catch {}
+    } catch { /* no-op */ }
     if (typeof onAfterApply === "function") onAfterApply(created);
   } catch (e) {
     setErr(getApiErrorMessage(e));

@@ -8,43 +8,43 @@ import { personLabel } from "../../utils/labels";
 import { buildGoogleNavUrl } from "../../utils/navigation";
 import {
   WEEKDAYS,
-  weekdayBitFromYmdUTC,
+  weekdayBitFromYmdUTC as _weekdayBitFromYmdUTC,
   countMatchingDaysInRange,
   nextYmdMatchingMask,
   selectedFromMask,
   maskFromSelected,
-  weekMaskToText,
+  weekMaskToText as _weekMaskToText,
   addDaysISO,
 } from "../../utils/agreementUi";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { getApiErrorMessage } from "../../utils/apiContract";
 import {
   PACKS,
-  clearPlanTermsForShiftIds,
+  clearPlanTermsForShiftIds as _clearPlanTermsForShiftIds,
   collectGuidedSessionPersonIds,
   coordNum,
   createAdditionalCustomSlot,
   createDefaultCustomSlots,
   createDurationOptions,
-  createFallbackCustomSlots,
+  createFallbackCustomSlots as _createFallbackCustomSlots,
   createInitialEndDate,
   directionLabel,
   emptyDestination,
   fmtCoord,
-  fmtTR,
+  fmtTR as _fmtTR,
   hasCoord,
-  packDescForMode,
-  packTitleForMode,
+  packDescForMode as _packDescForMode,
+  packTitleForMode as _packTitleForMode,
   parseHHMM,
-  parseTryInput,
+  parseTryInput as _parseTryInput,
   patternLabel,
   readGuidedTempShiftIds,
   stepTitle,
   toHHMM,
   todayYmd,
   updateStoredPeopleKvkkFields,
-  writeGuidedTempShiftIds,
-  ymdMinToIso,
+  writeGuidedTempShiftIds as _writeGuidedTempShiftIds,
+  ymdMinToIso as _ymdMinToIso,
 } from "./guidedPlanModalUtils";
 import { GuidedHubStep, GuidedPlanSetupStep, GuidedSolveOffersStep } from "./guidedPlanModalSections";
 import { MapPickEvents, Modal } from "./guidedPlanModalShell";
@@ -117,7 +117,7 @@ export default function GuidedPlanModal({
 
   // Step-3: offers
   const [roomQ, setRoomQ] = useState("");
-  const [onlyHubRooms, setOnlyHubRooms] = useState(false);
+  const [_onlyHubRooms, setOnlyHubRooms] = useState(false);
   const [selRoomIds, setSelRoomIds] = useState({});
   const [roomScores, setRoomScores] = useState({});
   const [offerAmount, setOfferAmount] = useState("");

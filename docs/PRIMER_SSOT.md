@@ -75,7 +75,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Kör line-count düşürme yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
 - `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue içinde **justified exception** olarak kalır.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
-- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/company/ShiftsPanel.jsx`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` **safe candidate review** kuyruğundadır.
+- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` **safe candidate review** kuyruğundadır.
 - Bu queue, `tools/repo_contract_state.json` içindeki `hotFileQueuePolicy` alanı ve `repo_audit` çıktısı ile birlikte doğrulanır.
 
 ## export / package hygiene closure

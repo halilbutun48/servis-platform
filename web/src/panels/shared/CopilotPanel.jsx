@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate, useHashRoute } from "../../router";
 import { useSession } from "../../state/session";
@@ -124,7 +124,7 @@ function screenOptionLabel(item) {
   return `${item.label || "Ekran"} • ${item.path || ""}`;
 }
 
-function normalizeRoleGuideKey(me) {
+function _normalizeRoleGuideKey(me) {
   const role = String(me?.role || "");
   if (role === "COMPANY") {
     const kind = String(me?.companyKind || "").toUpperCase();
@@ -281,7 +281,7 @@ export default function CopilotPanel() {
   const [intent, setIntent] = useState("SHIFT_SUMMARY");
   const [jobType, setJobType] = useState("OFFER_REVIEW");
   const [guideLevel, setGuideLevel] = useState("SHORT");
-  const [entityType, setEntityType] = useState("shift");
+  const [_entityType, setEntityType] = useState("shift");
   const [entityId, setEntityId] = useState("");
   const [pickerSearch, setPickerSearch] = useState("");
   const [busy, setBusy] = useState(false);
@@ -313,7 +313,7 @@ export default function CopilotPanel() {
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (parsed && String(parsed.source || "") === "ROOM_OPERATION_HEALTH") setEntryHint(parsed);
-    } catch {}
+    } catch { /* no-op */ }
   }, []);
 
   useEffect(() => {
@@ -641,7 +641,7 @@ export default function CopilotPanel() {
   }
 
   function clearEntryHint() {
-    try { sessionStorage.removeItem(ENTRY_HINT_KEY); } catch {}
+    try { sessionStorage.removeItem(ENTRY_HINT_KEY); } catch { /* no-op */ }
     setEntryHint(null);
   }
 

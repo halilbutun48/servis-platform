@@ -25,7 +25,7 @@ export default function RoutePanel() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
-  const [prevReachedOrder, setPrevReachedOrder] = useState(null);
+  const [_prevReachedOrder, setPrevReachedOrder] = useState(null);
   const [online, setOnline] = useState(isOnline());
   const [qLen, setQLen] = useState(queueSize());
   const [flushing, setFlushing] = useState(false);

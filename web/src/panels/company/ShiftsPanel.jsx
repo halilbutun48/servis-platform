@@ -1,10 +1,7 @@
-﻿// web/src/panels/company/ShiftsPanel.jsx
+// web/src/panels/company/ShiftsPanel.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
-import { invalidate } from "../../live/bus";
-import { personLabel } from "../../utils/labels";
 import ShiftPeopleTab from "./ShiftPeopleTab";
 import ShiftTemplatesPanel, { PRESET_TEMPLATES } from "./ShiftTemplatesPanel";
 import PlanBuilderPanel from "./PlanBuilderPanel";
@@ -14,21 +11,19 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { getCompanyCommercialFlowSummary, getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
-import { rowSelectionStyle } from "../../utils/listUi";
 import { getApiErrorMessage } from "../../utils/apiContract";
-import { formatTRY, offerGapMeta, parseTryInput, rankOffersWithRecommendation, roomLabel, trimOrNull, vehicleMetaLine } from "./shiftsPanelOfferUtils";
+import { rankOffersWithRecommendation, roomLabel, vehicleMetaLine } from "./shiftsPanelOfferUtils";
 import { AgreementBadge } from "./companyShiftsPanelSections";
 import CompanyShiftsPanelTrackView from "./CompanyShiftsPanelTrackView";
 import CompanyShiftsPanelIntro from "./CompanyShiftsPanelIntro";
-import { addDaysYmd, buildLocalRangeFromItem, computePackageShiftIds, isSameDayIstanbul, loadCustomTemplatesFromStorage, minutesOf, pickCount, todayYmdLocal, utcIsoToIstanbulLocalInput } from "./companyShiftsPanelUtils";
+import { addDaysYmd, computePackageShiftIds, isSameDayIstanbul, loadCustomTemplatesFromStorage, pickCount, todayYmdLocal } from "./companyShiftsPanelUtils";
 import { COMPANY_FINAL_STATUSES, filterCompanyFinalItems, filterCompanyMarketItems, filterCompanyPendingItems, getCompanyCanonicalCounts, getCompanyFinalItemsRaw, getCompanyMarketItemsRaw, getCompanyPendingItemsRaw, getCompanyRoomScoreIds } from "./companyShiftsPanelSelectors";
-import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompanyRequestAction, clearCompanyCounterOfferAction, companyCounterOfferAction, companyCounterPackageAction, decideCompanyRoomOfferAction, openCompanyExtendModal, openCompanyOfferModalForShift, openCompanyOffersModalForShift, sendCompanyCounterOfferAction, submitCompanyExtendRequest, submitCompanyOfferModal, toggleCompanyOfferRoom } from "./companyShiftsPanelActions";
+import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompanyRequestAction, companyCounterOfferAction, companyCounterPackageAction, openCompanyExtendModal, openCompanyOfferModalForShift, openCompanyOffersModalForShift, submitCompanyExtendRequest, submitCompanyOfferModal, toggleCompanyOfferRoom } from "./companyShiftsPanelActions";
 import { renderCompanyOfferSummary, renderRoomOfferSummary } from "./companyShiftsPanelSummaryCells";
 // M66 compatibility marker: Operasyon Kaydı UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
 
 export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const { token, me } = useSession();
-  const who = personLabel(me);
   const isCommercialMode = mode === "commercial";
 
 
@@ -43,12 +38,11 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const [trackTab, setTrackTab] = useState(isCommercialMode ? "market" : "pending"); // market | pending | list
 
   // Create flow (no new wizard; in-page steps)
-  const [createStep, setCreateStep] = useState("request"); // request | people | plan
-  const [showTemplatesMgr, setShowTemplatesMgr] = useState(false);
+  const [_createStep] = useState("request"); // request | people | plan
+  const [, setShowTemplatesMgr] = useState(false);
     // Create flow (Plan Builder time range comes from Step-1)
-  const [pbDate, setPbDate] = useState(() => todayYmdLocal());
   const [pbTplKey, setPbTplKey] = useState("");
-  const [lastCreatedShiftId, setLastCreatedShiftId] = useState(0);
+  const [lastCreatedShiftId] = useState(0);
 
 
   const [items, setItems] = useState([]);
@@ -67,7 +61,6 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
 
 
   // ✅ M24: Market shift (room seçmeden) + multi-room offers
-  const [marketMode, setMarketMode] = useState(false);
   const [marketQ, setMarketQ] = useState("");
   const [marketFocusIds, setMarketFocusIds] = useState([]);
   const [pendingFocusIds, setPendingFocusIds] = useState([]);
@@ -107,15 +100,6 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCommercialMode, mainTab, trackTab]);
 
-  // Room teklif kararı butonları için
-  const [decidingId, setDecidingId] = useState(null);
-
-  // Decision note input state (shift bazlı)
-  const [decisionNoteSel, setDecisionNoteSel] = useState({}); // { [shiftId]: string }
-  function setDecisionNote(shiftId, value) {
-    setDecisionNoteSel((p) => ({ ...p, [Number(shiftId)]: value }));
-  }
-
   // Pending filtreler
   const [pendingQ, setPendingQ] = useState("");
   // Hızlı filtre (Bugün / Yarın) — Istanbul local YYYY-MM-DD
@@ -149,7 +133,7 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
         setMarketFocusIds([]);
         setPendingQ("");
         setTimeout(() => {
-          try { pendingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+          try { pendingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op */ }
         }, 80);
       } else if (section === "list") {
         setTrackTab("list");
@@ -157,7 +141,7 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
         setPendingFocusIds([]);
         setMarketFocusIds([]);
         setTimeout(() => {
-          try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+          try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op */ }
         }, 80);
       } else {
         setTrackTab("market");
@@ -169,7 +153,7 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
           try {
             marketSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
             marketSearchRef.current?.focus?.();
-          } catch (e) {}
+          } catch { /* no-op */ }
         }, 80);
       }
     };
@@ -187,10 +171,10 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
     setTimeout(() => {
       try {
         marketSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      } catch {}
+      } catch { /* no-op */ }
       try {
         marketSearchRef.current?.focus?.();
-      } catch {}
+      } catch { /* no-op */ }
     }, 50);
   }
 
@@ -263,18 +247,9 @@ const allTemplates = useMemo(() => {
       return "";
     }
   });
-  const [roomQ, setRoomQ] = useState(""); // M22: room directory search
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
-  const [seatDemand, setSeatDemand] = useState("");
-  const [planDraftMeta, setPlanDraftMeta] = useState(null);
+  const [roomQ] = useState(""); // M22: room directory search
+  const [seatDemand] = useState("");
   const [offerVehicleId, setOfferVehicleId] = useState("");
-  const [offerAmount, setOfferAmount] = useState("");
-  const [offerNote, setOfferNote] = useState("");
-
-// template selection in request tab
-// Not: bundle template varsa her item ayrı option olur (tplId::idx)
-const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
 const templateOptions = useMemo(() => {
   const opts = [];
@@ -298,74 +273,10 @@ useEffect(() => {
   if (first) setPbTplKey(first);
 }, [templateOptions, pbTplKey]);
 
-const pbSelected = useMemo(
-  () => templateOptions.find((o) => String(o.key) === String(pbTplKey)) || null,
-  [templateOptions, pbTplKey]
-);
-
-const pbRange = useMemo(() => buildLocalRangeFromItem(pbDate, pbSelected?.item), [pbDate, pbSelected]);
-const pbOk = Boolean(pbRange?.startAtLocal && pbRange?.endAtLocal);
-
-function applyTemplateItemToRequest(tpl, it) {
-  if (!tpl || !it) return;
-
-  const baseDate = startAt ? String(startAt).slice(0, 10) : todayYmdLocal();
-
-  const sMin = minutesOf(it.startHHMM);
-  const eMin = minutesOf(it.endHHMM);
-  if (sMin == null || eMin == null) return;
-
-  const startDT = `${baseDate}T${it.startHHMM}`;
-  const endDate = eMin <= sMin ? addDaysYmd(baseDate, 1) : baseDate;
-  const endDT = `${endDate}T${it.endHHMM}`;
-
-  setStartAt(startDT);
-  setEndAt(endDT);
-
-  if (!String(seatDemand || "").trim() && tpl.people != null) {
-    setSeatDemand(String(tpl.people));
-  }
-}
-
-function onSelectTemplate(key) {
-  const k = String(key || "");
-  setSelectedTemplateId(k);
-  const opt = templateOptions.find((x) => x.key === k);
-  if (!opt) return;
-  applyTemplateItemToRequest(opt.tpl, opt.item);
-}
-
-function useTemplateFromList(tpl, itemIndex = 0) {
-  setMainTab("create");
-  setCreateStep("request");
-  setShowTemplatesMgr(false);
-  const k = `${tpl.id}::${Number(itemIndex) || 0}`;
-  setSelectedTemplateId(k);
-  const it = (tpl?.items || [])[Number(itemIndex) || 0];
-  applyTemplateItemToRequest(tpl, it);
-}
-
-function usePlanDraftToRequest(draft) {
-  // draft: {startAtLocal,endAtLocal,seatDemand,templateKey,marketMode,peopleIds,peopleNames,centroid,routeSummary}
-  setMainTab("create");
-  setCreateStep("request");
-  setShowTemplatesMgr(false);
-  setSelectedTemplateId(String(draft?.templateKey || ""));
-  setStartAt(String(draft?.startAtLocal || ""));
-  setEndAt(String(draft?.endAtLocal || ""));
-  setSeatDemand(draft?.seatDemand != null ? String(draft.seatDemand) : "");
-  setMarketMode(Boolean(draft?.marketMode));
-  setPlanDraftMeta(draft || null);
-
-  // Clear direct-offer fields (Plan Builder genelde market akışını hedefler)
-  setOfferVehicleId("");
-  setOfferAmount("");
-  setOfferNote("");
-}
 
   // Karşı teklif UI
-  const [offerOpen, setOfferOpen] = useState({});
-  const [offerSel, setOfferSel] = useState({});
+  const [offerOpen] = useState({});
+  const [, setOfferSel] = useState({});
 
   const isCompany = String(me?.role || "") === "COMPANY";
   const copilotScopeKey = useMemo(() => {
@@ -373,16 +284,6 @@ function usePlanDraftToRequest(draft) {
     if (path === "/school/shifts" || path === "/organization/shifts") return path;
     return "/company/shifts";
   }, []);
-
-  function toggleOffer(shiftId) {
-    setOfferOpen((p) => ({ ...p, [shiftId]: !p[shiftId] }));
-  }
-  function setOfferForShift(shiftId, patch) {
-    setOfferSel((prev) => ({
-      ...prev,
-      [shiftId]: { ...(prev[shiftId] || {}), ...patch },
-    }));
-  }
 
   function needsReferenceData() {
     if (mainTab === "create") return true;
@@ -452,19 +353,6 @@ function usePlanDraftToRequest(draft) {
       const list = Array.isArray(sh) ? sh : sh?.items ?? [];
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
       setItems(list);
-
-      setDecisionNoteSel((prev) => {
-        let changed = false;
-        const next = { ...prev };
-        for (const s of list) {
-          const sid = Number(s.id);
-          if (next[sid] === undefined) {
-            next[sid] = "";
-            changed = true;
-          }
-        }
-        return changed ? next : prev;
-      });
 
       if (withReferences || needsReferenceData()) {
         await ensureReferenceData(signal, { force: forceReferences });
@@ -774,18 +662,8 @@ function usePlanDraftToRequest(draft) {
     if (!isCompany) return;
     try {
       if (roomId) localStorage.setItem(LS_LAST_ROOM, String(roomId));
-    } catch {}
+    } catch { /* no-op */ }
   }, [roomOptions, roomId, isCompany, offerVehicleId, vehiclesById, seatN]);
-
-  const filteredVehicles = useMemo(() => {
-    const rid = Number(roomId);
-    const sd = seatN;
-
-    return vehicles
-      .filter((v) => !rid || !v?.roomId || Number(v.roomId) === rid)
-      .filter((v) => (sd ? Number(v?.capacity || 0) >= sd : true))
-      .sort((a, b) => Number(a?.capacity || 0) - Number(b?.capacity || 0));
-  }, [vehicles, roomId, seatN]);
 
 
   // offerSel init
@@ -809,70 +687,6 @@ function usePlanDraftToRequest(draft) {
       return changed ? next : prev;
     });
   }, [items]);
-
-  async function createShift(e) {
-    e.preventDefault();
-    setBusy(true);
-    setErr("");
-
-    try {
-      const body = {
-        startAt: istanbulLocalToUtcIso(startAt),
-        endAt: istanbulLocalToUtcIso(endAt),
-        status: "REQUESTED",
-      };
-
-      // ✅ M24: Direct vs Market
-      const rid = marketMode ? null : Number(roomId);
-      if (!marketMode && (!rid || !Number.isFinite(rid))) {
-        setErr("Room zorunlu (Market mode kapalı).");
-        return;
-      }
-      if (!marketMode) body.roomId = rid;
-
-      if (!body.startAt || !body.endAt) {
-        setErr("Start/End zorunlu.");
-        return;
-      }
-
-      // Direct shift: optional offer fields
-      if (!marketMode) {
-        if (offerVehicleId) body.companyOfferVehicleId = Number(offerVehicleId);
-
-        const amt = parseTryInput(offerAmount);
-        if (amt != null) body.companyOfferAmount = amt;
-
-        if (offerNote.trim()) body.companyOfferNote = offerNote.trim();
-      }
-
-      const createdShift = await api("/api/shifts", { method: "POST", token, body });
-
-      const createdId = Number(createdShift?.id || 0);
-      if (createdId) setLastCreatedShiftId(createdId);
-
-      setSelectedTemplateId("");
-      setStartAt("");
-      setEndAt("");
-      setSeatDemand("");
-      setOfferVehicleId("");
-      setOfferAmount("");
-      setOfferNote("");
-      setMarketMode(false);
-
-      invalidate("shifts");
-      await load();
-
-      setMainTab("track");
-      setTrackTab("pending");
-      setShowTemplatesMgr(false);
-      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
-
-    } catch (e2) {
-      setErr(getApiErrorMessage(e2));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   function setOffersCounter(offerId, patch) {
     setOffersCounterSel((prev) => ({
@@ -959,44 +773,8 @@ function usePlanDraftToRequest(draft) {
     await acceptCompanyOfferPackageAction({ roomId, offersModal, offersModalPkgIds, token, setBusy, setErr, setOffersModal, setOffersModalPkgIds, load });
   }
 
-  async function sendCounterOffer(shift) {
-    await sendCompanyCounterOfferAction({
-      shift,
-      offerSel,
-      vehiclesById,
-      token,
-      setBusy,
-      setErr,
-      setOfferOpen,
-      setMainTab,
-      setTrackTab,
-      setShowTemplatesMgr,
-      load,
-      setOfferSel,
-    });
-  }
-
-  async function clearCounterOffer(shift) {
-    await clearCompanyCounterOfferAction({
-      shift,
-      token,
-      setBusy,
-      setErr,
-      setOfferSel,
-      setOfferOpen,
-      setMainTab,
-      setTrackTab,
-      setShowTemplatesMgr,
-      load,
-    });
-  }
-
   async function cancelMyRequest(shift) {
     await cancelCompanyRequestAction({ shift, token, setBusy, setErr, setMainTab, setTrackTab, setShowTemplatesMgr, load });
-  }
-
-  async function decideRoomOffer(shift, decision, noteRaw) {
-    await decideCompanyRoomOfferAction({ shift, decision, noteRaw, token, setDecidingId, setErr, setDecisionNoteSel, setMainTab, setTrackTab, setShowTemplatesMgr, load });
   }
 
   // Pending vs Final
@@ -1075,15 +853,6 @@ function usePlanDraftToRequest(draft) {
     finalCount: finalItems.length,
     pickCount,
   }), [commercialSummary, marketItems.length, pendingItems.length, finalItems.length]);
-
-  const selectedRoom = roomsById.get(Number(roomId)) || roomOptions.find((r) => Number(r.id) === Number(roomId));
-
-  function vehiclesForShiftRoom(shift) {
-    const rid = Number(shift.roomId);
-    return vehicles
-      .filter((v) => !v?.roomId || Number(v.roomId) === rid)
-      .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
-  }
 
   function openOpsEvents(shiftId) {
     setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
@@ -1192,4 +961,7 @@ function usePlanDraftToRequest(draft) {
     </div>
   );
 }
+
+
+
 

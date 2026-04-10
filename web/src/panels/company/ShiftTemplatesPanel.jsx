@@ -1,3 +1,4 @@
+﻿/* eslint-disable react-refresh/only-export-components */
 // web/src/panels/company/ShiftTemplatesPanel.jsx
 // Note: Templates are only slot/time/direction. Days + duration moved to Agreement create.
 import { useEffect, useMemo, useState } from "react";
@@ -124,44 +125,51 @@ export default function ShiftTemplatesPanel({
     if (tplPackKey === "CUSTOM") {
       // reset to default custom on explicit selection (simple + predictable)
       if (it0) {
-        setC1Label(String(it0.label || "Özel"));
+  queueMicrotask(() => {
+    setC1Label(String(it0.label || "Ã–zel"));
+    setC1Start(String(it0.startHHMM || "08:00"));
+    setC1End(String(it0.endHHMM || "10:00"));
+    setC1Direction(String(it0.direction || "INBOUND"));
+    setC1Pattern(String(it0.pattern || "ONE_WAY"));
+  });
+}
+      queueMicrotask(() => {
+        setCustomMulti(false);
+        setC2Label("Akşam");
+        setC2Start("17:00");
+        setC2End("19:00");
+        setC2Direction("OUTBOUND");
+        setC2Pattern("ONE_WAY");
+      });
+      return;
+    }
+
+    // non-custom pack: keep inputs in sync (for readonly display / convert-to-custom shortcut)
+    queueMicrotask(() => {
+      if (it0) {
+        setC1Label(String(it0.label || "Vardiya"));
         setC1Start(String(it0.startHHMM || "08:00"));
         setC1End(String(it0.endHHMM || "10:00"));
         setC1Direction(String(it0.direction || "INBOUND"));
         setC1Pattern(String(it0.pattern || "ONE_WAY"));
       }
-      setCustomMulti(false);
-      setC2Label("Akşam");
-      setC2Start("17:00");
-      setC2End("19:00");
-      setC2Direction("OUTBOUND");
-      setC2Pattern("ONE_WAY");
-      return;
-    }
 
-    // non-custom pack: keep inputs in sync (for readonly display / convert-to-custom shortcut)
-    if (it0) {
-      setC1Label(String(it0.label || "Vardiya"));
-      setC1Start(String(it0.startHHMM || "08:00"));
-      setC1End(String(it0.endHHMM || "10:00"));
-      setC1Direction(String(it0.direction || "INBOUND"));
-      setC1Pattern(String(it0.pattern || "ONE_WAY"));
-    }
-    if (it1) {
-      setCustomMulti(true);
-      setC2Label(String(it1.label || "Vardiya 2"));
-      setC2Start(String(it1.startHHMM || "17:00"));
-      setC2End(String(it1.endHHMM || "19:00"));
-      setC2Direction(String(it1.direction || "OUTBOUND"));
-      setC2Pattern(String(it1.pattern || "ONE_WAY"));
-    } else {
-      setCustomMulti(false);
-      setC2Label("Akşam");
-      setC2Start("17:00");
-      setC2End("19:00");
-      setC2Direction("OUTBOUND");
-      setC2Pattern("ONE_WAY");
-    }
+      if (it1) {
+        setCustomMulti(true);
+        setC2Label(String(it1.label || "Vardiya 2"));
+        setC2Start(String(it1.startHHMM || "17:00"));
+        setC2End(String(it1.endHHMM || "19:00"));
+        setC2Direction(String(it1.direction || "OUTBOUND"));
+        setC2Pattern(String(it1.pattern || "ONE_WAY"));
+      } else {
+        setCustomMulti(false);
+        setC2Label("Akşam");
+        setC2Start("17:00");
+        setC2End("19:00");
+        setC2Direction("OUTBOUND");
+        setC2Pattern("ONE_WAY");
+      }
+    });
   }, [tplPackKey, pack]);
 
   const formItems = useMemo(() => {
@@ -573,3 +581,7 @@ export default function ShiftTemplatesPanel({
     </>
   );
 }
+
+
+
+

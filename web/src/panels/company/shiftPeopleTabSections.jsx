@@ -195,7 +195,6 @@ export function ShiftPeopleHubSection({
 
 export function ShiftPeopleImportSection({
   who,
-  whoPlural,
   busy,
   pName,
   setPName,

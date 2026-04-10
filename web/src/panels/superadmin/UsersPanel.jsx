@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import ParentChildMiniPanel from "./ParentChildMiniPanel";
@@ -202,7 +202,7 @@ export default function UsersPanel() {
   function copyText(t) {
     try {
       navigator.clipboard.writeText(String(t || ""));
-    } catch {}
+    } catch { /* no-op */ }
   }
 
   return (

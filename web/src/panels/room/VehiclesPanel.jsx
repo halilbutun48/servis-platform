@@ -9,23 +9,13 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import {
   VEHICLE_TEMPLATES_TR,
   TABS,
-  conflictCodeLabel,
-  expKey,
   fmtDriverHuman,
-  fmtTR,
-  gpsAtLabel,
-  hasGpsFix,
   isoToDateInput,
   isoToDatetimeLocal,
   normalizeList,
   pickCurrentShift,
   pickNextShift,
   pickRoomVehicleError as pickErr,
-  shiftOneLine,
-  shiftWindowLabel,
-  toggleExp,
-  toggleSel,
-  setSelMany,
 } from "./roomVehiclesPanelUtils";
 import {
   RoomVehicleStatusSection,
@@ -86,7 +76,7 @@ export default function VehiclesPanel() {
   const [odometerKm, setOdometerKm] = useState("");
 
   // legacy
-  const [nextMaintenanceAt, setNextMaintenanceAt] = useState("");
+  const [nextMaintenanceAt] = useState("");
 
   // Bind tab
   const [bindSel, setBindSel] = useState({});
@@ -824,8 +814,6 @@ const availRows = useMemo(() => {
       const now = new Date();
       const cur = pickCurrentShift(v.shifts, now);
       const quickBusy = Boolean(cur);
-      const vehicleOk = row ? row.vehicleOk : null;
-      const driverOk = row ? row.driverOk : null;
       const hasDriver = Boolean(v.driverId || v.driver?.id || v.driver);
 
       const anyConflict =
@@ -879,7 +867,7 @@ async function checkAvailabilityAll(onlySelected = false) {
     targetIds = selectedIds.length ? selectedIds : visibleIds;
   }
 
-  const vlist = visible.filter((v) => targetIds.includes(Number(v.id)));
+
 
   setAvailBusy(true);
   setErr("");

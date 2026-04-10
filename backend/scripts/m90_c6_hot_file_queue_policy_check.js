@@ -76,7 +76,6 @@ const planned = sorted(Object.keys(classifications));
 expect((state.activeMilestones || []).includes("M90C.6"), "state active milestones include M90C.6");
 expect(Number(policy.warningThreshold) === 1000 && Number(policy.blockThreshold) === 1200, "state policy keeps repo audit thresholds");
 expect(report.largeFiles.length === 2, "repo audit large file count remains 2");
-expect(report.warningHotFiles.length === 12, "repo audit hot file count remains 12");
 expect(JSON.stringify(actual) === JSON.stringify(planned), "policy classification set matches repo audit hot/large file set exactly");
 
 const expectedClasses = {
@@ -87,7 +86,6 @@ const expectedClasses = {
   "web/src/panels/shared/CopilotPanel.jsx": "acceptance-sensitive-later",
   "mobile/App.js": "acceptance-sensitive-later",
   "backend/src/ai/jobGuide/screenCatalog.js": "safe-candidate-review",
-  "web/src/panels/company/ShiftsPanel.jsx": "safe-candidate-review",
   "web/src/panels/room/ShiftsPanel.jsx": "safe-candidate-review",
   "web/src/panels/company/GuidedPlanModal.jsx": "safe-candidate-review",
   "web/src/panels/room/DriversPanel.jsx": "safe-candidate-review",

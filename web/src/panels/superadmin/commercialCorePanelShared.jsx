@@ -1,3 +1,4 @@
+﻿/* eslint-disable react-refresh/only-export-components */
 export function Card({ title, children }) {
   return (
     <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, flex: "1 1 280px" }}>
@@ -42,3 +43,4 @@ export function promptMaybe(message, fallback = "") {
   const value = globalThis.prompt(message, fallback);
   return value == null ? fallback : String(value);
 }
+

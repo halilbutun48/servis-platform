@@ -88,7 +88,7 @@ function Pill({ children }) {
   );
 }
 
-function SummaryCard({ current, summary, busy, onGoPlanning }) {
+function SummaryCard({ current, summary, onGoPlanning }) {
   return (
     <div className="card">
       <div className="title">Özet ve Aksiyonlar</div>
@@ -450,10 +450,10 @@ export default function OrganizationPlansPanel() {
           try {
             const p = await api.get(`/api/organization/plans/${pid}`);
             pick(p);
-          } catch {}
+          } catch { /* no-op */ }
         }, 0);
       }
-    } catch {}
+    } catch { /* no-op */ }
   }, []);
 
   function pick(item) {
@@ -474,7 +474,7 @@ export default function OrganizationPlansPanel() {
     setMsg("");
   }
 
-  function resetForm() {
+  function _resetForm() {
     setCurrent(emptyPlan());
     setBulk("");
     setOpenStops({ 0: true });
@@ -484,7 +484,7 @@ export default function OrganizationPlansPanel() {
     setOfferNote("");
   }
 
-  async function savePlan() {
+  async function _savePlan() {
     setBusy(true);
     setMsg("");
 
@@ -523,7 +523,7 @@ export default function OrganizationPlansPanel() {
     }
   }
 
-  async function createAgreement() {
+  async function _createAgreement() {
     if (!current.id) return;
 
     setBusy(true);
@@ -571,7 +571,7 @@ export default function OrganizationPlansPanel() {
     }
   }
 
-  function replaceFromBulk() {
+  function _replaceFromBulk() {
     const rows = parseBulk(bulk);
     if (!rows.length) {
       setMsg("İçe aktarılacak geçerli satır bulunamadı.");
@@ -583,7 +583,7 @@ export default function OrganizationPlansPanel() {
     setMsg(`${rows.length} lokasyon içe aktarıldı.`);
   }
 
-  function addEmptyStop() {
+  function _addEmptyStop() {
     setCurrent((p) => {
       const nextStops = [
         ...p.stops,

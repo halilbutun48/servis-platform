@@ -1,4 +1,4 @@
-import { getApiErrorInfo } from "../../utils/apiContract";
+﻿import { getApiErrorInfo } from "../../utils/apiContract";
 
 const TYPE_TR = { MINIBUS: "Minibüs", MIDIBUS: "Midibüs", OTOBUS: "Otobüs" };
 
@@ -118,7 +118,7 @@ function parsePossibleJson(text) {
     const t = String(text).trim();
     if (!t) return null;
     if (t.startsWith("{") || t.startsWith("[")) return JSON.parse(t);
-  } catch {}
+  } catch { /* no-op */ }
   return null;
 }
 

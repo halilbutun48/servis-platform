@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
@@ -613,7 +613,7 @@ export default function WorkflowPanel() {
           ts: Date.now(),
         })
       );
-    } catch {}
+    } catch { /* no-op */ }
     navigate(companyPath(me, "/georeview"));
   }
 

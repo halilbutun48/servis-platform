@@ -1,8 +1,12 @@
+
+const normalizeCoord = (value) => {
+  const n = safeNum(value);
+  return Number.isFinite(n) ? n : null;
+};
 // web/src/panels/company/ShiftPeopleTab.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { apiOr404Fallback } from "../../utils/apiFallback";
-import { useSession } from "../../state/session";
 import { personLabel, peopleLabel } from "../../utils/labels";
 import { companyPath } from "../../utils/paths";
 import { navigate } from "../../router";

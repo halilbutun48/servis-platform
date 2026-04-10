@@ -47,7 +47,7 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - Kör refactor yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
 - `helpComposer.js` ve `schema.prisma` **justified exception** olarak korunur.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
-- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/company/ShiftsPanel.jsx`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` **safe candidate review** kuyruğundadır.
+- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` **safe candidate review** kuyruğundadır.
 - Kanonik komut: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`.
 
 ## 2.4) M90C.7 — export / package hygiene closure

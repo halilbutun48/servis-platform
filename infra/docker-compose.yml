@@ -34,6 +34,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    env_file:
+      - ../.env
     environment:
       NODE_ENV: development
       TZ: Europe/Istanbul
@@ -66,13 +68,12 @@ services:
 
       # M19 — learned route (OSRM map-matching)
       # Optional: only set when compose --profile osrm is used
-      OSRM_URL: ${OSRM_URL:-}
+      OSRM_URL: http://osrm:5000
       ROUTE_LEARN_ENABLED: ${ROUTE_LEARN_ENABLED:-0}
       ROUTE_LEARN_INTERVAL_MS: ${ROUTE_LEARN_INTERVAL_MS:-2000}
 
       # Optional solver service (compose --profile osrm)
-      PLAN_SOLVER_URL: ${PLAN_SOLVER_URL:-}
-
+      PLAN_SOLVER_URL: http://solver:8000
       # Container içinde kullanılacak flag
       PRISMA_DB_PUSH_FLAGS: "--accept-data-loss"
       FEATURE_CHECKIN: ${FEATURE_CHECKIN:-0}
@@ -95,9 +96,8 @@ services:
       - ..:/app
       - /app/backend/node_modules
 
-    # ÖNEMLİ: $$ -> compose expand etmez, container shell expand eder
-    command: ["sh", "-lc", "npm install && npx prisma generate && npx prisma db push $${PRISMA_DB_PUSH_FLAGS:-} && npm run seed && npm run dev"]
-
+    # ÖNEMLİ: $ -> compose expand etmez, container shell expand eder
+    command: ["sh", "-lc", "npm install && npx prisma generate && npx prisma db push ${PRISMA_DB_PUSH_FLAGS:-} && npm run seed && npm run dev"]
   osrm:
     profiles: ["osrm"]
     image: osrm/osrm-backend:latest
@@ -127,3 +127,7 @@ services:
 
 volumes:
   pgdata:
+
+
+
+

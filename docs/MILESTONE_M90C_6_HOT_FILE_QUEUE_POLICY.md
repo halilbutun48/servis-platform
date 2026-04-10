@@ -27,7 +27,6 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 
 ### safe candidate review
 - `backend/src/ai/jobGuide/screenCatalog.js`
-- `web/src/panels/company/ShiftsPanel.jsx`
 - `web/src/panels/room/ShiftsPanel.jsx`
 - `web/src/panels/company/GuidedPlanModal.jsx`
 - `web/src/panels/room/DriversPanel.jsx`

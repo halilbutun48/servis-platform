@@ -1,7 +1,7 @@
 // web/src/panels/company/PlanBuilderPanel.jsx
 
 
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef as _useRef, useCallback as _useCallback } from "react";
 import { api } from "../../api";
 import { getApiErrorMessage } from "../../utils/apiContract";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
@@ -11,7 +11,7 @@ import {
   avgLatLng,
   buildLocalRangeFromItem,
   encodeGeohash,
-  istanbulLocalToUtcIso,
+  istanbulLocalToUtcIso as _istanbulLocalToUtcIso,
   todayYmdLocal,
 } from "./planBuilderPanelUtils";
 import {
@@ -39,7 +39,6 @@ export default function PlanBuilderPanel({
   hideDraftTransferUI = false,
   directionOverride,
   patternOverride,
-  onUseDraft,
   onAfterApply,
 }) {
   const { me } = useSession();
@@ -61,8 +60,8 @@ export default function PlanBuilderPanel({
   const [previewBusy, setPreviewBusy] = useState({}); // { [idx]: true }
 
   // Stage-3: apply (create shifts + people + stops + reorder)
-  const [applyBusy, setApplyBusy] = useState(false);
-  const [applyRes, setApplyRes] = useState(null); // { ok, created:[{shiftId, seatDemand, stopCount, solver?}] }
+  const [_applyBusy, setApplyBusy] = useState(false);
+  const [_applyRes, setApplyRes] = useState(null); // { ok, created:[{shiftId, seatDemand, stopCount, solver?}] }
 
   // --- M33.6b BULK OFFER MODAL (PlanBuilder) ---
   const [pbRooms, setPbRooms] = useState([]);
@@ -128,7 +127,7 @@ export default function PlanBuilderPanel({
   const [precision, setPrecision] = useState("6");
   const [baseDate, setBaseDate] = useState(() => todayYmdLocal());
   const [tplKey, setTplKey] = useState(() => (templateOptions?.[0]?.key ? String(templateOptions[0].key) : ""));
-  const transferAsMarket = true;
+  const _transferAsMarket = true;
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [rowOfferBusy, setRowOfferBusy] = useState({});
   const [routePreview, setRoutePreview] = useState({
@@ -342,7 +341,7 @@ export default function PlanBuilderPanel({
     });
   }
 
-  async function applyPlanToShifts() {
+  async function _applyPlanToShifts() {
     return applyPlanBuilderToShifts({
       api,
       token,
@@ -371,7 +370,7 @@ export default function PlanBuilderPanel({
         const el = document.getElementById("shift-tools-geocode");
         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
-    } catch (e) {}
+    } catch { /* no-op */ }
   };
  return (
     <div className="card">
