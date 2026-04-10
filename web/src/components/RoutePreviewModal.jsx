@@ -161,10 +161,10 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
     }, 220);
 
     return () => { alive = false; controller.abort(); clearTimeout(timer); };
-  }, [open, shiftId, remote?.shiftId, remote?.loadedAt, remote?.err]);
+  }, [open, shiftId, token, remote?.shiftId, remote?.loadedAt, remote?.err]);
 
-  const effStops = remote.stops ?? stops ?? [];
-  const effPeople = remote.people ?? people ?? [];
+  const effStops = useMemo(() => remote.stops ?? stops ?? [], [remote.stops, stops]);
+  const effPeople = useMemo(() => remote.people ?? people ?? [], [remote.people, people]);
   const effSummary = remote.summary ?? previewSummary ?? null;
   const effPathPoints = remote.pathPoints ?? previewPathPoints ?? null;
   const effSource = remote.source ?? previewSource ?? null;

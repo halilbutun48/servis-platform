@@ -139,7 +139,7 @@ export default function ReportsPanel() {
     };
   }, [tab, from, to, token]); // eslint-disable-line
 
-  const rawRows = Array.isArray(data?.[tab]?.rows) ? data[tab].rows : [];
+  const rawRows = useMemo(() => (Array.isArray(data?.[tab]?.rows) ? data[tab].rows : []), [data, tab]);
   const rows = useMemo(() => (tab === "shifts" ? normalizeShiftRows(rawRows) : rawRows), [tab, rawRows]);
   const headers = useMemo(() => {
     if (tab === "shifts") return SHIFT_COLUMNS.map(([key, label]) => ({ key, label }));
@@ -149,7 +149,7 @@ export default function ReportsPanel() {
       : [];
   }, [tab, rows]);
 
-  const currentColumnFilters = columnFiltersByTab?.[tab] || {};
+  const currentColumnFilters = useMemo(() => (columnFiltersByTab?.[tab] || {}), [columnFiltersByTab, tab]);
   const hasColumnFilter = useMemo(
     () => Object.values(currentColumnFilters).some((value) => String(value || "").trim()),
     [currentColumnFilters],

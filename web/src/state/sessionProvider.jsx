@@ -1,5 +1,5 @@
 // web/src/state/sessionProvider.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, clearToken, getToken, setToken } from "../api";
 import { startLiveWs, stopLiveWs } from "../live/ws";
 import { SessionCtx } from "./sessionContext";
@@ -13,7 +13,18 @@ export function SessionProvider({ children }) {
     if (token) setToken(token);
   }, [token]);
 
-  async function loadMe(t = token) {
+  const logout = useCallback(() => {
+    try {
+      stopLiveWs();
+    } catch {
+      // no-op: best effort logout cleanup
+    }
+    clearToken();
+    setTok("");
+    setMe(null);
+  }, []);
+
+  const loadMe = useCallback(async (t = token) => {
     if (!t) {
       setMe(null);
       return;
@@ -26,23 +37,19 @@ export function SessionProvider({ children }) {
       setAuthErr(String(e?.message || e));
       logout();
     }
-  }
-
-  function logout() {
-    try {
-      stopLiveWs();
-    } catch {
-      // no-op: best effort logout cleanup
-    }
-    clearToken();
-    setTok("");
-    setMe(null);
-  }
+  }, [logout, token]);
 
   useEffect(() => {
-    loadMe(token);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+    const timer = setTimeout(() => {
+      if (!token) {
+        setMe(null);
+        setAuthErr("");
+        return;
+      }
+      void loadMe(token);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [token, loadMe]);
 
   useEffect(() => {
     if (!token) {
@@ -53,6 +60,6 @@ export function SessionProvider({ children }) {
     return () => stopLiveWs();
   }, [token]);
 
-  const value = useMemo(() => ({ token, setToken: setTok, me, loadMe, logout, authErr }), [token, me, authErr]);
+  const value = useMemo(() => ({ token, setToken: setTok, me, loadMe, logout, authErr }), [token, me, authErr, loadMe, logout]);
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>;
 }

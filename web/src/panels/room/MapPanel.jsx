@@ -282,7 +282,7 @@ export default function RoomMapPanel() {
     if (ui) parts.push(`GPS ${ui}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     return parts.join(" • ");
-  }, [selected, selectedShift?.id, selected?.plate, selectedNext?.name]);
+  }, [selected, selectedShift?.id, selectedNext?.name]);
 
   useEffect(() => {
     if (!selected) {
@@ -327,7 +327,7 @@ export default function RoomMapPanel() {
     });
 
     return () => clearCopilotSelection("/room/map");
-  }, [selected, selected?.id, selected?.plate, selectedShift?.id, copilotSummary]);
+  }, [selected, selected?.id, selectedShift, selectedShift?.id, selectedNext, selectedEta, selectedStats, vehicles.length, copilotSummary]);
 
   useEffect(() => {
     let alive = true;

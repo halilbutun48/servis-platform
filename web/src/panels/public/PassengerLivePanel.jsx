@@ -193,7 +193,7 @@ export default function PassengerLivePanel() {
       window.removeEventListener("hashchange", onHash);
       window.clearInterval(t);
     };
-  }, []); // eslint-disable-line
+  }, []);
 
   const isLive = String(data?.phase || "") === "LIVE";
   const vehicles = useMemo(() => (isLive && data?.vehicle ? [data.vehicle] : []), [data, isLive]);

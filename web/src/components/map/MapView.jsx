@@ -1,5 +1,5 @@
 // web/src/components/map/MapView.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as LeafletNS from "leaflet";
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -118,7 +118,7 @@ function FitController({ points, followPoint, followZoom, fitKey }) {
     return () => window.removeEventListener("map:focus", onFocus);
   }, []);
 
-  function fitAll() {
+  const fitAll = useCallback(() => {
     if (!points?.length) return;
     const lats = points.map((p) => p[0]);
     const lons = points.map((p) => p[1]);
@@ -128,13 +128,13 @@ function FitController({ points, followPoint, followZoom, fitKey }) {
     ];
     map.fitBounds(bounds, { padding: [40, 40] });
     didFitRef.current = true;
-  }
+  }, [map, points]);
 
   useEffect(() => {
     if (didFitRef.current) return;
     if (!points?.length) return;
     fitAll();
-  }, [points?.length, fitKey]);
+  }, [fitAll, points?.length, fitKey]);
 
   useEffect(() => {
     if (!followRef.current || !followPoint) return;
@@ -146,7 +146,7 @@ function FitController({ points, followPoint, followZoom, fitKey }) {
     const onFit = () => fitAll();
     window.addEventListener("map:fitAll", onFit);
     return () => window.removeEventListener("map:fitAll", onFit);
-  }, [points?.length]);
+  }, [fitAll]);
 
   return null;
 }

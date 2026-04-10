@@ -21,7 +21,6 @@ export default function RegionsPanel() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const view = useMemo(() => {

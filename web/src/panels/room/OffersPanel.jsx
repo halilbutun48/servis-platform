@@ -1,5 +1,5 @@
 // web/src/panels/room/OffersPanel.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
@@ -348,7 +348,7 @@ export default function RoomOffersPanel() {
   }
 
 
-  async function loadPoolSummary(shiftId, { force = false } = {}) {
+  const loadPoolSummary = useCallback(async (shiftId, { force = false } = {}) => {
     const sid = Number(shiftId || approveModal.shiftId);
     if (!sid) return null;
     if (!force && poolSummary?.status === "ok" && Number(poolSummary?.data?.shiftId) === sid) return poolSummary.data;
@@ -367,7 +367,7 @@ export default function RoomOffersPanel() {
     } finally {
       poolInflight.current = false;
     }
-  }
+  }, [approveModal.shiftId, poolSummary?.data, poolSummary?.status]);
 
   async function doApprove({ startAfter = false } = {}) {
     const sid = Number(approveModal.shiftId);
@@ -418,7 +418,7 @@ export default function RoomOffersPanel() {
     const modalVehicle = vehicles.find((v) => Number(v.id) === Number(approveModal.vehicleId)) || null;
     const capacityMeta = buildCapacityMeta({ shift: modalShift, vehicle: modalVehicle });
     if (capacityMeta.insufficient) loadPoolSummary(sid);
-  }, [approveModal.open, approveModal.shiftId, approveModal.vehicleId, items, vehicles]);
+  }, [approveModal.open, approveModal.shiftId, approveModal.vehicleId, items, vehicles, loadPoolSummary]);
 
   return (
     <div className="wrap wrap--fluid">

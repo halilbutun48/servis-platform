@@ -1,5 +1,5 @@
 // web/src/panels/parent/LivePanel.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -171,7 +171,7 @@ export default function ParentLivePanel() {
     return items;
   }
 
-  async function loadVehicles(cid) {
+  const loadVehicles = useCallback(async (cid) => {
     const resolvedChildId = String(cid || "");
     if (!resolvedChildId) {
       setVehicles([]);
@@ -190,7 +190,7 @@ export default function ParentLivePanel() {
       return items[0]?.id ? String(items[0].id) : "";
     });
     return items;
-  }
+  }, [token]);
 
   async function loadAll() {
     setBusy(true);
@@ -244,7 +244,7 @@ export default function ParentLivePanel() {
         setVehicles([]);
       })
       .finally(() => setBusy(false));
-  }, [childId]);
+  }, [childId, loadVehicles]);
 
   useAutoReload("gps", () => loadVehicles(childId).catch(() => {}), Boolean(childId));
   useAutoReload("vehicles", () => loadVehicles(childId).catch(() => {}), Boolean(childId));

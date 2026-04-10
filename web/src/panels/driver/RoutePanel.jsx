@@ -35,7 +35,7 @@ export default function RoutePanel() {
 
   const mode = data?.mode || "";
   const shift = data?.shift || null;
-  const orderedStops = data?.orderedStops || data?.routeStops || [];
+  const orderedStops = useMemo(() => data?.orderedStops || data?.routeStops || [], [data?.orderedStops, data?.routeStops]);
   const nextStop = data?.nextStop || null;
   const progress = data?.progress || null;
   const paused = !!progress?.pausedAt;
@@ -189,7 +189,6 @@ useEffect(() => {
     if (ord > prev) showToast("Durak ulaşıldı ✅");
     return ord;
   });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [progress?.lastReachedOrder]);
 
   // ✅ M31-A: keyboard shortcut (Enter) = reached

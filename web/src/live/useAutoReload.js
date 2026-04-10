@@ -35,7 +35,6 @@ export function useAutoReload(topic, fn, enabled = true, debounceMs = 180) {
               try {
                 await Promise.resolve(fnRef.current?.(d));
               } catch (e) {
-                // eslint-disable-next-line no-console
                 console.warn("useAutoReload handler error:", e);
               }
             }

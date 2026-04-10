@@ -196,7 +196,7 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
   const [selection, setSelection] = useState(() => selectionApplies(readCopilotSelection(), currentPath) ? readCopilotSelection() : null);
   const scrollRef = useRef(null);
   const lastPathRef = useRef(currentPath);
-  const screenContext = useMemo(() => resolveCopilotScreenContext(currentPath, me), [currentPath, me?.role, me?.companyKind]);
+  const screenContext = useMemo(() => resolveCopilotScreenContext(currentPath, me), [currentPath, me]);
   const suggestions = useMemo(() => buildSuggestions(currentPath, mode, selection), [currentPath, mode, selection]);
   const isCopilotPage = /\/copilot$/.test(currentPath);
   const dims = SIZE_PRESETS[size] || SIZE_PRESETS.M;

@@ -97,7 +97,6 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     if (trackTab === "market") ensureAcc("market");
     if (trackTab === "pending") ensureAcc("pending");
     if (trackTab === "list") ensureAcc("list");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCommercialMode, mainTab, trackTab]);
 
   // Pending filtreler
@@ -159,7 +158,6 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
     };
     window.addEventListener("company:shifts:focus", onFocus);
     return () => window.removeEventListener("company:shifts:focus", onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function focusMarketById(id) {
