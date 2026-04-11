@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { api } from "../../api";
@@ -475,7 +475,7 @@ export default function GuidedPlanModal({
   }
 
 
-  async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
+  const cleanupDraftShifts = useCallback(async (idsInput = draftShiftIds, opts = {}) => {
     const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
     await cleanupGuidedDraftShifts({ token, ids });
     if (!opts.keepState) {
@@ -483,7 +483,7 @@ export default function GuidedPlanModal({
       setDraftShifts([]);
       setOsrmResById({});
     }
-  }
+  }, [draftShiftIds, token]);
 
   function resetAll(opts = {}) {
     if (!opts.skipCleanup && !sentOk && draftShiftIds.length) {
@@ -569,8 +569,10 @@ export default function GuidedPlanModal({
     return () => {
       alive = false;
     };
-  }, [open, token, resumeStep, resumeNonce]);
+  }, [open, token, resumeStep, resumeNonce, cleanupDraftShifts]);
 
+
+  const draftShiftIdsKey = useMemo(() => draftShiftIds.join("|"), [draftShiftIds]);
 
   useEffect(() => {
     if (!open) return;
@@ -579,18 +581,16 @@ export default function GuidedPlanModal({
     setOfferAmount("");
     setOfferNote("");
     setSentOk(false);
-  }, [open, step, draftShiftIds.join("|")]);
+  }, [open, step, draftShiftIdsKey]);
 
   useEffect(() => {
     const keys = new Set((durationOptions || []).map((x) => x.key));
     if (!keys.has(durationKey)) setDurationKey((durationOptions[0] || {}).key || "1d");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organization]);
+  }, [organization, durationKey, durationOptions]);
 
   // Sync endDate when start/duration changes
   useEffect(() => {
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, durationDays]);
 
   function stepItems() {
