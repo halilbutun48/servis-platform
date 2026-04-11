@@ -106,26 +106,6 @@
         "class": "safe-candidate-review",
         "note": "davranis degistirmeden section/state extraction adayi"
       },
-      "web/src/panels/company/GuidedPlanModal.jsx": {
-        "class": "safe-candidate-review",
-        "note": "modal ic mantigi kontrollu parcaya ayrilabilir"
-      },
-      "web/src/panels/room/DriversPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "liste/toolbar/dialog extraction icin uygun aday"
-      },
-      "web/src/panels/room/VehiclesPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "contract korunarak section extraction adayi"
-      },
-      "web/src/panels/company/ShiftPeopleTab.jsx": {
-        "class": "safe-candidate-review",
-        "note": "yardimci tablo/filtre extraction adayi"
-      },
-      "web/src/panels/organization/PlansPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "liste ve dialog parcalama icin uygun"
-      },
       "backend/src/routes/shifts/room.js": {
         "class": "acceptance-sensitive-later",
         "note": "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
@@ -141,6 +121,10 @@
       "mobile/App.js": {
         "class": "acceptance-sensitive-later",
         "note": "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
+      },
+      "web/src/panels/company/ShiftPeopleTab.jsx": {
+        "class": "safe-candidate-review",
+        "note": "shift kisi/ithal/stop yardimcilari kontrollu extraction sonrasi kalan review adayi"
       }
     }
   },

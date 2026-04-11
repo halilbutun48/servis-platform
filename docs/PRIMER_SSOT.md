@@ -75,7 +75,7 @@ Bu primer yaÅŸayan hattÄ±n resmi Ã¶zetidir.
 - KÃ¶r line-count dÃ¼ÅŸÃ¼rme yapÄ±lmaz; Ã¶nce acceptance, sonra kontrollÃ¼ temizlik uygulanÄ±r.
 - `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue iÃ§inde **justified exception** olarak kalÄ±r.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sÄ±nÄ±fÄ±ndadÄ±r.
-- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/company/GuidedPlanModal.jsx`, `web/src/panels/room/DriversPanel.jsx`, `web/src/panels/room/VehiclesPanel.jsx`, `web/src/panels/company/ShiftPeopleTab.jsx`, `web/src/panels/organization/PlansPanel.jsx` **safe candidate review** kuyruÄŸundadÄ±r.
+- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/room/ShiftsPanel.jsx` **safe candidate review** kuyruÄŸundadÄ±r.
 - Bu queue, `tools/repo_contract_state.json` iÃ§indeki `hotFileQueuePolicy` alanÄ± ve `repo_audit` Ã§Ä±ktÄ±sÄ± ile birlikte doÄŸrulanÄ±r.
 
 ## export / package hygiene closure
@@ -126,6 +126,3 @@ Bu primer yaÅŸayan hattÄ±n resmi Ã¶zetidir.
 - Compatibility note: m47.3 green, m47.4 next route.
 - Marker-first route: mobile readiness web pass canonical bridge after m47.3.
 
-## Final release evidence
-- Tek nokta kanÄ±t Ã¶zeti: `docs/FINAL_RELEASE_EVIDENCE_M90.md`
-- Bu dosya `tools\write_m90_final_release_evidence.ps1 -RepoRoot D:\servis-platform` ile gÃ¼ncellenir.

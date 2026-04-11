@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { api } from "../../api";
@@ -181,8 +181,6 @@ export default function GuidedPlanModal({
   );
 
   const selectedRoomCount = selectedRoomIds.length;
-
-  const draftShiftIdsKey = useMemo(() => draftShiftIds.join("|"), [draftShiftIds]);
 
   const orgFilledDestinations = useMemo(
     () => (orgDestinations || []).filter((d) => String(d?.title || d?.address || "").trim()),
@@ -477,7 +475,7 @@ export default function GuidedPlanModal({
   }
 
 
-  const cleanupDraftShifts = useCallback(async (idsInput = draftShiftIds, opts = {}) => {
+  async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
     const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
     await cleanupGuidedDraftShifts({ token, ids });
     if (!opts.keepState) {
@@ -485,7 +483,7 @@ export default function GuidedPlanModal({
       setDraftShifts([]);
       setOsrmResById({});
     }
-  }, [token, draftShiftIds]);
+  }
 
   function resetAll(opts = {}) {
     if (!opts.skipCleanup && !sentOk && draftShiftIds.length) {
@@ -571,7 +569,7 @@ export default function GuidedPlanModal({
     return () => {
       alive = false;
     };
-  }, [open, token, resumeStep, resumeNonce, cleanupDraftShifts]);
+  }, [open, token, resumeStep, resumeNonce]);
 
 
   useEffect(() => {
@@ -581,16 +579,18 @@ export default function GuidedPlanModal({
     setOfferAmount("");
     setOfferNote("");
     setSentOk(false);
-  }, [open, step, draftShiftIdsKey]);
+  }, [open, step, draftShiftIds.join("|")]);
 
   useEffect(() => {
     const keys = new Set((durationOptions || []).map((x) => x.key));
     if (!keys.has(durationKey)) setDurationKey((durationOptions[0] || {}).key || "1d");
-  }, [durationKey, durationOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organization]);
 
   // Sync endDate when start/duration changes
   useEffect(() => {
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, durationDays]);
 
   function stepItems() {

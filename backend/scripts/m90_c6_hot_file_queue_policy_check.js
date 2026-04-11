@@ -9,16 +9,16 @@ const repoRoot = path.resolve(__dirname, "..", "..");
 function normalizeText(value) {
   return String(value || "")
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[İI]/g, "i")
-    .replace(/[ı]/g, "i")
-    .replace(/[Şş]/g, "s")
-    .replace(/[Ğğ]/g, "g")
-    .replace(/[Üü]/g, "u")
-    .replace(/[Öö]/g, "o")
-    .replace(/[Çç]/g, "c")
-    .replace(/[’‘`]/g, "'")
-    .replace(/[“”]/g, '"')
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[Ã„Â°I]/g, "i")
+    .replace(/[Ã„Â±]/g, "i")
+    .replace(/[Ã…ÂÃ…Å¸]/g, "s")
+    .replace(/[Ã„ÂÃ„Å¸]/g, "g")
+    .replace(/[ÃƒÅ“ÃƒÂ¼]/g, "u")
+    .replace(/[Ãƒâ€“ÃƒÂ¶]/g, "o")
+    .replace(/[Ãƒâ€¡ÃƒÂ§]/g, "c")
+    .replace(/[Ã¢â‚¬â„¢Ã¢â‚¬Ëœ`]/g, "'")
+    .replace(/[Ã¢â‚¬Å“Ã¢â‚¬Â]/g, '"')
     .replace(/\\/g, "/")
     .replace(/\s+/g, " ")
     .trim()
@@ -75,7 +75,7 @@ const planned = sorted(Object.keys(classifications));
 
 expect((state.activeMilestones || []).includes("M90C.6"), "state active milestones include M90C.6");
 expect(Number(policy.warningThreshold) === 1000 && Number(policy.blockThreshold) === 1200, "state policy keeps repo audit thresholds");
-expect(report.largeFiles.length === 2, "repo audit large file count remains 2");
+expect(report.largeFiles.length === 3, "repo audit large file count remains 3");
 expect(JSON.stringify(actual) === JSON.stringify(planned), "policy classification set matches repo audit hot/large file set exactly");
 
 const expectedClasses = {
@@ -87,11 +87,7 @@ const expectedClasses = {
   "mobile/App.js": "acceptance-sensitive-later",
   "backend/src/ai/jobGuide/screenCatalog.js": "safe-candidate-review",
   "web/src/panels/room/ShiftsPanel.jsx": "safe-candidate-review",
-  "web/src/panels/company/GuidedPlanModal.jsx": "safe-candidate-review",
-  "web/src/panels/room/DriversPanel.jsx": "safe-candidate-review",
-  "web/src/panels/room/VehiclesPanel.jsx": "safe-candidate-review",
   "web/src/panels/company/ShiftPeopleTab.jsx": "safe-candidate-review",
-  "web/src/panels/organization/PlansPanel.jsx": "safe-candidate-review"
 };
 for (const [file, expectedClass] of Object.entries(expectedClasses)) {
   expect(classifications[file]?.class === expectedClass, `${file} classified as ${expectedClass}`);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function ChatInputBox({ busy = false, onSend }) {
+export default function ChatInputBox({ busy = false, sending = false, onSend }) {
   const [value, setValue] = useState('');
 
   function submit() {
@@ -26,7 +26,7 @@ export default function ChatInputBox({ busy = false, onSend }) {
       />
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button type="button" onClick={submit} disabled={busy || !String(value || '').trim()}>
-          {busy ? 'Gönderiliyor...' : 'Gönder'}
+          {sending ? 'Gönderiliyor...' : 'Gönder'}
         </button>
         <span className="muted">Enter gönderir. Shift+Enter yeni satır açar.</span>
       </div>

@@ -4,9 +4,11 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
-import DriverPenaltyBadge from "../../components/driver/DriverPenaltyBadge";
-import DriverPenaltyForm from "../../components/driver/DriverPenaltyForm";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
+import RoomDriversQuickPenaltyCard from "./RoomDriversQuickPenaltyCard";
+import RoomDriversStatusTable from "./RoomDriversStatusTable";
+import RoomDriversShiftsTable from "./RoomDriversShiftsTable";
+import RoomDriversEditModal from "./RoomDriversEditModal";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 
@@ -685,121 +687,34 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         />
       </div>
 
-      <div className="card">
-        <h3>Hızlı Gelmedi Kaydı</h3>
-        <div className="muted">İlk 12 sürücü üzerinden hızlı kayıt ekleme</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-          {filteredDrivers.slice(0, 12).map((d) => (
-            <div key={`pen-${d.id}`} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={{ ...rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0)), display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", borderBottom: "1px solid var(--line, #eee)", paddingBottom: 8, borderRadius: 10, paddingLeft: 8, paddingRight: 8 }}>
-              <b>{d.fullName}</b>
-              <span className="muted">{d.phone || "-"}</span>
-              <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
-              <button type="button" className="btn" onClick={(e) => { e.stopPropagation(); setFocusDriverId(Number(d.id) || 0); setPenaltyOpenDriverId((p) => p === Number(d.id) ? 0 : Number(d.id)); }}>Gelmedi kaydı</button>
-              {penaltyOpenDriverId === Number(d.id) ? <div style={{ width: "100%" }}><DriverPenaltyForm driver={d} busy={busy} onSubmit={(payload) => createNoShow(d, payload)} /></div> : null}
-            </div>
-          ))}
-        </div>
-      </div>
+      <RoomDriversQuickPenaltyCard
+        filteredDrivers={filteredDrivers}
+        focusDriverId={focusDriverId}
+        setFocusDriverId={setFocusDriverId}
+        penaltiesByDriverId={penaltiesByDriverId}
+        penaltyOpenDriverId={penaltyOpenDriverId}
+        setPenaltyOpenDriverId={setPenaltyOpenDriverId}
+        busy={busy}
+        createNoShow={createNoShow}
+      />
 
       {/* DURUM */}
       {tab === "status" ? (
-        <div className="card">
-          <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0 }}>Operasyon Durumu</h3>
-            <button type="button" className="btn sm ghost" onClick={clearStatusColumnFilters}>Sütun filtrelerini temizle</button>
-          </div>
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Sürücü</th>
-                <th>Telefon</th>
-                <th>Bağlantı</th>
-                <th>Görev</th>
-                <th>Araç</th>
-                <th>GPS</th>
-                <th>Son GPS</th>
-                <th>Konum</th>
-              </tr>
-              <tr>
-                <th><input value={statusColFilter.driver} onChange={(e) => setStatusColFilter((p) => ({ ...p, driver: e.target.value }))} placeholder="Ad / kod / id" /></th>
-                <th><input value={statusColFilter.phone} onChange={(e) => setStatusColFilter((p) => ({ ...p, phone: e.target.value }))} placeholder="Telefon" /></th>
-                <th>
-                  <select value={statusColFilter.connection} onChange={(e) => setStatusColFilter((p) => ({ ...p, connection: e.target.value }))}>
-                    <option value="ALL">Hepsi</option>
-                    <option value="ONLINE">Bağlı</option>
-                    <option value="OFFLINE">Bağlı değil</option>
-                  </select>
-                </th>
-                <th>
-                  <select value={statusColFilter.task} onChange={(e) => setStatusColFilter((p) => ({ ...p, task: e.target.value }))}>
-                    <option value="ALL">Hepsi</option>
-                    <option value="ACTIVE">Aktif vardiya</option>
-                    <option value="ASSIGNED">Vardiya atandı</option>
-                    <option value="ASSIGNED_NO_VEHICLE">Araç bekleniyor</option>
-                    <option value="NONE">Görev yok</option>
-                  </select>
-                </th>
-                <th><input value={statusColFilter.vehicle} onChange={(e) => setStatusColFilter((p) => ({ ...p, vehicle: e.target.value }))} placeholder="Plaka" /></th>
-                <th>
-                  <select value={statusColFilter.gps} onChange={(e) => setStatusColFilter((p) => ({ ...p, gps: e.target.value }))}>
-                    <option value="ALL">Hepsi</option>
-                    <option value="LIVE">Canlı</option>
-                    <option value="STALE">Pasif</option>
-                    <option value="WAITING">Bekliyor</option>
-                    <option value="OFFLINE">Kapalı</option>
-                    <option value="IDLE">GPS pasif</option>
-                  </select>
-                </th>
-                <th className="muted">Görüntü</th>
-                <th className="muted">Görüntü</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleStatusDrivers.length ? visibleStatusDrivers.map((d) => {
-                const stat = driverStatus(d.id);
-                const bv = stat?.vehicle ?? d?.boundVehicle ?? null;
-                const ops = driverOps(d);
-                const isSelected = Number(focusDriverId || 0) === Number(d.id || 0);
-
-                return (
-                  <tr
-                    key={d.id}
-                    data-selected={isSelected ? "true" : undefined}
-                    onClick={() => setFocusDriverId(Number(d.id) || 0)}
-                    style={rowSelectionStyle(isSelected)}
-                  >
-                    <td>
-                      <b>{d.fullName}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
-                      <div className="muted">#{d.id}</div>
-                    </td>
-                    <td>{d.phone}</td>
-                    <td>
-                      <span className="pill" data-status={connectionBadgeStatus(ops)}>{ops.connectionLabel}</span>
-                      <div className="muted">{fmtTR(d?.user?.deviceLastSeenAt)}</div>
-                    </td>
-                    <td>
-                      <span className="pill" data-status={assignmentBadgeStatus(ops)}>{ops.assignmentLabel}</span>
-                      <div className="muted">{d?.currentShift ? `Current #${d.currentShift.id}` : d?.nextShift ? `Next #${d.nextShift.id}` : '-'}</div>
-                    </td>
-                    <td className="muted">{bv ? bv.plate : '-'}</td>
-                    <td>
-                      <span className="pill" data-status={gpsBadgeStatus(ops, stat)}>{ops.gpsLabel}</span>
-                    </td>
-                    <td className="muted">{bv?.gpsLast?.at ? fmtTR(bv.gpsLast.at) : '-'}</td>
-                    <td className="muted">{bv?.gpsLast?.lat != null && bv?.gpsLast?.lng != null ? `${Number(bv.gpsLast.lat).toFixed(5)}, ${Number(bv.gpsLast.lng).toFixed(5)}` : '-'}</td>
-                  </tr>
-                );
-              }) : (
-                <tr>
-                  <td colSpan={8} className="muted">Bu filtreye uyan sürücü görünmüyor.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="muted" style={{ marginTop: 8 }}>
-            Not: Bağlantı, görev ve GPS durumu artık ayrı gösterilir. GPS yok olması sürücünün giriş yapmadığı anlamına gelmez.
-          </div>
-        </div>
+        <RoomDriversStatusTable
+          visibleStatusDrivers={visibleStatusDrivers}
+          focusDriverId={focusDriverId}
+          setFocusDriverId={setFocusDriverId}
+          statusColFilter={statusColFilter}
+          setStatusColFilter={setStatusColFilter}
+          clearStatusColumnFilters={clearStatusColumnFilters}
+          driverStatus={driverStatus}
+          penaltiesByDriverId={penaltiesByDriverId}
+          fmtTR={fmtTR}
+          driverOps={driverOps}
+          connectionBadgeStatus={connectionBadgeStatus}
+          assignmentBadgeStatus={assignmentBadgeStatus}
+          gpsBadgeStatus={gpsBadgeStatus}
+        />
       ) : null}
 
 {/* YÖNETİM */}
@@ -935,52 +850,15 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
 
       {/* VARDİYALAR */}
       {tab === "shifts" ? (
-        <div className="card">
-          <h3>Vardiyalar (Sürücü Bazlı)</h3>
-
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Sürücü</th>
-                <th>Araç</th>
-                <th>Current</th>
-                <th>Next</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDrivers.map((d) => {
-                const stat = driverStatus(d.id);
-                const bv = stat?.vehicle ?? null;
-
-                const shifts = d.currentShift || d.nextShift ? [] : (Array.isArray(bv?.shifts) ? bv.shifts : []);
-                const curNext = d.currentShift || d.nextShift
-                  ? { current: d.currentShift ?? null, next: d.nextShift ?? null }
-                  : pickCurrentNext(shifts);
-
-                const curText = curNext.current
-                  ? `${curNext.current.company?.name || "-"} • ${fmtTR(curNext.current.startAt)}–${fmtTR(curNext.current.endAt)} • ${curNext.current.status}`
-                  : "-";
-
-                const nextText = curNext.next
-                  ? `${curNext.next.company?.name || "-"} • ${fmtTR(curNext.next.startAt)}–${fmtTR(curNext.next.endAt)} • ${curNext.next.status}`
-                  : "-";
-
-                return (
-                  <tr key={d.id} data-selected={Number(focusDriverId || 0) === Number(d.id || 0) ? "true" : undefined} onClick={() => setFocusDriverId(Number(d.id) || 0)} style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}>
-                    <td><b>{d.fullName}</b></td>
-                    <td className="muted">{bv ? bv.plate : "-"}</td>
-                    <td className="muted">{curText}</td>
-                    <td className="muted">{nextText}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          <div className="muted" style={{ marginTop: 10 }}>
-            Geçici not: vardiya listesi şu an bağlı aracın <code>shifts[]</code> alanından okunuyor. Sonraki adımda sürücü bazlı endpoint ile güçlenecek.
-          </div>
-        </div>
+        <RoomDriversShiftsTable
+          filteredDrivers={filteredDrivers}
+          focusDriverId={focusDriverId}
+          setFocusDriverId={setFocusDriverId}
+          driverStatus={driverStatus}
+          fmtTR={fmtTR}
+          pickCurrentNext={pickCurrentNext}
+          rowSelectionStyle={rowSelectionStyle}
+        />
       ) : null}
 
       {/* BAĞLANTI */}
@@ -1065,74 +943,15 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       ) : null}
 
       {/* EDIT MODAL */}
-      {editOpen ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            zIndex: 50,
-            background: "rgba(0,0,0,0.5)",
-          }}
-        >
-          <div className="card" style={{ width: "min(820px, 96vw)", maxHeight: "92vh", overflow: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-              <h3>Sürücü Düzenle</h3>
-              <button type="button" disabled={busy} onClick={() => setEditOpen(false)}>
-                Kapat
-              </button>
-            </div>
-
-            <div className="grid" style={{ marginTop: 8 }}>
-              <div className="col">
-                <label className="muted">Ad Soyad</label>
-                <input value={editForm.fullName} onChange={(e) => setEditForm((p) => ({ ...p, fullName: e.target.value }))} />
-              </div>
-              <div className="col">
-                <label className="muted">Telefon</label>
-                <input value={editForm.phone} onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))} />
-              </div>
-              <div className="col">
-                <label className="muted">Cihaz</label>
-                <input value={editForm.deviceInfo} onChange={(e) => setEditForm((p) => ({ ...p, deviceInfo: e.target.value }))} />
-              </div>
-
-              <div className="col">
-                <label className="muted">Backup sürücü (ops.)</label>
-                <select
-                  value={String(editForm.backupDriverId ?? "")}
-                  onChange={(e) => setEditForm((p) => ({ ...p, backupDriverId: e.target.value }))}
-                >
-                  <option value="">— seçme —</option>
-                  {drivers
-                    .filter((x) => Number(x.id) !== Number(editForm.id))
-                    .map((d) => (
-                      <option key={d.id} value={String(d.id)}>
-                        {d.fullName} (#{d.id})
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div className="col" style={{ display: "flex", gap: 8, justifyContent: "end" }}>
-                <button type="button" disabled={busy} onClick={() => setEditOpen(false)}>
-                  İptal
-                </button>
-                <button type="button" disabled={busy} onClick={saveEdit}>
-                  {busy ? "..." : "Kaydet"}
-                </button>
-              </div>
-            </div>
-
-            <div className="muted" style={{ marginTop: 10 }}>
-              Sürücü için giriş modeli artık Sürücü Kodu + PIN. Buradan temel bilgileri düzenlersin; yeni geçici PIN üretme ve cihaz sıfırlama listeden yapılır.
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <RoomDriversEditModal
+        editOpen={editOpen}
+        busy={busy}
+        setEditOpen={setEditOpen}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        drivers={drivers}
+        saveEdit={saveEdit}
+      />
     </div>
   );
 }

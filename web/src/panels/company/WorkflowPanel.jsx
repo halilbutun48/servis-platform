@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
@@ -372,7 +372,7 @@ export default function WorkflowPanel() {
   const [guidedResumeStep, setGuidedResumeStep] = useState(null);
   const [guidedResumeNonce, setGuidedResumeNonce] = useState(0);
 
-  const loadRooms = useCallback(async (signal) => {
+  async function loadRooms(signal) {
     if (!token) return;
     setRoomsSupported(true);
     try {
@@ -384,9 +384,9 @@ export default function WorkflowPanel() {
       setRooms([]);
       setRoomsSupported(false);
     }
-  }, [token]);
+  }
 
-  const loadSummary = useCallback(async (signal) => {
+  async function loadSummary(signal) {
     if (!token) return;
     setErr("");
     try {
@@ -405,9 +405,9 @@ export default function WorkflowPanel() {
       setSummary({ todayAgreements: 0, todayShiftCount: 0, marketShiftCount: 0, geoNeedsReview: 0, openOffersCount: 0 });
       setErr(String(e?.message || e));
     }
-  }, [token]);
+  }
 
-  const loadCompanyOffers = useCallback(async (status = offersModal.status) => {
+  async function loadCompanyOffers(status = offersModal.status) {
     if (!token) return;
     try {
       const r = await getCompanyOffers(token, { status, q: offersModal.q, ttlMs: 25000, take: 30 });
@@ -417,9 +417,7 @@ export default function WorkflowPanel() {
       setOffersModal((p) => ({ ...p, items: [] }));
       setErr(String(e?.message || e));
     }
-  }, [token, offersModal.q, offersModal.status]);
-
-  const companyBasePath = useMemo(() => companyPath(me, ""), [me]);
+  }
 
   useEffect(() => {
     if (!token) return;
@@ -434,7 +432,8 @@ export default function WorkflowPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, loadSummary]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   useEffect(() => {
     if (!token || !guidedOpen) return;
@@ -448,7 +447,7 @@ export default function WorkflowPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, guidedOpen, loadRooms]);
+  }, [token, guidedOpen]);
 
   useEffect(() => {
     if (!offersModal.open) return;
@@ -456,7 +455,8 @@ export default function WorkflowPanel() {
       loadCompanyOffers(offersModal.status);
     }, 120);
     return () => clearTimeout(timer);
-  }, [offersModal.open, offersModal.status, offersModal.q, loadCompanyOffers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offersModal.open, offersModal.status, offersModal.q]);
 
   const stats = useMemo(() => ({
     todayAgreements: Number(summary?.todayAgreements || 0),
@@ -618,13 +618,14 @@ export default function WorkflowPanel() {
   }
 
   useEffect(() => {
-    const resume = readGuidedResume(companyBasePath);
+    const basePath = companyPath(me, "");
+    const resume = readGuidedResume(basePath);
     if (!resume) return;
     setGuidedResumeStep(Number.isFinite(Number(resume.step)) ? Number(resume.step) : 2);
     setGuidedResumeNonce(Date.now());
     setGuidedOpen(true);
     clearGuidedResume();
-  }, [companyBasePath]);
+  }, [me?.companyId, me?.id, me?.companyKind]);
 
   return (
     <div className="wrap wrap--fluid">

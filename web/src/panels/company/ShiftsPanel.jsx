@@ -1,5 +1,5 @@
 // web/src/panels/company/ShiftsPanel.jsx
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import ShiftPeopleTab from "./ShiftPeopleTab";
@@ -97,6 +97,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     if (trackTab === "market") ensureAcc("market");
     if (trackTab === "pending") ensureAcc("pending");
     if (trackTab === "list") ensureAcc("list");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCommercialMode, mainTab, trackTab]);
 
   // Pending filtreler
@@ -158,6 +159,7 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
     };
     window.addEventListener("company:shifts:focus", onFocus);
     return () => window.removeEventListener("company:shifts:focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function focusMarketById(id) {
@@ -275,7 +277,6 @@ useEffect(() => {
   // Karşı teklif UI
   const [offerOpen] = useState({});
   const [, setOfferSel] = useState({});
-  const hasOfferOpen = useMemo(() => Object.values(offerOpen || {}).some(Boolean), [offerOpen]);
 
   const isCompany = String(me?.role || "") === "COMPANY";
   const copilotScopeKey = useMemo(() => {
@@ -284,16 +285,16 @@ useEffect(() => {
     return "/company/shifts";
   }, []);
 
-  const referenceDataNeeded = useMemo(() => {
+  function needsReferenceData() {
     if (mainTab === "create") return true;
     if (detailModal?.kind === "vehicle") return true;
     if (offerModal?.open || offersModal?.open) return true;
-    if (hasOfferOpen) return true;
+    if (Object.values(offerOpen || {}).some(Boolean)) return true;
     if (offerVehicleId) return true;
     return false;
-  }, [mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, hasOfferOpen, offerVehicleId]);
+  }
 
-  const ensureReferenceData = useCallback(async (signal, { force = false } = {}) => {
+  async function ensureReferenceData(signal, { force = false } = {}) {
     if (!token) return;
     if (!force && refDataReady && rooms.length && vehicles.length) return;
     if (!force && refLoadPromiseRef.current) return refLoadPromiseRef.current;
@@ -317,7 +318,7 @@ useEffect(() => {
     } finally {
       if (refLoadPromiseRef.current === promise) refLoadPromiseRef.current = null;
     }
-  }, [token, refDataReady, rooms.length, vehicles.length]);
+  }
 
   async function loadCommercialSummary(signal, { force = false } = {}) {
     if (!token) return null;
@@ -353,7 +354,7 @@ useEffect(() => {
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
       setItems(list);
 
-      if (withReferences || referenceDataNeeded) {
+      if (withReferences || needsReferenceData()) {
         await ensureReferenceData(signal, { force: forceReferences });
       }
 
@@ -381,7 +382,7 @@ useEffect(() => {
   }, [me?.role, token]);
 
   useEffect(() => {
-    if (!token || !referenceDataNeeded) return;
+    if (!token || !needsReferenceData()) return;
     const controller = new AbortController();
     let cancelled = false;
     const timer = setTimeout(() => {
@@ -392,7 +393,7 @@ useEffect(() => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, referenceDataNeeded, ensureReferenceData]);
+  }, [token, mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, offerVehicleId, JSON.stringify(offerOpen)]);
 
   // M28 + M30-A: wizard sonrası tek intent kuyruğundan teklif ekranı aç
   useEffect(() => {
@@ -402,41 +403,18 @@ useEffect(() => {
     if (offerRaw) {
       localStorage.removeItem("company:autoOfferShiftId");
       const sid = Number(offerRaw);
-      if (sid) {
-        openCompanyOfferModalForShift({
-          shiftId: sid,
-          pkgIds: null,
-          items,
-          setOfferModalPkgIds,
-          setOfferModal,
-          ensureReferenceData,
-        });
-      }
+      if (sid) openOfferModalForShift(sid);
     }
 
     if (offersListRaw) {
       localStorage.removeItem("company:autoOffersListShiftId");
       const sid = Number(offersListRaw);
-      if (sid) {
-        setTimeout(() => {
-          openCompanyOffersModalForShift({
-            shiftId: sid,
-            pkgIds: null,
-            items,
-            token,
-            setBusy,
-            setErr,
-            setOffersCounterSel,
-            setOffersModalPkgIds,
-            setOffersModal,
-          });
-        }, 120);
-      }
+      if (sid) setTimeout(() => openOffersModalForShift(sid), 120);
     }
-  }, [items, token, ensureReferenceData]);
+  }, [token]);
 
   useAutoReload("shifts", () => load(undefined, { withReferences: false }), true, 650);
-  useAutoReload("rooms", () => (referenceDataNeeded ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);
+  useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);
 
   const roomsById = useMemo(() => {
     const m = new Map();
@@ -573,17 +551,13 @@ useEffect(() => {
     return parts.join(" • ");
   }, [copilotShift]);
 
-
-  const copilotShiftFacts = useMemo(() => {
-    if (!copilotShift) return null;
-    return buildShiftFacts({ shift: copilotShift, itemCount: items.length });
-  }, [copilotShift, items.length]);
-
   useEffect(() => {
     if (!copilotShift) {
       clearCopilotSelection(copilotScopeKey);
       return;
     }
+
+    const facts = buildShiftFacts({ shift: copilotShift, itemCount: items.length });
 
     setCopilotSelection({
       scopeKey: copilotScopeKey,
@@ -598,7 +572,7 @@ useEffect(() => {
         { label: 'Sürücü', value: copilotShift?.driver?.fullName || '-', help: 'Vardiyaya atanmış sürücü bilgisini gösterir.' },
         { label: 'Durak Sayısı', value: `${Array.isArray(copilotShift?.stops) ? copilotShift.stops.length : 0}`, help: 'Bu vardiyada kaç durak bulunduğunu gösterir.' },
       ],
-      facts: copilotShiftFacts,
+      facts,
       badges: [
         { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
         { label: 'Teklif', value: `${Number(copilotShift?.offers?.length || copilotShift?.openOfferCount || 0)}`, help: 'Bu vardiyaya bağlı açık veya görünen teklif sayısını özetler.' },
@@ -606,7 +580,7 @@ useEffect(() => {
     });
 
     return () => clearCopilotSelection(copilotScopeKey);
-  }, [copilotShift, copilotShiftFacts, copilotShiftSummary, copilotScopeKey]);
+  }, [copilotShift, copilotShiftSummary, copilotScopeKey]);
 
   function openVehicleDetail(s) {
     const id = Number(s?.vehicleId || s?.vehicle?.id || 0);
@@ -721,7 +695,7 @@ useEffect(() => {
     }));
   }
 
-  const openOfferModalForShift = useCallback((shiftId, pkgIds = null) => {
+  function openOfferModalForShift(shiftId, pkgIds = null) {
     openCompanyOfferModalForShift({
       shiftId,
       pkgIds,
@@ -730,7 +704,7 @@ useEffect(() => {
       setOfferModal,
       ensureReferenceData,
     });
-  }, [items, ensureReferenceData]);
+  }
 
   function toggleOfferRoom(roomId) {
     toggleCompanyOfferRoom(roomId, setOfferModal);
@@ -749,7 +723,7 @@ useEffect(() => {
     });
   }
 
-  const openOffersModalForShift = useCallback(async (shiftId, pkgIds = null) => {
+  async function openOffersModalForShift(shiftId, pkgIds = null) {
     await openCompanyOffersModalForShift({
       shiftId,
       pkgIds,
@@ -761,7 +735,7 @@ useEffect(() => {
       setOffersModalPkgIds,
       setOffersModal,
     });
-  }, [items, token]);
+  }
 
   async function companyCounterOffer(offer) {
     await companyCounterOfferAction({

@@ -6,9 +6,8 @@ export function ShiftPeopleSummarySection({
   maxWalkM,
   setMaxWalkM,
   companyKind,
-  onGenerateDraftStops,
+  onPrepareDraftStops,
   onOpenPreview,
-  onLoadShiftStops,
   roomText,
   who,
   geoStats,
@@ -48,16 +47,12 @@ export function ShiftPeopleSummarySection({
           )}
         </div>
 
-        <button type="button" disabled={busy} onClick={onGenerateDraftStops}>
-          Durak Üret (Preview)
+        <button type="button" disabled={busy || !selectedShiftId} onClick={onPrepareDraftStops}>
+          Durakları Hazırla
         </button>
 
         <button type="button" disabled={busy || !selectedShiftId} onClick={onOpenPreview}>
           Önizle
-        </button>
-
-        <button type="button" className="btn" disabled={busy || !selectedShiftId} onClick={onLoadShiftStops}>
-          Shift’ten Durakları Çek
         </button>
       </div>
 
@@ -107,7 +102,7 @@ export function ShiftPeopleSummarySection({
       ) : null}
 
       <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        Not: “Durak Üret” sadece koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kullanır.
+        Not: “Durakları Hazırla” önce durak üretir, ardından varsa shift duraklarını yükler. Üretim yalnızca koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kayıtlarda çalışır.
       </div>
     </div>
   );

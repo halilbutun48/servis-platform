@@ -1,26 +1,26 @@
-# M90C.6 — HOT-FILE QUEUE POLICY
+# M90C.6 â€” HOT-FILE QUEUE POLICY
 
-Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı olmaktan çıkarıp resmi sınıflı queue'ya çevirmek.
+AmaÃ§: `repo_audit` iÃ§indeki hot/large file listesini yalnÄ±z sayÄ±sal uyarÄ± olmaktan Ã§Ä±karÄ±p resmi sÄ±nÄ±flÄ± queue'ya Ã§evirmek.
 
 ## Kapanan kararlar
 - `backend/src/ai/chat/helpComposer.js` -> `justified exception`
 - `backend/prisma/schema.prisma` -> `justified exception / decision closed`
 
-## Sınıflar
+## SÄ±nÄ±flar
 ### 1) justified exception
-- line-count düşürme hedefi yok
+- line-count dÃ¼ÅŸÃ¼rme hedefi yok
 - agresif refactor yok
-- yalnız acceptance-safe lokal düzeltme
+- yalnÄ±z acceptance-safe lokal dÃ¼zeltme
 
 ### 2) safe candidate review
-- davranış değiştirmeden kontrollü parçalara ayırma / section extraction yapılabilir
-- refactor öncesi acceptance zinciri korunur
+- davranÄ±ÅŸ deÄŸiÅŸtirmeden kontrollÃ¼ parÃ§alara ayÄ±rma / section extraction yapÄ±labilir
+- refactor Ã¶ncesi acceptance zinciri korunur
 
 ### 3) acceptance-sensitive / later
-- sırf satır sayısı için açılmaz
-- yalnız explicit acceptance gerekçesi ve dar kapsamla ele alınır
+- sÄ±rf satÄ±r sayÄ±sÄ± iÃ§in aÃ§Ä±lmaz
+- yalnÄ±z explicit acceptance gerekÃ§esi ve dar kapsamla ele alÄ±nÄ±r
 
-## Bu repo için resmi dağılım
+## Bu repo iÃ§in resmi daÄŸÄ±lÄ±m
 ### justified exception
 - `backend/src/ai/chat/helpComposer.js`
 - `backend/prisma/schema.prisma`
@@ -28,11 +28,6 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 ### safe candidate review
 - `backend/src/ai/jobGuide/screenCatalog.js`
 - `web/src/panels/room/ShiftsPanel.jsx`
-- `web/src/panels/company/GuidedPlanModal.jsx`
-- `web/src/panels/room/DriversPanel.jsx`
-- `web/src/panels/room/VehiclesPanel.jsx`
-- `web/src/panels/company/ShiftPeopleTab.jsx`
-- `web/src/panels/organization/PlansPanel.jsx`
 
 ### acceptance-sensitive / later
 - `backend/src/routes/shifts/room.js`
@@ -40,7 +35,7 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 - `web/src/panels/shared/CopilotPanel.jsx`
 - `mobile/App.js`
 
-## Kaynak gerçek
+## Kaynak gerÃ§ek
 - Makine-okur kaynak: `tools/repo_contract_state.json > hotFileQueuePolicy`
-- Yürütülebilir kapı: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
-- Doğrulama: taze `repo_audit` çıktısı ile policy seti birebir eşleşmelidir.
+- YÃ¼rÃ¼tÃ¼lebilir kapÄ±: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
+- DoÄŸrulama: taze `repo_audit` Ã§Ä±ktÄ±sÄ± ile policy seti birebir eÅŸleÅŸmelidir.

@@ -1,13 +1,18 @@
-# RUNBOOK M76A-2 — Final Normalization + Archiving
+# RUNBOOK M76A-2 â€” Final Normalization + Archiving
 
 > Tarihsel not: Bu runbook M76A-2 anindaki normalize/archiving kararini anlatir. Guncel varsayilanlar daha sonra M89 bazina tasinmistir.
 
-Amaç: living giriş düzenini bozmadan tools kökündeki sıcak hotfix pack/check dosyalarını grouped living altına taşımak ve kökte compatibility alias bırakmaktır.
+AmaÃ§: living giriÅŸ dÃ¼zenini bozmadan tools kÃ¶kÃ¼ndeki sÄ±cak hotfix pack/check dosyalarÄ±nÄ± grouped living altÄ±na taÅŸÄ±mak ve kÃ¶kte compatibility alias bÄ±rakmaktÄ±r.
 
-Bu adımın kapsamı:
-- `tools/packs/living/hotfixes/` altında yaşayan hotfix pack dosyaları
-- `tools/checks/living/hotfixes/` altında yaşayan hotfix repo-contract/check dosyaları
-- kökte eski yol referansları için ince alias wrapper
-- M76A-2 anında `pack_living` ve `verify_living_runtime` varsayılanının M76 seviyesine çekilmesi
+Bu adÄ±mÄ±n kapsamÄ±:
+- `tools/packs/living/hotfixes/` altÄ±nda yaÅŸayan hotfix pack dosyalarÄ±
+- `tools/checks/living/hotfixes/` altÄ±nda yaÅŸayan hotfix repo-contract/check dosyalarÄ±
+- kÃ¶kte eski yol referanslarÄ± iÃ§in ince alias wrapper
+- M76A-2 anÄ±nda `pack_living` ve `verify_living_runtime` varsayÄ±lanÄ±nÄ±n M76 seviyesine Ã§ekilmesi
 
-Bu adım çalışma akışını kırmadan klasör temizliği yapar; runbook ve milestone dokümanları `docs/` altında kalır.
+Bu adÄ±m Ã§alÄ±ÅŸma akÄ±ÅŸÄ±nÄ± kÄ±rmadan klasÃ¶r temizliÄŸi yapar; runbook ve milestone dokÃ¼manlarÄ± `docs/` altÄ±nda kalÄ±r.
+
+Compatibility alias note:
+- Root hotfix check wrappers may remain for backward compatibility.
+- Canonical implementations live under `tools/checks/living/hotfixes/`.
+- Explicit compatibility aliases are excluded from the duplicate-check consolidation metric in `backend/scripts/repo_audit.js`.

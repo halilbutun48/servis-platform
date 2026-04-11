@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate, useHashRoute } from "../../router";
 import { useSession } from "../../state/session";
@@ -303,6 +303,9 @@ export default function CopilotPanel() {
   const [chatConversationState, setChatConversationState] = useState(null);
   const [chatSuggestedChips, setChatSuggestedChips] = useState([]);
   const [entryHint, setEntryHint] = useState(null);
+  const [autoChatBusy, setAutoChatBusy] = useState(false);
+  const chatRequestInFlightRef = useRef(false);
+  const lastAutoRunKeyRef = useRef("");
 
   const selectedIntent = useMemo(() => INTENT_OPTIONS.find((x) => x.value === intent) || INTENT_OPTIONS[0], [intent]);
   const selectedJob = useMemo(() => GUIDE_JOB_OPTIONS.find((x) => x.value === jobType) || GUIDE_JOB_OPTIONS[0], [jobType]);
@@ -454,10 +457,17 @@ export default function CopilotPanel() {
     return () => window.removeEventListener(evt, sync);
   }, [selectedChatScreen?.path, me?.role]);
   const effectiveChatEntityId = chatEntityType === "screen" ? chatScreenId : chatEntityId;
+  const autoRunKey = useMemo(() => {
+    if (panelMode !== "CHAT" || !selectedChatScreen || !effectiveChatEntityId) return "";
+    return `${selectedChatScreen.id}|${selectedChatScreen.path}|${chatEntityType}|${effectiveChatEntityId}`;
+  }, [panelMode, selectedChatScreen, effectiveChatEntityId, chatEntityType]);
 
-  const runChat = useCallback(async (messageText = "") => {
-    if (!token || !selectedChatScreen || !effectiveChatEntityId) return;
-    setChatBusy(true);
+  const runChat = useCallback(async (messageText = "", options = {}) => {
+    const isAuto = Boolean(options?.auto);
+    if (!token || !selectedChatScreen || !effectiveChatEntityId || chatRequestInFlightRef.current) return;
+    chatRequestInFlightRef.current = true;
+    if (isAuto) setAutoChatBusy(true);
+    else setChatBusy(true);
     setChatErr("");
     try {
       if (String(messageText || "").trim()) {
@@ -528,17 +538,26 @@ export default function CopilotPanel() {
     } catch (e2) {
       setChatErr(String(e2?.message || e2));
     } finally {
-      setChatBusy(false);
+      if (isAuto) setAutoChatBusy(false);
+      else setChatBusy(false);
+      chatRequestInFlightRef.current = false;
     }
   }, [token, selectedChatScreen, effectiveChatEntityId, chatEntityType, chatConversationState, chatMessages, chatSelection, me?.role, me?.companyKind]);
 
-  const shouldAutoRunChat = panelMode === "CHAT" && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy;
+  const shouldAutoRunChat = panelMode === "CHAT" && Boolean(selectedChatScreen) && Boolean(effectiveChatEntityId) && chatMessages.length === 0 && !chatBusy && !autoChatBusy && Boolean(autoRunKey) && lastAutoRunKeyRef.current !== autoRunKey;
 
   useEffect(() => {
-    if (shouldAutoRunChat) {
-      runChat("");
+    if (!shouldAutoRunChat || !autoRunKey) return;
+    lastAutoRunKeyRef.current = autoRunKey;
+    runChat("", { auto: true });
+  }, [shouldAutoRunChat, autoRunKey, runChat]);
+
+  useEffect(() => {
+    if (panelMode !== "CHAT") {
+      lastAutoRunKeyRef.current = "";
+      setAutoChatBusy(false);
     }
-  }, [shouldAutoRunChat, runChat]);
+  }, [panelMode]);
 
   function openChatGuide(guide) {
     setPanelMode("GUIDE");
@@ -739,7 +758,8 @@ export default function CopilotPanel() {
             </div>
 
             <ChatThread messages={chatMessages} onOpen={openGuideAction} onGuide={openChatGuide} onAsk={runAskAction} onCopy={copyText} />
-            <ChatInputBox busy={chatBusy} onSend={runChat} />
+            {autoChatBusy && !chatBusy ? <div className="muted">Bağlam okunuyor. Birkaç saniye sonra gönderebilirsin.</div> : null}
+            <ChatInputBox busy={chatBusy || autoChatBusy} sending={chatBusy} onSend={runChat} />
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {chatMessages.length ? (
@@ -754,7 +774,7 @@ export default function CopilotPanel() {
                 <details>
                   <summary style={{ cursor: "pointer" }}>Örnek sorular</summary>
                   <div style={{ marginTop: 8 }}>
-                    <SuggestedChips items={chatSuggestedChips} busy={chatBusy} onPick={runChat} />
+                    <SuggestedChips items={chatSuggestedChips} busy={chatBusy || autoChatBusy} onPick={runChat} />
                   </div>
                 </details>
               ) : null}

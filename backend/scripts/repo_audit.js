@@ -13,15 +13,15 @@ function normalizeText(value) {
   return String(value || "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[İI]/g, "i")
-    .replace(/[ı]/g, "i")
-    .replace(/[Şş]/g, "s")
-    .replace(/[Ğğ]/g, "g")
-    .replace(/[Üü]/g, "u")
-    .replace(/[Öö]/g, "o")
-    .replace(/[Çç]/g, "c")
-    .replace(/[’‘`]/g, "'")
-    .replace(/[“”]/g, '"')
+    .replace(/[Ä°I]/g, "i")
+    .replace(/[Ä±]/g, "i")
+    .replace(/[ÅÅŸ]/g, "s")
+    .replace(/[ÄÄŸ]/g, "g")
+    .replace(/[ÃœÃ¼]/g, "u")
+    .replace(/[Ã–Ã¶]/g, "o")
+    .replace(/[Ã‡Ã§]/g, "c")
+    .replace(/[â€™â€˜`]/g, "'")
+    .replace(/[â€œâ€]/g, '"')
     .replace(/\\/g, "/")
     .replace(/\s+/g, " ")
     .trim()
@@ -124,6 +124,38 @@ function normalizePwsh(text) {
     .join("\n");
 }
 
+
+function normalizePwshSemantic(text) {
+  const lines = String(text || "").split(/\r?\n/);
+  const refs = [];
+  for (const line of lines) {
+    if (/^\s*#\s*(compatibility_alias|canonical_target)\s*:/i.test(line)) continue;
+    const matches = line.matchAll(/([A-Za-z0-9_./\\-]+\.(?:ps1|js))/g);
+    for (const m of matches) refs.push(norm(m[1]).toLowerCase());
+  }
+  const normalizedLines = lines
+    .map((line) => line.replace(/#.*/g, "").trim())
+    .filter(Boolean)
+    .map((line) =>
+      line
+        .replace(/\bM\d+(?:\.\d+)?\b/gi, "MXX")
+        .replace(/\bm\d+(?:[_\.]\d+)?(?:check)?\b/gi, "mxx")
+        .replace(/\d+/g, "0")
+    )
+    .join("\n");
+  const semanticRefs = [...new Set(refs)].sort();
+  return JSON.stringify({ semanticRefs, normalizedLines });
+}
+function parseCompatibilityAliasMeta(relPath, text) {
+  if (!/^tools\/(?:check_|pack_).+\.ps1$/i.test(relPath)) return null;
+  const isAlias = /^\s*#\s*compatibility_alias\s*:\s*(?:true|1|yes)\s*$/im.test(text);
+  if (!isAlias) return null;
+  const targetMatch = text.match(/^\s*#\s*canonical_target\s*:\s*(.+?)\s*$/im);
+  return {
+    canonicalTarget: targetMatch ? norm(String(targetMatch[1]).trim()) : null
+  };
+}
+
 function normalizeJs(text) {
   return text
     .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -143,7 +175,7 @@ function normalizeJs(text) {
 function groupByNormalized(paths, normalizeFn) {
   const map = new Map();
   for (const p of paths) {
-    const key = sha1(Buffer.from(normalizeFn(readUtf8(p)), "utf8"));
+    const key = sha1(Buffer.from(normalizeFn(readUtf8(p), p), "utf8"));
     if (!map.has(key)) map.set(key, []);
     map.get(key).push(rel(p));
   }
@@ -242,8 +274,32 @@ const packFiles = toolPs1Files.filter((p) => path.basename(p).startsWith("pack_"
 const checkFiles = toolPs1Files.filter((p) => path.basename(p).startsWith("check_"));
 const backendScriptFiles = textFiles.filter((p) => norm(p).includes("/backend/scripts/") && path.extname(p).toLowerCase() === ".js");
 
-const duplicatePackGroups = groupByNormalized(packFiles, normalizePwsh);
-const duplicateCheckGroups = groupByNormalized(checkFiles, normalizePwsh);
+const compatibilityAliasPacks = packFiles
+  .map((p) => ({ fullPath: p, file: rel(p), meta: parseCompatibilityAliasMeta(rel(p), readUtf8(p)) }))
+  .filter((item) => item.meta)
+  .map((item) => ({
+    file: item.file,
+    canonicalTarget: item.meta.canonicalTarget
+  }))
+  .sort((a, b) => a.file.localeCompare(b.file));
+const compatibilityAliasPackSet = new Set(compatibilityAliasPacks.map((item) => item.file));
+const duplicatePackGroups = groupByNormalized(
+  packFiles.filter((p) => !compatibilityAliasPackSet.has(rel(p))),
+  (text) => normalizePwshSemantic(text)
+);
+const compatibilityAliasChecks = checkFiles
+  .map((p) => ({ fullPath: p, file: rel(p), meta: parseCompatibilityAliasMeta(rel(p), readUtf8(p)) }))
+  .filter((item) => item.meta)
+  .map((item) => ({
+    file: item.file,
+    canonicalTarget: item.meta.canonicalTarget
+  }))
+  .sort((a, b) => a.file.localeCompare(b.file));
+const compatibilityAliasCheckSet = new Set(compatibilityAliasChecks.map((item) => item.file));
+const duplicateCheckGroups = groupByNormalized(
+  checkFiles.filter((p) => !compatibilityAliasCheckSet.has(rel(p))),
+  (text) => normalizePwshSemantic(text)
+);
 const duplicateBackendScriptGroups = groupByNormalized(backendScriptFiles, normalizeJs);
 
 const orphanCandidates = [];
@@ -321,7 +377,9 @@ const summary = {
   exactDuplicateGroupCount: exactDuplicates.length,
   exactDuplicateFileCount: exactDuplicates.reduce((n, g) => n + g.length, 0),
   duplicatePackGroupCount: duplicatePackGroups.length,
+  compatibilityAliasPackCount: compatibilityAliasPacks.length,
   duplicateCheckGroupCount: duplicateCheckGroups.length,
+  compatibilityAliasCheckCount: compatibilityAliasChecks.length,
   duplicateBackendScriptGroupCount: duplicateBackendScriptGroups.length,
   orphanCandidateCount: orphanCandidates.length,
   tinyFileCount: tinyFiles.length,
@@ -338,7 +396,9 @@ const report = {
   summary,
   exactDuplicates,
   duplicatePackGroups,
+  compatibilityAliasPacks,
   duplicateCheckGroups,
+  compatibilityAliasChecks,
   duplicateBackendScriptGroups,
   orphanCandidates,
   tinyFiles,
@@ -358,7 +418,9 @@ console.log(`INFO report => ${rel(reportPath)}`);
 console.log(`INFO ignored dirs => ${summary.ignoredDirPatterns.join(", ")}`);
 console.log(`INFO exact duplicate groups: ${summary.exactDuplicateGroupCount}`);
 console.log(`INFO pack consolidation groups: ${summary.duplicatePackGroupCount}`);
+console.log(`INFO compatibility alias packs excluded: ${summary.compatibilityAliasPackCount}`);
 console.log(`INFO check consolidation groups: ${summary.duplicateCheckGroupCount}`);
+console.log(`INFO compatibility alias checks excluded: ${summary.compatibilityAliasCheckCount}`);
 console.log(`INFO backend script consolidation groups: ${summary.duplicateBackendScriptGroupCount}`);
 console.log(`INFO orphan candidates: ${summary.orphanCandidateCount}`);
 console.log(`INFO tiny files: ${summary.tinyFileCount}`);

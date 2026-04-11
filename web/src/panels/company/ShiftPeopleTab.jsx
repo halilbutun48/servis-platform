@@ -937,7 +937,15 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo(stops.length ? `Draft durak uretildi: ${stops.length} durak` : "OK koordinatli kayit yok - durak uretilemedi.");
   }
 
-  async function loadShiftStopsFromApi() {
+  async function prepareDraftStops() {
+    await generateDraftStops();
+    if (selectedShiftId && peopleBackend !== "off") {
+      await loadShiftStopsFromApi({ quiet: true });
+    }
+  }
+
+  async function loadShiftStopsFromApi(options = {}) {
+    const { quiet = false } = options;
     if (!selectedShiftId) return;
     setBusy(true);
     setErr("");
@@ -964,7 +972,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       setInfo(`Shift durakları yüklendi: ${withHub.length}`);
       return withHub;
     } catch (e) {
-      setErr(`Shift durakları yüklenemedi: ${getApiErrorMessage(e)}`);
+      if (!quiet) setErr(`Shift durakları yüklenemedi: ${getApiErrorMessage(e)}`);
+      return null;
     } finally {
       setBusy(false);
     }
@@ -983,7 +992,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     <div className="card">
       <h3>Shift Tools</h3>
       <div className="muted">
-        Shift bazlı araçlar: personel ekle/import → durak üret (preview) → rota/durak önizleme (mini-map). “Shift’ten Durakları Çek” mevcut durakları API’den getirir.
+        Shift bazlı araçlar: personel ekle/import → durakları hazırla → rota/durak önizleme (mini-map). “Durakları Hazırla” önce durak üretir, ardından varsa shift duraklarını yükler.
       </div>
 
       {err ? (
@@ -1007,9 +1016,8 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
             maxWalkM={maxWalkM}
             setMaxWalkM={setMaxWalkM}
             companyKind={me?.companyKind}
-            onGenerateDraftStops={generateDraftStops}
+            onPrepareDraftStops={prepareDraftStops}
             onOpenPreview={() => setPreviewOpen(true)}
-            onLoadShiftStops={loadShiftStopsFromApi}
             roomText={roomText}
             who={who}
             geoStats={geoStats}
