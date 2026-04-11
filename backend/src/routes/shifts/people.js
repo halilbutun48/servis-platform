@@ -276,6 +276,95 @@ function parseItemArray(req) {
   return validateWithZod(z.array(personelItemSchema).max(500), items);
 }
 
+
+async function generateStopsForShiftInternal({ req, shift, mode, maxWalkM }) {
+  const companyHub = (shift.hubLat == null || shift.hubLng == null)
+    ? await prisma.company.findUnique({ where: { id: shift.companyId }, select: { hubLat: true, hubLng: true } })
+    : null;
+
+  const people = await getShiftPeople(shift.id);
+  const { ok: points, skipped } = pickEligiblePoints(people);
+
+  if (points.length === 0) {
+    throw httpError(400, "NO_ELIGIBLE_POINTS", "No eligible personel points (need geoStatus OK or manual override + lat/lng)", {
+      skippedCount: skipped.length,
+      hubApplied: false,
+    });
+  }
+
+  const clusters = clusterStops(points, maxWalkM);
+  const namePrefix = String(shift?.direction || "INBOUND").toUpperCase() === "OUTBOUND" ? "Dropoff" : "Pickup";
+
+  let hubApplied = false;
+  let createdStops = [];
+  let assignmentCount = 0;
+
+  await prisma.$transaction(async (tx) => {
+    if ((shift.hubLat == null || shift.hubLng == null) && companyHub?.hubLat != null && companyHub?.hubLng != null) {
+      await tx.shift.update({
+        where: { id: shift.id },
+        data: { hubLat: companyHub.hubLat, hubLng: companyHub.hubLng },
+      });
+      hubApplied = true;
+    }
+
+    if (mode === "REPLACE") {
+      await tx.stopAssignment.deleteMany({ where: { shiftId: shift.id } });
+      await tx.shiftProgress.deleteMany({ where: { shiftId: shift.id } });
+      await tx.stop.deleteMany({ where: { shiftId: shift.id } });
+    }
+
+    const nextStops = [];
+    for (let i = 0; i < clusters.length; i++) {
+      const c = clusters[i];
+      const stop = await tx.stop.create({
+        data: {
+          shiftId: shift.id,
+          name: `${namePrefix} ${i + 1}`,
+          order: i + 1,
+          lat: c.center.lat,
+          lng: c.center.lng,
+          type: "COMMON",
+          state: "PENDING",
+        },
+      });
+      nextStops.push(stop);
+
+      const assignments = c.members.map((m) => ({
+        shiftId: shift.id,
+        stopId: stop.id,
+        personelId: m.personelId,
+        walkM: c.walkMByPersonelId.get(m.personelId) ?? 0,
+      }));
+
+      if (assignments.length > 0) {
+        await tx.stopAssignment.createMany({ data: assignments, skipDuplicates: true });
+      }
+    }
+
+    createdStops = nextStops;
+    assignmentCount = await tx.stopAssignment.count({ where: { shiftId: shift.id } });
+  });
+
+  await rebuildShiftRouteStateBestEffort(shift.id);
+  await audit(req, {
+    action: "SHIFT_STOPS_GENERATE",
+    entity: "Shift",
+    entityId: shift.id,
+    meta: { mode, maxWalkM, stops: createdStops.length, assignments: assignmentCount, skipped: skipped.length, hubApplied },
+  });
+
+  return {
+    ok: true,
+    shiftId: shift.id,
+    maxWalkM,
+    stopCount: createdStops.length,
+    assignmentCount,
+    skippedCount: skipped.length,
+    hubApplied,
+  };
+}
+
 export function attachShiftPeopleRoutes(router, _io) {
   const r = Router();
 
@@ -489,6 +578,25 @@ export function attachShiftPeopleRoutes(router, _io) {
     res.json({ ok: true, shiftId: shift.id, importId: imp.id, mode, summary, warnings });
   }));
 
+  // COMPANY: batch generate stops for guided multi-shift flow
+  r.post("/stops/generate-batch", authRequired(), requireRole("COMPANY"), asyncHandler(async (req, res) => {
+    const ids = Array.from(new Set((Array.isArray(req.body?.shiftIds) ? req.body.shiftIds : []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
+    const mode = validateWithZod(qModeSchema, req.body?.mode ?? req.query.mode);
+    const maxWalkM = validateWithZod(qMaxWalkSchema, req.body?.maxWalkM ?? req.query.maxWalkM);
+
+    if (!ids.length) throw httpError(400, "SHIFT_IDS_REQUIRED", "shiftIds required");
+    if (ids.length > 21) throw httpError(400, "GUIDED_SHIFT_LIMIT", "Guided en fazla 21 vardiya için durak üretebilir.");
+
+    const results = [];
+    for (const id of ids) {
+      const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
+      const result = await generateStopsForShiftInternal({ req, shift, mode, maxWalkM });
+      results.push(result);
+    }
+
+    return res.json({ ok: true, count: results.length, items: results, first: results[0] || null });
+  }));
+
   // COMPANY: generate stops from shift people
   r.post("/:id/stops/generate", authRequired(), requireRole("COMPANY"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
@@ -496,98 +604,8 @@ export function attachShiftPeopleRoutes(router, _io) {
     const maxWalkM = validateWithZod(qMaxWalkSchema, req.query.maxWalkM);
 
     const shift = await getShiftAndCheckScopeOrThrow(id, req.user);
-    const companyHub = (shift.hubLat == null || shift.hubLng == null)
-      ? await prisma.company.findUnique({ where: { id: shift.companyId }, select: { hubLat: true, hubLng: true } })
-      : null;
-
-    const people = await getShiftPeople(shift.id);
-    const { ok: points, skipped } = pickEligiblePoints(people);
-
-    if (points.length === 0) {
-      throw httpError(400, "NO_ELIGIBLE_POINTS", "No eligible personel points (need geoStatus OK or manual override + lat/lng)", {
-        skippedCount: skipped.length,
-        hubApplied: false,
-      });
-    }
-
-    const clusters = clusterStops(points, maxWalkM);
-    const namePrefix = String(shift?.direction || "INBOUND").toUpperCase() === "OUTBOUND" ? "Dropoff" : "Pickup";
-
-    let hubApplied = false;
-    let createdStops = [];
-    let assignmentCount = 0;
-
-    await prisma.$transaction(async (tx) => {
-      if ((shift.hubLat == null || shift.hubLng == null) && companyHub?.hubLat != null && companyHub?.hubLng != null) {
-        await tx.shift.update({
-          where: { id: shift.id },
-          data: { hubLat: companyHub.hubLat, hubLng: companyHub.hubLng },
-        });
-        hubApplied = true;
-      }
-
-      if (mode === "REPLACE") {
-        await tx.stopAssignment.deleteMany({ where: { shiftId: shift.id } });
-        await tx.shiftProgress.deleteMany({ where: { shiftId: shift.id } });
-        await tx.stop.deleteMany({ where: { shiftId: shift.id } });
-      }
-
-      const nextStops = [];
-      for (let i = 0; i < clusters.length; i++) {
-        const c = clusters[i];
-        const stop = await tx.stop.create({
-          data: {
-            shiftId: shift.id,
-            name: `${namePrefix} ${i + 1}`,
-            order: i + 1,
-            lat: c.center.lat,
-            lng: c.center.lng,
-            type: "COMMON",
-            state: "PENDING",
-          },
-        });
-        nextStops.push(stop);
-
-        const assignments = c.members.map((m) => ({
-          shiftId: shift.id,
-          stopId: stop.id,
-          personelId: m.personelId,
-          walkM: c.walkMByPersonelId.get(m.personelId) ?? 0,
-        }));
-
-        if (assignments.length > 0) {
-          await tx.stopAssignment.createMany({ data: assignments, skipDuplicates: true });
-        }
-      }
-
-      createdStops = nextStops;
-      assignmentCount = await tx.stopAssignment.count({ where: { shiftId: shift.id } });
-    });
-
-    await rebuildShiftRouteStateBestEffort(shift.id);
-    await audit(req, {
-      action: "SHIFT_STOPS_GENERATE",
-      entity: "Shift",
-      entityId: shift.id,
-      meta: {
-        mode,
-        maxWalkM,
-        stops: createdStops.length,
-        assignments: assignmentCount,
-        skipped: skipped.length,
-        hubApplied,
-      },
-    });
-
-    res.json({
-      ok: true,
-      shiftId: shift.id,
-      maxWalkM,
-      stopCount: createdStops.length,
-      assignmentCount,
-      skippedCount: skipped.length,
-      hubApplied,
-    });
+    const result = await generateStopsForShiftInternal({ req, shift, mode, maxWalkM });
+    res.json(result);
   }));
 
   // COMPANY + ROOM: list stops (used by Shift Tools "Shift’ten Durakları Çek")

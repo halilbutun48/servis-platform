@@ -6,7 +6,10 @@ export function ShiftPeopleSummarySection({
   maxWalkM,
   setMaxWalkM,
   companyKind,
+  stopActionBusy,
   onPrepareDraftStops,
+  onGenerateDraftStops,
+  onLoadShiftStops,
   onOpenPreview,
   roomText,
   who,
@@ -47,13 +50,28 @@ export function ShiftPeopleSummarySection({
           )}
         </div>
 
-        <button type="button" disabled={busy || !selectedShiftId} onClick={onPrepareDraftStops}>
-          Durakları Hazırla
-        </button>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            disabled={busy || stopActionBusy || !selectedShiftId}
+            onClick={onPrepareDraftStops}
+            title="Önce durak üretir, sonra shift duraklarını çeker"
+          >
+            {stopActionBusy ? "Hazırlanıyor..." : "Durakları Hazırla"}
+          </button>
 
-        <button type="button" disabled={busy || !selectedShiftId} onClick={onOpenPreview}>
-          Önizle
-        </button>
+          <button type="button" className="btn sm" disabled={busy || stopActionBusy || !selectedShiftId} onClick={onGenerateDraftStops}>
+            1. Durak Üret
+          </button>
+
+          <button type="button" className="btn sm" disabled={busy || stopActionBusy || !selectedShiftId} onClick={() => onLoadShiftStops({ quiet: false })}>
+            2. Shiftten Durakları Çek
+          </button>
+
+          <button type="button" disabled={busy || stopActionBusy || !selectedShiftId} onClick={onOpenPreview}>
+            Önizle
+          </button>
+        </div>
       </div>
 
       <div className="muted" style={{ marginTop: 10 }}>
@@ -102,7 +120,8 @@ export function ShiftPeopleSummarySection({
       ) : null}
 
       <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        Not: “Durakları Hazırla” önce durak üretir, ardından varsa shift duraklarını yükler. Üretim yalnızca koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kayıtlarda çalışır.
+        Önerilen sıra: <b>Durakları Hazırla</b> kullan. Gerekirse adımları ayrı ayrı da çalıştırabilirsin: <b>1. Durak Üret</b> → <b>2. Shiftten Durakları Çek</b>. Üretim yalnızca koordinatı (lat/lng) olan {whoPlural.toLowerCase()} kayıtlarda çalışır.
+        {stopActionBusy ? <span> İşlem sürerken butonlar geçici olarak kilitlenir.</span> : null}
       </div>
     </div>
   );

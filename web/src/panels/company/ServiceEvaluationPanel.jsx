@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { getCompanyTrustQualityItems, getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { getPath, navigate } from "../../router";
@@ -109,7 +109,7 @@ export default function ServiceEvaluationPanel() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  const loadBase = useCallback(async (signal) => {
+  async function loadBase(signal) {
     const [s, i] = await Promise.all([
       getCompanyTrustQualitySummary(token, { signal, ttlMs: 25000 }),
       getCompanyTrustQualityItems(token, { signal, take: 24, pendingOnly: true, ttlMs: 25000 }),
@@ -117,15 +117,15 @@ export default function ServiceEvaluationPanel() {
     if (signal?.aborted) return;
     setSummary(s || null);
     setItems(Array.isArray(i?.items) ? i.items : []);
-  }, [token]);
+  }
 
-  const ensureTemplate = useCallback(async (signal) => {
+  async function ensureTemplate(signal) {
     if (evaluation) return evaluation;
     const tpl = await getTrustQualityTemplate(token, { signal });
     if (signal?.aborted) return null;
     setEvaluation(tpl || null);
     return tpl || null;
-  }, [evaluation, token]);
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -141,7 +141,7 @@ export default function ServiceEvaluationPanel() {
       })();
     }, 320);
     return () => { cancelled = true; controller.abort(); clearTimeout(timer); };
-  }, [loadBase]);
+  }, [token]);
 
   const copilotItem = useMemo(() => {
     if (selected) return selected;
@@ -197,7 +197,7 @@ export default function ServiceEvaluationPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, selected, evaluation, ensureTemplate]);
+  }, [token, selected, evaluation]);
 
   const cards = useMemo(() => {
     const c = summary?.cards || {};

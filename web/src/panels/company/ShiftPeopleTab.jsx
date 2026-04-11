@@ -87,6 +87,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [stopSummary, setStopSummary] = useState(null);
 
   const [busy, setBusy] = useState(false);
+  const [stopActionBusy, setStopActionBusy] = useState(false);
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
   const [importMode, setImportMode] = useState("REPLACE");
@@ -246,6 +247,16 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return api(`/api/shifts/${shiftId}/stops/generate?mode=REPLACE&maxWalkM=${encodeURIComponent(String(mw))}`, {
       method: "POST",
       token,
+    });
+  }
+
+  async function generateStopsBatchOnBackend(shiftIds, maxWalkMValue) {
+    const mw = Number(maxWalkMValue);
+    const ids = Array.from(new Set((Array.isArray(shiftIds) ? shiftIds : []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
+    return api(`/api/shifts/stops/generate-batch`, {
+      method: "POST",
+      token,
+      body: { shiftIds: ids, mode: "REPLACE", maxWalkM: mw },
     });
   }
 
@@ -884,36 +895,55 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setImportQuickBusy(false);
   }
 
-  async function generateDraftStops() {
+  async function runStopAction(action) {
+    if (stopActionBusy) return null;
+    setStopActionBusy(true);
+    try {
+      return await action();
+    } finally {
+      setStopActionBusy(false);
+    }
+  }
+
+  async function generateDraftStopsInternal() {
     setErr("");
     setInfo("");
 
     const mw = Number(maxWalkM);
     if (!Number.isFinite(mw) || mw <= 0) {
       setErr("maxWalkM pozitif sayi olmali.");
-      return;
+      return false;
     }
 
     // Prefer backend: generate + persist stops (wizard Step-4 needs persisted stops)
-    // Guided Mode: outbound/inbound taslak shift'lerin hepsine aynı stop setini üret.
+    // Guided Mode: outbound/inbound taslak shift'lerin hepsine ayni stop setini uret.
     if (selectedShiftId && peopleBackend !== "off") {
+      setBusy(true);
       try {
         const ids = mirrorIds.length ? mirrorIds : [Number(selectedShiftId)];
-        await apiOr404Fallback(
+        const ok = await apiOr404Fallback(
           async () => {
             let firstResp = null;
-            for (const id of ids) {
-              const resp = await generateStopsOnBackend(String(id), mw);
-              if (!firstResp) firstResp = resp;
+            if (ids.length > 1) {
+              const resp = await generateStopsBatchOnBackend(ids, mw);
+              firstResp = resp?.first || (Array.isArray(resp?.items) ? resp.items[0] : null);
+            } else {
+              firstResp = await generateStopsOnBackend(String(ids[0]), mw);
             }
-            const loadedStops = await loadShiftStopsFromApi();
+            const shiftCount = ids.length;
+            setDraftStops([]);
             setStopSummary(buildStopSummary({
               maxWalkM: mw,
               stopCount: Number(firstResp?.stopCount || 0),
               coveredCount: Number(firstResp?.assignmentCount || 0),
               skippedCount: Number(firstResp?.skippedCount || 0),
               hubApplied: Boolean(firstResp?.hubApplied),
-            }, loadedStops, people));
+            }, [], people));
+            setInfo(
+              shiftCount > 1
+                ? `Durak uretimi tamamlandi: ${shiftCount} vardiya icin stop uretildi. Sonraki adim: Shiftten Duraklari Cek.`
+                : `Durak uretimi tamamlandi: ${Number(firstResp?.stopCount || 0)} durak. Sonraki adim: Shiftten Duraklari Cek.`
+            );
             setPeopleBackend("on");
             return true;
           },
@@ -923,9 +953,12 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           }
         );
 
-        return;
+        return Boolean(ok);
       } catch (e) {
         setErr(getApiErrorMessage(e));
+        return false;
+      } finally {
+        setBusy(false);
       }
     }
 
@@ -935,18 +968,27 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setDraftStops(withHub);
     setStopSummary(buildStopSummary({ maxWalkM: mw, hubApplied: Boolean(selectedShift?.hubLat && selectedShift?.hubLng) }, withHub, people));
     setInfo(stops.length ? `Draft durak uretildi: ${stops.length} durak` : "OK koordinatli kayit yok - durak uretilemedi.");
+    return true;
+  }
+
+  async function generateDraftStops() {
+    return runStopAction(() => generateDraftStopsInternal());
   }
 
   async function prepareDraftStops() {
-    await generateDraftStops();
-    if (selectedShiftId && peopleBackend !== "off") {
-      await loadShiftStopsFromApi({ quiet: true });
-    }
+    return runStopAction(async () => {
+      const ok = await generateDraftStopsInternal();
+      if (!ok) return false;
+      if (selectedShiftId && peopleBackend !== "off") {
+        await loadShiftStopsFromApiInternal({ quiet: true });
+      }
+      return true;
+    });
   }
 
-  async function loadShiftStopsFromApi(options = {}) {
+  async function loadShiftStopsFromApiInternal(options = {}) {
     const { quiet = false } = options;
-    if (!selectedShiftId) return;
+    if (!selectedShiftId) return null;
     setBusy(true);
     setErr("");
     setInfo("");
@@ -979,6 +1021,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     }
   }
 
+  async function loadShiftStopsFromApi(options = {}) {
+    return runStopAction(() => loadShiftStopsFromApiInternal(options));
+  }
+
   const roomText = useMemo(() => {
     if (!selectedShift) return "-";
     const r = roomsById?.get ? roomsById.get(Number(selectedShift.roomId)) : null;
@@ -992,7 +1038,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     <div className="card">
       <h3>Shift Tools</h3>
       <div className="muted">
-        Shift bazlı araçlar: personel ekle/import → durakları hazırla → rota/durak önizleme (mini-map). “Durakları Hazırla” önce durak üretir, ardından varsa shift duraklarını yükler.
+        Shift bazlı araçlar: personel ekle/import → durak üret → shift duraklarını çek → rota/durak önizleme (mini-map). “Durakları Hazırla” bu iki adımı sırayla çalıştırır.
       </div>
 
       {err ? (
@@ -1016,7 +1062,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
             maxWalkM={maxWalkM}
             setMaxWalkM={setMaxWalkM}
             companyKind={me?.companyKind}
+            stopActionBusy={stopActionBusy}
             onPrepareDraftStops={prepareDraftStops}
+            onGenerateDraftStops={generateDraftStops}
+            onLoadShiftStops={loadShiftStopsFromApi}
             onOpenPreview={() => setPreviewOpen(true)}
             roomText={roomText}
             who={who}

@@ -27,6 +27,7 @@ function statusOf(value) {
 }
 
 const FINAL_SHIFT_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
+const NON_MARKET_SHIFT_STATUSES = ["DRAFT", ...Array.from(FINAL_SHIFT_STATUSES)];
 
 function isFinalShiftStatus(value) {
   return FINAL_SHIFT_STATUSES.has(statusOf(value));
@@ -62,7 +63,13 @@ async function buildWorkflowSummary(company) {
       orderBy: { id: "desc" },
     }),
     prisma.shift.count({ where: { companyId: company.id, startAt: { gte: todayStart, lt: tomorrowStart } } }),
-    prisma.shift.count({ where: { companyId: company.id, roomId: null } }),
+    prisma.shift.count({
+      where: {
+        companyId: company.id,
+        roomId: null,
+        status: { not: "DRAFT" },
+      },
+    }),
     prisma.personel.count({ where: { companyId: company.id, kind: geoKind, geoStatus: "NEEDS_REVIEW" } }),
     prisma.shiftOffer.count({ where: { shift: { companyId: company.id }, status: "OPEN" } }),
   ]);
@@ -97,14 +104,14 @@ async function buildCommercialFlowSummary(company) {
     prisma.shift.count({
       where: {
         companyId: company.id,
-        status: { notIn: Array.from(FINAL_SHIFT_STATUSES) },
+        status: { notIn: NON_MARKET_SHIFT_STATUSES },
         roomId: null,
       },
     }),
     prisma.shift.count({
       where: {
         companyId: company.id,
-        status: { notIn: Array.from(FINAL_SHIFT_STATUSES) },
+        status: { notIn: NON_MARKET_SHIFT_STATUSES },
         NOT: [
           { roomId: null },
           { AND: [{ status: "SPLIT" }, { splitRootId: null }] },
@@ -126,13 +133,16 @@ async function buildCommercialFlowSummary(company) {
     prisma.shift.count({
       where: {
         companyId: company.id,
-        status: { notIn: Array.from(FINAL_SHIFT_STATUSES) },
+        status: { notIn: NON_MARKET_SHIFT_STATUSES },
         roomId: null,
         offers: { some: { status: "COUNTERED" } },
       },
     }),
     prisma.shift.findMany({
-      where: { companyId: company.id },
+      where: {
+        companyId: company.id,
+        status: { not: "DRAFT" },
+      },
       orderBy: [{ startAt: "desc" }, { id: "desc" }],
       take: 12,
       include: {

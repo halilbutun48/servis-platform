@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
@@ -372,7 +372,7 @@ export default function WorkflowPanel() {
   const [guidedResumeStep, setGuidedResumeStep] = useState(null);
   const [guidedResumeNonce, setGuidedResumeNonce] = useState(0);
 
-  const loadRooms = useCallback(async (signal) => {
+  async function loadRooms(signal) {
     if (!token) return;
     setRoomsSupported(true);
     try {
@@ -384,7 +384,7 @@ export default function WorkflowPanel() {
       setRooms([]);
       setRoomsSupported(false);
     }
-  }, [token]);
+  }
 
   async function loadSummary(signal) {
     if (!token) return;
@@ -447,7 +447,7 @@ export default function WorkflowPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, guidedOpen, loadRooms]);
+  }, [token, guidedOpen]);
 
   useEffect(() => {
     if (!offersModal.open) return;
@@ -625,7 +625,7 @@ export default function WorkflowPanel() {
     setGuidedResumeNonce(Date.now());
     setGuidedOpen(true);
     clearGuidedResume();
-  }, [me, me?.companyId, me?.id, me?.companyKind]);
+  }, [me?.companyId, me?.id, me?.companyKind]);
 
   return (
     <div className="wrap wrap--fluid">

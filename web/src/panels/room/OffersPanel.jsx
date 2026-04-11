@@ -60,6 +60,16 @@ function companyName(shift) {
   return company?.name || (shift?.companyId ? `Company #${shift.companyId}` : '-');
 }
 
+function minutePackageKey(offer) {
+  const shift = offer?.shift || {};
+  const companyId = Number(shift?.companyId || 0);
+  const createdAt = shift?.createdAt ? new Date(shift.createdAt) : null;
+  if (!companyId || !createdAt || Number.isNaN(createdAt.getTime())) return `offer:${Number(offer?.id || 0)}`;
+  createdAt.setSeconds(0, 0);
+  return `company:${companyId}:created:${createdAt.toISOString()}`;
+}
+
+
 function buildCapacityMeta({ shift, vehicle }) {
   const requiredPax = shiftRequiredPax(shift);
   const vehicleCapacity = vehicleCapacityValue(vehicle);
@@ -208,10 +218,39 @@ export default function RoomOffersPanel() {
       .filter((x) => Number.isFinite(x) && x > 0);
   }, [sel]);
 
+  const packageOfferIdsByKey = useMemo(() => {
+    const map = new Map();
+    for (const offer of items || []) {
+      if (!offer || offer.status === "CANCELLED" || offer.status === "ACCEPTED") continue;
+      const key = minutePackageKey(offer);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(Number(offer.id));
+    }
+    return map;
+  }, [items]);
+
   const focusedOffer = useMemo(
     () => filtered.find((o) => Number(o?.id || 0) === Number(focusedOfferId || 0)) || filtered[0] || null,
     [filtered, focusedOfferId]
   );
+
+  const focusedPackageIds = useMemo(() => {
+    if (!focusedOffer) return [];
+    return packageOfferIdsByKey.get(minutePackageKey(focusedOffer)) || [Number(focusedOffer.id)];
+  }, [focusedOffer, packageOfferIdsByKey]);
+
+  function setPackageSelection(offerIds, checked = true) {
+    const ids = Array.from(new Set((offerIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+    if (!ids.length) return;
+    setSel((prev) => {
+      const next = { ...(prev || {}) };
+      for (const id of ids) {
+        if (checked) next[id] = true;
+        else delete next[id];
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!focusedOffer) {
@@ -239,13 +278,9 @@ export default function RoomOffersPanel() {
     });
   }, [focusedOffer]);
 
-  function toggleAllFiltered() {
-    const next = {};
-    for (const o of filtered) {
-      if (o.status === "CANCELLED" || o.status === "ACCEPTED") continue;
-      next[o.id] = true;
-    }
-    setSel(next);
+  function selectFocusedPackage() {
+    if (!focusedPackageIds.length) return;
+    setPackageSelection(focusedPackageIds, true);
   }
 
   async function onBulkCounter() {
@@ -298,11 +333,8 @@ export default function RoomOffersPanel() {
     setBusy(true);
     setErr("");
     try {
-      let firstShiftId = 0;
-      for (const oid of ids) {
-        const res = await api.put(`/api/offers/${oid}/room-accept`, {});
-        if (!firstShiftId) firstShiftId = Number(res?.shift?.id || res?.shiftId || 0);
-      }
+      const res = await api.post(`/api/offers/room-accept-package`, { offerIds: ids });
+      const firstShiftId = Number(res?.firstShiftId || res?.results?.[0]?.shift?.id || 0);
       setSel({});
       await load();
       if (firstShiftId > 0) {
@@ -432,7 +464,7 @@ export default function RoomOffersPanel() {
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="muted">Toplam: {filtered.length} • Seçili: <b>{focusedOfferId || '-'}</b></div>
+            <div className="muted">Toplam: {filtered.length} • Seçili teklif: <b>{focusedOfferId || '-'}</b> • Paket: <b>{focusedPackageIds.length || 0}</b> vardiya</div>
             <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Durum
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} disabled={busy}>
@@ -451,8 +483,8 @@ export default function RoomOffersPanel() {
             />
           </div>
           <div className="row" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <button className="btn sm ghost" disabled={busy} onClick={toggleAllFiltered} title="OPEN+COUNTERED olanları seçer">
-              Hepsini Seç
+            <button className="btn sm ghost" disabled={busy || !focusedPackageIds.length} onClick={selectFocusedPackage} title="Seçili teklifin paketindeki vardiyaları seçer">
+              Paketi Seç
             </button>
             <input
               value={bulkAmount}
@@ -484,7 +516,7 @@ export default function RoomOffersPanel() {
           totalCount={items.length}
           filterValue={`${statusFilter} ${q}`.trim()}
           onClearFilter={() => { setQ(""); setStatusFilter("OPEN,COUNTERED"); }}
-          helper="Copilot seçili teklif kartını kullanır."
+          helper="Copilot seçili teklif kartını kullanır. Paket işlemlerinde önce paketi seç."
         />
       </div>
 
@@ -513,9 +545,9 @@ export default function RoomOffersPanel() {
                     type="checkbox"
                     disabled={!canCounter || busy}
                     checked={!!sel[o.id]}
-                    onChange={(e) => { e.stopPropagation(); setSel((p) => ({ ...p, [o.id]: e.target.checked })); }}
+                    onChange={(e) => { e.stopPropagation(); setPackageSelection(packageOfferIdsByKey.get(minutePackageKey(o)) || [Number(o.id)], e.target.checked); }}
                   />
-                  Seç
+                  Paketi Seç
                 </label>
                 {pill(o.status)}
                 {pill(shift?.status)}

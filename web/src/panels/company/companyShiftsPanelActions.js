@@ -229,13 +229,11 @@ export async function acceptCompanyOfferPackageAction({ roomId, offersModal, off
   setBusy(true);
   setErr("");
   try {
-    for (const sid of targetShiftIds) {
-      const r = await api(`/api/offers/shift/${sid}`, { method: "GET", token });
-      const items = r?.items || [];
-      const match = items.find((o) => Number(o.roomId) === rid && (o.status === "COUNTERED" || o.status === "OFFERED"));
-      if (!match?.id) continue;
-      await api(`/api/offers/${Number(match.id)}/accept`, { method: "PUT", token, body: {} });
-    }
+    await api(`/api/offers/accept-package`, {
+      method: "POST",
+      token,
+      body: { roomId: rid, shiftIds: targetShiftIds },
+    });
     setOffersModal((p) => ({ ...p, open: false }));
     setOffersModalPkgIds([]);
     invalidate("shifts");

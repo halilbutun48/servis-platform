@@ -50,6 +50,43 @@ async function loadFullShift(shiftId) {
   });
 }
 
+
+async function createShiftWithStopsTx(tx, { body, effectiveCompanyId, effectiveStatus }) {
+  const created = await tx.shift.create({
+    data: {
+      companyId: effectiveCompanyId,
+      roomId: body.roomId ?? null,
+      startAt: body.startAt,
+      endAt: body.endAt,
+      status: effectiveStatus,
+      hubLat: body.hubLat ?? null,
+      hubLng: body.hubLng ?? null,
+      direction: body.direction ?? "INBOUND",
+      pattern: body.pattern ?? "ONE_WAY",
+      requiredPaxOverride: body.requiredPax ?? null,
+      companyOfferVehicleId: body.companyOfferVehicleId ?? null,
+      companyOfferAmount: body.companyOfferAmount ?? null,
+      companyOfferNote: body.companyOfferNote ?? null,
+    },
+    include: { company: true, room: true, stops: true },
+  });
+
+  if (Array.isArray(body.stops) && body.stops.length) {
+    await tx.stop.createMany({
+      data: body.stops.map((s) => ({
+        shiftId: created.id,
+        name: s.name,
+        lat: s.lat,
+        lng: s.lng,
+        order: s.order,
+        type: s.type ?? "MANUAL",
+      })),
+    });
+  }
+
+  return created;
+}
+
 // --- Agreement overlap helpers (used to skip market offers when a contract already exists) ---
 function overlapsTR(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
@@ -116,6 +153,96 @@ async function findAgreementBlockedRoomIdsForShift({ companyId, roomIds, startAt
 
 // Company-focused endpoints (some are also allowed for ROOM/SUPER_ADMIN)
 export function attachShiftCompanyRoutes(r, io) {
+  r.post(
+    "/guided-batch",
+    authRequired(),
+    requireRole("COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const rows = Array.isArray(req.body?.items) ? req.body.items : [];
+        const uniqueStartDays = new Set(
+          rows
+            .map((row) => String(row?.startAt || "").slice(0, 10))
+            .filter((ymd) => /^\d{4}-\d{2}-\d{2}$/.test(ymd))
+        );
+        const totalShiftCount = Number(rows.length || 0);
+        const dayCount = Number(uniqueStartDays.size || 0);
+
+        if (!rows.length) {
+          return sendErrorResponse(res, httpError(400, "GUIDED_BATCH_EMPTY", "En az 1 taslak vardiya gerekli."));
+        }
+        if (dayCount > 7) {
+          return sendErrorResponse(res, httpError(400, "GUIDED_DAY_LIMIT", "Guided en fazla 7 gün olabilir."));
+        }
+        if (totalShiftCount > 21) {
+          return sendErrorResponse(res, httpError(400, "GUIDED_SHIFT_LIMIT", "Guided en fazla 21 vardiya oluşturabilir."));
+        }
+
+        const effectiveCompanyId = req.user.role === "COMPANY" ? req.user.companyId : Number(req.body?.companyId || 0);
+        if (!effectiveCompanyId) {
+          return sendErrorResponse(res, httpError(400, "companyId required"));
+        }
+
+        const parsedRows = rows.map((row) => validateWithZod(createShiftSchema, row));
+        for (const body of parsedRows) {
+          const hasHubLat = body.hubLat != null;
+          const hasHubLng = body.hubLng != null;
+          if (hasHubLat !== hasHubLng) {
+            return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
+          }
+          if (body.companyOfferVehicleId != null) {
+            const v = await prisma.vehicle.findUnique({
+              where: { id: body.companyOfferVehicleId },
+              select: { id: true, roomId: true },
+            });
+            if (!v) return sendErrorResponse(res, httpError(400, "companyOfferVehicleId not found"));
+            if (v.roomId && body.roomId && Number(v.roomId) !== Number(body.roomId)) {
+              return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "companyOfferVehicleId must belong to the same room"));
+            }
+          }
+        }
+
+        const created = await prisma.$transaction(async (tx) => {
+          const rowsOut = [];
+          for (const body of parsedRows) {
+            const createdRow = await createShiftWithStopsTx(tx, {
+              body,
+              effectiveCompanyId,
+              effectiveStatus: "DRAFT",
+            });
+            rowsOut.push(createdRow);
+          }
+          return rowsOut;
+        });
+
+        const fullItems = [];
+        for (const shift of created) {
+          await rebuildShiftRouteStateBestEffort(shift.id);
+          await upsertShiftSeriesCommercialBackboneByShiftId(shift.id).catch(() => null);
+          const full = await loadFullShift(shift.id);
+          fullItems.push(full);
+          await audit(req, {
+            action: "SHIFT_CREATE",
+            entity: "Shift",
+            entityId: shift.id,
+            meta: { status: "DRAFT", via: "GUIDED_BATCH" },
+          });
+          emitShift(io, full, "shift:list");
+        }
+
+        return res.json({
+          ok: true,
+          createdIds: fullItems.map((x) => Number(x.id)),
+          items: fullItems,
+          totalShiftCount,
+          dayCount,
+        });
+      } catch (e) {
+        return sendErrorResponse(res, e);
+      }
+    }
+  );
+
   // COMPANY/SUPER_ADMIN: create shift
   r.post(
     "/",
@@ -163,46 +290,9 @@ export function attachShiftCompanyRoutes(r, io) {
           }
         }
 
-        const shift = await prisma.$transaction(async (tx) => {
-          const created = await tx.shift.create({
-            data: {
-              companyId: effectiveCompanyId,
-              // ✅ M24: roomId optional (market shift)
-              roomId: body.roomId ?? null,
-              startAt: body.startAt,
-              endAt: body.endAt,
-
-              status: effectiveStatus,
-
-              // ✅ M19: routing meta
-              hubLat: body.hubLat ?? null,
-              hubLng: body.hubLng ?? null,
-              direction: body.direction ?? "INBOUND",
-              pattern: body.pattern ?? "ONE_WAY",
-              requiredPaxOverride: body.requiredPax ?? null,
-
-              companyOfferVehicleId: body.companyOfferVehicleId ?? null,
-              companyOfferAmount: body.companyOfferAmount ?? null,
-              companyOfferNote: body.companyOfferNote ?? null,
-            },
-            include: { company: true, room: true, stops: true },
-          });
-
-          if (Array.isArray(body.stops) && body.stops.length) {
-            await tx.stop.createMany({
-              data: body.stops.map((s) => ({
-                shiftId: created.id,
-                name: s.name,
-                lat: s.lat,
-                lng: s.lng,
-                order: s.order,
-                type: s.type ?? "MANUAL",
-              })),
-            });
-          }
-
-          return created;
-        });
+        const shift = await prisma.$transaction(async (tx) =>
+          createShiftWithStopsTx(tx, { body, effectiveCompanyId, effectiveStatus })
+        );
 
         await rebuildShiftRouteStateBestEffort(shift.id);
         await upsertShiftSeriesCommercialBackboneByShiftId(shift.id).catch(() => null);

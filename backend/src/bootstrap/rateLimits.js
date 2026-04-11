@@ -52,9 +52,16 @@ export function createApiRateLimiters({ ENV, isProd, verifyToken, rateLimitStore
   }
 
   function limiter429Handler(req, res) {
+    const resetTime = req.rateLimit?.resetTime instanceof Date ? req.rateLimit.resetTime.getTime() : null;
+    const retryAfterSec = resetTime ? Math.max(1, Math.ceil((resetTime - Date.now()) / 1000)) : null;
+    const message = retryAfterSec
+      ? `Çok kısa sürede çok sayıda işlem gönderildi. ${retryAfterSec} sn sonra tekrar deneyin.`
+      : "Çok kısa sürede çok sayıda işlem gönderildi. Lütfen biraz bekleyip tekrar deneyin.";
     return res.status(429).json({
       error: "RATE_LIMITED",
       code: "RATE_LIMITED",
+      message,
+      retryAfterSec,
       path: req.originalUrl || req.path || null,
     });
   }
@@ -160,6 +167,20 @@ export function createApiRateLimiters({ ENV, isProd, verifyToken, rateLimitStore
     keyGenerator: authKey,
   });
 
+  const guidedDraftCreateLimiter = buildLimiter({
+    windowMs: ENV.WRITE_RATE_LIMIT_WINDOW_MS,
+    max: Math.max(120, Math.round(Number(ENV.WRITE_RATE_LIMIT_MAX || 60) * 3)),
+    store: rlStore("write-guided-draft:", ENV.WRITE_RATE_LIMIT_WINDOW_MS),
+    keyGenerator: authKey,
+  });
+
+  const stopGenerateWriteLimiter = buildLimiter({
+    windowMs: ENV.WRITE_RATE_LIMIT_WINDOW_MS,
+    max: Math.max(180, Math.round(Number(ENV.WRITE_RATE_LIMIT_MAX || 60) * 4)),
+    store: rlStore("write-stop-generate:", ENV.WRITE_RATE_LIMIT_WINDOW_MS),
+    keyGenerator: authKey,
+  });
+
   const gpsLimiter = buildLimiter({
     windowMs: ENV.GPS_RATE_LIMIT_WINDOW_MS,
     max: ENV.GPS_RATE_LIMIT_MAX,
@@ -226,6 +247,21 @@ export function createApiRateLimiters({ ENV, isProd, verifyToken, rateLimitStore
     return pathname === "/rooms" || pathname === "/vehicles" || pathname === "/agreements";
   }
 
+
+  function isGuidedDraftCreateWritePath(req) {
+    const pathname = String(req.path || "");
+    if (String(req.method || "GET").toUpperCase() !== "POST") return false;
+    if (pathname === "/shifts/guided-batch") return true;
+    if (pathname !== "/shifts") return false;
+    return String(req.body?.status || "").toUpperCase() === "DRAFT";
+  }
+
+  function isStopGenerateWritePath(req) {
+    if (String(req.method || "GET").toUpperCase() !== "POST") return false;
+    const pathname = String(req.path || "");
+    return pathname === "/shifts/stops/generate-batch" || /^\/shifts\/\d+\/stops\/generate$/.test(pathname);
+  }
+
   function apiLimiterMiddleware(req, res, next) {
     if (req.path.startsWith("/auth")) return next();
     if (req.path.startsWith("/gps")) return next();
@@ -243,6 +279,8 @@ export function createApiRateLimiters({ ENV, isProd, verifyToken, rateLimitStore
       return readLimiter(req, res, next);
     }
 
+    if (isGuidedDraftCreateWritePath(req)) return guidedDraftCreateLimiter(req, res, next);
+    if (isStopGenerateWritePath(req)) return stopGenerateWriteLimiter(req, res, next);
     return writeLimiter(req, res, next);
   }
 

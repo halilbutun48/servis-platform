@@ -80,6 +80,12 @@ export async function createGuidedDraftShiftsAction({
     cur = addDaysISO(cur, 1);
   }
 
+  const dayCount = ymds.length;
+  const totalShiftCount = ymds.length * items.length;
+  if (dayCount > 7) throw new Error("Guided en fazla 7 gün olabilir. Daha uzun planlar için sözleşme kullanın.");
+  if (totalShiftCount > 21) throw new Error("Guided en fazla 21 vardiya oluşturabilir. Daha yoğun planlar için sözleşme kullanın.");
+
+  const rows = [];
   for (const ymd of ymds) {
     for (const it of items) {
       const startAt = ymdMinToIso(ymd, it.startMin);
@@ -140,43 +146,63 @@ export async function createGuidedDraftShiftsAction({
         if (stopDrafts.length) body.stops = stopDrafts;
       }
 
-      const shift = await api("/api/shifts", { token, method: "POST", body });
-      if (shift?.id) {
-        createdIds.push(Number(shift.id));
-        try {
-          localStorage.setItem(
-            `psv1:planTerms:shift:${Number(shift.id)}:v1`,
-            JSON.stringify({
-              planStartDate: startDate,
-              planEndDate: endDate,
-              ymd,
-              weekMask,
-              startMin: it.startMin,
-              endMin: it.endMin,
-              direction: it.direction,
-              pattern: organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern,
-              hubLat: lat,
-              hubLng: lng,
-              organization: organization
-                ? {
-                    gatheringName: orgGatheringName,
-                    estimatedPax: Number(orgEstimatedPax || 0) || null,
-                    returnType: orgReturnType,
-                    places: (orgFilledDestinations || []).map((d) => ({ title: d.title, address: d.address })),
-                  }
-                : null,
-            })
-          );
-        } catch {
-          // ignore localStorage errors
-        }
-      }
+      rows.push({ ymd, item: it, body });
     }
   }
 
+  let createdItems = [];
+  try {
+    const batchResp = await api("/api/shifts/guided-batch", {
+      token,
+      method: "POST",
+      body: { items: rows.map((row) => row.body) },
+    });
+    createdItems = Array.isArray(batchResp?.items) ? batchResp.items : [];
+  } catch (e) {
+    const msg = String(e?.message || e || "");
+    if (!msg.includes("Cannot POST /api/shifts/guided-batch")) throw e;
+    for (const row of rows) {
+      const shift = await api("/api/shifts", { token, method: "POST", body: row.body });
+      if (shift?.id) createdItems.push(shift);
+    }
+  }
+
+  createdItems.forEach((shift, idx) => {
+    if (shift?.id) createdIds.push(Number(shift.id));
+    const row = rows[idx];
+    if (!shift?.id || !row) return;
+    try {
+      localStorage.setItem(
+        `psv1:planTerms:shift:${Number(shift.id)}:v1`,
+        JSON.stringify({
+          planStartDate: startDate,
+          planEndDate: endDate,
+          ymd: row.ymd,
+          weekMask,
+          startMin: row.item.startMin,
+          endMin: row.item.endMin,
+          direction: row.item.direction,
+          pattern: organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : row.item.pattern,
+          hubLat: lat,
+          hubLng: lng,
+          organization: organization
+            ? {
+                gatheringName: orgGatheringName,
+                estimatedPax: Number(orgEstimatedPax || 0) || null,
+                returnType: orgReturnType,
+                places: (orgFilledDestinations || []).map((d) => ({ title: d.title, address: d.address })),
+              }
+            : null,
+        })
+      );
+    } catch {
+      // ignore localStorage errors
+    }
+  });
+
   writeGuidedTempShiftIds(createdIds);
-  const draftShifts = await loadGuidedResumeDraftShifts({ token, ids: createdIds });
-  return { createdIds, draftShifts };
+  const draftShifts = createdItems.length ? createdItems : await loadGuidedResumeDraftShifts({ token, ids: createdIds });
+  return { createdIds, draftShifts, dayCount, totalShiftCount };
 }
 
 export async function refreshGuidedDraftShiftsAction({ token, draftShiftIds }) {

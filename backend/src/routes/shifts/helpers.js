@@ -1,5 +1,5 @@
 // backend/src/routes/shifts.helpers.js
-// shifts.js içindeki yardımcı fonksiyonları ayrı dosyaya alır (satır sayısını azaltmak için)
+// shifts.js iÃ§indeki yardÄ±mcÄ± fonksiyonlarÄ± ayrÄ± dosyaya alÄ±r (satÄ±r sayÄ±sÄ±nÄ± azaltmak iÃ§in)
 
 import prisma from "../../prisma.js";
 
@@ -27,7 +27,7 @@ export function emitShift(io, shift, event, payload = {}) {
   if (!io || !shift) return;
   const base = { shiftId: shift.id, ...payload };
   io.to(`company:${shift.companyId}`).emit(event, base);
-  // ✅ M24: market shift olabilir (roomId null)
+  // âœ… M24: market shift olabilir (roomId null)
   if (shift.roomId) io.to(`room:${shift.roomId}`).emit(event, base);
   io.to(`shift:${shift.id}`).emit(event, base);
 }
@@ -186,7 +186,7 @@ export async function getRequestDelegateOrThrow() {
     };
   }
 
-  // Yeni schema isimleri olabilir (personelRequest vb). En azından crash olmasın.
+  // Yeni schema isimleri olabilir (personelRequest vb). En azÄ±ndan crash olmasÄ±n.
   // Burada sadece fail fast.
   const e = new Error("Request delegate not found (pickupRequest/request)");
   e.status = 500;
@@ -249,6 +249,7 @@ export function buildShiftsWhereFromQuery(query, user) {
   // Filters
   const statusRaw = (query?.status ?? "").toString().trim();
   const onlyOpen = String(query?.onlyOpen ?? "").trim() === "1";
+  const includeDrafts = String(query?.includeDrafts ?? "").trim() === "1";
 
   if (statusRaw) {
     const statuses = statusRaw
@@ -259,6 +260,8 @@ export function buildShiftsWhereFromQuery(query, user) {
     else if (statuses.length > 1) where.status = { in: statuses };
   } else if (onlyOpen) {
     where.status = { in: ["REQUESTED", "APPROVED", "ACTIVE"] };
+  } else if (!includeDrafts && (user?.role === "COMPANY" || user?.role === "SUPER_ADMIN")) {
+    where.status = { not: "DRAFT" };
   }
 
   const driverId = Number(query?.driverId);

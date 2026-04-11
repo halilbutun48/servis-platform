@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -179,7 +179,7 @@ export default function AgreementsPanel() {
   const durationDays = useMemo(() => {
     const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS.find((x) => x.key === DEFAULT_DURATION_KEY) || DURATION_PRESETS[0];
     return Number(p.days || 30);
-  }, [durationKey, DEFAULT_DURATION_KEY]);
+  }, [durationKey]);
   const [endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
 
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
@@ -235,27 +235,28 @@ export default function AgreementsPanel() {
     })();
 
     return () => { cancelled = true; };
-  }, [advancedOpen, token, roomId, roomById, useRoomHub, hubLat, hubLng]);
+  }, [advancedOpen, token, roomId, roomById, useRoomHub]);
 
-  const applyTemplate = useCallback((key) => {
+  function applyTemplate(key) {
     const t = PLAN_TEMPLATES.find((x) => x.key === key) || PLAN_TEMPLATES[0];
     setDaysSel(selectedFromMask(t.daysMask));
     setStartHHMM(toHHMM(t.startMin));
     setEndHHMM(toHHMM(t.endMin));
     setDirection(t.direction);
     setPattern(t.pattern);
-  }, []);
+  }
 
   useEffect(() => {
     applyTemplate(templateKey);
-  }, [templateKey, applyTemplate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateKey]);
 
   useEffect(() => {
     if (!isYmd(startDate)) return;
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
-  const loadRooms = useCallback(async (signal) => {
+  async function loadRooms(signal) {
     if (!token) return;
     setRoomErr("");
     setRoomsSupported(true);
@@ -269,7 +270,7 @@ export default function AgreementsPanel() {
       setRoomsSupported(false);
       setRoomErr(e?.message || "Rooms endpoint missing");
     }
-  }, [token]);
+  }
 
   async function load(signal) {
     if (!token) return;
@@ -333,7 +334,7 @@ export default function AgreementsPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, advancedOpen, loadRooms]);
+  }, [token, advancedOpen]);
 
   async function createAdvanced() {
     setErr("");

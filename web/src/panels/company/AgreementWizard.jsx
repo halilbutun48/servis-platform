@@ -90,6 +90,18 @@ const PACKS = [
     ],
   },
   {
+    key: "WK_THREE_SHIFTS",
+    title: "Hafta içi • 3 Vardiya",
+    desc: "3 agreement oluşturur (07-09 + 12-14 + 17-19)",
+    weekMask: 62,
+    durationDays: 30,
+    items: [
+      { label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
+      { label: "Öğlen", startMin: 12 * 60, endMin: 14 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
+      { label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
+    ],
+  },
+  {
     key: "WK_NIGHT",
     title: "Hafta içi • Gece",
     desc: "23:00 → 01:00 (midnight-cross)",

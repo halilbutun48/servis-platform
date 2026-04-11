@@ -87,57 +87,57 @@ export function collectGuidedSessionPersonIds(companyKey, shiftIds) {
 export const PACKS = [
   {
     key: "WK_MORNING",
-    title: "Hafta içi • Sabah",
-    desc: "07:00 → 09:00 (Toplama → Hub)",
+    title: "Hafta iÃ§i â€¢ Sabah",
+    desc: "07:00 â†’ 09:00 (Toplama â†’ Hub)",
     weekMask: 62,
     durationDays: 30,
     items: [{ label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
   },
   {
     key: "WK_EVENING",
-    title: "Hafta içi • Akşam",
-    desc: "17:00 → 19:00 (Hub → Dağıtım)",
+    title: "Hafta iÃ§i â€¢ AkÅŸam",
+    desc: "17:00 â†’ 19:00 (Hub â†’ DaÄŸÄ±tÄ±m)",
     weekMask: 62,
     durationDays: 30,
-    items: [{ label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" }],
+    items: [{ label: "AkÅŸam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" }],
   },
   {
     key: "WK_MORNING_EVENING",
-    title: "Hafta içi • Sabah + Akşam",
-    desc: "2 vardiya taslağı oluşturur (07-09 + 17-19)",
+    title: "Hafta iÃ§i â€¢ Sabah + AkÅŸam",
+    desc: "2 vardiya taslaÄŸÄ± oluÅŸturur (07-09 + 17-19)",
     weekMask: 62,
     durationDays: 30,
     items: [
       { label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
-      { label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
+      { label: "AkÅŸam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
     ],
   },
   {
     key: "WK_MORNING_AFTERNOON",
-    title: "Hafta içi • Sabah + Öğleden sonra",
-    desc: "2 vardiya taslağı oluşturur (06-08 + 15-17)",
+    title: "Hafta iÃ§i â€¢ Sabah + Ã–ÄŸleden sonra",
+    desc: "2 vardiya taslaÄŸÄ± oluÅŸturur (06-08 + 15-17)",
     weekMask: 62,
     durationDays: 30,
     items: [
       { label: "Sabah", startMin: 6 * 60, endMin: 8 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
-      { label: "Öğleden sonra", startMin: 15 * 60, endMin: 17 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
+      { label: "Ã–ÄŸleden sonra", startMin: 15 * 60, endMin: 17 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
     ],
   },
   {
     key: "WK_NIGHT",
-    title: "Hafta içi • Gece",
-    desc: "23:00 → 01:00 (midnight-cross)",
+    title: "Hafta iÃ§i â€¢ Gece",
+    desc: "23:00 â†’ 01:00 (midnight-cross)",
     weekMask: 62,
     durationDays: 30,
     items: [{ label: "Gece", startMin: 23 * 60, endMin: 1 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
   },
   {
     key: "CUSTOM",
-    title: "Özel",
+    title: "Ã–zel",
     desc: "Elle ayarla",
     weekMask: 62,
     durationDays: 30,
-    items: [{ label: "Özel", startMin: 8 * 60, endMin: 10 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
+    items: [{ label: "Ã–zel", startMin: 8 * 60, endMin: 10 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
   },
 ];
 
@@ -145,11 +145,11 @@ export function packTitleForMode(pack, organization) {
   if (!organization) return pack?.title || "";
   const map = {
     WK_MORNING: "Sabah toplama turu",
-    WK_EVENING: "Akşam dönüş turu",
-    WK_MORNING_EVENING: "Gidiş + dönüş",
-    WK_MORNING_AFTERNOON: "Sabah + öğleden sonra turu",
+    WK_EVENING: "AkÅŸam dÃ¶nÃ¼ÅŸ turu",
+    WK_MORNING_EVENING: "GidiÅŸ + dÃ¶nÃ¼ÅŸ",
+    WK_MORNING_AFTERNOON: "Sabah + Ã¶ÄŸleden sonra turu",
     WK_NIGHT: "Gece turu",
-    CUSTOM: "Özel plan",
+    CUSTOM: "Ã–zel plan",
   };
   return map[pack?.key] || pack?.title || "";
 }
@@ -157,24 +157,24 @@ export function packTitleForMode(pack, organization) {
 export function packDescForMode(pack, organization) {
   if (!organization) return pack?.desc || "";
   const map = {
-    WK_MORNING: "Sabah tek tur. Toplanma noktasından çıkıp ziyaret akışını başlatır.",
-    WK_EVENING: "Akşam tek tur. Dönüş ya da kapanış akışı için uygundur.",
-    WK_MORNING_EVENING: "Aynı gün gidiş + dönüş için 2 taslak oluşturur.",
-    WK_MORNING_AFTERNOON: "Sabah çıkış, öğleden sonra devam / dönüş için 2 taslak oluşturur.",
-    WK_NIGHT: "Gece başlayan tur veya etkinlik çıkışı için uygundur.",
-    CUSTOM: "Saatleri ve tur tipini elle düzenle.",
+    WK_MORNING: "Sabah tek tur. Toplanma noktasÄ±ndan Ã§Ä±kÄ±p ziyaret akÄ±ÅŸÄ±nÄ± baÅŸlatÄ±r.",
+    WK_EVENING: "AkÅŸam tek tur. DÃ¶nÃ¼ÅŸ ya da kapanÄ±ÅŸ akÄ±ÅŸÄ± iÃ§in uygundur.",
+    WK_MORNING_EVENING: "AynÄ± gÃ¼n gidiÅŸ + dÃ¶nÃ¼ÅŸ iÃ§in 2 taslak oluÅŸturur.",
+    WK_MORNING_AFTERNOON: "Sabah Ã§Ä±kÄ±ÅŸ, Ã¶ÄŸleden sonra devam / dÃ¶nÃ¼ÅŸ iÃ§in 2 taslak oluÅŸturur.",
+    WK_NIGHT: "Gece baÅŸlayan tur veya etkinlik Ã§Ä±kÄ±ÅŸÄ± iÃ§in uygundur.",
+    CUSTOM: "Saatleri ve tur tipini elle dÃ¼zenle.",
   };
   return map[pack?.key] || pack?.desc || "";
 }
 
 export function directionLabel(direction, organization) {
   if (!organization) return direction || "-";
-  return String(direction || "").toUpperCase() === "OUTBOUND" ? "Dağıtım / dönüş" : "Toplama / gidiş";
+  return String(direction || "").toUpperCase() === "OUTBOUND" ? "DaÄŸÄ±tÄ±m / dÃ¶nÃ¼ÅŸ" : "Toplama / gidiÅŸ";
 }
 
 export function patternLabel(pattern, organization) {
   if (!organization) return pattern || "-";
-  return String(pattern || "").toUpperCase() === "LOOP" ? "Başlangıç noktasına dön" : "Son noktada bitir";
+  return String(pattern || "").toUpperCase() === "LOOP" ? "BaÅŸlangÄ±Ã§ noktasÄ±na dÃ¶n" : "Son noktada bitir";
 }
 
 export function emptyDestination() {
@@ -199,16 +199,16 @@ export function fmtCoord(v) {
 
 export function stepTitle(step, who, organization) {
   if (organization) {
-    if (step === 0) return "1) Toplanma noktası";
+    if (step === 0) return "1) Toplanma noktasÄ±";
     if (step === 1) return "2) Plan paketi";
-    if (step === 2) return "3) Kişi sayısı + yerler";
-    if (step === 3) return "4) Ön izleme + teklif";
+    if (step === 2) return "3) KiÅŸi sayÄ±sÄ± + yerler";
+    if (step === 3) return "4) Ã–n izleme + teklif";
     return "";
   }
-  if (step === 0) return "1) Şirket konumu";
+  if (step === 0) return "1) Åirket konumu";
   if (step === 1) return "2) Plan paketi";
   if (step === 2) return `3) ${who} + Durak`;
-  if (step === 3) return "4) Ön izleme + teklif";
+  if (step === 3) return "4) Ã–n izleme + teklif";
   return "";
 }
 
@@ -249,7 +249,8 @@ export function clearPlanTermsForShiftIds(ids) {
 }
 
 export function createDurationOptions() {
-  return [{ key: "1d", label: "1 gün", days: 1 }, ...QUICK_DURATION_PRESETS];
+  const guidedPresets = (QUICK_DURATION_PRESETS || []).filter((x) => String(x?.key || "") !== "1m");
+  return [{ key: "1d", label: "1 gÃ¼n", days: 1 }, ...guidedPresets];
 }
 
 export function createDefaultCustomSlots() {

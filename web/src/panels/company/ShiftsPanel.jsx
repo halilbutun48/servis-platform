@@ -896,7 +896,6 @@ useEffect(() => {
           toggleAcc={toggleAcc}
           marketItems={marketItems}
           marketQ={marketQ}
-          setMarketQ={setMarketQ}
           marketFocusIds={marketFocusIds}
           setMarketFocusIds={setMarketFocusIds}
           busy={busy}
@@ -910,13 +909,10 @@ useEffect(() => {
           pendingSectionRef={pendingSectionRef}
           pendingItems={pendingItems}
           pendingQ={pendingQ}
-          setPendingQ={setPendingQ}
           pendingFocusIds={pendingFocusIds}
           setPendingFocusIds={setPendingFocusIds}
           pendingOnlyRoomOffer={pendingOnlyRoomOffer}
-          setPendingOnlyRoomOffer={setPendingOnlyRoomOffer}
           onlyAgreement={onlyAgreement}
-          setOnlyAgreement={setOnlyAgreement}
           roomsById={roomsById}
           renderRoomOfferSummary={(s) => renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOffersModal: openOffersModalForShift })}
           renderCompanyOfferSummary={(s) => renderCompanyOfferSummary(s, vehiclesById)}

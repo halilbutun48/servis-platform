@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { api } from "../../api";
@@ -97,10 +97,35 @@ export default function GuidedPlanModal({
   }, [durationKey, durationOptions]);
   const [endDate, setEndDate] = useState(createInitialEndDate());
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
+  const [customSlots, setCustomSlots] = useState(() => createDefaultCustomSlots());
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
   const eligibleDaysCount = useMemo(() => countMatchingDaysInRange(startDate, endDate, weekMask), [startDate, endDate, weekMask]);
+  const currentStepItems = useMemo(() => {
+    if (pack.key !== "CUSTOM") return pack.items;
+    const slots = Array.isArray(customSlots) ? customSlots : [];
+    if (!slots.length) return [];
+    const out = [];
+    for (const s of slots) {
+      const sMin = parseHHMM(s?.startHHMM);
+      const eMin = parseHHMM(s?.endHHMM);
+      if (sMin == null || eMin == null) return [];
+      out.push({
+        label: String(s?.label || "").trim() || "Özel",
+        startMin: sMin,
+        endMin: eMin,
+        direction: s?.direction || "INBOUND",
+        pattern: s?.pattern || "ONE_WAY",
+      });
+    }
+    return out;
+  }, [pack, customSlots]);
+  const totalShiftCount = useMemo(() => eligibleDaysCount * currentStepItems.length, [eligibleDaysCount, currentStepItems]);
+  const guidedLimitMessage = useMemo(() => {
+    if (eligibleDaysCount > 7) return "Guided en fazla 7 gün olabilir. Daha uzun planlar için sözleşme kullanın.";
+    if (totalShiftCount > 21) return "Guided en fazla 21 vardiya oluşturabilir. Daha yoğun planlar için sözleşme kullanın.";
+    return "";
+  }, [eligibleDaysCount, totalShiftCount]);
   const nextValidStart = useMemo(() => nextYmdMatchingMask(startDate, weekMask, 31), [startDate, weekMask]);
-  const [customSlots, setCustomSlots] = useState(() => createDefaultCustomSlots());
   const [draftNote, setDraftNote] = useState("");
   const [draftAmount, setDraftAmount] = useState("");
   const [orgEstimatedPax, setOrgEstimatedPax] = useState("");
@@ -475,7 +500,7 @@ export default function GuidedPlanModal({
   }
 
 
-  const cleanupDraftShifts = useCallback(async (idsInput = draftShiftIds, opts = {}) => {
+  async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
     const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
     await cleanupGuidedDraftShifts({ token, ids });
     if (!opts.keepState) {
@@ -483,7 +508,7 @@ export default function GuidedPlanModal({
       setDraftShifts([]);
       setOsrmResById({});
     }
-  }, [draftShiftIds, token]);
+  }
 
   function resetAll(opts = {}) {
     if (!opts.skipCleanup && !sentOk && draftShiftIds.length) {
@@ -569,10 +594,8 @@ export default function GuidedPlanModal({
     return () => {
       alive = false;
     };
-  }, [open, token, resumeStep, resumeNonce, cleanupDraftShifts]);
+  }, [open, token, resumeStep, resumeNonce]);
 
-
-  const draftShiftIdsKey = useMemo(() => draftShiftIds.join("|"), [draftShiftIds]);
 
   useEffect(() => {
     if (!open) return;
@@ -581,36 +604,22 @@ export default function GuidedPlanModal({
     setOfferAmount("");
     setOfferNote("");
     setSentOk(false);
-  }, [open, step, draftShiftIdsKey]);
+  }, [open, step, draftShiftIds.join("|")]);
 
   useEffect(() => {
     const keys = new Set((durationOptions || []).map((x) => x.key));
     if (!keys.has(durationKey)) setDurationKey((durationOptions[0] || {}).key || "1d");
-  }, [organization, durationKey, durationOptions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organization]);
 
   // Sync endDate when start/duration changes
   useEffect(() => {
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, durationDays]);
 
   function stepItems() {
-    if (pack.key !== "CUSTOM") return pack.items;
-    const slots = Array.isArray(customSlots) ? customSlots : [];
-    if (!slots.length) return [];
-    const out = [];
-    for (const s of slots) {
-      const sMin = parseHHMM(s?.startHHMM);
-      const eMin = parseHHMM(s?.endHHMM);
-      if (sMin == null || eMin == null) return [];
-      out.push({
-        label: String(s?.label || "").trim() || "Özel",
-        startMin: sMin,
-        endMin: eMin,
-        direction: s?.direction || "INBOUND",
-        pattern: s?.pattern || "ONE_WAY",
-      });
-    }
-    return out;
+    return currentStepItems;
   }
 
   async function saveHub() {
@@ -716,6 +725,15 @@ export default function GuidedPlanModal({
     const items = stepItems();
     if (!items.length) {
       setErr("Plan paketi geçersiz.");
+      return;
+    }
+    const totalDraftCount = eligibleDaysCount * items.length;
+    if (eligibleDaysCount > 7) {
+      setErr("Guided en fazla 7 gün olabilir. Daha uzun planlar için sözleşme kullanın.");
+      return;
+    }
+    if (totalDraftCount > 21) {
+      setErr("Guided en fazla 21 vardiya oluşturabilir. Daha yoğun planlar için sözleşme kullanın.");
       return;
     }
     if (organization) {
@@ -973,6 +991,8 @@ async function sendBulkOffers() {
           setDaysSel={setDaysSel}
           weekMask={weekMask}
           eligibleDaysCount={eligibleDaysCount}
+          totalShiftCount={totalShiftCount}
+          guidedLimitMessage={guidedLimitMessage}
           nextValidStart={nextValidStart}
           planSummary={planSummary}
           orgEstimatedPax={orgEstimatedPax}

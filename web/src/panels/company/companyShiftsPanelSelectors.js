@@ -1,12 +1,17 @@
 export const COMPANY_FINAL_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE", "REJECTED"]);
 
 export function getCompanyMarketItemsRaw(items, finalStatuses = COMPANY_FINAL_STATUSES) {
-  return (items || []).filter((s) => !finalStatuses.has(String(s?.status)) && (s?.roomId == null || s?.roomId === ""));
+  return (items || []).filter((s) => {
+    const status = String(s?.status || "");
+    if (status === "DRAFT") return false;
+    return !finalStatuses.has(status) && (s?.roomId == null || s?.roomId === "");
+  });
 }
 
 export function getCompanyPendingItemsRaw(items, finalStatuses = COMPANY_FINAL_STATUSES) {
   return (items || []).filter((s) => {
     const status = String(s?.status || "");
+    if (status === "DRAFT") return false;
     const isSplitRoot = status === "SPLIT" && !Number(s?.splitRootId || 0);
     if (isSplitRoot) return false;
     return !finalStatuses.has(status) && s?.roomId != null && s?.roomId !== "";

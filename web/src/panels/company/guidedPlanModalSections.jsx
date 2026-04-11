@@ -87,6 +87,8 @@ export function GuidedPlanSetupStep({
   setDaysSel,
   weekMask,
   eligibleDaysCount,
+  totalShiftCount,
+  guidedLimitMessage,
   nextValidStart,
   planSummary,
   orgEstimatedPax,
@@ -166,9 +168,16 @@ export function GuidedPlanSetupStep({
         />
       ) : null}
 
+      <div className="muted" style={{ fontSize: 12 }}>
+        Bu plan: <b>{eligibleDaysCount}</b> gün • <b>{totalShiftCount}</b> vardiya
+      </div>
+      {guidedLimitMessage ? (
+        <div className="card err">{guidedLimitMessage}</div>
+      ) : null}
+
       <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <button type="button" onClick={() => setStep(0)} disabled={busy}>Geri</button>
-        <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0}>Taslak shift oluştur</button>
+        <button type="button" onClick={createDraftShifts} disabled={busy || eligibleDaysCount === 0 || Boolean(guidedLimitMessage)}>Taslak shift oluştur</button>
       </div>
     </div>
   );

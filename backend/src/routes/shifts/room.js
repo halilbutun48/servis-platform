@@ -9,6 +9,7 @@ import { assertDriverAssignable } from "../../lib/penalties.js";
 import { buildNotifPayloadV1 } from "../../notifications/payloadV1.js";
 import { clearShiftRoutePreviewCache, rebuildShiftRouteStateBestEffort } from "../../services/shiftRouteState.js";
 import { upsertShiftSeriesCommercialBackboneByShiftId } from "../../services/paymentBackbone.js";
+import { findPackageShiftRowsByShiftId } from "../../services/shiftPackage.js";
 import {
   applyDispatchOverrides,
   buildDispatchSplitPlan,
@@ -777,34 +778,56 @@ export function attachShiftRoomRoutes(r, io) {
           return sendErrorResponse(res, httpError(400, "Cannot reject an ACTIVE shift"));
         }
 
-        const updated = await prisma.shift.update({
-          where: { id: shiftId },
-          data: {
-            status: "REJECTED",
-            driverId: null,
-            vehicleId: null,
-            roomOfferVehicleId: null,
-            roomOfferDecision: "REJECTED",
-          },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-            progress: true,
-            vehicle: true,
-            driver: true,
-            company: true,
-            room: true,
-          },
+        const packageRows = await findPackageShiftRowsByShiftId(shiftId, { roomId: shift.roomId == null ? undefined : Number(shift.roomId) });
+        const packageIds = Array.from(new Set((packageRows || []).map((row) => Number(row.id)).filter((id) => Number.isFinite(id) && id > 0)));
+        const targetIds = packageIds.length > 1 ? packageIds : [shiftId];
+
+        const activeOrDoneSibling = (packageRows || []).find((row) => Number(row.id) !== Number(shiftId) && ["ACTIVE", "DONE"].includes(String(row.status || "").toUpperCase()));
+        if (activeOrDoneSibling) {
+          return sendErrorResponse(res, httpError(409, "PACKAGE_REJECT_BLOCKED", "Paket vardiyası tekil reddedilemez; paket içindeki aktif/tamamlanmış kayıtlar var"));
+        }
+
+        const updatedList = await prisma.$transaction(async (tx) => {
+          await tx.shift.updateMany({
+            where: { id: { in: targetIds } },
+            data: {
+              status: "REJECTED",
+              driverId: null,
+              vehicleId: null,
+              roomOfferVehicleId: null,
+              roomOfferDecision: "REJECTED",
+            },
+          });
+          return tx.shift.findMany({
+            where: { id: { in: targetIds } },
+            include: {
+              stops: { orderBy: { order: "asc" } },
+              progress: true,
+              vehicle: true,
+              driver: true,
+              company: true,
+              room: true,
+            },
+            orderBy: [{ id: "asc" }],
+          });
         });
 
         await audit(req, {
           action: "SHIFT_REJECT",
           entity: "Shift",
-          entityId: updated.id,
+          entityId: shiftId,
+          meta: targetIds.length > 1 ? { packageShiftIds: targetIds } : null,
         });
 
-        clearShiftRoutePreviewCache(updated.id);
-        emitShift(io, updated, "shift:update");
-        return res.json(updated);
+        updatedList.forEach((item) => {
+          clearShiftRoutePreviewCache(item.id);
+          emitShift(io, item, "shift:update");
+        });
+
+        if (targetIds.length > 1) {
+          return res.json({ ok: true, packageRejected: true, updatedCount: updatedList.length, shifts: updatedList });
+        }
+        return res.json(updatedList[0] || null);
       } catch (e) {
         return sendErrorResponse(res, e);
       }

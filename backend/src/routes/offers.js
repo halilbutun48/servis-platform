@@ -10,8 +10,12 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { validateWithZod } from "../z.js";
+import { assertDriverAssignable } from "../lib/penalties.js";
+import { buildCapacityConflict, getShiftDemandSnapshot } from "../services/roomPoolPlanner.js";
+import { findPackageShiftIdsByShiftId } from "../services/shiftPackage.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
+import { getConflictOrNull } from "./shifts/roomShared.js";
 import * as H from "./shifts/helpers.js";
 
 const bulkCounterSchema = z.object({
@@ -31,6 +35,15 @@ const bulkCompanyCounterSchema = z.object({
   roomId: z.coerce.number().int().positive(),
   amountCompany: z.coerce.number().int().positive(),
   noteCompany: z.string().max(500).optional().nullable(),
+});
+
+const companyAcceptPackageSchema = z.object({
+  shiftIds: z.array(z.coerce.number().int().positive()).min(1).max(100),
+  roomId: z.coerce.number().int().positive(),
+});
+
+const roomAcceptPackageSchema = z.object({
+  offerIds: z.array(z.coerce.number().int().positive()).min(1).max(100),
 });
 
 const emitShift = H.emitShift;
@@ -64,41 +77,103 @@ async function loadCompanyDirectoryItems(where, take) {
   });
 }
 
-async function finalizeAcceptedOffer(io, offer) {
-  const shiftId = offer.shiftId;
-  const companyId = offer.shift.companyId;
-  const acceptedRoomId = offer.roomId;
+async function ensureRoomCanCoverShiftOrThrow({ shiftId, roomId }) {
+  const sid = Number(shiftId || 0);
+  const rid = Number(roomId || 0);
+  if (!sid || !rid) throw httpError(400, "shiftId/roomId required");
 
-  const offerRows = await prisma.shiftOffer.findMany({
+  const shift = await prisma.shift.findUnique({
+    where: { id: sid },
+    select: { id: true, startAt: true, endAt: true, companyId: true },
+  });
+  if (!shift) throw httpError(404, "Shift not found");
+
+  const demand = await getShiftDemandSnapshot(sid);
+  const requiredPax = Number(demand?.requiredPax || 0);
+  const vehicles = await prisma.vehicle.findMany({
+    where: { roomId: rid, archivedAt: null, status: "ACTIVE" },
+    select: { id: true, capacity: true },
+    orderBy: [{ capacity: "desc" }, { id: "asc" }],
+  });
+  const drivers = await prisma.driver.findMany({
+    where: { roomId: rid },
+    select: { id: true },
+    orderBy: { id: "asc" },
+  });
+
+  for (const vehicle of vehicles) {
+    const capacityConflict = buildCapacityConflict({
+      requiredPax,
+      vehicleCapacity: Number(vehicle?.capacity || 0),
+    });
+    if (capacityConflict) continue;
+
+    for (const driver of drivers) {
+      const driverId = Number(driver?.id || 0);
+      const vehicleId = Number(vehicle?.id || 0);
+      if (!driverId || !vehicleId) continue;
+      const conflict = await getConflictOrNull({
+        driverId,
+        vehicleId,
+        startAt: shift.startAt,
+        endAt: shift.endAt,
+        excludeShiftId: sid,
+      });
+      if (conflict) continue;
+      try {
+        await assertDriverAssignable({ driverId, shiftId: sid, at: shift.startAt });
+        return { ok: true, vehicleId, driverId };
+      } catch {
+        // try next pair
+      }
+    }
+  }
+
+  throw httpError(409, "PACKAGE_ROOM_CANNOT_COVER", "Room bu paket içindeki tüm vardiyaları karşılayamıyor");
+}
+
+async function finalizeAcceptedOfferTx(tx, offer) {
+  const shiftId = Number(offer.shiftId);
+  const companyId = Number(offer?.shift?.companyId || 0);
+  const acceptedRoomId = Number(offer.roomId);
+
+  const offerRows = await tx.shiftOffer.findMany({
     where: { shiftId },
     select: { id: true, roomId: true },
   });
-  const allRoomIds = Array.from(new Set(offerRows.map((x) => x.roomId)));
+  const allRoomIds = Array.from(new Set(offerRows.map((x) => Number(x.roomId)).filter((x) => x > 0)));
 
-  let cancelledCount = 0;
-
-  await prisma.$transaction(async (tx) => {
-    await tx.shiftOffer.update({ where: { id: offer.id }, data: { status: "ACCEPTED" } });
-    const upd = await tx.shiftOffer.updateMany({
-      where: { shiftId, id: { not: offer.id }, status: { in: ["OPEN", "COUNTERED"] } },
-      data: { status: "CANCELLED" },
-    });
-    cancelledCount = Number(upd?.count || 0);
-
-    await tx.shift.update({
-      where: { id: shiftId },
-      data: {
-        roomId: acceptedRoomId,
-        companyOfferAmount: offer.amountCompany ?? null,
-        roomOfferAmount: offer.amountRoom ?? null,
-        roomOfferDecision: "ACCEPTED",
-        roomOfferDecisionAt: new Date(),
-      },
-    });
+  await tx.shiftOffer.update({ where: { id: offer.id }, data: { status: "ACCEPTED" } });
+  const upd = await tx.shiftOffer.updateMany({
+    where: { shiftId, id: { not: offer.id }, status: { in: ["OPEN", "COUNTERED"] } },
+    data: { status: "CANCELLED" },
   });
 
-  const shiftFull = await prisma.shift.findUnique({
+  await tx.shift.update({
     where: { id: shiftId },
+    data: {
+      roomId: acceptedRoomId,
+      companyOfferAmount: offer.amountCompany ?? null,
+      roomOfferAmount: offer.amountRoom ?? null,
+      roomOfferDecision: "ACCEPTED",
+      roomOfferDecisionAt: new Date(),
+    },
+  });
+
+  return {
+    offerId: Number(offer.id),
+    shiftId,
+    companyId,
+    acceptedRoomId,
+    cancelledCount: Number(upd?.count || 0),
+    offerRows,
+    allRoomIds,
+  };
+}
+
+async function emitAcceptedOfferResult(io, meta) {
+  const shiftFull = await prisma.shift.findUnique({
+    where: { id: meta.shiftId },
     include: {
       stops: { orderBy: { order: "asc" } },
       progress: true,
@@ -109,26 +184,116 @@ async function finalizeAcceptedOffer(io, offer) {
     },
   });
 
-  io?.to?.(`company:${companyId}`)?.emit?.("offer:update", {
+  io?.to?.(`company:${meta.companyId}`)?.emit?.("offer:update", {
     kind: "offer:accept",
-    offerId: offer.id,
-    shiftId,
-    roomId: acceptedRoomId,
-    companyId,
+    offerId: meta.offerId,
+    shiftId: meta.shiftId,
+    roomId: meta.acceptedRoomId,
+    companyId: meta.companyId,
   });
-  for (const rid of allRoomIds) {
-    const row = offerRows.find((x) => x.roomId === rid);
+  for (const rid of meta.allRoomIds) {
+    const row = meta.offerRows.find((x) => Number(x.roomId) === Number(rid));
     io?.to?.(`room:${rid}`)?.emit?.("offer:update", {
-      kind: rid === acceptedRoomId ? "offer:accepted" : "offer:cancelled",
-      offerId: row?.id ?? offer.id,
-      shiftId,
+      kind: Number(rid) === Number(meta.acceptedRoomId) ? "offer:accepted" : "offer:cancelled",
+      offerId: row?.id ?? meta.offerId,
+      shiftId: meta.shiftId,
       roomId: rid,
-      companyId,
+      companyId: meta.companyId,
     });
   }
 
   emitShift(io, shiftFull, "shift:update");
-  return { cancelledCount, shift: shiftFull };
+  return { cancelledCount: meta.cancelledCount, shift: shiftFull };
+}
+
+async function finalizeAcceptedOffer(io, offer) {
+  let meta = null;
+  await prisma.$transaction(async (tx) => {
+    meta = await finalizeAcceptedOfferTx(tx, offer);
+  });
+  return emitAcceptedOfferResult(io, meta);
+}
+
+async function loadCompanyPackageAcceptanceTargetsOrThrow({ companyId, roomId, shiftIds }) {
+  const ids = Array.from(new Set((shiftIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+  if (!ids.length) throw httpError(400, "shiftIds required");
+
+  const canonicalIds = await findPackageShiftIdsByShiftId(ids[0]);
+  const targetShiftIds = canonicalIds.length > 1 ? canonicalIds : ids;
+  const sameSize = targetShiftIds.length === ids.length;
+  const sameItems = sameSize && targetShiftIds.every((id) => ids.includes(id));
+  if (targetShiftIds.length > 1 && !sameItems) {
+    throw httpError(409, "PACKAGE_ALL_OR_NOTHING", "Paket kısmi kabul edilemez; tüm paket birlikte kabul edilmeli");
+  }
+
+  const shifts = await prisma.shift.findMany({
+    where: { id: { in: targetShiftIds } },
+    select: { id: true, companyId: true, roomId: true, agreementId: true, startAt: true, endAt: true },
+    orderBy: [{ id: "asc" }],
+  });
+  if (shifts.length !== targetShiftIds.length) throw httpError(404, "Some shifts not found");
+  if (shifts.some((row) => Number(row.companyId || 0) !== Number(companyId || 0))) throw httpError(403, "Forbidden");
+  if (shifts.some((row) => Number(row.agreementId || 0) > 0)) throw httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled");
+  if (shifts.some((row) => row.roomId != null && Number(row.roomId) !== Number(roomId))) throw httpError(409, "PACKAGE_SHIFT_ALREADY_ASSIGNED", "Paket içindeki bir vardiya başka room'a atanmış");
+
+  for (const shift of shifts) {
+    await ensureRoomCanCoverShiftOrThrow({ shiftId: shift.id, roomId });
+  }
+
+  const offers = await prisma.shiftOffer.findMany({
+    where: { shiftId: { in: targetShiftIds }, roomId: Number(roomId) },
+    include: { shift: { select: { id: true, companyId: true, roomId: true, status: true, agreementId: true } } },
+    orderBy: [{ shiftId: "asc" }],
+  });
+  if (offers.length !== targetShiftIds.length) throw httpError(409, "PACKAGE_ROOM_MISSING_OFFER", "Room paket içindeki tüm vardiyalar için teklif vermemiş");
+
+  const allowedStatuses = new Set(["OPEN", "COUNTERED"]);
+  const blocked = offers.find((offer) => !allowedStatuses.has(String(offer.status || "").toUpperCase()));
+  if (blocked) throw httpError(409, "PACKAGE_OFFER_NOT_ACTIVE", `Paket içindeki Shift #${blocked.shiftId} için aktif teklif yok`);
+  const assignedElsewhere = offers.find((offer) => offer.shift?.roomId != null && Number(offer.shift.roomId) !== Number(roomId));
+  if (assignedElsewhere) throw httpError(409, "PACKAGE_SHIFT_ALREADY_ASSIGNED", `Shift #${assignedElsewhere.shiftId} başka room'a atanmış`);
+
+  return { targetShiftIds, offers };
+}
+
+async function loadRoomPackageAcceptanceTargetsOrThrow({ roomId, offerIds }) {
+  const ids = Array.from(new Set((offerIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+  if (!ids.length) throw httpError(400, "offerIds required");
+
+  const offers = await prisma.shiftOffer.findMany({
+    where: { id: { in: ids }, roomId: Number(roomId) },
+    include: { shift: { select: { id: true, companyId: true, roomId: true, status: true, agreementId: true } } },
+    orderBy: [{ shiftId: "asc" }],
+  });
+  if (offers.length !== ids.length) throw httpError(404, "Some offers not found for this room");
+
+  const shiftIds = offers.map((offer) => Number(offer.shiftId)).filter((x) => x > 0);
+  const canonicalIds = await findPackageShiftIdsByShiftId(shiftIds[0]);
+  const targetShiftIds = canonicalIds.length > 1 ? canonicalIds : shiftIds;
+  const sameSize = targetShiftIds.length === shiftIds.length;
+  const sameItems = sameSize && targetShiftIds.every((id) => shiftIds.includes(id));
+  if (targetShiftIds.length > 1 && !sameItems) {
+    throw httpError(409, "PACKAGE_ALL_OR_NOTHING", "Paket kısmi kabul edilemez; tüm paket birlikte kabul edilmeli");
+  }
+
+  const byShiftId = new Map(offers.map((offer) => [Number(offer.shiftId), offer]));
+  const targetOffers = targetShiftIds.map((shiftId) => byShiftId.get(Number(shiftId))).filter(Boolean);
+  if (targetOffers.length !== targetShiftIds.length) throw httpError(409, "PACKAGE_ROOM_MISSING_OFFER", "Room paket içindeki tüm vardiyalar için teklif seçmeli");
+
+  const blocked = targetOffers.find((offer) => Number(offer?.shift?.agreementId || 0) > 0);
+  if (blocked) throw httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled");
+  const cancelled = targetOffers.find((offer) => String(offer.status || "").toUpperCase() === "CANCELLED");
+  if (cancelled) throw httpError(409, "Offer cancelled");
+  const accepted = targetOffers.find((offer) => String(offer.status || "").toUpperCase() === "ACCEPTED");
+  if (accepted) throw httpError(409, "Offer already accepted");
+  const assignedElsewhere = targetOffers.find((offer) => offer.shift?.roomId != null && Number(offer.shift.roomId) !== Number(roomId));
+  if (assignedElsewhere) throw httpError(409, "Shift already assigned");
+
+  for (const offer of targetOffers) {
+    await ensureRoomCanCoverShiftOrThrow({ shiftId: offer.shiftId, roomId });
+  }
+
+  return { targetShiftIds, offers: targetOffers };
 }
 
 function parseStatusFilter(raw) {
@@ -532,6 +697,63 @@ export function offersRouter(io) {
         }
 
         return res.json({ ok: true, updatedCount: activeIds.length, total: allowed.length });
+      } catch (e) {
+        return sendErrorResponse(res, e);
+      }
+    }
+  );
+
+  // ROOM: accept package atomically
+  r.post(
+    "/room-accept-package",
+    authRequired(),
+    requireRole("ROOM", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const roomId = req.user.role === "ROOM" ? Number(req.user.roomId || 0) : Number(req.body?.roomId || 0);
+        if (!Number.isFinite(roomId) || roomId <= 0) return sendErrorResponse(res, httpError(400, "roomId required"));
+
+        const body = validateWithZod(roomAcceptPackageSchema, req.body);
+        const prepared = await loadRoomPackageAcceptanceTargetsOrThrow({ roomId, offerIds: body.offerIds });
+
+        const accepted = [];
+        await prisma.$transaction(async (tx) => {
+          for (const offer of prepared.offers) {
+            accepted.push(await finalizeAcceptedOfferTx(tx, offer));
+          }
+        });
+
+        const results = [];
+        for (const meta of accepted) results.push(await emitAcceptedOfferResult(io, meta));
+        return res.json({ ok: true, packageAccepted: true, updatedCount: results.length, shiftIds: prepared.targetShiftIds, firstShiftId: Number(results?.[0]?.shift?.id || 0), results });
+      } catch (e) {
+        return sendErrorResponse(res, e);
+      }
+    }
+  );
+
+  // COMPANY: accept package atomically
+  r.post(
+    "/accept-package",
+    authRequired(),
+    requireRole("COMPANY", "SUPER_ADMIN"),
+    async (req, res) => {
+      try {
+        const body = validateWithZod(companyAcceptPackageSchema, req.body);
+        const companyId = req.user.role === "COMPANY" ? Number(req.user.companyId || 0) : Number(req.body?.companyId || 0);
+        if (!Number.isFinite(companyId) || companyId <= 0) return sendErrorResponse(res, httpError(400, "companyId required"));
+
+        const prepared = await loadCompanyPackageAcceptanceTargetsOrThrow({ companyId, roomId: body.roomId, shiftIds: body.shiftIds });
+        const accepted = [];
+        await prisma.$transaction(async (tx) => {
+          for (const offer of prepared.offers) {
+            accepted.push(await finalizeAcceptedOfferTx(tx, offer));
+          }
+        });
+
+        const results = [];
+        for (const meta of accepted) results.push(await emitAcceptedOfferResult(io, meta));
+        return res.json({ ok: true, packageAccepted: true, updatedCount: results.length, shiftIds: prepared.targetShiftIds, roomId: Number(body.roomId), results });
       } catch (e) {
         return sendErrorResponse(res, e);
       }
