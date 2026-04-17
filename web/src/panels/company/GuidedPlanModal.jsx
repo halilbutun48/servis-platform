@@ -52,6 +52,7 @@ import {
   cleanupGuidedDraftShifts,
   createGuidedDraftShiftsAction,
   geocodeGuidedLocation,
+  hydrateGuidedDraftPeopleFromSourceShift,
   loadGuidedCompanyHub,
   loadGuidedResumeDraftShifts,
   osrmReorderGuidedCore,
@@ -826,9 +827,27 @@ export default function GuidedPlanModal({
         setErr("Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.");
         return;
       }
+
+      let nextDraftShifts = created.draftShifts;
+      let hydrationInfo = "";
+      if (!organization && routeRefreshMode) {
+        const sourceShiftId = Number(launchContext?.sourceShiftId || 0);
+        if (sourceShiftId > 0) {
+          const hydrated = await hydrateGuidedDraftPeopleFromSourceShift({
+            token,
+            sourceShiftId,
+            targetShiftIds: created.createdIds,
+          });
+          if (hydrated?.copied) {
+            hydrationInfo = ` • kaynak vardiyadan ${Number(hydrated.personCount || 0)} personel taşındı`;
+            nextDraftShifts = await refreshGuidedDraftShiftsAction({ token, draftShiftIds: created.createdIds });
+          }
+        }
+      }
+
       setDraftShiftIds(created.createdIds);
-      setDraftShifts(created.draftShifts);
-      setInfo(`✅ Taslak shift oluşturuldu: ${created.createdIds.map((x) => "#" + x).join(", ")}`);
+      setDraftShifts(nextDraftShifts);
+      setInfo(`✅ Taslak shift oluşturuldu: ${created.createdIds.map((x) => "#" + x).join(", ")}${hydrationInfo}`);
       setStep(2);
     } catch (e) {
       setErr(getApiErrorMessage(e));

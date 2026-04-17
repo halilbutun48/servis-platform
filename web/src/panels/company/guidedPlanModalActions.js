@@ -210,6 +210,83 @@ export async function refreshGuidedDraftShiftsAction({ token, draftShiftIds }) {
   return loadGuidedResumeDraftShifts({ token, ids: draftShiftIds });
 }
 
+export async function hydrateGuidedDraftPeopleFromSourceShift({ token, sourceShiftId, targetShiftIds }) {
+  const sid = Number(sourceShiftId || 0);
+  const targets = Array.from(new Set((Array.isArray(targetShiftIds) ? targetShiftIds : []).map((x) => Number(x)).filter(Number.isFinite)));
+  if (!token || !sid || !targets.length) return { copied: false, personCount: 0, coordCount: 0, targetCount: 0 };
+
+  const sourceResp = await api(`/api/shifts/${sid}/people`, { token });
+  const items = Array.isArray(sourceResp?.items) ? sourceResp.items : [];
+  if (!items.length) return { copied: false, personCount: 0, coordCount: 0, targetCount: targets.length };
+
+  const toFiniteCoord = (value) => {
+    if (value == null || value === "") return null;
+    const n0 = Number(value);
+    if (!Number.isFinite(n0)) return null;
+    const n = Object.is(n0, -0) ? 0 : n0;
+    if (n === 0) return null;
+    return n;
+  };
+
+  let previewPayload = null;
+  try {
+    previewPayload = await api(`/api/shifts/${sid}/route-preview`, { token });
+  } catch {
+    previewPayload = null;
+  }
+
+  const stopById = new Map(
+    (Array.isArray(previewPayload?.stops) ? previewPayload.stops : [])
+      .map((s) => [Number(s?.id || 0), { lat: toFiniteCoord(s?.lat), lng: toFiniteCoord(s?.lng) }])
+      .filter(([id]) => Number.isFinite(id) && id > 0)
+  );
+
+  const coordByPersonelId = new Map();
+  for (const a of Array.isArray(previewPayload?.assignments) ? previewPayload.assignments : []) {
+    const personelId = Number(a?.personelId || 0);
+    const stopId = Number(a?.stopId || 0);
+    if (!Number.isFinite(personelId) || personelId <= 0) continue;
+    const stop = stopById.get(stopId);
+    const lat = stop?.lat ?? null;
+    const lng = stop?.lng ?? null;
+    if (typeof lat === "number" && typeof lng === "number" && !coordByPersonelId.has(personelId)) {
+      coordByPersonelId.set(personelId, { lat, lng });
+    }
+  }
+
+  const payload = items
+    .map((p) => {
+      const personelId = Number(p?.id || p?.personelId || 0) || undefined;
+      const fromAssignment = personelId ? coordByPersonelId.get(personelId) : null;
+      const lat = toFiniteCoord(p?.lat ?? p?.homeLat ?? fromAssignment?.lat);
+      const lng = toFiniteCoord(p?.lng ?? p?.homeLng ?? fromAssignment?.lng);
+      return {
+        personelId,
+        fullName: String(p?.fullName || p?.name || "").trim(),
+        phone: p?.phone ?? null,
+        address: null,
+        lat,
+        lng,
+        geoManualOverride: p?.geoManualOverride === true,
+        kind: p?.kind || undefined,
+      };
+    })
+    .filter((p) => p.fullName);
+
+  if (!payload.length) return { copied: false, personCount: 0, coordCount: 0, targetCount: targets.length };
+
+  for (const targetId of targets) {
+    await api(`/api/shifts/${targetId}/people?mode=REPLACE`, {
+      token,
+      method: 'PUT',
+      body: { items: payload },
+    });
+  }
+
+  const coordCount = payload.filter((p) => typeof p.lat === "number" && typeof p.lng === "number").length;
+  return { copied: true, personCount: payload.length, coordCount, targetCount: targets.length };
+}
+
 export async function osrmReorderGuidedCore({ token, draftShifts, shiftId }) {
   const sid = Number(shiftId);
   const shift = (draftShifts || []).find((x) => Number(x.id) === sid);
