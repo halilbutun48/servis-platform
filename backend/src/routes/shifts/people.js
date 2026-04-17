@@ -108,7 +108,7 @@ function normalizeImportRows(rows) {
     const rowNo = index + 1;
     const parsed = importRawItemSchema.safeParse(raw ?? {});
     if (!parsed.success) {
-      warnings.push(warning(rowNo, "INVALID_ROW", "SatÄ±r biÃ§imi okunamadÄ±.", "error"));
+      warnings.push(warning(rowNo, "INVALID_ROW", "Satır biçimi okunamadı.", "error"));
       return;
     }
 
@@ -124,7 +124,7 @@ function normalizeImportRows(rows) {
     const kind = value.kind === "STUDENT" ? "STUDENT" : value.kind === "PERSONEL" ? "PERSONEL" : undefined;
 
     if (!fullName) {
-      warnings.push(warning(rowNo, "MISSING_NAME", "Ad soyad boÅŸ olduÄŸu iÃ§in satÄ±r atlandÄ±.", "error"));
+      warnings.push(warning(rowNo, "MISSING_NAME", "Ad soyad boş olduğu için satır atlandı.", "error"));
       return;
     }
 
@@ -132,13 +132,13 @@ function normalizeImportRows(rows) {
     const hasPartialCoords = (lat == null) !== (lng == null);
     if (hasPartialCoords) {
       warnings.push(
-        warning(rowNo, "INVALID_COORD", "Enlem/boylam eksik veya geÃ§ersiz; adres varsa review akÄ±ÅŸÄ±na dÃ¼ÅŸecek.")
+        warning(rowNo, "INVALID_COORD", "Enlem/boylam eksik veya geçersiz; adres varsa review akışına düşecek.")
       );
     }
 
     if (!address && !hasCoords) {
       warnings.push(
-        warning(rowNo, "MISSING_ADDRESS_OR_COORDS", "Adres veya geÃ§erli koordinat olmadÄ±ÄŸÄ± iÃ§in satÄ±r atlandÄ±.", "error")
+        warning(rowNo, "MISSING_ADDRESS_OR_COORDS", "Adres veya geçerli koordinat olmadığı için satır atlandı.", "error")
       );
       return;
     }
@@ -156,7 +156,7 @@ function normalizeImportRows(rows) {
 
     const fingerprint = buildImportFingerprint(normalized);
     if (seen.has(fingerprint)) {
-      warnings.push(warning(rowNo, "DUPLICATE_ROW", "AynÄ± satÄ±r bu dosyada tekrar ettiÄŸi iÃ§in atlandÄ±."));
+      warnings.push(warning(rowNo, "DUPLICATE_ROW", "Aynı satır bu dosyada tekrar ettiği için atlandı."));
       return;
     }
     seen.add(fingerprint);
@@ -164,7 +164,7 @@ function normalizeImportRows(rows) {
     const geoMeta = inferGeoState(normalized);
     if (geoMeta.geoStatus === "NEEDS_REVIEW") {
       warnings.push(
-        warning(rowNo, "GEO_NEEDS_REVIEW", `${geoMeta.geoReasonText}; kayÄ±t review gerektiriyor.`)
+        warning(rowNo, "GEO_NEEDS_REVIEW", `${geoMeta.geoReasonText}; kayıt review gerektiriyor.`)
       );
     }
 
@@ -460,7 +460,7 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const { accepted, warnings } = normalizeImportRows(rawRows);
     if (accepted.length === 0) {
-      throw httpError(400, "NO_VALID_ROWS", "Ä°Ã§e aktarÄ±lacak geÃ§erli satÄ±r bulunamadÄ±.", {
+      throw httpError(400, "NO_VALID_ROWS", "İçe aktarılacak geçerli satır bulunamadı.", {
         summary: {
           totalRows: rawRows.length,
           acceptedRows: 0,
@@ -588,7 +588,7 @@ export function attachShiftPeopleRoutes(router, _io) {
     const maxWalkM = validateWithZod(qMaxWalkSchema, req.body?.maxWalkM ?? req.query.maxWalkM);
 
     if (!ids.length) throw httpError(400, "SHIFT_IDS_REQUIRED", "shiftIds required");
-    if (ids.length > 21) throw httpError(400, "GUIDED_SHIFT_LIMIT", "Guided en fazla 21 vardiya iÃ§in durak Ã¼retebilir.");
+    if (ids.length > 21) throw httpError(400, "GUIDED_SHIFT_LIMIT", "Guided en fazla 21 vardiya için durak üretebilir.");
 
     const results = [];
     for (const id of ids) {
@@ -611,7 +611,7 @@ export function attachShiftPeopleRoutes(router, _io) {
     res.json(result);
   }));
 
-  // COMPANY + ROOM: list stops (used by Shift Tools "Shiftâ€™ten DuraklarÄ± Ã‡ek")
+  // COMPANY + ROOM: list stops (used by Shift Tools "Shiftten Durakları Çek")
   r.get("/:id/stops", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
 
