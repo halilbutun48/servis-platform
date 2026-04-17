@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { api } from "../../api";
@@ -69,10 +69,14 @@ export default function GuidedPlanModal({
   roomsSupported = true,
   onReloadRooms = null,
   onAfterCreated = null,
+  launchContext = null,
+  launchNonce = 0,
 }) {
   const { token, me } = useSession();
   const who = personLabel(me);
   const organization = me?.companyKind === "ORGANIZATION";
+  const appliedLaunchNonceRef = useRef(0);
+  const routeRefreshMode = String(launchContext?.mode || "").toUpperCase() === "ROUTE_REFRESH";
 
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -549,6 +553,7 @@ export default function GuidedPlanModal({
     setOfferNote("");
     setSentOk(false);
     setOfferOutcome("idle");
+    appliedLaunchNonceRef.current = 0;
   }
 
   // Load hub on open
@@ -598,6 +603,49 @@ export default function GuidedPlanModal({
     };
   }, [open, token, resumeStep, resumeNonce]);
 
+
+  useEffect(() => {
+    if (!open || !hubLoaded) return;
+    const nonce = Number(launchNonce || 0);
+    if (!nonce || appliedLaunchNonceRef.current === nonce) return;
+    if (!routeRefreshMode) return;
+
+    const roomId = Number(launchContext?.roomId || 0);
+    const nextWeekMask = Number(launchContext?.weekMask || 62) || 62;
+    const startHHMM = String(launchContext?.startHHMM || "08:00");
+    const endHHMM = String(launchContext?.endHHMM || "10:00");
+    const direction = String(launchContext?.direction || "INBOUND").toUpperCase();
+    const pattern = String(launchContext?.pattern || "ONE_WAY").toUpperCase();
+    const hubLatValue = coordNum(launchContext?.hubLat);
+    const hubLngValue = coordNum(launchContext?.hubLng);
+    const preferredStartDate = String(launchContext?.startDate || todayYmd());
+
+    setPackKey("CUSTOM");
+    setCustomSlots([{
+      label: "Vardiya 1",
+      startHHMM,
+      endHHMM,
+      direction,
+      pattern,
+    }]);
+    setStartDate(preferredStartDate);
+    setDurationKey(String(launchContext?.durationKey || "1w"));
+    setDaysSel(selectedFromMask(nextWeekMask));
+    if (hubLatValue != null && hubLngValue != null) {
+      setHubLat(String(hubLatValue));
+      setHubLng(String(hubLngValue));
+    }
+    if (roomId > 0) {
+      setSelRoomIds({ [roomId]: true });
+    }
+    if (launchContext?.roomName) {
+      setRoomQ(String(launchContext.roomName));
+    }
+    const hasReadyHub = (hubLatValue != null && hubLngValue != null) || (coordNum(hubLat) != null && coordNum(hubLng) != null);
+    setStep(hasReadyHub ? 1 : 0);
+    setInfo(`Sözleşme #${Number(launchContext?.agreementId || 0) || "?"} için rota güncelleme hazırlığı açıldı. Plan ve kişi/durak değişikliklerini bu akışta hazırlayabilirsin.`);
+    appliedLaunchNonceRef.current = nonce;
+  }, [open, hubLoaded, launchNonce, launchContext, routeRefreshMode, hubLat, hubLng]);
 
   useEffect(() => {
     if (!open) return;
@@ -946,7 +994,7 @@ async function sendBulkOffers() {
     >
       <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontWeight: 900, fontSize: 18 }}>Guided Mode — Yeni Plan</div>
+          <div style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Guided Mode — Rota Güncelle" : "Guided Mode — Yeni Plan"}</div>
           <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step, who, organization)}</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -959,6 +1007,21 @@ async function sendBulkOffers() {
       ) : null}
       {info ? (
         <div className="card" style={{ marginTop: 10, border: "1px solid #2a7" }}>{info}</div>
+      ) : null}
+      {routeRefreshMode ? (
+        <div className="card" style={{ marginTop: 10, border: "1px solid rgba(88,166,255,.28)" }}>
+          <div style={{ fontWeight: 800 }}>Rota güncelleme bağlamı</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Sözleşme #{Number(launchContext?.agreementId || 0) || "?"} • Kaynak vardiya #{Number(launchContext?.sourceShiftId || 0) || "?"}
+            {launchContext?.roomName ? ` • Oda ${launchContext.roomName}` : ""}
+          </div>
+          {launchContext?.sourceSummary ? (
+            <div className="muted" style={{ marginTop: 6 }}>{String(launchContext.sourceSummary)}</div>
+          ) : null}
+          <div className="muted" style={{ marginTop: 6 }}>
+            Bu turda mevcut Guided Mode aynı sözleşme bağlamıyla açıldı. Planı düzenleyip kişi/durak tarafını yeniden hazırlayabilirsin.
+          </div>
+        </div>
       ) : null}
 
       {/* Step-0: Hub */}
@@ -1071,13 +1134,13 @@ async function sendBulkOffers() {
             <div className="card" style={{ border: "1px solid #b85" }}>
               <div style={{ fontWeight: 800 }}>⚠ Guided Mode kilidi</div>
               <div className="muted" style={{ marginTop: 6 }}>
-                İncelenecek durumda veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
+                Review veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
-                İncelenecek: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Başarısız: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
+                Review: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Failed: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
-                Düzeltmeyi bu ekranda yap. Guided Mode içinden dış Konum Seçici ekranına çıkış kapalı tutulur.
+                Düzeltmeyi bu ekranda yap. Guided Mode içinden dış Geo Review ekranına çıkış kapalı tutulur.
               </div>
             </div>
           ) : null}

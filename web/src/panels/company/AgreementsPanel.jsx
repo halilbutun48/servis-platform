@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import AgreementWizard from "./AgreementWizard";
+import GuidedPlanModal from "./GuidedPlanModal";
 import { ProviderScoreCard } from "../../components/ProviderScoreBadge";
 import {
   WEEKDAYS,
@@ -146,6 +147,46 @@ function isYmd(s) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(s || "").trim());
 }
 
+function buildRouteRefreshLaunch({ agreement, room, origin }) {
+  const sourceShiftId = Number(origin?.sourceShiftId || 0);
+  if (!sourceShiftId) return null;
+
+  const agreementId = Number(agreement?.id || 0);
+  const roomId = Number(agreement?.roomId || room?.id || 0);
+  const startDate = String(agreement?.startDate || "").slice(0, 10);
+  const endDate = String(agreement?.endDate || "").slice(0, 10);
+  const today = todayYmd();
+  const refreshStartDate = isYmd(startDate) && startDate > today ? startDate : today;
+  const startHHMM = toHHMM(agreement?.startMin) || "08:00";
+  const endHHMM = toHHMM(agreement?.endMin) || "10:00";
+
+  return {
+    mode: "ROUTE_REFRESH",
+    agreementId,
+    roomId: roomId || null,
+    roomName: room?.name || null,
+    sourceShiftId,
+    sourceSummary: String(origin?.sourceSummary || "").trim() || null,
+    startDate: refreshStartDate,
+    agreementStartDate: isYmd(startDate) ? startDate : null,
+    agreementEndDate: isYmd(endDate) ? endDate : null,
+    durationKey: "1w",
+    weekMask: Number(agreement?.weekMask || 62) || 62,
+    startHHMM,
+    endHHMM,
+    direction: String(agreement?.direction || "INBOUND").toUpperCase(),
+    pattern: String(agreement?.pattern || "ONE_WAY").toUpperCase(),
+    hubLat: agreement?.hubLat ?? null,
+    hubLng: agreement?.hubLng ?? null,
+  };
+}
+
+function canRouteRefresh(agreement, origin) {
+  const status = String(agreement?.status || "").toUpperCase();
+  if (!["APPROVED", "ACTIVE"].includes(status)) return false;
+  return Number(origin?.sourceShiftId || 0) > 0;
+}
+
 const PLAN_TEMPLATES = [
   {
     key: "MORNING",
@@ -238,6 +279,9 @@ export default function AgreementsPanel() {
   const [wizardPrefillNonce, setWizardPrefillNonce] = useState(0);
   const [agreementOrigins, setAgreementOrigins] = useState({});
   const [recentConversion, setRecentConversion] = useState(null);
+  const [guidedOpen, setGuidedOpen] = useState(false);
+  const [routeRefreshLaunch, setRouteRefreshLaunch] = useState(null);
+  const [routeRefreshNonce, setRouteRefreshNonce] = useState(0);
 
   const [templateKey, _setTemplateKey] = useState("MORNING");
   const [roomId, _setRoomId] = useState("");
@@ -411,7 +455,7 @@ export default function AgreementsPanel() {
   }, [token, take, statusFilter]);
 
   useEffect(() => {
-    if (!token || !advancedOpen) return;
+    if (!token || (!advancedOpen && !guidedOpen)) return;
     const controller = new AbortController();
     let cancelled = false;
     const timer = setTimeout(() => {
@@ -422,7 +466,7 @@ export default function AgreementsPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, advancedOpen]);
+  }, [token, advancedOpen, guidedOpen]);
 
 
   useEffect(() => {
@@ -453,6 +497,20 @@ export default function AgreementsPanel() {
 
   async function _createAdvanced() {
     setErr("Doğrudan sözleşme açma kapalı. Önce vardiya oluşturup “Sözleşmeye Dönüştür” kullan.");
+  }
+
+
+  function startRouteRefresh(agreement, room) {
+    const origin = agreementOrigins?.[String(agreement?.id)] || null;
+    const launch = buildRouteRefreshLaunch({ agreement, room, origin });
+    if (!launch) {
+      setErr("Rota güncelleme için önce kaynak vardiya bağlantısı gerekli.");
+      return;
+    }
+    setErr("");
+    setRouteRefreshLaunch(launch);
+    setRouteRefreshNonce((n) => n + 1);
+    setGuidedOpen(true);
   }
 
 
@@ -756,6 +814,11 @@ export default function AgreementsPanel() {
             <button type="button" className="btn" onClick={() => openAgreementShift(selectedAgreementOrigin.sourceShiftId, false)}>
               Kaynak Vardiyaya Git
             </button>
+            {canRouteRefresh(selectedAgreementRow?.a, selectedAgreementOrigin) ? (
+              <button type="button" className="btn" disabled={busy} onClick={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}>
+                Rota Güncelle
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -859,6 +922,11 @@ export default function AgreementsPanel() {
                         </button>
                       </>
                     ) : null}
+                    {canRouteRefresh(a, agreementOrigins?.[String(a.id)]) ? (
+                      <button type="button" className="btn" disabled={busy} onClick={() => startRouteRefresh(a, room)}>
+                        Rota Güncelle
+                      </button>
+                    ) : null}
                     <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE" || a.status === "REJECTED"} onClick={() => cancelAgreement(a.id)}>
                       İptal Et
                     </button>
@@ -898,6 +966,22 @@ export default function AgreementsPanel() {
           </tbody>
         </table>
       </div>
+
+      <GuidedPlanModal
+        open={guidedOpen}
+        onClose={() => {
+          setGuidedOpen(false);
+          setRouteRefreshLaunch(null);
+        }}
+        rooms={rooms}
+        roomsSupported={roomsSupported}
+        onReloadRooms={loadRooms}
+        onAfterCreated={() => {
+          void load();
+        }}
+        launchContext={routeRefreshLaunch}
+        launchNonce={routeRefreshNonce}
+      />
     </div>
   );
 }
