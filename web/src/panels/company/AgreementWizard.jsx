@@ -17,6 +17,7 @@ import {
 import { isoFromTRYmdMin, ymdTR } from "../../utils/time";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { cachedGet } from "../../utils/uiDataCache";
+import { linkAgreementsToOrigin } from "../../utils/agreementOriginLink";
 
 function todayYmd() {
   return ymdTR();
@@ -165,6 +166,8 @@ export default function AgreementWizard({
   geoNeedsReview = null,
   renderTrigger = null,
   onCreated = null,
+  launchPrefill = null,
+  autoOpenNonce = 0,
 }) {
   const { token, me } = useSession();
 
@@ -228,6 +231,20 @@ export default function AgreementWizard({
   const [marketNoteCompany, setMarketNoteCompany] = useState("");
   const [marketDirection, setMarketDirection] = useState("INBOUND");
   const [marketPattern, setMarketPattern] = useState("ONE_WAY");
+
+
+function guessPackKey(prefill) {
+  const direction = String(prefill?.direction || "INBOUND").toUpperCase();
+  const pattern = String(prefill?.pattern || "ONE_WAY").toUpperCase();
+  const start = String(prefill?.startHHMM || "");
+  const end = String(prefill?.endHHMM || "");
+  const weekMask = Number(prefill?.weekMask || 0);
+  if (pattern !== "ONE_WAY") return "CUSTOM";
+  if (weekMask === 31 && direction === "INBOUND" && start === "07:00" && end === "09:00") return "WK_MORNING";
+  if (weekMask === 31 && direction === "OUTBOUND" && start === "17:00" && end === "19:00") return "WK_EVENING";
+  if (weekMask === 31 && direction === "INBOUND" && start === "23:00" && end === "01:00") return "WK_NIGHT";
+  return "CUSTOM";
+}
 
   const roomById = useMemo(() => {
     const m = new Map();
@@ -328,6 +345,41 @@ export default function AgreementWizard({
       .slice(0, 120);
   }, [roomsList, q, onlyHub]);
 
+
+  useEffect(() => {
+    if (!launchPrefill) return;
+
+    const next = launchPrefill;
+    const nextPackKey = guessPackKey(next);
+    setErr("");
+    setOkMsg("");
+    setPackKey(nextPackKey);
+    setOpen(true);
+
+    const timer = window.setTimeout(() => {
+      if (next?.roomId) {
+        setOnlyHub(false);
+        setQ("");
+      }
+      setRoomId(String(next?.roomId || ""));
+      if (next?.startDate) setStartDate(String(next.startDate).slice(0, 10));
+      if (next?.durationKey) setDurationKey(String(next.durationKey));
+      if (next?.endDate) setEndDate(String(next.endDate).slice(0, 10));
+      if (Number(next?.weekMask || 0) > 0) setDaysSel(selectedFromMask(Number(next.weekMask || 0)));
+      if (next?.startHHMM) setStartHHMM(String(next.startHHMM));
+      if (next?.endHHMM) setEndHHMM(String(next.endHHMM));
+      if (next?.direction) setDirection(String(next.direction));
+      if (next?.pattern) setPattern(String(next.pattern));
+
+      const hasHub = next?.hubLat != null && next?.hubLng != null;
+      setUseRoomHub(!hasHub);
+      setHubLat(hasHub ? String(next.hubLat) : "");
+      setHubLng(hasHub ? String(next.hubLng) : "");
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [launchPrefill, autoOpenNonce]);
+
   const filteredMarketRooms = useMemo(() => {
     const qq = String(marketQ || "").trim().toLowerCase();
     return (roomsList || [])
@@ -393,31 +445,51 @@ export default function AgreementWizard({
       items = [{ label: "Özel", startMin: sMin, endMin: eMin, direction, pattern }];
     }
 
+    if (items.length > 3) return setErr("Sözleşme tarafı günlük en fazla 3 slot destekler.");
+
     setBusy(true);
     try {
-      const createdIds = [];
-      for (const it of items) {
-        const body = {
-          roomId: rid,
-          startDate,
-          endDate,
-          weekMask,
+      const body = {
+        roomId: rid,
+        startDate,
+        endDate,
+        weekMask,
+        items: items.map((it) => ({
+          label: it.label || null,
           startMin: it.startMin,
           endMin: it.endMin,
           direction: it.direction,
           pattern: it.pattern,
-          hubLat: hubLatN,
-          hubLng: hubLngN,
-        };
-        if (amt != null) body.companyOfferAmount = amt;
-        if (note) body.companyOfferNote = note;
+        })),
+        hubLat: hubLatN,
+        hubLng: hubLngN,
+      };
+      if (launchPrefill?.sourceShiftId) body.sourceShiftId = Number(launchPrefill.sourceShiftId || 0);
+      if (amt != null) body.companyOfferAmount = amt;
+      if (note) body.companyOfferNote = note;
 
-        const r = await api("/api/agreements", { token, method: "POST", body });
-        if (r?.id) createdIds.push(Number(r.id));
+      const r = await api("/api/agreements/bundle", { token, method: "POST", body });
+      const createdIds = Array.isArray(r?.createdIds)
+        ? r.createdIds.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)
+        : [];
+
+      if (!createdIds.length) {
+        throw new Error("Sözleşme oluşturulamadı.");
       }
 
-      setOkMsg(`✅ Oluşturuldu: ${createdIds.length} agreement (${createdIds.map((x) => `#${x}`).join(", ")})`);
-      onCreated?.();
+      if (launchPrefill?.sourceShiftId) {
+        linkAgreementsToOrigin(createdIds, launchPrefill);
+      }
+      setOkMsg(`✅ Oluşturuldu: ${createdIds.length} sözleşme (${createdIds.map((x) => `#${x}`).join(", ")})`);
+      onCreated?.({
+        createdIds,
+        createdFromShift: launchPrefill?.sourceShiftId
+          ? {
+              sourceShiftId: Number(launchPrefill.sourceShiftId || 0),
+              sourceSummary: String(launchPrefill?.sourceSummary || ""),
+            }
+          : null,
+      });
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {

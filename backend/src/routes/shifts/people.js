@@ -13,6 +13,7 @@ import { httpError } from "../../errors/http.js";
 import { clearShiftRoutePreviewCache, rebuildShiftRouteStateBestEffort } from "../../services/shiftRouteState.js";
 import { decorateGeoItem, inferGeoState } from "../../services/geoState.js";
 import { rememberResponse } from "../../utils/responseCache.js";
+import { resolveAgreementSourceShiftPayload } from "../../services/agreementSourceShift.js";
 
 const qModeSchema = z
   .preprocess((v) => {
@@ -105,7 +106,7 @@ function normalizeImportRows(rows) {
     const rowNo = index + 1;
     const parsed = importRawItemSchema.safeParse(raw ?? {});
     if (!parsed.success) {
-      warnings.push(warning(rowNo, "INVALID_ROW", "Satır biçimi okunamadı.", "error"));
+      warnings.push(warning(rowNo, "INVALID_ROW", "SatÄ±r biÃ§imi okunamadÄ±.", "error"));
       return;
     }
 
@@ -121,7 +122,7 @@ function normalizeImportRows(rows) {
     const kind = value.kind === "STUDENT" ? "STUDENT" : value.kind === "PERSONEL" ? "PERSONEL" : undefined;
 
     if (!fullName) {
-      warnings.push(warning(rowNo, "MISSING_NAME", "Ad soyad boş olduğu için satır atlandı.", "error"));
+      warnings.push(warning(rowNo, "MISSING_NAME", "Ad soyad boÅŸ olduÄŸu iÃ§in satÄ±r atlandÄ±.", "error"));
       return;
     }
 
@@ -129,13 +130,13 @@ function normalizeImportRows(rows) {
     const hasPartialCoords = (lat == null) !== (lng == null);
     if (hasPartialCoords) {
       warnings.push(
-        warning(rowNo, "INVALID_COORD", "Enlem/boylam eksik veya geçersiz; adres varsa review akışına düşecek.")
+        warning(rowNo, "INVALID_COORD", "Enlem/boylam eksik veya geÃ§ersiz; adres varsa review akÄ±ÅŸÄ±na dÃ¼ÅŸecek.")
       );
     }
 
     if (!address && !hasCoords) {
       warnings.push(
-        warning(rowNo, "MISSING_ADDRESS_OR_COORDS", "Adres veya geçerli koordinat olmadığı için satır atlandı.", "error")
+        warning(rowNo, "MISSING_ADDRESS_OR_COORDS", "Adres veya geÃ§erli koordinat olmadÄ±ÄŸÄ± iÃ§in satÄ±r atlandÄ±.", "error")
       );
       return;
     }
@@ -153,7 +154,7 @@ function normalizeImportRows(rows) {
 
     const fingerprint = buildImportFingerprint(normalized);
     if (seen.has(fingerprint)) {
-      warnings.push(warning(rowNo, "DUPLICATE_ROW", "Aynı satır bu dosyada tekrar ettiği için atlandı."));
+      warnings.push(warning(rowNo, "DUPLICATE_ROW", "AynÄ± satÄ±r bu dosyada tekrar ettiÄŸi iÃ§in atlandÄ±."));
       return;
     }
     seen.add(fingerprint);
@@ -161,7 +162,7 @@ function normalizeImportRows(rows) {
     const geoMeta = inferGeoState(normalized);
     if (geoMeta.geoStatus === "NEEDS_REVIEW") {
       warnings.push(
-        warning(rowNo, "GEO_NEEDS_REVIEW", `${geoMeta.geoReasonText}; kayıt review gerektiriyor.`)
+        warning(rowNo, "GEO_NEEDS_REVIEW", `${geoMeta.geoReasonText}; kayÄ±t review gerektiriyor.`)
       );
     }
 
@@ -457,7 +458,7 @@ export function attachShiftPeopleRoutes(router, _io) {
 
     const { accepted, warnings } = normalizeImportRows(rawRows);
     if (accepted.length === 0) {
-      throw httpError(400, "NO_VALID_ROWS", "İçe aktarılacak geçerli satır bulunamadı.", {
+      throw httpError(400, "NO_VALID_ROWS", "Ä°Ã§e aktarÄ±lacak geÃ§erli satÄ±r bulunamadÄ±.", {
         summary: {
           totalRows: rawRows.length,
           acceptedRows: 0,
@@ -585,7 +586,7 @@ export function attachShiftPeopleRoutes(router, _io) {
     const maxWalkM = validateWithZod(qMaxWalkSchema, req.body?.maxWalkM ?? req.query.maxWalkM);
 
     if (!ids.length) throw httpError(400, "SHIFT_IDS_REQUIRED", "shiftIds required");
-    if (ids.length > 21) throw httpError(400, "GUIDED_SHIFT_LIMIT", "Guided en fazla 21 vardiya için durak üretebilir.");
+    if (ids.length > 21) throw httpError(400, "GUIDED_SHIFT_LIMIT", "Guided en fazla 21 vardiya iÃ§in durak Ã¼retebilir.");
 
     const results = [];
     for (const id of ids) {
@@ -608,7 +609,7 @@ export function attachShiftPeopleRoutes(router, _io) {
     res.json(result);
   }));
 
-  // COMPANY + ROOM: list stops (used by Shift Tools "Shift’ten Durakları Çek")
+  // COMPANY + ROOM: list stops (used by Shift Tools "Shiftâ€™ten DuraklarÄ± Ã‡ek")
   r.get("/:id/stops", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
 
@@ -637,6 +638,10 @@ export function attachShiftPeopleRoutes(router, _io) {
     return res.json({ ok: true, stops: items });
   }));
 
+  async function loadAgreementSourceShiftPayload(agreementId) {
+    return resolveAgreementSourceShiftPayload(agreementId);
+  }
+
   // COMPANY + ROOM: route preview (M19: summary + directional hub path + learned overlay)
   r.get("/:id/route-preview", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
@@ -660,22 +665,59 @@ export function attachShiftPeopleRoutes(router, _io) {
     const payload = await rememberResponse(
       `shift-route-preview:${id}`,
       async () => {
-        const people = await getShiftPeople(shift.id);
-        const stops = await prisma.stop.findMany({
+        let people = await getShiftPeople(shift.id);
+        let stops = await prisma.stop.findMany({
           where: { shiftId: shift.id },
           orderBy: { order: "asc" },
         });
-        const assignments = await prisma.stopAssignment.findMany({
+        let assignments = await prisma.stopAssignment.findMany({
           where: { shiftId: shift.id },
           select: { stopId: true, personelId: true, walkM: true },
         });
+        let previewShiftSource = shift;
+
+        const sourcePayload = Number(shift.agreementId || 0) > 0 ? await loadAgreementSourceShiftPayload(shift.agreementId) : null;
+        const currentHubLat = typeof shift.hubLat === "number" ? shift.hubLat : typeof shift.agreement?.hubLat === "number" ? shift.agreement.hubLat : typeof shift.room?.hubLat === "number" ? shift.room.hubLat : null;
+        const currentHubLng = typeof shift.hubLng === "number" ? shift.hubLng : typeof shift.agreement?.hubLng === "number" ? shift.agreement.hubLng : typeof shift.room?.hubLng === "number" ? shift.room.hubLng : null;
+        const hasMeaningfulStops = Array.isArray(stops) && stops.some((s) => {
+          if (typeof s?.lat !== "number" || typeof s?.lng !== "number") return false;
+          if (typeof currentHubLat !== "number" || typeof currentHubLng !== "number") return true;
+          return Math.abs(Number(s.lat) - Number(currentHubLat)) > 1e-6 || Math.abs(Number(s.lng) - Number(currentHubLng)) > 1e-6;
+        });
+
+        if (sourcePayload?.shift) {
+          const sourcePlanStops = Array.isArray(sourcePayload.shift.organizationPlan?.stops)
+            ? sourcePayload.shift.organizationPlan.stops.map((s) => ({
+                id: Number(s.id || 0),
+                shiftId: sourcePayload.shift.id,
+                name: s.name,
+                lat: s.lat,
+                lng: s.lng,
+                order: s.order,
+                type: s.type,
+              }))
+            : [];
+          if (!hasMeaningfulStops) {
+            if (Array.isArray(sourcePayload.stops) && sourcePayload.stops.length) stops = sourcePayload.stops;
+            else if (sourcePlanStops.length) stops = sourcePlanStops;
+          }
+          if (!people.length && Array.isArray(sourcePayload.people) && sourcePayload.people.length) {
+            people = sourcePayload.people;
+          }
+          if (!assignments.length && Array.isArray(sourcePayload.assignments) && sourcePayload.assignments.length) {
+            assignments = sourcePayload.assignments;
+          }
+          if (!hasMeaningfulStops || !people.length || !assignments.length || sourcePlanStops.length) {
+            previewShiftSource = sourcePayload.shift;
+          }
+        }
 
         const { skipped } = pickEligiblePoints(people);
 
         const countByStopId = new Map();
         for (const a of assignments) countByStopId.set(a.stopId, (countByStopId.get(a.stopId) || 0) + 1);
 
-        const orgPlanStops = Array.isArray(shift.organizationPlan?.stops) ? shift.organizationPlan.stops : [];
+        const orgPlanStops = Array.isArray(previewShiftSource.organizationPlan?.stops) ? previewShiftSource.organizationPlan.stops : [];
         const orgPlanStopsByOrder = new Map(orgPlanStops.map((s, i) => [Number(s.order || i + 1), s]));
 
         function fallbackPassengerCountForStop(stop, index) {
@@ -702,11 +744,11 @@ export function attachShiftPeopleRoutes(router, _io) {
           };
         });
 
-        const hubLat = typeof shift.hubLat === "number" ? shift.hubLat : typeof shift.agreement?.hubLat === "number" ? shift.agreement.hubLat : typeof shift.room?.hubLat === "number" ? shift.room.hubLat : null;
-        const hubLng = typeof shift.hubLng === "number" ? shift.hubLng : typeof shift.agreement?.hubLng === "number" ? shift.agreement.hubLng : typeof shift.room?.hubLng === "number" ? shift.room.hubLng : null;
+        const hubLat = typeof shift.hubLat === "number" ? shift.hubLat : typeof previewShiftSource?.hubLat === "number" ? previewShiftSource.hubLat : typeof shift.agreement?.hubLat === "number" ? shift.agreement.hubLat : typeof previewShiftSource?.agreement?.hubLat === "number" ? previewShiftSource.agreement.hubLat : typeof shift.room?.hubLat === "number" ? shift.room.hubLat : typeof previewShiftSource?.room?.hubLat === "number" ? previewShiftSource.room.hubLat : null;
+        const hubLng = typeof shift.hubLng === "number" ? shift.hubLng : typeof previewShiftSource?.hubLng === "number" ? previewShiftSource.hubLng : typeof shift.agreement?.hubLng === "number" ? shift.agreement.hubLng : typeof previewShiftSource?.agreement?.hubLng === "number" ? previewShiftSource.agreement.hubLng : typeof shift.room?.hubLng === "number" ? shift.room.hubLng : typeof previewShiftSource?.room?.hubLng === "number" ? previewShiftSource.room.hubLng : null;
         const hub = typeof hubLat === "number" && typeof hubLng === "number" ? { lat: hubLat, lng: hubLng } : null;
-        const direction = String(shift.direction || shift.agreement?.direction || "INBOUND").toUpperCase();
-        const pattern = String(shift.pattern || shift.agreement?.pattern || "ONE_WAY").toUpperCase();
+        const direction = String(shift.direction || previewShiftSource?.direction || shift.agreement?.direction || previewShiftSource?.agreement?.direction || "INBOUND").toUpperCase();
+        const pattern = String(shift.pattern || previewShiftSource?.pattern || shift.agreement?.pattern || previewShiftSource?.agreement?.pattern || "ONE_WAY").toUpperCase();
 
         const stopPoints = stopsWithCounts.filter((s) => typeof s.lat === "number" && typeof s.lng === "number").map((s) => ({ lat: s.lat, lng: s.lng }));
 
@@ -740,15 +782,15 @@ export function attachShiftPeopleRoutes(router, _io) {
         const routeKey = computeRouteKey({ direction, pattern, hub, stops: stopPoints });
         const learned = await prisma.routeLearned.findUnique({ where: { routeKey } });
         const learnedPoints = learned && Number(learned.sampleCount || 0) >= 3 ? parsePolyline(learned.polylineCanonical) : null;
-        const snapshotHash = String(shift.routeSnapshotInputHash || "");
-        const snapshotPoints = parsePolyline(shift.routeSnapshotPolyline);
+        const snapshotHash = String(shift.routeSnapshotInputHash || previewShiftSource?.routeSnapshotInputHash || "");
+        const snapshotPoints = parsePolyline(shift.routeSnapshotPolyline || previewShiftSource?.routeSnapshotPolyline);
         const snapshotFresh = Boolean(snapshotHash && snapshotHash === routeKey && Array.isArray(snapshotPoints) && snapshotPoints.length >= 2);
 
         const source = snapshotFresh ? "SNAPSHOT" : learnedPoints && learnedPoints.length >= 2 ? "LEARNED" : "ESTIMATED";
         const pathPoints = source === "SNAPSHOT" ? snapshotPoints : source === "LEARNED" ? learnedPoints : estPoints;
 
         const totalPassengerCountRaw = stopsWithCounts.reduce((sum, s) => sum + Number(s.previewCount ?? s.assignmentCount ?? s.passengerCount ?? 0), 0);
-        const requiredPaxFallback = Math.max(0, Number(shift.requiredPaxOverride || 0));
+        const requiredPaxFallback = Math.max(0, Number(shift.requiredPaxOverride || previewShiftSource?.requiredPaxOverride || 0));
         const totalPassengerCount = totalPassengerCountRaw > 0 ? totalPassengerCountRaw : requiredPaxFallback;
 
         const summary = {
@@ -771,9 +813,9 @@ export function attachShiftPeopleRoutes(router, _io) {
         }
 
         if (snapshotFresh) {
-          summary.distanceKmSnapshot = Number(Number((Number(shift.routeSnapshotDistanceM || 0) / 1000)).toFixed(2));
-          summary.durationMinSnapshot = Math.round(Number(shift.routeSnapshotDurationSec || 0) / 60);
-          summary.snapshotValidatedAt = shift.routeSnapshotValidatedAt || null;
+          summary.distanceKmSnapshot = Number(Number((Number((shift.routeSnapshotDistanceM ?? previewShiftSource?.routeSnapshotDistanceM) || 0) / 1000)).toFixed(2));
+          summary.durationMinSnapshot = Math.round(Number((shift.routeSnapshotDurationSec ?? previewShiftSource?.routeSnapshotDurationSec) || 0) / 60);
+          summary.snapshotValidatedAt = shift.routeSnapshotValidatedAt || previewShiftSource?.routeSnapshotValidatedAt || null;
         }
 
         summary.previewPolicy = source === "SNAPSHOT" ? "DB_SNAPSHOT" : source === "LEARNED" ? "DB_LEARNED" : "DB_ESTIMATED";

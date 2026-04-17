@@ -1,11 +1,7 @@
 // backend/src/routes/availability.js
 import express from "express";
 import { authRequired, requireRole } from "../auth/middleware.js";
-import { checkShiftConflicts, conflictResponse } from "../services/shiftConflict.js";
-import {
-  findAgreementConflictForRange,
-  agreementConflictResponse,
-} from "../services/agreementConflict.js";
+import { findReservationConflictForRange } from "../services/reservationConflict.js";
 import { prisma } from "../prisma.js";
 import { findAgreementConflictsForRangeBatch } from "../services/agreementConflictBatch.js";
 import { findShiftConflictsForRangeBatch } from "../services/shiftConflictBatch.js";
@@ -47,40 +43,26 @@ async function checkOne({ vehicleId, driverId, startAt, endAt, excludeShiftId })
     driverConflict: null,
   };
 
-  // ✅ Agreement-first (deterministik)
   if (driverId) {
-    const agDriver = await findAgreementConflictForRange({ driverId, startAt, endAt });
-    if (agDriver) {
-      row.driverOk = false;
-      row.driverConflict = slimConflict(
-        agreementConflictResponse({ kind: "driver", agreement: agDriver })
-      );
-    }
-  }
-  if (vehicleId) {
-    const agVehicle = await findAgreementConflictForRange({ vehicleId, startAt, endAt });
-    if (agVehicle) {
-      row.vehicleOk = false;
-      row.vehicleConflict = slimConflict(
-        agreementConflictResponse({ kind: "vehicle", agreement: agVehicle })
-      );
-    }
-  }
-
-  // Shift conflict (sadece agreement OK ise)
-  if (driverId && row.driverOk) {
-    const cr = conflictResponse(
-      await checkShiftConflicts({ driverId, startAt, endAt, excludeShiftId: excludeShiftId ?? undefined })
-    );
+    const cr = await findReservationConflictForRange({
+      driverId,
+      startAt,
+      endAt,
+      excludeShiftId: excludeShiftId ?? undefined,
+    });
     if (cr) {
       row.driverOk = false;
       row.driverConflict = slimConflict(cr);
     }
   }
-  if (vehicleId && row.vehicleOk) {
-    const cr = conflictResponse(
-      await checkShiftConflicts({ vehicleId, startAt, endAt, excludeShiftId: excludeShiftId ?? undefined })
-    );
+
+  if (vehicleId) {
+    const cr = await findReservationConflictForRange({
+      vehicleId,
+      startAt,
+      endAt,
+      excludeShiftId: excludeShiftId ?? undefined,
+    });
     if (cr) {
       row.vehicleOk = false;
       row.vehicleConflict = slimConflict(cr);

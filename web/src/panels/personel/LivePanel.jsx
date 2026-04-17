@@ -1,4 +1,4 @@
-﻿// web/src/panels/personel/LivePanel.jsx
+// web/src/panels/personel/LivePanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -106,20 +106,20 @@ function etaQualityTone(eta) {
 
 function etaQualityText(eta) {
   const q = String(eta?.routeQuality || "").toUpperCase();
-  if (q === "OFFLINE_GPS") return "GPS kapalÄ± veya Ã§ok eski";
+  if (q === "OFFLINE_GPS") return "GPS kapalı veya çok eski";
   if (q === "STALE_GPS") return "GPS gecikmeli";
   if (q === "SKIP_PRESENT") return "Atlanan durak var";
   if (q === "DONE_WITH_SKIPS") return "Rota bitti, atlanan durak var";
-  if (q === "DONE") return "Rota tamamlandÄ±";
+  if (q === "DONE") return "Rota tamamlandı";
   if (q === "NO_SHIFT") return "Aktif rota yok";
   return String(eta?.progressLabel || "Rota ilerliyor");
 }
 
 function nextActionText(eta) {
   const act = String(eta?.nextAction || "").toUpperCase();
-  if (act === "CONTACT_ROOM") return "Rota tamamlandÄ±; atlanan durak iÃ§in oda ile gÃ¶rÃ¼ÅŸÃ¼n.";
-  if (act === "WAIT_GPS_UPDATE") return "GPS verisi gÃ¼ncellenene kadar kÄ±sa sÃ¼re bekleyin.";
-  if (act === "NO_ACTIVE_ROUTE") return "Åu an aktif rota gÃ¶rÃ¼nmÃ¼yor.";
+  if (act === "CONTACT_ROOM") return "Rota tamamlandı; atlanan durak için oda ile görüşün.";
+  if (act === "WAIT_GPS_UPDATE") return "GPS verisi güncellenene kadar kısa süre bekleyin.";
+  if (act === "NO_ACTIVE_ROUTE") return "Şu an aktif rota görünmüyor.";
   return "";
 }
 
@@ -216,7 +216,7 @@ export default function PersonelLivePanel() {
   const vehicle = useMemo(() => {
     if (!baseVehicle) return null;
 
-    // /api/shifts/my payload'Ä± bazen gpsLast iÃ§ermeyebilir; ETA payload'Ä±ndan Ã¶dÃ¼nÃ§ al.
+    // /api/shifts/my payload'ı bazen gpsLast içermeyebilir; ETA payload'ından ödünç al.
     if (baseVehicle?.gpsLast?.at || baseVehicle?.gpsLast?.ts || !eta?.last) return baseVehicle;
 
     return {
@@ -315,8 +315,8 @@ export default function PersonelLivePanel() {
     <div className="wrap wrap--fluid">
       <div className="topbar">
         <div>
-          <div className="title">Personel â€¢ CanlÄ± Harita</div>
-          <div className="muted">Sana ait durak + araÃ§ yaklaÅŸÄ±mÄ± + ETA + navigasyon</div>
+          <div className="title">Personel • Canlı Harita</div>
+          <div className="muted">Sana ait durak + araç yaklaşımı + ETA + navigasyon</div>
         </div>
       </div>
 
@@ -325,7 +325,7 @@ export default function PersonelLivePanel() {
       <div className="grid mapGrid" style={{ ["--mapH"]: "min(520px, calc(100vh - 420px))" }}>
         <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16 }}>
-            Åu anki durum
+            Şu anki durum
           </div>
 
           {myShift ? (
@@ -341,7 +341,7 @@ export default function PersonelLivePanel() {
 
               <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span>
-                  AraÃ§: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}
+                  Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}
                 </span>
                 {vehicle ? (
                   <>
@@ -354,15 +354,15 @@ export default function PersonelLivePanel() {
                 ) : null}
               </div>
 
-              <div className="muted">SÃ¼rÃ¼cÃ¼: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
-              <div className="muted">Start: {fmtTR(myShift.startAt)} â€¢ End: {fmtTR(myShift.endAt)}</div>
+              <div className="muted">Sürücü: {myShift.driver?.fullName || (myShift.driverId ? `#${myShift.driverId}` : "-")}</div>
+              <div className="muted">Start: {fmtTR(myShift.startAt)} • End: {fmtTR(myShift.endAt)}</div>
 
               {totalStops ? (
                 <>
                   <div className="muted">
-                    Ä°lerleme: {pct}% (reached:{reachedCount}/{totalStops})
-                    {nextStop?.name ? ` â€¢ SÄ±radaki: ${nextStop.name}` : ""}
-                    {nextStop?.name && nextEtaMin != null ? ` â€¢ ETA: ${nextEtaMin}dk` : ""}{remainingStopsCount ? ` â€¢ Kalan durak: ${remainingStopsCount}` : ""}
+                    İlerleme: {pct}% (reached:{reachedCount}/{totalStops})
+                    {nextStop?.name ? ` • Sıradaki: ${nextStop.name}` : ""}
+                    {nextStop?.name && nextEtaMin != null ? ` • ETA: ${nextEtaMin}dk` : ""}{remainingStopsCount ? ` • Kalan durak: ${remainingStopsCount}` : ""}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span className="pill" data-status={routeQualityTone}>{routeQualityText}</span>
@@ -376,7 +376,7 @@ export default function PersonelLivePanel() {
             </div>
           ) : (
             <div className="muted" style={{ marginTop: 10 }}>
-              HenÃ¼z eÅŸleÅŸmiÅŸ bir servis yok.
+              Henüz eşleşmiş bir servis yok.
             </div>
           )}
         </div>
@@ -386,14 +386,14 @@ export default function PersonelLivePanel() {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
               <div>
                 <div className="title" style={{ fontSize: 16 }}>
-                  SeÃ§ili AraÃ§
+                  Seçili Araç
                 </div>
                 <div className="muted" style={{ fontSize: 12 }}>
-                  {vehicle?.plate || "-"} â€¢ Shift #{myShift?.id || "-"} â€¢ {String(myShift?.status || "-").toUpperCase()}
+                  {vehicle?.plate || "-"} • Shift #{myShift?.id || "-"} • {String(myShift?.status || "-").toUpperCase()}
                 </div>
               </div>
               <button className="btn sm" onClick={fitAll}>
-                TÃ¼mÃ¼nÃ¼ GÃ¶ster
+                Tümünü Göster
               </button>
             </div>
 
@@ -408,15 +408,15 @@ export default function PersonelLivePanel() {
                   <span className="pill">{gpsAgeLabel(vehicle)}</span>
                 </>
               ) : (
-                <span className="muted">AraÃ§ yok.</span>
+                <span className="muted">Araç yok.</span>
               )}
 
               {nextStop?.name ? (
                 <>
-                  <span className="muted">SÄ±radaki:</span>
+                  <span className="muted">Sıradaki:</span>
                   <span className="pill" data-status="NEXT">{nextStop.name}</span>
                   <button className="btn sm" style={{ marginLeft: 8 }} onClick={() => openNav(nextStop, vehicle)}>
-                    Navigasyon AÃ§
+                    Navigasyon Aç
                   </button>
                   {nextEtaMin != null ? (
                     <span className="muted">
@@ -446,7 +446,7 @@ export default function PersonelLivePanel() {
                   ) : null}
                 </>
               ) : (
-                <span className="muted">SÄ±radaki durak yok.</span>
+                <span className="muted">Sıradaki durak yok.</span>
               )}
             </div>
 
@@ -458,7 +458,7 @@ export default function PersonelLivePanel() {
 
             {recommended ? (
               <div className="muted" style={{ marginTop: 8 }}>
-                Ã–nerilen durak:{" "}
+                Önerilen durak:{" "}
                 <span className="pill" data-status="OK">{recommended.stop?.name || "Durak"}</span>
                 <span className="muted" style={{ marginLeft: 8 }}>
                   <b>{Math.round(recommended.distM)}m</b>
@@ -467,14 +467,14 @@ export default function PersonelLivePanel() {
                   className="btn sm"
                   style={{ marginLeft: 8 }}
                   onClick={() => openNav(recommended.stop, { gpsLast: { lat: myPos?.lat, lng: myPos?.lng } })}
-                  title="Konumundan duraÄŸa navigasyon"
+                  title="Konumundan durağa navigasyon"
                 >
-                  Navigasyon AÃ§
+                  Navigasyon Aç
                 </button>
               </div>
             ) : null}
 
-            {!recommended && geoErr ? <div className="muted" style={{ marginTop: 8 }}>Konum alÄ±namadÄ±: {geoErr}</div> : null}
+            {!recommended && geoErr ? <div className="muted" style={{ marginTop: 8 }}>Konum alınamadı: {geoErr}</div> : null}
 
             <div style={{ marginTop: 10 }}>
               <div className="muted" style={{ marginBottom: 6 }}>Mini Timeline</div>
@@ -492,8 +492,8 @@ export default function PersonelLivePanel() {
           </div>
 
           <div className="card" style={{ marginBottom: 10 }}>
-            <div className="title" style={{ fontSize: 16 }}>Harita Ã–nizleme</div>
-            <div className="muted" style={{ fontSize: 12 }}>SeÃ§ili araÃ§ + (varsa) duraklar</div>
+            <div className="title" style={{ fontSize: 16 }}>Harita Önizleme</div>
+            <div className="muted" style={{ fontSize: 12 }}>Seçili araç + (varsa) duraklar</div>
           </div>
 
           <MapView

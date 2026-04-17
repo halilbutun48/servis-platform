@@ -48,6 +48,7 @@ export default function RoomShiftsPanel() {
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
+  const [pendingPreviewShiftId, setPendingPreviewShiftId] = useState(null);
 
   // M28/M63-R3A: offers inbox -> ilgili satira hizli gecis
   useEffect(() => {
@@ -62,13 +63,15 @@ export default function RoomShiftsPanel() {
       }
     }
 
+    const previewRaw = localStorage.getItem("room:previewShiftId");
     const raw = localStorage.getItem("room:focusShiftId");
-    if (!raw) return;
-    localStorage.removeItem("room:focusShiftId");
-    const sid = String(raw || "").trim();
+    if (previewRaw) localStorage.removeItem("room:previewShiftId");
+    if (raw) localStorage.removeItem("room:focusShiftId");
+    const sid = String(previewRaw || raw || "").trim();
     if (!sid) return;
     setListStatus("ALL");
     setListQ(sid);
+    if (previewRaw) setPendingPreviewShiftId(Number(sid || 0));
   }, []);
 
   // Bekleyen satır: seçili araç + seçili driver (approve için)
@@ -559,6 +562,15 @@ const offersByShiftId = useMemo(() => {
     setPreviewLoading(false);
     setPreviewOpen(true);
   }
+
+  useEffect(() => {
+    const sid = Number(pendingPreviewShiftId || 0);
+    if (!sid || !Array.isArray(items) || !items.length) return;
+    const target = items.find((x) => Number(x?.id || 0) === sid);
+    if (!target) return;
+    setPendingPreviewShiftId(null);
+    openRoutePreview(target);
+  }, [pendingPreviewShiftId, items]);
 
   async function load() {
     setErr("");

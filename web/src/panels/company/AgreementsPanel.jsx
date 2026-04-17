@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { navigate } from "../../router";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -24,6 +25,9 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
+import { consumeAgreementPrefill } from "../../utils/agreementPrefill";
+import { getAgreementOrigins } from "../../utils/agreementOriginLink";
+import { companyPath } from "../../utils/paths";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -45,6 +49,94 @@ function ShiftSummary({ st }) {
   );
 }
 
+
+function trDateTime(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function AgreementOpsBridgeCard({ agreement, room, bridge, onOpenShift, onOpenPreview }) {
+  if (!agreement) return null;
+  const generatedCount = Number(bridge?.generatedCount || 0);
+  const lastShift = bridge?.lastShift || null;
+  const vehicleLabel = bridge?.agreementVehicle?.plate || lastShift?.vehicle?.plate || (agreement?.vehicleId ? `#${agreement.vehicleId}` : "-");
+  const driverLabel = bridge?.agreementDriver?.fullName || lastShift?.driver?.fullName || (agreement?.driverId ? `#${agreement.driverId}` : "-");
+  const hubText = typeof agreement?.hubLat === "number" && typeof agreement?.hubLng === "number"
+    ? `${agreement.hubLat.toFixed(4)}, ${agreement.hubLng.toFixed(4)}`
+    : (typeof bridge?.plan?.hubLat === "number" && typeof bridge?.plan?.hubLng === "number"
+      ? `${bridge.plan.hubLat.toFixed(4)}, ${bridge.plan.hubLng.toFixed(4)}`
+      : "-");
+
+  return (
+    <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
+          <div className="muted" style={{ marginTop: 4 }}>
+            {room?.name || `Room #${agreement?.roomId || "-"}`} • {String(agreement?.direction || bridge?.plan?.direction || "-").toUpperCase()} / {String(agreement?.pattern || bridge?.plan?.pattern || "-").toUpperCase()}
+          </div>
+        </div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <span className="pill" title="Bu sözleşmeden üretilen toplam vardiya">Üretilen vardiya: {generatedCount}</span>
+          <span className="pill" title="Sözleşme saat penceresi">{toHHMM(agreement?.startMin)} → {toHHMM(agreement?.endMin)}</span>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
+        <div>
+          <div className="muted">Araç</div>
+          <div style={{ fontWeight: 800 }}>{vehicleLabel}</div>
+        </div>
+        <div>
+          <div className="muted">Sürücü</div>
+          <div style={{ fontWeight: 800 }}>{driverLabel}</div>
+        </div>
+        <div>
+          <div className="muted">Hub</div>
+          <div style={{ fontWeight: 800 }}>{hubText}</div>
+        </div>
+        <div>
+          <div className="muted">Plan</div>
+          <div style={{ fontWeight: 800 }}>{weekMaskToText(agreement?.weekMask) || "-"}</div>
+        </div>
+      </div>
+
+      {lastShift ? (
+        <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 900 }}>Son üretilen vardiya #{lastShift.id}</div>
+              <div className="muted" style={{ marginTop: 4 }}>
+                {String(lastShift.status || "-").toUpperCase()} • {trDateTime(lastShift.startAt)} → {trDateTime(lastShift.endAt)}
+              </div>
+            </div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="btn" onClick={() => onOpenShift?.(lastShift.id)}>Vardiyaya Git</button>
+              <button type="button" className="btn" disabled={!lastShift?.previewAvailable && !lastShift?.id} onClick={() => onOpenPreview?.(lastShift.id)}>Rota Önizleme</button>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 10 }} className="muted">
+            <div>Durak: <b>{Number(lastShift.stopCount || 0)}</b></div>
+            <div>Personel: <b>{Number(lastShift.peopleCount || 0)}</b></div>
+            <div>Mesafe: <b>{lastShift.routeSnapshotDistanceM ? `${Math.round(Number(lastShift.routeSnapshotDistanceM) / 1000)} km` : "-"}</b></div>
+            <div>Süre: <b>{lastShift.routeSnapshotDurationSec ? `${Math.round(Number(lastShift.routeSnapshotDurationSec) / 60)} dk` : "-"}</b></div>
+          </div>
+        </div>
+      ) : (
+        <div className="muted" style={{ marginTop: 12 }}>
+          Bu sözleşmeden henüz üretilmiş vardiya yok. Operasyon bağlantısı ilk generated shift oluşunca burada görünür.
+        </div>
+      )}
+    </div>
+  );
+}
 
 function todayYmd() {
   return ymdTR();
@@ -146,13 +238,14 @@ function ExtendPill({ extendStatus, requestedEndDate }) {
 
 
 export default function AgreementsPanel() {
-  const { token } = useSession();
+  const { token, me } = useSession();
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   const [items, setItems] = useState([]);
   const [shiftStats, setShiftStats] = useState({}); // ✅ M59
+  const [opsBridge, setOpsBridge] = useState({});
   const shiftStatsCacheRef = useRef(new Map());
 
   const [take, setTake] = useState(20);
@@ -168,6 +261,10 @@ export default function AgreementsPanel() {
 
   // ✅ M27: advanced create (optional)
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [wizardPrefill, setWizardPrefill] = useState(null);
+  const [wizardPrefillNonce, setWizardPrefillNonce] = useState(0);
+  const [agreementOrigins, setAgreementOrigins] = useState({});
+  const [recentConversion, setRecentConversion] = useState(null);
 
   const [templateKey, setTemplateKey] = useState("MORNING");
   const [roomId, setRoomId] = useState("");
@@ -272,6 +369,17 @@ export default function AgreementsPanel() {
     }
   }
 
+  function openAgreementShift(shiftId, preview = false) {
+    const sid = Number(shiftId || 0);
+    if (!sid) return;
+    try {
+      localStorage.setItem(preview ? "company:previewShiftId" : "company:focusShiftId", String(sid));
+    } catch (e) {
+      void e;
+    }
+    navigate(companyPath(me, "/shifts"));
+  }
+
   async function load(signal) {
     if (!token) return;
     setErr("");
@@ -283,6 +391,7 @@ export default function AgreementsPanel() {
       if (signal?.aborted) return;
       const list = resp?.items ?? [];
       setItems(list);
+      setAgreementOrigins(getAgreementOrigins(list.map((x) => x?.id)));
 
       // ✅ M59: shift stats (today/horizon) for UI clarity
       try {
@@ -298,8 +407,16 @@ export default function AgreementsPanel() {
         } else {
           setShiftStats({});
         }
+
+        if (ids.length) {
+          const bridge = await api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } });
+          setOpsBridge(bridge?.byId ?? {});
+        } else {
+          setOpsBridge({});
+        }
       } catch {
         setShiftStats({});
+        setOpsBridge({});
       }
 
     } catch (e) {
@@ -335,6 +452,33 @@ export default function AgreementsPanel() {
       clearTimeout(timer);
     };
   }, [token, advancedOpen]);
+
+
+  useEffect(() => {
+    const prefill = consumeAgreementPrefill();
+    if (!prefill) return;
+    setWizardPrefill(prefill);
+    setWizardPrefillNonce((n) => n + 1);
+  }, []);
+
+  async function handleWizardCreated(detail = null) {
+    await load();
+    const createdIds = Array.isArray(detail?.createdIds) ? detail.createdIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0) : [];
+    const firstId = createdIds[0] || null;
+    if (firstId) setSelectedAgreementId(firstId);
+    if (detail?.createdFromShift?.sourceShiftId && firstId) {
+      setRecentConversion({
+        agreementId: firstId,
+        sourceShiftId: Number(detail.createdFromShift.sourceShiftId || 0),
+        sourceSummary: String(detail?.createdFromShift?.sourceSummary || ""),
+      });
+    } else {
+      setRecentConversion(null);
+    }
+    if (createdIds.length) {
+      setAgreementOrigins((prev) => ({ ...prev, ...getAgreementOrigins(createdIds) }));
+    }
+  }
 
   async function createAdvanced() {
     setErr("");
@@ -413,6 +557,38 @@ export default function AgreementsPanel() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function companyCounter(id, companyOfferAmount, companyOfferNote) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${id}/company-counter`, {
+        token,
+        method: "PUT",
+        body: {
+          companyOfferAmount,
+          companyOfferNote: companyOfferNote ?? null,
+        },
+      });
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Company counter failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function askCompanyCounter(a) {
+    const raw = prompt("Yeni şirket teklifi (₺):", String(a?.companyOfferAmount ?? a?.roomOfferAmount ?? ""));
+    if (raw == null) return;
+    const n = Number(String(raw).replace(/[^\d]/g, ""));
+    if (!Number.isFinite(n) || n <= 0) {
+      setErr("Yeni teklif miktarı geçersiz");
+      return;
+    }
+    const note = prompt("Yeni teklif notu (opsiyonel):", String(a?.companyOfferNote || ""));
+    companyCounter(a.id, Math.trunc(n), String(note || "").trim() || null);
   }
 
   async function cancelAgreement(id) {
@@ -533,6 +709,15 @@ export default function AgreementsPanel() {
     [filteredRows, selectedAgreementId]
   );
 
+  const selectedAgreementBridge = useMemo(
+    () => (selectedAgreementRow?.a ? opsBridge?.[selectedAgreementRow.a.id] || null : null),
+    [selectedAgreementRow, opsBridge]
+  );
+  const selectedAgreementOrigin = useMemo(
+    () => (selectedAgreementRow?.a ? agreementOrigins?.[String(selectedAgreementRow.a.id)] || null : null),
+    [selectedAgreementRow, agreementOrigins]
+  );
+
   useEffect(() => {
     const row = selectedAgreementRow;
     if (!row?.a) {
@@ -575,6 +760,7 @@ export default function AgreementsPanel() {
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} disabled={busy}>
               <option value="">(tümü)</option>
               <option value="REQUESTED">REQUESTED</option>
+              <option value="COUNTERED">COUNTERED</option>
               <option value="APPROVED">APPROVED</option>
               <option value="ACTIVE">ACTIVE</option>
               <option value="DONE">DONE</option>
@@ -616,23 +802,69 @@ export default function AgreementsPanel() {
         Not: Market/Shift teklifinde “anlaşma” sağlamak Agreement oluşturmaz. Agreement’lar ayrı “sözleşme” kaydıdır.
       </div>
 
-      {/* ✅ M27: Preset ile hızlı oluştur (Advanced) */}
+      {recentConversion ? (
+        <div className="card" style={{ border: "1px solid rgba(46,160,67,.45)" }}>
+          <div style={{ fontWeight: 900 }}>Vardiya sözleşmeye taşındı</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Vardiya #{recentConversion.sourceShiftId} için oluşturulan sözleşme seçildi: <b>#{recentConversion.agreementId}</b>
+          </div>
+          {recentConversion.sourceSummary ? (
+            <div className="muted" style={{ marginTop: 6 }}>{recentConversion.sourceSummary}</div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {wizardPrefill ? (
+        <div className="card" style={{ border: "1px solid rgba(88,166,255,.35)" }}>
+          <div style={{ fontWeight: 900 }}>Shift'ten getirilen sözleşme taslağı hazır</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            {String(wizardPrefill?.sourceSummary || "Seçilen vardiya bilgileri wizard'a taşındı.")}
+          </div>
+          <div className="muted" style={{ marginTop: 6 }}>Wizard otomatik açıldı. İstersen tarih/gün/saati düzenleyip kaydedebilirsin.</div>
+        </div>
+      ) : null}
+
+      {selectedAgreementRow?.a && selectedAgreementOrigin ? (
+        <div className="card" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+          <div style={{ fontWeight: 900 }}>Kaynak vardiya bağlantısı</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Bu sözleşme, vardiya <b>#{selectedAgreementOrigin.sourceShiftId}</b> üzerinden açılan taslaktan oluşturuldu.
+          </div>
+          {selectedAgreementOrigin?.sourceSummary ? (
+            <div className="muted" style={{ marginTop: 6 }}>{selectedAgreementOrigin.sourceSummary}</div>
+          ) : null}
+          <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <button type="button" className="btn" onClick={() => openAgreementShift(selectedAgreementOrigin.sourceShiftId, false)}>
+              Kaynak Vardiyaya Git
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {selectedAgreementRow?.a ? (
+        <AgreementOpsBridgeCard
+          agreement={selectedAgreementRow.a}
+          room={selectedAgreementRow.room}
+          bridge={selectedAgreementBridge}
+          onOpenShift={(shiftId) => openAgreementShift(shiftId, false)}
+          onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
+        />
+      ) : null}
+
       <div className="card">
-        <div style={{ fontWeight: 900 }}>Yeni Sözleşme (Hızlı)</div>
+        <div style={{ fontWeight: 900 }}>Sözleşme oluşturma kuralı</div>
         <div className="muted" style={{ marginTop: 4 }}>
-          Preset paket seç → room seç → tarih aralığı → oluştur. (İstersen sabah+akşam tek tıkla 2 agreement.)
+          Company tarafında sözleşme artık doğrudan bu ekrandan açılmaz. Önce bir vardiya oluştur, ardından ilgili vardiyada <b>Sözleşmeye Dönüştür</b> aksiyonunu kullan.
         </div>
         <div style={{ marginTop: 10 }}>
           <AgreementWizard
             rooms={null}
             roomsSupported={true}
             onReloadRooms={null}
-            renderTrigger={(open) => (
-              <button type="button" onClick={open} disabled={busy}>
-                Aç
-              </button>
-            )}
-            onCreated={load}
+            renderTrigger={() => null}
+            onCreated={handleWizardCreated}
+            launchPrefill={wizardPrefill}
+            autoOpenNonce={wizardPrefillNonce}
           />
         </div>
       </div>
@@ -818,7 +1050,7 @@ export default function AgreementsPanel() {
       <div className="tableWrap">
         <ListSelectionBanner
           selectedLabel={selectedAgreementRow?.a ? `Sözleşme #${selectedAgreementRow.a.id}` : ""}
-          selectedSummary={selectedAgreementRow?.a ? [String(selectedAgreementRow.a.status || '').toUpperCase(), selectedAgreementRow?.room?.name || `Room #${selectedAgreementRow.a.roomId || '-'}`, ymdTR(selectedAgreementRow.a.startDate), ymdTR(selectedAgreementRow.a.endDate)].filter(Boolean).join(" • ") : ""}
+          selectedSummary={selectedAgreementRow?.a ? [String(selectedAgreementRow.a.status || '').toUpperCase(), selectedAgreementRow?.room?.name || `Room #${selectedAgreementRow.a.roomId || '-'}`, ymdTR(selectedAgreementRow.a.startDate), ymdTR(selectedAgreementRow.a.endDate), selectedAgreementOrigin?.sourceShiftId ? `Kaynak vardiya #${selectedAgreementOrigin.sourceShiftId}` : null].filter(Boolean).join(" • ") : ""}
           visibleCount={filteredRows.length}
           totalCount={rows.length}
           filterValue={filterQ}
@@ -846,6 +1078,9 @@ export default function AgreementsPanel() {
               <tr key={a.id} onClick={() => setSelectedAgreementId(a.id)} style={rowSelectionStyle(Number(selectedAgreementId || 0) === Number(a.id || 0))}>
                 <td className="muted">
                   <div>#{a.id}</div>
+                  {agreementOrigins?.[String(a.id)]?.sourceShiftId ? (
+                    <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>Kaynak vardiya #{agreementOrigins[String(a.id)].sourceShiftId}</div>
+                  ) : null}
                   <CommercialReadonlySummary item={a.commercialBackbone} compact />
                 </td>
                 <td><StatusPill status={a.status} /><ExtendPill extendStatus={a.extendStatus} requestedEndDate={a.extendRequestedEndDate} /></td>
@@ -872,15 +1107,18 @@ export default function AgreementsPanel() {
                     {String(a.status || "").toUpperCase() === "COUNTERED" ? (
                       <>
                         <button type="button" disabled={busy} onClick={() => acceptCounter(a.id)}>
-                          Kabul Et
+                          Karşı Teklifi Kabul Et
+                        </button>
+                        <button type="button" className="btn" disabled={busy} onClick={() => askCompanyCounter(a)}>
+                          Yeni Teklif Ver
                         </button>
                         <button type="button" className="btn" disabled={busy} onClick={() => rejectCounter(a.id)}>
-                          Reddet
+                          Karşı Teklifi Reddet
                         </button>
                       </>
                     ) : null}
-                    <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE"} onClick={() => cancelAgreement(a.id)}>
-                      Cancel
+                    <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE" || a.status === "REJECTED"} onClick={() => cancelAgreement(a.id)}>
+                      İptal Et
                     </button>
 
                     {String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED" ? (

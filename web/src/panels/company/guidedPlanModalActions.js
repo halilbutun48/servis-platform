@@ -1,5 +1,6 @@
 import { api } from "../../api";
 import { addDaysISO, weekdayBitFromYmdUTC } from "../../utils/agreementUi";
+import { getApiErrorInfo } from "../../utils/apiContract";
 import {
   clearPlanTermsForShiftIds,
   parseTryInput,
@@ -265,13 +266,44 @@ export async function sendGuidedBulkOffersAction({ token, draftShiftIds, selecte
   if (amountCompany != null) baseBody.amountCompany = amountCompany;
   if (noteStr) baseBody.noteCompany = noteStr;
 
+  let sentCount = 0;
+  let blockedShiftCount = 0;
+  const skippedRoomIds = new Set();
+
   for (const sid of draftShiftIds) {
-    await api(`/api/shifts/${sid}/offers`, {
-      token,
-      method: "POST",
-      body: baseBody,
-    });
+    try {
+      const resp = await api(`/api/shifts/${sid}/offers`, {
+        token,
+        method: "POST",
+        body: baseBody,
+      });
+      sentCount += 1;
+      if (resp && Array.isArray(resp.skippedRoomIds)) {
+        for (const rid of resp.skippedRoomIds) {
+          const n = Number(rid);
+          if (Number.isFinite(n) && n > 0) skippedRoomIds.add(n);
+        }
+      }
+    } catch (error) {
+      const info = getApiErrorInfo(error);
+      if (info.code === "AGREEMENT_BLOCKED_ROOMS") {
+        blockedShiftCount += 1;
+        const blocked = Array.isArray(info.details?.skippedRoomIds) ? info.details.skippedRoomIds : [];
+        for (const rid of blocked) {
+          const n = Number(rid);
+          if (Number.isFinite(n) && n > 0) skippedRoomIds.add(n);
+        }
+        continue;
+      }
+      throw error;
+    }
   }
+
   writeGuidedTempShiftIds([]);
-  return { sentCount: draftShiftIds.length };
+  return {
+    sentCount,
+    blockedShiftCount,
+    skippedRoomIds: Array.from(skippedRoomIds),
+    allBlocked: draftShiftIds.length > 0 && blockedShiftCount === draftShiftIds.length,
+  };
 }

@@ -13,6 +13,7 @@ import { gpsStatusFromAt } from "../gps/status.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
+import { findReservationConflictForRange } from "../services/reservationConflict.js";
 
 // M72: audit helper (must never break ops)
 async function audit(prisma, { actorUserId, actorRole, action, entity, entityId, meta }) {
@@ -363,7 +364,7 @@ export function driverRouter(io) {
 
     const shift = await prisma.shift.findUnique({
       where: { id: shiftId },
-      select: { id: true, status: true, driverId: true, companyId: true, roomId: true, vehicleId: true },
+      select: { id: true, status: true, driverId: true, companyId: true, roomId: true, vehicleId: true, startAt: true, endAt: true },
     });
     if (!shift) return res.status(404).json({ error: "Shift not found" });
     if (shift.driverId !== driver.id) return res.status(403).json({ error: "Forbidden" });
@@ -372,6 +373,15 @@ export function driverRouter(io) {
     }
 
     if (shift.status === "APPROVED") {
+      const conflict = await findReservationConflictForRange({
+        driverId: shift.driverId ?? undefined,
+        vehicleId: shift.vehicleId ?? undefined,
+        startAt: shift.startAt,
+        endAt: shift.endAt,
+        excludeShiftId: shift.id,
+      });
+      if (conflict) return res.status(409).json(conflict);
+
       await prisma.shift.update({ where: { id: shiftId }, data: { status: "ACTIVE" } });
     }
 

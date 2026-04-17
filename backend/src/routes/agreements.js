@@ -7,14 +7,11 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
-// ✅ M59: agreement UI shift stats helper endpoint
+// âœ… M59: agreement UI shift stats helper endpoint
 
-import {
-  agreementsOverlap,
-  findAgreementConflictForApproval,
-  agreementConflictResponse,
-  computeFirstStartAtUTC,
-} from "../services/agreementConflict.js";
+import { computeFirstStartAtUTC } from "../services/agreementConflict.js";
+import { findReservationConflictForAgreement } from "../services/reservationConflict.js";
+import { validateAgreementSlotItems } from "../services/agreementSlots.js";
 
 function parseDateOnly(s) {
   const v = String(s || "").trim();
@@ -74,7 +71,7 @@ function parseHub(body) {
   const lat = body?.hubLat == null || body?.hubLat === "" ? null : toFloat(body.hubLat, null);
   const lng = body?.hubLng == null || body?.hubLng === "" ? null : toFloat(body.hubLng, null);
   if (lat == null && lng == null) return { hubLat: null, hubLng: null };
-  if (lat == null || lng == null) return { error: "hubLat+hubLng birlikte olmalı" };
+  if (lat == null || lng == null) return { error: "hubLat+hubLng birlikte olmalÄ±" };
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { error: "hubLat/hubLng range invalid" };
   return { hubLat: lat, hubLng: lng };
 }
@@ -122,7 +119,7 @@ export function agreementsRouter(io) {
     res.json({ items: mapped });
   });
 
-  // ✅ M59: SHIFT STATS (for UI clarity)
+  // âœ… M59: SHIFT STATS (for UI clarity)
   // Body: { agreementIds: number[], horizonDays?: number }
   // Returns: { byId: { [id]: { todayTotal, todayDone, horizonOpen } } }
   r.post("/shift-stats", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
@@ -141,7 +138,7 @@ export function agreementsRouter(io) {
     if (req.user.role === "COMPANY") scope.companyId = req.user.companyId ?? -1;
     if (req.user.role === "ROOM") scope.roomId = req.user.roomId ?? -1;
 
-    const todayWhere = { ...scope, startAt: { gte: todayStart, lt: tomorrowStart } };
+    const todayWhere = { ...scope, startAt: { gte: todayStart, lt: tomorrowStart }, status: { not: "DRAFT" } };
     const horizonWhere = { ...scope, startAt: { gte: now, lt: horizonEnd }, status: { in: ["APPROVED", "ACTIVE"] } };
 
     const [todayTotal, todayDone, horizonOpen] = await Promise.all([
@@ -171,6 +168,155 @@ export function agreementsRouter(io) {
 
     res.json({ byId, meta: { todayStart, tomorrowStart, horizonEnd, horizonDays } });
   });
+  // M91-D: OPERATION BRIDGE SUMMARY
+  // Body: { agreementIds:number[] }
+  // Returns: { byId: { [id]: { generatedCount, lastShift, agreementVehicle, agreementDriver } } }
+  r.post("/ops-bridge", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const ids = Array.isArray(req.body?.agreementIds) ? req.body.agreementIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0) : [];
+    if (!ids.length) return res.json({ byId: {} });
+
+    const agreementWhere = { id: { in: ids } };
+    if (req.user.role === "COMPANY") agreementWhere.companyId = req.user.companyId ?? -1;
+    if (req.user.role === "ROOM") agreementWhere.roomId = req.user.roomId ?? -1;
+
+    const agreements = await prisma.agreement.findMany({
+      where: agreementWhere,
+      select: {
+        id: true,
+        vehicleId: true,
+        driverId: true,
+        hubLat: true,
+        hubLng: true,
+        direction: true,
+        pattern: true,
+        startMin: true,
+        endMin: true,
+        weekMask: true,
+        vehicle: { select: { id: true, plate: true } },
+        driver: { select: { id: true, fullName: true } },
+      },
+    });
+
+    const allowedIds = agreements.map((row) => Number(row.id)).filter((n) => Number.isFinite(n) && n > 0);
+    if (!allowedIds.length) return res.json({ byId: {} });
+
+    const sourceRows = await prisma.commercialSource.findMany({
+      where: { agreementId: { in: allowedIds }, shiftRootId: { not: null } },
+      select: { agreementId: true, shiftRootId: true },
+      orderBy: { id: "asc" },
+    });
+    const sourceShiftIdByAgreement = Object.create(null);
+    for (const row of sourceRows || []) {
+      const aid = Number(row?.agreementId || 0);
+      const sid = Number(row?.shiftRootId || 0);
+      if (aid > 0 && sid > 0 && !sourceShiftIdByAgreement[aid]) sourceShiftIdByAgreement[aid] = sid;
+    }
+    const sourceShiftIds = Array.from(new Set(Object.values(sourceShiftIdByAgreement).map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0)));
+    const sourceShiftRows = sourceShiftIds.length
+      ? await prisma.shift.findMany({
+          where: { id: { in: sourceShiftIds } },
+          select: {
+            id: true,
+            routeSnapshotValidatedAt: true,
+            routeSnapshotDistanceM: true,
+            routeSnapshotDurationSec: true,
+            _count: { select: { stops: true, people: true } },
+          },
+        })
+      : [];
+    const sourceShiftById = Object.create(null);
+    for (const row of sourceShiftRows || []) sourceShiftById[Number(row.id)] = row;
+
+    const shiftWhere = { agreementId: { in: allowedIds }, status: { not: "DRAFT" } };
+    if (req.user.role === "COMPANY") shiftWhere.companyId = req.user.companyId ?? -1;
+    if (req.user.role === "ROOM") shiftWhere.roomId = req.user.roomId ?? -1;
+
+    const [counts, lastShifts] = await Promise.all([
+      prisma.shift.groupBy({ by: ["agreementId"], where: shiftWhere, _count: { _all: true } }),
+      prisma.shift.findMany({
+        where: shiftWhere,
+        orderBy: [{ startAt: "desc" }, { id: "desc" }],
+        select: {
+          id: true,
+          agreementId: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          vehicleId: true,
+          driverId: true,
+          hubLat: true,
+          hubLng: true,
+          direction: true,
+          pattern: true,
+          routeSnapshotValidatedAt: true,
+          routeSnapshotDistanceM: true,
+          routeSnapshotDurationSec: true,
+          vehicle: { select: { id: true, plate: true } },
+          driver: { select: { id: true, fullName: true } },
+          _count: { select: { stops: true, people: true } },
+        },
+      }),
+    ]);
+
+    const countMap = Object.create(null);
+    for (const row of counts || []) countMap[Number(row.agreementId)] = Number(row?._count?._all ?? 0);
+
+    const lastByAgreement = Object.create(null);
+    for (const row of lastShifts || []) {
+      const aid = Number(row?.agreementId || 0);
+      if (!aid || lastByAgreement[aid]) continue;
+      const sourceShift = sourceShiftById[Number(sourceShiftIdByAgreement[aid] || 0)] || null;
+      const generatedStopCount = Number(row?._count?.stops ?? 0) || 0;
+      const generatedPeopleCount = Number(row?._count?.people ?? 0) || 0;
+      const sourceStopCount = Number(sourceShift?._count?.stops ?? 0) || 0;
+      const sourcePeopleCount = Number(sourceShift?._count?.people ?? 0) || 0;
+      const stopCount = generatedStopCount > 1 ? generatedStopCount : Math.max(generatedStopCount, sourceStopCount);
+      const peopleCount = generatedPeopleCount > 0 ? generatedPeopleCount : sourcePeopleCount;
+      const previewAvailable = Boolean(row?.routeSnapshotValidatedAt || sourceShift?.routeSnapshotValidatedAt || stopCount || peopleCount || sourceShiftIdByAgreement[aid]);
+      lastByAgreement[aid] = {
+        id: row.id,
+        startAt: row.startAt,
+        endAt: row.endAt,
+        status: row.status,
+        vehicleId: row.vehicleId,
+        driverId: row.driverId,
+        hubLat: row.hubLat,
+        hubLng: row.hubLng,
+        direction: row.direction,
+        pattern: row.pattern,
+        routeSnapshotValidatedAt: row.routeSnapshotValidatedAt || sourceShift?.routeSnapshotValidatedAt || null,
+        routeSnapshotDistanceM: row.routeSnapshotDistanceM ?? sourceShift?.routeSnapshotDistanceM ?? null,
+        routeSnapshotDurationSec: row.routeSnapshotDurationSec ?? sourceShift?.routeSnapshotDurationSec ?? null,
+        stopCount,
+        peopleCount,
+        previewAvailable,
+        vehicle: row.vehicle ? { id: row.vehicle.id, plate: row.vehicle.plate || null } : null,
+        driver: row.driver ? { id: row.driver.id, fullName: row.driver.fullName || null } : null,
+      };
+    }
+
+    const byId = {};
+    for (const ag of agreements) {
+      byId[ag.id] = {
+        generatedCount: Number(countMap[Number(ag.id)] || 0),
+        agreementVehicle: ag.vehicle ? { id: ag.vehicle.id, plate: ag.vehicle.plate || null } : (ag.vehicleId ? { id: ag.vehicleId, plate: null } : null),
+        agreementDriver: ag.driver ? { id: ag.driver.id, fullName: ag.driver.fullName || null } : (ag.driverId ? { id: ag.driverId, fullName: null } : null),
+        plan: {
+          hubLat: ag.hubLat,
+          hubLng: ag.hubLng,
+          direction: ag.direction,
+          pattern: ag.pattern,
+          startMin: ag.startMin,
+          endMin: ag.endMin,
+          weekMask: ag.weekMask,
+        },
+        lastShift: lastByAgreement[Number(ag.id)] || null,
+      };
+    }
+
+    res.json({ byId });
+  });
+
   // GET by id (debug + checks)
   r.get("/:id", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const id = Number(req.params.id);
@@ -185,6 +331,79 @@ export function agreementsRouter(io) {
     }
 
     res.json(ag);
+  });
+
+  // M91-F: BUNDLE CREATE (COMPANY)
+  // Body: { roomId,startDate,endDate,weekMask,items:[{startMin,endMin,direction,pattern,label?}], hubLat?,hubLng?, companyOfferAmount?, companyOfferNote? }
+  r.post("/bundle", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    const companyId = req.user.companyId;
+    if (!companyId) return sendErrorResponse(res, httpError(400, "companyId required"));
+
+    const roomId = Number(req.body.roomId);
+    const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true, status: true } });
+    if (!room || room.status === "DELETED") return sendErrorResponse(res, httpError(400, "invalidRoomId"));
+
+    const startDate = parseDateOnly(req.body.startDate);
+    const endDate = parseDateOnly(req.body.endDate);
+    const weekMask = clampWeekMask(req.body.weekMask);
+    if (!startDate || !endDate) return sendErrorResponse(res, httpError(400, "startDate/endDate required"));
+    if (endDate < startDate) return sendErrorResponse(res, httpError(400, "endDate must be >= startDate"));
+    if (weekMask == null) return sendErrorResponse(res, httpError(400, "weekMask required (1..127)"));
+
+    const slotValidation = validateAgreementSlotItems(req.body?.items);
+    if (!slotValidation?.ok) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", slotValidation?.message || "invalidSlotBundle"));
+
+    const hub = parseHub(req.body);
+    if (hub?.error) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", hub.error));
+    const sourceShiftId = Number(req.body?.sourceShiftId || 0);
+
+    const created = await prisma.$transaction(async (tx) => {
+      const rows = [];
+      for (const slot of slotValidation.slots) {
+        const row = await tx.agreement.create({
+          data: {
+            companyId,
+            roomId,
+            startDate,
+            endDate,
+            weekMask,
+            startMin: slot.startMin,
+            endMin: slot.endMin,
+            status: "REQUESTED",
+            hubLat: hub.hubLat,
+            hubLng: hub.hubLng,
+            direction: slot.direction,
+            pattern: slot.pattern,
+            companyOfferAmount: toInt(req.body.companyOfferAmount, null),
+            companyOfferNote: req.body.companyOfferNote ? String(req.body.companyOfferNote) : null,
+          },
+        });
+        rows.push(row);
+      }
+      return rows;
+    });
+
+    for (const row of created) {
+      await upsertAgreementCommercialBackbone(row.id, { sourceShiftId }).catch(() => null);
+      await createAndEmitNotification({
+        io,
+        type: "AGREEMENT_REQUESTED",
+        scope: "ROOM",
+        roomId,
+        companyId,
+        payload: {
+          v: 1,
+          kind: "agreement:requested",
+          title: "Yeni sözleşme talebi",
+          message: `Agreement #${row.id} • teklif: ${row.companyOfferAmount ?? "-"}${row.companyOfferNote ? " — " + row.companyOfferNote : ""}`,
+        },
+        dedupeKey: `agreement:${row.id}:requested`,
+      });
+      io?.to?.(`company:${companyId}`)?.emit?.("agreement:update", { id: row.id, kind: "created" });
+      io?.to?.(`room:${roomId}`)?.emit?.("agreement:update", { id: row.id, kind: "created" });
+    }
+
+    return res.json({ ok: true, createdIds: created.map((row) => Number(row.id)), items: created });
   });
 
   // CREATE (COMPANY)
@@ -207,13 +426,15 @@ export function agreementsRouter(io) {
     if (weekMask == null) return sendErrorResponse(res, httpError(400, "weekMask required (1..127)"));
     if (startMin == null || endMin == null) return sendErrorResponse(res, httpError(400, "startMin/endMin required (0..1439)"));
 
-    // ✅ M19: routing meta
+    // âœ… M19: routing meta
     const direction = normDirection(req.body.direction);
     const pattern = normPattern(req.body.pattern);
     if (!direction) return sendErrorResponse(res, httpError(400, "direction invalid (INBOUND|OUTBOUND)"));
     if (!pattern) return sendErrorResponse(res, httpError(400, "pattern invalid (ONE_WAY|LOOP)"));
     const hub = parseHub(req.body);
     if (hub?.error) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", hub.error));
+
+    const sourceShiftId = Number(req.body?.sourceShiftId || 0);
 
     const created = await prisma.agreement.create({
       data: {
@@ -234,9 +455,9 @@ export function agreementsRouter(io) {
       },
     });
 
-    await upsertAgreementCommercialBackbone(created.id).catch(() => null);
+    await upsertAgreementCommercialBackbone(created.id, { sourceShiftId }).catch(() => null);
 
-    // ✅ M53: notify ROOM (company offer visible)
+    // âœ… M53: notify ROOM (company offer visible)
     await createAndEmitNotification({
       io,
       type: "AGREEMENT_REQUESTED",
@@ -246,8 +467,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:requested",
-        title: "Yeni sözleşme talebi",
-        message: `Agreement #${created.id} • teklif: ${created.companyOfferAmount ?? "-"}${created.companyOfferNote ? " — " + created.companyOfferNote : ""}`,
+        title: "Yeni sÃ¶zleÅŸme talebi",
+        message: `Agreement #${created.id} â€¢ teklif: ${created.companyOfferAmount ?? "-"}${created.companyOfferNote ? " â€” " + created.companyOfferNote : ""}`,
       },
       dedupeKey: `agreement:${created.id}:requested`,
     });
@@ -286,26 +507,22 @@ export function agreementsRouter(io) {
     const driverId = Number(req.body.driverId);
     if (!vehicleId || !driverId) return sendErrorResponse(res, httpError(400, "vehicleId+driverId required"));
 
-    // Fetch candidates reserved
-    const candidates = await findAgreementConflictForApproval({ agreementId: ag.id, vehicleId, driverId });
-
-    // Build a "proposed agreement" object for overlap test
-    const proposed = { ...ag, vehicleId, driverId };
-
-    // Check conflicts (vehicle first)
-    for (const c of candidates) {
-      if (c.vehicleId === vehicleId && agreementsOverlap(proposed, c)) {
-        return res.status(409).json(agreementConflictResponse({ kind: "vehicle", agreement: c }));
-      }
-    }
-    for (const c of candidates) {
-      if (c.driverId === driverId && agreementsOverlap(proposed, c)) {
-        return res.status(409).json(agreementConflictResponse({ kind: "driver", agreement: c }));
-      }
+    const conflict = await findReservationConflictForAgreement({
+      agreementId: ag.id,
+      vehicleId,
+      driverId,
+      startDate: ag.startDate,
+      endDate: ag.endDate,
+      weekMask: ag.weekMask,
+      startMin: ag.startMin,
+      endMin: ag.endMin,
+    });
+    if (conflict) {
+      return res.status(409).json(conflict);
     }
 
     const now = new Date();
-    const firstStart = computeFirstStartAtUTC(proposed);
+    const firstStart = computeFirstStartAtUTC(ag);
 
     const nextStatus = now >= firstStart ? "ACTIVE" : "APPROVED";
 
@@ -314,8 +531,8 @@ export function agreementsRouter(io) {
       data: {
         vehicleId,
         driverId,
-        // NOTE: pricing pazarlığı M57 itibariyle Agreement seviyesinde yapılır.
-        // roomOfferAmount/note burada opsiyonel bırakıldı (geriye dönük uyum).
+        // NOTE: pricing pazarlÄ±ÄŸÄ± M57 itibariyle Agreement seviyesinde yapÄ±lÄ±r.
+        // roomOfferAmount/note burada opsiyonel bÄ±rakÄ±ldÄ± (geriye dÃ¶nÃ¼k uyum).
         roomOfferAmount: toInt(req.body.roomOfferAmount, null),
         roomOfferNote: req.body.roomOfferNote ? String(req.body.roomOfferNote) : null,
         status: nextStatus,
@@ -323,7 +540,7 @@ export function agreementsRouter(io) {
     });
 
 
-    // ✅ M53: notify COMPANY (room approved / assigned)
+    // âœ… M53: notify COMPANY (room approved / assigned)
     await createAndEmitNotification({
       io,
       type: "AGREEMENT_APPROVED",
@@ -333,8 +550,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:approved",
-        title: "Sözleşme onaylandı",
-        message: `Agreement #${updated.id} onaylandı. vehicleId=${updated.vehicleId} driverId=${updated.driverId}`,
+        title: "SÃ¶zleÅŸme onaylandÄ±",
+        message: `Agreement #${updated.id} onaylandÄ±. vehicleId=${updated.vehicleId} driverId=${updated.driverId}`,
       },
       dedupeKey: `agreement:${updated.id}:approved`,
     });
@@ -388,8 +605,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:countered",
-        title: "Karşı teklif",
-        message: `Agreement #${updated.id} • karşı teklif: ${updated.roomOfferAmount ?? "-"}${updated.roomOfferNote ? " — " + updated.roomOfferNote : ""}`,
+        title: "KarÅŸÄ± teklif",
+        message: `Agreement #${updated.id} â€¢ karÅŸÄ± teklif: ${updated.roomOfferAmount ?? "-"}${updated.roomOfferNote ? " â€” " + updated.roomOfferNote : ""}`,
       },
       dedupeKey: `agreement:${updated.id}:counter`,
     });
@@ -433,14 +650,62 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:counterAccepted",
-        title: "Karşı teklif kabul edildi",
-        message: `Agreement #${updated.id} • teklif kabul edildi: ${updated.companyOfferAmount ?? "-"}`,
+        title: "KarÅŸÄ± teklif kabul edildi",
+        message: `Agreement #${updated.id} â€¢ teklif kabul edildi: ${updated.companyOfferAmount ?? "-"}`,
       },
       dedupeKey: `agreement:${updated.id}:counterAccepted:${updated.companyOfferAmount ?? "X"}`,
     });
 
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterAccepted" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterAccepted" });
+
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
+    res.json(updated);
+  });
+
+  // COMPANY COUNTER (COMPANY): send a revised company offer after room counter
+  r.put("/:id/company-counter", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ag = await prisma.agreement.findUnique({ where: { id } });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (ag.companyId !== req.user.companyId) return sendErrorResponse(res, httpError(403, "Forbidden"));
+
+    const st = String(ag.status || "").toUpperCase();
+    if (st !== "COUNTERED") {
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_COUNTER_NOT_PENDING", `notCountered:${st}`));
+    }
+
+    const companyOfferAmount = parseOfferAmount(req.body.companyOfferAmount);
+    if (companyOfferAmount == null) return sendErrorResponse(res, httpError(400, "companyOfferAmount required (>0)"));
+
+    const companyOfferNote = trimOrNull(req.body.companyOfferNote);
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: {
+        companyOfferAmount,
+        companyOfferNote,
+        status: "REQUESTED",
+      },
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_COMPANY_COUNTERED",
+      scope: "ROOM",
+      roomId: updated.roomId,
+      companyId: updated.companyId,
+      payload: {
+        v: 1,
+        kind: "agreement:companyCountered",
+        title: "Åirket yeni teklif gÃ¶nderdi",
+        message: `Agreement #${updated.id} â€¢ yeni teklif: ${updated.companyOfferAmount ?? "-"}${updated.companyOfferNote ? " â€” " + updated.companyOfferNote : ""}`,
+      },
+      dedupeKey: `agreement:${updated.id}:companyCounter:${updated.companyOfferAmount ?? "X"}`,
+    });
+
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "companyCountered" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "companyCountered" });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -476,14 +741,59 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:counterRejected",
-        title: "Karşı teklif reddedildi",
-        message: `Agreement #${updated.id} • karşı teklif reddedildi. Yeni teklif gönderebilirsin.`,
+        title: "KarÅŸÄ± teklif reddedildi",
+        message: `Agreement #${updated.id} â€¢ karÅŸÄ± teklif reddedildi. Yeni teklif gÃ¶nderebilirsin.`,
       },
       dedupeKey: `agreement:${updated.id}:counterRejected`,
     });
 
     io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterRejected" });
     io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterRejected" });
+
+    await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
+    res.json(updated);
+  });
+
+  // REJECT (ROOM): reject agreement request / negotiation
+  r.put("/:id/reject", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ag = await prisma.agreement.findUnique({ where: { id } });
+    if (!ag) return sendErrorResponse(res, httpError(404, "notFound"));
+
+    if (req.user.role === "ROOM" && ag.roomId !== req.user.roomId) {
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
+    }
+
+    const st = String(ag.status || "").toUpperCase();
+    if (st === "CANCELLED" || st === "REJECTED" || st === "DONE") {
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_INVALID_STATE", `invalidState:${st}`));
+    }
+    if (st === "APPROVED" || st === "ACTIVE") {
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_ALREADY_APPROVED", `alreadyApproved:${st}`));
+    }
+
+    const updated = await prisma.agreement.update({
+      where: { id },
+      data: { status: "REJECTED" },
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_REJECTED",
+      scope: "COMPANY",
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: {
+        v: 1,
+        kind: "agreement:rejected",
+        title: "SÃ¶zleÅŸme reddedildi",
+        message: `Agreement #${updated.id} reddedildi.`,
+      },
+      dedupeKey: `agreement:${updated.id}:rejected`,
+    });
+
+    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "rejected" });
+    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "rejected" });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -502,7 +812,7 @@ export function agreementsRouter(io) {
     });
 
 
-    // ✅ M53: notify ROOM (company cancelled)
+    // âœ… M53: notify ROOM (company cancelled)
     await createAndEmitNotification({
       io,
       type: "AGREEMENT_CANCELLED",
@@ -512,7 +822,7 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:cancelled",
-        title: "Sözleşme iptal edildi",
+        title: "SÃ¶zleÅŸme iptal edildi",
         message: `Agreement #${updated.id} iptal edildi.`,
       },
       dedupeKey: `agreement:${updated.id}:cancelled`,
@@ -526,7 +836,7 @@ export function agreementsRouter(io) {
   });
 
 
-  // ✅ M57: AGREEMENT EXTEND NEGOTIATION
+  // âœ… M57: AGREEMENT EXTEND NEGOTIATION
   // Model:
   // - Company sends extend-request (new endDate + optional new offer amount/note)
   // - Room can accept/reject OR counter price (then company accepts/rejects counter)
@@ -541,36 +851,28 @@ export function agreementsRouter(io) {
   }
 
   async function assertNoExtendConflictOr409(ag, proposedEndDate, res) {
-    // If already assigned, extend must not create conflicts
     if (!ag.vehicleId && !ag.driverId) return true;
 
-    const candidates = await findAgreementConflictForApproval({
+    const conflict = await findReservationConflictForAgreement({
       agreementId: ag.id,
       vehicleId: ag.vehicleId ?? undefined,
       driverId: ag.driverId ?? undefined,
+      startDate: ag.startDate,
+      endDate: proposedEndDate,
+      weekMask: ag.weekMask,
+      startMin: ag.startMin,
+      endMin: ag.endMin,
     });
-
-    const proposed = { ...ag, endDate: proposedEndDate };
-
-    for (const c of candidates) {
-      if (ag.vehicleId && c.vehicleId === ag.vehicleId && agreementsOverlap(proposed, c)) {
-        res.status(409).json(agreementConflictResponse({ kind: "vehicle", agreement: c }));
-        return false;
-      }
-    }
-    for (const c of candidates) {
-      if (ag.driverId && c.driverId === ag.driverId && agreementsOverlap(proposed, c)) {
-        res.status(409).json(agreementConflictResponse({ kind: "driver", agreement: c }));
-        return false;
-      }
+    if (conflict) {
+      res.status(409).json(conflict);
+      return false;
     }
     return true;
   }
 
   function computeReactivatedStatus(ag, proposedEndDate) {
     const now = new Date();
-    const proposed = { ...ag, endDate: proposedEndDate };
-    const firstStart = computeFirstStartAtUTC(proposed);
+    const firstStart = computeFirstStartAtUTC(ag);
     return now >= firstStart ? "ACTIVE" : "APPROVED";
   }
 
@@ -631,8 +933,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendRequested",
-        title: "Sözleşme uzatma teklifi",
-        message: `Agreement #${updated.id} yeni bitiş: ${ymdOfDateOnly(updated.extendRequestedEndDate)} • teklif: ${offerAmount ?? "-"}${offerNote ? " — " + offerNote : ""}`,
+        title: "SÃ¶zleÅŸme uzatma teklifi",
+        message: `Agreement #${updated.id} yeni bitiÅŸ: ${ymdOfDateOnly(updated.extendRequestedEndDate)} â€¢ teklif: ${offerAmount ?? "-"}${offerNote ? " â€” " + offerNote : ""}`,
       },
       dedupeKey: `agreement:${updated.id}:extendReq:${ymdOfDateOnly(updated.extendRequestedEndDate)}`,
     });
@@ -740,7 +1042,7 @@ export function agreementsRouter(io) {
         v: 1,
         kind: "agreement:extendAccepted",
         title: "Uzatma kabul edildi",
-        message: `Agreement #${updated.id} yeni bitiş: ${ymdOfDateOnly(updated.endDate)}`,
+        message: `Agreement #${updated.id} yeni bitiÅŸ: ${ymdOfDateOnly(updated.endDate)}`,
       },
       dedupeKey: `agreement:${updated.id}:extendAccepted:${ymdOfDateOnly(updated.endDate)}`,
     });
@@ -791,8 +1093,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendCountered",
-        title: "Uzatma karşı teklifi",
-        message: `Agreement #${updated.id} • yeni bitiş: ${ymdOfDateOnly(updated.extendRequestedEndDate)} • karşı: ${updated.extendCounterAmount}${updated.extendCounterNote ? " — " + updated.extendCounterNote : ""}`,
+        title: "Uzatma karÅŸÄ± teklifi",
+        message: `Agreement #${updated.id} â€¢ yeni bitiÅŸ: ${ymdOfDateOnly(updated.extendRequestedEndDate)} â€¢ karÅŸÄ±: ${updated.extendCounterAmount}${updated.extendCounterNote ? " â€” " + updated.extendCounterNote : ""}`,
       },
       dedupeKey: `agreement:${updated.id}:extendCounter:${ymdOfDateOnly(updated.extendRequestedEndDate)}:${updated.extendCounterAmount}`,
     });
@@ -851,8 +1153,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendCounterAccepted",
-        title: "Uzatma karşı teklifi kabul edildi",
-        message: `Agreement #${updated.id} yeni bitiş: ${ymdOfDateOnly(updated.endDate)} • yeni teklif: ${updated.companyOfferAmount ?? "-"}`,
+        title: "Uzatma karÅŸÄ± teklifi kabul edildi",
+        message: `Agreement #${updated.id} yeni bitiÅŸ: ${ymdOfDateOnly(updated.endDate)} â€¢ yeni teklif: ${updated.companyOfferAmount ?? "-"}`,
       },
       dedupeKey: `agreement:${updated.id}:extendCounterAccepted:${ymdOfDateOnly(updated.endDate)}:${updated.companyOfferAmount ?? "X"}`,
     });
@@ -895,8 +1197,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendCounterRejected",
-        title: "Karşı teklif reddedildi",
-        message: `Agreement #${updated.id} • uzatma teklifi hala beklemede. İstersen kabul et veya yeni counter gönder.`,
+        title: "KarÅŸÄ± teklif reddedildi",
+        message: `Agreement #${updated.id} â€¢ uzatma teklifi hala beklemede. Ä°stersen kabul et veya yeni counter gÃ¶nder.`,
       },
       dedupeKey: `agreement:${updated.id}:extendCounterRejected:${Date.now()}`,
     });

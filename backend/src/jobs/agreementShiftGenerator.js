@@ -2,10 +2,86 @@
 import { prisma } from "../prisma.js";
 import { checkShiftConflicts } from "../services/shiftConflict.js";
 import { ymdTR, addDaysTR, dayBitTRFromYmd, atTR, dateOnlyUTCFromYmd } from "../time/tr.js";
+import { rebuildShiftRouteStateBestEffort } from "../services/shiftRouteState.js";
+import { resolveAgreementSourceShiftPayload } from "../services/agreementSourceShift.js";
+
+async function loadAgreementSourceShift(agreementId) {
+  return resolveAgreementSourceShiftPayload(agreementId);
+}
+
+async function cloneAgreementShiftPayload(createdShiftId, sourceShift) {
+  if (!sourceShift || !createdShiftId) return;
+
+  const sourceStops = Array.isArray(sourceShift.stops) && sourceShift.stops.length
+    ? sourceShift.stops
+    : Array.isArray(sourceShift.organizationPlan?.stops)
+      ? sourceShift.organizationPlan.stops.map((s) => ({
+          id: 0,
+          name: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          order: s.order,
+          type: s.type,
+        }))
+      : [];
+
+  const stopRows = Array.isArray(sourceStops)
+    ? sourceStops.map((s) => ({
+        shiftId: createdShiftId,
+        name: s.name,
+        lat: s.lat,
+        lng: s.lng,
+        order: s.order,
+        type: s.type,
+      }))
+    : [];
+  if (stopRows.length) {
+    await prisma.stop.createMany({ data: stopRows });
+  }
+
+  const peopleRows = Array.isArray(sourceShift.people)
+    ? sourceShift.people
+        .map((p) => {
+          const personelId = Number(p?.personelId || 0);
+          return personelId > 0 ? { shiftId: createdShiftId, personelId, note: p?.note || null } : null;
+        })
+        .filter(Boolean)
+    : [];
+  if (peopleRows.length) {
+    await prisma.shiftPersonel.createMany({ data: peopleRows, skipDuplicates: true });
+  }
+
+  if (Array.isArray(sourceShift.assignments) && sourceShift.assignments.length && stopRows.length) {
+    const freshStops = await prisma.stop.findMany({
+      where: { shiftId: createdShiftId },
+      select: { id: true, order: true },
+      orderBy: { order: "asc" },
+    });
+    const oldOrderByStopId = new Map((sourceStops || []).map((s, idx) => [Number(s.id || idx + 1), Number(s.order || idx + 1)]));
+    const newStopIdByOrder = new Map(freshStops.map((s) => [Number(s.order), Number(s.id)]));
+    const assignmentRows = sourceShift.assignments
+      .map((row) => {
+        const order = oldOrderByStopId.get(Number(row.stopId)) || oldOrderByStopId.get(Number(row.stopId || 0));
+        const stopId = newStopIdByOrder.get(Number(order));
+        const personelId = Number(row.personelId || 0);
+        if (!stopId || personelId <= 0) return null;
+        return {
+          shiftId: createdShiftId,
+          stopId,
+          personelId,
+          walkM: Number.isFinite(Number(row.walkM)) ? Number(row.walkM) : 0,
+        };
+      })
+      .filter(Boolean);
+    if (assignmentRows.length) {
+      await prisma.stopAssignment.createMany({ data: assignmentRows, skipDuplicates: true });
+    }
+  }
+}
 
 /**
- * M52: approved/active agreement'lara göre rolling ufukta (bugün..+6 gün) shift üretir.
- * Saat/dow hesabı TR (+03:00) bazlıdır.
+ * M52: approved/active agreement'lara gÃ¶re rolling ufukta (bugÃ¼n..+6 gÃ¼n) shift Ã¼retir.
+ * Saat/dow hesabÄ± TR (+03:00) bazlÄ±dÄ±r.
  * Duplicate guard: Shift @@unique([agreementId, startAt])
  *
  * @param {import('socket.io').Server} io
@@ -37,6 +113,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
       });
 
       for (const a of agreements) {
+        const sourceShift = await loadAgreementSourceShift(a.id);
         // agreement date range as YMD (db.Date => safe via UTC components)
         const sYmd = String(a.startDate?.toISOString?.() || "").slice(0, 10);
         const eYmd = String(a.endDate?.toISOString?.() || "").slice(0, 10);
@@ -72,12 +149,22 @@ export function startAgreementShiftGenerator(io, opts = {}) {
               endAt: endAt.toISOString(),
             });
             if (conflicts?.driverConflict || conflicts?.vehicleConflict) {
-              continue; // skip silently (ops tarafı isterse log/audit ekleriz)
+              continue; // skip silently (ops tarafÄ± isterse log/audit ekleriz)
             }
           }
 
           // duplicate guard: unique(agreementId,startAt)
           try {
+            const routeSnapshotFromSource = sourceShift?.routeSnapshotValidatedAt
+              ? {
+                  routeSnapshotPolyline: sourceShift.routeSnapshotPolyline ?? null,
+                  routeSnapshotDistanceM: sourceShift.routeSnapshotDistanceM ?? null,
+                  routeSnapshotDurationSec: sourceShift.routeSnapshotDurationSec ?? null,
+                  routeSnapshotValidatedAt: sourceShift.routeSnapshotValidatedAt ?? null,
+                  routeSnapshotInputHash: sourceShift.routeSnapshotInputHash ?? null,
+                }
+              : {};
+
             // eslint-disable-next-line no-await-in-loop
             const created = await prisma.shift.create({
               data: {
@@ -89,13 +176,20 @@ export function startAgreementShiftGenerator(io, opts = {}) {
                 endAt,
                 status: "APPROVED",
                 agreementId: a.id,
-                // ✅ M19: routing meta
                 hubLat: a.hubLat ?? null,
                 hubLng: a.hubLng ?? null,
                 direction: a.direction ?? "INBOUND",
                 pattern: a.pattern ?? "ONE_WAY",
+                ...routeSnapshotFromSource,
               },
             });
+
+            // eslint-disable-next-line no-await-in-loop
+            await cloneAgreementShiftPayload(created.id, sourceShift);
+            if (!routeSnapshotFromSource.routeSnapshotValidatedAt) {
+              // eslint-disable-next-line no-await-in-loop
+              await rebuildShiftRouteStateBestEffort(created.id);
+            }
 
             const payload = {
               kind: "shift:update",
@@ -106,12 +200,10 @@ export function startAgreementShiftGenerator(io, opts = {}) {
               endAt: created.endAt,
             };
 
-            // WS invalidate için: shift kelimesi yeterli (client guessTopics)
             io?.to?.(`company:${created.companyId}`)?.emit?.("shift:update", payload);
             io?.to?.(`room:${created.roomId}`)?.emit?.("shift:update", payload);
             if (created.vehicleId) io?.to?.(`vehicle:${created.vehicleId}`)?.emit?.("shift:update", payload);
 
-            // (opsiyonel) agreement list refresh
             io?.to?.(`company:${created.companyId}`)?.emit?.("agreement:update", {
               kind: "agreement:update",
               agreementId: a.id,
@@ -121,10 +213,8 @@ export function startAgreementShiftGenerator(io, opts = {}) {
               agreementId: a.id,
             });
           } catch (e) {
-            // Prisma unique violation => already exists (duplicate guard)
             const msg = String(e?.code || e?.message || "");
             if (msg.includes("P2002")) continue;
-            // başka hata: sessiz geçmeyelim
             // eslint-disable-next-line no-console
             console.error("[agreementShiftGenerator] create failed:", e?.message || e);
           }
@@ -135,9 +225,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
     }
   }
 
-  // start
   timer = setInterval(() => tick().catch(() => {}), intervalMs);
-  // ilk tick biraz sonra (agreement sonradan oluşacağı için periodic yeterli)
   setTimeout(() => tick().catch(() => {}), Math.min(1500, intervalMs));
 
   return () => {

@@ -148,6 +148,7 @@ export default function GuidedPlanModal({
   const [offerAmount, setOfferAmount] = useState("");
   const [offerNote, setOfferNote] = useState("");
   const [sentOk, setSentOk] = useState(false);
+  const [offerOutcome, setOfferOutcome] = useState("idle");
   const [companyGeoGate, setCompanyGeoGate] = useState({ blocking: false, ready: true, geoStats: { ok: 0, review: 0, failed: 0, total: 0 }, stopSummary: null });
 
   useEffect(() => {
@@ -547,6 +548,7 @@ export default function GuidedPlanModal({
     setOfferAmount("");
     setOfferNote("");
     setSentOk(false);
+    setOfferOutcome("idle");
   }
 
   // Load hub on open
@@ -905,8 +907,17 @@ async function sendBulkOffers() {
     setBusy(true);
     try {
       const result = await sendGuidedBulkOffersAction({ token, draftShiftIds, selectedRoomIds: roomIds, offerAmount, offerNote });
+      const skippedCount = Array.isArray(result?.skippedRoomIds) ? result.skippedRoomIds.length : 0;
       setSentOk(true);
-      setInfo(`✅ Gönderildi (shift sayısı: ${result.sentCount}).`);
+      if (result?.allBlocked) {
+        setOfferOutcome("agreement_covered");
+        setInfo("ℹ️ Seçilen room'lar bu zaman penceresinde zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; taslak vardiyalar korundu.");
+      } else {
+        setOfferOutcome("sent");
+        const sentText = `✅ Gönderildi (shift sayısı: ${Number(result?.sentCount || 0)}).`;
+        const skipText = skippedCount > 0 ? ` Not: ${skippedCount} room teklif atlandı (aktif sözleşme çakışması).` : "";
+        setInfo(`${sentText}${skipText}`);
+      }
     } catch (e) {
       setErr(getApiErrorMessage(e));
     } finally {
@@ -1121,6 +1132,7 @@ async function sendBulkOffers() {
           onReloadRooms={onReloadRooms}
           roomsSupported={roomsSupported}
           sentOk={sentOk}
+          offerOutcome={offerOutcome}
           roomQ={roomQ}
           setRoomQ={setRoomQ}
           rooms={rooms}

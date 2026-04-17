@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { navigate } from "../../router";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -43,6 +44,72 @@ function moneyTry(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return String(v);
   return `₺${n}`;
+}
+
+function trDateTime(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function AgreementOpsBridgeCard({ agreement, bridge, onOpenShift, onOpenPreview }) {
+  if (!agreement) return null;
+  const generatedCount = Number(bridge?.generatedCount || 0);
+  const lastShift = bridge?.lastShift || null;
+  const vehicleLabel = bridge?.agreementVehicle?.plate || lastShift?.vehicle?.plate || (agreement?.vehicleId ? `#${agreement.vehicleId}` : "-");
+  const driverLabel = bridge?.agreementDriver?.fullName || lastShift?.driver?.fullName || (agreement?.driverId ? `#${agreement.driverId}` : "-");
+  const hubText = typeof agreement?.hubLat === "number" && typeof agreement?.hubLng === "number" ? `${agreement.hubLat.toFixed(4)}, ${agreement.hubLng.toFixed(4)}` : "-";
+
+  return (
+    <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
+          <div className="muted" style={{ marginTop: 4 }}>
+            {String(agreement?.status || "-").toUpperCase()} • {String(agreement?.direction || "-").toUpperCase()} / {String(agreement?.pattern || "-").toUpperCase()}
+          </div>
+        </div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <span className="pill">Üretilen vardiya: {generatedCount}</span>
+          <span className="pill">{toHHMM(agreement?.startMin)} → {toHHMM(agreement?.endMin)}</span>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
+        <div><div className="muted">Araç</div><div style={{ fontWeight: 800 }}>{vehicleLabel}</div></div>
+        <div><div className="muted">Sürücü</div><div style={{ fontWeight: 800 }}>{driverLabel}</div></div>
+        <div><div className="muted">Hub</div><div style={{ fontWeight: 800 }}>{hubText}</div></div>
+        <div><div className="muted">Plan</div><div style={{ fontWeight: 800 }}>{weekMaskToText(agreement?.weekMask) || "-"}</div></div>
+      </div>
+      {lastShift ? (
+        <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 900 }}>Son üretilen vardiya #{lastShift.id}</div>
+              <div className="muted" style={{ marginTop: 4 }}>{String(lastShift.status || "-").toUpperCase()} • {trDateTime(lastShift.startAt)} → {trDateTime(lastShift.endAt)}</div>
+            </div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="btn" onClick={() => onOpenShift?.(lastShift.id)}>Vardiyaya Git</button>
+              <button type="button" className="btn" disabled={!lastShift?.previewAvailable && !lastShift?.id} onClick={() => onOpenPreview?.(lastShift.id)}>Rota Önizleme</button>
+            </div>
+          </div>
+          <div className="muted" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 10 }}>
+            <div>Durak: <b>{Number(lastShift.stopCount || 0)}</b></div>
+            <div>Personel: <b>{Number(lastShift.peopleCount || 0)}</b></div>
+            <div>Mesafe: <b>{lastShift.routeSnapshotDistanceM ? `${Math.round(Number(lastShift.routeSnapshotDistanceM) / 1000)} km` : "-"}</b></div>
+            <div>Süre: <b>{lastShift.routeSnapshotDurationSec ? `${Math.round(Number(lastShift.routeSnapshotDurationSec) / 60)} dk` : "-"}</b></div>
+          </div>
+        </div>
+      ) : (
+        <div className="muted" style={{ marginTop: 12 }}>Bu sözleşmeye bağlı üretilmiş vardiya henüz yok.</div>
+      )}
+    </div>
+  );
 }
 
 function ymd(d) {
@@ -160,6 +227,7 @@ export default function AgreementsPanel() {
   const [pending, setPending] = useState([]);
   const [others, setOthers] = useState([]);
   const [shiftStats, setShiftStats] = useState({}); // ✅ M59
+  const [opsBridge, setOpsBridge] = useState({});
 
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -235,6 +303,20 @@ export default function AgreementsPanel() {
     return () => clearCopilotSelection('/room/agreements');
   }, [copilotAgreementTarget, pending, others, extendItems, shiftStats]);
 
+  function openAgreementShift(shiftId) {
+    const sid = Number(shiftId || 0);
+    if (!sid) return;
+    try { localStorage.setItem("room:focusShiftId", String(sid)); } catch (e) { void e; }
+    navigate("/room/shifts");
+  }
+
+  function openAgreementPreview(shiftId) {
+    const sid = Number(shiftId || 0);
+    if (!sid) return;
+    try { localStorage.setItem("room:previewShiftId", String(sid)); } catch (e) { void e; }
+    navigate("/room/shifts");
+  }
+
   async function loadAll() {
     if (!token) return;
     setErr("");
@@ -248,11 +330,15 @@ export default function AgreementsPanel() {
         if (ids.length) {
           const st = await api("/api/agreements/shift-stats", { token, method: "POST", body: { agreementIds: ids, horizonDays: 7 } });
           setShiftStats(st?.byId ?? {});
+          const bridge = await api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } });
+          setOpsBridge(bridge?.byId ?? {});
         } else {
           setShiftStats({});
+          setOpsBridge({});
         }
       } catch {
         setShiftStats({});
+        setOpsBridge({});
       }
 
 
@@ -346,6 +432,30 @@ export default function AgreementsPanel() {
     }
   }
 
+  async function rejectAgreement(id) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/${id}/reject`, { token, method: "PUT", body: {} });
+      if (Number(counterId || 0) === Number(id)) {
+        setCounterId(null);
+        setCounterAmount("");
+        setCounterNote("");
+      }
+      if (Number(approveId || 0) === Number(id)) {
+        setApproveId(null);
+        setSelVehicle("");
+        setSelDriver("");
+        setConflict(null);
+      }
+      await loadAll();
+    } catch (e) {
+      setErr(e?.message || "Reject failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function extendDecision(id, decision) {
     setErr("");
     setBusy(true);
@@ -390,7 +500,7 @@ export default function AgreementsPanel() {
       <div className="topbar">
         <div>
           <div className="title">Sözleşmeler (Room)</div>
-          <div className="muted">Pending onay (REQUESTED) • Not: Agreement ACTIVE/DONE **zaman bazlıdır** (endDate+endMin). Driver vardiyayı bitirse bile sözleşme endDate geçene kadar ACTIVE kalabilir. + Uzatma talepleri burada. Uzatma için accept/reject/counter yapabilirsin.</div>
+          <div className="muted">Pending onay (REQUESTED) • Room bu ekranda onay / karşı teklif / red kararını verir. Not: Agreement ACTIVE/DONE **zaman bazlıdır** (endDate+endMin). Driver vardiyayı bitirse bile sözleşme endDate geçene kadar ACTIVE kalabilir. + Uzatma talepleri burada. Uzatma için accept/reject/counter yapabilirsin.</div>
         </div>
         <button type="button" className="btn sm ghost" disabled={busy} onClick={loadAll}>
           Yenile
@@ -398,6 +508,10 @@ export default function AgreementsPanel() {
       </div>
 
       {err ? <div className="card err">{String(err)}</div> : null}
+
+      {copilotAgreementTarget ? (
+        <AgreementOpsBridgeCard agreement={copilotAgreementTarget} bridge={opsBridge?.[copilotAgreementTarget.id] || null} onOpenShift={openAgreementShift} onOpenPreview={openAgreementPreview} />
+      ) : null}
 
       <div className="card" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
         <div>
@@ -567,6 +681,17 @@ export default function AgreementsPanel() {
                     </button>
                     <button
                       type="button"
+                      className="btn sm ghost"
+                      disabled={busy}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rejectAgreement(a.id);
+                      }}
+                    >
+                      Reddet
+                    </button>
+                    <button
+                      type="button"
                       className="btn sm"
                       disabled={busy}
                       onClick={(e) => {
@@ -576,7 +701,7 @@ export default function AgreementsPanel() {
                         setConflict(null);
                       }}
                     >
-                      Approve
+                      Onayla
                     </button>
                   </td>
                 </tr>

@@ -177,8 +177,8 @@ async function upsertCommercialSource(tx, payload) {
     sourceType: payload.sourceType,
     sourceKey: payload.sourceKey,
     agreementId: payload.agreementId ?? null,
-    shiftRootId: payload.shiftRootId ?? null,
-    shiftGroupKey: payload.shiftGroupKey ?? null,
+    shiftRootId: payload.shiftRootId ?? existing?.shiftRootId ?? null,
+    shiftGroupKey: payload.shiftGroupKey ?? existing?.shiftGroupKey ?? null,
     companyId: payload.companyId,
     roomId: payload.roomId ?? null,
     paymentModeSnapshot,
@@ -247,9 +247,15 @@ export async function upsertAgreementCommercialBackbone(agreementId, options = {
   const id = Number(agreementId || 0);
   if (id <= 0) return null;
   const txClient = options.tx || prisma;
+  const sourceShiftId = Number(options.sourceShiftId || 0);
   const run = async (tx) => {
     const agreement = await tx.agreement.findUnique({ where: { id } });
     if (!agreement) return null;
+
+    let resolvedSourceShiftId = sourceShiftId > 0 ? sourceShiftId : 0;
+    if (resolvedSourceShiftId <= 0) {
+      resolvedSourceShiftId = Number(await resolveAgreementSourceShiftId(id) || 0);
+    }
 
     const config = await resolveActiveCommercialConfig(tx, { roomId: agreement.roomId });
     const companyAmount = agreement.companyOfferAmount != null ? toInt(agreement.companyOfferAmount, 0) : null;
@@ -261,7 +267,7 @@ export async function upsertAgreementCommercialBackbone(agreementId, options = {
       sourceType: "AGREEMENT",
       sourceKey: `AGREEMENT:${agreement.id}`,
       agreementId: agreement.id,
-      shiftRootId: null,
+      shiftRootId: resolvedSourceShiftId > 0 ? resolvedSourceShiftId : null,
       shiftGroupKey: null,
       companyId: agreement.companyId,
       roomId: agreement.roomId,

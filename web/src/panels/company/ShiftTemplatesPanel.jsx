@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components */
 // web/src/panels/company/ShiftTemplatesPanel.jsx
 // Note: Templates are only slot/time/direction. Days + duration moved to Agreement create.
 import { useEffect, useMemo, useState } from "react";
@@ -126,7 +126,7 @@ export default function ShiftTemplatesPanel({
       // reset to default custom on explicit selection (simple + predictable)
       if (it0) {
   queueMicrotask(() => {
-    setC1Label(String(it0.label || "Ã–zel"));
+    setC1Label(String(it0.label || "Özel"));
     setC1Start(String(it0.startHHMM || "08:00"));
     setC1End(String(it0.endHHMM || "10:00"));
     setC1Direction(String(it0.direction || "INBOUND"));

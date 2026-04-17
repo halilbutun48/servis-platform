@@ -1,4 +1,4 @@
-// backend/src/routes/shifts/company.js
+﻿// backend/src/routes/shifts/company.js
 import prisma from "../../prisma.js";
 import { authRequired, requireRole } from "../../auth/middleware.js";
 import { validateWithZod } from "../../z.js";
@@ -461,11 +461,9 @@ export function attachShiftCompanyRoutes(r, io) {
           endAt: shift.endAt,
         });
 
-        const skippedRoomIds = roomIds.filter((rid) => blockedRoomIdsSet.has(Number(rid)));
-        const effectiveRoomIds = roomIds.filter((rid) => !blockedRoomIdsSet.has(Number(rid)));
-        if (!effectiveRoomIds.length) {
-          return sendErrorResponse(res, httpError(409, "AGREEMENT_BLOCKED_ROOMS", "All selected rooms are already covered by an active agreement in this time window", { skippedRoomIds }));
-        }
+        const agreementCoveredRoomIds = roomIds.filter((rid) => blockedRoomIdsSet.has(Number(rid)));
+        const skippedRoomIds = [];
+        const effectiveRoomIds = roomIds.slice();
 
         await prisma.$transaction(async (tx) => {
           if (shift.status === "DRAFT") {
@@ -500,6 +498,7 @@ export function attachShiftCompanyRoutes(r, io) {
           kind: "offer:bulk",
           shiftId,
           roomIds: effectiveRoomIds,
+          agreementCoveredRoomIds,
           skippedRoomIds,
         });
         for (const rid of effectiveRoomIds) {
@@ -510,7 +509,7 @@ export function attachShiftCompanyRoutes(r, io) {
           });
         }
 
-        return res.json({ ok: true, items, skippedRoomIds });
+        return res.json({ ok: true, items, skippedRoomIds, agreementCoveredRoomIds });
       } catch (e) {
         return sendErrorResponse(res, e);
       }

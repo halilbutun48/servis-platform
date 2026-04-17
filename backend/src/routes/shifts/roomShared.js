@@ -6,10 +6,7 @@ import {
   persistChildPlan,
 } from "../../services/dispatchRepack.js";
 import { httpError, sendErrorResponse } from "../../errors/http.js";
-import {
-  checkShiftConflicts,
-  conflictResponse,
-} from "../../services/shiftConflict.js";
+import { findReservationConflictForRange } from "../../services/reservationConflict.js";
 import { buildCapacityConflict } from "../../services/roomPoolPlanner.js";
 
 export function toInt(v) {
@@ -57,14 +54,13 @@ export async function ensureVehicleDriverScopeOrThrow({ scopeRoomId, vehicleId, 
 }
 
 export async function getConflictOrNull({ driverId, vehicleId, startAt, endAt, excludeShiftId }) {
-  const conflicts = await checkShiftConflicts({
+  return findReservationConflictForRange({
     driverId,
     vehicleId,
     startAt,
     endAt,
     excludeShiftId,
   });
-  return conflictResponse(conflicts) || null;
 }
 
 export function sendShiftConflict(res, cr, fallbackCode = "SHIFT_CONFLICT", fallbackMessage = "Vehicle/driver conflict") {

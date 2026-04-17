@@ -354,6 +354,7 @@ export function CompanyPendingSection({
   onOpenExtendModal,
   onOpenPreview,
   onOpenOpsEvents,
+  onConvertShiftToAgreement,
 }) {
   return (
     <div className="card" ref={sectionRef} style={{ display: trackTab === "pending" ? "block" : "none" }}>
@@ -405,6 +406,7 @@ export function CompanyPendingSection({
                     onOpenExtendModal={onOpenExtendModal}
                     onOpenPreview={onOpenPreview}
                     onOpenOpsEvents={onOpenOpsEvents}
+                    onConvertShiftToAgreement={onConvertShiftToAgreement}
                   />
                 ))}
               </tbody>
@@ -444,6 +446,7 @@ export function CompanyFinalListSection({
   onOpenExtendModal,
   onOpenPreview,
   onOpenOpsEvents,
+  onConvertShiftToAgreement,
 }) {
   return (
     <div className="card" ref={sectionRef} style={{ display: trackTab === "list" ? "block" : "none" }}>
@@ -493,6 +496,7 @@ export function CompanyFinalListSection({
                     onOpenExtendModal={onOpenExtendModal}
                     onOpenPreview={onOpenPreview}
                     onOpenOpsEvents={onOpenOpsEvents}
+                    onConvertShiftToAgreement={onConvertShiftToAgreement}
                   />
                 ))}
               </tbody>

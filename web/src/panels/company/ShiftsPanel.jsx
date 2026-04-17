@@ -20,6 +20,7 @@ import { addDaysYmd, computePackageShiftIds, isSameDayIstanbul, loadCustomTempla
 import { COMPANY_FINAL_STATUSES, filterCompanyFinalItems, filterCompanyMarketItems, filterCompanyPendingItems, getCompanyCanonicalCounts, getCompanyFinalItemsRaw, getCompanyMarketItemsRaw, getCompanyPendingItemsRaw, getCompanyRoomScoreIds } from "./companyShiftsPanelSelectors";
 import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompanyRequestAction, companyCounterOfferAction, companyCounterPackageAction, openCompanyExtendModal, openCompanyOfferModalForShift, openCompanyOffersModalForShift, submitCompanyExtendRequest, submitCompanyOfferModal, toggleCompanyOfferRoom } from "./companyShiftsPanelActions";
 import { renderCompanyOfferSummary, renderRoomOfferSummary } from "./companyShiftsPanelSummaryCells";
+import { buildAgreementPrefillFromShift, stashAgreementPrefill } from "../../utils/agreementPrefill";
 // M66 compatibility marker: Operasyon Kaydı UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
 
 export default function CompanyShiftsPanel({ mode = "track" } = {}) {
@@ -394,6 +395,22 @@ useEffect(() => {
       clearTimeout(timer);
     };
   }, [token, mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, offerVehicleId, JSON.stringify(offerOpen)]);
+
+  useEffect(() => {
+    const previewRaw = localStorage.getItem("company:previewShiftId");
+    const focusRaw = localStorage.getItem("company:focusShiftId");
+    if (!previewRaw && !focusRaw) return;
+    if (previewRaw) localStorage.removeItem("company:previewShiftId");
+    if (focusRaw) localStorage.removeItem("company:focusShiftId");
+    const sid = Number(previewRaw || focusRaw || 0);
+    if (!sid) return;
+    setMainTab("track");
+    setTrackTab("list");
+    setFinalStatus("ALL");
+    setFinalQ(String(sid));
+    setFocusedTrackShiftId(sid);
+    if (previewRaw) setPreviewModal({ open: true, shiftId: sid });
+  }, []);
 
   // M28 + M30-A: wizard sonrası tek intent kuyruğundan teklif ekranı aç
   useEffect(() => {
@@ -858,6 +875,21 @@ useEffect(() => {
     setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
   }
 
+  function convertShiftToAgreement(shift) {
+    const room = roomsById.get(Number(shift?.roomId || 0)) || shift?.room || null;
+    const prefill = buildAgreementPrefillFromShift({ shift, room });
+    if (!prefill) {
+      setErr("Vardiya bilgisi sözleşme taslağına taşınamadı.");
+      return;
+    }
+    const ok = stashAgreementPrefill(prefill);
+    if (!ok) {
+      setErr("Sözleşme ön bilgisi tarayıcıya yazılamadı.");
+      return;
+    }
+    navigate(companyPath(me, "/agreements"));
+  }
+
   return (
     <div>
       <CompanyShiftsPanelIntro
@@ -920,6 +952,7 @@ useEffect(() => {
           openExtendModal={openExtendModal}
           setPreviewModal={setPreviewModal}
           openOpsEvents={openOpsEvents}
+          onConvertShiftToAgreement={convertShiftToAgreement}
           finalItems={finalItems}
           finalStatus={finalStatus}
           finalQ={finalQ}

@@ -157,6 +157,7 @@ export function GuidedBulkOffersCard({
   onReloadRooms,
   roomsSupported,
   sentOk,
+  offerOutcome,
   roomQ,
   setRoomQ,
   rooms,
@@ -251,7 +252,11 @@ export function GuidedBulkOffersCard({
           </div>
         </>
       ) : (
-        <div className="muted" style={{ marginTop: 10 }}>Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas.</div>
+        <div className="muted" style={{ marginTop: 10 }}>
+          {offerOutcome === "agreement_covered"
+            ? "Bu plan seçilen room'larda zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; devam etmek için Bitir'e bas."
+            : "Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas."}
+        </div>
       )}
     </div>
   );

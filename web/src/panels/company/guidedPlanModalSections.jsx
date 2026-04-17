@@ -199,6 +199,7 @@ export function GuidedSolveOffersStep({
   onReloadRooms,
   roomsSupported,
   sentOk,
+  offerOutcome,
   roomQ,
   setRoomQ,
   rooms,
@@ -255,6 +256,7 @@ export function GuidedSolveOffersStep({
         onReloadRooms={onReloadRooms}
         roomsSupported={roomsSupported}
         sentOk={sentOk}
+        offerOutcome={offerOutcome}
         roomQ={roomQ}
         setRoomQ={setRoomQ}
         rooms={rooms}

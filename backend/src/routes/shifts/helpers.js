@@ -1,4 +1,4 @@
-// backend/src/routes/shifts.helpers.js
+﻿// backend/src/routes/shifts.helpers.js
 // shifts.js iÃ§indeki yardÄ±mcÄ± fonksiyonlarÄ± ayrÄ± dosyaya alÄ±r (satÄ±r sayÄ±sÄ±nÄ± azaltmak iÃ§in)
 
 import prisma from "../../prisma.js";
@@ -252,10 +252,17 @@ export function buildShiftsWhereFromQuery(query, user) {
   const includeDrafts = String(query?.includeDrafts ?? "").trim() === "1";
 
   if (statusRaw) {
-    const statuses = statusRaw
+    let statuses = statusRaw
       .split(",")
-      .map((s) => s.trim())
+      .map((s) => s.trim().toUpperCase())
       .filter(Boolean);
+    if (!includeDrafts && (user?.role === "COMPANY" || user?.role === "SUPER_ADMIN")) {
+      statuses = statuses.filter((s) => s !== "DRAFT");
+      if (!statuses.length) {
+        where.id = -1;
+        return where;
+      }
+    }
     if (statuses.length === 1) where.status = statuses[0];
     else if (statuses.length > 1) where.status = { in: statuses };
   } else if (onlyOpen) {

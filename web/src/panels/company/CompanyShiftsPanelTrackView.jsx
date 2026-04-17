@@ -90,6 +90,7 @@ export default function CompanyShiftsPanelTrackView(props) {
     setOffersCounter,
     companyCounterOffer,
     companyCounterPackage,
+    onConvertShiftToAgreement,
   } = props;
 
   return (
@@ -237,6 +238,7 @@ export default function CompanyShiftsPanelTrackView(props) {
         onOpenExtendModal={openExtendModal}
         onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
         onOpenOpsEvents={openOpsEvents}
+        onConvertShiftToAgreement={onConvertShiftToAgreement}
       />
 
       <CompanyFinalListSection
@@ -265,6 +267,7 @@ export default function CompanyShiftsPanelTrackView(props) {
         onOpenExtendModal={openExtendModal}
         onOpenPreview={(shiftId) => setPreviewModal({ open: true, shiftId })}
         onOpenOpsEvents={openOpsEvents}
+        onConvertShiftToAgreement={onConvertShiftToAgreement}
       />
 
       <CompanyDetailModal detailModal={detailModal} onClose={() => setDetailModal(null)} fmtTR={fmtTR} vehicleMetaLine={vehicleMetaLine} />

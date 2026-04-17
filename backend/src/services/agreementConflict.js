@@ -25,7 +25,7 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
 
-function intervalsForDayTR(ag, ymd) {
+export function intervalsForDayTR(ag, ymd) {
   // week gate: only the "start day" is masked (night shift spills to next day)
   const mask = dayBitTRFromYmd(ymd);
   if ((Number(ag.weekMask || 0) & mask) === 0) return [];
@@ -125,6 +125,24 @@ export async function findAgreementConflictForApproval({ agreementId, vehicleId,
   return candidates;
 }
 
+export function agreementIntersectsRange(ag, startAt, endAt) {
+  const s = new Date(startAt);
+  const e = new Date(endAt);
+  if (!Number.isFinite(s.getTime()) || !Number.isFinite(e.getTime()) || !(s < e)) return false;
+
+  const sYmd = ymdFromDateOnlyUTC(dateOnlyTR(s));
+  const eYmd = ymdFromDateOnlyUTC(dateOnlyTR(e));
+  const endPlus = addDaysTR(eYmd, 1);
+
+  for (let ymd = sYmd; ymd <= endPlus; ymd = addDaysTR(ymd, 1)) {
+    const ints = intervalsForDayTR(ag, ymd);
+    for (const [as, ae] of ints) {
+      if (overlaps(as, ae, s, e)) return true;
+    }
+  }
+  return false;
+}
+
 export async function findAgreementConflictForRange({ vehicleId, driverId, startAt, endAt }) {
   const s = new Date(startAt);
   const e = new Date(endAt);
@@ -160,18 +178,8 @@ export async function findAgreementConflictForRange({ vehicleId, driverId, start
     orderBy: { id: "asc" },
   });
 
-  // precise overlap
-  const sYmd = ymdFromDateOnlyUTC(dateOnlyTR(s));
-  const eYmd = ymdFromDateOnlyUTC(dateOnlyTR(e));
-  const endPlus = addDaysTR(eYmd, 1);
-
   for (const ag of candidates) {
-    for (let ymd = sYmd; ymd <= endPlus; ymd = addDaysTR(ymd, 1)) {
-      const ints = intervalsForDayTR(ag, ymd);
-      for (const [as, ae] of ints) {
-        if (overlaps(as, ae, s, e)) return ag;
-      }
-    }
+    if (agreementIntersectsRange(ag, s, e)) return ag;
   }
   return null;
 }
