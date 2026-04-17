@@ -646,12 +646,12 @@ export default function WorkflowPanel() {
 
       {geoNeedsReview > 0 ? (
         <div className="card" style={{ border: "2px solid #f2c", marginTop: 12 }}>
-          <div style={{ fontWeight: 900 }}>⚠ Geo Review gerekli</div>
+          <div style={{ fontWeight: 900 }}>⚠ Konum kontrolü gerekli</div>
           <div className="muted" style={{ marginTop: 4 }}>
-            {geoNeedsReview} {who.toLowerCase()} konumu <b>NEEDS_REVIEW</b>. Planlama doğruluğu için önce düzeltmen önerilir.
+            {geoNeedsReview} {who.toLowerCase()} konumu için kontrol gerekiyor. Planlama doğruluğu için önce düzeltmen önerilir.
           </div>
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn" onClick={() => openGeoReview(true)}>Geo Review’e git</button>
+            <button type="button" className="btn" onClick={() => openGeoReview(true)}>Konum seçiciye git</button>
             <button type="button" className="btn" onClick={() => loadSummary()}>Yenile</button>
           </div>
         </div>
@@ -715,17 +715,17 @@ export default function WorkflowPanel() {
             <>
               <ChecklistRow
                 done={guide.geoOk}
-                title="1) Geo Review"
-                desc={guide.geoOk ? "Konumlar OK" : "NEEDS_REVIEW varsa düzelt"}
-                actionLabel={guide.geoOk ? "" : "Geo Review’e git"}
+                title="1) Konum seçici"
+                desc={guide.geoOk ? "Konumlar hazır" : "Konum kontrolü gerekiyorsa düzelt"}
+                actionLabel={guide.geoOk ? "" : "Konum seçiciye git"}
                 onAction={() => openGeoReview(true)}
               />
 
               <ChecklistRow
                 done={guide.hasAgreementToday}
-                title="2) Agreement"
+                title="2) Vardiya planı"
                 desc={guide.hasAgreementToday ? "Bugün için plan var" : "Guided Mode ile plan oluştur"}
-                actionLabel={guide.hasAgreementToday ? "Agreements" : "Plan oluştur"}
+                actionLabel={guide.hasAgreementToday ? "Sözleşmeleri aç" : "Plan oluştur"}
                 onAction={() => {
                   if (guide.hasAgreementToday) navigate(companyPath(me, "/agreements"));
                   else setGuidedOpen(true);

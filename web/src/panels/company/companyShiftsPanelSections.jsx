@@ -299,7 +299,7 @@ export function CompanyMarketSection({
             <table className="tbl" style={{ marginTop: 10 }}>
               <thead>
                 <tr>
-                  <th>ID</th><th>Status</th><th>Start</th><th>End</th><th>Offers</th>
+                  <th>ID</th><th>Durum</th><th>Başlangıç</th><th>Bitiş</th><th>Teklifler</th>
                 </tr>
               </thead>
               <tbody>
@@ -386,7 +386,7 @@ export function CompanyPendingSection({
             <table className="tbl" style={{ marginTop: 10 }}>
               <thead>
                 <tr>
-                  <th>ID</th><th>Status</th><th>Room</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Pazarlık</th><th>İptal</th><th>Start</th><th>End</th><th>Uzat</th><th>Operasyon</th>
+                  <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Pazarlık</th><th>İptal</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
                 </tr>
               </thead>
               <tbody>
@@ -453,7 +453,7 @@ export function CompanyFinalListSection({
       <CompanyAccordionHeader
         title="Liste"
         count={finalItems.length}
-        description="Sadece APPROVED/ACTIVE/DONE/REJECTED burada görünür."
+        description="Burada yalnız kabul edilen / aktif / tamamlanan / reddedilen vardiyalar görünür."
         accOpen={accOpen}
         onOpen={() => onSetOpen(true)}
         onClose={() => onSetOpen(false)}
@@ -476,7 +476,7 @@ export function CompanyFinalListSection({
             <table className="tbl" style={{ marginTop: 10 }}>
               <thead>
                 <tr>
-                  <th>ID</th><th>Status</th><th>Room</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Assigned Vehicle</th><th>Driver</th><th>Start</th><th>End</th><th>Uzat</th><th>Operasyon</th>
+                  <th>ID</th><th>Durum</th><th>Oda</th><th>Room Teklifi (R→C)</th><th>Company Teklifi (C→R)</th><th>Atanan Araç</th><th>Sürücü</th><th>Başlangıç</th><th>Bitiş</th><th>Uzat</th><th>Operasyon</th>
                 </tr>
               </thead>
               <tbody>

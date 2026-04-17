@@ -44,6 +44,14 @@ function normalizeCoord(v, kind) {
   return n;
 }
 
+function geoStatusLabel(status) {
+  const s = String(status || "").toUpperCase();
+  if (s === "OK") return "Hazır";
+  if (s === "NEEDS_REVIEW") return "İncelenecek";
+  if (s === "FAILED") return "Başarısız";
+  return String(status || "-") || "-";
+}
+
 function statusTone(status) {
   const s = String(status || "").toUpperCase();
   if (s === "OK") return { color: "#22c55e", bg: "rgba(34,197,94,.14)" };
@@ -674,7 +682,7 @@ export default function GeoReviewPanel() {
                             fontWeight: 600,
                           }}
                         >
-                          {p.geoStatus || "-"}
+                          {geoStatusLabel(p.geoStatus)}
                         </span>
                       </td>
                       <td className="muted">{hasCoord ? `${Number(p.homeLat).toFixed(5)}, ${Number(p.homeLng).toFixed(5)}` : "Yok"}</td>

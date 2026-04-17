@@ -194,7 +194,7 @@ export default function RoomsPanel() {
         <div className="topbar">
           <div>
             <div className="title">Room’lar</div>
-            <div className="muted">Room = servis sağlayan (operator) şirket. Company ile bağ Agreement üzerinden kurulur.</div>
+            <div className="muted">Room = servis sağlayan (operator) şirket. Company ile bağ sözleşme üzerinden kurulur.</div>
           </div>
           <div className="pill">{filteredCount} kayıt</div>
         </div>
@@ -297,11 +297,11 @@ export default function RoomsPanel() {
                 <div>
                   {editing ? (
                     <select value={editForm.status} onChange={(e) => setEditForm((s) => ({ ...s, status: e.target.value }))}>
-                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="ACTIVE">Aktif</option>
                       <option value="DELETED">DELETED</option>
                     </select>
                   ) : (
-                    <span className="pill">{r.status || "ACTIVE"}</span>
+                    <span className="pill">{String(r.status || "ACTIVE") === "ACTIVE" ? "Aktif" : String(r.status || "ACTIVE") === "PASSIVE" ? "Pasif" : (r.status || "-")}</span>
                   )}
                 </div>
 

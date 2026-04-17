@@ -347,7 +347,7 @@ export function RoomVehicleStatusSection({
             <th>Son GPS</th>
             <th>Hız</th>
             <th>Konum</th>
-            <th>GPS Status</th>
+            <th>GPS Durumu</th>
           </tr>
         </thead>
         <tbody>
@@ -402,7 +402,7 @@ export function RoomVehicleAssignmentsSection({
         <div>
           <h3 style={{ marginBottom: 0 }}>Atama görünümü</h3>
           <div className="muted" style={{ marginTop: 6 }}>
-            Araç bazlı <b>mevcut</b> ve <b>sıradaki</b> shift özeti. (Kaynak: <code>/api/vehicles</code> içindeki APPROVED/ACTIVE shifts)
+            Araç bazlı <b>mevcut</b> ve <b>sıradaki</b> shift özeti. (Kaynak: <code>/api/vehicles</code> içindeki kabul edilmiş / aktif vardiyalar)
           </div>
         </div>
         <div style={{ marginLeft: "auto" }} className="muted">
@@ -421,7 +421,7 @@ export function RoomVehicleAssignmentsSection({
             <option value="ALL">Hepsi</option>
             <option value="HAS_CURRENT">Sadece “Şu an” olanlar</option>
             <option value="HAS_NEXT">Sadece “Sıradaki” olanlar</option>
-            <option value="AGREEMENT_ONLY">Sadece Agreement olanlar</option>
+            <option value="AGREEMENT_ONLY">Sadece sözleşmeli olanlar</option>
           </select>
         </div>
         <div>
@@ -481,7 +481,7 @@ export function RoomVehicleAssignmentsSection({
       </div>
 
       <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-        Not: Bu tablo <code>/api/vehicles</code> içindeki <b>APPROVED/ACTIVE</b> shifts set’ini kullanır. REQUESTED (henüz atanmadı) burada görünmez.
+        Not: Bu tablo <code>/api/vehicles</code> içindeki <b>kabul edilmiş / aktif</b> vardiya setini kullanır. Bekleyen (henüz atanmadı) burada görünmez.
       </div>
     </div>
   );

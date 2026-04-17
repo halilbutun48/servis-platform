@@ -204,7 +204,7 @@ export default function ServiceEvaluationPanel() {
     return [
       { title: "Tamamlanan Hizmet", value: c.completedServices ?? "-", note: "Değerlendirme açılabilecek hizmetler" },
       { title: "Değerlendirme Bekleyen", value: c.pendingEvaluation ?? "-", note: "Kısa puan ve yorum bekleyen kayıtlar" },
-      { title: "Aktif Hizmet", value: c.activeServices ?? "-", note: "APPROVED / ACTIVE operasyonlar" },
+      { title: "Aktif Hizmet", value: c.activeServices ?? "-", note: "kabul edilen / aktif operasyonlar" },
       { title: "Sağlayıcı Sayısı", value: c.providerCount ?? "-", note: "Son hizmetlerde görünen oda / sağlayıcı" },
     ];
   }, [summary]);

@@ -8,6 +8,7 @@ import { ymdTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
+import { agreementExtendStatusText, agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -23,8 +24,8 @@ function ShiftSummary({ st }) {
   const h = Number(st?.horizonOpen ?? 0);
   return (
     <div className="muted" style={{ lineHeight: 1.2 }}>
-      <div>Bugün: {tTot ? (tDone + "/" + tTot + " DONE") : "-"}</div>
-      <div>Ufuk: {h ? (h + " APPROVED") : "-"}</div>
+      <div>Bugün: {tTot ? (tDone + "/" + tTot + " tamamlandı") : "-"}</div>
+      <div>Ufuk: {h ? (h + " kabul edildi") : "-"}</div>
     </div>
   );
 }
@@ -33,8 +34,8 @@ function ShiftSummary({ st }) {
 function pill(status) {
   const s = String(status || "").toUpperCase();
   return (
-    <span className="pill" data-status={s} title={s}>
-      {s}
+    <span className="pill" data-status={s} title={agreementStatusText(s)}>
+      {agreementStatusPillLabel(s)}
     </span>
   );
 }
@@ -72,7 +73,7 @@ function AgreementOpsBridgeCard({ agreement, bridge, onOpenShift, onOpenPreview 
         <div>
           <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
           <div className="muted" style={{ marginTop: 4 }}>
-            {String(agreement?.status || "-").toUpperCase()} • {String(agreement?.direction || "-").toUpperCase()} / {String(agreement?.pattern || "-").toUpperCase()}
+            {agreementStatusText(agreement?.status)} • {String(agreement?.direction || "-").toUpperCase()} / {String(agreement?.pattern || "-").toUpperCase()}
           </div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -292,7 +293,7 @@ export default function AgreementsPanel() {
         { label: 'Tutar', value: moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-'), help: 'Şirkete ait teklif veya sözleşme tutarını gösterir.' },
         { label: 'Araç', value: item?.vehicleId ? `#${item.vehicleId}` : '-', help: 'Onay sırasında seçilen aracı gösterir.' },
         { label: 'Sürücü', value: item?.driverId ? `#${item.driverId}` : '-', help: 'Onay sırasında seçilen sürücüyü gösterir.' },
-        { label: 'Bugün / Ufuk', value: `${Number(shiftStats?.[item.id]?.todayDone || 0)}/${Number(shiftStats?.[item.id]?.todayTotal || 0)} DONE • ${Number(shiftStats?.[item.id]?.horizonOpen || 0)} APPROVED`, help: 'Bugünkü ilerlemeyi ve 7 günlük ufuktaki üretilmiş vardiya sayısını gösterir.' },
+        { label: 'Bugün / Ufuk', value: `${Number(shiftStats?.[item.id]?.todayDone || 0)}/${Number(shiftStats?.[item.id]?.todayTotal || 0)} tamamlandı • ${Number(shiftStats?.[item.id]?.horizonOpen || 0)} kabul edildi`, help: 'Bugünkü ilerlemeyi ve 7 günlük ufuktaki üretilmiş vardiya sayısını gösterir.' },
       ],
       badges: [
         { label: 'Liste', value: pending.some((x) => x.id === item.id) ? 'Bekleyen' : others.some((x) => x.id === item.id) ? 'Diğer' : 'Uzatma', help: 'Sözleşmenin şu an hangi bölümde göründüğünü gösterir.' },
@@ -500,7 +501,7 @@ export default function AgreementsPanel() {
       <div className="topbar">
         <div>
           <div className="title">Sözleşmeler (Room)</div>
-          <div className="muted">Pending onay (REQUESTED) • Room bu ekranda onay / karşı teklif / red kararını verir. Not: Agreement ACTIVE/DONE **zaman bazlıdır** (endDate+endMin). Driver vardiyayı bitirse bile sözleşme endDate geçene kadar ACTIVE kalabilir. + Uzatma talepleri burada. Uzatma için accept/reject/counter yapabilirsin.</div>
+          <div className="muted">Bekleyen sözleşmeler burada karar bekler. Oda bu ekranda kabul / karşı teklif / red kararını verir. Not: sözleşme durumu zaman bazlıdır (endDate+endMin). Sürücü vardiyayı bitirse bile sözleşme endDate geçene kadar devam ediyor görünebilir. Uzatma talepleri de burada yönetilir.</div>
         </div>
         <button type="button" className="btn sm ghost" disabled={busy} onClick={loadAll}>
           Yenile
@@ -522,9 +523,9 @@ export default function AgreementsPanel() {
       </div>
 
       <div className="card">
-        <div style={{ fontWeight: 900, marginBottom: 10 }}>Uzatma Talepleri (extend)</div>
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Uzatma Talepleri</div>
         <div className="muted" style={{ marginBottom: 10 }}>
-          Company uzatma teklifi gönderir → Room: kabul / reddet / karşı teklif.
+          Şirket uzatma teklifi gönderir → oda kabul / reddet / karşı teklif verir.
         </div>
 
         <div className="tableWrap">
@@ -534,8 +535,8 @@ export default function AgreementsPanel() {
                 <th>ID</th>
                 <th>Mevcut</th>
                 <th>İstenen</th>
-                <th>Company Uzatma Teklifi</th>
-                <th>Room Counter</th>
+                <th>Şirket Uzatma Teklifi</th>
+                <th>Oda Karşı Teklifi</th>
                 <th>Durum</th>
                 <th>Aksiyon</th>
               </tr>
@@ -551,7 +552,7 @@ export default function AgreementsPanel() {
                     <td className="muted">{reqEnd || "-"}</td>
                     <td><OfferCell amount={a.extendOfferAmount} note={a.extendOfferNote} /></td>
                     <td><OfferCell amount={a.extendCounterAmount} note={a.extendCounterNote} /></td>
-                    <td className="muted">{ex}</td>
+                    <td className="muted">{agreementExtendStatusText(ex)}</td>
                     <td>
                       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                         <button type="button" className="btn sm" disabled={busy || ex !== "PENDING"} onClick={(e) => { e.stopPropagation(); extendDecision(a.id, "ACCEPT"); }}>
@@ -571,9 +572,9 @@ export default function AgreementsPanel() {
                             setExtendCounterNote(String(a.extendCounterNote ?? ""));
                           }}
                         >
-                          Counter
+                          Karşı Teklif
                         </button>
-                        {ex === "COUNTERED" ? <span className="muted" style={{ fontSize: 12 }}>Company kararı bekleniyor…</span> : null}
+                        {ex === "COUNTERED" ? <span className="muted" style={{ fontSize: 12 }}>Şirket kararı bekleniyor…</span> : null}
                       </div>
 
                       {extendCounterId === a.id ? (
@@ -626,20 +627,20 @@ export default function AgreementsPanel() {
       </div>
 
 <div className="card">
-        <div style={{ fontWeight: 900, marginBottom: 10 }}>Pending (REQUESTED)</div>
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Bekleyen Sözleşmeler</div>
         <div className="tableWrap">
           <table className="tbl">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Date</th>
-                <th>Time</th>
+                <th>Tarih</th>
+                <th>Saat</th>
                 <th>Günler</th>
                 <th>Dir/Pat</th>
                 <th>Vardiyalar</th>
                 <th>Hub</th>
-                <th>Company Teklif</th>
-                <th>Room Karşı</th>
+                <th>Şirket Teklifi</th>
+                <th>Oda Karşı Teklifi</th>
                 <th>Aksiyon</th>
               </tr>
             </thead>
@@ -677,7 +678,7 @@ export default function AgreementsPanel() {
                         setCounterNote(String(a.roomOfferNote ?? ""));
                       }}
                     >
-                      Counter
+                      Karşı Teklif
                     </button>
                     <button
                       type="button"
@@ -701,14 +702,14 @@ export default function AgreementsPanel() {
                         setConflict(null);
                       }}
                     >
-                      Onayla
+                      Kabul Et
                     </button>
                   </td>
                 </tr>
               ))}
               {!filteredPending.length ? (
                 <tr>
-                  <td colSpan={9} className="muted">Pending yok.</td>
+                  <td colSpan={9} className="muted">Bekleyen sözleşme yok.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -717,10 +718,10 @@ export default function AgreementsPanel() {
 
         {counterTarget ? (
           <div className="card" style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 900 }}>Counter Agreement #{counterTarget.id}</div>
+            <div style={{ fontWeight: 900 }}>Karşı Teklif • Sözleşme #{counterTarget.id}</div>
 
             <div className="muted" style={{ marginTop: 6 }}>
-              Company teklif: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
+              Şirket teklifi: <b>{moneyTry(counterTarget.companyOfferAmount)}</b>
               {counterTarget.companyOfferNote ? <span> — {counterTarget.companyOfferNote}</span> : null}
             </div>
 
@@ -757,16 +758,16 @@ export default function AgreementsPanel() {
 
         {approveTarget ? (
           <div className="card" style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 900 }}>Approve Agreement #{approveTarget.id}</div>
+            <div style={{ fontWeight: 900 }}>Kabul Akışı • Sözleşme #{approveTarget.id}</div>
 
             <div className="muted" style={{ marginTop: 6 }}>
-              Company teklif: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
+              Şirket teklifi: <b>{moneyTry(approveTarget.companyOfferAmount)}</b>
               {approveTarget.companyOfferNote ? <span> — {approveTarget.companyOfferNote}</span> : null}
             </div>
 
             <div className="fieldRow" style={{ marginTop: 12 }}>
               <div className="field">
-                <div className="muted">Vehicle</div>
+                <div className="muted">Araç</div>
                 <select
                   value={selVehicle}
                   onChange={(e) => {
@@ -784,7 +785,7 @@ export default function AgreementsPanel() {
               </div>
 
               <div className="field">
-                <div className="muted">Driver</div>
+                <div className="muted">Sürücü</div>
                 <select
                   value={selDriver}
                   onChange={(e) => {
@@ -804,7 +805,7 @@ export default function AgreementsPanel() {
 
             <div className="actionsRow" style={{ marginTop: 12 }}>
               <button type="button" className="btn sm primary" disabled={busy} onClick={approve}>
-                {busy ? "Onaylanıyor..." : "Onayla"}
+                {busy ? "Kabul ediliyor..." : "Kabul Et"}
               </button>
               <button
                 type="button"
@@ -828,8 +829,8 @@ export default function AgreementsPanel() {
 
       <div className="card">
         <div className="topbar" style={{ marginBottom: 10 }}>
-          <div style={{ fontWeight: 900 }}>Diğer Kayıtlar</div>
-          <div className="muted">APPROVED / ACTIVE / DONE / CANCELLED...</div>
+          <div style={{ fontWeight: 900 }}>Diğer Sözleşmeler</div>
+          <div className="muted">Kabul edildi / devam ediyor / tamamlandı / iptal edildi...</div>
         </div>
 
         <div className="tableWrap">
@@ -837,15 +838,15 @@ export default function AgreementsPanel() {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Days</th>
+                <th>Durum</th>
+                <th>Tarih</th>
+                <th>Saat</th>
+                <th>Günler</th>
                 <th>Dir/Pat</th>
-                <th>Company Teklif</th>
-                <th>Room Karşı</th>
-                <th>Vehicle</th>
-                <th>Driver</th>
+                <th>Şirket Teklifi</th>
+                <th>Oda Karşı Teklifi</th>
+                <th>Araç</th>
+                <th>Sürücü</th>
               </tr>
             </thead>
             <tbody>

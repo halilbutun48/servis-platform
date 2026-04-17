@@ -1071,13 +1071,13 @@ async function sendBulkOffers() {
             <div className="card" style={{ border: "1px solid #b85" }}>
               <div style={{ fontWeight: 800 }}>⚠ Guided Mode kilidi</div>
               <div className="muted" style={{ marginTop: 6 }}>
-                Review veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
+                İncelenecek durumda veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
-                Review: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Failed: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
+                İncelenecek: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Başarısız: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
               </div>
               <div className="muted" style={{ marginTop: 6 }}>
-                Düzeltmeyi bu ekranda yap. Guided Mode içinden dış Geo Review ekranına çıkış kapalı tutulur.
+                Düzeltmeyi bu ekranda yap. Guided Mode içinden dış Konum Seçici ekranına çıkış kapalı tutulur.
               </div>
             </div>
           ) : null}

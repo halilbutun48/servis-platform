@@ -62,8 +62,8 @@ export function SummaryCard({ current, summary, onGoPlanning }) {
         <Pill>
           Saat: {minToHm(current.startMin)} – {minToHm(current.endMin)}
         </Pill>
-        {current.publishedShiftId ? <Pill>Shift #{current.publishedShiftId}</Pill> : null}
-        {current.linkedAgreementId ? <Pill>Agreement #{current.linkedAgreementId}</Pill> : null}
+        {current.publishedShiftId ? <Pill>Vardiya #{current.publishedShiftId}</Pill> : null}
+        {current.linkedAgreementId ? <Pill>Sözleşme #{current.linkedAgreementId}</Pill> : null}
       </div>
 
       <div style={{ display: "grid", gap: 8 }}>

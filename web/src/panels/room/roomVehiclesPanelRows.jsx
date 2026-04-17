@@ -9,6 +9,7 @@ import {
   toggleExp,
   toggleSel,
 } from "./roomVehiclesPanelUtils";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 export function ShiftCompact({ s, open, onToggle }) {
   if (!s) return <span className="muted">—</span>;
@@ -20,8 +21,8 @@ export function ShiftCompact({ s, open, onToggle }) {
     <div style={{ display: "grid", gap: 6 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <span><b>{shiftOneLine(s)}</b></span>
-        <span className="pill" data-status={s.status === "ACTIVE" ? "BUSY" : "OK"}>{s.status}</span>
-        {hasAgreement ? <span className="pill" data-status="AGREEMENT">Agreement #{s.agreementId}</span> : null}
+        <span className="pill" data-status={s.status === "ACTIVE" ? "BUSY" : "OK"}>{displayStatusLabel(s.status)}</span>
+        {hasAgreement ? <span className="pill" data-status="AGREEMENT">Sözleşme #{s.agreementId}</span> : null}
         <button
           type="button"
           onClick={onToggle}
@@ -180,8 +181,8 @@ export function RoomTelematicsDeviceRow({
           onChange={(e) => setDeviceDrafts((prev) => ({ ...prev, [d.id]: { ...draft, status: e.target.value } }))}
           disabled={deviceSaving}
         >
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="DISABLED">DISABLED</option>
+          <option value="ACTIVE">Aktif</option>
+          <option value="DISABLED">Devre Dışı</option>
         </select>
       </td>
       <td>{fmtTR(d.lastSeenAt)}</td>

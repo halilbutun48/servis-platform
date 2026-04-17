@@ -45,11 +45,11 @@ export function PlanBuilderSummaryParamsSection({
       <div className="col">
         <div style={{ fontWeight: 800 }}>{who} Özeti</div>
         <div className="muted">
-          Toplam: <b>{stats.total}</b> • OK: <b>{stats.ok}</b> • NEEDS_REVIEW: <b>{stats.needs}</b> • FAILED: <b>{stats.failed}</b> • Konum eksik: <b>{stats.missingLoc}</b>
+          Toplam: <b>{stats.total}</b> • Hazır: <b>{stats.ok}</b> • İncelenecek: <b>{stats.needs}</b> • Başarısız: <b>{stats.failed}</b> • Konum eksik: <b>{stats.missingLoc}</b>
         </div>
         {stats.needs || stats.failed || stats.missingLoc ? (
           <div className="muted" style={{ marginTop: 6 }}>
-            Not: Stage-0 için varsayılan filtre <b>geoStatus=OK</b> ve <b>lat/lng var</b>. Geo Review bitmeden plan doğruluğu düşer.
+            Not: Stage-0 için varsayılan filtre <b>geoStatus=OK</b> ve <b>lat/lng var</b>. Konum kontrolü bitmeden plan doğruluğu düşer.
             <div style={{ marginTop: 8 }}>
               <button type="button" className="btn" onClick={openShiftToolsGeocode}>
                 Konumları düzelt (Shift Tools → Adresten Bul)

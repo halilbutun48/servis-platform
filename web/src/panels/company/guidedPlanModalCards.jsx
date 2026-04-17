@@ -23,8 +23,8 @@ export function GuidedCompanyGeoGateCard({ companyGeoGate }) {
       <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Company planı henüz tam değil" : "✅ Company planı koordinat olarak hazır"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {companyGeoGate.blocking
-          ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
-          : `Kişi kayıtları koordinatlı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
+          ? `İncelenecek: ${Number(companyGeoGate?.geoStats?.review || 0)} • Başarısız: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
+          : `Kişi kayıtları koordinatlı. İncelenecek: ${Number(companyGeoGate?.geoStats?.review || 0)} • Başarısız: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
       </div>
       <div className="muted" style={{ marginTop: 6 }}>Not: Bu kart sadece koordinat hazırlığını gösterir. Teklif için ayrıca OSRM rota doğrulaması gerekir.</div>
     </div>
@@ -93,8 +93,8 @@ export function GuidedDraftShiftsCard({ busy, draftShifts, osrmBatch, osrmReorde
           <thead>
             <tr>
               <th>ID</th>
-              <th>Start</th>
-              <th>End</th>
+              <th>Başlangıç</th>
+              <th>Bitiş</th>
               <th>Durak</th>
               <th></th>
             </tr>

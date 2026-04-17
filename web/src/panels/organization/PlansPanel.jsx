@@ -171,7 +171,7 @@ export default function OrganizationPlansPanel() {
 
     try {
       const data = await api.post(`/api/organization/plans/${current.id}/create-agreement`, {});
-      setMsg(`Sözleşme talebi oluşturuldu. Agreement #${data.agreementId}`);
+      setMsg(`Sözleşme talebi oluşturuldu. Sözleşme #${data.agreementId}`);
       await load();
     } catch (e) {
       setMsg(String(e?.message || e));

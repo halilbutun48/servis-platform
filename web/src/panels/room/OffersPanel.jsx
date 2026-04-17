@@ -5,6 +5,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import { rowSelectionStyle } from "../../utils/listUi";
+import { displayStatusLabel } from "../../utils/displayStatus";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
 
@@ -106,16 +107,16 @@ function blockedDriverReasonText(d) {
   if (!d) return "";
   if (d.reasonMessage) return String(d.reasonMessage);
   if (d.reasonCode === "DRIVER_SHIFT_CONFLICT") return "Başka vardiya ile çakışıyor";
-  if (d.reasonCode === "DRIVER_AGREEMENT_CONFLICT") return "Agreement ile çakışıyor";
+  if (d.reasonCode === "DRIVER_AGREEMENT_CONFLICT") return "Sözleşme ile çakışıyor";
   return d.reasonCode ? String(d.reasonCode) : "Bloklu";
 }
 
 const FILTERS = [
-  { key: "OPEN,COUNTERED", label: "Açık (OPEN+COUNTERED)" },
-  { key: "OPEN", label: "Sadece OPEN" },
-  { key: "COUNTERED", label: "Sadece COUNTERED" },
-  { key: "ACCEPTED", label: "ACCEPTED" },
-  { key: "CANCELLED", label: "CANCELLED" },
+  { key: "OPEN,COUNTERED", label: "Açık (bekliyor + karşı teklif)" },
+  { key: "OPEN", label: "Sadece açık" },
+  { key: "COUNTERED", label: "Sadece karşı teklif" },
+  { key: "ACCEPTED", label: "Kabul edildi" },
+  { key: "CANCELLED", label: "İptal edildi" },
   { key: "", label: "Tümü" },
 ];
 
@@ -511,7 +512,7 @@ export default function RoomOffersPanel() {
         </div>
         <ListSelectionBanner
           selectedLabel={focusedOffer ? `Teklif #${focusedOffer.id}` : ""}
-          selectedSummary={focusedOffer ? [companyName(focusedOffer?.shift), focusedOffer?.status, focusedOffer?.shift?.status ? `Vardiya ${focusedOffer.shift.status}` : ""].filter(Boolean).join(" • ") : ""}
+          selectedSummary={focusedOffer ? [companyName(focusedOffer?.shift), displayStatusLabel(focusedOffer?.status), focusedOffer?.shift?.status ? `Vardiya ${displayStatusLabel(focusedOffer.shift.status)}` : ""].filter(Boolean).join(" • ") : ""}
           visibleCount={filtered.length}
           totalCount={items.length}
           filterValue={`${statusFilter} ${q}`.trim()}
@@ -638,7 +639,7 @@ export default function RoomOffersPanel() {
             <div>
               <div style={{ fontWeight: 900 }}>Shift #{approveModal.shiftId} — Onay</div>
               <div className="muted">
-                ACCEPTED teklif → bu shift artık senin. Araç + sürücü seçip <b>Onayla</b> veya <b>Onayla + Başlat</b>.
+                Kabul edildi teklif → bu shift artık senin. Araç + sürücü seçip <b>Onayla</b> veya <b>Onayla + Başlat</b>.
               </div>
             </div>
             <button type="button" className="btn" disabled={busy} onClick={() => setApproveModal((p) => ({ ...p, open: false }))}>

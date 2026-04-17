@@ -224,7 +224,7 @@ useEffect(() => {
             {active ? (
               <div className="muted">Start: {fmt(active.startAt)} • End: {fmt(active.endAt)}</div>
             ) : (
-              <div className="muted">Bugün için atanmış ACTIVE/APPROVED vardiya yok.</div>
+              <div className="muted">Bugün için atanmış aktif / kabul edilmiş vardiya yok.</div>
             )}
           </div>
           {active?.status === "APPROVED" ? (
@@ -248,9 +248,9 @@ useEffect(() => {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Status</th>
-                  <th>Start</th>
-                  <th>End</th>
+                  <th>Durum</th>
+                  <th>Başlangıç</th>
+                  <th>Bitiş</th>
                   <th>Aksiyon</th>
                 </tr>
               </thead>
@@ -265,16 +265,16 @@ useEffect(() => {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Status</th>
-                    <th>Start</th>
-                    <th>End</th>
+                    <th>Durum</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
                     <th>Aksiyon</th>
                   </tr>
                 </thead>
                 <tbody>{tomorrow.map((s) => <ShiftRow key={s.id} s={s} />)}</tbody>
               </table>
               <div className="muted" style={{ marginTop: 8 }}>
-                Not: Yarınki vardiyalar şimdilik sadece bilgi amaçlıdır; başlayınca otomatik ACTIVE olur.
+                Not: Yarınki vardiyalar şimdilik sadece bilgi amaçlıdır; başlayınca otomatik aktif olur.
               </div>
             </div>
           ) : null}

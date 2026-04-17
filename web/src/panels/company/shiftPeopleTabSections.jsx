@@ -79,13 +79,13 @@ export function ShiftPeopleSummarySection({
       </div>
 
       <div className="muted" style={{ marginTop: 6 }}>
-        <b>{who}:</b> {geoStats.total} • OK: {geoStats.ok} • Review: {geoStats.review} • Failed: {geoStats.failed}
+        <b>{who}:</b> {geoStats.total} • Hazır: {geoStats.ok} • İncelenecek: {geoStats.review} • Başarısız: {geoStats.failed}
         {geoStats.review > 0 || geoStats.failed > 0 ? (
           <span style={{ marginLeft: 10 }}>
             {hideGeoReviewLinks ? (
               <button type="button" className="btn sm" onClick={() => onOpenGuidedGeoPicker(null)}>Konum seçiciye git</button>
             ) : (
-              <a href={"#" + geoReviewPath}>Geo Review’e git</a>
+              <a href={"#" + geoReviewPath}>Konum seçiciye git</a>
             )}
           </span>
         ) : null}
@@ -102,7 +102,7 @@ export function ShiftPeopleSummarySection({
             maxWalkM: <b>{stopSummary.maxWalkM ?? maxWalkMValue}</b> • Durak (hub hariç): <b>{stopSummary.stopCountWithoutHub ?? stopSummary.stopCount}</b> • Durak (hub dahil): <b>{stopSummary.stopCountWithHub ?? stopSummary.stopCount}</b>
           </div>
           <div className="muted" style={{ marginTop: 4 }}>
-            Toplam kişi: <b>{stopSummary.totalPeople}</b> • Kapsanan: <b>{stopSummary.coveredCount}</b> • Tekil: <b>{stopSummary.singletonCount}</b> • Review: <b>{stopSummary.reviewCount}</b> • Dışarıda/skip: <b>{stopSummary.skippedCount}</b>
+            Toplam kişi: <b>{stopSummary.totalPeople}</b> • Kapsanan: <b>{stopSummary.coveredCount}</b> • Tekil: <b>{stopSummary.singletonCount}</b> • İncelenecek: <b>{stopSummary.reviewCount}</b> • Dışarıda/atlanan: <b>{stopSummary.skippedCount}</b>
             {stopSummary.hubApplied ? <span> • Hub uygulandı</span> : null}
           </div>
           {(stopSummary.stopCountWithHub ?? stopSummary.stopCount) !== (stopSummary.stopCountWithoutHub ?? stopSummary.stopCount) ? (
@@ -310,7 +310,7 @@ export function ShiftPeopleImportSection({
               Toplam: {importSummary.totalRows} • Kabul: {importSummary.acceptedRows} • Shift'e bağlanan: {importSummary.linkedToShift}
             </div>
             <div className="muted" style={{ marginTop: 4 }}>
-              Oluşan: {importSummary.createdPersonels} • Güncellenen: {importSummary.updatedPersonels} • Review: {importSummary.needsReviewRows}
+              Oluşan: {importSummary.createdPersonels} • Güncellenen: {importSummary.updatedPersonels} • İncelenecek: {importSummary.needsReviewRows}
             </div>
             <div className="muted" style={{ marginTop: 4 }}>
               Atlanan: {importSummary.skippedRows} • Failed: {importSummary.failedRows}
@@ -321,13 +321,13 @@ export function ShiftPeopleImportSection({
                   {hideGeoReviewLinks ? (
                     <>Guided Mode'da tek tıkla Konum Seçici'ye geçebilir, işi bitirince aynı adıma geri dönebilirsin. İstersen burada satır bazlı da düzeltebilirsin.</>
                   ) : (
-                    <>Review gerektiren kayıtlar için <a href={"#" + geoReviewPath}>Geo Review</a> ekranını kullan.</>
+                    <>Konum kontrolü gerektiren kayıtlar için <a href={"#" + geoReviewPath}>Konum seçici</a> ekranını kullan.</>
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                   {hideGeoReviewLinks ? (
                     <button type="button" className="btn" onClick={() => onOpenGuidedGeoPicker(null)}>Konum seçiciye git</button>
-                  ) : <a className="btn" href={"#" + geoReviewPath}>Geo Review'a Git</a>}
+                  ) : <a className="btn" href={"#" + geoReviewPath}>Konum seçiciye git</a>}
                   <button type="button" className="btn" onClick={onRunImportQuickGeocode} disabled={importQuickBusy || busy}>
                     {importQuickBusy ? "Çalışıyor..." : "Review kayıtlarını topluca bul"}
                   </button>

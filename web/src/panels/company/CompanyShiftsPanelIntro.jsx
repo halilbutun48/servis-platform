@@ -15,7 +15,7 @@ export default function CompanyShiftsPanelIntro(props) {
     <>
       <div className="card">
         <h3>{isCommercialMode ? "Ticari Akışım (COMPANY)" : "Shifts (COMPANY)"}</h3>
-        <div className="muted">{isCommercialMode ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: APPROVED/ACTIVE/DONE/REJECTED" : "Bekleyen: REQUESTED • Liste: APPROVED/ACTIVE/DONE/REJECTED"}</div>
+        <div className="muted">{isCommercialMode ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: kabul edildi / aktif / tamamlandı / reddedildi" : "Bekleyen: bekliyor • Liste: kabul edildi / aktif / tamamlandı / reddedildi"}</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}

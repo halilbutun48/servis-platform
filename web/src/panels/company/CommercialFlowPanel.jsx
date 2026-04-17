@@ -100,7 +100,7 @@ export default function CompanyCommercialFlowPanel() {
       { title: "Market Teklifi", value: counts.market, note: "Room seçilmemiş, pazarlığı açık market talepleri", accent: counts.market ? "warm" : "default" },
       { title: "Karşı Teklif", value: counts.counter, note: "Karşı teklif sinyali taşıyan aktif pazarlık kayıtları", accent: counts.counter ? "warm" : "default" },
       { title: "Bekleyen", value: counts.pending, note: "Room atanmış, operasyon hazırlığı bekleyen talepler", accent: counts.pending ? "good" : "default" },
-      { title: "Liste", value: counts.final, note: "APPROVED / ACTIVE / DONE / REJECTED" },
+      { title: "Liste", value: counts.final, note: "kabul edildi / aktif / tamamlandı / reddedildi" },
       { title: "Aktif Operasyon", value: counts.active, note: "APPROVED + ACTIVE sahaya inen işler", accent: counts.active ? "good" : "default" },
     ];
   }, [counts]);

@@ -149,8 +149,8 @@ export default function CommercialFlowPanel() {
       { title: "Acik Teklif", value: c.openOffers ?? "-", note: "Incelenmesi gereken teklifler" },
       { title: "Karsi Teklifim", value: c.counteredOffers ?? "-", note: "Firma cevabi beklenen kayitlar" },
       { title: "Kabul Edilen", value: c.acceptedOffers ?? "-", note: "Bekleyen taleplere inen kayitlar" },
-      { title: "Sozlesme Bekleyen", value: c.requestedAgreements ?? "-", note: "Ayrica yonetilen sozlesme kayitlari" },
-      { title: "Aktif Sozlesme", value: c.activeAgreements ?? "-", note: "APPROVED / ACTIVE sozlesmeler" },
+      { title: "Sözleşme Bekleyen", value: c.requestedAgreements ?? "-", note: "Ayrı yönetilen sözleşme kayıtları" },
+      { title: "Aktif Sözleşme", value: c.activeAgreements ?? "-", note: "kabul edilen / aktif sözleşmeler" },
       { title: "Aktif Operasyon", value: c.approvedOrActiveShifts ?? "-", note: "Sahaya inen işler" },
     ];
   }, [summary]);

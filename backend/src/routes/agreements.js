@@ -7,7 +7,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
-// âœ… M59: agreement UI shift stats helper endpoint
+// ✅ M59: agreement UI shift stats helper endpoint
 
 import { computeFirstStartAtUTC } from "../services/agreementConflict.js";
 import { findReservationConflictForAgreement } from "../services/reservationConflict.js";
@@ -44,6 +44,37 @@ function trimOrNull(v) {
   return s ? s : null;
 }
 
+function agreementRef(id) {
+  return `Sözleşme #${id}`;
+}
+
+function offerSummary(amount, note) {
+  return `${amount ?? "-"}${note ? " — " + note : ""}`;
+}
+
+function directCreateBlockedMessage() {
+  return "Doğrudan sözleşme açma kapalı. Önce vardiya oluşturup “Sözleşmeye Dönüştür” kullan.";
+}
+
+async function requireSourceShiftForAgreementCreate(tx, { sourceShiftId, companyId, roomId }) {
+  const id = Number(sourceShiftId || 0);
+  if (id <= 0) throw httpError(400, "SOURCE_SHIFT_REQUIRED", directCreateBlockedMessage());
+  const shift = await tx.shift.findUnique({
+    where: { id },
+    select: { id: true, companyId: true, roomId: true, status: true },
+  });
+  if (!shift || Number(shift.companyId || 0) !== Number(companyId || 0)) {
+    throw httpError(400, "SOURCE_SHIFT_INVALID", "Kaynak vardiya bulunamadı.");
+  }
+  if (Number(roomId || 0) > 0 && Number(shift.roomId || 0) !== Number(roomId || 0)) {
+    throw httpError(400, "SOURCE_SHIFT_ROOM_MISMATCH", "Kaynak vardiya ile seçilen oda aynı olmalı.");
+  }
+  if (String(shift.status || "").toUpperCase() === "DRAFT") {
+    throw httpError(400, "SOURCE_SHIFT_INVALID_STATUS", "Taslak vardiyadan sözleşme açılamaz.");
+  }
+  return shift;
+}
+
 function parseOfferAmount(v) {
   const n = toInt(v, null);
   if (n == null) return null;
@@ -71,7 +102,7 @@ function parseHub(body) {
   const lat = body?.hubLat == null || body?.hubLat === "" ? null : toFloat(body.hubLat, null);
   const lng = body?.hubLng == null || body?.hubLng === "" ? null : toFloat(body.hubLng, null);
   if (lat == null && lng == null) return { hubLat: null, hubLng: null };
-  if (lat == null || lng == null) return { error: "hubLat+hubLng birlikte olmalÄ±" };
+  if (lat == null || lng == null) return { error: "hubLat+hubLng birlikte olmalı" };
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { error: "hubLat/hubLng range invalid" };
   return { hubLat: lat, hubLng: lng };
 }
@@ -119,7 +150,7 @@ export function agreementsRouter(io) {
     res.json({ items: mapped });
   });
 
-  // âœ… M59: SHIFT STATS (for UI clarity)
+  // ✅ M59: SHIFT STATS (for UI clarity)
   // Body: { agreementIds: number[], horizonDays?: number }
   // Returns: { byId: { [id]: { todayTotal, todayDone, horizonOpen } } }
   r.post("/shift-stats", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
@@ -357,6 +388,8 @@ export function agreementsRouter(io) {
     if (hub?.error) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", hub.error));
     const sourceShiftId = Number(req.body?.sourceShiftId || 0);
 
+    await requireSourceShiftForAgreementCreate(prisma, { sourceShiftId, companyId, roomId });
+
     const created = await prisma.$transaction(async (tx) => {
       const rows = [];
       for (const slot of slotValidation.slots) {
@@ -395,7 +428,7 @@ export function agreementsRouter(io) {
           v: 1,
           kind: "agreement:requested",
           title: "Yeni sözleşme talebi",
-          message: `Agreement #${row.id} • teklif: ${row.companyOfferAmount ?? "-"}${row.companyOfferNote ? " — " + row.companyOfferNote : ""}`,
+          message: `${agreementRef(row.id)} • teklif: ${offerSummary(row.companyOfferAmount, row.companyOfferNote)}`,
         },
         dedupeKey: `agreement:${row.id}:requested`,
       });
@@ -426,7 +459,7 @@ export function agreementsRouter(io) {
     if (weekMask == null) return sendErrorResponse(res, httpError(400, "weekMask required (1..127)"));
     if (startMin == null || endMin == null) return sendErrorResponse(res, httpError(400, "startMin/endMin required (0..1439)"));
 
-    // âœ… M19: routing meta
+    // ✅ M19: routing meta
     const direction = normDirection(req.body.direction);
     const pattern = normPattern(req.body.pattern);
     if (!direction) return sendErrorResponse(res, httpError(400, "direction invalid (INBOUND|OUTBOUND)"));
@@ -435,6 +468,8 @@ export function agreementsRouter(io) {
     if (hub?.error) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", hub.error));
 
     const sourceShiftId = Number(req.body?.sourceShiftId || 0);
+
+    await requireSourceShiftForAgreementCreate(prisma, { sourceShiftId, companyId, roomId });
 
     const created = await prisma.agreement.create({
       data: {
@@ -457,7 +492,7 @@ export function agreementsRouter(io) {
 
     await upsertAgreementCommercialBackbone(created.id, { sourceShiftId }).catch(() => null);
 
-    // âœ… M53: notify ROOM (company offer visible)
+    // ✅ M53: notify ROOM (company offer visible)
     await createAndEmitNotification({
       io,
       type: "AGREEMENT_REQUESTED",
@@ -467,8 +502,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:requested",
-        title: "Yeni sÃ¶zleÅŸme talebi",
-        message: `Agreement #${created.id} â€¢ teklif: ${created.companyOfferAmount ?? "-"}${created.companyOfferNote ? " â€” " + created.companyOfferNote : ""}`,
+        title: "Yeni sözleşme talebi",
+        message: `${agreementRef(created.id)} • teklif: ${offerSummary(created.companyOfferAmount, created.companyOfferNote)}`,
       },
       dedupeKey: `agreement:${created.id}:requested`,
     });
@@ -540,7 +575,7 @@ export function agreementsRouter(io) {
     });
 
 
-    // âœ… M53: notify COMPANY (room approved / assigned)
+    // ✅ M53: notify COMPANY (room approved / assigned)
     await createAndEmitNotification({
       io,
       type: "AGREEMENT_APPROVED",
@@ -550,8 +585,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:approved",
-        title: "SÃ¶zleÅŸme onaylandÄ±",
-        message: `Agreement #${updated.id} onaylandÄ±. vehicleId=${updated.vehicleId} driverId=${updated.driverId}`,
+        title: "Sözleşme kabul edildi",
+        message: `${agreementRef(updated.id)} kabul edildi. Araç=${updated.vehicleId} Sürücü=${updated.driverId}`,
       },
       dedupeKey: `agreement:${updated.id}:approved`,
     });
@@ -605,8 +640,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:countered",
-        title: "KarÅŸÄ± teklif",
-        message: `Agreement #${updated.id} â€¢ karÅŸÄ± teklif: ${updated.roomOfferAmount ?? "-"}${updated.roomOfferNote ? " â€” " + updated.roomOfferNote : ""}`,
+        title: "Karşı teklif",
+        message: `${agreementRef(updated.id)} • karşı teklif: ${offerSummary(updated.roomOfferAmount, updated.roomOfferNote)}`,
       },
       dedupeKey: `agreement:${updated.id}:counter`,
     });
@@ -650,8 +685,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:counterAccepted",
-        title: "KarÅŸÄ± teklif kabul edildi",
-        message: `Agreement #${updated.id} â€¢ teklif kabul edildi: ${updated.companyOfferAmount ?? "-"}`,
+        title: "Karşı teklif kabul edildi",
+        message: `${agreementRef(updated.id)} • teklif kabul edildi: ${updated.companyOfferAmount ?? "-"}`,
       },
       dedupeKey: `agreement:${updated.id}:counterAccepted:${updated.companyOfferAmount ?? "X"}`,
     });
@@ -698,8 +733,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:companyCountered",
-        title: "Åirket yeni teklif gÃ¶nderdi",
-        message: `Agreement #${updated.id} â€¢ yeni teklif: ${updated.companyOfferAmount ?? "-"}${updated.companyOfferNote ? " â€” " + updated.companyOfferNote : ""}`,
+        title: "Şirket yeni teklif gönderdi",
+        message: `${agreementRef(updated.id)} • yeni teklif: ${offerSummary(updated.companyOfferAmount, updated.companyOfferNote)}`,
       },
       dedupeKey: `agreement:${updated.id}:companyCounter:${updated.companyOfferAmount ?? "X"}`,
     });
@@ -741,8 +776,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:counterRejected",
-        title: "KarÅŸÄ± teklif reddedildi",
-        message: `Agreement #${updated.id} â€¢ karÅŸÄ± teklif reddedildi. Yeni teklif gÃ¶nderebilirsin.`,
+        title: "Karşı teklif reddedildi",
+        message: `${agreementRef(updated.id)} • karşı teklif reddedildi. Yeni teklif gönderebilirsin.`,
       },
       dedupeKey: `agreement:${updated.id}:counterRejected`,
     });
@@ -786,8 +821,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:rejected",
-        title: "SÃ¶zleÅŸme reddedildi",
-        message: `Agreement #${updated.id} reddedildi.`,
+        title: "Sözleşme reddedildi",
+        message: `${agreementRef(updated.id)} reddedildi.`,
       },
       dedupeKey: `agreement:${updated.id}:rejected`,
     });
@@ -812,7 +847,7 @@ export function agreementsRouter(io) {
     });
 
 
-    // âœ… M53: notify ROOM (company cancelled)
+    // ✅ M53: notify ROOM (company cancelled)
     await createAndEmitNotification({
       io,
       type: "AGREEMENT_CANCELLED",
@@ -822,8 +857,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:cancelled",
-        title: "SÃ¶zleÅŸme iptal edildi",
-        message: `Agreement #${updated.id} iptal edildi.`,
+        title: "Sözleşme iptal edildi",
+        message: `${agreementRef(updated.id)} iptal edildi.`,
       },
       dedupeKey: `agreement:${updated.id}:cancelled`,
     });
@@ -836,7 +871,7 @@ export function agreementsRouter(io) {
   });
 
 
-  // âœ… M57: AGREEMENT EXTEND NEGOTIATION
+  // ✅ M57: AGREEMENT EXTEND NEGOTIATION
   // Model:
   // - Company sends extend-request (new endDate + optional new offer amount/note)
   // - Room can accept/reject OR counter price (then company accepts/rejects counter)
@@ -933,8 +968,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendRequested",
-        title: "SÃ¶zleÅŸme uzatma teklifi",
-        message: `Agreement #${updated.id} yeni bitiÅŸ: ${ymdOfDateOnly(updated.extendRequestedEndDate)} â€¢ teklif: ${offerAmount ?? "-"}${offerNote ? " â€” " + offerNote : ""}`,
+        title: "Sözleşme uzatma teklifi",
+        message: `${agreementRef(updated.id)} • yeni bitiş: ${ymdOfDateOnly(updated.extendRequestedEndDate)} • teklif: ${offerSummary(offerAmount, offerNote)}`,
       },
       dedupeKey: `agreement:${updated.id}:extendReq:${ymdOfDateOnly(updated.extendRequestedEndDate)}`,
     });
@@ -992,7 +1027,7 @@ export function agreementsRouter(io) {
           v: 1,
           kind: "agreement:extendRejected",
           title: "Uzatma reddedildi",
-          message: `Agreement #${updated.id} uzatma teklifi reddedildi.`,
+          message: `${agreementRef(updated.id)} uzatma teklifi reddedildi.`,
         },
         dedupeKey: `agreement:${updated.id}:extendRejected:${Date.now()}`,
       });
@@ -1042,7 +1077,7 @@ export function agreementsRouter(io) {
         v: 1,
         kind: "agreement:extendAccepted",
         title: "Uzatma kabul edildi",
-        message: `Agreement #${updated.id} yeni bitiÅŸ: ${ymdOfDateOnly(updated.endDate)}`,
+        message: `${agreementRef(updated.id)} • yeni bitiş: ${ymdOfDateOnly(updated.endDate)}`,
       },
       dedupeKey: `agreement:${updated.id}:extendAccepted:${ymdOfDateOnly(updated.endDate)}`,
     });
@@ -1093,8 +1128,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendCountered",
-        title: "Uzatma karÅŸÄ± teklifi",
-        message: `Agreement #${updated.id} â€¢ yeni bitiÅŸ: ${ymdOfDateOnly(updated.extendRequestedEndDate)} â€¢ karÅŸÄ±: ${updated.extendCounterAmount}${updated.extendCounterNote ? " â€” " + updated.extendCounterNote : ""}`,
+        title: "Uzatma karşı teklifi",
+        message: `${agreementRef(updated.id)} • yeni bitiş: ${ymdOfDateOnly(updated.extendRequestedEndDate)} • karşı teklif: ${offerSummary(updated.extendCounterAmount, updated.extendCounterNote)}`,
       },
       dedupeKey: `agreement:${updated.id}:extendCounter:${ymdOfDateOnly(updated.extendRequestedEndDate)}:${updated.extendCounterAmount}`,
     });
@@ -1153,8 +1188,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendCounterAccepted",
-        title: "Uzatma karÅŸÄ± teklifi kabul edildi",
-        message: `Agreement #${updated.id} yeni bitiÅŸ: ${ymdOfDateOnly(updated.endDate)} â€¢ yeni teklif: ${updated.companyOfferAmount ?? "-"}`,
+        title: "Uzatma karşı teklifi kabul edildi",
+        message: `${agreementRef(updated.id)} • yeni bitiş: ${ymdOfDateOnly(updated.endDate)} • yeni teklif: ${updated.companyOfferAmount ?? "-"}`,
       },
       dedupeKey: `agreement:${updated.id}:extendCounterAccepted:${ymdOfDateOnly(updated.endDate)}:${updated.companyOfferAmount ?? "X"}`,
     });
@@ -1197,8 +1232,8 @@ export function agreementsRouter(io) {
       payload: {
         v: 1,
         kind: "agreement:extendCounterRejected",
-        title: "KarÅŸÄ± teklif reddedildi",
-        message: `Agreement #${updated.id} â€¢ uzatma teklifi hala beklemede. Ä°stersen kabul et veya yeni counter gÃ¶nder.`,
+        title: "Karşı teklif reddedildi",
+        message: `${agreementRef(updated.id)} • uzatma teklifi hâlâ beklemede. İstersen kabul et veya yeni karşı teklif gönder.`,
       },
       dedupeKey: `agreement:${updated.id}:extendCounterRejected:${Date.now()}`,
     });

@@ -132,7 +132,7 @@ export default function CompanyShiftsPanelTrackView(props) {
                   try { listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* no-op: scrolling is best effort */ }
                 }, 0);
               }}
-              title="Liste: APPROVED + ACTIVE"
+              title="Liste: kabul edildi + aktif"
             >
               Açık
             </button>
@@ -185,8 +185,8 @@ export default function CompanyShiftsPanelTrackView(props) {
         </div>
         <div className="muted" style={{ marginTop: 6 }}>
           {isCommercialMode
-            ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: APPROVED/ACTIVE/DONE/REJECTED"
-            : "Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Liste: APPROVED/ACTIVE/DONE/REJECTED"}
+            ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: kabul edildi / aktif / tamamlandı / reddedildi"
+            : "Market: room seçilmemiş talepler • Bekleyen: pazarlık/karar • Liste: kabul edildi / aktif / tamamlandı / reddedildi"}
         </div>
       </div>
 

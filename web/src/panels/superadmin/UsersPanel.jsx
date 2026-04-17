@@ -336,8 +336,8 @@ export default function UsersPanel() {
 
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">Tüm durumlar</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="DISABLED">DISABLED</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="DISABLED">Devre Dışı</option>
           </select>
 
           <button className="btn" disabled={busy} onClick={loadUsers}>

@@ -237,7 +237,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     if (c === "MISSING_ADDRESS_OR_COORDS") return "Adres/koordinat eksik";
     if (c === "INVALID_COORD") return "Koordinat geçersiz";
     if (c === "DUPLICATE_ROW") return "Tekrar satır";
-    if (c === "GEO_NEEDS_REVIEW") return "Geo review gerekir";
+    if (c === "GEO_NEEDS_REVIEW") return "Konum kontrolü gerekir";
     if (c === "INVALID_ROW") return "Satır okunamadı";
     return c || "Uyarı";
   }
@@ -752,7 +752,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         } else if ((r.lat == null) !== (r.lng == null)) {
           localWarnings.push({ rowNo, code: "INVALID_COORD", message: "Enlem/boylam eksik veya geçersiz; adres varsa review akışına düşecek.", level: "warning" });
         } else if (!(typeof r.lat === "number" && typeof r.lng === "number")) {
-          localWarnings.push({ rowNo, code: "GEO_NEEDS_REVIEW", message: "Koordinat eksik; kayıt review gerektiriyor.", level: "warning" });
+          localWarnings.push({ rowNo, code: "GEO_NEEDS_REVIEW", message: "Koordinat eksik; kayıt konum kontrolü gerektiriyor.", level: "warning" });
         }
       });
       setImportWarnings(localWarnings);

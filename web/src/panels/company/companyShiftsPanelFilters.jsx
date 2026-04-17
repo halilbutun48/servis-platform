@@ -25,7 +25,7 @@ export function CompanyMarketFilters({ marketQ, onChangeMarketQ, marketFocusIds,
       <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
         <input
           ref={searchRef}
-          placeholder="Ara (id/status)"
+          placeholder="Ara (id / durum)"
           value={marketQ}
           onChange={(e) => onChangeMarketQ(e.target.value)}
           style={{ minWidth: 220 }}
@@ -46,7 +46,7 @@ export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocus
     <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
       <div />
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        <input placeholder="Ara (id/status/note/room)" value={pendingQ} onChange={(e) => onChangePendingQ(e.target.value)} style={{ minWidth: 240 }} />
+        <input placeholder="Ara (id / durum / not / oda)" value={pendingQ} onChange={(e) => onChangePendingQ(e.target.value)} style={{ minWidth: 240 }} />
         {pendingFocusIds.length ? (
           <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span>Filtre: {(pendingFocusIds || []).map((id) => "#" + id).join(" ")}</span>
@@ -55,11 +55,11 @@ export function CompanyPendingFilters({ pendingQ, onChangePendingQ, pendingFocus
         ) : null}
         <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input type="checkbox" checked={pendingOnlyRoomOffer} onChange={(e) => onChangePendingOnlyRoomOffer(e.target.checked)} />
-          Sadece Room teklifi olanlar
+          Sadece oda teklifi olanlar
         </label>
         <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input type="checkbox" checked={onlyAgreement} onChange={(e) => onChangeOnlyAgreement(e.target.checked)} />
-          Sadece Agreement shiftleri
+          Sadece sözleşmeli vardiyalar
         </label>
         <button type="button" onClick={() => { onChangePendingQ(""); onChangePendingOnlyRoomOffer(false); onChangeOnlyAgreement(false); }}>Temizle</button>
       </div>
@@ -74,16 +74,16 @@ export function CompanyFinalListFilters({ finalStatus, onChangeFinalStatus, fina
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <select value={finalStatus} onChange={(e) => onChangeFinalStatus(e.target.value)}>
           <option value="ALL">Hepsi</option>
-          <option value="OPEN">Açık (APPROVED+ACTIVE)</option>
-          <option value="APPROVED">APPROVED</option>
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="DONE">DONE</option>
-          <option value="REJECTED">REJECTED</option>
+          <option value="OPEN">Açık (kabul edildi + aktif)</option>
+          <option value="APPROVED">Kabul Edildi</option>
+          <option value="ACTIVE">Aktif</option>
+          <option value="DONE">Tamamlandı</option>
+          <option value="REJECTED">Reddedildi</option>
         </select>
-        <input placeholder="Ara (id/status/plate/driver/note)" value={finalQ} onChange={(e) => onChangeFinalQ(e.target.value)} style={{ minWidth: 240 }} />
+        <input placeholder="Ara (id / durum / plaka / sürücü / not)" value={finalQ} onChange={(e) => onChangeFinalQ(e.target.value)} style={{ minWidth: 240 }} />
         <label className="muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input type="checkbox" checked={onlyAgreement} onChange={(e) => onChangeOnlyAgreement(e.target.checked)} />
-          Sadece Agreement shiftleri
+          Sadece sözleşmeli vardiyalar
         </label>
         <button type="button" onClick={onClearFilters}>Temizle</button>
       </div>

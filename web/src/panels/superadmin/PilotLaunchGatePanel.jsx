@@ -220,10 +220,10 @@ export default function PilotLaunchGatePanel() {
       </div>
 
       <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <SummaryCard title="Hazır vardiya" value={String(prepCounters.readyShifts || 0)} note="Yakın penceredeki APPROVED/ACTIVE vardiyalar" />
+        <SummaryCard title="Hazır vardiya" value={String(prepCounters.readyShifts || 0)} note="Yakın penceredeki kabul edilen / aktif vardiyalar" />
         <SummaryCard title="Aktif araç" value={String(prepCounters.activeVehicles || 0)} note="Sahaya çıkabilecek aktif araç sayısı" />
         <SummaryCard title="Driver kullanıcı" value={String(prepCounters.driverUsers || 0)} note="Mobil tur için giriş yapabilecek sürücü hesabı" />
-        <SummaryCard title="Aktif sözleşme" value={String(prepCounters.activeAgreements || 0)} note="Operasyonla ilişkili aktif/approved sözleşme görünürlüğü" />
+        <SummaryCard title="Aktif sözleşme" value={String(prepCounters.activeAgreements || 0)} note="Operasyonla ilişkili aktif / kabul edilen sözleşme görünürlüğü" />
       </div>
 
       {fieldPrepErr ? <div style={{ marginTop: 14, color: "#ffb17b", whiteSpace: "pre-wrap" }}>{fieldPrepErr}</div> : null}

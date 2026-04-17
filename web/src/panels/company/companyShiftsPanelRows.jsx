@@ -1,5 +1,6 @@
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import { rowSelectionStyle } from "../../utils/listUi";
+import { displayStatusLabel } from "../../utils/displayStatus";
 import { roomLabel } from "./shiftsPanelOfferUtils";
 
 export function AgreementBadge({ agreementId }) {
@@ -12,7 +13,7 @@ export function AgreementBadge({ agreementId }) {
       title="Sözleşmeye bağlı vardiya"
       style={{ marginLeft: 8 }}
     >
-      Agreement #{id}
+      Sözleşme #{id}
     </span>
   );
 }
@@ -48,7 +49,7 @@ function CompanyExtendCell({ shift, busy, fmtTR, onOpenExtendModal, onOpenPrevie
     <td>
       {shift.extendRequestedEndAt ? (
         <div style={{ display: "grid", gap: 6 }}>
-          <span className="pill" data-status={shift.extendDecision || "PENDING"}>{String(shift.extendDecision || "PENDING")}</span>
+          <span className="pill" data-status={shift.extendDecision || "PENDING"}>{displayStatusLabel(shift.extendDecision || "PENDING")}</span>
           <div className="muted" title={String(shift.extendRequestedEndAt)}>Talep: {fmtTR(shift.extendRequestedEndAt)}</div>
         </div>
       ) : (
@@ -112,7 +113,7 @@ export function CompanyMarketRow({
   return (
     <tr key={shift.id} onClick={() => onFocusShift(shift?.id)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
       <td>{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact /></td>
-      <td><span className="pill" data-status={shift.status}>{shift.status}</span></td>
+      <td><span className="pill" data-status={shift.status}>{displayStatusLabel(shift.status)}</span></td>
       <td className="muted">{fmtTR(shift.startAt)}</td>
       <td className="muted">{fmtTR(shift.endAt)}</td>
       <td>
@@ -164,7 +165,7 @@ export function CompanyPendingRow({
           </div>
         ) : null}
       </td>
-      <td><span className="pill" data-status={shift.status}>{shift.status}</span></td>
+      <td><span className="pill" data-status={shift.status}>{displayStatusLabel(shift.status)}</span></td>
       <CompanyRoomCell shift={shift} room={room} />
       <td>{renderRoomOfferSummary(shift)}</td>
       <td>{renderCompanyOfferSummary(shift)}</td>
@@ -205,7 +206,7 @@ export function CompanyFinalListRow({
   return (
     <tr key={shift.id} onClick={() => onFocusShift(shift?.id)} style={rowSelectionStyle(Number(copilotShiftId || 0) === Number(shift?.id || 0))}>
       <td>{shift.id}<AgreementBadge agreementId={shift.agreementId} /><CommercialReadonlySummary item={shift.commercialBackbone} compact /></td>
-      <td><span className="pill" data-status={shift.status}>{shift.status}</span></td>
+      <td><span className="pill" data-status={shift.status}>{displayStatusLabel(shift.status)}</span></td>
       <CompanyRoomCell shift={shift} room={room} />
       <td>{renderRoomOfferSummary(shift)}</td>
       <td>{renderCompanyOfferSummary(shift)}</td>

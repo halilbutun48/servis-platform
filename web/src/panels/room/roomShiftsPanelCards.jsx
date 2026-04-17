@@ -5,20 +5,21 @@ import {
   roomLabel,
   vehicleMetaLine,
 } from "./roomShiftsPanelUtils";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 export function AgreementBadge({ agreementId }) {
   const id = Number(agreementId);
   if (!Number.isFinite(id) || id <= 0) return null;
   return (
-    <span className="pill" data-status="AGREEMENT" title="Agreement kaynaklı otomatik shift" style={{ marginLeft: 8 }}>
-      Agreement #{id}
+    <span className="pill" data-status="AGREEMENT" title="Sözleşme kaynaklı otomatik vardiya" style={{ marginLeft: 8 }}>
+      Sözleşme #{id}
     </span>
   );
 }
 
 export function RoomStatusPill({ status }) {
   const v = String(status || "").toUpperCase();
-  return <span className="pill" data-status={v} title={v}>{v}</span>;
+  return <span className="pill" data-status={v} title={displayStatusLabel(v)}>{displayStatusLabel(v)}</span>;
 }
 
 export function RoomCompanyOfferSummary({ shift, vehiclesById }) {
@@ -50,7 +51,7 @@ export function RoomOfferSummary({ shift, vehiclesById }) {
       {rAmt != null ? <div className="muted" style={{ marginTop: 4 }}><b>R→C Tutar:</b> {formatTRY(rAmt)} ₺</div> : null}
       {shift?.roomOfferNote ? <div className="muted" style={{ marginTop: 4 }}><b>R→C Not:</b> {shift.roomOfferNote}</div> : null}
       {shift?.roomOfferToDriver ? <div className="muted" style={{ marginTop: 4 }}><b>R→D:</b> evet{shift.roomOfferDriverNote ? ` • ${shift.roomOfferDriverNote}` : ""}</div> : null}
-      <div style={{ marginTop: 8 }}><b>Karar:</b> {decision === "PENDING" ? <span className="muted">PENDING</span> : <span className="pill" data-status={decision}>{decision}</span>}{decision !== "PENDING" && decisionAtText ? <span className="muted"> • {decisionAtText}</span> : null}</div>
+      <div style={{ marginTop: 8 }}><b>Karar:</b> {decision === "PENDING" ? <span className="muted">Bekliyor</span> : <span className="pill" data-status={decision}>{decision}</span>}{decision !== "PENDING" && decisionAtText ? <span className="muted"> • {decisionAtText}</span> : null}</div>
       {shift?.roomOfferDecisionNote ? <div className="muted" style={{ marginTop: 6 }}><b>Karar Notu:</b> {shift.roomOfferDecisionNote}</div> : null}
     </div>
   );
