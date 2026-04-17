@@ -16,8 +16,10 @@ function normalizeText(v) {
 
 function normalizeCoord(v, kind) {
   if (v == null || v === "") return null;
-  const n = Number(v);
-  if (!Number.isFinite(n)) return null;
+  const n0 = Number(v);
+  if (!Number.isFinite(n0)) return null;
+  const n = Object.is(n0, -0) ? 0 : n0;
+  if (n === 0) return null;
   if (kind === "lat" && Math.abs(n) > 90) return null;
   if (kind === "lng" && Math.abs(n) > 180) return null;
   return n;

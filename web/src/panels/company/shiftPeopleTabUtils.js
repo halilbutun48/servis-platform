@@ -52,13 +52,15 @@ function normalizeCoord(v, kind) {
   // Heuristik: büyük sayıysa ölçekle.
   const abs = Math.abs(n);
   if (abs > 1000) {
-    // dene 1e6
     let scaled = n / 1e6;
     if (Math.abs(scaled) > 180) scaled = n / 1e5;
     if (Math.abs(scaled) > 180) scaled = n / 1e4;
     n = scaled;
   }
 
+  if (!Number.isFinite(n)) return null;
+  if (Object.is(n, -0)) n = 0;
+  if (n === 0) return null;
   if (kind === "lat" && Math.abs(n) > 90) return null;
   if (kind === "lng" && Math.abs(n) > 180) return null;
   return n;
