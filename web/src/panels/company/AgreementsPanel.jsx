@@ -29,6 +29,7 @@ import { consumeAgreementPrefill } from "../../utils/agreementPrefill";
 import { getAgreementOrigins } from "../../utils/agreementOriginLink";
 import { companyPath } from "../../utils/paths";
 import { AGREEMENT_STATUS_OPTIONS, agreementExtendStatusPillLabel, agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
+import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -61,110 +62,6 @@ function trDateTime(iso) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-
-function formatMoneyTry(amount) {
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return "-";
-  return `₺${n}`;
-}
-
-function formatKmTry(meters) {
-  const n = Number(meters);
-  if (!Number.isFinite(n) || n <= 0) return "-";
-  return `${(n / 1000).toFixed(1)} km`;
-}
-
-function formatMinutesTry(seconds) {
-  const n = Number(seconds);
-  if (!Number.isFinite(n) || n <= 0) return "-";
-  return `${Math.round(n / 60)} dk`;
-}
-
-function formatAmountDiff(currentAmount, nextAmount) {
-  const cur = Number(currentAmount);
-  const nxt = Number(nextAmount);
-  if (!Number.isFinite(cur) || !Number.isFinite(nxt)) return "-";
-  const diff = nxt - cur;
-  if (!diff) return "Değişiklik yok";
-  return `${diff > 0 ? "+" : "-"}₺${Math.abs(diff)}`;
-}
-
-function formatCountDiff(currentCount, nextCount, label) {
-  const cur = Number(currentCount);
-  const nxt = Number(nextCount);
-  if (!Number.isFinite(cur) || !Number.isFinite(nxt)) return null;
-  const diff = nxt - cur;
-  if (!diff) return `${label}: değişiklik yok`;
-  return `${diff > 0 ? "+" : "-"}${Math.abs(diff)} ${label}`;
-}
-
-function RouteRefreshPendingCard({ agreement, pending, bridge, origin, onOpenPreview }) {
-  if (!agreement || !pending) return null;
-  const currentAmount = agreement?.roomOfferAmount ?? agreement?.companyOfferAmount ?? null;
-  const nextAmount = pending?.companyOfferAmount ?? currentAmount;
-  const currentPeople = Number(bridge?.lastShift?.peopleCount || 0);
-  const currentStops = Number(bridge?.lastShift?.stopCount || 0);
-  const nextPeople = Number(pending?.peopleCount || 0);
-  const nextStops = Number(pending?.stopCount || 0);
-  const currentDistance = formatKmTry(bridge?.lastShift?.routeSnapshotDistanceM);
-  const currentDuration = formatMinutesTry(bridge?.lastShift?.routeSnapshotDurationSec);
-  const nextShiftPreviewId = Array.isArray(pending?.draftShiftIds) ? Number(pending.draftShiftIds[0] || 0) : 0;
-  const sourceShiftPreviewId = Number(origin?.sourceShiftId || 0);
-  const countDiffText = [
-    formatCountDiff(currentPeople, nextPeople, "personel"),
-    formatCountDiff(currentStops, nextStops, "durak"),
-  ].filter(Boolean).join(" • ");
-
-  return (
-    <div className="card" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontWeight: 900 }}>Bekleyen rota güncelleme teklifi</div>
-          <div className="muted" style={{ marginTop: 6 }}>
-            Talep #{pending.id} • {String(pending.startDate || "").slice(0, 10)} → {String(pending.endDate || "").slice(0, 10)} • {Number(pending.shiftCount || 0)} taslak vardiya
-          </div>
-        </div>
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          {sourceShiftPreviewId > 0 ? (
-            <button type="button" className="btn" onClick={() => onOpenPreview(sourceShiftPreviewId)}>
-              Mevcut Rotayı Gör
-            </button>
-          ) : null}
-          {nextShiftPreviewId > 0 ? (
-            <button type="button" className="btn" onClick={() => onOpenPreview(nextShiftPreviewId)}>
-              Yeni Rotayı Önizle
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Mevcut rota</div>
-          <div style={{ marginTop: 6, fontWeight: 900 }}>{currentPeople || "-"} personel • {currentStops || "-"} durak</div>
-          <div className="muted" style={{ marginTop: 6 }}>{currentDistance} • {currentDuration}</div>
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Önerilen yeni rota</div>
-          <div style={{ marginTop: 6, fontWeight: 900 }}>{nextPeople || "-"} personel • {nextStops || "-"} durak</div>
-          <div className="muted" style={{ marginTop: 6 }}>{weekMaskToText(pending?.weekMask) || weekMaskToText(agreement?.weekMask) || "-"} • {toHHMM(pending?.startMin)} → {toHHMM(pending?.endMin)}</div>
-          {countDiffText ? <div className="muted" style={{ marginTop: 6 }}>{countDiffText}</div> : null}
-        </div>
-        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="muted">Ücret etkisi</div>
-          <div style={{ marginTop: 6, fontWeight: 900 }}>Mevcut: {formatMoneyTry(currentAmount)}</div>
-          <div className="muted" style={{ marginTop: 6 }}>Yeni teklif: {formatMoneyTry(nextAmount)}</div>
-          <div className="muted" style={{ marginTop: 6 }}>Fark: {formatAmountDiff(currentAmount, nextAmount)}</div>
-        </div>
-      </div>
-
-      {pending?.companyOfferNote ? (
-        <div className="muted" style={{ marginTop: 10 }}>Not: {pending.companyOfferNote}</div>
-      ) : null}
-    </div>
-  );
 }
 
 function AgreementOpsBridgeCard({ agreement, room, bridge, onOpenShift, onOpenPreview }) {
@@ -291,6 +188,83 @@ function canRouteRefresh(agreement, origin) {
   const status = String(agreement?.status || "").toUpperCase();
   if (!["APPROVED", "ACTIVE"].includes(status)) return false;
   return Number(origin?.sourceShiftId || 0) > 0;
+}
+
+function summarizeRoutePreview(payload) {
+  const summary = payload?.summary || {};
+  const stops = Array.isArray(payload?.stops) ? payload.stops : [];
+  const people = Array.isArray(payload?.people) ? payload.people : [];
+
+  const distanceCandidates = [
+    summary?.distanceM,
+    summary?.routeDistanceM,
+    summary?.routeSnapshotDistanceM,
+    payload?.routeSnapshotDistanceM,
+    Number.isFinite(Number(summary?.distanceKmSnapshot)) ? Number(summary.distanceKmSnapshot) * 1000 : null,
+    Number.isFinite(Number(summary?.distanceKmLearned)) ? Number(summary.distanceKmLearned) * 1000 : null,
+    Number.isFinite(Number(summary?.distanceKm)) ? Number(summary.distanceKm) * 1000 : null,
+  ];
+  const durationCandidates = [
+    summary?.durationSec,
+    summary?.routeDurationSec,
+    summary?.routeSnapshotDurationSec,
+    payload?.routeSnapshotDurationSec,
+    Number.isFinite(Number(summary?.durationMinSnapshot)) ? Number(summary.durationMinSnapshot) * 60 : null,
+    Number.isFinite(Number(summary?.durationMinLearned)) ? Number(summary.durationMinLearned) * 60 : null,
+    Number.isFinite(Number(summary?.durationMin)) ? Number(summary.durationMin) * 60 : null,
+  ];
+  const firstFinite = (list) => {
+    for (const value of list) {
+      const n = Number(value);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+  };
+
+  return {
+    peopleCount: Math.max(0, Number(summary?.peopleCount ?? people.length ?? 0) || 0),
+    stopCount: Math.max(0, Number(summary?.stopCount ?? stops.length ?? 0) || 0),
+    distanceM: Math.max(0, firstFinite(distanceCandidates)),
+    durationSec: Math.max(0, firstFinite(durationCandidates)),
+  };
+}
+
+function formatKm(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  const km = n / 1000;
+  return km >= 10 ? `${Math.round(km)} km` : `${km.toFixed(1)} km`;
+}
+
+function formatDuration(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return `${Math.round(n / 60)} dk`;
+}
+
+function routeSummaryText(summary, fallback = null) {
+  const src = summary || fallback || {};
+  const parts = [];
+  parts.push(`${Math.max(0, Number(src?.peopleCount || 0))} personel`);
+  parts.push(`${Math.max(0, Number(src?.stopCount || 0))} durak`);
+  parts.push(formatKm(src?.distanceM));
+  parts.push(formatDuration(src?.durationSec));
+  return parts.join(" · ");
+}
+
+function routeDiffText(currentSummary, proposedSummary) {
+  const current = currentSummary || {};
+  const proposed = proposedSummary || {};
+  const parts = [];
+  const peopleDelta = Number(proposed?.peopleCount || 0) - Number(current?.peopleCount || 0);
+  const stopDelta = Number(proposed?.stopCount || 0) - Number(current?.stopCount || 0);
+  const distanceDelta = Number(proposed?.distanceM || 0) - Number(current?.distanceM || 0);
+  const durationDelta = Number(proposed?.durationSec || 0) - Number(current?.durationSec || 0);
+  if (peopleDelta) parts.push(`${peopleDelta > 0 ? '+' : ''}${peopleDelta} personel`);
+  if (stopDelta) parts.push(`${stopDelta > 0 ? '+' : ''}${stopDelta} durak`);
+  if (distanceDelta) parts.push(`${distanceDelta > 0 ? '+' : ''}${formatKm(Math.abs(distanceDelta))}`);
+  if (durationDelta) parts.push(`${durationDelta > 0 ? '+' : ''}${formatDuration(Math.abs(durationDelta))}`);
+  return parts.length ? parts.join(" · ") : "Personel / durak değişikliği yok";
 }
 
 const PLAN_TEMPLATES = [
@@ -816,11 +790,54 @@ export default function AgreementsPanel() {
     () => (selectedAgreementRow?.a ? agreementOrigins?.[String(selectedAgreementRow.a.id)] || null : null),
     [selectedAgreementRow, agreementOrigins]
   );
+  const selectedRouteRefreshLaunch = useMemo(
+    () => (
+      selectedAgreementRow?.a
+        ? buildRouteRefreshLaunch({ agreement: selectedAgreementRow.a, room: selectedAgreementRow.room, origin: selectedAgreementOrigin })
+        : null
+    ),
+    [selectedAgreementRow, selectedAgreementOrigin]
+  );
   const selectedRouteRefreshPending = useMemo(
     () => (selectedAgreementRow?.a ? routeRefreshPendingByAgreement?.[String(selectedAgreementRow.a.id)] || null : null),
     [selectedAgreementRow, routeRefreshPendingByAgreement]
   );
   const hasPendingRouteRefresh = (agreementId) => Boolean(routeRefreshPendingByAgreement?.[String(agreementId)]);
+  const [routeRefreshPreviewSummary, setRouteRefreshPreviewSummary] = useState({ loading: false, current: null, proposed: null, err: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRouteRefreshPreviewSummary() {
+      const pending = selectedRouteRefreshPending;
+      const sourceShiftId = Number(selectedAgreementOrigin?.sourceShiftId || 0);
+      const draftShiftIds = Array.isArray(pending?.draftShiftIds) ? pending.draftShiftIds.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0) : [];
+      if (!token || !pending || !sourceShiftId || !draftShiftIds.length) {
+        setRouteRefreshPreviewSummary({ loading: false, current: null, proposed: null, err: "" });
+        return;
+      }
+      setRouteRefreshPreviewSummary((prev) => ({ ...prev, loading: true, err: "" }));
+      try {
+        const [currentPayload, proposedPayload] = await Promise.all([
+          getShiftRoutePreview(token, sourceShiftId, { force: true, ttlMs: 0, delayMs: 0 }),
+          getShiftRoutePreview(token, draftShiftIds[0], { force: true, ttlMs: 0, delayMs: 0 }),
+        ]);
+        if (cancelled) return;
+        setRouteRefreshPreviewSummary({
+          loading: false,
+          current: summarizeRoutePreview(currentPayload),
+          proposed: summarizeRoutePreview(proposedPayload),
+          err: "",
+        });
+      } catch (e) {
+        if (cancelled) return;
+        setRouteRefreshPreviewSummary({ loading: false, current: null, proposed: null, err: e?.message || "Rota özeti yüklenemedi" });
+      }
+    }
+    void loadRouteRefreshPreviewSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, selectedAgreementOrigin, selectedRouteRefreshPending]);
 
   useEffect(() => {
     const row = selectedAgreementRow;
@@ -947,13 +964,79 @@ export default function AgreementsPanel() {
       ) : null}
 
       {selectedRouteRefreshPending ? (
-        <RouteRefreshPendingCard
-          agreement={selectedAgreementRow?.a}
-          pending={selectedRouteRefreshPending}
-          bridge={selectedAgreementBridge}
-          origin={selectedAgreementOrigin}
-          onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
-        />
+        <div className="card" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+          <div style={{ fontWeight: 900 }}>Bekleyen rota güncelleme teklifi</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Talep #{selectedRouteRefreshPending.id} • {String(selectedRouteRefreshPending.startDate || "").slice(0, 10)} → {String(selectedRouteRefreshPending.endDate || "").slice(0, 10)} • {Number(selectedRouteRefreshPending.shiftCount || 0)} taslak vardiya
+          </div>
+          {selectedRouteRefreshPending.companyOfferNote ? (
+            <div className="muted" style={{ marginTop: 6 }}>Not: {selectedRouteRefreshPending.companyOfferNote}</div>
+          ) : null}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>
+            <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted">Mevcut rota</div>
+              <div style={{ fontWeight: 900, marginTop: 4 }}>
+                {routeSummaryText(routeRefreshPreviewSummary.current, selectedAgreementBridge?.lastShift ? {
+                  peopleCount: Number(selectedAgreementBridge.lastShift.peopleCount || 0),
+                  stopCount: Number(selectedAgreementBridge.lastShift.stopCount || 0),
+                  distanceM: Number(selectedAgreementBridge.lastShift.routeSnapshotDistanceM || 0),
+                  durationSec: Number(selectedAgreementBridge.lastShift.routeSnapshotDurationSec || 0),
+                } : null)}
+              </div>
+            </div>
+            <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted">Önerilen yeni rota</div>
+              <div style={{ fontWeight: 900, marginTop: 4 }}>
+                {routeSummaryText(routeRefreshPreviewSummary.proposed, {
+                  peopleCount: Number(selectedRouteRefreshPending.peopleCount || 0),
+                  stopCount: Number(selectedRouteRefreshPending.stopCount || 0),
+                })}
+              </div>
+            </div>
+            <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted">Fark</div>
+              <div style={{ fontWeight: 900, marginTop: 4 }}>
+                {routeDiffText(
+                  routeRefreshPreviewSummary.current || (selectedAgreementBridge?.lastShift ? {
+                    peopleCount: Number(selectedAgreementBridge.lastShift.peopleCount || 0),
+                    stopCount: Number(selectedAgreementBridge.lastShift.stopCount || 0),
+                    distanceM: Number(selectedAgreementBridge.lastShift.routeSnapshotDistanceM || 0),
+                    durationSec: Number(selectedAgreementBridge.lastShift.routeSnapshotDurationSec || 0),
+                  } : null),
+                  routeRefreshPreviewSummary.proposed || {
+                    peopleCount: Number(selectedRouteRefreshPending.peopleCount || 0),
+                    stopCount: Number(selectedRouteRefreshPending.stopCount || 0),
+                  }
+                )}
+              </div>
+            </div>
+            <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted">Ücret etkisi</div>
+              <div style={{ fontWeight: 900, marginTop: 4 }}>
+                {(() => {
+                  const currentAmount = Number(selectedRouteRefreshLaunch?.currentCompanyOfferAmount ?? selectedAgreementRow?.a?.companyOfferAmount ?? 0);
+                  const nextAmount = Number(selectedRouteRefreshPending.companyOfferAmount ?? currentAmount);
+                  const diff = nextAmount - currentAmount;
+                  const fmt = (n) => new Intl.NumberFormat("tr-TR").format(Number(n || 0)) + " ₺";
+                  return `${fmt(currentAmount)} → ${fmt(nextAmount)} (${diff > 0 ? "+" : ""}${fmt(diff)})`;
+                })()}
+              </div>
+            </div>
+          </div>
+          {routeRefreshPreviewSummary.err ? (
+            <div className="muted" style={{ marginTop: 8 }}>Rota özeti yüklenemedi: {routeRefreshPreviewSummary.err}</div>
+          ) : routeRefreshPreviewSummary.loading ? (
+            <div className="muted" style={{ marginTop: 8 }}>Rota özeti yükleniyor…</div>
+          ) : null}
+          <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <button type="button" className="btn" disabled={!Number(selectedAgreementOrigin?.sourceShiftId || 0)} onClick={() => openAgreementShift(selectedAgreementOrigin.sourceShiftId, true)}>
+              Mevcut Rotayı Gör
+            </button>
+            <button type="button" className="btn" disabled={!Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0)} onClick={() => openAgreementShift(Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0), true)}>
+              Yeni Rotayı Önizle
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {selectedAgreementRow?.a ? (
