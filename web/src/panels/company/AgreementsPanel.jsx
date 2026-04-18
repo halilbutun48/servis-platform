@@ -63,6 +63,110 @@ function trDateTime(iso) {
   });
 }
 
+
+function formatMoneyTry(amount) {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return "-";
+  return `₺${n}`;
+}
+
+function formatKmTry(meters) {
+  const n = Number(meters);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return `${(n / 1000).toFixed(1)} km`;
+}
+
+function formatMinutesTry(seconds) {
+  const n = Number(seconds);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return `${Math.round(n / 60)} dk`;
+}
+
+function formatAmountDiff(currentAmount, nextAmount) {
+  const cur = Number(currentAmount);
+  const nxt = Number(nextAmount);
+  if (!Number.isFinite(cur) || !Number.isFinite(nxt)) return "-";
+  const diff = nxt - cur;
+  if (!diff) return "Değişiklik yok";
+  return `${diff > 0 ? "+" : "-"}₺${Math.abs(diff)}`;
+}
+
+function formatCountDiff(currentCount, nextCount, label) {
+  const cur = Number(currentCount);
+  const nxt = Number(nextCount);
+  if (!Number.isFinite(cur) || !Number.isFinite(nxt)) return null;
+  const diff = nxt - cur;
+  if (!diff) return `${label}: değişiklik yok`;
+  return `${diff > 0 ? "+" : "-"}${Math.abs(diff)} ${label}`;
+}
+
+function RouteRefreshPendingCard({ agreement, pending, bridge, origin, onOpenPreview }) {
+  if (!agreement || !pending) return null;
+  const currentAmount = agreement?.roomOfferAmount ?? agreement?.companyOfferAmount ?? null;
+  const nextAmount = pending?.companyOfferAmount ?? currentAmount;
+  const currentPeople = Number(bridge?.lastShift?.peopleCount || 0);
+  const currentStops = Number(bridge?.lastShift?.stopCount || 0);
+  const nextPeople = Number(pending?.peopleCount || 0);
+  const nextStops = Number(pending?.stopCount || 0);
+  const currentDistance = formatKmTry(bridge?.lastShift?.routeSnapshotDistanceM);
+  const currentDuration = formatMinutesTry(bridge?.lastShift?.routeSnapshotDurationSec);
+  const nextShiftPreviewId = Array.isArray(pending?.draftShiftIds) ? Number(pending.draftShiftIds[0] || 0) : 0;
+  const sourceShiftPreviewId = Number(origin?.sourceShiftId || 0);
+  const countDiffText = [
+    formatCountDiff(currentPeople, nextPeople, "personel"),
+    formatCountDiff(currentStops, nextStops, "durak"),
+  ].filter(Boolean).join(" • ");
+
+  return (
+    <div className="card" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontWeight: 900 }}>Bekleyen rota güncelleme teklifi</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Talep #{pending.id} • {String(pending.startDate || "").slice(0, 10)} → {String(pending.endDate || "").slice(0, 10)} • {Number(pending.shiftCount || 0)} taslak vardiya
+          </div>
+        </div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          {sourceShiftPreviewId > 0 ? (
+            <button type="button" className="btn" onClick={() => onOpenPreview(sourceShiftPreviewId)}>
+              Mevcut Rotayı Gör
+            </button>
+          ) : null}
+          {nextShiftPreviewId > 0 ? (
+            <button type="button" className="btn" onClick={() => onOpenPreview(nextShiftPreviewId)}>
+              Yeni Rotayı Önizle
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="muted">Mevcut rota</div>
+          <div style={{ marginTop: 6, fontWeight: 900 }}>{currentPeople || "-"} personel • {currentStops || "-"} durak</div>
+          <div className="muted" style={{ marginTop: 6 }}>{currentDistance} • {currentDuration}</div>
+        </div>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="muted">Önerilen yeni rota</div>
+          <div style={{ marginTop: 6, fontWeight: 900 }}>{nextPeople || "-"} personel • {nextStops || "-"} durak</div>
+          <div className="muted" style={{ marginTop: 6 }}>{weekMaskToText(pending?.weekMask) || weekMaskToText(agreement?.weekMask) || "-"} • {toHHMM(pending?.startMin)} → {toHHMM(pending?.endMin)}</div>
+          {countDiffText ? <div className="muted" style={{ marginTop: 6 }}>{countDiffText}</div> : null}
+        </div>
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+          <div className="muted">Ücret etkisi</div>
+          <div style={{ marginTop: 6, fontWeight: 900 }}>Mevcut: {formatMoneyTry(currentAmount)}</div>
+          <div className="muted" style={{ marginTop: 6 }}>Yeni teklif: {formatMoneyTry(nextAmount)}</div>
+          <div className="muted" style={{ marginTop: 6 }}>Fark: {formatAmountDiff(currentAmount, nextAmount)}</div>
+        </div>
+      </div>
+
+      {pending?.companyOfferNote ? (
+        <div className="muted" style={{ marginTop: 10 }}>Not: {pending.companyOfferNote}</div>
+      ) : null}
+    </div>
+  );
+}
+
 function AgreementOpsBridgeCard({ agreement, room, bridge, onOpenShift, onOpenPreview }) {
   if (!agreement) return null;
   const generatedCount = Number(bridge?.generatedCount || 0);
@@ -843,15 +947,13 @@ export default function AgreementsPanel() {
       ) : null}
 
       {selectedRouteRefreshPending ? (
-        <div className="card" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-          <div style={{ fontWeight: 900 }}>Bekleyen rota güncelleme teklifi</div>
-          <div className="muted" style={{ marginTop: 6 }}>
-            Talep #{selectedRouteRefreshPending.id} • {String(selectedRouteRefreshPending.startDate || "").slice(0, 10)} → {String(selectedRouteRefreshPending.endDate || "").slice(0, 10)} • {Number(selectedRouteRefreshPending.shiftCount || 0)} taslak vardiya
-          </div>
-          {selectedRouteRefreshPending.companyOfferNote ? (
-            <div className="muted" style={{ marginTop: 6 }}>Not: {selectedRouteRefreshPending.companyOfferNote}</div>
-          ) : null}
-        </div>
+        <RouteRefreshPendingCard
+          agreement={selectedAgreementRow?.a}
+          pending={selectedRouteRefreshPending}
+          bridge={selectedAgreementBridge}
+          origin={selectedAgreementOrigin}
+          onOpenPreview={(shiftId) => openAgreementShift(shiftId, true)}
+        />
       ) : null}
 
       {selectedAgreementRow?.a ? (
