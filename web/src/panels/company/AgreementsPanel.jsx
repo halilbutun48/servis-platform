@@ -178,6 +178,8 @@ function buildRouteRefreshLaunch({ agreement, room, origin }) {
     pattern: String(agreement?.pattern || "ONE_WAY").toUpperCase(),
     hubLat: agreement?.hubLat ?? null,
     hubLng: agreement?.hubLng ?? null,
+    currentCompanyOfferAmount: agreement?.companyOfferAmount ?? null,
+    currentRoomOfferAmount: agreement?.roomOfferAmount ?? null,
   };
 }
 
@@ -260,6 +262,7 @@ export default function AgreementsPanel() {
   const [items, setItems] = useState([]);
   const [shiftStats, setShiftStats] = useState({}); // ✅ M59
   const [opsBridge, setOpsBridge] = useState({});
+  const [routeRefreshPendingByAgreement, setRouteRefreshPendingByAgreement] = useState({});
   const shiftStatsCacheRef = useRef(new Map());
 
   const [take, setTake] = useState(20);
@@ -424,14 +427,25 @@ export default function AgreementsPanel() {
         }
 
         if (ids.length) {
-          const bridge = await api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } });
+          const [bridge, routeRefresh] = await Promise.all([
+            api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } }),
+            api("/api/agreements/route-refresh?status=PENDING", { token }).catch(() => ({ items: [] })),
+          ]);
           setOpsBridge(bridge?.byId ?? {});
+          const pendingMap = {};
+          for (const item of (Array.isArray(routeRefresh?.items) ? routeRefresh.items : [])) {
+            const aid = Number(item?.agreementId || 0);
+            if (aid > 0 && !pendingMap[String(aid)]) pendingMap[String(aid)] = item;
+          }
+          setRouteRefreshPendingByAgreement(pendingMap);
         } else {
           setOpsBridge({});
+          setRouteRefreshPendingByAgreement({});
         }
       } catch {
         setShiftStats({});
         setOpsBridge({});
+        setRouteRefreshPendingByAgreement({});
       }
 
     } catch (e) {
@@ -698,6 +712,11 @@ export default function AgreementsPanel() {
     () => (selectedAgreementRow?.a ? agreementOrigins?.[String(selectedAgreementRow.a.id)] || null : null),
     [selectedAgreementRow, agreementOrigins]
   );
+  const selectedRouteRefreshPending = useMemo(
+    () => (selectedAgreementRow?.a ? routeRefreshPendingByAgreement?.[String(selectedAgreementRow.a.id)] || null : null),
+    [selectedAgreementRow, routeRefreshPendingByAgreement]
+  );
+  const hasPendingRouteRefresh = (agreementId) => Boolean(routeRefreshPendingByAgreement?.[String(agreementId)]);
 
   useEffect(() => {
     const row = selectedAgreementRow;
@@ -815,11 +834,23 @@ export default function AgreementsPanel() {
               Kaynak Vardiyaya Git
             </button>
             {canRouteRefresh(selectedAgreementRow?.a, selectedAgreementOrigin) ? (
-              <button type="button" className="btn" disabled={busy} onClick={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}>
-                Rota Güncelle
+              <button type="button" className="btn" disabled={busy || Boolean(selectedRouteRefreshPending)} onClick={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}>
+                {selectedRouteRefreshPending ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
               </button>
             ) : null}
           </div>
+        </div>
+      ) : null}
+
+      {selectedRouteRefreshPending ? (
+        <div className="card" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
+          <div style={{ fontWeight: 900 }}>Bekleyen rota güncelleme teklifi</div>
+          <div className="muted" style={{ marginTop: 6 }}>
+            Talep #{selectedRouteRefreshPending.id} • {String(selectedRouteRefreshPending.startDate || "").slice(0, 10)} → {String(selectedRouteRefreshPending.endDate || "").slice(0, 10)} • {Number(selectedRouteRefreshPending.shiftCount || 0)} taslak vardiya
+          </div>
+          {selectedRouteRefreshPending.companyOfferNote ? (
+            <div className="muted" style={{ marginTop: 6 }}>Not: {selectedRouteRefreshPending.companyOfferNote}</div>
+          ) : null}
         </div>
       ) : null}
 
@@ -923,8 +954,8 @@ export default function AgreementsPanel() {
                       </>
                     ) : null}
                     {canRouteRefresh(a, agreementOrigins?.[String(a.id)]) ? (
-                      <button type="button" className="btn" disabled={busy} onClick={() => startRouteRefresh(a, room)}>
-                        Rota Güncelle
+                      <button type="button" className="btn" disabled={busy || hasPendingRouteRefresh(a.id)} onClick={() => startRouteRefresh(a, room)}>
+                        {hasPendingRouteRefresh(a.id) ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
                       </button>
                     ) : null}
                     <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE" || a.status === "REJECTED"} onClick={() => cancelAgreement(a.id)}>

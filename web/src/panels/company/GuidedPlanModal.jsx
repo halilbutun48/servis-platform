@@ -59,6 +59,7 @@ import {
   refreshGuidedDraftShiftsAction,
   saveGuidedCompanyHub,
   sendGuidedBulkOffersAction,
+  sendGuidedRouteRefreshRequestAction,
 } from "./guidedPlanModalActions";
 
 export default function GuidedPlanModal({
@@ -652,10 +653,13 @@ export default function GuidedPlanModal({
     if (!open) return;
     if (step !== 3) return;
     setSelRoomIds({});
-    setOfferAmount("");
+    const initialRouteRefreshAmount = routeRefreshMode
+      ? (launchContext?.currentCompanyOfferAmount != null ? String(launchContext.currentCompanyOfferAmount) : "")
+      : "";
+    setOfferAmount(initialRouteRefreshAmount);
     setOfferNote("");
     setSentOk(false);
-  }, [open, step, draftShiftIds.join("|")]);
+  }, [open, step, draftShiftIds.join("|"), routeRefreshMode, launchContext]);
 
   useEffect(() => {
     const keys = new Set((durationOptions || []).map((x) => x.key));
@@ -953,13 +957,7 @@ async function sendBulkOffers() {
     setInfo("");
     if (!token) return;
     if (!draftShiftIds.length) {
-      setErr("Önce taslak shift oluşturmalısın.");
-      return;
-    }
-
-    const roomIds = selectedRoomIds;
-    if (!roomIds.length) {
-      setErr("En az 1 room seç.");
+      setErr("Önce taslak vardiya oluşturmalısın.");
       return;
     }
     if (organization && !orgDraftCompletion.ready) {
@@ -973,17 +971,34 @@ async function sendBulkOffers() {
 
     setBusy(true);
     try {
-      const result = await sendGuidedBulkOffersAction({ token, draftShiftIds, selectedRoomIds: roomIds, offerAmount, offerNote });
-      const skippedCount = Array.isArray(result?.skippedRoomIds) ? result.skippedRoomIds.length : 0;
-      setSentOk(true);
-      if (result?.allBlocked) {
-        setOfferOutcome("agreement_covered");
-        setInfo("ℹ️ Seçilen room'lar bu zaman penceresinde zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; taslak vardiyalar korundu.");
+      if (routeRefreshMode) {
+        const agreementId = Number(launchContext?.agreementId || 0);
+        const roomId = Number(launchContext?.roomId || 0);
+        const sourceShiftId = Number(launchContext?.sourceShiftId || 0);
+        const created = await sendGuidedRouteRefreshRequestAction({
+          token, agreementId, roomId, sourceShiftId, draftShiftIds, offerAmount, offerNote,
+        });
+        setSentOk(true);
+        setOfferOutcome("route_refresh_pending");
+        setInfo(`✅ Rota güncelleme teklifi gönderildi (${launchContext?.roomName || `Oda #${roomId || "?"}`}). Talep #${Number(created?.item?.id || created?.id || 0) || "?"} olarak kaydedildi.`);
       } else {
-        setOfferOutcome("sent");
-        const sentText = `✅ Gönderildi (shift sayısı: ${Number(result?.sentCount || 0)}).`;
-        const skipText = skippedCount > 0 ? ` Not: ${skippedCount} room teklif atlandı (aktif sözleşme çakışması).` : "";
-        setInfo(`${sentText}${skipText}`);
+        const roomIds = selectedRoomIds;
+        if (!roomIds.length) {
+          setErr("En az 1 room seç.");
+          return;
+        }
+        const result = await sendGuidedBulkOffersAction({ token, draftShiftIds, selectedRoomIds: roomIds, offerAmount, offerNote });
+        const skippedCount = Array.isArray(result?.skippedRoomIds) ? result.skippedRoomIds.length : 0;
+        setSentOk(true);
+        if (result?.allBlocked) {
+          setOfferOutcome("agreement_covered");
+          setInfo("ℹ️ Seçilen room'lar bu zaman penceresinde zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; taslak vardiyalar korundu.");
+        } else {
+          setOfferOutcome("sent");
+          const sentText = `✅ Gönderildi (vardiya sayısı: ${Number(result?.sentCount || 0)}).`;
+          const skipText = skippedCount > 0 ? ` Not: ${skippedCount} room teklif atlandı (aktif sözleşme çakışması).` : "";
+          setInfo(`${sentText}${skipText}`);
+        }
       }
     } catch (e) {
       setErr(getApiErrorMessage(e));
@@ -1013,7 +1028,7 @@ async function sendBulkOffers() {
     >
       <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Guided Mode — Rota Güncelle" : "Guided Mode — Yeni Plan"}</div>
+          <div style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Rehberli Mod — Rota Güncelle" : "Rehberli Mod — Yeni Plan"}</div>
           <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step, who, organization)}</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -1038,7 +1053,7 @@ async function sendBulkOffers() {
             <div className="muted" style={{ marginTop: 6 }}>{String(launchContext.sourceSummary)}</div>
           ) : null}
           <div className="muted" style={{ marginTop: 6 }}>
-            Bu turda mevcut Guided Mode aynı sözleşme bağlamıyla açıldı. Planı düzenleyip kişi/durak tarafını yeniden hazırlayabilirsin.
+            Bu turda mevcut rehberli akış aynı sözleşme bağlamıyla açıldı. Planı düzenleyip kişi/durak tarafını yeniden hazırlayabilirsin.
           </div>
         </div>
       ) : null}
@@ -1213,6 +1228,8 @@ async function sendBulkOffers() {
           osrmResById={osrmResById}
           onReloadRooms={onReloadRooms}
           roomsSupported={roomsSupported}
+          routeRefreshMode={routeRefreshMode}
+          routeRefreshLaunch={launchContext}
           sentOk={sentOk}
           offerOutcome={offerOutcome}
           roomQ={roomQ}

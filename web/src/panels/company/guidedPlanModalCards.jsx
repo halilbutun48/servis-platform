@@ -23,8 +23,8 @@ export function GuidedCompanyGeoGateCard({ companyGeoGate }) {
       <div style={{ fontWeight: 800 }}>{companyGeoGate.blocking ? "⚠ Company planı henüz tam değil" : "✅ Company planı koordinat olarak hazır"}</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {companyGeoGate.blocking
-          ? `İncelenecek: ${Number(companyGeoGate?.geoStats?.review || 0)} • Başarısız: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
-          : `Kişi kayıtları koordinatlı. İncelenecek: ${Number(companyGeoGate?.geoStats?.review || 0)} • Başarısız: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
+          ? `Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}. Eksik koordinatlı kişi varken taslak shift doğrulanamaz.`
+          : `Kişi kayıtları koordinatlı. Review: ${Number(companyGeoGate?.geoStats?.review || 0)} • Failed: ${Number(companyGeoGate?.geoStats?.failed || 0)}.`}
       </div>
       <div className="muted" style={{ marginTop: 6 }}>Not: Bu kart sadece koordinat hazırlığını gösterir. Teklif için ayrıca OSRM rota doğrulaması gerekir.</div>
     </div>
@@ -152,10 +152,23 @@ export function GuidedRoomSelectionCard({ room, score, selected, onToggle }) {
   );
 }
 
+function amountTry(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+}
+
+function moneyTry(amount) {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return `${new Intl.NumberFormat("tr-TR").format(n)} ₺`;
+}
+
 export function GuidedBulkOffersCard({
   busy,
   onReloadRooms,
   roomsSupported,
+  routeRefreshMode,
+  routeRefreshLaunch,
   sentOk,
   offerOutcome,
   roomQ,
@@ -175,19 +188,29 @@ export function GuidedBulkOffersCard({
   orgDraftCompletion,
   offerOsrmGate,
 }) {
+  const lockedRoomLabel = routeRefreshLaunch?.roomName
+    ? `${routeRefreshLaunch.roomName}${routeRefreshLaunch?.roomId ? ` (#${routeRefreshLaunch.roomId})` : ""}`
+    : (routeRefreshLaunch?.roomId ? `Oda #${routeRefreshLaunch.roomId}` : "-");
+
   return (
     <div className="card">
       <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div>
-          <div style={{ fontWeight: 800 }}>Toplu teklif gönder</div>
-          <div className="muted">Seçili room’lara tüm taslak shift’ler için teklif gider.</div>
+          <div style={{ fontWeight: 800 }}>{routeRefreshMode ? "Rota güncelleme teklifi gönder" : "Toplu teklif gönder"}</div>
+          <div className="muted">
+            {routeRefreshMode
+              ? "Bu güncelleme yalnızca seçili sözleşmenin aynı odasına gider; market teklif akışı kullanılmaz."
+              : "Seçili room’lara tüm taslak shift’ler için teklif gider."}
+          </div>
         </div>
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={() => onReloadRooms?.()} disabled={busy || !roomsSupported}>Room’ları yenile</button>
-        </div>
+        {!routeRefreshMode ? (
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => onReloadRooms?.()} disabled={busy || !roomsSupported}>Room’ları yenile</button>
+          </div>
+        ) : null}
       </div>
 
-      {!roomsSupported ? (
+      {!routeRefreshMode && !roomsSupported ? (
         <div className="muted" style={{ marginTop: 8, color: "#b85" }}>
           /api/rooms endpoint bulunamadı. Önce Room directory (M22+) çalışmalı.
         </div>
@@ -195,59 +218,113 @@ export function GuidedBulkOffersCard({
 
       {!sentOk ? (
         <>
-          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div>
-              <label className="muted">Room ara</label>
-              <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="name contains" disabled={busy} />
-              <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
-              <div className="muted" style={{ marginTop: 6 }}>Hub konumu eksik room'lar da listelenir; hub eksikliği teklif engeli değildir.</div>
+          {routeRefreshMode ? (
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
+                <div style={{ fontWeight: 800 }}>Hedef oda</div>
+                <div className="muted" style={{ marginTop: 6 }}>{lockedRoomLabel}</div>
+                <div className="muted" style={{ marginTop: 6 }}>
+                  Kaynak vardiya #{Number(routeRefreshLaunch?.sourceShiftId || 0) || "?"} üzerinden hazırlanan taslak vardiyalar aynı odaya rota güncelleme teklifi olarak gönderilir.
+                </div>
+              </div>
+              <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div className="card" style={{ border: "1px solid rgba(88,166,255,.18)" }}>
+                  <div style={{ fontWeight: 800 }}>Mevcut sözleşme ücreti</div>
+                  <div className="muted" style={{ marginTop: 6 }}>{moneyTry(routeRefreshLaunch?.currentCompanyOfferAmount)}</div>
+                  {routeRefreshLaunch?.currentRoomOfferAmount != null ? (
+                    <div className="muted" style={{ marginTop: 6 }}>Oda karşı teklifi: {moneyTry(routeRefreshLaunch?.currentRoomOfferAmount)}</div>
+                  ) : null}
+                </div>
+                <div className="card" style={{ border: "1px solid rgba(88,166,255,.18)" }}>
+                  <div style={{ fontWeight: 800 }}>Yeni ücret önerisi</div>
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Rota değişikliği ticari etki yaratıyorsa bu alandan yeni teklif tutarını gir.
+                  </div>
+                  <label className="muted" style={{ marginTop: 8 }}>Önerilen yeni ücret (₺) (isteğe bağlı)</label>
+                  <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 27500" disabled={busy} />
+                  <div className="muted" style={{ marginTop: 8 }}>
+                    Fark: {(() => {
+                      const current = amountTry(routeRefreshLaunch?.currentCompanyOfferAmount);
+                      const next = amountTry(offerAmount);
+                      if (current == null && next == null) return "-";
+                      if (current == null && next != null) return `+${moneyTry(next)}`;
+                      if (current != null && next == null) return "Mevcut tutar korunur";
+                      const diff = Number(next || 0) - Number(current || 0);
+                      if (diff === 0) return "Değişiklik yok";
+                      const sign = diff > 0 ? "+" : "-";
+                      return `${sign}${moneyTry(Math.abs(diff))}`;
+                    })()}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="muted">Not (isteğe bağlı)</label>
+                <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. 1 personel değişti, duraklar güncellendi" disabled={busy} />
+              </div>
             </div>
-            <div>
-              <label className="muted">Tutar (₺) (isteğe bağlı)</label>
-              <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
-              <label className="muted" style={{ marginTop: 8 }}>Not (isteğe bağlı)</label>
-              <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. sabah giriş" disabled={busy} />
-            </div>
-          </div>
+          ) : (
+            <>
+              <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <label className="muted">Room ara</label>
+                  <input value={roomQ} onChange={(e) => setRoomQ(e.target.value)} placeholder="name contains" disabled={busy} />
+                  <div className="muted" style={{ marginTop: 8 }}>Toplam room: {(rooms || []).length} • Seçili: {selectedRoomCount}</div>
+                  <div className="muted" style={{ marginTop: 6 }}>Hub konumu eksik room'lar da listelenir; hub eksikliği teklif engeli değildir.</div>
+                </div>
+                <div>
+                  <label className="muted">Tutar (₺) (isteğe bağlı)</label>
+                  <input value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder="örn. 25000" disabled={busy} />
+                  <label className="muted" style={{ marginTop: 8 }}>Not (isteğe bağlı)</label>
+                  <input value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="örn. sabah giriş" disabled={busy} />
+                </div>
+              </div>
 
-          <div className="card" style={{ marginTop: 10, maxHeight: 260, overflow: "auto" }}>
-            {(roomsFiltered || []).map((room) => {
-              const roomId = String(room.id);
-              const score = roomScores[roomId] || null;
-              return (
-                <GuidedRoomSelectionCard
-                  key={room.id}
-                  room={room}
-                  score={score}
-                  selected={selRoomIds[roomId]}
-                  onToggle={(checked) => setSelRoomIds((p) => ({ ...p, [roomId]: checked }))}
-                />
-              );
-            })}
-            {!roomsFiltered.length ? <div className="muted">Room bulunamadı.</div> : null}
-          </div>
+              <div className="card" style={{ marginTop: 10, maxHeight: 260, overflow: "auto" }}>
+                {(roomsFiltered || []).map((room) => {
+                  const roomId = String(room.id);
+                  const score = roomScores[roomId] || null;
+                  return (
+                    <GuidedRoomSelectionCard
+                      key={room.id}
+                      room={room}
+                      score={score}
+                      selected={selRoomIds[roomId]}
+                      onToggle={(checked) => setSelRoomIds((p) => ({ ...p, [roomId]: checked }))}
+                    />
+                  );
+                })}
+                {!roomsFiltered.length ? <div className="muted">Room bulunamadı.</div> : null}
+              </div>
+            </>
+          )}
 
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => {
-                const next = {};
-                for (const room of roomsFiltered || []) next[String(room.id)] = true;
-                setSelRoomIds(next);
-              }}
-              disabled={busy || !roomsFiltered.length}
-            >
-              Hepsini Seç
-            </button>
-            <button type="button" onClick={() => { setSelRoomIds({}); setOfferAmount(""); setOfferNote(""); }} disabled={busy}>
-              Temizle
-            </button>
+            {!routeRefreshMode ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = {};
+                    for (const room of roomsFiltered || []) next[String(room.id)] = true;
+                    setSelRoomIds(next);
+                  }}
+                  disabled={busy || !roomsFiltered.length}
+                >
+                  Hepsini Seç
+                </button>
+                <button type="button" onClick={() => { setSelRoomIds({}); setOfferAmount(""); setOfferNote(""); }} disabled={busy}>
+                  Temizle
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => setOfferNote("")} disabled={busy}>Notu Temizle</button>
+            )}
             <button
               type="button"
               onClick={sendBulkOffers}
-              disabled={busy || !roomsSupported || selectedRoomCount < 1 || (organization && !orgDraftCompletion.ready) || (!organization && offerOsrmGate.blocking)}
+              disabled={busy || (!routeRefreshMode && !roomsSupported) || (!routeRefreshMode && selectedRoomCount < 1) || (organization && !orgDraftCompletion.ready) || (!organization && offerOsrmGate.blocking)}
             >
-              Toplu Teklifleri Gönder
+              {routeRefreshMode ? "Rota Güncelleme Teklifi Gönder" : "Toplu Teklifleri Gönder"}
             </button>
           </div>
         </>
@@ -255,7 +332,9 @@ export function GuidedBulkOffersCard({
         <div className="muted" style={{ marginTop: 10 }}>
           {offerOutcome === "agreement_covered"
             ? "Bu plan seçilen room'larda zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; devam etmek için Bitir'e bas."
-            : "Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas."}
+            : offerOutcome === "route_refresh_pending"
+              ? "Rota güncelleme teklifi aynı odaya gönderildi. Karar gelene kadar bu sözleşmede bekleyen güncelleme olarak kalır."
+              : "Teklifler gönderildi. Bu adım tamamlandı; devam etmek için Bitir'e bas."}
         </div>
       )}
     </div>

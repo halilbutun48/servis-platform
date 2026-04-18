@@ -7,6 +7,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
+import { createAgreementRouteRefreshRequest, getPendingAgreementRouteRefreshRequest, listAgreementRouteRefreshRequests } from "../services/agreementRouteRefreshStore.js";
 // ✅ M59: agreement UI shift stats helper endpoint
 
 import { computeFirstStartAtUTC } from "../services/agreementConflict.js";
@@ -54,6 +55,19 @@ function offerSummary(amount, note) {
 
 function directCreateBlockedMessage() {
   return "Doğrudan sözleşme açma kapalı. Önce vardiya oluşturup “Sözleşmeye Dönüştür” kullan.";
+}
+
+function routeRefreshRef(id) {
+  return `Rota güncelleme #${id}`;
+}
+
+function routeRefreshWindowSummary(item) {
+  const startDate = String(item?.startDate || "").slice(0, 10) || "-";
+  const endDate = String(item?.endDate || "").slice(0, 10) || "-";
+  const shiftCount = Number(item?.shiftCount || 0);
+  const stopCount = Number(item?.stopCount || 0);
+  const peopleCount = Number(item?.peopleCount || 0);
+  return `${startDate} → ${endDate} • ${shiftCount} taslak vardiya • ${stopCount} durak • ${peopleCount} personel`;
 }
 
 async function requireSourceShiftForAgreementCreate(tx, { sourceShiftId, companyId, roomId }) {
@@ -148,6 +162,148 @@ export function agreementsRouter(io) {
     }));
 
     res.json({ items: mapped });
+  });
+
+  r.get("/route-refresh", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const agreementId = Number(req.query.agreementId || 0);
+    const status = String(req.query.status || "").trim().toUpperCase();
+    const filters = {};
+    if (agreementId > 0) filters.agreementId = agreementId;
+    if (status) filters.status = status;
+    if (req.user.role === "COMPANY") filters.companyId = req.user.companyId ?? -1;
+    if (req.user.role === "ROOM") filters.roomId = req.user.roomId ?? -1;
+    const items = await listAgreementRouteRefreshRequests(filters);
+    res.json({ items });
+  });
+
+  r.post("/:id/route-refresh-request", authRequired(), requireRole("COMPANY"), async (req, res) => {
+    const agreementId = Number(req.params.id || 0);
+    if (!agreementId) return sendErrorResponse(res, httpError(400, "agreementId required"));
+
+    const agreement = await prisma.agreement.findUnique({
+      where: { id: agreementId },
+      select: {
+        id: true,
+        companyId: true,
+        roomId: true,
+        status: true,
+        weekMask: true,
+        startMin: true,
+        endMin: true,
+        direction: true,
+        pattern: true,
+        hubLat: true,
+        hubLng: true,
+      },
+    });
+    if (!agreement) return sendErrorResponse(res, httpError(404, "notFound"));
+    if (Number(agreement.companyId || 0) !== Number(req.user.companyId || 0)) return sendErrorResponse(res, httpError(403, "Forbidden"));
+
+    const agreementStatus = String(agreement.status || "").toUpperCase();
+    if (!["APPROVED", "ACTIVE"].includes(agreementStatus)) {
+      return sendErrorResponse(res, httpError(409, "AGREEMENT_INVALID_STATE", "Rota güncelleme sadece kabul edilmiş / aktif sözleşmede açılır."));
+    }
+
+    const pending = await getPendingAgreementRouteRefreshRequest(agreementId);
+    if (pending) {
+      return sendErrorResponse(res, httpError(409, "ROUTE_REFRESH_PENDING", "Bu sözleşme için zaten bekleyen rota güncelleme teklifi var."));
+    }
+
+    const roomId = Number(req.body?.roomId || agreement.roomId || 0);
+    const sourceShiftId = Number(req.body?.sourceShiftId || 0);
+    const draftShiftIds = Array.from(new Set((Array.isArray(req.body?.draftShiftIds) ? req.body.draftShiftIds : []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+    if (!roomId || Number(roomId) !== Number(agreement.roomId || 0)) {
+      return sendErrorResponse(res, httpError(400, "ROOM_REQUIRED", "Rota güncelleme aynı sözleşme odasına gitmelidir."));
+    }
+    if (sourceShiftId <= 0) {
+      return sendErrorResponse(res, httpError(400, "SOURCE_SHIFT_REQUIRED", "Kaynak vardiya olmadan rota güncelleme teklifi açılamaz."));
+    }
+    if (!draftShiftIds.length) {
+      return sendErrorResponse(res, httpError(400, "DRAFT_SHIFT_REQUIRED", "Önce taslak vardiyaları oluştur."));
+    }
+
+    const draftShifts = await prisma.shift.findMany({
+      where: {
+        id: { in: draftShiftIds },
+        companyId: req.user.companyId ?? -1,
+        status: "DRAFT",
+      },
+      select: {
+        id: true,
+        roomId: true,
+        agreementId: true,
+        startAt: true,
+        endAt: true,
+        direction: true,
+        pattern: true,
+        hubLat: true,
+        hubLng: true,
+        _count: { select: { stops: true, people: true } },
+      },
+    });
+    if (draftShifts.length !== draftShiftIds.length) {
+      return sendErrorResponse(res, httpError(400, "DRAFT_SHIFT_INVALID", "Taslak vardiyaların tamamı bulunamadı."));
+    }
+
+    const invalidRoom = draftShifts.find((shift) => shift.roomId != null && Number(shift.roomId) !== Number(roomId));
+    if (invalidRoom) {
+      return sendErrorResponse(res, httpError(400, "DRAFT_SHIFT_ROOM_MISMATCH", "Taslak vardiyalar seçilen oda ile aynı olmalı."));
+    }
+    const linkedElsewhere = draftShifts.find((shift) => Number(shift.agreementId || 0) > 0 && Number(shift.agreementId || 0) !== agreementId);
+    if (linkedElsewhere) {
+      return sendErrorResponse(res, httpError(400, "DRAFT_SHIFT_ALREADY_LINKED", "Bazı taslak vardiyalar başka sözleşmeye bağlı."));
+    }
+
+    const ordered = [...draftShifts].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    const firstShift = ordered[0] || null;
+    const lastShift = ordered[ordered.length - 1] || null;
+    const companyOfferAmount = parseOfferAmountNullable(req.body?.companyOfferAmount ?? req.body?.amountCompany);
+    if (String(req.body?.companyOfferAmount ?? req.body?.amountCompany ?? "").trim() && companyOfferAmount == null) {
+      return sendErrorResponse(res, httpError(400, "companyOfferAmount invalid (>0)"));
+    }
+    const companyOfferNote = trimOrNull(req.body?.companyOfferNote ?? req.body?.noteCompany);
+
+    const created = await createAgreementRouteRefreshRequest({
+      agreementId,
+      companyId: agreement.companyId,
+      roomId,
+      sourceShiftId,
+      draftShiftIds,
+      shiftCount: draftShiftIds.length,
+      peopleCount: Math.max(0, ...ordered.map((shift) => Number(shift?._count?.people || 0))),
+      stopCount: Math.max(0, ...ordered.map((shift) => Number(shift?._count?.stops || 0))),
+      startDate: firstShift ? ymdTR(firstShift.startAt) : null,
+      endDate: lastShift ? ymdTR(lastShift.endAt) : null,
+      weekMask: Number(agreement.weekMask || 0),
+      startMin: Number(agreement.startMin || 0),
+      endMin: Number(agreement.endMin || 0),
+      direction: agreement.direction,
+      pattern: agreement.pattern,
+      hubLat: agreement.hubLat,
+      hubLng: agreement.hubLng,
+      companyOfferAmount,
+      companyOfferNote,
+    });
+
+    await createAndEmitNotification({
+      io,
+      type: "AGREEMENT_ROUTE_REFRESH_REQUESTED",
+      scope: "ROOM",
+      roomId: agreement.roomId,
+      companyId: agreement.companyId,
+      payload: {
+        v: 1,
+        kind: "agreement:routeRefreshRequested",
+        title: "Rota güncelleme teklifi",
+        message: `${agreementRef(agreement.id)} • ${routeRefreshWindowSummary(created)}`,
+      },
+      dedupeKey: `agreement:${agreement.id}:routeRefresh:${created.id}`,
+    });
+
+    io?.to?.(`company:${agreement.companyId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshRequested", routeRefreshRequestId: created.id });
+    io?.to?.(`room:${agreement.roomId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshRequested", routeRefreshRequestId: created.id });
+
+    return res.status(201).json({ ok: true, item: created });
   });
 
   // ✅ M59: SHIFT STATS (for UI clarity)

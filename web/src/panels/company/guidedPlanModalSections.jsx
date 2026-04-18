@@ -198,6 +198,8 @@ export function GuidedSolveOffersStep({
   osrmResById,
   onReloadRooms,
   roomsSupported,
+  routeRefreshMode,
+  routeRefreshLaunch,
   sentOk,
   offerOutcome,
   roomQ,
@@ -255,6 +257,8 @@ export function GuidedSolveOffersStep({
         busy={busy}
         onReloadRooms={onReloadRooms}
         roomsSupported={roomsSupported}
+        routeRefreshMode={routeRefreshMode}
+        routeRefreshLaunch={routeRefreshLaunch}
         sentOk={sentOk}
         offerOutcome={offerOutcome}
         roomQ={roomQ}

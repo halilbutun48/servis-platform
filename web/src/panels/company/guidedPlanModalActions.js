@@ -384,3 +384,13 @@ export async function sendGuidedBulkOffersAction({ token, draftShiftIds, selecte
     allBlocked: draftShiftIds.length > 0 && blockedShiftCount === draftShiftIds.length,
   };
 }
+
+
+export async function sendGuidedRouteRefreshRequestAction({ token, agreementId, roomId, sourceShiftId, draftShiftIds, offerAmount, offerNote }) {
+  const body = { roomId, sourceShiftId, draftShiftIds };
+  const amountCompany = parseTryInput(offerAmount);
+  const noteStr = String(offerNote || "").trim();
+  if (amountCompany != null) body.companyOfferAmount = amountCompany;
+  if (noteStr) body.companyOfferNote = noteStr;
+  return api(`/api/agreements/${Number(agreementId || 0)}/route-refresh-request`, { token, method: "POST", body });
+}
