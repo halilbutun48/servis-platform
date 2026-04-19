@@ -11,7 +11,7 @@ function toInt(value, fallback = 0) {
 
 function normalizeStatus(value) {
   const s = String(value || "PENDING").trim().toUpperCase();
-  if (["PENDING", "ACCEPTED", "REJECTED", "CANCELLED"].includes(s)) return s;
+  if (["PENDING", "COUNTERED", "ACCEPTED", "REJECTED", "CANCELLED"].includes(s)) return s;
   return "PENDING";
 }
 
@@ -38,8 +38,17 @@ function normalizeItem(raw) {
     pattern: String(raw.pattern || "ONE_WAY").trim().toUpperCase(),
     hubLat: raw.hubLat == null ? null : Number(raw.hubLat),
     hubLng: raw.hubLng == null ? null : Number(raw.hubLng),
+    priorAgreementAmount: raw.priorAgreementAmount == null ? null : toInt(raw.priorAgreementAmount, null),
+    priorAgreementNote: String(raw.priorAgreementNote || "").trim() || null,
     companyOfferAmount: raw.companyOfferAmount == null ? null : toInt(raw.companyOfferAmount, null),
     companyOfferNote: String(raw.companyOfferNote || "").trim() || null,
+    initialCompanyOfferAmount: raw.initialCompanyOfferAmount == null ? toInt(raw.companyOfferAmount, null) : toInt(raw.initialCompanyOfferAmount, null),
+    initialCompanyOfferNote: String((raw.initialCompanyOfferNote ?? raw.companyOfferNote ?? "")).trim() || null,
+    roomCounterAmount: raw.roomCounterAmount == null ? null : toInt(raw.roomCounterAmount, null),
+    roomCounterNote: String(raw.roomCounterNote || "").trim() || null,
+    finalAcceptedAmount: raw.finalAcceptedAmount == null ? null : toInt(raw.finalAcceptedAmount, null),
+    finalAcceptedNote: String(raw.finalAcceptedNote || "").trim() || null,
+    finalAcceptedSource: String(raw.finalAcceptedSource || "").trim().toUpperCase() || null,
     createdAt: raw.createdAt || new Date().toISOString(),
     updatedAt: raw.updatedAt || new Date().toISOString(),
     decidedAt: raw.decidedAt || null,
@@ -102,7 +111,24 @@ export async function createAgreementRouteRefreshRequest(payload) {
   return state.items[0] || null;
 }
 
-export async function decideAgreementRouteRefreshRequest({ requestId, status }) {
+export async function updateAgreementRouteRefreshRequest({ requestId, patch = {} }) {
+  const next = await store.updateAsync((current) => {
+    const state = normalizeState(current);
+    state.items = state.items.map((item) => {
+      if (Number(item.id) !== Number(requestId)) return item;
+      return normalizeItem({
+        ...item,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      });
+    });
+    return state;
+  });
+  const state = normalizeState(next);
+  return state.items.find((item) => Number(item.id) === Number(requestId)) || null;
+}
+
+export async function decideAgreementRouteRefreshRequest({ requestId, status, patch = {} }) {
   const wanted = normalizeStatus(status);
   if (!["ACCEPTED", "REJECTED", "CANCELLED"].includes(wanted)) throw new Error("invalid route refresh decision");
   const next = await store.updateAsync((current) => {
@@ -111,6 +137,7 @@ export async function decideAgreementRouteRefreshRequest({ requestId, status }) 
       if (Number(item.id) !== Number(requestId)) return item;
       return normalizeItem({
         ...item,
+        ...patch,
         status: wanted,
         updatedAt: new Date().toISOString(),
         decidedAt: new Date().toISOString(),
