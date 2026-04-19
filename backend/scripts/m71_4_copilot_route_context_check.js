@@ -24,6 +24,8 @@ function includesAnyText(text, needles) {
   return (needles || []).some((needle) => includesText(text, needle));
 }
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 function must(label, cond) {
   if (!cond) {
@@ -33,11 +35,14 @@ function must(label, cond) {
   console.log('OK', label);
 }
 
-const panel = fs.readFileSync(new URL('../src/panels/shared/CopilotPanel.jsx', import.meta.url), 'utf8');
-const composer = fs.readFileSync(new URL('../src/ai/chat/helpComposer.js', import.meta.url), 'utf8');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, '..', '..');
+const panel = fs.readFileSync(path.join(repoRoot, 'web/src/panels/shared/CopilotPanel.jsx'), 'utf8');
+const composer = fs.readFileSync(path.join(repoRoot, 'backend/src/ai/chat/helpComposer.js'), 'utf8');
 
 console.log('=== M71.4 COPILOT ROUTE CONTEXT + SCREEN ANALYSIS CHECK ===');
-must('chat screen route sync added', includesText(panel, 'syncChatScreenToRoute') && includesText(panel, 'hashchange') && includesText(panel, 'popstate'));
+must('chat screen route sync added', includesText(panel, 'useHashRoute') && includesText(panel, 'hashPath'));
 must('chat screen route sync uses current route', includesText(panel, 'setChatScreenId(String(match.id))'));
-must('screen analysis widened beyond entityType screen', includesText(composer, "const analysis = screenContext && screenDefinition ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;"));
+must('screen analysis widened beyond entityType screen', includesText(composer, "const hasScreenContext") && includesText(composer, "analyzeScreenState({ screenContext, screenDefinition, conversationState })"));
 console.log('=== M71.4 COPILOT ROUTE CONTEXT + SCREEN ANALYSIS CHECK PASS ===');

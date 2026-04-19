@@ -173,7 +173,7 @@ export default function GeoReviewPanel() {
     lng: "",
   });
 
-  const scopedIds = useMemo(() => readSessionPersonIds(companyKey), [companyKey, busy]);
+  const scopedIds = useMemo(() => readSessionPersonIds(companyKey), [companyKey]);
   const scopedIdsKey = useMemo(() => scopedIds.join(','), [scopedIds]);
   const hasPlanningScope = scopedIds.length > 0;
 
@@ -540,7 +540,7 @@ export default function GeoReviewPanel() {
       },
     });
     return () => clearCopilotSelection(copilotScopeKey);
-  }, [selected, selectedReason, school, copilotScopeKey]);
+  }, [selected, selectedReason, school, copilotScopeKey, counts, scopeMode, hasPlanningScope]);
 
   return (
     <div style={{ width: "100%", maxWidth: "none" }}>
@@ -735,8 +735,6 @@ export default function GeoReviewPanel() {
     </div>
   );
 }
-
-
 
 
 

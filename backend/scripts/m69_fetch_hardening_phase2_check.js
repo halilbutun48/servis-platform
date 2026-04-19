@@ -59,9 +59,9 @@ function expectNotContains(rel, pattern, msg) {
 
 console.log("=== M69 FETCH HARDENING PHASE-2 CHECK ===");
 
-expectContains("web/src/panels/company/ShiftsPanel.jsx", "function needsReferenceData()", "shifts panel reference-data gate exists");
-expectContains("web/src/panels/company/ShiftsPanel.jsx", "async function ensureReferenceData", "shifts panel lazy reference loader exists");
-expectContains("web/src/panels/company/ShiftsPanel.jsx", "await getCompanyShifts(token, { signal", "shifts panel primary load reads shifts first");
+expectContains("web/src/panels/company/ShiftsPanel.jsx", "const needsReferenceData = useCallback", "shifts panel reference-data gate exists");
+expectContains("web/src/panels/company/ShiftsPanel.jsx", "const ensureReferenceData = useCallback(async", "shifts panel lazy reference loader exists");
+expectContains("web/src/panels/company/ShiftsPanel.jsx", "getCompanyShifts(token, { signal", "shifts panel primary load reads shifts first");
 expectNotContains("web/src/panels/company/ShiftsPanel.jsx", "const [sh, veh, rm] = await Promise.all([", "shifts panel no longer loads shifts+vehicles+rooms together on entry");
 expectContainsAny("web/src/panels/company/ShiftsPanel.jsx", [
   'useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: true }) : Promise.resolve())',
@@ -71,7 +71,7 @@ expectContainsAny("web/src/panels/company/ShiftsPanel.jsx", [
 expectContains("web/src/panels/company/ShiftsPanel.jsx", "fetchProviderScoreMap(roomScoreIds, token)", "room score fetch now derives from visible shift rooms");
 
 expectContains("web/src/panels/company/AgreementsPanel.jsx", "rooms={null}", "agreement wizard self-loads rooms lazily");
-expectContains("web/src/panels/company/AgreementsPanel.jsx", "if (!token || !advancedOpen) return;", "agreements panel lazy room effect exists");
+expectContains("web/src/panels/company/AgreementsPanel.jsx", "if (!token || (!advancedOpen && !guidedOpen)) return;", "agreements panel lazy room effect exists");
 expectNotContains("web/src/panels/company/AgreementsPanel.jsx", "loadRooms(controller.signal);\n      load(controller.signal);", "agreements initial mount no longer loads rooms together with list");
 
 expectContains("web/src/components/RoutePreviewModal.jsx", "getShiftRoutePreview(token, shiftId", "route preview modal uses cached route-preview fetch");

@@ -5,7 +5,7 @@
 - **STARTPACK_V1.md** — hızlı başlangıç ve değişmez kurallar
 - **CHECKLIST_SSOT.md** — resmi green kutuları ve marker mantığı
 - **MILESTONE_REGISTRY_V1.md** — tarihsel ve yaşayan milestone anlamları
-- **SCRIPT_KILAVUZU_MILESTONE_HARITASI.md** — M0→M89 tek parça script/milestone rehberi
+- **SCRIPT_KILAVUZU_MILESTONE_HARITASI.md** — M0→latest tek parça script/milestone rehberi
 - **KABUL_KRITERLERI_10_10_VARDIS.md** — 10/10 kalite kapısı
 - **NEXT_BACKLOG_V1.md** — bir sonraki kontrollü iş
 - **PARENT_ACCESS_FLOW.md** — Veli Erişimi akışının güncel ürün davranışı
@@ -15,6 +15,8 @@
 - Tarihsel tam master anchor: `MASTER PACK PASS OK (M0->M79)`
 - Repo audit: `REPO AUDIT MASTER PASS`
 - Sonraki ana iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
+- Tek repo kontrol girisi: `npm run verify:repo`
+- En son verification spine: `M92 — repo verification spine`
 - `tools/STABLE_TO.txt = 78` yalnızca M78.x compatibility marker olarak yaşar; yaşayan üst hattı inkâr etmez.
 
 ## Operasyon / test

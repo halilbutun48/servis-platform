@@ -43,6 +43,14 @@ function toPositiveIntOrZero(v) {
   return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
 }
 
+function parsePositiveAmountInput(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const normalized = raw.replace(/\s+/g, "").replace(",", ".");
+  const n = Number(normalized);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+}
+
 function shiftRequiredPax(shift) {
   return Math.max(
     toPositiveIntOrZero(shift?.requiredPax),
@@ -287,11 +295,21 @@ export default function RoomOffersPanel() {
 
   async function onBulkCounter() {
     const ids = selectedIds;
-    const amountRoom = bulkAmount == null || bulkAmount === "" ? undefined : Number(bulkAmount);
+    const bulkParsedAmount = parsePositiveAmountInput(bulkAmount);
+    const selectedDraftAmounts = ids
+      .map((id) => parsePositiveAmountInput(counterSel?.[id]?.amountRoom))
+      .filter((amount) => amount != null);
+    const uniqueDraftAmounts = Array.from(new Set(selectedDraftAmounts));
+    const amountRoom = bulkParsedAmount ?? (selectedDraftAmounts.length === ids.length && uniqueDraftAmounts.length === 1 ? uniqueDraftAmounts[0] : null);
     const noteRoom = String(bulkNote || "").trim() || undefined;
 
     if (!ids.length) return setErr("Önce en az 1 teklif seç.");
-    if (!Number.isFinite(amountRoom) || amountRoom <= 0) return setErr("Paket karşı teklif amount gerekli.");
+    if (!amountRoom) {
+      if (selectedDraftAmounts.length) {
+        return setErr("Paket karşı teklif için üstte tek tutar gir veya seçili kartlarda aynı tutarı kullan.");
+      }
+      return setErr("Paket karşı teklif tutarı gerekli.");
+    }
 
     setBusy(true);
     setErr("");
@@ -300,6 +318,11 @@ export default function RoomOffersPanel() {
       setSel({});
       setBulkAmount("");
       setBulkNote("");
+      setCounterSel((prev) => {
+        const next = { ...(prev || {}) };
+        for (const id of ids) delete next[id];
+        return next;
+      });
       await load();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -457,8 +480,8 @@ export default function RoomOffersPanel() {
   return (
     <div className="wrap wrap--fluid">
       <div className="card">
-        <div className="title">Offers (Gelen Teklifler)</div>
-        <div className="muted">Company tarafının gönderdiği market shift teklifleri.</div>
+        <div className="title">Teklifler (Gelen Teklifler)</div>
+        <div className="muted">Şirket tarafının gönderdiği market vardiya teklifleri.</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
@@ -492,6 +515,7 @@ export default function RoomOffersPanel() {
               value={bulkAmount}
               onChange={(e) => setBulkAmount(e.target.value)}
               placeholder="Paket karşı teklif (₺)"
+              title="Boş bırakılırsa seçili kartlardaki aynı karşı teklif tutarı kullanılır."
               style={{ width: 180 }}
             />
             <input
@@ -501,7 +525,7 @@ export default function RoomOffersPanel() {
               style={{ minWidth: 240 }}
             />
             <button className="btn" disabled={busy || !selectedIds.length} onClick={onBulkCounter}>
-              Pakete Counter ({selectedIds.length})
+              Pakete Karşı Teklif ({selectedIds.length})
             </button>
             <button className="btn" disabled={busy || !selectedIds.length} onClick={acceptSelectedPackage} title="Seçili company karşı tekliflerini kabul edip ilgili bekleyen taleplere geç">
               Paketi Kabul Et ve Bekleyen Taleplere Geç
@@ -578,15 +602,15 @@ export default function RoomOffersPanel() {
 
             <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
               <div className="muted">
-                Company: <b>{formatTRY(o.amountCompany)}</b>
+                Şirket: <b>{formatTRY(o.amountCompany)}</b>
               </div>
               <div className="muted">
-                Room: <b>{formatTRY(o.amountRoom)}</b>
+                Oda: <b>{formatTRY(o.amountRoom)}</b>
               </div>
             </div>
 
-            {o.noteCompany ? <div className="muted">Not (Company): {o.noteCompany}</div> : null}
-            {o.noteRoom ? <div className="muted">Not (Room): {o.noteRoom}</div> : null}
+            {o.noteCompany ? <div className="muted">Not (Şirket): {o.noteCompany}</div> : null}
+            {o.noteRoom ? <div className="muted">Not (Oda): {o.noteRoom}</div> : null}
 
             {canCounter ? (
               <>
@@ -609,7 +633,7 @@ export default function RoomOffersPanel() {
                     />
                   </div>
                   <button className="btn" disabled={busy} onClick={() => onCounter(o.id)}>
-                    Counter Gönder
+                    Karşı Teklif Gönder
                   </button>
                 </div>
               </>

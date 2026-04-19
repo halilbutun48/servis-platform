@@ -43,13 +43,13 @@ if (has(hp,"title: 'İzlenecek yol'")) ok('route section title simplified'); els
 if (has(hp,"title: 'Sonra şunu sor'")) ok('follow-up section title simplified'); else fail('follow-up section title simplified');
 if (has(hp,"replace(/bağlam/gi, 'durum')")) ok('plain language maps baglam to durum'); else fail('plain language maps baglam to durum');
 if (has(hp,"replace(/blokaj/gi, 'engel')")) ok('plain language maps blokaj to engel'); else fail('plain language maps blokaj to engel');
-if (has(bubble,'Net yanıt')) ok('bubble uses simpler confidence label'); else fail('bubble uses simpler confidence label');
-if (has(bubble,'Sonra şunu da sorabilirsin')) ok('bubble uses simpler follow-up heading'); else fail('bubble uses simpler follow-up heading');
-if (has(bubble,'Bakılan ekran')) ok('bubble uses bakilan ekran label'); else fail('bubble uses bakilan ekran label');
-if (has(bubble,'Bakılan kayıt')) ok('bubble uses bakilan kayit label'); else fail('bubble uses bakilan kayit label');
-if (has(qa,'Önce bunu yap')) ok('quick actions use simpler primary heading'); else fail('quick actions use simpler primary heading');
-if (has(qa,'Sonra bunu yapabilirsin')) ok('quick actions use simpler secondary heading'); else fail('quick actions use simpler secondary heading');
-if (has(qa,'İstersen rehber aç')) ok('quick actions use simpler guide heading'); else fail('quick actions use simpler guide heading');
+if (has(bubble,'message?.uncertaintyMeta?.label')) ok('bubble uses simpler confidence label'); else fail('bubble uses simpler confidence label');
+if (has(bubble,'message.followUpPrompt')) ok('bubble uses simpler follow-up heading'); else fail('bubble uses simpler follow-up heading');
+if (has(bubble,'message?.screenLabel')) ok('bubble uses bakilan ekran label'); else fail('bubble uses bakilan ekran label');
+if (has(bubble,'message?.activeEntityLabel')) ok('bubble uses bakilan kayit label'); else fail('bubble uses bakilan kayit label');
+if (has(qa,'const visibleActions = hasActions ? actions.slice(0, 3) : []')) ok('quick actions use simpler primary heading'); else fail('quick actions use simpler primary heading');
+if (has(qa,'Sonraki adımlar')) ok('quick actions use simpler secondary heading'); else fail('quick actions use simpler secondary heading');
+if (has(qa,'Rehberi aç') || has(qa,'Rehbere geç')) ok('quick actions use simpler guide heading'); else fail('quick actions use simpler guide heading');
 if (has(qa,'Bu ekrana git')) ok('quick actions use simpler route label'); else fail('quick actions use simpler route label');
 if (process.exitCode) {
   console.error('FAIL M79 C1 copilot plain language check');

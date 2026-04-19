@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import { useCallback } from "react";
 import { getCompanyTrustQualityItems, getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { getPath, navigate } from "../../router";
 import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
@@ -109,7 +110,7 @@ export default function ServiceEvaluationPanel() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  async function loadBase(signal) {
+  const loadBase = useCallback(async (signal) => {
     const [s, i] = await Promise.all([
       getCompanyTrustQualitySummary(token, { signal, ttlMs: 25000 }),
       getCompanyTrustQualityItems(token, { signal, take: 24, pendingOnly: true, ttlMs: 25000 }),
@@ -117,15 +118,15 @@ export default function ServiceEvaluationPanel() {
     if (signal?.aborted) return;
     setSummary(s || null);
     setItems(Array.isArray(i?.items) ? i.items : []);
-  }
+  }, [token]);
 
-  async function ensureTemplate(signal) {
+  const ensureTemplate = useCallback(async (signal) => {
     if (evaluation) return evaluation;
     const tpl = await getTrustQualityTemplate(token, { signal });
     if (signal?.aborted) return null;
     setEvaluation(tpl || null);
     return tpl || null;
-  }
+  }, [evaluation, token]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -141,7 +142,7 @@ export default function ServiceEvaluationPanel() {
       })();
     }, 320);
     return () => { cancelled = true; controller.abort(); clearTimeout(timer); };
-  }, [token]);
+  }, [token, loadBase]);
 
   const copilotItem = useMemo(() => {
     if (selected) return selected;
@@ -197,7 +198,7 @@ export default function ServiceEvaluationPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, selected, evaluation]);
+  }, [token, selected, evaluation, ensureTemplate]);
 
   const cards = useMemo(() => {
     const c = summary?.cards || {};

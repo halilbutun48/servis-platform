@@ -4,6 +4,7 @@
 
 import { io as ioClient } from "socket.io-client";
 import { banner, step, assertOk, loginFirst, reqJson, pickVehicleDriver } from "./_harness.js";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
@@ -78,12 +79,16 @@ async function main() {
   const wsCompany = await connectWs(companyToken);
   const wsRoom = await connectWs(roomToken);
 
-  // create agreement as company for this room
-  step("create agreement (company) -> expect WS agreement:update for both");
+  // create source shift + agreement as company for this room
+  step("create source shift (company) for room -> expect agreement create to stay canonical");
   const today = new Date();
   const startDate = ymdTR(today);
   const endDate = ymdTR(new Date(today.getTime() + 30 * 86400_000));
 
+  const src = await createAgreementSourceShift({ reqJson, token: companyToken, roomId, tag: "M23" });
+  assertOk(src.shiftId > 0, "source shift created");
+
+  step("create agreement (company) with sourceShiftId -> expect WS agreement:update for both");
   const pCompany1 = waitForEvent(wsCompany, "agreement:update");
   const pRoom1 = waitForEvent(wsRoom, "agreement:update");
 
@@ -91,6 +96,7 @@ async function main() {
     token: companyToken,
     body: {
       roomId,
+      sourceShiftId: src.shiftId,
       startDate,
       endDate,
       weekMask: 127,

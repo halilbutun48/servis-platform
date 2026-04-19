@@ -51,7 +51,7 @@ const bubbleText = read('web/src/components/copilot/ChatMessageBubble.jsx');
 
 ensure(includesText(helpComposerText, 'expandFollowUpMessage'), 'help composer expands short follow-up prompts');
 ensure(includesText(helpComposerText, 'buildContinuityMeta'), 'help composer builds continuity meta');
-ensure(includesText(helpComposerText, 'Aynı kayıt üstünde devam'), 'help composer adds same-record response section');
+ensure(includesText(helpComposerText, 'Aynı kayıt') && includesText(helpComposerText, 'aynı seçili kayıt üstünden devam eder'), 'help composer adds same-record response section');
 ensure(includesText(helpComposerText, 'lastSelectedEntityType'), 'help composer stores last selected entity type');
 ensure(includesText(helpComposerText, 'lastSelectedLabel'), 'help composer stores last selected label');
 ensure(includesText(intentRouterText, 'isShortFollowUp'), 'intent router detects short follow-up prompts');

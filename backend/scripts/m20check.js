@@ -2,6 +2,7 @@
 // M20CHECK: Availability bulk endpoint (single request for many vehicles)
 
 import { login, reqJson, banner, step, assertOk, sleep } from "./_harness.js";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
@@ -22,18 +23,14 @@ function minTR(d) {
 }
 
 function futureTRAtMs(hourTR = 10, minuteTR = 0) {
-  // Returns a UTC ms timestamp that corresponds to the next occurrence of (hourTR:minuteTR) in TR local time.
-  // Ensures it's in the future (>= now + 5min) to avoid edge timing flakiness.
   const now = Date.now();
   const tr = new Date(now + TR_OFFSET_MS);
   const y = tr.getUTCFullYear();
   const m = tr.getUTCMonth();
   const dd = tr.getUTCDate();
-
-  // TR is UTC+03:00 (no DST in Türkiye). So TR 10:00 => UTC 07:00.
   const utcHour = (hourTR + 24 - 3) % 24;
   let base = Date.UTC(y, m, dd, utcHour, minuteTR, 0, 0);
-  if (base <= now + 5 * 60_000) base += 24 * 60 * 60_000; // tomorrow
+  if (base <= now + 5 * 60_000) base += 24 * 60 * 60_000;
   return base;
 }
 
@@ -101,8 +98,13 @@ async function approveShift(roomToken, shiftId, vehicleId, driverId) {
   mustOk(r, "shift approve");
 }
 
-async function createAgreement(companyToken, body) {
-  const r = await reqJson("POST", "/api/agreements", { token: companyToken, body });
+async function createAgreement(companyToken, roomId, body) {
+  const src = await createAgreementSourceShift({ reqJson, token: companyToken, roomId, tag: "M20" });
+  assertOk(src.shiftId > 0, "source shift created for agreement");
+  const r = await reqJson("POST", "/api/agreements", {
+    token: companyToken,
+    body: { ...body, roomId, sourceShiftId: src.shiftId },
+  });
   mustOk(r, "agreement create");
   assertOk(!!r.json?.id, "agreementId present");
   return Number(r.json.id);
@@ -148,19 +150,13 @@ async function main() {
   const v2 = await createVehicle(roomToken, `M20-B-${rand(6)}`);
   await bind(roomToken, v2, d2);
 
-  // blocker shift on v1/d1
-  const now = Date.now();// Choose a deterministic future window inside one TR day (avoids midnight flake).
-// Base = next TR 10:00 (or tomorrow if already passed).
-const baseMs = futureTRAtMs(10, 0);
+  const baseMs = futureTRAtMs(10, 0);
+  const qStart = new Date(baseMs).toISOString();
+  const qEnd = new Date(baseMs + 30 * 60 * 1000).toISOString();
+  const start1 = new Date(baseMs - 10 * 60 * 1000).toISOString();
+  const end1 = new Date(baseMs + 50 * 60 * 1000).toISOString();
 
-// query window overlaps blocker
-const qStart = new Date(baseMs).toISOString();
-const qEnd = new Date(baseMs + 30 * 60 * 1000).toISOString();
-
-// blocker shift overlaps query window (v1/d1)
-const start1 = new Date(baseMs - 10 * 60 * 1000).toISOString();
-const end1 = new Date(baseMs + 50 * 60 * 1000).toISOString();
-step("create+approve blocker shift (v1/d1)");
+  step("create+approve blocker shift (v1/d1)");
   const shId = await createShift(companyToken, roomId, start1, end1);
   await approveShift(roomToken, shId, v1, d1);
 
@@ -175,7 +171,6 @@ step("create+approve blocker shift (v1/d1)");
   assertOk(b.vehicleOk === true, "v2 vehicleOk=true");
   assertOk(b.driverOk === true, "v2 driverOk=true");
 
-  // Agreement-first test: create agreement on v2/d2 in the same query window
   step("create+approve agreement on v2/d2 covering query window (agreement-first)");
   const s = new Date(qStart);
   const e = new Date(qEnd);
@@ -185,14 +180,12 @@ step("create+approve blocker shift (v1/d1)");
   const endMin = minTR(e);
   assertOk(endMin > startMin, "endMin > startMin");
 
-  const agId = await createAgreement(companyToken, {
-    roomId,
+  const agId = await createAgreement(companyToken, roomId, {
     startDate,
     endDate,
     weekMask: 127,
     startMin,
     endMin,
-    // routing meta (M19)
     direction: "OUTBOUND",
     pattern: "ONE_WAY",
     hubLat: 41.0,
@@ -200,7 +193,6 @@ step("create+approve blocker shift (v1/d1)");
   });
   await approveAgreement(roomToken, agId, { vehicleId: v2, driverId: d2 });
 
-  // wait a tick for DB consistency (gate stability)
   await sleep(300);
 
   step("bulk should now report AGREEMENT conflict for v2 (agreement-first)");
@@ -218,4 +210,3 @@ main().catch((e) => {
   console.error("M20CHECK FAIL:", e?.message || e);
   process.exit(1);
 });
-

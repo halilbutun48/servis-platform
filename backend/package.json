@@ -10,6 +10,8 @@
     "lint": "node scripts/repo_js_syntax_scan.js",
     "smoke": "node scripts/smoke.js",
     "fullcheck": "node scripts/fullcheck.js",
+    "repo:check": "node scripts/run_repo_check_chain.js --phase all",
+    "repo:check:chain": "node scripts/run_repo_check_chain.js --phase all",
     "m0check": "node scripts/m0check.js",
     "m1check": "node scripts/m1check.js",
     "m2check": "node scripts/m2check.js",
@@ -41,7 +43,11 @@
     "m90c6check": "node scripts/m90_c6_hot_file_queue_policy_check.js",
     "m90c7check": "node scripts/m90_c7_export_package_hygiene_check.js",
     "m90c8check": "node scripts/m90_c8_ci_verification_visibility_check.js",
-    "m90c9check": "node scripts/m90_c9_safe_closure_final_hygiene_check.js"
+    "m90c9check": "node scripts/m90_c9_safe_closure_final_hygiene_check.js",
+    "milestones:static": "node scripts/run_m0_latest.js --static-only --to latest --continue",
+    "m91check": "node scripts/run_m91_route_preview_checks.js",
+    "m91:milestones": "node scripts/run_m0_latest.js --static-only --from M91 --to M91 --continue",
+    "m92check": "node scripts/m92_repo_verification_spine_check.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

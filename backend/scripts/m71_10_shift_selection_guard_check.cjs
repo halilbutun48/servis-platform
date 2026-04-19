@@ -44,8 +44,9 @@ ok(includesText(shifts, 'if (trackTab === "market") return marketItems[0] || nul
 ok(includesText(shifts, 'if (trackTab === "pending") return pendingItems[0] || null;'), 'company shifts picks first pending row for copilot selection');
 ok(includesText(shifts, 'return finalItems[0] || null;'), 'company shifts picks first final row for copilot selection');
 const help = read('backend/src/ai/chat/helpComposer.js');
-ok(includesText(help, 'function isShiftTrackingScreen(screenDefinition)'), 'helpComposer has shifts-screen guard helper');
-ok(includesText(help, 'function shiftScreenNoSelectionReply(questionType, screenDefinition)'), 'helpComposer has no-selection reply helper');
+const entityRuntime = read('backend/src/ai/chat/helpComposerEntityRuntime.js');
+ok(includesText(entityRuntime, 'function isShiftTrackingScreen(screenDefinition)'), 'helpComposer has shifts-screen guard helper');
+ok(includesText(entityRuntime, 'function shiftScreenNoSelectionReply(questionType, screenDefinition)'), 'helpComposer has no-selection reply helper');
 ok(includesText(help, "entityType === 'screen' && isShiftTrackingScreen(screenDefinition)"), 'helpComposer guards shifts screen record questions');
 if (process.exitCode) {
   console.error('=== M71.10 CHECK FAIL ===');

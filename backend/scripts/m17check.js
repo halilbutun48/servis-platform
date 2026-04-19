@@ -1,5 +1,6 @@
 // backend/scripts/m17check.js
 import { login, reqJson, banner, step, assertOk, sleep } from "./_harness.js";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
@@ -59,8 +60,13 @@ async function createDriver(roomToken, fullName) {
   return Number(r.json.id);
 }
 
-async function createAgreement(companyToken, body) {
-  const r = await reqJson("POST", "/api/agreements", { token: companyToken, body });
+async function createAgreement(companyToken, roomId, body) {
+  const src = await createAgreementSourceShift({ reqJson, token: companyToken, roomId, tag: "M17" });
+  assertOk(src.shiftId > 0, "source shift created for agreement");
+  const r = await reqJson("POST", "/api/agreements", {
+    token: companyToken,
+    body: { ...body, roomId, sourceShiftId: src.shiftId },
+  });
   mustOk(r, "agreement create");
   assertOk(!!r.json?.id, "agreementId present");
   return Number(r.json.id);
@@ -80,7 +86,6 @@ async function getAgreement(anyToken, id) {
 async function main() {
   banner("M17CHECK: Agreements (request/approve/conflict/monitor)");
 
-  // IMPORTANT: login() token string döner
   const roomToken = await login("room@demo.com");
   const companyToken = await login("company@demo.com");
 
@@ -97,8 +102,7 @@ async function main() {
   const endDate = addDaysYmdTR(startDate, 7);
 
   step("create agreement A (08:00-10:00)");
-  const a1id = await createAgreement(companyToken, {
-    roomId,
+  const a1id = await createAgreement(companyToken, roomId, {
     startDate,
     endDate,
     weekMask: 127,
@@ -113,8 +117,7 @@ async function main() {
   mustOk(a1ap, "approve A ok");
 
   step("create agreement B same window (should conflict on approve)");
-  const a2id = await createAgreement(companyToken, {
-    roomId,
+  const a2id = await createAgreement(companyToken, roomId, {
     startDate,
     endDate,
     weekMask: 127,
@@ -124,7 +127,6 @@ async function main() {
   });
 
   const a2ap = await approveAgreement(roomToken, a2id, { vehicleId: vId, driverId: dId });
-  // Expect 409
   assertOk(a2ap.status === 409, "approve B conflict 409");
   assertOk(
     a2ap.json?.code === "AGREEMENT_VEHICLE_CONFLICT" || a2ap.json?.code === "AGREEMENT_DRIVER_CONFLICT",
@@ -132,8 +134,7 @@ async function main() {
   );
 
   step("create agreement C different time (10:00-12:00) should pass");
-  const a3id = await createAgreement(companyToken, {
-    roomId,
+  const a3id = await createAgreement(companyToken, roomId, {
     startDate,
     endDate,
     weekMask: 127,
@@ -164,8 +165,7 @@ async function main() {
   const pastEnd = addDaysYmdTR(startDate, -1);
   const pastStart = addDaysYmdTR(startDate, -2);
 
-  const a4id = await createAgreement(companyToken, {
-    roomId,
+  const a4id = await createAgreement(companyToken, roomId, {
     startDate: pastStart,
     endDate: pastEnd,
     weekMask: 127,
@@ -177,7 +177,6 @@ async function main() {
   const a4ap = await approveAgreement(roomToken, a4id, { vehicleId: vId, driverId: dId });
   mustOk(a4ap, "approve PAST ok");
 
-  // agreementMonitor default ~5s => bir tık fazla bekle
   await sleep(6500);
 
   const a4 = await getAgreement(roomToken, a4id);

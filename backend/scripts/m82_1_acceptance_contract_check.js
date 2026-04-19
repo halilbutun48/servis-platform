@@ -88,9 +88,11 @@ expectIncludes(peopleUpsert, 'clearShiftRoutePreviewCache(shift.id);', 'people u
 const peopleImport = segment(people, 'r.post("/:id/people/import"', 'r.post("/:id/stops/generate"');
 expectIncludes(peopleImport, 'clearShiftRoutePreviewCache(shift.id);', 'people import clears preview cache');
 
+const peopleGenerateImpl = segment(people, 'async function generateStopsForShiftInternal', 'export function attachShiftPeopleRoutes');
 const peopleGenerate = segment(people, 'r.post("/:id/stops/generate"', 'r.get("/:id/stops"');
-expectIncludes(peopleGenerate, 'await prisma.$transaction(async (tx) => {', 'people generate is transaction wrapped');
-expectIncludes(peopleGenerate, 'await rebuildShiftRouteStateBestEffort(shift.id);', 'people generate rebuilds route state');
+expectIncludes(peopleGenerate, 'generateStopsForShiftInternal({ req, shift, mode, maxWalkM });', 'people generate route uses canonical generator');
+expectIncludes(peopleGenerateImpl, 'await prisma.$transaction(async (tx) => {', 'people generate is transaction wrapped');
+expectIncludes(peopleGenerateImpl, 'await rebuildShiftRouteStateBestEffort(shift.id);', 'people generate rebuilds route state');
 
 const ensureMarketShift = segment(organization, 'async function ensureMarketShiftFromPlan(company, plan) {', 'export function organizationRouter(io) {');
 expectIncludes(ensureMarketShift, 'await rebuildShiftRouteStateBestEffort(shift.id);', 'organization plan-to-shift builder rebuilds route state');

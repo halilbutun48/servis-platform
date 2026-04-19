@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-const repoRoot = path.resolve(process.cwd());
+const cwd = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
+const repoRoot = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
 
 function normalizeText(value) {
@@ -28,8 +29,8 @@ function includesText(text, needle) {
 function includesAnyText(text, needles) {
   return (needles || []).some((needle) => includesText(text, needle));
 }
-const routePath = path.join(repoRoot, "src", "routes", "commercialCore.js");
-const opsPath = path.join(repoRoot, "src", "ops", "settlementReconciliationDesk.js");
+const routePath = path.join(repoRoot, "backend", "src", "routes", "commercialCore.js");
+const opsPath = path.join(repoRoot, "backend", "src", "ops", "settlementReconciliationDesk.js");
 
 function fail(msg) {
   console.error(`FAIL ${msg}`);

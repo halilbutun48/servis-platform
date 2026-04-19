@@ -17,7 +17,8 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
-const repoRoot = path.resolve(process.cwd(), ".."); // backend/ içinden çalışır
+const cwd = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
+const repoRoot = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, ".."); // backend/ or repo root
 
 const required = [
   "docs/PROJECT_SPEC_V1.md",

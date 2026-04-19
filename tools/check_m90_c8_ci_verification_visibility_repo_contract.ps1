@@ -25,6 +25,7 @@ $required = @(
   'tools/repo_contract_state.json',
   'package.json',
   'backend/package.json',
+  'backend/scripts/run_repo_check_chain.js',
   'backend/scripts/run_web_lint_with_evidence.js',
   'artifacts/lint/README.md'
 )
@@ -40,11 +41,13 @@ $toolsReadme = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools/RE
 $scriptGuide = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md'
 $rootPackage = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'package.json'
 $backendPackage = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend/package.json'
+$repoChain = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend/scripts/run_repo_check_chain.js'
 $state = Read-RepoContractState -RepoRoot $RepoRoot
 
 Assert-RepoContractContainsAll -Text $workflow -Needles @('repo-verification','shareable-export','npm run verify:ci','pack_m90_c7_export_package_hygiene.ps1','web_lint_latest.txt','upload-artifact@v4') -Label 'workflow wires repo verification, web lint and shareable export evidence'
 Assert-RepoContractContainsAll -Text $workflow -Needles @('push','pull_request','workflow_dispatch','ubuntu-latest','windows-latest') -Label 'workflow exposes trigger and runner visibility'
-Assert-RepoContractContainsAll -Text $rootPackage -Needles @('verify:ci','verify:closure','npm run lint','run_web_lint_with_evidence.js','m90b1check','audit:repo','m90c6check','m90c7check','m90c8check') -Label 'root package exposes canonical verify chain and web lint evidence writer'
+Assert-RepoContractContainsAll -Text $rootPackage -Needles @('verify:repo','verify:ci','verify:closure','run_repo_check_chain.js --phase all','run_repo_check_chain.js --phase closure','run_web_lint_with_evidence.js') -Label 'root package exposes canonical verify chain and web lint evidence writer'
+Assert-RepoContractContainsAll -Text $repoChain -Needles @('m90_b1_canonical_closure_gate_check.js','repo_audit.js','m90_c6_hot_file_queue_policy_check.js','m90_c7_export_package_hygiene_check.js','m90_c8_ci_verification_visibility_check.js') -Label 'repo check chain exposes closure gates and repo audit'
 Assert-RepoContractContainsAll -Text $backendPackage -Needles @('m90c8check','m90_c8_ci_verification_visibility_check.js') -Label 'backend package exposes M90C.8 node gate'
 Assert-RepoContractContainsAll -Text $milestone -Needles @('M90C.8','CI / verification visibility','npm run verify:ci','.github/workflows/vardis_verification_visibility.yml') -Label 'milestone doc captures CI / verification visibility scope'
 Assert-RepoContractContainsAll -Text $runbook -Needles @('npm run verify:ci','pack_m90_c8_ci_verification_visibility.ps1','pack_m90_c7_export_package_hygiene.ps1') -Label 'runbook exposes local and CI verification order'

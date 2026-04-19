@@ -10,12 +10,9 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { validateWithZod } from "../z.js";
-import { assertDriverAssignable } from "../lib/penalties.js";
-import { buildCapacityConflict, getShiftDemandSnapshot } from "../services/roomPoolPlanner.js";
 import { findPackageShiftIdsByShiftId } from "../services/shiftPackage.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
-import { getConflictOrNull } from "./shifts/roomShared.js";
 import * as H from "./shifts/helpers.js";
 
 const bulkCounterSchema = z.object({
@@ -75,61 +72,6 @@ async function loadCompanyDirectoryItems(where, take) {
       },
     },
   });
-}
-
-async function ensureRoomCanCoverShiftOrThrow({ shiftId, roomId }) {
-  const sid = Number(shiftId || 0);
-  const rid = Number(roomId || 0);
-  if (!sid || !rid) throw httpError(400, "shiftId/roomId required");
-
-  const shift = await prisma.shift.findUnique({
-    where: { id: sid },
-    select: { id: true, startAt: true, endAt: true, companyId: true },
-  });
-  if (!shift) throw httpError(404, "Shift not found");
-
-  const demand = await getShiftDemandSnapshot(sid);
-  const requiredPax = Number(demand?.requiredPax || 0);
-  const vehicles = await prisma.vehicle.findMany({
-    where: { roomId: rid, archivedAt: null, status: "ACTIVE" },
-    select: { id: true, capacity: true },
-    orderBy: [{ capacity: "desc" }, { id: "asc" }],
-  });
-  const drivers = await prisma.driver.findMany({
-    where: { roomId: rid },
-    select: { id: true },
-    orderBy: { id: "asc" },
-  });
-
-  for (const vehicle of vehicles) {
-    const capacityConflict = buildCapacityConflict({
-      requiredPax,
-      vehicleCapacity: Number(vehicle?.capacity || 0),
-    });
-    if (capacityConflict) continue;
-
-    for (const driver of drivers) {
-      const driverId = Number(driver?.id || 0);
-      const vehicleId = Number(vehicle?.id || 0);
-      if (!driverId || !vehicleId) continue;
-      const conflict = await getConflictOrNull({
-        driverId,
-        vehicleId,
-        startAt: shift.startAt,
-        endAt: shift.endAt,
-        excludeShiftId: sid,
-      });
-      if (conflict) continue;
-      try {
-        await assertDriverAssignable({ driverId, shiftId: sid, at: shift.startAt });
-        return { ok: true, vehicleId, driverId };
-      } catch {
-        // try next pair
-      }
-    }
-  }
-
-  throw httpError(409, "PACKAGE_ROOM_CANNOT_COVER", "Room bu paket içindeki tüm vardiyaları karşılayamıyor");
 }
 
 async function finalizeAcceptedOfferTx(tx, offer) {
@@ -235,10 +177,7 @@ async function loadCompanyPackageAcceptanceTargetsOrThrow({ companyId, roomId, s
   if (shifts.some((row) => Number(row.companyId || 0) !== Number(companyId || 0))) throw httpError(403, "Forbidden");
   if (shifts.some((row) => Number(row.agreementId || 0) > 0)) throw httpError(409, "AGREEMENT_NO_OFFERS", "Agreement shift: offers disabled");
   if (shifts.some((row) => row.roomId != null && Number(row.roomId) !== Number(roomId))) throw httpError(409, "PACKAGE_SHIFT_ALREADY_ASSIGNED", "Paket içindeki bir vardiya başka room'a atanmış");
-
-  for (const shift of shifts) {
-    await ensureRoomCanCoverShiftOrThrow({ shiftId: shift.id, roomId });
-  }
+  // Package accept is a commercial decision; vehicle/driver readiness is checked later in the pending operation flow.
 
   const offers = await prisma.shiftOffer.findMany({
     where: { shiftId: { in: targetShiftIds }, roomId: Number(roomId) },
@@ -288,10 +227,7 @@ async function loadRoomPackageAcceptanceTargetsOrThrow({ roomId, offerIds }) {
   if (accepted) throw httpError(409, "Offer already accepted");
   const assignedElsewhere = targetOffers.find((offer) => offer.shift?.roomId != null && Number(offer.shift.roomId) !== Number(roomId));
   if (assignedElsewhere) throw httpError(409, "Shift already assigned");
-
-  for (const offer of targetOffers) {
-    await ensureRoomCanCoverShiftOrThrow({ shiftId: offer.shiftId, roomId });
-  }
+  // Package accept is a commercial decision; vehicle/driver readiness is checked later in the pending operation flow.
 
   return { targetShiftIds, offers: targetOffers };
 }

@@ -57,6 +57,7 @@ async function main() {
   const requiredStageIds = [
     "M0-M41", "M42 OPTIONAL", "M58", "M59", "M60", "M61", "M62", "M63", "M64", "M65", "M66", "DOCS-SSOT",
     "M80", "M80.1", "M80.2", "M80.3", "M81", "M82.1", "M82.8", "M82.9", "M82.10", "M82.11", "M83", "M84", "M85", "M86", "M87", "M88", "M89"
+    , "M90B.1", "M90C.6", "M90C.7", "M90C.8", "M90C.9", "M91", "M92"
   ];
   const stageIds = manifest.stages.map((stage) => stage.id);
   requiredStageIds.forEach((id) => must(`manifest contains ${id}`, stageIds.includes(id)));
@@ -101,7 +102,7 @@ async function main() {
   must("full runbook mentions historical master/docs pack", includesAnyText(fullRunbook, ["tools\\pack.ps1 -To 66", "pack_docs_ssot"]));
   must("docs pack runbook explains runbook/checklist same roof", includesAnyText(docsPackRunbook, ["Runbook + checklist", "tek çatı", "milestone_pack_manifest.json"]));
   must("marker policy explains state first and historical split", includesAnyText(markerPolicy, ["latestHistoricalMasterPack", "historicalNextMilestone", "docsContractMode", "state-first-canonical-history-split"]));
-  must("script guide says canonical single guide", includesAnyText(scriptGuide, ["tek resmi rehber", "M0'dan M89'a", "M90"]));
+  must("script guide says canonical single guide", includesAnyText(scriptGuide, ["tek resmi rehber", "M0'dan M89'a", "M90", "M92", "repo verification spine"]));
 
   console.log("\nOK DOCS / SSOT PACK CHECK PASS");
 }

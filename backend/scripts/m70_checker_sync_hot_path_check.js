@@ -53,8 +53,8 @@ ok(
 );
 
 const serviceEval = read("web/src/panels/company/ServiceEvaluationPanel.jsx");
-ok(includesText(serviceEval, "async function loadBase(signal)"), "service evaluation split base loader exists");
-ok(includesText(serviceEval, "async function ensureTemplate(signal)"), "service evaluation lazy template loader exists");
+ok(includesText(serviceEval, "const loadBase = useCallback(async (signal)") || includesText(serviceEval, "async function loadBase(signal)"), "service evaluation split base loader exists");
+ok(includesText(serviceEval, "const ensureTemplate = useCallback(async (signal)") || includesText(serviceEval, "async function ensureTemplate(signal)"), "service evaluation lazy template loader exists");
 ok(includesText(serviceEval, "await loadBase(controller.signal);"), "service evaluation first frame uses base loader only");
 
 const agreements = read("backend/src/routes/agreements.js");
@@ -101,4 +101,3 @@ ok(
 ok(includesText(storm, "/api/service-evaluation") === false, "storm check not coupled to wrong paths");
 
 console.log("=== M70 CHECKER SYNC + HOT PATH CHECK PASS ===");
-

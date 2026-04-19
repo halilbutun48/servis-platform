@@ -45,7 +45,7 @@ ok('help composer exists');
 
 const src = fs.readFileSync(helpComposerPath, 'utf8');
 if (has(src, 'export function normalizeEverydayQuestion(message)')) ok('help composer exports everyday question normalizer'); else fail('help composer exports everyday question normalizer');
-if (has(src, "const effectiveMessage = normalizeEverydayQuestion(expandFollowUpMessage(rawMessage, conversationState, screenContext));")) ok('everyday question normalizer feeds effective message'); else fail('everyday question normalizer feeds effective message');
+if (has(src, "const expandedMessage = expandFollowUpMessage(rawMessage, conversationState, screenContext);") && has(src, "const effectiveMessage = extractPrimaryConcern(expandedMessage);")) ok('everyday question normalizer feeds effective message'); else fail('everyday question normalizer feeds effective message');
 if (has(src, "return 'Bu ekran ne için?';")) ok('normalizer maps screen purpose slang'); else fail('normalizer maps screen purpose slang');
 if (has(src, "return 'İlk neye bakayım?';")) ok('normalizer maps first-control slang'); else fail('normalizer maps first-control slang');
 if (has(src, "return 'Bu neden olmuyor?';")) ok('normalizer maps blockage slang'); else fail('normalizer maps blockage slang');

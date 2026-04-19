@@ -378,7 +378,7 @@ export default function CompanyMapPanel() {
     if (ui) parts.push(`GPS ${ui}`);
     if (selectedNext?.name) parts.push(`Sıradaki ${selectedNext.name}`);
     return parts.join(" • ");
-  }, [selected, selectedShift?.id, selected?.plate, selectedNext?.name]);
+  }, [selected, selectedShift?.id, selectedNext?.name]);
 
   useEffect(() => {
     if (!selected) {
@@ -421,7 +421,7 @@ export default function CompanyMapPanel() {
       ],
     });
     return () => clearCopilotSelection(scopeKey);
-  }, [selected, selected?.id, selected?.plate, selectedShift?.id, copilotSummary, scopeKey]);
+  }, [selected, selectedShift, selectedNext, selectedEta, selectedStats, vehicles.length, copilotSummary, scopeKey]);
 
   useEffect(() => {
     let alive = true;

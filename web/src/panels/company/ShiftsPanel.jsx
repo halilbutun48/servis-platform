@@ -1,5 +1,5 @@
 // web/src/panels/company/ShiftsPanel.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import ShiftPeopleTab from "./ShiftPeopleTab";
@@ -10,7 +10,7 @@ import { companyPath } from "../../utils/paths";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
-import { getCompanyCommercialFlowSummary, getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
+import { getCompanyAgreements, getCompanyCommercialFlowSummary, getCompanyRooms, getCompanyShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 import { getApiErrorMessage } from "../../utils/apiContract";
 import { rankOffersWithRecommendation, roomLabel, vehicleMetaLine } from "./shiftsPanelOfferUtils";
 import { AgreementBadge } from "./companyShiftsPanelSections";
@@ -22,6 +22,45 @@ import { acceptCompanyOfferAction, acceptCompanyOfferPackageAction, cancelCompan
 import { renderCompanyOfferSummary, renderRoomOfferSummary } from "./companyShiftsPanelSummaryCells";
 import { buildAgreementPrefillFromShift, stashAgreementPrefill } from "../../utils/agreementPrefill";
 // M66 compatibility marker: Operasyon Kaydı UI + ShiftOperationEventsModal implementation lives in CompanyShiftsPanelTrackView.
+
+const AGREEMENT_CONVERSION_PENDING_STATUSES = new Set(["REQUESTED", "COUNTERED"]);
+const AGREEMENT_CONVERSION_LINKED_STATUSES = new Set(["APPROVED", "ACTIVE", "DONE"]);
+const AGREEMENT_CONVERSION_CLOSED_STATUSES = new Set(["REJECTED", "CANCELLED"]);
+
+function agreementConversionState(status) {
+  const st = String(status || "").toUpperCase();
+  if (AGREEMENT_CONVERSION_PENDING_STATUSES.has(st)) return "pending";
+  if (AGREEMENT_CONVERSION_LINKED_STATUSES.has(st)) return "linked";
+  if (AGREEMENT_CONVERSION_CLOSED_STATUSES.has(st)) return "closed";
+  return "";
+}
+
+function agreementConversionRank(state) {
+  if (state === "pending") return 3;
+  if (state === "linked") return 2;
+  if (state === "closed") return 1;
+  return 0;
+}
+
+function buildAgreementConversionByShift(agreements) {
+  const byShift = {};
+  (Array.isArray(agreements) ? agreements : []).forEach((agreement) => {
+    const shiftId = Number(agreement?.commercialBackbone?.shiftRootId || 0);
+    const agreementId = Number(agreement?.id || 0);
+    const status = String(agreement?.status || "").toUpperCase();
+    const state = agreementConversionState(status);
+    if (!shiftId || !agreementId || !state) return;
+
+    const next = { agreementId, status, state };
+    const prev = byShift[String(shiftId)] || null;
+    const nextRank = agreementConversionRank(next.state);
+    const prevRank = agreementConversionRank(prev?.state);
+    if (!prev || nextRank > prevRank || (nextRank === prevRank && agreementId > Number(prev.agreementId || 0))) {
+      byShift[String(shiftId)] = next;
+    }
+  });
+  return byShift;
+}
 
 export default function CompanyShiftsPanel({ mode = "track" } = {}) {
   const { token, me } = useSession();
@@ -48,6 +87,7 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
 
   const [items, setItems] = useState([]);
   const [commercialSummary, setCommercialSummary] = useState(null);
+  const [agreementConversionByShift, setAgreementConversionByShift] = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [roomScores, setRoomScores] = useState({});
@@ -98,7 +138,6 @@ export default function CompanyShiftsPanel({ mode = "track" } = {}) {
     if (trackTab === "market") ensureAcc("market");
     if (trackTab === "pending") ensureAcc("pending");
     if (trackTab === "list") ensureAcc("list");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCommercialMode, mainTab, trackTab]);
 
   // Pending filtreler
@@ -160,7 +199,6 @@ const ensureAcc = (key) => setAccOpen((p) => (p?.[key] ? p : ({ ...p, [key]: tru
     };
     window.addEventListener("company:shifts:focus", onFocus);
     return () => window.removeEventListener("company:shifts:focus", onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function focusMarketById(id) {
@@ -277,6 +315,7 @@ useEffect(() => {
 
   // Karşı teklif UI
   const [offerOpen] = useState({});
+  const hasOfferOpen = useMemo(() => Object.values(offerOpen || {}).some(Boolean), [offerOpen]);
   const [, setOfferSel] = useState({});
 
   const isCompany = String(me?.role || "") === "COMPANY";
@@ -286,16 +325,16 @@ useEffect(() => {
     return "/company/shifts";
   }, []);
 
-  function needsReferenceData() {
+  const needsReferenceData = useCallback(() => {
     if (mainTab === "create") return true;
     if (detailModal?.kind === "vehicle") return true;
     if (offerModal?.open || offersModal?.open) return true;
-    if (Object.values(offerOpen || {}).some(Boolean)) return true;
+    if (hasOfferOpen) return true;
     if (offerVehicleId) return true;
     return false;
-  }
+  }, [mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, hasOfferOpen, offerVehicleId]);
 
-  async function ensureReferenceData(signal, { force = false } = {}) {
+  const ensureReferenceData = useCallback(async (signal, { force = false } = {}) => {
     if (!token) return;
     if (!force && refDataReady && rooms.length && vehicles.length) return;
     if (!force && refLoadPromiseRef.current) return refLoadPromiseRef.current;
@@ -319,7 +358,7 @@ useEffect(() => {
     } finally {
       if (refLoadPromiseRef.current === promise) refLoadPromiseRef.current = null;
     }
-  }
+  }, [token, refDataReady, rooms.length, vehicles.length]);
 
   async function loadCommercialSummary(signal, { force = false } = {}) {
     if (!token) return null;
@@ -348,12 +387,17 @@ useEffect(() => {
   async function load(signal, { withReferences = false, forceReferences = false } = {}) {
     setErr("");
     try {
-      const sh = await getCompanyShifts(token, { signal, ttlMs: 25000, take: 32 });
+      const [sh, agreementsResp] = await Promise.all([
+        getCompanyShifts(token, { signal, ttlMs: 25000, take: 32 }),
+        getCompanyAgreements(token, { signal, take: 200, ttlMs: 8000, delayMs: 90 }).catch(() => ({ items: [] })),
+      ]);
       if (signal?.aborted) return;
 
       const list = Array.isArray(sh) ? sh : sh?.items ?? [];
+      const agreements = Array.isArray(agreementsResp) ? agreementsResp : agreementsResp?.items ?? [];
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
       setItems(list);
+      setAgreementConversionByShift(buildAgreementConversionByShift(agreements));
 
       if (withReferences || needsReferenceData()) {
         await ensureReferenceData(signal, { force: forceReferences });
@@ -394,7 +438,7 @@ useEffect(() => {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, mainTab, detailModal?.kind, offerModal?.open, offersModal?.open, offerVehicleId, JSON.stringify(offerOpen)]);
+  }, [token, needsReferenceData, ensureReferenceData]);
 
   useEffect(() => {
     const previewRaw = localStorage.getItem("company:previewShiftId");
@@ -411,24 +455,6 @@ useEffect(() => {
     setFocusedTrackShiftId(sid);
     if (previewRaw) setPreviewModal({ open: true, shiftId: sid });
   }, []);
-
-  // M28 + M30-A: wizard sonrası tek intent kuyruğundan teklif ekranı aç
-  useEffect(() => {
-    const offerRaw = localStorage.getItem("company:autoOfferShiftId");
-    const offersListRaw = localStorage.getItem("company:autoOffersListShiftId");
-
-    if (offerRaw) {
-      localStorage.removeItem("company:autoOfferShiftId");
-      const sid = Number(offerRaw);
-      if (sid) openOfferModalForShift(sid);
-    }
-
-    if (offersListRaw) {
-      localStorage.removeItem("company:autoOffersListShiftId");
-      const sid = Number(offersListRaw);
-      if (sid) setTimeout(() => openOffersModalForShift(sid), 120);
-    }
-  }, [token]);
 
   useAutoReload("shifts", () => load(undefined, { withReferences: false }), true, 650);
   useAutoReload("rooms", () => (needsReferenceData() ? ensureReferenceData(undefined, { force: false }) : Promise.resolve()), true, 650);
@@ -597,7 +623,7 @@ useEffect(() => {
     });
 
     return () => clearCopilotSelection(copilotScopeKey);
-  }, [copilotShift, copilotShiftSummary, copilotScopeKey]);
+  }, [copilotShift, copilotShiftSummary, copilotScopeKey, items.length]);
 
   function openVehicleDetail(s) {
     const id = Number(s?.vehicleId || s?.vehicle?.id || 0);
@@ -712,7 +738,7 @@ useEffect(() => {
     }));
   }
 
-  function openOfferModalForShift(shiftId, pkgIds = null) {
+  const openOfferModalForShift = useCallback((shiftId, pkgIds = null) => {
     openCompanyOfferModalForShift({
       shiftId,
       pkgIds,
@@ -721,7 +747,7 @@ useEffect(() => {
       setOfferModal,
       ensureReferenceData,
     });
-  }
+  }, [items, ensureReferenceData]);
 
   function toggleOfferRoom(roomId) {
     toggleCompanyOfferRoom(roomId, setOfferModal);
@@ -740,7 +766,7 @@ useEffect(() => {
     });
   }
 
-  async function openOffersModalForShift(shiftId, pkgIds = null) {
+  const openOffersModalForShift = useCallback(async (shiftId, pkgIds = null) => {
     await openCompanyOffersModalForShift({
       shiftId,
       pkgIds,
@@ -752,7 +778,26 @@ useEffect(() => {
       setOffersModalPkgIds,
       setOffersModal,
     });
-  }
+  }, [items, token]);
+
+  // M28 + M30-A: wizard sonrası tek intent kuyruğundan teklif ekranı aç
+  useEffect(() => {
+    if (!token) return;
+    const offerRaw = localStorage.getItem("company:autoOfferShiftId");
+    const offersListRaw = localStorage.getItem("company:autoOffersListShiftId");
+
+    if (offerRaw) {
+      localStorage.removeItem("company:autoOfferShiftId");
+      const sid = Number(offerRaw);
+      if (sid) openOfferModalForShift(sid);
+    }
+
+    if (offersListRaw) {
+      localStorage.removeItem("company:autoOffersListShiftId");
+      const sid = Number(offersListRaw);
+      if (sid) setTimeout(() => openOffersModalForShift(sid), 120);
+    }
+  }, [token, openOfferModalForShift, openOffersModalForShift]);
 
   async function companyCounterOffer(offer) {
     await companyCounterOfferAction({
@@ -876,6 +921,15 @@ useEffect(() => {
   }
 
   function convertShiftToAgreement(shift) {
+    const guard = agreementConversionByShift[String(Number(shift?.id || 0))] || null;
+    if (guard?.state === "pending") {
+      setErr(`Bu vardiya için sözleşme talebi bekliyor: Sözleşme #${guard.agreementId}.`);
+      return;
+    }
+    if (guard?.state === "linked") {
+      setErr(`Bu vardiya zaten sözleşmeye taşındı: Sözleşme #${guard.agreementId}.`);
+      return;
+    }
     const room = roomsById.get(Number(shift?.roomId || 0)) || shift?.room || null;
     const prefill = buildAgreementPrefillFromShift({ shift, room });
     if (!prefill) {
@@ -946,6 +1000,7 @@ useEffect(() => {
           pendingOnlyRoomOffer={pendingOnlyRoomOffer}
           onlyAgreement={onlyAgreement}
           roomsById={roomsById}
+          agreementConversionByShift={agreementConversionByShift}
           renderRoomOfferSummary={(s) => renderRoomOfferSummary(s, { vehiclesById, fmtTR, busy, onOpenOffersModal: openOffersModalForShift })}
           renderCompanyOfferSummary={(s) => renderCompanyOfferSummary(s, vehiclesById)}
           cancelMyRequest={cancelMyRequest}
@@ -990,7 +1045,3 @@ useEffect(() => {
     </div>
   );
 }
-
-
-
-

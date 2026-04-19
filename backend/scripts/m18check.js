@@ -1,6 +1,7 @@
 // backend/scripts/m18check.js
 import { prisma } from "../src/prisma.js";
 import { login, reqJson, banner, step, assertOk, sleep } from "./_harness.js";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 // TR-local schedule semantics (UTC+03:00)
 const TR_OFFSET_MS = 180 * 60_000;
@@ -62,7 +63,7 @@ async function main() {
   const driverId = Number(d.json?.id || 0);
   assertOk(!!driverId, "driverId present");
 
-  step("create agreement for today");
+  step("create agreement for today via source shift");
   const today = new Date();
   // IMPORTANT: This check must be deterministic at *any* time of day.
   // If we use a fixed window like 00:01-00:02, approving later in the day
@@ -86,10 +87,22 @@ async function main() {
   }
 
   const endMin = (startMin + 2) % 1440;
+  const sourceShiftStartAt = atTR(startDate, startMin).toISOString();
+  const sourceShiftEndAt = atTR(startDate, endMin).toISOString();
+
+  const src = await createAgreementSourceShift({
+    reqJson,
+    token: companyToken,
+    roomId,
+    tag: "M18",
+    startAt: sourceShiftStartAt,
+    endAt: sourceShiftEndAt,
+  });
+  assertOk(src.shiftId > 0, "source shift created for agreement");
 
   const a = await reqJson("POST", "/api/agreements", {
     token: companyToken,
-    body: { roomId, startDate, endDate, weekMask, startMin, endMin },
+    body: { roomId, startDate, endDate, weekMask, startMin, endMin, sourceShiftId: src.shiftId },
   });
   mustOk(a, "agreement create");
   const agreementId = Number(a.json?.id || 0);
@@ -148,6 +161,7 @@ async function main() {
         "ASSERT_FAIL: generated shift exists",
         `now=${new Date().toISOString()}`,
         `expectedStartAt=${startAt.toISOString()}`,
+        `sourceShiftId=${src.shiftId}`,
         `agreement=${JSON.stringify(ag)}`,
         `recentShifts=${JSON.stringify(recent)}`,
       ].join("\n")

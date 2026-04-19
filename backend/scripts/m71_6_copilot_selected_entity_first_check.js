@@ -43,11 +43,11 @@ const panel = fs.readFileSync(copilotPanelPath, 'utf8');
 const composer = fs.readFileSync(helpComposerPath, 'utf8');
 
 console.log('=== M71.6 COPILOT SELECTED ENTITY FIRST CHECK ===');
-must(panel, 'const selectedType = String(chatSelection?.entityType || "");', 'CopilotPanel reads selected entity type');
-must(panel, 'setChatEntityType((prev) => (prev === selectedType ? prev : selectedType));', 'CopilotPanel syncs selected entity type');
+must(panel, 'const nextType = String(next.entityType || "");', 'CopilotPanel reads selected entity type');
+must(panel, 'setChatEntityType(nextType);', 'CopilotPanel syncs selected entity type');
 must(panel, 'selectedEntityType: chatSelection?.entityType || ""', 'CopilotPanel sends selected entity type');
 must(panel, 'selectedEntityId: Number(chatSelection?.entityId || 0) || null', 'CopilotPanel sends selected entity id');
-must(composer, "const shouldPreferEntity = recordScopedQuestion && entityType !== 'screen' && !!context;", 'helpComposer prefers entity on record scoped questions');
+must(composer, "const preferEntityContext = prefersSelectedEntity(questionType, requestEntityType, context);", 'helpComposer prefers entity on record scoped questions');
 must(composer, "if (questionType === 'READINESS_CHECK' && entityType === 'shift')", 'helpComposer has shift readiness reply');
 must(composer, "if (questionType === 'MISSING_DATA_HELP' && entityType === 'shift')", 'helpComposer has shift missing reply');
 must(composer, "if (questionType === 'SAFE_NEXT_STEP' && entityType === 'shift')", 'helpComposer has shift next step reply');

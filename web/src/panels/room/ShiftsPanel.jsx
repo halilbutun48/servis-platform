@@ -1012,6 +1012,7 @@ const offersByShiftId = useMemo(() => {
         decideExtend={decideExtend}
         openOpsEvents={openOpsEvents}
         openReassignModal={openReassignModal}
+        openRoutePreview={openRoutePreview}
         setFocusedTrackShiftId={setFocusedTrackShiftId}
         copilotShiftId={copilotShiftId}
       />

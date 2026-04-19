@@ -6,16 +6,16 @@ Timezone: Europe/Istanbul
 ## M22 Hedef
 Room artık Company’ye bağlı değil (Agreement üzerinden bağlanıyor). M22 ile Company tarafında “Room Directory” UX’i gelir:
 - Company panellerinde **room seçimi + arama**
-- Agreement create ekranında **Room dropdown** (GET `/api/rooms`) + “hub var mı?” görünürlüğü
+- Shift -> sözleşmeye dönüştür akışında **Room dropdown** (GET `/api/rooms`) + “hub var mı?” görünürlüğü
 - (Opsiyon) WS `agreement:update` ile auto refresh (zaten M17.1’de var)
 
 ## M22 DoD
-1) Company → Agreement oluştururken room **dropdown** ile seçilir.
+1) Company → Shift’ten sözleşmeye dönüşüm akışında room **dropdown** ile seçilir.
 2) Room listesinde **search** vardır (`name contains`).
 3) Room’da hub yoksa UI’da **Hub yok** görünür; agreement oluşturmak için:
    - ya room hub tanımlı olmalı,
    - ya da company formunda **manual hub lat/lng** girilmeli.
-4) Backend: `GET /api/rooms?q=...&hasHub=1` çalışır.
+4) Backend: `GET /api/rooms?q=...&hasHub=1` çalışır. Tekil sözleşme create için `sourceShiftId` zorunludur.
 5) Gate: `tools/pack.ps1 -To 22` **PACK PASS**.
 
 ---
@@ -36,7 +36,7 @@ Room artık Company’ye bağlı değil (Agreement üzerinden bağlanıyor). M22
 **Script:** `backend/scripts/m22check.js`
 - SUPER_ADMIN room create + hub set
 - COMPANY: GET /api/rooms?q=... & hasHub=1
-- COMPANY: POST /api/agreements (roomId ile)
+- COMPANY: source shift create + POST /api/agreements (roomId + sourceShiftId ile)
 
 ---
 

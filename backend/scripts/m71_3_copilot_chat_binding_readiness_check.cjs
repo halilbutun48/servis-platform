@@ -37,11 +37,11 @@ function includesAnyText(text, needles) {
 const copilotPanel = fs.readFileSync(path.join(repoRoot, 'web', 'src', 'panels', 'shared', 'CopilotPanel.jsx'), 'utf8');
 const helpComposer = fs.readFileSync(path.join(backendRoot, 'src', 'ai', 'chat', 'helpComposer.js'), 'utf8');
 
-if (!includesText(copilotPanel, 'window.addEventListener("hashchange", syncChatScreenToRoute)')) fail('CopilotPanel route sync missing');
+if (!includesText(copilotPanel, 'useHashRoute') || !includesText(copilotPanel, 'hashPath')) fail('CopilotPanel route sync missing');
 ok('CopilotPanel route sync present');
 if (!includesText(copilotPanel, 'setChatScreenId(String(match.id))')) fail('CopilotPanel hard screen sync missing');
 ok('CopilotPanel hard screen sync present');
-if (!includesText(helpComposer, "screenContext?.path ? analyzeScreenState")) fail('helpComposer screenContext-based analysis missing');
+if (!includesText(helpComposer, "const hasScreenContext") || !includesText(helpComposer, "analyzeScreenState({ screenContext, screenDefinition, conversationState })")) fail('helpComposer screenContext-based analysis missing');
 ok('helpComposer screenContext-based analysis present');
 if (!includesText(helpComposer, "questionType === 'READINESS_CHECK'")) fail('readiness branch missing');
 ok('readiness branch present');

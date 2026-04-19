@@ -7,6 +7,8 @@
 - Tarihsel anchor: `M0->M79`
 - M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapanmıştır; sıradaki resmi iş: `M90C.9 güvenli kapanış / final hygiene checklist`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 executable closure gate`
+- Tek repo kontrol girisi: `npm run verify:repo`
+- Repo verification spine: `M92`
 
 ## Repo üstünde yaşayan hat
 - `M80 -> M89`
@@ -66,6 +68,8 @@
 - Yeni resmi CI görünürlük komutu: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`.
 - Yeni resmi final closure komutu: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Root verify chain: `npm run verify:ci`.
+- Single-roof repo check: `npm run verify:repo`.
+- M92 repo verification spine check: `npm --prefix backend run m92check`.
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
 - Kanonik final verify girişi: `npm run verify:final`.
 

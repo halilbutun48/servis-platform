@@ -53,6 +53,13 @@
 - `M90C.9 - safe closure / final hygiene checklist`
   - amac: release/shareable/export/verify siralamasini tek resmi checklist altinda sabitlemek ve Windows tarafinda pwsh tercih kuralini yazili hale getirmek
   - komut: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
+- `M91 - shift/agreement route preview`
+  - amac: vardiya kaynakli sozlesme akisinda rota onizleme ve kaynak vardiya baglantisini korumak
+  - komut: `tools\pack_m91_shift_agreement_route_preview.ps1 -RepoRoot D:\servis-platform`
+- `M92 - repo verification spine`
+  - amac: tum repo kontrol zincirini tek catiya toplamak
+  - komut: `npm run verify:repo`
+  - pack: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.
@@ -70,3 +77,4 @@
 ## REPO_CONTRACT_MARKERS_V1
 - REGISTRY_ROUTE_M63_M65_V1
 - REGISTRY_ROUTE_M80_M89_V1
+- REGISTRY_ROUTE_M91_M92_VERIFICATION_SPINE_V1

@@ -68,31 +68,61 @@ function CompanyExtendCell({ shift, busy, fmtTR, onOpenExtendModal, onOpenPrevie
   );
 }
 
-function CompanyOpsCell({ busy, shift, onOpenOpsEvents, onConvertShiftToAgreement }) {
+function agreementConversionTitle(agreementConversion) {
+  const agreementId = Number(agreementConversion?.agreementId || 0);
+  const status = String(agreementConversion?.status || "").toUpperCase();
+  return agreementId ? `Sözleşme #${agreementId}${status ? ` • ${status}` : ""}` : "";
+}
+
+function CompanyOpsCell({ busy, shift, agreementConversion, onOpenOpsEvents, onConvertShiftToAgreement }) {
   const hasAgreement = Number(shift?.agreementId || 0) > 0;
-  const canConvert = Number(shift?.roomId || 0) > 0 && !hasAgreement;
+  const conversionState = String(agreementConversion?.state || "");
+  const conversionTitle = agreementConversionTitle(agreementConversion);
+  const hasPendingAgreementRequest = conversionState === "pending";
+  const hasLinkedAgreementRequest = conversionState === "linked";
+  const hadClosedAgreementRequest = conversionState === "closed";
+  const canConvert = Number(shift?.roomId || 0) > 0 && !hasAgreement && !hasPendingAgreementRequest && !hasLinkedAgreementRequest;
   return (
     <td>
       <div style={{ display: "grid", gap: 8 }}>
         <button type="button" className="btn sm" disabled={busy} onClick={() => onOpenOpsEvents(shift?.id)}>Operasyon Kaydı</button>
-        {hasAgreement ? (
+        {hasAgreement || hasLinkedAgreementRequest ? (
           <span
             className="pill"
             data-status="AGREEMENT"
-            title="Bu vardiya zaten bir sözleşmeye bağlandı."
+            title={conversionTitle || "Bu vardiya zaten bir sözleşmeye bağlandı."}
           >
-            Sözleşmeye Bağlı
+            {hasAgreement ? "Sözleşmeye Bağlı" : "Sözleşmeye Taşındı"}
+          </span>
+        ) : hasPendingAgreementRequest ? (
+          <span
+            className="pill"
+            data-status={agreementConversion?.status || "REQUESTED"}
+            title={conversionTitle || "Bu vardiya için sözleşme talebi oda kararını bekliyor."}
+          >
+            Sözleşme talebi bekliyor
           </span>
         ) : (
-          <button
-            type="button"
-            className="btn sm"
-            disabled={busy || !canConvert}
-            title={!Number(shift?.roomId || 0) ? "Önce room seçili olmalı." : "Bu vardiya düzenini sözleşmeye taşı."}
-            onClick={() => onConvertShiftToAgreement?.(shift)}
-          >
-            Sözleşmeye Dönüştür
-          </button>
+          <>
+            {hadClosedAgreementRequest ? (
+              <span
+                className="pill"
+                data-status={agreementConversion?.status || "CLOSED"}
+                title={conversionTitle || "Önceki sözleşme talebi sonuçlandı; tekrar deneyebilirsin."}
+              >
+                Önceki talep sonuçlandı
+              </span>
+            ) : null}
+            <button
+              type="button"
+              className="btn sm"
+              disabled={busy || !canConvert}
+              title={!Number(shift?.roomId || 0) ? "Önce room seçili olmalı." : "Bu vardiya düzenini sözleşmeye taşı."}
+              onClick={() => onConvertShiftToAgreement?.(shift)}
+            >
+              {hadClosedAgreementRequest ? "Yeniden Dönüştür" : "Sözleşmeye Dönüştür"}
+            </button>
+          </>
         )}
       </div>
     </td>
@@ -148,6 +178,7 @@ export function CompanyPendingRow({
   onOpenExtendModal,
   onOpenPreview,
   onOpenOpsEvents,
+  agreementConversion,
   onConvertShiftToAgreement,
 }) {
   const room = roomsById.get(Number(shift.roomId));
@@ -179,7 +210,7 @@ export function CompanyPendingRow({
       <td className="muted" title={String(shift.startAt)}>{fmtTR(shift.startAt)}</td>
       <td className="muted" title={String(shift.endAt)}>{fmtTR(shift.endAt)}</td>
       <CompanyExtendCell shift={shift} busy={busy} fmtTR={fmtTR} onOpenExtendModal={onOpenExtendModal} onOpenPreview={onOpenPreview} />
-      <CompanyOpsCell busy={busy} shift={shift} onOpenOpsEvents={onOpenOpsEvents} onConvertShiftToAgreement={onConvertShiftToAgreement} />
+      <CompanyOpsCell busy={busy} shift={shift} agreementConversion={agreementConversion} onOpenOpsEvents={onOpenOpsEvents} onConvertShiftToAgreement={onConvertShiftToAgreement} />
     </tr>
   );
 }
@@ -198,6 +229,7 @@ export function CompanyFinalListRow({
   onOpenExtendModal,
   onOpenPreview,
   onOpenOpsEvents,
+  agreementConversion,
   onConvertShiftToAgreement,
 }) {
   const room = roomsById.get(Number(shift.roomId));
@@ -227,7 +259,7 @@ export function CompanyFinalListRow({
       <td className="muted" title={String(shift.startAt)}>{fmtTR(shift.startAt)}</td>
       <td className="muted" title={String(shift.endAt)}>{fmtTR(shift.endAt)}</td>
       <CompanyExtendCell shift={shift} busy={busy} fmtTR={fmtTR} onOpenExtendModal={onOpenExtendModal} onOpenPreview={onOpenPreview} />
-      <CompanyOpsCell busy={busy} shift={shift} onOpenOpsEvents={onOpenOpsEvents} onConvertShiftToAgreement={onConvertShiftToAgreement} />
+      <CompanyOpsCell busy={busy} shift={shift} agreementConversion={agreementConversion} onOpenOpsEvents={onOpenOpsEvents} onConvertShiftToAgreement={onConvertShiftToAgreement} />
     </tr>
   );
 }

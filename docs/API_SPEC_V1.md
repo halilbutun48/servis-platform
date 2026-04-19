@@ -173,16 +173,39 @@ POST /api/availability/bulk (ROOM/SUPER_ADMIN)
 
 Agreement conflict önce, Shift conflict sonra raporlanır.
 
-Agreements (M17)
+Agreements (M17 / M91 canonical)
 POST /api/agreements (COMPANY)
+
+Not: doğrudan sözleşme açma kapalıdır. Tekil create için `sourceShiftId` zorunludur.
+
 {
   "roomId": 1,
+  "sourceShiftId": 123,
   "startDate": "2026-02-01",
   "endDate": "2026-03-01",
   "weekMask": 127,
   "startMin": 480,
-  "endMin": 600
+  "endMin": 600,
+  "direction": "INBOUND",
+  "pattern": "ONE_WAY"
 }
+
+POST /api/agreements/bundle (COMPANY)
+
+Agreement Wizard / preset akışının kanonik girişidir. Çoklu slot create burada yapılır.
+
+{
+  "roomId": 1,
+  "sourceShiftId": 123,
+  "startDate": "2026-02-01",
+  "endDate": "2026-03-01",
+  "weekMask": 62,
+  "items": [
+    { "startMin": 420, "endMin": 540, "direction": "INBOUND", "pattern": "ONE_WAY" },
+    { "startMin": 1020, "endMin": 1140, "direction": "OUTBOUND", "pattern": "ONE_WAY" }
+  ]
+}
+
 GET /api/agreements?take=50&status=REQUESTED (COMPANY/ROOM/SUPER_ADMIN)
 PUT /api/agreements/:id/approve (ROOM)
 { "vehicleId": 1, "driverId": 1 }
@@ -387,16 +410,39 @@ GET /api/availability?startAt=...&endAt=...&driverId=...
 
 Agreement conflict önce, Shift conflict sonra raporlanır.
 
-Agreements (M17)
+Agreements (M17 / M91 canonical)
 POST /api/agreements (COMPANY)
+
+Not: doğrudan sözleşme açma kapalıdır. Tekil create için `sourceShiftId` zorunludur.
+
 {
   "roomId": 1,
+  "sourceShiftId": 123,
   "startDate": "2026-02-01",
   "endDate": "2026-03-01",
   "weekMask": 127,
   "startMin": 480,
-  "endMin": 600
+  "endMin": 600,
+  "direction": "INBOUND",
+  "pattern": "ONE_WAY"
 }
+
+POST /api/agreements/bundle (COMPANY)
+
+Agreement Wizard / preset akışının kanonik girişidir. Çoklu slot create burada yapılır.
+
+{
+  "roomId": 1,
+  "sourceShiftId": 123,
+  "startDate": "2026-02-01",
+  "endDate": "2026-03-01",
+  "weekMask": 62,
+  "items": [
+    { "startMin": 420, "endMin": 540, "direction": "INBOUND", "pattern": "ONE_WAY" },
+    { "startMin": 1020, "endMin": 1140, "direction": "OUTBOUND", "pattern": "ONE_WAY" }
+  ]
+}
+
 GET /api/agreements?take=50&status=REQUESTED (COMPANY/ROOM/SUPER_ADMIN)
 PUT /api/agreements/:id/approve (ROOM)
 { "vehicleId": 1, "driverId": 1 }

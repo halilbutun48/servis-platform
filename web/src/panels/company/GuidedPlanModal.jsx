@@ -142,6 +142,7 @@ export default function GuidedPlanModal({
   const [mapPickPoint, setMapPickPoint] = useState(null);
 
   const [draftShiftIds, setDraftShiftIds] = useState([]);
+  const draftShiftIdsKey = draftShiftIds.join("|");
   const [draftShifts, setDraftShifts] = useState([]);
   const [osrmBatch, setOsrmBatch] = useState({ running: false, done: 0, total: 0 });
   const [osrmResById, setOsrmResById] = useState({});
@@ -574,7 +575,7 @@ export default function GuidedPlanModal({
       const lingeringIds = readGuidedTempShiftIds();
       const resumeMode = resumeStep != null && Number(resumeNonce || 0) > 0;
       if (lingeringIds.length && !resumeMode) {
-        await cleanupDraftShifts(lingeringIds, { keepState: true });
+        await cleanupGuidedDraftShifts({ token, ids: lingeringIds });
       }
       if (resumeMode && lingeringIds.length) {
         if (!alive) return;
@@ -659,7 +660,7 @@ export default function GuidedPlanModal({
     setOfferAmount(initialRouteRefreshAmount);
     setOfferNote("");
     setSentOk(false);
-  }, [open, step, draftShiftIds.join("|"), routeRefreshMode, launchContext]);
+  }, [open, step, draftShiftIdsKey, routeRefreshMode, launchContext]);
 
   useEffect(() => {
     const keys = new Set((durationOptions || []).map((x) => x.key));
@@ -670,7 +671,6 @@ export default function GuidedPlanModal({
   // Sync endDate when start/duration changes
   useEffect(() => {
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, durationDays]);
 
   function stepItems() {

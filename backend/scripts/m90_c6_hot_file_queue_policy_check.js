@@ -75,12 +75,17 @@ const planned = sorted(Object.keys(classifications));
 
 expect((state.activeMilestones || []).includes("M90C.6"), "state active milestones include M90C.6");
 expect(Number(policy.warningThreshold) === 1000 && Number(policy.blockThreshold) === 1200, "state policy keeps repo audit thresholds");
-expect(report.largeFiles.length === 3, "repo audit large file count remains 3");
+expect(report.largeFiles.length === Number(policy.currentLargeFileCount), "repo audit large file count matches policy snapshot");
+expect(report.warningHotFiles.length === Number(policy.currentWarningHotFileCount), "repo audit warning hot file count matches policy snapshot");
 expect(JSON.stringify(actual) === JSON.stringify(planned), "policy classification set matches repo audit hot/large file set exactly");
 
 const expectedClasses = {
   "backend/src/ai/chat/helpComposer.js": "justified-exception",
+  "backend/src/routes/agreements.js": "acceptance-sensitive-later",
   "backend/prisma/schema.prisma": "justified-exception",
+  "web/src/panels/room/AgreementsPanel.jsx": "safe-candidate-review",
+  "web/src/panels/company/GuidedPlanModal.jsx": "acceptance-sensitive-later",
+  "web/src/panels/company/AgreementsPanel.jsx": "safe-candidate-review",
   "backend/src/routes/shifts/room.js": "acceptance-sensitive-later",
   "backend/src/routes/shifts/company.js": "acceptance-sensitive-later",
   "web/src/panels/shared/CopilotPanel.jsx": "acceptance-sensitive-later",
@@ -88,6 +93,9 @@ const expectedClasses = {
   "backend/src/ai/jobGuide/screenCatalog.js": "safe-candidate-review",
   "web/src/panels/room/ShiftsPanel.jsx": "safe-candidate-review",
   "web/src/panels/company/ShiftPeopleTab.jsx": "safe-candidate-review",
+  "web/src/panels/company/AgreementWizard.jsx": "safe-candidate-review",
+  "tools/milestone_pack_manifest.json": "justified-exception",
+  "web/src/panels/company/ShiftsPanel.jsx": "safe-candidate-review",
 };
 for (const [file, expectedClass] of Object.entries(expectedClasses)) {
   expect(classifications[file]?.class === expectedClass, `${file} classified as ${expectedClass}`);

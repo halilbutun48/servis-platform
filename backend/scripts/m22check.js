@@ -2,9 +2,10 @@
 // M22CHECK: Company Room Directory + Agreement create UX
 // - Company can list/search rooms via GET /api/rooms?q=...
 // - Optional filter: hasHub=1
-// - Company can create agreement by selecting a room from directory
+// - Company can create agreement from a source shift by selecting a room from directory
 
 import { banner, step, assertOk, loginFirst, reqJson } from "./_harness.js";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
@@ -79,16 +80,21 @@ async function main() {
   const items2 = list2.json?.items ?? [];
   assertOk(items2.some((x) => Number(x.id) === roomId), "created room found by hasHub filter");
 
-  // 4) COMPANY create agreement with selected room
-  step("company creates agreement using directory roomId");
+  // 4) COMPANY create source shift + agreement with selected room
+  step("company creates source shift using directory roomId");
   const today = new Date();
   const startDate = ymdTR(today);
   const endDate = ymdTR(new Date(today.getTime() + 30 * 86400_000));
 
+  const src = await createAgreementSourceShift({ reqJson, token: companyToken, roomId, tag: "M22" });
+  assertOk(src.shiftId > 0, "source shift created");
+
+  step("company creates agreement using directory roomId + sourceShiftId");
   const a = await reqJson("POST", "/api/agreements", {
     token: companyToken,
     body: {
       roomId,
+      sourceShiftId: src.shiftId,
       startDate,
       endDate,
       weekMask: 127,

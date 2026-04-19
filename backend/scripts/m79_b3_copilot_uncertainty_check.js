@@ -49,7 +49,7 @@ const bubbleText = read('web/src/components/copilot/ChatMessageBubble.jsx');
 
 ensure(includesText(helpComposerText, 'buildUncertaintyMeta'), 'help composer builds uncertainty meta');
 ensure(includesText(helpComposerText, 'verificationHintForQuestionType'), 'help composer builds verification hint');
-ensure(includesText(helpComposerText, 'Emin değilsen önce bunu kontrol et'), 'help composer adds verify response section');
+ensure(includesText(helpComposerText, 'Emin değilsen önce şuna bak'), 'help composer adds verify response section');
 ensure(includesText(helpComposerText, 'uncertaintyMeta'), 'help composer returns uncertainty meta');
 ensure(includesText(panelText, 'uncertaintyMeta: payload?.uncertaintyMeta || null'), 'copilot panel stores uncertainty meta on assistant message');
 ensure(includesText(bubbleText, 'uncertaintyTone'), 'chat bubble renders uncertainty tone');

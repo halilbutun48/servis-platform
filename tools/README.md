@@ -3,6 +3,9 @@
 <!-- TOOLS_HYGIENE_CHECK_MARKER_V1 -->
 
 ## Kanonik komutlar
+- Tek repo kontrol zinciri: `npm run verify:repo`
+- PowerShell wrapper: `tools\check-repo.ps1 -Phase all`
+- Faz listeleme: `node backend\scripts\run_repo_check_chain.js --list`
 - Güncel master doğrulama: `tools\pack.ps1 -To 89 -RepoDir D:\servis-platform -NoBuild`
 - Living master doğrulama: `tools\pack_living.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
 - Living static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
@@ -14,6 +17,10 @@
 - M90C.8 CI / verification visibility: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 - M90C.9 güvenli kapanış / final hygiene checklist: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Root verify chain: `npm run verify:ci`
+- Root verify chain canonical entry: `npm run verify:repo`
+- Milestone static chain: `npm run verify:milestones`
+- M0->latest runner: `node backend\scripts\run_m0_latest.js --static-only --to latest --continue`
+- M92 repo verification spine: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
@@ -48,6 +55,12 @@
 - İlk yürütülebilir kapanış kapısı: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 - Sıradaki resmi kapanış kuyruğu: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Root verify chain: `npm run verify:ci`
+- Single-roof repo check: `npm run verify:repo`
+- Milestone static chain: `npm run verify:milestones`
+- M91 route preview / shift agreement check: `npm --prefix backend run m91check`
+- M91 compatibility milestone sweep: `npm --prefix backend run m91:milestones`
+- M91 family runner: `node backend\scripts\run_m91_route_preview_checks.js`
+- M92 repo verification spine check: `npm --prefix backend run m92check`
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
 - Kanonik web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
@@ -81,8 +94,8 @@
 
 ## Final closure order
 - `npm run verify:final`
-- `pwsh -ExecutionPolicy Bypass -File .	ools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
-- `pwsh -ExecutionPolicy Bypass -File .	ools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
+- `pwsh -ExecutionPolicy Bypass -File .\tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
+- `pwsh -ExecutionPolicy Bypass -File .\tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
 - `git status --short`
 - Beklenen fark disinda degisiklik yoksa commit/tag/push
 

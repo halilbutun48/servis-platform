@@ -42,6 +42,7 @@ console.log("=== M90C.9 SAFE CLOSURE / FINAL HYGIENE CHECK ===");
 const state = JSON.parse(read("tools/repo_contract_state.json"));
 const rootPackage = JSON.parse(read("package.json"));
 const backendPackage = JSON.parse(read("backend/package.json"));
+const repoChain = read("backend/scripts/run_repo_check_chain.js");
 const exportTool = read("tools/export_shareable_repo_bundle.ps1");
 const primer = read("docs/PRIMER_SSOT.md");
 const backlog = read("docs/NEXT_BACKLOG_V1.md");
@@ -63,8 +64,10 @@ expect((policy.exportPack || "") === "tools/pack_m90_c7_export_package_hygiene.p
 expect((policy.exportTool || "") === "tools/export_shareable_repo_bundle.ps1", "state policy points to shareable export tool");
 expect(Array.isArray(policy.orderedSteps) && policy.orderedSteps.length >= 4 && policy.orderedSteps.some((x) => includesText(x, "verify:final")) && policy.orderedSteps.some((x) => includesText(x, "pack_m90_c7_export_package_hygiene")) && policy.orderedSteps.some((x) => includesText(x, "export_shareable_repo_bundle")) && policy.orderedSteps.some((x) => includesText(x, "git status --short")), "state policy captures final closure order");
 
-expect((rootPackage.scripts || {})["verify:closure"]?.includes("m90c9check"), "root verify:closure includes m90c9check");
-expect((rootPackage.scripts || {})["verify:final"] === "npm run verify:ci", "root verify:final aliases canonical verify chain");
+expect((rootPackage.scripts || {})["verify:repo"] === "node backend/scripts/run_repo_check_chain.js --phase all", "root verify:repo points to canonical repo check chain");
+expect((rootPackage.scripts || {})["verify:closure"]?.includes("run_repo_check_chain.js --phase closure"), "root verify:closure uses closure phase from repo check chain");
+expect((rootPackage.scripts || {})["verify:final"] === "npm run verify:repo", "root verify:final aliases canonical repo check chain");
+expect(includesText(repoChain, "m90_c9_safe_closure_final_hygiene_check.js"), "repo check chain includes m90c9check");
 expect((backendPackage.scripts || {})["m90c9check"] === "node scripts/m90_c9_safe_closure_final_hygiene_check.js", "backend package exposes m90c9check script");
 
 expect(includesText(exportTool, "tar.exe") && includesText(exportTool, "CreateFromDirectory"), "export tool keeps tar and dotnet zip fallback");

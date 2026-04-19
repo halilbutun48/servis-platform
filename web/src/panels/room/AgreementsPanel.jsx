@@ -483,6 +483,21 @@ export default function AgreementsPanel() {
     });
   }
 
+  function agreementPreviewShiftId(agreement) {
+    const agreementId = Number(agreement?.id || 0);
+    const bridge = agreementId > 0 ? opsBridge?.[String(agreementId)] || null : null;
+    const lastShiftId = Number(bridge?.lastShift?.id || 0);
+    if (lastShiftId > 0) return lastShiftId;
+    const sourceShiftId = Number(
+      bridge?.sourceShiftId ||
+      bridge?.sourceShift?.id ||
+      agreement?.commercialBackbone?.shiftRootId ||
+      agreement?.commercialBackbone?.sourceShiftId ||
+      0
+    );
+    return sourceShiftId > 0 ? sourceShiftId : 0;
+  }
+
   useEffect(() => {
     if (!token || !routeRefreshItems.length) {
       setRouteRefreshPreviewById({});
@@ -1149,6 +1164,17 @@ export default function AgreementsPanel() {
                     <button
                       type="button"
                       className="btn sm ghost"
+                      disabled={!agreementPreviewShiftId(a)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
+                      }}
+                    >
+                      Rota Önizleme
+                    </button>
+                    <button
+                      type="button"
+                      className="btn sm ghost"
                       disabled={busy}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1190,7 +1216,7 @@ export default function AgreementsPanel() {
               ))}
               {!filteredPending.length ? (
                 <tr>
-                  <td colSpan={9} className="muted">Bekleyen sözleşme yok.</td>
+                  <td colSpan={10} className="muted">Bekleyen sözleşme yok.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -1328,6 +1354,7 @@ export default function AgreementsPanel() {
                 <th>Oda Karşı Teklifi</th>
                 <th>Araç</th>
                 <th>Sürücü</th>
+                <th>Aksiyon</th>
               </tr>
             </thead>
             <tbody>
@@ -1347,11 +1374,24 @@ export default function AgreementsPanel() {
                   <td><OfferCell amount={a.roomOfferAmount} note={a.roomOfferNote} /></td>
                   <td className="muted">{a.vehicle?.plate ?? a.vehicleId ?? "-"}</td>
                   <td className="muted">{a.driver?.fullName ?? a.driverId ?? "-"}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn sm ghost"
+                      disabled={!agreementPreviewShiftId(a)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openAgreementPreview(agreementPreviewShiftId(a), { title: `Sözleşme #${a.id} — Rota Önizleme` });
+                      }}
+                    >
+                      Rota Önizleme
+                    </button>
+                  </td>
                 </tr>
               ))}
               {!filteredOthers.length ? (
                 <tr>
-                  <td colSpan={10} className="muted">Kayıt yok.</td>
+                  <td colSpan={11} className="muted">Kayıt yok.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -1370,7 +1410,6 @@ export default function AgreementsPanel() {
     </div>
   );
 }
-
 
 
 

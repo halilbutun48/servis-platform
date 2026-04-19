@@ -1,8 +1,9 @@
-// M26CHECK: Company workflow UX (Agreement templates + Company Home panel readiness)
+// M26CHECK: Company workflow UX (Agreement templates + Company Home panel readiness (source-shift canonical))
 // This is a light API contract check. UI changes are covered indirectly.
 
 import http from "http";
 import https from "https";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
@@ -98,18 +99,23 @@ async function main() {
   if (!rs.items.some((x) => x.id === room.id)) throw new Error("created room not found by search");
   ok("company GET /api/rooms?q works");
 
-  // create agreement with template-ish values (weekdays, morning)
+  // create source shift + agreement with template-ish values (weekdays, morning)
   const startDate = todayYmd();
   const endDate = addDaysYmd(startDate, 30);
   const weekMask = 62; // Mon-Fri
   const startMin = 7 * 60;
   const endMin = 9 * 60;
 
+  const src = await createAgreementSourceShift({ reqJson, token: tC, roomId: room.id, tag: "M26" });
+  if (!src?.shiftId) throw new Error("source shift create -> id missing");
+  ok("source shift create");
+
   const ag = await mustOk(
     reqJson("POST", "/api/agreements", {
       token: tC,
       body: {
         roomId: room.id,
+        sourceShiftId: src.shiftId,
         startDate,
         endDate,
         weekMask,

@@ -964,6 +964,90 @@
       "checklist": "docs/CHECKLIST_SSOT.md",
       "repoParam": "RepoRoot",
       "supportsNoBuild": false
+    },
+    {
+      "id": "M90B.1",
+      "group": 90,
+      "kind": "closure-pack",
+      "script": "tools/pack_m90_b1_canonical_closure_gate.ps1",
+      "check": "tools/check_m90_b1_canonical_closure_gate_repo_contract.ps1",
+      "runtime": "backend/scripts/m90_b1_canonical_closure_gate_check.js",
+      "runbook": "docs/RUNBOOK_M90B_1_EXECUTABLE_CLOSURE_GATE.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
+    },
+    {
+      "id": "M90C.6",
+      "group": 90,
+      "kind": "closure-pack",
+      "script": "tools/pack_m90_c6_hot_file_queue_policy.ps1",
+      "check": "tools/check_m90_c6_hot_file_queue_policy_repo_contract.ps1",
+      "runtime": "backend/scripts/m90_c6_hot_file_queue_policy_check.js",
+      "runbook": "docs/RUNBOOK_M90C_6_HOT_FILE_QUEUE_POLICY.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
+    },
+    {
+      "id": "M90C.7",
+      "group": 90,
+      "kind": "closure-pack",
+      "script": "tools/pack_m90_c7_export_package_hygiene.ps1",
+      "check": "tools/check_m90_c7_export_package_hygiene_repo_contract.ps1",
+      "runtime": "backend/scripts/m90_c7_export_package_hygiene_check.js",
+      "runbook": "docs/RUNBOOK_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
+    },
+    {
+      "id": "M90C.8",
+      "group": 90,
+      "kind": "closure-pack",
+      "script": "tools/pack_m90_c8_ci_verification_visibility.ps1",
+      "check": "tools/check_m90_c8_ci_verification_visibility_repo_contract.ps1",
+      "runtime": "backend/scripts/m90_c8_ci_verification_visibility_check.js",
+      "runbook": "docs/RUNBOOK_M90C_8_CI_VERIFICATION_VISIBILITY.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
+    },
+    {
+      "id": "M90C.9",
+      "group": 90,
+      "kind": "closure-pack",
+      "script": "tools/pack_m90_c9_safe_closure_final_hygiene.ps1",
+      "check": "tools/check_m90_c9_safe_closure_final_hygiene_repo_contract.ps1",
+      "runtime": "backend/scripts/m90_c9_safe_closure_final_hygiene_check.js",
+      "runbook": "docs/RUNBOOK_M90C_9_SAFE_CLOSURE_FINAL_HYGIENE_CHECKLIST.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
+    },
+    {
+      "id": "M91",
+      "group": 91,
+      "kind": "acceptance-pack",
+      "script": "tools/pack_m91_shift_agreement_route_preview.ps1",
+      "check": "tools/check_m91_shift_agreement_route_preview_repo_contract.ps1",
+      "runtime": "backend/scripts/m91_company_agreement_from_shift_only_check.js",
+      "runbook": "docs/RUNBOOK_M91_SHIFT_AGREEMENT_ROUTE_PREVIEW.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
+    },
+    {
+      "id": "M92",
+      "group": 92,
+      "kind": "verification-spine",
+      "script": "tools/pack_m92_repo_verification_spine.ps1",
+      "check": "tools/check_m92_repo_verification_spine_repo_contract.ps1",
+      "runtime": "backend/scripts/m92_repo_verification_spine_check.js",
+      "runbook": "docs/RUNBOOK_M92_REPO_VERIFICATION_SPINE.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
     }
   ]
 }

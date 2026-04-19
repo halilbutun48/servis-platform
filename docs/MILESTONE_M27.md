@@ -6,9 +6,9 @@ Sahadaki kullanıcı için **en az tıkla planlama**:
 - **Preset plan paketi** seçsin (Sabah / Akşam / Sabah+Akşam / Gece).
 - Room seçsin (hub’lı filtre + arama).
 - Tarih aralığı + günler.
-- Tek tıkla agreement(ler) oluşturulsun.
+- Tek tıkla shift kaynaklı sözleşme slotları oluşturulsun.
 
-> Not: Backend’de yeni endpoint yok. Wizard UI mevcut `POST /api/agreements` ile **ardışık** create yapar.
+> Not: Wizard artık shift kaynaklı çalışır. Kanonik create yolu `POST /api/agreements/bundle` + `sourceShiftId` ile çoklu slot oluşturmaktır.
 
 ---
 
@@ -35,7 +35,7 @@ Sahadaki kullanıcı için **en az tıkla planlama**:
 - `backend/scripts/m27check.js`
   - SuperAdmin room+hub create
   - Company `GET /api/rooms?hasHub=1` doğrular
-  - Company morning + evening olmak üzere 2 agreement create
+  - Company source shift + morning/evening bundle create
   - Listede ikisi var mı kontrol
   - Cleanup: cancel
 
@@ -49,6 +49,6 @@ Sahadaki kullanıcı için **en az tıkla planlama**:
 - `tools/pack.ps1 -To 27` → **PACK PASS ✅**
 - Company:
   - Wizard açılır
-  - Preset seçip **tek ekrandan** agreement(ler) oluşturulur
+  - Preset seçip **tek ekrandan** shift kaynaklı sözleşme slotları oluşturulur
   - Oluşturma sonrası agreements listesinde görünür
 

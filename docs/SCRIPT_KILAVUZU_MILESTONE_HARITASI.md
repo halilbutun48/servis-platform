@@ -2,7 +2,7 @@
 
 Tarih: 2026-04-08  
 Repo: `servis-platform`  
-Kapsam: Bu doküman, M0'dan M89'a kadar milestone ve script ilişkisini **tek resmi rehberde** toplar.
+Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script ilişkisini **tek resmi rehberde** toplar.
 
 ## 1) Bu dosya nasıl okunmalı?
 - Önce `tools/repo_contract_state.json` okunur.
@@ -24,14 +24,22 @@ Kapsam: Bu doküman, M0'dan M89'a kadar milestone ve script ilişkisini **tek re
 
 ## 4) Master orchestration
 ### Ana komutlar
+- `npm run verify:repo`
+- `tools\check-repo.ps1 -Phase all`
+- `node backend\scripts\run_repo_check_chain.js --phase all`
 - `tools\pack.ps1 -To 89 -RepoDir D:\servis-platform -NoBuild`
 - `tools\pack_living.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
 - `tools\verify_living_runtime.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
 - `tools\check_repo_audit_master.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
+- `node backend\scripts\run_m0_latest.js --static-only --to latest --continue`
+- `npm run verify:milestones`
 
 ### Orchestration mantığı
+- `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
+- `backend/scripts/run_repo_check_chain.js` lint -> docs -> hot -> web-contract -> closure -> milestones sirasini uygular.
+- Eski tekil scriptler ve packler kanit olarak kalir; gunluk siralama bu runner uzerinden okunur.
 - `pack.ps1` ana üst kapıdır.
 - `pack_living.ps1`, master pack'i living girişinden çağırır.
 - `verify_living_static.ps1`, statik repo ve alt bant kontrollerini koşturur.
@@ -40,7 +48,7 @@ Kapsam: Bu doküman, M0'dan M89'a kadar milestone ve script ilişkisini **tek re
 
 ## 5) Faz haritası
 ### Faz A — M0→M41 çekirdek temel hat [HISTORICAL]
-Bu bant tek tek ayrı pack rehberinden çok `run_m0_m66.js` ve legacy milestone check zinciri ile yaşar.
+Bu bant tek tek ayrı pack rehberinden çok `run_m0_latest.js` ve legacy milestone check zinciri ile yaşar. Eski `run_m0_m66.js` yalniz tarihsel wrapper olarak dusunulmelidir; guncel komut `npm run verify:milestones`.
 Ana kapsama örnekleri:
 - iskelet / auth / role / seed
 - temel REST/WS omurgası
@@ -367,9 +375,34 @@ Bu bant güncel doğrulanmış üst hattır.
 - Export/hijyen shell tercihi: `pwsh`
 - Ana konu: release/shareable/export/verify sırasını tek resmi checklist altında sabitlemek ve PS5 uyum dersini kalıcı kurala çevirmek.
 
+### M91 — shift / agreement route preview [STATIC CHECK BAND]
+- Runbook: `docs/RUNBOOK_M91_SHIFT_AGREEMENT_ROUTE_PREVIEW.md`
+- Pack: `tools/pack_m91_shift_agreement_route_preview.ps1`
+- Backend alias: `npm --prefix backend run m91check`
+- Family runner: `node backend/scripts/run_m91_route_preview_checks.js`
+- Compatibility milestone alias: `npm --prefix backend run m91:milestones`
+- Latest runner: `npm run verify:milestones`
+- Ana konu: vardiyadan sozlesmeye gecen akista kaynak vardiya, rota onizleme, operasyon koprusu ve linked-shift guard'larini ayni kontratta tutmak. Benzer M91 marker scriptleri `backend/scripts/_m91_route_preview_checks.js` altinda tek catiya alinmistir; eski `m91*_check.js` dosyalari compatibility wrapper olarak kalir.
+
+### M92 — repo verification spine [CANONICAL CHECK CHAIN]
+- Milestone: `docs/MILESTONE_M92_REPO_VERIFICATION_SPINE.md`
+- Runbook: `docs/RUNBOOK_M92_REPO_VERIFICATION_SPINE.md`
+- Pack: `tools/pack_m92_repo_verification_spine.ps1`
+- Backend alias: `npm --prefix backend run m92check`
+- Root alias: `npm run verify:repo`
+- Ana konu: tum repo kontrollerini tek catiya toplamak; package scriptleri, tools wrapper, manifest, state, runbook ve M0->latest runner baglantisini ayni guard altinda tutmak.
+
+### M0->latest static verification [RUNNER]
+- Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
+- Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
+- Root alias: `npm run verify:milestones`
+- Ana konu: legacy M0-Mxx check hattini repo kokunden, `.js/.cjs/.mjs` kapsamiyla ve latest milestone'a kadar tek zincirde calistirmak.
+
 ## 11) Hızlı okuma özeti
 - `M0→M41`: çekirdek temel hat
 - `M42→M58`: mobil / KVKK / hazırlık ön bant
 - `M59→M79`: operasyon / SSOT / hot-path / acceptance anchor
 - `M80→M89`: güncel canonical upper route
 - `M90`: 10/10 kapanış ve canonical convergence
+- `M91`: shift/agreement route preview local acceptance bandi
+- `M92`: repo verification spine ve tek cati kontrol zinciri

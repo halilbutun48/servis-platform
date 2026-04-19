@@ -3,6 +3,10 @@ artifacts/*
 
 backend/data/*.json
 !backend/data/.gitkeep
+data/*.json
+data/*.json.bak
+data/*.json.lock
+data/*.json.*.tmp
 
 node_modules/
 dist/

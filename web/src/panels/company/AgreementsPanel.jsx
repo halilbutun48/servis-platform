@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { navigate } from "../../router";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -190,6 +190,15 @@ function canRouteRefresh(agreement, origin) {
   return Number(origin?.sourceShiftId || 0) > 0;
 }
 
+function isActiveRouteRefreshStatus(status) {
+  return ["PENDING", "COUNTERED"].includes(String(status || "").toUpperCase());
+}
+
+function moneyTry(value) {
+  const n = Number(value || 0);
+  return `${new Intl.NumberFormat("tr-TR").format(Number.isFinite(n) ? n : 0)} ₺`;
+}
+
 function summarizeRoutePreview(payload) {
   const summary = payload?.summary || {};
   const stops = Array.isArray(payload?.stops) ? payload.stops : [];
@@ -374,7 +383,7 @@ export default function AgreementsPanel() {
   const durationDays = useMemo(() => {
     const p = DURATION_PRESETS.find((x) => x.key === durationKey) || DURATION_PRESETS.find((x) => x.key === DEFAULT_DURATION_KEY) || DURATION_PRESETS[0];
     return Number(p.days || 30);
-  }, [durationKey]);
+  }, [DEFAULT_DURATION_KEY, durationKey]);
   const [_endDate, setEndDate] = useState(addDaysISO(todayYmd(), 0));
 
   const [daysSel, setDaysSel] = useState(() => selectedFromMask(62));
@@ -402,7 +411,6 @@ export default function AgreementsPanel() {
   }, [rooms]);
 
   useEffect(() => {
-    let cancelled = false;
     const rid = Number(roomId || 0);
     const room = rid ? roomById.get(rid) : null;
 
@@ -412,6 +420,11 @@ export default function AgreementsPanel() {
         setHubLng(String(room.hubLng));
       }
     }
+  }, [roomId, roomById, useRoomHub, hubLat, hubLng]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const rid = Number(roomId || 0);
 
     if (!advancedOpen || !token || !rid) {
       setSelectedRoomScore(null);
@@ -428,7 +441,7 @@ export default function AgreementsPanel() {
     })();
 
     return () => { cancelled = true; };
-  }, [advancedOpen, token, roomId, roomById, useRoomHub]);
+  }, [advancedOpen, token, roomId]);
 
   function applyTemplate(key) {
     const t = PLAN_TEMPLATES.find((x) => x.key === key) || PLAN_TEMPLATES[0];
@@ -441,7 +454,6 @@ export default function AgreementsPanel() {
 
   useEffect(() => {
     applyTemplate(templateKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateKey]);
 
   useEffect(() => {
@@ -449,7 +461,7 @@ export default function AgreementsPanel() {
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
-  async function loadRooms(signal) {
+  const loadRooms = useCallback(async (signal) => {
     if (!token) return;
     setRoomErr("");
     setRoomsSupported(true);
@@ -463,7 +475,7 @@ export default function AgreementsPanel() {
       setRoomsSupported(false);
       setRoomErr(e?.message || "Odalar endpointi yok");
     }
-  }
+  }, [token]);
 
   function openAgreementShift(shiftId, preview = false) {
     const sid = Number(shiftId || 0);
@@ -507,7 +519,7 @@ export default function AgreementsPanel() {
         if (ids.length) {
           const [bridge, routeRefresh] = await Promise.all([
             api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } }),
-            api("/api/agreements/route-refresh?status=PENDING", { token }).catch(() => ({ items: [] })),
+            api("/api/agreements/route-refresh", { token }).catch(() => ({ items: [] })),
           ]);
           const nextBridge = bridge?.byId ?? {};
           setOpsBridge(nextBridge);
@@ -530,6 +542,7 @@ export default function AgreementsPanel() {
           });
           const pendingMap = {};
           for (const item of (Array.isArray(routeRefresh?.items) ? routeRefresh.items : [])) {
+            if (!isActiveRouteRefreshStatus(item?.status)) continue;
             const aid = Number(item?.agreementId || 0);
             if (aid > 0 && !pendingMap[String(aid)]) pendingMap[String(aid)] = item;
           }
@@ -576,7 +589,7 @@ export default function AgreementsPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token, advancedOpen, guidedOpen]);
+  }, [token, advancedOpen, guidedOpen, loadRooms]);
 
 
   useEffect(() => {
@@ -621,6 +634,32 @@ export default function AgreementsPanel() {
     setRouteRefreshLaunch(launch);
     setRouteRefreshNonce((n) => n + 1);
     setGuidedOpen(true);
+  }
+
+  async function acceptRouteRefreshCounter(requestId) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/route-refresh/${requestId}/accept-counter`, { token, method: "PUT", body: {} });
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Rota güncelleme karşı teklifi kabul edilemedi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejectRouteRefreshCounter(requestId) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/route-refresh/${requestId}/reject-counter`, { token, method: "PUT", body: {} });
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Rota güncelleme karşı teklifi reddedilemedi.");
+    } finally {
+      setBusy(false);
+    }
   }
 
 
@@ -820,8 +859,20 @@ export default function AgreementsPanel() {
     () => (selectedAgreementRow?.a ? routeRefreshPendingByAgreement?.[String(selectedAgreementRow.a.id)] || null : null),
     [selectedAgreementRow, routeRefreshPendingByAgreement]
   );
+  const selectedRouteRefreshStatus = String(selectedRouteRefreshPending?.status || "").toUpperCase();
+  const selectedRouteRefreshCountered = selectedRouteRefreshStatus === "COUNTERED";
   void selectedRouteRefreshLaunch;
   const hasPendingRouteRefresh = (agreementId) => Boolean(routeRefreshPendingByAgreement?.[String(agreementId)]);
+  const routeRefreshActionLabel = (agreementId) => {
+    const item = routeRefreshPendingByAgreement?.[String(agreementId)];
+    if (String(item?.status || "").toUpperCase() === "COUNTERED") return "Karşı Teklif Geldi";
+    return item ? "Rota Güncelleme Bekliyor" : "Rota Güncelle";
+  };
+  const agreementPreviewShiftId = (agreementId) => {
+    const bridgeLastShiftId = Number(opsBridge?.[String(agreementId)]?.lastShift?.id || 0);
+    if (bridgeLastShiftId > 0) return bridgeLastShiftId;
+    return Number(agreementOrigins?.[String(agreementId)]?.sourceShiftId || 0);
+  };
   const [routeRefreshPreviewSummary, setRouteRefreshPreviewSummary] = useState({ loading: false, current: null, proposed: null, err: "" });
 
   useEffect(() => {
@@ -974,9 +1025,14 @@ export default function AgreementsPanel() {
               Kaynak Vardiyaya Git
             </button>
             {canRouteRefresh(selectedAgreementRow?.a, selectedAgreementOrigin) ? (
-              <button type="button" className="btn" disabled={busy || Boolean(selectedRouteRefreshPending)} onClick={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}>
-                {selectedRouteRefreshPending ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
-              </button>
+              <>
+                <button type="button" className="btn" disabled={!agreementPreviewShiftId(selectedAgreementRow.a.id)} onClick={() => openAgreementShift(agreementPreviewShiftId(selectedAgreementRow.a.id), true)}>
+                  Rota Önizleme
+                </button>
+                <button type="button" className="btn" disabled={busy || Boolean(selectedRouteRefreshPending)} onClick={() => startRouteRefresh(selectedAgreementRow.a, selectedAgreementRow.room)}>
+                  {selectedRouteRefreshCountered ? "Karşı Teklif Geldi" : selectedRouteRefreshPending ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
+                </button>
+              </>
             ) : null}
           </div>
         </div>
@@ -984,12 +1040,18 @@ export default function AgreementsPanel() {
 
       {selectedRouteRefreshPending ? (
         <div className="card" style={{ border: "1px solid rgba(88,166,255,.24)" }}>
-          <div style={{ fontWeight: 900 }}>Bekleyen rota güncelleme teklifi</div>
+          <div style={{ fontWeight: 900 }}>{selectedRouteRefreshCountered ? "Rota güncelleme karşı teklifi" : "Bekleyen rota güncelleme teklifi"}</div>
           <div className="muted" style={{ marginTop: 6 }}>
             Talep #{selectedRouteRefreshPending.id} • {String(selectedRouteRefreshPending.startDate || "").slice(0, 10)} → {String(selectedRouteRefreshPending.endDate || "").slice(0, 10)} • {Number(selectedRouteRefreshPending.shiftCount || 0)} taslak vardiya
           </div>
           {selectedRouteRefreshPending.companyOfferNote ? (
-            <div className="muted" style={{ marginTop: 6 }}>Not: {selectedRouteRefreshPending.companyOfferNote}</div>
+            <div className="muted" style={{ marginTop: 6 }}>Şirket notu: {selectedRouteRefreshPending.companyOfferNote}</div>
+          ) : null}
+          {selectedRouteRefreshCountered ? (
+            <div className="muted" style={{ marginTop: 6 }}>
+              Oda karşı teklifi: <b>{moneyTry(selectedRouteRefreshPending.roomCounterAmount)}</b>
+              {selectedRouteRefreshPending.roomCounterNote ? <span> — {selectedRouteRefreshPending.roomCounterNote}</span> : null}
+            </div>
           ) : null}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>
             <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
@@ -1034,10 +1096,13 @@ export default function AgreementsPanel() {
               <div style={{ fontWeight: 900, marginTop: 4 }}>
                 {(() => {
                   const currentAmount = Number(selectedRouteRefreshLaunch?.currentCompanyOfferAmount ?? selectedAgreementRow?.a?.companyOfferAmount ?? 0);
-                  const nextAmount = Number(selectedRouteRefreshPending.companyOfferAmount ?? currentAmount);
+                  const nextAmount = Number(
+                    selectedRouteRefreshCountered
+                      ? selectedRouteRefreshPending.roomCounterAmount ?? selectedRouteRefreshPending.companyOfferAmount ?? currentAmount
+                      : selectedRouteRefreshPending.companyOfferAmount ?? currentAmount
+                  );
                   const diff = nextAmount - currentAmount;
-                  const fmt = (n) => new Intl.NumberFormat("tr-TR").format(Number(n || 0)) + " ₺";
-                  return `${fmt(currentAmount)} → ${fmt(nextAmount)} (${diff > 0 ? "+" : ""}${fmt(diff)})`;
+                  return `${moneyTry(currentAmount)} → ${moneyTry(nextAmount)} (${diff > 0 ? "+" : ""}${moneyTry(diff)})`;
                 })()}
               </div>
             </div>
@@ -1054,6 +1119,16 @@ export default function AgreementsPanel() {
             <button type="button" className="btn" disabled={!Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0)} onClick={() => openAgreementShift(Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0), true)}>
               Yeni Rotayı Önizle
             </button>
+            {selectedRouteRefreshCountered ? (
+              <>
+                <button type="button" disabled={busy} onClick={() => acceptRouteRefreshCounter(selectedRouteRefreshPending.id)}>
+                  Karşı Teklifi Kabul Et
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => rejectRouteRefreshCounter(selectedRouteRefreshPending.id)}>
+                  Karşı Teklifi Reddet
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -1158,9 +1233,14 @@ export default function AgreementsPanel() {
                       </>
                     ) : null}
                     {canRouteRefresh(a, agreementOrigins?.[String(a.id)]) ? (
-                      <button type="button" className="btn" disabled={busy || hasPendingRouteRefresh(a.id)} onClick={() => startRouteRefresh(a, room)}>
-                        {hasPendingRouteRefresh(a.id) ? "Rota Güncelleme Bekliyor" : "Rota Güncelle"}
-                      </button>
+                      <>
+                        <button type="button" className="btn" disabled={!agreementPreviewShiftId(a.id)} onClick={() => openAgreementShift(agreementPreviewShiftId(a.id), true)}>
+                          Rota Önizleme
+                        </button>
+                        <button type="button" className="btn" disabled={busy || hasPendingRouteRefresh(a.id)} onClick={() => startRouteRefresh(a, room)}>
+                          {routeRefreshActionLabel(a.id)}
+                        </button>
+                      </>
                     ) : null}
                     <button type="button" disabled={busy || a.status === "CANCELLED" || a.status === "DONE" || a.status === "REJECTED"} onClick={() => cancelAgreement(a.id)}>
                       İptal Et
@@ -1182,9 +1262,6 @@ export default function AgreementsPanel() {
                     </button>
                     <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 30)}>
                       Uzat +30g
-                    </button>
-                    <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => extendByDays(a, 90)}>
-                      Uzat +90g
                     </button>
                     <button type="button" disabled={busy || String(a.extendStatus || "NONE").toUpperCase() === "COUNTERED"} onClick={() => askExtend(a)}>
                       Tarih...
@@ -1220,4 +1297,3 @@ export default function AgreementsPanel() {
     </div>
   );
 }
-

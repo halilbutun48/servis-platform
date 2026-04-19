@@ -8,7 +8,7 @@
   "historicalNextMilestone": "M80",
   "livingUpperRouteFrom": 80,
   "livingUpperRouteTo": 89,
-  "latestManifestStage": "M89",
+  "latestManifestStage": "M92",
   "docsContractMode": "state-first-canonical-history-split",
   "canonicalPackHierarchy": {
     "publicRoot": "tools/packs/living",
@@ -63,7 +63,9 @@
     "M90C.6",
     "M90C.7",
     "M90C.8",
-    "M90C.9"
+    "M90C.9",
+    "M91",
+    "M92"
   ],
   "canonicalDocs": [
     "README.md",
@@ -83,6 +85,8 @@
     "policyVersion": 1,
     "warningThreshold": 1000,
     "blockThreshold": 1200,
+    "currentLargeFileCount": 8,
+    "currentWarningHotFileCount": 8,
     "principles": [
       "line-count dusurmek icin kor refactor yok",
       "once acceptance sonra kontrollu temizlik",
@@ -93,6 +97,10 @@
       "backend/src/ai/chat/helpComposer.js": {
         "class": "justified-exception",
         "note": "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
+      },
+      "backend/src/routes/agreements.js": {
+        "class": "acceptance-sensitive-later",
+        "note": "sozlesme, route-refresh ve operasyon koprusu merkezi; kor split yerine contract destekli planli refactor"
       },
       "backend/prisma/schema.prisma": {
         "class": "justified-exception",
@@ -105,6 +113,18 @@
       "web/src/panels/room/ShiftsPanel.jsx": {
         "class": "safe-candidate-review",
         "note": "davranis degistirmeden section/state extraction adayi"
+      },
+      "web/src/panels/room/AgreementsPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "room sozlesme ve rota onizleme yuzeyleri icin kontrollu section extraction adayi"
+      },
+      "web/src/panels/company/GuidedPlanModal.jsx": {
+        "class": "acceptance-sensitive-later",
+        "note": "guided plan ve rota guncelleme akisi kritik; yalniz contract destekli parcalanir"
+      },
+      "web/src/panels/company/AgreementsPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "company sozlesme/route-refresh aksiyonlari icin kontrollu component extraction adayi"
       },
       "backend/src/routes/shifts/room.js": {
         "class": "acceptance-sensitive-later",
@@ -125,6 +145,18 @@
       "web/src/panels/company/ShiftPeopleTab.jsx": {
         "class": "safe-candidate-review",
         "note": "shift kisi/ithal/stop yardimcilari kontrollu extraction sonrasi kalan review adayi"
+      },
+      "web/src/panels/company/AgreementWizard.jsx": {
+        "class": "safe-candidate-review",
+        "note": "sozlesme taslak/prefill akisi icin kontrollu section extraction adayi"
+      },
+      "tools/milestone_pack_manifest.json": {
+        "class": "justified-exception",
+        "note": "tek resmi milestone manifesti; bolme yerine M92 spine ile okunurluk ve giris komutu sabitlenir"
+      },
+      "web/src/panels/company/ShiftsPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "vardiya ticari/track state ayrimi icin kontrollu extraction adayi"
       }
     }
   },
@@ -208,5 +240,29 @@
       "line-count reduction stays deferred until after acceptance, hygiene, export, and CI closure work"
     ],
     "lintEvidence": "artifacts/lint/web_lint_latest.txt"
+  },
+  "repoVerificationSpine": {
+    "goal": "single-roof-repo-verification-chain",
+    "primaryCommand": "npm run verify:repo",
+    "ciCommand": "npm run verify:ci",
+    "finalCommand": "npm run verify:final",
+    "runner": "backend/scripts/run_repo_check_chain.js",
+    "milestoneRunner": "backend/scripts/run_m0_latest.js",
+    "m92Check": "backend/scripts/m92_repo_verification_spine_check.js",
+    "toolsWrapper": "tools/check-repo.ps1",
+    "orderedPhases": [
+      "lint",
+      "docs",
+      "hot",
+      "web-contract",
+      "closure",
+      "milestones"
+    ],
+    "compatibilityNotes": [
+      "legacy milestone scripts remain as evidence",
+      "new daily gate is npm run verify:repo",
+      "M91 local route preview checks are included through the M0-latest milestone runner",
+      "M92 validates the package, tools, state, manifest, runbook and runner bindings"
+    ]
   }
 }

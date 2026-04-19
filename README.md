@@ -28,6 +28,8 @@ Bu repo, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı om
 - Ürün kodu geri alınmaz; pack/check/runbook/docs yeni canonical gerçeğe uydurulur.
 
 ## Kanonik komutlar
+- Tek repo kontrol zinciri: `npm run verify:repo`
+- Fazli repo kontrolu: `tools\check-repo.ps1 -Phase all`
 - Master pack: `tools\pack.ps1 -To 89 -RepoDir D:\servis-platform -NoBuild`
 - Living master doğrulama: `tools\pack_living.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
 - Living static doğrulama: `tools\verify_living_static.ps1 -RepoRoot D:\servis-platform`
@@ -42,6 +44,8 @@ Bu repo, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı om
 - M87 ödeme hesabı hazırlığı: `tools\pack_m87_payment_account_readiness.ps1 -RepoRoot D:\servis-platform`
 - M88 settlement operasyon masası: `tools\pack_m88_settlement_operations_console.ps1 -RepoRoot D:\servis-platform`
 - M89 settlement mutabakat masası: `tools\pack_m89_settlement_reconciliation_desk.ps1 -RepoRoot D:\servis-platform`
+- M91 shift/agreement rota onizleme: `tools\pack_m91_shift_agreement_route_preview.ps1 -RepoRoot D:\servis-platform`
+- M92 repo verification spine: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
 
 ## Kanonik / tarihsel ayrımı
 - `README.md`, `docs/README.md`, `docs/PRIMER_SSOT.md`, `docs/STARTPACK_V1.md`, `docs/CHECKLIST_SSOT.md`, `docs/MILESTONE_REGISTRY_V1.md`, `docs/NEXT_BACKLOG_V1.md`, `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`, `tools/README.md`, `tools/PRIMER_SNAPSHOT.md`, `tools/CHECKLIST_SSOT.md` güncel canonical yüzeydir.
@@ -56,6 +60,8 @@ Bu repo, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı om
 ## Root orchestration
 - root lint: `npm run lint`
 - hot-path smoke: `npm run verify:hot`
+- single roof check: `npm run verify:repo`
+- milestone static chain: `npm run verify:milestones`
 - mobile acceptance: `npm run acceptance:mobile` (mobile klasörü içinde)
 
 ## REPO_CONTRACT_MARKERS_V1

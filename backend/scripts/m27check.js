@@ -1,9 +1,10 @@
 // M27CHECK: Agreement Wizard presets (batch create) contract check
 // - company can search hub rooms
-// - company can create 2 agreements (morning+evening) sequentially
+// - company can create 2 agreement slots (morning+evening) through bundle + source shift
 
 import http from "http";
 import https from "https";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
@@ -103,58 +104,43 @@ async function main() {
   const endDate = addDaysYmd(startDate, 30);
   const weekMask = 62; // Mon-Fri
 
-  // morning + evening (two sequential creates)
-  const a1 = await mustOk(
-    reqJson("POST", "/api/agreements", {
-      token: tC,
-      body: {
-        roomId: room.id,
-        startDate,
-        endDate,
-        weekMask,
-        startMin: 7 * 60,
-        endMin: 9 * 60,
-        direction: "INBOUND",
-        pattern: "ONE_WAY",
-        hubLat,
-        hubLng,
-      },
-    }),
-    "agreement create (morning)"
-  );
-  if (!a1?.id) throw new Error("agreement create (morning) -> id missing");
-  ok("agreement create (morning)");
+  const src = await createAgreementSourceShift({ reqJson, token: tC, roomId: room.id, tag: "M27" });
+  if (!src?.shiftId) throw new Error("source shift create -> id missing");
+  ok("source shift create");
 
-  const a2 = await mustOk(
-    reqJson("POST", "/api/agreements", {
+  // morning + evening now go through canonical bundle create with sourceShiftId
+  const bundle = await mustOk(
+    reqJson("POST", "/api/agreements/bundle", {
       token: tC,
       body: {
         roomId: room.id,
+        sourceShiftId: src.shiftId,
         startDate,
         endDate,
         weekMask,
-        startMin: 17 * 60,
-        endMin: 19 * 60,
-        direction: "OUTBOUND",
-        pattern: "ONE_WAY",
         hubLat,
         hubLng,
+        items: [
+          { label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
+          { label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
+        ],
       },
     }),
-    "agreement create (evening)"
+    "agreement bundle create (morning+evening)"
   );
-  if (!a2?.id) throw new Error("agreement create (evening) -> id missing");
-  ok("agreement create (evening)");
+  const createdIds = Array.isArray(bundle?.createdIds) ? bundle.createdIds.map((x) => Number(x)).filter((x) => x > 0) : [];
+  if (createdIds.length !== 2) throw new Error(`agreement bundle create -> expected 2 ids, got ${createdIds.length}`);
+  ok("agreement bundle create (2 items)");
 
   const al = await mustOk(reqJson("GET", "/api/agreements?take=200", { token: tC }), "agreements list");
   if (!Array.isArray(al?.items)) throw new Error("agreements list -> items missing");
-  if (!al.items.some((x) => x.id === a1.id)) throw new Error("morning agreement not in list");
-  if (!al.items.some((x) => x.id === a2.id)) throw new Error("evening agreement not in list");
+  if (!createdIds.every((id) => al.items.some((x) => Number(x.id) === id))) throw new Error("bundle agreements not found in list");
   ok("agreements list contains both created");
 
   // cleanup
-  await mustOk(reqJson("PUT", `/api/agreements/${a1.id}/cancel`, { token: tC, body: {} }), "agreement cancel A1");
-  await mustOk(reqJson("PUT", `/api/agreements/${a2.id}/cancel`, { token: tC, body: {} }), "agreement cancel A2");
+  for (const id of createdIds) {
+    await mustOk(reqJson("PUT", `/api/agreements/${id}/cancel`, { token: tC, body: {} }), `agreement cancel #${id}`);
+  }
   ok("agreement cancel (cleanup)");
 
   console.log("OK M27CHECK PASS");

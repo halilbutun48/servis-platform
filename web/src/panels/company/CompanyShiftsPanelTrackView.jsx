@@ -52,6 +52,7 @@ export default function CompanyShiftsPanelTrackView(props) {
     pendingOnlyRoomOffer,
     onlyAgreement,
     roomsById,
+    agreementConversionByShift,
     renderRoomOfferSummary,
     renderCompanyOfferSummary,
     cancelMyRequest,
@@ -230,6 +231,7 @@ export default function CompanyShiftsPanelTrackView(props) {
         copilotShiftId={copilotShiftId}
         onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
         roomsById={roomsById}
+        agreementConversionByShift={agreementConversionByShift}
         renderRoomOfferSummary={renderRoomOfferSummary}
         renderCompanyOfferSummary={renderCompanyOfferSummary}
         onOpenOffersModal={openOffersModalForShift}
@@ -259,6 +261,7 @@ export default function CompanyShiftsPanelTrackView(props) {
         copilotShiftId={copilotShiftId}
         onFocusShift={(shiftId) => setFocusedTrackShiftId(Number(shiftId || 0) || null)}
         roomsById={roomsById}
+        agreementConversionByShift={agreementConversionByShift}
         renderRoomOfferSummary={renderRoomOfferSummary}
         renderCompanyOfferSummary={renderCompanyOfferSummary}
         fmtTR={fmtTR}

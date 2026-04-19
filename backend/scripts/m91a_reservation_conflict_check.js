@@ -1,5 +1,6 @@
 import { login, reqJson, banner, step, assertOk, sleep } from "./_harness.js";
 import { prisma } from "../src/prisma.js";
+import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 function rand(n = 6) {
   return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
@@ -84,8 +85,13 @@ async function approveShift(roomToken, shiftId, vehicleId, driverId) {
 async function roomStartShift(roomToken, shiftId) {
   return reqJson("POST", `/api/shifts/${shiftId}/start`, { token: roomToken });
 }
-async function createAgreement(companyToken, body) {
-  const r = await reqJson("POST", "/api/agreements", { token: companyToken, body });
+async function createAgreement(companyToken, roomId, body) {
+  const src = await createAgreementSourceShift({ reqJson, token: companyToken, roomId, tag: "M91A" });
+  assertOk(src.shiftId > 0, "source shift created for agreement");
+  const r = await reqJson("POST", "/api/agreements", {
+    token: companyToken,
+    body: { ...body, roomId, sourceShiftId: src.shiftId },
+  });
   mustOk(r, "agreement create");
   return Number(r.json.id);
 }
@@ -128,8 +134,7 @@ async function main() {
   const blockerShiftId = await createShift(companyToken, roomId, shiftStart, shiftEnd);
   mustOk(await approveShift(roomToken, blockerShiftId, vehicleId, driverId), "blocker shift approve");
 
-  const agId = await createAgreement(companyToken, {
-    roomId,
+  const agId = await createAgreement(companyToken, roomId, {
     startDate: agStartDate,
     endDate: agStartDate,
     weekMask: 127,
@@ -149,8 +154,7 @@ async function main() {
   const vehicle2 = await createVehicle(roomToken, `M91-B-${rand(6)}`);
   await bind(roomToken, vehicle2, driver2);
 
-  const ag2Id = await createAgreement(companyToken, {
-    roomId,
+  const ag2Id = await createAgreement(companyToken, roomId, {
     startDate: agStartDate,
     endDate: agStartDate,
     weekMask: 127,
@@ -183,8 +187,7 @@ async function main() {
   );
   mustOk(await approveShift(roomToken, shift3Id, vehicle2, driver2), "clean shift approve ok");
 
-  const ag3Id = await createAgreement(companyToken, {
-    roomId,
+  const ag3Id = await createAgreement(companyToken, roomId, {
     startDate: agStartDate,
     endDate: agStartDate,
     weekMask: 127,
@@ -216,8 +219,7 @@ async function main() {
   const extendBase = futureTRAtMs(11, 0) + 24 * 60 * 60 * 1000;
   const extendStartDate = ymdTR(new Date(extendBase));
   const extendEndDate = ymdTR(new Date(extendBase));
-  const extendAgreementId = await createAgreement(companyToken, {
-    roomId,
+  const extendAgreementId = await createAgreement(companyToken, roomId, {
     startDate: extendStartDate,
     endDate: extendEndDate,
     weekMask: 127,

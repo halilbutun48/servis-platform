@@ -34,6 +34,7 @@ $required = @(
   'tools/export_shareable_repo_bundle.ps1',
   'package.json',
   'backend/package.json',
+  'backend/scripts/run_repo_check_chain.js',
   'backend/scripts/run_web_lint_with_evidence.js',
   'artifacts/lint/README.md'
 )
@@ -48,10 +49,12 @@ $toolsReadme = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools/RE
 $scriptGuide = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md'
 $rootPackage = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'package.json'
 $backendPackage = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend/package.json'
+$repoChain = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'backend/scripts/run_repo_check_chain.js'
 $exportTool = Read-RepoContractText -RepoRoot $RepoRoot -RelativePath 'tools/export_shareable_repo_bundle.ps1'
 $state = Read-RepoContractState -RepoRoot $RepoRoot
 
-Assert-RepoContractContainsAll -Text $rootPackage -Needles @('verify:final','verify:ci','verify:closure','npm run lint','run_web_lint_with_evidence.js','m90c9check') -Label 'root package exposes final verify chain and lint evidence writer'
+Assert-RepoContractContainsAll -Text $rootPackage -Needles @('verify:repo','verify:final','verify:ci','verify:closure','run_repo_check_chain.js --phase all','run_repo_check_chain.js --phase closure','run_web_lint_with_evidence.js') -Label 'root package exposes final verify chain and lint evidence writer'
+Assert-RepoContractContainsAll -Text $repoChain -Needles @('m90_c9_safe_closure_final_hygiene_check.js','run_web_lint_with_evidence.js','run_m0_latest.js') -Label 'repo check chain exposes final hygiene and repo-wide checks'
 Assert-RepoContractContainsAll -Text $backendPackage -Needles @('m90c9check','m90_c9_safe_closure_final_hygiene_check.js') -Label 'backend package exposes M90C.9 node gate'
 Assert-RepoContractContainsAll -Text $milestone -Needles @('M90C.9','verify:final','pwsh','export_shareable_repo_bundle.ps1') -Label 'milestone doc captures final hygiene checklist scope'
 Assert-RepoContractContainsAll -Text $runbook -Needles @('npm run verify:final','artifacts\lint\web_lint_latest.txt','pwsh','pack_m90_c7_export_package_hygiene.ps1','export_shareable_repo_bundle.ps1','git status --short') -Label 'runbook exposes final closure order'
@@ -65,4 +68,3 @@ Assert-RepoContractContainsNone -Text $exportTool -Needles @('GetRelativePath(',
 Assert-RepoContractContainsAll -Text ($state | ConvertTo-Json -Depth 20) -Needles @('M90C.9','safeClosureFinalHygiene','safe-closure-final-hygiene-checklist','verify:final','pwsh','artifacts/lint/web_lint_latest.txt') -Label 'state includes M90C.9 final hygiene policy'
 
 Write-Host "=== M90C.9 Repo Contract PASS ==="
-

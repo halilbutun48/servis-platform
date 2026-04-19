@@ -12,11 +12,11 @@ function hasCoord(lat, lng) {
   return safeNum(lat) != null && safeNum(lng) != null;
 }
 
-function buildSourceSummary({ shift, room, startDate, startHHMM, endHHMM, stopCount, peopleCount }) {
+function buildSourceSummary({ shift, room, sourceDate, startHHMM, endHHMM, stopCount, peopleCount }) {
   const parts = [];
   parts.push(`Vardiya #${Number(shift?.id || 0) || "?"}`);
   if (room?.name) parts.push(`Room ${room.name}`);
-  parts.push(`${formatDateTR(shift?.startAt || startDate)} ${startHHMM} → ${endHHMM}`);
+  parts.push(`${formatDateTR(shift?.startAt || sourceDate)} ${startHHMM} → ${endHHMM}`);
   if (stopCount > 0) parts.push(`${stopCount} durak`);
   if (peopleCount > 0) parts.push(`${peopleCount} personel`);
   return parts.join(" • ");
@@ -27,7 +27,8 @@ export function buildAgreementPrefillFromShift({ shift, room } = {}) {
   const roomId = Number(shift?.roomId || room?.id || 0);
   if (!shiftId || !roomId) return null;
 
-  const startDate = ymdTR(shift?.startAt || new Date());
+  const sourceDate = ymdTR(shift?.startAt || new Date());
+  const startDate = addDaysISO(sourceDate, 1);
   const startHHMM = formatTimeTR(shift?.startAt || new Date(), { hour: "2-digit", minute: "2-digit", hour12: false });
   const endHHMM = formatTimeTR(shift?.endAt || shift?.startAt || new Date(), { hour: "2-digit", minute: "2-digit", hour12: false });
   const stopCount = Array.isArray(shift?.stops)
@@ -39,13 +40,13 @@ export function buildAgreementPrefillFromShift({ shift, room } = {}) {
   return {
     source: "SHIFT",
     sourceShiftId: shiftId,
-    sourceSummary: buildSourceSummary({ shift, room, startDate, startHHMM, endHHMM, stopCount, peopleCount }),
+    sourceSummary: buildSourceSummary({ shift, room, sourceDate, startHHMM, endHHMM, stopCount, peopleCount }),
     roomId,
     roomName: room?.name || null,
     startDate,
     endDate: addDaysISO(startDate, 6),
     durationKey: "1w",
-    weekMask: weekdayBitFromYmdTR(startDate),
+    weekMask: weekdayBitFromYmdTR(sourceDate),
     startHHMM,
     endHHMM,
     direction: String(shift?.direction || "INBOUND").toUpperCase(),

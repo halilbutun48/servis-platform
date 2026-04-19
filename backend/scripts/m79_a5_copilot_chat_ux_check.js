@@ -46,8 +46,8 @@ has(helpComposer, 'function questionTypeLabel(', 'help composer adds question la
 has(helpComposer, 'function buildResponseSections(', 'help composer adds response sections');
 has(helpComposer, 'questionLabel,', 'help composer returns question label');
 has(helpComposer, 'responseSections,', 'help composer returns response sections');
-has(helpComposer, "title: 'Şimdi yap'", 'response sections include next step card');
-has(helpComposer, "title: 'Devamında sor'", 'response sections include follow-up card');
+has(helpComposer, "title: 'Şimdi bunu yap'", 'response sections include next step card');
+has(helpComposer, "title: 'Sonra şunu sor'", 'response sections include follow-up card');
 
 has(panel, 'suggestedChips: payload?.suggestedChips || []', 'copilot panel stores suggested chips on message');
 has(panel, 'questionType: payload?.questionType || ""', 'copilot panel stores question type');
@@ -55,15 +55,15 @@ has(panel, 'questionLabel: payload?.questionLabel || ""', 'copilot panel stores 
 has(panel, 'intentConfidence: Number(payload?.intentConfidence || 0)', 'copilot panel stores intent confidence');
 has(panel, 'responseSections: payload?.responseSections || []', 'copilot panel stores response sections');
 
-has(bubble, 'Hızlı devam soruları', 'chat bubble shows follow-up chips');
+has(bubble, 'message.followUpPrompt', 'chat bubble shows follow-up chips');
 has(bubble, 'İşe yaradı', 'chat bubble exposes positive feedback');
 has(bubble, 'Eksik kaldı', 'chat bubble exposes negative feedback');
 has(bubble, 'message.responseSections', 'chat bubble renders response sections');
 has(bubble, 'message.questionLabel', 'chat bubble renders question label');
 
-has(actions, 'Öncelikli adım', 'chat quick actions highlights primary action');
-has(actions, 'Diğer hızlı adımlar', 'chat quick actions labels secondary actions');
-has(actions, 'İlgili rehberler', 'chat quick actions labels guides');
+has(actions, 'const visibleActions = hasActions ? actions.slice(0, 3) : []', 'chat quick actions highlights primary action');
+has(actions, 'Sonraki adımlar', 'chat quick actions labels secondary actions');
+has(actions, 'linkedGuides.slice(0, 2)', 'chat quick actions labels guides');
 
 if (process.exitCode) {
   console.error('FAIL M79 A5 copilot chat ux check');

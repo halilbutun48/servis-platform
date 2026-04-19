@@ -59,17 +59,17 @@ async function createDriver(roomToken) {
   return Number(c.json.id);
 }
 
-async function ensureMinVehicles(roomToken, minCount = 3) {
-  let ids = await listVehicles(roomToken);
-  while (ids.length < minCount) {
+async function createDedicatedVehicles(roomToken, count = 4) {
+  const ids = [];
+  for (let i = 0; i < count; i += 1) {
     ids.push(await createVehicle(roomToken));
   }
   return ids;
 }
 
-async function ensureMinDrivers(roomToken, minCount = 3) {
-  let ids = await listDrivers(roomToken);
-  while (ids.length < minCount) {
+async function createDedicatedDrivers(roomToken, count = 4) {
+  const ids = [];
+  for (let i = 0; i < count; i += 1) {
     ids.push(await createDriver(roomToken));
   }
   return ids;
@@ -212,9 +212,11 @@ async function main() {
   const startQ = iso(20 * 60 * 1000);
   const endQ   = iso(60 * 60 * 1000);
 
-  // OK flake önleme: en az 3 araç + 3 driver
-  const vehicleIds = await ensureMinVehicles(roomToken, 3);
-  const driverIds  = await ensureMinDrivers(roomToken, 3);
+  // Deterministic M14 pool: mevcut havuzdan seçmeyelim.
+  // Önceki gate adımlarından kalan vardiya/atama durumları availability testini kirletmesin.
+  // Her run kendine ait kaynaklarla çalışsın.
+  const vehicleIds = await createDedicatedVehicles(roomToken, 4);
+  const driverIds  = await createDedicatedDrivers(roomToken, 4);
 
   const blockerId = await createShift(companyToken, { roomId, startAt: start1, endAt: end1 });
 

@@ -159,6 +159,12 @@ function pickPackFirstItem(pack, { startHHMM, endHHMM, direction, pattern }) {
   return it || null;
 }
 
+function buildPackPreviewItems(pack, { startHHMM, endHHMM, direction, pattern }) {
+  if (pack?.key !== "CUSTOM") return pack?.items || [];
+  const first = pickPackFirstItem(pack, { startHHMM, endHHMM, direction, pattern });
+  return first ? [{ label: "Özel", ...first }] : [];
+}
+
 export default function AgreementWizard({
   rooms = null,
   roomsSupported = true,
@@ -188,6 +194,7 @@ export default function AgreementWizard({
   // pack
   const [packKey, setPackKey] = useState("WK_MORNING_EVENING");
   const pack = useMemo(() => PACKS.find((p) => p.key === packKey) || PACKS[0], [packKey]);
+  const launchPrefillPackKey = useMemo(() => (launchPrefill ? guessPackKey(launchPrefill) : ""), [launchPrefill]);
 
   // dates
   const [startDate, setStartDate] = useState(todayYmd());
@@ -254,6 +261,11 @@ function guessPackKey(prefill) {
 
   const selectedRoomScore = useMemo(() => roomScores[String(roomId)] || null, [roomScores, roomId]);
   const selectedMarketRoomCount = useMemo(() => Object.values(marketRoomIds || {}).filter(Boolean).length, [marketRoomIds]);
+  const packPreviewItems = useMemo(
+    () => buildPackPreviewItems(pack, { startHHMM, endHHMM, direction, pattern }),
+    [pack, startHHMM, endHHMM, direction, pattern]
+  );
+  const hasCreated = Boolean(okMsg);
 
   // load rooms internally if needed
   useEffect(() => {
@@ -298,6 +310,12 @@ function guessPackKey(prefill) {
 
   // apply pack defaults when pack changes
   useEffect(() => {
+    const preserveLaunchPrefillCustom =
+      packKey === "CUSTOM" &&
+      launchPrefillPackKey === "CUSTOM" &&
+      Number(launchPrefill?.sourceShiftId || 0) > 0;
+    if (preserveLaunchPrefillCustom) return;
+
     setDaysSel(selectedFromMask(pack.weekMask));
     setDurationKey("2d");
     if (isYmd(startDate)) setEndDate(addDaysISO(startDate, 0));
@@ -310,7 +328,7 @@ function guessPackKey(prefill) {
       setPattern(one.pattern || "ONE_WAY");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packKey]);
+  }, [packKey, launchPrefillPackKey, launchPrefill?.sourceShiftId]);
 
   // duration -> endDate autofill (unless user manually edits endDate after)
   useEffect(() => {
@@ -795,6 +813,8 @@ function guessPackKey(prefill) {
           </div>
         </Modal>
 
+        {!hasCreated ? (
+        <>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
           <div className="card">
             <div style={{ fontWeight: 800, marginBottom: 6 }}>1) Oda seç</div>
@@ -882,7 +902,7 @@ function guessPackKey(prefill) {
             <div className="card" style={{ marginTop: 10, border: "1px dashed #ddd" }}>
               <div className="muted">Paket özeti</div>
               <ul className="muted" style={{ marginTop: 6 }}>
-                {(pack.items || []).map((it, idx) => (
+                {packPreviewItems.map((it, idx) => (
                   <li key={idx}>
                     <b>{it.label}:</b> {toHHMM(it.startMin)} → {toHHMM(it.endMin)} • {it.direction} • {it.pattern}
                   </li>
@@ -1027,12 +1047,14 @@ function guessPackKey(prefill) {
 
         <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           <button type="button" disabled={busy || !roomsSupported} onClick={create}>
-            {busy ? "Oluşturuluyor..." : `Oluştur (${pack.key === "WK_MORNING_EVENING" ? "2" : String(pack.items?.length || 1)})`}
+            {busy ? "Oluşturuluyor..." : `Oluştur (${pack.key === "WK_MORNING_EVENING" ? "2" : String(packPreviewItems.length || 1)})`}
           </button>
           <button type="button" disabled={busy} onClick={() => setOpen(false)}>
             İptal
           </button>
         </div>
+        </>
+        ) : null}
       </Modal>
     </>
   );

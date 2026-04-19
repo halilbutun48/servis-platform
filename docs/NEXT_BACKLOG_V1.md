@@ -5,6 +5,8 @@ Timezone: Europe/Istanbul
 
 Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapandi -> siradaki resmi is M90C.9 safe closure / final hygiene checklist**
 
+Single-roof verification update: `M91` route preview local acceptance bandi ve `M92` repo verification spine eklendi. Gunluk resmi kontrol girisi `npm run verify:repo`.
+
 ## 1) Resmi durum
 - GÃ¼ncel doÄŸrulanmÄ±ÅŸ baz: `MASTER PACK PASS OK (M0->M89)`
 - Tarihsel tam master referansÄ± korunur: `MASTER PACK PASS OK (M0->M79)`
@@ -91,6 +93,9 @@ Current direction: **servis-platform main -> M0->M89 green -> M90C.1 / M90C.2 / 
 - `tools\pack_m87_payment_account_readiness.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m88_settlement_operations_console.ps1 -RepoRoot D:\servis-platform`
 - `tools\pack_m89_settlement_reconciliation_desk.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m91_shift_agreement_route_preview.ps1 -RepoRoot D:\servis-platform`
+- `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
+- `npm run verify:repo`
 
 ## 5) AÃ§Ä±k hizalama notu
 - `docs/overlays/M80`, `M81`, `M82` klasÃ¶rleri gÃ¼ncel milestone anlamÄ± deÄŸildir.
@@ -139,4 +144,3 @@ GÃ¼ncel baz: `servis-platform` main, master pack `M0->M89` green. `M90C.1`, `M
 
 
 M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 kapandi
-

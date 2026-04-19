@@ -346,6 +346,7 @@ export function CompanyPendingSection({
   copilotShiftId,
   onFocusShift,
   roomsById,
+  agreementConversionByShift,
   renderRoomOfferSummary,
   renderCompanyOfferSummary,
   onOpenOffersModal,
@@ -399,6 +400,7 @@ export function CompanyPendingSection({
                     copilotShiftId={copilotShiftId}
                     onFocusShift={onFocusShift}
                     roomsById={roomsById}
+                    agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
                     renderRoomOfferSummary={renderRoomOfferSummary}
                     renderCompanyOfferSummary={renderCompanyOfferSummary}
                     onOpenOffersModal={onOpenOffersModal}
@@ -438,6 +440,7 @@ export function CompanyFinalListSection({
   copilotShiftId,
   onFocusShift,
   roomsById,
+  agreementConversionByShift,
   renderRoomOfferSummary,
   renderCompanyOfferSummary,
   fmtTR,
@@ -489,6 +492,7 @@ export function CompanyFinalListSection({
                     copilotShiftId={copilotShiftId}
                     onFocusShift={onFocusShift}
                     roomsById={roomsById}
+                    agreementConversion={agreementConversionByShift?.[String(Number(shift.id || 0))] || null}
                     renderRoomOfferSummary={renderRoomOfferSummary}
                     renderCompanyOfferSummary={renderCompanyOfferSummary}
                     onOpenVehicleDetail={onOpenVehicleDetail}

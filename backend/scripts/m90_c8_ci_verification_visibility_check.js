@@ -42,6 +42,7 @@ console.log("=== M90C.8 CI / VERIFICATION VISIBILITY CHECK ===");
 const state = JSON.parse(read("tools/repo_contract_state.json"));
 const rootPackage = JSON.parse(read("package.json"));
 const backendPackage = JSON.parse(read("backend/package.json"));
+const repoChain = read("backend/scripts/run_repo_check_chain.js");
 const workflow = read(".github/workflows/vardis_verification_visibility.yml");
 const primer = read("docs/PRIMER_SSOT.md");
 const backlog = read("docs/NEXT_BACKLOG_V1.md");
@@ -63,8 +64,11 @@ expect((policy.lintEvidence || "") === "artifacts/lint/web_lint_latest.txt", "st
 expect((policy.exportPack || "") === "tools/pack_m90_c7_export_package_hygiene.ps1", "state policy points to export hygiene pack");
 expect(Array.isArray(policy.jobs) && policy.jobs.includes("repo-verification") && policy.jobs.includes("shareable-export"), "state policy lists repo-verification and shareable-export jobs");
 
-expect((rootPackage.scripts || {})["verify:closure"]?.includes("m90b1check") && (rootPackage.scripts || {})["verify:closure"]?.includes("audit:repo") && (rootPackage.scripts || {})["verify:closure"]?.includes("m90c6check") && (rootPackage.scripts || {})["verify:closure"]?.includes("m90c7check") && (rootPackage.scripts || {})["verify:closure"]?.includes("m90c8check"), "root verify:closure chains closure gates and repo audit");
-expect((rootPackage.scripts || {})["verify:ci"]?.includes("npm run lint") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:docs") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:hot") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:web-contract") && (rootPackage.scripts || {})["verify:ci"]?.includes("npm run verify:closure"), "root verify:ci exposes canonical verification chain");
+expect((rootPackage.scripts || {})["verify:repo"] === "node backend/scripts/run_repo_check_chain.js --phase all", "root verify:repo points to canonical repo check chain");
+expect((rootPackage.scripts || {})["verify:ci"] === "npm run verify:repo", "root verify:ci aliases canonical repo check chain");
+expect((rootPackage.scripts || {})["verify:closure"]?.includes("run_repo_check_chain.js --phase closure"), "root verify:closure uses closure phase from repo check chain");
+expect(includesText(repoChain, "m90_b1_canonical_closure_gate_check.js") && includesText(repoChain, "repo_audit.js") && includesText(repoChain, "m90_c6_hot_file_queue_policy_check.js") && includesText(repoChain, "m90_c7_export_package_hygiene_check.js") && includesText(repoChain, "m90_c8_ci_verification_visibility_check.js"), "repo check chain runs closure gates and repo audit");
+expect(includesText(repoChain, "run_web_lint_with_evidence.js") && includesText(repoChain, "docs_ssot_pack_check.js") && includesText(repoChain, "m82_2_web_contract_cache_check.js"), "repo check chain exposes lint docs and web-contract phases");
 expect((rootPackage.scripts || {})["lint:web"] === "node backend/scripts/run_web_lint_with_evidence.js", "root lint:web writes canonical web lint evidence");
 expect((backendPackage.scripts || {})["m90c8check"] === "node scripts/m90_c8_ci_verification_visibility_check.js", "backend package exposes m90c8check script");
 
