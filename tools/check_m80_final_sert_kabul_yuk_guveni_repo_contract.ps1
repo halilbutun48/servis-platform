@@ -1,4 +1,4 @@
-﻿param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
+param([string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_repo_contract_common.ps1')
 . (Join-Path $PSScriptRoot '_repo_contract_state.ps1')
@@ -49,7 +49,7 @@ $stageIds = @($manifest.stages | ForEach-Object { [string]$_.id })
 Assert-RepoContractStateValue -State $state -Property 'latestHistoricalMasterPack' -Expected 79 -Label 'state latest historical master pack is 79'
 Assert-RepoContractStateValue -State $state -Property 'stableTo' -Expected 78 -Label 'state stable_to remains 78'
 Assert-RepoContractStateValue -State $state -Property 'historicalNextMilestone' -Expected 'M80' -Label 'state historical next milestone is M80'
-if ((@("M79","M80","M81","M82.1","M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89") -contains [string]$state.latestManifestStage)) { Write-Host "OK state latest manifest stage stays M79 or later living route" } else { throw "FAIL state latest manifest stage stays M79 or later living route" }
+if ((@("M79","M80","M81","M82.1","M82.8","M82.9","M82.10","M82.11","M83","M84","M85","M86","M87","M88","M89","M90","M90B.1","M90C.6","M90C.7","M90C.8","M90C.9","M91","M92") -contains [string]$state.latestManifestStage)) { Write-Host "OK state latest manifest stage stays M79 or later canonical/living route" } else { throw "FAIL state latest manifest stage stays M79 or later canonical/living route" }
 Assert-RepoContractStateArrayContains -State $state -Property 'activeMilestones' -Expected 'M80' -Label 'state marks M80 active'
 if (-not ($stageIds -contains 'M80')) { throw 'FAIL manifest contains M80' }
 Write-Host 'OK manifest contains M80'
