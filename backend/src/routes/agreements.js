@@ -380,7 +380,6 @@ export function agreementsRouter(io) {
             where: {
               id: { in: draftIds },
               companyId: freshAgreement.companyId,
-              roomId: freshAgreement.roomId,
               status: "DRAFT",
             },
             select: {
@@ -393,6 +392,14 @@ export function agreementsRouter(io) {
           });
           if (draftRowsRaw.length !== draftIds.length) {
             throw httpError(409, "DRAFT_SHIFT_INVALID", "Taslak vardiyaların tamamı bulunamadı veya artık geçerli değil.");
+          }
+          const invalidRoom = draftRowsRaw.find((row) => row.roomId != null && Number(row.roomId) !== Number(freshAgreement.roomId || 0));
+          if (invalidRoom) {
+            throw httpError(409, "DRAFT_SHIFT_ROOM_MISMATCH", "Taslak vardiyaların oda bağlamı geçersiz.");
+          }
+          const linkedElsewhere = draftRowsRaw.find((row) => Number(row.agreementId || 0) > 0 && Number(row.agreementId || 0) !== Number(freshAgreement.id || 0));
+          if (linkedElsewhere) {
+            throw httpError(409, "DRAFT_SHIFT_ALREADY_LINKED", "Bazı taslak vardiyalar başka sözleşmeye bağlı.");
           }
           const draftById = Object.fromEntries(draftRowsRaw.map((row) => [Number(row.id), row]));
           const draftRows = draftIds.map((id) => draftById[Number(id)]).filter(Boolean);
