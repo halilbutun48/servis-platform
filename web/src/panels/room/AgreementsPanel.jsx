@@ -9,6 +9,8 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import { agreementExtendStatusText, agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
+import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
+import RoutePreviewModal from "../../components/RoutePreviewModal";
 
 // ✅ M59 helpers
 function daysLeftYmd(ymd) {
@@ -57,6 +59,91 @@ function trDateTime(iso) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function summarizeRoutePreview(payload) {
+  const summary = payload?.summary || {};
+  const stops = Array.isArray(payload?.stops) ? payload.stops : [];
+  const people = Array.isArray(payload?.people) ? payload.people : [];
+
+  const distanceCandidates = [
+    summary?.distanceM,
+    summary?.routeDistanceM,
+    summary?.routeSnapshotDistanceM,
+    payload?.routeSnapshotDistanceM,
+    Number.isFinite(Number(summary?.distanceKmSnapshot)) ? Number(summary.distanceKmSnapshot) * 1000 : null,
+    Number.isFinite(Number(summary?.distanceKmLearned)) ? Number(summary.distanceKmLearned) * 1000 : null,
+    Number.isFinite(Number(summary?.distanceKm)) ? Number(summary.distanceKm) * 1000 : null,
+  ];
+  const durationCandidates = [
+    summary?.durationSec,
+    summary?.routeDurationSec,
+    summary?.routeSnapshotDurationSec,
+    payload?.routeSnapshotDurationSec,
+    Number.isFinite(Number(summary?.durationMinSnapshot)) ? Number(summary.durationMinSnapshot) * 60 : null,
+    Number.isFinite(Number(summary?.durationMinLearned)) ? Number(summary.durationMinLearned) * 60 : null,
+    Number.isFinite(Number(summary?.durationMin)) ? Number(summary.durationMin) * 60 : null,
+  ];
+  const firstFinite = (list) => {
+    for (const value of list) {
+      const n = Number(value);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    return 0;
+  };
+
+  return {
+    peopleCount: Math.max(0, Number(summary?.peopleCount ?? people.length ?? 0) || 0),
+    stopCount: Math.max(0, Number(summary?.stopCount ?? stops.length ?? 0) || 0),
+    distanceM: Math.max(0, firstFinite(distanceCandidates)),
+    durationSec: Math.max(0, firstFinite(durationCandidates)),
+  };
+}
+
+function formatKm(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  const km = n / 1000;
+  return km >= 10 ? `${Math.round(km)} km` : `${km.toFixed(1)} km`;
+}
+
+function formatDuration(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n) || n <= 0) return "-";
+  return `${Math.round(n / 60)} dk`;
+}
+
+function routeSummaryText(summary, fallback = null) {
+  const src = summary || fallback || {};
+  return [
+    `${Math.max(0, Number(src?.peopleCount || 0))} personel`,
+    `${Math.max(0, Number(src?.stopCount || 0))} durak`,
+    formatKm(src?.distanceM),
+    formatDuration(src?.durationSec),
+  ].join(" · ");
+}
+
+function routeDiffText(currentSummary, proposedSummary) {
+  const current = currentSummary || {};
+  const proposed = proposedSummary || {};
+  const parts = [];
+  const peopleDelta = Number(proposed?.peopleCount || 0) - Number(current?.peopleCount || 0);
+  const stopDelta = Number(proposed?.stopCount || 0) - Number(current?.stopCount || 0);
+  const distanceDelta = Number(proposed?.distanceM || 0) - Number(current?.distanceM || 0);
+  const durationDelta = Number(proposed?.durationSec || 0) - Number(current?.durationSec || 0);
+  if (peopleDelta) parts.push(`${peopleDelta > 0 ? "+" : ""}${peopleDelta} personel`);
+  if (stopDelta) parts.push(`${stopDelta > 0 ? "+" : ""}${stopDelta} durak`);
+  if (distanceDelta) parts.push(`${distanceDelta > 0 ? "+" : "-"}${formatKm(Math.abs(distanceDelta))}`);
+  if (durationDelta) parts.push(`${durationDelta > 0 ? "+" : "-"}${formatDuration(Math.abs(durationDelta))}`);
+  return parts.length ? parts.join(" · ") : "Kişi / durak / km / süre farkı yok";
+}
+
+function routePriceDiffText(currentAmount, nextAmount) {
+  const current = Number(currentAmount || 0);
+  const next = Number(nextAmount ?? currentAmount ?? 0);
+  const diff = next - current;
+  const fmt = (n) => new Intl.NumberFormat("tr-TR").format(Number(n || 0)) + " ₺";
+  return `${fmt(current)} → ${fmt(next)} (${diff > 0 ? "+" : ""}${fmt(diff)})`;
 }
 
 function AgreementOpsBridgeCard({ agreement, bridge, onOpenShift, onOpenPreview }) {
@@ -229,6 +316,9 @@ export default function AgreementsPanel() {
   const [others, setOthers] = useState([]);
   const [shiftStats, setShiftStats] = useState({}); // ✅ M59
   const [opsBridge, setOpsBridge] = useState({});
+  const [routeRefreshItems, setRouteRefreshItems] = useState([]);
+  const [routeRefreshPreviewById, setRouteRefreshPreviewById] = useState({});
+  const [previewModal, setPreviewModal] = useState({ open: false, shiftId: null, title: "Rota Önizleme" });
 
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -272,6 +362,25 @@ export default function AgreementsPanel() {
     a?.id, a?.status, a?.startDate, a?.endDate, a?.companyOfferAmount, a?.roomOfferAmount, a?.companyOfferNote, a?.roomOfferNote,
     a?.direction, a?.pattern, a?.hubLat, a?.hubLng, weekMaskToText(a?.weekMask),
   ], filterQ)), [others, filterQ]);
+  const agreementById = useMemo(() => {
+    const map = {};
+    [...pending, ...others, ...extendItems].forEach((item) => {
+      const id = Number(item?.id || 0);
+      if (id > 0 && !map[String(id)]) map[String(id)] = item;
+    });
+    return map;
+  }, [pending, others, extendItems]);
+  const filteredRouteRefreshItems = useMemo(() => routeRefreshItems.filter((item) => includesFilter([
+    item?.id,
+    item?.agreementId,
+    item?.status,
+    item?.startDate,
+    item?.endDate,
+    item?.companyOfferAmount,
+    item?.companyOfferNote,
+    item?.peopleCount,
+    item?.stopCount,
+  ], filterQ)), [routeRefreshItems, filterQ]);
 
   useEffect(() => {
     const item = copilotAgreementTarget;
@@ -311,12 +420,60 @@ export default function AgreementsPanel() {
     navigate("/room/shifts");
   }
 
-  function openAgreementPreview(shiftId) {
+  function openAgreementPreview(shiftId, options = {}) {
     const sid = Number(shiftId || 0);
     if (!sid) return;
-    try { localStorage.setItem("room:previewShiftId", String(sid)); } catch (e) { void e; }
-    navigate("/room/shifts");
+    const nextTitle = String(options?.title || "").trim();
+    setPreviewModal({
+      open: true,
+      shiftId: sid,
+      title: nextTitle || `Shift #${sid} — Harita Önizleme`,
+    });
   }
+
+  useEffect(() => {
+    if (!token || !routeRefreshItems.length) {
+      setRouteRefreshPreviewById({});
+      return;
+    }
+    const controller = new AbortController();
+    let cancelled = false;
+    const items = routeRefreshItems.slice(0, 12);
+    const loadingMap = Object.fromEntries(items.map((item) => [String(item.id), { loading: true, current: null, proposed: null, err: "" }]));
+    setRouteRefreshPreviewById(loadingMap);
+    (async () => {
+      const results = await Promise.all(items.map(async (item) => {
+        const requestId = Number(item?.id || 0);
+        const sourceShiftId = Number(item?.sourceShiftId || 0);
+        const draftShiftId = Number((item?.draftShiftIds || [])[0] || 0);
+        try {
+          const [currentRaw, proposedRaw] = await Promise.all([
+            sourceShiftId > 0 ? getShiftRoutePreview(token, sourceShiftId, { signal: controller.signal, force: true, ttlMs: 0, delayMs: 0 }) : null,
+            draftShiftId > 0 ? getShiftRoutePreview(token, draftShiftId, { signal: controller.signal, force: true, ttlMs: 0, delayMs: 0 }) : null,
+          ]);
+          return [String(requestId), {
+            loading: false,
+            current: summarizeRoutePreview(currentRaw),
+            proposed: summarizeRoutePreview(proposedRaw),
+            err: "",
+          }];
+        } catch (error) {
+          return [String(requestId), {
+            loading: false,
+            current: null,
+            proposed: null,
+            err: error?.message || "Rota özeti yüklenemedi.",
+          }];
+        }
+      }));
+      if (cancelled) return;
+      setRouteRefreshPreviewById(Object.fromEntries(results));
+    })();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [token, routeRefreshItems]);
 
   async function loadAll() {
     if (!token) return;
@@ -329,17 +486,23 @@ export default function AgreementsPanel() {
       try {
         const ids = items.map((x) => x?.id).filter(Boolean);
         if (ids.length) {
-          const st = await api("/api/agreements/shift-stats", { token, method: "POST", body: { agreementIds: ids, horizonDays: 7 } });
+          const [st, bridge, routeRefresh] = await Promise.all([
+            api("/api/agreements/shift-stats", { token, method: "POST", body: { agreementIds: ids, horizonDays: 7 } }),
+            api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } }),
+            api("/api/agreements/route-refresh?status=PENDING", { token }).catch(() => ({ items: [] })),
+          ]);
           setShiftStats(st?.byId ?? {});
-          const bridge = await api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } });
           setOpsBridge(bridge?.byId ?? {});
+          setRouteRefreshItems(Array.isArray(routeRefresh?.items) ? routeRefresh.items : []);
         } else {
           setShiftStats({});
           setOpsBridge({});
+          setRouteRefreshItems([]);
         }
       } catch {
         setShiftStats({});
         setOpsBridge({});
+        setRouteRefreshItems([]);
       }
 
 
@@ -457,6 +620,23 @@ export default function AgreementsPanel() {
     }
   }
 
+  async function decideRouteRefresh(requestId, decision) {
+    setErr("");
+    setBusy(true);
+    try {
+      await api(`/api/agreements/route-refresh/${requestId}/decision`, {
+        token,
+        method: "PUT",
+        body: { decision },
+      });
+      await loadAll();
+    } catch (e) {
+      setErr(e?.message || "Rota güncelleme kararı kaydedilemedi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function extendDecision(id, decision) {
     setErr("");
     setBusy(true);
@@ -519,7 +699,110 @@ export default function AgreementsPanel() {
           <div className="muted">Filtre</div>
           <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="ID / durum / teklif / tarih / not" />
         </div>
-        <div className="muted">Gösterilen: <b>{filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{pending.length + others.length + extendItems.length}</b></div>
+        <div className="muted">Gösterilen: <b>{filteredRouteRefreshItems.length + filteredPending.length + filteredOthers.length + filteredExtendItems.length}</b> / Toplam: <b>{routeRefreshItems.length + pending.length + others.length + extendItems.length}</b></div>
+      </div>
+
+
+      <div className="card">
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Rota Güncelleme Talepleri</div>
+        <div className="muted" style={{ marginBottom: 12 }}>
+          Bu alan vardiya pazarlığı değil, aktif sözleşmeye bağlı rota değişiklik talebidir. Oda burada mevcut rota ile önerilen yeni rotayı karşılaştırıp karar verir.
+        </div>
+        <div style={{ display: "grid", gap: 12 }}>
+          {filteredRouteRefreshItems.map((item) => {
+            const requestId = Number(item?.id || 0);
+            const agreementId = Number(item?.agreementId || 0);
+            const agreement = agreementById[String(agreementId)] || null;
+            const preview = routeRefreshPreviewById[String(requestId)] || { loading: false, current: null, proposed: null, err: "" };
+            const sourceShiftId = Number(item?.sourceShiftId || 0);
+            const draftShiftId = Number((item?.draftShiftIds || [])[0] || 0);
+            const bridgeShift = opsBridge?.[agreementId]?.lastShift || null;
+            const currentSummaryFallback = {
+              peopleCount: Number(bridgeShift?.peopleCount || preview?.current?.peopleCount || 0),
+              stopCount: Number(bridgeShift?.stopCount || preview?.current?.stopCount || 0),
+              distanceM: Number(bridgeShift?.routeSnapshotDistanceM || preview?.current?.distanceM || 0),
+              durationSec: Number(bridgeShift?.routeSnapshotDurationSec || preview?.current?.durationSec || 0),
+            };
+            const proposedSummaryFallback = {
+              peopleCount: Number(item?.peopleCount || 0),
+              stopCount: Number(item?.stopCount || 0),
+              distanceM: Number(preview?.proposed?.distanceM || 0),
+              durationSec: Number(preview?.proposed?.durationSec || 0),
+            };
+            const effectiveCurrentSummary = preview?.current || currentSummaryFallback;
+            const effectiveProposedSummary = preview?.proposed || proposedSummaryFallback;
+            return (
+              <div
+                key={item.id}
+                className="card"
+                style={{ border: Number(selectedAgreementId || 0) === agreementId ? "1px solid rgba(88,166,255,.42)" : "1px solid rgba(255,255,255,.08)" }}
+                onClick={() => setSelectedAgreementId(agreementId)}
+              >
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 900 }}>Sözleşme #{agreementId} • Rota güncelleme #{item.id}</div>
+                    <div className="muted" style={{ marginTop: 4 }}>
+                      {String(item?.startDate || "-").slice(0, 10)} → {String(item?.endDate || "-").slice(0, 10)} • {trDateTime(item?.createdAt)}
+                    </div>
+                  </div>
+                  <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                    <span className="pill">{Number(item?.shiftCount || 0)} taslak vardiya</span>
+                    <span className="pill">{String(item?.direction || agreement?.direction || "INBOUND").toUpperCase()} / {String(item?.pattern || agreement?.pattern || "ONE_WAY").toUpperCase()}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginTop: 12 }}>
+                  <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+                    <div className="muted">Mevcut rota</div>
+                    <div style={{ fontWeight: 800, marginTop: 4 }}>
+                      {routeSummaryText(effectiveCurrentSummary)}
+                    </div>
+                  </div>
+                  <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+                    <div className="muted">Önerilen yeni rota</div>
+                    <div style={{ fontWeight: 800, marginTop: 4 }}>
+                      {routeSummaryText(effectiveProposedSummary)}
+                    </div>
+                  </div>
+                  <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+                    <div className="muted">Fark</div>
+                    <div style={{ fontWeight: 800, marginTop: 4 }}>
+                      {routeDiffText(effectiveCurrentSummary, effectiveProposedSummary)}
+                    </div>
+                  </div>
+                  <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+                    <div className="muted">Ücret etkisi</div>
+                    <div style={{ fontWeight: 800, marginTop: 4 }}>
+                      {routePriceDiffText(agreement?.companyOfferAmount, item?.companyOfferAmount ?? agreement?.companyOfferAmount)}
+                    </div>
+                    {item?.companyOfferNote ? <div className="muted" style={{ marginTop: 6 }}>{item.companyOfferNote}</div> : null}
+                  </div>
+                </div>
+
+                {preview?.err ? <div className="muted" style={{ marginTop: 10 }}>Rota özeti yüklenemedi: {preview.err}</div> : null}
+                {preview?.loading ? <div className="muted" style={{ marginTop: 10 }}>Rota özeti yükleniyor…</div> : null}
+
+                <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                  <button type="button" className="btn sm ghost" disabled={!sourceShiftId} onClick={(e) => { e.stopPropagation(); openAgreementPreview(sourceShiftId, { title: `Sözleşme #${agreementId} — Mevcut Rota` }); }}>
+                    Mevcut Rotayı Gör
+                  </button>
+                  <button type="button" className="btn sm ghost" disabled={!draftShiftId} onClick={(e) => { e.stopPropagation(); openAgreementPreview(draftShiftId, { title: `Sözleşme #${agreementId} — Önerilen Yeni Rota` }); }}>
+                    Yeni Rotayı Önizle
+                  </button>
+                  <button type="button" className="btn sm ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); decideRouteRefresh(requestId, "CANCEL"); }}>
+                    İptal Et
+                  </button>
+                  <button type="button" className="btn sm" disabled={busy} onClick={(e) => { e.stopPropagation(); decideRouteRefresh(requestId, "ACCEPT"); }}>
+                    Kabul Et
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {!filteredRouteRefreshItems.length ? (
+            <div className="muted">Bekleyen rota güncelleme talebi yok.</div>
+          ) : null}
+        </div>
       </div>
 
       <div className="card">
@@ -877,6 +1160,15 @@ export default function AgreementsPanel() {
           </table>
         </div>
       </div>
+
+      {previewModal.open ? (
+        <RoutePreviewModal
+          open={previewModal.open}
+          onClose={() => setPreviewModal({ open: false, shiftId: null, title: "Rota Önizleme" })}
+          title={previewModal.title || (previewModal.shiftId ? `Shift #${previewModal.shiftId} — Harita Önizleme` : "Rota Önizleme")}
+          shiftId={previewModal.shiftId}
+        />
+      ) : null}
     </div>
   );
 }

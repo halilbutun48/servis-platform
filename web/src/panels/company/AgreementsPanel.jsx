@@ -509,7 +509,25 @@ export default function AgreementsPanel() {
             api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } }),
             api("/api/agreements/route-refresh?status=PENDING", { token }).catch(() => ({ items: [] })),
           ]);
-          setOpsBridge(bridge?.byId ?? {});
+          const nextBridge = bridge?.byId ?? {};
+          setOpsBridge(nextBridge);
+          setAgreementOrigins((prev) => {
+            const stored = getAgreementOrigins(list.map((x) => x?.id));
+            const merged = { ...stored, ...prev };
+            Object.entries(nextBridge).forEach(([agreementId, item]) => {
+              const sourceShiftId = Number(item?.sourceShiftId || 0);
+              if (!sourceShiftId) return;
+              merged[String(agreementId)] = {
+                source: "SHIFT",
+                sourceShiftId,
+                sourceSummary: String(item?.sourceSummary || `Kaynak vardiya #${sourceShiftId}`),
+                linkedAgreementId: Number(agreementId || 0),
+                linkedAt: new Date().toISOString(),
+                linkedAtTs: Date.now(),
+              };
+            });
+            return merged;
+          });
           const pendingMap = {};
           for (const item of (Array.isArray(routeRefresh?.items) ? routeRefresh.items : [])) {
             const aid = Number(item?.agreementId || 0);

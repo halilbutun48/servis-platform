@@ -103,7 +103,7 @@ export default function RoutePreviewModal({ open, onClose, title, shiftId, stops
           const data = await apiOr404Fallback(
             async () => await getShiftRoutePreview(token, shiftId, { signal: controller.signal, ttlMs: 30000, delayMs: 120 }),
             async () => {
-              const resp = await api(`/api/shifts/${shiftId}/stops`, { signal: controller.signal });
+              const resp = await api(`/api/shifts/${shiftId}/stops`, { token, signal: controller.signal });
               const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
               return { ok: true, people: [], stops: list };
             }

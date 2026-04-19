@@ -2,6 +2,7 @@
 // shifts.js iÃ§indeki yardÄ±mcÄ± fonksiyonlarÄ± ayrÄ± dosyaya alÄ±r (satÄ±r sayÄ±sÄ±nÄ± azaltmak iÃ§in)
 
 import prisma from "../../prisma.js";
+import { listAgreementRouteRefreshRequests } from "../../services/agreementRouteRefreshStore.js";
 
 export function isEditableStatus(status) {
   return status === "DRAFT" || status === "REQUESTED";
@@ -75,7 +76,7 @@ export function clusterPoints(points, radiusM) {
 export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
   // opts is mostly Prisma findUnique args (include/select, etc).
   // We also allow a custom flag for ROOM access via marketplace offers.
-  const { allowRoomOfferScope = false, ...prismaOpts } = opts || {};
+  const { allowRoomOfferScope = false, allowRoomRouteRefreshScope = false, ...prismaOpts } = opts || {};
 
   const shift = await prisma.shift.findUnique({ where: { id: shiftId }, ...(prismaOpts || {}) });
   if (!shift) {
@@ -109,6 +110,20 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
         select: { id: true },
       });
       if (offer) return shift;
+    }
+
+    // Optional scope: allow ROOM to preview pending agreement route-refresh draft/source shifts
+    // from the room's own decision surface before the draft shift is formally assigned.
+    if (allowRoomRouteRefreshScope) {
+      const items = await listAgreementRouteRefreshRequests({ roomId, status: "PENDING" });
+      const match = items.find((item) => {
+        const sourceShiftId = Number(item?.sourceShiftId || 0);
+        const draftIds = Array.isArray(item?.draftShiftIds)
+          ? item.draftShiftIds.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)
+          : [];
+        return sourceShiftId === Number(shift.id) || draftIds.includes(Number(shift.id));
+      });
+      if (match) return shift;
     }
 
     const e = new Error("Forbidden");

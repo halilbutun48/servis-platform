@@ -7,7 +7,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
-import { createAgreementRouteRefreshRequest, getPendingAgreementRouteRefreshRequest, listAgreementRouteRefreshRequests } from "../services/agreementRouteRefreshStore.js";
+import { createAgreementRouteRefreshRequest, decideAgreementRouteRefreshRequest, getAgreementRouteRefreshRequestById, getPendingAgreementRouteRefreshRequest, listAgreementRouteRefreshRequests } from "../services/agreementRouteRefreshStore.js";
 // ✅ M59: agreement UI shift stats helper endpoint
 
 import { computeFirstStartAtUTC } from "../services/agreementConflict.js";
@@ -68,6 +68,14 @@ function routeRefreshWindowSummary(item) {
   const stopCount = Number(item?.stopCount || 0);
   const peopleCount = Number(item?.peopleCount || 0);
   return `${startDate} → ${endDate} • ${shiftCount} taslak vardiya • ${stopCount} durak • ${peopleCount} personel`;
+}
+
+function parseRouteRefreshDecision(value) {
+  const raw = String(value || "").trim().toUpperCase();
+  if (["ACCEPT", "ACCEPTED", "APPROVE", "APPROVED", "KABUL"].includes(raw)) return "ACCEPTED";
+  if (["REJECT", "REJECTED", "DECLINE", "DECLINED", "REDDET"].includes(raw)) return "REJECTED";
+  if (["CANCEL", "CANCELLED", "CANCELED", "IPTAL", "İPTAL"].includes(raw)) return "CANCELLED";
+  return null;
 }
 
 async function requireSourceShiftForAgreementCreate(tx, { sourceShiftId, companyId, roomId }) {
@@ -306,6 +314,189 @@ export function agreementsRouter(io) {
     return res.status(201).json({ ok: true, item: created });
   });
 
+  r.put("/route-refresh/:requestId/decision", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {
+    const requestId = Number(req.params.requestId || 0);
+    if (requestId <= 0) return sendErrorResponse(res, httpError(400, "requestId required"));
+
+    const decision = parseRouteRefreshDecision(req.body?.decision ?? req.body?.status ?? req.body?.action);
+    if (!decision) return sendErrorResponse(res, httpError(400, "ROUTE_REFRESH_DECISION_REQUIRED", "Karar gerekli: ACCEPT veya CANCEL."));
+
+    const currentItem = await getAgreementRouteRefreshRequestById(requestId);
+    if (!currentItem) return sendErrorResponse(res, httpError(404, "ROUTE_REFRESH_NOT_FOUND", "Rota güncelleme talebi bulunamadı."));
+    if (String(currentItem.status || "").toUpperCase() !== "PENDING") {
+      return sendErrorResponse(res, httpError(409, "ROUTE_REFRESH_ALREADY_DECIDED", `Bu talep zaten ${String(currentItem.status || "-").toUpperCase()} durumunda.`));
+    }
+
+    const agreement = await prisma.agreement.findUnique({
+      where: { id: Number(currentItem.agreementId || 0) },
+      select: {
+        id: true,
+        companyId: true,
+        roomId: true,
+        status: true,
+        vehicleId: true,
+        driverId: true,
+        companyOfferAmount: true,
+        companyOfferNote: true,
+      },
+    });
+    if (!agreement) return sendErrorResponse(res, httpError(404, "AGREEMENT_NOT_FOUND", "Sözleşme bulunamadı."));
+    if (req.user.role === "ROOM" && Number(agreement.roomId || 0) !== Number(req.user.roomId || 0)) {
+      return sendErrorResponse(res, httpError(403, "Forbidden"));
+    }
+    if (Number(currentItem.roomId || 0) !== Number(agreement.roomId || 0)) {
+      return sendErrorResponse(res, httpError(409, "ROUTE_REFRESH_ROOM_MISMATCH", "Talep oda bağlamı bozulmuş."));
+    }
+
+    let updatedAgreement = agreement;
+    let acceptedSourceShiftId = 0;
+
+    if (decision === "ACCEPTED") {
+      try {
+        const result = await prisma.$transaction(async (tx) => {
+          const freshAgreement = await tx.agreement.findUnique({
+            where: { id: agreement.id },
+            select: {
+              id: true,
+              companyId: true,
+              roomId: true,
+              status: true,
+              vehicleId: true,
+              driverId: true,
+              companyOfferAmount: true,
+              companyOfferNote: true,
+            },
+          });
+          if (!freshAgreement) throw httpError(404, "AGREEMENT_NOT_FOUND", "Sözleşme bulunamadı.");
+          const agreementStatus = String(freshAgreement.status || "").toUpperCase();
+          if (!["APPROVED", "ACTIVE"].includes(agreementStatus)) {
+            throw httpError(409, "AGREEMENT_INVALID_STATE", "Rota güncelleme sadece aktif / kabul edilmiş sözleşmede uygulanır.");
+          }
+
+          const draftIds = Array.from(new Set((Array.isArray(currentItem.draftShiftIds) ? currentItem.draftShiftIds : []).map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)));
+          if (!draftIds.length) throw httpError(400, "DRAFT_SHIFT_REQUIRED", "Taslak vardiya bulunamadı.");
+
+          const draftRowsRaw = await tx.shift.findMany({
+            where: {
+              id: { in: draftIds },
+              companyId: freshAgreement.companyId,
+              roomId: freshAgreement.roomId,
+              status: "DRAFT",
+            },
+            select: {
+              id: true,
+              startAt: true,
+              endAt: true,
+              roomId: true,
+              agreementId: true,
+            },
+          });
+          if (draftRowsRaw.length !== draftIds.length) {
+            throw httpError(409, "DRAFT_SHIFT_INVALID", "Taslak vardiyaların tamamı bulunamadı veya artık geçerli değil.");
+          }
+          const draftById = Object.fromEntries(draftRowsRaw.map((row) => [Number(row.id), row]));
+          const draftRows = draftIds.map((id) => draftById[Number(id)]).filter(Boolean);
+          const startIsoList = draftRows.map((row) => new Date(row.startAt).toISOString());
+          const existingRows = startIsoList.length
+            ? await tx.shift.findMany({
+                where: {
+                  agreementId: freshAgreement.id,
+                  startAt: { in: startIsoList.map((iso) => new Date(iso)) },
+                },
+                select: { id: true, startAt: true, status: true },
+              })
+            : [];
+          const now = new Date();
+          const blocking = existingRows.find((row) => {
+            const st = String(row.status || "").toUpperCase();
+            if (!["ACTIVE", "DONE"].includes(st)) return false;
+            const ts = new Date(row.startAt).getTime();
+            return Number.isFinite(ts) && ts <= now.getTime();
+          });
+          if (blocking) {
+            throw httpError(409, "ROUTE_REFRESH_LIVE_SHIFT_CONFLICT", `Başlamış vardiya bulundu (#${blocking.id}). Önce canlı vardiya penceresi bitsin.`);
+          }
+
+          const obsoleteIds = existingRows.map((row) => Number(row.id)).filter((id) => id > 0);
+          if (obsoleteIds.length) {
+            await tx.shift.updateMany({
+              where: { id: { in: obsoleteIds } },
+              data: { agreementId: null, status: "REJECTED" },
+            });
+          }
+
+          for (const row of draftRows) {
+            const nextStatus = new Date(row.startAt).getTime() <= now.getTime() ? "ACTIVE" : "APPROVED";
+            await tx.shift.update({
+              where: { id: row.id },
+              data: {
+                agreementId: freshAgreement.id,
+                status: nextStatus,
+                roomId: freshAgreement.roomId,
+                vehicleId: freshAgreement.vehicleId ?? null,
+                driverId: freshAgreement.driverId ?? null,
+              },
+            });
+          }
+
+          const nextAgreementData = {};
+          if (currentItem.companyOfferAmount != null) nextAgreementData.companyOfferAmount = Number(currentItem.companyOfferAmount);
+          if (currentItem.companyOfferNote != null) nextAgreementData.companyOfferNote = currentItem.companyOfferNote;
+          const nextAgreement = Object.keys(nextAgreementData).length
+            ? await tx.agreement.update({ where: { id: freshAgreement.id }, data: nextAgreementData })
+            : await tx.agreement.findUnique({ where: { id: freshAgreement.id } });
+
+          const acceptedRootId = Number(draftRows[0]?.id || 0);
+          await upsertAgreementCommercialBackbone(freshAgreement.id, { tx, sourceShiftId: acceptedRootId }).catch(() => null);
+          return { agreement: nextAgreement || freshAgreement, sourceShiftId: acceptedRootId };
+        });
+        updatedAgreement = result.agreement || agreement;
+        acceptedSourceShiftId = Number(result.sourceShiftId || 0);
+      } catch (error) {
+        return sendErrorResponse(res, error);
+      }
+    }
+
+    const nextItem = await decideAgreementRouteRefreshRequest({ requestId, status: decision });
+    if (!nextItem) return sendErrorResponse(res, httpError(500, "ROUTE_REFRESH_STORE_UPDATE_FAILED", "Rota güncelleme talebi kaydedilemedi."));
+
+    const notifyType = decision === "ACCEPTED" ? "AGREEMENT_ROUTE_REFRESH_ACCEPTED" : "AGREEMENT_ROUTE_REFRESH_CANCELLED";
+    const notifyTitle = decision === "ACCEPTED" ? "Rota güncelleme kabul edildi" : "Rota güncelleme iptal edildi";
+    const notifyMessage = decision === "ACCEPTED"
+      ? `${agreementRef(updatedAgreement.id)} • ${routeRefreshRef(nextItem.id)} kabul edildi`
+      : `${agreementRef(updatedAgreement.id)} • ${routeRefreshRef(nextItem.id)} iptal edildi`;
+
+    await createAndEmitNotification({
+      io,
+      type: notifyType,
+      scope: "COMPANY",
+      companyId: updatedAgreement.companyId,
+      roomId: updatedAgreement.roomId,
+      payload: {
+        v: 1,
+        kind: decision === "ACCEPTED" ? "agreement:routeRefreshAccepted" : "agreement:routeRefreshCancelled",
+        title: notifyTitle,
+        message: notifyMessage,
+      },
+      dedupeKey: `agreement:${updatedAgreement.id}:routeRefresh:${nextItem.id}:${decision}`,
+    });
+
+    io?.to?.(`company:${updatedAgreement.companyId}`)?.emit?.("agreement:update", {
+      id: updatedAgreement.id,
+      kind: decision === "ACCEPTED" ? "routeRefreshAccepted" : "routeRefreshCancelled",
+      routeRefreshRequestId: nextItem.id,
+      sourceShiftId: acceptedSourceShiftId || undefined,
+    });
+    io?.to?.(`room:${updatedAgreement.roomId}`)?.emit?.("agreement:update", {
+      id: updatedAgreement.id,
+      kind: decision === "ACCEPTED" ? "routeRefreshAccepted" : "routeRefreshCancelled",
+      routeRefreshRequestId: nextItem.id,
+      sourceShiftId: acceptedSourceShiftId || undefined,
+    });
+
+    return res.json({ ok: true, item: nextItem, agreement: updatedAgreement, sourceShiftId: acceptedSourceShiftId || null });
+  });
+
   // ✅ M59: SHIFT STATS (for UI clarity)
   // Body: { agreementIds: number[], horizonDays?: number }
   // Returns: { byId: { [id]: { todayTotal, todayDone, horizonOpen } } }
@@ -484,8 +675,13 @@ export function agreementsRouter(io) {
 
     const byId = {};
     for (const ag of agreements) {
+      const sourceShift = sourceShiftById[Number(sourceShiftIdByAgreement[Number(ag.id)] || 0)] || null;
       byId[ag.id] = {
         generatedCount: Number(countMap[Number(ag.id)] || 0),
+        sourceShiftId: Number(sourceShiftIdByAgreement[Number(ag.id)] || 0) || null,
+        sourceSummary: sourceShift
+          ? `Kaynak vardiya #${sourceShift.id} • ${Number(sourceShift?._count?.people || 0)} personel • ${Number(sourceShift?._count?.stops || 0)} durak`
+          : null,
         agreementVehicle: ag.vehicle ? { id: ag.vehicle.id, plate: ag.vehicle.plate || null } : (ag.vehicleId ? { id: ag.vehicleId, plate: null } : null),
         agreementDriver: ag.driver ? { id: ag.driver.id, fullName: ag.driver.fullName || null } : (ag.driverId ? { id: ag.driverId, fullName: null } : null),
         plan: {
