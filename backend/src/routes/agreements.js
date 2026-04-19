@@ -1136,8 +1136,8 @@ export function agreementsRouter(io) {
       data: {
         vehicleId,
         driverId,
-        // NOTE: pricing pazarlÄ±ÄŸÄ± M57 itibariyle Agreement seviyesinde yapÄ±lÄ±r.
-        // roomOfferAmount/note burada opsiyonel bÄ±rakÄ±ldÄ± (geriye dÃ¶nÃ¼k uyum).
+        // NOTE: pricing pazarlığı M57 itibariyle Agreement seviyesinde yapılır.
+        // roomOfferAmount/note burada opsiyonel bırakıldı (geriye dönük uyum).
         roomOfferAmount: toInt(req.body.roomOfferAmount, null),
         roomOfferNote: req.body.roomOfferNote ? String(req.body.roomOfferNote) : null,
         status: nextStatus,

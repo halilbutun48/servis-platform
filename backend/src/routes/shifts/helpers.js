@@ -1,5 +1,5 @@
-﻿// backend/src/routes/shifts.helpers.js
-// shifts.js iÃ§indeki yardÄ±mcÄ± fonksiyonlarÄ± ayrÄ± dosyaya alÄ±r (satÄ±r sayÄ±sÄ±nÄ± azaltmak iÃ§in)
+// backend/src/routes/shifts.helpers.js
+// shifts.js içindeki yardımcı fonksiyonları ayrı dosyaya alır (satır sayısını azaltmak için)
 
 import prisma from "../../prisma.js";
 import { listAgreementRouteRefreshRequests } from "../../services/agreementRouteRefreshStore.js";
@@ -28,7 +28,7 @@ export function emitShift(io, shift, event, payload = {}) {
   if (!io || !shift) return;
   const base = { shiftId: shift.id, ...payload };
   io.to(`company:${shift.companyId}`).emit(event, base);
-  // âœ… M24: market shift olabilir (roomId null)
+  // ✅ M24: market shift olabilir (roomId null)
   if (shift.roomId) io.to(`room:${shift.roomId}`).emit(event, base);
   io.to(`shift:${shift.id}`).emit(event, base);
 }
@@ -201,7 +201,7 @@ export async function getRequestDelegateOrThrow() {
     };
   }
 
-  // Yeni schema isimleri olabilir (personelRequest vb). En azÄ±ndan crash olmasÄ±n.
+  // Yeni schema isimleri olabilir (personelRequest vb). En azından crash olmasın.
   // Burada sadece fail fast.
   const e = new Error("Request delegate not found (pickupRequest/request)");
   e.status = 500;

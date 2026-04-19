@@ -80,8 +80,8 @@ async function cloneAgreementShiftPayload(createdShiftId, sourceShift) {
 }
 
 /**
- * M52: approved/active agreement'lara gÃ¶re rolling ufukta (bugÃ¼n..+6 gÃ¼n) shift Ã¼retir.
- * Saat/dow hesabÄ± TR (+03:00) bazlÄ±dÄ±r.
+ * M52: approved/active agreement'lara göre rolling ufukta (bugün..+6 gün) shift üretir.
+ * Saat/dow hesabı TR (+03:00) bazlıdır.
  * Duplicate guard: Shift @@unique([agreementId, startAt])
  *
  * @param {import('socket.io').Server} io
@@ -149,7 +149,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
               endAt: endAt.toISOString(),
             });
             if (conflicts?.driverConflict || conflicts?.vehicleConflict) {
-              continue; // skip silently (ops tarafÄ± isterse log/audit ekleriz)
+              continue; // skip silently (ops tarafı isterse log/audit ekleriz)
             }
           }
 

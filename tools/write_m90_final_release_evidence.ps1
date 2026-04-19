@@ -1,4 +1,4 @@
-﻿param(
+param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 )
 
@@ -42,7 +42,7 @@ $docsContractMode = if ($state -and $state.docsContractMode) { [string]$state.do
 $lintSummary = 'see artifacts/lint/web_lint_latest.txt'
 if (Test-Path $lintPath) {
   $lintContent = Get-Content $lintPath -Raw -Encoding UTF8
-  if ($lintContent -match 'âœ–\s+(\d+)\s+problems?\s+\((\d+)\s+errors?,\s+(\d+)\s+warnings?\)') {
+  if ($lintContent -match '✖\s+(\d+)\s+problems?\s+\((\d+)\s+errors?,\s+(\d+)\s+warnings?\)') {
     $lintSummary = "$($matches[2]) error / $($matches[3]) warning"
   } elseif (($lintContent -notmatch 'warning') -and ($lintContent -notmatch 'error') -and ($lintContent -match 'eslint \.')) {
     $lintSummary = '0 error / 0 warning'

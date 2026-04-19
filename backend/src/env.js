@@ -102,7 +102,7 @@ export const ENV = {
   NOTIFICATION_RETENTION_DAYS: Number(process.env.NOTIFICATION_RETENTION_DAYS ?? 0),
 
   // ✅ M39: GPS points retention (0 = disabled)
-  GPS_POINT_RETENTION_DAYS: Number(process.env.GPS_POINT_RETENTION_DAYS ?? 0),  // âœ… M45: backup policy / local dump output
+  GPS_POINT_RETENTION_DAYS: Number(process.env.GPS_POINT_RETENTION_DAYS ?? 0),  // ✅ M45: backup policy / local dump output
   BACKUP_LOCAL_DIR: process.env.BACKUP_LOCAL_DIR ?? "/app/artifacts/backups",
   BACKUP_LOCAL_RETENTION_DAYS: Number(process.env.BACKUP_LOCAL_RETENTION_DAYS ?? 14),
   BACKUP_DUMP_FORMAT: process.env.BACKUP_DUMP_FORMAT ?? "plain",

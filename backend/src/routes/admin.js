@@ -132,17 +132,17 @@ r.post("/retention/run", authRequired(), requireRole("SUPER_ADMIN"), async (req,
 });
 
 
-// âœ… M45: retention policy summary (ops/readiness)
+// ✅ M45: retention policy summary (ops/readiness)
 r.get("/retention/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json({ ok: true, ...getRetentionPolicySummary() });
 });
 
-// âœ… M45: backup policy summary (ops/readiness)
+// ✅ M45: backup policy summary (ops/readiness)
 r.get("/backup/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json({ ok: true, ...getBackupPolicySummary() });
 });
 
-// âœ… M45: local backup dir manifest / latest dump visibility
+// ✅ M45: local backup dir manifest / latest dump visibility
 r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json({
     ok: true,
