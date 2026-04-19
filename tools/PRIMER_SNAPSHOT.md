@@ -10,6 +10,12 @@
 - Tek repo kontrol girisi: `npm run verify:repo`
 - Repo verification spine: `M92`
 
+## Kanonik komut hiyerarşisi (Tur 1)
+- Resmi günlük giriş: `npm run verify:repo`.
+- Resmi kapanış girişi: `npm run verify:final`.
+- `tools\pack_living.ps1`, compatibility / geniş prova hattı olarak korunur; birincil resmi giriş değildir.
+- Wrapper/alias politikası ve hedef klasör düzeni referansı: `docs/HEDEF_KLASORLEME_VE_TEST_SIRASI_V1.md`.
+
 ## Repo üstünde yaşayan hat
 - `M80 -> M89`
 

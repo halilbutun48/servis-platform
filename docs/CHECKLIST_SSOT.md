@@ -11,6 +11,13 @@
 - Sonraki kontrollü iş: `M90`
 - Tam güven için `tools\verify_living_static.ps1` ve `tools\verify_living_runtime.ps1 -To 89` birlikte okunmalıdır.
 
+## Kanonik komut hiyerarşisi (Tur 1)
+- Resmi günlük giriş: `npm run verify:repo`
+- Resmi kapanış girişi: `npm run verify:final`
+- Compatibility / geniş prova hattı: `tools\pack_living.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
+- `pack_living`, resmi ilk giriş değildir; living/historical geniş kapsama hattıdır.
+- Wrapper/alias politikası ve hedef klasör düzeni referansı: `docs/HEDEF_KLASORLEME_VE_TEST_SIRASI_V1.md`
+
 ## Tarihsel resmi green kutular
 - [x] `M44 — Telematics`
 - [x] `M45 — Retention + Backup`

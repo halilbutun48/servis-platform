@@ -14,6 +14,13 @@ Bu primer yaşayan hattın resmi özetidir.
 - Local acceptance overlay: `M91 shift/agreement route preview`
 - Repo verification spine: `M92 repo verification spine`
 
+## Kanonik komut hiyerarşisi (Tur 1)
+- Resmi günlük giriş: `npm run verify:repo`.
+- Resmi kapanış girişi: `npm run verify:final`.
+- `tools\pack_living.ps1` korunur; ancak compatibility / geniş prova hattıdır ve birincil resmi giriş değildir.
+- Wrapper/alias politikası ve hedef klasör düzeni için repo içi kanonik referans: `docs/HEDEF_KLASORLEME_VE_TEST_SIRASI_V1.md`.
+- Bu Tur 1 hizalamasında ürün koduna dokunulmaz; yalnız docs/tools anlatımı ve giriş düzeni netleştirilir.
+
 ## Güncel yaşayan sıra
 - `M80` — final sert kabul ve yük güveni
 - `M80.1` — hot panel daraltma

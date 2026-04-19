@@ -4,6 +4,8 @@ Bu belge, repo içindeki script / check / tools / runbook / docs yapısını yen
 
 Amaç, tek seferde agresif taşıma yapmak değil; kanonik çalışma sırasını koruyarak, alias destekli ve kontrollü bir yeniden düzenleme yapmaktır.
 
+Bu belge Tur 1 itibarıyla repo içi kanonik referans metni olarak kabul edilir; docs/tools hizalama turları bu belgeye göre yorumlanır.
+
 ---
 
 ## 1. Temel karar

@@ -25,6 +25,15 @@
 - Final verify chain: `npm run verify:final`
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 
+## Resmi komut hiyerarşisi (Tur 1)
+- Günlük resmi giriş: `npm run verify:repo`
+- PowerShell karşılığı / wrapper: `tools\check-repo.ps1 -Phase all`
+- Resmi kapanış: `npm run verify:final`
+- Compatibility / geniş prova hattı: `tools\pack_living.ps1 -To 89 -RepoRoot D:\servis-platform -NoBuild`
+- `pack_living` korunur; ancak resmi ilk giriş değildir.
+- Wrapper/alias politikası ve hedef klasör düzeni için referans: `docs/HEDEF_KLASORLEME_VE_TEST_SIRASI_V1.md`
+
+
 ## Tarihsel anchor / compatibility marker
 - Tarihsel tam master referansı: `tools\pack.ps1 -To 79 -RepoDir D:\servis-platform -NoBuild`
 - `tools\STABLE_TO.txt = 78` M78.x compatibility marker olarak kalır.
