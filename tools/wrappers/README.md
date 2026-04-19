@@ -1,12 +1,14 @@
-# TOOLS WRAPPERS
+# TOOLS WRAPPERS README
 
-Bu klasor, hedef tools duzeni icin kontrollu gecis katmanidir.
+Bu klasör wrapper-first yön için tutulur.
 
-- Kullanicinin resmi gunluk girisi: `npm run verify:repo`
-- Resmi kapanis: `npm run verify:final`
-- Compatibility / genis prova hatti: `tools\pack_living.ps1`
+## Roller
+- `verify_repo.ps1` = resmi repo doğrulama wrapper'ı
+- `verify_final.ps1` = resmi kapanış wrapper'ı
+- `pack_living.ps1` = compatibility / geniş prova wrapper'ı
+- `verify_living_static.ps1` = compatibility static wrapper'ı
+- `verify_living_runtime.ps1` = compatibility runtime wrapper'ı
 
 Not:
-- Tools root altindaki mevcut giris dosyalari korunur.
-- Bu wrapper katmani Tur 2'de hedef klasor duzenine yaklasmak icin eklenmistir.
-- Eski root yollar compatibility amaciyla yasamaya devam eder.
+- Root altındaki eski girişler yaşamaya devam eder.
+- Bu klasör, davranışı kırmadan hedef klasör düzenine yaklaşmak için eklenmiştir.

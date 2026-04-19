@@ -1,28 +1,28 @@
-# HEDEF KLASÃ–RLEME VE TEST SIRASI V1
+# HEDEF KLASÖRLEME VE TEST SIRASI V1
 
-Bu belge, repo iÃ§indeki script / check / tools / runbook / docs yapÄ±sÄ±nÄ± yeni canonical gerÃ§eÄŸe gÃ¶re yeniden hizalamak iÃ§in hazÄ±rlanmÄ±ÅŸtÄ±r.
+Bu belge, repo içindeki script / check / tools / runbook / docs yapısını yeni canonical gerçeğe göre yeniden hizalamak için hazırlanmıştır.
 
-AmaÃ§, tek seferde agresif taÅŸÄ±ma yapmak deÄŸil; kanonik Ã§alÄ±ÅŸma sÄ±rasÄ±nÄ± koruyarak, alias destekli ve kontrollÃ¼ bir yeniden dÃ¼zenleme yapmaktÄ±r.
+Amaç, tek seferde agresif taşıma yapmak değil; kanonik çalışma sırasını koruyarak, alias destekli ve kontrollü bir yeniden düzenleme yapmaktır.
 
 ---
 
 ## 1. Temel karar
 
-Yeni resmi giriÅŸ artÄ±k ÅŸudur:
+Yeni resmi giriş artık şudur:
 
 - `npm run verify:repo`
 
-Yeni resmi kapanÄ±ÅŸ giriÅŸi ÅŸudur:
+Yeni resmi kapanış girişi şudur:
 
 - `npm run verify:final`
 
-`tools/pack_living.ps1` korunur; ancak birincil resmi giriÅŸ deÄŸil, compatibility / geniÅŸ master prova hattÄ± olarak konumlanÄ±r.
+`tools/pack_living.ps1` korunur; ancak birincil resmi giriş değil, compatibility / geniş master prova hattı olarak konumlanır.
 
 ---
 
-## 2. Kanonik doÄŸrulama sÄ±rasÄ±
+## 2. Kanonik doğrulama sırası
 
-Repoâ€™nun resmi doÄŸrulama sÄ±rasÄ± aÅŸaÄŸÄ±daki gibidir:
+Repo’nun resmi doğrulama sırası aşağıdaki gibidir:
 
 1. lint
 2. docs / ssot
@@ -31,28 +31,28 @@ Repoâ€™nun resmi doÄŸrulama sÄ±rasÄ± aÅŸaÄŸÄ±daki gibidir:
 5. closure
 6. milestones
 
-Bu sÄ±ra repo check chain ile birebir uyumlu kalmalÄ±dÄ±r.
+Bu sıra repo check chain ile birebir uyumlu kalmalıdır.
 
-### GÃ¼nlÃ¼k geliÅŸtirme sÄ±rasÄ±
+### Günlük geliştirme sırası
 
 - `npm run verify:repo`
 
-### Final kapanÄ±ÅŸ sÄ±rasÄ±
+### Final kapanış sırası
 
 1. `npm run verify:final`
 2. `pwsh -ExecutionPolicy Bypass -File .\tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
 3. `pwsh -ExecutionPolicy Bypass -File .\tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
 4. `git status --short`
 
-### Compatibility / geniÅŸ master prova
+### Compatibility / geniş master prova
 
 - `tools/pack_living.ps1`
 
-Not: `pack_living` artÄ±k resmi ilk giriÅŸ deÄŸildir; legacy/living geniÅŸ kapsama hattÄ±dÄ±r.
+Not: `pack_living` artık resmi ilk giriş değildir; legacy/living geniş kapsama hattıdır.
 
 ---
 
-## 3. Hedef tools klasÃ¶r dÃ¼zeni
+## 3. Hedef tools klasör düzeni
 
 ```text
 tools/
@@ -108,18 +108,18 @@ tools/
   _backup/
 ```
 
-### Bu dÃ¼zenin anlamÄ±
+### Bu düzenin anlamı
 
-- `wrappers/`: kullanÄ±cÄ±ya gÃ¶rÃ¼nen kÄ±sa giriÅŸler
-- `packs/canonical/`: bugÃ¼nÃ¼n resmi kapanÄ±ÅŸ ve repo hijyeni hattÄ±
-- `packs/living/`: tarihsel / phase bazlÄ± living hat
-- `packs/milestones/`: milestone bazlÄ± tekil packâ€™ler
-- `packs/compat/`: eski alias / geÃ§iÅŸ paketleri
-- `checks/*`: aynÄ± ayrÄ±mÄ±n repo contract ve doÄŸrulama karÅŸÄ±lÄ±ÄŸÄ±
+- `wrappers/`: kullanıcıya görünen kısa girişler
+- `packs/canonical/`: bugünün resmi kapanış ve repo hijyeni hattı
+- `packs/living/`: tarihsel / phase bazlı living hat
+- `packs/milestones/`: milestone bazlı tekil pack’ler
+- `packs/compat/`: eski alias / geçiş paketleri
+- `checks/*`: aynı ayrımın repo contract ve doğrulama karşılığı
 
 ---
 
-## 4. Hedef docs / runbook dÃ¼zeni
+## 4. Hedef docs / runbook düzeni
 
 ```text
 docs/
@@ -147,15 +147,15 @@ docs/
 
 ### Kural
 
-- â€œBugÃ¼n hangi komutu Ã§alÄ±ÅŸtÄ±racaÄŸÄ±m?â€ sorusunun cevabÄ± canonical runbookâ€™ta olmalÄ±
-- milestone runbookâ€™larÄ± tarihsel ve teknik iz iÃ§in yaÅŸamaya devam etmeli
-- compat dokÃ¼manlarÄ± eski â†’ yeni geÃ§iÅŸi gÃ¶rÃ¼nÃ¼r kÄ±lmalÄ±
+- “Bugün hangi komutu çalıştıracağım?” sorusunun cevabı canonical runbook’ta olmalı
+- milestone runbook’ları tarihsel ve teknik iz için yaşamaya devam etmeli
+- compat dokümanları eski → yeni geçişi görünür kılmalı
 
 ---
 
-## 5. Ä°simlendirme politikasÄ±
+## 5. İsimlendirme politikası
 
-### KullanÄ±cÄ±ya gÃ¶rÃ¼nen kÄ±sa isimler
+### Kullanıcıya görünen kısa isimler
 
 - `verify_repo.ps1`
 - `verify_final.ps1`
@@ -168,33 +168,33 @@ docs/
 - `check_m90_c8_ci_verification_visibility_repo_contract.ps1`
 - `pack_m92_repo_verification_spine.ps1`
 
-### Ä°lke
+### İlke
 
-- wrapper isimleri kÄ±sa ve gÃ¶rev odaklÄ± olur
-- milestone isimleri teknik ve iz sÃ¼rÃ¼lebilir kalÄ±r
-- kÄ±sa wrapper ile teknik milestone ismi aynÄ± seviyede kullanÄ±lmaz
+- wrapper isimleri kısa ve görev odaklı olur
+- milestone isimleri teknik ve iz sürülebilir kalır
+- kısa wrapper ile teknik milestone ismi aynı seviyede kullanılmaz
 
 ---
 
-## 6. Alias politikasÄ±
+## 6. Alias politikası
 
 Eski yollar tek seferde silinmez.
 
-### AÅŸama 1
+### Aşama 1
 
-- eski dosya adÄ± yerinde kalÄ±r
-- iÃ§inden yeni hedefe delegasyon yapÄ±lÄ±r
+- eski dosya adı yerinde kalır
+- içinden yeni hedefe delegasyon yapılır
 
-### AÅŸama 2
+### Aşama 2
 
-- README / primer / checklist yeni yolu gÃ¶sterir
-- eski yol `compat` olarak iÅŸaretlenir
+- README / primer / checklist yeni yolu gösterir
+- eski yol `compat` olarak işaretlenir
 
-### AÅŸama 3
+### Aşama 3
 
-- yeterli geÃ§iÅŸ sonrasÄ± eski alias archive edilir
+- yeterli geçiş sonrası eski alias archive edilir
 
-### Ã–rnek
+### Örnek
 
 Eski:
 - `tools/pack_m77_kvkk_uyum_katmani.ps1`
@@ -202,119 +202,135 @@ Eski:
 Yeni hedef:
 - `tools/packs/milestones/pack_m77_kvkk_uyum_katmani.ps1`
 
-Eski dosya bir sÃ¼re yaÅŸar, ama yalnÄ±z delegasyon yapar.
+Eski dosya bir süre yaşar, ama yalnız delegasyon yapar.
 
 ---
 
-## 7. Resmi Ã§alÄ±ÅŸma modeli
+## 7. Resmi çalışma modeli
 
-### Resmi giriÅŸ
+### Resmi giriş
 
 - `npm run verify:repo`
 
-### Resmi final giriÅŸ
+### Resmi final giriş
 
 - `npm run verify:final`
 
-### Resmi paylaÅŸÄ±m/export akÄ±ÅŸÄ±
+### Resmi paylaşım/export akışı
 
 - export hygiene
 - shareable bundle
 - temiz `git status`
 
-### Compatibility / legacy geniÅŸ doÄŸrulama
+### Compatibility / legacy geniş doğrulama
 
 - `tools/pack_living.ps1`
-- gerekirse phase packâ€™ler ve tekil milestone packâ€™ler
+- gerekirse phase pack’ler ve tekil milestone pack’ler
 
 ---
 
-## 8. Ne yapÄ±lmayacak
+## 8. Ne yapılmayacak
 
-AÅŸaÄŸÄ±dakiler tek seferde yapÄ±lmayacaktÄ±r:
+Aşağıdakiler tek seferde yapılmayacaktır:
 
-- tÃ¼m tools/runbook dosyalarÄ±nÄ± big-bang rename etmek
-- eski aliasâ€™larÄ± aynÄ± turda silmek
-- milestone tarihÃ§esini sade gÃ¶rÃ¼nÃ¼m iÃ§in ezmek
-- `verify:repo` yerine yeni ana giriÅŸ icat etmek
-- canonical sÄ±ra netleÅŸmeden fiziksel taÅŸÄ±ma yapmak
+- tüm tools/runbook dosyalarını big-bang rename etmek
+- eski alias’ları aynı turda silmek
+- milestone tarihçesini sade görünüm için ezmek
+- `verify:repo` yerine yeni ana giriş icat etmek
+- canonical sıra netleşmeden fiziksel taşıma yapmak
 
 ---
 
-## 9. GeÃ§iÅŸ planÄ±
+## 9. Geçiş planı
 
-### Tur 1 â€” hizalama
+### Tur 1 — hizalama
 
 Hedef:
-- canonical sÄ±ra dokÃ¼manÄ±
-- wrapper standardÄ±
-- alias politikasÄ±
-- tools/docs hedef klasÃ¶r planÄ±
-- README / primer / checklist gÃ¼ncellemesi
+- canonical sıra dokümanı
+- wrapper standardı
+- alias politikası
+- tools/docs hedef klasör planı
+- README / primer / checklist güncellemesi
 
-Ã‡Ä±ktÄ±:
-- fiziksel taÅŸÄ±ma yok ya da minimum
+Çıktı:
+- fiziksel taşıma yok ya da minimum
 - repo contract zinciri korunur
 
-### Tur 2 â€” kontrollÃ¼ fiziksel taÅŸÄ±ma
+### Tur 2 — kontrollü fiziksel taşıma
 
 Hedef:
-- packs/checks klasÃ¶rlerini yeni sÄ±nÄ±flara taÅŸÄ±mak
-- runbook klasÃ¶rlerini ayÄ±rmak
-- eski dosyalarÄ± delegasyon aliasâ€™Ä± olarak bÄ±rakmak
+- packs/checks klasörlerini yeni sınıflara taşımak
+- runbook klasörlerini ayırmak
+- eski dosyaları delegasyon alias’ı olarak bırakmak
 
-KoÅŸul:
+Koşul:
 - her tur sonunda `npm run verify:repo`
 
-### Tur 3 â€” temizlik
+### Tur 3 — temizlik
 
 Hedef:
-- gerÃ§ekten kullanÄ±lmayan aliasâ€™larÄ± archive etmek
-- duplicate / legacy yollarÄ± kapatmak
-- docs sadeleÅŸtirme
+- gerçekten kullanılmayan alias’ları archive etmek
+- duplicate / legacy yolları kapatmak
+- docs sadeleştirme
 
-KoÅŸul:
-- final kapanÄ±ÅŸ ve export hygiene zinciri bozulmamalÄ±
+Koşul:
+- final kapanış ve export hygiene zinciri bozulmamalı
 
 ---
 
-## 10. Agreement / shift yeni gerÃ§eÄŸi iÃ§in Ã¶zel not
+## 10. Agreement / shift yeni gerçeği için özel not
 
-Yeni canonical iÅŸ kuralÄ±:
+Yeni canonical iş kuralı:
 
-- agreement doÄŸrudan companyâ€™den aÃ§Ä±lmaz
-- doÄŸru akÄ±ÅŸ: `vardiya oluÅŸtur -> SÃ¶zleÅŸmeye DÃ¶nÃ¼ÅŸtÃ¼r -> rolling Ã¼retim`
+- agreement doğrudan company’den açılmaz
+- doğru akış: `vardiya oluştur -> Sözleşmeye Dönüştür -> rolling üretim`
 
 Bu nedenle:
-- direct agreement create bekleyen legacy script/check/doc Ã¶ÄŸeleri geÃ§iÅŸ planÄ±nda ayrÄ±ca temizlenmelidir
-- legacy agreement testleri, canonical verification dizisinin ayrÄ± bir cleanup alt baÅŸlÄ±ÄŸÄ± olarak ele alÄ±nmalÄ±dÄ±r
+- direct agreement create bekleyen legacy script/check/doc öğeleri geçiş planında ayrıca temizlenmelidir
+- legacy agreement testleri, canonical verification dizisinin ayrı bir cleanup alt başlığı olarak ele alınmalıdır
 
 ---
 
-## 11. BaÅŸarÄ± Ã¶lÃ§Ã¼tÃ¼
+## 11. Başarı ölçütü
 
-Bu yeniden hizalama baÅŸarÄ±lÄ± sayÄ±labilmesi iÃ§in:
+Bu yeniden hizalama başarılı sayılabilmesi için:
 
-1. `npm run verify:repo` PASS kalmalÄ±
-2. `npm run verify:final` PASS kalmalÄ±
-3. canonical giriÅŸler deÄŸiÅŸmeden sadeleÅŸmeli
-4. eski â†’ yeni yol haritasÄ± gÃ¶rÃ¼nÃ¼r olmalÄ±
-5. yeni biri repoâ€™ya girince ilk bakÄ±ÅŸta hangi komutu Ã§alÄ±ÅŸtÄ±racaÄŸÄ±nÄ± anlayabilmeli
+1. `npm run verify:repo` PASS kalmalı
+2. `npm run verify:final` PASS kalmalı
+3. canonical girişler değişmeden sadeleşmeli
+4. eski → yeni yol haritası görünür olmalı
+5. yeni biri repo’ya girince ilk bakışta hangi komutu çalıştıracağını anlayabilmeli
 
 ---
 
-## 12. KÄ±sa karar Ã¶zeti
+## 12. Kısa karar özeti
 
-- Big-bang taÅŸÄ±ma yapÄ±lmaz
-- Ã–nce canonical sÄ±ra sabitlenir
-- Sonra alias destekli kontrollÃ¼ taÅŸÄ±ma yapÄ±lÄ±r
-- En son temizlik yapÄ±lÄ±r
-- `verify:repo` birincil giriÅŸ olarak korunur
-- `pack_living` compatibility / geniÅŸ prova hattÄ± olarak yaÅŸamaya devam eder
+- Big-bang taşıma yapılmaz
+- Önce canonical sıra sabitlenir
+- Sonra alias destekli kontrollü taşıma yapılır
+- En son temizlik yapılır
+- `verify:repo` birincil giriş olarak korunur
+- `pack_living` compatibility / geniş prova hattı olarak yaşamaya devam eder
 
 
-## Tur 2 ilerleme notu
-- Fiziksel buyuk tasima yapilmadan `tools/wrappers` katmani eklendi.
-- Root altindaki mevcut giris dosyalari compatibility amaciyla korunur.
-- Hedef duzen: wrapperlar yeni yapinin iskeletini kurar, root dosyalar kontrollu gecis boyunca yasamaya devam eder.
-- Bu turda urun koduna dokunulmaz; yalniz tools giris katmani netlestirilir.
+---
+
+## 13. Tur 3 alias envanteri notu
+
+Tur 3 yaklaşımı şudur:
+
+- root tools girişleri hemen silinmez
+- önce resmi günlük giriş / resmi kapanış / compatibility alias rolleri görünür hale getirilir
+- `tools/wrappers/` geleceğe dönük yön olarak eklenir
+- root living girişleri compat-only olarak yaşamaya devam eder
+- archive kararı ancak green zincir bozulmadan, daha sonraki turda verilir
+
+Bu nedenle Tur 3 sonunda beklenen model:
+
+- `npm run verify:repo` = resmi günlük giriş
+- `npm run verify:final` = resmi kapanış
+- `tools\check-repo.ps1` = resmi root PowerShell wrapper
+- `tools\pack_living.ps1` = compatibility / geniş prova
+- `tools\verify_living_static.ps1` = compatibility static giriş
+- `tools\verify_living_runtime.ps1` = compatibility runtime giriş
+- `tools\wrappers\*` = wrapper-first yön

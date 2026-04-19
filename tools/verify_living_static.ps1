@@ -1,3 +1,8 @@
+<#
+TUR3_ALIAS_STATUS_V1
+COMPATIBILITY ROOT ENTRY
+Bu dosya compatibility/living static doğrulama girişi olarak korunur. Wrapper-first yön için tools/wrappers/verify_living_static.ps1 de eklenmiştir; ancak eski çağrılar kırılmaz.
+#>
 param(
   [Parameter(Mandatory=$false)][string]$RepoRoot = ''
 )

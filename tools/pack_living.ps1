@@ -1,4 +1,9 @@
-﻿param(
+<#
+TUR3_ALIAS_STATUS_V1
+COMPATIBILITY ROOT ENTRY
+Bu dosya yaşar; ancak resmi günlük giriş değildir. Canonical günlük giriş npm run verify:repo, resmi kapanış npm run verify:final komutudur. Bu root dosya legacy/living geniş prova hattı için korunur.
+#>
+param(
   [Parameter(Mandatory=$false)][ValidateRange(0,199)][int]$To = 89,
   [Parameter(Mandatory=$false)][string]$RepoRoot = '',
   [Parameter(Mandatory=$false)][string]$ComposeDir = 'infra',

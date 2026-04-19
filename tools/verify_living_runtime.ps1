@@ -1,3 +1,8 @@
+<#
+TUR3_ALIAS_STATUS_V1
+COMPATIBILITY ROOT ENTRY
+Bu dosya compatibility/living runtime doğrulama girişi olarak korunur. Wrapper-first yön için tools/wrappers/verify_living_runtime.ps1 de eklenmiştir; ancak eski çağrılar kırılmaz.
+#>
 param(
   [Parameter(Mandatory=$false)][ValidateRange(67,199)][int]$To = 89,
   [Parameter(Mandatory=$false)][string]$RepoRoot = '',

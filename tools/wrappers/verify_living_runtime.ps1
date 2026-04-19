@@ -6,5 +6,5 @@ param(
   [Parameter(Mandatory=$false)][switch]$NoBuild
 )
 $ErrorActionPreference = 'Stop'
-$ToolsRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-& (Join-Path $ToolsRoot 'verify_living_runtime.ps1') -To $To -RepoRoot $RepoRoot -ComposeDir $ComposeDir -ApiService $ApiService -NoBuild:$NoBuild
+$rootTools = Split-Path -Parent $PSScriptRoot
+& (Join-Path $rootTools 'verify_living_runtime.ps1') -To $To -RepoRoot $RepoRoot -ComposeDir $ComposeDir -ApiService $ApiService -NoBuild:$NoBuild

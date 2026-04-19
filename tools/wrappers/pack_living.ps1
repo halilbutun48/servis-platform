@@ -8,5 +8,5 @@ param(
   [Parameter(Mandatory=$false)][switch]$SkipRepoAudit
 )
 $ErrorActionPreference = 'Stop'
-$ToolsRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-& (Join-Path $ToolsRoot 'pack_living.ps1') -To $To -RepoRoot $RepoRoot -ComposeDir $ComposeDir -ApiService $ApiService -NoBuild:$NoBuild -SkipStaticRepoChecks:$SkipStaticRepoChecks -SkipRepoAudit:$SkipRepoAudit
+$rootTools = Split-Path -Parent $PSScriptRoot
+& (Join-Path $rootTools 'pack_living.ps1') -To $To -RepoRoot $RepoRoot -ComposeDir $ComposeDir -ApiService $ApiService -NoBuild:$NoBuild -SkipStaticRepoChecks:$SkipStaticRepoChecks -SkipRepoAudit:$SkipRepoAudit

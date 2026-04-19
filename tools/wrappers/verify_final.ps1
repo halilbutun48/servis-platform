@@ -1,15 +1,7 @@
-param(
-  [string]$RepoRoot = ''
-)
-$ErrorActionPreference = 'Stop'
-$ToolsRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
-  $RepoRoot = (Resolve-Path (Join-Path $ToolsRoot '..')).Path
-}
+$ErrorActionPreference = "Stop"
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Push-Location $RepoRoot
 try {
   npm run verify:final
-  if (-not $?) { throw 'verify:final failed.' }
-} finally {
-  Pop-Location
-}
+  if ($LASTEXITCODE -ne 0) { throw 'verify:final failed' }
+} finally { Pop-Location }
