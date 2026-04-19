@@ -7,6 +7,7 @@ import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { pickNextStopByRemainingKmOrEta } from "../../components/stopTimelineUtils";
 import { ageSecFromAt, uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function haversineMeters(lat1, lng1, lat2, lng2) {
   const R = 6371000;
@@ -333,7 +334,7 @@ export default function PersonelLivePanel() {
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <b>Shift #{myShift.id}</b>
                 <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>
-                  {String(myShift.status || "").toUpperCase()}
+                  {displayStatusLabel(String(myShift.status || "").toUpperCase())}
                 </span>
               </div>
 
@@ -345,8 +346,8 @@ export default function PersonelLivePanel() {
                 </span>
                 {vehicle ? (
                   <>
-                    <span className="pill" data-status={pillKey} title={`GPS: ${ui}`}>
-                      {ui}
+                    <span className="pill" data-status={pillKey} title={`GPS: ${displayStatusLabel(ui)}`}>
+                      {displayStatusLabel(ui)}
                     </span>
                     <span className="muted">Son GPS:</span>
                     <span className="pill">{gpsAgeLabel(vehicle)}</span>
@@ -402,7 +403,7 @@ export default function PersonelLivePanel() {
                 <>
                   <span className="muted">GPS:</span>
                   <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(vehicle))}>
-                    {uiStatusFromVehicle(vehicle)}
+                    {displayStatusLabel(uiStatusFromVehicle(vehicle))}
                   </span>
                   <span className="muted">Son GPS:</span>
                   <span className="pill">{gpsAgeLabel(vehicle)}</span>

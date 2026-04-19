@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 import { companyPath } from "../../utils/paths";
@@ -9,6 +9,7 @@ import { formatDateTimeTR } from "../../utils/time";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { getCompanyOffers, getCompanyRooms, getCompanyWorkflowSummary } from "../../utils/companyDataHub";
 import { clearUiDataCache } from "../../utils/uiDataCache";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 const GEOREVIEW_OPEN_MODE_KEY = "psv1:georeview:openMode:v1";
@@ -43,10 +44,11 @@ function clearGuidedResume() {
 }
 
 function pill(status) {
-  const s = String(status || "");
+  const s = String(status || "").toUpperCase();
+  const label = displayStatusLabel(s);
   return (
-    <span className="pill" data-status={s} title={s}>
-      {s}
+    <span className="pill" data-status={s} title={label}>
+      {label}
     </span>
   );
 }
@@ -876,7 +878,7 @@ export default function WorkflowPanel() {
 
                   <RecommendationReasons reasons={isRecommended ? recommendationReasons : []} />
                   <div className="muted" style={{ marginTop: 8 }}>
-                    Shift #{o.shiftId} • Shift durumu {String(shift.status || "-")} • Güncelleme {fmtTR(o.updatedAt)}
+                    Shift #{o.shiftId} • Vardiya durumu {displayStatusLabel(String(shift.status || "-").toUpperCase())} • Güncelleme {fmtTR(o.updatedAt)}
                   </div>
                   <div className="muted" style={{ marginTop: 4 }}>{gap.note}</div>
                   {isRecommended ? (

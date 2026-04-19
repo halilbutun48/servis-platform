@@ -90,7 +90,7 @@ export function RoomVehicleLinkSection({
               >
                 {items.map((v) => (
                   <option key={v.id} value={v.id} disabled={Boolean(v.archivedAt)}>
-                    {v.plate} (#{v.id}){v.archivedAt ? " • ARCHIVED" : ""}
+                    {v.plate} (#{v.id}){v.archivedAt ? " • Arşivde" : ""}
                   </option>
                 ))}
               </select>

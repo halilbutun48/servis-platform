@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { formatDateTimeTR } from "../../utils/time";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function fmt(dt) {
   try {
@@ -115,7 +116,7 @@ export default function RoomCheckinPanel() {
               <option value="">Vardiya seç</option>
               {items.map((s) => (
                 <option key={s.id} value={s.id}>
-                  #{s.id} • {s.status} • {fmt(s.startAt)}
+                  #{s.id} • {displayStatusLabel(s.status)} • {fmt(s.startAt)}
                 </option>
               ))}
             </select>
@@ -123,7 +124,7 @@ export default function RoomCheckinPanel() {
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="pill" data-status="COUNT">BOARD {counts.BOARD || 0}</span>
             <span className="pill" data-status="COUNT">ALIGHT {counts.ALIGHT || 0}</span>
-            {selectedShift ? <span className="pill" data-status={selectedShift.status}>{selectedShift.status}</span> : null}
+            {selectedShift ? <span className="pill" data-status={String(selectedShift.status || "").toUpperCase()}>{displayStatusLabel(String(selectedShift.status || "").toUpperCase())}</span> : null}
           </div>
         </div>
         {selectedShift ? (
@@ -150,7 +151,7 @@ export default function RoomCheckinPanel() {
               <tr key={it.id}>
                 <td>{fmt(it.at)}</td>
                 <td>{it.personel?.fullName || `#${it.personelId}`}</td>
-                <td><span className="pill" data-status={it.eventType}>{it.eventType}</span></td>
+                <td><span className="pill" data-status={String(it.eventType || "").toUpperCase()}>{displayStatusLabel(String(it.eventType || "").toUpperCase())}</span></td>
                 <td>{it.source || "-"}</td>
                 <td>{it.deviceId || "-"}</td>
               </tr>

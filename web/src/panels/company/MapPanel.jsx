@@ -12,6 +12,7 @@ import { buildMapFacts } from "../../utils/copilotFacts";
 import { getPath } from "../../router";
 import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function asNum(v) {
   const n = Number(String(v ?? "").replace(",", "."));
@@ -60,7 +61,7 @@ function normShiftStatus(s) {
 
 function shiftTitle(s) {
   if (!s) return "Shift yok";
-  return `Shift #${s.id} • ${normShiftStatus(s.status)}`;
+  return `Shift #${s.id} • ${displayStatusLabel(normShiftStatus(s.status))}`;
 }
 
 function isReached(stop) {
@@ -415,8 +416,8 @@ export default function CompanyMapPanel() {
       ],
       facts,
       badges: [
-        { label: 'GPS', value: uiStatusFromVehicle(selected) || '-', help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
-        { label: 'Vardiya Durumu', value: String(selectedShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
+        { label: 'GPS', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
+        { label: 'Vardiya Durumu', value: displayStatusLabel(String(selectedShift?.status || '-').toUpperCase()), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
       ],
     });
     return () => clearCopilotSelection(scopeKey);
@@ -550,13 +551,13 @@ export default function CompanyMapPanel() {
                   >
                     <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
                       <b>{v?.plate || "-"}</b>
-                      <span className="pill" data-status={c.pillKey} title={`GPS: ${c.ui}`}>{c.ui}</span>
+                      <span className="pill" data-status={c.pillKey} title={`GPS: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
                       <span className="pill" data-status={normShiftStatus(s?.status)}>
-                        {normShiftStatus(s?.status)}
+                        {displayStatusLabel(normShiftStatus(s?.status))}
                       </span>
                       {!gpsOk ? (
                         <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
-                          NO GPS
+                          GPS yok
                         </span>
                       ) : null}
                     </span>
@@ -641,13 +642,13 @@ export default function CompanyMapPanel() {
                 >
                   {selectedShift ? (
                     <span className="pill" data-status={String(selectedShift?.status || "").toUpperCase()}>
-                      {String(selectedShift?.status || "").toUpperCase()}
+                      {displayStatusLabel(String(selectedShift?.status || "").toUpperCase())}
                     </span>
                   ) : null}
 
                   <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
                   <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
-                    {uiStatusFromVehicle(selected)}
+                    {displayStatusLabel(uiStatusFromVehicle(selected))}
                   </span>
 
                   <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>

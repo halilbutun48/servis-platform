@@ -6,6 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import CameraQrScannerCard from "../../components/checkin/CameraQrScannerCard";
 import { extractCheckinToken } from "../../utils/checkinToken";
 import { formatDateTimeTR } from "../../utils/time";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function fmt(dt) {
   try {
@@ -179,7 +180,7 @@ export default function DriverCheckinPanel() {
                   <option value="">Vardiya seç</option>
                   {shifts.map((s) => (
                     <option key={s.id} value={s.id}>
-                      #{s.id} • {s.status} • {fmt(s.startAt)}
+                      #{s.id} • {displayStatusLabel(s.status)} • {fmt(s.startAt)}
                     </option>
                   ))}
                 </select>
@@ -203,7 +204,7 @@ export default function DriverCheckinPanel() {
 
             {selectedShift ? (
               <div className="muted" style={{ marginTop: 10 }}>
-                Shift #{selectedShift.id} • <span className="pill" data-status={selectedShift.status}>{selectedShift.status}</span>
+                Shift #{selectedShift.id} • <span className="pill" data-status={String(selectedShift.status || "").toUpperCase()}>{displayStatusLabel(String(selectedShift.status || "").toUpperCase())}</span>
                 {selectedShift.status !== "ACTIVE" ? (
                   <button type="button" className="btn sm" style={{ marginLeft: 8 }} onClick={() => navigate("/driver/today")}>Bugün ekranına git</button>
                 ) : null}
@@ -248,7 +249,7 @@ export default function DriverCheckinPanel() {
                   <span className="pill" data-status={lastResult?.deduped ? "REQUESTED" : "APPROVED"}>
                     {lastResult?.deduped ? "DEDUPED" : "OK"}
                   </span>
-                  <span className="muted">Son event: {lastResult?.lastEvent?.eventType || "-"} • {fmt(lastResult?.lastEvent?.at)}</span>
+                  <span className="muted">Son event: {displayStatusLabel(lastResult?.lastEvent?.eventType || "-")} • {fmt(lastResult?.lastEvent?.at)}</span>
                 </div>
               </div>
             ) : null}
@@ -271,7 +272,7 @@ export default function DriverCheckinPanel() {
                 <tr key={it.id}>
                   <td>{fmt(it.at)}</td>
                   <td>{it.personel?.fullName || `#${it.personelId}`}</td>
-                  <td><span className="pill" data-status={it.eventType}>{it.eventType}</span></td>
+                  <td><span className="pill" data-status={String(it.eventType || "").toUpperCase()}>{displayStatusLabel(String(it.eventType || "").toUpperCase())}</span></td>
                   <td>{it.source || "-"}</td>
                 </tr>
               )) : (

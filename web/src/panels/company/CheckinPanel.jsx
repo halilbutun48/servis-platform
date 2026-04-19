@@ -5,6 +5,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import QrCanvas from "../../components/checkin/QrCanvas";
 import { formatDateTimeTR } from "../../utils/time";
 import { nowIsoTR } from "../../utils/time";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function fmt(dt) {
   try {
@@ -15,7 +16,8 @@ function fmt(dt) {
 }
 
 function statusPill(status) {
-  return <span className="pill" data-status={status || "COUNT"}>{status || "-"}</span>;
+  const key = String(status || "COUNT").toUpperCase();
+  return <span className="pill" data-status={key}>{displayStatusLabel(key)}</span>;
 }
 
 export default function CompanyCheckinPanel() {
@@ -219,7 +221,7 @@ export default function CompanyCheckinPanel() {
               <option value="">Vardiya seç</option>
               {items.map((s) => (
                 <option key={s.id} value={s.id}>
-                  #{s.id} • {s.status} • {fmt(s.startAt)}
+                  #{s.id} • {displayStatusLabel(s.status)} • {fmt(s.startAt)}
                 </option>
               ))}
             </select>
@@ -262,7 +264,7 @@ export default function CompanyCheckinPanel() {
                     <td>{p.fullName || p.name || `Personel #${pid}`}</td>
                     <td>#{pid}</td>
                     <td>
-                      {active.length ? active.map((x) => <span key={x.id} className="pill" data-status="ACTIVE" style={{ marginRight: 6 }}>{x.type}</span>) : <span className="muted">Aktif credential yok</span>}
+                      {active.length ? active.map((x) => <span key={x.id} className="pill" data-status="ACTIVE" style={{ marginRight: 6 }}>{displayStatusLabel(x.type)}</span>) : <span className="muted">Aktif credential yok</span>}
                     </td>
                     <td>
                       <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>

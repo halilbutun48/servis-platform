@@ -1,5 +1,6 @@
 import { ProviderScoreBadge } from "../../components/ProviderScoreBadge";
 import { formatTRY, offerGapMeta, roomLabel } from "./shiftsPanelOfferUtils";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function RecommendationBadge({ reason = "" }) {
   return (
@@ -127,7 +128,7 @@ export function CompanyOfferDecisionCard({
           <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             {isRecommended ? <RecommendationBadge reason={recommendationReason} /> : null}
             <ProviderScoreBadge score={roomScore || null} prominent showLabel />
-            <span className="pill" data-status={offer.status}>{offer.status}</span>
+            <span className="pill" data-status={offerStatus}>{displayStatusLabel(offerStatus)}</span>
             <OfferSignalPill label="Karar" value={canAccept ? "Verilebilir" : "Beklemede"} tone={canAccept ? "warn" : "neutral"} />
           </div>
         </div>

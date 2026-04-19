@@ -171,10 +171,10 @@ export default function NotificationsPanel() {
         }
 
         .notifTblCard { flex:1; min-height:420px; overflow:hidden; }
-        .notifTblWrap { height:100%; overflow-y:auto; overflow-x:hidden; }
+        .notifTblWrap { height:100%; overflow-y:auto; overflow-x:auto; }
 
-        .notifTbl { width:100%; border-collapse:collapse; table-layout:fixed; }
-        .notifTbl th, .notifTbl td { padding:8px 8px; vertical-align:top; }
+        .notifTbl { width:max(100%, 1560px); border-collapse:collapse; table-layout:fixed; }
+        .notifTbl th, .notifTbl td { padding:10px 12px; vertical-align:top; }
         .notifTbl thead th {
           position:sticky; top:0;
           background: rgba(12,18,28,0.92);
@@ -182,34 +182,36 @@ export default function NotificationsPanel() {
           z-index:1;
         }
 
+        .notifTbl thead th, .notifTbl .nowrap { white-space:nowrap; }
+
         .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
         .nowrap { white-space:nowrap; }
         .ellipsis { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
         .clamp2{
           display:-webkit-box;
-          -webkit-line-clamp:2;
+          -webkit-line-clamp:3;
           -webkit-box-orient:vertical;
           overflow:hidden;
         }
 
         /* Daha kompakt kolonlar */
-        .colId { width:54px; }
-        .colType { width:160px; }
-        .colScope { width:96px; }
-        .colAt { width:120px; }
-        .colTitle { width:160px; }
-        .colMsg { width:auto; }
-        .colVehicle { width:68px; }
-        .colKind { width:150px; }
-        .colStatus { width:120px; }
-        .colAge { width:60px; }
-        .colPayload { width:72px; }
+        .colId { width:60px; }
+        .colType { width:170px; }
+        .colScope { width:100px; }
+        .colAt { width:136px; }
+        .colTitle { width:250px; }
+        .colMsg { width:360px; }
+        .colVehicle { width:72px; }
+        .colKind { width:170px; }
+        .colStatus { width:130px; }
+        .colAge { width:72px; }
+        .colPayload { width:88px; }
 
         /* .pill taşmasın */
         .pillEllip {
           display:inline-block;
-          max-width: 150px;
+          max-width: 160px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;

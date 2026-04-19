@@ -233,7 +233,7 @@ export function RoomVehicleManageSection({
                     <td title={!gpsOk ? "GPS verisi yok (haritada görünmez)" : ""}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                         <span>{v.plate}</span>
-                        {isArchived ? <span className="pill" data-status="PASSIVE">ARCHIVED</span> : null}
+                        {isArchived ? <span className="pill" data-status="PASSIVE">Arşivde</span> : null}
                       </div>
                       {!gpsOk ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>📡 GPS yok</div> : null}
                     </td>
@@ -654,7 +654,7 @@ export function RoomVehicleTelematicsSection({
             >
               {items.map((v) => (
                 <option key={v.id} value={v.id} disabled={Boolean(v.archivedAt)}>
-                  {v.plate} (#{v.id}){v.archivedAt ? " • ARCHIVED" : ""}
+                  {v.plate} (#{v.id}){v.archivedAt ? " • Arşivde" : ""}
                 </option>
               ))}
             </select>

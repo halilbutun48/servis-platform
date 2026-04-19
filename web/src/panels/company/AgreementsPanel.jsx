@@ -64,43 +64,6 @@ function trDateTime(iso) {
   });
 }
 
-function moneyTry(v) {
-  if (v == null || v === "") return "-";
-  const n = Number(v);
-  if (!Number.isFinite(n)) return String(v);
-  return `${new Intl.NumberFormat("tr-TR").format(n)} ₺`;
-}
-
-function routePriceDiffText(currentAmount, nextAmount) {
-  const current = Number(currentAmount || 0);
-  const next = Number(nextAmount ?? currentAmount ?? 0);
-  const diff = next - current;
-  return `${moneyTry(current)} → ${moneyTry(next)} (${diff > 0 ? "+" : ""}${moneyTry(diff)})`;
-}
-
-function RouteRefreshCommercialBox({ item, agreement, accepted = false }) {
-  const priorAmount = Number(item?.priorAgreementAmount ?? agreement?.companyOfferAmount ?? 0);
-  const companyAmount = Number(item?.initialCompanyOfferAmount ?? item?.companyOfferAmount ?? agreement?.companyOfferAmount ?? priorAmount);
-  const roomAmount = item?.roomCounterAmount == null ? null : Number(item.roomCounterAmount);
-  const finalAmount = accepted
-    ? Number(item?.finalAcceptedAmount ?? (roomAmount ?? item?.companyOfferAmount ?? companyAmount ?? priorAmount))
-    : Number(roomAmount ?? item?.companyOfferAmount ?? companyAmount ?? priorAmount);
-  return (
-    <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-      <div className="muted">{accepted ? "Ücret akışı" : "Ücret pazarlığı"}</div>
-      <div style={{ fontWeight: 900, marginTop: 4 }}>
-        {routePriceDiffText(priorAmount, finalAmount)}
-      </div>
-      <div className="muted" style={{ marginTop: 6, lineHeight: 1.5 }}>
-        <div>Mevcut: <b>{moneyTry(priorAmount)}</b></div>
-        <div>Şirket teklifi: <b>{moneyTry(companyAmount)}</b>{item?.initialCompanyOfferNote ? <span> — {item.initialCompanyOfferNote}</span> : (item?.companyOfferNote ? <span> — {item.companyOfferNote}</span> : null)}</div>
-        <div>Oda karşı teklifi: <b>{roomAmount == null ? "-" : moneyTry(roomAmount)}</b>{item?.roomCounterNote ? <span> — {item.roomCounterNote}</span> : null}</div>
-        {accepted ? <div>Uygulanan final: <b>{moneyTry(finalAmount)}</b>{item?.finalAcceptedNote ? <span> — {item.finalAcceptedNote}</span> : null}</div> : null}
-      </div>
-    </div>
-  );
-}
-
 function AgreementOpsBridgeCard({ agreement, room, bridge, onOpenShift, onOpenPreview }) {
   if (!agreement) return null;
   const generatedCount = Number(bridge?.generatedCount || 0);
@@ -544,7 +507,7 @@ export default function AgreementsPanel() {
         if (ids.length) {
           const [bridge, routeRefresh] = await Promise.all([
             api("/api/agreements/ops-bridge", { token, method: "POST", body: { agreementIds: ids } }),
-            api("/api/agreements/route-refresh", { token }).catch(() => ({ items: [] })),
+            api("/api/agreements/route-refresh?status=PENDING", { token }).catch(() => ({ items: [] })),
           ]);
           const nextBridge = bridge?.byId ?? {};
           setOpsBridge(nextBridge);
@@ -568,9 +531,7 @@ export default function AgreementsPanel() {
           const pendingMap = {};
           for (const item of (Array.isArray(routeRefresh?.items) ? routeRefresh.items : [])) {
             const aid = Number(item?.agreementId || 0);
-            const st = String(item?.status || '').toUpperCase();
-            if (!aid || !["PENDING", "COUNTERED"].includes(st)) continue;
-            if (!pendingMap[String(aid)]) pendingMap[String(aid)] = item;
+            if (aid > 0 && !pendingMap[String(aid)]) pendingMap[String(aid)] = item;
           }
           setRouteRefreshPendingByAgreement(pendingMap);
         } else {
@@ -671,32 +632,6 @@ export default function AgreementsPanel() {
       await load();
     } catch (e) {
       setErr(e?.message || "Accept counter failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function acceptRouteRefreshCounter(requestId) {
-    setErr("");
-    setBusy(true);
-    try {
-      await api(`/api/agreements/route-refresh/${requestId}/accept-counter`, { token, method: "PUT", body: {} });
-      await load();
-    } catch (e) {
-      setErr(e?.message || "Rota güncelleme karşı teklifi kabul edilemedi");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function rejectRouteRefreshCounter(requestId) {
-    setErr("");
-    setBusy(true);
-    try {
-      await api(`/api/agreements/route-refresh/${requestId}/reject-counter`, { token, method: "PUT", body: {} });
-      await load();
-    } catch (e) {
-      setErr(e?.message || "Rota güncelleme karşı teklifi reddedilemedi");
     } finally {
       setBusy(false);
     }
@@ -885,6 +820,7 @@ export default function AgreementsPanel() {
     () => (selectedAgreementRow?.a ? routeRefreshPendingByAgreement?.[String(selectedAgreementRow.a.id)] || null : null),
     [selectedAgreementRow, routeRefreshPendingByAgreement]
   );
+  void selectedRouteRefreshLaunch;
   const hasPendingRouteRefresh = (agreementId) => Boolean(routeRefreshPendingByAgreement?.[String(agreementId)]);
   const [routeRefreshPreviewSummary, setRouteRefreshPreviewSummary] = useState({ loading: false, current: null, proposed: null, err: "" });
 
@@ -1055,11 +991,6 @@ export default function AgreementsPanel() {
           {selectedRouteRefreshPending.companyOfferNote ? (
             <div className="muted" style={{ marginTop: 6 }}>Not: {selectedRouteRefreshPending.companyOfferNote}</div>
           ) : null}
-          {String(selectedRouteRefreshPending.status || '').toUpperCase() === 'COUNTERED' ? (
-            <div className="muted" style={{ marginTop: 6, color: 'var(--warn-ink, #f2cc60)' }}>
-              Oda karşı teklif verdi. Şirket burada kabul / reddet kararı verir.
-            </div>
-          ) : null}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>
             <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
               <div className="muted">Mevcut rota</div>
@@ -1098,7 +1029,18 @@ export default function AgreementsPanel() {
                 )}
               </div>
             </div>
-            <RouteRefreshCommercialBox item={selectedRouteRefreshPending} agreement={selectedAgreementRow?.a} />
+            <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
+              <div className="muted">Ücret etkisi</div>
+              <div style={{ fontWeight: 900, marginTop: 4 }}>
+                {(() => {
+                  const currentAmount = Number(selectedRouteRefreshLaunch?.currentCompanyOfferAmount ?? selectedAgreementRow?.a?.companyOfferAmount ?? 0);
+                  const nextAmount = Number(selectedRouteRefreshPending.companyOfferAmount ?? currentAmount);
+                  const diff = nextAmount - currentAmount;
+                  const fmt = (n) => new Intl.NumberFormat("tr-TR").format(Number(n || 0)) + " ₺";
+                  return `${fmt(currentAmount)} → ${fmt(nextAmount)} (${diff > 0 ? "+" : ""}${fmt(diff)})`;
+                })()}
+              </div>
+            </div>
           </div>
           {routeRefreshPreviewSummary.err ? (
             <div className="muted" style={{ marginTop: 8 }}>Rota özeti yüklenemedi: {routeRefreshPreviewSummary.err}</div>
@@ -1112,16 +1054,6 @@ export default function AgreementsPanel() {
             <button type="button" className="btn" disabled={!Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0)} onClick={() => openAgreementShift(Number((selectedRouteRefreshPending?.draftShiftIds || [])[0] || 0), true)}>
               Yeni Rotayı Önizle
             </button>
-            {String(selectedRouteRefreshPending?.status || '').toUpperCase() === 'COUNTERED' ? (
-              <>
-                <button type="button" className="btn" disabled={busy} onClick={() => acceptRouteRefreshCounter(Number(selectedRouteRefreshPending.id || 0))}>
-                  Karşı Teklifi Kabul Et
-                </button>
-                <button type="button" className="btn ghost" disabled={busy} onClick={() => rejectRouteRefreshCounter(Number(selectedRouteRefreshPending.id || 0))}>
-                  Karşı Teklifi Reddet
-                </button>
-              </>
-            ) : null}
           </div>
         </div>
       ) : null}

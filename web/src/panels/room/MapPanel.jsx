@@ -9,6 +9,7 @@ import { ageSecFromAt, pillKeyFromUi, uiStatusFromVehicle } from "../../utils/ui
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildMapFacts } from "../../utils/copilotFacts";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function toNum(v) {
   const n = typeof v === "number" ? v : Number(v);
@@ -101,7 +102,7 @@ function shiftTitle(s) {
   if (!s) return "-";
   const id = s.id ? `#${s.id}` : "";
   const st = String(s.status || "").toUpperCase();
-  return `Shift ${id} • ${st}`;
+  return `Shift ${id} • ${displayStatusLabel(st)}`;
 }
 
 function fmtTR(iso) {
@@ -321,8 +322,8 @@ export default function RoomMapPanel() {
       ],
       facts,
       badges: [
-        { label: 'GPS', value: uiStatusFromVehicle(selected) || '-', help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
-        { label: 'Vardiya Durumu', value: String(selectedShift?.status || '-').toUpperCase(), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
+        { label: 'GPS', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'Araç GPS sinyalinin canlı mı eski mi yok mu olduğunu gösterir.' },
+        { label: 'Vardiya Durumu', value: displayStatusLabel(String(selectedShift?.status || '-').toUpperCase()), help: 'Seçili vardiyanın operasyon durumunu gösterir.' },
       ],
     });
 
@@ -454,13 +455,13 @@ export default function RoomMapPanel() {
                   >
                     <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", minWidth: 0 }}>
                       <b>{v?.plate || "-"}</b>
-                      <span className="pill" data-status={c.pillKey} title={`GPS: ${c.ui}`}>{c.ui}</span>
+                      <span className="pill" data-status={c.pillKey} title={`GPS: ${displayStatusLabel(c.ui)}`}>{displayStatusLabel(c.ui)}</span>
                       <span className="pill" data-status={String(s?.status || "").toUpperCase()}>
-                        {String(s?.status || "").toUpperCase()}
+                        {displayStatusLabel(String(s?.status || "").toUpperCase())}
                       </span>
                       {!gpsOk ? (
                         <span className="pill" data-status="PASSIVE" style={{ fontSize: 11 }}>
-                          NO GPS
+                          GPS yok
                         </span>
                       ) : null}
                     </span>
@@ -549,13 +550,13 @@ export default function RoomMapPanel() {
                 >
                   {selectedShift ? (
                     <span className="pill" data-status={String(selectedShift?.status || "").toUpperCase()}>
-                      {String(selectedShift?.status || "").toUpperCase()}
+                      {displayStatusLabel(String(selectedShift?.status || "").toUpperCase())}
                     </span>
                   ) : null}
 
                   <span className="muted" style={{ fontSize: 12 }}>GPS:</span>
                   <span className="pill" data-status={pillKeyFromUi(uiStatusFromVehicle(selected))}>
-                    {uiStatusFromVehicle(selected)}
+                    {displayStatusLabel(uiStatusFromVehicle(selected))}
                   </span>
 
                   <span className="muted" style={{ fontSize: 12 }}>Son GPS:</span>

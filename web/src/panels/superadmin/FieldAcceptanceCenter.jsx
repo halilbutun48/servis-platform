@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function Card({ title, children }) {
   return (
@@ -146,7 +147,7 @@ export default function FieldAcceptanceCenter() {
                   <div style={{ fontWeight: 700 }}>{item.label}</div>
                   <div className="muted" style={{ marginTop: 6 }}>Alan: {item.area || "genel"}</div>
                 </div>
-                <div className="pill">{status}</div>
+                <div className="pill">{displayStatusLabel(status)}</div>
               </div>
             );
           })}

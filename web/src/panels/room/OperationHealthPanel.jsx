@@ -4,6 +4,7 @@ import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
 
@@ -45,7 +46,7 @@ function StatusBadge({ kind, value }) {
         ...badgeStyle(kind, value),
       }}
     >
-      {value || "-"}
+      {displayStatusLabel(value)}
     </span>
   );
 }
@@ -259,7 +260,7 @@ export default function OperationHealthPanel() {
     return [
       { title: "Aktif Sürücü", value: c.activeDrivers ?? "-", note: "Kendi operasyon alanınız" },
       { title: "Riskli Cihaz", value: c.riskyDevices ?? "-", note: "İzin, oturum veya GPS sorunu" },
-      { title: "Stale / Offline", value: c.staleOrOffline ?? "-", note: "Son konum akışı zayıf" },
+      { title: "Zayıf / Çevrim dışı", value: c.staleOrOffline ?? "-", note: "Son konum akışı zayıf" },
       { title: "Açık Sorun", value: c.openIssues ?? "-", note: "Takip edilmesi gereken durum" },
     ];
   }, [summary]);

@@ -4,6 +4,7 @@ import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
 import { useSession } from "../../state/session";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
+import { displayStatusLabel } from "../../utils/displayStatus";
 import { getCompanyCommercialFlowSummary } from "../../utils/companyDataHub";
 
 function fmtTR(iso) {
@@ -50,7 +51,7 @@ function StatusBadge({ value }) {
   if (["COUNTERED", "PAZARLIK", "NEGOTIATION", "PENDING"].includes(normalized)) style = { color: "#b2ddff", background: "rgba(83,177,253,0.12)", border: "1px solid rgba(83,177,253,0.35)" };
   if (["ACCEPTED", "APPROVED", "ACTIVE"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
   if (["CANCELLED", "DONE", "REJECTED"].includes(normalized)) style = { color: "#fecdca", background: "rgba(240,68,56,0.12)", border: "1px solid rgba(240,68,56,0.35)" };
-  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{value || "-"}</span>;
+  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{displayStatusLabel(value)}</span>;
 }
 
 
@@ -101,7 +102,7 @@ export default function CompanyCommercialFlowPanel() {
       { title: "Karşı Teklif", value: counts.counter, note: "Karşı teklif sinyali taşıyan aktif pazarlık kayıtları", accent: counts.counter ? "warm" : "default" },
       { title: "Bekleyen", value: counts.pending, note: "Room atanmış, operasyon hazırlığı bekleyen talepler", accent: counts.pending ? "good" : "default" },
       { title: "Liste", value: counts.final, note: "kabul edildi / aktif / tamamlandı / reddedildi" },
-      { title: "Aktif Operasyon", value: counts.active, note: "APPROVED + ACTIVE sahaya inen işler", accent: counts.active ? "good" : "default" },
+      { title: "Aktif Operasyon", value: counts.active, note: "Kabul edildi + aktif sahaya inen işler", accent: counts.active ? "good" : "default" },
     ];
   }, [counts]);
 
@@ -212,7 +213,7 @@ export default function CompanyCommercialFlowPanel() {
               {flowOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm akışlar" : value}</option>)}
             </select>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Durum filtresi" title="Durum filtresi">
-              {statusOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm durumlar" : value}</option>)}
+              {statusOptions.map((value) => <option key={value} value={value}>{value === "ALL" ? "Tüm durumlar" : displayStatusLabel(value)}</option>)}
             </select>
             <button type="button" onClick={() => navigate("/company/planning")}>Planlama Merkezi'ni aç</button>
             <button type="button" onClick={() => openShifts("market")}>Marketi aç</button>

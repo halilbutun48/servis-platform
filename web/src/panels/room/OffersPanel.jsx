@@ -29,10 +29,11 @@ function formatTRY(amount) {
 }
 
 function pill(status) {
-  const s = String(status || "");
+  const s = String(status || "").toUpperCase();
+  const label = displayStatusLabel(s);
   return (
-    <span className="pill" data-status={s} title={s}>
-      {s}
+    <span className="pill" data-status={s} title={label}>
+      {label}
     </span>
   );
 }
@@ -264,7 +265,7 @@ export default function RoomOffersPanel() {
       entityType: 'shift',
       entityId: Number(focusedOffer?.shiftId || shift?.id || 1102) || 1102,
       label: `Teklif #${focusedOffer.id}`,
-      summary: [String(focusedOffer?.status || '').toUpperCase(), companyName(shift), shift?.status ? `Vardiya ${String(shift.status).toUpperCase()}` : null].filter(Boolean).join(' • '),
+      summary: [displayStatusLabel(String(focusedOffer?.status || '').toUpperCase()), companyName(shift), shift?.status ? `Vardiya ${displayStatusLabel(String(shift.status).toUpperCase())}` : null].filter(Boolean).join(' • '),
       fields: [
         { label: 'Shift', value: focusedOffer?.shiftId ? `#${focusedOffer.shiftId}` : '-', help: 'Teklifin bağlı olduğu vardiya kaydını gösterir.' },
         { label: 'Karşı taraf', value: companyName(shift), help: 'Teklifin geldiği company bilgisini gösterir.' },

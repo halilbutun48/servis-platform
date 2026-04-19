@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -262,7 +263,7 @@ export default function MyRidePanel() {
           {myShift ? (
             <div className="col" style={{ gap: 6 }}>
               <div>
-                <b>Shift #{myShift.id}</b> — <span className="pill" data-status={myShift.status}>{myShift.status}</span>
+                <b>Shift #{myShift.id}</b> — <span className="pill" data-status={String(myShift.status || "").toUpperCase()}>{displayStatusLabel(String(myShift.status || "").toUpperCase())}</span>
               </div>
               <div className="muted">Room: {myShift.room?.name || (myShift.roomId ? `#${myShift.roomId}` : "-")}</div>
               <div className="muted">Araç: {vehicle?.plate || (myShift.vehicleId ? `#${myShift.vehicleId}` : "-")}</div>
@@ -314,7 +315,7 @@ export default function MyRidePanel() {
                     {s.name}
                     {nearestStop && String(nearestStop.id) === String(s.id) ? <span className="pill" data-status="REQUESTED" style={{ marginLeft: 8 }}>EN YAKIN</span> : null}
                   </td>
-                  <td><span className="pill" data-status={String(s.status || "PENDING").toUpperCase()}>{String(s.status || "PENDING").toUpperCase()}</span></td>
+                  <td><span className="pill" data-status={String(s.status || "PENDING").toUpperCase()}>{displayStatusLabel(String(s.status || "PENDING").toUpperCase())}</span></td>
                   <td>{Number.isFinite(Number(s.distanceM)) ? `${(Number(s.distanceM) / 1000).toFixed(2)} km` : "-"}</td>
                   <td>{Number.isFinite(Number(s.etaMin)) ? Math.round(Number(s.etaMin)) : "-"}</td>
                   <td>

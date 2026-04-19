@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
+import { displayStatusLabel } from "../../utils/displayStatus";
 function fmt(dt) {
   try {
     const d = new Date(dt);
@@ -40,7 +41,7 @@ export default function DriverTodayPanel() {
 
   const activeLabel = useMemo(() => {
     if (!active) return "Aktif görev yok";
-    return `Shift #${active.id} — ${active.status}`;
+    return `Shift #${active.id} — ${displayStatusLabel(active.status)}`;
   }, [active]);
 
   async function load() {
@@ -149,7 +150,7 @@ useEffect(() => {
         <td>#{s.id}</td>
         <td>
           <span className="pill" data-status={s.status}>
-            {s.status}
+            {displayStatusLabel(s.status)}
           </span>
         </td>
         <td>{fmt(s.startAt)}</td>

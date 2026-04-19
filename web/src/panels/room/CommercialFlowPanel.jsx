@@ -6,6 +6,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
+import { displayStatusLabel } from "../../utils/displayStatus";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -42,7 +43,7 @@ function StatusBadge({ value }) {
   if (["COUNTERED", "PAZARLIK", "NEGOTIATION"].includes(normalized)) style = { color: "#b2ddff", background: "rgba(83,177,253,0.12)", border: "1px solid rgba(83,177,253,0.35)" };
   if (["ACCEPTED", "APPROVED", "ACTIVE"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
   if (["CANCELLED", "DONE", "REJECTED"].includes(normalized)) style = { color: "#fecdca", background: "rgba(240,68,56,0.12)", border: "1px solid rgba(240,68,56,0.35)" };
-  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{value || "-"}</span>;
+  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{displayStatusLabel(value)}</span>;
 }
 
 export default function CommercialFlowPanel() {
@@ -230,7 +231,7 @@ export default function CommercialFlowPanel() {
                 <th>
                   <select value={statusQ} onChange={(e) => setStatusQ(e.target.value)} style={{ width: "100%", minWidth: 120 }}>
                     <option value="">Tum durumlar</option>
-                    {statusOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+                    {statusOptions.map((value) => <option key={value} value={value}>{displayStatusLabel(value)}</option>)}
                   </select>
                 </th>
                 <th></th>
