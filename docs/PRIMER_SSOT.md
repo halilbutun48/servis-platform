@@ -4,8 +4,10 @@ Bu primer yaşayan hattın resmi özetidir.
 
 ## Güncel baz
 - Repo: `servis-platform`
-- Branch: `main`
+- Branch: `m90d1_web_lint_inventory`
 - Güncel doğrulanmış baz: `M0->M89 green`
+- 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
+- Repo check chain sonucu: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
@@ -13,8 +15,11 @@ Bu primer yaşayan hattın resmi özetidir.
 - Tek repo kontrol girişi: `npm run verify:repo`
 - Local acceptance overlay: `M91 shift/agreement route preview`
 - Repo verification spine: `M92 repo verification spine`
+- Güncel kapanmış ek hatlar: `M91`, `M92`, `Tur 1`, `Tur 2`, `Tur 3`.
+- Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.
 
 ## Kanonik komut hiyerarşisi (Tur 1)
+- Tur 1 / Tur 2 / Tur 3 docs-tools-wrapper hizasi kapanmistir; bundan sonraki ilerleme ihtiyac-temelli ve kontrollu olmalidir.
 - Resmi günlük giriş: `npm run verify:repo`.
 - Resmi kapanış girişi: `npm run verify:final`.
 - `tools\pack_living.ps1` korunur; ancak compatibility / geniş prova hattıdır ve birincil resmi giriş değildir.
@@ -107,6 +112,7 @@ Compatibility aliases for legacy checks:
 - Repo-native görünür doğrulama zinciri: `npm run verify:ci`.
 - Root verify zinciri backend + web lint çalıştırır; web lint kanonik kanıtı: `artifacts/lint/web_lint_latest.txt`.
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`.
+- Fresh runner hazırlığı workflow içinde explicit: `npm --prefix backend ci` ve `npm --prefix web ci`.
 - `repo-verification` işi root verify chain çalıştırır; `shareable-export` işi M90C.7 export hygiene pack çalıştırır.
 - Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json`, `artifacts/lint/web_lint_latest.txt` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
 - Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.

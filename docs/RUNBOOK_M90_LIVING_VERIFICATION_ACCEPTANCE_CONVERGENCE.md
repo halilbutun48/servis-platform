@@ -43,6 +43,7 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - Web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - Komut: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`
+- Fresh runner hazırlığı: `npm --prefix backend ci` ve `npm --prefix web ci`; npm cache `backend/package-lock.json` ve `web/package-lock.json` ile bağlanır.
 - Beklenen sonuç: `repo-verification` ve `shareable-export` işleri repo audit + web lint + sanitized shareable export artefaktlarını görünür kılar; satır azaltma hâlâ en sona bırakılır.
 
 ## Değişmez kural

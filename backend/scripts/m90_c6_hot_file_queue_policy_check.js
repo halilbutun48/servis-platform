@@ -10,15 +10,15 @@ function normalizeText(value) {
   return String(value || "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[Ã„Â°I]/g, "i")
-    .replace(/[Ã„Â±]/g, "i")
-    .replace(/[Ã…ÂÃ…Å¸]/g, "s")
-    .replace(/[Ã„ÂÃ„Å¸]/g, "g")
-    .replace(/[ÃƒÅ“ÃƒÂ¼]/g, "u")
-    .replace(/[Ãƒâ€“ÃƒÂ¶]/g, "o")
-    .replace(/[Ãƒâ€¡ÃƒÂ§]/g, "c")
-    .replace(/[Ã¢â‚¬â„¢Ã¢â‚¬Ëœ`]/g, "'")
-    .replace(/[Ã¢â‚¬Å“Ã¢â‚¬Â]/g, '"')
+    .replace(/[\u0130I]/g, "i")
+    .replace(/[\u0131]/g, "i")
+    .replace(/[\u015e\u015f]/g, "s")
+    .replace(/[\u011e\u011f]/g, "g")
+    .replace(/[\u00dc\u00fc]/g, "u")
+    .replace(/[\u00d6\u00f6]/g, "o")
+    .replace(/[\u00c7\u00e7]/g, "c")
+    .replace(/[\u2019\u2018`]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
     .replace(/\\/g, "/")
     .replace(/\s+/g, " ")
     .trim()
@@ -93,9 +93,7 @@ const expectedClasses = {
   "backend/src/ai/jobGuide/screenCatalog.js": "safe-candidate-review",
   "web/src/panels/room/ShiftsPanel.jsx": "safe-candidate-review",
   "web/src/panels/company/ShiftPeopleTab.jsx": "safe-candidate-review",
-  "web/src/panels/company/AgreementWizard.jsx": "safe-candidate-review",
   "tools/milestone_pack_manifest.json": "justified-exception",
-  "web/src/panels/company/ShiftsPanel.jsx": "safe-candidate-review",
 };
 for (const [file, expectedClass] of Object.entries(expectedClasses)) {
   expect(classifications[file]?.class === expectedClass, `${file} classified as ${expectedClass}`);

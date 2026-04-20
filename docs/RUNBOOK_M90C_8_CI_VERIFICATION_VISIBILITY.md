@@ -8,6 +8,10 @@
 
 ## Workflow yolu
 - Dosya: `.github/workflows/vardis_verification_visibility.yml`
+- Fresh runner hazırlığı:
+  - `npm --prefix backend ci`
+  - `npm --prefix web ci`
+  - npm cache lockfile kaynakları: `backend/package-lock.json`, `web/package-lock.json`
 - İşler:
   - `repo-verification` -> `npm run verify:ci`
   - `shareable-export` -> `tools/pack_m90_c7_export_package_hygiene.ps1`
@@ -20,4 +24,5 @@
 
 ## Not
 - M90C.8 yeni ürün davranışı açmaz; mevcut closure zincirini repo-native görünür yapar.
+- Fresh runner dependency kurulumu explicit kalır; local node_modules varlığına güvenilmez.
 - Satır azaltma hâlâ sona bırakılır.

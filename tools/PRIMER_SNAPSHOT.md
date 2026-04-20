@@ -2,15 +2,20 @@
 
 ## Güncel baz
 - Repo: `servis-platform`
-- Branch: `main`
+- Branch: `m90d1_web_lint_inventory`
 - Güncel doğrulanmış baz: `M0->M89 green`
+- 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `pack_living` yeşildir.
+- Repo check chain: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
 - Tarihsel anchor: `M0->M79`
 - M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapanmıştır; sıradaki resmi iş: `M90C.9 güvenli kapanış / final hygiene checklist`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 executable closure gate`
 - Tek repo kontrol girisi: `npm run verify:repo`
 - Repo verification spine: `M92`
+- Kapanmış ek hatlar: `M91`, `M92`, `Tur 1`, `Tur 2`, `Tur 3`.
+- Not: `M90C.9` satiri closure compatibility gorunurlugu icin korunur.
 
 ## Kanonik komut hiyerarşisi (Tur 1)
+- Tur 1 / Tur 2 / Tur 3 docs-tools-wrapper hizasi kapanmistir.
 - Resmi günlük giriş: `npm run verify:repo`.
 - Resmi kapanış girişi: `npm run verify:final`.
 - `tools\pack_living.ps1`, compatibility / geniş prova hattı olarak korunur; birincil resmi giriş değildir.
@@ -76,6 +81,7 @@
 - Root verify chain: `npm run verify:ci`.
 - Single-roof repo check: `npm run verify:repo`.
 - M92 repo verification spine check: `npm --prefix backend run m92check`.
+- CI fresh runner hazırlığı: `npm --prefix backend ci` ve `npm --prefix web ci`.
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
 - Kanonik final verify girişi: `npm run verify:final`.
 

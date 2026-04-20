@@ -1,41 +1,51 @@
-# M90C.6 â€” HOT-FILE QUEUE POLICY
+# M90C.6 — HOT-FILE QUEUE POLICY
 
-AmaÃ§: `repo_audit` iÃ§indeki hot/large file listesini yalnÄ±z sayÄ±sal uyarÄ± olmaktan Ã§Ä±karÄ±p resmi sÄ±nÄ±flÄ± queue'ya Ã§evirmek.
+Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı olmaktan çıkarıp resmi sınıflı queue'ya çevirmek.
 
-## Kapanan kararlar
+## Kapanan Kararlar
 - `backend/src/ai/chat/helpComposer.js` -> `justified exception`
 - `backend/prisma/schema.prisma` -> `justified exception / decision closed`
 
-## SÄ±nÄ±flar
+## Sınıflar
 ### 1) justified exception
-- line-count dÃ¼ÅŸÃ¼rme hedefi yok
+- line-count düşürme hedefi yok
 - agresif refactor yok
-- yalnÄ±z acceptance-safe lokal dÃ¼zeltme
+- yalnız acceptance-safe lokal düzeltme
 
 ### 2) safe candidate review
-- davranÄ±ÅŸ deÄŸiÅŸtirmeden kontrollÃ¼ parÃ§alara ayÄ±rma / section extraction yapÄ±labilir
-- refactor Ã¶ncesi acceptance zinciri korunur
+- davranış değiştirmeden kontrollü parçalara ayırma / section extraction yapılabilir
+- refactor öncesi acceptance zinciri korunur
 
 ### 3) acceptance-sensitive / later
-- sÄ±rf satÄ±r sayÄ±sÄ± iÃ§in aÃ§Ä±lmaz
-- yalnÄ±z explicit acceptance gerekÃ§esi ve dar kapsamla ele alÄ±nÄ±r
+- sırf satır sayısı için açılmaz
+- yalnız explicit acceptance gerekçesi ve dar kapsamla ele alınır
 
-## Bu repo iÃ§in resmi daÄŸÄ±lÄ±m
+## Bu Repo İçin Resmi Dağılım
 ### justified exception
 - `backend/src/ai/chat/helpComposer.js`
 - `backend/prisma/schema.prisma`
+- `tools/milestone_pack_manifest.json`
 
 ### safe candidate review
 - `backend/src/ai/jobGuide/screenCatalog.js`
 - `web/src/panels/room/ShiftsPanel.jsx`
+- `web/src/panels/room/AgreementsPanel.jsx`
+- `web/src/panels/company/AgreementsPanel.jsx`
+- `web/src/panels/company/ShiftPeopleTab.jsx`
+
+### completed controlled extraction
+- `web/src/panels/company/AgreementWizard.jsx` -> preset/config ve modal kabuğu ayrıldı; dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.
+- `web/src/panels/company/ShiftsPanel.jsx` -> sozlesmeye donusum state helper'i ve market odak helper'i ayrıldı; dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.
 
 ### acceptance-sensitive / later
+- `backend/src/routes/agreements.js`
 - `backend/src/routes/shifts/room.js`
 - `backend/src/routes/shifts/company.js`
+- `web/src/panels/company/GuidedPlanModal.jsx`
 - `web/src/panels/shared/CopilotPanel.jsx`
 - `mobile/App.js`
 
-## Kaynak gerÃ§ek
+## Kaynak Gerçek
 - Makine-okur kaynak: `tools/repo_contract_state.json > hotFileQueuePolicy`
-- YÃ¼rÃ¼tÃ¼lebilir kapÄ±: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
-- DoÄŸrulama: taze `repo_audit` Ã§Ä±ktÄ±sÄ± ile policy seti birebir eÅŸleÅŸmelidir.
+- Yürütülebilir kapı: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
+- Doğrulama: taze `repo_audit` çıktısı ile policy seti birebir eşleşmelidir.

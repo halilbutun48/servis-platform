@@ -20,6 +20,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            web/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm --prefix backend ci
+
+      - name: Install web dependencies
+        run: npm --prefix web ci
 
       - name: Canonical verification chain
         run: npm run verify:ci
@@ -51,6 +61,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            web/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm --prefix backend ci
+
+      - name: Install web dependencies
+        run: npm --prefix web ci
 
       - name: Export hygiene pack
         shell: pwsh

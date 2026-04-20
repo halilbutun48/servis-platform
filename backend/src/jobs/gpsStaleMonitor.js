@@ -126,7 +126,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
           if (gate.transition === "LIVE_TO_STALE") {
             kind = "GPS_STALE";
             title = "GPS Stale";
-          } else if (gate.transition === "STALE_TO_OFFLINE") {
+          } else if (gate.transition === "STALE_TO_OFFLINE" || gate.transition === "LIVE_TO_OFFLINE") {
             kind = "GPS_OFFLINE";
             title = "GPS Offline";
           } else {

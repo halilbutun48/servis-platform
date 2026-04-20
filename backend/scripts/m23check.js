@@ -3,10 +3,47 @@
 // (UI auto-refresh M23-A: ws.js eventName-based topic inference fix)
 
 import { io as ioClient } from "socket.io-client";
-import { banner, step, assertOk, loginFirst, reqJson, pickVehicleDriver } from "./_harness.js";
+import { banner, step, assertOk, loginFirst, reqJson } from "./_harness.js";
 import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
+
+function rand(n = 6) {
+  return Math.random().toString(16).slice(2, 2 + n).toUpperCase();
+}
+
+function mustOk(resp, label) {
+  if (resp?.ok) {
+    console.log(`OK ${label}`);
+    return resp;
+  }
+  const status = resp?.status ?? 0;
+  const text = String(resp?.text ?? "").slice(0, 800);
+  console.error(`FAIL ${label} (status=${status})\n${text}`);
+  throw new Error(`ASSERT_FAIL: ${label}`);
+}
+
+async function createIsolatedVehicleDriver(roomToken) {
+  const plate = `M23-${rand(6)}`;
+  const driverName = `M23 Driver ${rand(4)}`;
+
+  const vehicle = await reqJson("POST", "/api/vehicles", {
+    token: roomToken,
+    body: { plate, capacity: 16, speedLimitKmh: 90 },
+  });
+  mustOk(vehicle, `vehicle create (${plate})`);
+
+  const driver = await reqJson("POST", "/api/drivers", {
+    token: roomToken,
+    body: { fullName: driverName, phone: "0000000000", deviceInfo: "m23-check" },
+  });
+  mustOk(driver, `driver create (${driverName})`);
+
+  return {
+    vehicleId: Number(vehicle.json?.id || 0),
+    driverId: Number(driver.json?.id || 0),
+  };
+}
 
 // TR-local date helper (UTC+03:00)
 const TR_OFFSET_MS = 180 * 60_000;
@@ -117,7 +154,7 @@ async function main() {
 
   // approve agreement (room) -> needs vehicleId+driverId
   step("approve agreement (room) -> expect WS agreement:update for both");
-  const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
+  const { vehicleId, driverId } = await createIsolatedVehicleDriver(roomToken);
   assertOk(vehicleId > 0 && driverId > 0, "vehicleId+driverId available");
 
   const pCompany2 = waitForEvent(wsCompany, "agreement:update");

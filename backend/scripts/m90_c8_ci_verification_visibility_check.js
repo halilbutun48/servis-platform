@@ -62,7 +62,10 @@ expect((policy.primaryCommand || "") === "npm run verify:ci", "state policy poin
 expect((policy.lintCommand || "") === "npm run lint:web", "state policy records canonical web lint command");
 expect((policy.lintEvidence || "") === "artifacts/lint/web_lint_latest.txt", "state policy records canonical web lint evidence path");
 expect((policy.exportPack || "") === "tools/pack_m90_c7_export_package_hygiene.ps1", "state policy points to export hygiene pack");
+expect(Array.isArray(policy.dependencyInstallCommands) && policy.dependencyInstallCommands.includes("npm --prefix backend ci") && policy.dependencyInstallCommands.includes("npm --prefix web ci"), "state policy records fresh runner dependency install commands");
+expect(Array.isArray(policy.dependencyLockfiles) && policy.dependencyLockfiles.includes("backend/package-lock.json") && policy.dependencyLockfiles.includes("web/package-lock.json"), "state policy records dependency lockfiles");
 expect(Array.isArray(policy.jobs) && policy.jobs.includes("repo-verification") && policy.jobs.includes("shareable-export"), "state policy lists repo-verification and shareable-export jobs");
+expect(fs.existsSync(path.join(repoRoot, "backend/package-lock.json")) && fs.existsSync(path.join(repoRoot, "web/package-lock.json")), "backend and web lockfiles exist for npm ci");
 
 expect((rootPackage.scripts || {})["verify:repo"] === "node backend/scripts/run_repo_check_chain.js --phase all", "root verify:repo points to canonical repo check chain");
 expect((rootPackage.scripts || {})["verify:ci"] === "npm run verify:repo", "root verify:ci aliases canonical repo check chain");
@@ -75,6 +78,8 @@ expect((backendPackage.scripts || {})["m90c8check"] === "node scripts/m90_c8_ci_
 expect(includesText(workflow, "push") && includesText(workflow, "pull_request") && includesText(workflow, "workflow_dispatch"), "workflow listens to push, pull_request and workflow_dispatch");
 expect(includesText(workflow, "repo-verification") && includesText(workflow, "shareable-export"), "workflow defines both visibility jobs");
 expect(includesText(workflow, "ubuntu-latest") && includesText(workflow, "windows-latest"), "workflow spans ubuntu and windows runners");
+expect(includesText(workflow, "cache-dependency-path") && includesText(workflow, "backend/package-lock.json") && includesText(workflow, "web/package-lock.json"), "workflow caches npm dependencies by backend and web lockfiles");
+expect(includesText(workflow, "npm --prefix backend ci") && includesText(workflow, "npm --prefix web ci"), "workflow installs backend and web dependencies on fresh runners");
 expect(includesText(workflow, "npm run verify:ci"), "workflow runs root verify:ci command");
 expect(includesText(workflow, "pack_m90_c7_export_package_hygiene.ps1"), "workflow runs export hygiene pack in shareable-export job");
 expect(includesText(workflow, "upload-artifact@v4") && includesText(workflow, "repo_audit_latest.json") && includesText(workflow, "web_lint_latest.txt") && includesText(workflow, "servis-platform_shareable_*.zip"), "workflow uploads repo audit, web lint and shareable export artifacts");

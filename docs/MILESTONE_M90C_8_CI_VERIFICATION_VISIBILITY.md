@@ -4,6 +4,8 @@ Amaç: yerelde çalışan doğrulama zincirini repo-native görünür hale getir
 
 ## Kapsam
 - kök doğrulama komutu: `npm run verify:ci`
+- fresh runner bağımlılık kurulumu: `npm --prefix backend ci` ve `npm --prefix web ci`
+- dependency cache lockfile kaynakları: `backend/package-lock.json`, `web/package-lock.json`
 - kök zincir backend + web lint çalıştırır; kanonik web lint kanıtı `artifacts/lint/web_lint_latest.txt` dosyasına yazılır
 - closure zinciri: `M90B.1`, `M90C.6`, `M90C.7`, `M90C.8`
 - GitHub Actions workflow: `.github/workflows/vardis_verification_visibility.yml`
@@ -13,10 +15,13 @@ Amaç: yerelde çalışan doğrulama zincirini repo-native görünür hale getir
 - yeni ürün özelliği açılmaz
 - satır azaltma en sona bırakılır
 - workflow mevcut green hattı yeniden görünür kılar; yeni acceptance alanı icat etmez
+- workflow dependency kurulumunu açık yapar; fresh runner `eslint` veya backend bağımlılığı eksikliğiyle yalancı kırmızı üretmez
 - export hygiene yolu `tools/pack_m90_c7_export_package_hygiene.ps1` üzerinden korunur
 
 ## Exit criteria
 - `npm run verify:ci` canonical chain'i tek komutta çalıştırır
+- workflow `backend/package-lock.json` ve `web/package-lock.json` üzerinden npm cache kullanır
+- workflow `npm --prefix backend ci` ve `npm --prefix web ci` adımlarını verify/export öncesinde çalıştırır
 - root verify zinciri backend + web lint çalıştırır ve web lint sonucunu `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - workflow `push`, `pull_request`, `workflow_dispatch` tetiklerinde görünür
 - `repo-verification` işi `npm run verify:ci` çalıştırır

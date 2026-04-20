@@ -53,6 +53,7 @@ Amaç: `M0->M89 green` bazının üstüne yeni özellik eklemek değil; repo ger
 - Kök komut: `npm run verify:ci`.
 - Kök zincir backend + web lint çalıştırır; web lint kanonik kanıtı `artifacts/lint/web_lint_latest.txt`.
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`.
+- Fresh runner hazırlığı: `npm --prefix backend ci` ve `npm --prefix web ci`; cache kaynakları `backend/package-lock.json` ve `web/package-lock.json`.
 - `repo-verification` ve `shareable-export` işleri repo audit + web lint + sanitized export artifact görünürlüğünü korur.
 - Yürütülebilir kapı: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`.
 

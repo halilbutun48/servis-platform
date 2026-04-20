@@ -86,7 +86,7 @@
     "warningThreshold": 1000,
     "blockThreshold": 1200,
     "currentLargeFileCount": 8,
-    "currentWarningHotFileCount": 8,
+      "currentWarningHotFileCount": 6,
     "principles": [
       "line-count dusurmek icin kor refactor yok",
       "once acceptance sonra kontrollu temizlik",
@@ -146,17 +146,9 @@
         "class": "safe-candidate-review",
         "note": "shift kisi/ithal/stop yardimcilari kontrollu extraction sonrasi kalan review adayi"
       },
-      "web/src/panels/company/AgreementWizard.jsx": {
-        "class": "safe-candidate-review",
-        "note": "sozlesme taslak/prefill akisi icin kontrollu section extraction adayi"
-      },
       "tools/milestone_pack_manifest.json": {
         "class": "justified-exception",
         "note": "tek resmi milestone manifesti; bolme yerine M92 spine ile okunurluk ve giris komutu sabitlenir"
-      },
-      "web/src/panels/company/ShiftsPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "vardiya ticari/track state ayrimi icin kontrollu extraction adayi"
       }
     }
   },
@@ -209,6 +201,14 @@
     "workflowPath": ".github/workflows/vardis_verification_visibility.yml",
     "primaryCommand": "npm run verify:ci",
     "exportPack": "tools/pack_m90_c7_export_package_hygiene.ps1",
+    "dependencyInstallCommands": [
+      "npm --prefix backend ci",
+      "npm --prefix web ci"
+    ],
+    "dependencyLockfiles": [
+      "backend/package-lock.json",
+      "web/package-lock.json"
+    ],
     "jobs": [
       "repo-verification",
       "shareable-export"

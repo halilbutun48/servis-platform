@@ -9,6 +9,7 @@ const UI = {
 
 function transitionOf(prev, next) {
   if (prev === UI.LIVE && next === UI.STALE) return "LIVE_TO_STALE";
+  if (prev === UI.LIVE && next === UI.OFFLINE) return "LIVE_TO_OFFLINE";
   if (prev === UI.STALE && next === UI.OFFLINE) return "STALE_TO_OFFLINE";
   if ((prev === UI.STALE || prev === UI.OFFLINE) && next === UI.LIVE) return "TO_LIVE";
   return null;

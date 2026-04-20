@@ -15,9 +15,15 @@ Bu repo, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı om
 - Parent access akışı: `docs/PARENT_ACCESS_FLOW.md`
 - Overlay geçmişi: `docs/overlays/`
 
-## Güncel dürüst durum (2026-04-08)
+## Güncel dürüst durum (2026-04-19 gece)
 - Repo: `servis-platform`
-- Branch: `main`
+- Branch: `m90d1_web_lint_inventory`
+- Güncel çalışma notu: `verify:repo`, `verify:ci`, `verify:final` ve `pack_living` yeşildir.
+- Repo check chain: `PASS 20 / FAIL 0`; selected static milestone set: `PASS 88 / FAIL 0 / SKIP 74`.
+- CI fresh runner hazırlığı workflow içinde explicit: `npm --prefix backend ci` ve `npm --prefix web ci`.
+- M91 route preview / source shift / ops bridge hattı ve M92 repo verification spine doğrulanmıştır.
+- Tools/docs reorganizasyonu Tur 1 / Tur 2 / Tur 3 kapanmıştır; wrapper + compat alias görünürlüğü tamamlanmıştır.
+- Closure compatibility görünürlüğü için `M90B.1`, `M90C.6`, `M90C.7`, `M90C.8`, `M90C.9` referansları korunur; bu görünürlük yeni büyük reorganizasyon çağrısı değildir.
 - Güncel doğrulanmış baz: `MASTER PACK PASS OK (M0->M89)`
 - Tarihsel temiz anchor korunur: `MASTER PACK PASS OK (M0->M79)`
 - Tarihsel anchor ile yaşayan üst hat aynı repo üzerinde birlikte taşınır.

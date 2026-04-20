@@ -3,7 +3,6 @@ import {
   BASE_URL,
   login,
   getRoomCompanyIds,
-  pickVehicleDriver,
   preCleanDriverShifts,
   ensureActiveShift,
   closeShiftHard,
@@ -11,12 +10,53 @@ import {
   sleep,
   callAny,
   itemsOf,
+  reqJson,
 } from "./_harness.js";
 import { prisma } from "../src/prisma.js";
 import { ENV } from "../src/env.js";
 
 function ok(msg) {
   console.log(`OK ${msg}`);
+}
+
+function must(cond, msg) {
+  if (!cond) throw new Error(`FAIL ${msg}`);
+}
+
+function uniq(prefix = "M4") {
+  return `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
+}
+
+async function createIsolatedVehicleDriver(roomToken) {
+  const suffix = uniq();
+  const vehicle = await reqJson("POST", "/api/vehicles", {
+    token: roomToken,
+    body: { plate: suffix, capacity: 16, speedLimitKmh: 90 },
+  });
+  must(vehicle.ok, `vehicle create (${suffix})`);
+  const vehicleId = Number(vehicle.json?.id || vehicle.json?.vehicle?.id || 0);
+  must(vehicleId > 0, "vehicleId present");
+
+  const driver = await reqJson("POST", "/api/drivers", {
+    token: roomToken,
+    body: { fullName: `M4 Driver ${suffix}`, phone: `90537${String(Date.now()).slice(-6)}`, deviceInfo: "m4-check" },
+  });
+  must(driver.ok, `driver create (${suffix})`);
+  const driverId = Number(driver.json?.id || driver.json?.driver?.id || 0);
+  const driverCode = String(driver.json?.issuedCredentials?.driverCode || "");
+  const temporaryPin = String(driver.json?.issuedCredentials?.temporaryPin || "");
+  must(driverId > 0, "driverId present");
+  must(driverCode.length >= 6, "driver code issued");
+  must(temporaryPin.length >= 4, "temporary pin issued");
+
+  const loginResp = await reqJson("POST", "/api/auth/login", {
+    body: { identifier: driverCode, password: temporaryPin },
+  });
+  must(loginResp.ok, "isolated driver login ok");
+  const driverToken = String(loginResp.json?.token || "");
+  must(driverToken.length > 20, "isolated driver token present");
+
+  return { vehicleId, driverId, driverToken };
 }
 
 function upper(s) {
@@ -127,7 +167,17 @@ function increasedBeyond(cur, base) {
   return cur.count > base.count;
 }
 
-async function waitForNewAllScopes({ kind, vehicleId, driverToken, roomToken, companyToken, timeoutMs, stepMs, label }) {
+async function waitForNewAllScopes({
+  kind,
+  vehicleId,
+  driverToken,
+  roomToken,
+  companyToken,
+  timeoutMs,
+  stepMs,
+  label,
+  refresh = null,
+}) {
   const base = await Promise.all([
     snapScope(driverToken, kind, vehicleId),
     snapScope(roomToken, kind, vehicleId),
@@ -136,6 +186,8 @@ async function waitForNewAllScopes({ kind, vehicleId, driverToken, roomToken, co
 
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
+    if (refresh) await refresh();
+
     const cur = await Promise.all([
       snapScope(driverToken, kind, vehicleId),
       snapScope(roomToken, kind, vehicleId),
@@ -199,13 +251,13 @@ function computeOverspeedKmh(vehicle) {
 async function main() {
   console.log(`API_URL = ${BASE_URL}`);
 
-  const driverToken = await login("driver@demo.com", "demo123");
   const roomToken = await login("room@demo.com", "demo123");
   const companyToken = await login("company@demo.com", "demo123");
-  ok("login(driver/room/company)");
+  ok("login(room/company)");
 
   const { roomId, companyId } = await getRoomCompanyIds(roomToken, companyToken);
-  const { vehicleId, driverId } = await pickVehicleDriver(roomToken);
+  const { vehicleId, driverId, driverToken } = await createIsolatedVehicleDriver(roomToken);
+  ok(`isolated vehicle+driver (vehicleId=${vehicleId}, driverId=${driverId})`);
 
   const pre = await preCleanDriverShifts({ roomToken, driverToken, driverId });
   if (pre.found) console.log(`CLEAN pre-clean: found=${pre.found} cleaned=${pre.cleaned}`);
@@ -262,6 +314,14 @@ async function main() {
     const offlineAgeMs = (offlineSec + 10) * 1000;
 
     console.log(`WAIT forcing LIVE->STALE (gpsLast.at -${Math.floor(staleAgeMs/1000)}s) and waiting for monitor tick...`);
+    const keepStaleAge = () =>
+      prisma.gpsLast.update({
+        where: { vehicleId: h.vehicleId },
+        data: { at: new Date(Date.now() - staleAgeMs) },
+      });
+
+    await keepStaleAge();
+
     const staleWait = waitForNewAllScopes({
       kind: "GPS_STALE",
       vehicleId: h.vehicleId,
@@ -271,11 +331,7 @@ async function main() {
       timeoutMs: 90_000,
       stepMs: 2500,
       label: "LIVE->STALE",
-    });
-
-    await prisma.gpsLast.update({
-      where: { vehicleId: h.vehicleId },
-      data: { at: new Date(Date.now() - staleAgeMs) },
+      refresh: keepStaleAge,
     });
 
     const st = await staleWait;

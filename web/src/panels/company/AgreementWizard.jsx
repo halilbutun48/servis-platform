@@ -18,6 +18,8 @@ import { isoFromTRYmdMin, ymdTR } from "../../utils/time";
 import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { cachedGet } from "../../utils/uiDataCache";
 import { linkAgreementsToOrigin } from "../../utils/agreementOriginLink";
+import { AgreementWizardModal as Modal } from "./AgreementWizardModal";
+import { AGREEMENT_WIZARD_PACKS } from "./agreementWizardPacks";
 
 function todayYmd() {
   return ymdTR();
@@ -61,87 +63,7 @@ function parseTryInput(raw) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-// ✅ M27: preset paketleri (tek tık)
-const PACKS = [
-  {
-    key: "WK_MORNING",
-    title: "Hafta içi • Sabah",
-    desc: "07:00 → 09:00 (Toplama → Hub)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
-  },
-  {
-    key: "WK_EVENING",
-    title: "Hafta içi • Akşam",
-    desc: "17:00 → 19:00 (Hub → Dağıtım)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" }],
-  },
-  {
-    key: "WK_MORNING_EVENING",
-    title: "Hafta içi • Sabah + Akşam",
-    desc: "2 agreement oluşturur (07-09 + 17-19)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [
-      { label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
-      { label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
-    ],
-  },
-  {
-    key: "WK_THREE_SHIFTS",
-    title: "Hafta içi • 3 Vardiya",
-    desc: "3 agreement oluşturur (07-09 + 12-14 + 17-19)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [
-      { label: "Sabah", startMin: 7 * 60, endMin: 9 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
-      { label: "Öğlen", startMin: 12 * 60, endMin: 14 * 60, direction: "INBOUND", pattern: "ONE_WAY" },
-      { label: "Akşam", startMin: 17 * 60, endMin: 19 * 60, direction: "OUTBOUND", pattern: "ONE_WAY" },
-    ],
-  },
-  {
-    key: "WK_NIGHT",
-    title: "Hafta içi • Gece",
-    desc: "23:00 → 01:00 (midnight-cross)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Gece", startMin: 23 * 60, endMin: 1 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
-  },
-  {
-    key: "CUSTOM",
-    title: "Özel",
-    desc: "Elle ayarla (tek agreement)",
-    weekMask: 62,
-    durationDays: 30,
-    items: [{ label: "Özel", startMin: 8 * 60, endMin: 10 * 60, direction: "INBOUND", pattern: "ONE_WAY" }],
-  },
-];
-
-function Modal({ open, onClose, children }) {
-  if (!open) return null;
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.35)",
-        zIndex: 50,
-        padding: 16,
-        overflow: "auto",
-      }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
-      <div className="card" style={{ maxWidth: 980, margin: "24px auto" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
+const PACKS = AGREEMENT_WIZARD_PACKS;
 
 function onlyDigits(raw) {
   return String(raw ?? "").replace(/\./g, "").replace(/[^\d]/g, "");
