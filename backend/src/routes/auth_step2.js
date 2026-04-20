@@ -7,7 +7,6 @@ import { signToken } from "../auth/jwt.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { ENV } from "../env.js";
 import { verifyGoogleCredential } from "../auth/google.js";
-import { sanitizeAuthInviteListItem } from "../kvkk/enforcement.js";
 
 const DISABLED_PREFIX = "$DISABLED$";
 const authStep2Router = express.Router();
@@ -403,115 +402,12 @@ async function consumeParentInvite({ req, invite, existingUser, email, fullName 
   return user;
 }
 
-function inviteTitle(kind, row) {
-  if (kind === "PARENT") return "Veli Erişimi";
-  if (row?.role === "DRIVER") return "Sürücü Giriş Daveti";
-  if (row?.role === "PERSONEL") return "Personel Giriş Daveti";
-  if (row?.role === "ROOM") return "Room Kullanıcı Daveti";
-  if (row?.role === "COMPANY") return "Company Kullanıcı Daveti";
-  return "Giriş Daveti";
-}
-
-function mapInviteInfo(ref) {
-  if (!ref) return null;
-  if (ref.kind === "PARENT") {
-    const x = ref.row;
-    return {
-      kind: ref.kind,
-      title: inviteTitle(ref.kind, x),
-      role: "PARENT",
-      email: x.email || null,
-      fullName: x.parentFullName || null,
-      expiresAt: x.expiresAt,
-      company: x.company ? { id: x.company.id, name: x.company.name, kind: x.company.kind } : null,
-      child: x.child ? { id: x.child.id, fullName: x.child.fullName, kind: x.child.kind } : null,
-    };
-  }
-  const x = ref.row;
-  return {
-    kind: ref.kind,
-    title: inviteTitle(ref.kind, x),
-    type: x.type,
-    role: x.role,
-    email: x.email || null,
-    fullName: x.fullName || null,
-    expiresAt: x.expiresAt,
-    company: x.company ? { id: x.company.id, name: x.company.name, kind: x.company.kind } : null,
-    room: x.room ? { id: x.room.id, name: x.room.name } : null,
-    personel: x.personel ? { id: x.personel.id, fullName: x.personel.fullName } : null,
-    child: x.childPersonel ? { id: x.childPersonel.id, fullName: x.childPersonel.fullName } : null,
-    driver: x.driver ? { id: x.driver.id, fullName: x.driver.fullName } : null,
-  };
-}
-
-const createInviteSchema = z.object({
-  email: z.string().trim().toLowerCase().email(),
-  ttlDays: z.number().int().min(1).max(365).optional(),
-  role: z.enum(["PERSONEL", "DRIVER", "ROOM", "COMPANY"]),
-  companyId: z.number().int().positive().optional().nullable(),
-  roomId: z.number().int().positive().optional().nullable(),
-  personelId: z.number().int().positive().optional().nullable(),
-  driverId: z.number().int().positive().optional().nullable(),
-  fullName: z.string().trim().min(2).optional().nullable(),
-  phone: z.string().trim().min(3).optional().nullable(),
-}).superRefine((v, ctx) => {
-  if (v.role === "PERSONEL" && !v.personelId) ctx.addIssue({ code: "custom", path: ["personelId"], message: "PERSONEL requires personelId" });
-  if (v.role === "DRIVER" && !v.driverId) ctx.addIssue({ code: "custom", path: ["driverId"], message: "DRIVER requires driverId" });
-  if (v.role === "ROOM" && !v.roomId) ctx.addIssue({ code: "custom", path: ["roomId"], message: "ROOM requires roomId" });
-  if ((v.role === "COMPANY" || v.role === "PERSONEL") && !v.companyId) ctx.addIssue({ code: "custom", path: ["companyId"], message: "COMPANY scope requires companyId" });
-  if (v.role === "DRIVER" && !v.roomId) ctx.addIssue({ code: "custom", path: ["roomId"], message: "DRIVER requires roomId" });
-});
-
 const googleLoginSchema = z.object({
   credential: z.string().trim().optional(),
   inviteToken: z.string().trim().optional(),
   deviceId: z.string().trim().min(2).optional(),
   testProfile: z.any().optional(),
 });
-
-function roleTypeOf(role) {
-  if (role === "PERSONEL") return "PERSONEL_INVITE";
-  if (role === "DRIVER") return "DRIVER_INVITE";
-  if (role === "ROOM") return "ROOM_USER_INVITE";
-  if (role === "COMPANY") return "COMPANY_USER_INVITE";
-  return "COMPANY_USER_INVITE";
-}
-
-async function assertInviteScope(req, parsed) {
-  const b = parsed;
-  if (req.user.role === "COMPANY") {
-    if (!req.user.companyId) throw Object.assign(new Error("COMPANY_SCOPE_REQUIRED"), { status: 400, code: "COMPANY_SCOPE_REQUIRED" });
-    if (b.role !== "PERSONEL") throw Object.assign(new Error("FORBIDDEN"), { status: 403, code: "FORBIDDEN" });
-    if (Number(b.companyId) !== Number(req.user.companyId)) throw Object.assign(new Error("INVITE_SCOPE_FORBIDDEN"), { status: 403, code: "INVITE_SCOPE_FORBIDDEN" });
-    const personel = await prisma.personel.findUnique({ where: { id: Number(b.personelId) }, select: { id: true, companyId: true, fullName: true, phone: true, userId: true } });
-    if (!personel || Number(personel.companyId) !== Number(req.user.companyId)) throw Object.assign(new Error("PERSONEL_NOT_FOUND"), { status: 404, code: "PERSONEL_NOT_FOUND" });
-    if (personel.userId) throw Object.assign(new Error("INVITE_PROFILE_ALREADY_LINKED"), { status: 409, code: "INVITE_PROFILE_ALREADY_LINKED" });
-    return { fullName: b.fullName || personel.fullName, phone: b.phone || personel.phone || null, companyId: req.user.companyId, roomId: null, personelId: personel.id, driverId: null };
-  }
-
-  if (req.user.role === "ROOM") {
-    if (!req.user.roomId) throw Object.assign(new Error("ROOM_SCOPE_REQUIRED"), { status: 400, code: "ROOM_SCOPE_REQUIRED" });
-    if (b.role !== "DRIVER") throw Object.assign(new Error("FORBIDDEN"), { status: 403, code: "FORBIDDEN" });
-    if (Number(b.roomId) !== Number(req.user.roomId)) throw Object.assign(new Error("INVITE_SCOPE_FORBIDDEN"), { status: 403, code: "INVITE_SCOPE_FORBIDDEN" });
-    const driver = await prisma.driver.findUnique({ where: { id: Number(b.driverId) }, select: { id: true, roomId: true, fullName: true, phone: true, userId: true } });
-    if (!driver || Number(driver.roomId) !== Number(req.user.roomId)) throw Object.assign(new Error("DRIVER_NOT_FOUND"), { status: 404, code: "DRIVER_NOT_FOUND" });
-    if (driver.userId) throw Object.assign(new Error("INVITE_PROFILE_ALREADY_LINKED"), { status: 409, code: "INVITE_PROFILE_ALREADY_LINKED" });
-    return { fullName: b.fullName || driver.fullName, phone: b.phone || driver.phone || null, companyId: null, roomId: req.user.roomId, personelId: null, driverId: driver.id };
-  }
-
-  if (req.user.role === "SUPER_ADMIN") {
-    return {
-      fullName: b.fullName || null,
-      phone: b.phone || null,
-      companyId: b.companyId ?? null,
-      roomId: b.roomId ?? null,
-      personelId: b.personelId ?? null,
-      driverId: b.driverId ?? null,
-    };
-  }
-
-  throw Object.assign(new Error("FORBIDDEN"), { status: 403, code: "FORBIDDEN" });
-}
 
 authStep2Router.get("/invite/info", async (_req, res) => res.status(410).json({ error: "AUTH_INVITE_REMOVED", message: "Hesap daveti akışı kaldırıldı." }));
 

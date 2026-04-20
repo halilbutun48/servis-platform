@@ -49,12 +49,6 @@ function readStore() {
   return { version: 1, items };
 }
 
-function writeStore(nextStore) {
-  const safe = nextStore && typeof nextStore === "object" ? nextStore : { version: 1, items: {} };
-  if (!safe.items || typeof safe.items !== "object") safe.items = {};
-  store.writeSync({ version: 1, items: safe.items });
-}
-
 function emailLocalPart(email) {
   const clean = String(email || "").trim().toLowerCase();
   const idx = clean.indexOf("@");

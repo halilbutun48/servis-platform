@@ -85,7 +85,7 @@ export function runM91GeneratedShiftPreviewFixCheck() {
   assertIncludes("backend/src/routes/shifts/people.js", "hasMeaningfulStops", "route preview detects hub-only generated shifts");
   assertIncludes("backend/src/routes/shifts/people.js", "sourcePayload?.shift", "route preview falls back to source shift payload");
   assertIncludes("backend/src/routes/agreements.js", "previewAvailable", "agreements ops bridge exposes previewAvailable");
-  assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "previewAvailable", "company ops bridge enables preview with fallback");
+  assertIncludes("web/src/components/AgreementOpsBridgeCard.jsx", "previewAvailable", "shared ops bridge enables preview with fallback");
   assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "Rota Önizleme", "room ops bridge exposes preview action");
   banner("M91 GENERATED SHIFT PREVIEW FIX CHECK PASS");
 }

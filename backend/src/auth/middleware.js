@@ -90,7 +90,7 @@ export function authRequired() {
       req.user = user;
       await touchDriverPresenceIfNeeded(user);
       next();
-    } catch (e) {
+    } catch (_e) {
       return sendErrorResponse(res, httpError(401, "UNAUTHORIZED", "Unauthorized"));
     }
   };

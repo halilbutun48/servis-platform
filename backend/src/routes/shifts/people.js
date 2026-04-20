@@ -174,10 +174,6 @@ function normalizeImportRows(rows) {
   return { accepted, warnings };
 }
 
-function normalizeGeoStatus(input) {
-  return inferGeoState(input).geoStatus;
-}
-
 async function upsertCompanyPersonel(companyId, item, defaultKind) {
   const phone = sanitizePhone(item.phone);
   const geoMeta = inferGeoState(item);

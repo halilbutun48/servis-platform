@@ -319,7 +319,6 @@ function analyzeShifts(screenContext, screenDefinition, conversationState) {
 function analyzeCommercialFlow(screenContext, screenDefinition) {
   const result = makeResult('COMMERCIAL_FLOW', screenContext, screenDefinition);
   const fields = selectedFieldRows(screenContext);
-  const badges = selectedBadgeRows(screenContext);
   const flow = findValue(fields, ['akış', 'akis']);
   const status = findValue(fields, ['durum']);
   const nextStep = findValue(fields, ['sonraki adım', 'sonraki adim']);
@@ -382,7 +381,6 @@ function analyzeServiceEvaluation(screenContext, screenDefinition) {
 function analyzeAgreements(screenContext, screenDefinition) {
   const result = makeResult('AGREEMENTS', screenContext, screenDefinition);
   const fields = selectedFieldRows(screenContext);
-  const badges = selectedBadgeRows(screenContext);
   const status = findValue(fields, ['durum']);
   const start = findValue(fields, ['başlangıç', 'baslangic']);
   const end = findValue(fields, ['bitiş', 'bitis']);

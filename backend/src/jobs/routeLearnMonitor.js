@@ -131,7 +131,6 @@ export function startRouteLearnMonitor(_io, opts = {}) {
 
         // retention: keep newest maxN
         if (samples.length > maxN) {
-          const keepIds = new Set(samples.slice(0, maxN).map((x) => x.id));
           const delIds = samples.slice(maxN).map((x) => x.id);
           if (delIds.length) {
             await prisma.routeLearnSample.deleteMany({ where: { id: { in: delIds } } });

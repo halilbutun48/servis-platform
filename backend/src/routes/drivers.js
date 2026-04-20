@@ -8,10 +8,6 @@ import { audit } from "../audit.js";
 import { clearDriverPinFailureState } from "../auth/driverAccessGuard.js";
 import { createDriverSchema } from "../validators.js";
 
-function normalizeDriverCode(value) {
-  return String(value || "").trim().toUpperCase().replace(/\s+/g, "");
-}
-
 function buildAliasEmail(driverCode) {
   return `${String(driverCode || "").trim().toLowerCase()}@driver.local`;
 }

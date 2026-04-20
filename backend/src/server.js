@@ -4,7 +4,6 @@ import http from "http";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import rateLimit from "express-rate-limit";
 import { Server } from "socket.io";
 import "dotenv/config";
 
@@ -69,7 +68,6 @@ import { operationVerificationRouter } from "./routes/operationVerification.js";
 import { startMonitors } from "./jobs/index.js";
 import { apiRequestLog } from "./middleware/apiRequestLog.js";
 import { getRedis } from "./redis/index.js";
-import { RedisRateLimitStore } from "./middleware/rateLimitRedisStore.js";
 import { startCapacityBaselineMonitor, capacityRequestStarted, capacityRequestFinished, capacityWsConnected, capacityWsDisconnected, getCapacityHealthSummary } from "./ops/capacityLoadBaseline.js";
 import { edgeRequestContext, applyEdgeSecurityHeaders, edgeSecurityGuard, getEdgeSecurityHealthSummary } from "./ops/edgeSecurityBaseline.js";
 import { pickExport, assertRouteFactories } from "./bootstrap/routeFactories.js";
@@ -344,7 +342,6 @@ process.on("SIGINT", shutdown);
 server.listen(ENV.PORT, () => {
   console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
-
 
 
 

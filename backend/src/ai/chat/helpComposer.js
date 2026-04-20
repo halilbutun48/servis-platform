@@ -636,7 +636,7 @@ function weakCarryReply(sourceScreenDefinition, sourceScreenContext) {
   return `${sourceLabel} ekranında önce geçerli kayıt oluşmalı. Şimdi ekran önermek erken. Önce marker'a tıklayıp aracı seç; üst kartta Shift, Son GPS ve Sıradaki durak dolu mu bak. ${evidence ? `Bunu şuradan anlıyorum: ${evidence}.` : ''}`.trim();
 }
 
-function scoreNextScreenCandidate({ candidate, targetScreenDefinition, sourceScreenDefinition, sourceScreenContext, genericFlow = false, recordScoped = false }) {
+function scoreNextScreenCandidate({ candidate, targetScreenDefinition, sourceScreenDefinition, sourceScreenContext, genericFlow = false }) {
   const candidatePath = normalizeText(candidate?.path || '');
   const targetKind = screenKind(targetScreenDefinition);
   const sourceKind = screenKind(sourceScreenDefinition);
@@ -1014,7 +1014,6 @@ function menuAction(menu, context, reason = '', extras = {}) {
 function entityActionPlan({ entityType, context, screenDefinition, roleMode, questionType, reply }) {
   const rows = [];
   if (entityType === 'shift') {
-    const shiftsMenu = findMenu(screenDefinition, ['vardiya'], ['/shifts']);
     const offersMenu = findMenu(screenDefinition, ['teklif', 'offer'], ['/offers']);
     const vehiclesMenu = findMenu(screenDefinition, ['araç', 'vehicle'], ['/vehicles']);
     const driversMenu = findMenu(screenDefinition, ['sürücü', 'driver'], ['/drivers']);

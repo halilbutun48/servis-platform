@@ -334,7 +334,7 @@ export function attachShiftRoomRoutes(r, io) {
           return sendErrorResponse(res, httpError(400, "SHIFT_REASSIGN_NO_CHANGE", "No change detected"));
         }
 
-        const { vehicle, driver } = await ensureVehicleDriverScopeOrThrow({ scopeRoomId: Number(shift.roomId), vehicleId, driverId });
+        const { vehicle } = await ensureVehicleDriverScopeOrThrow({ scopeRoomId: Number(shift.roomId), vehicleId, driverId });
 
         const demand = await getShiftDemandSnapshot(shift.id);
         const capacityConflict = buildCapacityConflict({

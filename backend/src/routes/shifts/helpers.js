@@ -376,7 +376,7 @@ export async function getMyShiftPayload(query, user) {
  * Validates company offer update intent and returns a normalized patch.
  * NOTE: Route layer already runs Zod; this is a second safety net + normalization.
  */
-export function validateOfferInputOrThrow({ shift, user, data }) {
+export function validateOfferInputOrThrow({ shift, data }) {
   if (!data || typeof data !== "object") {
     throw Object.assign(new Error("Invalid offer payload"), { status: 400 });
   }

@@ -518,12 +518,6 @@ function signal(label, state, detail) {
   return { label, state, detail };
 }
 
-function signalState(ok, warn = false) {
-  if (ok) return "GOOD";
-  if (warn) return "WARN";
-  return "BLOCKED";
-}
-
 function buildConfidenceScore(severity, blocks, risks, evidenceCount) {
   let score = 0.9;
   if (severity === "CRITICAL") score = 0.58;
@@ -562,7 +556,7 @@ function buildVehicleEvidence(vehicle) {
   ]).slice(0, 8);
 }
 
-function buildShiftDecisionSignals(shift, blocks, risks) {
+function buildShiftDecisionSignals(shift, _blocks, _risks) {
   return [
     signal("Araç ataması", shift.vehicleId ? "GOOD" : "BLOCKED", shift.vehicle?.plate || "Araç atanmadı"),
     signal("Sürücü ataması", shift.driverId ? "GOOD" : "BLOCKED", shift.driver?.fullName || "Sürücü atanmadı"),
@@ -572,7 +566,7 @@ function buildShiftDecisionSignals(shift, blocks, risks) {
   ].slice(0, 5);
 }
 
-function buildVehicleDecisionSignals(vehicle, blocks, risks) {
+function buildVehicleDecisionSignals(vehicle, _blocks, _risks) {
   return [
     signal("Active device", vehicle.activeDeviceCount > 0 ? "GOOD" : "BLOCKED", `${vehicle.activeDeviceCount}/${vehicle.deviceCount}`),
     signal("GPS sinyali", vehicle.gpsLast?.at ? "GOOD" : "BLOCKED", vehicle.gpsLast?.at || "GPS verisi yok"),

@@ -8,9 +8,12 @@ import { ymdTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
+import AgreementOpsBridgeCard from "../../components/AgreementOpsBridgeCard";
+import AgreementConflictBox from "../../components/AgreementConflictBox";
 import { agreementExtendStatusText, agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
+import { buildAgreementCopilotFacts } from "../../utils/agreementCopilotFacts";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 
 // ✅ M59 helpers
@@ -32,7 +35,6 @@ function ShiftSummary({ st }) {
     </div>
   );
 }
-
 
 function pill(status) {
   const s = String(status || "").toUpperCase();
@@ -95,64 +97,9 @@ function RouteRefreshCommercialBox({ item, agreement, accepted = false }) {
   );
 }
 
-function AgreementOpsBridgeCard({ agreement, bridge, onOpenShift, onOpenPreview }) {
-  if (!agreement) return null;
-  const generatedCount = Number(bridge?.generatedCount || 0);
-  const lastShift = bridge?.lastShift || null;
-  const vehicleLabel = bridge?.agreementVehicle?.plate || lastShift?.vehicle?.plate || (agreement?.vehicleId ? `#${agreement.vehicleId}` : "-");
-  const driverLabel = bridge?.agreementDriver?.fullName || lastShift?.driver?.fullName || (agreement?.driverId ? `#${agreement.driverId}` : "-");
-  const hubText = typeof agreement?.hubLat === "number" && typeof agreement?.hubLng === "number" ? `${agreement.hubLat.toFixed(4)}, ${agreement.hubLng.toFixed(4)}` : "-";
-
-  return (
-    <div className="card" style={{ border: "1px solid rgba(88,166,255,.28)" }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontWeight: 900 }}>Operasyon Köprüsü</div>
-          <div className="muted" style={{ marginTop: 4 }}>
-            {agreementStatusText(agreement?.status)} • {String(agreement?.direction || "-").toUpperCase()} / {String(agreement?.pattern || "-").toUpperCase()}
-          </div>
-        </div>
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          <span className="pill">Üretilen vardiya: {generatedCount}</span>
-          <span className="pill">{toHHMM(agreement?.startMin)} → {toHHMM(agreement?.endMin)}</span>
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 12 }}>
-        <div><div className="muted">Araç</div><div style={{ fontWeight: 800 }}>{vehicleLabel}</div></div>
-        <div><div className="muted">Sürücü</div><div style={{ fontWeight: 800 }}>{driverLabel}</div></div>
-        <div><div className="muted">Hub</div><div style={{ fontWeight: 800 }}>{hubText}</div></div>
-        <div><div className="muted">Plan</div><div style={{ fontWeight: 800 }}>{weekMaskToText(agreement?.weekMask) || "-"}</div></div>
-      </div>
-      {lastShift ? (
-        <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(255,255,255,.03)" }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontWeight: 900 }}>Son üretilen vardiya #{lastShift.id}</div>
-              <div className="muted" style={{ marginTop: 4 }}>{String(lastShift.status || "-").toUpperCase()} • {trDateTime(lastShift.startAt)} → {trDateTime(lastShift.endAt)}</div>
-            </div>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="button" className="btn" onClick={() => onOpenShift?.(lastShift.id)}>Vardiyaya Git</button>
-              <button type="button" className="btn" disabled={!lastShift?.previewAvailable && !lastShift?.id} onClick={() => onOpenPreview?.(lastShift.id)}>Rota Önizleme</button>
-            </div>
-          </div>
-          <div className="muted" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginTop: 10 }}>
-            <div>Durak: <b>{Number(lastShift.stopCount || 0)}</b></div>
-            <div>Personel: <b>{Number(lastShift.peopleCount || 0)}</b></div>
-            <div>Mesafe: <b>{lastShift.routeSnapshotDistanceM ? `${Math.round(Number(lastShift.routeSnapshotDistanceM) / 1000)} km` : "-"}</b></div>
-            <div>Süre: <b>{lastShift.routeSnapshotDurationSec ? `${Math.round(Number(lastShift.routeSnapshotDurationSec) / 60)} dk` : "-"}</b></div>
-          </div>
-        </div>
-      ) : (
-        <div className="muted" style={{ marginTop: 12 }}>Bu sözleşmeye bağlı üretilmiş vardiya henüz yok.</div>
-      )}
-    </div>
-  );
-}
-
 function ymd(d) {
   return String(d || "").slice(0, 10);
 }
-
 
 function parseTryInput(raw) {
   if (raw == null) return null;
@@ -173,94 +120,10 @@ function OfferCell({ amount, note }) {
   );
 }
 
-
-function buildAgreementCopilotFacts(item, summary = {}) {
-  const status = String(item?.status || '').toUpperCase();
-  const hasVehicle = Boolean(item?.vehicleId);
-  const hasDriver = Boolean(item?.driverId);
-  const shiftOpen = Number(item?.shiftCount ?? summary.shiftCount ?? 0) > 0;
-  const blockers = [];
-  const missing = [];
-  if (!item?.id) blockers.push('Önce odak sözleşme seçilmeden yorum genel kalır.');
-  if (!hasVehicle) missing.push('Araç seçilmemiş');
-  if (!hasDriver) missing.push('Sürücü seçilmemiş');
-  if (["ACTIVE", "APPROVED"].includes(status) && (!hasVehicle || !hasDriver)) blockers.push('Sözleşme aktif görünse de araç veya sürücü eksikse saha için tam hazır değildir.');
-  if (["REQUESTED", "COUNTERED"].includes(status)) blockers.push('Karar bekleyen sözleşmede önce onay / karşı teklif yönü netleşmelidir.');
-  return {
-    screenType: 'AGREEMENTS',
-    stage: status || '-',
-    readiness: blockers.length ? 'REVIEW_NEEDED' : (["ACTIVE", "APPROVED"].includes(status) ? 'READY' : 'REVIEW_NEEDED'),
-    readinessScore: blockers.length ? 48 : (["ACTIVE", "APPROVED"].includes(status) ? 84 : 66),
-    blockers,
-    missing,
-    counters: {
-      pending: Number(summary.pendingCount || 0),
-      other: Number(summary.otherCount || 0),
-      extend: Number(summary.extendCount || 0),
-      shifts: Number(item?.shiftCount ?? 0),
-    },
-    evidence: [
-      `Durum: ${status || '-'}`,
-      `Tutar: ${moneyTry(item?.companyOfferAmount ?? item?.amount ?? '-')}`,
-      `Araç: ${hasVehicle ? `#${item.vehicleId}` : 'Yok'}`,
-      `Sürücü: ${hasDriver ? `#${item.driverId}` : 'Yok'}`,
-      `Vardiya: ${shiftOpen ? 'Var' : 'Yok'}`,
-    ],
-    reasoningLead: blockers.length
-      ? 'Bu sözleşmede ana risk karar veya atama tarafında görünüyor.'
-      : 'Bu sözleşmede önce durum, sonra tarih ve araç-sürücü bağı okunmalı.',
-    nextBestAction: status === 'REQUESTED'
-      ? 'Önce sözleşmeyi onaylayacaksan araç ve sürücü seç. Karşı teklif vereceksen tutar ve notu netleştir.'
-      : status === 'COUNTERED'
-        ? 'Önce karşı teklif notunu ve tutarı tekrar kontrol et. Sonra karar yönünü netleştir.'
-        : (["ACTIVE", "APPROVED"].includes(status)
-          ? 'Önce bağlı vardiya ve ufukta üretilen iş sayısını kontrol et.'
-          : 'Önce durum ve tarih aralığını doğrula. Sonra bağlı işi görmek için vardiya tarafına geç.'),
-    safestNextStep: 'En risksiz adım, seçili sözleşmenin tarih aralığı ile araç-sürücü bağını birlikte doğrulamaktır.',
-    compareHint: 'Sözleşme onayı ile saha hazırlığı aynı şey değildir; araç ve sürücü eksikse iş hâlâ operasyona tam hazır sayılmaz.',
-  };
-}
-
-function ConflictBox({ errObj }) {
-  if (!errObj) return null;
-  const code = errObj?.code;
-  const msg = errObj?.message || errObj?.error || "Conflict";
-  const c = errObj?.conflictingAgreement;
-
-  return (
-    <div className="card" style={{ borderColor: "rgba(239,68,68,.45)", background: "rgba(85,16,20,.25)" }}>
-      <div style={{ fontWeight: 900 }}>{code || "CONFLICT"}</div>
-      <div className="muted" style={{ marginTop: 6 }}>{msg}</div>
-
-      {c ? (
-        <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-          <div>
-            conflict agreementId: <b>{c.id}</b>
-          </div>
-          <div>status: {c.status}</div>
-          <div>
-            date: {String(c.startDate).slice(0, 10)} → {String(c.endDate).slice(0, 10)}
-          </div>
-          <div>
-            time: {toHHMM(c.startMin)} → {toHHMM(c.endMin)}
-          </div>
-          <div>
-            days: {weekMaskToText(c.weekMask)} (mask={c.weekMask})
-          </div>
-          <div>
-            v:{c.vehicleId ?? "-"} / d:{c.driverId ?? "-"}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export default function AgreementsPanel() {
   const { token } = useSession();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-
   const [pending, setPending] = useState([]);
   const [others, setOthers] = useState([]);
   const [shiftStats, setShiftStats] = useState({}); // ✅ M59
@@ -271,7 +134,6 @@ export default function AgreementsPanel() {
 
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
-
   const [approveId, setApproveId] = useState(null);
   const [selVehicle, setSelVehicle] = useState("");
   const [selDriver, setSelDriver] = useState("");
@@ -1253,7 +1115,7 @@ export default function AgreementsPanel() {
               </button>
             </div>
 
-            <ConflictBox errObj={conflict} />
+            <AgreementConflictBox errObj={conflict} />
           </div>
         ) : null}
       </div>
@@ -1334,6 +1196,3 @@ export default function AgreementsPanel() {
     </div>
   );
 }
-
-
-

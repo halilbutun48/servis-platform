@@ -1512,7 +1512,7 @@ export function agreementsRouter(io) {
     return true;
   }
 
-  function computeReactivatedStatus(ag, proposedEndDate) {
+  function computeReactivatedStatus(ag) {
     const now = new Date();
     const firstStart = computeFirstStartAtUTC(ag);
     return now >= firstStart ? "ACTIVE" : "APPROVED";

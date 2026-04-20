@@ -13,10 +13,6 @@ function randomToken() {
   return crypto.randomBytes(24).toString("base64url");
 }
 
-function uniqNums(xs) {
-  return Array.from(new Set((xs || []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
-}
-
 function computeEtaTo(last, targetLat, targetLng) {
   if (!last || typeof last.lat !== "number" || typeof last.lng !== "number") return null;
   if (typeof targetLat !== "number" || typeof targetLng !== "number") return null;
@@ -135,7 +131,7 @@ export function passengerLinksRouter() {
   r.post("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
     try {
       const body = createSchema.parse(req.body ?? {});
-      const shift = await ensureShiftScope(body.shiftId, req.user);
+      await ensureShiftScope(body.shiftId, req.user);
 
       const exists = await prisma.personel.findFirst({
         where: {

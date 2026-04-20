@@ -28,10 +28,6 @@ function normalizeStatus(value, fallback = "BEKLIYOR") {
   return STATUS_IDS.has(normalized) ? normalized : fallback;
 }
 
-function sortNewest(items) {
-  return [...(Array.isArray(items) ? items : [])].sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")));
-}
-
 function toNumber(value) {
   const n = Number(value || 0);
   return Number.isFinite(n) ? n : 0;

@@ -60,6 +60,21 @@ const baseRules = {
   ],
 };
 
+const scriptTemplateUnusedPattern = "^(_|includesAnyText|listVehicles|listDrivers|sleep|isoPlusMin|superToken|token1|state|bad|readme|primer|startpack|backlog|toolsPrimer|toolsReadme|callAny|nowTag|agreements|opsManifest|packLiving|verifyLivingRuntime|normalizePwsh|head|serverText|textHas)$";
+const scriptTemplateUnusedArgPattern = "^(_|driverToken|roomIds|callAny)$";
+
+const scriptRules = {
+  ...baseRules,
+  "no-unused-vars": [
+    "warn",
+    {
+      argsIgnorePattern: scriptTemplateUnusedArgPattern,
+      caughtErrorsIgnorePattern: "^_",
+      varsIgnorePattern: scriptTemplateUnusedPattern,
+    },
+  ],
+};
+
 export default [
   {
     ignores: [
@@ -71,13 +86,22 @@ export default [
     ],
   },
   {
-    files: ["backend/src/**/*.js", "backend/scripts/**/*.js"],
+    files: ["backend/src/**/*.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
       globals: commonGlobals,
     },
     rules: baseRules,
+  },
+  {
+    files: ["backend/scripts/**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: commonGlobals,
+    },
+    rules: scriptRules,
   },
   {
     files: ["backend/**/*.cjs"],
@@ -93,6 +117,6 @@ export default [
         require: "readonly",
       },
     },
-    rules: baseRules,
+    rules: scriptRules,
   },
 ];

@@ -21,20 +21,6 @@ function superAdminActions(context) {
 }
 
 
-function screenAction(label, path, kind, reason) {
-  return action(label, path, kind, reason);
-}
-
-function buildScreenQuickActions(jobType, context) {
-  const out = [];
-  if (context?.path) out.push(screenAction(`${context.label || 'Bu ekran'} ekranını aç`, context.path, 'PRIMARY', 'Bu rehberin anlattığı ekranı doğrudan açar.'));
-  for (const row of Array.isArray(context?.screenMenus) ? context.screenMenus : []) {
-    if (row?.path && row.path !== context?.path) out.push(screenAction(`${row.label} ekranını aç`, row.path, out.length ? 'SECONDARY' : 'PRIMARY', row.purpose || 'İlgili ekrana geçiş sağlar.'));
-    if (out.length >= 3) break;
-  }
-  return out.slice(0, 3);
-}
-
 function buildScreenIfStuck(context) {
   const rows = [];
   rows.push({

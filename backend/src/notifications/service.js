@@ -225,7 +225,7 @@ function buildConnectData({
   return data;
 }
 
-async function safeUpdateByDedupeKey({ dedupeKey, data, useConnect }) {
+async function safeUpdateByDedupeKey({ dedupeKey, data, useConnect: _useConnect }) {
   try {
     // dedupeKey unique ise update çalışır
     return await prisma.notification.update({

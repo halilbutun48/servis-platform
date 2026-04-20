@@ -55,12 +55,6 @@ function roundConfidence(value) {
   return Number(clamp(0.5, value, 0.99).toFixed(2));
 }
 
-function signalStatus(okValue, warnValues, value) {
-  if ([].concat(okValue || []).includes(value)) return "GOOD";
-  if ([].concat(warnValues || []).includes(value)) return "WARN";
-  return "BLOCKED";
-}
-
 function mapBlocker(code) {
   const map = {
     VEHICLE_MISSING: "Araç ataması eksik.",
@@ -350,7 +344,7 @@ function calibrateActionPlan(recommendedActions, context, base, meta) {
   }).sort((a, b) => {
     if ((b?.priorityScore || 0) !== (a?.priorityScore || 0)) return (b?.priorityScore || 0) - (a?.priorityScore || 0);
     return (a?.sortIndex || 0) - (b?.sortIndex || 0);
-  }).map(({ sortIndex, ...rest }) => rest);
+  }).map(({ sortIndex: _sortIndex, ...rest }) => rest);
 
   const recommendedFirstAction = enriched[0]
     ? {

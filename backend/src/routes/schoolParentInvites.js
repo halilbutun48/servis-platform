@@ -50,7 +50,7 @@ async function recordAudit(req, action, entity, entityId, meta) {
         action,
         entity,
         entityId: entityId ?? null,
-        meta: meta ?? null,
+        meta: sanitizeAuditMeta(meta ?? null),
       },
     });
   } catch {}

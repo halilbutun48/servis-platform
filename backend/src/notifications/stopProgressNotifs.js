@@ -81,7 +81,7 @@ export async function emitStopProgressNotifs({
   stop,
   stopId,
   state,
-  source = "",
+  source: _source = "",
 } = {}) {
   try {
     const sid = asInt(shiftId);

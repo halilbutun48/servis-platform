@@ -7,10 +7,6 @@ async function readStore() {
   return Array.isArray(parsed) ? parsed : [];
 }
 
-async function writeStore(items) {
-  return store.writeAsync(Array.isArray(items) ? items : []);
-}
-
 export async function getPasswordChangeRequirement(userId) {
   const id = Number(userId || 0);
   if (!id) return null;

@@ -4,7 +4,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { prisma } from "../prisma.js";
-import { signToken, verifyToken } from "../auth/jwt.js";
+import { signToken } from "../auth/jwt.js";
 import { authRequired } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { clearDriverPinFailureState, getDriverPinLockState, registerDriverPinFailure, validateNewDriverPin } from "../auth/driverAccessGuard.js";
@@ -119,20 +119,6 @@ function issueAccessToken(user, extra = {}) {
   return signToken(payload, expiresIn ? { expiresIn } : {});
 }
 
-function hashToken(raw) {
-  return crypto.createHash("sha256").update(String(raw || ""), "utf8").digest("hex");
-}
-
-function newRefreshToken() {
-  return crypto.randomBytes(32).toString("base64url");
-}
-
-
-function pickDeviceId(req) {
-  const d = String(req.body?.deviceId || "").trim();
-  return d ? d : null;
-}
-
 function normalizeDriverCode(value) {
   return String(value || '').trim().toUpperCase().replace(/\s+/g, '');
 }
@@ -155,58 +141,6 @@ async function findLoginUser(identifierRaw) {
     where: { role: 'DRIVER', driver: { is: { driverCode: normalizeDriverCode(identifier) } } },
     include,
   });
-}
-
-async function enforceDriverDeviceBinding({ req, user }) {
-  // For DRIVER: deviceId is mandatory and sticky.
-  if (String(user?.role || "") !== "DRIVER") return { ok: true, user };
-
-  const deviceId = pickDeviceId(req);
-  if (!deviceId) return { ok: false, status: 400, body: { error: "deviceId required", code: "DEVICE_ID_REQUIRED" } };
-
-  // If not yet bound => bind now
-  if (!user.deviceId) {
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: { deviceId, deviceBoundAt: new Date(), deviceLastSeenAt: new Date() },
-    });
-    return { ok: true, user: updated };
-  }
-
-  // Bound but mismatch => reject
-  if (String(user.deviceId) !== deviceId) {
-    return { ok: false, status: 403, body: { error: "DEVICE_MISMATCH", code: "DEVICE_MISMATCH" } };
-  }
-
-  // Match => update lastSeen
-  const updated = await prisma.user.update({
-    where: { id: user.id },
-    data: { deviceLastSeenAt: new Date() },
-  });
-  return { ok: true, user: updated };
-}
-
-async function issueTokens({ req, user }) {
-  const token = issueAccessToken(user);
-
-  const refreshToken = newRefreshToken();
-  const tokenHash = hashToken(refreshToken);
-
-  // default 30 days
-  const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000);
-
-  await prisma.refreshSession.create({
-    data: {
-      userId: user.id,
-      tokenHash,
-      deviceId: pickDeviceId(req),
-      expiresAt,
-      ip: getReqIp(req),
-      userAgent: req.headers["user-agent"]?.toString() || null,
-    },
-  });
-
-  return { token, refreshToken };
 }
 
 export const authRouter = express.Router();
@@ -902,5 +836,4 @@ authRouter.post("/logout", authRequired(), async (req, res) => {
   await prisma.refreshSession.updateMany({ where: { userId: u.id, revokedAt: null }, data: { revokedAt: new Date() } });
   return res.json({ ok: true });
 });
-
 
