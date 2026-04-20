@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -85,8 +85,15 @@ function ensureDir(p) {
 
 function gitTrackedRelSet() {
   try {
-    const out = execSync("git ls-files -z", { cwd: repoRoot, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
-    return new Set(out.split("\0").filter(Boolean).map(norm));
+    const result = spawnSync("git", ["ls-files", "-z"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    if (result.error || result.status !== 0) {
+      return null;
+    }
+    return new Set(String(result.stdout || "").split("\0").filter(Boolean).map(norm));
   } catch {
     return null;
   }
@@ -223,7 +230,17 @@ function isIntentionalTinyFile(relPath) {
 
 const allFiles = walk(repoRoot);
 const trackedRelSet = gitTrackedRelSet();
-const trackedFilter = (p) => !trackedRelSet || trackedRelSet.has(rel(p));
+function isRuntimeJsonRelPath(p) {
+  return (
+    (p.startsWith("backend/data/") || p.startsWith("data/")) &&
+    p.endsWith(".json")
+  );
+}
+const trackedFilter = (p) => {
+  const relPath = rel(p);
+  if (trackedRelSet) return trackedRelSet.has(relPath);
+  return !isRuntimeJsonRelPath(relPath);
+};
 const trackedAllFiles = allFiles.filter(trackedFilter);
 const textFiles = trackedAllFiles.filter((p) => allowedTextExt.has(path.extname(p).toLowerCase()));
 const textMap = new Map(textFiles.map((p) => [rel(p), readUtf8(p)]));
@@ -387,7 +404,8 @@ const summary = {
   largeFileCount: largeFiles.length,
   largeFileWarningCount: warningHotFiles.length,
   activeDocContractRefCount: activeDocContractRefs.length,
-  runtimeJsonFileCount: runtimeJsonFiles.length
+  runtimeJsonFileCount: runtimeJsonFiles.length,
+  gitTrackedIndexAvailable: Boolean(trackedRelSet)
 };
 
 const report = {

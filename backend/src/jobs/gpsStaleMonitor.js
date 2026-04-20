@@ -46,7 +46,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
 
       // gpsLast olan araçlar → "daha önce GPS görmüş" demektir; spam riskini azaltır
       // (gate ayrıca seenLiveAt şartı ile spam'i keser)
-      // eslint-disable-next-line no-constant-condition
+       
       while (true) {
         const vehicles = await prisma.vehicle.findMany({
           where: { id: { gt: lastId }, gpsLast: { isNot: null } },

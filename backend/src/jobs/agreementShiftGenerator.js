@@ -132,7 +132,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
           const endAt = atTR(endYmd, a.endMin);
 
           // cheap precheck: already exists?
-          // eslint-disable-next-line no-await-in-loop
+           
           const exists = await prisma.shift.findFirst({
             where: { agreementId: a.id, startAt },
             select: { id: true },
@@ -141,7 +141,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
 
           // shift conflict with any existing shift (manual or generated)
           if (a.driverId || a.vehicleId) {
-            // eslint-disable-next-line no-await-in-loop
+             
             const conflicts = await checkShiftConflicts({
               driverId: a.driverId ?? undefined,
               vehicleId: a.vehicleId ?? undefined,
@@ -165,7 +165,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
                 }
               : {};
 
-            // eslint-disable-next-line no-await-in-loop
+             
             const created = await prisma.shift.create({
               data: {
                 companyId: a.companyId,
@@ -184,10 +184,10 @@ export function startAgreementShiftGenerator(io, opts = {}) {
               },
             });
 
-            // eslint-disable-next-line no-await-in-loop
+             
             await cloneAgreementShiftPayload(created.id, sourceShift);
             if (!routeSnapshotFromSource.routeSnapshotValidatedAt) {
-              // eslint-disable-next-line no-await-in-loop
+               
               await rebuildShiftRouteStateBestEffort(created.id);
             }
 
@@ -215,7 +215,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
           } catch (e) {
             const msg = String(e?.code || e?.message || "");
             if (msg.includes("P2002")) continue;
-            // eslint-disable-next-line no-console
+             
             console.error("[agreementShiftGenerator] create failed:", e?.message || e);
           }
         }

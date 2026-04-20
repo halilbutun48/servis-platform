@@ -166,7 +166,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
         }
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.error("[routeLearnMonitor] tick failed:", e?.message || e);
     } finally {
       running = false;

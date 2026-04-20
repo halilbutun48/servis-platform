@@ -124,13 +124,13 @@ async function main() {
   let found = null;
   const deadline = Date.now() + 25_000;
   while (Date.now() < deadline) {
-    // eslint-disable-next-line no-await-in-loop
+     
     found = await prisma.shift.findFirst({
       where: { agreementId, startAt },
       select: { id: true, status: true, startAt: true },
     });
     if (found?.id) break;
-    // eslint-disable-next-line no-await-in-loop
+     
     await sleep(1250);
   }
 

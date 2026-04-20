@@ -94,7 +94,7 @@ export function sendPenaltyError(res, err, fallbackCode = "ACTIVE_NO_SHOW_PENALT
   );
 }
 
-function buildSplitGroupKey(rootShiftId) {
+export function buildSplitGroupKey(rootShiftId) {
   return `split:${rootShiftId}:${Date.now()}`;
 }
 

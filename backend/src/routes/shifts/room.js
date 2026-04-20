@@ -13,6 +13,7 @@ import { findPackageShiftRowsByShiftId } from "../../services/shiftPackage.js";
 import {
   applyDispatchOverrides,
   buildDispatchSplitPlan,
+  buildSplitGroupKey,
   createChildShiftFromSlice,
   ensureVehicleDriverScopeOrThrow,
   getConflictOrNull,

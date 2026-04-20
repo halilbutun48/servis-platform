@@ -484,15 +484,60 @@ export async function preCleanDriverShifts({ roomToken, driverToken, driverId })
   });
 
   let cleaned = 0;
+  const seen = new Set();
+  const allowDbFallback = (() => {
+    try {
+      const u = new URL(BASE_URL);
+      return ["127.0.0.1", "localhost"].includes(u.hostname) && String(process.env.HARNESS_DB_FALLBACK ?? "1") !== "0";
+    } catch {
+      return false;
+    }
+  })();
+  const forceDone = async (sid) => {
+    if (!allowDbFallback) return false;
+    await prisma.shift.update({
+      where: { id: sid },
+      data: {
+        status: "DONE",
+        driverId: null,
+        vehicleId: null,
+      },
+    });
+    return true;
+  };
+
   for (const s of openish) {
     const sid = Number(s?.id);
     if (!sid) continue;
+    seen.add(sid);
 
     const okClose = await closeShiftHard({ shiftId: sid, driverToken, roomToken });
-    if (okClose) cleaned++;
+    if (okClose || await forceDone(sid)) cleaned++;
   }
 
-  return { cleaned, found: openish.length };
+  const dbOpenish = allowDbFallback
+    ? await prisma.shift.findMany({
+      where: {
+        driverId: Number(driverId),
+        status: { in: ["APPROVED", "ACTIVE", "REQUESTED"] },
+      },
+      select: { id: true },
+    })
+    : [];
+
+  let dbOnly = 0;
+  for (const s of dbOpenish) {
+    const sid = Number(s?.id || 0);
+    if (!sid || seen.has(sid)) continue;
+    dbOnly++;
+    if (await forceDone(sid)) cleaned++;
+  }
+
+  if (dbOnly) {
+    console.log(`${I_BROOM} db-fallback: found=${dbOnly}`);
+  }
+
+  return { cleaned, found: openish.length + dbOnly };
 }
 
 export async function kvkkAccept(token, docKey = "LOCATION_CONSENT", docVersion = "1") {
@@ -526,4 +571,3 @@ export async function postGps(driverToken, body) {
 
 // Küçük log helper’ları (istersen kullanırsın)
 export const ICONS = { I_OK, I_FAIL, I_INFO, I_WAIT, I_BROOM };
-

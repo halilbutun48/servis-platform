@@ -47,6 +47,7 @@ const backendDataReadme = read("backend/data/README.md");
 const preflight = read("tools/_repo_hygiene_preflight.ps1");
 const preflightInternal = read("tools/_packs/_repo_hygiene_preflight.ps1");
 const exportTool = read("tools/export_shareable_repo_bundle.ps1");
+const packM90C7 = read("tools/pack_m90_c7_export_package_hygiene.ps1");
 const primer = read("docs/PRIMER_SSOT.md");
 const backlog = read("docs/NEXT_BACKLOG_V1.md");
 const toolsPrimer = read("tools/PRIMER_SNAPSHOT.md");
@@ -82,6 +83,12 @@ expect(includesText(exportTool, "Compress-Archive") || includesText(exportTool, 
 expect(includesText(exportTool, "backend/data/*.json") && includesText(exportTool, "README_M*_OVERLAY*.txt"), "shareable export tool excludes runtime json and overlay residue globs");
 expect(includesText(exportTool, "artifacts/") && includesText(exportTool, "web/dist/") && includesText(exportTool, "mobile/dist/"), "shareable export tool excludes artifacts and dist trees");
 expect(includesText(exportTool, "pack_living_final.log") && includesText(exportTool, "pack_living_latest.log"), "shareable export tool excludes pack logs");
+expect(includesText(exportTool, "node_modules") && includesText(packM90C7, "node_modules"), "shareable export and pack inspection block nested node_modules");
+expect(!includesText(exportTool, "Where-Object { param("), "shareable export tool has no duplicated nested pipeline body");
+expect(includesText(exportTool, "Test-ForbiddenRelPath") && includesText(exportTool, "Assert-InsideRoot"), "shareable export tool enforces policy and staging path confinement");
+expect(includesText(exportTool, "finally") && includesText(exportTool, "Remove-Item"), "shareable export tool cleans staging in finally");
+expect(includesText(packM90C7, "OpenRead") && includesText(packM90C7, "forbidden entry"), "M90C.7 pack inspects zip contents for forbidden entries");
+expect(includesText(packM90C7, "shareable export inspected entries"), "M90C.7 pack records inspected zip entry count");
 
 const docsBundle = [primer, backlog, toolsPrimer, toolsReadme, scriptGuide, milestone, runbook, livingMilestone, livingRunbook].join("\n");
 expect(includesText(docsBundle, "M90C.7"), "canonical docs mention M90C.7");

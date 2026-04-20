@@ -1,4 +1,7 @@
 
+import fs from "fs";
+import path from "path";
+
 function normalizeText(value) {
   return String(value || "")
     .normalize("NFKD")
@@ -23,8 +26,6 @@ function includesText(text, needle) {
 function includesAnyText(text, needles) {
   return (needles || []).some((needle) => includesText(text, needle));
 }
-const fs = require("fs");
-const path = require("path");
 function ok(x){ console.log("OK " + x); }
 function fail(x){ console.error("FAIL " + x); process.exitCode = 1; }
 function read(p){ return fs.readFileSync(p, "utf8"); }

@@ -10,6 +10,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import CommercialReadonlySummary from "../../components/CommercialReadonlySummary";
 import { agreementExtendStatusText, agreementStatusPillLabel, agreementStatusText } from "../../utils/agreementLabels";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
+import { routeDiffText, routeSummaryText, summarizeRoutePreview } from "../../utils/routePreviewSummary";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 
 // ✅ M59 helpers
@@ -59,83 +60,6 @@ function trDateTime(iso) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function summarizeRoutePreview(payload) {
-  const summary = payload?.summary || {};
-  const stops = Array.isArray(payload?.stops) ? payload.stops : [];
-  const people = Array.isArray(payload?.people) ? payload.people : [];
-
-  const distanceCandidates = [
-    summary?.distanceM,
-    summary?.routeDistanceM,
-    summary?.routeSnapshotDistanceM,
-    payload?.routeSnapshotDistanceM,
-    Number.isFinite(Number(summary?.distanceKmSnapshot)) ? Number(summary.distanceKmSnapshot) * 1000 : null,
-    Number.isFinite(Number(summary?.distanceKmLearned)) ? Number(summary.distanceKmLearned) * 1000 : null,
-    Number.isFinite(Number(summary?.distanceKm)) ? Number(summary.distanceKm) * 1000 : null,
-  ];
-  const durationCandidates = [
-    summary?.durationSec,
-    summary?.routeDurationSec,
-    summary?.routeSnapshotDurationSec,
-    payload?.routeSnapshotDurationSec,
-    Number.isFinite(Number(summary?.durationMinSnapshot)) ? Number(summary.durationMinSnapshot) * 60 : null,
-    Number.isFinite(Number(summary?.durationMinLearned)) ? Number(summary.durationMinLearned) * 60 : null,
-    Number.isFinite(Number(summary?.durationMin)) ? Number(summary.durationMin) * 60 : null,
-  ];
-  const firstFinite = (list) => {
-    for (const value of list) {
-      const n = Number(value);
-      if (Number.isFinite(n) && n > 0) return n;
-    }
-    return 0;
-  };
-
-  return {
-    peopleCount: Math.max(0, Number(summary?.peopleCount ?? people.length ?? 0) || 0),
-    stopCount: Math.max(0, Number(summary?.stopCount ?? stops.length ?? 0) || 0),
-    distanceM: Math.max(0, firstFinite(distanceCandidates)),
-    durationSec: Math.max(0, firstFinite(durationCandidates)),
-  };
-}
-
-function formatKm(value) {
-  const n = Number(value || 0);
-  if (!Number.isFinite(n) || n <= 0) return "-";
-  const km = n / 1000;
-  return km >= 10 ? `${Math.round(km)} km` : `${km.toFixed(1)} km`;
-}
-
-function formatDuration(value) {
-  const n = Number(value || 0);
-  if (!Number.isFinite(n) || n <= 0) return "-";
-  return `${Math.round(n / 60)} dk`;
-}
-
-function routeSummaryText(summary, fallback = null) {
-  const src = summary || fallback || {};
-  return [
-    `${Math.max(0, Number(src?.peopleCount || 0))} personel`,
-    `${Math.max(0, Number(src?.stopCount || 0))} durak`,
-    formatKm(src?.distanceM),
-    formatDuration(src?.durationSec),
-  ].join(" · ");
-}
-
-function routeDiffText(currentSummary, proposedSummary) {
-  const current = currentSummary || {};
-  const proposed = proposedSummary || {};
-  const parts = [];
-  const peopleDelta = Number(proposed?.peopleCount || 0) - Number(current?.peopleCount || 0);
-  const stopDelta = Number(proposed?.stopCount || 0) - Number(current?.stopCount || 0);
-  const distanceDelta = Number(proposed?.distanceM || 0) - Number(current?.distanceM || 0);
-  const durationDelta = Number(proposed?.durationSec || 0) - Number(current?.durationSec || 0);
-  if (peopleDelta) parts.push(`${peopleDelta > 0 ? "+" : ""}${peopleDelta} personel`);
-  if (stopDelta) parts.push(`${stopDelta > 0 ? "+" : ""}${stopDelta} durak`);
-  if (distanceDelta) parts.push(`${distanceDelta > 0 ? "+" : "-"}${formatKm(Math.abs(distanceDelta))}`);
-  if (durationDelta) parts.push(`${durationDelta > 0 ? "+" : "-"}${formatDuration(Math.abs(durationDelta))}`);
-  return parts.length ? parts.join(" · ") : "Kişi / durak / km / süre farkı yok";
 }
 
 function routePriceDiffText(currentAmount, nextAmount) {
@@ -1410,7 +1334,6 @@ export default function AgreementsPanel() {
     </div>
   );
 }
-
 
 
 

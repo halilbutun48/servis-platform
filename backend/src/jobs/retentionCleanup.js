@@ -44,7 +44,7 @@ async function deleteOldBatched({ model, label, cutoff, batchSize, field = "crea
   let deleted = 0;
   let batches = 0;
 
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     const rows = await prisma[model].findMany({
       where: { [field]: { lt: cutoff } },

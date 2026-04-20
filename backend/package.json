@@ -7,7 +7,7 @@
     "dev": "nodemon --watch src --ext js,json --signal SIGTERM --exec \"node src/server.js\"",
     "start": "node src/server.js",
     "seed": "node prisma/seed.js",
-    "lint": "node scripts/repo_js_syntax_scan.js",
+    "lint": "node scripts/run_backend_lint.js",
     "smoke": "node scripts/smoke.js",
     "fullcheck": "node scripts/fullcheck.js",
     "repo:check": "node scripts/run_repo_check_chain.js --phase all",

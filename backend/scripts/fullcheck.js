@@ -250,6 +250,11 @@ async function main() {
   if (!gotEtaWs) throw new Error("FAIL WS eta:update missing (driver)");
   console.log("OK WS eta:update (driver)");
 
+  const staleSec = Math.max(ENV.GPS_STALE_SEC ?? 40, 5);
+  const offlineSec = Math.max(ENV.GPS_OFFLINE_SEC ?? 120, staleSec + 10);
+  const staleAgeMs = (staleSec + 5) * 1000;
+  const offlineAgeMs = (offlineSec + 10) * 1000;
+
   // --- STALE (deterministic) ---
   {
     const dS0 = await listNotifs(driverToken);
@@ -263,11 +268,6 @@ async function main() {
     };
 
     // OK STALE threshold fix: -35s (25s bazen yetmiyor)
-    const staleSec = Math.max(ENV.GPS_STALE_SEC ?? 40, 5);
-    const offlineSec = Math.max(ENV.GPS_OFFLINE_SEC ?? 120, staleSec + 10);
-    const staleAgeMs = (staleSec + 5) * 1000;
-    const offlineAgeMs = (offlineSec + 10) * 1000;
-
     console.log(`WAIT forcing LIVE->STALE (gpsLast.at -${Math.floor(staleAgeMs/1000)}s) and waiting for monitor tick...`);
     await prisma.gpsLast.update({
       where: { vehicleId: h.vehicleId },
