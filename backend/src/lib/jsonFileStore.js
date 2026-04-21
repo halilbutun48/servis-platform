@@ -1,15 +1,19 @@
 import fs from "fs";
 import { promises as fsp } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 const writeQueues = new Map();
 const syncLocks = new Set();
 const DEFAULT_LOCK_TIMEOUT_MS = 4000;
 const DEFAULT_LOCK_RETRY_MS = 25;
 const DEFAULT_STALE_LOCK_MS = 15000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DEFAULT_DATA_DIR = path.resolve(__dirname, "..", "..", "data");
 
 function defaultDataDir() {
-  return path.resolve(process.cwd(), "data");
+  return DEFAULT_DATA_DIR;
 }
 
 export function createJsonFileStore(filename, options = {}) {

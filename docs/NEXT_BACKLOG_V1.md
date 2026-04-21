@@ -27,7 +27,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - Üst ticari kapanış marker'ları explicit korunur: `M83`, `M84`, `M85`, `M86`, `M87`, `M88`, `M89`.
 
 ## 2) Hemen Sonraki Ana Faz
-1. `M90C.9` — güvenli kapanış / final hygiene checklist görünürlüğünü koru.
+1. `M90` — kapanmış closure / verification marker'larını green görünürlükte tutarak ihtiyaç-temelli kontrollü ilerlemeyi koru.
 2. `M90A` — canonical markdown hizasını yalnız gerçek ihtiyaç çıktığında düzelt.
 3. `M90B` — `repo_contract_state` + pack/verify convergence çizgisini state-first tut.
 4. `M90C` — screenshot bağımlılığını azaltan proof reformunu ürün davranışı açmadan sürdür.
@@ -39,7 +39,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - `M90C.3` kapanmıştır; M90B.1 görünürlüğü backlog içinde devam eder.
 - `M90C.5` schema için resmi karar kapısıdır.
 - `M90C.6` hot-file queue policy, `M90C.7` export/package hygiene closure ve `M90C.8` CI / verification visibility kapanmıştır.
-- Sıradaki görünür kapı `M90C.9` safe closure / final hygiene checklist'tir.
+- `M90C.9`, `M91` ve `M92` green / compatibility görünürlüğü olarak korunur; resmi çalışma yönü `M90` rotası içinde kontrollü ilerlemedir.
 
 ## 2.1) helpComposer Exception Policy
 - `backend/src/ai/chat/helpComposer.js` justified exception dosyasıdır.
@@ -54,7 +54,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - Gerekçe: migration, seed, Prisma client ve repo-contract/check yüzeyleri tek path üzerinden bağlanmıştır.
 - M90 kapanış hattında split refactor acceptance değeri üretmez; yapısal risk üretir.
 - İzin verilen değişiklikler: migration-safe alan/model/enum ekleri, relation/index/constraint tamiri, acceptance-safe lokal düzeltme.
-- Bu karar kapanmıştır; hot-file queue policy, export/package hygiene closure ve CI / verification visibility de kapanmıştır; sıradaki gerçek iş: `M90C.9 — güvenli kapanış / final hygiene checklist`.
+- Bu karar kapanmıştır; hot-file queue policy, export/package hygiene closure, safe closure/final hygiene ve repo verification spine green çizgide korunur; resmi çalışma yönü `M90` rotası içinde ihtiyaç-temelli kontrollü ilerlemedir.
 
 ## 2.3) M90C.6 — Hot-File Queue Policy
 - Hot/large file listesi artık sadece rapor değildir; resmi sınıflı queue olarak takip edilir.

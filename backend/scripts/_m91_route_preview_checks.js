@@ -84,7 +84,7 @@ export function runM91GeneratedShiftPreviewFixCheck() {
   banner("M91 generated shift preview fix check");
   assertIncludes("backend/src/routes/shifts/people.js", "hasMeaningfulStops", "route preview detects hub-only generated shifts");
   assertIncludes("backend/src/routes/shifts/people.js", "sourcePayload?.shift", "route preview falls back to source shift payload");
-  assertIncludes("backend/src/routes/agreements.js", "previewAvailable", "agreements ops bridge exposes previewAvailable");
+  assertIncludes("backend/src/services/agreementOpsBridge.js", "previewAvailable", "agreements ops bridge exposes previewAvailable");
   assertIncludes("web/src/components/AgreementOpsBridgeCard.jsx", "previewAvailable", "shared ops bridge enables preview with fallback");
   assertIncludes("web/src/panels/room/AgreementsPanel.jsx", "Rota Önizleme", "room ops bridge exposes preview action");
   banner("M91 GENERATED SHIFT PREVIEW FIX CHECK PASS");
@@ -116,7 +116,7 @@ export function runM91PrefillRoutePreviewPropagationCheck() {
   assertIncludes("backend/src/jobs/agreementShiftGenerator.js", "resolveAgreementSourceShiftPayload", "generator reads source shift via shared helper");
   assertIncludes("backend/src/jobs/agreementShiftGenerator.js", "routeSnapshot", "generator carries route snapshot");
   assertIncludes("backend/src/routes/shifts/people.js", "resolveAgreementSourceShiftPayload", "people preview route can fall back to source shift");
-  assertIncludes("backend/src/routes/agreements.js", "sourceShiftId", "agreements ops bridge can read source shift");
+  assertIncludes("backend/src/services/agreementOpsBridge.js", "sourceShiftId", "agreements ops bridge can read source shift");
   banner("M91 PREFILL + ROUTE PREVIEW PROPAGATION CHECK PASS");
 }
 
@@ -140,8 +140,8 @@ export function runM91RoutePreviewRoomGuardFixCheck() {
 export function runM91AgreementOperationsBridgeCheck() {
   banner("M91D agreement operations bridge check");
   assertIncludes("backend/src/routes/agreements.js", 'r.post("/ops-bridge"', "ops bridge route");
-  assertIncludes("backend/src/routes/agreements.js", "generatedCount", "ops bridge generated count");
-  assertIncludes("backend/src/routes/agreements.js", "routeSnapshotValidatedAt", "ops bridge preview fields");
+  assertIncludes("backend/src/services/agreementOpsBridge.js", "generatedCount", "ops bridge generated count");
+  assertIncludes("backend/src/services/agreementOpsBridge.js", "routeSnapshotValidatedAt", "ops bridge preview fields");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "AgreementOpsBridgeCard", "company ops bridge card");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "/api/agreements/ops-bridge", "company ops bridge api call");
   assertIncludes("web/src/panels/company/AgreementsPanel.jsx", "company:previewShiftId", "company preview focus stash");
@@ -208,7 +208,7 @@ export function runM91DraftSlotHardeningCheck() {
   assertIncludes("backend/src/routes/shifts/helpers.js", 'statuses = statuses.filter((s) => s !== "DRAFT")', "draft only exposed via includeDrafts guard");
   assertIncludes("backend/src/routes/shifts/helpers.js", "where.id = -1", "draft direct status query collapses to no results");
   assertIncludes("backend/src/routes/agreements.js", 'status: { not: "DRAFT" }', "agreement shift stats excludes draft");
-  assertIncludes("backend/src/routes/agreements.js", 'const shiftWhere = { agreementId: { in: allowedIds }, status: { not: "DRAFT" } };', "ops bridge excludes draft");
+  assertIncludes("backend/src/services/agreementOpsBridge.js", 'status: { not: "DRAFT" }', "ops bridge excludes draft");
   assertIncludes("backend/src/routes/agreements.js", 'r.post("/bundle"', "bundle route exists");
   assertIncludes("backend/src/services/agreementSlots.js", "Sözleşme tarafı günlük en fazla 3 slot destekler", "slot validation service exists");
   assertIncludes("backend/src/services/agreementSlots.js", "Slot saatleri çakışamaz.", "slot overlap validation exists");

@@ -11,11 +11,12 @@ Bu primer yaşayan hattın resmi özetidir.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
-- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapanmıştır; sıradaki resmi iş: `M90C.9 — güvenli kapanış / final hygiene checklist`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 / M90C.9 kapanmıştır; `M91` ve `M92` ile birlikte green / compatibility çizgisinde korunur.
 - Tek repo kontrol girişi: `npm run verify:repo`
 - Local acceptance overlay: `M91 shift/agreement route preview`
 - Repo verification spine: `M92 repo verification spine`
 - Güncel kapanmış ek hatlar: `M91`, `M92`, `Tur 1`, `Tur 2`, `Tur 3`.
+- Resmi çalışma yönü: `M90` rotası içinde ihtiyaç-temelli kontrollü ilerleme.
 - Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.
 
 ## Kanonik komut hiyerarşisi (Tur 1)

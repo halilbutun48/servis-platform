@@ -7,11 +7,12 @@
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `pack_living` yeşildir.
 - Repo check chain: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
 - Tarihsel anchor: `M0->M79`
-- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 kapanmıştır; sıradaki resmi iş: `M90C.9 güvenli kapanış / final hygiene checklist`
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 / M90C.9 kapanmıştır; `M91` ve `M92` ile birlikte green / compatibility çizgisinde korunur.
 - İlk yürütülebilir kapanış kapısı: `M90B.1 executable closure gate`
 - Tek repo kontrol girisi: `npm run verify:repo`
 - Repo verification spine: `M92`
 - Kapanmış ek hatlar: `M91`, `M92`, `Tur 1`, `Tur 2`, `Tur 3`.
+- Resmi çalışma yönü: `M90` rotası içinde ihtiyaç-temelli kontrollü ilerleme.
 - Not: `M90C.9` satiri closure compatibility gorunurlugu icin korunur.
 
 ## Kanonik komut hiyerarşisi (Tur 1)

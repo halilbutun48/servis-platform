@@ -86,7 +86,7 @@ expect(includesText(docsBundle, "physical_snapshot_hygiene_latest.json"), "canon
 expect(includesText(docsBundle, "verify:snapshot"), "canonical docs mention snapshot soft-gate command");
 expect(includesText(docsBundle, "pwsh"), "canonical docs mention pwsh preference");
 expect(includesText(docsBundle, "satır azaltma en sona") || includesText(docsBundle, "line-count reduction stays deferred"), "canonical docs preserve deferred line-count policy");
-expect(includesText(primer, "M90C.9") && (includesText(primer, "guvenli kapanis") || includesText(primer, "final hygiene checklist")), "primer points to M90C.9 as current official work");
+expect(includesText(primer, "M90C.9") && includesText(primer, "M90") && includesText(primer, "ihtiyac-temelli kontrollu ilerleme"), "primer keeps M90C.9 visibility while pointing official work to controlled M90 route");
 expect(includesText(toolsReadme, "pack_m90_c9_safe_closure_final_hygiene.ps1") && includesText(toolsReadme, "npm run verify:final"), "tools readme exposes M90C.9 pack and final verify command");
 expect(includesText(scriptGuide, "RUNBOOK_M90C_9_SAFE_CLOSURE_FINAL_HYGIENE_CHECKLIST.md"), "script guide exposes M90C.9 runbook");
 

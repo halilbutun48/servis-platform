@@ -4,7 +4,7 @@
   "latestHistoricalMasterPack": 79,
   "stableTo": 78,
   "historicalStableTo": 78,
-  "nextMilestone": "M90C.9",
+  "nextMilestone": "M90",
   "historicalNextMilestone": "M80",
   "livingUpperRouteFrom": 80,
   "livingUpperRouteTo": 89,
@@ -143,6 +143,7 @@
   "shareablePackageHygiene": {
     "policyVersion": 1,
     "goal": "shareable-package-clean-export",
+    "defaultRuntimeDataRoot": "backend/data",
     "principles": [
       "line-count reduction stays deferred until after acceptance and hygiene closure",
       "shareable exports must exclude workspace secrets, build artifacts, runtime json stores, and transient overlay/log residues",
@@ -245,6 +246,7 @@
     "principles": [
       "export-clean and physical snapshot clean are separate checks",
       "the first snapshot gate is report-only and does not block verify:final even when verify:final refreshes the report",
+      "backend/data is the intentional local runtime json working area and is reported as review-needed instead of hard-fail",
       "deprecated export zip residues and overlay backup residues are not allowed in the working tree snapshot surface",
       "docs/overlays stays as intentional tracked history and is not treated as snapshot dirt"
     ],
@@ -271,9 +273,11 @@
       "mobile/dist/"
     ],
     "hardFailGlobFiles": [
-      "backend/data/*.json",
       "data/*.json",
       "artifacts/exports/*.zip"
+    ],
+    "warningGlobFiles": [
+      "backend/data/*.json"
     ],
     "warningPathPrefixes": [
       "artifacts/",

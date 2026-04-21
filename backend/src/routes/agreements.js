@@ -13,6 +13,7 @@ import { createAgreementRouteRefreshRequest, decideAgreementRouteRefreshRequest,
 import { computeFirstStartAtUTC } from "../services/agreementConflict.js";
 import { findReservationConflictForAgreement } from "../services/reservationConflict.js";
 import { validateAgreementSlotItems } from "../services/agreementSlots.js";
+import { buildAgreementOpsBridgeById } from "../services/agreementOpsBridge.js";
 
 function parseDateOnly(s) {
   const v = String(s || "").trim();
@@ -807,150 +808,9 @@ export function agreementsRouter(io) {
   r.post("/ops-bridge", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
     const ids = Array.isArray(req.body?.agreementIds) ? req.body.agreementIds.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0) : [];
     if (!ids.length) return res.json({ byId: {} });
-
-    const agreementWhere = { id: { in: ids } };
-    if (req.user.role === "COMPANY") agreementWhere.companyId = req.user.companyId ?? -1;
-    if (req.user.role === "ROOM") agreementWhere.roomId = req.user.roomId ?? -1;
-
-    const agreements = await prisma.agreement.findMany({
-      where: agreementWhere,
-      select: {
-        id: true,
-        vehicleId: true,
-        driverId: true,
-        hubLat: true,
-        hubLng: true,
-        direction: true,
-        pattern: true,
-        startMin: true,
-        endMin: true,
-        weekMask: true,
-        vehicle: { select: { id: true, plate: true } },
-        driver: { select: { id: true, fullName: true } },
-      },
-    });
-
-    const allowedIds = agreements.map((row) => Number(row.id)).filter((n) => Number.isFinite(n) && n > 0);
-    if (!allowedIds.length) return res.json({ byId: {} });
-
-    const sourceRows = await prisma.commercialSource.findMany({
-      where: { agreementId: { in: allowedIds }, shiftRootId: { not: null } },
-      select: { agreementId: true, shiftRootId: true },
-      orderBy: { id: "asc" },
-    });
-    const sourceShiftIdByAgreement = Object.create(null);
-    for (const row of sourceRows || []) {
-      const aid = Number(row?.agreementId || 0);
-      const sid = Number(row?.shiftRootId || 0);
-      if (aid > 0 && sid > 0 && !sourceShiftIdByAgreement[aid]) sourceShiftIdByAgreement[aid] = sid;
-    }
-    const sourceShiftIds = Array.from(new Set(Object.values(sourceShiftIdByAgreement).map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0)));
-    const sourceShiftRows = sourceShiftIds.length
-      ? await prisma.shift.findMany({
-          where: { id: { in: sourceShiftIds } },
-          select: {
-            id: true,
-            routeSnapshotValidatedAt: true,
-            routeSnapshotDistanceM: true,
-            routeSnapshotDurationSec: true,
-            _count: { select: { stops: true, people: true } },
-          },
-        })
-      : [];
-    const sourceShiftById = Object.create(null);
-    for (const row of sourceShiftRows || []) sourceShiftById[Number(row.id)] = row;
-
-    const shiftWhere = { agreementId: { in: allowedIds }, status: { not: "DRAFT" } };
-    if (req.user.role === "COMPANY") shiftWhere.companyId = req.user.companyId ?? -1;
-    if (req.user.role === "ROOM") shiftWhere.roomId = req.user.roomId ?? -1;
-
-    const [counts, lastShifts] = await Promise.all([
-      prisma.shift.groupBy({ by: ["agreementId"], where: shiftWhere, _count: { _all: true } }),
-      prisma.shift.findMany({
-        where: shiftWhere,
-        orderBy: [{ startAt: "desc" }, { id: "desc" }],
-        select: {
-          id: true,
-          agreementId: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          vehicleId: true,
-          driverId: true,
-          hubLat: true,
-          hubLng: true,
-          direction: true,
-          pattern: true,
-          routeSnapshotValidatedAt: true,
-          routeSnapshotDistanceM: true,
-          routeSnapshotDurationSec: true,
-          vehicle: { select: { id: true, plate: true } },
-          driver: { select: { id: true, fullName: true } },
-          _count: { select: { stops: true, people: true } },
-        },
-      }),
-    ]);
-
-    const countMap = Object.create(null);
-    for (const row of counts || []) countMap[Number(row.agreementId)] = Number(row?._count?._all ?? 0);
-
-    const lastByAgreement = Object.create(null);
-    for (const row of lastShifts || []) {
-      const aid = Number(row?.agreementId || 0);
-      if (!aid || lastByAgreement[aid]) continue;
-      const sourceShift = sourceShiftById[Number(sourceShiftIdByAgreement[aid] || 0)] || null;
-      const generatedStopCount = Number(row?._count?.stops ?? 0) || 0;
-      const generatedPeopleCount = Number(row?._count?.people ?? 0) || 0;
-      const sourceStopCount = Number(sourceShift?._count?.stops ?? 0) || 0;
-      const sourcePeopleCount = Number(sourceShift?._count?.people ?? 0) || 0;
-      const stopCount = generatedStopCount > 1 ? generatedStopCount : Math.max(generatedStopCount, sourceStopCount);
-      const peopleCount = generatedPeopleCount > 0 ? generatedPeopleCount : sourcePeopleCount;
-      const previewAvailable = Boolean(row?.routeSnapshotValidatedAt || sourceShift?.routeSnapshotValidatedAt || stopCount || peopleCount || sourceShiftIdByAgreement[aid]);
-      lastByAgreement[aid] = {
-        id: row.id,
-        startAt: row.startAt,
-        endAt: row.endAt,
-        status: row.status,
-        vehicleId: row.vehicleId,
-        driverId: row.driverId,
-        hubLat: row.hubLat,
-        hubLng: row.hubLng,
-        direction: row.direction,
-        pattern: row.pattern,
-        routeSnapshotValidatedAt: row.routeSnapshotValidatedAt || sourceShift?.routeSnapshotValidatedAt || null,
-        routeSnapshotDistanceM: row.routeSnapshotDistanceM ?? sourceShift?.routeSnapshotDistanceM ?? null,
-        routeSnapshotDurationSec: row.routeSnapshotDurationSec ?? sourceShift?.routeSnapshotDurationSec ?? null,
-        stopCount,
-        peopleCount,
-        previewAvailable,
-        vehicle: row.vehicle ? { id: row.vehicle.id, plate: row.vehicle.plate || null } : null,
-        driver: row.driver ? { id: row.driver.id, fullName: row.driver.fullName || null } : null,
-      };
-    }
-
-    const byId = {};
-    for (const ag of agreements) {
-      const sourceShift = sourceShiftById[Number(sourceShiftIdByAgreement[Number(ag.id)] || 0)] || null;
-      byId[ag.id] = {
-        generatedCount: Number(countMap[Number(ag.id)] || 0),
-        sourceShiftId: Number(sourceShiftIdByAgreement[Number(ag.id)] || 0) || null,
-        sourceSummary: sourceShift
-          ? `Kaynak vardiya #${sourceShift.id} • ${Number(sourceShift?._count?.people || 0)} personel • ${Number(sourceShift?._count?.stops || 0)} durak`
-          : null,
-        agreementVehicle: ag.vehicle ? { id: ag.vehicle.id, plate: ag.vehicle.plate || null } : (ag.vehicleId ? { id: ag.vehicleId, plate: null } : null),
-        agreementDriver: ag.driver ? { id: ag.driver.id, fullName: ag.driver.fullName || null } : (ag.driverId ? { id: ag.driverId, fullName: null } : null),
-        plan: {
-          hubLat: ag.hubLat,
-          hubLng: ag.hubLng,
-          direction: ag.direction,
-          pattern: ag.pattern,
-          startMin: ag.startMin,
-          endMin: ag.endMin,
-          weekMask: ag.weekMask,
-        },
-        lastShift: lastByAgreement[Number(ag.id)] || null,
-      };
-    }
+    const companyId = req.user.role === "COMPANY" ? (req.user.companyId ?? -1) : null;
+    const roomId = req.user.role === "ROOM" ? (req.user.roomId ?? -1) : null;
+    const byId = await buildAgreementOpsBridgeById({ agreementIds: ids, companyId, roomId });
 
     res.json({ byId });
   });
