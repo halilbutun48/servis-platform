@@ -6,7 +6,7 @@ import { dateOnlyUTCFromYmd } from "../time/tr.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { createAndEmitNotification } from "../notifications/service.js";
-import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
+import { ymdTR } from "../time/tr.js";
 import { createAgreementRouteRefreshRequest, decideAgreementRouteRefreshRequest, getAgreementRouteRefreshRequestById, getPendingAgreementRouteRefreshRequest, listAgreementRouteRefreshRequests, updateAgreementRouteRefreshRequest } from "../services/agreementRouteRefreshStore.js";
 // ✅ M59: agreement UI shift stats helper endpoint
 
@@ -14,6 +14,7 @@ import { computeFirstStartAtUTC } from "../services/agreementConflict.js";
 import { findReservationConflictForAgreement } from "../services/reservationConflict.js";
 import { validateAgreementSlotItems } from "../services/agreementSlots.js";
 import { buildAgreementOpsBridgeById } from "../services/agreementOpsBridge.js";
+import { buildAgreementShiftStats } from "../services/agreementShiftStats.js";
 
 function parseDateOnly(s) {
   const v = String(s || "").trim();
@@ -761,46 +762,11 @@ export function agreementsRouter(io) {
     const horizonDays = Math.min(30, Math.max(1, Number(req.body?.horizonDays ?? 7)));
 
     if (!ids.length) return res.json({ byId: {} });
+    const companyId = req.user.role === "COMPANY" ? (req.user.companyId ?? -1) : null;
+    const roomId = req.user.role === "ROOM" ? (req.user.roomId ?? -1) : null;
+    const stats = await buildAgreementShiftStats({ agreementIds: ids, horizonDays, companyId, roomId });
 
-    const now = new Date();
-    const todayYmd = ymdTR(now);
-    const todayStart = atTR(todayYmd, 0);
-    const tomorrowStart = atTR(addDaysTR(todayYmd, 1), 0);
-    const horizonEnd = atTR(addDaysTR(todayYmd, horizonDays), 0);
-
-    const scope = { agreementId: { in: ids } };
-    if (req.user.role === "COMPANY") scope.companyId = req.user.companyId ?? -1;
-    if (req.user.role === "ROOM") scope.roomId = req.user.roomId ?? -1;
-
-    const todayWhere = { ...scope, startAt: { gte: todayStart, lt: tomorrowStart }, status: { not: "DRAFT" } };
-    const horizonWhere = { ...scope, startAt: { gte: now, lt: horizonEnd }, status: { in: ["APPROVED", "ACTIVE"] } };
-
-    const [todayTotal, todayDone, horizonOpen] = await Promise.all([
-      prisma.shift.groupBy({ by: ["agreementId"], where: todayWhere, _count: { _all: true } }),
-      prisma.shift.groupBy({ by: ["agreementId"], where: { ...todayWhere, status: "DONE" }, _count: { _all: true } }),
-      prisma.shift.groupBy({ by: ["agreementId"], where: horizonWhere, _count: { _all: true } }),
-    ]);
-
-    const byId = {};
-    for (const id of ids) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
-
-    for (const row of (todayTotal || [])) {
-      const id = Number(row.agreementId);
-      if (!byId[id]) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
-      byId[id].todayTotal = Number(row?._count?._all ?? 0);
-    }
-    for (const row of (todayDone || [])) {
-      const id = Number(row.agreementId);
-      if (!byId[id]) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
-      byId[id].todayDone = Number(row?._count?._all ?? 0);
-    }
-    for (const row of (horizonOpen || [])) {
-      const id = Number(row.agreementId);
-      if (!byId[id]) byId[id] = { todayTotal: 0, todayDone: 0, horizonOpen: 0 };
-      byId[id].horizonOpen = Number(row?._count?._all ?? 0);
-    }
-
-    res.json({ byId, meta: { todayStart, tomorrowStart, horizonEnd, horizonDays } });
+    res.json(stats);
   });
   // M91-D: OPERATION BRIDGE SUMMARY
   // Body: { agreementIds:number[] }

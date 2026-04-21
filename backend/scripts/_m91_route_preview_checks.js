@@ -207,7 +207,7 @@ export function runM91DraftSlotHardeningCheck() {
   banner("M91E/F draft + slot hardening check");
   assertIncludes("backend/src/routes/shifts/helpers.js", 'statuses = statuses.filter((s) => s !== "DRAFT")', "draft only exposed via includeDrafts guard");
   assertIncludes("backend/src/routes/shifts/helpers.js", "where.id = -1", "draft direct status query collapses to no results");
-  assertIncludes("backend/src/routes/agreements.js", 'status: { not: "DRAFT" }', "agreement shift stats excludes draft");
+  assertIncludes("backend/src/services/agreementShiftStats.js", 'status: { not: "DRAFT" }', "agreement shift stats excludes draft");
   assertIncludes("backend/src/services/agreementOpsBridge.js", 'status: { not: "DRAFT" }', "ops bridge excludes draft");
   assertIncludes("backend/src/routes/agreements.js", 'r.post("/bundle"', "bundle route exists");
   assertIncludes("backend/src/services/agreementSlots.js", "Sözleşme tarafı günlük en fazla 3 slot destekler", "slot validation service exists");
