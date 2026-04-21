@@ -6,6 +6,7 @@ import MapView from "../../components/map/MapView";
 import StopTimeline from "../../components/StopTimeline";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats } from "../../utils/navigation";
 import { nowIsoTR } from "../../utils/time";
+import PanelChrome from "../../components/PanelChrome";
 
 
 function isReached(stop) {
@@ -128,15 +129,11 @@ export default function DriverMapPanel() {
 
   return (
     <div className="wrap wrap--fluid">
-      <div className="topbar">
-        <div>
-          <div className="title">Driver • Harita</div>
-          <div className="muted">Seçili araç + vardiya durakları</div>
-        </div>
-        <button onClick={loadAll} style={{ padding: "8px 12px" }}>
-          Yenile
-        </button>
-      </div>
+      <PanelChrome
+        title="Driver • Harita"
+        subtitle="Seçili araç + vardiya durakları"
+        actions={<button onClick={loadAll} style={{ padding: "8px 12px" }}>Yenile</button>}
+      />
 
       {err ? <div className="card err">{err}</div> : null}
 

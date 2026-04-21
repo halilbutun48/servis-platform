@@ -11,16 +11,16 @@ Bu runbook, saha testine cikmadan once acceptance kararini sistem icine tasimak 
 ## 1) M60 amac cumlesi
 M60 ile sistem su soruya tek yerde cevap vermelidir:
 
-**"Hangi cihaz, hangi build ve hangi test kosusuyla GO / LIMITED GO / NO-GO kararina gidildi?"**
+**"Hangi cihaz, hangi build ve hangi test kosusuyla GO / LIMITED_GO / NO_GO kararina gidildi?"**
 
 ## 2) Kapsam
 M60 su basliklari acar:
-- pilot test oturumu kaydi iskeleti
-- acceptance checklist sabiti
-- GO / LIMITED GO / NO-GO karar secenekleri
-- cihaz / build bazli test ozeti iskeleti
-- kanit ve not alani iskeleti
-- super admin acceptance merkezi paneli iskeleti
+- pilot test oturumu kaydi
+- acceptance checklist
+- GO / LIMITED_GO / NO_GO karar secenekleri
+- cihaz / build bazli test ozeti
+- kanit ve not alani
+- super admin acceptance merkezi paneli
 
 ## 3) Kapsam siniri
 M60, launch karari vermez.
@@ -35,9 +35,9 @@ Bunlar sirayla daha sonra:
 
 a altina alinacaktir.
 
-## 4) M60.1 ilk teslim paketi
+## 4) M60 ilk teslim paketi
 Ilk teslim su 4 parcayi acik bir repo iskeleti olarak koyar:
-1. backend acceptance manifest ve session-template route iskeleti
+1. backend acceptance manifest ve canlı session route iskeleti
 2. mobile acceptance evidence helper iskeleti
 3. web super admin acceptance merkezi paneli iskeleti
 4. SSOT / runbook / pack / check disiplini
@@ -61,14 +61,23 @@ Web tarafinda hedeflenen ilk gorunum:
 - kanit turleri
 - acceptance raporu iskeleti
 
-## 7) Kanonik komut
+## 7) Canli session akisi
+M60 artik session-template ile calismaz.
+Tek current session uzerinden su islemler yapilir:
+- oturum yaratma
+- oturum yukleme
+- oturum kaydetme
+- karar persist etme
+- checklist madde status guncelleme
+
+## 8) Kanonik komut
 `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 
 Bu komut su iki parcayi dogrular:
 - repo-contract: `tools\check_m60_field_acceptance_center_repo_contract.ps1`
 - runtime/check: `backend\scripts\m60_field_acceptance_center_check.js`
 
-## 8) Green yorumu
+## 9) Green yorumu
 M60 green sayilabilmesi icin:
 - pack gecmeli
 - repo-contract gecmeli

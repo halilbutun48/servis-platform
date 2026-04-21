@@ -3,6 +3,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { getPilotLaunchGateManifest } from "../ops/pilotLaunchGateManifest.js";
 import { buildFieldPrepPacket } from "../ops/fieldPrepPacket.js";
 import { buildFieldFeedbackLoopPacket, getFieldFeedbackRecordById, listFieldFeedbackRecords, updateFieldFeedbackRecordStatus, upsertFieldFeedbackRecord } from "../ops/fieldFeedbackLoop.js";
+import { deletePilotLaunchGateRisk, getPilotLaunchGateDecision, listPilotLaunchGateRisks, savePilotLaunchGateDecision, upsertPilotLaunchGateRisk } from "../ops/pilotLaunchGateState.js";
 
 export const pilotLaunchGateRouter = Router();
 
@@ -10,12 +11,67 @@ pilotLaunchGateRouter.get('/manifest', (_req, res) => {
   res.json({ ok: true, manifest: getPilotLaunchGateManifest() });
 });
 
-pilotLaunchGateRouter.get('/decision-template', (_req, res) => {
-  res.json({ ok: true, decision: { status: 'LIMITED_GO', reason: 'Checklist tamamlanmadi', blockingItems: [], notes: [] } });
+pilotLaunchGateRouter.get('/decision', authRequired(), requireRole('SUPER_ADMIN'), async (_req, res, next) => {
+  try {
+    const decision = await getPilotLaunchGateDecision();
+    return res.json({ ok: true, decision });
+  } catch (error) {
+    return next(error);
+  }
 });
 
-pilotLaunchGateRouter.get('/risk-template', (_req, res) => {
-  res.json({ ok: true, risks: [{ severity: 'MEDIUM', title: 'Ornek risk', owner: 'SUPER_ADMIN' }] });
+pilotLaunchGateRouter.post('/decision', authRequired(), requireRole('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const decision = await savePilotLaunchGateDecision(req.body || {}, req.user);
+    return res.json({ ok: true, decision });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+pilotLaunchGateRouter.get('/risks', authRequired(), requireRole('SUPER_ADMIN'), async (_req, res, next) => {
+  try {
+    const risks = await listPilotLaunchGateRisks();
+    return res.json({ ok: true, risks });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+pilotLaunchGateRouter.post('/risks', authRequired(), requireRole('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const item = await upsertPilotLaunchGateRisk(req.body || {}, req.user);
+    return res.status(201).json({ ok: true, item });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+pilotLaunchGateRouter.delete('/risks/:id', authRequired(), requireRole('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const removed = await deletePilotLaunchGateRisk(req.params.id);
+    if (!removed) return res.status(404).json({ error: 'PILOT_LAUNCH_RISK_NOT_FOUND' });
+    return res.json({ ok: true, id: req.params.id });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+pilotLaunchGateRouter.get('/summary', authRequired(), requireRole('SUPER_ADMIN'), async (_req, res, next) => {
+  try {
+    const [decision, risks] = await Promise.all([getPilotLaunchGateDecision(), listPilotLaunchGateRisks()]);
+    return res.json({
+      ok: true,
+      decision,
+      risks,
+      summary: {
+        decisionStatus: decision?.status || "LIMITED_GO",
+        riskCount: Array.isArray(risks) ? risks.length : 0,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 pilotLaunchGateRouter.get('/field-prep-packet', authRequired(), requireRole('SUPER_ADMIN'), async (_req, res, next) => {
@@ -37,7 +93,7 @@ pilotLaunchGateRouter.get('/field-feedback-loop', authRequired(), requireRole('S
   }
 });
 
-pilotLaunchGateRouter.get('/field-feedback-loop/records', authRequired(), requireRole('SUPER_ADMIN', 'ROOM', 'COMPANY', 'DRIVER'), async (req, res, next) => {
+pilotLaunchGateRouter.get('/field-feedback-loop/records', authRequired(), requireRole('SUPER_ADMIN', 'ROOM', 'COMPANY', 'DRIVER', 'PERSONEL', 'PARENT'), async (req, res, next) => {
   try {
     const requestedRole = String(req.query?.role || '').trim().toUpperCase();
     const roleFilter = req.user?.role === 'SUPER_ADMIN' ? requestedRole || 'ALL' : String(req.user?.role || '').trim().toUpperCase();
@@ -54,7 +110,7 @@ pilotLaunchGateRouter.get('/field-feedback-loop/records', authRequired(), requir
   }
 });
 
-pilotLaunchGateRouter.post('/field-feedback-loop/records', authRequired(), requireRole('SUPER_ADMIN', 'ROOM', 'COMPANY', 'DRIVER'), async (req, res, next) => {
+pilotLaunchGateRouter.post('/field-feedback-loop/records', authRequired(), requireRole('SUPER_ADMIN', 'ROOM', 'COMPANY', 'DRIVER', 'PERSONEL', 'PARENT'), async (req, res, next) => {
   try {
     const payload = { ...(req.body || {}) };
     if (req.user?.role !== 'SUPER_ADMIN') {

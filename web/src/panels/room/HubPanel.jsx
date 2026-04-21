@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import PanelChrome from "../../components/PanelChrome";
 import HubMapPicker from "../../components/geo/HubMapPicker";
 
 function sanitizeAddress(input) {
@@ -132,73 +133,85 @@ export default function HubPanel() {
   }
 
   return (
-    <div className="card">
-      <div className="topbar">
-        <div>
-          <div className="title">Room Hub</div>
-          <div className="muted">Operasyon merkezi/garaj hub'ı (opsiyonel). Company için zorunlu değildir.</div>
-          {roomName ? (
-            <div className="muted" style={{ marginTop: 6 }}>
-              Room: <b>{roomName}</b>
-            </div>
-          ) : null}
-        </div>
-        <button type="button" className="btn sm ghost" onClick={load} disabled={busy}>
-          Yenile
-        </button>
+    <div style={{ display: "grid", gap: 14, minWidth: 0 }}>
+      <PanelChrome
+        title="Room Hub"
+        subtitle="Operasyon merkezi/garaj hub'ı (opsiyonel). Company için zorunlu değildir."
+        actions={<button type="button" className="btn sm ghost" onClick={load} disabled={busy}>Yenile</button>}
+      />
+
+      <div className="toolbar" style={{ gap: 8, flexWrap: "wrap" }}>
+        {roomName ? <span className="pill" data-status="ROLE">Room: {roomName}</span> : null}
+        {roomId ? <span className="pill" data-status="COUNT">Room ID: {roomId}</span> : null}
+        <span className="pill" data-status="ROLE">Hub: {lat && lng ? `${lat}, ${lng}` : "-"}</span>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
       {msg ? <div className="card" style={{ borderColor: "rgba(34,197,94,.35)", background: "rgba(6,34,20,.25)" }}>{msg}</div> : null}
 
-      <div className="field">
-        <div className="muted">Adres</div>
-        <input
-          value={addr}
-          onChange={(e) => setAddr(e.target.value)}
-          placeholder="örn. Garaj / Depo / İlçe / İl"
-          disabled={busy}
-        />
-      </div>
+      <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", alignItems: "start" }}>
+        <PanelChrome
+          title="Adres ve Koordinat"
+          subtitle="Hub koordinatını elle, konumla ya da harita üstünden seç."
+        >
+          <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+            <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+              <div className="panelMeta">Adres</div>
+              <input
+                value={addr}
+                onChange={(e) => setAddr(e.target.value)}
+                placeholder="örn. Garaj / Depo / İlçe / İl"
+                disabled={busy}
+              />
+            </div>
 
-      <div className="fieldRow" style={{ marginTop: 12 }}>
-        <div className="field">
-          <div className="muted">Hub Lat</div>
-          <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
-        </div>
-        <div className="field">
-          <div className="muted">Hub Lng</div>
-          <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
-        </div>
-      </div>
+            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(2, minmax(0, 1fr))", minWidth: 0 }}>
+              <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+                <div className="panelMeta">Hub Lat</div>
+                <input type="number" step="0.000001" value={lat} onChange={(e) => setLat(e.target.value)} disabled={busy} />
+              </div>
+              <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+                <div className="panelMeta">Hub Lng</div>
+                <input type="number" step="0.000001" value={lng} onChange={(e) => setLng(e.target.value)} disabled={busy} />
+              </div>
+            </div>
 
-      <div className="actionsRow" style={{ marginTop: 12 }}>
-        <button type="button" className="btn sm" onClick={myLocation} disabled={busy}>
-          Konumumu Al
-        </button>
-        <button type="button" className="btn sm" onClick={geocode} disabled={busy}>
-          Adresten Bul
-        </button>
-        <button type="button" className="btn sm primary" onClick={save} disabled={busy}>
-          Kaydet
-        </button>
-      </div>
+            <div className="toolbar" style={{ marginTop: 2 }}>
+              <button type="button" className="btn sm" onClick={myLocation} disabled={busy}>
+                Konumumu Al
+              </button>
+              <button type="button" className="btn sm" onClick={geocode} disabled={busy}>
+                Adresten Bul
+              </button>
+              <button type="button" className="btn sm primary" onClick={save} disabled={busy}>
+                Kaydet
+              </button>
+            </div>
+          </div>
+        </PanelChrome>
 
-      <HubMapPicker
-        lat={lat}
-        lng={lng}
-        busy={busy}
-        subjectLabel="Room Hub"
-        onPick={(nextLat, nextLng) => {
-          setLat(String(nextLat));
-          setLng(String(nextLng));
-          setMsg(`Haritada seçildi: ${Number(nextLat).toFixed(6)}, ${Number(nextLng).toFixed(6)}. Kaydet'e bas.`);
-          setErr("");
-        }}
-      />
+        <PanelChrome
+          title="Konum Önizleme"
+          subtitle="Pikselde gördüğün nokta, kayda gidecek konumu netleştirir."
+        >
+          <HubMapPicker
+            lat={lat}
+            lng={lng}
+            busy={busy}
+            subjectLabel="Room Hub"
+            previewHeight={580}
+            onPick={(nextLat, nextLng) => {
+              setLat(String(nextLat));
+              setLng(String(nextLng));
+              setMsg(`Haritada seçildi: ${Number(nextLat).toFixed(6)}, ${Number(nextLng).toFixed(6)}. Kaydet'e bas.`);
+              setErr("");
+            }}
+          />
 
-      <div className="muted" style={{ marginTop: 10 }}>
-        Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman OK).
+          <div className="panelMeta" style={{ marginTop: 10 }}>
+            Not: Konum izni için tarayıcı bazen <b>HTTPS</b> ister (localhost çoğu zaman OK).
+          </div>
+        </PanelChrome>
       </div>
     </div>
   );

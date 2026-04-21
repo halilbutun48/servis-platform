@@ -35,6 +35,7 @@ function includesAnyText(text, needles) {
 
 function banner(title) { console.log(`\n=== ${title} ===`); }
 function must(label, ok) { if (!ok) throw new Error(`FAIL ${label}`); console.log(`OK ${label}`); }
+function mustNot(label, ok) { if (ok) throw new Error(`FAIL ${label}`); console.log(`OK ${label}`); }
 function read(rel) { return fs.readFileSync(path.join(repoRoot, rel), "utf8"); }
 function exists(rel) { return fs.existsSync(path.join(repoRoot, rel)); }
 function includesAny(text, needles) { return includesAnyText(text, needles); }
@@ -47,6 +48,7 @@ async function main() {
   const requiredFiles = [
     "backend/scripts/m65_pilot_launch_gate_check.js",
     "backend/src/ops/pilotLaunchGateManifest.js",
+    "backend/src/ops/pilotLaunchGateState.js",
     "backend/src/routes/pilotLaunchGate.js",
     "web/src/panels/superadmin/PilotLaunchGatePanel.jsx",
     "docs/RUNBOOK_M65_PILOT_LAUNCH_GATE.md",
@@ -87,10 +89,15 @@ async function main() {
       must("tools checklist contract markers synced", checklistsCompatible(checklist, toolsChecklist));
     must("registry includes M65/M66 history or current living route", includesAny(registry, ["M65 - Pilot Launch Gate - green-base", "M65 - Pilot Launch Gate - green", "M66 - Operasyonel Reassignment - functional-open", "M66 - Operasyonel Reassignment - fonksiyonel / tekrar test acik", "M75 - green-baseline", "M75 - living baseline", "M76A-1 - minimum-normalization - active", "M76A-1 - minimum normalization", "M77 - KVKK + Uyum Katmanı", "M82", "M82.8", "M82.9", "M83", "M84", "M85", "M86", "M87", "M88", "M89"]));
 
-  must("route exposes launch gate endpoints", includesAny(route, ["/manifest", "/decision-template", "/summary", "/risk-template"]));
+  must("route exposes launch gate endpoints", includesAny(route, ["/manifest", "/decision", "/risks", "/summary"]));
+  mustNot("route drops template endpoints", includesAny(route, ["/decision-template", "/risk-template"]));
   must("manifest defines launch gate capabilities", includesAny(manifest, ["PILOT_LAUNCH_GATE_CAPABILITIES", "GO / LIMITED GO / NO-GO", "riskMatrix"]));
-  must("panel shows M65 cards", includesAny(panel, ["M65 Pilot Launch Gate", "Launch checklist", "GO / LIMITED GO / NO-GO"]));
-  must("runbook explains M65 scope", includesAny(runbook, ["Pilot Launch Gate", "kritik risk listesi", "M65 green olmadan sahaya çıkılmaz"]));
+  must("panel shows M65 cards", includesAny(panel, ["M65 Pilot Launch Gate", "Launch checklist", "GO / LIMITED GO / NO-GO", "Karar kaydı", "Risk kaydı"]));
+  mustNot("panel drops template endpoints", includesAny(panel, ["/api/pilot-launch-gate/decision-template", "/api/pilot-launch-gate/risk-template"]));
+  must("panel uses real field acceptance session api", includesAny(panel, ["/api/field-acceptance/session"]));
+  must("panel keeps acceptance summary", includesAny(panel, ["Acceptance özetleri", "Kabul checklisti"]));
+  mustNot("panel drops field acceptance session-template api", includesAny(panel, ["/api/field-acceptance/session-template"]));
+  must("runbook explains M65 scope", includesAny(runbook, ["Pilot Launch Gate", "kritik risk listesi", "M65 green olmadan sahaya çıkılmaz", "karar kaydı", "risk kaydı"]));
 
   console.log("");
   console.log("OK M65 PILOT LAUNCH GATE CHECK PASS");

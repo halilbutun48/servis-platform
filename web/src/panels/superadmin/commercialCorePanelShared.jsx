@@ -1,8 +1,8 @@
 ﻿/* eslint-disable react-refresh/only-export-components */
 export function Card({ title, children }) {
   return (
-    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, flex: "1 1 280px" }}>
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>{title}</div>
+    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, flex: "1 1 280px" }}>
+      <div className="panelSectionTitle" style={{ marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
@@ -24,9 +24,9 @@ export function fmtDateTime(value) {
 export function InputRow({ label, children, help }) {
   return (
     <label style={{ display: "grid", gap: 6 }}>
-      <div style={{ fontWeight: 600 }}>{label}</div>
+      <div className="panelMeta">{label}</div>
       {children}
-      {help ? <div className="muted">{help}</div> : null}
+      {help ? <div className="panelMeta">{help}</div> : null}
     </label>
   );
 }

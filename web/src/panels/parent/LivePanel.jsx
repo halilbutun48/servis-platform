@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
+import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import { navigate } from "../../router";
 
 function etaText(v) {
@@ -315,6 +316,8 @@ export default function ParentLivePanel() {
         <div className="title">Veli • Canlı Takip</div>
         <div className="muted">KVKK kuralı: Canlı konum sadece <b>vardiya saat aralığında</b> gösterilir. Çocuğun durağı, tüm shift durakları ve size göre en yakın durak birlikte gösterilir.</div>
       </div>
+
+      <PanelFeedbackEntryCard roleId="PARENT" panelLabel="Veli Canlı Takip" relatedPath="/parent/live" />
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

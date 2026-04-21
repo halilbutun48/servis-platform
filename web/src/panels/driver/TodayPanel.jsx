@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
+import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import { displayStatusLabel } from "../../utils/displayStatus";
 function fmt(dt) {
   try {
@@ -215,6 +216,8 @@ useEffect(() => {
 ) : null}
       </div>
 
+      <PanelFeedbackEntryCard roleId="DRIVER" panelLabel="Driver Today" relatedPath="/driver/today" />
+
       {err ? <div className="card err">{err}</div> : null}
 
       <div className="card">
@@ -284,5 +287,4 @@ useEffect(() => {
     </div>
   );
 }
-
 

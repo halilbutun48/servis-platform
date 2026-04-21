@@ -85,8 +85,8 @@ export default function RegionsPanel() {
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
         <div>
-          <h2 style={{ margin: 0, marginBottom: 6 }}>İller (Region)</h2>
-          <div style={{ opacity: 0.75 }}>SUPER_ADMIN illeri tanımlar. Company/Room listelerinde filtre ve atama için kullanılır.</div>
+          <div className="panelTitle" style={{ marginBottom: 6 }}>İller (Region)</div>
+          <div className="panelMeta">SUPER_ADMIN illeri tanımlar. Company/Room listelerinde filtre ve atama için kullanılır.</div>
         </div>
         <div className="saActions">
           <span className="pill" data-status="COUNT">

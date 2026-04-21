@@ -14,7 +14,7 @@ export default function CompanyAgreementsOverviewSection({
   return (
     <>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>Sözleşmeler (Company)</h2>
+        <div className="panelTitle">Sözleşmeler (Company)</div>
         <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <label className="muted">
             Durum

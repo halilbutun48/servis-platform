@@ -25,6 +25,7 @@
     "m10check": "node scripts/m10check.js",
     "m11check": "node scripts/m11check.js",
     "m12check": "node scripts/m12check.js",
+    "m60check": "node scripts/m60_field_acceptance_center_check.js",
     "m66check": "node scripts/m66check.js",
     "m82_1check": "node scripts/m82_1_correctness_guard_check.js",
     "m82_1accept": "node scripts/m82_1_acceptance_contract_check.js",
@@ -51,7 +52,8 @@
     "m91:smoke:route-preview": "node scripts/m91_route_preview_fallback_smoke.js",
     "m91:smoke": "npm run m91:smoke:agreement && npm run m91:smoke:route-preview",
     "m91:milestones": "node scripts/run_m0_latest.js --static-only --from M91 --to M91 --continue",
-    "m92check": "node scripts/m92_repo_verification_spine_check.js"
+    "m92check": "node scripts/m92_repo_verification_spine_check.js",
+    "spec16check": "node scripts/project_spec_v1_future_strengthening_coverage_check.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

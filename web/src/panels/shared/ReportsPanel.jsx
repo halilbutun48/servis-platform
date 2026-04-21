@@ -5,6 +5,7 @@ import { cachedGet } from "../../utils/uiDataCache";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
+import PanelChrome from "../../components/PanelChrome";
 
 const TABS = [
   ["shifts", "Vardiyalar"],
@@ -184,6 +185,7 @@ export default function ReportsPanel() {
   const tableMinWidth = wideDataTab
     ? Math.max(headers.length * 160, 1900)
     : Math.max(headers.length * 180, 1100);
+  const tableWrapClassName = wideDataTab ? "reportsTableWrap reportsTableWrap--shifts" : "reportsTableWrap";
 
   function setColumnFilterValue(key, value) {
     setColumnFiltersByTab((prev) => ({
@@ -237,49 +239,54 @@ export default function ReportsPanel() {
   }, [base, headers, selectedRow, tab]);
 
   return (
-    <div>
-      <div className="card">
-        <h3>Raporlar</h3>
-        <div className="muted">Operasyon özeti ve CSV dışa aktarma</div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8, alignItems: "end" }}>
-          {TABS.map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              className={tab === k ? "btn primary" : "btn"}
-              onClick={() => {
-                setTab(k);
-                setSelectedRowKey("");
-              }}
-            >
-              {label}
-            </button>
-          ))}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+      <PanelChrome
+        title="Raporlar"
+        subtitle="Operasyon özeti ve CSV dışa aktarma"
+      >
+        <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+            {TABS.map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                className={tab === k ? "btn primary" : "btn"}
+                onClick={() => {
+                  setTab(k);
+                  setSelectedRowKey("");
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", alignItems: "end", minWidth: 0 }}>
             <div>
-              <label className="muted">Genel filtre</label>
-              <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Satır içinde ara" />
+              <label className="panelMeta">Genel filtre</label>
+              <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Satır içinde ara" style={{ width: "100%" }} />
             </div>
             <div>
-              <label className="muted">Başlangıç</label>
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <label className="panelMeta">Başlangıç</label>
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ width: "100%" }} />
             </div>
             <div>
-              <label className="muted">Bitiş</label>
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              <label className="panelMeta">Bitiş</label>
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: "100%" }} />
             </div>
-            <button className="btn" onClick={() => { setSelectedRowKey(""); load(tab); }} disabled={loading}>Yenile</button>
-            {(tab === "shifts" || tab === "drivers") ? (
-              <a className="btn" href={`/api/reports/${tab}/export.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`} target="_blank" rel="noreferrer">
-                CSV indir
-              </a>
-            ) : null}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
+              <button className="btn" onClick={() => { setSelectedRowKey(""); load(tab); }} disabled={loading}>Yenile</button>
+              {(tab === "shifts" || tab === "drivers") ? (
+                <a className="btn" href={`/api/reports/${tab}/export.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`} target="_blank" rel="noreferrer">
+                  CSV indir
+                </a>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
-      {err ? <div className="card err">{err}</div> : null}
-      <div className="card">
-        <div className="muted">Rol: {me?.role} • Ekran: {base}/reports</div>
+      </PanelChrome>
+      {err ? <div className="card err" style={{ minWidth: 0 }}>{err}</div> : null}
+      <div className="card" style={{ minWidth: 0 }}>
+        <div className="panelMeta">Rol: {me?.role} • Ekran: {base}/reports</div>
         <ListSelectionBanner
           selectedLabel={selectedRow ? `${TABS.find(([k]) => k === tab)?.[1] || "Rapor"} satırı` : ""}
           selectedSummary={selectedRow ? buildSelectedSummary(headers, selectedRow) : ""}
@@ -290,10 +297,10 @@ export default function ReportsPanel() {
           helper={hasColumnFilter ? "Genel filtreye ek olarak sütun filtreleri de aktif." : "Copilot seçili rapor satırını kullanır."}
         />
       </div>
-      <div className="card" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div className="card reportsCard" style={{ minWidth: 0 }}>
         {loading ? <div>Yükleniyor...</div> : filteredRows.length ? (
-          <div style={{ display: "block", width: "100%", overflowX: "auto", overflowY: "hidden", paddingBottom: 6 }}>
-            <table className="tbl" style={{ minWidth: `${tableMinWidth}px`, width: wideDataTab ? "max-content" : "100%" }}>
+          <div className={tableWrapClassName} style={{ minWidth: 0 }}>
+            <table className="tbl reportsTable" style={{ minWidth: `${tableMinWidth}px`, width: wideDataTab ? "max-content" : "100%" }}>
               <thead>
                 <tr>
                   {headers.map(({ key, label }) => (

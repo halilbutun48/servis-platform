@@ -6,8 +6,8 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 
 function Card({ title, children }) {
   return (
-    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, flex: "1 1 220px" }}>
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>{title}</div>
+    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, flex: "1 1 220px" }}>
+      <div className="panelSectionTitle" style={{ marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
@@ -104,6 +104,14 @@ export default function OperationVerificationPanel() {
   const proofMap = useMemo(() => Object.fromEntries((proofOptions || []).map((item) => [item.id, item.label])), [proofOptions]);
   const statusMap = useMemo(() => Object.fromEntries((statusOptions || []).map((item) => [item.id, item.label])), [statusOptions]);
   const copilotCheck = useMemo(() => (surface?.checks || [])[0] || null, [surface]);
+  const coreRoles = useMemo(() => {
+    const roles = Array.isArray(manifest?.roles) ? manifest.roles : [];
+    return roles.filter((item) => ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER"].includes(item.id));
+  }, [manifest]);
+  const extendedRoles = useMemo(() => {
+    const roles = Array.isArray(manifest?.roles) ? manifest.roles : [];
+    return roles.filter((item) => ["PERSONEL", "PARENT"].includes(item.id));
+  }, [manifest]);
 
   useEffect(() => {
     if (!surface && !manifest) {
@@ -118,6 +126,8 @@ export default function OperationVerificationPanel() {
       blockers: Number(surface?.checks?.length || 0) > Number(surface?.savedCount || 0) ? ['Tüm kontroller kayıt altına alınmadan rol yüzeyi tamam sayılmaz.'] : [],
       counters: {
         roles: Number(manifest?.totals?.roleCount || 0),
+        coreRoles: coreRoles.length,
+        extendedRoles: extendedRoles.length,
         checks: Number(surface?.checks?.length || 0),
         saved: Number(surface?.savedCount || 0),
         defaults: String(surface?.defaultStatus || '-'),
@@ -155,7 +165,7 @@ export default function OperationVerificationPanel() {
       facts,
     });
     return () => clearCopilotSelection('/superadmin/operation-verification');
-  }, [manifest, surface, selectedRole, statusMap, proofMap, copilotCheck]);
+  }, [manifest, surface, selectedRole, statusMap, proofMap, copilotCheck, coreRoles.length, extendedRoles.length]);
 
 
   function setDraft(checkId, patch) {
@@ -199,12 +209,12 @@ export default function OperationVerificationPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Operasyon Doğrulama</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelTitle">Operasyon Doğrulama</div>
+          <div className="panelSubtitle" style={{ marginTop: 6 }}>
             M78.1 Operasyon Doğrulama Yüzeyi. Rol bazlı operasyon kontrolünü, kanıt türlerini ve kısa not kaydını tek ekranda toplar. STABLE_TO yine 78.
           </div>
         </div>
-        <div className="muted" style={{ alignSelf: "center" }}>
+        <div className="panelMeta" style={{ alignSelf: "center" }}>
           {manifest?.totals?.roleCount || 0} rol • {surface?.savedCount || 0} kayıtlı kontrol
         </div>
       </div>
@@ -214,10 +224,11 @@ export default function OperationVerificationPanel() {
 
       <PanelKvkkHint panelKey="operationVerification" effectiveRole={selectedRole} />
 
-      <div className="muted" style={{ marginTop: 12 }}>
+      <div className="panelMeta" style={{ marginTop: 12 }}>
         Bu ekranda kanıt türleri, kısa not ve referans metni kaydedilir. Yazma işlemi için step-up gerekebilir.
       </div>
 
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
       <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {(manifest?.roles || []).map((role) => (
           <button key={role.id} type="button" style={pillStyle(selectedRole === role.id)} onClick={() => setSelectedRole(role.id)}>
@@ -228,12 +239,12 @@ export default function OperationVerificationPanel() {
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Seçili rol">
-          <div style={{ fontWeight: 700 }}>{surface?.role?.label || "-"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{surface?.goal || "-"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>Yüzey: {surface?.role?.surface || "-"}</div>
+          <div className="panelStatValue">{surface?.role?.label || "-"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>{surface?.goal || "-"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Yüzey: {surface?.role?.surface || "-"}</div>
         </Card>
         <Card title="Durum özeti">
-          <div className="muted">Varsayılan karar: {statusMap[surface?.defaultStatus] || surface?.defaultStatus || "-"}</div>
+          <div className="panelMeta">Varsayılan karar: {statusMap[surface?.defaultStatus] || surface?.defaultStatus || "-"}</div>
           <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
             {(statusOptions || []).map((item) => (
               <div key={item.id}>{item.label}: {surface?.statusCounts?.[item.id] || 0}</div>
@@ -243,12 +254,28 @@ export default function OperationVerificationPanel() {
         <Card title="Kanıt türleri">
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {(surface?.recommendedProofs || []).map((id) => (
-              <span key={id} style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)" }}>
+              <span key={id} className="pill">
                 {proofMap[id] || id}
               </span>
             ))}
           </div>
-          <div className="muted" style={{ marginTop: 8 }}>Kayıtlı kontrol: {surface?.savedCount || 0}</div>
+          <div className="panelMeta" style={{ marginTop: 8 }}>Kayıtlı kontrol: {surface?.savedCount || 0}</div>
+        </Card>
+      </div>
+
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Card title="Genişleyen saha yüzeyleri">
+          <div className="panelBody">{extendedRoles.length ? extendedRoles.map((item) => item.label).join(" • ") : "Ek yüzey yok"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            {extendedRoles.map((item) => item.summary).join(" • ") || "Personel ve veli doğrulama hattı genişledikçe burada detaylanır."}
+          </div>
+        </Card>
+        <Card title="Çekirdek doğrulama">
+          <div className="panelBody">{coreRoles.length ? coreRoles.map((item) => item.label).join(" • ") : "Çekirdek rol yok"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Operasyon doğrulama ana akışı bu rollerle sürer.
+          </div>
         </Card>
       </div>
 
@@ -270,9 +297,9 @@ export default function OperationVerificationPanel() {
               return (
                 <tr key={item.id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                   <td style={{ padding: "10px 8px", minWidth: 240 }}>
-                    <div style={{ fontWeight: 600 }}>{item.title}</div>
-                    <div className="muted" style={{ marginTop: 6 }}>{item.nextStep || "-"}</div>
-                    <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                    <div className="panelSectionTitle">{item.title}</div>
+                    <div className="panelMeta" style={{ marginTop: 6 }}>{item.nextStep || "-"}</div>
+                    <div className="panelMeta" style={{ marginTop: 6 }}>
                       Kaynak: {item.statusOrigin === "MANUAL" ? "manuel kayıt" : "varsayılan"}
                       {item.updatedAt ? ` • ${new Date(item.updatedAt).toLocaleString("tr-TR")}` : ""}
                     </div>

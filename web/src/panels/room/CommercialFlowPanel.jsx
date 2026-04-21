@@ -28,10 +28,10 @@ function MetricCard({ title, value, note, accent = "default" }) {
   };
   const palette = accentMap[accent] || accentMap.default;
   return (
-    <div style={{ padding: 14, border: palette.border, borderRadius: 14, flex: "1 1 180px" }}>
-      <div className="muted" style={{ marginBottom: 8, color: palette.title, fontWeight: 700 }}>{title}</div>
-      <div style={{ fontSize: 30, fontWeight: 900, color: palette.value, letterSpacing: "-0.02em" }}>{value}</div>
-      {note ? <div className="muted" style={{ marginTop: 8 }}>{note}</div> : null}
+    <div style={{ padding: 14, border: palette.border, borderRadius: 8, flex: "1 1 180px" }}>
+      <div className="panelSectionTitle" style={{ marginBottom: 8, color: palette.title }}>{title}</div>
+      <div className="panelStatValue" style={{ color: palette.value }}>{value}</div>
+      {note ? <div className="panelMeta" style={{ marginTop: 8 }}>{note}</div> : null}
     </div>
   );
 }
@@ -160,10 +160,10 @@ export default function CommercialFlowPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Ticari Akisim</h2>
-          <div className="muted" style={{ marginTop: 6 }}>Room icin teklif/pazarlik gorunurlugu. Pazarlik markette biter; kabul edilen is bekleyen talep ve sonra vardiyaya iner</div>
+          <div className="panelTitle">Ticari Akışım</div>
+          <div className="panelSubtitle" style={{ marginTop: 6 }}>Room için teklif/pazarlık görünürlüğü. Pazarlık markette biter; kabul edilen iş bekleyen talep ve sonra vardiyaya iner.</div>
         </div>
-        <div className="muted">Kapsam: Kendi ticari alaniniz</div>
+        <div className="panelMeta">Kapsam: Kendi ticari alanınız</div>
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
@@ -172,12 +172,12 @@ export default function CommercialFlowPanel() {
         {cards.map((card) => <MetricCard key={card.title} {...card} />)}
       </div>
 
-      <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
+      <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-          <div style={{ fontWeight: 700 }}>Ticari Akış Listesi</div>
+          <div className="panelSectionTitle">Ticari Akış Listesi</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "end" }}>
             <div>
-              <div className="muted">Filtre</div>
+              <div className="panelMeta">Filtre</div>
               <input value={filterQ} onChange={(e) => setFilterQ(e.target.value)} placeholder="Karşı taraf / durum / not" />
             </div>
             <button type="button" onClick={() => navigate("/room/offers")}>Teklifleri ac</button>
@@ -263,7 +263,7 @@ export default function CommercialFlowPanel() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} className="muted" style={{ padding: "8px 0" }}>
+                  <td colSpan={7} className="panelMeta" style={{ padding: "8px 0" }}>
                     {items.length ? 'Filtreye uyan ticari kayıt yok.' : 'Henüz oda kapsamına düşen ticari kayıt yok. Kural: pazarlık Market/Teklifler ekranında, operasyon hazırlığı Bekleyen Taleplerde ilerler.'}
                   </td>
                 </tr>
@@ -275,4 +275,3 @@ export default function CommercialFlowPanel() {
     </div>
   );
 }
-

@@ -9,12 +9,12 @@ function Card({ title, children, wide = false }) {
       style={{
         padding: 14,
         border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 14,
+        borderRadius: 8,
         flex: wide ? "1 1 420px" : "1 1 280px",
         minWidth: 0,
       }}
     >
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>{title}</div>
+      <div className="panelSectionTitle" style={{ marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
@@ -47,6 +47,7 @@ function liveStatusText(summary) {
 }
 
 export default function ObservabilityPanel() {
+  const [manifest, setManifest] = useState(null);
   const [summary, setSummary] = useState(null);
   const [eventTypes, setEventTypes] = useState([]);
   const [recentEvents, setRecentEvents] = useState([]);
@@ -55,11 +56,13 @@ export default function ObservabilityPanel() {
   const load = async () => {
     setErr("");
     try {
-      const [s, types, recent] = await Promise.all([
+      const [m, s, types, recent] = await Promise.all([
+        api("/api/observability/manifest"),
         api("/api/observability/health-summary"),
         api("/api/observability/event-types"),
         api("/api/observability/recent-events").catch(() => ({ items: [] })),
       ]);
+      setManifest(m || null);
       setSummary(s || null);
       setEventTypes(Array.isArray(types?.items) ? types.items : []);
       setRecentEvents(Array.isArray(recent?.items) ? recent.items : []);
@@ -72,12 +75,14 @@ export default function ObservabilityPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const [s, types, recent] = await Promise.all([
+        const [m, s, types, recent] = await Promise.all([
+          api("/api/observability/manifest"),
           api("/api/observability/health-summary"),
           api("/api/observability/event-types"),
           api("/api/observability/recent-events").catch(() => ({ items: [] })),
         ]);
         if (cancelled) return;
+        setManifest(m || null);
         setSummary(s || null);
         setEventTypes(Array.isArray(types?.items) ? types.items : []);
         setRecentEvents(Array.isArray(recent?.items) ? recent.items : []);
@@ -91,10 +96,14 @@ export default function ObservabilityPanel() {
     };
   }, []);
 
+  const widgets = Array.isArray(manifest?.widgets) ? manifest.widgets : [];
+  const activeWidgets = widgets.filter((item) => ["mobileHealth", "deviceHealth", "gpsReliability"].includes(item.key));
+  const roadmapWidgets = widgets.filter((item) => ["issueInbox", "shiftTimeline"].includes(item.key));
+
   useEffect(() => {
     const firstEvent = recentEvents[0] || null;
     const score = typeof summary?.gpsReliability?.score === 'number' ? Number(summary.gpsReliability.score) : null;
-    if (!summary && !recentEvents.length && !eventTypes.length) {
+    if (!manifest && !summary && !recentEvents.length && !eventTypes.length) {
       clearCopilotSelection('/superadmin/observability');
       return;
     }
@@ -108,6 +117,7 @@ export default function ObservabilityPanel() {
         ...((score != null && score < 60) ? ['GPS güven skoru düşük görünüyor.'] : []),
       ],
       counters: { eventTypes: eventTypes.length, recentEvents: recentEvents.length, gpsScore: score != null ? score : '-' },
+      roadmapCounters: { activeWidgets: activeWidgets.length, roadmapWidgets: roadmapWidgets.length },
       evidence: [
         `Canlı durum: ${liveStatusText(summary)}`,
         `GPS skor: ${gpsScoreText(summary)}`,
@@ -140,7 +150,7 @@ export default function ObservabilityPanel() {
       facts,
     });
     return () => clearCopilotSelection('/superadmin/observability');
-  }, [summary, eventTypes, recentEvents]);
+  }, [manifest, summary, eventTypes, recentEvents, activeWidgets.length, roadmapWidgets.length]);
 
   const gpsNotes = useMemo(() => {
     const raw = Array.isArray(summary?.gpsReliability?.notes) ? summary.gpsReliability.notes : [];
@@ -151,8 +161,8 @@ export default function ObservabilityPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Canlı Sağlık ve Risk Özeti</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelTitle">Canlı Sağlık ve Risk Özeti</div>
+          <div className="panelSubtitle" style={{ marginTop: 6 }}>
             Sahadaki cihaz, yayın ve canlılık durumunu tek ekranda özetler.
           </div>
         </div>
@@ -163,15 +173,16 @@ export default function ObservabilityPanel() {
 
       <PanelKvkkHint panelKey="observability" />
 
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Canlı durum">
-          <div style={{ fontSize: 28, fontWeight: 800 }}>{liveStatusText(summary)}</div>
-          <div className="muted" style={{ marginTop: 6 }}>Kaynak: sürücünün telefon GPS'i</div>
+          <div className="panelStatValue">{liveStatusText(summary)}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Kaynak: sürücünün telefon GPS'i</div>
         </Card>
         <Card title="GPS güven skoru">
-          <div style={{ fontSize: 28, fontWeight: 800 }}>{gpsScoreText(summary)}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{summary?.gpsReliability?.label || "GPS güven özeti"}</div>
-          <ul className="muted" style={{ marginTop: 8, paddingLeft: 18 }}>
+          <div className="panelStatValue">{gpsScoreText(summary)}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>{summary?.gpsReliability?.label || "GPS güven özeti"}</div>
+          <ul className="panelMeta" style={{ marginTop: 8, paddingLeft: 18 }}>
             {gpsNotes.map((note, idx) => (
               <li key={idx}>{note}</li>
             ))}
@@ -187,16 +198,16 @@ export default function ObservabilityPanel() {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Son canlı olaylar" wide>
           {!recentEvents.length ? (
-            <div className="muted">Henüz canlı olay yok.</div>
+            <div className="panelMeta">Henüz canlı olay yok.</div>
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
               {recentEvents.map((item) => (
                 <div key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 6 }}>
                   <div>
-                    <div style={{ fontWeight: 700 }}>{item.label || item.type}</div>
-                    <div className="muted">Önem: {item.severity || "INFO"}</div>
+                    <div className="panelSectionTitle">{item.label || item.type}</div>
+                    <div className="panelMeta">Önem: {item.severity || "INFO"}</div>
                   </div>
-                  <div className="muted" style={{ whiteSpace: "nowrap" }}>{fmtTR(item.createdAt)}</div>
+                  <div className="panelMeta" style={{ whiteSpace: "nowrap" }}>{fmtTR(item.createdAt)}</div>
                 </div>
               ))}
             </div>
@@ -204,14 +215,30 @@ export default function ObservabilityPanel() {
         </Card>
         <Card title="İzlenen olay türleri">
           {!eventTypes.length ? (
-            <div className="muted">Henüz olay türü tanımı yok.</div>
+            <div className="panelMeta">Henüz olay türü tanımı yok.</div>
           ) : (
-            <ul style={{ margin: 0, paddingLeft: 18 }} className="muted">
+            <ul style={{ margin: 0, paddingLeft: 18 }} className="panelMeta">
               {eventTypes.slice(0, 10).map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
           )}
+        </Card>
+      </div>
+
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Card title="Planlı yüzeyler">
+          <div className="panelBody">{roadmapWidgets.length ? roadmapWidgets.map((item) => item.label).join(" • ") : "Planlı yüzey yok"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Aktif yüzey: {activeWidgets.length} • Gelecek faz: {roadmapWidgets.length}
+          </div>
+        </Card>
+        <Card title="Kapsam notu">
+          <div className="panelBody">{manifest?.title || "Gözlemleme + saha teşhis"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            {manifest?.scope?.room ? "Oda ve Süper Yönetici için canlı yüzey" : "Kapsam bilgisi bekleniyor."}
+          </div>
         </Card>
       </div>
     </div>

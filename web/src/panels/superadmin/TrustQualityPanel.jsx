@@ -4,14 +4,15 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 
 function Card({ title, children }) {
   return (
-    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, flex: "1 1 280px" }}>
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>{title}</div>
+    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, flex: "1 1 280px" }}>
+      <div className="panelSectionTitle" style={{ marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   );
 }
 
 export default function TrustQualityPanel() {
+  const [manifest, setManifest] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
   const [providerSignal, setProviderSignal] = useState(null);
   const [err, setErr] = useState("");
@@ -67,11 +68,13 @@ export default function TrustQualityPanel() {
     let cancelled = false;
     (async () => {
       try {
-        const [e, p] = await Promise.all([
+        const [m, e, p] = await Promise.all([
+          api("/api/trust-quality/manifest"),
           api("/api/trust-quality/evaluation-template"),
           api("/api/trust-quality/provider-signal-template"),
         ]);
         if (cancelled) return;
+        setManifest(m || null);
         setEvaluation(e || null);
         setProviderSignal(p || null);
       } catch (e2) {
@@ -82,33 +85,55 @@ export default function TrustQualityPanel() {
     return () => { cancelled = true; };
   }, []);
 
+  const dimensions = Array.isArray(manifest?.dimensions) ? manifest.dimensions : [];
+  const activeDimensions = dimensions.filter((item) => String(item?.status || "").toUpperCase() === "ACTIVE");
+  const plannedDimensions = dimensions.filter((item) => String(item?.status || "").toUpperCase() === "PLANNED");
+  const manifestRules = Array.isArray(manifest?.rules) ? manifest.rules : [];
+
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Güven ve Kalite</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
-            Hizmet değerlendirmesi, sağlayıcı kalite sinyali ve karar desteği özetini gösterir.
+          <div className="panelTitle">Güven ve Kalite Özeti</div>
+          <div className="panelSubtitle" style={{ marginTop: 6 }}>
+            Hizmet değerlendirmesi, sağlayıcı kalite sinyalini ve karar desteği özetini birlikte gösterir.
           </div>
         </div>
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Aktif kalite görünümü">
-          <div>Kalite özeti açık</div>
-          <div className="muted" style={{ marginTop: 6 }}>Hizmet alan değerlendirmesi ile sağlayıcı sinyali birlikte izlenir.</div>
+          <div className="panelBody">Kalite özeti açık</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Hizmet alan değerlendirmesi ile sağlayıcı sinyali birlikte izlenir.</div>
         </Card>
         <Card title="Hizmet alan değerlendirmesi">
-          <div>{(evaluation?.fields || []).length} alan</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelStatValue">{(evaluation?.fields || []).length} alan</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             {(evaluation?.fields || []).join(" • ") || "Henüz değerlendirme alanı yok"}
           </div>
         </Card>
         <Card title="Sağlayıcı kalite sinyali">
-          <div>{(providerSignal?.signals || []).join(" • ") || "Henüz sinyal yok"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>{providerSignal?.summary || "Sağlayıcı kalite ve güven görünürlüğü için özet sinyal seti."}</div>
+          <div className="panelBody">{(providerSignal?.signals || []).join(" • ") || "Henüz sinyal yok"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>{providerSignal?.summary || "Sağlayıcı kalite ve güven görünürlüğü için özet sinyal seti."}</div>
+        </Card>
+      </div>
+
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Card title="Planlı kalite boyutları">
+          <div className="panelBody">{plannedDimensions.length ? plannedDimensions.map((item) => item.label).join(" • ") : "Planlı boyut yok"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Aktif: {activeDimensions.length} • Planlı: {plannedDimensions.length}
+          </div>
+        </Card>
+        <Card title="Yol haritası kuralları">
+          <div className="panelBody">{manifest?.activeMilestone || "M63"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            {manifestRules.join(" • ") || "Henüz yol haritası kuralı yok"}
+          </div>
         </Card>
       </div>
     </div>

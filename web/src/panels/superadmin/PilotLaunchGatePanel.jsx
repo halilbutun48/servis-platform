@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import PanelChrome from "../../components/PanelChrome";
 
 function SummaryCard({ title, value, note }) {
   return (
-    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, flex: "1 1 280px" }}>
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>{title}</div>
-      <div style={{ fontSize: 28, fontWeight: 800 }}>{value}</div>
-      <div className="muted" style={{ marginTop: 6 }}>{note}</div>
+    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, flex: "1 1 280px" }}>
+      <div className="panelSectionTitle" style={{ marginBottom: 8 }}>{title}</div>
+      <div className="panelStatValue">{value}</div>
+      <div className="panelMeta" style={{ marginTop: 6 }}>{note}</div>
     </div>
   );
 }
@@ -14,8 +15,8 @@ function SummaryCard({ title, value, note }) {
 function Row({ title, text }) {
   return (
     <div className="card">
-      <div style={{ fontWeight: 700 }}>{title}</div>
-      <div className="muted" style={{ marginTop: 6 }}>{text}</div>
+      <div className="panelSectionTitle">{title}</div>
+      <div className="panelBody" style={{ marginTop: 6 }}>{text}</div>
     </div>
   );
 }
@@ -37,23 +38,53 @@ function PrepList({ title, items, renderDetail }) {
   return (
     <div className="card" style={{ display: "grid", gap: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-        <div style={{ fontWeight: 700 }}>{title}</div>
-        <div className="muted">{safeItems.length} kayıt</div>
+        <div className="panelSectionTitle">{title}</div>
+        <div className="panelMeta">{safeItems.length} kayıt</div>
       </div>
       {safeItems.length ? safeItems.map((item, idx) => (
-        <div key={item?.id || item?.roleId || item?.surfaceId || idx} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, display: "grid", gap: 6 }}>
+        <div key={item?.id || item?.roleId || item?.surfaceId || idx} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, display: "grid", gap: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ fontWeight: 700 }}>{item?.title || item?.label || item?.roleId || `Kayıt ${idx + 1}`}</div>
+            <div className="panelSectionTitle">{item?.title || item?.label || item?.roleId || `Kayıt ${idx + 1}`}</div>
             {item?.status?.code ? <Pill code={item.status.code} /> : null}
           </div>
-          {item?.owner ? <div className="muted">Sorumlu: {item.owner}</div> : null}
-          {item?.surface ? <div className="muted">Yüzey: {item.surface}</div> : null}
-          <div className="muted">{renderDetail ? renderDetail(item) : (item?.detail || item?.success || "-")}</div>
+          {item?.owner ? <div className="panelMeta">Sorumlu: {item.owner}</div> : null}
+          {item?.surface ? <div className="panelMeta">Yüzey: {item.surface}</div> : null}
+          <div className="panelMeta">{renderDetail ? renderDetail(item) : (item?.detail || item?.success || "-")}</div>
         </div>
       )) : <div className="muted">Henüz kayıt yok.</div>}
     </div>
   );
 }
+
+function splitLines(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function joinLines(items) {
+  return Array.isArray(items) ? items.join("\n") : "";
+}
+
+const FEEDBACK_ROLE_OPTIONS = ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"];
+const DECISION_STATUS_OPTIONS = [
+  { id: "GO", label: "GO" },
+  { id: "LIMITED_GO", label: "LIMITED_GO" },
+  { id: "NO_GO", label: "NO_GO" },
+];
+const RISK_SEVERITY_OPTIONS = [
+  { id: "LOW", label: "LOW" },
+  { id: "MEDIUM", label: "MEDIUM" },
+  { id: "HIGH", label: "HIGH" },
+  { id: "CRITICAL", label: "CRITICAL" },
+];
+const RISK_STATUS_OPTIONS = [
+  { id: "OPEN", label: "OPEN" },
+  { id: "TRACKING", label: "TRACKING" },
+  { id: "MITIGATED", label: "MITIGATED" },
+  { id: "CLOSED", label: "CLOSED" },
+];
 
 const DEFAULT_FEEDBACK_FORM = {
   title: "",
@@ -67,15 +98,35 @@ const DEFAULT_FEEDBACK_FORM = {
   relatedPath: "/driver/today",
 };
 
+const DEFAULT_DECISION_FORM = {
+  status: "LIMITED_GO",
+  reason: "Checklist tamamlanmadi",
+  blockingItemsText: "",
+  notesText: "",
+};
+
+const DEFAULT_RISK_FORM = {
+  id: "",
+  title: "",
+  detail: "",
+  severity: "MEDIUM",
+  status: "OPEN",
+  owner: "SUPER_ADMIN",
+};
+
 export default function PilotLaunchGatePanel() {
   const [manifest, setManifest] = useState(null);
   const [decision, setDecision] = useState(null);
   const [risks, setRisks] = useState([]);
+  const [decisionForm, setDecisionForm] = useState(DEFAULT_DECISION_FORM);
+  const [riskForm, setRiskForm] = useState(DEFAULT_RISK_FORM);
   const [acceptanceManifest, setAcceptanceManifest] = useState(null);
   const [acceptanceSession, setAcceptanceSession] = useState(null);
   const [healthSummary, setHealthSummary] = useState(null);
   const [fieldPrep, setFieldPrep] = useState(null);
   const [fieldPrepErr, setFieldPrepErr] = useState("");
+  const [decisionBusy, setDecisionBusy] = useState(false);
+  const [riskBusy, setRiskBusy] = useState(false);
   const [feedbackPacket, setFeedbackPacket] = useState(null);
   const [feedbackErr, setFeedbackErr] = useState("");
   const [feedbackBusy, setFeedbackBusy] = useState(false);
@@ -84,10 +135,10 @@ export default function PilotLaunchGatePanel() {
   const load = async () => {
     const [m, d, r, am, as, hs, fp, fl] = await Promise.all([
       api('/api/pilot-launch-gate/manifest').catch(() => null),
-      api('/api/pilot-launch-gate/decision-template').catch(() => null),
-      api('/api/pilot-launch-gate/risk-template').catch(() => null),
+      api('/api/pilot-launch-gate/decision').catch(() => null),
+      api('/api/pilot-launch-gate/risks').catch(() => null),
       api('/api/field-acceptance/manifest').catch(() => null),
-      api('/api/field-acceptance/session-template').catch(() => null),
+      api('/api/field-acceptance/session').catch(() => null),
       api('/api/observability/health-summary').catch(() => null),
       api('/api/pilot-launch-gate/field-prep-packet').catch((e) => ({ __error: e })),
       api('/api/pilot-launch-gate/field-feedback-loop').catch((e) => ({ __error: e })),
@@ -95,8 +146,15 @@ export default function PilotLaunchGatePanel() {
     setManifest(m?.manifest || null);
     setDecision(d?.decision || null);
     setRisks(Array.isArray(r?.risks) ? r.risks : []);
-    setAcceptanceManifest(am || null);
-    setAcceptanceSession(as || null);
+    setDecisionForm({
+      status: d?.decision?.status || DEFAULT_DECISION_FORM.status,
+      reason: d?.decision?.reason || DEFAULT_DECISION_FORM.reason,
+      blockingItemsText: joinLines(d?.decision?.blockingItems),
+      notesText: joinLines(d?.decision?.notes),
+    });
+    setRiskForm(DEFAULT_RISK_FORM);
+    setAcceptanceManifest(am?.manifest || am || null);
+    setAcceptanceSession(as?.session || as?.currentSession || as || null);
     setHealthSummary(hs || null);
     if (fp?.__error) {
       setFieldPrep(null);
@@ -156,8 +214,86 @@ export default function PilotLaunchGatePanel() {
 
   const decisionText = `${decisionLabel} • ${decision?.reason || "Karar nedeni henüz girilmedi."}`;
 
+  const updateDecisionField = (key, value) => {
+    setDecisionForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateRiskField = (key, value) => {
+    setRiskForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   const updateFeedbackField = (key, value) => {
     setFeedbackForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const saveDecision = async () => {
+    if (decisionBusy) return;
+    setDecisionBusy(true);
+    try {
+      await api('/api/pilot-launch-gate/decision', {
+        method: 'POST',
+        body: {
+          status: decisionForm.status,
+          reason: decisionForm.reason,
+          blockingItems: splitLines(decisionForm.blockingItemsText),
+          notes: splitLines(decisionForm.notesText),
+        },
+      });
+      await load();
+    } finally {
+      setDecisionBusy(false);
+    }
+  };
+
+  const saveRisk = async () => {
+    if (riskBusy || !String(riskForm.title || '').trim()) return;
+    setRiskBusy(true);
+    try {
+      await api('/api/pilot-launch-gate/risks', {
+        method: 'POST',
+        body: {
+          id: riskForm.id || undefined,
+          title: riskForm.title,
+          detail: riskForm.detail,
+          severity: riskForm.severity,
+          status: riskForm.status,
+          owner: riskForm.owner,
+        },
+      });
+      setRiskForm(DEFAULT_RISK_FORM);
+      await load();
+    } finally {
+      setRiskBusy(false);
+    }
+  };
+
+  const editRisk = (item) => {
+    setRiskForm({
+      id: item?.id || "",
+      title: item?.title || "",
+      detail: item?.detail || "",
+      severity: item?.severity || DEFAULT_RISK_FORM.severity,
+      status: item?.status || DEFAULT_RISK_FORM.status,
+      owner: item?.owner || DEFAULT_RISK_FORM.owner,
+    });
+  };
+
+  const clearRiskForm = () => {
+    setRiskForm(DEFAULT_RISK_FORM);
+  };
+
+  const removeRisk = async (recordId) => {
+    if (riskBusy || !recordId) return;
+    setRiskBusy(true);
+    try {
+      await api(`/api/pilot-launch-gate/risks/${recordId}`, { method: 'DELETE' });
+      if (riskForm.id === recordId) {
+        setRiskForm(DEFAULT_RISK_FORM);
+      }
+      await load();
+    } finally {
+      setRiskBusy(false);
+    }
   };
 
   const submitFeedback = async () => {
@@ -194,20 +330,96 @@ export default function PilotLaunchGatePanel() {
   };
 
   return (
-    <div className="card">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ marginTop: 0, marginBottom: 0 }}>Sahaya Çıkış Kontrolü</h2>
-          <div className="muted" style={{ marginTop: 6 }}>Sahaya çıkıştan önce son kararı, bloklayan riskleri, saha hazırlık paketini ve saha geri bildirim döngüsünü tek yerde toplar.</div>
-        </div>
-        <button className="btn" onClick={load} disabled={feedbackBusy}>Yenile</button>
-      </div>
+    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+      <PanelChrome
+        title="Sahaya Çıkış Kontrolü"
+        subtitle="Sahaya çıkıştan önce son kararı, bloklayan riskleri, saha hazırlık paketini ve saha geri bildirim döngüsünü tek yerde toplar."
+        actions={(
+          <button className="btn" onClick={load} disabled={decisionBusy || riskBusy || feedbackBusy}>Yenile</button>
+        )}
+      />
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <SummaryCard title="Son karar" value={decisionLabel} note={decision?.reason || "Checklist tamamlanmadı"} />
         <SummaryCard title="Risk sayısı" value={String(riskCount)} note={riskCount ? "Açık riskler izlenmeli" : "Kritik risk görünmüyor"} />
         <SummaryCard title="Saha hazırlık" value={prepStage} note={fieldPrepErr || `${prepSummary.blockerCount || 0} blok • ${prepSummary.warningCount || 0} uyarı`} />
         <SummaryCard title="M84 saha döngüsü" value={feedbackStage} note={feedbackErr || `${feedbackSummary.openCount || 0} açık • ${feedbackSummary.repeatedCount || 0} tekrar`} />
+      </div>
+
+      <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+        <div className="card" style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div>
+              <div className="panelSectionTitle">Karar kaydı</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>GO / LIMITED_GO / NO_GO kararını sahici state'e yazar.</div>
+            </div>
+            <Pill code={decisionForm.status} />
+          </div>
+          <select className="input" value={decisionForm.status} onChange={(e) => updateDecisionField("status", e.target.value)}>
+            {DECISION_STATUS_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+          </select>
+          <input className="input" placeholder="Karar nedeni" value={decisionForm.reason} onChange={(e) => updateDecisionField("reason", e.target.value)} />
+          <textarea className="input" rows={3} placeholder="Bloklayan maddeler (satır satır)" value={decisionForm.blockingItemsText} onChange={(e) => updateDecisionField("blockingItemsText", e.target.value)} />
+          <textarea className="input" rows={3} placeholder="Notlar (satır satır)" value={decisionForm.notesText} onChange={(e) => updateDecisionField("notesText", e.target.value)} />
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="panelMeta">Son güncelleme: {decision?.updatedAt || "-"}</div>
+            <button className="btn" onClick={saveDecision} disabled={decisionBusy}>{decisionBusy ? "Kaydediliyor..." : "Kararı kaydet"}</button>
+          </div>
+        </div>
+
+        <div className="card" style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div>
+              <div className="panelSectionTitle">Risk kaydı</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Gerçek riskleri listeler, düzenler ve kaldırır.</div>
+            </div>
+            <SeverityPill value={riskForm.severity} />
+          </div>
+          <input className="input" placeholder="Risk başlığı" value={riskForm.title} onChange={(e) => updateRiskField("title", e.target.value)} />
+          <textarea className="input" rows={3} placeholder="Risk detayı" value={riskForm.detail} onChange={(e) => updateRiskField("detail", e.target.value)} />
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+            <select className="input" value={riskForm.severity} onChange={(e) => updateRiskField("severity", e.target.value)}>
+              {RISK_SEVERITY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+            <select className="input" value={riskForm.status} onChange={(e) => updateRiskField("status", e.target.value)}>
+              {RISK_STATUS_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+            <select className="input" value={riskForm.owner} onChange={(e) => updateRiskField("owner", e.target.value)}>
+              {FEEDBACK_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="panelMeta">{riskForm.id ? `Düzenlenen risk: ${riskForm.id}` : "Yeni risk kaydı oluşturuluyor."}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn" onClick={saveRisk} disabled={riskBusy || !String(riskForm.title || "").trim()}>{riskBusy ? "Kaydediliyor..." : "Riski kaydet"}</button>
+              <button className="btn" onClick={clearRiskForm} disabled={riskBusy}>{riskForm.id ? "Düzenlemeyi bırak" : "Temizle"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        <div className="card" style={{ marginTop: 12, display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="panelSectionTitle">Kayıtlı riskler</div>
+          <div className="panelMeta">{riskCount} kayıt</div>
+        </div>
+        {riskCount ? risks.map((item) => (
+          <div key={item.id} style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, display: "grid", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div className="panelSectionTitle">{item.title}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <SeverityPill value={item.severity} />
+                <Pill code={item.status} />
+              </div>
+            </div>
+            <div className="panelBody">{item.detail || "Detay girilmemiş."}</div>
+            <div className="panelMeta">Sorumlu: {item.owner} • Son güncelleme: {item.updatedAt || "-"}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn sm" onClick={() => editRisk(item)} disabled={riskBusy}>Düzenle</button>
+              <button className="btn sm" onClick={() => removeRisk(item.id)} disabled={riskBusy}>Sil</button>
+            </div>
+          </div>
+        )) : <div className="muted">Henüz risk kaydı yok.</div>}
       </div>
 
       <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
@@ -260,8 +472,8 @@ export default function PilotLaunchGatePanel() {
       <div className="card" style={{ marginTop: 18, display: "grid", gap: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 18 }}>Saha gözlem / geri bildirim döngüsü</div>
-            <div className="muted" style={{ marginTop: 6 }}>Durum akışı: görüldü → tekrarlandı → çözüldü → kapandı.</div>
+            <div className="panelSectionTitle">Saha gözlem / geri bildirim döngüsü</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Durum akışı: görüldü → tekrarlandı → çözüldü → kapandı.</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <Pill code={feedbackStage} />
@@ -270,22 +482,22 @@ export default function PilotLaunchGatePanel() {
 
         {feedbackErr ? <div style={{ color: '#ffb17b', whiteSpace: 'pre-wrap' }}>{feedbackErr}</div> : null}
 
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <SummaryCard title="Açık kayıt" value={String(feedbackSummary.openCount || 0)} note="Görüldü durumundaki kayıtlar" />
-          <SummaryCard title="Tekrarlandı" value={String(feedbackSummary.repeatedCount || 0)} note="Sahada yeniden üreyen kayıtlar" />
-          <SummaryCard title="Çözüldü" value={String(feedbackSummary.resolvedCount || 0)} note="Henüz kapanmayan ama düzeltilen kayıtlar" />
-          <SummaryCard title="Kapandı" value={String(feedbackSummary.closedCount || 0)} note="Doğrulanıp kapanan kayıtlar" />
-        </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <SummaryCard title="Açık kayıt" value={String(feedbackSummary.openCount || 0)} note="Görüldü durumundaki kayıtlar" />
+            <SummaryCard title="Tekrarlandı" value={String(feedbackSummary.repeatedCount || 0)} note="Sahada yeniden üreyen kayıtlar" />
+            <SummaryCard title="Çözüldü" value={String(feedbackSummary.resolvedCount || 0)} note="Henüz kapanmayan ama düzeltilen kayıtlar" />
+            <SummaryCard title="Kapandı" value={String(feedbackSummary.closedCount || 0)} note="Doğrulanıp kapanan kayıtlar" />
+          </div>
 
         <div className="card" style={{ display: "grid", gap: 10 }}>
-          <div style={{ fontWeight: 700 }}>Yeni saha geri bildirimi ekle</div>
+          <div className="panelSectionTitle">Yeni saha geri bildirimi ekle</div>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
             <input className="input" placeholder="Başlık" value={feedbackForm.title} onChange={(e) => updateFeedbackField('title', e.target.value)} />
             <select className="input" value={feedbackForm.reportedByRole} onChange={(e) => updateFeedbackField('reportedByRole', e.target.value)}>
-              {['SUPER_ADMIN','ROOM','COMPANY','DRIVER'].map((role) => <option key={role} value={role}>{role}</option>)}
+              {FEEDBACK_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
             </select>
             <select className="input" value={feedbackForm.ownerRole} onChange={(e) => updateFeedbackField('ownerRole', e.target.value)}>
-              {['SUPER_ADMIN','ROOM','COMPANY','DRIVER'].map((role) => <option key={role} value={role}>{role}</option>)}
+              {FEEDBACK_ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
             </select>
             <select className="input" value={feedbackForm.surface} onChange={(e) => updateFeedbackField('surface', e.target.value)}>
               {feedbackSurfaces.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
@@ -304,7 +516,7 @@ export default function PilotLaunchGatePanel() {
           </div>
           <textarea className="input" rows={4} placeholder="Detay / gözlem" value={feedbackForm.detail} onChange={(e) => updateFeedbackField('detail', e.target.value)} />
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="muted">Bu kayıt backend üstünde saklanır; tarayıcı local state tek kaynak değildir.</div>
+            <div className="panelMeta">Bu kayıt backend üstünde saklanır; tarayıcı local state tek kaynak değildir.</div>
             <button className="btn" onClick={submitFeedback} disabled={feedbackBusy || !String(feedbackForm.title || '').trim() || !String(feedbackForm.detail || '').trim()}>{feedbackBusy ? 'Kaydediliyor...' : 'Kaydı ekle'}</button>
           </div>
         </div>
@@ -328,22 +540,22 @@ export default function PilotLaunchGatePanel() {
 
         <div className="card" style={{ display: "grid", gap: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ fontWeight: 700 }}>Son saha kayıtları</div>
-            <div className="muted">{feedbackRecords.length} kayıt</div>
-          </div>
-          {feedbackRecords.length ? feedbackRecords.map((item) => (
-            <div key={item.id} style={{ padding: 12, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ fontWeight: 700 }}>{item.title}</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <SeverityPill value={item.severity} />
-                  <Pill code={item.status} />
-                </div>
+          <div className="panelSectionTitle">Son saha kayıtları</div>
+          <div className="panelMeta">{feedbackRecords.length} kayıt</div>
+        </div>
+        {feedbackRecords.length ? feedbackRecords.map((item) => (
+          <div key={item.id} style={{ padding: 12, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, display: 'grid', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="panelSectionTitle">{item.title}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <SeverityPill value={item.severity} />
+                <Pill code={item.status} />
               </div>
-              <div className="muted">{item.detail}</div>
-              <div className="muted">Rol: {item.reportedByRole} • Sorumlu: {item.ownerRole} • Yüzey: {item.surface}{item.relatedPath ? ` • Yol: ${item.relatedPath}` : ''}{item.scenarioId ? ` • Senaryo: ${item.scenarioId}` : ''}</div>
-              <div className="muted">Son güncelleyen: {item.lastUpdatedByEmail || '-'} • {item.updatedAt || '-'}</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            </div>
+            <div className="panelMeta">{item.detail}</div>
+            <div className="panelMeta">Rol: {item.reportedByRole} • Sorumlu: {item.ownerRole} • Yüzey: {item.surface}{item.relatedPath ? ` • Yol: ${item.relatedPath}` : ''}{item.scenarioId ? ` • Senaryo: ${item.scenarioId}` : ''}</div>
+            <div className="panelMeta">Son güncelleyen: {item.lastUpdatedByEmail || '-'} • {item.updatedAt || '-'}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button className="btn sm" disabled={feedbackBusy || item.status === 'TEKRARLANDI'} onClick={() => changeFeedbackStatus(item.id, 'TEKRARLANDI')}>Tekrarlandı</button>
                 <button className="btn sm" disabled={feedbackBusy || item.status === 'COZULDU'} onClick={() => changeFeedbackStatus(item.id, 'COZULDU')}>Çözüldü</button>
                 <button className="btn sm" disabled={feedbackBusy || item.status === 'KAPANDI'} onClick={() => changeFeedbackStatus(item.id, 'KAPANDI')}>Kapandı</button>

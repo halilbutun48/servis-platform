@@ -43,12 +43,15 @@ export default function NaturalCopilotPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Yardımcı Altyapısı</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
-            Yardımcı cevabının hangi bölüm yapısıyla üretildiğini ve geri bildirim seçeneklerini özetler.
+          <div className="panelTitle">Yardımcı Merkezi</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            M64 yol haritası, cevap iskeleti ve geri bildirim seçeneklerini özetler; canlı operasyon yüzeyi değildir.
           </div>
         </div>
-        <button className="btn" onClick={load}>Yenile</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span className="pill" data-status="INFO">Yol Haritası</span>
+          <button className="btn" onClick={load}>Yenile</button>
+        </div>
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}

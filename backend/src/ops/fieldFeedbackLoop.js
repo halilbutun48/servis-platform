@@ -26,7 +26,7 @@ export const FIELD_FEEDBACK_SURFACES = [
   { id: "OTHER", label: "Diğer" },
 ];
 
-export const FIELD_FEEDBACK_ROLES = ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER"];
+export const FIELD_FEEDBACK_ROLES = ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"];
 
 const STATUS_IDS = new Set(FIELD_FEEDBACK_STATUSES.map((item) => item.id));
 const SEVERITY_IDS = new Set(FIELD_FEEDBACK_SEVERITIES.map((item) => item.id));
@@ -112,7 +112,7 @@ function bucketSummary(items) {
     lastUpdatedAt: items[0]?.updatedAt || null,
     lastUpdatedByEmail: items[0]?.lastUpdatedByEmail || "",
     bySeverity: { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 },
-    byRole: { SUPER_ADMIN: 0, ROOM: 0, COMPANY: 0, DRIVER: 0 },
+    byRole: { SUPER_ADMIN: 0, ROOM: 0, COMPANY: 0, DRIVER: 0, PERSONEL: 0, PARENT: 0 },
   };
   for (const item of items) {
     const status = normalizeStatus(item?.status);

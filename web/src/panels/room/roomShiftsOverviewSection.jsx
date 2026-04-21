@@ -1,4 +1,5 @@
 import RoutePreviewModal from "../../components/RoutePreviewModal";
+import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import ShiftReassignModal from "../../components/ShiftReassignModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { RoomDispatchPoolSummary } from "./roomShiftsPanelSections";
@@ -7,11 +8,13 @@ export function RoomShiftsOverviewSection({ err }) {
   return (
     <>
       <div className="card">
-        <h3>Shifts (ROOM)</h3>
-        <div className="muted">Company request → Room approve (vehicle+driver) + opsiyonel pazarlık</div>
+        <div className="panelSectionTitle">Shifts (ROOM)</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>Company request → Room approve (vehicle+driver) + opsiyonel pazarlık</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
+
+      <PanelFeedbackEntryCard roleId="ROOM" panelLabel="Room Shifts" relatedPath="/room/shifts" />
     </>
   );
 }

@@ -37,12 +37,12 @@ const checks = [
   {
     file: "web/src/panels/superadmin/ObservabilityPanel.jsx",
     mustNot: ['useSession', 'token } = useSession', '{ token }', '[token]'],
-    must: ['api("/api/observability/manifest"', 'api("/api/observability/health-summary"', '}, []);']
+    must: ['api("/api/observability/health-summary"', 'api("/api/observability/event-types"', 'api("/api/observability/recent-events"']
   },
   {
     file: "web/src/panels/superadmin/FieldAcceptanceCenter.jsx",
-    mustNot: ['useSession', 'token } = useSession', '{ token }', '[token]'],
-    must: ['api("/api/field-acceptance/manifest")', 'api("/api/field-acceptance/session-template")', '}, []);']
+    mustNot: ['useSession', 'token } = useSession', '{ token }', '[token]', '/api/field-acceptance/session-template'],
+    must: ['api("/api/field-acceptance/manifest")', 'api("/api/field-acceptance/session")', 'Yeni oturum oluştur']
   },
   {
     file: "web/src/panels/superadmin/PilotLaunchGatePanel.jsx",

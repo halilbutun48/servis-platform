@@ -17,7 +17,7 @@ export const NATURAL_COPILOT_RULES = [
 export function getNaturalCopilotManifest() {
   return {
     activeMilestone: "M64",
-    title: "Dogal Copilot Katmani",
+    title: "Dogal Copilot Yol Haritasi",
     capabilities: NATURAL_COPILOT_CAPABILITIES,
     rules: NATURAL_COPILOT_RULES,
   };
@@ -27,7 +27,7 @@ export function buildNaturalReplyTemplate() {
   return {
     activeMilestone: "M64",
     sections: ["durum", "ana-sebep", "simdi-ne-yap", "sonraki-adim", "gerekirse-daha-basit-anlat"],
-    summary: "Ayni karari daha dogal Turkce ile anlatan cevap iskeleti.",
+    summary: "M64 yol haritasi icin cevap iskeleti.",
   };
 }
 
@@ -35,6 +35,6 @@ export function buildCopilotFeedbackTemplate() {
   return {
     activeMilestone: "M64",
     options: ["ise-yaradi", "ise-yaramadi", "cok-teknikti", "yanlis-anladi", "daha-basit-anlat"],
-    summary: "Copilot kalitesini iyilestirmek icin geri bildirim iskeleti.",
+    summary: "M64 yol haritasi icin geri bildirim iskeleti.",
   };
 }

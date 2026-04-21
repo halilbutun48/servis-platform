@@ -40,8 +40,8 @@ export default function SsotAlignmentPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Sistem Standartları</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelTitle">Sistem Standartları</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini özetler.
           </div>
         </div>

@@ -62,7 +62,10 @@ must(includesText(agreementsPanel, "scopeKey: '/room/agreements'"), 'room agreem
 must(includesText(agreementsPanel, 'buildAgreementCopilotFacts'), 'room agreements builds copilot facts');
 must(includesText(operationHealthPanel, "scopeKey: '/room/operation-health'"), 'operation health writes copilot selection');
 must(includesText(operationVerificationPanel, "scopeKey: '/superadmin/operation-verification'"), 'operation verification writes copilot selection');
-must(includesText(acceptancePanel, "scopeKey: '/superadmin/acceptance'"), 'field acceptance writes copilot selection');
+must(
+  includesAnyText(acceptancePanel, ["scopeKey: '/superadmin/acceptance'", 'scopeKey: "/superadmin/acceptance"']),
+  'field acceptance writes copilot selection'
+);
 must(includesText(trustPanel, "scopeKey: '/superadmin/trust-quality'"), 'trust quality writes copilot selection');
 must(includesText(observabilityPanel, "scopeKey: '/superadmin/observability'"), 'observability writes copilot selection');
 

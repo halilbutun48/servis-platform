@@ -116,6 +116,8 @@ export default function CommercialCorePanel() {
   }, []);
 
   const steps = manifest?.steps || [];
+  const activeSteps = steps.filter((item) => String(item?.status || "").toUpperCase() === "ACTIVE");
+  const plannedSteps = steps.filter((item) => String(item?.status || "").toUpperCase() === "PLANNED");
   const route = lifecycle?.route || [];
   const cards = paymentBackbone?.cards || {};
   const activeRule = paymentBackbone?.activeRule || null;
@@ -412,9 +414,9 @@ async function deactivateRequired(sourceId) {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Ticari Akış</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
-            Talebin teklif, karşı teklif, uzlaşma ve sözleşmeye geçiş yolunu özetler.
+          <div className="panelTitle">Ticari Akış Özeti</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Talep, teklif, pazarlık ve sözleşme geçişini tek akışta özetler.
           </div>
         </div>
         <button className="btn" onClick={load}>Yenile</button>
@@ -423,22 +425,23 @@ async function deactivateRequired(sourceId) {
       {err ? <div style={{ marginTop: 12, color: "#ffb17b", whiteSpace: "pre-wrap" }}>{stripHtmlNoise(err)}</div> : null}
       {okMsg ? <div style={{ marginTop: 12, color: "#7bffb2", whiteSpace: "pre-wrap" }}>{okMsg}</div> : null}
 
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Aktif durum">
           <div>{manifest?.title || "Henüz ticari özet yok"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             {manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}
           </div>
         </Card>
-        <Card title="İzlenen adımlar">
-          <div>{steps.length} adım</div>
-          <div className="muted" style={{ marginTop: 6 }}>
-            {steps.map((item) => item.label).join(" • ") || "Henüz adım listesi yok"}
+        <Card title="Aktif adımlar">
+          <div>{activeSteps.length} adım</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            {activeSteps.map((item) => item.label).join(" • ") || "Henüz aktif adım yok"}
           </div>
         </Card>
         <Card title="Sözleşmeye geçiş">
           <div>{route.join(" → ") || "Henüz geçiş yolu yok"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             {lifecycle?.summary || "Bu ekran ticari sürecin hangi kapılardan geçtiğini anlatır"}
           </div>
         </Card>
@@ -447,37 +450,37 @@ async function deactivateRequired(sourceId) {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Dormant payment backbone">
           <div>{paymentBackbone?.summary || "Henüz payment backbone özeti yok"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             {paymentBackbone?.activeMilestone || "-"} • {paymentBackbone?.dormant ? "Dormant" : "Açık"}
           </div>
         </Card>
         <Card title="Aktif komisyon kuralı">
           <div>{activeRule ? `${activeRule.paymentMode} • ${fmtBps(activeRule.commissionBps)}` : "Henüz aktif kural yok"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             {activeRule ? `Kaynak: ${activeRule.scopeType}${activeRule.roomId ? ` #${activeRule.roomId}` : ""}${activeRule.ruleId ? ` • Kural #${activeRule.ruleId}` : ""}` : "M82.10 ile yönetim yüzeyi açılacak"}
           </div>
         </Card>
         <Card title="Kaynak sayaçları">
           <div>Toplam kaynak: {cards.commercialSources || 0}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Agreement: {cards.agreementSources || 0} • Shift series: {cards.shiftSeriesSources || 0}
           </div>
         </Card>
         <Card title="Settlement hazırlığı">
           <div>Plan: {cards.settlementPlans || 0}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Hesap: {cards.paymentAccounts || 0} • Kural: {cards.commissionRules || 0}
           </div>
         </Card>
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>Super Admin ticari ayarlar</div>
-        <div className="muted">
+        <div className="panelSectionTitle">Super Admin ticari ayarlar</div>
+        <div className="panelMeta">
           {settings?.summary || "Global payment mode ve oda bazlı komisyon override ayarları dormant omurgaya yazılır."}
         </div>
         {paymentBackboneEndpointStatus !== "ok" || settingsEndpointStatus !== "ok" ? (
-          <div className="muted" style={{ color: "#ffb17b" }}>
+          <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {settingsEndpointStatus === "forbidden"
               ? "Bu yüzeyin tam okunması için önce TOTP step-up doğrulamasını tamamla."
               : settingsEndpointStatus === "missing"
@@ -511,7 +514,7 @@ async function deactivateRequired(sourceId) {
             <InputRow label="Not" help="İç not. Ticari snapshot içine doğrudan yazılmaz.">
               <textarea rows="3" value={globalForm.note} onChange={(e) => setGlobalForm((prev) => ({ ...prev, note: e.target.value }))} />
             </InputRow>
-            <div className="muted">Son güncelleme: {fmtDateTime(settings?.globalRule?.updatedAt)}</div>
+            <div className="panelMeta">Son güncelleme: {fmtDateTime(settings?.globalRule?.updatedAt)}</div>
             <button className="btn" onClick={saveGlobal} disabled={busyKey === "global" || !settingsWritable}>
               {busyKey === "global" ? "Kaydediliyor..." : "Global ayarı kaydet"}
             </button>
@@ -523,8 +526,8 @@ async function deactivateRequired(sourceId) {
             <InputRow label="Oda ara" help="Önce odayı seç, sonra override kaydet.">
               <input value={roomQuery} onChange={(e) => setRoomQuery(e.target.value)} placeholder="Oda adı yaz" disabled={!settingsWritable} />
             </InputRow>
-            <div style={{ maxHeight: 180, overflow: "auto", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 8 }}>
-              {!settingsWritable ? <div className="muted">Ayar endpointi hazır olmadan oda override seçimi kapalı.</div> : filteredRooms.length ? filteredRooms.map((room) => (
+              <div style={{ maxHeight: 180, overflow: "auto", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 8 }}>
+              {!settingsWritable ? <div className="panelMeta">Ayar endpointi hazır olmadan oda override seçimi kapalı.</div> : filteredRooms.length ? filteredRooms.map((room) => (
                 <button
                   key={room.id}
                   className="btn sm"
@@ -535,7 +538,7 @@ async function deactivateRequired(sourceId) {
                   <span>{room.name}</span>
                   <span>#{room.id}</span>
                 </button>
-              )) : <div className="muted">Eşleşen oda bulunamadı.</div>}
+              )) : <div className="panelMeta">Eşleşen oda bulunamadı.</div>}
             </div>
             <InputRow label="Seçili oda">
               <input value={roomForm.roomId} readOnly placeholder="Önce oda seç" />
@@ -571,7 +574,7 @@ async function deactivateRequired(sourceId) {
           {roomOverrides.length ? (
             <div style={{ display: "grid", gap: 8 }}>
               {roomOverrides.map((item) => (
-                <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, display: "grid", gap: 6 }}>
+                <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                     <div style={{ fontWeight: 700 }}>{item.roomName || `Oda #${item.roomId}`}</div>
                     <button className="btn sm" disabled={busyKey === `disable:${item.roomId}` || !settingsWritable} onClick={() => disableRoomOverride(item.roomId)}>
@@ -579,24 +582,24 @@ async function deactivateRequired(sourceId) {
                     </button>
                   </div>
                   <div>{item.paymentMode} • {fmtBps(item.commissionBps)}</div>
-                  <div className="muted">Room #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                  {item.note ? <div className="muted">Not: {item.note}</div> : null}
+                  <div className="panelMeta">Room #{item.roomId} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                  {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="muted">Aktif oda override yok. Tüm yeni ticari kaynaklar global ayarı kullanır.</div>
+            <div className="panelMeta">Aktif oda override yok. Tüm yeni ticari kaynaklar global ayarı kullanır.</div>
           )}
         </Card>
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>M85 opsiyonel ödeme pilotu</div>
-        <div className="muted">
+        <div className="panelSectionTitle">M85 opsiyonel ödeme pilotu</div>
+        <div className="panelMeta">
           {pilotStatus?.summary || "OPTIONAL moddaki ticari kaynaklar pilot listesine alınabilir. READY olanlar yalnız pilot hazırlık görünürlüğü taşır; gerçek charge/payout hala dormant kalır."}
         </div>
         {pilotEndpointStatus !== "ok" || pilotCandidatesEndpointStatus !== "ok" ? (
-          <div className="muted" style={{ color: "#ffb17b" }}>
+          <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {pilotEndpointStatus === "forbidden"
               ? "Opsiyonel ödeme pilot yüzeyi için önce TOTP step-up doğrulamasını tamamla."
               : pilotEndpointStatus === "missing"
@@ -609,13 +612,13 @@ async function deactivateRequired(sourceId) {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Pilot özeti">
           <div>{pilotStatus?.activeMilestone || "M85"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Hazır: {pilotStatus?.readyCount || 0} • Bekleyen: {pilotStatus?.dormantCount || 0}
           </div>
         </Card>
         <Card title="OPTIONAL adaylar">
           <div>{pilotStatus?.candidateCount || 0} kaynak</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Global veya oda override OPTIONAL ise yeni ticari kaynak burada görünür.
           </div>
         </Card>
@@ -631,14 +634,14 @@ async function deactivateRequired(sourceId) {
                 const busyOn = busyKey === `pilot:on:${item.id}`;
                 const busyOff = busyKey === `pilot:off:${item.id}`;
                 return (
-                  <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, display: "grid", gap: 6 }}>
+                  <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
                       <div>{isReady ? "READY" : settlementStatus}</div>
                     </div>
                     <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
-                    <div className="muted">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                    <div className="muted">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                    <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                    <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="btn sm" disabled={!pilotWritable || isReady || busyOn} onClick={() => activatePilot(item.id)}>
                         {busyOn ? "Hazırlanıyor..." : "Pilot READY yap"}
@@ -652,18 +655,18 @@ async function deactivateRequired(sourceId) {
               })}
             </div>
           ) : (
-            <div className="muted">OPTIONAL modda pilot adayı kaynak yok. Önce payment mode OPTIONAL olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
+            <div className="panelMeta">OPTIONAL modda pilot adayı kaynak yok. Önce payment mode OPTIONAL olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
           )}
         </Card>
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>M86 zorunlu ödeme rollout'u</div>
-        <div className="muted">
+        <div className="panelSectionTitle">M86 zorunlu ödeme rollout'u</div>
+        <div className="panelMeta">
           {requiredStatus?.summary || "REQUIRED moddaki ticari kaynaklar ACTIVE/DISABLED akışıyla yönetilir. ACTIVE durumda settlement planı aktif, entry satırları READY görünür; gerçek provider entegrasyonu hala dormant adapter üstünden temsil edilir."}
         </div>
         {requiredEndpointStatus !== "ok" || requiredCandidatesEndpointStatus !== "ok" ? (
-          <div className="muted" style={{ color: "#ffb17b" }}>
+          <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {requiredEndpointStatus === "forbidden"
               ? "Zorunlu ödeme rollout yüzeyi için önce TOTP step-up doğrulamasını tamamla."
               : requiredEndpointStatus === "missing"
@@ -676,13 +679,13 @@ async function deactivateRequired(sourceId) {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Rollout özeti">
           <div>{requiredStatus?.activeMilestone || "M86"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Aktif: {requiredStatus?.activeCount || 0} • Bekleyen: {requiredStatus?.waitingCount || 0} • Durdurulan: {requiredStatus?.disabledCount || 0}
           </div>
         </Card>
         <Card title="REQUIRED adaylar">
           <div>{requiredStatus?.candidateCount || 0} kaynak</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Global veya oda override REQUIRED ise yeni ticari kaynak burada zorunlu rollout adayı olarak görünür.
           </div>
         </Card>
@@ -699,14 +702,14 @@ async function deactivateRequired(sourceId) {
                 const busyOn = busyKey === `required:on:${item.id}`;
                 const busyOff = busyKey === `required:off:${item.id}`;
                 return (
-                  <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, display: "grid", gap: 6 }}>
+                  <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
                       <div>{settlementStatus}</div>
                     </div>
                     <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
-                    <div className="muted">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                    <div className="muted">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                    <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                    <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="btn sm" disabled={!requiredWritable || isActive || busyOn} onClick={() => activateRequired(item.id)}>
                         {busyOn ? "Aktifleştiriliyor..." : "Rollout ACTIVE yap"}
@@ -720,17 +723,17 @@ async function deactivateRequired(sourceId) {
               })}
             </div>
           ) : (
-            <div className="muted">REQUIRED modda rollout adayı kaynak yok. Önce payment mode REQUIRED olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
+            <div className="panelMeta">REQUIRED modda rollout adayı kaynak yok. Önce payment mode REQUIRED olacak şekilde yeni sözleşme veya vardiya serisi üret.</div>
           )}
         </Card>
       </div>
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>M87 ödeme hesabı hazırlığı</div>
-        <div className="muted">
+        <div className="panelSectionTitle">M87 ödeme hesabı hazırlığı</div>
+        <div className="panelMeta">
           {accountStatus?.summary || "Şirket ve oda tarafındaki ödeme hesabı metadata/readiness durumu bu yüzeyde görünür. Bu faz gerçek charge/payout açmaz."}
         </div>
         {accountEndpointStatus !== "ok" || accountCandidatesEndpointStatus !== "ok" ? (
-          <div className="muted" style={{ color: "#ffb17b" }}>
+          <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {accountEndpointStatus === "forbidden"
               ? "Ödeme hesabı hazırlık yüzeyi için önce TOTP step-up doğrulamasını tamamla."
               : accountEndpointStatus === "missing"
@@ -743,13 +746,13 @@ async function deactivateRequired(sourceId) {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Hesap hazırlık özeti">
           <div>{accountStatus?.activeMilestone || "M87"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Şirket hazır: {accountStatus?.companyReadyCount || 0}/{accountStatus?.companyCandidateCount || 0} • Oda hazır: {accountStatus?.roomReadyCount || 0}/{accountStatus?.roomCandidateCount || 0}
           </div>
         </Card>
         <Card title="Eksik / hata">
           <div>Eksik: {(accountStatus?.companyMissingCount || 0) + (accountStatus?.roomMissingCount || 0)}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Hata: {(accountStatus?.companyErrorCount || 0) + (accountStatus?.roomErrorCount || 0)} • Platform hesabı: {accountStatus?.platformAccountCount || 0}
           </div>
         </Card>
@@ -796,14 +799,14 @@ async function deactivateRequired(sourceId) {
           {Array.isArray(accountCandidates) && accountCandidates.length ? (
             <div style={{ display: "grid", gap: 8 }}>
               {accountCandidates.map((item) => (
-                <div key={item.key} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, display: "grid", gap: 6 }}>
+                  <div key={item.key} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                     <div style={{ fontWeight: 700 }}>{item.ownerName}</div>
                     <div>{item.accountStatus || "MISSING"}</div>
                   </div>
                   <div>{item.ownerType} • Mode: {item.paymentModeHint} • Settlement: {item.settlementStatusHint}</div>
-                  <div className="muted">Kaynak: {item.sourceType} • {item.sourceKey} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                  <div className="muted">Hesap: {item?.account?.label || "-"} • Provider: {item?.account?.providerKey || "-"} • IBAN: {item?.account?.maskedIban || "-"}</div>
+                  <div className="panelMeta">Kaynak: {item.sourceType} • {item.sourceKey} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                  <div className="panelMeta">Hesap: {item?.account?.label || "-"} • Provider: {item?.account?.providerKey || "-"} • IBAN: {item?.account?.maskedIban || "-"}</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button className="btn sm" disabled={!accountWritable} onClick={() => applyAccountCandidate(item)}>Forma al</button>
                   </div>
@@ -811,18 +814,18 @@ async function deactivateRequired(sourceId) {
               ))}
             </div>
           ) : (
-            <div className="muted">OPTIONAL/REQUIRED modda hesap hazırlık adayı kaynak yok.</div>
+            <div className="panelMeta">OPTIONAL/REQUIRED modda hesap hazırlık adayı kaynak yok.</div>
           )}
         </Card>
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>M88 settlement operasyon masası</div>
-        <div className="muted">
+        <div className="panelSectionTitle">M88 settlement operasyon masası</div>
+        <div className="panelMeta">
           {settlementStatus?.summary || "READY/PLANNED/EXECUTED settlement entry satırları Super Admin yüzeyinde görünür ve manuel operasyon akışıyla yönetilir."}
         </div>
         {settlementEndpointStatus !== "ok" || settlementQueueEndpointStatus !== "ok" ? (
-          <div className="muted" style={{ color: "#ffb17b" }}>
+          <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {settlementEndpointStatus === "forbidden"
               ? "Settlement operasyon yüzeyi için önce TOTP step-up doğrulamasını tamamla."
               : settlementEndpointStatus === "missing"
@@ -835,13 +838,13 @@ async function deactivateRequired(sourceId) {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Settlement özet">
           <div>{settlementStatus?.activeMilestone || "M88"}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             READY: {settlementStatus?.readyCount || 0} • PLANNED: {settlementStatus?.plannedCount || 0} • EXECUTED: {settlementStatus?.executedCount || 0}
           </div>
         </Card>
         <Card title="Hazırlık / blok">
           <div>Finans hazır: {settlementStatus?.financeReadyCount || 0}</div>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Bloklu: {settlementStatus?.blockedCount || 0} • Kuyruk: {settlementStatus?.candidateCount || 0}
           </div>
         </Card>
@@ -862,16 +865,16 @@ async function deactivateRequired(sourceId) {
                 const canReady = settlementWritable && ["PLANNED", "CANCELLED", "READY"].includes(status);
                 const canCancel = settlementWritable && ["READY", "PLANNED", "CANCELLED"].includes(status);
                 return (
-                  <div key={item.entryId} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, display: "grid", gap: 6 }}>
+                  <div key={item.entryId} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 700 }}>{item.entryKind} • {item.sourceKey}</div>
                       <div>{status}</div>
                     </div>
                     <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
-                    <div className="muted">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Mode: {item.paymentModeSnapshot} • Plan: {item.settlementPlanStatus}</div>
-                    <div className="muted">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Şirket hesap: {item?.companyAccount?.status || "MISSING"} • Oda hesap: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "N/A"}</div>
-                    <div className="muted">Provider ref: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
-                    {item.note ? <div className="muted">Not: {item.note}</div> : null}
+                    <div className="panelMeta">Tutar: {item.amount || 0} {item.currencyCode || "TRY"} • Mode: {item.paymentModeSnapshot} • Plan: {item.settlementPlanStatus}</div>
+                    <div className="panelMeta">Finans hazırlık: {item.financeReady ? "Hazır" : "Bloklu"} • Şirket hesap: {item?.companyAccount?.status || "MISSING"} • Oda hesap: {item.roomId ? (item?.roomAccount?.status || "MISSING") : "N/A"}</div>
+                    <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Vade: {fmtDateTime(item.dueAt)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                    {item.note ? <div className="panelMeta">Not: {item.note}</div> : null}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="btn sm" disabled={!canPlan || busyPlan} onClick={() => markSettlementPlanned(item)}>
                         {busyPlan ? "Planlanıyor..." : "PLANNED yap"}
@@ -891,18 +894,18 @@ async function deactivateRequired(sourceId) {
               })}
             </div>
           ) : (
-            <div className="muted">Settlement operasyon kuyruğunda görünür satır yok.</div>
+            <div className="panelMeta">Settlement operasyon kuyruğunda görünür satır yok.</div>
           )}
         </Card>
       </div>
 
-      <div style={{ marginTop: 18, padding: 16, borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)", display: "grid", gap: 12 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>M89 settlement mutabakat masası</div>
-        <div className="muted">
+      <div style={{ marginTop: 18, padding: 14, borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", display: "grid", gap: 12 }}>
+        <div className="panelSectionTitle">M89 settlement mutabakat masası</div>
+        <div className="panelMeta">
           {reconciliationStatus?.summary || "PLANNED/EXECUTED satırlar için bekliyor-eşleşti-inceleme-uyuşmazlık-kapandı döngüsü görünür olur. Bu faz gerçek provider webhook yerine manuel mutabakat izi tutar."}
         </div>
         {reconciliationEndpointStatus !== "ok" || reconciliationQueueEndpointStatus !== "ok" ? (
-          <div className="muted" style={{ color: "#ffb17b" }}>
+          <div className="panelMeta" style={{ color: "#ffb17b" }}>
             {reconciliationEndpointStatus === "forbidden"
               ? "Settlement mutabakat yüzeyi için önce TOTP step-up doğrulamasını tamamla."
               : reconciliationEndpointStatus === "missing"
@@ -913,16 +916,16 @@ async function deactivateRequired(sourceId) {
         <div style={{ marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Card title="Mutabakat özet">
             <div>{reconciliationStatus?.activeMilestone || "M89"}</div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
               Bekliyor: {reconciliationStatus?.pendingCount || 0} • Eşleşti: {reconciliationStatus?.matchedCount || 0}
             </div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
               İnceleme: {reconciliationStatus?.reviewCount || 0} • Uyuşmazlık: {reconciliationStatus?.mismatchCount || 0} • Kapandı: {reconciliationStatus?.closedCount || 0}
             </div>
           </Card>
           <Card title="Risk sinyali">
             <div>Eksik provider ref: {reconciliationStatus?.missingProviderRefCount || 0}</div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
               Vadesi geçen planlı: {reconciliationStatus?.overduePlannedCount || 0} • Kuyruk: {reconciliationStatus?.candidateCount || 0}
             </div>
           </Card>
@@ -937,15 +940,15 @@ async function deactivateRequired(sourceId) {
                 const busyMismatch = busyKey === `recon:UYUSMAZLIK:${item.entryId}`;
                 const busyClosed = busyKey === `recon:KAPANDI:${item.entryId}`;
                 return (
-                  <div key={`recon-${item.entryId}`} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: 10, display: "grid", gap: 6 }}>
+                  <div key={`recon-${item.entryId}`} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                       <div style={{ fontWeight: 700 }}>{item.entryKind} • {item.sourceKey}</div>
                       <div>{state}</div>
                     </div>
                     <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
-                    <div className="muted">Beklenen: {item.reconciliationExpectedAmount ?? item.amount ?? 0} • Gelen: {item.reconciliationReceivedAmount ?? item.amount ?? 0} • Delta: {item.reconciliationDeltaAmount ?? 0}</div>
-                    <div className="muted">Provider ref: {item.providerRef || "-"} • Harici ref: {item.reconciliationExternalRef || "-"} • Son güncelleme: {fmtDateTime(item.reconciliationLastUpdatedAt)}</div>
-                    <div className="muted">{item.missingProviderRef ? "Eksik provider ref var. " : ""}{item.overduePlanned ? "Plan vadesi geçti. " : ""}{item.reconciliationNote ? `Not: ${item.reconciliationNote}` : "Mutabakat notu yok."}</div>
+                    <div className="panelMeta">Beklenen: {item.reconciliationExpectedAmount ?? item.amount ?? 0} • Gelen: {item.reconciliationReceivedAmount ?? item.amount ?? 0} • Delta: {item.reconciliationDeltaAmount ?? 0}</div>
+                    <div className="panelMeta">Provider ref: {item.providerRef || "-"} • Harici ref: {item.reconciliationExternalRef || "-"} • Son güncelleme: {fmtDateTime(item.reconciliationLastUpdatedAt)}</div>
+                    <div className="panelMeta">{item.missingProviderRef ? "Eksik provider ref var. " : ""}{item.overduePlanned ? "Plan vadesi geçti. " : ""}{item.reconciliationNote ? `Not: ${item.reconciliationNote}` : "Mutabakat notu yok."}</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="btn sm" disabled={!reconciliationWritable || busyMatched} onClick={() => saveReconciliation(item, "ESLESTI")}>{busyMatched ? "Kaydediliyor..." : "Eşleşti"}</button>
                       <button className="btn sm" disabled={!reconciliationWritable || busyReview} onClick={() => saveReconciliation(item, "INCELEME_GEREKLI")}>{busyReview ? "Kaydediliyor..." : "İnceleme"}</button>
@@ -957,8 +960,24 @@ async function deactivateRequired(sourceId) {
               })}
             </div>
           ) : (
-            <div className="muted">Settlement mutabakat kuyruğunda görünür satır yok.</div>
+            <div className="panelMeta">Settlement mutabakat kuyruğunda görünür satır yok.</div>
           )}
+        </Card>
+      </div>
+
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Card title="Planlı ticari adımlar">
+          <div>{plannedSteps.length ? plannedSteps.map((item) => item.label).join(" • ") : "Planlı adım yok"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Aktif: {activeSteps.length} • Planlı: {plannedSteps.length}
+          </div>
+        </Card>
+        <Card title="Plan notları">
+          <div>{manifest?.activeMilestone || "M62"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            {manifest?.rules?.join(" • ") || "Henüz plan notu yok"}
+          </div>
         </Card>
       </div>
 

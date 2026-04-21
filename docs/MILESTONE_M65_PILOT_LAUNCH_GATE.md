@@ -13,4 +13,4 @@
 - `docs/MILESTONE_M65_PILOT_LAUNCH_GATE.md`
 
 ## Amaç
-M59, M60, M61, M62, M63 ve M64 verilerini tek bir launch gate yüzeyinde toplamak.
+M59, M60, M61, M62, M63 ve M64 verilerini tek bir launch gate yüzeyinde toplamak; karar ve risk kayıtlarını canlı state'e bağlamak.

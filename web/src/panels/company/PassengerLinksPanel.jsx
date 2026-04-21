@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
+import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -151,6 +152,11 @@ export default function PassengerLinksPanel() {
         <div className="title">{me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}</div>
         <div className="muted">Login vermeden, tek kişiye özel süreli canlı takip linki üret. Link sadece kendi durak + ETA + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran ENDED/final durum olarak görünür.</div>
       </div>
+
+      <PanelFeedbackEntryCard
+        roleId={me?.companyKind || "COMPANY"}
+        panelLabel={me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}
+      />
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>

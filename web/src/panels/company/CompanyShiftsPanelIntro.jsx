@@ -1,3 +1,5 @@
+import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
+
 export default function CompanyShiftsPanelIntro(props) {
   const {
     isCommercialMode,
@@ -14,24 +16,26 @@ export default function CompanyShiftsPanelIntro(props) {
   return (
     <>
       <div className="card">
-        <h3>{isCommercialMode ? "Ticari Akışım (COMPANY)" : "Shifts (COMPANY)"}</h3>
-        <div className="muted">{isCommercialMode ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: kabul edildi / aktif / tamamlandı / reddedildi" : "Bekleyen: bekliyor • Liste: kabul edildi / aktif / tamamlandı / reddedildi"}</div>
+        <div className="panelSectionTitle">{isCommercialMode ? "Ticari Akışım (COMPANY)" : "Shifts (COMPANY)"}</div>
+        <div className="panelMeta" style={{ marginTop: 6 }}>{isCommercialMode ? "Market: teklif / pazarlık • Bekleyen: operasyon hazırlığı • Liste: kabul edildi / aktif / tamamlandı / reddedildi" : "Bekleyen: bekliyor • Liste: kabul edildi / aktif / tamamlandı / reddedildi"}</div>
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
+
+      <PanelFeedbackEntryCard roleId="COMPANY" panelLabel="Company Shifts" relatedPath="/company/shifts" />
 
       {applyToast?.ids?.length ? (
         <div className="card" style={{ marginTop: 10 }}>
           <div className="row" style={{ justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontWeight: 800 }}>Oluşturuldu:</div>
-              <div className="muted" style={{ marginTop: 4 }}>
+              <div className="panelSectionTitle">Oluşturuldu:</div>
+              <div className="panelMeta" style={{ marginTop: 4 }}>
                 {(applyToast.ids || []).map((id) => (
                   <button key={id} type="button" className="btn" style={{ marginRight: 6, marginTop: 6 }} onClick={() => focusMarketById(id)}>
                     #{id}
                   </button>
                 ))}
-                <span className="muted" style={{ marginLeft: 8 }}>Tıkla → Bekleyen Talepler / Market Shifts’te filtrele</span>
+                <span className="panelMeta" style={{ marginLeft: 8 }}>Tıkla → Bekleyen Talepler / Market Shifts’te filtrele</span>
               </div>
             </div>
             <button type="button" className="btn" onClick={() => setApplyToast(null)}>Kapat</button>
@@ -41,8 +45,8 @@ export default function CompanyShiftsPanelIntro(props) {
 
       {!isCommercialMode ? (
         <>
-          <div className="card">
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="card">
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
                 className="btn"
@@ -61,16 +65,16 @@ export default function CompanyShiftsPanelIntro(props) {
               >
                 Takip
               </button>
-            </div>
-            <div className="muted" style={{ marginTop: 6 }}>
+              </div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
               Oluşturma akışı bu ekrandan kaldırıldı. Şablon, talep, Shift Tools, OSRM + solver ve teklif üretimi Planlama Merkezi'nden yürür; bu ekran takip ve operasyon içindir.
             </div>
           </div>
 
           {mainTab === "create" ? (
             <div className="card">
-              <div style={{ fontWeight: 800 }}>Oluşturma Planlama Merkezi'ne taşındı</div>
-              <div className="muted" style={{ marginTop: 8 }}>
+              <div className="panelSectionTitle">Oluşturma Planlama Merkezi'ne taşındı</div>
+              <div className="panelMeta" style={{ marginTop: 8 }}>
                 Aynı işi iki farklı yerden üretmemek için bu ekrandaki oluşturma akışı pasife alındı.
                 Yeni vardiya kurma, şablon/talep, Shift Tools, durak üretimi, OSRM + solver ön izleme ve market teklif akışı Planlama Merkezi'nden yapılır.
               </div>
@@ -85,10 +89,10 @@ export default function CompanyShiftsPanelIntro(props) {
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
-              <h3 style={{ margin: 0 }}>Ticari Akışım</h3>
-              <div className="muted" style={{ marginTop: 6 }}>Company için teklif, karşı teklif ve pazarlık görünürlüğü</div>
+              <div className="panelSectionTitle">Ticari Akışım</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>Company için teklif, karşı teklif ve pazarlık görünürlüğü</div>
             </div>
-            <div className="muted">Kapsam: Kendi ticari alanınız</div>
+            <div className="panelMeta">Kapsam: Kendi ticari alanınız</div>
           </div>
         </div>
       )}

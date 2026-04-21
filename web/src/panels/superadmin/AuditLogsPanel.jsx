@@ -54,7 +54,7 @@ export default function AuditLogsPanel() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
-        <h2 style={{ margin: 0 }}>Audit Logs</h2>
+        <div className="panelTitle">Audit Logs</div>
         <span className="pill" data-status="COUNT">
           {items.length} kayıt
         </span>
@@ -157,5 +157,4 @@ export default function AuditLogsPanel() {
     </div>
   );
 }
-
 

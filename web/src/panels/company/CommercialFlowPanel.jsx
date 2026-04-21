@@ -6,6 +6,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getCompanyCommercialFlowSummary } from "../../utils/companyDataHub";
+import PanelChrome from "../../components/PanelChrome";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -36,10 +37,10 @@ function MetricCard({ title, value, note, accent = "default" }) {
   };
   const palette = accentMap[accent] || accentMap.default;
   return (
-    <div style={{ padding: 14, border: palette.border, borderRadius: 14, flex: "1 1 180px" }}>
-      <div className="muted" style={{ marginBottom: 8, color: palette.title, fontWeight: 700 }}>{title}</div>
-      <div style={{ fontSize: 30, fontWeight: 900, color: palette.value, letterSpacing: "-0.02em" }}>{value}</div>
-      {note ? <div className="muted" style={{ marginTop: 8 }}>{note}</div> : null}
+    <div style={{ padding: 14, border: palette.border, borderRadius: 8, flex: "1 1 180px" }}>
+      <div className="panelSectionTitle" style={{ marginBottom: 8, color: palette.title }}>{title}</div>
+      <div className="panelStatValue" style={{ color: palette.value }}>{value}</div>
+      {note ? <div className="panelMeta" style={{ marginTop: 8 }}>{note}</div> : null}
     </div>
   );
 }
@@ -185,16 +186,12 @@ export default function CompanyCommercialFlowPanel() {
   }
 
   return (
-    <div className="card">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Ticari Akışım</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
-            Company için ticari görünüm artık gerçek market tekliflerinden beslenir. Vardiya üstündeki eski room-offer alanları burada referans alınmaz.
-          </div>
-        </div>
-        <div className="muted">Kapsam: Kendi ticari alanınız</div>
-      </div>
+    <div style={{ display: "grid", gap: 14 }}>
+      <PanelChrome
+        title="Ticari Akışım"
+        subtitle="Company için ticari görünüm artık gerçek market tekliflerinden beslenir. Vardiya üstündeki eski room-offer alanları burada referans alınmaz."
+        actions={<div className="panelMeta">Kapsam: Kendi ticari alanınız</div>}
+      />
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
@@ -202,11 +199,11 @@ export default function CompanyCommercialFlowPanel() {
         {cards.map((card) => <MetricCard key={card.title} {...card} />)}
       </div>
 
-      <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
+      <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
           <div>
-            <div style={{ fontWeight: 700 }}>Ticari Akış Listesi</div>
-            <div className="muted" style={{ marginTop: 4 }}>Market, bekleyen ve operasyona inen kayıtların tek kanonik özeti</div>
+            <div className="panelSectionTitle">Ticari Akış Listesi</div>
+            <div className="panelMeta" style={{ marginTop: 4 }}>Market, bekleyen ve operasyona inen kayıtların tek kanonik özeti</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <select value={flowFilter} onChange={(e) => setFlowFilter(e.target.value)} aria-label="Akış filtresi" title="Akış filtresi">
@@ -251,7 +248,7 @@ export default function CompanyCommercialFlowPanel() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={7} className="muted" style={{ padding: "8px 0" }}>
+                  <td colSpan={7} className="panelMeta" style={{ padding: "8px 0" }}>
                     Bu filtrede firma kapsamına düşen ticari kayıt yok. Kural: pazarlık Market'te, operasyon hazırlığı Bekleyen Taleplerde, onaylı işler Liste'de.
                   </td>
                 </tr>
@@ -263,6 +260,3 @@ export default function CompanyCommercialFlowPanel() {
     </div>
   );
 }
-
-
-

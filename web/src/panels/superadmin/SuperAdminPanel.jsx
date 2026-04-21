@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
+import PanelChrome from "../../components/PanelChrome";
 
 function copyText(s) {
   const v = String(s ?? "");
@@ -115,20 +116,16 @@ export default function SuperAdminPanel() {
   };
 
   return (
-    <div className="card">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Süper Yönetici</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
-            {me?.email} • {trRole(me?.role)}
-          </div>
-        </div>
-        <div className="saActions" style={{ alignSelf: "flex-start" }}>
+    <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
+      <PanelChrome
+        title="Süper Yönetici"
+        subtitle={`${me?.email} • ${trRole(me?.role)}`}
+        actions={(
           <button className="btn sm" disabled={busy} onClick={loadStats}>
             Özeti Yenile
           </button>
-        </div>
-      </div>
+        )}
+      />
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         {/* Quick */}
@@ -137,10 +134,10 @@ export default function SuperAdminPanel() {
             flex: "1 1 320px",
             padding: 14,
             border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 14,
+            borderRadius: 8,
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Hızlı erişim</div>
+          <div className="panelSectionTitle" style={{ marginBottom: 8 }}>Hızlı erişim</div>
           <div className="saActions">
             <button className="btn sm" onClick={() => navigate("/superadmin/companies")}>Şirketler</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/rooms")}>Operasyon Odaları</button>
@@ -166,17 +163,17 @@ export default function SuperAdminPanel() {
             flex: "1 1 320px",
             padding: 14,
             border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 14,
+            borderRadius: 8,
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Özet</div>
+          <div className="panelSectionTitle" style={{ marginBottom: 8 }}>Özet</div>
 
-          <div style={{ opacity: 0.9 }}>Şirket (aktif/toplam): {fmtActiveTotal(stats.companies, stats.companiesTotal)}</div>
-          <div style={{ opacity: 0.9, marginTop: 6 }}>Operasyon odası (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
-          <div style={{ opacity: 0.9, marginTop: 6 }}>Araç sayısı: {stats.vehiclesTotal ?? stats.vehicles ?? "-"}</div>
-          <div style={{ opacity: 0.9, marginTop: 6 }}>Şoför sayısı: {stats.driversTotal ?? stats.drivers ?? "-"}</div>
+          <div className="panelBody">Şirket (aktif/toplam): {fmtActiveTotal(stats.companies, stats.companiesTotal)}</div>
+          <div className="panelBody" style={{ marginTop: 6 }}>Operasyon odası (aktif/toplam): {fmtActiveTotal(stats.rooms, stats.roomsTotal)}</div>
+          <div className="panelBody" style={{ marginTop: 6 }}>Araç sayısı: {stats.vehiclesTotal ?? stats.vehicles ?? "-"}</div>
+          <div className="panelBody" style={{ marginTop: 6 }}>Şoför sayısı: {stats.driversTotal ?? stats.drivers ?? "-"}</div>
 
-          <div className="muted" style={{ marginTop: 10 }}>
+          <div className="panelMeta" style={{ marginTop: 10 }}>
             Not: Özet “aktif” sayıları silinmiş olarak işaretlenen kayıtları hariç tutar.
           </div>
         </div>
@@ -186,11 +183,11 @@ export default function SuperAdminPanel() {
             flex: "1 1 420px",
             padding: 14,
             border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 14,
+            borderRadius: 8,
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Bölüm rehberi</div>
-          <div className="muted" style={{ marginBottom: 10 }}>
+          <div className="panelSectionTitle" style={{ marginBottom: 8 }}>Bölüm rehberi</div>
+          <div className="panelMeta" style={{ marginBottom: 10 }}>
             Hangi menünün ne işe yaradığını hızlıca buradan okuyabilirsin.
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
@@ -200,36 +197,38 @@ export default function SuperAdminPanel() {
                 style={{
                   padding: "10px 12px",
                   border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 12,
+                  borderRadius: 8,
                 }}
               >
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.title}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{item.desc}</div>
+                <div className="panelSectionTitle" style={{ marginBottom: 4 }}>{item.title}</div>
+                <div className="panelMeta">{item.desc}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Demo accounts */}
-        <div
+        <details
           style={{
             flex: "1 1 320px",
             padding: 14,
             border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 14,
+            borderRadius: 8,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-            <div style={{ fontWeight: 700 }}>Demo hesapları</div>
+          <summary className="panelSectionTitle" style={{ cursor: "pointer" }}>Demo hesapları (kurulum / debug)</summary>
+
+          <div className="panelMeta" style={{ marginTop: 8 }}>
+            Gerekmedikçe kapalı kalır. Canlı ortamda demo hesapları kullanmayın.
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <button className="btn sm" onClick={() => copyText(DEMO_ACCOUNTS.map((a) => a.email).join("\n"))}>
               Mailleri Kopyala
             </button>
-          </div>
-
-          <div className="muted" style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <span>
+            <div className="panelMeta">
               Şifre: <b>{DEMO_PASSWORD}</b>
-            </span>
+            </div>
             <button className="btn sm" onClick={() => copyText(DEMO_PASSWORD)}>
               Şifreyi Kopyala
             </button>
@@ -246,7 +245,7 @@ export default function SuperAdminPanel() {
                   alignItems: "center",
                   padding: "10px 10px",
                   border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 12,
+                  borderRadius: 8,
                 }}
               >
                 <div style={{ minWidth: 0 }}>
@@ -254,7 +253,7 @@ export default function SuperAdminPanel() {
                     <code style={{ opacity: 0.9 }}>{a.email}</code>
                     <Pill status="ROLE">{trRole(a.role)}</Pill>
                   </div>
-                  <div className="muted" style={{ marginTop: 4, fontSize: 12, opacity: 0.85 }}>
+                  <div className="panelMeta" style={{ marginTop: 4 }}>
                     {a.name} • {a.scope}
                   </div>
                 </div>
@@ -266,11 +265,7 @@ export default function SuperAdminPanel() {
               </div>
             ))}
           </div>
-
-          <div className="muted" style={{ marginTop: 10 }}>
-            Not: Bu liste örnek veri ile birlikte gelir. Canlı ortamda demo hesapları kullanmayın.
-          </div>
-        </div>
+        </details>
       </div>
     </div>
   );

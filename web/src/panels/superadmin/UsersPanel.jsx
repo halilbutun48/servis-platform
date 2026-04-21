@@ -209,8 +209,8 @@ export default function UsersPanel() {
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
         <div>
-          <h2 style={{ margin: 0, marginBottom: 6 }}>Kullanıcılar</h2>
-          <div style={{ opacity: 0.75 }}>Süper yönetici kullanıcı hesabı açar, kullanıcı adı tanımlar, gerektiğinde geçici şifre üretir, hesabı pasif eder veya yeniden açar. Reset sonrası ilk girişte şifre değişimi zorunludur.</div>
+          <div className="panelTitle" style={{ marginBottom: 6 }}>Kullanıcılar</div>
+          <div className="panelMeta">Süper yönetici kullanıcı hesabı açar, kullanıcı adı tanımlar, gerektiğinde geçici şifre üretir, hesabı pasif eder veya yeniden açar. Reset sonrası ilk girişte şifre değişimi zorunludur.</div>
         </div>
         <div className="saActions">
           <span className="pill" data-status="COUNT">
@@ -521,5 +521,4 @@ export default function UsersPanel() {
     </div>
   );
 }
-
 

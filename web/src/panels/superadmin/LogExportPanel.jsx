@@ -158,7 +158,7 @@ export default function LogExportPanel() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "baseline" }}>
-        <h2 style={{ margin: 0 }}>SuperAdmin Log Export</h2>
+        <div className="panelTitle">SuperAdmin Log Export</div>
         <span className="pill" data-status="COUNT">{items.length} kayıt</span>
       </div>
 

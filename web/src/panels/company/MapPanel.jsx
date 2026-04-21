@@ -13,6 +13,7 @@ import { getPath } from "../../router";
 import { getCompanyMapShifts, getCompanyVehicles } from "../../utils/companyDataHub";
 import { getShiftRoutePreview } from "../../utils/shiftRoutePreview";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import PanelChrome from "../../components/PanelChrome";
 
 function asNum(v) {
   const n = Number(String(v ?? "").replace(",", "."));
@@ -462,40 +463,39 @@ export default function CompanyMapPanel() {
 
   return (
     <div className="wrap wrap--fluid">
-      <div className="topbar">
-        <div>
-          <div className="title">{scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Organizasyon" : "Company"} • Canlı Harita</div>
-          <div className="muted">Tek panel: canlı liste + seçili araç + duraklar + harita</div>
-        </div>
+      <PanelChrome
+        title={`${scopeKey === "/school/map" ? "Okul" : scopeKey === "/organization/map" ? "Organizasyon" : "Company"} • Canlı Harita`}
+        subtitle="Tek panel: canlı liste + seçili araç + duraklar + harita"
+        actions={
+          <div className="toolbar" style={{ justifyContent: "flex-end" }}>
+            <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(Boolean(e.target.checked))} />
+              Sadece ACTIVE
+            </label>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(Boolean(e.target.checked))} />
-            Sadece ACTIVE
-          </label>
+            <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="checkbox" checked={showNoGps} onChange={(e) => setShowNoGps(Boolean(e.target.checked))} />
+              GPS olmayanları göster
+            </label>
 
-          <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={showNoGps} onChange={(e) => setShowNoGps(Boolean(e.target.checked))} />
-            GPS olmayanları göster
-          </label>
+            <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="checkbox" checked={showStops} onChange={(e) => setShowStops(Boolean(e.target.checked))} />
+              Durakları göster
+            </label>
 
-          <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="checkbox" checked={showStops} onChange={(e) => setShowStops(Boolean(e.target.checked))} />
-            Durakları göster
-          </label>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Plaka / sürücü / room / id"
+              style={{ width: 280 }}
+            />
 
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Plaka / sürücü / room / id"
-            style={{ width: 280 }}
-          />
-
-          <button className="btn sm" onClick={loadAll} disabled={busy}>
-            {busy ? "..." : "Yenile"}
-          </button>
-        </div>
-      </div>
+            <button className="btn sm" onClick={loadAll} disabled={busy}>
+              {busy ? "..." : "Yenile"}
+            </button>
+          </div>
+        }
+      />
 
       {err ? <div className="card err">{err}</div> : null}
 

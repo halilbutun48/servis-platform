@@ -11,6 +11,7 @@ import RoomDriversShiftsTable from "./RoomDriversShiftsTable";
 import RoomDriversEditModal from "./RoomDriversEditModal";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import ListSelectionBanner from "../../components/ListSelectionBanner";
+import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 
 const TABS = [
   { key: "status", label: "Durum" },
@@ -697,6 +698,8 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
         busy={busy}
         createNoShow={createNoShow}
       />
+
+      <PanelFeedbackEntryCard roleId="ROOM" panelLabel="Sürücü Yönetimi" relatedPath="/room/drivers" />
 
       {/* DURUM */}
       {tab === "status" ? (

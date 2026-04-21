@@ -10,6 +10,7 @@ import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { getCompanyOffers, getCompanyRooms, getCompanyWorkflowSummary } from "../../utils/companyDataHub";
 import { clearUiDataCache } from "../../utils/uiDataCache";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import PanelChrome from "../../components/PanelChrome";
 
 const GUIDED_RESUME_KEY = "psv1:guidedResume:v1";
 const GEOREVIEW_OPEN_MODE_KEY = "psv1:georeview:openMode:v1";
@@ -633,10 +634,10 @@ export default function WorkflowPanel() {
 
   return (
     <div className="wrap wrap--fluid">
-      <div className="card">
-        <div className="title">{school ? "Okul — Planlama Merkezi" : organization ? "Organization — Gezi / Planlama Merkezi" : "Company — Planlama Merkezi"}</div>
-        <div className="muted">
-          {organization ? (
+      <PanelChrome
+        title={school ? "Okul — Planlama Merkezi" : organization ? "Organization — Gezi / Planlama Merkezi" : "Company — Planlama Merkezi"}
+        subtitle={
+          organization ? (
             <>
               Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>Toplanma noktası</b> → <b>Plan paketi</b> → <b>Kişi sayısı / gidilecek yerler</b> → <b>Ön izleme / teklif</b>.
             </>
@@ -644,9 +645,9 @@ export default function WorkflowPanel() {
             <>
               Yeni iş kurmak için <b>Planlama Merkezi</b>, mevcut işi takip etmek için <b>Vardiyalar</b> kullanılır. Akış: <b>Şirket konumu</b> → <b>Plan paketi</b> → <b>{who}/Durak</b> → <b>Ön izleme / teklif</b>.
             </>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       {geoNeedsReview > 0 ? (
         <div className="card" style={{ border: "2px solid #f2c", marginTop: 12 }}>

@@ -4,7 +4,6 @@ import path from "node:path";
 const cwd = process.cwd();
 const root = fs.existsSync(path.join(cwd, "backend", "src")) ? cwd : path.resolve(cwd, "..");
 
-
 function normalizeText(value) {
   return String(value || "")
     .normalize("NFKD")
@@ -23,9 +22,11 @@ function normalizeText(value) {
     .trim()
     .toLowerCase();
 }
+
 function includesText(text, needle) {
   return normalizeText(text).includes(normalizeText(needle));
 }
+
 function includesAnyText(text, needles) {
   return (needles || []).some((needle) => includesText(text, needle));
 }
@@ -33,13 +34,20 @@ function includesAnyText(text, needles) {
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
 }
+
 function exists(rel) {
   const ok = fs.existsSync(path.join(root, rel));
   if (!ok) throw new Error(`FAIL ${rel} exists`);
   console.log(`OK ${rel} exists`);
 }
+
 function must(cond, label) {
   if (!cond) throw new Error(`FAIL ${label}`);
+  console.log(`OK ${label}`);
+}
+
+function mustNot(cond, label) {
+  if (cond) throw new Error(`FAIL ${label}`);
   console.log(`OK ${label}`);
 }
 
@@ -47,6 +55,7 @@ console.log("=== M60 SAHA ACCEPTANCE MERKEZI CHECK ===");
 console.log("INFO checking required M60 files");
 [
   "backend/src/ops/fieldAcceptanceManifest.js",
+  "backend/src/ops/fieldAcceptanceState.js",
   "backend/src/routes/fieldAcceptance.js",
   "web/src/panels/superadmin/FieldAcceptanceCenter.jsx",
   "docs/RUNBOOK_M60_FIELD_ACCEPTANCE_CENTER.md",
@@ -57,7 +66,7 @@ console.log("INFO checking required M60 files");
   "docs/PROJECT_SPEC_V1.md",
   "docs/PRIMER_SSOT.md",
   "docs/STARTPACK_V1.md",
-  "docs/CHECKLIST_SSOT.md"
+  "docs/CHECKLIST_SSOT.md",
 ].forEach(exists);
 
 console.log("INFO checking updated product identity and route");
@@ -85,13 +94,14 @@ must(
   "checklist marks M59 green and keeps M60 open"
 );
 
-console.log("INFO checking backend acceptance skeleton");
+console.log("INFO checking backend acceptance session");
 const serverTxt = read("backend/src/server.js");
 const mountTxt = fs.existsSync(path.join(root, "backend/src/bootstrap/routeMounts.js"))
   ? read("backend/src/bootstrap/routeMounts.js")
   : "";
 const routeTxt = read("backend/src/routes/fieldAcceptance.js");
 const manifestTxt = read("backend/src/ops/fieldAcceptanceManifest.js");
+const stateTxt = read("backend/src/ops/fieldAcceptanceState.js");
 const panelTxt = read("web/src/panels/superadmin/FieldAcceptanceCenter.jsx");
 
 must(
@@ -107,8 +117,16 @@ must(
   "field acceptance route exposes manifest endpoint"
 );
 must(
-  includesText(routeTxt, "/session-template") || includesText(routeTxt, "/template") || includesText(routeTxt, 'router.get("/session-template"') || includesText(routeTxt, 'router.get("/template"') || includesText(routeTxt, "router.get('/session-template'") || includesText(routeTxt, "router.get('/template'"),
-  "field acceptance route exposes template endpoint"
+  includesText(routeTxt, "/session") || includesText(routeTxt, 'router.get("/session"') || includesText(routeTxt, "router.get('/session'"),
+  "field acceptance route exposes session endpoint"
+);
+must(
+  includesText(routeTxt, "/session/decision") || includesText(routeTxt, "/session/checklist") || includesText(routeTxt, 'router.patch("/session/decision"') || includesText(routeTxt, 'router.patch("/session/checklist"'),
+  "field acceptance route exposes editable session endpoints"
+);
+mustNot(
+  includesAnyText(routeTxt, ["/session-template", "/template"]),
+  "field acceptance route drops template endpoint"
 );
 must(
   includesText(manifestTxt, "decisions") || includesText(manifestTxt, "checklist"),
@@ -119,8 +137,27 @@ must(
   "manifest defines acceptance evidence"
 );
 must(
+  includesText(stateTxt, "createFieldAcceptanceSession") &&
+  includesText(stateTxt, "saveFieldAcceptanceSession") &&
+  includesText(stateTxt, "updateFieldAcceptanceChecklistItemStatus"),
+  "state store exposes real session helpers"
+);
+must(
   includesText(panelTxt, "FieldAcceptanceCenter") || includesText(panelTxt, "Acceptance") || includesText(panelTxt, "Kabul"),
   "web panel shows M60 cards"
+);
+must(
+  includesText(panelTxt, "Yeni oturum oluştur") &&
+  includesText(panelTxt, "Oturumu kaydet") &&
+  includesText(panelTxt, "Kararı kaydet") &&
+  includesText(panelTxt, "/api/field-acceptance/session") &&
+  includesText(panelTxt, "/api/field-acceptance/session/decision") &&
+  includesText(panelTxt, "/api/field-acceptance/session/checklist"),
+  "web panel uses real acceptance session endpoints"
+);
+mustNot(
+  includesAnyText(panelTxt, ["/api/field-acceptance/session-template", "/session-template"]),
+  "web panel drops session-template endpoint"
 );
 
 console.log("M60 SAHA ACCEPTANCE MERKEZI CHECK PASS");

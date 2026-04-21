@@ -269,8 +269,8 @@ export default function OperationHealthPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Operasyon Sağlığı</h2>
-          <div className="muted" style={{ marginTop: 6 }}>
+          <div className="panelTitle">Operasyon Sağlığı</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
             Room için sürücü, araç ve canlılık görünürlüğü
           </div>
         </div>

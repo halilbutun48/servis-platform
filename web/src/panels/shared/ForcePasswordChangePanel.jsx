@@ -41,8 +41,8 @@ export default function ForcePasswordChangePanel() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <BrandMark size={44} />
           <div>
-            <h2 style={{ margin: 0 }}>Şifrenizi değiştirin</h2>
-            <div className="muted">Bu hesap için geçici şifre kullanıldı. Devam etmek için yeni şifre belirleyin.</div>
+            <div className="panelTitle">Şifrenizi değiştirin</div>
+            <div className="panelMeta">Bu hesap için geçici şifre kullanıldı. Devam etmek için yeni şifre belirleyin.</div>
           </div>
         </div>
 

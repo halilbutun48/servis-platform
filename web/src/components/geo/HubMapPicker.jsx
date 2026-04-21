@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { CircleMarker, MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import "../map/mapShell.css";
 
 const DEFAULT_COUNTRY_CENTER = [39.0, 35.0];
 const EMPTY_ZOOM = 6;
@@ -151,6 +152,7 @@ export default function HubMapPicker({
   busy = false,
   title = "Büyük Haritada İşaretle",
   subjectLabel = "Hub",
+  previewHeight = 290,
 }) {
   const latNum = toNum(lat);
   const lngNum = toNum(lng);
@@ -181,78 +183,61 @@ export default function HubMapPicker({
 
   return (
     <>
-      <div className="actionsRow" style={{ marginTop: 12, flexWrap: "wrap" }}>
+      <div className="toolbar" style={{ marginTop: 12, flexWrap: "wrap" }}>
         <button type="button" className="btn sm primary" onClick={openPicker} disabled={busy}>
           {title}
         </button>
       </div>
 
-      <div
-        style={{
-          marginTop: 12,
-          height: 290,
-          borderRadius: 14,
-          overflow: "hidden",
-          border: "1px solid rgba(148,163,184,.18)",
-          background: "rgba(15,23,42,.18)",
-          position: "relative",
-        }}
-      >
-        <PreviewMap
-          center={center}
-          zoom={previewZoom}
-          valid={valid}
-          latNum={latNum}
-          lngNum={lngNum}
-          watchKey={`${latNum ?? "x"}:${lngNum ?? "x"}`}
-        />
+      <div className="ms-mapwrap" style={{ marginTop: 12, height: previewHeight }}>
+        <div className="ms-map">
+          <PreviewMap
+            center={center}
+            zoom={previewZoom}
+            valid={valid}
+            latNum={latNum}
+            lngNum={lngNum}
+            watchKey={`${latNum ?? "x"}:${lngNum ?? "x"}`}
+          />
+        </div>
       </div>
 
-      <div className="muted" style={{ marginTop: 10 }}>
+      <div className="panelMeta" style={{ marginTop: 10 }}>
         Küçük harita önizleme içindir. Noktayı rahat seçmek için "{title}" butonunu kullan. OK dedikten sonra konum lat/lng alanına aktarılır; sonra normal Kaydet ile veritabanına yazılır.
       </div>
 
       {pickerOpen ? (
         <div className="modal-backdrop" style={{ padding: 20 }}>
-          <div className="modal" style={{ maxWidth: 1180, borderRadius: 18, border: "1px solid #22314f", background: "#121a2a", padding: 16 }}>
+          <div className="modal" style={{ maxWidth: 1180, borderRadius: 8, border: "1px solid #22314f", background: "#121a2a", padding: 16 }}>
             <div className="topbar" style={{ alignItems: "flex-start", gap: 12 }}>
               <div>
-                <div className="title">{subjectLabel} için büyük haritada konum işaretle</div>
-                <div className="muted">Haritada tıkla, pimi yerleştir. Sonra OK ile seçimi ana forma uygula.</div>
+                <div className="panelTitle">{subjectLabel} için büyük haritada konum işaretle</div>
+                <div className="panelSubtitle">Haritada tıkla, pimi yerleştir. Sonra OK ile seçimi ana forma uygula.</div>
               </div>
               <div className="muted" style={{ textAlign: "right" }}>
-                <div>Lat: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
-                <div style={{ marginTop: 4 }}>Lng: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
+                <div className="panelMeta">Lat: <b>{draftValid ? draftLat.toFixed(6) : "-"}</b></div>
+                <div className="panelMeta" style={{ marginTop: 4 }}>Lng: <b>{draftValid ? draftLng.toFixed(6) : "-"}</b></div>
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 12,
-                height: "70vh",
-                minHeight: 520,
-                borderRadius: 16,
-                overflow: "hidden",
-                border: "1px solid rgba(148,163,184,.18)",
-                background: "rgba(15,23,42,.18)",
-                position: "relative",
-              }}
-            >
-              <EditableMap
-                center={draftCenter}
-                zoom={pickerZoom}
-                valid={draftValid}
-                latNum={draftLat}
-                lngNum={draftLng}
-                onPick={(nextLat, nextLng) => {
-                  setDraftLat(Number(nextLat.toFixed(6)));
-                  setDraftLng(Number(nextLng.toFixed(6)));
-                }}
-                watchKey={`${pickerOpen}:${draftLat ?? "x"}:${draftLng ?? "x"}`}
-              />
+            <div className="ms-mapwrap" style={{ marginTop: 12, height: "70vh", minHeight: 520 }}>
+              <div className="ms-map">
+                <EditableMap
+                  center={draftCenter}
+                  zoom={pickerZoom}
+                  valid={draftValid}
+                  latNum={draftLat}
+                  lngNum={draftLng}
+                  onPick={(nextLat, nextLng) => {
+                    setDraftLat(Number(nextLat.toFixed(6)));
+                    setDraftLng(Number(nextLng.toFixed(6)));
+                  }}
+                  watchKey={`${pickerOpen}:${draftLat ?? "x"}:${draftLng ?? "x"}`}
+                />
+              </div>
             </div>
 
-            <div className="muted" style={{ marginTop: 10 }}>
+            <div className="panelMeta" style={{ marginTop: 10 }}>
               İpucu: Haritayı kaydır-zoom yap, doğru noktaya tıkla. OK dediğinde koordinat ana forma aktarılır. Ardından Kaydet ile işlemi tamamla.
             </div>
 
