@@ -100,7 +100,7 @@ Compatibility aliases for legacy checks:
 - Kör line-count düşürme yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
 - `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue içinde **justified exception** olarak kalır.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
-- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/room/ShiftsPanel.jsx` **safe candidate review** kuyruğundadır.
+- `web/src/panels/company/ShiftPeopleTab.jsx` **safe candidate review** kuyruğundadır.
 - Bu queue, `tools/repo_contract_state.json` içindeki `hotFileQueuePolicy` alanı ve `repo_audit` çıktısı ile birlikte doğrulanır.
 
 ## export / package hygiene closure

@@ -4,9 +4,6 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { invalidate } from "../../live/bus";
-import RoutePreviewModal from "../../components/RoutePreviewModal";
-import ShiftReassignModal from "../../components/ShiftReassignModal";
-import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { getApiErrorMessage } from "../../utils/apiContract";
@@ -18,11 +15,9 @@ import {
   shiftRequiredPax,
   trimOrNull,
 } from "./roomShiftsPanelUtils";
-import {
-  RoomDispatchPoolSummary,
-  RoomPendingSection,
-  RoomFinalListSection } from "./roomShiftsPanelSections";
 import { autoSplitApproveAction, approveShiftAction, rejectShiftAction, submitReassignAction } from "./roomShiftsPanelActions";
+import { RoomShiftsModalSection, RoomShiftsOverviewSection } from "./roomShiftsOverviewSection";
+import { RoomShiftsMainSections } from "./roomShiftsMainSections";
 
 export default function RoomShiftsPanel() {
   const { token } = useSession();
@@ -127,9 +122,7 @@ async function decideExtend(shiftId, decision) {
   const [dispatchEditSel, setDispatchEditSel] = useState({}); // { [shiftId]: { [splitIndex]: { vehicleId, driverId } } }
   const dispatchInflight = useRef(new Set());
 
-  function toggleAvailable(shiftId) {
-    setShowAvailableOnly((p) => ({ ...p, [Number(shiftId)]: !p[Number(shiftId)] }));
-  }
+  function toggleAvailable(shiftId) { setShowAvailableOnly((p) => ({ ...p, [Number(shiftId)]: !p[Number(shiftId)] })); }
 
   const roomsById = useMemo(() => {
     const m = new Map();
@@ -162,11 +155,10 @@ async function decideExtend(shiftId, decision) {
     return `${cid}:${bucket}`;
   };
 
-  const pkgShiftIdsFor = (baseShift) => {
-    const key = pkgKeyOfShift(baseShift);
-    const arr = (pendingFiltered || []).filter((x) => pkgKeyOfShift(x) === key);
-    return arr.map((x) => Number(x.id)).filter(Number.isFinite);
-  };
+  const pkgShiftIdsFor = (baseShift) => (pendingFiltered || [])
+    .filter((x) => pkgKeyOfShift(x) === pkgKeyOfShift(baseShift))
+    .map((x) => Number(x.id))
+    .filter(Number.isFinite);
 
   const uiCopyVehicleToPkg = (baseShift, vehicleIdStr) => {
     const vidStr = String(vehicleIdStr || "");
@@ -327,25 +319,18 @@ const offersByShiftId = useMemo(() => {
   function selectedDispatchVehicleId(shiftId, part) {
     const sid = Number(shiftId || 0);
     const idx = Number(part?.splitIndex || 0);
-    const v = dispatchEditSel?.[sid]?.[idx]?.vehicleId;
-    return Number(v || part?.vehicleId || 0) || 0;
+    return Number(dispatchEditSel?.[sid]?.[idx]?.vehicleId || part?.vehicleId || 0) || 0;
   }
 
   function selectedDispatchDriverId(shiftId, part) {
     const sid = Number(shiftId || 0);
     const idx = Number(part?.splitIndex || 0);
-    const d = dispatchEditSel?.[sid]?.[idx]?.driverId;
-    return Number(d || part?.driverId || 0) || 0;
+    return Number(dispatchEditSel?.[sid]?.[idx]?.driverId || part?.driverId || 0) || 0;
   }
 
   function buildDispatchVirtualShift(shift, allocatedPax) {
     const pax = Number(allocatedPax || 0) || 0;
-    return {
-      ...(shift || {}),
-      requiredPax: pax,
-      requiredPaxOverride: pax,
-      assignmentCount: pax,
-      peopleCount: pax };
+    return { ...(shift || {}), requiredPax: pax, requiredPaxOverride: pax, assignmentCount: pax, peopleCount: pax };
   }
 
   function getDispatchSelectionStates(shift, suggestions = []) {
@@ -381,12 +366,7 @@ const offersByShiftId = useMemo(() => {
   }
 
   function makeSig({ shift, vehicleId, driverId }) {
-    return [
-      String(vehicleId || ""),
-      String(driverId || ""),
-      String(shift?.startAt || ""),
-      String(shift?.endAt || ""),
-    ].join("|");
+    return [String(vehicleId || ""), String(driverId || ""), String(shift?.startAt || ""), String(shift?.endAt || "")].join("|");
   }
 
   function localAvailability({ shift, vehicleId, driverId }) {
@@ -872,34 +852,6 @@ const offersByShiftId = useMemo(() => {
     setPreviewOpen(true);
   }
 
-  function renderPoolSummary(shift, capacityMeta, effectiveRoomId = null) {
-    return (
-      <RoomDispatchPoolSummary
-        shift={shift}
-        capacityMeta={capacityMeta}
-        effectiveRoomId={effectiveRoomId}
-        poolSummary={poolSummary}
-        dispatchPreview={dispatchPreview}
-        getDispatchSelectionStates={getDispatchSelectionStates}
-        vehiclesForRoom={vehiclesForRoom}
-        driversForRoom={driversForRoom}
-        selectedDispatchVehicleId={selectedDispatchVehicleId}
-        selectedDispatchDriverId={selectedDispatchDriverId}
-        vehiclesById={vehiclesById}
-        driversById={driversById}
-        buildDispatchVirtualShift={buildDispatchVirtualShift}
-        setDispatchSelection={setDispatchSelection}
-        openDispatchSuggestionPreview={openDispatchSuggestionPreview}
-        loadPoolSummary={loadPoolSummary}
-        loadDispatchPreview={loadDispatchPreview}
-        autoSplitApprove={autoSplitApprove}
-        busy={busy}
-      />
-    );
-  }
-
-
-
   async function autoSplitApprove(shift) {
     return autoSplitApproveAction({
       setBusy,
@@ -943,24 +895,15 @@ const offersByShiftId = useMemo(() => {
     return submitReassignAction({ reassignModal, setBusy, setErr, api, invalidate, load, getApiErrorMessage, setReassignModal, setOpsEventsModal }, payload);
   }
 
-  function openReassignModal(shift) {
-    setReassignModal({ open: true, shift });
-  }
+  function openReassignModal(shift) { setReassignModal({ open: true, shift }); }
 
-  function openOpsEvents(shiftId) {
-    setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
-  }
+  function openOpsEvents(shiftId) { setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null }); }
 
   return (
     <div>
-      <div className="card">
-        <h3>Shifts (ROOM)</h3>
-        <div className="muted">Company request → Room approve (vehicle+driver) + opsiyonel pazarlık</div>
-      </div>
+      <RoomShiftsOverviewSection err={err} />
 
-      {err ? <div className="card err">{err}</div> : null}
-
-      <RoomPendingSection
+      <RoomShiftsMainSections
         pendingStatus={pendingStatus}
         setPendingStatus={setPendingStatus}
         pendingQ={pendingQ}
@@ -980,7 +923,6 @@ const offersByShiftId = useMemo(() => {
         avail={avail}
         busy={busy}
         openRoutePreview={openRoutePreview}
-        renderPoolSummary={renderPoolSummary}
         setAssignSel={setAssignSel}
         setDriverSel={setDriverSel}
         drivers={drivers}
@@ -992,57 +934,44 @@ const offersByShiftId = useMemo(() => {
         rejectShift={rejectShift}
         setFocusedTrackShiftId={setFocusedTrackShiftId}
         copilotShiftId={copilotShiftId}
-      />
-
-      <RoomFinalListSection
+        poolSummary={poolSummary}
+        dispatchPreview={dispatchPreview}
+        getDispatchSelectionStates={getDispatchSelectionStates}
+        driversForRoom={driversForRoom}
+        selectedDispatchVehicleId={selectedDispatchVehicleId}
+        selectedDispatchDriverId={selectedDispatchDriverId}
+        driversById={driversById}
+        buildDispatchVirtualShift={buildDispatchVirtualShift}
+        setDispatchSelection={setDispatchSelection}
+        openDispatchSuggestionPreview={openDispatchSuggestionPreview}
+        loadPoolSummary={loadPoolSummary}
+        loadDispatchPreview={loadDispatchPreview}
+        autoSplitApprove={autoSplitApprove}
         listStatus={listStatus}
         setListStatus={setListStatus}
         listQ={listQ}
         setListQ={setListQ}
-        onlyAgreement={onlyAgreement}
-        setOnlyAgreement={setOnlyAgreement}
         copilotShift={copilotShift}
         listFiltered={listFiltered}
         items={items}
-        offersByShiftId={offersByShiftId}
-        vehiclesById={vehiclesById}
         extendNoteSel={extendNoteSel}
         setExtendNote={setExtendNote}
-        busy={busy}
         decideExtend={decideExtend}
         openOpsEvents={openOpsEvents}
         openReassignModal={openReassignModal}
-        openRoutePreview={openRoutePreview}
-        setFocusedTrackShiftId={setFocusedTrackShiftId}
-        copilotShiftId={copilotShiftId}
       />
 
-      {/* Preview error/info (modal dışında küçük banner) */}
-      {previewOpen && previewErr ? (
-        <div className="card err" style={{ marginTop: 10 }}>
-          Harita Önizleme: {previewErr}
-        </div>
-      ) : null}
-
-      <ShiftReassignModal
-        open={reassignModal.open}
-        shift={reassignModal.shift}
-        vehicles={vehicles}
-        drivers={drivers}
-        busy={busy}
-        onClose={() => setReassignModal({ open: false, shift: null })}
-        onSubmit={submitReassign}
-      />
-
-      <ShiftOperationEventsModal
-        open={opsEventsModal.open}
-        shiftId={opsEventsModal.shiftId}
-        onClose={() => setOpsEventsModal({ open: false, shiftId: null })}
-      />
-
-      <RoutePreviewModal
-        open={previewOpen}
-        onClose={() => {
+      <RoomShiftsModalSection
+        previewOpen={previewOpen}
+        previewErr={previewErr}
+        previewShift={previewShift}
+        previewStops={previewStops}
+        previewPeople={previewPeople}
+        previewSummary={previewSummary}
+        previewPathPoints={previewPathPoints}
+        previewSource={previewSource}
+        previewLoading={previewLoading}
+        onClosePreview={() => {
           setPreviewOpen(false);
           setPreviewShift(null);
           setPreviewStops([]);
@@ -1053,18 +982,14 @@ const offersByShiftId = useMemo(() => {
           setPreviewErr("");
           setPreviewLoading(false);
         }}
-        title={
-          previewShift
-            ? `Shift #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
-            : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
-        }
-        shiftId={typeof previewShift?.id === "number" ? previewShift?.id : null}
-        stops={previewStops}
-        people={previewPeople}
-        previewSummary={previewSummary}
-        previewPathPoints={previewPathPoints}
-        previewSource={previewSource}
-        previewShift={previewShift}
+        reassignModal={reassignModal}
+        vehicles={vehicles}
+        drivers={drivers}
+        busy={busy}
+        onCloseReassign={() => setReassignModal({ open: false, shift: null })}
+        onSubmitReassign={submitReassign}
+        opsEventsModal={opsEventsModal}
+        onCloseOpsEvents={() => setOpsEventsModal({ open: false, shiftId: null })}
       />
     </div>
   );

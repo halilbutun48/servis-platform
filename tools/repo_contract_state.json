@@ -86,7 +86,7 @@
     "warningThreshold": 1000,
     "blockThreshold": 1200,
     "currentLargeFileCount": 3,
-    "currentWarningHotFileCount": 8,
+    "currentWarningHotFileCount": 6,
     "principles": [
       "line-count dusurmek icin kor refactor yok",
       "once acceptance sonra kontrollu temizlik",
@@ -106,17 +106,9 @@
         "class": "justified-exception",
         "note": "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
       },
-      "web/src/panels/room/ShiftsPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "davranis degistirmeden section/state extraction adayi"
-      },
       "web/src/panels/company/GuidedPlanModal.jsx": {
         "class": "acceptance-sensitive-later",
         "note": "guided plan ve rota guncelleme akisi kritik; yalniz contract destekli parcalanir"
-      },
-      "web/src/panels/company/AgreementsPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "company sozlesme/route-refresh aksiyonlari icin kontrollu component extraction adayi"
       },
       "backend/src/routes/shifts/room.js": {
         "class": "acceptance-sensitive-later",

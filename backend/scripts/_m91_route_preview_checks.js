@@ -192,13 +192,15 @@ export function runM91ShiftOriginLinkCheck() {
   const util = fs.readFileSync(relPath("web/src/utils/agreementOriginLink.js"), "utf8");
   const wizard = fs.readFileSync(relPath("web/src/panels/company/AgreementWizard.jsx"), "utf8");
   const panel = fs.readFileSync(relPath("web/src/panels/company/AgreementsPanel.jsx"), "utf8");
+  const sourceShiftSection = fs.readFileSync(relPath("web/src/panels/company/companyAgreementsSourceShiftSection.jsx"), "utf8");
+  const panelSurface = `${panel}\n${sourceShiftSection}`;
   assertTextIncludes(util, "linkAgreementsToOrigin", "agreement origin link util");
   assertTextIncludes(util, "getAgreementOrigins", "agreement origin read util");
   assertTextIncludes(wizard, "linkAgreementsToOrigin(createdIds, launchPrefill)", "wizard links created agreements to shift origin");
   assertTextIncludes(wizard, "createdFromShift", "wizard returns created from shift detail");
   assertTextIncludes(panel, "handleWizardCreated", "agreements panel handles wizard created detail");
-  assertTextIncludes(panel, "Kaynak vardiya bağlantısı", "agreements panel source shift card");
-  assertTextIncludesAny(panel, ["Kaynak Vardiyaya Git", "Kaynak vardiyaya Git"], "agreements panel source shift action");
+  assertTextIncludes(panelSurface, "Kaynak vardiya bağlantısı", "agreements panel source shift card");
+  assertTextIncludesAny(panelSurface, ["Kaynak Vardiyaya Git", "Kaynak vardiyaya Git"], "agreements panel source shift action");
   assertTextIncludes(panel, "Kaynak vardiya #", "agreements panel source shift badge in list");
   banner("M91C SHIFT ORIGIN LINK CHECK PASS");
 }

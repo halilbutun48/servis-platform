@@ -63,6 +63,8 @@ async function main() {
   const roomReassignNotifications = read("backend/src/routes/shifts/roomReassignNotifications.js");
   const sharedRoute = read("backend/src/routes/shifts/shared.js");
   const roomPanel = read("web/src/panels/room/ShiftsPanel.jsx");
+  const roomPanelRows = read("web/src/panels/room/roomShiftsPanelRows.jsx");
+  const roomPanelOverview = read("web/src/panels/room/roomShiftsOverviewSection.jsx");
   const companyPanel = read("web/src/panels/company/ShiftsPanel.jsx");
   const reassignModal = read("web/src/components/ShiftReassignModal.jsx");
   const eventsModal = read("web/src/components/ShiftOperationEventsModal.jsx");
@@ -77,8 +79,8 @@ async function main() {
   must("shared route exposes operation-events endpoint", includesAny(sharedRoute, ['"/:id/operation-events"', 'SHIFT_REASSIGN']));
 
   console.log("INFO checking web M66 wiring");
-  must("room panel renders reassign action", includesAny(roomPanel, ["Atamayı Değiştir", "ShiftReassignModal"]));
-  must("room panel renders operation log action", includesAny(roomPanel, ["İşlem Kaydı", "ShiftOperationEventsModal"]));
+  must("room panel renders reassign action", includesAny(roomPanel + roomPanelRows + roomPanelOverview, ["Atamayı Değiştir", "ShiftReassignModal"]));
+  must("room panel renders operation log action", includesAny(roomPanel + roomPanelRows + roomPanelOverview, ["İşlem Kaydı", "ShiftOperationEventsModal"]));
   must("company panel renders operation log action", includesAny(companyPanel, ["Operasyon Kaydı", "ShiftOperationEventsModal"]));
   must("reassign modal explains package refresh", includesAny(reassignModal, ["Değişikliği Kaydet ve Paketi Yenile", "rota / görev paketi yenilenir"]));
   must("operation events modal maps reasons in Turkish", includesAny(eventsModal, ["Araç arızası", "Operasyon Akışı"]));

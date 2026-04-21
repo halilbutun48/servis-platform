@@ -28,14 +28,14 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 
 ### safe candidate review
 - `backend/src/ai/jobGuide/screenCatalog.js`
-- `web/src/panels/room/ShiftsPanel.jsx`
 - `web/src/panels/room/AgreementsPanel.jsx`
-- `web/src/panels/company/AgreementsPanel.jsx`
 - `web/src/panels/company/ShiftPeopleTab.jsx`
 
 ### completed controlled extraction
 - `web/src/panels/company/AgreementWizard.jsx` -> preset/config ve modal kabuğu ayrıldı; dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.
 - `web/src/panels/company/ShiftsPanel.jsx` -> sozlesmeye donusum state helper'i ve market odak helper'i ayrıldı; dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.
+- `web/src/panels/company/AgreementsPanel.jsx` -> source-shift, route-refresh ve selected summary extraction'lariyla dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.
+- `web/src/panels/room/ShiftsPanel.jsx` -> overview/modal/dispatch wrapper extraction'lariyla dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.
 
 ### acceptance-sensitive / later
 - `backend/src/routes/agreements.js`

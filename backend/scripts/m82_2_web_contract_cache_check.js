@@ -52,6 +52,8 @@ const roomShiftsUtils = read("web/src/panels/room/roomShiftsPanelUtils.js");
 const roomShiftsSections = read("web/src/panels/room/roomShiftsPanelSections.jsx");
 const roomShiftsRows = read("web/src/panels/room/roomShiftsPanelRows.jsx");
 const roomShiftsCards = read("web/src/panels/room/roomShiftsPanelCards.jsx");
+const roomShiftsOverview = read("web/src/panels/room/roomShiftsOverviewSection.jsx");
+const roomShiftsMainSections = read("web/src/panels/room/roomShiftsMainSections.jsx");
 const roomVehicles = read("web/src/panels/room/VehiclesPanel.jsx");
 const roomVehiclesUtils = read("web/src/panels/room/roomVehiclesPanelUtils.js");
 const roomVehiclesSections = read("web/src/panels/room/roomVehiclesPanelSections.jsx");
@@ -295,11 +297,17 @@ else fail("company PlanBuilderPanel must use extracted util/workflow/action/sect
 if (process.exitCode) process.exit(process.exitCode);
 
 if (/from\s+["']\.\/roomShiftsPanelUtils["']/.test(roomShifts)
-  && /from\s+["']\.\/roomShiftsPanelSections["']/.test(roomShifts)
+  && /from\s+["']\.\/roomShiftsOverviewSection["']/.test(roomShifts)
+  && /from\s+["']\.\/roomShiftsMainSections["']/.test(roomShifts)
   && /from\s+["']\.\.\/\.\.\/utils\/apiContract["']/.test(roomShifts)
   && /getApiErrorMessage/.test(roomShifts)
   && /export function normalizeRoomShiftError/.test(roomShiftsUtils)
   && /getApiErrorInfo/.test(roomShiftsUtils)
+  && /from\s+["']\.\/roomShiftsPanelSections["']/.test(roomShiftsMainSections)
+  && /RoomShiftsDispatchPoolSection/.test(roomShiftsMainSections)
+  && /RoomShiftsOverviewSection/.test(roomShiftsOverview)
+  && /RoomShiftsModalSection/.test(roomShiftsOverview)
+  && /RoomShiftsDispatchPoolSection/.test(roomShiftsOverview)
   && /from\s+["']\.\/roomShiftsPanelRows["']/.test(roomShiftsSections)
   && /from\s+["']\.\/roomShiftsPanelCards["']/.test(roomShiftsSections)
   && /export \{[\s\S]*AgreementBadge[\s\S]*RoomAvailabilityLine[\s\S]*\}/.test(roomShiftsSections)

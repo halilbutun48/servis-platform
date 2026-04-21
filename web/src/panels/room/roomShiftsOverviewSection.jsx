@@ -1,0 +1,85 @@
+import RoutePreviewModal from "../../components/RoutePreviewModal";
+import ShiftReassignModal from "../../components/ShiftReassignModal";
+import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
+import { RoomDispatchPoolSummary } from "./roomShiftsPanelSections";
+
+export function RoomShiftsOverviewSection({ err }) {
+  return (
+    <>
+      <div className="card">
+        <h3>Shifts (ROOM)</h3>
+        <div className="muted">Company request → Room approve (vehicle+driver) + opsiyonel pazarlık</div>
+      </div>
+
+      {err ? <div className="card err">{err}</div> : null}
+    </>
+  );
+}
+
+export function RoomShiftsDispatchPoolSection(props) {
+  return <RoomDispatchPoolSummary {...props} />;
+}
+
+export function RoomShiftsModalSection({
+  previewOpen,
+  previewErr,
+  previewShift,
+  previewStops,
+  previewPeople,
+  previewSummary,
+  previewPathPoints,
+  previewSource,
+  previewLoading,
+  onClosePreview,
+  reassignModal,
+  vehicles,
+  drivers,
+  busy,
+  onCloseReassign,
+  onSubmitReassign,
+  opsEventsModal,
+  onCloseOpsEvents,
+}) {
+  return (
+    <>
+      {previewOpen && previewErr ? (
+        <div className="card err" style={{ marginTop: 10 }}>
+          Harita Önizleme: {previewErr}
+        </div>
+      ) : null}
+
+      <ShiftReassignModal
+        open={reassignModal.open}
+        shift={reassignModal.shift}
+        vehicles={vehicles}
+        drivers={drivers}
+        busy={busy}
+        onClose={onCloseReassign}
+        onSubmit={onSubmitReassign}
+      />
+
+      <ShiftOperationEventsModal
+        open={opsEventsModal.open}
+        shiftId={opsEventsModal.shiftId}
+        onClose={onCloseOpsEvents}
+      />
+
+      <RoutePreviewModal
+        open={previewOpen}
+        onClose={onClosePreview}
+        title={
+          previewShift
+            ? `Shift #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
+            : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
+        }
+        shiftId={typeof previewShift?.id === "number" ? previewShift?.id : null}
+        stops={previewStops}
+        people={previewPeople}
+        previewSummary={previewSummary}
+        previewPathPoints={previewPathPoints}
+        previewSource={previewSource}
+        previewShift={previewShift}
+      />
+    </>
+  );
+}

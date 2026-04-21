@@ -61,9 +61,11 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - Kör refactor yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
 - `helpComposer.js` ve `schema.prisma` **justified exception** olarak korunur.
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
-- `backend/src/ai/jobGuide/screenCatalog.js`, `web/src/panels/room/ShiftsPanel.jsx`, `web/src/panels/room/AgreementsPanel.jsx`, `web/src/panels/company/AgreementsPanel.jsx` ve `web/src/panels/company/ShiftPeopleTab.jsx` **safe candidate review** kuyruğundadır.
+- `web/src/panels/company/ShiftPeopleTab.jsx` **safe candidate review** kuyruğundadır.
 - `web/src/panels/company/AgreementWizard.jsx` kontrollü extraction ile 1000 satır altına indi; artık hot-file kuyruğunda değildir.
 - `web/src/panels/company/ShiftsPanel.jsx` kontrollü extraction ile 1000 satır altına indi; artık hot-file kuyruğunda değildir.
+- `web/src/panels/company/AgreementsPanel.jsx` kontrollü extraction ile 1000 satır altına indi; artık hot-file kuyruğunda değildir.
+- `web/src/panels/room/ShiftsPanel.jsx` kontrollü extraction ile 1000 satır altına indi; artık hot-file kuyruğunda değildir.
 - Kanonik komut: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`.
 
 ## 2.4) M90C.7 — Export / Package Hygiene Closure
