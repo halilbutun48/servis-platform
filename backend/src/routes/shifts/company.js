@@ -20,21 +20,19 @@ import {
 
 // Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
 import * as H from "./helpers.js";
-import { addDaysTR, atTR, dateOnlyUTCFromYmd, dayBitTRFromYmd, ymdTR } from "../../time/tr.js";
 import { httpError, sendErrorResponse } from "../../errors/http.js";
 import { rebuildShiftRouteStateBestEffort, clearShiftRoutePreviewCache } from "../../services/shiftRouteState.js";
 import { upsertShiftSeriesCommercialBackboneByShiftId } from "../../services/paymentBackbone.js";
+import { findAgreementBlockedRoomIdsForShift } from "../../services/agreementOfferCoverage.js";
+import {
+  isRouteShapePatch,
+  requireCompanyOfferVehicleSameRoomOrThrow,
+  requireHubPairOrThrow,
+} from "../../services/companyShiftValidation.js";
 
 const emitShift = H.emitShift;
 
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
-
-function isRouteShapePatch(body) {
-  return Object.prototype.hasOwnProperty.call(body || {}, 'hubLat')
-    || Object.prototype.hasOwnProperty.call(body || {}, 'hubLng')
-    || Object.prototype.hasOwnProperty.call(body || {}, 'direction')
-    || Object.prototype.hasOwnProperty.call(body || {}, 'pattern');
-}
 
 async function loadFullShift(shiftId) {
   return prisma.shift.findUnique({
@@ -87,70 +85,6 @@ async function createShiftWithStopsTx(tx, { body, effectiveCompanyId, effectiveS
   return created;
 }
 
-// --- Agreement overlap helpers (used to skip market offers when a contract already exists) ---
-function overlapsTR(aStart, aEnd, bStart, bEnd) {
-  return aStart < bEnd && aEnd > bStart;
-}
-
-function intervalsForDayTR(ag, ymd) {
-  const mask = dayBitTRFromYmd(ymd);
-  if ((Number(ag.weekMask || 0) & mask) === 0) return [];
-
-  const startMin = Number(ag.startMin || 0);
-  const endMin = Number(ag.endMin || 0);
-  const start = atTR(ymd, startMin);
-
-  if (endMin >= startMin) {
-    return [[start, atTR(ymd, endMin)]];
-  }
-
-  const nextYmd = addDaysTR(ymd, 1);
-  const midnightNext = atTR(nextYmd, 0);
-  return [
-    [start, midnightNext],
-    [midnightNext, atTR(nextYmd, endMin)],
-  ];
-}
-
-function agreementOverlapsRangeTR(ag, s, e) {
-  const startYmd = ymdTR(s);
-  const endYmd = ymdTR(e);
-  const horizonEnd = addDaysTR(endYmd, 1);
-  for (let cur = startYmd; cur <= horizonEnd; cur = addDaysTR(cur, 1)) {
-    const ints = intervalsForDayTR(ag, cur);
-    for (const [as, ae] of ints) {
-      if (overlapsTR(as, ae, s, e)) return true;
-    }
-  }
-  return false;
-}
-
-async function findAgreementBlockedRoomIdsForShift({ companyId, roomIds, startAt, endAt }) {
-  const s = new Date(startAt);
-  const e = new Date(endAt);
-  const startYmd = ymdTR(s);
-  const endYmd = ymdTR(e);
-
-  const candidates = await prisma.agreement.findMany({
-    where: {
-      companyId,
-      roomId: { in: roomIds },
-      status: { in: ["APPROVED", "ACTIVE"] },
-      startDate: { lte: dateOnlyUTCFromYmd(endYmd) },
-      endDate: { gte: dateOnlyUTCFromYmd(startYmd) },
-    },
-    select: { id: true, roomId: true, startDate: true, endDate: true, weekMask: true, startMin: true, endMin: true, status: true },
-    orderBy: { id: "asc" },
-  });
-
-  const blocked = new Set();
-  for (const ag of candidates) {
-    if (agreementOverlapsRangeTR(ag, s, e)) blocked.add(Number(ag.roomId));
-  }
-  return blocked;
-}
-// --- /Agreement overlap helpers ---
-
 // Company-focused endpoints (some are also allowed for ROOM/SUPER_ADMIN)
 export function attachShiftCompanyRoutes(r, io) {
   r.post(
@@ -185,20 +119,12 @@ export function attachShiftCompanyRoutes(r, io) {
 
         const parsedRows = rows.map((row) => validateWithZod(createShiftSchema, row));
         for (const body of parsedRows) {
-          const hasHubLat = body.hubLat != null;
-          const hasHubLng = body.hubLng != null;
-          if (hasHubLat !== hasHubLng) {
-            return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
-          }
+          requireHubPairOrThrow(body);
           if (body.companyOfferVehicleId != null) {
-            const v = await prisma.vehicle.findUnique({
-              where: { id: body.companyOfferVehicleId },
-              select: { id: true, roomId: true },
+            await requireCompanyOfferVehicleSameRoomOrThrow({
+              companyOfferVehicleId: body.companyOfferVehicleId,
+              roomId: body.roomId,
             });
-            if (!v) return sendErrorResponse(res, httpError(400, "companyOfferVehicleId not found"));
-            if (v.roomId && body.roomId && Number(v.roomId) !== Number(body.roomId)) {
-              return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "companyOfferVehicleId must belong to the same room"));
-            }
           }
         }
 
@@ -270,24 +196,14 @@ export function attachShiftCompanyRoutes(r, io) {
 
 
         // ✅ M19: hub pair validation
-        const hasHubLat = body.hubLat != null;
-        const hasHubLng = body.hubLng != null;
-        if (hasHubLat !== hasHubLng) {
-          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
-        }
+        requireHubPairOrThrow(body);
 
         // Optional: companyOfferVehicleId verildiyse araç var mı ve aynı room mu?
         if (body.companyOfferVehicleId != null) {
-          const v = await prisma.vehicle.findUnique({
-            where: { id: body.companyOfferVehicleId },
-            select: { id: true, roomId: true },
+          await requireCompanyOfferVehicleSameRoomOrThrow({
+            companyOfferVehicleId: body.companyOfferVehicleId,
+            roomId: body.roomId,
           });
-          if (!v) {
-            return sendErrorResponse(res, httpError(400, "companyOfferVehicleId not found"));
-          }
-          if (v.roomId && body.roomId && Number(v.roomId) !== Number(body.roomId)) {
-            return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "companyOfferVehicleId must belong to the same room"));
-          }
         }
 
         const shift = await prisma.$transaction(async (tx) =>
@@ -540,11 +456,7 @@ export function attachShiftCompanyRoutes(r, io) {
         }
 
         // ✅ M19: hub pair validation (update)
-        const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
-        const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
-        if (updHasHubLat !== updHasHubLng) {
-          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
-        }
+        requireHubPairOrThrow(body, { strict: true });
 
         const routeShapeChanged = isRouteShapePatch(body);
         const updated = await prisma.shift.update({
@@ -605,11 +517,7 @@ export function attachShiftCompanyRoutes(r, io) {
         }
 
         // ✅ M19: hub pair validation (update)
-        const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
-        const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
-        if (updHasHubLat !== updHasHubLng) {
-          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
-        }
+        requireHubPairOrThrow(body, { strict: true });
 
         // only allow negotiate in DRAFT/REQUESTED (optional rule)
         if (!["DRAFT", "REQUESTED"].includes(String(shift.status))) {
@@ -617,14 +525,10 @@ export function attachShiftCompanyRoutes(r, io) {
         }
 
         if (body.companyOfferVehicleId != null) {
-          const v = await prisma.vehicle.findUnique({
-            where: { id: body.companyOfferVehicleId },
-            select: { id: true, roomId: true },
+          await requireCompanyOfferVehicleSameRoomOrThrow({
+            companyOfferVehicleId: body.companyOfferVehicleId,
+            roomId: shift.roomId,
           });
-          if (!v) return sendErrorResponse(res, httpError(400, "companyOfferVehicleId not found"));
-          if (v.roomId && shift.roomId && Number(v.roomId) !== Number(shift.roomId)) {
-            return sendErrorResponse(res, httpError(400, "BAD_REQUEST", "companyOfferVehicleId must belong to the same room"));
-          }
         }
 
         const updated = await prisma.shift.update({
@@ -677,11 +581,7 @@ export function attachShiftCompanyRoutes(r, io) {
         }
 
         // ✅ M19: hub pair validation (update)
-        const updHasHubLat = Object.prototype.hasOwnProperty.call(body, "hubLat");
-        const updHasHubLng = Object.prototype.hasOwnProperty.call(body, "hubLng");
-        if (updHasHubLat !== updHasHubLng) {
-          return sendErrorResponse(res, httpError(400, "hubLat+hubLng together"));
-        }
+        requireHubPairOrThrow(body, { strict: true });
 
         const updated = await prisma.shift.update({
           where: { id },
@@ -1111,4 +1011,3 @@ r.put(
     }
   );
 }
-
