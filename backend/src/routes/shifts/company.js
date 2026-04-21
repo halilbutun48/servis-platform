@@ -21,14 +21,19 @@ import {
 // Avoid named imports from helpers to prevent hard crashes at module-load time in edge environments.
 import * as H from "./helpers.js";
 import { httpError, sendErrorResponse } from "../../errors/http.js";
-import { rebuildShiftRouteStateBestEffort, clearShiftRoutePreviewCache } from "../../services/shiftRouteState.js";
-import { upsertShiftSeriesCommercialBackboneByShiftId } from "../../services/paymentBackbone.js";
+import { rebuildShiftRouteStateBestEffort } from "../../services/shiftRouteState.js";
 import { findAgreementBlockedRoomIdsForShift } from "../../services/agreementOfferCoverage.js";
 import {
   isRouteShapePatch,
   requireCompanyOfferVehicleSameRoomOrThrow,
   requireHubPairOrThrow,
 } from "../../services/companyShiftValidation.js";
+import {
+  auditCompanyShiftMutation,
+  publishCompanyShiftMutation,
+  refreshCompanyShiftRouteStateAfterMutation,
+  syncCompanyShiftCommercialBackbone,
+} from "../../services/companyShiftMutationTail.js";
 
 const emitShift = H.emitShift;
 
@@ -143,17 +148,16 @@ export function attachShiftCompanyRoutes(r, io) {
 
         const fullItems = [];
         for (const shift of created) {
-          await rebuildShiftRouteStateBestEffort(shift.id);
-          await upsertShiftSeriesCommercialBackboneByShiftId(shift.id).catch(() => null);
+          await refreshCompanyShiftRouteStateAfterMutation(shift.id, true);
+          await syncCompanyShiftCommercialBackbone(shift.id);
           const full = await loadFullShift(shift.id);
           fullItems.push(full);
-          await audit(req, {
+          await auditCompanyShiftMutation(req, {
             action: "SHIFT_CREATE",
-            entity: "Shift",
             entityId: shift.id,
             meta: { status: "DRAFT", via: "GUIDED_BATCH" },
           });
-          emitShift(io, full, "shift:list");
+          publishCompanyShiftMutation(io, emitShift, full, "shift:list");
         }
 
         return res.json({
@@ -210,18 +214,17 @@ export function attachShiftCompanyRoutes(r, io) {
           createShiftWithStopsTx(tx, { body, effectiveCompanyId, effectiveStatus })
         );
 
-        await rebuildShiftRouteStateBestEffort(shift.id);
-        await upsertShiftSeriesCommercialBackboneByShiftId(shift.id).catch(() => null);
+        await refreshCompanyShiftRouteStateAfterMutation(shift.id, true);
+        await syncCompanyShiftCommercialBackbone(shift.id);
         const full = await loadFullShift(shift.id);
 
-        await audit(req, {
+        await auditCompanyShiftMutation(req, {
           action: "SHIFT_CREATE",
-          entity: "Shift",
           entityId: shift.id,
           meta: { status: effectiveStatus },
         });
 
-        emitShift(io, full, "shift:list");
+        publishCompanyShiftMutation(io, emitShift, full, "shift:list");
         return res.json(full);
       } catch (e) {
         return sendErrorResponse(res, e);
@@ -481,17 +484,15 @@ export function attachShiftCompanyRoutes(r, io) {
           },
         });
 
-        if (routeShapeChanged) await rebuildShiftRouteStateBestEffort(id);
-        else clearShiftRoutePreviewCache(id);
+        await refreshCompanyShiftRouteStateAfterMutation(id, routeShapeChanged);
 
-        await audit(req, {
+        await auditCompanyShiftMutation(req, {
           action: "SHIFT_UPDATE",
-          entity: "Shift",
           entityId: id,
         });
 
-        await upsertShiftSeriesCommercialBackboneByShiftId(updated.id).catch(() => null);
-        emitShift(io, updated, "shift:list");
+        await syncCompanyShiftCommercialBackbone(updated.id);
+        publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
         return sendErrorResponse(res, e);
@@ -548,14 +549,13 @@ export function attachShiftCompanyRoutes(r, io) {
           },
         });
 
-        await audit(req, {
+        await auditCompanyShiftMutation(req, {
           action: "SHIFT_COMPANY_OFFER",
-          entity: "Shift",
           entityId: id,
         });
 
-        await upsertShiftSeriesCommercialBackboneByShiftId(updated.id).catch(() => null);
-        emitShift(io, updated, "shift:list");
+        await syncCompanyShiftCommercialBackbone(updated.id);
+        publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
         return sendErrorResponse(res, e);
@@ -600,9 +600,8 @@ export function attachShiftCompanyRoutes(r, io) {
           },
         });
 
-        await audit(req, {
+        await auditCompanyShiftMutation(req, {
           action: "SHIFT_ROOM_OFFER_DECISION",
-          entity: "Shift",
           entityId: id,
           meta: { decision: body.decision },
         });
@@ -625,8 +624,8 @@ if (updated?.roomId) {
   });
 }
 
-        await upsertShiftSeriesCommercialBackboneByShiftId(updated.id).catch(() => null);
-        emitShift(io, updated, "shift:list");
+        await syncCompanyShiftCommercialBackbone(updated.id);
+        publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
         return res.json(updated);
       } catch (e) {
         return sendErrorResponse(res, e);
@@ -695,9 +694,8 @@ r.put(
         },
       });
 
-      await audit(req, {
+      await auditCompanyShiftMutation(req, {
         action: "SHIFT_EXTEND_REQUEST",
-        entity: "Shift",
         entityId: id,
         meta: { requestedEndAt: next.toISOString() },
       });
@@ -717,7 +715,7 @@ r.put(
         dedupeKey: `shift:${id}:extend:${next.toISOString()}`,
       });
 
-      emitShift(io, updated, "shift:list");
+      publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
       return res.json(updated);
     } catch (e) {
       return sendErrorResponse(res, e);
