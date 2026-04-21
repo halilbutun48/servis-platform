@@ -52,6 +52,7 @@ function mustInclude(text, needle, label) {
 const schema = read("backend/prisma/schema.prisma");
 const migration = read("backend/prisma/migrations/20260407103000_m82_9_dormant_payment_backbone/migration.sql");
 const service = read("backend/src/services/paymentBackbone.js");
+const companyShiftTail = read("backend/src/services/companyShiftMutationTail.js");
 const agreements = read("backend/src/routes/agreements.js");
 const shiftsCompany = read("backend/src/routes/shifts/company.js");
 const shiftsRoom = read("backend/src/routes/shifts/room.js");
@@ -76,7 +77,8 @@ mustInclude(service, "upsertAgreementCommercialBackbone", "payment backbone serv
 mustInclude(service, "upsertShiftSeriesCommercialBackboneByShiftId", "payment backbone service supports shift series snapshot");
 mustInclude(service, "buildPaymentBackboneStatus", "payment backbone service exposes status builder");
 mustInclude(agreements, "upsertAgreementCommercialBackbone", "agreements route wires dormant backbone");
-mustInclude(shiftsCompany, "upsertShiftSeriesCommercialBackboneByShiftId", "company shifts route wires shift series backbone");
+mustInclude(companyShiftTail, "upsertShiftSeriesCommercialBackboneByShiftId", "company shift mutation tail supports shift series backbone");
+mustInclude(shiftsCompany, "syncCompanyShiftCommercialBackbone", "company shifts route wires shift series backbone");
 mustInclude(shiftsRoom, "upsertShiftSeriesCommercialBackboneByShiftId", "room shifts route refreshes shift series backbone after split");
 mustInclude(commercialCore, "/payment-backbone/status", "commercial core route exposes payment backbone status endpoint");
 mustInclude(commercialCore, "/payment-backbone/sources", "commercial core route exposes payment backbone sources endpoint");
@@ -90,5 +92,4 @@ mustInclude(registry, "M82.9", "registry lists M82.9");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M82.9 dormant payment backbone check passed");
-
 

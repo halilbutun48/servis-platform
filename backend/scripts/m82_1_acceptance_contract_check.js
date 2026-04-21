@@ -48,6 +48,7 @@ function expectIncludes(text, needle, msg) { if (text && includesText(text, need
 console.log("=== M82.1 ACCEPTANCE + CONTRACT CHECK ===");
 
 const company = read("backend/src/routes/shifts/company.js");
+const companyMutationTail = read("backend/src/services/companyShiftMutationTail.js");
 const people = read("backend/src/routes/shifts/people.js");
 const room = read("backend/src/routes/shifts/room.js");
 const organization = read("backend/src/routes/organization.js");
@@ -60,11 +61,14 @@ if (!includesText(organization, 'json({ error') && !includesText(organization, '
 if (!includesText(company, 'async function refreshShiftRouteSnapshot(')) ok("company routes no longer keep local snapshot rebuild helper shadow"); else fail("company routes no longer keep local snapshot rebuild helper shadow");
 
 const companyCreate = segment(company, 'r.post(\n    "/",', 'r.delete(');
-expectIncludes(companyCreate, 'await rebuildShiftRouteStateBestEffort(shift.id);', 'company create rebuilds route state after transaction');
+expectIncludes(companyCreate, 'await refreshCompanyShiftRouteStateAfterMutation(shift.id, true);', 'company create refreshes route state after transaction');
+expectIncludes(companyMutationTail, 'if (routeShapeChanged === true) {', 'company mutation tail keeps route-shape rebuild branch');
+expectIncludes(companyMutationTail, 'await rebuildShiftRouteStateBestEffort(shiftId);', 'company mutation tail rebuilds route state after create/update mutations');
 
 const companyUpdate = segment(company, 'r.put(\n    "/:id",', 'r.put(\n    "/:id/company-offer"');
-expectIncludes(companyUpdate, 'if (routeShapeChanged) await rebuildShiftRouteStateBestEffort(id);', 'company update rebuilds route state when route shape changes');
-expectIncludes(companyUpdate, 'else clearShiftRoutePreviewCache(id);', 'company update clears preview cache for non-route-shape updates');
+expectIncludes(companyUpdate, 'await refreshCompanyShiftRouteStateAfterMutation(id, routeShapeChanged);', 'company update delegates route refresh tail to helper');
+expectIncludes(companyMutationTail, 'if (routeShapeChanged === false) {', 'company mutation tail keeps preview-cache branch');
+expectIncludes(companyMutationTail, 'clearShiftRoutePreviewCache(shiftId);', 'company mutation tail clears preview cache for non-route-shape updates');
 
 const companyAddStop = segment(company, 'r.post(\n    "/:id/stops",', 'r.put(\n    "/:id/stops/:stopId');
 expectIncludes(companyAddStop, 'await rebuildShiftRouteStateBestEffort(shiftId);', 'company stop add rebuilds route state');
