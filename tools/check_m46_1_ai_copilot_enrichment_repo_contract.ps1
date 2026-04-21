@@ -36,8 +36,9 @@ MustContain (Join-Path $RepoRoot "backend\src\ai\tools.js") 'references' "tools 
 
 Write-Host "INFO Checking web enrichment wiring"
 $panel = Join-Path $RepoRoot "web\src\panels\shared\CopilotPanel.jsx"
-MustContain $panel 'copyText(result.summary || "")' "panel has copy summary action"
-MustContain $panel 'copyText(result.noteDraft || "")' "panel has copy note action"
+$advancedResult = Join-Path $RepoRoot "web\src\components\copilot\CopilotAdvancedResultCard.jsx"
+MustContain $advancedResult 'copyText(result.summary || "")' "advanced result card has copy summary action"
+MustContain $advancedResult 'copyText(result.noteDraft || "")' "advanced result card has copy note action"
 MustContain $panel 'Son 5 analiz' "panel has recent analyses section"
 MustContain $panel 'Blocks' "panel renders blocks section"
 MustContain $panel 'Next Checks' "panel renders next checks section"

@@ -222,6 +222,7 @@ const intentionalTinyFileIgnore = [
   /^infra\/\.env$/i,
   /^tools\/STABLE_TO\.txt$/i,
   /^backend\/data\/[^/]+\.json$/i,
+  /^data\/[^/]+\.json$/i,
 ];
 
 function isIntentionalTinyFile(relPath) {
@@ -266,7 +267,7 @@ const activeDocContractRefs = [...textMap.entries()]
   .sort((a, b) => b.refs - a.refs);
 const runtimeJsonFiles = trackedAllFiles
   .map((p) => rel(p))
-  .filter((p) => p.startsWith('backend/data/') && p.endsWith('.json'));
+  .filter((p) => (p.startsWith('backend/data/') || p.startsWith('data/')) && p.endsWith('.json'));
 
 
 const exactByHash = new Map();
@@ -278,7 +279,7 @@ for (const p of textFiles) {
 
 const exactDuplicates = [...exactByHash.values()]
   .filter((group) => group.length > 1)
-  .filter((group) => !group.every((file) => file.startsWith("backend/data/") && file.endsWith(".json")))
+  .filter((group) => !group.every((file) => (file.startsWith("backend/data/") || file.startsWith("data/")) && file.endsWith(".json")))
   .filter((group) => {
     const sorted = [...group].sort();
     const pairKey = sorted.join("||");

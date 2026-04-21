@@ -14,6 +14,7 @@
 - M90B.1 executable closure gate: `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 - M90C.6 hot-file queue policy: `tools\pack_m90_c6_hot_file_queue_policy.ps1 -RepoRoot D:\servis-platform`
 - M90C.7 export / package hygiene closure: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
+- Physical snapshot hygiene soft gate: `npm run verify:snapshot`
 - M90C.8 CI / verification visibility: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 - M90C.9 güvenli kapanış / final hygiene checklist: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Root verify chain: `npm run verify:ci`
@@ -66,6 +67,7 @@
 - Kanonik web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - CI workflow: `.github/workflows/vardis_verification_visibility.yml`
 - Shareable repo zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
+- `verify:snapshot` fiziksel dosya yüzeyini raporlar; ilk turda `verify:final` için hard blocker değildir.
 - Windows tarafinda export/hijyen kapanisinda `pwsh` tercih edilir.
 - Satır azaltma en sona bırakılır; önce acceptance + export/package hijyeni + CI görünürlüğü + güvenli kapanış checklist'i kapanır.
 - Tek rehber: `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`

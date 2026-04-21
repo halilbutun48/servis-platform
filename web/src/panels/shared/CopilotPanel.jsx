@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate, useHashRoute } from "../../router";
 import { useSession } from "../../state/session";
-import { companyPath } from "../../utils/paths";
 import JobGuideHeader from "../../components/copilot/JobGuideHeader";
 import BeforeYouStartCard from "../../components/copilot/BeforeYouStartCard";
 import QuickActionsCard from "../../components/copilot/QuickActionsCard";
@@ -19,12 +18,24 @@ import ScreenMenusCard from "../../components/copilot/ScreenMenusCard";
 import ChatThread from "../../components/copilot/ChatThread";
 import ChatInputBox from "../../components/copilot/ChatInputBox";
 import ChatQualitySummary from "../../components/copilot/ChatQualitySummary";
+import CopilotAdvancedResultCard from "../../components/copilot/CopilotAdvancedResultCard";
 import SuggestedChips from "../../components/copilot/SuggestedChips";
 import { captureCopilotUiSurface } from "../../components/copilot/uiSurface";
 import { copilotSelectionEventName, readCopilotSelection } from "../../utils/copilotSelection";
-import { formatDateTimeTR } from "../../utils/time";
 import { nowIsoTR } from "../../utils/time";
 import { getCopilotScreenOptions } from "../../copilot/screenRegistry";
+import {
+  canUseEntityChat,
+  defaultChatEntityType,
+  filterItems,
+  firstList,
+  optionLabel,
+  resolveGuideRoute,
+  safeHistoryLoad,
+  saveHistory,
+  screenOptionLabel,
+  selectionApplies,
+} from "../../utils/copilotPanelHelpers";
 
 const PANEL_MODES = [
   { value: "CHAT", label: "Sohbet" },
@@ -61,36 +72,7 @@ const INTENT_OPTIONS = [
   { value: "GPS_SIGNAL_DIAGNOSIS", label: "GPS Sinyal Teşhisi", helper: "Sinyal ve veri akışı teşhisi", entityType: "vehicle" },
 ];
 
-const HISTORY_KEY = "copilot.history.m46_6_a";
 const ENTRY_HINT_KEY = "room:operationHealthHint";
-
-function canUseEntityChat(role) {
-  return ["ROOM", "COMPANY", "SUPER_ADMIN"].includes(String(role || ""));
-}
-
-function defaultChatEntityType(role) {
-  return canUseEntityChat(role) ? "shift" : "screen";
-}
-
-function normalizeScopePath(path) {
-  return String(path || "").split("?")[0];
-}
-
-function scopeFamily(path) {
-  return normalizeScopePath(path).split("/").filter(Boolean)[0] || "";
-}
-
-function selectionApplies(selection, path) {
-  if (!selection) return false;
-  const scope = normalizeScopePath(selection.scopeKey || "");
-  const current = normalizeScopePath(path);
-  if (!scope || scope === current) return true;
-  const sameFamily = scopeFamily(scope) && scopeFamily(scope) === scopeFamily(current);
-  if (!sameFamily) return false;
-  if (/\/copilot$/.test(current)) return true;
-  const entityType = String(selection?.entityType || "");
-  return ["shift", "vehicle"].includes(entityType);
-}
 
 
 // Legacy repo-contract compatibility markers (M46.1 → M46.5 checks)
@@ -119,160 +101,9 @@ const GUIDE_BLOCK_MARKERS = {
 };
 
 
-function screenOptionLabel(item) {
-  if (!item) return "";
-  return `${item.label || "Ekran"} • ${item.path || ""}`;
-}
-
-function _normalizeRoleGuideKey(me) {
-  const role = String(me?.role || "");
-  if (role === "COMPANY") {
-    const kind = String(me?.companyKind || "").toUpperCase();
-    if (kind === "SCHOOL") return "SCHOOL";
-    if (kind === "ORGANIZATION") return "ORGANIZATION";
-    return "COMPANY";
-  }
-  return role;
-}
-
 function buildScreenOptions(me) {
   return getCopilotScreenOptions(me);
 }
-
-function firstList(resp) {
-  if (Array.isArray(resp)) return resp;
-  if (Array.isArray(resp?.items)) return resp.items;
-  return [];
-}
-
-function safeHistoryLoad() {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    const parsed = JSON.parse(raw || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(entry) {
-  try {
-    const prev = safeHistoryLoad();
-    const dedupeKey = `${entry.panelMode}:${entry.intent || "-"}:${entry.jobType || "-"}:${entry.entityType}:${entry.entityId}`;
-    const next = [entry, ...prev.filter((x) => `${x.panelMode}:${x.intent || "-"}:${x.jobType || "-"}:${x.entityType}:${x.entityId}` !== dedupeKey)].slice(0, 5);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-    return next;
-  } catch {
-    return [];
-  }
-}
-
-function severityStyle(severity) {
-  const map = {
-    CRITICAL: { color: "#fff", background: "#b42318" },
-    WARN: { color: "#fff", background: "#b54708" },
-    INFO: { color: "#fff", background: "#175cd3" },
-    OK: { color: "#fff", background: "#027a48" },
-  };
-  return map[severity] || { color: "#fff", background: "#667085" };
-}
-
-function signalStyle(state) {
-  const map = {
-    GOOD: { color: "#027a48", border: "1px solid #12b76a", background: "#ecfdf3" },
-    WARN: { color: "#b54708", border: "1px solid #f79009", background: "#fffaeb" },
-    BLOCKED: { color: "#b42318", border: "1px solid #f04438", background: "#fef3f2" },
-    INFO: { color: "#175cd3", border: "1px solid #53b1fd", background: "#eff8ff" },
-  };
-  return map[state] || { color: "#344054", border: "1px solid #d0d5dd", background: "#f8fafc" };
-}
-
-function decisionTone(value) {
-  if (["OK", "READY", "FRESH", "SUFFICIENT"].includes(String(value || ""))) return signalStyle("GOOD");
-  if (["ATTENTION", "REVIEW_NEEDED", "STALE", "PARTIAL"].includes(String(value || ""))) return signalStyle("WARN");
-  if (["BLOCKED", "NOT_READY", "WEAK"].includes(String(value || ""))) return signalStyle("BLOCKED");
-  return signalStyle("INFO");
-}
-
-function confidencePct(value) {
-  return typeof value === "number" ? `${Math.round(value * 100)}%` : "-";
-}
-
-function optionLabel(entityType, item) {
-  if (!item) return "";
-  if (entityType === "screen") return screenOptionLabel(item);
-  if (entityType === "vehicle") {
-    return `#${item.id} • ${item.plate || "plaka?"} • ${item.status || "-"}`;
-  }
-  return `#${item.id} • ${item.status || "-"} • ${item.company?.name || item.room?.name || "vardiya"}`;
-}
-
-function filterItems(entityType, list, search) {
-  const q = String(search || "").trim().toLowerCase();
-  if (!q) return list;
-  return (Array.isArray(list) ? list : []).filter((item) => optionLabel(entityType, item).toLowerCase().includes(q));
-}
-
-function ReferenceList({ data }) {
-  const entries = Object.entries(data || {});
-  if (!entries.length) return <div className="muted">Referans görünmüyor.</div>;
-  return (
-    <ul style={{ margin: 0, paddingLeft: 18 }}>
-      {entries.map(([k, v]) => (
-        <li key={k}>
-          <b>{k}</b>: {Array.isArray(v) ? (v.length ? v.join(", ") : "-") : (v ?? "-").toString()}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function DecisionBadge({ label, value }) {
-  return (
-    <div style={{ borderRadius: 999, padding: "6px 10px", fontWeight: 700, display: "inline-flex", gap: 6, alignItems: "center", ...decisionTone(value) }}>
-      <span>{label}</span>
-      <span>{value || "-"}</span>
-    </div>
-  );
-}
-
-function priorityTone(score) {
-  if (Number(score || 0) >= 85) return signalStyle("BLOCKED");
-  if (Number(score || 0) >= 60) return signalStyle("WARN");
-  return signalStyle("GOOD");
-}
-
-function actionPriorityLabel(action) {
-  const score = Number(action?.priorityScore || 0);
-  return `${action?.priority || "-"} • ${score || 0}`;
-}
-
-function resolveGuideRoute(me, routeKey) {
-  const role = String(me?.role || "");
-  const key = String(routeKey || "");
-  if (key.startsWith("/")) return key;
-  if (role === "ROOM") {
-    if (key === "ROOM_OFFERS") return "/room/offers";
-    if (key === "ROOM_SHIFTS") return "/room/shifts";
-    if (key === "ROOM_VEHICLES") return "/room/vehicles";
-    if (key === "ROOM_DRIVERS") return "/room/drivers";
-    if (key === "ROOM_AGREEMENTS") return "/room/agreements";
-    if (key === "ROOM_MAP") return "/room/map";
-    if (key === "ROOM_OPERATION_HEALTH") return "/room/operation-health";
-    if (key === "ROOM_COPILOT") return "/room/copilot";
-  }
-  if (role === "COMPANY") {
-    if (key === "COMPANY_SHIFTS") return companyPath(me, "/shifts");
-    if (key === "COMPANY_AGREEMENTS") return companyPath(me, "/agreements");
-    if (key === "COMPANY_COPILOT") return companyPath(me, "/copilot");
-  }
-  if (role === "SUPER_ADMIN") {
-    if (key === "SUPERADMIN_OVERVIEW") return "/superadmin";
-    if (key === "SUPERADMIN_COPILOT") return "/superadmin/copilot";
-  }
-  return "";
-}
-
 
 export default function CopilotPanel() {
   const { token, me } = useSession();
@@ -972,200 +803,12 @@ export default function CopilotPanel() {
       ) : null}
 
       {result && result.mode !== "JOB_GUIDE" ? (
-        <div className="card" style={{ display: "grid", gap: 12 }}>
-          <div>
-            <div className="title">Sonuç</div>
-            <div className="muted" style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span>Provider: <b>{result.provider || "-"}</b></span>
-              <span>Mode: <b>{result.mode || "-"}</b></span>
-              <span>Scope: <b>{result.scope?.role || me?.role || "-"}</b></span>
-              <span>Versiyon: <b>{result.copilotVersion || "-"}</b></span>
-              <span>Oluşturma: <b>{result.generatedAt ? formatDateTimeTR(result.generatedAt) : "-"}</b></span>
-              <span>Güven: <b>{confidencePct(result.confidence)}</b></span>
-              <span style={{ ...severityStyle(result.severity), padding: "2px 8px", borderRadius: 999, fontWeight: 700 }}>{result.severity || "-"}</span>
-            </div>
-            {result.providerSummary ? (
-              <div className="muted" style={{ marginTop: 6 }}>{result.providerSummary}</div>
-            ) : null}
-          </div>
-
-          <div className="muted" style={{ display: "grid", gap: 4 }}>
-            <div><b>{result.intentLabel || result.intent || "-"}</b></div>
-            <div>{result.entityLabel || `${result.entityType || "entity"} #${result.entityId || "-"}`}</div>
-            <div>{result.scope?.summary || "-"}</div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <DecisionBadge label="Genel Durum" value={result.overallStatus} />
-            <DecisionBadge label="Hazırlık" value={result.actionability} />
-            <DecisionBadge label="Tazelik" value={result.dataFreshness} />
-            <DecisionBadge label="Kapsam" value={result.coverage} />
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => copyText(result.summary || "")}>Kopyala özet</button>
-            {result.noteDraft ? <button type="button" onClick={() => copyText(result.noteDraft || "")}>Kopyala not</button> : null}
-            {copyMsg ? <span className="muted">{copyMsg}</span> : null}
-          </div>
-
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{result.summary || "-"}</div>
-
-          {result.explanation ? (
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Açıklama</div>
-              <div className="muted" style={{ marginTop: 8 }}>{result.explanation}</div>
-            </div>
-          ) : null}
-
-          {result.recommendedFirstAction ? (
-            <div style={{ borderRadius: 12, padding: 12, ...priorityTone(result.recommendedFirstAction.priorityScore) }}>
-              <div className="title" style={{ fontSize: 16 }}>İlk Önerilen Adım</div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
-                <div style={{ fontWeight: 700 }}>{result.recommendedFirstAction.title || "-"}</div>
-                <div style={{ borderRadius: 999, padding: "2px 8px", ...priorityTone(result.recommendedFirstAction.priorityScore) }}>
-                  {actionPriorityLabel(result.recommendedFirstAction)}
-                </div>
-              </div>
-              <div className="muted" style={{ marginTop: 8 }}><b>Neden şimdi:</b> {result.recommendedFirstAction.whyNow || "-"}</div>
-              {result.actionPlanSummary ? <div className="muted" style={{ marginTop: 8 }}>{result.actionPlanSummary}</div> : null}
-              {result.recommendedFirstAction.blockedBy?.length ? <div style={{ marginTop: 8 }}><b>Engeller:</b> {result.recommendedFirstAction.blockedBy.join(" • ")}</div> : null}
-              {result.recommendedFirstAction.evidenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Kanıt bağları:</b> {result.recommendedFirstAction.evidenceLinks.join(" • ")}</div> : null}
-              {result.recommendedFirstAction.referenceLinks?.length ? <div style={{ marginTop: 8 }}><b>Referans bağları:</b> {result.recommendedFirstAction.referenceLinks.join(", ")}</div> : null}
-            </div>
-          ) : null}
-
-          {result.calibrationNotes?.length ? (
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Kalibrasyon Notları</div>
-              <ul>
-                {result.calibrationNotes.map((x, i) => <li key={i}>{x}</li>)}
-              </ul>
-            </div>
-          ) : null}
-
-          {result.highlights?.length ? (
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Öne Çıkanlar</div>
-              <ul>
-                {result.highlights.map((x, i) => <li key={i}>{x}</li>)}
-              </ul>
-            </div>
-          ) : null}
-
-          <div>
-            <div className="title" style={{ fontSize: 16 }}>Önerilen Adımlar</div>
-            {result.recommendedActions?.length ? (
-              <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
-                {result.recommendedActions.map((x, i) => (
-                  <div key={`${x.title || 'action'}:${i}`} style={{ border: "1px solid #d0d5dd", borderRadius: 12, padding: 12, display: "grid", gap: 8 }}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                      <div style={{ fontWeight: 700 }}>{x.title || "-"}</div>
-                      <div style={{ borderRadius: 999, padding: "2px 8px", ...priorityTone(x.priorityScore) }}>
-                        {actionPriorityLabel(x)}
-                      </div>
-                    </div>
-                    <div className="muted">{x.reason || "-"}</div>
-                    {x.whyNow ? <div><b>Neden şimdi:</b> {x.whyNow}</div> : null}
-                    {x.preconditions?.length ? <div><b>Ön koşullar:</b> {x.preconditions.join(" • ")}</div> : null}
-                    {x.dependsOn?.length ? <div><b>Bağlı olduğu şeyler:</b> {x.dependsOn.join(" • ")}</div> : null}
-                    {x.blockedBy?.length ? <div><b>Engeller:</b> {x.blockedBy.join(" • ")}</div> : null}
-                    {x.evidenceLinks?.length ? <div><b>Kanıt bağları:</b> {x.evidenceLinks.join(" • ")}</div> : null}
-                    {x.referenceLinks?.length ? <div><b>Referans bağları:</b> {x.referenceLinks.join(", ")}</div> : null}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="muted" style={{ marginTop: 8 }}>Önerilen adım görünmüyor.</div>
-            )}
-          </div>
-
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Gerçekler</div>
-              <ul>
-                {(result.facts || []).map((x, i) => <li key={i}>{x}</li>)}
-              </ul>
-            </div>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Riskler</div>
-              {result.risks?.length ? <ul>{result.risks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Risk görünmüyor.</div>}
-            </div>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Öneriler</div>
-              {result.suggestions?.length ? <ul>{result.suggestions.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Öneri yok.</div>}
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Engeller</div>
-              {result.blockers?.length ? <ul>{result.blockers.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Açıklanmış engel görünmüyor.</div>}
-            </div>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Eksik Veri</div>
-              {result.missingData?.length ? <ul>{result.missingData.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Eksik veri görünmüyor.</div>}
-            </div>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Blok Kodları</div>
-              {result.blocks?.length ? <ul>{result.blocks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Kod seviyesinde blok görünmüyor.</div>}
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Sonraki Kontroller</div>
-              {result.nextChecks?.length ? <ul>{result.nextChecks.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Ek kontrol önerisi yok.</div>}
-            </div>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Referanslar</div>
-              <ReferenceList data={result.references} />
-            </div>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Kanıtlar</div>
-              {result.evidence?.length ? <ul>{result.evidence.map((x, i) => <li key={i}>{x}</li>)}</ul> : <div className="muted">Kanıt görünmüyor.</div>}
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Karar Sinyalleri</div>
-              {result.decisionSignals?.length ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  {result.decisionSignals.map((x, i) => (
-                    <div key={`${x.label || "signal"}:${i}`} style={{ borderRadius: 10, padding: 10, ...signalStyle(x.state) }}>
-                      <div style={{ fontWeight: 700 }}>{x.label || "-"}</div>
-                      <div>{x.detail || "-"}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="muted">Karar sinyali görünmüyor.</div>
-              )}
-            </div>
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Tutarlılık Kontrolleri</div>
-              {result.consistencyChecks?.length ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  {result.consistencyChecks.map((x, i) => (
-                    <div key={`${x.label || "check"}:${i}`} style={{ borderRadius: 10, padding: 10, ...signalStyle(x.status) }}>
-                      <div style={{ fontWeight: 700 }}>{x.label || "-"}</div>
-                      <div>{x.detail || "-"}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="muted">Tutarlılık kontrolü görünmüyor.</div>
-              )}
-            </div>
-          </div>
-
-          {result.noteDraft ? (
-            <div>
-              <div className="title" style={{ fontSize: 16 }}>Not Taslağı</div>
-              <textarea readOnly value={result.noteDraft} rows={8} style={{ width: "100%", marginTop: 8 }} />
-            </div>
-          ) : null}
-        </div>
+        <CopilotAdvancedResultCard
+          result={result}
+          role={me?.role}
+          copyText={copyText}
+          copyMsg={copyMsg}
+        />
       ) : null}
 
       <div className="card">

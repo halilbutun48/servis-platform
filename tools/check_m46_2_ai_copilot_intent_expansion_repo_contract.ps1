@@ -35,11 +35,12 @@ MustContain (Join-Path $RepoRoot "backend\src\ai\tools.js") 'buildVehicleReferen
 
 Write-Host "INFO Checking web intent expansion wiring"
 $panel = Join-Path $RepoRoot "web\src\panels\shared\CopilotPanel.jsx"
+$advancedResult = Join-Path $RepoRoot "web\src\components\copilot\CopilotAdvancedResultCard.jsx"
 MustContain $panel 'ASSIGNMENT_READINESS' "panel exposes assignment readiness option"
 MustContain $panel 'OFFER_DECISION_HELP' "panel exposes offer decision option"
 MustContain $panel 'GPS_SIGNAL_DIAGNOSIS' "panel exposes gps diagnosis option"
 MustContain $panel 'pickerSearch' "panel has quick search state"
-MustContain $panel 'Highlights' "panel renders highlights section"
-MustContain $panel 'scope?.summary' "panel renders scope summary"
+MustContain $advancedResult 'result.highlights' "advanced result card renders highlights section"
+MustContain $advancedResult 'scope?.summary' "advanced result card renders scope summary"
 
 Write-Host "M46.2 AI COPILOT INTENT EXPANSION REPO CONTRACT PASS"

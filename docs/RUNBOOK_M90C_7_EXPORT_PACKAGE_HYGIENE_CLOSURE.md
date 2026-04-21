@@ -20,7 +20,7 @@ Amaç: paylaşılabilir repo paketini çalışma alanı artıklarından arındı
 - `.env`, `backend/.env`, `infra/.env`
 - `artifacts`, `node_modules`, `.next`, `build`, `coverage`, `_archive`, `_backup`
 - `web/dist`, `mobile/dist`, `infra/osrm-data`
-- `backend/data/*.json`
+- `backend/data/*.json`, `data/*.json`
 - overlay readme/log kalıntıları
 - mevcut zip arşivleri
 
@@ -28,3 +28,4 @@ Amaç: paylaşılabilir repo paketini çalışma alanı artıklarından arındı
 - `artifacts\shareable-export\servis-platform_shareable_<timestamp>.zip`
 - Bu zip çalışma alanı sırrı, runtime JSON store ve build artığı taşımaz.
 - M90C.7 pack PASS çıktısı alınır.
+- Fiziksel snapshot yüzeyi için ayrı soft gate: `npm run verify:snapshot`

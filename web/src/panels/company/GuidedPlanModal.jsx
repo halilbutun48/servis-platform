@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleMarker, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { api } from "../../api";
 import { useSession } from "../../state/session";
-import ShiftPeopleTab from "./ShiftPeopleTab";
 import { personLabel } from "../../utils/labels";
 import { buildGoogleNavUrl } from "../../utils/navigation";
 import {
@@ -21,7 +18,6 @@ import { getApiErrorMessage } from "../../utils/apiContract";
 import {
   PACKS,
   clearPlanTermsForShiftIds as _clearPlanTermsForShiftIds,
-  collectGuidedSessionPersonIds,
   coordNum,
   createAdditionalCustomSlot,
   createDefaultCustomSlots,
@@ -42,12 +38,12 @@ import {
   stepTitle,
   toHHMM,
   todayYmd,
-  updateStoredPeopleKvkkFields,
   writeGuidedTempShiftIds as _writeGuidedTempShiftIds,
   ymdMinToIso as _ymdMinToIso,
 } from "./guidedPlanModalUtils";
+import GuidedPeopleStopsStep from "./guidedPlanModalPeopleStep";
 import { GuidedHubStep, GuidedPlanSetupStep, GuidedSolveOffersStep } from "./guidedPlanModalSections";
-import { MapPickEvents, Modal } from "./guidedPlanModalShell";
+import { MapPointPickerModal, Modal } from "./guidedPlanModalShell";
 import {
   cleanupGuidedDraftShifts,
   createGuidedDraftShiftsAction,
@@ -61,7 +57,6 @@ import {
   sendGuidedBulkOffersAction,
   sendGuidedRouteRefreshRequestAction,
 } from "./guidedPlanModalActions";
-
 export default function GuidedPlanModal({
   open,
   onClose,
@@ -79,7 +74,6 @@ export default function GuidedPlanModal({
   const organization = me?.companyKind === "ORGANIZATION";
   const appliedLaunchNonceRef = useRef(0);
   const routeRefreshMode = String(launchContext?.mode || "").toUpperCase() === "ROUTE_REFRESH";
-
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -506,7 +500,6 @@ export default function GuidedPlanModal({
     parts.push(`Dönüş: ${returnText}`);
     return `[Gezi planı] ${parts.join(" | ")}`;
   }
-
 
   async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
     const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
@@ -1126,89 +1119,24 @@ async function sendBulkOffers() {
 
       {/* Step-2: People + stops */}
       {step === 2 ? (
-        <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div className="muted">{organization ? "3. adım: Yerleri ve kişi sayısını son kez kontrol et. Kişi/import bölümü Organization için opsiyoneldir." : `3. adım: ${who} ekle/import → durak üret → önizleme.`}</div>
-          {!draftShiftIds.length ? (
-            <div className="card err">Önce taslak shift oluşturmalısın.</div>
-          ) : (
-            <div className="card">
-              <div className="muted">Taslak shift’ler: {draftShiftIds.map((x) => `#${x}`).join(", ")}</div>
-              <div className="muted" style={{ marginTop: 4 }}>Not: Bu adım Shift Tools UI’sinin aynısını kullanır.</div>
-            </div>
-          )}
-
-          {organization ? (
-            <>
-              <div className="card">
-                <div style={{ fontWeight: 800 }}>Plan özeti</div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Toplanma: <b>{orgGatheringName || "-"}</b> • Tahmini kişi: <b>{orgEstimatedPax || "-"}</b> • Dönüş: <b>{orgReturnType === "RETURN_TO_START" ? "Başlangıç noktasına dön" : "Son noktada bitir"}</b>
-                </div>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Yerler: {orgFilledDestinations.length ? orgFilledDestinations.map((d) => d.title || d.address).join(" → ") : "Henüz yer girilmedi"}
-                </div>
-              </div>
-              <details className="card">
-                <summary style={{ cursor: "pointer", fontWeight: 800 }}>Opsiyonel kişi / import alanı</summary>
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Organization için bu bölüm zorunlu değil. Sadece kişi listesi de taşımak istersen kullan.
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  <ShiftPeopleTab token={token} me={me} shifts={draftShifts} roomsById={roomsById} mirrorShiftIds={(draftShifts || []).map((s) => s.id)} />
-                </div>
-              </details>
-            </>
-          ) : (
-            <div className="card">
-              <ShiftPeopleTab token={token} me={me} shifts={draftShifts} roomsById={roomsById} mirrorShiftIds={(draftShifts || []).map((s) => s.id)} guidedMode hideGeoReviewLinks onSummaryChange={setCompanyGeoGate} />
-            </div>
-          )}
-
-          {!organization && companyGeoGate.blocking ? (
-            <div className="card" style={{ border: "1px solid #b85" }}>
-              <div style={{ fontWeight: 800 }}>⚠ Guided Mode kilidi</div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Review veya eksik koordinatlı kişi varken sonraki adıma geçilmez ve markete gönderim açılmaz.
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Review: <b>{Number(companyGeoGate?.geoStats?.review || 0)}</b> • Failed: <b>{Number(companyGeoGate?.geoStats?.failed || 0)}</b>
-              </div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                Düzeltmeyi bu ekranda yap. Guided Mode içinden dış Geo Review ekranına çıkış kapalı tutulur.
-              </div>
-            </div>
-          ) : null}
-
-          <div className="row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => setStep(1)} disabled={busy}>Geri</button>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  if (!organization) {
-                    const companyKey = String(me?.companyId ?? me?.id ?? "unknown");
-                    const personIds = collectGuidedSessionPersonIds(companyKey, draftShiftIds);
-                    if (personIds.length) {
-                      await api("/api/company/personels/bulk-clear", {
-                        token,
-                        method: "POST",
-                        body: { ids: personIds, fields: ["phone", "address"] },
-                      });
-                      updateStoredPeopleKvkkFields(companyKey, draftShiftIds, { phone: true, address: true });
-                    }
-                  }
-                  refreshDraftShifts();
-                  setStep(3);
-                } catch (e) {
-                  setErr(getApiErrorMessage(e));
-                }
-              }}
-              disabled={busy || (!organization && companyGeoGate.blocking)}
-            >
-              {organization ? "İleri" : "Adres Temizle ve İlerle"}
-            </button>
-          </div>
-        </div>
+        <GuidedPeopleStopsStep
+          organization={organization}
+          busy={busy}
+          token={token}
+          me={me}
+          draftShiftIds={draftShiftIds}
+          draftShifts={draftShifts}
+          roomsById={roomsById}
+          orgGatheringName={orgGatheringName}
+          orgEstimatedPax={orgEstimatedPax}
+          orgReturnType={orgReturnType}
+          orgFilledDestinations={orgFilledDestinations}
+          companyGeoGate={companyGeoGate}
+          setCompanyGeoGate={setCompanyGeoGate}
+          setStep={setStep}
+          refreshDraftShifts={refreshDraftShifts}
+          setErr={setErr}
+        />
       ) : null}
 
       {/* Step-3: Solve + offers */}
@@ -1254,51 +1182,17 @@ async function sendBulkOffers() {
 
     </Modal>
 
-    <Modal
+    <MapPointPickerModal
       open={mapPickIdx != null}
       onClose={() => {
         setMapPickIdx(null);
         setMapPickPoint(null);
       }}
-    >
-      <div style={{ display: "grid", gap: 10 }}>
-        <div style={{ fontWeight: 800 }}>Haritadan nokta seç</div>
-        <div className="muted">Haritada bir noktaya tıkla. Seçilen koordinat ilgili yer kartına yazılır.</div>
-        <div style={{ height: 360, width: "100%", border: "1px solid #223", borderRadius: 12, overflow: "hidden" }}>
-          {Array.isArray(mapPickPoint) ? (
-            <MapContainer center={mapPickPoint} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-              <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <MapPickEvents onPick={(lat, lng) => setMapPickPoint([lat, lng])} />
-              <CircleMarker center={mapPickPoint} radius={9} pathOptions={{ color: "#2563eb", fillColor: "#2563eb", fillOpacity: 0.7 }} />
-            </MapContainer>
-          ) : null}
-        </div>
-        <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 180 }}>
-            <label className="muted">Lat</label>
-            <input value={fmtCoord(mapPickPoint?.[0])} readOnly />
-          </div>
-          <div style={{ flex: 1, minWidth: 180 }}>
-            <label className="muted">Lng</label>
-            <input value={fmtCoord(mapPickPoint?.[1])} readOnly />
-          </div>
-        </div>
-        <div className="row" style={{ justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={() => {
-              setMapPickIdx(null);
-              setMapPickPoint(null);
-            }}
-          >
-            Vazgeç
-          </button>
-          <button type="button" onClick={applyDestinationMapPoint} disabled={!Array.isArray(mapPickPoint)}>
-            Bu noktayı kullan
-          </button>
-        </div>
-      </div>
-    </Modal>
+      mapPickPoint={mapPickPoint}
+      setMapPickPoint={setMapPickPoint}
+      fmtCoord={fmtCoord}
+      applyDestinationMapPoint={applyDestinationMapPoint}
+    />
     </>
   );
 }

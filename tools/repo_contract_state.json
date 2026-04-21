@@ -85,8 +85,8 @@
     "policyVersion": 1,
     "warningThreshold": 1000,
     "blockThreshold": 1200,
-    "currentLargeFileCount": 6,
-    "currentWarningHotFileCount": 8,
+    "currentLargeFileCount": 3,
+    "currentWarningHotFileCount": 10,
     "principles": [
       "line-count dusurmek icin kor refactor yok",
       "once acceptance sonra kontrollu temizlik",
@@ -134,10 +134,6 @@
         "class": "acceptance-sensitive-later",
         "note": "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
       },
-      "web/src/panels/shared/CopilotPanel.jsx": {
-        "class": "acceptance-sensitive-later",
-        "note": "gorunur acceptance yuzeyi; yalniz explicit gerekceyle ele alinir"
-      },
       "mobile/App.js": {
         "class": "acceptance-sensitive-later",
         "note": "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
@@ -170,6 +166,7 @@
     ],
     "forbiddenGlobFiles": [
       "backend/data/*.json",
+      "data/*.json",
       "README_M*_OVERLAY*.txt",
       "*.zip"
     ],
@@ -240,6 +237,51 @@
       "line-count reduction stays deferred until after acceptance, hygiene, export, and CI closure work"
     ],
     "lintEvidence": "artifacts/lint/web_lint_latest.txt"
+  },
+  "physicalSnapshotHygiene": {
+    "policyVersion": 1,
+    "goal": "physical-snapshot-hygiene-distinction",
+    "primaryCommand": "npm run verify:snapshot",
+    "softGate": true,
+    "reportPath": "artifacts/repo-audit/physical_snapshot_hygiene_latest.json",
+    "principles": [
+      "export-clean and physical snapshot clean are separate checks",
+      "the first snapshot gate is report-only and does not block verify:final",
+      "deprecated export zip residues and overlay backup residues are not allowed in the working tree snapshot surface",
+      "docs/overlays stays as intentional tracked history and is not treated as snapshot dirt"
+    ],
+    "allowExactFiles": [
+      "artifacts/.gitkeep"
+    ],
+    "allowPathPrefixes": [
+      "artifacts/lint/",
+      "artifacts/repo-audit/",
+      "artifacts/shareable-export/",
+      "docs/overlays/"
+    ],
+    "allowGlobFiles": [
+      "artifacts/shareable-export/servis-platform_shareable_*.zip"
+    ],
+    "hardFailExactFiles": [
+      ".env",
+      "backend/.env",
+      "infra/.env"
+    ],
+    "hardFailPathPrefixes": [
+      "artifacts/overlay-backups/",
+      "web/dist/",
+      "mobile/dist/"
+    ],
+    "hardFailGlobFiles": [
+      "backend/data/*.json",
+      "data/*.json",
+      "artifacts/exports/*.zip"
+    ],
+    "warningPathPrefixes": [
+      "artifacts/",
+      "docs/_archive/",
+      "tools/_archive/"
+    ]
   },
   "repoVerificationSpine": {
     "goal": "single-roof-repo-verification-chain",

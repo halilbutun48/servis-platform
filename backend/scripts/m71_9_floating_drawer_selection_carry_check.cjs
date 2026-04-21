@@ -45,14 +45,15 @@ console.log('=== M71.9 FLOATING DRAWER SELECTION CARRY CHECK ===');
 
 const drawer = read('web/src/components/copilot/FloatingCopilotDrawer.jsx');
 const panel = read('web/src/panels/shared/CopilotPanel.jsx');
+const panelHelpers = read('web/src/utils/copilotPanelHelpers.js');
 
 ok(includesText(drawer, 'function normalizeScopePath(path)'), 'drawer normalizes scope path');
 ok(includesText(drawer, 'scopeFamily(path)'), 'drawer computes scope family');
 ok(includesText(drawer, 'selection?.entityType || ""'), 'drawer sends selected entity type');
 ok(includesText(drawer, 'selectedEntityId: Number(selection?.entityId || 0) || null'), 'drawer sends selected entity id');
 ok(includesText(drawer, 'if (q) return q;'), 'drawer sends raw user question');
-ok(includesText(panel, 'function normalizeScopePath(path)'), 'panel normalizes scope path');
-ok(includesText(panel, 'scopeFamily(path)'), 'panel computes scope family');
+ok(includesText(panel, 'function normalizeScopePath(path)') || includesText(panelHelpers, 'function normalizeScopePath(path)'), 'panel normalizes scope path');
+ok(includesText(panel, 'scopeFamily(path)') || includesText(panelHelpers, 'scopeFamily(path)'), 'panel computes scope family');
 
 if (process.exitCode) {
   console.error('=== M71.9 FLOATING DRAWER SELECTION CARRY CHECK FAIL ===');

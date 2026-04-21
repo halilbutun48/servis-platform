@@ -88,7 +88,6 @@ const expectedClasses = {
   "web/src/panels/company/AgreementsPanel.jsx": "safe-candidate-review",
   "backend/src/routes/shifts/room.js": "acceptance-sensitive-later",
   "backend/src/routes/shifts/company.js": "acceptance-sensitive-later",
-  "web/src/panels/shared/CopilotPanel.jsx": "acceptance-sensitive-later",
   "mobile/App.js": "acceptance-sensitive-later",
   "backend/src/ai/jobGuide/screenCatalog.js": "safe-candidate-review",
   "web/src/panels/room/ShiftsPanel.jsx": "safe-candidate-review",

@@ -995,7 +995,11 @@ export function agreementsRouter(io) {
     if (hub?.error) return sendErrorResponse(res, httpError(400, "BAD_REQUEST", hub.error));
     const sourceShiftId = Number(req.body?.sourceShiftId || 0);
 
-    await requireSourceShiftForAgreementCreate(prisma, { sourceShiftId, companyId, roomId });
+    try {
+      await requireSourceShiftForAgreementCreate(prisma, { sourceShiftId, companyId, roomId });
+    } catch (error) {
+      return sendErrorResponse(res, error);
+    }
 
     const created = await prisma.$transaction(async (tx) => {
       const rows = [];
@@ -1076,7 +1080,11 @@ export function agreementsRouter(io) {
 
     const sourceShiftId = Number(req.body?.sourceShiftId || 0);
 
-    await requireSourceShiftForAgreementCreate(prisma, { sourceShiftId, companyId, roomId });
+    try {
+      await requireSourceShiftForAgreementCreate(prisma, { sourceShiftId, companyId, roomId });
+    } catch (error) {
+      return sendErrorResponse(res, error);
+    }
 
     const created = await prisma.agreement.create({
       data: {

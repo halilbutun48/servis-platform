@@ -39,9 +39,10 @@ MustContain (Join-Path $RepoRoot "backend\src\ai\tools.js") 'buildVehicleExplana
 
 Write-Host "INFO Checking web quality/evidence wiring"
 $panel = Join-Path $RepoRoot "web\src\panels\shared\CopilotPanel.jsx"
-MustContain $panel 'confidencePct' "panel renders confidence"
-MustContain $panel 'Explanation' "panel renders explanation section"
-MustContain $panel 'Evidence' "panel renders evidence section"
-MustContain $panel 'Decision Signals' "panel renders decision signals section"
+$advancedResult = Join-Path $RepoRoot "web\src\components\copilot\CopilotAdvancedResultCard.jsx"
+MustContain $advancedResult 'confidencePct' "advanced result card renders confidence"
+MustContain $advancedResult 'result.explanation' "advanced result card renders explanation section"
+MustContain $advancedResult 'result.evidence' "advanced result card renders evidence section"
+MustContain $advancedResult 'decisionSignals' "advanced result card renders decision signals section"
 
 Write-Host "M46.3 AI COPILOT QUALITY + EVIDENCE REPO CONTRACT PASS"

@@ -20,6 +20,7 @@ Amaç: repo green bazını bozmadan, paylaşılabilir repo paketi için temiz ex
 - `web/dist/`, `mobile/dist/`
 - `infra/osrm-data/`
 - `backend/data/*.json`
+- `data/*.json`
 - `pack_living_final.log`, `pack_living_latest.log`
 - `README_M*_OVERLAY*.txt`
 - `*.zip`
@@ -29,6 +30,7 @@ Amaç: repo green bazını bozmadan, paylaşılabilir repo paketi için temiz ex
 - Bu adım davranış refactor'u değildir.
 - Yalnız acceptance-safe hijyen ve export güveni hedeflenir.
 - Runtime JSON store repoda kalıcı kaynak sayılmaz; shareable pakete girmez.
+- `export-clean` ile `physical snapshot clean` aynı şey değildir; fiziksel yüzey ölçümü ayrı soft gate ile izlenir.
 
 ## Yürütülebilir kapı
 - `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`

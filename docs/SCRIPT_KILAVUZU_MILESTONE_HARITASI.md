@@ -357,7 +357,8 @@ Bu bant güncel doğrulanmış üst hattır.
 - Pack: `tools/pack_m90_c7_export_package_hygiene.ps1`
 - Runbook: `docs/RUNBOOK_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE.md`
 - Shareable export: `tools/export_shareable_repo_bundle.ps1`
-- Ana konu: env/build/runtime-json/overlay kalıntısı taşımayan temiz shareable repo zip üretmek.
+- Physical snapshot soft gate: `npm run verify:snapshot`
+- Ana konu: env/build/runtime-json/overlay kalıntısı taşımayan temiz shareable repo zip üretmek; fiziksel snapshot yüzeyi export-clean ile karıştırılmaz.
 
 ### M90C.8 — CI / verification visibility [PACK]
 - Pack: `tools/pack_m90_c8_ci_verification_visibility.ps1`

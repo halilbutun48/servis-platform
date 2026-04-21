@@ -5,6 +5,7 @@
   "scripts": {
     "check": "npm run verify:repo",
     "verify:repo": "node backend/scripts/run_repo_check_chain.js --phase all",
+    "verify:snapshot": "node backend/scripts/m90_c10_physical_snapshot_hygiene_check.js",
     "lint:backend": "npm --prefix backend run lint",
     "lint:web": "node backend/scripts/run_web_lint_with_evidence.js",
     "lint": "npm run lint:backend && npm run lint:web",

@@ -63,11 +63,12 @@ expect((state.activeMilestones || []).includes("M90C.7"), "state active mileston
 expect(policy.goal === "shareable-package-clean-export", "state policy goal tracks shareable package clean export");
 expect((policy.exportTool || "") === "tools/export_shareable_repo_bundle.ps1", "state policy points to shareable export tool");
 expect((policy.forbiddenExactFiles || []).includes(".env") && (policy.forbiddenExactFiles || []).includes("backend/.env") && (policy.forbiddenExactFiles || []).includes("infra/.env"), "state policy blocks env files");
-expect((policy.forbiddenGlobFiles || []).includes("backend/data/*.json") && (policy.forbiddenGlobFiles || []).includes("README_M*_OVERLAY*.txt"), "state policy blocks runtime json and overlay residue globs");
+expect((policy.forbiddenGlobFiles || []).includes("backend/data/*.json") && (policy.forbiddenGlobFiles || []).includes("data/*.json") && (policy.forbiddenGlobFiles || []).includes("README_M*_OVERLAY*.txt"), "state policy blocks runtime json and overlay residue globs");
 expect((policy.forbiddenPathPrefixes || []).includes("artifacts/") && (policy.forbiddenPathPrefixes || []).includes("web/dist/") && (policy.forbiddenPathPrefixes || []).includes("mobile/dist/"), "state policy blocks artifacts and dist trees");
 expect(report.summary.runtimeJsonFileCount === 0, "repo audit runtime json count remains 0");
 
 expect(includesText(gitignore, "backend/data/*.json"), ".gitignore keeps runtime json ignored");
+expect(includesText(gitignore, "data/*.json"), ".gitignore keeps root runtime json ignored");
 expect(includesText(gitignore, ".env") && includesText(gitignore, "backend/.env") && includesText(gitignore, "infra/.env"), ".gitignore blocks env files");
 expect(includesText(gitignore, "web/dist/") && includesText(gitignore, "mobile/dist/"), ".gitignore blocks web/mobile dist");
 expect(includesText(gitignore, "pack_living_*.log") && includesText(gitignore, "README_M*_OVERLAY*.txt"), ".gitignore blocks pack logs and overlay residues");
@@ -80,7 +81,7 @@ expect(includesText(preflightBundle, "web\\dist") && includesText(preflightBundl
 expect(includesText(preflightBundle, "pack_living_final.log") && includesText(preflightBundle, "README_M*_OVERLAY*.txt"), "repo hygiene preflight removes pack log and overlay readme residues");
 
 expect(includesText(exportTool, "Compress-Archive") || includesText(exportTool, "tar.exe") || includesText(exportTool, "CreateFromDirectory"), "shareable export tool creates sanitized zip output");
-expect(includesText(exportTool, "backend/data/*.json") && includesText(exportTool, "README_M*_OVERLAY*.txt"), "shareable export tool excludes runtime json and overlay residue globs");
+expect(includesText(exportTool, "backend/data/*.json") && includesText(exportTool, "data/*.json") && includesText(exportTool, "README_M*_OVERLAY*.txt"), "shareable export tool excludes runtime json and overlay residue globs");
 expect(includesText(exportTool, "artifacts/") && includesText(exportTool, "web/dist/") && includesText(exportTool, "mobile/dist/"), "shareable export tool excludes artifacts and dist trees");
 expect(includesText(exportTool, "pack_living_final.log") && includesText(exportTool, "pack_living_latest.log"), "shareable export tool excludes pack logs");
 expect(includesText(exportTool, "node_modules") && includesText(packM90C7, "node_modules"), "shareable export and pack inspection block nested node_modules");

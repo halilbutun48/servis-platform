@@ -104,9 +104,11 @@ Compatibility aliases for legacy checks:
 
 ## export / package hygiene closure
 - Satır azaltma en sona bırakılır; bu adım export güveni ve çalışma alanı hijyeni içindir.
-- `.env`, build/dist artıkları, runtime JSON store dosyaları ve overlay/log kalıntıları shareable pakete giremez.
+- `.env`, build/dist artıkları, `backend/data/*.json`, `data/*.json` ve overlay/log kalıntıları shareable pakete giremez.
 - Kanonik komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Shareable zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`.
+- Fiziksel snapshot yüzeyi için ayrı soft gate: `npm run verify:snapshot`.
+- `verify:snapshot` fiziksel dosya yüzeyini raporlar; ilk turda `verify:final` hattını bloklamaz.
 
 ## CI / verification visibility
 - Repo-native görünür doğrulama zinciri: `npm run verify:ci`.

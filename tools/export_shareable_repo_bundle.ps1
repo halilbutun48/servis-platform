@@ -1,11 +1,11 @@
 param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
-  [string]$OutputDir = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")).Path "artifacts\exports")
+  [string]$OutputDir = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")).Path "artifacts\shareable-export")
 )
 
 $ErrorActionPreference = "Stop"
 
-# shareable export excludes: backend/data/*.json, README_M*_OVERLAY*.txt
+# shareable export excludes: backend/data/*.json, data/*.json, README_M*_OVERLAY*.txt
 # shareable export excludes: artifacts/, web/dist/, mobile/dist/
 # shareable export excludes: pack_living_final.log, pack_living_latest.log
 # legacy note: Compress-Archive fallback was replaced because long paths and hidden files made it brittle.
@@ -89,7 +89,7 @@ function Assert-InsideRoot {
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "servis-platform-shareable-$timestamp"
 $stageRoot = Join-Path $tempRoot "servis-platform"
-$zipPath = Join-Path $OutputDir "servis-platform-shareable-$timestamp.zip"
+$zipPath = Join-Path $OutputDir "servis-platform_shareable_$timestamp.zip"
 $copied = 0
 
 if (Test-Path $tempRoot) {

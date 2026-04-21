@@ -60,6 +60,7 @@ async function main() {
   requiredFiles.forEach((rel) => must(`${rel} exists`, exists(rel)));
 
   const roomRoute = read("backend/src/routes/shifts/room.js");
+  const roomReassignNotifications = read("backend/src/routes/shifts/roomReassignNotifications.js");
   const sharedRoute = read("backend/src/routes/shifts/shared.js");
   const roomPanel = read("web/src/panels/room/ShiftsPanel.jsx");
   const companyPanel = read("web/src/panels/company/ShiftsPanel.jsx");
@@ -71,8 +72,8 @@ async function main() {
 
   console.log("INFO checking backend M66 route skeleton");
   must("room route exposes reassign endpoint", includesAny(roomRoute, ['"/:id/reassign"', "Only APPROVED/ACTIVE shifts can be reassigned"]));
-  must("room route writes SHIFT_REASSIGN audit", includesAny(roomRoute, ["SHIFT_REASSIGN", 'action: "reassign"']));
-  must("room route emits new and old driver handoff events", includesAny(roomRoute, ["reassign-removed", 'emit?.("route:plan"', 'emit?.("shift:update"']));
+  must("room route writes SHIFT_REASSIGN audit", includesAny(roomRoute + roomReassignNotifications, ["SHIFT_REASSIGN", 'action: "reassign"']));
+  must("room route emits new and old driver handoff events", includesAny(roomRoute + roomReassignNotifications, ["reassign-removed", 'emit?.("route:plan"', 'emit?.("shift:update"']));
   must("shared route exposes operation-events endpoint", includesAny(sharedRoute, ['"/:id/operation-events"', 'SHIFT_REASSIGN']));
 
   console.log("INFO checking web M66 wiring");
