@@ -18,6 +18,8 @@ import { getApiErrorMessage } from "../../utils/apiContract";
 import {
   PACKS,
   clearPlanTermsForShiftIds as _clearPlanTermsForShiftIds,
+  buildGuidedPlanModalResetState,
+  buildGuidedPlanModalRouteRefreshPrefill,
   coordNum,
   createAdditionalCustomSlot,
   createDefaultCustomSlots,
@@ -515,40 +517,42 @@ export default function GuidedPlanModal({
     if (!opts.skipCleanup && !sentOk && draftShiftIds.length) {
       void cleanupDraftShifts(draftShiftIds, { keepState: true });
     }
-    setStep(0);
-    setBusy(false);
-    setErr("");
-    setInfo("");
-    setHubLat("");
-    setHubLng("");
-    setAddr("");
-    setHubLoaded(false);
-    setPackKey("WK_MORNING_EVENING");
-    setStartDate(todayYmd());
-    setDurationKey("1d");
-    setEndDate(createInitialEndDate());
-    setDaysSel(selectedFromMask(62));
-    setCustomSlots(createDefaultCustomSlots());
-    setDraftNote("");
-    setDraftAmount("");
-    setOrgEstimatedPax("");
-    setOrgGatheringName("");
-    setOrgReturnType("RETURN_TO_START");
-    setOrgDestinations([emptyDestination()]);
-    setMapPickIdx(null);
-    setMapPickPoint(null);
-    setDraftShiftIds([]);
-    setDraftShifts([]);
-    setOsrmBatch({ running: false, done: 0, total: 0 });
-    setOsrmResById({});
-    setCompanyGeoGate({ blocking: false, ready: true, geoStats: { ok: 0, review: 0, failed: 0, total: 0 }, stopSummary: null });
-    setRoomQ("");
-    setOnlyHubRooms(false);
-    setSelRoomIds({});
-    setOfferAmount("");
-    setOfferNote("");
-    setSentOk(false);
-    setOfferOutcome("idle");
+    const next = buildGuidedPlanModalResetState();
+    setStep(next.step);
+    setBusy(next.busy);
+    setErr(next.err);
+    setInfo(next.info);
+    setHubLat(next.hubLat);
+    setHubLng(next.hubLng);
+    setAddr(next.addr);
+    setHubLoaded(next.hubLoaded);
+    setPackKey(next.packKey);
+    setStartDate(next.startDate);
+    setDurationKey(next.durationKey);
+    setEndDate(next.endDate);
+    setDaysSel(next.daysSel);
+    setCustomSlots(next.customSlots);
+    setDraftNote(next.draftNote);
+    setDraftAmount(next.draftAmount);
+    setOrgEstimatedPax(next.orgEstimatedPax);
+    setOrgGatheringName(next.orgGatheringName);
+    setOrgReturnType(next.orgReturnType);
+    setOrgDestinations(next.orgDestinations);
+    setMapPickIdx(next.mapPickIdx);
+    setMapPickPoint(next.mapPickPoint);
+    setDraftShiftIds(next.draftShiftIds);
+    setDraftShifts(next.draftShifts);
+    setOsrmBatch(next.osrmBatch);
+    setOsrmResById(next.osrmResById);
+    setCompanyGeoGate(next.companyGeoGate);
+    setRoomQ(next.roomQ);
+    setOnlyHubRooms(next.onlyHubRooms);
+    setSelRoomIds(next.selRoomIds);
+    setRoomScores(next.roomScores);
+    setOfferAmount(next.offerAmount);
+    setOfferNote(next.offerNote);
+    setSentOk(next.sentOk);
+    setOfferOutcome(next.offerOutcome);
     appliedLaunchNonceRef.current = 0;
   }
 
@@ -606,40 +610,29 @@ export default function GuidedPlanModal({
     if (!nonce || appliedLaunchNonceRef.current === nonce) return;
     if (!routeRefreshMode) return;
 
-    const roomId = Number(launchContext?.roomId || 0);
-    const nextWeekMask = Number(launchContext?.weekMask || 62) || 62;
-    const startHHMM = String(launchContext?.startHHMM || "08:00");
-    const endHHMM = String(launchContext?.endHHMM || "10:00");
-    const direction = String(launchContext?.direction || "INBOUND").toUpperCase();
-    const pattern = String(launchContext?.pattern || "ONE_WAY").toUpperCase();
-    const hubLatValue = coordNum(launchContext?.hubLat);
-    const hubLngValue = coordNum(launchContext?.hubLng);
-    const preferredStartDate = String(launchContext?.startDate || todayYmd());
+    const prefill = buildGuidedPlanModalRouteRefreshPrefill({
+      launchContext,
+      currentHubLat: hubLat,
+      currentHubLng: hubLng,
+    });
 
-    setPackKey("CUSTOM");
-    setCustomSlots([{
-      label: "Vardiya 1",
-      startHHMM,
-      endHHMM,
-      direction,
-      pattern,
-    }]);
-    setStartDate(preferredStartDate);
-    setDurationKey(String(launchContext?.durationKey || "1w"));
-    setDaysSel(selectedFromMask(nextWeekMask));
-    if (hubLatValue != null && hubLngValue != null) {
-      setHubLat(String(hubLatValue));
-      setHubLng(String(hubLngValue));
+    setPackKey(prefill.packKey);
+    setCustomSlots(prefill.customSlots);
+    setStartDate(prefill.startDate);
+    setDurationKey(prefill.durationKey);
+    setDaysSel(prefill.daysSel);
+    if (prefill.hubLat != null && prefill.hubLng != null) {
+      setHubLat(prefill.hubLat);
+      setHubLng(prefill.hubLng);
     }
-    if (roomId > 0) {
-      setSelRoomIds({ [roomId]: true });
+    if (prefill.selRoomIds) {
+      setSelRoomIds(prefill.selRoomIds);
     }
-    if (launchContext?.roomName) {
-      setRoomQ(String(launchContext.roomName));
+    if (prefill.roomQ) {
+      setRoomQ(prefill.roomQ);
     }
-    const hasReadyHub = (hubLatValue != null && hubLngValue != null) || (coordNum(hubLat) != null && coordNum(hubLng) != null);
-    setStep(hasReadyHub ? 1 : 0);
-    setInfo(`Sözleşme #${Number(launchContext?.agreementId || 0) || "?"} için rota güncelleme hazırlığı açıldı. Plan ve kişi/durak değişikliklerini bu akışta hazırlayabilirsin.`);
+    setStep(prefill.step);
+    setInfo(prefill.info);
     appliedLaunchNonceRef.current = nonce;
   }, [open, hubLoaded, launchNonce, launchContext, routeRefreshMode, hubLat, hubLng]);
 

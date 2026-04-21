@@ -1,6 +1,7 @@
 import {
   QUICK_DURATION_PRESETS,
   addDaysISO,
+  selectedFromMask,
 } from "../../utils/agreementUi";
 import { formatDateTimeTR, isoFromTRYmdMin, ymdTR } from "../../utils/time";
 
@@ -40,6 +41,88 @@ export function parseTryInput(raw) {
   if (!cleaned) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export function buildGuidedPlanModalResetState() {
+  return {
+    step: 0,
+    busy: false,
+    err: "",
+    info: "",
+    hubLat: "",
+    hubLng: "",
+    addr: "",
+    hubLoaded: false,
+    packKey: "WK_MORNING_EVENING",
+    startDate: todayYmd(),
+    durationKey: "1d",
+    endDate: createInitialEndDate(),
+    daysSel: selectedFromMask(62),
+    customSlots: createDefaultCustomSlots(),
+    draftNote: "",
+    draftAmount: "",
+    orgEstimatedPax: "",
+    orgGatheringName: "",
+    orgReturnType: "RETURN_TO_START",
+    orgDestinations: [emptyDestination()],
+    mapPickIdx: null,
+    mapPickPoint: null,
+    draftShiftIds: [],
+    draftShifts: [],
+    osrmBatch: { running: false, done: 0, total: 0 },
+    osrmResById: {},
+    roomQ: "",
+    onlyHubRooms: false,
+    selRoomIds: {},
+    roomScores: {},
+    offerAmount: "",
+    offerNote: "",
+    sentOk: false,
+    offerOutcome: "idle",
+    companyGeoGate: {
+      blocking: false,
+      ready: true,
+      geoStats: { ok: 0, review: 0, failed: 0, total: 0 },
+      stopSummary: null,
+    },
+  };
+}
+
+export function buildGuidedPlanModalRouteRefreshPrefill({ launchContext, currentHubLat, currentHubLng }) {
+  const roomId = Number(launchContext?.roomId || 0);
+  const nextWeekMask = Number(launchContext?.weekMask || 62) || 62;
+  const startHHMM = String(launchContext?.startHHMM || "08:00");
+  const endHHMM = String(launchContext?.endHHMM || "10:00");
+  const direction = String(launchContext?.direction || "INBOUND").toUpperCase();
+  const pattern = String(launchContext?.pattern || "ONE_WAY").toUpperCase();
+  const hubLatValue = coordNum(launchContext?.hubLat);
+  const hubLngValue = coordNum(launchContext?.hubLng);
+  const preferredStartDate = String(launchContext?.startDate || todayYmd());
+  const currentHubLatValue = coordNum(currentHubLat);
+  const currentHubLngValue = coordNum(currentHubLng);
+  const hasReadyHub = (hubLatValue != null && hubLngValue != null) || (currentHubLatValue != null && currentHubLngValue != null);
+
+  return {
+    packKey: "CUSTOM",
+    customSlots: [
+      {
+        label: "Vardiya 1",
+        startHHMM,
+        endHHMM,
+        direction,
+        pattern,
+      },
+    ],
+    startDate: preferredStartDate,
+    durationKey: String(launchContext?.durationKey || "1w"),
+    daysSel: selectedFromMask(nextWeekMask),
+    hubLat: hubLatValue != null ? String(hubLatValue) : null,
+    hubLng: hubLngValue != null ? String(hubLngValue) : null,
+    selRoomIds: roomId > 0 ? { [roomId]: true } : null,
+    roomQ: launchContext?.roomName ? String(launchContext.roomName) : null,
+    step: hasReadyHub ? 1 : 0,
+    info: `Sözleşme #${Number(launchContext?.agreementId || 0) || "?"} için rota güncelleme hazırlığı açıldı. Plan ve kişi/durak değişikliklerini bu akışta hazırlayabilirsin.`,
+  };
 }
 
 export function updateStoredPeopleKvkkFields(companyKey, shiftIds, patch) {
