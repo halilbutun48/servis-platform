@@ -32,6 +32,7 @@ Write-Host 'INFO Checking M46.6-C2 files'
   'docs\RUNBOOK_M46_6_C2_SCREEN_COVERAGE_TERMINOLOGY.md',
   'backend\src\ai\jobGuide\glossary.js',
   'backend\src\ai\jobGuide\screenCatalog.js',
+  'backend\src\ai\jobGuide\screenCatalog.roomCompany.js',
   'backend\src\ai\chat\helpComposer.js',
   'backend\src\ai\chat\intentRouter.js',
   'web\src\panels\shared\CopilotPanel.jsx',
@@ -52,7 +53,10 @@ MustContainText $glossary 'checkin' 'glossary includes check-in term'
 MustContainText $glossary 'explainTermsFromText' 'glossary exposes text term resolver'
 
 Write-Host 'INFO Checking screen coverage catalog'
-$catalog = ReadText 'backend\src\ai\jobGuide\screenCatalog.js'
+$catalog = @(
+  (ReadText 'backend\src\ai\jobGuide\screenCatalog.js'),
+  (ReadText 'backend\src\ai\jobGuide\screenCatalog.roomCompany.js')
+) -join "`n"
 MustContainText $catalog '/room/hub' 'catalog includes room hub'
 MustContainText $catalog '/room/checkin' 'catalog includes room checkin'
 MustContainText $catalog '/company/hub' 'catalog includes company hub'

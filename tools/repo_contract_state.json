@@ -86,7 +86,7 @@
     "warningThreshold": 1000,
     "blockThreshold": 1200,
     "currentLargeFileCount": 3,
-    "currentWarningHotFileCount": 10,
+    "currentWarningHotFileCount": 9,
     "principles": [
       "line-count dusurmek icin kor refactor yok",
       "once acceptance sonra kontrollu temizlik",
@@ -105,10 +105,6 @@
       "backend/prisma/schema.prisma": {
         "class": "justified-exception",
         "note": "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
-      },
-      "backend/src/ai/jobGuide/screenCatalog.js": {
-        "class": "safe-candidate-review",
-        "note": "katalog/yuzey ayrimi icin kontrollu extraction adayi"
       },
       "web/src/panels/room/ShiftsPanel.jsx": {
         "class": "safe-candidate-review",
@@ -221,6 +217,10 @@
   "safeClosureFinalHygiene": {
     "goal": "safe-closure-final-hygiene-checklist",
     "primaryCommand": "npm run verify:final",
+    "verifyFinalBehavior": [
+      "run verify:repo",
+      "refresh physical snapshot soft-gate report"
+    ],
     "windowsPreferredShell": "pwsh",
     "exportPack": "tools/pack_m90_c7_export_package_hygiene.ps1",
     "exportTool": "tools/export_shareable_repo_bundle.ps1",
@@ -233,10 +233,12 @@
     ],
     "compatibilityNotes": [
       "On Windows, prefer pwsh for export-related packs and shareable bundle generation",
+      "verify:final refreshes the physical snapshot hygiene report but keeps snapshot results soft-gated",
       "export_shareable_repo_bundle.ps1 must stay compatible with Windows PowerShell 5.1 fallback semantics even when pwsh is preferred",
       "line-count reduction stays deferred until after acceptance, hygiene, export, and CI closure work"
     ],
-    "lintEvidence": "artifacts/lint/web_lint_latest.txt"
+    "lintEvidence": "artifacts/lint/web_lint_latest.txt",
+    "snapshotReport": "artifacts/repo-audit/physical_snapshot_hygiene_latest.json"
   },
   "physicalSnapshotHygiene": {
     "policyVersion": 1,
@@ -246,7 +248,7 @@
     "reportPath": "artifacts/repo-audit/physical_snapshot_hygiene_latest.json",
     "principles": [
       "export-clean and physical snapshot clean are separate checks",
-      "the first snapshot gate is report-only and does not block verify:final",
+      "the first snapshot gate is report-only and does not block verify:final even when verify:final refreshes the report",
       "deprecated export zip residues and overlay backup residues are not allowed in the working tree snapshot surface",
       "docs/overlays stays as intentional tracked history and is not treated as snapshot dirt"
     ],

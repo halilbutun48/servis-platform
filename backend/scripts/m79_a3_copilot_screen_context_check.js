@@ -49,7 +49,10 @@ const acceptancePanel = read('web/src/panels/superadmin/FieldAcceptanceCenter.js
 const trustPanel = read('web/src/panels/superadmin/TrustQualityPanel.jsx');
 const observabilityPanel = read('web/src/panels/superadmin/ObservabilityPanel.jsx');
 const analyzer = read('backend/src/ai/chat/screenStateAnalyzer.js');
-const catalog = read('backend/src/ai/jobGuide/screenCatalog.js');
+const catalog = [
+  read('backend/src/ai/jobGuide/screenCatalog.js'),
+  read('backend/src/ai/jobGuide/screenCatalog.roomCompany.js'),
+].join('\n');
 
 must(includesText(copilotPanel, 'import { getCopilotScreenOptions } from "../../copilot/screenRegistry";'), 'CopilotPanel imports shared screen registry');
 must(includesText(copilotPanel, 'return getCopilotScreenOptions(me);'), 'CopilotPanel uses shared screen options');

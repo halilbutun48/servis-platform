@@ -89,7 +89,6 @@ const expectedClasses = {
   "backend/src/routes/shifts/room.js": "acceptance-sensitive-later",
   "backend/src/routes/shifts/company.js": "acceptance-sensitive-later",
   "mobile/App.js": "acceptance-sensitive-later",
-  "backend/src/ai/jobGuide/screenCatalog.js": "safe-candidate-review",
   "web/src/panels/room/ShiftsPanel.jsx": "safe-candidate-review",
   "web/src/panels/company/ShiftPeopleTab.jsx": "safe-candidate-review",
   "tools/milestone_pack_manifest.json": "justified-exception",
