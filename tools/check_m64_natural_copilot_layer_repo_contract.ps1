@@ -106,15 +106,15 @@ Assert-RepoContractContainsAny $toolsReadme @('TOOLS_README_ROUTE_M64_V1','m64 -
 
 Assert-RepoContractContainsAny $registry @('REGISTRY_ROUTE_M63_M65_V1','m64 - dogal copilot katmani - green-base','m64 - dogal copilot katmani','m66 - operasyonel reassignment - functional-open','m75 green baseline','m76a-1','m77.5','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'registry lists current official M64 state'
 
-Assert-RepoContractContainsAny $runbook @('dogal copilot katmani','kisa konusma hafizasi','m64 green olmadan m65') 'runbook defines M64 scope'
+Assert-RepoContractContainsAny $runbook @('dogal copilot yol haritasi','roadmap / planned yuzeyi','read-only','suggestion-first','canli yonetim paneli degil') 'runbook defines M64 roadmap scope'
 
-Assert-RepoContractContainsAny $milestone @('dogal copilot katmani','manifest','feedback-template') 'milestone documents M64 outputs'
+Assert-RepoContractContainsAny $milestone @('dogal copilot yol haritasi','roadmap / planned yuzeyi','manifest','feedback-template','canli yonetim paneli degil') 'milestone documents M64 roadmap outputs'
 
 Assert-RepoContractContainsAny $route @('/manifest','/reply-template','/feedback-template') 'natural copilot route exposes manifest and templates'
 
 Assert-RepoContractContainsAny $manifest @('natural_copilot_capabilities','dogal turkce cevap katmani','copilot geri bildirim zemini') 'manifest defines M64 natural capabilities'
 
-Assert-RepoContractContainsAny $panel @('m64 dogal copilot katmani','dogal cevap','geri bildirim') 'web panel shows M64 cards'
+Assert-RepoContractContainsAny $panel @('dogal copilot yol haritasi','roadmap','planned surface','aktif capability','planlanan capability','read-only','suggestion-first') 'web panel shows roadmap/planned cards'
 
 Assert-RepoContractContainsAny $pack @('m64_natural_copilot_layer_check.js','check_m64_natural_copilot_layer_repo_contract.ps1') 'm64 pack wires runtime and repo contract'
 

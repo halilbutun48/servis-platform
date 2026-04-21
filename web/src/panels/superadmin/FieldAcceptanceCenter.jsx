@@ -16,6 +16,20 @@ function Card({ title, children }) {
   );
 }
 
+function formatTR(iso) {
+  if (!iso) return "-";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return String(iso);
+  return date.toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function unwrapManifest(payload) {
   return payload?.manifest || payload || null;
 }
@@ -115,6 +129,9 @@ export default function FieldAcceptanceCenter() {
   const firstPending = getFirstPending(checklist);
   const decisionValue = String(session?.decision || "LIMITED_GO").trim().toUpperCase() || "LIMITED_GO";
   const riskNote = String(session?.decisionReason || session?.note || "").trim();
+  const currentSessionId = session?.sessionId || "-";
+  const currentSessionCreatedBy = session?.createdByEmail || "-";
+  const currentSessionUpdatedBy = session?.updatedByEmail || "-";
 
   useEffect(() => {
     if (!manifest && !session) {
@@ -150,27 +167,31 @@ export default function FieldAcceptanceCenter() {
       entityId: 6108,
       label: firstPending?.label || "Saha kabul özeti",
       summary: [
+        currentSessionId !== "-" ? currentSessionId : null,
         decisionValue,
         totalChecklist ? `${totalChecklist} madde` : null,
         pendingChecklist.length ? `${pendingChecklist.length} bekleyen` : "hepsi PASS",
       ].filter(Boolean).join(" • "),
       fields: [
+        { label: "Session", value: currentSessionId, help: "Tek currentSession kaydının kimliğini gösterir." },
         { label: "Karar", value: decisionValue, help: "Test oturumu için seçilen kabul kararını gösterir." },
         { label: "Checklist", value: String(totalChecklist), help: "Toplam checklist maddesi sayısını gösterir." },
         { label: "Bekleyen", value: String(pendingChecklist.length), help: "Henüz PASS olmayan checklist maddesi sayısını gösterir." },
         { label: "Cihaz", value: session?.deviceModel || "-", help: "Test oturumunda kullanılan cihaz modelini gösterir." },
         { label: "Build", value: session?.buildProfile || "-", help: "Test edilen mobil build profilini gösterir." },
+        { label: "Oluşturan", value: currentSessionCreatedBy, help: "Tek currentSession kaydını oluşturan kullanıcıyı gösterir." },
+        { label: "Güncelleyen", value: currentSessionUpdatedBy, help: "Tek currentSession kaydını son güncelleyen kullanıcıyı gösterir." },
         { label: "İlk Açık Madde", value: firstPending?.label || "-", help: "Henüz tamamlanmamış ilk checklist maddesini gösterir." },
       ],
       badges: [
         { label: "Alan", value: firstPending?.area || "-", help: "Açık checklist maddesinin ait olduğu alanı gösterir." },
-        { label: "Oturum", value: session?.sessionId || "-", help: "Aktif saha kabul oturumunun kimliğini gösterir." },
+        { label: "Oturum", value: currentSessionId, help: "Aktif saha kabul oturumunun kimliğini gösterir." },
       ],
       facts,
     });
 
     return () => clearCopilotSelection("/superadmin/acceptance");
-  }, [manifest, session, decisionValue, firstPending, pendingChecklist.length, passChecklist, totalChecklist]);
+  }, [manifest, session, currentSessionId, currentSessionCreatedBy, currentSessionUpdatedBy, decisionValue, firstPending, pendingChecklist.length, passChecklist, totalChecklist]);
 
   const setSessionField = (key, value) => {
     setSession((prev) => ({ ...(prev || {}), [key]: value }));
@@ -269,26 +290,67 @@ export default function FieldAcceptanceCenter() {
 
       <PanelKvkkHint panelKey="fieldAcceptance" />
 
+      <Card title="Canlı oturum">
+        <div className="panelMeta">
+          Tek currentSession kaydı buradan okunur; create, kaydet, karar ve checklist güncellemeleri aynı kaydı besler.
+        </div>
+        <div style={{ marginTop: 12, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}>
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+            <div className="panelMeta">Session ID</div>
+            <div className="panelBody" style={{ marginTop: 4 }}>{currentSessionId}</div>
+          </div>
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+            <div className="panelMeta">Oluşturuldu</div>
+            <div className="panelBody" style={{ marginTop: 4 }}>{formatTR(createdAt)}</div>
+          </div>
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+            <div className="panelMeta">Güncellendi</div>
+            <div className="panelBody" style={{ marginTop: 4 }}>{formatTR(updatedAt)}</div>
+          </div>
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+            <div className="panelMeta">Karar</div>
+            <div className="panelBody" style={{ marginTop: 4 }}>{decisionValue}</div>
+          </div>
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+            <div className="panelMeta">Oluşturan</div>
+            <div className="panelBody" style={{ marginTop: 4 }}>{currentSessionCreatedBy}</div>
+          </div>
+          <div style={{ padding: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+            <div className="panelMeta">Güncelleyen</div>
+            <div className="panelBody" style={{ marginTop: 4 }}>{currentSessionUpdatedBy}</div>
+          </div>
+        </div>
+        <div className="panelMeta" style={{ marginTop: 10 }}>
+          Bu üst bant live currentSession snapshot'ıdır; manifest varsayılanları aşağıdaki kartlarda ayrı gösterilir.
+        </div>
+      </Card>
+
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Karar seçenekleri">
+        <Card title="Varsayılanlar / manifest: karar seçenekleri">
           <div className="panelMeta">{(manifest?.decisions || []).join(", ") || "Henüz karar seçeneği yok"}</div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Bu kart manifest varsayılanlarını gösterir; canlı karar currentSession içindedir.</div>
         </Card>
-        <Card title="Checklist özeti">
+        <Card title="Varsayılanlar / manifest: checklist özeti">
           <div>{totalChecklist} madde</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             {(manifest?.checklist || []).slice(0, 3).map((item) => item.label).join(" • ") || "Henüz checklist maddesi yok"}
           </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Bu kart manifest seed'ini gösterir; canlı durum currentSession checklist'inden okunur.</div>
         </Card>
-        <Card title="Test oturumu özeti">
+        <Card title="Canlı currentSession özeti">
           <div>Karar: {session?.decision || "-"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Cihaz: {session?.deviceModel || "-"} • Build: {session?.buildProfile || "-"} • Not: {riskNote || "-"}
           </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>Bu kart currentSession snapshot'ının kısa özetidir.</div>
         </Card>
-        <Card title="Oturum kimliği">
-          <div>{sessionId}</div>
+        <Card title="CurrentSession provenance">
+          <div>{currentSessionId}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Oluşturuldu: {createdAt} • Güncellendi: {updatedAt}
+            Oluşturuldu: {formatTR(createdAt)} • Güncellendi: {formatTR(updatedAt)}
+          </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Oluşturan: {currentSessionCreatedBy} • Güncelleyen: {currentSessionUpdatedBy}
           </div>
         </Card>
       </div>
@@ -317,7 +379,7 @@ export default function FieldAcceptanceCenter() {
             />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
-            <div className="muted">Karar: {session?.decision || "-"}</div>
+            <div className="muted">Karar: {session?.decision || "-"} • currentSession kaydına yazılır</div>
             <button className="btn" onClick={saveDecision} disabled={decisionBusy}>
               {decisionBusy ? "Kaydediliyor..." : "Kararı kaydet"}
             </button>
@@ -325,7 +387,7 @@ export default function FieldAcceptanceCenter() {
         </Card>
 
         <Card title="Oturum bilgisi">
-          <div className="muted">Saha kabul oturumunun kimlik ve cihaz alanları.</div>
+          <div className="muted">Saha kabul currentSession kaydının kimlik ve cihaz alanları.</div>
           <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
             <input className="input" value={sessionId} readOnly />
             <input className="input" placeholder="Sürücü etiketi" value={session?.driverLabel || ""} onChange={(e) => setSessionField("driverLabel", e.target.value)} />
@@ -336,7 +398,7 @@ export default function FieldAcceptanceCenter() {
             <input className="input" type="number" min="0" placeholder="Kanıt sayısı" value={session?.evidenceCount ?? 0} onChange={(e) => setSessionField("evidenceCount", Number(e.target.value || 0))} />
           </div>
           <div className="panelMeta" style={{ marginTop: 10 }}>
-            Bu alanlar sahadaki oturumun tek kayıt üzerinden korunmasına yardımcı olur.
+            Bu alanlar sahadaki currentSession kaydının tek kayıt üzerinden korunmasına yardımcı olur.
           </div>
         </Card>
       </div>
@@ -378,7 +440,7 @@ export default function FieldAcceptanceCenter() {
                 />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                <div className="muted">Güncelleme: {item.updatedAt || "-"}</div>
+                <div className="muted">Güncelleme: {item.updatedAt || "-"} • currentSession checklist alanı</div>
                 <button className="btn" onClick={() => saveChecklistItem(item)} disabled={busy}>
                   {busy ? "Kaydediliyor..." : "Maddeyi güncelle"}
                 </button>

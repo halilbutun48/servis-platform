@@ -150,6 +150,14 @@ must(
   includesText(panelTxt, "Yeni oturum oluştur") &&
   includesText(panelTxt, "Oturumu kaydet") &&
   includesText(panelTxt, "Kararı kaydet") &&
+  includesText(panelTxt, "Canlı oturum") &&
+  includesText(panelTxt, "currentSession"),
+  "web panel shows live currentSession band",
+);
+must(
+  includesText(panelTxt, "Yeni oturum oluştur") &&
+  includesText(panelTxt, "Oturumu kaydet") &&
+  includesText(panelTxt, "Kararı kaydet") &&
   includesText(panelTxt, "/api/field-acceptance/session") &&
   includesText(panelTxt, "/api/field-acceptance/session/decision") &&
   includesText(panelTxt, "/api/field-acceptance/session/checklist"),

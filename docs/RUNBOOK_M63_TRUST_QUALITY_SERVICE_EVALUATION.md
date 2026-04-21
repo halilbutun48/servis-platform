@@ -7,6 +7,7 @@ Urunun guven ve kalite katmanini resmi olarak acmak; hizmet alan kurum degerlend
 
 ## Kapsam
 - hizmet alan kurum degerlendirmesi iskeleti
+- canli kalite ozeti ile roadmap/template kartlarinin birlikte okunmasi
 - saglayici kalite ozet kartlari
 - no-show / iptal / uyum / ETA kalite sinyalleri
 - karar destek gorunurlugu ve kalite manifesti
@@ -25,7 +26,7 @@ M63 green sayilabilmesi icin:
 1. README / PROJECT_SPEC / PRIMER / STARTPACK / CHECKLIST / NEXT_BACKLOG M62 green + M63 aktif durumu ile hizali olmali
 2. milestone registry M63 aktif durumunu tek kayitta gostermeli
 3. backend route `/api/trust-quality` altinda manifest ve kalite template endpointleri donmeli
-4. super admin panelinde M63 guven + kalite karti gorunmeli
+4. super admin panelinde canli kalite ozeti karti ile roadmap/template kartlari birlikte gorunmeli
 5. pack ve repo-contract birlikte PASS vermeli
 
 M63 green olmadan M64'e gecilmez.

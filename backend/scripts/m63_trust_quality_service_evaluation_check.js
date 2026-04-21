@@ -81,6 +81,7 @@ async function main() {
   const manifest = read("backend/src/ops/trustQualityManifest.js");
   const route = read("backend/src/routes/trustQuality.js");
   const panel = read("web/src/panels/superadmin/TrustQualityPanel.jsx");
+  const milestone = read("docs/MILESTONE_M63_TRUST_QUALITY_SERVICE_EVALUATION.md");
   const runbook = read("docs/RUNBOOK_M63_TRUST_QUALITY_SERVICE_EVALUATION.md");
 
   console.log("INFO checking updated route and SSOT status");
@@ -91,9 +92,10 @@ async function main() {
   must("server imports trust quality router", includesAny(server, ["trustQualityRouter", "./routes/trustQuality.js"]) || includesAny(mountTxt, ["trustQualityRouter"]));
   must("server mounts /api/trust-quality", includesAny(server, ["/api/trust-quality"]) || includesAny(mountTxt, ["/api/trust-quality"]));
   must("manifest defines trust dimensions", includesAny(manifest, ["TRUST_QUALITY_DIMENSIONS", "Hizmet alan degerlendirmesi", "Karar destek yuzeyi", "Hizmet alan değerlendirmesi", "Karar destek yüzeyi"]));
-  must("route exposes manifest and templates", includesAny(route, ["/manifest", "/evaluation-template", "/provider-signal-template"]));
-  must("panel shows M63 cards", includesAny(panel, ["M63 Güven + Kalite + Hizmet Değerlendirme", "Hizmet alan değerlendirmesi", "Sağlayıcı kalite sinyali", "M63 Guven + Kalite + Hizmet Degerlendirme", "Hizmet alan degerlendirmesi", "Saglayici kalite sinyali"]));
-  must("runbook explains M63 scope", includesAny(runbook, ["guven ve kalite katmani", "hizmet alan kurum degerlendirmesi", "M63 green olmadan M64'e gecilmez", "güven ve kalite katmanı", "hizmet alan kurum değerlendirmesi", "M63 green olmadan M64"]));
+  must("route exposes live summary and roadmap templates", includesAny(route, ["/manifest", "/company/summary", "/evaluation-template", "/provider-signal-template"]));
+  must("panel shows live summary and roadmap cards", includesAny(panel, ["Canlı kalite özeti", "Tamamlanan hizmet", "Değerlendirme bekleyen", "Aktif hizmet", "Sağlayıcı sayısı", "Yol haritası: hizmet alan değerlendirmesi", "Yol haritası: sağlayıcı kalite sinyali", "Canli kalite ozeti", "Tamamlanan hizmet", "Degerlendirme bekleyen", "Aktif hizmet", "Saglayici sayisi"]));
+  must("milestone explains live summary and roadmap split", includesAny(milestone, ["canli kalite ozeti", "roadmap", "template kartlarini birlikte gösterir", "canlı kalite özeti", "roadmap", "template kartlarını birlikte gösterir"]));
+  must("runbook explains live summary and roadmap split", includesAny(runbook, ["canli kalite ozeti", "roadmap", "template kartlarini birlikte gösterir", "canlı kalite özeti", "roadmap", "template kartlarını birlikte gösterir"]));
 
   console.log();
   console.log("OK M63 GUVEN + KALITE + HIZMET DEGERLENDIRME CHECK PASS");

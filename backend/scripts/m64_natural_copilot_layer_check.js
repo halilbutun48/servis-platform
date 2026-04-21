@@ -92,8 +92,9 @@ async function main() {
   must("server mounts /api/natural-copilot", includesAny(server, ["/api/natural-copilot"]) || includesAny(mountTxt, ["/api/natural-copilot"]));
   must("manifest defines natural copilot capabilities", includesAny(manifest, ["NATURAL_COPILOT_CAPABILITIES", "Dogal Turkce cevap katmani", "Copilot geri bildirim zemini", "Doğal Türkçe cevap katmanı"]));
   must("route exposes manifest and templates", includesAny(route, ["/manifest", "/reply-template", "/feedback-template"]));
-  must("panel shows M64 cards", includesAny(panel, ["M64 Doğal Copilot Katmanı", "Doğal cevap", "Geri bildirim", "M64 Dogal Copilot Katmani", "Dogal cevap", "Geri bildirim"]));
-  must("runbook explains M64 scope", includesAny(runbook, ["doğal copilot katmanı", "kısa konuşma hafızası", "M64 green olmadan M65", "dogal copilot katmani", "kisa konusma hafizasi"]));
+  must("panel labels roadmap/planned surface", includesAny(panel, ["Doğal Copilot Yol Haritası", "Roadmap", "Planned surface", "read-only", "suggestion-first", "canlı operasyon yüzeyi değildir"]));
+  must("panel distinguishes active and planned capabilities", includesAny(panel, ["Aktif capability", "Planlanan capability", "ACTIVE", "PLANNED"]));
+  must("runbook explains roadmap/planned scope", includesAny(runbook, ["doğal copilot yol haritası", "roadmap / planned yüzeyi", "read-only", "suggestion-first", "canlı yönetim paneli değil", "dogal copilot yol haritasi", "roadmap / planned yuzeyi"]));
 
   console.log();
   console.log("OK M64 DOGAL COPILOT KATMANI CHECK PASS");

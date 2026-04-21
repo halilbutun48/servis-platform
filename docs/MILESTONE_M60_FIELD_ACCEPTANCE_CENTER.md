@@ -45,3 +45,4 @@ Bu kayit:
 - checklist maddesi status gunceller
 
 Panel, sahaya cikmadan once karar ve checklist bilgisini ayni ekranda toplamayi hedefler.
+Ustteki "Canli oturum" bandi currentSession provenance'unu aciklar; alttaki kartlar manifest varsayimlari ile canli durumu ayri okutur.

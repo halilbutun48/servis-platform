@@ -1,9 +1,9 @@
 export const NATURAL_COPILOT_CAPABILITIES = [
-  { id: "natural_reply", label: "Dogal Turkce cevap katmani", status: "ACTIVE" },
-  { id: "short_memory", label: "Kisa konusma hafizasi", status: "ACTIVE" },
+  { id: "natural_reply", label: "Doğal Türkçe cevap katmanı", status: "ACTIVE" },
+  { id: "short_memory", label: "Kısa konuşma hafızası", status: "ACTIVE" },
   { id: "why_blocked", label: "Neden ilerlemiyor modu", status: "PLANNED" },
-  { id: "next_step", label: "Simdi ne yapayim modu", status: "PLANNED" },
-  { id: "simplify", label: "Daha basit anlat secenegi", status: "PLANNED" },
+  { id: "next_step", label: "Şimdi ne yapayım modu", status: "PLANNED" },
+  { id: "simplify", label: "Daha basit anlat seçeneği", status: "PLANNED" },
   { id: "feedback", label: "Copilot geri bildirim zemini", status: "PLANNED" },
 ];
 
@@ -17,7 +17,7 @@ export const NATURAL_COPILOT_RULES = [
 export function getNaturalCopilotManifest() {
   return {
     activeMilestone: "M64",
-    title: "Dogal Copilot Yol Haritasi",
+    title: "Doğal Copilot Yol Haritası",
     capabilities: NATURAL_COPILOT_CAPABILITIES,
     rules: NATURAL_COPILOT_RULES,
   };
@@ -27,7 +27,7 @@ export function buildNaturalReplyTemplate() {
   return {
     activeMilestone: "M64",
     sections: ["durum", "ana-sebep", "simdi-ne-yap", "sonraki-adim", "gerekirse-daha-basit-anlat"],
-    summary: "M64 yol haritasi icin cevap iskeleti.",
+    summary: "M64 yol haritası için cevap iskeleti.",
   };
 }
 
@@ -35,6 +35,6 @@ export function buildCopilotFeedbackTemplate() {
   return {
     activeMilestone: "M64",
     options: ["ise-yaradi", "ise-yaramadi", "cok-teknikti", "yanlis-anladi", "daha-basit-anlat"],
-    summary: "M64 yol haritasi icin geri bildirim iskeleti.",
+    summary: "M64 yol haritası için geri bildirim iskeleti.",
   };
 }

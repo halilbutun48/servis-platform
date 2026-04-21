@@ -3,11 +3,11 @@
 # MILESTONE — M63 GUVEN + KALITE + HIZMET DEGERLENDIRME
 
 ## Hedef
-Hizmet alan kurum degerlendirmesini, saglayici kalite sinyallerini ve karar destek gorunurlugunu resmi urun omurgasina eklemek.
+Hizmet alan kurum degerlendirmesini, canli kalite ozeti ile roadmap/template ayrimini ve karar destek gorunurlugunu resmi urun omurgasina eklemek.
 
 ## Uretilecek iskelet
 - backend manifest + route: `trustQualityManifest.js`, `trustQuality.js`
-- super admin paneli: `TrustQualityPanel.jsx`
+- super admin paneli: `TrustQualityPanel.jsx` (canli kalite ozeti + roadmap kartlari)
 - runtime check: `backend/scripts/m63_trust_quality_service_evaluation_check.js`
 - repo-contract: `tools/check_m63_trust_quality_service_evaluation_repo_contract.ps1`
 - pack: `tools/pack_m63_trust_quality_service_evaluation.ps1`

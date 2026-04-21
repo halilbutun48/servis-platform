@@ -54,10 +54,10 @@ Assert-RepoContractContainsAny $toolsChecklist @('TOOLS_CHECKLIST_ROUTE_M63_V1',
 Assert-RepoContractContainsAny $toolsReadme @('TOOLS_README_ROUTE_M63_V1','pack_m63_trust_quality_service_evaluation.ps1','m63 green olmadan m64 acilmaz','post-m66 functional','pack_m66_operation_reassignment.ps1','m75 green baseline','m76a-1','m77','m82','m82.8','m83','m84','m85','m86','m87','m88','m89') 'tools readme reflects M63 route or later official state'
 Assert-RepoContractContainsAny $registry @('REGISTRY_ROUTE_M63_M65_V1','m63 - guven + kalite + hizmet degerlendirme - aktif','m63 - guven + kalite + hizmet degerlendirme - green','m63 - guven + kalite + hizmet degerlendirme - green-base','m75 - living baseline','m76a-1 - minimum normalization','m77 - kvkk + uyum katmani') 'registry lists current official M63 state'
 Assert-RepoContractContainsAny $runbook @('m63 guven + kalite + hizmet degerlendirme','hizmet alan kurum degerlendirmesi','m63 green olmadan m64') 'runbook defines M63 scope'
-Assert-RepoContractContainsAny $milestone @('m63 guven + kalite + hizmet degerlendirme','trustqualitypanel.jsx','pack_m63_trust_quality_service_evaluation.ps1') 'milestone documents M63 outputs'
-Assert-RepoContractContainsAny $route @('/manifest','/evaluation-template','/provider-signal-template') 'trust quality route exposes summary endpoints'
+Assert-RepoContractContainsAny $milestone @('m63 guven + kalite + hizmet degerlendirme','trustqualitypanel.jsx','pack_m63_trust_quality_service_evaluation.ps1','canli kalite ozeti','roadmap') 'milestone documents live summary and roadmap split'
+Assert-RepoContractContainsAny $route @('/manifest','/company/summary','/evaluation-template','/provider-signal-template') 'trust quality route exposes live summary and roadmap templates'
 Assert-RepoContractContainsAny $manifest @('trust_quality_dimensions','hizmet alan degerlendirmesi','karar destek yuzeyi') 'manifest defines M63 trust dimensions'
-Assert-RepoContractContainsAny $panel @('m63 guven + kalite + hizmet degerlendirme','hizmet alan degerlendirmesi','saglayici kalite sinyali') 'web panel shows M63 cards'
+Assert-RepoContractContainsAny $panel @('canli kalite ozeti','tamamlanan hizmet','degerlendirme bekleyen','aktif hizmet','saglayici sayisi','yol haritasi: hizmet alan degerlendirmesi','yol haritasi: saglayici kalite sinyali') 'web panel shows live summary and roadmap cards'
 Assert-RepoContractContainsAny $pack @('m63_trust_quality_service_evaluation_check.js','check_m63_trust_quality_service_evaluation_repo_contract.ps1','pack pass ok') 'm63 pack wires runtime and repo contract'
 Assert-RepoContractContainsAny $script @('m63 guven + kalite + hizmet degerlendirme check','/api/trust-quality') 'm63 runtime check covers skeleton baseline'
 

@@ -1,9 +1,9 @@
 <!-- REPO_CONTRACT_MARKER milestone=M64 slug=natural-copilot-layer -->
 
-# M64 — DOĞAL COPILOT KATMANI
+# M64 — DOĞAL COPILOT YOL HARİTASI
 
 ## Hedef
-Copilot'u daha doğal Türkçe, daha takipli ve daha açıklayıcı hale getiren resmi katmanı açmak.
+Copilot'u daha doğal Türkçe, daha takipli ve daha açıklayıcı hale getiren resmi roadmap / planned yüzeyini açmak.
 
 ## Ana çıktılar
 - doğal cevap manifesti
@@ -11,7 +11,7 @@ Copilot'u daha doğal Türkçe, daha takipli ve daha açıklayıcı hale getiren
 - neden ilerlemiyor kartı
 - daha basit anlat kartı
 - geri bildirim şablonu
-- backend route + super admin paneli
+- backend route + super admin roadmap paneli
 - pack/check/runbook iskeleti
 
 ## Repo çıktıları
@@ -27,3 +27,4 @@ Copilot'u daha doğal Türkçe, daha takipli ve daha açıklayıcı hale getiren
 ## Green kuralı
 - M64 green olmadan M65 açılmaz.
 - Bu aşama yalnızca resmi iskeleti ve doğrulama hattını açar.
+- Canlı yönetim paneli değil, roadmap / planned surface olarak konumlanır.

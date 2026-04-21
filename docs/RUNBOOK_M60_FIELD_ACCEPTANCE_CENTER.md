@@ -70,6 +70,8 @@ Tek current session uzerinden su islemler yapilir:
 - karar persist etme
 - checklist madde status guncelleme
 
+Panelin ustunde "Canli oturum" bandi currentSession provenance'unu (Session ID, createdAt, updatedAt, decision, createdBy, updatedBy) acikca gosterir; manifest varsayimlari alttaki kartlarda ayrilir.
+
 ## 8) Kanonik komut
 `tools\pack_m60_field_acceptance_center.ps1 -RepoRoot D:\servis-platform`
 
