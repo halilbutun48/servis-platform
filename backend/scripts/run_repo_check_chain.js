@@ -29,6 +29,7 @@ function nodeStep(id, relPath, args = []) {
 const phaseDefinitions = {
   lint: [
     nodeStep("backend-lint", "backend/scripts/run_backend_lint.js"),
+    nodeStep("relative-import-integrity", "backend/scripts/relative_import_integrity_check.js"),
     nodeStep("web-lint-with-evidence", "backend/scripts/run_web_lint_with_evidence.js"),
   ],
   docs: [

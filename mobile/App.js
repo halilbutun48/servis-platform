@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, SafeAreaView, StatusBar, StyleSheet } from 'react-native';
+import { AppState, Linking, SafeAreaView, StatusBar } from 'react-native';
 import * as Location from 'expo-location';
 import {
   clearLastMobileSnapshot,
@@ -28,9 +28,7 @@ import {
   fetchShiftRoute,
   fetchToday,
   getApiBaseUrl,
-  humanizeApiError,
   isKvkkBlockingError,
-  isNetworkLikeError,
   isSessionFailureError,
   loginDriver,
   logoutDriver,
@@ -49,7 +47,6 @@ import {
   GPS_PUBLISH_INTERVAL_MS,
   permissionTextFromStatus,
   resolveGpsPublishTarget,
-  resolveLiveLocationState,
   resolveVisibleShift,
 } from './src/lib/gps';
 import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
@@ -91,19 +88,6 @@ export default function App() {
   function resetGpsRetryState() {
     gpsRetryCountRef.current = 0;
     gpsNextRetryAtRef.current = 0;
-  }
-
-  function decorateGpsState(baseGps, route, { usingCachedData = false, netStatus = 'unknown', selectedShiftId = null } = {}) {
-    return {
-      ...baseGps,
-      ...resolveLiveLocationState({
-        route,
-        gps: baseGps,
-        usingCachedData,
-        netStatus,
-        selectedShiftId,
-      }),
-    };
   }
 
   async function refreshRouteAfterGpsPublish(shiftId, fallbackToday = null) {
@@ -1109,6 +1093,7 @@ export default function App() {
       screen={screen}
       routeOps={routeOps}
       styles={styles}
+      apiBaseUrl={getApiBaseUrl()}
       releaseInfo={RELEASE_INFO}
       onLogin={handleLogin}
       onPinChange={handlePinChange}
@@ -1145,4 +1130,3 @@ export default function App() {
     </SafeAreaView>
   );
 }
-

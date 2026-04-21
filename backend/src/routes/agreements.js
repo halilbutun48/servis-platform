@@ -2,6 +2,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { buildAgreementCommercialBackboneMap, upsertAgreementCommercialBackbone } from "../services/paymentBackbone.js";
+import { broadcastAgreementUpdate } from "../services/agreementBroadcast.js";
 import { dateOnlyUTCFromYmd } from "../time/tr.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
@@ -292,8 +293,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${agreement.id}:routeRefresh:${created.id}`,
     });
 
-    io?.to?.(`company:${agreement.companyId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshRequested", routeRefreshRequestId: created.id });
-    io?.to?.(`room:${agreement.roomId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshRequested", routeRefreshRequestId: created.id });
+    broadcastAgreementUpdate(io, {
+      companyId: agreement.companyId,
+      roomId: agreement.roomId,
+      payload: { id: agreement.id, kind: "routeRefreshRequested", routeRefreshRequestId: created.id },
+    });
 
     return res.status(201).json({ ok: true, item: created });
   });
@@ -348,8 +352,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${agreement.id}:routeRefresh:${updated.id}:counter:${updated.roomCounterAmount ?? "X"}`,
     });
 
-    io?.to?.(`company:${agreement.companyId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshCountered", routeRefreshRequestId: updated.id });
-    io?.to?.(`room:${agreement.roomId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshCountered", routeRefreshRequestId: updated.id });
+    broadcastAgreementUpdate(io, {
+      companyId: agreement.companyId,
+      roomId: agreement.roomId,
+      payload: { id: agreement.id, kind: "routeRefreshCountered", routeRefreshRequestId: updated.id },
+    });
     return res.json({ ok: true, item: updated });
   });
 
@@ -426,17 +433,15 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updatedAgreement.id}:routeRefresh:${nextItem.id}:counterAccepted:${nextItem.finalAcceptedAmount ?? "X"}`,
     });
 
-    io?.to?.(`company:${updatedAgreement.companyId}`)?.emit?.("agreement:update", {
-      id: updatedAgreement.id,
-      kind: "routeRefreshCounterAccepted",
-      routeRefreshRequestId: nextItem.id,
-      sourceShiftId: acceptedSourceShiftId || undefined,
-    });
-    io?.to?.(`room:${updatedAgreement.roomId}`)?.emit?.("agreement:update", {
-      id: updatedAgreement.id,
-      kind: "routeRefreshCounterAccepted",
-      routeRefreshRequestId: nextItem.id,
-      sourceShiftId: acceptedSourceShiftId || undefined,
+    broadcastAgreementUpdate(io, {
+      companyId: updatedAgreement.companyId,
+      roomId: updatedAgreement.roomId,
+      payload: {
+        id: updatedAgreement.id,
+        kind: "routeRefreshCounterAccepted",
+        routeRefreshRequestId: nextItem.id,
+        sourceShiftId: acceptedSourceShiftId || undefined,
+      },
     });
 
     return res.json({ ok: true, item: nextItem, agreement: updatedAgreement, sourceShiftId: acceptedSourceShiftId || null });
@@ -486,8 +491,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${agreement.id}:routeRefresh:${updated.id}:counterRejected`,
     });
 
-    io?.to?.(`company:${agreement.companyId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshCounterRejected", routeRefreshRequestId: updated.id });
-    io?.to?.(`room:${agreement.roomId}`)?.emit?.("agreement:update", { id: agreement.id, kind: "routeRefreshCounterRejected", routeRefreshRequestId: updated.id });
+    broadcastAgreementUpdate(io, {
+      companyId: agreement.companyId,
+      roomId: agreement.roomId,
+      payload: { id: agreement.id, kind: "routeRefreshCounterRejected", routeRefreshRequestId: updated.id },
+    });
     return res.json({ ok: true, item: updated });
   });
 
@@ -679,17 +687,15 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updatedAgreement.id}:routeRefresh:${nextItem.id}:${decision}`,
     });
 
-    io?.to?.(`company:${updatedAgreement.companyId}`)?.emit?.("agreement:update", {
-      id: updatedAgreement.id,
-      kind: decision === "ACCEPTED" ? "routeRefreshAccepted" : "routeRefreshCancelled",
-      routeRefreshRequestId: nextItem.id,
-      sourceShiftId: acceptedSourceShiftId || undefined,
-    });
-    io?.to?.(`room:${updatedAgreement.roomId}`)?.emit?.("agreement:update", {
-      id: updatedAgreement.id,
-      kind: decision === "ACCEPTED" ? "routeRefreshAccepted" : "routeRefreshCancelled",
-      routeRefreshRequestId: nextItem.id,
-      sourceShiftId: acceptedSourceShiftId || undefined,
+    broadcastAgreementUpdate(io, {
+      companyId: updatedAgreement.companyId,
+      roomId: updatedAgreement.roomId,
+      payload: {
+        id: updatedAgreement.id,
+        kind: decision === "ACCEPTED" ? "routeRefreshAccepted" : "routeRefreshCancelled",
+        routeRefreshRequestId: nextItem.id,
+        sourceShiftId: acceptedSourceShiftId || undefined,
+      },
     });
 
     return res.json({ ok: true, item: nextItem, agreement: updatedAgreement, sourceShiftId: acceptedSourceShiftId || null });
@@ -810,8 +816,11 @@ export function agreementsRouter(io) {
         },
         dedupeKey: `agreement:${row.id}:requested`,
       });
-      io?.to?.(`company:${companyId}`)?.emit?.("agreement:update", { id: row.id, kind: "created" });
-      io?.to?.(`room:${roomId}`)?.emit?.("agreement:update", { id: row.id, kind: "created" });
+      broadcastAgreementUpdate(io, {
+        companyId,
+        roomId,
+        payload: { id: row.id, kind: "created" },
+      });
     }
 
     return res.json({ ok: true, createdIds: created.map((row) => Number(row.id)), items: created });
@@ -890,8 +899,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${created.id}:requested`,
     });
 
-    io?.to?.(`company:${companyId}`)?.emit?.("agreement:update", { id: created.id, kind: "created" });
-    io?.to?.(`room:${roomId}`)?.emit?.("agreement:update", { id: created.id, kind: "created" });
+    broadcastAgreementUpdate(io, {
+      companyId,
+      roomId,
+      payload: { id: created.id, kind: "created" },
+    });
 
     res.json(created);
   });
@@ -973,8 +985,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:approved`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "approved" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "approved" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "approved" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1028,8 +1043,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:counter`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "countered" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "countered" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "countered" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1073,8 +1091,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:counterAccepted:${updated.companyOfferAmount ?? "X"}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterAccepted" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterAccepted" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "counterAccepted" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1121,8 +1142,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:companyCounter:${updated.companyOfferAmount ?? "X"}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "companyCountered" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "companyCountered" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "companyCountered" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1164,8 +1188,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:counterRejected`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterRejected" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "counterRejected" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "counterRejected" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1209,8 +1236,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:rejected`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "rejected" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "rejected" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "rejected" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1245,8 +1275,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:cancelled`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "cancelled" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "cancelled" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "cancelled" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1356,8 +1389,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:extendReq:${ymdOfDateOnly(updated.extendRequestedEndDate)}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "extendRequested" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1414,8 +1450,11 @@ export function agreementsRouter(io) {
         dedupeKey: `agreement:${updated.id}:extendRejected:${Date.now()}`,
       });
 
-      io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRejected" });
-      io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRejected" });
+      broadcastAgreementUpdate(io, {
+        companyId: updated.companyId,
+        roomId: updated.roomId,
+        payload: { id: updated.id, kind: "extendRejected" },
+      });
 
       return res.json(updated);
     }
@@ -1464,8 +1503,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:extendAccepted:${ymdOfDateOnly(updated.endDate)}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendAccepted" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendAccepted" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "extendAccepted" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1516,8 +1558,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:extendCounter:${ymdOfDateOnly(updated.extendRequestedEndDate)}:${updated.extendCounterAmount}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCountered" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCountered" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "extendCountered" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1576,8 +1621,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:extendCounterAccepted:${ymdOfDateOnly(updated.endDate)}:${updated.companyOfferAmount ?? "X"}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterAccepted" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterAccepted" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "extendCounterAccepted" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1620,8 +1668,11 @@ export function agreementsRouter(io) {
       dedupeKey: `agreement:${updated.id}:extendCounterRejected:${Date.now()}`,
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterRejected" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendCounterRejected" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "extendCounterRejected" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);
@@ -1672,8 +1723,11 @@ export function agreementsRouter(io) {
       },
     });
 
-    io?.to?.(`company:${updated.companyId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
-    io?.to?.(`room:${updated.roomId}`)?.emit?.("agreement:update", { id: updated.id, kind: "extendRequested" });
+    broadcastAgreementUpdate(io, {
+      companyId: updated.companyId,
+      roomId: updated.roomId,
+      payload: { id: updated.id, kind: "extendRequested" },
+    });
 
     await upsertAgreementCommercialBackbone(updated.id).catch(() => null);
     res.json(updated);

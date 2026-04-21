@@ -62,6 +62,7 @@ must("backend exposes repo and M92 aliases", includesAll(JSON.stringify(backendS
 must("repo chain keeps canonical phases in order", includesAll(chain, [
   'const defaultPhaseOrder = ["lint", "docs", "hot", "web-contract", "closure", "milestones"]',
   "run_web_lint_with_evidence.js",
+  "relative_import_integrity_check.js",
   "docs_ssot_pack_check.js",
   "m90_b1_canonical_closure_gate_check.js",
   "repo_audit.js",
