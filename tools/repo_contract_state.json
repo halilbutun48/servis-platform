@@ -86,7 +86,7 @@
     "warningThreshold": 1000,
     "blockThreshold": 1200,
     "currentLargeFileCount": 3,
-    "currentWarningHotFileCount": 9,
+    "currentWarningHotFileCount": 8,
     "principles": [
       "line-count dusurmek icin kor refactor yok",
       "once acceptance sonra kontrollu temizlik",
@@ -109,10 +109,6 @@
       "web/src/panels/room/ShiftsPanel.jsx": {
         "class": "safe-candidate-review",
         "note": "davranis degistirmeden section/state extraction adayi"
-      },
-      "web/src/panels/room/AgreementsPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "room sozlesme ve rota onizleme yuzeyleri icin kontrollu section extraction adayi"
       },
       "web/src/panels/company/GuidedPlanModal.jsx": {
         "class": "acceptance-sensitive-later",

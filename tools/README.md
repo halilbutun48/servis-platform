@@ -24,6 +24,7 @@
 - M92 repo verification spine: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
+- `verify:final`, `verify:repo` zincirinden sonra `verify:snapshot` soft gate raporunu da yeniler.
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 
 ## Tarihsel anchor / compatibility marker
@@ -67,7 +68,7 @@
 - Kanonik web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - CI workflow: `.github/workflows/vardis_verification_visibility.yml`
 - Shareable repo zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
-- `verify:snapshot` fiziksel dosya yüzeyini raporlar; ilk turda `verify:final` için hard blocker değildir.
+- `verify:snapshot` fiziksel dosya yüzeyini raporlar; `verify:final` bu raporu yeniler ama ilk turda hard blocker değildir.
 - Windows tarafinda export/hijyen kapanisinda `pwsh` tercih edilir.
 - Satır azaltma en sona bırakılır; önce acceptance + export/package hijyeni + CI görünürlüğü + güvenli kapanış checklist'i kapanır.
 - Tek rehber: `docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md`

@@ -122,7 +122,8 @@ Compatibility aliases for legacy checks:
 
 ## safe closure / final hygiene checklist
 - Kanonik final doğrulama girişi: `npm run verify:final`.
-- `verify:final`, root lint zinciri üzerinden backend + web lint çalıştırır ve web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
+- `verify:final`, önce `verify:repo` zincirini çalıştırır; sonra fiziksel snapshot soft gate raporunu yeniler.
+- Bu komut web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına ve snapshot raporunu `artifacts/repo-audit/physical_snapshot_hygiene_latest.json` dosyasına yazar.
 - Windows tarafında export/hijyen komutlarında tercih edilen kabuk: `pwsh`.
 - Final closure sırası: `npm run verify:final` -> `pwsh -ExecutionPolicy Bypass -File .\tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform` -> `pwsh -ExecutionPolicy Bypass -File .\tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform` -> `git status --short`.
 - `tools/export_shareable_repo_bundle.ps1` içinde `tar.exe` / `.NET ZipFile` fallback korunur; `GetRelativePath` ve `ConvertFrom-Json -Depth` gibi PS5 uyumsuzlukları geri gelmez.

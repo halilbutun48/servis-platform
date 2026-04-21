@@ -85,6 +85,8 @@
 - CI fresh runner hazırlığı: `npm --prefix backend ci` ve `npm --prefix web ci`.
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
 - Kanonik final verify girişi: `npm run verify:final`.
+- `verify:final`, `verify:repo` zincirinden sonra `verify:snapshot` soft gate raporunu da yeniler.
+- Final verify çıktıları: `artifacts/lint/web_lint_latest.txt` ve `artifacts/repo-audit/physical_snapshot_hygiene_latest.json`.
 
 ## hot-file queue policy
 - `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` justified exception olarak korunur.
@@ -122,6 +124,6 @@
 ## safe closure / final hygiene checklist
 - Windows tarafında export/hijyen kapanışı için tercih edilen shell `pwsh` olur.
 - Final sıra: `npm run verify:final` -> `type artifacts\lint\web_lint_latest.txt` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
-- `verify:snapshot`, fiziksel dosya yüzeyini ayrıca raporlar; ilk turda hard blocker değildir.
+- `verify:snapshot`, fiziksel dosya yüzeyini soft gate olarak raporlar; `verify:final` bu raporu yeniler ama hard blocker gibi davranmaz.
 - `tools/export_shareable_repo_bundle.ps1` PS5 uyumlu fallback mantığını korur; `GetRelativePath` ve `ConvertFrom-Json -Depth` gibi kırıklar geri gelmez.
 - Satır azaltma en sona bırakılır.

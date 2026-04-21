@@ -59,14 +59,17 @@ expect((state.activeMilestones || []).includes("M90C.9"), "state active mileston
 expect(policy.goal === "safe-closure-final-hygiene-checklist", "state policy goal tracks final hygiene checklist");
 expect((policy.primaryCommand || "") === "npm run verify:final", "state policy points to root verify:final command");
 expect((policy.lintEvidence || "") === "artifacts/lint/web_lint_latest.txt", "state policy records canonical web lint evidence path");
+expect((policy.snapshotReport || "") === "artifacts/repo-audit/physical_snapshot_hygiene_latest.json", "state policy records canonical snapshot report path");
 expect((policy.windowsPreferredShell || "") === "pwsh", "state policy records pwsh as windows preferred shell");
 expect((policy.exportPack || "") === "tools/pack_m90_c7_export_package_hygiene.ps1", "state policy points to export hygiene pack");
 expect((policy.exportTool || "") === "tools/export_shareable_repo_bundle.ps1", "state policy points to shareable export tool");
 expect(Array.isArray(policy.orderedSteps) && policy.orderedSteps.length >= 4 && policy.orderedSteps.some((x) => includesText(x, "verify:final")) && policy.orderedSteps.some((x) => includesText(x, "pack_m90_c7_export_package_hygiene")) && policy.orderedSteps.some((x) => includesText(x, "export_shareable_repo_bundle")) && policy.orderedSteps.some((x) => includesText(x, "git status --short")), "state policy captures final closure order");
+expect(Array.isArray(policy.verifyFinalBehavior) && policy.verifyFinalBehavior.some((x) => includesText(x, "verify:repo")) && policy.verifyFinalBehavior.some((x) => includesText(x, "snapshot")), "state policy describes verify:final repo-plus-snapshot behavior");
 
 expect((rootPackage.scripts || {})["verify:repo"] === "node backend/scripts/run_repo_check_chain.js --phase all", "root verify:repo points to canonical repo check chain");
 expect((rootPackage.scripts || {})["verify:closure"]?.includes("run_repo_check_chain.js --phase closure"), "root verify:closure uses closure phase from repo check chain");
-expect((rootPackage.scripts || {})["verify:final"] === "npm run verify:repo", "root verify:final aliases canonical repo check chain");
+expect(includesText((rootPackage.scripts || {})["verify:final"], "npm run verify:repo"), "root verify:final includes canonical repo check chain");
+expect(includesText((rootPackage.scripts || {})["verify:final"], "npm run verify:snapshot"), "root verify:final refreshes snapshot soft-gate report");
 expect(includesText(repoChain, "m90_c9_safe_closure_final_hygiene_check.js"), "repo check chain includes m90c9check");
 expect((backendPackage.scripts || {})["m90c9check"] === "node scripts/m90_c9_safe_closure_final_hygiene_check.js", "backend package exposes m90c9check script");
 
@@ -79,6 +82,8 @@ expect(includesText(docsBundle, "M90C.9"), "canonical docs mention M90C.9");
 expect(includesText(docsBundle, "safe closure") || includesText(docsBundle, "guvenli kapanis"), "canonical docs mention safe closure / final hygiene checklist");
 expect(includesText(docsBundle, "npm run verify:final"), "canonical docs mention root verify:final command");
 expect(includesText(docsBundle, "artifacts/lint/web_lint_latest.txt"), "canonical docs mention canonical web lint evidence path");
+expect(includesText(docsBundle, "physical_snapshot_hygiene_latest.json"), "canonical docs mention canonical snapshot report path");
+expect(includesText(docsBundle, "verify:snapshot"), "canonical docs mention snapshot soft-gate command");
 expect(includesText(docsBundle, "pwsh"), "canonical docs mention pwsh preference");
 expect(includesText(docsBundle, "satır azaltma en sona") || includesText(docsBundle, "line-count reduction stays deferred"), "canonical docs preserve deferred line-count policy");
 expect(includesText(primer, "M90C.9") && (includesText(primer, "guvenli kapanis") || includesText(primer, "final hygiene checklist")), "primer points to M90C.9 as current official work");

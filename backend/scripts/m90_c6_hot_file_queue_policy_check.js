@@ -83,7 +83,6 @@ const expectedClasses = {
   "backend/src/ai/chat/helpComposer.js": "justified-exception",
   "backend/src/routes/agreements.js": "acceptance-sensitive-later",
   "backend/prisma/schema.prisma": "justified-exception",
-  "web/src/panels/room/AgreementsPanel.jsx": "safe-candidate-review",
   "web/src/panels/company/GuidedPlanModal.jsx": "acceptance-sensitive-later",
   "web/src/panels/company/AgreementsPanel.jsx": "safe-candidate-review",
   "backend/src/routes/shifts/room.js": "acceptance-sensitive-later",

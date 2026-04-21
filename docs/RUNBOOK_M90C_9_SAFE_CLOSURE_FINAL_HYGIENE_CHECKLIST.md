@@ -5,6 +5,8 @@ Final release/shareable/export/verify kapanisini tek resmi checklist altinda top
 
 ## Sira
 1. `npm run verify:final`
+   - Bu komut `verify:repo` zincirini ve ardından `verify:snapshot` soft gate raporunu çalıştırır.
+   - Beklenen kanıtlar: `artifacts/lint/web_lint_latest.txt` ve `artifacts/repo-audit/physical_snapshot_hygiene_latest.json`
 2. `type artifacts\lint\web_lint_latest.txt`
 3. `pwsh -ExecutionPolicy Bypass -File .\tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
 4. `pwsh -ExecutionPolicy Bypass -File .\tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`

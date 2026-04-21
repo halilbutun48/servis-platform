@@ -39,7 +39,8 @@ must("tools check-repo wrapper exists", exists("tools/check-repo.ps1"));
 must("root package exposes single repo entry", rootScripts.check === "npm run verify:repo");
 must("root verify:repo uses repo check chain", rootScripts["verify:repo"] === "node backend/scripts/run_repo_check_chain.js --phase all");
 must("root verify:ci aliases repo check chain", rootScripts["verify:ci"] === "npm run verify:repo");
-must("root verify:final aliases repo check chain", rootScripts["verify:final"] === "npm run verify:repo");
+must("root verify:final includes repo check chain", includesText(rootScripts["verify:final"], "npm run verify:repo"));
+must("root verify:final refreshes snapshot soft-gate report", includesText(rootScripts["verify:final"], "npm run verify:snapshot"));
 must("root phase aliases point to repo check chain", includesAll(JSON.stringify(rootScripts), [
   "run_repo_check_chain.js --phase docs",
   "run_repo_check_chain.js --phase hot",

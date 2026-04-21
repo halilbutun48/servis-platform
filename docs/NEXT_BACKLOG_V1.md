@@ -85,7 +85,8 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 
 ## 2.6) M90C.9 — Güvenli Kapanış / Final Hygiene Checklist
 - Kanonik final giriş komutu: `npm run verify:final`.
-- `verify:final`, root lint zinciri üzerinden backend + web lint çalıştırır ve web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar.
+- `verify:final`, önce `verify:repo` zincirini çalıştırır; sonra `verify:snapshot` soft gate raporunu yeniler.
+- Final giriş bu yüzden hem `artifacts/lint/web_lint_latest.txt` hem `artifacts/repo-audit/physical_snapshot_hygiene_latest.json` üretir/günceller.
 - Windows tarafında export/hijyen kapanışı için tercih edilen kabuk `pwsh` olacaktır.
 - Final closure sırası: `verify:final` -> `type artifacts\lint\web_lint_latest.txt` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
 - `tools/export_shareable_repo_bundle.ps1` PS5 uyumsuz API çağrılarını geri getirmeyecek; `tar.exe` / `.NET ZipFile` fallback korunacaktır.

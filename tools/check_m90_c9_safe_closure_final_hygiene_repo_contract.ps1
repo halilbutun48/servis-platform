@@ -57,7 +57,7 @@ Assert-RepoContractContainsAll -Text $rootPackage -Needles @('verify:repo','veri
 Assert-RepoContractContainsAll -Text $repoChain -Needles @('m90_c9_safe_closure_final_hygiene_check.js','run_web_lint_with_evidence.js','run_m0_latest.js') -Label 'repo check chain exposes final hygiene and repo-wide checks'
 Assert-RepoContractContainsAll -Text $backendPackage -Needles @('m90c9check','m90_c9_safe_closure_final_hygiene_check.js') -Label 'backend package exposes M90C.9 node gate'
 Assert-RepoContractContainsAll -Text $milestone -Needles @('M90C.9','verify:final','pwsh','export_shareable_repo_bundle.ps1') -Label 'milestone doc captures final hygiene checklist scope'
-Assert-RepoContractContainsAll -Text $runbook -Needles @('npm run verify:final','artifacts\lint\web_lint_latest.txt','pwsh','pack_m90_c7_export_package_hygiene.ps1','export_shareable_repo_bundle.ps1','git status --short') -Label 'runbook exposes final closure order'
+Assert-RepoContractContainsAll -Text $runbook -Needles @('npm run verify:final','artifacts\lint\web_lint_latest.txt','artifacts/repo-audit/physical_snapshot_hygiene_latest.json','verify:snapshot','pwsh','pack_m90_c7_export_package_hygiene.ps1','export_shareable_repo_bundle.ps1','git status --short') -Label 'runbook exposes final closure order'
 Assert-RepoContractContainsAll -Text $primer -Needles @('M90C.9','safe closure','verify:final') -Label 'primer tracks M90C.9 as current work'
 Assert-RepoContractContainsAll -Text $backlog -Needles @('M90C.9','safe closure','verify:final') -Label 'backlog prioritizes M90C.9 route'
 Assert-RepoContractContainsAll -Text $toolsPrimer -Needles @('M90C.9','verify:final') -Label 'tools primer exposes M90C.9 route'
@@ -65,6 +65,6 @@ Assert-RepoContractContainsAll -Text $toolsReadme -Needles @('pack_m90_c9_safe_c
 Assert-RepoContractContainsAll -Text $scriptGuide -Needles @('M90C.9','RUNBOOK_M90C_9_SAFE_CLOSURE_FINAL_HYGIENE_CHECKLIST.md') -Label 'script guide exposes M90C.9 pack and runbook'
 Assert-RepoContractContainsAll -Text $exportTool -Needles @('tar.exe','CreateFromDirectory','prefer pwsh') -Label 'export tool keeps compatibility fallback and pwsh note'
 Assert-RepoContractContainsNone -Text $exportTool -Needles @('GetRelativePath(','ConvertFrom-Json -Depth') -Label 'export tool excludes PowerShell 5.1 breaking APIs'
-Assert-RepoContractContainsAll -Text ($state | ConvertTo-Json -Depth 20) -Needles @('M90C.9','safeClosureFinalHygiene','safe-closure-final-hygiene-checklist','verify:final','pwsh','artifacts/lint/web_lint_latest.txt') -Label 'state includes M90C.9 final hygiene policy'
+Assert-RepoContractContainsAll -Text ($state | ConvertTo-Json -Depth 20) -Needles @('M90C.9','safeClosureFinalHygiene','safe-closure-final-hygiene-checklist','verify:final','verify:repo','verify:snapshot','pwsh','artifacts/lint/web_lint_latest.txt','artifacts/repo-audit/physical_snapshot_hygiene_latest.json') -Label 'state includes M90C.9 final hygiene policy'
 
 Write-Host "=== M90C.9 Repo Contract PASS ==="
