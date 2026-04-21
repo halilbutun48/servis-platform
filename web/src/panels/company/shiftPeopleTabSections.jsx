@@ -1,3 +1,5 @@
+import ShiftPersonelTable from "../../components/ShiftPersonelTable";
+
 export function ShiftPeopleSummarySection({
   busy,
   selectedShiftId,
@@ -368,6 +370,186 @@ export function ShiftPeopleImportSection({
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+export function ShiftPeopleOverviewSection({
+  err,
+  info,
+  busy,
+  selectedShiftId,
+  setSelectedShiftId,
+  shiftOptions,
+  maxWalkM,
+  setMaxWalkM,
+  companyKind,
+  stopActionBusy,
+  onPrepareDraftStops,
+  onGenerateDraftStops,
+  onLoadShiftStops,
+  onOpenPreview,
+  roomText,
+  who,
+  whoPlural,
+  geoStats,
+  hideGeoReviewLinks,
+  onOpenGuidedGeoPicker,
+  geoReviewPath,
+  draftStopsLength,
+  stopSummary,
+  hubDirection,
+  setHubDirection,
+  hubAddress,
+  setHubAddress,
+  onGeocodeHubAddress,
+  hubLat,
+  setHubLat,
+  hubLng,
+  setHubLng,
+  onSaveHubToShift,
+  onClearHubOnShift,
+  hubPosLabel,
+  selectedShift,
+  pName,
+  setPName,
+  pAddress,
+  setPAddress,
+  pLat,
+  setPLat,
+  pLng,
+  setPLng,
+  onAddPersonManual,
+  onGeocodeManualAddress,
+  importMode,
+  setImportMode,
+  onImportFile,
+  importSummary,
+  onRunImportQuickGeocode,
+  importQuickBusy,
+  importQuickStats,
+  importWarnings,
+  importWarningSummary,
+  warningLabel,
+}) {
+  return (
+    <>
+      <h3>Shift Tools</h3>
+      <div className="muted">
+        Shift bazlı araçlar: personel ekle/import → durak üret → shift duraklarını çek → rota/durak önizleme (mini-map). “Durakları Hazırla” bu iki adımı sırayla çalıştırır.
+      </div>
+
+      {err ? (
+        <div className="card err" style={{ marginTop: 10 }}>
+          {err}
+        </div>
+      ) : null}
+      {info ? (
+        <div className="card" style={{ marginTop: 10 }}>
+          {info}
+        </div>
+      ) : null}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <ShiftPeopleSummarySection
+            busy={busy}
+            selectedShiftId={selectedShiftId}
+            setSelectedShiftId={setSelectedShiftId}
+            shiftOptions={shiftOptions}
+            maxWalkM={maxWalkM}
+            setMaxWalkM={setMaxWalkM}
+            companyKind={companyKind}
+            stopActionBusy={stopActionBusy}
+            onPrepareDraftStops={onPrepareDraftStops}
+            onGenerateDraftStops={onGenerateDraftStops}
+            onLoadShiftStops={onLoadShiftStops}
+            onOpenPreview={onOpenPreview}
+            roomText={roomText}
+            who={who}
+            geoStats={geoStats}
+            hideGeoReviewLinks={hideGeoReviewLinks}
+            onOpenGuidedGeoPicker={onOpenGuidedGeoPicker}
+            geoReviewPath={geoReviewPath}
+            draftStopsLength={draftStopsLength}
+            stopSummary={stopSummary}
+            maxWalkMValue={maxWalkM}
+            whoPlural={whoPlural}
+          />
+
+          <ShiftPeopleHubSection
+            busy={busy}
+            hubDirection={hubDirection}
+            setHubDirection={setHubDirection}
+            hubAddress={hubAddress}
+            setHubAddress={setHubAddress}
+            onGeocodeHubAddress={onGeocodeHubAddress}
+            hubLat={hubLat}
+            setHubLat={setHubLat}
+            hubLng={hubLng}
+            setHubLng={setHubLng}
+            selectedShiftId={selectedShiftId}
+            onSaveHubToShift={onSaveHubToShift}
+            onClearHubOnShift={onClearHubOnShift}
+            hubPosLabel={hubPosLabel}
+            selectedShift={selectedShift}
+          />
+        </div>
+
+        <ShiftPeopleImportSection
+          who={who}
+          whoPlural={whoPlural}
+          busy={busy}
+          pName={pName}
+          setPName={setPName}
+          pAddress={pAddress}
+          setPAddress={setPAddress}
+          pLat={pLat}
+          setPLat={setPLat}
+          pLng={pLng}
+          setPLng={setPLng}
+          onAddPersonManual={onAddPersonManual}
+          onGeocodeManualAddress={onGeocodeManualAddress}
+          importMode={importMode}
+          setImportMode={setImportMode}
+          onImportFile={onImportFile}
+          importSummary={importSummary}
+          hideGeoReviewLinks={hideGeoReviewLinks}
+          geoReviewPath={geoReviewPath}
+          onOpenGuidedGeoPicker={onOpenGuidedGeoPicker}
+          onRunImportQuickGeocode={onRunImportQuickGeocode}
+          importQuickBusy={importQuickBusy}
+          importQuickStats={importQuickStats}
+          importWarnings={importWarnings}
+          importWarningSummary={importWarningSummary}
+          warningLabel={warningLabel}
+        />
+      </div>
+    </>
+  );
+}
+
+export function ShiftPeopleListSection({
+  who,
+  people,
+  onRemove,
+  onUpdate,
+  onGeocodeAddress,
+  onOpenGeoPicker,
+  geocodeBusyId,
+}) {
+  return (
+    <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
+      <h3 style={{ marginTop: 0 }}>Shift {who} Listesi</h3>
+      <ShiftPersonelTable
+        people={people}
+        onRemove={onRemove}
+        onUpdate={onUpdate}
+        onGeocodeAddress={onGeocodeAddress}
+        onOpenGeoPicker={onOpenGeoPicker}
+        geocodeBusyId={geocodeBusyId}
+        emptyLabel={`Henüz ${who.toLowerCase()} yok.`}
+      />
     </div>
   );
 }

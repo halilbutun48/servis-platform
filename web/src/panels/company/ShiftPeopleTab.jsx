@@ -11,7 +11,6 @@ import { personLabel, peopleLabel } from "../../utils/labels";
 import { companyPath } from "../../utils/paths";
 import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
-import ShiftPersonelTable from "../../components/ShiftPersonelTable";
 import { clearUiDataCache } from "../../utils/uiDataCache";
 
 import { getApiErrorMessage } from "../../utils/apiContract";
@@ -29,6 +28,8 @@ import {
   ShiftPeopleSummarySection,
   ShiftPeopleHubSection,
   ShiftPeopleImportSection,
+  ShiftPeopleOverviewSection,
+  ShiftPeopleListSection,
 } from "./shiftPeopleTabSections";
 
 export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShiftIds, preferredShiftId, guidedMode = false, hideGeoReviewLinks = false, onSummaryChange = null }) {
@@ -1036,112 +1037,74 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
   return (
     <div className="card">
-      <h3>Shift Tools</h3>
-      <div className="muted">
-        Shift bazlı araçlar: personel ekle/import → durak üret → shift duraklarını çek → rota/durak önizleme (mini-map). “Durakları Hazırla” bu iki adımı sırayla çalıştırır.
-      </div>
+      <ShiftPeopleOverviewSection
+        err={err}
+        info={info}
+        busy={busy}
+        selectedShiftId={selectedShiftId}
+        setSelectedShiftId={setSelectedShiftId}
+        shiftOptions={shiftOptions}
+        maxWalkM={maxWalkM}
+        setMaxWalkM={setMaxWalkM}
+        companyKind={me?.companyKind}
+        stopActionBusy={stopActionBusy}
+        onPrepareDraftStops={prepareDraftStops}
+        onGenerateDraftStops={generateDraftStops}
+        onLoadShiftStops={loadShiftStopsFromApi}
+        onOpenPreview={() => setPreviewOpen(true)}
+        roomText={roomText}
+        who={who}
+        whoPlural={whoPlural}
+        geoStats={geoStats}
+        hideGeoReviewLinks={hideGeoReviewLinks}
+        onOpenGuidedGeoPicker={openGuidedGeoPicker}
+        geoReviewPath={geoReviewPath}
+        draftStopsLength={draftStops.length}
+        stopSummary={stopSummary}
+        hubDirection={hubDirection}
+        setHubDirection={setHubDirection}
+        hubAddress={hubAddress}
+        setHubAddress={setHubAddress}
+        onGeocodeHubAddress={geocodeHubAddress}
+        hubLat={hubLat}
+        setHubLat={setHubLat}
+        hubLng={hubLng}
+        setHubLng={setHubLng}
+        onSaveHubToShift={saveHubToShift}
+        onClearHubOnShift={clearHubOnShift}
+        hubPosLabel={hubPosLabel}
+        selectedShift={selectedShift}
+        pName={pName}
+        setPName={setPName}
+        pAddress={pAddress}
+        setPAddress={setPAddress}
+        pLat={pLat}
+        setPLat={setPLat}
+        pLng={pLng}
+        setPLng={setPLng}
+        onAddPersonManual={addPersonManual}
+        onGeocodeManualAddress={geocodeManualAddress}
+        importMode={importMode}
+        setImportMode={setImportMode}
+        onImportFile={importFile}
+        importSummary={importSummary}
+        onRunImportQuickGeocode={runImportQuickGeocode}
+        importQuickBusy={importQuickBusy}
+        importQuickStats={importQuickStats}
+        importWarnings={importWarnings}
+        importWarningSummary={importWarningSummary}
+        warningLabel={warningLabel}
+      />
 
-      {err ? (
-        <div className="card err" style={{ marginTop: 10 }}>
-          {err}
-        </div>
-      ) : null}
-      {info ? (
-        <div className="card" style={{ marginTop: 10 }}>
-          {info}
-        </div>
-      ) : null}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <ShiftPeopleSummarySection
-            busy={busy}
-            selectedShiftId={selectedShiftId}
-            setSelectedShiftId={setSelectedShiftId}
-            shiftOptions={shiftOptions}
-            maxWalkM={maxWalkM}
-            setMaxWalkM={setMaxWalkM}
-            companyKind={me?.companyKind}
-            stopActionBusy={stopActionBusy}
-            onPrepareDraftStops={prepareDraftStops}
-            onGenerateDraftStops={generateDraftStops}
-            onLoadShiftStops={loadShiftStopsFromApi}
-            onOpenPreview={() => setPreviewOpen(true)}
-            roomText={roomText}
-            who={who}
-            geoStats={geoStats}
-            hideGeoReviewLinks={hideGeoReviewLinks}
-            onOpenGuidedGeoPicker={openGuidedGeoPicker}
-            geoReviewPath={geoReviewPath}
-            draftStopsLength={draftStops.length}
-            stopSummary={stopSummary}
-            maxWalkMValue={maxWalkM}
-            whoPlural={whoPlural}
-          />
-
-          <ShiftPeopleHubSection
-            busy={busy}
-            hubDirection={hubDirection}
-            setHubDirection={setHubDirection}
-            hubAddress={hubAddress}
-            setHubAddress={setHubAddress}
-            onGeocodeHubAddress={geocodeHubAddress}
-            hubLat={hubLat}
-            setHubLat={setHubLat}
-            hubLng={hubLng}
-            setHubLng={setHubLng}
-            selectedShiftId={selectedShiftId}
-            onSaveHubToShift={saveHubToShift}
-            onClearHubOnShift={clearHubOnShift}
-            hubPosLabel={hubPosLabel}
-            selectedShift={selectedShift}
-          />
-        </div>
-
-        {/* Manual add / import */}
-        <ShiftPeopleImportSection
-          who={who}
-          whoPlural={whoPlural}
-          busy={busy}
-          pName={pName}
-          setPName={setPName}
-          pAddress={pAddress}
-          setPAddress={setPAddress}
-          pLat={pLat}
-          setPLat={setPLat}
-          pLng={pLng}
-          setPLng={setPLng}
-          onAddPersonManual={addPersonManual}
-          onGeocodeManualAddress={geocodeManualAddress}
-          importMode={importMode}
-          setImportMode={setImportMode}
-          onImportFile={importFile}
-          importSummary={importSummary}
-          hideGeoReviewLinks={hideGeoReviewLinks}
-          geoReviewPath={geoReviewPath}
-          onOpenGuidedGeoPicker={openGuidedGeoPicker}
-          onRunImportQuickGeocode={runImportQuickGeocode}
-          importQuickBusy={importQuickBusy}
-          importQuickStats={importQuickStats}
-          importWarnings={importWarnings}
-          importWarningSummary={importWarningSummary}
-          warningLabel={warningLabel}
-        />
-      </div>
-
-      {/* People table */}
-      <div className="card" style={{ marginTop: 12, overflowX: "auto" }}>
-        <h3 style={{ marginTop: 0 }}>Shift {who} Listesi</h3>
-        <ShiftPersonelTable
-          people={people}
-          onRemove={removePerson}
-          onUpdate={updatePerson}
-          onGeocodeAddress={geocodePersonAddress}
-          onOpenGeoPicker={guidedMode ? openGuidedGeoPicker : null}
-          geocodeBusyId={rowGeocodeBusyId}
-          emptyLabel={`Henüz ${who.toLowerCase()} yok.`}
-        />
-      </div>
+      <ShiftPeopleListSection
+        who={who}
+        people={people}
+        onRemove={removePerson}
+        onUpdate={updatePerson}
+        onGeocodeAddress={geocodePersonAddress}
+        onOpenGeoPicker={guidedMode ? openGuidedGeoPicker : null}
+        geocodeBusyId={rowGeocodeBusyId}
+      />
 
       <RoutePreviewModal
         open={previewOpen}
@@ -1153,4 +1116,3 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     </div>
   );
 }
-
