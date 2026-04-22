@@ -174,6 +174,7 @@ export function startRetentionCleanup(_ioUnused, opts = {}) {
       const apiCutoff = cutoffFromDays(ENV.API_REQUEST_RETENTION_DAYS);
       const auditCutoff = cutoffFromDays(ENV.AUDIT_LOG_RETENTION_DAYS);
       const notifCutoff = cutoffFromDays(ENV.NOTIFICATION_RETENTION_DAYS);
+      const gpsCutoff = cutoffFromDays(ENV.GPS_POINT_RETENTION_DAYS);
 
       const api = await deleteOldBatched({
         model: "apiRequest",
@@ -196,12 +197,20 @@ export function startRetentionCleanup(_ioUnused, opts = {}) {
         batchSize,
       });
 
+      const gps = await deleteOldBatched({
+        model: "gpsPoint",
+        label: "GpsPoint",
+        cutoff: gpsCutoff,
+        batchSize,
+        field: "at",
+      });
+
       const ms = Date.now() - t0;
 
       // Only log when something happened (or if first run is useful).
-      if (api.deleted || audit.deleted || notif.deleted) {
+      if (api.deleted || audit.deleted || notif.deleted || gps.deleted) {
         console.log(
-          `retentionCleanup: ApiRequest -${api.deleted}, AuditLog -${audit.deleted}, Notification -${notif.deleted} (ms=${ms})`
+          `retentionCleanup: ApiRequest -${api.deleted}, AuditLog -${audit.deleted}, Notification -${notif.deleted}, GpsPoint -${gps.deleted} (ms=${ms})`
         );
       }
     } catch (e) {

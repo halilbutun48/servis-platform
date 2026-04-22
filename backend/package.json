@@ -55,6 +55,9 @@
     "m91:smoke": "npm run m91:smoke:agreement && npm run m91:smoke:route-preview",
     "m91:milestones": "node scripts/run_m0_latest.js --static-only --from M91 --to M91 --continue",
     "m92check": "node scripts/m92_repo_verification_spine_check.js",
+    "bench:gps:100": "node scripts/bench_gps_publish_only.js --scenario=publish-only",
+    "bench:gps:100:auto": "node scripts/bench_gps_publish_only.js --scenario=auto-reached",
+    "bench:gps:300:auto:panels": "node scripts/bench_gps_publish_only.js --scenario=auto-reached --vehicles=300 --panelProfile=readstorm",
     "spec16check": "node scripts/project_spec_v1_future_strengthening_coverage_check.js"
   },
   "dependencies": {
