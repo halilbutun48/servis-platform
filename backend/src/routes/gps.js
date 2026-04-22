@@ -1,6 +1,7 @@
 // backend/src/routes/gps.js
 import express from "express";
 import { prisma } from "../prisma.js";
+import { ENV } from "../env.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { requireConsent, CONSENT_DOCS } from "../middleware/consentGate.js";
 import { gpsIngestSchema } from "../validators.js";
@@ -53,46 +54,62 @@ export function gpsRouter(io) {
           ? new Date(parsed.data.ts)
           : new Date();
 
-      const vehicle = await prisma.vehicle.findUnique({
-        where: { id: vehicleId },
-        select: { id: true, plate: true, roomId: true, speedLimitKmh: true },
-      });
+      const [vehicle, senderDriver, previousGpsLast] = await Promise.all([
+        prisma.vehicle.findUnique({
+          where: { id: vehicleId },
+          select: { id: true, plate: true, roomId: true, speedLimitKmh: true },
+        }),
+        prisma.driver.findFirst({
+          where: { userId: u.id },
+          select: { id: true },
+        }),
+        prisma.gpsLast.findUnique({
+          where: { vehicleId },
+          select: { lat: true, lng: true, at: true },
+        }),
+      ]);
       if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
 
       // =========================================================
       // ✅ M9 GPS hardening
       // Driver yalnızca kendi APPROVED/ACTIVE shift'inde atanmış araca GPS basabilir
       // =========================================================
-      const senderDriver = await prisma.driver.findFirst({
-        where: { userId: u.id },
-        select: { id: true },
-      });
       if (!senderDriver) return res.status(400).json({ error: "Driver profile not found" });
       const senderDriverId = senderDriver.id;
-
-      const allowedShift = await prisma.shift.findFirst({
+      const activeShifts = await prisma.shift.findMany({
         where: {
-          driverId: senderDriver.id,
           vehicleId,
           status: { in: ["APPROVED", "ACTIVE"] },
         },
-        select: { id: true },
+        select: { id: true, driverId: true, companyId: true, startAt: true, endAt: true },
       });
+      const allowedShift = activeShifts.find((s) => Number(s.driverId || 0) === Number(senderDriverId));
 
       if (!allowedShift) {
         return res.status(403).json({ error: "Forbidden: driver not assigned to this vehicle" });
       }
 
-      // History point
-      await prisma.gpsPoint.create({
-        data: {
-          vehicleId,
-          lat,
-          lng,
-          speed: typeof speed === "number" ? speed : null,
-          at,
-        },
-      });
+      // History point (kısa / anlamlı hareket dışında prune et)
+      const historyMinSec = Math.max(0, Number(ENV.TELEMATICS_HISTORY_MIN_SEC || 0));
+      const historyMinMeters = Math.max(0, Number(ENV.TELEMATICS_HISTORY_MIN_METERS || 0));
+      const prevAtMs = previousGpsLast?.at ? new Date(previousGpsLast.at).getTime() : 0;
+      const sameAt = !!prevAtMs && prevAtMs === at.getTime();
+      const distM = previousGpsLast ? haversineKm(previousGpsLast.lat, previousGpsLast.lng, lat, lng) * 1000 : Infinity;
+      const historyAgeSec = prevAtMs ? Math.abs(at.getTime() - prevAtMs) / 1000 : Infinity;
+      const deduped = !!previousGpsLast && sameAt && distM <= 5;
+      const skipHistory = !!previousGpsLast && historyAgeSec < historyMinSec && distM < historyMinMeters;
+
+      if (!deduped && !skipHistory) {
+        await prisma.gpsPoint.create({
+          data: {
+            vehicleId,
+            lat,
+            lng,
+            speed: typeof speed === "number" ? speed : null,
+            at,
+          },
+        });
+      }
 
       // ✅ DB enum: OK | STALE
       const last = await prisma.gpsLast.upsert({
@@ -127,60 +144,30 @@ export function gpsRouter(io) {
       const nowForScope = at;
       // Not: COMPANY rolü /api/notifications/my'da companyId üzerinden filtreliyor.
       // Bu yüzden GPS bildirimlerinde SHIFT.companyId mutlaka kapsanmalı.
-      const companyIds = new Set();
-      try {
-        const rel = await prisma.shift.findMany({
-          where: {
-          vehicleId,
-          status: { in: ["APPROVED", "ACTIVE"] },
-          startAt: { lte: nowForScope },
-          endAt: { gte: nowForScope },
-        },
-          select: { companyId: true },
-        });
-        for (const r of rel) if (r.companyId) companyIds.add(r.companyId);
-      } catch (_) {}
+      const companyIds = new Set(
+        activeShifts
+          .filter((shift) => shift.startAt <= nowForScope && shift.endAt >= nowForScope && shift.companyId)
+          .map((shift) => shift.companyId)
+      );
 
       // =========================================================
       // ✅ helper: DRIVER notif hedeflerini üret
       // - her zaman sender user hedefi var (driverId null olabilir)
       // - ayrıca shift’e atanmış driver varsa onu da ekle
       // =========================================================
-      let driverNotifTargetsPromise = null;
-      async function getDriverNotifTargets() {
-        if (driverNotifTargetsPromise) return driverNotifTargetsPromise;
-        driverNotifTargetsPromise = (async () => {
-        const targets = [];
-
-        // ✅ her durumda sender user’a DRIVER notif üret
-        targets.push({ driverId: senderDriverId, userId: u.id });
-
-        // assigned shift driver (varsa)
-        try {
-          const sh = await prisma.shift.findFirst({
-            where: {
-              vehicleId,
-              status: { in: ["APPROVED", "ACTIVE"] },
-              driverId: { not: null },
-            },
-            select: { driverId: true },
+      const driverNotifTargets = [{ driverId: senderDriverId, userId: u.id }];
+      try {
+        const assignedShift = activeShifts.find((shift) => Number(shift.driverId || 0) && Number(shift.driverId || 0) !== Number(senderDriverId));
+        const assignedDriverId = assignedShift?.driverId ?? null;
+        if (assignedDriverId) {
+          const dUser = await prisma.driver.findUnique({
+            where: { id: assignedDriverId },
+            select: { userId: true },
           });
-
-          const assignedDriverId = sh?.driverId ?? null;
-          if (assignedDriverId && assignedDriverId !== senderDriverId) {
-            const dUser = await prisma.driver.findUnique({
-              where: { id: assignedDriverId },
-              select: { userId: true },
-            });
-            targets.push({ driverId: assignedDriverId, userId: dUser?.userId ?? null });
-          }
-        } catch {
-          // ignore
+          driverNotifTargets.push({ driverId: assignedDriverId, userId: dUser?.userId ?? null });
         }
-
-          return targets;
-        })();
-        return driverNotifTargetsPromise;
+      } catch {
+        // ignore
       }
 
       // =========================================================
@@ -206,8 +193,7 @@ export function gpsRouter(io) {
 
         // ✅ NOTIF tarafı GPS ingest'i KIRAMAZ
         try {
-          const targets = await getDriverNotifTargets();
-          for (const t of targets) {
+          for (const t of driverNotifTargets) {
             await createAndEmitNotification({
               io,
               type: "GPS_RECOVERY",
@@ -286,8 +272,7 @@ export function gpsRouter(io) {
 
         // ✅ NOTIF tarafı GPS ingest'i KIRAMAZ
         try {
-          const targets = await getDriverNotifTargets();
-          for (const t of targets) {
+          for (const t of driverNotifTargets) {
             await createAndEmitNotification({
               io,
               type: "OVERSPEED",
