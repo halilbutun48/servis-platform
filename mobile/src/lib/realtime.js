@@ -4,6 +4,7 @@ const DRIVER_REALTIME_EVENTS = new Set([
   'ws:ready',
   'shift:update',
   'route:plan',
+  'route:progress',
   'notif:new',
 ]);
 

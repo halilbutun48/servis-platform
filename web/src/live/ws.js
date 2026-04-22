@@ -116,6 +116,9 @@ function guessTopics(msg) {
   if (raw.includes("offer")) topics.add("offers");
   if (raw.includes("checkin")) topics.add("checkin");
 
+  // ✅ M71/M72: route progress should refresh driver/company shift views
+  if (ev === "route:progress" || ev === "route:plan") topics.add("shifts");
+
   // explicit topic override (backend msg.topic kullanırsa)
   if (
     topic === "shifts" ||

@@ -6,6 +6,7 @@ import { navigate } from "../../router";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
 import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
+import { useAutoReload } from "../../live/useAutoReload";
 import { displayStatusLabel } from "../../utils/displayStatus";
 function fmt(dt) {
   try {
@@ -54,6 +55,8 @@ export default function DriverTodayPanel() {
       setErr(String(e?.message || e));
     }
   }
+
+  useAutoReload("shifts", load, Boolean(token));
 
   useEffect(() => {
     load();
@@ -287,4 +290,3 @@ useEffect(() => {
     </div>
   );
 }
-

@@ -54,7 +54,13 @@ export function useDriverRealtimeResync({
       baseUrl: apiBaseUrl,
       token: sessionToken,
       onSignal: ({ eventName }) => {
-        if (eventName === 'shift:update' || eventName === 'route:plan' || eventName === 'notif:new' || eventName === 'ws:ready') {
+        if (
+          eventName === 'shift:update' ||
+          eventName === 'route:plan' ||
+          eventName === 'route:progress' ||
+          eventName === 'notif:new' ||
+          eventName === 'ws:ready'
+        ) {
           scheduleSync();
         }
       },

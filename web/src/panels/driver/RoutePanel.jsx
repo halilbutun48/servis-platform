@@ -4,6 +4,7 @@ import { enqueueRequest, flushQueue, getQueue, isOnline, queueSize } from "../..
 import MapView from "../../components/map/MapView";
 import QueueDetailTable from "../../components/QueueDetailTable";
 import StopTimeline from "../../components/StopTimeline";
+import { useAutoReload } from "../../live/useAutoReload";
 import { useSession } from "../../state/session";
 import { openNextStopNavigation, openFullRouteNavigation, routeStats, isReachedStop } from "../../utils/navigation";
 import { nowIsoTR } from "../../utils/time";
@@ -134,6 +135,8 @@ export default function RoutePanel() {
       setErr(String(e?.message || e));
     }
   }
+
+  useAutoReload("shifts", load, Boolean(token));
 
   useEffect(() => {
     load();
@@ -587,6 +590,5 @@ async function undoLast() {
     </div>
   );
 }
-
 
 
