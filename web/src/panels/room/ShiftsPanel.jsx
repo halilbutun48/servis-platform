@@ -552,7 +552,7 @@ const offersByShiftId = useMemo(() => {
     openRoutePreview(target);
   }, [pendingPreviewShiftId, items]);
 
-  async function load() {
+  async function loadAll() {
     setErr("");
     try {
       const [sh, veh, drv, rm, off] = await Promise.all([
@@ -595,23 +595,25 @@ const offersByShiftId = useMemo(() => {
       });
 
       // driver seçimleri init (var olanı ezme)
-      const vMap = new Map(vlist.map((v) => [Number(v.id), v]));
-      setDriverSel((prev) => {
-        let changed = false;
-        const next = { ...prev };
-        for (const s of list) {
-          const sid = Number(s.id);
-          if (next[sid] !== undefined) continue;
+      {
+        const vMap = new Map(vlist.map((v) => [Number(v.id), v]));
+        setDriverSel((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          for (const s of list) {
+            const sid = Number(s.id);
+            if (next[sid] !== undefined) continue;
 
-          const vid = s.vehicleId ?? s.companyOfferVehicleId ?? null;
-          const vv = vid ? vMap.get(Number(vid)) : null;
-          const did = s.driverId ?? vv?.driverId ?? null;
+            const vid = s.vehicleId ?? s.companyOfferVehicleId ?? null;
+            const vv = vid ? vMap.get(Number(vid)) : null;
+            const did = s.driverId ?? vv?.driverId ?? null;
 
-          next[sid] = did ? String(did) : "";
-          changed = true;
-        }
-        return changed ? next : prev;
-      });
+            next[sid] = did ? String(did) : "";
+            changed = true;
+          }
+          return changed ? next : prev;
+        });
+      }
 
       // roomOffer form init (var olanı ezme)
       setRoomOfferSel((prev) => {
@@ -637,14 +639,135 @@ const offersByShiftId = useMemo(() => {
     }
   }
 
+  async function loadShiftListOnly() {
+    setErr("");
+    try {
+      const sh = await api("/api/shifts?take=200&includeOffered=1", { token });
+      const list = Array.isArray(sh) ? sh : sh?.items ?? [];
+      list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
+
+      setItems(list);
+      // satır seçimleri init (var olanı ezme)
+      setAssignSel((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const s of list) {
+          const sid = Number(s.id);
+          if (next[sid] !== undefined) continue;
+
+          next[sid] = s.companyOfferVehicleId ? String(s.companyOfferVehicleId) : "";
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+
+      // driver seçimleri init (var olanı ezme)
+      {
+        const vMap = new Map((Array.isArray(vehicles) ? vehicles : []).map((v) => [Number(v.id), v]));
+        setDriverSel((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          for (const s of list) {
+            const sid = Number(s.id);
+            if (next[sid] !== undefined) continue;
+
+            const vid = s.vehicleId ?? s.companyOfferVehicleId ?? null;
+            const vv = vid ? vMap.get(Number(vid)) : null;
+            const did = s.driverId ?? vv?.driverId ?? null;
+
+            next[sid] = did ? String(did) : "";
+            changed = true;
+          }
+          return changed ? next : prev;
+        });
+      }
+
+      // roomOffer form init (var olanı ezme)
+      setRoomOfferSel((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const s of list) {
+          const sid = Number(s.id);
+          if (next[sid]) continue;
+
+          next[sid] = {
+            roomOfferVehicleId: s.roomOfferVehicleId ? String(s.roomOfferVehicleId) : "",
+            roomOfferAmount: s.roomOfferAmount != null ? String(s.roomOfferAmount) : "",
+            roomOfferNote: s.roomOfferNote ?? "",
+            notifyDriver: Boolean(s.roomOfferToDriver),
+            driverNote: s.roomOfferDriverNote ?? "" };
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+    } catch (e) {
+      const ne = normalizeErr(e);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
+    }
+  }
+
+  async function loadReferenceDataOnly() {
+    setErr("");
+    try {
+      const [veh, drv, rm] = await Promise.all([
+        api("/api/vehicles", { token }),
+        api("/api/drivers", { token }).catch(() => ({ items: [] })),
+        api("/api/rooms", { token }).catch(() => ({ items: [] })),
+      ]);
+
+      const vlist = Array.isArray(veh) ? veh : veh?.items ?? [];
+      const dlist = Array.isArray(drv) ? drv : drv?.items ?? [];
+      const rlist = Array.isArray(rm) ? rm : rm?.items ?? [];
+
+      setVehicles(vlist);
+      setDrivers(dlist);
+      setRooms(rlist);
+
+      const vMap = new Map(vlist.map((v) => [Number(v.id), v]));
+      setDriverSel((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const s of items) {
+          const sid = Number(s.id);
+          if (next[sid] !== undefined) continue;
+
+          const vid = s.vehicleId ?? s.companyOfferVehicleId ?? null;
+          const vv = vid ? vMap.get(Number(vid)) : null;
+          const did = s.driverId ?? vv?.driverId ?? null;
+
+          next[sid] = did ? String(did) : "";
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+    } catch (e) {
+      const ne = normalizeErr(e);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
+    }
+  }
+
+  async function loadOffersOnly() {
+    setErr("");
+    try {
+      const off = await api("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token }).catch(() => ({ items: [] }));
+      const olist = Array.isArray(off) ? off : off?.items ?? [];
+      setOffers(Array.isArray(olist) ? olist : []);
+    } catch (e) {
+      const ne = normalizeErr(e);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
+    }
+  }
+
   useEffect(() => {
-    load();
+    loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useAutoReload("shifts", load);
-  useAutoReload("drivers", load);
-  useAutoReload("rooms", load);
+  useAutoReload("shifts", loadShiftListOnly);
+  useAutoReload("vehicles", loadReferenceDataOnly);
+  useAutoReload("drivers", loadReferenceDataOnly);
+  useAutoReload("rooms", loadReferenceDataOnly);
+  useAutoReload("offers", loadOffersOnly);
 
   const PENDING_STATUSES = useMemo(() => new Set(["DRAFT", "REQUESTED"]), []);
   const pendingBase = useMemo(
@@ -863,7 +986,7 @@ const offersByShiftId = useMemo(() => {
       api,
       token,
       invalidate,
-      load,
+      loadAll,
       getApiErrorMessage }, shift);
   }
 
@@ -881,23 +1004,27 @@ const offersByShiftId = useMemo(() => {
       api,
       token,
       invalidate,
-      load,
+      loadAll,
       setAvail,
       normalizeErr,
       makeSig }, shift);
   }
 
   async function rejectShift(shift) {
-    return rejectShiftAction({ setBusy, setErr, api, token, invalidate, load, getApiErrorMessage }, shift);
+    return rejectShiftAction({ setBusy, setErr, api, token, invalidate, loadAll, getApiErrorMessage }, shift);
   }
 
   async function submitReassign(payload) {
-    return submitReassignAction({ reassignModal, setBusy, setErr, api, invalidate, load, getApiErrorMessage, setReassignModal, setOpsEventsModal }, payload);
+    return submitReassignAction({ reassignModal, setBusy, setErr, api, invalidate, loadAll, getApiErrorMessage, setReassignModal, setOpsEventsModal }, payload);
   }
 
-  function openReassignModal(shift) { setReassignModal({ open: true, shift }); }
+  function openReassignModal(shift) {
+    setReassignModal({ open: true, shift });
+  }
 
-  function openOpsEvents(shiftId) { setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null }); }
+  function openOpsEvents(shiftId) {
+    setOpsEventsModal({ open: true, shiftId: Number(shiftId) || null });
+  }
 
   return (
     <div>
