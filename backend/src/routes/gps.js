@@ -68,6 +68,7 @@ export function gpsRouter(io) {
         select: { id: true },
       });
       if (!senderDriver) return res.status(400).json({ error: "Driver profile not found" });
+      const senderDriverId = senderDriver.id;
 
       const allowedShift = await prisma.shift.findFirst({
         where: {
@@ -145,20 +146,11 @@ export function gpsRouter(io) {
       // - her zaman sender user hedefi var (driverId null olabilir)
       // - ayrıca shift’e atanmış driver varsa onu da ekle
       // =========================================================
+      let driverNotifTargetsPromise = null;
       async function getDriverNotifTargets() {
+        if (driverNotifTargetsPromise) return driverNotifTargetsPromise;
+        driverNotifTargetsPromise = (async () => {
         const targets = [];
-
-        // sender driver record (yoksa null kalır)
-        let senderDriverId = null;
-        try {
-          const sender = await prisma.driver.findFirst({
-            where: { userId: u.id },
-            select: { id: true },
-          });
-          senderDriverId = sender?.id ?? null;
-        } catch {
-          senderDriverId = null;
-        }
 
         // ✅ her durumda sender user’a DRIVER notif üret
         targets.push({ driverId: senderDriverId, userId: u.id });
@@ -186,7 +178,9 @@ export function gpsRouter(io) {
           // ignore
         }
 
-        return targets;
+          return targets;
+        })();
+        return driverNotifTargetsPromise;
       }
 
       // =========================================================

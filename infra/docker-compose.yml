@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:16
     container_name: personel_db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-servis}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-servispass}
@@ -20,20 +21,27 @@ services:
   redis:
     image: redis:7
     container_name: personel_redis
+    restart: unless-stopped
     environment:
       TZ: Europe/Istanbul
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   api:
     build:
       context: ../backend
     container_name: personel_api
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     env_file:
       - ../.env
     environment:
@@ -88,6 +96,7 @@ services:
       BACKUP_LOCAL_DIR: ${BACKUP_LOCAL_DIR:-/app/artifacts/backups}
       BACKUP_LOCAL_RETENTION_DAYS: ${BACKUP_LOCAL_RETENTION_DAYS:-14}
       BACKUP_DUMP_FORMAT: ${BACKUP_DUMP_FORMAT:-plain}
+      GPS_POINT_RETENTION_DAYS: ${GPS_POINT_RETENTION_DAYS:-30}
 
     ports:
       - "${API_PORT:-3000}:3000"
@@ -102,6 +111,7 @@ services:
     profiles: ["osrm"]
     image: osrm/osrm-backend:latest
     container_name: personel_osrm
+    restart: unless-stopped
     environment:
       TZ: Europe/Istanbul
     command: osrm-routed --algorithm mld /data/turkey-latest.osrm
@@ -115,6 +125,7 @@ services:
     build:
       context: ./solver
     container_name: personel_solver
+    restart: unless-stopped
     environment:
       TZ: Europe/Istanbul
     ports:
