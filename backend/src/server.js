@@ -331,12 +331,16 @@ app.use(expressErrorHandler);
 // Background monitors
 const stopMonitors = startMonitors(io);
 
-function shutdown() {
+let shuttingDown = false;
+
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
   try {
     stopSocketRelay?.();
   } catch {}
   try {
-    stopMonitors?.();
+    await stopMonitors?.();
   } catch {}
   server.close(() => process.exit(0));
 }
@@ -347,8 +351,6 @@ process.on("SIGINT", shutdown);
 server.listen(ENV.PORT, () => {
   console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
-
-
 
 
 

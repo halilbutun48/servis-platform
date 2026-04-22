@@ -187,10 +187,17 @@ export function startMonitors(io, opts = {}) {
   });
 
   return () => {
+    if (closed) return;
     closed = true;
     clearTimers();
     isLeader = false;
-    void stopLocal();
-    void releaseLeader(redis, leaderId);
+    return (async () => {
+      try {
+        await stopLocal();
+      } catch {}
+      try {
+        await releaseLeader(redis, leaderId);
+      } catch {}
+    })();
   };
 }
