@@ -17,6 +17,7 @@ import { validateAgreementSlotItems } from "../services/agreementSlots.js";
 import { buildAgreementOpsBridgeById } from "../services/agreementOpsBridge.js";
 import { buildAgreementShiftStats } from "../services/agreementShiftStats.js";
 import { requireSourceShiftForAgreementCreate } from "../services/agreementSourceShiftGate.js";
+import { buildAgreementListItemsWithCommercialBackbone } from "../services/agreementListView.js";
 
 function parseDateOnly(s) {
   const v = String(s || "").trim();
@@ -145,10 +146,7 @@ export function agreementsRouter(io) {
     });
 
     const commercialBackboneByAgreementId = await buildAgreementCommercialBackboneMap(items.map((item) => item.id));
-    const mapped = items.map((item) => ({
-      ...item,
-      commercialBackbone: commercialBackboneByAgreementId[Number(item.id)] || null,
-    }));
+    const mapped = buildAgreementListItemsWithCommercialBackbone(items, commercialBackboneByAgreementId);
 
     res.json({ items: mapped });
   });
