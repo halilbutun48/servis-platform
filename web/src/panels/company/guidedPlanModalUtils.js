@@ -264,6 +264,61 @@ export function emptyDestination() {
   return { title: "", address: "", lat: "", lng: "", status: "idle", foundText: "" };
 }
 
+export function buildGuidedPlanFilledDestinations(orgDestinations) {
+  return (Array.isArray(orgDestinations) ? orgDestinations : []).filter((d) => String(d?.title || d?.address || "").trim());
+}
+
+export function buildGuidedPlanDestinationAudit(orgDestinations) {
+  const items = (Array.isArray(orgDestinations) ? orgDestinations : [])
+    .map((d, idx) => {
+      const label = String(d?.title || d?.address || "").trim();
+      const lat = coordNum(d?.lat);
+      const lng = coordNum(d?.lng);
+      return {
+        idx,
+        label: label || `Yer ${idx + 1}`,
+        lat,
+        lng,
+        hasCoord: hasCoord(lat, lng),
+      };
+    })
+    .filter((x) => Boolean(x.label));
+
+  return {
+    total: items.length,
+    ready: items.filter((x) => x.hasCoord).length,
+    missing: items.filter((x) => !x.hasCoord),
+    ok: items.length > 0 && items.every((x) => x.hasCoord),
+  };
+}
+
+export function buildGuidedPlanDraftCompletion({ organization, draftShifts, draftShiftIds, orgDestinationAudit }) {
+  if (!organization) return { ready: true, reasons: [], badShiftIds: [], expectedStops: 0 };
+
+  const reasons = [];
+  const expectedStops = Number(orgDestinationAudit?.total || 0);
+  if (!expectedStops) reasons.push("En az 1 gidilecek yer ekle.");
+  if (!orgDestinationAudit?.ok) {
+    reasons.push(`Koordinatı eksik yerler: ${(orgDestinationAudit?.missing || []).map((x) => x.label).join(", ")}`);
+  }
+  const badShiftIds = (Array.isArray(draftShifts) ? draftShifts : [])
+    .filter((s) => {
+      const validStops = (Array.isArray(s?.stops) ? s.stops : []).filter((st) => hasCoord(coordNum(st?.lat), coordNum(st?.lng)));
+      return validStops.length < expectedStops;
+    })
+    .map((s) => Number(s.id))
+    .filter(Number.isFinite);
+  if ((Array.isArray(draftShiftIds) ? draftShiftIds : []).length && badShiftIds.length) {
+    reasons.push(`Eksik duraklı taslak shift: ${badShiftIds.map((id) => `#${id}`).join(", ")}`);
+  }
+  return {
+    ready: reasons.length === 0 && (Array.isArray(draftShiftIds) ? draftShiftIds : []).length > 0,
+    reasons,
+    badShiftIds,
+    expectedStops,
+  };
+}
+
 export function coordNum(v) {
   const s = String(v ?? "").trim().replace(",", ".");
   if (!s) return null;

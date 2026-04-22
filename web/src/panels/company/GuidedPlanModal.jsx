@@ -17,6 +17,9 @@ import { fetchProviderScoreMap } from "../../utils/providerScores";
 import { getApiErrorMessage } from "../../utils/apiContract";
 import {
   PACKS,
+  buildGuidedPlanDestinationAudit,
+  buildGuidedPlanDraftCompletion,
+  buildGuidedPlanFilledDestinations,
   clearPlanTermsForShiftIds as _clearPlanTermsForShiftIds,
   buildGuidedPlanModalResetState,
   buildGuidedPlanModalRouteRefreshPrefill,
@@ -212,58 +215,17 @@ export default function GuidedPlanModal({
   const selectedRoomCount = selectedRoomIds.length;
 
   const orgFilledDestinations = useMemo(
-    () => (orgDestinations || []).filter((d) => String(d?.title || d?.address || "").trim()),
+    () => buildGuidedPlanFilledDestinations(orgDestinations),
     [orgDestinations]
   );
 
   const orgDestinationAudit = useMemo(() => {
-    const items = (orgDestinations || [])
-      .map((d, idx) => {
-        const label = String(d?.title || d?.address || "").trim();
-        const lat = coordNum(d?.lat);
-        const lng = coordNum(d?.lng);
-        return {
-          idx,
-          label: label || `Yer ${idx + 1}`,
-          lat,
-          lng,
-          hasCoord: hasCoord(lat, lng),
-        };
-      })
-      .filter((x) => Boolean(x.label));
-    return {
-      total: items.length,
-      ready: items.filter((x) => x.hasCoord).length,
-      missing: items.filter((x) => !x.hasCoord),
-      ok: items.length > 0 && items.every((x) => x.hasCoord),
-    };
+    return buildGuidedPlanDestinationAudit(orgDestinations);
   }, [orgDestinations]);
 
   const orgDraftCompletion = useMemo(() => {
-    if (!organization) return { ready: true, reasons: [], badShiftIds: [], expectedStops: 0 };
-    const reasons = [];
-    const expectedStops = orgDestinationAudit.total;
-    if (!expectedStops) reasons.push("En az 1 gidilecek yer ekle.");
-    if (!orgDestinationAudit.ok) {
-      reasons.push(`Koordinatı eksik yerler: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}`);
-    }
-    const badShiftIds = (draftShifts || [])
-      .filter((s) => {
-        const validStops = (Array.isArray(s?.stops) ? s.stops : []).filter((st) => hasCoord(coordNum(st?.lat), coordNum(st?.lng)));
-        return validStops.length < expectedStops;
-      })
-      .map((s) => Number(s.id))
-      .filter(Number.isFinite);
-    if (draftShiftIds.length && badShiftIds.length) {
-      reasons.push(`Eksik duraklı taslak shift: ${badShiftIds.map((id) => `#${id}`).join(", ")}`);
-    }
-    return {
-      ready: reasons.length === 0 && draftShiftIds.length > 0,
-      reasons,
-      badShiftIds,
-      expectedStops,
-    };
-  }, [organization, orgDestinationAudit, draftShifts, draftShiftIds]);
+    return buildGuidedPlanDraftCompletion({ organization, draftShifts, draftShiftIds, orgDestinationAudit });
+  }, [organization, draftShifts, draftShiftIds, orgDestinationAudit]);
 
   const offerOsrmGate = useMemo(() => {
     const items = (draftShifts || []).map((s) => {
