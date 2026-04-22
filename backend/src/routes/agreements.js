@@ -17,6 +17,7 @@ import { validateAgreementSlotItems } from "../services/agreementSlots.js";
 import { buildAgreementOpsBridgeById } from "../services/agreementOpsBridge.js";
 import { buildAgreementShiftStats } from "../services/agreementShiftStats.js";
 import { requireSourceShiftForAgreementCreate } from "../services/agreementSourceShiftGate.js";
+import { agreementRef, routeRefreshRef } from "../services/agreementCopy.js";
 import { buildAgreementListItemsWithCommercialBackbone } from "../services/agreementListView.js";
 
 function parseDateOnly(s) {
@@ -50,16 +51,8 @@ function trimOrNull(v) {
   return s ? s : null;
 }
 
-function agreementRef(id) {
-  return `Sözleşme #${id}`;
-}
-
 function offerSummary(amount, note) {
   return `${amount ?? "-"}${note ? " — " + note : ""}`;
-}
-
-function routeRefreshRef(id) {
-  return `Rota güncelleme #${id}`;
 }
 
 function routeRefreshWindowSummary(item) {
