@@ -51,6 +51,7 @@ import {
 } from './src/lib/gps';
 import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
 import { deriveRouteTransition, getDriverBackgroundRuntimeStatus, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
+import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
 import { RELEASE_INFO, backgroundPermissionTextFromStatus, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState } from './src/app/mobileAppState';
 
@@ -238,11 +239,21 @@ export default function App() {
         clearPendingSessionEvent().catch(() => null),
       ]);
 
+      const latestSession = await getSession().catch(() => null);
+      const nextSession = latestSession?.token && latestSession.token !== state.session?.token
+        ? {
+            ...latestSession,
+            deviceId: latestSession.deviceId || state.session?.deviceId || '',
+          }
+        : state.session;
+
       setState((prev) => ({
         ...prev,
         loading: false,
         syncing: false,
         usingCachedData: false,
+        session: nextSession || prev.session,
+        deviceId: nextSession?.deviceId || prev.deviceId,
         net: nextNet,
         me,
         today,
@@ -700,6 +711,14 @@ export default function App() {
       }));
     }
   }
+
+  useDriverRealtimeResync({
+    apiBaseUrl: getApiBaseUrl(),
+    sessionToken: state.session?.token || '',
+    role: state.me?.role || '',
+    requirePinChange: Boolean(state.me?.requirePinChange),
+    onSync: () => syncSignedIn({ soft: true, force: true }),
+  });
 
   useEffect(() => {
     let alive = true;

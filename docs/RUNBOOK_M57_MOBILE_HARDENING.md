@@ -46,6 +46,7 @@ Mobil tabanda bugun zaten bulunan temel capability:
 - refresh/session bozulursa uygulama `Oturum kapandi. Yeniden giris yapin.` diyerek temiz sekilde girise doner
 - KVKK karti mobilde gorunur; gerekli/tamamlanan sayilari ve dokuman listesi gorulur
 - KVKK onayi eksikse GPS publish hattinda net blok dili gorunur
+- Surucu mobil uygulama backend `shift:update` / `route:plan` / `notif:new` olaylarini dinler; polling sadece yedek toparlama yoludur
 
 ### 3.4 M57.4 — Android preview/internal build disiplini
 - `mobile/app.json` icinde release stage ve build track metadatasi sabitlendi
