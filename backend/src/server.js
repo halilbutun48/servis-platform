@@ -74,6 +74,7 @@ import { pickExport, assertRouteFactories } from "./bootstrap/routeFactories.js"
 import { mountCoreRoutes, mountIoRoutes } from "./bootstrap/routeMounts.js";
 import { createApiRateLimiters } from "./bootstrap/rateLimits.js";
 import { expressErrorHandler } from "./errors/http.js";
+import { installSocketRelay } from "./ws/socketRelay.js";
 
 import * as agreementsMod from "./routes/agreements.js";
 
@@ -266,6 +267,7 @@ mountCoreRoutes(app, {
 // Server + Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: ENV.CORS_ORIGIN === "*" ? true : ENV.CORS_ORIGIN } });
+const stopSocketRelay = installSocketRelay(io, { redisUrl: ENV.REDIS_URL });
 
 // Socket auth: token -> decode -> DB user -> join scopes
 io.use(async (socket, next) => {
@@ -331,6 +333,9 @@ const stopMonitors = startMonitors(io);
 
 function shutdown() {
   try {
+    stopSocketRelay?.();
+  } catch {}
+  try {
     stopMonitors?.();
   } catch {}
   server.close(() => process.exit(0));
@@ -342,7 +347,6 @@ process.on("SIGINT", shutdown);
 server.listen(ENV.PORT, () => {
   console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
-
 
 
 

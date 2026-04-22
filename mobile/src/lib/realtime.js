@@ -27,6 +27,7 @@ export function connectDriverRealtime({
     autoConnect: true,
     auth: { token: resolvedToken },
     forceNew: true,
+    transports: ['websocket'],
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
