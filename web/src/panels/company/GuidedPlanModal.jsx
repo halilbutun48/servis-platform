@@ -20,6 +20,7 @@ import {
   buildGuidedPlanDestinationAudit,
   buildGuidedPlanDraftCompletion,
   buildGuidedPlanFilledDestinations,
+  buildGuidedPlanCurrentStepItems,
   clearPlanTermsForShiftIds as _clearPlanTermsForShiftIds,
   buildGuidedPlanModalResetState,
   buildGuidedPlanModalRouteRefreshPrefill,
@@ -36,7 +37,6 @@ import {
   hasCoord,
   packDescForMode as _packDescForMode,
   packTitleForMode as _packTitleForMode,
-  parseHHMM,
   parseTryInput as _parseTryInput,
   patternLabel,
   readGuidedTempShiftIds,
@@ -105,25 +105,7 @@ export default function GuidedPlanModal({
   const [customSlots, setCustomSlots] = useState(() => createDefaultCustomSlots());
   const weekMask = useMemo(() => maskFromSelected(daysSel), [daysSel]);
   const eligibleDaysCount = useMemo(() => countMatchingDaysInRange(startDate, endDate, weekMask), [startDate, endDate, weekMask]);
-  const currentStepItems = useMemo(() => {
-    if (pack.key !== "CUSTOM") return pack.items;
-    const slots = Array.isArray(customSlots) ? customSlots : [];
-    if (!slots.length) return [];
-    const out = [];
-    for (const s of slots) {
-      const sMin = parseHHMM(s?.startHHMM);
-      const eMin = parseHHMM(s?.endHHMM);
-      if (sMin == null || eMin == null) return [];
-      out.push({
-        label: String(s?.label || "").trim() || "Özel",
-        startMin: sMin,
-        endMin: eMin,
-        direction: s?.direction || "INBOUND",
-        pattern: s?.pattern || "ONE_WAY",
-      });
-    }
-    return out;
-  }, [pack, customSlots]);
+  const currentStepItems = useMemo(() => buildGuidedPlanCurrentStepItems({ pack, customSlots }), [pack, customSlots]);
   const totalShiftCount = useMemo(() => eligibleDaysCount * currentStepItems.length, [eligibleDaysCount, currentStepItems]);
   const guidedLimitMessage = useMemo(() => {
     if (eligibleDaysCount > 7) return "Guided en fazla 7 gün olabilir. Daha uzun planlar için sözleşme kullanın.";

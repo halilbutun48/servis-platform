@@ -319,6 +319,26 @@ export function buildGuidedPlanDraftCompletion({ organization, draftShifts, draf
   };
 }
 
+export function buildGuidedPlanCurrentStepItems({ pack, customSlots }) {
+  if (!pack || pack.key !== "CUSTOM") return Array.isArray(pack?.items) ? pack.items : [];
+  const slots = Array.isArray(customSlots) ? customSlots : [];
+  if (!slots.length) return [];
+  const out = [];
+  for (const s of slots) {
+    const sMin = parseHHMM(s?.startHHMM);
+    const eMin = parseHHMM(s?.endHHMM);
+    if (sMin == null || eMin == null) return [];
+    out.push({
+      label: String(s?.label || "").trim() || "Özel",
+      startMin: sMin,
+      endMin: eMin,
+      direction: s?.direction || "INBOUND",
+      pattern: s?.pattern || "ONE_WAY",
+    });
+  }
+  return out;
+}
+
 export function coordNum(v) {
   const s = String(v ?? "").trim().replace(",", ".");
   if (!s) return null;
