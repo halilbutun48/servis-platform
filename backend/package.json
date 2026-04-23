@@ -58,6 +58,7 @@
     "bench:gps:100": "node scripts/bench_gps_publish_only.js --scenario=publish-only",
     "bench:gps:100:auto": "node scripts/bench_gps_publish_only.js --scenario=auto-reached",
     "bench:gps:300:auto:panels": "node scripts/bench_gps_publish_only.js --scenario=auto-reached --vehicles=300 --panelProfile=readstorm",
+    "bench:reset": "node scripts/bench_reset_data.js --force",
     "spec16check": "node scripts/project_spec_v1_future_strengthening_coverage_check.js"
   },
   "dependencies": {
