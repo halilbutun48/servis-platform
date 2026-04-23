@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { humanizeApiError, isNetworkLikeError } from '../lib/api';
 import { buildReleaseInfo } from '../lib/release';
-import { formatGpsCoords, resolveLiveLocationState } from '../lib/gps';
+import { formatGpsCoords, permissionTextFromStatus, resolveLiveLocationState } from '../lib/gps';
 
 export const RELEASE_INFO = buildReleaseInfo();
 
@@ -156,6 +156,85 @@ export function backgroundPermissionTextFromStatus(permission) {
   if (permission.status === 'granted') return "Arka plan GPS izni hazir.";
   if (permission.canAskAgain === false) return 'Arka plan GPS izni kapali. Ayarlardan acmaniz gerekiyor.';
   return 'Arka plan GPS izni gerekli.';
+}
+
+export function buildGpsRuntimeSnapshot({
+  runtime = null,
+  reason = '',
+  options = {},
+  appState = 'active',
+} = {}) {
+  const foregroundPermission = options.foregroundPermission ?? runtime?.foregroundPermission ?? null;
+  const backgroundPermission = options.backgroundPermission ?? runtime?.backgroundPermission ?? null;
+  const taskStarted = Boolean(runtime?.started);
+  const canOpenSettings = Boolean(
+    options.canOpenSettings ?? ((foregroundPermission?.canAskAgain === false) || (backgroundPermission?.canAskAgain === false))
+  );
+
+  return {
+    permissionStatus: foregroundPermission?.status || options.permissionStatus || 'unknown',
+    permissionText: permissionTextFromStatus(foregroundPermission),
+    backgroundPermissionStatus: backgroundPermission?.status || 'unknown',
+    backgroundPermissionText: options.backgroundPermissionText || backgroundPermissionTextFromStatus(backgroundPermission),
+    backgroundTaskState: taskStarted ? 'running' : 'stopped',
+    backgroundTaskText: taskStarted
+      ? 'Arka plan GPS servisi kayitli. Ekran kapansa da yayin devam etmeli.'
+      : 'Arka plan GPS servisi henuz devrede degil.',
+    appState: options.appState || appState,
+    lastBackgroundReason: reason || options.reason || '',
+    lastBackgroundSyncAt: new Date().toISOString(),
+    canOpenSettings,
+  };
+}
+
+export function buildSignedInSyncArtifacts({
+  state = initialState,
+  routeBundle = { route: null, selectedShiftId: null },
+  me = null,
+  today = null,
+  health = null,
+  kvkkCurrent = null,
+  lastSyncAt = '',
+} = {}) {
+  const selectedShiftId = routeBundle?.selectedShiftId ?? null;
+  const nextKvkk = nextKvkkState(kvkkCurrent || me?.kvkk, state.kvkk);
+  const nextNet = {
+    status: 'online',
+    message: state.net?.status === 'offline' ? 'Baglanti geri geldi, bilgiler yenileniyor.' : 'Baglanti var.',
+    lastOnlineAt: lastSyncAt,
+    lastOfflineAt: state.net?.lastOfflineAt || '',
+    lastRecoveryAt: state.net?.status === 'offline' ? lastSyncAt : (state.net?.lastRecoveryAt || ''),
+    retryCount: 0,
+    nextRetryAt: '',
+  };
+  const nextGps = decorateGpsState({
+    ...state.gps,
+    shiftId: Number(selectedShiftId || state.gps?.shiftId || 0) || null,
+    vehicleId: Number(routeBundle?.route?.shift?.vehicleId || routeBundle?.route?.vehicle?.id || state.gps?.vehicleId || 0) || null,
+  }, routeBundle?.route, {
+    usingCachedData: false,
+    netStatus: nextNet.status,
+    selectedShiftId,
+  });
+
+  return {
+    nextKvkk,
+    nextNet,
+    nextGps,
+    selectedShiftId,
+    snapshot: buildMobileSnapshot({
+      me,
+      today,
+      route: routeBundle?.route,
+      health,
+      kvkk: nextKvkk,
+      net: nextNet,
+      lastSyncAt,
+      lastErrorAt: '',
+      gps: nextGps,
+      selectedShiftId,
+    }),
+  };
 }
 
 export function decorateGpsState(baseGps, route, { usingCachedData = false, netStatus = 'unknown', selectedShiftId = null } = {}) {

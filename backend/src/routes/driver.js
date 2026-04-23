@@ -539,6 +539,15 @@ export function driverRouter(io) {
       stop: { id: stopId, order: stop.order ?? null, state },
       state,
       source: "DRIVER_OPS",
+      shiftSnapshot: {
+        id: shiftId,
+        companyId: shift.companyId,
+        roomId: shift.roomId,
+        vehicleId: fresh?.vehicleId ?? null,
+      },
+      stopsSnapshot: fresh?.stops ?? [],
+      vehicleSnapshot: fresh?.vehicle ? { id: fresh.vehicle.id, plate: fresh.vehicle.plate } : null,
+      gpsLastSnapshot: fresh?.vehicle?.gpsLast ?? null,
     });
 
     // instant ETA update (GPS beklemesin)

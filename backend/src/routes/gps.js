@@ -319,6 +319,7 @@ export function gpsRouter(io) {
       // - When within 80m of the NEXT pending stop and (speed <= 15 km/h if provided), mark stop as REACHED.
       // - Idempotent: already reached/skipped stops are ignored.
       // =========================================================
+      let autoReachedShifts = null;
       try {
         const radiusM = 80;
         const maxSpeedKmh = 15;
@@ -338,12 +339,12 @@ export function gpsRouter(io) {
           return max;
         }
 
-        const shifts = await prisma.shift.findMany({
+        autoReachedShifts = await prisma.shift.findMany({
           where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
           include: { stops: { orderBy: { order: "asc" } }, progress: true },
         });
 
-        for (const sh of shifts) {
+        for (const sh of autoReachedShifts) {
           if (sh.progress?.pausedAt) continue;
           const next = firstPending(sh.stops ?? []);
           if (!next) continue;
@@ -370,6 +371,9 @@ export function gpsRouter(io) {
             where: { id: next.id },
             data: { state: "REACHED", reachedAt: now2, skippedAt: null },
           });
+          next.state = "REACHED";
+          next.reachedAt = now2;
+          next.skippedAt = null;
 
           // stop progress notifications (ROOM/COMPANY + user/parent proximity)
           await emitStopProgressNotifs({
@@ -378,6 +382,10 @@ export function gpsRouter(io) {
             stop: { id: next.id, order: next.order ?? null, state: "REACHED" },
             state: "REACHED",
             source: "AUTO_GEOFENCE",
+            shiftSnapshot: { id: sh.id, companyId: sh.companyId, roomId: sh.roomId, vehicleId },
+            stopsSnapshot: sh.stops,
+            vehicleSnapshot: vehicle,
+            gpsLastSnapshot: last,
           });
 
 
@@ -390,15 +398,10 @@ export function gpsRouter(io) {
             meta: { stopId: next.id, vehicleId, source: "AUTO_GEOFENCE" },
           });
 
-          const fresh = await prisma.shift.findUnique({
-            where: { id: sh.id },
-            include: { stops: { orderBy: { order: "asc" } } },
-          });
-
-          const nextStop = firstPending(fresh?.stops ?? []);
+          const nextStop = firstPending(sh.stops ?? []);
           const completed = !nextStop;
 
-          const lastReachedOrder = derivedLastReached(fresh?.stops ?? []);
+          const lastReachedOrder = derivedLastReached(sh.stops ?? []);
           await prisma.shiftProgress.upsert({
             where: { shiftId: sh.id },
             update: { lastReachedOrder },
@@ -445,7 +448,7 @@ export function gpsRouter(io) {
       // ✅ ETA broadcast (progress-aware)
       // =========================================================
       try {
-        const shifts = await prisma.shift.findMany({
+        const shifts = autoReachedShifts ?? await prisma.shift.findMany({
           where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
           include: {
             stops: { orderBy: { order: "asc" } },

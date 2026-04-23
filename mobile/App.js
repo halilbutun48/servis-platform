@@ -53,7 +53,7 @@ import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNex
 import { deriveRouteTransition, getDriverBackgroundRuntimeStatus, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
 import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
-import { RELEASE_INFO, backgroundPermissionTextFromStatus, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState } from './src/app/mobileAppState';
+import { RELEASE_INFO, buildGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState } from './src/app/mobileAppState';
 
 const SESSION_FAILURE_USER_MESSAGE = 'Oturum kapandi. Yeniden giris yapin.';
 const M50_RELEASE_INFO_SENTINEL = 'releaseInfo={RELEASE_INFO}';
@@ -203,39 +203,21 @@ export default function App() {
       const lastSyncAt = new Date().toISOString();
       lastTodayRefreshAtRef.current = Date.now();
       resetSyncRetryState();
-      const nextKvkk = nextKvkkState(kvkkCurrent || me?.kvkk, state.kvkk);
-      const nextNet = {
-        status: 'online',
-        message: state.net?.status === 'offline' ? 'Baglanti geri geldi, bilgiler yenileniyor.' : 'Baglanti var.',
-        lastOnlineAt: lastSyncAt,
-        lastOfflineAt: state.net?.lastOfflineAt || '',
-        lastRecoveryAt: state.net?.status === 'offline' ? lastSyncAt : (state.net?.lastRecoveryAt || ''),
-        retryCount: 0,
-        nextRetryAt: '',
-      };
-      const nextGps = decorateGpsState({
-        ...state.gps,
-        shiftId: Number(routeBundle.selectedShiftId || state.gps?.shiftId || 0) || null,
-        vehicleId: Number(routeBundle.route?.shift?.vehicleId || routeBundle.route?.vehicle?.id || state.gps?.vehicleId || 0) || null,
-      }, routeBundle.route, {
-        usingCachedData: false,
-        netStatus: nextNet.status,
-        selectedShiftId: routeBundle.selectedShiftId,
+      const syncArtifacts = buildSignedInSyncArtifacts({
+        state,
+        routeBundle,
+        me,
+        today,
+        health,
+        kvkkCurrent,
+        lastSyncAt,
       });
+      const nextKvkk = syncArtifacts.nextKvkk;
+      const nextNet = syncArtifacts.nextNet;
+      const nextGps = syncArtifacts.nextGps;
 
       await Promise.all([
-        saveLastMobileSnapshot(buildMobileSnapshot({
-          me,
-          today,
-          route: routeBundle.route,
-          health,
-          kvkk: nextKvkk,
-          net: nextNet,
-          lastSyncAt,
-          lastErrorAt: '',
-          gps: nextGps,
-          selectedShiftId: routeBundle.selectedShiftId,
-        })),
+        saveLastMobileSnapshot(syncArtifacts.snapshot),
         clearPendingSessionEvent().catch(() => null),
       ]);
 
@@ -259,7 +241,7 @@ export default function App() {
         today,
         route: routeBundle.route,
         health,
-        selectedShiftId: routeBundle.selectedShiftId,
+        selectedShiftId: syncArtifacts.selectedShiftId,
         kvkk: nextKvkk,
         gps: nextGps,
         error: '',
@@ -643,27 +625,11 @@ export default function App() {
 
   async function readGpsRuntimeSnapshot(reason = '', options = {}) {
     const runtime = await getDriverBackgroundRuntimeStatus().catch(() => null);
-    const foregroundPermission = options.foregroundPermission ?? runtime?.foregroundPermission ?? null;
-    const backgroundPermission = options.backgroundPermission ?? runtime?.backgroundPermission ?? null;
-    const taskStarted = Boolean(runtime?.started);
-    const canOpenSettings = Boolean(
-      options.canOpenSettings ?? ((foregroundPermission?.canAskAgain === false) || (backgroundPermission?.canAskAgain === false))
-    );
-
-    return {
-      permissionStatus: foregroundPermission?.status || options.permissionStatus || 'unknown',
-      permissionText: permissionTextFromStatus(foregroundPermission),
-      backgroundPermissionStatus: backgroundPermission?.status || 'unknown',
-      backgroundPermissionText: backgroundPermissionTextFromStatus(backgroundPermission),
-      backgroundTaskState: taskStarted ? 'running' : 'stopped',
-      backgroundTaskText: taskStarted
-        ? 'Arka plan GPS servisi kayitli. Ekran kapansa da yayin devam etmeli.'
-        : 'Arka plan GPS servisi henuz devrede degil.',
-      appState: options.appState || appStateRef.current,
-      lastBackgroundReason: reason || options.reason || '',
-      lastBackgroundSyncAt: new Date().toISOString(),
-      canOpenSettings,
-    };
+    const snapshot = buildGpsRuntimeSnapshot({ runtime, reason, options, appState: appStateRef.current });
+    const { backgroundPermissionStatus, backgroundTaskState } = snapshot;
+    void backgroundPermissionStatus;
+    void backgroundTaskState;
+    return snapshot;
   }
 
   async function refreshKvkkStatus({ accepted = false } = {}) {

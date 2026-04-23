@@ -82,6 +82,10 @@ export async function emitStopProgressNotifs({
   stopId,
   state,
   source: _source = "",
+  shiftSnapshot = null,
+  stopsSnapshot = null,
+  vehicleSnapshot = null,
+  gpsLastSnapshot = null,
 } = {}) {
   try {
     const sid = asInt(shiftId);
@@ -91,17 +95,27 @@ export async function emitStopProgressNotifs({
     const st = String(state ?? stop?.state ?? "");
     if (!isProgressState(st)) return;
 
-    const shift = await prisma.shift.findUnique({
-      where: { id: sid },
-      select: { id: true, companyId: true, roomId: true, vehicleId: true, startAt: true },
-    });
+    const shift = shiftSnapshot
+      ? {
+          id: sid,
+          companyId: asInt(shiftSnapshot.companyId),
+          roomId: asInt(shiftSnapshot.roomId),
+          vehicleId: asInt(shiftSnapshot.vehicleId),
+          startAt: shiftSnapshot.startAt ?? null,
+        }
+      : await prisma.shift.findUnique({
+          where: { id: sid },
+          select: { id: true, companyId: true, roomId: true, vehicleId: true, startAt: true },
+        });
     if (!shift) return;
 
-    const stops = await prisma.stop.findMany({
-      where: { shiftId: sid },
-      orderBy: { order: "asc" },
-      select: { id: true, order: true, name: true, state: true, lat: true, lng: true },
-    });
+    const stops = Array.isArray(stopsSnapshot) && stopsSnapshot.length
+      ? stopsSnapshot
+      : await prisma.stop.findMany({
+          where: { shiftId: sid },
+          orderBy: { order: "asc" },
+          select: { id: true, order: true, name: true, state: true, lat: true, lng: true },
+        });
 
     const cur = stop?.order ? { ...stop } : stops.find((x) => x.id === sId);
     if (!cur) return;
@@ -110,8 +124,8 @@ export async function emitStopProgressNotifs({
     const remaining = stops.filter((x) => x.state === "PENDING").length;
     const nextPending = stops.find((x) => x.state === "PENDING") ?? null;
 
-    const vehicle = await safeFindVehicle(shift.vehicleId);
-    const last = await safeFindGpsLast(shift.vehicleId);
+    const vehicle = vehicleSnapshot ?? await safeFindVehicle(shift.vehicleId);
+    const last = gpsLastSnapshot ?? await safeFindGpsLast(shift.vehicleId);
 
     const kmToNext =
       last && nextPending ? haversineKm(last.lat, last.lng, nextPending.lat, nextPending.lng) : null;
