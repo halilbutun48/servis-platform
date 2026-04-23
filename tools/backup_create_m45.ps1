@@ -31,7 +31,7 @@ if ($KeepDays -le 0) {
   if ([int]::TryParse([string]$rawKeep, [ref]$parsedKeep)) {
     $KeepDays = $parsedKeep
   } else {
-    $KeepDays = 14
+    $KeepDays = 730
   }
 }
 
@@ -61,17 +61,31 @@ if ((Test-Path -LiteralPath $stderrPath) -and ((Get-Item -LiteralPath $stderrPat
   Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
 }
 
+$sqlHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $sqlPath).Hash.ToLowerInvariant()
+
 $meta = [ordered]@{
-  schemaVersion = 'm45-backup-manifest-v1'
+  schemaVersion = 'm45-backup-manifest-v2'
+  archiveClass = 'full-db-snapshot'
+  archiveMode = 'hot-delete-plus-archive'
   createdAtUtc = (Get-Date).ToUniversalTime().ToString('o')
   repoRoot = $RepoRoot
   backupFile = $sqlPath
   sizeBytes = (Get-Item -LiteralPath $sqlPath).Length
+  backupSha256 = $sqlHash
   keepDays = $KeepDays
   dumpFormat = 'plain-sql'
+  retentionPolicy = [ordered]@{
+    apiRequestDays = 730
+    auditLogDays = 730
+    notificationDays = 180
+    checkinEventDays = 180
+    gpsPointDays = 30
+    consentMode = 'retain-proof'
+  }
   notes = @(
     'Created from docker compose db service with pg_dump',
-    'Flags: --clean --if-exists --no-owner --no-privileges'
+    'Flags: --clean --if-exists --no-owner --no-privileges',
+    'Archive snapshot keeps the long tail for log retention / legal proof'
   )
 }
 $meta | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifestPath -Encoding UTF8

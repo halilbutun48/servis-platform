@@ -1,6 +1,7 @@
 param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
   [Parameter(Mandatory=$true)][string]$BackupFile,
+  [string]$ManifestFile = "",
   [switch]$Force
 )
 
@@ -13,6 +14,29 @@ if (-not $Force) {
 
 if (!(Test-Path -LiteralPath $BackupFile)) {
   throw "Backup file not found: $BackupFile"
+}
+
+if ([string]::IsNullOrWhiteSpace($ManifestFile)) {
+  $candidate = [IO.Path]::Combine([IO.Path]::GetDirectoryName($BackupFile), ([IO.Path]::GetFileNameWithoutExtension($BackupFile) + "_manifest.json"))
+  if (Test-Path -LiteralPath $candidate) {
+    $ManifestFile = $candidate
+  }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($ManifestFile) -and !(Test-Path -LiteralPath $ManifestFile)) {
+  throw "Manifest file not found: $ManifestFile"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($ManifestFile)) {
+  $manifestRaw = Get-Content -LiteralPath $ManifestFile -Raw -Encoding UTF8
+  $manifest = $manifestRaw | ConvertFrom-Json
+  $expectedHash = [string]$manifest.backupSha256
+  if ($expectedHash) {
+    $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $BackupFile).Hash.ToLowerInvariant()
+    if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
+      throw "Backup hash mismatch. expected=$expectedHash actual=$actualHash"
+    }
+  }
 }
 
 $dc = "docker"

@@ -91,20 +91,23 @@ export const ENV = {
   EXPORT_RATE_LIMIT_MAX: Number(process.env.EXPORT_RATE_LIMIT_MAX ?? 10),
 
   // Log retention / cleanup (M10 + ops)
-  // Default: keep 2 years for ApiRequest + AuditLog (spec alignment)
+  // Default: keep 2 years for ApiRequest + AuditLog, shorter hot windows for telemetry/log fanout
   LOG_RETENTION_ENABLED: (process.env.LOG_RETENTION_ENABLED ?? "1") === "1",
   LOG_RETENTION_INTERVAL_HOURS: Number(process.env.LOG_RETENTION_INTERVAL_HOURS ?? 24),
   LOG_RETENTION_BATCH_SIZE: Number(process.env.LOG_RETENTION_BATCH_SIZE ?? 5000),
   API_REQUEST_RETENTION_DAYS: Number(process.env.API_REQUEST_RETENTION_DAYS ?? 730),
   AUDIT_LOG_RETENTION_DAYS: Number(process.env.AUDIT_LOG_RETENTION_DAYS ?? 730),
 
-  // Optional (off by default): old notifications cleanup
-  NOTIFICATION_RETENTION_DAYS: Number(process.env.NOTIFICATION_RETENTION_DAYS ?? 0),
+  // Hot retention, with archive snapshots keeping the long-term proof trail
+  NOTIFICATION_RETENTION_DAYS: Number(process.env.NOTIFICATION_RETENTION_DAYS ?? 180),
+  CHECKIN_EVENT_RETENTION_DAYS: Number(process.env.CHECKIN_EVENT_RETENTION_DAYS ?? 180),
 
-  // ✅ M39: GPS points retention (0 = disabled)
-  GPS_POINT_RETENTION_DAYS: Number(process.env.GPS_POINT_RETENTION_DAYS ?? 0),  // ✅ M45: backup policy / local dump output
+  // ✅ M39: GPS points retention (30d hot window by default, archive snapshot keeps the long tail)
+  GPS_POINT_RETENTION_DAYS: Number(process.env.GPS_POINT_RETENTION_DAYS ?? 30),
+
+  // ✅ M45: backup policy / local snapshot output (archive layer)
   BACKUP_LOCAL_DIR: process.env.BACKUP_LOCAL_DIR ?? "/app/artifacts/backups",
-  BACKUP_LOCAL_RETENTION_DAYS: Number(process.env.BACKUP_LOCAL_RETENTION_DAYS ?? 14),
+  BACKUP_LOCAL_RETENTION_DAYS: Number(process.env.BACKUP_LOCAL_RETENTION_DAYS ?? 730),
   BACKUP_DUMP_FORMAT: process.env.BACKUP_DUMP_FORMAT ?? "plain",
 
   // ✅ M19: route learning (optional)

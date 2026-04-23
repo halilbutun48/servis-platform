@@ -68,11 +68,18 @@ export function getRetentionPolicySummary() {
     apiRequestRetentionDays: ENV.API_REQUEST_RETENTION_DAYS,
     auditLogRetentionDays: ENV.AUDIT_LOG_RETENTION_DAYS,
     notificationRetentionDays: ENV.NOTIFICATION_RETENTION_DAYS,
+    checkinEventRetentionDays: ENV.CHECKIN_EVENT_RETENTION_DAYS,
     gpsPointRetentionDays: ENV.GPS_POINT_RETENTION_DAYS,
     telematicsUsesGpsPoint: true,
     historyGate: {
       telematicsHistoryMinSec: ENV.TELEMATICS_HISTORY_MIN_SEC,
       telematicsHistoryMinMeters: ENV.TELEMATICS_HISTORY_MIN_METERS,
+    },
+    archive: {
+      mode: "full-db-snapshot",
+      backupLocalDir: ENV.BACKUP_LOCAL_DIR,
+      backupLocalRetentionDays: ENV.BACKUP_LOCAL_RETENTION_DAYS,
+      backupDumpFormat: ENV.BACKUP_DUMP_FORMAT,
     },
   };
 }
@@ -83,6 +90,8 @@ export function getBackupPolicySummary() {
     backupLocalDir: ENV.BACKUP_LOCAL_DIR,
     backupLocalRetentionDays: ENV.BACKUP_LOCAL_RETENTION_DAYS,
     backupDumpFormat: ENV.BACKUP_DUMP_FORMAT,
+    archiveMode: "full-db-snapshot",
+    archiveRetentionDays: ENV.BACKUP_LOCAL_RETENTION_DAYS,
     dbTargetMasked: maskDatabaseUrl(ENV.DATABASE_URL),
     localDirExists: fs.existsSync(ENV.BACKUP_LOCAL_DIR),
   };

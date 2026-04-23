@@ -12,15 +12,19 @@ async function main() {
   must("retention policy ok", retention.ok && retention.json?.ok === true);
   must("api request retention = 730", Number(retention.json?.apiRequestRetentionDays) === 730);
   must("audit log retention = 730", Number(retention.json?.auditLogRetentionDays) === 730);
-  must("gps retention field visible", Object.prototype.hasOwnProperty.call(retention.json || {}, "gpsPointRetentionDays"));
+  must("notification retention = 180", Number(retention.json?.notificationRetentionDays) === 180);
+  must("checkin event retention = 180", Number(retention.json?.checkinEventRetentionDays) === 180);
+  must("gps retention = 30", Number(retention.json?.gpsPointRetentionDays) === 30);
   must("telematics uses gpsPoint", retention.json?.telematicsUsesGpsPoint === true);
+  must("retention archive summary visible", retention.json?.archive?.mode === "full-db-snapshot");
 
   step("GET /api/admin/backup/policy");
   const backupPolicy = await reqJson("GET", "/api/admin/backup/policy", { token });
   must("backup policy ok", backupPolicy.ok && backupPolicy.json?.ok === true);
   must("backup local dir set", typeof backupPolicy.json?.backupLocalDir === "string" && backupPolicy.json.backupLocalDir.length > 0);
-  must("backup local retention > 0", Number(backupPolicy.json?.backupLocalRetentionDays) > 0);
+  must("backup local retention = 730", Number(backupPolicy.json?.backupLocalRetentionDays) === 730);
   must("backup format visible", typeof backupPolicy.json?.backupDumpFormat === "string" && backupPolicy.json.backupDumpFormat.length > 0);
+  must("backup policy archive mode visible", backupPolicy.json?.archiveMode === "full-db-snapshot");
 
   step("GET /api/admin/backup/manifest");
   const manifest = await reqJson("GET", "/api/admin/backup/manifest", { token });
@@ -31,6 +35,8 @@ async function main() {
   const dryRun = await reqJson("POST", "/api/admin/retention/run", { token, body: { dryRun: true } });
   must("retention dryRun ok", dryRun.ok && dryRun.json?.ok === true);
   must("retention dryRun returns gpsPoint bucket", !!dryRun.json?.gpsPoint);
+  must("retention dryRun returns checkinEvent bucket", !!dryRun.json?.checkinEvent);
+  must("retention dryRun keeps consent proof bucket", !!dryRun.json?.consent?.retainedProof);
 
   step("GET /api/admin/audit-logs?action=RETENTION_RUN");
   const auditLogs = await reqJson("GET", "/api/admin/audit-logs?action=RETENTION_RUN&take=5", { token });

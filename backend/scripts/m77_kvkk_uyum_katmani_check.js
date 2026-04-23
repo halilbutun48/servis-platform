@@ -219,7 +219,7 @@ for (const needle of ['GET /api/auth/parent-invite/info', 'tokenHash', 'GET /api
 }
 
 const retentionDoc = read('docs/KVKK_RETENTION_ENFORCEMENT_V1.md');
-for (const needle of ['API_REQUEST_RETENTION_DAYS = 730', 'AUDIT_LOG_RETENTION_DAYS = 730', 'GPS_POINT_RETENTION_DAYS = 0', 'GET /api/kvkk/retention', 'buildKvkkRetentionRunAuditMeta()']) {
+for (const needle of ['API_REQUEST_RETENTION_DAYS = 730', 'AUDIT_LOG_RETENTION_DAYS = 730', 'GPS_POINT_RETENTION_DAYS = 30', 'GET /api/kvkk/retention', 'buildKvkkRetentionRunAuditMeta()']) {
   if (!includesText(retentionDoc, needle)) fail(`retention doc covers ${needle}`);
   ok(`retention doc covers ${needle}`);
 }
@@ -266,6 +266,5 @@ const reportPath = path.join(artifactDir, 'm77_kvkk_uyum_katmani_latest.json');
 fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 console.log(`INFO report => ${path.relative(repoRoot, reportPath).replace(/\\/g, '/')}`);
 console.log('=== M77 KVKK + UYUM KATMANI CHECK PASS ===');
-
 
 

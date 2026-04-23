@@ -1,6 +1,6 @@
 // backend/src/jobs/retentionCleanup.js
 // Log retention / cleanup job (M10+ops)
-// - ApiRequest + AuditLog (and optionally Notification) tables can grow unbounded.
+// - ApiRequest + AuditLog + Notification + CheckinEvent + GpsPoint can grow unbounded.
 // - This job deletes old rows in small batches to avoid long locks.
 //
 // Defaults (see env.js): keep 2 years for ApiRequest + AuditLog.
@@ -91,6 +91,7 @@ export async function runRetentionCleanupOnce(opts = {}) {
   const apiCutoff = cutoffFromDays(ENV.API_REQUEST_RETENTION_DAYS);
   const auditCutoff = cutoffFromDays(ENV.AUDIT_LOG_RETENTION_DAYS);
   const notifCutoff = cutoffFromDays(ENV.NOTIFICATION_RETENTION_DAYS);
+  const checkinCutoff = cutoffFromDays(ENV.CHECKIN_EVENT_RETENTION_DAYS);
   const gpsCutoff = cutoffFromDays(ENV.GPS_POINT_RETENTION_DAYS);
 
   // In dryRun, we count full table candidates (can be heavy; intended for admin use).
@@ -100,11 +101,13 @@ export async function runRetentionCleanupOnce(opts = {}) {
 
   const result = {
     dryRun,
-    cutoffs: { apiCutoff, auditCutoff, notifCutoff, gpsCutoff },
+    cutoffs: { apiCutoff, auditCutoff, notifCutoff, checkinCutoff, gpsCutoff },
     apiRequest: { deleted: 0, batches: 0, wouldDelete: 0 },
     auditLog: { deleted: 0, batches: 0, wouldDelete: 0 },
     notification: { deleted: 0, batches: 0, wouldDelete: 0 },
+    checkinEvent: { deleted: 0, batches: 0, wouldDelete: 0 },
     gpsPoint: { deleted: 0, batches: 0, wouldDelete: 0 },
+    consent: { retainedProof: true, deleted: 0, batches: 0, wouldDelete: 0 },
   };
 
   // ApiRequest
@@ -135,6 +138,17 @@ export async function runRetentionCleanupOnce(opts = {}) {
     } else {
       const r = await deleteOldBatched({ model: "notification", label: "Notification", cutoff: notifCutoff, batchSize, maxBatches });
       result.notification.deleted = r.deleted; result.notification.batches = r.batches;
+    }
+  }
+
+  // CheckinEvent
+  if (checkinCutoff) {
+    if (dryRun) {
+      result.checkinEvent.wouldDelete = (await countWhere("checkinEvent", { at: { lt: checkinCutoff } })) ?? 0;
+    } else {
+      const r = await deleteOldBatched({ model: "checkinEvent", label: "CheckinEvent", cutoff: checkinCutoff, batchSize, field: "at", maxBatches });
+      result.checkinEvent.deleted = r.deleted;
+      result.checkinEvent.batches = r.batches;
     }
   }
 
@@ -174,6 +188,7 @@ export function startRetentionCleanup(_ioUnused, opts = {}) {
       const apiCutoff = cutoffFromDays(ENV.API_REQUEST_RETENTION_DAYS);
       const auditCutoff = cutoffFromDays(ENV.AUDIT_LOG_RETENTION_DAYS);
       const notifCutoff = cutoffFromDays(ENV.NOTIFICATION_RETENTION_DAYS);
+      const checkinCutoff = cutoffFromDays(ENV.CHECKIN_EVENT_RETENTION_DAYS);
       const gpsCutoff = cutoffFromDays(ENV.GPS_POINT_RETENTION_DAYS);
 
       const api = await deleteOldBatched({
@@ -197,6 +212,14 @@ export function startRetentionCleanup(_ioUnused, opts = {}) {
         batchSize,
       });
 
+      const checkin = await deleteOldBatched({
+        model: "checkinEvent",
+        label: "CheckinEvent",
+        cutoff: checkinCutoff,
+        batchSize,
+        field: "at",
+      });
+
       const gps = await deleteOldBatched({
         model: "gpsPoint",
         label: "GpsPoint",
@@ -208,9 +231,9 @@ export function startRetentionCleanup(_ioUnused, opts = {}) {
       const ms = Date.now() - t0;
 
       // Only log when something happened (or if first run is useful).
-      if (api.deleted || audit.deleted || notif.deleted || gps.deleted) {
+      if (api.deleted || audit.deleted || notif.deleted || checkin.deleted || gps.deleted) {
         console.log(
-          `retentionCleanup: ApiRequest -${api.deleted}, AuditLog -${audit.deleted}, Notification -${notif.deleted}, GpsPoint -${gps.deleted} (ms=${ms})`
+          `retentionCleanup: ApiRequest -${api.deleted}, AuditLog -${audit.deleted}, Notification -${notif.deleted}, CheckinEvent -${checkin.deleted}, GpsPoint -${gps.deleted} (ms=${ms})`
         );
       }
     } catch (e) {
