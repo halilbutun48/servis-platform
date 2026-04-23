@@ -25,27 +25,27 @@ function isProgressState(state) {
   return state === "REACHED" || state === "SKIPPED";
 }
 
-async function safeFindVehicle(vehicleId) {
+async function safeFindVehicle(vehicleId, prismaClient = prisma) {
   if (!vehicleId) return null;
   try {
-    return await prisma.vehicle.findUnique({ where: { id: vehicleId }, select: { id: true, plate: true } });
+    return await prismaClient.vehicle.findUnique({ where: { id: vehicleId }, select: { id: true, plate: true } });
   } catch {
     return null;
   }
 }
 
-async function safeFindGpsLast(vehicleId) {
+async function safeFindGpsLast(vehicleId, prismaClient = prisma) {
   if (!vehicleId) return null;
   try {
-    return await prisma.gpsLast.findUnique({ where: { vehicleId }, select: { lat: true, lng: true, speed: true, at: true } });
+    return await prismaClient.gpsLast.findUnique({ where: { vehicleId }, select: { lat: true, lng: true, speed: true, at: true } });
   } catch {
     return null;
   }
 }
 
-async function safeFindAssignments(shiftId) {
+async function safeFindAssignments(shiftId, prismaClient = prisma) {
   try {
-    return await prisma.stopAssignment.findMany({
+    return await prismaClient.stopAssignment.findMany({
       where: { shiftId },
       include: {
         stop: { select: { id: true, order: true, name: true, lat: true, lng: true } },
@@ -57,9 +57,9 @@ async function safeFindAssignments(shiftId) {
   }
 }
 
-async function safeFindParentLinks(personelIds) {
+async function safeFindParentLinks(personelIds, prismaClient = prisma) {
   try {
-    const d = prisma.parentChild;
+    const d = prismaClient.parentChild;
     if (!d?.findMany) return [];
 
     return await d.findMany({
@@ -86,6 +86,9 @@ export async function emitStopProgressNotifs({
   stopsSnapshot = null,
   vehicleSnapshot = null,
   gpsLastSnapshot = null,
+  totalStops = null,
+  remainingStops = null,
+  prismaClient = prisma,
 } = {}) {
   try {
     const sid = asInt(shiftId);
@@ -103,29 +106,35 @@ export async function emitStopProgressNotifs({
           vehicleId: asInt(shiftSnapshot.vehicleId),
           startAt: shiftSnapshot.startAt ?? null,
         }
-      : await prisma.shift.findUnique({
+      : await prismaClient.shift.findUnique({
           where: { id: sid },
           select: { id: true, companyId: true, roomId: true, vehicleId: true, startAt: true },
         });
     if (!shift) return;
 
-    const stops = Array.isArray(stopsSnapshot) && stopsSnapshot.length
-      ? stopsSnapshot
-      : await prisma.stop.findMany({
-          where: { shiftId: sid },
+    const pendingStops = Array.isArray(stopsSnapshot) && stopsSnapshot.length
+      ? stopsSnapshot.filter((x) => String(x?.state ?? "") === "PENDING")
+      : await prismaClient.stop.findMany({
+          where: { shiftId: sid, state: "PENDING" },
           orderBy: { order: "asc" },
           select: { id: true, order: true, name: true, state: true, lat: true, lng: true },
         });
 
-    const cur = stop?.order ? { ...stop } : stops.find((x) => x.id === sId);
+    const cur = stop?.order ? { ...stop } : pendingStops.find((x) => x.id === sId);
     if (!cur) return;
 
-    const total = stops.length;
-    const remaining = stops.filter((x) => x.state === "PENDING").length;
-    const nextPending = stops.find((x) => x.state === "PENDING") ?? null;
+    const total =
+      Number.isFinite(Number(totalStops)) && Number(totalStops) > 0
+        ? Number(totalStops)
+        : await prismaClient.stop.count({ where: { shiftId: sid } });
+    const remaining =
+      Number.isFinite(Number(remainingStops)) && Number(remainingStops) >= 0
+        ? Number(remainingStops)
+        : await prismaClient.stop.count({ where: { shiftId: sid, state: "PENDING" } });
+    const nextPending = pendingStops[0] ?? null;
 
-    const vehicle = vehicleSnapshot ?? await safeFindVehicle(shift.vehicleId);
-    const last = gpsLastSnapshot ?? await safeFindGpsLast(shift.vehicleId);
+    const vehicle = vehicleSnapshot ?? await safeFindVehicle(shift.vehicleId, prismaClient);
+    const last = gpsLastSnapshot ?? await safeFindGpsLast(shift.vehicleId, prismaClient);
 
     const kmToNext =
       last && nextPending ? haversineKm(last.lat, last.lng, nextPending.lat, nextPending.lng) : null;
@@ -145,6 +154,7 @@ export async function emitStopProgressNotifs({
         companyId: shift.companyId,
         vehicleId: shift.vehicleId,
         shiftId: shift.id,
+        prismaClient,
         payloadJson: { title: baseTitle, message: baseMsg, vehicleId: shift.vehicleId, kind: "STOP_REACHED" },
         dedupeKey: `STOP_REACHED:ROOM:${shift.roomId}:SHIFT:${shift.id}:O:${cur.order}`,
       });
@@ -159,17 +169,18 @@ export async function emitStopProgressNotifs({
         roomId: shift.roomId,
         vehicleId: shift.vehicleId,
         shiftId: shift.id,
+        prismaClient,
         payloadJson: { title: baseTitle, message: baseMsg, vehicleId: shift.vehicleId, kind: "STOP_REACHED" },
         dedupeKey: `STOP_REACHED:COMPANY:${shift.companyId}:SHIFT:${shift.id}:O:${cur.order}`,
       });
     }
 
     // --------- Personel / Parent: per-assignment proximity ---------
-    const assigns = await safeFindAssignments(shift.id);
+    const assigns = await safeFindAssignments(shift.id, prismaClient);
     if (!assigns.length) return;
 
     const personelIds = Array.from(new Set(assigns.map((a) => a.personelId).filter(Boolean)));
-    const parentLinks = await safeFindParentLinks(personelIds);
+    const parentLinks = await safeFindParentLinks(personelIds, prismaClient);
 
     // Map personelId -> [parentUserId]
     const parentsByPersonel = new Map();
@@ -212,6 +223,7 @@ export async function emitStopProgressNotifs({
             companyId: shift.companyId,
             vehicleId: shift.vehicleId,
             shiftId: shift.id,
+            prismaClient,
             payloadJson: { title, message: msgBase, vehicleId: shift.vehicleId, kind: "STOP_REACHED_USER" },
             dedupeKey: `STOP_REACHED:USER:${p.userId}:SHIFT:${shift.id}:P:${p.id}`,
           });
@@ -227,6 +239,7 @@ export async function emitStopProgressNotifs({
             companyId: shift.companyId,
             vehicleId: shift.vehicleId,
             shiftId: shift.id,
+            prismaClient,
             payloadJson: { title, message: msgBase, vehicleId: shift.vehicleId, kind: "STOP_REACHED_PARENT" },
             dedupeKey: `STOP_REACHED:PARENT:${puid}:SHIFT:${shift.id}:CHILD:${p.id}`,
           });
@@ -251,6 +264,7 @@ export async function emitStopProgressNotifs({
             companyId: shift.companyId,
             vehicleId: shift.vehicleId,
             shiftId: shift.id,
+            prismaClient,
             payloadJson: { title, message: msg, vehicleId: shift.vehicleId, kind: type },
             dedupeKey: `${type}:USER:${p.userId}:SHIFT:${shift.id}:P:${p.id}`,
           });
@@ -266,6 +280,7 @@ export async function emitStopProgressNotifs({
             companyId: shift.companyId,
             vehicleId: shift.vehicleId,
             shiftId: shift.id,
+            prismaClient,
             payloadJson: { title, message: msg, vehicleId: shift.vehicleId, kind: type },
             dedupeKey: `${type}:PARENT:${puid}:SHIFT:${shift.id}:CHILD:${p.id}`,
           });

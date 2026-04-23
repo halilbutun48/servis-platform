@@ -88,6 +88,7 @@ const expectedClasses = {
   "backend/src/routes/shifts/company.js": "acceptance-sensitive-later",
   "mobile/App.js": "acceptance-sensitive-later",
   "web/src/panels/company/ShiftPeopleTab.jsx": "safe-candidate-review",
+  "web/src/panels/room/ShiftsPanel.jsx": "safe-candidate-review",
   "tools/milestone_pack_manifest.json": "justified-exception",
 };
 for (const [file, expectedClass] of Object.entries(expectedClasses)) {

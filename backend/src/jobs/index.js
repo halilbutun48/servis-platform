@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import { startGpsStaleMonitor } from "./gpsStaleMonitor.js";
 import { startMaintenanceMonitor } from "./maintenanceMonitor.js";
 import { startRetentionCleanup } from "./retentionCleanup.js";
+import { startAutoReachedQueueWorker } from "./autoReachedQueue.js";
 
 import { startAgreementMonitor } from "./agreementMonitor.js";
 import { startAgreementShiftGenerator } from "./agreementShiftGenerator.js";
@@ -53,6 +54,9 @@ function startLocalMonitors(io, opts = {}) {
 
   // ✅ M17: agreement lifecycle monitor (AUTO DONE)
   stopFns.push(startAgreementMonitor(io, { intervalMs: opts.agreementIntervalMs }));
+
+  // ✅ AUTO-REACHED queue worker: keep GPS ingest thin, process stop progress out of band.
+  stopFns.push(startAutoReachedQueueWorker(io, { redisUrl: opts.redisUrl }));
 
   // ✅ M52: agreement -> rolling 7-day shift generator
   // ✅ M19: learned route monitor (optional)

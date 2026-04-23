@@ -85,8 +85,8 @@
     "policyVersion": 1,
     "warningThreshold": 1000,
     "blockThreshold": 1200,
-    "currentLargeFileCount": 3,
-    "currentWarningHotFileCount": 6,
+    "currentLargeFileCount": 4,
+    "currentWarningHotFileCount": 7,
     "principles": [
       "line-count dusurmek icin kor refactor yok",
       "once acceptance sonra kontrollu temizlik",
@@ -105,6 +105,10 @@
       "backend/prisma/schema.prisma": {
         "class": "justified-exception",
         "note": "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
+      },
+      "backend/scripts/bench_gps_publish_only.js": {
+        "class": "justified-exception",
+        "note": "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
       },
       "web/src/panels/company/GuidedPlanModal.jsx": {
         "class": "acceptance-sensitive-later",
@@ -125,6 +129,10 @@
       "web/src/panels/company/ShiftPeopleTab.jsx": {
         "class": "safe-candidate-review",
         "note": "shift kisi/ithal/stop yardimcilari kontrollu extraction sonrasi kalan review adayi"
+      },
+      "web/src/panels/room/ShiftsPanel.jsx": {
+        "class": "safe-candidate-review",
+        "note": "room shifts reload/kopuk sekmeler mevcut; kontrollu extraction ve review adayi"
       },
       "tools/milestone_pack_manifest.json": {
         "class": "justified-exception",

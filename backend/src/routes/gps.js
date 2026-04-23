@@ -7,31 +7,12 @@ import { requireConsent, CONSENT_DOCS } from "../middleware/consentGate.js";
 import { gpsIngestSchema } from "../validators.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
-import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
-import { haversineKm, etaMinutes } from "../geo.js";
+import { haversineKm } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW
 import { gpsThrottle1200ms } from "../middleware/gpsThrottle1200ms.js";
 import { isoOffsetTR } from "../time/tr.js";
-
-// M72: audit helper (must never break gps ingest)
-async function audit(prisma, { actorUserId, actorRole, action, entity, entityId, meta }) {
-  try {
-    await prisma.auditLog.create({
-      data: {
-        actorUserId: actorUserId ?? null,
-        actorRole: actorRole ?? null,
-        action,
-        entity,
-        entityId: entityId ?? null,
-        meta: meta ?? undefined,
-      },
-    });
-  } catch (e) {
-    console.error("AUDIT error:", e);
-  }
-}
-
+import { enqueueAutoReachedTask, processAutoReachedTask } from "../jobs/autoReachedQueue.js";
 
 export function gpsRouter(io) {
   const r = express.Router();
@@ -329,160 +310,65 @@ export function gpsRouter(io) {
           return (stops ?? []).find((s) => s.state === "PENDING") ?? null;
         }
 
-        function derivedLastReached(stops) {
-          let max = 0;
-          for (const s of stops ?? []) {
-            if (s.state === "REACHED" || s.state === "SKIPPED") {
-              if (typeof s.order === "number" && s.order > max) max = s.order;
-            }
-          }
-          return max;
-        }
-
         autoReachedShifts = await prisma.shift.findMany({
           where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
-          include: { stops: { orderBy: { order: "asc" } }, progress: true },
+          include: {
+            progress: { select: { lastReachedOrder: true, pausedAt: true } },
+            stops: {
+              where: { state: "PENDING" },
+              orderBy: { order: "asc" },
+              take: 2,
+              select: { id: true, order: true, name: true, state: true, lat: true, lng: true },
+            },
+          },
         });
 
         for (const sh of autoReachedShifts) {
           if (sh.progress?.pausedAt) continue;
           const next = firstPending(sh.stops ?? []);
           if (!next) continue;
+          if (Number(next.order ?? 0) <= Number(sh.progress?.lastReachedOrder ?? 0)) continue;
 
           const km = haversineKm(lat, lng, next.lat, next.lng);
           const distM = km * 1000;
           if (distM > radiusM) continue;
           if (speedKmh !== null && speedKmh > maxSpeedKmh) continue;
 
-          // start shift if still APPROVED
-          await prisma.shift.updateMany({ where: { id: sh.id, status: "APPROVED" }, data: { status: "ACTIVE" } });
-
-          // ensure startedAt exists and not paused
           const now2 = new Date();
-          await prisma.shiftProgress.upsert({
-            where: { shiftId: sh.id },
-            update: { pausedAt: null },
-            create: { shiftId: sh.id, lastReachedOrder: 0, startedAt: now2, pausedAt: null },
-          });
-          await prisma.shiftProgress.updateMany({ where: { shiftId: sh.id, startedAt: null }, data: { startedAt: now2 } });
-
-          // update stop + progress
-          await prisma.stop.update({
-            where: { id: next.id },
-            data: { state: "REACHED", reachedAt: now2, skippedAt: null },
-          });
-          next.state = "REACHED";
-          next.reachedAt = now2;
-          next.skippedAt = null;
-
-          // stop progress notifications (ROOM/COMPANY + user/parent proximity)
-          await emitStopProgressNotifs({
-            io,
+          const lastReachedOrder = Math.max(Number(sh.progress?.lastReachedOrder ?? 0), Number(next.order ?? 0));
+          const task = {
             shiftId: sh.id,
-            stop: { id: next.id, order: next.order ?? null, state: "REACHED" },
-            state: "REACHED",
-            source: "AUTO_GEOFENCE",
-            shiftSnapshot: { id: sh.id, companyId: sh.companyId, roomId: sh.roomId, vehicleId },
-            stopsSnapshot: sh.stops,
-            vehicleSnapshot: vehicle,
-            gpsLastSnapshot: last,
-          });
-
-
-          await audit(prisma, {
-            actorUserId: null,
-            actorRole: "SYSTEM",
-            action: "AUTO_STOP_REACHED",
-            entity: "Shift",
-            entityId: sh.id,
-            meta: { stopId: next.id, vehicleId, source: "AUTO_GEOFENCE" },
-          });
-
-          const nextStop = firstPending(sh.stops ?? []);
-          const completed = !nextStop;
-
-          const lastReachedOrder = derivedLastReached(sh.stops ?? []);
-          await prisma.shiftProgress.upsert({
-            where: { shiftId: sh.id },
-            update: { lastReachedOrder },
-            create: { shiftId: sh.id, lastReachedOrder },
-          });
-
-          const payload = {
-            shiftId: sh.id,
+            stopId: next.id,
+            stopOrder: next.order ?? null,
             vehicleId,
-            nextStop,
-            completed,
-            changed: { stopId: next.id, state: "REACHED", reachedAt: now2 },
-            source: "AUTO_GEOFENCE",
+            atIso: now2.toISOString(),
+            lat,
+            lng,
+            speed: typeof speed === "number" ? speed : null,
+            completed: (sh.stops?.length ?? 0) <= 1,
+            lastReachedOrder,
+            shiftSnapshot: {
+              id: sh.id,
+              companyId: sh.companyId ?? null,
+              roomId: sh.roomId ?? null,
+              vehicleId,
+              startAt: sh.startAt ?? null,
+            },
+            stopsSnapshot: sh.stops ?? [],
+            vehicleSnapshot: { id: vehicle.id, plate: vehicle.plate },
+            gpsLastSnapshot: { lat: last.lat, lng: last.lng, at: last.at },
           };
 
-          io.to(`shift:${sh.id}`).emit("route:progress", payload);
-          if (sh.roomId) io.to(`room:${sh.roomId}`).emit("route:progress", payload);
-          if (sh.companyId) io.to(`company:${sh.companyId}`).emit("route:progress", payload);
-          io.to(`vehicle:${vehicleId}`).emit("route:progress", payload);
-
-          if (completed) {
-            // mark DONE + completedAt
-            await prisma.shiftProgress.upsert({
-              where: { shiftId: sh.id },
-              update: { completedAt: now2, lastReachedOrder },
-              create: { shiftId: sh.id, lastReachedOrder, completedAt: now2 },
+          const queued = await enqueueAutoReachedTask(task);
+          if (!queued.ok) {
+            console.error("AUTO_REACHED enqueue failed:", queued.error || queued.reason || "unknown");
+            void processAutoReachedTask(io, task).catch((e) => {
+              console.error("AUTO_REACHED fallback error:", e);
             });
-            await prisma.shift.update({ where: { id: sh.id }, data: { status: "DONE" } });
-
-            await audit(prisma, { actorUserId: null, actorRole: "SYSTEM", action: "AUTO_SHIFT_COMPLETE", entity: "Shift", entityId: sh.id, meta: { vehicleId, source: "AUTO_GEOFENCE" } });
-
-            const donePayload = { shiftId: sh.id, vehicleId, completed: true, nextStop: null, source: "AUTO_GEOFENCE" };
-            io.to(`shift:${sh.id}`).emit("route:progress", donePayload);
-            if (sh.roomId) io.to(`room:${sh.roomId}`).emit("route:progress", donePayload);
-            if (sh.companyId) io.to(`company:${sh.companyId}`).emit("route:progress", donePayload);
-            io.to(`vehicle:${vehicleId}`).emit("route:progress", donePayload);
           }
         }
       } catch (e) {
         console.error("AUTO_REACHED error:", e);
-      }
-
-      // =========================================================
-      // ✅ ETA broadcast (progress-aware)
-      // =========================================================
-      try {
-        const shifts = autoReachedShifts ?? await prisma.shift.findMany({
-          where: { vehicleId, status: { in: ["APPROVED", "ACTIVE"] } },
-          include: {
-            stops: { orderBy: { order: "asc" } },
-          },
-        });
-
-        const speedKmh = typeof speed === "number" ? speed : 30;
-
-        for (const sh of shifts) {
-          if (sh.progress?.pausedAt) continue;
-          if (!sh.stops?.length) continue;
-
-          const remainingStops = sh.stops.filter((s) => s.state === "PENDING");
-          if (!remainingStops.length) continue;
-
-          const items = remainingStops.map((s) => {
-            const km = haversineKm(lat, lng, s.lat, s.lng);
-            return {
-              id: s.id,
-              name: s.name,
-              order: s.order,
-              remainingKm: Number(km.toFixed(2)),
-              etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)),
-            };
-          });
-
-          const payload = { shiftId: sh.id, vehicleId, at: last.at, stops: items };
-
-          io.to(`vehicle:${vehicleId}`).emit("eta:update", payload);
-          io.to(`room:${sh.roomId}`).emit("eta:update", payload);
-          io.to(`company:${sh.companyId}`).emit("eta:update", payload);
-        }
-      } catch (e) {
-        console.error("ETA calc error:", e);
       }
 
       return res.json({ ok: true });

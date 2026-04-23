@@ -225,10 +225,10 @@ function buildConnectData({
   return data;
 }
 
-async function safeUpdateByDedupeKey({ dedupeKey, data, useConnect: _useConnect }) {
+async function safeUpdateByDedupeKey({ dedupeKey, data, useConnect: _useConnect, prismaClient = prisma }) {
   try {
     // dedupeKey unique ise update çalışır
-    return await prisma.notification.update({
+    return await prismaClient.notification.update({
       where: { dedupeKey },
       data,
     });
@@ -245,16 +245,16 @@ async function safeUpdateByDedupeKey({ dedupeKey, data, useConnect: _useConnect 
       throw e;
     }
 
-    return await prisma.notification.update({
+    return await prismaClient.notification.update({
       where: { dedupeKey },
       data: data2,
     });
   }
 }
 
-async function safeFindByDedupeKey(dedupeKey) {
+async function safeFindByDedupeKey(dedupeKey, prismaClient = prisma) {
   try {
-    return await prisma.notification.findUnique({ where: { dedupeKey } });
+    return await prismaClient.notification.findUnique({ where: { dedupeKey } });
   } catch {
     return null;
   }
@@ -279,9 +279,11 @@ export async function createNotification({
 
   // opsiyonel
   dedupeKey = null,
+  prismaClient = prisma,
 } = {}) {
   if (!type) throw new Error("createNotification: type gerekli.");
   if (!scope) throw new Error("createNotification: scope gerekli.");
+  const db = prismaClient ?? prisma;
 
   const obj = ensurePayloadObject({ payload, payloadJson });
   const v1 = normalizeToV1({ type, payloadObj: obj, vehicleIdFallback: vehicleId });
@@ -334,7 +336,7 @@ export async function createNotification({
       });
 
       try {
-        return await prisma.notification.upsert({
+        return await db.notification.upsert({
           where: { dedupeKey: finalDedupeKey },
           update: updateData,
           create: createData,
@@ -377,11 +379,11 @@ export async function createNotification({
 
           // dedupeKey alanı yoksa upsert anlamsız; create'a düşecek
           if (dkUnknown) {
-            return await prisma.notification.create({ data: createData2 });
+            return await db.notification.create({ data: createData2 });
           }
 
           try {
-            return await prisma.notification.upsert({
+            return await db.notification.upsert({
               where: { dedupeKey: finalDedupeKey },
               update: updateData2,
               create: createData2,
@@ -418,7 +420,7 @@ export async function createNotification({
     });
 
     try {
-      return await prisma.notification.create({ data: createData });
+      return await db.notification.create({ data: createData });
     } catch (e) {
       // yanlış moddaysak üst seviyeye fırlat
       if (useConnect && needsScalarFallback(e)) throw e;
@@ -444,9 +446,10 @@ export async function createNotification({
             dedupeKey: finalDedupeKey,
             data: updateData,
             useConnect,
+            prismaClient: db,
           });
         } catch {
-          const existing = await safeFindByDedupeKey(finalDedupeKey);
+          const existing = await safeFindByDedupeKey(finalDedupeKey, db);
           if (existing) return existing;
           // bulamazsa orijinal hatayı fırlat
           throw e;
@@ -472,7 +475,7 @@ export async function createNotification({
       });
 
       try {
-        return await prisma.notification.create({ data: createData2 });
+        return await db.notification.create({ data: createData2 });
       } catch (e2) {
         // yine dedupeKey çakışırsa aynı fix
         if (finalDedupeKey && isPrismaUniqueViolation(e2, "dedupeKey")) {
@@ -494,9 +497,10 @@ export async function createNotification({
               dedupeKey: finalDedupeKey,
               data: updateData2,
               useConnect,
+              prismaClient: db,
             });
           } catch {
-            const existing = await safeFindByDedupeKey(finalDedupeKey);
+            const existing = await safeFindByDedupeKey(finalDedupeKey, db);
             if (existing) return existing;
             throw e2;
           }

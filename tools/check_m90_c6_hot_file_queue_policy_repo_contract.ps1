@@ -43,7 +43,7 @@ Assert-RepoContractContainsAny -Text $pack -Needles @(
   'M90C.6 hot-file queue policy PACK PASS'
 ) -Label 'pack wires repo audit rerun and node gate'
 Assert-RepoContractContainsAny -Text $check -Needles @(
-  'repo audit large file count remains 3',
+  'repo audit large file count remains 4',
   'policy classification set matches repo audit hot/large file set exactly',
   'M90C.6 HOT-FILE QUEUE POLICY CHECK PASS'
 ) -Label 'node check encodes M90C.6 invariants'
