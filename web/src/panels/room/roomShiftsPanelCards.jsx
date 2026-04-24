@@ -6,6 +6,7 @@ import {
   vehicleMetaLine,
 } from "./roomShiftsPanelUtils";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 
 export function AgreementBadge({ agreementId }) {
   const id = Number(agreementId);
@@ -79,7 +80,7 @@ export function RoomAvailabilityLine({ shift, vehicleId, driverId, autoDriverNam
       </div>
       {capacity.requiredPax > 0 ? <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><span><b>Yolcu:</b> {capacity.requiredPax}</span><span>• <b>Koltuk:</b> {capacity.vehicleCapacity || "-"}</span>{capacity.insufficient ? <span>• <b>Eksik:</b> {capacity.missingCapacity}</span> : null}{capacity.insufficient && capacity.minVehicleCount ? <span>• <b>Bu araçla min:</b> {capacity.minVehicleCount} araç</span> : null}{capacity.requiredPax > 0 && capacity.roomMaxCapacity > 0 ? <span>• <b>Room max tek araç:</b> {capacity.roomMaxCapacity}</span> : null}</div> : null}
       {capacity.insufficient ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Kapasite uyarısı:</b> tek araç yetmiyor.</div><div className="muted" style={{ marginTop: 6 }}>Bu seçimle en az <b>{capacity.minVehicleCount || "-"}</b> araç gerekir.{capacity.roomMinVehicleCount ? ` Room havuzundaki en büyük araçla bile min ${capacity.roomMinVehicleCount} araç gerekir.` : ""}</div></div> : null}
-      {conflict && csId ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Çakışan vardiya:</b> #{csId} {cs?.status ? <span className="pill" data-status={String(cs.status || "").toUpperCase()} style={{ marginLeft: 6 }}>{displayStatusLabel(String(cs.status || "").toUpperCase())}</span> : null}</div><div className="muted" style={{ marginTop: 6 }}>{csCompanyName ? <span><b>Company:</b> {csCompanyName}</span> : null}{csRoomName ? <span> • <b>Room:</b> {csRoomName}</span> : null}</div><div className="muted" style={{ marginTop: 6 }}><b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}</div></div> : null}
+      {conflict && csId ? <div className="card" style={{ padding: 10 }}><div className="muted"><b>Çakışan vardiya:</b> #{csId} {cs?.status ? <span className="pill" data-status={String(cs.status || "").toUpperCase()} style={{ marginLeft: 6 }}>{displayStatusLabel(String(cs.status || "").toUpperCase())}</span> : null}</div><div className="muted" style={{ marginTop: 6 }}>{csCompanyName ? <span><b>Company:</b> {csCompanyName}</span> : null}{csRoomName ? <span> • <b>Room:</b> {csRoomName}</span> : null}</div>{hasRegionOwnership(csRoom) ? <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>{formatRegionOwnership(csRoom)}</div> : null}<div className="muted" style={{ marginTop: 6 }}><b>Zaman:</b> {fmtTR(cs.startAt)} → {fmtTR(cs.endAt)}</div></div> : null}
     </div>
   );
 }
@@ -138,7 +139,7 @@ export function RoomDispatchSuggestionCard({
             <option value="">Araç seç</option>
             {eligibleVehicles.map((v) => (
               <option key={`dispatch-v-${sid}-${splitIndex}-${v.id}`} value={v.id}>
-                {v.plate} {v?.capacity ? `• ${v.capacity} koltuk` : ""}
+                {v.plate} {v?.capacity ? `• ${v.capacity} koltuk` : ""}{hasRegionOwnership(v) ? ` • ${formatRegionOwnership(v).replace(/^Bölge:\s*/, "")}` : ""}
               </option>
             ))}
           </select>
@@ -152,7 +153,7 @@ export function RoomDispatchSuggestionCard({
             <option value="">Şoför seç</option>
             {eligibleDrivers.map((d) => (
               <option key={`dispatch-d-${sid}-${splitIndex}-${d.id}`} value={d.id}>
-                {d.fullName || `#${d.id}`}
+                {d.fullName || `#${d.id}`}{hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}
               </option>
             ))}
           </select>

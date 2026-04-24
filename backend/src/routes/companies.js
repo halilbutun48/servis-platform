@@ -5,6 +5,7 @@ import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { resolveCompanyOwnership } from "../region/index.js";
 
 const zRegionId = z.preprocess(
   (v) => (v == null || v === "" ? null : Number(v)),
@@ -89,7 +90,12 @@ export function companiesRouter() {
       orderBy: { id: "asc" },
     });
 
-    res.json({ items });
+    res.json({
+      items: items.map((item) => ({
+        ...item,
+        regionOwnership: resolveCompanyOwnership(item),
+      })),
+    });
   });
 
   // CREATE
@@ -127,7 +133,10 @@ export function companiesRouter() {
       }
     }
 
-    res.status(201).json(item);
+    res.status(201).json({
+      ...item,
+      regionOwnership: resolveCompanyOwnership(item),
+    });
   });
 
   // READ
@@ -138,7 +147,10 @@ export function companiesRouter() {
       include: { region: { select: { id: true, name: true } } },
     });
     if (!item) return res.status(404).json({ error: "Company not found" });
-    res.json(item);
+    res.json({
+      ...item,
+      regionOwnership: resolveCompanyOwnership(item),
+    });
   });
 
   // UPDATE

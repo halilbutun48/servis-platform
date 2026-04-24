@@ -32,6 +32,7 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 - `web/src/panels/room/AgreementsPanel.jsx`
 - `web/src/panels/company/ShiftPeopleTab.jsx`
 - `web/src/panels/room/ShiftsPanel.jsx`
+- `web/src/panels/room/VehiclesPanel.jsx`
 
 ### completed controlled extraction
 - `web/src/panels/company/AgreementWizard.jsx` -> preset/config ve modal kabuğu ayrıldı; dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.

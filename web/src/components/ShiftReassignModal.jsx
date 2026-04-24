@@ -9,7 +9,7 @@ const REASONS = [
   ["OTHER", "Diğer"],
 ];
 
-function ShiftReassignModalBody({ shift, vehicles, drivers, busy, onClose, onSubmit }) {
+function ShiftReassignModalBody({ shift, subtitle = "", vehicles, drivers, busy, onClose, onSubmit }) {
   const [vehicleId, setVehicleId] = useState(() => (shift?.vehicleId ? String(shift.vehicleId) : ""));
   const [driverId, setDriverId] = useState(() => (shift?.driverId ? String(shift.driverId) : ""));
   const [reason, setReason] = useState("VEHICLE_BREAKDOWN");
@@ -24,6 +24,7 @@ function ShiftReassignModalBody({ shift, vehicles, drivers, busy, onClose, onSub
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12 }}>
           <div>
             <div style={{ fontWeight: 900 }}>Shift #{shift.id} — Operasyonel Atama Değişikliği</div>
+            {subtitle ? <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>{subtitle}</div> : null}
             <div className="muted" style={{ marginTop: 4 }}>
               Bu işlem ticari pazarlık değildir. Yeni araç / sürücü ataması yapılır, rota / görev paketi yenilenir ve company operasyon kaydında görünür.
             </div>
@@ -88,7 +89,7 @@ function ShiftReassignModalBody({ shift, vehicles, drivers, busy, onClose, onSub
   );
 }
 
-export default function ShiftReassignModal({ open, shift, vehicles = [], drivers = [], busy = false, onClose, onSubmit }) {
+export default function ShiftReassignModal({ open, shift, subtitle = "", vehicles = [], drivers = [], busy = false, onClose, onSubmit }) {
   if (!open || !shift) return null;
 
   const modalKey = `${shift.id || "new"}:${shift.vehicleId || "none"}:${shift.driverId || "none"}`;
@@ -97,6 +98,7 @@ export default function ShiftReassignModal({ open, shift, vehicles = [], drivers
     <ShiftReassignModalBody
       key={modalKey}
       shift={shift}
+      subtitle={subtitle}
       vehicles={vehicles}
       drivers={drivers}
       busy={busy}

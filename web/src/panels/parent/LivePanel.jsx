@@ -6,6 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
 import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import { navigate } from "../../router";
+import { formatRegionOwnership } from "../../utils/regionOwnership";
 
 function etaText(v) {
   const m = v?.etaToChildMin;
@@ -114,6 +115,10 @@ function walkMinutesText(meters) {
   const n = Number(meters);
   if (!Number.isFinite(n)) return "—";
   return `${Math.max(1, Math.round(n / 80))} dk`;
+}
+
+function regionText(value) {
+  return String(formatRegionOwnership(value) || "").replace(/^Bölge:\s*/i, "") || "—";
 }
 
 function timeText(value) {
@@ -304,6 +309,7 @@ export default function ParentLivePanel() {
     if (!selectedVehicle) return [];
     return [
       infoCard("Araç", selectedVehicle?.plate || `#${selectedVehicle?.id || "-"}`, hasVehiclePoint(selectedVehicle) ? "Canlı konum görünüyor" : "Canlı konum henüz görünmüyor"),
+      infoCard("Bölge", regionText(selectedVehicle), "Çocuğun servisinin bağlı olduğu bölge."),
       infoCard("Görünürlük aralığı", timeRangeText(selectedVehicle?.visibleWindow), "Canlı konum sadece bu vardiya aralığında görünür."),
       infoCard("Son konum", gpsAgeText(selectedVehicle?.gpsLast), selectedVehicle?.gpsLast?.precision === "masked-2dp" ? "Konum KVKK gereği yaklaşık gösterilir." : null),
       infoCard("Kalan durak", numText(selectedVehicle?.remainingStopsToChild), selectedVehicle?.childStopReached ? "Çocuğun durağına ulaşıldı." : "Çocuğun durağına kadar kalan durak sayısı."),
@@ -351,6 +357,7 @@ export default function ParentLivePanel() {
 
           <div className="muted">Araç: <b>{vehicles.length}</b></div>
           {selected?.company?.name ? <div className="muted">Okul/Şirket: <b>{selected.company.name}</b></div> : null}
+          {selected?.company ? <div className="muted">Bölge: <b>{regionText(selected.company)}</b></div> : null}
         </div>
 
         {vehicles.length > 1 ? (
@@ -385,6 +392,7 @@ export default function ParentLivePanel() {
               <div className="title">Çocuk durağı ve yaklaşım</div>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 <div>Araç <b>#{selectedVehicle.id}</b> • <b>{selectedVehicle.plate}</b></div>
+                <div className="muted">Bölge: <b>{regionText(selectedVehicle)}</b></div>
                 <div>Çocuğun durağı: <b>{childStop ? stopTitle(childStop) : "Atanmış durak bulunamadı"}</b></div>
                 <div>En yakın durak: <b>{nearestStop ? stopTitle(nearestStop) : "Konum alınmadı"}</b>{nearestStop && childStop && sameStop(nearestStop, childStop) ? <span className="muted"> • Çocuğun durağı ile aynı</span> : null}</div>
                 <div className="muted">Araçtan çocuğun durağına ETA: <b>{etaText(selectedVehicle)}</b>{selectedVehicle?.etaToChildKm != null ? <> • Mesafe: <b>{selectedVehicle.etaToChildKm} km</b></> : null}</div>

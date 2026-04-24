@@ -64,7 +64,7 @@ function FitBounds({ bounds }) {
   return null;
 }
 
-export default function RoutePreviewModal({ open, onClose, title, shiftId, stops, people, previewSummary = null, previewPathPoints = null, previewSource = null, previewShift = null }) {
+export default function RoutePreviewModal({ open, onClose, title, subtitle = "", shiftId, stops, people, previewSummary = null, previewPathPoints = null, previewSource = null, previewShift = null }) {
   const { token } = useSession();
 
   const [remote, setRemote] = useState({
@@ -285,7 +285,10 @@ function scrollToStopRow(stopId) {
     >
       <div className="card" style={{ width: "min(1200px, 96vw)", maxHeight: "92vh", overflow: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-          <h3 style={{ margin: 0 }}>{title || "Rota/Durak Önizleme"}</h3>
+          <div>
+            <h3 style={{ margin: 0 }}>{title || "Rota/Durak Önizleme"}</h3>
+            {subtitle ? <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>{subtitle}</div> : null}
+          </div>
           <button type="button" onClick={onClose}>Kapat</button>
         </div>
 

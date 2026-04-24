@@ -2,8 +2,90 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../auth/middleware.js";
+import { resolveNotificationOwnership } from "../region/ownership.js";
 
 export const notificationsRouter = express.Router();
+
+const notificationRegionInclude = {
+  company: {
+    select: {
+      id: true,
+      regionId: true,
+      district: true,
+      region: { select: { id: true, name: true } },
+    },
+  },
+  room: {
+    select: {
+      id: true,
+      regionId: true,
+      district: true,
+      region: { select: { id: true, name: true } },
+    },
+  },
+  vehicle: {
+    select: {
+      id: true,
+      room: {
+        select: {
+          id: true,
+          regionId: true,
+          district: true,
+          region: { select: { id: true, name: true } },
+        },
+      },
+    },
+  },
+  driver: {
+    select: {
+      id: true,
+      room: {
+        select: {
+          id: true,
+          regionId: true,
+          district: true,
+          region: { select: { id: true, name: true } },
+        },
+      },
+    },
+  },
+  shift: {
+    select: {
+      id: true,
+      regionId: true,
+      district: true,
+      region: { select: { id: true, name: true } },
+      room: {
+        select: {
+          id: true,
+          regionId: true,
+          district: true,
+          region: { select: { id: true, name: true } },
+        },
+      },
+      company: {
+        select: {
+          id: true,
+          regionId: true,
+          district: true,
+          region: { select: { id: true, name: true } },
+        },
+      },
+    },
+  },
+};
+
+function decorateNotificationRegion(notification = {}) {
+  const regionOwnership = resolveNotificationOwnership(notification, notification);
+  const regionRoutingKey = regionOwnership?.regionKey ?? null;
+  const { company: _company, room: _room, vehicle: _vehicle, driver: _driver, shift: _shift, ...base } = notification;
+
+  return {
+    ...base,
+    regionOwnership,
+    regionRoutingKey,
+  };
+}
 
 // GET /api/notifications/my
 // Scope bazlı bildirimler (ROOM/COMPANY/DRIVER)
@@ -14,8 +96,12 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
 
     // SUPER_ADMIN: hepsi
     if (u.role === "SUPER_ADMIN") {
-      const items = await prisma.notification.findMany({ orderBy: { id: "desc" }, take: 100 });
-      return res.json(items);
+      const items = await prisma.notification.findMany({
+        orderBy: { id: "desc" },
+        take: 100,
+        include: notificationRegionInclude,
+      });
+      return res.json(items.map(decorateNotificationRegion));
     }
 
     // ROOM: sadece ROOM scope + roomId
@@ -25,8 +111,9 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
         where: { scope: "ROOM", roomId: u.roomId },
         orderBy: { id: "desc" },
         take: 100,
+        include: notificationRegionInclude,
       });
-      return res.json(items);
+      return res.json(items.map(decorateNotificationRegion));
     }
 
     // COMPANY: companyId tag'li notifs
@@ -36,8 +123,9 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
         where: { companyId: u.companyId },
         orderBy: { id: "desc" },
         take: 100,
+        include: notificationRegionInclude,
       });
-      return res.json(items);
+      return res.json(items.map(decorateNotificationRegion));
     }
 
     // PERSONEL: companyId + userId (kişisel) notifs
@@ -49,8 +137,9 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
         where: { OR: ors },
         orderBy: { id: "desc" },
         take: 100,
+        include: notificationRegionInclude,
       });
-      return res.json(items);
+      return res.json(items.map(decorateNotificationRegion));
     }
 
     // PARENT: sadece userId (kişisel) notifs
@@ -59,8 +148,9 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
         where: { userId: u.id },
         orderBy: { id: "desc" },
         take: 100,
+        include: notificationRegionInclude,
       });
-      return res.json(items);
+      return res.json(items.map(decorateNotificationRegion));
     }
 
     // DRIVER: sadece DRIVER scope + driverId
@@ -71,8 +161,9 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
         where: { scope: "DRIVER", driverId: driver.id },
         orderBy: { id: "desc" },
         take: 100,
+        include: notificationRegionInclude,
       });
-      return res.json(items);
+      return res.json(items.map(decorateNotificationRegion));
     }
 
     return res.json([]);

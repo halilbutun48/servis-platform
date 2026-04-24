@@ -3,6 +3,9 @@
 
 import prisma from "../../prisma.js";
 import { listAgreementRouteRefreshRequests } from "../../services/agreementRouteRefreshStore.js";
+import { decorateShiftWithRegionContext } from "../../region/ownership.js";
+
+export { decorateShiftWithRegionContext } from "../../region/ownership.js";
 
 export function isEditableStatus(status) {
   return status === "DRAFT" || status === "REQUESTED";
@@ -26,11 +29,18 @@ export function parseDateOrThrow(s, fieldName) {
 // WS helper
 export function emitShift(io, shift, event, payload = {}) {
   if (!io || !shift) return;
-  const base = { shiftId: shift.id, ...payload };
-  io.to(`company:${shift.companyId}`).emit(event, base);
+  const decorated = decorateShiftWithRegionContext(shift);
+  const base = {
+    shiftId: decorated.id,
+    ...payload,
+    regionOwnership: decorated.regionOwnership,
+    regionRoutingKey: decorated.regionRoutingKey,
+    regionContext: decorated.regionContext,
+  };
+  io.to(`company:${decorated.companyId}`).emit(event, base);
   // ✅ M24: market shift olabilir (roomId null)
-  if (shift.roomId) io.to(`room:${shift.roomId}`).emit(event, base);
-  io.to(`shift:${shift.id}`).emit(event, base);
+  if (decorated.roomId) io.to(`room:${decorated.roomId}`).emit(event, base);
+  io.to(`shift:${decorated.id}`).emit(event, base);
 }
 
 // --- M7 helpers ---
@@ -85,7 +95,7 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
     throw e;
   }
 
-  if (user.role === "SUPER_ADMIN") return shift;
+  if (user.role === "SUPER_ADMIN") return decorateShiftWithRegionContext(shift);
 
   if (user.role === "ROOM") {
     const roomId = user.roomId ? Number(user.roomId) : null;
@@ -96,7 +106,7 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
     }
 
     // Normal scope: shift already assigned to this room
-    if (roomId === shift.roomId) return shift;
+    if (roomId === shift.roomId) return decorateShiftWithRegionContext(shift);
 
     // Optional scope: allow ROOM to read market/offered shifts BEFORE assignment
     // only if there is an active offer (OPEN/COUNTERED/ACCEPTED) for this room.
@@ -109,7 +119,7 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
         },
         select: { id: true },
       });
-      if (offer) return shift;
+      if (offer) return decorateShiftWithRegionContext(shift);
     }
 
     // Optional scope: allow ROOM to preview pending agreement route-refresh draft/source shifts
@@ -123,7 +133,7 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
           : [];
         return sourceShiftId === Number(shift.id) || draftIds.includes(Number(shift.id));
       });
-      if (match) return shift;
+      if (match) return decorateShiftWithRegionContext(shift);
     }
 
     const e = new Error("Forbidden");
@@ -140,7 +150,7 @@ export async function getShiftAndCheckScopeOrThrow(shiftId, user, opts = {}) {
       e.status = 403;
       throw e;
     }
-    return shift;
+    return decorateShiftWithRegionContext(shift);
   }
 if (user.role === "COMPANY") {
     if (!user.companyId || user.companyId !== shift.companyId) {
@@ -148,7 +158,7 @@ if (user.role === "COMPANY") {
       e.status = 403;
       throw e;
     }
-    return shift;
+    return decorateShiftWithRegionContext(shift);
   }
 
   const e = new Error("Forbidden");
@@ -340,7 +350,9 @@ export async function getMyShiftPayload(query, user) {
     const where = { driverId };
     if (onlyOpen) where.status = { in: ["APPROVED", "ACTIVE"] };
     return {
-      items: await prisma.shift.findMany({ where, include, orderBy: { id: "desc" }, take }),
+      items: (await prisma.shift.findMany({ where, include, orderBy: { id: "desc" }, take })).map((item) =>
+        decorateShiftWithRegionContext(item)
+      ),
     };
   }
 
@@ -357,14 +369,18 @@ export async function getMyShiftPayload(query, user) {
     const where = { id: { in: shiftIds } };
     if (onlyOpen) where.status = { in: ["REQUESTED", "APPROVED", "ACTIVE"] };
     return {
-      items: await prisma.shift.findMany({ where, include, orderBy: { id: "desc" }, take }),
+      items: (await prisma.shift.findMany({ where, include, orderBy: { id: "desc" }, take })).map((item) =>
+        decorateShiftWithRegionContext(item)
+      ),
     };
   }
 
   // For ROOM/COMPANY/SUPER_ADMIN, behave like list (scoped) for convenience.
   const where = buildShiftsWhereFromQuery(query, user);
   return {
-    items: await prisma.shift.findMany({ where, include, orderBy: { id: "desc" }, take }),
+    items: (await prisma.shift.findMany({ where, include, orderBy: { id: "desc" }, take })).map((item) =>
+      decorateShiftWithRegionContext(item)
+    ),
   };
 }
 

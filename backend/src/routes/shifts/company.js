@@ -34,13 +34,15 @@ import {
   refreshCompanyShiftRouteStateAfterMutation,
   syncCompanyShiftCommercialBackbone,
 } from "../../services/companyShiftMutationTail.js";
+import { requireSameRegionOrThrow } from "../../region/ownership.js";
 
 const emitShift = H.emitShift;
+const decorateShiftWithRegionContext = H.decorateShiftWithRegionContext;
 
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 
 async function loadFullShift(shiftId) {
-  return prisma.shift.findUnique({
+  const shift = await prisma.shift.findUnique({
     where: { id: Number(shiftId) },
     include: {
       stops: { orderBy: { order: "asc" } },
@@ -51,6 +53,37 @@ async function loadFullShift(shiftId) {
       room: true,
     },
   });
+  return decorateShiftWithRegionContext(shift);
+}
+
+async function assertCompanyRoomRegionMatchOrThrow({ companyId, roomId, label }) {
+  if (!roomId) return null;
+
+  const [company, room] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: Number(companyId) },
+      select: {
+        id: true,
+        regionId: true,
+        district: true,
+        region: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.room.findUnique({
+      where: { id: Number(roomId) },
+      select: {
+        id: true,
+        regionId: true,
+        district: true,
+        region: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
+
+  if (!company) throw Object.assign(new Error("Company not found"), { status: 404 });
+  if (!room) throw Object.assign(new Error("Room not found"), { status: 404 });
+
+  return requireSameRegionOrThrow({ company, room, label });
 }
 
 
@@ -122,14 +155,19 @@ export function attachShiftCompanyRoutes(r, io) {
           return sendErrorResponse(res, httpError(400, "companyId required"));
         }
 
-        const parsedRows = rows.map((row) => validateWithZod(createShiftSchema, row));
-        for (const body of parsedRows) {
-          requireHubPairOrThrow(body);
-          if (body.companyOfferVehicleId != null) {
-            await requireCompanyOfferVehicleSameRoomOrThrow({
-              companyOfferVehicleId: body.companyOfferVehicleId,
-              roomId: body.roomId,
+          const parsedRows = rows.map((row) => validateWithZod(createShiftSchema, row));
+          for (const body of parsedRows) {
+            requireHubPairOrThrow(body);
+            await assertCompanyRoomRegionMatchOrThrow({
+              companyId: effectiveCompanyId,
+              roomId: body.roomId ?? null,
+              label: "GUIDED_BATCH_SHIFT_CREATE",
             });
+            if (body.companyOfferVehicleId != null) {
+              await requireCompanyOfferVehicleSameRoomOrThrow({
+                companyOfferVehicleId: body.companyOfferVehicleId,
+                roomId: body.roomId,
+              });
           }
         }
 
@@ -199,13 +237,18 @@ export function attachShiftCompanyRoutes(r, io) {
             : (body.status ?? "DRAFT");
 
 
-        // ✅ M19: hub pair validation
-        requireHubPairOrThrow(body);
+          // ✅ M19: hub pair validation
+          requireHubPairOrThrow(body);
+          await assertCompanyRoomRegionMatchOrThrow({
+            companyId: effectiveCompanyId,
+            roomId: body.roomId ?? null,
+            label: "SHIFT_CREATE",
+          });
 
-        // Optional: companyOfferVehicleId verildiyse araç var mı ve aynı room mu?
-        if (body.companyOfferVehicleId != null) {
-          await requireCompanyOfferVehicleSameRoomOrThrow({
-            companyOfferVehicleId: body.companyOfferVehicleId,
+          // Optional: companyOfferVehicleId verildiyse araç var mı ve aynı room mu?
+          if (body.companyOfferVehicleId != null) {
+            await requireCompanyOfferVehicleSameRoomOrThrow({
+              companyOfferVehicleId: body.companyOfferVehicleId,
             roomId: body.roomId,
           });
         }
@@ -492,8 +535,9 @@ export function attachShiftCompanyRoutes(r, io) {
         });
 
         await syncCompanyShiftCommercialBackbone(updated.id);
-        publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
-        return res.json(updated);
+        const decoratedUpdated = decorateShiftWithRegionContext(updated);
+        publishCompanyShiftMutation(io, emitShift, decoratedUpdated, "shift:list");
+        return res.json(decoratedUpdated);
       } catch (e) {
         return sendErrorResponse(res, e);
       }
@@ -555,8 +599,9 @@ export function attachShiftCompanyRoutes(r, io) {
         });
 
         await syncCompanyShiftCommercialBackbone(updated.id);
-        publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
-        return res.json(updated);
+        const decoratedUpdated = decorateShiftWithRegionContext(updated);
+        publishCompanyShiftMutation(io, emitShift, decoratedUpdated, "shift:list");
+        return res.json(decoratedUpdated);
       } catch (e) {
         return sendErrorResponse(res, e);
       }
@@ -625,8 +670,9 @@ if (updated?.roomId) {
 }
 
         await syncCompanyShiftCommercialBackbone(updated.id);
-        publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
-        return res.json(updated);
+        const decoratedUpdated = decorateShiftWithRegionContext(updated);
+        publishCompanyShiftMutation(io, emitShift, decoratedUpdated, "shift:list");
+        return res.json(decoratedUpdated);
       } catch (e) {
         return sendErrorResponse(res, e);
       }
@@ -715,8 +761,9 @@ r.put(
         dedupeKey: `shift:${id}:extend:${next.toISOString()}`,
       });
 
-      publishCompanyShiftMutation(io, emitShift, updated, "shift:list");
-      return res.json(updated);
+      const decoratedUpdated = decorateShiftWithRegionContext(updated);
+      publishCompanyShiftMutation(io, emitShift, decoratedUpdated, "shift:list");
+      return res.json(decoratedUpdated);
     } catch (e) {
       return sendErrorResponse(res, e);
     }

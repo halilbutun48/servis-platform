@@ -27,6 +27,7 @@ export function RoomShiftsModalSection({
   previewOpen,
   previewErr,
   previewShift,
+  previewSubtitle,
   previewStops,
   previewPeople,
   previewSummary,
@@ -35,12 +36,14 @@ export function RoomShiftsModalSection({
   previewLoading,
   onClosePreview,
   reassignModal,
+  reassignSubtitle,
   vehicles,
   drivers,
   busy,
   onCloseReassign,
   onSubmitReassign,
   opsEventsModal,
+  opsEventsSubtitle,
   onCloseOpsEvents,
 }) {
   return (
@@ -54,6 +57,7 @@ export function RoomShiftsModalSection({
       <ShiftReassignModal
         open={reassignModal.open}
         shift={reassignModal.shift}
+        subtitle={reassignSubtitle}
         vehicles={vehicles}
         drivers={drivers}
         busy={busy}
@@ -64,6 +68,7 @@ export function RoomShiftsModalSection({
       <ShiftOperationEventsModal
         open={opsEventsModal.open}
         shiftId={opsEventsModal.shiftId}
+        subtitle={opsEventsSubtitle}
         onClose={onCloseOpsEvents}
       />
 
@@ -75,6 +80,7 @@ export function RoomShiftsModalSection({
             ? `Shift #${previewShift.id} — Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
             : `Harita Önizleme${previewLoading ? " (yükleniyor...)" : ""}`
         }
+        subtitle={previewSubtitle}
         shiftId={typeof previewShift?.id === "number" ? previewShift?.id : null}
         stops={previewStops}
         people={previewPeople}

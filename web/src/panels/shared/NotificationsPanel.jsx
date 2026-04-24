@@ -4,6 +4,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { normalizeNotifV1 } from "../../utils/notificationV1";
+import { formatRegionOwnership } from "../../utils/regionOwnership";
 import { pillKeyFromAny } from "../../utils/uiStatus";
 import { formatDateTimeTR } from "../../utils/time";
 
@@ -95,6 +96,7 @@ export default function NotificationsPanel() {
       const typeLabel = fmt(p.kind ?? n?.type ?? "-"); // önce kind yoksa type
       const kind = fmt(p.kind ?? "");
       const status = fmt(p.status ?? "");
+      const regionLabel = formatRegionOwnership(n?.regionOwnership);
 
       const payloadPretty = JSON.stringify(p, null, 2);
 
@@ -109,6 +111,7 @@ export default function NotificationsPanel() {
         vehicleId: fmt(vehicleId),
         kind,
         status,
+        regionLabel,
         ageSec: p.ageSec,
         at,
         atRaw: fmt(atRaw),
@@ -141,6 +144,7 @@ export default function NotificationsPanel() {
         r.vehicleId,
         r.kind,
         r.status,
+        r.regionLabel,
       ]
         .map((x) => String(x || "").toLowerCase())
         .join(" | ");
@@ -199,6 +203,7 @@ export default function NotificationsPanel() {
         .colId { width:60px; }
         .colType { width:170px; }
         .colScope { width:100px; }
+        .colRegion { width:190px; }
         .colAt { width:136px; }
         .colTitle { width:250px; }
         .colMsg { width:360px; }
@@ -288,6 +293,7 @@ export default function NotificationsPanel() {
                   <col className="colId" />
                   <col className="colType" />
                   <col className="colScope" />
+                  <col className="colRegion" />
                   <col className="colAt" />
                   <col className="colTitle" />
                   <col className="colMsg" />
@@ -303,6 +309,7 @@ export default function NotificationsPanel() {
                     <th>ID</th>
                     <th>Type</th>
                     <th>Scope</th>
+                    <th>Region</th>
                     <th>At</th>
                     <th className="hideSm">Title</th>
                     <th>Message</th>
@@ -326,6 +333,12 @@ export default function NotificationsPanel() {
                       </td>
 
                       <td className="mono nowrap">{r.scope}</td>
+
+                      <td title={r.regionLabel}>
+                        <span className="pill pillEllip" data-status={pillKeyFromAny(r.regionLabel)}>
+                          {r.regionLabel}
+                        </span>
+                      </td>
 
                       <td className="muted mono nowrap" title={r.atRaw}>
                         {r.at}
@@ -410,6 +423,7 @@ export default function NotificationsPanel() {
                   <span className="pill" data-status={pillKeyFromAny(selected.typeLabel)}>{selected.typeLabel}</span>
                   <span className="pill" data-status={pillKeyFromAny(selected.status || "")}>{selected.status || "-"}</span>
                   <span className="mono">{selected.scope}</span>
+                  <span className="mono">{selected.regionLabel}</span>
                   <span className="mono">{selected.at}</span>
                 </div>
               </div>
@@ -421,6 +435,9 @@ export default function NotificationsPanel() {
             </div>
             <div className="muted" style={{ marginBottom: 12 }}>
               <b>Message:</b> {selected.message || "-"}
+            </div>
+            <div className="muted" style={{ marginBottom: 12 }}>
+              <b>Bölge:</b> {selected.regionLabel || "-"}
             </div>
 
             <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{selected.payloadPretty}</pre>

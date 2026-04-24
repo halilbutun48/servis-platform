@@ -8,6 +8,7 @@ import { getRedis } from "../redis/index.js";
 import { createMiniRedisClient } from "../redis/miniRedis.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { haversineKm, etaMinutes } from "../geo.js";
+import { buildRegionRoutingKey } from "../region/index.js";
 
 const AUTO_REACHED_QUEUE_KEY = "gps:auto-reached:v1";
 const AUTO_REACHED_LOCK_PREFIX = "gps:auto-reached:lock:v1";
@@ -97,6 +98,12 @@ export async function processAutoReachedTask(io, task) {
   const stopsSnapshot = Array.isArray(task?.stopsSnapshot) ? task.stopsSnapshot : null;
   const vehicleSnapshot = task?.vehicleSnapshot ?? null;
   const gpsLastSnapshot = task?.gpsLastSnapshot ?? null;
+  const regionRoutingKey =
+    task?.regionRoutingKey ??
+    buildRegionRoutingKey(shiftSnapshot ?? {}) ??
+    buildRegionRoutingKey(vehicleSnapshot ?? {}) ??
+    null;
+  const regionContext = task?.regionContext ?? null;
   const completed = task?.completed === true;
   const now2 = task?.atIso ? new Date(task.atIso) : new Date();
 
@@ -146,6 +153,8 @@ export async function processAutoReachedTask(io, task) {
     completed,
     changed: { stopId, state: "REACHED", reachedAt: now2 },
     source: "AUTO_GEOFENCE",
+    regionRoutingKey,
+    regionContext,
   };
 
   io.to(`shift:${shiftId}`).emit("route:progress", payload);
@@ -176,6 +185,8 @@ export async function processAutoReachedTask(io, task) {
 
   if (completed) {
     const donePayload = { shiftId, vehicleId, completed: true, nextStop: null, source: "AUTO_GEOFENCE" };
+    donePayload.regionRoutingKey = regionRoutingKey;
+    donePayload.regionContext = regionContext;
     await Promise.all([
       workerPrisma.shiftProgress.upsert({
         where: { shiftId },

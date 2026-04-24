@@ -10,6 +10,7 @@ Amaç: large/hot file listesini resmi queue politikasına bağlamak ve her dosya
 - `largeFiles` ve `warningHotFiles` sayısı güncel repo-audit snapshot'ı ile policy içinde birebir eşleşir.
 - Güncel snapshot'ta `backend/scripts/bench_gps_publish_only.js` de justified exception kuyruğunda yer alır.
 - Güncel snapshot'ta `web/src/panels/room/ShiftsPanel.jsx` safe candidate review kuyruğunda yer alır.
+- Güncel snapshot'ta `web/src/panels/room/VehiclesPanel.jsx` safe candidate review kuyruğunda yer alır.
 - Policy sınıfları `tools/repo_contract_state.json` içinde bulunur.
 - Policy seti ile `repo_audit` seti birebir eşleşir.
 - Justified exception dosyaları acceptance-safe lokal düzeltme dışında zorlanmaz.

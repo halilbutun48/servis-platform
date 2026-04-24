@@ -14,6 +14,7 @@ import { findPackageShiftIdsByShiftId } from "../services/shiftPackage.js";
 
 import { counterShiftOfferSchema } from "./shifts/schemas.js";
 import * as H from "./shifts/helpers.js";
+import { decorateShiftWithRegionContext } from "./shifts/helpers.js";
 
 const bulkCounterSchema = z.object({
   offerIds: z.array(z.coerce.number().int().positive()).min(1).max(50),
@@ -61,7 +62,7 @@ function shouldBypassCompanyOffersCache(req) {
 }
 
 async function loadCompanyDirectoryItems(where, take) {
-  return prisma.shiftOffer.findMany({
+  const items = await prisma.shiftOffer.findMany({
     where,
     orderBy: [{ updatedAt: "desc" }],
     take,
@@ -72,6 +73,10 @@ async function loadCompanyDirectoryItems(where, take) {
       },
     },
   });
+  return items.map((item) => ({
+    ...item,
+    shift: item.shift ? decorateShiftWithRegionContext(item.shift) : item.shift,
+  }));
 }
 
 async function finalizeAcceptedOfferTx(tx, offer) {
@@ -114,7 +119,7 @@ async function finalizeAcceptedOfferTx(tx, offer) {
 }
 
 async function emitAcceptedOfferResult(io, meta) {
-  const shiftFull = await prisma.shift.findUnique({
+  const shiftFull = decorateShiftWithRegionContext(await prisma.shift.findUnique({
     where: { id: meta.shiftId },
     include: {
       stops: { orderBy: { order: "asc" } },
@@ -124,7 +129,7 @@ async function emitAcceptedOfferResult(io, meta) {
       company: true,
       room: true,
     },
-  });
+  }));
 
   io?.to?.(`company:${meta.companyId}`)?.emit?.("offer:update", {
     kind: "offer:accept",
@@ -297,7 +302,7 @@ export function offersRouter(io) {
             ...o,
             shift: o.shift
               ? {
-                  ...o.shift,
+                  ...decorateShiftWithRegionContext(o.shift),
                   assignmentCount,
                   peopleCount,
                   orgPassengerCount,

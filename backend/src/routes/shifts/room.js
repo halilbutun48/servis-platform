@@ -37,6 +37,7 @@ import * as H from "./helpers.js";
 
 const clusterPoints = H.clusterPoints;
 const emitShift = H.emitShift;
+const decorateShiftWithRegionContext = H.decorateShiftWithRegionContext;
 const getShiftAndCheckScopeOrThrow = H.getShiftAndCheckScopeOrThrow;
 const resolveRequestDelegateSafe = H.resolveRequestDelegateSafe;
 
@@ -195,9 +196,10 @@ export function attachShiftRoomRoutes(r, io) {
       });
 
       clearShiftRoutePreviewCache(updated.id);
-      emitShift(io, updated, "shift:update");
-      emitShift(io, updated, "route:plan");
-      return res.json(updated);
+      const decoratedUpdated = decorateShiftWithRegionContext(updated);
+      emitShift(io, decoratedUpdated, "shift:update");
+      emitShift(io, decoratedUpdated, "route:plan");
+      return res.json(decoratedUpdated);
     } catch (e) {
       return sendErrorResponse(res, e);
     }
@@ -298,9 +300,10 @@ export function attachShiftRoomRoutes(r, io) {
         await emitReassignNotifications({ io, before: shift, after: updated, reason, note });
 
         clearShiftRoutePreviewCache(updated.id);
-        emitShift(io, updated, "shift:update", { action: "reassign", reason });
-        emitShift(io, updated, "route:plan", { action: "reassign", reason });
-        return res.json({ ok: true, shift: updated, event: meta });
+        const decoratedUpdated = decorateShiftWithRegionContext(updated);
+        emitShift(io, decoratedUpdated, "shift:update", { action: "reassign", reason });
+        emitShift(io, decoratedUpdated, "route:plan", { action: "reassign", reason });
+        return res.json({ ok: true, shift: decoratedUpdated, event: meta });
       } catch (e) {
         return sendErrorResponse(res, e);
       }
@@ -851,9 +854,10 @@ export function attachShiftRoomRoutes(r, io) {
         });
 
         clearShiftRoutePreviewCache(updated.id);
-        emitShift(io, updated, "shift:update");
-        emitShift(io, updated, "shift:list");
-        return res.json(updated);
+        const decoratedUpdated = decorateShiftWithRegionContext(updated);
+        emitShift(io, decoratedUpdated, "shift:update");
+        emitShift(io, decoratedUpdated, "shift:list");
+        return res.json(decoratedUpdated);
       } catch (e) {
         return sendErrorResponse(res, e);
       }
@@ -930,8 +934,9 @@ r.put(
       });
 
       clearShiftRoutePreviewCache(updated.id);
-      emitShift(io, updated, "shift:list");
-      return res.json(updated);
+      const decoratedUpdated = decorateShiftWithRegionContext(updated);
+      emitShift(io, decoratedUpdated, "shift:list");
+      return res.json(decoratedUpdated);
     } catch (e) {
       return sendErrorResponse(res, e);
     }
@@ -988,9 +993,10 @@ r.put(
         });
 
         clearShiftRoutePreviewCache(updated.id);
-        emitShift(io, updated, "shift:update");
-        emitShift(io, updated, "route:plan");
-        return res.json(updated);
+        const decoratedUpdated = decorateShiftWithRegionContext(updated);
+        emitShift(io, decoratedUpdated, "shift:update");
+        emitShift(io, decoratedUpdated, "route:plan");
+        return res.json(decoratedUpdated);
       } catch (e) {
         return sendErrorResponse(res, e);
       }

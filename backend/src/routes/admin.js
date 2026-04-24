@@ -8,8 +8,13 @@ import crypto from "crypto";
 import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { runRetentionCleanupOnce } from "../jobs/retentionCleanup.js";
+import { createBackupArchive, restoreBackupArchive } from "../ops/backupArchiveOps.js";
 import { getBackupManifestSummary, getBackupPolicySummary, getRetentionPolicySummary } from "../ops/retentionBackupPolicy.js";
 import { getCapacityPolicySummary, getCapacitySnapshot } from "../ops/capacityLoadBaseline.js";
+import { getRegionCapacitySnapshot } from "../ops/regionCapacity.js";
+import { getRegionCellDeploymentBlueprint } from "../ops/regionCellDeploymentBlueprint.js";
+import { getRegionFailoverDrillPack, recordRegionFailoverDrillRun } from "../ops/regionFailoverDrill.js";
+import { getRegionNextPhasePack } from "../ops/regionNextPhasePack.js";
 import { getEdgeSecurityPolicySummary, getEdgeSecuritySnapshot } from "../ops/edgeSecurityBaseline.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
@@ -155,6 +160,41 @@ r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_re
   });
 });
 
+// ✅ M45: backup create (host-side wrapper around archive snapshot)
+r.post("/backup/create", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  try {
+    const outputDir = String(req.body?.outputDir || "").trim() || null;
+    const keepDaysRaw = req.body?.keepDays;
+    const keepDays = keepDaysRaw == null || keepDaysRaw === "" ? null : Number(keepDaysRaw);
+    const result = createBackupArchive({
+      outputDir,
+      keepDays: Number.isFinite(keepDays) ? keepDays : null,
+    });
+    const status = result.ok ? 200 : 500;
+    return res.status(status).json({ ok: result.ok, ...result });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
+// ✅ M45: backup restore (host-side wrapper around archive snapshot)
+r.post("/backup/restore", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  try {
+    const backupFile = String(req.body?.backupFile || "").trim();
+    const manifestFile = String(req.body?.manifestFile || "").trim() || null;
+    const force = req.body?.force === true || String(req.body?.force || "").toLowerCase() === "true";
+    const result = restoreBackupArchive({
+      backupFile,
+      manifestFile,
+      force,
+    });
+    const status = result.ok ? 200 : 500;
+    return res.status(status).json({ ok: result.ok, ...result });
+  } catch (e) {
+    return res.status(400).json({ ok: false, error: String(e?.message || e) });
+  }
+});
+
 
 // M47.2: capacity / load baseline policy
 r.get("/capacity/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
@@ -164,6 +204,46 @@ r.get("/capacity/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_re
 // M47.2: capacity / load snapshot
 r.get("/capacity/snapshot", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json(await getCapacitySnapshot());
+});
+
+// M47.2+: region next-phase execution pack
+r.get("/regions/next-phase", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json(await getRegionNextPhasePack());
+});
+
+// M47.2+: physical region cell deployment blueprint
+r.get("/regions/deployment-blueprint", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json(await getRegionCellDeploymentBlueprint());
+});
+
+// M47.2+: failover / rebalancing drill pack
+r.get("/regions/failover-drill", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json(await getRegionFailoverDrillPack());
+});
+
+// M47.2+: failover / rebalancing drill dry-run record
+r.post("/regions/failover-drill/run", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  try {
+    const scenarioId = String(req.body?.scenarioId || "").trim() || null;
+    const regionId = req.body?.regionId == null || String(req.body?.regionId).trim() === "" ? null : Number(req.body.regionId);
+    const note = String(req.body?.note || "").trim() || null;
+    const result = await recordRegionFailoverDrillRun({ scenarioId, regionId, note }, req.user);
+    await audit(req, {
+      action: "REGION_FAILOVER_DRILL_RUN",
+      entity: "Region",
+      entityId: Number(result.regionId || 0) || null,
+      meta: {
+        scenarioId: result.scenarioId,
+        regionId: result.regionId,
+        regionName: result.regionName,
+        primaryCellId: result.primaryCellId,
+        status: result.status,
+      },
+    });
+    return res.status(201).json({ ok: true, ...result });
+  } catch (e) {
+    return res.status(400).json({ ok: false, error: String(e?.message || e) });
+  }
 });
 
 // M47.3: edge security / resilience policy
@@ -294,6 +374,24 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
         roomId: true,
         createdAt: true,
         passwordHash: true,
+        company: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
@@ -309,6 +407,28 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
           phone: u.phone,
           companyId: u.companyId,
           roomId: u.roomId,
+          company: u.company
+            ? {
+                id: u.company.id,
+                name: u.company.name,
+                regionId: u.company.regionId,
+                district: u.company.district,
+                regionOwnership: u.company.region
+                  ? { regionId: u.company.region.id, regionName: u.company.region.name, district: u.company.district || null }
+                  : null,
+              }
+            : null,
+          room: u.room
+            ? {
+                id: u.room.id,
+                name: u.room.name,
+                regionId: u.room.regionId,
+                district: u.room.district,
+                regionOwnership: u.room.region
+                  ? { regionId: u.room.region.id, regionName: u.room.region.name, district: u.room.district || null }
+                  : null,
+              }
+            : null,
           createdAt: u.createdAt,
           disabled: isDisabledHash(u.passwordHash),
         };
@@ -662,8 +782,8 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
 
   // --- Regions (İl) ---
   r.get("/regions", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
-    const items = await prisma.region.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] });
-    res.json({ items });
+    const snapshot = await getRegionCapacitySnapshot();
+    res.json(snapshot);
   });
 
   r.post("/regions", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {

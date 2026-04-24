@@ -8,6 +8,7 @@ import { httpError } from "../../errors/http.js";
 import * as H from "./helpers.js";
 import { sanitizeOperationEventMeta, sanitizeShiftActorLabel, sanitizeShiftParticipantPayload } from "../../kvkk/enforcement.js";
 import { buildShiftCommercialBackboneMap } from "../../services/paymentBackbone.js";
+import { decorateShiftWithRegionContext } from "../../region/ownership.js";
 
 const buildShiftsWhereFromQuery =
   H.buildShiftsWhereFromQuery ??
@@ -188,7 +189,7 @@ export function attachShiftSharedRoutes(r) {
           },
         });
 
-        const mappedBase = items.map((s) => {
+        const mappedBase = items.map((item) => decorateShiftWithRegionContext(item)).map((s) => {
           const assignmentCount = Number(s?._count?.assignments || 0);
           const peopleCount = Number(s?._count?.people || 0);
           const orgPassengerCount = Array.isArray(s?.organizationPlan?.stops)
@@ -233,7 +234,7 @@ export function attachShiftSharedRoutes(r) {
 
         if (req.user.role === "DRIVER") {
           const driverId = await getDriverIdOrThrow(req.user);
-          shift = await prisma.shift.findFirst({
+          shift = decorateShiftWithRegionContext(await prisma.shift.findFirst({
             where: {
               driverId,
               status: { in: ["APPROVED", "ACTIVE"] },
@@ -247,7 +248,7 @@ export function attachShiftSharedRoutes(r) {
               company: true,
               room: true,
             },
-          });
+          }));
         }
 
         if (req.user.role === "PERSONEL") {
@@ -259,7 +260,7 @@ export function attachShiftSharedRoutes(r) {
           });
 
           if (latestReq?.shiftId) {
-            shift = await prisma.shift.findUnique({
+            shift = decorateShiftWithRegionContext(await prisma.shift.findUnique({
               where: { id: latestReq.shiftId },
               include: {
                 stops: { orderBy: { order: "asc" } },
@@ -268,7 +269,7 @@ export function attachShiftSharedRoutes(r) {
                 company: true,
                 room: true,
               },
-            });
+            }));
           }
         }
 
@@ -392,7 +393,7 @@ export function attachShiftSharedRoutes(r) {
           if (shift.driverId !== driver.id) throw httpError(403, "FORBIDDEN", "Forbidden");
         }
 
-        return res.json(sanitizeShiftParticipantPayload(shift, { role: req.user?.role }));
+        return res.json(sanitizeShiftParticipantPayload(decorateShiftWithRegionContext(shift), { role: req.user?.role }));
     })
   );
 }

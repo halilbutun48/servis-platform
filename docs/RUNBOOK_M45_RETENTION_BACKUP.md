@@ -30,9 +30,11 @@ Bu kayıtlar retention arşivi değildir; expiry/revoke yaşam döngüsüyle yö
 2. Archive policy kontrolü:
    - `GET /api/admin/backup/policy`
 3. Archive snapshot oluştur:
-   - `tools\backup_create_m45.ps1 -RepoRoot D:\servis-platform`
+   - `npm --prefix backend run m45:backup:create`
+   - veya `pwsh -ExecutionPolicy Bypass -File .\tools\backup_create_m45.ps1 -RepoRoot D:\servis-platform`
 4. Manifest doğrula:
    - `GET /api/admin/backup/manifest`
+   - `GET /api/admin/regions/next-phase`
 5. Gerekirse hot cleanup dry-run:
    - `POST /api/admin/retention/run` body `{ "dryRun": true }`
 
@@ -58,6 +60,9 @@ Bu manifest artık sadece “dosya var mı” kontrolü değil, aynı zamanda b�
 - `-Force` olmadan çalışmaz
 - manifest varsa sha256 hash doğrulaması yapar
 - hash uyuşmuyorsa restore etmez
+
+Repo düzeyi restore girişi:
+- `npm --prefix backend run m45:backup:restore -- --backup-file <sql> --manifest-file <manifest> --force`
 
 Örnek:
 ```powershell
@@ -89,10 +94,10 @@ pwsh -ExecutionPolicy Bypass -File .\tools\backup_restore_m45.ps1 `
 - Sha256 doğrulaması geçmiyor.
 - Retention run dry-run hesabı politika ile çelişiyor.
 - `GpsPoint` / `Notification` hot window düşürülmüş ama archive snapshot alınmamış.
+- `GET /api/admin/regions/next-phase` üzerinde archive/restore READY görünmüyor.
 
 ## 7) Sonraki kontrol
 
 - `npm --prefix backend run m45check`
 - `npm run verify:repo`
 - `npm run verify:final`
-

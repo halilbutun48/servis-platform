@@ -4,6 +4,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { formatRegionOwnership } from "../../utils/regionOwnership";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -343,7 +344,9 @@ export default function MyRidePanel() {
           </div>
           <ul style={{ marginTop: 8 }}>
             {notifs.map((n) => (
-              <li key={n.id} className="muted"><b>{n.type}</b> • {fmtTR(n.createdAt)}</li>
+              <li key={n.id} className="muted">
+                <b>{n.type}</b> • {formatRegionOwnership(n)} • {fmtTR(n.createdAt)}
+              </li>
             ))}
           </ul>
         </div>

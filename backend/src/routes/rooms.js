@@ -9,6 +9,7 @@ import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
+import { resolveRoomOwnership } from "../region/index.js";
 
 function roleOf(req) {
   return String(req.user?.role || req.me?.role || req.auth?.role || "");
@@ -143,7 +144,14 @@ export function roomsRouter() {
         include: { region: { select: { id: true, name: true } } },
       });
       if (!item || item.status === "DELETED") return res.json({ items: [] });
-      return res.json({ items: [item] });
+      return res.json({
+        items: [
+          {
+            ...item,
+            regionOwnership: resolveRoomOwnership(item),
+          },
+        ],
+      });
     }
 
     const q = String(req.query.q || "").trim();
@@ -172,14 +180,14 @@ export function roomsRouter() {
       if (district) where.district = { contains: district, mode: "insensitive" };
     }
 
-    // COMPANY: region gate (legacy allow regionId null rooms too)
+    // COMPANY: only rooms in the same region
     if (role === "COMPANY") {
       const cid = companyIdOf(req);
       if (cid) {
         const c = await prisma.company.findUnique({ where: { id: cid }, select: { regionId: true } });
         const rId = c?.regionId ?? null;
         if (rId != null) {
-          where.OR = [{ regionId: rId }, { regionId: null }];
+          where.regionId = rId;
         }
       }
     }
@@ -191,7 +199,12 @@ export function roomsRouter() {
       orderBy: [{ name: "asc" }, { id: "asc" }],
     });
 
-    return res.json({ items });
+    return res.json({
+      items: items.map((item) => ({
+        ...item,
+        regionOwnership: resolveRoomOwnership(item),
+      })),
+    });
   });
 
   // READ
@@ -213,7 +226,10 @@ export function roomsRouter() {
       }
     }
 
-    return res.json(item);
+    return res.json({
+      ...item,
+      regionOwnership: resolveRoomOwnership(item),
+    });
   });
 
   // CREATE (SUPER_ADMIN only)
@@ -248,7 +264,10 @@ export function roomsRouter() {
       });
     }
 
-    return res.status(201).json(item);
+    return res.status(201).json({
+      ...item,
+      regionOwnership: resolveRoomOwnership(item),
+    });
   });
 
   // UPDATE (SUPER_ADMIN only)

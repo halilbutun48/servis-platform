@@ -1,4 +1,5 @@
 import { hasGpsFix, VEHICLE_TEMPLATES_TR, VEHICLE_TYPES } from "./roomVehiclesPanelUtils";
+import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 
 export function RoomDeviceTokenRevealCard({ tokenReveal, copyToken }) {
   if (!tokenReveal?.token) return null;
@@ -33,6 +34,7 @@ export function RoomVehicleCurrentLinkCard({ focusVehicle, focusDriverLabel, foc
     <div className="card" style={{ margin: 0 }}>
       <h3 style={{ marginTop: 0 }}>Mevcut Bağlantı</h3>
       <div className="muted">Seçili araç: <b>{focusVehicle?.plate || "-"}</b></div>
+      {hasRegionOwnership(focusVehicle) ? <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>{formatRegionOwnership(focusVehicle)}</div> : null}
       <div style={{ marginTop: 10 }}>
         <div className="muted">Aktif sürücü</div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
@@ -90,7 +92,7 @@ export function RoomVehicleLinkSection({
               >
                 {items.map((v) => (
                   <option key={v.id} value={v.id} disabled={Boolean(v.archivedAt)}>
-                    {v.plate} (#{v.id}){v.archivedAt ? " • Arşivde" : ""}
+                    {v.plate} (#{v.id}){hasRegionOwnership(v) ? ` • ${formatRegionOwnership(v).replace(/^Bölge:\s*/, "")}` : ""}{v.archivedAt ? " • Arşivde" : ""}
                   </option>
                 ))}
               </select>
@@ -100,7 +102,7 @@ export function RoomVehicleLinkSection({
               <select value={String(bindSel[focusVehicleId] ?? "")} onChange={(e) => setBindSel((prev) => ({ ...prev, [focusVehicleId]: e.target.value }))} disabled={busy || focusArchived}>
                 <option value="">Driver seç</option>
                 {drivers.map((d) => (
-                  <option key={d.id} value={d.id}>{driverOptionLabel(d)}</option>
+                  <option key={d.id} value={d.id}>{driverOptionLabel(d)}{hasRegionOwnership(d) ? ` • ${formatRegionOwnership(d).replace(/^Bölge:\s*/, "")}` : ""}</option>
                 ))}
               </select>
             </div>

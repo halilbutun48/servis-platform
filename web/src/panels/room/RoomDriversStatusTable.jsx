@@ -1,5 +1,6 @@
 import DriverPenaltyBadge from "../../components/driver/DriverPenaltyBadge";
 import { rowSelectionStyle } from "../../utils/listUi";
+import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 
 export default function RoomDriversStatusTable({
   visibleStatusDrivers,
@@ -85,6 +86,7 @@ export default function RoomDriversStatusTable({
                 <td>
                   <b>{d.fullName}</b> <DriverPenaltyBadge item={penaltiesByDriverId[d.id]} />
                   <div className="muted">#{d.id}</div>
+                  {hasRegionOwnership(d) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(d)}</div> : null}
                 </td>
                 <td>{d.phone}</td>
                 <td>

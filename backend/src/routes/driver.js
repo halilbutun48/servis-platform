@@ -7,7 +7,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
-import { emitShift } from "./shifts/helpers.js";
+import { decorateShiftWithRegionContext, emitShift } from "./shifts/helpers.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 
@@ -82,14 +82,33 @@ async function getDriverByUserId(userId) {
 }
 
 async function getShiftForDriver({ shiftId }) {
-  return prisma.shift.findUnique({
+  const shift = await prisma.shift.findUnique({
     where: { id: shiftId },
     include: {
       vehicle: { include: { gpsLast: true } },
+      company: {
+        select: {
+          id: true,
+          name: true,
+          regionId: true,
+          district: true,
+          region: { select: { id: true, name: true } },
+        },
+      },
+      room: {
+        select: {
+          id: true,
+          name: true,
+          regionId: true,
+          district: true,
+          region: { select: { id: true, name: true } },
+        },
+      },
       stops: { include: { _count: { select: { assignments: true } } }, orderBy: { order: "asc" } },
       progress: true,
     },
   });
+  return decorateShiftWithRegionContext(shift);
 }
 
 async function maybeStartShiftIfApproved(shiftId) {
@@ -101,7 +120,8 @@ async function maybeStartShiftIfApproved(shiftId) {
 }
 
 function buildDriverRoutePayload(shift) {
-  const last = shift?.vehicle?.gpsLast ?? null;
+  const decoratedShift = decorateShiftWithRegionContext(shift);
+  const last = decoratedShift?.vehicle?.gpsLast ?? null;
   const backendGpsMeta = last
     ? (() => {
         const gpsFreshness = gpsStatusFromAt(last.at);
@@ -130,7 +150,7 @@ function buildDriverRoutePayload(shift) {
       };
   const speedKmh = typeof last?.speed === "number" ? last.speed : 30;
 
-  const routeStops = (shift?.stops ?? []).map((s) => {
+  const routeStops = (decoratedShift?.stops ?? []).map((s) => {
     const km = last ? haversineKm(last.lat, last.lng, s.lat, s.lng) : null;
     const passengerCount = Math.max(0, Number(s?._count?.assignments || 0));
     return {
@@ -152,7 +172,7 @@ function buildDriverRoutePayload(shift) {
   const orderedStops = [...routeStops].sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
   const proximityStops = last ? [...routeStops].sort((a, b) => Number(a.remainingKm || 0) - Number(b.remainingKm || 0)) : [...orderedStops];
   const nextStop = orderedStops.find((s) => s.state === "PENDING") ?? null;
-  const lastReachedOrder = derivedLastReachedOrder(shift?.stops ?? []);
+  const lastReachedOrder = derivedLastReachedOrder(decoratedShift?.stops ?? []);
   const remainingStops = orderedStops.filter((s) => s.state === "PENDING");
   const totalPassengers = orderedStops.reduce((sum, s) => sum + Math.max(0, Number(s.passengerCount || 0)), 0);
   const remainingPassengers = remainingStops.reduce((sum, s) => sum + Math.max(0, Number(s.passengerCount || 0)), 0);
@@ -160,23 +180,29 @@ function buildDriverRoutePayload(shift) {
   return {
     mode: "OK",
     shift: {
-      id: shift.id,
-      companyId: shift.companyId,
-      roomId: shift.roomId,
-      vehicleId: shift.vehicleId,
-      driverId: shift.driverId,
-      startAt: shift.startAt,
-      endAt: shift.endAt,
-      status: shift.status,
+      id: decoratedShift.id,
+      companyId: decoratedShift.companyId,
+      roomId: decoratedShift.roomId,
+      vehicleId: decoratedShift.vehicleId,
+      driverId: decoratedShift.driverId,
+      startAt: decoratedShift.startAt,
+      endAt: decoratedShift.endAt,
+      status: decoratedShift.status,
+      regionOwnership: decoratedShift.regionOwnership,
+      regionRoutingKey: decoratedShift.regionRoutingKey,
+      regionContext: decoratedShift.regionContext,
     },
-    vehicle: shift.vehicle
+    regionOwnership: decoratedShift.regionOwnership,
+    regionRoutingKey: decoratedShift.regionRoutingKey,
+    regionContext: decoratedShift.regionContext,
+    vehicle: decoratedShift.vehicle
       ? {
-          id: shift.vehicle.id,
-          plate: shift.vehicle.plate,
-          capacity: shift.vehicle.capacity,
-          speedLimitKmh: shift.vehicle.speedLimitKmh,
-          nextMaintenanceAt: shift.vehicle.nextMaintenanceAt,
-          status: shift.vehicle.status,
+          id: decoratedShift.vehicle.id,
+          plate: decoratedShift.vehicle.plate,
+          capacity: decoratedShift.vehicle.capacity,
+          speedLimitKmh: decoratedShift.vehicle.speedLimitKmh,
+          nextMaintenanceAt: decoratedShift.vehicle.nextMaintenanceAt,
+          status: decoratedShift.vehicle.status,
         }
       : null,
     last,
@@ -187,9 +213,9 @@ function buildDriverRoutePayload(shift) {
     },
     progress: {
       lastReachedOrder,
-      startedAt: shift.progress?.startedAt ?? null,
-      pausedAt: shift.progress?.pausedAt ?? null,
-      completed: shift.status === "DONE" || !!shift.progress?.completedAt,
+      startedAt: decoratedShift.progress?.startedAt ?? null,
+      pausedAt: decoratedShift.progress?.pausedAt ?? null,
+      completed: decoratedShift.status === "DONE" || !!decoratedShift.progress?.completedAt,
     },
     summary: {
       totalStops: orderedStops.length,
@@ -267,21 +293,39 @@ export function driverRouter(io) {
         driverId: true,
         agreementId: true,
         vehicle: { select: { id: true, plate: true } },
-        company: { select: { id: true, name: true } },
+        company: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 
+    const decoratedRows = rows.map((row) => decorateShiftWithRegionContext(row));
     const today = [];
     const tomorrow = [];
     const upcoming = [];
-    for (const s of rows) {
+    for (const s of decoratedRows) {
       const y = ymdTR(s.startAt);
       if (y === todayYmd) today.push(s);
       else if (y === tomorrowYmd) tomorrow.push(s);
       if (new Date(s.startAt).getTime() > now.getTime()) upcoming.push(s);
     }
 
-    const active = rows.find((s) => {
+    const active = decoratedRows.find((s) => {
       const st = String(s.status || "").toUpperCase();
       const startMs = new Date(s.startAt).getTime();
       const endMs = new Date(s.endAt).getTime();
@@ -300,7 +344,7 @@ export function driverRouter(io) {
       else assignmentState = "ASSIGNED";
     }
 
-    return res.json({ mode: rows.length ? "OK" : "NO_ASSIGNED_SHIFT", todayYmd, tomorrowYmd, today, tomorrow, upcoming, active, assigned, assignmentState });
+    return res.json({ mode: decoratedRows.length ? "OK" : "NO_ASSIGNED_SHIFT", todayYmd, tomorrowYmd, today, tomorrow, upcoming, active, assigned, assignmentState });
   });
 
   // =========================================================
@@ -315,6 +359,24 @@ export function driverRouter(io) {
       where: { driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] } },
       include: {
         vehicle: { include: { gpsLast: true } },
+        company: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
         stops: { include: { _count: { select: { assignments: true } } }, orderBy: { order: "asc" } },
         progress: true,
       },
@@ -341,6 +403,24 @@ export function driverRouter(io) {
       where: { id: shiftId },
       include: {
         vehicle: { include: { gpsLast: true } },
+        company: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
+        room: {
+          select: {
+            id: true,
+            name: true,
+            regionId: true,
+            district: true,
+            region: { select: { id: true, name: true } },
+          },
+        },
         stops: { include: { _count: { select: { assignments: true } } }, orderBy: { order: "asc" } },
         progress: true,
       },

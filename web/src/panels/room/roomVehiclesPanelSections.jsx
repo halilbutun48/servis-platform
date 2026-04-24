@@ -20,6 +20,7 @@ import {
   RoomVehicleEditModal,
   RoomVehicleLinkSection,
 } from "./roomVehiclesPanelCards";
+import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 
 
 export function RoomVehicleManageSection({
@@ -235,6 +236,7 @@ export function RoomVehicleManageSection({
                         <span>{v.plate}</span>
                         {isArchived ? <span className="pill" data-status="PASSIVE">Arşivde</span> : null}
                       </div>
+                      {hasRegionOwnership(v) ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{formatRegionOwnership(v)}</div> : null}
                       {!gpsOk ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>📡 GPS yok</div> : null}
                     </td>
                     <td className="muted">{v.capacity}</td>
@@ -245,6 +247,7 @@ export function RoomVehicleManageSection({
                     <td className="muted">{v.note ? String(v.note) : "-"}</td>
                     <td>
                       <div className="muted">{driverLabel}{drvId ? ` (id=${drvId})` : ""}</div>
+                      {hasRegionOwnership(v) ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{formatRegionOwnership(v)}</div> : null}
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                         <button
                           type="button"
@@ -357,6 +360,7 @@ export function RoomVehicleStatusSection({
               <tr key={v.id} onClick={() => onSelectVehicle(Number(v.id) || 0)} style={rowSelectionStyle(Number(focusVehicleId || 0) === Number(v.id || 0))}>
                 <td>
                   <div>{v.plate}</div>
+                  {hasRegionOwnership(v) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(v)}</div> : null}
                   {!hasGps ? <div className="muted" style={{ fontSize: 12 }}>📡 GPS yok</div> : null}
                 </td>
                 <td>
@@ -654,7 +658,7 @@ export function RoomVehicleTelematicsSection({
             >
               {items.map((v) => (
                 <option key={v.id} value={v.id} disabled={Boolean(v.archivedAt)}>
-                  {v.plate} (#{v.id}){v.archivedAt ? " • Arşivde" : ""}
+                  {v.plate} (#{v.id}){hasRegionOwnership(v) ? ` • ${formatRegionOwnership(v).replace(/^Bölge:\s*/, "")}` : ""}{v.archivedAt ? " • Arşivde" : ""}
                 </option>
               ))}
             </select>

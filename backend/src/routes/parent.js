@@ -7,6 +7,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { requireConsent, CONSENT_DOCS } from "../middleware/consentGate.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { sanitizeParentChildItem, sanitizeVehicleLiveItem } from "../kvkk/enforcement.js";
+import { resolveVehicleOwnership } from "../region/ownership.js";
 
 function uniqNums(xs) {
   return Array.from(new Set((xs || []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
@@ -17,7 +18,15 @@ const VEHICLE_LIVE_SELECT = {
   plate: true,
   capacity: true,
   roomId: true,
-  room: { select: { id: true, name: true } },
+  room: {
+    select: {
+      id: true,
+      name: true,
+      regionId: true,
+      district: true,
+      region: { select: { id: true, name: true } },
+    },
+  },
   gpsLast: { select: { lat: true, lng: true, at: true, status: true, speed: true } },
   gpsState: { select: { lastUiStatus: true, lastChangedAt: true } },
 };
@@ -230,6 +239,7 @@ export function parentRouter() {
         const targetLat = stop?.lat ?? child?.homeLat ?? null;
         const targetLng = stop?.lng ?? child?.homeLng ?? null;
         const eta = computeEtaTo(v.gpsLast, targetLat, targetLng);
+        const regionOwnership = resolveVehicleOwnership(v, { room: v.room });
 
         const sid = shiftByVehicleId.get(Number(v.id)) || null;
         const shiftStops = sid ? stopsByShiftId.get(Number(sid)) || [] : [];
@@ -239,6 +249,8 @@ export function parentRouter() {
         const baseItem = sanitizeVehicleLiveItem(v, { role: "PARENT" });
         return {
           ...baseItem,
+          regionOwnership,
+          regionRoutingKey: regionOwnership?.regionKey ?? null,
           childId,
           visibleWindow,
           // ETA
@@ -270,7 +282,15 @@ export function parentRouter() {
       return res.json(patched);
     }
 
-    return res.json((items || []).map((v) => sanitizeVehicleLiveItem(v, { role: "PARENT" })));
+    return res.json((items || []).map((v) => {
+      const baseItem = sanitizeVehicleLiveItem(v, { role: "PARENT" });
+      const regionOwnership = resolveVehicleOwnership(v, { room: v.room });
+      return {
+        ...baseItem,
+        regionOwnership,
+        regionRoutingKey: regionOwnership?.regionKey ?? null,
+      };
+    }));
   });
 
   return r;

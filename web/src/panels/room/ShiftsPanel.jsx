@@ -7,6 +7,7 @@ import { invalidate } from "../../live/bus";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { getApiErrorMessage } from "../../utils/apiContract";
+import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 import {
   buildCapacityMeta,
   formatShiftDateTimeTR as fmtTR,
@@ -141,6 +142,28 @@ async function decideExtend(shiftId, decision) {
     for (const d of drivers) m.set(Number(d.id), d);
     return m;
   }, [drivers]);
+
+  const resolveShiftRegionLabel = (shift) => {
+    if (!shift) return "";
+    const sourceRoomId = Number(shift?.roomId || shift?.room?.id || 0);
+    const room = sourceRoomId > 0 ? roomsById.get(sourceRoomId) : null;
+    const source = room?.regionOwnership
+      || shift?.room?.regionOwnership
+      || shift?.company?.regionOwnership
+      || shift?.vehicle?.regionOwnership
+      || shift?.driver?.regionOwnership
+      || null;
+    return hasRegionOwnership(source) ? formatRegionOwnership(source) : "";
+  };
+
+  const previewRegionLabel = useMemo(() => resolveShiftRegionLabel(previewShift), [previewShift, roomsById]);
+  const reassignRegionLabel = useMemo(() => resolveShiftRegionLabel(reassignModal.shift), [reassignModal.shift, roomsById]);
+  const opsEventsShift = useMemo(() => {
+    const sid = Number(opsEventsModal.shiftId || 0);
+    if (!sid) return null;
+    return items.find((x) => Number(x?.id || 0) === sid) || null;
+  }, [items, opsEventsModal.shiftId]);
+  const opsEventsRegionLabel = useMemo(() => resolveShiftRegionLabel(opsEventsShift), [opsEventsShift, roomsById]);
 
   
   // M61_UI_COPY — Paket içi hızlı doldurma (sadece UI)
@@ -1067,7 +1090,6 @@ const offersByShiftId = useMemo(() => {
         driversForRoom={driversForRoom}
         selectedDispatchVehicleId={selectedDispatchVehicleId}
         selectedDispatchDriverId={selectedDispatchDriverId}
-        driversById={driversById}
         buildDispatchVirtualShift={buildDispatchVirtualShift}
         setDispatchSelection={setDispatchSelection}
         openDispatchSuggestionPreview={openDispatchSuggestionPreview}
@@ -1092,6 +1114,7 @@ const offersByShiftId = useMemo(() => {
         previewOpen={previewOpen}
         previewErr={previewErr}
         previewShift={previewShift}
+        previewSubtitle={previewRegionLabel}
         previewStops={previewStops}
         previewPeople={previewPeople}
         previewSummary={previewSummary}
@@ -1110,12 +1133,14 @@ const offersByShiftId = useMemo(() => {
           setPreviewLoading(false);
         }}
         reassignModal={reassignModal}
+        reassignSubtitle={reassignRegionLabel}
         vehicles={vehicles}
         drivers={drivers}
         busy={busy}
         onCloseReassign={() => setReassignModal({ open: false, shift: null })}
         onSubmitReassign={submitReassign}
         opsEventsModal={opsEventsModal}
+        opsEventsSubtitle={opsEventsRegionLabel}
         onCloseOpsEvents={() => setOpsEventsModal({ open: false, shiftId: null })}
       />
     </div>

@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
+import { formatRegionOwnership } from "../../utils/regionOwnership";
 import RoomDriversQuickPenaltyCard from "./RoomDriversQuickPenaltyCard";
 import RoomDriversStatusTable from "./RoomDriversStatusTable";
 import RoomDriversShiftsTable from "./RoomDriversShiftsTable";
@@ -563,6 +564,7 @@ Geçici PIN: ${issuedCreds.temporaryPin}`;
       fields: [
         { label: 'Ad Soyad', value: focusDriver?.fullName || '-', help: 'Seçili sürücüyü gösterir.' },
         { label: 'Telefon', value: focusDriver?.phone || '-', help: 'Sürücünün telefon bilgisini gösterir.' },
+        { label: 'Bölge', value: formatRegionOwnership(focusDriver?.regionOwnership), help: 'Sürücünün bağlı olduğu il / ilçe bilgisini gösterir.' },
         { label: 'Bağlı Araç', value: boundVehicle?.plate || '-', help: 'Sürücüye bağlı aracı gösterir.' },
         { label: 'Atama', value: ops?.assignmentState || '-', help: 'Sürücünün atama durumunu gösterir.' },
         { label: 'Bağlantı', value: ops?.connectionState || '-', help: 'Sürücünün bağlantı durumunu gösterir.' },

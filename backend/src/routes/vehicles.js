@@ -4,6 +4,7 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createVehicleSchema } from "../validators.js";
 import { sanitizeVehicleDirectoryItem } from "../kvkk/enforcement.js";
+import { resolveRoomOwnership } from "../region/ownership.js";
 
 export function vehiclesRouter(io) {
   const r = express.Router();
@@ -120,6 +121,17 @@ export function vehiclesRouter(io) {
     if (u.role === "ROOM") {
       if (!u.roomId) return res.json([]);
 
+      const room = await prisma.room.findUnique({
+        where: { id: u.roomId },
+        select: {
+          id: true,
+          regionId: true,
+          district: true,
+          region: { select: { id: true, name: true } },
+        },
+      });
+      const roomOwnership = resolveRoomOwnership(room || { id: u.roomId, regionId: null, district: null, region: null });
+
       const where = { roomId: u.roomId, ...qWhere };
       if (onlyArchived) where.archivedAt = { not: null };
       else if (!includeArchived) where.archivedAt = null;
@@ -140,7 +152,10 @@ export function vehiclesRouter(io) {
         orderBy: { id: "asc" },
         take,
       });
-      return res.json(items.map((x) => sanitizeVehicleDirectoryItem(x, { role: u.role })));
+      return res.json(items.map((x) => ({
+        ...sanitizeVehicleDirectoryItem(x, { role: u.role }),
+        regionOwnership: roomOwnership,
+      })));
     }
 
     if (u.role === "COMPANY") {

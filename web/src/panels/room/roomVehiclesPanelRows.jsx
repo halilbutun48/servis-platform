@@ -10,6 +10,7 @@ import {
   toggleSel,
 } from "./roomVehiclesPanelUtils";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
 
 export function ShiftCompact({ s, open, onToggle }) {
   if (!s) return <span className="muted">—</span>;
@@ -66,6 +67,7 @@ export function RoomVehicleAssignmentRow({
           <b>{v.plate}</b>
           <span className="muted">#{v.id}</span>
         </div>
+        {hasRegionOwnership(v) ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{formatRegionOwnership(v)}</div> : null}
       </td>
       <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
         {v.driver ? <span>{fmtDriverHuman(v.driver)}</span> : <span className="muted">Bağlı sürücü yok</span>}
@@ -128,6 +130,7 @@ export function RoomVehicleAvailabilityRow({
           <span className="muted">#{v.id}</span>
           {quickBusy ? <span className="pill" data-status="BUSY" title="Şu an shift var">Şu an meşgul</span> : <span className="pill" data-status="FREE" title="Şu an shift yok">Şu an müsait</span>}
         </div>
+        {hasRegionOwnership(v) ? <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{formatRegionOwnership(v)}</div> : null}
       </td>
       <td style={{ padding: "12px 14px", verticalAlign: "top" }}>
         {v.driver ? fmtDriverHuman(v.driver) : <span className="muted">Bağlı sürücü yok</span>}

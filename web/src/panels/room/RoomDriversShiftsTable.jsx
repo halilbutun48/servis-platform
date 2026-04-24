@@ -1,3 +1,5 @@
+import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
+
 export default function RoomDriversShiftsTable({
   filteredDrivers,
   focusDriverId,
@@ -45,7 +47,11 @@ export default function RoomDriversShiftsTable({
                 onClick={() => setFocusDriverId(Number(d.id) || 0)}
                 style={rowSelectionStyle(Number(focusDriverId || 0) === Number(d.id || 0))}
               >
-                <td><b>{d.fullName}</b></td>
+                <td>
+                  <b>{d.fullName}</b>
+                  <div className="muted" style={{ fontSize: 12 }}>#{d.id}</div>
+                  {hasRegionOwnership(d) ? <div className="muted" style={{ fontSize: 12 }}>{formatRegionOwnership(d)}</div> : null}
+                </td>
                 <td className="muted">{bv ? bv.plate : "-"}</td>
                 <td className="muted">{curText}</td>
                 <td className="muted">{nextText}</td>

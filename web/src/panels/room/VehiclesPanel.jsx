@@ -7,6 +7,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { isoFromTRDateInput, isoFromTRLocalInput, toDatetimeLocalTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { formatRegionOwnership } from "../../utils/regionOwnership";
 import {
   VEHICLE_TEMPLATES_TR,
   TABS,
@@ -348,6 +349,7 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
         { label: 'Plaka', value: focusVehicle?.plate || '-', help: 'Seçili aracın plakasını gösterir.' },
         { label: 'Tip', value: focusVehicle?.type || '-', help: 'Araç tipini gösterir.' },
         { label: 'Kapasite', value: String(focusVehicle?.capacity || '-'), help: 'Araç kapasitesini gösterir.' },
+        { label: 'Bölge', value: formatRegionOwnership(focusVehicle?.regionOwnership), help: 'Aracın bağlı olduğu il / ilçe bilgisini gösterir.' },
         { label: 'Sürücü', value: focusDriverLabel || '-', help: 'Araca bağlı sürücüyü gösterir.' },
         { label: 'Durum', value: ui?.label || '-', help: 'Aracın operasyon/GPS durumunu gösterir.' },
       ],

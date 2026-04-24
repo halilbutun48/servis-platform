@@ -8,6 +8,7 @@
 - **SCRIPT_KILAVUZU_MILESTONE_HARITASI.md** — M0→latest tek parça script/milestone rehberi
 - **KABUL_KRITERLERI_10_10_VARDIS.md** — 10/10 kalite kapısı
 - **NEXT_BACKLOG_V1.md** — bir sonraki kontrollü iş
+- **CONVERSATION_CLOSURE_INDEX_V1.md** — bu sohbetin hizalanan ana bantları ve kalanlar
 - **PARENT_ACCESS_FLOW.md** — Veli Erişimi akışının güncel ürün davranışı
 
 ## Güncel çalışma omurgası
@@ -25,6 +26,13 @@
 - **ROL_BAZLI_OPERASYON_DOGRULAMA_V1.md** — operasyon doğrulama rol yüzeyi
 - **KANIT_PROOF_KONTROL_OMURGASI_V1.md** — kanıt / proof omurgası
 - **KABUL_RED_EKSIK_TEKRAR_KONTROL_AKISI_V1.md** — karar akışı
+- **REGION_SHARDING_SINGLE_ENTRY_GATE_V1.md** — region sharding tek giriş kapısı
+- **REGION_SHARDING_NEXT_PHASE_ROADMAP_V1.md** — region next phase open items
+- **REGION_NEXT_PHASE_EXECUTION_PACK_V1.md** — region next phase execution pack
+- **REGION_PHYSICAL_CELL_DEPLOYMENT_V1.md** — fiziksel region cell deployment brief
+- **REGION_ZONE_ALT_SHARD_V1.md** — büyük şehir zone / ilçe alt-shard policy
+- **REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md** — archive export / manifest / restore
+- **REGION_FAILOVER_REBALANCING_DRILL_V1.md** — failover / rebalancing drill runbook
 
 ## Overlay / tarihsel notlar
 - `docs/overlays/` runtime kaynağı değildir; patch/overlay geçmişidir.

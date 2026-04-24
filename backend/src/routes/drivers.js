@@ -7,6 +7,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { audit } from "../audit.js";
 import { clearDriverPinFailureState } from "../auth/driverAccessGuard.js";
 import { createDriverSchema } from "../validators.js";
+import { resolveRoomOwnership } from "../region/ownership.js";
 
 function buildAliasEmail(driverCode) {
   return `${String(driverCode || "").trim().toLowerCase()}@driver.local`;
@@ -138,6 +139,17 @@ export function driversRouter(io) {
     const u = req.user;
     if (!u.roomId) return res.json([]);
 
+    const room = await prisma.room.findUnique({
+      where: { id: u.roomId },
+      select: {
+        id: true,
+        regionId: true,
+        district: true,
+        region: { select: { id: true, name: true } },
+      },
+    });
+    const roomOwnership = resolveRoomOwnership(room || { id: u.roomId, regionId: null, district: null, region: null });
+
     const drivers = await prisma.driver.findMany({
       where: { roomId: u.roomId },
       include: {
@@ -216,6 +228,7 @@ export function driversRouter(io) {
 
       return {
         ...driver,
+        regionOwnership: roomOwnership,
         boundVehicle,
         currentShift,
         nextShift,

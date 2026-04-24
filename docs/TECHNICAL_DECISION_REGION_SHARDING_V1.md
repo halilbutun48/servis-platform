@@ -12,6 +12,10 @@ Vardis için hedef ölçekleme modeli:
 - auth, üst yönetim ve merkezi politika yüzeylerinin **merkezi control plane** içinde kalması
 - telemetry / log / archive verisinin **ayrı archive omurgasında** tutulması
 
+Tekil region cell icin planlama bandi:
+- `3000` arac civari: stabil operasyon tavani
+- `3500` arac: stress / üst sinir referansi
+
 ## Neden bu karar alındı
 Mevcut benchmark ve soak sonuçları şunu gösterdi:
 
@@ -170,12 +174,26 @@ Bu karar, mevcut repo çizgisiyle uyumludur:
 - KVKK / retention sınıflarıyla çelişmez
 - mevcut role/scope yapısı bozulmadan arkada bölgesel routing katmanı eklenebilir
 
+## Repo'da bugun uygulananlar
+
+- region ownership helper, routing key ve same-region guard backend'e yerlestirildi
+- super-admin region paneli kapasite snapshot'i gosteriyor
+- super-admin user paneli il / zone bilgisiyle region hizasi veriyor
+- room / company / parent / notification / shift / driver / vehicle read surfaces region etiketi tasiyor
+- route preview, reassign ve operation modallari region etiketini tasiyor
+- GPS ingest ve auto-reached worker region context tasiyor
+- company kendi ilindeki room'larla sinirli
+- company shift create / batch akisi same-region guard ile kapali
+- per-region capacity dashboard super-admin panelde gorunur
+
 ## Uygulama sırası
 
 ### Faz 1 — Karar ve isimlendirme
 - `serviceRegionId` kavramını resmi hale getir
 - region / zone isimlendirme standardını sabitle
 - hazirlik checklisti: [REGION_SHARDING_READINESS_CHECKLIST_V1](REGION_SHARDING_READINESS_CHECKLIST_V1.md)
+- backend task paketi: [BACKEND_REGION_OWNERSHIP_AND_ROUTING_TASKS_V1](BACKEND_REGION_OWNERSHIP_AND_ROUTING_TASKS_V1.md)
+- next phase roadmap: [REGION_SHARDING_NEXT_PHASE_ROADMAP_V1](REGION_SHARDING_NEXT_PHASE_ROADMAP_V1.md)
 
 ### Faz 2 — Routing hazırlığı
 - araç, shift, kurum için region bağlama kuralları netleşsin
@@ -197,7 +215,17 @@ region-aware hale gelsin
 ## Hazırlık checklisti ile bağ
 
 Karar notu teorik çerçeveyi verir.  
-Operasyonel olarak ilerlemek için [REGION_SHARDING_READINESS_CHECKLIST_V1](REGION_SHARDING_READINESS_CHECKLIST_V1.md) kullanılır.
+Operasyonel olarak ilerlemek için [REGION_SHARDING_READINESS_CHECKLIST_V1](REGION_SHARDING_READINESS_CHECKLIST_V1.md) ve [BACKEND_REGION_OWNERSHIP_AND_ROUTING_TASKS_V1](BACKEND_REGION_OWNERSHIP_AND_ROUTING_TASKS_V1.md) kullanılır.
+Repo-side execution paketleri icin [REGION_SHARDING_NEXT_PHASE_ROADMAP_V1](REGION_SHARDING_NEXT_PHASE_ROADMAP_V1.md) kullanilir.
+
+Detay execution docs:
+- [REGION_NEXT_PHASE_EXECUTION_PACK_V1](REGION_NEXT_PHASE_EXECUTION_PACK_V1.md)
+- [REGION_PHYSICAL_CELL_DEPLOYMENT_V1](REGION_PHYSICAL_CELL_DEPLOYMENT_V1.md)
+- [REGION_ZONE_ALT_SHARD_V1](REGION_ZONE_ALT_SHARD_V1.md)
+- [REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1](REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md)
+- [REGION_FAILOVER_REBALANCING_DRILL_V1](REGION_FAILOVER_REBALANCING_DRILL_V1.md)
+
+Tek giris kapisi olarak [REGION_SHARDING_SINGLE_ENTRY_GATE_V1](REGION_SHARDING_SINGLE_ENTRY_GATE_V1.md) kullan.
 
 ## Riskler
 Bu karar uygulanırken özellikle şunlara dikkat edilir:

@@ -12,6 +12,25 @@ function Pill({ children, status }) {
   );
 }
 
+function getRegionContext(item) {
+  if (!item) return null;
+  const ro = item.regionOwnership || {};
+  const regionName = ro.regionName || item.region?.name || null;
+  const district = ro.district || item.district || null;
+  const regionId = ro.regionId ?? item.regionId ?? null;
+  if (regionId == null && !regionName && !district) return null;
+  return { regionId, regionName, district, regionKey: ro.regionKey || null };
+}
+
+function formatRegionContext(item) {
+  const ctx = getRegionContext(item);
+  if (!ctx) return "-";
+  const parts = [];
+  if (ctx.regionName) parts.push(ctx.regionName);
+  if (ctx.district) parts.push(ctx.district);
+  return parts.length ? parts.join(" / ") : "-";
+}
+
 export default function UsersPanel() {
   const { token } = useSession();
 
@@ -74,18 +93,45 @@ export default function UsersPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const companyById = useMemo(() => new Map((companies || []).map((x) => [Number(x.id), x])), [companies]);
+  const roomById = useMemo(() => new Map((rooms || []).map((x) => [Number(x.id), x])), [rooms]);
+
   const scopeLabel = useMemo(() => {
     const cMap = new Map((companies || []).map((x) => [Number(x.id), x.name]));
     const rMap = new Map((rooms || []).map((x) => [Number(x.id), x.name]));
     return (u) => {
-      if (u.role === "COMPANY") return `Company #${u.companyId} ${cMap.get(Number(u.companyId)) || ""}`.trim();
-      if (u.role === "ROOM") return `Room #${u.roomId} ${rMap.get(Number(u.roomId)) || ""}`.trim();
-      if (u.role === "DRIVER") return u.roomId ? `Room #${u.roomId}` : "-";
-      if (u.role === "PERSONEL") return u.companyId ? `Company #${u.companyId}` : "-";
+      if (u.role === "COMPANY") {
+        const company = companyById.get(Number(u.companyId));
+        const base = `Company #${u.companyId} ${cMap.get(Number(u.companyId)) || ""}`.trim();
+        return company ? `${base} • ${formatRegionContext(company)}` : base;
+      }
+      if (u.role === "ROOM") {
+        const room = roomById.get(Number(u.roomId));
+        const base = `Room #${u.roomId} ${rMap.get(Number(u.roomId)) || ""}`.trim();
+        return room ? `${base} • ${formatRegionContext(room)}` : base;
+      }
+      if (u.role === "DRIVER") {
+        const room = roomById.get(Number(u.roomId));
+        const base = u.roomId ? `Room #${u.roomId}` : "-";
+        return room ? `${base} • ${formatRegionContext(room)}` : base;
+      }
+      if (u.role === "PERSONEL") {
+        const company = companyById.get(Number(u.companyId));
+        const base = u.companyId ? `Company #${u.companyId}` : "-";
+        return company ? `${base} • ${formatRegionContext(company)}` : base;
+      }
       if (u.role === "PARENT") return "Parent";
       return "-";
     };
-  }, [companies, rooms]);
+  }, [companyById, roomById]);
+
+  function userRegionLabel(u) {
+    if (u.role === "COMPANY") return formatRegionContext(companyById.get(Number(u.companyId)));
+    if (u.role === "ROOM") return formatRegionContext(roomById.get(Number(u.roomId)));
+    if (u.role === "DRIVER") return formatRegionContext(roomById.get(Number(u.roomId)));
+    if (u.role === "PERSONEL") return formatRegionContext(companyById.get(Number(u.companyId)));
+    return "-";
+  }
 
   const view = useMemo(() => {
     const list = items || [];
@@ -273,7 +319,7 @@ export default function UsersPanel() {
                 <option value="">Seç</option>
                 {(companies || []).map((c) => (
                   <option key={c.id} value={c.id}>
-                    #{c.id} {c.name}
+                    #{c.id} {c.name} • {formatRegionContext(c)}
                   </option>
                 ))}
               </select>
@@ -285,7 +331,7 @@ export default function UsersPanel() {
                 <option value="">Seç</option>
                 {(rooms || []).map((r) => (
                   <option key={r.id} value={r.id}>
-                    #{r.id} {r.name}
+                    #{r.id} {r.name} • {formatRegionContext(r)}
                   </option>
                 ))}
               </select>
@@ -382,6 +428,9 @@ export default function UsersPanel() {
                 <button className="btn sm" style={{ marginTop: 6 }} onClick={() => copyText(u.username || "")} disabled={busy}>
                   Kullanıcı adını kopyala
                 </button>
+                <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                  Bölge: {userRegionLabel(u)}
+                </div>
               </div>
 
               <div>
@@ -479,7 +528,7 @@ export default function UsersPanel() {
                     <option value="">Seç</option>
                     {(companies || []).map((c) => (
                       <option key={c.id} value={c.id}>
-                        #{c.id} {c.name}
+                        #{c.id} {c.name} • {formatRegionContext(c)}
                       </option>
                     ))}
                   </select>
@@ -493,7 +542,7 @@ export default function UsersPanel() {
                     <option value="">Seç</option>
                     {(rooms || []).map((r) => (
                       <option key={r.id} value={r.id}>
-                        #{r.id} {r.name}
+                        #{r.id} {r.name} • {formatRegionContext(r)}
                       </option>
                     ))}
                   </select>
@@ -521,4 +570,3 @@ export default function UsersPanel() {
     </div>
   );
 }
-

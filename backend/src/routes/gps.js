@@ -13,6 +13,13 @@ import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW
 import { gpsThrottle1200ms } from "../middleware/gpsThrottle1200ms.js";
 import { isoOffsetTR } from "../time/tr.js";
 import { enqueueAutoReachedTask, processAutoReachedTask } from "../jobs/autoReachedQueue.js";
+import {
+  buildRegionRoutingKey,
+  resolveCompanyOwnership,
+  resolveRoomOwnership,
+  resolveShiftOwnership,
+  resolveVehicleOwnership,
+} from "../region/index.js";
 
 export function gpsRouter(io) {
   const r = express.Router();
@@ -131,6 +138,72 @@ export function gpsRouter(io) {
           .map((shift) => shift.companyId)
       );
 
+      const [vehicleRoom, companyRecords] = await Promise.all([
+        vehicle.roomId
+          ? prisma.room.findUnique({
+              where: { id: vehicle.roomId },
+              select: {
+                id: true,
+                regionId: true,
+                district: true,
+                region: { select: { id: true, name: true } },
+              },
+            })
+          : Promise.resolve(null),
+        companyIds.size
+          ? prisma.company.findMany({
+              where: { id: { in: Array.from(companyIds) } },
+              select: {
+                id: true,
+                regionId: true,
+                district: true,
+                region: { select: { id: true, name: true } },
+              },
+            })
+          : Promise.resolve([]),
+      ]);
+
+      const companyOwnershipById = new Map(companyRecords.map((c) => [c.id, resolveCompanyOwnership(c)]));
+      const primaryCompany =
+        allowedShift?.companyId != null
+          ? companyOwnershipById.get(allowedShift.companyId) ?? null
+          : companyRecords[0]
+            ? resolveCompanyOwnership(companyRecords[0])
+            : null;
+      const vehicleOwnership = resolveVehicleOwnership(
+        {
+          id: vehicleId,
+          roomId: vehicle.roomId,
+          room: vehicleRoom,
+        },
+        { room: vehicleRoom, company: primaryCompany }
+      );
+      const roomOwnership = vehicleRoom ? resolveRoomOwnership(vehicleRoom) : null;
+      const shiftOwnership = resolveShiftOwnership(
+        {
+          id: allowedShift.id,
+          companyId: allowedShift.companyId ?? null,
+          roomId: vehicle.roomId,
+          vehicleId,
+          startAt: allowedShift.startAt ?? null,
+          endAt: allowedShift.endAt ?? null,
+        },
+        { room: vehicleRoom, company: primaryCompany, vehicle: { room: vehicleRoom } }
+      );
+      const regionRoutingKey =
+        buildRegionRoutingKey(shiftOwnership) ||
+        buildRegionRoutingKey(roomOwnership ?? {}) ||
+        buildRegionRoutingKey(vehicleOwnership ?? {}) ||
+        buildRegionRoutingKey(primaryCompany ?? {}) ||
+        null;
+      const regionContext = {
+        routingKey: regionRoutingKey,
+        vehicle: vehicleOwnership,
+        room: roomOwnership,
+        company: primaryCompany,
+        shift: shiftOwnership,
+      };
+
       // =========================================================
       // ✅ helper: DRIVER notif hedeflerini üret
       // - her zaman sender user hedefi var (driverId null olabilir)
@@ -222,6 +295,8 @@ export function gpsRouter(io) {
         at: last.at,
         status: uiStatus,
         ageSec,
+        regionRoutingKey,
+        regionContext,
       };
 
 
@@ -230,7 +305,7 @@ export function gpsRouter(io) {
       for (const cid of companyIds) io.to(`company:${cid}`).emit("gps:update", gpsPayload);
 
       // ✅ WS: vehicle:status
-      const vehicleStatusPayload = { vehicleId, status: uiStatus, ageSec };
+      const vehicleStatusPayload = { vehicleId, status: uiStatus, ageSec, regionRoutingKey, regionContext };
       io.to(`vehicle:${vehicleId}`).emit("vehicle:status", vehicleStatusPayload);
       io.to(`room:${vehicle.roomId}`).emit("vehicle:status", vehicleStatusPayload);
       for (const cid of companyIds) io.to(`company:${cid}`).emit("vehicle:status", vehicleStatusPayload);
@@ -357,6 +432,8 @@ export function gpsRouter(io) {
             stopsSnapshot: sh.stops ?? [],
             vehicleSnapshot: { id: vehicle.id, plate: vehicle.plate },
             gpsLastSnapshot: { lat: last.lat, lng: last.lng, at: last.at },
+            regionRoutingKey,
+            regionContext,
           };
 
           const queued = await enqueueAutoReachedTask(task);

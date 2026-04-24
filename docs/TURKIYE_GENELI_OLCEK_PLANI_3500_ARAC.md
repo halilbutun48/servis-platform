@@ -1,10 +1,10 @@
-# Turkiye Geneli Olcek Plani - 3500 Arac Referans Modeli
+# Turkiye Geneli Olcek Plani - 3000 Stabil Tavan / 3500 Stress Referans Modeli
 
 Bu belge bir milestone degil; ulke geneli yayilimda oda, firma ve panel planlamasi icin referans notudur.
 
 ## Kisa karar
 
-- 3500 arac, mevcut tek-stack benchmark icin ust sinira yakin referans seviyedir.
+- 3000 arac, stabil operasyon tavanidir; 3500 arac ise stress / ust sinir referansidir.
 - Ulke geneline yayilirken araci il bazinda grupla, buyuk illeri ilce/zone ile alt parcaya bol.
 - Oda sayisini arac sayisindan birebir cikarma; oda, canli operasyon birimidir.
 - Firma sayisi da arac sayisina degil, tenant / isletici / regional organizasyon yapisina gore belirlenir.
@@ -34,14 +34,15 @@ Ulke geneli planda bu sayi dogrudan "tek sunucuda 3500" diye okunmamalidir; shar
 ## Load test referansi
 
 Mevcut benchmark okumasina gore:
-- 3000 arac: hala rahat calisan stabil bandin ust siniri gibi gorunuyor
-- 3500 arac: geciyor, ama latency belirgin yukselmeye basliyor
+- 3000 arac: stabil operasyon tavanina yakin
+- 3500 arac: geciyor, ama stress bandinda calisiyor
 - 3600 arac: daha fazla drift goruluyor
 - 3750 arac: timeout duvarina yaklasiyor / kaliyor
 
 Bu nedenle:
-- 3000 arac civari: stabil bant
-- 3500 arac: ust sinira yakin referans / ceiling band
+- 3000 arac civari: stabil tavan
+- 3000-3500 arac: stress band
+- 3500 arac: ust sinir referansi / ceiling band
 
 3500, tek bir hot shard icin "konforlu" degil; planlama tavanina yakin bir referans sayi olarak alinmali.
 
@@ -49,7 +50,8 @@ Bu nedenle:
 
 Tekil infra, panelsiz ve staggered cadenceli current test formunda:
 - **stabil bant:** 2000-3000 arac
-- **sari bant:** 3000-3500 arac
+- **stabil tavan:** 3000 arac
+- **sari / stress bant:** 3000-3500 arac
 - **ust sinir referansi:** 3500 arac
 
 Bu ayrim, 500 bin arac planinda hangi shard'in saglikli calistigini ayirmak icin kullanilmalidir.
@@ -108,7 +110,7 @@ Bu, 3500 araci tek bir yerde tutmak yerine operasyonu daha ince parcaya ayirir.
 
 ## 500k hedefi icin not
 
-500 bin arac icin 3500'i "tek hot tablo tavani" olarak okumak dogru degil; bu bir shard / operasyon adasi icin referans kabul edilmeli.
+500 bin arac icin 3000'i "tek region cell stabil tavani", 3500'i ise "stress referansi" olarak okumak dogru olur; bunlar shard / operasyon adasi icin referans kabul edilmeli.
 
 Ulke geneli planlama:
 - ust katman: 81 il
