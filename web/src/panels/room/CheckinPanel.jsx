@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -28,7 +28,7 @@ export default function RoomCheckinPanel() {
     [items, selectedShiftId]
   );
 
-  async function loadShifts() {
+  const loadShifts = useCallback(async () => {
     if (!featureOn) return;
     const sh = await api("/api/shifts?take=200&status=APPROVED,ACTIVE,DONE&includeOffered=1", { token });
     const list = Array.isArray(sh) ? sh : sh?.items ?? [];
@@ -40,9 +40,9 @@ export default function RoomCheckinPanel() {
       const active = filtered.find((x) => x.status === "ACTIVE") || filtered[0] || null;
       return active ? String(active.id) : "";
     });
-  }
+  }, [featureOn, me?.roomId, token]);
 
-  async function loadEvents(shiftId) {
+  const loadEvents = useCallback(async (shiftId) => {
     if (!featureOn || !shiftId) {
       setEvents([]);
       setCounts({ BOARD: 0, ALIGHT: 0 });
@@ -51,9 +51,9 @@ export default function RoomCheckinPanel() {
     const r = await api(`/api/checkin/shifts/${shiftId}/events`, { token });
     setEvents(r?.items ?? []);
     setCounts(r?.counts ?? { BOARD: 0, ALIGHT: 0 });
-  }
+  }, [featureOn, token]);
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setErr("");
     setLoading(true);
     try {
@@ -63,12 +63,11 @@ export default function RoomCheckinPanel() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [loadShifts]);
 
   useEffect(() => {
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [featureOn, me?.roomId]);
+  }, [loadAll, me?.roomId]);
 
   useEffect(() => {
     if (!selectedShiftId || !featureOn) return;
@@ -76,8 +75,7 @@ export default function RoomCheckinPanel() {
     loadEvents(selectedShiftId)
       .catch((e) => setErr(String(e?.message || e)))
       .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedShiftId, featureOn]);
+  }, [featureOn, loadEvents, selectedShiftId]);
 
   useAutoReload("shifts", async () => {
     await loadShifts();

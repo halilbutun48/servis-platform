@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
@@ -76,7 +76,7 @@ export default function SuperAdminPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  async function loadStats() {
+  const loadStats = useCallback(async () => {
     setBusy(true);
     setErr("");
     try {
@@ -96,7 +96,7 @@ export default function SuperAdminPanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,8 +107,7 @@ export default function SuperAdminPanel() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [loadStats]);
 
   const fmtActiveTotal = (active, total) => {
     if (active == null && total == null) return "-";

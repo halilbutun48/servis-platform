@@ -143,9 +143,9 @@ export default function PlanBuilderPanel({
 
   useEffect(() => {
     if (tplKey) return;
-    if (templateOptions?.[0]?.key) setTplKey(String(templateOptions[0].key));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateOptions?.length]);
+    const firstKey = templateOptions?.[0]?.key;
+    if (firstKey) setTplKey(String(firstKey));
+  }, [templateOptions, tplKey]);
 
   useEffect(() => {
     setMaxWalkM((prev) => {
@@ -157,7 +157,7 @@ export default function PlanBuilderPanel({
     });
   }, [companyDefaultMaxWalkM]);
 
-  async function load() {
+  const load = _useCallback(async () => {
     setErr("");
     setBusy(true);
     try {
@@ -169,12 +169,11 @@ export default function PlanBuilderPanel({
     } finally {
       setBusy(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   const stats = useMemo(() => {
     let total = 0;
@@ -461,6 +460,5 @@ export default function PlanBuilderPanel({
 </div>
   );
 }
-
 
 

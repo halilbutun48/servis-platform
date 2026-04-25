@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getTotpStatus, setupTotp, enableTotp, verifyTotp } from "../../api";
 import { useSession } from "../../state/session";
 
@@ -12,7 +12,7 @@ export default function TotpStepUpCard() {
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
 
-  async function refreshStatus() {
+  const refreshStatus = useCallback(async () => {
     if (!token || !shouldShow) return;
     try {
       const r = await getTotpStatus(token);
@@ -21,12 +21,11 @@ export default function TotpStepUpCard() {
     } catch (e) {
       setErr(String(e?.message || e));
     }
-  }
+  }, [shouldShow, token]);
 
   useEffect(() => {
     refreshStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, role]);
+  }, [refreshStatus]);
 
   if (!token || !shouldShow) return null;
   if (!status?.required) return null;

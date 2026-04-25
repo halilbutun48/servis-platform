@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 
 function labelStudent(p) {
@@ -18,23 +18,23 @@ export default function ParentChildMiniPanel({ token, parentUserId }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  async function loadAllStudents() {
+  const loadAllStudents = useCallback(async () => {
     const res = await api("/api/personels", { token });
     const list = Array.isArray(res) ? res : res?.items || [];
     // M80+ ile: Personel.kind === 'STUDENT'. Eski repolarda kind yok → hepsini göster.
     const filtered = list.filter((p) => (p?.kind ? p.kind === "STUDENT" : true));
     setStudents(filtered);
-  }
+  }, [token]);
 
-  async function loadLinks() {
+  const loadLinks = useCallback(async () => {
     const qs = new URLSearchParams();
     qs.set("parentUserId", String(parentUserId));
     const res = await api(`/api/admin/parent-children?${qs.toString()}`, { token });
     const list = res?.items || res || [];
     setLinks(Array.isArray(list) ? list : []);
-  }
+  }, [parentUserId, token]);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setErr("");
     setBusy(true);
     try {
@@ -44,12 +44,11 @@ export default function ParentChildMiniPanel({ token, parentUserId }) {
     } finally {
       setBusy(false);
     }
-  }
+  }, [loadAllStudents, loadLinks]);
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parentUserId]);
+  }, [refresh]);
 
   const studentsById = useMemo(() => {
     const m = new Map();

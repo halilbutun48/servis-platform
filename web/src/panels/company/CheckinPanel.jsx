@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -40,7 +40,7 @@ export default function CompanyCheckinPanel() {
     [items, selectedShiftId]
   );
 
-  async function loadShifts() {
+  const loadShifts = useCallback(async () => {
     if (!featureOn) return;
     const sh = await api("/api/shifts?take=200&status=APPROVED,ACTIVE,DONE", { token });
     const list = Array.isArray(sh) ? sh : sh?.items ?? [];
@@ -51,9 +51,9 @@ export default function CompanyCheckinPanel() {
       const active = list.find((x) => x.status === "ACTIVE") || list[0] || null;
       return active ? String(active.id) : "";
     });
-  }
+  }, [featureOn, token]);
 
-  async function loadShiftDetail(shiftId) {
+  const loadShiftDetail = useCallback(async (shiftId) => {
     if (!featureOn || !shiftId) {
       setPeople([]);
       setEvents([]);
@@ -85,9 +85,9 @@ export default function CompanyCheckinPanel() {
     );
 
     setCredMap(Object.fromEntries(results));
-  }
+  }, [featureOn, token]);
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setErr("");
     setLoading(true);
     try {
@@ -97,12 +97,11 @@ export default function CompanyCheckinPanel() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [loadShifts]);
 
   useEffect(() => {
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [featureOn, me?.companyId, me?.companyKind]);
+  }, [loadAll, featureOn, me?.companyId, me?.companyKind]);
 
   useEffect(() => {
     if (!selectedShiftId || !featureOn) return;
@@ -111,8 +110,7 @@ export default function CompanyCheckinPanel() {
     loadShiftDetail(selectedShiftId)
       .catch((e) => setErr(String(e?.message || e)))
       .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedShiftId, featureOn]);
+  }, [selectedShiftId, featureOn, loadShiftDetail]);
 
   useAutoReload("shifts", async () => {
     await loadShifts();

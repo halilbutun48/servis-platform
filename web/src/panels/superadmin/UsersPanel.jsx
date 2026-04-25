@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import ParentChildMiniPanel from "./ParentChildMiniPanel";
@@ -58,13 +58,13 @@ export default function UsersPanel() {
   const [edit, setEdit] = useState(null); // {id, role, username, fullName, phone, companyId, roomId}
   const [lastPw, setLastPw] = useState(null); // {login, password}
 
-  async function loadRefs() {
+  const loadRefs = useCallback(async () => {
     const [c, r] = await Promise.all([api("/api/companies?all=0", { token }), api("/api/rooms?take=500", { token })]);
     setCompanies(c.items || []);
     setRooms(r.items || []);
-  }
+  }, [token]);
 
-  async function loadUsers() {
+  const loadUsers = useCallback(async () => {
     setErr("");
     setBusy(true);
     try {
@@ -79,19 +79,20 @@ export default function UsersPanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [q, role, token]);
+
+  const loadAll = useCallback(async () => {
+    try {
+      await loadRefs();
+      await loadUsers();
+    } catch (e) {
+      setErr(e?.message || String(e));
+    }
+  }, [loadRefs, loadUsers]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        await loadRefs();
-        await loadUsers();
-      } catch (e) {
-        setErr(e?.message || String(e));
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadAll();
+  }, [loadAll]);
 
   const companyById = useMemo(() => new Map((companies || []).map((x) => [Number(x.id), x])), [companies]);
   const roomById = useMemo(() => new Map((rooms || []).map((x) => [Number(x.id), x])), [rooms]);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "../../api";
 import { formatDateTimeTR } from "../../utils/time";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
@@ -27,7 +27,7 @@ export default function AuditLogsPanel() {
     } catch { /* no-op: clipboard copy is best-effort */ }
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     setBusy(true);
     setErr("");
     try {
@@ -44,12 +44,11 @@ export default function AuditLogsPanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [action, actorEmail, entity, q]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   return (
     <div style={{ padding: 16 }}>
@@ -157,4 +156,3 @@ export default function AuditLogsPanel() {
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { formatDateTimeTR } from "../../utils/time";
@@ -64,16 +64,16 @@ export default function CompaniesPanel() {
     return rid ? regionNameById.get(rid) || "-" : "-";
   }
 
-  async function loadRegions() {
+  const loadRegions = useCallback(async () => {
     try {
       const r = await api("/api/admin/regions", { token });
       setRegions(r.items || []);
     } catch {
       // ignore (non-critical for list)
     }
-  }
+  }, [token]);
 
-  async function load() {
+  const load = useCallback(async () => {
     setBusy(true);
     setErr("");
     try {
@@ -92,13 +92,12 @@ export default function CompaniesPanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [district, kind, q, regionId, token]);
 
   useEffect(() => {
     loadRegions();
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load, loadRegions]);
 
   async function create() {
     const n = normStr(newName);
@@ -461,5 +460,3 @@ export default function CompaniesPanel() {
     </>
   );
 }
-
-

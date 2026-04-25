@@ -291,7 +291,7 @@ export default function AgreementsPanel() {
     navigate(companyPath(me, "/shifts"));
   }
 
-  async function load(signal) {
+  const load = useCallback(async (signal) => {
     if (!token) return;
     setErr("");
     try {
@@ -363,7 +363,7 @@ export default function AgreementsPanel() {
     } catch (e) {
       setErr(e?.message || "Sözleşmeler yüklenemedi.");
     }
-  }
+  }, [statusFilter, take, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -377,8 +377,7 @@ export default function AgreementsPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, take, statusFilter]);
+  }, [load, token]);
 
   useEffect(() => {
     if (!token || (!advancedOpen && !guidedOpen)) return;

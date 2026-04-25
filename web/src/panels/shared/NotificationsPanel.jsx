@@ -1,5 +1,5 @@
 // web/src/panels/shared/NotificationsPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -57,7 +57,7 @@ export default function NotificationsPanel() {
   const [fType, setFType] = useState("ALL");
   const [fStatus, setFStatus] = useState("ALL");
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!token) return;
     setBusy(true);
     setErr("");
@@ -71,12 +71,11 @@ export default function NotificationsPanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [load]);
 
   useAutoReload("notifications", load);
 

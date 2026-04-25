@@ -410,7 +410,7 @@ export default function WorkflowPanel() {
     }
   }, [token]);
 
-  async function loadCompanyOffers(status = offersModal.status) {
+  const loadCompanyOffers = useCallback(async (status = offersModal.status) => {
     if (!token) return;
     try {
       const r = await getCompanyOffers(token, { status, q: offersModal.q, ttlMs: 25000, take: 30 });
@@ -420,7 +420,7 @@ export default function WorkflowPanel() {
       setOffersModal((p) => ({ ...p, items: [] }));
       setErr(String(e?.message || e));
     }
-  }
+  }, [token, offersModal.q, offersModal.status]);
 
   useEffect(() => {
     if (!token) return;
@@ -457,8 +457,7 @@ export default function WorkflowPanel() {
       loadCompanyOffers(offersModal.status);
     }, 120);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offersModal.open, offersModal.status, offersModal.q]);
+  }, [offersModal.open, offersModal.status, loadCompanyOffers]);
 
   const stats = useMemo(() => ({
     todayAgreements: Number(summary?.todayAgreements || 0),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 
@@ -16,7 +16,7 @@ export default function KvkkConsentGate() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  async function loadCurrent() {
+  const loadCurrent = useCallback(async () => {
     if (!enabled) return;
     try {
       setErr("");
@@ -25,12 +25,11 @@ export default function KvkkConsentGate() {
     } catch (e) {
       setErr(e?.message || String(e));
     }
-  }
+  }, [enabled, token]);
 
   useEffect(() => {
     loadCurrent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, token, role]);
+  }, [loadCurrent]);
 
   const missingDocs = useMemo(() => {
     const items = Array.isArray(summary?.items) ? summary.items : [];

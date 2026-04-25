@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { navigate } from "../../router";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
@@ -274,7 +274,7 @@ export default function AgreementsPanel() {
     };
   }, [token, routeRefreshItems]);
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     if (!token) return;
     setErr("");
     try {
@@ -324,7 +324,7 @@ export default function AgreementsPanel() {
     } catch (e) {
       setErr(e?.message || "Load failed");
     }
-  }
+  }, [token]);
 
   // ✅ WS invalidate → agreements topic gelince reload
   useAutoReload("agreements", loadAll, !!token);
@@ -332,8 +332,7 @@ export default function AgreementsPanel() {
   useEffect(() => {
     if (!token) return;
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [loadAll, token]);
 
   async function approve() {
     setConflict(null);

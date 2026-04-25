@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { formatDateTimeTR, isoFromTRLocalInput } from "../../utils/time";
@@ -100,7 +100,7 @@ export default function LogExportPanel() {
     return qs;
   }
 
-  async function onPreview() {
+  const onPreview = useCallback(async () => {
     if (isBundle) return; // bundle is export-only
     setBusy(true);
     setErr("");
@@ -121,14 +121,14 @@ export default function LogExportPanel() {
       if (status.trim()) qs.set("status", status.trim());
 
       const base = basePathForKind(kind);
-    const r = await api.get(`${base}/preview?${qs.toString()}`, { token });
+      const r = await api.get(`${base}/preview?${qs.toString()}`, { token });
       setItems(r.items || []);
     } catch (e) {
       setErr(e?.message || String(e));
     } finally {
       setBusy(false);
     }
-  }
+  }, [email, fromLocal, ip, isBundle, kind, pathLike, status, token, toLocal, userId]);
 
   async function onExport() {
     setBusy(true);
@@ -152,8 +152,7 @@ export default function LogExportPanel() {
   useEffect(() => {
     // initial preview
     onPreview();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onPreview]);
 
   return (
     <div style={{ padding: 16 }}>

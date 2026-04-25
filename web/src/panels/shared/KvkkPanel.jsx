@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 
@@ -25,7 +25,7 @@ export default function KvkkPanel() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     if (!token) return;
     setBusy(true);
     setErr("");
@@ -46,12 +46,11 @@ export default function KvkkPanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [loadAll]);
 
   const rows = useMemo(() => {
     const arr = Array.isArray(matrix?.rows) ? matrix.rows : [];

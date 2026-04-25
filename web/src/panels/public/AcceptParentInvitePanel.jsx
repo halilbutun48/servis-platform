@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { navigate } from "../../router";
@@ -67,7 +67,7 @@ export default function AcceptParentInvitePanel({ path }) {
   const stateMeta = accessStateMeta(accessStateCode);
   const formLocked = busy || loadingInfo || stateMeta.terminal;
 
-  async function finishLogin(body) {
+  const finishLogin = useCallback(async (body) => {
     setBusy(true);
     setErr("");
     try {
@@ -81,15 +81,14 @@ export default function AcceptParentInvitePanel({ path }) {
     } finally {
       setBusy(false);
     }
-  }
+  }, [setToken]);
 
   useEffect(() => {
     if (!accessToken) return;
     if (loadingInfo || stateMeta.terminal || busy || autoTried) return;
     setAutoTried(true);
     finishLogin({ token: accessToken });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, loadingInfo, stateMeta.terminal, autoTried]);
+  }, [accessToken, autoTried, busy, finishLogin, loadingInfo, stateMeta.terminal]);
 
   function onCodePinAccess(e) {
     e?.preventDefault?.();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -32,7 +32,7 @@ export default function DriverMapPanel() {
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
   const [err, setErr] = useState("");
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     if (!token) return;
     setErr("");
     try {
@@ -49,12 +49,11 @@ export default function DriverMapPanel() {
       setErr(String(e?.message || e));
       setShifts([]);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [loadAll]);
 
   // gps:update => HTTP reload yok; sadece state patch
   useAutoReload("gps", (detail) => {
@@ -113,8 +112,7 @@ export default function DriverMapPanel() {
     if (!token) return;
     const t = setInterval(loadAll, 15000);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, selectedVehicleId]);
+  }, [token, selectedVehicleId, loadAll]);
 
   const activeShift = useMemo(() => {
     return shifts.find((s) => s.status === "ACTIVE" || s.status === "APPROVED") || null;

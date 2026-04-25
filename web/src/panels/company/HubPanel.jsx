@@ -1,5 +1,5 @@
 // web/src/panels/company/HubPanel.jsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
@@ -24,7 +24,7 @@ export default function HubPanel() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
-  async function load(opts = {}) {
+  const load = useCallback(async (opts = {}) => {
     const silent = Boolean(opts?.silent);
     setErr("");
     if (!silent) setMsg("");
@@ -35,12 +35,11 @@ export default function HubPanel() {
     } catch (e) {
       setErr(e?.message || String(e));
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     load({ silent: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   async function myLocation() {
     setErr("");
