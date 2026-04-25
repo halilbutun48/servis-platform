@@ -15,6 +15,7 @@ const SHARED = [
   { id: 9001, path: "/shared/notifications", label: "Bildirimler" },
   { id: 9002, path: "/shared/logs", label: "Log Export" },
   { id: 9003, path: "/shared/kvkk", label: "KVKK" },
+  { id: 9004, path: "/shared/feedback", label: "Geri Bildirim" },
 ];
 
 const REGISTRY = {
@@ -117,7 +118,7 @@ const REGISTRY = {
     { id: 6114, path: "/superadmin/copilot", label: "Copilot" },
     { id: 6115, path: "/superadmin/logexport", label: "Log Dışa Aktarımı" },
     { id: 6116, path: "/superadmin/natural-copilot", label: "Natural Copilot" },
-    { id: 6117, path: "/shared/kvkk", label: "KVKK" },
+    ...SHARED,
   ],
 };
 

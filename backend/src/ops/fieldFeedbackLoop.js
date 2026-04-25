@@ -10,6 +10,12 @@ export const FIELD_FEEDBACK_STATUSES = [
   { id: "KAPANDI", label: "Kapandı", bucket: "CLOSED" },
 ];
 
+export const FIELD_FEEDBACK_CATEGORIES = [
+  { id: "GORUS", label: "Görüş" },
+  { id: "ONERI", label: "Öneri" },
+  { id: "DEGERLENDIRME", label: "Değerlendirme" },
+];
+
 export const FIELD_FEEDBACK_SEVERITIES = [
   { id: "LOW", label: "Düşük" },
   { id: "MEDIUM", label: "Orta" },
@@ -29,6 +35,7 @@ export const FIELD_FEEDBACK_SURFACES = [
 export const FIELD_FEEDBACK_ROLES = ["SUPER_ADMIN", "ROOM", "COMPANY", "DRIVER", "PERSONEL", "PARENT"];
 
 const STATUS_IDS = new Set(FIELD_FEEDBACK_STATUSES.map((item) => item.id));
+const CATEGORY_IDS = new Set(FIELD_FEEDBACK_CATEGORIES.map((item) => item.id));
 const SEVERITY_IDS = new Set(FIELD_FEEDBACK_SEVERITIES.map((item) => item.id));
 const SURFACE_IDS = new Set(FIELD_FEEDBACK_SURFACES.map((item) => item.id));
 const ROLE_IDS = new Set(FIELD_FEEDBACK_ROLES);
@@ -59,10 +66,23 @@ function normalizeSeverity(value, fallback = "MEDIUM") {
   return SEVERITY_IDS.has(normalized) ? normalized : fallback;
 }
 
+function normalizeCategory(value, fallback = "GORUS") {
+  const normalized = cleanUpper(value);
+  if (!normalized) return fallback;
+  return CATEGORY_IDS.has(normalized) ? normalized : fallback;
+}
+
 function normalizeSurface(value, fallback = "OTHER") {
   const normalized = cleanUpper(value);
   if (!normalized) return fallback;
   return SURFACE_IDS.has(normalized) ? normalized : fallback;
+}
+
+function normalizeRating(value, fallback = null) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return fallback;
+  const rating = Math.max(1, Math.min(5, Math.round(raw)));
+  return rating;
 }
 
 function normalizeTags(tags) {
@@ -101,6 +121,14 @@ function summarizeScenarioCoverage(items) {
   }));
 }
 
+function summarizeCategoryCoverage(items) {
+  return FIELD_FEEDBACK_CATEGORIES.map((category) => ({
+    categoryId: category.id,
+    label: category.label,
+    count: items.filter((item) => normalizeCategory(item?.categoryId) === category.id).length,
+  }));
+}
+
 function bucketSummary(items) {
   const summary = {
     total: items.length,
@@ -111,21 +139,33 @@ function bucketSummary(items) {
     criticalOpenCount: 0,
     lastUpdatedAt: items[0]?.updatedAt || null,
     lastUpdatedByEmail: items[0]?.lastUpdatedByEmail || "",
+    ratingCount: 0,
+    ratingTotal: 0,
+    ratingAverage: 0,
     bySeverity: { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 },
     byRole: { SUPER_ADMIN: 0, ROOM: 0, COMPANY: 0, DRIVER: 0, PERSONEL: 0, PARENT: 0 },
+    byCategory: { GORUS: 0, ONERI: 0, DEGERLENDIRME: 0 },
   };
   for (const item of items) {
     const status = normalizeStatus(item?.status);
     const severity = normalizeSeverity(item?.severity);
     const roleId = normalizeRoleId(item?.reportedByRole);
+    const categoryId = normalizeCategory(item?.categoryId);
+    const rating = normalizeRating(item?.rating, null);
     if (summary.bySeverity[severity] != null) summary.bySeverity[severity] += 1;
     if (summary.byRole[roleId] != null) summary.byRole[roleId] += 1;
+    if (summary.byCategory[categoryId] != null) summary.byCategory[categoryId] += 1;
+    if (rating != null) {
+      summary.ratingCount += 1;
+      summary.ratingTotal += rating;
+    }
     if (status === "GORULDU") summary.openCount += 1;
     if (status === "TEKRARLANDI") summary.repeatedCount += 1;
     if (status === "COZULDU") summary.resolvedCount += 1;
     if (status === "KAPANDI") summary.closedCount += 1;
     if ((status === "GORULDU" || status === "TEKRARLANDI") && (severity === "HIGH" || severity === "CRITICAL")) summary.criticalOpenCount += 1;
   }
+  summary.ratingAverage = summary.ratingCount ? Number((summary.ratingTotal / summary.ratingCount).toFixed(2)) : 0;
   return summary;
 }
 
@@ -137,12 +177,14 @@ export async function readFieldFeedbackRecords() {
 export async function listFieldFeedbackRecords(options = {}) {
   const items = sortNewest(await readFieldFeedbackRecords());
   const roleId = cleanUpper(options?.roleId || options?.reportedByRole || "");
+  const categoryId = cleanUpper(options?.categoryId || "");
   const status = cleanUpper(options?.status || "");
   const severity = cleanUpper(options?.severity || "");
   const surface = cleanUpper(options?.surface || "");
   const query = cleanText(options?.query, 120).toLowerCase();
   return items.filter((item) => {
     if (roleId && roleId !== "ALL" && normalizeRoleId(item?.reportedByRole) !== roleId) return false;
+    if (categoryId && categoryId !== "ALL" && normalizeCategory(item?.categoryId) !== categoryId) return false;
     if (status && status !== "ALL" && normalizeStatus(item?.status) !== status) return false;
     if (severity && severity !== "ALL" && normalizeSeverity(item?.severity) !== severity) return false;
     if (surface && surface !== "ALL" && normalizeSurface(item?.surface) !== surface) return false;
@@ -183,7 +225,9 @@ export async function upsertFieldFeedbackRecord(input, actor = null) {
       title,
       detail,
       status: nextStatus,
+      categoryId: normalizeCategory(input?.categoryId, prev?.categoryId || "GORUS"),
       severity: normalizeSeverity(input?.severity, prev?.severity || "MEDIUM"),
+      rating: normalizeRating(input?.rating, prev?.rating ?? null),
       surface: normalizeSurface(input?.surface, prev?.surface || "OTHER"),
       reportedByRole: normalizeRoleId(input?.reportedByRole || actor?.role, prev?.reportedByRole || "SUPER_ADMIN"),
       ownerRole: normalizeRoleId(input?.ownerRole || prev?.ownerRole || input?.reportedByRole || actor?.role || "SUPER_ADMIN"),
@@ -270,10 +314,12 @@ export async function buildFieldFeedbackLoopPacket() {
     blockers,
     warnings,
     statuses: FIELD_FEEDBACK_STATUSES,
+    categories: FIELD_FEEDBACK_CATEGORIES,
     severities: FIELD_FEEDBACK_SEVERITIES,
     surfaces: FIELD_FEEDBACK_SURFACES,
     records: items.slice(0, 24),
     roleCoverage: summarizeRoleCoverage(items),
+    categoryCoverage: summarizeCategoryCoverage(items),
     surfaceCoverage: summarizeSurfaceCoverage(items),
     scenarioCoverage: summarizeScenarioCoverage(items),
     notes: [

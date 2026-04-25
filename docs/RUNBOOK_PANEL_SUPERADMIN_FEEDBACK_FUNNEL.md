@@ -7,6 +7,11 @@ Bu runbook, tum panel ailelerinden Super Admin tarafina tek bir gorus / oneri / 
 - rol ve yuzeye gore geri bildirim yogunlugunu gormek
 - Super Admin icin tek bir inceleme / durum guncelleme noktasi acmak
 
+## Resmi giris
+- `NavDock` icinde `Gelişmiş` altinda `Geri Bildirim`
+- `Copilot` ayri olarak en alt hizadadir
+- ortak `#/shared/feedback` sayfasi
+
 ## Mevcut zemin
 - store:
   - `backend/src/ops/fieldFeedbackLoop.js`
@@ -37,6 +42,8 @@ Ilk kapsam icin bu giriler `#/room/drivers` ve `#/company/access-links` gibi yuz
 ## Onerilen alanlar
 - `title`
 - `detail`
+- `rating`
+- `categoryId`
 - `reportedByRole`
 - `surface`
 - `relatedPath`
@@ -46,9 +53,11 @@ Ilk kapsam icin bu giriler `#/room/drivers` ve `#/company/access-links` gibi yuz
 ## Onerilen category degerleri
 - `GORUS`
 - `ONERI`
-- `SIKAYET`
-- `SAHA_SORUNU`
-- `UX_NOTU`
+- `DEGERLENDIRME`
+
+## Onerilen yildiz puani
+- 1 ile 5 arasinda tek puan
+- Super Admin okurken son puan ve not birlikte gorunur
 
 ## Bugunku minimum urun kapsami
 - `ROOM`
@@ -60,7 +69,9 @@ Ilk kapsam icin bu giriler `#/room/drivers` ve `#/company/access-links` gibi yuz
 
 ## Yonetim modeli
 - ilk fazda mevcut `PilotLaunchGatePanel` icindeki M84 bolumu inbox gibi kullanilir
-- ikinci fazda ayri bir `SuperAdmin Feedback Inbox` paneli acilabilir
+- ikinci fazda ortak `#/shared/feedback` sayfasi ana giris olur
+- `Copilot` hizasi, geri bildirimden ayrik ama sayfanin en altindadir
+- Super Admin panelinin altinda ayni dongunun ozet bolumu gorunur
 
 ## Kural
 - local state notu resmi geri bildirim yerine gecmez
@@ -71,3 +82,4 @@ Ilk kapsam icin bu giriler `#/room/drivers` ve `#/company/access-links` gibi yuz
 - yeni veri modeli acmadan ilerler
 - mevcut M84 altyapisini yeniden kullanir
 - panel-geneli geri bildirim ihtiyacini minimum riskle acar
+- Gelişmiş alt menusu ile tek giris kapisi saglar

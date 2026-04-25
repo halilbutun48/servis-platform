@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
-import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -29,6 +28,20 @@ function freshKey(shiftId, personelId) {
   return `${String(shiftId || "")}:${String(personelId || "")}`;
 }
 
+function shiftPriority(status) {
+  const s = String(status || "").toUpperCase();
+  if (s === "ACTIVE") return 0;
+  if (s === "APPROVED") return 1;
+  return 2;
+}
+
+function pickPreferredShift(items, currentShiftId) {
+  const current = currentShiftId ? items.find((s) => String(s.id) === String(currentShiftId)) || null : null;
+  const active = items.find((s) => String(s.status || "").toUpperCase() === "ACTIVE") || null;
+  if (current && String(current.status || "").toUpperCase() === "ACTIVE") return current;
+  return active || current || items[0] || null;
+}
+
 export default function PassengerLinksPanel() {
   const { token, me } = useSession();
   const [shifts, setShifts] = useState([]);
@@ -43,9 +56,18 @@ export default function PassengerLinksPanel() {
 
   async function loadShifts() {
     const res = await api("/api/shifts?status=APPROVED,ACTIVE&take=100", { token });
-    const items = Array.isArray(res?.items) ? res.items : [];
+    const items = (Array.isArray(res?.items) ? res.items : []).slice().sort((a, b) => {
+      const pa = shiftPriority(a?.status);
+      const pb = shiftPriority(b?.status);
+      if (pa !== pb) return pa - pb;
+      const ta = new Date(a?.startAt || 0).getTime();
+      const tb = new Date(b?.startAt || 0).getTime();
+      if (ta !== tb) return tb - ta;
+      return Number(a?.id || 0) - Number(b?.id || 0);
+    });
     setShifts(items);
-    if (!shiftId && items[0]?.id) setShiftId(String(items[0].id));
+    const preferred = pickPreferredShift(items, shiftId);
+    if (preferred?.id && String(preferred.id) !== String(shiftId || "")) setShiftId(String(preferred.id));
     return items;
   }
 
@@ -152,11 +174,6 @@ export default function PassengerLinksPanel() {
         <div className="title">{me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}</div>
         <div className="muted">Login vermeden, tek kişiye özel süreli canlı takip linki üret. Link sadece kendi durak + ETA + navigasyon bilgisini gösterir. Süre dolana kadar tekrar açılabilir; vardiya bitmişse ekran ENDED/final durum olarak görünür.</div>
       </div>
-
-      <PanelFeedbackEntryCard
-        roleId={me?.companyKind || "COMPANY"}
-        panelLabel={me?.companyKind === "SCHOOL" ? "Öğrenci Canlı Linkleri" : "Personel Canlı Linkleri"}
-      />
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>

@@ -16,6 +16,7 @@ Bu belge, region sharding calismasinda tek giris kapisi olarak kullanilir.
 10. [REGION_ZONE_ALT_SHARD_V1](REGION_ZONE_ALT_SHARD_V1.md)
 11. [REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1](REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md)
 12. [REGION_FAILOVER_REBALANCING_DRILL_V1](REGION_FAILOVER_REBALANCING_DRILL_V1.md)
+13. [REGION_FIELD_ROLLOUT_RUNBOOK_V1](REGION_FIELD_ROLLOUT_RUNBOOK_V1.md)
 
 ## Kisa hukum
 
@@ -38,6 +39,7 @@ Repo-side fiziksel region cell blueprint, archive ve failover pack de tamamlandi
 - 3000 stabil tavan / 3500 stress referansi
 - physical region cell deployment blueprint
 - failover / rebalancing drill pack ve dry-run kaydi
+- saha / altyapi rollout runbook'u
 
 ## Eksik olanlar
 

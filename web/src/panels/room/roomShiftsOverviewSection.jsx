@@ -1,5 +1,4 @@
 import RoutePreviewModal from "../../components/RoutePreviewModal";
-import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import ShiftReassignModal from "../../components/ShiftReassignModal";
 import ShiftOperationEventsModal from "../../components/ShiftOperationEventsModal";
 import { RoomDispatchPoolSummary } from "./roomShiftsPanelSections";
@@ -13,8 +12,6 @@ export function RoomShiftsOverviewSection({ err }) {
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
-
-      <PanelFeedbackEntryCard roleId="ROOM" panelLabel="Room Shifts" relatedPath="/room/shifts" />
     </>
   );
 }

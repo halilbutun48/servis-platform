@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { humanizeApiError, isNetworkLikeError } from '../lib/api';
+import { getDriverBackgroundRuntimeStatus } from '../lib/backgroundGps';
 import { buildReleaseInfo } from '../lib/release';
 import { formatGpsCoords, permissionTextFromStatus, resolveLiveLocationState } from '../lib/gps';
 
@@ -185,6 +186,22 @@ export function buildGpsRuntimeSnapshot({
     lastBackgroundSyncAt: new Date().toISOString(),
     canOpenSettings,
   };
+}
+
+export async function readGpsRuntimeSnapshot(reason = '', options = {}, appState = 'active') {
+  const runtime = await getDriverBackgroundRuntimeStatus().catch(() => null);
+  return buildGpsRuntimeSnapshot({ runtime, reason, options, appState });
+}
+
+export function applyGpsRuntimeSnapshot(setState, snapshot = {}) {
+  if (typeof setState !== 'function') return;
+  setState((prev) => ({
+    ...prev,
+    gps: {
+      ...prev.gps,
+      ...snapshot,
+    },
+  }));
 }
 
 export function buildSignedInSyncArtifacts({

@@ -18,7 +18,8 @@ Bu milestone'un amaci:
 2. role ve yuzeye gore siniflanan geri bildirim kaydi
 3. durum akisi: `GORULDU -> TEKRARLANDI -> COZULDU -> KAPANDI`
 4. Super Admin tarafinda ozet paket ve kayit yonetimi
-5. check + pack + runbook + milestone izi
+5. Gelişmiş alt menusu ile ortak `Geri Bildirim` girisi
+6. check + pack + runbook + milestone izi
 
 ## Repo cikti seti
 - `backend/scripts/m84_field_feedback_loop_check.js`
@@ -34,13 +35,16 @@ Bu milestone'un amaci:
 - `Super Admin > Sahaya Cikis Kontrolu` icinde `Saha gozlem / geri bildirim dongusu`
 - yeni saha geri bildirimi ekleme formu
 - kayitlar icin durum guncelleme aksiyonlari
-- `ROOM`, `COMPANY`, `DRIVER`, `PERSONEL` ve `PARENT` panellerinde mini geri bildirim girisi
-- `#/room/drivers` ve `#/company/access-links` gibi yüzeylerde de aynı mini geri bildirim girisi
+- `NavDock` icinde `Gelişmiş` altinda `Geri Bildirim` alt menusu; `Copilot` en altta ayridir
+- `ROOM`, `COMPANY`, `DRIVER`, `PERSONEL` ve `PARENT` panellerinde ortak geri bildirim girisi
+- `#/room/drivers` ve `#/company/access-links` gibi yuzeylerdeki eski mini butonlar kaldirilir
+- degerlendirme alaninda 1-5 yildiz kullanilir; notlar Super Admin tarafinda okunur
 
 ## Kural
 - M84 geri bildirim kaydi local not degil, backend runtime store kaydidir.
-- Kayitlar en az rol, yuzey, baslik ve detay ile acilir.
-- Panel yuzeylerindeki `Gorus / Oneri / Sikayet` girisleri ayni M84 omurgasina baglanir; ikinci bir paralel kayit modeli acilmaz.
+- Kayitlar en az rol, yuzey, baslik, detay, kategori ve yildiz puani ile acilir.
+- Panel yuzeylerindeki eski butonlar kaldirilir; tek resmi giris Gelişmiş alt menusu ve ortak geri bildirim sayfasidir.
+- Ayri bir paralel kayit modeli acilmaz.
 
 ## Kanonik komut
 - `tools\pack_m84_field_feedback_loop.ps1 -RepoRoot D:\servis-platform`

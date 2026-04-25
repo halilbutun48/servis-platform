@@ -29,10 +29,15 @@
 - **REGION_SHARDING_SINGLE_ENTRY_GATE_V1.md** — region sharding tek giriş kapısı
 - **REGION_SHARDING_NEXT_PHASE_ROADMAP_V1.md** — region next phase open items
 - **REGION_NEXT_PHASE_EXECUTION_PACK_V1.md** — region next phase execution pack
+- **REGION_FIELD_ROLLOUT_RUNBOOK_V1.md** — saha / altyapi rollout runbook
 - **REGION_PHYSICAL_CELL_DEPLOYMENT_V1.md** — fiziksel region cell deployment brief
 - **REGION_ZONE_ALT_SHARD_V1.md** — büyük şehir zone / ilçe alt-shard policy
 - **REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md** — archive export / manifest / restore
 - **REGION_FAILOVER_REBALANCING_DRILL_V1.md** — failover / rebalancing drill runbook
+- **MOBILE_SCOPE_BOUNDARY_V1.md** — mobil driver-first kapsam sınırı
+- **RUNBOOK_M47_2_CAPACITY_LOAD_BASELINE.md** — kapasite/load baz cizgisi ve tekil infra envelope
+- **RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md** — auto-reached queue durability sınır notu
+- **RUNBOOK_CLEAN_CLONE_VERIFICATION_V1.md** — temiz klon bootstrap + verify akışı
 
 ## Overlay / tarihsel notlar
 - `docs/overlays/` runtime kaynağı değildir; patch/overlay geçmişidir.

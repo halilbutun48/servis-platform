@@ -25,3 +25,17 @@ export function hasRegionOwnership(input) {
     (toText(source.regionName) || toText(source?.region?.name) || toText(source.district) || source.regionId != null)
   );
 }
+
+export function resolveShiftRegionLabel(shift, roomsById) {
+  if (!shift) return "";
+  const sourceRoomId = Number(shift?.roomId || shift?.room?.id || 0);
+  const room = sourceRoomId > 0 && roomsById?.get ? roomsById.get(sourceRoomId) : null;
+  const source =
+    room?.regionOwnership
+    || shift?.room?.regionOwnership
+    || shift?.company?.regionOwnership
+    || shift?.vehicle?.regionOwnership
+    || shift?.driver?.regionOwnership
+    || null;
+  return hasRegionOwnership(source) ? formatRegionOwnership(source) : "";
+}

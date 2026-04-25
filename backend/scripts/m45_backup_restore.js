@@ -16,6 +16,12 @@ async function main() {
   const backupFile = readArg("backup-file");
   const manifestFile = readArg("manifest-file");
   const force = hasFlag("force");
+
+  if (!backupFile) {
+    console.log("SKIP Restore skipped: --backup-file not provided.");
+    return;
+  }
+
   const result = restoreBackupArchive({
     backupFile,
     manifestFile,

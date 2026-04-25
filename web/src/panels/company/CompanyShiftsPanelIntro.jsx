@@ -1,5 +1,3 @@
-import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
-
 export default function CompanyShiftsPanelIntro(props) {
   const {
     isCommercialMode,
@@ -21,8 +19,6 @@ export default function CompanyShiftsPanelIntro(props) {
       </div>
 
       {err ? <div className="card err">{err}</div> : null}
-
-      <PanelFeedbackEntryCard roleId="COMPANY" panelLabel="Company Shifts" relatedPath="/company/shifts" />
 
       {applyToast?.ids?.length ? (
         <div className="card" style={{ marginTop: 10 }}>

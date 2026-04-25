@@ -145,6 +145,12 @@ Bu sayilar fiziksel rollout icin referans kapasitesidir; tek basina ulke geneli 
 Bu roadmap'teki fiziksel rollout icin repo-side kalan acik artik yoktur.  
 Geriye kalan is, deploy ve tatbikatin saha ortaminda uygulanmasidir.
 
+## 7) Field rollout handoff
+
+Repo-side execution paketleri icin hazirlanan saha runbook'u:
+
+- [REGION_FIELD_ROLLOUT_RUNBOOK_V1](REGION_FIELD_ROLLOUT_RUNBOOK_V1.md)
+
 ## Bagli dokumanlar
 
 - [TURKIYE_GENELI_OLCEK_PLANI_3500_ARAC](TURKIYE_GENELI_OLCEK_PLANI_3500_ARAC.md)

@@ -6,6 +6,12 @@ Bu primer yaşayan hattın resmi özetidir.
 - Repo: `servis-platform`
 - Branch: `m90d1_web_lint_inventory`
 - Güncel doğrulanmış baz: `M0->M89 green`
+- Kapasite/load baz cizgisi tekil infra envelope üzerinde alındı: `1x api + 1x db + 1x redis + 1x osrm + 1x solver`.
+- 500 araç cliff'i queue/worker split ile kapatıldı; 1000 araç 120s staggered kısa ve soak yeşil.
+- 2 yıllık retention / archive hizada; `GpsPoint`, `ApiRequest`, `AuditLog`, `Notification` aynı sınıf değildir.
+- Gelişmiş altında `Geri Bildirim` alt menüsü açıldı; Copilot en alta taşındı; panel içi dağınık geri bildirim butonları kaldırıldı.
+- Region/sharding yönü resmi teknik karar + field rollout runbook olarak kapandı.
+- Mobil uygulama driver-first kalır; tüm web panellerini mobile taşımak bu aşamada hedef değildir.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
 - Repo check chain sonucu: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
 - Tarihsel temiz anchor: `M0->M79`
@@ -67,6 +73,11 @@ Compatibility aliases for legacy checks:
 - “driver GPS” yerine “sürücünün telefon GPS'i” kullanılır.
 - “agreement” yerine “sözleşme” kullanılır.
 - Sistem eskiye döndürülmez; script/check/doc yeni canonical gerçeğe göre güncellenir.
+
+## Infra / queue guardrail
+- `autoReachedQueue` minimal safe queue olarak kabul edilir; tam enterprise queue değildir.
+- Redis down / worker crash / shutdown handoff sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde resmi olarak tanımlıdır.
+- Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`.
 
 ## M90 odak noktası
 - kanonik markdown hizası

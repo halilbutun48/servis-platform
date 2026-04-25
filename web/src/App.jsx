@@ -57,6 +57,7 @@ const NotificationsPanel = lazy(() => import("./panels/shared/NotificationsPanel
 const LogsPanel = lazy(() => import("./panels/shared/LogsPanel"));
 const ReportsPanel = lazy(() => import("./panels/shared/ReportsPanel"));
 const CopilotPanel = lazy(() => import("./panels/shared/CopilotPanel"));
+const FeedbackLoopPanel = lazy(() => import("./panels/shared/FeedbackLoopPanel"));
 const KvkkPanel = lazy(() => import("./panels/shared/KvkkPanel"));
 const ForcePasswordChangePanel = lazy(() => import("./panels/shared/ForcePasswordChangePanel"));
 
@@ -194,6 +195,7 @@ export default function App() {
     // Shared
     if (path === "/shared/notifications") return { layout: true, node: <NotificationsPanel /> };
     if (path === "/shared/logs") return { layout: true, node: <LogsPanel /> };
+    if (path === "/shared/feedback") return { layout: true, node: <FeedbackLoopPanel /> };
     if (path === "/shared/kvkk") return { layout: true, node: <KvkkPanel /> };
     if (path === "/room/reports") return { layout: true, node: <ReportsPanel /> };
     if (path === "/room/operation-health") return { layout: true, node: <OperationHealthPanel /> };
@@ -311,5 +313,4 @@ export default function App() {
     </AppShell>
   );
 }
-
 

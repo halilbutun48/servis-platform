@@ -21,6 +21,13 @@ function computeEtaTo(last, targetLat, targetLng) {
   return { km: Number(km.toFixed(2)), etaMin: Number(etaMinutes(km, speedKmh).toFixed(0)) };
 }
 
+const PASSENGER_LIVE_SHIFT_INCLUDE = {
+  vehicle: { include: { gpsLast: true, gpsState: true } },
+  room: { select: { id: true, name: true } },
+  company: { select: { id: true, name: true, kind: true } },
+  stops: { orderBy: { order: "asc" } },
+};
+
 function computeStopProgress(stops, myStopId) {
   const arr = Array.isArray(stops) ? stops.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
   const pending = arr.filter((s) => s?.state === "PENDING");
@@ -75,6 +82,25 @@ async function ensureShiftScope(shiftId, user) {
     throw Object.assign(new Error("Forbidden"), { status: 403 });
   }
   return shift;
+}
+
+async function resolvePreferredPersonelShift({ companyId, personelId, now }) {
+  if (!companyId || !personelId) return null;
+  return prisma.shift.findFirst({
+    where: {
+      companyId,
+      status: { in: ["APPROVED", "ACTIVE"] },
+      vehicleId: { not: null },
+      startAt: { lte: now },
+      endAt: { gte: now },
+      OR: [
+        { people: { some: { personelId } } },
+        { assignments: { some: { personelId } } },
+      ],
+    },
+    orderBy: [{ startAt: "desc" }, { id: "desc" }],
+    include: PASSENGER_LIVE_SHIFT_INCLUDE,
+  });
 }
 
 const createSchema = z.object({
@@ -226,14 +252,7 @@ export function publicPassengerLiveRouter() {
       const row = await prisma.passengerLiveLink.findUnique({
         where: { tokenHash },
         include: {
-          shift: {
-            include: {
-              vehicle: { include: { gpsLast: true, gpsState: true } },
-              room: { select: { id: true, name: true } },
-              company: { select: { id: true, name: true, kind: true } },
-              stops: { orderBy: { order: 'asc' } },
-            },
-          },
+          shift: { include: PASSENGER_LIVE_SHIFT_INCLUDE },
           personel: { select: { id: true, fullName: true, phone: true, homeLat: true, homeLng: true, homeAddress: true } },
         },
       });
@@ -242,8 +261,14 @@ export function publicPassengerLiveRouter() {
       if (row.revokedAt) return res.status(410).json({ error: 'LINK_REVOKED' });
       if (row.expiresAt && new Date(row.expiresAt).getTime() <= Date.now()) return res.status(410).json({ error: 'LINK_EXPIRED' });
 
-      const shift = row.shift;
       const personel = row.personel;
+      const preferredShift = await resolvePreferredPersonelShift({
+        companyId: row.shift.companyId,
+        personelId: personel.id,
+        now: new Date(),
+      });
+      const shift = preferredShift || row.shift;
+
       const assign = await prisma.stopAssignment.findFirst({
         where: { shiftId: shift.id, personelId: personel.id },
         include: { stop: true },

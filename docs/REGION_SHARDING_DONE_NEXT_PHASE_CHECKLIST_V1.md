@@ -30,17 +30,19 @@ Tek giris kapisi:
 - archive export / manifest / restore scriptleri ve admin endpoint'leri repo'da hazir
 - physical region cell deployment blueprint ve admin gorunurlugu repo'da hazir
 - failover / rebalancing drill pack, dry-run kaydi ve admin gorunurlugu repo'da hazir
+- saha / altyapi rollout runbook'u yazildi ve tek giris kapisina baglandi
 
 ## Next phase
 
 Repo-side region open item kalmadi.  
-Kalan isler saha / altyapi operasyonu olarak ayrik takip edilir.
+Kalan isler saha / altyapi operasyonu olarak ayrik takip edilir; field rollout runbook bu fazin resmi calisma belgesidir.
 
 Detay execution docs:
 - [REGION_PHYSICAL_CELL_DEPLOYMENT_V1](REGION_PHYSICAL_CELL_DEPLOYMENT_V1.md)
 - [REGION_ZONE_ALT_SHARD_V1](REGION_ZONE_ALT_SHARD_V1.md)
 - [REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1](REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md)
 - [REGION_FAILOVER_REBALANCING_DRILL_V1](REGION_FAILOVER_REBALANCING_DRILL_V1.md)
+- [REGION_FIELD_ROLLOUT_RUNBOOK_V1](REGION_FIELD_ROLLOUT_RUNBOOK_V1.md)
 
 ## Kisa hukum
 

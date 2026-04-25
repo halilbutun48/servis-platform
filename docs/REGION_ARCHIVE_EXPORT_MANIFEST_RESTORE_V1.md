@@ -16,6 +16,7 @@ Archive omurgasi repo'da zaten mevcut:
 - `backend/src/routes/admin.js` backup create / restore endpoint'lerini verir
 - `backend/src/ops/backupArchiveOps.js` create / restore wrapper'ini toplar
 - `backend/scripts/m45_backup_create.js` ve `backend/scripts/m45_backup_restore.js` repo komutlari olarak calisir
+- `m45_backup_restore.js` verify/automation akışında backup parametresi yoksa güvenli `SKIP` davranışı verir; gerçek restore yine explicit `--backup-file` ister
 - `tools/backup_create_m45.ps1` full-db snapshot + manifest uretir
 - `tools/backup_restore_m45.ps1` manifest hash dogrulamasiyla restore yapar
 - `docs/RUNBOOK_M45_RETENTION_BACKUP.md` calisma akisini anlatir
@@ -85,3 +86,4 @@ Kanonik manifest icinde en az su bilgiler bulunmali:
 - [REGION_SHARDING_NEXT_PHASE_ROADMAP_V1](REGION_SHARDING_NEXT_PHASE_ROADMAP_V1.md)
 - [KVKK_RETENTION_ENFORCEMENT_V1](KVKK_RETENTION_ENFORCEMENT_V1.md)
 - [KVKK_RETENTION_ANONIMLESTIRME_V1](KVKK_RETENTION_ANONIMLESTIRME_V1.md)
+- [REGION_FIELD_ROLLOUT_RUNBOOK_V1](REGION_FIELD_ROLLOUT_RUNBOOK_V1.md)

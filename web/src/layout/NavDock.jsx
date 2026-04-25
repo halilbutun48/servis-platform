@@ -72,6 +72,11 @@ export default function NavDock({ role, path, me }) {
 
     const base = role === "COMPANY" ? companyBase(me) : "";
     const copilotEntry = getCopilotMenuEntry({ role, companyKind: me?.companyKind });
+    const feedbackEntry = { label: "Geri Bildirim", path: "/shared/feedback" };
+    const copilotSection = {
+      title: "Copilot",
+      items: [{ label: copilotEntry.label, path: copilotEntry.path }],
+    };
 
     if (role === "ROOM") {
       sections.push({
@@ -99,7 +104,6 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
-      advanced.push({ label: copilotEntry.label, path: copilotEntry.path });
     } else if (role === "COMPANY") {
       sections.push({
         title: "Ana",
@@ -124,7 +128,6 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "KVKK", path: "/shared/kvkk" });
       advanced.push({ label: "Log Export", path: "/shared/logs" });
       advanced.push({ label: "Bildirimler", path: "/shared/notifications" });
-      advanced.push({ label: copilotEntry.label, path: copilotEntry.path });
     } else if (role === "DRIVER") {
       sections.push({
         title: "",
@@ -185,14 +188,15 @@ export default function NavDock({ role, path, me }) {
           { label: "Sistem Standartları", path: "/superadmin/ssot-alignment" },
           { label: "Ticari Akış", path: "/superadmin/commercial-core" },
           { label: "Güven ve Kalite", path: "/superadmin/trust-quality" },
-                    { label: copilotEntry.label, path: copilotEntry.path },
           { label: "KVKK", path: "/shared/kvkk" },
           { label: "Log Dışa Aktarımı", path: "/superadmin/logexport" },
         ],
       });
     }
 
-    return { sections, advanced };
+    advanced.push(feedbackEntry);
+
+    return { sections, advanced, copilotSection };
   }, [role, me]);
 
   const hasAdvanced = cfg.advanced.length > 0;
@@ -219,7 +223,10 @@ export default function NavDock({ role, path, me }) {
           {showAdvanced ? <Section title={null} items={cfg.advanced} path={path} /> : null}
         </div>
       ) : null}
+
+      {cfg.copilotSection ? (
+        <Section key="copilot" title={cfg.copilotSection.title} items={cfg.copilotSection.items} path={path} />
+      ) : null}
     </div>
   );
 }
-

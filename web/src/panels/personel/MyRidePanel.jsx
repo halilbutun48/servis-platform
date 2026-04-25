@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
+import { api, reportNoShow } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import { navigate } from "../../router";
@@ -90,6 +90,8 @@ export default function MyRidePanel() {
   const [myPos, setMyPos] = useState(null);
   const [selectedStopId, setSelectedStopId] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [noShowBusy, setNoShowBusy] = useState(false);
+  const [noShowMsg, setNoShowMsg] = useState("");
   const [err, setErr] = useState("");
 
   async function loadMyShift() {
@@ -137,6 +139,26 @@ export default function MyRidePanel() {
     setErr("");
     const s = await loadMyShift();
     await Promise.all([loadEta(s), loadNotifs()]);
+  }
+
+  async function handleNoShow() {
+    if (!myShift?.id || noShowBusy) return;
+    setNoShowBusy(true);
+    setErr("");
+    setNoShowMsg("");
+    try {
+      const result = await reportNoShow({ token });
+      const stopName = result?.stop?.name ? ` Durak: ${result.stop.name}.` : "";
+      const suggestion = result?.canSkipStop
+        ? " Bu durakta başka kimse yok; durağı atlama önerisi gitti."
+        : " Bu durakta başka yolcular da var; durağı atlamama uyarısı gitti.";
+      setNoShowMsg(`${result?.targetName || "Bildirim"} için sürücüye iletildi.${stopName}${suggestion}`);
+      await loadAll();
+    } catch (e) {
+      setErr(String(e?.message || e));
+    } finally {
+      setNoShowBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -280,6 +302,11 @@ export default function MyRidePanel() {
                   <span className="pill" data-status={routeQualityTone(eta)}>{routeQualityText(eta)}</span>
                 </div>
               ) : null}
+              <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <button type="button" disabled={noShowBusy} onClick={handleNoShow}>{noShowBusy ? "..." : "Bugün gelmiyorum"}</button>
+                <div className="muted">Bu bildirim sürücüye gider. Durakta yalnız sen varsın, atlama önerisi eklenir.</div>
+              </div>
+              {noShowMsg ? <div className="muted" style={{ marginTop: 8 }}>{noShowMsg}</div> : null}
               {selectedStop ? (
                 <div className="muted" style={{ marginTop: 8 }}>
                   Seçili durak: <b>{selectedStop.name}</b>

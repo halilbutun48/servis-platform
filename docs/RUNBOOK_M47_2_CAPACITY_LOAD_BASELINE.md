@@ -7,6 +7,13 @@ Bu milestone, uretim oncesi **kapasite baz cizgisi** olusturmak icin minimum goz
 - `GET /api/admin/capacity/policy` ile threshold/politika okunur.
 - `GET /api/admin/capacity/snapshot` ile son pencere icindeki istek, gecikme, 429 ve inventory gorulur.
 - Request inflight, websocket baglanti sayisi ve event-loop lag tutulur.
+- Bu baz cizgi **tekil infra envelope** icinde alinmistir: `1x api + 1x db + 1x redis + 1x osrm + 1x solver`.
+- Bu benchmark sonucu, ayni anda coklu region cell ya da ekstra replica varmis gibi genellenmez.
+
+## Queue siniri
+- `autoReachedQueue` performans fix'i olarak kabul edilir; **minimal guvenli queue** seviyesindedir, tam enterprise queue degildir.
+- Redis down olursa GPS hot path fallback ile ilerler; worker crash / reclaim / shutdown handoff siniri ayrica `RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` icinde tutulur.
+- Lock TTL, backlog, retry ve graceful shutdown davranisi resmi sinirdir; bu runbook queue omurgasinin enterprise durability iddiasi olmadigini acikca soyler.
 
 ## Beklenen gostergeler
 - Ortalama istek/dakika
@@ -27,3 +34,4 @@ Bu milestone, uretim oncesi **kapasite baz cizgisi** olusturmak icin minimum goz
 - Bu ekran tek basina bir stress test degildir; ama resmi baz cizgi icin yeterli ilk gozlem katmanidir.
 - 429 orani ve p95 gecikme ilk bakilacak iki sinyaldir.
 - Redis rate-limit store acik kalmali; GPS ve telematics ayrik kota mantigi korunmalidir.
+- Bu baz cizgiyi okurken region / shard kapasite dokumanlarindaki `3000 stabil tavan` ile karistirma; burada yazilan tekil infra adasidir.

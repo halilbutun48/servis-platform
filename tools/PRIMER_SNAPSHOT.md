@@ -4,6 +4,11 @@
 - Repo: `servis-platform`
 - Branch: `m90d1_web_lint_inventory`
 - Güncel doğrulanmış baz: `M0->M89 green`
+- Kapasite/load baz cizgisi tekil infra envelope üzerinde alındı: `1x api + 1x db + 1x redis + 1x osrm + 1x solver`.
+- 500 araç cliff'i queue/worker split ile kapatıldı; 1000 araç 120s staggered kısa ve soak yeşil.
+- 2 yıllık retention / archive hizada; `GpsPoint`, `ApiRequest`, `AuditLog`, `Notification` aynı sınıf değildir.
+- Gelişmiş altında `Geri Bildirim` alt menüsü açıldı; Copilot en alta taşındı; eski panel feedback butonları kaldırıldı.
+- Region/sharding yönü resmi teknik karar + field rollout runbook olarak kapandı.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `pack_living` yeşildir.
 - Repo check chain: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
 - Tarihsel anchor: `M0->M79`
@@ -29,6 +34,11 @@
 - Vardis, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı omurgada taşır.
 - Konumlama: pazar + sözleşme + operasyon.
 - Ödeme omurgası dormant/feature-flag mantığında ilerler.
+
+## Infra / queue truth
+- `autoReachedQueue` minimal safe queue olarak kabul edilir; tam enterprise queue değildir.
+- Redis down / worker crash / shutdown handoff sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde açıkça yazılıdır.
+- Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`.
 
 ## Resmi üst hat
 1. `M82.1` Backend correctness kilidi

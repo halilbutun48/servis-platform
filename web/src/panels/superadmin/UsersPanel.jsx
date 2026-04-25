@@ -123,7 +123,7 @@ export default function UsersPanel() {
       if (u.role === "PARENT") return "Parent";
       return "-";
     };
-  }, [companyById, roomById]);
+  }, [companies, rooms, companyById, roomById]);
 
   function userRegionLabel(u) {
     if (u.role === "COMPANY") return formatRegionContext(companyById.get(Number(u.companyId)));

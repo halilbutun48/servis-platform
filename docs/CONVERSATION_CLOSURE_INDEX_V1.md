@@ -29,6 +29,7 @@ Amaci yeni urun davranisi acmak degil; yapilanlari, kalanlari ve bagli dokumanla
 - [REGION_SHARDING_SINGLE_ENTRY_GATE_V1](REGION_SHARDING_SINGLE_ENTRY_GATE_V1.md)
 - [REGION_SHARDING_NEXT_PHASE_ROADMAP_V1](REGION_SHARDING_NEXT_PHASE_ROADMAP_V1.md)
 - [REGION_NEXT_PHASE_EXECUTION_PACK_V1](REGION_NEXT_PHASE_EXECUTION_PACK_V1.md)
+- [REGION_FIELD_ROLLOUT_RUNBOOK_V1](REGION_FIELD_ROLLOUT_RUNBOOK_V1.md)
 - [BACKEND_REGION_OWNERSHIP_AND_ROUTING_TASKS_V1](BACKEND_REGION_OWNERSHIP_AND_ROUTING_TASKS_V1.md)
 - [REGION_PHYSICAL_CELL_DEPLOYMENT_V1](REGION_PHYSICAL_CELL_DEPLOYMENT_V1.md)
 - [REGION_ZONE_ALT_SHARD_V1](REGION_ZONE_ALT_SHARD_V1.md)
@@ -39,10 +40,11 @@ Amaci yeni urun davranisi acmak degil; yapilanlari, kalanlari ve bagli dokumanla
 ### Kalanlar
 
 Repo-side region open item kalmadi.  
-Fiziksel deploy ve saha failover tatbikati operasyon / altyapi tarafinda ayrik izlenir.
+Fiziksel deploy ve saha failover tatbikati operasyon / altyapi tarafinda ayrik izlenir; field rollout runbook bu akis icin ayrica yayinlandi.
 
 Execution pack:
 - [REGION_NEXT_PHASE_EXECUTION_PACK_V1](REGION_NEXT_PHASE_EXECUTION_PACK_V1.md)
+- [REGION_FIELD_ROLLOUT_RUNBOOK_V1](REGION_FIELD_ROLLOUT_RUNBOOK_V1.md)
 
 Detay execution docs:
 - [REGION_PHYSICAL_CELL_DEPLOYMENT_V1](REGION_PHYSICAL_CELL_DEPLOYMENT_V1.md)

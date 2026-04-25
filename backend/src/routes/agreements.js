@@ -64,6 +64,23 @@ function routeRefreshWindowSummary(item) {
   return `${startDate} → ${endDate} • ${shiftCount} taslak vardiya • ${stopCount} durak • ${peopleCount} personel`;
 }
 
+async function emitAgreementNotification(io, { type, scope, companyId = null, roomId = null, kind, title, message, dedupeKey }) {
+  return createAndEmitNotification({
+    io,
+    type,
+    scope,
+    companyId,
+    roomId,
+    payload: {
+      v: 1,
+      kind,
+      title,
+      message,
+    },
+    dedupeKey,
+  });
+}
+
 function parseRouteRefreshDecision(value) {
   const raw = String(value || "").trim().toUpperCase();
   if (["ACCEPT", "ACCEPTED", "APPROVE", "APPROVED", "KABUL"].includes(raw)) return "ACCEPTED";
@@ -269,18 +286,14 @@ export function agreementsRouter(io) {
       initialCompanyOfferNote: companyOfferNote,
     });
 
-    await createAndEmitNotification({
-      io,
+    await emitAgreementNotification(io, {
       type: "AGREEMENT_ROUTE_REFRESH_REQUESTED",
       scope: "ROOM",
       roomId: agreement.roomId,
       companyId: agreement.companyId,
-      payload: {
-        v: 1,
-        kind: "agreement:routeRefreshRequested",
-        title: "Rota güncelleme teklifi",
-        message: `${agreementRef(agreement.id)} • ${routeRefreshWindowSummary(created)}`,
-      },
+      kind: "agreement:routeRefreshRequested",
+      title: "Rota güncelleme teklifi",
+      message: `${agreementRef(agreement.id)} • ${routeRefreshWindowSummary(created)}`,
       dedupeKey: `agreement:${agreement.id}:routeRefresh:${created.id}`,
     });
 
@@ -328,18 +341,14 @@ export function agreementsRouter(io) {
     });
     if (!updated) return sendErrorResponse(res, httpError(500, "ROUTE_REFRESH_STORE_UPDATE_FAILED", "Karşı teklif kaydedilemedi."));
 
-    await createAndEmitNotification({
-      io,
+    await emitAgreementNotification(io, {
       type: "AGREEMENT_ROUTE_REFRESH_COUNTERED",
       scope: "COMPANY",
       companyId: agreement.companyId,
       roomId: agreement.roomId,
-      payload: {
-        v: 1,
-        kind: "agreement:routeRefreshCountered",
-        title: "Rota güncelleme karşı teklifi",
-        message: `${agreementRef(agreement.id)} • ${routeRefreshRef(updated.id)} • oda karşı teklifi: ${offerSummary(updated.roomCounterAmount, updated.roomCounterNote)}`,
-      },
+      kind: "agreement:routeRefreshCountered",
+      title: "Rota güncelleme karşı teklifi",
+      message: `${agreementRef(agreement.id)} • ${routeRefreshRef(updated.id)} • oda karşı teklifi: ${offerSummary(updated.roomCounterAmount, updated.roomCounterNote)}`,
       dedupeKey: `agreement:${agreement.id}:routeRefresh:${updated.id}:counter:${updated.roomCounterAmount ?? "X"}`,
     });
 
@@ -663,18 +672,14 @@ export function agreementsRouter(io) {
       ? `${agreementRef(updatedAgreement.id)} • ${routeRefreshRef(nextItem.id)} kabul edildi`
       : `${agreementRef(updatedAgreement.id)} • ${routeRefreshRef(nextItem.id)} iptal edildi`;
 
-    await createAndEmitNotification({
-      io,
+    await emitAgreementNotification(io, {
       type: notifyType,
       scope: "COMPANY",
       companyId: updatedAgreement.companyId,
       roomId: updatedAgreement.roomId,
-      payload: {
-        v: 1,
-        kind: decision === "ACCEPTED" ? "agreement:routeRefreshAccepted" : "agreement:routeRefreshCancelled",
-        title: notifyTitle,
-        message: notifyMessage,
-      },
+      kind: decision === "ACCEPTED" ? "agreement:routeRefreshAccepted" : "agreement:routeRefreshCancelled",
+      title: notifyTitle,
+      message: notifyMessage,
       dedupeKey: `agreement:${updatedAgreement.id}:routeRefresh:${nextItem.id}:${decision}`,
     });
 
@@ -1597,18 +1602,14 @@ export function agreementsRouter(io) {
       },
     });
 
-    await createAndEmitNotification({
-      io,
+    await emitAgreementNotification(io, {
       type: "AGREEMENT_EXTEND_COUNTER_ACCEPTED",
       scope: "ROOM",
       roomId: updated.roomId,
       companyId: updated.companyId,
-      payload: {
-        v: 1,
-        kind: "agreement:extendCounterAccepted",
-        title: "Uzatma karşı teklifi kabul edildi",
-        message: `${agreementRef(updated.id)} • yeni bitiş: ${ymdOfDateOnly(updated.endDate)} • yeni teklif: ${updated.companyOfferAmount ?? "-"}`,
-      },
+      kind: "agreement:extendCounterAccepted",
+      title: "Uzatma karşı teklifi kabul edildi",
+      message: `${agreementRef(updated.id)} • yeni bitiş: ${ymdOfDateOnly(updated.endDate)} • yeni teklif: ${updated.companyOfferAmount ?? "-"}`,
       dedupeKey: `agreement:${updated.id}:extendCounterAccepted:${ymdOfDateOnly(updated.endDate)}:${updated.companyOfferAmount ?? "X"}`,
     });
 
@@ -1644,18 +1645,14 @@ export function agreementsRouter(io) {
       },
     });
 
-    await createAndEmitNotification({
-      io,
+    await emitAgreementNotification(io, {
       type: "AGREEMENT_EXTEND_COUNTER_REJECTED",
       scope: "ROOM",
       roomId: updated.roomId,
       companyId: updated.companyId,
-      payload: {
-        v: 1,
-        kind: "agreement:extendCounterRejected",
-        title: "Karşı teklif reddedildi",
-        message: `${agreementRef(updated.id)} • uzatma teklifi hâlâ beklemede. İstersen kabul et veya yeni karşı teklif gönder.`,
-      },
+      kind: "agreement:extendCounterRejected",
+      title: "Karşı teklif reddedildi",
+      message: `${agreementRef(updated.id)} • uzatma teklifi hâlâ beklemede. İstersen kabul et veya yeni karşı teklif gönder.`,
       dedupeKey: `agreement:${updated.id}:extendCounterRejected:${Date.now()}`,
     });
 

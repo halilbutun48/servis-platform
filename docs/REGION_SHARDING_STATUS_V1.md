@@ -89,6 +89,7 @@ Detay execution docs:
 - [REGION_ZONE_ALT_SHARD_V1](REGION_ZONE_ALT_SHARD_V1.md)
 - [REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1](REGION_ARCHIVE_EXPORT_MANIFEST_RESTORE_V1.md)
 - [REGION_FAILOVER_REBALANCING_DRILL_V1](REGION_FAILOVER_REBALANCING_DRILL_V1.md)
+- [REGION_FIELD_ROLLOUT_RUNBOOK_V1](REGION_FIELD_ROLLOUT_RUNBOOK_V1.md)
 
 1. Regional API / Redis / DB cell plani saha altyapisina uygulanir.
 2. Region bazli go-live drill ve failover tatbikati saha operasyonunda yürütülür.

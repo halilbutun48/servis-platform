@@ -15,6 +15,14 @@ Bu repo, okul/öğrenci/veli ile şirket/personel taşıma alanlarını aynı om
 - Parent access akışı: `docs/PARENT_ACCESS_FLOW.md`
 - Overlay geçmişi: `docs/overlays/`
 
+## Mevcut teknik fotoğraf
+- Kapasite/load baz cizgisi tekil infra envelope üzerinde okunur: `1x api + 1x db + 1x redis + 1x osrm + 1x solver`.
+- 500 araç cliff'i queue/worker split ile kapandı; 1000 araç 120s staggered kısa ve soak temiz.
+- 2 yıllık retention politikasında `GpsPoint` ile `AuditLog` aynı sınıfta değildir; archive / hot ayrımı yapılır.
+- Region/sharding yönü logical region, super-admin yüzeyleri ve field rollout runbook ile resmi hale geldi.
+- `autoReachedQueue` minimal safe queue'dur; Redis down / worker crash / handoff sınırları ayrıca runbook ile belgelenir.
+- Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`
+
 ## Güncel dürüst durum (2026-04-19 gece)
 - Repo: `servis-platform`
 - Branch: `m90d1_web_lint_inventory`

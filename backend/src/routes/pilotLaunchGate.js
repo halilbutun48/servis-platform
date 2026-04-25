@@ -99,6 +99,7 @@ pilotLaunchGateRouter.get('/field-feedback-loop/records', authRequired(), requir
     const roleFilter = req.user?.role === 'SUPER_ADMIN' ? requestedRole || 'ALL' : String(req.user?.role || '').trim().toUpperCase();
     const items = await listFieldFeedbackRecords({
       roleId: roleFilter,
+      categoryId: req.query?.category,
       status: req.query?.status,
       severity: req.query?.severity,
       surface: req.query?.surface,

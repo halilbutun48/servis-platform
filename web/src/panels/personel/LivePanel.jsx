@@ -4,7 +4,6 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
-import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import StopTimeline from "../../components/StopTimeline";
 import { pickNextStopByRemainingKmOrEta } from "../../components/stopTimelineUtils";
 import { ageSecFromAt, uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
@@ -321,9 +320,6 @@ export default function PersonelLivePanel() {
           <div className="muted">Sana ait durak + araç yaklaşımı + ETA + navigasyon</div>
         </div>
       </div>
-
-      <PanelFeedbackEntryCard roleId="PERSONEL" panelLabel="Personel Canlı Harita" relatedPath="/personel/live" />
-
       {err ? <div className="card err">{err}</div> : null}
 
       <div className="grid mapGrid" style={{ ["--mapH"]: "min(520px, calc(100vh - 420px))" }}>
@@ -513,7 +509,6 @@ export default function PersonelLivePanel() {
     </div>
   );
 }
-
 
 
 

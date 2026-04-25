@@ -7,7 +7,7 @@ import { invalidate } from "../../live/bus";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildShiftFacts } from "../../utils/copilotFacts";
 import { getApiErrorMessage } from "../../utils/apiContract";
-import { formatRegionOwnership, hasRegionOwnership } from "../../utils/regionOwnership";
+import { resolveShiftRegionLabel } from "../../utils/regionOwnership";
 import {
   buildCapacityMeta,
   formatShiftDateTimeTR as fmtTR,
@@ -143,27 +143,14 @@ async function decideExtend(shiftId, decision) {
     return m;
   }, [drivers]);
 
-  const resolveShiftRegionLabel = (shift) => {
-    if (!shift) return "";
-    const sourceRoomId = Number(shift?.roomId || shift?.room?.id || 0);
-    const room = sourceRoomId > 0 ? roomsById.get(sourceRoomId) : null;
-    const source = room?.regionOwnership
-      || shift?.room?.regionOwnership
-      || shift?.company?.regionOwnership
-      || shift?.vehicle?.regionOwnership
-      || shift?.driver?.regionOwnership
-      || null;
-    return hasRegionOwnership(source) ? formatRegionOwnership(source) : "";
-  };
-
-  const previewRegionLabel = useMemo(() => resolveShiftRegionLabel(previewShift), [previewShift, roomsById]);
-  const reassignRegionLabel = useMemo(() => resolveShiftRegionLabel(reassignModal.shift), [reassignModal.shift, roomsById]);
+  const previewRegionLabel = useMemo(() => resolveShiftRegionLabel(previewShift, roomsById), [previewShift, roomsById]);
+  const reassignRegionLabel = useMemo(() => resolveShiftRegionLabel(reassignModal.shift, roomsById), [reassignModal.shift, roomsById]);
   const opsEventsShift = useMemo(() => {
     const sid = Number(opsEventsModal.shiftId || 0);
     if (!sid) return null;
     return items.find((x) => Number(x?.id || 0) === sid) || null;
   }, [items, opsEventsModal.shiftId]);
-  const opsEventsRegionLabel = useMemo(() => resolveShiftRegionLabel(opsEventsShift), [opsEventsShift, roomsById]);
+  const opsEventsRegionLabel = useMemo(() => resolveShiftRegionLabel(opsEventsShift, roomsById), [opsEventsShift, roomsById]);
 
   
   // M61_UI_COPY — Paket içi hızlı doldurma (sadece UI)

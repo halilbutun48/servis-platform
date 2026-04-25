@@ -227,6 +227,11 @@ app.get("/health", async (req, res) => {
   });
 });
 
+// Server + Socket.IO
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: ENV.CORS_ORIGIN === "*" ? true : ENV.CORS_ORIGIN } });
+const stopSocketRelay = installSocketRelay(io, { redisUrl: ENV.REDIS_URL });
+
 mountCoreRoutes(app, {
   authStep2Router,
   authRouter,
@@ -262,12 +267,7 @@ mountCoreRoutes(app, {
   availabilityRoutes,
   adminLogsRouter,
   adminRouter,
-});
-
-// Server + Socket.IO
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: ENV.CORS_ORIGIN === "*" ? true : ENV.CORS_ORIGIN } });
-const stopSocketRelay = installSocketRelay(io, { redisUrl: ENV.REDIS_URL });
+}, io);
 
 // Socket auth: token -> decode -> DB user -> join scopes
 io.use(async (socket, next) => {
@@ -351,7 +351,6 @@ process.on("SIGINT", shutdown);
 server.listen(ENV.PORT, () => {
   console.log(`✅ API listening on http://localhost:${ENV.PORT}`);
 });
-
 
 
 

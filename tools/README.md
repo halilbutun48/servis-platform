@@ -20,6 +20,7 @@
 - Root verify chain: `npm run verify:ci`
 - Root verify chain canonical entry: `npm run verify:repo`
 - Milestone static chain: `npm run verify:milestones`
+- Clean clone verification: `tools\verify_clean_clone.ps1`
 - M0->latest runner: `node backend\scripts\run_m0_latest.js --static-only --to latest --continue`
 - M92 repo verification spine: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar

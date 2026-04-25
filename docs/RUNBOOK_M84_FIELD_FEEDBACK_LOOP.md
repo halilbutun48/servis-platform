@@ -10,6 +10,8 @@ Bu runbook, `M83 saha hazirlik paketi` sonrasinda saha gununde cikan sorunlari d
 
 ## Kapsam
 - `Sahaya Cikis Kontrolu` panelinde M84 geri bildirim bolumu
+- `NavDock` icinde `Gelişmiş` altinda `Geri Bildirim` alt menusu; `Copilot` en altta ayridir
+- ortak `#/shared/feedback` sayfasi
 - backend runtime store ile saha geri bildirim kayitlari
 - ozet paket endpoint'i
 - yeni kayit acma ve durum guncelleme endpoint'leri
@@ -28,7 +30,7 @@ Bu runbook, `M83 saha hazirlik paketi` sonrasinda saha gununde cikan sorunlari d
 ## Beklenen sonuc
 - Super Admin son saha ekraninda acik/tekrarlayan/cozulen/kapanan kayitlari tek yerde gorur
 - role ve yuzeye gore geri bildirim yogunlugu okunur
-- yeni kayit acilir ve ayni yuzeyden durum ilerletilebilir
+- yeni kayit acilir, yildiz degeri eklenir ve ayni yuzeyden durum ilerletilebilir
 
 ## Kabul notu
 - M84 green olsa bile saha gozlem turu insan tarafindan kosulur

@@ -1,6 +1,6 @@
 // backend/src/bootstrap/routeMounts.js
 
-export function mountCoreRoutes(app, routes) {
+export function mountCoreRoutes(app, routes, io) {
   const {
     authStep2Router,
     authRouter,
@@ -58,7 +58,7 @@ export function mountCoreRoutes(app, routes) {
   app.use("/api/kvkk", kvkkRouter());
   app.use("/api/logs", logsRouter());
   app.use("/api/reports", reportsRouter());
-  app.use("/api/penalties", penaltiesRouter());
+  app.use("/api/penalties", penaltiesRouter(io));
   app.use("/api/eta", etaRouter);
   app.use("/api/geocode", geocodeRouter());
   app.use("/api/company/hub", companyHubRouter());

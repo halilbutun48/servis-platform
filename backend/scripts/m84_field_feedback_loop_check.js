@@ -24,6 +24,11 @@ function mustInclude(text, needle, label) {
   else fail(label);
 }
 
+function mustNotInclude(text, needle, label) {
+  if (includesText(text, needle)) fail(label);
+  else ok(label);
+}
+
 function normalizeText(value) {
   return String(value || "")
     .replace(/[İI]/g, "i")
@@ -62,7 +67,10 @@ function mustMentionMilestone(text, milestone, descriptors, label) {
 const service = read("backend/src/ops/fieldFeedbackLoop.js");
 const route = read("backend/src/routes/pilotLaunchGate.js");
 const panel = read("web/src/panels/superadmin/PilotLaunchGatePanel.jsx");
-const feedbackEntry = read("web/src/components/PanelFeedbackEntryCard.jsx");
+const feedbackEntry = read("web/src/components/feedback/FeedbackLoopSection.jsx");
+const feedbackPanel = read("web/src/panels/shared/FeedbackLoopPanel.jsx");
+const navDock = read("web/src/layout/NavDock.jsx");
+const superAdminPanel = read("web/src/panels/superadmin/SuperAdminPanel.jsx");
 const companyPanel = read("web/src/panels/company/CompanyShiftsPanelIntro.jsx");
 const accessLinksPanel = read("web/src/panels/company/PassengerLinksPanel.jsx");
 const roomPanel = read("web/src/panels/room/roomShiftsOverviewSection.jsx");
@@ -80,6 +88,8 @@ const funnelRunbook = read("docs/RUNBOOK_PANEL_SUPERADMIN_FEEDBACK_FUNNEL.md");
 const milestone = read("docs/MILESTONE_M84_FIELD_FEEDBACK_LOOP.md");
 
 mustInclude(service, "FIELD_FEEDBACK_STATUSES", "field feedback service exposes statuses");
+mustInclude(service, "FIELD_FEEDBACK_CATEGORIES", "field feedback service exposes categories");
+mustInclude(service, "normalizeRating", "field feedback service exposes rating normalizer");
 mustInclude(service, "buildFieldFeedbackLoopPacket", "field feedback service exposes packet builder");
 mustInclude(service, "updateFieldFeedbackRecordStatus", "field feedback service exposes status updater");
 mustInclude(service, '"PERSONEL"', "field feedback service includes PERSONEL role");
@@ -91,15 +101,26 @@ mustInclude(route, "'PARENT'", "pilot launch gate route allows PARENT feedback r
 mustInclude(panel, "Saha gözlem / geri bildirim döngüsü", "pilot launch gate panel renders M84 feedback section");
 mustInclude(panel, "Durum akışı", "pilot launch gate panel renders status flow summary");
 mustInclude(panel, "Yeni saha geri bildirimi ekle", "pilot launch gate panel renders create form");
-mustInclude(feedbackEntry, "/api/pilot-launch-gate/field-feedback-loop/records", "shared panel feedback entry posts to M84 endpoint");
-mustInclude(feedbackEntry, "Görüş / Öneri / Şikayet", "shared panel feedback entry renders category label");
-mustInclude(companyPanel, "PanelFeedbackEntryCard", "company panel renders shared feedback entry");
-mustInclude(accessLinksPanel, "PanelFeedbackEntryCard", "company access-links panel renders shared feedback entry");
-mustInclude(driversPanel, "PanelFeedbackEntryCard", "room drivers panel renders shared feedback entry");
-mustInclude(roomPanel, "PanelFeedbackEntryCard", "room panel renders shared feedback entry");
-mustInclude(driverPanel, "PanelFeedbackEntryCard", "driver panel renders shared feedback entry");
-mustInclude(personelPanel, "PanelFeedbackEntryCard", "personel panel renders shared feedback entry");
-mustInclude(parentPanel, "PanelFeedbackEntryCard", "parent panel renders shared feedback entry");
+mustInclude(feedbackEntry, "/api/pilot-launch-gate/field-feedback-loop/records", "shared feedback section posts to M84 endpoint");
+mustInclude(feedbackEntry, "Geri Bildirim", "shared feedback section renders friendly title");
+mustInclude(feedbackEntry, "★", "shared feedback section renders star rating");
+mustInclude(feedbackPanel, "FeedbackLoopSection", "shared feedback panel uses reusable section");
+mustInclude(navDock, "Gelişmiş", "navdock exposes advanced feedback group");
+mustInclude(navDock, "advanced.push(feedbackEntry)", "navdock exposes feedback under advanced");
+mustInclude(navDock, "Geri Bildirim", "navdock exposes feedback submenu");
+mustInclude(navDock, "/shared/feedback", "navdock feedback submenu points to shared feedback");
+mustNotInclude(navDock, "copilotEntry.path }, feedbackEntry", "navdock feedback no longer sits under Copilot");
+mustInclude(navDock, "copilotSection", "navdock keeps copilot section visible at the bottom");
+mustNotInclude(navDock, "sections.push({ title: \"Copilot\"", "navdock no longer renders copilot as a top section");
+mustInclude(superAdminPanel, "FeedbackLoopSection", "superadmin panel renders feedback section");
+mustInclude(superAdminPanel, "Geri Bildirim", "superadmin panel renders feedback title");
+mustNotInclude(companyPanel, "PanelFeedbackEntryCard", "company panel no longer renders scattered feedback entry");
+mustNotInclude(accessLinksPanel, "PanelFeedbackEntryCard", "company access-links panel no longer renders scattered feedback entry");
+mustNotInclude(driversPanel, "PanelFeedbackEntryCard", "room drivers panel no longer renders scattered feedback entry");
+mustNotInclude(roomPanel, "PanelFeedbackEntryCard", "room panel no longer renders scattered feedback entry");
+mustNotInclude(driverPanel, "PanelFeedbackEntryCard", "driver panel no longer renders scattered feedback entry");
+mustNotInclude(personelPanel, "PanelFeedbackEntryCard", "personel panel no longer renders scattered feedback entry");
+mustNotInclude(parentPanel, "PanelFeedbackEntryCard", "parent panel no longer renders scattered feedback entry");
 mustInclude(backendPkg, '"m84check": "node scripts/m84_field_feedback_loop_check.js"', "backend package exposes m84check script");
 mustInclude(toolsReadme, "pack_m84_field_feedback_loop.ps1", "tools readme lists M84 pack");
 mustMentionMilestone(toolsPrimer, "M84", ["saha gozlem / geri bildirim dongusu", "saha geri bildirim dongusu", "field feedback loop", "m84check"], "tools primer lists M84");
@@ -109,7 +130,7 @@ mustMentionMilestone(primer, "M84", ["saha gozlem / geri bildirim dongusu", "sah
 mustInclude(runbook, "m84check", "runbook references m84check");
 mustInclude(funnelRunbook, "`PERSONEL`", "panel feedback funnel runbook lists PERSONEL");
 mustInclude(funnelRunbook, "`PARENT`", "panel feedback funnel runbook lists PARENT");
-mustInclude(milestone, "mini geri bildirim girisi", "m84 milestone documents panel feedback rollout");
+mustInclude(milestone, "gelişmiş alt menüsü", "m84 milestone documents shared feedback rollout");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M84 saha gözlem / geri bildirim döngüsü check passed");

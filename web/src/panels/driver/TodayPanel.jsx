@@ -5,7 +5,6 @@ import { useSession } from "../../state/session";
 import { navigate } from "../../router";
 
 import QueueDetailTable from "../../components/QueueDetailTable";
-import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import { useAutoReload } from "../../live/useAutoReload";
 import { displayStatusLabel } from "../../utils/displayStatus";
 function fmt(dt) {
@@ -218,9 +217,6 @@ useEffect(() => {
   </div>
 ) : null}
       </div>
-
-      <PanelFeedbackEntryCard roleId="DRIVER" panelLabel="Driver Today" relatedPath="/driver/today" />
-
       {err ? <div className="card err">{err}</div> : null}
 
       <div className="card">

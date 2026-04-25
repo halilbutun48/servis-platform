@@ -50,10 +50,10 @@ import {
   resolveVisibleShift,
 } from './src/lib/gps';
 import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
-import { deriveRouteTransition, getDriverBackgroundRuntimeStatus, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
+import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
 import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
-import { RELEASE_INFO, buildGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState } from './src/app/mobileAppState';
+import { RELEASE_INFO, applyGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState, readGpsRuntimeSnapshot } from './src/app/mobileAppState';
 
 const SESSION_FAILURE_USER_MESSAGE = 'Oturum kapandi. Yeniden giris yapin.';
 const M50_RELEASE_INFO_SENTINEL = 'releaseInfo={RELEASE_INFO}';
@@ -611,27 +611,6 @@ export default function App() {
       gpsBusyRef.current = false;
     }
   }
-
-
-  function applyGpsRuntimeSnapshot(snapshot = {}) {
-    setState((prev) => ({
-      ...prev,
-      gps: {
-        ...prev.gps,
-        ...snapshot,
-      },
-    }));
-  }
-
-  async function readGpsRuntimeSnapshot(reason = '', options = {}) {
-    const runtime = await getDriverBackgroundRuntimeStatus().catch(() => null);
-    const snapshot = buildGpsRuntimeSnapshot({ runtime, reason, options, appState: appStateRef.current });
-    const { backgroundPermissionStatus, backgroundTaskState } = snapshot;
-    void backgroundPermissionStatus;
-    void backgroundTaskState;
-    return snapshot;
-  }
-
   async function refreshKvkkStatus({ accepted = false } = {}) {
     setState((prev) => ({
       ...prev,
@@ -784,7 +763,9 @@ export default function App() {
         selectedShiftId: state.selectedShiftId,
       }).then((runtime) => {
         if (!runtime) return;
-        return readGpsRuntimeSnapshot(runtime.reason, { appState: nextState }).then(applyGpsRuntimeSnapshot);
+      return readGpsRuntimeSnapshot(runtime.reason, { appState: nextState }).then((snapshot) =>
+        applyGpsRuntimeSnapshot(setState, snapshot)
+      );
       }).catch(() => null);
 
       if (nextState === 'active') {
@@ -823,7 +804,9 @@ export default function App() {
       selectedShiftId: state.selectedShiftId,
     }).then((runtime) => {
       if (!runtime) return;
-      return readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).then(applyGpsRuntimeSnapshot);
+      return readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).then((snapshot) =>
+        applyGpsRuntimeSnapshot(setState, snapshot)
+      );
     }).catch(() => null);
 
     refreshGpsStatus({ publishNow: false }).catch(() => null);
@@ -1042,7 +1025,7 @@ export default function App() {
     }).catch(() => null);
     if (runtime) {
       const snapshot = await readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).catch(() => null);
-      if (snapshot) applyGpsRuntimeSnapshot(snapshot);
+      if (snapshot) applyGpsRuntimeSnapshot(setState, snapshot);
     }
   }
 

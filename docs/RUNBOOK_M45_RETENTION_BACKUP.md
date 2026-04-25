@@ -64,6 +64,10 @@ Bu manifest artık sadece “dosya var mı” kontrolü değil, aynı zamanda b�
 Repo düzeyi restore girişi:
 - `npm --prefix backend run m45:backup:restore -- --backup-file <sql> --manifest-file <manifest> --force`
 
+Not:
+- `backend/scripts/m45_backup_restore.js` verify/automation akışında `--backup-file` verilmemişse güvenli biçimde `SKIP` eder.
+- Gerçek restore için yine `--backup-file` ve `--force` zorunludur; bu davranış PowerShell wrapper ve runbook ile uyumludur.
+
 Örnek:
 ```powershell
 pwsh -ExecutionPolicy Bypass -File .\tools\backup_restore_m45.ps1 `

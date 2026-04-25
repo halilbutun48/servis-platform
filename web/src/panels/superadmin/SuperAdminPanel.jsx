@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
+import FeedbackLoopSection from "../../components/feedback/FeedbackLoopSection";
 
 function copyText(s) {
   const v = String(s ?? "");
@@ -266,6 +267,13 @@ export default function SuperAdminPanel() {
             ))}
           </div>
         </details>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <FeedbackLoopSection
+          title="Geri Bildirim"
+          subtitle="Sahadan gelen notları ve yıldızlı değerlendirmeleri Super Admin buradan okur; kayıtlar aynı kuyruğa düşer."
+        />
       </div>
     </div>
   );

@@ -1,10 +1,9 @@
 // web/src/panels/parent/LivePanel.jsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
+import { api, reportNoShow } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import MapView from "../../components/map/MapView";
-import PanelFeedbackEntryCard from "../../components/PanelFeedbackEntryCard";
 import { navigate } from "../../router";
 import { formatRegionOwnership } from "../../utils/regionOwnership";
 
@@ -167,6 +166,8 @@ export default function ParentLivePanel() {
   const [geoBusy, setGeoBusy] = useState(false);
   const [geoErr, setGeoErr] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [noShowBusy, setNoShowBusy] = useState(false);
+  const [noShowMsg, setNoShowMsg] = useState("");
   const lastRequestedChildRef = useRef("");
 
   async function loadChildren() {
@@ -316,15 +317,32 @@ export default function ParentLivePanel() {
     ];
   }, [selectedVehicle]);
 
+  async function handleNoShow() {
+    if (!childId || noShowBusy) return;
+    setNoShowBusy(true);
+    setErr("");
+    setNoShowMsg("");
+    try {
+      const result = await reportNoShow({ token, childId });
+      const stopName = result?.stop?.name ? ` Durak: ${result.stop.name}.` : "";
+      const suggestion = result?.canSkipStop
+        ? " Bu durakta başka kimse yok; durağı atlama önerisi gitti."
+        : " Bu durakta başka yolcular da var; durağı atlamama uyarısı gitti.";
+      setNoShowMsg(`${result?.targetName || "Bildirim"} için sürücüye iletildi.${stopName}${suggestion}`);
+      await loadVehicles(childId);
+    } catch (e) {
+      setErr(e?.message || String(e));
+    } finally {
+      setNoShowBusy(false);
+    }
+  }
+
   return (
     <div className="wrap">
       <div className="card">
         <div className="title">Veli • Canlı Takip</div>
         <div className="muted">KVKK kuralı: Canlı konum sadece <b>vardiya saat aralığında</b> gösterilir. Çocuğun durağı, tüm shift durakları ve size göre en yakın durak birlikte gösterilir.</div>
       </div>
-
-      <PanelFeedbackEntryCard roleId="PARENT" panelLabel="Veli Canlı Takip" relatedPath="/parent/live" />
-
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -405,7 +423,10 @@ export default function ParentLivePanel() {
                   <button type="button" className="btn" onClick={() => navigate(`/shared/logs?kind=bundle_vehicle&targetType=vehicle&targetId=${selectedVehicle.id}&childId=${childId}&format=txt`)} title="Araç için TXT log export (GPS + hız + bildirim)">Log TXT</button>
                   {childNavUrl ? <button type="button" className="btn" onClick={() => window.open(childNavUrl, "_blank", "noopener,noreferrer")}>Çocuğun durağına git</button> : null}
                   {nearestNavUrl ? <button type="button" className="btn" onClick={() => window.open(nearestNavUrl, "_blank", "noopener,noreferrer")}>En yakın durağa git</button> : null}
+                  <button type="button" className="btn" disabled={!childId || noShowBusy} onClick={handleNoShow}>{noShowBusy ? "..." : "Bugün gelmiyor"}</button>
                 </div>
+                <div className="muted" style={{ marginTop: 8 }}>Bu işlem sürücüye bildirim gönderir. Eğer durakta başka kimse yoksa, durak atlama önerisi eklenir.</div>
+                {noShowMsg ? <div className="muted" style={{ marginTop: 6 }}>{noShowMsg}</div> : null}
               </div>
             </div>
 
