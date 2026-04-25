@@ -9,6 +9,7 @@
 - 2 yıllık retention / archive hizada; `GpsPoint`, `ApiRequest`, `AuditLog`, `Notification` aynı sınıf değildir.
 - Gelişmiş altında `Geri Bildirim` alt menüsü açıldı; Copilot en alta taşındı; eski panel feedback butonları kaldırıldı.
 - Region/sharding yönü resmi teknik karar + field rollout runbook olarak kapandı.
+- Refresh rotasyonu fail-closed; telematics vendor webhook HMAC + timestamp + replay guard ile korunur; `x-greenpack` sadece local-test override olarak kalır.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `pack_living` yeşildir.
 - Repo check chain: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
 - Tarihsel anchor: `M0->M79`
@@ -36,8 +37,8 @@
 - Ödeme omurgası dormant/feature-flag mantığında ilerler.
 
 ## Infra / queue truth
-- `autoReachedQueue` minimal safe queue olarak kabul edilir; tam enterprise queue değildir.
-- Redis down / worker crash / shutdown handoff sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde açıkça yazılıdır.
+- `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlariyla daha dayanıklıdır; tam enterprise exactly-once queue değildir.
+- Redis down / worker crash / shutdown handoff / stale reclaim sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde açıkça yazılıdır.
 - Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`.
 
 ## Resmi üst hat

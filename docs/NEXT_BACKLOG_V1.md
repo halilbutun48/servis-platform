@@ -15,6 +15,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - CI fresh runner hazırlığı workflow içinde explicit: `npm --prefix backend ci` ve `npm --prefix web ci`.
 - Bu backlog içinde `M90` closure referansları compatibility / görünür kapanış hattı olarak korunur.
 - Gerçek çalışma yönü: büyük reorganizasyon değil, ihtiyaç-temelli kontrollü ilerleme.
+- Kalan son çizgi sırası: runtime JSON soft-gate'leri -> queue dayanıklılığı -> sıcak dosya borcu (en son).
 
 ## 1) Resmi Durum
 - Güncel doğrulanmış baz: `MASTER PACK PASS OK (M0->M89)`.

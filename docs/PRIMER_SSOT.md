@@ -12,6 +12,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Gelişmiş altında `Geri Bildirim` alt menüsü açıldı; Copilot en alta taşındı; panel içi dağınık geri bildirim butonları kaldırıldı.
 - Region/sharding yönü resmi teknik karar + field rollout runbook olarak kapandı.
 - Mobil uygulama driver-first kalır; tüm web panellerini mobile taşımak bu aşamada hedef değildir.
+- Refresh rotasyonu fail-closed; telematics vendor webhook HMAC + timestamp + replay guard ile korunur; `x-greenpack` sadece explicit local-test override olarak kalır.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
 - Repo check chain sonucu: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
 - Tarihsel temiz anchor: `M0->M79`
@@ -75,8 +76,8 @@ Compatibility aliases for legacy checks:
 - Sistem eskiye döndürülmez; script/check/doc yeni canonical gerçeğe göre güncellenir.
 
 ## Infra / queue guardrail
-- `autoReachedQueue` minimal safe queue olarak kabul edilir; tam enterprise queue değildir.
-- Redis down / worker crash / shutdown handoff sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde resmi olarak tanımlıdır.
+- `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlariyla daha dayanıklı hale getirilmiştir; yine de tam enterprise exactly-once queue değildir.
+- Redis down / worker crash / shutdown handoff / stale reclaim sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde resmi olarak tanımlıdır.
 - Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`.
 
 ## M90 odak noktası
@@ -113,10 +114,11 @@ Compatibility aliases for legacy checks:
 - `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
 - `web/src/panels/company/ShiftPeopleTab.jsx` **safe candidate review** kuyruğundadır.
 - Bu queue, `tools/repo_contract_state.json` içindeki `hotFileQueuePolicy` alanı ve `repo_audit` çıktısı ile birlikte doğrulanır.
+- Sıcak dosya borcu en son ele alınır; önce güvenlik, doğrulama, hygiene ve acceptance odaklı işler tamamlanır.
 
 ## export / package hygiene closure
 - Satır azaltma en sona bırakılır; bu adım export güveni ve çalışma alanı hijyeni içindir.
-- `.env`, build/dist artıkları, `backend/data/*.json`, `data/*.json` ve overlay/log kalıntıları shareable pakete giremez.
+- `.env`, build/dist artıkları, `backend/data/*.json` legacy residues, `data/*.json`, `artifacts/runtime-data/*.json` ve overlay/log kalıntıları shareable pakete giremez.
 - Kanonik komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`.
 - Shareable zip üretimi: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`.
 - Fiziksel snapshot yüzeyi için ayrı soft gate: `npm run verify:snapshot`.

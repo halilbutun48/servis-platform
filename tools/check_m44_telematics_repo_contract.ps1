@@ -52,9 +52,12 @@ NeedRegex 'backend\prisma\schema.prisma' 'model\s+Vehicle\s*\{[\s\S]*?\bgpsDevic
 
 Write-Host "INFO Checking env + compose wiring"
 NeedContains '.env.example' 'TELEMATICS_ENABLED' '.env example has TELEMATICS_ENABLED'
-NeedContains '.env.example' 'TELEMATICS_VENDOR_SHARED_SECRET' '.env example has TELEMATICS_VENDOR_SHARED_SECRET'
+NeedContains '.env.example' 'TELEMATICS_VENDOR_SECRET_GENERIC' '.env example has TELEMATICS_VENDOR_SECRET_GENERIC'
+NeedContains '.env.example' 'TELEMATICS_VENDOR_SECRET_TRACCAR' '.env example has TELEMATICS_VENDOR_SECRET_TRACCAR'
+NeedContains '.env.example' 'TELEMATICS_VENDOR_SHARED_SECRET_LEGACY_ALLOWED' '.env example has TELEMATICS_VENDOR_SHARED_SECRET_LEGACY_ALLOWED'
 NeedContains 'infra\docker-compose.yml' 'TELEMATICS_ENABLED' 'docker compose passes TELEMATICS_ENABLED'
-NeedContains 'infra\docker-compose.yml' 'TELEMATICS_VENDOR_SHARED_SECRET' 'docker compose passes TELEMATICS_VENDOR_SHARED_SECRET'
+NeedContains 'infra\docker-compose.yml' 'TELEMATICS_VENDOR_SECRET_GENERIC' 'docker compose passes TELEMATICS_VENDOR_SECRET_GENERIC'
+NeedContains 'infra\docker-compose.yml' 'TELEMATICS_VENDOR_SECRET_TRACCAR' 'docker compose passes TELEMATICS_VENDOR_SECRET_TRACCAR'
 
 Write-Host "INFO Checking server + tools wiring"
 NeedAnyFileContains @('backend\src\server.js','backend\src\bootstrap\routeMounts.js') @('/api/telematics') 'server mounts telematics router'

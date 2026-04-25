@@ -688,55 +688,61 @@ authRouter.post("/refresh", async (req, res) => {
     return sendErrorResponse(res, httpError(403, "ACCOUNT_DISABLED", "Account disabled"));
   }
 
-  const newAccess = issueAccessToken(user);
-
-  // rotate refresh token (best-effort for non-privileged roles)
   const newRefreshRaw = randomTokenHex(32);
+  const tokenHash2 = sha256Hex(newRefreshRaw);
+  const ttlDays = Number(ENV.REFRESH_TOKEN_TTL_DAYS || 30);
+  const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+
+  let created = null;
   try {
-    const tokenHash2 = sha256Hex(newRefreshRaw);
-    const ttlDays = Number(ENV.REFRESH_TOKEN_TTL_DAYS || 30);
-    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+    created = await prisma.$transaction(async (tx) => {
+      const nextSession = await tx.refreshSession.create({
+        data: {
+          userId: user.id,
+          tokenHash: tokenHash2,
+          deviceId: session.deviceId || reqDeviceId || null,
+          expiresAt,
+          ip: getReqIp(req),
+          userAgent: req.headers["user-agent"]?.toString() || null,
+        },
+      });
 
-    const created = await prisma.refreshSession.create({
-      data: {
-        userId: user.id,
-        tokenHash: tokenHash2,
-        deviceId: session.deviceId || reqDeviceId || null,
-        expiresAt,
-        ip: getReqIp(req),
-        userAgent: req.headers["user-agent"]?.toString() || null,
-      },
+      await tx.refreshSession.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date(), replacedById: nextSession.id },
+      });
+
+      return nextSession;
     });
-
-    await prisma.refreshSession.update({ where: { id: session.id }, data: { revokedAt: new Date(), replacedById: created.id } });
-    await enforceMaxRefreshSessions(user.id);
-
-
+  } catch (e) {
     await recordLoginAudit({
       req,
       email: user.email || null,
       user,
-      action: "AUTH_REFRESH_OK",
-      reason: null,
-      meta: { oldRefreshSessionId: session.id, newRefreshSessionId: created.id },
-    });
-
-    return res.json({ token: newAccess, refreshToken: newRefreshRaw });
-  } catch {
-    if (isStepUpRole(user.role)) {
-      return sendErrorResponse(res, httpError(503, "REFRESH_SESSION_CREATE_FAILED", "Oturum yenilenemedi. Lütfen tekrar deneyin."));
-    }
-    // if rotation fails, keep old
-    await recordLoginAudit({
-      req,
-      email: user.email || null,
-      user,
-      action: "AUTH_REFRESH_OK_NO_ROTATE",
+      action: "AUTH_REFRESH_ROTATION_FAILED",
       reason: "ROTATION_CREATE_FAILED",
-      meta: { refreshSessionId: session.id },
+      meta: { refreshSessionId: session.id, error: String(e?.code || e?.message || "UNKNOWN") },
     });
-    return res.json({ token: newAccess, refreshToken: refreshTokenRaw });
+    return sendErrorResponse(res, httpError(503, "REFRESH_SESSION_CREATE_FAILED", "Oturum yenilenemedi. Lütfen tekrar deneyin."));
   }
+
+  try {
+    await enforceMaxRefreshSessions(user.id);
+  } catch {
+    // best-effort cleanup only
+  }
+
+  const newAccess = issueAccessToken(user);
+  await recordLoginAudit({
+    req,
+    email: user.email || null,
+    user,
+    action: "AUTH_REFRESH_OK",
+    reason: null,
+    meta: { oldRefreshSessionId: session.id, newRefreshSessionId: created.id },
+  });
+
+  return res.json({ token: newAccess, refreshToken: newRefreshRaw });
 });
 
 authRouter.post("/driver/change-pin", authRequired(), async (req, res) => {

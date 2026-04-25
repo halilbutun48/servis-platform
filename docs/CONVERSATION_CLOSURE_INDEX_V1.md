@@ -79,6 +79,7 @@ Detay execution docs:
 ### Yapilanlar
 
 - 500 / 1000 / 3500 bandlari icin benchmark ve soak hizalandi
+- autoReachedQueue claim / processing / reclaim / dead-letter guardrail ile queue dayanıklılığı güçlendirildi
 - 3000 stabil tavan, 3500 stress / ceiling referansi olarak belgelendi
 - region bazli kapasite planlamasi icin room / company / panel referanslari yazildi
 
@@ -111,20 +112,34 @@ Detay execution docs:
 
 ### Yapilanlar
 
-- hot-file queue policy
 - export/package hygiene closure
 - CI / verification visibility
 - safe closure / final hygiene
 - repo verification spine
+- hot-file queue policy
 
 ### Bagli dokumanlar
 
-- [MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY](MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md)
 - [MILESTONE_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE](MILESTONE_M90C_7_EXPORT_PACKAGE_HYGIENE_CLOSURE.md)
 - [MILESTONE_M90C_8_CI_VERIFICATION_VISIBILITY](MILESTONE_M90C_8_CI_VERIFICATION_VISIBILITY.md)
 - [MILESTONE_M90C_9_SAFE_CLOSURE_FINAL_HYGIENE_CHECKLIST](MILESTONE_M90C_9_SAFE_CLOSURE_FINAL_HYGIENE_CHECKLIST.md)
 - [MILESTONE_M91_SHIFT_AGREEMENT_ROUTE_PREVIEW](MILESTONE_M91_SHIFT_AGREEMENT_ROUTE_PREVIEW.md)
 - [MILESTONE_M92_REPO_VERIFICATION_SPINE](MILESTONE_M92_REPO_VERIFICATION_SPINE.md)
+- [MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY](MILESTONE_M90C_6_HOT_FILE_QUEUE_POLICY.md)
+
+## 6) Security hardening
+
+### Yapilanlar
+
+- refresh rotasyonu fail-closed hale getirildi
+- telematics vendor webhook signed HMAC + timestamp + replay guard ile korunur
+- `x-greenpack` bypass local-test override seviyesine indirildi
+
+### Bagli dokumanlar
+
+- [OVERLAY_NOTES_M44_TELEMATICS_2026-03-10](overlays/OVERLAY_NOTES_M44_TELEMATICS_2026-03-10.md)
+- [API_SPEC_V1](API_SPEC_V1.md)
+- [RUNBOOK_M77_KVKK_UYUM_KATMANI](RUNBOOK_M77_KVKK_UYUM_KATMANI.md)
 
 ## Kisa karar
 

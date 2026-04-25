@@ -15,12 +15,16 @@ Amaç: mevcut `driver -> /api/gps` hattını bozmadan, araç üstü cihaz / vend
 - Cihaz akışı `GpsLast` / `GpsPoint` tablolarına yazar ve mevcut live map/WS hattını kullanır.
 - `gps:update` yanında `telematics:update` event'i de yayınlanır.
 - History write için varsayılan gate: `30 sn / 50 m` (env ile ayarlanabilir).
-- Vendor endpoint shared secret ile korunur.
+- Vendor endpoint per-vendor HMAC + timestamp + replay guard ile korunur; legacy shared secret sadece compat/test yolu olarak tutulur.
 - Device provisioning token'ı sadece create / rotate cevabında ham olarak gösterilir; DB'de hash saklanır.
 
 ## Yeni env
 - `TELEMATICS_ENABLED=1`
-- `TELEMATICS_VENDOR_SHARED_SECRET=...`
+- `TELEMATICS_VENDOR_SECRET_GENERIC=...`
+- `TELEMATICS_VENDOR_SECRET_TRACCAR=...`
+- `TELEMATICS_VENDOR_SHARED_SECRET=...` (legacy compat only)
+- `TELEMATICS_VENDOR_SHARED_SECRET_LEGACY_ALLOWED=0`
+- `TELEMATICS_VENDOR_REPLAY_WINDOW_SEC=300`
 - `TELEMATICS_RATE_LIMIT_WINDOW_MS=60000`
 - `TELEMATICS_RATE_LIMIT_MAX=240`
 - `TELEMATICS_HISTORY_MIN_SEC=30`

@@ -10,7 +10,7 @@ const DEFAULT_LOCK_RETRY_MS = 25;
 const DEFAULT_STALE_LOCK_MS = 15000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DEFAULT_DATA_DIR = path.resolve(__dirname, "..", "..", "data");
+const DEFAULT_DATA_DIR = path.resolve(__dirname, "..", "..", "artifacts", "runtime-data");
 
 function defaultDataDir() {
   return DEFAULT_DATA_DIR;

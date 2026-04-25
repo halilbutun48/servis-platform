@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
 import { io } from "socket.io-client";
 import { prisma } from "../src/prisma.js";
-import { signToken } from "../src/auth/jwt.js";
 import { CONSENT_DOCS } from "../src/middleware/consentGate.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -533,6 +532,29 @@ function createPanelSession({ name, token, panels }) {
   };
 }
 
+async function loginBenchmarkUser(identifier, password, deviceId = null) {
+  const body = {
+    identifier,
+    password,
+  };
+  if (deviceId) body.deviceId = deviceId;
+
+  const resp = await requestJson("POST", "/api/auth/login", {
+    body,
+    timeoutMs: DEFAULT_TIMEOUT_MS,
+  });
+
+  if (!resp.ok || !resp.json?.token) {
+    throw new Error(`benchmark login failed for ${identifier}: ${resp.status}\n${String(resp.text || "").slice(0, 400)}`);
+  }
+
+  return {
+    token: String(resp.json.token || "").trim(),
+    refreshToken: resp.json.refreshToken ? String(resp.json.refreshToken).trim() : null,
+    deviceId: resp.json.deviceId || deviceId || null,
+  };
+}
+
 function createPanelBench({ panelProfile, seed }) {
   const profile = String(panelProfile || DEFAULT_PANEL_PROFILE).trim().toLowerCase();
   if (profile === DEFAULT_PANEL_PROFILE) return null;
@@ -543,16 +565,8 @@ function createPanelBench({ panelProfile, seed }) {
 
   const first = seed.items[0];
   const driverToken = String(first?.token || "").trim();
-  const companyToken = signToken({
-    userId: Number(seed?.companyUser?.id || 0),
-    role: "COMPANY",
-    sv: Number(seed?.companyUser?.sessionVersion || 1),
-  });
-  const roomToken = signToken({
-    userId: Number(seed?.roomUser?.id || 0),
-    role: "ROOM",
-    sv: Number(seed?.roomUser?.sessionVersion || 1),
-  });
+  const companyToken = String(seed?.companyUser?.token || "").trim();
+  const roomToken = String(seed?.roomUser?.token || "").trim();
   const driverShiftId = Number(first?.shiftId || 0);
   const companyCache = new Map();
 
@@ -1024,7 +1038,8 @@ async function ensureBenchmarkFleet(vehicleCount, benchTag, { scenario, cycles }
         driverId: driver.id,
         vehicleId: vehicle.id,
         shiftId: shift.id,
-        token: signToken({ userId: user.id, role: "DRIVER", sv: Number(user.sessionVersion || 1) }),
+        email,
+        token: null,
         baseLat,
         baseLng,
         seedLat,
@@ -1037,6 +1052,21 @@ async function ensureBenchmarkFleet(vehicleCount, benchTag, { scenario, cycles }
     });
 
     seedItems.push(row);
+  }
+
+  const companyLogin = await loginBenchmarkUser(companyUserEmail, DEFAULT_PASSWORD, `bench-company-${safeTag}`);
+  const roomLogin = await loginBenchmarkUser(roomUserEmail, DEFAULT_PASSWORD, `bench-room-${safeTag}`);
+  company.token = companyLogin.token;
+  company.refreshToken = companyLogin.refreshToken;
+  company.deviceId = companyLogin.deviceId;
+  room.token = roomLogin.token;
+  room.refreshToken = roomLogin.refreshToken;
+  room.deviceId = roomLogin.deviceId;
+
+  for (const item of seedItems) {
+    const login = await loginBenchmarkUser(item.email, DEFAULT_PASSWORD, item.deviceId);
+    item.token = login.token;
+    item.refreshToken = login.refreshToken;
   }
 
   return {

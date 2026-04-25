@@ -1,6 +1,7 @@
 // backend/src/jobs/autoReachedQueue.js
 // Auto-reached queue: keep /api/gps hot path thin, do the heavy stop-progress work off the request path.
 
+import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
@@ -11,8 +12,15 @@ import { haversineKm, etaMinutes } from "../geo.js";
 import { buildRegionRoutingKey } from "../region/index.js";
 
 const AUTO_REACHED_QUEUE_KEY = "gps:auto-reached:v1";
+const AUTO_REACHED_PROCESSING_KEY = "gps:auto-reached:processing:v1";
+const AUTO_REACHED_CLAIMS_HASH = "gps:auto-reached:claims:v1";
+const AUTO_REACHED_CLAIMS_INDEX = "gps:auto-reached:claims:index:v1";
+const AUTO_REACHED_DEAD_LETTER_KEY = "gps:auto-reached:dead:v1";
 const AUTO_REACHED_LOCK_PREFIX = "gps:auto-reached:lock:v1";
 const DEFAULT_LOCK_TTL_MS = 2 * 60 * 60 * 1000;
+const DEFAULT_PROCESSING_TTL_MS = 15 * 60 * 1000;
+const DEFAULT_RECLAIM_SWEEP_MS = 30 * 1000;
+const DEFAULT_MAX_ATTEMPTS = 5;
 
 function buildWorkerDatabaseUrl() {
   const base = String(process.env.DATABASE_URL || ENV.DATABASE_URL || "").trim();
@@ -43,6 +51,136 @@ function makeLockKey(shiftId, stopId) {
   return `${AUTO_REACHED_LOCK_PREFIX}:shift:${shiftId}:stop:${stopId}`;
 }
 
+function makeQueueTaskId(task = {}) {
+  if (task?.queueTaskId) return String(task.queueTaskId);
+  if (task?.taskId) return String(task.taskId);
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${crypto.randomBytes(8).toString("hex")}`;
+}
+
+function normalizeQueueTask(task = {}) {
+  const nowIso = new Date().toISOString();
+  return {
+    ...task,
+    queueTaskId: makeQueueTaskId(task),
+    queuedAtIso: String(task?.queuedAtIso || nowIso),
+    attemptCount: Math.max(0, Math.trunc(Number(task?.attemptCount || 0)) || 0),
+  };
+}
+
+function safeParseTask(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function clampQueueAttempts(value) {
+  const n = Math.trunc(Number(value || 0));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+async function removeClaimState(redis, taskId) {
+  try {
+    await redis.send("HDEL", AUTO_REACHED_CLAIMS_HASH, String(taskId));
+  } catch {
+    // ignore
+  }
+  try {
+    await redis.send("ZREM", AUTO_REACHED_CLAIMS_INDEX, String(taskId));
+  } catch {
+    // ignore
+  }
+}
+
+async function rememberClaimState(redis, envelope, raw, claimedAtMs) {
+  const record = {
+    raw,
+    claimedAtMs,
+    queueTaskId: envelope.queueTaskId,
+    attemptCount: clampQueueAttempts(envelope.attemptCount),
+    lockKey: envelope.lockKey || null,
+    lockToken: envelope.lockToken || null,
+    lockTtlMs: Number(envelope.lockTtlMs || 0) || null,
+  };
+  await redis.send("HSET", AUTO_REACHED_CLAIMS_HASH, String(envelope.queueTaskId), JSON.stringify(record));
+  await redis.send("ZADD", AUTO_REACHED_CLAIMS_INDEX, String(claimedAtMs), String(envelope.queueTaskId));
+}
+
+async function clearProcessingState(redis, envelope, raw) {
+  if (raw) {
+    try {
+      await redis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
+    } catch {
+      // ignore
+    }
+  }
+  await removeClaimState(redis, envelope.queueTaskId);
+  if (envelope.lockKey) {
+    try {
+      await redis.send("DEL", envelope.lockKey);
+    } catch {
+      // ignore
+    }
+  }
+}
+
+async function removeProcessingState(redis, envelope, raw) {
+  if (raw) {
+    try {
+      await redis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
+    } catch {
+      // ignore
+    }
+  }
+  await removeClaimState(redis, envelope.queueTaskId);
+}
+
+async function moveToDeadLetter(redis, envelope, raw, reason) {
+  const payload = {
+    ...envelope,
+    deadLetteredAtIso: new Date().toISOString(),
+    deadLetterReason: String(reason || "UNKNOWN"),
+  };
+  try {
+    await redis.send("LPUSH", AUTO_REACHED_DEAD_LETTER_KEY, JSON.stringify(payload));
+    await redis.send("LTRIM", AUTO_REACHED_DEAD_LETTER_KEY, "0", "199");
+  } catch {
+    // ignore
+  }
+  await clearProcessingState(redis, envelope, raw);
+}
+
+async function requeueFromProcessing(redis, envelope, raw, reason, maxAttempts) {
+  const currentAttempts = clampQueueAttempts(envelope.attemptCount);
+  const nextAttempts = currentAttempts + 1;
+  if (nextAttempts >= maxAttempts) {
+    await moveToDeadLetter(redis, { ...envelope, attemptCount: nextAttempts }, raw, reason || "MAX_ATTEMPTS");
+    return { action: "dead-letter" };
+  }
+
+  const nowIso = new Date().toISOString();
+  const nextEnvelope = normalizeQueueTask({
+    ...envelope,
+    attemptCount: nextAttempts,
+    queuedAtIso: nowIso,
+    requeuedAtIso: nowIso,
+    lastRequeueReason: String(reason || "RECLAIM"),
+  });
+
+  try {
+    await redis.send("LPUSH", AUTO_REACHED_QUEUE_KEY, JSON.stringify(nextEnvelope));
+  } catch (e) {
+    throw e;
+  }
+
+  await removeProcessingState(redis, envelope, raw);
+  return { action: "requeued" };
+}
+
 async function audit(prismaClient, { actorUserId, actorRole, action, entity, entityId, meta }) {
   try {
     await prismaClient.auditLog.create({
@@ -64,9 +202,10 @@ export async function enqueueAutoReachedTask(task, opts = {}) {
   const redis = getRedis();
   if (!redis?.send) return { ok: false, reason: "REDIS_UNAVAILABLE" };
 
+  const envelope = normalizeQueueTask(task);
   const lockTtlMs = Math.max(60_000, Number(opts.lockTtlMs ?? ENV.AUTO_REACHED_LOCK_TTL_MS ?? DEFAULT_LOCK_TTL_MS));
-  const lockKey = makeLockKey(task.shiftId, task.stopId);
-  const lockToken = `${task.shiftId}:${task.stopId}:${task.atIso ?? Date.now()}`;
+  const lockKey = makeLockKey(envelope.shiftId, envelope.stopId);
+  const lockToken = `${envelope.shiftId}:${envelope.stopId}:${envelope.queueTaskId}:${envelope.atIso ?? Date.now()}`;
 
   try {
     const acquired = await redis.send("SET", lockKey, lockToken, "NX", "PX", String(lockTtlMs));
@@ -74,8 +213,15 @@ export async function enqueueAutoReachedTask(task, opts = {}) {
       return { ok: true, queued: false, deduped: true };
     }
 
-    await redis.send("LPUSH", AUTO_REACHED_QUEUE_KEY, JSON.stringify({ ...task, lockKey, lockToken, lockTtlMs }));
-    return { ok: true, queued: true };
+    const payload = {
+      ...envelope,
+      lockKey,
+      lockToken,
+      lockTtlMs,
+    };
+
+    await redis.send("LPUSH", AUTO_REACHED_QUEUE_KEY, JSON.stringify(payload));
+    return { ok: true, queued: true, taskId: envelope.queueTaskId };
   } catch (e) {
     try {
       await redis.send("DEL", lockKey);
@@ -254,17 +400,76 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
   if (!redisUrl) return () => {};
 
   const queueRedis = createMiniRedisClient(redisUrl);
+  const controlRedis = createMiniRedisClient(redisUrl);
+  const processingTtlMs = Math.max(60_000, Number(opts.processingTtlMs ?? ENV.AUTO_REACHED_PROCESSING_TTL_MS ?? DEFAULT_PROCESSING_TTL_MS));
+  const reclaimSweepMs = Math.max(10_000, Number(opts.reclaimSweepMs ?? ENV.AUTO_REACHED_RECLAIM_SWEEP_MS ?? DEFAULT_RECLAIM_SWEEP_MS));
+  const maxAttempts = Math.max(1, Math.trunc(Number(opts.maxAttempts ?? ENV.AUTO_REACHED_MAX_ATTEMPTS ?? DEFAULT_MAX_ATTEMPTS)) || DEFAULT_MAX_ATTEMPTS);
   let closed = false;
+  let reclaimTimer = null;
+  let reclaimBusy = false;
+  const activeTasks = new Set();
   const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+  const reclaimStaleClaims = async () => {
+    if (closed || reclaimBusy) return;
+    reclaimBusy = true;
+    try {
+      const cutoff = Date.now() - processingTtlMs;
+      const staleIds = await controlRedis.send(
+        "ZRANGEBYSCORE",
+        AUTO_REACHED_CLAIMS_INDEX,
+        "-inf",
+        String(cutoff),
+        "LIMIT",
+        "0",
+        "25"
+      );
+      const ids = Array.isArray(staleIds) ? staleIds : [];
+      for (const taskId of ids) {
+        if (closed) break;
+        const raw = await controlRedis.send("HGET", AUTO_REACHED_CLAIMS_HASH, String(taskId));
+        if (!raw) {
+          await removeClaimState(controlRedis, taskId);
+          continue;
+        }
+
+        const envelope = safeParseTask(raw);
+        if (!envelope) {
+          await moveToDeadLetter(controlRedis, normalizeQueueTask({ queueTaskId: taskId }), raw, "PARSE_STALE_CLAIM");
+          continue;
+        }
+
+        await requeueFromProcessing(controlRedis, normalizeQueueTask(envelope), raw, "STALE_CLAIM", maxAttempts);
+      }
+    } catch (e) {
+      if (!closed) {
+        console.error("autoReachedQueue reclaim error:", e);
+      }
+    } finally {
+      reclaimBusy = false;
+    }
+  };
+
+  const scheduleReclaim = () => {
+    if (closed) return;
+    if (reclaimTimer) return;
+    reclaimTimer = setTimeout(async () => {
+      reclaimTimer = null;
+      await reclaimStaleClaims();
+      scheduleReclaim();
+    }, reclaimSweepMs);
+    reclaimTimer.unref?.();
+  };
+
   const loop = async () => {
+    scheduleReclaim();
     while (!closed) {
       let item = null;
       try {
-        item = await queueRedis.send("BRPOP", AUTO_REACHED_QUEUE_KEY, "1");
+        item = await queueRedis.send("BRPOPLPUSH", AUTO_REACHED_QUEUE_KEY, AUTO_REACHED_PROCESSING_KEY, "1");
       } catch (e) {
         if (!closed) {
-          console.error("autoReachedQueue BRPOP error:", e);
+          console.error("autoReachedQueue BRPOPLPUSH error:", e);
         }
         await pause(1000);
         continue;
@@ -273,34 +478,69 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
       if (closed) break;
       if (!item) continue;
 
-      const raw = Array.isArray(item) ? item[1] : null;
+      const raw = typeof item === "string" ? item : Array.isArray(item) ? item[item.length - 1] : null;
       if (!raw) continue;
 
       let task = null;
       try {
-        task = JSON.parse(raw);
+        task = safeParseTask(raw);
+      } catch (_e) {
+        task = null;
+      }
+
+      if (!task) {
+        console.error("autoReachedQueue parse error:", raw.slice(0, 200));
+        try {
+          await controlRedis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
+        } catch {
+          // ignore
+        }
+        continue;
+      }
+
+      task = normalizeQueueTask(task);
+      activeTasks.add(task.queueTaskId);
+
+      try {
+        await rememberClaimState(controlRedis, task, raw, Date.now());
       } catch (e) {
-        console.error("autoReachedQueue parse error:", e);
+        console.error("autoReachedQueue claim record error:", e);
+        try {
+          await controlRedis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
+        } catch {
+          // ignore
+        }
+        try {
+          await controlRedis.send("LPUSH", AUTO_REACHED_QUEUE_KEY, raw);
+        } catch {
+          // ignore
+        }
+        activeTasks.delete(task.queueTaskId);
         continue;
       }
 
       try {
         await processAutoReachedTask(io, task);
-        if (task?.lockKey) {
-          try {
-            await queueRedis.send("DEL", task.lockKey);
-          } catch {
-            // ignore
-          }
-        }
+        await clearProcessingState(controlRedis, task, raw);
       } catch (e) {
         console.error("autoReachedQueue task error:", e);
         try {
-          await queueRedis.send("LPUSH", AUTO_REACHED_QUEUE_KEY, raw);
+          await controlRedis.send("HSET", AUTO_REACHED_CLAIMS_HASH, String(task.queueTaskId), JSON.stringify({
+            raw,
+            claimedAtMs: Date.now() - processingTtlMs - 1,
+            queueTaskId: task.queueTaskId,
+            attemptCount: clampQueueAttempts(task.attemptCount),
+            lockKey: task.lockKey || null,
+            lockToken: task.lockToken || null,
+            lockTtlMs: Number(task.lockTtlMs || 0) || null,
+          }));
+          await controlRedis.send("ZADD", AUTO_REACHED_CLAIMS_INDEX, String(Date.now() - processingTtlMs - 1), String(task.queueTaskId));
         } catch {
           // ignore
         }
       }
+
+      activeTasks.delete(task.queueTaskId);
     }
   };
 
@@ -308,8 +548,17 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
 
   return () => {
     closed = true;
+    if (reclaimTimer) {
+      clearTimeout(reclaimTimer);
+      reclaimTimer = null;
+    }
     try {
       queueRedis.quit();
+    } catch {
+      // ignore
+    }
+    try {
+      controlRedis.quit();
     } catch {
       // ignore
     }

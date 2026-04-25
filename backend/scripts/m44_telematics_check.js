@@ -1,4 +1,5 @@
 import http from "http";
+import crypto from "crypto";
 import { banner, step, must, reqJson } from "./_harness.js";
 import { prisma } from "../src/prisma.js";
 import { hashTelematicsToken } from "../src/telematics/hash.js";
@@ -35,6 +36,24 @@ async function postRaw(path, body, headers = {}) {
   });
 }
 
+function signVendorPayload(provider, body, timestampMs, secret) {
+  const payload = [
+    String(provider || "").trim().toLowerCase(),
+    String(timestampMs || 0),
+    String(body?.serial || ""),
+    String(body?.at || ""),
+    String(body?.lat ?? ""),
+    String(body?.lng ?? ""),
+    String(body?.speed ?? ""),
+    String(body?.heading ?? ""),
+    String(body?.accuracy ?? ""),
+    String(body?.provider || ""),
+    String(body?.source || "VENDOR"),
+  ].join("|");
+
+  return crypto.createHmac("sha256", String(secret || "")).update(payload, "utf8").digest("hex");
+}
+
 async function login(email, password) {
   const r = await reqJson("POST", "/api/auth/login", { body: { email, password } });
   must(`login ok ${email}`, r.ok && !!r.json?.token);
@@ -59,7 +78,7 @@ async function ensureRoomVehicle(roomUserId) {
 async function main() {
   banner("M44 TELEMATICS CHECK");
   must("telematics enabled", ENV.TELEMATICS_ENABLED === true);
-  must("vendor secret configured", !!String(ENV.TELEMATICS_VENDOR_SHARED_SECRET || ""));
+  must("vendor secret configured", !!String(ENV.TELEMATICS_VENDOR_SECRET_GENERIC || ENV.TELEMATICS_VENDOR_SHARED_SECRET || ""));
 
   step("seed room login and vehicle");
   const room = await login("room@demo.com", "demo123");
@@ -95,7 +114,18 @@ async function main() {
 
   step("vendor cloud push -> same vehicle through serial lookup");
   const at2 = new Date(Date.now() + 65_000).toISOString();
-  const vendorPush = await postRaw("/api/telematics/vendor/generic", { serial, lat: 41.015, lng: 29.02, speed: 41, at: at2 }, { "x-telematics-secret": String(ENV.TELEMATICS_VENDOR_SHARED_SECRET) });
+  const vendorSecret = String(ENV.TELEMATICS_VENDOR_SECRET_GENERIC || ENV.TELEMATICS_VENDOR_SHARED_SECRET || "");
+  const vendorTimestamp = String(Date.now());
+  const vendorBody = { serial, lat: 41.015, lng: 29.02, speed: 41, at: at2 };
+  const vendorSignature = signVendorPayload("generic", vendorBody, vendorTimestamp, vendorSecret);
+  const vendorPush = await postRaw(
+    "/api/telematics/vendor/generic",
+    vendorBody,
+    {
+      "x-telematics-timestamp": vendorTimestamp,
+      "x-telematics-signature": vendorSignature,
+    }
+  );
   must("vendor push ok", vendorPush.ok && vendorPush.json?.vehicleId === vehicle.id);
   must("vendor push source VENDOR", String(vendorPush.json?.source || "") === "VENDOR");
 

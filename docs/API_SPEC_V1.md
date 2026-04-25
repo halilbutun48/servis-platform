@@ -625,9 +625,11 @@ Device direct push
 
 Vendor cloud push
 - `POST /api/telematics/vendor/:provider`
-- auth: `x-telematics-secret`
+- auth: `x-telematics-timestamp` + `x-telematics-signature`
+- secret source: provider-specific HMAC secret
 - supported providers: `generic`, `traccar`
 - generic body: `{ "serial": "IMEI-001", "lat": 41.02, "lng": 29.02, "speed": 40, "at": "..." }`
+- legacy shared-secret compat only local/test yolu olarak tutulur; production akisi signed webhook kullanir.
 
 Publish
 - existing `gps:update` korunur

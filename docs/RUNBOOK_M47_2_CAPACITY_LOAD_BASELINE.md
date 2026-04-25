@@ -11,9 +11,9 @@ Bu milestone, uretim oncesi **kapasite baz cizgisi** olusturmak icin minimum goz
 - Bu benchmark sonucu, ayni anda coklu region cell ya da ekstra replica varmis gibi genellenmez.
 
 ## Queue siniri
-- `autoReachedQueue` performans fix'i olarak kabul edilir; **minimal guvenli queue** seviyesindedir, tam enterprise queue degildir.
+- `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlariyla daha dayanıklıdır; yine de **tam enterprise queue** degildir.
 - Redis down olursa GPS hot path fallback ile ilerler; worker crash / reclaim / shutdown handoff siniri ayrica `RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` icinde tutulur.
-- Lock TTL, backlog, retry ve graceful shutdown davranisi resmi sinirdir; bu runbook queue omurgasinin enterprise durability iddiasi olmadigini acikca soyler.
+- Lock TTL, backlog, retry, stale reclaim ve graceful shutdown davranisi resmi sinirdir; bu runbook queue omurgasinin enterprise exactly-once iddiasi olmadigini acikca soyler.
 
 ## Beklenen gostergeler
 - Ortalama istek/dakika

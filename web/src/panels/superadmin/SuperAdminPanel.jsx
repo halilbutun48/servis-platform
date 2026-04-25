@@ -271,8 +271,9 @@ export default function SuperAdminPanel() {
 
       <div style={{ marginTop: 14 }}>
         <FeedbackLoopSection
-          title="Geri Bildirim"
-          subtitle="Sahadan gelen notları ve yıldızlı değerlendirmeleri Super Admin buradan okur; kayıtlar aynı kuyruğa düşer."
+          title="Gelen geri bildirimler"
+          subtitle="Sahadan gelen notları ve yıldızlı değerlendirmeleri Super Admin buradan okur ve durumlarını günceller."
+          mode="review"
         />
       </div>
     </div>

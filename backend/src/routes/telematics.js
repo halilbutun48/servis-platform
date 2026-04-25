@@ -4,7 +4,7 @@ import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { makeTelematicsToken, hashTelematicsToken } from "../telematics/hash.js";
 import { normalizeDirectPush, normalizeVendorPayload } from "../telematics/providers.js";
-import { readDeviceToken, readProviderSecret, findDeviceByToken, findDeviceBySerial, ingestTelematicsPosition } from "../telematics/service.js";
+import { readDeviceToken, findDeviceByToken, findDeviceBySerial, ingestTelematicsPosition, verifyVendorWebhookAuth } from "../telematics/service.js";
 
 function ensureEnabled() {
   if (!ENV.TELEMATICS_ENABLED) {
@@ -181,13 +181,12 @@ export function telematicsRouter(io) {
   r.post("/vendor/:provider", async (req, res) => {
     try {
       ensureEnabled();
-      const expected = String(ENV.TELEMATICS_VENDOR_SHARED_SECRET || "").trim();
-      const got = readProviderSecret(req);
-      if (!expected) return res.status(503).json({ error: "VENDOR_SECRET_NOT_CONFIGURED" });
-      if (!got || got !== expected) return res.status(401).json({ error: "VENDOR_UNAUTHORIZED" });
-
       const provider = String(req.params.provider || "").trim();
       const normalized = normalizeVendorPayload(provider, req.body || {});
+      const auth = await verifyVendorWebhookAuth({ provider, normalized, req });
+      if (!auth.ok) {
+        return res.status(auth.status || 401).json({ error: auth.code || "VENDOR_UNAUTHORIZED" });
+      }
       const device = await findDeviceBySerial({ provider, serial: normalized.serial });
       if (!device) return res.status(404).json({ error: "DEVICE_NOT_FOUND" });
 

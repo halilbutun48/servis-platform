@@ -25,6 +25,7 @@
 - M92 repo verification spine: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
+- All checks wrapper: `tools\run_all_checks.ps1`
 - `verify:final`, `verify:repo` zincirinden sonra `verify:snapshot` soft gate raporunu da yeniler.
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 

@@ -17,7 +17,8 @@
     "upperRouteSubpack": "tools/_packs/pack_m82.ps1"
   },
   "runtimeJsonStores": {
-    "backendDataDir": "backend/data",
+    "backendDataDir": "artifacts/runtime-data",
+    "legacyBackendDataDir": "backend/data",
     "atomicWrite": true,
     "transactionalUpdate": true,
     "trackedRuntimeFiles": false,
@@ -147,7 +148,7 @@
   "shareablePackageHygiene": {
     "policyVersion": 1,
     "goal": "shareable-package-clean-export",
-    "defaultRuntimeDataRoot": "backend/data",
+      "defaultRuntimeDataRoot": "artifacts/runtime-data",
     "principles": [
       "line-count reduction stays deferred until after acceptance and hygiene closure",
       "shareable exports must exclude workspace secrets, build artifacts, runtime json stores, and transient overlay/log residues",
@@ -247,25 +248,39 @@
     "primaryCommand": "npm run verify:snapshot",
     "softGate": true,
     "reportPath": "artifacts/repo-audit/physical_snapshot_hygiene_latest.json",
-    "principles": [
-      "export-clean and physical snapshot clean are separate checks",
-      "the first snapshot gate is report-only and does not block verify:final even when verify:final refreshes the report",
-      "backend/data is the intentional local runtime json working area and is reported as review-needed instead of hard-fail",
-      "deprecated export zip residues and overlay backup residues are not allowed in the working tree snapshot surface",
-      "docs/overlays stays as intentional tracked history and is not treated as snapshot dirt"
-    ],
-    "allowExactFiles": [
-      "artifacts/.gitkeep"
-    ],
-    "allowPathPrefixes": [
-      "artifacts/lint/",
-      "artifacts/repo-audit/",
-      "artifacts/shareable-export/",
-      "docs/overlays/"
-    ],
-    "allowGlobFiles": [
-      "artifacts/shareable-export/servis-platform_shareable_*.zip"
-    ],
+      "principles": [
+        "export-clean and physical snapshot clean are separate checks",
+        "the first snapshot gate is report-only and does not block verify:final even when verify:final refreshes the report",
+        "intentional evidence artifacts produced by the repo verification chain are allowlisted instead of counted as physical dirt",
+        "artifacts/runtime-data is the intentional local runtime json working area; backend/data remains only as a legacy compatibility shell and is guarded as a residue path",
+        "deprecated export zip residues and overlay backup residues are not allowed in the working tree snapshot surface",
+        "docs/overlays stays as intentional tracked history and is not treated as snapshot dirt"
+      ],
+      "allowExactFiles": [
+        "artifacts/.gitkeep",
+        "artifacts/backend-dev.err.log",
+        "artifacts/backend-dev.out.log",
+        "artifacts/pack_m89_full_latest.log",
+        "artifacts/repo_deep_audit_latest.json",
+        "artifacts/repo_deep_audit_latest.md"
+      ],
+      "allowPathPrefixes": [
+        "artifacts/backups/",
+        "artifacts/benchmarks/",
+        "artifacts/compliance/",
+        "artifacts/consolidation/",
+        "artifacts/normalization/",
+        "artifacts/operations/",
+        "artifacts/repo-audit-clean/",
+        "artifacts/lint/",
+        "artifacts/repo-audit/",
+        "artifacts/shareable-export/",
+        "artifacts/runtime-data/",
+        "docs/overlays/"
+      ],
+      "allowGlobFiles": [
+        "artifacts/shareable-export/servis-platform_shareable_*.zip"
+      ],
     "hardFailExactFiles": [
       ".env",
       "backend/.env",
@@ -280,15 +295,11 @@
       "data/*.json",
       "artifacts/exports/*.zip"
     ],
-    "warningGlobFiles": [
-      "backend/data/*.json"
-    ],
-    "warningPathPrefixes": [
-      "artifacts/",
-      "docs/_archive/",
-      "tools/_archive/"
-    ]
-  },
+      "warningGlobFiles": [
+        "backend/data/*.json"
+      ],
+      "warningPathPrefixes": []
+    },
   "repoVerificationSpine": {
     "goal": "single-roof-repo-verification-chain",
     "primaryCommand": "npm run verify:repo",

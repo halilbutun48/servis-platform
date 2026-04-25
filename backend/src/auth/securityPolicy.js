@@ -20,7 +20,7 @@ export function isLocalDevMode() {
 
 export function isGreenpackBypassAllowed(req) {
   const hdr = String(req?.headers?.["x-greenpack"] || "").trim();
-  return hdr === "1" && isLocalDevMode();
+  return hdr === "1" && isLocalDevMode() && ENV.GREENPACK_BYPASS_ENABLED === true;
 }
 
 export function getStepUpRequiredRoles() {

@@ -53,11 +53,29 @@ function pillStyle(kind) {
   return { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#d0d5dd" };
 }
 
-export default function FeedbackLoopSection({ title = "Geri Bildirim", subtitle = "", compact = false }) {
+const REVIEW_STATUS_OPTIONS = [
+  { id: "GORULDU", label: "Görüldü" },
+  { id: "TEKRARLANDI", label: "Tekrarlandı" },
+  { id: "COZULDU", label: "Çözüldü" },
+  { id: "KAPANDI", label: "Kapandı" },
+];
+
+function statusLabel(value) {
+  const code = String(value || "GORULDU").toUpperCase();
+  return REVIEW_STATUS_OPTIONS.find((item) => item.id === code)?.label || code;
+}
+
+export default function FeedbackLoopSection({
+  title = "Geri Bildirim",
+  subtitle = "",
+  compact = false,
+  mode = "write",
+}) {
   const { token, me } = useSession();
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [reviewBusyId, setReviewBusyId] = useState("");
   const [err, setErr] = useState("");
   const [form, setForm] = useState({
     categoryId: "GORUS",
@@ -103,6 +121,8 @@ export default function FeedbackLoopSection({ title = "Geri Bildirim", subtitle 
     };
   }, [items]);
 
+  const reviewMode = mode === "review";
+
   async function submit() {
     const safeTitle = String(form.title || "").trim();
     const safeDetail = String(form.detail || "").trim();
@@ -144,13 +164,34 @@ export default function FeedbackLoopSection({ title = "Geri Bildirim", subtitle 
     }
   }
 
+  async function updateStatus(recordId, status) {
+    if (!token || !recordId || !status) return;
+    setReviewBusyId(recordId);
+    setErr("");
+    try {
+      await api(`/api/pilot-launch-gate/field-feedback-loop/records/${recordId}/status`, {
+        method: "POST",
+        token,
+        body: {
+          status,
+          note: `Super Admin değerlendirdi: ${statusLabel(status)}`,
+        },
+      });
+      await load();
+    } catch (error) {
+      setErr(String(error?.message || error));
+    } finally {
+      setReviewBusyId("");
+    }
+  }
+
   return (
     <div className="card" style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div className="panelSectionTitle">{title}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            {subtitle || "Kısa not, öneri veya değerlendirme bırak; kayıtlar Super Admin tarafından okunur."}
+            {subtitle || (reviewMode ? "Gelen kayıtları oku, durumunu güncelle ve kapat." : "Kısa not, öneri veya değerlendirme bırak; kayıtlar Super Admin tarafından okunur.")}
           </div>
         </div>
         <div className="panelMeta" style={{ textAlign: "right" }}>
@@ -161,66 +202,66 @@ export default function FeedbackLoopSection({ title = "Geri Bildirim", subtitle 
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {CATEGORY_OPTIONS.map((item) => (
-          <button
+          <span
             key={item.id}
-            type="button"
-            className={form.categoryId === item.id ? "btn primary" : "btn"}
-            disabled={saving}
-            onClick={() => setForm((prev) => ({ ...prev, categoryId: item.id }))}
+            className="pill"
+            style={item.id === "DEGERLENDIRME" ? { background: "rgba(130,150,255,0.14)" } : undefined}
           >
-            {item.label}
-          </button>
+            {item.label} • {summary.byCategory[item.id] || 0}
+          </span>
         ))}
       </div>
 
-      <div style={{ display: "grid", gap: 10 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <span className="panelMeta">Yıldız değerlendirme</span>
-          <Stars
-            value={form.rating}
-            onChange={(rating) => setForm((prev) => ({ ...prev, rating }))}
-          />
-        </label>
+      {!reviewMode ? (
+        <div style={{ display: "grid", gap: 10 }}>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span className="panelMeta">Yıldız değerlendirme</span>
+            <Stars
+              value={form.rating}
+              onChange={(rating) => setForm((prev) => ({ ...prev, rating }))}
+            />
+          </label>
 
-        <label style={{ display: "grid", gap: 6 }}>
-          <span className="panelMeta">Kısa başlık</span>
-          <input
-            value={form.title}
-            onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-            placeholder={`${CATEGORY_LABELS[form.categoryId] || "Görüş"} • ${me?.role || "Kullanıcı"}`}
-            maxLength={160}
-          />
-        </label>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span className="panelMeta">Kısa başlık</span>
+            <input
+              value={form.title}
+              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              placeholder={`${CATEGORY_LABELS[form.categoryId] || "Görüş"} • ${me?.role || "Kullanıcı"}`}
+              maxLength={160}
+            />
+          </label>
 
-        <label style={{ display: "grid", gap: 6 }}>
-          <span className="panelMeta">Detay</span>
-          <textarea
-            value={form.detail}
-            onChange={(event) => setForm((prev) => ({ ...prev, detail: event.target.value }))}
-            rows={compact ? 3 : 4}
-            maxLength={1600}
-            placeholder="Kısa bağlam, neden önemli olduğu ve varsa beklenen davranış."
-          />
-        </label>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span className="panelMeta">Detay</span>
+            <textarea
+              value={form.detail}
+              onChange={(event) => setForm((prev) => ({ ...prev, detail: event.target.value }))}
+              rows={compact ? 3 : 4}
+              maxLength={1600}
+              placeholder="Kısa bağlam, neden önemli olduğu ve varsa beklenen davranış."
+            />
+          </label>
 
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <div className="panelMeta" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {CATEGORY_OPTIONS.map((item) => (
-              <span key={item.id} className="pill" style={item.id === "DEGERLENDIRME" ? { background: "rgba(130,150,255,0.14)" } : undefined}>
-                {item.label} • {summary.byCategory[item.id] || 0}
-              </span>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn" disabled={saving} onClick={() => setForm((prev) => ({ ...prev, title: "", detail: "" }))}>
-              Temizle
-            </button>
-            <button type="button" className="btn primary" disabled={saving} onClick={submit}>
-              {saving ? "..." : "Gönder"}
-            </button>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="panelMeta">
+              Kayıtlar Super Admin tarafından okunur ve durumlandırılır.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="btn" disabled={saving} onClick={() => setForm((prev) => ({ ...prev, title: "", detail: "" }))}>
+                Temizle
+              </button>
+              <button type="button" className="btn primary" disabled={saving} onClick={submit}>
+                {saving ? "..." : "Gönder"}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="panelMeta">
+          Bu yüzey yalnızca gelen kayıtları okumak ve durumlarını güncellemek içindir; yeni kayıt diğer panellerden gelir.
+        </div>
+      )}
 
       {err ? <div className="panelMeta" style={{ color: "#fca5a5", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
@@ -261,6 +302,22 @@ export default function FeedbackLoopSection({ title = "Geri Bildirim", subtitle 
                 <span>Yüzey: <b>{item?.surface || "-"}</b></span>
                 {item?.ownerRole ? <span>Sahip: <b>{item.ownerRole}</b></span> : null}
               </div>
+
+              {reviewMode ? (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {REVIEW_STATUS_OPTIONS.map((statusItem) => (
+                    <button
+                      key={statusItem.id}
+                      type="button"
+                      className={String(item?.status || "").toUpperCase() === statusItem.id ? "btn primary" : "btn"}
+                      disabled={Boolean(reviewBusyId) && reviewBusyId !== item?.id}
+                      onClick={() => updateStatus(item?.id, statusItem.id)}
+                    >
+                      {statusItem.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           );
         })}

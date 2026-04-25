@@ -63,12 +63,12 @@ const policy = state.shareablePackageHygiene || {};
 expect((state.activeMilestones || []).includes("M90C.7"), "state active milestones include M90C.7");
 expect(policy.goal === "shareable-package-clean-export", "state policy goal tracks shareable package clean export");
 expect((policy.exportTool || "") === "tools/export_shareable_repo_bundle.ps1", "state policy points to shareable export tool");
-expect((policy.defaultRuntimeDataRoot || "") === "backend/data", "state policy records backend/data as default runtime json root");
+expect((policy.defaultRuntimeDataRoot || "") === "artifacts/runtime-data", "state policy records artifacts/runtime-data as default runtime json root");
 expect((policy.forbiddenExactFiles || []).includes(".env") && (policy.forbiddenExactFiles || []).includes("backend/.env") && (policy.forbiddenExactFiles || []).includes("infra/.env"), "state policy blocks env files");
 expect((policy.forbiddenGlobFiles || []).includes("backend/data/*.json") && (policy.forbiddenGlobFiles || []).includes("data/*.json") && (policy.forbiddenGlobFiles || []).includes("README_M*_OVERLAY*.txt"), "state policy blocks runtime json and overlay residue globs");
 expect((policy.forbiddenPathPrefixes || []).includes("artifacts/") && (policy.forbiddenPathPrefixes || []).includes("web/dist/") && (policy.forbiddenPathPrefixes || []).includes("mobile/dist/"), "state policy blocks artifacts and dist trees");
 expect(report.summary.runtimeJsonFileCount === 0, "repo audit runtime json count remains 0");
-expect(includesText(jsonFileStore, 'const DEFAULT_DATA_DIR = path.resolve(__dirname, "..", "..", "data")'), "json file store default root resolves to backend/data");
+expect(includesText(jsonFileStore, 'const DEFAULT_DATA_DIR = path.resolve(__dirname, "..", "..", "artifacts", "runtime-data")'), "json file store default root resolves to artifacts/runtime-data");
 expect(includesText(jsonFileStore, "process.env.RUNTIME_DATA_DIR") && !includesText(jsonFileStore, 'path.resolve(process.cwd(), "data")'), "json file store keeps override path without cwd data fallback");
 
 expect(includesText(gitignore, "backend/data/*.json"), ".gitignore keeps runtime json ignored");

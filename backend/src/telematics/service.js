@@ -1,11 +1,134 @@
+import crypto from "node:crypto";
 import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { haversineKm } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
+import { isProductionLike } from "../auth/securityPolicy.js";
+import { getRedis } from "../redis/index.js";
 import { hashTelematicsToken } from "./hash.js";
 
 function distanceMeters(aLat, aLng, bLat, bLng) {
   return haversineKm(aLat, aLng, bLat, bLng) * 1000;
+}
+
+function sha256Hex(value) {
+  return crypto.createHash("sha256").update(String(value || ""), "utf8").digest("hex");
+}
+
+function timingSafeHexEqual(left, right) {
+  const a = Buffer.from(String(left || "").trim(), "hex");
+  const b = Buffer.from(String(right || "").trim(), "hex");
+  if (!a.length || !b.length || a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+function normalizeProviderName(provider) {
+  return String(provider || "").trim().toLowerCase();
+}
+
+function resolveVendorSecret(provider) {
+  const key = normalizeProviderName(provider);
+  const perProvider =
+    key === "traccar"
+      ? String(ENV.TELEMATICS_VENDOR_SECRET_TRACCAR || "").trim()
+      : key === "generic"
+        ? String(ENV.TELEMATICS_VENDOR_SECRET_GENERIC || "").trim()
+        : "";
+  if (perProvider) return { secret: perProvider, source: "provider" };
+
+  const legacy = String(ENV.TELEMATICS_VENDOR_SHARED_SECRET || "").trim();
+  if (legacy && ENV.TELEMATICS_VENDOR_SHARED_SECRET_LEGACY_ALLOWED && !isProductionLike()) {
+    return { secret: legacy, source: "legacy" };
+  }
+
+  return { secret: "", source: null };
+}
+
+function readVendorTimestamp(req) {
+  const raw = String(req.get("x-telematics-timestamp") || req.get("x-telematics-ts") || "").trim();
+  if (!raw) return null;
+  if (/^\d{10,13}$/.test(raw)) {
+    const ms = raw.length === 10 ? Number(raw) * 1000 : Number(raw);
+    return Number.isFinite(ms) ? ms : null;
+  }
+  const parsed = new Date(raw);
+  const ms = parsed.getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function readVendorSignature(req) {
+  return String(req.get("x-telematics-signature") || req.get("x-telematics-signature-v1") || "").trim();
+}
+
+function buildVendorSignatureBase(provider, normalized, timestampMs) {
+  const atIso = normalized?.at instanceof Date
+    ? normalized.at.toISOString()
+    : normalized?.at
+      ? new Date(normalized.at).toISOString()
+      : "";
+
+  return [
+    normalizeProviderName(provider),
+    String(timestampMs || 0),
+    String(normalized?.serial || ""),
+    atIso,
+    String(normalized?.lat ?? ""),
+    String(normalized?.lng ?? ""),
+    String(normalized?.speed ?? ""),
+    String(normalized?.heading ?? ""),
+    String(normalized?.accuracy ?? ""),
+    String(normalized?.provider || ""),
+    String(normalized?.source || ""),
+  ].join("|");
+}
+
+export async function verifyVendorWebhookAuth({ provider, normalized, req }) {
+  const resolved = resolveVendorSecret(provider);
+  if (!resolved.secret) {
+    return { ok: false, status: 503, code: "VENDOR_SECRET_NOT_CONFIGURED" };
+  }
+
+  const timestampMs = readVendorTimestamp(req);
+  if (!timestampMs) {
+    return { ok: false, status: 400, code: "VENDOR_TIMESTAMP_REQUIRED" };
+  }
+
+  const clockSkewMs = Math.max(30_000, Number(ENV.TELEMATICS_VENDOR_REPLAY_WINDOW_SEC || 300) * 1000);
+  if (Math.abs(Date.now() - timestampMs) > clockSkewMs) {
+    return { ok: false, status: 401, code: "VENDOR_TIMESTAMP_OUT_OF_RANGE" };
+  }
+
+  const signature = readVendorSignature(req);
+  if (!signature) {
+    return { ok: false, status: 401, code: "VENDOR_SIGNATURE_REQUIRED" };
+  }
+
+  const expected = crypto
+    .createHmac("sha256", resolved.secret)
+    .update(buildVendorSignatureBase(provider, normalized, timestampMs), "utf8")
+    .digest("hex");
+
+  if (!timingSafeHexEqual(expected, signature)) {
+    return { ok: false, status: 401, code: "VENDOR_UNAUTHORIZED" };
+  }
+
+  const redis = getRedis();
+  if (!redis?.send) {
+    return { ok: false, status: 503, code: "VENDOR_REPLAY_GUARD_UNAVAILABLE" };
+  }
+
+  const replayKey = `telematics:vendor:replay:v1:${normalizeProviderName(provider)}:${sha256Hex(`${timestampMs}:${signature}:${buildVendorSignatureBase(provider, normalized, timestampMs)}`)}`;
+  try {
+    const ttlSec = Math.max(60, Number(ENV.TELEMATICS_VENDOR_REPLAY_WINDOW_SEC || 300) + 30);
+    const claimed = await redis.send("SET", replayKey, "1", "NX", "EX", String(ttlSec));
+    if (String(claimed || "").toUpperCase() !== "OK") {
+      return { ok: false, status: 401, code: "VENDOR_REPLAY_DETECTED" };
+    }
+  } catch {
+    return { ok: false, status: 503, code: "VENDOR_REPLAY_GUARD_UNAVAILABLE" };
+  }
+
+  return { ok: true, secretSource: resolved.source, timestampMs };
 }
 
 async function writeAudit({ action, entity, entityId, meta }) {
@@ -28,14 +151,6 @@ export function readDeviceToken(req) {
   const m = auth.match(/^Device\s+(.+)$/i);
   if (m?.[1]) return String(m[1]).trim();
   const alt = String(req.get("x-device-key") || "").trim();
-  return alt || null;
-}
-
-export function readProviderSecret(req) {
-  const auth = String(req.get("authorization") || "").trim();
-  const m = auth.match(/^Provider\s+(.+)$/i);
-  if (m?.[1]) return String(m[1]).trim();
-  const alt = String(req.get("x-telematics-secret") || "").trim();
   return alt || null;
 }
 
