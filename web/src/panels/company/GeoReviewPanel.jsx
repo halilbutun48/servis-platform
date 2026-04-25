@@ -1,5 +1,5 @@
 // web/src/panels/company/GeoReviewPanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { getPath, navigate } from "../../router";
 import { resolveRuntimeScopeKey } from "../../copilot/screenRegistry";
@@ -240,18 +240,20 @@ export default function GeoReviewPanel() {
     }
   }
 
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
     const timer = setTimeout(() => {
-      if (!cancelled) load(controller.signal, { force: !!openIntent?.forceRefresh });
+      if (!cancelled) loadRef.current(controller.signal, { force: !!openIntent?.forceRefresh });
     }, 320);
     return () => {
       cancelled = true;
       controller.abort();
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [school, debouncedQ, token, scopeMode, hasPlanningScope, scopedIdsKey, openIntent]);
 
   useEffect(() => {
@@ -259,14 +261,13 @@ export default function GeoReviewPanel() {
     const controller = new AbortController();
     let cancelled = false;
     const timer = setTimeout(() => {
-      if (!cancelled) load(controller.signal, { force: false });
+      if (!cancelled) loadRef.current(controller.signal, { force: false });
     }, 180);
     return () => {
       cancelled = true;
       controller.abort();
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsExpandedDataset, school, debouncedQ, token, scopeMode, hasPlanningScope, scopedIdsKey]);
 
   const filtered = useMemo(() => {
