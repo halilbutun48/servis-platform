@@ -2,6 +2,7 @@
 import { io as ioc } from "socket.io-client";
 import { prisma } from "../src/prisma.js";
 import { ENV } from "../src/env.js";
+import { totpToken } from "../src/auth/totp.js";
 
 import {
   BASE_URL,
@@ -73,6 +74,38 @@ async function waitFor(condFn, timeoutMs, stepMs = 100) {
   return false;
 }
 
+async function ensureTotpStepUp(token, label) {
+  const setup = await reqJson("POST", "/api/auth/totp/setup", {
+    token,
+    includeGreenpack: false,
+    body: {},
+  });
+  if (!setup.ok || !setup.json?.secretBase32) {
+    throw new Error(`FAIL TOTP setup (${label}) -> ${setup.status}\n${String(setup.text || "").slice(0, 400)}`);
+  }
+
+  const code = totpToken(setup.json.secretBase32);
+  const enable = await reqJson("POST", "/api/auth/totp/enable", {
+    token,
+    includeGreenpack: false,
+    body: { code },
+  });
+  if (!enable.ok || enable.json?.enabled !== true) {
+    throw new Error(`FAIL TOTP enable (${label}) -> ${enable.status}\n${String(enable.text || "").slice(0, 400)}`);
+  }
+
+  const verify = await reqJson("POST", "/api/auth/totp/verify", {
+    token,
+    includeGreenpack: false,
+    body: { code },
+  });
+  if (!verify.ok || !verify.json?.token) {
+    throw new Error(`FAIL TOTP verify (${label}) -> ${verify.status}\n${String(verify.text || "").slice(0, 400)}`);
+  }
+
+  return verify.json.token;
+}
+
 async function waitForNewNotifAllScopes({ kind, vehicleId, tokens, baseMarkers, timeoutMs = 90_000, stepMs = 1200 }) {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
@@ -142,10 +175,14 @@ async function main() {
 
   // logins
   const driverToken = await login("driver@demo.com", "demo123");
-  const roomToken = await login("room@demo.com", "demo123");
-  const companyToken = await login("company@demo.com", "demo123");
+  const roomLoginToken = await login("room@demo.com", "demo123");
+  const companyLoginToken = await login("company@demo.com", "demo123");
   const personelToken = await login("personel@demo.com", "demo123");
   console.log("OK login(driver/room/company/personel)");
+
+  const roomToken = await ensureTotpStepUp(roomLoginToken, "room");
+  const companyToken = await ensureTotpStepUp(companyLoginToken, "company");
+  console.log("OK TOTP step-up(room/company)");
 
   // ids + cleanup + active shift harness
   const { roomId, companyId } = await getRoomCompanyIds(roomToken, companyToken);
@@ -219,19 +256,28 @@ async function main() {
     r: markerOf(r0.items, "OVERSPEED", h.vehicleId),
     c: markerOf(c0.items, "OVERSPEED", h.vehicleId),
   };
+  console.log("OK OVERSPEED base markers", baseOver);
 
   clearBags();
   await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.03025, lng: 28.99605, speed: 140, speedKmh: 140 });
+  await sleep(1500);
+  await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.03025, lng: 28.99605, speed: 140, speedKmh: 140 });
+  await sleep(2500);
 
-  const overRes = await waitForNewNotifAllScopes({
-    kind: "OVERSPEED",
-    vehicleId: h.vehicleId,
-    tokens: { driver: driverToken, room: roomToken, company: companyToken },
-    baseMarkers: baseOver,
-    timeoutMs: 15_000,
-    stepMs: 1200,
-  });
-  if (!overRes.ok) throw new Error("FAIL OVERSPEED not created for all scopes");
+  const [dO, rO, cO] = await Promise.all([
+    listNotifs(driverToken),
+    listNotifs(roomToken),
+    listNotifs(companyToken),
+  ]);
+  const overMarkers = {
+    d: markerOf(dO.items, "OVERSPEED", h.vehicleId),
+    r: markerOf(rO.items, "OVERSPEED", h.vehicleId),
+    c: markerOf(cO.items, "OVERSPEED", h.vehicleId),
+  };
+  if (!(overMarkers.d > baseOver.d && overMarkers.r > baseOver.r && overMarkers.c > baseOver.c)) {
+    throw new Error(`FAIL OVERSPEED not created for all scopes -> ${JSON.stringify({ baseOver, markers: overMarkers })}`);
+  }
+  console.log("OK OVERSPEED notif markers", overMarkers);
 
   const wsD = await waitFor(() => driverWS.bag.notif.length > 0, 6000);
   const wsR = await waitFor(() => roomWS.bag.notif.length > 0, 6000);
@@ -245,7 +291,24 @@ async function main() {
   if (!eta.ok || !Array.isArray(eta.json?.stops)) throw new Error("FAIL /api/eta invalid (stops[])");
   console.log(`OK /api/eta (stops=${eta.json.stops.length})`);
 
-  await postGps(driverToken, { vehicleId: h.vehicleId, lat: 41.0303, lng: 28.9961, speed: 25, speedKmh: 25 });
+  const etaShift = await prisma.shift.findUnique({
+    where: { id: h.shiftId },
+    select: {
+      id: true,
+      stops: {
+        where: { state: "PENDING" },
+        orderBy: { order: "asc" },
+        take: 1,
+        select: { id: true },
+      },
+    },
+  });
+  const etaStopId = etaShift?.stops?.[0]?.id ?? null;
+  if (!etaStopId) throw new Error("FAIL eta stop missing");
+
+  const etaReached = await reqJson("POST", `/api/driver/shifts/${h.shiftId}/stops/${etaStopId}/reached`, { token: driverToken });
+  if (!etaReached.ok) throw new Error(`FAIL /api/driver/shifts/${h.shiftId}/stops/${etaStopId}/reached -> ${etaReached.status}`);
+
   const gotEtaWs = await waitFor(() => driverWS.bag.eta.length > 0, 6000);
   if (!gotEtaWs) throw new Error("FAIL WS eta:update missing (driver)");
   console.log("OK WS eta:update (driver)");

@@ -5,7 +5,7 @@ import { useSession } from "../../state/session";
 export default function TotpStepUpCard() {
   const { token, me, setToken } = useSession();
   const role = String(me?.role || "");
-  const shouldShow = role === "ROOM" || role === "SUPER_ADMIN";
+  const shouldShow = role === "ROOM" || role === "SUPER_ADMIN" || role === "COMPANY";
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
   const [setupData, setSetupData] = useState(null);
@@ -84,7 +84,7 @@ export default function TotpStepUpCard() {
       <div className="title">Güvenlik — TOTP Step-up</div>
       <div className="muted" style={{ marginTop: 6 }}>
         {needsSetup
-          ? "Bu rol için TOTP kurulumu zorunlu. Kritik ROOM / SUPER_ADMIN işlemleri kurulum tamamlanmadan açılmaz."
+          ? "Bu rol için TOTP kurulumu zorunlu. Kritik ROOM / COMPANY / SUPER_ADMIN işlemleri kurulum tamamlanmadan açılmaz."
           : steppedUp
           ? "Step-up aktif. Kritik işlemler bu oturumda açık."
           : "TOTP kurulu ama step-up doğrulaması yapılmamış. Kritik işlemler için kod doğrulayın."}

@@ -52,9 +52,6 @@ const notificationRegionInclude = {
   shift: {
     select: {
       id: true,
-      regionId: true,
-      district: true,
-      region: { select: { id: true, name: true } },
       room: {
         select: {
           id: true,
