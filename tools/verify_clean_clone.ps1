@@ -30,12 +30,6 @@ finally {
 
 Expand-Archive -LiteralPath $archivePath -DestinationPath $stagingRoot -Force
 
-$stagingEnv = Join-Path $stagingRoot '.env'
-$stagingEnvExample = Join-Path $stagingRoot '.env.example'
-if (-not (Test-Path -LiteralPath $stagingEnv) -and (Test-Path -LiteralPath $stagingEnvExample)) {
-  Copy-Item -LiteralPath $stagingEnvExample -Destination $stagingEnv -Force
-}
-
 $env:RUNTIME_DATA_DIR = $runtimeDataDir
 $env:npm_config_cache = $npmCacheDir
 $env:npm_config_fund = 'false'
