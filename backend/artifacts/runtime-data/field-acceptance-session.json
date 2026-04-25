@@ -1,0 +1,63 @@
+{
+  "currentSession": {
+    "sessionId": "M60-SKELETON-001",
+    "decision": "LIMITED_GO",
+    "driverLabel": "Driver demo",
+    "deviceModel": "Android demo cihaz",
+    "osVersion": "Android 14",
+    "buildProfile": "preview",
+    "testerLabel": "Field Operator",
+    "checklist": [
+      {
+        "id": "login_ok",
+        "label": "Giris akisi tamamlandi",
+        "area": "auth",
+        "status": "PASS"
+      },
+      {
+        "id": "pin_change_ok",
+        "label": "Ilk PIN degisimi anlasilir",
+        "area": "auth",
+        "status": "PASS"
+      },
+      {
+        "id": "today_screen_ok",
+        "label": "Today ekrani net",
+        "area": "ux",
+        "status": "PASS"
+      },
+      {
+        "id": "gps_permission_ok",
+        "label": "GPS izin akisi net",
+        "area": "gps",
+        "status": "PASS"
+      },
+      {
+        "id": "gps_publish_ok",
+        "label": "Surucunun telefon GPS'i yayin verdi",
+        "area": "gps",
+        "status": "PASS"
+      },
+      {
+        "id": "offline_recovery_ok",
+        "label": "Offline toparlama anlasilir",
+        "area": "resilience",
+        "status": "PENDING"
+      },
+      {
+        "id": "kvkk_ok",
+        "label": "KVKK blocking dili net",
+        "area": "kvkk",
+        "status": "PENDING"
+      },
+      {
+        "id": "eta_voice_ok",
+        "label": "ETA ve sesli rehber yeterli",
+        "area": "route",
+        "status": "PENDING"
+      }
+    ],
+    "evidenceCount": 2,
+    "note": "Saha oncesi acceptance merkezi iskeleti"
+  }
+}

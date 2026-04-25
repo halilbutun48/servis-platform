@@ -1,0 +1,11 @@
+{
+  "decision": {
+    "status": "LIMITED_GO",
+    "reason": "Checklist tamamlanmadi",
+    "blockingItems": [],
+    "notes": [],
+    "updatedAt": null,
+    "updatedByEmail": ""
+  },
+  "risks": []
+}
