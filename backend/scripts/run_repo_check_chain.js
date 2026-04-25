@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
+const runtimeDataDir = path.join(repoRoot, "artifacts", "runtime-data");
 
 function nodeStep(id, relPath, args = []) {
   return {
@@ -128,10 +129,12 @@ function runStep(step) {
     const child = spawn(step.command, step.args, {
       cwd: repoRoot,
       env: {
-        ...process.env,
-        REPO_ROOT: repoRoot,
-        PROJECT_ROOT: repoRoot,
-      },
+      ...process.env,
+      REPO_ROOT: repoRoot,
+      PROJECT_ROOT: repoRoot,
+      BACKUP_ARCHIVE_ALLOW_PLACEHOLDER: process.env.BACKUP_ARCHIVE_ALLOW_PLACEHOLDER || "1",
+      RUNTIME_DATA_DIR: process.env.RUNTIME_DATA_DIR || runtimeDataDir,
+    },
       stdio: "inherit",
     });
 

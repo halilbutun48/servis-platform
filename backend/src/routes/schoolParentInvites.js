@@ -1,7 +1,7 @@
 import express from "express";
 import crypto from "crypto";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { sanitizeAuditMeta, sanitizeInviteItem } from "../kvkk/enforcement.js";
 
 function sha256Hex(s) {
@@ -91,6 +91,7 @@ function mapInvite(it, role = "COMPANY") {
 export function schoolParentInvitesRouter() {
   const r = express.Router();
   r.use(authRequired(), requireRole("COMPANY", "SUPER_ADMIN"));
+  r.use(requireStepUpWrite("COMPANY", "SUPER_ADMIN"));
 
   r.get("/", async (req, res) => {
     const company = await assertSchoolScope(req, res);

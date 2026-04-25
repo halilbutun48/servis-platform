@@ -19,6 +19,7 @@ import { buildAgreementShiftStats } from "../services/agreementShiftStats.js";
 import { requireSourceShiftForAgreementCreate } from "../services/agreementSourceShiftGate.js";
 import { agreementRef, routeRefreshRef } from "../services/agreementCopy.js";
 import { buildAgreementListItemsWithCommercialBackbone } from "../services/agreementListView.js";
+import { requireStepUpWrite } from "../auth/middleware.js";
 
 function parseDateOnly(s) {
   const v = String(s || "").trim();
@@ -123,9 +124,10 @@ function parseHub(body) {
 
 export function agreementsRouter(io) {
   const r = express.Router();
+  r.use(authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "ROOM", "SUPER_ADMIN"));
 
   // LIST
-  r.get("/", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+  r.get("/", async (req, res) => {
     const take = Math.min(200, Math.max(1, Number(req.query.take || 50)));
     const status = String(req.query.status || "").trim() || null;
     const q = String(req.query.q || "").trim();
@@ -161,7 +163,7 @@ export function agreementsRouter(io) {
     res.json({ items: mapped });
   });
 
-  r.get("/route-refresh", authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), async (req, res) => {
+  r.get("/route-refresh", async (req, res) => {
     const agreementId = Number(req.query.agreementId || 0);
     const status = String(req.query.status || "").trim().toUpperCase();
     const filters = {};
@@ -173,7 +175,7 @@ export function agreementsRouter(io) {
     res.json({ items });
   });
 
-  r.post("/:id/route-refresh-request", authRequired(), requireRole("COMPANY"), async (req, res) => {
+  r.post("/:id/route-refresh-request", async (req, res) => {
     const agreementId = Number(req.params.id || 0);
     if (!agreementId) return sendErrorResponse(res, httpError(400, "agreementId required"));
 

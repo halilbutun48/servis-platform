@@ -43,6 +43,14 @@ function enableHash(h) {
   return inner;
 }
 
+async function revokeUserRefreshSessions(tx, userId) {
+  try {
+    await tx.refreshSession.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+  } catch {
+    // best-effort
+  }
+}
+
 function genPassword() {
   // URL-safe random password (~12 chars)
   return crypto.randomBytes(9).toString("base64url");
@@ -565,20 +573,30 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     }
 
 
-    const updated = await prisma.user.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        fullName: true,
-        phone: true,
-        roomId: true,
-        companyId: true,
-        createdAt: true,
-        passwordHash: true,
-      },
+    const scopeChanged = Object.prototype.hasOwnProperty.call(data, "roomId") || Object.prototype.hasOwnProperty.call(data, "companyId");
+    const updated = await prisma.$transaction(async (tx) => {
+      const next = await tx.user.update({
+        where: { id },
+        data: {
+          ...data,
+          ...(scopeChanged ? { sessionVersion: { increment: 1 } } : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          fullName: true,
+          phone: true,
+          roomId: true,
+          companyId: true,
+          createdAt: true,
+          passwordHash: true,
+        },
+      });
+      if (scopeChanged) {
+        await revokeUserRefreshSessions(tx, next.id);
+      }
+      return next;
     });
 
     if (nextUsername) {
@@ -611,10 +629,14 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     const nextPw = genPassword();
     const hash = await bcrypt.hash(nextPw, 10);
 
-    const updated = await prisma.user.update({
-      where: { id },
-      data: { passwordHash: hash },
-      select: { id: true, email: true, role: true },
+    const updated = await prisma.$transaction(async (tx) => {
+      const next = await tx.user.update({
+        where: { id },
+        data: { passwordHash: hash, sessionVersion: { increment: 1 } },
+        select: { id: true, email: true, role: true },
+      });
+      await revokeUserRefreshSessions(tx, next.id);
+      return next;
     });
 
     await markPasswordChangeRequired(updated.id, {
@@ -636,14 +658,17 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
     const u = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true, role: true, passwordHash: true } });
     if (!u) return res.status(404).json({ error: "User not found" });
 
-    if (isDisabledHash(u.passwordHash)) {
-      return res.json({ ok: true, user: { id: u.id, ...getUserLoginMeta(u), role: u.role }, disabled: true });
-    }
-
-    const updated = await prisma.user.update({
-      where: { id },
-      data: { passwordHash: disabledHash(u.passwordHash) },
-      select: { id: true, email: true, role: true },
+    const updated = await prisma.$transaction(async (tx) => {
+      const next = await tx.user.update({
+        where: { id },
+        data: {
+          passwordHash: isDisabledHash(u.passwordHash) ? u.passwordHash : disabledHash(u.passwordHash),
+          sessionVersion: { increment: 1 },
+        },
+        select: { id: true, email: true, role: true, passwordHash: true },
+      });
+      await revokeUserRefreshSessions(tx, next.id);
+      return next;
     });
 
     const loginMeta = getUserLoginMeta(updated);
@@ -667,10 +692,14 @@ r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), asy
       return res.status(409).json({ error: "Cannot enable without reset (legacy disabled hash). Use reset-password." });
     }
 
-    const updated = await prisma.user.update({
-      where: { id },
-      data: { passwordHash: restored },
-      select: { id: true, email: true, role: true },
+    const updated = await prisma.$transaction(async (tx) => {
+      const next = await tx.user.update({
+        where: { id },
+        data: { passwordHash: restored, sessionVersion: { increment: 1 } },
+        select: { id: true, email: true, role: true },
+      });
+      await revokeUserRefreshSessions(tx, next.id);
+      return next;
     });
 
     const loginMeta = getUserLoginMeta(updated);

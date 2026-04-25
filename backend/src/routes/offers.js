@@ -6,7 +6,7 @@
 import express from "express";
 import { z } from "zod";
 import prisma from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { rememberResponse } from "../utils/responseCache.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { validateWithZod } from "../z.js";
@@ -251,13 +251,12 @@ function parseStatusFilter(raw) {
 
 export function offersRouter(io) {
   const r = express.Router();
+  r.use(authRequired(), requireRole("ROOM", "COMPANY", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "ROOM", "SUPER_ADMIN"));
 
   // ROOM: inbox
   // GET /api/offers/inbox?status=OPEN,COUNTERED
   r.get(
     "/inbox",
-    authRequired(),
-    requireRole("ROOM", "SUPER_ADMIN"),
     async (req, res) => {
       try {
         const roomId =
@@ -324,8 +323,6 @@ export function offersRouter(io) {
   // GET /api/offers/company?status=OPEN,COUNTERED
   r.get(
     "/company",
-    authRequired(),
-    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       try {
         const companyIdRaw =

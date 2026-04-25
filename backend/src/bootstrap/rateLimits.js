@@ -1,8 +1,9 @@
 // backend/src/bootstrap/rateLimits.js
 import rateLimit from "express-rate-limit";
 import { RedisRateLimitStore } from "../middleware/rateLimitRedisStore.js";
+import { isGreenpackBypassAllowed } from "../auth/securityPolicy.js";
 
-export function createApiRateLimiters({ ENV, isProd, verifyToken, rateLimitStoreMode, getRedis }) {
+export function createApiRateLimiters({ ENV, verifyToken, rateLimitStoreMode, getRedis }) {
   const useRedisRateLimitStore = String(rateLimitStoreMode || "").toLowerCase() === "redis";
   const redis = useRedisRateLimitStore ? getRedis() : null;
 
@@ -12,9 +13,7 @@ export function createApiRateLimiters({ ENV, isProd, verifyToken, rateLimitStore
   }
 
   function greenpackSkip(req) {
-    if (isProd) return false;
-    const gp = String(req.get("x-greenpack") || "").toLowerCase();
-    return gp === "1" || gp === "true";
+    return isGreenpackBypassAllowed(req);
   }
 
   function readBearerToken(req) {

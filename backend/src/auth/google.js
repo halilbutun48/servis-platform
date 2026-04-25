@@ -1,5 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { ENV } from "../env.js";
+import { isGreenpackBypassAllowed } from "./securityPolicy.js";
 
 const _clients = new Map();
 
@@ -10,16 +11,6 @@ function allowedClientIds() {
     .filter(Boolean);
 }
 
-function isProd() {
-  const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
-  return mode === "production";
-}
-
-function isGreenpackBypass(req) {
-  const hdr = String(req.headers?.["x-greenpack"] || "").trim();
-  return !isProd() && hdr === "1";
-}
-
 function clientFor(audienceKey) {
   if (_clients.has(audienceKey)) return _clients.get(audienceKey);
   const c = new OAuth2Client();
@@ -28,7 +19,7 @@ function clientFor(audienceKey) {
 }
 
 export async function verifyGoogleCredential({ credential, req }) {
-  if (isGreenpackBypass(req) && req.body?.testProfile && typeof req.body.testProfile === "object") {
+  if (isGreenpackBypassAllowed(req) && req.body?.testProfile && typeof req.body.testProfile === "object") {
     const p = req.body.testProfile;
     const email = String(p.email || "").trim().toLowerCase();
     const sub = String(p.sub || "").trim();

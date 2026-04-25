@@ -9,12 +9,15 @@ data/*.json.lock
 data/*.json.*.tmp
 
 node_modules/
+.npm-cache/
 dist/
 build/
 coverage/
 .next/
 _archive/
 _backup/
+!tools/_backup/
+!tools/_backup/README.md
 
 .env
 backend/.env

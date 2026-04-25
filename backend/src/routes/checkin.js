@@ -5,7 +5,7 @@
 import express from "express";
 import crypto from "crypto";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { consentGate, CONSENT_DOCS } from "../middleware/consentGate.js";
 
 function isEnabled() {
@@ -105,11 +105,11 @@ export function checkinRouter(io) {
     return next();
   });
 
+  r.use("/company", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "SUPER_ADMIN"));
+
   // --- COMPANY: credential issue/revoke/list ---
   r.post(
     "/company/personels/:id/credentials/issue",
-    authRequired(),
-    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       const personelId = toInt(req.params.id, null);
       if (!personelId) return res.status(400).json({ error: "personelId required" });
@@ -166,8 +166,6 @@ export function checkinRouter(io) {
 
   r.post(
     "/company/personels/:id/credentials/revoke",
-    authRequired(),
-    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       const personelId = toInt(req.params.id, null);
       if (!personelId) return res.status(400).json({ error: "personelId required" });
@@ -207,8 +205,6 @@ export function checkinRouter(io) {
 
   r.get(
     "/company/personels/:id/credentials",
-    authRequired(),
-    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       const personelId = toInt(req.params.id, null);
       if (!personelId) return res.status(400).json({ error: "personelId required" });

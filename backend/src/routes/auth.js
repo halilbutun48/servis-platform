@@ -9,6 +9,8 @@ import { authRequired } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
 import { clearDriverPinFailureState, getDriverPinLockState, registerDriverPinFailure, validateNewDriverPin } from "../auth/driverAccessGuard.js";
 import { generateSecretBase32, buildOtpauthUrl, verifyTotp, normalizeTotpToken } from "../auth/totp.js";
+import { decryptSecretValue, encryptSecretValue } from "../auth/secretVault.js";
+import { getAccessTokenExpiresInForUser, isGreenpackBypassAllowed, isStepUpRole, isProductionLike } from "../auth/securityPolicy.js";
 import { loginSchema, refreshSchema, logoutSchema } from "../validators.js";
 import { ENV } from "../env.js";
 import { clearPasswordChangeRequired, isPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
@@ -79,37 +81,8 @@ async function enforceMaxRefreshSessions(userId) {
   }
 }
 
-function isProd() {
-  const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
-  return mode === "production";
-}
-
-
-function isGreenpackStepUpBypass(req) {
-  const hdr = String(req.headers?.["x-greenpack"] || "").trim();
-  if (hdr !== "1") return false;
-  return !isProd();
-}
-
-function stepUpRequiredRolesSet() {
-  return new Set(
-    String(ENV.STEP_UP_REQUIRED_ROLES || "SUPER_ADMIN,ROOM")
-      .split(",")
-      .map((x) => String(x || "").trim().toUpperCase())
-      .filter(Boolean)
-  );
-}
-
-function isStepUpRole(role) {
-  return stepUpRequiredRolesSet().has(String(role || "").trim().toUpperCase());
-}
-
 function accessExpiresInForUser(user) {
-  if (String(user?.role || "") === "DRIVER") {
-    const v = String(ENV.DRIVER_ACCESS_TOKEN_EXPIRES_IN || "").trim();
-    if (v) return v;
-  }
-  return null;
+  return getAccessTokenExpiresInForUser(user);
 }
 
 function issueAccessToken(user, extra = {}) {
@@ -241,7 +214,7 @@ authRouter.post("/login", async (req, res) => {
       return sendErrorResponse(res, httpError(403, "DEVICE_MISMATCH", "Bu sürücü kodu başka bir cihaza bağlı görünüyor."));
     }
 
-    if (isProd() && user.deviceId && !reqDeviceId) {
+    if (isProductionLike() && user.deviceId && !reqDeviceId) {
       await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_DEVICE_REQUIRED", reason: "DEVICE_ID_REQUIRED", meta: { driverId: user.driver?.id || null } });
       return sendErrorResponse(res, httpError(400, "DEVICE_ID_REQUIRED", "Bu hesap için cihaz bilgisi gerekli."));
     }
@@ -268,16 +241,17 @@ authRouter.post("/login", async (req, res) => {
   
 
   const mustChangePassword = await isPasswordChangeRequired(user.id);
+  const greenpackBypass = isGreenpackBypassAllowed(req);
 
   const loginExtra = {};
-  if (isGreenpackStepUpBypass(req) && isStepUpRole(user.role)) {
+  if (greenpackBypass && isStepUpRole(user.role)) {
     loginExtra.stepUpUntil = Date.now() + Number(ENV.STEP_UP_TOTP_WINDOW_SEC || 43200) * 1000;
   }
-  if (mustChangePassword && !isGreenpackStepUpBypass(req)) loginExtra.pwdChangeOnly = true;
-  const token = issueAccessToken(user, loginExtra);
+  if (mustChangePassword && !greenpackBypass) loginExtra.pwdChangeOnly = true;
 
-  // Refresh session (always attempt; fail-open)
+  // Refresh session (attempt; fail-closed for privileged roles)
   const refreshTokenRaw = randomTokenHex(32);
+  const stepUpRole = isStepUpRole(user.role);
   try {
     const tokenHash = sha256Hex(refreshTokenRaw);
     const ttlDays = Number(ENV.REFRESH_TOKEN_TTL_DAYS || 30);
@@ -295,8 +269,13 @@ authRouter.post("/login", async (req, res) => {
     });
     await enforceMaxRefreshSessions(user.id);
   } catch {
+    if (stepUpRole) {
+      return sendErrorResponse(res, httpError(503, "REFRESH_SESSION_CREATE_FAILED", "Oturum kaydı oluşturulamadı. Lütfen tekrar deneyin."));
+    }
     // ignore
   }
+
+  const token = issueAccessToken(user, loginExtra);
 
   await recordLoginAudit({ req, email: identifier, user, action: "AUTH_LOGIN_OK", reason: null, meta: { deviceId: reqDeviceId || null, driverId: user.driver?.id || null, passwordChangeRequired: mustChangePassword } });
 
@@ -360,7 +339,7 @@ authRouter.post("/change-password", authRequired(), async (req, res) => {
   await clearPasswordChangeRequired(user.id);
 
   const loginExtra = {};
-  if (isGreenpackStepUpBypass(req) && isStepUpRole(updated.role)) {
+  if (isGreenpackBypassAllowed(req) && isStepUpRole(updated.role)) {
     loginExtra.stepUpUntil = Date.now() + Number(ENV.STEP_UP_TOTP_WINDOW_SEC || 43200) * 1000;
   }
   const token = issueAccessToken(updated, loginExtra);
@@ -478,6 +457,7 @@ authRouter.post("/parent-invite/accept", async (req, res) => {
           role: "PARENT",
           companyId: accessRow.company.id,
           fullName: accessRow.child?.fullName ? `${accessRow.child.fullName} velisi` : parentUser.fullName,
+          sessionVersion: { increment: 1 },
         },
       });
     }
@@ -542,7 +522,7 @@ authRouter.post("/totp/setup", authRequired(), async (req, res) => {
   const secretBase32 = generateSecretBase32(20);
   await prisma.user.update({
     where: { id: user.id },
-    data: { totpPendingSecretBase32: secretBase32 },
+    data: { totpPendingSecretBase32: encryptSecretValue(secretBase32) },
   });
   await recordLoginAudit({ req, email: user.email, user, action: "AUTH_TOTP_SETUP_ISSUED", reason: null });
 
@@ -561,7 +541,12 @@ authRouter.post("/totp/enable", authRequired(), async (req, res) => {
   if (!/^\d{6}$/.test(code)) return sendErrorResponse(res, httpError(400, "TOTP_CODE_REQUIRED", "TOTP_CODE_REQUIRED"));
 
   const fresh = await prisma.user.findUnique({ where: { id: user.id } });
-  const pendingSecret = String(fresh?.totpPendingSecretBase32 || "");
+  let pendingSecret = String(fresh?.totpPendingSecretBase32 || "");
+  try {
+    pendingSecret = decryptSecretValue(pendingSecret);
+  } catch {
+    return sendErrorResponse(res, httpError(500, "TOTP_SECRET_INVALID", "TOTP_SECRET_INVALID"));
+  }
   if (!pendingSecret) return sendErrorResponse(res, httpError(409, "TOTP_SETUP_PENDING_NOT_FOUND", "TOTP_SETUP_PENDING_NOT_FOUND"));
   if (!verifyTotp(pendingSecret, code)) {
     await recordLoginAudit({ req, email: user.email, user, action: "AUTH_TOTP_ENABLE_FAIL", reason: "BAD_TOTP_CODE" });
@@ -571,7 +556,7 @@ authRouter.post("/totp/enable", authRequired(), async (req, res) => {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      totpSecretBase32: pendingSecret,
+      totpSecretBase32: encryptSecretValue(pendingSecret),
       totpPendingSecretBase32: null,
       totpEnabledAt: new Date(),
       totpLastVerifiedAt: new Date(),
@@ -588,7 +573,12 @@ authRouter.post("/totp/verify", authRequired(), async (req, res) => {
   if (!/^\d{6}$/.test(code)) return sendErrorResponse(res, httpError(400, "TOTP_CODE_REQUIRED", "TOTP_CODE_REQUIRED"));
 
   const fresh = await prisma.user.findUnique({ where: { id: user.id } });
-  const secretBase32 = String(fresh?.totpSecretBase32 || "");
+  let secretBase32 = String(fresh?.totpSecretBase32 || "");
+  try {
+    secretBase32 = decryptSecretValue(secretBase32);
+  } catch {
+    return sendErrorResponse(res, httpError(500, "TOTP_SECRET_INVALID", "TOTP_SECRET_INVALID"));
+  }
   if (!secretBase32 || !fresh?.totpEnabledAt) {
     return sendErrorResponse(res, httpError(403, "TOTP_SETUP_REQUIRED", "TOTP_SETUP_REQUIRED"));
   }
@@ -680,7 +670,7 @@ authRouter.post("/refresh", async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) return sendErrorResponse(res, httpError(401, "INVALID_USER"));
 
-  if (isProd() && ENV.REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND && session.deviceId && !reqDeviceId) {
+  if (isProductionLike() && ENV.REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND && session.deviceId && !reqDeviceId) {
     if (String(user?.role || "") === "DRIVER") {
       await recordLoginAudit({
         req,
@@ -694,9 +684,13 @@ authRouter.post("/refresh", async (req, res) => {
     }
   }
 
+  if (String(user.passwordHash || "").startsWith("$DISABLED$")) {
+    return sendErrorResponse(res, httpError(403, "ACCOUNT_DISABLED", "Account disabled"));
+  }
+
   const newAccess = issueAccessToken(user);
 
-  // rotate refresh token (best-effort)
+  // rotate refresh token (best-effort for non-privileged roles)
   const newRefreshRaw = randomTokenHex(32);
   try {
     const tokenHash2 = sha256Hex(newRefreshRaw);
@@ -729,6 +723,9 @@ authRouter.post("/refresh", async (req, res) => {
 
     return res.json({ token: newAccess, refreshToken: newRefreshRaw });
   } catch {
+    if (isStepUpRole(user.role)) {
+      return sendErrorResponse(res, httpError(503, "REFRESH_SESSION_CREATE_FAILED", "Oturum yenilenemedi. Lütfen tekrar deneyin."));
+    }
     // if rotation fails, keep old
     await recordLoginAudit({
       req,
@@ -836,4 +833,3 @@ authRouter.post("/logout", authRequired(), async (req, res) => {
   await prisma.refreshSession.updateMany({ where: { userId: u.id, revokedAt: null }, data: { revokedAt: new Date() } });
   return res.json({ ok: true });
 });
-

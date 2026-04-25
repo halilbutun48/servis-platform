@@ -3,6 +3,7 @@
 
 import { prisma } from "../prisma.js";
 import { getKvkkDocument } from "../kvkk/documents.js";
+import { isGreenpackBypassAllowed } from "../auth/securityPolicy.js";
 
 export const CONSENT_DOCS = {
   LOCATION: (() => {
@@ -71,8 +72,7 @@ export function consentGate(a, b, c) {
       if (!row) return kvkk403(res, { docKey, docVersion });
       return next();
     } catch (e) {
-      const gp = String(req.get("x-greenpack") || "").toLowerCase();
-      const detail = gp === "1" || gp === "true" ? String(e?.message || e) : undefined;
+      const detail = isGreenpackBypassAllowed(req) ? String(e?.message || e) : undefined;
       console.error("consentGate error:", e);
       return kvkk403(res, { docKey, docVersion, detail });
     }

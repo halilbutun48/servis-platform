@@ -1,5 +1,5 @@
 import express from "express";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import {
   getTrustQualityManifest,
   buildServiceEvaluationTemplate,
@@ -53,7 +53,7 @@ export function trustQualityRouter() {
     const items = applyTakeLimit(list, take);
     return res.json({ items, meta: { take, pendingOnly, q } });
   });
-  r.post("/company/evaluations", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), async (req, res) => {
+  r.post("/company/evaluations", authRequired(), requireRole("COMPANY", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "SUPER_ADMIN"), async (req, res) => {
     try {
       const saved = await submitCompanyServiceEvaluation(req.user, req.body || {});
       clearResponseCache("trust-quality:", userScope(req.user));

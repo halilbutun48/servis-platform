@@ -2,7 +2,7 @@ import express from "express";
 import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 
 function sha256Hex(s) {
@@ -113,8 +113,9 @@ const createSchema = z.object({
 
 export function passengerLinksRouter() {
   const r = express.Router();
+  r.use(authRequired(), requireRole("COMPANY"), requireStepUpWrite("COMPANY"));
 
-  r.get("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
+  r.get("/", async (req, res) => {
     try {
       const shiftId = req.query.shiftId ? Number(req.query.shiftId) : null;
       const personelId = req.query.personelId ? Number(req.query.personelId) : null;
@@ -154,7 +155,7 @@ export function passengerLinksRouter() {
     }
   });
 
-  r.post("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
+  r.post("/", async (req, res) => {
     try {
       const body = createSchema.parse(req.body ?? {});
       await ensureShiftScope(body.shiftId, req.user);
@@ -217,7 +218,7 @@ export function passengerLinksRouter() {
     }
   });
 
-  r.post('/:id/revoke', authRequired(), requireRole('COMPANY'), async (req, res) => {
+  r.post('/:id/revoke', async (req, res) => {
     try {
       const id = Number(req.params.id);
       if (!id) return res.status(400).json({ error: 'badId' });

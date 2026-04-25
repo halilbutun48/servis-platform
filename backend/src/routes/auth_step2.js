@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { signToken } from "../auth/jwt.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
+import { getAccessTokenExpiresInForUser, isStepUpRole } from "../auth/securityPolicy.js";
 import { ENV } from "../env.js";
 import { verifyGoogleCredential } from "../auth/google.js";
 
@@ -61,8 +62,7 @@ function pickDeviceId(req) {
 }
 
 function roleNeedsStepUp(role) {
-  const x = String(role || "").trim().toUpperCase();
-  return x === "ROOM" || x === "SUPER_ADMIN";
+  return isStepUpRole(role);
 }
 
 async function recordAudit({ req, email, user, action, reason, meta }) {
@@ -95,10 +95,10 @@ async function createPasswordHash() {
 
 async function issueAuthPayload({ req, user, action = "AUTH_OAUTH_LOGIN", meta = {} }) {
   const sv = Number(user?.sessionVersion ?? 1);
-  const token = signToken({ userId: user.id, role: user.role, sv });
   const refreshToken = randomTokenHex(32);
   const ttlDays = Number(ENV.REFRESH_TOKEN_TTL_DAYS || 30);
   const deviceId = pickDeviceId(req);
+  const expiresIn = getAccessTokenExpiresInForUser(user);
 
   try {
     await prisma.refreshSession.create({
@@ -112,9 +112,13 @@ async function issueAuthPayload({ req, user, action = "AUTH_OAUTH_LOGIN", meta =
       },
     });
   } catch {
+    if (isStepUpRole(user.role)) {
+      throw Object.assign(new Error("REFRESH_SESSION_CREATE_FAILED"), { status: 503, code: "REFRESH_SESSION_CREATE_FAILED" });
+    }
     // fail-open
   }
 
+  const token = signToken({ userId: user.id, role: user.role, sv }, expiresIn ? { expiresIn } : {});
   await recordAudit({ req, email: user.email, user, action, meta });
   return {
     token,
@@ -258,7 +262,10 @@ async function upsertUserFromInvite({ tx, invite, existingUser, email, fullName 
     }
     return tx.user.update({
       where: { id: existingUser.id },
-      data: scopeData,
+      data: {
+        ...scopeData,
+        sessionVersion: { increment: 1 },
+      },
     });
   }
 
@@ -360,6 +367,7 @@ async function consumeParentInvite({ req, invite, existingUser, email, fullName 
           roomId: null,
           fullName: fullName || invite.parentFullName || parentUser.fullName || email.split("@")[0],
           phone: invite.phone || parentUser.phone || null,
+          sessionVersion: { increment: 1 },
         },
       });
     } else {

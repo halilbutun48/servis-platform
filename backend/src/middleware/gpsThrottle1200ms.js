@@ -12,6 +12,7 @@
  */
 
 import { getRedis } from "../redis/index.js";
+import { isGreenpackBypassAllowed } from "../auth/securityPolicy.js";
 
 const DEFAULT_MIN_INTERVAL_MS = 1200;
 
@@ -40,11 +41,7 @@ export function gpsThrottle1200ms(opts = {}) {
   return async function gpsThrottleMiddleware(req, res, next) {
     try {
       // ✅ GreenPack / local test bypass
-      if (process.env.NODE_ENV !== "production") {
-        const gp = String(req.headers?.["x-greenpack"] ?? "");
-        const noThrottle = String(req.query?.noThrottle ?? "") === "1";
-        if (gp === "1" || noThrottle) return next();
-      }
+      if (isGreenpackBypassAllowed(req) || String(req.query?.noThrottle ?? "") === "1") return next();
 
       const key = getKey(req);
       const now = Date.now();

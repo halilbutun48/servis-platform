@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $removed = @()
 
 $bak = Join-Path $RepoRoot 'backend\data\*.bak'
+$json = Join-Path $RepoRoot 'backend\data\*.json'
 $distTargets = @(
   (Join-Path $RepoRoot 'mobile\dist'),
   (Join-Path $RepoRoot 'web\dist')
@@ -18,6 +19,11 @@ $transientGlobs = @(
 )
 
 Get-ChildItem $bak -ErrorAction SilentlyContinue | ForEach-Object {
+  Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+  $removed += $_.Name
+}
+
+Get-ChildItem $json -ErrorAction SilentlyContinue | ForEach-Object {
   Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
   $removed += $_.Name
 }

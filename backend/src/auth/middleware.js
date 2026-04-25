@@ -1,7 +1,7 @@
 import { verifyToken } from "./jwt.js";
 import { prisma } from "../prisma.js";
-import { ENV } from "../env.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
+import { isGreenpackBypassAllowed, isStepUpRole } from "./securityPolicy.js";
 
 function readToken(req) {
   const header = req.headers["authorization"] || "";
@@ -47,21 +47,15 @@ async function touchDriverPresenceIfNeeded(user) {
   }
 }
 
-function isProd() {
-  const mode = String(process.env.NODE_ENV || ENV.NODE_ENV || ENV.APP_ENV || "development").toLowerCase();
-  return mode === "production";
-}
-
-function isGreenpackStepUpBypass(req) {
-  const hdr = String(req.headers?.["x-greenpack"] || "").trim();
-  if (hdr !== "1") return false;
-  return !isProd();
-}
-
 export function authRequired() {
   return async (req, res, next) => {
     try {
-      if (req.user) return next();
+      if (req.user) {
+        if (String(req.user.passwordHash || "").startsWith("$DISABLED$")) {
+          return sendErrorResponse(res, httpError(403, "ACCOUNT_DISABLED", "Account disabled"));
+        }
+        return next();
+      }
       const token = readToken(req);
       if (!token) return sendErrorResponse(res, httpError(401, "MISSING_TOKEN", "Missing token"));
 
@@ -71,6 +65,9 @@ export function authRequired() {
         where: { id: decoded.userId },
       });
       if (!user) return sendErrorResponse(res, httpError(401, "INVALID_TOKEN", "Invalid token"));
+      if (String(user.passwordHash || "").startsWith("$DISABLED$")) {
+        return sendErrorResponse(res, httpError(403, "ACCOUNT_DISABLED", "Account disabled"));
+      }
 
       const tokenSv = Number(decoded?.sv ?? decoded?.sessionVersion ?? 1);
       const userSv = Number(user?.sessionVersion ?? 1);
@@ -105,7 +102,7 @@ export function requireRole(...roles) {
 }
 
 function stepUpRequiredForRole(role) {
-  return role === "ROOM" || role === "SUPER_ADMIN";
+  return isStepUpRole(role);
 }
 
 export function requireStepUp(...roles) {
@@ -116,7 +113,7 @@ export function requireStepUp(...roles) {
 
     if (!stepUpRequiredForRole(role)) return next();
 
-    if (isGreenpackStepUpBypass(req)) return next();
+    if (isGreenpackBypassAllowed(req)) return next();
 
     const hasTotp = !!(req.user.totpSecretBase32 && req.user.totpEnabledAt);
     if (!hasTotp) {

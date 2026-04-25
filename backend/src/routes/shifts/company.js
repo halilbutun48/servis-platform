@@ -1,6 +1,6 @@
 ﻿// backend/src/routes/shifts/company.js
 import prisma from "../../prisma.js";
-import { authRequired, requireRole } from "../../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../../auth/middleware.js";
 import { validateWithZod } from "../../z.js";
 import { audit } from "../../audit.js";
 import { createNotification } from "../../notifications/service.js";
@@ -35,6 +35,7 @@ import {
   syncCompanyShiftCommercialBackbone,
 } from "../../services/companyShiftMutationTail.js";
 import { requireSameRegionOrThrow } from "../../region/ownership.js";
+import { isGreenpackBypassAllowed } from "../../auth/securityPolicy.js";
 
 const emitShift = H.emitShift;
 const decorateShiftWithRegionContext = H.decorateShiftWithRegionContext;
@@ -125,10 +126,10 @@ async function createShiftWithStopsTx(tx, { body, effectiveCompanyId, effectiveS
 
 // Company-focused endpoints (some are also allowed for ROOM/SUPER_ADMIN)
 export function attachShiftCompanyRoutes(r, io) {
+  r.use(authRequired(), requireRole("COMPANY", "ROOM", "SUPER_ADMIN"), requireStepUpWrite("COMPANY", "ROOM", "SUPER_ADMIN"));
+
   r.post(
     "/guided-batch",
-    authRequired(),
-    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       try {
         const rows = Array.isArray(req.body?.items) ? req.body.items : [];
@@ -214,8 +215,6 @@ export function attachShiftCompanyRoutes(r, io) {
   // COMPANY/SUPER_ADMIN: create shift
   r.post(
     "/",
-    authRequired(),
-    requireRole("COMPANY", "SUPER_ADMIN"),
     async (req, res) => {
       try {
         const body = validateWithZod(createShiftSchema, req.body);
@@ -415,7 +414,7 @@ export function attachShiftCompanyRoutes(r, io) {
         }
 
         // GREENPACK_AGREEMENT_BYPASS (dev only): allow market offers even if an agreement exists (pack stability).
-        const isGreenPack = process.env.NODE_ENV !== "production" && String(req.headers["x-greenpack"] || "") === "1";
+        const isGreenPack = isGreenpackBypassAllowed(req);
         const blockedRoomIdsSet = isGreenPack ? new Set() : await findAgreementBlockedRoomIdsForShift({
           companyId: shift.companyId,
           roomIds,

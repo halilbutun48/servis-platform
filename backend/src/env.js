@@ -1,14 +1,24 @@
 // backend/src/env.js
 // Tek yerde ENV okuma standardı (M0→M12)
 
+const RUNTIME_MODE = String(process.env.NODE_ENV || process.env.APP_ENV || "development").toLowerCase();
+const IS_PRODUCTION = RUNTIME_MODE === "production";
+const JWT_SECRET_RAW = String(process.env.JWT_SECRET || "").trim();
+
+if (IS_PRODUCTION && !JWT_SECRET_RAW) {
+  throw new Error("JWT_SECRET is required in production");
+}
+
 export const ENV = {
   // Server
   PORT: Number(process.env.PORT ?? 3000),
+  NODE_ENV: RUNTIME_MODE,
   APP_VERSION: process.env.APP_VERSION || process.env.npm_package_version || "dev",
 
   // Auth
-  JWT_SECRET: process.env.JWT_SECRET ?? "dev-secret",
+  JWT_SECRET: JWT_SECRET_RAW || "dev-secret",
   ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN ?? "7d", // backward compatible default
+  PRIVILEGED_ACCESS_TOKEN_EXPIRES_IN: process.env.PRIVILEGED_ACCESS_TOKEN_EXPIRES_IN ?? "1h",
   // ✅ M46.9: optional tighter access token TTL for DRIVER (e.g. "12h" or "1h")
   DRIVER_ACCESS_TOKEN_EXPIRES_IN: process.env.DRIVER_ACCESS_TOKEN_EXPIRES_IN ?? "",
   // ✅ M46.9: cap active refresh sessions per user (0 = unlimited)
@@ -16,9 +26,10 @@ export const ENV = {
   // ✅ M46.9: if session/device is bound, require deviceId on refresh (prod only)
   REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND: (process.env.REFRESH_REQUIRE_DEVICE_ID_FOR_BOUND ?? "1") === "1",
   REFRESH_TOKEN_TTL_DAYS: Number(process.env.REFRESH_TOKEN_TTL_DAYS ?? 30),
-  STEP_UP_REQUIRED_ROLES: process.env.STEP_UP_REQUIRED_ROLES ?? "SUPER_ADMIN,ROOM",
+  STEP_UP_REQUIRED_ROLES: process.env.STEP_UP_REQUIRED_ROLES ?? "SUPER_ADMIN,ROOM,COMPANY",
   STEP_UP_TOTP_WINDOW_SEC: Number(process.env.STEP_UP_TOTP_WINDOW_SEC ?? 12 * 60 * 60),
   STEP_UP_TOTP_ISSUER: process.env.STEP_UP_TOTP_ISSUER ?? "Personel-Servis V1",
+  TOTP_SECRET_VAULT_KEY: process.env.TOTP_SECRET_VAULT_KEY ?? "",
   GOOGLE_AUTH_ENABLED: (process.env.GOOGLE_AUTH_ENABLED ?? "0") === "1",
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ?? "",
 

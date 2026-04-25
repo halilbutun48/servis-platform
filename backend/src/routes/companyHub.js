@@ -3,7 +3,7 @@
 import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { httpError } from "../errors/http.js";
 
@@ -33,6 +33,7 @@ const hubSchema = z
 export function companyHubRouter() {
   const r = express.Router();
   r.use(authRequired(), requireRole("COMPANY"));
+  r.use(requireStepUpWrite("COMPANY"));
 
   r.get("/", asyncHandler(async (req, res) => {
     const companyId = companyIdOf(req);

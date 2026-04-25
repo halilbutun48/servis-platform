@@ -2,7 +2,7 @@
 import express from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { decorateGeoItem, inferGeoState } from "../services/geoState.js";
 import { clearResponseCache, rememberResponse } from "../utils/responseCache.js";
 import { sanitizeCompanyPersonelItem } from "../kvkk/enforcement.js";
@@ -54,6 +54,7 @@ export function companyPersonelsRouter() {
 
   // COMPANY scope only
   r.use(authRequired(), requireRole("COMPANY"));
+  r.use(requireStepUpWrite("COMPANY"));
 
   // GET /api/company/personels?geoStatus=NEEDS_REVIEW
   r.get("/", async (req, res) => {

@@ -2,7 +2,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "../prisma.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { createPersonelSchema } from "../validators.js";
 import { clearResponseCache } from "../utils/responseCache.js";
 
@@ -30,7 +30,7 @@ export function personelsRouter(io) {
   });
 
   // COMPANY: create personel (login opsiyonel)
-  r.post("/", authRequired(), requireRole("COMPANY"), async (req, res) => {
+  r.post("/", authRequired(), requireRole("COMPANY"), requireStepUpWrite("COMPANY"), async (req, res) => {
     const u = req.user;
     if (!u.companyId) return res.status(400).json({ error: "COMPANY must have companyId" });
 
