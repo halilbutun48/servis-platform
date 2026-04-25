@@ -739,3 +739,83 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
     }
   };
 }
+
+/**
+ * M93 queue durability proof helpers.
+ * Read-only helpers: expose bounded dead-letter visibility and threshold classification
+ * without changing enqueue/worker processing semantics.
+ */
+export function evaluateAutoReachedQueueHealthThresholds(snapshot = {}, opts = {}) {
+  const queue = snapshot?.queue || {};
+  const thresholds = {
+    queueDepthWarn: Number(opts.queueDepthWarn ?? process.env.AUTO_REACHED_QUEUE_DEPTH_WARN ?? 500),
+    processingDepthWarn: Number(opts.processingDepthWarn ?? process.env.AUTO_REACHED_PROCESSING_DEPTH_WARN ?? 50),
+    claimsDepthWarn: Number(opts.claimsDepthWarn ?? process.env.AUTO_REACHED_CLAIMS_DEPTH_WARN ?? 50),
+    deadLetterDepthWarn: Number(opts.deadLetterDepthWarn ?? process.env.AUTO_REACHED_DEAD_LETTER_DEPTH_WARN ?? 1),
+    oldestClaimAgeMsWarn: Number(opts.oldestClaimAgeMsWarn ?? process.env.AUTO_REACHED_OLDEST_CLAIM_AGE_MS_WARN ?? 120000),
+  };
+
+  const warnings = [];
+  const pushIf = (condition, code, message, value, threshold) => {
+    if (condition) warnings.push({ code, message, value, threshold });
+  };
+
+  pushIf(Number(queue.queueDepth || 0) > thresholds.queueDepthWarn, "QUEUE_DEPTH_HIGH", "Auto-reached kuyruk derinliÄŸi eÅŸiÄŸi aÅŸtÄ±.", Number(queue.queueDepth || 0), thresholds.queueDepthWarn);
+  pushIf(Number(queue.processingDepth || 0) > thresholds.processingDepthWarn, "PROCESSING_DEPTH_HIGH", "Processing kuyruÄŸu eÅŸiÄŸi aÅŸtÄ±.", Number(queue.processingDepth || 0), thresholds.processingDepthWarn);
+  pushIf(Number(queue.claimsDepth || 0) > thresholds.claimsDepthWarn, "CLAIMS_DEPTH_HIGH", "Claim kayÄ±tlarÄ± eÅŸiÄŸi aÅŸtÄ±.", Number(queue.claimsDepth || 0), thresholds.claimsDepthWarn);
+  pushIf(Number(queue.deadLetterDepth || 0) > thresholds.deadLetterDepthWarn, "DEAD_LETTER_DEPTH_HIGH", "Dead-letter kayÄ±tlarÄ± eÅŸiÄŸi aÅŸtÄ±.", Number(queue.deadLetterDepth || 0), thresholds.deadLetterDepthWarn);
+  pushIf(Number(queue.oldestClaimAgeMs || 0) > thresholds.oldestClaimAgeMsWarn, "OLDEST_CLAIM_STALE", "En eski claim reclaim eÅŸiÄŸini aÅŸtÄ±.", Number(queue.oldestClaimAgeMs || 0), thresholds.oldestClaimAgeMsWarn);
+  pushIf(snapshot?.redisAvailable === false || snapshot?.redisConnected === false, "REDIS_NOT_CONNECTED", "Redis baÄŸlantÄ±sÄ± yok veya baÄŸlÄ± deÄŸil.", snapshot?.redisConnected === true ? 1 : 0, 1);
+
+  return {
+    ok: warnings.length === 0,
+    status: warnings.length === 0 ? "OK" : "WARN",
+    thresholds,
+    warnings,
+    checkedAtIso: new Date().toISOString(),
+  };
+}
+
+export async function getAutoReachedDeadLetterSnapshot(opts = {}) {
+  const redis = opts.redis || getRedis();
+  const limit = Math.min(200, Math.max(1, Number(opts.limit ?? 50)));
+  const out = {
+    ok: Boolean(redis?.send),
+    redisAvailable: Boolean(redis?.send),
+    key: AUTO_REACHED_DEAD_LETTER_KEY,
+    limit,
+    items: [],
+    error: null,
+  };
+  if (!redis?.send) {
+    out.error = "REDIS_UNAVAILABLE";
+    return out;
+  }
+  try {
+    const rows = await redis.send("LRANGE", AUTO_REACHED_DEAD_LETTER_KEY, "0", String(limit - 1));
+    out.items = Array.isArray(rows)
+      ? rows.map((raw) => {
+          try {
+            return { ok: true, raw, parsed: JSON.parse(raw) };
+          } catch (e) {
+            return { ok: false, raw, parseError: String(e?.message || e) };
+          }
+        })
+      : [];
+    out.ok = true;
+  } catch (e) {
+    out.ok = false;
+    out.error = String(e?.message || e);
+  }
+  return out;
+}
+
+export async function getAutoReachedQueueProofSnapshot(opts = {}) {
+  const health = await getAutoReachedQueueHealthSnapshot(opts);
+  return {
+    ok: true,
+    health,
+    threshold: evaluateAutoReachedQueueHealthThresholds(health, opts),
+    deadLetter: await getAutoReachedDeadLetterSnapshot(opts),
+  };
+}

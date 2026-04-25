@@ -129,3 +129,4 @@
 ## Repo audit consolidation note
 - Duplicate pack/check consolidation uses semantic PowerShell signatures.
 - Explicit `compatibility_alias` wrappers are counted separately and excluded from raw consolidation totals.
+- M93 Queue durability proof: powershell -ExecutionPolicy Bypass -File .\tools\pack_m93_queue_durability_proof.ps1 -RepoRoot <repo>
