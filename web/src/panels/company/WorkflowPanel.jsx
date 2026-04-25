@@ -389,7 +389,7 @@ export default function WorkflowPanel() {
     }
   }, [token]);
 
-  async function loadSummary(signal) {
+  const loadSummary = useCallback(async (signal) => {
     if (!token) return;
     setErr("");
     try {
@@ -408,7 +408,7 @@ export default function WorkflowPanel() {
       setSummary({ todayAgreements: 0, todayShiftCount: 0, marketShiftCount: 0, geoNeedsReview: 0, openOffersCount: 0 });
       setErr(String(e?.message || e));
     }
-  }
+  }, [token]);
 
   async function loadCompanyOffers(status = offersModal.status) {
     if (!token) return;
@@ -435,8 +435,7 @@ export default function WorkflowPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, loadSummary]);
 
   useEffect(() => {
     if (!token || !guidedOpen) return;
