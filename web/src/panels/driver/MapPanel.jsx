@@ -39,7 +39,7 @@ export default function DriverMapPanel() {
       const v = await api("/api/live/vehicles", { token });
       setVehicles(Array.isArray(v) ? v : []);
 
-      // ✅ driver için doğru endpoint
+      // âœ… driver iÃ§in doÄŸru endpoint
       const s = await api("/api/shifts/my", { token });
       setShifts(Array.isArray(s) ? s : (s?.items ?? []));
 
@@ -52,8 +52,12 @@ export default function DriverMapPanel() {
   }, [token]);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+    if (!token) return;
+    const t = setTimeout(() => {
+      loadAll();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [token, loadAll]);
 
   // gps:update => HTTP reload yok; sadece state patch
   useAutoReload("gps", (detail) => {
@@ -87,7 +91,7 @@ export default function DriverMapPanel() {
     );
   });
 
-  // vehicle:status gibi GPS kaynaklı spam'lerde full reload yapma
+  // vehicle:status gibi GPS kaynaklÄ± spam'lerde full reload yapma
   useAutoReload("vehicles", (detail) => {
     const ev = detail?.payload?.msg?._event;
     if (ev === "vehicle:status") {
@@ -128,8 +132,8 @@ export default function DriverMapPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title="Driver • Harita"
-        subtitle="Seçili araç + vardiya durakları"
+        title="Driver â€¢ Harita"
+        subtitle="SeÃ§ili araÃ§ + vardiya duraklarÄ±"
         actions={<button onClick={loadAll} style={{ padding: "8px 12px" }}>Yenile</button>}
       />
 
@@ -138,8 +142,8 @@ export default function DriverMapPanel() {
       <div className="card" style={{ marginBottom: 10 }}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontWeight: 900 }}>Canlı rota özeti</div>
-            <div className="muted">Tüm duraklar rota sırası ile, sıradaki durak highlight, canlı araç takibi</div>
+            <div style={{ fontWeight: 900 }}>CanlÄ± rota Ã¶zeti</div>
+            <div className="muted">TÃ¼m duraklar rota sÄ±rasÄ± ile, sÄ±radaki durak highlight, canlÄ± araÃ§ takibi</div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="pill">Toplam: {stats.total}</span>
@@ -151,18 +155,18 @@ export default function DriverMapPanel() {
         <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           {nextStop?.name ? (
             <>
-              <span className="muted">Sıradaki:</span>
+              <span className="muted">SÄ±radaki:</span>
               <span className="pill" data-status="NEXT">{nextStop.name}</span>
-              <button type="button" onClick={() => openNextStopNavigation(nextStop, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Sonraki Durağa Navigasyon</button>
-              <button type="button" onClick={() => openFullRouteNavigation(stops, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Tam Rotayı Dış Navigasyonda Aç</button>
+              <button type="button" onClick={() => openNextStopNavigation(nextStop, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Sonraki DuraÄŸa Navigasyon</button>
+              <button type="button" onClick={() => openFullRouteNavigation(stops, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Tam RotayÄ± DÄ±ÅŸ Navigasyonda AÃ§</button>
             </>
           ) : (
-            <span className="muted">Sıradaki durak yok.</span>
+            <span className="muted">SÄ±radaki durak yok.</span>
           )}
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <div className="muted" style={{ marginBottom: 6 }}>Adım adım takip</div>
+          <div className="muted" style={{ marginBottom: 6 }}>AdÄ±m adÄ±m takip</div>
           <StopTimeline stops={stops} nextStopId={nextStop?.id ?? null} compact={false} onSelect={(s) => focusStop(s)} />
         </div>
       </div>

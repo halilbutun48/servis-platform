@@ -363,7 +363,7 @@ export default function AgreementsPanel() {
     } catch (e) {
       setErr(e?.message || "Sözleşmeler yüklenemedi.");
     }
-  }, [statusFilter, take, token]);
+  }, [token, take, statusFilter]);
 
   useEffect(() => {
     if (!token) return;

@@ -695,9 +695,11 @@ async function decideExtend(shiftId, decision) {
     }
   }
 
+  const loadAllRef = useRef(loadAll);
+  loadAllRef.current = loadAll;
+
   useEffect(() => {
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadAllRef.current();
   }, []);
 
   useAutoReload("shifts", loadShiftListOnly);

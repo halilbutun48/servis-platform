@@ -212,8 +212,7 @@ const [customTemplates, setCustomTemplates] = useState([]); // [{id,name,packKey
 
 useEffect(() => {
   setCustomTemplates(loadCustomTemplatesFromStorage(templatesStorageKey, templatesStorageKeyLegacy));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [templatesStorageKey]);
+}, [templatesStorageKey, templatesStorageKeyLegacy]);
 
 useEffect(() => {
   try {
@@ -362,18 +361,20 @@ useEffect(() => {
     }
   }
 
-  useEffect(() => {
+  const loadRef = useRef(load);
+loadRef.current = load;
+
+useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
     const timer = setTimeout(() => {
-      if (!cancelled) load(controller.signal, { withReferences: false });
+      if (!cancelled) loadRef.current(controller.signal, { withReferences: false });
     }, 320);
     return () => {
       cancelled = true;
       controller.abort();
       clearTimeout(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.role, token]);
 
   useEffect(() => {

@@ -216,11 +216,13 @@ export default function FloatingCopilotDrawer({ path: propPath = "" }) {
     return () => window.removeEventListener(evt, onSelection);
   }, [currentPath]);
 
+  const askRef = useRef(ask);
+  askRef.current = ask;
+
   useEffect(() => {
     if (!open || !token || isCopilotPage) return;
-    if (!messages.length) ask("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, token, isCopilotPage]);
+    if (!messages.length) askRef.current("");
+  }, [open, token, isCopilotPage, messages.length]);
 
   useEffect(() => {
     if (!open || !token || isCopilotPage) return;
