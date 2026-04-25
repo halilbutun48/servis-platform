@@ -14,6 +14,7 @@ Bu milestone, uretim oncesi **kapasite baz cizgisi** olusturmak icin minimum goz
 - `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlariyla daha dayanıklıdır; yine de **tam enterprise queue** degildir.
 - Redis down olursa GPS hot path fallback ile ilerler; worker crash / reclaim / shutdown handoff siniri ayrica `RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` icinde tutulur.
 - Lock TTL, backlog, retry, stale reclaim ve graceful shutdown davranisi resmi sinirdir; bu runbook queue omurgasinin enterprise exactly-once iddiasi olmadigini acikca soyler.
+- Canli queue guardrail icin `GET /api/admin/queues/auto-reached` kullanilir; `queueDepth`, `processingDepth`, `claimsDepth`, `deadLetterDepth` ve `oldestClaimAgeMs` birlikte okunur.
 
 ## Beklenen gostergeler
 - Ortalama istek/dakika

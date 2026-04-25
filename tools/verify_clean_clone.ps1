@@ -14,10 +14,31 @@ $stagingRoot = Join-Path $env:TEMP ("servis-platform-clean-clone-$runId")
 $archivePath = Join-Path $env:TEMP ("servis-platform-clean-clone-$runId.zip")
 $runtimeDataDir = Join-Path $stagingRoot 'artifacts\runtime-data'
 $npmCacheDir = Join-Path $stagingRoot '.npm-cache'
+$tempDir = Join-Path $stagingRoot '.temp'
+
+$previousTemp = $env:TEMP
+$previousTmp = $env:TMP
+$previousNpmCache = $env:npm_config_cache
+$previousNpmFund = $env:npm_config_fund
+$previousNpmAudit = $env:npm_config_audit
+$previousNpmNotifier = $env:npm_config_update_notifier
+$previousNoUpdateNotifier = $env:NO_UPDATE_NOTIFIER
+$previousDatabaseUrl = $env:DATABASE_URL
+$previousRuntimeDataDir = $env:RUNTIME_DATA_DIR
 
 New-Item -ItemType Directory -Force -Path $stagingRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $runtimeDataDir | Out-Null
 New-Item -ItemType Directory -Force -Path $npmCacheDir | Out-Null
+New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
+
+$env:TEMP = $tempDir
+$env:TMP = $tempDir
+$env:npm_config_cache = $npmCacheDir
+$env:npm_config_fund = 'false'
+$env:npm_config_audit = 'false'
+$env:npm_config_update_notifier = 'false'
+$env:NO_UPDATE_NOTIFIER = '1'
+$env:RUNTIME_DATA_DIR = $runtimeDataDir
 
 Push-Location $RepoRoot
 try {
@@ -30,13 +51,6 @@ finally {
 
 Expand-Archive -LiteralPath $archivePath -DestinationPath $stagingRoot -Force
 
-$env:RUNTIME_DATA_DIR = $runtimeDataDir
-$env:npm_config_cache = $npmCacheDir
-$env:npm_config_fund = 'false'
-$env:npm_config_audit = 'false'
-$env:npm_config_update_notifier = 'false'
-$env:NO_UPDATE_NOTIFIER = '1'
-
 if (-not $env:DATABASE_URL) {
   $env:DATABASE_URL = 'postgresql://placeholder:placeholder@localhost:5432/servis_platform_clean_clone?schema=public'
 }
@@ -48,6 +62,11 @@ try {
 
   npm --prefix web ci --ignore-scripts --cache $npmCacheDir --no-audit --no-fund
   if (-not $?) { throw 'web ci failed' }
+
+  $espreePath = Join-Path $stagingRoot 'web\node_modules\espree\dist\espree.cjs'
+  if (-not (Test-Path -LiteralPath $espreePath)) {
+    throw 'bootstrap dependency missing: web/node_modules/espree/dist/espree.cjs. Run npm --prefix web ci before verify:repo.'
+  }
 
   Push-Location (Join-Path $stagingRoot 'backend')
   try {
@@ -144,4 +163,13 @@ finally {
   Pop-Location
   Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
+  if ($null -eq $previousTemp) { Remove-Item Env:\TEMP -ErrorAction SilentlyContinue } else { $env:TEMP = $previousTemp }
+  if ($null -eq $previousTmp) { Remove-Item Env:\TMP -ErrorAction SilentlyContinue } else { $env:TMP = $previousTmp }
+  if ($null -eq $previousNpmCache) { Remove-Item Env:\npm_config_cache -ErrorAction SilentlyContinue } else { $env:npm_config_cache = $previousNpmCache }
+  if ($null -eq $previousNpmFund) { Remove-Item Env:\npm_config_fund -ErrorAction SilentlyContinue } else { $env:npm_config_fund = $previousNpmFund }
+  if ($null -eq $previousNpmAudit) { Remove-Item Env:\npm_config_audit -ErrorAction SilentlyContinue } else { $env:npm_config_audit = $previousNpmAudit }
+  if ($null -eq $previousNpmNotifier) { Remove-Item Env:\npm_config_update_notifier -ErrorAction SilentlyContinue } else { $env:npm_config_update_notifier = $previousNpmNotifier }
+  if ($null -eq $previousNoUpdateNotifier) { Remove-Item Env:\NO_UPDATE_NOTIFIER -ErrorAction SilentlyContinue } else { $env:NO_UPDATE_NOTIFIER = $previousNoUpdateNotifier }
+  if ($null -eq $previousDatabaseUrl) { Remove-Item Env:\DATABASE_URL -ErrorAction SilentlyContinue } else { $env:DATABASE_URL = $previousDatabaseUrl }
+  if ($null -eq $previousRuntimeDataDir) { Remove-Item Env:\RUNTIME_DATA_DIR -ErrorAction SilentlyContinue } else { $env:RUNTIME_DATA_DIR = $previousRuntimeDataDir }
 }

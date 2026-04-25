@@ -1,5 +1,6 @@
 import { prisma } from "../src/prisma.js";
 import { banner, step, assertOk, login, getRoomCompanyIds, reqJson } from "./_harness.js";
+import { ensureTotpStepUp } from "./_totp_harness.js";
 import {
   createSourceShift,
   createAgreementBundleFromSource,
@@ -17,8 +18,8 @@ async function main() {
   banner("M91 behavioral smoke: shift -> sözleşme dönüşümü");
   step(`tag=${tag}`);
 
-  const companyToken = await login("company@demo.com", "demo123");
-  const roomToken = await login("room@demo.com", "demo123");
+  const companyToken = await ensureTotpStepUp(await login("company@demo.com", "demo123"), "company");
+  const roomToken = await ensureTotpStepUp(await login("room@demo.com", "demo123"), "room");
   const { roomId } = await getRoomCompanyIds(roomToken, companyToken);
   assertOk(Number(roomId || 0) > 0, "room scope resolved");
 

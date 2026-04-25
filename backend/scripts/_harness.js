@@ -394,7 +394,7 @@ const shBody = {
     ],
   };
 
-  const shCreate = await callAny("POST", ["/api/shifts", "/api/shift"], {
+  const shCreate = await callAny("POST", ["/api/shifts"], {
     token: companyToken,
     body: shBody,
   });

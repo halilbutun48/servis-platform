@@ -54,7 +54,13 @@ import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgrou
 import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
 import { RELEASE_INFO, applyGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState, readGpsRuntimeSnapshot } from './src/app/mobileAppState';
-
+import {
+  applySessionFailure as applySessionFailureFlow,
+  consumePendingSessionEvent as consumePendingSessionEventFlow,
+  loadRouteBundle as loadRouteBundleFlow,
+  refreshRouteAfterGpsPublish as refreshRouteAfterGpsPublishFlow,
+  resolveCurrentShiftId as resolveCurrentShiftIdFlow,
+} from './src/app/mobileAppFlow';
 const SESSION_FAILURE_USER_MESSAGE = 'Oturum kapandi. Yeniden giris yapin.';
 const M50_RELEASE_INFO_SENTINEL = 'releaseInfo={RELEASE_INFO}';
 const M57_4_RELEASE_INFO_MARKERS = {
@@ -62,7 +68,6 @@ const M57_4_RELEASE_INFO_MARKERS = {
   productionBundle: 'Production AAB hazir',
   releaseDiscipline: 'Internal preview once, production AAB later',
 };
-
 const M82_8_SPLIT_SCREEN_SENTINEL = { RouteScreen: 'RouteScreen', LiveScreen: 'LiveScreen' };
 
 export default function App() {
@@ -90,94 +95,39 @@ export default function App() {
     gpsRetryCountRef.current = 0;
     gpsNextRetryAtRef.current = 0;
   }
-
-  async function refreshRouteAfterGpsPublish(shiftId, fallbackToday = null) {
-    const now = Date.now();
-    const shouldRefreshToday = !state.today || !lastTodayRefreshAtRef.current || (now - lastTodayRefreshAtRef.current) >= 120000;
-    const nextToday = shouldRefreshToday
-      ? await fetchToday().catch(() => null)
-      : (fallbackToday || state.today || null);
-
-    if (nextToday && shouldRefreshToday) lastTodayRefreshAtRef.current = now;
-
-    const preferredShiftId = Number(shiftId || state.selectedShiftId || 0) || null;
-    if (preferredShiftId) {
-      const nextRoute = await fetchShiftRoute(preferredShiftId).catch(() => null);
-      if (nextRoute) {
-        return {
-          today: nextToday || fallbackToday || state.today || null,
-          route: nextRoute,
-          selectedShiftId: Number(nextRoute?.shift?.id || preferredShiftId || 0) || null,
-        };
-      }
-    }
-
-    return loadRouteBundle(nextToday || fallbackToday || state.today, preferredShiftId);
-  }
-
   async function applySessionFailure(error) {
-    try {
-      stopVoiceGuidance();
-      await stopDriverBackgroundLocation();
-      await Promise.all([
-        clearSession(),
-        clearLastMobileSnapshot(),
-        clearSelectedShiftId(),
-        clearPendingSessionEvent(),
-      ]);
-    } finally {
-      syncBusyRef.current = false;
-      gpsBusyRef.current = false;
-      resetSyncRetryState();
-      resetGpsRetryState();
-      lastTodayRefreshAtRef.current = 0;
-      setScreen('today');
-      setRouteOps({ busy: false, message: '' });
-      setState((prev) => ({
-        ...initialState,
-        loading: false,
-        deviceId: prev.deviceId,
-        error: humanizeSessionFailure(error) || SESSION_FAILURE_USER_MESSAGE,
-        lastErrorAt: new Date().toISOString(),
-      }));
-    }
+    await applySessionFailureFlow({
+      error,
+      stopVoiceGuidance,
+      stopDriverBackgroundLocation,
+      clearSession,
+      clearLastMobileSnapshot,
+      clearSelectedShiftId,
+      clearPendingSessionEvent,
+      resetSyncRetryState,
+      resetGpsRetryState,
+      setScreen,
+      setRouteOps,
+      setState,
+      initialState,
+      deviceId: state.deviceId,
+      humanizeSessionFailure,
+      sessionFailureUserMessage: SESSION_FAILURE_USER_MESSAGE,
+    });
+    syncBusyRef.current = false;
+    gpsBusyRef.current = false;
+    lastTodayRefreshAtRef.current = 0;
   }
 
-  async function consumePendingSessionEvent({ hasSession = Boolean(state.session?.token) } = {}) {
-    const pendingEvent = await getPendingSessionEvent().catch(() => null);
-    if (!pendingEvent) return false;
-    await clearPendingSessionEvent().catch(() => null);
-    if (hasSession) {
-      await applySessionFailure(pendingEvent);
-    } else {
-      setState((prev) => ({
-        ...prev,
-        error: humanizeSessionFailure(pendingEvent),
-        lastErrorAt: new Date().toISOString(),
-      }));
-    }
-    return true;
-  }
-
-  async function loadRouteBundle(todayValue, preferredShiftId = null) {
-    const selectedShift = resolveVisibleShift(todayValue, preferredShiftId, null);
-    const selectedShiftId = Number(selectedShift?.id || 0) || null;
-    const route = selectedShiftId
-      ? await fetchShiftRoute(selectedShiftId).catch(() => null)
-      : await fetchActiveRoute().catch(() => null);
-    const finalShiftId = Number(route?.shift?.id || selectedShiftId || 0) || null;
-
-    if (finalShiftId) await saveSelectedShiftId(finalShiftId);
-    else await clearSelectedShiftId();
-
-    return {
-      route,
-      selectedShiftId: finalShiftId,
-    };
-  }
-
-  function resolveCurrentShiftId() {
-    return Number(state.selectedShiftId || state.route?.shift?.id || state.today?.active?.id || state.today?.assigned?.id || 0) || null;
+  async function consumePendingSessionEvent(options = {}) {
+    return consumePendingSessionEventFlow({
+      getPendingSessionEvent,
+      clearPendingSessionEvent,
+      hasSession: options?.hasSession ?? Boolean(state.session?.token),
+      onSessionFailure: applySessionFailure,
+      setState,
+      humanizeSessionFailure,
+    });
   }
 
   async function syncSignedIn({ soft = false, preferredShiftIdOverride = null, force = false } = {}) {
@@ -199,7 +149,15 @@ export default function App() {
         fetchToday().catch(() => null),
         fetchKvkkCurrent().catch(() => null),
       ]);
-      const routeBundle = await loadRouteBundle(today, preferredShiftId);
+      const routeBundle = await loadRouteBundleFlow({
+        todayValue: today,
+        preferredShiftId,
+        resolveVisibleShift,
+        fetchShiftRoute,
+        fetchActiveRoute,
+        saveSelectedShiftId,
+        clearSelectedShiftId,
+      });
       const lastSyncAt = new Date().toISOString();
       lastTodayRefreshAtRef.current = Date.now();
       resetSyncRetryState();
@@ -477,7 +435,19 @@ export default function App() {
       await publishGps(payload);
 
       resetGpsRetryState();
-      const nextRouteBundle = await refreshRouteAfterGpsPublish(target.shiftId, state.today);
+      const nextRouteBundle = await refreshRouteAfterGpsPublishFlow({
+        shiftId: target.shiftId,
+        fallbackToday: state.today,
+        currentToday: state.today,
+        lastTodayRefreshAtRef,
+        fetchToday,
+        fetchShiftRoute,
+        fetchActiveRoute,
+        resolveVisibleShift,
+        saveSelectedShiftId,
+        clearSelectedShiftId,
+        stateSelectedShiftId: state.selectedShiftId,
+      });
       const nextToday = nextRouteBundle.today || state.today;
       const nextRoute = nextRouteBundle.route;
 
@@ -867,7 +837,11 @@ export default function App() {
   }
 
   async function runRouteAction(label, runner) {
-    const shiftId = resolveCurrentShiftId();
+    const shiftId = resolveCurrentShiftIdFlow({
+      selectedShiftId: state.selectedShiftId,
+      route: state.route,
+      today: state.today,
+    });
     if (!shiftId) {
       setState((prev) => ({ ...prev, error: 'Seçili vardiya yok.', lastErrorAt: new Date().toISOString() }));
       return;

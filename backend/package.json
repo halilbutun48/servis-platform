@@ -55,6 +55,8 @@
     "m91:smoke:agreement": "node scripts/m91_shift_to_agreement_smoke.js",
     "m91:smoke:route-preview": "node scripts/m91_route_preview_fallback_smoke.js",
     "m91:smoke": "npm run m91:smoke:agreement && npm run m91:smoke:route-preview",
+    "m91a:smoke": "node scripts/m91a_reservation_conflict_check.js",
+    "current:surface": "npm run smoke && npm run m91:smoke && npm run m91a:smoke",
     "m91:milestones": "node scripts/run_m0_latest.js --static-only --from M91 --to M91 --continue",
     "m92check": "node scripts/m92_repo_verification_spine_check.js",
     "bench:gps:100": "node scripts/bench_gps_publish_only.js --scenario=publish-only",

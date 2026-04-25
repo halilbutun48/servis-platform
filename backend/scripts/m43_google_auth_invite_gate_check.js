@@ -1,4 +1,5 @@
 import { banner, step, must, reqJson } from "./_harness.js";
+import { ensureTotpStepUp } from "./_totp_harness.js";
 import { prisma } from "../src/prisma.js";
 
 async function loginRaw(email, password) {
@@ -9,6 +10,9 @@ async function loginRaw(email, password) {
 
 async function resolveSchoolStudent(schoolToken) {
   const personels = await reqJson("GET", "/api/company/personels?kind=STUDENT&take=50", { token: schoolToken });
+  if (!personels.ok) {
+    console.error("M43 school student list failed:", personels.status, personels.text || JSON.stringify(personels.json || {}));
+  }
   must("school student list ok", personels.ok && Array.isArray(personels.json?.items));
   const items = Array.isArray(personels.json?.items) ? personels.json.items : [];
   const student = items.find((x) => String(x?.kind || "").toUpperCase() === "STUDENT") || null;
@@ -20,14 +24,15 @@ async function main() {
   banner("M43 PARENT ACCESS CLEANUP CHECK");
 
   step("login school");
-  const school = await loginRaw("school@demo.com", "demo123");
+  const schoolLogin = await loginRaw("school@demo.com", "demo123");
+  const schoolToken = await ensureTotpStepUp(schoolLogin.token, "school");
 
   step("resolve school student");
-  const student = await resolveSchoolStudent(school.token);
+  const student = await resolveSchoolStudent(schoolToken);
 
   step("create parent access");
   const access = await reqJson("POST", "/api/school/parent-invites", {
-    token: school.token,
+    token: schoolToken,
     body: { childPersonelId: student.id, expiresInDays: 7 },
   });
   must("parent access create ok", access.ok && access.json?.ok === true);
@@ -58,13 +63,13 @@ async function main() {
   must("code pin login ok", codePinLogin.ok && codePinLogin.json?.user?.role === "PARENT");
 
   step("legacy auth invite routes are removed");
-  const legacyList = await reqJson("GET", "/api/auth/invites", { token: school.token });
+  const legacyList = await reqJson("GET", "/api/auth/invites", { token: schoolToken });
   must("legacy list removed", legacyList.status === 410);
   const legacyInfo = await reqJson("GET", "/api/auth/invite/info?token=test");
   must("legacy info removed", legacyInfo.status === 410);
 
   step("revoke stops access");
-  const revoke = await reqJson("POST", `/api/school/parent-invites/${accessId}/revoke`, { token: school.token, body: {} });
+  const revoke = await reqJson("POST", `/api/school/parent-invites/${accessId}/revoke`, { token: schoolToken, body: {} });
   must("revoke ok", revoke.ok && revoke.json?.ok === true);
 
   const revokedLogin = await reqJson("POST", "/api/auth/parent-invite/accept", { body: { token: rawToken } });

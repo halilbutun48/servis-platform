@@ -16,6 +16,7 @@ import { getRegionCellDeploymentBlueprint } from "../ops/regionCellDeploymentBlu
 import { getRegionFailoverDrillPack, recordRegionFailoverDrillRun } from "../ops/regionFailoverDrill.js";
 import { getRegionNextPhasePack } from "../ops/regionNextPhasePack.js";
 import { getEdgeSecurityPolicySummary, getEdgeSecuritySnapshot } from "../ops/edgeSecurityBaseline.js";
+import { getAutoReachedQueueHealthSnapshot } from "../jobs/autoReachedQueue.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { markPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
@@ -262,6 +263,11 @@ r.get("/edge-security/policy", authRequired(), requireRole("SUPER_ADMIN"), async
 // M47.3: edge security / resilience snapshot
 r.get("/edge-security/snapshot", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json(await getEdgeSecuritySnapshot());
+});
+
+// M47.3+: auto-reached queue health / backlog visibility
+r.get("/queues/auto-reached", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json(await getAutoReachedQueueHealthSnapshot());
 });
   /**
    * SUPER_ADMIN — Overview stats

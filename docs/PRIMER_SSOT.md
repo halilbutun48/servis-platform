@@ -78,6 +78,7 @@ Compatibility aliases for legacy checks:
 ## Infra / queue guardrail
 - `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlariyla daha dayanıklı hale getirilmiştir; yine de tam enterprise exactly-once queue değildir.
 - Redis down / worker crash / shutdown handoff / stale reclaim sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde resmi olarak tanımlıdır.
+- Operasyonel ölçüm kapısı: `GET /api/admin/queues/auto-reached`.
 - Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`.
 
 ## M90 odak noktası
@@ -95,6 +96,8 @@ Compatibility aliases for legacy checks:
 - Yalnız acceptance-safe lokal düzeltme yapılabilir.
 - M90C.1, M90C.2 ve M90C.3 kapanmıştır; helpComposer policy canonical docs içine işlenmiştir.
 - Latest static milestone chain: `npm run verify:milestones` -> `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`.
+- Current live surface pack: `npm --prefix backend run current:surface`.
+- Deep surface diagnostic wrapper: `tools/run_all_checks.ps1 -Deep` (current live surface pack + legacy parent/KVKK/retention/ops yüzeyleri).
 - M91 local acceptance overlay: shift/agreement route preview ve kaynak vardiya bağlantısı `docs/RUNBOOK_M91_SHIFT_AGREEMENT_ROUTE_PREVIEW.md` ile takip edilir.
 - M92 repo verification spine: package scriptleri, tools wrapper, manifest, state ve runbook bağlantısı `npm run verify:repo` altında toplanır.
 

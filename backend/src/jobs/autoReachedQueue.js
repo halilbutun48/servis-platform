@@ -22,6 +22,32 @@ const DEFAULT_PROCESSING_TTL_MS = 15 * 60 * 1000;
 const DEFAULT_RECLAIM_SWEEP_MS = 30 * 1000;
 const DEFAULT_MAX_ATTEMPTS = 5;
 
+const queueRuntime = {
+  startedAtIso: new Date().toISOString(),
+  workerPid: process.pid,
+  closed: true,
+  activeTasks: 0,
+  peakActiveTasks: 0,
+  totalDequeued: 0,
+  totalHandled: 0,
+  totalRequeued: 0,
+  totalDeadLettered: 0,
+  totalParseErrors: 0,
+  totalClaimRecordErrors: 0,
+  totalTaskErrors: 0,
+  lastDequeuedAtIso: null,
+  lastHandledAtIso: null,
+  lastReclaimAtIso: null,
+  lastRequeuedAtIso: null,
+  lastDeadLetteredAtIso: null,
+  lastErrorAtIso: null,
+  lastErrorMessage: null,
+  lastDequeuedTaskId: null,
+  lastHandledTaskId: null,
+  lastRequeuedTaskId: null,
+  lastDeadLetteredTaskId: null,
+};
+
 function buildWorkerDatabaseUrl() {
   const base = String(process.env.DATABASE_URL || ENV.DATABASE_URL || "").trim();
   if (!base) return null;
@@ -83,6 +109,18 @@ function clampQueueAttempts(value) {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function syncActiveTasks(activeTasks) {
+  queueRuntime.activeTasks = Math.max(0, Number(activeTasks?.size || 0));
+  if (queueRuntime.activeTasks > queueRuntime.peakActiveTasks) {
+    queueRuntime.peakActiveTasks = queueRuntime.activeTasks;
+  }
+}
+
+function noteQueueError(error) {
+  queueRuntime.lastErrorAtIso = new Date().toISOString();
+  queueRuntime.lastErrorMessage = String(error?.message || error || "UNKNOWN_ERROR");
+}
+
 async function removeClaimState(redis, taskId) {
   try {
     await redis.send("HDEL", AUTO_REACHED_CLAIMS_HASH, String(taskId));
@@ -140,6 +178,9 @@ async function removeProcessingState(redis, envelope, raw) {
 }
 
 async function moveToDeadLetter(redis, envelope, raw, reason) {
+  queueRuntime.totalDeadLettered += 1;
+  queueRuntime.lastDeadLetteredAtIso = new Date().toISOString();
+  queueRuntime.lastDeadLetteredTaskId = String(envelope.queueTaskId || "");
   const payload = {
     ...envelope,
     deadLetteredAtIso: new Date().toISOString(),
@@ -163,6 +204,9 @@ async function requeueFromProcessing(redis, envelope, raw, reason, maxAttempts) 
   }
 
   const nowIso = new Date().toISOString();
+  queueRuntime.totalRequeued += 1;
+  queueRuntime.lastRequeuedAtIso = nowIso;
+  queueRuntime.lastRequeuedTaskId = String(envelope.queueTaskId || "");
   const nextEnvelope = normalizeQueueTask({
     ...envelope,
     attemptCount: nextAttempts,
@@ -196,6 +240,110 @@ async function audit(prismaClient, { actorUserId, actorRole, action, entity, ent
   } catch {
     // never block the queue on audit failures
   }
+}
+
+export function getAutoReachedQueueRuntimeSnapshot() {
+  return {
+    startedAtIso: queueRuntime.startedAtIso,
+    workerPid: queueRuntime.workerPid,
+    closed: queueRuntime.closed,
+    activeTasks: queueRuntime.activeTasks,
+    peakActiveTasks: queueRuntime.peakActiveTasks,
+    totalDequeued: queueRuntime.totalDequeued,
+    totalHandled: queueRuntime.totalHandled,
+    totalRequeued: queueRuntime.totalRequeued,
+    totalDeadLettered: queueRuntime.totalDeadLettered,
+    totalParseErrors: queueRuntime.totalParseErrors,
+    totalClaimRecordErrors: queueRuntime.totalClaimRecordErrors,
+    totalTaskErrors: queueRuntime.totalTaskErrors,
+    lastDequeuedAtIso: queueRuntime.lastDequeuedAtIso,
+    lastHandledAtIso: queueRuntime.lastHandledAtIso,
+    lastReclaimAtIso: queueRuntime.lastReclaimAtIso,
+    lastRequeuedAtIso: queueRuntime.lastRequeuedAtIso,
+    lastDeadLetteredAtIso: queueRuntime.lastDeadLetteredAtIso,
+    lastErrorAtIso: queueRuntime.lastErrorAtIso,
+    lastErrorMessage: queueRuntime.lastErrorMessage,
+    lastDequeuedTaskId: queueRuntime.lastDequeuedTaskId,
+    lastHandledTaskId: queueRuntime.lastHandledTaskId,
+    lastRequeuedTaskId: queueRuntime.lastRequeuedTaskId,
+    lastDeadLetteredTaskId: queueRuntime.lastDeadLetteredTaskId,
+  };
+}
+
+export async function getAutoReachedQueueHealthSnapshot(opts = {}) {
+  const redis = opts.redis || getRedis();
+  const connected = Boolean(redis?.connected);
+  const config = {
+    lockTtlMs: Math.max(60_000, Number(opts.lockTtlMs ?? ENV.AUTO_REACHED_LOCK_TTL_MS ?? DEFAULT_LOCK_TTL_MS)),
+    processingTtlMs: Math.max(60_000, Number(opts.processingTtlMs ?? ENV.AUTO_REACHED_PROCESSING_TTL_MS ?? DEFAULT_PROCESSING_TTL_MS)),
+    reclaimSweepMs: Math.max(10_000, Number(opts.reclaimSweepMs ?? ENV.AUTO_REACHED_RECLAIM_SWEEP_MS ?? DEFAULT_RECLAIM_SWEEP_MS)),
+    maxAttempts: Math.max(1, Math.trunc(Number(opts.maxAttempts ?? ENV.AUTO_REACHED_MAX_ATTEMPTS ?? DEFAULT_MAX_ATTEMPTS)) || DEFAULT_MAX_ATTEMPTS),
+  };
+
+  const snapshot = {
+    ok: true,
+    capturedAt: new Date().toISOString(),
+    redisAvailable: Boolean(redis?.send),
+    redisConnected: connected,
+    config,
+    runtime: getAutoReachedQueueRuntimeSnapshot(),
+    queue: {
+      key: AUTO_REACHED_QUEUE_KEY,
+      processingKey: AUTO_REACHED_PROCESSING_KEY,
+      claimsHashKey: AUTO_REACHED_CLAIMS_HASH,
+      claimsIndexKey: AUTO_REACHED_CLAIMS_INDEX,
+      deadLetterKey: AUTO_REACHED_DEAD_LETTER_KEY,
+      queueDepth: null,
+      processingDepth: null,
+      claimsDepth: null,
+      claimsIndexDepth: null,
+      deadLetterDepth: null,
+      oldestClaimTaskId: null,
+      oldestClaimAtMs: null,
+      oldestClaimAgeMs: null,
+    },
+    notes: [
+      "queueDepth backlog'i gosterir; processingDepth claim altinda calisan isleri gosterir.",
+      "claimsDepth ve claimsIndexDepth stale reclaim/gozetim sinirini izlemek icindir.",
+      "deadLetterDepth poison job birikimini, oldestClaimAgeMs ise reclaim gecikmesini gosterir.",
+    ],
+  };
+
+  if (!redis?.send) return snapshot;
+
+  try {
+    const [queueDepth, processingDepth, claimsDepth, claimsIndexDepth, deadLetterDepth, oldestClaim] = await Promise.all([
+      redis.send("LLEN", AUTO_REACHED_QUEUE_KEY),
+      redis.send("LLEN", AUTO_REACHED_PROCESSING_KEY),
+      redis.send("HLEN", AUTO_REACHED_CLAIMS_HASH),
+      redis.send("ZCARD", AUTO_REACHED_CLAIMS_INDEX),
+      redis.send("LLEN", AUTO_REACHED_DEAD_LETTER_KEY),
+      redis.send("ZRANGE", AUTO_REACHED_CLAIMS_INDEX, "0", "0", "WITHSCORES"),
+    ]);
+
+    snapshot.queue.queueDepth = Number(queueDepth || 0);
+    snapshot.queue.processingDepth = Number(processingDepth || 0);
+    snapshot.queue.claimsDepth = Number(claimsDepth || 0);
+    snapshot.queue.claimsIndexDepth = Number(claimsIndexDepth || 0);
+    snapshot.queue.deadLetterDepth = Number(deadLetterDepth || 0);
+
+    const oldest = Array.isArray(oldestClaim) ? oldestClaim : [];
+    if (oldest.length >= 2) {
+      const taskId = String(oldest[0] || "");
+      const atMs = Number(oldest[1] || 0);
+      if (taskId) snapshot.queue.oldestClaimTaskId = taskId;
+      if (Number.isFinite(atMs) && atMs > 0) {
+        snapshot.queue.oldestClaimAtMs = atMs;
+        snapshot.queue.oldestClaimAgeMs = Math.max(0, Date.now() - atMs);
+      }
+    }
+  } catch (error) {
+    snapshot.ok = false;
+    snapshot.redisAvailable = Boolean(redis?.send);
+    snapshot.error = String(error?.message || error || "QUEUE_HEALTH_UNAVAILABLE");
+  }
+
+  return snapshot;
 }
 
 export async function enqueueAutoReachedTask(task, opts = {}) {
@@ -409,6 +557,9 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
   let reclaimBusy = false;
   const activeTasks = new Set();
   const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  queueRuntime.closed = false;
+  queueRuntime.workerPid = process.pid;
+  queueRuntime.startedAtIso = queueRuntime.startedAtIso || new Date().toISOString();
 
   const reclaimStaleClaims = async () => {
     if (closed || reclaimBusy) return;
@@ -425,6 +576,9 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
         "25"
       );
       const ids = Array.isArray(staleIds) ? staleIds : [];
+      if (ids.length) {
+        queueRuntime.lastReclaimAtIso = new Date().toISOString();
+      }
       for (const taskId of ids) {
         if (closed) break;
         const raw = await controlRedis.send("HGET", AUTO_REACHED_CLAIMS_HASH, String(taskId));
@@ -490,21 +644,31 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
 
       if (!task) {
         console.error("autoReachedQueue parse error:", raw.slice(0, 200));
+        queueRuntime.totalParseErrors += 1;
+        noteQueueError("autoReachedQueue parse error");
         try {
           await controlRedis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
         } catch {
           // ignore
         }
+        activeTasks.delete(String(item?.queueTaskId || ""));
+        syncActiveTasks(activeTasks);
         continue;
       }
 
       task = normalizeQueueTask(task);
       activeTasks.add(task.queueTaskId);
+      queueRuntime.totalDequeued += 1;
+      queueRuntime.lastDequeuedAtIso = new Date().toISOString();
+      queueRuntime.lastDequeuedTaskId = task.queueTaskId;
+      syncActiveTasks(activeTasks);
 
       try {
         await rememberClaimState(controlRedis, task, raw, Date.now());
       } catch (e) {
         console.error("autoReachedQueue claim record error:", e);
+        queueRuntime.totalClaimRecordErrors += 1;
+        noteQueueError(e);
         try {
           await controlRedis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
         } catch {
@@ -516,14 +680,20 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
           // ignore
         }
         activeTasks.delete(task.queueTaskId);
+        syncActiveTasks(activeTasks);
         continue;
       }
 
       try {
         await processAutoReachedTask(io, task);
         await clearProcessingState(controlRedis, task, raw);
+        queueRuntime.totalHandled += 1;
+        queueRuntime.lastHandledAtIso = new Date().toISOString();
+        queueRuntime.lastHandledTaskId = task.queueTaskId;
       } catch (e) {
         console.error("autoReachedQueue task error:", e);
+        queueRuntime.totalTaskErrors += 1;
+        noteQueueError(e);
         try {
           await controlRedis.send("HSET", AUTO_REACHED_CLAIMS_HASH, String(task.queueTaskId), JSON.stringify({
             raw,
@@ -541,6 +711,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
       }
 
       activeTasks.delete(task.queueTaskId);
+      syncActiveTasks(activeTasks);
     }
   };
 
@@ -548,6 +719,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
 
   return () => {
     closed = true;
+    queueRuntime.closed = true;
     if (reclaimTimer) {
       clearTimeout(reclaimTimer);
       reclaimTimer = null;

@@ -18,6 +18,7 @@ import {
   ensureActiveShift,
   closeShiftHard,
 } from "./_harness.js";
+import { ensureTotpStepUp } from "./_totp_harness.js";
 
 const DOC_KEY = "LOCATION_CONSENT";
 const DOC_VERSION = "1";
@@ -51,9 +52,9 @@ function assertKvkk403(r, label) {
 async function main() {
   banner("M38CHECK: KVKK Consent gate + prod guards");
 
-  const superToken = await loginFirst("super");
-  const roomToken = await loginFirst("room");
-  const companyToken = await loginFirst("company");
+  const superToken = await ensureTotpStepUp(await loginFirst("super"), "super");
+  const roomToken = await ensureTotpStepUp(await loginFirst("room"), "room");
+  const companyToken = await ensureTotpStepUp(await loginFirst("company"), "company");
   const driverToken = await loginFirst("driver");
   const parentToken = await loginFirst("parent");
 

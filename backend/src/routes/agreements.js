@@ -3,10 +3,8 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { buildAgreementCommercialBackboneMap, upsertAgreementCommercialBackbone } from "../services/paymentBackbone.js";
 import { broadcastAgreementUpdate } from "../services/agreementBroadcast.js";
-import { dateOnlyUTCFromYmd } from "../time/tr.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { httpError, sendErrorResponse } from "../errors/http.js";
-import { createAndEmitNotification } from "../notifications/service.js";
 import { ymdTR } from "../time/tr.js";
 import { createAgreementRouteRefreshRequest, decideAgreementRouteRefreshRequest, getAgreementRouteRefreshRequestById, getPendingAgreementRouteRefreshRequest, listAgreementRouteRefreshRequests, updateAgreementRouteRefreshRequest } from "../services/agreementRouteRefreshStore.js";
 // ✅ M59: agreement UI shift stats helper endpoint
@@ -19,108 +17,24 @@ import { buildAgreementShiftStats } from "../services/agreementShiftStats.js";
 import { requireSourceShiftForAgreementCreate } from "../services/agreementSourceShiftGate.js";
 import { agreementRef, routeRefreshRef } from "../services/agreementCopy.js";
 import { buildAgreementListItemsWithCommercialBackbone } from "../services/agreementListView.js";
+import { createAndEmitNotification } from "../notifications/service.js";
 import { requireStepUpWrite } from "../auth/middleware.js";
-
-function parseDateOnly(s) {
-  const v = String(s || "").trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
-  return dateOnlyUTCFromYmd(v);
-}
-function toInt(v, def = null) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : def;
-}
-function toFloat(v, def = null) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : def;
-}
-function clampMin(v) {
-  const n = toInt(v, null);
-  if (n == null) return null;
-  if (n < 0 || n > 1439) return null;
-  return n;
-}
-function clampWeekMask(v) {
-  const n = toInt(v, null);
-  if (n == null) return null;
-  if (n < 1 || n > 127) return null;
-  return n;
-}
-
-function trimOrNull(v) {
-  const s = String(v ?? "").trim();
-  return s ? s : null;
-}
-
-function offerSummary(amount, note) {
-  return `${amount ?? "-"}${note ? " — " + note : ""}`;
-}
-
-function routeRefreshWindowSummary(item) {
-  const startDate = String(item?.startDate || "").slice(0, 10) || "-";
-  const endDate = String(item?.endDate || "").slice(0, 10) || "-";
-  const shiftCount = Number(item?.shiftCount || 0);
-  const stopCount = Number(item?.stopCount || 0);
-  const peopleCount = Number(item?.peopleCount || 0);
-  return `${startDate} → ${endDate} • ${shiftCount} taslak vardiya • ${stopCount} durak • ${peopleCount} personel`;
-}
-
-async function emitAgreementNotification(io, { type, scope, companyId = null, roomId = null, kind, title, message, dedupeKey }) {
-  return createAndEmitNotification({
-    io,
-    type,
-    scope,
-    companyId,
-    roomId,
-    payload: {
-      v: 1,
-      kind,
-      title,
-      message,
-    },
-    dedupeKey,
-  });
-}
-
-function parseRouteRefreshDecision(value) {
-  const raw = String(value || "").trim().toUpperCase();
-  if (["ACCEPT", "ACCEPTED", "APPROVE", "APPROVED", "KABUL"].includes(raw)) return "ACCEPTED";
-  if (["REJECT", "REJECTED", "DECLINE", "DECLINED", "REDDET"].includes(raw)) return "REJECTED";
-  if (["CANCEL", "CANCELLED", "CANCELED", "IPTAL", "İPTAL"].includes(raw)) return "CANCELLED";
-  return null;
-}
-
-function parseOfferAmount(v) {
-  const n = toInt(v, null);
-  if (n == null) return null;
-  if (n <= 0) return null;
-  return n;
-}
-
-function parseOfferAmountNullable(v) {
-  const raw = v == null ? "" : String(v).trim();
-  if (!raw) return null;
-  return parseOfferAmount(raw);
-}
-
-function normDirection(v) {
-  const s = String(v || "INBOUND").trim().toUpperCase();
-  if (s === "INBOUND" || s === "OUTBOUND") return s;
-  return null;
-}
-function normPattern(v) {
-  const s = String(v || "ONE_WAY").trim().toUpperCase();
-  if (s === "ONE_WAY" || s === "LOOP") return s;
-  return null;
-}
-function parseHub(body) {
-  const lat = body?.hubLat == null || body?.hubLat === "" ? null : toFloat(body.hubLat, null);
-  const lng = body?.hubLng == null || body?.hubLng === "" ? null : toFloat(body.hubLng, null);
-  if (lat == null && lng == null) return { hubLat: null, hubLng: null };
-  if (lat == null || lng == null) return { error: "hubLat+hubLng birlikte olmalı" };
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return { error: "hubLat/hubLng range invalid" };
-  return { hubLat: lat, hubLng: lng };
-}
+import {
+  clampMin,
+  clampWeekMask,
+  emitAgreementNotification,
+  normDirection,
+  normPattern,
+  offerSummary,
+  parseDateOnly,
+  parseHub,
+  parseOfferAmount,
+  parseOfferAmountNullable,
+  parseRouteRefreshDecision,
+  routeRefreshWindowSummary,
+  toInt,
+  trimOrNull,
+} from "./agreementsHelpers.js";
 
 export function agreementsRouter(io) {
   const r = express.Router();

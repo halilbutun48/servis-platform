@@ -2,14 +2,13 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { loadWebEspree } from "./bootstrap_dependencies.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "../..");
-const require = createRequire(import.meta.url);
-const espree = require(path.join(repoRoot, "web", "node_modules", "espree", "dist", "espree.cjs"));
+const espree = loadWebEspree();
 
 const includeEntries = [
   path.join(repoRoot, "mobile", "App.js"),

@@ -20,13 +20,17 @@
 - Root verify chain: `npm run verify:ci`
 - Root verify chain canonical entry: `npm run verify:repo`
 - Milestone static chain: `npm run verify:milestones`
+- Current live surface pack: `npm --prefix backend run current:surface`
 - Clean clone verification: `tools\verify_clean_clone.ps1`
+- Deep surface diagnostic wrapper: `tools\run_all_checks.ps1 -Deep`
 - M0->latest runner: `node backend\scripts\run_m0_latest.js --static-only --to latest --continue`
 - M92 repo verification spine: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
 - Root verify zinciri web lint kanıtını `artifacts/lint/web_lint_latest.txt` dosyasına yazar
 - Final verify chain: `npm run verify:final`
 - All checks wrapper: `tools\run_all_checks.ps1`
+- All checks wrapper runs `verify:final`, static milestones, current live surface pack, then backend `fullcheck`
 - `verify:final`, `verify:repo` zincirinden sonra `verify:snapshot` soft gate raporunu da yeniler.
+- `tools\run_all_checks.ps1 -Deep` current live surface pack'e ek olarak legacy parent/KVKK/retention/ops yüzeylerini de dener; bu mod stale yüzeyleri görünür kılmak içindir ve günlük gate'ten daha serttir.
 - Docs/SSOT sync pack: `tools\pack_docs_ssot.ps1 -RepoRoot D:\servis-platform`
 
 ## Tarihsel anchor / compatibility marker

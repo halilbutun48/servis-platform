@@ -35,6 +35,17 @@ Bu not, `backend/src/jobs/autoReachedQueue.js` icindeki auto-reached akisinin **
 - Dead-letter listesi operasyon incelemesi icindir; backlog ve reclaim davranisi birlikte okunmalidir.
 - Bu runbook hala "performans fix var ama tam enterprise queue değil" notunu resmi kabul eder.
 
+## Izleme ve alarm matrisi
+- Health snapshot: `GET /api/admin/queues/auto-reached`
+- `queueDepth`: bekleyen is sayisi
+- `processingDepth`: claim altinda calisan is sayisi
+- `claimsDepth` / `claimsIndexDepth`: stale reclaim gozlem katmani
+- `deadLetterDepth`: poison job birikimi
+- `oldestClaimAgeMs`: reclaim gecikmesi; `processingTtlMs` sınırına yaklaşınca alarm düşün
+- `totalTaskErrors` veya `lastErrorMessage` artıyorsa downstream veya payload bozulmasi arastirilmalidir
+- `lastHandledAtIso` duruyorsa ama `queueDepth` yükseliyorsa worker ilerlemiyor olabilir
+- `deadLetterDepth` artıyor ve `requeue` sayısı yükseliyorsa retry sınırı gözden geçirilmelidir
+
 ## Okuma notu
 - Bu kuyruk, `500 -> 1000 -> 3500` kapasite hikayesindeki request-path hafifletmenin parcasidir.
 - Queue, worker crash'e karsi dayanıklılığı artirir; ama full durable job system yerine gecmez.

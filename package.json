@@ -16,6 +16,7 @@
     "verify:web-contract": "node backend/scripts/run_repo_check_chain.js --phase web-contract",
     "verify:closure": "node backend/scripts/run_repo_check_chain.js --phase closure",
     "verify:milestones": "node backend/scripts/run_m0_latest.js --static-only --to latest --continue",
+    "verify:milestones:live": "node backend/scripts/run_m0_latest.js --integration-only --to latest --continue",
     "verify:ci": "npm run verify:repo",
     "verify:final": "npm run verify:repo && npm run verify:snapshot"
   }

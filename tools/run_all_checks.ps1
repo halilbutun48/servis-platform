@@ -1,5 +1,6 @@
 param(
-  [int]$HealthTimeoutSec = 30
+  [int]$HealthTimeoutSec = 30,
+  [switch]$Deep
 )
 
 $ErrorActionPreference = "Stop"
@@ -69,7 +70,51 @@ try {
     throw "Backend health endpoint is not ready at $healthUrl. Start the API with: npm --prefix backend run dev"
   }
 
+  Invoke-Step -Label "backend current surface pack" -Action { npm --prefix backend run current:surface }
   Invoke-Step -Label "backend fullcheck" -Action { npm --prefix backend run fullcheck }
+
+  if ($Deep) {
+    Write-Host ""
+    Write-Host "=== deep surface diagnostic pack ==="
+
+    $deepFailures = New-Object System.Collections.Generic.List[string]
+
+    function Invoke-DeepStep {
+      param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][scriptblock]$Action
+      )
+
+      Write-Host ""
+      Write-Host "=== $Label ==="
+      try {
+        & $Action
+        if ($LASTEXITCODE -ne 0) {
+          throw "$Label failed with exit code $LASTEXITCODE"
+        }
+      } catch {
+        Write-Host "FAIL $Label -> $($_.Exception.Message)"
+        [void]$deepFailures.Add($Label)
+      }
+    }
+
+    Invoke-DeepStep -Label "legacy surface: m37 school-parent e2e" -Action { node backend\scripts\m37check.js }
+    Invoke-DeepStep -Label "legacy surface: m38 kvkk consent gate" -Action { node backend\scripts\m38check.js }
+    Invoke-DeepStep -Label "legacy surface: m43 parent invite cleanup" -Action { node backend\scripts\m43_google_auth_invite_gate_check.js }
+
+    $telematicsEnabled = $env:TELEMATICS_ENABLED
+    if (-not [string]::IsNullOrWhiteSpace($telematicsEnabled) -and $telematicsEnabled -notin @("0", "false", "False")) {
+      Invoke-DeepStep -Label "legacy surface: m44 telematics" -Action { node backend\scripts\m44_telematics_check.js }
+    } else {
+      Write-Host "SKIP legacy surface: m44 telematics disabled by TELEMATICS_ENABLED"
+    }
+
+    Invoke-DeepStep -Label "legacy surface: m45 retention + backup" -Action { node backend\scripts\m45_retention_backup_check.js }
+
+    if ($deepFailures.Count -gt 0) {
+      throw "Deep surface diagnostic pack failed: $($deepFailures -join ', ')"
+    }
+  }
 
   Write-Host ""
   Write-Host "ALL CHECKS PASS"

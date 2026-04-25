@@ -27,13 +27,12 @@ function safeMapGet(map, key) {
   return key == null ? null : map.get(String(key)) || null;
 }
 
-function resolveRegionIdFromRoom(roomId, roomMap, companyMap) {
+function resolveRegionIdFromRoom(roomId, roomMap) {
   const room = safeMapGet(roomMap, roomId);
   if (!room) return null;
   const directRegionId = toInt(room.regionId);
   if (directRegionId != null) return directRegionId;
-  const company = safeMapGet(companyMap, room.companyId);
-  return toInt(company?.regionId);
+  return null;
 }
 
 function resolveRegionIdFromCompany(companyId, companyMap) {
@@ -107,7 +106,7 @@ export async function getRegionCapacitySnapshot() {
     }),
     prisma.room.findMany({
       where: { status: { not: "DELETED" } },
-      select: { id: true, companyId: true, regionId: true, district: true },
+      select: { id: true, regionId: true, district: true },
     }),
     prisma.company.groupBy({
       by: ["regionId"],
@@ -184,19 +183,19 @@ export async function getRegionCapacitySnapshot() {
   finalizeZoneSamples(zoneMapByRegion, bucketMap);
 
   for (const group of vehicleGroups) {
-    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap, companyMap);
+    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap);
     bump(bucketMap, regionId, "vehicleCount", Number(group._count?._all || 0));
   }
   for (const group of activeVehicleGroups) {
-    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap, companyMap);
+    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap);
     bump(bucketMap, regionId, "activeVehicleCount", Number(group._count?._all || 0));
   }
   for (const group of driverGroups) {
-    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap, companyMap);
+    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap);
     bump(bucketMap, regionId, "driverCount", Number(group._count?._all || 0));
   }
   for (const group of openShiftRoomGroups) {
-    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap, companyMap);
+    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap);
     bump(bucketMap, regionId, "openShiftCount", Number(group._count?._all || 0));
   }
   for (const group of openShiftCompanyGroups) {
@@ -204,7 +203,7 @@ export async function getRegionCapacitySnapshot() {
     bump(bucketMap, regionId, "openShiftCount", Number(group._count?._all || 0));
   }
   for (const group of activeShiftRoomGroups) {
-    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap, companyMap);
+    const regionId = resolveRegionIdFromRoom(group.roomId, roomMap);
     bump(bucketMap, regionId, "activeShiftCount", Number(group._count?._all || 0));
   }
   for (const group of activeShiftCompanyGroups) {

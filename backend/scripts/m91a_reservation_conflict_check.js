@@ -1,4 +1,5 @@
 import { login, reqJson, banner, step, assertOk, sleep } from "./_harness.js";
+import { ensureTotpStepUp } from "./_totp_harness.js";
 import { prisma } from "../src/prisma.js";
 import { createAgreementSourceShift } from "./_agreement_source_shift_harness.js";
 
@@ -110,8 +111,8 @@ async function extendAgreement(companyToken, id, endDate) {
 
 async function main() {
   banner("M91A reservation conflict check");
-  const companyToken = await login("company@demo.com");
-  const roomToken = await login("room@demo.com");
+  const companyToken = await ensureTotpStepUp(await login("company@demo.com"), "company");
+  const roomToken = await ensureTotpStepUp(await login("room@demo.com"), "room");
 
   const meRoom = await reqJson("GET", "/api/me", { token: roomToken });
   mustOk(meRoom, "/api/me room");

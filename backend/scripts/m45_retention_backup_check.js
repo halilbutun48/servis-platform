@@ -1,10 +1,11 @@
 import { banner, step, must, login, reqJson, itemsOf } from "./_harness.js";
+import { ensureTotpStepUp } from "./_totp_harness.js";
 
 async function main() {
   banner("M45 RETENTION + BACKUP CHECK");
 
   step("login superadmin@demo.com");
-  const token = await login("superadmin@demo.com", "demo123");
+  const token = await ensureTotpStepUp(await login("superadmin@demo.com", "demo123"), "super");
   must("super admin login ok", !!token);
 
   step("GET /api/admin/retention/policy");

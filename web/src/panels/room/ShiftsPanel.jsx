@@ -16,6 +16,14 @@ import {
   shiftRequiredPax,
   trimOrNull,
 } from "./roomShiftsPanelUtils";
+import {
+  effectiveShiftRoomId,
+  isDriverAvailableForShift,
+  isVehicleAvailableForShift,
+  makeAvailabilitySig,
+  matchShift,
+  pkgShiftIdsFor,
+} from "./roomShiftsPanelHelpers";
 import { autoSplitApproveAction, approveShiftAction, rejectShiftAction, submitReassignAction } from "./roomShiftsPanelActions";
 import { RoomShiftsModalSection, RoomShiftsOverviewSection } from "./roomShiftsOverviewSection";
 import { RoomShiftsMainSections } from "./roomShiftsMainSections";
@@ -152,28 +160,10 @@ async function decideExtend(shiftId, decision) {
   }, [items, opsEventsModal.shiftId]);
   const opsEventsRegionLabel = useMemo(() => resolveShiftRegionLabel(opsEventsShift, roomsById), [opsEventsShift, roomsById]);
 
-  
-  // M61_UI_COPY — Paket içi hızlı doldurma (sadece UI)
-  // Not: Bu kopyalama sadece dropdown değerlerini kopyalar; backend’e kayıt atmaz.
-  const pkgKeyOfShift = (sh) => {
-    const cid = Number(sh?.companyId ?? sh?.company?.id ?? 0);
-    const t0 =
-      sh?.createdAt ? new Date(sh.createdAt).getTime() :
-      sh?.startAt ? new Date(sh.startAt).getTime() :
-      0;
-    const bucket = Number.isFinite(t0) ? Math.floor(t0 / 60000) : 0;
-    return `${cid}:${bucket}`;
-  };
-
-  const pkgShiftIdsFor = (baseShift) => (pendingFiltered || [])
-    .filter((x) => pkgKeyOfShift(x) === pkgKeyOfShift(baseShift))
-    .map((x) => Number(x.id))
-    .filter(Number.isFinite);
-
   const uiCopyVehicleToPkg = (baseShift, vehicleIdStr) => {
     const vidStr = String(vehicleIdStr || "");
     if (!vidStr) return;
-    const ids = pkgShiftIdsFor(baseShift);
+    const ids = pkgShiftIdsFor(baseShift, pendingFiltered);
     if (ids.length <= 1) return;
 
     setAssignSel((prev) => {
@@ -200,7 +190,7 @@ async function decideExtend(shiftId, decision) {
   const uiCopyDriverToPkg = (baseShift, driverIdStr) => {
     const didStr = String(driverIdStr || "");
     if (!didStr) return;
-    const ids = pkgShiftIdsFor(baseShift);
+    const ids = pkgShiftIdsFor(baseShift, pendingFiltered);
     if (ids.length <= 1) return;
 
     setDriverSel((prev) => {
@@ -209,7 +199,7 @@ async function decideExtend(shiftId, decision) {
       return next;
     });
   };
-const offersByShiftId = useMemo(() => {
+  const offersByShiftId = useMemo(() => {
     const m = new Map();
     for (const o of offers || []) {
       const sid = Number(o?.shiftId);
@@ -219,69 +209,6 @@ const offersByShiftId = useMemo(() => {
     }
     return m;
   }, [offers]);
-
-  function effectiveShiftRoomId(shift, marketOffer = null) {
-    const shiftRoomId = Number(shift?.roomId || 0);
-    if (shiftRoomId > 0) return shiftRoomId;
-    const offerRoomId = Number(marketOffer?.roomId || 0);
-    if (offerRoomId > 0) return offerRoomId;
-    return null;
-  }
-
-  function matchShift(s, qRaw) {
-    const q = String(qRaw ?? "").trim().toLowerCase();
-    if (!q) return true;
-
-    const parts = [
-      s?.id,
-      s?.status,
-      s?.company?.name,
-      s?.vehicle?.plate,
-      s?.driver?.fullName,
-      s?.companyOfferNote,
-      s?.roomOfferNote,
-      s?.roomOfferDecision,
-      s?.roomOfferDecisionNote,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return parts.includes(q);
-  }
-
-  // “müsait araç” hesabı (UI local): aynı zaman aralığında APPROVED/ACTIVE shift’i olan araç müsait değildir
-  function isVehicleAvailableForShift(vehicleId, shift) {
-    const vId = Number(vehicleId);
-    if (!Number.isFinite(vId)) return false;
-
-    const blockers = items.filter((x) => {
-      if (!x?.vehicleId) return false;
-      if (Number(x.vehicleId) !== vId) return false;
-      const st = String(x.status || "");
-      if (!["APPROVED", "ACTIVE"].includes(st)) return false;
-      if (Number(x.id) === Number(shift.id)) return false;
-      return overlaps(x.startAt, x.endAt, shift.startAt, shift.endAt);
-    });
-
-    return blockers.length === 0;
-  }
-
-  function isDriverAvailableForShift(driverId, shift) {
-    const dId = Number(driverId);
-    if (!Number.isFinite(dId)) return false;
-
-    const blockers = items.filter((x) => {
-      if (!x?.driverId) return false;
-      if (Number(x.driverId) !== dId) return false;
-      const st = String(x.status || "");
-      if (!["APPROVED", "ACTIVE"].includes(st)) return false;
-      if (Number(x.id) === Number(shift.id)) return false;
-      return overlaps(x.startAt, x.endAt, shift.startAt, shift.endAt);
-    });
-
-    return blockers.length === 0;
-  }
 
   function vehiclesForRoom(roomId) {
     const rid = Number(roomId);
@@ -373,10 +300,6 @@ const offersByShiftId = useMemo(() => {
       result[row.splitIndex] = localAvailability({ shift: virtualShift, vehicleId: row.vehicleId, driverId: row.driverId });
     }
     return result;
-  }
-
-  function makeSig({ shift, vehicleId, driverId }) {
-    return [String(vehicleId || ""), String(driverId || ""), String(shift?.startAt || ""), String(shift?.endAt || "")].join("|");
   }
 
   function localAvailability({ shift, vehicleId, driverId }) {
@@ -484,7 +407,7 @@ const offersByShiftId = useMemo(() => {
 
   async function checkAvailabilityForShift(shift, vehicleId, driverId) {
     const sid = Number(shift.id);
-    const sig = makeSig({ shift, vehicleId, driverId });
+    const sig = makeAvailabilitySig({ shift, vehicleId, driverId });
 
     // sig değişmediyse tekrar etme
     const prev = avail[sid];
@@ -1017,7 +940,7 @@ const offersByShiftId = useMemo(() => {
       loadAll,
       setAvail,
       normalizeErr,
-      makeSig }, shift);
+      makeSig: makeAvailabilitySig }, shift);
   }
 
   async function rejectShift(shift) {

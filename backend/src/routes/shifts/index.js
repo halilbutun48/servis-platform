@@ -15,9 +15,9 @@ export function shiftsRouter(io) {
 
   // Order is not critical for these endpoints, but we keep it stable.
   attachShiftSharedRoutes(r);
+  attachShiftDriverRoutes(r, io);
   attachShiftCompanyRoutes(r, io);
   attachShiftRoomRoutes(r, io);
-  attachShiftDriverRoutes(r, io);
 attachShiftPeopleRoutes(r, io);
 
   return r;

@@ -8,6 +8,7 @@
 import http from "http";
 import https from "https";
 import { login as compatLogin } from "./_harness.js";
+import { ensureTotpStepUp } from "./_totp_harness.js";
 
 const BASE_URL = process.env.API_URL ?? "http://127.0.0.1:3000";
 
@@ -159,8 +160,8 @@ async function main() {
   console.log(`API_URL = ${BASE_URL}`);
 
   const driverToken = await login("driver@demo.com", "demo123");
-  const roomToken = await login("room@demo.com", "demo123");
-  const companyToken = await login("company@demo.com", "demo123");
+  const roomToken = await ensureTotpStepUp(await login("room@demo.com", "demo123"), "room");
+  const companyToken = await ensureTotpStepUp(await login("company@demo.com", "demo123"), "company");
   console.log("OK login(driver/room/company)");
 
   // OK ACTIVE shift harness (GPS/ETA 403 fix)
@@ -179,6 +180,12 @@ async function main() {
     token: driverToken,
     body: { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 },
   });
+  await sleep(1500);
+  await requestJson("POST", "/api/gps", {
+    token: driverToken,
+    body: { vehicleId, lat: 41.03025, lng: 28.99605, speed: 140 },
+  });
+  await sleep(2500);
   console.log("OK POST /api/gps (OVERSPEED)");
 
   const driverNotifs1 = await requestJson("GET", "/api/notifications/my", { token: driverToken });
@@ -220,5 +227,3 @@ main().catch((e) => {
   console.error(String(e?.stack ?? e));
   process.exit(1);
 });
-
-
