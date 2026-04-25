@@ -4,7 +4,7 @@ const normalizeCoord = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 // web/src/panels/company/ShiftPeopleTab.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { apiOr404Fallback } from "../../utils/apiFallback";
 import { personLabel, peopleLabel } from "../../utils/labels";
@@ -70,7 +70,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   const [selectedShiftId, setSelectedShiftId] = useState("");
   const [maxWalkM, setMaxWalkM] = useState(me?.companyKind === "SCHOOL" ? 50 : 250);
 
-  // ✅ M51.B: Shift Hub (Toplanma/Dağıtım)
+  // Ã¢Å“â€¦ M51.B: Shift Hub (Toplanma/DaÃ„Å¸Ã„Â±tÃ„Â±m)
   const [hubDirection, setHubDirection] = useState("INBOUND");
   const [hubAddress, setHubAddress] = useState("");
   const [hubLat, setHubLat] = useState("");
@@ -122,7 +122,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return patch ? { ...selectedShiftBase, ...patch } : selectedShiftBase;
   }, [selectedShiftBase, shiftPatchById]);
 
-  // Guided Mode: aynı personel/stop setini birden fazla taslak shift'e aynala
+  // Guided Mode: aynÃ„Â± personel/stop setini birden fazla taslak shift'e aynala
   const mirrorIds = useMemo(() => {
     const base = Array.isArray(mirrorShiftIds) ? mirrorShiftIds : [];
     const ids = [Number(selectedShiftId || 0), ...base.map((x) => Number(x || 0))]
@@ -135,7 +135,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return `psv1:company:${companyKey}:shift:${sid}:people:v1`;
   }, [companyKey, selectedShiftId]);
 
-  function loadPeopleFromStorage() {
+  const loadPeopleFromStorage = useCallback(() => {
     try {
       const raw = localStorage.getItem(peopleStorageKey);
       if (!raw) return [];
@@ -157,17 +157,17 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     } catch {
       return [];
     }
-  }
+  }, [peopleStorageKey]);
 
-  function savePeopleToStorage(list) {
+  const savePeopleToStorage = useCallback((list) => {
     try {
       localStorage.setItem(peopleStorageKey, JSON.stringify(list));
     } catch {
       // ignore
     }
-  }
+  }, [peopleStorageKey]);
 
-  function mapBackendPeopleToUi(items) {
+  const mapBackendPeopleToUi = useCallback((items) => {
     const list = Array.isArray(items) ? items : [];
     return list
       .map((p) => ({
@@ -184,9 +184,9 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         geoManualOverride: Boolean(p?.geoManualOverride),
       }))
       .filter((x) => x.id);
-  }
+  }, []);
 
-  function mapUiPeopleToBackend(list) {
+  const mapUiPeopleToBackend = useCallback((list) => {
     const arr = Array.isArray(list) ? list : [];
     return arr.map((p) => ({
       personelId: p.personelId || (String(p.id).match(/^\d+$/) ? Number(p.id) : undefined),
@@ -198,21 +198,21 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       geoManualOverride: Boolean(p.geoManualOverride),
       geoReason: String(p.geoReason || "") || null,
     }));
-  }
+  }, []);
 
-  async function loadPeopleFromBackend(shiftId) {
+  const loadPeopleFromBackend = useCallback(async (shiftId) => {
     const r = await api(`/api/shifts/${shiftId}/people`, { token });
     return mapBackendPeopleToUi(r?.items);
-  }
+  }, [mapBackendPeopleToUi, token]);
 
-  async function savePeopleToBackend(shiftId, list) {
+  const savePeopleToBackend = useCallback(async (shiftId, list) => {
     const items = mapUiPeopleToBackend(list);
     return api(`/api/shifts/${shiftId}/people?mode=REPLACE`, {
       method: "PUT",
       body: { items },
       token,
     });
-  }
+  }, [mapUiPeopleToBackend, token]);
 
   async function importPeopleToBackend(shiftId, fileName, rows, mode) {
     return api(`/api/shifts/${shiftId}/people/import?mode=${encodeURIComponent(String(mode || "REPLACE"))}`, {
@@ -221,6 +221,18 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       token,
     });
   }
+
+  const loadPeopleFromStorageRef = useRef(loadPeopleFromStorage);
+  const loadPeopleFromBackendRef = useRef(loadPeopleFromBackend);
+  const savePeopleToStorageRef = useRef(savePeopleToStorage);
+  const savePeopleToBackendRef = useRef(savePeopleToBackend);
+
+  useEffect(() => {
+    loadPeopleFromStorageRef.current = loadPeopleFromStorage;
+    loadPeopleFromBackendRef.current = loadPeopleFromBackend;
+    savePeopleToStorageRef.current = savePeopleToStorage;
+    savePeopleToBackendRef.current = savePeopleToBackend;
+  }, [loadPeopleFromStorage, loadPeopleFromBackend, savePeopleToStorage, savePeopleToBackend]);
 
   function summarizeWarnings(list) {
     const items = Array.isArray(list) ? list : [];
@@ -236,11 +248,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const c = String(code || "");
     if (c === "MISSING_NAME") return "Ad Soyad eksik";
     if (c === "MISSING_ADDRESS_OR_COORDS") return "Adres/koordinat eksik";
-    if (c === "INVALID_COORD") return "Koordinat geçersiz";
-    if (c === "DUPLICATE_ROW") return "Tekrar satır";
-    if (c === "GEO_NEEDS_REVIEW") return "Konum kontrolü gerekir";
-    if (c === "INVALID_ROW") return "Satır okunamadı";
-    return c || "Uyarı";
+    if (c === "INVALID_COORD") return "Koordinat geÃƒÂ§ersiz";
+    if (c === "DUPLICATE_ROW") return "Tekrar satÃ„Â±r";
+    if (c === "GEO_NEEDS_REVIEW") return "Konum kontrolÃƒÂ¼ gerekir";
+    if (c === "INVALID_ROW") return "SatÃ„Â±r okunamadÃ„Â±";
+    return c || "UyarÃ„Â±";
   }
 
   async function generateStopsOnBackend(shiftId, maxWalkMValue) {
@@ -279,7 +291,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
 
     const dir = String(shift?.direction || "").toUpperCase();
     if (dir === "OUTBOUND") return [hub, ...list];
-    // INBOUND (Toplama → Hub): rota hub'da bitmeli
+    // INBOUND (Toplama Ã¢â€ â€™ Hub): rota hub'da bitmeli
     return [...list, hub];
   }
 
@@ -292,7 +304,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const exists = shiftOptions.some((s) => Number(s.id) === pid);
     if (!exists) return;
 
-    // Kullanıcı elle başka shift seçmediyse otomatik seç
+    // KullanÃ„Â±cÃ„Â± elle baÃ…Å¸ka shift seÃƒÂ§mediyse otomatik seÃƒÂ§
     setSelectedShiftId((cur) => (cur ? cur : String(pid)));
   }, [preferredShiftId, shiftOptions]);
 
@@ -328,13 +340,13 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       try {
         const list = await apiOr404Fallback(
           async () => {
-            const data = await loadPeopleFromBackend(sid);
+            const data = await loadPeopleFromBackendRef.current(sid);
             setPeopleBackend("on");
             return data;
           },
           async () => {
             setPeopleBackend("off");
-            return loadPeopleFromStorage();
+            return loadPeopleFromStorageRef.current();
           }
         );
 
@@ -345,7 +357,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       } catch (e) {
         if (!alive) return;
         setErr(getApiErrorMessage(e));
-        setPeople(loadPeopleFromStorage());
+        setPeople(loadPeopleFromStorageRef.current());
       } finally {
         if (alive) setBusy(false);
       }
@@ -354,7 +366,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peopleStorageKey, selectedShiftId, validShiftIdSet]);
 
   // keep localStorage in sync + (soft) persist to backend
@@ -363,7 +374,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     if (!validShiftIdSet.has(Number(selectedShiftId || 0))) return;
 
     // always keep local fallback updated
-    savePeopleToStorage(people);
+    savePeopleToStorageRef.current(people);
 
     // debounce backend save; only if backend not known as missing
     if (peopleBackend === "off") return;
@@ -373,11 +384,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       try {
         await apiOr404Fallback(
           async () => {
-            // Guided Mode: aynı listeyi taslak shift'lerin hepsine yaz
+            // Guided Mode: aynÃ„Â± listeyi taslak shift'lerin hepsine yaz
             const ids = (mirrorIds.length ? mirrorIds : [Number(sid)]).filter((id) => validShiftIdSet.has(Number(id || 0)));
             if (!ids.length) return false;
             for (const id of ids) {
-              await savePeopleToBackend(String(id), people);
+              await savePeopleToBackendRef.current(String(id), people);
             }
             setPeopleBackend("on");
             return true;
@@ -398,7 +409,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     }, 500);
 
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, selectedShiftId, peopleBackend, mirrorIds, validShiftIdSet]);
 
   const geoStats = useMemo(() => {
@@ -457,7 +467,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return arr.filter((x) => String(x?.id || "") !== "hub");
   }
 
-  // ✅ M51.B: selected shift değişince hub formunu doldur
+  // Ã¢Å“â€¦ M51.B: selected shift deÃ„Å¸iÃ…Å¸ince hub formunu doldur
   useEffect(() => {
     if (!selectedShift) return;
     const dir = String(selectedShift?.direction || "INBOUND").toUpperCase();
@@ -465,8 +475,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setHubLat(typeof selectedShift?.hubLat === "number" ? String(selectedShift.hubLat) : "");
     setHubLng(typeof selectedShift?.hubLng === "number" ? String(selectedShift.hubLng) : "");
     setHubAddress("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedShiftId]);
+  }, [selectedShift]);
 
   const hubPosLabel = useMemo(() => {
     const dir = String(hubDirection || "").toUpperCase();
@@ -491,10 +500,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
         setInfo(`Hub konumu bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Hub konumu bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Hub konumu bulundu. Lat/Lng alanlarÃ„Â±nÃ„Â± kontrol et.");
       }
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Geocode baÃ…Å¸arÃ„Â±sÃ„Â±z: notfound" : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false)
@@ -506,7 +515,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo("");
     const sid = Number(selectedShiftId || 0);
     if (!sid) {
-      setErr("Shift seç.");
+      setErr("Shift seÃƒÂ§.");
       return;
     }
 
@@ -535,7 +544,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         },
       }));
 
-      // Draft durak listesine hub'ı ekle (OUTBOUND: başa, INBOUND: sona)
+      // Draft durak listesine hub'Ã„Â± ekle (OUTBOUND: baÃ…Å¸a, INBOUND: sona)
       const baseStops = stripHubStop(draftStops);
       const withHub = withHubStop(baseStops, { ...(selectedShift || {}), hubLat: lat, hubLng: lng, direction: dir });
       setDraftStops(withHub);
@@ -588,10 +597,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       if (typeof r?.lat === "number" && typeof r?.lng === "number") {
         setInfo(`Konum bulundu: ${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)}.`);
       } else {
-        setInfo("Konum bulundu. Lat/Lng alanlarını kontrol et.");
+        setInfo("Konum bulundu. Lat/Lng alanlarÃ„Â±nÃ„Â± kontrol et.");
       }
     } catch (e) {
-      const m = e?.payload?.error === "notfound" ? "Geocode başarısız: notfound" : e?.message || String(e);
+      const m = e?.payload?.error === "notfound" ? "Geocode baÃ…Å¸arÃ„Â±sÃ„Â±z: notfound" : e?.message || String(e);
       setErr(m);
     } finally {
       setBusy(false);
@@ -613,7 +622,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       return;
     }
     if ((String(pLat || "").trim() && lat === null) || (String(pLng || "").trim() && lng === null)) {
-      setErr("Lat/Lng sayı olmalı (opsiyonel). Örn: 37.12345 veya 37,12345");
+      setErr("Lat/Lng sayÃ„Â± olmalÃ„Â± (opsiyonel). Ãƒâ€“rn: 37.12345 veya 37,12345");
       return;
     }
 
@@ -640,7 +649,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
   }
 
   async function importExcelFile(file) {
-    // `xlsx` dependency web tarafında kurulu olmalı (npm i xlsx)
+    // `xlsx` dependency web tarafÃ„Â±nda kurulu olmalÃ„Â± (npm i xlsx)
     const XLSX = await import("xlsx");
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: "array" });
@@ -670,7 +679,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     try {
       const rows = await parsePeopleFile(file);
       if (!rows.length) {
-        setErr("Dosyada okunabilir satır bulunamadı.");
+        setErr("Dosyada okunabilir satÃ„Â±r bulunamadÃ„Â±.");
         return;
       }
 
@@ -706,7 +715,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           const warnings = Array.isArray(firstResp?.warnings) ? firstResp.warnings : [];
           setImportWarnings(warnings);
           const warningCount = warnings.length;
-          setInfo(`Import tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
+          setInfo(`Import tamamlandÃ„Â±: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satÃ„Â±r iÃ…Å¸lendi${warningCount ? ` Ã¢â‚¬Â¢ ${warningCount} uyarÃ„Â±` : ""}`);
 
           const fresh = await loadPeopleFromBackend(String(sid));
           setPeople(fresh);
@@ -718,7 +727,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           setImportWarnings(warnings);
           if (warnings.length) {
             const first = warnings[0];
-            setErr(`${payload?.error || e?.message || String(e)}${first?.rowNo ? ` (İlk sorun satır ${first.rowNo}: ${first.message})` : ""}`.trim());
+            setErr(`${payload?.error || e?.message || String(e)}${first?.rowNo ? ` (Ã„Â°lk sorun satÃ„Â±r ${first.rowNo}: ${first.message})` : ""}`.trim());
           } else {
             setErr(String(payload?.error || e?.message || e));
           }
@@ -739,7 +748,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         .filter((x) => x.name && (x.address || (typeof x.lat === "number" && typeof x.lng === "number")));
 
       if (!mapped.length) {
-        setErr("Dosyada geçerli satır bulunamadı (Ad Soyad zorunlu; adres veya koordinat olmalı).");
+        setErr("Dosyada geÃƒÂ§erli satÃ„Â±r bulunamadÃ„Â± (Ad Soyad zorunlu; adres veya koordinat olmalÃ„Â±).");
         return;
       }
 
@@ -747,13 +756,13 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       const localWarnings = [];
       normalizedRows.forEach((r, index) => {
         const rowNo = index + 1;
-        if (!r.fullName) localWarnings.push({ rowNo, code: "MISSING_NAME", message: "Ad soyad boş olduğu için satır atlandı.", level: "error" });
+        if (!r.fullName) localWarnings.push({ rowNo, code: "MISSING_NAME", message: "Ad soyad boÃ…Å¸ olduÃ„Å¸u iÃƒÂ§in satÃ„Â±r atlandÃ„Â±.", level: "error" });
         else if (!r.address && !(typeof r.lat === "number" && typeof r.lng === "number")) {
-          localWarnings.push({ rowNo, code: "MISSING_ADDRESS_OR_COORDS", message: "Adres veya geçerli koordinat olmadığı için satır atlandı.", level: "error" });
+          localWarnings.push({ rowNo, code: "MISSING_ADDRESS_OR_COORDS", message: "Adres veya geÃƒÂ§erli koordinat olmadÃ„Â±Ã„Å¸Ã„Â± iÃƒÂ§in satÃ„Â±r atlandÃ„Â±.", level: "error" });
         } else if ((r.lat == null) !== (r.lng == null)) {
-          localWarnings.push({ rowNo, code: "INVALID_COORD", message: "Enlem/boylam eksik veya geçersiz; adres varsa review akışına düşecek.", level: "warning" });
+          localWarnings.push({ rowNo, code: "INVALID_COORD", message: "Enlem/boylam eksik veya geÃƒÂ§ersiz; adres varsa review akÃ„Â±Ã…Å¸Ã„Â±na dÃƒÂ¼Ã…Å¸ecek.", level: "warning" });
         } else if (!(typeof r.lat === "number" && typeof r.lng === "number")) {
-          localWarnings.push({ rowNo, code: "GEO_NEEDS_REVIEW", message: "Koordinat eksik; kayıt konum kontrolü gerektiriyor.", level: "warning" });
+          localWarnings.push({ rowNo, code: "GEO_NEEDS_REVIEW", message: "Koordinat eksik; kayÃ„Â±t konum kontrolÃƒÂ¼ gerektiriyor.", level: "warning" });
         }
       });
       setImportWarnings(localWarnings);
@@ -767,7 +776,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         needsReviewRows: mapped.filter((x) => x.geoStatus === "NEEDS_REVIEW").length,
         failedRows: Math.max(0, normalizedRows.length - mapped.length),
       });
-      setInfo(`İçe aktarıldı: ${mapped.length} kayıt (${peopleBackend === "off" ? "yerel mod" : "önizleme"})`);
+      setInfo(`Ã„Â°ÃƒÂ§e aktarÃ„Â±ldÃ„Â±: ${mapped.length} kayÃ„Â±t (${peopleBackend === "off" ? "yerel mod" : "ÃƒÂ¶nizleme"})`);
     } catch (e) {
       setErr(getApiErrorMessage(e));
     }
@@ -796,7 +805,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     if (!target) return;
     const query = sanitizeAddress(target.address || "");
     if (!query) {
-      setErr("Adres boş. Önce adresi gir.");
+      setErr("Adres boÃ…Å¸. Ãƒâ€“nce adresi gir.");
       return;
     }
 
@@ -808,7 +817,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       const lat = normalizeCoord(resp?.lat, "lat");
       const lng = normalizeCoord(resp?.lng, "lng");
       if (typeof lat !== "number" || typeof lng !== "number") {
-        throw new Error("Adres için geçerli koordinat bulunamadı.");
+        throw new Error("Adres iÃƒÂ§in geÃƒÂ§erli koordinat bulunamadÃ„Â±.");
       }
 
       setPeople((prev) =>
@@ -822,14 +831,14 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           return next;
         })
       );
-      setInfo("Adres bulundu. Koordinatlar satıra işlendi; devam etmeden önce Kaydet ile listeyi kaydet.");
+      setInfo("Adres bulundu. Koordinatlar satÃ„Â±ra iÃ…Å¸lendi; devam etmeden ÃƒÂ¶nce Kaydet ile listeyi kaydet.");
     } catch (e) {
       if (e?.status === 404) {
-        setErr("Adresten Bul başarısız: Adres bulunamadı.");
+        setErr("Adresten Bul baÃ…Å¸arÃ„Â±sÃ„Â±z: Adres bulunamadÃ„Â±.");
       } else if (e?.status === 400) {
-        setErr("Adresten Bul başarısız: Geocode isteği eksik veya hatalı.");
+        setErr("Adresten Bul baÃ…Å¸arÃ„Â±sÃ„Â±z: Geocode isteÃ„Å¸i eksik veya hatalÃ„Â±.");
       } else {
-        setErr(`Adresten Bul başarısız: ${getApiErrorMessage(e)}`);
+        setErr(`Adresten Bul baÃ…Å¸arÃ„Â±sÃ„Â±z: ${getApiErrorMessage(e)}`);
       }
     } finally {
       setRowGeocodeBusyId("");
@@ -845,7 +854,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     });
 
     if (!candidates.length) {
-      setInfo("Toplu geocode için uygun review kaydı yok.");
+      setInfo("Toplu geocode iÃƒÂ§in uygun review kaydÃ„Â± yok.");
       setImportQuickStats({ found: 0, notFound: 0, error: 0 });
       return;
     }
@@ -892,7 +901,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setImportQuickStats({ found, notFound, error });
     const remainingReview = nextPeople.filter((p) => p.geoStatus === "NEEDS_REVIEW").length;
     setImportSummary((prev) => prev ? { ...prev, needsReviewRows: remainingReview } : prev);
-    setInfo(`Toplu geocode tamamlandı: bulundu ${found}, bulunamadı ${notFound}, hata ${error}. Değişiklikleri kalıcı yapmak için Kaydet ile listeyi kaydet.`);
+    setInfo(`Toplu geocode tamamlandÃ„Â±: bulundu ${found}, bulunamadÃ„Â± ${notFound}, hata ${error}. DeÃ„Å¸iÃ…Å¸iklikleri kalÃ„Â±cÃ„Â± yapmak iÃƒÂ§in Kaydet ile listeyi kaydet.`);
     setImportQuickBusy(false);
   }
 
@@ -1012,10 +1021,10 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       const withHub = withHubStop(mapped, selectedShift);
       setDraftStops(withHub);
       setStopSummary(buildStopSummary({}, withHub, people));
-      setInfo(`Shift durakları yüklendi: ${withHub.length}`);
+      setInfo(`Shift duraklarÃ„Â± yÃƒÂ¼klendi: ${withHub.length}`);
       return withHub;
     } catch (e) {
-      if (!quiet) setErr(`Shift durakları yüklenemedi: ${getApiErrorMessage(e)}`);
+      if (!quiet) setErr(`Shift duraklarÃ„Â± yÃƒÂ¼klenemedi: ${getApiErrorMessage(e)}`);
       return null;
     } finally {
       setBusy(false);
@@ -1109,7 +1118,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       <RoutePreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        title={selectedShift ? `Shift #${selectedShift.id} — Rota/Durak Önizleme` : "Rota/Durak Önizleme"}
+        title={selectedShift ? `Shift #${selectedShift.id} Ã¢â‚¬â€ Rota/Durak Ãƒâ€“nizleme` : "Rota/Durak Ãƒâ€“nizleme"}
         stops={draftStops}
         people={people}
       />
