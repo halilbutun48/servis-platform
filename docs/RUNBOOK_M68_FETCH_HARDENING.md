@@ -24,6 +24,6 @@ Company tarafında hızlı menü geçişlerinde oluşan tekrar fetch dalgasını
 4. Gerekirse M67 storm check ile önce/sonra farkını ölç.
 
 ## Bilinen sonraki adımlar
-- WebSocket invalidate sonrası bazı paneller hâlâ full reload yapıyor.
+- WebSocket invalidate sonras? baz? paneller h?l? full reload yap?yor.
 - `offers/company` backend sorgusunda daha ileri index/shape iyileştirmesi gerekebilir.
 - `CheckinPanel`, `GuidedPlanModal`, `PlanBuilderPanel` için ayrı hafifletme turu yapılabilir.

@@ -1,6 +1,6 @@
 # RUNBOOK — M46.4 AI Copilot Decision Consistency + Action Plan
 
-> **Uyumluluk notu (M79+):** Bu M46 runbook'u artık pilot-era exact versiyon etiketi beklemek yerine, aynı davranışın modern Copilot yüzeyinde hâlâ mevcut olup olmadığını doğrulayan legacy compatibility referansı olarak okunmalıdır.
+> **Uyumluluk notu (M79+):** Bu M46 runbook'u art?k pilot-era exact versiyon etiketi beklemek yerine, ayn? davran???n modern Copilot y?zeyinde h?l? mevcut olup olmad???n? do?rulayan legacy compatibility referans? olarak okunmal?d?r.
 > Exact `copilotVersion` eşitliği yerine davranışsal / yapısal doğrulama esastır.
 
 
@@ -8,7 +8,7 @@ Tarih: 2026-03-12
 Timezone: Europe/Istanbul
 
 ## Amaç
-M46.3 üstüne karar tutarlılığı ve aksiyon planı katmanı eklenir. Copilot hâlâ read-only / suggestion-first çalışır; write aksiyonu yapmaz.
+M46.3 ?st?ne karar tutarl?l??? ve aksiyon plan? katman? eklenir. Copilot h?l? read-only / suggestion-first ?al???r; write aksiyonu yapmaz.
 
 ## Yeni alanlar
 - `overallStatus` → `OK | ATTENTION | BLOCKED`

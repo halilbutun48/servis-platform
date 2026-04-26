@@ -18,7 +18,7 @@
 - Sonraki ana iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - Tek repo kontrol girisi: `npm run verify:repo`
 - En son verification spine: `M92 — repo verification spine`
-- `tools/STABLE_TO.txt = 78` yalnızca M78.x compatibility marker olarak yaşar; yaşayan üst hattı inkâr etmez.
+- `tools/STABLE_TO.txt = 78` yaln?zca M78.x compatibility marker olarak ya?ar; ya?ayan ?st hatt? ink?r etmez.
 
 ## Operasyon / test
 - **RUNBOOK_MASTER_PACK_AND_REPO_AUDIT.md** — master pack + repo audit akışı

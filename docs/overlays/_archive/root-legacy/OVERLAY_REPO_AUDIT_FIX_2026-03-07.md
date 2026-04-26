@@ -12,7 +12,7 @@ Bu overlay güncel repodaki iki yük taşıyan kırığı hedefler:
 
 2. **M4 GPS OFFLINE threshold drift**
    - `env.js` eşikleri `GPS_STALE_SEC=40`, `GPS_OFFLINE_SEC=120`
-   - `gps/status.js` ve test scriptleri hâlâ eski `20/300` mantığına bağlıydı.
+   - `gps/status.js` ve test scriptleri h�l� eski `20/300` mant11na bal1yd1.
    - Fix:
      - `gps/status.js` artık `ENV` eşiklerini kullanır
      - `m4check.js` ve `fullcheck.js` env-aware hale getirildi

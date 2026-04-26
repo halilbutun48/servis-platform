@@ -45,5 +45,5 @@ Okul modunu **en az kıran** şekilde açmak:
 - `/api/company/personels?kind=STUDENT` döner.
 
 ## Notlar / Risk
-- Okul kullanıcıları hâlâ `role=COMPANY` (yetki modeli değişmedi).
+- Okul kullan?c?lar? h?l? `role=COMPANY` (yetki modeli de?i?medi).
 - Öğrenci alanları (sınıf/no vb) **bu adımda yok** (gerekirse M80.1+).

@@ -25,4 +25,4 @@
 ## Not
 - M90C.8 yeni ürün davranışı açmaz; mevcut closure zincirini repo-native görünür yapar.
 - Fresh runner dependency kurulumu explicit kalır; local node_modules varlığına güvenilmez.
-- Satır azaltma hâlâ sona bırakılır.
+- Sat?r azaltma h?l? sona b?rak?l?r.

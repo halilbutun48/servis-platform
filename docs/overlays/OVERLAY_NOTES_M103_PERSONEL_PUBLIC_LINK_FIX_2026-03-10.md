@@ -2,7 +2,7 @@
 
 ## Amaç
 M102 sonrası panelde görülen iki UI tutarsızlığını düzeltmek:
-- süresi dolmuş / revoke edilmiş linklerin hâlâ “aktif” gibi görünmesi
+- s?resi dolmu? / revoke edilmi? linklerin h?l? aktif gibi g?r?nmesi
 - vardiya değişince veya revoke sonrası eski ham URL’nin ekranda kalması
 
 ## Değişiklikler

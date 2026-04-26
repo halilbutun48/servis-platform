@@ -199,7 +199,7 @@ GET /api/shifts/:id/route-preview
 
 hem COMPANY hem ROOM bu endpoint’ten modalı besler
 
-Not: Eğer hâlihazırda GET /api/shifts/:id ve GET /api/shifts/:id/stops gibi endpoint’lerin varsa, route-preview sadece “people + assignments + stops” tek response olarak birleştiren ince bir wrapper da olabilir.
+Not: Eer h�lihaz1rda GET /api/shifts/:id ve GET /api/shifts/:id/stops gibi endpointlerin varsa, route-preview sadece people + assignments + stops tek response olarak birle_tiren ince bir wrapper da olabilir.
 
 2) Prisma / DB: eklenecek modeller (M16)
 2.1 Geo cache & shift personeli

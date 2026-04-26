@@ -17,7 +17,7 @@ Parent (PARENT role) panelinde seçili çocuk için **ETA (yaklaşık)** göster
   1) Eğer `StopAssignment` varsa, çocuğun bağlı olduğu **Stop** noktasına göre ETA
   2) Yoksa `Personel.homeLat/homeLng` (ev) ile fallback
 
-> Not: Hâlâ KVKK time-window gate geçerli (shift startAt<=now<=endAt).
+> Not: H?l? KVKK time-window gate ge?erli (shift startAt<=now<=endAt).
 
 ## Web
 - `Veli • Canlı Takip` ekranında haritanın üstünde ETA özet kartı eklendi.
