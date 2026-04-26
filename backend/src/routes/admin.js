@@ -29,7 +29,7 @@ function isDisabledHash(hash) {
   return String(hash || "").startsWith(DISABLED_PREFIX);
 }
 
-// Ã¢Å“â€¦ Disable artÃ„Â±k eski hash'i saklar: "$DISABLED$" + <bcryptHash>
+// ? Disable art?k eski hash'i saklar: "$DISABLED$" + <bcryptHash>
 function disabledHash(originalHash) {
   const h = String(originalHash || "");
   if (!h) return DISABLED_PREFIX + crypto.randomBytes(16).toString("hex");
@@ -73,7 +73,7 @@ function deriveCompatUsername(rawUsername, email) {
     .replace(/^[_.]+|[_.]+$/g, "");
 
   const compact = normalized.length > 24 ? normalized.slice(0, 24).replace(/[_.]+$/g, "") : normalized;
-  if (!compact) throw new Error("KullanÃ„Â±cÃ„Â± adÃ„Â± ÃƒÂ¼retilemedi");
+  if (!compact) throw new Error("Kullan?c? ad? ?retilemedi");
   return validateUsernameOrThrow(compact);
 }
 
@@ -91,7 +91,7 @@ const createUserSchema = z
   .superRefine((v, ctx) => {
     const email = String(v.email || "").trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      ctx.addIssue({ code: "custom", path: ["email"], message: "GeÃƒÂ§erli bir e-posta girin veya boÃ…Å¸ bÃ„Â±rakÃ„Â±n." });
+      ctx.addIssue({ code: "custom", path: ["email"], message: "Ge?erli bir e-posta girin veya bo? b?rak?n." });
     }
     if (v.role === "ROOM") {
       if (!v.roomId) ctx.addIssue({ code: "custom", message: "ROOM requires roomId" });
@@ -126,7 +126,7 @@ const updateUserSchema = z
 export function adminRouter() {
   const r = express.Router();
 
-// Ã¢Å“â€¦ M39: retention run (dry-run supported)
+// ? M39: retention run (dry-run supported)
 r.post("/retention/run", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const dryRun = !!req.body?.dryRun;
@@ -146,17 +146,17 @@ r.post("/retention/run", authRequired(), requireRole("SUPER_ADMIN"), async (req,
 });
 
 
-// Ã¢Å“â€¦ M45: retention policy summary (ops/readiness)
+// ? M45: retention policy summary (ops/readiness)
 r.get("/retention/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json({ ok: true, ...getRetentionPolicySummary() });
 });
 
-// Ã¢Å“â€¦ M45: backup policy summary (ops/readiness)
+// ? M45: backup policy summary (ops/readiness)
 r.get("/backup/policy", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json({ ok: true, ...getBackupPolicySummary() });
 });
 
-// Ã¢Å“â€¦ M45: local backup dir manifest / latest dump visibility
+// ? M45: local backup dir manifest / latest dump visibility
 r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json({
     ok: true,
@@ -169,7 +169,7 @@ r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_re
   });
 });
 
-// Ã¢Å“â€¦ M45: backup create (host-side wrapper around archive snapshot)
+// ? M45: backup create (host-side wrapper around archive snapshot)
 r.post("/backup/create", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const outputDir = String(req.body?.outputDir || "").trim() || null;
@@ -186,7 +186,7 @@ r.post("/backup/create", authRequired(), requireRole("SUPER_ADMIN"), async (req,
   }
 });
 
-// Ã¢Å“â€¦ M45: backup restore (host-side wrapper around archive snapshot)
+// ? M45: backup restore (host-side wrapper around archive snapshot)
 r.post("/backup/restore", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const backupFile = String(req.body?.backupFile || "").trim();
@@ -282,7 +282,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
   const health = await getAutoReachedQueueHealthSnapshot();
   return res.json({ health, threshold: evaluateAutoReachedQueueHealthThresholds(health) });
 });  /**
-   * SUPER_ADMIN Ã¢â‚¬â€ Overview stats
+   * SUPER_ADMIN ? Overview stats
    * GET /api/admin/stats
    */
   r.get("/stats", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
@@ -483,7 +483,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
     const hasManualPassword = Boolean(String(parsed.data.password || "").trim());
 
     if (await isUsernameTaken(prisma, username)) {
-      return res.status(409).json({ error: "KullanÃ„Â±cÃ„Â± adÃ„Â± zaten kullanÃ„Â±lÃ„Â±yor" });
+      return res.status(409).json({ error: "Kullan?c? ad? zaten kullan?l?yor" });
     }
 
     const email = publicEmail || buildInternalLoginEmail(username);
@@ -544,10 +544,10 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
       passwordChangeRequired: true,
       note:
         role === "PERSONEL"
-          ? "PERSONEL user created. NOTE: Personel profile record is managed under /api/personels (COMPANY flow). Ã„Â°lk giriÃ…Å¸te Ã…Å¸ifre deÃ„Å¸iÃ…Å¸imi zorunludur."
+          ? "PERSONEL user created. NOTE: Personel profile record is managed under /api/personels (COMPANY flow). ?lk giri?te ?ifre de?i?imi zorunludur."
           : role === "DRIVER"
-          ? "DRIVER user created. NOTE: Driver profile record is managed under /api/drivers (ROOM flow). Ã„Â°lk giriÃ…Å¸te Ã…Å¸ifre deÃ„Å¸iÃ…Å¸imi zorunludur."
-          : "Ã„Â°lk giriÃ…Å¸te Ã…Å¸ifre deÃ„Å¸iÃ…Å¸imi zorunludur.",
+          ? "DRIVER user created. NOTE: Driver profile record is managed under /api/drivers (ROOM flow). ?lk giri?te ?ifre de?i?imi zorunludur."
+          : "?lk giri?te ?ifre de?i?imi zorunludur.",
     });
   });
 
@@ -564,7 +564,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
       nextUsername = validateUsernameOrThrow(data.username);
       delete data.username;
       if (await isUsernameTaken(prisma, nextUsername, id)) {
-        return res.status(409).json({ error: "KullanÃ„Â±cÃ„Â± adÃ„Â± zaten kullanÃ„Â±lÃ„Â±yor" });
+        return res.status(409).json({ error: "Kullan?c? ad? zaten kullan?l?yor" });
       }
     }
     if (Object.prototype.hasOwnProperty.call(data, "roomId")) data.roomId = data.roomId ? Number(data.roomId) : null;
@@ -724,7 +724,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
     await audit(req, { action: "ADMIN_USER_ENABLE", entity: "User", entityId: updated.id, meta: { email: loginMeta.email, username: loginMeta.username, role: updated.role } });
     res.json({ ok: true, user: { ...updated, username: loginMeta.username, email: loginMeta.email }, disabled: false });
   });
-  // --- Parent Ã¢â€ â€ Student links (M81) ---
+  // --- Parent ? Student links (M81) ---
   // GET /api/admin/parent-children?parentUserId=
   r.get("/parent-children", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
     const parentUserId = req.query.parentUserId != null && String(req.query.parentUserId).trim() !== "" ? Number(req.query.parentUserId) : null;
@@ -827,7 +827,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
   });
 
 
-  // --- Regions (Ã„Â°l) ---
+  // --- Regions (?l) ---
   r.get("/regions", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
     const snapshot = await getRegionCapacitySnapshot();
     res.json(snapshot);
