@@ -187,9 +187,7 @@ export default function PersonelLivePanel() {
   }
 
   const loadAllRef = useRef(loadAll);
-  useEffect(() => {
-    loadAllRef.current = loadAll;
-  }, [loadAll]);
+  loadAllRef.current = loadAll;
 
   useEffect(() => {
     if (!token) return;

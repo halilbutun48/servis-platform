@@ -142,9 +142,7 @@ export default function MyRidePanel() {
   }
 
   const loadAllRef = useRef(loadAll);
-  useEffect(() => {
-    loadAllRef.current = loadAll;
-  }, [loadAll]);
+  loadAllRef.current = loadAll;
 
   async function handleNoShow() {
     if (!myShift?.id || noShowBusy) return;

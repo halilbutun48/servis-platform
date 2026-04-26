@@ -47,9 +47,7 @@ export function useRoomVehicleTelematics({
   }
 
   const loadDevicesRef = useRef(loadDevices);
-  useEffect(() => {
-    loadDevicesRef.current = loadDevices;
-  }, [loadDevices]);
+  loadDevicesRef.current = loadDevices;
 
   useEffect(() => {
     if (tab !== "telematics") return;

@@ -165,9 +165,7 @@ export default function RoomMapPanel() {
     }
   }
   const loadRef = useRef(load);
-  useEffect(() => {
-    loadRef.current = load;
-  }, [load]);
+  loadRef.current = load;
 
   useEffect(() => {
     if (!token) return;
