@@ -50,9 +50,7 @@ export default function SchoolParentInvitePanel() {
   }
 
   const loadAllRef = useRef(loadAll);
-  useEffect(() => {
-    loadAllRef.current = loadAll;
-  }, [loadAll]);
+  loadAllRef.current = loadAll;
 
   useEffect(() => {
     if (!token || me?.companyKind !== "SCHOOL") return;

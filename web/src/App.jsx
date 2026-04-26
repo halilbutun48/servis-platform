@@ -167,7 +167,7 @@ export default function App() {
   useEffect(() => {
     if (!token || !me?.role) return;
     if (path === "/" || path === "") navigate(roleDefaultPath(me));
-  }, [token, me?.role, me?.requirePasswordChange, path]);
+  }, [token, me, me?.role, me?.requirePasswordChange, path]);
 
   const view = useMemo(() => {
     if (!token) {

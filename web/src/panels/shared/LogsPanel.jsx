@@ -108,11 +108,8 @@ export default function LogsPanel() {
   const [items, setItems] = useState([]);
 
   const lastCopyRef = useRef("");
-  const onPreviewRef = useRef(onPreview);
-
-  useEffect(() => {
-    onPreviewRef.current = onPreview;
-  }, [onPreview]);
+  const onPreviewRef = useRef(() => Promise.resolve());
+  onPreviewRef.current = onPreview;
 
   // lock targetType if kind dictates
   useEffect(() => {
