@@ -103,7 +103,7 @@ function shiftTitle(s) {
   if (!s) return "-";
   const id = s.id ? `#${s.id}` : "";
   const st = String(s.status || "").toUpperCase();
-  return `Shift ${id} â€¢ ${displayStatusLabel(st)}`;
+  return `Shift ${id} ? ${displayStatusLabel(st)}`;
 }
 
 function fmtTR(iso) {
@@ -284,11 +284,11 @@ export default function RoomMapPanel() {
     if (!selected) return null;
     const parts = [];
     if (selectedShift?.id) parts.push(`Vardiya #${selectedShift.id}`);
-    if (selected?.plate) parts.push(`AraÃ§ ${selected.plate}`);
+    if (selected?.plate) parts.push(`Ara? ${selected.plate}`);
     const ui = uiStatusFromVehicle(selected);
     if (ui) parts.push(`GPS ${ui}`);
-    if (selectedNext?.name) parts.push(`SÄ±radaki ${selectedNext.name}`);
-    return parts.join(" â€¢ ");
+    if (selectedNext?.name) parts.push(`S?radaki ${selectedNext.name}`);
+    return parts.join(" ? ");
   }, [selected, selectedShift?.id, selectedNext?.name]);
 
   useEffect(() => {
@@ -315,21 +315,21 @@ export default function RoomMapPanel() {
       label: selectedShift?.id
         ? `Vardiya #${selectedShift.id}`
         : selected?.plate
-          ? `AraÃ§ ${selected.plate}`
-          : `AraÃ§ #${selected?.id || "-"}`,
+          ? `Ara? ${selected.plate}`
+          : `Ara? #${selected?.id || "-"}`,
       summary: copilotSummary || "",
       fields: [
-        { label: 'AraÃ§', value: selected?.plate || `#${selected?.id || '-'}`, help: 'SeÃ§ili aracÄ±n plakasÄ±nÄ± veya kayÄ±t numarasÄ±nÄ± gÃ¶sterir.' },
-        { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canlÄ± konum bilgisinin kaÃ§ dakika veya saniye Ã¶nce geldiÄŸini gÃ¶sterir.' },
-        { label: 'SÄ±radaki Durak', value: selectedNext?.name || '-', help: 'AraÃ§ ÅŸu anda hangi duraÄŸa doÄŸru gidiyor bilgisini gÃ¶sterir.' },
-        { label: 'ETA', value: selectedEta != null ? `${selectedEta}dk` : '-', help: 'SÄ±radaki duraÄŸa tahmini kalan sÃ¼reyi gÃ¶sterir.' },
-        { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'SeÃ§ili vardiyadaki toplam durak sayÄ±sÄ±nÄ± gÃ¶sterir.' },
-        { label: 'Kalan', value: `${selectedStats?.remaining ?? 0}`, help: 'HenÃ¼z tamamlanmamÄ±ÅŸ durak sayÄ±sÄ±nÄ± gÃ¶sterir.' },
+        { label: 'Ara?', value: selected?.plate || `#${selected?.id || '-'}`, help: 'Se?ili arac?n plakas?n? veya kay?t numaras?n? g?sterir.' },
+        { label: 'Son GPS', value: gpsAgeLabel(selected), help: 'Son canl? konum bilgisinin ka? dakika veya saniye ?nce geldi?ini g?sterir.' },
+        { label: 'S?radaki Durak', value: selectedNext?.name || '-', help: 'Ara? ?u anda hangi dura?a do?ru gidiyor bilgisini g?sterir.' },
+        { label: 'ETA', value: selectedEta != null ? `${selectedEta}dk` : '-', help: 'S?radaki dura?a tahmini kalan s?reyi g?sterir.' },
+        { label: 'Toplam Durak', value: `${selectedStats?.total ?? 0}`, help: 'Se?ili vardiyadaki toplam durak say?s?n? g?sterir.' },
+        { label: 'Kalan', value: `${selectedStats?.remaining ?? 0}`, help: 'Hen?z tamamlanmam?? durak say?s?n? g?sterir.' },
       ],
       facts,
       badges: [
-        { label: 'GPS', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'AraÃ§ GPS sinyalinin canlÄ± mÄ± eski mi yok mu olduÄŸunu gÃ¶sterir.' },
-        { label: 'Vardiya Durumu', value: displayStatusLabel(String(selectedShift?.status || '-').toUpperCase()), help: 'SeÃ§ili vardiyanÄ±n operasyon durumunu gÃ¶sterir.' },
+        { label: 'GPS', value: displayStatusLabel(uiStatusFromVehicle(selected) || '-'), help: 'Ara? GPS sinyalinin canl? m? eski mi yok mu oldu?unu g?sterir.' },
+        { label: 'Vardiya Durumu', value: displayStatusLabel(String(selectedShift?.status || '-').toUpperCase()), help: 'Se?ili vardiyan?n operasyon durumunu g?sterir.' },
       ],
     });
 
@@ -373,8 +373,8 @@ export default function RoomMapPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title="Room â€¢ CanlÄ± Takip"
-        subtitle="Tek panel: canlÄ± liste + seÃ§ili araÃ§ + duraklar + harita"
+        title="Room ? Canl? Takip"
+        subtitle="Tek panel: canl? liste + se?ili ara? + duraklar + harita"
         actions={
           <div className="toolbar" style={{ justifyContent: "flex-end" }}>
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -384,18 +384,18 @@ export default function RoomMapPanel() {
 
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={showNoGps} onChange={(e) => setShowNoGps(Boolean(e.target.checked))} />
-              GPS olmayanlarÄ± gÃ¶ster
+              GPS olmayanlar? g?ster
             </label>
 
             <label className="muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input type="checkbox" checked={showStops} onChange={(e) => setShowStops(Boolean(e.target.checked))} />
-              DuraklarÄ± gÃ¶ster
+              Duraklar? g?ster
             </label>
 
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Plaka / sÃ¼rÃ¼cÃ¼ / ÅŸirket / id"
+              placeholder="Plaka / s?r?c? / ?irket / id"
               style={{ width: 280 }}
             />
 
@@ -411,18 +411,18 @@ export default function RoomMapPanel() {
       <div className="grid mapGrid" style={{ ["--mapH"]: "min(700px, calc(100vh - 300px))" }}>
         <div className="card mapAsideCard" style={{ height: "calc(var(--mapH) + 285px)" }}>
           <div className="title" style={{ fontSize: 16, display: "flex", justifyContent: "space-between", gap: 12 }}>
-            <span>CanlÄ± Liste</span>
-            <span className="muted" style={{ fontSize: 12 }}>{cards.length} kayÄ±t</span>
+            <span>Canl? Liste</span>
+            <span className="muted" style={{ fontSize: 12 }}>{cards.length} kay?t</span>
           </div>
 
           <div className="muted" style={{ margin: "8px 0 10px" }}>
-            SatÄ±ra tÄ±kla â†’ saÄŸda timeline + harita.
+            Sat?ra t?kla ? sa?da timeline + harita.
           </div>
 
           <div className="col mapAsideList" style={{ flex: 1, minHeight: 0 }}>
             {!cards.length ? (
               <div className="muted" style={{ padding: 10 }}>
-                Aktif/uygun vardiya bulunamadÄ±.
+                Aktif/uygun vardiya bulunamad?.
               </div>
             ) : null}
 
@@ -481,8 +481,8 @@ export default function RoomMapPanel() {
                         textOverflow: "ellipsis",
                       }}
                     >
-                      SÃ¼rÃ¼cÃ¼: {s?.driver?.fullName || v?.driver?.fullName || "-"}
-                      {s?.company?.name ? ` â€¢ ${s.company.name}` : ""}
+                      S?r?c?: {s?.driver?.fullName || v?.driver?.fullName || "-"}
+                      {s?.company?.name ? ` ? ${s.company.name}` : ""}
                     </span>
 
                     <span
@@ -495,9 +495,9 @@ export default function RoomMapPanel() {
                         display: "block",
                       }}
                     >
-                      Ä°lerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
-                      {c.nextStop?.name ? ` â€¢ SÄ±radaki: ${c.nextStop.name}` : ""}
-                      {c.nextStop?.name && c.nextEtaMin != null ? ` â€¢ ETA: ${c.nextEtaMin}dk` : ""}
+                      ?lerleme: {c.pct}% (reached:{c.lastReachedOrder}/{c.total || 0})
+                      {c.nextStop?.name ? ` ? S?radaki: ${c.nextStop.name}` : ""}
+                      {c.nextStop?.name && c.nextEtaMin != null ? ` ? ETA: ${c.nextEtaMin}dk` : ""}
                     </span>
                   </span>
 
@@ -515,7 +515,7 @@ export default function RoomMapPanel() {
                       Son GPS: {gpsAgeLabel(v)}
                     </span>
                     <span className="muted" style={{ fontSize: 12 }}>
-                      BaÅŸlangÄ±Ã§: {fmtTR(s?.startAt)}
+                      Ba?lang??: {fmtTR(s?.startAt)}
                     </span>
                   </span>
                 </button>
@@ -528,9 +528,9 @@ export default function RoomMapPanel() {
           <div className="card" style={{ marginBottom: 10, paddingTop: 12, paddingBottom: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div>
-                <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>SeÃ§ili AraÃ§</div>
+                <div className="title" style={{ fontSize: 16, lineHeight: 1.1 }}>Se?ili Ara?</div>
                 <div className="muted" style={{ fontSize: 12, lineHeight: 1.1 }}>
-                  {selected?.plate || "-"} â€¢ {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
+                  {selected?.plate || "-"} ? {selectedShift ? shiftTitle(selectedShift) : "Shift yok"}
                 </div>
               </div>
 
@@ -569,14 +569,14 @@ export default function RoomMapPanel() {
 
                   {selectedNext?.name ? (
                     <>
-                      <span className="muted" style={{ fontSize: 12 }}>SÄ±radaki:</span>
+                      <span className="muted" style={{ fontSize: 12 }}>S?radaki:</span>
                       <span className="pill" data-status="NEXT">{selectedNext.name}</span>
 
                       <button
                         className="btn sm"
                         onClick={() => openNextStopNavigation(selectedNext, selected)}
                       >
-                        Sonraki DuraÄŸa Navigasyon
+                        Sonraki Dura?a Navigasyon
                       </button>
 
                       {selectedEta != null ? (
@@ -587,11 +587,11 @@ export default function RoomMapPanel() {
                         className="btn sm"
                         onClick={() => openFullRouteNavigation(selectedStops, selected)}
                       >
-                        Tam RotayÄ± DÄ±ÅŸ Navigasyonda AÃ§
+                        Tam Rotay? D?? Navigasyonda A?
                       </button>
                     </>
                   ) : (
-                    <span className="muted">SÄ±radaki durak yok.</span>
+                    <span className="muted">S?radaki durak yok.</span>
                   )}
                 </div>
 
@@ -606,7 +606,7 @@ export default function RoomMapPanel() {
                     marginLeft: "auto",
                   }}
                 >
-                  <span className="pill">Toplam Durak SayÄ±sÄ±: {selectedStats.total}</span>
+                  <span className="pill">Toplam Durak Say?s?: {selectedStats.total}</span>
                   <span className="pill" data-status="OK">Tamamlanan: {selectedStats.completed}</span>
                   <span className="pill" data-status="REQUESTED">Kalan: {selectedStats.remaining}</span>
 
@@ -629,16 +629,16 @@ export default function RoomMapPanel() {
                     </div>
                   </div>
 
-                  <button className="btn sm" onClick={fitAll}>TÃ¼mÃ¼nÃ¼ GÃ¶ster</button>
+                  <button className="btn sm" onClick={fitAll}>T?m?n? G?ster</button>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="card" style={{ marginBottom: 10 }}>
-            <div className="title" style={{ fontSize: 16 }}>Harita Ã–nizleme</div>
+            <div className="title" style={{ fontSize: 16 }}>Harita ?nizleme</div>
             <div className="muted" style={{ fontSize: 12 }}>
-              SeÃ§ili araÃ§ + tÃ¼m rota. Yol aÄŸÄ±na yakÄ±n Ã¶nizleme varsa otomatik kullanÄ±lÄ±r.
+              Se?ili ara? + t?m rota. Yol a??na yak?n ?nizleme varsa otomatik kullan?l?r.
             </div>
           </div>
 

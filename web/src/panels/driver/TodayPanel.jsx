@@ -43,8 +43,8 @@ export default function DriverTodayPanel() {
   const hasAny = (today?.length || 0) + (tomorrow?.length || 0) > 0;
 
   const activeLabel = useMemo(() => {
-    if (!active) return "Aktif gÃ¶rev yok";
-    return `Shift #${active.id} â€” ${displayStatusLabel(active.status)}`;
+    if (!active) return "Aktif g?rev yok";
+    return `Shift #${active.id} ? ${displayStatusLabel(active.status)}`;
   }, [active]);
 
   async function load() {
@@ -124,7 +124,7 @@ useEffect(() => {
       if (!isOnline()) {
         enqueueRequest({ method: 'POST', url: `/api/driver/shifts/${shiftId}/start`, body: null, label: 'start' });
         setQLen(queueSize());
-        // route ekranÄ±nda da offline queue var
+        // route ekran?nda da offline queue var
         navigate(`/driver/route?shift=${shiftId}`);
         return;
       }
@@ -141,7 +141,7 @@ useEffect(() => {
       }
       navigate(`/driver/route?shift=${shiftId}`);
     } catch (e) {
-      // EÄŸer endpoint yoksa veya yetki yoksa sÃ¼rÃ¼cÃ¼ yine Rota ekranÄ±nda manuel reached ile baÅŸlayabilir.
+      // E?er endpoint yoksa veya yetki yoksa s?r?c? yine Rota ekran?nda manuel reached ile ba?layabilir.
       setErr(String(e?.message || e));
     } finally {
       setBusyId(null);
@@ -163,7 +163,7 @@ useEffect(() => {
         <td style={{ whiteSpace: "nowrap" }}>
           {s.status === "APPROVED" ? (
             <button type="button" disabled={busyId === s.id} onClick={() => startShift(s.id)}>
-              {busyId === s.id ? "..." : "GÃ¶reve BaÅŸla"}
+              {busyId === s.id ? "..." : "G?reve Ba?la"}
             </button>
           ) : null}
           <button type="button" style={{ marginLeft: 8 }} onClick={() => navigate(`/driver/route?shift=${s.id}`)}
@@ -178,8 +178,8 @@ useEffect(() => {
   return (
     <div>
       <div className="card">
-        <h3>BugÃ¼n</h3>
-        <div className="muted">Tek hedef: aktif gÃ¶revi gÃ¶r â†’ baÅŸlat â†’ rota ekranÄ±nda reached ile ilerle.</div>
+        <h3>Bug?n</h3>
+        <div className="muted">Tek hedef: aktif g?revi g?r ? ba?lat ? rota ekran?nda reached ile ilerle.</div>
 <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
   <div className="row" style={{ gap: 8, alignItems: "center" }}>
     {!online ? (
@@ -196,13 +196,13 @@ useEffect(() => {
   <div className="row" style={{ gap: 8, alignItems: "center" }}>
     {qLen ? (
       <button type="button" onClick={() => setShowQueue((p) => !p)} style={{ fontWeight: 900 }}>
-        {showQueue ? "Kuyruk DetayÄ± Kapat" : "Kuyruk DetayÄ±"}
+        {showQueue ? "Kuyruk Detay? Kapat" : "Kuyruk Detay?"}
       </button>
     ) : null}
 
     {online && qLen ? (
       <button type="button" disabled={flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
-        {flushing ? "..." : `KuyruÄŸu GÃ¶nder (${qLen})`}
+        {flushing ? "..." : `Kuyru?u G?nder (${qLen})`}
       </button>
     ) : null}
   </div>
@@ -222,19 +222,19 @@ useEffect(() => {
       {err ? <div className="card err">{err}</div> : null}
 
       <div className="card">
-        <h3>Aktif GÃ¶rev</h3>
+        <h3>Aktif G?rev</h3>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
             <b>{activeLabel}</b>
             {active ? (
-              <div className="muted">Start: {fmt(active.startAt)} â€¢ End: {fmt(active.endAt)}</div>
+              <div className="muted">Start: {fmt(active.startAt)} ? End: {fmt(active.endAt)}</div>
             ) : (
-              <div className="muted">BugÃ¼n iÃ§in atanmÄ±ÅŸ aktif / kabul edilmiÅŸ vardiya yok.</div>
+              <div className="muted">Bug?n i?in atanm?? aktif / kabul edilmi? vardiya yok.</div>
             )}
           </div>
           {active?.status === "APPROVED" ? (
             <button type="button" disabled={busyId === active.id} onClick={() => startShift(active.id)}>
-              {busyId === active.id ? "..." : "GÃ¶reve BaÅŸla"}
+              {busyId === active.id ? "..." : "G?reve Ba?la"}
             </button>
           ) : null}
           {active?.status === "ACTIVE" ? (
@@ -244,18 +244,18 @@ useEffect(() => {
       </div>
 
       {!hasAny ? (
-        <div className="card muted">BugÃ¼n/yarÄ±n iÃ§in vardiya bulunamadÄ±.</div>
+        <div className="card muted">Bug?n/yar?n i?in vardiya bulunamad?.</div>
       ) : (
         <>
           <div className="card" style={{ overflowX: "auto" }}>
-            <h3>BugÃ¼n Vardiyalar</h3>
+            <h3>Bug?n Vardiyalar</h3>
             <table className="tbl" style={{ whiteSpace: "nowrap" }}>
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Durum</th>
-                  <th>BaÅŸlangÄ±Ã§</th>
-                  <th>BitiÅŸ</th>
+                  <th>Ba?lang??</th>
+                  <th>Biti?</th>
                   <th>Aksiyon</th>
                 </tr>
               </thead>
@@ -265,21 +265,21 @@ useEffect(() => {
 
           {tomorrow?.length ? (
             <div className="card" style={{ overflowX: "auto" }}>
-              <h3>YarÄ±n</h3>
+              <h3>Yar?n</h3>
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
                   <tr>
                     <th>ID</th>
                     <th>Durum</th>
-                    <th>BaÅŸlangÄ±Ã§</th>
-                    <th>BitiÅŸ</th>
+                    <th>Ba?lang??</th>
+                    <th>Biti?</th>
                     <th>Aksiyon</th>
                   </tr>
                 </thead>
                 <tbody>{tomorrow.map((s) => <ShiftRow key={s.id} s={s} />)}</tbody>
               </table>
               <div className="muted" style={{ marginTop: 8 }}>
-                Not: YarÄ±nki vardiyalar ÅŸimdilik sadece bilgi amaÃ§lÄ±dÄ±r; baÅŸlayÄ±nca otomatik aktif olur.
+                Not: Yar?ndaki vardiyalar ?imdilik sadece bilgi ama?l?d?r; ba?lay?nca otomatik aktif olur.
               </div>
             </div>
           ) : null}
