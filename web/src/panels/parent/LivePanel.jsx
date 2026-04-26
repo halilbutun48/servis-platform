@@ -170,13 +170,13 @@ export default function ParentLivePanel() {
   const [noShowMsg, setNoShowMsg] = useState("");
   const lastRequestedChildRef = useRef("");
 
-  async function loadChildren() {
+  const loadChildren = useCallback(async () => {
     const r = await api("/api/parent/children", { token });
     const items = Array.isArray(r?.items) ? r.items : [];
     setChildren(items);
     if (!childId && items[0]?.id) setChildId(String(items[0].id));
     return items;
-  }
+  }, [token, childId]);
 
   const loadVehicles = useCallback(async (cid) => {
     const resolvedChildId = String(cid || "");
@@ -199,7 +199,7 @@ export default function ParentLivePanel() {
     return items;
   }, [token]);
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setBusy(true);
     setErr("");
     try {
@@ -212,9 +212,9 @@ export default function ParentLivePanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [childId, loadChildren, loadVehicles]);
 
-  function requestMyLocation() {
+  const requestMyLocation = useCallback(() => {
     setGeoErr("");
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setGeoErr("Tarayıcı konum desteği vermiyor.");
@@ -232,25 +232,16 @@ export default function ParentLivePanel() {
       },
       { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 }
     );
-  }
+  }, []);
 
-  const loadAllRef = useRef(loadAll);
-  useEffect(() => {
-    loadAllRef.current = loadAll;
-  }, [loadAll]);
-
-  const requestMyLocationRef = useRef(requestMyLocation);
-  useEffect(() => {
-    requestMyLocationRef.current = requestMyLocation;
-  }, [requestMyLocation]);
 
   useEffect(() => {
     if (!token) return;
     queueMicrotask(() => {
-      loadAllRef.current();
-      requestMyLocationRef.current();
+      loadAll();
+      requestMyLocation();
     });
-  }, [token]);
+  }, [token, loadAll, requestMyLocation]);
 
   useEffect(() => {
     const cid = String(childId || "");
