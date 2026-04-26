@@ -234,11 +234,23 @@ export default function ParentLivePanel() {
     );
   }
 
+  const loadAllRef = useRef(loadAll);
   useEffect(() => {
-    loadAll();
-    requestMyLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadAllRef.current = loadAll;
+  }, [loadAll]);
+
+  const requestMyLocationRef = useRef(requestMyLocation);
+  useEffect(() => {
+    requestMyLocationRef.current = requestMyLocation;
+  }, [requestMyLocation]);
+
+  useEffect(() => {
+    if (!token) return;
+    queueMicrotask(() => {
+      loadAllRef.current();
+      requestMyLocationRef.current();
+    });
+  }, [token]);
 
   useEffect(() => {
     const cid = String(childId || "");

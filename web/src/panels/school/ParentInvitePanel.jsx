@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { makeHashLink } from "../../utils/publicBaseUrl";
@@ -49,10 +49,16 @@ export default function SchoolParentInvitePanel() {
     }
   }
 
+  const loadAllRef = useRef(loadAll);
+  useEffect(() => {
+    loadAllRef.current = loadAll;
+  }, [loadAll]);
+
   useEffect(() => {
     if (!token || me?.companyKind !== "SCHOOL") return;
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    queueMicrotask(() => {
+      loadAllRef.current();
+    });
   }, [token, me?.companyId, me?.companyKind]);
 
   async function createAccess({ childId, durationDays }) {

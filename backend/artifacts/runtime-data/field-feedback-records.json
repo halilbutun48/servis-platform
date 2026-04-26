@@ -1,1 +1,64 @@
-[]
+[
+  {
+    "id": "ff-mofa67qm-d7ofis",
+    "title": "program fena değil",
+    "detail": "biraz daah calısılması lazım",
+    "status": "GORULDU",
+    "categoryId": "GORUS",
+    "severity": "LOW",
+    "rating": 3,
+    "surface": "WEB",
+    "reportedByRole": "ROOM",
+    "ownerRole": "ROOM",
+    "scenarioId": "",
+    "relatedPath": "",
+    "relatedShiftId": null,
+    "tags": [
+      "GORUS",
+      "FEEDBACK_LOOP"
+    ],
+    "createdAt": "2026-04-26T04:41:04.926Z",
+    "createdByUserId": 3,
+    "createdByEmail": "room@demo.com",
+    "updatedAt": "2026-04-26T04:41:57.267Z",
+    "lastUpdatedByUserId": 1,
+    "lastUpdatedByEmail": "superadmin@demo.com",
+    "history": [
+      {
+        "at": "2026-04-26T04:41:04.926Z",
+        "status": "GORULDU",
+        "byRole": "ROOM",
+        "byEmail": "room@demo.com",
+        "note": "biraz daah calısılması lazım"
+      },
+      {
+        "at": "2026-04-26T04:41:44.743Z",
+        "status": "GORULDU",
+        "byRole": "SUPER_ADMIN",
+        "byEmail": "superadmin@demo.com",
+        "note": "Super Admin değerlendirdi: Görüldü"
+      },
+      {
+        "at": "2026-04-26T04:41:53.670Z",
+        "status": "COZULDU",
+        "byRole": "SUPER_ADMIN",
+        "byEmail": "superadmin@demo.com",
+        "note": "Super Admin değerlendirdi: Çözüldü"
+      },
+      {
+        "at": "2026-04-26T04:41:55.381Z",
+        "status": "KAPANDI",
+        "byRole": "SUPER_ADMIN",
+        "byEmail": "superadmin@demo.com",
+        "note": "Super Admin değerlendirdi: Kapandı"
+      },
+      {
+        "at": "2026-04-26T04:41:57.267Z",
+        "status": "GORULDU",
+        "byRole": "SUPER_ADMIN",
+        "byEmail": "superadmin@demo.com",
+        "note": "Super Admin değerlendirdi: Görüldü"
+      }
+    ]
+  }
+]

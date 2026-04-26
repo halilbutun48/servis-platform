@@ -1,5 +1,5 @@
 // web/src/panels/personel/LivePanel.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -186,7 +186,17 @@ export default function PersonelLivePanel() {
     await loadEta(vid, s?.id || null);
   }
 
-  useEffect(() => { queueMicrotask(() => { loadAll(); }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const loadAllRef = useRef(loadAll);
+  useEffect(() => {
+    loadAllRef.current = loadAll;
+  }, [loadAll]);
+
+  useEffect(() => {
+    if (!token) return;
+    queueMicrotask(() => {
+      loadAllRef.current();
+    });
+  }, [token]);
 
   useAutoReload("shifts", loadAll);
   useAutoReload("vehicles", loadAll);

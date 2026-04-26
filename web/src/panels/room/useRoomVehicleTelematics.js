@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export function useRoomVehicleTelematics({
   tab,
@@ -46,11 +46,16 @@ export function useRoomVehicleTelematics({
     }
   }
 
+  const loadDevicesRef = useRef(loadDevices);
+  useEffect(() => {
+    loadDevicesRef.current = loadDevices;
+  }, [loadDevices]);
+
   useEffect(() => {
     if (tab !== "telematics") return;
     if (deviceLoaded) return;
-    loadDevices();
-  }, [tab, deviceLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+    loadDevicesRef.current();
+  }, [tab, deviceLoaded]);
 
   async function createDevice(e) {
     e.preventDefault();

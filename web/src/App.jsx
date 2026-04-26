@@ -167,8 +167,7 @@ export default function App() {
   useEffect(() => {
     if (!token || !me?.role) return;
     if (path === "/" || path === "") navigate(roleDefaultPath(me));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, me?.role, me?.requirePasswordChange]);
+  }, [token, me?.role, me?.requirePasswordChange, path]);
 
   const view = useMemo(() => {
     if (!token) {

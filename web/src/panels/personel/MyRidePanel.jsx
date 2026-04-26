@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, reportNoShow } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -141,6 +141,11 @@ export default function MyRidePanel() {
     await Promise.all([loadEta(s), loadNotifs()]);
   }
 
+  const loadAllRef = useRef(loadAll);
+  useEffect(() => {
+    loadAllRef.current = loadAll;
+  }, [loadAll]);
+
   async function handleNoShow() {
     if (!myShift?.id || noShowBusy) return;
     setNoShowBusy(true);
@@ -162,9 +167,11 @@ export default function MyRidePanel() {
   }
 
   useEffect(() => {
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!token) return;
+    queueMicrotask(() => {
+      loadAllRef.current();
+    });
+  }, [token]);
 
   useAutoReload("shifts", loadAll);
   useAutoReload("requests", loadAll);

@@ -108,6 +108,11 @@ export default function LogsPanel() {
   const [items, setItems] = useState([]);
 
   const lastCopyRef = useRef("");
+  const onPreviewRef = useRef(onPreview);
+
+  useEffect(() => {
+    onPreviewRef.current = onPreview;
+  }, [onPreview]);
 
   // lock targetType if kind dictates
   useEffect(() => {
@@ -119,10 +124,9 @@ export default function LogsPanel() {
   useEffect(() => {
     if (!auto) return;
     const t = setInterval(() => {
-      onPreview().catch(() => {});
+      onPreviewRef.current().catch(() => {});
     }, 5000);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auto, kind, targetType, targetId, childId, format, take, from, to, onlyBad, cat, q]);
 
   const grouped = useMemo(() => {
