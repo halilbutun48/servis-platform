@@ -760,12 +760,12 @@ export function evaluateAutoReachedQueueHealthThresholds(snapshot = {}, opts = {
     if (condition) warnings.push({ code, message, value, threshold });
   };
 
-  pushIf(Number(queue.queueDepth || 0) > thresholds.queueDepthWarn, "QUEUE_DEPTH_HIGH", "Auto-reached kuyruk derinliÄŸi eÅŸiÄŸi aÅŸtÄ±.", Number(queue.queueDepth || 0), thresholds.queueDepthWarn);
-  pushIf(Number(queue.processingDepth || 0) > thresholds.processingDepthWarn, "PROCESSING_DEPTH_HIGH", "Processing kuyruÄŸu eÅŸiÄŸi aÅŸtÄ±.", Number(queue.processingDepth || 0), thresholds.processingDepthWarn);
-  pushIf(Number(queue.claimsDepth || 0) > thresholds.claimsDepthWarn, "CLAIMS_DEPTH_HIGH", "Claim kayÄ±tlarÄ± eÅŸiÄŸi aÅŸtÄ±.", Number(queue.claimsDepth || 0), thresholds.claimsDepthWarn);
-  pushIf(Number(queue.deadLetterDepth || 0) > thresholds.deadLetterDepthWarn, "DEAD_LETTER_DEPTH_HIGH", "Dead-letter kayÄ±tlarÄ± eÅŸiÄŸi aÅŸtÄ±.", Number(queue.deadLetterDepth || 0), thresholds.deadLetterDepthWarn);
-  pushIf(Number(queue.oldestClaimAgeMs || 0) > thresholds.oldestClaimAgeMsWarn, "OLDEST_CLAIM_STALE", "En eski claim reclaim eÅŸiÄŸini aÅŸtÄ±.", Number(queue.oldestClaimAgeMs || 0), thresholds.oldestClaimAgeMsWarn);
-  pushIf(snapshot?.redisAvailable === false || snapshot?.redisConnected === false, "REDIS_NOT_CONNECTED", "Redis baÄŸlantÄ±sÄ± yok veya baÄŸlÄ± deÄŸil.", snapshot?.redisConnected === true ? 1 : 0, 1);
+  pushIf(Number(queue.queueDepth || 0) > thresholds.queueDepthWarn, "QUEUE_DEPTH_HIGH", "Auto-reached kuyruk derinli?i e?i?i a?t?.", Number(queue.queueDepth || 0), thresholds.queueDepthWarn);
+  pushIf(Number(queue.processingDepth || 0) > thresholds.processingDepthWarn, "PROCESSING_DEPTH_HIGH", "Processing kuyru?u e?i?i a?t?.", Number(queue.processingDepth || 0), thresholds.processingDepthWarn);
+  pushIf(Number(queue.claimsDepth || 0) > thresholds.claimsDepthWarn, "CLAIMS_DEPTH_HIGH", "Claim kay?tlar? e?i?i a?t?.", Number(queue.claimsDepth || 0), thresholds.claimsDepthWarn);
+  pushIf(Number(queue.deadLetterDepth || 0) > thresholds.deadLetterDepthWarn, "DEAD_LETTER_DEPTH_HIGH", "Dead-letter kay?tlar? e?i?i a?t?.", Number(queue.deadLetterDepth || 0), thresholds.deadLetterDepthWarn);
+  pushIf(Number(queue.oldestClaimAgeMs || 0) > thresholds.oldestClaimAgeMsWarn, "OLDEST_CLAIM_STALE", "En eski claim reclaim e?i?ini a?t?.", Number(queue.oldestClaimAgeMs || 0), thresholds.oldestClaimAgeMsWarn);
+  pushIf(snapshot?.redisAvailable === false || snapshot?.redisConnected === false, "REDIS_NOT_CONNECTED", "Redis ba?lant?s? yok veya ba?l? de?il.", snapshot?.redisConnected === true ? 1 : 0, 1);
 
   return {
     ok: warnings.length === 0,

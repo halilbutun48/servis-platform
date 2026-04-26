@@ -304,7 +304,7 @@ export const COMPANY = [
       { key: 'COMPANY_PLAN_REVIEW', title: 'Konum ve veri hazırlığını kontrol et', action: 'Önce georeview ihtiyacı olan kişi veya durak var mı kontrol et.', doneWhen: 'NEEDS_REVIEW kalmaz veya neden kaldığı bilinir.', ifBlocked: 'Konum seçici veya büyük harita ile eksik noktayı düzelt.' },
       { key: 'COMPANY_PLAN_START', title: 'Plan akışını başlat', action: 'Rehberi Başlat ile paket, tarih ve kapsam bilgisini seç.', doneWhen: 'Step akışı açık ve ilerliyor.', ifBlocked: 'Yanlış şirket/okul/organizasyon kapsamında olabilirsin.' },
       { key: 'COMPANY_PLAN_SOLVE', title: 'Kişi ve durak çözümünü tamamla', action: 'Durakları, matrix çözümünü ve teklif öncesi sayıları kontrol et.', doneWhen: 'Çözüm çıktısı mantıklı ve gönderime hazır.', ifBlocked: 'OSRM veya matrix sorunu varsa önce konum kalitesini düzelt.' },
-      { key: 'COMPANY_PLAN_HANDOFF', title: 'Takibe doğru ekranla devam et', action: 'Plan çıktıysa Vardiyalar ekranına geç.', doneWhen: 'Takip ekranı netleşir.', ifBlocked: 'Hâlâ plan kuruyorsan bu ekrandan ayrılma.' },
+      { key: 'COMPANY_PLAN_HANDOFF', title: 'Takibe do?ru ekranla devam et', action: 'Plan ??kt?ysa Vardiyalar ekran?na ge?.', doneWhen: 'Takip ekran? netle?ir.', ifBlocked: 'H?l? plan kuruyorsan bu ekrandan ayr?lma.' },
     ],
     nextScreens: [
       { label: 'Konum İncele', path: '/company/georeview', reason: 'Eksik veya hatalı koordinatı düzeltmek için.' },

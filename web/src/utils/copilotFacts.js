@@ -376,7 +376,7 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
       enabled: isMarket,
       reason: 'Kayıt market aşamasında değil.',
       purpose: 'Pazarlık ve teklif karşılaştırma tarafını açar.',
-      whenToUse: 'Kayıt hâlâ market bölümündeyse kullanılır.',
+      whenToUse: 'Kay?t h?l? market b?l?m?ndeyse kullan?l?r.',
       whatHappens: 'Market satırları veya ilgili teklif görünümü açılır.',
       blockedBy: isMarket ? [] : ['Kayıt market aşamasında değil'],
     }),
@@ -418,7 +418,7 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
       `Sonraki adım: ${selectedItem?.nextStep || '-'}`,
     ],
     reasoningLead: isMarket
-      ? 'Bu kayıt hâlâ ticari pazarlık tarafında görünüyor.'
+      ? 'Bu kay?t h?l? ticari pazarl?k taraf?nda g?r?n?yor.'
       : isPending
         ? 'Bu kayıt kabul edilmiş ama operasyon hazırlığı ayrıca kontrol edilmelidir.'
         : 'Bu kayıt operasyon tarafına geçmiş görünüyor.',
