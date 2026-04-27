@@ -14,15 +14,16 @@ Bu primer yaşayan hattın resmi özetidir.
 - Mobil uygulama driver-first kalır; tüm web panellerini mobile taşımak bu aşamada hedef değildir.
 - Refresh rotasyonu fail-closed; telematics vendor webhook HMAC + timestamp + replay guard ile korunur; `x-greenpack` sadece explicit local-test override olarak kalır.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
-- Repo check chain sonucu: `PASS 20 / FAIL 0`; selected milestone static set: `PASS 88 / FAIL 0 / SKIP 74`.
+- Repo check chain sonucu: `PASS 21 / FAIL 0`; selected milestone static set: `PASS 92 / FAIL 0 / SKIP 78`.
 - Tarihsel temiz anchor: `M0->M79`
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
-- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 / M90C.9 kapanmıştır; `M91` ve `M92` ile birlikte green / compatibility çizgisinde korunur.
+- M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 / M90C.9 kapanmıştır; `M91`, `M92` ve `M93` ile birlikte green / compatibility çizgisinde korunur.
 - Tek repo kontrol girişi: `npm run verify:repo`
 - Local acceptance overlay: `M91 shift/agreement route preview`
 - Repo verification spine: `M92 repo verification spine`
-- Güncel kapanmış ek hatlar: `M91`, `M92`, `Tur 1`, `Tur 2`, `Tur 3`.
+- Queue durability proof: `M93 queue durability proof`
+- Güncel kapanmış ek hatlar: `M91`, `M92`, `M93`, `Tur 1`, `Tur 2`, `Tur 3`.
 - Resmi çalışma yönü: `M90` rotası içinde ihtiyaç-temelli kontrollü ilerleme.
 - Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.
 
@@ -174,7 +175,8 @@ Compatibility aliases for legacy checks:
 - 2026-04-27 benchmark evidence doc: `docs/PERFORMANCE_EVIDENCE_20260427.md`
 - 3000 vehicles, 30 cycles, 120s cadence, publish-only: 90,000 requests, p95 27.66ms, throttled 0.
 - 3000 vehicles, 10 cycles, 120s cadence, readstorm: 30,000 GPS requests, 523,405 panel invalidations, p95 27.39ms, throttled 0.
-- Remaining benchmark caveat: fixed `PASSWORD_CHANGE_REQUIRED` seed-user hygiene errors are not throughput failures.
+- Temiz readstorm kanıtı: 3000 araç, 3 cycle, 9000 / 9000 OK, errors 0, throttled 0, p95 33.21ms.
+- Not: `PASSWORD_CHANGE_REQUIRED` seed-user hijyen hatası kapanmıştır; önceki hatalar throughput problemi değildi.
 
 ## M90C.9 SAFE CLOSURE / FINAL HYGIENE
 - M90C.9 görünür closure hygiene milestone kaydıdır.
@@ -185,3 +187,10 @@ Compatibility aliases for legacy checks:
 - Sonuç: throttled 0, errors 0, p95 33.21ms, p99 42.1ms.
 - Panel yükü: 210 panel request, 179 panel reload, 125282 panel invalidation.
 - PASSWORD_CHANGE_REQUIRED seed-user hijyen hatası kapandı; önceki benchmark hataları sistem yükü değil test datası hijyeniydi.
+
+## M93 QUEUE DURABILITY PROOF
+- M93, autoReachedQueue için queue dayanıklılık kanıtı ve görünürlük hattıdır.
+- Kapsam: Redis down/up, worker restart reclaim, dead-letter görünürlüğü ve threshold kontrolü.
+- Komut: `tools\pack_m93_queue_durability_proof.ps1 -RepoRoot D:\servis-platform`.
+- Runtime probe: `backend/scripts/m93_queue_durability_runtime_probe.js`.
+- Not: Bu proof exactly-once queue iddiası değildir; operasyonel dayanıklılık ve görünürlük kanıtıdır.

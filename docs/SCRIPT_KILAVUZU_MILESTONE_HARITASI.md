@@ -393,6 +393,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Root alias: `npm run verify:repo`
 - Ana konu: tum repo kontrollerini tek catiya toplamak; package scriptleri, tools wrapper, manifest, state, runbook ve M0->latest runner baglantisini ayni guard altinda tutmak.
 
+
+### M93 — queue durability proof [PACK]
+- Milestone: `docs/MILESTONE_M93_QUEUE_DURABILITY_PROOF.md`
+- Runbook: `docs/RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md`
+- Pack: `tools/pack_m93_queue_durability_proof.ps1`
+- Runtime probe: `backend/scripts/m93_queue_durability_runtime_probe.js`
+- Ana konu: autoReachedQueue için Redis down/up, worker restart reclaim, dead-letter görünürlüğü ve threshold kanıtını resmi hatta bağlamak.
+
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
 - Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
@@ -407,3 +415,4 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M90`: 10/10 kapanış ve canonical convergence
 - `M91`: shift/agreement route preview local acceptance bandi
 - `M92`: repo verification spine ve tek cati kontrol zinciri
+- `M93`: queue durability proof ve autoReachedQueue görünürlük kanıtı

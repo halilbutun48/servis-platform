@@ -1,327 +1,339 @@
 {
-  "version": 2,
-  "latestMasterPack": 89,
-  "latestHistoricalMasterPack": 79,
-  "stableTo": 78,
-  "historicalStableTo": 78,
-  "nextMilestone": "M90",
-  "historicalNextMilestone": "M80",
-  "livingUpperRouteFrom": 80,
-  "livingUpperRouteTo": 89,
-  "latestManifestStage": "M92",
-  "docsContractMode": "state-first-canonical-history-split",
-  "canonicalPackHierarchy": {
-    "publicRoot": "tools/packs/living",
-    "internalRoot": "tools/_packs",
-    "masterPackUsesPublicWrappers": true,
-    "upperRouteSubpack": "tools/_packs/pack_m82.ps1"
-  },
-  "runtimeJsonStores": {
-    "backendDataDir": "artifacts/runtime-data",
-    "legacyBackendDataDir": "backend/data",
-    "atomicWrite": true,
-    "transactionalUpdate": true,
-    "trackedRuntimeFiles": false,
-    "singleWriterRecommended": true,
-    "trackedBackupFiles": false
-  },
-  "phaseDefaults": {
-    "packLivingTo": 89,
-    "verifyLivingRuntimeTo": 89,
-    "phase76To": 81,
-    "upperRouteFrom": 82,
-    "upperRouteTo": 89
-  },
-  "activeMilestones": [
-    "M76A-1",
-    "M76B",
-    "M76A-2",
-    "M77",
-    "M78",
-    "M78.1",
-    "M78.2",
-    "M78.3",
-    "M79",
-    "M80",
-    "M80.1",
-    "M80.2",
-    "M80.3",
-    "M81",
-    "M82.1",
-    "M82.8",
-    "M82.9",
-    "M82.10",
-    "M82.11",
-    "M83",
-    "M84",
-    "M85",
-    "M86",
-    "M87",
-    "M88",
-    "M89",
-    "M90",
-    "M90B.1",
-    "M90C.6",
-    "M90C.7",
-    "M90C.8",
-    "M90C.9",
-    "M91",
-    "M92"
-  ],
-  "canonicalDocs": [
-    "README.md",
-    "docs/README.md",
-    "docs/PRIMER_SSOT.md",
-    "docs/STARTPACK_V1.md",
-    "docs/CHECKLIST_SSOT.md",
-    "docs/MILESTONE_REGISTRY_V1.md",
-    "docs/NEXT_BACKLOG_V1.md",
-    "docs/KABUL_KRITERLERI_10_10_VARDIS.md",
-    "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
-    "tools/README.md",
-    "tools/PRIMER_SNAPSHOT.md",
-    "tools/CHECKLIST_SSOT.md"
-  ],
-  "hotFileQueuePolicy": {
-    "policyVersion": 1,
-    "warningThreshold": 1000,
-    "blockThreshold": 1200,
-    "currentLargeFileCount": 4,
-    "currentWarningHotFileCount": 8,
-    "principles": [
-      "line-count dusurmek icin kor refactor yok",
-      "once acceptance sonra kontrollu temizlik",
-      "justified exception dosyalarinda agresif split yok",
-      "acceptance-sensitive dosyalar explicit gerekce olmadan acilmaz"
-    ],
-    "classifications": {
-      "backend/src/ai/chat/helpComposer.js": {
-        "class": "justified-exception",
-        "note": "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
-      },
-      "backend/src/routes/agreements.js": {
-        "class": "acceptance-sensitive-later",
-        "note": "sozlesme, route-refresh ve operasyon koprusu merkezi; kor split yerine contract destekli planli refactor"
-      },
-      "backend/prisma/schema.prisma": {
-        "class": "justified-exception",
-        "note": "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
-      },
-      "backend/scripts/bench_gps_publish_only.js": {
-        "class": "justified-exception",
-        "note": "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
-      },
-      "web/src/panels/company/GuidedPlanModal.jsx": {
-        "class": "acceptance-sensitive-later",
-        "note": "guided plan ve rota guncelleme akisi kritik; yalniz contract destekli parcalanir"
-      },
-      "backend/src/routes/shifts/room.js": {
-        "class": "acceptance-sensitive-later",
-        "note": "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
-      },
-      "backend/src/routes/shifts/company.js": {
-        "class": "acceptance-sensitive-later",
-        "note": "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
-      },
-      "mobile/App.js": {
-        "class": "acceptance-sensitive-later",
-        "note": "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
-      },
-      "web/src/panels/company/ShiftPeopleTab.jsx": {
-        "class": "safe-candidate-review",
-        "note": "shift kisi/ithal/stop yardimcilari kontrollu extraction sonrasi kalan review adayi"
-      },
-      "web/src/panels/room/ShiftsPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "room shifts reload/kopuk sekmeler mevcut; kontrollu extraction ve review adayi"
-      },
-      "web/src/panels/room/VehiclesPanel.jsx": {
-        "class": "safe-candidate-review",
-        "note": "room vehicles akisi ve bagli kartlar kontrollu extraction sonrasi kalan review adayi"
-      },
-      "tools/milestone_pack_manifest.json": {
-        "class": "justified-exception",
-        "note": "tek resmi milestone manifesti; bolme yerine M92 spine ile okunurluk ve giris komutu sabitlenir"
-      }
-    }
-  },
-  "shareablePackageHygiene": {
-    "policyVersion": 1,
-    "goal": "shareable-package-clean-export",
-      "defaultRuntimeDataRoot": "artifacts/runtime-data",
-    "principles": [
-      "line-count reduction stays deferred until after acceptance and hygiene closure",
-      "shareable exports must exclude workspace secrets, build artifacts, runtime json stores, and transient overlay/log residues",
-      "repo hygiene preflight may remove only safe transient residues from the working tree",
-      "artifacts stay local and are never part of the shareable repo bundle"
-    ],
-    "forbiddenExactFiles": [
-      ".env",
-      "backend/.env",
-      "infra/.env",
-      "pack_living_final.log",
-      "pack_living_latest.log"
-    ],
-    "forbiddenGlobFiles": [
-      "backend/data/*.json",
-      "data/*.json",
-      "README_M*_OVERLAY*.txt",
-      "*.zip"
-    ],
-    "forbiddenPathPrefixes": [
-      ".git/",
-      "node_modules/",
-      "artifacts/",
-      ".next/",
-      "dist/",
-      "build/",
-      "coverage/",
-      "_archive/",
-      "_backup/",
-      "infra/osrm-data/",
-      "web/dist/",
-      "mobile/dist/"
-    ],
-    "preflightTransientTargets": [
-      "web/dist",
-      "mobile/dist",
-      "pack_living_final.log",
-      "pack_living_latest.log",
-      "README_M*_OVERLAY*.txt"
-    ],
-    "exportTool": "tools/export_shareable_repo_bundle.ps1"
-  },
-  "ciVerificationVisibility": {
-    "goal": "repo-native-ci-verification-visibility",
-    "workflowPath": ".github/workflows/vardis_verification_visibility.yml",
-    "primaryCommand": "npm run verify:ci",
-    "exportPack": "tools/pack_m90_c7_export_package_hygiene.ps1",
-    "dependencyInstallCommands": [
-      "npm --prefix backend ci",
-      "npm --prefix web ci"
-    ],
-    "dependencyLockfiles": [
-      "backend/package-lock.json",
-      "web/package-lock.json"
-    ],
-    "jobs": [
-      "repo-verification",
-      "shareable-export"
-    ],
-    "artifacts": [
-      "artifacts/repo-audit/repo_audit_latest.json",
-      "artifacts/lint/web_lint_latest.txt",
-      "artifacts/shareable-export/servis-platform_shareable_*.zip"
-    ],
-    "lintCommand": "npm run lint:web",
-    "lintEvidence": "artifacts/lint/web_lint_latest.txt"
-  },
-  "safeClosureFinalHygiene": {
-    "goal": "safe-closure-final-hygiene-checklist",
-    "primaryCommand": "npm run verify:final",
-    "verifyFinalBehavior": [
-      "run verify:repo",
-      "refresh physical snapshot soft-gate report"
-    ],
-    "windowsPreferredShell": "pwsh",
-    "exportPack": "tools/pack_m90_c7_export_package_hygiene.ps1",
-    "exportTool": "tools/export_shareable_repo_bundle.ps1",
-    "orderedSteps": [
-      "npm run verify:final",
-      "pwsh -ExecutionPolicy Bypass -File .\\tools\\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\\servis-platform",
-      "pwsh -ExecutionPolicy Bypass -File .\\tools\\export_shareable_repo_bundle.ps1 -RepoRoot D:\\servis-platform",
-      "git status --short",
-      "git add -A && git commit / tag / push only after expected diff is confirmed"
-    ],
-    "compatibilityNotes": [
-      "On Windows, prefer pwsh for export-related packs and shareable bundle generation",
-      "verify:final refreshes the physical snapshot hygiene report but keeps snapshot results soft-gated",
-      "export_shareable_repo_bundle.ps1 must stay compatible with Windows PowerShell 5.1 fallback semantics even when pwsh is preferred",
-      "line-count reduction stays deferred until after acceptance, hygiene, export, and CI closure work"
-    ],
-    "lintEvidence": "artifacts/lint/web_lint_latest.txt",
-    "snapshotReport": "artifacts/repo-audit/physical_snapshot_hygiene_latest.json"
-  },
-  "physicalSnapshotHygiene": {
-    "policyVersion": 1,
-    "goal": "physical-snapshot-hygiene-distinction",
-    "primaryCommand": "npm run verify:snapshot",
-    "softGate": true,
-    "reportPath": "artifacts/repo-audit/physical_snapshot_hygiene_latest.json",
-      "principles": [
-        "export-clean and physical snapshot clean are separate checks",
-        "the first snapshot gate is report-only and does not block verify:final even when verify:final refreshes the report",
-        "intentional evidence artifacts produced by the repo verification chain are allowlisted instead of counted as physical dirt",
-        "artifacts/runtime-data is the intentional local runtime json working area; backend/data remains only as a legacy compatibility shell and is guarded as a residue path",
-        "deprecated export zip residues and overlay backup residues are not allowed in the working tree snapshot surface",
-        "docs/overlays stays as intentional tracked history and is not treated as snapshot dirt"
-      ],
-      "allowExactFiles": [
-        "artifacts/.gitkeep",
-        "artifacts/backend-dev.err.log",
-        "artifacts/backend-dev.out.log",
-        "artifacts/pack_m89_full_latest.log",
-        "artifacts/repo_deep_audit_latest.json",
-        "artifacts/repo_deep_audit_latest.md"
-      ],
-      "allowPathPrefixes": [
-        "artifacts/backups/",
-        "artifacts/benchmarks/",
-        "artifacts/compliance/",
-        "artifacts/consolidation/",
-        "artifacts/normalization/",
-        "artifacts/operations/",
-        "artifacts/repo-audit-clean/",
-        "artifacts/lint/",
-        "artifacts/repo-audit/",
-        "artifacts/shareable-export/",
-        "artifacts/runtime-data/",
-        "docs/overlays/"
-      ],
-      "allowGlobFiles": [
-        "artifacts/shareable-export/servis-platform_shareable_*.zip"
-      ],
-    "hardFailExactFiles": [
-      ".env",
-      "backend/.env",
-      "infra/.env"
-    ],
-    "hardFailPathPrefixes": [
-      "artifacts/overlay-backups/",
-      "web/dist/",
-      "mobile/dist/"
-    ],
-    "hardFailGlobFiles": [
-      "data/*.json",
-      "artifacts/exports/*.zip"
-    ],
-      "warningGlobFiles": [
-        "backend/data/*.json"
-      ],
-      "warningPathPrefixes": []
-    },
-  "repoVerificationSpine": {
-    "goal": "single-roof-repo-verification-chain",
-    "primaryCommand": "npm run verify:repo",
-    "ciCommand": "npm run verify:ci",
-    "finalCommand": "npm run verify:final",
-    "runner": "backend/scripts/run_repo_check_chain.js",
-    "milestoneRunner": "backend/scripts/run_m0_latest.js",
-    "m92Check": "backend/scripts/m92_repo_verification_spine_check.js",
-    "toolsWrapper": "tools/check-repo.ps1",
-    "orderedPhases": [
-      "lint",
-      "docs",
-      "hot",
-      "web-contract",
-      "closure",
-      "milestones"
-    ],
-    "compatibilityNotes": [
-      "legacy milestone scripts remain as evidence",
-      "new daily gate is npm run verify:repo",
-      "M91 local route preview checks are included through the M0-latest milestone runner",
-      "M92 validates the package, tools, state, manifest, runbook and runner bindings"
-    ]
-  }
+    "version":  2,
+    "latestMasterPack":  89,
+    "latestHistoricalMasterPack":  79,
+    "stableTo":  78,
+    "historicalStableTo":  78,
+    "nextMilestone":  "M90",
+    "historicalNextMilestone":  "M80",
+    "livingUpperRouteFrom":  80,
+    "livingUpperRouteTo":  89,
+    "latestManifestStage":  "M89",
+    "docsContractMode":  "state-first-canonical-history-split",
+    "canonicalPackHierarchy":  {
+                                   "publicRoot":  "tools/packs/living",
+                                   "internalRoot":  "tools/_packs",
+                                   "masterPackUsesPublicWrappers":  true,
+                                   "upperRouteSubpack":  "tools/_packs/pack_m82.ps1"
+                               },
+    "runtimeJsonStores":  {
+                              "backendDataDir":  "artifacts/runtime-data",
+                              "legacyBackendDataDir":  "backend/data",
+                              "atomicWrite":  true,
+                              "transactionalUpdate":  true,
+                              "trackedRuntimeFiles":  false,
+                              "singleWriterRecommended":  true,
+                              "trackedBackupFiles":  false
+                          },
+    "phaseDefaults":  {
+                          "packLivingTo":  89,
+                          "verifyLivingRuntimeTo":  89,
+                          "phase76To":  81,
+                          "upperRouteFrom":  82,
+                          "upperRouteTo":  89
+                      },
+    "activeMilestones":  [
+                             "M76A-1",
+                             "M76B",
+                             "M76A-2",
+                             "M77",
+                             "M78",
+                             "M78.1",
+                             "M78.2",
+                             "M78.3",
+                             "M79",
+                             "M80",
+                             "M80.1",
+                             "M80.2",
+                             "M80.3",
+                             "M81",
+                             "M82.1",
+                             "M82.8",
+                             "M82.9",
+                             "M82.10",
+                             "M82.11",
+                             "M83",
+                             "M84",
+                             "M85",
+                             "M86",
+                             "M87",
+                             "M88",
+                             "M89",
+                             "M90",
+                             "M90B.1",
+                             "M90C.6",
+                             "M90C.7",
+                             "M90C.8",
+                             "M90C.9",
+                             "M91",
+                             "M92",
+                             "M93"
+                         ],
+    "canonicalDocs":  [
+                          "README.md",
+                          "docs/README.md",
+                          "docs/PRIMER_SSOT.md",
+                          "docs/STARTPACK_V1.md",
+                          "docs/CHECKLIST_SSOT.md",
+                          "docs/MILESTONE_REGISTRY_V1.md",
+                          "docs/NEXT_BACKLOG_V1.md",
+                          "docs/KABUL_KRITERLERI_10_10_VARDIS.md",
+                          "docs/SCRIPT_KILAVUZU_MILESTONE_HARITASI.md",
+                          "tools/README.md",
+                          "tools/PRIMER_SNAPSHOT.md",
+                          "tools/CHECKLIST_SSOT.md"
+                      ],
+    "hotFileQueuePolicy":  {
+                               "policyVersion":  1,
+                               "warningThreshold":  1000,
+                               "blockThreshold":  1200,
+                               "currentLargeFileCount":  4,
+                               "currentWarningHotFileCount":  8,
+                               "principles":  [
+                                                  "line-count dusurmek icin kor refactor yok",
+                                                  "once acceptance sonra kontrollu temizlik",
+                                                  "justified exception dosyalarinda agresif split yok",
+                                                  "acceptance-sensitive dosyalar explicit gerekce olmadan acilmaz"
+                                              ],
+                               "classifications":  {
+                                                       "backend/src/ai/chat/helpComposer.js":  {
+                                                                                                   "class":  "justified-exception",
+                                                                                                   "note":  "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
+                                                                                               },
+                                                       "backend/src/routes/agreements.js":  {
+                                                                                                "class":  "acceptance-sensitive-later",
+                                                                                                "note":  "sozlesme, route-refresh ve operasyon koprusu merkezi; kor split yerine contract destekli planli refactor"
+                                                                                            },
+                                                       "backend/prisma/schema.prisma":  {
+                                                                                            "class":  "justified-exception",
+                                                                                            "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
+                                                                                        },
+                                                       "backend/scripts/bench_gps_publish_only.js":  {
+                                                                                                         "class":  "justified-exception",
+                                                                                                         "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
+                                                                                                     },
+                                                       "web/src/panels/company/GuidedPlanModal.jsx":  {
+                                                                                                          "class":  "acceptance-sensitive-later",
+                                                                                                          "note":  "guided plan ve rota guncelleme akisi kritik; yalniz contract destekli parcalanir"
+                                                                                                      },
+                                                       "backend/src/routes/shifts/room.js":  {
+                                                                                                 "class":  "acceptance-sensitive-later",
+                                                                                                 "note":  "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
+                                                                                             },
+                                                       "backend/src/routes/shifts/company.js":  {
+                                                                                                    "class":  "acceptance-sensitive-later",
+                                                                                                    "note":  "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
+                                                                                                },
+                                                       "mobile/App.js":  {
+                                                                             "class":  "acceptance-sensitive-later",
+                                                                             "note":  "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
+                                                                         },
+                                                       "web/src/panels/company/ShiftPeopleTab.jsx":  {
+                                                                                                         "class":  "safe-candidate-review",
+                                                                                                         "note":  "shift kisi/ithal/stop yardimcilari kontrollu extraction sonrasi kalan review adayi"
+                                                                                                     },
+                                                       "web/src/panels/room/ShiftsPanel.jsx":  {
+                                                                                                   "class":  "safe-candidate-review",
+                                                                                                   "note":  "room shifts reload/kopuk sekmeler mevcut; kontrollu extraction ve review adayi"
+                                                                                               },
+                                                       "web/src/panels/room/VehiclesPanel.jsx":  {
+                                                                                                     "class":  "safe-candidate-review",
+                                                                                                     "note":  "room vehicles akisi ve bagli kartlar kontrollu extraction sonrasi kalan review adayi"
+                                                                                                 },
+                                                       "tools/milestone_pack_manifest.json":  {
+                                                                                                  "class":  "justified-exception",
+                                                                                                  "note":  "tek resmi milestone manifesti; bolme yerine M92 spine ile okunurluk ve giris komutu sabitlenir"
+                                                                                              }
+                                                   }
+                           },
+    "shareablePackageHygiene":  {
+                                    "policyVersion":  1,
+                                    "goal":  "shareable-package-clean-export",
+                                    "defaultRuntimeDataRoot":  "artifacts/runtime-data",
+                                    "principles":  [
+                                                       "line-count reduction stays deferred until after acceptance and hygiene closure",
+                                                       "shareable exports must exclude workspace secrets, build artifacts, runtime json stores, and transient overlay/log residues",
+                                                       "repo hygiene preflight may remove only safe transient residues from the working tree",
+                                                       "artifacts stay local and are never part of the shareable repo bundle"
+                                                   ],
+                                    "forbiddenExactFiles":  [
+                                                                ".env",
+                                                                "backend/.env",
+                                                                "infra/.env",
+                                                                "pack_living_final.log",
+                                                                "pack_living_latest.log"
+                                                            ],
+                                    "forbiddenGlobFiles":  [
+                                                               "backend/data/*.json",
+                                                               "data/*.json",
+                                                               "README_M*_OVERLAY*.txt",
+                                                               "*.zip"
+                                                           ],
+                                    "forbiddenPathPrefixes":  [
+                                                                  ".git/",
+                                                                  "node_modules/",
+                                                                  "artifacts/",
+                                                                  ".next/",
+                                                                  "dist/",
+                                                                  "build/",
+                                                                  "coverage/",
+                                                                  "_archive/",
+                                                                  "_backup/",
+                                                                  "infra/osrm-data/",
+                                                                  "web/dist/",
+                                                                  "mobile/dist/"
+                                                              ],
+                                    "preflightTransientTargets":  [
+                                                                      "web/dist",
+                                                                      "mobile/dist",
+                                                                      "pack_living_final.log",
+                                                                      "pack_living_latest.log",
+                                                                      "README_M*_OVERLAY*.txt"
+                                                                  ],
+                                    "exportTool":  "tools/export_shareable_repo_bundle.ps1"
+                                },
+    "ciVerificationVisibility":  {
+                                     "goal":  "repo-native-ci-verification-visibility",
+                                     "workflowPath":  ".github/workflows/vardis_verification_visibility.yml",
+                                     "primaryCommand":  "npm run verify:ci",
+                                     "exportPack":  "tools/pack_m90_c7_export_package_hygiene.ps1",
+                                     "dependencyInstallCommands":  [
+                                                                       "npm --prefix backend ci",
+                                                                       "npm --prefix web ci"
+                                                                   ],
+                                     "dependencyLockfiles":  [
+                                                                 "backend/package-lock.json",
+                                                                 "web/package-lock.json"
+                                                             ],
+                                     "jobs":  [
+                                                  "repo-verification",
+                                                  "shareable-export"
+                                              ],
+                                     "artifacts":  [
+                                                       "artifacts/repo-audit/repo_audit_latest.json",
+                                                       "artifacts/lint/web_lint_latest.txt",
+                                                       "artifacts/shareable-export/servis-platform_shareable_*.zip"
+                                                   ],
+                                     "lintCommand":  "npm run lint:web",
+                                     "lintEvidence":  "artifacts/lint/web_lint_latest.txt"
+                                 },
+    "safeClosureFinalHygiene":  {
+                                    "goal":  "safe-closure-final-hygiene-checklist",
+                                    "primaryCommand":  "npm run verify:final",
+                                    "verifyFinalBehavior":  [
+                                                                "run verify:repo",
+                                                                "refresh physical snapshot soft-gate report"
+                                                            ],
+                                    "windowsPreferredShell":  "pwsh",
+                                    "exportPack":  "tools/pack_m90_c7_export_package_hygiene.ps1",
+                                    "exportTool":  "tools/export_shareable_repo_bundle.ps1",
+                                    "orderedSteps":  [
+                                                         "npm run verify:final",
+                                                         "pwsh -ExecutionPolicy Bypass -File .\\tools\\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\\servis-platform",
+                                                         "pwsh -ExecutionPolicy Bypass -File .\\tools\\export_shareable_repo_bundle.ps1 -RepoRoot D:\\servis-platform",
+                                                         "git status --short",
+                                                         "git add -A \u0026\u0026 git commit / tag / push only after expected diff is confirmed"
+                                                     ],
+                                    "compatibilityNotes":  [
+                                                               "On Windows, prefer pwsh for export-related packs and shareable bundle generation",
+                                                               "verify:final refreshes the physical snapshot hygiene report but keeps snapshot results soft-gated",
+                                                               "export_shareable_repo_bundle.ps1 must stay compatible with Windows PowerShell 5.1 fallback semantics even when pwsh is preferred",
+                                                               "line-count reduction stays deferred until after acceptance, hygiene, export, and CI closure work"
+                                                           ],
+                                    "lintEvidence":  "artifacts/lint/web_lint_latest.txt",
+                                    "snapshotReport":  "artifacts/repo-audit/physical_snapshot_hygiene_latest.json"
+                                },
+    "physicalSnapshotHygiene":  {
+                                    "policyVersion":  1,
+                                    "goal":  "physical-snapshot-hygiene-distinction",
+                                    "primaryCommand":  "npm run verify:snapshot",
+                                    "softGate":  true,
+                                    "reportPath":  "artifacts/repo-audit/physical_snapshot_hygiene_latest.json",
+                                    "principles":  [
+                                                       "export-clean and physical snapshot clean are separate checks",
+                                                       "the first snapshot gate is report-only and does not block verify:final even when verify:final refreshes the report",
+                                                       "intentional evidence artifacts produced by the repo verification chain are allowlisted instead of counted as physical dirt",
+                                                       "artifacts/runtime-data is the intentional local runtime json working area; backend/data remains only as a legacy compatibility shell and is guarded as a residue path",
+                                                       "deprecated export zip residues and overlay backup residues are not allowed in the working tree snapshot surface",
+                                                       "docs/overlays stays as intentional tracked history and is not treated as snapshot dirt"
+                                                   ],
+                                    "allowExactFiles":  [
+                                                            "artifacts/.gitkeep",
+                                                            "artifacts/backend-dev.err.log",
+                                                            "artifacts/backend-dev.out.log",
+                                                            "artifacts/pack_m89_full_latest.log",
+                                                            "artifacts/repo_deep_audit_latest.json",
+                                                            "artifacts/repo_deep_audit_latest.md"
+                                                        ],
+                                    "allowPathPrefixes":  [
+                                                              "artifacts/backups/",
+                                                              "artifacts/benchmarks/",
+                                                              "artifacts/compliance/",
+                                                              "artifacts/consolidation/",
+                                                              "artifacts/normalization/",
+                                                              "artifacts/operations/",
+                                                              "artifacts/repo-audit-clean/",
+                                                              "artifacts/lint/",
+                                                              "artifacts/repo-audit/",
+                                                              "artifacts/shareable-export/",
+                                                              "artifacts/runtime-data/",
+                                                              "docs/overlays/"
+                                                          ],
+                                    "allowGlobFiles":  [
+                                                           "artifacts/shareable-export/servis-platform_shareable_*.zip"
+                                                       ],
+                                    "hardFailExactFiles":  [
+                                                               ".env",
+                                                               "backend/.env",
+                                                               "infra/.env"
+                                                           ],
+                                    "hardFailPathPrefixes":  [
+                                                                 "artifacts/overlay-backups/",
+                                                                 "web/dist/",
+                                                                 "mobile/dist/"
+                                                             ],
+                                    "hardFailGlobFiles":  [
+                                                              "data/*.json",
+                                                              "artifacts/exports/*.zip"
+                                                          ],
+                                    "warningGlobFiles":  [
+                                                             "backend/data/*.json"
+                                                         ],
+                                    "warningPathPrefixes":  [
+
+                                                            ]
+                                },
+    "repoVerificationSpine":  {
+                                  "goal":  "single-roof-repo-verification-chain",
+                                  "primaryCommand":  "npm run verify:repo",
+                                  "ciCommand":  "npm run verify:ci",
+                                  "finalCommand":  "npm run verify:final",
+                                  "runner":  "backend/scripts/run_repo_check_chain.js",
+                                  "milestoneRunner":  "backend/scripts/run_m0_latest.js",
+                                  "m92Check":  "backend/scripts/m92_repo_verification_spine_check.js",
+                                  "toolsWrapper":  "tools/check-repo.ps1",
+                                  "orderedPhases":  [
+                                                        "lint",
+                                                        "docs",
+                                                        "hot",
+                                                        "web-contract",
+                                                        "closure",
+                                                        "milestones"
+                                                    ],
+                                  "compatibilityNotes":  [
+                                                             "legacy milestone scripts remain as evidence",
+                                                             "new daily gate is npm run verify:repo",
+                                                             "M91 local route preview checks are included through the M0-latest milestone runner",
+                                                             "M92 validates the package, tools, state, manifest, runbook and runner bindings"
+                                                         ]
+                              },
+    "queueDurabilityProof":  {
+                                 "goal":  "queue-durability-proof-visibility",
+                                 "milestone":  "M93",
+                                 "pack":  "tools/pack_m93_queue_durability_proof.ps1",
+                                 "runtimeProbe":  "backend/scripts/m93_queue_durability_runtime_probe.js",
+                                 "runbook":  "docs/RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md",
+                                 "adminSurface":  "GET /api/admin/queues/auto-reached",
+                                 "caveat":  "durability proof; not an exactly-once queue claim"
+                             }
 }

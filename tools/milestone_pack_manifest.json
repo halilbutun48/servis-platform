@@ -1048,6 +1048,17 @@
       "checklist": "docs/CHECKLIST_SSOT.md",
       "repoParam": "RepoRoot",
       "supportsNoBuild": false
+    },
+    {
+      "id": "M93",
+      "group": 93,
+      "kind": "queue-durability-proof",
+      "script": "tools/pack_m93_queue_durability_proof.ps1",
+      "runtime": "backend/scripts/m93_queue_durability_proof_check.js",
+      "runbook": "docs/RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md",
+      "checklist": "docs/CHECKLIST_SSOT.md",
+      "repoParam": "RepoRoot",
+      "supportsNoBuild": false
     }
   ]
 }

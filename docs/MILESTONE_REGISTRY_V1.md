@@ -60,6 +60,9 @@
   - amac: tum repo kontrol zincirini tek catiya toplamak
   - komut: `npm run verify:repo`
   - pack: `tools\pack_m92_repo_verification_spine.ps1 -RepoRoot D:\servis-platform`
+- `M93 - queue durability proof - green`
+  - amaç: autoReachedQueue için Redis down/up, worker restart reclaim, dead-letter görünürlüğü ve threshold kanıtını resmi hatta bağlamak
+  - komut: `tools\pack_m93_queue_durability_proof.ps1 -RepoRoot D:\servis-platform`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.
@@ -78,3 +81,4 @@
 - REGISTRY_ROUTE_M63_M65_V1
 - REGISTRY_ROUTE_M80_M89_V1
 - REGISTRY_ROUTE_M91_M92_VERIFICATION_SPINE_V1
+- REGISTRY_ROUTE_M93_QUEUE_DURABILITY_PROOF_V1

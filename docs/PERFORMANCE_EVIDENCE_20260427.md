@@ -18,7 +18,7 @@ The goal is to preserve the scale-test proof without changing production behavio
 
 ## Important interpretation note
 
-The repeated `PASSWORD_CHANGE_REQUIRED` errors are test-data/auth hygiene errors, not load or throughput failures. The error pattern is stable and maps to the same seed users across cycles.
+Earlier `PASSWORD_CHANGE_REQUIRED` errors were test-data/auth hygiene errors, not load or throughput failures. After the seed-user hygiene fix, the clean readstorm proof below records `errors=0`.
 
 ## Evidence summary
 
@@ -47,35 +47,7 @@ Interpretation:
 - GPS publish-only path is stable at 3000 vehicles with 120s cadence.
 - No throttling occurred.
 - Latency remained low for the full soak window.
-
-### 3000 vehicles / readstorm / 5 cycles
-
-Command:
-
-```powershell
-node backend/scripts/bench_gps_publish_only.js --vehicles=3000 --cycles=5 --intervalMs=120000 --panelProfile=readstorm
-```
-
-Result:
-
-- Requests: `15000`
-- OK: `14960`
-- Errors: `40`
-- Throttled: `0`
-- p50: `26.15ms`
-- p95: `38.12ms`
-- p99: `46.96ms`
-- Duration: `890191ms`
-- Panel requests: `337`
-- Panel reloads: `290`
-- Panel invalidations: `224491`
-- Report: `artifacts/benchmarks/gps_publish-only_3000veh_5cycles_2026-04-27T11-32-52-777Z.json`
-
-Interpretation:
-
-- Readstorm profile started successfully after panel token-source fix.
-- WS invalidation and panel read pressure were active.
-- No throttling occurred.
+- The repeated errors in this historical run came from seed-user password-change hygiene, not throughput.
 
 ### 3000 vehicles / readstorm / 10 cycles
 
@@ -105,6 +77,37 @@ Interpretation:
 - 3000 vehicles with panel readstorm remained stable.
 - Panel invalidation volume exceeded 523k without throttling.
 - p95 stayed below 30ms.
+- The repeated errors in this historical run came from seed-user password-change hygiene, not throughput.
+
+### 3000 vehicles / readstorm / 3 cycles / clean seed hygiene
+
+Command:
+
+```powershell
+node backend/scripts/bench_gps_publish_only.js --vehicles=3000 --cycles=3 --intervalMs=120000 --panelProfile=readstorm
+```
+
+Result:
+
+- Requests: `9000`
+- OK: `9000`
+- Errors: `0`
+- Throttled: `0`
+- p50: `24.03ms`
+- p95: `33.21ms`
+- p99: `42.1ms`
+- Duration: `638950ms`
+- Panel requests: `210`
+- Panel reloads: `179`
+- Panel invalidations: `125282`
+- Report: `artifacts/benchmarks/gps_publish-only_3000veh_3cycles_2026-04-27T12-40-01-908Z.json`
+
+Interpretation:
+
+- Seed-user password-change hygiene is clean.
+- Readstorm starts with driver, company and room panel sessions.
+- GPS publish + panel read + WS invalidation pressure stays stable.
+- No throttling and no application errors were observed.
 
 ## Current scale-readiness conclusion
 
@@ -114,23 +117,12 @@ The platform is stable for:
 - 120s GPS publish cadence
 - publish-only soak
 - readstorm profile with active panel sessions and WS invalidation pressure
+- clean seed-user hygiene with `errors=0`
 
 This evidence supports the current conclusion that the system is rate-bound rather than vehicle-count-bound.
 
 ## Remaining caveats
 
-- The benchmark harness still exposes fixed auth/test-data hygiene errors (`PASSWORD_CHANGE_REQUIRED`) for a small seed-user subset.
-- The next performance proof should either clear the password-change state for benchmark users or record that these errors are excluded from throughput interpretation.
+- The clean readstorm proof is 3 cycles; a clean 30-cycle readstorm soak can be added later for enterprise evidence.
 - Hot-file debt remains tracked separately under M90C.6.
 - Field/pilot evidence remains separate from synthetic benchmark evidence.
-## BENCH_CLEAN_READSTORM_3000_3CYCLES_20260427
-
-- Tarih: 2026-04-27
-- Senaryo: 3000 araç, 3 cycle, 120s cadence, eadstorm panel profili.
-- Komut: 
-ode backend/scripts/bench_gps_publish_only.js --vehicles=3000 --cycles=3 --intervalMs=120000 --panelProfile=readstorm
-- Sonuç: 9000 / 9000 OK, throttled 0, errors 0.
-- Latency: p50 24.03ms, p95 33.21ms, p99 42.1ms.
-- Panel yükü: panelRequests 210, panelReloads 179, panelInvalidations 125282.
-- Rapor: rtifacts/benchmarks/gps_publish-only_3000veh_3cycles_2026-04-27T12-40-01-908Z.json.
-- Not: PASSWORD_CHANGE_REQUIRED seed-user hijyen hatası kapandı; önceki hatalar throughput problemi değildi.
