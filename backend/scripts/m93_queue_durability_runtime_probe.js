@@ -21,10 +21,10 @@ console.log(`API_URL=${API_URL}`);
 if (!TOKEN) console.log("WARN SUPER_ADMIN_TOKEN/ADMIN_TOKEN not set; protected endpoints may return 401.");
 
 const paths = [
-  "/api/admin/queue/auto-reached/health",
-  "/api/admin/queue/auto-reached/thresholds",
-  "/api/admin/queue/auto-reached/dead-letter",
-  "/api/admin/queue/auto-reached/proof",
+  "/api/admin/queues/auto-reached",
+  "/api/admin/queues/auto-reached/thresholds",
+  "/api/admin/queues/auto-reached/dead-letter",
+  "/api/admin/queues/auto-reached/proof",
 ];
 
 let failed = false;

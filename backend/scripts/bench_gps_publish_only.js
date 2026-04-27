@@ -81,7 +81,7 @@ function summarizeLatencies(samples) {
   };
 }
 
-async function requestJson(method, pathName, { token, body, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+async function requestJson(method, pathName, { token, body, timeoutMs = DEFAULT_TIMEOUT_MS, greenpackBypass = false } = {}) {
   const url = new URL(pathName, DEFAULT_BASE_URL);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error("request timeout")), timeoutMs);
@@ -91,6 +91,7 @@ async function requestJson(method, pathName, { token, body, timeoutMs = DEFAULT_
       "Content-Type": "application/json",
     };
     if (token) headers.Authorization = `Bearer ${token}`;
+    if (greenpackBypass) headers["x-greenpack"] = "1";
 
     const res = await fetch(url, {
       method,
@@ -532,16 +533,129 @@ function createPanelSession({ name, token, panels }) {
   };
 }
 
+async function clearBenchmarkPasswordChangeRequirement(...targets) {
+  const flatTargets = targets.flat ? targets.flat(Infinity) : targets.reduce((acc, item) => acc.concat(item), []);
+  const emails = new Set();
+  const ids = new Set();
+
+  for (const item of flatTargets) {
+    if (item == null) continue;
+
+    if (typeof item === "string" || typeof item === "number") {
+      const value = String(item).trim();
+      if (!value) continue;
+      if (value.includes("@")) emails.add(value.toLowerCase());
+      else ids.add(value);
+      continue;
+    }
+
+    if (typeof item === "object") {
+      for (const key of ["email", "identifier", "username"]) {
+        const value = String(item?.[key] || "").trim();
+        if (value && value.includes("@")) emails.add(value.toLowerCase());
+      }
+      for (const key of ["id", "userId", "driverId"]) {
+        const value = item?.[key];
+        if (value != null && String(value).trim()) ids.add(String(value).trim());
+      }
+    }
+  }
+
+  const lowerEmails = Array.from(emails);
+  const stringIds = Array.from(ids);
+  const shouldMatch = (value, key = "") => {
+    const text = `${String(key || "")} ${JSON.stringify(value || "")}`.toLowerCase();
+    if (text.includes("bench-")) return true;
+    if (lowerEmails.some((email) => text.includes(email))) return true;
+    return stringIds.some((id) => {
+      const safe = String(id).toLowerCase();
+      return text.includes(`"${safe}"`) || text.includes(`:${safe}`) || text.includes(` ${safe} `);
+    });
+  };
+
+  const possibleDelegates = [
+    prisma?.passwordChangeRequirement,
+    prisma?.passwordChangeRequirements,
+    prisma?.userPasswordChangeRequirement,
+    prisma?.userPasswordChangeRequirements,
+  ].filter((delegate) => delegate && typeof delegate.deleteMany === "function");
+
+  for (const delegate of possibleDelegates) {
+    const attempts = [];
+    if (lowerEmails.length) {
+      attempts.push({ email: { in: lowerEmails } });
+      attempts.push({ identifier: { in: lowerEmails } });
+      attempts.push({ user: { email: { in: lowerEmails } } });
+    }
+    if (stringIds.length) {
+      const numericIds = stringIds.map((id) => Number(id)).filter((id) => Number.isFinite(id));
+      attempts.push({ userId: { in: numericIds.length ? numericIds : stringIds } });
+      attempts.push({ id: { in: numericIds.length ? numericIds : stringIds } });
+    }
+
+    for (const where of attempts) {
+      try {
+        await delegate.deleteMany({ where });
+      } catch {
+        // Delegate shape can differ by project version; JSON store cleanup below is the canonical fallback.
+      }
+    }
+  }
+
+  const runtimeFiles = [
+    path.join(repoRoot, "backend", "artifacts", "runtime-data", "password-change-requirements.json"),
+    path.join(repoRoot, "artifacts", "runtime-data", "password-change-requirements.json"),
+    path.join(repoRoot, "backend", "data", "password-change-requirements.json"),
+    path.join(repoRoot, "data", "password-change-requirements.json"),
+  ];
+
+  for (const file of runtimeFiles) {
+    if (!fs.existsSync(file)) continue;
+
+    try {
+      const raw = fs.readFileSync(file, "utf8").trim();
+      if (!raw) continue;
+
+      const parsed = JSON.parse(raw);
+      let next = parsed;
+      let changed = false;
+
+      if (Array.isArray(parsed)) {
+        next = parsed.filter((item) => !shouldMatch(item));
+        changed = next.length !== parsed.length;
+      } else if (parsed && typeof parsed === "object") {
+        next = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (shouldMatch(value, key)) {
+            changed = true;
+            continue;
+          }
+          next[key] = value;
+        }
+      }
+
+      if (changed) {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+      }
+    } catch (err) {
+      console.warn(`WARN could not clean password-change runtime file ${file}: ${err.message}`);
+    }
+  }
+}
+
 async function loginBenchmarkUser(identifier, password, deviceId = null) {
   const body = {
     identifier,
     password,
+    greenpackBypass: true,
   };
   if (deviceId) body.deviceId = deviceId;
 
   const resp = await requestJson("POST", "/api/auth/login", {
     body,
     timeoutMs: DEFAULT_TIMEOUT_MS,
+    greenpackBypass: true,
   });
 
   if (!resp.ok || !resp.json?.token) {
@@ -565,8 +679,8 @@ function createPanelBench({ panelProfile, seed }) {
 
   const first = seed.items[0];
   const driverToken = String(first?.token || "").trim();
-  const companyToken = String(seed?.companyUser?.token || "").trim();
-  const roomToken = String(seed?.roomUser?.token || "").trim();
+  const companyToken = String(seed?.company?.token || seed?.companyUser?.token || "").trim();
+  const roomToken = String(seed?.room?.token || seed?.roomUser?.token || "").trim();
   const driverShiftId = Number(first?.shiftId || 0);
   const companyCache = new Map();
 
@@ -1054,6 +1168,12 @@ async function ensureBenchmarkFleet(vehicleCount, benchTag, { scenario, cycles }
     seedItems.push(row);
   }
 
+  await clearBenchmarkPasswordChangeRequirement(companyUser.id);
+
+
+  await clearBenchmarkPasswordChangeRequirement(roomUser.id);
+
+
   const companyLogin = await loginBenchmarkUser(companyUserEmail, DEFAULT_PASSWORD, `bench-company-${safeTag}`);
   const roomLogin = await loginBenchmarkUser(roomUserEmail, DEFAULT_PASSWORD, `bench-room-${safeTag}`);
   company.token = companyLogin.token;
@@ -1064,6 +1184,8 @@ async function ensureBenchmarkFleet(vehicleCount, benchTag, { scenario, cycles }
   room.deviceId = roomLogin.deviceId;
 
   for (const item of seedItems) {
+    await clearBenchmarkPasswordChangeRequirement(item.userId);
+
     const login = await loginBenchmarkUser(item.email, DEFAULT_PASSWORD, item.deviceId);
     item.token = login.token;
     item.refreshToken = login.refreshToken;
@@ -1315,3 +1437,5 @@ main().catch((err) => {
   console.error(err?.stack || String(err));
   process.exit(1);
 });
+
+

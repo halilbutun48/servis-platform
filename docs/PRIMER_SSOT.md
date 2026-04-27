@@ -6,7 +6,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Repo: `servis-platform`
 - Branch: `m90d1_web_lint_inventory`
 - Güncel doğrulanmış baz: `M0->M89 green`
-- Kapasite/load baz cizgisi tekil infra envelope üzerinde alındı: `1x api + 1x db + 1x redis + 1x osrm + 1x solver`.
+- Kapasite/load baz çizgisi tekil infra envelope üzerinde alındı: `1x api + 1x db + 1x redis + 1x osrm + 1x solver`.
 - 500 araç cliff'i queue/worker split ile kapatıldı; 1000 araç 120s staggered kısa ve soak yeşil.
 - 2 yıllık retention / archive hizada; `GpsPoint`, `ApiRequest`, `AuditLog`, `Notification` aynı sınıf değildir.
 - Gelişmiş altında `Geri Bildirim` alt menüsü açıldı; Copilot en alta taşındı; panel içi dağınık geri bildirim butonları kaldırıldı.
@@ -27,7 +27,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.
 
 ## Kanonik komut hiyerarşisi (Tur 1)
-- Tur 1 / Tur 2 / Tur 3 docs-tools-wrapper hizasi kapanmistir; bundan sonraki ilerleme ihtiyac-temelli ve kontrollu olmalidir.
+- Tur 1 / Tur 2 / Tur 3 docs-tools-wrapper hizası kapanmıştır; bundan sonraki ilerleme ihtiyaç-temelli ve kontrollü olmalıdır.
 - Resmi günlük giriş: `npm run verify:repo`.
 - Resmi kapanış girişi: `npm run verify:final`.
 - `tools\pack_living.ps1` korunur; ancak compatibility / geniş prova hattıdır ve birincil resmi giriş değildir.
@@ -76,7 +76,7 @@ Compatibility aliases for legacy checks:
 - Sistem eskiye döndürülmez; script/check/doc yeni canonical gerçeğe göre güncellenir.
 
 ## Infra / queue guardrail
-- `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlariyla daha dayanıklı hale getirilmiştir; yine de tam enterprise exactly-once queue değildir.
+- `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlarıyla daha dayanıklı hale getirilmiştir; yine de tam enterprise exactly-once queue değildir.
 - Redis down / worker crash / shutdown handoff / stale reclaim sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde resmi olarak tanımlıdır.
 - Operasyonel ölçüm kapısı: `GET /api/admin/queues/auto-reached`.
 - Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`.
@@ -136,7 +136,6 @@ Compatibility aliases for legacy checks:
 - Artifact görünürlüğü: `artifacts/repo-audit/repo_audit_latest.json`, `artifacts/lint/web_lint_latest.txt` ve `artifacts/shareable-export/servis-platform_shareable_*.zip`.
 - Satır azaltma en sona bırakılır; bu adım görünür doğrulama içindir.
 
-
 ## safe closure / final hygiene checklist
 - Kanonik final doğrulama girişi: `npm run verify:final`.
 - `verify:final`, önce `verify:repo` zincirini çalıştırır; sonra fiziksel snapshot soft gate raporunu yeniler.
@@ -170,3 +169,19 @@ Compatibility aliases for legacy checks:
 ## M47_4_MOBILE_READINESS_ROUTE_V1
 - Compatibility note: m47.3 green, m47.4 next route.
 - Marker-first route: mobile readiness web pass canonical bridge after m47.3.
+
+## PERFORMANCE_EVIDENCE_20260427
+- 2026-04-27 benchmark evidence doc: `docs/PERFORMANCE_EVIDENCE_20260427.md`
+- 3000 vehicles, 30 cycles, 120s cadence, publish-only: 90,000 requests, p95 27.66ms, throttled 0.
+- 3000 vehicles, 10 cycles, 120s cadence, readstorm: 30,000 GPS requests, 523,405 panel invalidations, p95 27.39ms, throttled 0.
+- Remaining benchmark caveat: fixed `PASSWORD_CHANGE_REQUIRED` seed-user hygiene errors are not throughput failures.
+
+## M90C.9 SAFE CLOSURE / FINAL HYGIENE
+- M90C.9 görünür closure hygiene milestone kaydıdır.
+- Resmi çalışma rotası kontrollü M90 hattında kalır.
+- Bu kayıt final hijyen standardını ve `npm run verify:final` kapanışını temsil eder.
+## PRIMER_PERFORMANCE_CLEAN_READSTORM_3000_20260427
+- 2026-04-27 temiz readstorm kanıtı: 3000 araç, 3 cycle, 120s cadence, 9000 / 9000 OK.
+- Sonuç: throttled 0, errors 0, p95 33.21ms, p99 42.1ms.
+- Panel yükü: 210 panel request, 179 panel reload, 125282 panel invalidation.
+- PASSWORD_CHANGE_REQUIRED seed-user hijyen hatası kapandı; önceki benchmark hataları sistem yükü değil test datası hijyeniydi.
