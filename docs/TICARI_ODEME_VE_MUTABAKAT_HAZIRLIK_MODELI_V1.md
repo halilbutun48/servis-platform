@@ -5,6 +5,10 @@ Durum: Hazırlık modeli. Canlı charge / payout devrede değil.
 
 Bu belge devreye alma belgesi değildir. Amaç, ticari akışta ödeme kanallarını, mutabakat akışını ve repo içi hazırlık sınırını tek yerde sabitlemektir.
 
+Aktivasyon anahtarı:
+- `PAYMENT_BACKBONE_ENABLED=0` => hazırlık / dormant
+- `PAYMENT_BACKBONE_ENABLED=1` => canlı aktivasyon kapısı için uygun zemin
+
 ## 1) Resmi amaç
 - Ticari akışta ödeme hazırlığını, tahsilat/mutabakat kaydını ve operasyon görünürlüğünü tek omurgada toplamak.
 - Canlı sanal POS, banka entegrasyonu veya provider webhook açmadan önce veri modelini ve operasyon sırasını netleştirmek.
@@ -78,7 +82,18 @@ Bu başlıklar yalnız hazırlık ve operasyon tasarımı düzeyinde kalır.
 - PCI kapsamı dar tutuluyor mu?
 - Mutabakat ve audit kayıtları Super Admin yüzeyinde okunabiliyor mu?
 
-## 7) Repo kararı
+## 7) Aktivasyon checklist
+Canlı kapı açılmadan önce bu sıra görünür ve okunur kalır:
+
+- `PAYMENT_BACKBONE_ENABLED=0/1` bayrağı tanımlı mı?
+- Super Admin yazma yüzeyleri step-up ile korunuyor mu?
+- Banka transferi birincil kanal olarak hazır mı?
+- Sanal POS + 3D Secure kanalı ikinci fazda bekliyor mu?
+- Provider webhook / payout entegrasyonu ayrı kapıda mı?
+- Finance / operasyon GO kararı ayrı bir onay noktası mı?
+- Rollback / smoke / audit planı erişilebilir mi?
+
+## 8) Repo kararı
 Bu repo turunda hedef canlı ödeme açmak değildir.
 Hedef, ödeme ve mutabakat sistemini canlıya hazır, fakat dormant / hazırlık modunda tutmaktır.
 
@@ -88,7 +103,7 @@ Bu yüzden:
 - settlement ve reconciliation ayrı operasyon katmanlarıdır
 - M85 / M86 çizgisi bu belgeye göre gelecekteki aktivasyon kapısı olarak kalır
 
-## 8) Kaynaklar
+## 9) Kaynaklar
 - [TCMB EFT / FAST](https://www.tcmb.gov.tr/wps/wcm/connect/TR/TCMB%20TR/Main%20Menu/Temel%20Faaliyetler/Odeme%20Sistemleri/Turkiyedeki%20Odeme%20Sistemleri/Elektronik%20Fon%20Transfer%20%28EFT%29%20Sistemi)
 - [TCMB FAST FAQ](https://fast.tcmb.gov.tr/wps/wcm/connect/fast/sss?v=1.0.24)
 - [PCI DSS](https://www.pcisecuritystandards.org/standards/pci-dss/)

@@ -66,7 +66,9 @@ Compatibility aliases for legacy checks:
 - Konumlama: **pazar + sözleşme + operasyon**
 - Yazılım şu anda ücretsiz kullanım yönünde kurgulanır; gelir modeli gelecekte ödeme/komisyon aracılığıdır.
 - Ödeme omurgası gerçek charge/payout açmadan önce dormant/feature-flag mantığında ilerler.
+- Kanonik aktivasyon anahtarı `PAYMENT_BACKBONE_ENABLED=0/1` ile taşınır; `0` hazırlık, `1` canlı kapı için uygun zemin anlamına gelir.
 - Kanonik ödeme hazırlık belgesi: `docs/TICARI_ODEME_VE_MUTABAKAT_HAZIRLIK_MODELI_V1.md`.
+- Aktivasyon checklist'i de aynı kanonik belgede tutulur; canlı charge/payout bu turda yine açılmaz.
 - Bu aşamada canlı charge / payout açılmaz; banka transferi önce, sanal POS + 3D Secure sonra hazırlanır.
 
 ## Kalıcı kurallar

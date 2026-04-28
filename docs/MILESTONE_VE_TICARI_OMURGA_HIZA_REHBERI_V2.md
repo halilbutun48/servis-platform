@@ -25,6 +25,7 @@ Yeni resmi düşünce:
 - settlement omurgası ticari kaynak tipini bilir
 - bu turda hedef canlı ödeme açmak değil, ödeme ve mutabakatı hazırlık modelinde tutmaktır
 - birincil kanal FAST / EFT / Havale, ikincil kanal Sanal POS + 3D Secure olarak hazırlanır
+- canlı ödeme kapısı `PAYMENT_BACKBONE_ENABLED=0/1` ile ayrılır; `0` hazırlık, `1` canlı katmana geçiş için hazır zemin anlamına gelir
 - gerçek provider/webhook/payout aktivasyonu ayrı bir kapıdır
 
 ## Super Admin ticari yetkileri

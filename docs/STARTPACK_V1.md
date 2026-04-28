@@ -38,6 +38,7 @@ Amaç: Bu dosya, projenin güncel çalışma kurallarını, aktif milestone hatt
 7. Ticari kaynak oluşturulduğu anda payment/commission snapshot alınır.
 8. Sonradan oran değişse bile eski ticari kayıt bozulmaz.
 9. Banka transferi birincil kanal, sanal POS + 3D Secure ikincil kanaldır; canlı ödeme açımı ayrı bir aktivasyon kapısıdır.
+10. Canlı ödeme kapısı `PAYMENT_BACKBONE_ENABLED=0/1` anahtarıyla ayrılır; `0` hazırlık, `1` canlı kapı için hazır zemin anlamına gelir.
 
 ## 4) Proof / kabul ilkesi
 - Screenshot ana kanıt değildir.

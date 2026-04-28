@@ -36,6 +36,10 @@ export const ENV = {
   // M46: AI Copilot Foundation
   AI_COPILOT_ENABLED: (process.env.AI_COPILOT_ENABLED ?? "1") === "1",
 
+  // M82.9: payment backbone activation gate
+  // 0 = preparation / dormant, 1 = live-capable activation hook
+  PAYMENT_BACKBONE_ENABLED: (process.env.PAYMENT_BACKBONE_ENABLED ?? "0") === "1",
+
   // M47.3: production resilience + edge security
   EDGE_SECURITY_ENABLED: (process.env.EDGE_SECURITY_ENABLED ?? "1") === "1",
   EDGE_SECURITY_HEADERS_ENABLED: (process.env.EDGE_SECURITY_HEADERS_ENABLED ?? "1") === "1",

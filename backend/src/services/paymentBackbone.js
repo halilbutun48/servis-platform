@@ -1,4 +1,5 @@
 import prisma from "../prisma.js";
+import { ENV } from "../env.js";
 import { resolveAgreementSourceShiftId } from "./agreementSourceShift.js";
 
 import {
@@ -29,6 +30,62 @@ export const providerAdapters = {
     },
   },
 };
+
+export function buildPaymentBackboneActivationChecklist() {
+  const liveGate = !!ENV.PAYMENT_BACKBONE_ENABLED;
+  return [
+    {
+      key: "activation-flag",
+      label: "Aktivasyon bayrağı",
+      status: liveGate ? "READY" : "PREP",
+      detail: liveGate
+        ? "PAYMENT_BACKBONE_ENABLED=1; kapı canlı aktivasyon için hazır görünür."
+        : "PAYMENT_BACKBONE_ENABLED=0; sistem hazırlık / dormant modda kalır.",
+    },
+    {
+      key: "step-up",
+      label: "Super Admin step-up",
+      status: "READY",
+      detail: "Ticari yazma yüzeyleri step-up ile korunur.",
+    },
+    {
+      key: "read-surfaces",
+      label: "Hazırlık yüzeyleri",
+      status: "READY",
+      detail: "Status / settings / settlement / reconciliation okumaları görünür.",
+    },
+    {
+      key: "bank-transfer",
+      label: "Banka transferi birincil kanal",
+      status: "READY",
+      detail: "FAST / EFT / Havale ilk ödeme kanalı olarak hazırlanır.",
+    },
+    {
+      key: "card-channel",
+      label: "Sanal POS + 3D Secure",
+      status: liveGate ? "PREP" : "PREP",
+      detail: "Kartlı kanal ikinci fazdır; hosted checkout ve provider onboarding ayrı kapıdadır.",
+    },
+    {
+      key: "provider-webhook",
+      label: "Provider webhook / payout",
+      status: "BLOCKED",
+      detail: "Canlı provider entegrasyonu ve payout açılışı bu hazırlık turunda devre dışı bırakılır.",
+    },
+    {
+      key: "finance-signoff",
+      label: "Finans / operasyon onayı",
+      status: "PENDING",
+      detail: "Canlı aktivasyon öncesi finans ve operasyon GO kararı gereklidir.",
+    },
+    {
+      key: "rollback-smoke",
+      label: "Rollback / smoke planı",
+      status: "READY",
+      detail: "Aktivasyon öncesi geri dönüş ve temel smoke akışı runbook ile tariflidir.",
+    },
+  ];
+}
 
 function toInt(value, fallback = 0) {
   const n = Number(value);
@@ -527,6 +584,13 @@ export async function buildPaymentBackboneSettings() {
   ]);
 
   return {
+    activationGate: {
+      envKey: "PAYMENT_BACKBONE_ENABLED",
+      enabled: !!ENV.PAYMENT_BACKBONE_ENABLED,
+      state: ENV.PAYMENT_BACKBONE_ENABLED ? "1" : "0",
+      mode: ENV.PAYMENT_BACKBONE_ENABLED ? "LIVE_READY" : "PREP_ONLY",
+    },
+    activationChecklist: buildPaymentBackboneActivationChecklist(),
     paymentModes: PAYMENT_MODES,
     globalRule: globalRule
       ? {
@@ -553,7 +617,9 @@ export async function buildPaymentBackboneSettings() {
       updatedAt: row.updatedAt,
     })),
     roomOverrideCount: roomRuleCount,
-    summary: "Super Admin payment mode ve komisyon ayarları dormant ticari omurgaya veri sağlar; gerçek charge/payout hala kapalıdır.",
+    summary: ENV.PAYMENT_BACKBONE_ENABLED
+      ? "Super Admin payment mode ve komisyon ayarları artık canlı aktivasyon kapısı için hazırdır; mevcut provider adapter hâlâ DORMANT temsilindedir."
+      : "Super Admin payment mode ve komisyon ayarları dormant ticari omurgaya veri sağlar; gerçek charge/payout hala kapalıdır.",
   };
 }
 
@@ -612,6 +678,13 @@ export async function buildPaymentBackboneStatus() {
   }
 
   return {
+    activationGate: {
+      envKey: "PAYMENT_BACKBONE_ENABLED",
+      enabled: !!ENV.PAYMENT_BACKBONE_ENABLED,
+      state: ENV.PAYMENT_BACKBONE_ENABLED ? "1" : "0",
+      mode: ENV.PAYMENT_BACKBONE_ENABLED ? "LIVE_READY" : "PREP_ONLY",
+    },
+    activationChecklist: buildPaymentBackboneActivationChecklist(),
     activeMilestone: requiredRollout.activeCount > 0 ? "M86" : (optionalPilot.readyCount > 0 ? "M85" : "M82.9"),
     dormant: optionalPilot.readyCount <= 0,
     paymentModes: PAYMENT_MODES,
@@ -650,6 +723,8 @@ export async function buildPaymentBackboneStatus() {
       ? "REQUIRED moddaki ticari kaynaklar aktif rollout kapsamina alindi; settlement planlari ACTIVE, entry satirlari READY durumunda izlenir. Gercek provider entegrasyonu hala DORMANT adapter uzerinden temsil edilir."
       : optionalPilot.readyCount > 0
       ? "Opsiyonel odeme pilotu secili ticari kaynaklarda READY durumuna alinabilir; gercek charge/payout hala zorunlu rollout degildir."
+      : ENV.PAYMENT_BACKBONE_ENABLED
+      ? "Odeme/komisyon omurgasi canlı aktivasyon anahtarıyla hazır tutuluyor; provider adapter hâlâ DORMANT, gerçek charge/payout kapısı ayrı bir entegrasyon aşamasında açılacak."
       : "Odeme/komisyon omurgasi feature-flagli ve dormant kuruldu. Gercek charge/payout acik degil; yalnizca snapshot ve settlement hazirlik kaydi uretilir.",
   };
 }

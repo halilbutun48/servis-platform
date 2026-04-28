@@ -122,6 +122,8 @@ export default function CommercialCorePanel() {
   const cards = paymentBackbone?.cards || {};
   const activeRule = paymentBackbone?.activeRule || null;
   const roomOverrides = settings?.roomOverrides || [];
+  const activationGate = paymentBackbone?.activationGate || settings?.activationGate || null;
+  const activationChecklist = paymentBackbone?.activationChecklist || settings?.activationChecklist || [];
   const paymentBackboneEndpointStatus = String(paymentBackbone?.endpointStatus || "ok");
   const settingsEndpointStatus = String(settings?.endpointStatus || "ok");
   const pilotEndpointStatus = String(pilotStatus?.endpointStatus || "ok");
@@ -448,10 +450,26 @@ async function deactivateRequired(sourceId) {
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Dormant payment backbone">
+        <Card title="Payment backbone durumu">
           <div>{paymentBackbone?.summary || "Henüz payment backbone özeti yok"}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             {paymentBackbone?.activeMilestone || "-"} • {paymentBackbone?.dormant ? "Dormant" : "Açık"}
+          </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Aktivasyon anahtarı: {activationGate?.state ?? "0"} • {activationGate?.enabled ? "Hazırlıktan canlı kapıya uygun" : "Hazırlık modu"}
+          </div>
+        </Card>
+        <Card title="Aktivasyon checklist">
+          <div style={{ display: "grid", gap: 6 }}>
+            {(activationChecklist || []).map((item) => (
+              <div key={item.key} style={{ display: "grid", gap: 4, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                  <strong>{item.label}</strong>
+                  <span className="panelMeta">{item.status}</span>
+                </div>
+                <div className="panelMeta">{item.detail}</div>
+              </div>
+            ))}
           </div>
         </Card>
         <Card title="Aktif komisyon kuralı">
