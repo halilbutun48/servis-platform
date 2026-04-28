@@ -80,7 +80,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/route-templates", routeTemplatesRouter());
   app.use("/api/availability", availabilityRoutes);
   app.use("/api/admin/logs", adminLogsRouter());
-  app.use("/api/admin", adminRouter());
+  app.use("/api/admin", adminRouter(io));
 }
 
 export function mountIoRoutes(app, io, routes) {

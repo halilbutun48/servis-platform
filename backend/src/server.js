@@ -77,7 +77,7 @@ import { expressErrorHandler } from "./errors/http.js";
 import { installSocketRelay } from "./ws/socketRelay.js";
 
 import * as agreementsMod from "./routes/agreements.js";
-import logger from "lib/logger.js";
+import logger from "./lib/logger.js";
 
 const vehiclesRouter = pickExport(vehiclesMod, "vehiclesRouter");
 const driversRouter = pickExport(driversMod, "driversRouter");

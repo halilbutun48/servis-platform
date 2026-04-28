@@ -2,7 +2,7 @@
 
 Amaç: `autoReachedQueue` için gerçek saha öncesi dayanıklılık kanıtlarını tek çatıya almak.
 
-Bu paket **işleme davranışını değiştirmez**. Mevcut queue yapısına read-only kanıt yüzeyi ve statik doğrulama ekler.
+Bu paket **işleme davranışını değiştirmez**. Mevcut queue yapısına read-only kanıt yüzeyi, kontrollü incident-sync ve drill modu ekler.
 
 ## Kanıt alanları
 
@@ -22,7 +22,8 @@ Beklenen davranış:
 3. GPS POST / queue enqueue denemesi yap.
 4. API'nin kontrollü hata verdiğini doğrula.
 5. Redis container'ı tekrar başlat.
-6. `/api/admin/queues/auto-reached/health` ve `/proof` yüzeylerini kontrol et.
+6. `/api/admin/queues/auto-reached`, `/api/admin/queues/auto-reached/thresholds`, `/api/admin/queues/auto-reached/proof` ve `/api/admin/queues/auto-reached/dead-letter` yüzeylerini kontrol et.
+7. Gerekirse `POST /api/admin/queues/auto-reached/incident-sync` ile incident/recovery notification durumunu kayıt altına al.
 
 ### 2. Worker restart reclaim testi
 
@@ -43,18 +44,19 @@ Kanıt sinyalleri:
 
 ### 3. Dead-letter admin görünürlüğü ve kontrollü replay/resolve
 
-Yeni read-only endpoint:
+Yeni admin yüzeyleri:
 
 - `GET /api/admin/queues/auto-reached/dead-letter`
 - `GET /api/admin/queues/auto-reached/proof`
 - `POST /api/admin/queues/auto-reached/dead-letter/:taskId/requeue`
 - `POST /api/admin/queues/auto-reached/dead-letter/:taskId/resolve`
+- `POST /api/admin/queues/auto-reached/incident-sync`
 
 Beklenen:
 
 - Sadece super admin guard arkasında görünür.
 - En fazla 200 kayıt tutulur.
-- JSON parse edilemeyen dead-letter kayıtları da raw olarak görünür.
+- JSON parse edilemeyen dead-letter kayıtları da görünür ve resolve edilebilir.
 - Requeue işlemi task'i artan attemptCount ile ana kuyruğa geri taşır ve dead-letter listesinden çıkarır.
 - Resolve işlemi task'i dead-letter listesinden kaldırır ve incelenmiş/kapanmış kabul eder.
 - Her iki işlem de audit log'a düşer; queue artık sadece gözlemlenen değil kontrollü yönetilen bir yüzeye sahiptir.
@@ -73,6 +75,7 @@ Yeni threshold sınıflandırması:
 Endpoint:
 
 - `GET /api/admin/queues/auto-reached/thresholds`
+- `POST /api/admin/queues/auto-reached/incident-sync`
 
 Varsayılan eşikler env ile override edilebilir:
 
@@ -92,6 +95,7 @@ Bu queue yüzeyi hâlâ exactly-once enterprise broker değildir. Ancak:
 - threshold uyarıları admin yüzeyinde okunabilir
 - replay/resolve her seferinde audit kaydı üretir
 - incident kartı, threshold sinyallerini alarm seviyesine çevirir
+- incident-sync, queue state'i notification feed'e ve ops ekranına taşır
 - chaos proof notları Redis down/up, worker restart ve poison job drill'lerini görünür tutar
 
 Bu, minimal güvenli queue'dan operasyonel olarak izlenebilir queue seviyesine geçiştir; yine de Redis down / worker restart / poison job chaos drill'leri manuel veya ayrı test koşularıyla doğrulanmalıdır.
@@ -117,7 +121,13 @@ Super admin token biliniyorsa:
 $env:API_URL="http://127.0.0.1:3000"; $env:SUPER_ADMIN_TOKEN="<token>"; node .\backend\scripts\m93_queue_durability_runtime_probe.js
 ```
 
-Bu probe Redis'i durdurmaz, worker öldürmez. Sadece read-only endpoint'leri kontrol eder.
+Drill modu:
+
+```powershell
+$env:API_URL="http://127.0.0.1:3000"; $env:SUPER_ADMIN_TOKEN="<token>"; node .\backend\scripts\m93_queue_durability_runtime_probe.js --drill
+```
+
+Bu probe varsayılan modda read-only endpoint'leri kontrol eder. `--drill` ile Redis down/up, worker restart ve poison-job chaos adımları kontrollü olarak çalıştırılır.
 
 ## Kabul kriteri
 
@@ -127,5 +137,7 @@ M93 GREEN sayılması için:
 - Queue health endpoint görülebilir.
 - Dead-letter endpoint görülebilir.
 - Threshold endpoint uyarı üretebilir.
-- Manual Redis down/up drill sonucu notlanır.
-- Manual worker restart reclaim drill sonucu notlanır.
+- `incident-sync` yüzeyi threshold sinyallerini notification feed'e taşır.
+- Manual veya otomatik Redis down/up drill sonucu notlanır.
+- Manual veya otomatik worker restart reclaim drill sonucu notlanır.
+- Manual veya otomatik poison job dead-letter drill sonucu notlanır.

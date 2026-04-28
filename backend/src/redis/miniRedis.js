@@ -99,6 +99,7 @@ export function createMiniRedisClient(redisUrl) {
   let buffer = Buffer.alloc(0);
   let connected = false;
   let connecting = false;
+  let closing = false;
   const queue = [];
 
   function connect() {
@@ -151,8 +152,10 @@ export function createMiniRedisClient(redisUrl) {
     sock.on("close", () => {
       connected = false;
       connecting = false;
-      // reconnect
-      setTimeout(() => connect(), 500);
+      if (!closing) {
+        // reconnect
+        setTimeout(() => connect(), 500);
+      }
     });
   }
 
@@ -178,6 +181,7 @@ export function createMiniRedisClient(redisUrl) {
       return connected;
     },
     quit() {
+      closing = true;
       try {
         sock?.end();
       } catch {}

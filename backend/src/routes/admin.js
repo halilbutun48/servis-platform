@@ -23,6 +23,7 @@ import {
   getAutoReachedQueueProofSnapshot,
   requeueAutoReachedDeadLetter,
   resolveAutoReachedDeadLetter,
+  syncAutoReachedQueueIncidentNotifications,
 } from "../jobs/autoReachedQueue.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
@@ -130,7 +131,7 @@ const updateUserSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: "At least one field required" });
 
-export function adminRouter() {
+export function adminRouter(io = null) {
   const r = express.Router();
 
 // ? M39: retention run (dry-run supported)
@@ -288,6 +289,26 @@ r.get("/queues/auto-reached/proof", authRequired(), requireRole("SUPER_ADMIN"), 
 r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   const health = await getAutoReachedQueueHealthSnapshot();
   return res.json({ health, threshold: evaluateAutoReachedQueueHealthThresholds(health) });
+});
+
+r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  try {
+    const result = await syncAutoReachedQueueIncidentNotifications({ io });
+    await audit(req, {
+      action: "QUEUE_AUTO_REACHED_INCIDENT_SYNC",
+      entity: "Queue",
+      entityId: null,
+      meta: {
+        phase: result.phase,
+        severity: result.severity,
+        notificationType: result.notificationType,
+        synced: result.synced,
+      },
+    });
+    return res.json({ ok: true, ...result });
+  } catch (e) {
+    return res.status(500).json({ error: String(e?.message || e) });
+  }
 });
 
   // SUPER_ADMIN: Overview stats

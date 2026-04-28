@@ -78,8 +78,8 @@ Compatibility aliases for legacy checks:
 
 ## Infra / queue guardrail
 - `autoReachedQueue` claim / processing / reclaim / dead-letter katmanlarıyla daha dayanıklı hale getirilmiştir; yine de tam enterprise exactly-once queue değildir.
-- Redis down / worker crash / shutdown handoff / stale reclaim sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` içinde resmi olarak tanımlıdır.
-- Operasyonel ölçüm ve yönetim kapısı: `GET /api/admin/queues/auto-reached`, `GET /api/admin/queues/auto-reached/proof`, `GET /api/admin/queues/auto-reached/dead-letter`, `GET /api/admin/queues/auto-reached/thresholds`, `POST /api/admin/queues/auto-reached/dead-letter/:taskId/requeue`, `POST /api/admin/queues/auto-reached/dead-letter/:taskId/resolve`.
+- Redis down / worker crash / shutdown handoff / stale reclaim / poison job sınırları `docs/RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md` ve `docs/RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md` içinde resmi olarak tanımlıdır.
+- Operasyonel ölçüm ve yönetim kapısı: `GET /api/admin/queues/auto-reached`, `GET /api/admin/queues/auto-reached/proof`, `GET /api/admin/queues/auto-reached/dead-letter`, `GET /api/admin/queues/auto-reached/thresholds`, `POST /api/admin/queues/auto-reached/dead-letter/:taskId/requeue`, `POST /api/admin/queues/auto-reached/dead-letter/:taskId/resolve`, `POST /api/admin/queues/auto-reached/incident-sync`.
 - Incident/alarm kartı ve chaos proof notları `docs/RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md` içinde yaşar; `verify:final` snapshot öncesi generated `web/dist`, `mobile/dist` ve `backend/dist` artığını temizler.
 - Clean-clone doğrulama yolu: `tools\verify_clean_clone.ps1`.
 

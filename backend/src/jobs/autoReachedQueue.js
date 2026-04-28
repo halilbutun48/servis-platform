@@ -7,6 +7,7 @@ import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { getRedis } from "../redis/index.js";
 import { createMiniRedisClient } from "../redis/miniRedis.js";
+import { createAndEmitNotification, createNotification } from "../notifications/service.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { buildRegionRoutingKey } from "../region/index.js";
@@ -18,6 +19,8 @@ const AUTO_REACHED_CLAIMS_HASH = "gps:auto-reached:claims:v1";
 const AUTO_REACHED_CLAIMS_INDEX = "gps:auto-reached:claims:index:v1";
 const AUTO_REACHED_DEAD_LETTER_KEY = "gps:auto-reached:dead:v1";
 const AUTO_REACHED_LOCK_PREFIX = "gps:auto-reached:lock:v1";
+const AUTO_REACHED_INCIDENT_NOTIFICATION_TYPE = "AUTO_REACHED_QUEUE_INCIDENT";
+const AUTO_REACHED_RECOVERY_NOTIFICATION_TYPE = "AUTO_REACHED_QUEUE_RECOVERY";
 const DEFAULT_LOCK_TTL_MS = 2 * 60 * 60 * 1000;
 const DEFAULT_PROCESSING_TTL_MS = 15 * 60 * 1000;
 const DEFAULT_RECLAIM_SWEEP_MS = 30 * 1000;
@@ -161,6 +164,125 @@ function buildDeadLetterReplayEnvelope(parsed = {}) {
   delete next.deadLetteredAtIso;
   delete next.deadLetterReason;
   return next;
+}
+
+function buildParseDeadLetterEnvelope(raw = "") {
+  const nowIso = new Date().toISOString();
+  const rawText = String(raw || "");
+  const rawHash = crypto.createHash("sha256").update(rawText).digest("hex").slice(0, 16);
+  return {
+    queueTaskId: `PARSE:${rawHash}`,
+    attemptCount: 0,
+    queuedAtIso: nowIso,
+    deadLetteredAtIso: nowIso,
+    deadLetterReason: "PARSE_INVALID_JSON",
+    replayable: false,
+    rawPreview: rawText.slice(0, 500),
+    rawLength: rawText.length,
+  };
+}
+
+function isAutoReachedInvalidTaskError(error) {
+  const code = String(error?.code || error?.message || "").trim();
+  return code === "AUTO_REACHED_INVALID_TASK";
+}
+
+function buildAutoReachedQueueNotificationPayload({ proof, incident, phase, createdAtIso }) {
+  const health = proof?.health ?? {};
+  const queue = health?.queue ?? {};
+  const deadLetter = proof?.deadLetter ?? {};
+  const threshold = proof?.threshold ?? {};
+  return {
+    kind: "auto-reached-queue",
+    phase,
+    severity: incident?.severity || "OK",
+    title: incident?.title || "Queue sağlıklı",
+    warnings: Array.isArray(threshold?.warnings) ? threshold.warnings : [],
+    recommendedActions: Array.isArray(incident?.recommendedActions) ? incident.recommendedActions : [],
+    chaosDrills: Array.isArray(incident?.chaosDrills) ? incident.chaosDrills : [],
+    health: {
+      redisConnected: Boolean(health.redisConnected),
+      queueDepth: Number(queue.queueDepth ?? 0),
+      processingDepth: Number(queue.processingDepth ?? 0),
+      claimsDepth: Number(queue.claimsDepth ?? 0),
+      deadLetterDepth: Number(queue.deadLetterDepth ?? 0),
+      oldestClaimAgeMs: queue.oldestClaimAgeMs ?? null,
+    },
+    threshold,
+    deadLetter: {
+      depth: Number(deadLetter.depth ?? 0),
+      total: Number(deadLetter.total ?? 0),
+      items: Array.isArray(deadLetter.items) ? deadLetter.items.slice(0, 5) : [],
+    },
+    proof,
+    createdAtIso,
+  };
+}
+
+export async function syncAutoReachedQueueIncidentNotifications({ io = null, prismaClient = prisma, includeRecovery = true } = {}) {
+  const proof = await getAutoReachedQueueProofSnapshot();
+  const incident = proof?.incident || buildAutoReachedQueueIncidentSnapshot(proof?.health || {});
+  const severity = String(incident?.severity || "OK").toUpperCase();
+  const phase = severity === "OK" ? "RECOVERY" : "INCIDENT";
+  if (phase === "RECOVERY" && includeRecovery !== true) {
+    return {
+      ok: true,
+      synced: 0,
+      phase,
+      severity,
+      proof,
+      incident,
+    };
+  }
+
+  const users = await prismaClient.user.findMany({
+    where: { role: "SUPER_ADMIN" },
+    select: { id: true, email: true, fullName: true },
+    orderBy: [{ id: "asc" }],
+  });
+
+  const payload = buildAutoReachedQueueNotificationPayload({
+    proof,
+    incident,
+    phase,
+    createdAtIso: new Date().toISOString(),
+  });
+
+  const notificationType = phase === "RECOVERY" ? AUTO_REACHED_RECOVERY_NOTIFICATION_TYPE : AUTO_REACHED_INCIDENT_NOTIFICATION_TYPE;
+  const created = [];
+  for (const user of users) {
+    const dedupeKey = `AUTO_REACHED_QUEUE_STATE:${user.id}:${notificationType}`;
+    const createdRow = io
+      ? await createAndEmitNotification({
+          io,
+          type: notificationType,
+          scope: "USER",
+          userId: user.id,
+          payload,
+          dedupeKey,
+          prismaClient,
+        })
+      : await createNotification({
+          type: notificationType,
+          scope: "USER",
+          userId: user.id,
+          payload,
+          dedupeKey,
+          prismaClient,
+        });
+    created.push(createdRow);
+  }
+
+  return {
+    ok: true,
+    synced: created.length,
+    phase,
+    severity,
+    notificationType,
+    users: users.map((u) => ({ id: u.id, email: u.email, fullName: u.fullName })),
+    proof,
+    incident,
+  };
 }
 
 function syncActiveTasks(activeTasks) {
@@ -438,7 +560,17 @@ export async function processAutoReachedTask(io, task) {
   const shiftId = toInt(task?.shiftId);
   const stopId = toInt(task?.stopId);
   const vehicleId = toInt(task?.vehicleId);
-  if (!shiftId || !stopId || !vehicleId) return false;
+  if (!shiftId || !stopId || !vehicleId) {
+    const err = new Error("AUTO_REACHED_INVALID_TASK");
+    err.code = "AUTO_REACHED_INVALID_TASK";
+    err.details = {
+      shiftId,
+      stopId,
+      vehicleId,
+      queueTaskId: String(task?.queueTaskId || ""),
+    };
+    throw err;
+  }
 
   const stopOrder = Number(task?.stopOrder ?? task?.stop?.order ?? 0);
   const lastReachedOrder = Math.max(0, Number(task?.lastReachedOrder ?? stopOrder));
@@ -701,7 +833,8 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
         queueRuntime.totalParseErrors += 1;
         noteQueueError("autoReachedQueue parse error");
         try {
-          await controlRedis.send("LREM", AUTO_REACHED_PROCESSING_KEY, "1", raw);
+          const parseDeadLetter = buildParseDeadLetterEnvelope(raw);
+          await moveToDeadLetter(controlRedis, parseDeadLetter, raw, "PARSE_INVALID_JSON");
         } catch {
           // ignore
         }
@@ -748,6 +881,16 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
         logger.error("autoReachedQueue task error:", e);
         queueRuntime.totalTaskErrors += 1;
         noteQueueError(e);
+        if (isAutoReachedInvalidTaskError(e)) {
+          try {
+            await moveToDeadLetter(controlRedis, task, raw, "INVALID_TASK");
+          } catch {
+            // ignore
+          }
+          activeTasks.delete(task.queueTaskId);
+          syncActiveTasks(activeTasks);
+          continue;
+        }
         try {
           await controlRedis.send("HSET", AUTO_REACHED_CLAIMS_HASH, String(task.queueTaskId), JSON.stringify({
             raw,
@@ -925,6 +1068,9 @@ export async function requeueAutoReachedDeadLetter(taskId, opts = {}) {
   try {
     const entry = await findDeadLetterEntry(redis, normalizedTaskId, opts.limit ?? 200);
     if (!entry) return { ok: false, reason: "NOT_FOUND" };
+    if (entry.parsed?.replayable === false || String(entry.parsed?.deadLetterReason || "") === "PARSE_INVALID_JSON") {
+      return { ok: false, reason: "NOT_REPLAYABLE", error: "PARSE_INVALID_JSON" };
+    }
 
     const nextEnvelope = buildDeadLetterReplayEnvelope(entry.parsed || {});
     if (!nextEnvelope.queueTaskId) nextEnvelope.queueTaskId = normalizedTaskId;
