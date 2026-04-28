@@ -23,6 +23,9 @@ Yeni resmi düşünce:
 - kısa iş/vardiya serisi için `SHIFT_SERIES` olabilir
 - ödeme/komisyon yalnız hukuki sözleşme nesnesine kilitlenmez
 - settlement omurgası ticari kaynak tipini bilir
+- bu turda hedef canlı ödeme açmak değil, ödeme ve mutabakatı hazırlık modelinde tutmaktır
+- birincil kanal FAST / EFT / Havale, ikincil kanal Sanal POS + 3D Secure olarak hazırlanır
+- gerçek provider/webhook/payout aktivasyonu ayrı bir kapıdır
 
 ## Super Admin ticari yetkileri
 - payment mode (`OFF | OPTIONAL | REQUIRED`)

@@ -38,6 +38,7 @@
 - **RUNBOOK_M47_2_CAPACITY_LOAD_BASELINE.md** — kapasite/load baz cizgisi ve tekil infra envelope
 - **RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md** — auto-reached queue durability sınır notu
 - **RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md** — auto-reached queue dayanıklılık kanıtı ve operasyon yüzeyi
+- **TICARI_ODEME_VE_MUTABAKAT_HAZIRLIK_MODELI_V1.md** — ödeme kanalı hazırlık modeli, kanal sırası ve mutabakat sınırı
 - **RUNBOOK_CLEAN_CLONE_VERIFICATION_V1.md** — temiz klon bootstrap + verify akışı
 
 ## Overlay / tarihsel notlar

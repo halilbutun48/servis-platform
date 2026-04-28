@@ -66,6 +66,8 @@ Compatibility aliases for legacy checks:
 - Konumlama: **pazar + sözleşme + operasyon**
 - Yazılım şu anda ücretsiz kullanım yönünde kurgulanır; gelir modeli gelecekte ödeme/komisyon aracılığıdır.
 - Ödeme omurgası gerçek charge/payout açmadan önce dormant/feature-flag mantığında ilerler.
+- Kanonik ödeme hazırlık belgesi: `docs/TICARI_ODEME_VE_MUTABAKAT_HAZIRLIK_MODELI_V1.md`.
+- Bu aşamada canlı charge / payout açılmaz; banka transferi önce, sanal POS + 3D Secure sonra hazırlanır.
 
 ## Kalıcı kurallar
 - Adım adım, kontrollü ilerlenir.

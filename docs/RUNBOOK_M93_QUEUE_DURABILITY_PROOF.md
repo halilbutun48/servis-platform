@@ -17,7 +17,7 @@ Beklenen davranış:
 
 Önerilen manuel drill:
 
-1. Sistem çalışırken queue health endpoint'i oku.
+1. Sistem çalışırken `/api/admin/queues/auto-reached` proof özetini oku.
 2. Redis container'ı durdur.
 3. GPS POST / queue enqueue denemesi yap.
 4. API'nin kontrollü hata verdiğini doğrula.
@@ -134,7 +134,7 @@ Bu probe varsayılan modda read-only endpoint'leri kontrol eder. `--drill` ile R
 M93 GREEN sayılması için:
 
 - Statik pack PASS.
-- Queue health endpoint görülebilir.
+- Base queue endpoint ve proof endpoint görülebilir.
 - Dead-letter endpoint görülebilir.
 - Threshold endpoint uyarı üretebilir.
 - `incident-sync` yüzeyi threshold sinyallerini notification feed'e taşır.

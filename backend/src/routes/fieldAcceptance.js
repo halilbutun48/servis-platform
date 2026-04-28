@@ -1,5 +1,5 @@
 import express from "express";
-import { authRequired } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import {
   getFieldAcceptanceManifest,
 } from "../ops/fieldAcceptanceManifest.js";
@@ -25,6 +25,7 @@ function unwrapBody(body) {
 
 export function fieldAcceptanceRouter() {
   const r = express.Router();
+  const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
 
   r.get("/manifest", authRequired(), async (_req, res) => {
     return res.json(wrapManifest(getFieldAcceptanceManifest()));
@@ -39,7 +40,7 @@ export function fieldAcceptanceRouter() {
     }
   });
 
-  r.post("/session", authRequired(), async (req, res, next) => {
+  r.post("/session", ...superAdminWrite, async (req, res, next) => {
     try {
       const session = await createFieldAcceptanceSession(unwrapBody(req.body), req.user);
       return res.status(201).json(wrapSession(session));
@@ -48,7 +49,7 @@ export function fieldAcceptanceRouter() {
     }
   });
 
-  r.put("/session", authRequired(), async (req, res, next) => {
+  r.put("/session", ...superAdminWrite, async (req, res, next) => {
     try {
       const session = await saveFieldAcceptanceSession(unwrapBody(req.body), req.user);
       return res.json(wrapSession(session));
@@ -57,7 +58,7 @@ export function fieldAcceptanceRouter() {
     }
   });
 
-  r.patch("/session/decision", authRequired(), async (req, res, next) => {
+  r.patch("/session/decision", ...superAdminWrite, async (req, res, next) => {
     try {
       const session = await persistFieldAcceptanceDecision(unwrapBody(req.body), req.user);
       return res.json(wrapSession(session));
@@ -66,7 +67,7 @@ export function fieldAcceptanceRouter() {
     }
   });
 
-  r.patch("/session/checklist/:itemId", authRequired(), async (req, res, next) => {
+  r.patch("/session/checklist/:itemId", ...superAdminWrite, async (req, res, next) => {
     try {
       const session = await updateFieldAcceptanceChecklistItemStatus(
         req.params.itemId,

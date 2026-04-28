@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { getPilotLaunchGateManifest } from "../ops/pilotLaunchGateManifest.js";
 import { buildFieldPrepPacket } from "../ops/fieldPrepPacket.js";
 import { buildFieldFeedbackLoopPacket, getFieldFeedbackRecordById, listFieldFeedbackRecords, updateFieldFeedbackRecordStatus, upsertFieldFeedbackRecord } from "../ops/fieldFeedbackLoop.js";
 import { deletePilotLaunchGateRisk, getPilotLaunchGateDecision, listPilotLaunchGateRisks, savePilotLaunchGateDecision, upsertPilotLaunchGateRisk } from "../ops/pilotLaunchGateState.js";
 
 export const pilotLaunchGateRouter = Router();
+const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
 
 pilotLaunchGateRouter.get('/manifest', (_req, res) => {
   res.json({ ok: true, manifest: getPilotLaunchGateManifest() });
@@ -20,7 +21,7 @@ pilotLaunchGateRouter.get('/decision', authRequired(), requireRole('SUPER_ADMIN'
   }
 });
 
-pilotLaunchGateRouter.post('/decision', authRequired(), requireRole('SUPER_ADMIN'), async (req, res, next) => {
+pilotLaunchGateRouter.post('/decision', ...superAdminWrite, async (req, res, next) => {
   try {
     const decision = await savePilotLaunchGateDecision(req.body || {}, req.user);
     return res.json({ ok: true, decision });
@@ -38,7 +39,7 @@ pilotLaunchGateRouter.get('/risks', authRequired(), requireRole('SUPER_ADMIN'), 
   }
 });
 
-pilotLaunchGateRouter.post('/risks', authRequired(), requireRole('SUPER_ADMIN'), async (req, res, next) => {
+pilotLaunchGateRouter.post('/risks', ...superAdminWrite, async (req, res, next) => {
   try {
     const item = await upsertPilotLaunchGateRisk(req.body || {}, req.user);
     return res.status(201).json({ ok: true, item });
@@ -47,7 +48,7 @@ pilotLaunchGateRouter.post('/risks', authRequired(), requireRole('SUPER_ADMIN'),
   }
 });
 
-pilotLaunchGateRouter.delete('/risks/:id', authRequired(), requireRole('SUPER_ADMIN'), async (req, res, next) => {
+pilotLaunchGateRouter.delete('/risks/:id', ...superAdminWrite, async (req, res, next) => {
   try {
     const removed = await deletePilotLaunchGateRisk(req.params.id);
     if (!removed) return res.status(404).json({ error: 'PILOT_LAUNCH_RISK_NOT_FOUND' });
@@ -126,7 +127,7 @@ pilotLaunchGateRouter.post('/field-feedback-loop/records', authRequired(), requi
   }
 });
 
-pilotLaunchGateRouter.post('/field-feedback-loop/records/:id/status', authRequired(), requireRole('SUPER_ADMIN', 'ROOM', 'COMPANY'), async (req, res, next) => {
+pilotLaunchGateRouter.post('/field-feedback-loop/records/:id/status', authRequired(), requireStepUpWrite('SUPER_ADMIN', 'ROOM', 'COMPANY'), requireRole('SUPER_ADMIN', 'ROOM', 'COMPANY'), async (req, res, next) => {
   try {
     const current = await getFieldFeedbackRecordById(req.params.id);
     if (!current) return res.status(404).json({ error: 'FIELD_FEEDBACK_NOT_FOUND' });

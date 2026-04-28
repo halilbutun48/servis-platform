@@ -26,6 +26,7 @@ Amaç: Bu dosya, projenin güncel çalışma kurallarını, aktif milestone hatt
 8. Overlay standardı tek zip / tek kök / nested root yok şeklinde korunur.
 9. Büyük dosyalar kontrollü biçimde bölünür.
 10. Repo hijyen hattı dosya silme aracı değil; kanonik düzen ve senkron denetim hattıdır.
+11. Ödeme ve mutabakat şu aşamada hazırlık modelindedir; canlı charge / payout açılmaz. Kanonik referans: `docs/TICARI_ODEME_VE_MUTABAKAT_HAZIRLIK_MODELI_V1.md`.
 
 ## 3) Ticari omurga kuralları
 1. Ödeme omurgası yalnız sözleşmeye kilitlenmez.
@@ -36,6 +37,7 @@ Amaç: Bu dosya, projenin güncel çalışma kurallarını, aktif milestone hatt
 6. Global varsayılan + oda bazlı override birlikte çalışır.
 7. Ticari kaynak oluşturulduğu anda payment/commission snapshot alınır.
 8. Sonradan oran değişse bile eski ticari kayıt bozulmaz.
+9. Banka transferi birincil kanal, sanal POS + 3D Secure ikincil kanaldır; canlı ödeme açımı ayrı bir aktivasyon kapısıdır.
 
 ## 4) Proof / kabul ilkesi
 - Screenshot ana kanıt değildir.
