@@ -43,8 +43,8 @@ export default function DriverTodayPanel() {
   const hasAny = (today?.length || 0) + (tomorrow?.length || 0) > 0;
 
   const activeLabel = useMemo(() => {
-    if (!active) return "Aktif g?rev yok";
-    return `Shift #${active.id} ? ${displayStatusLabel(active.status)}`;
+    if (!active) return "Aktif görev yok";
+    return `Shift #${active.id} - ${displayStatusLabel(active.status)}`;
   }, [active]);
 
   async function load() {
@@ -124,7 +124,7 @@ useEffect(() => {
       if (!isOnline()) {
         enqueueRequest({ method: 'POST', url: `/api/driver/shifts/${shiftId}/start`, body: null, label: 'start' });
         setQLen(queueSize());
-        // route ekran?nda da offline queue var
+        // route ekranında da offline queue var
         navigate(`/driver/route?shift=${shiftId}`);
         return;
       }
@@ -141,7 +141,7 @@ useEffect(() => {
       }
       navigate(`/driver/route?shift=${shiftId}`);
     } catch (e) {
-      // E?er endpoint yoksa veya yetki yoksa s?r?c? yine Rota ekran?nda manuel reached ile ba?layabilir.
+      // Eğer endpoint yoksa veya yetki yoksa sürücü yine Rota ekranında manuel reached ile başlayabilir.
       setErr(String(e?.message || e));
     } finally {
       setBusyId(null);
@@ -163,7 +163,7 @@ useEffect(() => {
         <td style={{ whiteSpace: "nowrap" }}>
           {s.status === "APPROVED" ? (
             <button type="button" disabled={busyId === s.id} onClick={() => startShift(s.id)}>
-              {busyId === s.id ? "..." : "G?reve Ba?la"}
+              {busyId === s.id ? "..." : "Göreve Başla"}
             </button>
           ) : null}
           <button type="button" style={{ marginLeft: 8 }} onClick={() => navigate(`/driver/route?shift=${s.id}`)}
@@ -178,8 +178,8 @@ useEffect(() => {
   return (
     <div>
       <div className="card">
-        <h3>Bug?n</h3>
-        <div className="muted">Tek hedef: aktif g?revi g?r ? ba?lat ? rota ekran?nda reached ile ilerle.</div>
+        <h3>Bugün</h3>
+        <div className="muted">Tek hedef: aktif görevi gör → başlat → rota ekranında reached ile ilerle.</div>
 <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 10 }}>
   <div className="row" style={{ gap: 8, alignItems: "center" }}>
     {!online ? (
@@ -196,13 +196,13 @@ useEffect(() => {
   <div className="row" style={{ gap: 8, alignItems: "center" }}>
     {qLen ? (
       <button type="button" onClick={() => setShowQueue((p) => !p)} style={{ fontWeight: 900 }}>
-        {showQueue ? "Kuyruk Detay? Kapat" : "Kuyruk Detay?"}
+        {showQueue ? "Kuyruk Detayı Kapat" : "Kuyruk Detayı"}
       </button>
     ) : null}
 
     {online && qLen ? (
       <button type="button" disabled={flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
-        {flushing ? "..." : `Kuyru?u G?nder (${qLen})`}
+        {flushing ? "..." : `Kuyruğu Gönder (${qLen})`}
       </button>
     ) : null}
   </div>
@@ -222,19 +222,19 @@ useEffect(() => {
       {err ? <div className="card err">{err}</div> : null}
 
       <div className="card">
-        <h3>Aktif G?rev</h3>
+        <h3>Aktif Görev</h3>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
             <b>{activeLabel}</b>
             {active ? (
-              <div className="muted">Start: {fmt(active.startAt)} ? End: {fmt(active.endAt)}</div>
+              <div className="muted">Start: {fmt(active.startAt)} - End: {fmt(active.endAt)}</div>
             ) : (
-              <div className="muted">Bug?n i?in atanm?? aktif / kabul edilmi? vardiya yok.</div>
+              <div className="muted">Bugün için atanmış aktif / kabul edilmiş vardiya yok.</div>
             )}
           </div>
           {active?.status === "APPROVED" ? (
             <button type="button" disabled={busyId === active.id} onClick={() => startShift(active.id)}>
-              {busyId === active.id ? "..." : "G?reve Ba?la"}
+              {busyId === active.id ? "..." : "Göreve Başla"}
             </button>
           ) : null}
           {active?.status === "ACTIVE" ? (
@@ -244,17 +244,17 @@ useEffect(() => {
       </div>
 
       {!hasAny ? (
-        <div className="card muted">Bug?n/yar?n i?in vardiya bulunamad?.</div>
+        <div className="card muted">Bugün/yarın için vardiya bulunamadı.</div>
       ) : (
         <>
           <div className="card" style={{ overflowX: "auto" }}>
-            <h3>Bug?n Vardiyalar</h3>
+            <h3>Bugün Vardiyalar</h3>
             <table className="tbl" style={{ whiteSpace: "nowrap" }}>
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Durum</th>
-                  <th>Ba?lang??</th>
+                  <th>Başlangıç</th>
                   <th>Biti?</th>
                   <th>Aksiyon</th>
                 </tr>
@@ -265,13 +265,13 @@ useEffect(() => {
 
           {tomorrow?.length ? (
             <div className="card" style={{ overflowX: "auto" }}>
-              <h3>Yar?n</h3>
+              <h3>Yarın</h3>
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
                   <tr>
                     <th>ID</th>
                     <th>Durum</th>
-                    <th>Ba?lang??</th>
+                    <th>Başlangıç</th>
                     <th>Biti?</th>
                     <th>Aksiyon</th>
                   </tr>
@@ -279,7 +279,7 @@ useEffect(() => {
                 <tbody>{tomorrow.map((s) => <ShiftRow key={s.id} s={s} />)}</tbody>
               </table>
               <div className="muted" style={{ marginTop: 8 }}>
-                Not: Yar?ndaki vardiyalar ?imdilik sadece bilgi ama?l?d?r; ba?lay?nca otomatik aktif olur.
+                Not: Yarındaki vardiyalar şimdilik sadece bilgi amaçlıdır; başlayınca otomatik aktif olur.
               </div>
             </div>
           ) : null}
@@ -288,3 +288,5 @@ useEffect(() => {
     </div>
   );
 }
+
+

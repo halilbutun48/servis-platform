@@ -4,6 +4,7 @@
 import { prisma } from "../prisma.js";
 import { haversineKm } from "../geo.js";
 import { createAndEmitNotification } from "./service.js";
+import logger from "../lib/logger.js";
 
 function fmtKm(km) {
   if (typeof km !== "number" || !Number.isFinite(km)) return null;
@@ -289,6 +290,7 @@ export async function emitStopProgressNotifs({
     }
   } catch (e) {
     // never crash the request pipeline
-    console.error("emitStopProgressNotifs error:", e);
+    logger.error("emitStopProgressNotifs error:", e);
   }
 }
+

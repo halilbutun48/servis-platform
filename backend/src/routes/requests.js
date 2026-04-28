@@ -3,6 +3,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createRequestSchema } from "../validators.js";
+import logger from "../lib/logger.js";
 
 /**
  * PickupRequestStatus enum:
@@ -108,7 +109,7 @@ export function requestsRouter(io) {
 
       return res.json(item);
     } catch (e) {
-      console.error("[requests] POST / error:", e);
+      logger.error("[requests] POST / error:", e);
       return res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -157,7 +158,7 @@ export function requestsRouter(io) {
 
       return res.json(items);
     } catch (e) {
-      console.error("[requests] GET / error:", e);
+      logger.error("[requests] GET / error:", e);
       return res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -218,7 +219,7 @@ export function requestsRouter(io) {
 
       return res.json(updated);
     } catch (e) {
-      console.error("[requests] POST /:id/close error:", e);
+      logger.error("[requests] POST /:id/close error:", e);
       return res.status(500).json({ error: "Internal Server Error" });
     }
   });

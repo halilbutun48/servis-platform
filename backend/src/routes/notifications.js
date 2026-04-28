@@ -3,6 +3,7 @@ import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired } from "../auth/middleware.js";
 import { resolveNotificationOwnership } from "../region/ownership.js";
+import logger from "../lib/logger.js";
 
 export const notificationsRouter = express.Router();
 
@@ -165,7 +166,8 @@ notificationsRouter.get("/my", authRequired(), async (req, res) => {
 
     return res.json([]);
   } catch (e) {
-    console.error("notifications/my error:", e);
+    logger.error("notifications/my error:", e);
     return res.status(500).json({ error: "notifications failed" });
   }
 });
+

@@ -7,6 +7,7 @@
 
 import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
+import logger from "../lib/logger.js";
 
 function msFromHours(h) {
   const v = Number(h || 0);
@@ -28,7 +29,7 @@ async function isDbReadyOnce() {
   } catch {
     if (!globalThis.__retentionDbWarned) {
       globalThis.__retentionDbWarned = true;
-      console.warn("retentionCleanup: DB not ready, skipping run.");
+      logger.warn("retentionCleanup: DB not ready, skipping run.");
     }
     return false;
   }
@@ -65,7 +66,7 @@ async function deleteOldBatched({ model, label, cutoff, batchSize, field = "crea
     batches += 1;
 
     if (batches >= maxBatches) {
-      console.warn(
+      logger.warn(
         `retentionCleanup: maxBatches reached for ${label} (deleted=${deleted}). Will continue next run.`
       );
       break;
@@ -232,12 +233,12 @@ export function startRetentionCleanup(_ioUnused, opts = {}) {
 
       // Only log when something happened (or if first run is useful).
       if (api.deleted || audit.deleted || notif.deleted || checkin.deleted || gps.deleted) {
-        console.log(
+        logger.info(
           `retentionCleanup: ApiRequest -${api.deleted}, AuditLog -${audit.deleted}, Notification -${notif.deleted}, CheckinEvent -${checkin.deleted}, GpsPoint -${gps.deleted} (ms=${ms})`
         );
       }
     } catch (e) {
-      console.error("retentionCleanup error:", e);
+      logger.error("retentionCleanup error:", e);
     } finally {
       running = false;
     }
@@ -251,3 +252,4 @@ export function startRetentionCleanup(_ioUnused, opts = {}) {
   const timer = setInterval(tick, intervalMs);
   return () => clearInterval(timer);
 }
+

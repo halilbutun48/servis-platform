@@ -48,7 +48,7 @@ export default function RoomShiftsPanel() {
   const [pendingQ, setPendingQ] = useState("");
   const [onlyAgreement, setOnlyAgreement] = useState(false);
 
-  // T?m shifts filtreleri
+  // Tüm shifts filtreleri
   const [listStatus, setListStatus] = useState("OPEN"); // OPEN | ALL | REQUESTED | APPROVED | ACTIVE | DONE | REJECTED | DRAFT
   const [listQ, setListQ] = useState("");
   const [focusedTrackShiftId, setFocusedTrackShiftId] = useState(null);
@@ -78,15 +78,15 @@ export default function RoomShiftsPanel() {
     if (previewRaw) setPendingPreviewShiftId(Number(sid || 0));
   }, []);
 
-  // Bekleyen sat?r: se?ili ara? + se?ili driver (approve i?in)
+  // Bekleyen satır: seçili araç + seçili driver (approve için)
   const [assignSel, setAssignSel] = useState({}); // { [shiftId]: vehicleIdStr }
   const [driverSel, setDriverSel] = useState({}); // { [shiftId]: driverIdStr }
   const [showAvailableOnly, setShowAvailableOnly] = useState({}); // { [shiftId]: bool }
 
-  // Room kar?? teklif verisi, sadece init i?in tutuluyor
+  // Room karşı teklif verisi, sadece init için tutuluyor
   const [, setRoomOfferSel] = useState({});
 
-  // M51: Shift s?re uzatma (Room karar)
+  // M51: Shift süre uzatma (Room karar)
   const [extendNoteSel, setExtendNoteSel] = useState({}); // { [shiftId]: string }
   const setExtendNote = (shiftId, v) => setExtendNoteSel((p) => ({ ...p, [Number(shiftId)]: v }));
  // { [offerId]: { amountRoom, noteRoom } }
@@ -103,13 +103,13 @@ async function decideExtend(shiftId, decision) {
     setExtendNoteSel((p) => ({ ...p, [sid]: "" }));
     invalidate("shift:list");
   } catch (e) {
-    setErr(getApiErrorMessage(e, "??lem ba?ar?s?z."));
+    setErr(getApiErrorMessage(e, "İşlem başarısız."));
   } finally {
     setBusy(false);
   }
 }
 
-  // M14: uygunluk/?at??ma state (shift bazl?)
+  // M14: uygunluk/çatışma state (shift bazlı)
   // shape: { [sid]: { sig, status, code, message, conflictingShift, source } }
   // status: idle | checking | ok | conflict | error | missing
   const [avail, setAvail] = useState({});
@@ -121,11 +121,11 @@ async function decideExtend(shiftId, decision) {
   const loadPoolSummaryRef = useRef(null);
   const poolSummaryRef = useRef(poolSummary);
 
-  // M16: Haritada ?nizleme (modal)
+  // M16: Haritada önizleme (modal)
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewShift, setPreviewShift] = useState(null);
   const [previewStops, setPreviewStops] = useState([]);
-  const [previewPeople, setPreviewPeople] = useState([]); // ?imdilik bo? (backend gelince assignment/personel eklenebilir)
+  const [previewPeople, setPreviewPeople] = useState([]); // şimdilik boş (backend gelince assignment/personel eklenebilir)
   const [previewSummary, setPreviewSummary] = useState(null);
   const [previewPathPoints, setPreviewPathPoints] = useState(null);
   const [previewSource, setPreviewSource] = useState(null);
@@ -176,7 +176,7 @@ async function decideExtend(shiftId, decision) {
       return next;
     });
 
-    // ara? driver'? varsa ve sat?rda manuel driver yoksa doldur
+    // araç driver'ı varsa ve satırda manuel driver yoksa doldur
     const vid = Number(vidStr);
     const vv = Number.isFinite(vid) ? vehiclesById.get(vid) : null;
     const autoDid = vv?.driverId ? String(vv.driverId) : "";
@@ -293,11 +293,11 @@ async function decideExtend(shiftId, decision) {
       const vDup = row.vehicleId && (vehicleCounts.get(row.vehicleId) || 0) > 1;
       const dDup = row.driverId && (driverCounts.get(row.driverId) || 0) > 1;
       if (vDup) {
-        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_VEHICLE", message: "Ayn? ara? ba?ka ?neride de se?ili." };
+        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_VEHICLE", message: "Aynı araç başka öneride de seçili." };
         continue;
       }
       if (dDup) {
-        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_DRIVER", message: "Ayn? ?of?r ba?ka ?neride de se?ili." };
+        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_DRIVER", message: "Aynı şoför başka öneride de seçili." };
         continue;
       }
       const virtualShift = buildDispatchVirtualShift(shift, row.allocatedPax);
@@ -337,7 +337,7 @@ async function decideExtend(shiftId, decision) {
       return {
         status: "conflict",
         code: "DRIVER_CONFLICT",
-        message: "Driver ayn? zaman aral???nda ba?ka bir vardiyada.",
+        message: "Driver aynı zaman aralığında başka bir vardiyada.",
         conflictingShift: conflictingShift || null };
     }
 
@@ -355,7 +355,7 @@ async function decideExtend(shiftId, decision) {
       return {
         status: "conflict",
         code: "VEHICLE_CONFLICT",
-        message: "Ara? ayn? zaman aral???nda ba?ka bir vardiyada.",
+        message: "Araç aynı zaman aralığında başka bir vardiyada.",
         conflictingShift: conflictingShift || null };
     }
 
@@ -384,16 +384,16 @@ async function decideExtend(shiftId, decision) {
         return {
           status: "conflict",
           code: r.code || "CONFLICT",
-          message: r.message || "?ak??ma.",
+          message: r.message || "Çakışma.",
           conflictingShift: r.conflictingShift || r.conflict || null,
           source: "remote" };
       }
-      // ba?ka payload: {code,message,...}
+      // başka payload: {code,message,...}
       if (r.code && (String(r.code).includes("CONFLICT") || String(r.code).includes("OVERLAP") || String(r.code).includes("CAPACITY"))) {
         return {
           status: "conflict",
           code: r.code,
-          message: r.message || "?ak??ma.",
+          message: r.message || "Çakışma.",
           conflictingShift: r.conflictingShift || null,
           source: "remote" };
       }
@@ -413,11 +413,11 @@ async function decideExtend(shiftId, decision) {
     const sid = Number(shift.id);
     const sig = makeAvailabilitySig({ shift, vehicleId, driverId });
 
-    // sig de?i?mediyse tekrar etme
+    // sig değişmediyse tekrar etme
     const prev = avail[sid];
     if (prev?.sig === sig && prev?.status && prev.status !== "checking") return;
 
-    // se?im eksik
+    // seçim eksik
     if (!vehicleId || !driverId) {
       setAvail((p) => ({
         ...p,
@@ -425,7 +425,7 @@ async function decideExtend(shiftId, decision) {
       return;
     }
 
-    // inflight tekille?tirme
+    // inflight tekilleştirme
     const inflightKey = `${sid}|${sig}`;
     if (availInflight.current.has(inflightKey)) return;
     availInflight.current.add(inflightKey);
@@ -435,7 +435,7 @@ async function decideExtend(shiftId, decision) {
       [sid]: { sig, status: "checking", code: "CHECKING", message: "Kontrol ediliyor..." } }));
 
     try {
-      // ?nce remote dene; 404 vb. olursa local fallback
+      // önce remote dene; 404 vb. olursa local fallback
       let out = null;
       try {
         out = await remoteAvailability({ shift, vehicleId, driverId });
@@ -473,9 +473,9 @@ async function decideExtend(shiftId, decision) {
 
     setPreviewShift(shift);
     setPreviewStops([]);
-    setPreviewPeople([]); // ?imdilik bo?
+    setPreviewPeople([]); // şimdilik boş
     setPreviewErr("");
-    // M16.2: fetch'i modal yap?yor (route-preview); burada loading tutmuyoruz
+    // M16.2: fetch'i modal yapıyor (route-preview); burada loading tutmuyoruz
     setPreviewLoading(false);
     setPreviewOpen(true);
   }
@@ -496,8 +496,8 @@ async function decideExtend(shiftId, decision) {
         // ? includeOffered=1: market/offered shift'leri de getir (shift.roomId null olsa bile)
         api("/api/shifts?take=200&includeOffered=1", { token }),
         api("/api/vehicles", { token }),
-        api("/api/drivers", { token }).catch(() => ({ items: [] })), // baz? ortamlarda yoksa k?rma
-        api("/api/rooms", { token }).catch(() => ({ items: [] })), // ROOM yetkisi var ama yoksa k?rma
+        api("/api/drivers", { token }).catch(() => ({ items: [] })), // bazı ortamlarda yoksa kırma
+        api("/api/rooms", { token }).catch(() => ({ items: [] })), // ROOM yetkisi var ama yoksa kırma
         api("/api/offers/inbox?status=OPEN,COUNTERED,ACCEPTED&take=300", { token }).catch(() => ({ items: [] })),
       ]);
 
@@ -516,7 +516,7 @@ async function decideExtend(shiftId, decision) {
       setRooms(rlist);
       setOffers(Array.isArray(olist) ? olist : []);
 
-      // sat?r se?imleri init (var olan? ezme)
+      // satır seçimleri init (var olanı ezme)
       setAssignSel((prev) => {
         let changed = false;
         const next = { ...prev };
@@ -524,14 +524,14 @@ async function decideExtend(shiftId, decision) {
           const sid = Number(s.id);
           if (next[sid] !== undefined) continue;
 
-          // default: companyOfferVehicleId varsa onu se?, yoksa bo?
+          // default: companyOfferVehicleId varsa onu seç, yoksa boş
           next[sid] = s.companyOfferVehicleId ? String(s.companyOfferVehicleId) : "";
           changed = true;
         }
         return changed ? next : prev;
       });
 
-      // driver se?imleri init (var olan? ezme)
+      // driver seçimleri init (var olanı ezme)
       {
         const vMap = new Map(vlist.map((v) => [Number(v.id), v]));
         setDriverSel((prev) => {
@@ -572,7 +572,7 @@ async function decideExtend(shiftId, decision) {
       });
     } catch (e) {
       const ne = normalizeErr(e);
-      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu s?r?c? i?in aktif gelmedi kayd? var. Bu nedenle atama yap?lamaz." : ne.message);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
     }
   }
 
@@ -584,7 +584,7 @@ async function decideExtend(shiftId, decision) {
       list.sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0));
 
       setItems(list);
-      // sat?r se?imleri init (var olan? ezme)
+      // satır seçimleri init (var olanı ezme)
       setAssignSel((prev) => {
         let changed = false;
         const next = { ...prev };
@@ -598,7 +598,7 @@ async function decideExtend(shiftId, decision) {
         return changed ? next : prev;
       });
 
-      // driver se?imleri init (var olan? ezme)
+      // driver seçimleri init (var olanı ezme)
       {
         const vMap = new Map((Array.isArray(vehicles) ? vehicles : []).map((v) => [Number(v.id), v]));
         setDriverSel((prev) => {
@@ -639,7 +639,7 @@ async function decideExtend(shiftId, decision) {
       });
     } catch (e) {
       const ne = normalizeErr(e);
-      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu s?r?c? i?in aktif gelmedi kayd? var. Bu nedenle atama yap?lamaz." : ne.message);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
     }
   }
 
@@ -679,7 +679,7 @@ async function decideExtend(shiftId, decision) {
       });
     } catch (e) {
       const ne = normalizeErr(e);
-      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu s?r?c? i?in aktif gelmedi kayd? var. Bu nedenle atama yap?lamaz." : ne.message);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
     }
   }
 
@@ -691,7 +691,7 @@ async function decideExtend(shiftId, decision) {
       setOffers(Array.isArray(olist) ? olist : []);
     } catch (e) {
       const ne = normalizeErr(e);
-      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu s?r?c? i?in aktif gelmedi kayd? var. Bu nedenle atama yap?lamaz." : ne.message);
+      setErr(ne.code === "ACTIVE_NO_SHOW_PENALTY" ? "Bu sürücü için aktif gelmedi kaydı var. Bu nedenle atama yapılamaz." : ne.message);
     }
   }
 
@@ -765,14 +765,14 @@ async function decideExtend(shiftId, decision) {
       label: `Vardiya #${copilotShift.id}`,
       summary: [String(copilotShift?.status || '').toUpperCase() || '-', fmtTR(copilotShift?.startAt), fmtTR(copilotShift?.endAt)].filter(Boolean).join(' ? '),
       fields: [
-        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Vardiyan?n operasyon durumunu g?sterir.' },
-        { label: 'Saat', value: `${fmtTR(copilotShift?.startAt)} ? ${fmtTR(copilotShift?.endAt)}`, help: 'Planlanan ba?lang?? ve biti? saatini g?sterir.' },
-        { label: 'Ara?', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Ba?l? ara? bilgisini g?sterir.' },
-        { label: 'S?r?c?', value: copilotShift?.driver?.fullName || (copilotShift?.driverId ? `#${copilotShift.driverId}` : '-'), help: 'Ba?l? s?r?c? bilgisini g?sterir.' },
-        { label: 'Yolcu', value: String(shiftRequiredPax(copilotShift) || 0), help: 'Tahmini gerekli yolcu kapasitesini g?sterir.' },
+        { label: 'Durum', value: String(copilotShift?.status || '-').toUpperCase(), help: 'Vardiyanın operasyon durumunu gösterir.' },
+        { label: 'Saat', value: `${fmtTR(copilotShift?.startAt)} - ${fmtTR(copilotShift?.endAt)}`, help: 'Planlanan başlangıç ve bitiş saatini gösterir.' },
+        { label: 'Araç', value: copilotShift?.vehicle?.plate || (copilotShift?.vehicleId ? `#${copilotShift.vehicleId}` : '-'), help: 'Bağlı araç bilgisini gösterir.' },
+        { label: 'Sürücü', value: copilotShift?.driver?.fullName || (copilotShift?.driverId ? `#${copilotShift.driverId}` : '-'), help: 'Bağlı sürücü bilgisini gösterir.' },
+        { label: 'Yolcu', value: String(shiftRequiredPax(copilotShift) || 0), help: 'Tahmini gerekli yolcu kapasitesini gösterir.' },
       ],
       badges: [
-        ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'S?zle?me', value: `#${copilotShift.agreementId}`, help: 'Bu vardiyan?n s?zle?me kaynakl? ?retildi?ini g?sterir.' }] : []),
+                ...(Number(copilotShift?.agreementId || 0) > 0 ? [{ label: 'Sözleşme', value: `#${copilotShift.agreementId}`, help: 'Bu vardiyanın sözleşme kaynaklı üretildiğini gösterir.' }] : []),
       ],
       facts });
   }, [copilotShift, pendingFiltered.length, listFiltered.length]);
@@ -783,7 +783,7 @@ async function decideExtend(shiftId, decision) {
   loadPoolSummaryRef.current = loadPoolSummary;
   poolSummaryRef.current = poolSummary;
 
-  // M14: bekleyen listede se?imler de?i?tik?e availability g?ncelle (throttle)
+  // M14: bekleyen listede seçimler değiştikçe availability güncelle (throttle)
 
   useEffect(() => {
     if (!pendingFiltered?.length) return;
@@ -799,7 +799,7 @@ async function decideExtend(shiftId, decision) {
         const vId = vStr ? Number(vStr) : null;
         const dId = dStr ? Number(dStr) : null;
 
-        // ara? se?ili ama driver bo?sa, ara?taki driverId'yi kullan (approve ile uyum)
+        // araç seçili ama driver boşsa, araçtaki driverId'yi kullan (approve ile uyum)
         const autoD = vId ? (vehiclesById.get(Number(vId))?.driverId ? Number(vehiclesById.get(Number(vId))?.driverId) : null) : null;
         const effDriverId = dId ?? autoD;
 
@@ -860,7 +860,7 @@ async function decideExtend(shiftId, decision) {
       setPoolSummary((prev) => ({ ...prev, [sid]: { status: "ok", data } }));
       return data;
     } catch (e) {
-      const msg = String(e?.message || e || "Havuz ?zeti al?namad?.");
+      const msg = String(e?.message || e || "Havuz özeti alınamadı.");
       setPoolSummary((prev) => ({ ...prev, [sid]: { status: "error", error: msg } }));
       return null;
     } finally {
@@ -886,7 +886,7 @@ async function decideExtend(shiftId, decision) {
       hydrateDispatchSelections(sid, data?.suggestions || []);
       return data;
     } catch (e) {
-      const msg = getApiErrorMessage(e, "Dispatch ?nizleme al?namad?.");
+      const msg = getApiErrorMessage(e, "Dispatch önizleme alınamadı.");
       setDispatchPreview((prev) => ({ ...prev, [sid]: { status: "error", error: msg } }));
       return null;
     } finally {
@@ -1067,3 +1067,4 @@ async function decideExtend(shiftId, decision) {
     </div>
   );
 }
+

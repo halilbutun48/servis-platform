@@ -138,7 +138,7 @@ function buildEnvChecks() {
     {
       id: "env_jwt_secret",
       title: "JWT secret varsayılan değil",
-      status: statusFromBoolean(String(ENV.JWT_SECRET || "").trim() && String(ENV.JWT_SECRET || "") !== "dev-secret", "JWT secret ?zel de?er ta??yor.", "JWT secret h?l? varsay?lan/dev g?r?n?yor.", "WARN"),
+      status: statusFromBoolean(String(ENV.JWT_SECRET || "").trim() && String(ENV.JWT_SECRET || "") !== "dev-secret", "JWT secret özel değer taşıyor.", "JWT secret hâlâ varsayılan/dev görünüyor.", "WARN"),
     },
     {
       id: "env_cors_origin",

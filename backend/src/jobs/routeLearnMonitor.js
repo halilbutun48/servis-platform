@@ -5,6 +5,7 @@ import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { computeRouteKey, stringifyPolyline, median, pickCanonicalSample, downsamplePoints } from "../services/routeLearning.js";
 import { osrmMatch } from "../services/osrmMatch.js";
+import logger from "../lib/logger.js";
 
 function hubFrom({ shift, agreement, room }) {
   const lat =
@@ -166,7 +167,7 @@ export function startRouteLearnMonitor(_io, opts = {}) {
       }
     } catch (e) {
        
-      console.error("[routeLearnMonitor] tick failed:", e?.message || e);
+      logger.error("[routeLearnMonitor] tick failed:", e?.message || e);
     } finally {
       running = false;
     }
@@ -179,3 +180,4 @@ export function startRouteLearnMonitor(_io, opts = {}) {
     try { clearInterval(timer); } catch {}
   };
 }
+

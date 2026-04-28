@@ -168,7 +168,7 @@ export default function RoomOffersPanel() {
     }));
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     setErr("");
     try {
       const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}&take=200` : "?take=200";
@@ -177,9 +177,9 @@ export default function RoomOffersPanel() {
     } catch (e) {
       setErr(String(e?.message || e));
     }
-  }
+  }, [statusFilter]);
 
-  async function loadAssets() {
+  const loadAssets = useCallback(async () => {
     try {
       const [v, d] = await Promise.all([api.get("/api/vehicles"), api.get("/api/drivers")]);
       setVehicles(Array.isArray(v) ? v : v?.items ?? []);
@@ -188,13 +188,12 @@ export default function RoomOffersPanel() {
       setVehicles([]);
       setDrivers([]);
     }
-  }
+  }, []);
 
   useEffect(() => {
     load();
     loadAssets();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [load, loadAssets, statusFilter]);
 
   useAutoReload("offers", load, true);
 

@@ -3,7 +3,7 @@
 Bu dosya, 2026-04-05 itibarıyla STARTPACK / PRIMER / MILESTONE_REGISTRY çizgisini aynı resmi gösterecek şekilde hizalamak için eklenmiştir.
 
 ## Neden gerekliydi?
-Repo i?indeki mevcut dok?manlar?n bir b?l?m? h?l? M79/M80 aktifmi? gibi konu?uyor. Oysa resmi do?rulanm?? son baz:
+Repo içindeki mevcut dokümanların bir bölümü hâlâ M79/M80 aktifmiş gibi konuşuyor. Oysa resmi doğrulanmış son baz:
 - M61 geçti
 - M67→M79 geçti
 - M80 / M80.1 / M80.2 / M80.3 geçti

@@ -231,7 +231,7 @@ function analyzeGeoReview(screenContext, screenDefinition, conversationState) {
   if (!result.selectedLabel) result.blockers.push('Önce listeden bir kişi seçilmeden sağ panel güvenilir okunmaz.');
   if (hasBlankish(coord)) result.missingData.push('Koordinat boş görünüyor.');
   if (hasBlankish(coord) && hasBlankish(address)) result.blockers.push('Hem adres hem koordinat boşsa otomatik üretim ve manuel kaydetme akışı ilerlemez.');
-  if (badgeHas(badges, ['needs_review', 'failed']) || /review|incele/.test(normalizeText(status))) result.reasoningLead = 'Bu kay?t h?l? konum do?rulama istiyor.';
+  if (badgeHas(badges, ['needs_review', 'failed']) || /review|incele/.test(normalizeText(status))) result.reasoningLead = 'Bu kayıt hâlâ konum doğrulama istiyor.';
   else result.reasoningLead = 'Bu kayıtta ana karar koordinatın gerçekten doğrulanıp kaydedilmediği.';
   if (coord) result.evidence.push(`Koordinat: ${coord}`);
   if (address) result.evidence.push(`Adres: ${address}`);
@@ -310,7 +310,7 @@ function analyzeShifts(screenContext, screenDefinition, conversationState) {
   result.safestNextStep = 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.';
   const lastQuestion = normalizeText(conversationState?.lastUserMessage || '');
   if (/kayıt ne durumda|hazır mı|atama/.test(lastQuestion)) result.changedHint = 'Az önce hazır mı sorulduysa yalnız durum rozetine değil araç-sürücü boşluklarına da bakmak gerekir.';
-  result.compareHint = 'APPROVED ile tam atama ayn? ?ey de?ildir; ara? ve s?r?c? bo?sa i? h?l? saha i?in eksiktir.';
+  result.compareHint = 'APPROVED ile tam atama aynı şey değildir; araç ve sürücü boşsa iş hâlâ saha için eksiktir.';
   applyStructuredFacts(result, screenContext);
   applyUiSurface(result, screenContext);
   return finalize(result);
@@ -404,7 +404,7 @@ function analyzeAgreements(screenContext, screenDefinition) {
     ? 'Önce karar yönünü netleştir. Onay vereceksen araç ve sürücüyü kontrol et; karşı teklif vereceksen tutarı ve notu tekrar oku.'
     : 'Önce bağlı vardiya veya ufuk bilgisini kontrol et. Sonra sözleşmenin saha etkisini değerlendir.';
   result.safestNextStep = 'En risksiz adım, seçili sözleşmenin tarih aralığı ile araç-sürücü bağını birlikte doğrulamaktır.';
-  result.compareHint = 'S?zle?me onay? ile saha haz?rl??? ayn? ?ey de?ildir; ara? ve s?r?c? eksikse i? h?l? operasyona tam haz?r say?lmaz.';
+  result.compareHint = 'Sözleşme onayı ile saha hazırlığı aynı şey değildir; araç ve sürücü eksikse iş hâlâ operasyona tam hazır sayılmaz.';
   applyStructuredFacts(result, screenContext);
   applyUiSurface(result, screenContext);
   return finalize(result);

@@ -145,7 +145,7 @@ export default function CompanyMapPanel() {
   const [err, setErr] = useState("");
   const [routePreview, setRoutePreview] = useState({ points: [], source: "ESTIMATED" });
 
-  async function loadVehicles(signal) {
+  const loadVehicles = useCallback(async (signal) => {
     const r = await getCompanyVehicles(token, { signal, take: 20, onlyActive: true, ttlMs: 45000 });
     const items = Array.isArray(r) ? r : [];
     setVehicles(items);
@@ -158,9 +158,9 @@ export default function CompanyMapPanel() {
       const first = withShift ? items.find((v) => String(v.id) === String(withShift.vehicleId)) : null;
       setSelectedVehicleId((first || items[0] || null)?.id ?? null);
     }
-  }
+  }, [token, selectedVehicleId, shifts]);
 
-  async function loadShifts(signal) {
+  const loadShifts = useCallback(async (signal) => {
     const r = await getCompanyMapShifts(token, { signal, ttlMs: 9000 });
     const items = Array.isArray(r?.items) ? r.items : Array.isArray(r) ? r : [];
     setShifts(items);
@@ -169,9 +169,9 @@ export default function CompanyMapPanel() {
       const first = items[0] || null;
       if (first?.vehicleId != null) setSelectedVehicleId(first.vehicleId);
     }
-  }
+  }, [token, selectedVehicleId]);
 
-  async function loadAll(signal) {
+  const loadAll = useCallback(async (signal) => {
     setErr("");
     setBusy(true);
     try {
@@ -181,7 +181,7 @@ export default function CompanyMapPanel() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [loadVehicles, loadShifts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,7 +194,7 @@ export default function CompanyMapPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadAll]);
 
   const refreshTimersRef = useRef({ vehicles: null, shifts: null });
 

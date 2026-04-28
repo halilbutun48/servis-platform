@@ -3,6 +3,7 @@ import { clearResponseCacheExact } from '../utils/responseCache.js';
 import { computeRouteKey, stringifyPolyline, sumDistanceKm } from './routeLearning.js';
 import { osrmRoute } from './osrmRoute.js';
 import { etaMinutes } from '../geo.js';
+import logger from "../lib/logger.js";
 
 function buildShiftServicePathPoints(shift) {
   const hub =
@@ -110,7 +111,8 @@ export async function rebuildShiftRouteStateBestEffort(shiftId, db = prisma) {
   try {
     return await rebuildShiftRouteState(shiftId, db);
   } catch (err) {
-    console.error('[shift-route-state] rebuild failed', { shiftId: Number(shiftId), message: String(err?.message || err) });
+    logger.error('[shift-route-state] rebuild failed', { shiftId: Number(shiftId), message: String(err?.message || err) });
     return null;
   }
 }
+

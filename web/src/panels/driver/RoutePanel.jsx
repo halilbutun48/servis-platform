@@ -35,6 +35,10 @@ export default function RoutePanel() {
   const flushBusyRef = useRef(false);
   const loadRef = useRef(null);
   const flushNowRef = useRef(null);
+  const busyRef = useRef(false);
+  const shiftIdRef = useRef(null);
+  const nextStopIdRef = useRef(null);
+  const reachedRef = useRef(null);
 
   const mode = data?.mode || "";
   const shift = data?.shift || null;
@@ -67,6 +71,10 @@ export default function RoutePanel() {
     return ms <= 120000;
   }, [lastReachedStop?.id, lastReachedStop?.reachedAt, lastReachedStop?.skippedAt]);
 
+  busyRef.current = busy;
+  shiftIdRef.current = shift?.id || null;
+  nextStopIdRef.current = nextStop?.id || null;
+
   function focusStop(stop) {
     const lat = Number(stop?.lat);
     const lng = Number(stop?.lng);
@@ -87,7 +95,7 @@ export default function RoutePanel() {
     if (!isOnline()) {
       enqueueRequest({ method: 'POST', url, body, label });
       setQLen(queueSize());
-      showToast('OFFLINE: Kuyru?a al?nd?');
+      showToast('OFFLINE: Kuyruğa alındı');
       return { queued: true };
     }
 
@@ -101,7 +109,7 @@ export default function RoutePanel() {
       if (!e?.status || s >= 500) {
         enqueueRequest({ method: 'POST', url, body, label });
         setQLen(queueSize());
-        showToast(s >= 500 ? 'Sunucu ge?ici hatas?: Kuyru?a al?nd?' : 'Ba?lant? yok: Kuyru?a al?nd?');
+        showToast(s >= 500 ? 'Sunucu geçici hatası: Kuyruğa alındı' : 'Bağlantı yok: Kuyruğa alındı');
         return { queued: true };
       }
       throw e;
@@ -116,7 +124,7 @@ export default function RoutePanel() {
     try {
       const r = await flushQueue({ token, apiFn: api });
       setQLen(queueSize());
-      if (r.sent || r.dropped) showToast(`Kuyruk i?lendi: +${r.sent} (drop ${r.dropped})`);
+      if (r.sent || r.dropped) showToast(`Kuyruk işlendi: +${r.sent} (drop ${r.dropped})`);
       await load();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -191,7 +199,7 @@ useEffect(() => {
 
   setPrevReachedOrder((prev) => {
     if (prev == null) return ord;
-    if (ord > prev) showToast("Durak ula??ld? ?");
+    if (ord > prev) showToast("Durak ulaşıldı");
     return ord;
   });
 }, [progress?.lastReachedOrder]);
@@ -200,14 +208,13 @@ useEffect(() => {
   useEffect(() => {
     function onKey(e) {
       if (e.key !== "Enter") return;
-      if (busy) return;
-      if (!shift?.id || !nextStop?.id) return;
-      reached();
+      if (busyRef.current) return;
+      if (!shiftIdRef.current || !nextStopIdRef.current) return;
+      reachedRef.current?.();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busy, shift?.id, nextStop?.id]);
+  }, []);
   function applyOptimisticReached() {
     try {
       const now = nowIsoTR();
@@ -266,16 +273,16 @@ useEffect(() => {
         return;
       }
 
-      showToast("Durak ula??ld? ?");
+      showToast("Durak ulaşıldı");
 
-      // h?zl? UI g?ncelle
+      // hızlı UI güncelle
       setData((prev) => ({
         ...(prev || {}),
         progress: { lastReachedOrder: r.lastReachedOrder, completed: r.completed },
         nextStop: r.nextStop || null,
       }));
 
-      // kesin senkron i?in yenile
+      // kesin senkron için yenile
       await load();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -286,6 +293,9 @@ useEffect(() => {
 
 
 
+
+
+  reachedRef.current = reached;
 async function undoLast() {
   if (!shift?.id || !lastReachedStop?.id) return;
   setBusy(true);
@@ -293,7 +303,7 @@ async function undoLast() {
   try {
     const r = await safePost(`/api/driver/shifts/${shift.id}/stops/${lastReachedStop.id}/undo`, null, 'undo');
     if (r?.queued) return;
-    showToast("Geri al?nd? ??");
+    showToast("Geri alındı");
     await load();
   } catch (e) {
     setErr(String(e?.message || e));
@@ -324,7 +334,7 @@ async function undoLast() {
     try {
       const r = await safePost(`/api/driver/shifts/${shift.id}/pause`, null, 'pause');
       if (r?.queued) return;
-      showToast('Mola al?nd? ??');
+      showToast('Mola alındı');
       await load();
     } catch (e) {
       setErr(String(e?.message || e));
@@ -376,7 +386,7 @@ async function undoLast() {
     <div>
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <h3 style={{ margin: 0 }}>Bug?n Rotam</h3>
+          <h3 style={{ margin: 0 }}>Bugün Rotam</h3>
           <div className="row" style={{ gap: 8, alignItems: "center" }}>
             {!online ? (
               <span className="pill" style={{ fontWeight: 900 }} data-status="REJECTED">OFFLINE {qLen ? `(${qLen})` : ""}</span>
@@ -385,12 +395,12 @@ async function undoLast() {
             ) : null}
             {qLen ? (
               <button type="button" onClick={() => setShowQueue((p) => !p)} style={{ fontWeight: 900 }}>
-                {showQueue ? "Kuyruk Detay? Kapat" : "Kuyruk Detay?"}
+                {showQueue ? "Kuyruk Detayını Kapat" : "Kuyruk Detayı"}
               </button>
             ) : null}
             {online && qLen ? (
               <button type="button" disabled={busy || flushing} onClick={flushNow} style={{ fontWeight: 900 }}>
-                {flushing ? "..." : `Kuyru?u G?nder (${qLen})`}
+                {flushing ? "..." : `Kuyruğu Gönder (${qLen})`}
               </button>
             ) : null}
           </div>
@@ -406,7 +416,7 @@ async function undoLast() {
           </div>
         ) : null}
         <div className="muted">
-          Faz 1/Faz 2: <b>Rota s?ras?</b> + <b>s?radaki durak</b> + <b>d?? navigasyon</b>. (K?sayol: <b>Enter</b>)
+          Faz 1/Faz 2: <b>Rota sırası</b> + <b>sıradaki durak</b> + <b>dış navigasyon</b>. (Kısayol: <b>Enter</b>)
         </div>
       </div>
 
@@ -436,7 +446,7 @@ async function undoLast() {
           {shift ? (
             <div className="col">
               <div>
-                <b>Shift #{shift.id}</b> ?{" "}
+                <b>Shift #{shift.id}</b> •{" "}
                 <span className="pill" data-status={shift.status}>
                   {paused ? `${shift.status} (MOLA)` : shift.status}
                 </span>
@@ -448,16 +458,16 @@ async function undoLast() {
                   <div className="bar">
                     <div className="barFill" style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="muted">?lerleme: {pct}% (lastReachedOrder: {progress.lastReachedOrder})</div>
+                  <div className="muted">İlerleme: {pct}% (lastReachedOrder: {progress.lastReachedOrder})</div>
                 </>
               ) : null}
 
               {mode === "COMPLETED_FALLBACK" ? (
-                <div className="ok">? Vardiya tamamland?. Yeni vardiya bekleniyor.</div>
+                <div className="ok">• Vardiya tamamlandı. Yeni vardiya bekleniyor.</div>
               ) : null}
             </div>
           ) : (
-            <div className="muted">Vardiya bulunamad?</div>
+            <div className="muted">Vardiya bulunamadı.</div>
           )}
         </div>
 
@@ -465,11 +475,11 @@ async function undoLast() {
           <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <h3>Sonraki Durak</h3>
-              <div className="muted">Ara?: {data?.vehicle?.plate || "-"} ? GPS: {data?.last?.status || "-"}</div>
+              <div className="muted">Araç: {data?.vehicle?.plate || "-"} • GPS: {data?.last?.status || "-"}</div>
             </div>
             {shift?.status === "APPROVED" ? (
               <button type="button" disabled={busy} onClick={startShift} style={{ fontWeight: 900 }}>
-                G?reve Ba?la
+                Göreve Başla
               </button>
             ) : null}
             {shift?.status === "ACTIVE" ? (
@@ -485,7 +495,7 @@ async function undoLast() {
             ) : null}
             {shift?.status === "ACTIVE" && !nextStop ? (
               <button type="button" disabled={busy} onClick={complete}>
-                G?revi Bitir
+                Görevi Bitir
               </button>
             ) : null}
             <button type="button" disabled={busy} onClick={load}>
@@ -509,12 +519,12 @@ async function undoLast() {
               </div>
 
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => openNextStopNavigation(nextStop, { gpsLast: data?.last })}>Sonraki Dura?a Navigasyon</button>
-                <button type="button" onClick={() => openFullRouteNavigation(orderedStops, { gpsLast: data?.last })}>Tam Rotay? D?? Navigasyonda A?</button>
+                <button type="button" onClick={() => openNextStopNavigation(nextStop, { gpsLast: data?.last })}>Sonraki Durak Navigasyonu</button>
+                <button type="button" onClick={() => openFullRouteNavigation(orderedStops, { gpsLast: data?.last })}>Tam Rotayı Dış Navigasyonda Aç</button>
               </div>
 
               <button type="button" disabled={busy || shift?.status !== "ACTIVE" || paused} onClick={reached} style={reachedBtnStyle}>
-                {busy ? "..." : paused ? "Mola (Devam Et)" : shift?.status !== "ACTIVE" ? "Ba?lat (G?reve Ba?la)" : "Reached"}
+                {busy ? "..." : paused ? "Mola (Devam Et)" : shift?.status !== "ACTIVE" ? "Başlat (Göreve Başla)" : "Reached"}
               </button>
 
               {lastReachedStop ? (
@@ -526,7 +536,7 @@ async function undoLast() {
               <div className="muted">Konum: {data?.last ? `${data.last.lat}, ${data.last.lng}` : "-"}</div>
             </div>
           ) : (
-            <div className="muted">Sonraki durak yok (vardiya bitmi? olabilir).</div>
+            <div className="muted">Sonraki durak yok (vardiya bitmiş olabilir).</div>
           )}
 
           <div className="muted" style={{ marginTop: 10 }}>mode: {mode || "-"}</div>
@@ -534,7 +544,7 @@ async function undoLast() {
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>
-        <div className="muted" style={{ marginBottom: 6 }}>Ad?m ad?m takip</div>
+        <div className="muted" style={{ marginBottom: 6 }}>Adım adım takip</div>
         <StopTimeline
           stops={orderedStops}
           nextStopId={nextStop?.id ?? null}
@@ -546,9 +556,9 @@ async function undoLast() {
 
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <h3>Duraklar (rota s?ras? / mesafe / ETA)</h3>
+          <h3>Duraklar (rota sırası / mesafe / ETA)</h3>
           <button type="button" onClick={() => setShowStops((p) => !p)}>
-            {showStops ? "Gizle" : "G?ster"}
+            {showStops ? "Gizle" : "Göster"}
           </button>
         </div>
 
@@ -573,7 +583,7 @@ async function undoLast() {
                     <td>{s.order}</td>
                     <td>{s.name}</td>
                     <td>
-                      {isNext ? <span className="pill" data-status="NEXT">NEXT</span> : reachedState ? <span className="pill" data-status="OK">OK</span> : <span className="pill" data-status="REQUESTED">BEKL?YOR</span>}
+                      {isNext ? <span className="pill" data-status="NEXT">NEXT</span> : reachedState ? <span className="pill" data-status="OK">OK</span> : <span className="pill" data-status="REQUESTED">BEKLİYOR</span>}
                     </td>
                     <td>{s.remainingKm}</td>
                     <td>{s.etaMin}</td>

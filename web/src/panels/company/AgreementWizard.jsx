@@ -249,8 +249,7 @@ function guessPackKey(prefill) {
       setDirection(one.direction || "INBOUND");
       setPattern(one.pattern || "ONE_WAY");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packKey, launchPrefillPackKey, launchPrefill?.sourceShiftId]);
+  }, [pack, packKey, launchPrefillPackKey, launchPrefill?.sourceShiftId, startDate]);
 
   // duration -> endDate autofill (unless user manually edits endDate after)
   useEffect(() => {

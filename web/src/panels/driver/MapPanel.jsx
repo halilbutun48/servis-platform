@@ -39,7 +39,7 @@ export default function DriverMapPanel() {
       const v = await api("/api/live/vehicles", { token });
       setVehicles(Array.isArray(v) ? v : []);
 
-      // ? driver i?in do?ru endpoint
+      // driver için doğru endpoint
       const s = await api("/api/shifts/my", { token });
       setShifts(Array.isArray(s) ? s : (s?.items ?? []));
 
@@ -132,8 +132,8 @@ export default function DriverMapPanel() {
   return (
     <div className="wrap wrap--fluid">
       <PanelChrome
-        title="Driver ? Harita"
-        subtitle="Se?ili ara? + vardiya duraklar?"
+        title="Driver - Harita"
+        subtitle="Seçili araç + vardiya durakları"
         actions={<button onClick={loadAll} style={{ padding: "8px 12px" }}>Yenile</button>}
       />
 
@@ -142,8 +142,8 @@ export default function DriverMapPanel() {
       <div className="card" style={{ marginBottom: 10 }}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontWeight: 900 }}>Canl? rota ?zeti</div>
-            <div className="muted">T?m duraklar rota s?ras? ile, s?radaki durak highlight, canl? ara? takibi</div>
+            <div style={{ fontWeight: 900 }}>Canlı rota özeti</div>
+            <div className="muted">Tüm duraklar rota sırası ile, sıradaki durak highlight, canlı araç takibi</div>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
             <span className="pill">Toplam: {stats.total}</span>
@@ -155,18 +155,18 @@ export default function DriverMapPanel() {
         <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           {nextStop?.name ? (
             <>
-              <span className="muted">S?radaki:</span>
+              <span className="muted">Sıradaki:</span>
               <span className="pill" data-status="NEXT">{nextStop.name}</span>
-              <button type="button" onClick={() => openNextStopNavigation(nextStop, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Sonraki Dura?a Navigasyon</button>
-              <button type="button" onClick={() => openFullRouteNavigation(stops, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Tam Rotay? D?? Navigasyonda A?</button>
+              <button type="button" onClick={() => openNextStopNavigation(nextStop, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Sonraki Durağa Navigasyon</button>
+              <button type="button" onClick={() => openFullRouteNavigation(stops, vehicles.find((v) => String(v.id) === String(selectedVehicleId)) || null)}>Tam Rotayı Dış Navigasyonda Aç</button>
             </>
           ) : (
-            <span className="muted">S?radaki durak yok.</span>
+            <span className="muted">Sıradaki durak yok.</span>
           )}
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <div className="muted" style={{ marginBottom: 6 }}>Ad?m ad?m takip</div>
+          <div className="muted" style={{ marginBottom: 6 }}>Adım adım takip</div>
           <StopTimeline stops={stops} nextStopId={nextStop?.id ?? null} compact={false} onSelect={(s) => focusStop(s)} />
         </div>
       </div>
@@ -182,3 +182,4 @@ export default function DriverMapPanel() {
     </div>
   );
 }
+

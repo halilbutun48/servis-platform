@@ -35,7 +35,7 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - Bu adım shareable repo exportunu temiz zip olarak kilitler.
 - Komut: `tools\pack_m90_c7_export_package_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Shareable export: `tools\export_shareable_repo_bundle.ps1 -RepoRoot D:\servis-platform`
-- Beklenen sonu?: env/build/runtime-json/overlay kal?nt?s? ta??mayan shareable export zip ?retilir; sat?r azaltma h?l? en sona b?rak?l?r.
+- Beklenen sonuç: env/build/runtime-json/overlay kalıntısı taşımayan shareable export zip üretilir; satır azaltma hâlâ en sona bırakılır.
 
 ## M90C.8 çalışma mantığı
 - Bu adım kanonik doğrulama zincirini repo-native görünür hale getirir.
@@ -44,7 +44,7 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - Komut: `tools\pack_m90_c8_ci_verification_visibility.ps1 -RepoRoot D:\servis-platform`
 - Workflow: `.github/workflows/vardis_verification_visibility.yml`
 - Fresh runner hazırlığı: `npm --prefix backend ci` ve `npm --prefix web ci`; npm cache `backend/package-lock.json` ve `web/package-lock.json` ile bağlanır.
-- Beklenen sonu?: `repo-verification` ve `shareable-export` i?leri repo audit + web lint + sanitized shareable export artefaktlar?n? g?r?n?r k?lar; sat?r azaltma h?l? en sona b?rak?l?r.
+- Beklenen sonuç: `repo-verification` ve `shareable-export` işleri repo audit + web lint + sanitized shareable export artefaktlarını görünür kılar; satır azaltma hâlâ en sona bırakılır.
 
 ## Değişmez kural
 - yeni ürün özelliği açılmaz
@@ -59,4 +59,4 @@ Amaç: yaşayan repo gerçeği ile docs / state / script guide / proof / verific
 - Web lint kanıtı: `artifacts/lint/web_lint_latest.txt`
 - Komut: `tools\pack_m90_c9_safe_closure_final_hygiene.ps1 -RepoRoot D:\servis-platform`
 - Windows notu: export/hijyen kapanışında `pwsh` tercih edilir; script yine de PowerShell 5.1 fallback güvenini korur.
-- Beklenen sonu?: `verify:final` zinciri, web lint kan?t?, sanitized export pack, shareable bundle ?retimi ve temiz `git status` s?ras? resmi kapan?? checklisti olarak g?r?n?r olur; sat?r azaltma h?l? en sona b?rak?l?r.
+- Beklenen sonuç: `verify:final` zinciri, web lint kanıtı, sanitized export pack, shareable bundle üretimi ve temiz `git status` sırası resmi kapanış checklisti olarak görünür olur; satır azaltma hâlâ en sona bırakılır.

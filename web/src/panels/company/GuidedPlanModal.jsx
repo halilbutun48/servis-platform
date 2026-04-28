@@ -108,8 +108,8 @@ export default function GuidedPlanModal({
   const currentStepItems = useMemo(() => buildGuidedPlanCurrentStepItems({ pack, customSlots }), [pack, customSlots]);
   const totalShiftCount = useMemo(() => eligibleDaysCount * currentStepItems.length, [eligibleDaysCount, currentStepItems]);
   const guidedLimitMessage = useMemo(() => {
-    if (eligibleDaysCount > 7) return "Guided en fazla 7 g?n olabilir. Daha uzun planlar i?in s?zle?me kullan?n.";
-    if (totalShiftCount > 21) return "Guided en fazla 21 vardiya olu?turabilir. Daha yo?un planlar i?in s?zle?me kullan?n.";
+    if (eligibleDaysCount > 7) return "Guided en fazla 7 gün olabilir. Daha uzun planlar için sözleşme kullanın.";
+    if (totalShiftCount > 21) return "Guided en fazla 21 vardiya oluşturabilir. Daha yoğun planlar için sözleşme kullanın.";
     return "";
   }, [eligibleDaysCount, totalShiftCount]);
   const nextValidStart = useMemo(() => nextYmdMatchingMask(startDate, weekMask, 31), [startDate, weekMask]);
@@ -229,11 +229,11 @@ export default function GuidedPlanModal({
     const stoplessCount = items.filter((x) => x.stopless).length;
     const firstError = items.find((x) => x.failed)?.error || "";
     const reasons = [];
-    if (!total) reasons.push("?nce taslak shift olu?tur.");
-    if (!organization && companyGeoGate.blocking) reasons.push("?nce ki?i koordinatlar?n? tamamla.");
-    if (stoplessCount > 0) reasons.push(`Duraks?z taslak shift: ${stoplessCount}`);
-    if (pendingCount > 0) reasons.push(`OSRM do?rulamas? bekleyen taslak: ${pendingCount}`);
-    if (errorCount > 0) reasons.push(firstError || `OSRM do?rulama hatas?: ${errorCount}`);
+    if (!total) reasons.push("Önce taslak shift oluştur.");
+    if (!organization && companyGeoGate.blocking) reasons.push("Önce kişi koordinatlarını tamamla.");
+    if (stoplessCount > 0) reasons.push(`Duraksız taslak shift: ${stoplessCount}`);
+    if (pendingCount > 0) reasons.push(`OSRM doğrulamas? bekleyen taslak: ${pendingCount}`);
+    if (errorCount > 0) reasons.push(firstError || `OSRM doğrulama hatas?: ${errorCount}`);
     return {
       total,
       readyCount,
@@ -272,7 +272,7 @@ export default function GuidedPlanModal({
             lat: fmtCoord(lat),
             lng: fmtCoord(lng),
             status: "manual",
-            foundText: "Koordinat haz?r",
+            foundText: "Koordinat hazır",
           };
         }
         if (String(item?.status || "") === "manual") {
@@ -309,7 +309,7 @@ export default function GuidedPlanModal({
               lat: fmtCoord(lat),
               lng: fmtCoord(lng),
               status: "manual",
-              foundText: "Haritadan se?ildi",
+              foundText: "Haritadan seçildi",
             }
           : item
       )
@@ -322,7 +322,7 @@ export default function GuidedPlanModal({
     const lat = coordNum(dest?.lat);
     const lng = coordNum(dest?.lng);
     if (!hasCoord(lat, lng)) {
-      setErr("Navigasyon i?in yer koordinat? gerekli.");
+      setErr("Navigasyon için yer koordinat? gerekli.");
       return;
     }
     const hLat = coordNum(hubLat);
@@ -332,7 +332,7 @@ export default function GuidedPlanModal({
       destination: { lat, lng },
     });
     if (!url) {
-      setErr("Navigasyon linki olu?turulamad?.");
+      setErr("Navigasyon linki oluşturulamad?.");
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
@@ -343,7 +343,7 @@ export default function GuidedPlanModal({
       .map((s) => ({ lat: coordNum(s?.lat), lng: coordNum(s?.lng) }))
       .filter((x) => hasCoord(x.lat, x.lng));
     if (!stops.length) {
-      setErr("Navigasyon i?in en az 1 durak gerekli.");
+      setErr("Navigasyon için en az 1 durak gerekli.");
       return;
     }
     const hLat = coordNum(shift?.hubLat);
@@ -360,7 +360,7 @@ export default function GuidedPlanModal({
       waypoints = stops.slice(0, -1);
     } else {
       if (stops.length < 2) {
-        setErr("Navigasyon i?in hub veya en az 2 durak gerekli.");
+        setErr("Navigasyon için hub veya en az 2 durak gerekli.");
         return;
       }
       origin = stops[0];
@@ -369,7 +369,7 @@ export default function GuidedPlanModal({
     }
     const url = buildGoogleNavUrl({ origin, destination, waypoints });
     if (!url) {
-      setErr("Navigasyon linki olu?turulamad?.");
+      setErr("Navigasyon linki oluşturulamad?.");
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
@@ -405,7 +405,7 @@ export default function GuidedPlanModal({
     const item = (orgDestinations || [])[idx];
     const q = String(item?.address || item?.title || "").trim();
     if (q.length < 3) {
-      setErr("Yer i?in en az 3 karakterlik ad veya adres gir.");
+      setErr("Yer için en az 3 karakterlik ad veya adres gir.");
       return;
     }
     setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "loading", foundText: "" } : x)));
@@ -427,10 +427,10 @@ export default function GuidedPlanModal({
           )
         );
       } else {
-        setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: "Bulunamad?" } : x)));
+        setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: "Bulunamadı" } : x)));
       }
     } catch (e) {
-      setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: getApiErrorMessage(e, "Bulunamad?") } : x)));
+      setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: getApiErrorMessage(e, "Bulunamadı") } : x)));
     }
   }
 
@@ -438,12 +438,12 @@ export default function GuidedPlanModal({
     const pax = String(orgEstimatedPax || "").trim();
     const gathering = String(orgGatheringName || "").trim();
     const places = orgFilledDestinations.map((d) => String(d.title || d.address || "").trim()).filter(Boolean);
-    const returnText = orgReturnType === "RETURN_TO_START" ? "Ba?lang?? noktas?na d?n" : "Son noktada bitir";
+    const returnText = orgReturnType === "RETURN_TO_START" ? "Başlangıç noktasına dön" : "Son noktada bitir";
     const parts = [];
     if (gathering) parts.push(`Toplanma: ${gathering}`);
-    if (pax) parts.push(`Tahmini ki?i: ${pax}`);
+    if (pax) parts.push(`Tahmini kişi: ${pax}`);
     if (places.length) parts.push(`Yerler: ${places.join(" ? ")}`);
-    parts.push(`D?n??: ${returnText}`);
+    parts.push(`Dönüş: ${returnText}`);
     return `[Gezi plan?] ${parts.join(" | ")}`;
   }
 
@@ -613,7 +613,7 @@ export default function GuidedPlanModal({
     const lat = hubLat === "" ? null : Number(hubLat);
     const lng = hubLng === "" ? null : Number(hubLng);
     if ((lat == null) !== (lng == null)) {
-      setErr("Hub lat/lng birlikte olmal?.");
+      setErr("Hub lat/lng birlikte olmalı.");
       return;
     }
     if (lat != null && lng != null && (lat === 0 || lng === 0)) {
@@ -624,7 +624,7 @@ export default function GuidedPlanModal({
     setBusy(true);
     try {
       await saveGuidedCompanyHub({ token, hubLat: lat, hubLng: lng });
-      setInfo(organization ? "? Toplanma noktas? kaydedildi." : "? ?irket konumu kaydedildi.");
+      setInfo(organization ? "? Toplanma noktas? kaydedildi." : "? Şirket konumu kaydedildi.");
       setStep(1);
     } catch (e) {
       setErr(getApiErrorMessage(e));
@@ -637,7 +637,7 @@ export default function GuidedPlanModal({
     setErr("");
     setInfo("");
     if (!navigator?.geolocation) {
-      setErr("Taray?c? konum izni desteklemiyor.");
+      setErr("Tarayıcı konum izni desteklemiyor.");
       return;
     }
 
@@ -648,12 +648,16 @@ export default function GuidedPlanModal({
         const lat = Number(pos?.coords?.latitude);
         const lng = Number(pos?.coords?.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          setErr("Konum okunamad?.");
+          setErr("Konum okunamadı.");
           return;
         }
         setHubLat(String(lat));
         setHubLng(String(lng));
-        setInfo(organization ? "? Toplanma noktas? konumu al?nd?. Kaydetmek i?in '?leri'ye bas." : "? Konum al?nd?. Kaydetmek i?in '?leri'ye bas.");
+        setInfo(
+          organization
+            ? "• Toplanma noktası konumu alındı. Kaydetmek için 'İleri'ye bas."
+            : "• Konum alındı. Kaydetmek için 'İleri'ye bas."
+        );
       },
       (e) => {
         setBusy(false);
@@ -669,7 +673,7 @@ export default function GuidedPlanModal({
     if (!token) return;
     const q = String(addr || "").trim();
     if (q.length < 3) {
-      setErr("Adres en az 3 karakter olmal?.");
+      setErr("Adres en az 3 karakter olmalı.");
       return;
     }
     setBusy(true);
@@ -678,9 +682,9 @@ export default function GuidedPlanModal({
       if (r?.ok) {
         setHubLat(String(r.lat));
         setHubLng(String(r.lng));
-        setInfo(`? Bulundu: ${r.displayName || ""}`);
+        setInfo(`Bulundu: ${r.displayName || ""}`);
       } else {
-        setErr("Adres bulunamad?.");
+        setErr("Adres bulunamadı.");
       }
     } catch (e) {
       setErr(getApiErrorMessage(e));
@@ -698,7 +702,7 @@ export default function GuidedPlanModal({
     const lat = hubLat === "" ? null : Number(hubLat);
     const lng = hubLng === "" ? null : Number(hubLng);
     if ((lat == null) !== (lng == null)) {
-      setErr("Hub lat/lng birlikte olmal?.");
+      setErr("Hub lat/lng birlikte olmalı.");
       return;
     }
     if (lat != null && lng != null && (lat === 0 || lng === 0)) {
@@ -708,21 +712,21 @@ export default function GuidedPlanModal({
 
     const items = stepItems();
     if (!items.length) {
-      setErr("Plan paketi ge?ersiz.");
+      setErr("Plan paketi geçersiz.");
       return;
     }
     const totalDraftCount = eligibleDaysCount * items.length;
     if (eligibleDaysCount > 7) {
-      setErr("Guided en fazla 7 g?n olabilir. Daha uzun planlar i?in s?zle?me kullan?n.");
+      setErr("Guided en fazla 7 gün olabilir. Daha uzun planlar için sözleşme kullanın.");
       return;
     }
     if (totalDraftCount > 21) {
-      setErr("Guided en fazla 21 vardiya olu?turabilir. Daha yo?un planlar i?in s?zle?me kullan?n.");
+      setErr("Guided en fazla 21 vardiya oluşturabilir. Daha yoğun planlar için sözleşme kullanın.");
       return;
     }
     if (organization) {
       if (!String(orgEstimatedPax || "").trim()) {
-        setErr("Tahmini ki?i say?s?n? gir.");
+        setErr("Tahmini kişi sayısını gir.");
         return;
       }
       if (!orgFilledDestinations.length) {
@@ -730,7 +734,7 @@ export default function GuidedPlanModal({
         return;
       }
       if (!orgDestinationAudit.ok) {
-        setErr(`Koordinat? eksik yerler var: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}. Adresten bul, manuel lat/lng gir veya haritadan se?.`);
+        setErr(`Koordinat? eksik yerler var: ${orgDestinationAudit.missing.map((x) => x.label).join(", ")}. Adresten bul, manuel lat/lng gir veya haritadan seç.`);
         return;
       }
     }
@@ -757,7 +761,7 @@ export default function GuidedPlanModal({
         hubLng,
       });
       if (!created.createdIds.length) {
-        setErr("Se?ili tarih aral???nda (g?n filtresine g?re) vardiya ?retilecek g?n yok. Ba?lang?? / g?nler / s?reyi de?i?tir.");
+        setErr("Seçili tarih aralığında (gün filtresine göre) vardiya üretilecek gün yok. Başlangıç / günler / süreyi değiştir.");
         return;
       }
 
@@ -772,7 +776,7 @@ export default function GuidedPlanModal({
             targetShiftIds: created.createdIds,
           });
           if (hydrated?.copied) {
-            hydrationInfo = ` ? kaynak vardiyadan ${Number(hydrated.personCount || 0)} personel ta??nd?`;
+            hydrationInfo = ` ? kaynak vardiyadan ${Number(hydrated.personCount || 0)} personel taşındı`;
             nextDraftShifts = await refreshGuidedDraftShiftsAction({ token, draftShiftIds: created.createdIds });
           }
         }
@@ -780,7 +784,7 @@ export default function GuidedPlanModal({
 
       setDraftShiftIds(created.createdIds);
       setDraftShifts(nextDraftShifts);
-      setInfo(`? Taslak shift olu?turuldu: ${created.createdIds.map((x) => "#" + x).join(", ")}${hydrationInfo}`);
+      setInfo(`? Taslak shift oluşturuldu: ${created.createdIds.map((x) => "#" + x).join(", ")}${hydrationInfo}`);
       setStep(2);
     } catch (e) {
       setErr(getApiErrorMessage(e));
@@ -817,11 +821,11 @@ async function osrmReorder(shiftId) {
     const res = await osrmReorderCore(sid);
     if (!res.ok) {
       setOsrmResById((prev) => ({ ...prev, [sid]: { ok: false, error: res.error } }));
-      setErr(res.error || "S?ralama ba?ar?s?z.");
+      setErr(res.error || "Sıralama başarısız.");
       return;
     }
     setOsrmResById((prev) => ({ ...prev, [sid]: { ok: true } }));
-    setInfo(`? Rota s?raland? (solver: ${res.solver || "-" }).`);
+    setInfo(`? Rota sıraland? (solver: ${res.solver || "-" }).`);
     await refreshDraftShifts();
   } catch (e) {
     setErr(getApiErrorMessage(e));
@@ -872,7 +876,7 @@ async function osrmReorderAll() {
     }
 
     await refreshDraftShifts();
-    setInfo(`? Hepsi i?lendi. OK: ${okCount}, Hata: ${errCount}.`);
+    setInfo(`? Hepsi işlendi. OK: ${okCount}, Hata: ${errCount}.`);
   } catch (e) {
     setErr(getApiErrorMessage(e));
   } finally {
@@ -886,15 +890,15 @@ async function sendBulkOffers() {
     setInfo("");
     if (!token) return;
     if (!draftShiftIds.length) {
-      setErr("?nce taslak vardiya olu?turmal?s?n.");
+      setErr("Önce taslak vardiya oluşturmalısın.");
       return;
     }
     if (organization && !orgDraftCompletion.ready) {
-      setErr(`Markete g?ndermek i?in plan tamamlanmal?: ${orgDraftCompletion.reasons.join(" ? ")}`);
+      setErr(`Markete gündermek için plan tamamlanmal?: ${orgDraftCompletion.reasons.join(" ? ")}`);
       return;
     }
     if (!organization && offerOsrmGate.blocking) {
-      setErr(offerOsrmGate.reasons.join(" ? ") || "OSRM rota do?rulamas? tamamlanmadan teklif g?nderilemez.");
+      setErr(offerOsrmGate.reasons.join(" ? ") || "OSRM rota doğrulamas? tamamlanmadan teklif günderilemez.");
       return;
     }
 
@@ -909,11 +913,11 @@ async function sendBulkOffers() {
         });
         setSentOk(true);
         setOfferOutcome("route_refresh_pending");
-        setInfo(`? Rota g?ncelleme teklifi g?nderildi (${launchContext?.roomName || `Oda #${roomId || "?"}`}). Talep #${Number(created?.item?.id || created?.id || 0) || "?"} olarak kaydedildi.`);
+        setInfo(`? Rota güncelleme teklifi günderildi (${launchContext?.roomName || `Oda #${roomId || "?"}`}). Talep #${Number(created?.item?.id || created?.id || 0) || "?"} olarak kaydedildi.`);
       } else {
         const roomIds = selectedRoomIds;
         if (!roomIds.length) {
-          setErr("En az 1 room se?.");
+          setErr("En az 1 room seç.");
           return;
         }
         const result = await sendGuidedBulkOffersAction({ token, draftShiftIds, selectedRoomIds: roomIds, offerAmount, offerNote });
@@ -921,11 +925,14 @@ async function sendBulkOffers() {
         setSentOk(true);
         if (result?.allBlocked) {
           setOfferOutcome("agreement_covered");
-          setInfo("?? Se?ilen room'lar bu zaman penceresinde zaten aktif s?zle?me kapsam?nda. Yeni teklif g?nderilmedi; taslak vardiyalar korundu.");
+          setInfo("Seçilen room'lar bu zaman penceresinde zaten aktif sözleşme kapsamında. Yeni teklif gönderilmedi; taslak vardiyalar korundu.");
         } else {
           setOfferOutcome("sent");
-          const sentText = `? G?nderildi (vardiya say?s?: ${Number(result?.sentCount || 0)}).`;
-          const skipText = skippedCount > 0 ? ` Not: ${skippedCount} room teklif atland? (aktif s?zle?me ?ak??mas?).` : "";
+          const sentText = `Gönderildi (vardiya sayısı: ${Number(result?.sentCount || 0)}).`;
+          const skipText =
+            skippedCount > 0
+              ? ` Not: ${skippedCount} room teklif atlandı (aktif sözleşme çakışması).`
+              : "";
           setInfo(`${sentText}${skipText}`);
         }
       }
@@ -939,7 +946,7 @@ async function sendBulkOffers() {
   const planSummary = useMemo(() => {
     const lines = currentStepItems.map((it) => {
       const p = organization ? (orgReturnType === "RETURN_TO_START" ? "LOOP" : "ONE_WAY") : it.pattern;
-      return `${it.label || ""}: ${toHHMM(it.startMin)} ? ${toHHMM(it.endMin)}${organization ? ` ? ${patternLabel(p, organization)}` : ` ? ${directionLabel(it.direction, organization)} ? ${patternLabel(p, organization)}`}`;
+      return `${it.label || ""}: ${toHHMM(it.startMin)} → ${toHHMM(it.endMin)}${organization ? ` → ${patternLabel(p, organization)}` : ` → ${directionLabel(it.direction, organization)} → ${patternLabel(p, organization)}`}`;
     });
     return lines;
   }, [currentStepItems, organization, orgReturnType]);
@@ -955,7 +962,7 @@ async function sendBulkOffers() {
     >
       <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Rehberli Mod ? Rota G?ncelle" : "Rehberli Mod ? Yeni Plan"}</div>
+          <div style={{ fontWeight: 900, fontSize: 18 }}>{routeRefreshMode ? "Rehberli Mod → Rota Güncelle" : "Rehberli Mod → Yeni Plan"}</div>
           <div className="muted" style={{ marginTop: 4 }}>{stepTitle(step, who, organization)}</div>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -971,16 +978,16 @@ async function sendBulkOffers() {
       ) : null}
       {routeRefreshMode ? (
         <div className="card" style={{ marginTop: 10, border: "1px solid rgba(88,166,255,.28)" }}>
-          <div style={{ fontWeight: 800 }}>Rota g?ncelleme ba?lam?</div>
+          <div style={{ fontWeight: 800 }}>Rota güncelleme bağlamı</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            S?zle?me #{Number(launchContext?.agreementId || 0) || "?"} ? Kaynak vardiya #{Number(launchContext?.sourceShiftId || 0) || "?"}
-            {launchContext?.roomName ? ` ? Oda ${launchContext.roomName}` : ""}
+            Sözleşme #{Number(launchContext?.agreementId || 0) || "?"} · Kaynak vardiya #{Number(launchContext?.sourceShiftId || 0) || "?"}
+            {launchContext?.roomName ? ` · Oda ${launchContext.roomName}` : ""}
           </div>
           {launchContext?.sourceSummary ? (
             <div className="muted" style={{ marginTop: 6 }}>{String(launchContext.sourceSummary)}</div>
           ) : null}
           <div className="muted" style={{ marginTop: 6 }}>
-            Bu turda mevcut rehberli ak?? ayn? s?zle?me ba?lam?yla a??ld?. Plan? d?zenleyip ki?i/durak taraf?n? yeniden haz?rlayabilirsin.
+            Bu turda mevcut rehberli akış aynı sözleşme bağlamıyla açıldı. Planı düzenleyip kişi/durak tarafını yeniden hazırlayabilirsin.
           </div>
         </div>
       ) : null}

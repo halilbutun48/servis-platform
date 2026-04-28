@@ -1,7 +1,7 @@
 # OVERLAY NOTES — M100 ASCII Check Output (2026-03-10)
 
 Amaç:
-- Windows PowerShell / code page fark? nedeniyle `?/?/??/??` ??kt?lar?n?n `???????` gibi bozuk g?r?nmesini ?nlemek.
+- Windows PowerShell / code page farkı nedeniyle `?/?/??/??` çıktıların `???????` gibi bozuk görünmesini önlemek.
 
 Yapılan:
 - aktif check/pack scriptlerindeki kullanıcıya görünen emoji çıktıları ASCII hale getirildi.

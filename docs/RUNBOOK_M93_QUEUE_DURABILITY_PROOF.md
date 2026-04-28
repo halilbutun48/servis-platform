@@ -22,7 +22,7 @@ Beklenen davranış:
 3. GPS POST / queue enqueue denemesi yap.
 4. API'nin kontrollü hata verdiğini doğrula.
 5. Redis container'ı tekrar başlat.
-6. `/api/admin/queue/auto-reached/health` ve `/proof` yüzeylerini kontrol et.
+6. `/api/admin/queues/auto-reached/health` ve `/proof` yüzeylerini kontrol et.
 
 ### 2. Worker restart reclaim testi
 
@@ -41,18 +41,23 @@ Kanıt sinyalleri:
 - `runtime.totalReclaimed`
 - `runtime.lastReclaimAtIso`
 
-### 3. Dead-letter admin görünürlüğü
+### 3. Dead-letter admin görünürlüğü ve kontrollü replay/resolve
 
 Yeni read-only endpoint:
 
-- `GET /api/admin/queue/auto-reached/dead-letter`
-- `GET /api/admin/queue/auto-reached/proof`
+- `GET /api/admin/queues/auto-reached/dead-letter`
+- `GET /api/admin/queues/auto-reached/proof`
+- `POST /api/admin/queues/auto-reached/dead-letter/:taskId/requeue`
+- `POST /api/admin/queues/auto-reached/dead-letter/:taskId/resolve`
 
 Beklenen:
 
 - Sadece super admin guard arkasında görünür.
 - En fazla 200 kayıt tutulur.
 - JSON parse edilemeyen dead-letter kayıtları da raw olarak görünür.
+- Requeue işlemi task'i artan attemptCount ile ana kuyruğa geri taşır ve dead-letter listesinden çıkarır.
+- Resolve işlemi task'i dead-letter listesinden kaldırır ve incelenmiş/kapanmış kabul eder.
+- Her iki işlem de audit log'a düşer; queue artık sadece gözlemlenen değil kontrollü yönetilen bir yüzeye sahiptir.
 
 ### 4. Queue health threshold check
 
@@ -67,7 +72,7 @@ Yeni threshold sınıflandırması:
 
 Endpoint:
 
-- `GET /api/admin/queue/auto-reached/thresholds`
+- `GET /api/admin/queues/auto-reached/thresholds`
 
 Varsayılan eşikler env ile override edilebilir:
 
@@ -76,6 +81,20 @@ Varsayılan eşikler env ile override edilebilir:
 - `AUTO_REACHED_CLAIMS_DEPTH_WARN`
 - `AUTO_REACHED_DEAD_LETTER_DEPTH_WARN`
 - `AUTO_REACHED_OLDEST_CLAIM_AGE_MS_WARN`
+
+## Operasyon notu
+
+Bu queue yüzeyi hâlâ exactly-once enterprise broker değildir. Ancak:
+
+- dead-letter görünür
+- dead-letter replay/resolve kontrollü
+- reclaim gecikmesi ölçülebilir
+- threshold uyarıları admin yüzeyinde okunabilir
+- replay/resolve her seferinde audit kaydı üretir
+- incident kartı, threshold sinyallerini alarm seviyesine çevirir
+- chaos proof notları Redis down/up, worker restart ve poison job drill'lerini görünür tutar
+
+Bu, minimal güvenli queue'dan operasyonel olarak izlenebilir queue seviyesine geçiştir; yine de Redis down / worker restart / poison job chaos drill'leri manuel veya ayrı test koşularıyla doğrulanmalıdır.
 
 ## Statik doğrulama
 

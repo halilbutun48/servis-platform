@@ -10,6 +10,7 @@ import { createMiniRedisClient } from "../redis/miniRedis.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { buildRegionRoutingKey } from "../region/index.js";
+import logger from "../lib/logger.js";
 
 const AUTO_REACHED_QUEUE_KEY = "gps:auto-reached:v1";
 const AUTO_REACHED_PROCESSING_KEY = "gps:auto-reached:processing:v1";
@@ -107,6 +108,59 @@ function safeParseTask(raw) {
 function clampQueueAttempts(value) {
   const n = Math.trunc(Number(value || 0));
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function buildQueueIncidentRecommendations(codes = []) {
+  const codeSet = new Set((Array.isArray(codes) ? codes : []).map((code) => String(code || "")));
+  if (codeSet.has("REDIS_NOT_CONNECTED")) {
+    return [
+      "Redis bağlantısını ve worker sürecini kontrol et.",
+      "GPS ingest tarafında queue fallback davranışını izle.",
+      "Gerekirse dead-letter/reclaim sweep sonrasında worker restart uygula.",
+    ];
+  }
+  if (codeSet.has("DEAD_LETTER_DEPTH_HIGH")) {
+    return [
+      "Dead-letter kayıtlarını incele.",
+      "Uygun kayıtları kontrollü requeue et veya resolve et.",
+      "Poison job tekrarı varsa attempt limitini ve iş verisini kontrol et.",
+    ];
+  }
+  if (codeSet.has("OLDEST_CLAIM_STALE")) {
+    return [
+      "Worker reclaim sweep gecikmesini kontrol et.",
+      "Aynı task için processing listesi ve claims index uyumunu doğrula.",
+      "Stale claim varsa worker restart / reclaim drill notla.",
+    ];
+  }
+  if (codeSet.has("QUEUE_DEPTH_HIGH") || codeSet.has("PROCESSING_DEPTH_HIGH") || codeSet.has("CLAIMS_DEPTH_HIGH")) {
+    return [
+      "Backlog ve processing yükünü izle.",
+      "Worker kapasitesi ile ingest hızı arasındaki farkı ölç.",
+      "Alarm seviyesini gerekiyorsa operasyon ekibine ilet.",
+    ];
+  }
+  return ["Queue sağlıklı; gözlemlemeye devam et."];
+}
+
+function extractDeadLetterTaskId(parsed = {}) {
+  const candidate = parsed?.queueTaskId ?? parsed?.taskId ?? parsed?.id ?? null;
+  const normalized = String(candidate || "").trim();
+  return normalized || null;
+}
+
+function buildDeadLetterReplayEnvelope(parsed = {}) {
+  const nowIso = new Date().toISOString();
+  const next = normalizeQueueTask({
+    ...parsed,
+    attemptCount: clampQueueAttempts(parsed?.attemptCount) + 1,
+    queuedAtIso: nowIso,
+    requeuedAtIso: nowIso,
+    lastRequeueReason: "DEAD_LETTER_REPLAY",
+  });
+  delete next.deadLetteredAtIso;
+  delete next.deadLetterReason;
+  return next;
 }
 
 function syncActiveTasks(activeTasks) {
@@ -303,9 +357,9 @@ export async function getAutoReachedQueueHealthSnapshot(opts = {}) {
       oldestClaimAgeMs: null,
     },
     notes: [
-      "queueDepth backlog'i gosterir; processingDepth claim altinda calisan isleri gosterir.",
-      "claimsDepth ve claimsIndexDepth stale reclaim/gozetim sinirini izlemek icindir.",
-      "deadLetterDepth poison job birikimini, oldestClaimAgeMs ise reclaim gecikmesini gosterir.",
+      "queueDepth backlog'u gösterir; processingDepth claim altında çalışan işleri gösterir.",
+      "claimsDepth ve claimsIndexDepth stale reclaim/gözetim sınırını izlemek içindir.",
+      "deadLetterDepth poison job birikimini, oldestClaimAgeMs ise reclaim gecikmesini gösterir.",
     ],
   };
 
@@ -597,7 +651,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
       }
     } catch (e) {
       if (!closed) {
-        console.error("autoReachedQueue reclaim error:", e);
+        logger.error("autoReachedQueue reclaim error:", e);
       }
     } finally {
       reclaimBusy = false;
@@ -623,7 +677,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
         item = await queueRedis.send("BRPOPLPUSH", AUTO_REACHED_QUEUE_KEY, AUTO_REACHED_PROCESSING_KEY, "1");
       } catch (e) {
         if (!closed) {
-          console.error("autoReachedQueue BRPOPLPUSH error:", e);
+          logger.error("autoReachedQueue BRPOPLPUSH error:", e);
         }
         await pause(1000);
         continue;
@@ -643,7 +697,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
       }
 
       if (!task) {
-        console.error("autoReachedQueue parse error:", raw.slice(0, 200));
+        logger.error("autoReachedQueue parse error:", raw.slice(0, 200));
         queueRuntime.totalParseErrors += 1;
         noteQueueError("autoReachedQueue parse error");
         try {
@@ -666,7 +720,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
       try {
         await rememberClaimState(controlRedis, task, raw, Date.now());
       } catch (e) {
-        console.error("autoReachedQueue claim record error:", e);
+        logger.error("autoReachedQueue claim record error:", e);
         queueRuntime.totalClaimRecordErrors += 1;
         noteQueueError(e);
         try {
@@ -691,7 +745,7 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
         queueRuntime.lastHandledAtIso = new Date().toISOString();
         queueRuntime.lastHandledTaskId = task.queueTaskId;
       } catch (e) {
-        console.error("autoReachedQueue task error:", e);
+        logger.error("autoReachedQueue task error:", e);
         queueRuntime.totalTaskErrors += 1;
         noteQueueError(e);
         try {
@@ -748,11 +802,11 @@ export function startAutoReachedQueueWorker(io, opts = {}) {
 export function evaluateAutoReachedQueueHealthThresholds(snapshot = {}, opts = {}) {
   const queue = snapshot?.queue || {};
   const thresholds = {
-    queueDepthWarn: Number(opts.queueDepthWarn ?? process.env.AUTO_REACHED_QUEUE_DEPTH_WARN ?? 500),
-    processingDepthWarn: Number(opts.processingDepthWarn ?? process.env.AUTO_REACHED_PROCESSING_DEPTH_WARN ?? 50),
-    claimsDepthWarn: Number(opts.claimsDepthWarn ?? process.env.AUTO_REACHED_CLAIMS_DEPTH_WARN ?? 50),
-    deadLetterDepthWarn: Number(opts.deadLetterDepthWarn ?? process.env.AUTO_REACHED_DEAD_LETTER_DEPTH_WARN ?? 1),
-    oldestClaimAgeMsWarn: Number(opts.oldestClaimAgeMsWarn ?? process.env.AUTO_REACHED_OLDEST_CLAIM_AGE_MS_WARN ?? 120000),
+    queueDepthWarn: Number(opts.queueDepthWarn ?? ENV.AUTO_REACHED_QUEUE_DEPTH_WARN ?? 500),
+    processingDepthWarn: Number(opts.processingDepthWarn ?? ENV.AUTO_REACHED_PROCESSING_DEPTH_WARN ?? 50),
+    claimsDepthWarn: Number(opts.claimsDepthWarn ?? ENV.AUTO_REACHED_CLAIMS_DEPTH_WARN ?? 50),
+    deadLetterDepthWarn: Number(opts.deadLetterDepthWarn ?? ENV.AUTO_REACHED_DEAD_LETTER_DEPTH_WARN ?? 1),
+    oldestClaimAgeMsWarn: Number(opts.oldestClaimAgeMsWarn ?? ENV.AUTO_REACHED_OLDEST_CLAIM_AGE_MS_WARN ?? 120000),
   };
 
   const warnings = [];
@@ -760,12 +814,12 @@ export function evaluateAutoReachedQueueHealthThresholds(snapshot = {}, opts = {
     if (condition) warnings.push({ code, message, value, threshold });
   };
 
-  pushIf(Number(queue.queueDepth || 0) > thresholds.queueDepthWarn, "QUEUE_DEPTH_HIGH", "Auto-reached kuyruk derinli?i e?i?i a?t?.", Number(queue.queueDepth || 0), thresholds.queueDepthWarn);
-  pushIf(Number(queue.processingDepth || 0) > thresholds.processingDepthWarn, "PROCESSING_DEPTH_HIGH", "Processing kuyru?u e?i?i a?t?.", Number(queue.processingDepth || 0), thresholds.processingDepthWarn);
-  pushIf(Number(queue.claimsDepth || 0) > thresholds.claimsDepthWarn, "CLAIMS_DEPTH_HIGH", "Claim kay?tlar? e?i?i a?t?.", Number(queue.claimsDepth || 0), thresholds.claimsDepthWarn);
-  pushIf(Number(queue.deadLetterDepth || 0) > thresholds.deadLetterDepthWarn, "DEAD_LETTER_DEPTH_HIGH", "Dead-letter kay?tlar? e?i?i a?t?.", Number(queue.deadLetterDepth || 0), thresholds.deadLetterDepthWarn);
-  pushIf(Number(queue.oldestClaimAgeMs || 0) > thresholds.oldestClaimAgeMsWarn, "OLDEST_CLAIM_STALE", "En eski claim reclaim e?i?ini a?t?.", Number(queue.oldestClaimAgeMs || 0), thresholds.oldestClaimAgeMsWarn);
-  pushIf(snapshot?.redisAvailable === false || snapshot?.redisConnected === false, "REDIS_NOT_CONNECTED", "Redis ba?lant?s? yok veya ba?l? de?il.", snapshot?.redisConnected === true ? 1 : 0, 1);
+  pushIf(Number(queue.queueDepth || 0) > thresholds.queueDepthWarn, "QUEUE_DEPTH_HIGH", "Auto-reached kuyruk derinliği eşiği aştı.", Number(queue.queueDepth || 0), thresholds.queueDepthWarn);
+  pushIf(Number(queue.processingDepth || 0) > thresholds.processingDepthWarn, "PROCESSING_DEPTH_HIGH", "Processing kuyruğu eşiği aştı.", Number(queue.processingDepth || 0), thresholds.processingDepthWarn);
+  pushIf(Number(queue.claimsDepth || 0) > thresholds.claimsDepthWarn, "CLAIMS_DEPTH_HIGH", "Claim kayıtları eşiği aştı.", Number(queue.claimsDepth || 0), thresholds.claimsDepthWarn);
+  pushIf(Number(queue.deadLetterDepth || 0) > thresholds.deadLetterDepthWarn, "DEAD_LETTER_DEPTH_HIGH", "Dead-letter kayıtları eşiği aştı.", Number(queue.deadLetterDepth || 0), thresholds.deadLetterDepthWarn);
+  pushIf(Number(queue.oldestClaimAgeMs || 0) > thresholds.oldestClaimAgeMsWarn, "OLDEST_CLAIM_STALE", "En eski claim reclaim eşiğini aştı.", Number(queue.oldestClaimAgeMs || 0), thresholds.oldestClaimAgeMsWarn);
+  pushIf(snapshot?.redisAvailable === false || snapshot?.redisConnected === false, "REDIS_NOT_CONNECTED", "Redis bağlantısı yok veya bağlı değil.", snapshot?.redisConnected === true ? 1 : 0, 1);
 
   return {
     ok: warnings.length === 0,
@@ -773,6 +827,42 @@ export function evaluateAutoReachedQueueHealthThresholds(snapshot = {}, opts = {
     thresholds,
     warnings,
     checkedAtIso: new Date().toISOString(),
+  };
+}
+
+export function buildAutoReachedQueueIncidentSnapshot(snapshot = {}, opts = {}) {
+  const threshold = evaluateAutoReachedQueueHealthThresholds(snapshot, opts);
+  const warnings = Array.isArray(threshold.warnings) ? threshold.warnings : [];
+  const codeList = warnings.map((item) => String(item?.code || "")).filter(Boolean);
+  const codeSet = new Set(codeList);
+
+  let severity = "OK";
+  let title = "Queue sağlıklı";
+  if (codeSet.has("REDIS_NOT_CONNECTED")) {
+    severity = "CRITICAL";
+    title = "Redis bağlantısı yok";
+  } else if (codeSet.has("DEAD_LETTER_DEPTH_HIGH")) {
+    severity = "HIGH";
+    title = "Dead-letter birikimi yükseldi";
+  } else if (codeSet.has("OLDEST_CLAIM_STALE")) {
+    severity = "HIGH";
+    title = "Claim reclaim gecikiyor";
+  } else if (codeSet.has("QUEUE_DEPTH_HIGH") || codeSet.has("PROCESSING_DEPTH_HIGH") || codeSet.has("CLAIMS_DEPTH_HIGH")) {
+    severity = "WARN";
+    title = "Queue yükü yükseliyor";
+  }
+
+  return {
+    ok: severity === "OK",
+    severity,
+    title,
+    recommendedActions: buildQueueIncidentRecommendations(codeList),
+    chaosDrills: [
+      "Redis down/up: enqueue ve proof yüzeyi davranışını gözle.",
+      "Worker restart: reclaim ve dead-letter geçişini doğrula.",
+      "Poison job: attempt limiti ve dead-letter akışını kontrol et.",
+    ],
+    threshold,
   };
 }
 
@@ -810,12 +900,80 @@ export async function getAutoReachedDeadLetterSnapshot(opts = {}) {
   return out;
 }
 
+async function findDeadLetterEntry(redis, taskId, limit = 200) {
+  const rows = await redis.send("LRANGE", AUTO_REACHED_DEAD_LETTER_KEY, "0", String(Math.max(1, Math.min(200, limit)) - 1));
+  const items = Array.isArray(rows) ? rows : [];
+  for (let idx = 0; idx < items.length; idx += 1) {
+    const raw = items[idx];
+    if (!raw) continue;
+    const parsed = safeParseTask(raw);
+    const parsedTaskId = extractDeadLetterTaskId(parsed || {});
+    if (parsedTaskId && String(parsedTaskId) === String(taskId)) {
+      return { index: idx, raw, parsed };
+    }
+  }
+  return null;
+}
+
+export async function requeueAutoReachedDeadLetter(taskId, opts = {}) {
+  const redis = opts.redis || getRedis();
+  if (!redis?.send) return { ok: false, reason: "REDIS_UNAVAILABLE" };
+
+  const normalizedTaskId = String(taskId || "").trim();
+  if (!normalizedTaskId) return { ok: false, reason: "TASK_ID_REQUIRED" };
+
+  try {
+    const entry = await findDeadLetterEntry(redis, normalizedTaskId, opts.limit ?? 200);
+    if (!entry) return { ok: false, reason: "NOT_FOUND" };
+
+    const nextEnvelope = buildDeadLetterReplayEnvelope(entry.parsed || {});
+    if (!nextEnvelope.queueTaskId) nextEnvelope.queueTaskId = normalizedTaskId;
+
+    await redis.send("LREM", AUTO_REACHED_DEAD_LETTER_KEY, "1", entry.raw);
+    await redis.send("LPUSH", AUTO_REACHED_QUEUE_KEY, JSON.stringify(nextEnvelope));
+
+    return {
+      ok: true,
+      action: "requeued",
+      taskId: String(nextEnvelope.queueTaskId || normalizedTaskId),
+      attemptCount: clampQueueAttempts(nextEnvelope.attemptCount),
+      queuedAtIso: nextEnvelope.queuedAtIso,
+    };
+  } catch (e) {
+    return { ok: false, reason: "REQUEUE_FAILED", error: String(e?.message || e || "REQUEUE_FAILED") };
+  }
+}
+
+export async function resolveAutoReachedDeadLetter(taskId, opts = {}) {
+  const redis = opts.redis || getRedis();
+  if (!redis?.send) return { ok: false, reason: "REDIS_UNAVAILABLE" };
+
+  const normalizedTaskId = String(taskId || "").trim();
+  if (!normalizedTaskId) return { ok: false, reason: "TASK_ID_REQUIRED" };
+
+  try {
+    const entry = await findDeadLetterEntry(redis, normalizedTaskId, opts.limit ?? 200);
+    if (!entry) return { ok: false, reason: "NOT_FOUND" };
+
+    await redis.send("LREM", AUTO_REACHED_DEAD_LETTER_KEY, "1", entry.raw);
+    return {
+      ok: true,
+      action: "resolved",
+      taskId: normalizedTaskId,
+    };
+  } catch (e) {
+    return { ok: false, reason: "RESOLVE_FAILED", error: String(e?.message || e || "RESOLVE_FAILED") };
+  }
+}
+
 export async function getAutoReachedQueueProofSnapshot(opts = {}) {
   const health = await getAutoReachedQueueHealthSnapshot(opts);
   return {
     ok: true,
     health,
     threshold: evaluateAutoReachedQueueHealthThresholds(health, opts),
+    incident: buildAutoReachedQueueIncidentSnapshot(health, opts),
     deadLetter: await getAutoReachedDeadLetterSnapshot(opts),
   };
 }
+

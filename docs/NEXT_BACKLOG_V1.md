@@ -93,7 +93,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 - Windows tarafında export/hijyen kapanışı için tercih edilen kabuk `pwsh` olacaktır.
 - Final closure sırası: `verify:final` -> `type artifacts\lint\web_lint_latest.txt` -> `pack_m90_c7_export_package_hygiene` -> `export_shareable_repo_bundle` -> `git status --short`.
 - `tools/export_shareable_repo_bundle.ps1` PS5 uyumsuz API çağrılarını geri getirmeyecek; `tar.exe` / `.NET ZipFile` fallback korunacaktır.
-- Sat?r azaltma h?l? en sona b?rak?l?r; bu ad?m release/shareable/export/verify kapan?? emniyetidir.
+- Satır azaltma hâlâ en sona bırakılır; bu adım release/shareable/export/verify kapanış emniyetidir.
 
 ## 3) Bu Turun Çalışma Kuralı
 - Ürün davranışını bozma.

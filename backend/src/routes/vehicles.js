@@ -5,6 +5,7 @@ import { authRequired, requireRole } from "../auth/middleware.js";
 import { createVehicleSchema } from "../validators.js";
 import { sanitizeVehicleDirectoryItem } from "../kvkk/enforcement.js";
 import { resolveRoomOwnership } from "../region/ownership.js";
+import logger from "../lib/logger.js";
 
 export function vehiclesRouter(io) {
   const r = express.Router();
@@ -581,10 +582,11 @@ export function vehiclesRouter(io) {
           });
         }
       }
-      console.error("vehicle create failed", e);
+      logger.error("vehicle create failed", e);
       return res.status(500).json({ error: "Araç kaydedilemedi.", code: "VEHICLE_CREATE_FAILED" });
     }
   });
 
   return r;
 }
+

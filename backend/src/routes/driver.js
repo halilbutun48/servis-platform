@@ -14,6 +14,7 @@ import { gpsStatusFromAt } from "../gps/status.js";
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
 import { findReservationConflictForRange } from "../services/reservationConflict.js";
+import logger from "../lib/logger.js";
 
 // M72: audit helper (must never break ops)
 async function audit(prisma, { actorUserId, actorRole, action, entity, entityId, meta }) {
@@ -29,7 +30,7 @@ async function audit(prisma, { actorUserId, actorRole, action, entity, entityId,
       },
     });
   } catch (e) {
-    console.error("AUDIT error:", e);
+    logger.error("AUDIT error:", e);
   }
 }
 
@@ -644,7 +645,7 @@ export function driverRouter(io) {
         io?.to(`company:${shift.companyId}`).emit("eta:update", etaPayload);
       }
     } catch (e) {
-      console.error("stop state -> eta:update error:", e);
+      logger.error("stop state -> eta:update error:", e);
     }
 
     // Optional: auto complete if no pending stops
@@ -658,7 +659,7 @@ export function driverRouter(io) {
           io,
         });
       } catch (e) {
-        console.error("auto complete error:", e);
+        logger.error("auto complete error:", e);
       }
     }
 
@@ -806,3 +807,4 @@ export function driverRouter(io) {
 
   return r;
 }
+

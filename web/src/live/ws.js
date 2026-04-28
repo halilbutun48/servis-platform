@@ -1,6 +1,7 @@
 // web/src/live/ws.js
 import { io } from "socket.io-client";
 import { invalidate } from "./bus";
+import logger from "../lib/logger.js";
 
 let socket = null;
 let reconnectTimer = null;
@@ -225,7 +226,7 @@ function connect() {
     });
   } catch (e) {
     connecting = false;
-    console.debug("[ws] create failed:", e);
+    logger.debug("[ws] create failed:", e);
     scheduleReconnect();
     return;
   }
@@ -233,18 +234,18 @@ function connect() {
   socket.on("connect", () => {
     connecting = false;
     backoffMs = 500;
-    console.debug("[ws] connected", socket.id);
+    logger.debug("[ws] connected", socket.id);
   });
 
   socket.on("disconnect", (reason) => {
     connecting = false;
-    console.debug("[ws] disconnected:", reason, "-> reconnect");
+    logger.debug("[ws] disconnected:", reason, "-> reconnect");
     scheduleReconnect();
   });
 
   socket.on("connect_error", (err) => {
     connecting = false;
-    console.debug("[ws] connect_error:", err?.message || err, "-> reconnect");
+    logger.debug("[ws] connect_error:", err?.message || err, "-> reconnect");
     scheduleReconnect();
   });
 
@@ -261,7 +262,7 @@ function connect() {
       invalidate(t, { source: "ws", msg });
     }
 
-    if (topics.length) console.debug("[ws] invalidate:", topics, msg);
+    if (topics.length) logger.debug("[ws] invalidate:", topics, msg);
   });
 
   socket.on("message", (payload) => {
@@ -274,7 +275,7 @@ function connect() {
       invalidate(t, { source: "ws", msg });
     }
 
-    if (topics.length) console.debug("[ws] invalidate(message):", topics, msg);
+    if (topics.length) logger.debug("[ws] invalidate(message):", topics, msg);
   });
 }
 
@@ -301,3 +302,4 @@ export function stopLiveWs() {
   // temiz restart için
   lastSig.clear();
 }
+

@@ -1,6 +1,6 @@
 # M81.3 Mobile GPS Flow Smoke
 
-Ama?: telefon/Expo ?al??t?rmadan mobil GPS zincirinin statik s?zle?mesini do?rulamak.
+Amaç: telefon/Expo çalıştırmadan mobil GPS zincirinin statik sözleşmesini doğrulamak.
 
 Kontrol edilen zincir:
 
@@ -9,7 +9,7 @@ Kontrol edilen zincir:
 3. Mobil GPS yayın yüzeyi
 4. Backend `/gps` ingest yüzeyi
 5. Backend GPS update / WS publish izi
-6. Auto-reached queue veya ayr??t?r?lm?? i?lem izi
+6. Auto-reached queue veya ayrıştırılmış işlem izi
 
 Komut:
 
@@ -23,4 +23,4 @@ Strict mod:
 Set-Location "D:\servis-platform"; powershell -ExecutionPolicy Bypass -File .\tools\pack_m81_3_mobile_gps_flow_smoke.ps1 -RepoRoot "D:\servis-platform" -Strict
 ```
 
-Not: Soft modda baz? alanlar WARN olarak kalabilir. ?zellikle `socket.io-client` import edilip `mobile/package.json` i?inde dependency olarak yoksa soft mod WARN verir, strict mod FAIL verir.
+Not: Soft modda bazı alanlar WARN olarak kalabilir. Özellikle `socket.io-client` import edilip `mobile/package.json` içinde dependency olarak yoksa soft mod WARN verir, strict mod FAIL verir.

@@ -4,6 +4,7 @@
 import { prisma } from "../prisma.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
+import logger from "../lib/logger.js";
 
 async function isDbReadyOnce() {
   try {
@@ -13,7 +14,7 @@ async function isDbReadyOnce() {
   } catch {
     if (!globalThis.__dbWarned) {
       globalThis.__dbWarned = true;
-      console.warn("maintenanceMonitor: DB not ready, skipping checks.");
+      logger.warn("maintenanceMonitor: DB not ready, skipping checks.");
     }
     return false;
   }
@@ -135,7 +136,7 @@ export function startMaintenanceMonitor(io, opts = {}) {
         }
       }
     } catch (e) {
-      console.error("maintenanceMonitor error:", e);
+      logger.error("maintenanceMonitor error:", e);
     } finally {
       running = false;
     }
@@ -143,3 +144,4 @@ export function startMaintenanceMonitor(io, opts = {}) {
 
   return () => clearInterval(timer);
 }
+

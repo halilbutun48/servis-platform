@@ -4,7 +4,7 @@ Bu dar overlay sadece `tools/check_m82_1_backend_correctness_repo_contract.ps1` 
 
 ## Kök neden
 `docs/PRIMER_SSOT.md` yaşayan hattı `M82.8 -> M85` olarak özetliyor.
-Ancak `M82.1` repo-contract check'i h?l? primer i?inde do?rudan:
+Ancak `M82.1` repo-contract check'i hâlâ primer içinde doğrudan:
 - `M82.1`
 - `backend correctness kilidi`
 - `merkezi error contract`

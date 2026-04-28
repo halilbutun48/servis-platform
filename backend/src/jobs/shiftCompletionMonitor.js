@@ -1,5 +1,6 @@
 // backend/src/jobs/shiftCompletionMonitor.js
 import { prisma } from "../prisma.js";
+import logger from "../lib/logger.js";
 
 /**
  * If a shift has shiftProgress.completedAt set but shift.status is not DONE,
@@ -52,7 +53,7 @@ export function startShiftCompletionMonitor(io, opts = {}) {
       }
     } catch (e) {
       // don't crash monitors
-      console.error("[shiftCompletionMonitor] tick error:", e?.message || e);
+      logger.error("[shiftCompletionMonitor] tick error:", e?.message || e);
     } finally {
       running = false;
     }
@@ -67,3 +68,4 @@ export function startShiftCompletionMonitor(io, opts = {}) {
     try { clearInterval(timer); } catch {}
   };
 }
+

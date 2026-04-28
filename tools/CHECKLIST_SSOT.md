@@ -2,7 +2,7 @@
 
 > Not: Bu checklistte `[x]` yalnızca master pack, ayrı milestone pack/check veya repo içi doğrulama izi ile açıkça bağlanan işler içindir.
 > Güncel doğrulanmış baz `tools\pack.ps1 -To 89` ve `MASTER PACK PASS OK (M0->M89)` çizgisidir.
-> Tarihsel tam master anchor `tools\pack.ps1 -To 79` olarak korunur; bu anchor g?ncel ?st hatt? ink?r etmez.
+> Tarihsel tam master anchor `tools\pack.ps1 -To 79` olarak korunur; bu anchor güncel üst hattı geçersiz kılmaz.
 
 ## Aktif hat
 - Güncel doğrulanmış baz: `M89`

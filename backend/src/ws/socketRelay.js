@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import net from "node:net";
 
 import { getRedis } from "../redis/index.js";
+import logger from "../lib/logger.js";
 
 const RELAY_CHANNEL = "ws:relay:v1";
 const INSTANCE_ID = `${process.pid}:${crypto.randomBytes(8).toString("hex")}`;
@@ -145,7 +146,7 @@ function createRedisSubscriber(redisUrl, onMessage) {
         }
         subscribe();
       } catch (e) {
-        console.debug("[ws-relay] subscriber setup failed:", e?.message || e);
+        logger.debug("[ws-relay] subscriber setup failed:", e?.message || e);
       }
     });
 
@@ -157,7 +158,7 @@ function createRedisSubscriber(redisUrl, onMessage) {
         try {
           parsed = parseResp(buffer, 0);
         } catch (e) {
-          console.debug("[ws-relay] subscriber parse failed:", e?.message || e);
+          logger.debug("[ws-relay] subscriber parse failed:", e?.message || e);
           buffer = Buffer.alloc(0);
           break;
         }
@@ -180,7 +181,7 @@ function createRedisSubscriber(redisUrl, onMessage) {
       connected = false;
       connecting = false;
       if (!stopped) {
-        console.debug("[ws-relay] subscriber error:", err?.message || err);
+        logger.debug("[ws-relay] subscriber error:", err?.message || err);
         setTimeout(connect, 500);
       }
     });
@@ -222,10 +223,10 @@ export function installSocketRelay(io, { redisUrl = String(process.env.REDIS_URL
   const publish = (message) => {
     try {
       void redis.send("PUBLISH", RELAY_CHANNEL, JSON.stringify(message)).catch((err) => {
-        console.debug("[ws-relay] publish failed:", err?.message || err);
+        logger.debug("[ws-relay] publish failed:", err?.message || err);
       });
     } catch (err) {
-      console.debug("[ws-relay] publish exception:", err?.message || err);
+      logger.debug("[ws-relay] publish exception:", err?.message || err);
     }
   };
 
@@ -322,3 +323,4 @@ export function installSocketRelay(io, { redisUrl = String(process.env.REDIS_URL
     if (baseEmit) io.emit = baseEmit;
   };
 }
+

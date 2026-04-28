@@ -20,7 +20,7 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch() {
     // İstersen log:
-    // console.error("UI crashed:", error, info);
+    // logger.error("UI crashed:", error, info);
   }
 
   render() {
@@ -58,3 +58,4 @@ export default class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+

@@ -41,7 +41,7 @@
     "check:m82.8": "node scripts/m82_8_verification_2_0_check.js"
   },
   "dependencies": {
-    "expo": "~54.0.0",
+    "expo": "^54.0.34",
     "expo-location": "~19.0.8",
     "expo-secure-store": "~15.0.8",
     "expo-speech": "~14.0.7",
@@ -53,5 +53,9 @@
   },
   "devDependencies": {
     "babel-preset-expo": "^54.0.6"
+  },
+  "overrides": {
+    "postcss": "8.5.10",
+    "uuid": "14.0.0"
   }
 }

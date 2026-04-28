@@ -1,6 +1,7 @@
 // web/src/live/useAutoReload.js
 import { useEffect, useRef } from "react";
 import { on } from "./bus";
+import logger from "../lib/logger.js";
 
 /**
  * useAutoReload("shifts", loadAll)
@@ -35,7 +36,7 @@ export function useAutoReload(topic, fn, enabled = true, debounceMs = 180) {
               try {
                 await Promise.resolve(fnRef.current?.(d));
               } catch (e) {
-                console.warn("useAutoReload handler error:", e);
+                logger.warn("useAutoReload handler error:", e);
               }
             }
           } finally {
@@ -57,3 +58,4 @@ export function useAutoReload(topic, fn, enabled = true, debounceMs = 180) {
     };
   }, [topic, enabled, debounceMs]);
 }
+

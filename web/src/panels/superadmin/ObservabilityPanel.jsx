@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
@@ -46,14 +46,34 @@ function liveStatusText(summary) {
   return status;
 }
 
+function formatMaybeNumber(value) {
+  if (value == null || value === "") return "-";
+  const n = Number(value);
+  return Number.isFinite(n) ? String(n) : String(value);
+}
+
 export default function ObservabilityPanel() {
   const [manifest, setManifest] = useState(null);
   const [summary, setSummary] = useState(null);
   const [eventTypes, setEventTypes] = useState([]);
   const [recentEvents, setRecentEvents] = useState([]);
+  const [queueProof, setQueueProof] = useState(null);
   const [err, setErr] = useState("");
+  const [queueErr, setQueueErr] = useState("");
+  const [queueBusyKey, setQueueBusyKey] = useState("");
 
-  const load = async () => {
+  const loadQueue = useCallback(async () => {
+    try {
+      const proof = await api("/api/admin/queues/auto-reached/proof");
+      setQueueProof(proof || null);
+      setQueueErr("");
+    } catch (e) {
+      setQueueProof(null);
+      setQueueErr(e?.message || String(e));
+    }
+  }, []);
+
+  const load = useCallback(async () => {
     setErr("");
     try {
       const [m, s, types, recent] = await Promise.all([
@@ -69,7 +89,8 @@ export default function ObservabilityPanel() {
     } catch (e) {
       setErr(e?.message || String(e));
     }
-  };
+    await loadQueue();
+  }, [loadQueue]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,18 +112,31 @@ export default function ObservabilityPanel() {
         setErr(e?.message || String(e));
       }
     })();
+    (async () => {
+      await loadQueue();
+    })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadQueue]);
 
   const widgets = Array.isArray(manifest?.widgets) ? manifest.widgets : [];
   const activeWidgets = widgets.filter((item) => ["mobileHealth", "deviceHealth", "gpsReliability"].includes(item.key));
   const roadmapWidgets = widgets.filter((item) => ["issueInbox", "shiftTimeline"].includes(item.key));
+  const queueHealth = queueProof?.health || null;
+  const queueThreshold = queueProof?.threshold || null;
+  const queueIncident = queueProof?.incident || null;
+  const queueDeadLetter = queueProof?.deadLetter || null;
+  const queueStats = queueHealth?.queue || {};
+  const queueWarnings = Array.isArray(queueThreshold?.warnings) ? queueThreshold.warnings : [];
+  const queueNotes = Array.isArray(queueHealth?.notes) ? queueHealth.notes : [];
+  const queueItems = Array.isArray(queueDeadLetter?.items) ? queueDeadLetter.items : [];
 
   useEffect(() => {
     const firstEvent = recentEvents[0] || null;
     const score = typeof summary?.gpsReliability?.score === 'number' ? Number(summary.gpsReliability.score) : null;
+    const queueDepth = Number(queueStats.queueDepth || 0);
+    const deadLetterDepth = Number(queueStats.deadLetterDepth || 0);
     if (!manifest && !summary && !recentEvents.length && !eventTypes.length) {
       clearCopilotSelection('/superadmin/observability');
       return;
@@ -117,25 +151,27 @@ export default function ObservabilityPanel() {
         ...((score != null && score < 60) ? ['GPS güven skoru düşük görünüyor.'] : []),
       ],
       counters: { eventTypes: eventTypes.length, recentEvents: recentEvents.length, gpsScore: score != null ? score : '-' },
-      roadmapCounters: { activeWidgets: activeWidgets.length, roadmapWidgets: roadmapWidgets.length },
+      roadmapCounters: { activeWidgets: activeWidgets.length, roadmapWidgets: roadmapWidgets.length, queueDepth, deadLetterDepth },
       evidence: [
         `Canlı durum: ${liveStatusText(summary)}`,
         `GPS skor: ${gpsScoreText(summary)}`,
+        `Queue: ${queueThreshold?.status || "BELİRSİZ"} / ${formatMaybeNumber(queueStats.queueDepth)}`,
+        `Alarm: ${queueIncident?.severity || "BELİRSİZ"} / ${queueIncident?.title || "-"}`,
         `Son canlı olay: ${firstEvent?.label || firstEvent?.type || '-'}`,
       ],
       reasoningLead: 'Bu ekranda amaç canlı sağlık, GPS güveni ve son olayları aynı yerde okumaktır.',
       nextBestAction: firstEvent
-        ? 'Önce son canlı olayın önemini ve zamanını oku. Sonra cihaz sağlık notlarıyla birlikte değerlendir.'
-        : 'Önce canlı durum ve GPS güven notlarını oku. Sonra event type ve son sync alanlarını kontrol et.',
-      safestNextStep: 'En risksiz adım, canlı durum ile GPS skorunu aynı anda okuyup sonra son olaya inmektir.',
-      compareHint: 'Canlı durum ile GPS güven skoru aynı şey değildir; biri saha akışını, diğeri veri kalitesini özetler.',
+        ? 'Önce son canlı olayın önemini ve zamanını oku. Sonra cihaz sağlık ve queue notlarıyla birlikte değerlendir.'
+        : 'Önce canlı durum, GPS güven notu ve queue eşiklerini oku. Sonra event type ve dead-letter satırlarına in.',
+      safestNextStep: 'En risksiz adım, canlı durum, GPS skoru ve queue threshold bilgisini aynı anda okuyup sonra ayrıntıya inmektir.',
+      compareHint: 'Canlı durum ile GPS güven skoru aynı şey değildir; biri saha akışını, diğeri veri kalitesini özetler. Queue ise operasyon dayanıklılığını gösterir.',
     };
     setCopilotSelection({
       scopeKey: '/superadmin/observability',
       entityType: 'screen',
       entityId: 6107,
-      label: firstEvent?.label || 'Canlı sağlık özeti',
-      summary: [liveStatusText(summary), gpsScoreText(summary), firstEvent?.severity || null].filter(Boolean).join(' • '),
+      label: firstEvent?.label || 'Canlı sağlık ve queue özeti',
+      summary: [liveStatusText(summary), gpsScoreText(summary), queueThreshold?.status || null, firstEvent?.severity || null].filter(Boolean).join(' • '),
       fields: [
         { label: 'Canlı Durum', value: liveStatusText(summary), help: 'Saha akışının genel canlılık durumunu gösterir.' },
         { label: 'GPS Skoru', value: gpsScoreText(summary), help: 'GPS güven katmanının skorunu gösterir.' },
@@ -143,19 +179,43 @@ export default function ObservabilityPanel() {
         { label: 'Son Sync', value: summary?.deviceHealth?.lastSyncAt || '-', help: 'Son senkron zamanını gösterir.' },
         { label: 'Son GPS', value: summary?.deviceHealth?.lastGpsAt || '-', help: 'Son GPS zamanını gösterir.' },
         { label: 'Son Olay', value: firstEvent?.label || firstEvent?.type || '-', help: 'En son canlı olay başlığını gösterir.' },
+        { label: 'Queue Durum', value: queueThreshold?.status || '-', help: 'Auto-reached queue dayanıklılık kontrolünün son durumunu gösterir.' },
+        { label: 'Queue Alarm', value: queueIncident?.severity || '-', help: 'Queue alarm seviyesini gösterir.' },
+        { label: 'Dead-letter', value: formatMaybeNumber(queueStats.deadLetterDepth), help: 'Kuyrukta bekleyen dead-letter sayısını gösterir.' },
       ],
       badges: [
         { label: 'Önem', value: firstEvent?.severity || '-', help: 'Son canlı olayın önem seviyesini gösterir.' },
+        { label: 'Queue', value: queueThreshold?.status || '-', help: 'Queue threshold değerlendirme sonucunu gösterir.' },
+        { label: 'Alarm', value: queueIncident?.severity || '-', help: 'Operasyon alarm seviyesini gösterir.' },
       ],
       facts,
     });
     return () => clearCopilotSelection('/superadmin/observability');
-  }, [manifest, summary, eventTypes, recentEvents, activeWidgets.length, roadmapWidgets.length]);
+  }, [manifest, summary, eventTypes, recentEvents, activeWidgets.length, roadmapWidgets.length, queueThreshold, queueIncident, queueStats.queueDepth, queueStats.deadLetterDepth]);
 
   const gpsNotes = useMemo(() => {
     const raw = Array.isArray(summary?.gpsReliability?.notes) ? summary.gpsReliability.notes : [];
     return raw.length ? raw : ["Canlı GPS güven notu henüz oluşmadı."];
   }, [summary]);
+
+  const openDeadLetterCount = queueItems.filter((item) => item?.ok !== false).length;
+  const queueHealthLabel = queueThreshold?.status || (queueProof?.ok ? "OK" : "Bilinmiyor");
+  const queueIncidentTitle = queueIncident?.title || "Queue alarmı yok";
+
+  const runDeadLetterAction = useCallback(async (taskId, action) => {
+    const normalizedTaskId = String(taskId || "").trim();
+    if (!normalizedTaskId) return;
+    setQueueBusyKey(`${normalizedTaskId}:${action}`);
+    setQueueErr("");
+    try {
+      await api(`/api/admin/queues/auto-reached/dead-letter/${encodeURIComponent(normalizedTaskId)}/${action}`, { method: "POST" });
+      await loadQueue();
+    } catch (e) {
+      setQueueErr(e?.message || String(e));
+    } finally {
+      setQueueBusyKey("");
+    }
+  }, [loadQueue]);
 
   return (
     <div className="card">
@@ -192,6 +252,128 @@ export default function ObservabilityPanel() {
           <div>Risk: {summary?.deviceHealth?.risk && summary.deviceHealth.risk !== "unknown" ? summary.deviceHealth.risk : "Henüz risk yok"}</div>
           <div style={{ marginTop: 6 }}>Son sync: {summary?.deviceHealth?.lastSyncAt || "Henüz veri yok"}</div>
           <div style={{ marginTop: 6 }}>Son GPS: {summary?.deviceHealth?.lastGpsAt || "Henüz veri yok"}</div>
+        </Card>
+      </div>
+
+      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Auto-reached queue</div>
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Card title="Queue proof" wide>
+          {queueErr ? <div style={{ marginBottom: 8, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{queueErr}</div> : null}
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+            <div>
+              <div className="panelMeta">Durum</div>
+              <div className="panelSectionTitle">{queueHealthLabel}</div>
+            </div>
+            <div>
+              <div className="panelMeta">Queue depth</div>
+              <div className="panelSectionTitle">{formatMaybeNumber(queueStats.queueDepth)}</div>
+            </div>
+            <div>
+              <div className="panelMeta">Processing</div>
+              <div className="panelSectionTitle">{formatMaybeNumber(queueStats.processingDepth)}</div>
+            </div>
+            <div>
+              <div className="panelMeta">Claims</div>
+              <div className="panelSectionTitle">{formatMaybeNumber(queueStats.claimsDepth)}</div>
+            </div>
+            <div>
+              <div className="panelMeta">Dead-letter</div>
+              <div className="panelSectionTitle">{formatMaybeNumber(queueStats.deadLetterDepth)}</div>
+            </div>
+            <div>
+              <div className="panelMeta">En eski claim</div>
+              <div className="panelSectionTitle">{formatMaybeNumber(queueStats.oldestClaimAgeMs)} ms</div>
+            </div>
+          </div>
+          <div className="panelMeta" style={{ marginTop: 10 }}>
+            {queueHealth?.redisConnected === false ? "Redis bağlı değil." : "Redis erişilebilir."}
+            {" "}• Reclaim sweep: {formatMaybeNumber(queueHealth?.config?.reclaimSweepMs)} ms
+            {" "}• Max attempts: {formatMaybeNumber(queueHealth?.config?.maxAttempts)}
+          </div>
+          <div className="panelMeta" style={{ marginTop: 6 }}>
+            Başlangıç: {fmtTR(queueHealth?.capturedAt)} • Worker PID: {queueHealth?.runtime?.workerPid || "-"}
+          </div>
+          <div style={{ marginTop: 12, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 12 }}>
+            <div className="panelSectionTitle">Queue alarm</div>
+            <div className="panelBody" style={{ marginTop: 6 }}>{queueIncidentTitle}</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Seviye: {queueIncident?.severity || "OK"}</div>
+            <ul className="panelMeta" style={{ marginTop: 8, paddingLeft: 18 }}>
+              {(Array.isArray(queueIncident?.recommendedActions) ? queueIncident.recommendedActions : ["Queue sağlıklı; alarm aksiyonu yok."]).map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+            <div className="panelMeta" style={{ marginTop: 10 }}>Chaos proof</div>
+            <ul className="panelMeta" style={{ marginTop: 8, paddingLeft: 18 }}>
+              {(Array.isArray(queueIncident?.chaosDrills) ? queueIncident.chaosDrills : ["Redis down/up", "Worker restart", "Poison job"]).map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {(queueWarnings.length ? queueWarnings : queueNotes).map((item, idx) => (
+              <span key={idx} className="pill" data-status="WARN">
+                {item?.message || item}
+              </span>
+            ))}
+            {!queueWarnings.length && !queueNotes.length ? <span className="pill" data-status="OK">Eşik yok</span> : null}
+          </div>
+        </Card>
+      </div>
+
+      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Card title={`Dead-letter (${openDeadLetterCount})`} wide>
+          {!queueItems.length ? (
+            <div className="panelMeta">Henüz dead-letter yok.</div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {queueItems.map((item, idx) => {
+                const parsed = item?.parsed || {};
+                const taskId = String(parsed?.queueTaskId || parsed?.taskId || parsed?.id || "").trim();
+                const canAct = !!taskId && item?.ok !== false;
+                const busyRequeue = queueBusyKey === `${taskId}:requeue`;
+                const busyResolve = queueBusyKey === `${taskId}:resolve`;
+                return (
+                  <div key={`${taskId || "dead"}-${idx}`} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <div>
+                        <div className="panelSectionTitle">{taskId ? `Task ${taskId}` : "Parse edilemeyen kayıt"}</div>
+                        <div className="panelMeta">
+                          Neden: {parsed?.deadLetterReason || item?.parseError || "Bilinmiyor"}
+                        </div>
+                      </div>
+                      <div className="panelMeta" style={{ whiteSpace: "nowrap" }}>
+                        {fmtTR(parsed?.deadLetteredAtIso || parsed?.queuedAtIso || null)}
+                      </div>
+                    </div>
+                    <div className="panelMeta" style={{ marginTop: 6 }}>
+                      Attempts: {formatMaybeNumber(parsed?.attemptCount)} • Requeue reason: {parsed?.lastRequeueReason || "-"}
+                    </div>
+                    {!item?.ok ? (
+                      <div className="panelMeta" style={{ marginTop: 6, color: "#ff7b7b" }}>
+                        Raw parse error: {item?.parseError || "-"}
+                      </div>
+                    ) : null}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                      <button
+                        className="btn"
+                        disabled={!canAct || busyResolve || busyRequeue}
+                        onClick={() => runDeadLetterAction(taskId, "requeue")}
+                      >
+                        {busyRequeue ? "Yeniden kuyruğa alınıyor..." : "Yeniden kuyruğa al"}
+                      </button>
+                      <button
+                        className="btn"
+                        disabled={!canAct || busyResolve || busyRequeue}
+                        onClick={() => runDeadLetterAction(taskId, "resolve")}
+                      >
+                        {busyResolve ? "Çözülüyor..." : "Çözülmüş işaretle"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       </div>
 

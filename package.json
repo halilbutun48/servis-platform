@@ -18,6 +18,6 @@
     "verify:milestones": "node backend/scripts/run_m0_latest.js --static-only --to latest --continue",
     "verify:milestones:live": "node backend/scripts/run_m0_latest.js --integration-only --to latest --continue",
     "verify:ci": "npm run verify:repo",
-    "verify:final": "npm run verify:repo && npm run verify:snapshot"
+    "verify:final": "npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"
   }
 }

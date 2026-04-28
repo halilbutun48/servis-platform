@@ -4,6 +4,7 @@
 import { prisma } from "../prisma.js";
 import { getKvkkDocument } from "../kvkk/documents.js";
 import { isGreenpackBypassAllowed } from "../auth/securityPolicy.js";
+import logger from "../lib/logger.js";
 
 export const CONSENT_DOCS = {
   LOCATION: (() => {
@@ -60,7 +61,7 @@ export function consentGate(a, b, c) {
 
       const Consent = getConsentDelegate();
       if (!Consent) {
-        console.error("consentGate: Prisma delegate missing (expected prisma.consent)");
+        logger.error("consentGate: Prisma delegate missing (expected prisma.consent)");
         return res.status(500).json({ error: "consent model missing" });
       }
 
@@ -73,7 +74,7 @@ export function consentGate(a, b, c) {
       return next();
     } catch (e) {
       const detail = isGreenpackBypassAllowed(req) ? String(e?.message || e) : undefined;
-      console.error("consentGate error:", e);
+      logger.error("consentGate error:", e);
       return kvkk403(res, { docKey, docVersion, detail });
     }
   };
@@ -133,3 +134,4 @@ export async function revokeConsent({ userId, docKey, docVersion }) {
 }
 
 export default consentGate;
+

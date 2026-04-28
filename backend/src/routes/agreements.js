@@ -1568,7 +1568,7 @@ export function agreementsRouter(io) {
       companyId: updated.companyId,
       kind: "agreement:extendCounterRejected",
       title: "Karşı teklif reddedildi",
-      message: `${agreementRef(updated.id)} ? uzatma teklifi h?l? beklemede. ?stersen kabul et veya yeni kar?? teklif g?nder.`,
+      message: `${agreementRef(updated.id)} - uzatma teklifi hâlâ beklemede. İstersen kabul et veya yeni karşı teklif gönder.`,
       dedupeKey: `agreement:${updated.id}:extendCounterRejected:${Date.now()}`,
     });
 

@@ -18,7 +18,7 @@
 - Sonraki ana iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - Tek repo kontrol girisi: `npm run verify:repo`
 - En son verification spine: `M92 — repo verification spine`
-- `tools/STABLE_TO.txt = 78` yaln?zca M78.x compatibility marker olarak ya?ar; ya?ayan ?st hatt? ink?r etmez.
+- `tools/STABLE_TO.txt = 78` yalnızca M78.x compatibility marker olarak yaşar; yaşayan üst hattı inkâr etmez.
 
 ## Operasyon / test
 - **RUNBOOK_MASTER_PACK_AND_REPO_AUDIT.md** — master pack + repo audit akışı
@@ -37,6 +37,7 @@
 - **MOBILE_SCOPE_BOUNDARY_V1.md** — mobil driver-first kapsam sınırı
 - **RUNBOOK_M47_2_CAPACITY_LOAD_BASELINE.md** — kapasite/load baz cizgisi ve tekil infra envelope
 - **RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md** — auto-reached queue durability sınır notu
+- **RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md** — auto-reached queue dayanıklılık kanıtı ve operasyon yüzeyi
 - **RUNBOOK_CLEAN_CLONE_VERIFICATION_V1.md** — temiz klon bootstrap + verify akışı
 
 ## Overlay / tarihsel notlar

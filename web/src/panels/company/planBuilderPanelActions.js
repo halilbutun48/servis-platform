@@ -15,6 +15,7 @@ import {
   parseShiftStopsResponse,
   summarizeMatrix,
 } from "./planBuilderPanelWorkflow";
+import logger from "../../lib/logger.js";
 
 export async function ensurePlanBuilderRoomsLoaded({ api, token, pbRooms, setPbRoomsBusy, setPbRooms }) {
   if (pbRooms?.length) return;
@@ -23,7 +24,7 @@ export async function ensurePlanBuilderRoomsLoaded({ api, token, pbRooms, setPbR
     const r = await api("/api/rooms?take=500", { method: "GET", token });
     setPbRooms(Array.isArray(r?.items) ? r.items : Array.isArray(r) ? r : []);
   } catch (e) {
-    console.warn("rooms load failed", e);
+    logger.warn("rooms load failed", e);
   } finally {
     setPbRoomsBusy(false);
   }
@@ -575,3 +576,4 @@ export async function applyPlanBuilderToShifts({
     setApplyBusy(false);
   }
 }
+

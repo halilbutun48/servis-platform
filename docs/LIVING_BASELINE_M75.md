@@ -40,7 +40,7 @@ Bu dosya M76A-1 kapsamında yaşayan doğrulama setini tek yerde toplar. Amaç t
 - M76A-1 minimum normalizasyon
 
 ## Hedefli doğrulama pack'leri (master zincir dışında)
-Bunlar tamamen ??pe at?lmad?. H?l? hedefli kontrol i?in de?erlidir; ancak master manifest zincirinin ana omurgas? de?ildir.
+Bunlar tamamen çöpe atılmadı. Hâlâ hedefli kontrol için değerlidir; ancak master manifest zincirinin ana omurgası değildir.
 
 - `tools\pack_m71_room_title_hotfix.ps1`
 - `tools\pack_m71_workflow_loadsummary_hotfix.ps1`

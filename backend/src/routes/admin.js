@@ -1,5 +1,5 @@
 // backend/src/routes/admin.js
-// SUPER_ADMIN ops endpoints (stats + users + regions) + audit logs
+// SUPER_ADMIN ops endpoints (stats + users + regions + queue ops) + audit logs
 
 import express from "express";
 import { z } from "zod";
@@ -16,7 +16,14 @@ import { getRegionCellDeploymentBlueprint } from "../ops/regionCellDeploymentBlu
 import { getRegionFailoverDrillPack, recordRegionFailoverDrillRun } from "../ops/regionFailoverDrill.js";
 import { getRegionNextPhasePack } from "../ops/regionNextPhasePack.js";
 import { getEdgeSecurityPolicySummary, getEdgeSecuritySnapshot } from "../ops/edgeSecurityBaseline.js";
-import { getAutoReachedQueueHealthSnapshot, getAutoReachedDeadLetterSnapshot, getAutoReachedQueueProofSnapshot, evaluateAutoReachedQueueHealthThresholds } from "../jobs/autoReachedQueue.js";
+import {
+  evaluateAutoReachedQueueHealthThresholds,
+  getAutoReachedDeadLetterSnapshot,
+  getAutoReachedQueueHealthSnapshot,
+  getAutoReachedQueueProofSnapshot,
+  requeueAutoReachedDeadLetter,
+  resolveAutoReachedDeadLetter,
+} from "../jobs/autoReachedQueue.js";
 import { audit } from "../audit.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { markPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
@@ -29,7 +36,7 @@ function isDisabledHash(hash) {
   return String(hash || "").startsWith(DISABLED_PREFIX);
 }
 
-// ? Disable art?k eski hash'i saklar: "$DISABLED$" + <bcryptHash>
+// Disable artık eski hash'i saklar: "$DISABLED$" + <bcryptHash>
 function disabledHash(originalHash) {
   const h = String(originalHash || "");
   if (!h) return DISABLED_PREFIX + crypto.randomBytes(16).toString("hex");
@@ -73,7 +80,7 @@ function deriveCompatUsername(rawUsername, email) {
     .replace(/^[_.]+|[_.]+$/g, "");
 
   const compact = normalized.length > 24 ? normalized.slice(0, 24).replace(/[_.]+$/g, "") : normalized;
-  if (!compact) throw new Error("Kullan?c? ad? ?retilemedi");
+  if (!compact) throw new Error("Kullanıcı adı üretilemedi");
   return validateUsernameOrThrow(compact);
 }
 
@@ -91,7 +98,7 @@ const createUserSchema = z
   .superRefine((v, ctx) => {
     const email = String(v.email || "").trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      ctx.addIssue({ code: "custom", path: ["email"], message: "Ge?erli bir e-posta girin veya bo? b?rak?n." });
+      ctx.addIssue({ code: "custom", path: ["email"], message: "Geçerli bir e-posta girin veya boş bırakın." });
     }
     if (v.role === "ROOM") {
       if (!v.roomId) ctx.addIssue({ code: "custom", message: "ROOM requires roomId" });
@@ -281,10 +288,10 @@ r.get("/queues/auto-reached/proof", authRequired(), requireRole("SUPER_ADMIN"), 
 r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   const health = await getAutoReachedQueueHealthSnapshot();
   return res.json({ health, threshold: evaluateAutoReachedQueueHealthThresholds(health) });
-});  /**
-   * SUPER_ADMIN ? Overview stats
-   * GET /api/admin/stats
-   */
+});
+
+  // SUPER_ADMIN: Overview stats
+  // GET /api/admin/stats
   r.get("/stats", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
     const [companiesTotal, roomsTotal, vehiclesTotal, driversTotal, companies, rooms] = await Promise.all([
       prisma.company.count(),
@@ -305,6 +312,38 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
       vehiclesTotal,
       driversTotal,
     });
+  });
+
+  r.post("/queues/auto-reached/dead-letter/:taskId/requeue", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+    const taskId = String(req.params.taskId || "").trim();
+    const result = await requeueAutoReachedDeadLetter(taskId);
+    if (!result.ok) {
+      const status = result.reason === "NOT_FOUND" ? 404 : result.reason === "REDIS_UNAVAILABLE" ? 503 : 400;
+      return res.status(status).json({ ok: false, ...result });
+    }
+    await audit(req, {
+      action: "QUEUE_AUTO_REACHED_DEAD_LETTER_REQUEUE",
+      entity: "Queue",
+      entityId: Number.isFinite(Number(result.taskId)) ? Number(result.taskId) : null,
+      meta: { taskId: result.taskId, attemptCount: result.attemptCount, queuedAtIso: result.queuedAtIso },
+    });
+    return res.json({ ok: true, ...result });
+  });
+
+  r.post("/queues/auto-reached/dead-letter/:taskId/resolve", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+    const taskId = String(req.params.taskId || "").trim();
+    const result = await resolveAutoReachedDeadLetter(taskId);
+    if (!result.ok) {
+      const status = result.reason === "NOT_FOUND" ? 404 : result.reason === "REDIS_UNAVAILABLE" ? 503 : 400;
+      return res.status(status).json({ ok: false, ...result });
+    }
+    await audit(req, {
+      action: "QUEUE_AUTO_REACHED_DEAD_LETTER_RESOLVE",
+      entity: "Queue",
+      entityId: Number.isFinite(Number(taskId)) ? Number(taskId) : null,
+      meta: { taskId },
+    });
+    return res.json({ ok: true, ...result });
   });
 
   // --- Audit logs ---
@@ -483,7 +522,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
     const hasManualPassword = Boolean(String(parsed.data.password || "").trim());
 
     if (await isUsernameTaken(prisma, username)) {
-      return res.status(409).json({ error: "Kullan?c? ad? zaten kullan?l?yor" });
+      return res.status(409).json({ error: "Kullanıcı adı zaten kullanılıyor" });
     }
 
     const email = publicEmail || buildInternalLoginEmail(username);
@@ -544,10 +583,10 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
       passwordChangeRequired: true,
       note:
         role === "PERSONEL"
-          ? "PERSONEL user created. NOTE: Personel profile record is managed under /api/personels (COMPANY flow). ?lk giri?te ?ifre de?i?imi zorunludur."
+          ? "PERSONEL user created. NOTE: Personel profile record is managed under /api/personels (COMPANY flow). İlk girişte şifre değişimi zorunludur."
           : role === "DRIVER"
-          ? "DRIVER user created. NOTE: Driver profile record is managed under /api/drivers (ROOM flow). ?lk giri?te ?ifre de?i?imi zorunludur."
-          : "?lk giri?te ?ifre de?i?imi zorunludur.",
+          ? "DRIVER user created. NOTE: Driver profile record is managed under /api/drivers (ROOM flow). İlk girişte şifre değişimi zorunludur."
+          : "İlk girişte şifre değişimi zorunludur.",
     });
   });
 
@@ -564,7 +603,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
       nextUsername = validateUsernameOrThrow(data.username);
       delete data.username;
       if (await isUsernameTaken(prisma, nextUsername, id)) {
-        return res.status(409).json({ error: "Kullan?c? ad? zaten kullan?l?yor" });
+        return res.status(409).json({ error: "Kullanıcı adı zaten kullanılıyor" });
       }
     }
     if (Object.prototype.hasOwnProperty.call(data, "roomId")) data.roomId = data.roomId ? Number(data.roomId) : null;
@@ -827,7 +866,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
   });
 
 
-  // --- Regions (?l) ---
+  // --- Regions (İl) ---
   r.get("/regions", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
     const snapshot = await getRegionCapacitySnapshot();
     res.json(snapshot);

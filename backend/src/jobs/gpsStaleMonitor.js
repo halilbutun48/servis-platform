@@ -10,6 +10,7 @@ import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js";
 import { createAndEmitNotification } from "../notifications/service.js";
 import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
+import logger from "../lib/logger.js";
 
 async function isDbReadyOnce() {
   try {
@@ -19,7 +20,7 @@ async function isDbReadyOnce() {
   } catch {
     if (!globalThis.__dbWarned) {
       globalThis.__dbWarned = true;
-      console.warn("gpsStaleMonitor: DB not ready, skipping checks.");
+      logger.warn("gpsStaleMonitor: DB not ready, skipping checks.");
     }
     return false;
   }
@@ -223,7 +224,7 @@ export function startGpsStaleMonitor(io, opts = {}) {
         }
       }
     } catch (e) {
-      console.error("gpsStaleMonitor error:", e);
+      logger.error("gpsStaleMonitor error:", e);
     } finally {
       running = false;
     }
@@ -231,3 +232,4 @@ export function startGpsStaleMonitor(io, opts = {}) {
 
   return () => clearInterval(timer);
 }
+

@@ -4,6 +4,7 @@ import { fetchActiveRoute, fetchShiftRoute, isSessionFailureError, publishGps } 
 import { buildGpsPayload, GPS_PUBLISH_INTERVAL_MS, resolveGpsPublishTarget } from './gps';
 import { getLastMobileSnapshot, getSelectedShiftId, getVoiceGuidanceEnabled, savePendingSessionEvent } from './storage';
 import { speakReachedStopAndNext, speakRouteCompleted } from './voice';
+import logger from "logger.js";
 
 export const DRIVER_BG_LOCATION_TASK = 'ps-driver-bg-location';
 const DRIVER_BG_DISTANCE_INTERVAL_M = 20;
@@ -250,7 +251,8 @@ if (!TaskManager.isTaskDefined(DRIVER_BG_LOCATION_TASK)) {
         await stopDriverBackgroundLocation().catch(() => null);
         return;
       }
-      console.log('driver background gps task error', String(taskError?.message || taskError || 'unknown'));
+      logger.info('driver background gps task error', String(taskError?.message || taskError || 'unknown'));
     }
   });
 }
+

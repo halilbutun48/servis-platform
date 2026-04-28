@@ -20,6 +20,7 @@ import {
   resolveShiftOwnership,
   resolveVehicleOwnership,
 } from "../region/index.js";
+import logger from "../lib/logger.js";
 
 export function gpsRouter(io) {
   const r = express.Router();
@@ -282,7 +283,7 @@ export function gpsRouter(io) {
             });
           }
         } catch (e) {
-          console.error("GPS_RECOVERY notif error:", e);
+          logger.error("GPS_RECOVERY notif error:", e);
         }
       }
 
@@ -365,7 +366,7 @@ export function gpsRouter(io) {
             });
           }
         } catch (e) {
-          console.error("OVERSPEED notif error:", e);
+          logger.error("OVERSPEED notif error:", e);
         }
       }
 
@@ -438,22 +439,23 @@ export function gpsRouter(io) {
 
           const queued = await enqueueAutoReachedTask(task);
           if (!queued.ok) {
-            console.error("AUTO_REACHED enqueue failed:", queued.error || queued.reason || "unknown");
+            logger.error("AUTO_REACHED enqueue failed:", queued.error || queued.reason || "unknown");
             void processAutoReachedTask(io, task).catch((e) => {
-              console.error("AUTO_REACHED fallback error:", e);
+              logger.error("AUTO_REACHED fallback error:", e);
             });
           }
         }
       } catch (e) {
-        console.error("AUTO_REACHED error:", e);
+        logger.error("AUTO_REACHED error:", e);
       }
 
       return res.json({ ok: true });
     } catch (e) {
-      console.error("gps ingest error:", e);
+      logger.error("gps ingest error:", e);
       return res.status(500).json({ error: "gps ingest failed" });
     }
   });
 
   return r;
 }
+

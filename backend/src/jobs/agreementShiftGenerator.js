@@ -4,6 +4,7 @@ import { checkShiftConflicts } from "../services/shiftConflict.js";
 import { ymdTR, addDaysTR, dayBitTRFromYmd, atTR, dateOnlyUTCFromYmd } from "../time/tr.js";
 import { rebuildShiftRouteStateBestEffort } from "../services/shiftRouteState.js";
 import { resolveAgreementSourceShiftPayload } from "../services/agreementSourceShift.js";
+import logger from "../lib/logger.js";
 
 async function loadAgreementSourceShift(agreementId) {
   return resolveAgreementSourceShiftPayload(agreementId);
@@ -216,7 +217,7 @@ export function startAgreementShiftGenerator(io, opts = {}) {
             const msg = String(e?.code || e?.message || "");
             if (msg.includes("P2002")) continue;
              
-            console.error("[agreementShiftGenerator] create failed:", e?.message || e);
+            logger.error("[agreementShiftGenerator] create failed:", e?.message || e);
           }
         }
       }
@@ -234,3 +235,4 @@ export function startAgreementShiftGenerator(io, opts = {}) {
     } catch {}
   };
 }
+
