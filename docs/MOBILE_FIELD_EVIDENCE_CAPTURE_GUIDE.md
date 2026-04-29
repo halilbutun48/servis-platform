@@ -7,8 +7,17 @@ Bu rehber, mobil GPS akışının gerçek cihazda ve zayıf ağ altında doğrul
 1. Uygulamayı üretim benzeri build ile çalıştır.
 2. Gerçek Android cihaz kullan.
 3. Pil tasarrufu ve agresif arka plan kısıtlarını not et.
-4. Telefon GPS'ini aç.
+4. Sürücünün telefon GPS'ini aç.
 5. KVKK ve gerekli izinleri doğrula.
+
+## Güvenlik değerlendirmesi
+
+Bu saha kaydında güvenlik tarafında özellikle şu kapılar not edilir:
+
+- Release guard: HTTPS, placeholder host, localhost / özel ağ IP, Expo Go ve production debug blokları.
+- Token ve refresh token: SecureStore tabanlı saklama.
+- Background GPS: KVKK blocking ve oturum sağlığı ile birlikte çalışır.
+- Mobil saha hardening: root / jailbreak ve SSL pinning ayrı doğrulama başlığı olarak değerlendirilir.
 
 ## Toplanacak senaryolar
 

@@ -154,5 +154,6 @@ export function buildReleaseInfo() {
     acceptanceIssues: guard.issues,
     acceptanceWarnings: guard.warnings,
     releaseDiscipline: 'Env doğrulama + acceptance özeti + runtime guard + checker',
+    fieldHardeningSummary: 'Sürücünün telefon GPS’i, KVKK blokları ve release guard birlikte izlenir.',
   };
 }

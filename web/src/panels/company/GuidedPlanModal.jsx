@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useSession } from "../../state/session";
 import { personLabel } from "../../utils/labels";
-import { buildGoogleNavUrl } from "../../utils/navigation";
 import {
   WEEKDAYS,
   weekdayBitFromYmdUTC as _weekdayBitFromYmdUTC,
@@ -62,6 +61,19 @@ import {
   sendGuidedBulkOffersAction,
   sendGuidedRouteRefreshRequestAction,
 } from "./guidedPlanModalActions";
+import {
+  addDestinationToList,
+  applyDestinationMapPointToList,
+  buildDestinationMapPickerBasePoint,
+  buildDestinationNavigationTarget,
+  buildOrganizationNoteSummary,
+  buildShiftNavigationTarget,
+  geocodeGuidedDestinationAtIndex,
+  moveDestinationInList,
+  removeDestinationFromList,
+  setDestinationCoordFieldInList,
+  setDestinationFieldInList,
+} from "./guidedPlanModalDestinationHelpers";
 export default function GuidedPlanModal({
   open,
   onClose,
@@ -246,205 +258,75 @@ export default function GuidedPlanModal({
   }, [draftShifts, osrmResById, organization, companyGeoGate]);
 
   function setDestinationField(idx, field, value) {
-    setOrgDestinations((prev) =>
-      (prev || []).map((item, i) =>
-        i === idx
-          ? {
-              ...item,
-              [field]: value,
-              ...((field === "title" || field === "address") ? { status: "idle", foundText: "", lat: "", lng: "" } : {}),
-            }
-          : item
-      )
-    );
+    setOrgDestinations((prev) => setDestinationFieldInList(prev, idx, field, value));
   }
 
   function setDestinationCoordField(idx, field, value) {
-    setOrgDestinations((prev) =>
-      (prev || []).map((item, i) => {
-        if (i !== idx) return item;
-        const next = { ...item, [field]: value };
-        const lat = coordNum(field === "lat" ? value : next.lat);
-        const lng = coordNum(field === "lng" ? value : next.lng);
-        if (hasCoord(lat, lng)) {
-          return {
-            ...next,
-            lat: fmtCoord(lat),
-            lng: fmtCoord(lng),
-            status: "manual",
-            foundText: "Koordinat hazır",
-          };
-        }
-        if (String(item?.status || "") === "manual") {
-          return { ...next, status: "idle", foundText: "" };
-        }
-        return next;
-      })
-    );
+    setOrgDestinations((prev) => setDestinationCoordFieldInList(prev, idx, field, value));
   }
 
   function openDestinationMapPicker(idx) {
     const item = (orgDestinations || [])[idx] || {};
-    const lat = coordNum(item?.lat);
-    const lng = coordNum(item?.lng);
-    const hubLatNum = coordNum(hubLat);
-    const hubLngNum = coordNum(hubLng);
-    const base = hasCoord(lat, lng)
-      ? [lat, lng]
-      : hasCoord(hubLatNum, hubLngNum)
-      ? [hubLatNum, hubLngNum]
-      : [41.0082, 28.9784];
     setMapPickIdx(idx);
-    setMapPickPoint(base);
+    setMapPickPoint(buildDestinationMapPickerBasePoint({ item, hubLat, hubLng }));
   }
 
   function applyDestinationMapPoint() {
     if (mapPickIdx == null || !Array.isArray(mapPickPoint)) return;
-    const [lat, lng] = mapPickPoint;
-    setOrgDestinations((prev) =>
-      (prev || []).map((item, i) =>
-        i === mapPickIdx
-          ? {
-              ...item,
-              lat: fmtCoord(lat),
-              lng: fmtCoord(lng),
-              status: "manual",
-              foundText: "Haritadan seçildi",
-            }
-          : item
-      )
-    );
+    setOrgDestinations((prev) => applyDestinationMapPointToList(prev, mapPickIdx, mapPickPoint));
     setMapPickIdx(null);
     setMapPickPoint(null);
   }
 
   function openDestinationNavigation(dest) {
-    const lat = coordNum(dest?.lat);
-    const lng = coordNum(dest?.lng);
-    if (!hasCoord(lat, lng)) {
-      setErr("Navigasyon için yer koordinat? gerekli.");
+    const next = buildDestinationNavigationTarget({ dest, hubLat, hubLng });
+    if (next.error) {
+      setErr(next.error);
       return;
     }
-    const hLat = coordNum(hubLat);
-    const hLng = coordNum(hubLng);
-    const url = buildGoogleNavUrl({
-      origin: hasCoord(hLat, hLng) ? { lat: hLat, lng: hLng } : null,
-      destination: { lat, lng },
-    });
-    if (!url) {
-      setErr("Navigasyon linki oluşturulamad?.");
-      return;
-    }
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(next.url, "_blank", "noopener,noreferrer");
   }
 
   function openShiftNavigation(shift) {
-    const stops = (Array.isArray(shift?.stops) ? shift.stops : [])
-      .map((s) => ({ lat: coordNum(s?.lat), lng: coordNum(s?.lng) }))
-      .filter((x) => hasCoord(x.lat, x.lng));
-    if (!stops.length) {
-      setErr("Navigasyon için en az 1 durak gerekli.");
+    const next = buildShiftNavigationTarget({ shift });
+    if (next.error) {
+      setErr(next.error);
       return;
     }
-    const hLat = coordNum(shift?.hubLat);
-    const hLng = coordNum(shift?.hubLng);
-    let origin = hasCoord(hLat, hLng) ? { lat: hLat, lng: hLng } : null;
-    let destination = null;
-    let waypoints = [];
-    const loop = String(shift?.pattern || "").toUpperCase() === "LOOP";
-    if (loop && origin) {
-      destination = origin;
-      waypoints = stops;
-    } else if (origin) {
-      destination = stops[stops.length - 1] || null;
-      waypoints = stops.slice(0, -1);
-    } else {
-      if (stops.length < 2) {
-        setErr("Navigasyon için hub veya en az 2 durak gerekli.");
-        return;
-      }
-      origin = stops[0];
-      destination = stops[stops.length - 1];
-      waypoints = stops.slice(1, -1);
-    }
-    const url = buildGoogleNavUrl({ origin, destination, waypoints });
-    if (!url) {
-      setErr("Navigasyon linki oluşturulamad?.");
-      return;
-    }
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(next.url, "_blank", "noopener,noreferrer");
   }
 
   function addDestination() {
-    setOrgDestinations((prev) => [...(prev || []), emptyDestination()]);
+    setOrgDestinations((prev) => addDestinationToList(prev));
   }
 
   function removeDestination(idx) {
-    setOrgDestinations((prev) => {
-      const next = (prev || []).filter((_, i) => i !== idx);
-      return next.length ? next : [emptyDestination()];
-    });
+    setOrgDestinations((prev) => removeDestinationFromList(prev, idx));
   }
 
   function moveDestination(idx, dir) {
-    setOrgDestinations((prev) => {
-      const next = [...(prev || [])];
-      const to = idx + dir;
-      if (to < 0 || to >= next.length) return next;
-      const tmp = next[idx];
-      next[idx] = next[to];
-      next[to] = tmp;
-      return next;
-    });
+    setOrgDestinations((prev) => moveDestinationInList(prev, idx, dir));
   }
 
   async function geocodeDestination(idx) {
-    setErr("");
-    setInfo("");
-    if (!token) return;
-    const item = (orgDestinations || [])[idx];
-    const q = String(item?.address || item?.title || "").trim();
-    if (q.length < 3) {
-      setErr("Yer için en az 3 karakterlik ad veya adres gir.");
-      return;
-    }
-    setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "loading", foundText: "" } : x)));
-    try {
-      const r = await geocodeGuidedLocation({ token, q });
-      if (r?.ok) {
-        setOrgDestinations((prev) =>
-          (prev || []).map((x, i) =>
-            i === idx
-              ? {
-                  ...x,
-                  lat: String(r.lat),
-                  lng: String(r.lng),
-                  status: "ok",
-                  foundText: String(r.displayName || q),
-                  title: String(x.title || "").trim() || String(r.displayName || q).split(",")[0],
-                }
-              : x
-          )
-        );
-      } else {
-        setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: "Bulunamadı" } : x)));
-      }
-    } catch (e) {
-      setOrgDestinations((prev) => (prev || []).map((x, i) => (i === idx ? { ...x, status: "error", foundText: getApiErrorMessage(e, "Bulunamadı") } : x)));
-    }
+    await geocodeGuidedDestinationAtIndex({
+      token,
+      idx,
+      orgDestinations,
+      setOrgDestinations,
+      setErr,
+      setInfo,
+    });
   }
 
   function orgNoteSummary() {
-    const pax = String(orgEstimatedPax || "").trim();
-    const gathering = String(orgGatheringName || "").trim();
-    const places = orgFilledDestinations.map((d) => String(d.title || d.address || "").trim()).filter(Boolean);
-    const returnText = orgReturnType === "RETURN_TO_START" ? "Başlangıç noktasına dön" : "Son noktada bitir";
-    const parts = [];
-    if (gathering) parts.push(`Toplanma: ${gathering}`);
-    if (pax) parts.push(`Tahmini kişi: ${pax}`);
-    if (places.length) parts.push(`Yerler: ${places.join(" ? ")}`);
-    parts.push(`Dönüş: ${returnText}`);
-    return `[Gezi plan?] ${parts.join(" | ")}`;
+    return buildOrganizationNoteSummary({
+      organization,
+      orgEstimatedPax,
+      orgGatheringName,
+      orgFilledDestinations,
+      orgReturnType,
+    });
   }
 
   async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
