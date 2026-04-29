@@ -90,7 +90,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
   "currentLargeFileCount":  3,
-  "currentWarningHotFileCount":  6,
+  "currentWarningHotFileCount":  3,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -98,10 +98,6 @@
                                                   "acceptance-sensitive dosyalar explicit gerekce olmadan acilmaz"
                                               ],
                                "classifications":  {
-                                                       "backend/src/jobs/autoReachedQueue.js":  {
-                                                                                                   "class":  "acceptance-sensitive-later",
-                                                                                                   "note":  "queue durability proof ve incident proof merkezi; kontrollu chaos/alert yüzeyi"
-                                                                                               },
                                                        "backend/src/ai/chat/helpComposer.js":  {
                                                                                                    "class":  "justified-exception",
                                                                                                    "note":  "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
@@ -118,10 +114,6 @@
                                                                                                          "class":  "justified-exception",
                                                                                                          "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
                                                                                                      },
-                                                       "web/src/panels/company/GuidedPlanModal.jsx":  {
-                                                                                                          "class":  "acceptance-sensitive-later",
-                                                                                                          "note":  "guided plan ve rota guncelleme akisi kritik; yalniz contract destekli parcalanir"
-                                                                                                      },
                                                        "backend/src/routes/shifts/room.js":  {
                                                                                                  "class":  "acceptance-sensitive-later",
                                                                                                  "note":  "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
@@ -129,11 +121,7 @@
                                                        "backend/src/routes/shifts/company.js":  {
                                                                                                     "class":  "acceptance-sensitive-later",
                                                                                                     "note":  "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
-                                                                                                },
-                                                       "mobile/App.js":  {
-                                                                             "class":  "acceptance-sensitive-later",
-                                                                             "note":  "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
-                                                                         }
+                                                                                                }
                                                    }
                            },
     "shareablePackageHygiene":  {

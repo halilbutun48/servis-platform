@@ -134,11 +134,11 @@ export function buildReleaseInfo() {
   const guard = getReleaseGuard();
   return {
     appVersion: '0.2.3',
-    releaseTarget: 'Android + iOS M82.6 acceptance sertlestirme',
+    releaseTarget: 'Android + iOS M82.6 kabul sertleştirme',
     buildProfiles: 'preview / production / preview-simulator',
-    deliveryMode: 'EAS Build + internal dagitim',
-    expoGoStatus: 'Expo Go degil, internal build ile test et',
-    androidPreview: 'Preview APK / internal dagitim',
+    deliveryMode: 'EAS Build + iç dağıtım',
+    expoGoStatus: 'Expo Go değil, internal build ile test et',
+    androidPreview: 'Preview APK / iç dağıtım',
     productionBundle: 'Production AAB + iOS store hazırlığı',
     envStage: guard.stage || 'ayarsiz',
     apiBaseUrl: guard.apiBaseUrl || '',

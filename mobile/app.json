@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Personel Servis Surucu",
+    "name": "Personel Servis Sürücü",
     "slug": "personel-servis-driver-mobile",
     "scheme": "psdriver",
     "version": "0.2.3",
@@ -19,8 +19,8 @@
         "UIBackgroundModes": [
           "location"
         ],
-        "NSLocationWhenInUseUsageDescription": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir."
+        "NSLocationWhenInUseUsageDescription": "Sürücünün telefon GPS’i ile görev sırasında konum güncellemek için izin gerekir.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Sürücünün telefon GPS’i ile görev sırasında konum güncellemek için izin gerekir."
       }
     },
     "android": {
@@ -59,8 +59,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
-          "locationAlwaysAndWhenInUsePermission": "Surucunun telefon GPS'i ile gorev sirasinda konum guncellemek icin izin gerekir.",
+          "locationWhenInUsePermission": "Sürücünün telefon GPS’i ile görev sırasında konum güncellemek için izin gerekir.",
+          "locationAlwaysAndWhenInUsePermission": "Sürücünün telefon GPS’i ile görev sırasında konum güncellemek için izin gerekir.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true

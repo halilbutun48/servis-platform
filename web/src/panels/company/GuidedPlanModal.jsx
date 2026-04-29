@@ -257,78 +257,6 @@ export default function GuidedPlanModal({
     };
   }, [draftShifts, osrmResById, organization, companyGeoGate]);
 
-  function setDestinationField(idx, field, value) {
-    setOrgDestinations((prev) => setDestinationFieldInList(prev, idx, field, value));
-  }
-
-  function setDestinationCoordField(idx, field, value) {
-    setOrgDestinations((prev) => setDestinationCoordFieldInList(prev, idx, field, value));
-  }
-
-  function openDestinationMapPicker(idx) {
-    const item = (orgDestinations || [])[idx] || {};
-    setMapPickIdx(idx);
-    setMapPickPoint(buildDestinationMapPickerBasePoint({ item, hubLat, hubLng }));
-  }
-
-  function applyDestinationMapPoint() {
-    if (mapPickIdx == null || !Array.isArray(mapPickPoint)) return;
-    setOrgDestinations((prev) => applyDestinationMapPointToList(prev, mapPickIdx, mapPickPoint));
-    setMapPickIdx(null);
-    setMapPickPoint(null);
-  }
-
-  function openDestinationNavigation(dest) {
-    const next = buildDestinationNavigationTarget({ dest, hubLat, hubLng });
-    if (next.error) {
-      setErr(next.error);
-      return;
-    }
-    window.open(next.url, "_blank", "noopener,noreferrer");
-  }
-
-  function openShiftNavigation(shift) {
-    const next = buildShiftNavigationTarget({ shift });
-    if (next.error) {
-      setErr(next.error);
-      return;
-    }
-    window.open(next.url, "_blank", "noopener,noreferrer");
-  }
-
-  function addDestination() {
-    setOrgDestinations((prev) => addDestinationToList(prev));
-  }
-
-  function removeDestination(idx) {
-    setOrgDestinations((prev) => removeDestinationFromList(prev, idx));
-  }
-
-  function moveDestination(idx, dir) {
-    setOrgDestinations((prev) => moveDestinationInList(prev, idx, dir));
-  }
-
-  async function geocodeDestination(idx) {
-    await geocodeGuidedDestinationAtIndex({
-      token,
-      idx,
-      orgDestinations,
-      setOrgDestinations,
-      setErr,
-      setInfo,
-    });
-  }
-
-  function orgNoteSummary() {
-    return buildOrganizationNoteSummary({
-      organization,
-      orgEstimatedPax,
-      orgGatheringName,
-      orgFilledDestinations,
-      orgReturnType,
-    });
-  }
-
   async function cleanupDraftShifts(idsInput = draftShiftIds, opts = {}) {
     const ids = Array.from(new Set((Array.isArray(idsInput) ? idsInput : []).map((x) => Number(x)).filter(Number.isFinite)));
     await cleanupGuidedDraftShifts({ token, ids });
@@ -484,10 +412,6 @@ export default function GuidedPlanModal({
     setEndDate(addDaysISO(startDate, Math.max(0, durationDays - 1)));
   }, [startDate, durationDays]);
 
-  function stepItems() {
-    return currentStepItems;
-  }
-
   async function saveHub() {
     setErr("");
     setInfo("");
@@ -592,7 +516,7 @@ export default function GuidedPlanModal({
       return;
     }
 
-    const items = stepItems();
+    const items = currentStepItems;
     if (!items.length) {
       setErr("Plan paketi geçersiz.");
       return;
@@ -634,7 +558,15 @@ export default function GuidedPlanModal({
         draftNote,
         draftAmount,
         organization,
-        orgNoteSummaryText: organization ? orgNoteSummary() : "",
+        orgNoteSummaryText: organization
+          ? buildOrganizationNoteSummary({
+              organization,
+              orgEstimatedPax,
+              orgGatheringName,
+              orgFilledDestinations,
+              orgReturnType,
+            })
+          : "",
         orgReturnType,
         orgEstimatedPax,
         orgFilledDestinations,
@@ -925,14 +857,25 @@ async function sendBulkOffers() {
           setOrgGatheringName={setOrgGatheringName}
           orgDestinationAudit={orgDestinationAudit}
           orgDestinations={orgDestinations}
-          moveDestination={moveDestination}
-          removeDestination={removeDestination}
-          setDestinationField={setDestinationField}
-          setDestinationCoordField={setDestinationCoordField}
-          geocodeDestination={geocodeDestination}
-          openDestinationMapPicker={openDestinationMapPicker}
-          openDestinationNavigation={openDestinationNavigation}
-          addDestination={addDestination}
+          moveDestination={(idx, dir) => setOrgDestinations((prev) => moveDestinationInList(prev, idx, dir))}
+          removeDestination={(idx) => setOrgDestinations((prev) => removeDestinationFromList(prev, idx))}
+          setDestinationField={(idx, field, value) => setOrgDestinations((prev) => setDestinationFieldInList(prev, idx, field, value))}
+          setDestinationCoordField={(idx, field, value) => setOrgDestinations((prev) => setDestinationCoordFieldInList(prev, idx, field, value))}
+          geocodeDestination={(idx) => geocodeGuidedDestinationAtIndex({ token, idx, orgDestinations, setOrgDestinations, setErr, setInfo })}
+          openDestinationMapPicker={(idx) => {
+            const item = (orgDestinations || [])[idx] || {};
+            setMapPickIdx(idx);
+            setMapPickPoint(buildDestinationMapPickerBasePoint({ item, hubLat, hubLng }));
+          }}
+          openDestinationNavigation={(dest) => {
+            const next = buildDestinationNavigationTarget({ dest, hubLat, hubLng });
+            if (next.error) {
+              setErr(next.error);
+              return;
+            }
+            window.open(next.url, "_blank", "noopener,noreferrer");
+          }}
+          addDestination={() => setOrgDestinations((prev) => addDestinationToList(prev))}
           orgReturnType={orgReturnType}
           setOrgReturnType={setOrgReturnType}
           setStep={setStep}
@@ -975,7 +918,14 @@ async function sendBulkOffers() {
           osrmBatch={osrmBatch}
           osrmReorderAll={osrmReorderAll}
           osrmReorder={osrmReorder}
-          openShiftNavigation={openShiftNavigation}
+          openShiftNavigation={(shift) => {
+            const next = buildShiftNavigationTarget({ shift });
+            if (next.error) {
+              setErr(next.error);
+              return;
+            }
+            window.open(next.url, "_blank", "noopener,noreferrer");
+          }}
           osrmResById={osrmResById}
           onReloadRooms={onReloadRooms}
           roomsSupported={roomsSupported}
@@ -1014,7 +964,12 @@ async function sendBulkOffers() {
       mapPickPoint={mapPickPoint}
       setMapPickPoint={setMapPickPoint}
       fmtCoord={fmtCoord}
-      applyDestinationMapPoint={applyDestinationMapPoint}
+      applyDestinationMapPoint={() => {
+        if (mapPickIdx == null || !Array.isArray(mapPickPoint)) return;
+        setOrgDestinations((prev) => applyDestinationMapPointToList(prev, mapPickIdx, mapPickPoint));
+        setMapPickIdx(null);
+        setMapPickPoint(null);
+      }}
     />
     </>
   );

@@ -83,11 +83,8 @@ const expectedClasses = {
   "backend/src/ai/chat/helpComposer.js": "justified-exception",
   "backend/src/routes/agreements.js": "acceptance-sensitive-later",
   "backend/prisma/schema.prisma": "justified-exception",
-  "web/src/panels/company/GuidedPlanModal.jsx": "acceptance-sensitive-later",
-  "backend/src/jobs/autoReachedQueue.js": "acceptance-sensitive-later",
   "backend/src/routes/shifts/room.js": "acceptance-sensitive-later",
   "backend/src/routes/shifts/company.js": "acceptance-sensitive-later",
-  "mobile/App.js": "acceptance-sensitive-later",
 };
 for (const [file, expectedClass] of Object.entries(expectedClasses)) {
   expect(classifications[file]?.class === expectedClass, `${file} classified as ${expectedClass}`);

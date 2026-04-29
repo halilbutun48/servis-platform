@@ -306,6 +306,10 @@ r.get("/queues/auto-reached", authRequired(), requireRole("SUPER_ADMIN"), async 
   return res.json(await getAutoReachedQueueHealthSnapshot());
 });
 
+r.get("/queues/auto-reached/health", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
+  return res.json(await getAutoReachedQueueHealthSnapshot());
+});
+
 r.get("/queues/auto-reached/dead-letter", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
   return res.json(await getAutoReachedDeadLetterSnapshot());
 });

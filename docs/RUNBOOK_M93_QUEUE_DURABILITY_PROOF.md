@@ -22,7 +22,7 @@ Beklenen davranış:
 3. GPS POST / queue enqueue denemesi yap.
 4. API'nin kontrollü hata verdiğini doğrula.
 5. Redis container'ı tekrar başlat.
-6. `/api/admin/queues/auto-reached`, `/api/admin/queues/auto-reached/thresholds`, `/api/admin/queues/auto-reached/proof` ve `/api/admin/queues/auto-reached/dead-letter` yüzeylerini kontrol et.
+6. `/api/admin/queues/auto-reached`, `/api/admin/queues/auto-reached/health`, `/api/admin/queues/auto-reached/thresholds`, `/api/admin/queues/auto-reached/proof` ve `/api/admin/queues/auto-reached/dead-letter` yüzeylerini kontrol et.
 7. Gerekirse `POST /api/admin/queues/auto-reached/incident-sync` ile incident/recovery notification durumunu kayıt altına al.
 
 ### 2. Worker restart reclaim testi
@@ -48,6 +48,7 @@ Yeni admin yüzeyleri:
 
 - `GET /api/admin/queues/auto-reached/dead-letter`
 - `GET /api/admin/queues/auto-reached/proof`
+- `GET /api/admin/queues/auto-reached/health`
 - `POST /api/admin/queues/auto-reached/dead-letter/:taskId/requeue`
 - `POST /api/admin/queues/auto-reached/dead-letter/:taskId/resolve`
 - `POST /api/admin/queues/auto-reached/incident-sync`

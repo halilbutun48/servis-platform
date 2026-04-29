@@ -156,6 +156,7 @@ if (IS_SYNC && !TOKEN) {
 
 const paths = [
   "/api/admin/queues/auto-reached",
+  "/api/admin/queues/auto-reached/health",
   "/api/admin/queues/auto-reached/thresholds",
   "/api/admin/queues/auto-reached/dead-letter",
   "/api/admin/queues/auto-reached/proof",

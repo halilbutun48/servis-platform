@@ -53,6 +53,7 @@ import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNex
 import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
 import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
+import { createMobileAppHandlers } from './src/app/mobileAppHandlers';
 import { RELEASE_INFO, applyGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState, readGpsRuntimeSnapshot } from './src/app/mobileAppState';
 import {
   applySessionFailure as applySessionFailureFlow,
@@ -269,7 +270,7 @@ export default function App() {
         vehicleId: target.vehicleId,
         lastAttemptAt: new Date().toISOString(),
         publishState: publishNow ? 'publishing' : prev.gps.publishState,
-        publishText: publishNow ? 'Konum gonderiliyor.' : prev.gps.publishText,
+        publishText: publishNow ? 'Konum gönderiliyor.' : prev.gps.publishText,
       }, prev.route, {
         usingCachedData: prev.usingCachedData,
         netStatus: prev.net?.status || 'unknown',
@@ -288,9 +289,9 @@ export default function App() {
           gps: {
             ...prev.gps,
             permissionStatus: 'error',
-            permissionText: 'GPS izin durumu okunamadi.',
+            permissionText: 'GPS izin durumu okunamadı.',
             publishState: 'error',
-            publishText: 'GPS durumu okunamadi.',
+            publishText: 'GPS durumu okunamadı.',
             lastErrorAt: new Date().toISOString(),
             canOpenSettings: false,
           },
@@ -317,8 +318,8 @@ export default function App() {
             permissionText,
             publishState: 'blocked',
             publishText: permission.canAskAgain === false
-              ? 'GPS izni kapali. Ayarlardan acmadan konum gonderilemez.'
-              : 'GPS izni gerekli. Izin yenilenmeden konum gonderilemez.',
+              ? 'GPS izni kapalı. Ayarlardan açmadan konum gönderilemez.'
+              : 'GPS izni gerekli. İzin yenilenmeden konum gönderilemez.',
           }, prev.route, {
             usingCachedData: prev.usingCachedData,
             netStatus: prev.net?.status || 'unknown',
@@ -341,7 +342,7 @@ export default function App() {
             permissionStatus: permission.status,
             permissionText,
             publishState: 'blocked',
-            publishText: 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.',
+            publishText: 'KVKK onayı eksik. Onay tamamlanmadan konum gönderilemez.',
             lastLocationText,
             canOpenSettings: false,
             retryCount: 0,
@@ -365,7 +366,7 @@ export default function App() {
             permissionStatus: permission.status,
             permissionText,
             publishState: 'no-shift',
-            publishText: 'Bugun aktif gorev yok. Bugun veya yakin zaman icin atanmis vardiya yok. Bu yuzden konum gonderilmiyor.',
+            publishText: 'Bugün aktif görev yok. Bugün veya yakın zaman için atanmış vardiya yok. Bu yüzden konum gönderilmiyor.',
             lastLocationText,
             canOpenSettings: false,
             retryCount: 0,
@@ -389,7 +390,7 @@ export default function App() {
             permissionStatus: permission.status,
             permissionText,
             publishState: 'no-vehicle',
-            publishText: 'Gorev var ama arac atamasi gorunmuyor. Bu yuzden konum gonderilmiyor.',
+            publishText: 'Görev var ama araç ataması görünmüyor. Bu yüzden konum gönderilmiyor.',
             lastLocationText,
             canOpenSettings: false,
             retryCount: 0,
@@ -413,7 +414,7 @@ export default function App() {
             permissionStatus: permission.status,
             permissionText,
             publishState: 'waiting',
-            publishText: 'Vardiya atandi. Baslangic saati bekleniyor; gorev hazir olunca konum gonderecek.',
+            publishText: 'Vardiya atandı. Başlangıç saati bekleniyor; görev hazır olunca konum gönderecek.',
             lastLocationText,
             canOpenSettings: false,
             retryCount: 0,
@@ -470,7 +471,7 @@ export default function App() {
         permissionStatus: permission.status,
         permissionText,
         publishState: 'ok',
-        publishText: "Konum gonderildi. Gosterilen resmi konum backend arac GPS'inden okunur.",
+        publishText: 'Konum gönderildi. Gösterilen resmi konum backend aracının GPS’inden okunur.',
         lastLocationText: formatGpsCoords(current?.coords),
         lastSentAt: new Date().toISOString(),
         shiftId: nextRouteBundle?.selectedShiftId || target.shiftId,
@@ -525,12 +526,12 @@ export default function App() {
         const kvkkCurrent = await fetchKvkkCurrent().catch(() => null);
         setState((prev) => ({
           ...prev,
-          kvkk: nextKvkkState(kvkkCurrent || { ...prev.kvkk, blocking: true }, prev.kvkk, 'KVKK onayi eksik. Konum gonderimi durduruldu.'),
+          kvkk: nextKvkkState(kvkkCurrent || { ...prev.kvkk, blocking: true }, prev.kvkk, 'KVKK onayı eksik. Konum gönderimi durduruldu.'),
           gps: decorateGpsState({
             ...prev.gps,
             ...backgroundSnapshot,
             publishState: 'blocked',
-            publishText: 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.',
+            publishText: 'KVKK onayı eksik. Onay tamamlanmadan konum gönderilemez.',
             lastErrorAt: new Date().toISOString(),
             retryCount: 0,
             nextRetryAt: '',
@@ -590,7 +591,7 @@ export default function App() {
         ...prev.kvkk,
         loading: !accepted,
         busy: accepted,
-        message: accepted ? 'KVKK onayi kaydediliyor.' : 'KVKK durumu yenileniyor.',
+        message: accepted ? 'KVKK onayı kaydediliyor.' : 'KVKK durumu yenileniyor.',
       },
     }));
 
@@ -813,223 +814,22 @@ export default function App() {
   }, [state.voiceEnabled, state.today?.active?.id, state.today?.assigned?.id, state.route?.shift?.id, state.route?.progress?.completed, state.route?.progress?.lastReachedOrder, state.route?.nextStop?.id, state.route?.nextStop?.etaMin]);
 
 
-  function handleOpenToday() {
-    setScreen('today');
-  }
-
-  function handleOpenRoute() {
-    setScreen('route');
-  }
-
-  function handleOpenLive() {
-    setScreen('live');
-  }
-
-  async function handleSelectShift(shiftId) {
-    const nextShiftId = Number(shiftId || 0) || null;
-    if (!nextShiftId) return;
-    await saveSelectedShiftId(nextShiftId);
-    setState((prev) => ({ ...prev, selectedShiftId: nextShiftId, gps: decorateGpsState(prev.gps, prev.route, { usingCachedData: prev.usingCachedData, netStatus: prev.net?.status || 'unknown', selectedShiftId: nextShiftId }), error: '' }));
-    try {
-      await syncSignedIn({ soft: true, preferredShiftIdOverride: nextShiftId, force: true });
-      await refreshGpsStatus({ publishNow: false, force: true });
-    } catch {
-      // state already updated by sync/gps helpers
-    }
-  }
-
-  async function runRouteAction(label, runner) {
-    const shiftId = resolveCurrentShiftIdFlow({
-      selectedShiftId: state.selectedShiftId,
-      route: state.route,
-      today: state.today,
-    });
-    if (!shiftId) {
-      setState((prev) => ({ ...prev, error: 'Seçili vardiya yok.', lastErrorAt: new Date().toISOString() }));
-      return;
-    }
-
-    setRouteOps({ busy: true, message: `${label} çalışıyor...` });
-    try {
-      await runner(shiftId);
-      await syncSignedIn({ soft: true, preferredShiftIdOverride: shiftId });
-      await refreshGpsStatus({ publishNow: false, force: true }).catch(() => null);
-      setRouteOps({ busy: false, message: `${label} tamamlandı.` });
-    } catch (error) {
-      if (isSessionFailureError(error)) {
-        await applySessionFailure(error);
-        return;
-      }
-      setRouteOps({ busy: false, message: '' });
-      setState((prev) => ({
-        ...prev,
-        error: humanize(error),
-        lastErrorAt: new Date().toISOString(),
-      }));
-    }
-  }
-
-  async function handleStartShift() {
-    await runRouteAction('Vardiya başlatma', (shiftId) => startDriverShift(shiftId));
-  }
-
-  async function handlePauseShift() {
-    await runRouteAction('Vardiya duraklatma', (shiftId) => pauseDriverShift(shiftId));
-  }
-
-  async function handleResumeShift() {
-    await runRouteAction('Vardiya devam', (shiftId) => resumeDriverShift(shiftId));
-  }
-
-  async function handleCompleteShift() {
-    await runRouteAction('Vardiya tamamlama', (shiftId) => completeDriverShift(shiftId));
-  }
-
-  async function handleMarkReached(stopId) {
-    await runRouteAction('Durak ulaşıldı', (shiftId) => markDriverStopReached(shiftId, stopId));
-  }
-
-  async function handleSkipStop(stopId) {
-    await runRouteAction('Durak atlama', (shiftId) => skipDriverStop(shiftId, stopId));
-  }
-
-  async function handleReopenStop(stopId) {
-    await runRouteAction('Durak yeniden açma', (shiftId) => reopenDriverStop(shiftId, stopId));
-  }
-
-  async function handleUndoStop(stopId) {
-    await runRouteAction('Durak geri alma', (shiftId) => undoDriverStop(shiftId, stopId));
-  }
-
-  async function handleLogin({ identifier, password }) {
-    const data = await loginDriver(identifier, password);
-    const deviceId = data.deviceId || (await ensureDeviceId());
-    const session = {
-      token: data.token,
-      refreshToken: data.refreshToken || '',
-      deviceId,
-    };
-    await Promise.all([saveSession(session), clearSelectedShiftId(), clearPendingSessionEvent().catch(() => null)]);
-    resetSyncRetryState();
-    resetGpsRetryState();
-    setScreen('today');
-    setState((prev) => ({ ...prev, session, deviceId, selectedShiftId: null }));
-    await syncSignedIn({ soft: false });
-  }
-
-  async function handlePinChange({ currentPin, newPin }) {
-    const changed = await changeDriverPin(currentPin, newPin);
-    if (changed?.token) {
-      const session = await getSession();
-      await Promise.all([
-        saveSession({
-          ...(session || {}),
-          token: changed.token,
-          refreshToken: changed.refreshToken || session?.refreshToken || '',
-          deviceId: session?.deviceId || state.deviceId || '',
-        }),
-        clearPendingSessionEvent().catch(() => null),
-      ]);
-    }
-    await syncSignedIn({ soft: false });
-  }
-
-  async function handleRefresh() {
-    try {
-      await syncSignedIn({ soft: true, force: true });
-      await refreshGpsStatus({ publishNow: false, force: true });
-    } catch {
-      // error already reflected in state
-    }
-  }
-
-  async function handleLogout() {
-    try {
-      stopVoiceGuidance();
-      await stopDriverBackgroundLocation();
-      await logoutDriver();
-    } finally {
-      await Promise.all([clearSession(), clearLastMobileSnapshot(), clearSelectedShiftId(), clearPendingSessionEvent().catch(() => null)]);
-      resetSyncRetryState();
-      resetGpsRetryState();
-      lastTodayRefreshAtRef.current = 0;
-      setScreen('today');
-      setRouteOps({ busy: false, message: '' });
-      setState({ ...initialState, loading: false, deviceId: state.deviceId });
-    }
-  }
-
-  async function handleToggleVoiceGuidance() {
-    const next = !state.voiceEnabled;
-    await saveVoiceGuidanceEnabled(next);
-    if (!next) stopVoiceGuidance();
-    if (next && state.route?.nextStop) {
-      const welcomeKey = buildVoiceWelcomeKey(state.today, state.route);
-      if (welcomeKey) {
-        lastVoiceWelcomeRef.current = welcomeKey;
-        lastVoiceCueRef.current = buildVoiceCueKey(state.route);
-        speakShiftWelcome(state.today, state.route);
-      } else {
-        const cueKey = buildVoiceCueKey(state.route);
-        lastVoiceCueRef.current = cueKey;
-        speakNextStop(state.route);
-      }
-    }
-    setState((prev) => ({ ...prev, voiceEnabled: next }));
-  }
-
-  function handleSpeakNextStop() {
-    speakNextStop(state.route);
-  }
-
-  function handleSpeakEta() {
-    speakStopEta(state.route);
-  }
-
-  async function handleRequestGpsPermission() {
-    await refreshGpsStatus({ requestPermission: true, publishNow: false, force: true });
-    const runtime = await syncDriverBackgroundLocation({
-      sessionToken: state.session?.token,
-      role: state.me?.role,
-      requirePinChange: state.me?.requirePinChange,
-      today: state.today,
-      route: state.route,
-      kvkkBlocking: state.kvkk?.blocking,
-      requestPermission: true,
-      appState: appStateRef.current,
-      selectedShiftId: state.selectedShiftId,
-    }).catch(() => null);
-    if (runtime) {
-      const snapshot = await readGpsRuntimeSnapshot(runtime.reason, { appState: appStateRef.current }).catch(() => null);
-      if (snapshot) applyGpsRuntimeSnapshot(setState, snapshot);
-    }
-  }
-
-  async function handlePublishGpsNow() {
-    await refreshGpsStatus({ publishNow: true, force: true });
-  }
-
-  async function handleRefreshGpsStatus() {
-    await refreshGpsStatus({ publishNow: false, force: true });
-  }
-
-  async function handleOpenGpsSettings() {
-    await Linking.openSettings().catch(() => null);
-  }
-
-  async function handleAcceptKvkk() {
-    try {
-      await acceptKvkkRequiredMany();
-      await refreshKvkkStatus({ accepted: true });
-      await refreshGpsStatus({ publishNow: false, force: true });
-    } catch {
-      // state already updated in helper/caller
-    }
-  }
-
-  async function handleRefreshKvkk() {
-    await refreshKvkkStatus({ accepted: false });
-  }
+  const mobileHandlers = createMobileAppHandlers({
+    state,
+    setState,
+    setScreen,
+    setRouteOps,
+    initialState,
+    syncSignedIn,
+    refreshGpsStatus,
+    refreshKvkkStatus,
+    applySessionFailure,
+    resetSyncRetryState,
+    resetGpsRetryState,
+    lastVoiceWelcomeRef,
+    lastVoiceCueRef,
+    appStateRef,
+  });
 
   const content = useMemo(() => (
     <MobileAppContent
@@ -1039,31 +839,31 @@ export default function App() {
       styles={styles}
       apiBaseUrl={getApiBaseUrl()}
       releaseInfo={RELEASE_INFO}
-      onLogin={handleLogin}
-      onPinChange={handlePinChange}
-      onLogout={handleLogout}
-      onRefresh={handleRefresh}
-      onOpenToday={handleOpenToday}
-      onOpenRoute={handleOpenRoute}
-      onOpenLive={handleOpenLive}
-      onSelectShift={handleSelectShift}
-      onStartShift={handleStartShift}
-      onPauseShift={handlePauseShift}
-      onResumeShift={handleResumeShift}
-      onCompleteShift={handleCompleteShift}
-      onMarkReached={handleMarkReached}
-      onSkipStop={handleSkipStop}
-      onReopenStop={handleReopenStop}
-      onUndoStop={handleUndoStop}
-      onToggleVoiceGuidance={handleToggleVoiceGuidance}
-      onSpeakNextStop={handleSpeakNextStop}
-      onSpeakEta={handleSpeakEta}
-      onRequestGpsPermission={handleRequestGpsPermission}
-      onRefreshGpsStatus={handleRefreshGpsStatus}
-      onOpenGpsSettings={handleOpenGpsSettings}
-      onPublishGpsNow={handlePublishGpsNow}
-      onAcceptKvkk={handleAcceptKvkk}
-      onRefreshKvkkStatus={handleRefreshKvkk}
+      onLogin={mobileHandlers.handleLogin}
+      onPinChange={mobileHandlers.handlePinChange}
+      onLogout={mobileHandlers.handleLogout}
+      onRefresh={mobileHandlers.handleRefresh}
+      onOpenToday={mobileHandlers.handleOpenToday}
+      onOpenRoute={mobileHandlers.handleOpenRoute}
+      onOpenLive={mobileHandlers.handleOpenLive}
+      onSelectShift={mobileHandlers.handleSelectShift}
+      onStartShift={mobileHandlers.handleStartShift}
+      onPauseShift={mobileHandlers.handlePauseShift}
+      onResumeShift={mobileHandlers.handleResumeShift}
+      onCompleteShift={mobileHandlers.handleCompleteShift}
+      onMarkReached={mobileHandlers.handleMarkReached}
+      onSkipStop={mobileHandlers.handleSkipStop}
+      onReopenStop={mobileHandlers.handleReopenStop}
+      onUndoStop={mobileHandlers.handleUndoStop}
+      onToggleVoiceGuidance={mobileHandlers.handleToggleVoiceGuidance}
+      onSpeakNextStop={mobileHandlers.handleSpeakNextStop}
+      onSpeakEta={mobileHandlers.handleSpeakEta}
+      onRequestGpsPermission={mobileHandlers.handleRequestGpsPermission}
+      onRefreshGpsStatus={mobileHandlers.handleRefreshGpsStatus}
+      onOpenGpsSettings={mobileHandlers.handleOpenGpsSettings}
+      onPublishGpsNow={mobileHandlers.handlePublishGpsNow}
+      onAcceptKvkk={mobileHandlers.handleAcceptKvkk}
+      onRefreshKvkkStatus={mobileHandlers.handleRefreshKvkk}
     />
   ), [state, screen, routeOps]);
 

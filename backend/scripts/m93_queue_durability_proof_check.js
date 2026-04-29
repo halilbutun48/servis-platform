@@ -23,6 +23,7 @@ console.log("=== M93 QUEUE DURABILITY PROOF CHECK ===");
 
 const files = [
   "backend/src/jobs/autoReachedQueue.js",
+  "backend/src/jobs/autoReachedQueueProof.js",
   "backend/src/routes/admin.js",
   "backend/scripts/m93_queue_durability_proof_check.js",
   "backend/scripts/m93_queue_durability_runtime_probe.js",
@@ -33,6 +34,7 @@ const files = [
 for (const f of files) must(exists(f), `${f} exists`);
 
 const queue = read("backend/src/jobs/autoReachedQueue.js");
+const proofHelpers = read("backend/src/jobs/autoReachedQueueProof.js");
 const admin = exists("backend/src/routes/admin.js") ? read("backend/src/routes/admin.js") : "";
 
 includes(queue, "AUTO_REACHED_DEAD_LETTER_KEY", "dead-letter key is defined");
@@ -47,11 +49,12 @@ includes(queue, "getAutoReachedQueueHealthSnapshot", "queue health snapshot exis
 includes(queue, "evaluateAutoReachedQueueHealthThresholds", "queue threshold evaluator exists");
 includes(queue, "getAutoReachedDeadLetterSnapshot", "dead-letter inspect helper exists");
 includes(queue, "getAutoReachedQueueProofSnapshot", "combined proof snapshot helper exists");
-includes(queue, "REDIS_NOT_CONNECTED", "redis down threshold warning exists");
-includes(queue, "DEAD_LETTER_DEPTH_HIGH", "dead-letter threshold warning exists");
-includes(queue, "OLDEST_CLAIM_STALE", "stale claim threshold warning exists");
+includes(proofHelpers, "REDIS_NOT_CONNECTED", "redis down threshold warning exists");
+includes(proofHelpers, "DEAD_LETTER_DEPTH_HIGH", "dead-letter threshold warning exists");
+includes(proofHelpers, "OLDEST_CLAIM_STALE", "stale claim threshold warning exists");
 
 includes(admin, "/queues/auto-reached", "admin auto-reached queue surface exists");
+includes(admin, "/queues/auto-reached/health", "admin health alias exists");
 includes(admin, "/queues/auto-reached/dead-letter", "admin dead-letter read-only endpoint exists");
 includes(admin, "/queues/auto-reached/proof", "admin proof endpoint exists");
 includes(admin, "/queues/auto-reached/thresholds", "admin threshold endpoint exists");
@@ -62,6 +65,7 @@ includes(runbook, "Redis kesildi", "runbook covers Redis down/up drill");
 includes(runbook, "Worker restart reclaim", "runbook covers worker restart reclaim drill");
 includes(runbook, "Dead-letter", "runbook covers dead-letter visibility");
 includes(runbook, "Queue health threshold", "runbook covers threshold check");
+includes(runbook, "/health", "runbook mentions health alias");
 
 if (failed) {
   console.error("M93 QUEUE DURABILITY PROOF CHECK FAIL");
