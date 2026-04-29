@@ -32,6 +32,7 @@ export default function MobileAppContent({
   onOpenRoute,
   onOpenLive,
   onSelectShift,
+  onSelectChild,
   routeOpsBusy,
   routeOpsText,
   onStartShift,
@@ -51,6 +52,7 @@ export default function MobileAppContent({
   onPublishGpsNow,
   onAcceptKvkk,
   onRefreshKvkkStatus,
+  onReportNoShow,
 }) {
   const loading = Boolean(state?.loading && !state?.me);
 
@@ -91,8 +93,16 @@ export default function MobileAppContent({
         apiBaseUrl={apiBaseUrl}
         lastSyncAt={state?.lastSyncAt || ''}
         releaseInfo={releaseInfo}
+        roleLive={state?.roleLive || null}
+        routeOpsBusy={Boolean(routeOps?.busy)}
+        routeOpsText={routeOps?.message || ''}
+        selectedShiftId={state?.selectedShiftId || null}
+        selectedChildId={state?.selectedChildId || null}
         onRefresh={onRefresh}
         onLogout={onLogout}
+        onSelectShift={onSelectShift}
+        onSelectChild={onSelectChild}
+        onReportNoShow={onReportNoShow}
       />
     );
   }

@@ -7,6 +7,7 @@ import {
   isSessionFailureError,
   loginDriver,
   logoutDriver,
+  reportSelfNoShow,
   markDriverStopReached,
   pauseDriverShift,
   reopenDriverStop,
@@ -18,9 +19,11 @@ import {
 import {
   clearLastMobileSnapshot,
   clearPendingSessionEvent,
+  clearSelectedChildId,
   clearSelectedShiftId,
   clearSession,
   getSession,
+  saveSelectedChildId,
   saveSelectedShiftId,
   saveSession,
   saveVoiceGuidanceEnabled,
@@ -124,6 +127,22 @@ export function createMobileAppHandlers({
     }
   }
 
+  async function handleSelectChild(childId) {
+    const nextChildId = Number(childId || 0) || null;
+    if (!nextChildId) return;
+    await saveSelectedChildId(nextChildId);
+    setState((prev) => ({
+      ...prev,
+      selectedChildId: nextChildId,
+      error: '',
+    }));
+    try {
+      await syncSignedIn({ soft: true, force: true });
+    } catch {
+      // state already updated by sync helper
+    }
+  }
+
   async function handleStartShift() {
     await runRouteAction('Vardiya başlatma', (shiftId) => startDriverShift(shiftId));
   }
@@ -164,7 +183,12 @@ export function createMobileAppHandlers({
       refreshToken: data.refreshToken || '',
       deviceId,
     };
-    await Promise.all([saveSession(session), clearSelectedShiftId(), clearPendingSessionEvent().catch(() => null)]);
+    await Promise.all([
+      saveSession(session),
+      clearSelectedShiftId(),
+      clearSelectedChildId(),
+      clearPendingSessionEvent().catch(() => null),
+    ]);
     resetSyncRetryState();
     resetGpsRetryState();
     setRouteOps({ busy: false, message: '' });
@@ -211,12 +235,54 @@ export function createMobileAppHandlers({
       await stopDriverBackgroundLocation();
       await logoutDriver();
     } finally {
-      await Promise.all([clearSession(), clearLastMobileSnapshot(), clearSelectedShiftId(), clearPendingSessionEvent().catch(() => null)]);
+      await Promise.all([
+        clearSession(),
+        clearLastMobileSnapshot(),
+        clearSelectedShiftId(),
+        clearSelectedChildId(),
+        clearPendingSessionEvent().catch(() => null),
+      ]);
       resetSyncRetryState();
       resetGpsRetryState();
       setScreen('today');
       setRouteOps({ busy: false, message: '' });
       setState({ ...initialState, loading: false, deviceId: state.deviceId });
+    }
+  }
+
+  async function handleReportNoShow({ childId = null, reason = '' } = {}) {
+    const role = String(state.me?.role || '').trim().toUpperCase();
+    const targetChildId = role === 'PARENT'
+      ? (Number(childId || state.selectedChildId || 0) || null)
+      : null;
+    if (role === 'PARENT' && !targetChildId) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Önce bağlı öğrenci seçin.',
+        lastErrorAt: new Date().toISOString(),
+      }));
+      return;
+    }
+
+    setRouteOps({ busy: true, message: 'Bildirim gönderiliyor...' });
+    try {
+      await reportSelfNoShow({
+        childId: targetChildId,
+        reason: String(reason || '').trim() || (role === 'PARENT' ? 'Bugün öğrencim servise binmeyecek.' : 'Bugün servisi kullanmayacağım.'),
+      });
+      await syncSignedIn({ soft: true, force: true });
+      setRouteOps({ busy: false, message: 'Bildirim kaydedildi.' });
+    } catch (error) {
+      if (isSessionFailureError(error)) {
+        await applySessionFailure(error);
+        return;
+      }
+      setRouteOps({ busy: false, message: '' });
+      setState((prev) => ({
+        ...prev,
+        error: humanize(error),
+        lastErrorAt: new Date().toISOString(),
+      }));
     }
   }
 
@@ -297,6 +363,7 @@ export function createMobileAppHandlers({
     handleOpenRoute,
     handleOpenLive,
     handleSelectShift,
+    handleSelectChild,
     handleStartShift,
     handlePauseShift,
     handleResumeShift,
@@ -318,5 +385,6 @@ export function createMobileAppHandlers({
     handleOpenGpsSettings,
     handleAcceptKvkk,
     handleRefreshKvkk,
+    handleReportNoShow,
   };
 }

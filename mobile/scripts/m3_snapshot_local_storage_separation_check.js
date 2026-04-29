@@ -18,6 +18,13 @@ function must(text, needle, msg) {
   ok(msg);
 }
 
+function mustAny(text, needles, msg) {
+  if (!Array.isArray(needles) || !needles.some((needle) => text.includes(needle))) {
+    throw new Error(`FAIL ${msg}`);
+  }
+  ok(msg);
+}
+
 console.log('=== M3 SNAPSHOT / LOCAL STORAGE SEPARATION CHECK ===');
 
 const pkg = JSON.parse(read('package.json'));
@@ -56,7 +63,10 @@ must(app, 'clearPendingSessionEvent', 'app clears pending recovery event');
 must(app, 'clearLastMobileSnapshot', 'app clears snapshot on session failure');
 must(app, 'clearSelectedShiftId', 'app clears selected shift on session failure');
 must(app, 'clearSession', 'app clears session on session failure');
-must(app, 'hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId })', 'app hydrates runtime from snapshot with separate ownership inputs');
+mustAny(app, [
+  'hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId })',
+  'hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId, selectedChildId })',
+], 'app hydrates runtime from snapshot with separate ownership inputs');
 must(app, 'saveVoiceGuidanceEnabled', 'app persists user voice preference');
 must(app, 'saveSession', 'app persists session separately from snapshot');
 

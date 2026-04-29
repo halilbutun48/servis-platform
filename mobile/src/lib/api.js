@@ -337,6 +337,27 @@ export async function fetchToday() {
   return request('/api/driver/shifts/today');
 }
 
+export async function fetchLiveVehicles(take = 20) {
+  const limit = Number.isFinite(Number(take)) ? Math.max(1, Math.min(100, Number(take))) : 20;
+  return request(`/api/live/vehicles?take=${limit}`);
+}
+
+export async function fetchPersonelShifts(take = 20) {
+  const limit = Number.isFinite(Number(take)) ? Math.max(1, Math.min(100, Number(take))) : 20;
+  return request(`/api/personel/shifts?take=${limit}`);
+}
+
+export async function fetchParentChildren() {
+  return request('/api/parent/children');
+}
+
+export async function fetchParentLiveVehicles(childId, take = 20) {
+  const childValue = Number(childId || 0);
+  if (!Number.isFinite(childValue) || childValue <= 0) return [];
+  const limit = Number.isFinite(Number(take)) ? Math.max(1, Math.min(100, Number(take))) : 20;
+  return request(`/api/parent/live/vehicles?childId=${childValue}&take=${limit}`);
+}
+
 export async function fetchActiveRoute() {
   return request('/api/driver/route/active');
 }
@@ -387,6 +408,18 @@ export async function acceptKvkkRequiredMany(items = []) {
   return request('/api/kvkk/consents/accept-many', {
     method: 'POST',
     body: Array.isArray(items) && items.length ? { items } : {},
+  });
+}
+
+export async function reportSelfNoShow({ childId = null, reason = '' } = {}) {
+  const body = {
+    reason: String(reason || '').trim(),
+  };
+  const childValue = Number(childId || 0);
+  if (Number.isFinite(childValue) && childValue > 0) body.childId = childValue;
+  return request('/api/penalties/self/no-show', {
+    method: 'POST',
+    body,
   });
 }
 

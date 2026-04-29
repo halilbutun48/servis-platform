@@ -5,6 +5,7 @@ const DEVICE_KEY = 'ps.driver.device-id.v1';
 const VOICE_ENABLED_KEY = 'ps.driver.voice-enabled.v1';
 const SNAPSHOT_KEY = 'ps.driver.mobile-snapshot.v1';
 const SELECTED_SHIFT_KEY = 'ps.driver.selected-shift-id.v1';
+const SELECTED_CHILD_KEY = 'ps.driver.selected-child-id.v1';
 const PENDING_SESSION_EVENT_KEY = 'ps.driver.pending-session-event.v1';
 
 export async function getSession() {
@@ -84,6 +85,25 @@ export async function saveSelectedShiftId(shiftId) {
 
 export async function clearSelectedShiftId() {
   await SecureStore.deleteItemAsync(SELECTED_SHIFT_KEY);
+}
+
+export async function getSelectedChildId() {
+  const raw = await SecureStore.getItemAsync(SELECTED_CHILD_KEY);
+  const value = Number(raw || 0);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+export async function saveSelectedChildId(childId) {
+  const value = Number(childId || 0);
+  if (!Number.isFinite(value) || value <= 0) {
+    await SecureStore.deleteItemAsync(SELECTED_CHILD_KEY);
+    return;
+  }
+  await SecureStore.setItemAsync(SELECTED_CHILD_KEY, String(value));
+}
+
+export async function clearSelectedChildId() {
+  await SecureStore.deleteItemAsync(SELECTED_CHILD_KEY);
 }
 
 export async function getPendingSessionEvent() {

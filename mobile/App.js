@@ -4,14 +4,17 @@ import * as Location from 'expo-location';
 import {
   clearLastMobileSnapshot,
   clearPendingSessionEvent,
+  clearSelectedChildId,
   clearSelectedShiftId,
   clearSession,
   getLastMobileSnapshot,
   getPendingSessionEvent,
+  getSelectedChildId,
   getSelectedShiftId,
   getSession,
   getVoiceGuidanceEnabled,
   saveLastMobileSnapshot,
+  saveSelectedChildId,
   saveSelectedShiftId,
   saveSession,
   saveVoiceGuidanceEnabled,
@@ -21,10 +24,14 @@ import {
   changeDriverPin,
   completeDriverShift,
   ensureDeviceId,
+  fetchLiveVehicles,
   fetchActiveRoute,
   fetchHealth,
   fetchKvkkCurrent,
   fetchMe,
+  fetchParentChildren,
+  fetchParentLiveVehicles,
+  fetchPersonelShifts,
   fetchShiftRoute,
   fetchToday,
   getApiBaseUrl,
@@ -54,6 +61,7 @@ import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgrou
 import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
 import { createMobileAppHandlers } from './src/app/mobileAppHandlers';
+import { buildParentRoleLiveState, buildPersonelRoleLiveState } from './src/app/roleLiveState';
 import { DEFAULT_GPS, DEFAULT_KVKK, RELEASE_INFO, applyGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState, readGpsRuntimeSnapshot } from './src/app/mobileAppState';
 import {
   applySessionFailure as applySessionFailureFlow,
@@ -106,6 +114,7 @@ export default function App() {
       clearSession,
       clearLastMobileSnapshot,
       clearSelectedShiftId,
+      clearSelectedChildId,
       clearPendingSessionEvent,
       resetSyncRetryState,
       resetGpsRetryState,
@@ -148,6 +157,8 @@ export default function App() {
       const preferredShiftId = preferredShiftIdOverride || state.selectedShiftId || (await getSelectedShiftId().catch(() => null));
       const health = await fetchHealth();
       const me = await fetchMe();
+      const role = String(me?.role || '').trim().toUpperCase();
+      const preferredChildId = state.selectedChildId || (await getSelectedChildId().catch(() => null));
       const latestSession = await getSession().catch(() => null);
       const nextSession = latestSession?.token && latestSession.token !== state.session?.token
         ? {
@@ -156,7 +167,57 @@ export default function App() {
           }
         : state.session;
 
-      if (String(me?.role || '').trim().toUpperCase() !== 'DRIVER') {
+      if (role !== 'DRIVER') {
+        const kvkkCurrent = await fetchKvkkCurrent().catch(() => null);
+        let nextRoleLive = null;
+        let nextSelectedShiftId = role === 'PERSONEL' ? preferredShiftId : null;
+        let nextSelectedChildId = role === 'PARENT' ? preferredChildId : null;
+
+        if (role === 'PERSONEL') {
+          const [personelShifts, liveVehicles] = await Promise.all([
+            fetchPersonelShifts(20).catch(() => ({ items: [] })),
+            fetchLiveVehicles(20).catch(() => []),
+          ]);
+          nextRoleLive = buildPersonelRoleLiveState({
+            shifts: personelShifts?.items || [],
+            liveVehicles: Array.isArray(liveVehicles) ? liveVehicles : [],
+            selectedShiftId: preferredShiftId,
+            lastSyncAt: new Date().toISOString(),
+            kvkkBlocking: Boolean(kvkkCurrent?.blocking),
+            netStatus: 'online',
+          });
+          nextSelectedShiftId = nextRoleLive?.selectedShiftId || nextSelectedShiftId || null;
+        } else if (role === 'PARENT') {
+          const childrenResponse = await fetchParentChildren().catch(() => ({ items: [] }));
+          const children = Array.isArray(childrenResponse?.items) ? childrenResponse.items : [];
+          if (children.length) {
+            const knownChildId = preferredChildId && children.some((child) => Number(child?.id || 0) === Number(preferredChildId)) ? preferredChildId : null;
+            nextSelectedChildId = knownChildId || children[0]?.id || null;
+            const liveVehicles = !kvkkCurrent?.blocking && nextSelectedChildId
+              ? await fetchParentLiveVehicles(nextSelectedChildId, 20).catch(() => [])
+              : [];
+            nextRoleLive = buildParentRoleLiveState({
+              children,
+              liveVehicles: Array.isArray(liveVehicles) ? liveVehicles : [],
+              selectedChildId: nextSelectedChildId,
+              lastSyncAt: new Date().toISOString(),
+              kvkkBlocking: Boolean(kvkkCurrent?.blocking),
+              netStatus: 'online',
+            });
+            nextSelectedChildId = nextRoleLive?.selectedChildId || nextSelectedChildId || null;
+          } else {
+            nextRoleLive = buildParentRoleLiveState({
+              children: [],
+              liveVehicles: [],
+              selectedChildId: null,
+              lastSyncAt: new Date().toISOString(),
+              kvkkBlocking: Boolean(kvkkCurrent?.blocking),
+              netStatus: 'online',
+            });
+            nextSelectedChildId = null;
+          }
+        }
+
         const lastSyncAt = new Date().toISOString();
         resetSyncRetryState();
         const nextNet = {
@@ -170,18 +231,21 @@ export default function App() {
         };
 
         await Promise.all([
-          clearSelectedShiftId().catch(() => null),
           clearPendingSessionEvent().catch(() => null),
           saveLastMobileSnapshot(buildMobileSnapshot({
             me,
             health,
             net: nextNet,
-            kvkk: DEFAULT_KVKK,
+            kvkk: kvkkCurrent ? nextKvkkState(kvkkCurrent, DEFAULT_KVKK) : DEFAULT_KVKK,
             gps: DEFAULT_GPS,
             lastSyncAt,
             lastErrorAt: '',
-            selectedShiftId: null,
+            selectedShiftId: nextSelectedShiftId,
+            selectedChildId: nextSelectedChildId,
+            roleLive: nextRoleLive,
           })),
+          role === 'PERSONEL' ? saveSelectedShiftId(nextSelectedShiftId || null).catch(() => null) : Promise.resolve(null),
+          role === 'PARENT' ? saveSelectedChildId(nextSelectedChildId || null).catch(() => null) : Promise.resolve(null),
         ]);
 
         setRouteOps({ busy: false, message: '' });
@@ -195,11 +259,13 @@ export default function App() {
           me,
           today: null,
           route: null,
+          roleLive: nextRoleLive,
           health,
           net: nextNet,
           gps: { ...DEFAULT_GPS },
-          kvkk: { ...DEFAULT_KVKK },
-          selectedShiftId: null,
+          kvkk: kvkkCurrent ? nextKvkkState(kvkkCurrent, DEFAULT_KVKK) : { ...DEFAULT_KVKK },
+          selectedShiftId: nextSelectedShiftId,
+          selectedChildId: nextSelectedChildId,
           error: '',
           lastErrorAt: '',
           lastSyncAt,
@@ -248,6 +314,8 @@ export default function App() {
         usingCachedData: false,
         session: nextSession || prev.session,
         deviceId: nextSession?.deviceId || prev.deviceId,
+        selectedChildId: null,
+        roleLive: null,
         net: nextNet,
         me,
         today,
@@ -693,18 +761,19 @@ export default function App() {
     let alive = true;
     (async () => {
       try {
-        const [deviceId, session, voiceEnabled, selectedShiftId, snapshot, pendingSessionEvent] = await Promise.all([
+        const [deviceId, session, voiceEnabled, selectedShiftId, selectedChildId, snapshot, pendingSessionEvent] = await Promise.all([
           ensureDeviceId(),
           getSession(),
           getVoiceGuidanceEnabled(),
           getSelectedShiftId().catch(() => null),
+          getSelectedChildId().catch(() => null),
           getLastMobileSnapshot().catch(() => null),
           getPendingSessionEvent().catch(() => null),
         ]);
         if (!alive) return;
 
         if (snapshot) {
-          setState(hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId }));
+          setState(hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId, selectedChildId }));
           if (snapshot?.lastSyncAt) lastTodayRefreshAtRef.current = new Date(snapshot.lastSyncAt).getTime() || 0;
         }
 
@@ -725,12 +794,13 @@ export default function App() {
             deviceId,
             voiceEnabled,
             selectedShiftId: selectedShiftId || snapshot?.selectedShiftId || null,
+            selectedChildId: selectedChildId || snapshot?.selectedChildId || null,
           }));
           return;
         }
 
         if (!snapshot) {
-          setState((prev) => ({ ...prev, session, deviceId, voiceEnabled, selectedShiftId: selectedShiftId || null }));
+          setState((prev) => ({ ...prev, session, deviceId, voiceEnabled, selectedShiftId: selectedShiftId || null, selectedChildId: selectedChildId || null }));
         }
         await syncSignedIn({ soft: Boolean(snapshot) });
       } catch (error) {

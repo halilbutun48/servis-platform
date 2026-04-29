@@ -93,9 +93,11 @@ export const initialState = {
   deviceId: '',
   voiceEnabled: false,
   selectedShiftId: null,
+  selectedChildId: null,
   me: null,
   today: null,
   route: null,
+  roleLive: null,
   health: { ...DEFAULT_HEALTH },
   net: { ...DEFAULT_NET },
   gps: { ...DEFAULT_GPS },
@@ -252,6 +254,7 @@ export function buildSignedInSyncArtifacts({
       me,
       today,
       route: routeBundle?.route,
+      roleLive: state.roleLive,
       health,
       kvkk: nextKvkk,
       net: nextNet,
@@ -259,6 +262,7 @@ export function buildSignedInSyncArtifacts({
       lastErrorAt: '',
       gps: nextGps,
       selectedShiftId,
+      selectedChildId: state.selectedChildId,
     }),
   };
 }
@@ -347,6 +351,7 @@ export function buildMobileSnapshot({
   me = null,
   today = null,
   route = null,
+  roleLive = null,
   health = null,
   kvkk = null,
   net = null,
@@ -354,6 +359,7 @@ export function buildMobileSnapshot({
   lastErrorAt = '',
   gps = null,
   selectedShiftId = null,
+  selectedChildId = null,
 } = {}) {
   return {
     version: 1,
@@ -363,11 +369,13 @@ export function buildMobileSnapshot({
     me: cloneObject(me),
     today: cloneObject(today),
     route: cloneObject(route),
+    roleLive: cloneObject(roleLive),
     health: mergeStateWithDefaults(DEFAULT_HEALTH, health),
     kvkk: mergeKvkkState(kvkk),
     net: mergeNetState(net),
     gps: mergeGpsState(gps),
     selectedShiftId: positiveInt(selectedShiftId),
+    selectedChildId: positiveInt(selectedChildId),
   };
 }
 
@@ -378,7 +386,7 @@ function mergeStateWithDefaults(defaultState, value) {
   };
 }
 
-export function hydrateStateFromSnapshot(snapshot, { session = null, deviceId = '', voiceEnabled = false, selectedShiftId = null } = {}) {
+export function hydrateStateFromSnapshot(snapshot, { session = null, deviceId = '', voiceEnabled = false, selectedShiftId = null, selectedChildId = null } = {}) {
   const snap = isPlainObject(snapshot) ? snapshot : {};
   return {
     ...initialState,
@@ -393,9 +401,11 @@ export function hydrateStateFromSnapshot(snapshot, { session = null, deviceId = 
     deviceId: String(deviceId || snap.deviceId || ''),
     voiceEnabled: typeof voiceEnabled === 'boolean' ? voiceEnabled : Boolean(snap.voiceEnabled),
     selectedShiftId: positiveInt(selectedShiftId || snap.selectedShiftId) || null,
+    selectedChildId: positiveInt(selectedChildId || snap.selectedChildId) || null,
     me: cloneObject(snap.me),
     today: cloneObject(snap.today),
     route: cloneObject(snap.route),
+    roleLive: cloneObject(snap.roleLive),
     health: mergeStateWithDefaults(DEFAULT_HEALTH, snap.health),
     net: mergeNetState(snap.net),
     gps: mergeGpsState(snap.gps),
