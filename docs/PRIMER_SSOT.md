@@ -19,7 +19,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Sonraki kontrollü iş: `M90 — Canonical Closure / 10-10 kapanış paketi`
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
 - M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 / M90C.9 kapanmıştır; `M91`, `M92` ve `M93` ile birlikte green / compatibility çizgisinde korunur.
-- M94-D2 — admin audit + payment export polish görünürlük kaydıdır.
+- M94-D2 / M94-D3 — admin audit + payment export polish ve settlement ledger CSV temizliği görünürlük kaydıdır.
 - Tek repo kontrol girişi: `npm run verify:repo`
 - Local acceptance overlay: `M91 shift/agreement route preview`
 - Repo verification spine: `M92 repo verification spine`

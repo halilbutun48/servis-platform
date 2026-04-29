@@ -402,9 +402,9 @@ Bu bant güncel doğrulanmış üst hattır.
 - Runtime probe: `backend/scripts/m93_queue_durability_runtime_probe.js`
 - Ana konu: autoReachedQueue için Redis down/up, worker restart reclaim, dead-letter görünürlüğü ve threshold kanıtını resmi hatta bağlamak.
 
-### M94-D2 — admin audit + payment export polish [CHECK]
+### M94-D2 / M94-D3 — admin audit + payment export polish + settlement ledger CSV cleanup [CHECK]
 - Komut: `node backend\scripts\m94d_admin_payment_security_export_check.js`
-- Ana konu: admin write step-up, payment ledger export audit standardı ve ticari panel görünürlüğünü küçük bir kapanış check'iyle sabitlemek.
+- Ana konu: admin write step-up, payment ledger export audit standardı, ledger CSV temizliği ve ticari panel görünürlüğünü küçük bir kapanış check'iyle sabitlemek.
 
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`

@@ -8,7 +8,17 @@ function includesAll(text, needles) {
   return needles.every((needle) => includesText(text, needle));
 }
 
-banner("M94-D ADMIN PAYMENT SECURITY EXPORT CHECK");
+banner("M94-D3 ADMIN PAYMENT SECURITY EXPORT CHECK");
+
+function countOccurrences(text, needle) {
+  return String(text || "").split(String(needle || "")).length - 1;
+}
+
+function extractQuotedList(text, marker) {
+  const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = String(text || "").match(new RegExp(`${escapedMarker}\\s*=\\s*\\[(.*?)\\]`, "s"));
+  return match ? Array.from(match[1].matchAll(/"([^"]+)"/g), (m) => m[1]) : [];
+}
 
 const state = JSON.parse(read("tools/repo_contract_state.json"));
 const adminJs = read("backend/src/routes/admin.js");
@@ -21,9 +31,9 @@ const panel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const panelActions = read("web/src/panels/superadmin/commercialCorePanelActions.js");
 
 must("backend package exposes m94dcheck script", (backendPackage.scripts || {}).m94dcheck === "node scripts/m94d_admin_payment_security_export_check.js");
-must("state active milestones include M94-D2", (state.activeMilestones || []).includes("M94-D2"));
-must("primer mentions M94-D2", includesText(primer, "M94-D2") && includesText(primer, "admin audit + payment export polish"));
-must("registry mentions M94-D2", includesText(registry, "M94-D2") && includesText(registry, "admin audit + payment export polish"));
+must("state active milestones include M94-D2 and M94-D3", ["M94-D2", "M94-D3"].every((stage) => (state.activeMilestones || []).includes(stage)));
+must("primer mentions M94-D2 and M94-D3", includesText(primer, "M94-D2") && includesText(primer, "M94-D3"));
+must("registry mentions M94-D2 and M94-D3", includesText(registry, "M94-D2") && includesText(registry, "M94-D3"));
 
 must("admin route imports step-up guard", includesText(adminJs, "requireStepUpWrite"));
 must("admin backup routes remain step-up protected", includesAll(adminJs, [
@@ -66,6 +76,41 @@ must("commercial core settlement ledger export exists and uses standardized audi
   'r.get("/payment-backbone/sources/export.csv", authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")',
 ]));
 must("commercial core does not keep the old settlement ledger audit action name in route code", !includesText(commercialCoreJs, 'action: "SETTLEMENT_LEDGER_EXPORT"'));
+must(
+  "commercial core ledger export columns are standardized and unique",
+  JSON.stringify(extractQuotedList(commercialCoreJs, "const settlementLedgerExportColumns")) === JSON.stringify([
+    "commercialSourceId",
+    "sourceType",
+    "sourceKey",
+    "companyId",
+    "companyName",
+    "roomId",
+    "roomName",
+    "paymentMode",
+    "commissionBps",
+    "settlementPlanId",
+    "settlementPlanStatus",
+    "settlementEntryId",
+    "entryType",
+    "entryStatus",
+    "grossAmount",
+    "commissionAmount",
+    "providerAmount",
+    "entryAmount",
+    "currency",
+    "dueAt",
+    "providerRef",
+    "executedAt",
+    "cancelledAt",
+    "reconciliationStatus",
+    "updatedAt",
+  ])
+);
+must("commercial core ledger export row builder maps from the shared column list", includesText(commercialCoreJs, "settlementLedgerExportColumns.map((key) => csvEscapeLedger(row?.[key] ?? \"\"))"));
+must(
+  "commercial core ledger export audit action appears only as PAYMENT_LEDGER_EXPORT in route code",
+  countOccurrences(commercialCoreJs, '"PAYMENT_LEDGER_EXPORT"') >= 1 && !includesText(commercialCoreJs, '"SETTLEMENT_LEDGER_EXPORT"')
+);
 
 must("commercial core settlement messages use proper Turkish characters", includesAll(commercialCoreJs, [
   "Zorunlu ödeme rollout kaynakları ACTIVE durumuna alındı",
@@ -84,4 +129,4 @@ must("super admin panel exposes detailed ledger export", includesAll(panel, [
 ]));
 must("ledger export action uses settlement ledger endpoint", includesText(panelActions, "/api/commercial-core/payment-backbone/settlement/ledger/export.csv"));
 
-console.log("M94-D ADMIN PAYMENT SECURITY EXPORT CHECK PASS");
+console.log("M94-D3 ADMIN PAYMENT SECURITY EXPORT CHECK PASS");

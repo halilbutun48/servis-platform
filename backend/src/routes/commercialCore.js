@@ -223,6 +223,34 @@ function csvEscapeLedger(value) {
   return s;
 }
 
+const settlementLedgerExportColumns = [
+  "commercialSourceId",
+  "sourceType",
+  "sourceKey",
+  "companyId",
+  "companyName",
+  "roomId",
+  "roomName",
+  "paymentMode",
+  "commissionBps",
+  "settlementPlanId",
+  "settlementPlanStatus",
+  "settlementEntryId",
+  "entryType",
+  "entryStatus",
+  "grossAmount",
+  "commissionAmount",
+  "providerAmount",
+  "entryAmount",
+  "currency",
+  "dueAt",
+  "providerRef",
+  "executedAt",
+  "cancelledAt",
+  "reconciliationStatus",
+  "updatedAt",
+];
+
 function formatLedgerDate(value) {
   if (!value) return "";
   const d = value instanceof Date ? value : new Date(value);
@@ -250,33 +278,7 @@ function deriveLedgerReconciliationStatus(entry, record) {
 }
 
 function buildSettlementLedgerCsvRow(row) {
-  return [
-    row.commercialSourceId,
-    row.sourceType,
-    row.sourceKey,
-    row.companyId ?? "",
-    row.companyName || "",
-    row.roomId ?? "",
-    row.roomName || "",
-    row.paymentMode,
-    row.commissionBps,
-    row.settlementPlanId ?? "",
-    row.settlementPlanStatus,
-    row.settlementEntryId,
-    row.entryType,
-    row.entryStatus,
-    row.grossAmount,
-    row.commissionAmount,
-    row.providerAmount,
-    row.entryAmount,
-    row.currency,
-    row.dueAt || "",
-    row.providerRef || "",
-    row.executedAt || "",
-    row.cancelledAt || "",
-    row.reconciliationStatus,
-    row.updatedAt,
-  ].map(csvEscapeLedger).join(",");
+  return settlementLedgerExportColumns.map((key) => csvEscapeLedger(row?.[key] ?? "")).join(",");
 }
 
 async function listSettlementLedgerExportRows(query = {}) {
@@ -543,33 +545,7 @@ export function commercialCoreRouter() {
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     res.setHeader("Content-Disposition", `attachment; filename="settlement_ledger_${stamp}.csv"`);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    const header = [
-      "commercialSourceId",
-      "sourceType",
-      "sourceKey",
-      "companyId",
-      "companyName",
-      "roomId",
-      "roomName",
-      "paymentMode",
-      "commissionBps",
-      "settlementPlanId",
-      "settlementPlanStatus",
-      "settlementEntryId",
-      "entryType",
-      "entryStatus",
-      "grossAmount",
-      "commissionAmount",
-      "providerAmount",
-      "entryAmount",
-      "currency",
-      "dueAt",
-      "providerRef",
-      "executedAt",
-      "cancelledAt",
-      "reconciliationStatus",
-      "updatedAt",
-    ].join(",");
+    const header = settlementLedgerExportColumns.join(",");
     const body = items.map((item) => buildSettlementLedgerCsvRow(item)).join("\n");
     return res.send(`${header}\n${body}\n`);
   });
