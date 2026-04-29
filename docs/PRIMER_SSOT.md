@@ -184,6 +184,9 @@ Compatibility aliases for legacy checks:
 ## EVIDENCE_PACK_20260428
 - Evidence index: `docs/EVIDENCE_PACK_20260428.md`
 - Groups synthetic performance evidence, M93 queue proof, and remaining field checklist in one roof.
+- Long soak artifact: `artifacts/benchmarks/gps_auto-reached_3000veh_30cycles_2026-04-29T05-12-16-959Z.json`
+- Field capture template: `docs/SAHA_EVIDENCE_PACK_TEMPLATE.md`
+- Field capture guide: `docs/MOBILE_FIELD_EVIDENCE_CAPTURE_GUIDE.md`
 - Keeps the long-soak / chaos / pilot evidence conversation readable without scattering links across the repo.
 - Temiz readstorm kanıtı: 3000 araç, 3 cycle, 9000 / 9000 OK, errors 0, throttled 0, p95 33.21ms.
 - Not: `PASSWORD_CHANGE_REQUIRED` seed-user hijyen hatası kapanmıştır; önceki hatalar throughput problemi değildi.

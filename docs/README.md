@@ -39,6 +39,8 @@
 - **RUNBOOK_AUTO_REACHED_QUEUE_DURABILITY_V1.md** — auto-reached queue durability sınır notu
 - **RUNBOOK_M93_QUEUE_DURABILITY_PROOF.md** — auto-reached queue dayanıklılık kanıtı ve operasyon yüzeyi
 - **EVIDENCE_PACK_20260428.md** — performans, queue proof ve saha checklist tek indeks
+- **SAHA_EVIDENCE_PACK_TEMPLATE.md** — gerçek cihaz saha kanıtı şablonu
+- **MOBILE_FIELD_EVIDENCE_CAPTURE_GUIDE.md** — mobil saha kanıtı toplama rehberi
 - **TICARI_ODEME_VE_MUTABAKAT_HAZIRLIK_MODELI_V1.md** — ödeme kanalı hazırlık modeli, kanal sırası ve mutabakat sınırı
 - **RUNBOOK_CLEAN_CLONE_VERIFICATION_V1.md** — temiz klon bootstrap + verify akışı
 

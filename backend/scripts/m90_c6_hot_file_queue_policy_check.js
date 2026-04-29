@@ -88,8 +88,6 @@ const expectedClasses = {
   "backend/src/routes/shifts/room.js": "acceptance-sensitive-later",
   "backend/src/routes/shifts/company.js": "acceptance-sensitive-later",
   "mobile/App.js": "acceptance-sensitive-later",
-  "web/src/panels/superadmin/CommercialCorePanel.jsx": "acceptance-sensitive-later",
-  "tools/milestone_pack_manifest.json": "justified-exception",
 };
 for (const [file, expectedClass] of Object.entries(expectedClasses)) {
   expect(classifications[file]?.class === expectedClass, `${file} classified as ${expectedClass}`);

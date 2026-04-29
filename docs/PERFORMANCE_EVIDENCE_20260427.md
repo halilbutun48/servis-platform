@@ -134,7 +134,30 @@ Follow-up runs were captured with the benchmark harness extended to support adju
 - `requestTimeoutMs` can be raised for longer saturation checks.
 - `noThrottle=1` is benchmark-only and appends `?noThrottle=1` to `/api/gps` requests.
 
-This gave us two useful 3000-vehicle / 30-cycle readstorm artifacts:
+This gave us additional 3000-vehicle / 30-cycle readstorm artifacts:
+
+### 3000 vehicles / auto-reached / readstorm / 30 cycles / noThrottle=1 / 30s interval / concurrency=64
+
+Command:
+
+```powershell
+node backend/scripts/bench_gps_publish_only.js --scenario=auto-reached --vehicles=3000 --cycles=30 --intervalMs=30000 --panelProfile=readstorm --noThrottle=1 --requestTimeoutMs=30000 --concurrency=64
+```
+
+Result:
+
+- Requests: `90000`
+- OK: `90000`
+- Errors: `0`
+- Throttled: `0`
+- p50: `1630.2ms`
+- p95: `1913.94ms`
+- p99: `2223.84ms`
+- Duration: `2559942ms`
+- Panel requests: `17201`
+- Panel reloads: `11543`
+- Panel invalidations: `198764`
+- Report: `artifacts/benchmarks/gps_auto-reached_3000veh_30cycles_2026-04-29T05-12-16-959Z.json`
 
 ### 3000 vehicles / readstorm / 30 cycles / noThrottle=1 / 20s interval
 
@@ -174,6 +197,6 @@ Result:
 
 Interpretation:
 
-- We now have a measured 30-cycle readstorm saturation boundary and a benchmark harness that can express longer request timeouts and throttle bypass explicitly.
-- The cleanest long-soak proof remains the 3000-vehicle publish-only 30-cycle artifact and the 3000-vehicle readstorm 3-cycle clean baseline.
-- The exact 3000-vehicle / 30-cycle / full readstorm clean soak still needs either a lighter panel profile or a longer runner window than this workspace provided.
+- We now have a measured 30-cycle readstorm saturation boundary and a benchmark harness that can express longer request timeouts, throttle bypass, and bounded worker concurrency explicitly.
+- The cleanest long-soak proof now includes the 3000-vehicle auto-reached 30-cycle readstorm artifact with `errors=0`.
+- The earlier 20s / 30s runs remain useful as stress boundary examples, but the current long soak is the stronger canonical proof.

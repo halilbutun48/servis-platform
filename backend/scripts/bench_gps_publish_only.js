@@ -25,6 +25,7 @@ const DEFAULT_PANEL_DEBOUNCE_MS = 180;
 const DEFAULT_BASE_URL = process.env.API_URL || "http://127.0.0.1:3000";
 const DEFAULT_PASSWORD = "demo123";
 const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_CONCURRENCY = 64;
 let runtimeRequestTimeoutMs = DEFAULT_TIMEOUT_MS;
 
 function parseArgs(argv) {
@@ -1201,7 +1202,7 @@ async function ensureBenchmarkFleet(vehicleCount, benchTag, { scenario, cycles }
   };
 }
 
-function buildReport({ benchTag, scenario, vehicles, cycles, intervalMs, baseUrl, seed, samples, startedAt, finishedAt, panels = null }) {
+function buildReport({ benchTag, scenario, vehicles, cycles, intervalMs, concurrency, baseUrl, seed, samples, startedAt, finishedAt, panels = null }) {
   const latencies = summarizeLatencies(samples);
   const statusCounts = new Map();
   let okCount = 0;
@@ -1233,6 +1234,7 @@ function buildReport({ benchTag, scenario, vehicles, cycles, intervalMs, baseUrl
       vehicles,
       cycles,
       intervalMs,
+      concurrency,
       throttle: "server throttle on",
       websocketConsumers: panelSummary?.sessionCount || 0,
       panelProfile: panelSummary?.profile || "none",
@@ -1277,6 +1279,7 @@ async function main() {
   const vehicles = pickInt(args.vehicles || process.env.BENCH_VEHICLES, DEFAULT_VEHICLES);
   const cycles = pickInt(args.cycles || process.env.BENCH_CYCLES, DEFAULT_CYCLES);
   const intervalMs = pickInt(args.intervalMs || process.env.BENCH_INTERVAL_MS, DEFAULT_INTERVAL_MS);
+  const concurrency = pickInt(args.concurrency || process.env.BENCH_CONCURRENCY, DEFAULT_CONCURRENCY);
   runtimeRequestTimeoutMs = pickInt(args.requestTimeoutMs || process.env.BENCH_REQUEST_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
   const benchNoThrottle = String(args.noThrottle || process.env.BENCH_NO_THROTTLE || "").trim() === "1";
   const outputDir = String(args.outputDir || process.env.BENCH_OUTPUT_DIR || DEFAULT_OUTPUT_DIR).trim();
@@ -1292,6 +1295,7 @@ async function main() {
   console.log(`vehicles: ${vehicles}`);
   console.log(`cycles: ${cycles}`);
   console.log(`intervalMs: ${intervalMs}`);
+  console.log(`concurrency: ${concurrency}`);
   console.log(`requestTimeoutMs: ${runtimeRequestTimeoutMs}`);
   console.log(`benchNoThrottle: ${benchNoThrottle ? "1" : "0"}`);
   console.log(`seed: ${skipSeed ? "reuse-or-seed" : "enabled"}`);
@@ -1322,58 +1326,86 @@ async function main() {
 
   const samples = [];
   const errors = [];
-  const promises = [];
+  const tasks = [];
   const spacingMs = Math.max(1, Math.floor(intervalMs / vehicles));
 
   for (const item of seed.items) {
     for (let cycle = 0; cycle < cycles; cycle += 1) {
       const offsetMs = cycle * intervalMs + item.benchIndex * spacingMs;
-      promises.push((async () => {
-        await sleep(offsetMs);
-        const payload = buildSamplePayload({
-          vehicleId: item.vehicleId,
-          baseLat: item.baseLat,
-          baseLng: item.baseLng,
-          cycle,
-          scenario,
-        });
-
-        const t0 = performance.now();
-        const gpsPath = benchNoThrottle ? "/api/gps?noThrottle=1" : "/api/gps";
-        const resp = await requestJson("POST", gpsPath, {
-          token: item.token,
-          body: payload,
-          timeoutMs: runtimeRequestTimeoutMs,
-        });
-        const latencyMs = performance.now() - t0;
-        const throttled = Boolean(resp.ok && resp.json && resp.json.throttled);
-        const sample = {
-          vehicleId: item.vehicleId,
-          driverId: item.driverId,
-          shiftId: item.shiftId,
-          cycle,
-          status: resp.status,
-          ok: resp.ok,
-          throttled,
-          latencyMs: roundMs(latencyMs),
-        };
-        samples.push(sample);
-        if (!resp.ok || throttled) {
-          errors.push({
-            vehicleId: item.vehicleId,
-            driverId: item.driverId,
-            shiftId: item.shiftId,
-            cycle,
-            status: resp.status,
-            throttled,
-            text: String(resp.text || "").slice(0, 240),
-          });
-        }
-      })());
+      tasks.push({
+        vehicleId: item.vehicleId,
+        driverId: item.driverId,
+        shiftId: item.shiftId,
+        token: item.token,
+        baseLat: item.baseLat,
+        baseLng: item.baseLng,
+        cycle,
+        offsetMs,
+      });
     }
   }
 
-  await Promise.all(promises);
+  tasks.sort((a, b) => a.offsetMs - b.offsetMs);
+  const benchStart = performance.now();
+  const effectiveConcurrency = Math.max(1, Math.min(concurrency, tasks.length || 1));
+  let cursor = 0;
+
+  async function consumeTask(task) {
+    const elapsed = performance.now() - benchStart;
+    const waitMs = Math.max(0, task.offsetMs - elapsed);
+    if (waitMs > 0) await sleep(waitMs);
+
+    const payload = buildSamplePayload({
+      vehicleId: task.vehicleId,
+      baseLat: task.baseLat,
+      baseLng: task.baseLng,
+      cycle: task.cycle,
+      scenario,
+    });
+
+    const t0 = performance.now();
+    const gpsPath = benchNoThrottle ? "/api/gps?noThrottle=1" : "/api/gps";
+    const resp = await requestJson("POST", gpsPath, {
+      token: task.token,
+      body: payload,
+      timeoutMs: runtimeRequestTimeoutMs,
+    });
+    const latencyMs = performance.now() - t0;
+    const throttled = Boolean(resp.ok && resp.json && resp.json.throttled);
+    const sample = {
+      vehicleId: task.vehicleId,
+      driverId: task.driverId,
+      shiftId: task.shiftId,
+      cycle: task.cycle,
+      status: resp.status,
+      ok: resp.ok,
+      throttled,
+      latencyMs: roundMs(latencyMs),
+    };
+    samples.push(sample);
+    if (!resp.ok || throttled) {
+      errors.push({
+        vehicleId: task.vehicleId,
+        driverId: task.driverId,
+        shiftId: task.shiftId,
+        cycle: task.cycle,
+        status: resp.status,
+        throttled,
+        text: String(resp.text || "").slice(0, 240),
+      });
+    }
+  }
+
+  async function worker() {
+    while (true) {
+      const idx = cursor;
+      cursor += 1;
+      if (idx >= tasks.length) return;
+      await consumeTask(tasks[idx]);
+    }
+  }
+
+  await Promise.all(Array.from({ length: effectiveConcurrency }, () => worker()));
 
   if (panelBench) {
     await sleep(DEFAULT_PANEL_DRAIN_MS);
@@ -1387,6 +1419,7 @@ async function main() {
     vehicles,
     cycles,
     intervalMs,
+    concurrency: effectiveConcurrency,
     baseUrl: DEFAULT_BASE_URL,
     seed: {
       companyId: seed.company.id,

@@ -87,8 +87,8 @@
                                 "policyVersion":  1,
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
-                                "currentLargeFileCount":  5,
-                                "currentWarningHotFileCount":  6,
+  "currentLargeFileCount":  3,
+  "currentWarningHotFileCount":  6,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -131,15 +131,7 @@
                                                        "mobile/App.js":  {
                                                                              "class":  "acceptance-sensitive-later",
                                                                              "note":  "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
-                                                                         },
-                                                       "web/src/panels/superadmin/CommercialCorePanel.jsx":  {
-                                                                                                             "class":  "acceptance-sensitive-later",
-                                                                                                             "note":  "ticari omurga ve aktivasyon yüzeyi; contract destekli planli temizlik ister"
-                                                                                                         },
-                                                       "tools/milestone_pack_manifest.json":  {
-                                                                                                  "class":  "justified-exception",
-                                                                                                  "note":  "tek resmi milestone manifesti; bolme yerine M92 spine ile okunurluk ve giris komutu sabitlenir"
-                                                                                              }
+                                                                         }
                                                    }
                            },
     "shareablePackageHygiene":  {

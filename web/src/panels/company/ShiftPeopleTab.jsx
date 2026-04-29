@@ -12,6 +12,7 @@ import { companyPath } from "../../utils/paths";
 import { navigate } from "../../router";
 import RoutePreviewModal from "../../components/RoutePreviewModal";
 import { clearUiDataCache } from "../../utils/uiDataCache";
+import { buildShiftPeopleTabActions } from "./shiftPeopleTabActions";
 
 import { getApiErrorMessage } from "../../utils/apiContract";
 import {
@@ -144,24 +145,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const sid = String(selectedShiftId || "");
     return `psv1:company:${companyKey}:shift:${sid}:people:v1`;
   }, [companyKey, selectedShiftId]);
-
-  async function generateStopsOnBackend(shiftId, maxWalkMValue) {
-    const mw = Number(maxWalkMValue);
-    return api(`/api/shifts/${shiftId}/stops/generate?mode=REPLACE&maxWalkM=${encodeURIComponent(String(mw))}`, {
-      method: "POST",
-      token,
-    });
-  }
-
-  async function generateStopsBatchOnBackend(shiftIds, maxWalkMValue) {
-    const mw = Number(maxWalkMValue);
-    const ids = Array.from(new Set((Array.isArray(shiftIds) ? shiftIds : []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)));
-    return api(`/api/shifts/stops/generate-batch`, {
-      method: "POST",
-      token,
-      body: { shiftIds: ids, mode: "REPLACE", maxWalkM: mw },
-    });
-  }
 
   // init selected shift
   useEffect(() => {
@@ -618,273 +601,79 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     }
   }
 
-  function removePerson(id) {
-    setPeople((prev) => (prev || []).filter((p) => p.id !== id));
-  }
+  const shiftPeopleActions = buildShiftPeopleTabActions({
+    api,
+    apiOr404Fallback,
+    buildStopSummary,
+    clearUiDataCache,
+    companyPath,
+    clusterPeople,
+    computeGeoMeta,
+    computeGeoStatus,
+    draftStops,
+    getApiErrorMessage,
+    hubAddress,
+    hubDirection,
+    hubLat,
+    hubLng,
+    hubPosLabel,
+    importMode,
+    importPeopleToBackendApi,
+    loadPeopleFromBackendApi,
+    me,
+    mirrorIds,
+    maxWalkM,
+    navigate,
+    normalizeCoord,
+    pAddress,
+    pLat,
+    pLng,
+    pName,
+    parseCsv,
+    parseSheetRowsToPeople,
+    people,
+    peopleBackend,
+    peopleStorageKey,
+    savePeopleToBackendApi,
+    sanitizeAddress,
+    selectedShift,
+    selectedShiftId,
+    setBusy,
+    setDraftStops,
+    setErr,
+    setImportQuickBusy,
+    setImportQuickStats,
+    setImportSummary,
+    setImportWarnings,
+    setInfo,
+    setPeople,
+    setPeopleBackend,
+    setPAddress,
+    setPLat,
+    setPLng,
+    setPName,
+    setRowGeocodeBusyId,
+    setStopSummary,
+    setShiftPatchById,
+    setStopActionBusy,
+    stripHubStop,
+    summarizeWarnings,
+    stopActionBusy,
+    token,
+    withHubStop,
+    writeGuidedResume,
+    writePeopleToStorage,
+  });
+  const {
+    removePerson,
+    updatePerson,
+    geocodePersonAddress,
+    runImportQuickGeocode,
+    generateDraftStops,
+    prepareDraftStops,
+    loadShiftStopsFromApi,
+  } = shiftPeopleActions;
 
-  function updatePerson(id, patch) {
-    setPeople((prev) =>
-      (prev || []).map((p) => {
-        if (p.id !== id) return p;
-        const next = { ...p, ...patch };
-        const meta = computeGeoMeta(next);
-        next.geoStatus = meta.geoStatus;
-        next.geoReason = meta.geoReason;
-        next.geoReasonText = meta.geoReasonText;
-        return next;
-      })
-    );
-  }
-
-  async function geocodePersonAddress(id) {
-    const target = (people || []).find((p) => p.id === id);
-    if (!target) return;
-    const query = sanitizeAddress(target.address || "");
-    if (!query) {
-      setErr("Adres boş. Önce adresi gir.");
-      return;
-    }
-
-    setErr("");
-    setInfo("");
-    setRowGeocodeBusyId(id);
-    try {
-      const resp = await api(`/api/geocode`, { method: "POST", body: { q: query, country: "tr" }, token });
-      const lat = normalizeCoord(resp?.lat, "lat");
-      const lng = normalizeCoord(resp?.lng, "lng");
-      if (typeof lat !== "number" || typeof lng !== "number") {
-        throw new Error("Adres için geçerli koordinat bulunamadı.");
-      }
-
-      setPeople((prev) =>
-        (prev || []).map((p) => {
-          if (p.id !== id) return p;
-          const next = { ...p, lat, lng };
-          const meta = computeGeoMeta(next);
-          next.geoStatus = meta.geoStatus;
-          next.geoReason = meta.geoReason;
-          next.geoReasonText = meta.geoReasonText;
-          return next;
-        })
-      );
-      setInfo("Adres bulundu. Koordinatlar satıra işlendi; devam etmeden önce Kaydet ile listeyi kaydet.");
-    } catch (e) {
-      if (e?.status === 404) {
-        setErr("Adresten Bul başarısız: Adres bulunamadı.");
-      } else if (e?.status === 400) {
-        setErr("Adresten Bul başarısız: Geocode isteği eksik veya hatalı.");
-      } else {
-        setErr(`Adresten Bul başarısız: ${getApiErrorMessage(e)}`);
-      }
-    } finally {
-      setRowGeocodeBusyId("");
-    }
-  }
-
-  async function runImportQuickGeocode() {
-    const candidates = (people || []).filter((p) => {
-      const reason = String(p?.geoReason || "");
-      const hasAddress = Boolean(String(p?.address || "").trim());
-      const hasCoords = typeof p?.lat === "number" && typeof p?.lng === "number";
-      return hasAddress && !hasCoords && (reason === "ADDRESS_ONLY" || reason === "INVALID_COORD");
-    });
-
-    if (!candidates.length) {
-      setInfo("Toplu geocode için uygun review kaydı yok.");
-      setImportQuickStats({ found: 0, notFound: 0, error: 0 });
-      return;
-    }
-
-    setImportQuickBusy(true);
-    setErr("");
-    setInfo("");
-    let found = 0;
-    let notFound = 0;
-    let error = 0;
-
-    let nextPeople = [...(people || [])];
-    for (const item of candidates) {
-      const q = sanitizeAddress(item.address || "");
-      if (!q) {
-        notFound += 1;
-        continue;
-      }
-      try {
-        const resp = await api(`/api/geocode`, { method: "POST", body: { q, country: "tr" }, token });
-        const lat = normalizeCoord(resp?.lat, "lat");
-        const lng = normalizeCoord(resp?.lng, "lng");
-        if (typeof lat !== "number" || typeof lng !== "number") {
-          error += 1;
-          continue;
-        }
-        nextPeople = nextPeople.map((p) => {
-          if (p.id !== item.id) return p;
-          const next = { ...p, lat, lng };
-          const meta = computeGeoMeta(next);
-          next.geoStatus = meta.geoStatus;
-          next.geoReason = meta.geoReason;
-          next.geoReasonText = meta.geoReasonText;
-          return next;
-        });
-        found += 1;
-      } catch (e) {
-        if (e?.status === 404) notFound += 1;
-        else error += 1;
-      }
-    }
-
-    setPeople(nextPeople);
-    setImportQuickStats({ found, notFound, error });
-    const remainingReview = nextPeople.filter((p) => p.geoStatus === "NEEDS_REVIEW").length;
-    setImportSummary((prev) => prev ? { ...prev, needsReviewRows: remainingReview } : prev);
-    setInfo(`Toplu geocode tamamlandı: bulundu ${found}, bulunamadı ${notFound}, hata ${error}. Değişiklikleri kalıcı yapmak için Kaydet ile listeyi kaydet.`);
-    setImportQuickBusy(false);
-  }
-
-  async function runStopAction(action) {
-    if (stopActionBusy) return null;
-    setStopActionBusy(true);
-    try {
-      return await action();
-    } finally {
-      setStopActionBusy(false);
-    }
-  }
-
-  async function generateDraftStopsInternal() {
-    setErr("");
-    setInfo("");
-
-    const mw = Number(maxWalkM);
-    if (!Number.isFinite(mw) || mw <= 0) {
-      setErr("maxWalkM pozitif sayi olmali.");
-      return false;
-    }
-
-    // Prefer backend: generate + persist stops (wizard Step-4 needs persisted stops)
-    // Guided Mode: outbound/inbound taslak shift'lerin hepsine ayni stop setini uret.
-    if (selectedShiftId && peopleBackend !== "off") {
-      setBusy(true);
-      try {
-        const ids = mirrorIds.length ? mirrorIds : [Number(selectedShiftId)];
-        const ok = await apiOr404Fallback(
-          async () => {
-            let firstResp = null;
-            if (ids.length > 1) {
-              const resp = await generateStopsBatchOnBackend(ids, mw);
-              firstResp = resp?.first || (Array.isArray(resp?.items) ? resp.items[0] : null);
-            } else {
-              firstResp = await generateStopsOnBackend(String(ids[0]), mw);
-            }
-            const shiftCount = ids.length;
-            setDraftStops([]);
-            setStopSummary(buildStopSummary({
-              base: {
-                maxWalkM: mw,
-                stopCount: Number(firstResp?.stopCount || 0),
-                coveredCount: Number(firstResp?.assignmentCount || 0),
-                skippedCount: Number(firstResp?.skippedCount || 0),
-                hubApplied: Boolean(firstResp?.hubApplied),
-              },
-              stopsInput: [],
-              peopleInput: people,
-              computeGeoStatus,
-            }));
-            setInfo(
-              shiftCount > 1
-                ? `Durak üretimi tamamlandı: ${shiftCount} vardiya için stop üretildi. Sonraki adım: Shiftten Durakları Çek.`
-                : `Durak üretimi tamamlandı: ${Number(firstResp?.stopCount || 0)} durak. Sonraki adım: Shiftten Durakları Çek.`
-            );
-            setPeopleBackend("on");
-            return true;
-          },
-          async () => {
-            setPeopleBackend("off");
-            return false;
-          }
-        );
-
-        return Boolean(ok);
-      } catch (e) {
-        setErr(getApiErrorMessage(e));
-        return false;
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    // Fallback: UI-only preview (does not persist)
-    const stops = clusterPeople(people, mw);
-    const withHub = withHubStop(stops, selectedShift);
-    setDraftStops(withHub);
-    setStopSummary(buildStopSummary({
-      base: { maxWalkM: mw, hubApplied: Boolean(selectedShift?.hubLat && selectedShift?.hubLng) },
-      stopsInput: withHub,
-      peopleInput: people,
-      computeGeoStatus,
-    }));
-    setInfo(stops.length ? `Draft durak oluşturuldu: ${stops.length} durak` : "OK koordinatlı kayıt yok - durak oluşturulamadı.");
-    return true;
-  }
-
-  async function generateDraftStops() {
-    return runStopAction(() => generateDraftStopsInternal());
-  }
-
-  async function prepareDraftStops() {
-    return runStopAction(async () => {
-      const ok = await generateDraftStopsInternal();
-      if (!ok) return false;
-      if (selectedShiftId && peopleBackend !== "off") {
-        await loadShiftStopsFromApiInternal({ quiet: true });
-      }
-      return true;
-    });
-  }
-
-  async function loadShiftStopsFromApiInternal(options = {}) {
-    const { quiet = false } = options;
-    if (!selectedShiftId) return null;
-    setBusy(true);
-    setErr("");
-    setInfo("");
-    setImportSummary(null);
-    setImportWarnings([]);
-    try {
-      const sid = Number(selectedShiftId);
-      const resp = await api(`/api/shifts/${sid}/stops`, { token });
-      const list = Array.isArray(resp) ? resp : resp?.items ?? resp?.stops ?? [];
-      const mapped = (list || [])
-        .filter((s) => typeof s?.lat === "number" && typeof s?.lng === "number")
-        .map((s, i) => ({
-          id: String(s.id ?? `api_${i}`),
-          title: String(s.title || s.name || `Durak ${i + 1}`),
-          lat: s.lat,
-          lng: s.lng,
-          count: s.assignmentCount ?? null,
-          memberIds: [],
-        }));
-      const withHub = withHubStop(mapped, selectedShift);
-      setDraftStops(withHub);
-      setStopSummary(buildStopSummary({
-        base: {},
-        stopsInput: withHub,
-        peopleInput: people,
-        computeGeoStatus,
-      }));
-      setInfo(`Shift durakları yüklendi: ${withHub.length}`);
-      return withHub;
-    } catch (e) {
-      if (!quiet) setErr(`Shift durakları yüklenemedi: ${getApiErrorMessage(e)}`);
-      return null;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function loadShiftStopsFromApi(options = {}) {
-    return runStopAction(() => loadShiftStopsFromApiInternal(options));
-  }
 
   const roomText = useMemo(() => {
     if (!selectedShift) return "-";
