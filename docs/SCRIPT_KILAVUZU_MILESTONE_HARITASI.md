@@ -35,6 +35,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `tools\pack_m90_b1_canonical_closure_gate.ps1 -RepoRoot D:\servis-platform`
 - `node backend\scripts\run_m0_latest.js --static-only --to latest --continue`
 - `npm run verify:milestones`
+- `node backend\scripts\m94d_admin_payment_security_export_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -400,6 +401,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Pack: `tools/pack_m93_queue_durability_proof.ps1`
 - Runtime probe: `backend/scripts/m93_queue_durability_runtime_probe.js`
 - Ana konu: autoReachedQueue için Redis down/up, worker restart reclaim, dead-letter görünürlüğü ve threshold kanıtını resmi hatta bağlamak.
+
+### M94-D2 — admin audit + payment export polish [CHECK]
+- Komut: `node backend\scripts\m94d_admin_payment_security_export_check.js`
+- Ana konu: admin write step-up, payment ledger export audit standardı ve ticari panel görünürlüğünü küçük bir kapanış check'iyle sabitlemek.
 
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`

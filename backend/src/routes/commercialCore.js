@@ -518,7 +518,7 @@ export function commercialCoreRouter() {
   r.get("/payment-backbone/settlement/ledger/export.csv", authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN"), async (req, res) => {
     const query = parseSettlementLedgerExportQuery(req.query, { take: 1000 });
     const items = await listSettlementLedgerExportRows(query);
-    await auditCommercialCoreWrite(req, "SETTLEMENT_LEDGER_EXPORT", "SettlementEntry", null, {
+    await auditCommercialCoreWrite(req, "PAYMENT_LEDGER_EXPORT", "SettlementEntry", null, {
       endpoint: "/api/commercial-core/payment-backbone/settlement/ledger/export.csv",
       kind: "settlement_ledger",
       format: "csv",
@@ -628,7 +628,7 @@ export function commercialCoreRouter() {
       sourceIds: parsed.data.sourceIds,
       changedCount: result?.changedCount ?? result?.count ?? null,
     });
-    return res.json({ ok: true, ...result, message: "Zorunlu odeme rollout kaynaklari ACTIVE durumuna alindi" });
+    return res.json({ ok: true, ...result, message: "Zorunlu ödeme rollout kaynakları ACTIVE durumuna alındı" });
   });
 
   r.post("/payment-backbone/required/deactivate", ...superAdminWrite, async (req, res) => {
@@ -641,7 +641,7 @@ export function commercialCoreRouter() {
       sourceIds: parsed.data.sourceIds,
       changedCount: result?.changedCount ?? result?.count ?? null,
     });
-    return res.json({ ok: true, ...result, message: "Zorunlu odeme rollout kaynaklari DISABLED durumuna alindi" });
+    return res.json({ ok: true, ...result, message: "Zorunlu ödeme rollout kaynakları DISABLED durumuna alındı" });
   });
 
   r.get("/payment-backbone/accounts/status", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
@@ -666,7 +666,7 @@ export function commercialCoreRouter() {
       providerKey: item.providerKey,
       status: item.status,
     });
-    return res.json({ ok: true, item, message: "Odeme hesabi metadata kaydedildi" });
+    return res.json({ ok: true, item, message: "Ödeme hesabı metadata kaydedildi" });
   });
 
   r.get("/payment-backbone/settlement/status", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
@@ -690,7 +690,7 @@ export function commercialCoreRouter() {
       note: parsed.data.note || null,
       changedCount: result?.changedCount ?? null,
     });
-    return res.json({ ok: true, ...result, message: "Settlement entry satirlari PLANNED durumuna alindi" });
+    return res.json({ ok: true, ...result, message: "Settlement entry satırları PLANNED durumuna alındı" });
   });
 
   r.post("/payment-backbone/settlement/entries/execute", ...superAdminWrite, async (req, res) => {
@@ -705,7 +705,7 @@ export function commercialCoreRouter() {
       note: parsed.data.note || null,
       changedCount: result?.changedCount ?? null,
     });
-    return res.json({ ok: true, ...result, message: "Settlement entry satirlari EXECUTED durumuna alindi" });
+    return res.json({ ok: true, ...result, message: "Settlement entry satırları EXECUTED durumuna alındı" });
   });
 
   r.post("/payment-backbone/settlement/entries/cancel", ...superAdminWrite, async (req, res) => {
@@ -719,7 +719,7 @@ export function commercialCoreRouter() {
       note: parsed.data.note || null,
       changedCount: result?.changedCount ?? null,
     });
-    return res.json({ ok: true, ...result, message: "Settlement entry satirlari CANCELLED durumuna alindi" });
+    return res.json({ ok: true, ...result, message: "Settlement entry satırları CANCELLED durumuna alındı" });
   });
 
   r.post("/payment-backbone/settlement/entries/ready", ...superAdminWrite, async (req, res) => {
@@ -734,7 +734,7 @@ export function commercialCoreRouter() {
       note: parsed.data.note || null,
       changedCount: result?.changedCount ?? null,
     });
-    return res.json({ ok: true, ...result, message: "Settlement entry satirlari READY durumuna alindi" });
+    return res.json({ ok: true, ...result, message: "Settlement entry satırları READY durumuna alındı" });
   });
 
   r.get("/payment-backbone/reconciliation/status", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
@@ -759,7 +759,7 @@ export function commercialCoreRouter() {
       externalRef: item.externalRef || null,
       note: item.note || null,
     });
-    return res.json({ ok: true, item, message: "Settlement mutabakat kaydi guncellendi" });
+    return res.json({ ok: true, item, message: "Settlement mutabakat kaydı güncellendi" });
   });
 
   r.get("/room/summary", authRequired(), requireRole("ROOM", "SUPER_ADMIN"), async (req, res) => {

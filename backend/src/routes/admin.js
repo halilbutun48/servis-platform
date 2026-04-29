@@ -135,6 +135,20 @@ export function adminRouter(io = null) {
   const r = express.Router();
   const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
 
+  async function auditAdminWrite(req, action, entity, entityId, meta = {}) {
+    return audit(req, {
+      action,
+      entity,
+      entityId: entityId ?? null,
+      meta: {
+        ...meta,
+        actorId: Number(req.user?.id || 0) || null,
+        requestIp: req.ip || null,
+        userAgent: String(req.headers?.["user-agent"] || "").trim() || null,
+      },
+    });
+  }
+
 // ? M39: retention run (dry-run supported)
 r.post("/retention/run", ...superAdminWrite, async (req, res) => {
   try {
@@ -188,6 +202,12 @@ r.post("/backup/create", ...superAdminWrite, async (req, res) => {
       outputDir,
       keepDays: Number.isFinite(keepDays) ? keepDays : null,
     });
+    await auditAdminWrite(req, "ADMIN_BACKUP_CREATE", "BackupArchive", null, {
+      outputDir,
+      keepDays: Number.isFinite(keepDays) ? keepDays : null,
+      backupFile: result?.backupFile || result?.file || null,
+      status: result?.ok ? "OK" : "FAILED",
+    });
     const status = result.ok ? 200 : 500;
     return res.status(status).json({ ok: result.ok, ...result });
   } catch (e) {
@@ -205,6 +225,13 @@ r.post("/backup/restore", ...superAdminWrite, async (req, res) => {
       backupFile,
       manifestFile,
       force,
+    });
+    await auditAdminWrite(req, "ADMIN_BACKUP_RESTORE", "BackupArchive", null, {
+      backupFile,
+      manifestFile,
+      force,
+      restoreSource: backupFile,
+      status: result?.ok ? "OK" : "FAILED",
     });
     const status = result.ok ? 200 : 500;
     return res.status(status).json({ ok: result.ok, ...result });
@@ -905,6 +932,10 @@ r.post("/queues/auto-reached/dead-letter/:taskId/resolve", ...superAdminWrite, a
     if (exists) return res.status(409).json({ error: "Region already exists" });
 
     const created = await prisma.region.create({ data: { name } });
+    await auditAdminWrite(req, "ADMIN_REGION_CREATE", "Region", created.id, {
+      regionId: created.id,
+      regionName: created.name,
+    });
     res.status(201).json(created);
   });
 
@@ -920,7 +951,13 @@ r.post("/queues/auto-reached/dead-letter/:taskId/resolve", ...superAdminWrite, a
     });
     if (exists) return res.status(409).json({ error: "Region name already used" });
 
+    const before = await prisma.region.findUnique({ where: { id }, select: { id: true, name: true } }).catch(() => null);
     const updated = await prisma.region.update({ where: { id }, data: { name } });
+    await auditAdminWrite(req, "ADMIN_REGION_UPDATE", "Region", updated.id, {
+      regionId: updated.id,
+      regionName: updated.name,
+      previousRegionName: before?.name || null,
+    });
     res.json(updated);
   });
 
@@ -934,7 +971,12 @@ r.post("/queues/auto-reached/dead-letter/:taskId/resolve", ...superAdminWrite, a
     ]);
     if (c > 0 || ro > 0) return res.status(409).json({ error: "Region in use", companies: c, rooms: ro });
 
+    const existing = await prisma.region.findUnique({ where: { id }, select: { id: true, name: true } });
     await prisma.region.delete({ where: { id } });
+    await auditAdminWrite(req, "ADMIN_REGION_DELETE", "Region", id, {
+      regionId: id,
+      regionName: existing?.name || null,
+    });
     res.json({ ok: true });
   });
 

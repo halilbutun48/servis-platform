@@ -63,6 +63,9 @@
 - `M93 - queue durability proof - green`
   - amaç: autoReachedQueue için Redis down/up, worker restart reclaim, dead-letter görünürlüğü ve threshold kanıtını resmi hatta bağlamak
   - komut: `tools\pack_m93_queue_durability_proof.ps1 -RepoRoot D:\servis-platform`
+- `M94-D2 - admin audit + payment export polish - green`
+  - amaç: admin write step-up, payment ledger export audit standardı ve detaylı muhasebe CSV görünürlüğünü küçük bir kapanışta toplamak
+  - komut: `node backend/scripts/m94d_admin_payment_security_export_check.js`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

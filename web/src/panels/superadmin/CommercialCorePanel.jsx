@@ -93,13 +93,13 @@ export default function CommercialCorePanel() {
       setRequiredCandidatesMeta(requiredCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (requiredCandidatesRes?.data || { endpointStatus: "missing", summary: "Zorunlu rollout aday endpointi okunamadı." }));
       setRequiredCandidates(requiredItems);
       setAccountStatus(accounts);
-      setAccountCandidatesMeta(accountCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (accountCandidatesRes?.data || { endpointStatus: "missing", summary: "Odeme hesabi aday endpointi okunamadi." }));
+      setAccountCandidatesMeta(accountCandidatesRes?.ok ? { endpointStatus: "ok", summary: "" } : (accountCandidatesRes?.data || { endpointStatus: "missing", summary: "Ödeme hesabı aday endpointi okunamadı." }));
       setAccountCandidates(accountItems);
       setSettlementStatus(settlement);
-      setSettlementQueueMeta(settlementQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (settlementQueueRes?.data || { endpointStatus: "missing", summary: "Settlement operasyon kuyrugu endpointi okunamadi." }));
+      setSettlementQueueMeta(settlementQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (settlementQueueRes?.data || { endpointStatus: "missing", summary: "Settlement operasyon kuyruğu endpointi okunamadı." }));
       setSettlementQueue(settlementItems);
       setReconciliationStatus(reconciliation);
-      setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Settlement mutabakat kuyrugu endpointi okunamadi." }));
+      setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Settlement mutabakat kuyruğu endpointi okunamadı." }));
       setReconciliationQueue(reconciliationItems);
       setPaymentSourcesMeta(paymentSourcesRes?.ok ? { endpointStatus: "ok", summary: paymentSourcesData?.summary?.total != null ? `${paymentSourcesData.summary.total} kaynak` : "" } : (paymentSourcesRes?.data || { endpointStatus: "missing", summary: "Ödeme kaynakları endpointi okunamadı." }));
       setPaymentSources(paymentSourceItems);
@@ -117,13 +117,13 @@ export default function CommercialCorePanel() {
         if (!pilotCandidatesRes?.ok) reasons.push(pilotCandidatesRes?.status === 403 ? "opsiyonel ödeme pilot aday listesi step-up bekliyor" : "opsiyonel ödeme pilot aday listesi endpointi bulunamadı");
         if (!requiredRes?.ok) reasons.push(requiredRes?.status === 403 ? "zorunlu ödeme rollout özeti step-up bekliyor" : "zorunlu ödeme rollout özeti endpointi bulunamadı");
         if (!requiredCandidatesRes?.ok) reasons.push(requiredCandidatesRes?.status === 403 ? "zorunlu ödeme rollout aday listesi step-up bekliyor" : "zorunlu ödeme rollout aday listesi endpointi bulunamadı");
-        if (!accountStatusRes?.ok) reasons.push(accountStatusRes?.status === 403 ? "odeme hesabi hazirlik ozeti step-up bekliyor" : "odeme hesabi hazirlik ozeti endpointi bulunamadi");
-        if (!accountCandidatesRes?.ok) reasons.push(accountCandidatesRes?.status === 403 ? "odeme hesabi aday listesi step-up bekliyor" : "odeme hesabi aday listesi endpointi bulunamadi");
-        if (!settlementStatusRes?.ok) reasons.push(settlementStatusRes?.status === 403 ? "settlement operasyon ozeti step-up bekliyor" : "settlement operasyon ozeti endpointi bulunamadi");
-        if (!settlementQueueRes?.ok) reasons.push(settlementQueueRes?.status === 403 ? "settlement operasyon kuyrugu step-up bekliyor" : "settlement operasyon kuyrugu endpointi bulunamadi");
-        if (!reconciliationStatusRes?.ok) reasons.push(reconciliationStatusRes?.status === 403 ? "settlement mutabakat ozeti step-up bekliyor" : "settlement mutabakat ozeti endpointi bulunamadi");
-        if (!reconciliationQueueRes?.ok) reasons.push(reconciliationQueueRes?.status === 403 ? "settlement mutabakat kuyrugu step-up bekliyor" : "settlement mutabakat kuyrugu endpointi bulunamadi");
-        if (!paymentSourcesRes?.ok) reasons.push(paymentSourcesRes?.status === 403 ? "odeme kaynaklari step-up bekliyor" : "odeme kaynaklari endpointi bulunamadi");
+        if (!accountStatusRes?.ok) reasons.push(accountStatusRes?.status === 403 ? "Ödeme hesabı hazırlık özeti step-up bekliyor" : "Ödeme hesabı hazırlık özeti endpointi bulunamadı");
+        if (!accountCandidatesRes?.ok) reasons.push(accountCandidatesRes?.status === 403 ? "Ödeme hesabı aday listesi step-up bekliyor" : "Ödeme hesabı aday listesi endpointi bulunamadı");
+        if (!settlementStatusRes?.ok) reasons.push(settlementStatusRes?.status === 403 ? "Settlement operasyon özeti step-up bekliyor" : "Settlement operasyon özeti endpointi bulunamadı");
+        if (!settlementQueueRes?.ok) reasons.push(settlementQueueRes?.status === 403 ? "Settlement operasyon kuyruğu step-up bekliyor" : "Settlement operasyon kuyruğu endpointi bulunamadı");
+        if (!reconciliationStatusRes?.ok) reasons.push(reconciliationStatusRes?.status === 403 ? "Settlement mutabakat özeti step-up bekliyor" : "Settlement mutabakat özeti endpointi bulunamadı");
+        if (!reconciliationQueueRes?.ok) reasons.push(reconciliationQueueRes?.status === 403 ? "Settlement mutabakat kuyruğu step-up bekliyor" : "Settlement mutabakat kuyruğu endpointi bulunamadı");
+        if (!paymentSourcesRes?.ok) reasons.push(paymentSourcesRes?.status === 403 ? "Ödeme kaynakları step-up bekliyor" : "Ödeme kaynakları endpointi bulunamadı");
         setErr(reasons.join(" • "));
       }
     } catch (e) {
