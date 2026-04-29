@@ -96,11 +96,13 @@ export default function LiveScreen({
       <Card>
         <SectionTitle title="Sürücünün telefon GPS'i" />
         <View style={styles.rowGap}>
+          <Pill label={`Görev desteği: ${gps?.backgroundTaskAvailable ? 'Hazır' : 'Yok'}`} tone={gps?.backgroundTaskAvailable ? 'ok' : 'warn'} />
           <Pill label={`İzin: ${gps?.permissionStatus || 'unknown'}`} tone={gps?.permissionStatus === 'granted' ? 'ok' : 'warn'} />
           <Pill label={`Arka plan: ${gps?.backgroundPermissionStatus || 'unknown'}`} tone={gps?.backgroundPermissionStatus === 'granted' ? 'ok' : 'warn'} />
           <Pill label={`Servis: ${gps?.backgroundTaskState || 'unknown'}`} tone={gps?.backgroundTaskState === 'running' ? 'ok' : 'warn'} />
           <Pill label={`Gönderim: ${gps?.publishState || 'idle'}`} tone={gps?.publishState === 'ok' ? 'ok' : gps?.publishState === 'retry' || gpsNeedsPermission || kvkkBlocking ? 'warn' : 'info'} />
         </View>
+        <Info label="Görev desteği" value={gps?.backgroundTaskAvailableText || '-'} />
         <Info label="İzin durumu" value={gps?.permissionText || '-'} />
         <Info label="Arka plan izni" value={gps?.backgroundPermissionText || '-'} />
         <Info label="Arka plan servis" value={gps?.backgroundTaskText || '-'} />
@@ -126,6 +128,7 @@ export default function LiveScreen({
         <Info label="Son deneme" value={fmt(gps?.lastAttemptAt)} />
         <Info label="GPS yeniden deneme" value={gps?.retryCount != null ? String(gps.retryCount) : '-'} />
         <Info label="GPS sonraki deneme" value={fmt(gps?.nextRetryAt)} />
+        <Text style={styles.muted}>Ekran kapalı kalsa da arka plan görev desteği varsa telefon GPS'i konumu yayınlamayı sürdürür; zayıf ağda kontrollü yeniden deneme devreye girer.</Text>
         <View style={styles.actionsRow}>
           <PrimaryButton title={gpsActionTitle} onPress={gpsNeedsPermission ? onRequestGpsPermission : onPublishGpsNow} disabled={kvkkBlocking} />
           <SecondaryButton title="Durumu tazele" onPress={onRefreshGpsStatus} />

@@ -110,8 +110,20 @@ export async function syncDriverBackgroundLocation({
   const backgroundPreferred = String(appState || 'active') !== 'active';
   const target = resolveGpsPublishTarget(today, route, selectedShiftId);
 
+  if (!runtime.taskAvailable) {
+    if (runtime.started) await stopDriverBackgroundLocation();
+    return {
+      started: false,
+      reason: 'task-unavailable',
+      target,
+      runtime: {
+        ...runtime,
+        started: false,
+      },
+    };
+  }
+
   const eligible = Boolean(
-    runtime.taskAvailable &&
     sessionToken &&
     isDriver &&
     !requirePinChange &&
@@ -180,23 +192,23 @@ export async function syncDriverBackgroundLocation({
   }
 
   if (!runtime.started) {
-    await Location.startLocationUpdatesAsync(DRIVER_BG_LOCATION_TASK, {
-      accuracy: Location.Accuracy.Balanced,
-      activityType: Location.ActivityType.AutomotiveNavigation,
-      timeInterval: GPS_PUBLISH_INTERVAL_MS,
-      distanceInterval: DRIVER_BG_DISTANCE_INTERVAL_M,
-      deferredUpdatesDistance: 0,
-      deferredUpdatesInterval: 0,
-      pausesUpdatesAutomatically: false,
-      showsBackgroundLocationIndicator: true,
-      mayShowUserSettingsDialog: false,
-      foregroundService: {
-        notificationTitle: 'Personel Servis GPS açık',
+      await Location.startLocationUpdatesAsync(DRIVER_BG_LOCATION_TASK, {
+        accuracy: Location.Accuracy.Balanced,
+        activityType: Location.ActivityType.AutomotiveNavigation,
+        timeInterval: GPS_PUBLISH_INTERVAL_MS,
+        distanceInterval: DRIVER_BG_DISTANCE_INTERVAL_M,
+        deferredUpdatesDistance: 0,
+        deferredUpdatesInterval: 0,
+        pausesUpdatesAutomatically: false,
+        showsBackgroundLocationIndicator: true,
+        mayShowUserSettingsDialog: false,
+        foregroundService: {
+        notificationTitle: "Sürücünün telefon GPS'i açık",
         notificationBody: "Sürücünün telefon GPS'i vardiya sırasında arka planda konum gönderiyor.",
-        notificationColor: '#0f172a',
-        killServiceOnDestroy: false,
-      },
-    });
+          notificationColor: '#0f172a',
+          killServiceOnDestroy: false,
+        },
+      });
   }
 
   return {

@@ -176,6 +176,7 @@ export default function TodayScreen({
           title="GPS hazırlığı"
           subtitle="Sürücünün telefon GPS'i ve canlı konum yayını burada izlenir."
         />
+        <Info label="Arka plan görev desteği" value={gps?.backgroundTaskAvailableText || '-'} />
         <Info label="Sağlık" value={health?.ok ? 'UP' : health?.status || '-'} />
         <Info label="Bağlantı" value={net?.message || '-'} />
         <Info label="GPS" value={gps?.publishText || '-'} />

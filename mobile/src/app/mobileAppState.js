@@ -46,6 +46,8 @@ const DEFAULT_GPS = {
   permissionText: "Sürücünün telefon GPS'i için izin gerekli.",
   backgroundPermissionStatus: 'unknown',
   backgroundPermissionText: 'Arka plan GPS izni okunamadı.',
+  backgroundTaskAvailable: false,
+  backgroundTaskAvailableText: 'Arka plan GPS görevi henüz doğrulanmadı.',
   backgroundTaskState: 'stopped',
   backgroundTaskText: 'Arka plan GPS servisi henüz devrede değil.',
   appState: 'active',
@@ -168,6 +170,7 @@ export function buildGpsRuntimeSnapshot({
   const foregroundPermission = options.foregroundPermission ?? runtime?.foregroundPermission ?? null;
   const backgroundPermission = options.backgroundPermission ?? runtime?.backgroundPermission ?? null;
   const taskStarted = Boolean(runtime?.started);
+  const taskAvailable = runtime?.taskAvailable !== false;
   const canOpenSettings = Boolean(
     options.canOpenSettings ?? ((foregroundPermission?.canAskAgain === false) || (backgroundPermission?.canAskAgain === false))
   );
@@ -177,10 +180,16 @@ export function buildGpsRuntimeSnapshot({
     permissionText: permissionTextFromStatus(foregroundPermission),
     backgroundPermissionStatus: backgroundPermission?.status || 'unknown',
     backgroundPermissionText: options.backgroundPermissionText || backgroundPermissionTextFromStatus(backgroundPermission),
+    backgroundTaskAvailable: taskAvailable,
+    backgroundTaskAvailableText: taskAvailable
+      ? 'Arka plan GPS görevi bu cihazda destekleniyor.'
+      : 'Arka plan GPS görevi bu cihazda desteklenmiyor.',
     backgroundTaskState: taskStarted ? 'running' : 'stopped',
     backgroundTaskText: taskStarted
       ? 'Arka plan GPS servisi kayıtlı. Ekran kapansa da yayın devam etmeli.'
-      : 'Arka plan GPS servisi henüz devrede değil.',
+      : (taskAvailable
+        ? 'Arka plan GPS servisi henüz devrede değil.'
+        : 'Arka plan GPS görevi bu cihazda desteklenmiyor.'),
     appState: options.appState || appState,
     lastBackgroundReason: reason || options.reason || '',
     lastBackgroundSyncAt: new Date().toISOString(),
