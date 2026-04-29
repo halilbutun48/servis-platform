@@ -898,6 +898,8 @@ export default function App() {
       onOpenRoute={mobileHandlers.handleOpenRoute}
       onOpenLive={mobileHandlers.handleOpenLive}
       onSelectShift={mobileHandlers.handleSelectShift}
+      routeOpsBusy={Boolean(routeOps?.busy)}
+      routeOpsText={routeOps?.message || ''}
       onStartShift={mobileHandlers.handleStartShift}
       onPauseShift={mobileHandlers.handlePauseShift}
       onResumeShift={mobileHandlers.handleResumeShift}
@@ -916,7 +918,7 @@ export default function App() {
       onAcceptKvkk={mobileHandlers.handleAcceptKvkk}
       onRefreshKvkkStatus={mobileHandlers.handleRefreshKvkk}
     />
-  ), [state, screen, routeOps]);
+  ), [state, screen, routeOps, mobileHandlers]);
 
   return (
     <SafeAreaView style={styles.safe}>

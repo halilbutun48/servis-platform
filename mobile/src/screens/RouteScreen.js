@@ -44,6 +44,15 @@ export default function RouteScreen({
   const pendingStops = Array.isArray(route?.orderedStops)
     ? route.orderedStops.filter((stop) => String(stop?.state || '').toUpperCase() === 'PENDING')
     : [];
+  const routeSummary = {
+    remainingRouteEtaMin: route?.summary?.remainingRouteEtaMin ?? route?.remainingRouteEtaMin ?? null,
+    remainingKm: route?.summary?.remainingKm ?? route?.remainingKm ?? null,
+    remainingStops: route?.summary?.remainingStops ?? pendingStops.length,
+    remainingPassengers: route?.summary?.remainingPassengers ?? route?.remainingPassengers ?? null,
+    lastReachedOrder: route?.progress?.lastReachedOrder ?? route?.summary?.lastReachedOrder ?? null,
+    completed: Boolean(route?.progress?.completed ?? route?.summary?.completed),
+    paused: Boolean(route?.progress?.pausedAt),
+  };
   const canStart = String(route?.shift?.status || activeShift?.status || '').toUpperCase() === 'APPROVED';
   const canPause = String(route?.shift?.status || activeShift?.status || '').toUpperCase() === 'ACTIVE' && !route?.progress?.pausedAt;
   const canResume = String(route?.shift?.status || activeShift?.status || '').toUpperCase() === 'ACTIVE' && !!route?.progress?.pausedAt;
@@ -106,6 +115,20 @@ export default function RouteScreen({
               {canResume ? <PrimaryButton title="Devam et" onPress={onResumeShift} disabled={routeOpsBusy} /> : null}
               {canComplete ? <SecondaryButton title="Vardiyayı tamamla" onPress={onCompleteShift} disabled={routeOpsBusy} /> : null}
             </View>
+          </Card>
+
+          <Card>
+            <SectionTitle title="Rota özeti" subtitle="Kalan süre, mesafe ve durak ilerlemesi tek yerde." />
+            <View style={styles.rowGap}>
+              {routeSummary.completed ? <Pill label="Rota tamamlandı" tone="ok" /> : null}
+              {routeSummary.paused ? <Pill label="Vardiya duraklatıldı" tone="warn" /> : null}
+              <Pill label={nextStop ? 'Sıradaki durak hazır' : 'Bekleyen durak yok'} tone={nextStop ? 'info' : 'warn'} />
+            </View>
+            <Info label="Kalan rota süresi" value={routeSummary.remainingRouteEtaMin != null ? `${routeSummary.remainingRouteEtaMin} dk` : '-'} />
+            <Info label="Kalan km" value={routeSummary.remainingKm != null ? `${routeSummary.remainingKm} km` : '-'} />
+            <Info label="Kalan durak" value={routeSummary.remainingStops != null ? String(routeSummary.remainingStops) : '-'} />
+            <Info label="Kalan yolcu" value={routeSummary.remainingPassengers != null ? String(routeSummary.remainingPassengers) : '-'} />
+            <Info label="Son ulaşılan sıra" value={routeSummary.lastReachedOrder != null ? String(routeSummary.lastReachedOrder) : '-'} />
           </Card>
 
           <Card>

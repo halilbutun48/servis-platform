@@ -32,6 +32,8 @@ export default function MobileAppContent({
   onOpenRoute,
   onOpenLive,
   onSelectShift,
+  routeOpsBusy,
+  routeOpsText,
   onStartShift,
   onPauseShift,
   onResumeShift,
@@ -163,18 +165,25 @@ export default function MobileAppContent({
       syncing={Boolean(state?.syncing)}
       usingCachedData={Boolean(state?.usingCachedData)}
       releaseInfo={releaseInfo}
-      net={state?.net || null}
-      gps={state?.gps || null}
-      kvkk={state?.kvkk || null}
-      selectedShiftId={state?.selectedShiftId || null}
-      onRefresh={onRefresh}
-      onLogout={onLogout}
-      onOpenRoute={onOpenRoute}
-      onOpenLive={onOpenLive}
-      onSelectShift={onSelectShift}
-      onOpenSettings={onOpenGpsSettings}
-      onPublishGpsNow={onPublishGpsNow}
-    />
+        net={state?.net || null}
+        gps={state?.gps || null}
+        kvkk={state?.kvkk || null}
+        selectedShiftId={state?.selectedShiftId || null}
+        routeOpsBusy={routeOpsBusy}
+        routeOpsText={routeOpsText}
+        onRefresh={onRefresh}
+        onLogout={onLogout}
+        onOpenRoute={onOpenRoute}
+        onOpenLive={onOpenLive}
+        onSelectShift={onSelectShift}
+        onStartShift={onStartShift}
+        onCompleteShift={onCompleteShift}
+        onMarkReached={onMarkReached}
+        onSpeakNextStop={onSpeakNextStop}
+        onSpeakEta={onSpeakEta}
+        onOpenSettings={onOpenGpsSettings}
+        onPublishGpsNow={onPublishGpsNow}
+      />
   );
 }
 

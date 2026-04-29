@@ -9,6 +9,8 @@ export default function TodayScreen({
   route,
   error,
   health,
+  routeOpsBusy,
+  routeOpsText,
   deviceId,
   apiBaseUrl,
   lastSyncAt,
@@ -25,16 +27,44 @@ export default function TodayScreen({
   onOpenRoute,
   onOpenLive,
   onSelectShift,
+  onStartShift,
+  onCompleteShift,
+  onMarkReached,
+  onSpeakNextStop,
+  onSpeakEta,
   onOpenSettings,
   onPublishGpsNow,
 }) {
   const visibleShifts = listVisibleShifts(today);
   const activeShift = resolveVisibleShift(today, selectedShiftId, route);
   const nextStop = route?.nextStop || null;
+  const shiftStatus = String(route?.shift?.status || activeShift?.status || '').toUpperCase();
   const pendingStops = Array.isArray(route?.orderedStops)
     ? route.orderedStops.filter((stop) => String(stop?.state || '').toUpperCase() === 'PENDING')
     : [];
   const routePreviewStops = pendingStops.slice(0, 6);
+  const routeSummary = useMemo(() => {
+    const summary = route?.summary || {};
+    const progress = route?.progress || {};
+    const remainingRouteEtaMin = summary.remainingRouteEtaMin ?? route?.remainingRouteEtaMin ?? null;
+    const remainingKm = summary.remainingKm ?? route?.remainingKm ?? null;
+    const remainingStops = summary.remainingStops ?? pendingStops.length ?? null;
+    const remainingPassengers = summary.remainingPassengers ?? route?.remainingPassengers ?? null;
+    const lastReachedOrder = progress.lastReachedOrder ?? summary.lastReachedOrder ?? null;
+    const completed = Boolean(progress.completed ?? summary.completed);
+    const paused = Boolean(progress.pausedAt);
+    const statusText = completed ? 'Tamamlandı' : paused ? 'Duraklatıldı' : activeShift ? 'Çalışıyor' : 'Görev yok';
+    return {
+      remainingRouteEtaMin,
+      remainingKm,
+      remainingStops,
+      remainingPassengers,
+      lastReachedOrder,
+      completed,
+      paused,
+      statusText,
+    };
+  }, [activeShift, pendingStops.length, route]);
   const headerText = useMemo(() => {
     const fullName = String(me?.fullName || 'Sürücü').trim();
     return fullName ? `${fullName}, bugün görev ekranın hazır.` : 'Bugün görev ekranın hazır.';
@@ -73,16 +103,29 @@ export default function TodayScreen({
       </Card>
 
       <Card>
-        <SectionTitle title="Görev özeti" />
+        <SectionTitle title="Bugünkü görev" subtitle="Rota, ETA ve hızlı işlemler tek yerde." />
+        {routeOpsText ? <Text style={styles.helper}>{routeOpsText}</Text> : null}
         {activeShift ? (
           <>
             <Info label="Seçili vardiya" value={`#${activeShift.id} • ${String(activeShift.status || '-').toUpperCase()}`} />
             <Info label="Başlangıç" value={fmt(activeShift.startAt)} />
             <Info label="Bitiş" value={fmt(activeShift.endAt)} />
             <Info label="Araç" value={route?.vehicle?.plate || activeShift?.vehicle?.plate || (activeShift?.vehicleId ? `#${activeShift.vehicleId}` : '-')} />
+            <Info label="Rota durumu" value={routeSummary.statusText} />
             <Info label="Sıradaki durak" value={nextStop?.name || '-'} />
-            <Info label="Kalan durak" value={route?.summary?.remainingStops != null ? String(route.summary.remainingStops) : String(pendingStops.length || 0)} />
-            <Info label="Kalan yolcu" value={route?.summary?.remainingPassengers != null ? String(route.summary.remainingPassengers) : '-'} />
+            <Info label="Durak ETA" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
+            <Info label="Kalan rota süresi" value={routeSummary.remainingRouteEtaMin != null ? `${routeSummary.remainingRouteEtaMin} dk` : '-'} />
+            <Info label="Kalan km" value={routeSummary.remainingKm != null ? `${routeSummary.remainingKm} km` : '-'} />
+            <Info label="Kalan durak" value={routeSummary.remainingStops != null ? String(routeSummary.remainingStops) : String(pendingStops.length || 0)} />
+            <Info label="Kalan yolcu" value={routeSummary.remainingPassengers != null ? String(routeSummary.remainingPassengers) : '-'} />
+            <Info label="Son ulaşılan sıra" value={routeSummary.lastReachedOrder != null ? String(routeSummary.lastReachedOrder) : '-'} />
+            {routeSummary.completed ? <Pill label="Rota tamamlandı" tone="ok" /> : null}
+            {routeSummary.paused ? <Pill label="Vardiya duraklatıldı" tone="warn" /> : null}
+            <View style={styles.actionsRow}>
+              {shiftStatus === 'APPROVED' ? <PrimaryButton title="Vardiyayı başlat" onPress={onStartShift} disabled={!onStartShift || routeOpsBusy} /> : null}
+              {nextStop ? <SecondaryButton title="Durak ulaşıldı" onPress={() => onMarkReached?.(nextStop.id)} disabled={!onMarkReached || routeOpsBusy || !!route?.progress?.pausedAt} /> : null}
+              {['APPROVED', 'ACTIVE', 'DONE'].includes(shiftStatus) && !route?.progress?.pausedAt && pendingStops.length === 0 ? <SecondaryButton title="Vardiyayı tamamla" onPress={onCompleteShift} disabled={!onCompleteShift || routeOpsBusy} /> : null}
+            </View>
           </>
         ) : (
           <EmptyState title="Görev görünmüyor" text="Bugün ekranında görev görünmüyorsa oda veya şirket atamasını kontrol et." />
@@ -164,8 +207,8 @@ export default function TodayScreen({
         <Info label="Durak ETA" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
         <Text style={styles.muted}>Sıradaki durağı oku ve ETA oku eylemleri sürücünün telefon GPS'i ile birlikte sahada düşük bilişsel yük hedefiyle kullanılır.</Text>
         <View style={styles.actionsRow}>
-          <SecondaryButton title="Sıradaki durağı oku" onPress={() => null} />
-          <SecondaryButton title="ETA oku" onPress={() => null} />
+          <SecondaryButton title="Sıradaki durağı oku" onPress={onSpeakNextStop} disabled={!onSpeakNextStop || !nextStop} />
+          <SecondaryButton title="ETA oku" onPress={onSpeakEta} disabled={!onSpeakEta || !nextStop} />
           <SecondaryButton title="Tam rotayı navigasyonda aç" onPress={onOpenRoute} />
         </View>
       </Card>
