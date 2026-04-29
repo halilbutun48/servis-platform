@@ -61,6 +61,7 @@ export default function ObservabilityPanel() {
   const [err, setErr] = useState("");
   const [queueErr, setQueueErr] = useState("");
   const [queueBusyKey, setQueueBusyKey] = useState("");
+  const [queueSyncBusy, setQueueSyncBusy] = useState(false);
 
   const loadQueue = useCallback(async () => {
     try {
@@ -217,6 +218,19 @@ export default function ObservabilityPanel() {
     }
   }, [loadQueue]);
 
+  const syncQueueIncident = useCallback(async () => {
+    setQueueSyncBusy(true);
+    setQueueErr("");
+    try {
+      await api("/api/admin/queues/auto-reached/incident-sync", { method: "POST" });
+      await loadQueue();
+    } catch (e) {
+      setQueueErr(e?.message || String(e));
+    } finally {
+      setQueueSyncBusy(false);
+    }
+  }, [loadQueue]);
+
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -259,6 +273,11 @@ export default function ObservabilityPanel() {
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Queue proof" wide>
           {queueErr ? <div style={{ marginBottom: 8, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{queueErr}</div> : null}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            <button className="btn" disabled={queueSyncBusy} onClick={syncQueueIncident}>
+              {queueSyncBusy ? "Alarm eşitleniyor..." : "Alarmı eşitle"}
+            </button>
+          </div>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
             <div>
               <div className="panelMeta">Durum</div>

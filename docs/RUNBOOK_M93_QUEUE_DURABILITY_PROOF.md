@@ -129,6 +129,14 @@ $env:API_URL="http://127.0.0.1:3000"; $env:SUPER_ADMIN_TOKEN="<token>"; node .\b
 
 Bu probe varsayılan modda read-only endpoint'leri kontrol eder. `--drill` ile Redis down/up, worker restart ve poison-job chaos adımları kontrollü olarak çalıştırılır.
 
+Queue alarmını notification feed'e taşımak için aynı probe `--sync` ile de çalıştırılabilir:
+
+```powershell
+$env:API_URL="http://127.0.0.1:3000"; $env:SUPER_ADMIN_TOKEN="<token>"; node .\backend\scripts\m93_queue_durability_runtime_probe.js --sync
+```
+
+Bu mod read-only değildir; `POST /api/admin/queues/auto-reached/incident-sync` çağırır ve queue threshold/incident bilgisini ops bildirimine çevirir.
+
 ## Kabul kriteri
 
 M93 GREEN sayılması için:

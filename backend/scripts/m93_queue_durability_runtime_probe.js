@@ -18,7 +18,9 @@ const COMPOSE_FILE = path.join("infra", "docker-compose.yml");
 const API_URL = String(process.env.API_URL || "http://127.0.0.1:3000").replace(/\/+$/, "");
 const TOKEN = String(process.env.SUPER_ADMIN_TOKEN || process.env.ADMIN_TOKEN || "").trim();
 const REDIS_URL = String(process.env.AUTO_REACHED_DRILL_REDIS_URL || "redis://127.0.0.1:6379").trim();
-const IS_DRILL = new Set(process.argv.slice(2)).has("--drill") || new Set(process.argv.slice(2)).has("--chaos");
+const ARG_SET = new Set(process.argv.slice(2));
+const IS_DRILL = ARG_SET.has("--drill") || ARG_SET.has("--chaos");
+const IS_SYNC = ARG_SET.has("--sync") || ARG_SET.has("--alarm-sync");
 
 async function get(path) {
   const headers = TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
@@ -147,6 +149,10 @@ if (IS_DRILL && !TOKEN) {
   console.error("FAIL --drill requires SUPER_ADMIN_TOKEN or ADMIN_TOKEN.");
   process.exit(1);
 }
+if (IS_SYNC && !TOKEN) {
+  console.error("FAIL --sync requires SUPER_ADMIN_TOKEN or ADMIN_TOKEN.");
+  process.exit(1);
+}
 
 const paths = [
   "/api/admin/queues/auto-reached",
@@ -167,6 +173,16 @@ for (const p of paths) {
       console.log(`INFO threshold status=${r.json?.threshold?.status || "UNKNOWN"} warnings=${r.json?.threshold?.warnings?.length ?? "?"}`);
     }
   }
+}
+
+if (IS_SYNC && !IS_DRILL) {
+  console.log("=== M93 QUEUE ALARM SYNC ===");
+  const sync = await syncIncident();
+  if (!sync.ok) {
+    console.error(`FAIL incident-sync -> ${sync.status} ${String(sync.text || "").slice(0, 300)}`);
+    process.exit(1);
+  }
+  console.log(`OK incident-sync phase=${sync.json?.phase || "UNKNOWN"} severity=${sync.json?.severity || "UNKNOWN"} synced=${sync.json?.synced ?? "?"}`);
 }
 
 if (IS_DRILL) {
