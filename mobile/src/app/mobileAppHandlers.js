@@ -167,8 +167,15 @@ export function createMobileAppHandlers({
     await Promise.all([saveSession(session), clearSelectedShiftId(), clearPendingSessionEvent().catch(() => null)]);
     resetSyncRetryState();
     resetGpsRetryState();
+    setRouteOps({ busy: false, message: '' });
     setScreen('today');
-    setState((prev) => ({ ...prev, session, deviceId, selectedShiftId: null }));
+    setState((prev) => ({
+      ...initialState,
+      loading: true,
+      session,
+      deviceId,
+      voiceEnabled: prev.voiceEnabled,
+    }));
     await syncSignedIn({ soft: false });
   }
 

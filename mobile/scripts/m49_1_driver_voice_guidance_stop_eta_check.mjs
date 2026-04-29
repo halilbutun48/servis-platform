@@ -7,6 +7,26 @@ const app = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
 const storage = fs.readFileSync(path.join(root, 'src/lib/storage.js'), 'utf8');
 const voice = fs.readFileSync(path.join(root, 'src/lib/voice.js'), 'utf8');
 const today = fs.readFileSync(path.join(root, 'src/screens/TodayScreen.js'), 'utf8');
+function normalize(text) {
+  return String(text || '')
+    .replace(/ı/g, 'i')
+    .replace(/İ/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/Ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/Ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/Ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/Ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'c')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+function has(text, needle) {
+  return normalize(text).includes(normalize(needle));
+}
 
 function ok(msg) {
   console.log(`OK ${msg}`);
@@ -33,9 +53,9 @@ must(voice.includes('expo-speech'), 'voice helper imports expo-speech');
 must(voice.includes("language: 'tr-TR'"), 'voice helper uses Turkish language');
 must(voice.includes('Sesli yardıma hoş geldiniz'), 'voice helper has welcome summary');
 must(voice.includes('Güzergâh tamamlandı'), 'voice helper has completion line');
-must(today.includes('Sesli rehber'), 'today screen has voice guidance card');
-must(today.includes('Siradaki duragi oku'), 'today screen has read next stop action');
-must(today.includes('ETA oku'), 'today screen has eta action');
-must(today.includes('Durak ETA'), 'today screen shows stop eta');
-must(today.includes('Tam rotayi navigasyonda ac'), 'today screen has full route navigation action');
+must(has(today, 'Sesli rehber'), 'today screen has voice guidance card');
+must(has(today, 'Siradaki duragi oku'), 'today screen has read next stop action');
+must(has(today, 'ETA oku'), 'today screen has eta action');
+must(has(today, 'Durak ETA'), 'today screen shows stop eta');
+must(has(today, 'Tam rotayi navigasyonda ac'), 'today screen has full route navigation action');
 console.log('=== M49.1 DRIVER VOICE GUIDANCE + STOP ETA CHECK PASS ===');

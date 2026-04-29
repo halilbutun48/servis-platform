@@ -54,7 +54,7 @@ import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgrou
 import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
 import { createMobileAppHandlers } from './src/app/mobileAppHandlers';
-import { RELEASE_INFO, applyGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState, readGpsRuntimeSnapshot } from './src/app/mobileAppState';
+import { DEFAULT_GPS, DEFAULT_KVKK, RELEASE_INFO, applyGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState, readGpsRuntimeSnapshot } from './src/app/mobileAppState';
 import {
   applySessionFailure as applySessionFailureFlow,
   consumePendingSessionEvent as consumePendingSessionEventFlow,
@@ -148,6 +148,65 @@ export default function App() {
       const preferredShiftId = preferredShiftIdOverride || state.selectedShiftId || (await getSelectedShiftId().catch(() => null));
       const health = await fetchHealth();
       const me = await fetchMe();
+      const latestSession = await getSession().catch(() => null);
+      const nextSession = latestSession?.token && latestSession.token !== state.session?.token
+        ? {
+            ...latestSession,
+            deviceId: latestSession.deviceId || state.session?.deviceId || '',
+          }
+        : state.session;
+
+      if (String(me?.role || '').trim().toUpperCase() !== 'DRIVER') {
+        const lastSyncAt = new Date().toISOString();
+        resetSyncRetryState();
+        const nextNet = {
+          status: 'online',
+          message: 'Bağlantı var.',
+          lastOnlineAt: lastSyncAt,
+          lastOfflineAt: state.net?.lastOfflineAt || '',
+          lastRecoveryAt: state.net?.status === 'offline' ? lastSyncAt : (state.net?.lastRecoveryAt || ''),
+          retryCount: 0,
+          nextRetryAt: '',
+        };
+
+        await Promise.all([
+          clearSelectedShiftId().catch(() => null),
+          clearPendingSessionEvent().catch(() => null),
+          saveLastMobileSnapshot(buildMobileSnapshot({
+            me,
+            health,
+            net: nextNet,
+            kvkk: DEFAULT_KVKK,
+            gps: DEFAULT_GPS,
+            lastSyncAt,
+            lastErrorAt: '',
+            selectedShiftId: null,
+          })),
+        ]);
+
+        setRouteOps({ busy: false, message: '' });
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          syncing: false,
+          usingCachedData: false,
+          session: nextSession || prev.session,
+          deviceId: nextSession?.deviceId || prev.deviceId,
+          me,
+          today: null,
+          route: null,
+          health,
+          net: nextNet,
+          gps: { ...DEFAULT_GPS },
+          kvkk: { ...DEFAULT_KVKK },
+          selectedShiftId: null,
+          error: '',
+          lastErrorAt: '',
+          lastSyncAt,
+        }));
+        return;
+      }
+
       const [today, kvkkCurrent] = await Promise.all([
         fetchToday().catch(() => null),
         fetchKvkkCurrent().catch(() => null),
@@ -181,14 +240,6 @@ export default function App() {
         saveLastMobileSnapshot(syncArtifacts.snapshot),
         clearPendingSessionEvent().catch(() => null),
       ]);
-
-      const latestSession = await getSession().catch(() => null);
-      const nextSession = latestSession?.token && latestSession.token !== state.session?.token
-        ? {
-            ...latestSession,
-            deviceId: latestSession.deviceId || state.session?.deviceId || '',
-          }
-        : state.session;
 
       setState((prev) => ({
         ...prev,

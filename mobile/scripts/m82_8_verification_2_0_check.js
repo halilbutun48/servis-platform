@@ -16,9 +16,28 @@ function fail(msg) {
   process.exitCode = 1;
 }
 
+function normalize(text) {
+  return String(text || '')
+    .replace(/ı/g, 'i')
+    .replace(/İ/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/Ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/Ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/Ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/Ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'c')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 function assertContains(text, needles, label) {
   const arr = Array.isArray(needles) ? needles : [needles];
-  const missing = arr.filter((needle) => !text.includes(needle));
+  const normalizedText = normalize(text);
+  const missing = arr.filter((needle) => !normalizedText.includes(normalize(needle)));
   if (missing.length) {
     fail(`${label} missing => ${missing.join(', ')}`);
     return;

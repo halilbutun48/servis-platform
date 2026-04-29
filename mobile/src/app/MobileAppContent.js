@@ -2,6 +2,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import LoginScreen from '../screens/LoginScreen';
 import LiveScreen from '../screens/LiveScreen';
 import PinChangeScreen from '../screens/PinChangeScreen';
+import RoleHomeScreen from '../screens/RoleHomeScreen';
 import RouteScreen from '../screens/RouteScreen';
 import TodayScreen from '../screens/TodayScreen';
 import { styles as appStyles } from './mobileAppState';
@@ -73,6 +74,23 @@ export default function MobileAppContent({
         onSubmit={onPinChange}
         onLogout={onLogout}
         initialError={state?.error || ''}
+      />
+    );
+  }
+
+  const role = String(state?.me?.role || '').trim().toUpperCase();
+  if (role === 'PERSONEL' || role === 'PARENT') {
+    return (
+      <RoleHomeScreen
+        role={role}
+        me={state?.me || null}
+        health={state?.health || null}
+        deviceId={state?.deviceId || ''}
+        apiBaseUrl={apiBaseUrl}
+        lastSyncAt={state?.lastSyncAt || ''}
+        releaseInfo={releaseInfo}
+        onRefresh={onRefresh}
+        onLogout={onLogout}
       />
     );
   }
