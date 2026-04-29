@@ -49,6 +49,8 @@
     "m90c9check": "node scripts/m90_c9_safe_closure_final_hygiene_check.js",
     "m90c10check": "node scripts/m90_c10_physical_snapshot_hygiene_check.js",
     "m94dcheck": "node scripts/m94d_admin_payment_security_export_check.js",
+    "m94echeck": "node scripts/m94e_queue_chaos_alarm_check.js",
+    "m94eprobe": "node scripts/m94e_queue_chaos_alarm_probe.js",
     "m45:backup:create": "node scripts/m45_backup_create.js",
     "m45:backup:restore": "node scripts/m45_backup_restore.js",
     "milestones:static": "node scripts/run_m0_latest.js --static-only --to latest --continue",

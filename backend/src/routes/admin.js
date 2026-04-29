@@ -323,21 +323,23 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
   return res.json({ health, threshold: evaluateAutoReachedQueueHealthThresholds(health) });
 });
 
-r.post("/queues/auto-reached/incident-sync", ...superAdminWrite, async (req, res) => {
-  try {
-    const result = await syncAutoReachedQueueIncidentNotifications({ io });
-    await audit(req, {
-      action: "QUEUE_AUTO_REACHED_INCIDENT_SYNC",
-      entity: "Queue",
-      entityId: null,
-      meta: {
-        phase: result.phase,
-        severity: result.severity,
-        notificationType: result.notificationType,
-        synced: result.synced,
-      },
-    });
-    return res.json({ ok: true, ...result });
+  r.post("/queues/auto-reached/incident-sync", ...superAdminWrite, async (req, res) => {
+    try {
+      const result = await syncAutoReachedQueueIncidentNotifications({ io });
+      await audit(req, {
+        action: "AUTO_REACHED_QUEUE_INCIDENT_SYNC",
+        entity: "Queue",
+        entityId: null,
+        meta: {
+          phase: result.phase,
+          severity: result.severity,
+          notificationType: result.notificationType,
+          alarmLevel: result.alarm?.alarmLevel || null,
+          dedupeKey: result.alarm?.dedupeKey || null,
+          synced: result.synced,
+        },
+      });
+      return res.json({ ok: true, ...result });
   } catch (e) {
     return res.status(500).json({ error: String(e?.message || e) });
   }
@@ -375,7 +377,7 @@ r.post("/queues/auto-reached/dead-letter/:taskId/requeue", ...superAdminWrite, a
       return res.status(status).json({ ok: false, ...result });
     }
     await audit(req, {
-      action: "QUEUE_AUTO_REACHED_DEAD_LETTER_REQUEUE",
+      action: "AUTO_REACHED_QUEUE_DEAD_LETTER_REQUEUE",
       entity: "Queue",
       entityId: Number.isFinite(Number(result.taskId)) ? Number(result.taskId) : null,
       meta: { taskId: result.taskId, attemptCount: result.attemptCount, queuedAtIso: result.queuedAtIso },
@@ -391,7 +393,7 @@ r.post("/queues/auto-reached/dead-letter/:taskId/resolve", ...superAdminWrite, a
       return res.status(status).json({ ok: false, ...result });
     }
     await audit(req, {
-      action: "QUEUE_AUTO_REACHED_DEAD_LETTER_RESOLVE",
+      action: "AUTO_REACHED_QUEUE_DEAD_LETTER_RESOLVE",
       entity: "Queue",
       entityId: Number.isFinite(Number(taskId)) ? Number(taskId) : null,
       meta: { taskId },

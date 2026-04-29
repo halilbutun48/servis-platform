@@ -68,6 +68,7 @@
                              "M91",
                              "M92",
                              "M93",
+                             "M94-E",
                              "M94-D2",
                              "M94-D3"
                          ],
@@ -90,7 +91,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
   "currentLargeFileCount":  3,
-  "currentWarningHotFileCount":  3,
+  "currentWarningHotFileCount":  0,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -102,10 +103,6 @@
                                                                                                    "class":  "justified-exception",
                                                                                                    "note":  "accepted center; dar ve davranis-guvenli lokal duzeltme disinda zorlanmaz"
                                                                                                },
-                                                       "backend/src/routes/agreements.js":  {
-                                                                                                "class":  "acceptance-sensitive-later",
-                                                                                                "note":  "sozlesme, route-refresh ve operasyon koprusu merkezi; kor split yerine contract destekli planli refactor"
-                                                                                            },
                                                        "backend/prisma/schema.prisma":  {
                                                                                             "class":  "justified-exception",
                                                                                             "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
@@ -113,15 +110,7 @@
                                                        "backend/scripts/bench_gps_publish_only.js":  {
                                                                                                          "class":  "justified-exception",
                                                                                                          "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
-                                                                                                     },
-                                                       "backend/src/routes/shifts/room.js":  {
-                                                                                                 "class":  "acceptance-sensitive-later",
-                                                                                                 "note":  "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
-                                                                                             },
-                                                       "backend/src/routes/shifts/company.js":  {
-                                                                                                    "class":  "acceptance-sensitive-later",
-                                                                                                    "note":  "route hata/izin/audit akis merkezi; sirf line-count icin acilmaz"
-                                                                                                }
+                                                                                                     }
                                                    }
                            },
     "shareablePackageHygiene":  {

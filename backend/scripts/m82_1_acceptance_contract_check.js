@@ -48,6 +48,7 @@ function expectIncludes(text, needle, msg) { if (text && includesText(text, need
 console.log("=== M82.1 ACCEPTANCE + CONTRACT CHECK ===");
 
 const company = read("backend/src/routes/shifts/company.js");
+const companyStops = read("backend/src/routes/shifts/shiftsCompanyStopsRouter.js");
 const companyMutationTail = read("backend/src/services/companyShiftMutationTail.js");
 const people = read("backend/src/routes/shifts/people.js");
 const room = read("backend/src/routes/shifts/room.js");
@@ -70,20 +71,20 @@ expectIncludes(companyUpdate, 'await refreshCompanyShiftRouteStateAfterMutation(
 expectIncludes(companyMutationTail, 'if (routeShapeChanged === false) {', 'company mutation tail keeps preview-cache branch');
 expectIncludes(companyMutationTail, 'clearShiftRoutePreviewCache(shiftId);', 'company mutation tail clears preview cache for non-route-shape updates');
 
-const companyAddStop = segment(company, 'r.post(\n    "/:id/stops",', 'r.put(\n    "/:id/stops/:stopId');
+const companyAddStop = segment(companyStops, 'r.post(\n    "/:id/stops",', 'r.put(\n    "/:id/stops/:stopId');
 expectIncludes(companyAddStop, 'await rebuildShiftRouteStateBestEffort(shiftId);', 'company stop add rebuilds route state');
 
-const companyUpdateStop = segment(company, 'r.put(\n    "/:id/stops/:stopId', 'r.delete(\n    "/:id/stops/:stopId');
+const companyUpdateStop = segment(companyStops, 'r.put(\n    "/:id/stops/:stopId', 'r.delete(\n    "/:id/stops/:stopId');
 expectIncludes(companyUpdateStop, 'await rebuildShiftRouteStateBestEffort(shiftId);', 'company stop update rebuilds route state');
 
-const companyDeleteStop = segment(company, 'r.delete(\n    "/:id/stops/:stopId', 'r.post(\n    "/:id/stops/from-template"');
+const companyDeleteStop = segment(companyStops, 'r.delete(\n    "/:id/stops/:stopId', 'r.post(\n    "/:id/stops/from-template"');
 expectIncludes(companyDeleteStop, 'await rebuildShiftRouteStateBestEffort(shiftId);', 'company stop delete rebuilds route state');
 
-const companyTemplate = segment(company, 'r.post(\n    "/:id/stops/from-template"', 'r.put(\n    "/:id/stops/reorder"');
+const companyTemplate = segment(companyStops, 'r.post(\n    "/:id/stops/from-template"', 'r.put(\n    "/:id/stops/reorder"');
 expectIncludes(companyTemplate, 'await prisma.$transaction(async (tx) => {', 'company template apply is transaction wrapped');
 expectIncludes(companyTemplate, 'await rebuildShiftRouteStateBestEffort(shiftId);', 'company template apply rebuilds route state');
 
-const companyReorder = segment(company, 'r.put(\n    "/:id/stops/reorder"', null);
+const companyReorder = segment(companyStops, 'r.put(\n    "/:id/stops/reorder"', null);
 expectIncludes(companyReorder, 'await rebuildShiftRouteStateBestEffort(shiftId);', 'company reorder rebuilds route state');
 
 const peopleUpsert = segment(people, 'r.put("/:id/people"', 'r.post("/:id/people/import"');

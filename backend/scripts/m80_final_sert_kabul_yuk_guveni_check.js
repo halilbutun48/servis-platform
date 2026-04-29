@@ -121,6 +121,7 @@ const guidedActionsText = read("web/src/panels/company/guidedPlanModalActions.js
 const guidedCardsText = read("web/src/panels/company/guidedPlanModalCards.jsx");
 const routeModal = read("web/src/components/RoutePreviewModal.jsx");
 const companyRoutes = read("backend/src/routes/shifts/company.js");
+const companyStopsRoutes = read("backend/src/routes/shifts/shiftsCompanyStopsRouter.js");
 const peopleRoutes = read("backend/src/routes/shifts/people.js");
 const osrmRouteText = read("backend/src/services/osrmRoute.js");
 const shiftRouteStateText = read("backend/src/services/shiftRouteState.js");
@@ -139,7 +140,10 @@ textIncludes(schemaText, "routeSnapshotDistanceM", "shift schema has routeSnapsh
 textIncludes(schemaText, "routeSnapshotDurationSec", "shift schema has routeSnapshotDurationSec");
 textIncludes(schemaText, "routeSnapshotValidatedAt", "shift schema has routeSnapshotValidatedAt");
 textIncludes(schemaText, "routeSnapshotInputHash", "shift schema has routeSnapshotInputHash");
-if (includesAnyText(companyRoutes, ["rebuildShiftRouteStateBestEffort(","refreshShiftRouteSnapshot("]) && includesAnyText(shiftRouteStateText, ["refreshShiftRouteSnapshot("])) ok("company reorder refreshes route snapshot"); else fail("company reorder refreshes route snapshot");
+const companyReorderRefreshesRouteSnapshot =
+  includesAnyText(companyRoutes, ["rebuildShiftRouteStateBestEffort(", "refreshShiftRouteSnapshot("]) ||
+  includesAnyText(companyStopsRoutes, ["rebuildShiftRouteStateBestEffort(", "refreshShiftRouteSnapshot("]);
+if (companyReorderRefreshesRouteSnapshot && includesAnyText(shiftRouteStateText, ["refreshShiftRouteSnapshot("])) ok("company reorder refreshes route snapshot"); else fail("company reorder refreshes route snapshot");
 if (includesAnyText(shiftRouteStateText, ["routeSnapshotValidatedAt"])) ok("company writes validatedAt"); else fail("company writes validatedAt");
 if (includesAnyText(shiftRouteStateText, ["osrmRoute("])) ok("company uses osrmRoute for snapshot"); else fail("company uses osrmRoute for snapshot");
 textIncludes(peopleRoutes, 'source === "SNAPSHOT"', "route preview supports SNAPSHOT source");

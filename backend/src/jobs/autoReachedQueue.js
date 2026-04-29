@@ -7,14 +7,11 @@ import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { getRedis } from "../redis/index.js";
 import { createMiniRedisClient } from "../redis/miniRedis.js";
-import { createAndEmitNotification, createNotification } from "../notifications/service.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { haversineKm, etaMinutes } from "../geo.js";
 import { buildRegionRoutingKey } from "../region/index.js";
 import logger from "../lib/logger.js";
-import {
-  buildAutoReachedQueueNotificationPayload,
-} from "./autoReachedQueueNotification.js";
+import { buildAutoReachedQueueAlarmSnapshot, syncAutoReachedQueueAlarmNotifications } from "./autoReachedQueueAlarm.js";
 import {
   buildAutoReachedQueueIncidentSnapshot,
   evaluateAutoReachedQueueHealthThresholds,
@@ -28,8 +25,6 @@ const AUTO_REACHED_CLAIMS_HASH = "gps:auto-reached:claims:v1";
 const AUTO_REACHED_CLAIMS_INDEX = "gps:auto-reached:claims:index:v1";
 const AUTO_REACHED_DEAD_LETTER_KEY = "gps:auto-reached:dead:v1";
 const AUTO_REACHED_LOCK_PREFIX = "gps:auto-reached:lock:v1";
-const AUTO_REACHED_INCIDENT_NOTIFICATION_TYPE = "AUTO_REACHED_QUEUE_INCIDENT";
-const AUTO_REACHED_RECOVERY_NOTIFICATION_TYPE = "AUTO_REACHED_QUEUE_RECOVERY";
 const DEFAULT_LOCK_TTL_MS = 2 * 60 * 60 * 1000;
 const DEFAULT_PROCESSING_TTL_MS = 15 * 60 * 1000;
 const DEFAULT_RECLAIM_SWEEP_MS = 30 * 1000;
@@ -164,69 +159,7 @@ function isAutoReachedInvalidTaskError(error) {
 }
 
 export async function syncAutoReachedQueueIncidentNotifications({ io = null, prismaClient = prisma, includeRecovery = true } = {}) {
-  const proof = await getAutoReachedQueueProofSnapshot();
-  const incident = proof?.incident || buildAutoReachedQueueIncidentSnapshot(proof?.health || {});
-  const severity = String(incident?.severity || "OK").toUpperCase();
-  const phase = severity === "OK" ? "RECOVERY" : "INCIDENT";
-  if (phase === "RECOVERY" && includeRecovery !== true) {
-    return {
-      ok: true,
-      synced: 0,
-      phase,
-      severity,
-      proof,
-      incident,
-    };
-  }
-
-  const users = await prismaClient.user.findMany({
-    where: { role: "SUPER_ADMIN" },
-    select: { id: true, email: true, fullName: true },
-    orderBy: [{ id: "asc" }],
-  });
-
-  const payload = buildAutoReachedQueueNotificationPayload({
-    proof,
-    incident,
-    phase,
-    createdAtIso: new Date().toISOString(),
-  });
-
-  const notificationType = phase === "RECOVERY" ? AUTO_REACHED_RECOVERY_NOTIFICATION_TYPE : AUTO_REACHED_INCIDENT_NOTIFICATION_TYPE;
-  const created = [];
-  for (const user of users) {
-    const dedupeKey = `AUTO_REACHED_QUEUE_STATE:${user.id}:${notificationType}`;
-    const createdRow = io
-      ? await createAndEmitNotification({
-          io,
-          type: notificationType,
-          scope: "USER",
-          userId: user.id,
-          payload,
-          dedupeKey,
-          prismaClient,
-        })
-      : await createNotification({
-          type: notificationType,
-          scope: "USER",
-          userId: user.id,
-          payload,
-          dedupeKey,
-          prismaClient,
-        });
-    created.push(createdRow);
-  }
-
-  return {
-    ok: true,
-    synced: created.length,
-    phase,
-    severity,
-    notificationType,
-    users: users.map((u) => ({ id: u.id, email: u.email, fullName: u.fullName })),
-    proof,
-    incident,
-  };
+  return syncAutoReachedQueueAlarmNotifications({ io, prismaClient, includeRecovery });
 }
 
 function syncActiveTasks(activeTasks) {
@@ -992,6 +925,7 @@ export async function getAutoReachedQueueProofSnapshot(opts = {}) {
     threshold: evaluateAutoReachedQueueHealthThresholds(health, opts),
     incident: buildAutoReachedQueueIncidentSnapshot(health, opts),
     deadLetter: await getAutoReachedDeadLetterSnapshot(opts),
+    alarm: buildAutoReachedQueueAlarmSnapshot(health, opts),
   };
 }
 

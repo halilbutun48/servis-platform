@@ -28,7 +28,7 @@ function buildQueueIncidentRecommendations(codes = []) {
       "Alarm seviyesini gerekiyorsa operasyon ekibine ilet.",
     ];
   }
-  return ["Queue sağlıklı; gözlemlemeye devam et."];
+  return ["Kuyruk sağlıklı; gözlemlemeye devam et."];
 }
 
 function buildAutoReachedQueueNotificationPayload({ proof, incident, phase, createdAtIso }) {

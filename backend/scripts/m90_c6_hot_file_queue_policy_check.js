@@ -81,10 +81,7 @@ expect(JSON.stringify(actual) === JSON.stringify(planned), "policy classificatio
 
 const expectedClasses = {
   "backend/src/ai/chat/helpComposer.js": "justified-exception",
-  "backend/src/routes/agreements.js": "acceptance-sensitive-later",
   "backend/prisma/schema.prisma": "justified-exception",
-  "backend/src/routes/shifts/room.js": "acceptance-sensitive-later",
-  "backend/src/routes/shifts/company.js": "acceptance-sensitive-later",
 };
 for (const [file, expectedClass] of Object.entries(expectedClasses)) {
   expect(classifications[file]?.class === expectedClass, `${file} classified as ${expectedClass}`);

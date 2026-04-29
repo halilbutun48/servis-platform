@@ -66,6 +66,9 @@
 - `M94-D2 / M94-D3 - admin audit + payment export polish + settlement ledger CSV cleanup - green`
   - amaç: admin write step-up, payment ledger export audit standardı ve ledger CSV temizliğini küçük bir kapanışta toplamak
   - komut: `node backend/scripts/m94d_admin_payment_security_export_check.js`
+- `M94-E - queue chaos/alarm proof - active`
+  - amaç: autoReachedQueue için Redis unavailable, stale claim reclaim, dead-letter ve threshold alarm proof'unu güvenli check/probe ile görünür kılmak
+  - komut: `node backend/scripts/m94e_queue_chaos_alarm_check.js && node backend/scripts/m94e_queue_chaos_alarm_probe.js`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

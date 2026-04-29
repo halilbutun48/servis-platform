@@ -56,6 +56,7 @@ const companyShiftTail = read("backend/src/services/companyShiftMutationTail.js"
 const agreements = read("backend/src/routes/agreements.js");
 const shiftsCompany = read("backend/src/routes/shifts/company.js");
 const shiftsRoom = read("backend/src/routes/shifts/room.js");
+const shiftsRoomDispatch = read("backend/src/routes/shifts/shiftsRoomDispatchRouter.js");
 const commercialCore = read("backend/src/routes/commercialCore.js");
 const webPanel = read("web/src/panels/superadmin/CommercialCorePanel.jsx");
 const toolsReadme = read("tools/README.md");
@@ -79,7 +80,11 @@ mustInclude(service, "buildPaymentBackboneStatus", "payment backbone service exp
 mustInclude(agreements, "upsertAgreementCommercialBackbone", "agreements route wires dormant backbone");
 mustInclude(companyShiftTail, "upsertShiftSeriesCommercialBackboneByShiftId", "company shift mutation tail supports shift series backbone");
 mustInclude(shiftsCompany, "syncCompanyShiftCommercialBackbone", "company shifts route wires shift series backbone");
-mustInclude(shiftsRoom, "upsertShiftSeriesCommercialBackboneByShiftId", "room shifts route refreshes shift series backbone after split");
+if (!includesAnyText([shiftsRoom, shiftsRoomDispatch], ["upsertShiftSeriesCommercialBackboneByShiftId"])) {
+  fail("room shifts route refreshes shift series backbone after split");
+} else {
+  ok("room shifts route refreshes shift series backbone after split");
+}
 mustInclude(commercialCore, "/payment-backbone/status", "commercial core route exposes payment backbone status endpoint");
 mustInclude(commercialCore, "/payment-backbone/sources", "commercial core route exposes payment backbone sources endpoint");
 mustInclude(webPanel, "/api/commercial-core/payment-backbone/status", "superadmin commercial core panel reads payment backbone status");
@@ -92,4 +97,3 @@ mustInclude(registry, "M82.9", "registry lists M82.9");
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log("OK M82.9 dormant payment backbone check passed");
-

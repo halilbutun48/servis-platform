@@ -57,6 +57,7 @@ const phaseDefinitions = {
     nodeStep("m90c7-export-package-hygiene", "backend/scripts/m90_c7_export_package_hygiene_check.js"),
     nodeStep("m90c8-ci-verification-visibility", "backend/scripts/m90_c8_ci_verification_visibility_check.js"),
     nodeStep("m90c9-safe-closure-final-hygiene", "backend/scripts/m90_c9_safe_closure_final_hygiene_check.js"),
+    nodeStep("m94e-queue-chaos-alarm", "backend/scripts/m94e_queue_chaos_alarm_check.js"),
   ],
   milestones: [
     nodeStep("m0-latest-static-milestones", "backend/scripts/run_m0_latest.js", [

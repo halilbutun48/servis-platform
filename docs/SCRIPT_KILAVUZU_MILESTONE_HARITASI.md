@@ -36,6 +36,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\run_m0_latest.js --static-only --to latest --continue`
 - `npm run verify:milestones`
 - `node backend\scripts\m94d_admin_payment_security_export_check.js`
+- `node backend\scripts\m94e_queue_chaos_alarm_check.js`
+- `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -406,6 +408,12 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\m94d_admin_payment_security_export_check.js`
 - Ana konu: admin write step-up, payment ledger export audit standardı, ledger CSV temizliği ve ticari panel görünürlüğünü küçük bir kapanış check'iyle sabitlemek.
 
+### M94-E — queue chaos / alarm proof [CHECK + PROBE]
+- Runbook: `docs/RUNBOOK_M94E_QUEUE_CHAOS_ALARM_PROOF.md`
+- Komut: `node backend\scripts\m94e_queue_chaos_alarm_check.js`
+- Probe: `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
+- Ana konu: autoReachedQueue için Redis unavailable, stale claim reclaim, dead-letter görünürlüğü, dedupe'li alarm ve incident-sync akışını güvenli probe ile görünür kılmak.
+
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
 - Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
@@ -421,3 +429,4 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M91`: shift/agreement route preview local acceptance bandi
 - `M92`: repo verification spine ve tek cati kontrol zinciri
 - `M93`: queue durability proof ve autoReachedQueue görünürlük kanıtı
+- `M94-E`: queue chaos/alarm proof ve güvenli runtime probe
