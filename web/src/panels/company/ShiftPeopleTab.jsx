@@ -4,7 +4,7 @@ const normalizeCoord = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 // web/src/panels/company/ShiftPeopleTab.jsx
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import { apiOr404Fallback } from "../../utils/apiFallback";
 import { personLabel, peopleLabel } from "../../utils/labels";
@@ -23,6 +23,16 @@ import {
   computeGeoMeta,
   computeGeoStatus,
   clusterPeople,
+  summarizeWarnings,
+  warningLabel,
+  stripHubStop,
+  withHubStop,
+  buildStopSummary,
+  readPeopleFromStorage,
+  writePeopleToStorage,
+  loadPeopleFromBackend as loadPeopleFromBackendApi,
+  savePeopleToBackend as savePeopleToBackendApi,
+  importPeopleToBackend as importPeopleToBackendApi,
 } from "./shiftPeopleTabUtils";
 import {
   ShiftPeopleSummarySection,
@@ -45,7 +55,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           .map((x) => Number(x || 0))
           .filter((x) => Number.isFinite(x) && x > 0);
         for (const sid of ids) {
-          await savePeopleToBackend(String(sid), people);
+        await savePeopleToBackendApi(api, token, String(sid), people);
         }
         clearUiDataCache("/api/company/personels");
         setPeopleBackend("on");
@@ -122,7 +132,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return patch ? { ...selectedShiftBase, ...patch } : selectedShiftBase;
   }, [selectedShiftBase, shiftPatchById]);
 
-  // Guided Mode: ayn? personel/stop setini birden fazla taslak shift'e aynala
+  // Guided Mode: aynı personel/stop setini birden fazla taslak shift'e aynala
   const mirrorIds = useMemo(() => {
     const base = Array.isArray(mirrorShiftIds) ? mirrorShiftIds : [];
     const ids = [Number(selectedShiftId || 0), ...base.map((x) => Number(x || 0))]
@@ -134,126 +144,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const sid = String(selectedShiftId || "");
     return `psv1:company:${companyKey}:shift:${sid}:people:v1`;
   }, [companyKey, selectedShiftId]);
-
-  const loadPeopleFromStorage = useCallback(() => {
-    try {
-      const raw = localStorage.getItem(peopleStorageKey);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .map((x) => ({
-          id: String(x?.id || ""),
-          name: String(x?.name || ""),
-          phone: String(x?.phone || ""),
-          address: String(x?.address || ""),
-          lat: typeof x?.lat === "number" ? x.lat : null,
-          lng: typeof x?.lng === "number" ? x.lng : null,
-          geoStatus: String(x?.geoStatus || ""),
-          geoReason: String(x?.geoReason || ""),
-          geoReasonText: String(x?.geoReasonText || ""),
-        }))
-        .filter((x) => x.id);
-    } catch {
-      return [];
-    }
-  }, [peopleStorageKey]);
-
-  const savePeopleToStorage = useCallback((list) => {
-    try {
-      localStorage.setItem(peopleStorageKey, JSON.stringify(list));
-    } catch {
-      // ignore
-    }
-  }, [peopleStorageKey]);
-
-  const mapBackendPeopleToUi = useCallback((items) => {
-    const list = Array.isArray(items) ? items : [];
-    return list
-      .map((p) => ({
-        id: String(p?.id ?? ""),
-        personelId: Number(p?.id ?? 0) || null,
-        name: String(p?.fullName ?? ""),
-        phone: String(p?.phone ?? ""),
-        address: String(p?.homeAddress ?? ""),
-        lat: typeof p?.homeLat === "number" ? p.homeLat : null,
-        lng: typeof p?.homeLng === "number" ? p.homeLng : null,
-        geoStatus: String(p?.geoStatus ?? ""),
-        geoReason: String(p?.geoReason ?? p?.geoNote ?? ""),
-        geoReasonText: String(p?.geoReasonText ?? ""),
-        geoManualOverride: Boolean(p?.geoManualOverride),
-      }))
-      .filter((x) => x.id);
-  }, []);
-
-  const mapUiPeopleToBackend = useCallback((list) => {
-    const arr = Array.isArray(list) ? list : [];
-    return arr.map((p) => ({
-      personelId: p.personelId || (String(p.id).match(/^\d+$/) ? Number(p.id) : undefined),
-      fullName: String(p.name || "").trim(),
-      phone: String(p.phone || "").trim() || null,
-      address: String(p.address || "").trim() || null,
-      lat: typeof p.lat === "number" ? p.lat : null,
-      lng: typeof p.lng === "number" ? p.lng : null,
-      geoManualOverride: Boolean(p.geoManualOverride),
-      geoReason: String(p.geoReason || "") || null,
-    }));
-  }, []);
-
-  const loadPeopleFromBackend = useCallback(async (shiftId) => {
-    const r = await api(`/api/shifts/${shiftId}/people`, { token });
-    return mapBackendPeopleToUi(r?.items);
-  }, [mapBackendPeopleToUi, token]);
-
-  const savePeopleToBackend = useCallback(async (shiftId, list) => {
-    const items = mapUiPeopleToBackend(list);
-    return api(`/api/shifts/${shiftId}/people?mode=REPLACE`, {
-      method: "PUT",
-      body: { items },
-      token,
-    });
-  }, [mapUiPeopleToBackend, token]);
-
-  async function importPeopleToBackend(shiftId, fileName, rows, mode) {
-    return api(`/api/shifts/${shiftId}/people/import?mode=${encodeURIComponent(String(mode || "REPLACE"))}`, {
-      method: "POST",
-      body: { fileName, rows },
-      token,
-    });
-  }
-
-  const loadPeopleFromStorageRef = useRef(loadPeopleFromStorage);
-  const loadPeopleFromBackendRef = useRef(loadPeopleFromBackend);
-  const savePeopleToStorageRef = useRef(savePeopleToStorage);
-  const savePeopleToBackendRef = useRef(savePeopleToBackend);
-
-  useEffect(() => {
-    loadPeopleFromStorageRef.current = loadPeopleFromStorage;
-    loadPeopleFromBackendRef.current = loadPeopleFromBackend;
-    savePeopleToStorageRef.current = savePeopleToStorage;
-    savePeopleToBackendRef.current = savePeopleToBackend;
-  }, [loadPeopleFromStorage, loadPeopleFromBackend, savePeopleToStorage, savePeopleToBackend]);
-
-  function summarizeWarnings(list) {
-    const items = Array.isArray(list) ? list : [];
-    const counts = new Map();
-    for (const item of items) {
-      const key = String(item?.code || "UNKNOWN");
-      counts.set(key, (counts.get(key) || 0) + 1);
-    }
-    return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
-  }
-
-  function warningLabel(code) {
-    const c = String(code || "");
-    if (c === "MISSING_NAME") return "Ad Soyad eksik";
-    if (c === "MISSING_ADDRESS_OR_COORDS") return "Adres/koordinat eksik";
-    if (c === "INVALID_COORD") return "Koordinat geçersiz";
-    if (c === "DUPLICATE_ROW") return "Tekrar satır";
-  if (c === "GEO_NEEDS_REVIEW") return "Konum kontrolü gerekir";
-    if (c === "INVALID_ROW") return "Satır okunamadı";
-    return c || "Uyar?";
-  }
 
   async function generateStopsOnBackend(shiftId, maxWalkMValue) {
     const mw = Number(maxWalkMValue);
@@ -271,28 +161,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       token,
       body: { shiftIds: ids, mode: "REPLACE", maxWalkM: mw },
     });
-  }
-
-  function withHubStop(stops, shift) {
-    const list = Array.isArray(stops) ? [...stops] : [];
-    const hubLat = typeof shift?.hubLat === "number" ? shift.hubLat : null;
-    const hubLng = typeof shift?.hubLng === "number" ? shift.hubLng : null;
-    if (hubLat == null || hubLng == null) return list;
-
-    const hub = {
-      id: "hub",
-      title: "Hub",
-      lat: hubLat,
-      lng: hubLng,
-      count: null,
-      memberIds: [],
-      _virtual: true,
-    };
-
-    const dir = String(shift?.direction || "").toUpperCase();
-    if (dir === "OUTBOUND") return [hub, ...list];
-    // INBOUND (Toplama ? Hub): rota hub'da bitmeli
-    return [...list, hub];
   }
 
   // init selected shift
@@ -340,13 +208,13 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       try {
         const list = await apiOr404Fallback(
           async () => {
-            const data = await loadPeopleFromBackendRef.current(sid);
+            const data = await loadPeopleFromBackendApi(api, token, sid);
             setPeopleBackend("on");
             return data;
           },
           async () => {
             setPeopleBackend("off");
-            return loadPeopleFromStorageRef.current();
+            return readPeopleFromStorage(peopleStorageKey);
           }
         );
 
@@ -357,7 +225,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       } catch (e) {
         if (!alive) return;
         setErr(getApiErrorMessage(e));
-        setPeople(loadPeopleFromStorageRef.current());
+        setPeople(readPeopleFromStorage(peopleStorageKey));
       } finally {
         if (alive) setBusy(false);
       }
@@ -366,7 +234,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     return () => {
       alive = false;
     };
-  }, [peopleStorageKey, selectedShiftId, validShiftIdSet]);
+  }, [peopleStorageKey, selectedShiftId, validShiftIdSet, token]);
 
   // keep localStorage in sync + (soft) persist to backend
   useEffect(() => {
@@ -374,7 +242,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     if (!validShiftIdSet.has(Number(selectedShiftId || 0))) return;
 
     // always keep local fallback updated
-    savePeopleToStorageRef.current(people);
+    writePeopleToStorage(peopleStorageKey, people);
 
     // debounce backend save; only if backend not known as missing
     if (peopleBackend === "off") return;
@@ -384,11 +252,11 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       try {
         await apiOr404Fallback(
           async () => {
-            // Guided Mode: ayn? listeyi taslak shift'lerin hepsine yaz
+            // Guided Mode: aynı listeyi taslak shift'lerin hepsine yaz
             const ids = (mirrorIds.length ? mirrorIds : [Number(sid)]).filter((id) => validShiftIdSet.has(Number(id || 0)));
             if (!ids.length) return false;
             for (const id of ids) {
-              await savePeopleToBackendRef.current(String(id), people);
+              await savePeopleToBackendApi(api, token, String(id), people);
             }
             setPeopleBackend("on");
             return true;
@@ -409,7 +277,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     }, 500);
 
     return () => clearTimeout(t);
-  }, [people, selectedShiftId, peopleBackend, mirrorIds, validShiftIdSet]);
+  }, [people, selectedShiftId, peopleBackend, mirrorIds, validShiftIdSet, peopleStorageKey, token]);
 
   const geoStats = useMemo(() => {
     let ok = 0,
@@ -434,38 +302,6 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       ready: Number(geoStats.review || 0) === 0 && Number(geoStats.failed || 0) === 0,
     });
   }, [onSummaryChange, selectedShiftId, geoStats, stopSummary]);
-
-  function buildStopSummary(base = {}, stopsInput = draftStops, peopleInput = people) {
-    const allStops = Array.isArray(stopsInput) ? stopsInput : [];
-    const realStops = stripHubStop(allStops);
-    const hubIncluded = allStops.some((x) => String(x?.id || "") === "hub");
-    const totalPeople = Number(base.totalPeople ?? (Array.isArray(peopleInput) ? peopleInput.length : 0));
-    const reviewCount = Number(base.reviewCount ?? (Array.isArray(peopleInput) ? peopleInput.filter((p) => (p.geoStatus || computeGeoStatus(p)) === "NEEDS_REVIEW").length : 0));
-    const coveredCount = Number(base.coveredCount ?? realStops.reduce((sum, s) => sum + Number(s?.count || 0), 0));
-    const singletonCount = Number(base.singletonCount ?? realStops.filter((s) => Number(s?.count || 0) === 1).length);
-    const stopCountWithoutHub = Number(base.stopCountWithoutHub ?? base.stopCount ?? realStops.length);
-    const stopCountWithHub = Number(base.stopCountWithHub ?? (stopCountWithoutHub + (hubIncluded ? 1 : 0)));
-    const skippedCount = Number(base.skippedCount ?? Math.max(0, totalPeople - coveredCount - reviewCount));
-    const stopLoads = realStops.map((s, i) => ({ title: String(s?.title || `Durak ${i + 1}`), count: Number(s?.count || 0) }));
-    return {
-      ...base,
-      totalPeople,
-      reviewCount,
-      coveredCount,
-      singletonCount,
-      stopCount: stopCountWithoutHub,
-      stopCountWithoutHub,
-      stopCountWithHub,
-      hubIncluded,
-      skippedCount,
-      stopLoads,
-    };
-  }
-
-  function stripHubStop(list) {
-    const arr = Array.isArray(list) ? list : [];
-    return arr.filter((x) => String(x?.id || "") !== "hub");
-  }
 
   // M51.B: selected shift değişince hub formunu doldur
   useEffect(() => {
@@ -515,7 +351,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     setInfo("");
     const sid = Number(selectedShiftId || 0);
     if (!sid) {
-      setErr("Shift se?.");
+      setErr("Shift seç.");
       return;
     }
 
@@ -699,7 +535,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           await apiOr404Fallback(
             async () => {
               for (const id of ids) {
-                const resp = await importPeopleToBackend(String(id), file.name || null, normalizedRows, importMode);
+                const resp = await importPeopleToBackendApi(api, token, String(id), file.name || null, normalizedRows, importMode);
                 if (!firstResp) firstResp = resp;
               }
               setPeopleBackend("on");
@@ -712,12 +548,12 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
           );
 
           if (firstResp?.summary) setImportSummary(firstResp.summary);
-          const warnings = Array.isArray(firstResp?.warnings) ? firstResp.warnings : [];
-          setImportWarnings(warnings);
-          const warningCount = warnings.length;
-          setInfo(`Import tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` ? ${warningCount} uyarı` : ""}`);
+      const warnings = Array.isArray(firstResp?.warnings) ? firstResp.warnings : [];
+      setImportWarnings(warnings);
+      const warningCount = warnings.length;
+          setInfo(`Import tamamlandı: ${firstResp?.summary?.acceptedRows ?? 0}/${firstResp?.summary?.totalRows ?? normalizedRows.length} satır işlendi${warningCount ? ` • ${warningCount} uyarı` : ""}`);
 
-          const fresh = await loadPeopleFromBackend(String(sid));
+          const fresh = await loadPeopleFromBackendApi(api, token, String(sid));
           setPeople(fresh);
           return;
         } catch (e) {
@@ -943,16 +779,21 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
             const shiftCount = ids.length;
             setDraftStops([]);
             setStopSummary(buildStopSummary({
-              maxWalkM: mw,
-              stopCount: Number(firstResp?.stopCount || 0),
-              coveredCount: Number(firstResp?.assignmentCount || 0),
-              skippedCount: Number(firstResp?.skippedCount || 0),
-              hubApplied: Boolean(firstResp?.hubApplied),
-            }, [], people));
+              base: {
+                maxWalkM: mw,
+                stopCount: Number(firstResp?.stopCount || 0),
+                coveredCount: Number(firstResp?.assignmentCount || 0),
+                skippedCount: Number(firstResp?.skippedCount || 0),
+                hubApplied: Boolean(firstResp?.hubApplied),
+              },
+              stopsInput: [],
+              peopleInput: people,
+              computeGeoStatus,
+            }));
             setInfo(
               shiftCount > 1
-                ? `Durak uretimi tamamlandi: ${shiftCount} vardiya icin stop uretildi. Sonraki adim: Shiftten Duraklari Cek.`
-                : `Durak uretimi tamamlandi: ${Number(firstResp?.stopCount || 0)} durak. Sonraki adim: Shiftten Duraklari Cek.`
+                ? `Durak üretimi tamamlandı: ${shiftCount} vardiya için stop üretildi. Sonraki adım: Shiftten Durakları Çek.`
+                : `Durak üretimi tamamlandı: ${Number(firstResp?.stopCount || 0)} durak. Sonraki adım: Shiftten Durakları Çek.`
             );
             setPeopleBackend("on");
             return true;
@@ -976,8 +817,13 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
     const stops = clusterPeople(people, mw);
     const withHub = withHubStop(stops, selectedShift);
     setDraftStops(withHub);
-    setStopSummary(buildStopSummary({ maxWalkM: mw, hubApplied: Boolean(selectedShift?.hubLat && selectedShift?.hubLng) }, withHub, people));
-      setInfo(stops.length ? `Draft durak oluşturuldu: ${stops.length} durak` : "OK koordinatlı kayıt yok - durak oluşturulamadı.");
+    setStopSummary(buildStopSummary({
+      base: { maxWalkM: mw, hubApplied: Boolean(selectedShift?.hubLat && selectedShift?.hubLng) },
+      stopsInput: withHub,
+      peopleInput: people,
+      computeGeoStatus,
+    }));
+    setInfo(stops.length ? `Draft durak oluşturuldu: ${stops.length} durak` : "OK koordinatlı kayıt yok - durak oluşturulamadı.");
     return true;
   }
 
@@ -1020,7 +866,12 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
         }));
       const withHub = withHubStop(mapped, selectedShift);
       setDraftStops(withHub);
-      setStopSummary(buildStopSummary({}, withHub, people));
+      setStopSummary(buildStopSummary({
+        base: {},
+        stopsInput: withHub,
+        peopleInput: people,
+        computeGeoStatus,
+      }));
       setInfo(`Shift durakları yüklendi: ${withHub.length}`);
       return withHub;
     } catch (e) {
@@ -1118,7 +969,7 @@ export default function ShiftPeopleTab({ token, me, shifts, roomsById, mirrorShi
       <RoutePreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        title={selectedShift ? `Shift #${selectedShift.id} ? Rota/Durak önizleme` : "Rota/Durak önizleme"}
+    title={selectedShift ? `Shift #${selectedShift.id} - Rota/Durak önizleme` : "Rota/Durak önizleme"}
         stops={draftStops}
         people={people}
       />

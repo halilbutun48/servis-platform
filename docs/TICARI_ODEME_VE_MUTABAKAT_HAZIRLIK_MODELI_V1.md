@@ -54,6 +54,8 @@ Hazırlık modeli şu yüzeylerde görünür:
 - `backend/src/ops/commercialCoreManifest.js`
 - `backend/src/ops/settlementReconciliationDesk.js`
 - `web/src/panels/superadmin/CommercialCorePanel.jsx`
+- `GET /api/commercial-core/payment-backbone/sources`
+- `GET /api/commercial-core/payment-backbone/sources/export.csv`
 
 İlgili kanonik açıklama zinciri:
 
@@ -76,6 +78,7 @@ Bu başlıklar yalnız hazırlık ve operasyon tasarımı düzeyinde kalır.
 ## 6) Hazırlık checklist
 - Ticari kaynaklar doğru oluşuyor mu?
 - Settlement plan, entry ve reconciliation kayıtları okunabiliyor mu?
+- Ödeme kaynakları listesi ve CSV dışa aktarım yüzeyi okunabiliyor mu?
 - Payment account readiness yüzeyi görünür mü?
 - Banka transferi ile kartlı ödeme ayrımı net mi?
 - Kartlı akışta 3D Secure ve hosted checkout varsayımı korunuyor mu?
@@ -92,6 +95,7 @@ Canlı kapı açılmadan önce bu sıra görünür ve okunur kalır:
 - Provider webhook / payout entegrasyonu ayrı kapıda mı?
 - Finance / operasyon GO kararı ayrı bir onay noktası mı?
 - Rollback / smoke / audit planı erişilebilir mi?
+- Ödeme kaynakları CSV export trail audit'e düşüyor mu?
 
 ## 8) Repo kararı
 Bu repo turunda hedef canlı ödeme açmak değildir.

@@ -7,10 +7,10 @@ import { useAutoReload } from "../../live/useAutoReload";
 import { uiStatusFromVehicle, pillKeyFromUi } from "../../utils/uiStatus";
 import { isoFromTRDateInput, isoFromTRLocalInput, toDatetimeLocalTR } from "../../utils/time";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
-import { formatRegionOwnership } from "../../utils/regionOwnership";
 import {
   VEHICLE_TEMPLATES_TR,
   TABS,
+  buildVehicleCopilotSelection,
   fmtDriverHuman,
   isoToDateInput,
   isoToDatetimeLocal,
@@ -335,29 +335,11 @@ const [availSel, setAvailSel] = useState({}); // { [vehicleId]: true }
 
   useEffect(() => {
     if (!focusVehicle) {
-      clearCopilotSelection('/room/vehicles');
+      clearCopilotSelection("/room/vehicles");
       return;
     }
     const ui = uiStatusFromVehicle(focusVehicle) || {};
-    setCopilotSelection({
-      scopeKey: '/room/vehicles',
-      entityType: 'vehicle',
-      entityId: Number(focusVehicle?.id || 1104) || 1104,
-      label: focusVehicle?.plate || `Araç #${focusVehicle?.id || '-'}`,
-      summary: [focusVehicle?.plate, focusVehicle?.brand, focusVehicle?.model, focusVehicle?.type].filter(Boolean).join(' • '),
-      fields: [
-        { label: 'Plaka', value: focusVehicle?.plate || '-', help: 'Seçili aracın plakasını gösterir.' },
-        { label: 'Tip', value: focusVehicle?.type || '-', help: 'Araç tipini gösterir.' },
-        { label: 'Kapasite', value: String(focusVehicle?.capacity || '-'), help: 'Araç kapasitesini gösterir.' },
-        { label: 'Bölge', value: formatRegionOwnership(focusVehicle?.regionOwnership), help: 'Aracın bağlı olduğu il / ilçe bilgisini gösterir.' },
-        { label: 'Sürücü', value: focusDriverLabel || '-', help: 'Araca bağlı sürücüyü gösterir.' },
-        { label: 'Durum', value: ui?.label || '-', help: 'Aracın operasyon/GPS durumunu gösterir.' },
-      ],
-      badges: [
-        { label: 'Bağ', value: focusHasDriver ? 'Sürücü bağlı' : 'Sürücü yok', help: 'Araç-sürücü bağının olup olmadığını gösterir.' },
-      ],
-      facts: { screenType: 'VEHICLES', stage: pillKeyFromUi(ui), nextBestAction: focusHasDriver ? 'Önce GPS ve durum satırını oku. Sonra gerekiyorsa telematics veya atama sekmesine geç.' : 'Önce sürücü bağı var mı kontrol et. Sonra durum alanını oku.' },
-    });
+    setCopilotSelection(buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }));
   }, [focusVehicle, focusDriverLabel, focusHasDriver]);
 
   const selectedDriverId = Number(bindSel?.[focusVehicleId] || 0);

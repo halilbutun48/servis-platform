@@ -37,6 +37,8 @@ import {
   listSettlementReconciliationQueue,
   upsertSettlementReconciliationRecord,
 } from "../ops/settlementReconciliationDesk.js";
+import { audit } from "../audit.js";
+import { buildKvkkExportAuditMeta } from "../kvkk/retention.js";
 
 const globalRuleSchema = z.object({
   paymentMode: z.enum(["OFF", "OPTIONAL", "REQUIRED"]),
@@ -92,6 +94,72 @@ const paymentAccountSchema = z.object({
   }
 });
 
+const sourceListQuerySchema = z.object({
+  type: z.string().trim().optional().nullable(),
+  sourceType: z.string().trim().optional().nullable(),
+  companyId: z.coerce.number().int().positive().optional().nullable(),
+  roomId: z.coerce.number().int().positive().optional().nullable(),
+  paymentMode: z.string().trim().optional().nullable(),
+  settlementStatus: z.string().trim().optional().nullable(),
+  q: z.string().trim().optional().nullable(),
+  from: z.string().trim().optional().nullable(),
+  to: z.string().trim().optional().nullable(),
+  take: z.coerce.number().int().min(1).max(1000).optional().default(20),
+});
+
+function csvEscape(value) {
+  let s = String(value ?? "");
+  if (/^[=+\-@]/.test(s)) {
+    s = `'${s}`;
+  }
+  if (s.includes('"') || s.includes(",") || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function formatDateIso(value) {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toISOString();
+}
+
+function toCommercialSourceCsvRow(item) {
+  return [
+    item.id,
+    item.sourceType,
+    item.sourceKey,
+    item.companyId ?? "",
+    item.companyName || "",
+    item.roomId ?? "",
+    item.roomName || "",
+    item.agreementId ?? "",
+    item.shiftRootId ?? "",
+    item.shiftGroupKey || "",
+    item.paymentModeSnapshot || "",
+    item.commissionBpsSnapshot ?? 0,
+    item.settlementStatus || "",
+    item.providerAdapterKey || "",
+    item.amountCompanySnapshot ?? "",
+    item.amountProviderSnapshot ?? "",
+    item.currencyCode || "TRY",
+    formatDateIso(item.createdAt),
+    formatDateIso(item.updatedAt),
+  ].map(csvEscape).join(",");
+}
+
+function parseCommercialSourceQuery(raw = {}, { take = 20 } = {}) {
+  const parsed = sourceListQuerySchema.safeParse({ ...raw, take });
+  if (!parsed.success) {
+    const error = new Error("INVALID_COMMERCIAL_SOURCE_QUERY");
+    error.status = 400;
+    error.issues = parsed.error.issues;
+    throw error;
+  }
+  return parsed.data;
+}
+
 export function commercialCoreRouter() {
   const r = express.Router();
   const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
@@ -142,9 +210,72 @@ export function commercialCoreRouter() {
   });
 
   r.get("/payment-backbone/sources", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
-    const take = Number(req.query.take || 20);
-    const type = typeof req.query.type === "string" ? req.query.type : undefined;
-    return res.json({ items: await listCommercialSources({ type, take }) });
+    const query = parseCommercialSourceQuery(req.query, { take: req.query?.take ?? 20 });
+    const items = await listCommercialSources(query);
+    return res.json({
+      ok: true,
+      items,
+      summary: {
+        total: items.length,
+        sourceType: query.sourceType || query.type || "ALL",
+        paymentMode: query.paymentMode || "ALL",
+        settlementStatus: query.settlementStatus || "ALL",
+      },
+    });
+  });
+
+  r.get("/payment-backbone/sources/export.csv", authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN"), async (req, res) => {
+    const query = parseCommercialSourceQuery(req.query, { take: 1000 });
+    const items = await listCommercialSources(query);
+    await audit(req, {
+      action: "PAYMENT_BACKBONE_EXPORT",
+      entity: "CommercialSource",
+      meta: buildKvkkExportAuditMeta({
+        endpoint: "/api/commercial-core/payment-backbone/sources/export.csv",
+        kind: "payment_backbone_sources",
+        format: "csv",
+        take: query.take,
+        rowCount: items.length,
+        reason: "Commercial source / settlement export",
+        filters: {
+          type: query.type || null,
+          sourceType: query.sourceType || null,
+          companyId: query.companyId || null,
+          roomId: query.roomId || null,
+          paymentMode: query.paymentMode || null,
+          settlementStatus: query.settlementStatus || null,
+          q: query.q || null,
+          from: query.from || null,
+          to: query.to || null,
+        },
+      }),
+    });
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    res.setHeader("Content-Disposition", `attachment; filename="payment_sources_${stamp}.csv"`);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    const header = [
+      "id",
+      "sourceType",
+      "sourceKey",
+      "companyId",
+      "companyName",
+      "roomId",
+      "roomName",
+      "agreementId",
+      "shiftRootId",
+      "shiftGroupKey",
+      "paymentMode",
+      "commissionBps",
+      "settlementStatus",
+      "providerAdapterKey",
+      "amountCompany",
+      "amountProvider",
+      "currencyCode",
+      "createdAt",
+      "updatedAt",
+    ].join(",");
+    const body = items.map((item) => toCommercialSourceCsvRow(item)).join("\n");
+    return res.send(`${header}\n${body}\n`);
   });
 
   r.get("/payment-backbone/pilot/status", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {

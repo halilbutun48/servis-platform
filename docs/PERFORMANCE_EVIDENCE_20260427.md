@@ -126,3 +126,54 @@ This evidence supports the current conclusion that the system is rate-bound rath
 - The clean readstorm proof is 3 cycles; a clean 30-cycle readstorm soak can be added later for enterprise evidence.
 - Hot-file debt remains tracked separately under M90C.6.
 - Field/pilot evidence remains separate from synthetic benchmark evidence.
+
+## 2026-04-28 addendum
+
+Follow-up runs were captured with the benchmark harness extended to support adjustable request timeouts and an explicit `noThrottle` benchmark flag:
+
+- `requestTimeoutMs` can be raised for longer saturation checks.
+- `noThrottle=1` is benchmark-only and appends `?noThrottle=1` to `/api/gps` requests.
+
+This gave us two useful 3000-vehicle / 30-cycle readstorm artifacts:
+
+### 3000 vehicles / readstorm / 30 cycles / noThrottle=1 / 20s interval
+
+Command:
+
+```powershell
+node --% backend/scripts/bench_gps_publish_only.js --scenario=publish-only --panelProfile=readstorm --vehicles=3000 --cycles=30 --intervalMs=20000 --requestTimeoutMs=60000 --noThrottle=1 --output=artifacts/benchmarks/gps_publish-only_3000veh_30cycles_readstorm_2026-04-28T_clean_nothrottle.json
+```
+
+Result:
+
+- Requests: `90000`
+- OK: `49132`
+- Errors: `40868`
+- Throttled: `0`
+- p50: `2797.97ms`
+- p95: `60008.74ms`
+- p99: `60013.14ms`
+- Duration: `949290ms`
+- Panel requests: `464`
+- Panel reloads: `414`
+- Panel invalidations: `134805`
+- Report: `artifacts/benchmarks/gps_publish-only_3000veh_30cycles_readstorm_2026-04-28T_clean_nothrottle.json`
+
+### 3000 vehicles / readstorm / 30 cycles / noThrottle=1 / 30s interval
+
+Command:
+
+```powershell
+node --% backend/scripts/bench_gps_publish_only.js --scenario=publish-only --panelProfile=readstorm --vehicles=3000 --cycles=30 --intervalMs=30000 --requestTimeoutMs=60000 --noThrottle=1 --output=artifacts/benchmarks/gps_publish-only_3000veh_30cycles_readstorm_2026-04-28T_clean_nothrottle_spaced.json
+```
+
+Result:
+
+- The run timed out at the 20-minute shell limit before completion.
+- The partial output confirms the harness and seed setup were working, but the longer soak needs a larger wall-clock window or a lighter panel profile to finish cleanly in this workspace.
+
+Interpretation:
+
+- We now have a measured 30-cycle readstorm saturation boundary and a benchmark harness that can express longer request timeouts and throttle bypass explicitly.
+- The cleanest long-soak proof remains the 3000-vehicle publish-only 30-cycle artifact and the 3000-vehicle readstorm 3-cycle clean baseline.
+- The exact 3000-vehicle / 30-cycle / full readstorm clean soak still needs either a lighter panel profile or a longer runner window than this workspace provided.

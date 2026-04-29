@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 const API_BASE_URL = String(process.env.EXPO_PUBLIC_API_BASE_URL || '').trim();
 const RELEASE_STAGE = String(process.env.EXPO_PUBLIC_RELEASE_STAGE || '').trim().toLowerCase();
 const REQUEST_TIMEOUT_MS = Math.max(4000, Number(process.env.EXPO_PUBLIC_API_TIMEOUT_MS || 12000));
@@ -28,11 +30,22 @@ function buildIssueList({ apiBaseUrl = API_BASE_URL, releaseStage = RELEASE_STAG
   const stage = String(releaseStage || '').trim().toLowerCase();
   const urlText = String(apiBaseUrl || '').trim();
   let parsed = null;
+  const executionEnvironment = String(Constants?.executionEnvironment || '').trim();
+  const appOwnership = String(Constants?.appOwnership || '').trim();
+  const debugMode = Boolean(Constants?.debugMode);
 
   if (!stage) {
     issues.push('Release stage ayarlı değil. EXPO_PUBLIC_RELEASE_STAGE gerekli.');
   } else if (!ALLOWED_STAGES.includes(stage)) {
     issues.push(`Release stage tanınmadı: ${stage}. Geçerli değer preview-internal, preview-simulator veya production olmalı.`);
+  }
+
+  if (executionEnvironment === 'storeClient' || appOwnership === 'expo') {
+    issues.push('Expo Go desteklenmiyor. Internal build veya standalone release kullanın.');
+  }
+
+  if (stage === 'production' && debugMode) {
+    issues.push('Production stage debug modda çalışamaz.');
   }
 
   if (!urlText) {
@@ -77,6 +90,12 @@ function buildIssueList({ apiBaseUrl = API_BASE_URL, releaseStage = RELEASE_STAG
     warnings.push('API timeout değeri yüksek. Ağ hataları kullanıcıya geç yansıyabilir.');
   }
 
+  if (stage === 'production' && executionEnvironment && executionEnvironment !== 'standalone') {
+    issues.push(`Production stage standalone build olmalı. Geçerli runtime: ${executionEnvironment}.`);
+  } else if (stage.startsWith('preview') && executionEnvironment === 'storeClient') {
+    warnings.push('Preview build Expo Go içinde görünüyor. Bu dağıtım yüzeyi için internal build tercih edin.');
+  }
+
   return { issues, warnings, parsed };
 }
 
@@ -94,12 +113,12 @@ export function getReleaseGuard() {
     warnings,
     blocking: issues.length > 0,
     statusText: issues.length ? `BLOCKING (${issues.length})` : warnings.length ? `WARN (${warnings.length})` : 'READY',
-    summary: issues[0] || warnings[0] || 'Release / env kabul kontrolu hazir.',
+    summary: issues[0] || warnings[0] || 'Release / env kabul kontrolü hazır.',
   };
 }
 
 export function humanizeReleaseGuard(guard = getReleaseGuard()) {
-  return guard?.summary || 'Release / env kabul kontrolu hazir.';
+  return guard?.summary || 'Release / env kabul kontrolü hazır.';
 }
 
 export function buildReleaseBlockingError(guard = getReleaseGuard()) {
@@ -120,17 +139,20 @@ export function buildReleaseInfo() {
     deliveryMode: 'EAS Build + internal dagitim',
     expoGoStatus: 'Expo Go degil, internal build ile test et',
     androidPreview: 'Preview APK / internal dagitim',
-    productionBundle: 'Production AAB + iOS store hazirligi',
+    productionBundle: 'Production AAB + iOS store hazırlığı',
     envStage: guard.stage || 'ayarsiz',
     apiBaseUrl: guard.apiBaseUrl || '',
     apiHost: guard.apiHost || '',
     apiScheme: guard.apiScheme || '-',
     timeoutMs: guard.timeoutMs,
+    executionEnvironment: String(Constants?.executionEnvironment || '-'),
+    appOwnership: String(Constants?.appOwnership || '-'),
+    debugMode: Boolean(Constants?.debugMode),
     acceptanceBlocking: guard.blocking,
     acceptanceStatusText: guard.statusText,
     acceptanceSummary: guard.summary,
     acceptanceIssues: guard.issues,
     acceptanceWarnings: guard.warnings,
-    releaseDiscipline: 'Env dogrulama + acceptance ozeti + runtime guard + checker',
+    releaseDiscipline: 'Env doğrulama + acceptance özeti + runtime guard + checker',
   };
 }

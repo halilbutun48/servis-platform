@@ -43,26 +43,26 @@ const DEFAULT_HEALTH = {
 
 const DEFAULT_GPS = {
   permissionStatus: 'unknown',
-  permissionText: "Surucunun telefon GPS'i icin izin gerekli.",
+  permissionText: "Sürücünün telefon GPS'i için izin gerekli.",
   backgroundPermissionStatus: 'unknown',
-  backgroundPermissionText: 'Arka plan GPS izni okunamadi.',
+  backgroundPermissionText: 'Arka plan GPS izni okunamadı.',
   backgroundTaskState: 'stopped',
-  backgroundTaskText: 'Arka plan GPS servisi henuz devrede degil.',
+  backgroundTaskText: 'Arka plan GPS servisi henüz devrede değil.',
   appState: 'active',
   lastBackgroundReason: '',
   lastBackgroundSyncAt: '',
   canOpenSettings: false,
   publishState: 'idle',
-  publishText: 'Konum hazirlaniyor.',
-  sourcePriorityText: "Resmi arac GPS'i > yerel telefon onizlemesi > onbellek",
+  publishText: 'Konum hazırlanıyor.',
+  sourcePriorityText: "Resmi araç GPS'i > yerel telefon önizlemesi > önbellek",
   officialSourceKey: 'BACKEND_VEHICLE_GPS',
-  officialSourceText: "Resmi arac GPS'i",
+  officialSourceText: "Resmi araç GPS'i",
   officialCoordsText: '-',
   officialAt: '',
   officialFreshness: 'OFFLINE',
   officialFreshnessText: 'GPS yok veya bekleniyor',
   displaySourceKey: 'NONE',
-  displaySourceText: 'Canli konum bekleniyor',
+  displaySourceText: 'Canlı konum bekleniyor',
   displayCoordsText: '-',
   displayAt: '',
   localPreviewText: '-',
@@ -136,15 +136,15 @@ function mergeKvkkState(baseKvkk = {}) {
   };
 }
 
-export function humanize(value, fallback = 'Islem basarisiz.') {
+export function humanize(value, fallback = 'İşlem başarısız.') {
   return humanizeApiError(value, fallback);
 }
 
-export function humanizeGpsError(value, fallback = 'GPS konumu gonderilemedi.') {
+export function humanizeGpsError(value, fallback = 'GPS konumu gönderilemedi.') {
   return humanizeApiError(value, fallback);
 }
 
-export function humanizeSessionFailure(value, fallback = 'Oturum kapandi. Yeniden giris yapin.') {
+export function humanizeSessionFailure(value, fallback = 'Oturum kapandı. Yeniden giriş yapın.') {
   return humanizeApiError(value, fallback);
 }
 
@@ -153,9 +153,9 @@ export function isNetworkError(value) {
 }
 
 export function backgroundPermissionTextFromStatus(permission) {
-  if (!permission) return 'Arka plan GPS izni okunamadi.';
-  if (permission.status === 'granted') return "Arka plan GPS izni hazir.";
-  if (permission.canAskAgain === false) return 'Arka plan GPS izni kapali. Ayarlardan acmaniz gerekiyor.';
+  if (!permission) return 'Arka plan GPS izni okunamadı.';
+  if (permission.status === 'granted') return 'Arka plan GPS izni hazır.';
+  if (permission.canAskAgain === false) return 'Arka plan GPS izni kapalı. Ayarlardan açmanız gerekiyor.';
   return 'Arka plan GPS izni gerekli.';
 }
 
@@ -179,8 +179,8 @@ export function buildGpsRuntimeSnapshot({
     backgroundPermissionText: options.backgroundPermissionText || backgroundPermissionTextFromStatus(backgroundPermission),
     backgroundTaskState: taskStarted ? 'running' : 'stopped',
     backgroundTaskText: taskStarted
-      ? 'Arka plan GPS servisi kayitli. Ekran kapansa da yayin devam etmeli.'
-      : 'Arka plan GPS servisi henuz devrede degil.',
+      ? 'Arka plan GPS servisi kayıtlı. Ekran kapansa da yayın devam etmeli.'
+      : 'Arka plan GPS servisi henüz devrede değil.',
     appState: options.appState || appState,
     lastBackgroundReason: reason || options.reason || '',
     lastBackgroundSyncAt: new Date().toISOString(),
@@ -217,7 +217,7 @@ export function buildSignedInSyncArtifacts({
   const nextKvkk = nextKvkkState(kvkkCurrent || me?.kvkk, state.kvkk);
   const nextNet = {
     status: 'online',
-    message: state.net?.status === 'offline' ? 'Baglanti geri geldi, bilgiler yenileniyor.' : 'Baglanti var.',
+    message: state.net?.status === 'offline' ? 'Bağlantı geri geldi, bilgiler yenileniyor.' : 'Bağlantı var.',
     lastOnlineAt: lastSyncAt,
     lastOfflineAt: state.net?.lastOfflineAt || '',
     lastRecoveryAt: state.net?.status === 'offline' ? lastSyncAt : (state.net?.lastRecoveryAt || ''),

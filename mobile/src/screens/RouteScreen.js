@@ -13,7 +13,7 @@ function stopTone(stop, nextStopId) {
 
 function stopLabel(stop, nextStopId) {
   const state = String(stop?.state || '').toUpperCase();
-  if (Number(stop?.id || 0) && Number(stop?.id || 0) === Number(nextStopId || 0) && state === 'PENDING') return 'SIRADAKI';
+  if (Number(stop?.id || 0) && Number(stop?.id || 0) === Number(nextStopId || 0) && state === 'PENDING') return 'SIRADAKİ';
   return state || 'PENDING';
 }
 

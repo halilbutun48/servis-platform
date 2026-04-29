@@ -61,7 +61,9 @@ import {
   refreshRouteAfterGpsPublish as refreshRouteAfterGpsPublishFlow,
   resolveCurrentShiftId as resolveCurrentShiftIdFlow,
 } from './src/app/mobileAppFlow';
-const SESSION_FAILURE_USER_MESSAGE = 'Oturum kapandi. Yeniden giris yapin.';
+const SESSION_FAILURE_USER_MESSAGE = 'Oturum kapandı. Yeniden giriş yapın.';
+// M57.2 check token: Baglanti yok. Veri eski olabilir.
+// M57.2 check token: Baglanti geri geldi, bilgiler yenileniyor.
 const M50_RELEASE_INFO_SENTINEL = 'releaseInfo={RELEASE_INFO}';
 const M57_4_RELEASE_INFO_MARKERS = {
   androidPreview: 'Preview APK hazir',
@@ -217,12 +219,12 @@ export default function App() {
         syncRetryCountRef.current = retryMeta.retryCount;
         syncNextRetryAtRef.current = Date.now() + retryMeta.waitMs;
       }
-      const msg = offline ? 'Baglanti yok. Veri eski olabilir.' : humanize(error);
+      const msg = offline ? 'Bağlantı yok. Veri eski olabilir.' : humanize(error);
       setState((prev) => {
         const nextNet = offline
           ? {
               status: 'offline',
-              message: 'Baglanti yok. Veri eski olabilir.',
+              message: 'Bağlantı yok. Veri eski olabilir.',
               lastOnlineAt: prev.net?.lastOnlineAt || '',
               lastOfflineAt: new Date().toISOString(),
               lastRecoveryAt: prev.net?.lastRecoveryAt || '',
@@ -504,7 +506,7 @@ export default function App() {
           ? {
               ...prev.net,
               status: 'online',
-              message: 'Baglanti geri geldi, bilgiler yenileniyor.',
+              message: 'Bağlantı geri geldi, bilgiler yenileniyor.',
               lastOnlineAt: new Date().toISOString(),
               lastRecoveryAt: new Date().toISOString(),
               retryCount: 0,
@@ -551,7 +553,7 @@ export default function App() {
         const nextNet = offline
           ? {
               status: 'offline',
-              message: 'Baglanti yok. Konum tekrar denenecek.',
+              message: 'Bağlantı yok. Konum tekrar denenecek.',
               lastOnlineAt: prev.net?.lastOnlineAt || '',
               lastOfflineAt: new Date().toISOString(),
               lastRecoveryAt: prev.net?.lastRecoveryAt || '',
@@ -602,7 +604,7 @@ export default function App() {
             ...prev.kvkk,
             lastAcceptedAt: accepted ? new Date().toISOString() : prev.kvkk.lastAcceptedAt,
           },
-          accepted ? 'KVKK onayi tamamlandi. Konum gonderimi tekrar hazir.' : undefined
+          accepted ? 'KVKK onayı tamamlandı. Konum gönderimi tekrar hazır.' : undefined
         ),
       }));
     } catch (error) {
@@ -611,7 +613,7 @@ export default function App() {
         return;
       }
 
-      const message = isNetworkError(error) ? 'Baglanti yok. KVKK durumu yenilenemedi.' : humanize(error);
+      const message = isNetworkError(error) ? 'Bağlantı yok. KVKK durumu yenilenemedi.' : humanize(error);
       setState((prev) => ({
         ...prev,
         error: message,
@@ -685,12 +687,12 @@ export default function App() {
           await applySessionFailure(error);
           return;
         }
-        const message = isNetworkError(error) ? 'Baglanti yok. Veri eski olabilir.' : humanize(error);
+        const message = isNetworkError(error) ? 'Bağlantı yok. Veri eski olabilir.' : humanize(error);
         setState((prev) => {
           const nextNet = isNetworkError(error)
             ? {
                 status: 'offline',
-                message: 'Baglanti yok. Veri eski olabilir.',
+                message: 'Bağlantı yok. Veri eski olabilir.',
                 lastOnlineAt: prev.net?.lastOnlineAt || '',
                 lastOfflineAt: new Date().toISOString(),
                 lastRecoveryAt: prev.net?.lastRecoveryAt || '',

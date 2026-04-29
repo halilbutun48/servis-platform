@@ -25,6 +25,7 @@ const DEFAULT_PANEL_DEBOUNCE_MS = 180;
 const DEFAULT_BASE_URL = process.env.API_URL || "http://127.0.0.1:3000";
 const DEFAULT_PASSWORD = "demo123";
 const DEFAULT_TIMEOUT_MS = 15_000;
+let runtimeRequestTimeoutMs = DEFAULT_TIMEOUT_MS;
 
 function parseArgs(argv) {
   const out = {};
@@ -81,7 +82,7 @@ function summarizeLatencies(samples) {
   };
 }
 
-async function requestJson(method, pathName, { token, body, timeoutMs = DEFAULT_TIMEOUT_MS, greenpackBypass = false } = {}) {
+async function requestJson(method, pathName, { token, body, timeoutMs = runtimeRequestTimeoutMs, greenpackBypass = false } = {}) {
   const url = new URL(pathName, DEFAULT_BASE_URL);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error("request timeout")), timeoutMs);
@@ -242,7 +243,7 @@ function guessPanelTopics(msg) {
 }
 
 function createPanelRequestRunner(metrics, panelName, sessionName, token) {
-  return async function request(method, pathName, { body, timeoutMs = DEFAULT_TIMEOUT_MS, force = false, ttlMs = 0, cacheKey = null, cacheStore = null } = {}, source = "reload") {
+  return async function request(method, pathName, { body, timeoutMs = runtimeRequestTimeoutMs, force = false, ttlMs = 0, cacheKey = null, cacheStore = null } = {}, source = "reload") {
     if (cacheStore && cacheKey && !force) {
       const hit = cacheStore.get(cacheKey);
       if (hit && hit.expiresAt > Date.now()) {
@@ -654,7 +655,7 @@ async function loginBenchmarkUser(identifier, password, deviceId = null) {
 
   const resp = await requestJson("POST", "/api/auth/login", {
     body,
-    timeoutMs: DEFAULT_TIMEOUT_MS,
+    timeoutMs: runtimeRequestTimeoutMs,
     greenpackBypass: true,
   });
 
@@ -1276,6 +1277,8 @@ async function main() {
   const vehicles = pickInt(args.vehicles || process.env.BENCH_VEHICLES, DEFAULT_VEHICLES);
   const cycles = pickInt(args.cycles || process.env.BENCH_CYCLES, DEFAULT_CYCLES);
   const intervalMs = pickInt(args.intervalMs || process.env.BENCH_INTERVAL_MS, DEFAULT_INTERVAL_MS);
+  runtimeRequestTimeoutMs = pickInt(args.requestTimeoutMs || process.env.BENCH_REQUEST_TIMEOUT_MS, DEFAULT_TIMEOUT_MS);
+  const benchNoThrottle = String(args.noThrottle || process.env.BENCH_NO_THROTTLE || "").trim() === "1";
   const outputDir = String(args.outputDir || process.env.BENCH_OUTPUT_DIR || DEFAULT_OUTPUT_DIR).trim();
   const outputFile = String(args.output || process.env.BENCH_OUTPUT || "").trim();
   const skipSeed = String(args.skipSeed || process.env.BENCH_SKIP_SEED || "").trim() === "1";
@@ -1289,6 +1292,8 @@ async function main() {
   console.log(`vehicles: ${vehicles}`);
   console.log(`cycles: ${cycles}`);
   console.log(`intervalMs: ${intervalMs}`);
+  console.log(`requestTimeoutMs: ${runtimeRequestTimeoutMs}`);
+  console.log(`benchNoThrottle: ${benchNoThrottle ? "1" : "0"}`);
   console.log(`seed: ${skipSeed ? "reuse-or-seed" : "enabled"}`);
 
   if (!["publish-only", "auto-reached"].includes(scenario)) {
@@ -1334,10 +1339,11 @@ async function main() {
         });
 
         const t0 = performance.now();
-        const resp = await requestJson("POST", "/api/gps", {
+        const gpsPath = benchNoThrottle ? "/api/gps?noThrottle=1" : "/api/gps";
+        const resp = await requestJson("POST", gpsPath, {
           token: item.token,
           body: payload,
-          timeoutMs: DEFAULT_TIMEOUT_MS,
+          timeoutMs: runtimeRequestTimeoutMs,
         });
         const latencyMs = performance.now() - t0;
         const throttled = Boolean(resp.ok && resp.json && resp.json.throttled);

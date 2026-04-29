@@ -1,7 +1,52 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { api, getToken } from "../../api";
 import { Card, fmtBps, fmtDateTime, InputRow, promptMaybe, stripHtmlNoise } from "./commercialCorePanelShared";
 import { readOptional } from "./commercialCorePanelOptionalStates";
+
+async function downloadWithToken(url, token, filenameHint) {
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(txt || `HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const cd = res.headers.get("content-disposition") || "";
+  const m = cd.match(/filename="([^"]+)"/i);
+  const filename = m?.[1] || filenameHint || "payment_sources.csv";
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 1500);
+}
+
+function buildPaymentSourceQuery(filters = {}, take = 20) {
+  const qs = new URLSearchParams();
+  qs.set("take", String(take));
+  const sourceType = String(filters?.sourceType || "").trim();
+  if (sourceType && sourceType !== "ALL") qs.set("sourceType", sourceType);
+  const paymentMode = String(filters?.paymentMode || "").trim();
+  if (paymentMode && paymentMode !== "ALL") qs.set("paymentMode", paymentMode);
+  const settlementStatus = String(filters?.settlementStatus || "").trim();
+  if (settlementStatus && settlementStatus !== "ALL") qs.set("settlementStatus", settlementStatus);
+  const companyId = String(filters?.companyId || "").trim();
+  if (companyId) qs.set("companyId", companyId);
+  const roomId = String(filters?.roomId || "").trim();
+  if (roomId) qs.set("roomId", roomId);
+  const q = String(filters?.q || "").trim();
+  if (q) qs.set("q", q);
+  const from = String(filters?.from || "").trim();
+  if (from) qs.set("from", from);
+  const to = String(filters?.to || "").trim();
+  if (to) qs.set("to", to);
+  return qs;
+}
 
 export default function CommercialCorePanel() {
   const [manifest, setManifest] = useState(null);
@@ -23,8 +68,20 @@ export default function CommercialCorePanel() {
   const [reconciliationStatus, setReconciliationStatus] = useState(null);
   const [reconciliationQueueMeta, setReconciliationQueueMeta] = useState({ endpointStatus: "ok", summary: "" });
   const [reconciliationQueue, setReconciliationQueue] = useState([]);
+  const [paymentSourcesMeta, setPaymentSourcesMeta] = useState({ endpointStatus: "ok", summary: "" });
+  const [paymentSources, setPaymentSources] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [roomQuery, setRoomQuery] = useState("");
+  const [paymentSourceFilters, setPaymentSourceFilters] = useState({
+    sourceType: "ALL",
+    paymentMode: "ALL",
+    settlementStatus: "ALL",
+    companyId: "",
+    roomId: "",
+    q: "",
+    from: "",
+    to: "",
+  });
   const [globalForm, setGlobalForm] = useState({ paymentMode: "OFF", commissionBps: 0, note: "" });
   const [roomForm, setRoomForm] = useState({ roomId: "", paymentMode: "OFF", commissionBps: 0, note: "" });
   const [accountForm, setAccountForm] = useState({ ownerType: "COMPANY", ownerId: "", providerKey: "DORMANT", status: "INACTIVE", label: "", maskedIban: "", accountRef: "", note: "" });
@@ -32,10 +89,10 @@ export default function CommercialCorePanel() {
   const [err, setErr] = useState("");
   const [okMsg, setOkMsg] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setErr("");
     try {
-      const [m, l, pbRes, cfgRes, pilotRes, pilotCandidatesRes, requiredRes, requiredCandidatesRes, accountStatusRes, accountCandidatesRes, settlementStatusRes, settlementQueueRes, reconciliationStatusRes, reconciliationQueueRes, roomRes] = await Promise.all([
+      const [m, l, pbRes, cfgRes, pilotRes, pilotCandidatesRes, requiredRes, requiredCandidatesRes, accountStatusRes, accountCandidatesRes, settlementStatusRes, settlementQueueRes, reconciliationStatusRes, reconciliationQueueRes, paymentSourcesRes, roomRes] = await Promise.all([
         api("/api/commercial-core/manifest"),
         api("/api/commercial-core/lifecycle-template"),
         readOptional("/api/commercial-core/payment-backbone/status", "paymentBackbone"),
@@ -50,6 +107,7 @@ export default function CommercialCorePanel() {
         readOptional("/api/commercial-core/payment-backbone/settlement/queue?take=40", "settlementQueue"),
         readOptional("/api/commercial-core/payment-backbone/reconciliation/status", "reconciliationStatus"),
         readOptional("/api/commercial-core/payment-backbone/reconciliation/queue?take=40", "reconciliationQueue"),
+        readOptional(`/api/commercial-core/payment-backbone/sources?${buildPaymentSourceQuery(paymentSourceFilters, 20).toString()}`, "paymentSources"),
         readOptional("/api/rooms?take=500", "rooms"),
       ]);
       const pb = pbRes?.data || null;
@@ -64,6 +122,8 @@ export default function CommercialCorePanel() {
       const settlementItems = settlementQueueRes?.ok ? (settlementQueueRes?.data?.items || []) : [];
       const reconciliation = reconciliationStatusRes?.data || null;
       const reconciliationItems = reconciliationQueueRes?.ok ? (reconciliationQueueRes?.data?.items || []) : [];
+      const paymentSourcesData = paymentSourcesRes?.data || null;
+      const paymentSourceItems = paymentSourcesRes?.ok ? (paymentSourcesData?.items || []) : [];
       const roomItems = roomRes?.ok ? (roomRes?.data?.items || []) : [];
       setManifest(m || null);
       setLifecycle(l || null);
@@ -84,13 +144,15 @@ export default function CommercialCorePanel() {
       setReconciliationStatus(reconciliation);
       setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Settlement mutabakat kuyrugu endpointi okunamadi." }));
       setReconciliationQueue(reconciliationItems);
+      setPaymentSourcesMeta(paymentSourcesRes?.ok ? { endpointStatus: "ok", summary: paymentSourcesData?.summary?.total != null ? `${paymentSourcesData.summary.total} kaynak` : "" } : (paymentSourcesRes?.data || { endpointStatus: "missing", summary: "Ödeme kaynakları endpointi okunamadı." }));
+      setPaymentSources(paymentSourceItems);
       setRooms(roomItems);
       setGlobalForm({
         paymentMode: cfg?.globalRule?.paymentMode || "OFF",
         commissionBps: Number(cfg?.globalRule?.commissionBps || 0),
         note: cfg?.globalRule?.note || "",
       });
-      if (!pbRes?.ok || !cfgRes?.ok || !pilotRes?.ok || !pilotCandidatesRes?.ok || !requiredRes?.ok || !requiredCandidatesRes?.ok || !accountStatusRes?.ok || !accountCandidatesRes?.ok || !settlementStatusRes?.ok || !settlementQueueRes?.ok || !reconciliationStatusRes?.ok || !reconciliationQueueRes?.ok) {
+      if (!pbRes?.ok || !cfgRes?.ok || !pilotRes?.ok || !pilotCandidatesRes?.ok || !requiredRes?.ok || !requiredCandidatesRes?.ok || !accountStatusRes?.ok || !accountCandidatesRes?.ok || !settlementStatusRes?.ok || !settlementQueueRes?.ok || !reconciliationStatusRes?.ok || !reconciliationQueueRes?.ok || !paymentSourcesRes?.ok) {
         const reasons = [];
         if (!pbRes?.ok) reasons.push(pbRes?.status === 403 ? "payment backbone özeti step-up bekliyor" : "payment backbone özeti endpointi bulunamadı");
         if (!cfgRes?.ok) reasons.push(cfgRes?.status === 403 ? "ticari ayarlar step-up bekliyor" : "ticari ayarlar endpointi bulunamadı");
@@ -104,16 +166,17 @@ export default function CommercialCorePanel() {
         if (!settlementQueueRes?.ok) reasons.push(settlementQueueRes?.status === 403 ? "settlement operasyon kuyrugu step-up bekliyor" : "settlement operasyon kuyrugu endpointi bulunamadi");
         if (!reconciliationStatusRes?.ok) reasons.push(reconciliationStatusRes?.status === 403 ? "settlement mutabakat ozeti step-up bekliyor" : "settlement mutabakat ozeti endpointi bulunamadi");
         if (!reconciliationQueueRes?.ok) reasons.push(reconciliationQueueRes?.status === 403 ? "settlement mutabakat kuyrugu step-up bekliyor" : "settlement mutabakat kuyrugu endpointi bulunamadi");
+        if (!paymentSourcesRes?.ok) reasons.push(paymentSourcesRes?.status === 403 ? "odeme kaynaklari step-up bekliyor" : "odeme kaynaklari endpointi bulunamadi");
         setErr(reasons.join(" • "));
       }
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));
     }
-  }
+  }, [paymentSourceFilters]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const steps = manifest?.steps || [];
   const activeSteps = steps.filter((item) => String(item?.status || "").toUpperCase() === "ACTIVE");
@@ -136,12 +199,14 @@ export default function CommercialCorePanel() {
   const settlementQueueEndpointStatus = String(settlementQueueMeta?.endpointStatus || "ok");
   const reconciliationEndpointStatus = String(reconciliationStatus?.endpointStatus || "ok");
   const reconciliationQueueEndpointStatus = String(reconciliationQueueMeta?.endpointStatus || "ok");
+  const paymentSourcesEndpointStatus = String(paymentSourcesMeta?.endpointStatus || "ok");
   const settingsWritable = settingsEndpointStatus === "ok";
   const pilotWritable = pilotEndpointStatus === "ok" && pilotCandidatesEndpointStatus === "ok";
   const requiredWritable = requiredEndpointStatus === "ok" && requiredCandidatesEndpointStatus === "ok";
   const accountWritable = accountEndpointStatus === "ok" && accountCandidatesEndpointStatus === "ok";
   const settlementWritable = settlementEndpointStatus === "ok" && settlementQueueEndpointStatus === "ok";
   const reconciliationWritable = reconciliationEndpointStatus === "ok" && reconciliationQueueEndpointStatus === "ok";
+  const paymentSourcesWritable = paymentSourcesEndpointStatus === "ok";
 
   const filteredRooms = useMemo(() => {
     const q = String(roomQuery || "").trim().toLowerCase();
@@ -403,6 +468,35 @@ async function deactivateRequired(sourceId) {
     }
   }
 
+  async function refreshPaymentSources() {
+    setBusyKey("payment-sources");
+    setErr("");
+    setOkMsg("");
+    try {
+      await load();
+      setOkMsg("Ödeme kaynakları yenilendi.");
+    } catch (e) {
+      setErr(stripHtmlNoise(e?.message || String(e)));
+    } finally {
+      setBusyKey("");
+    }
+  }
+
+  async function exportPaymentSourcesCsv() {
+    setBusyKey("payment-sources-export");
+    setErr("");
+    setOkMsg("");
+    try {
+      const qs = buildPaymentSourceQuery(paymentSourceFilters, 1000);
+      await downloadWithToken(`/api/commercial-core/payment-backbone/sources/export.csv?${qs.toString()}`, getToken(), "payment_sources.csv");
+      setOkMsg("Ödeme kaynakları CSV olarak indirildi.");
+    } catch (e) {
+      setErr(stripHtmlNoise(e?.message || String(e)));
+    } finally {
+      setBusyKey("");
+    }
+  }
+
   function applyRoom(room) {
     setRoomForm((prev) => ({
       ...prev,
@@ -488,6 +582,130 @@ async function deactivateRequired(sourceId) {
           <div>Plan: {cards.settlementPlans || 0}</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
             Hesap: {cards.paymentAccounts || 0} • Kural: {cards.commissionRules || 0}
+          </div>
+        </Card>
+      </div>
+
+      <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+        <div className="panelSectionTitle">Ödeme listesi ve dışa aktarım</div>
+        <div className="panelMeta">
+          Hazırlık omurgasındaki kaynakları filtreleyip CSV olarak indirebilirsin. Export için Super Admin step-up gerekir.
+        </div>
+        {paymentSourcesEndpointStatus !== "ok" ? (
+          <div className="panelMeta" style={{ color: "#ffb17b" }}>
+            {paymentSourcesEndpointStatus === "forbidden"
+              ? "Ödeme listesi için önce TOTP step-up doğrulamasını tamamla."
+              : "Ödeme listesi endpointi bu çalışmakta olan sunucuda yok görünüyor."}
+          </div>
+        ) : null}
+        <Card title={`Ödeme kaynakları (${paymentSourcesMeta?.summary || paymentSources.length || 0})`}>
+          <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+              <InputRow label="Kaynak türü">
+                <select value={paymentSourceFilters.sourceType} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, sourceType: e.target.value }))}>
+                  <option value="ALL">Tümü</option>
+                  <option value="AGREEMENT">Agreement</option>
+                  <option value="SHIFT_SERIES">Shift series</option>
+                </select>
+              </InputRow>
+              <InputRow label="Payment mode">
+                <select value={paymentSourceFilters.paymentMode} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, paymentMode: e.target.value }))}>
+                  <option value="ALL">Tümü</option>
+                  <option value="OFF">OFF</option>
+                  <option value="OPTIONAL">OPTIONAL</option>
+                  <option value="REQUIRED">REQUIRED</option>
+                </select>
+              </InputRow>
+              <InputRow label="Mutabakat durumu">
+                <select value={paymentSourceFilters.settlementStatus} onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, settlementStatus: e.target.value }))}>
+                  <option value="ALL">Tümü</option>
+                  <option value="DORMANT">DORMANT</option>
+                  <option value="READY">READY</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="DISABLED">DISABLED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </InputRow>
+              <InputRow label="Şirket ID">
+                <input
+                  type="number"
+                  min="1"
+                  value={paymentSourceFilters.companyId}
+                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, companyId: e.target.value }))}
+                  placeholder="örn. 12"
+                />
+              </InputRow>
+              <InputRow label="Oda ID">
+                <input
+                  type="number"
+                  min="1"
+                  value={paymentSourceFilters.roomId}
+                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, roomId: e.target.value }))}
+                  placeholder="örn. 4"
+                />
+              </InputRow>
+              <InputRow label="Ara">
+                <input
+                  value={paymentSourceFilters.q}
+                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, q: e.target.value }))}
+                  placeholder="sourceKey / şirket / oda"
+                />
+              </InputRow>
+              <InputRow label="Başlangıç">
+                <input
+                  type="datetime-local"
+                  value={paymentSourceFilters.from}
+                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, from: e.target.value }))}
+                />
+              </InputRow>
+              <InputRow label="Bitiş">
+                <input
+                  type="datetime-local"
+                  value={paymentSourceFilters.to}
+                  onChange={(e) => setPaymentSourceFilters((prev) => ({ ...prev, to: e.target.value }))}
+                />
+              </InputRow>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn" onClick={refreshPaymentSources} disabled={busyKey === "payment-sources" || !paymentSourcesWritable}>
+                {busyKey === "payment-sources" ? "Yenileniyor..." : "Listeyi yenile"}
+              </button>
+              <button className="btn" onClick={exportPaymentSourcesCsv} disabled={busyKey === "payment-sources-export" || !paymentSourcesWritable}>
+                {busyKey === "payment-sources-export" ? "İndiriliyor..." : "CSV indir"}
+              </button>
+              <button
+                className="btn sm"
+                onClick={() => setPaymentSourceFilters({
+                  sourceType: "ALL",
+                  paymentMode: "ALL",
+                  settlementStatus: "ALL",
+                  companyId: "",
+                  roomId: "",
+                  q: "",
+                  from: "",
+                  to: "",
+                })}
+              >
+                Filtreleri temizle
+              </button>
+            </div>
+            {Array.isArray(paymentSources) && paymentSources.length ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {paymentSources.map((item) => (
+                  <div key={item.id} style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 10, display: "grid", gap: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                      <div style={{ fontWeight: 700 }}>{item.sourceKey}</div>
+                      <div>{item.settlementStatus || item?.settlementPlan?.status || "DORMANT"}</div>
+                    </div>
+                    <div>{item.sourceType} • {item.roomName || `Oda #${item.roomId || "-"}`} • {item.companyName || `Şirket #${item.companyId || "-"}`}</div>
+                    <div className="panelMeta">Mode: {item.paymentModeSnapshot} • Komisyon: {fmtBps(item.commissionBpsSnapshot)} • Son güncelleme: {fmtDateTime(item.updatedAt)}</div>
+                    <div className="panelMeta">Brüt: {item?.settlementPlan?.grossAmount ?? item?.amountCompanySnapshot ?? 0} • Komisyon: {item?.settlementPlan?.commissionAmount ?? 0} • Sağlayıcı net: {item?.settlementPlan?.providerNetAmount ?? item?.amountProviderSnapshot ?? 0}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="panelMeta">Filtreye uyan ödeme kaynağı yok. Filtreleri daraltmayı veya hazırlık omurgasında yeni kaynak üretmeyi dene.</div>
+            )}
           </div>
         </Card>
       </div>

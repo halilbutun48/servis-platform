@@ -27,10 +27,23 @@ export function getApiTimeoutMs() {
   return REQUEST_TIMEOUT_MS;
 }
 
+function generateDeviceId() {
+  const crypto = globalThis?.crypto || null;
+  if (crypto?.randomUUID) {
+    return `mobile-${crypto.randomUUID().replace(/-/g, '')}`;
+  }
+  if (crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return `mobile-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+  }
+  return `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export async function ensureDeviceId() {
   let deviceId = await getDeviceId();
   if (deviceId) return deviceId;
-  deviceId = `mobile-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+  deviceId = generateDeviceId();
   await saveDeviceId(deviceId);
   return deviceId;
 }
@@ -188,10 +201,19 @@ async function refreshIfNeeded() {
       body: { refreshToken: session.refreshToken, deviceId },
     });
 
+    if (!refreshed?.token || !refreshed?.refreshToken) {
+      throw buildNormalizedError({
+        path: '/api/auth/refresh',
+        status: 503,
+        code: 'REFRESH_SESSION_CREATE_FAILED',
+        fallbackMessage: 'Oturum yenilenemedi. Lütfen tekrar giriş yapın.',
+      });
+    }
+
     const nextSession = {
       ...session,
-      token: refreshed?.token || '',
-      refreshToken: refreshed?.refreshToken || session.refreshToken,
+      token: refreshed.token,
+      refreshToken: refreshed.refreshToken,
       deviceId,
     };
     await saveSession(nextSession);

@@ -68,7 +68,7 @@ Compatibility aliases for legacy checks:
 - Ödeme omurgası gerçek charge/payout açmadan önce dormant/feature-flag mantığında ilerler.
 - Kanonik aktivasyon anahtarı `PAYMENT_BACKBONE_ENABLED=0/1` ile taşınır; `0` hazırlık, `1` canlı kapı için uygun zemin anlamına gelir.
 - Kanonik ödeme hazırlık belgesi: `docs/TICARI_ODEME_VE_MUTABAKAT_HAZIRLIK_MODELI_V1.md`.
-- Aktivasyon checklist'i de aynı kanonik belgede tutulur; canlı charge/payout bu turda yine açılmaz.
+- Aktivasyon checklist'i ve Super Admin ödeme listesi / CSV export yüzeyi de aynı kanonik belgede tutulur; canlı charge/payout bu turda yine açılmaz.
 - Bu aşamada canlı charge / payout açılmaz; banka transferi önce, sanal POS + 3D Secure sonra hazırlanır.
 
 ## Kalıcı kurallar
@@ -180,6 +180,11 @@ Compatibility aliases for legacy checks:
 - 2026-04-27 benchmark evidence doc: `docs/PERFORMANCE_EVIDENCE_20260427.md`
 - 3000 vehicles, 30 cycles, 120s cadence, publish-only: 90,000 requests, p95 27.66ms, throttled 0.
 - 3000 vehicles, 10 cycles, 120s cadence, readstorm: 30,000 GPS requests, 523,405 panel invalidations, p95 27.39ms, throttled 0.
+
+## EVIDENCE_PACK_20260428
+- Evidence index: `docs/EVIDENCE_PACK_20260428.md`
+- Groups synthetic performance evidence, M93 queue proof, and remaining field checklist in one roof.
+- Keeps the long-soak / chaos / pilot evidence conversation readable without scattering links across the repo.
 - Temiz readstorm kanıtı: 3000 araç, 3 cycle, 9000 / 9000 OK, errors 0, throttled 0, p95 33.21ms.
 - Not: `PASSWORD_CHANGE_REQUIRED` seed-user hijyen hatası kapanmıştır; önceki hatalar throughput problemi değildi.
 

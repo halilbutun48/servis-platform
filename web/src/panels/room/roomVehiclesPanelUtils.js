@@ -1,5 +1,7 @@
 import { formatDateTimeTR, formatDateTR, formatTimeTR, toDateInputTR, toDatetimeLocalTR } from "../../utils/time";
 import { getApiErrorInfo } from "../../utils/apiContract";
+import { formatRegionOwnership } from "../../utils/regionOwnership";
+import { pillKeyFromUi } from "../../utils/uiStatus";
 
 export const VEHICLE_TYPES = [
   { value: "", label: "Seç (opsiyonel)" },
@@ -138,4 +140,32 @@ export function setSelMany(setter, ids, val) {
     }
     return next;
   });
+}
+
+export function buildVehicleCopilotSelection({ focusVehicle, focusDriverLabel, focusHasDriver, ui }) {
+  return {
+    scopeKey: "/room/vehicles",
+    entityType: "vehicle",
+    entityId: Number(focusVehicle?.id || 1104) || 1104,
+    label: focusVehicle?.plate || `Araç #${focusVehicle?.id || "-"}`,
+    summary: [focusVehicle?.plate, focusVehicle?.brand, focusVehicle?.model, focusVehicle?.type].filter(Boolean).join(" • "),
+    fields: [
+      { label: "Plaka", value: focusVehicle?.plate || "-", help: "Seçili aracın plakasını gösterir." },
+      { label: "Tip", value: focusVehicle?.type || "-", help: "Araç tipini gösterir." },
+      { label: "Kapasite", value: String(focusVehicle?.capacity || "-"), help: "Araç kapasitesini gösterir." },
+      { label: "Bölge", value: formatRegionOwnership(focusVehicle?.regionOwnership), help: "Aracın bağlı olduğu il / ilçe bilgisini gösterir." },
+      { label: "Sürücü", value: focusDriverLabel || "-", help: "Araca bağlı sürücüyü gösterir." },
+      { label: "Durum", value: ui?.label || "-", help: "Aracın operasyon/GPS durumunu gösterir." },
+    ],
+    badges: [
+      { label: "Bağ", value: focusHasDriver ? "Sürücü bağlı" : "Sürücü yok", help: "Araç-sürücü bağının olup olmadığını gösterir." },
+    ],
+    facts: {
+      screenType: "VEHICLES",
+      stage: pillKeyFromUi(ui),
+      nextBestAction: focusHasDriver
+        ? "Önce GPS ve durum satırını oku. Sonra gerekiyorsa telematics veya atama sekmesine geç."
+        : "Önce sürücü bağı var mı kontrol et. Sonra durum alanını oku.",
+    },
+  };
 }

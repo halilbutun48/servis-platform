@@ -184,6 +184,171 @@ export function parseSheetRowsToPeople(rows2d) {
   return out;
 }
 
+export function mapStoragePeopleToUi(items) {
+  const list = Array.isArray(items) ? items : [];
+  return list
+    .map((x) => ({
+      id: String(x?.id || ""),
+      name: String(x?.name || ""),
+      phone: String(x?.phone || ""),
+      address: String(x?.address || ""),
+      lat: typeof x?.lat === "number" ? x.lat : null,
+      lng: typeof x?.lng === "number" ? x.lng : null,
+      geoStatus: String(x?.geoStatus || ""),
+      geoReason: String(x?.geoReason || ""),
+      geoReasonText: String(x?.geoReasonText || ""),
+    }))
+    .filter((x) => x.id);
+}
+
+export function mapBackendPeopleToUi(items) {
+  const list = Array.isArray(items) ? items : [];
+  return list
+    .map((p) => ({
+      id: String(p?.id ?? ""),
+      personelId: Number(p?.id ?? 0) || null,
+      name: String(p?.fullName ?? ""),
+      phone: String(p?.phone ?? ""),
+      address: String(p?.homeAddress ?? ""),
+      lat: typeof p?.homeLat === "number" ? p.homeLat : null,
+      lng: typeof p?.homeLng === "number" ? p.homeLng : null,
+      geoStatus: String(p?.geoStatus ?? ""),
+      geoReason: String(p?.geoReason ?? p?.geoNote ?? ""),
+      geoReasonText: String(p?.geoReasonText ?? ""),
+      geoManualOverride: Boolean(p?.geoManualOverride),
+    }))
+    .filter((x) => x.id);
+}
+
+export function mapUiPeopleToBackend(list) {
+  const arr = Array.isArray(list) ? list : [];
+  return arr.map((p) => ({
+    personelId: p.personelId || (String(p.id).match(/^\d+$/) ? Number(p.id) : undefined),
+    fullName: String(p.name || "").trim(),
+    phone: String(p.phone || "").trim() || null,
+    address: String(p.address || "").trim() || null,
+    lat: typeof p.lat === "number" ? p.lat : null,
+    lng: typeof p.lng === "number" ? p.lng : null,
+    geoManualOverride: Boolean(p.geoManualOverride),
+    geoReason: String(p.geoReason || "") || null,
+  }));
+}
+
+export function readPeopleFromStorage(storageKey) {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return mapStoragePeopleToUi(parsed);
+  } catch {
+    return [];
+  }
+}
+
+export function writePeopleToStorage(storageKey, list) {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(Array.isArray(list) ? list : []));
+  } catch {
+    // ignore
+  }
+}
+
+export async function loadPeopleFromBackend(apiFn, token, shiftId) {
+  const r = await apiFn(`/api/shifts/${shiftId}/people`, { token });
+  return mapBackendPeopleToUi(r?.items);
+}
+
+export async function savePeopleToBackend(apiFn, token, shiftId, list) {
+  const items = mapUiPeopleToBackend(list);
+  return apiFn(`/api/shifts/${shiftId}/people?mode=REPLACE`, {
+    method: "PUT",
+    body: { items },
+    token,
+  });
+}
+
+export async function importPeopleToBackend(apiFn, token, shiftId, fileName, rows, mode) {
+  return apiFn(`/api/shifts/${shiftId}/people/import?mode=${encodeURIComponent(String(mode || "REPLACE"))}`, {
+    method: "POST",
+    body: { fileName, rows },
+    token,
+  });
+}
+
+export function summarizeWarnings(list) {
+  const items = Array.isArray(list) ? list : [];
+  const counts = new Map();
+  for (const item of items) {
+    const key = String(item?.code || "UNKNOWN");
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return Array.from(counts.entries()).map(([code, count]) => ({ code, count }));
+}
+
+export function warningLabel(code) {
+  const c = String(code || "");
+  if (c === "MISSING_NAME") return "Ad Soyad eksik";
+  if (c === "MISSING_ADDRESS_OR_COORDS") return "Adres/koordinat eksik";
+  if (c === "INVALID_COORD") return "Koordinat geçersiz";
+  if (c === "DUPLICATE_ROW") return "Tekrar satır";
+  if (c === "GEO_NEEDS_REVIEW") return "Konum kontrolü gerekir";
+  if (c === "INVALID_ROW") return "Satır okunamadı";
+  return c || "Uyarı";
+}
+
+export function stripHubStop(list) {
+  const arr = Array.isArray(list) ? list : [];
+  return arr.filter((x) => String(x?.id || "") !== "hub");
+}
+
+export function withHubStop(stops, shift) {
+  const list = Array.isArray(stops) ? [...stops] : [];
+  const hubLat = typeof shift?.hubLat === "number" ? shift.hubLat : null;
+  const hubLng = typeof shift?.hubLng === "number" ? shift.hubLng : null;
+  if (hubLat == null || hubLng == null) return list;
+
+  const hub = {
+    id: "hub",
+    title: "Hub",
+    lat: hubLat,
+    lng: hubLng,
+    count: null,
+    memberIds: [],
+    _virtual: true,
+  };
+
+  const dir = String(shift?.direction || "").toUpperCase();
+  if (dir === "OUTBOUND") return [hub, ...list];
+  return [...list, hub];
+}
+
+export function buildStopSummary({ base = {}, stopsInput, peopleInput, computeGeoStatus: computeGeoStatusFn }) {
+  const allStops = Array.isArray(stopsInput) ? stopsInput : [];
+  const realStops = stripHubStop(allStops);
+  const hubIncluded = allStops.some((x) => String(x?.id || "") === "hub");
+  const totalPeople = Number(base.totalPeople ?? (Array.isArray(peopleInput) ? peopleInput.length : 0));
+  const reviewCount = Number(base.reviewCount ?? (Array.isArray(peopleInput) ? peopleInput.filter((p) => (p.geoStatus || computeGeoStatusFn(p)) === "NEEDS_REVIEW").length : 0));
+  const coveredCount = Number(base.coveredCount ?? realStops.reduce((sum, s) => sum + Number(s?.count || 0), 0));
+  const singletonCount = Number(base.singletonCount ?? realStops.filter((s) => Number(s?.count || 0) === 1).length);
+  const stopCountWithoutHub = Number(base.stopCountWithoutHub ?? base.stopCount ?? realStops.length);
+  const stopCountWithHub = Number(base.stopCountWithHub ?? (stopCountWithoutHub + (hubIncluded ? 1 : 0)));
+  const skippedCount = Number(base.skippedCount ?? Math.max(0, totalPeople - coveredCount - reviewCount));
+  const stopLoads = realStops.map((s, i) => ({ title: String(s?.title || `Durak ${i + 1}`), count: Number(s?.count || 0) }));
+  return {
+    ...base,
+    totalPeople,
+    reviewCount,
+    coveredCount,
+    singletonCount,
+    stopCount: stopCountWithoutHub,
+    stopCountWithoutHub,
+    stopCountWithHub,
+    hubIncluded,
+    skippedCount,
+    stopLoads,
+  };
+}
+
 export function computeGeoMeta(p) {
   const hasCoords = typeof p?.lat === "number" && typeof p?.lng === "number";
   const hasPartialCoords = (p?.lat == null) !== (p?.lng == null);

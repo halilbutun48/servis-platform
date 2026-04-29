@@ -10,8 +10,8 @@ function LoadingScreen({ styles }) {
   return (
     <View style={[styles.safe, loadingStyles.wrap]}>
       <ActivityIndicator color="#0f172a" />
-      <Text style={loadingStyles.title}>Mobil uygulama hazirlaniyor</Text>
-      <Text style={loadingStyles.text}>Oturum ve son kayitlar yukleniyor.</Text>
+      <Text style={loadingStyles.title}>Mobil uygulama hazırlanıyor</Text>
+      <Text style={loadingStyles.text}>Oturum ve son kayıtlar yükleniyor.</Text>
     </View>
   );
 }

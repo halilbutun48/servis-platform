@@ -84,11 +84,11 @@
                           "tools/CHECKLIST_SSOT.md"
                       ],
     "hotFileQueuePolicy":  {
-                               "policyVersion":  1,
-                               "warningThreshold":  1000,
-                               "blockThreshold":  1200,
-                               "currentLargeFileCount":  4,
-    "currentWarningHotFileCount":  10,
+                                "policyVersion":  1,
+                                "warningThreshold":  1000,
+                                "blockThreshold":  1200,
+                                "currentLargeFileCount":  5,
+                                "currentWarningHotFileCount":  6,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -132,22 +132,10 @@
                                                                              "class":  "acceptance-sensitive-later",
                                                                              "note":  "mobil orkestrasyon merkezi; yalniz explicit gerekceyle ele alinir"
                                                                          },
-                                                       "web/src/panels/company/ShiftPeopleTab.jsx":  {
-                                                                                                         "class":  "safe-candidate-review",
-                                                                                                         "note":  "shift kisi/ithal/stop yardimcilari kontrollu extraction sonrasi kalan review adayi"
-                                                                                                     },
                                                        "web/src/panels/superadmin/CommercialCorePanel.jsx":  {
                                                                                                              "class":  "acceptance-sensitive-later",
                                                                                                              "note":  "ticari omurga ve aktivasyon yüzeyi; contract destekli planli temizlik ister"
                                                                                                          },
-                                                       "web/src/panels/room/ShiftsPanel.jsx":  {
-                                                                                                   "class":  "safe-candidate-review",
-                                                                                                   "note":  "room shifts reload/kopuk sekmeler mevcut; kontrollu extraction ve review adayi"
-                                                                                               },
-                                                       "web/src/panels/room/VehiclesPanel.jsx":  {
-                                                                                                     "class":  "safe-candidate-review",
-                                                                                                     "note":  "room vehicles akisi ve bagli kartlar kontrollu extraction sonrasi kalan review adayi"
-                                                                                                 },
                                                        "tools/milestone_pack_manifest.json":  {
                                                                                                   "class":  "justified-exception",
                                                                                                   "note":  "tek resmi milestone manifesti; bolme yerine M92 spine ile okunurluk ve giris komutu sabitlenir"

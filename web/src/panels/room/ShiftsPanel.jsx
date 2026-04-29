@@ -1,5 +1,5 @@
 // web/src/panels/room/ShiftsPanel.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
@@ -18,6 +18,17 @@ import {
 } from "./roomShiftsPanelUtils";
 import {
   effectiveShiftRoomId,
+  buildOffersByShiftId,
+  listVehiclesForRoom,
+  listDriversForRoom,
+  copyVehicleToPkg as copyVehicleToPkgHelper,
+  copyDriverToPkg as copyDriverToPkgHelper,
+  hydrateDispatchSelections as hydrateDispatchSelectionsHelper,
+  setDispatchSelection as setDispatchSelectionHelper,
+  selectedDispatchVehicleId as selectedDispatchVehicleIdHelper,
+  selectedDispatchDriverId as selectedDispatchDriverIdHelper,
+  buildDispatchVirtualShift as buildDispatchVirtualShiftHelper,
+  getDispatchSelectionStates as getDispatchSelectionStatesHelper,
   isDriverAvailableForShift,
   isVehicleAvailableForShift,
   makeAvailabilitySig,
@@ -164,151 +175,37 @@ async function decideExtend(shiftId, decision) {
   }, [items, opsEventsModal.shiftId]);
   const opsEventsRegionLabel = useMemo(() => resolveShiftRegionLabel(opsEventsShift, roomsById), [opsEventsShift, roomsById]);
 
-  const uiCopyVehicleToPkg = (baseShift, vehicleIdStr) => {
-    const vidStr = String(vehicleIdStr || "");
-    if (!vidStr) return;
-    const ids = pkgShiftIdsFor(baseShift, pendingFiltered);
-    if (ids.length <= 1) return;
+  const uiCopyVehicleToPkg = (baseShift, vehicleIdStr) =>
+    copyVehicleToPkgHelper({ baseShift, vehicleIdStr, pendingFiltered, vehiclesById, setAssignSel, setDriverSel, pkgShiftIdsFor });
 
-    setAssignSel((prev) => {
-      const next = { ...(prev || {}) };
-      for (const id of ids) next[id] = vidStr;
-      return next;
-    });
+  const uiCopyDriverToPkg = (baseShift, driverIdStr) =>
+    copyDriverToPkgHelper({ baseShift, driverIdStr, pendingFiltered, setDriverSel, pkgShiftIdsFor });
 
-    // araç driver'ı varsa ve satırda manuel driver yoksa doldur
-    const vid = Number(vidStr);
-    const vv = Number.isFinite(vid) ? vehiclesById.get(vid) : null;
-    const autoDid = vv?.driverId ? String(vv.driverId) : "";
-    if (autoDid) {
-      setDriverSel((prev) => {
-        const next = { ...(prev || {}) };
-        for (const id of ids) {
-          if (!next[id]) next[id] = autoDid;
-        }
-        return next;
-      });
-    }
-  };
+  const offersByShiftId = useMemo(() => buildOffersByShiftId(offers), [offers]);
 
-  const uiCopyDriverToPkg = (baseShift, driverIdStr) => {
-    const didStr = String(driverIdStr || "");
-    if (!didStr) return;
-    const ids = pkgShiftIdsFor(baseShift, pendingFiltered);
-    if (ids.length <= 1) return;
+  const vehiclesForRoom = useCallback((roomId) => listVehiclesForRoom(vehicles, roomId), [vehicles]);
 
-    setDriverSel((prev) => {
-      const next = { ...(prev || {}) };
-      for (const id of ids) next[id] = didStr;
-      return next;
-    });
-  };
-  const offersByShiftId = useMemo(() => {
-    const m = new Map();
-    for (const o of offers || []) {
-      const sid = Number(o?.shiftId);
-      if (!Number.isFinite(sid) || sid <= 0) continue;
-      // unique per (shiftId, roomId)
-      m.set(sid, o);
-    }
-    return m;
-  }, [offers]);
+  const driversForRoom = useCallback((roomId) => listDriversForRoom(drivers, roomId), [drivers]);
 
-  function vehiclesForRoom(roomId) {
-    const rid = Number(roomId);
-    return vehicles
-      .filter((v) => !v?.roomId || Number(v.roomId) === rid)
-      .sort((a, b) => String(a.plate || "").localeCompare(String(b.plate || "")));
-  }
+  const hydrateDispatchSelections = useCallback((shiftId, suggestions = []) => {
+    hydrateDispatchSelectionsHelper(setDispatchEditSel, shiftId, suggestions);
+  }, []);
 
-  function driversForRoom(roomId) {
-    const rid = Number(roomId);
-    return drivers
-      .filter((d) => !d?.roomId || Number(d.roomId) === rid)
-      .sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || "")));
-  }
+  const setDispatchSelection = useCallback((shiftId, splitIndex, patch) => {
+    setDispatchSelectionHelper(setDispatchEditSel, shiftId, splitIndex, patch);
+  }, []);
 
-  function hydrateDispatchSelections(shiftId, suggestions = []) {
-    const sid = Number(shiftId || 0);
-    if (!sid) return;
-    setDispatchEditSel((prev) => {
-      const base = { ...(prev[sid] || {}) };
-      for (const part of suggestions || []) {
-        const idx = Number(part?.splitIndex || 0);
-        if (!idx) continue;
-        base[idx] = {
-          vehicleId: Number(base[idx]?.vehicleId || part?.vehicleId || 0) || "",
-          driverId: Number(base[idx]?.driverId || part?.driverId || 0) || "" };
-      }
-      return { ...prev, [sid]: base };
-    });
-  }
+  const selectedDispatchVehicleId = useCallback((shiftId, part) => {
+    return selectedDispatchVehicleIdHelper(dispatchEditSel, shiftId, part);
+  }, [dispatchEditSel]);
 
-  function setDispatchSelection(shiftId, splitIndex, patch) {
-    const sid = Number(shiftId || 0);
-    const idx = Number(splitIndex || 0);
-    if (!sid || !idx) return;
-    setDispatchEditSel((prev) => ({
-      ...prev,
-      [sid]: {
-        ...(prev[sid] || {}),
-        [idx]: {
-          ...(prev[sid]?.[idx] || {}),
-          ...(patch || {}) } } }));
-  }
-
-  function selectedDispatchVehicleId(shiftId, part) {
-    const sid = Number(shiftId || 0);
-    const idx = Number(part?.splitIndex || 0);
-    return Number(dispatchEditSel?.[sid]?.[idx]?.vehicleId || part?.vehicleId || 0) || 0;
-  }
-
-  function selectedDispatchDriverId(shiftId, part) {
-    const sid = Number(shiftId || 0);
-    const idx = Number(part?.splitIndex || 0);
-    return Number(dispatchEditSel?.[sid]?.[idx]?.driverId || part?.driverId || 0) || 0;
-  }
-
-  function buildDispatchVirtualShift(shift, allocatedPax) {
-    const pax = Number(allocatedPax || 0) || 0;
-    return { ...(shift || {}), requiredPax: pax, requiredPaxOverride: pax, assignmentCount: pax, peopleCount: pax };
-  }
-
-  function getDispatchSelectionStates(shift, suggestions = []) {
-    const sid = Number(shift?.id || 0);
-    const vehicleCounts = new Map();
-    const driverCounts = new Map();
-    const selRows = (suggestions || []).map((part) => ({
-      splitIndex: Number(part?.splitIndex || 0),
-      allocatedPax: Number(part?.allocatedPax || 0),
-      vehicleId: selectedDispatchVehicleId(sid, part),
-      driverId: selectedDispatchDriverId(sid, part),
-      part }));
-    for (const row of selRows) {
-      if (row.vehicleId) vehicleCounts.set(row.vehicleId, (vehicleCounts.get(row.vehicleId) || 0) + 1);
-      if (row.driverId) driverCounts.set(row.driverId, (driverCounts.get(row.driverId) || 0) + 1);
-    }
-    const result = {};
-    for (const row of selRows) {
-      const vDup = row.vehicleId && (vehicleCounts.get(row.vehicleId) || 0) > 1;
-      const dDup = row.driverId && (driverCounts.get(row.driverId) || 0) > 1;
-      if (vDup) {
-        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_VEHICLE", message: "Aynı araç başka öneride de seçili." };
-        continue;
-      }
-      if (dDup) {
-        result[row.splitIndex] = { status: "conflict", code: "DUPLICATE_DRIVER", message: "Aynı şoför başka öneride de seçili." };
-        continue;
-      }
-      const virtualShift = buildDispatchVirtualShift(shift, row.allocatedPax);
-      result[row.splitIndex] = localAvailability({ shift: virtualShift, vehicleId: row.vehicleId, driverId: row.driverId });
-    }
-    return result;
-  }
+  const selectedDispatchDriverId = useCallback((shiftId, part) => {
+    return selectedDispatchDriverIdHelper(dispatchEditSel, shiftId, part);
+  }, [dispatchEditSel]);
 
   function localAvailability({ shift, vehicleId, driverId }) {
     if (!vehicleId || !driverId) {
-      return { status: "missing", code: "SELECT_REQUIRED", message: "Ara? ve driver se?." };
+      return { status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." };
     }
 
     const vehicle = vehiclesById.get(Number(vehicleId)) || null;
@@ -421,7 +318,7 @@ async function decideExtend(shiftId, decision) {
     if (!vehicleId || !driverId) {
       setAvail((p) => ({
         ...p,
-        [sid]: { sig, status: "missing", code: "SELECT_REQUIRED", message: "Ara? ve driver se?." } }));
+        [sid]: { sig, status: "missing", code: "SELECT_REQUIRED", message: "Araç ve driver seç." } }));
       return;
     }
 
@@ -1007,11 +904,11 @@ async function decideExtend(shiftId, decision) {
         copilotShiftId={copilotShiftId}
         poolSummary={poolSummary}
         dispatchPreview={dispatchPreview}
-        getDispatchSelectionStates={getDispatchSelectionStates}
+        getDispatchSelectionStates={getDispatchSelectionStatesHelper}
         driversForRoom={driversForRoom}
         selectedDispatchVehicleId={selectedDispatchVehicleId}
         selectedDispatchDriverId={selectedDispatchDriverId}
-        buildDispatchVirtualShift={buildDispatchVirtualShift}
+        buildDispatchVirtualShift={buildDispatchVirtualShiftHelper}
         setDispatchSelection={setDispatchSelection}
         openDispatchSuggestionPreview={openDispatchSuggestionPreview}
         loadPoolSummary={loadPoolSummary}

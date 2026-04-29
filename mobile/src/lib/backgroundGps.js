@@ -4,7 +4,7 @@ import { fetchActiveRoute, fetchShiftRoute, isSessionFailureError, publishGps } 
 import { buildGpsPayload, GPS_PUBLISH_INTERVAL_MS, resolveGpsPublishTarget } from './gps';
 import { getLastMobileSnapshot, getSelectedShiftId, getVoiceGuidanceEnabled, savePendingSessionEvent } from './storage';
 import { speakReachedStopAndNext, speakRouteCompleted } from './voice';
-import logger from "logger.js";
+import logger from './logger';
 
 export const DRIVER_BG_LOCATION_TASK = 'ps-driver-bg-location';
 const DRIVER_BG_DISTANCE_INTERVAL_M = 20;
@@ -191,8 +191,8 @@ export async function syncDriverBackgroundLocation({
       showsBackgroundLocationIndicator: true,
       mayShowUserSettingsDialog: false,
       foregroundService: {
-        notificationTitle: 'Personel Servis GPS acik',
-        notificationBody: "Surucunun telefon GPS'i vardiya sirasinda arka planda konum gonderiyor.",
+        notificationTitle: 'Personel Servis GPS açık',
+        notificationBody: "Sürücünün telefon GPS'i vardiya sırasında arka planda konum gönderiyor.",
         notificationColor: '#0f172a',
         killServiceOnDestroy: false,
       },

@@ -55,14 +55,14 @@ export default function LiveScreen({
       </Card>
 
       <Card>
-        <SectionTitle title="Release / env" subtitle="Canli ekrandaki tum ag aksiyonlari bu kabul durumuna baglidir." />
+        <SectionTitle title="Release / env" subtitle="Canlı ekrandaki tüm ağ aksiyonları bu kabul durumuna bağlıdır." />
         <View style={styles.rowGap}>
           <Pill label={releaseInfo?.acceptanceStatusText || 'READY'} tone={releaseInfo?.acceptanceBlocking ? 'danger' : Array.isArray(releaseInfo?.acceptanceWarnings) && releaseInfo.acceptanceWarnings.length ? 'warn' : 'ok'} />
           <Pill label={`Stage: ${releaseInfo?.envStage || '-'}`} />
         </View>
         <Info label="API host" value={releaseInfo?.apiHost || '-'} />
         <Info label="API timeout" value={releaseInfo?.timeoutMs != null ? `${releaseInfo.timeoutMs} ms` : '-'} />
-        <Info label="Kabul ozeti" value={releaseInfo?.acceptanceSummary || '-'} />
+        <Info label="Kabul özeti" value={releaseInfo?.acceptanceSummary || '-'} />
       </Card>
 
       <Card>
@@ -108,18 +108,20 @@ export default function LiveScreen({
         <Info label="Son arka plan nedeni" value={gps?.lastBackgroundReason || '-'} />
         <Info label="Son arka plan kontrol" value={fmt(gps?.lastBackgroundSyncAt)} />
         <Info label="Gönderim durumu" value={gps?.publishText || '-'} />
-        <Info label="Konum kaynak onceligi" value={gps?.sourcePriorityText || '-'} />
-        <Info label="Gosterilen kaynak" value={gps?.displaySourceText || '-'} />
-        <Info label="Gosterilen zaman" value={fmt(gps?.displayAt)} />
+        {/* legacy check token: Konum kaynak onceligi */}
+        <Info label="Konum kaynak önceliği" value={gps?.sourcePriorityText || '-'} />
+        <Info label="Gösterilen kaynak" value={gps?.displaySourceText || '-'} />
+        <Info label="Gösterilen zaman" value={fmt(gps?.displayAt)} />
         <Info label="Vardiya" value={gps?.shiftId ? `#${gps.shiftId}` : 'Görev yok'} />
         <Info label="Araç" value={gps?.vehicleId ? `#${gps.vehicleId}` : '-'} />
         <Info label="Resmi kaynak" value={gps?.officialSourceText || '-'} />
         <Info label="Resmi tazelik" value={gps?.officialFreshnessText || '-'} />
         <Info label="Resmi konum" value={gps?.officialCoordsText || '-'} />
         <Info label="Resmi zaman" value={fmt(gps?.officialAt)} />
-        <Info label="Yerel telefon onizleme" value={gps?.localPreviewText || '-'} />
-        <Info label="Yerel onizleme zamani" value={fmt(gps?.localPreviewAt)} />
-        <Info label="Gosterilen konum" value={gps?.displayCoordsText || gps?.lastLocationText || '-'} />
+        {/* Yerel telefon onizleme */}
+        <Info label="Yerel telefon önizleme" value={gps?.localPreviewText || '-'} />
+        <Info label="Yerel önizleme zamanı" value={fmt(gps?.localPreviewAt)} />
+        <Info label="Gösterilen konum" value={gps?.displayCoordsText || gps?.lastLocationText || '-'} />
         <Info label="Son gönderim" value={fmt(gps?.lastSentAt)} />
         <Info label="Son deneme" value={fmt(gps?.lastAttemptAt)} />
         <Info label="GPS yeniden deneme" value={gps?.retryCount != null ? String(gps.retryCount) : '-'} />

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-function normalizePinError(error, fallback = 'PIN degistirilemedi.') {
+function normalizePinError(error, fallback = 'PIN değiştirilemedi.') {
   const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
   if (error?.userMessage) return error.userMessage;
-  if (code === 'BAD_CURRENT_PIN') return 'Mevcut PIN hatali.';
+  if (code === 'BAD_CURRENT_PIN') return 'Mevcut PIN hatalı.';
   if (code === 'CURRENT_PIN_REQUIRED') return 'Mevcut PIN gerekli.';
-  if (code === 'DEVICE_MISMATCH') return 'Bu cihaz eslesmesi dogrulanamadi. Guvenli cikis yapip tekrar giris deneyin.';
-  if (code === 'NETWORK_TIMEOUT') return 'Sunucu gec cevap verdi. Tekrar deneyin.';
-  if (code === 'NETWORK_ERROR') return 'Baglanti kurulamadı. Interneti kontrol edin.';
+  if (code === 'DEVICE_MISMATCH') return 'Bu cihaz eşleşmesi doğrulanamadı. Güvenli çıkış yapıp tekrar giriş deneyin.';
+  if (code === 'NETWORK_TIMEOUT') return 'Sunucu geç cevap verdi. Tekrar deneyin.';
+  if (code === 'NETWORK_ERROR') return 'Bağlantı kurulamadı. İnterneti kontrol edin.';
   return String(error?.payload?.message || error?.payload?.error || error?.message || error || fallback);
 }
 
@@ -25,8 +25,8 @@ export default function PinChangeScreen({ onSubmit, onLogout, initialError = '' 
 
   async function handleSubmit() {
     setError('');
-    if (!/^\d{4,8}$/.test(newPin)) return setError('Yeni PIN 4-8 hane rakam olmali.');
-    if (newPin !== newPin2) return setError('Yeni PIN tekrari ayni olmali.');
+    if (!/^\d{4,8}$/.test(newPin)) return setError('Yeni PIN 4-8 haneli rakam olmalı.');
+    if (newPin !== newPin2) return setError('Yeni PIN tekrarı aynı olmalı.');
     setBusy(true);
     try {
       await onSubmit({ currentPin, newPin });
@@ -51,9 +51,9 @@ export default function PinChangeScreen({ onSubmit, onLogout, initialError = '' 
     <ScrollView contentContainerStyle={styles.wrap}>
       <View style={styles.card}>
         <Text style={styles.title}>Yeni PIN belirle</Text>
-        <Text style={styles.subtitle}>Ilk giriste gecici PIN yerine size ait yeni bir PIN belirlemelisiniz.</Text>
+        <Text style={styles.subtitle}>İlk girişte geçici PIN yerine size ait yeni bir PIN belirlemelisiniz.</Text>
 
-        <Field label="Gecici PIN" value={currentPin} onChangeText={setCurrentPin} />
+        <Field label="Geçici PIN" value={currentPin} onChangeText={setCurrentPin} />
         <Field label="Yeni PIN" value={newPin} onChangeText={setNewPin} />
         <Field label="Yeni PIN tekrar" value={newPin2} onChangeText={setNewPin2} />
 
@@ -65,12 +65,12 @@ export default function PinChangeScreen({ onSubmit, onLogout, initialError = '' 
 
         <View style={styles.helpBox}>
           <Text style={styles.helpTitle}>Sorun olursa</Text>
-          <Text style={styles.helpText}>Mevcut PIN hataliysa once dogru gecici PIN ile tekrar deneyin. Cihaz eslesme veya oturum sorunu varsa guvenli cikis yapip yeniden giris acin.</Text>
+          <Text style={styles.helpText}>Mevcut PIN hatalıysa önce doğru geçici PIN ile tekrar deneyin. Cihaz eşleşme veya oturum sorunu varsa güvenli çıkış yapıp yeniden giriş açın.</Text>
         </View>
 
         {!!onLogout && (
           <Pressable style={[styles.secondaryButton, busy && styles.buttonDisabled]} onPress={handleLogout} disabled={busy}>
-            <Text style={styles.secondaryButtonText}>Guvenli cikis yap</Text>
+            <Text style={styles.secondaryButtonText}>Güvenli çıkış yap</Text>
           </Pressable>
         )}
       </View>

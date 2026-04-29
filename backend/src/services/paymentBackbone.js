@@ -110,6 +110,13 @@ function normalizeTake(value, fallback = 20, max = 100) {
   return Math.min(max, Math.max(1, Number.isFinite(Number(value)) ? Math.trunc(Number(value)) : fallback));
 }
 
+function parseDateMaybe(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const dt = new Date(raw);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
 function normalizeSourceIds(sourceIds = []) {
   const input = Array.isArray(sourceIds) ? sourceIds : [sourceIds];
   const ids = input.map((item) => Number(item || 0)).filter((item) => item > 0);
@@ -930,14 +937,44 @@ export async function deactivateRequiredPaymentRollout({ sourceIds } = {}) {
   return setRequiredPaymentRolloutEnabled(sourceIds, false);
 }
 
-export async function listCommercialSources({ type, take = 20 } = {}) {
+export async function listCommercialSources({ type, sourceType, companyId, roomId, paymentMode, settlementStatus, q, from, to, take = 20 } = {}) {
   const where = {};
-  const typeUp = upper(type, "");
+  const typeRaw = String(sourceType || type || "").trim();
+  const typeUp = upper(typeRaw, "");
   if (COMMERCIAL_SOURCE_TYPES.includes(typeUp)) where.sourceType = typeUp;
+  const companyIdNum = Number(companyId || 0);
+  if (companyIdNum > 0) where.companyId = companyIdNum;
+  const roomIdNum = Number(roomId || 0);
+  if (roomIdNum > 0) where.roomId = roomIdNum;
+  const paymentModeRaw = String(paymentMode || "").trim();
+  if (paymentModeRaw && upper(paymentModeRaw, "") !== "ALL") {
+    const paymentModeUp = clampPaymentMode(paymentModeRaw);
+    if (paymentModeUp) where.paymentModeSnapshot = paymentModeUp;
+  }
+  const settlementStatusRaw = String(settlementStatus || "").trim();
+  const settlementStatusUp = upper(settlementStatusRaw, "");
+  if (settlementStatusUp && settlementStatusUp !== "ALL") where.settlementStatus = settlementStatusUp;
+  const fromDate = parseDateMaybe(from);
+  const toDate = parseDateMaybe(to);
+  if (fromDate || toDate) {
+    where.createdAt = {
+      ...(fromDate ? { gte: fromDate } : {}),
+      ...(toDate ? { lte: toDate } : {}),
+    };
+  }
+  const query = String(q || "").trim();
+  if (query) {
+    where.OR = [
+      { sourceKey: { contains: query, mode: "insensitive" } },
+      { shiftGroupKey: { contains: query, mode: "insensitive" } },
+      { company: { name: { contains: query, mode: "insensitive" } } },
+      { room: { name: { contains: query, mode: "insensitive" } } },
+    ];
+  }
   const rows = await prisma.commercialSource.findMany({
     where,
     orderBy: { updatedAt: "desc" },
-    take: normalizeTake(take, 20, 100),
+    take: normalizeTake(take, 20, 1000),
     include: {
       company: { select: { id: true, name: true } },
       room: { select: { id: true, name: true } },

@@ -255,7 +255,7 @@ useEffect(() => {
                   <th>ID</th>
                   <th>Durum</th>
                   <th>Başlangıç</th>
-                  <th>Biti?</th>
+                  <th>Bitiş</th>
                   <th>Aksiyon</th>
                 </tr>
               </thead>
@@ -272,7 +272,7 @@ useEffect(() => {
                     <th>ID</th>
                     <th>Durum</th>
                     <th>Başlangıç</th>
-                    <th>Biti?</th>
+                    <th>Bitiş</th>
                     <th>Aksiyon</th>
                   </tr>
                 </thead>

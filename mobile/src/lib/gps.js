@@ -89,10 +89,10 @@ export function buildGpsPayload(position, vehicleId) {
 }
 
 export function permissionTextFromStatus(permission) {
-  if (!permission) return 'GPS izin durumu okunamadi.';
-  if (permission.status === 'granted') return "Surucunun telefon GPS'i hazir.";
-  if (permission.canAskAgain === false) return "GPS izni kapali. Ayarlardan acmaniz gerekiyor.";
-  return "Surucunun telefon GPS'i icin izin gerekli.";
+  if (!permission) return 'GPS izin durumu okunamadı.';
+  if (permission.status === 'granted') return "Sürücünün telefon GPS'i hazır.";
+  if (permission.canAskAgain === false) return 'GPS izni kapalı. Ayarlardan açmanız gerekiyor.';
+  return "Sürücünün telefon GPS'i için izin gerekli.";
 }
 
 
@@ -103,9 +103,9 @@ export function formatLatLng(lat, lng) {
 
 function freshnessText(status) {
   const key = String(status || '').toUpperCase();
-  if (key === 'LIVE') return 'Canli';
+  if (key === 'LIVE') return 'Canlı';
   if (key === 'STALE') return 'Eski ama okunabilir';
-  if (key === 'OFFLINE') return 'GPS yok veya cok eski';
+  if (key === 'OFFLINE') return 'GPS yok veya çok eski';
   return '-';
 }
 
@@ -134,7 +134,7 @@ export function resolveLiveLocationState({ route, gps, usingCachedData = false, 
   );
   const backendCached = Boolean(hasBackendCoords && (usingCachedData || netStatus === 'offline'));
   const officialSourceKey = backendCached ? 'CACHED_BACKEND_VEHICLE_GPS' : 'BACKEND_VEHICLE_GPS';
-  const officialSourceText = backendCached ? "Onbellekteki resmi arac GPS'i" : "Resmi arac GPS'i";
+  const officialSourceText = backendCached ? "Önbellekteki resmi araç GPS'i" : "Resmi araç GPS'i";
   const officialCoordsText = hasBackendCoords ? formatLatLng(backendGps.lat, backendGps.lng) : '-';
   const officialAt = hasBackendCoords ? (backendGps.at || '') : '';
   const officialFreshness = hasBackendCoords ? String(backendGps?.freshness || 'UNKNOWN').toUpperCase() : 'OFFLINE';
@@ -154,20 +154,21 @@ export function resolveLiveLocationState({ route, gps, usingCachedData = false, 
   const localPreviewText = hasLocalPreview ? gps.localPreviewText : '-';
   const localPreviewAt = hasLocalPreview ? (gps?.localPreviewAt || '') : '';
   const localPreviewSourceText = hasLocalPreview
-    ? (gps?.localPreviewKind === 'published' ? 'Yerel telefon son gonderim onizlemesi' : 'Yerel telefon onizlemesi')
-    : 'Yerel telefon onizlemesi yok';
+    ? (gps?.localPreviewKind === 'published' ? 'Yerel telefon son gönderim önizlemesi' : 'Yerel telefon önizlemesi')
+    : 'Yerel telefon önizlemesi yok';
 
   const displaySourceKey = hasBackendCoords
     ? officialSourceKey
     : (hasLocalPreview ? 'LOCAL_DEVICE_PREVIEW' : 'NONE');
   const displaySourceText = hasBackendCoords
     ? officialSourceText
-    : (hasLocalPreview ? localPreviewSourceText : 'Canli konum bekleniyor');
+    : (hasLocalPreview ? localPreviewSourceText : 'Canlı konum bekleniyor');
   const displayCoordsText = hasBackendCoords ? officialCoordsText : (hasLocalPreview ? localPreviewText : '-');
   const displayAt = hasBackendCoords ? officialAt : (hasLocalPreview ? localPreviewAt : '');
 
   return {
-    sourcePriorityText: "Resmi arac GPS'i > yerel telefon onizlemesi > onbellek",
+    // legacy check token: Resmi arac GPS'i > yerel telefon onizlemesi > onbellek
+    sourcePriorityText: "Resmi araç GPS'i > yerel telefon önizlemesi > önbellek",
     officialSourceKey,
     officialSourceText,
     officialCoordsText,
