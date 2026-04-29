@@ -192,6 +192,7 @@ export default function CommercialCorePanel() {
     saveReconciliation,
     refreshPaymentSources,
     exportPaymentSourcesCsv,
+    exportSettlementLedgerCsv,
     applyRoom,
   } = useMemo(
     () => createCommercialCorePanelActions({
@@ -374,6 +375,9 @@ export default function CommercialCorePanel() {
               </button>
               <button className="btn" onClick={exportPaymentSourcesCsv} disabled={busyKey === "payment-sources-export" || !paymentSourcesWritable}>
                 {busyKey === "payment-sources-export" ? "İndiriliyor..." : "CSV indir"}
+              </button>
+              <button className="btn" onClick={exportSettlementLedgerCsv} disabled={busyKey === "payment-sources-ledger-export" || !paymentSourcesWritable}>
+                {busyKey === "payment-sources-ledger-export" ? "İndiriliyor..." : "Detaylı muhasebe CSV indir"}
               </button>
               <button
                 className="btn sm"

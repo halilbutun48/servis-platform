@@ -1,5 +1,6 @@
 import express from "express";
 import { z } from "zod";
+import { prisma } from "../prisma.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import {
   getCommercialCoreManifest,
@@ -35,6 +36,7 @@ import {
 import {
   buildSettlementReconciliationStatus,
   listSettlementReconciliationQueue,
+  readSettlementReconciliationRecords,
   upsertSettlementReconciliationRecord,
 } from "../ops/settlementReconciliationDesk.js";
 import { audit } from "../audit.js";
@@ -107,6 +109,13 @@ const sourceListQuerySchema = z.object({
   take: z.coerce.number().int().min(1).max(1000).optional().default(20),
 });
 
+const settlementLedgerExportQuerySchema = sourceListQuerySchema.extend({
+  entryStatus: z.string().trim().optional().nullable(),
+  entryType: z.string().trim().optional().nullable(),
+  reconciliationStatus: z.string().trim().optional().nullable(),
+  take: z.coerce.number().int().min(1).max(1000).optional().default(1000),
+});
+
 function csvEscape(value) {
   let s = String(value ?? "");
   if (/^[=+\-@]/.test(s)) {
@@ -160,9 +169,218 @@ function parseCommercialSourceQuery(raw = {}, { take = 20 } = {}) {
   return parsed.data;
 }
 
+function parseSettlementLedgerExportQuery(raw = {}, { take = 1000 } = {}) {
+  const parsed = settlementLedgerExportQuerySchema.safeParse({ ...raw, take });
+  if (!parsed.success) {
+    const error = new Error("INVALID_SETTLEMENT_LEDGER_EXPORT_QUERY");
+    error.status = 400;
+    error.issues = parsed.error.issues;
+    throw error;
+  }
+  return parsed.data;
+}
+
+function buildCommercialSourceWhere(query = {}) {
+  const where = {};
+  const typeRaw = String(query.sourceType || query.type || "").trim();
+  const typeUp = typeRaw.toUpperCase();
+  if (["AGREEMENT", "SHIFT_SERIES"].includes(typeUp)) where.sourceType = typeUp;
+  const companyIdNum = Number(query.companyId || 0);
+  if (companyIdNum > 0) where.companyId = companyIdNum;
+  const roomIdNum = Number(query.roomId || 0);
+  if (roomIdNum > 0) where.roomId = roomIdNum;
+  const paymentModeRaw = String(query.paymentMode || "").trim();
+  if (paymentModeRaw && paymentModeRaw.toUpperCase() !== "ALL") where.paymentModeSnapshot = paymentModeRaw.toUpperCase();
+  const settlementStatusRaw = String(query.settlementStatus || "").trim();
+  const settlementStatusUp = settlementStatusRaw.toUpperCase();
+  if (settlementStatusUp && settlementStatusUp !== "ALL") where.settlementStatus = settlementStatusUp;
+  const from = String(query.from || "").trim();
+  const to = String(query.to || "").trim();
+  if (from || to) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    const createdAt = {};
+    if (from && !Number.isNaN(fromDate.getTime())) createdAt.gte = fromDate;
+    if (to && !Number.isNaN(toDate.getTime())) createdAt.lte = toDate;
+    if (Object.keys(createdAt).length) where.createdAt = createdAt;
+  }
+  const q = String(query.q || "").trim();
+  if (q) {
+    where.OR = [
+      { sourceKey: { contains: q, mode: "insensitive" } },
+      { shiftGroupKey: { contains: q, mode: "insensitive" } },
+      { company: { name: { contains: q, mode: "insensitive" } } },
+      { room: { name: { contains: q, mode: "insensitive" } } },
+    ];
+  }
+  return where;
+}
+
+function csvEscapeLedger(value) {
+  let s = String(value ?? "");
+  if (/^[=+\-@]/.test(s)) s = `'${s}`;
+  if (s.includes('"') || s.includes(",") || s.includes("\n")) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function formatLedgerDate(value) {
+  if (!value) return "";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toISOString();
+}
+
+function normalizeLedgerEntryType(kind) {
+  const v = String(kind || "").trim().toUpperCase();
+  if (v === "COMPANY_CHARGE" || v === "PLATFORM_COMMISSION" || v === "PROVIDER_PAYOUT") return v;
+  return v || "UNKNOWN";
+}
+
+function deriveLedgerReconciliationStatus(entry, record) {
+  const recordStatus = String(record?.status || "").trim().toUpperCase();
+  if (recordStatus) return recordStatus;
+  const entryStatus = String(entry?.entryStatus || "").trim().toUpperCase();
+  const providerRef = String(entry?.providerRef || "").trim();
+  if (entryStatus === "EXECUTED" && providerRef) return "BEKLIYOR";
+  if (entryStatus === "PLANNED" && entry?.dueAt) {
+    const dueAt = new Date(entry.dueAt);
+    if (!Number.isNaN(dueAt.getTime()) && dueAt.getTime() < Date.now()) return "INCELEME_GEREKLI";
+  }
+  return "BEKLIYOR";
+}
+
+function buildSettlementLedgerCsvRow(row) {
+  return [
+    row.commercialSourceId,
+    row.sourceType,
+    row.sourceKey,
+    row.companyId ?? "",
+    row.companyName || "",
+    row.roomId ?? "",
+    row.roomName || "",
+    row.paymentMode,
+    row.commissionBps,
+    row.settlementPlanId ?? "",
+    row.settlementPlanStatus,
+    row.settlementEntryId,
+    row.entryType,
+    row.entryStatus,
+    row.grossAmount,
+    row.commissionAmount,
+    row.providerAmount,
+    row.entryAmount,
+    row.currency,
+    row.dueAt || "",
+    row.providerRef || "",
+    row.executedAt || "",
+    row.cancelledAt || "",
+    row.reconciliationStatus,
+    row.updatedAt,
+  ].map(csvEscapeLedger).join(",");
+}
+
+async function listSettlementLedgerExportRows(query = {}) {
+  const sourceWhere = buildCommercialSourceWhere(query);
+  const sources = await prisma.commercialSource.findMany({
+    where: sourceWhere,
+    orderBy: { updatedAt: "desc" },
+    take: Math.min(1000, Math.max(1, Number(query.take || 1000))),
+    include: {
+      company: { select: { id: true, name: true } },
+      room: { select: { id: true, name: true } },
+      settlementPlans: { orderBy: { id: "asc" }, include: { entries: true } },
+    },
+  });
+
+  const reconciliationRecords = await readSettlementReconciliationRecords();
+  const recordMap = new Map();
+  for (const record of Array.isArray(reconciliationRecords) ? reconciliationRecords : []) {
+    const entryId = Number(record?.entryId || 0);
+    if (entryId > 0 && !recordMap.has(entryId)) recordMap.set(entryId, record);
+  }
+
+  const entryStatusFilter = String(query.entryStatus || "").trim().toUpperCase();
+  const entryTypeFilter = String(query.entryType || "").trim().toUpperCase();
+  const reconciliationStatusFilter = String(query.reconciliationStatus || "").trim().toUpperCase();
+  const fromDate = String(query.from || "").trim() ? new Date(query.from) : null;
+  const toDate = String(query.to || "").trim() ? new Date(query.to) : null;
+  const q = String(query.q || "").trim().toLowerCase();
+  const rows = [];
+
+  for (const source of sources) {
+    for (const plan of source.settlementPlans || []) {
+      for (const entry of plan.entries || []) {
+        const entryType = normalizeLedgerEntryType(entry.kind);
+        const entryStatus = String(entry.status || "").trim().toUpperCase();
+        const row = {
+          commercialSourceId: source.id,
+          sourceType: source.sourceType,
+          sourceKey: source.sourceKey,
+          companyId: source.companyId,
+          companyName: source.company?.name || null,
+          roomId: source.roomId ?? null,
+          roomName: source.room?.name || null,
+          paymentMode: source.paymentModeSnapshot || plan.paymentModeSnapshot || "OFF",
+          commissionBps: Number(plan.commissionBpsSnapshot || source.commissionBpsSnapshot || 0),
+          settlementPlanId: plan.id,
+          settlementPlanStatus: String(plan.status || "DORMANT").toUpperCase(),
+          settlementEntryId: entry.id,
+          entryType,
+          entryStatus,
+          grossAmount: Number(plan.grossAmount || 0),
+          commissionAmount: Number(plan.commissionAmount || 0),
+          providerAmount: Number(plan.providerNetAmount || 0),
+          entryAmount: Number(entry.amount || 0),
+          currency: entry.currencyCode || plan.currencyCode || source.currencyCode || "TRY",
+          dueAt: formatLedgerDate(entry.dueAt),
+          providerRef: entry.providerRef || "",
+          executedAt: entryStatus === "EXECUTED" ? formatLedgerDate(entry.updatedAt) : "",
+          cancelledAt: entryStatus === "CANCELLED" ? formatLedgerDate(entry.updatedAt) : "",
+          reconciliationStatus: deriveLedgerReconciliationStatus({ entryStatus, dueAt: entry.dueAt, providerRef: entry.providerRef }, recordMap.get(Number(entry.id || 0))),
+          updatedAt: formatLedgerDate(entry.updatedAt),
+          note: entry.note || "",
+        };
+
+        if (entryStatusFilter && entryStatusFilter !== "ALL" && entryStatus !== entryStatusFilter) continue;
+        if (entryTypeFilter && entryTypeFilter !== "ALL" && entryType !== entryTypeFilter) continue;
+        if (reconciliationStatusFilter && reconciliationStatusFilter !== "ALL" && row.reconciliationStatus !== reconciliationStatusFilter) continue;
+        if (fromDate || toDate) {
+          const updatedAt = entry.updatedAt ? new Date(entry.updatedAt) : null;
+          if (fromDate && (!updatedAt || Number.isNaN(updatedAt.getTime()) || updatedAt.getTime() < fromDate.getTime())) continue;
+          if (toDate && (!updatedAt || Number.isNaN(updatedAt.getTime()) || updatedAt.getTime() > toDate.getTime())) continue;
+        }
+        if (q) {
+          const haystack = [
+            row.sourceKey,
+            row.companyName,
+            row.roomName,
+            row.entryType,
+            row.entryStatus,
+            row.reconciliationStatus,
+            row.providerRef,
+            row.note,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          if (!haystack.includes(q)) continue;
+        }
+
+        rows.push(row);
+      }
+    }
+  }
+
+  rows.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")) || Number(b.settlementEntryId || 0) - Number(a.settlementEntryId || 0));
+  return rows;
+}
+
 export function commercialCoreRouter() {
   const r = express.Router();
   const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
+  async function auditCommercialCoreWrite(req, action, entity, entityId, meta = {}) {
+    return audit(req, { action, entity, entityId: entityId ?? null, meta });
+  }
 
   r.get("/manifest", authRequired(), async (_req, res) => {
     return res.json(getCommercialCoreManifest());
@@ -190,6 +408,12 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_GLOBAL_PAYMENT_RULE", issues: parsed.error.issues });
     }
     const item = await upsertGlobalCommissionRule(parsed.data);
+    await auditCommercialCoreWrite(req, "PAYMENT_RULE_UPDATE", "CommissionRule", item.id, {
+      scopeType: "GLOBAL",
+      paymentMode: item.paymentMode,
+      commissionBps: item.commissionBps,
+      note: item.note || null,
+    });
     return res.json({ ok: true, item, message: "Global ticari ayar kaydedildi" });
   });
 
@@ -199,6 +423,13 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_ROOM_PAYMENT_RULE", issues: parsed.error.issues });
     }
     const item = await upsertRoomCommissionRule(parsed.data);
+    await auditCommercialCoreWrite(req, "PAYMENT_ROOM_RULE_UPDATE", "CommissionRule", item.id, {
+      scopeType: "ROOM",
+      roomId: item.roomId,
+      paymentMode: item.paymentMode,
+      commissionBps: item.commissionBps,
+      note: item.note || null,
+    });
     return res.json({ ok: true, item, message: "Oda bazlı ticari ayar kaydedildi" });
   });
 
@@ -206,6 +437,12 @@ export function commercialCoreRouter() {
     const roomId = Number(req.params.roomId || 0);
     if (roomId <= 0) return res.status(400).json({ error: "INVALID_ROOM_ID" });
     const result = await disableRoomCommissionRule(roomId);
+    await auditCommercialCoreWrite(req, "PAYMENT_ROOM_RULE_UPDATE", "CommissionRule", roomId, {
+      scopeType: "ROOM",
+      roomId,
+      disabledCount: result.disabledCount,
+      action: "DISABLE",
+    });
     return res.json({ ok: true, ...result, message: "Oda override kapatıldı" });
   });
 
@@ -278,6 +515,65 @@ export function commercialCoreRouter() {
     return res.send(`${header}\n${body}\n`);
   });
 
+  r.get("/payment-backbone/settlement/ledger/export.csv", authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN"), async (req, res) => {
+    const query = parseSettlementLedgerExportQuery(req.query, { take: 1000 });
+    const items = await listSettlementLedgerExportRows(query);
+    await auditCommercialCoreWrite(req, "SETTLEMENT_LEDGER_EXPORT", "SettlementEntry", null, {
+      endpoint: "/api/commercial-core/payment-backbone/settlement/ledger/export.csv",
+      kind: "settlement_ledger",
+      format: "csv",
+      take: query.take,
+      rowCount: items.length,
+      reason: "Settlement ledger export",
+      filters: {
+        type: query.type || null,
+        sourceType: query.sourceType || null,
+        companyId: query.companyId || null,
+        roomId: query.roomId || null,
+        paymentMode: query.paymentMode || null,
+        settlementStatus: query.settlementStatus || null,
+        entryStatus: query.entryStatus || null,
+        entryType: query.entryType || null,
+        reconciliationStatus: query.reconciliationStatus || null,
+        q: query.q || null,
+        from: query.from || null,
+        to: query.to || null,
+      },
+    });
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    res.setHeader("Content-Disposition", `attachment; filename="settlement_ledger_${stamp}.csv"`);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    const header = [
+      "commercialSourceId",
+      "sourceType",
+      "sourceKey",
+      "companyId",
+      "companyName",
+      "roomId",
+      "roomName",
+      "paymentMode",
+      "commissionBps",
+      "settlementPlanId",
+      "settlementPlanStatus",
+      "settlementEntryId",
+      "entryType",
+      "entryStatus",
+      "grossAmount",
+      "commissionAmount",
+      "providerAmount",
+      "entryAmount",
+      "currency",
+      "dueAt",
+      "providerRef",
+      "executedAt",
+      "cancelledAt",
+      "reconciliationStatus",
+      "updatedAt",
+    ].join(",");
+    const body = items.map((item) => buildSettlementLedgerCsvRow(item)).join("\n");
+    return res.send(`${header}\n${body}\n`);
+  });
+
   r.get("/payment-backbone/pilot/status", authRequired(), requireRole("SUPER_ADMIN"), async (_req, res) => {
     return res.json(await buildOptionalPaymentPilotStatus());
   });
@@ -293,6 +589,10 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_OPTIONAL_PILOT_SOURCE_IDS", issues: parsed.error.issues });
     }
     const result = await activateOptionalPaymentPilot(parsed.data);
+    await auditCommercialCoreWrite(req, "PAYMENT_PILOT_ACTIVATE", "CommercialSource", null, {
+      sourceIds: parsed.data.sourceIds,
+      changedCount: result?.changedCount ?? result?.count ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Opsiyonel ödeme pilotu kaynakları READY durumuna alındı" });
   });
 
@@ -302,6 +602,10 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_OPTIONAL_PILOT_SOURCE_IDS", issues: parsed.error.issues });
     }
     const result = await deactivateOptionalPaymentPilot(parsed.data);
+    await auditCommercialCoreWrite(req, "PAYMENT_PILOT_DEACTIVATE", "CommercialSource", null, {
+      sourceIds: parsed.data.sourceIds,
+      changedCount: result?.changedCount ?? result?.count ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Opsiyonel ödeme pilotu kaynakları DORMANT durumuna alındı" });
   });
 
@@ -320,6 +624,10 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_REQUIRED_ROLLOUT_SOURCE_IDS", issues: parsed.error.issues });
     }
     const result = await activateRequiredPaymentRollout(parsed.data);
+    await auditCommercialCoreWrite(req, "PAYMENT_REQUIRED_ACTIVATE", "CommercialSource", null, {
+      sourceIds: parsed.data.sourceIds,
+      changedCount: result?.changedCount ?? result?.count ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Zorunlu odeme rollout kaynaklari ACTIVE durumuna alindi" });
   });
 
@@ -329,6 +637,10 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_REQUIRED_ROLLOUT_SOURCE_IDS", issues: parsed.error.issues });
     }
     const result = await deactivateRequiredPaymentRollout(parsed.data);
+    await auditCommercialCoreWrite(req, "PAYMENT_REQUIRED_DEACTIVATE", "CommercialSource", null, {
+      sourceIds: parsed.data.sourceIds,
+      changedCount: result?.changedCount ?? result?.count ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Zorunlu odeme rollout kaynaklari DISABLED durumuna alindi" });
   });
 
@@ -347,6 +659,13 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_PAYMENT_ACCOUNT_PAYLOAD", issues: parsed.error.issues });
     }
     const item = await upsertPaymentAccountMetadata(parsed.data);
+    await auditCommercialCoreWrite(req, "PAYMENT_ACCOUNT_UPSERT", "PaymentAccount", item.id ?? null, {
+      ownerType: item.ownerType,
+      companyId: item.companyId ?? null,
+      roomId: item.roomId ?? null,
+      providerKey: item.providerKey,
+      status: item.status,
+    });
     return res.json({ ok: true, item, message: "Odeme hesabi metadata kaydedildi" });
   });
 
@@ -365,6 +684,12 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_PLAN_PAYLOAD", issues: parsed.error.issues });
     }
     const result = await planSettlementEntries(parsed.data);
+    await auditCommercialCoreWrite(req, "SETTLEMENT_ENTRY_PLAN", "SettlementEntry", null, {
+      entryIds: parsed.data.entryIds,
+      dueAt: parsed.data.dueAt || null,
+      note: parsed.data.note || null,
+      changedCount: result?.changedCount ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Settlement entry satirlari PLANNED durumuna alindi" });
   });
 
@@ -374,6 +699,12 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_EXECUTE_PAYLOAD", issues: parsed.error.issues });
     }
     const result = await executeSettlementEntries(parsed.data);
+    await auditCommercialCoreWrite(req, "SETTLEMENT_ENTRY_EXECUTE", "SettlementEntry", null, {
+      entryIds: parsed.data.entryIds,
+      providerRef: parsed.data.providerRef || null,
+      note: parsed.data.note || null,
+      changedCount: result?.changedCount ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Settlement entry satirlari EXECUTED durumuna alindi" });
   });
 
@@ -383,6 +714,11 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_CANCEL_PAYLOAD", issues: parsed.error.issues });
     }
     const result = await cancelSettlementEntries(parsed.data);
+    await auditCommercialCoreWrite(req, "SETTLEMENT_ENTRY_CANCEL", "SettlementEntry", null, {
+      entryIds: parsed.data.entryIds,
+      note: parsed.data.note || null,
+      changedCount: result?.changedCount ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Settlement entry satirlari CANCELLED durumuna alindi" });
   });
 
@@ -392,6 +728,12 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_READY_PAYLOAD", issues: parsed.error.issues });
     }
     const result = await readySettlementEntries(parsed.data);
+    await auditCommercialCoreWrite(req, "SETTLEMENT_ENTRY_READY", "SettlementEntry", null, {
+      entryIds: parsed.data.entryIds,
+      dueAt: parsed.data.dueAt || null,
+      note: parsed.data.note || null,
+      changedCount: result?.changedCount ?? null,
+    });
     return res.json({ ok: true, ...result, message: "Settlement entry satirlari READY durumuna alindi" });
   });
 
@@ -410,6 +752,13 @@ export function commercialCoreRouter() {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_RECONCILIATION_PAYLOAD", issues: parsed.error.issues });
     }
     const item = await upsertSettlementReconciliationRecord(parsed.data, req.user);
+    await auditCommercialCoreWrite(req, "SETTLEMENT_RECONCILIATION_UPSERT", "SettlementEntry", item.entryId ?? null, {
+      entryId: item.entryId,
+      status: item.status,
+      providerRef: item.providerRef || null,
+      externalRef: item.externalRef || null,
+      note: item.note || null,
+    });
     return res.json({ ok: true, item, message: "Settlement mutabakat kaydi guncellendi" });
   });
 

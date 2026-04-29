@@ -295,6 +295,21 @@ export function createCommercialCorePanelActions({
     }
   }
 
+  async function exportSettlementLedgerCsv() {
+    setBusyKey("payment-sources-ledger-export");
+    setErr("");
+    setOkMsg("");
+    try {
+      const qs = buildPaymentSourceQuery(paymentSourceFilters, 1000);
+      await downloadWithToken(`/api/commercial-core/payment-backbone/settlement/ledger/export.csv?${qs.toString()}`, getToken(), "settlement_ledger.csv");
+      setOkMsg("Detaylı muhasebe CSV indirildi.");
+    } catch (e) {
+      setErr(stripHtmlNoise(e?.message || String(e)));
+    } finally {
+      setBusyKey("");
+    }
+  }
+
   function applyRoom(room) {
     setRoomForm((prev) => ({
       ...prev,
@@ -321,6 +336,7 @@ export function createCommercialCorePanelActions({
     saveReconciliation,
     refreshPaymentSources,
     exportPaymentSourcesCsv,
+    exportSettlementLedgerCsv,
     applyRoom,
   };
 }

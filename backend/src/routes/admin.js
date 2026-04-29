@@ -26,7 +26,7 @@ import {
   syncAutoReachedQueueIncidentNotifications,
 } from "../jobs/autoReachedQueue.js";
 import { audit } from "../audit.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { markPasswordChangeRequired } from "../auth/passwordChangeRequirementStore.js";
 import { validatePasswordPolicy } from "../auth/passwordPolicy.js";
 import { buildInternalLoginEmail, getUserLoginMeta, isUsernameTaken, setStoredLogin, validateUsernameOrThrow } from "../auth/usernameDirectory.js";
@@ -133,9 +133,10 @@ const updateUserSchema = z
 
 export function adminRouter(io = null) {
   const r = express.Router();
+  const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
 
 // ? M39: retention run (dry-run supported)
-r.post("/retention/run", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+r.post("/retention/run", ...superAdminWrite, async (req, res) => {
   try {
     const dryRun = !!req.body?.dryRun;
     const result = await runRetentionCleanupOnce({ dryRun });
@@ -178,7 +179,7 @@ r.get("/backup/manifest", authRequired(), requireRole("SUPER_ADMIN"), async (_re
 });
 
 // ? M45: backup create (host-side wrapper around archive snapshot)
-r.post("/backup/create", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+r.post("/backup/create", ...superAdminWrite, async (req, res) => {
   try {
     const outputDir = String(req.body?.outputDir || "").trim() || null;
     const keepDaysRaw = req.body?.keepDays;
@@ -195,7 +196,7 @@ r.post("/backup/create", authRequired(), requireRole("SUPER_ADMIN"), async (req,
 });
 
 // ? M45: backup restore (host-side wrapper around archive snapshot)
-r.post("/backup/restore", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+r.post("/backup/restore", ...superAdminWrite, async (req, res) => {
   try {
     const backupFile = String(req.body?.backupFile || "").trim();
     const manifestFile = String(req.body?.manifestFile || "").trim() || null;
@@ -239,7 +240,7 @@ r.get("/regions/failover-drill", authRequired(), requireRole("SUPER_ADMIN"), asy
 });
 
 // M47.2+: failover / rebalancing drill dry-run record
-r.post("/regions/failover-drill/run", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+r.post("/regions/failover-drill/run", ...superAdminWrite, async (req, res) => {
   try {
     const scenarioId = String(req.body?.scenarioId || "").trim() || null;
     const regionId = req.body?.regionId == null || String(req.body?.regionId).trim() === "" ? null : Number(req.body.regionId);
@@ -291,7 +292,7 @@ r.get("/queues/auto-reached/thresholds", authRequired(), requireRole("SUPER_ADMI
   return res.json({ health, threshold: evaluateAutoReachedQueueHealthThresholds(health) });
 });
 
-r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+r.post("/queues/auto-reached/incident-sync", ...superAdminWrite, async (req, res) => {
   try {
     const result = await syncAutoReachedQueueIncidentNotifications({ io });
     await audit(req, {
@@ -335,7 +336,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     });
   });
 
-  r.post("/queues/auto-reached/dead-letter/:taskId/requeue", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+r.post("/queues/auto-reached/dead-letter/:taskId/requeue", ...superAdminWrite, async (req, res) => {
     const taskId = String(req.params.taskId || "").trim();
     const result = await requeueAutoReachedDeadLetter(taskId);
     if (!result.ok) {
@@ -351,7 +352,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     return res.json({ ok: true, ...result });
   });
 
-  r.post("/queues/auto-reached/dead-letter/:taskId/resolve", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+r.post("/queues/auto-reached/dead-letter/:taskId/resolve", ...superAdminWrite, async (req, res) => {
     const taskId = String(req.params.taskId || "").trim();
     const result = await resolveAutoReachedDeadLetter(taskId);
     if (!result.ok) {
@@ -527,7 +528,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     res.json({ items: mapped });
   });
 
-  r.post("/users", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.post("/users", ...superAdminWrite, async (req, res) => {
     const parsed = createUserSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -611,7 +612,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     });
   });
 
-  r.put("/users/:id", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.put("/users/:id", ...superAdminWrite, async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
 
@@ -700,7 +701,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     });
   });
 
-  r.post("/users/:id/reset-password", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.post("/users/:id/reset-password", ...superAdminWrite, async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
 
@@ -728,7 +729,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     res.json({ ok: true, user: { ...updated, username: loginMeta.username, email: loginMeta.email }, tempPassword: nextPw, passwordChangeRequired: true });
   });
 
-  r.post("/users/:id/disable", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.post("/users/:id/disable", ...superAdminWrite, async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
     if (id === Number(req.user.id)) return res.status(400).json({ error: "Cannot disable self" });
@@ -754,7 +755,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     res.json({ ok: true, user: { ...updated, username: loginMeta.username, email: loginMeta.email }, disabled: true });
   });
 
-  r.post("/users/:id/enable", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.post("/users/:id/enable", ...superAdminWrite, async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
 
@@ -822,7 +823,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
   });
 
   // POST /api/admin/parent-children { parentUserId, personelId }
-  r.post("/parent-children", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.post("/parent-children", ...superAdminWrite, async (req, res) => {
     const parentUserId = Number(req.body?.parentUserId || 0);
     const personelId = Number(req.body?.personelId || 0);
     if (!parentUserId || !personelId) return res.status(400).json({ error: "parentUserId and personelId required" });
@@ -873,7 +874,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
   });
 
   // DELETE /api/admin/parent-children/:id
-  r.delete("/parent-children/:id", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.delete("/parent-children/:id", ...superAdminWrite, async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
 
@@ -893,7 +894,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     res.json(snapshot);
   });
 
-  r.post("/regions", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.post("/regions", ...superAdminWrite, async (req, res) => {
     const name = String(req.body?.name || "").trim();
     if (name.length < 2) return res.status(400).json({ error: "Region name required" });
 
@@ -907,7 +908,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     res.status(201).json(created);
   });
 
-  r.put("/regions/:id", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.put("/regions/:id", ...superAdminWrite, async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
     const name = String(req.body?.name || "").trim();
@@ -923,7 +924,7 @@ r.post("/queues/auto-reached/incident-sync", authRequired(), requireRole("SUPER_
     res.json(updated);
   });
 
-  r.delete("/regions/:id", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.delete("/regions/:id", ...superAdminWrite, async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid id" });
 

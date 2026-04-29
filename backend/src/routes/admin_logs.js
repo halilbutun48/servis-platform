@@ -2,7 +2,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { audit } from "../audit.js";
-import { authRequired, requireRole } from "../auth/middleware.js";
+import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
 import { maskEmail, maskIp, sanitizeLogText } from "../kvkk/enforcement.js";
 import { buildKvkkExportAuditMeta } from "../kvkk/retention.js";
 
@@ -223,7 +223,7 @@ export function adminLogsRouter() {
   });
 
   // Export (default txt)
-  r.get("/export", authRequired(), requireRole("SUPER_ADMIN"), async (req, res) => {
+  r.get("/export", authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN"), async (req, res) => {
     const kind0 = String(req.query.kind || "audit").trim().toLowerCase();
     const kind = kind0 === "requests" ? "api" : kind0;
     const take = clampTake(req.query.take, 1000);
