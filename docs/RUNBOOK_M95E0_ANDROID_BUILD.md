@@ -49,6 +49,13 @@ Bu adım saha testi değildir. APK/AAB üretmek, gerçek telefonda saha kanıtı
 - Emülatörde `10.0.2.2`, host makinenin yerel API adresine erişmek için kullanılır.
 - Bu adres gerçek telefonda kullanılmaz.
 - Bu profil, gerçek saha kanıtı yerine geçmez.
+- Local APK build'inde HTTP cleartext izni yalnız emülatör için açılır.
+
+## Cleartext HTTP kuralı
+- `local-emulator` build'inde `http://10.0.2.2:3000` için izin verilir.
+- Gerçek telefon, preview ve production build'lerinde HTTPS kullanılır.
+- Production build'de cleartext açık kalmamalıdır.
+- `10.0.2.2` gerçek cihaz için kullanılmaz.
 
 ## Gerçek Android telefona APK nasıl kurulur?
 1. APK artefact'ı üret.
