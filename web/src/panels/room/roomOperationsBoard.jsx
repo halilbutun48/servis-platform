@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
+import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 
 function cardStyle() {
   return {
@@ -44,29 +45,7 @@ function SummaryRow({ label, value, note }) {
 }
 
 function StatusPill({ value }) {
-  const normalized = String(value || "-").trim().toUpperCase();
-  const style = normalized === "OPEN"
-    ? { color: "#fedf89", background: "rgba(247,144,9,0.16)", border: "1px solid rgba(247,144,9,0.45)" }
-    : normalized === "ACTIVE"
-      ? { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" }
-      : { color: "#d0d5dd", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "4px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 800,
-        ...style,
-      }}
-    >
-      {displayStatusLabel(value)}
-    </span>
-  );
+  return <span style={statusBadgeInlineStyle(value)}>{displayStatusLabel(value)}</span>;
 }
 
 function lineLabel(value) {

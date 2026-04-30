@@ -17,13 +17,13 @@ const DECISION_LABELS = {
 };
 
 const DECISION_TONES = {
-  AUTO_ACCEPTED: "ok",
+  AUTO_ACCEPTED: "success",
   MANUAL_REVIEW: "info",
-  CUTOFF_REVIEW: "warn",
-  ROOM_ACCEPTED: "ok",
-  ROOM_CANCELLED: "warn",
-  CANCELLED: "warn",
-  NO_SHOW: "ok",
+  CUTOFF_REVIEW: "warning",
+  ROOM_ACCEPTED: "success",
+  ROOM_CANCELLED: "critical",
+  CANCELLED: "critical",
+  NO_SHOW: "warning",
 };
 
 function normalize(value) {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import PanelChrome from "../../components/PanelChrome";
+import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 
 function SummaryCard({ title, value, note }) {
   return (
@@ -23,14 +24,13 @@ function Row({ title, text }) {
 
 function Pill({ code }) {
   const safe = String(code || "CHECK").toUpperCase();
-  const bg = safe === "READY" || safe === "STABLE" ? "rgba(70,180,120,0.18)" : safe === "BLOCK" || safe === "ACTION_REQUIRED" ? "rgba(220,80,80,0.18)" : safe === "WARN" || safe === "TRACKING" ? "rgba(255,180,90,0.18)" : "rgba(130,150,255,0.18)";
-  return <span className="pill" style={{ background: bg }}>{safe}</span>;
+  return <span className="pill" style={statusBadgeInlineStyle(safe)}>{safe}</span>;
 }
 
 function SeverityPill({ value }) {
   const safe = String(value || "MEDIUM").toUpperCase();
-  const bg = safe === "CRITICAL" ? "rgba(220,80,80,0.22)" : safe === "HIGH" ? "rgba(255,180,90,0.22)" : safe === "LOW" ? "rgba(80,180,120,0.18)" : "rgba(130,150,255,0.18)";
-  return <span className="pill" style={{ background: bg }}>{safe}</span>;
+  const mapped = safe === "CRITICAL" ? "CRITICAL" : safe === "HIGH" ? "WARNING" : safe === "LOW" ? "SUCCESS" : "INFO";
+  return <span className="pill" style={statusBadgeInlineStyle(mapped)}>{safe}</span>;
 }
 
 function PrepList({ title, items, renderDetail }) {

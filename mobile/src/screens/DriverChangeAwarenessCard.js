@@ -2,10 +2,21 @@ import { Text, View } from 'react-native';
 import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, fmt, styles } from './mobileUi';
 
 function recentTone(item) {
-  if (item?.tone === 'danger') return 'danger';
-  if (item?.tone === 'warn') return 'warn';
-  if (item?.tone === 'ok') return 'ok';
+  const tone = String(item?.tone || '').trim().toLowerCase();
+  if (tone === 'danger' || tone === 'critical') return 'critical';
+  if (tone === 'warn' || tone === 'warning') return 'warning';
+  if (tone === 'ok' || tone === 'success') return 'success';
+  if (tone === 'passive') return 'passive';
   return 'info';
+}
+
+function toneLabel(tone) {
+  const t = String(tone || '').trim().toLowerCase();
+  if (t === 'danger' || t === 'critical') return 'Acil';
+  if (t === 'warn' || t === 'warning') return 'Uyarı';
+  if (t === 'ok' || t === 'success') return 'Pozitif';
+  if (t === 'passive') return 'Pasif';
+  return 'Bilgi';
 }
 
 export default function DriverChangeAwarenessCard({
@@ -31,9 +42,9 @@ export default function DriverChangeAwarenessCard({
         subtitle="Yeni rota, no-show, bakım ve GPS uyarıları burada görünür. Sesli uyarı açıksa en yeni kayıt otomatik okunur."
       />
       <View style={styles.rowGap}>
-        <Pill label={voiceEnabled ? 'Sesli uyarı açık' : 'Sesli uyarı kapalı'} tone={voiceEnabled ? 'ok' : 'warn'} />
-        <Pill label={latestLabel} tone={unreadCount > 0 ? 'warn' : 'ok'} />
-        <Pill label={latest?.tone === 'danger' ? 'Acil' : latest?.kind || latest?.type || 'DRIVER'} tone={latest?.tone || 'info'} />
+        <Pill label={voiceEnabled ? 'Sesli uyarı açık' : 'Sesli uyarı kapalı'} tone={voiceEnabled ? 'success' : 'passive'} />
+        <Pill label={latestLabel} tone={unreadCount > 0 ? 'warning' : 'success'} />
+        <Pill label={toneLabel(latest?.tone) === 'Bilgi' ? (latest?.kind || latest?.type || 'DRIVER') : toneLabel(latest?.tone)} tone={latest?.tone || 'info'} />
       </View>
 
       {latest ? (
@@ -72,7 +83,7 @@ export default function DriverChangeAwarenessCard({
                 </Text>
               </View>
               <View style={localStyles.itemBadgeWrap}>
-                <Pill label={item.tone === 'danger' ? 'Acil' : item.tone === 'warn' ? 'Uyarı' : item.tone === 'ok' ? 'Pozitif' : 'Bilgi'} tone={recentTone(item)} />
+                <Pill label={toneLabel(item.tone)} tone={recentTone(item)} />
               </View>
             </View>
           ))}

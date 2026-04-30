@@ -39,11 +39,21 @@ export function Info({ label, value }) {
 }
 
 export function Pill({ label, tone = 'info' }) {
+  const resolvedTone = resolveTone(tone);
   return (
-    <View style={[styles.pill, tone === 'warn' ? styles.pillWarn : tone === 'ok' ? styles.pillOk : tone === 'danger' ? styles.pillDanger : null]}>
-      <Text style={[styles.pillText, tone === 'warn' ? styles.pillWarnText : tone === 'ok' ? styles.pillOkText : tone === 'danger' ? styles.pillDangerText : null]}>{label}</Text>
+    <View style={[styles.pill, resolvedTone === 'info' ? styles.pillInfo : resolvedTone === 'warning' ? styles.pillWarn : resolvedTone === 'success' ? styles.pillOk : resolvedTone === 'critical' ? styles.pillDanger : resolvedTone === 'passive' ? styles.pillPassive : null]}>
+      <Text style={[styles.pillText, resolvedTone === 'info' ? styles.pillInfoText : resolvedTone === 'warning' ? styles.pillWarnText : resolvedTone === 'success' ? styles.pillOkText : resolvedTone === 'critical' ? styles.pillDangerText : resolvedTone === 'passive' ? styles.pillPassiveText : null]}>{label}</Text>
     </View>
   );
+}
+
+function resolveTone(tone) {
+  const t = String(tone || 'info').trim().toLowerCase();
+  if (t === 'ok' || t === 'success' || t === 'tamam' || t === 'normal') return 'success';
+  if (t === 'warn' || t === 'warning' || t === 'dikkat') return 'warning';
+  if (t === 'danger' || t === 'critical' || t === 'kritik') return 'critical';
+  if (t === 'passive' || t === 'muted' || t === 'waiting' || t === 'pending') return 'passive';
+  return 'info';
 }
 
 export function PrimaryButton({ title, onPress, disabled = false }) {
@@ -201,11 +211,17 @@ export const styles = StyleSheet.create({
   pillOk: {
     backgroundColor: '#ecfdf5',
   },
+  pillInfo: {
+    backgroundColor: '#eff6ff',
+  },
   pillWarn: {
     backgroundColor: '#fff7ed',
   },
   pillDanger: {
     backgroundColor: '#fef2f2',
+  },
+  pillPassive: {
+    backgroundColor: '#e2e8f0',
   },
   pillText: {
     color: '#4338ca',
@@ -215,11 +231,17 @@ export const styles = StyleSheet.create({
   pillOkText: {
     color: '#047857',
   },
+  pillInfoText: {
+    color: '#1d4ed8',
+  },
   pillWarnText: {
     color: '#c2410c',
   },
   pillDangerText: {
     color: '#b91c1c',
+  },
+  pillPassiveText: {
+    color: '#475569',
   },
   infoRow: {
     flexDirection: 'row',

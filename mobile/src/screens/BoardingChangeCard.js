@@ -3,16 +3,24 @@ import { listBoardingChangeOptions } from '../app/boardingChangeState';
 import { Card, EmptyState, Info, Pill, PrimaryButton, SectionTitle, fmt, styles } from './mobileUi';
 
 function optionTone(option) {
-  if (option?.tone === 'danger') return 'danger';
-  if (option?.tone === 'warn') return 'warn';
+  const tone = String(option?.tone || '').trim().toLowerCase();
+  if (tone === 'danger' || tone === 'critical') return 'critical';
+  if (tone === 'warn' || tone === 'warning') return 'warning';
+  if (tone === 'ok' || tone === 'success') return 'success';
   return 'info';
 }
 
 function recentTone(item) {
+  const tone = String(item?.tone || '').trim().toLowerCase();
+  if (tone === 'danger' || tone === 'critical') return 'critical';
+  if (tone === 'warn' || tone === 'warning') return 'warning';
+  if (tone === 'ok' || tone === 'success') return 'success';
+  if (tone === 'passive') return 'passive';
   if (item?.kind === 'OPERATION_NOTE') return 'info';
-  if (item?.kind === 'PICKUP_FROM_LOCATION') return 'danger';
-  if (item?.kind === 'NO_SHOW') return 'ok';
-  return 'warn';
+  if (item?.kind === 'PICKUP_FROM_LOCATION') return 'critical';
+  if (item?.kind === 'NO_SHOW') return 'warning';
+  if (item?.kind === 'DIFFERENT_STOP' || item?.kind === 'LATE_TO_STOP') return 'warning';
+  return 'warning';
 }
 
 export default function BoardingChangeCard({
@@ -36,9 +44,9 @@ export default function BoardingChangeCard({
       ? 'İptal edildi'
       : 'Operasyon kuyruğunda';
   const backendDecisionTone = backendDecisionState === 'ACCEPTED'
-    ? 'ok'
+    ? 'success'
     : backendDecisionState === 'CANCELLED'
-      ? 'warn'
+      ? 'critical'
       : 'info';
 
   return (
@@ -50,15 +58,15 @@ export default function BoardingChangeCard({
           : 'Bugün servisi kullanmayacağım hızlı kayıt üst kartta durur; bu kart farklı durak, gecikme ve rota dışı talepleri toplar.'}
       />
       <View style={styles.rowGap}>
-        <Pill label={key === 'PARENT' ? 'Veli akışı' : 'Personel akışı'} tone="ok" />
-        <Pill label={boardingChange?.lastSubmittedAt ? 'Son istek kayıtlı' : 'Kayıt bekliyor'} tone={boardingChange?.lastSubmittedAt ? 'info' : 'warn'} />
+        <Pill label={key === 'PARENT' ? 'Veli akışı' : 'Personel akışı'} tone="success" />
+        <Pill label={boardingChange?.lastSubmittedAt ? 'Son istek kayıtlı' : 'Kayıt bekliyor'} tone={boardingChange?.lastSubmittedAt ? 'info' : 'passive'} />
         {boardingChange?.backendRequestId ? (
           <Pill
             label={backendDecisionLabel}
             tone={backendDecisionTone}
           />
         ) : null}
-        <Pill label={current ? `Sıradaki durak: ${nextStopName}` : 'Canlı servis bekleniyor'} tone={current ? 'info' : 'warn'} />
+        <Pill label={current ? `Sıradaki durak: ${nextStopName}` : 'Canlı servis bekleniyor'} tone={current ? 'info' : 'passive'} />
       </View>
       <Info label="Sıradaki durak" value={nextStopName} />
       <Info label="Durağa ETA" value={etaText} />

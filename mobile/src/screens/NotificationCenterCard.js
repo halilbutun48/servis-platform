@@ -2,9 +2,11 @@ import { Text, View } from 'react-native';
 import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, fmt, styles } from './mobileUi';
 
 function statusTone(item) {
-  if (item?.tone === 'danger') return 'danger';
-  if (item?.tone === 'warn') return 'warn';
-  if (item?.tone === 'ok') return 'ok';
+  const tone = String(item?.tone || '').trim().toLowerCase();
+  if (tone === 'danger' || tone === 'critical') return 'critical';
+  if (tone === 'warn' || tone === 'warning') return 'warning';
+  if (tone === 'ok' || tone === 'success') return 'success';
+  if (tone === 'passive') return 'passive';
   return 'info';
 }
 
@@ -28,8 +30,8 @@ export default function NotificationCenterCard({
     <Card>
       <SectionTitle title={title} subtitle={subtitle} />
       <View style={styles.rowGap}>
-        <Pill label={unreadCount > 0 ? `${unreadCount} yeni` : 'Yeni yok'} tone={unreadCount > 0 ? 'warn' : 'ok'} />
-        <Pill label={isLatestSeen ? 'Son bildirim okundu' : 'Son bildirim yeni'} tone={isLatestSeen ? 'ok' : 'warn'} />
+        <Pill label={unreadCount > 0 ? `${unreadCount} yeni` : 'Yeni yok'} tone={unreadCount > 0 ? 'warning' : 'passive'} />
+        <Pill label={isLatestSeen ? 'Son bildirim okundu' : 'Son bildirim yeni'} tone={isLatestSeen ? 'success' : 'warning'} />
         {latest ? <Pill label={latest.intentLabel || latest.type || 'Bildirim'} tone={statusTone(latest)} /> : null}
       </View>
 
@@ -72,7 +74,7 @@ export default function NotificationCenterCard({
                 </Text>
               </View>
               <View style={localStyles.itemBadgeWrap}>
-                <Pill label={item.read ? 'Okundu' : 'Yeni'} tone={item.read ? 'ok' : 'warn'} />
+                <Pill label={item.read ? 'Okundu' : 'Yeni'} tone={item.read ? 'success' : 'warning'} />
               </View>
             </View>
           ))}

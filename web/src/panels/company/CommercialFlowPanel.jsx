@@ -7,6 +7,7 @@ import { buildCommercialFlowFacts } from "../../utils/copilotFacts";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { getCompanyCommercialFlowSummary } from "../../utils/companyDataHub";
 import PanelChrome from "../../components/PanelChrome";
+import { statusBadgeInlineStyle } from "../../utils/statusBadge";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -46,13 +47,7 @@ function MetricCard({ title, value, note, accent = "default" }) {
 }
 
 function StatusBadge({ value }) {
-  const normalized = String(value || "").trim().toUpperCase();
-  let style = { color: "#d0d5dd", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
-  if (["OPEN", "REQUESTED"].includes(normalized)) style = { color: "#fedf89", background: "rgba(247,144,9,0.16)", border: "1px solid rgba(247,144,9,0.45)" };
-  if (["COUNTERED", "PAZARLIK", "NEGOTIATION", "PENDING"].includes(normalized)) style = { color: "#b2ddff", background: "rgba(83,177,253,0.12)", border: "1px solid rgba(83,177,253,0.35)" };
-  if (["ACCEPTED", "APPROVED", "ACTIVE"].includes(normalized)) style = { color: "#d1fadf", background: "rgba(18,183,106,0.16)", border: "1px solid rgba(18,183,106,0.45)" };
-  if (["CANCELLED", "DONE", "REJECTED"].includes(normalized)) style = { color: "#fecdca", background: "rgba(240,68,56,0.12)", border: "1px solid rgba(240,68,56,0.35)" };
-  return <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", ...style }}>{displayStatusLabel(value)}</span>;
+  return <span style={statusBadgeInlineStyle(value)}>{displayStatusLabel(value)}</span>;
 }
 
 

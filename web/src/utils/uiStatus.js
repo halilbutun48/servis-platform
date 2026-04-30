@@ -45,26 +45,31 @@ export function markerStatusFromUi(ui) {
   return "online";
 }
 
-// mevcut .pill CSS ACTIVE/STALE/PASSIVE bekliyor
+// mevcut .pill CSS success/warning/critical/info/passive bekliyor
 export function pillKeyFromUi(ui) {
-  if (ui === "LIVE") return "ACTIVE";
-  if (ui === "STALE") return "STALE";
-  return "PASSIVE"; // OFFLINE
+  if (ui === "LIVE") return "SUCCESS";
+  if (ui === "STALE") return "WARNING";
+  return "CRITICAL"; // OFFLINE
 }
 
 // Notifications gibi yerlerde GPS_STALE / GPS_OFFLINE / LIVE / OFFLINE vs. gelirse
-// mevcut pill CSS (ACTIVE|STALE|PASSIVE) ile uyumlu hale getirir.
+// mevcut pill CSS (success|warning|critical|info|passive) ile uyumlu hale getirir.
 export function pillKeyFromAny(x) {
   const t = String(x || "").toUpperCase();
 
-  // LIVE / recovery / ACTIVE -> ACTIVE (yeşil)
-  if (t === "LIVE" || t === "ACTIVE" || t.includes("LIVE") || t.includes("RECOVERY")) return "ACTIVE";
+  // LIVE / recovery / ACTIVE -> success (yeşil)
+  if (t === "LIVE" || t === "ACTIVE" || t.includes("LIVE") || t.includes("RECOVERY")) return "SUCCESS";
 
-  // STALE / GPS_STALE -> STALE (amber)
-  if (t === "STALE" || t.includes("STALE")) return "STALE";
+  // STALE / GPS_STALE -> warning (sarı)
+  if (t === "STALE" || t.includes("STALE") || t === "REQUESTED" || t === "PENDING") return "WARNING";
 
-  // OFFLINE / PASSIVE / GPS_OFFLINE -> PASSIVE (gri)
-  if (t === "OFFLINE" || t === "PASSIVE" || t.includes("OFFLINE")) return "PASSIVE";
+  // OFFLINE / FAIL / ERROR -> critical (kırmızı)
+  if (t === "OFFLINE" || t.includes("OFFLINE") || t === "FAIL" || t === "ERROR") return "CRITICAL";
+
+  // PASSIVE / DRAFT / ARCHIVED -> passive (gri)
+  if (t === "PASSIVE" || t === "DRAFT" || t === "ARCHIVED" || t === "SKIPPED" || t === "NONE") return "PASSIVE";
+
+  if (t === "COUNT" || t === "ROLE" || t === "INFO" || t === "UNKNOWN") return "INFO";
 
   return "PASSIVE";
 }
