@@ -1,4 +1,8 @@
 import { StyleSheet } from 'react-native';
+import { buildDriverAvailabilityState } from './driverAvailabilityState';
+import { buildDriverAwarenessState } from './driverAwarenessState';
+import { buildBoardingChangeState } from './boardingChangeState';
+import { buildNotificationCenterState } from './notificationState';
 import { humanizeApiError, isNetworkLikeError } from '../lib/api';
 import { getDriverBackgroundRuntimeStatus } from '../lib/backgroundGps';
 import { buildReleaseInfo } from '../lib/release';
@@ -94,6 +98,10 @@ export const initialState = {
   voiceEnabled: false,
   selectedShiftId: null,
   selectedChildId: null,
+  driverAvailability: buildDriverAvailabilityState(),
+  driverAwareness: buildDriverAwarenessState(),
+  boardingChange: buildBoardingChangeState(),
+  notifications: buildNotificationCenterState(),
   me: null,
   today: null,
   route: null,
@@ -223,6 +231,8 @@ export function buildSignedInSyncArtifacts({
   health = null,
   kvkkCurrent = null,
   lastSyncAt = '',
+  driverAwareness = null,
+  notifications = null,
 } = {}) {
   const selectedShiftId = routeBundle?.selectedShiftId ?? null;
   const nextKvkk = nextKvkkState(kvkkCurrent || me?.kvkk, state.kvkk);
@@ -263,6 +273,10 @@ export function buildSignedInSyncArtifacts({
       gps: nextGps,
       selectedShiftId,
       selectedChildId: state.selectedChildId,
+      driverAvailability: state.driverAvailability,
+      driverAwareness,
+      notifications,
+      boardingChange: state.boardingChange,
     }),
   };
 }
@@ -360,6 +374,10 @@ export function buildMobileSnapshot({
   gps = null,
   selectedShiftId = null,
   selectedChildId = null,
+  driverAvailability = null,
+  driverAwareness = null,
+  notifications = null,
+  boardingChange = null,
 } = {}) {
   return {
     version: 1,
@@ -376,6 +394,10 @@ export function buildMobileSnapshot({
     gps: mergeGpsState(gps),
     selectedShiftId: positiveInt(selectedShiftId),
     selectedChildId: positiveInt(selectedChildId),
+    driverAvailability: buildDriverAvailabilityState(driverAvailability),
+    driverAwareness: buildDriverAwarenessState(driverAwareness),
+    notifications: buildNotificationCenterState(notifications),
+    boardingChange: buildBoardingChangeState(boardingChange),
   };
 }
 
@@ -402,6 +424,10 @@ export function hydrateStateFromSnapshot(snapshot, { session = null, deviceId = 
     voiceEnabled: typeof voiceEnabled === 'boolean' ? voiceEnabled : Boolean(snap.voiceEnabled),
     selectedShiftId: positiveInt(selectedShiftId || snap.selectedShiftId) || null,
     selectedChildId: positiveInt(selectedChildId || snap.selectedChildId) || null,
+    driverAvailability: buildDriverAvailabilityState(snap.driverAvailability),
+    driverAwareness: buildDriverAwarenessState(snap.driverAwareness),
+    notifications: buildNotificationCenterState(snap.notifications),
+    boardingChange: buildBoardingChangeState(snap.boardingChange),
     me: cloneObject(snap.me),
     today: cloneObject(snap.today),
     route: cloneObject(snap.route),

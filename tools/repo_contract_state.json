@@ -70,7 +70,10 @@
                              "M93",
                              "M94-E",
                              "M94-D2",
-                             "M94-D3"
+                             "M94-D3",
+                             "M97",
+                             "M97-A",
+                             "M98-A"
                          ],
     "canonicalDocs":  [
                           "README.md",

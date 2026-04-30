@@ -1,4 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import BoardingChangeCard from './BoardingChangeCard';
+import NotificationCenterCard from './NotificationCenterCard';
+import PersonelActivationCard from './PersonelActivationCard';
 import { Card, EmptyState, Info, Pill, PrimaryButton, RoutePreviewList, SecondaryButton, SectionTitle, ShiftChooser, fmt, styles } from './mobileUi';
 
 const ROLE_COPY = {
@@ -103,6 +106,8 @@ export default function RoleHomeScreen({
   routeOpsText = '',
   releaseInfo = null,
   roleLive = null,
+  boardingChange = null,
+  notifications = null,
   selectedShiftId = null,
   selectedChildId = null,
   onRefresh,
@@ -110,6 +115,8 @@ export default function RoleHomeScreen({
   onSelectShift,
   onSelectChild,
   onReportNoShow,
+  onRequestBoardingChange,
+  onMarkNotificationsSeen,
 }) {
   const key = String(role || '').trim().toUpperCase();
   const copy = ROLE_COPY[key] || ROLE_COPY.PERSONEL;
@@ -117,7 +124,7 @@ export default function RoleHomeScreen({
   const healthLabel = health?.ok ? 'UP' : String(health?.status || '-').toUpperCase();
   const current = roleLive?.current || null;
   const items = key === 'PARENT' ? (roleLive?.children || []) : (roleLive?.items || []);
-  const actionBusy = Boolean(routeOpsBusy || roleLive?.loading);
+  const actionBusy = Boolean(routeOpsBusy || roleLive?.loading || boardingChange?.loading);
 
   return (
     <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
@@ -142,6 +149,15 @@ export default function RoleHomeScreen({
         <Info label="Son senkron" value={fmt(lastSyncAt)} />
         <Info label="Release özeti" value={releaseInfo?.acceptanceSummary || '-'} />
       </Card>
+
+      {key === 'PERSONEL' ? <PersonelActivationCard me={me} /> : null}
+
+      <NotificationCenterCard
+        notifications={notifications}
+        routeOpsBusy={actionBusy}
+        onMarkLatestSeen={onMarkNotificationsSeen}
+        onRefresh={onRefresh}
+      />
 
       {key === 'PERSONEL' && items.length ? (
         <Card>
@@ -204,6 +220,14 @@ export default function RoleHomeScreen({
         </View>
         {copy.actionNote ? <Text style={styles.muted}>{copy.actionNote}</Text> : null}
       </Card>
+
+      <BoardingChangeCard
+        role={key}
+        current={current}
+        boardingChange={boardingChange}
+        routeOpsBusy={actionBusy}
+        onRequestBoardingChange={onRequestBoardingChange}
+      />
 
       <Card>
         <SectionTitle title="Hızlı özet" subtitle="Canlı servis bilgisi ve çevrim içi durum." />

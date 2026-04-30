@@ -79,6 +79,21 @@ function reachedStopLine(reachedStop, route) {
   return parts.join(' ');
 }
 
+function driverChangeLine(notification) {
+  const title = String(notification?.title || notification?.kind || notification?.type || 'Sürücü uyarısı').trim() || 'Sürücü uyarısı';
+  const message = String(notification?.message || notification?.summary || '').trim();
+  return buildSpeechSentence(['Sürücü uyarısı.', title, message]);
+}
+
+function buildSpeechSentence(parts = []) {
+  return parts
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function speak(text) {
   stopVoiceGuidance();
   Speech.speak(text, {
@@ -116,6 +131,10 @@ export function speakReachedStopAndNext(reachedStop, route) {
   speak(reachedStopLine(reachedStop, route));
 }
 
+export function speakDriverChangeAlert(notification) {
+  speak(driverChangeLine(notification));
+}
+
 export function buildVoiceCueKey(route) {
   const shiftId = Number(route?.shift?.id || 0) || 0;
   if (route?.progress?.completed) return `done:${shiftId}`;
@@ -133,4 +152,14 @@ export function buildVoiceWelcomeKey(today, route) {
 export function buildCompletionCueKey(route) {
   const shiftId = Number(route?.shift?.id || 0) || 0;
   return route?.progress?.completed ? `complete:${shiftId}` : '';
+}
+
+export function buildDriverChangeCueKey(notification) {
+  const id = Number(notification?.id || 0) || 0;
+  if (id) return `driver-change:${id}`;
+
+  const type = String(notification?.type || notification?.kind || '').trim();
+  const at = String(notification?.createdAt || notification?.at || '').trim();
+  if (type || at) return `driver-change:${type}:${at}`;
+  return '';
 }

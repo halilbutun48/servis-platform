@@ -18,12 +18,13 @@ export default function TabletOpsQuickBar({ role, me, path }) {
 
   const base = role === "COMPANY" ? companyBase(me) : "";
   const items =
-    role === "ROOM"
+      role === "ROOM"
       ? [
           { label: "Canlı Takip", path: "/room/map" },
           { label: "Teklifler", path: "/room/offers" },
           { label: "Vardiyalar", path: "/room/shifts" },
           { label: "Sürücüler", path: "/room/drivers" },
+          { label: "Check-in", path: "/room/checkin" },
         ]
       : [
           { label: "Harita", path: base + "/map" },

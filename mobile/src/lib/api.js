@@ -333,6 +333,10 @@ export async function fetchMe() {
   return request('/api/me');
 }
 
+export async function fetchMyNotifications() {
+  return request('/api/notifications/my');
+}
+
 export async function fetchToday() {
   return request('/api/driver/shifts/today');
 }

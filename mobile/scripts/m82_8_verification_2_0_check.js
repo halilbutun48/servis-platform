@@ -53,6 +53,7 @@ const app = read('mobile/App.js');
 const routeScreen = read('mobile/src/screens/RouteScreen.js');
 const liveScreen = read('mobile/src/screens/LiveScreen.js');
 const todayScreen = read('mobile/src/screens/TodayScreen.js');
+const taskCard = read('mobile/src/screens/DriverTaskSummaryCard.js');
 const loginScreen = read('mobile/src/screens/LoginScreen.js');
 const backgroundGps = read('mobile/src/lib/backgroundGps.js');
 const release = read('mobile/src/lib/release.js');
@@ -64,7 +65,8 @@ assertContains(api, ['fetchShiftRoute', 'startDriverShift', 'pauseDriverShift', 
 assertContains(app, ['selectedShiftId', 'syncSignedIn', 'getPendingSessionEvent', 'RouteScreen', 'LiveScreen'], 'app wires selected shift + pending session event + split screens');
 assertContains(routeScreen, ['Vardiyayı başlat', 'Durak ulaşıldı', 'Durağı atla', 'Geri al', 'Yeniden aç', 'Vardiyayı tamamla'], 'route screen exposes driver manual operations');
 assertContains(liveScreen, ['Resmi kaynak', 'Yerel telefon onizleme', 'Resmi tazelik', 'Release / env'], 'live screen distinguishes official source from local preview');
-assertContains(todayScreen, ['Release hazirligi', 'Resmi GPS tazeligi', 'Rota ekranını aç', 'Canlı ekranını aç'], 'today screen keeps release card and split navigation entry');
+assertContains(todayScreen, ['Release hazirligi', 'Resmi GPS tazeligi', 'DriverTaskSummaryCard'], 'today screen keeps release card and task summary card');
+assertContains(taskCard, ['Rota ekranını aç', 'Canlı ekranını aç'], 'shared task card keeps split navigation entry');
 assertContains(loginScreen, ['Release / env kabul kontrolu'], 'login screen exposes release acceptance status');
 assertContains(backgroundGps, ['getSelectedShiftId', 'savePendingSessionEvent', 'fetchShiftRoute', 'publishGps'], 'background gps keeps selected shift + session failure + route-only publish path');
 assertContains(app, ['retryCount', 'nextRetryAt'], 'app keeps retry/backoff visibility in runtime state');

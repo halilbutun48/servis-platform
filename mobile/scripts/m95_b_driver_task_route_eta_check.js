@@ -45,6 +45,7 @@ const app = read('App.js');
 const content = read('src/app/MobileAppContent.js');
 const today = read('src/screens/TodayScreen.js');
 const route = read('src/screens/RouteScreen.js');
+const taskCard = read('src/screens/DriverTaskSummaryCard.js');
 
 must(has(JSON.stringify(pkg.scripts || {}), 'check:m95b'), 'package exposes m95b entrypoint');
 must(has(app, 'routeOpsBusy'), 'app passes route ops busy state');
@@ -63,14 +64,19 @@ must(has(content, 'onStartShift'), 'mobile content forwards start shift');
 must(has(content, 'onCompleteShift'), 'mobile content forwards complete shift');
 must(has(content, 'onMarkReached'), 'mobile content forwards mark reached');
 
-must(has(today, 'Bugünkü görev'), 'today screen exposes task summary');
-must(has(today, 'Kalan rota süresi'), 'today screen shows remaining route duration');
-must(has(today, 'Kalan km'), 'today screen shows remaining distance');
-must(has(today, 'Kalan durak'), 'today screen shows remaining stops');
-must(has(today, 'Son ulaşılan sıra'), 'today screen shows last reached order');
-must(has(today, 'Vardiyayı başlat'), 'today screen exposes start shift action');
-must(has(today, 'Durak ulaşıldı'), 'today screen exposes reached stop action');
-must(has(today, 'Vardiyayı tamamla'), 'today screen exposes complete shift action');
+must(has(today, 'DriverTaskSummaryCard'), 'today screen renders shared task summary card');
+must(has(route, 'DriverTaskSummaryCard'), 'route screen renders shared task summary card');
+must(has(taskCard, 'Bugünkü görev'), 'task card exposes today task title');
+must(has(taskCard, 'Kalan rota süresi'), 'task card shows remaining route duration');
+must(has(taskCard, 'Kalan km'), 'task card shows remaining distance');
+must(has(taskCard, 'Kalan durak'), 'task card shows remaining stops');
+must(has(taskCard, 'Son ulaşılan sıra'), 'task card shows last reached order');
+must(has(taskCard, 'Vardiyayı başlat'), 'task card exposes start shift action');
+must(has(taskCard, 'Durak ulaşıldı'), 'task card exposes reached stop action');
+must(has(taskCard, 'Vardiyayı tamamla'), 'task card exposes complete shift action');
+must(has(taskCard, 'Rota ekranını aç'), 'task card exposes route screen action');
+must(has(taskCard, 'Canlı ekranını aç'), 'task card exposes live screen action');
+must(has(taskCard, 'Yenile'), 'task card exposes refresh action');
 must(has(today, 'Sıradaki durağı oku'), 'today screen exposes voice next stop action');
 must(has(today, 'ETA oku'), 'today screen exposes voice eta action');
 

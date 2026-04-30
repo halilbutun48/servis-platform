@@ -69,6 +69,15 @@
 - `M94-E - queue chaos/alarm proof - active`
   - amaç: autoReachedQueue için Redis unavailable, stale claim reclaim, dead-letter ve threshold alarm proof'unu güvenli check/probe ile görünür kılmak
   - komut: `node backend/scripts/m94e_queue_chaos_alarm_check.js && node backend/scripts/m94e_queue_chaos_alarm_probe.js`
+- `M97 - check-in panel integrations - active`
+  - amaç: room/company/school/organization/driver check-in görünürlük ve kısayollarını panel/nav katmanında güvenli biçimde restore etmek
+  - komut: `node backend/scripts/m97_panel_integration_check.js`
+- `M97-A - room operation board - active`
+  - amaç: room operasyon panelinde bugünkü görevler, aktif servisler, sürücü / araç durumu ve biniş değişikliği özetini tek yerde göstermek
+  - komut: `node backend/scripts/m97_a_room_operation_panel_check.js`
+- `M98-A - personel activation model - active`
+  - amaç: personel hesabı için kurum daveti, ilk giriş PIN/şifre değişimi ve cihaz eşleşmesi modelini görünür kılmak
+  - komut: `node mobile/scripts/m98_a_personel_activation_model_check.js`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.

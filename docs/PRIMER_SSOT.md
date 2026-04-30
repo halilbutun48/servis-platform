@@ -25,6 +25,9 @@ Bu primer yaşayan hattın resmi özetidir.
 - Repo verification spine: `M92 repo verification spine`
 - Queue durability proof: `M93 queue durability proof`
 - Queue chaos/alarm proof: `M94-E queue chaos/alarm proof` — static check + synthetic runtime probe ile yaşar.
+- Check-in panel integrations: `M97 check-in panel integrations` — nav restore ve panel kısayolları check'i ile yaşar.
+- Room operation board: `M97-A room operation board` — oda operasyon özetini, görev/servis sayfalarını ve biniş değişikliği görünümünü yaşatır.
+- Personel activation model: `M98-A personel activation model` — kurum daveti ve ilk giriş modeliyle yaşar.
 - Güncel kapanmış ek hatlar: `M91`, `M92`, `M93`, `Tur 1`, `Tur 2`, `Tur 3`.
 - Resmi çalışma yönü: `M90` rotası içinde ihtiyaç-temelli kontrollü ilerleme.
 - Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.

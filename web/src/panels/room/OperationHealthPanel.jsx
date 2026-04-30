@@ -5,6 +5,7 @@ import { useSession } from "../../state/session";
 import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import RoomOperationsBoard from "./roomOperationsBoard";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
 
@@ -143,6 +144,7 @@ export default function OperationHealthPanel() {
   const [summary, setSummary] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [issues, setIssues] = useState([]);
+  const [roomOperations, setRoomOperations] = useState(null);
   const [err, setErr] = useState("");
   const [filterQ, setFilterQ] = useState("");
   const [driverStatusFilter, setDriverStatusFilter] = useState("");
@@ -153,15 +155,30 @@ export default function OperationHealthPanel() {
     let cancelled = false;
     (async () => {
       try {
+        const today = new Date().toISOString().slice(0, 10);
         const [s, d, i] = await Promise.all([
           api("/api/observability/room/summary", { token }),
           api("/api/observability/room/drivers", { token }),
           api("/api/observability/room/issues", { token }),
         ]);
+        const [driverSignals, shiftSummary, vehicleSummary, driverSummary, requests] = await Promise.all([
+          api("/api/drivers?take=200", { token }).catch(() => []),
+          api(`/api/reports/shifts/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+          api(`/api/reports/vehicles/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+          api(`/api/reports/drivers/summary?from=${encodeURIComponent(today)}&to=${encodeURIComponent(today)}`, { token }).catch(() => null),
+          api("/api/requests?onlyOpen=1&onlyActive=1", { token }).catch(() => []),
+        ]);
         if (cancelled) return;
         setSummary(s || null);
         setDrivers(Array.isArray(d?.items) ? d.items : []);
         setIssues(Array.isArray(i?.items) ? i.items : []);
+        setRoomOperations({
+          driverSignals: Array.isArray(driverSignals) ? driverSignals : [],
+          shiftSummary: shiftSummary || null,
+          vehicleSummary: vehicleSummary || null,
+          driverSummary: driverSummary || null,
+          requests: Array.isArray(requests) ? requests : [],
+        });
       } catch (e) {
         if (cancelled) return;
         setErr(e?.message || String(e));
@@ -269,13 +286,18 @@ export default function OperationHealthPanel() {
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div className="panelTitle">Operasyon Sağlığı</div>
+          <div className="panelTitle">Oda Operasyon Paneli</div>
           <div className="panelMeta" style={{ marginTop: 6 }}>
-            Room için sürücü, araç ve canlılık görünürlüğü
+            Room için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü
           </div>
         </div>
         <div className="muted">Kapsam: Kendi operasyon alanınız</div>
       </div>
+
+      <RoomOperationsBoard
+        roomSummary={summary}
+        roomData={roomOperations}
+      />
 
       <div className="card" style={{ marginTop: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
         <div>

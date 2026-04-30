@@ -31,6 +31,7 @@ const MENU_GUIDE = [
   { title: "İşlem Kayıtları", desc: "Kim, ne zaman, hangi işlemi yaptı sorusunun kaydı." },
   { title: "Canlı İzleme", desc: "Sistemin ve sahadaki akışın canlı görünümü." },
   { title: "Kabul Merkezi", desc: "Saha kabul ve doğrulama işlerinin ana ekranı." },
+  { title: "Check-in", desc: "ROOM, COMPANY, SCHOOL ve ORGANIZATION için check-in izleme ve hızlı geçiş alanı." },
   { title: "Operasyon Doğrulama", desc: "Checklist, kanıt ve sonuç kaydı için kullanılan ekran." },
   { title: "Sistem Standartları", desc: "Resmi doküman, paket ve çalışma hattının aynı kurala göre ilerlediğini gösterir." },
   { title: "Ticari Akış", desc: "Talep, teklif, pazarlık ve sözleşme adımlarını tek akışta özetler." },
@@ -146,6 +147,7 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>İşlem Kayıtları</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/observability")}>Canlı İzleme</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/acceptance")}>Kabul Merkezi</button>
+          <button className="btn sm" onClick={() => navigate("/room/checkin")}>Check-in</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/ssot-alignment")}>Sistem Standartları</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/commercial-core")}>Ticari Akış</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/trust-quality")}>Güven + Kalite</button>

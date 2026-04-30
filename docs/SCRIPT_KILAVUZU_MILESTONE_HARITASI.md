@@ -414,6 +414,18 @@ Bu bant güncel doğrulanmış üst hattır.
 - Probe: `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
 - Ana konu: autoReachedQueue için Redis unavailable, stale claim reclaim, dead-letter görünürlüğü, dedupe'li alarm ve incident-sync akışını güvenli probe ile görünür kılmak.
 
+### M97 — check-in panel integrations [CHECK]
+- Komut: `node backend\scripts\m97_panel_integration_check.js`
+- Ana konu: room/company/school/organization/driver check-in görünürlük ve kısayollarını panel/nav katmanında güvenli biçimde restore etmek.
+
+### M97-A — room operation board [CHECK]
+- Komut: `node backend\scripts\m97_a_room_operation_panel_check.js`
+- Ana konu: oda operasyon panelinde bugünkü görevler, aktif servisler, sürücü / araç durumu ve biniş değişikliği özetini tek yerde göstermek.
+
+### M98-A — personel activation model [CHECK]
+- Komut: `node mobile\scripts\m98_a_personel_activation_model_check.js`
+- Ana konu: personel hesabı için kurum daveti, ilk giriş PIN/şifre değişimi ve cihaz eşleşmesi modelini görünür kılmak.
+
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
 - Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
@@ -430,3 +442,5 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M92`: repo verification spine ve tek cati kontrol zinciri
 - `M93`: queue durability proof ve autoReachedQueue görünürlük kanıtı
 - `M94-E`: queue chaos/alarm proof ve güvenli runtime probe
+- `M97`: check-in panel integrations ve nav restore check'i
+- `M98-A`: personel activation model check'i

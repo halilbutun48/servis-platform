@@ -85,6 +85,7 @@ async function main() {
   const pin = read("mobile/src/screens/PinChangeScreen.js");
   const today = read("mobile/src/screens/TodayScreen.js");
   const live = read("mobile/src/screens/LiveScreen.js");
+  const taskCard = read("mobile/src/screens/DriverTaskSummaryCard.js");
   const gps = read("mobile/src/lib/gps.js");
   const voice = read("mobile/src/lib/voice.js");
   const appJson = read("mobile/app.json");
@@ -97,7 +98,7 @@ async function main() {
   console.log("INFO checking driver mobile acceptance baseline");
   must("login keeps driver code / pin flow", includesAny(login, ["Surucu Kodu + PIN", "Sürücü Kodu + PIN", "Surucu Kodu veya e-posta", "PIN veya sifre", "PIN veya şifre"]));
   must("pin change screen exists for first login", includesAny(pin, ["Yeni PIN belirle", "PIN'i kaydet", "Ilk giriste"]));
-  must("today screen exposes route summary", includesAny(today, ["Rota ozeti", "Rota Özeti", "Görev özeti", "Gorev ozeti", "Sonraki durak", "Sıradaki durak", "Siradaki durak"]));
+  must("today screen exposes route summary", includesAny(today, ["DriverTaskSummaryCard"]) && includesAny(taskCard, ["Kalan rota süresi", "Kalan km", "Kalan durak", "Sıradaki durak", "RoutePreviewList"]));
   must("mobile screens expose voice and ETA actions", includesAny(today + "\n" + live, ["Sesli rehber", "ETA oku", "Durak ETA", "Sıradaki durağı oku", "Siradaki duragi oku"]));
   must("mobile screens expose GPS permission card", includesAny(today + "\n" + live, ["Surucunun telefon GPS'i", "Sürücünün telefon GPS'i", "GPS iznini yenile", "Ayarlari ac", "Ayarları aç"]));
   must("today screen exposes connection recovery language", includesAny(today, ["Baglanti", "otomatik denemeler devam eder", "Baglanti geri geldi"]));

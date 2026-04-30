@@ -1,6 +1,8 @@
 import { ScrollView, Text, View } from 'react-native';
 import { listVisibleShifts, resolveVisibleShift } from '../lib/gps';
 import { openFullRouteNavigation, openNextStopNavigation } from '../lib/navigation';
+import DriverAvailabilityCard from './DriverAvailabilityCard';
+import DriverTaskSummaryCard from './DriverTaskSummaryCard';
 import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, ShiftChooser, TopTabs, fmt, styles } from './mobileUi';
 
 function stopTone(stop, nextStopId) {
@@ -25,6 +27,7 @@ export default function RouteScreen({
   selectedShiftId,
   routeOpsBusy,
   routeOpsText,
+  driverAvailability,
   onRefresh,
   onOpenToday,
   onOpenLive,
@@ -37,6 +40,7 @@ export default function RouteScreen({
   onSkipStop,
   onReopenStop,
   onUndoStop,
+  onSetDriverAvailability,
 }) {
   const visibleShifts = listVisibleShifts(today);
   const activeShift = route?.shift || resolveVisibleShift(today, selectedShiftId, route);
@@ -52,6 +56,13 @@ export default function RouteScreen({
     lastReachedOrder: route?.progress?.lastReachedOrder ?? route?.summary?.lastReachedOrder ?? null,
     completed: Boolean(route?.progress?.completed ?? route?.summary?.completed),
     paused: Boolean(route?.progress?.pausedAt),
+    statusText: route?.progress?.completed
+      ? 'Tamamlandı'
+      : route?.progress?.pausedAt
+        ? 'Duraklatıldı'
+        : activeShift
+          ? 'Çalışıyor'
+          : 'Görev yok',
   };
   const canStart = String(route?.shift?.status || activeShift?.status || '').toUpperCase() === 'APPROVED';
   const canPause = String(route?.shift?.status || activeShift?.status || '').toUpperCase() === 'ACTIVE' && !route?.progress?.pausedAt;
@@ -91,6 +102,29 @@ export default function RouteScreen({
           <EmptyState title="Vardiya görünmüyor" text="Bugün veya yakın zaman için atanmış vardiya yok." />
         )}
       </Card>
+
+      <DriverAvailabilityCard
+        driverAvailability={driverAvailability}
+        routeOpsBusy={routeOpsBusy}
+        onSetDriverAvailability={onSetDriverAvailability}
+      />
+
+      {activeShift ? (
+        <DriverTaskSummaryCard
+          title="Görev / rota / ETA"
+          subtitle="Güncel rota, tahmini varış ve kalan iş tek kartta."
+          activeShift={activeShift}
+          route={route}
+          routeSummary={routeSummary}
+          nextStop={nextStop}
+          routePreviewStops={Array.isArray(route?.orderedStops) ? route.orderedStops : []}
+          routeOpsText={routeOpsText}
+          routeOpsBusy={routeOpsBusy}
+          onOpenRoute={openFullRoute}
+          onOpenLive={onOpenLive}
+          onRefresh={onRefresh}
+        />
+      ) : null}
 
       {!activeShift ? (
         <Card>

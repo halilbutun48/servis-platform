@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { listVisibleShifts, resolveVisibleShift } from '../lib/gps';
+import DriverAvailabilityCard from './DriverAvailabilityCard';
+import DriverChangeAwarenessCard from './DriverChangeAwarenessCard';
+import NotificationCenterCard from './NotificationCenterCard';
+import DriverTaskSummaryCard from './DriverTaskSummaryCard';
 import { Card, EmptyState, Info, Pill, PrimaryButton, RoutePreviewList, SecondaryButton, SectionTitle, ShiftChooser, TopTabs, fmt, isStale, styles } from './mobileUi';
 
 export default function TodayScreen({
@@ -22,6 +26,10 @@ export default function TodayScreen({
   gps,
   kvkk,
   selectedShiftId,
+  driverAvailability,
+  voiceEnabled,
+  driverAwareness,
+  notifications,
   onRefresh,
   onLogout,
   onOpenRoute,
@@ -32,13 +40,16 @@ export default function TodayScreen({
   onMarkReached,
   onSpeakNextStop,
   onSpeakEta,
+  onSpeakDriverAwareness,
+  onAcknowledgeDriverAwareness,
+  onMarkNotificationsSeen,
   onOpenSettings,
   onPublishGpsNow,
+  onSetDriverAvailability,
 }) {
   const visibleShifts = listVisibleShifts(today);
   const activeShift = resolveVisibleShift(today, selectedShiftId, route);
   const nextStop = route?.nextStop || null;
-  const shiftStatus = String(route?.shift?.status || activeShift?.status || '').toUpperCase();
   const pendingStops = Array.isArray(route?.orderedStops)
     ? route.orderedStops.filter((stop) => String(stop?.state || '').toUpperCase() === 'PENDING')
     : [];
@@ -102,40 +113,46 @@ export default function TodayScreen({
         )}
       </Card>
 
-      <Card>
-        <SectionTitle title="Bugünkü görev" subtitle="Rota, ETA ve hızlı işlemler tek yerde." />
-        {routeOpsText ? <Text style={styles.helper}>{routeOpsText}</Text> : null}
-        {activeShift ? (
-          <>
-            <Info label="Seçili vardiya" value={`#${activeShift.id} • ${String(activeShift.status || '-').toUpperCase()}`} />
-            <Info label="Başlangıç" value={fmt(activeShift.startAt)} />
-            <Info label="Bitiş" value={fmt(activeShift.endAt)} />
-            <Info label="Araç" value={route?.vehicle?.plate || activeShift?.vehicle?.plate || (activeShift?.vehicleId ? `#${activeShift.vehicleId}` : '-')} />
-            <Info label="Rota durumu" value={routeSummary.statusText} />
-            <Info label="Sıradaki durak" value={nextStop?.name || '-'} />
-            <Info label="Durak ETA" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
-            <Info label="Kalan rota süresi" value={routeSummary.remainingRouteEtaMin != null ? `${routeSummary.remainingRouteEtaMin} dk` : '-'} />
-            <Info label="Kalan km" value={routeSummary.remainingKm != null ? `${routeSummary.remainingKm} km` : '-'} />
-            <Info label="Kalan durak" value={routeSummary.remainingStops != null ? String(routeSummary.remainingStops) : String(pendingStops.length || 0)} />
-            <Info label="Kalan yolcu" value={routeSummary.remainingPassengers != null ? String(routeSummary.remainingPassengers) : '-'} />
-            <Info label="Son ulaşılan sıra" value={routeSummary.lastReachedOrder != null ? String(routeSummary.lastReachedOrder) : '-'} />
-            {routeSummary.completed ? <Pill label="Rota tamamlandı" tone="ok" /> : null}
-            {routeSummary.paused ? <Pill label="Vardiya duraklatıldı" tone="warn" /> : null}
-            <View style={styles.actionsRow}>
-              {shiftStatus === 'APPROVED' ? <PrimaryButton title="Vardiyayı başlat" onPress={onStartShift} disabled={!onStartShift || routeOpsBusy} /> : null}
-              {nextStop ? <SecondaryButton title="Durak ulaşıldı" onPress={() => onMarkReached?.(nextStop.id)} disabled={!onMarkReached || routeOpsBusy || !!route?.progress?.pausedAt} /> : null}
-              {['APPROVED', 'ACTIVE', 'DONE'].includes(shiftStatus) && !route?.progress?.pausedAt && pendingStops.length === 0 ? <SecondaryButton title="Vardiyayı tamamla" onPress={onCompleteShift} disabled={!onCompleteShift || routeOpsBusy} /> : null}
-            </View>
-          </>
-        ) : (
-          <EmptyState title="Görev görünmüyor" text="Bugün ekranında görev görünmüyorsa oda veya şirket atamasını kontrol et." />
-        )}
-        <View style={styles.actionsRow}>
-          <PrimaryButton title="Rota ekranını aç" onPress={onOpenRoute} disabled={!activeShift} />
-          <SecondaryButton title="Canlı ekranını aç" onPress={onOpenLive} />
-          <SecondaryButton title="Yenile" onPress={onRefresh} />
-        </View>
-      </Card>
+      <DriverAvailabilityCard
+        driverAvailability={driverAvailability}
+        routeOpsBusy={routeOpsBusy}
+        onSetDriverAvailability={onSetDriverAvailability}
+      />
+
+      <DriverTaskSummaryCard
+        title="Bugünkü görev"
+        subtitle="Rota, ETA ve hızlı işlemler tek yerde."
+        activeShift={activeShift}
+        route={route}
+        routeSummary={routeSummary}
+        nextStop={nextStop}
+        routePreviewStops={routePreviewStops}
+        routeOpsText={routeOpsText}
+        routeOpsBusy={routeOpsBusy}
+        showWorkflowActions
+        onStartShift={onStartShift}
+        onMarkReached={onMarkReached}
+        onCompleteShift={onCompleteShift}
+        onOpenRoute={onOpenRoute}
+        onOpenLive={onOpenLive}
+        onRefresh={onRefresh}
+      />
+
+      <NotificationCenterCard
+        notifications={notifications}
+        routeOpsBusy={routeOpsBusy}
+        onMarkLatestSeen={onMarkNotificationsSeen}
+        onRefresh={onRefresh}
+      />
+
+      <DriverChangeAwarenessCard
+        voiceEnabled={Boolean(voiceEnabled)}
+        driverAwareness={driverAwareness}
+        routeOpsBusy={routeOpsBusy}
+        onSpeakDriverAwareness={onSpeakDriverAwareness}
+        onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
+        onRefresh={onRefresh}
+      />
 
       <Card>
         <SectionTitle title="Rota kısa özeti" />

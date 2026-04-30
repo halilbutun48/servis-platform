@@ -33,8 +33,10 @@ export default function MobileAppContent({
   onOpenLive,
   onSelectShift,
   onSelectChild,
+  driverAvailability,
   routeOpsBusy,
   routeOpsText,
+  boardingChange,
   onStartShift,
   onPauseShift,
   onResumeShift,
@@ -46,6 +48,9 @@ export default function MobileAppContent({
   onToggleVoiceGuidance,
   onSpeakNextStop,
   onSpeakEta,
+  onSpeakDriverAwareness,
+  onAcknowledgeDriverAwareness,
+  onMarkNotificationsSeen,
   onRequestGpsPermission,
   onRefreshGpsStatus,
   onOpenGpsSettings,
@@ -53,6 +58,8 @@ export default function MobileAppContent({
   onAcceptKvkk,
   onRefreshKvkkStatus,
   onReportNoShow,
+  onRequestBoardingChange,
+  onSetDriverAvailability,
 }) {
   const loading = Boolean(state?.loading && !state?.me);
 
@@ -94,6 +101,8 @@ export default function MobileAppContent({
         lastSyncAt={state?.lastSyncAt || ''}
         releaseInfo={releaseInfo}
         roleLive={state?.roleLive || null}
+        boardingChange={state?.boardingChange || null}
+        notifications={state?.notifications || null}
         routeOpsBusy={Boolean(routeOps?.busy)}
         routeOpsText={routeOps?.message || ''}
         selectedShiftId={state?.selectedShiftId || null}
@@ -103,6 +112,7 @@ export default function MobileAppContent({
         onSelectShift={onSelectShift}
         onSelectChild={onSelectChild}
         onReportNoShow={onReportNoShow}
+        onRequestBoardingChange={onRequestBoardingChange}
       />
     );
   }
@@ -118,6 +128,7 @@ export default function MobileAppContent({
         selectedShiftId={state?.selectedShiftId || null}
         routeOpsBusy={Boolean(routeOps?.busy)}
         routeOpsText={routeOps?.message || ''}
+        driverAvailability={state?.driverAvailability || null}
         onRefresh={onRefresh}
         onOpenToday={onOpenToday}
         onOpenLive={onOpenLive}
@@ -130,6 +141,7 @@ export default function MobileAppContent({
         onSkipStop={onSkipStop}
         onReopenStop={onReopenStop}
         onUndoStop={onUndoStop}
+        onSetDriverAvailability={onSetDriverAvailability}
       />
     );
   }
@@ -162,10 +174,10 @@ export default function MobileAppContent({
   }
 
   return (
-    <TodayScreen
-      me={state?.me || null}
-      today={state?.today || null}
-      route={state?.route || null}
+      <TodayScreen
+        me={state?.me || null}
+        today={state?.today || null}
+        route={state?.route || null}
       error={state?.error || ''}
       health={state?.health || null}
       deviceId={state?.deviceId || ''}
@@ -178,6 +190,10 @@ export default function MobileAppContent({
         net={state?.net || null}
         gps={state?.gps || null}
         kvkk={state?.kvkk || null}
+        driverAvailability={driverAvailability || state?.driverAvailability || null}
+        voiceEnabled={Boolean(state?.voiceEnabled)}
+        driverAwareness={state?.driverAwareness || null}
+        notifications={state?.notifications || null}
         selectedShiftId={state?.selectedShiftId || null}
         routeOpsBusy={routeOpsBusy}
         routeOpsText={routeOpsText}
@@ -191,8 +207,12 @@ export default function MobileAppContent({
         onMarkReached={onMarkReached}
         onSpeakNextStop={onSpeakNextStop}
         onSpeakEta={onSpeakEta}
+        onSpeakDriverAwareness={onSpeakDriverAwareness}
+        onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
+        onMarkNotificationsSeen={onMarkNotificationsSeen}
         onOpenSettings={onOpenGpsSettings}
         onPublishGpsNow={onPublishGpsNow}
+        onSetDriverAvailability={onSetDriverAvailability}
       />
   );
 }

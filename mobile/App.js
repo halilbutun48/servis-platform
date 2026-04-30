@@ -29,6 +29,7 @@ import {
   fetchHealth,
   fetchKvkkCurrent,
   fetchMe,
+  fetchMyNotifications,
   fetchParentChildren,
   fetchParentLiveVehicles,
   fetchPersonelShifts,
@@ -56,11 +57,13 @@ import {
   resolveGpsPublishTarget,
   resolveVisibleShift,
 } from './src/lib/gps';
-import { buildCompletionCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
+import { buildCompletionCueKey, buildDriverChangeCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakDriverChangeAlert, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome, speakStopEta, stopVoiceGuidance } from './src/lib/voice';
 import { deriveRouteTransition, stopDriverBackgroundLocation, syncDriverBackgroundLocation } from './src/lib/backgroundGps';
 import { useDriverRealtimeResync } from './src/app/useDriverRealtimeResync';
 import MobileAppContent from './src/app/MobileAppContent';
 import { createMobileAppHandlers } from './src/app/mobileAppHandlers';
+import { buildDriverAwarenessState, getLatestDriverAwarenessNotification, markDriverAwarenessAnnounced } from './src/app/driverAwarenessState';
+import { buildNotificationCenterState } from './src/app/notificationState';
 import { buildParentRoleLiveState, buildPersonelRoleLiveState } from './src/app/roleLiveState';
 import { DEFAULT_GPS, DEFAULT_KVKK, RELEASE_INFO, applyGpsRuntimeSnapshot, buildLocalPreviewSnapshot, buildMobileSnapshot, buildRetryMeta, buildSignedInSyncArtifacts, canRunRetryWindow, decorateGpsState, humanize, humanizeGpsError, humanizeSessionFailure, hydrateStateFromSnapshot, initialState, isNetworkError, nextKvkkState, readGpsRuntimeSnapshot } from './src/app/mobileAppState';
 import {
@@ -90,6 +93,7 @@ export default function App() {
   const lastVoiceCueRef = useRef('');
   const lastVoiceWelcomeRef = useRef('');
   const lastVoiceCompletionRef = useRef('');
+  const lastDriverAwarenessCueRef = useRef('');
   const appStateRef = useRef(AppState.currentState || 'active');
   const syncRetryCountRef = useRef(0);
   const syncNextRetryAtRef = useRef(0);
@@ -159,6 +163,7 @@ export default function App() {
       const me = await fetchMe();
       const role = String(me?.role || '').trim().toUpperCase();
       const preferredChildId = state.selectedChildId || (await getSelectedChildId().catch(() => null));
+      const notificationsPromise = fetchMyNotifications().catch(() => []);
       const latestSession = await getSession().catch(() => null);
       const nextSession = latestSession?.token && latestSession.token !== state.session?.token
         ? {
@@ -168,7 +173,10 @@ export default function App() {
         : state.session;
 
       if (role !== 'DRIVER') {
-        const kvkkCurrent = await fetchKvkkCurrent().catch(() => null);
+        const [kvkkCurrent, notifications] = await Promise.all([
+          fetchKvkkCurrent().catch(() => null),
+          notificationsPromise,
+        ]);
         let nextRoleLive = null;
         let nextSelectedShiftId = role === 'PERSONEL' ? preferredShiftId : null;
         let nextSelectedChildId = role === 'PARENT' ? preferredChildId : null;
@@ -220,6 +228,14 @@ export default function App() {
 
         const lastSyncAt = new Date().toISOString();
         resetSyncRetryState();
+        lastDriverAwarenessCueRef.current = '';
+        const nextNotifications = buildNotificationCenterState({
+          role,
+          items: notifications,
+          lastSeenNotificationId: state.notifications?.lastSeenNotificationId || null,
+          lastSeenAt: state.notifications?.lastSeenAt || '',
+          lastFetchedAt: lastSyncAt,
+        });
         const nextNet = {
           status: 'online',
           message: 'Bağlantı var.',
@@ -242,6 +258,9 @@ export default function App() {
             lastErrorAt: '',
             selectedShiftId: nextSelectedShiftId,
             selectedChildId: nextSelectedChildId,
+            driverAvailability: state.driverAvailability,
+            driverAwareness: buildDriverAwarenessState(),
+            notifications: nextNotifications,
             roleLive: nextRoleLive,
           })),
           role === 'PERSONEL' ? saveSelectedShiftId(nextSelectedShiftId || null).catch(() => null) : Promise.resolve(null),
@@ -266,6 +285,8 @@ export default function App() {
           kvkk: kvkkCurrent ? nextKvkkState(kvkkCurrent, DEFAULT_KVKK) : { ...DEFAULT_KVKK },
           selectedShiftId: nextSelectedShiftId,
           selectedChildId: nextSelectedChildId,
+          driverAwareness: buildDriverAwarenessState(),
+          notifications: nextNotifications,
           error: '',
           lastErrorAt: '',
           lastSyncAt,
@@ -273,9 +294,10 @@ export default function App() {
         return;
       }
 
-      const [today, kvkkCurrent] = await Promise.all([
+      const [today, kvkkCurrent, notifications] = await Promise.all([
         fetchToday().catch(() => null),
         fetchKvkkCurrent().catch(() => null),
+        notificationsPromise,
       ]);
       const routeBundle = await loadRouteBundleFlow({
         todayValue: today,
@@ -289,6 +311,30 @@ export default function App() {
       const lastSyncAt = new Date().toISOString();
       lastTodayRefreshAtRef.current = Date.now();
       resetSyncRetryState();
+      const nextNotifications = buildNotificationCenterState({
+        role,
+        items: notifications,
+        lastSeenNotificationId: state.notifications?.lastSeenNotificationId || null,
+        lastSeenAt: state.notifications?.lastSeenAt || '',
+        lastFetchedAt: lastSyncAt,
+      });
+      const nextDriverAwarenessBase = buildDriverAwarenessState({
+        items: Array.isArray(notifications) ? notifications : [],
+        lastSeenNotificationId: state.driverAwareness?.lastSeenNotificationId || null,
+        lastAnnouncedNotificationId: state.driverAwareness?.lastAnnouncedNotificationId || null,
+        lastSeenAt: state.driverAwareness?.lastSeenAt || '',
+        lastAnnouncedAt: state.driverAwareness?.lastAnnouncedAt || '',
+        lastFetchedAt: lastSyncAt,
+        updatedAt: lastSyncAt,
+      });
+      const latestDriverAwareness = getLatestDriverAwarenessNotification(nextDriverAwarenessBase);
+      const driverCueKey = buildDriverChangeCueKey(latestDriverAwareness);
+      let nextDriverAwareness = nextDriverAwarenessBase;
+      if (state.voiceEnabled && latestDriverAwareness?.id && driverCueKey && driverCueKey !== lastDriverAwarenessCueRef.current) {
+        speakDriverChangeAlert(latestDriverAwareness);
+        nextDriverAwareness = markDriverAwarenessAnnounced(nextDriverAwarenessBase, latestDriverAwareness, lastSyncAt);
+        lastDriverAwarenessCueRef.current = driverCueKey;
+      }
       const syncArtifacts = buildSignedInSyncArtifacts({
         state,
         routeBundle,
@@ -297,6 +343,8 @@ export default function App() {
         health,
         kvkkCurrent,
         lastSyncAt,
+        driverAwareness: nextDriverAwareness,
+        notifications: nextNotifications,
       });
       const nextKvkk = syncArtifacts.nextKvkk;
       const nextNet = syncArtifacts.nextNet;
@@ -326,6 +374,8 @@ export default function App() {
         gps: nextGps,
         error: '',
         lastSyncAt,
+        driverAwareness: nextDriverAwareness,
+        notifications: nextNotifications,
       }));
     } catch (error) {
       if (isSessionFailureError(error)) {
@@ -615,6 +665,9 @@ export default function App() {
         lastErrorAt: state.lastErrorAt,
         gps: nextGpsState,
         selectedShiftId: nextRouteBundle?.selectedShiftId || state.selectedShiftId,
+        driverAvailability: state.driverAvailability,
+        driverAwareness: state.driverAwareness,
+        notifications: state.notifications,
       }));
 
       setState((prev) => ({
@@ -775,6 +828,7 @@ export default function App() {
         if (snapshot) {
           setState(hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId, selectedChildId }));
           if (snapshot?.lastSyncAt) lastTodayRefreshAtRef.current = new Date(snapshot.lastSyncAt).getTime() || 0;
+          lastDriverAwarenessCueRef.current = buildDriverChangeCueKey(snapshot?.driverAwareness?.latestRelevant || snapshot?.driverAwareness?.items?.[0] || null);
         }
 
         if (pendingSessionEvent && session?.token) {
@@ -949,6 +1003,7 @@ export default function App() {
     resetGpsRetryState,
     lastVoiceWelcomeRef,
     lastVoiceCueRef,
+    lastDriverAwarenessCueRef,
     appStateRef,
   });
 
@@ -970,6 +1025,9 @@ export default function App() {
       onSelectShift={mobileHandlers.handleSelectShift}
       routeOpsBusy={Boolean(routeOps?.busy)}
       routeOpsText={routeOps?.message || ''}
+      driverAvailability={state?.driverAvailability || null}
+      boardingChange={state?.boardingChange || null}
+      notifications={state?.notifications || null}
       onStartShift={mobileHandlers.handleStartShift}
       onPauseShift={mobileHandlers.handlePauseShift}
       onResumeShift={mobileHandlers.handleResumeShift}
@@ -981,12 +1039,18 @@ export default function App() {
       onToggleVoiceGuidance={mobileHandlers.handleToggleVoiceGuidance}
       onSpeakNextStop={mobileHandlers.handleSpeakNextStop}
       onSpeakEta={mobileHandlers.handleSpeakEta}
+      onSpeakDriverAwareness={mobileHandlers.handleSpeakDriverAwareness}
+      onAcknowledgeDriverAwareness={mobileHandlers.handleAcknowledgeDriverAwareness}
+      onMarkNotificationsSeen={mobileHandlers.handleMarkNotificationsSeen}
       onRequestGpsPermission={mobileHandlers.handleRequestGpsPermission}
       onRefreshGpsStatus={mobileHandlers.handleRefreshGpsStatus}
       onOpenGpsSettings={mobileHandlers.handleOpenGpsSettings}
       onPublishGpsNow={mobileHandlers.handlePublishGpsNow}
       onAcceptKvkk={mobileHandlers.handleAcceptKvkk}
       onRefreshKvkkStatus={mobileHandlers.handleRefreshKvkk}
+      onReportNoShow={mobileHandlers.handleReportNoShow}
+      onRequestBoardingChange={mobileHandlers.handleRequestBoardingChange}
+      onSetDriverAvailability={mobileHandlers.handleSetDriverAvailability}
     />
   ), [state, screen, routeOps, mobileHandlers]);
 
