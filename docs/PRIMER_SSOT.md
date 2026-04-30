@@ -12,6 +12,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Gelişmiş altında `Geri Bildirim` alt menüsü açıldı; Copilot en alta taşındı; panel içi dağınık geri bildirim butonları kaldırıldı.
 - Region/sharding yönü resmi teknik karar + field rollout runbook olarak kapandı.
 - Mobil uygulama driver-first kalır; tüm web panellerini mobile taşımak bu aşamada hedef değildir.
+- Mobile/App.js ince shell olarak kalır; yeni mobile işler `mobile/src/app/*`, `mobile/src/screens/*` ve helper dosyalarına taşınır.
 - Refresh rotasyonu fail-closed; telematics vendor webhook HMAC + timestamp + replay guard ile korunur; `x-greenpack` sadece explicit local-test override olarak kalır.
 - 2026-04-19 gece güncellemesi: `verify:repo`, `verify:ci`, `verify:final` ve `tools\pack_living.ps1` yeşildir.
 - Repo check chain sonucu: `PASS 21 / FAIL 0`; selected milestone static set: `PASS 92 / FAIL 0 / SKIP 78`.
@@ -20,6 +21,10 @@ Bu primer yaşayan hattın resmi özetidir.
 - İlk yürütülebilir kapanış kapısı: `M90B.1 — executable closure gate`
 - M90C.1 / M90C.2 / M90C.3 / M90C.4 / M90C.5 / M90C.6 / M90C.7 / M90C.8 / M90C.9 kapanmıştır; `M91`, `M92` ve `M93` ile birlikte green / compatibility çizgisinde korunur.
 - M94-D2 / M94-D3 — admin audit + payment export polish ve settlement ledger CSV temizliği görünürlük kaydıdır.
+- M96-A — driver availability local state bandıdır.
+- M96-B — mobile notifications foundation driver, personel, veli ve operasyon bildirim yüzeylerini tek foundation altında yaşatır.
+- M96-C — boarding change local model bandıdır; backend/panel bind sonraki halkadadır.
+- M96-D — driver change awareness ve sesli uyarı mobil yüzeyidir.
 - Tek repo kontrol girişi: `npm run verify:repo`
 - Local acceptance overlay: `M91 shift/agreement route preview`
 - Repo verification spine: `M92 repo verification spine`
@@ -27,7 +32,14 @@ Bu primer yaşayan hattın resmi özetidir.
 - Queue chaos/alarm proof: `M94-E queue chaos/alarm proof` — static check + synthetic runtime probe ile yaşar.
 - Check-in panel integrations: `M97 check-in panel integrations` — nav restore ve panel kısayolları check'i ile yaşar.
 - Room operation board: `M97-A room operation board` — oda operasyon özetini, görev/servis sayfalarını ve biniş değişikliği görünümünü yaşatır.
+- Company operations panel: `M97-B company operations panel` — personel servis atamaları, biniş değişiklikleri ve bildirim özetini yaşatır.
+- School operations panel: `M97-C school operations panel` — öğrenci servis atamaları, veli bağlantıları ve bildirim geçmişini yaşatır.
+- Super Admin operations panel: `M97-D super admin operations panel` — rol/yetki denetimi, audit ve tekrar eden işlem özetini yaşatır.
 - Personel activation model: `M98-A personel activation model` — kurum daveti ve ilk giriş modeliyle yaşar.
+- Parent activation and link access: `M98-B parent activation and link access` — veli daveti, bağlantı süresi ve takip yetkisiyle yaşar.
+- Link lifetime and tracking authority: `M98-C link lifetime and tracking authority` — davet süresi, aktif servis ve görünürlük kuralıyla yaşar.
+- KVKK visibility matrix: `M98-D kvkk visibility matrix` — rol bazlı takip görünürlüğü ve kapı kurallarıyla yaşar.
+- Mobile regression pack: `M99-A mobile regression pack` — login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'iyle yaşar.
 - Güncel kapanmış ek hatlar: `M91`, `M92`, `M93`, `Tur 1`, `Tur 2`, `Tur 3`.
 - Resmi çalışma yönü: `M90` rotası içinde ihtiyaç-temelli kontrollü ilerleme.
 - Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.
@@ -125,7 +137,7 @@ Compatibility aliases for legacy checks:
 - Hot/large file kuyruğu yalnız sayısal repo-audit çıktısı değildir; resmi sınıflı queue olarak yönetilir.
 - Kör line-count düşürme yapılmaz; önce acceptance, sonra kontrollü temizlik uygulanır.
 - `backend/src/ai/chat/helpComposer.js` ve `backend/prisma/schema.prisma` queue içinde **justified exception** olarak kalır.
-- `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js`, `web/src/panels/shared/CopilotPanel.jsx` ve `mobile/App.js` **acceptance-sensitive / later** sınıfındadır.
+- `backend/src/routes/shifts/room.js`, `backend/src/routes/shifts/company.js` ve `web/src/panels/shared/CopilotPanel.jsx` **acceptance-sensitive / later** sınıfındadır; `mobile/App.js` shell kalır, yeni mobile iş helper/state/screen dosyalarına taşınır.
 - `web/src/panels/company/ShiftPeopleTab.jsx` **safe candidate review** kuyruğundadır.
 - Bu queue, `tools/repo_contract_state.json` içindeki `hotFileQueuePolicy` alanı ve `repo_audit` çıktısı ile birlikte doğrulanır.
 - Sıcak dosya borcu en son ele alınır; önce güvenlik, doğrulama, hygiene ve acceptance odaklı işler tamamlanır.

@@ -109,6 +109,7 @@ export default function NavDock({ role, path, me }) {
         title: "Ana",
         items: [
           { label: "Harita", path: base + "/map" },
+          { label: me?.companyKind === "SCHOOL" ? "Okul Operasyon Paneli" : me?.companyKind === "ORGANIZATION" ? "Organizasyon Operasyon Paneli" : "Operasyon Paneli", path: base + "/operations", badge: "Yeni" },
           { label: "Ticari Akışım", path: base + "/commercial-flow", badge: "Yeni" },
           { label: me?.companyKind === "SCHOOL" ? "Okul Merkezi" : "Planlama Merkezi", path: base },
           { label: "Vardiyalar", path: base + "/shifts" },
@@ -177,6 +178,7 @@ export default function NavDock({ role, path, me }) {
         items: [
           { label: "İşlem Kayıtları", path: "/superadmin/audit" },
           { label: "Canlı İzleme", path: "/superadmin/observability" },
+          { label: "Denetim Paneli", path: "/superadmin/operations", badge: "Yeni" },
           { label: "Kabul Merkezi", path: "/superadmin/acceptance" },
           { label: "Operasyon Doğrulama", path: "/superadmin/operation-verification", badge: "Yeni" },
           { label: "Sahaya Çıkış Kontrolü", path: "/superadmin/pilot-launch-gate" },

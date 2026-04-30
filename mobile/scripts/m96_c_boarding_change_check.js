@@ -71,6 +71,7 @@ must(has(screen, 'Bugün öğrencim servise binmeyecek'), 'role home keeps paren
 must(has(card, 'Biniş değişikliği'), 'boarding change card shows title');
 must(has(card, 'Son istekler'), 'boarding change card shows recent request list');
 must(has(card, 'listBoardingChangeOptions'), 'boarding change card uses helper-driven option list');
+must(has(card, 'mobil yerel istek modelidir'), 'boarding change card keeps local foundation scope');
 must(has(card, 'Durağa yetişemiyorum') || has(card, 'Durağa yetişemiyor') || has(helper, 'Durağa yetişemiyorum'), 'boarding change card exposes late-to-stop wording');
 must(has(card, 'Konumdan alınmak istiyorum') || has(helper, 'Konumdan alınmak istiyorum'), 'boarding change card exposes pickup-from-location wording');
 

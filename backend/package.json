@@ -53,6 +53,7 @@
     "m94eprobe": "node scripts/m94e_queue_chaos_alarm_probe.js",
     "m97acheck": "node scripts/m97_a_room_operation_panel_check.js",
     "m97check": "node scripts/m97_panel_integration_check.js",
+    "m97opscheck": "node scripts/m97_panel_operations_check.js",
     "m45:backup:create": "node scripts/m45_backup_create.js",
     "m45:backup:restore": "node scripts/m45_backup_restore.js",
     "milestones:static": "node scripts/run_m0_latest.js --static-only --to latest --continue",

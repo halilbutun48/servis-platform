@@ -38,6 +38,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m94d_admin_payment_security_export_check.js`
 - `node backend\scripts\m94e_queue_chaos_alarm_check.js`
 - `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
+- `node backend\scripts\m97_panel_operations_check.js`
+- `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -414,6 +416,22 @@ Bu bant güncel doğrulanmış üst hattır.
 - Probe: `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
 - Ana konu: autoReachedQueue için Redis unavailable, stale claim reclaim, dead-letter görünürlüğü, dedupe'li alarm ve incident-sync akışını güvenli probe ile görünür kılmak.
 
+### M96-A — driver availability local state [CHECK]
+- Komut: `node mobile\scripts\m96_a_driver_availability_check.js`
+- Ana konu: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak.
+
+### M96-B — mobile notifications foundation [CHECK]
+- Komut: `node mobile\scripts\m96_b_notifications_check.js`
+- Ana konu: driver, personel, veli ve operasyon bildirim yüzeylerini mobilde tek foundation altında görünür kılmak.
+
+### M96-C — boarding change local model [CHECK]
+- Komut: `node mobile\scripts\m96_c_boarding_change_check.js`
+- Ana konu: biniş değişikliği taleplerini mobil yerel istek modeli olarak görünür kılmak; backend/panel bind sonraki halkada yaşar.
+
+### M96-D — driver change awareness [CHECK]
+- Komut: `node mobile\scripts\m96_d_driver_change_awareness_check.js`
+- Ana konu: sürücü değişiklik farkındalığı ve sesli uyarı katmanını mobilde görünür kılmak.
+
 ### M97 — check-in panel integrations [CHECK]
 - Komut: `node backend\scripts\m97_panel_integration_check.js`
 - Ana konu: room/company/school/organization/driver check-in görünürlük ve kısayollarını panel/nav katmanında güvenli biçimde restore etmek.
@@ -425,6 +443,22 @@ Bu bant güncel doğrulanmış üst hattır.
 ### M98-A — personel activation model [CHECK]
 - Komut: `node mobile\scripts\m98_a_personel_activation_model_check.js`
 - Ana konu: personel hesabı için kurum daveti, ilk giriş PIN/şifre değişimi ve cihaz eşleşmesi modelini görünür kılmak.
+
+### M98-B — parent activation and link access [CHECK]
+- Komut: `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
+- Ana konu: veli daveti, bağlantı süresi ve takip yetkisini görünür kılmak.
+
+### M98-C — link lifetime and tracking authority [CHECK]
+- Komut: `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
+- Ana konu: bağlantı süresi, aktif servis ve görünürlük kuralını görünür kılmak.
+
+### M98-D — kvkk visibility matrix [CHECK]
+- Komut: `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
+- Ana konu: rol bazlı takip görünürlüğü ve KVKK kapı kurallarını görünür kılmak.
+
+### M99-A — mobile regression pack [CHECK]
+- Komut: `node mobile\scripts\m99_a_mobile_regression_pack_check.js`
+- Ana konu: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak.
 
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
@@ -442,5 +476,13 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M92`: repo verification spine ve tek cati kontrol zinciri
 - `M93`: queue durability proof ve autoReachedQueue görünürlük kanıtı
 - `M94-E`: queue chaos/alarm proof ve güvenli runtime probe
+- `M96-A`: driver availability local state check'i
+- `M96-B`: mobile notifications foundation check'i
+- `M96-C`: boarding change local model check'i
+- `M96-D`: driver change awareness check'i
 - `M97`: check-in panel integrations ve nav restore check'i
 - `M98-A`: personel activation model check'i
+- `M98-B`: parent activation and link access check'i
+- `M98-C`: link lifetime and tracking authority check'i
+- `M98-D`: kvkk visibility matrix check'i
+- `M99-A`: mobile regression pack check'i

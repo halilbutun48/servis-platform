@@ -36,6 +36,7 @@ const REGISTRY = {
   ],
   COMPANY: [
     { id: 2101, path: "/company", label: "Planlama Merkezi" },
+    { id: 2117, path: "/company/operations", label: "Operasyon Paneli" },
     { id: 2102, path: "/company/shifts", label: "Vardiyalar" },
     { id: 2103, path: "/company/agreements", label: "Sözleşmeler" },
     { id: 2104, path: "/company/access-links", label: "Personel Link" },
@@ -51,6 +52,7 @@ const REGISTRY = {
   ],
   SCHOOL: [
     { id: 2201, path: "/school", label: "Okul Merkezi" },
+    { id: 2218, path: "/school/operations", label: "Okul Operasyon Paneli" },
     { id: 2202, path: "/school/shifts", label: "Vardiyalar" },
     { id: 2203, path: "/school/agreements", label: "Sözleşmeler" },
     { id: 2204, path: "/school/access-links", label: "Öğrenci Link" },
@@ -67,6 +69,7 @@ const REGISTRY = {
   ],
   ORGANIZATION: [
     { id: 2301, path: "/organization", label: "Gezi / Planlama Merkezi" },
+    { id: 2315, path: "/organization/operations", label: "Organizasyon Operasyon Paneli" },
     { id: 2302, path: "/organization/plans", label: "Yer Planları" },
     { id: 2303, path: "/organization/shifts", label: "Vardiyalar" },
     { id: 2304, path: "/organization/agreements", label: "Sözleşmeler" },
@@ -103,6 +106,7 @@ const REGISTRY = {
   ],
   SUPER_ADMIN: [
     { id: 6101, path: "/superadmin", label: "Genel Bakış" },
+    { id: 6117, path: "/superadmin/operations", label: "Denetim Paneli" },
     { id: 6102, path: "/superadmin/companies", label: "Şirketler" },
     { id: 6103, path: "/superadmin/rooms", label: "Operasyon Odaları" },
     { id: 6104, path: "/superadmin/users", label: "Kullanıcılar" },

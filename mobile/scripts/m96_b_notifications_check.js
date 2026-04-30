@@ -54,8 +54,9 @@ const api = read('src/lib/api.js');
 const backendNotificationsRoute = read('backend/src/routes/notifications.js', repoRoot);
 const backendSchema = read('backend/prisma/schema.prisma', repoRoot);
 
-must(has(JSON.stringify(pkg.scripts || {}), 'check:m96bnotifications'), 'package exposes m96bnotifications entrypoint');
-must(has(pkg.scripts['acceptance:mobile'] || '', 'check:m96bnotifications'), 'acceptance chain keeps M96-B notification gate');
+must(has(JSON.stringify(pkg.scripts || {}), 'check:m96b'), 'package exposes m96b entrypoint');
+must(has(JSON.stringify(pkg.scripts || {}), 'check:m96bnotifications'), 'package keeps m96bnotifications compatibility alias');
+must(has(pkg.scripts['acceptance:mobile'] || '', 'check:m96b'), 'acceptance chain keeps M96-B notification gate');
 must(has(pkg.scripts['check:m1'] || '', 'acceptance:mobile'), 'check:m1 still delegates to mobile acceptance chain');
 
 must(has(notificationState, 'NOTIFICATION_ROLE_MESSAGES'), 'notification state defines role message table');

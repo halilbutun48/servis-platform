@@ -145,6 +145,7 @@ export default function SuperAdminPanel() {
             <button className="btn sm" onClick={() => navigate("/superadmin/users")}>Kullanıcılar</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/regions")}>Bölgeler</button>
             <button className="btn sm" onClick={() => navigate("/superadmin/audit")}>İşlem Kayıtları</button>
+            <button className="btn sm" onClick={() => navigate("/superadmin/operations")}>Denetim Paneli</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/observability")}>Canlı İzleme</button>
           <button className="btn sm" onClick={() => navigate("/superadmin/acceptance")}>Kabul Merkezi</button>
           <button className="btn sm" onClick={() => navigate("/room/checkin")}>Check-in</button>

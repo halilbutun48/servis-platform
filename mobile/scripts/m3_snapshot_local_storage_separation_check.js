@@ -30,6 +30,7 @@ console.log('=== M3 SNAPSHOT / LOCAL STORAGE SEPARATION CHECK ===');
 const pkg = JSON.parse(read('package.json'));
 const storage = read('src/lib/storage.js');
 const appState = read('src/app/mobileAppState.js');
+const lifecycle = read('src/app/useMobileAppLifecycle.js');
 const app = read('App.js');
 
 must(JSON.stringify(pkg.scripts || {}), '"check:m3"', 'package json exposes check:m3');
@@ -63,9 +64,9 @@ must(app, 'clearPendingSessionEvent', 'app clears pending recovery event');
 must(app, 'clearLastMobileSnapshot', 'app clears snapshot on session failure');
 must(app, 'clearSelectedShiftId', 'app clears selected shift on session failure');
 must(app, 'clearSession', 'app clears session on session failure');
-mustAny(app, [
-  'hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId })',
-  'hydrateStateFromSnapshot(snapshot, { session, deviceId, voiceEnabled, selectedShiftId, selectedChildId })',
+mustAny(lifecycle, [
+  'hydrateStateFromSnapshot(snapshot, { session, deviceId,',
+  'hydrateStateFromSnapshot(null, { session: null, deviceId,',
 ], 'app hydrates runtime from snapshot with separate ownership inputs');
 must(app, 'saveVoiceGuidanceEnabled', 'app persists user voice preference');
 must(app, 'saveSession', 'app persists session separately from snapshot');

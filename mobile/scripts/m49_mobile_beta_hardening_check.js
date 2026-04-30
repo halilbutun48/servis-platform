@@ -35,13 +35,14 @@ function banner(text) {
 banner('M49 MOBILE BETA HARDENING CHECK');
 const app = read('App.js');
 const pkg = JSON.parse(read('package.json'));
+const lifecycle = read('src/app/useMobileAppLifecycle.js');
 const api = read('src/lib/api.js');
 const today = read('src/screens/TodayScreen.js');
 
 must('m49 script present in package json', pkg.scripts && pkg.scripts['check:m49']);
-must('app uses AppState listener', app.includes('AppState'));
-must('app refreshes on foreground active', app.includes("nextState === 'active'"));
-must('app has 30s periodic refresh', app.includes('30000'));
+must('app uses AppState listener', lifecycle.includes('AppState.addEventListener'));
+must('app refreshes on foreground active', lifecycle.includes("nextState === 'active'"));
+must('app has 30s periodic refresh', lifecycle.includes('30000'));
 must('app stores last sync state', app.includes('lastSyncAt'));
 must('api exposes fetchHealth', api.includes('fetchHealth'));
 must('api exposes logoutDriver', api.includes('logoutDriver'));

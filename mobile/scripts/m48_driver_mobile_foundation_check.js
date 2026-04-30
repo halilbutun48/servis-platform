@@ -53,6 +53,6 @@ must('today screen has haritada ac action', normalize(route).includes(normalize(
 must('api uses auth refresh', api.includes('/api/auth/refresh'));
 must('api sends driver device id', api.includes('deviceId'));
 must('app uses fetchMe', app.includes('fetchMe'));
-must('app routes require pin change', app.includes('requirePinChange'));
+must('app wires pin change handler', app.includes('onPinChange={mobileHandlers.handlePinChange}'));
 
 banner('M48 DRIVER MOBILE FOUNDATION CHECK PASS');

@@ -46,7 +46,7 @@ export default function BoardingChangeCard({
       <Info label="Sıradaki durak" value={nextStopName} />
       <Info label="Durağa ETA" value={etaText} />
       <Info label="Durağa mesafe" value={distanceText} />
-      <Text style={styles.muted}>Bugün binmeyecek hızlı kayıt üst kartta hazır. Bu kart rota içi ve operasyona düşen diğer değişiklikleri toplar.</Text>
+      <Text style={styles.muted}>Bu aşama mobil yerel istek modelidir; kesinleşen kararlar sonraki halkada backend ve panellere bağlanır.</Text>
 
       <View style={styles.actionsRow}>
         {options.map((option) => (

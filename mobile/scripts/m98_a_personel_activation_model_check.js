@@ -65,6 +65,7 @@ must(includes(card, 'Personel aktivasyon modeli'), 'personel activation card kee
 must(includes(card, 'Kurum daveti'), 'personel activation card keeps invite model');
 must(includes(card, 'İlk girişte PIN/şifre değişimi gerekli'), 'personel activation card keeps first login guidance');
 must(includes(card, 'Hesap pasife alınırsa canlı takip kapanır'), 'personel activation card keeps closure note');
+must(includes(card, 'mobil model seviyesindedir') || includes(card, 'Tam aktivasyon entegrasyonu'), 'personel activation card keeps model-only scope');
 must(includes(roleHome, 'PersonelActivationCard'), 'role home renders personel activation card');
 must(includes(roleHome, "key === 'PERSONEL'"), 'role home keeps personel activation scope');
 must(includes(primer, 'M98-A personel activation model'), 'primer mentions M98-A');

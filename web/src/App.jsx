@@ -33,6 +33,8 @@ const ServiceEvaluationPanel = lazy(() => import("./panels/company/ServiceEvalua
 const CompanyCommercialFlowPanel = lazy(() => import("./panels/company/CommercialFlowPanel"));
 const OrganizationCenterPanel = lazy(() => import("./panels/organization/CenterPanel"));
 const OrganizationPlansPanel = lazy(() => import("./panels/organization/PlansPanel"));
+const CompanyOperationsPanel = lazy(() => import("./panels/company/OperationsPanel"));
+const SchoolOperationsPanel = lazy(() => import("./panels/school/OperationsPanel"));
 
 // DRIVER
 const DriverMapPanel = lazy(() => import("./panels/driver/MapPanel"));
@@ -77,6 +79,7 @@ const SuperTrustQualityPanel = lazy(() => import("./panels/superadmin/TrustQuali
 const SuperNaturalCopilotPanel = lazy(() => import("./panels/superadmin/NaturalCopilotPanel"));
 const SuperPilotLaunchGatePanel = lazy(() => import("./panels/superadmin/PilotLaunchGatePanel"));
 const SuperOperationVerificationPanel = lazy(() => import("./panels/superadmin/OperationVerificationPanel"));
+const SuperOperationsPanel = lazy(() => import("./panels/superadmin/OperationsPanel"));
 
 function roleDefaultPath(me) {
   if (me?.requirePasswordChange) return "/auth/change-password";
@@ -217,6 +220,7 @@ export default function App() {
 
     // COMPANY
     if (path === "/company") return { layout: true, node: <CompanyWorkflowPanel /> };
+    if (path === "/company/operations") return { layout: true, node: <CompanyOperationsPanel /> };
     if (path === "/company/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/company/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
     if (path === "/company/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
@@ -230,6 +234,7 @@ export default function App() {
 
     // SCHOOL (Company.kind=SCHOOL)
     if (path === "/school") return { layout: true, node: <CompanyWorkflowPanel /> };
+    if (path === "/school/operations") return { layout: true, node: <SchoolOperationsPanel /> };
     if (path === "/school/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/school/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
     if (path === "/school/shifts") return { layout: true, node: <CompanyShiftsPanel /> };
@@ -245,6 +250,7 @@ export default function App() {
 
     // ORGANIZATION (Company.kind=ORGANIZATION)
     if (path === "/organization") return { layout: true, node: <CompanyWorkflowPanel /> };
+    if (path === "/organization/operations") return { layout: true, node: <CompanyOperationsPanel /> };
     if (path === "/organization/plans") return { layout: true, node: <OrganizationPlansPanel /> };
     if (path === "/organization/map") return { layout: true, node: <CompanyMapPanel /> };
     if (path === "/organization/commercial-flow") return { layout: true, node: <CompanyCommercialFlowPanel /> };
@@ -283,6 +289,7 @@ export default function App() {
     if (path === "/superadmin/audit") return { layout: true, node: <SuperAuditLogsPanel /> };
     if (path === "/superadmin/logexport") return { layout: true, node: <SuperLogExportPanel /> };
     if (path === "/superadmin/observability") return { layout: true, node: <SuperObservabilityPanel /> };
+    if (path === "/superadmin/operations") return { layout: true, node: <SuperOperationsPanel /> };
     if (path === "/superadmin/acceptance") return { layout: true, node: <SuperFieldAcceptancePanel /> };
     if (path === "/superadmin/ssot-alignment") return { layout: true, node: <SuperSsotAlignmentPanel /> };
     if (path === "/superadmin/commercial-core") return { layout: true, node: <SuperCommercialCorePanel /> };
@@ -312,4 +319,3 @@ export default function App() {
     </AppShell>
   );
 }
-

@@ -2,6 +2,9 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import BoardingChangeCard from './BoardingChangeCard';
 import NotificationCenterCard from './NotificationCenterCard';
 import PersonelActivationCard from './PersonelActivationCard';
+import ParentActivationCard from './ParentActivationCard';
+import LinkAccessCard from './LinkAccessCard';
+import KvkkVisibilityMatrixCard from './KvkkVisibilityMatrixCard';
 import { Card, EmptyState, Info, Pill, PrimaryButton, RoutePreviewList, SecondaryButton, SectionTitle, ShiftChooser, fmt, styles } from './mobileUi';
 
 const ROLE_COPY = {
@@ -151,6 +154,18 @@ export default function RoleHomeScreen({
       </Card>
 
       {key === 'PERSONEL' ? <PersonelActivationCard me={me} /> : null}
+
+      {key === 'PARENT' ? (
+        <ParentActivationCard roleLive={roleLive} selectedChildId={selectedChildId} />
+      ) : null}
+
+      {(key === 'PERSONEL' || key === 'PARENT') ? (
+        <LinkAccessCard role={key} roleLive={roleLive} />
+      ) : null}
+
+      {(key === 'PERSONEL' || key === 'PARENT') ? (
+        <KvkkVisibilityMatrixCard role={key} roleLive={roleLive} />
+      ) : null}
 
       <NotificationCenterCard
         notifications={notifications}

@@ -28,6 +28,7 @@ export default function TabletOpsQuickBar({ role, me, path }) {
         ]
       : [
           { label: "Harita", path: base + "/map" },
+          { label: "Operasyon", path: base + "/operations" },
           { label: "Merkez", path: base },
           { label: "Vardiyalar", path: base + "/shifts" },
           { label: "Check-in", path: base + "/checkin" },

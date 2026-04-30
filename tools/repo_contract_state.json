@@ -71,9 +71,20 @@
                              "M94-E",
                              "M94-D2",
                              "M94-D3",
+                             "M96-A",
+                             "M96-B",
+                             "M96-C",
+                             "M96-D",
                              "M97",
                              "M97-A",
-                             "M98-A"
+                             "M97-B",
+                             "M97-C",
+                             "M97-D",
+                             "M98-A",
+                             "M98-B",
+                             "M98-C",
+                             "M98-D",
+                             "M99-A"
                          ],
     "canonicalDocs":  [
                           "README.md",
@@ -94,7 +105,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
                                 "currentLargeFileCount":  3,
-  "currentWarningHotFileCount":  1,
+  "currentWarningHotFileCount":  0,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -114,11 +125,6 @@
                                                                                                          "class":  "justified-exception",
                                                                                                          "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
                                                                                                      }
-                                                       ,
-                                                       "mobile/App.js":  {
-                                                                            "class":  "safe-candidate-review",
-                                                                            "note":  "mobile shell stays readable while role routing and live tracking settle; split only with care after acceptance"
-                                                                        }
                                                    }
                            },
     "shareablePackageHygiene":  {
