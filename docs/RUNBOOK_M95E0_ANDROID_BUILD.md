@@ -50,12 +50,16 @@ Bu adım saha testi değildir. APK/AAB üretmek, gerçek telefonda saha kanıtı
 - Bu adres gerçek telefonda kullanılmaz.
 - Bu profil, gerçek saha kanıtı yerine geçmez.
 - Local APK build'inde HTTP cleartext izni yalnız emülatör için açılır.
+- Android uygulamasının native fetch yolu, tarayıcıdan farklı olarak network security config ister.
+- Tarayıcı host'a erişebiliyor olsa bile, app fetch için native izin ayrıca gerekir.
+- Tarayıcı host'a erişebiliyor olsa bile, native fetch ayrı izin ister.
 
 ## Cleartext HTTP kuralı
 - `local-emulator` build'inde `http://10.0.2.2:3000` için izin verilir.
 - Gerçek telefon, preview ve production build'lerinde HTTPS kullanılır.
 - Production build'de cleartext açık kalmamalıdır.
 - `10.0.2.2` gerçek cihaz için kullanılmaz.
+- Android native network security config sadece local profile ile üretilir.
 
 ## Gerçek Android telefona APK nasıl kurulur?
 1. APK artefact'ı üret.
