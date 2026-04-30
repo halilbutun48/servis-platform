@@ -16,7 +16,13 @@ function buildUrl(path) {
     throw error;
   }
   if (/^https?:\/\//i.test(path)) return path;
-  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  try {
+    return new URL(normalizedPath, baseUrl).toString();
+  } catch {
+    return `${API_BASE_URL.replace(/\/$/, '')}${normalizedPath}`;
+  }
 }
 
 export function getApiBaseUrl() {

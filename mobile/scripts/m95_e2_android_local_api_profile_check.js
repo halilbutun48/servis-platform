@@ -34,7 +34,7 @@ function findProfile(eas, profileName) {
   must(Boolean(localProfile), 'eas local-apk profile exists');
   must(String(localProfile?.android?.buildType || '').trim().toLowerCase() === 'apk', 'local profile builds apk');
   must(String(localProfile?.distribution || '').trim().toLowerCase() === 'internal', 'local profile keeps internal distribution');
-  must(String(localProfile?.env?.EXPO_PUBLIC_API_BASE_URL || '').trim() === 'http://10.0.2.2:3000/api', 'local profile keeps emulator api base');
+  must(String(localProfile?.env?.EXPO_PUBLIC_API_BASE_URL || '').trim() === 'http://10.0.2.2:3000', 'local profile keeps emulator root api base');
   must(String(localProfile?.env?.EXPO_PUBLIC_RELEASE_STAGE || '').trim().toLowerCase() === 'local-emulator', 'local profile keeps local-emulator stage');
 
   must(Boolean(previewProfile), 'preview profile exists');
@@ -47,7 +47,7 @@ function findProfile(eas, profileName) {
   must(/if\s*\(isLocalEmulatorStage\)/.test(releaseText), 'release guard has local-emulator branch');
   must(/protocol\s*!==\s*'http:'/.test(releaseText), 'release guard permits http only through local-emulator branch');
   must(/hostname\s*!==\s*'10\.0\.2\.2'/.test(releaseText), 'release guard pins emulator host to 10.0.2.2');
-  must(/pathname\s*!==\s*'\/api'/.test(releaseText), 'release guard pins emulator path to /api');
+  must(/pathname\s*!==\s*'\/'/.test(releaseText), 'release guard pins emulator root path');
   must(/protocol\s*!==\s*'https:'/.test(releaseText), 'release guard keeps https requirement for non-local stages');
   must(/isPrivateOrLocalHost\(hostname\)/.test(releaseText), 'release guard keeps private host rejection for non-local stages');
   must(/buildProfiles:\s*'preview \/ local-apk \/ production \/ preview-simulator'/.test(releaseText), 'release info mentions local-apk build profile');

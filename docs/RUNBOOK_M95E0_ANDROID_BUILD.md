@@ -40,7 +40,9 @@ Bu adım saha testi değildir. APK/AAB üretmek, gerçek telefonda saha kanıtı
 2. Emülatör açık olsun.
 3. `adb install -r <apk-dosyasi>`
 4. Uygulama açılışında emülatör API base olarak:
-   - `http://10.0.2.2:3000/api`
+   - `http://10.0.2.2:3000`
+5. Mobil uygulama endpointlerde `/api/...` path ekler.
+6. `/api/api` tekrar etmemelidir.
 
 ## Local emulator APK profili ne için?
 - Bu profil yalnızca Android emülatör içindir.
@@ -57,10 +59,11 @@ Bu adım saha testi değildir. APK/AAB üretmek, gerçek telefonda saha kanıtı
 6. İleride test sunucusu varsa HTTPS tercih edilmelidir.
 
 ## API base kuralları
-- Emülatör için: `http://10.0.2.2:3000/api`
+- Emülatör için root host: `http://10.0.2.2:3000`
+- Mobil uygulama endpointlerde `/api/...` path ekler.
 - Gerçek telefon için: bilgisayarın yerel ağ IP adresi veya güvenli test sunucusu
 - Production hattı için HTTPS zorunludur.
-- Local emulator APK profilinde `10.0.2.2` kullanılır.
+- Local emulator APK profilinde `10.0.2.2` kök host kullanılır.
 - Gerçek telefonda `10.0.2.2` kullanılmaz.
 
 ## Güvenlik ve saha ayrımı

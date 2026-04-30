@@ -73,8 +73,8 @@ function buildIssueList({ apiBaseUrl = API_BASE_URL, releaseStage = RELEASE_STAG
       if (String(parsed.port || '').trim() !== '3000') {
         issues.push('Local emulator stage için API portu 3000 olmalı.');
       }
-      if (pathname !== '/api') {
-        issues.push('Local emulator stage için API tabanı /api olmalı.');
+      if (pathname !== '/') {
+        issues.push('Local emulator stage için API tabanı kök host olmalı.');
       }
     } else {
       if (protocol !== 'https:') {
