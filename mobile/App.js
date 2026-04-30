@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { AppState, Linking, SafeAreaView, StatusBar } from 'react-native';
+import { AppState, Linking, Platform, SafeAreaView, StatusBar } from 'react-native';
 import * as Location from 'expo-location';
 import {
   clearLastMobileSnapshot,
@@ -886,7 +886,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      {Platform.OS === 'ios' ? <StatusBar barStyle="dark-content" /> : null}
       {content}
     </SafeAreaView>
   );
