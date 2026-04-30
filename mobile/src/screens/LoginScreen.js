@@ -23,15 +23,38 @@ function normalizeLoginError(error, fallback = 'Giriş başarısız.') {
   return String(error?.payload?.message || error?.payload?.error || error?.message || error || fallback);
 }
 
+function buildLoginDebugViewModel(error) {
+  const diagnostics = error?.loginDiagnostics || error?.diagnostics || null;
+  if (!diagnostics || String(diagnostics?.stage || '').trim().toLowerCase() !== 'local-emulator') return null;
+  return {
+    endpoint: `${String(diagnostics.method || 'POST').trim()} ${String(diagnostics.endpointPath || '/api/auth/login').trim()}`.trim(),
+    attemptedUrl: String(diagnostics.attemptedUrl || '').trim(),
+    status: String(diagnostics.status || 0).trim(),
+    code: String(diagnostics.code || '').trim() || '-',
+    message: String(diagnostics.message || '').trim() || '-',
+    fieldErrorKeys: Array.isArray(diagnostics.fieldErrorKeys) ? diagnostics.fieldErrorKeys.filter(Boolean) : [],
+    networkErrorName: String(diagnostics.networkErrorName || '').trim(),
+    networkErrorMessage: String(diagnostics.networkErrorMessage || '').trim(),
+    transport: String(diagnostics.transport || '').trim() || '-',
+  };
+}
+
 export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '', deviceId = '', releaseInfo = null }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(initialError);
+  const [loginDebug, setLoginDebug] = useState(null);
   const [busy, setBusy] = useState(false);
+  const isLocalEmulator = String(releaseInfo?.envStage || '').trim().toLowerCase() === 'local-emulator';
 
   useEffect(() => {
     setError(initialError || '');
+    if (!initialError) setLoginDebug(null);
   }, [initialError]);
+
+  useEffect(() => {
+    if (!isLocalEmulator) setLoginDebug(null);
+  }, [isLocalEmulator]);
 
   const helper = useMemo(() => {
     if (releaseInfo?.acceptanceBlocking) return releaseInfo.acceptanceSummary || 'Release / env kabul kontrolü blokluyor.';
@@ -42,10 +65,12 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
   async function handleSubmit() {
     setBusy(true);
     setError('');
+    setLoginDebug(null);
     try {
       await onLogin({ identifier: identifier.trim(), password: password.trim() });
     } catch (err) {
       setError(normalizeLoginError(err));
+      setLoginDebug(buildLoginDebugViewModel(err));
     } finally {
       setBusy(false);
     }
@@ -85,6 +110,26 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
         </Pressable>
 
         {!!error && <Text style={styles.error}>{error}</Text>}
+
+        {isLocalEmulator && loginDebug ? (
+          <View style={styles.debugBox}>
+            <Text style={styles.debugTitle}>Login debug</Text>
+            <Text style={styles.debugText}>Endpoint: {loginDebug.endpoint || '-'}</Text>
+            <Text style={styles.debugText}>URL: {loginDebug.attemptedUrl || '-'}</Text>
+            <Text style={styles.debugText}>Status: {loginDebug.status || '-'}</Text>
+            <Text style={styles.debugText}>Code: {loginDebug.code || '-'}</Text>
+            <Text style={styles.debugText}>Message: {loginDebug.message || '-'}</Text>
+            {loginDebug.fieldErrorKeys.length ? (
+              <Text style={styles.debugText}>Validation: {loginDebug.fieldErrorKeys.join(', ')}</Text>
+            ) : null}
+            {(loginDebug.networkErrorName || loginDebug.networkErrorMessage) ? (
+              <Text style={styles.debugText}>
+                Network: {loginDebug.networkErrorName || '-'} {loginDebug.networkErrorMessage || '-'}
+              </Text>
+            ) : null}
+            <Text style={styles.debugMeta}>Transport: {loginDebug.transport || '-'}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.noteBox}>
           <Text style={styles.noteTitle}>Bağlantı ve cihaz</Text>
@@ -177,13 +222,35 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 6,
   },
+  debugBox: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 14,
+    padding: 14,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
   noteTitle: {
     color: '#1d4ed8',
+    fontWeight: '700',
+  },
+  debugTitle: {
+    color: '#0f172a',
     fontWeight: '700',
   },
   noteText: {
     color: '#1e3a8a',
     lineHeight: 20,
+  },
+  debugText: {
+    color: '#334155',
+    lineHeight: 18,
+    fontSize: 12,
+  },
+  debugMeta: {
+    color: '#64748b',
+    lineHeight: 18,
+    fontSize: 12,
   },
   meta: {
     color: '#334155',

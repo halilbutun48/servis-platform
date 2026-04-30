@@ -65,6 +65,35 @@ function extractValidationFieldMessage(payload) {
   return messages.join(' ');
 }
 
+function buildLoginDiagnostics({
+  releaseGuard = getReleaseGuard(),
+  path = '/api/auth/login',
+  method = 'POST',
+  attemptedUrl = '',
+  response = null,
+  networkError = null,
+} = {}) {
+  if (String(releaseGuard?.stage || '').trim().toLowerCase() !== 'local-emulator') return null;
+  const payload = response?.payload && typeof response.payload === 'object' ? response.payload : null;
+  const fieldErrorKeys = payload?.fieldErrors && typeof payload.fieldErrors === 'object'
+    ? Object.keys(payload.fieldErrors).map((key) => String(key).trim()).filter(Boolean)
+    : [];
+  return {
+    stage: 'local-emulator',
+    method,
+    endpointPath: path,
+    attemptedUrl,
+    apiBaseUrl: String(releaseGuard?.apiBaseUrl || API_BASE_URL || '').trim(),
+    transport: networkError ? 'network' : 'http',
+    status: Number(response?.status || networkError?.status || 0) || 0,
+    code: String(response?.code || payload?.code || payload?.error || networkError?.code || '').trim(),
+    message: String(payload?.message || payload?.error || response?.message || networkError?.message || '').trim(),
+    fieldErrorKeys,
+    networkErrorName: networkError?.name ? String(networkError.name) : '',
+    networkErrorMessage: networkError?.message ? String(networkError.message) : '',
+  };
+}
+
 function deriveErrorCode(payload, status = 0, fallbackMessage = '') {
   const raw = String(payload?.code || payload?.error || fallbackMessage || '').trim();
   if (raw) return raw.toUpperCase().replace(/\s+/g, '_');
@@ -325,9 +354,36 @@ export function isNetworkLikeError(error) {
 
 export async function loginDriver(identifier, password) {
   const deviceId = await ensureDeviceId();
+  const releaseGuard = getReleaseGuard();
+  const attemptedUrl = buildUrl('/api/auth/login');
   return rawRequest('/api/auth/login', {
     method: 'POST',
     body: { identifier, password, deviceId },
+  }).catch((error) => {
+    const stage = String(releaseGuard?.stage || '').trim().toLowerCase();
+    if (stage === 'local-emulator') {
+      const response = Number(error?.status || 0) > 0
+        ? {
+            status: Number(error?.status || 0),
+            payload: error?.payload || null,
+            code: error?.code || '',
+            message: error?.userMessage || error?.message || '',
+          }
+        : null;
+      const diagnostics = buildLoginDiagnostics({
+        releaseGuard,
+        path: '/api/auth/login',
+        method: 'POST',
+        attemptedUrl,
+        response,
+        networkError: response ? null : error,
+      });
+      if (diagnostics) {
+        error.loginDiagnostics = diagnostics;
+        error.diagnostics = diagnostics;
+      }
+    }
+    throw error;
   });
 }
 
