@@ -4,8 +4,13 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleShee
 function normalizeLoginError(error, fallback = 'Giriş başarısız.') {
   const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
   const cooldownSec = Number(error?.payload?.cooldownSec || 0) || 0;
+  const fieldErrors = error?.payload?.fieldErrors || null;
   if (error?.userMessage) return error.userMessage;
-  if (code === 'INVALID_CREDENTIALS') return 'Sürücü kodu veya PIN hatalı.';
+  if (fieldErrors && typeof fieldErrors === 'object') {
+    if (fieldErrors.identifier || fieldErrors.code || fieldErrors.email) return 'Sürücü kodu veya e-posta gerekli.';
+    if (fieldErrors.password || fieldErrors.pin) return 'PIN veya şifre gerekli.';
+  }
+  if (code === 'INVALID_CREDENTIALS') return 'Sürücü kodu/e-posta veya PIN/şifre hatalı.';
   if (code === 'PIN_LOCKED') {
     return cooldownSec > 0
       ? `Çok fazla hatalı PIN denemesi oldu. ${cooldownSec} saniye sonra tekrar deneyin.`

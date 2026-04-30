@@ -54,6 +54,17 @@ function extractPayloadMessage(payload) {
   return String(payload?.message || payload?.error || payload?.code || '').trim();
 }
 
+function extractValidationFieldMessage(payload) {
+  const fieldErrors = payload?.fieldErrors;
+  if (!fieldErrors || typeof fieldErrors !== 'object') return '';
+  const hasIdentifier = Boolean(fieldErrors.identifier || fieldErrors.code || fieldErrors.email);
+  const hasPassword = Boolean(fieldErrors.password || fieldErrors.pin);
+  const messages = [];
+  if (hasIdentifier) messages.push('Sürücü kodu veya e-posta gerekli.');
+  if (hasPassword) messages.push('PIN veya şifre gerekli.');
+  return messages.join(' ');
+}
+
 function deriveErrorCode(payload, status = 0, fallbackMessage = '') {
   const raw = String(payload?.code || payload?.error || fallbackMessage || '').trim();
   if (raw) return raw.toUpperCase().replace(/\s+/g, '_');
@@ -72,7 +83,7 @@ function deriveUserMessage(code, { payload = null, status = 0, fallbackMessage =
     case 'NETWORK_ERROR':
       return 'Bağlantı kurulamadı. İnternet erişimini kontrol edin.';
     case 'INVALID_CREDENTIALS':
-      return 'Sürücü kodu veya PIN hatalı.';
+      return 'Sürücü kodu/e-posta veya PIN/şifre hatalı.';
     case 'PIN_LOCKED':
       return cooldownSec > 0
         ? `Çok fazla hatalı PIN denemesi oldu. ${cooldownSec} saniye sonra tekrar deneyin.`
@@ -94,6 +105,10 @@ function deriveUserMessage(code, { payload = null, status = 0, fallbackMessage =
     case 'CONSENT_REQUIRED':
       return 'Devam etmek için gerekli KVKK onaylarını tamamlayın.';
     default:
+      if (payload?.fieldErrors) {
+        const fieldMessage = extractValidationFieldMessage(payload);
+        if (fieldMessage) return fieldMessage;
+      }
       return String(payload?.message || payload?.error || fallbackMessage || `HTTP ${status || 0}` || 'İşlem başarısız.');
   }
 }
