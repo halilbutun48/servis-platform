@@ -23,7 +23,7 @@ function normalizeLoginError(error, fallback = 'Giriş başarısız.') {
   return String(error?.payload?.message || error?.payload?.error || error?.message || error || fallback);
 }
 
-function buildLoginDebugViewModel(error) {
+function buildLoginDebugViewModel(error, deviceId = '') {
   const diagnostics = error?.loginDiagnostics || error?.diagnostics || null;
   if (!diagnostics || String(diagnostics?.stage || '').trim().toLowerCase() !== 'local-emulator') return null;
   return {
@@ -32,7 +32,10 @@ function buildLoginDebugViewModel(error) {
     status: String(diagnostics.status || 0).trim(),
     code: String(diagnostics.code || '').trim() || '-',
     message: String(diagnostics.message || '').trim() || '-',
+    detailKeys: Array.isArray(diagnostics.detailKeys) ? diagnostics.detailKeys.filter(Boolean) : [],
     fieldErrorKeys: Array.isArray(diagnostics.fieldErrorKeys) ? diagnostics.fieldErrorKeys.filter(Boolean) : [],
+    deviceIdState: diagnostics.deviceIdPresent != null ? (diagnostics.deviceIdPresent ? 'hazır' : 'yok') : (String(deviceId || '').trim() ? 'hazır' : 'yok'),
+    deviceIdMask: String(diagnostics.deviceIdMask || '').trim(),
     networkErrorName: String(diagnostics.networkErrorName || '').trim(),
     networkErrorMessage: String(diagnostics.networkErrorMessage || '').trim(),
     transport: String(diagnostics.transport || '').trim() || '-',
@@ -70,7 +73,7 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
       await onLogin({ identifier: identifier.trim(), password: password.trim() });
     } catch (err) {
       setError(normalizeLoginError(err));
-      setLoginDebug(buildLoginDebugViewModel(err));
+      setLoginDebug(buildLoginDebugViewModel(err, deviceId));
     } finally {
       setBusy(false);
     }
@@ -119,9 +122,12 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
             <Text style={styles.debugText}>Status: {loginDebug.status || '-'}</Text>
             <Text style={styles.debugText}>Code: {loginDebug.code || '-'}</Text>
             <Text style={styles.debugText}>Message: {loginDebug.message || '-'}</Text>
+            <Text style={styles.debugText}>Details: {loginDebug.detailKeys.length ? loginDebug.detailKeys.join(', ') : '-'}</Text>
             {loginDebug.fieldErrorKeys.length ? (
               <Text style={styles.debugText}>Validation: {loginDebug.fieldErrorKeys.join(', ')}</Text>
             ) : null}
+            <Text style={styles.debugText}>Cihaz: {loginDebug.deviceIdState || '-'}</Text>
+            {loginDebug.deviceIdMask ? <Text style={styles.debugText}>Cihaz kodu: {loginDebug.deviceIdMask}</Text> : null}
             {(loginDebug.networkErrorName || loginDebug.networkErrorMessage) ? (
               <Text style={styles.debugText}>
                 Network: {loginDebug.networkErrorName || '-'} {loginDebug.networkErrorMessage || '-'}
@@ -135,7 +141,7 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
           <Text style={styles.noteTitle}>Bağlantı ve cihaz</Text>
           <Text style={styles.noteText}>{helper}</Text>
           <Text style={styles.meta}>API: {apiBaseUrl || 'AYARSIZ'}</Text>
-          <Text style={styles.meta}>Cihaz: {deviceId || '-'}</Text>
+          <Text style={styles.meta}>Cihaz: {deviceId ? 'hazır' : 'yok'}</Text>
         </View>
 
         <View style={[styles.noteBox, releaseInfo?.acceptanceBlocking ? styles.acceptanceBoxDanger : null]}>

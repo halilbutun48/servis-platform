@@ -4,6 +4,72 @@ import { buildReleaseBlockingError, getReleaseGuard } from './release';
 const API_BASE_URL = String(process.env.EXPO_PUBLIC_API_BASE_URL || '').trim().replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = Math.max(4000, Number(process.env.EXPO_PUBLIC_API_TIMEOUT_MS || 12000));
 
+function isRecord(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function extractScalarText(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value);
+  if (value instanceof Error) return String(value.message || '').trim();
+  if (Array.isArray(value)) {
+    return value.map((item) => extractScalarText(item)).filter(Boolean).join(', ');
+  }
+  if (isRecord(value)) {
+    for (const key of ['code', 'message', 'error', 'reason', 'name', 'type', 'description']) {
+      const next = extractScalarText(value[key]);
+      if (next) return next;
+    }
+    return '';
+  }
+  return String(value).trim();
+}
+
+function collectObjectKeys(...values) {
+  const keys = new Set();
+  for (const value of values) {
+    if (!isRecord(value)) continue;
+    Object.keys(value).forEach((key) => {
+      const text = String(key || '').trim();
+      if (text) keys.add(text);
+    });
+  }
+  return Array.from(keys);
+}
+
+function resolveBackendErrorShape(payload) {
+  const root = isRecord(payload) ? payload : null;
+  const nestedError = isRecord(root?.error) ? root.error : null;
+  const details = isRecord(nestedError?.details) ? nestedError.details : isRecord(root?.details) ? root.details : null;
+  const fieldErrors = isRecord(nestedError?.fieldErrors) ? nestedError.fieldErrors : isRecord(root?.fieldErrors) ? root.fieldErrors : null;
+
+  return {
+    code:
+      extractScalarText(nestedError?.code) ||
+      extractScalarText(root?.code) ||
+      extractScalarText(nestedError?.error) ||
+      extractScalarText(root?.error) ||
+      extractScalarText(root?.name) ||
+      extractScalarText(root?.type),
+    message:
+      extractScalarText(nestedError?.message) ||
+      extractScalarText(root?.message) ||
+      extractScalarText(nestedError?.description) ||
+      extractScalarText(root?.description) ||
+      extractScalarText(root?.errorMessage),
+    details,
+    fieldErrors,
+  };
+}
+
+function maskDeviceId(deviceId = '') {
+  const clean = String(deviceId || '').trim();
+  if (!clean) return '';
+  if (clean.length <= 8) return clean;
+  return `${clean.slice(0, 4)}…${clean.slice(-4)}`;
+}
+
 function buildUrl(path) {
   const releaseGuard = getReleaseGuard();
   if (releaseGuard.blocking) {
@@ -57,11 +123,13 @@ export async function ensureDeviceId() {
 function extractPayloadMessage(payload) {
   if (!payload) return '';
   if (typeof payload === 'string') return payload;
-  return String(payload?.message || payload?.error || payload?.code || '').trim();
+  const envelope = resolveBackendErrorShape(payload);
+  return envelope.message || envelope.code || '';
 }
 
 function extractValidationFieldMessage(payload) {
-  const fieldErrors = payload?.fieldErrors;
+  const envelope = resolveBackendErrorShape(payload);
+  const fieldErrors = envelope.fieldErrors || payload?.fieldErrors;
   if (!fieldErrors || typeof fieldErrors !== 'object') return '';
   const hasIdentifier = Boolean(fieldErrors.identifier || fieldErrors.code || fieldErrors.email);
   const hasPassword = Boolean(fieldErrors.password || fieldErrors.pin);
@@ -78,12 +146,14 @@ function buildLoginDiagnostics({
   attemptedUrl = '',
   response = null,
   networkError = null,
+  deviceId = '',
 } = {}) {
   if (String(releaseGuard?.stage || '').trim().toLowerCase() !== 'local-emulator') return null;
   const payload = response?.payload && typeof response.payload === 'object' ? response.payload : null;
-  const fieldErrorKeys = payload?.fieldErrors && typeof payload.fieldErrors === 'object'
-    ? Object.keys(payload.fieldErrors).map((key) => String(key).trim()).filter(Boolean)
-    : [];
+  const envelope = resolveBackendErrorShape(payload);
+  const detailKeys = collectObjectKeys(envelope.details);
+  const fieldErrorKeys = collectObjectKeys(envelope.fieldErrors);
+  const deviceIdText = String(deviceId || '').trim();
   return {
     stage: 'local-emulator',
     method,
@@ -92,24 +162,44 @@ function buildLoginDiagnostics({
     apiBaseUrl: String(releaseGuard?.apiBaseUrl || API_BASE_URL || '').trim(),
     transport: networkError ? 'network' : 'http',
     status: Number(response?.status || networkError?.status || 0) || 0,
-    code: String(response?.code || payload?.code || payload?.error || networkError?.code || '').trim(),
-    message: String(payload?.message || payload?.error || response?.message || networkError?.message || '').trim(),
+    code:
+      extractScalarText(response?.code) ||
+      envelope.code ||
+      extractScalarText(payload?.error) ||
+      extractScalarText(networkError?.code),
+    message:
+      envelope.message ||
+      extractScalarText(response?.message) ||
+      extractScalarText(networkError?.message),
+    detailKeys,
     fieldErrorKeys,
-    networkErrorName: networkError?.name ? String(networkError.name) : '',
-    networkErrorMessage: networkError?.message ? String(networkError.message) : '',
+    deviceIdPresent: Boolean(deviceIdText),
+    deviceIdMask: maskDeviceId(deviceIdText),
+    networkErrorName: extractScalarText(networkError?.name),
+    networkErrorMessage: extractScalarText(networkError?.message),
   };
 }
 
 function deriveErrorCode(payload, status = 0, fallbackMessage = '') {
-  const raw = String(payload?.code || payload?.error || fallbackMessage || '').trim();
+  const envelope = resolveBackendErrorShape(payload);
+  const raw =
+    envelope.code ||
+    extractScalarText(payload?.code) ||
+    extractScalarText(payload?.error) ||
+    extractScalarText(fallbackMessage);
   if (raw) return raw.toUpperCase().replace(/\s+/g, '_');
+  if (Number(status) === 403) return 'HTTP_403';
   if (Number(status) === 408) return 'NETWORK_TIMEOUT';
   if (Number(status) > 0) return `HTTP_${Number(status)}`;
   return 'REQUEST_FAILED';
 }
 
 function deriveUserMessage(code, { payload = null, status = 0, fallbackMessage = '' } = {}) {
+  const envelope = resolveBackendErrorShape(payload);
   const cooldownSec = Number(payload?.cooldownSec || 0) || 0;
+  if (Number(status) === 403 || String(code || '').toUpperCase() === 'HTTP_403' || String(code || '').toUpperCase() === 'FORBIDDEN') {
+    return 'Giriş yetkisi doğrulanamadı. Sürücü kodu, PIN veya cihaz eşleşmesini kontrol edin.';
+  }
   switch (String(code || '').toUpperCase()) {
     case 'API_BASE_URL_MISSING':
       return 'Mobil API adresi ayarlı değil. EXPO_PUBLIC_API_BASE_URL gerekli.';
@@ -140,11 +230,11 @@ function deriveUserMessage(code, { payload = null, status = 0, fallbackMessage =
     case 'CONSENT_REQUIRED':
       return 'Devam etmek için gerekli KVKK onaylarını tamamlayın.';
     default:
-      if (payload?.fieldErrors) {
+      if (envelope.fieldErrors || payload?.fieldErrors) {
         const fieldMessage = extractValidationFieldMessage(payload);
         if (fieldMessage) return fieldMessage;
       }
-      return String(payload?.message || payload?.error || fallbackMessage || `HTTP ${status || 0}` || 'İşlem başarısız.');
+      return extractScalarText(envelope.message) || extractScalarText(payload?.message) || extractScalarText(payload?.error) || extractScalarText(fallbackMessage) || `HTTP ${status || 0}` || 'İşlem başarısız.';
   }
 }
 
@@ -383,6 +473,7 @@ export async function loginDriver(identifier, password) {
         attemptedUrl,
         response,
         networkError: response ? null : error,
+        deviceId,
       });
       if (diagnostics) {
         error.loginDiagnostics = diagnostics;
