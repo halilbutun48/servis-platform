@@ -416,6 +416,11 @@ Bu bant güncel doğrulanmış üst hattır.
 - Probe: `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
 - Ana konu: autoReachedQueue için Redis unavailable, stale claim reclaim, dead-letter görünürlüğü, dedupe'li alarm ve incident-sync akışını güvenli probe ile görünür kılmak.
 
+### M95-E0 — android apk/aab build readiness [CHECK]
+- Runbook: `docs/RUNBOOK_M95E0_ANDROID_BUILD.md`
+- Komut: `node mobile\scripts\m95_e0_android_build_readiness_check.js`
+- Ana konu: Android APK/AAB build hazırlığını resmi runbook/check altında görünür kılmak; saha kanıtından ayrı tutmak.
+
 ### M96-A — driver availability local state [CHECK]
 - Komut: `node mobile\scripts\m96_a_driver_availability_check.js`
 - Ana konu: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak.
@@ -489,6 +494,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M92`: repo verification spine ve tek cati kontrol zinciri
 - `M93`: queue durability proof ve autoReachedQueue görünürlük kanıtı
 - `M94-E`: queue chaos/alarm proof ve güvenli runtime probe
+- `M95-E0`: android apk/aab build readiness check'i
 - `M96-A`: driver availability local state check'i
 - `M96-B`: mobile notifications foundation check'i
 - `M96-C`: boarding change local model check'i

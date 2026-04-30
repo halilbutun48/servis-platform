@@ -69,6 +69,9 @@
 - `M94-E - queue chaos/alarm proof - active`
   - amaç: autoReachedQueue için Redis unavailable, stale claim reclaim, dead-letter ve threshold alarm proof'unu güvenli check/probe ile görünür kılmak
   - komut: `node backend/scripts/m94e_queue_chaos_alarm_check.js && node backend/scripts/m94e_queue_chaos_alarm_probe.js`
+- `M95-E0 - android apk/aab build readiness - active`
+  - amaç: Android APK/AAB build hazırlığını resmi runbook/check ile görünür kılmak; saha kanıtından ayrı tutmak
+  - komut: `node mobile/scripts/m95_e0_android_build_readiness_check.js`
 - `M96-A - driver availability local state - active`
   - amaç: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak
   - komut: `node mobile/scripts/m96_a_driver_availability_check.js`

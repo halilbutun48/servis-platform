@@ -31,6 +31,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Repo verification spine: `M92 repo verification spine`
 - Queue durability proof: `M93 queue durability proof`
 - Queue chaos/alarm proof: `M94-E queue chaos/alarm proof` — static check + synthetic runtime probe ile yaşar.
+- Android APK/AAB build readiness: `M95-E0 android apk/aab build readiness` — APK/AAB hazırlığı ile saha kanıtı ayrımını resmi runbook/check altında yaşatır.
 - Check-in panel integrations: `M97 check-in panel integrations` — nav restore ve panel kısayolları check'i ile yaşar.
 - Room operation board: `M97-A room operation board` — oda operasyon özetini, görev/servis sayfalarını ve biniş değişikliği görünümünü yaşatır.
 - Company operations panel: `M97-B company operations panel` — personel servis atamaları, biniş değişiklikleri ve bildirim özetini yaşatır.
