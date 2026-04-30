@@ -1,6 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import LoginScreen from '../screens/LoginScreen';
 import LiveScreen from '../screens/LiveScreen';
+import DriverShellLoadingScreen from '../screens/DriverShellLoadingScreen';
 import PinChangeScreen from '../screens/PinChangeScreen';
 import RoleHomeScreen from '../screens/RoleHomeScreen';
 import RouteScreen from '../screens/RouteScreen';
@@ -61,7 +62,29 @@ export default function MobileAppContent({
   onRequestBoardingChange,
   onSetDriverAvailability,
 }) {
+  const hasSession = Boolean(state?.session?.token);
   const loading = Boolean(state?.loading && !state?.me);
+  const postLoginLoading = Boolean(hasSession && (state?.loading || state?.syncing || !state?.me));
+  const role = String(state?.me?.role || '').trim().toUpperCase();
+
+  if (postLoginLoading) {
+    return (
+      <DriverShellLoadingScreen
+        role={role}
+        screen={screen}
+        error={state?.error || ''}
+        health={state?.health || null}
+        deviceId={state?.deviceId || ''}
+        apiBaseUrl={apiBaseUrl}
+        lastSyncAt={state?.lastSyncAt || ''}
+        loading={Boolean(state?.loading)}
+        syncing={Boolean(state?.syncing)}
+        releaseInfo={releaseInfo}
+        onRefresh={onRefresh}
+        onLogout={onLogout}
+      />
+    );
+  }
 
   if (loading) {
     return <LoadingScreen styles={shellStyles} />;
@@ -89,7 +112,6 @@ export default function MobileAppContent({
     );
   }
 
-  const role = String(state?.me?.role || '').trim().toUpperCase();
   if (role === 'PERSONEL' || role === 'PARENT') {
     return (
       <RoleHomeScreen
