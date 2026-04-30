@@ -28,6 +28,9 @@ Bu adım saha testi değildir. APK/AAB üretmek, gerçek telefonda saha kanıtı
 - APK:
   - `npm --prefix mobile run build:android:apk`
   - eşdeğer EAS komutu: `eas build --profile preview --platform android`
+- Local emulator APK:
+  - `npm --prefix mobile run build:android:local-apk`
+  - eşdeğer EAS komutu: `eas build --profile local-apk --platform android`
 - AAB:
   - `npm --prefix mobile run build:android:aab`
   - eşdeğer EAS komutu: `eas build --profile production --platform android`
@@ -38,6 +41,12 @@ Bu adım saha testi değildir. APK/AAB üretmek, gerçek telefonda saha kanıtı
 3. `adb install -r <apk-dosyasi>`
 4. Uygulama açılışında emülatör API base olarak:
    - `http://10.0.2.2:3000/api`
+
+## Local emulator APK profili ne için?
+- Bu profil yalnızca Android emülatör içindir.
+- Emülatörde `10.0.2.2`, host makinenin yerel API adresine erişmek için kullanılır.
+- Bu adres gerçek telefonda kullanılmaz.
+- Bu profil, gerçek saha kanıtı yerine geçmez.
 
 ## Gerçek Android telefona APK nasıl kurulur?
 1. APK artefact'ı üret.
@@ -51,6 +60,8 @@ Bu adım saha testi değildir. APK/AAB üretmek, gerçek telefonda saha kanıtı
 - Emülatör için: `http://10.0.2.2:3000/api`
 - Gerçek telefon için: bilgisayarın yerel ağ IP adresi veya güvenli test sunucusu
 - Production hattı için HTTPS zorunludur.
+- Local emulator APK profilinde `10.0.2.2` kullanılır.
+- Gerçek telefonda `10.0.2.2` kullanılmaz.
 
 ## Güvenlik ve saha ayrımı
 - APK/AAB hazırlığı, saha kanıtı değildir.

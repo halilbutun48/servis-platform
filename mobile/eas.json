@@ -18,6 +18,17 @@
         "EXPO_PUBLIC_API_TIMEOUT_MS": "12000"
       }
     },
+    "local-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "http://10.0.2.2:3000/api",
+        "EXPO_PUBLIC_RELEASE_STAGE": "local-emulator",
+        "EXPO_PUBLIC_API_TIMEOUT_MS": "12000"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"

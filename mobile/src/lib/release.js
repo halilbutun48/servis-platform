@@ -4,7 +4,7 @@ const API_BASE_URL = String(process.env.EXPO_PUBLIC_API_BASE_URL || '').trim();
 const RELEASE_STAGE = String(process.env.EXPO_PUBLIC_RELEASE_STAGE || '').trim().toLowerCase();
 const REQUEST_TIMEOUT_MS = Math.max(4000, Number(process.env.EXPO_PUBLIC_API_TIMEOUT_MS || 12000));
 
-const ALLOWED_STAGES = ['preview-internal', 'preview-simulator', 'production'];
+const ALLOWED_STAGES = ['preview-internal', 'preview-simulator', 'local-emulator', 'production'];
 
 function isPrivateOrLocalHost(hostname = '') {
   const host = String(hostname || '').trim().toLowerCase();
@@ -61,11 +61,28 @@ function buildIssueList({ apiBaseUrl = API_BASE_URL, releaseStage = RELEASE_STAG
   if (parsed) {
     const protocol = String(parsed.protocol || '').toLowerCase();
     const hostname = String(parsed.hostname || '').toLowerCase();
-    if (protocol !== 'https:') {
-      issues.push('Mobil API adresi HTTPS olmalı.');
-    }
-    if (isPrivateOrLocalHost(hostname)) {
-      issues.push('Mobil API adresi localhost veya özel ağ IP olamaz. Gerçek cihaz için dışarıdan erişilen HTTPS adres gerekli.');
+    const pathname = String(parsed.pathname || '').replace(/\/+$/, '') || '/';
+    const isLocalEmulatorStage = stage === 'local-emulator';
+    if (isLocalEmulatorStage) {
+      if (protocol !== 'http:') {
+        issues.push('Local emulator stage için API adresi HTTP olmalı.');
+      }
+      if (hostname !== '10.0.2.2') {
+        issues.push('Local emulator stage için emülatör adresi 10.0.2.2 olmalı.');
+      }
+      if (String(parsed.port || '').trim() !== '3000') {
+        issues.push('Local emulator stage için API portu 3000 olmalı.');
+      }
+      if (pathname !== '/api') {
+        issues.push('Local emulator stage için API tabanı /api olmalı.');
+      }
+    } else {
+      if (protocol !== 'https:') {
+        issues.push('Mobil API adresi HTTPS olmalı.');
+      }
+      if (isPrivateOrLocalHost(hostname)) {
+        issues.push('Mobil API adresi localhost veya özel ağ IP olamaz. Gerçek cihaz için dışarıdan erişilen HTTPS adres gerekli.');
+      }
     }
     if (isPlaceholderHost(hostname, urlText)) {
       issues.push('Mobil API adresi placeholder durumda. Gerçek preview/production backend adresi girilmeli.');
@@ -135,10 +152,11 @@ export function buildReleaseInfo() {
   return {
     appVersion: '0.2.3',
     releaseTarget: 'Android + iOS M82.6 kabul sertleştirme',
-    buildProfiles: 'preview / production / preview-simulator',
+    buildProfiles: 'preview / local-apk / production / preview-simulator',
     deliveryMode: 'EAS Build + iç dağıtım',
     expoGoStatus: 'Expo Go değil, internal build ile test et',
     androidPreview: 'Preview APK / iç dağıtım',
+    androidLocalApk: 'Local emulator APK / 10.0.2.2',
     productionBundle: 'Production AAB + iOS store hazırlığı',
     envStage: guard.stage || 'ayarsiz',
     apiBaseUrl: guard.apiBaseUrl || '',
