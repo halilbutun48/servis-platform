@@ -427,6 +427,11 @@ Bu bant güncel doğrulanmış üst hattır.
 ### M96-C — boarding change local model [CHECK]
 - Komut: `node mobile\scripts\m96_c_boarding_change_check.js`
 - Ana konu: biniş değişikliği taleplerini mobil yerel istek modeli olarak görünür kılmak; backend/panel bind sonraki halkada yaşar.
+- Not: operasyon readiness için ayrıca `M96-C2` check'i kullanılır.
+
+### M96-C2 — boarding change operations readiness [CHECK]
+- Komut: `node backend\scripts\m96_c2_boarding_change_ops_check.js`
+- Ana konu: backend/panel/audit/notification/auto-accept görünürlüğünü doğrulamak.
 
 ### M96-D — driver change awareness [CHECK]
 - Komut: `node mobile\scripts\m96_d_driver_change_awareness_check.js`
@@ -460,6 +465,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node mobile\scripts\m99_a_mobile_regression_pack_check.js`
 - Ana konu: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak.
 
+### M99-B — real scenario tests [CHECK]
+- Komut: `node mobile\scripts\m99_b_real_scenario_tests_check.js`
+- Ana konu: sürücü, personel, veli ve operasyon yüzeylerini gerçek senaryo pack'iyle tek check'te yaşatmak.
+
+### M99-C — field launch readiness [CHECK]
+- Komut: `node mobile\scripts\m99_c_field_launch_readiness_check.js`
+- Ana konu: gerçek cihaz, zayıf ağ ve saha kanıtı hazırlığını tek check'te görünür kılmak.
+
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
 - Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
@@ -479,6 +492,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M96-A`: driver availability local state check'i
 - `M96-B`: mobile notifications foundation check'i
 - `M96-C`: boarding change local model check'i
+- `M96-C2`: boarding change operations readiness check'i
 - `M96-D`: driver change awareness check'i
 - `M97`: check-in panel integrations ve nav restore check'i
 - `M98-A`: personel activation model check'i
@@ -486,3 +500,5 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M98-C`: link lifetime and tracking authority check'i
 - `M98-D`: kvkk visibility matrix check'i
 - `M99-A`: mobile regression pack check'i
+- `M99-B`: real scenario tests check'i
+- `M99-C`: field launch readiness check'i

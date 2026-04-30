@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { displayStatusLabel } from "../../utils/displayStatus";
+import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
 
 function cardStyle() {
   return {
@@ -142,14 +143,15 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
     return requests.slice(0, 5).map((item) => {
       const personelName = item?.personel?.fullName || item?.personel?.name || `Personel #${item?.personelId || "-"}`;
       const shiftId = item?.shift?.id || item?.shiftId || "-";
-      const isLocation = item?.lat != null && item?.lng != null;
+      const kindLabel = boardingChangeKindLabel(item?.requestKind || item?.kind);
+      const decisionState = String(item?.decisionState || item?.status || "").trim().toUpperCase();
       return {
         id: item?.id || `${shiftId}-${personelName}`,
         title: personelName,
-        detail: isLocation
-          ? `Konumlu istek • shift #${shiftId}`
-          : `Standart istek • shift #${shiftId}`,
+        detail: `${kindLabel} • shift #${shiftId}`,
+        decisionText: item?.decisionText || boardingChangeDecisionLabel(decisionState),
         status: item?.status || "OPEN",
+        decisionState,
       };
     });
   }, [requests]);
@@ -214,6 +216,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
                   <StatusPill value={item.status} />
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>{item.detail}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{item.decisionText}</div>
               </div>
             )) : <div className="muted">Bekleyen biniş değişikliği yok.</div>}
           </div>
@@ -246,6 +249,7 @@ export default function RoomOperationsBoard({ roomSummary, roomData }) {
                   <StatusPill value={item.status} />
                 </div>
                 <div className="muted" style={{ marginTop: 6 }}>{item.detail}</div>
+                <div className="muted" style={{ marginTop: 4 }}>{item.decisionText}</div>
               </div>
             )) : <div className="muted">Riskli ya da onay bekleyen istek yok.</div>}
           </div>

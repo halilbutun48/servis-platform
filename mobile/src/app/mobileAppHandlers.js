@@ -8,6 +8,7 @@ import {
   loginDriver,
   logoutDriver,
   reportSelfNoShow,
+  submitBoardingChangeRequest,
   markDriverStopReached,
   pauseDriverShift,
   reopenDriverStop,
@@ -38,6 +39,7 @@ import {
   saveVoiceGuidanceEnabled,
 } from '../lib/storage';
 import { buildNotificationCenterState, markNotificationCenterSeen } from './notificationState';
+import { buildBoardingChangeRequestPayload } from './boardingChangeRequestBridge';
 import {
   applyGpsRuntimeSnapshot,
   buildMobileSnapshot,
@@ -388,21 +390,37 @@ export function createMobileAppHandlers({
       return;
     }
 
+    const shiftId = Number(resolveCurrentShiftIdFlow({
+      selectedShiftId: state.selectedShiftId,
+      route: state.route,
+      today: state.today,
+    }) || 0) || null;
+
+    const backendPayload = buildBoardingChangeRequestPayload({
+      state,
+      current: state.roleLive?.current || null,
+      shiftId,
+      kind: normalizedKind,
+      reason: String(reason || '').trim(),
+      childId: targetChildId,
+      source: 'mobile',
+    });
+
     const nextBoardingChange = appendBoardingChangeRequest(state.boardingChange, {
       kind: normalizedKind,
       role: normalizedRole,
       reason: String(reason || '').trim(),
       childId: targetChildId,
-      shiftId: Number(resolveCurrentShiftIdFlow({
-        selectedShiftId: state.selectedShiftId,
-        route: state.route,
-        today: state.today,
-      }) || 0) || null,
+      shiftId,
       source: 'mobile',
     });
 
     setRouteOps({ busy: true, message: 'Biniş değişikliği kaydediliyor...' });
     try {
+      let backendResult = null;
+      if (backendPayload?.shiftId && Number.isFinite(Number(backendPayload.lat)) && Number.isFinite(Number(backendPayload.lng))) {
+        backendResult = await submitBoardingChangeRequest(backendPayload).catch(() => null);
+      }
       await saveLastMobileSnapshot(buildMobileSnapshot({
         me: state.me,
         today: state.today,
@@ -423,10 +441,22 @@ export function createMobileAppHandlers({
       }));
       setState((prev) => ({
         ...prev,
-        boardingChange: nextBoardingChange,
+        boardingChange: {
+          ...nextBoardingChange,
+          backendRequestId: Number(backendResult?.id || 0) || null,
+          backendStatus: String(backendResult?.status || ''),
+          backendDecisionState: String(backendResult?.decisionState || backendResult?.decisionText || ''),
+          backendDecisionText: String(backendResult?.decisionText || backendResult?.decisionState || ''),
+          backendSyncedAt: String(backendResult?.createdAt || new Date().toISOString()),
+        },
         error: '',
       }));
-      setRouteOps({ busy: false, message: 'Biniş değişikliği kaydedildi.' });
+      setRouteOps({
+        busy: false,
+        message: backendResult?.id
+          ? 'Biniş değişikliği operasyon kuyruğuna gönderildi.'
+          : 'Biniş değişikliği kaydedildi.',
+      });
     } catch (error) {
       setRouteOps({ busy: false, message: '' });
       setState((prev) => ({

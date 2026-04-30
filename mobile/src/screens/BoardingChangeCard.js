@@ -29,6 +29,17 @@ export default function BoardingChangeCard({
   const nextStopName = current?.nextStop?.name || '-';
   const etaText = current?.etaMin != null ? `${current.etaMin} dk` : '-';
   const distanceText = current?.etaKm != null ? `${current.etaKm} km` : '-';
+  const backendDecisionState = String(boardingChange?.backendDecisionState || boardingChange?.backendStatus || '').trim().toUpperCase();
+  const backendDecisionLabel = backendDecisionState === 'ACCEPTED'
+    ? 'Operasyon onaylı'
+    : backendDecisionState === 'CANCELLED'
+      ? 'İptal edildi'
+      : 'Operasyon kuyruğunda';
+  const backendDecisionTone = backendDecisionState === 'ACCEPTED'
+    ? 'ok'
+    : backendDecisionState === 'CANCELLED'
+      ? 'warn'
+      : 'info';
 
   return (
     <Card>
@@ -41,6 +52,12 @@ export default function BoardingChangeCard({
       <View style={styles.rowGap}>
         <Pill label={key === 'PARENT' ? 'Veli akışı' : 'Personel akışı'} tone="ok" />
         <Pill label={boardingChange?.lastSubmittedAt ? 'Son istek kayıtlı' : 'Kayıt bekliyor'} tone={boardingChange?.lastSubmittedAt ? 'info' : 'warn'} />
+        {boardingChange?.backendRequestId ? (
+          <Pill
+            label={backendDecisionLabel}
+            tone={backendDecisionTone}
+          />
+        ) : null}
         <Pill label={current ? `Sıradaki durak: ${nextStopName}` : 'Canlı servis bekleniyor'} tone={current ? 'info' : 'warn'} />
       </View>
       <Info label="Sıradaki durak" value={nextStopName} />
@@ -62,6 +79,9 @@ export default function BoardingChangeCard({
         ))}
       </View>
       <Text style={styles.helper}>Rota dışı konum isteği manuel inceleme gerektirir; kayıtlı durak akışları daha hafiftir.</Text>
+      {boardingChange?.backendDecisionText ? (
+        <Text style={styles.helper}>Operasyon durumu: {boardingChange.backendDecisionText}</Text>
+      ) : null}
 
       {recent.length ? (
         <View style={{ gap: 10, marginTop: 4 }}>

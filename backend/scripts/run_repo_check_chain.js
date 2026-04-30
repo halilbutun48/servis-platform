@@ -58,6 +58,7 @@ const phaseDefinitions = {
     nodeStep("m90c8-ci-verification-visibility", "backend/scripts/m90_c8_ci_verification_visibility_check.js"),
     nodeStep("m90c9-safe-closure-final-hygiene", "backend/scripts/m90_c9_safe_closure_final_hygiene_check.js"),
     nodeStep("m94e-queue-chaos-alarm", "backend/scripts/m94e_queue_chaos_alarm_check.js"),
+    nodeStep("m96c2-boarding-change-ops", "backend/scripts/m96_c2_boarding_change_ops_check.js"),
     nodeStep("m97-panel-operations", "backend/scripts/m97_panel_operations_check.js"),
   ],
   milestones: [

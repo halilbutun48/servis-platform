@@ -6,6 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import PanelChrome from "../../components/PanelChrome";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
+import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
 
 function MiniStat({ title, value, note }) {
   return (
@@ -123,6 +124,20 @@ export default function SchoolOperationsPanel() {
       expiresAt: invite.expiresAt || null,
     })),
     [invites]
+  );
+
+  const requestRows = useMemo(
+    () => riskRequestRows.slice(0, 10).map((item) => ({
+      id: item.id,
+      personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
+      shift: item?.shift?.id || item?.shiftId || "-",
+      status: item?.status || "OPEN",
+      kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
+      decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      detail: item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
+      createdAt: item?.createdAt || item?.at || null,
+    })),
+    [riskRequestRows]
   );
 
   if (me?.companyKind !== "SCHOOL") {
@@ -266,19 +281,21 @@ export default function SchoolOperationsPanel() {
                 <th>Shift</th>
                 <th>Durum</th>
                 <th>Tür</th>
+                <th>Karar</th>
                 <th>Zaman</th>
               </tr>
             </thead>
             <tbody>
-              {riskRequestRows.length ? riskRequestRows.slice(0, 10).map((item) => (
-                <tr key={item.id}>
-                  <td>{item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`}</td>
-                  <td>#{item?.shift?.id || item?.shiftId || "-"}</td>
-                  <td>{displayStatusLabel(item?.status || "OPEN")}</td>
-                  <td>{item?.lat != null || item?.lng != null ? "Konumlu istek" : "Standart istek"}</td>
-                  <td>{fmtTR(item?.createdAt || item?.at)}</td>
+              {requestRows.length ? requestRows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.personel}</td>
+                  <td>#{row.shift}</td>
+                  <td>{displayStatusLabel(row.status)}</td>
+                  <td>{row.kind}</td>
+                  <td>{row.decision}</td>
+                  <td>{fmtTR(row.createdAt)}</td>
                 </tr>
-              )) : <tr><td colSpan={5} className="muted">Riskli istek yok.</td></tr>}
+              )) : <tr><td colSpan={6} className="muted">Riskli istek yok.</td></tr>}
             </tbody>
           </table>
         </div>

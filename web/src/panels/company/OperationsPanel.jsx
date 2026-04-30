@@ -6,6 +6,7 @@ import { useAutoReload } from "../../live/useAutoReload";
 import PanelChrome from "../../components/PanelChrome";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
+import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
 
 function companyBaseFromKind(kind) {
   const k = String(kind || "").toUpperCase();
@@ -170,7 +171,9 @@ export default function CompanyOperationsPanel() {
       personel: item?.personel?.fullName || item?.personel?.name || `#${item?.personelId || "-"}`,
       shift: item?.shift?.id || item?.shiftId || "-",
       status: item?.status || "OPEN",
-      detail: item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği",
+      kind: boardingChangeKindLabel(item?.requestKind || item?.kind),
+      decision: boardingChangeDecisionLabel(item?.decisionState || item?.status),
+      detail: item?.decisionText || (item?.lat != null || item?.lng != null ? "Konumlu biniş değişikliği" : "Standart biniş değişikliği"),
       createdAt: item?.createdAt || item?.at || null,
     })),
     [openRequestRows]
@@ -300,6 +303,7 @@ export default function CompanyOperationsPanel() {
                 <th>Shift</th>
                 <th>Durum</th>
                 <th>Tür</th>
+                <th>Karar</th>
                 <th>Zaman</th>
               </tr>
             </thead>
@@ -309,11 +313,12 @@ export default function CompanyOperationsPanel() {
                   <td>{row.personel}</td>
                   <td>#{row.shift}</td>
                   <td>{displayStatusLabel(row.status)}</td>
-                  <td>{row.detail}</td>
+                  <td>{row.kind}</td>
+                  <td>{row.decision}</td>
                   <td>{fmtTR(row.createdAt)}</td>
                 </tr>
               )) : (
-                <tr><td colSpan={5} className="muted">Bekleyen biniş değişikliği yok.</td></tr>
+                <tr><td colSpan={6} className="muted">Bekleyen biniş değişikliği yok.</td></tr>
               )}
             </tbody>
           </table>

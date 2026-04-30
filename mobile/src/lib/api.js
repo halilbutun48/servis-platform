@@ -427,6 +427,43 @@ export async function reportSelfNoShow({ childId = null, reason = '' } = {}) {
   });
 }
 
+export async function submitBoardingChangeRequest({
+  shiftId,
+  lat,
+  lng,
+  kind = '',
+  reason = '',
+  childId = null,
+  source = 'mobile',
+} = {}) {
+  const shiftValue = Number(shiftId || 0);
+  const latValue = Number(lat);
+  const lngValue = Number(lng);
+  if (!Number.isFinite(shiftValue) || shiftValue <= 0) {
+    throw buildNormalizedError({ code: 'SHIFT_ID_REQUIRED', fallbackMessage: 'Geçerli vardiya seçilmedi.' });
+  }
+  if (!Number.isFinite(latValue) || !Number.isFinite(lngValue)) {
+    throw buildNormalizedError({ code: 'BOARDING_CHANGE_COORDS_REQUIRED', fallbackMessage: 'Konum bilgisi gerekli.' });
+  }
+
+  const body = {
+    shiftId: shiftValue,
+    lat: latValue,
+    lng: lngValue,
+    kind: String(kind || '').trim(),
+    reason: String(reason || '').trim(),
+    source: String(source || 'mobile').trim() || 'mobile',
+  };
+
+  const childValue = Number(childId || 0);
+  if (Number.isFinite(childValue) && childValue > 0) body.childId = childValue;
+
+  return request('/api/requests', {
+    method: 'POST',
+    body,
+  });
+}
+
 export async function changeDriverPin(currentPin, newPin) {
   return request('/api/auth/driver/change-pin', {
     method: 'POST',

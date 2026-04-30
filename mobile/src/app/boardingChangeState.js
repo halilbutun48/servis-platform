@@ -167,6 +167,11 @@ export function buildBoardingChangeState(input = {}) {
     lastStatusText: String(input?.lastStatusText || ''),
     lastScopeText: String(input?.lastScopeText || ''),
     lastError: String(input?.lastError || ''),
+    backendRequestId: Number(input?.backendRequestId || 0) || null,
+    backendStatus: String(input?.backendStatus || ''),
+    backendDecisionState: String(input?.backendDecisionState || ''),
+    backendDecisionText: String(input?.backendDecisionText || ''),
+    backendSyncedAt: String(input?.backendSyncedAt || ''),
     loading: Boolean(input?.loading),
     updatedAt: String(input?.updatedAt || ''),
   };
@@ -215,6 +220,11 @@ export function appendBoardingChangeRequest(state = {}, request = {}) {
     lastScopeText: item.scopeText,
     updatedAt: item.updatedAt,
     lastError: '',
+    backendRequestId: Number(request?.backendRequestId || 0) || prev.backendRequestId || null,
+    backendStatus: String(request?.backendStatus || prev.backendStatus || ''),
+    backendDecisionState: String(request?.backendDecisionState || prev.backendDecisionState || ''),
+    backendDecisionText: String(request?.backendDecisionText || prev.backendDecisionText || ''),
+    backendSyncedAt: String(request?.backendSyncedAt || prev.backendSyncedAt || ''),
     loading: false,
   };
 }

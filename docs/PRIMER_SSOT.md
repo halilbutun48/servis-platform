@@ -24,6 +24,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - M96-A — driver availability local state bandıdır.
 - M96-B — mobile notifications foundation driver, personel, veli ve operasyon bildirim yüzeylerini tek foundation altında yaşatır.
 - M96-C — boarding change local model bandıdır; backend/panel bind sonraki halkadadır.
+- M96-C2 — boarding change operations readiness bandıdır; backend/panel/audit/notification/auto-accept görünürlüğü burada yaşar.
 - M96-D — driver change awareness ve sesli uyarı mobil yüzeyidir.
 - Tek repo kontrol girişi: `npm run verify:repo`
 - Local acceptance overlay: `M91 shift/agreement route preview`
@@ -40,6 +41,8 @@ Bu primer yaşayan hattın resmi özetidir.
 - Link lifetime and tracking authority: `M98-C link lifetime and tracking authority` — davet süresi, aktif servis ve görünürlük kuralıyla yaşar.
 - KVKK visibility matrix: `M98-D kvkk visibility matrix` — rol bazlı takip görünürlüğü ve kapı kurallarıyla yaşar.
 - Mobile regression pack: `M99-A mobile regression pack` — login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'iyle yaşar.
+- Real scenario tests: `M99-B real scenario tests` — sürücü, personel, veli ve operasyon yüzeylerini gerçek senaryo pack'iyle yaşatır.
+- Field launch readiness: `M99-C field launch readiness` — gerçek cihaz, zayıf ağ, ekran kapalı GPS ve saha kanıtı hazırlığıyla yaşar.
 - Güncel kapanmış ek hatlar: `M91`, `M92`, `M93`, `Tur 1`, `Tur 2`, `Tur 3`.
 - Resmi çalışma yönü: `M90` rotası içinde ihtiyaç-temelli kontrollü ilerleme.
 - Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.

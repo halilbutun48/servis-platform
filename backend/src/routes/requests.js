@@ -4,6 +4,8 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { createRequestSchema } from "../validators.js";
 import logger from "../lib/logger.js";
+import { audit } from "../audit.js";
+import { emitBoardingChangeNotifications, evaluateBoardingChangeDecision, buildBoardingChangeRequestReason, formatBoardingChangeDecisionText, normalizeBoardingChangeKind } from "./boardingChangeRequestOps.js";
 
 /**
  * PickupRequestStatus enum:
@@ -21,8 +23,8 @@ const ALLOWED_CLOSE = new Set(["ACCEPTED", "CANCELLED"]);
 export function requestsRouter(io) {
   const r = express.Router();
 
-  // PERSONEL: create pickup request for a shift
-  r.post("/", authRequired(), requireRole("PERSONEL"), async (req, res) => {
+  // PERSONEL/PARENT: create pickup request for a shift
+  r.post("/", authRequired(), requireRole("PERSONEL", "PARENT"), async (req, res) => {
     try {
       const u = req.user;
 
@@ -31,20 +33,58 @@ export function requestsRouter(io) {
         return res.status(400).json({ error: parsed.error.flatten() });
       }
 
-      // Link user -> personel record
-      const personel = await prisma.personel.findFirst({
-        where: { userId: u.id },
-        select: { id: true, companyId: true },
-      });
-      if (!personel) {
-        return res
-          .status(400)
-          .json({ error: "Personel profile not found for user" });
+      const requestKind = normalizeBoardingChangeKind(req.body?.kind);
+      const requestReason = String(req.body?.reason || "").trim() || buildBoardingChangeRequestReason(requestKind, u.role);
+      const parentChildId = Number(req.body?.childId ?? req.body?.personelId ?? 0) || null;
+
+      let requesterUserId = u.id;
+      let requesterRole = u.role;
+      let personel = null;
+
+      if (u.role === "PERSONEL") {
+        personel = await prisma.personel.findFirst({
+          where: { userId: u.id },
+          select: { id: true, companyId: true, userId: true, fullName: true },
+        });
+        if (!personel) {
+          return res
+            .status(400)
+            .json({ error: "Personel profile not found for user" });
+        }
+      } else {
+        if (!parentChildId) {
+          return res.status(400).json({ error: "childId gerekli" });
+        }
+        const link = await prisma.parentChild.findFirst({
+          where: { parentUserId: u.id, personelId: parentChildId },
+          select: { personelId: true },
+        });
+        if (!link) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        personel = await prisma.personel.findUnique({
+          where: { id: parentChildId },
+          select: { id: true, companyId: true, userId: true, fullName: true },
+        });
+        if (!personel) {
+          return res.status(404).json({ error: "Child profile not found" });
+        }
+        requesterRole = "PARENT";
       }
 
       const shift = await prisma.shift.findUnique({
         where: { id: parsed.data.shiftId },
-        select: { id: true, companyId: true, roomId: true, status: true },
+        select: {
+          id: true,
+          companyId: true,
+          roomId: true,
+          status: true,
+          startAt: true,
+          endAt: true,
+          driverId: true,
+          vehicleId: true,
+          stops: { select: { id: true, name: true, lat: true, lng: true, order: true } },
+        },
       });
       if (!shift) return res.status(404).json({ error: "Shift not found" });
 
@@ -85,29 +125,123 @@ export function requestsRouter(io) {
           .json({ error: "Request already OPEN", id: existing.id });
       }
 
+      const decision = evaluateBoardingChangeDecision({
+        kind: requestKind,
+        lat: parsed.data.lat,
+        lng: parsed.data.lng,
+        shift,
+        now: new Date(),
+      });
+      const decisionState = decision.autoAccepted ? "AUTO_ACCEPTED" : (decision.cutoffReached ? "CUTOFF_REVIEW" : "MANUAL_REVIEW");
+      const decisionText = formatBoardingChangeDecisionText({
+        requestKind,
+        requesterRole,
+        decisionState,
+      });
+      const requestStatus = decision.autoAccepted ? "ACCEPTED" : "OPEN";
+
       const item = await prisma.pickupRequest.create({
         data: {
           shiftId: shift.id,
           personelId: personel.id,
           lat: parsed.data.lat,
           lng: parsed.data.lng,
-          status: "OPEN",
+          status: requestStatus,
         },
         include: { personel: true, shift: true },
       });
 
+      await audit(req, {
+        action: "BOARDING_CHANGE_REQUEST_CREATE",
+        entity: "PickupRequest",
+        entityId: item.id,
+        meta: {
+          actorId: requesterUserId,
+          actorRole: requesterRole,
+          requestKind,
+          requestReason,
+          decisionText,
+          personelId: personel.id,
+          shiftId: shift.id,
+          companyId: shift.companyId,
+          roomId: shift.roomId,
+          driverId: shift.driverId,
+          vehicleId: shift.vehicleId,
+          lat: parsed.data.lat,
+          lng: parsed.data.lng,
+          nearestStopId: decision.nearestStop?.id ?? null,
+          nearestStopName: decision.nearestStop?.name ?? null,
+          distanceM: decision.nearestStop?.distanceM ?? null,
+          cutoffReached: decision.cutoffReached,
+          decisionState,
+        },
+      });
+
+      if (decision.autoAccepted) {
+        await audit(req, {
+          action: "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
+          entity: "PickupRequest",
+          entityId: item.id,
+          meta: {
+            actorId: requesterUserId,
+            actorRole: requesterRole,
+            requestKind,
+            requestReason,
+            decisionText,
+            shiftId: shift.id,
+            nearestStopId: decision.nearestStop?.id ?? null,
+            nearestStopName: decision.nearestStop?.name ?? null,
+            distanceM: decision.nearestStop?.distanceM ?? null,
+          },
+        });
+      }
+
+      await emitBoardingChangeNotifications({
+        io,
+        shift,
+        personel,
+        requesterUserId,
+        requesterRole,
+        requestKind,
+        requestReason,
+        decisionState,
+        nearestStop: decision.nearestStop,
+      });
+
       const evt = {
         requestId: item.id,
-        action: "created",
+        action: decision.autoAccepted ? "auto-accepted" : "created",
         shiftId: shift.id,
         status: item.status,
+        kind: requestKind,
+        reason: requestReason,
+        decisionState,
+        decisionText,
+        nearestStop: decision.nearestStop ? {
+          id: decision.nearestStop.id,
+          name: decision.nearestStop.name,
+          order: decision.nearestStop.order,
+          distanceM: Math.round(decision.nearestStop.distanceM),
+        } : null,
       };
 
       io.to(`company:${shift.companyId}`).emit("request:update", evt);
       io.to(`room:${shift.roomId}`).emit("request:update", evt);
       io.to(`shift:${shift.id}`).emit("request:update", evt);
 
-      return res.json(item);
+      return res.json({
+        ...item,
+        requestKind,
+        requestReason,
+        decisionState,
+        decisionText,
+        nearestStop: decision.nearestStop ? {
+          id: decision.nearestStop.id,
+          name: decision.nearestStop.name,
+          order: decision.nearestStop.order,
+          distanceM: Math.round(decision.nearestStop.distanceM),
+        } : null,
+      });
     } catch (e) {
       logger.error("[requests] POST / error:", e);
       return res.status(500).json({ error: "Internal Server Error" });
@@ -156,7 +290,56 @@ export function requestsRouter(io) {
         take: 200,
       });
 
-      return res.json(items);
+      const ids = items.map((item) => Number(item?.id || 0)).filter((n) => Number.isFinite(n) && n > 0);
+      const audits = ids.length
+        ? await prisma.auditLog.findMany({
+            where: {
+              entity: "PickupRequest",
+              entityId: { in: ids },
+              action: { in: [
+                "BOARDING_CHANGE_REQUEST_CREATE",
+                "BOARDING_CHANGE_REQUEST_AUTO_ACCEPTED",
+                "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT",
+                "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
+              ] },
+            },
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
+      const auditMap = new Map();
+      for (const row of audits) {
+        const key = Number(row?.entityId || 0);
+        if (!key || auditMap.has(key)) continue;
+        auditMap.set(key, row);
+      }
+
+      return res.json(items.map((item) => {
+        const meta = auditMap.get(Number(item.id || 0))?.meta || {};
+        const closeState = String(meta.closeStatus || "").toUpperCase();
+        const derivedDecisionState = closeState === "ACCEPTED"
+          ? "ROOM_ACCEPTED"
+          : closeState === "CANCELLED"
+            ? "ROOM_CANCELLED"
+            : null;
+        const decisionState = meta.decisionState || derivedDecisionState || (String(item.status || "").toUpperCase() === "ACCEPTED" ? "AUTO_ACCEPTED" : "MANUAL_REVIEW");
+        const decisionText = meta.decisionText || formatBoardingChangeDecisionText({
+          requestKind: meta.requestKind || "DIFFERENT_STOP",
+          requesterRole: meta.actorRole || "PERSONEL",
+          decisionState,
+        });
+        return {
+          ...item,
+          requestKind: meta.requestKind || "DIFFERENT_STOP",
+          requestReason: meta.requestReason || "",
+          decisionState,
+          decisionText,
+          nearestStop: meta.nearestStopName ? {
+            id: meta.nearestStopId ?? null,
+            name: meta.nearestStopName,
+            distanceM: meta.distanceM != null ? Math.round(Number(meta.distanceM)) : null,
+          } : null,
+        };
+      }));
     } catch (e) {
       logger.error("[requests] GET / error:", e);
       return res.status(500).json({ error: "Internal Server Error" });
@@ -206,18 +389,62 @@ export function requestsRouter(io) {
         include: { personel: true, shift: true },
       });
 
+      await audit(req, {
+        action: closeStatus === "ACCEPTED" ? "BOARDING_CHANGE_REQUEST_CLOSE_ACCEPT" : "BOARDING_CHANGE_REQUEST_CLOSE_CANCEL",
+        entity: "PickupRequest",
+        entityId: updated.id,
+        meta: {
+          actorId: u.id,
+          actorRole: u.role,
+          shiftId: updated.shiftId,
+          personelId: updated.personelId,
+          closeStatus,
+          decisionState: closeStatus === "ACCEPTED" ? "ROOM_ACCEPTED" : "ROOM_CANCELLED",
+          decisionText: closeStatus === "ACCEPTED"
+            ? "İstek oda tarafından onaylandı."
+            : "İstek oda tarafından iptal edildi.",
+        },
+      });
+
+      await emitBoardingChangeNotifications({
+        io,
+        shift: updated.shift,
+        personel: updated.personel,
+        requesterUserId: updated.personel?.userId || null,
+        requesterRole: "PERSONEL",
+        requestKind: "DIFFERENT_STOP",
+        requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
+        decisionState: closeStatus === "ACCEPTED" ? "ROOM_ACCEPTED" : "ROOM_CANCELLED",
+        nearestStop: null,
+      });
+
+      const decisionState = closeStatus === "ACCEPTED" ? "ROOM_ACCEPTED" : "ROOM_CANCELLED";
+      const decisionText = closeStatus === "ACCEPTED"
+        ? "İstek oda tarafından onaylandı."
+        : "İstek oda tarafından iptal edildi.";
       const evt = {
         requestId: updated.id,
         action: "closed",
         shiftId: updated.shiftId,
         status: updated.status,
+        kind: "DIFFERENT_STOP",
+        requestKind: "DIFFERENT_STOP",
+        requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
+        decisionState,
+        decisionText,
       };
 
       io.to(`company:${updated.shift.companyId}`).emit("request:update", evt);
       io.to(`room:${updated.shift.roomId}`).emit("request:update", evt);
       io.to(`shift:${updated.shiftId}`).emit("request:update", evt);
 
-      return res.json(updated);
+      return res.json({
+        ...updated,
+        requestKind: "DIFFERENT_STOP",
+        requestReason: `İstek ${closeStatus === "ACCEPTED" ? "onaylandı" : "iptal edildi"}.`,
+        decisionState,
+        decisionText,
+      });
     } catch (e) {
       logger.error("[requests] POST /:id/close error:", e);
       return res.status(500).json({ error: "Internal Server Error" });

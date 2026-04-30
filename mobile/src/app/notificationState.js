@@ -134,6 +134,7 @@ function resolveNotificationScopeLabel(scope = '') {
 function resolveNotificationIntentLabel({ type = '', title = '', message = '', scope = '' } = {}) {
   const text = fold([type, title, message, scope].filter(Boolean).join(' '));
   if (text.includes('no show') || text.includes('binmeyecek') || text.includes('today will not board')) return 'Biniş';
+  if (text.includes('binis degisikligi') || text.includes('boarding change')) return 'Biniş';
   if (text.includes('farkli durak') || text.includes('farkli duraktan') || text.includes('boarding point') || text.includes('binis noktasi')) return 'Durak';
   if (text.includes('gorev') || text.includes('task') || text.includes('vardiya') || text.includes('shift')) return 'Görev';
   if (text.includes('yaklasti') || text.includes('500 m') || text.includes('2 dk') || text.includes('ulasti')) return 'Yaklaşma';

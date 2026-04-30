@@ -49,6 +49,7 @@
     "m90c9check": "node scripts/m90_c9_safe_closure_final_hygiene_check.js",
     "m90c10check": "node scripts/m90_c10_physical_snapshot_hygiene_check.js",
     "m94dcheck": "node scripts/m94d_admin_payment_security_export_check.js",
+    "m96c2check": "node scripts/m96_c2_boarding_change_ops_check.js",
     "m94echeck": "node scripts/m94e_queue_chaos_alarm_check.js",
     "m94eprobe": "node scripts/m94e_queue_chaos_alarm_probe.js",
     "m97acheck": "node scripts/m97_a_room_operation_panel_check.js",

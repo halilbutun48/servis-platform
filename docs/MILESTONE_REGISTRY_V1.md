@@ -78,6 +78,9 @@
 - `M96-C - boarding change local model - active`
   - amaç: biniş değişikliği taleplerini mobil yerel istek modeli olarak görünür kılmak; backend/panel bind sonraki halkada yaşar
   - komut: `node mobile/scripts/m96_c_boarding_change_check.js`
+- `M96-C2 - boarding change operations readiness - active`
+  - amaç: biniş değişikliği için backend/panel/audit/notification/auto-accept görünürlüğünü doğrulamak
+  - komut: `node backend/scripts/m96_c2_boarding_change_ops_check.js`
 - `M96-D - driver change awareness - active`
   - amaç: sürücü değişiklik farkındalığı ve sesli uyarı katmanını mobilde görünür kılmak
   - komut: `node mobile/scripts/m96_d_driver_change_awareness_check.js`
@@ -111,6 +114,12 @@
 - `M99-A - mobile regression pack - active`
   - amaç: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak
   - komut: `node mobile/scripts/m99_a_mobile_regression_pack_check.js`
+- `M99-B - real scenario tests - active`
+  - amaç: sürücü, personel, veli ve operasyon yüzeylerini gerçek senaryo pack'iyle tek check'te yaşatmak
+  - komut: `node mobile/scripts/m99_b_real_scenario_tests_check.js`
+- `M99-C - field launch readiness - active`
+  - amaç: gerçek cihaz, zayıf ağ ve saha kanıtı hazırlığını tek check'te görünür kılmak
+  - komut: `node mobile/scripts/m99_c_field_launch_readiness_check.js`
 
 ## 4) Ticari omurga notu
 - Ticari kaynak yalniz sozlesme degildir.
