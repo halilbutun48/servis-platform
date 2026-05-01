@@ -1,6 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 import { resolveDriverGpsShiftContext } from '../lib/gps';
-import { Card, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, TopTabs, fmt, isStale, styles } from './mobileUi';
+import { DriverDiagnosticsCard, GpsSourceStatusCard } from './driverPremiumUi';
+import { Card, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, fmt, isStale, styles } from './mobileUi';
 import { driverGpsBackgroundReasonText, driverGpsPrimaryActionLabel, driverGpsStatusLabel, humanizeDriverUiText } from './driverUiText';
 
 export default function LiveScreen({
@@ -66,11 +67,43 @@ export default function LiveScreen({
   const releaseStageText = humanizeDriverUiText(releaseInfo?.envStage || '-', 'Bilinmiyor');
   const releaseStatusText = humanizeDriverUiText(releaseInfo?.acceptanceStatusText || 'READY', 'Hazır');
   const netStatusText = humanizeDriverUiText(net?.status || '-', 'Bilinmiyor');
+  const sourceCards = [
+    {
+      key: 'vehicle',
+      title: "Araç GPS'i",
+      subtitle: gps?.officialSourceText || "Araçtan gelen konum verisi.",
+      badge: gps?.officialFreshnessText || 'Bekliyor',
+      active: String(gps?.officialSourceKey || '').includes('BACKEND_VEHICLE_GPS'),
+      tone: 'success',
+    },
+    {
+      key: 'driver-phone',
+      title: "Sürücünün telefon GPS'i",
+      subtitle: gps?.displaySourceText === "Sürücünün telefon GPS'i"
+        ? 'Telefon GPS’i ile konum paylaşımı aktif.'
+        : "Telefon GPS'i yedek kaynak olarak hazır.",
+      badge: gps?.displaySourceText === "Sürücünün telefon GPS'i" ? 'Aktif' : 'Bekliyor',
+      active: gps?.displaySourceText === "Sürücünün telefon GPS'i",
+      tone: 'info',
+    },
+    {
+      key: 'waiting',
+      title: 'GPS bekleniyor',
+      subtitle: gpsNeedsPermission ? 'GPS izni bekleniyor.' : 'Konum verisi kısa süreli bekleniyor.',
+      badge: gpsNeedsPermission ? 'İzin gerekli' : 'Hazır',
+      active: !gps?.displaySourceText || gps?.displaySourceKey === 'NONE',
+      tone: 'warning',
+    },
+  ];
+  const summaryItems = [
+    { label: 'Görev durumu', value: gpsContext.canPublish ? 'Aktif görev var' : 'Aktif görev yok', note: gpsContext.shiftId ? `#${gpsContext.shiftId}` : '' },
+    { label: 'Son konum kaynağı', value: gps?.displaySourceText || '-', note: gps?.officialFreshnessText || '' },
+    { label: 'Konum güncellendi', value: fmt(gps?.displayAt || gps?.lastSentAt), note: gpsStatusText },
+    { label: 'Konum doğruluğu', value: gps?.officialFreshnessText || '-', note: gpsBackgroundReasonText || '' },
+  ];
 
   return (
     <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-      <TopTabs current="live" onToday={onOpenToday} onRoute={onOpenRoute} onLive={() => null} />
-
       <Card>
         <Text style={styles.title}>Canlı</Text>
         <Text style={styles.subtitle}>Bağlantı, sürücünün telefon GPS'i, KVKK ve sesli rehber bu ekrandan izlenir.</Text>
@@ -81,42 +114,30 @@ export default function LiveScreen({
         </View>
       </Card>
 
-      <Card>
-        <SectionTitle title="Bağlantı" />
-        <Info label="Mesaj" value={net?.message || '-'} />
-        <Info label="Son online" value={fmt(net?.lastOnlineAt)} />
-        <Info label="Son offline" value={fmt(net?.lastOfflineAt)} />
-        <Info label="Son toparlama" value={fmt(net?.lastRecoveryAt)} />
-        <Info label="Yeniden deneme sayısı" value={net?.retryCount != null ? String(net.retryCount) : '-'} />
-        <Info label="Sonraki deneme" value={fmt(net?.nextRetryAt)} />
-      </Card>
-
-      <Card>
-        <SectionTitle title="Yayın / ortam" subtitle="Canlı ekrandaki tüm ağ aksiyonları bu kabul durumuna bağlıdır." />
-        <View style={styles.rowGap}>
-          <Pill label={releaseStatusText} tone={releaseInfo?.acceptanceBlocking ? 'danger' : Array.isArray(releaseInfo?.acceptanceWarnings) && releaseInfo.acceptanceWarnings.length ? 'warn' : 'ok'} />
-          <Pill label={`Ortam: ${releaseStageText}`} />
-        </View>
-        <Info label="API adresi" value={releaseInfo?.apiHost || '-'} />
-        <Info label="Zaman aşımı" value={releaseInfo?.timeoutMs != null ? `${releaseInfo.timeoutMs} ms` : '-'} />
-        <Info label="Kabul özeti" value={releaseInfo?.acceptanceSummary || '-'} />
-      </Card>
-
-      <Card>
-        <SectionTitle title="KVKK" />
-        <View style={styles.rowGap}>
-          <Pill label={kvkkBlocking ? 'Gönderim kapalı' : 'Hazır'} tone={kvkkBlocking ? 'warn' : 'ok'} />
-          <Pill label={`Gerekli: ${kvkk?.requiredCount || 0}`} />
-          <Pill label={`Tamam: ${kvkk?.acceptedCount || 0}`} tone={!kvkkBlocking && (kvkk?.acceptedCount || 0) > 0 ? 'ok' : 'info'} />
-        </View>
-        <Info label="Mesaj" value={kvkk?.message || '-'} />
-        <Info label="Son kontrol" value={fmt(kvkk?.lastCheckedAt)} />
-        <Info label="Son onay" value={fmt(kvkk?.lastAcceptedAt)} />
-        <View style={styles.actionsRow}>
-          {kvkkBlocking ? <PrimaryButton title="KVKK onayını tamamla" onPress={onAcceptKvkk} disabled={kvkk?.busy} /> : null}
-          <SecondaryButton title="KVKK durumunu yenile" onPress={onRefreshKvkkStatus} disabled={kvkk?.busy || kvkk?.loading} />
-        </View>
-      </Card>
+      <GpsSourceStatusCard
+        title="Konum ve GPS durumu"
+        subtitle="Araç GPS'i, sürücünün telefon GPS'i ve bekleyen durumlar."
+        sourceCards={sourceCards}
+        primaryActionLabel={gpsActionTitle}
+        primaryAction={gpsPrimaryDisabled ? null : gpsPrimaryAction}
+        secondaryActionLabel="Durumu tazele"
+        secondaryAction={onRefreshGpsStatus}
+        openSettingsLabel="Ayarlara git"
+        onOpenSettings={gpsCanOpenSettings ? onOpenGpsSettings : null}
+        warningText={
+          hasActiveShift
+            ? hasVehicle
+              ? (gpsContext.canPublish ? '' : 'Bu vardiya GPS gönderimi için hazır değil.')
+              : 'Bu görev için araç bilgisi bulunamadı.'
+            : 'Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.'
+        }
+        summaryItems={summaryItems}
+        footer={
+          backgroundTaskAvailable
+            ? "Ekran kapalı kalsa da arka plan görev desteği varsa sürücünün telefon GPS'i konumu yayınlamayı sürdürür; zayıf ağda kontrollü yeniden deneme devreye girer."
+            : 'Bu cihazda arka plan GPS görevi desteklenmiyor.'
+        }
+      />
 
       <Card>
         <SectionTitle title="Sesli rehber" />
@@ -130,64 +151,56 @@ export default function LiveScreen({
         </View>
       </Card>
 
-      <Card>
-        <SectionTitle title="Sürücünün telefon GPS'i" />
-        <View style={styles.rowGap}>
-          <Pill label={`Görev desteği: ${backgroundTaskAvailable ? 'Hazır' : 'Yok'}`} tone={backgroundTaskAvailable ? 'ok' : 'warn'} />
-          <Pill label={gpsStatusText} tone={gpsNeedsPermission || kvkkBlocking || !backgroundTaskRunning || !gpsContext.canPublish ? 'warn' : 'ok'} />
-          <Pill label={`İzin: ${gps?.permissionStatus === 'granted' ? 'Verildi' : 'Bekleniyor'}`} tone={gps?.permissionStatus === 'granted' ? 'ok' : 'warn'} />
-          <Pill label={`Arka plan: ${gps?.backgroundPermissionStatus === 'granted' ? 'Verildi' : 'Gerekli'}`} tone={gps?.backgroundPermissionStatus === 'granted' ? 'ok' : 'warn'} />
-          <Pill label={`Servis: ${backgroundTaskRunning ? 'Çalışıyor' : 'Durduruldu'}`} tone={backgroundTaskRunning ? 'ok' : 'warn'} />
-          <Pill label={`Gönderim: ${gps?.publishState === 'ok' ? 'Aktif' : gps?.publishState === 'retry' ? 'Yeniden denenecek' : gps?.publishState === 'blocked' ? 'Kapalı' : 'Bekliyor'}`} tone={gps?.publishState === 'ok' ? 'ok' : gps?.publishState === 'retry' || gpsNeedsPermission || kvkkBlocking ? 'warn' : 'info'} />
-        </View>
-        <Info label="Görev desteği" value={gps?.backgroundTaskAvailableText || '-'} />
-        <Info label="İzin durumu" value={gps?.permissionText || 'GPS izni bekleniyor'} />
-        <Info label="Arka plan izni" value={gps?.backgroundPermissionText || 'Arka plan izni gerekli'} />
-        <Info label="Arka plan servis" value={gps?.backgroundTaskText || 'GPS gönderimi kapalı'} />
-        <Info label="Uygulama durumu" value={humanizeDriverUiText(gps?.appState || '-', 'Bilinmiyor')} />
-        <Info label="Son arka plan nedeni" value={gpsBackgroundReasonText || '-'} />
-        {showGpsDebug ? (
-          <>
-            <Info label="Seçili vardiya" value={gpsContext.selectedShiftId ? `#${gpsContext.selectedShiftId}` : '-'} />
-            <Info label="GPS vardiyası" value={gpsContext.shiftId ? `#${gpsContext.shiftId} • ${humanizeDriverUiText(gpsContext.shiftStatus || '-', 'Bilinmiyor')}` : '-'} />
-            <Info label="Araç" value={gpsContext.vehicleId ? `#${gpsContext.vehicleId}` : 'Yok'} />
-            <Info label="Başlatma engeli" value={humanizeDriverUiText(gpsContext.reason || '-', 'Hazır')} />
-          </>
-        ) : null}
-        <Text style={styles.muted}>
-          {hasActiveShift
-            ? hasVehicle
-              ? (gpsContext.canPublish ? "Sürücünün telefon GPS'i hazır." : 'Bu vardiya GPS gönderimi için hazır değil.')
-              : 'Bu görev için araç bilgisi bulunamadı.'
-            : 'Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.'}
-        </Text>
-        <Info label="Son arka plan kontrol" value={fmt(gps?.lastBackgroundSyncAt)} />
-        <Info label="Gönderim durumu" value={gps?.publishText || '-'} />
-        {/* legacy check token: Konum kaynak onceligi */}
-        <Info label="Konum kaynak önceliği" value={gps?.sourcePriorityText || '-'} />
-        <Info label="Gösterilen kaynak" value={gps?.displaySourceText || '-'} />
-        <Info label="Gösterilen zaman" value={fmt(gps?.displayAt)} />
-        <Info label="Vardiya" value={gps?.shiftId ? `#${gps.shiftId}` : 'Görev yok'} />
-        <Info label="Araç" value={gps?.vehicleId ? `#${gps.vehicleId}` : '-'} />
-        <Info label="Resmi kaynak" value={gps?.officialSourceText || '-'} />
-        <Info label="Resmi tazelik" value={gps?.officialFreshnessText || '-'} />
-        <Info label="Resmi konum" value={gps?.officialCoordsText || '-'} />
-        <Info label="Resmi zaman" value={fmt(gps?.officialAt)} />
-        {/* Yerel telefon onizleme */}
-        <Info label="Yerel telefon önizleme" value={gps?.localPreviewText || '-'} />
-        <Info label="Yerel önizleme zamanı" value={fmt(gps?.localPreviewAt)} />
-        <Info label="Gösterilen konum" value={gps?.displayCoordsText || gps?.lastLocationText || '-'} />
-        <Info label="Son gönderim" value={fmt(gps?.lastSentAt)} />
-        <Info label="Son deneme" value={fmt(gps?.lastAttemptAt)} />
-        <Info label="GPS yeniden deneme" value={gps?.retryCount != null ? String(gps.retryCount) : '-'} />
-        <Info label="GPS sonraki deneme" value={fmt(gps?.nextRetryAt)} />
-        <Text style={styles.muted}>Ekran kapalı kalsa da arka plan görev desteği varsa sürücünün telefon GPS'i konumu yayınlamayı sürdürür; zayıf ağda kontrollü yeniden deneme devreye girer.</Text>
-        <View style={styles.actionsRow}>
-          <PrimaryButton title={gpsActionTitle} onPress={gpsPrimaryAction} disabled={gpsPrimaryDisabled} />
-          <SecondaryButton title="Durumu tazele" onPress={onRefreshGpsStatus} />
-          {gpsCanOpenSettings ? <SecondaryButton title="Ayarlara git" onPress={onOpenGpsSettings} /> : null}
-        </View>
-      </Card>
+      <DriverDiagnosticsCard
+        title="Gelişmiş durum"
+        subtitle="Teknik ayrıntılar burada gizli tutulur."
+        summary="Bağlantı, KVKK, yayın ve yerel debug ayrıntıları burada toplanır."
+        items={[
+          { label: 'Bağlantı mesajı', value: net?.message || '-' },
+          { label: 'Son online', value: fmt(net?.lastOnlineAt) },
+          { label: 'Son offline', value: fmt(net?.lastOfflineAt) },
+          { label: 'Son toparlama', value: fmt(net?.lastRecoveryAt) },
+          { label: 'Yeniden deneme sayısı', value: net?.retryCount != null ? String(net.retryCount) : '-' },
+          { label: 'Sonraki deneme', value: fmt(net?.nextRetryAt) },
+          { label: 'KVKK durumu', value: kvkk?.message || '-' },
+          { label: 'Gerekli belge', value: kvkk?.requiredCount != null ? String(kvkk.requiredCount) : '-' },
+          { label: 'Kabul edilen', value: kvkk?.acceptedCount != null ? String(kvkk.acceptedCount) : '-' },
+          { label: 'Bekleyen', value: Array.isArray(kvkk?.pendingDocKeys) && kvkk.pendingDocKeys.length ? kvkk.pendingDocKeys.join(', ') : '-' },
+          { label: 'Seçili vardiya', value: gpsContext.selectedShiftId ? `#${gpsContext.selectedShiftId}` : '-' },
+          { label: 'GPS vardiyası', value: gpsContext.shiftId ? `#${gpsContext.shiftId} • ${humanizeDriverUiText(gpsContext.shiftStatus || '-', 'Bilinmiyor')}` : '-' },
+          { label: 'Araç', value: gpsContext.vehicleId ? `#${gpsContext.vehicleId}` : 'Yok' },
+          { label: 'Başlatma engeli', value: humanizeDriverUiText(gpsContext.reason || '-', 'Hazır') },
+          { label: 'Son arka plan nedeni', value: gpsBackgroundReasonText || '-' },
+          { label: 'Gönderim durumu', value: gps?.publishText || '-' },
+          { label: 'Konum kaynak önceliği', value: gps?.sourcePriorityText || '-' },
+          { label: 'Gösterilen kaynak', value: gps?.displaySourceText || '-' },
+          { label: 'Gösterilen zaman', value: fmt(gps?.displayAt) },
+          { label: 'Vardiya', value: gps?.shiftId ? `#${gps.shiftId}` : 'Görev yok' },
+          { label: 'Araç', value: gps?.vehicleId ? `#${gps.vehicleId}` : '-' },
+          { label: 'Resmi kaynak', value: gps?.officialSourceText || '-' },
+          { label: 'Resmi tazelik', value: gps?.officialFreshnessText || '-' },
+          { label: 'Resmi konum', value: gps?.officialCoordsText || '-' },
+          { label: 'Resmi zaman', value: fmt(gps?.officialAt) },
+          { label: 'Yerel telefon önizleme', value: gps?.localPreviewText || '-' },
+          { label: 'Yerel önizleme zamanı', value: fmt(gps?.localPreviewAt) },
+          { label: 'Gösterilen konum', value: gps?.displayCoordsText || gps?.lastLocationText || '-' },
+          { label: 'Son gönderim', value: fmt(gps?.lastSentAt) },
+          { label: 'Son deneme', value: fmt(gps?.lastAttemptAt) },
+          { label: 'GPS yeniden deneme', value: gps?.retryCount != null ? String(gps.retryCount) : '-' },
+          { label: 'GPS sonraki deneme', value: fmt(gps?.nextRetryAt) },
+          { label: 'Uygulama durumu', value: humanizeDriverUiText(gps?.appState || '-', 'Bilinmiyor') },
+          { label: 'API adresi', value: releaseInfo?.apiHost || '-' },
+          { label: 'Zaman aşımı', value: releaseInfo?.timeoutMs != null ? `${releaseInfo.timeoutMs} ms` : '-' },
+          { label: 'Kabul özeti', value: releaseInfo?.acceptanceSummary || '-' },
+          { label: 'Ortam', value: releaseStageText },
+          { label: 'Yayın durumu', value: releaseStatusText },
+        ]}
+        footer={
+          showGpsDebug
+            ? `Seçili vardiya: ${gpsContext.selectedShiftId || '-'} • GPS vardiyası: ${gpsContext.shiftId || '-'} • Araç: ${gpsContext.vehicleId || '-'}`
+            : ''
+        }
+      />
     </ScrollView>
   );
 }

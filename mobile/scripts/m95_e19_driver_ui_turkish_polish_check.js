@@ -54,48 +54,47 @@ must(has(JSON.stringify(pkg.scripts || {}), 'check:m95e19'), 'package exposes m9
 must(has(pkg.scripts?.['check:m1'] || '', 'check:m95e19'), 'check:m1 includes m95e19');
 must(has(pkg.scripts?.['acceptance:mobile'] || '', 'check:m95e19'), 'acceptance chain includes m95e19');
 
-must(has(today, 'Yayın hazırlığı'), 'today screen keeps Turkish release title');
-must(has(today, 'Yayın profilleri'), 'today screen keeps Turkish build profiles label');
-must(has(today, 'Canlı test'), 'today screen keeps live test label');
-must(has(today, 'Android önizleme'), 'today screen keeps android preview label');
-must(has(today, 'Yayın paketi'), 'today screen keeps production bundle label');
-must(has(today, 'Yayın hedefi'), 'today screen keeps release target label');
-must(has(today, 'Ortam aşaması'), 'today screen keeps environment stage label');
-must(has(today, 'Derleme durumu'), 'today screen keeps build status label');
-must(has(today, 'API adresi'), 'today screen keeps api address label');
-must(has(today, 'API şeması'), 'today screen keeps api scheme label');
-must(has(today, 'Zaman aşımı'), 'today screen keeps timeout label');
-must(has(today, 'Rota, tahmini varış ve hızlı işlemler tek yerde.'), 'today screen summary is Turkish');
-must(has(today, 'Sürücünün telefon GPS\'i'), 'today screen keeps driver gps wording');
+must(has(today, 'Günaydın'), 'today screen keeps greeting');
+must(has(today, 'Bugünkü Vardiya'), 'today screen keeps hero wardiya title');
+must(has(today, 'Sürüş ve GPS yardımı'), 'today screen keeps gps helper card');
+must(has(today, 'Konumu şimdi gönder'), 'today screen keeps direct publish action');
+must(has(today, 'Gelişmiş durum'), 'today screen keeps advanced status card');
+must(has(today, 'DriverAvailabilityCard'), 'today screen keeps driver status card');
+must(has(today, 'NotificationCenterCard'), 'today screen keeps notification summary card');
+must(has(today, 'DriverChangeAwarenessCard'), 'today screen keeps awareness card');
 
-must(has(route, 'Görev / rota / tahmini varış'), 'route screen keeps Turkish task-route title');
-must(has(route, 'Sıradaki'), 'route screen keeps Turkish next stop pill');
-must(has(route, 'Ulaşıldı:'), 'route screen keeps Turkish reached text');
-must(has(route, 'Atlandı:'), 'route screen keeps Turkish skipped text');
-must(has(route, 'beklemeye alınır'), 'route screen keeps Turkish pending explanation');
-must(has(route, 'humanizeDriverUiText'), 'route screen uses humanize helper');
+must(has(route, 'Bugünkü rota'), 'route screen keeps route hero title');
+must(has(route, 'Durak listesi'), 'route screen keeps stop list card');
+must(has(route, 'Navigasyonu aç'), 'route screen keeps navigation action');
+must(has(route, 'Tam rotayı aç'), 'route screen keeps full route action');
+must(has(route, 'Seçili vardiya'), 'route screen keeps selected shift card');
+must(has(route, 'Gelişmiş durum'), 'route screen keeps advanced status card');
+must(has(route, 'DriverTaskSummaryCard'), 'route screen keeps hero route summary card');
+must(has(route, 'StopListCard'), 'route screen keeps stop list component');
 
-must(has(live, 'Yayın / ortam'), 'live screen keeps Turkish release title');
-must(has(live, 'API adresi'), 'live screen keeps api address label');
-must(has(live, 'Zaman aşımı'), 'live screen keeps timeout label');
-must(has(live, 'Ayarlara git'), 'live screen keeps settings action wording');
-must(has(live, 'driverGpsPrimaryActionLabel'), 'live screen uses gps primary action helper');
-must(has(live, 'driverGpsStatusLabel'), 'live screen uses gps status helper');
-must(has(live, 'gpsActionTitle'), 'live screen builds gps action title');
-must(has(live, 'Sürücünün telefon GPS\'i'), 'live screen keeps driver gps heading');
+must(has(live, 'Konum ve GPS durumu'), 'live screen keeps gps status title');
+must(has(live, 'gpsActionTitle'), 'live screen keeps derived gps action title');
+must(has(live, 'driverGpsPrimaryActionLabel'), 'live screen keeps gps primary action helper');
+must(has(live, 'Gelişmiş durum'), 'live screen keeps advanced status card');
+must(has(live, 'Sürücünün telefon GPS\'i'), 'live screen keeps driver gps wording');
+must(has(live, 'GpsSourceStatusCard'), 'live screen uses gps source status card');
+must(has(live, 'DriverDiagnosticsCard'), 'live screen keeps advanced diagnostics card');
 
 must(has(availability, 'Sürücü durumu'), 'availability card keeps Turkish title');
 must(has(availability, 'Hazır bekleme tercihi cihazda kalır.'), 'availability card keeps shorter subtitle');
 must(has(availability, 'Yeni iş atamasını oda/operasyon yapar.'), 'availability card keeps shorter footer text');
+must(has(availability, 'QuickActionsGrid'), 'availability card keeps compact action grid');
+must(has(availability, 'driverAvailabilityActionLabel'), 'availability card keeps helper driven action labels');
 
 must(has(taskCard, 'Rota, tahmini varış ve hızlı işlemler tek yerde.'), 'task card keeps Turkish summary');
-must(has(taskCard, 'Tahmini varış'), 'task card keeps tahmini varış label');
-must(has(taskCard, 'Bugün atanmış görev görünmüyor.'), 'task card keeps empty state');
+must(has(taskCard, 'Navigasyonu aç'), 'task card or route uses navigation wording');
+must(has(taskCard, 'Durak önizlemesi'), 'task card keeps route preview');
 
 must(has(loading, 'Sürücü ekranı yükleniyor...'), 'loading screen keeps driver loading text');
 must(has(loading, 'Oturum açıldı, görev bilgileri hazırlanıyor.'), 'loading screen keeps loading status text');
 
 must(has(ui, "Platform.OS === 'android' ? 30 : 16"), 'mobile ui uses android top padding');
+must(has(ui, "Platform.OS === 'android' ? 108 : 96"), 'mobile ui keeps bottom padding');
 must(has(textHelper, "['driver', 'Sürücü']"), 'text helper maps driver');
 must(has(textHelper, "['approved', 'Onaylı']"), 'text helper maps approved');
 must(has(textHelper, "['ok', 'Hazır']"), 'text helper maps ok');

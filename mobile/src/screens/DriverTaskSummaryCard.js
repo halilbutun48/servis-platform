@@ -1,16 +1,6 @@
-import { Text, View } from 'react-native';
-import {
-  Card,
-  EmptyState,
-  Info,
-  Pill,
-  PrimaryButton,
-  RoutePreviewList,
-  SecondaryButton,
-  SectionTitle,
-  styles,
-} from './mobileUi';
-import { humanizeDriverUiText } from './driverUiText';
+import { View } from 'react-native';
+import { Card, EmptyState, SecondaryButton, styles } from './mobileUi';
+import { HeroShiftCard, QuickActionsGrid, RouteMiniMapCard } from './driverPremiumUi';
 
 function statusTextFor(routeSummary = {}, activeShift = null) {
   if (routeSummary.completed) return 'Tamamlandı';
@@ -52,45 +42,70 @@ export default function DriverTaskSummaryCard({
   const lastReachedOrder = routeSummary.lastReachedOrder ?? route?.summary?.lastReachedOrder ?? null;
   const canStart = shiftStatus === 'APPROVED';
   const canComplete = ['APPROVED', 'ACTIVE', 'DONE'].includes(shiftStatus) && !route?.progress?.pausedAt && Number(remainingStops || 0) === 0;
+  const quickActions = [
+    showWorkflowActions && canStart
+      ? { title: 'Vardiyayı başlat', subtitle: 'Yolculuğa geç', tone: 'dark', onPress: onStartShift }
+      : null,
+    showWorkflowActions && nextStop
+      ? { title: 'Durak ulaşıldı', subtitle: 'Sonraki durağa geçiş', tone: 'success', onPress: () => onMarkReached?.(nextStop.id), disabled: routeOpsBusy || !!route?.progress?.pausedAt }
+      : null,
+    showWorkflowActions && canComplete
+      ? { title: 'Vardiyayı tamamla', subtitle: 'İşi kapat', tone: 'warning', onPress: onCompleteShift, disabled: routeOpsBusy }
+      : null,
+  ].filter(Boolean);
+  const supportActions = [
+    onOpenRoute ? { title: 'Navigasyonu aç', onPress: onOpenRoute } : null,
+    onOpenLive ? { title: 'Canlı', onPress: onOpenLive } : null,
+    onRefresh ? { title: 'Yenile', onPress: onRefresh, disabled: routeOpsBusy } : null,
+  ].filter(Boolean);
 
   return (
-    <Card>
-      <SectionTitle title={title} subtitle={subtitle} />
-      {routeOpsText ? <Text style={styles.helper}>{routeOpsText}</Text> : null}
+    <Card style={styles.heroCard}>
+      <HeroShiftCard
+        title={title}
+        subtitle={subtitle}
+        activeShift={activeShift}
+        routeSummary={routeSummary}
+        nextStop={nextStop}
+        stats={[
+          { label: 'Kalan rota süresi', value: remainingRouteEtaMin != null ? `${remainingRouteEtaMin} dk` : '-', note: 'Tahmini', tone: 'dark' },
+          { label: 'Kalan km', value: remainingKm != null ? `${remainingKm} km` : '-', note: 'Mesafe', tone: 'dark' },
+          { label: 'Kalan durak', value: remainingStops != null ? String(remainingStops) : '-', note: 'Akış', tone: 'dark' },
+          { label: 'Kalan yolcu', value: remainingPassengers != null ? String(remainingPassengers) : '-', note: 'Yük', tone: 'dark' },
+        ]}
+        statusLabel={statusTextFor(routeSummary, activeShift)}
+        statusTone={statusToneFor(routeSummary, activeShift)}
+        footer={routeOpsText || 'Bugün atanmış görev görünmüyorsa operasyon ekibiniz görev atadığında burada görünecek.'}
+      />
 
       {hasShift ? (
         <>
-          <View style={styles.rowGap}>
-            {routeSummary.completed ? <Pill label="Rota tamamlandı" tone="ok" /> : null}
-            {routeSummary.paused ? <Pill label="Vardiya duraklatıldı" tone="warn" /> : null}
-            <Pill label={statusTextFor(routeSummary, activeShift)} tone={statusToneFor(routeSummary, activeShift)} />
-            <Pill label={nextStop ? 'Sıradaki durak hazır' : 'Bekleyen durak yok'} tone={nextStop ? 'info' : 'warn'} />
-          </View>
+          <QuickActionsGrid actions={quickActions} />
 
-          <Info label="Seçili vardiya" value={`#${activeShift.id} • ${humanizeDriverUiText(route?.shift?.status || activeShift?.status || '-', 'Bilinmiyor')}`} />
-          <Info label="Rota durumu" value={humanizeDriverUiText(route?.mode || 'NO_DATA', 'Veri yok')} />
-          <Info label="Sıradaki durak" value={nextStop?.name || '-'} />
-          <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
-          <Info label="Kalan rota süresi" value={remainingRouteEtaMin != null ? `${remainingRouteEtaMin} dk` : '-'} />
-          <Info label="Kalan km" value={remainingKm != null ? `${remainingKm} km` : '-'} />
-          <Info label="Kalan durak" value={remainingStops != null ? String(remainingStops) : '-'} />
-          <Info label="Kalan yolcu" value={remainingPassengers != null ? String(remainingPassengers) : '-'} />
-          <Info label="Son ulaşılan sıra" value={lastReachedOrder != null ? String(lastReachedOrder) : '-'} />
+          {supportActions.length ? (
+            <View style={styles.actionsRow}>
+              {supportActions.map((action) => (
+                <SecondaryButton
+                  key={action.title}
+                  title={action.title}
+                  onPress={action.onPress}
+                  disabled={Boolean(action.disabled)}
+                />
+              ))}
+            </View>
+          ) : null}
 
           {Array.isArray(routePreviewStops) && routePreviewStops.length ? (
-            <RoutePreviewList stops={routePreviewStops.slice(0, 4)} />
+            <RouteMiniMapCard
+              title="Durak önizlemesi"
+              subtitle="İlk duraklar kısa bir rota hissi ile görünür."
+              stops={routePreviewStops.slice(0, 4)}
+              nextStopId={nextStop?.id || null}
+              routeSummary={routeSummary}
+            />
           ) : (
             <EmptyState title="Bugün atanmış görev görünmüyor." text="Operasyon ekibiniz görev atadığında burada görünecek." />
           )}
-
-          <View style={styles.actionsRow}>
-            {showWorkflowActions && canStart ? <PrimaryButton title="Vardiyayı başlat" onPress={onStartShift} disabled={routeOpsBusy} /> : null}
-            {showWorkflowActions && nextStop ? <SecondaryButton title="Durak ulaşıldı" onPress={() => onMarkReached?.(nextStop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} /> : null}
-            {showWorkflowActions && canComplete ? <SecondaryButton title="Vardiyayı tamamla" onPress={onCompleteShift} disabled={routeOpsBusy} /> : null}
-            <SecondaryButton title="Rota ekranını aç" onPress={onOpenRoute} />
-            <SecondaryButton title="Canlı ekranını aç" onPress={onOpenLive} />
-            <SecondaryButton title="Yenile" onPress={onRefresh} disabled={routeOpsBusy} />
-          </View>
         </>
       ) : (
         <EmptyState title="Görev görünmüyor" text="Bugün ekranında görev görünmüyorsa oda veya şirket atamasını kontrol et." />

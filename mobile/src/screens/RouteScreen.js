@@ -3,24 +3,9 @@ import { listVisibleShifts, resolveDriverGpsShiftContext } from '../lib/gps';
 import { openFullRouteNavigation, openNextStopNavigation } from '../lib/navigation';
 import DriverAvailabilityCard from './DriverAvailabilityCard';
 import DriverTaskSummaryCard from './DriverTaskSummaryCard';
-import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, ShiftChooser, TopTabs, fmt, styles } from './mobileUi';
+import { DriverDiagnosticsCard, StopListCard } from './driverPremiumUi';
+import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, ShiftChooser, fmt, styles } from './mobileUi';
 import { humanizeDriverUiText } from './driverUiText';
-
-function stopTone(stop, nextStopId) {
-  const state = String(stop?.state || '').toUpperCase();
-  if (state === 'REACHED') return 'ok';
-  if (state === 'SKIPPED') return 'warn';
-  if (Number(stop?.id || 0) && Number(stop?.id || 0) === Number(nextStopId || 0)) return 'danger';
-  return 'info';
-}
-
-function stopLabel(stop, nextStopId) {
-  const state = String(stop?.state || '').toUpperCase();
-  if (Number(stop?.id || 0) && Number(stop?.id || 0) === Number(nextStopId || 0) && state === 'PENDING') return 'Sıradaki';
-  if (state === 'REACHED') return 'Ulaşıldı';
-  if (state === 'SKIPPED') return 'Atlandı';
-  return humanizeDriverUiText(state || 'PENDING', 'Bekliyor');
-}
 
 export default function RouteScreen({
   today,
@@ -82,11 +67,9 @@ export default function RouteScreen({
 
   return (
     <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-      <TopTabs current="route" onToday={onOpenToday} onRoute={() => null} onLive={onOpenLive} />
-
       <Card>
         <Text style={styles.title}>Rota</Text>
-        <Text style={styles.subtitle}>Bu ekranda seçili vardiya, sıradaki durak ve manuel operasyon adımları yönetilir.</Text>
+        <Text style={styles.subtitle}>Seçili vardiya, mini rota önizlemesi ve durak akışı burada.</Text>
         {!!error ? <Text style={styles.error}>{error}</Text> : null}
         <View style={styles.rowGap}>
           <Pill label={syncing ? 'Senkron oluyor' : 'Hazır'} tone={syncing ? 'warn' : 'ok'} />
@@ -113,32 +96,30 @@ export default function RouteScreen({
       />
 
       {activeShift ? (
-        <DriverTaskSummaryCard
-          title="Görev / rota / tahmini varış"
-          subtitle="Güncel rota, tahmini varış ve kalan iş tek kartta."
-          activeShift={activeShift}
-          route={route}
-          routeSummary={routeSummary}
-          nextStop={nextStop}
-          routePreviewStops={Array.isArray(route?.orderedStops) ? route.orderedStops : []}
-          routeOpsText={routeOpsText}
-          routeOpsBusy={routeOpsBusy}
-          onOpenRoute={openFullRoute}
-          onOpenLive={onOpenLive}
-          onRefresh={onRefresh}
-        />
-      ) : null}
-
-      {!activeShift ? (
-        <Card>
-          <EmptyState title="Rota bulunamadı" text="Seçili vardiya için rota verisi gelmedi. Yenile ve vardiya seçimini tekrar dene." />
-          <View style={styles.actionsRow}>
-            <PrimaryButton title="Yenile" onPress={onRefresh} />
-            <SecondaryButton title="Bugüne dön" onPress={onOpenToday} />
-          </View>
-        </Card>
-      ) : (
         <>
+          <DriverTaskSummaryCard
+            title="Bugünkü rota"
+            subtitle="Güncel rota, tahmini varış ve kalan iş tek kartta."
+            activeShift={activeShift}
+            route={route}
+            routeSummary={routeSummary}
+            nextStop={nextStop}
+            routePreviewStops={Array.isArray(route?.orderedStops) ? route.orderedStops : []}
+            routeOpsText={routeOpsText}
+            routeOpsBusy={routeOpsBusy}
+            onOpenRoute={openFullRoute}
+            onOpenLive={onOpenLive}
+            onRefresh={onRefresh}
+          />
+
+          <StopListCard
+            title="Durak listesi"
+            subtitle="İlk duraklar ve sıradaki rota akışı burada görünür."
+            stops={Array.isArray(route?.orderedStops) ? route.orderedStops : []}
+            nextStopId={nextStop?.id || null}
+            onOpenFullRoute={openFullRoute}
+          />
+
           <Card>
             <SectionTitle title="Seçili vardiya" />
             <Info label="Vardiya" value={`#${activeShift.id} • ${humanizeDriverUiText(route?.shift?.status || activeShift?.status || '-', 'Bilinmiyor')}`} />
@@ -155,20 +136,6 @@ export default function RouteScreen({
           </Card>
 
           <Card>
-            <SectionTitle title="Rota özeti" subtitle="Kalan süre, mesafe ve durak ilerlemesi tek yerde." />
-            <View style={styles.rowGap}>
-              {routeSummary.completed ? <Pill label="Rota tamamlandı" tone="ok" /> : null}
-              {routeSummary.paused ? <Pill label="Vardiya duraklatıldı" tone="warn" /> : null}
-              <Pill label={nextStop ? 'Sıradaki durak hazır' : 'Bekleyen durak yok'} tone={nextStop ? 'info' : 'warn'} />
-            </View>
-            <Info label="Kalan rota süresi" value={routeSummary.remainingRouteEtaMin != null ? `${routeSummary.remainingRouteEtaMin} dk` : '-'} />
-            <Info label="Kalan km" value={routeSummary.remainingKm != null ? `${routeSummary.remainingKm} km` : '-'} />
-            <Info label="Kalan durak" value={routeSummary.remainingStops != null ? String(routeSummary.remainingStops) : '-'} />
-            <Info label="Kalan yolcu" value={routeSummary.remainingPassengers != null ? String(routeSummary.remainingPassengers) : '-'} />
-            <Info label="Son ulaşılan sıra" value={routeSummary.lastReachedOrder != null ? String(routeSummary.lastReachedOrder) : '-'} />
-          </Card>
-
-          <Card>
             <SectionTitle title="Sıradaki durak" />
             {nextStop ? (
               <>
@@ -180,7 +147,7 @@ export default function RouteScreen({
                 <View style={styles.actionsRow}>
                   <PrimaryButton title="Durak ulaşıldı" onPress={() => onMarkReached(nextStop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} />
                   <SecondaryButton title="Durağı atla" onPress={() => onSkipStop(nextStop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} />
-                  <SecondaryButton title="Haritada aç" onPress={openMaps} disabled={!nextStop?.lat || !nextStop?.lng} />
+                  <SecondaryButton title="Navigasyonu aç" onPress={openMaps} disabled={!nextStop?.lat || !nextStop?.lng} />
                   <SecondaryButton title="Tam rotayı aç" onPress={openFullRoute} disabled={!pendingStops.length} />
                 </View>
               </>
@@ -189,41 +156,27 @@ export default function RouteScreen({
             )}
           </Card>
 
-          <Card>
-            <SectionTitle title="Tüm duraklar" subtitle="Geri al 2 dakikalık pencereyi dener. Yeniden aç, süre dolsa bile durak tekrar beklemeye alınır." />
-            {Array.isArray(route?.orderedStops) && route.orderedStops.length ? (
-              <View style={{ gap: 10 }}>
-                {route.orderedStops.map((stop) => {
-                  const state = String(stop?.state || 'PENDING').toUpperCase();
-                  const isPending = state === 'PENDING';
-                  const isClosed = state === 'REACHED' || state === 'SKIPPED';
-                  return (
-                    <View key={stop.id} style={styles.stopCard}>
-                      <View style={styles.stopTitleRow}>
-                        <Text style={styles.stopTitle}>{stop.order ? `${stop.order}. ` : ''}{stop.name || 'İsimsiz durak'}</Text>
-                        <Pill label={stopLabel(stop, nextStop?.id)} tone={stopTone(stop, nextStop?.id)} />
-                      </View>
-                      <Text style={styles.stopMeta}>
-                        {stop.passengerCount != null ? `${stop.passengerCount} kişi` : 'Yolcu bilgisi yok'}
-                        {stop.remainingKm != null ? ` • ${stop.remainingKm} km` : ''}
-                        {stop.etaMin != null ? ` • ${stop.etaMin} dk` : ''}
-                      </Text>
-                      <Text style={styles.stopMeta}>Ulaşıldı: {fmt(stop.reachedAt)} • Atlandı: {fmt(stop.skippedAt)}</Text>
-                      <View style={styles.actionsRow}>
-                        {isPending ? <PrimaryButton title="Ulaşıldı" onPress={() => onMarkReached(stop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} /> : null}
-                        {isPending ? <SecondaryButton title="Atla" onPress={() => onSkipStop(stop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} /> : null}
-                        {isClosed ? <SecondaryButton title="Geri al" onPress={() => onUndoStop(stop.id)} disabled={routeOpsBusy} /> : null}
-                        {isClosed ? <SecondaryButton title="Yeniden aç" onPress={() => onReopenStop(stop.id)} disabled={routeOpsBusy} /> : null}
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            ) : (
-              <EmptyState title="Durak listesi boş" text="Bu vardiya için durak oluşturulmamış görünüyor." />
-            )}
-          </Card>
+          <DriverDiagnosticsCard
+            title="Gelişmiş durum"
+            subtitle="Teknik rota ayrıntıları burada gizli tutulur."
+            summary="Durak, vardiya ve operasyon bilgileri burada toplanır."
+            items={[
+              { label: 'Kalan rota süresi', value: routeSummary.remainingRouteEtaMin != null ? `${routeSummary.remainingRouteEtaMin} dk` : '-' },
+              { label: 'Kalan km', value: routeSummary.remainingKm != null ? `${routeSummary.remainingKm} km` : '-' },
+              { label: 'Kalan durak', value: routeSummary.remainingStops != null ? String(routeSummary.remainingStops) : '-' },
+              { label: 'Kalan yolcu', value: routeSummary.remainingPassengers != null ? String(routeSummary.remainingPassengers) : '-' },
+              { label: 'Son ulaşılan sıra', value: routeSummary.lastReachedOrder != null ? String(routeSummary.lastReachedOrder) : '-' },
+            ]}
+          />
         </>
+      ) : (
+        <Card>
+          <EmptyState title="Rota bulunamadı" text="Seçili vardiya için rota verisi gelmedi. Yenile ve vardiya seçimini tekrar dene." />
+          <View style={styles.actionsRow}>
+            <PrimaryButton title="Yenile" onPress={onRefresh} />
+            <SecondaryButton title="Bugüne dön" onPress={onOpenToday} />
+          </View>
+        </Card>
       )}
     </ScrollView>
   );

@@ -54,12 +54,13 @@ must(has(state, 'backgroundTaskAvailable'), 'state tracks background task availa
 must(has(state, 'backgroundTaskAvailableText'), 'state exposes background task availability text');
 must(has(bg, 'task-unavailable'), 'background gps emits task unavailable reason');
 must(has(bg, 'backgroundPreferred'), 'background gps keeps app-state preference');
-must(has(live, 'Görev desteği'), 'live screen shows task availability');
+must(has(live, 'GpsSourceStatusCard'), 'live screen shows task availability');
+must(has(live, 'Konum ve GPS durumu'), 'live screen keeps gps status title');
 must(has(live, 'Ekran kapalı kalsa da'), 'live screen explains screen-off behavior');
 must(has(live, 'zayıf ağda kontrollü yeniden deneme'), 'live screen explains retry behavior');
 must(has(live, "Sürücünün telefon GPS'i"), 'live screen keeps phone gps terminology');
 must(has(today, 'Arka plan görev desteği'), 'today screen shows background task availability');
-must(has(today, "Sürücünün telefon GPS'i"), 'today screen keeps phone gps terminology');
+must(has(today, 'Konumu şimdi gönder'), 'today screen keeps phone gps terminology');
 must(has(today, 'GPS sonraki deneme'), 'today screen shows next gps retry');
 
 console.log('M95-C driver phone GPS check passed');

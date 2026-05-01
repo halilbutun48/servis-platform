@@ -16,8 +16,8 @@ export function fmt(value) {
   }
 }
 
-export function Card({ children }) {
-  return <View style={styles.card}>{children}</View>;
+export function Card({ children, style = null }) {
+  return <View style={[styles.card, style]}>{children}</View>;
 }
 
 export function SectionTitle({ title, subtitle }) {
@@ -72,19 +72,30 @@ export function SecondaryButton({ title, onPress, disabled = false, tone = 'defa
   );
 }
 
-export function TopTabs({ current = 'today', onToday, onRoute, onLive }) {
+export function TopTabs({ current = 'today', onToday, onRoute, onLive, variant = 'light' }) {
   const items = [
     { key: 'today', label: 'Bugün', onPress: onToday },
     { key: 'route', label: 'Rota', onPress: onRoute },
     { key: 'live', label: 'Canlı', onPress: onLive },
   ];
+  const isDark = String(variant || '').toLowerCase() === 'dark';
   return (
-    <View style={styles.tabWrap}>
+    <View style={[styles.tabWrap, isDark ? styles.tabWrapDark : null]}>
       {items.map((item) => {
         const active = current === item.key;
         return (
-          <Pressable key={item.key} style={[styles.tabItem, active ? styles.tabItemActive : null]} onPress={item.onPress}>
-            <Text style={[styles.tabText, active ? styles.tabTextActive : null]}>{item.label}</Text>
+          <Pressable
+            key={item.key}
+            style={[
+              styles.tabItem,
+              isDark ? styles.tabItemDark : null,
+              active ? (isDark ? styles.tabItemActiveDark : styles.tabItemActive) : null,
+            ]}
+            onPress={item.onPress}
+          >
+            <Text style={[styles.tabText, isDark ? styles.tabTextDark : null, active ? (isDark ? styles.tabTextActiveDark : styles.tabTextActive) : null]}>
+              {item.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -145,26 +156,28 @@ export function EmptyState({ title, text }) {
 export const styles = StyleSheet.create({
   wrap: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eef4fb',
   },
   content: {
     paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 30 : 16,
-    paddingBottom: 18,
-    gap: 12,
+    paddingBottom: Platform.OS === 'android' ? 108 : 96,
+    gap: 14,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 18,
+    borderRadius: 22,
     padding: 16,
     gap: 10,
     shadowColor: '#0f172a',
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 18,
-    elevation: 2,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#0f172a',
   },
@@ -359,6 +372,12 @@ export const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 2,
   },
+  tabWrapDark: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 18,
+    padding: 4,
+    gap: 6,
+  },
   tabItem: {
     flex: 1,
     minHeight: 42,
@@ -366,9 +385,20 @@ export const styles = StyleSheet.create({
     backgroundColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   tabItemActive: {
     backgroundColor: '#0f172a',
+    borderColor: '#0f172a',
+  },
+  tabItemDark: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  tabItemActiveDark: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#dbeafe',
   },
   tabText: {
     color: '#0f172a',
@@ -376,6 +406,12 @@ export const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: '#fff',
+  },
+  tabTextDark: {
+    color: '#dbeafe',
+  },
+  tabTextActiveDark: {
+    color: '#0f172a',
   },
   shiftChooserWrap: {
     flexDirection: 'row',

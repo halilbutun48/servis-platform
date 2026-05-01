@@ -48,8 +48,8 @@ must('app config has secure-store plugin', appJson.includes('expo-secure-store')
 must('app config has location plugin', appJson.includes('expo-location'));
 must('login screen exists', normalize(login).includes(normalize('Surucu Kodu veya e-posta')));
 must('pin change screen exists', pin.includes('Yeni PIN belirle'));
-must('today screen has GPS section', normalize(today).includes(normalize('GPS hazirligi')) || normalize(today).includes(normalize("Sürücünün telefon GPS'i")));
-must('today screen has haritada ac action', normalize(route).includes(normalize('Haritada ac')) || normalize(route).includes(normalize('Haritada aç')));
+must('today screen has GPS section', normalize(today).includes(normalize('Sürüş ve GPS yardımı')) || normalize(today).includes(normalize('Konumu şimdi gönder')));
+must('today screen has navigation action', normalize(route).includes(normalize('Navigasyonu aç')) || normalize(route).includes(normalize('Tam rotayı aç')));
 must('api uses auth refresh', api.includes('/api/auth/refresh'));
 must('api sends driver device id', api.includes('deviceId'));
 must('app uses fetchMe', app.includes('fetchMe'));

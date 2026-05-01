@@ -33,7 +33,15 @@ must(app, 'isNetworkError', 'app has network error detector');
 must(app, 'Baglanti yok. Veri eski olabilir.', 'app has offline message');
 must(app, 'Baglanti geri geldi, bilgiler yenileniyor.', 'app has recovery message');
 must(app, 'net:', 'app has net state');
-must(today, 'SectionTitle title="Baglanti"', 'today screen has connectivity card');
-must(today, 'Baglanti yoksa otomatik denemeler devam eder', 'today screen explains retry behavior');
+must(today, 'DriverDiagnosticsCard', 'today screen has connectivity diagnostics card');
+must(today, 'Bağlantı durumu', 'today screen shows connectivity status');
+must(today, 'Bağlantı mesajı', 'today screen shows connectivity message');
+must(today, 'Son online', 'today screen shows last online time');
+must(today, 'Son offline', 'today screen shows last offline time');
+must(today, 'Son toparlanma', 'today screen shows recovery time');
+must(today, 'Yeniden deneme sayısı', 'today screen shows retry count');
+must(today, 'Sonraki deneme', 'today screen shows next retry time');
+must(today, 'Veri eski olabilir', 'today screen shows stale data badge');
+must(today, 'Önbellekten açıldı', 'today screen shows cached data badge');
 
 console.log('=== M57.2 OFFLINE/ONLINE TOPARLAMA CHECK PASS ===');

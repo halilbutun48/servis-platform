@@ -70,16 +70,17 @@ must(has(release, 'Expo Go degil'), 'release info keeps expo go guard');
 must(has(release, 'Sürücünün telefon GPS’i'), 'release info keeps driver phone gps wording');
 must(has(release, 'KVKK blokları ve release guard birlikte izlenir'), 'release info keeps combined field guard summary');
 
-must(has(today, 'Yayın hazırlığı'), 'today screen keeps release readiness card');
-must(has(today, 'Uygulama sürümü'), 'today screen shows app version');
-must(has(today, 'Yayin hedefi'), 'today screen shows release target');
+must(has(today, 'DriverDiagnosticsCard'), 'today screen keeps diagnostics card');
+must(has(today, 'Gelişmiş durum'), 'today screen keeps advanced status card');
+must(has(today, 'Yayın hedefi'), 'today screen shows release target');
 must(has(today, 'Yayın profilleri'), 'today screen shows build profiles');
-must(has(today, 'Canli test'), 'today screen keeps live test status');
+must(has(today, 'Canlı test'), 'today screen keeps live test status');
 must(has(today, 'Yayın paketi'), 'today screen keeps production bundle status');
 must(has(today, 'Ortam aşaması'), 'today screen keeps release env status');
 
-must(has(live, 'Yayın / ortam'), 'live screen keeps release env card');
-must(has(live, 'Canlı ekrandaki tüm ağ aksiyonları bu kabul durumuna bağlıdır.'), 'live screen keeps release dependency note');
+must(has(live, 'Gelişmiş durum'), 'live screen keeps diagnostics card');
+must(has(live, 'Ortam'), 'live screen keeps release env info');
+must(has(live, 'Yayın durumu'), 'live screen keeps release status info');
 must(has(live, 'Sürücünün telefon GPS\'i'), 'live screen keeps phone gps wording');
 
 must(has(evidencePack, '90000'), 'evidence pack keeps long soak request count');

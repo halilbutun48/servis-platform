@@ -37,8 +37,10 @@ must(api, 'markSessionFailure', 'api marks refresh/session failure');
 must(app, 'applySessionFailure', 'app has clean session failure handler');
 must(app, 'Oturum kapandi. Yeniden giris yapin.', 'app has session failure user message');
 must(app, 'KVKK onayi eksik. Onay tamamlanmadan konum gonderilemez.', 'app blocks gps when kvkk missing');
-must(today, 'SectionTitle title="KVKK"', 'today screen has kvkk card');
-must(today, 'KVKK onayini tamamla', 'today screen has kvkk accept action');
+must(today, 'KVKK eksik', 'today screen keeps kvkk blocking pill');
+must(today, 'KVKK hazır', 'today screen keeps kvkk ready pill');
+must(today, 'Gelişmiş durum', 'today screen keeps kvkk diagnostics section');
+must(today, 'KVKK durumu', 'today screen keeps kvkk diagnostics field');
 must(login, 'setError(initialError ||', 'login screen reacts to renewed initial error');
 
 console.log('=== M57.3 SESSION FAILURE + KVKK BLOCKING CHECK PASS ===');

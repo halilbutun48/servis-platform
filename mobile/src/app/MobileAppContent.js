@@ -6,6 +6,7 @@ import PinChangeScreen from '../screens/PinChangeScreen';
 import RoleHomeScreen from '../screens/RoleHomeScreen';
 import RouteScreen from '../screens/RouteScreen';
 import TodayScreen from '../screens/TodayScreen';
+import { DriverAppHeader, DriverBottomTabBar } from '../screens/driverPremiumUi';
 import { styles as appStyles } from './mobileAppState';
 
 function LoadingScreen({ styles }) {
@@ -14,6 +15,46 @@ function LoadingScreen({ styles }) {
       <ActivityIndicator color="#0f172a" />
       <Text style={loadingStyles.title}>Mobil uygulama hazırlanıyor</Text>
       <Text style={loadingStyles.text}>Oturum ve son kayıtlar yükleniyor.</Text>
+    </View>
+  );
+}
+
+function DriverShellFrame({
+  screen,
+  me,
+  today,
+  route,
+  gps,
+  lastSyncAt,
+  onOpenToday,
+  onOpenRoute,
+  onOpenLive,
+  onNotifications,
+  onProfile,
+  children,
+}) {
+  return (
+    <View style={shellStyles.driverShell}>
+      <DriverAppHeader
+        screen={screen}
+        me={me}
+        today={today}
+        route={route}
+        gps={gps}
+        lastSyncAt={lastSyncAt}
+        onOpenToday={onOpenToday}
+        onOpenRoute={onOpenRoute}
+        onOpenLive={onOpenLive}
+      />
+      <View style={shellStyles.driverBody}>{children}</View>
+      <DriverBottomTabBar
+        current={String(screen || 'today').toLowerCase()}
+        onToday={onOpenToday}
+        onRoute={onOpenRoute}
+        onLive={onOpenLive}
+        onNotifications={onNotifications}
+        onProfile={onProfile}
+      />
     </View>
   );
 }
@@ -148,100 +189,135 @@ export default function MobileAppContent({
   const activeScreen = String(screen || 'today').toLowerCase();
   if (activeScreen === 'route') {
     return (
-      <RouteScreen
+      <DriverShellFrame
+        screen={activeScreen}
+        me={state?.me || null}
         today={state?.today || null}
         route={state?.route || null}
-        error={state?.error || ''}
-        syncing={Boolean(state?.syncing)}
-        selectedShiftId={state?.selectedShiftId || null}
-        routeOpsBusy={Boolean(routeOps?.busy)}
-        routeOpsText={routeOps?.message || ''}
-        driverAvailability={state?.driverAvailability || null}
-        onRefresh={onRefresh}
+        gps={state?.gps || null}
+        lastSyncAt={state?.lastSyncAt || ''}
         onOpenToday={onOpenToday}
+        onOpenRoute={onOpenRoute}
         onOpenLive={onOpenLive}
-        onSelectShift={onSelectShift}
-        onStartShift={onStartShift}
-        onPauseShift={onPauseShift}
-        onResumeShift={onResumeShift}
-        onCompleteShift={onCompleteShift}
-        onMarkReached={onMarkReached}
-        onSkipStop={onSkipStop}
-        onReopenStop={onReopenStop}
-        onUndoStop={onUndoStop}
-        onSetDriverAvailability={onSetDriverAvailability}
-      />
+      >
+        <RouteScreen
+          today={state?.today || null}
+          route={state?.route || null}
+          error={state?.error || ''}
+          syncing={Boolean(state?.syncing)}
+          selectedShiftId={state?.selectedShiftId || null}
+          routeOpsBusy={Boolean(routeOps?.busy)}
+          routeOpsText={routeOps?.message || ''}
+          driverAvailability={state?.driverAvailability || null}
+          onRefresh={onRefresh}
+          onOpenToday={onOpenToday}
+          onOpenLive={onOpenLive}
+          onSelectShift={onSelectShift}
+          onStartShift={onStartShift}
+          onPauseShift={onPauseShift}
+          onResumeShift={onResumeShift}
+          onCompleteShift={onCompleteShift}
+          onMarkReached={onMarkReached}
+          onSkipStop={onSkipStop}
+          onReopenStop={onReopenStop}
+          onUndoStop={onUndoStop}
+          onSetDriverAvailability={onSetDriverAvailability}
+        />
+      </DriverShellFrame>
     );
   }
 
   if (activeScreen === 'live') {
     return (
-      <LiveScreen
+      <DriverShellFrame
+        screen={activeScreen}
+        me={state?.me || null}
         today={state?.today || null}
         route={state?.route || null}
-        lastSyncAt={state?.lastSyncAt || ''}
-        net={state?.net || null}
         gps={state?.gps || null}
-        kvkk={state?.kvkk || null}
-        voiceEnabled={Boolean(state?.voiceEnabled)}
-        selectedShiftId={state?.selectedShiftId || null}
+        lastSyncAt={state?.lastSyncAt || ''}
         onOpenToday={onOpenToday}
         onOpenRoute={onOpenRoute}
-        onToggleVoiceGuidance={onToggleVoiceGuidance}
-        onSpeakNextStop={onSpeakNextStop}
-        onSpeakEta={onSpeakEta}
-        onRequestGpsPermission={onRequestGpsPermission}
-        onRefreshGpsStatus={onRefreshGpsStatus}
-        onOpenGpsSettings={onOpenGpsSettings}
-        onPublishGpsNow={onPublishGpsNow}
-        onAcceptKvkk={onAcceptKvkk}
-        onRefreshKvkkStatus={onRefreshKvkkStatus}
-        releaseInfo={releaseInfo}
-      />
+        onOpenLive={onOpenLive}
+      >
+        <LiveScreen
+          today={state?.today || null}
+          route={state?.route || null}
+          lastSyncAt={state?.lastSyncAt || ''}
+          net={state?.net || null}
+          gps={state?.gps || null}
+          kvkk={state?.kvkk || null}
+          voiceEnabled={Boolean(state?.voiceEnabled)}
+          selectedShiftId={state?.selectedShiftId || null}
+          onOpenToday={onOpenToday}
+          onOpenRoute={onOpenRoute}
+          onToggleVoiceGuidance={onToggleVoiceGuidance}
+          onSpeakNextStop={onSpeakNextStop}
+          onSpeakEta={onSpeakEta}
+          onRequestGpsPermission={onRequestGpsPermission}
+          onRefreshGpsStatus={onRefreshGpsStatus}
+          onOpenGpsSettings={onOpenGpsSettings}
+          onPublishGpsNow={onPublishGpsNow}
+          onAcceptKvkk={onAcceptKvkk}
+          onRefreshKvkkStatus={onRefreshKvkkStatus}
+          releaseInfo={releaseInfo}
+        />
+      </DriverShellFrame>
     );
   }
 
   return (
-    <TodayScreen
+    <DriverShellFrame
+      screen={activeScreen}
       me={state?.me || null}
       today={state?.today || null}
       route={state?.route || null}
-      error={state?.error || ''}
-      health={state?.health || null}
-      deviceId={state?.deviceId || ''}
-      apiBaseUrl={apiBaseUrl}
-      lastSyncAt={state?.lastSyncAt || ''}
-      lastErrorAt={state?.lastErrorAt || ''}
-      syncing={Boolean(state?.syncing)}
-      usingCachedData={Boolean(state?.usingCachedData)}
-      releaseInfo={releaseInfo}
-      net={state?.net || null}
       gps={state?.gps || null}
-      kvkk={state?.kvkk || null}
-      driverAvailability={driverAvailability || state?.driverAvailability || null}
-      voiceEnabled={Boolean(state?.voiceEnabled)}
-      driverAwareness={state?.driverAwareness || null}
-      notifications={state?.notifications || null}
-      selectedShiftId={state?.selectedShiftId || null}
-      routeOpsBusy={routeOpsBusy}
-      routeOpsText={routeOpsText}
-      onRefresh={onRefresh}
-      onLogout={onLogout}
+      lastSyncAt={state?.lastSyncAt || ''}
+      onOpenToday={onOpenToday}
       onOpenRoute={onOpenRoute}
       onOpenLive={onOpenLive}
-      onSelectShift={onSelectShift}
-      onStartShift={onStartShift}
-      onCompleteShift={onCompleteShift}
-      onMarkReached={onMarkReached}
-      onSpeakNextStop={onSpeakNextStop}
-      onSpeakEta={onSpeakEta}
-      onSpeakDriverAwareness={onSpeakDriverAwareness}
-      onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
-      onMarkNotificationsSeen={onMarkNotificationsSeen}
-      onOpenSettings={onOpenGpsSettings}
-      onPublishGpsNow={onPublishGpsNow}
-      onSetDriverAvailability={onSetDriverAvailability}
-    />
+    >
+      <TodayScreen
+        me={state?.me || null}
+        today={state?.today || null}
+        route={state?.route || null}
+        error={state?.error || ''}
+        health={state?.health || null}
+        deviceId={state?.deviceId || ''}
+        apiBaseUrl={apiBaseUrl}
+        lastSyncAt={state?.lastSyncAt || ''}
+        lastErrorAt={state?.lastErrorAt || ''}
+        syncing={Boolean(state?.syncing)}
+        usingCachedData={Boolean(state?.usingCachedData)}
+        releaseInfo={releaseInfo}
+        net={state?.net || null}
+        gps={state?.gps || null}
+        kvkk={state?.kvkk || null}
+        driverAvailability={driverAvailability || state?.driverAvailability || null}
+        voiceEnabled={Boolean(state?.voiceEnabled)}
+        driverAwareness={state?.driverAwareness || null}
+        notifications={state?.notifications || null}
+        selectedShiftId={state?.selectedShiftId || null}
+        routeOpsBusy={routeOpsBusy}
+        routeOpsText={routeOpsText}
+        onRefresh={onRefresh}
+        onLogout={onLogout}
+        onOpenLive={onOpenLive}
+        onSelectShift={onSelectShift}
+        onStartShift={onStartShift}
+        onCompleteShift={onCompleteShift}
+        onMarkReached={onMarkReached}
+        onSpeakNextStop={onSpeakNextStop}
+        onSpeakEta={onSpeakEta}
+        onSpeakDriverAwareness={onSpeakDriverAwareness}
+        onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
+        onMarkNotificationsSeen={onMarkNotificationsSeen}
+        onOpenSettings={onOpenGpsSettings}
+        onPublishGpsNow={onPublishGpsNow}
+        onSetDriverAvailability={onSetDriverAvailability}
+      />
+    </DriverShellFrame>
   );
 }
 
@@ -262,5 +338,15 @@ const loadingStyles = StyleSheet.create({
     color: '#475569',
     textAlign: 'center',
     lineHeight: 20,
+  },
+});
+
+const shellStyles = StyleSheet.create({
+  driverShell: {
+    flex: 1,
+    backgroundColor: '#eef4fb',
+  },
+  driverBody: {
+    flex: 1,
   },
 });

@@ -92,17 +92,19 @@ must(has(roleHome, 'KvkkVisibilityMatrixCard'), 'role home keeps kvkk matrix car
 must(has(roleHome, "key === 'PERSONEL'"), 'role home keeps personel branch');
 must(has(roleHome, "key === 'PARENT'"), 'role home keeps parent branch');
 
-must(has(today, 'Bugünkü görev'), 'today screen keeps driver task card');
-must(has(today, 'Rota kısa özeti'), 'today screen keeps route summary card');
-must(has(today, 'Sürücünün telefon GPS\'i'), 'today screen keeps driver phone gps wording');
+must(has(today, 'DriverTaskSummaryCard'), 'today screen keeps driver task hero card');
+must(has(today, 'Bugünkü Vardiya'), 'today screen keeps premium hero title');
+must(has(today, 'showWorkflowActions'), 'today screen keeps workflow actions visible');
+must(has(today, 'Sürüş ve GPS yardımı'), 'today screen keeps compact gps helper card');
 must(has(today, 'NotificationCenterCard'), 'today screen keeps notification center card');
 must(has(today, 'DriverAvailabilityCard'), 'today screen keeps availability card');
 must(has(today, 'DriverChangeAwarenessCard'), 'today screen keeps awareness card');
-must(has(today, 'Sesli rehber'), 'today screen keeps voice guidance section');
+must(has(today, 'Konumu şimdi gönder'), 'today screen keeps compact gps action');
 must(has(today, 'onRefresh={onRefresh}'), 'today screen keeps refresh wiring');
 
-must(has(route, 'Görev / rota / tahmini varış'), 'route screen keeps task/route/eta card');
-must(has(route, 'Rota özeti'), 'route screen keeps route summary section');
+must(has(route, 'DriverTaskSummaryCard'), 'route screen keeps shared route card');
+must(has(route, 'Bugünkü rota'), 'route screen keeps premium route hero title');
+must(has(route, 'Navigasyonu aç'), 'route screen keeps navigation action');
 must(has(route, 'Sıradaki durak'), 'route screen keeps next stop section');
 must(has(route, 'DriverAvailabilityCard'), 'route screen keeps availability card');
 must(has(route, 'Tam rotayı aç'), 'route screen keeps full route action');

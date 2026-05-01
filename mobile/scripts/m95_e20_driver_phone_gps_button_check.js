@@ -50,7 +50,9 @@ must(live, 'backgroundTaskRunning ? onPublishGpsNow : onRequestGpsPermission', '
 must(live, 'gpsPrimaryAction', 'live screen uses derived primary GPS action');
 must(live, 'gpsPrimaryDisabled', 'live screen uses disabled guard for GPS action');
 must(live, 'Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.', 'live screen shows no-task fallback text');
-must(live, 'Görev desteği: ${backgroundTaskAvailable ? \'Hazır\' : \'Yok\'}', 'live screen shows task availability');
+must(live, 'GpsSourceStatusCard', 'live screen uses source status card');
+must(live, 'gpsActionTitle', 'live screen keeps derived gps action title');
+must(live, 'driverGpsPrimaryActionLabel', 'live screen keeps gps primary action helper');
 must(gps, "sourceLabelFromKey", 'gps helper can label GPS source');
 must(gps, "source: normalizedSource", 'gps payload keeps source field');
 must(gps, "Sürücünün telefon GPS'i", 'gps helper keeps driver phone GPS wording');
@@ -59,6 +61,7 @@ must(ui, 'driverGpsBackgroundReasonText', 'driver UI text exposes GPS background
 must(ui, 'Arka plan GPS görevi desteklenmiyor', 'driver UI text covers unavailable task');
 must(ui, 'Aktif görev yok', 'driver UI text covers no-active-shift action label');
 must(ui, "Sürücünün telefon GPS'ini başlat", 'driver GPS start label kept');
+must(ui, 'GPS gönderimi aktif', 'driver UI text keeps active GPS label');
 mustNot(lifecycle, 'fetchMe(', 'lifecycle does not reintroduce fetchMe polling');
 
 console.log('=== M95-E20 DRIVER PHONE GPS BUTTON CHECK PASS ===');

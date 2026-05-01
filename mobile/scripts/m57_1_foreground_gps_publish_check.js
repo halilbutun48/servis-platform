@@ -44,9 +44,9 @@ must(gps, 'IN_PROGRESS', 'gps helper keeps in-progress shift publish support');
 must(gps, 'STARTED', 'gps helper keeps started shift publish support');
 must(gps, 'APPROVED', 'gps helper keeps approved shift publish support');
 must(gps, 'canPublish: reason === \'ready\'', 'gps helper gates publish through a shared ready resolver');
-must(today, "Sürücünün telefon GPS'i", 'today screen has gps card title');
+must(today, 'Sürüş ve GPS yardımı', 'today screen has gps helper card title');
 must(today, 'Ayarları aç', 'today screen exposes settings action');
-must(today, 'Konumu simdi gonder', 'today screen exposes manual publish action');
+must(today, 'Konumu şimdi gönder', 'today screen exposes manual publish action');
 if (!(normalize(today).includes(normalize('Görev yok')) || normalize(app).includes(normalize('Bugün aktif görev yok. Bu yüzden konum gönderilmiyor.')))) throw new Error('FAIL no-shift publish stop visible'); ok('no-shift publish stop visible');
 
 console.log('=== M57.1 FOREGROUND GPS PUBLISH CHECK PASS ===');

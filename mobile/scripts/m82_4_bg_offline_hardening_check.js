@@ -37,7 +37,12 @@ must(app, 'gpsNextRetryAtRef', 'app tracks gps retry window');
 must(app, 'refreshRouteAfterGpsPublish', 'app refreshes route with lighter post-gps path');
 must(bg, 'BACKGROUND_ROUTE_CACHE_MAX_AGE_MS', 'background gps route cache window present');
 must(bg, 'pickSnapshotRoute', 'background gps can reuse cached snapshot route');
-must(today, 'artan bekleme ile son basarili snapshot ekranda kalir', 'today screen explains progressive retry');
+must(today, 'DriverDiagnosticsCard', 'today screen keeps connectivity diagnostics card');
+must(today, 'Bağlantı durumu', 'today screen shows connectivity status');
+must(today, 'Bağlantı mesajı', 'today screen shows connectivity message');
+must(today, 'Önbellekten açıldı', 'today screen shows cached data badge');
+must(today, 'Veri eski olabilir', 'today screen shows stale data badge');
+must(today, 'Sonraki deneme', 'today screen shows next retry line');
 must(live, 'GPS sonraki deneme', 'live screen shows next gps retry');
 
 console.log('=== M82.4 BACKGROUND GPS / OFFLINE HARDENING CHECK PASS ===');

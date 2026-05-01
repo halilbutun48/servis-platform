@@ -48,11 +48,16 @@ must(env, 'EXPO_PUBLIC_RELEASE_STAGE=preview-internal', 'env example defines pre
 must(app, 'androidPreview:', 'app defines android preview release info');
 must(app, 'productionBundle:', 'app defines production bundle release info');
 must(app, 'releaseDiscipline:', 'app defines release discipline info');
+must(today, 'DriverDiagnosticsCard', 'today screen keeps diagnostics card');
+must(today, 'Gelişmiş durum', 'today screen keeps diagnostics title');
+must(today, 'Yayın hedefi', 'today screen shows release target line');
+must(today, 'Yayın profilleri', 'today screen shows build profiles line');
+must(today, 'Canlı test', 'today screen shows expo go status line');
 must(today, 'Android önizleme', 'today screen shows android preview line');
 must(today, 'Yayın paketi', 'today screen shows production bundle line');
 must(today, 'Ortam aşaması', 'today screen shows env stage line');
-must(today, 'Android önizleme ve yayın paketi hazır olmadan yayın disiplini tamamlanmış sayılmaz.', 'today screen shows preview apk badge');
-must(today, 'Yayın paketi', 'today screen shows production bundle badge');
+must(today, 'Derleme durumu', 'today screen shows build status line');
+must(today, 'Kabul özeti', 'today screen shows acceptance summary line');
 
 console.log('=== M57.4 ANDROID PREVIEW / INTERNAL BUILD CHECK PASS ===');
 

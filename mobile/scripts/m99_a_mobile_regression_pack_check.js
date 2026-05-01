@@ -118,7 +118,7 @@ must(has(today, 'NotificationCenterCard'), 'today screen keeps notification card
 must(has(today, 'DriverAvailabilityCard'), 'today screen keeps availability card');
 must(has(today, 'DriverChangeAwarenessCard'), 'today screen keeps awareness card');
 must(has(route, 'DriverTaskSummaryCard'), 'route screen keeps driver task summary');
-must(has(route, 'Rota özeti'), 'route screen keeps route summary');
+must(has(route, 'Bugünkü rota'), 'route screen keeps route summary');
 must(has(route, 'DriverAvailabilityCard'), 'route screen keeps availability card');
 must(has(live, 'GPS'), 'live screen keeps gps wording');
 
