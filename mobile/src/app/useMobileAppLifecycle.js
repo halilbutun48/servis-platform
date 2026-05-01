@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { clearPendingSessionEvent, getLastMobileSnapshot, getPendingSessionEvent, getSelectedChildId, getSelectedShiftId, getSession, getVoiceGuidanceEnabled, ensureDeviceId } from '../lib/storage';
+import { clearPendingSessionEvent, getLastMobileSnapshot, getPendingSessionEvent, getSelectedChildId, getSelectedShiftId, getSession, getVoiceGuidanceEnabled } from '../lib/storage';
+import { ensureDeviceId } from '../lib/api';
 import { applyGpsRuntimeSnapshot, buildCompletionCueKey, buildDriverChangeCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, decorateGpsState, hydrateStateFromSnapshot, isNetworkError, readGpsRuntimeSnapshot } from './mobileAppState';
 import { stopDriverBackgroundLocation, syncDriverBackgroundLocation } from '../lib/backgroundGps';
 import { GPS_PUBLISH_INTERVAL_MS } from '../lib/gps';

@@ -120,6 +120,332 @@ function cloneObject(value) {
   return isPlainObject(value) ? { ...value } : null;
 }
 
+function compactShift(value) {
+  return isPlainObject(value)
+    ? {
+        id: positiveInt(value.id),
+        status: String(value.status || ''),
+        startAt: String(value.startAt || ''),
+        endAt: String(value.endAt || ''),
+        vehicleId: positiveInt(value.vehicleId),
+      }
+    : null;
+}
+
+function compactStop(value) {
+  return isPlainObject(value)
+    ? {
+        id: positiveInt(value.id),
+        name: String(value.name || ''),
+        order: positiveInt(value.order),
+        state: String(value.state || ''),
+        passengerCount: positiveInt(value.passengerCount),
+        remainingKm: value.remainingKm != null ? Number(value.remainingKm) : null,
+        etaMin: value.etaMin != null ? Number(value.etaMin) : null,
+        lat: value.lat != null ? Number(value.lat) : null,
+        lng: value.lng != null ? Number(value.lng) : null,
+        reachedAt: String(value.reachedAt || ''),
+        skippedAt: String(value.skippedAt || ''),
+      }
+    : null;
+}
+
+function compactSummary(value, keys = []) {
+  if (!isPlainObject(value)) return null;
+  const next = {};
+  for (const key of keys) {
+    if (value[key] != null) next[key] = value[key];
+  }
+  return Object.keys(next).length ? next : null;
+}
+
+function compactNotificationItem(value) {
+  return isPlainObject(value)
+    ? {
+        id: positiveInt(value.id),
+        type: String(value.type || ''),
+        scope: String(value.scope || ''),
+        scopeLabel: String(value.scopeLabel || ''),
+        title: String(value.title || ''),
+        message: String(value.message || ''),
+        createdAt: String(value.createdAt || ''),
+        dedupeKey: String(value.dedupeKey || ''),
+        intentLabel: String(value.intentLabel || ''),
+        tone: String(value.tone || ''),
+        read: Boolean(value.read),
+        statusText: String(value.statusText || ''),
+      }
+    : null;
+}
+
+function compactDriverAwarenessItem(value) {
+  return isPlainObject(value)
+    ? {
+        id: positiveInt(value.id),
+        type: String(value.type || ''),
+        scope: String(value.scope || ''),
+        title: String(value.title || ''),
+        message: String(value.message || ''),
+        kind: String(value.kind || ''),
+        createdAt: String(value.createdAt || ''),
+        spokenText: String(value.spokenText || ''),
+        summary: String(value.summary || ''),
+        tone: String(value.tone || ''),
+      }
+    : null;
+}
+
+function compactBoardingChangeItem(value) {
+  return isPlainObject(value)
+    ? {
+        id: String(value.id || ''),
+        kind: String(value.kind || ''),
+        role: String(value.role || ''),
+        label: String(value.label || ''),
+        description: String(value.description || ''),
+        tone: String(value.tone || ''),
+        scopeText: String(value.scopeText || ''),
+        statusText: String(value.statusText || ''),
+        reason: String(value.reason || ''),
+        childId: positiveInt(value.childId),
+        shiftId: positiveInt(value.shiftId),
+        source: String(value.source || ''),
+        createdAt: String(value.createdAt || ''),
+        updatedAt: String(value.updatedAt || ''),
+      }
+    : null;
+}
+
+function compactArray(value, mapper, limit = 2) {
+  return Array.isArray(value)
+    ? value.slice(0, limit).map((item) => mapper(item)).filter(Boolean)
+    : [];
+}
+
+function compactMobileSnapshot(snapshot = {}) {
+  if (!isPlainObject(snapshot)) return {};
+
+  const next = {
+    version: Number(snapshot.version || 1) || 1,
+    snapshotAt: String(snapshot.snapshotAt || ''),
+    lastSyncAt: String(snapshot.lastSyncAt || ''),
+    lastErrorAt: String(snapshot.lastErrorAt || ''),
+    me: compactSummary(snapshot.me, ['id', 'role', 'fullName', 'requirePinChange']),
+    today: isPlainObject(snapshot.today)
+      ? {
+          active: compactShift(snapshot.today.active),
+          assigned: compactShift(snapshot.today.assigned),
+          summary: compactSummary(snapshot.today.summary, ['totalShifts', 'activeShifts', 'approvedShifts', 'pendingShifts']),
+          today: compactArray(snapshot.today.today, compactShift, 1),
+          tomorrow: compactArray(snapshot.today.tomorrow, compactShift, 1),
+          upcoming: compactArray(snapshot.today.upcoming, compactShift, 1),
+        }
+      : null,
+    route: isPlainObject(snapshot.route)
+      ? {
+          shift: compactShift(snapshot.route.shift),
+          summary: compactSummary(snapshot.route.summary, ['totalStops', 'totalPassengers', 'remainingRouteEtaMin', 'remainingKm', 'remainingStops', 'remainingPassengers', 'lastReachedOrder', 'completed', 'paused']),
+          progress: compactSummary(snapshot.route.progress, ['completed', 'pausedAt', 'lastReachedOrder']),
+          nextStop: compactStop(snapshot.route.nextStop),
+          orderedStops: compactArray(snapshot.route.orderedStops, compactStop, 2),
+          vehicle: compactSummary(snapshot.route.vehicle, ['id', 'plate']),
+          last: compactSummary(snapshot.route.last, ['id', 'plate']),
+          mode: String(snapshot.route.mode || ''),
+          remainingRouteEtaMin: snapshot.route.remainingRouteEtaMin ?? null,
+          remainingKm: snapshot.route.remainingKm ?? null,
+          remainingStops: snapshot.route.remainingStops ?? null,
+          remainingPassengers: snapshot.route.remainingPassengers ?? null,
+        }
+      : null,
+    roleLive: isPlainObject(snapshot.roleLive)
+      ? {
+          kind: String(snapshot.roleLive.kind || ''),
+          loading: Boolean(snapshot.roleLive.loading),
+          error: String(snapshot.roleLive.error || ''),
+          blocked: Boolean(snapshot.roleLive.blocked),
+          lastSyncAt: String(snapshot.roleLive.lastSyncAt || ''),
+          netStatus: String(snapshot.roleLive.netStatus || ''),
+          selectedShiftId: positiveInt(snapshot.roleLive.selectedShiftId),
+          selectedChildId: positiveInt(snapshot.roleLive.selectedChildId),
+          current: isPlainObject(snapshot.roleLive.current)
+            ? {
+                shiftId: positiveInt(snapshot.roleLive.current.shiftId),
+                shiftStatus: String(snapshot.roleLive.current.shiftStatus || ''),
+                roomName: String(snapshot.roleLive.current.roomName || ''),
+                driverName: String(snapshot.roleLive.current.driverName || ''),
+                vehiclePlate: String(snapshot.roleLive.current.vehiclePlate || ''),
+                nextStop: compactStop(snapshot.roleLive.current.nextStop),
+                remainingStops: positiveInt(snapshot.roleLive.current.remainingStops),
+                remainingPassengers: positiveInt(snapshot.roleLive.current.remainingPassengers),
+                remainingKm: snapshot.roleLive.current.remainingKm != null ? Number(snapshot.roleLive.current.remainingKm) : null,
+                etaMin: snapshot.roleLive.current.etaMin != null ? Number(snapshot.roleLive.current.etaMin) : null,
+                gpsStatus: String(snapshot.roleLive.current.gpsStatus || ''),
+                gpsAt: String(snapshot.roleLive.current.gpsAt || ''),
+                primaryText: String(snapshot.roleLive.current.primaryText || ''),
+                secondaryText: String(snapshot.roleLive.current.secondaryText || ''),
+                statusText: String(snapshot.roleLive.current.statusText || ''),
+                childId: positiveInt(snapshot.roleLive.current.childId),
+                childName: String(snapshot.roleLive.current.childName || ''),
+                companyName: String(snapshot.roleLive.current.companyName || ''),
+                childStopReached: Boolean(snapshot.roleLive.current.childStopReached),
+              }
+            : null,
+          summary: compactSummary(snapshot.roleLive.summary, ['totalShifts', 'activeShifts', 'liveVehicles', 'totalChildren', 'consentBlocked']),
+        }
+      : null,
+    health: mergeStateWithDefaults(DEFAULT_HEALTH, snapshot.health),
+    kvkk: mergeKvkkState(snapshot.kvkk),
+    net: mergeNetState(snapshot.net),
+    gps: mergeGpsState(snapshot.gps),
+    selectedShiftId: positiveInt(snapshot.selectedShiftId),
+    selectedChildId: positiveInt(snapshot.selectedChildId),
+    driverAvailability: buildDriverAvailabilityState(snapshot.driverAvailability),
+    driverAwareness: isPlainObject(snapshot.driverAwareness)
+      ? {
+          items: compactArray(snapshot.driverAwareness.items, compactDriverAwarenessItem, 1),
+          latestRelevant: compactDriverAwarenessItem(snapshot.driverAwareness.latestRelevant),
+          latestRelevantId: positiveInt(snapshot.driverAwareness.latestRelevantId),
+          unreadCount: positiveInt(snapshot.driverAwareness.unreadCount) || 0,
+          hasUnread: Boolean(snapshot.driverAwareness.hasUnread),
+          lastSeenNotificationId: positiveInt(snapshot.driverAwareness.lastSeenNotificationId),
+          lastAnnouncedNotificationId: positiveInt(snapshot.driverAwareness.lastAnnouncedNotificationId),
+          lastSeenAt: String(snapshot.driverAwareness.lastSeenAt || ''),
+          lastAnnouncedAt: String(snapshot.driverAwareness.lastAnnouncedAt || ''),
+          lastFetchedAt: String(snapshot.driverAwareness.lastFetchedAt || ''),
+          updatedAt: String(snapshot.driverAwareness.updatedAt || ''),
+        }
+      : buildDriverAwarenessState(),
+    notifications: isPlainObject(snapshot.notifications)
+      ? {
+          role: String(snapshot.notifications.role || 'DEFAULT'),
+          title: String(snapshot.notifications.title || ''),
+          subtitle: String(snapshot.notifications.subtitle || ''),
+          emptyTitle: String(snapshot.notifications.emptyTitle || ''),
+          emptyText: String(snapshot.notifications.emptyText || ''),
+          actionLabel: String(snapshot.notifications.actionLabel || ''),
+          summary: String(snapshot.notifications.summary || ''),
+          surfaceLabel: String(snapshot.notifications.surfaceLabel || ''),
+          surfaceHint: String(snapshot.notifications.surfaceHint || ''),
+          items: compactArray(snapshot.notifications.items, compactNotificationItem, 1),
+          unreadItems: [],
+          unreadCount: positiveInt(snapshot.notifications.unreadCount) || 0,
+          hasUnread: Boolean(snapshot.notifications.hasUnread),
+          latestRelevant: compactNotificationItem(snapshot.notifications.latestRelevant),
+          lastSeenNotificationId: positiveInt(snapshot.notifications.lastSeenNotificationId),
+          lastSeenAt: String(snapshot.notifications.lastSeenAt || ''),
+          lastFetchedAt: String(snapshot.notifications.lastFetchedAt || ''),
+        }
+      : buildNotificationCenterState(),
+    boardingChange: isPlainObject(snapshot.boardingChange)
+      ? {
+          items: compactArray(snapshot.boardingChange.items, compactBoardingChangeItem, 1),
+          lastSubmittedAt: String(snapshot.boardingChange.lastSubmittedAt || ''),
+          lastKind: String(snapshot.boardingChange.lastKind || ''),
+          lastLabel: String(snapshot.boardingChange.lastLabel || ''),
+          lastRole: String(snapshot.boardingChange.lastRole || ''),
+          lastStatusText: String(snapshot.boardingChange.lastStatusText || ''),
+          lastScopeText: String(snapshot.boardingChange.lastScopeText || ''),
+          lastError: String(snapshot.boardingChange.lastError || ''),
+          backendRequestId: positiveInt(snapshot.boardingChange.backendRequestId),
+          backendStatus: String(snapshot.boardingChange.backendStatus || ''),
+          backendDecisionState: String(snapshot.boardingChange.backendDecisionState || ''),
+          backendDecisionText: String(snapshot.boardingChange.backendDecisionText || ''),
+          backendSyncedAt: String(snapshot.boardingChange.backendSyncedAt || ''),
+          loading: Boolean(snapshot.boardingChange.loading),
+          updatedAt: String(snapshot.boardingChange.updatedAt || ''),
+        }
+      : buildBoardingChangeState(),
+  };
+
+  const serialized = JSON.stringify(next);
+  if (serialized.length <= 1800) return next;
+
+  return {
+    version: next.version,
+    snapshotAt: next.snapshotAt,
+    lastSyncAt: next.lastSyncAt,
+    lastErrorAt: next.lastErrorAt,
+    me: next.me,
+    today: next.today ? {
+      active: next.today.active,
+      assigned: next.today.assigned,
+      summary: next.today.summary,
+    } : null,
+    route: next.route ? {
+      shift: next.route.shift,
+      summary: next.route.summary,
+      progress: next.route.progress,
+      nextStop: next.route.nextStop,
+    } : null,
+    roleLive: next.roleLive ? {
+      kind: next.roleLive.kind,
+      loading: next.roleLive.loading,
+      error: next.roleLive.error,
+      blocked: next.roleLive.blocked,
+      lastSyncAt: next.roleLive.lastSyncAt,
+      netStatus: next.roleLive.netStatus,
+      selectedShiftId: next.roleLive.selectedShiftId,
+      selectedChildId: next.roleLive.selectedChildId,
+      current: next.roleLive.current ? {
+        shiftId: next.roleLive.current.shiftId,
+        shiftStatus: next.roleLive.current.shiftStatus,
+        roomName: next.roleLive.current.roomName,
+        driverName: next.roleLive.current.driverName,
+        vehiclePlate: next.roleLive.current.vehiclePlate,
+        nextStop: next.roleLive.current.nextStop,
+        remainingStops: next.roleLive.current.remainingStops,
+        remainingPassengers: next.roleLive.current.remainingPassengers,
+        remainingKm: next.roleLive.current.remainingKm,
+        etaMin: next.roleLive.current.etaMin,
+        gpsStatus: next.roleLive.current.gpsStatus,
+        gpsAt: next.roleLive.current.gpsAt,
+        primaryText: next.roleLive.current.primaryText,
+        secondaryText: next.roleLive.current.secondaryText,
+        statusText: next.roleLive.current.statusText,
+        childId: next.roleLive.current.childId,
+        childName: next.roleLive.current.childName,
+        companyName: next.roleLive.current.companyName,
+        childStopReached: next.roleLive.current.childStopReached,
+      } : null,
+      summary: next.roleLive.summary,
+    } : null,
+    health: next.health,
+    kvkk: next.kvkk,
+    net: next.net,
+    gps: next.gps,
+    selectedShiftId: next.selectedShiftId,
+    selectedChildId: next.selectedChildId,
+    driverAvailability: next.driverAvailability,
+    driverAwareness: next.driverAwareness ? {
+      ...next.driverAwareness,
+      items: [],
+    } : buildDriverAwarenessState(),
+    notifications: next.notifications ? {
+      role: next.notifications.role,
+      title: next.notifications.title,
+      subtitle: next.notifications.subtitle,
+      emptyTitle: next.notifications.emptyTitle,
+      emptyText: next.notifications.emptyText,
+      actionLabel: next.notifications.actionLabel,
+      summary: next.notifications.summary,
+      surfaceLabel: next.notifications.surfaceLabel,
+      surfaceHint: next.notifications.surfaceHint,
+      items: [],
+      unreadItems: [],
+      unreadCount: next.notifications.unreadCount,
+      hasUnread: next.notifications.hasUnread,
+      latestRelevant: next.notifications.latestRelevant,
+      lastSeenNotificationId: next.notifications.lastSeenNotificationId,
+      lastSeenAt: next.notifications.lastSeenAt,
+      lastFetchedAt: next.notifications.lastFetchedAt,
+    } : buildNotificationCenterState(),
+    boardingChange: next.boardingChange ? {
+      ...next.boardingChange,
+      items: [],
+    } : buildBoardingChangeState(),
+  };
+}
+
 function positiveInt(value) {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : null;
@@ -379,7 +705,7 @@ export function buildMobileSnapshot({
   notifications = null,
   boardingChange = null,
 } = {}) {
-  return {
+  return compactMobileSnapshot({
     version: 1,
     snapshotAt: lastSyncAt || new Date().toISOString(),
     lastSyncAt: String(lastSyncAt || ''),
@@ -398,7 +724,7 @@ export function buildMobileSnapshot({
     driverAwareness: buildDriverAwarenessState(driverAwareness),
     notifications: buildNotificationCenterState(notifications),
     boardingChange: buildBoardingChangeState(boardingChange),
-  };
+  });
 }
 
 function mergeStateWithDefaults(defaultState, value) {
