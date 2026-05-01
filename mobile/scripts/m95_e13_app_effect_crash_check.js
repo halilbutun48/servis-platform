@@ -38,7 +38,7 @@ must(/import \{ ensureDeviceId \} from '\.\.\/lib\/api'/.test(lifecycle), 'lifec
 must(!/from '\.\.\/lib\/storage'.*ensureDeviceId/.test(lifecycle), 'lifecycle no longer imports ensureDeviceId from storage');
 must(/ensureDeviceId\(\)/.test(lifecycle), 'lifecycle still resolves a device id');
 must(/useDriverRealtimeResync/.test(lifecycle), 'lifecycle keeps realtime resync wiring');
-must(/syncSignedIn\(\{ soft: Boolean\(snapshot\) \}\)/.test(lifecycle), 'lifecycle keeps signed-in sync after hydration');
+must(/syncSignedInRef\.current\(\{ soft: Boolean\(snapshot\) \}\)/.test(lifecycle), 'lifecycle keeps signed-in sync after hydration');
 must(/function compactMobileSnapshot\(/.test(state), 'snapshot compaction helper exists');
 must(/SNAPSHOT_MAX_BYTES/.test(state) || /serialized\.length <= 1800/.test(state), 'snapshot size budget exists');
 must(/items: compactArray\(snapshot\.notifications\.items, compactNotificationItem, 1\)/.test(state), 'notifications snapshot is compacted');

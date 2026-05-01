@@ -3,6 +3,7 @@ import {
   acceptKvkkRequiredMany,
   changeDriverPin,
   completeDriverShift,
+  clearApiQueryCache,
   ensureDeviceId,
   isSessionFailureError,
   loginDriver,
@@ -270,6 +271,7 @@ export function createMobileAppHandlers({
       clearSelectedChildId(),
       clearPendingSessionEvent().catch(() => null),
     ]);
+    clearApiQueryCache();
     resetSyncRetryState();
     resetGpsRetryState();
     if (lastDriverAwarenessCueRef) {
@@ -300,6 +302,7 @@ export function createMobileAppHandlers({
         }),
         clearPendingSessionEvent().catch(() => null),
       ]);
+      clearApiQueryCache();
     }
     await syncSignedIn({ soft: false });
   }
@@ -318,6 +321,7 @@ export function createMobileAppHandlers({
       stopVoiceGuidance();
       await stopDriverBackgroundLocation();
       await logoutDriver();
+      clearApiQueryCache();
     } finally {
       await Promise.all([
         clearSession(),

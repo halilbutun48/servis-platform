@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { clearPendingSessionEvent, getLastMobileSnapshot, getPendingSessionEvent, getSelectedChildId, getSelectedShiftId, getSession, getVoiceGuidanceEnabled } from '../lib/storage';
 import { ensureDeviceId } from '../lib/api';
@@ -21,14 +21,23 @@ export function useMobileAppLifecycle({
   lastVoiceWelcomeRef,
   lastVoiceCompletionRef,
   lastDriverAwarenessCueRef,
+  lastSyncedSessionTokenRef,
   apiBaseUrl,
 }) {
+  const syncSignedInRef = useRef(syncSignedIn);
+  const refreshGpsStatusRef = useRef(refreshGpsStatus);
+  const applySessionFailureRef = useRef(applySessionFailure);
+
+  syncSignedInRef.current = syncSignedIn;
+  refreshGpsStatusRef.current = refreshGpsStatus;
+  applySessionFailureRef.current = applySessionFailure;
+
   useDriverRealtimeResync({
     apiBaseUrl,
     sessionToken: state.session?.token || '',
     role: state.me?.role || '',
     requirePinChange: Boolean(state.me?.requirePinChange),
-    onSync: () => syncSignedIn({ soft: true, force: true }),
+    onSync: () => syncSignedInRef.current({ soft: true, skipMe: true }),
   });
 
   useEffect(() => {
@@ -54,7 +63,7 @@ export function useMobileAppLifecycle({
 
         if (pendingSessionEvent && session?.token) {
           await clearPendingSessionEvent().catch(() => null);
-          await applySessionFailure(pendingSessionEvent);
+          await applySessionFailureRef.current(pendingSessionEvent);
           return;
         }
 
@@ -77,11 +86,12 @@ export function useMobileAppLifecycle({
         if (!snapshot) {
           setState((prev) => ({ ...prev, session, deviceId, voiceEnabled, selectedShiftId: selectedShiftId || null, selectedChildId: selectedChildId || null }));
         }
-        await syncSignedIn({ soft: Boolean(snapshot) });
+        if (session?.token && lastSyncedSessionTokenRef?.current === session.token) return;
+        await syncSignedInRef.current({ soft: Boolean(snapshot) });
       } catch (error) {
         if (!alive) return;
         if (String(error?.code || '').toUpperCase().includes('SESSION') || String(error?.name || '').toUpperCase().includes('SESSION')) {
-          await applySessionFailure(error);
+          await applySessionFailureRef.current(error);
           return;
         }
         const message = isNetworkError(error) ? 'Bağlantı yok. Veri eski olabilir.' : String(error?.message || 'Beklenmeyen hata');
@@ -115,7 +125,7 @@ export function useMobileAppLifecycle({
     return () => {
       alive = false;
     };
-  }, [applySessionFailure, lastDriverAwarenessCueRef, lastTodayRefreshAtRef, setState, syncSignedIn, state.me?.requirePinChange]);
+  }, [lastDriverAwarenessCueRef, lastSyncedSessionTokenRef, lastTodayRefreshAtRef, setState, state.me?.requirePinChange]);
 
   useEffect(() => {
     if (!state.session?.token || state.me?.requirePinChange) return;
@@ -138,8 +148,8 @@ export function useMobileAppLifecycle({
       }).catch(() => null);
 
       if (nextState === 'active') {
-        syncSignedIn({ soft: true, force: true }).catch(() => null);
-        refreshGpsStatus({ publishNow: true, force: true }).catch(() => null);
+        syncSignedInRef.current({ soft: true, skipMe: true }).catch(() => null);
+        refreshGpsStatusRef.current({ publishNow: true }).catch(() => null);
       }
     });
     if (appStateRef.current === 'active') {
@@ -161,15 +171,15 @@ export function useMobileAppLifecycle({
     }
 
     return () => sub.remove();
-  }, [appStateRef, applyGpsRuntimeSnapshot, refreshGpsStatus, setState, state.kvkk?.blocking, state.me?.requirePinChange, state.me?.role, state.route, state.selectedShiftId, state.session?.token, state.today, syncSignedIn]);
+  }, [appStateRef, applyGpsRuntimeSnapshot, setState, state.kvkk?.blocking, state.me?.requirePinChange, state.me?.role, state.route, state.selectedShiftId, state.session?.token, state.today]);
 
   useEffect(() => {
     if (!state.session?.token || state.me?.requirePinChange) return;
     const timer = setInterval(() => {
-      syncSignedIn({ soft: true }).catch(() => null);
+      syncSignedInRef.current({ soft: true, skipMe: true }).catch(() => null);
     }, 30000);
     return () => clearInterval(timer);
-  }, [state.session?.token, state.me?.requirePinChange, state.selectedShiftId, syncSignedIn]);
+  }, [state.session?.token, state.me?.requirePinChange, state.selectedShiftId]);
 
   useEffect(() => {
     if (!state.session?.token || state.me?.requirePinChange || String(state.me?.role || '').toUpperCase() !== 'DRIVER') {
@@ -193,13 +203,13 @@ export function useMobileAppLifecycle({
       );
     }).catch(() => null);
 
-    refreshGpsStatus({ publishNow: false }).catch(() => null);
+    refreshGpsStatusRef.current({ publishNow: false }).catch(() => null);
     const timer = setInterval(() => {
       if (appStateRef.current !== 'active') return;
-      refreshGpsStatus({ publishNow: true }).catch(() => null);
+      refreshGpsStatusRef.current({ publishNow: true }).catch(() => null);
     }, GPS_PUBLISH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [appStateRef, applyGpsRuntimeSnapshot, refreshGpsStatus, setState, state.kvkk?.blocking, state.me?.requirePinChange, state.me?.role, state.route, state.selectedShiftId, state.session?.token, state.today]);
+  }, [appStateRef, applyGpsRuntimeSnapshot, setState, state.kvkk?.blocking, state.me?.requirePinChange, state.me?.role, state.route, state.selectedShiftId, state.session?.token, state.today]);
 
   useEffect(() => {
     if (!state.voiceEnabled) return;

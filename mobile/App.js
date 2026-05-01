@@ -100,6 +100,7 @@ export default function App() {
   const gpsRetryCountRef = useRef(0);
   const gpsNextRetryAtRef = useRef(0);
   const lastTodayRefreshAtRef = useRef(0);
+  const lastSyncedSessionTokenRef = useRef('');
 
   function resetSyncRetryState() {
     syncRetryCountRef.current = 0;
@@ -136,6 +137,7 @@ export default function App() {
     syncBusyRef.current = false;
     gpsBusyRef.current = false;
     lastTodayRefreshAtRef.current = 0;
+    lastSyncedSessionTokenRef.current = '';
   }
 
   async function consumePendingSessionEvent(options = {}) {
@@ -149,7 +151,7 @@ export default function App() {
     });
   }
 
-  async function syncSignedIn({ soft = false, preferredShiftIdOverride = null, force = false } = {}) {
+  async function syncSignedIn({ soft = false, preferredShiftIdOverride = null, force = false, skipMe = false } = {}) {
     if (syncBusyRef.current) return;
     if (soft && !canRunRetryWindow(syncNextRetryAtRef.current, force)) return;
     syncBusyRef.current = true;
@@ -163,10 +165,11 @@ export default function App() {
     try {
       const preferredShiftId = preferredShiftIdOverride || state.selectedShiftId || (await getSelectedShiftId().catch(() => null));
       const health = await fetchHealth();
-      const me = await fetchMe();
-      const role = String(me?.role || '').trim().toUpperCase();
+      const shouldFetchMe = !skipMe || !state.me;
+      const me = shouldFetchMe ? await fetchMe({ force }) : state.me;
+      const role = String(me?.role || state.me?.role || '').trim().toUpperCase();
       const preferredChildId = state.selectedChildId || (await getSelectedChildId().catch(() => null));
-      const notificationsPromise = fetchMyNotifications().catch(() => []);
+      const notificationsPromise = fetchMyNotifications({ force }).catch(() => []);
       const latestSession = await getSession().catch(() => null);
       const nextSession = latestSession?.token && latestSession.token !== state.session?.token
         ? {
@@ -177,7 +180,7 @@ export default function App() {
 
       if (role !== 'DRIVER') {
         const [kvkkCurrent, notifications] = await Promise.all([
-          fetchKvkkCurrent().catch(() => null),
+          fetchKvkkCurrent({ force }).catch(() => null),
           notificationsPromise,
         ]);
         let nextRoleLive = null;
@@ -271,6 +274,7 @@ export default function App() {
         ]);
 
         setRouteOps({ busy: false, message: '' });
+        lastSyncedSessionTokenRef.current = String(nextSession?.token || state.session?.token || '');
         setState((prev) => ({
           ...prev,
           loading: false,
@@ -298,8 +302,8 @@ export default function App() {
       }
 
       const [today, kvkkCurrent, notifications] = await Promise.all([
-        fetchToday().catch(() => null),
-        fetchKvkkCurrent().catch(() => null),
+        fetchToday({ force }).catch(() => null),
+        fetchKvkkCurrent({ force }).catch(() => null),
         notificationsPromise,
       ]);
       const routeBundle = await loadRouteBundleFlow({
@@ -310,6 +314,7 @@ export default function App() {
         fetchActiveRoute,
         saveSelectedShiftId,
         clearSelectedShiftId,
+        force,
       });
       const lastSyncAt = new Date().toISOString();
       lastTodayRefreshAtRef.current = Date.now();
@@ -358,6 +363,7 @@ export default function App() {
         clearPendingSessionEvent().catch(() => null),
       ]);
 
+      lastSyncedSessionTokenRef.current = String(nextSession?.token || state.session?.token || '');
       setState((prev) => ({
         ...prev,
         loading: false,
@@ -387,12 +393,17 @@ export default function App() {
       }
 
       const offline = isNetworkError(error);
-      const retryMeta = offline ? buildRetryMeta(syncRetryCountRef.current + 1, 15000, 180000) : null;
+      const rateLimited = Number(error?.status || 0) === 429 || String(error?.code || '').toUpperCase() === 'RATE_LIMITED';
+      const retryMeta = offline || rateLimited ? buildRetryMeta(syncRetryCountRef.current + 1, 60000, 180000) : null;
       if (retryMeta) {
         syncRetryCountRef.current = retryMeta.retryCount;
         syncNextRetryAtRef.current = Date.now() + retryMeta.waitMs;
       }
-      const msg = offline ? 'Bağlantı yok. Veri eski olabilir.' : humanize(error);
+      const msg = offline
+        ? 'Bağlantı yok. Veri eski olabilir.'
+        : rateLimited
+          ? 'İstekler geçici olarak sınırlandı. Biraz sonra tekrar denenecek.'
+          : humanize(error);
       setState((prev) => {
         const nextNet = offline
           ? {
@@ -404,7 +415,17 @@ export default function App() {
               retryCount: retryMeta?.retryCount || prev.net?.retryCount || 0,
               nextRetryAt: retryMeta?.nextRetryAt || prev.net?.nextRetryAt || '',
             }
-          : prev.net;
+          : rateLimited
+            ? {
+                status: 'throttled',
+                message: 'İstekler geçici olarak sınırlandı. Biraz sonra tekrar denenecek.',
+                lastOnlineAt: prev.net?.lastOnlineAt || '',
+                lastOfflineAt: prev.net?.lastOfflineAt || '',
+                lastRecoveryAt: prev.net?.lastRecoveryAt || '',
+                retryCount: retryMeta?.retryCount || prev.net?.retryCount || 0,
+                nextRetryAt: retryMeta?.nextRetryAt || prev.net?.nextRetryAt || '',
+              }
+            : prev.net;
         return {
           ...prev,
           loading: false,
@@ -698,7 +719,7 @@ export default function App() {
       }
 
       if (isKvkkBlockingError(error)) {
-        const kvkkCurrent = await fetchKvkkCurrent().catch(() => null);
+        const kvkkCurrent = await fetchKvkkCurrent({ force: true }).catch(() => null);
         setState((prev) => ({
           ...prev,
           kvkk: nextKvkkState(kvkkCurrent || { ...prev.kvkk, blocking: true }, prev.kvkk, 'KVKK onayı eksik. Konum gönderimi durduruldu.'),
@@ -759,7 +780,7 @@ export default function App() {
       gpsBusyRef.current = false;
     }
   }
-  async function refreshKvkkStatus({ accepted = false } = {}) {
+  async function refreshKvkkStatus({ accepted = false, force = false } = {}) {
     setState((prev) => ({
       ...prev,
       kvkk: {
@@ -771,7 +792,7 @@ export default function App() {
     }));
 
     try {
-      const kvkkCurrent = await fetchKvkkCurrent();
+      const kvkkCurrent = await fetchKvkkCurrent({ force: accepted || force });
       setState((prev) => ({
         ...prev,
         kvkk: nextKvkkState(
@@ -818,6 +839,7 @@ export default function App() {
     lastVoiceWelcomeRef,
     lastVoiceCompletionRef,
     lastDriverAwarenessCueRef,
+    lastSyncedSessionTokenRef,
     apiBaseUrl: getApiBaseUrl(),
   });
 

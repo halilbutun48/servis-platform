@@ -3,6 +3,9 @@ import { buildReleaseBlockingError, getReleaseGuard } from './release';
 
 const API_BASE_URL = String(process.env.EXPO_PUBLIC_API_BASE_URL || '').trim().replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = Math.max(4000, Number(process.env.EXPO_PUBLIC_API_TIMEOUT_MS || 12000));
+const QUERY_CACHE_TTL_MS = Math.max(15000, Number(process.env.EXPO_PUBLIC_QUERY_CACHE_TTL_MS || 60000));
+const QUERY_RATE_LIMIT_COOLDOWN_MS = Math.max(30000, Number(process.env.EXPO_PUBLIC_QUERY_RATE_LIMIT_COOLDOWN_MS || 60000));
+const QUERY_CACHE = new Map();
 
 function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -36,6 +39,80 @@ function collectObjectKeys(...values) {
     });
   }
   return Array.from(keys);
+}
+
+function buildQueryCacheKey(name, parts = []) {
+  const normalizedParts = Array.isArray(parts) ? parts : [parts];
+  return [name, ...normalizedParts.map((part) => String(part ?? '').trim())].join('|');
+}
+
+function getQueryCacheEntry(cacheKey) {
+  if (!QUERY_CACHE.has(cacheKey)) {
+    QUERY_CACHE.set(cacheKey, {
+      promise: null,
+      hasValue: false,
+      value: undefined,
+      resolvedAt: 0,
+      cooldownUntil: 0,
+      lastError: null,
+      lastStatus: 0,
+    });
+  }
+  return QUERY_CACHE.get(cacheKey);
+}
+
+export function clearApiQueryCache() {
+  QUERY_CACHE.clear();
+}
+
+async function requestWithQueryCache(cacheName, parts, fetcher, { force = false, ttlMs = QUERY_CACHE_TTL_MS, cooldownMs = QUERY_RATE_LIMIT_COOLDOWN_MS } = {}) {
+  const cacheKey = buildQueryCacheKey(cacheName, parts);
+  const entry = getQueryCacheEntry(cacheKey);
+  const now = Date.now();
+
+  if (!force) {
+    if (entry.promise) return entry.promise;
+    if (entry.cooldownUntil > now) {
+      if (entry.hasValue) return entry.value;
+      throw entry.lastError || buildNormalizedError({
+        status: 429,
+        code: 'RATE_LIMITED',
+        fallbackMessage: 'Çok fazla istek gönderildi. Biraz sonra tekrar deneyin.',
+      });
+    }
+    if (entry.hasValue && entry.resolvedAt && (now - entry.resolvedAt) < ttlMs) {
+      return entry.value;
+    }
+  }
+
+  const nextPromise = (async () => {
+    try {
+      const value = await fetcher();
+      entry.hasValue = true;
+      entry.value = value;
+      entry.resolvedAt = Date.now();
+      entry.lastError = null;
+      entry.lastStatus = 0;
+      entry.cooldownUntil = 0;
+      return value;
+    } catch (error) {
+      const normalized = normalizeThrownError(error, cacheName);
+      entry.lastError = normalized;
+      entry.lastStatus = Number(normalized?.status || 0);
+      if (entry.lastStatus === 429) {
+        entry.cooldownUntil = Date.now() + cooldownMs;
+      } else if (normalized?.isNetworkError) {
+        entry.cooldownUntil = Date.now() + Math.min(cooldownMs, 30000);
+      }
+      if (entry.hasValue && !force) return entry.value;
+      throw normalized;
+    } finally {
+      if (entry.promise === nextPromise) entry.promise = null;
+    }
+  })();
+
+  entry.promise = nextPromise;
+  return nextPromise;
 }
 
 function resolveBackendErrorShape(payload) {
@@ -357,6 +434,7 @@ async function refreshIfNeeded() {
       deviceId,
     };
     await saveSession(nextSession);
+    clearApiQueryCache();
     return nextSession;
   } catch (error) {
     throw markSessionFailure(error, 'refresh-failed');
@@ -497,16 +575,16 @@ export async function fetchHealth() {
   }
 }
 
-export async function fetchMe() {
-  return request('/api/me');
+export async function fetchMe({ force = false } = {}) {
+  return requestWithQueryCache('me', [], () => request('/api/me'), { force });
 }
 
-export async function fetchMyNotifications() {
-  return request('/api/notifications/my');
+export async function fetchMyNotifications({ force = false } = {}) {
+  return requestWithQueryCache('notifications', [], () => request('/api/notifications/my'), { force });
 }
 
-export async function fetchToday() {
-  return request('/api/driver/shifts/today');
+export async function fetchToday({ force = false } = {}) {
+  return requestWithQueryCache('driver-today', [], () => request('/api/driver/shifts/today'), { force });
 }
 
 export async function fetchLiveVehicles(take = 20) {
@@ -530,14 +608,14 @@ export async function fetchParentLiveVehicles(childId, take = 20) {
   return request(`/api/parent/live/vehicles?childId=${childValue}&take=${limit}`);
 }
 
-export async function fetchActiveRoute() {
-  return request('/api/driver/route/active');
+export async function fetchActiveRoute({ force = false } = {}) {
+  return requestWithQueryCache('driver-active-route', [], () => request('/api/driver/route/active'), { force });
 }
 
-export async function fetchShiftRoute(shiftId) {
+export async function fetchShiftRoute(shiftId, { force = false } = {}) {
   const value = asPositiveInt(shiftId);
   if (!value) return null;
-  return request(`/api/driver/shifts/${value}/route`);
+  return requestWithQueryCache('driver-shift-route', [value], () => request(`/api/driver/shifts/${value}/route`), { force });
 }
 
 export async function startDriverShift(shiftId) {
@@ -572,8 +650,8 @@ export async function undoDriverStop(shiftId, stopId) {
   return postStopAction(shiftId, stopId, 'undo');
 }
 
-export async function fetchKvkkCurrent() {
-  return request('/api/kvkk/documents/current');
+export async function fetchKvkkCurrent({ force = false } = {}) {
+  return requestWithQueryCache('kvkk-current', [], () => request('/api/kvkk/documents/current'), { force });
 }
 
 export async function acceptKvkkRequiredMany(items = []) {
@@ -641,7 +719,10 @@ export async function changeDriverPin(currentPin, newPin) {
 
 export async function logoutDriver() {
   const session = await getSession();
-  if (!session?.refreshToken) return { ok: true, localOnly: true };
+  if (!session?.refreshToken) {
+    clearApiQueryCache();
+    return { ok: true, localOnly: true };
+  }
   try {
     return await request(
       '/api/auth/logout',
@@ -653,6 +734,8 @@ export async function logoutDriver() {
     );
   } catch {
     return { ok: false, localOnly: true };
+  } finally {
+    clearApiQueryCache();
   }
 }
 

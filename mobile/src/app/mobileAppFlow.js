@@ -6,12 +6,13 @@ export async function loadRouteBundle({
   fetchActiveRoute,
   saveSelectedShiftId,
   clearSelectedShiftId,
+  force = false,
 }) {
   const selectedShift = resolveVisibleShift(todayValue, preferredShiftId, null);
   const selectedShiftId = Number(selectedShift?.id || 0) || null;
   const route = selectedShiftId
-    ? await fetchShiftRoute(selectedShiftId).catch(() => null)
-    : await fetchActiveRoute().catch(() => null);
+    ? await fetchShiftRoute(selectedShiftId, { force }).catch(() => null)
+    : await fetchActiveRoute({ force }).catch(() => null);
   const finalShiftId = Number(route?.shift?.id || selectedShiftId || 0) || null;
 
   if (finalShiftId) await saveSelectedShiftId(finalShiftId);
@@ -36,11 +37,12 @@ export async function refreshRouteAfterGpsPublish({
   clearSelectedShiftId,
   loadRouteBundle,
   stateSelectedShiftId,
+  force = false,
 }) {
   const now = Date.now();
   const shouldRefreshToday = !currentToday || !lastTodayRefreshAtRef?.current || (now - lastTodayRefreshAtRef.current) >= 120000;
   const nextToday = shouldRefreshToday
-    ? await fetchToday().catch(() => null)
+    ? await fetchToday({ force }).catch(() => null)
     : (fallbackToday || currentToday || null);
 
   if (nextToday && shouldRefreshToday && lastTodayRefreshAtRef?.current != null) {
@@ -49,7 +51,7 @@ export async function refreshRouteAfterGpsPublish({
 
   const preferredShiftId = Number(shiftId || stateSelectedShiftId || 0) || null;
   if (preferredShiftId) {
-    const nextRoute = await fetchShiftRoute(preferredShiftId).catch(() => null);
+    const nextRoute = await fetchShiftRoute(preferredShiftId, { force }).catch(() => null);
     if (nextRoute) {
       return {
         today: nextToday || fallbackToday || currentToday || null,
@@ -67,6 +69,7 @@ export async function refreshRouteAfterGpsPublish({
     fetchActiveRoute,
     saveSelectedShiftId,
     clearSelectedShiftId,
+    force,
   });
 }
 
