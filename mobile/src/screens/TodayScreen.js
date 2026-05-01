@@ -6,6 +6,7 @@ import DriverChangeAwarenessCard from './DriverChangeAwarenessCard';
 import NotificationCenterCard from './NotificationCenterCard';
 import DriverTaskSummaryCard from './DriverTaskSummaryCard';
 import { Card, EmptyState, Info, Pill, PrimaryButton, RoutePreviewList, SecondaryButton, SectionTitle, ShiftChooser, TopTabs, fmt, isStale, styles } from './mobileUi';
+import { humanizeDriverUiText } from './driverUiText';
 
 export default function TodayScreen({
   me,
@@ -96,7 +97,7 @@ export default function TodayScreen({
         <Text style={styles.subtitle}>{headerText}</Text>
         {!!error ? <Text style={styles.error}>{error}</Text> : null}
         <View style={styles.rowGap}>
-          <Pill label={`Rol: ${String(me?.role || '-')}`} />
+          <Pill label={`Rol: ${humanizeDriverUiText(me?.role || '-', 'Bilinmiyor')}`} />
           <Pill label={syncing ? 'Senkron oluyor' : 'Hazır'} tone={syncing ? 'warn' : 'ok'} />
           {usingCachedData ? <Pill label="Önbellekten açıldı" tone="warn" /> : null}
           {stale ? <Pill label="Veri eski olabilir" tone="warn" /> : null}
@@ -121,7 +122,7 @@ export default function TodayScreen({
 
       <DriverTaskSummaryCard
         title="Bugünkü görev"
-        subtitle="Rota, ETA ve hızlı işlemler tek yerde."
+        subtitle="Rota, tahmini varış ve hızlı işlemler tek yerde."
         activeShift={activeShift}
         route={route}
         routeSummary={routeSummary}
@@ -156,8 +157,8 @@ export default function TodayScreen({
 
       <Card>
         <SectionTitle title="Rota kısa özeti" />
-        <Info label="Rota modu" value={route?.mode || 'NO_DATA'} />
-        <Info label="Yaklaşık varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
+        <Info label="Rota durumu" value={humanizeDriverUiText(route?.mode || 'NO_DATA', 'Veri yok')} />
+        <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
         <Info label="Kalan km" value={nextStop?.remainingKm != null ? `${nextStop.remainingKm} km` : '-'} />
         <Info label="Toplam durak" value={route?.summary?.totalStops != null ? String(route.summary.totalStops) : Array.isArray(route?.orderedStops) ? String(route.orderedStops.length) : '-'} />
         {routePreviewStops.length ? <RoutePreviewList stops={routePreviewStops} /> : <EmptyState title="Rota bekliyor" text="Bekleyen durak önizlemesi henüz görünmüyor." />}
@@ -167,12 +168,12 @@ export default function TodayScreen({
       <Card>
         {/* SectionTitle title="Baglanti" */}
         <SectionTitle title="Bağlantı" subtitle="Çevrimdışı açılışta son başarılı veri gösterilebilir." />
-        <Info label="Durum" value={net?.status || '-'} />
+        <Info label="Durum" value={humanizeDriverUiText(net?.status || '-', 'Bilinmiyor')} />
         <Info label="Mesaj" value={net?.message || '-'} />
         <Info label="Son online" value={fmt(net?.lastOnlineAt)} />
         <Info label="Son offline" value={fmt(net?.lastOfflineAt)} />
         <Info label="Son toparlanma" value={fmt(net?.lastRecoveryAt)} />
-        <Info label="Yeniden deneme sayisi" value={net?.retryCount != null ? String(net.retryCount) : '-'} />
+        <Info label="Yeniden deneme sayısı" value={net?.retryCount != null ? String(net.retryCount) : '-'} />
         <Info label="Sonraki deneme" value={fmt(net?.nextRetryAt)} />
         {/* Baglanti yoksa otomatik denemeler devam eder */}
         {/* artan bekleme ile son basarili snapshot ekranda kalir */}
@@ -194,17 +195,17 @@ export default function TodayScreen({
           subtitle="Sürücünün telefon GPS'i ve canlı konum yayını burada izlenir."
         />
         <Info label="Arka plan görev desteği" value={gps?.backgroundTaskAvailableText || '-'} />
-        <Info label="Sağlık" value={health?.ok ? 'UP' : health?.status || '-'} />
+        <Info label="Sağlık" value={health?.ok ? 'Hazır' : humanizeDriverUiText(health?.status || '-', 'Bilinmiyor')} />
         <Info label="Bağlantı" value={net?.message || '-'} />
-        <Info label="GPS" value={gps?.publishText || '-'} />
+        <Info label="GPS" value={humanizeDriverUiText(gps?.publishState || '-', 'Bilinmiyor')} />
         {/* legacy check token: Konum kaynagi */}
         <Info label="Konum kaynağı" value={gps?.displaySourceText || '-'} />
         {/* Resmi GPS tazeligi */}
         <Info label="Resmi GPS tazeliği" value={gps?.officialFreshnessText || '-'} />
         <Info label="Arka plan izni" value={gps?.backgroundPermissionText || '-'} />
-        <Info label="Arka plan servis" value={gps?.backgroundTaskText || '-'} />
+        <Info label="Arka plan servis" value={humanizeDriverUiText(gps?.backgroundTaskState || '-', 'Bilinmiyor')} />
         <Info label="Son arka plan nedeni" value={gps?.lastBackgroundReason || '-'} />
-        <Info label="GPS tekrar sayisi" value={gps?.retryCount != null ? String(gps.retryCount) : '-'} />
+        <Info label="GPS tekrar sayısı" value={gps?.retryCount != null ? String(gps.retryCount) : '-'} />
         <Info label="GPS sonraki deneme" value={fmt(gps?.nextRetryAt)} />
         <Info label="API taban" value={apiBaseUrl || '-'} />
         <Info label="Device ID" value={deviceId || '-'} />
@@ -214,42 +215,42 @@ export default function TodayScreen({
           <Text style={styles.muted}>Görev yok. Bugün aktif görev yok. Bu yüzden konum gönderilmiyor.</Text>
         ) : null}
         <View style={styles.actionsRow}>
-          <SecondaryButton title="Ayarlari ac" onPress={onOpenSettings} />
+          <SecondaryButton title="Ayarları aç" onPress={onOpenSettings} />
           <SecondaryButton title="Konumu şimdi gönder" onPress={onPublishGpsNow} />
         </View>
       </Card>
 
       <Card>
-        <SectionTitle title="Sesli rehber" subtitle="Sıradaki durağı ve Durak ETA bilgisini sürücüye sesli olarak tekrar eder." />
+        <SectionTitle title="Sesli rehber" subtitle="Sıradaki durağı ve tahmini varış bilgisini sürücüye sesli olarak tekrar eder." />
         <Info label="Sesli rehber" value="Hazır" />
-        <Info label="Durak ETA" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
-        <Text style={styles.muted}>Sıradaki durağı oku ve ETA oku eylemleri sürücünün telefon GPS'i ile birlikte sahada düşük bilişsel yük hedefiyle kullanılır.</Text>
+        <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
+        <Text style={styles.muted}>Sıradaki durağı oku ve tahmini varış oku eylemleri sürücünün telefon GPS'i ile birlikte sahada düşük bilişsel yük hedefiyle kullanılır.</Text>
         <View style={styles.actionsRow}>
           <SecondaryButton title="Sıradaki durağı oku" onPress={onSpeakNextStop} disabled={!onSpeakNextStop || !nextStop} />
-          <SecondaryButton title="ETA oku" onPress={onSpeakEta} disabled={!onSpeakEta || !nextStop} />
+          <SecondaryButton title="Tahmini varış oku" onPress={onSpeakEta} disabled={!onSpeakEta || !nextStop} />
           <SecondaryButton title="Tam rotayı navigasyonda aç" onPress={onOpenRoute} />
         </View>
       </Card>
 
       <Card>
-        {/* Release hazirligi */}
-        <SectionTitle title="Release hazırlığı" subtitle="Mobil beta ve release / env / acceptance sertleştirme özeti" />
+        {/* Yayın hazırlığı */}
+        <SectionTitle title="Yayın hazırlığı" subtitle="Mobil yayın ve ortam kabul özeti" />
         <View style={styles.rowGap}>
-          <Pill label={releaseInfo?.acceptanceStatusText || 'READY'} tone={releaseInfo?.acceptanceBlocking ? 'danger' : Array.isArray(releaseInfo?.acceptanceWarnings) && releaseInfo.acceptanceWarnings.length ? 'warn' : 'ok'} />
-        <Pill label={`Ortam: ${releaseInfo?.envStage || '-'} | Beta durumu`} tone="info" />
+          <Pill label={humanizeDriverUiText(releaseInfo?.acceptanceStatusText || 'READY', 'Hazır')} tone={releaseInfo?.acceptanceBlocking ? 'danger' : Array.isArray(releaseInfo?.acceptanceWarnings) && releaseInfo.acceptanceWarnings.length ? 'warn' : 'ok'} />
+          <Pill label={`Ortam: ${humanizeDriverUiText(releaseInfo?.envStage || '-', 'Bilinmiyor')}`} tone="info" />
         </View>
         <Info label="Uygulama sürümü" value={releaseInfo?.appVersion || '-'} />
-        <Info label="Release hedefi" value={releaseInfo?.releaseTarget || '-'} />
-        <Info label="Build profilleri" value={releaseInfo?.buildProfiles || '-'} />
-        <Info label="Teslimat" value={releaseInfo?.deliveryMode || '-'} />
-        <Info label="Expo Go" value={releaseInfo?.expoGoStatus || '-'} />
-        <Info label="Android preview" value={releaseInfo?.androidPreview || 'Preview APK hazır'} />
-        <Info label="Production bundle" value={releaseInfo?.productionBundle || 'Production AAB hazır'} />
-        <Info label="Env aşaması" value={releaseInfo?.envStage || '-'} />
-        <Info label="EAS Build" value={releaseInfo?.androidPreview || '-'} />
-        <Info label="API host" value={releaseInfo?.apiHost || '-'} />
-        <Info label="API semasi" value={releaseInfo?.apiScheme || '-'} />
-        <Info label="API timeout" value={releaseInfo?.timeoutMs != null ? `${releaseInfo.timeoutMs} ms` : '-'} />
+        <Info label="Yayın hedefi" value={releaseInfo?.releaseTarget || '-'} />
+        <Info label="Yayın profilleri" value={humanizeDriverUiText(releaseInfo?.buildProfiles || '-', '-')} />
+        <Info label="Dağıtım" value={releaseInfo?.deliveryMode || '-'} />
+        <Info label="Canlı test" value={humanizeDriverUiText(releaseInfo?.expoGoStatus || '-', 'Bilinmiyor')} />
+        <Info label="Android önizleme" value={humanizeDriverUiText(releaseInfo?.androidPreview || 'Hazır', 'Hazır')} />
+        <Info label="Yayın paketi" value={humanizeDriverUiText(releaseInfo?.productionBundle || 'Hazır', 'Hazır')} />
+        <Info label="Ortam aşaması" value={humanizeDriverUiText(releaseInfo?.envStage || '-', 'Bilinmiyor')} />
+        <Info label="Derleme durumu" value={humanizeDriverUiText(releaseInfo?.androidPreview || '-', 'Bilinmiyor')} />
+        <Info label="API adresi" value={releaseInfo?.apiHost || '-'} />
+        <Info label="API şeması" value={releaseInfo?.apiScheme || '-'} />
+        <Info label="Zaman aşımı" value={releaseInfo?.timeoutMs != null ? `${releaseInfo.timeoutMs} ms` : '-'} />
         <Info label="Kabul özeti" value={releaseInfo?.acceptanceSummary || '-'} />
         {Array.isArray(releaseInfo?.acceptanceIssues) && releaseInfo.acceptanceIssues.length ? (
           <Text style={styles.error}>{releaseInfo.acceptanceIssues.join(' • ')}</Text>
@@ -257,9 +258,9 @@ export default function TodayScreen({
         {!releaseInfo?.acceptanceBlocking && Array.isArray(releaseInfo?.acceptanceWarnings) && releaseInfo.acceptanceWarnings.length ? (
           <Text style={styles.muted}>{releaseInfo.acceptanceWarnings.join(' • ')}</Text>
         ) : null}
-        <Text style={styles.muted}>Preview APK hazır ve Production AAB hazır olmadan release disiplini tamamlanmış sayılmaz.</Text>
+        <Text style={styles.muted}>Android önizleme ve yayın paketi hazır olmadan yayın disiplini tamamlanmış sayılmaz.</Text>
         <View style={styles.actionsRow}>
-          <SecondaryButton title="Haritada ac" onPress={onOpenLive} />
+          <SecondaryButton title="Haritada aç" onPress={onOpenLive} />
           <SecondaryButton title="Güvenli çıkış" onPress={onLogout} />
         </View>
       </Card>

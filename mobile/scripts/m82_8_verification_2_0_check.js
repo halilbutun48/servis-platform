@@ -64,8 +64,8 @@ assertContains(storage, ['getLastMobileSnapshot', 'saveLastMobileSnapshot', 'get
 assertContains(api, ['fetchShiftRoute', 'startDriverShift', 'pauseDriverShift', 'resumeDriverShift', 'completeDriverShift', 'markDriverStopReached', 'skipDriverStop', 'reopenDriverStop', 'undoDriverStop', 'AbortController'], 'api exposes shift route + manual ops + timeout');
 assertContains(app, ['selectedShiftId', 'syncSignedIn', 'getPendingSessionEvent', 'RouteScreen', 'LiveScreen'], 'app wires selected shift + pending session event + split screens');
 assertContains(routeScreen, ['Vardiyayı başlat', 'Durak ulaşıldı', 'Durağı atla', 'Geri al', 'Yeniden aç', 'Vardiyayı tamamla'], 'route screen exposes driver manual operations');
-assertContains(liveScreen, ['Resmi kaynak', 'Yerel telefon onizleme', 'Resmi tazelik', 'Release / env'], 'live screen distinguishes official source from local preview');
-assertContains(todayScreen, ['Release hazirligi', 'Resmi GPS tazeligi', 'DriverTaskSummaryCard'], 'today screen keeps release card and task summary card');
+assertContains(liveScreen, ['Resmi kaynak', 'Yerel telefon onizleme', 'Resmi tazelik', 'Yayin / ortam'], 'live screen distinguishes official source from local preview');
+assertContains(todayScreen, ['Yayin hazirligi', 'Resmi GPS tazeligi', 'DriverTaskSummaryCard'], 'today screen keeps release card and task summary card');
 assertContains(taskCard, ['Rota ekranını aç', 'Canlı ekranını aç'], 'shared task card keeps split navigation entry');
 assertContains(loginScreen, ['Release / env kabul kontrolu'], 'login screen exposes release acceptance status');
 assertContains(backgroundGps, ['getSelectedShiftId', 'savePendingSessionEvent', 'fetchShiftRoute', 'publishGps'], 'background gps keeps selected shift + session failure + route-only publish path');

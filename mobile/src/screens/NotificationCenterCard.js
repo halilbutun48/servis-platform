@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, fmt, styles } from './mobileUi';
+import { humanizeDriverUiText } from './driverUiText';
 
 function statusTone(item) {
   const tone = String(item?.tone || '').trim().toLowerCase();
@@ -32,14 +33,14 @@ export default function NotificationCenterCard({
       <View style={styles.rowGap}>
         <Pill label={unreadCount > 0 ? `${unreadCount} yeni` : 'Yeni yok'} tone={unreadCount > 0 ? 'warning' : 'passive'} />
         <Pill label={isLatestSeen ? 'Son bildirim okundu' : 'Son bildirim yeni'} tone={isLatestSeen ? 'success' : 'warning'} />
-        {latest ? <Pill label={latest.intentLabel || latest.type || 'Bildirim'} tone={statusTone(latest)} /> : null}
+        {latest ? <Pill label={humanizeDriverUiText(latest.intentLabel || latest.type || 'Bildirim', 'Bildirim')} tone={statusTone(latest)} /> : null}
       </View>
 
       {latest ? (
         <>
           <Info label="Son bildirim" value={latest.title || '-'} />
           <Info label="Ayrıntı" value={latest.message || '-'} />
-          <Info label="Tür" value={latest.intentLabel || latest.type || '-'} />
+          <Info label="Tür" value={humanizeDriverUiText(latest.intentLabel || latest.type || '-', 'Bildirim')} />
           <Info label="Son alım" value={fmt(notifications?.lastFetchedAt)} />
           <Info label="Son okuma" value={fmt(notifications?.lastSeenAt)} />
           <Text style={styles.muted}>{notifications?.summary || 'En yeni kayıtlar üstte listelenir.'}</Text>
@@ -70,7 +71,7 @@ export default function NotificationCenterCard({
                   {item.message || 'Ayrıntı yok'}
                 </Text>
                 <Text style={localStyles.itemMeta}>
-                  {item.intentLabel || item.type || 'Genel'} • {item.scopeLabel || 'Genel'} • {fmt(item.createdAt)}
+                  {humanizeDriverUiText(item.intentLabel || item.type || 'Genel', 'Genel')} • {item.scopeLabel || 'Genel'} • {fmt(item.createdAt)}
                 </Text>
               </View>
               <View style={localStyles.itemBadgeWrap}>

@@ -40,7 +40,7 @@ must(api, "request('/api/gps'", 'mobile api posts to /api/gps');
 must(gps, 'resolveGpsPublishTarget', 'gps helper resolves active shift and vehicle');
 must(gps, "['APPROVED', 'ACTIVE']", 'gps helper gates publish to approved or active shift');
 must(today, "Sürücünün telefon GPS'i", 'today screen has gps card title');
-must(today, 'Ayarlari ac', 'today screen exposes settings action');
+must(today, 'Ayarları aç', 'today screen exposes settings action');
 must(today, 'Konumu simdi gonder', 'today screen exposes manual publish action');
 if (!(normalize(today).includes(normalize('Görev yok')) || normalize(app).includes(normalize('Bugün aktif görev yok. Bu yüzden konum gönderilmiyor.')))) throw new Error('FAIL no-shift publish stop visible'); ok('no-shift publish stop visible');
 

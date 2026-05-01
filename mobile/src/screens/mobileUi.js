@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export function isStale(value) {
   if (!value) return false;
@@ -148,7 +148,9 @@ export const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 30 : 16,
+    paddingBottom: 18,
     gap: 12,
   },
   card: {

@@ -66,18 +66,19 @@ must(has(appJson, 'releaseStage'), 'app config keeps release stage marker');
 
 must(has(release, 'fieldHardeningSummary'), 'release info keeps field hardening summary');
 must(has(release, 'releaseDiscipline'), 'release info keeps release discipline');
-must(has(release, 'Expo Go değil'), 'release info keeps expo go guard');
+must(has(release, 'Expo Go degil'), 'release info keeps expo go guard');
 must(has(release, 'Sürücünün telefon GPS’i'), 'release info keeps driver phone gps wording');
 must(has(release, 'KVKK blokları ve release guard birlikte izlenir'), 'release info keeps combined field guard summary');
 
-must(has(today, 'Release hazırlığı'), 'today screen keeps release readiness card');
+must(has(today, 'Yayın hazırlığı'), 'today screen keeps release readiness card');
 must(has(today, 'Uygulama sürümü'), 'today screen shows app version');
-must(has(today, 'Release hedefi'), 'today screen shows release target');
-must(has(today, 'Build profilleri'), 'today screen shows build profiles');
-must(has(today, 'Expo Go'), 'today screen keeps expo go status');
-must(has(today, 'EAS Build'), 'today screen keeps eas build status');
+must(has(today, 'Yayin hedefi'), 'today screen shows release target');
+must(has(today, 'Yayın profilleri'), 'today screen shows build profiles');
+must(has(today, 'Canli test'), 'today screen keeps live test status');
+must(has(today, 'Yayın paketi'), 'today screen keeps production bundle status');
+must(has(today, 'Ortam aşaması'), 'today screen keeps release env status');
 
-must(has(live, 'Release / env'), 'live screen keeps release env card');
+must(has(live, 'Yayın / ortam'), 'live screen keeps release env card');
 must(has(live, 'Canlı ekrandaki tüm ağ aksiyonları bu kabul durumuna bağlıdır.'), 'live screen keeps release dependency note');
 must(has(live, 'Sürücünün telefon GPS\'i'), 'live screen keeps phone gps wording');
 

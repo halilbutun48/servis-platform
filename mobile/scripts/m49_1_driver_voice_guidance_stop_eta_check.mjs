@@ -55,7 +55,7 @@ must(voice.includes('Sesli yardıma hoş geldiniz'), 'voice helper has welcome s
 must(voice.includes('Güzergâh tamamlandı'), 'voice helper has completion line');
 must(has(today, 'Sesli rehber'), 'today screen has voice guidance card');
 must(has(today, 'Siradaki duragi oku'), 'today screen has read next stop action');
-must(has(today, 'ETA oku'), 'today screen has eta action');
-must(has(today, 'Durak ETA'), 'today screen shows stop eta');
+must(has(today, 'Tahmini varış oku'), 'today screen has eta action');
+must(has(today, 'Tahmini varış'), 'today screen shows stop eta');
 must(has(today, 'Tam rotayi navigasyonda ac'), 'today screen has full route navigation action');
 console.log('=== M49.1 DRIVER VOICE GUIDANCE + STOP ETA CHECK PASS ===');

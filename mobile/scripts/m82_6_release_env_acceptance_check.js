@@ -45,10 +45,11 @@ must(release, 'EXPO_PUBLIC_RELEASE_STAGE', 'release helper reads release stage e
 must(release, 'EXPO_PUBLIC_API_TIMEOUT_MS', 'release helper reads api timeout env');
 must(release, 'placeholder', 'release helper blocks placeholder hosts');
 must(login, 'Release / env kabul kontrolu', 'login screen shows release env acceptance card');
-must(today, 'Release hazirligi', 'today screen shows release readiness card');
-must(today, 'Expo Go', 'today screen still shows expo go guidance');
-must(today, 'EAS Build', 'today screen still shows eas build guidance');
-must(live, 'Release / env', 'live screen shows release env state');
+must(today, 'Yayin hazirligi', 'today screen shows release readiness card');
+must(today, 'Canli test', 'today screen still shows live test guidance');
+must(today, 'Android onizleme', 'today screen still shows android preview guidance');
+must(today, 'Yayin paketi', 'today screen still shows production bundle guidance');
+must(live, 'Yayin / ortam', 'live screen shows release env state');
 must(eas, '__SET_PREVIEW_HTTPS_API_BASE_URL__', 'preview eas profile requires explicit https api host replacement');
 must(eas, '__SET_PRODUCTION_HTTPS_API_BASE_URL__', 'production eas profile requires explicit https api host replacement');
 must(envExample, 'EXPO_PUBLIC_API_TIMEOUT_MS=12000', '.env.example includes api timeout');

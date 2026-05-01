@@ -4,6 +4,7 @@ import { openFullRouteNavigation, openNextStopNavigation } from '../lib/navigati
 import DriverAvailabilityCard from './DriverAvailabilityCard';
 import DriverTaskSummaryCard from './DriverTaskSummaryCard';
 import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, ShiftChooser, TopTabs, fmt, styles } from './mobileUi';
+import { humanizeDriverUiText } from './driverUiText';
 
 function stopTone(stop, nextStopId) {
   const state = String(stop?.state || '').toUpperCase();
@@ -15,8 +16,10 @@ function stopTone(stop, nextStopId) {
 
 function stopLabel(stop, nextStopId) {
   const state = String(stop?.state || '').toUpperCase();
-  if (Number(stop?.id || 0) && Number(stop?.id || 0) === Number(nextStopId || 0) && state === 'PENDING') return 'SIRADAKİ';
-  return state || 'PENDING';
+  if (Number(stop?.id || 0) && Number(stop?.id || 0) === Number(nextStopId || 0) && state === 'PENDING') return 'Sıradaki';
+  if (state === 'REACHED') return 'Ulaşıldı';
+  if (state === 'SKIPPED') return 'Atlandı';
+  return humanizeDriverUiText(state || 'PENDING', 'Bekliyor');
 }
 
 export default function RouteScreen({
@@ -111,7 +114,7 @@ export default function RouteScreen({
 
       {activeShift ? (
         <DriverTaskSummaryCard
-          title="Görev / rota / ETA"
+          title="Görev / rota / tahmini varış"
           subtitle="Güncel rota, tahmini varış ve kalan iş tek kartta."
           activeShift={activeShift}
           route={route}
@@ -138,7 +141,7 @@ export default function RouteScreen({
         <>
           <Card>
             <SectionTitle title="Seçili vardiya" />
-            <Info label="Vardiya" value={`#${activeShift.id} • ${String(route?.shift?.status || activeShift?.status || '-').toUpperCase()}`} />
+            <Info label="Vardiya" value={`#${activeShift.id} • ${humanizeDriverUiText(route?.shift?.status || activeShift?.status || '-', 'Bilinmiyor')}`} />
             <Info label="Başlangıç" value={fmt(route?.shift?.startAt || activeShift?.startAt)} />
             <Info label="Bitiş" value={fmt(route?.shift?.endAt || activeShift?.endAt)} />
             <Info label="Araç" value={route?.vehicle?.plate || activeShift?.vehicle?.plate || (activeShift?.vehicleId ? `#${activeShift.vehicleId}` : '-')} />
@@ -172,7 +175,7 @@ export default function RouteScreen({
                 <Info label="Durak" value={nextStop?.name || '-'} />
                 <Info label="Sıra" value={nextStop?.order != null ? String(nextStop.order) : '-'} />
                 <Info label="Yolcu" value={nextStop?.passengerCount != null ? `${nextStop.passengerCount} kişi` : '-'} />
-                <Info label="ETA" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
+                <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
                 <Info label="Mesafe" value={nextStop?.remainingKm != null ? `${nextStop.remainingKm} km` : '-'} />
                 <View style={styles.actionsRow}>
                   <PrimaryButton title="Durak ulaşıldı" onPress={() => onMarkReached(nextStop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} />
@@ -187,7 +190,7 @@ export default function RouteScreen({
           </Card>
 
           <Card>
-            <SectionTitle title="Tüm duraklar" subtitle="Geri al 2 dakikalık pencereyi dener. Yeniden aç, pencere dolsa bile durağı tekrar PENDING yapar." />
+            <SectionTitle title="Tüm duraklar" subtitle="Geri al 2 dakikalık pencereyi dener. Yeniden aç, süre dolsa bile durak tekrar beklemeye alınır." />
             {Array.isArray(route?.orderedStops) && route.orderedStops.length ? (
               <View style={{ gap: 10 }}>
                 {route.orderedStops.map((stop) => {
@@ -205,7 +208,7 @@ export default function RouteScreen({
                         {stop.remainingKm != null ? ` • ${stop.remainingKm} km` : ''}
                         {stop.etaMin != null ? ` • ${stop.etaMin} dk` : ''}
                       </Text>
-                      <Text style={styles.stopMeta}>Reached: {fmt(stop.reachedAt)} • Skipped: {fmt(stop.skippedAt)}</Text>
+                      <Text style={styles.stopMeta}>Ulaşıldı: {fmt(stop.reachedAt)} • Atlandı: {fmt(stop.skippedAt)}</Text>
                       <View style={styles.actionsRow}>
                         {isPending ? <PrimaryButton title="Ulaşıldı" onPress={() => onMarkReached(stop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} /> : null}
                         {isPending ? <SecondaryButton title="Atla" onPress={() => onSkipStop(stop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} /> : null}

@@ -47,7 +47,7 @@ must('app stores last sync state', app.includes('lastSyncAt'));
 must('api exposes fetchHealth', api.includes('fetchHealth'));
 must('api exposes logoutDriver', api.includes('logoutDriver'));
 must('api exposes api base getter', api.includes('getApiBaseUrl'));
-must('today screen has beta durum card', normalize(today).includes(normalize('Beta durum')));
+must('today screen has yayin hazirligi card', normalize(today).includes(normalize('Yayın hazırlığı')));
 must('today screen shows api base url', normalize(today).includes(normalize('API taban')));
 must('today screen shows device id', normalize(today).includes(normalize('Device ID')));
 must('today screen shows last sync', normalize(today).includes(normalize('Son basarili senkron')));

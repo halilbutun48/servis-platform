@@ -1,5 +1,6 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Card, Info, Pill, SecondaryButton, SectionTitle, fmt, styles } from './mobileUi';
+import { humanizeDriverUiText } from './driverUiText';
 
 export default function DriverShellLoadingScreen({
   role = '',
@@ -33,17 +34,17 @@ export default function DriverShellLoadingScreen({
           </View>
 
           <View style={styles.rowGap}>
-            <Pill label={`Rol: ${currentRole}`} tone="info" />
+            <Pill label={`Rol: ${humanizeDriverUiText(currentRole, 'Bilinmiyor')}`} tone="info" />
             <Pill label={loading || syncing ? 'Hazırlanıyor' : 'Hazır'} tone={loading || syncing ? 'warning' : 'success'} />
             <Pill label={`Ekran: ${activeScreen}`} tone="passive" />
-            <Pill label={releaseInfo?.envStage || 'unknown'} tone="passive" />
+            <Pill label={`Ortam: ${humanizeDriverUiText(releaseInfo?.envStage || 'unknown', 'Bilinmiyor')}`} tone="passive" />
           </View>
 
           <Info label="Durum" value={error || 'Oturum açıldı, görev bilgileri hazırlanıyor.'} />
           <Info label="Son senkron" value={fmt(lastSyncAt)} />
           <Info label="API" value={apiBaseUrl || '-'} />
           <Info label="Cihaz" value={deviceId ? 'hazır' : 'yok'} />
-          <Info label="Sağlık" value={health?.ok ? 'UP' : health?.status || '-'} />
+          <Info label="Sağlık" value={health?.ok ? 'Hazır' : humanizeDriverUiText(health?.status || '-', 'Bilinmiyor')} />
 
           <Text style={styles.muted}>
             Bu ekran, sürücü görev kartları yüklenirken boş beyaz alan oluşmaması için görünür kalır.

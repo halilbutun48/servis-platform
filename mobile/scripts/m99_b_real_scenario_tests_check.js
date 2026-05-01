@@ -101,7 +101,7 @@ must(has(today, 'DriverChangeAwarenessCard'), 'today screen keeps awareness card
 must(has(today, 'Sesli rehber'), 'today screen keeps voice guidance section');
 must(has(today, 'onRefresh={onRefresh}'), 'today screen keeps refresh wiring');
 
-must(has(route, 'Görev / rota / ETA'), 'route screen keeps task/route/eta card');
+must(has(route, 'Görev / rota / tahmini varış'), 'route screen keeps task/route/eta card');
 must(has(route, 'Rota özeti'), 'route screen keeps route summary section');
 must(has(route, 'Sıradaki durak'), 'route screen keeps next stop section');
 must(has(route, 'DriverAvailabilityCard'), 'route screen keeps availability card');
@@ -110,7 +110,8 @@ must(has(route, 'Tam rotayı aç'), 'route screen keeps full route action');
 must(has(live, 'Sürücünün telefon GPS\'i'), 'live screen keeps driver phone gps section');
 must(has(live, 'Sesli rehber'), 'live screen keeps voice guidance section');
 must(has(live, 'KVKK'), 'live screen keeps kvkk section');
-must(has(live, 'Konumu şimdi gönder'), 'live screen keeps publish gps action');
+must(has(live, 'driverGpsPrimaryActionLabel'), 'live screen keeps publish gps helper');
+must(has(live, 'gpsActionTitle'), 'live screen keeps publish gps title state');
 
 must(has(notificationCard, 'Son bildirimi gördüm'), 'notification card keeps seen action');
 must(has(notificationCard, 'Son kayıtlar'), 'notification card keeps recent list');
@@ -122,7 +123,7 @@ must(has(boardingCard, 'Son istekler'), 'boarding card keeps recent requests');
 must(has(boardingCard, 'mobil yerel istek modelidir'), 'boarding card keeps local model note');
 must(has(boardingCard, 'Rota dışı konum isteği manuel inceleme gerektirir'), 'boarding card keeps manual review note');
 
-must(has(availabilityCard, 'Sürücü mola / müsaitlik'), 'availability card keeps title');
+must(has(availabilityCard, 'Sürücü durumu'), 'availability card keeps title');
 must(has(availabilityCard, 'Yeni iş atamasını oda/operasyon yapar'), 'availability card keeps operational assignment note');
 must(has(availabilityCard, 'Yerel tercih'), 'availability card keeps local preference chip');
 
@@ -132,7 +133,7 @@ must(has(awarenessCard, 'Gördüm'), 'awareness card keeps acknowledge action');
 must(has(awarenessCard, 'Son uyarılar'), 'awareness card keeps recent alerts list');
 
 must(has(taskCard, 'Bugünkü görev'), 'task card keeps title');
-must(has(taskCard, 'Rota, ETA ve hızlı işlemler tek yerde.'), 'task card keeps scenario summary');
+must(has(taskCard, 'Rota, tahmini varış ve hızlı işlemler tek yerde.'), 'task card keeps scenario summary');
 must(has(taskCard, 'Durak ulaşıldı'), 'task card keeps reached action');
 must(has(taskCard, 'Vardiyayı tamamla'), 'task card keeps complete action');
 

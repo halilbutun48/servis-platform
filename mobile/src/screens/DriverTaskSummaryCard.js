@@ -10,6 +10,7 @@ import {
   SectionTitle,
   styles,
 } from './mobileUi';
+import { humanizeDriverUiText } from './driverUiText';
 
 function statusTextFor(routeSummary = {}, activeShift = null) {
   if (routeSummary.completed) return 'Tamamlandı';
@@ -26,7 +27,7 @@ function statusToneFor(routeSummary = {}, activeShift = null) {
 
 export default function DriverTaskSummaryCard({
   title = 'Bugünkü görev',
-  subtitle = 'Rota, ETA ve hızlı işlemler tek yerde.',
+  subtitle = 'Rota, tahmini varış ve hızlı işlemler tek yerde.',
   activeShift = null,
   route = null,
   routeSummary = {},
@@ -66,10 +67,10 @@ export default function DriverTaskSummaryCard({
             <Pill label={nextStop ? 'Sıradaki durak hazır' : 'Bekleyen durak yok'} tone={nextStop ? 'info' : 'warn'} />
           </View>
 
-          <Info label="Seçili vardiya" value={`#${activeShift.id} • ${String(route?.shift?.status || activeShift?.status || '-').toUpperCase()}`} />
-          <Info label="Rota modu" value={route?.mode || 'NO_DATA'} />
+          <Info label="Seçili vardiya" value={`#${activeShift.id} • ${humanizeDriverUiText(route?.shift?.status || activeShift?.status || '-', 'Bilinmiyor')}`} />
+          <Info label="Rota durumu" value={humanizeDriverUiText(route?.mode || 'NO_DATA', 'Veri yok')} />
           <Info label="Sıradaki durak" value={nextStop?.name || '-'} />
-          <Info label="Durak ETA" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
+          <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
           <Info label="Kalan rota süresi" value={remainingRouteEtaMin != null ? `${remainingRouteEtaMin} dk` : '-'} />
           <Info label="Kalan km" value={remainingKm != null ? `${remainingKm} km` : '-'} />
           <Info label="Kalan durak" value={remainingStops != null ? String(remainingStops) : '-'} />
@@ -79,7 +80,7 @@ export default function DriverTaskSummaryCard({
           {Array.isArray(routePreviewStops) && routePreviewStops.length ? (
             <RoutePreviewList stops={routePreviewStops.slice(0, 4)} />
           ) : (
-            <EmptyState title="Durak verisi görünmüyor" text="Canlı rota bilgisi henüz hazırlanmadı." />
+            <EmptyState title="Bugün atanmış görev görünmüyor." text="Operasyon ekibiniz görev atadığında burada görünecek." />
           )}
 
           <View style={styles.actionsRow}>

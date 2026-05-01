@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 import { listDriverAvailabilityModes } from '../app/driverAvailabilityState';
 import { Card, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, fmt, styles } from './mobileUi';
+import { driverAvailabilityActionLabel } from './driverUiText';
 
 export default function DriverAvailabilityCard({
   driverAvailability,
@@ -13,11 +14,10 @@ export default function DriverAvailabilityCard({
   return (
     <Card>
       <SectionTitle
-        title="Sürücü mola / müsaitlik"
-        subtitle="Hazır bekleme tercihi cihazda saklanır."
+        title="Sürücü durumu"
+        subtitle="Hazır bekleme tercihi cihazda kalır."
       />
       <Info label="Durum" value={driverAvailability?.label || 'Görevdeyim'} />
-      <Info label="Açıklama" value={driverAvailability?.description || 'Aktif vardiya içindeyim.'} />
       <Info label="Son güncelleme" value={fmt(driverAvailability?.updatedAt)} />
       <View style={styles.rowGap}>
         <Pill label={`Şu an: ${driverAvailability?.label || 'Görevdeyim'}`} tone={driverAvailability?.tone || 'info'} />
@@ -25,7 +25,7 @@ export default function DriverAvailabilityCard({
       </View>
       <View style={styles.actionsRow}>
         {modes.map((item) => {
-          const title = item.label;
+          const title = driverAvailabilityActionLabel(item.mode);
           const active = item.mode === currentMode;
           const danger = item.mode === 'NOT_AVAILABLE' || item.mode === 'CLOSED_TODAY';
           const commonProps = {
@@ -40,7 +40,7 @@ export default function DriverAvailabilityCard({
           return active ? <PrimaryButton {...commonProps} /> : <SecondaryButton {...commonProps} />;
         })}
       </View>
-      <Text style={styles.muted}>Yeni iş atamasını oda/operasyon yapar; bu kart sadece sürücünün hazır bekleme tercihini tutar.</Text>
+      <Text style={styles.muted}>Yeni iş atamasını oda/operasyon yapar.</Text>
     </Card>
   );
 }

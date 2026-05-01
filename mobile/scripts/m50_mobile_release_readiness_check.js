@@ -40,11 +40,13 @@ must(eas, 'preview', 'eas has preview profile');
 must(eas, 'production', 'eas has production profile');
 must(app, 'RELEASE_INFO', 'app defines release info');
 must(app, 'releaseInfo={RELEASE_INFO}', 'app passes release info to today screen');
-must(today, 'Release hazirligi', 'today screen has release readiness card');
+must(today, 'Yayin hazirligi', 'today screen has release readiness card');
 must(today, 'Uygulama surumu', 'today screen shows app version');
-must(today, 'Release hedefi', 'today screen shows release target');
-must(today, 'Build profilleri', 'today screen shows build profiles');
-must(today, 'Expo Go', 'today screen shows expo go status');
-must(today, 'EAS Build', 'today screen mentions eas build');
+must(today, 'Yayin hedefi', 'today screen shows release target');
+must(today, 'Yayin profilleri', 'today screen shows build profiles');
+must(today, 'Canli test', 'today screen shows live test status');
+must(today, 'Android onizleme', 'today screen shows android preview status');
+must(today, 'Yayin paketi', 'today screen shows production bundle status');
+must(today, 'Derleme durumu', 'today screen mentions build status');
 
 console.log('=== M50 MOBILE RELEASE READINESS CHECK PASS ===');

@@ -49,7 +49,7 @@ must(has(JSON.stringify(pkg.scripts || {}), 'check:m96b'), 'package exposes m96b
 must(has(today, 'DriverTaskSummaryCard'), 'today screen renders task summary card');
 must(has(route, 'DriverTaskSummaryCard'), 'route screen renders task summary card');
 must(has(today, 'title="Bugünkü görev"'), 'today screen keeps today task title');
-must(has(route, 'title="Görev / rota / ETA"'), 'route screen keeps route eta title');
+must(has(route, 'title="Görev / rota / tahmini varış"'), 'route screen keeps route eta title');
 must(has(taskCard, 'Kalan rota süresi'), 'task card shows remaining route duration');
 must(has(taskCard, 'Kalan km'), 'task card shows remaining distance');
 must(has(taskCard, 'Kalan durak'), 'task card shows remaining stops');

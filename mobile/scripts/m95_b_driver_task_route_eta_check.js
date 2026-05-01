@@ -78,7 +78,7 @@ must(has(taskCard, 'Rota ekranını aç'), 'task card exposes route screen actio
 must(has(taskCard, 'Canlı ekranını aç'), 'task card exposes live screen action');
 must(has(taskCard, 'Yenile'), 'task card exposes refresh action');
 must(has(today, 'Sıradaki durağı oku'), 'today screen exposes voice next stop action');
-must(has(today, 'ETA oku'), 'today screen exposes voice eta action');
+must(has(today, 'Tahmini varış oku'), 'today screen exposes voice eta action');
 
 must(has(route, 'Rota özeti'), 'route screen exposes route summary card');
 must(has(route, 'Kalan rota süresi'), 'route screen shows remaining route duration');
