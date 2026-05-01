@@ -10,6 +10,7 @@ import { buildNotifPayloadV1 } from "../notifications/payloadV1.js";
 import { haversineKm } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { gateVehicleGpsState } from "../gps/gpsStateGate.js"; // ✅ NEW
+import { gpsSourceLabelFromKey } from "../gps/sourceLabel.js";
 import { gpsThrottle1200ms } from "../middleware/gpsThrottle1200ms.js";
 import { isoOffsetTR } from "../time/tr.js";
 import { enqueueAutoReachedTask, processAutoReachedTask } from "../jobs/autoReachedQueue.js";
@@ -228,10 +229,14 @@ export function gpsRouter(io) {
       // =========================================================
       // ✅ RECOVERY GATE (OFFLINE/STALE -> LIVE)
       // =========================================================
+      const gpsSource = "DRIVER_PHONE";
+      const gpsSourceLabel = gpsSourceLabelFromKey(gpsSource);
+
       const gate = await gateVehicleGpsState({
         prisma,
         vehicleId,
         newUiStatus: uiStatus,
+        newSource: gpsSource,
         now: new Date(),
       });
 
@@ -296,6 +301,8 @@ export function gpsRouter(io) {
         at: last.at,
         status: uiStatus,
         ageSec,
+        source: gpsSource,
+        sourceLabel: gpsSourceLabel,
         regionRoutingKey,
         regionContext,
       };

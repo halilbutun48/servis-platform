@@ -73,11 +73,12 @@ export function formatGpsCoords(coords) {
   return `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
 }
 
-export function buildGpsPayload(position, vehicleId) {
+export function buildGpsPayload(position, vehicleId, source = 'DEVICE') {
   const coords = position?.coords || {};
   const speed = typeof coords.speed === 'number' && Number.isFinite(coords.speed) && coords.speed >= 0
     ? Number((coords.speed * 3.6).toFixed(1))
     : undefined;
+  const normalizedSource = String(source || 'DEVICE').trim().toUpperCase() || 'DEVICE';
 
   return {
     vehicleId,
@@ -85,6 +86,7 @@ export function buildGpsPayload(position, vehicleId) {
     lng: Number(coords.longitude),
     speed,
     at: new Date(position?.timestamp || Date.now()).toISOString(),
+    source: normalizedSource,
   };
 }
 
@@ -107,6 +109,14 @@ function freshnessText(status) {
   if (key === 'STALE') return 'Eski ama okunabilir';
   if (key === 'OFFLINE') return 'GPS yok veya çok eski';
   return '-';
+}
+
+function sourceLabelFromKey(source, { cached = false } = {}) {
+  const key = String(source || '').trim().toUpperCase();
+  if (key === 'DRIVER_PHONE') return cached ? "Önbellekteki sürücünün telefon GPS'i" : "Sürücünün telefon GPS'i";
+  if (key === 'LOCAL_DEVICE_PREVIEW') return cached ? 'Önbellekteki yerel telefon önizlemesi' : 'Yerel telefon önizlemesi';
+  if (key === 'CACHED_BACKEND_VEHICLE_GPS') return "Önbellekteki resmi araç GPS'i";
+  return cached ? "Önbellekteki resmi araç GPS'i" : "Resmi araç GPS'i";
 }
 
 export function resolveLiveLocationState({ route, gps, usingCachedData = false, netStatus = 'unknown', selectedShiftId = null } = {}) {
@@ -133,8 +143,9 @@ export function resolveLiveLocationState({ route, gps, usingCachedData = false, 
     typeof backendGps?.lng === 'number'
   );
   const backendCached = Boolean(hasBackendCoords && (usingCachedData || netStatus === 'offline'));
-  const officialSourceKey = backendCached ? 'CACHED_BACKEND_VEHICLE_GPS' : 'BACKEND_VEHICLE_GPS';
-  const officialSourceText = backendCached ? "Önbellekteki resmi araç GPS'i" : "Resmi araç GPS'i";
+  const backendSourceKey = String(backendGps?.source || 'BACKEND_VEHICLE_GPS').trim().toUpperCase() || 'BACKEND_VEHICLE_GPS';
+  const officialSourceKey = backendCached ? `CACHED_${backendSourceKey}` : backendSourceKey;
+  const officialSourceText = sourceLabelFromKey(backendSourceKey, { cached: backendCached });
   const officialCoordsText = hasBackendCoords ? formatLatLng(backendGps.lat, backendGps.lng) : '-';
   const officialAt = hasBackendCoords ? (backendGps.at || '') : '';
   const officialFreshness = hasBackendCoords ? String(backendGps?.freshness || 'UNKNOWN').toUpperCase() : 'OFFLINE';

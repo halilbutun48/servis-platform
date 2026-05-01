@@ -237,7 +237,7 @@ if (!TaskManager.isTaskDefined(DRIVER_BG_LOCATION_TASK)) {
       const { route: previousRoute, target } = await loadBackgroundRoute(selectedShiftId);
       if (!target.activeShift || !target.vehicleId || !target.canPublish) return;
 
-      await publishGps(buildGpsPayload(latest, target.vehicleId));
+      await publishGps(buildGpsPayload(latest, target.vehicleId, 'DRIVER_PHONE'));
 
       const voiceEnabled = await getVoiceGuidanceEnabled().catch(() => false);
       if (!voiceEnabled) return;

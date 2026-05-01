@@ -114,7 +114,11 @@ export function driverAvailabilityActionLabel(mode) {
 export function driverGpsPrimaryActionLabel({
   gpsNeedsPermission = false,
   backgroundTaskRunning = false,
+  hasActiveShift = true,
+  backgroundTaskAvailable = true,
 } = {}) {
+  if (!hasActiveShift) return 'Aktif görev yok';
+  if (!backgroundTaskAvailable) return 'Arka plan GPS desteklenmiyor';
   if (gpsNeedsPermission) return 'GPS izni ver';
   if (!backgroundTaskRunning) return "Sürücünün telefon GPS'ini başlat";
   return 'Konumu şimdi gönder';
@@ -123,9 +127,11 @@ export function driverGpsPrimaryActionLabel({
 export function driverGpsStatusLabel({
   gpsNeedsPermission = false,
   backgroundPermissionGranted = true,
+  backgroundTaskAvailable = true,
   backgroundTaskRunning = false,
   publishState = '',
 } = {}) {
+  if (!backgroundTaskAvailable) return 'Arka plan GPS görevi desteklenmiyor';
   if (gpsNeedsPermission) return 'GPS izni bekleniyor';
   if (!backgroundPermissionGranted) return 'Arka plan izni gerekli';
   if (!backgroundTaskRunning) return 'GPS gönderimi kapalı';
@@ -134,4 +140,36 @@ export function driverGpsStatusLabel({
   if (status === 'retry') return 'GPS gönderimi yeniden denenecek';
   if (status === 'blocked') return 'GPS gönderimi kapalı';
   return 'Sürücünün telefon GPS’i hazır';
+}
+
+export function driverGpsBackgroundReasonText(
+  reason,
+  {
+    hasActiveShift = true,
+    backgroundTaskAvailable = true,
+    gpsNeedsPermission = false,
+    backgroundPermissionGranted = true,
+    backgroundTaskRunning = false,
+  } = {}
+) {
+  const key = String(reason || '').trim().toLowerCase();
+  if (!backgroundTaskAvailable || key === 'task-unavailable') {
+    return 'Bu cihazda arka plan GPS görevi desteklenmiyor.';
+  }
+  if (!hasActiveShift || key === 'not-eligible') {
+    return 'Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.';
+  }
+  if (gpsNeedsPermission || key === 'foreground-permission') {
+    return 'GPS izni gerekli.';
+  }
+  if (!backgroundPermissionGranted || key === 'background-permission') {
+    return 'Arka plan izni gerekli.';
+  }
+  if (backgroundTaskRunning || ['armed-active', 'running', 'started', 'published'].includes(key)) {
+    return "Sürücünün telefon GPS'i hazır.";
+  }
+  if (key === 'session-failure') {
+    return 'Oturum yenilenmeli.';
+  }
+  return reason ? humanizeDriverUiText(reason, "Sürücünün telefon GPS'i hazır") : "Sürücünün telefon GPS'i hazır";
 }

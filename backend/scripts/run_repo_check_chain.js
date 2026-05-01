@@ -60,6 +60,8 @@ const phaseDefinitions = {
     nodeStep("m94e-queue-chaos-alarm", "backend/scripts/m94e_queue_chaos_alarm_check.js"),
     nodeStep("m96c2-boarding-change-ops", "backend/scripts/m96_c2_boarding_change_ops_check.js"),
     nodeStep("m97-panel-operations", "backend/scripts/m97_panel_operations_check.js"),
+    nodeStep("m95e20-gps-fallback", "backend/scripts/m95_e20_driver_phone_gps_fallback_check.js"),
+    nodeStep("m95e20-web-gps-badge", "web/scripts/m95_e20_web_gps_source_badge_check.js"),
   ],
   milestones: [
     nodeStep("m0-latest-static-milestones", "backend/scripts/run_m0_latest.js", [

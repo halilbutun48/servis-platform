@@ -38,6 +38,7 @@ must(gps, "Resmi arac GPS'i > yerel telefon onizlemesi > onbellek", 'gps helper 
 must(live, 'Konum kaynak onceligi', 'live screen shows source priority');
 must(live, 'Resmi kaynak', 'live screen shows official source');
 must(today, 'Konum kaynagi', 'today screen shows active source');
-must(driverRoute, 'officialSource: "BACKEND_VEHICLE_GPS"', 'driver route payload marks backend official source');
+must(driverRoute, 'officialSource: vehicleGpsSource', 'driver route payload uses source-aware official source');
+must(driverRoute, 'backendVehicleGps: backendGpsMeta', 'driver route payload keeps backend gps metadata');
 
 console.log('=== M82.5 LIVE LOCATION SOURCE PRIORITY CHECK PASS ===');

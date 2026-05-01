@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from "reac
 import "leaflet/dist/leaflet.css";
 
 import { uiStatusFromVehicle } from "../../utils/uiStatus";
+import { gpsFreshnessLabelFromUiStatus, gpsSourceLabelFromKey } from "../../utils/gpsSource";
 import "./mapShell.css";
 import "./markers.css";
 import { makeVehicleMarkerC } from "../../lib/markers/vehicleMarkerC";
@@ -276,11 +277,13 @@ export default function MapView({
     ];
   }, [vehiclePoints, stopPoints, routeLine]);
 
-  const sourceLabel = routeSource === "LEARNED"
+  const routeSourceLabel = routeSource === "LEARNED"
     ? "Öğrenilmiş rota"
     : routeSource === "OSRM"
       ? "Yol ağına yakın rota"
       : "Tahmini rota";
+  const gpsSourceLabel = gpsSourceLabelFromKey(selectedVehicle?.gpsState?.lastSource || selectedVehicle?.liveLocation?.backendVehicleGps?.source || selectedVehicle?.gpsLast?.source || '');
+  const gpsFreshnessLabel = gpsFreshnessLabelFromUiStatus(selectedUi);
 
   const selectedVehicleLabel = selectedVehicle?.plate
     ? `Araç: ${selectedVehicle.plate}`
@@ -386,7 +389,9 @@ export default function MapView({
             flexWrap: "wrap",
           }}
         >
-          <span className="pill">{sourceLabel}</span>
+          <span className="pill">Rota kaynağı: {routeSourceLabel}</span>
+          <span className="pill">GPS kaynağı: {gpsSourceLabel}</span>
+          <span className="pill">GPS durumu: {gpsFreshnessLabel}</span>
           <span className="pill" data-status="NEXT">{nextStopLabel}</span>
           {selectedVehicle?.plate ? (
             <span className="pill">{selectedVehicleLabel}</span>

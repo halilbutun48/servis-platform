@@ -10,6 +10,7 @@ import { haversineKm, etaMinutes } from "../geo.js";
 import { decorateShiftWithRegionContext, emitShift } from "./shifts/helpers.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { gpsStatusFromAt } from "../gps/status.js";
+import { gpsSourceLabelFromKey } from "../gps/sourceLabel.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -86,7 +87,7 @@ async function getShiftForDriver({ shiftId }) {
   const shift = await prisma.shift.findUnique({
     where: { id: shiftId },
     include: {
-      vehicle: { include: { gpsLast: true } },
+      vehicle: { include: { gpsLast: true, gpsState: true } },
       company: {
         select: {
           id: true,
@@ -123,13 +124,16 @@ async function maybeStartShiftIfApproved(shiftId) {
 function buildDriverRoutePayload(shift) {
   const decoratedShift = decorateShiftWithRegionContext(shift);
   const last = decoratedShift?.vehicle?.gpsLast ?? null;
+  const vehicleGpsSource = String(decoratedShift?.vehicle?.gpsState?.lastSource || "BACKEND_VEHICLE_GPS").trim().toUpperCase() || "BACKEND_VEHICLE_GPS";
+  const backendGpsLabel = gpsSourceLabelFromKey(vehicleGpsSource);
   const backendGpsMeta = last
     ? (() => {
         const gpsFreshness = gpsStatusFromAt(last.at);
         return {
           available: true,
-          source: "BACKEND_VEHICLE_GPS",
-          label: "Resmi arac GPS'i",
+          source: vehicleGpsSource,
+          label: backendGpsLabel,
+          sourceLabel: backendGpsLabel,
           freshness: gpsFreshness.status,
           ageSec: gpsFreshness.ageSec,
           at: last.at,
@@ -140,8 +144,9 @@ function buildDriverRoutePayload(shift) {
       })()
     : {
         available: false,
-        source: "BACKEND_VEHICLE_GPS",
-        label: "Resmi arac GPS'i",
+        source: vehicleGpsSource,
+        label: backendGpsLabel,
+        sourceLabel: backendGpsLabel,
         freshness: "OFFLINE",
         ageSec: null,
         at: null,
@@ -208,8 +213,8 @@ function buildDriverRoutePayload(shift) {
       : null,
     last,
     liveLocation: {
-      officialSource: "BACKEND_VEHICLE_GPS",
-      sourcePriority: ["BACKEND_VEHICLE_GPS", "LOCAL_DEVICE_PREVIEW", "CACHED_BACKEND_VEHICLE_GPS"],
+      officialSource: vehicleGpsSource,
+      sourcePriority: ["BACKEND_VEHICLE_GPS", "DRIVER_PHONE", "LOCAL_DEVICE_PREVIEW", "CACHED_BACKEND_VEHICLE_GPS"],
       backendVehicleGps: backendGpsMeta,
     },
     progress: {
@@ -359,7 +364,7 @@ export function driverRouter(io) {
     const shift = await prisma.shift.findFirst({
       where: { driverId: driver.id, status: { in: ["APPROVED", "ACTIVE"] } },
       include: {
-        vehicle: { include: { gpsLast: true } },
+        vehicle: { include: { gpsLast: true, gpsState: true } },
         company: {
           select: {
             id: true,
@@ -403,7 +408,7 @@ export function driverRouter(io) {
     const shift = await prisma.shift.findUnique({
       where: { id: shiftId },
       include: {
-        vehicle: { include: { gpsLast: true } },
+        vehicle: { include: { gpsLast: true, gpsState: true } },
         company: {
           select: {
             id: true,
@@ -579,7 +584,7 @@ export function driverRouter(io) {
     // reload stops for accurate nextStop/completion
     const fresh = await prisma.shift.findUnique({
       where: { id: shiftId },
-      include: { stops: { orderBy: { order: "asc" } }, vehicle: { include: { gpsLast: true } }, progress: true },
+      include: { stops: { orderBy: { order: "asc" } }, vehicle: { include: { gpsLast: true, gpsState: true } }, progress: true },
     });
 
     const nextStop = firstPendingStop(fresh?.stops ?? []);

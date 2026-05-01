@@ -52,6 +52,7 @@
     "m96c2check": "node scripts/m96_c2_boarding_change_ops_check.js",
     "m94echeck": "node scripts/m94e_queue_chaos_alarm_check.js",
     "m94eprobe": "node scripts/m94e_queue_chaos_alarm_probe.js",
+    "m95e20check": "node scripts/m95_e20_driver_phone_gps_fallback_check.js",
     "m97acheck": "node scripts/m97_a_room_operation_panel_check.js",
     "m97check": "node scripts/m97_panel_integration_check.js",
     "m97opscheck": "node scripts/m97_panel_operations_check.js",

@@ -3,6 +3,8 @@ import { prisma } from "../prisma.js";
 import { ENV } from "../env.js";
 import { haversineKm } from "../geo.js";
 import { gpsStatusFromAt } from "../gps/status.js";
+import { gateVehicleGpsState } from "../gps/gpsStateGate.js";
+import { gpsSourceLabelFromKey } from "../gps/sourceLabel.js";
 import { isProductionLike } from "../auth/securityPolicy.js";
 import { getRedis } from "../redis/index.js";
 import { hashTelematicsToken } from "./hash.js";
@@ -291,6 +293,7 @@ export async function ingestTelematicsPosition(io, device, normalized) {
     status: uiStatus,
     ageSec,
     source: normalized.source || "DEVICE",
+    sourceLabel: gpsSourceLabelFromKey(normalized.source || "DEVICE"),
     telematics: {
       deviceId: device.id,
       provider: normalized.provider || null,
@@ -299,6 +302,16 @@ export async function ingestTelematicsPosition(io, device, normalized) {
       deduped,
     },
   };
+
+  try {
+    await gateVehicleGpsState({
+      prisma,
+      vehicleId,
+      newUiStatus: uiStatus,
+      newSource: normalized.source || "DEVICE",
+      now: at,
+    });
+  } catch {}
 
   io.to(`vehicle:${vehicleId}`).emit("gps:update", payload);
   io.to(`vehicle:${vehicleId}`).emit("telematics:update", payload);

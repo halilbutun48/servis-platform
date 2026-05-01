@@ -27,9 +27,11 @@ function transitionOf(prev, next) {
  * @param {import("@prisma/client").PrismaClient} args.prisma
  * @param {number} args.vehicleId
  * @param {"LIVE"|"STALE"|"OFFLINE"} args.newUiStatus
+ * @param {string|null|undefined} [args.newSource]
  * @param {Date} args.now
  */
-export async function gateVehicleGpsState({ prisma, vehicleId, newUiStatus, now }) {
+export async function gateVehicleGpsState({ prisma, vehicleId, newUiStatus, newSource = null, now }) {
+  const nextSource = String(newSource || '').trim().toUpperCase() || null;
   const cur = await prisma.vehicleGpsState.findUnique({ where: { vehicleId } });
 
   // İlk kayıt: notif yok (başlangıç spam’ini keser)
@@ -40,6 +42,7 @@ export async function gateVehicleGpsState({ prisma, vehicleId, newUiStatus, now 
         lastUiStatus: newUiStatus,
         lastChangedAt: now,
         seenLiveAt: newUiStatus === UI.LIVE ? now : null,
+        lastSource: nextSource,
       },
     });
 
@@ -53,7 +56,7 @@ export async function gateVehicleGpsState({ prisma, vehicleId, newUiStatus, now 
   }
 
   // Aynı state: notif yok
-  if (cur.lastUiStatus === newUiStatus) {
+  if (cur.lastUiStatus === newUiStatus && (!nextSource || String(cur.lastSource || '').trim().toUpperCase() === nextSource)) {
     return {
       changed: false,
       shouldNotify: false,
@@ -73,6 +76,7 @@ export async function gateVehicleGpsState({ prisma, vehicleId, newUiStatus, now 
       lastUiStatus: newUiStatus,
       lastChangedAt: now,
       ...(newUiStatus === UI.LIVE && !cur.seenLiveAt ? { seenLiveAt: now } : {}),
+      ...(nextSource ? { lastSource: nextSource } : {}),
     },
   });
 

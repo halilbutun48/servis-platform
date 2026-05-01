@@ -1,6 +1,6 @@
 import { ScrollView, Text, View } from 'react-native';
 import { Card, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, TopTabs, fmt, isStale, styles } from './mobileUi';
-import { driverGpsPrimaryActionLabel, driverGpsStatusLabel, humanizeDriverUiText } from './driverUiText';
+import { driverGpsBackgroundReasonText, driverGpsPrimaryActionLabel, driverGpsStatusLabel, humanizeDriverUiText } from './driverUiText';
 
 export default function LiveScreen({
   today,
@@ -25,18 +25,32 @@ export default function LiveScreen({
   releaseInfo,
 }) {
   const nextStop = route?.nextStop || null;
+  const hasActiveShift = Boolean(gps?.shiftId || selectedShiftId || route?.shift?.id || today?.active?.id);
   const gpsNeedsPermission = gps?.permissionStatus !== 'granted' || gps?.backgroundPermissionStatus !== 'granted';
   const gpsCanOpenSettings = Boolean(gps?.canOpenSettings);
+  const backgroundTaskAvailable = Boolean(gps?.backgroundTaskAvailable);
   const backgroundTaskRunning = String(gps?.backgroundTaskState || '').toLowerCase() === 'running';
   const kvkkBlocking = Boolean(kvkk?.blocking);
   const stale = isStale(lastSyncAt);
   const gpsActionTitle = driverGpsPrimaryActionLabel({
     gpsNeedsPermission,
     backgroundTaskRunning,
+    hasActiveShift,
+    backgroundTaskAvailable,
+  });
+  const gpsPrimaryAction = backgroundTaskRunning ? onPublishGpsNow : onRequestGpsPermission;
+  const gpsPrimaryDisabled = kvkkBlocking || !hasActiveShift || !backgroundTaskAvailable;
+  const gpsBackgroundReasonText = driverGpsBackgroundReasonText(gps?.lastBackgroundReason, {
+    hasActiveShift,
+    backgroundTaskAvailable,
+    gpsNeedsPermission,
+    backgroundPermissionGranted: gps?.backgroundPermissionStatus === 'granted',
+    backgroundTaskRunning,
   });
   const gpsStatusText = driverGpsStatusLabel({
     gpsNeedsPermission,
     backgroundPermissionGranted: gps?.backgroundPermissionStatus === 'granted',
+    backgroundTaskAvailable,
     backgroundTaskRunning,
     publishState: gps?.publishState || '',
   });
@@ -110,7 +124,7 @@ export default function LiveScreen({
       <Card>
         <SectionTitle title="Sürücünün telefon GPS'i" />
         <View style={styles.rowGap}>
-          <Pill label={`Görev desteği: ${gps?.backgroundTaskAvailable ? 'Hazır' : 'Yok'}`} tone={gps?.backgroundTaskAvailable ? 'ok' : 'warn'} />
+          <Pill label={`Görev desteği: ${backgroundTaskAvailable ? 'Hazır' : 'Yok'}`} tone={backgroundTaskAvailable ? 'ok' : 'warn'} />
           <Pill label={gpsStatusText} tone={gpsNeedsPermission || kvkkBlocking || !backgroundTaskRunning ? 'warn' : 'ok'} />
           <Pill label={`İzin: ${gps?.permissionStatus === 'granted' ? 'Verildi' : 'Bekleniyor'}`} tone={gps?.permissionStatus === 'granted' ? 'ok' : 'warn'} />
           <Pill label={`Arka plan: ${gps?.backgroundPermissionStatus === 'granted' ? 'Verildi' : 'Gerekli'}`} tone={gps?.backgroundPermissionStatus === 'granted' ? 'ok' : 'warn'} />
@@ -122,7 +136,12 @@ export default function LiveScreen({
         <Info label="Arka plan izni" value={gps?.backgroundPermissionText || 'Arka plan izni gerekli'} />
         <Info label="Arka plan servis" value={gps?.backgroundTaskText || 'GPS gönderimi kapalı'} />
         <Info label="Uygulama durumu" value={humanizeDriverUiText(gps?.appState || '-', 'Bilinmiyor')} />
-        <Info label="Son arka plan nedeni" value={gps?.lastBackgroundReason || '-'} />
+        <Info label="Son arka plan nedeni" value={gpsBackgroundReasonText || '-'} />
+        <Text style={styles.muted}>
+          {hasActiveShift
+            ? "Sürücünün telefon GPS'i hazır."
+            : 'Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.'}
+        </Text>
         <Info label="Son arka plan kontrol" value={fmt(gps?.lastBackgroundSyncAt)} />
         <Info label="Gönderim durumu" value={gps?.publishText || '-'} />
         {/* legacy check token: Konum kaynak onceligi */}
@@ -145,7 +164,7 @@ export default function LiveScreen({
         <Info label="GPS sonraki deneme" value={fmt(gps?.nextRetryAt)} />
         <Text style={styles.muted}>Ekran kapalı kalsa da arka plan görev desteği varsa sürücünün telefon GPS'i konumu yayınlamayı sürdürür; zayıf ağda kontrollü yeniden deneme devreye girer.</Text>
         <View style={styles.actionsRow}>
-          <PrimaryButton title={gpsActionTitle} onPress={gpsNeedsPermission ? onRequestGpsPermission : onPublishGpsNow} disabled={kvkkBlocking} />
+          <PrimaryButton title={gpsActionTitle} onPress={gpsPrimaryAction} disabled={gpsPrimaryDisabled} />
           <SecondaryButton title="Durumu tazele" onPress={onRefreshGpsStatus} />
           {gpsCanOpenSettings ? <SecondaryButton title="Ayarlara git" onPress={onOpenGpsSettings} /> : null}
         </View>
