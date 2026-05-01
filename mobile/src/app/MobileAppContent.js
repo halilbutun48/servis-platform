@@ -25,6 +25,7 @@ export default function MobileAppContent({
   styles: shellStyles = appStyles,
   releaseInfo,
   apiBaseUrl = '',
+  onDriverShellReady,
   onLogin,
   onPinChange,
   onLogout,
@@ -64,8 +65,13 @@ export default function MobileAppContent({
 }) {
   const hasSession = Boolean(state?.session?.token);
   const loading = Boolean(state?.loading && !state?.me);
-  const postLoginLoading = Boolean(hasSession && (state?.loading || state?.syncing || !state?.me));
   const role = String(state?.me?.role || '').trim().toUpperCase();
+  const driverUiReady = Boolean(state?.driverUiReady);
+  const postLoginLoading = Boolean(
+    hasSession &&
+    !state?.me?.requirePinChange &&
+    (state?.loading || state?.syncing || !state?.me || (role === 'DRIVER' && !driverUiReady))
+  );
 
   if (postLoginLoading) {
     return (
@@ -80,6 +86,7 @@ export default function MobileAppContent({
         loading={Boolean(state?.loading)}
         syncing={Boolean(state?.syncing)}
         releaseInfo={releaseInfo}
+        onReady={onDriverShellReady}
         onRefresh={onRefresh}
         onLogout={onLogout}
       />
@@ -196,10 +203,10 @@ export default function MobileAppContent({
   }
 
   return (
-      <TodayScreen
-        me={state?.me || null}
-        today={state?.today || null}
-        route={state?.route || null}
+    <TodayScreen
+      me={state?.me || null}
+      today={state?.today || null}
+      route={state?.route || null}
       error={state?.error || ''}
       health={state?.health || null}
       deviceId={state?.deviceId || ''}
@@ -209,33 +216,33 @@ export default function MobileAppContent({
       syncing={Boolean(state?.syncing)}
       usingCachedData={Boolean(state?.usingCachedData)}
       releaseInfo={releaseInfo}
-        net={state?.net || null}
-        gps={state?.gps || null}
-        kvkk={state?.kvkk || null}
-        driverAvailability={driverAvailability || state?.driverAvailability || null}
-        voiceEnabled={Boolean(state?.voiceEnabled)}
-        driverAwareness={state?.driverAwareness || null}
-        notifications={state?.notifications || null}
-        selectedShiftId={state?.selectedShiftId || null}
-        routeOpsBusy={routeOpsBusy}
-        routeOpsText={routeOpsText}
-        onRefresh={onRefresh}
-        onLogout={onLogout}
-        onOpenRoute={onOpenRoute}
-        onOpenLive={onOpenLive}
-        onSelectShift={onSelectShift}
-        onStartShift={onStartShift}
-        onCompleteShift={onCompleteShift}
-        onMarkReached={onMarkReached}
-        onSpeakNextStop={onSpeakNextStop}
-        onSpeakEta={onSpeakEta}
-        onSpeakDriverAwareness={onSpeakDriverAwareness}
-        onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
-        onMarkNotificationsSeen={onMarkNotificationsSeen}
-        onOpenSettings={onOpenGpsSettings}
-        onPublishGpsNow={onPublishGpsNow}
-        onSetDriverAvailability={onSetDriverAvailability}
-      />
+      net={state?.net || null}
+      gps={state?.gps || null}
+      kvkk={state?.kvkk || null}
+      driverAvailability={driverAvailability || state?.driverAvailability || null}
+      voiceEnabled={Boolean(state?.voiceEnabled)}
+      driverAwareness={state?.driverAwareness || null}
+      notifications={state?.notifications || null}
+      selectedShiftId={state?.selectedShiftId || null}
+      routeOpsBusy={routeOpsBusy}
+      routeOpsText={routeOpsText}
+      onRefresh={onRefresh}
+      onLogout={onLogout}
+      onOpenRoute={onOpenRoute}
+      onOpenLive={onOpenLive}
+      onSelectShift={onSelectShift}
+      onStartShift={onStartShift}
+      onCompleteShift={onCompleteShift}
+      onMarkReached={onMarkReached}
+      onSpeakNextStop={onSpeakNextStop}
+      onSpeakEta={onSpeakEta}
+      onSpeakDriverAwareness={onSpeakDriverAwareness}
+      onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
+      onMarkNotificationsSeen={onMarkNotificationsSeen}
+      onOpenSettings={onOpenGpsSettings}
+      onPublishGpsNow={onPublishGpsNow}
+      onSetDriverAvailability={onSetDriverAvailability}
+    />
   );
 }
 

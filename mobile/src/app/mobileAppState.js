@@ -95,6 +95,7 @@ export const initialState = {
   lastSyncAt: '',
   session: null,
   deviceId: '',
+  driverUiReady: false,
   voiceEnabled: false,
   selectedShiftId: null,
   selectedChildId: null,

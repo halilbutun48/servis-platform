@@ -110,6 +110,9 @@ export default function App() {
     gpsRetryCountRef.current = 0;
     gpsNextRetryAtRef.current = 0;
   }
+  function handleDriverShellReady() {
+    setState((prev) => (prev.driverUiReady ? prev : { ...prev, driverUiReady: true }));
+  }
   async function applySessionFailure(error) {
     await applySessionFailureFlow({
       error,
@@ -845,6 +848,7 @@ export default function App() {
       styles={styles}
       apiBaseUrl={getApiBaseUrl()}
       releaseInfo={RELEASE_INFO}
+      onDriverShellReady={handleDriverShellReady}
       onLogin={mobileHandlers.handleLogin}
       onPinChange={mobileHandlers.handlePinChange}
       onLogout={mobileHandlers.handleLogout}

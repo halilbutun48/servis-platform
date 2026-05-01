@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { clearPendingSessionEvent, getLastMobileSnapshot, getPendingSessionEvent, getSelectedChildId, getSelectedShiftId, getSession, getVoiceGuidanceEnabled } from '../lib/storage';
 import { ensureDeviceId } from '../lib/api';
-import { applyGpsRuntimeSnapshot, buildCompletionCueKey, buildDriverChangeCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, decorateGpsState, hydrateStateFromSnapshot, isNetworkError, readGpsRuntimeSnapshot } from './mobileAppState';
 import { stopDriverBackgroundLocation, syncDriverBackgroundLocation } from '../lib/backgroundGps';
 import { GPS_PUBLISH_INTERVAL_MS } from '../lib/gps';
 import { getLatestDriverAwarenessNotification, markDriverAwarenessAnnounced } from './driverAwarenessState';
-import { speakDriverChangeAlert, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome } from '../lib/voice';
+import { applyGpsRuntimeSnapshot, decorateGpsState, hydrateStateFromSnapshot, isNetworkError, readGpsRuntimeSnapshot } from './mobileAppState';
+import { buildCompletionCueKey, buildDriverChangeCueKey, buildVoiceCueKey, buildVoiceWelcomeKey, speakDriverChangeAlert, speakNextStop, speakReachedStopAndNext, speakRouteCompleted, speakShiftWelcome } from '../lib/voice';
 import { useDriverRealtimeResync } from './useDriverRealtimeResync';
 
 export function useMobileAppLifecycle({

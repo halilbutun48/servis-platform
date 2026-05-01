@@ -44,13 +44,16 @@ must(/SNAPSHOT_MAX_BYTES/.test(state) || /serialized\.length <= 1800/.test(state
 must(/items: compactArray\(snapshot\.notifications\.items, compactNotificationItem, 1\)/.test(state), 'notifications snapshot is compacted');
 must(/items: compactArray\(snapshot\.driverAwareness\.items, compactDriverAwarenessItem, 1\)/.test(state), 'driver awareness snapshot is compacted');
 must(/items: compactArray\(snapshot\.boardingChange\.items, compactBoardingChangeItem, 1\)/.test(state), 'boarding change snapshot is compacted');
+must(/driverUiReady:\s*false/.test(state), 'initial driver UI ready state exists');
 must(/DriverShellLoadingScreen/.test(content), 'MobileAppContent keeps the driver shell fallback import');
-must(/postLoginLoading = Boolean\(hasSession && \(state\?\.loading \|\| state\?\.syncing \|\| !state\?\.me\)\)/.test(content), 'MobileAppContent keeps post-login fallback gate');
+must(/postLoginLoading = Boolean\(\s*hasSession &&\s*!state\?\.me\?\.requirePinChange &&\s*\(state\?\.loading \|\| state\?\.syncing \|\| !state\?\.me \|\| \(role === 'DRIVER' && !driverUiReady\)\)\s*\)/.test(content), 'MobileAppContent keeps post-login fallback gate');
 must(/if \(postLoginLoading\)/.test(content), 'MobileAppContent renders the driver shell before driver content');
-must(/<DriverShellLoadingScreen/.test(content), 'MobileAppContent can draw a visible driver shell');
+must(/<DriverShellLoadingScreen[\s\S]*onReady=\{onDriverShellReady\}/.test(content), 'MobileAppContent can hand off driver shell readiness');
+must(shell.includes('onLayout={() => onReady?.()}'), 'DriverShellLoadingScreen marks first paint readiness');
 must(/EmptyState/.test(today) && /EmptyState/.test(route), 'TodayScreen and RouteScreen still keep safe empty states');
 must(/Platform\.OS === 'ios' \? <StatusBar barStyle="dark-content" \/> : null/.test(app), 'App.js keeps the iOS-only StatusBar guard');
 must(/SafeAreaView style=\{styles\.safe\}/.test(app), 'App.js keeps the safe root shell');
+must(/onDriverShellReady=\{handleDriverShellReady\}/.test(app), 'App.js wires driver shell readiness callback');
 must(/withLocalEmulatorNetworkSecurity/.test(appConfig), 'local network security plugin remains in app config');
 must(/usesCleartextTraffic:\s*isLocalEmulator/.test(appConfig), 'local cleartext remains stage-gated');
 must(/Local emulator APK \/ 10\.0\.2\.2/.test(release), 'release keeps local emulator root host');

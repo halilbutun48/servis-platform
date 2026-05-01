@@ -12,6 +12,7 @@ export default function DriverShellLoadingScreen({
   loading = true,
   syncing = false,
   releaseInfo = null,
+  onReady,
   onRefresh,
   onLogout,
 }) {
@@ -22,7 +23,7 @@ export default function DriverShellLoadingScreen({
   const loadingText = syncing ? 'Görev bilgileri eşitleniyor.' : 'İlk sürücü görünümü hazırlanıyor.';
 
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} onLayout={() => onReady?.()} collapsable={false}>
       <View style={localStyles.shell}>
         <Card>
           <SectionTitle title={title} subtitle={subtitle} />

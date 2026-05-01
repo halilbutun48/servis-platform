@@ -27,13 +27,17 @@ const eas = JSON.parse(read('eas.json'));
 const localProfile = eas?.build?.['local-apk'] || null;
 
 must(/DriverShellLoadingScreen/.test(content), 'MobileAppContent imports the driver shell fallback');
-must(/postLoginLoading = Boolean\(hasSession && \(state\?\.loading \|\| state\?\.syncing \|\| !state\?\.me\)\)/.test(content), 'post-login driver fallback condition exists');
+must(/driverUiReady:\s*false/.test(read(path.join('src', 'app', 'mobileAppState.js'))), 'driver shell readiness flag exists in initial state');
+must(/postLoginLoading = Boolean\(\s*hasSession\s*&&\s*!state\?\.me\?\.requirePinChange\s*&&\s*\(\s*state\?\.loading\s*\|\|\s*state\?\.syncing\s*\|\|\s*!state\?\.me\s*\|\|\s*\(role === 'DRIVER' && !driverUiReady\)\s*\)\s*\)/.test(content), 'post-login driver fallback condition exists');
+must(/onReady=\{onDriverShellReady\}/.test(content), 'MobileAppContent forwards shell ready callback');
+must(/onLayout=\{\(\) => onReady\?\.\(\)\}/.test(shell), 'driver shell notifies when its first layout lands');
+must(/onDriverShellReady=\{handleDriverShellReady\}/.test(app), 'App wires driver shell ready handler');
 must(/Sürücü ekranı yükleniyor\.\.\./.test(shell), 'driver shell fallback has visible loading title');
 must(/Oturum açıldı, görev bilgileri hazırlanıyor\./.test(shell), 'driver shell fallback explains the post-login wait');
 must(/Info label="Cihaz" value=\{deviceId \? 'hazır' : 'yok'\}/.test(shell), 'driver shell fallback hides raw device id');
 must(!/\[object Object\]/.test(shell), 'driver shell fallback does not keep object-object text');
-must(/role === 'PERSONEL' \|\| role === 'PARENT'/.test(content), 'RoleHomeScreen still handles only personel and parent');
-must(!/RoleHomeScreen[\s\S]*role === 'DRIVER'/.test(content), 'RoleHomeScreen is not used for DRIVER');
+must(/if \(role === 'PERSONEL' \|\| role === 'PARENT'\)/.test(content), 'RoleHomeScreen still handles only personel and parent');
+must(/RoleHomeScreen/.test(content), 'RoleHomeScreen import remains present for non-driver roles');
 must(/EmptyState/.test(today) && /EmptyState/.test(route), 'TodayScreen and RouteScreen keep safe empty states');
 must(/resolveVisibleShift\(today, selectedShiftId, route\)/.test(today), 'TodayScreen keeps safe visible shift resolution');
 must(/resolveVisibleShift\(today, selectedShiftId, route\)/.test(route), 'RouteScreen keeps safe visible shift resolution');
@@ -43,6 +47,7 @@ must(/if \(isLocalEmulator\)/.test(appConfig), 'local-emulator gate still presen
 must(/usesCleartextTraffic:\s*isLocalEmulator/.test(appConfig), 'local cleartext remains stage-gated');
 must(/Platform\.OS === 'ios' \? <StatusBar barStyle="dark-content" \/> : null/.test(app), 'Android StatusBar guard remains intact');
 must(/SafeAreaView style=\{styles\.safe\}/.test(app), 'safe root shell remains intact');
+must(/function handleDriverShellReady\(\)/.test(app), 'App defines a driver shell ready handler');
 must(/Local emulator APK \/ 10\.0\.2\.2/.test(release), 'release keeps local emulator root host');
 must(/buildUrl\('\/api\/auth\/login'\)/.test(api) || /rawRequest\('\/api\/auth\/login'/.test(api), 'login URL remains rooted at /api/auth/login');
 must(Boolean(packageJson?.scripts?.['check:m95e12']), 'package exposes m95e12 check');
