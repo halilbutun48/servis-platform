@@ -28,7 +28,8 @@ const localProfile = eas?.build?.['local-apk'] || null;
 
 must(/DriverShellLoadingScreen/.test(content), 'MobileAppContent imports the driver shell fallback');
 must(/driverUiReady:\s*false/.test(read(path.join('src', 'app', 'mobileAppState.js'))), 'driver shell readiness flag exists in initial state');
-must(/postLoginLoading = Boolean\(\s*hasSession\s*&&\s*!state\?\.me\?\.requirePinChange\s*&&\s*\(\s*state\?\.loading\s*\|\|\s*state\?\.syncing\s*\|\|\s*!state\?\.me\s*\|\|\s*\(role === 'DRIVER' && !driverUiReady\)\s*\)\s*\)/.test(content), 'post-login driver fallback condition exists');
+must(/postLoginLoading = Boolean\(\s*hasSession\s*&&\s*!state\?\.me\?\.requirePinChange\s*&&\s*state\?\.loading\s*\)/.test(content), 'post-login driver fallback condition exists');
+must(!/driverUiReady/.test(content), 'MobileAppContent no longer gates driver shell on driverUiReady');
 must(/onReady=\{onDriverShellReady\}/.test(content), 'MobileAppContent forwards shell ready callback');
 must(/onLayout=\{\(\) => onReady\?\.\(\)\}/.test(shell), 'driver shell notifies when its first layout lands');
 must(/onDriverShellReady=\{handleDriverShellReady\}/.test(app), 'App wires driver shell ready handler');

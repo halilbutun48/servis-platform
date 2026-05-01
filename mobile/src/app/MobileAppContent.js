@@ -62,15 +62,14 @@ export default function MobileAppContent({
   onReportNoShow,
   onRequestBoardingChange,
   onSetDriverAvailability,
-}) {
+  }) {
   const hasSession = Boolean(state?.session?.token);
   const loading = Boolean(state?.loading && !state?.me);
   const role = String(state?.me?.role || '').trim().toUpperCase();
-  const driverUiReady = Boolean(state?.driverUiReady);
   const postLoginLoading = Boolean(
     hasSession &&
     !state?.me?.requirePinChange &&
-    (state?.loading || state?.syncing || !state?.me || (role === 'DRIVER' && !driverUiReady))
+    state?.loading
   );
 
   if (postLoginLoading) {

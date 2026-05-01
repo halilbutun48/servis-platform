@@ -46,7 +46,8 @@ must(/items: compactArray\(snapshot\.driverAwareness\.items, compactDriverAwaren
 must(/items: compactArray\(snapshot\.boardingChange\.items, compactBoardingChangeItem, 1\)/.test(state), 'boarding change snapshot is compacted');
 must(/driverUiReady:\s*false/.test(state), 'initial driver UI ready state exists');
 must(/DriverShellLoadingScreen/.test(content), 'MobileAppContent keeps the driver shell fallback import');
-must(/postLoginLoading = Boolean\(\s*hasSession &&\s*!state\?\.me\?\.requirePinChange &&\s*\(state\?\.loading \|\| state\?\.syncing \|\| !state\?\.me \|\| \(role === 'DRIVER' && !driverUiReady\)\)\s*\)/.test(content), 'MobileAppContent keeps post-login fallback gate');
+must(/postLoginLoading = Boolean\(\s*hasSession &&\s*!state\?\.me\?\.requirePinChange &&\s*state\?\.loading\s*\)/.test(content), 'MobileAppContent keeps post-login fallback gate');
+must(!/driverUiReady/.test(content), 'MobileAppContent no longer gates driver shell on driverUiReady');
 must(/if \(postLoginLoading\)/.test(content), 'MobileAppContent renders the driver shell before driver content');
 must(/<DriverShellLoadingScreen[\s\S]*onReady=\{onDriverShellReady\}/.test(content), 'MobileAppContent can hand off driver shell readiness');
 must(shell.includes('onLayout={() => onReady?.()}'), 'DriverShellLoadingScreen marks first paint readiness');
