@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 function normalizePinError(error, fallback = 'PIN değiştirilemedi.') {
   const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
@@ -18,15 +18,18 @@ export default function PinChangeScreen({ onSubmit, onLogout, initialError = '' 
   const [newPin2, setNewPin2] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(initialError);
+  const submitLockRef = useRef(false);
 
   useEffect(() => {
     setError(initialError || '');
   }, [initialError]);
 
   async function handleSubmit() {
-    setError('');
+    if (busy || submitLockRef.current) return;
     if (!/^\d{4,8}$/.test(newPin)) return setError('Yeni PIN 4-8 haneli rakam olmalı.');
     if (newPin !== newPin2) return setError('Yeni PIN tekrarı aynı olmalı.');
+    submitLockRef.current = true;
+    setError('');
     setBusy(true);
     try {
       await onSubmit({ currentPin, newPin });
@@ -34,47 +37,60 @@ export default function PinChangeScreen({ onSubmit, onLogout, initialError = '' 
       setError(normalizePinError(err));
     } finally {
       setBusy(false);
+      submitLockRef.current = false;
     }
   }
 
   async function handleLogout() {
     if (!onLogout) return;
+    if (busy || submitLockRef.current) return;
+    submitLockRef.current = true;
     setBusy(true);
     try {
       await onLogout();
     } finally {
       setBusy(false);
+      submitLockRef.current = false;
     }
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.wrap}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Yeni PIN belirle</Text>
-        <Text style={styles.subtitle}>İlk girişte geçici PIN yerine size ait yeni bir PIN belirlemelisiniz.</Text>
+    <KeyboardAvoidingView style={styles.shell} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.wrap}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        <View style={styles.card}>
+          <Text style={styles.title}>Yeni PIN belirle</Text>
+          <Text style={styles.subtitle}>İlk girişte geçici PIN yerine size ait yeni bir PIN belirlemelisiniz.</Text>
 
-        <Field label="Geçici PIN" value={currentPin} onChangeText={setCurrentPin} />
-        <Field label="Yeni PIN" value={newPin} onChangeText={setNewPin} />
-        <Field label="Yeni PIN tekrar" value={newPin2} onChangeText={setNewPin2} />
+          <Field label="Geçici PIN" value={currentPin} onChangeText={setCurrentPin} />
+          <Field label="Yeni PIN" value={newPin} onChangeText={setNewPin} />
+          <Field label="Yeni PIN tekrar" value={newPin2} onChangeText={setNewPin2} />
 
-        <Pressable style={[styles.button, busy && styles.buttonDisabled]} onPress={handleSubmit} disabled={busy}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>PIN'i kaydet</Text>}
-        </Pressable>
-
-        {!!error && <Text style={styles.error}>{error}</Text>}
-
-        <View style={styles.helpBox}>
-          <Text style={styles.helpTitle}>Sorun olursa</Text>
-          <Text style={styles.helpText}>Mevcut PIN hatalıysa önce doğru geçici PIN ile tekrar deneyin. Cihaz eşleşme veya oturum sorunu varsa güvenli çıkış yapıp yeniden giriş açın.</Text>
-        </View>
-
-        {!!onLogout && (
-          <Pressable style={[styles.secondaryButton, busy && styles.buttonDisabled]} onPress={handleLogout} disabled={busy}>
-            <Text style={styles.secondaryButtonText}>Güvenli çıkış yap</Text>
+          <Pressable style={[styles.button, busy && styles.buttonDisabled]} onPress={handleSubmit} disabled={busy || submitLockRef.current}>
+            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>PIN'i kaydet</Text>}
           </Pressable>
-        )}
-      </View>
-    </ScrollView>
+
+          <View style={styles.errorShell}>
+            {!!error ? <Text style={styles.error}>{error}</Text> : <Text style={styles.errorPlaceholder}> </Text>}
+          </View>
+
+          <View style={styles.helpBox}>
+            <Text style={styles.helpTitle}>Sorun olursa</Text>
+            <Text style={styles.helpText}>Mevcut PIN hatalıysa önce doğru geçici PIN ile tekrar deneyin. Cihaz eşleşme veya oturum sorunu varsa güvenli çıkış yapıp yeniden giriş açın.</Text>
+          </View>
+
+          {!!onLogout && (
+            <Pressable style={[styles.secondaryButton, busy && styles.buttonDisabled]} onPress={handleLogout} disabled={busy || submitLockRef.current}>
+              <Text style={styles.secondaryButtonText}>Güvenli çıkış yap</Text>
+            </Pressable>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -88,13 +104,22 @@ function Field({ label, value, onChangeText }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
+  shell: {
+    flex: 1,
     backgroundColor: '#f8fafc',
   },
+  scroll: {
+    flex: 1,
+  },
+  wrap: {
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 24,
+  },
   card: {
+    alignSelf: 'stretch',
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
@@ -152,6 +177,14 @@ const styles = StyleSheet.create({
   },
   error: {
     color: '#b91c1c',
+    lineHeight: 20,
+  },
+  errorShell: {
+    minHeight: 28,
+    justifyContent: 'center',
+  },
+  errorPlaceholder: {
+    color: 'transparent',
     lineHeight: 20,
   },
   helpBox: {
