@@ -598,6 +598,9 @@ export default function App() {
       }
 
       if (!target.canPublish) {
+        const waitingText = target.reason === 'not-eligible'
+          ? 'Bu vardiya GPS gönderimi için hazır değil.'
+          : 'Vardiya atandı. Başlangıç saati bekleniyor; görev hazır olunca konum gönderecek.';
         setState((prev) => ({
           ...prev,
           gps: decorateGpsState({
@@ -607,7 +610,7 @@ export default function App() {
             permissionStatus: permission.status,
             permissionText,
             publishState: 'waiting',
-            publishText: 'Vardiya atandı. Başlangıç saati bekleniyor; görev hazır olunca konum gönderecek.',
+            publishText: waitingText,
             lastLocationText,
             canOpenSettings: false,
             retryCount: 0,
@@ -626,7 +629,7 @@ export default function App() {
         mayShowUserSettingsDialog: false,
       });
 
-      const payload = buildGpsPayload(current, target.vehicleId);
+      const payload = buildGpsPayload(current, target.vehicleId, 'DRIVER_PHONE', target.shiftId);
       const previousRoute = state.route;
       await publishGps(payload);
 

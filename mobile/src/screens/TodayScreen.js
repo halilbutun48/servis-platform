@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { listVisibleShifts, resolveVisibleShift } from '../lib/gps';
+import { listVisibleShifts, resolveDriverGpsShiftContext } from '../lib/gps';
 import DriverAvailabilityCard from './DriverAvailabilityCard';
 import DriverChangeAwarenessCard from './DriverChangeAwarenessCard';
 import NotificationCenterCard from './NotificationCenterCard';
@@ -49,7 +49,7 @@ export default function TodayScreen({
   onSetDriverAvailability,
 }) {
   const visibleShifts = listVisibleShifts(today);
-  const activeShift = resolveVisibleShift(today, selectedShiftId, route);
+  const activeShift = resolveDriverGpsShiftContext(today, route, selectedShiftId).activeShift;
   const nextStop = route?.nextStop || null;
   const pendingStops = Array.isArray(route?.orderedStops)
     ? route.orderedStops.filter((stop) => String(stop?.state || '').toUpperCase() === 'PENDING')

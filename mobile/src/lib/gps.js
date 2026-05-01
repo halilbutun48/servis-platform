@@ -1,5 +1,7 @@
 export const GPS_PUBLISH_INTERVAL_MS = 20000;
 
+const DRIVER_GPS_ELIGIBLE_SHIFT_STATUSES = new Set(['ACTIVE', 'IN_PROGRESS', 'STARTED', 'APPROVED']);
+
 export function listVisibleShifts(today) {
   const buckets = [today?.active, today?.assigned]
     .concat(Array.isArray(today?.today) ? today.today : [])
@@ -27,44 +29,72 @@ export function resolveVisibleShift(today, selectedShiftId, route) {
   return shifts[0] || null;
 }
 
-export function resolveGpsPublishTarget(today, route, selectedShiftId) {
-  const visibleShift = resolveVisibleShift(today, selectedShiftId, route);
-  const routeShiftId = Number(route?.shift?.id || 0) || null;
-  const routeFallbackShift = !visibleShift && routeShiftId
-    ? {
-        id: routeShiftId,
-        status: route?.shift?.status || '',
-        vehicleId: route?.shift?.vehicleId || route?.vehicle?.id || null,
-        vehicle: route?.vehicle || null,
-        startAt: route?.shift?.startAt || route?.startAt || null,
-        endAt: route?.shift?.endAt || route?.endAt || null,
-      }
-    : null;
-  const activeShift = visibleShift || routeFallbackShift;
-  const routeMatchesShift = Boolean(routeShiftId && activeShift?.id && routeShiftId === Number(activeShift.id));
-  const shiftStatus = String((routeMatchesShift ? route?.shift?.status : '') || activeShift?.status || '').toUpperCase();
-  const vehicleId = Number(
-    (routeMatchesShift ? (route?.shift?.vehicleId || route?.vehicle?.id) : 0) ||
-    activeShift?.vehicleId ||
-    activeShift?.vehicle?.id ||
+function normalizeShiftStatus(status) {
+  const raw = String(status || '').trim();
+  if (!raw) return '';
+  const key = raw.replace(/\s+/g, ' ').toUpperCase();
+  if (key === 'ONAYLI') return 'APPROVED';
+  if (key === 'ÇALIŞIYOR' || key === 'CALISIYOR') return 'ACTIVE';
+  if (key === 'BAŞLATILDI' || key === 'BASLATILDI') return 'STARTED';
+  if (key === 'İLERLİYOR' || key === 'ILERLIYOR') return 'IN_PROGRESS';
+  return key;
+}
+
+function resolveShiftVehicleId(shift, route) {
+  return Number(
+    shift?.vehicleId ||
+    shift?.vehicle?.id ||
+    route?.shift?.vehicleId ||
+    route?.vehicle?.id ||
     0
   ) || null;
-  const shiftId = Number(activeShift?.id || (routeMatchesShift ? routeShiftId : 0) || 0) || null;
-  const startMs = activeShift?.startAt ? new Date(activeShift.startAt).getTime() : NaN;
-  const endMs = activeShift?.endAt ? new Date(activeShift.endAt).getTime() : NaN;
-  const nowMs = Date.now();
-  const withinWindow = Number.isFinite(startMs) && Number.isFinite(endMs) && startMs <= nowMs && endMs >= nowMs;
-  const assignmentState = activeShift
-    ? (!vehicleId ? 'ASSIGNED_NO_VEHICLE' : (shiftStatus === 'ACTIVE' || withinWindow ? 'ACTIVE' : 'ASSIGNED'))
-    : 'NONE';
+}
+
+export function resolveDriverGpsShiftContext(today, route, selectedShiftId) {
+  const visibleShifts = listVisibleShifts(today);
+  const preferredVisibleShift = resolveVisibleShift(today, selectedShiftId, route);
+  const routeShift = route?.shift || null;
+  const todayActiveShift = today?.active || null;
+  const todayAssignedShift = today?.assigned || null;
+  const firstEligibleVisibleShift = visibleShifts.find((item) => DRIVER_GPS_ELIGIBLE_SHIFT_STATUSES.has(normalizeShiftStatus(item?.status)));
+
+  const activeShift =
+    preferredVisibleShift ||
+    routeShift ||
+    todayActiveShift ||
+    todayAssignedShift ||
+    firstEligibleVisibleShift ||
+    visibleShifts[0] ||
+    null;
+
+  const shiftId = Number(activeShift?.id || routeShift?.id || todayActiveShift?.id || todayAssignedShift?.id || 0) || null;
+  const vehicleId = resolveShiftVehicleId(activeShift, route);
+  const shiftStatus = normalizeShiftStatus(activeShift?.status || routeShift?.status || todayActiveShift?.status || todayAssignedShift?.status || '');
+  const hasEligibleStatus = DRIVER_GPS_ELIGIBLE_SHIFT_STATUSES.has(shiftStatus);
+
+  let reason = 'ready';
+  if (!activeShift) reason = 'no-shift';
+  else if (!vehicleId) reason = 'no-vehicle';
+  else if (!hasEligibleStatus) reason = 'not-eligible';
 
   return {
     activeShift,
     shiftId,
     vehicleId,
     shiftStatus,
-    assignmentState,
-    canPublish: Boolean(activeShift && vehicleId && ['APPROVED', 'ACTIVE'].includes(shiftStatus) && (shiftStatus === 'ACTIVE' || withinWindow)),
+    assignmentState: !activeShift ? 'NONE' : !vehicleId ? 'ASSIGNED_NO_VEHICLE' : reason === 'ready' ? 'ACTIVE' : 'ASSIGNED',
+    reason,
+    canPublish: reason === 'ready',
+    selectedShiftId: Number(selectedShiftId || 0) || null,
+    visibleShiftCount: visibleShifts.length,
+  };
+}
+
+export function resolveGpsPublishTarget(today, route, selectedShiftId) {
+  const context = resolveDriverGpsShiftContext(today, route, selectedShiftId);
+  return {
+    ...context,
+    routeShiftId: Number(route?.shift?.id || 0) || null,
   };
 }
 
@@ -73,14 +103,14 @@ export function formatGpsCoords(coords) {
   return `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
 }
 
-export function buildGpsPayload(position, vehicleId, source = 'DEVICE') {
+export function buildGpsPayload(position, vehicleId, source = 'DEVICE', shiftId = null) {
   const coords = position?.coords || {};
   const speed = typeof coords.speed === 'number' && Number.isFinite(coords.speed) && coords.speed >= 0
     ? Number((coords.speed * 3.6).toFixed(1))
     : undefined;
   const normalizedSource = String(source || 'DEVICE').trim().toUpperCase() || 'DEVICE';
 
-  return {
+  const payload = {
     vehicleId,
     lat: Number(coords.latitude),
     lng: Number(coords.longitude),
@@ -88,6 +118,11 @@ export function buildGpsPayload(position, vehicleId, source = 'DEVICE') {
     at: new Date(position?.timestamp || Date.now()).toISOString(),
     source: normalizedSource,
   };
+
+  const normalizedShiftId = Number(shiftId || 0) || null;
+  if (normalizedShiftId) payload.shiftId = normalizedShiftId;
+
+  return payload;
 }
 
 export function permissionTextFromStatus(permission) {

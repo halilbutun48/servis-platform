@@ -26,6 +26,8 @@ const TEXT_MAP = new Map([
   ['pending', 'Bekliyor'],
   ['completed', 'Tamamlandı'],
   ['done', 'Tamamlandı'],
+  ['in_progress', 'Çalışıyor'],
+  ['started', 'Başladı'],
   ['offline', 'Bağlantı yok'],
   ['warning', 'Dikkat'],
   ['warn', 'Dikkat'],
@@ -67,6 +69,8 @@ const TOKEN_REPLACEMENTS = [
   [/\bpending\b/gi, 'Bekliyor'],
   [/\bcompleted\b/gi, 'Tamamlandı'],
   [/\bdone\b/gi, 'Tamamlandı'],
+  [/\bin_progress\b/gi, 'Çalışıyor'],
+  [/\bstarted\b/gi, 'Başladı'],
   [/\boffline\b/gi, 'Bağlantı yok'],
   [/\bwarning\b/gi, 'Dikkat'],
   [/\bwarn\b/gi, 'Dikkat'],
@@ -116,8 +120,12 @@ export function driverGpsPrimaryActionLabel({
   backgroundTaskRunning = false,
   hasActiveShift = true,
   backgroundTaskAvailable = true,
+  hasVehicle = true,
+  canPublish = true,
 } = {}) {
   if (!hasActiveShift) return 'Aktif görev yok';
+  if (!hasVehicle) return 'Araç bilgisi yok';
+  if (!canPublish) return 'Bu vardiya GPS gönderimi için hazır değil.';
   if (!backgroundTaskAvailable) return 'Arka plan GPS desteklenmiyor';
   if (gpsNeedsPermission) return 'GPS izni ver';
   if (!backgroundTaskRunning) return "Sürücünün telefon GPS'ini başlat";
@@ -129,9 +137,13 @@ export function driverGpsStatusLabel({
   backgroundPermissionGranted = true,
   backgroundTaskAvailable = true,
   backgroundTaskRunning = false,
+  hasVehicle = true,
+  canPublish = true,
   publishState = '',
 } = {}) {
+  if (!hasVehicle) return 'Araç bilgisi yok';
   if (!backgroundTaskAvailable) return 'Arka plan GPS görevi desteklenmiyor';
+  if (!canPublish) return 'Bu vardiya GPS gönderimi için hazır değil.';
   if (gpsNeedsPermission) return 'GPS izni bekleniyor';
   if (!backgroundPermissionGranted) return 'Arka plan izni gerekli';
   if (!backgroundTaskRunning) return 'GPS gönderimi kapalı';
@@ -156,14 +168,20 @@ export function driverGpsBackgroundReasonText(
   if (!backgroundTaskAvailable || key === 'task-unavailable') {
     return 'Bu cihazda arka plan GPS görevi desteklenmiyor.';
   }
-  if (!hasActiveShift || key === 'not-eligible') {
+  if (!hasActiveShift || key === 'no-shift') {
     return 'Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.';
+  }
+  if (key === 'no-vehicle') {
+    return 'Bu görev için araç bilgisi bulunamadı.';
   }
   if (gpsNeedsPermission || key === 'foreground-permission') {
     return 'GPS izni gerekli.';
   }
   if (!backgroundPermissionGranted || key === 'background-permission') {
     return 'Arka plan izni gerekli.';
+  }
+  if (key === 'not-eligible' || key === 'waiting') {
+    return 'Bu vardiya GPS gönderimi için hazır değil.';
   }
   if (backgroundTaskRunning || ['armed-active', 'running', 'started', 'published'].includes(key)) {
     return "Sürücünün telefon GPS'i hazır.";

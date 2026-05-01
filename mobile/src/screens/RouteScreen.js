@@ -1,5 +1,5 @@
 import { ScrollView, Text, View } from 'react-native';
-import { listVisibleShifts, resolveVisibleShift } from '../lib/gps';
+import { listVisibleShifts, resolveDriverGpsShiftContext } from '../lib/gps';
 import { openFullRouteNavigation, openNextStopNavigation } from '../lib/navigation';
 import DriverAvailabilityCard from './DriverAvailabilityCard';
 import DriverTaskSummaryCard from './DriverTaskSummaryCard';
@@ -46,7 +46,7 @@ export default function RouteScreen({
   onSetDriverAvailability,
 }) {
   const visibleShifts = listVisibleShifts(today);
-  const activeShift = route?.shift || resolveVisibleShift(today, selectedShiftId, route);
+  const activeShift = resolveDriverGpsShiftContext(today, route, selectedShiftId).activeShift || route?.shift || null;
   const nextStop = route?.nextStop || null;
   const pendingStops = Array.isArray(route?.orderedStops)
     ? route.orderedStops.filter((stop) => String(stop?.state || '').toUpperCase() === 'PENDING')

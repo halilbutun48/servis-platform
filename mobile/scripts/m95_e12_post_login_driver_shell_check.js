@@ -40,8 +40,8 @@ must(!/\[object Object\]/.test(shell), 'driver shell fallback does not keep obje
 must(/if \(role === 'PERSONEL' \|\| role === 'PARENT'\)/.test(content), 'RoleHomeScreen still handles only personel and parent');
 must(/RoleHomeScreen/.test(content), 'RoleHomeScreen import remains present for non-driver roles');
 must(/EmptyState/.test(today) && /EmptyState/.test(route), 'TodayScreen and RouteScreen keep safe empty states');
-must(/resolveVisibleShift\(today, selectedShiftId, route\)/.test(today), 'TodayScreen keeps safe visible shift resolution');
-must(/resolveVisibleShift\(today, selectedShiftId, route\)/.test(route), 'RouteScreen keeps safe visible shift resolution');
+must(/resolveDriverGpsShiftContext/.test(today), 'TodayScreen keeps safe visible shift resolution');
+must(/resolveDriverGpsShiftContext/.test(route), 'RouteScreen keeps safe visible shift resolution');
 must(/buildUrl\('\/api\/auth\/login'\)/.test(api) && /rawRequest\('\/api\/auth\/login'/.test(api), 'login URL still targets /api/auth/login');
 must(/withLocalEmulatorNetworkSecurity/.test(appConfig), 'local network security plugin still present');
 must(/if \(isLocalEmulator\)/.test(appConfig), 'local-emulator gate still present in app config');

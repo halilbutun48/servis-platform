@@ -1,4 +1,5 @@
 import { ScrollView, Text, View } from 'react-native';
+import { resolveDriverGpsShiftContext } from '../lib/gps';
 import { Card, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, TopTabs, fmt, isStale, styles } from './mobileUi';
 import { driverGpsBackgroundReasonText, driverGpsPrimaryActionLabel, driverGpsStatusLabel, humanizeDriverUiText } from './driverUiText';
 
@@ -25,7 +26,9 @@ export default function LiveScreen({
   releaseInfo,
 }) {
   const nextStop = route?.nextStop || null;
-  const hasActiveShift = Boolean(gps?.shiftId || selectedShiftId || route?.shift?.id || today?.active?.id);
+  const gpsContext = resolveDriverGpsShiftContext(today, route, selectedShiftId);
+  const hasActiveShift = Boolean(gpsContext.activeShift);
+  const hasVehicle = Boolean(gpsContext.vehicleId);
   const gpsNeedsPermission = gps?.permissionStatus !== 'granted' || gps?.backgroundPermissionStatus !== 'granted';
   const gpsCanOpenSettings = Boolean(gps?.canOpenSettings);
   const backgroundTaskAvailable = Boolean(gps?.backgroundTaskAvailable);
@@ -37,11 +40,14 @@ export default function LiveScreen({
     backgroundTaskRunning,
     hasActiveShift,
     backgroundTaskAvailable,
+    hasVehicle,
+    canPublish: gpsContext.canPublish,
   });
   const gpsPrimaryAction = backgroundTaskRunning ? onPublishGpsNow : onRequestGpsPermission;
-  const gpsPrimaryDisabled = kvkkBlocking || !hasActiveShift || !backgroundTaskAvailable;
-  const gpsBackgroundReasonText = driverGpsBackgroundReasonText(gps?.lastBackgroundReason, {
+  const gpsPrimaryDisabled = kvkkBlocking || !backgroundTaskAvailable || !hasActiveShift || !hasVehicle || !gpsContext.canPublish;
+  const gpsBackgroundReasonText = driverGpsBackgroundReasonText(gps?.lastBackgroundReason || gpsContext.reason, {
     hasActiveShift,
+    hasVehicle,
     backgroundTaskAvailable,
     gpsNeedsPermission,
     backgroundPermissionGranted: gps?.backgroundPermissionStatus === 'granted',
@@ -52,8 +58,11 @@ export default function LiveScreen({
     backgroundPermissionGranted: gps?.backgroundPermissionStatus === 'granted',
     backgroundTaskAvailable,
     backgroundTaskRunning,
+    hasVehicle,
+    canPublish: gpsContext.canPublish,
     publishState: gps?.publishState || '',
   });
+  const showGpsDebug = String(releaseInfo?.envStage || '').trim().toLowerCase() === 'local-emulator';
   const releaseStageText = humanizeDriverUiText(releaseInfo?.envStage || '-', 'Bilinmiyor');
   const releaseStatusText = humanizeDriverUiText(releaseInfo?.acceptanceStatusText || 'READY', 'Hazır');
   const netStatusText = humanizeDriverUiText(net?.status || '-', 'Bilinmiyor');
@@ -125,7 +134,7 @@ export default function LiveScreen({
         <SectionTitle title="Sürücünün telefon GPS'i" />
         <View style={styles.rowGap}>
           <Pill label={`Görev desteği: ${backgroundTaskAvailable ? 'Hazır' : 'Yok'}`} tone={backgroundTaskAvailable ? 'ok' : 'warn'} />
-          <Pill label={gpsStatusText} tone={gpsNeedsPermission || kvkkBlocking || !backgroundTaskRunning ? 'warn' : 'ok'} />
+          <Pill label={gpsStatusText} tone={gpsNeedsPermission || kvkkBlocking || !backgroundTaskRunning || !gpsContext.canPublish ? 'warn' : 'ok'} />
           <Pill label={`İzin: ${gps?.permissionStatus === 'granted' ? 'Verildi' : 'Bekleniyor'}`} tone={gps?.permissionStatus === 'granted' ? 'ok' : 'warn'} />
           <Pill label={`Arka plan: ${gps?.backgroundPermissionStatus === 'granted' ? 'Verildi' : 'Gerekli'}`} tone={gps?.backgroundPermissionStatus === 'granted' ? 'ok' : 'warn'} />
           <Pill label={`Servis: ${backgroundTaskRunning ? 'Çalışıyor' : 'Durduruldu'}`} tone={backgroundTaskRunning ? 'ok' : 'warn'} />
@@ -137,9 +146,19 @@ export default function LiveScreen({
         <Info label="Arka plan servis" value={gps?.backgroundTaskText || 'GPS gönderimi kapalı'} />
         <Info label="Uygulama durumu" value={humanizeDriverUiText(gps?.appState || '-', 'Bilinmiyor')} />
         <Info label="Son arka plan nedeni" value={gpsBackgroundReasonText || '-'} />
+        {showGpsDebug ? (
+          <>
+            <Info label="Seçili vardiya" value={gpsContext.selectedShiftId ? `#${gpsContext.selectedShiftId}` : '-'} />
+            <Info label="GPS vardiyası" value={gpsContext.shiftId ? `#${gpsContext.shiftId} • ${humanizeDriverUiText(gpsContext.shiftStatus || '-', 'Bilinmiyor')}` : '-'} />
+            <Info label="Araç" value={gpsContext.vehicleId ? `#${gpsContext.vehicleId}` : 'Yok'} />
+            <Info label="Başlatma engeli" value={humanizeDriverUiText(gpsContext.reason || '-', 'Hazır')} />
+          </>
+        ) : null}
         <Text style={styles.muted}>
           {hasActiveShift
-            ? "Sürücünün telefon GPS'i hazır."
+            ? hasVehicle
+              ? (gpsContext.canPublish ? "Sürücünün telefon GPS'i hazır." : 'Bu vardiya GPS gönderimi için hazır değil.')
+              : 'Bu görev için araç bilgisi bulunamadı.'
             : 'Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.'}
         </Text>
         <Info label="Son arka plan kontrol" value={fmt(gps?.lastBackgroundSyncAt)} />

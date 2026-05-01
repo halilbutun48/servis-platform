@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { fetchActiveRoute, fetchShiftRoute, isSessionFailureError, publishGps } from './api';
-import { buildGpsPayload, GPS_PUBLISH_INTERVAL_MS, resolveGpsPublishTarget } from './gps';
+import { buildGpsPayload, GPS_PUBLISH_INTERVAL_MS, resolveDriverGpsShiftContext, resolveGpsPublishTarget } from './gps';
 import { getLastMobileSnapshot, getSelectedShiftId, getVoiceGuidanceEnabled, savePendingSessionEvent } from './storage';
 import { speakReachedStopAndNext, speakRouteCompleted } from './voice';
 import logger from './logger';
@@ -108,7 +108,7 @@ export async function syncDriverBackgroundLocation({
   const runtime = await getDriverBackgroundRuntimeStatus();
   const isDriver = String(role || '').toUpperCase() === 'DRIVER';
   const backgroundPreferred = String(appState || 'active') !== 'active';
-  const target = resolveGpsPublishTarget(today, route, selectedShiftId);
+  const target = resolveDriverGpsShiftContext(today, route, selectedShiftId);
 
   if (!runtime.taskAvailable) {
     if (runtime.started) await stopDriverBackgroundLocation();
@@ -123,19 +123,24 @@ export async function syncDriverBackgroundLocation({
     };
   }
 
-  const eligible = Boolean(
-    sessionToken &&
-    isDriver &&
-    !requirePinChange &&
-    !kvkkBlocking &&
-    target.activeShift &&
-    target.vehicleId &&
-    target.canPublish
-  );
-
-  if (!eligible) {
+  if (!sessionToken || !isDriver || requirePinChange || kvkkBlocking) {
     if (runtime.started) await stopDriverBackgroundLocation();
     return { started: false, reason: 'not-eligible', target, runtime: { ...runtime, started: false } };
+  }
+
+  if (!target.activeShift) {
+    if (runtime.started) await stopDriverBackgroundLocation();
+    return { started: false, reason: 'no-shift', target, runtime: { ...runtime, started: false } };
+  }
+
+  if (!target.vehicleId) {
+    if (runtime.started) await stopDriverBackgroundLocation();
+    return { started: false, reason: 'no-vehicle', target, runtime: { ...runtime, started: false } };
+  }
+
+  if (!target.canPublish) {
+    if (runtime.started) await stopDriverBackgroundLocation();
+    return { started: false, reason: target.reason || 'not-eligible', target, runtime: { ...runtime, started: false } };
   }
 
   const foregroundPermission = requestPermission
@@ -237,7 +242,7 @@ if (!TaskManager.isTaskDefined(DRIVER_BG_LOCATION_TASK)) {
       const { route: previousRoute, target } = await loadBackgroundRoute(selectedShiftId);
       if (!target.activeShift || !target.vehicleId || !target.canPublish) return;
 
-      await publishGps(buildGpsPayload(latest, target.vehicleId, 'DRIVER_PHONE'));
+      await publishGps(buildGpsPayload(latest, target.vehicleId, 'DRIVER_PHONE', target.shiftId));
 
       const voiceEnabled = await getVoiceGuidanceEnabled().catch(() => false);
       if (!voiceEnabled) return;

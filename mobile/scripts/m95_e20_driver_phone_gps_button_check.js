@@ -54,7 +54,7 @@ must(live, 'Görev desteği: ${backgroundTaskAvailable ? \'Hazır\' : \'Yok\'}',
 must(gps, "sourceLabelFromKey", 'gps helper can label GPS source');
 must(gps, "source: normalizedSource", 'gps payload keeps source field');
 must(gps, "Sürücünün telefon GPS'i", 'gps helper keeps driver phone GPS wording');
-must(bg, "buildGpsPayload(latest, target.vehicleId, 'DRIVER_PHONE')", 'background GPS publishes as driver phone source');
+must(bg, "buildGpsPayload(latest, target.vehicleId, 'DRIVER_PHONE', target.shiftId)", 'background GPS publishes as driver phone source with shift context');
 must(ui, 'driverGpsBackgroundReasonText', 'driver UI text exposes GPS background reason helper');
 must(ui, 'Arka plan GPS görevi desteklenmiyor', 'driver UI text covers unavailable task');
 must(ui, 'Aktif görev yok', 'driver UI text covers no-active-shift action label');
