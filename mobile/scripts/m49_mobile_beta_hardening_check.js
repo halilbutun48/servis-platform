@@ -47,10 +47,10 @@ must('app stores last sync state', app.includes('lastSyncAt'));
 must('api exposes fetchHealth', api.includes('fetchHealth'));
 must('api exposes logoutDriver', api.includes('logoutDriver'));
 must('api exposes api base getter', api.includes('getApiBaseUrl'));
-must('today screen has premium gps helper card', normalize(today).includes(normalize('Sürüş ve GPS yardımı')));
+must('today screen has premium hero summary', normalize(today).includes(normalize('Bugünkü Vardiya')) || normalize(today).includes(normalize('Bugünün ana görevi, kısa özet ve hızlı işlemler burada.')));
+must('today screen keeps diagnostics accordion', normalize(today).includes(normalize('Gelişmiş durum')));
 must('today screen shows api address', normalize(today).includes(normalize('API adresi')));
 must('today screen shows last sync', normalize(today).includes(normalize('Son başarılı senkron')));
 must('today screen shows release package', normalize(today).includes(normalize('Yayın paketi')));
-must('today screen shows diagnostics accordion', normalize(today).includes(normalize('Gelişmiş durum')));
 
 banner('M49 MOBILE BETA HARDENING CHECK PASS');

@@ -6,7 +6,9 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const app = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
 const storage = fs.readFileSync(path.join(root, 'src/lib/storage.js'), 'utf8');
 const voice = fs.readFileSync(path.join(root, 'src/lib/voice.js'), 'utf8');
+const premium = fs.readFileSync(path.join(root, 'src/screens/driverPremiumUi.js'), 'utf8');
 const today = fs.readFileSync(path.join(root, 'src/screens/TodayScreen.js'), 'utf8');
+const route = fs.readFileSync(path.join(root, 'src/screens/RouteScreen.js'), 'utf8');
 function normalize(text) {
   return String(text || '')
     .replace(/ı/g, 'i')
@@ -53,8 +55,9 @@ must(voice.includes('expo-speech'), 'voice helper imports expo-speech');
 must(voice.includes("language: 'tr-TR'"), 'voice helper uses Turkish language');
 must(voice.includes('Sesli yardıma hoş geldiniz'), 'voice helper has welcome summary');
 must(voice.includes('Güzergâh tamamlandı'), 'voice helper has completion line');
-must(has(today, 'Sürüş ve GPS yardımı'), 'today screen has voice guidance helper card');
-must(has(today, 'Siradaki duragi oku'), 'today screen has read next stop action');
-must(has(today, 'Tahmini varış oku'), 'today screen has eta action');
-must(has(today, 'Tahmini varış'), 'today screen shows stop eta');
+must(has(route, 'RouteVoiceSupportCard'), 'route screen has voice guidance card');
+must(has(premium, 'Sesli destek'), 'premium ui keeps voice support title');
+must(has(premium, 'Sıradaki durağı oku'), 'premium ui has read next stop action');
+must(has(premium, 'Tahmini varışı oku'), 'premium ui has eta action');
+must(has(premium, 'Tahmini varış'), 'premium ui shows stop eta');
 console.log('=== M49.1 DRIVER VOICE GUIDANCE + STOP ETA CHECK PASS ===');

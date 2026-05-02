@@ -38,6 +38,11 @@ function must(cond, msg) {
   ok(msg);
 }
 
+function mustNot(text, needle, msg) {
+  if (has(text, needle)) throw new Error(`FAIL ${msg}`);
+  ok(msg);
+}
+
 console.log('=== M95-C DRIVER PHONE GPS CHECK ===');
 
 const pkg = JSON.parse(read('package.json'));
@@ -60,7 +65,7 @@ must(has(live, 'Ekran kapalı kalsa da'), 'live screen explains screen-off behav
 must(has(live, 'zayıf ağda kontrollü yeniden deneme'), 'live screen explains retry behavior');
 must(has(live, "Sürücünün telefon GPS'i"), 'live screen keeps phone gps terminology');
 must(has(today, 'Arka plan görev desteği'), 'today screen shows background task availability');
-must(has(today, 'Konumu şimdi gönder'), 'today screen keeps phone gps terminology');
+mustNot(today, 'Konumu şimdi gönder', 'today screen no longer shows the old phone gps action');
 must(has(today, 'GPS sonraki deneme'), 'today screen shows next gps retry');
 
 console.log('M95-C driver phone GPS check passed');

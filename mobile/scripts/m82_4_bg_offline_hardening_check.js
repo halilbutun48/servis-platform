@@ -22,6 +22,7 @@ function normalize(text){
     .replace(/[\u0300-\u036f]/g, '');
 }
 function must(text, needle, msg){ if(!normalize(text).includes(normalize(needle))) throw new Error(`FAIL ${msg}`); ok(msg); }
+function mustNot(text, needle, msg){ if(normalize(text).includes(normalize(needle))) throw new Error(`FAIL ${msg}`); ok(msg); }
 
 console.log('=== M82.4 BACKGROUND GPS / OFFLINE HARDENING CHECK ===');
 const pkg = read('package.json');
@@ -40,8 +41,8 @@ must(bg, 'pickSnapshotRoute', 'background gps can reuse cached snapshot route');
 must(today, 'DriverDiagnosticsCard', 'today screen keeps connectivity diagnostics card');
 must(today, 'Bağlantı durumu', 'today screen shows connectivity status');
 must(today, 'Bağlantı mesajı', 'today screen shows connectivity message');
-must(today, 'Önbellekten açıldı', 'today screen shows cached data badge');
-must(today, 'Veri eski olabilir', 'today screen shows stale data badge');
+mustNot(today, 'Önbellekten açıldı', 'today screen no longer shows cached data badge');
+mustNot(today, 'Veri eski olabilir', 'today screen no longer shows stale data badge');
 must(today, 'Sonraki deneme', 'today screen shows next retry line');
 must(live, 'GPS sonraki deneme', 'live screen shows next gps retry');
 

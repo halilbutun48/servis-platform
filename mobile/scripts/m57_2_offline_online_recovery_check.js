@@ -22,6 +22,7 @@ function normalize(text){
     .replace(/[\u0300-\u036f]/g, '');
 }
 function must(text, needle, msg){ if(!normalize(text).includes(normalize(needle))) throw new Error(`FAIL ${msg}`); ok(msg); }
+function mustNot(text, needle, msg){ if(normalize(text).includes(normalize(needle))) throw new Error(`FAIL ${msg}`); ok(msg); }
 
 console.log('=== M57.2 OFFLINE/ONLINE TOPARLAMA CHECK ===');
 const pkg = read('package.json');
@@ -41,7 +42,7 @@ must(today, 'Son offline', 'today screen shows last offline time');
 must(today, 'Son toparlanma', 'today screen shows recovery time');
 must(today, 'Yeniden deneme sayısı', 'today screen shows retry count');
 must(today, 'Sonraki deneme', 'today screen shows next retry time');
-must(today, 'Veri eski olabilir', 'today screen shows stale data badge');
-must(today, 'Önbellekten açıldı', 'today screen shows cached data badge');
+mustNot(today, 'Veri eski olabilir', 'today screen no longer shows stale data badge');
+mustNot(today, 'Önbellekten açıldı', 'today screen no longer shows cached data badge');
 
 console.log('=== M57.2 OFFLINE/ONLINE TOPARLAMA CHECK PASS ===');

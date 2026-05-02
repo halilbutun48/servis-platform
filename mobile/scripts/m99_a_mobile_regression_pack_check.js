@@ -39,6 +39,11 @@ function must(cond, msg) {
   ok(msg);
 }
 
+function mustNot(text, needle, msg) {
+  if (has(text, needle)) throw new Error(`FAIL ${msg}`);
+  ok(msg);
+}
+
 console.log('=== M99-A MOBILE REGRESSION PACK CHECK ===');
 
 const pkg = JSON.parse(read('package.json'));
@@ -117,10 +122,20 @@ must(has(today, 'DriverTaskSummaryCard'), 'today screen keeps driver task summar
 must(has(today, 'NotificationCenterCard'), 'today screen keeps notification card');
 must(has(today, 'DriverAvailabilityCard'), 'today screen keeps availability card');
 must(has(today, 'DriverChangeAwarenessCard'), 'today screen keeps awareness card');
+must(has(today, 'Rota ekranına geç'), 'today screen keeps route transition action');
+mustNot(today, 'Sürüş ve GPS yardımı', 'today screen no longer shows the old gps helper card');
 must(has(route, 'DriverTaskSummaryCard'), 'route screen keeps driver task summary');
-must(has(route, 'Bugünkü rota'), 'route screen keeps route summary');
-must(has(route, 'DriverAvailabilityCard'), 'route screen keeps availability card');
-must(has(live, 'GPS'), 'live screen keeps gps wording');
+must(has(route, 'Rota #'), 'route screen keeps route summary');
+must(has(route, 'RouteNavigationCard'), 'route screen keeps navigation card');
+must(has(route, 'RouteVoiceSupportCard'), 'route screen keeps voice card');
+must(has(route, 'RouteMiniMapCard'), 'route screen keeps route preview card');
+must(has(route, 'Navigasyonu aç'), 'route screen keeps navigation action');
+must(has(route, 'Sıradaki durağa git'), 'route screen keeps next stop navigation action');
+must(has(route, 'Tüm rotayı aç'), 'route screen keeps full route action');
+mustNot(route, 'DriverAvailabilityCard', 'route screen no longer shows availability card');
+must(has(live, 'Konum ve GPS durumu'), 'live screen keeps gps wording');
+must(has(live, 'GpsSourceStatusCard'), 'live screen keeps gps source card');
+mustNot(live, 'Sesli rehber', 'live screen no longer shows voice guidance card');
 
 must(has(notificationState, 'NOTIFICATION_ROLE_MESSAGES'), 'notification state keeps role messages');
 must(has(notificationState, 'buildNotificationCenterState'), 'notification state keeps center builder');

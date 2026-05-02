@@ -1,10 +1,9 @@
 import { ScrollView, Text, View } from 'react-native';
-import { listVisibleShifts, resolveDriverGpsShiftContext } from '../lib/gps';
+import { resolveDriverGpsShiftContext } from '../lib/gps';
 import { openFullRouteNavigation, openNextStopNavigation } from '../lib/navigation';
-import DriverAvailabilityCard from './DriverAvailabilityCard';
 import DriverTaskSummaryCard from './DriverTaskSummaryCard';
-import { DriverDiagnosticsCard, StopListCard } from './driverPremiumUi';
-import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, ShiftChooser, fmt, styles } from './mobileUi';
+import { DriverDiagnosticsCard, RouteMiniMapCard, RouteNavigationCard, RouteVoiceSupportCard, StopListCard } from './driverPremiumUi';
+import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, fmt, styles } from './mobileUi';
 import { humanizeDriverUiText } from './driverUiText';
 
 export default function RouteScreen({
@@ -15,11 +14,12 @@ export default function RouteScreen({
   selectedShiftId,
   routeOpsBusy,
   routeOpsText,
-  driverAvailability,
   onRefresh,
   onOpenToday,
-  onOpenLive,
-  onSelectShift,
+  voiceEnabled,
+  onToggleVoiceGuidance,
+  onSpeakNextStop,
+  onSpeakEta,
   onStartShift,
   onPauseShift,
   onResumeShift,
@@ -28,9 +28,7 @@ export default function RouteScreen({
   onSkipStop,
   onReopenStop,
   onUndoStop,
-  onSetDriverAvailability,
 }) {
-  const visibleShifts = listVisibleShifts(today);
   const activeShift = resolveDriverGpsShiftContext(today, route, selectedShiftId).activeShift || route?.shift || null;
   const nextStop = route?.nextStop || null;
   const pendingStops = Array.isArray(route?.orderedStops)
@@ -69,7 +67,7 @@ export default function RouteScreen({
     <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
       <Card>
         <Text style={styles.title}>Rota</Text>
-        <Text style={styles.subtitle}>Seçili vardiya, mini rota önizlemesi ve durak akışı burada.</Text>
+        <Text style={styles.subtitle}>Rota, navigasyon ve durak akışı burada.</Text>
         {!!error ? <Text style={styles.error}>{error}</Text> : null}
         <View style={styles.rowGap}>
           <Pill label={syncing ? 'Senkron oluyor' : 'Hazır'} tone={syncing ? 'warn' : 'ok'} />
@@ -80,36 +78,41 @@ export default function RouteScreen({
         {routeOpsText ? <Text style={styles.helper}>{routeOpsText}</Text> : null}
       </Card>
 
-      <Card>
-        <SectionTitle title="Vardiya seçimi" subtitle="Rota ve manuel işlem her zaman seçili vardiyaya çalışır." />
-        {visibleShifts.length ? (
-          <ShiftChooser shifts={visibleShifts} selectedShiftId={selectedShiftId || route?.shift?.id} onSelectShift={onSelectShift} />
-        ) : (
-          <EmptyState title="Vardiya görünmüyor" text="Bugün veya yakın zaman için atanmış vardiya yok." />
-        )}
-      </Card>
-
-      <DriverAvailabilityCard
-        driverAvailability={driverAvailability}
-        routeOpsBusy={routeOpsBusy}
-        onSetDriverAvailability={onSetDriverAvailability}
-      />
-
       {activeShift ? (
         <>
           <DriverTaskSummaryCard
-            title="Bugünkü rota"
-            subtitle="Güncel rota, tahmini varış ve kalan iş tek kartta."
+            title={`Rota #${activeShift.id}`}
+            subtitle="Bugünkü rota özeti ve kısa operasyon bilgisi."
             activeShift={activeShift}
             route={route}
             routeSummary={routeSummary}
             nextStop={nextStop}
-            routePreviewStops={Array.isArray(route?.orderedStops) ? route.orderedStops : []}
             routeOpsText={routeOpsText}
             routeOpsBusy={routeOpsBusy}
-            onOpenRoute={openFullRoute}
-            onOpenLive={onOpenLive}
+            showWorkflowActions={false}
+            showRoutePreview={false}
+            showRouteAction={false}
+            showLiveAction={false}
             onRefresh={onRefresh}
+          />
+
+          <RouteNavigationCard
+            nextStop={nextStop}
+            routeSummary={routeSummary}
+            onOpenRoute={openMaps}
+            onOpenNextStopNavigation={openMaps}
+            onOpenFullRoute={openFullRoute}
+            primaryActionLabel="Navigasyonu aç"
+            nextStopActionLabel="Sıradaki durağa git"
+            fullRouteActionLabel="Tüm rotayı aç"
+          />
+
+          <RouteMiniMapCard
+            title="Mini rota önizlemesi"
+            subtitle="Temsilî rota önizlemesi. Gerçek yol ve trafik için navigasyonu açın."
+            stops={Array.isArray(route?.orderedStops) ? route.orderedStops : []}
+            nextStopId={nextStop?.id || null}
+            routeSummary={routeSummary}
           />
 
           <StopListCard
@@ -147,14 +150,20 @@ export default function RouteScreen({
                 <View style={styles.actionsRow}>
                   <PrimaryButton title="Durak ulaşıldı" onPress={() => onMarkReached(nextStop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} />
                   <SecondaryButton title="Durağı atla" onPress={() => onSkipStop(nextStop.id)} disabled={routeOpsBusy || !!route?.progress?.pausedAt} />
-                  <SecondaryButton title="Navigasyonu aç" onPress={openMaps} disabled={!nextStop?.lat || !nextStop?.lng} />
-                  <SecondaryButton title="Tam rotayı aç" onPress={openFullRoute} disabled={!pendingStops.length} />
                 </View>
               </>
             ) : (
               <EmptyState title="Bekleyen durak yok" text="Tüm duraklar işlendi. Gerekirse vardiyayı tamamla." />
             )}
           </Card>
+
+          <RouteVoiceSupportCard
+            voiceEnabled={Boolean(voiceEnabled)}
+            nextStop={nextStop}
+            onToggleVoiceGuidance={onToggleVoiceGuidance}
+            onSpeakNextStop={onSpeakNextStop}
+            onSpeakEta={onSpeakEta}
+          />
 
           <DriverDiagnosticsCard
             title="Gelişmiş durum"

@@ -46,6 +46,7 @@ const content = read('src/app/MobileAppContent.js');
 const today = read('src/screens/TodayScreen.js');
 const route = read('src/screens/RouteScreen.js');
 const taskCard = read('src/screens/DriverTaskSummaryCard.js');
+const premium = read('src/screens/driverPremiumUi.js');
 
 must(has(JSON.stringify(pkg.scripts || {}), 'check:m95b'), 'package exposes m95b entrypoint');
 must(has(app, 'routeOpsBusy'), 'app passes route ops busy state');
@@ -76,8 +77,8 @@ must(has(taskCard, 'Vardiyayı tamamla'), 'task card exposes complete shift acti
 must(has(taskCard, 'Navigasyonu aç'), 'task card exposes navigation action');
 must(has(taskCard, 'Canlı'), 'task card exposes live screen action');
 must(has(taskCard, 'Yenile'), 'task card exposes refresh action');
-must(has(today, 'Sıradaki durağı oku'), 'today screen exposes voice next stop action');
-must(has(today, 'Tahmini varış oku'), 'today screen exposes voice eta action');
+must(has(premium, 'Sıradaki durağı oku'), 'premium ui exposes voice next stop action');
+must(has(premium, 'Tahmini varışı oku'), 'premium ui exposes voice eta action');
 
 must(has(route, 'Bugünkü rota'), 'route screen exposes route summary card');
 must(has(route, 'Kalan rota süresi'), 'route screen shows remaining route duration');

@@ -6,7 +6,7 @@ import DriverChangeAwarenessCard from './DriverChangeAwarenessCard';
 import { DriverDiagnosticsCard } from './driverPremiumUi';
 import NotificationCenterCard from './NotificationCenterCard';
 import DriverTaskSummaryCard from './DriverTaskSummaryCard';
-import { Card, EmptyState, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, ShiftChooser, fmt, isStale, styles } from './mobileUi';
+import { Card, EmptyState, Pill, SectionTitle, ShiftChooser, fmt, isStale, styles } from './mobileUi';
 import { humanizeDriverUiText } from './driverUiText';
 
 export default function TodayScreen({
@@ -22,7 +22,6 @@ export default function TodayScreen({
   lastSyncAt,
   lastErrorAt,
   syncing,
-  usingCachedData,
   releaseInfo,
   net,
   gps,
@@ -33,19 +32,14 @@ export default function TodayScreen({
   driverAwareness,
   notifications,
   onRefresh,
-  onLogout,
-  onOpenLive,
+  onOpenRoute,
   onSelectShift,
   onStartShift,
   onCompleteShift,
   onMarkReached,
-  onSpeakNextStop,
-  onSpeakEta,
   onSpeakDriverAwareness,
   onAcknowledgeDriverAwareness,
   onMarkNotificationsSeen,
-  onOpenSettings,
-  onPublishGpsNow,
   onSetDriverAvailability,
 }) {
   const visibleShifts = listVisibleShifts(today);
@@ -54,7 +48,6 @@ export default function TodayScreen({
   const pendingStops = Array.isArray(route?.orderedStops)
     ? route.orderedStops.filter((stop) => String(stop?.state || '').toUpperCase() === 'PENDING')
     : [];
-  const routePreviewStops = pendingStops.slice(0, 6);
   const routeSummary = useMemo(() => {
     const summary = route?.summary || {};
     const progress = route?.progress || {};
@@ -83,6 +76,7 @@ export default function TodayScreen({
   }, [me?.fullName]);
   const stale = isStale(lastSyncAt);
   const kvkkBlocking = Boolean(kvkk?.blocking);
+  const showShiftChooser = visibleShifts.length > 1;
   const refreshControl = Platform.OS === 'ios'
     ? <RefreshControl refreshing={!!syncing} onRefresh={onRefresh} />
     : undefined;
@@ -99,43 +93,43 @@ export default function TodayScreen({
         <View style={styles.rowGap}>
           <Pill label={`Rol: ${humanizeDriverUiText(me?.role || '-', 'Bilinmiyor')}`} />
           <Pill label={syncing ? 'Senkron oluyor' : 'Hazır'} tone={syncing ? 'warn' : 'ok'} />
-          {usingCachedData ? <Pill label="Önbellekten açıldı" tone="warn" /> : null}
-          {stale ? <Pill label="Veri eski olabilir" tone="warn" /> : null}
           {kvkkBlocking ? <Pill label="KVKK eksik" tone="warn" /> : <Pill label="KVKK hazır" tone="ok" />}
         </View>
         {!!error ? <Text style={styles.error}>{error}</Text> : null}
       </Card>
 
-      <Card>
-        <SectionTitle title="Vardiya seçimi" subtitle="Sürücü birden fazla vardiya görüyorsa doğru vardiyayı buradan seçer." />
-        {visibleShifts.length ? (
+      {showShiftChooser ? (
+        <Card>
+          <SectionTitle title="Vardiya seçimi" subtitle="Birden fazla vardiya görünüyorsa doğru vardiyayı buradan seç." />
           <ShiftChooser shifts={visibleShifts} selectedShiftId={selectedShiftId || route?.shift?.id} onSelectShift={onSelectShift} />
-        ) : (
-          <EmptyState title="Görünür vardiya yok" text="Bugün veya yakın zaman için atanmış vardiya görünmüyor." />
-        )}
-      </Card>
+        </Card>
+      ) : null}
 
       <DriverAvailabilityCard
         driverAvailability={driverAvailability}
         routeOpsBusy={routeOpsBusy}
         onSetDriverAvailability={onSetDriverAvailability}
+        compact
       />
 
       <DriverTaskSummaryCard
         title="Bugünkü Vardiya"
-        subtitle="Rota, tahmini varış ve hızlı işlemler tek yerde."
+        subtitle="Bugünün ana görevi, kısa özet ve hızlı işlemler burada."
         activeShift={activeShift}
         route={route}
         routeSummary={routeSummary}
         nextStop={nextStop}
-        routePreviewStops={routePreviewStops}
         routeOpsText={routeOpsText}
         routeOpsBusy={routeOpsBusy}
         showWorkflowActions
+        showRoutePreview={false}
+        showRouteAction={true}
+        showLiveAction={false}
+        routeActionLabel="Rota ekranına geç"
         onStartShift={onStartShift}
         onMarkReached={onMarkReached}
         onCompleteShift={onCompleteShift}
-        onOpenLive={onOpenLive}
+        onOpenRoute={onOpenRoute}
         onRefresh={onRefresh}
       />
 
@@ -144,6 +138,7 @@ export default function TodayScreen({
         routeOpsBusy={routeOpsBusy}
         onMarkLatestSeen={onMarkNotificationsSeen}
         onRefresh={onRefresh}
+        compact
       />
 
       <DriverChangeAwarenessCard
@@ -153,21 +148,8 @@ export default function TodayScreen({
         onSpeakDriverAwareness={onSpeakDriverAwareness}
         onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
         onRefresh={onRefresh}
+        compact
       />
-
-      <Card>
-        <SectionTitle title="Sürüş ve GPS yardımı" subtitle="Rota, konum ve sesli rehber kısa yoldan erişilir." />
-        <Info label="Rota durumu" value={humanizeDriverUiText(route?.mode || 'NO_DATA', 'Veri yok')} />
-        <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
-        <Info label="Kalan km" value={nextStop?.remainingKm != null ? `${nextStop.remainingKm} km` : '-'} />
-        <Info label="Toplam durak" value={route?.summary?.totalStops != null ? String(route.summary.totalStops) : Array.isArray(route?.orderedStops) ? String(route.orderedStops.length) : '-'} />
-        <View style={styles.actionsRow}>
-          <SecondaryButton title="Sıradaki durağı oku" onPress={onSpeakNextStop} disabled={!onSpeakNextStop || !nextStop} />
-          <SecondaryButton title="Tahmini varış oku" onPress={onSpeakEta} disabled={!onSpeakEta || !nextStop} />
-          <SecondaryButton title="Ayarları aç" onPress={onOpenSettings} />
-          <SecondaryButton title="Konumu şimdi gönder" onPress={onPublishGpsNow} />
-        </View>
-      </Card>
 
       <DriverDiagnosticsCard
         title="Gelişmiş durum"

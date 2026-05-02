@@ -71,7 +71,7 @@ must(has(content, 'onSetDriverAvailability'), 'mobile content forwards driver av
 must(has(app, 'driverAvailability: state.driverAvailability'), 'app persists driver availability in snapshots');
 must(has(app, 'onSetDriverAvailability'), 'app wires driver availability handler');
 must(has(today, 'DriverAvailabilityCard'), 'today screen renders driver availability card');
-must(has(route, 'DriverAvailabilityCard'), 'route screen renders driver availability card');
+must(!has(route, 'DriverAvailabilityCard'), 'route screen no longer renders driver availability card');
 must(has(card, 'Sürücü durumu'), 'availability card shows driver availability title');
 must(has(card, 'Hazır bekleme tercihi cihazda kalır.'), 'availability card explains local availability storage');
 must(has(card, 'listDriverAvailabilityModes'), 'availability card renders helper-driven availability modes');

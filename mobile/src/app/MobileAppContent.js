@@ -208,11 +208,8 @@ export default function MobileAppContent({
           selectedShiftId={state?.selectedShiftId || null}
           routeOpsBusy={Boolean(routeOps?.busy)}
           routeOpsText={routeOps?.message || ''}
-          driverAvailability={state?.driverAvailability || null}
           onRefresh={onRefresh}
           onOpenToday={onOpenToday}
-          onOpenLive={onOpenLive}
-          onSelectShift={onSelectShift}
           onStartShift={onStartShift}
           onPauseShift={onPauseShift}
           onResumeShift={onResumeShift}
@@ -221,7 +218,10 @@ export default function MobileAppContent({
           onSkipStop={onSkipStop}
           onReopenStop={onReopenStop}
           onUndoStop={onUndoStop}
-          onSetDriverAvailability={onSetDriverAvailability}
+          voiceEnabled={Boolean(state?.voiceEnabled)}
+          onToggleVoiceGuidance={onToggleVoiceGuidance}
+          onSpeakNextStop={onSpeakNextStop}
+          onSpeakEta={onSpeakEta}
         />
       </DriverShellFrame>
     );
@@ -247,19 +247,11 @@ export default function MobileAppContent({
           net={state?.net || null}
           gps={state?.gps || null}
           kvkk={state?.kvkk || null}
-          voiceEnabled={Boolean(state?.voiceEnabled)}
           selectedShiftId={state?.selectedShiftId || null}
-          onOpenToday={onOpenToday}
-          onOpenRoute={onOpenRoute}
-          onToggleVoiceGuidance={onToggleVoiceGuidance}
-          onSpeakNextStop={onSpeakNextStop}
-          onSpeakEta={onSpeakEta}
           onRequestGpsPermission={onRequestGpsPermission}
           onRefreshGpsStatus={onRefreshGpsStatus}
           onOpenGpsSettings={onOpenGpsSettings}
           onPublishGpsNow={onPublishGpsNow}
-          onAcceptKvkk={onAcceptKvkk}
-          onRefreshKvkkStatus={onRefreshKvkkStatus}
           releaseInfo={releaseInfo}
         />
       </DriverShellFrame>
@@ -303,6 +295,7 @@ export default function MobileAppContent({
         routeOpsText={routeOpsText}
         onRefresh={onRefresh}
         onLogout={onLogout}
+        onOpenRoute={onOpenRoute}
         onOpenLive={onOpenLive}
         onSelectShift={onSelectShift}
         onStartShift={onStartShift}
@@ -313,8 +306,6 @@ export default function MobileAppContent({
         onSpeakDriverAwareness={onSpeakDriverAwareness}
         onAcknowledgeDriverAwareness={onAcknowledgeDriverAwareness}
         onMarkNotificationsSeen={onMarkNotificationsSeen}
-        onOpenSettings={onOpenGpsSettings}
-        onPublishGpsNow={onPublishGpsNow}
         onSetDriverAvailability={onSetDriverAvailability}
       />
     </DriverShellFrame>

@@ -109,7 +109,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
                                 "currentLargeFileCount":  3,
-  "currentWarningHotFileCount":  0,
+  "currentWarningHotFileCount":  1,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -125,11 +125,16 @@
                                                                                             "class":  "justified-exception",
                                                                                             "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
                                                                                         },
-                                                       "backend/scripts/bench_gps_publish_only.js":  {
-                                                                                                         "class":  "justified-exception",
-                                                                                                         "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
-                                                                                                     }
-                                                   }
+                                                        "backend/scripts/bench_gps_publish_only.js":  {
+                                                                                                           "class":  "justified-exception",
+                                                                                                           "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
+                                                                                                       }
+                                                       ,
+                                                       "mobile/src/screens/driverPremiumUi.js":  {
+                                                                                                      "class":  "safe-candidate-review",
+                                                                                                      "note":  "premium mobile shell; controlled cleanup adayi"
+                                                                                                  }
+                                }
                            },
     "shareablePackageHygiene":  {
                                     "policyVersion":  1,

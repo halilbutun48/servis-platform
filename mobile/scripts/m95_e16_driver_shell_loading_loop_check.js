@@ -16,6 +16,7 @@ function ok(message) {
 const mobileAppContent = read('src/app/MobileAppContent.js');
 const lifecycle = read('src/app/useMobileAppLifecycle.js');
 const todayScreen = read('src/screens/TodayScreen.js');
+const taskCard = read('src/screens/DriverTaskSummaryCard.js');
 const driverShell = read('src/screens/DriverShellLoadingScreen.js');
 const pinChange = read('src/screens/PinChangeScreen.js');
 const appJs = read('App.js');
@@ -32,9 +33,10 @@ if (mobileAppContent.includes("state?.loading || state?.syncing || !state?.me ||
   fail('legacy infinite driver shell gate still present');
 }
 if (mobileAppContent.includes('driverUiReady')) fail('driverUiReady should not gate MobileAppContent anymore');
-if (!todayScreen.includes('Görünür vardiya yok')) fail('TodayScreen empty state missing');
-if (!todayScreen.includes('Bugün aktif görev yok.') && !todayScreen.includes('Bugün veya yakın zaman için atanmış vardiya görünmüyor.')) {
-  fail('TodayScreen no-task empty message missing');
+if (!todayScreen.includes('DriverTaskSummaryCard')) fail('TodayScreen task card missing');
+if (!taskCard.includes('Görev görünmüyor')) fail('Task card empty state missing');
+if (!taskCard.includes('Bugün ekranında görev görünmüyorsa oda veya şirket atamasını kontrol et.')) {
+  fail('Task card no-task empty message missing');
 }
 if (!driverShell.includes('Sürücü ekranı yükleniyor...')) fail('DriverShellLoadingScreen title missing');
 if (!driverShell.includes('onReady?.()')) fail('DriverShellLoadingScreen ready hook missing');

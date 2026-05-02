@@ -26,6 +26,7 @@ export default function DriverChangeAwarenessCard({
   onSpeakDriverAwareness,
   onAcknowledgeDriverAwareness,
   onRefresh,
+  compact = false,
 }) {
   const latest = driverAwareness?.latestRelevant || null;
   const items = Array.isArray(driverAwareness?.items) ? driverAwareness.items.slice(0, 3) : [];
@@ -39,7 +40,7 @@ export default function DriverChangeAwarenessCard({
     <Card>
       <SectionTitle
         title="Sürücü değişiklik farkındalığı"
-        subtitle="Yeni rota, no-show, bakım ve GPS uyarıları burada görünür. Sesli uyarı açıksa en yeni kayıt otomatik okunur."
+        subtitle={compact ? 'Kısa değişiklik özeti.' : 'Yeni rota, no-show, bakım ve GPS uyarıları burada görünür. Sesli uyarı açıksa en yeni kayıt otomatik okunur.'}
       />
       <View style={styles.rowGap}>
         <Pill label={voiceEnabled ? 'Sesli uyarı açık' : 'Sesli uyarı kapalı'} tone={voiceEnabled ? 'success' : 'passive'} />
@@ -51,10 +52,14 @@ export default function DriverChangeAwarenessCard({
         <>
           <Info label="Son uyarı" value={latest.title || '-'} />
           <Info label="Ayrıntı" value={latest.message || '-'} />
-          <Info label="Son güncelleme" value={fmt(latest.createdAt || driverAwareness?.lastFetchedAt || driverAwareness?.updatedAt)} />
-          <Info label="Son okuma" value={fmt(driverAwareness?.lastAnnouncedAt)} />
-          <Info label="Görüldü" value={fmt(driverAwareness?.lastSeenAt)} />
-          <Text style={styles.muted}>Bu kart sürücünün telefon GPS’i, rota değişiklikleri ve operasyon uyarılarını tek yerde toplar.</Text>
+          {compact ? null : (
+            <>
+              <Info label="Son güncelleme" value={fmt(latest.createdAt || driverAwareness?.lastFetchedAt || driverAwareness?.updatedAt)} />
+              <Info label="Son okuma" value={fmt(driverAwareness?.lastAnnouncedAt)} />
+              <Info label="Görüldü" value={fmt(driverAwareness?.lastSeenAt)} />
+              <Text style={styles.muted}>Bu kart sürücünün telefon GPS’i, rota değişiklikleri ve operasyon uyarılarını tek yerde toplar.</Text>
+            </>
+          )}
         </>
       ) : (
         <EmptyState title="Sürücü uyarısı yok" text="Yeni bir kayıt geldiğinde burada görünür ve sesli uyarı olarak okunur." />
@@ -66,7 +71,7 @@ export default function DriverChangeAwarenessCard({
         <SecondaryButton title="Yenile" onPress={onRefresh} disabled={routeOpsBusy || !onRefresh} />
       </View>
 
-      {items.length ? (
+      {!compact && items.length ? (
         <View style={localStyles.listWrap}>
           <SectionTitle title="Son uyarılar" subtitle="En yeni kayıtlar üstte görünür." />
           {items.map((item) => (

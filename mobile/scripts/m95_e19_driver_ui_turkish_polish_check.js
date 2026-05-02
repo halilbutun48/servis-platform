@@ -38,6 +38,11 @@ function must(cond, msg) {
   ok(msg);
 }
 
+function mustNot(text, needle, msg) {
+  if (has(text, needle)) throw new Error(`FAIL ${msg}`);
+  ok(msg);
+}
+
 console.log('=== M95-E19 DRIVER UI TURKISH POLISH CHECK ===');
 
 const pkg = JSON.parse(read('package.json'));
@@ -56,21 +61,27 @@ must(has(pkg.scripts?.['acceptance:mobile'] || '', 'check:m95e19'), 'acceptance 
 
 must(has(today, 'Günaydın'), 'today screen keeps greeting');
 must(has(today, 'Bugünkü Vardiya'), 'today screen keeps hero wardiya title');
-must(has(today, 'Sürüş ve GPS yardımı'), 'today screen keeps gps helper card');
-must(has(today, 'Konumu şimdi gönder'), 'today screen keeps direct publish action');
+must(has(today, 'Rota ekranına geç'), 'today screen keeps route transition action');
 must(has(today, 'Gelişmiş durum'), 'today screen keeps advanced status card');
 must(has(today, 'DriverAvailabilityCard'), 'today screen keeps driver status card');
 must(has(today, 'NotificationCenterCard'), 'today screen keeps notification summary card');
 must(has(today, 'DriverChangeAwarenessCard'), 'today screen keeps awareness card');
+mustNot(today, 'Sürüş ve GPS yardımı', 'today screen no longer shows old gps helper card');
+mustNot(today, 'Konumu şimdi gönder', 'today screen no longer shows direct publish action');
 
-must(has(route, 'Bugünkü rota'), 'route screen keeps route hero title');
+must(has(route, 'Rota, navigasyon ve durak akışı burada.'), 'route screen keeps premium route intro');
+must(has(route, 'Rota #'), 'route screen keeps route hero title');
+must(has(route, 'RouteNavigationCard'), 'route screen keeps route navigation card');
+must(has(route, 'RouteVoiceSupportCard'), 'route screen keeps route voice support card');
+must(has(route, 'RouteMiniMapCard'), 'route screen keeps route preview card');
 must(has(route, 'Durak listesi'), 'route screen keeps stop list card');
 must(has(route, 'Navigasyonu aç'), 'route screen keeps navigation action');
-must(has(route, 'Tam rotayı aç'), 'route screen keeps full route action');
-must(has(route, 'Seçili vardiya'), 'route screen keeps selected shift card');
+must(has(route, 'Sıradaki durağa git'), 'route screen keeps next stop navigation action');
+must(has(route, 'Tüm rotayı aç'), 'route screen keeps full route action');
 must(has(route, 'Gelişmiş durum'), 'route screen keeps advanced status card');
 must(has(route, 'DriverTaskSummaryCard'), 'route screen keeps hero route summary card');
 must(has(route, 'StopListCard'), 'route screen keeps stop list component');
+mustNot(route, 'DriverAvailabilityCard', 'route screen no longer shows availability card');
 
 must(has(live, 'Konum ve GPS durumu'), 'live screen keeps gps status title');
 must(has(live, 'gpsActionTitle'), 'live screen keeps derived gps action title');
@@ -79,16 +90,17 @@ must(has(live, 'Gelişmiş durum'), 'live screen keeps advanced status card');
 must(has(live, 'Sürücünün telefon GPS\'i'), 'live screen keeps driver gps wording');
 must(has(live, 'GpsSourceStatusCard'), 'live screen uses gps source status card');
 must(has(live, 'DriverDiagnosticsCard'), 'live screen keeps advanced diagnostics card');
+mustNot(live, 'Sesli rehber', 'live screen no longer shows voice guidance card');
 
 must(has(availability, 'Sürücü durumu'), 'availability card keeps Turkish title');
-must(has(availability, 'Hazır bekleme tercihi cihazda kalır.'), 'availability card keeps shorter subtitle');
+must(has(availability, 'Kısa sürücü durumu özeti.'), 'availability card keeps compact subtitle');
 must(has(availability, 'Yeni iş atamasını oda/operasyon yapar.'), 'availability card keeps shorter footer text');
 must(has(availability, 'QuickActionsGrid'), 'availability card keeps compact action grid');
 must(has(availability, 'driverAvailabilityActionLabel'), 'availability card keeps helper driven action labels');
 
-must(has(taskCard, 'Rota, tahmini varış ve hızlı işlemler tek yerde.'), 'task card keeps Turkish summary');
-must(has(taskCard, 'Navigasyonu aç'), 'task card or route uses navigation wording');
-must(has(taskCard, 'Durak önizlemesi'), 'task card keeps route preview');
+must(has(today, 'Bugünün ana görevi, kısa özet ve hızlı işlemler burada.'), 'today keeps Turkish summary');
+must(has(today, 'Rota ekranına geç'), 'today keeps route transition wording');
+must(has(taskCard, 'Temsilî rota önizlemesi'), 'task card keeps representative route preview wording');
 
 must(has(loading, 'Sürücü ekranı yükleniyor...'), 'loading screen keeps driver loading text');
 must(has(loading, 'Oturum açıldı, görev bilgileri hazırlanıyor.'), 'loading screen keeps loading status text');

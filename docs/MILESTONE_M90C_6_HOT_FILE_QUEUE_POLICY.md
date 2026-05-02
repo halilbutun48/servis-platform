@@ -16,6 +16,8 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 - davranış değiştirmeden kontrollü parçalara ayırma / section extraction yapılabilir
 - refactor öncesi acceptance zinciri korunur
 
+Güncel snapshot'ta `mobile/src/screens/driverPremiumUi.js` de safe candidate review kuyruğundadır.
+
 ### 3) acceptance-sensitive / later
 - sırf satır sayısı için açılmaz
 - yalnız explicit acceptance gerekçesi ve dar kapsamla ele alınır
@@ -33,6 +35,7 @@ Amaç: `repo_audit` içindeki hot/large file listesini yalnız sayısal uyarı o
 - `web/src/panels/company/ShiftPeopleTab.jsx`
 - `web/src/panels/room/ShiftsPanel.jsx`
 - `web/src/panels/room/VehiclesPanel.jsx`
+- `mobile/src/screens/driverPremiumUi.js`
 
 ### completed controlled extraction
 - `web/src/panels/company/AgreementWizard.jsx` -> preset/config ve modal kabuğu ayrıldı; dosya 1000 satır altına indi ve hot-file kuyruğundan çıktı.

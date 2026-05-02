@@ -16,6 +16,7 @@ export default function NotificationCenterCard({
   routeOpsBusy = false,
   onMarkLatestSeen,
   onRefresh,
+  compact = false,
 }) {
   const latest = notifications?.latestRelevant || null;
   const items = Array.isArray(notifications?.items) ? notifications.items.slice(0, 4) : [];
@@ -40,9 +41,13 @@ export default function NotificationCenterCard({
         <>
           <Info label="Son bildirim" value={latest.title || '-'} />
           <Info label="Ayrıntı" value={latest.message || '-'} />
-          <Info label="Tür" value={humanizeDriverUiText(latest.intentLabel || latest.type || '-', 'Bildirim')} />
-          <Info label="Son alım" value={fmt(notifications?.lastFetchedAt)} />
-          <Info label="Son okuma" value={fmt(notifications?.lastSeenAt)} />
+          {compact ? null : (
+            <>
+              <Info label="Tür" value={humanizeDriverUiText(latest.intentLabel || latest.type || '-', 'Bildirim')} />
+              <Info label="Son alım" value={fmt(notifications?.lastFetchedAt)} />
+              <Info label="Son okuma" value={fmt(notifications?.lastSeenAt)} />
+            </>
+          )}
           <Text style={styles.muted}>{notifications?.summary || 'En yeni kayıtlar üstte listelenir.'}</Text>
         </>
       ) : (
@@ -58,7 +63,7 @@ export default function NotificationCenterCard({
         <SecondaryButton title="Yenile" onPress={onRefresh} disabled={routeOpsBusy || !onRefresh} />
       </View>
 
-      {items.length ? (
+      {!compact && items.length ? (
         <View style={localStyles.listWrap}>
           <SectionTitle title="Son kayıtlar" subtitle="En yeni bildirimler üstte görünür." />
           {items.map((item) => (

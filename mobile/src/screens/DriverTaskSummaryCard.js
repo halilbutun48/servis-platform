@@ -26,6 +26,10 @@ export default function DriverTaskSummaryCard({
   routeOpsText = '',
   routeOpsBusy = false,
   showWorkflowActions = false,
+  showRoutePreview = true,
+  showRouteAction = true,
+  showLiveAction = true,
+  routeActionLabel = 'Navigasyonu aç',
   onStartShift,
   onMarkReached,
   onCompleteShift,
@@ -54,8 +58,8 @@ export default function DriverTaskSummaryCard({
       : null,
   ].filter(Boolean);
   const supportActions = [
-    onOpenRoute ? { title: 'Navigasyonu aç', onPress: onOpenRoute } : null,
-    onOpenLive ? { title: 'Canlı', onPress: onOpenLive } : null,
+    showRouteAction && onOpenRoute ? { title: routeActionLabel, onPress: onOpenRoute } : null,
+    showLiveAction && onOpenLive ? { title: 'Canlı', onPress: onOpenLive } : null,
     onRefresh ? { title: 'Yenile', onPress: onRefresh, disabled: routeOpsBusy } : null,
   ].filter(Boolean);
 
@@ -95,17 +99,17 @@ export default function DriverTaskSummaryCard({
             </View>
           ) : null}
 
-          {Array.isArray(routePreviewStops) && routePreviewStops.length ? (
+          {showRoutePreview && Array.isArray(routePreviewStops) && routePreviewStops.length ? (
             <RouteMiniMapCard
               title="Durak önizlemesi"
-              subtitle="İlk duraklar kısa bir rota hissi ile görünür."
+              subtitle="Temsilî rota önizlemesi. Gerçek yol ve trafik için navigasyonu açın."
               stops={routePreviewStops.slice(0, 4)}
               nextStopId={nextStop?.id || null}
               routeSummary={routeSummary}
             />
-          ) : (
+          ) : showRoutePreview ? (
             <EmptyState title="Bugün atanmış görev görünmüyor." text="Operasyon ekibiniz görev atadığında burada görünecek." />
-          )}
+          ) : null}
         </>
       ) : (
         <EmptyState title="Görev görünmüyor" text="Bugün ekranında görev görünmüyorsa oda veya şirket atamasını kontrol et." />

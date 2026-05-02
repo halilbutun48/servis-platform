@@ -27,21 +27,18 @@ function screenMeta(screen) {
   if (key === 'route') {
     return {
       title: 'Rota',
-      subtitle: 'Mini rota önizlemesi, durak listesi ve operasyon adımları burada.',
-      hint: 'Rota ekranı',
+      subtitle: 'Rota sırası ve navigasyon burada.',
     };
   }
   if (key === 'live') {
     return {
       title: 'Canlı',
-      subtitle: "Sürücünün telefon GPS'i, kaynak önceliği ve konum durumu burada.",
-      hint: 'Canlı ekran',
+      subtitle: "GPS ve konum paylaşımı burada.",
     };
   }
   return {
     title: 'Bugün',
-    subtitle: 'Vardiya, kısa aksiyonlar ve gün özeti tek yerden.',
-    hint: 'Bugün ekranı',
+    subtitle: 'Bugünkü görev ve hızlı işlemler burada.',
   };
 }
 
@@ -214,7 +211,7 @@ export function HeroShiftCard({
 
 export function RouteMiniMapCard({
   title = 'Mini rota önizlemesi',
-  subtitle = 'Durak akışı ve rota yönü hızlıca görünür.',
+  subtitle = 'Temsilî rota önizlemesi. Gerçek yol ve trafik için navigasyonu açın.',
   stops = [],
   nextStopId = null,
   routeSummary = {},
@@ -244,13 +241,111 @@ export function RouteMiniMapCard({
           })}
         </View>
       ) : (
-        <EmptyState title="Mini rota yok" text="Seçili vardiya için durak önizlemesi hazırlanıyor." />
+        <EmptyState title="Mini rota yok" text="Temsilî rota önizlemesi hazırlanıyor." />
       )}
 
       <View style={localStyles.mapMetaRow}>
         <StatTile label="Kalan durak" value={remainingStops != null ? String(remainingStops) : '-'} tone="info" />
         <StatTile label="Tahmini varış" value={routeSummary.remainingRouteEtaMin != null ? `${routeSummary.remainingRouteEtaMin} dk` : '-'} tone="success" />
         <StatTile label="Toplam km" value={routeSummary.remainingKm != null ? `${routeSummary.remainingKm} km` : '-'} tone="warning" />
+      </View>
+    </Card>
+  );
+}
+
+export function RouteNavigationCard({
+  title = 'Navigasyon',
+  subtitle = 'Temsilî rota önizlemesi var. Gerçek yol ve trafik için navigasyonu açın.',
+  nextStop = null,
+  routeSummary = {},
+  onOpenRoute,
+  onOpenNextStopNavigation,
+  onOpenFullRoute,
+  primaryActionLabel = 'Navigasyonu aç',
+  nextStopActionLabel = 'Sıradaki durağa git',
+  fullRouteActionLabel = 'Tüm rotayı aç',
+}) {
+  const hasNextStopCoords = nextStop?.lat != null && nextStop?.lng != null;
+  const actionDisabled = !onOpenRoute && !onOpenNextStopNavigation && !onOpenFullRoute;
+  const actions = [
+    onOpenRoute ? { title: primaryActionLabel, onPress: onOpenRoute, tone: 'dark', disabled: !hasNextStopCoords } : null,
+    onOpenNextStopNavigation ? { title: nextStopActionLabel, onPress: onOpenNextStopNavigation, disabled: !hasNextStopCoords } : null,
+    onOpenFullRoute ? { title: fullRouteActionLabel, onPress: onOpenFullRoute } : null,
+  ].filter(Boolean);
+
+  return (
+    <Card style={localStyles.routeNavCard}>
+      <SectionTitle title={title} subtitle={subtitle} />
+      <View style={localStyles.routeNavStats}>
+        <StatTile
+          label="Sıradaki durak"
+          value={nextStop?.name || '-'}
+          note={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : 'Hazır'}
+          tone="dark"
+        />
+        <StatTile
+          label="Tahmini varış"
+          value={routeSummary.remainingRouteEtaMin != null ? `${routeSummary.remainingRouteEtaMin} dk` : '-'}
+          note="Gerçek yol için navigasyon"
+          tone="info"
+        />
+        <StatTile
+          label="Kalan mesafe"
+          value={routeSummary.remainingKm != null ? `${routeSummary.remainingKm} km` : '-'}
+          note="Kuş uçuşu önizleme değil"
+          tone="success"
+        />
+      </View>
+      <View style={localStyles.routeNavBanner}>
+        <Text style={localStyles.routeNavBannerText}>
+          Bu kart durak sırasını özetler. Gerçek yol ve trafik bilgisi navigasyonda açılır.
+        </Text>
+      </View>
+      <View style={localStyles.routeNavPrimary}>
+        <PrimaryButton title={primaryActionLabel} onPress={onOpenRoute} disabled={!onOpenRoute || !hasNextStopCoords} />
+      </View>
+      {actions.length ? (
+        <View style={localStyles.routeNavActions}>
+          {actions
+            .filter((action) => action.title !== 'Navigasyonu aç')
+            .map((action) => (
+              <SecondaryButton
+                key={action.title}
+                title={action.title}
+                onPress={action.onPress}
+                disabled={Boolean(action.disabled) || actionDisabled}
+              />
+            ))}
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+export function RouteVoiceSupportCard({
+  voiceEnabled = false,
+  nextStop = null,
+  onToggleVoiceGuidance,
+  onSpeakNextStop,
+  onSpeakEta,
+}) {
+  return (
+    <Card style={localStyles.routeVoiceCard}>
+      <SectionTitle
+        title="Sesli destek"
+        subtitle="Navigasyon açıkken uygulama servis operasyon uyarılarını sesli hatırlatır."
+      />
+      <View style={localStyles.routeVoiceMeta}>
+        <Pill label={voiceEnabled ? 'Sesli destek açık' : 'Sesli destek kapalı'} tone={voiceEnabled ? 'success' : 'passive'} />
+      </View>
+      <View style={localStyles.routeVoiceStats}>
+        <Info label="Sıradaki durak" value={nextStop?.name || '-'} />
+        <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
+      </View>
+      <View style={localStyles.routeVoiceActions}>
+        <PrimaryButton title={voiceEnabled ? 'Sesli desteği kapat' : 'Sesli desteği aç'} onPress={onToggleVoiceGuidance} />
+        <SecondaryButton title="Sıradaki durağı oku" onPress={onSpeakNextStop} disabled={!nextStop || !onSpeakNextStop} />
+        <SecondaryButton title="Tahmini varışı oku" onPress={onSpeakEta} disabled={!nextStop || !onSpeakEta} />
       </View>
     </Card>
   );
@@ -415,10 +510,6 @@ export function DriverDiagnosticsCard({
 export function DriverAppHeader({
   me = null,
   screen = 'today',
-  today = null,
-  route = null,
-  gps = null,
-  lastSyncAt = '',
   onOpenToday,
   onOpenRoute,
   onOpenLive,
@@ -427,11 +518,11 @@ export function DriverAppHeader({
 }) {
   const meta = screenMeta(screen);
   const fullName = String(me?.fullName || me?.name || me?.displayName || 'Sürücü').trim() || 'Sürücü';
-  const activeShift = route?.shift || today?.active || today?.assigned || null;
-  const nextStop = route?.nextStop || null;
-  const shiftLabel = activeShift ? `#${activeShift.id} • ${humanizeDriverUiText(activeShift.status || '-', 'Bilinmiyor')}` : 'Görev bekliyor';
-  const gpsLabel = gps?.displaySourceText || "Sürücünün telefon GPS'i";
-  const syncLabel = lastSyncAt ? `Son senkron ${fmt(lastSyncAt)}` : 'Senkron bekleniyor';
+  const greeting = meta.title === 'Bugün'
+    ? `Günaydın, ${fullName}`
+    : meta.title === 'Rota'
+      ? `Rota hazır, ${fullName}`
+      : `Konum takibi hazır, ${fullName}`;
 
   return (
     <View style={localStyles.headerWrap}>
@@ -444,14 +535,9 @@ export function DriverAppHeader({
           <ShellIcon symbol="◌" onPress={onOpenNotifications} passive={!onOpenNotifications} />
         </View>
 
-        <View style={localStyles.headerPills}>
-          <Pill label={fullName} tone="passive" />
-          <Pill label={meta.hint} tone="info" />
-          <Pill label={shiftLabel} tone={activeShift ? 'ok' : 'warn'} />
-          <Pill label={gpsLabel} tone="passive" />
-          <Pill label={syncLabel} tone="passive" />
-          {nextStop ? <Pill label={`Sıradaki ${nextStop.name || '-'}`} tone="info" /> : null}
-        </View>
+        <Text style={localStyles.headerGreeting} numberOfLines={1}>
+          {greeting}
+        </Text>
         <Text style={localStyles.headerSubtitle} numberOfLines={2}>
           {meta.subtitle}
         </Text>
@@ -469,11 +555,11 @@ export function DriverBottomTabBar({
   onProfile,
 }) {
   const items = [
-    { key: 'today', label: 'Bugün', hint: 'Vardiya', symbol: '◧', onPress: onToday, passive: false },
-    { key: 'route', label: 'Rota', hint: 'Durak', symbol: '▭', onPress: onRoute, passive: false },
-    { key: 'live', label: 'Canlı', hint: 'GPS', symbol: '◉', onPress: onLive, passive: false },
-    { key: 'notifications', label: 'Bildirimler', hint: 'Yakında', symbol: '✉', onPress: onNotifications, passive: true },
-    { key: 'profile', label: 'Profil', hint: 'Yakında', symbol: '◔', onPress: onProfile, passive: true },
+    { key: 'today', label: 'Bugün', symbol: '◧', onPress: onToday, passive: false },
+    { key: 'route', label: 'Rota', symbol: '▭', onPress: onRoute, passive: false },
+    { key: 'live', label: 'Canlı', symbol: '◉', onPress: onLive, passive: false },
+    { key: 'notifications', label: 'Bildirimler', symbol: '✉', onPress: onNotifications, passive: true },
+    { key: 'profile', label: 'Profil', symbol: '◔', onPress: onProfile, passive: true },
   ];
 
   return (
@@ -497,9 +583,6 @@ export function DriverBottomTabBar({
             </Text>
             <Text style={[localStyles.bottomLabel, active ? localStyles.bottomLabelActive : null]}>
               {item.label}
-            </Text>
-            <Text style={[localStyles.bottomHint, active ? localStyles.bottomHintActive : null]}>
-              {item.hint}
             </Text>
           </Pressable>
         );
@@ -937,10 +1020,11 @@ const localStyles = StyleSheet.create({
     lineHeight: 19,
     fontSize: 13,
   },
-  headerPills: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  headerGreeting: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+    lineHeight: 24,
   },
   bottomWrap: {
     flexDirection: 'row',
@@ -988,15 +1072,49 @@ const localStyles = StyleSheet.create({
   bottomLabelActive: {
     color: '#fff',
   },
-  bottomHint: {
-    color: COLORS.muted,
-    fontSize: 10,
-  },
-  bottomHintActive: {
-    color: '#dbeafe',
-  },
   divider: {
     height: 1,
     backgroundColor: COLORS.border,
+  },
+  routeNavCard: {
+    gap: 12,
+  },
+  routeNavStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  routeNavBanner: {
+    borderRadius: 16,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    padding: 12,
+  },
+  routeNavBannerText: {
+    color: COLORS.muted,
+    lineHeight: 18,
+  },
+  routeNavPrimary: {
+    marginTop: 2,
+  },
+  routeNavActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  routeVoiceCard: {
+    gap: 12,
+  },
+  routeVoiceMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  routeVoiceStats: {
+    gap: 8,
+  },
+  routeVoiceActions: {
+    gap: 8,
   },
 });

@@ -29,7 +29,8 @@ const app = read('App.js');
 const handlers = read('src/app/mobileAppHandlers.js');
 const api = read('src/lib/api.js');
 const gps = read('src/lib/gps.js');
-const today = read('src/screens/TodayScreen.js');
+const premium = read('src/screens/driverPremiumUi.js');
+const live = read('src/screens/LiveScreen.js');
 
 must(pkg, 'check:m57.1', 'm57.1 script present in package json');
 must(app, 'GPS_PUBLISH_INTERVAL_MS', 'app defines foreground gps publish interval');
@@ -44,9 +45,9 @@ must(gps, 'IN_PROGRESS', 'gps helper keeps in-progress shift publish support');
 must(gps, 'STARTED', 'gps helper keeps started shift publish support');
 must(gps, 'APPROVED', 'gps helper keeps approved shift publish support');
 must(gps, 'canPublish: reason === \'ready\'', 'gps helper gates publish through a shared ready resolver');
-must(today, 'Sürüş ve GPS yardımı', 'today screen has gps helper card title');
-must(today, 'Ayarları aç', 'today screen exposes settings action');
-must(today, 'Konumu şimdi gönder', 'today screen exposes manual publish action');
-if (!(normalize(today).includes(normalize('Görev yok')) || normalize(app).includes(normalize('Bugün aktif görev yok. Bu yüzden konum gönderilmiyor.')))) throw new Error('FAIL no-shift publish stop visible'); ok('no-shift publish stop visible');
+must(live, 'Konum ve GPS durumu', 'live screen has gps helper card title');
+must(live, 'Ayarlara git', 'live screen exposes settings action');
+must(premium, 'Sürücünün telefon GPS\'ini başlat', 'premium ui exposes manual publish action');
+if (!(normalize(live).includes(normalize('Aktif görev bulunmadığı için GPS gönderimi başlatılamıyor.')) || normalize(app).includes(normalize('Bugün aktif görev yok. Bu yüzden konum gönderilmiyor.')))) throw new Error('FAIL no-shift publish stop visible'); ok('no-shift publish stop visible');
 
 console.log('=== M57.1 FOREGROUND GPS PUBLISH CHECK PASS ===');

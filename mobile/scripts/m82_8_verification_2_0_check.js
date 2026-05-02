@@ -63,10 +63,11 @@ assertContains(pkg.scripts['acceptance:mobile'] || '', ['check:m82.4', 'check:m8
 assertContains(storage, ['getLastMobileSnapshot', 'saveLastMobileSnapshot', 'getSelectedShiftId', 'saveSelectedShiftId', 'getPendingSessionEvent', 'savePendingSessionEvent'], 'storage keeps snapshot + selected shift + pending session event');
 assertContains(api, ['fetchShiftRoute', 'startDriverShift', 'pauseDriverShift', 'resumeDriverShift', 'completeDriverShift', 'markDriverStopReached', 'skipDriverStop', 'reopenDriverStop', 'undoDriverStop', 'AbortController'], 'api exposes shift route + manual ops + timeout');
 assertContains(app, ['selectedShiftId', 'syncSignedIn', 'getPendingSessionEvent', 'RouteScreen', 'LiveScreen'], 'app wires selected shift + pending session event + split screens');
-assertContains(routeScreen, ['Vardiyayı başlat', 'Durak ulaşıldı', 'Vardiyayı tamamla', 'Navigasyonu aç', 'Tam rotayı aç'], 'route screen exposes driver manual operations');
+assertContains(routeScreen, ['Vardiyayı başlat', 'Durak ulaşıldı', 'Vardiyayı tamamla', 'RouteNavigationCard', 'RouteVoiceSupportCard', 'Navigasyonu aç', 'Sıradaki durağa git', 'Tüm rotayı aç'], 'route screen exposes driver manual operations');
 assertContains(liveScreen, ['Sürücünün telefon GPS\'i', 'Araç GPS\'i', 'Konum ve GPS durumu', 'Gelişmiş durum'], 'live screen distinguishes official source from local preview');
 assertContains(todayScreen, ['DriverDiagnosticsCard', 'Yayın hedefi', 'Yayın profilleri', 'Canlı test', 'Android önizleme', 'Yayın paketi', 'Ortam aşaması', 'Kabul özeti'], 'today screen keeps release card and task summary card');
-assertContains(taskCard, ['Navigasyonu aç', 'Canlı'], 'shared task card keeps split navigation entry');
+assertContains(todayScreen, ['Rota ekranına geç'], 'today screen keeps route entry action');
+assertContains(taskCard, ['Temsilî rota önizlemesi'], 'shared task card keeps premium route preview wording');
 assertContains(loginScreen, ['Release / env kabul kontrolu'], 'login screen exposes release acceptance status');
 assertContains(backgroundGps, ['getSelectedShiftId', 'savePendingSessionEvent', 'fetchShiftRoute', 'publishGps'], 'background gps keeps selected shift + session failure + route-only publish path');
 assertContains(app, ['retryCount', 'nextRetryAt'], 'app keeps retry/backoff visibility in runtime state');

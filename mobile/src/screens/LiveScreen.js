@@ -1,7 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 import { resolveDriverGpsShiftContext } from '../lib/gps';
 import { DriverDiagnosticsCard, GpsSourceStatusCard } from './driverPremiumUi';
-import { Card, Info, Pill, PrimaryButton, SecondaryButton, SectionTitle, fmt, isStale, styles } from './mobileUi';
+import { Card, Pill, fmt, isStale, styles } from './mobileUi';
 import { driverGpsBackgroundReasonText, driverGpsPrimaryActionLabel, driverGpsStatusLabel, humanizeDriverUiText } from './driverUiText';
 
 export default function LiveScreen({
@@ -11,22 +11,13 @@ export default function LiveScreen({
   net,
   gps,
   kvkk,
-  voiceEnabled,
   selectedShiftId,
-  onOpenToday,
-  onOpenRoute,
-  onToggleVoiceGuidance,
-  onSpeakNextStop,
-  onSpeakEta,
   onRequestGpsPermission,
   onRefreshGpsStatus,
   onOpenGpsSettings,
   onPublishGpsNow,
-  onAcceptKvkk,
-  onRefreshKvkkStatus,
   releaseInfo,
 }) {
-  const nextStop = route?.nextStop || null;
   const gpsContext = resolveDriverGpsShiftContext(today, route, selectedShiftId);
   const hasActiveShift = Boolean(gpsContext.activeShift);
   const hasVehicle = Boolean(gpsContext.vehicleId);
@@ -106,7 +97,7 @@ export default function LiveScreen({
     <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
       <Card>
         <Text style={styles.title}>Canlı</Text>
-        <Text style={styles.subtitle}>Bağlantı, sürücünün telefon GPS'i, KVKK ve sesli rehber bu ekrandan izlenir.</Text>
+        <Text style={styles.subtitle}>Bağlantı, sürücünün telefon GPS'i ve KVKK bu ekrandan izlenir.</Text>
         <View style={styles.rowGap}>
           <Pill label={`Vardiya: ${selectedShiftId || route?.shift?.id || today?.active?.id || '-'}`} tone={selectedShiftId || route?.shift?.id ? 'ok' : 'warn'} />
           <Pill label={`Bağlantı: ${netStatusText}`} tone={net?.status === 'online' ? 'ok' : net?.status === 'offline' ? 'warn' : 'info'} />
@@ -138,18 +129,6 @@ export default function LiveScreen({
             : 'Bu cihazda arka plan GPS görevi desteklenmiyor.'
         }
       />
-
-      <Card>
-        <SectionTitle title="Sesli rehber" />
-        <Info label="Durum" value={voiceEnabled ? 'Açık' : 'Kapalı'} />
-        <Info label="Sıradaki durak" value={nextStop?.name || '-'} />
-        <Info label="Tahmini varış" value={nextStop?.etaMin != null ? `${nextStop.etaMin} dk` : '-'} />
-        <View style={styles.actionsRow}>
-          <PrimaryButton title={voiceEnabled ? 'Sesli rehberi kapat' : 'Sesli rehberi aç'} onPress={onToggleVoiceGuidance} />
-          <SecondaryButton title="Sıradaki durağı oku" onPress={onSpeakNextStop} disabled={!nextStop} />
-          <SecondaryButton title="Tahmini varış oku" onPress={onSpeakEta} disabled={!nextStop} />
-        </View>
-      </Card>
 
       <DriverDiagnosticsCard
         title="Gelişmiş durum"
