@@ -10,7 +10,7 @@ import { haversineKm, etaMinutes } from "../geo.js";
 import { decorateShiftWithRegionContext, emitShift } from "./shifts/helpers.js";
 import { emitStopProgressNotifs } from "../notifications/stopProgressNotifs.js";
 import { gpsStatusFromAt } from "../gps/status.js";
-import { gpsSourceLabelFromKey } from "../gps/sourceLabel.js";
+import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
 
 // TR day helpers (already used across repo)
 import { ymdTR, addDaysTR, atTR } from "../time/tr.js";
@@ -125,28 +125,34 @@ function buildDriverRoutePayload(shift) {
   const decoratedShift = decorateShiftWithRegionContext(shift);
   const last = decoratedShift?.vehicle?.gpsLast ?? null;
   const vehicleGpsSource = String(decoratedShift?.vehicle?.gpsState?.lastSource || "BACKEND_VEHICLE_GPS").trim().toUpperCase() || "BACKEND_VEHICLE_GPS";
-  const backendGpsLabel = gpsSourceLabelFromKey(vehicleGpsSource);
+  const gpsFreshness = last ? gpsStatusFromAt(last.at) : { status: "OFFLINE", ageSec: null };
+  const hasActiveShift = String(decoratedShift?.status || "").trim().toUpperCase() === "ACTIVE";
+  const sourceVisibility = resolveGpsSourceVisibility({
+    officialSourceKey: vehicleGpsSource,
+    freshness: gpsFreshness.status,
+    hasActiveShift,
+  });
+  const backendGpsLabel = sourceVisibility.label;
   const backendGpsMeta = last
-    ? (() => {
-        const gpsFreshness = gpsStatusFromAt(last.at);
-        return {
-          available: true,
-          source: vehicleGpsSource,
-          label: backendGpsLabel,
-          sourceLabel: backendGpsLabel,
-          freshness: gpsFreshness.status,
-          ageSec: gpsFreshness.ageSec,
-          at: last.at,
-          lat: last.lat,
-          lng: last.lng,
-          speed: last.speed,
-        };
-      })()
+    ? {
+        available: true,
+        source: vehicleGpsSource,
+        label: backendGpsLabel,
+        sourceLabel: backendGpsLabel,
+        sourceVisibility,
+        freshness: gpsFreshness.status,
+        ageSec: gpsFreshness.ageSec,
+        at: last.at,
+        lat: last.lat,
+        lng: last.lng,
+        speed: last.speed,
+      }
     : {
         available: false,
         source: vehicleGpsSource,
         label: backendGpsLabel,
         sourceLabel: backendGpsLabel,
+        sourceVisibility,
         freshness: "OFFLINE",
         ageSec: null,
         at: null,
@@ -215,6 +221,7 @@ function buildDriverRoutePayload(shift) {
     liveLocation: {
       officialSource: vehicleGpsSource,
       sourcePriority: ["BACKEND_VEHICLE_GPS", "DRIVER_PHONE", "LOCAL_DEVICE_PREVIEW", "CACHED_BACKEND_VEHICLE_GPS"],
+      sourceVisibility,
       backendVehicleGps: backendGpsMeta,
     },
     progress: {

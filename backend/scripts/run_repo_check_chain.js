@@ -32,6 +32,7 @@ const phaseDefinitions = {
     nodeStep("backend-lint", "backend/scripts/run_backend_lint.js"),
     nodeStep("relative-import-integrity", "backend/scripts/relative_import_integrity_check.js"),
     nodeStep("web-lint-with-evidence", "backend/scripts/run_web_lint_with_evidence.js"),
+    nodeStep("brand-visibility", "tools/check_brand.js"),
   ],
   docs: [
     nodeStep("docs-ssot-pack", "backend/scripts/docs_ssot_pack_check.js"),
@@ -61,6 +62,7 @@ const phaseDefinitions = {
     nodeStep("m96c2-boarding-change-ops", "backend/scripts/m96_c2_boarding_change_ops_check.js"),
     nodeStep("m97-panel-operations", "backend/scripts/m97_panel_operations_check.js"),
     nodeStep("m95e20-gps-fallback", "backend/scripts/m95_e20_driver_phone_gps_fallback_check.js"),
+    nodeStep("m95e23b-gps-source-visibility", "backend/scripts/m95_e23b_gps_source_visibility_check.js"),
     nodeStep("m95e20-web-gps-badge", "web/scripts/m95_e20_web_gps_source_badge_check.js"),
   ],
   milestones: [

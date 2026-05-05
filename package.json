@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "scripts": {
     "check": "npm run verify:repo",
+    "check:brand": "node tools/check_brand.js",
+    "check:m95e23b": "node backend/scripts/m95_e23b_gps_source_visibility_check.js",
     "verify:repo": "node backend/scripts/run_repo_check_chain.js --phase all",
     "verify:snapshot": "node backend/scripts/m90_c10_physical_snapshot_hygiene_check.js",
     "lint:backend": "npm --prefix backend run lint",
