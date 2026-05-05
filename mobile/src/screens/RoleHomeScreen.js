@@ -6,6 +6,7 @@ import ParentActivationCard from './ParentActivationCard';
 import LinkAccessCard from './LinkAccessCard';
 import KvkkVisibilityMatrixCard from './KvkkVisibilityMatrixCard';
 import RoleLivePremiumCard from './RoleLivePremiumCard';
+import RoleOverviewPremiumCard from './RoleOverviewPremiumCard';
 import { Card, EmptyState, Info, Pill, PrimaryButton, RoutePreviewList, SecondaryButton, SectionTitle, ShiftChooser, fmt, styles } from './mobileUi';
 import { resolveMobileRolePremiumSurface, resolveMobileRoleSurface } from '../lib/roleSurface';
 import { buildRoleLivePremiumSurface } from '../app/roleLiveState';
@@ -180,6 +181,23 @@ export default function RoleHomeScreen({
         onMarkNotificationsSeen={onMarkNotificationsSeen}
         legacyCards={legacyCards}
         legacyLabels={legacyLabels}
+      />
+    );
+  }
+
+  if (isOverviewRole) {
+    return (
+      <RoleOverviewPremiumCard
+        role={key}
+        me={me}
+        roleLive={roleLive}
+        notifications={notifications}
+        health={health}
+        releaseInfo={releaseInfo}
+        lastSyncAt={lastSyncAt}
+        routeOpsBusy={actionBusy}
+        onRefresh={onRefresh}
+        onMarkNotificationsSeen={onMarkNotificationsSeen}
       />
     );
   }
