@@ -1,3 +1,5 @@
+import { resolveMobileRolePremiumSurface } from '../lib/roleSurface';
+
 function positiveInt(value) {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : null;
@@ -72,6 +74,168 @@ function pickLiveVehicle(liveVehicles, vehicleId) {
   if (!Array.isArray(liveVehicles) || !liveVehicles.length) return null;
   if (!id) return liveVehicles[0] || null;
   return liveVehicles.find((item) => Number(item?.id || 0) === id || Number(item?.vehicleId || 0) === id) || liveVehicles[0] || null;
+}
+
+function isTimestampStale(value, thresholdMs = 90000) {
+  if (!value) return false;
+  const ms = new Date(value).getTime();
+  if (!Number.isFinite(ms)) return false;
+  return Date.now() - ms > thresholdMs;
+}
+
+function gpsFreshnessText(value) {
+  if (!value) return 'GPS bekleniyor';
+  if (isTimestampStale(value)) return 'GPS eski';
+  return 'Güncel';
+}
+
+function createPremiumStats(key, current, etaText, statusText, gpsText) {
+  if (key === 'PARENT') {
+    return [
+      {
+        label: 'Tahmini geliş',
+        value: etaText,
+        note: current?.secondaryText || 'Bağlı öğrenci için güncellenir.',
+        tone: 'dark',
+      },
+      {
+        label: 'Öğrenci',
+        value: current?.childName || '-',
+        note: current?.companyName || '-',
+        tone: 'info',
+      },
+      {
+        label: 'Araç / servis',
+        value: current?.vehiclePlate || '-',
+        note: gpsText,
+        tone: 'success',
+      },
+    ];
+  }
+
+  return [
+    {
+      label: 'Tahmini geliş',
+      value: etaText,
+      note: current?.secondaryText || 'Servis güncelleniyor.',
+      tone: 'dark',
+    },
+    {
+      label: 'Biniş durağı',
+      value: current?.nextStop?.name || '-',
+      note: current?.remainingStops != null ? `${current.remainingStops} durak kaldı` : 'Sıradaki durak',
+      tone: 'info',
+    },
+    {
+      label: 'Araç / servis',
+      value: current?.vehiclePlate || '-',
+      note: current?.driverName || statusText,
+      tone: 'success',
+    },
+  ];
+}
+
+export function buildRoleLivePremiumSurface(role, roleLive = null) {
+  const key = String(role || '').trim().toUpperCase();
+  const current = roleLive?.current || null;
+  const surface = resolveMobileRolePremiumSurface(key);
+  const etaMin = Number(current?.etaMin || 0);
+  const hasEta = Number.isFinite(etaMin) && etaMin > 0;
+  const etaText = hasEta ? `${etaMin} dk` : 'Servis bekleniyor';
+  const gpsText = gpsFreshnessText(current?.gpsAt || '');
+
+  let heroText = surface.heroHint || surface.subtitle || 'Servis yaklaşıyor';
+  let statusText = surface.legacySubtitle || 'Canlı takip';
+  let statusTone = 'info';
+
+  if (key === 'PARENT') {
+    if (current?.childStopReached) {
+      heroText = 'Servise bindi';
+      statusText = 'Servise bindi';
+      statusTone = 'success';
+    } else if (current?.primaryText && /ulaştı/i.test(current.primaryText)) {
+      heroText = 'Okula ulaştı';
+      statusText = 'Okula ulaştı';
+      statusTone = 'success';
+    } else if (hasEta) {
+      heroText = `Servis ${etaMin} dk uzakta`;
+      statusText = 'Yolda';
+      statusTone = 'info';
+    } else {
+      heroText = 'Servis yaklaşıyor';
+      statusText = 'Bugün aktif';
+      statusTone = 'warn';
+    }
+  } else if (key === 'PERSONEL') {
+    if (hasEta) {
+      heroText = `Servisim ${etaMin} dk uzakta`;
+      statusText = current?.shiftStatus === 'ACTIVE' ? 'Bugün aktif' : 'Servis izleniyor';
+      statusTone = current?.shiftStatus === 'ACTIVE' ? 'success' : 'info';
+    } else if (current?.shiftStatus === 'ACTIVE') {
+      heroText = 'Servisim yaklaşıyor';
+      statusText = 'Bugün aktif';
+      statusTone = 'success';
+    } else if (current?.shiftStatus === 'APPROVED') {
+      heroText = 'Servisim yaklaşıyor';
+      statusText = 'Hazır';
+      statusTone = 'info';
+    } else {
+      heroText = 'Servisim yaklaşıyor';
+      statusText = 'Servis izleniyor';
+      statusTone = 'warn';
+    }
+  }
+
+  const routeSummary = key === 'PARENT'
+    ? {
+        remainingRouteEtaMin: hasEta ? etaMin : null,
+        remainingKm: current?.etaKm != null ? Number(current.etaKm) : current?.remainingKm ?? null,
+        remainingStops: current?.remainingStopsToChild ?? current?.remainingStops ?? null,
+        remainingPassengers: current?.remainingPassengers ?? null,
+        lastReachedOrder: null,
+        completed: false,
+        paused: false,
+        statusText,
+      }
+    : {
+        remainingRouteEtaMin: hasEta ? etaMin : null,
+        remainingKm: current?.remainingKm ?? null,
+        remainingStops: current?.remainingStops ?? null,
+        remainingPassengers: current?.remainingPassengers ?? null,
+        lastReachedOrder: null,
+        completed: false,
+        paused: false,
+        statusText,
+      };
+
+  const detailRows = key === 'PARENT'
+    ? [
+        { label: 'Öğrenci', value: current?.childName || '-' },
+        { label: surface.serviceLabel, value: current?.vehiclePlate || '-' },
+        { label: surface.boardingLabel, value: current?.nextStop?.name || '-' },
+        { label: surface.gpsLabel, value: gpsText },
+      ]
+    : [
+        { label: surface.etaLabel, value: etaText },
+        { label: surface.boardingLabel, value: current?.nextStop?.name || '-' },
+        { label: surface.serviceLabel, value: current?.vehiclePlate || '-' },
+        { label: surface.gpsLabel, value: gpsText },
+      ];
+
+  return {
+    key,
+    ...surface,
+    heroText,
+    statusText,
+    statusTone,
+    gpsText,
+    hasCurrent: Boolean(current),
+    current,
+    stats: createPremiumStats(key, current, etaText, statusText, gpsText),
+    routeSummary,
+    routePreviewStops: Array.isArray(current?.routePreviewStops) ? current.routePreviewStops : [],
+    detailRows,
+  };
 }
 
 export function buildPersonelRoleLiveState({
