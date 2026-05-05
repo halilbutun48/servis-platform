@@ -7,6 +7,7 @@
     "check:brand": "node tools/check_brand.js",
     "check:m95e23b": "node backend/scripts/m95_e23b_gps_source_visibility_check.js",
     "check:m95e23c": "npm --prefix web run check:m95e23c",
+    "check:web-mobile": "npm --prefix web run check:web-mobile",
     "verify:repo": "node backend/scripts/run_repo_check_chain.js --phase all",
     "verify:snapshot": "node backend/scripts/m90_c10_physical_snapshot_hygiene_check.js",
     "lint:backend": "npm --prefix backend run lint",
@@ -21,6 +22,6 @@
     "verify:milestones": "node backend/scripts/run_m0_latest.js --static-only --to latest --continue",
     "verify:milestones:live": "node backend/scripts/run_m0_latest.js --integration-only --to latest --continue",
     "verify:ci": "npm run verify:repo",
-    "verify:final": "npm run check:m95e23c && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"
+    "verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"
   }
 }

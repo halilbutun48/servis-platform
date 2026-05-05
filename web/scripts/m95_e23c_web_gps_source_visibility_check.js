@@ -48,7 +48,7 @@ const mapView = read("src/components/map/MapView.jsx");
 const routePanel = read("src/panels/driver/RoutePanel.jsx");
 
 must(rootPkg, "check:m95e23c", "root package exposes check:m95e23c");
-must(rootPkg, "npm run check:m95e23c && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot", "root final verify chain includes web source visibility check");
+must(rootPkg, "npm run check:m95e23c && npm run check:web-mobile && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot", "root final verify chain includes web source visibility check");
 must(webPkg, "check:m95e23c", "web package exposes m95e23c");
 must(helper, "gpsSourceVisibilityTextFromVehicle", "web helper exports source visibility resolver");
 must(helper, "sourceVisibility?.text", "web helper prefers source visibility text");

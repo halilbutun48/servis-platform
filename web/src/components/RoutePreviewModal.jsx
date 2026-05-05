@@ -271,30 +271,19 @@ function scrollToStopRow(stopId) {
   if (!open) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        zIndex: 60,
-        background: "rgba(0,0,0,0.55)",
-      }}
-    >
-      <div className="card" style={{ width: "min(1200px, 96vw)", maxHeight: "92vh", overflow: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+    <div className="modal-backdrop routePreviewBackdrop" style={{ zIndex: 60, background: "rgba(0,0,0,0.55)" }}>
+      <div className="card modal routePreviewModal">
+        <div className="routePreviewHeader">
           <div>
-            <h3 style={{ margin: 0 }}>{title || "Rota/Durak Önizleme"}</h3>
-            {subtitle ? <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>{subtitle}</div> : null}
+            <h3 className="routePreviewTitle">{title || "Rota/Durak Önizleme"}</h3>
+            {subtitle ? <div className="muted routePreviewSubtitle">{subtitle}</div> : null}
           </div>
           <button type="button" onClick={onClose}>Kapat</button>
         </div>
 
-        {remote.err ? <div className="card err" style={{ marginTop: 12 }}>{remote.err}</div> : null}
+        {remote.err ? <div className="card err routePreviewError">{remote.err}</div> : null}
 
-        <div className="muted" style={{ marginTop: 8 }}>
+        <div className="muted routePreviewMeta">
           Durak: {stopPts.length}
           {effectiveRequiredPax > 0 ? ` • ${organizationLikePreview ? "Tahmini Kişi" : "Toplam Kişi"}: ${effectiveRequiredPax}` : ""}
           {peoplePts.length ? ` • Personel (koordinatlı): ${peoplePts.length}` : ""}
@@ -302,8 +291,8 @@ function scrollToStopRow(stopId) {
         </div>
 
         {effSummary ? (
-          <div className="card" style={{ marginTop: 12, padding: 10 }}>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div className="card routePreviewSummaryCard">
+            <div className="routePreviewSummaryRow">
               <b>Özet</b>
               <span className="muted">•</span>
               <span className="muted">Tip: {effSummary.direction}/{effSummary.pattern}{effSummary.isLoop ? " (LOOP)" : ""}</span>
@@ -311,7 +300,7 @@ function scrollToStopRow(stopId) {
               <span className="muted">Kaynak: {routeQuality.sourceLabel}</span>
             </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+            <div className="routePreviewStats">
               <div>Durak (hub hariç): <b>{routeQuality.stopCountWithoutHub}</b></div>
               <div>Durak (hub dahil): <b>{routeQuality.stopCountWithHub}</b></div>
               <div>{organizationLikePreview ? "Tahmini kişi" : "Kişi"}: <b>{effectiveRequiredPax || Number(stopPts.reduce((sum, s) => sum + Number(s.count ?? 0), 0))}</b></div>
@@ -327,32 +316,32 @@ function scrollToStopRow(stopId) {
               ) : null}
             </div>
 
-            <div className="card" style={{ marginTop: 10, padding: 10 }}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <div className="card routePreviewQualityCard">
+              <div className="routePreviewSummaryRow">
                 <b>Rota Kalitesi</b>
                 <span className="muted">•</span>
                 <span className="muted">Kaynak: {routeQuality.sourceLabel}</span>
               </div>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+              <div className="routePreviewStats">
                 <div>Tekil durak: <b>{routeQuality.singletonCount}</b></div>
                 <div>Review etkisi: <b>{routeQuality.reviewCount}</b></div>
                 <div>Başlangıç: <b>{effSummary?.startLabel || "-"}</b></div>
                 <div>Bitiş: <b>{effSummary?.endLabel || "-"}</b></div>
               </div>
-              <div className="muted" style={{ marginTop: 8 }}>
+              <div className="muted routePreviewNotes">
                 {routeQuality.qualityNotes.join(" • ")}
               </div>
             </div>
 
             {effSummary?.warning ? (
-              <div className="muted" style={{ marginTop: 8 }}>
+              <div className="muted routePreviewWarning">
                 Uyarı: {String(effSummary?.warning)}
               </div>
             ) : null}
           </div>
         ) : null}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+        <div className="routePreviewActions">
           <button
             type="button"
             className="btn sm"
@@ -364,13 +353,12 @@ function scrollToStopRow(stopId) {
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12, alignItems: "start", marginTop: 12 }}>
-          {/* Mini-map */}
-          <div className="card" style={{ margin: 0 }}>
-            <h3 style={{ marginTop: 0 }}>Mini Map</h3>
+        <div className="routePreviewLayout">
+          <div className="card routePreviewMapCard" style={{ margin: 0 }}>
+            <h3 className="routePreviewSectionTitle" style={{ marginTop: 0 }}>Mini Map</h3>
 
             {bounds ? (
-              <div style={{ width: "100%", height: 420, borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="routePreviewMapFrame">
                 <MapContainer center={center} zoom={13} style={{ width: "100%", height: "100%" }} scrollWheelZoom={false}>
                   <FitBounds bounds={bounds} />
                   <TileLayer
@@ -382,7 +370,6 @@ function scrollToStopRow(stopId) {
                     <Polyline positions={linePts.map((p) => [p.lat, p.lng])} />
                   ) : null}
 
-                  {/* Stops */}
                   {stopPts.map((s, i) => (
                     <CircleMarker key={s.id || i} center={[s.lat, s.lng]} radius={8}>
                       <Tooltip permanent direction="right" offset={[10, 0]} opacity={0.9}>
@@ -391,7 +378,6 @@ function scrollToStopRow(stopId) {
                     </CircleMarker>
                   ))}
 
-                  {/* Start / End */}
                   {startPt ? (
                     <CircleMarker center={[startPt.lat, startPt.lng]} radius={10}>
                       <Tooltip permanent direction="left" offset={[-10, 0]} opacity={0.9}>
@@ -423,25 +409,24 @@ function scrollToStopRow(stopId) {
             </div>
           </div>
 
-          
-{/* Mini Timeline (M74.3) */}
-<div className="card" style={{ margin: 0, marginBottom: 12, padding: 10 }}>
-  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-    <b>Mini Timeline</b>
-    <span className="muted" style={{ fontSize: 12 }}>Chip'e tıkla → listede o durağa git</span>
-  </div>
-  <div style={{ marginTop: 8 }}>
-    <StopTimeline
-      stops={stopsForTimeline}
-      nextStopId={nextStopId}
-      selectedStopId={selectedStopId}
-      compact
-      onSelect={(s) => scrollToStopRow(s?.id)}
-    />
-  </div>
-</div>          {/* Stops list */}
-          <div className="card" style={{ margin: 0, overflowX: "auto" }}>
-            <h3 style={{ marginTop: 0 }}>Durak Listesi</h3>
+          <div className="card routePreviewTimelineCard" style={{ margin: 0, marginBottom: 12, padding: 10 }}>
+            <div className="routePreviewSummaryRow">
+              <b>Mini Timeline</b>
+              <span className="muted" style={{ fontSize: 12 }}>Chip'e tıkla → listede o durağa git</span>
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <StopTimeline
+                stops={stopsForTimeline}
+                nextStopId={nextStopId}
+                selectedStopId={selectedStopId}
+                compact
+                onSelect={(s) => scrollToStopRow(s?.id)}
+              />
+            </div>
+          </div>
+
+          <div className="card routePreviewStopsCard" style={{ margin: 0, overflowX: "auto" }}>
+            <h3 className="routePreviewSectionTitle" style={{ marginTop: 0 }}>Durak Listesi</h3>
             {stopPts.length ? (
               <table className="tbl" style={{ whiteSpace: "nowrap" }}>
                 <thead>
@@ -454,7 +439,11 @@ function scrollToStopRow(stopId) {
                 </thead>
                 <tbody>
                   {stopPts.map((s, i) => (
-                    <tr key={s.id || i} id={`stoprow-${s.id || i}`} style={selectedStopId && String(selectedStopId) === String(s.id || i) ? { outline: "2px solid rgba(245,158,11,.55)" } : undefined}>
+                    <tr
+                      key={s.id || i}
+                      id={`stoprow-${s.id || i}`}
+                      style={selectedStopId && String(selectedStopId) === String(s.id || i) ? { outline: "2px solid rgba(245,158,11,.55)" } : undefined}
+                    >
                       <td className="muted">{i + 1}</td>
                       <td>{s.title || `Durak ${i + 1}`}</td>
                       <td className="muted">

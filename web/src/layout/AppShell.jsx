@@ -6,6 +6,7 @@ import { useSession } from "../state/session";
 import TabletOpsQuickBar from "../components/TabletOpsQuickBar";
 import BrandMark from "../components/BrandMark";
 import FloatingCopilotDrawer from "../components/copilot/FloatingCopilotDrawer";
+import { BRAND_NAME } from "../config/brand";
 
 export default function AppShell({ path, children }) {
   const { me, logout } = useSession();
@@ -23,9 +24,9 @@ export default function AppShell({ path, children }) {
       <NavDock role={role} path={path} me={me} />
       <div className="shellMain">
         <div className="shellTop">
-          <div><BrandMark compact subtitle="Operasyon paneli" /></div>
-          <div>
-            <div className="title">Vardis</div>
+          <div className="shellTopBrand"><BrandMark compact subtitle="Operasyon paneli" /></div>
+          <div className="shellTopMeta">
+            <div className="title">{BRAND_NAME}</div>
             <div className="muted">
               {isSchool ? "Okul operasyonu" : isOrganization ? "Organizasyon operasyonu" : "Personel servis operasyonu"}
             </div>
@@ -33,7 +34,7 @@ export default function AppShell({ path, children }) {
               {me?.email || "-"} • {isSchool ? "SCHOOL" : isOrganization ? "ORGANIZATION" : role}
             </div>
           </div>
-          <button className="btn sm" onClick={logout}>
+          <button className="btn sm shellTopLogout" onClick={logout}>
             Çıkış
           </button>
         </div>

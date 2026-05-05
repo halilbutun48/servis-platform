@@ -4,6 +4,7 @@ import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
 import { getCopilotMenuEntry } from "../copilot/screenRegistry";
 import BrandMark from "../components/BrandMark";
+import { BRAND_NAME } from "../config/brand";
 
 function roleTitle(role, me) {
   if (role === "SUPER_ADMIN") return "Süper Yönetici";
@@ -205,10 +206,10 @@ export default function NavDock({ role, path, me }) {
 
   return (
     <div className="navDock">
-      <div style={{ marginBottom: 12 }}><BrandMark compact subtitle="Operasyon menüsü" /></div>
+      <div className="navDockBrand"><BrandMark compact subtitle="Operasyon menüsü" /></div>
       <div className="navDockTitle">
-        <div style={{ fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", opacity: 0.8 }}>Vardis</div>
-        <div style={{ fontSize: 18, fontWeight: 700, marginTop: 2 }}>
+        <div className="navDockBrandName">{BRAND_NAME}</div>
+        <div className="navDockRole">
           {roleTitle(role, me)}
         </div>
       </div>

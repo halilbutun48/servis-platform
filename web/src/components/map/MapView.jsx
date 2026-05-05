@@ -296,7 +296,7 @@ export default function MapView({
   const nextStopLabel = nextStop?.name ? `Sıradaki: ${nextStop.name}` : "Sıradaki durak yok";
 
   return (
-    <div className="card" style={{ padding: 0 }}>
+    <div className="card mapViewShell" style={{ padding: 0 }}>
       <div style={{ height, width: "100%", position: "relative" }}>
         <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <FitController
@@ -370,29 +370,12 @@ export default function MapView({
         </MapContainer>
       </div>
 
-      <div
-        style={{
-          padding: 12,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 10,
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="mapViewFooter">
         <div className="muted" style={{ fontSize: 12 }}>
           {selectedVehicleLabel}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            justifyContent: "flex-end",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="mapViewPills">
           <span className="pill">Rota kaynağı: {routeSourceLabel}</span>
           <span className="pill" title={sourceVisibility?.label || gpsSourceVisibility.label}>GPS kaynağı: {gpsSourceLabel}</span>
           <span className="pill">GPS durumu: {gpsFreshnessLabel}</span>
@@ -400,7 +383,7 @@ export default function MapView({
           {selectedVehicle?.plate ? (
             <span className="pill">{selectedVehicleLabel}</span>
           ) : null}
-                 </div>
+        </div>
       </div>
     </div>
   );

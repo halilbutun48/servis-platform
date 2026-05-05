@@ -482,7 +482,75 @@
 
 /* Smaller screens: reduce rail + spacing */
 @media (max-width: 640px){
-  .ms-body{ padding:10px; gap:10px; grid-template-columns:64px 1fr; }
-  .ms-rail{ border-radius:16px; }
+  .ms-header{
+    min-height:56px;
+    height:auto;
+    padding:10px 12px;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+
+  .ms-brand{
+    font-size:18px;
+    gap:8px;
+  }
+
+  .ms-body{
+    padding:8px;
+    gap:8px;
+    grid-template-columns:1fr;
+  }
+
+  .ms-body.ms-body--noRail{
+    grid-template-columns:1fr;
+  }
+
+  .ms-rail{
+    display:none;
+  }
+
+  .ms-right{
+    top:56px;
+    height:calc(100dvh - 56px);
+    width:100vw;
+    border-radius:18px 18px 0 0;
+  }
+
+  .ms-right-backdrop{
+    inset:56px 0 0 0;
+  }
+
   .ms-mapwrap{ border-radius:16px; }
+}
+
+/* Responsive footer for MapView (inside the app shell card). */
+.mapViewFooter{
+  padding:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.mapViewPills{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+
+@media (max-width: 640px){
+  .mapViewFooter{
+    padding:10px;
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .mapViewPills{
+    width:100%;
+    justify-content:flex-start;
+  }
 }

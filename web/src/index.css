@@ -205,6 +205,127 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:16px; z-index:9000; }
 .modal{ width:100%; max-height:90vh; overflow:auto; }
 
+.shellTopBrand { min-width: 0; }
+.shellTopMeta { min-width: 0; }
+.shellTopLogout { flex-shrink: 0; }
+
+.navDockBrand { margin-bottom: 12px; }
+.navDockBrandName { font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.8; }
+.navDockRole { font-size: 18px; font-weight: 700; margin-top: 2px; }
+
+.panelChromeHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.panelChromeTitleBlock { min-width: 0; }
+.panelChromeActions { justify-content: flex-end; }
+
+.routePreviewBackdrop {
+  background: rgba(0, 0, 0, .58);
+}
+
+.routePreviewModal {
+  width: min(1200px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+  overflow-x: hidden;
+  margin-bottom: 0;
+  padding: 16px;
+}
+
+.routePreviewHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.routePreviewTitle {
+  margin: 0;
+}
+
+.routePreviewSubtitle {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.routePreviewMeta {
+  margin-top: 8px;
+}
+
+.routePreviewSummaryCard {
+  margin-top: 12px;
+  margin-bottom: 0;
+  padding: 10px;
+}
+
+.routePreviewSummaryRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.routePreviewStats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.routePreviewQualityCard {
+  margin-top: 10px;
+  margin-bottom: 0;
+  padding: 10px;
+}
+
+.routePreviewNotes {
+  margin-top: 8px;
+}
+
+.routePreviewWarning {
+  margin-top: 8px;
+}
+
+.routePreviewActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.routePreviewLayout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+  align-items: start;
+  margin-top: 12px;
+}
+
+.routePreviewMapCard,
+.routePreviewTimelineCard,
+.routePreviewStopsCard {
+  margin: 0;
+}
+
+.routePreviewTimelineCard {
+  margin-bottom: 0;
+}
+
+.routePreviewSectionTitle {
+  margin-top: 0;
+}
+
+.routePreviewMapFrame {
+  width: 100%;
+  height: 420px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
 
 /* --- UI helpers (M37) --- */
 .row{ display:flex; gap:10px; }
@@ -347,12 +468,117 @@ button, input, select, textarea, .btn, .secondary, .navItem {
   .shellTop {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
   }
+  .shellTopMeta {
+    display: grid;
+    gap: 2px;
+    width: 100%;
+  }
+  .shellTopLogout { align-self: flex-start; }
   .shellContent { padding: 12px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
   .card { padding: 14px; }
   .tbl { min-width: 640px; }
   .modal-backdrop { align-items: flex-end; padding: 10px; }
   .modal { max-height: min(88vh, 88dvh); border-radius: 16px 16px 0 0; }
+  .panelChromeHead { flex-direction: column; align-items: flex-start; }
+  .panelChromeActions, .saActions { width: 100%; justify-content: flex-start; }
+  .panelChromeActions > *, .saActions > * { flex: 1 1 100%; }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .shellTop { padding: calc(11px + env(safe-area-inset-top)) 14px 11px; }
+  .navDock { padding: 12px 14px; }
+  .navDockTitle { margin-bottom: 8px; }
+  .navDockBrandName { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+  .navDockRole { font-size: 17px; font-weight: 700; margin-top: 2px; }
+  .panelTitle { font-size: 20px; }
+  .panelSectionTitle { font-size: 15px; }
+}
+
+@media (max-width: 640px) {
+  .wrap { margin: 12px auto; padding: 0 10px; }
+  .topbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .row { flex-direction: column; }
+  .shellTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+  }
+  .shellTopBrand { width: 100%; }
+  .shellTopMeta {
+    display: grid;
+    gap: 2px;
+    width: 100%;
+  }
+  .shellTopMeta .title { font-size: 18px; line-height: 1.15; }
+  .shellTopMeta .muted { font-size: 12px; }
+  .shellTopLogout { align-self: flex-start; }
+
+  .navDock {
+    padding: 8px 10px;
+    overflow-x: auto;
+  }
+  .navDockBrand { display: none; }
+  .navDockTitle { margin-bottom: 8px; }
+  .navDockBrandName { display: none; }
+  .navDockRole { font-size: 16px; font-weight: 800; margin-top: 0; text-transform: none; letter-spacing: 0; }
+  .navSection { margin-bottom: 8px; }
+  .navSectionTitle { display: none; }
+  .navDockItems {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+  .navItem {
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 0 14px;
+  }
+  .navLabel { font-size: 13px; }
+  .navBadge { font-size: 11px; padding: 2px 7px; }
+
+  .shellContent { padding: 10px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .card { padding: 12px; border-radius: 12px; }
+  .title { font-size: 18px; }
+  .panelTitle { font-size: 18px; }
+  .panelSubtitle { font-size: 13px; }
+  .panelSectionTitle { font-size: 15px; }
+  .panelSectionSubtitle, .panelMeta { font-size: 12px; }
+  .panelBody { font-size: 14px; line-height: 1.5; }
+  .panelStatValue { font-size: 22px; }
+  .panelChromeHead { flex-direction: column; align-items: flex-start; }
+  .panelChromeActions, .saActions { width: 100%; justify-content: flex-start; }
+  .panelChromeActions > *, .saActions > * { flex: 1 1 100%; }
+  .btn, .secondary, .navItem, .tabletQuickButton { min-height: 44px; }
+  .tbl { min-width: 640px; }
+  .modal-backdrop { align-items: flex-end; padding: 8px; }
+  .modal { width: 100%; max-height: min(92dvh, 92vh); border-radius: 18px 18px 0 0; }
+
+  .routePreviewModal {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    padding: 12px;
+  }
+  .routePreviewHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .routePreviewActions {
+    justify-content: flex-start;
+  }
+  .routePreviewLayout {
+    grid-template-columns: 1fr;
+  }
+  .routePreviewMapFrame {
+    height: min(42vh, 360px);
+  }
 }
 
 

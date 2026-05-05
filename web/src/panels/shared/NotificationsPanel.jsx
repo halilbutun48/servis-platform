@@ -169,8 +169,9 @@ export default function NotificationsPanel() {
 
         .notifFilters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
         .notifFilters input, .notifFilters select {
-          height: 34px;
-          padding: 6px 10px;
+          min-height: 44px;
+          height: auto;
+          padding: 8px 10px;
         }
 
         .notifTblCard { flex:1; min-height:420px; overflow:hidden; }
@@ -227,6 +228,17 @@ export default function NotificationsPanel() {
         }
         @media (max-width: 980px){
           .hideSm { display:none; }
+        }
+
+        @media (max-width: 640px){
+          .notifLayout { min-height: auto; }
+          .notifTopbar { align-items: stretch; }
+          .notifFilters { width: 100%; align-items: stretch; }
+          .notifFilters input, .notifFilters select, .notifFilters button {
+            width: 100%;
+            min-width: 0 !important;
+          }
+          .notifTblCard { min-height: 320px; }
         }
       `}</style>
 
