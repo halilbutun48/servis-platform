@@ -132,6 +132,26 @@ export function driverGpsPrimaryActionLabel({
   return 'Konumu şimdi gönder';
 }
 
+function normalizeGpsSourceKey(source) {
+  return String(source || '')
+    .trim()
+    .toUpperCase()
+    .replace(/^CACHED_/, '');
+}
+
+export function driverPhoneGpsStateLabel({
+  officialSourceKey = '',
+  backgroundTaskRunning = false,
+  hasActiveShift = true,
+} = {}) {
+  if (!hasActiveShift) return "Telefon GPS'i beklemede — görev yok";
+
+  const key = normalizeGpsSourceKey(officialSourceKey);
+  if (key === 'DRIVER_PHONE') return "Sürücünün telefon GPS'i devrede";
+  if (backgroundTaskRunning || key === 'BACKEND_VEHICLE_GPS') return "Sürücünün telefon GPS'i beklemede";
+  return "Sürücünün telefon GPS'i beklemede";
+}
+
 export function driverGpsStatusLabel({
   gpsNeedsPermission = false,
   backgroundPermissionGranted = true,

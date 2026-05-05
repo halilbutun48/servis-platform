@@ -2,7 +2,13 @@ import { ScrollView, Text, View } from 'react-native';
 import { resolveDriverGpsShiftContext } from '../lib/gps';
 import { DriverDiagnosticsCard, GpsSourceStatusCard } from './driverPremiumUi';
 import { Card, Pill, fmt, isStale, styles } from './mobileUi';
-import { driverGpsBackgroundReasonText, driverGpsPrimaryActionLabel, driverGpsStatusLabel, humanizeDriverUiText } from './driverUiText';
+import {
+  driverGpsBackgroundReasonText,
+  driverGpsPrimaryActionLabel,
+  driverGpsStatusLabel,
+  driverPhoneGpsStateLabel,
+  humanizeDriverUiText,
+} from './driverUiText';
 
 export default function LiveScreen({
   today,
@@ -54,6 +60,16 @@ export default function LiveScreen({
     canPublish: gpsContext.canPublish,
     publishState: gps?.publishState || '',
   });
+  const phoneGpsStateText = driverPhoneGpsStateLabel({
+    officialSourceKey: gps?.officialSourceKey,
+    backgroundTaskRunning,
+    hasActiveShift,
+  });
+  const phoneGpsBadgeText = phoneGpsStateText === "Sürücünün telefon GPS'i devrede"
+    ? 'Aktif'
+    : phoneGpsStateText === "Telefon GPS'i beklemede — görev yok"
+      ? 'Görev yok'
+      : 'Beklemede';
   const showGpsDebug = String(releaseInfo?.envStage || '').trim().toLowerCase() === 'local-emulator';
   const releaseStageText = humanizeDriverUiText(releaseInfo?.envStage || '-', 'Bilinmiyor');
   const releaseStatusText = humanizeDriverUiText(releaseInfo?.acceptanceStatusText || 'READY', 'Hazır');
@@ -62,7 +78,7 @@ export default function LiveScreen({
     {
       key: 'vehicle',
       title: "Araç GPS'i",
-      subtitle: gps?.officialSourceText || "Araçtan gelen konum verisi.",
+      subtitle: gps?.officialFreshnessText || "Araç GPS'i bekliyor.",
       badge: gps?.officialFreshnessText || 'Bekliyor',
       active: String(gps?.officialSourceKey || '').includes('BACKEND_VEHICLE_GPS'),
       tone: 'success',
@@ -70,25 +86,27 @@ export default function LiveScreen({
     {
       key: 'driver-phone',
       title: "Sürücünün telefon GPS'i",
-      subtitle: gps?.displaySourceText === "Sürücünün telefon GPS'i"
-        ? 'Telefon GPS’i ile konum paylaşımı aktif.'
-        : "Telefon GPS'i yedek kaynak olarak hazır.",
-      badge: gps?.displaySourceText === "Sürücünün telefon GPS'i" ? 'Aktif' : 'Bekliyor',
-      active: gps?.displaySourceText === "Sürücünün telefon GPS'i",
-      tone: 'info',
+      subtitle: phoneGpsStateText,
+      badge: phoneGpsBadgeText,
+      active: phoneGpsStateText === "Sürücünün telefon GPS'i devrede",
+      tone: phoneGpsStateText === "Sürücünün telefon GPS'i devrede" ? 'info' : 'warning',
     },
     {
       key: 'waiting',
       title: 'GPS bekleniyor',
-      subtitle: gpsNeedsPermission ? 'GPS izni bekleniyor.' : 'Konum verisi kısa süreli bekleniyor.',
-      badge: gpsNeedsPermission ? 'İzin gerekli' : 'Hazır',
+      subtitle: gpsNeedsPermission
+        ? 'GPS izni bekleniyor.'
+        : hasActiveShift
+          ? 'Konum verisi kısa süreli bekleniyor.'
+          : phoneGpsStateText,
+      badge: gpsNeedsPermission ? 'İzin gerekli' : hasActiveShift ? 'Hazır' : 'Görev yok',
       active: !gps?.displaySourceText || gps?.displaySourceKey === 'NONE',
       tone: 'warning',
     },
   ];
   const summaryItems = [
     { label: 'Görev durumu', value: gpsContext.canPublish ? 'Aktif görev var' : 'Aktif görev yok', note: gpsContext.shiftId ? `#${gpsContext.shiftId}` : '' },
-    { label: 'Son konum kaynağı', value: gps?.displaySourceText || '-', note: gps?.officialFreshnessText || '' },
+    { label: 'Telefon GPS durumu', value: phoneGpsStateText, note: gpsContext.canPublish ? 'Yayın hazır' : 'Beklemede' },
     { label: 'Konum güncellendi', value: fmt(gps?.displayAt || gps?.lastSentAt), note: gpsStatusText },
     { label: 'Konum doğruluğu', value: gps?.officialFreshnessText || '-', note: gpsBackgroundReasonText || '' },
   ];
