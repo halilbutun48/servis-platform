@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 
 import { uiStatusFromVehicle } from "../../utils/uiStatus";
 import { gpsFreshnessLabelFromUiStatus, gpsSourceLabelFromKey } from "../../utils/gpsSource";
+import { gpsSourceVisibilityTextFromVehicle } from "../../utils/gpsSourceVisibility";
 import "./mapShell.css";
 import "./markers.css";
 import { makeVehicleMarkerC } from "../../lib/markers/vehicleMarkerC";
@@ -282,7 +283,10 @@ export default function MapView({
     : routeSource === "OSRM"
       ? "Yol ağına yakın rota"
       : "Tahmini rota";
-  const gpsSourceLabel = gpsSourceLabelFromKey(selectedVehicle?.gpsState?.lastSource || selectedVehicle?.liveLocation?.backendVehicleGps?.source || selectedVehicle?.gpsLast?.source || '');
+  const gpsSourceFallbackLabel = gpsSourceLabelFromKey(selectedVehicle?.gpsState?.lastSource || selectedVehicle?.liveLocation?.backendVehicleGps?.source || selectedVehicle?.gpsLast?.source || '');
+  const gpsSourceVisibility = gpsSourceVisibilityTextFromVehicle(selectedVehicle);
+  const sourceVisibility = gpsSourceVisibility.sourceVisibility;
+  const gpsSourceLabel = gpsSourceVisibility.text || gpsSourceFallbackLabel;
   const gpsFreshnessLabel = gpsFreshnessLabelFromUiStatus(selectedUi);
 
   const selectedVehicleLabel = selectedVehicle?.plate
@@ -390,7 +394,7 @@ export default function MapView({
           }}
         >
           <span className="pill">Rota kaynağı: {routeSourceLabel}</span>
-          <span className="pill">GPS kaynağı: {gpsSourceLabel}</span>
+          <span className="pill" title={sourceVisibility?.label || gpsSourceVisibility.label}>GPS kaynağı: {gpsSourceLabel}</span>
           <span className="pill">GPS durumu: {gpsFreshnessLabel}</span>
           <span className="pill" data-status="NEXT">{nextStopLabel}</span>
           {selectedVehicle?.plate ? (

@@ -430,11 +430,17 @@ async function undoLast() {
 
 
       {data?.routeStops?.length ? (
-        <MapView
-          vehicles={data?.vehicle && data?.last ? [{ id: data.vehicle.id, plate: data.vehicle.plate, gpsLast: data.last }] : []}
-          stops={data.routeStops}
-          selectedVehicleId={data?.vehicle?.id ?? null}
-          onSelectVehicle={() => {}}
+      <MapView
+        vehicles={data?.vehicle && data?.last ? [{
+          id: data.vehicle.id,
+          plate: data.vehicle.plate,
+          gpsLast: data.last,
+          gpsState: { lastSource: data?.liveLocation?.officialSource || data?.liveLocation?.backendVehicleGps?.source || null },
+          liveLocation: data?.liveLocation || null,
+        }] : []}
+        stops={data.routeStops}
+        selectedVehicleId={data?.vehicle?.id ?? null}
+        onSelectVehicle={() => {}}
           fitKey={`driverRoute:${shift?.id ?? "x"}:${(data.routeStops || []).length}:${data?.last?.at ?? ""}`}
           height="320px"
         />
