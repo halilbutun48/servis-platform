@@ -17,10 +17,6 @@ const repoRoot = path.resolve(__dirname, "../..");
 const RUN_ID = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
 let SMOKE_BASE_URL = null;
 
-function isLocalSmokeTarget(url) {
-  return ["localhost", "127.0.0.1", "::1"].includes(String(url?.hostname || "").trim().toLowerCase());
-}
-
 function assert(cond, message) {
   if (!cond) throw new Error(`FAIL ${message}`);
   console.log(`OK ${message}`);
