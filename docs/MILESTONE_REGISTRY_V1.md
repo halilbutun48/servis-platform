@@ -109,6 +109,8 @@
   - `M98-D - kvkk visibility matrix - active`
   - `M98-E2E - code + PIN acceptance gate - green`
   - `M98-E3 - code + PIN saha / UX kanıt paketi - active`
+  - `M98-E4 - code + PIN runtime smoke - active`
+  - `M98-E5 - code + PIN gerçek kullanıcı kabul checklist’i - active`
 - `M99-A - mobile regression pack - active`
   - amaç: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak
   - komut: `node mobile/scripts/m99_a_mobile_regression_pack_check.js`

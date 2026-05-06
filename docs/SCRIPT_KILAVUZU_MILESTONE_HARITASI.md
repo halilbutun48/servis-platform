@@ -42,6 +42,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
 - `node backend\scripts\m98_e2e_code_pin_access_acceptance_check.js`
 - `node backend\scripts\m98_e3_code_pin_field_ux_check.js`
+- `node backend\scripts\m98_e5_code_pin_manual_acceptance_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -468,6 +469,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
 - Ana konu: rol bazlı takip görünürlüğü ve KVKK kapı kurallarını görünür kılmak.
 
+### M98-E5 — kod + PIN gerçek kullanıcı kabul checklist’i [CHECK]
+- Komut: `node backend\scripts\m98_e5_code_pin_manual_acceptance_check.js`
+- Ana konu: saha/operatör gözüyle kod + PIN erişim paketinin gerçek kullanıcı kabulünü tek checklist altında doğrulamak.
+
 ### M99-A — mobile regression pack [CHECK]
 - Komut: `node mobile\scripts\m99_a_mobile_regression_pack_check.js`
 - Ana konu: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak.
@@ -507,6 +512,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M98-B`: parent activation and link access check'i
 - `M98-C`: link lifetime and tracking authority check'i
 - `M98-D`: kvkk visibility matrix check'i
+- `M98-E5`: kod + PIN gerçek kullanıcı kabul checklist'i
 - `M99-A`: mobile regression pack check'i
 - `M99-B`: real scenario tests check'i
 - `M99-C`: field launch readiness check'i
