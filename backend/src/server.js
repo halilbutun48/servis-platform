@@ -55,6 +55,7 @@ import { checkinRouter } from "./routes/checkin.js";
 import { organizationRouter } from "./routes/organization.js";
 import { schoolParentInvitesRouter } from "./routes/schoolParentInvites.js";
 import { passengerLinksRouter, publicPassengerLiveRouter } from "./routes/passengerLinks.js";
+import * as personelAccessMod from "./routes/personelAccess.js";
 import { aiRouter } from "./routes/ai.js";
 import { observabilityRouter } from "./routes/observability.js";
 import { fieldAcceptanceRouter } from "./routes/fieldAcceptance.js";
@@ -89,6 +90,8 @@ const driverRouter = pickExport(driverMod, "driverRouter");
 const personelsRouter = pickExport(personelsMod, "personelsRouter");
 const companyPersonelsRouter = pickExport(companyPersonelsMod, "companyPersonelsRouter");
 const personelShiftsRouter = pickExport(personelShiftsMod, "personelShiftsRouter");
+const personelAccessRouter = pickExport(personelAccessMod, "personelAccessRouter");
+const publicPersonelInviteRouter = pickExport(personelAccessMod, "publicPersonelInviteRouter");
 
 const companiesRouter = pickExport(companiesMod, "companiesRouter");
 const roomsRouter = pickExport(roomsMod, "roomsRouter");
@@ -105,6 +108,8 @@ assertRouteFactories({
   personelsRouter,
   companyPersonelsRouter,
   personelShiftsRouter,
+  personelAccessRouter,
+  publicPersonelInviteRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,
@@ -189,6 +194,7 @@ const {
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/google", authLimiter);
 app.use("/api/auth/parent-invite", authLimiter);
+app.use("/api/auth/personel-invite", authLimiter);
 app.use("/api/auth/refresh", authActionLimiter);
 app.use("/api/auth/logout", authActionLimiter);
 app.use("/api/auth/driver/change-pin", authActionLimiter);
@@ -321,6 +327,8 @@ mountIoRoutes(app, io, {
   companyPersonelsRouter,
   passengerLinksRouter,
   personelShiftsRouter,
+  personelAccessRouter,
+  publicPersonelInviteRouter,
   agreementsRouter,
   offersRouter,
   checkinRouter,

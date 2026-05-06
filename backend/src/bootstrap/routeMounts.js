@@ -30,6 +30,8 @@ export function mountCoreRoutes(app, routes, io) {
     operationVerificationRouter,
     parentRouter,
     schoolParentInvitesRouter,
+    personelAccessRouter,
+    publicPersonelInviteRouter,
     companiesRouter,
     roomsRouter,
     routeTemplatesRouter,
@@ -75,6 +77,8 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/operation-verification", operationVerificationRouter());
   app.use("/api/parent", parentRouter());
   app.use("/api/school/parent-invites", schoolParentInvitesRouter());
+  app.use("/api/auth/personel-invite", publicPersonelInviteRouter());
+  app.use("/api/company/personel-invites", personelAccessRouter());
   app.use("/api/companies", companiesRouter());
   app.use("/api/rooms", roomsRouter());
   app.use("/api/route-templates", routeTemplatesRouter());
