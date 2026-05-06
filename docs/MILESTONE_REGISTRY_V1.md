@@ -75,6 +75,9 @@
 - `M95-E25 - mobil saha kabul checklist’i - active`
   - amaç: mobil uygulamanın saha öncesi temel kullanıcı akışlarını sade Türkçe checklist ile doğrulamak
   - komut: `node backend/scripts/m95_e25_mobile_field_acceptance_check.js`
+- `M95-E26 - android emulator smoke planı - active`
+  - amaç: gerçek cihaz öncesi local emulator üzerinde API base, APK profil ve temel rollerin smoke planını görünür kılmak
+  - komut: `node backend/scripts/m95_e26_android_emulator_smoke_plan_check.js`
 - `M96-A - driver availability local state - active`
   - amaç: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak
   - komut: `node mobile/scripts/m96_a_driver_availability_check.js`
