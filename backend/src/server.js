@@ -268,6 +268,8 @@ mountCoreRoutes(app, {
   operationVerificationRouter,
   parentRouter,
   schoolParentInvitesRouter,
+  personelAccessRouter,
+  publicPersonelInviteRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,

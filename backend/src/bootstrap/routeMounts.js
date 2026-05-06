@@ -40,11 +40,18 @@ export function mountCoreRoutes(app, routes, io) {
     adminRouter,
   } = routes;
 
+  function resolveRouterMount(routeExport) {
+    if (typeof routeExport === "function") {
+      return routeExport();
+    }
+    return routeExport;
+  }
+
   // Public routes
   app.use("/api/auth", authStep2Router);
   app.use("/api/auth", authRouter);
-  app.use("/api/public/passenger-live", publicPassengerLiveRouter());
-  app.use("/api/public/personel-live", publicPassengerLiveRouter());
+  app.use("/api/public/passenger-live", resolveRouterMount(publicPassengerLiveRouter));
+  app.use("/api/public/personel-live", resolveRouterMount(publicPassengerLiveRouter));
 
   // Step 1.5: TOTP step-up guard (ROOM + SUPER_ADMIN on sensitive paths)
   app.use("/api/admin/logs", authRequired(), requireStepUp("SUPER_ADMIN"));
@@ -77,7 +84,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/operation-verification", operationVerificationRouter());
   app.use("/api/parent", parentRouter());
   app.use("/api/school/parent-invites", schoolParentInvitesRouter());
-  app.use("/api/auth/personel-invite", publicPersonelInviteRouter());
+  app.use("/api/auth/personel-invite", resolveRouterMount(publicPersonelInviteRouter));
   app.use("/api/company/personel-invites", personelAccessRouter());
   app.use("/api/companies", companiesRouter());
   app.use("/api/rooms", roomsRouter());
