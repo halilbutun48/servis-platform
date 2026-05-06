@@ -102,18 +102,13 @@
 - `M97-D - super admin operations panel - active`
   - amaç: super admin için rol/yetki denetimi, audit/log ve tekrar eden işlem görünürlüğünü tek yerde göstermek
   - komut: `node backend/scripts/m97_panel_operations_check.js`
-- `M98-A - personel activation model - active`
-  - amaç: personel hesabı için kurum daveti, ilk giriş PIN/şifre değişimi ve cihaz eşleşmesi mobil model seviyesinde görünür kılmak
-  - komut: `node mobile/scripts/m98_a_personel_activation_model_check.js`
-- `M98-B - parent activation and link access - active`
-  - amaç: veli daveti, bağlantı süresi ve takip yetkisini görünür kılmak
-  - komut: `node mobile/scripts/m98_bcd_activation_kvkk_check.js`
-- `M98-C - link lifetime and tracking authority - active`
-  - amaç: bağlantı süresi ve aktif servis / ilişki görünürlüğünü görünür kılmak
-  - komut: `node mobile/scripts/m98_bcd_activation_kvkk_check.js`
-- `M98-D - kvkk visibility matrix - active`
-  - amaç: rol bazlı KVKK görünürlük matrisini görünür kılmak
-  - komut: `node mobile/scripts/m98_bcd_activation_kvkk_check.js`
+- `M98 kod + PIN kanıt bandı`
+  - `M98-A - personel activation model - active`
+  - `M98-B - parent activation and link access - active`
+  - `M98-C - link lifetime and tracking authority - active`
+  - `M98-D - kvkk visibility matrix - active`
+  - `M98-E2E - code + PIN acceptance gate - green`
+  - `M98-E3 - code + PIN saha / UX kanıt paketi - active`
 - `M99-A - mobile regression pack - active`
   - amaç: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak
   - komut: `node mobile/scripts/m99_a_mobile_regression_pack_check.js`

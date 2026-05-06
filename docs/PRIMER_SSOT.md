@@ -41,6 +41,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - Parent activation and link access: `M98-B parent activation and link access` — veli daveti, bağlantı süresi ve takip yetkisiyle yaşar.
 - Link lifetime and tracking authority: `M98-C link lifetime and tracking authority` — davet süresi, aktif servis ve görünürlük kuralıyla yaşar.
 - KVKK visibility matrix: `M98-D kvkk visibility matrix` — rol bazlı takip görünürlüğü ve kapı kurallarıyla yaşar.
+- `M98-E2E` code + PIN acceptance gate green; `M98-E3` code + PIN saha / UX kanıt paketi active.
 - Mobile regression pack: `M99-A mobile regression pack` — login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'iyle yaşar.
 - Real scenario tests: `M99-B real scenario tests` — sürücü, personel, veli ve operasyon yüzeylerini gerçek senaryo pack'iyle yaşatır.
 - Field launch readiness: `M99-C field launch readiness` — gerçek cihaz, zayıf ağ, ekran kapalı GPS ve saha kanıtı hazırlığıyla yaşar.

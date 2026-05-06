@@ -40,6 +40,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
 - `node backend\scripts\m97_panel_operations_check.js`
 - `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
+- `node backend\scripts\m98_e2e_code_pin_access_acceptance_check.js`
+- `node backend\scripts\m98_e3_code_pin_field_ux_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
