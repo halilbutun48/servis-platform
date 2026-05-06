@@ -30,7 +30,7 @@ must(/resolveBackendErrorShape/.test(api), 'api normalizes backend error envelop
 must(/extractScalarText/.test(api), 'api extracts backend scalar text safely');
 must(/collectObjectKeys/.test(api), 'api collects backend detail keys');
 must(/HTTP_403/.test(api), 'api maps status 403 to a dedicated login error code');
-must(/Giriş yetkisi doğrulanamadı\. Sürücü kodu, PIN veya cihaz eşleşmesini kontrol edin\./.test(api), 'api keeps the 403 Turkish message');
+must(/Giriş yetkisi doğrulanamadı\. Kullanıcı kodu, PIN veya cihaz eşleşmesini kontrol edin\./.test(api), 'api keeps the 403 Turkish message');
 must(/deviceIdPresent/.test(api), 'api includes deviceId presence in diagnostics');
 must(/deviceIdMask/.test(api), 'api includes masked device id in diagnostics');
 must(/body:\s*\{\s*identifier,\s*password,\s*deviceId\s*\}/.test(api), 'login payload keeps deviceId');

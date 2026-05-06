@@ -24,16 +24,17 @@ must(/body:\s*\{\s*identifier,\s*password,\s*deviceId\s*\}/.test(api), 'api logi
 must(!/body:\s*\{\s*code\s*,\s*pin\b/.test(api), 'api does not send code/pin payload');
 must(/fieldErrors\.identifier|fieldErrors\.code|fieldErrors\.email/.test(api), 'api maps identifier validation error');
 must(/fieldErrors\.password|fieldErrors\.pin/.test(api), 'api maps password validation error');
-must(/Sürücü kodu\/e-posta veya PIN\/şifre hatalı\./.test(api), 'api keeps simplified invalid credentials message');
+must(/Kullanıcı kodu veya PIN\/şifre hatalı\./.test(api), 'api keeps simplified invalid credentials message');
 
 must(/async function handleLogin\s*\(\s*\{\s*identifier\s*,\s*password\s*\}\s*\)/.test(handlers), 'handlers accept identifier/password login payload');
-must(/await loginDriver\(identifier,\s*password\)/.test(handlers), 'handlers forward identifier/password to loginDriver');
+must(/await loginDriver\(loginIdentifier,\s*loginPassword\)/.test(handlers), 'handlers forward identifier/password to loginDriver');
+must(/acceptPersonelInvite/.test(handlers), 'handlers can fall back to personel invite accept');
 
-must(/Sürücü Kodu veya e-posta/.test(screen), 'login screen keeps identifier label');
+must(/Kullanıcı kodu/.test(screen), 'login screen keeps identifier label');
 must(/PIN veya şifre/.test(screen), 'login screen keeps password label');
 must(/fieldErrors\.identifier|fieldErrors\.code|fieldErrors\.email/.test(screen), 'login screen maps identifier validation error');
 must(/fieldErrors\.password|fieldErrors\.pin/.test(screen), 'login screen maps password validation error');
-must(/Sürücü kodu\/e-posta veya PIN\/şifre hatalı\./.test(screen), 'login screen keeps simplified invalid credentials message');
+must(/Kullanıcı kodu veya PIN\/şifre hatalı\./.test(screen), 'login screen keeps simplified invalid credentials message');
 
 must(Boolean(pkg?.scripts?.['check:m95e4']), 'package exposes m95e4 check');
 must(String(pkg?.scripts?.['check:m1'] || '').includes('check:m95e4'), 'check:m1 includes m95e4');

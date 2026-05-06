@@ -46,7 +46,7 @@ must('expo-secure-store dependency present', pkg.dependencies && pkg.dependencie
 must('sdk 54 scaffold selected', String(pkg.dependencies.expo).includes('54'));
 must('app config has secure-store plugin', appJson.includes('expo-secure-store'));
 must('app config has location plugin', appJson.includes('expo-location'));
-must('login screen exists', normalize(login).includes(normalize('Surucu Kodu veya e-posta')));
+must('login screen exists', normalize(login).includes(normalize('Kullanıcı kodu')));
 must('pin change screen exists', pin.includes('Yeni PIN belirle'));
 must('today screen has premium hero summary', normalize(today).includes(normalize('Bugünkü Vardiya')) || normalize(today).includes(normalize('Bugünün ana görevi, kısa özet ve hızlı işlemler burada.')));
 must('today screen has route transition action', normalize(today).includes(normalize('Rota ekranına geç')));

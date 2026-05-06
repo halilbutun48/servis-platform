@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getMobileLoginCopy } from '../lib/roleSurface';
+
+const loginCopy = getMobileLoginCopy();
 
 function normalizeLoginError(error, fallback = 'Giriş başarısız.') {
   const code = String(error?.code || error?.payload?.code || error?.payload?.error || '').toUpperCase();
@@ -7,17 +10,23 @@ function normalizeLoginError(error, fallback = 'Giriş başarısız.') {
   const fieldErrors = error?.payload?.fieldErrors || null;
   if (error?.userMessage) return error.userMessage;
   if (fieldErrors && typeof fieldErrors === 'object') {
-    if (fieldErrors.identifier || fieldErrors.code || fieldErrors.email) return 'Sürücü kodu veya e-posta gerekli.';
+    if (fieldErrors.identifier || fieldErrors.code || fieldErrors.email) return 'Kullanıcı kodu gerekli.';
     if (fieldErrors.password || fieldErrors.pin) return 'PIN veya şifre gerekli.';
   }
-  if (code === 'INVALID_CREDENTIALS') return 'Sürücü kodu/e-posta veya PIN/şifre hatalı.';
+  if (code === 'INVALID_CREDENTIALS') return 'Kullanıcı kodu veya PIN/şifre hatalı.';
   if (code === 'PIN_LOCKED') {
     return cooldownSec > 0
-      ? `Çok fazla hatalı PIN denemesi oldu. ${cooldownSec} saniye sonra tekrar deneyin.`
-      : 'Çok fazla hatalı PIN denemesi oldu. Bir süre sonra tekrar deneyin.';
+      ? `Çok fazla hatalı giriş denemesi oldu. ${cooldownSec} saniye sonra tekrar deneyin.`
+      : 'Çok fazla hatalı giriş denemesi oldu. Bir süre sonra tekrar deneyin.';
   }
-  if (code === 'DEVICE_MISMATCH') return 'Bu cihaz bu sürücü hesabı ile eşleşmiyor. Operasyon ile cihaz eşleşmesini kontrol edin.';
+  if (code === 'DEVICE_MISMATCH') return 'Bu hesap bu cihazla eşleşmiyor. Operasyon ile cihaz eşleşmesini kontrol edin.';
   if (code === 'DEVICE_ID_REQUIRED') return 'Bu hesap için cihaz doğrulaması gerekli.';
+  if (code === 'INVITE_NOT_FOUND') return 'Kullanıcı kodu bulunamadı.';
+  if (code === 'INVITE_REVOKED') return 'Bu kod iptal edilmiş.';
+  if (code === 'INVITE_EXPIRED') return 'Bu kodun süresi dolmuş.';
+  if (code === 'INVITE_ACCEPTED') return 'Bu kod daha önce kullanılmış.';
+  if (code === 'INVITE_SCOPE_INVALID') return 'Bu kod bu giriş için geçerli değil.';
+  if (code === 'INVALID_INVITE_PAYLOAD') return 'Kullanıcı kodu ve PIN gerekli.';
   if (code === 'NETWORK_TIMEOUT') return 'Sunucu geç cevap verdi. Tekrar deneyin.';
   if (code === 'NETWORK_ERROR') return 'Bağlantı kurulamadı. İnterneti kontrol edin.';
   return String(error?.payload?.message || error?.payload?.error || error?.message || error || fallback);
@@ -62,8 +71,8 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
   const helper = useMemo(() => {
     if (releaseInfo?.acceptanceBlocking) return releaseInfo.acceptanceSummary || 'Release / env kabul kontrolü blokluyor.';
     if (!apiBaseUrl) return 'Uygulama sunucu adresi ayarlı değil. Teknik ekip EXPO_PUBLIC_API_BASE_URL değerini kontrol etmelidir.';
-    return 'Gerçek akış: Sürücü kodunuzu ve PIN bilginizi girin. Cihaz eşleşme hatasında operasyon ile iletişime geçin.';
-  }, [apiBaseUrl, releaseInfo]);
+    return loginCopy.helper;
+  }, [apiBaseUrl, releaseInfo, loginCopy.helper]);
 
   async function handleSubmit() {
     setBusy(true);
@@ -82,18 +91,18 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
   return (
     <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
-        <Text style={styles.title}>Sürücü Mobil</Text>
-        <Text style={styles.subtitle}>Bugünün görevini aç, rotayı takip et ve sürücünün telefon GPS'i hazırlığını kontrol et.</Text>
+        <Text style={styles.title}>Mobil Giriş</Text>
+        <Text style={styles.subtitle}>Size verilen sürücü, personel veya veli kodunu girin.</Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Sürücü Kodu veya e-posta</Text>
+          <Text style={styles.label}>{loginCopy.identifierLabel}</Text>
           <TextInput
             value={identifier}
             onChangeText={setIdentifier}
             autoCapitalize="none"
             autoCorrect={false}
             style={styles.input}
-            placeholder="SRC-000001"
+            placeholder={loginCopy.identifierPlaceholder}
           />
         </View>
 
@@ -109,7 +118,7 @@ export default function LoginScreen({ onLogin, initialError = '', apiBaseUrl = '
         </View>
 
         <Pressable style={[styles.button, busy && styles.buttonDisabled]} onPress={handleSubmit} disabled={busy || !apiBaseUrl || !!releaseInfo?.acceptanceBlocking}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Girişi aç</Text>}
+          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{loginCopy.buttonText}</Text>}
         </Pressable>
 
         {!!error && <Text style={styles.error}>{error}</Text>}

@@ -17,9 +17,9 @@ function normalizeCompanyKind(companyKind) {
 }
 
 const LOGIN_COPY = Object.freeze({
-  identifierLabel: 'Telefon / e-posta / kullanıcı kodu',
-  identifierPlaceholder: 'telefon, e-posta veya kullanıcı kodu',
-  helper: 'Telefon / e-posta / kullanıcı kodu ile giriş yapın. PIN veya şifre ile doğrulama tamamlanır; girişten sonra rolünüze göre uygun ekran açılır.',
+  identifierLabel: 'Kullanıcı kodu',
+  identifierPlaceholder: 'Örn. ABCD1234',
+  helper: 'Size verilen sürücü, personel veya veli kodunu girin. PIN veya şifre ile doğrulama tamamlanır; girişten sonra rolünüze göre uygun ekran açılır.',
   buttonText: 'Giriş yap',
 });
 

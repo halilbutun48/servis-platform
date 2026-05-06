@@ -110,7 +110,11 @@ export default function MobileAppContent({
   const loading = Boolean(state?.loading && !state?.me);
   const role = String(state?.me?.role || '').trim().toUpperCase();
   const requiresPinChange = role === 'DRIVER' && Boolean(state?.me?.requirePinChange);
-  const requiresPasswordChange = Boolean(state?.me?.requirePasswordChange);
+  const requiresPasswordChange = Boolean(
+    state?.session?.passwordChangeRequired ||
+    state?.session?.requirePasswordChange ||
+    state?.me?.requirePasswordChange
+  );
   const postLoginLoading = Boolean(
     hasSession &&
     !state?.me?.requirePinChange &&

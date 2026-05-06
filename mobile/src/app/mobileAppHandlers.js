@@ -1,11 +1,13 @@
 import { Linking } from 'react-native';
 import {
   acceptKvkkRequiredMany,
+  acceptPersonelInvite,
   changeDriverPin,
   changePassword,
   completeDriverShift,
   clearApiQueryCache,
   ensureDeviceId,
+  isCredentialLoginError,
   isSessionFailureError,
   loginDriver,
   logoutDriver,
@@ -259,12 +261,29 @@ export function createMobileAppHandlers({
   }
 
   async function handleLogin({ identifier, password }) {
-    const data = await loginDriver(identifier, password);
+    const loginIdentifier = String(identifier || '').trim();
+    const loginPassword = String(password || '').trim();
+    let data;
+    try {
+      data = await loginDriver(loginIdentifier, loginPassword);
+    } catch (error) {
+      const accessCode = loginIdentifier.toUpperCase();
+      const looksLikePersonelCode = /^[A-Z0-9]{8}$/.test(accessCode);
+      const looksLikePin = /^\d{6}$/.test(loginPassword);
+      if (!isCredentialLoginError(error) || !looksLikePersonelCode || !looksLikePin) {
+        throw error;
+      }
+      data = await acceptPersonelInvite({ accessCode: loginIdentifier, pin: loginPassword });
+    }
+
     const deviceId = data.deviceId || (await ensureDeviceId());
+    const passwordChangeRequired = Boolean(data.passwordChangeRequired || data.requirePasswordChange);
     const session = {
       token: data.token,
       refreshToken: data.refreshToken || '',
       deviceId,
+      passwordChangeRequired,
+      requirePasswordChange: passwordChangeRequired,
     };
     await Promise.all([
       saveSession(session),
@@ -301,6 +320,7 @@ export function createMobileAppHandlers({
           refreshToken: changed.refreshToken || session?.refreshToken || '',
           deviceId: session?.deviceId || state.deviceId || '',
           passwordChangeRequired: false,
+          requirePasswordChange: false,
         }),
         clearPendingSessionEvent().catch(() => null),
       ]);
@@ -318,15 +338,16 @@ export function createMobileAppHandlers({
       if (changed?.token) {
         const session = await getSession();
         await Promise.all([
-        saveSession({
-          ...(session || {}),
-          token: changed.token,
-          refreshToken: '',
-          deviceId: session?.deviceId || state.deviceId || '',
-          passwordChangeRequired: false,
-        }),
-        clearPendingSessionEvent().catch(() => null),
-      ]);
+          saveSession({
+            ...(session || {}),
+            token: changed.token,
+            refreshToken: '',
+            deviceId: session?.deviceId || state.deviceId || '',
+            passwordChangeRequired: false,
+            requirePasswordChange: false,
+          }),
+          clearPendingSessionEvent().catch(() => null),
+        ]);
         clearApiQueryCache();
       }
       setScreen('today');

@@ -45,8 +45,8 @@ must(String(pkg?.scripts?.['check:m1'] || '').includes('check:m95e24a'), 'check:
 must(String(pkg?.scripts?.['acceptance:mobile'] || '').includes('check:m95e24a'), 'acceptance chain includes m95e24a');
 
 must(has(roleSurface, 'export function getMobileLoginCopy'), 'role surface exports login copy helper');
-must(has(roleSurface, 'Telefon / e-posta / kullanıcı kodu'), 'role surface keeps common login label');
-must(has(roleSurface, 'Telefon / e-posta / kullanıcı kodu ile giriş yapın.'), 'role surface keeps common login helper');
+must(has(roleSurface, 'Kullanıcı kodu'), 'role surface keeps common login label');
+must(has(roleSurface, 'Size verilen sürücü, personel veya veli kodunu girin.'), 'role surface keeps common login helper');
 must(has(roleSurface, 'export function resolveMobileRoleKey'), 'role surface exports role key resolver');
 must(has(roleSurface, "if (key === 'ORGANIZATION') return 'COMPANY';"), 'role surface maps organization to company');
 must(has(roleSurface, "if (key === 'COMPANY' && normalizeCompanyKind(companyKind) === 'SCHOOL') return 'SCHOOL';"), 'role surface keeps company/school resolver');

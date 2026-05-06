@@ -211,7 +211,7 @@ function extractValidationFieldMessage(payload) {
   const hasIdentifier = Boolean(fieldErrors.identifier || fieldErrors.code || fieldErrors.email);
   const hasPassword = Boolean(fieldErrors.password || fieldErrors.pin);
   const messages = [];
-  if (hasIdentifier) messages.push('Sürücü kodu veya e-posta gerekli.');
+  if (hasIdentifier) messages.push('Kullanıcı kodu gerekli.');
   if (hasPassword) messages.push('PIN veya şifre gerekli.');
   return messages.join(' ');
 }
@@ -275,7 +275,7 @@ function deriveUserMessage(code, { payload = null, status = 0, fallbackMessage =
   const envelope = resolveBackendErrorShape(payload);
   const cooldownSec = Number(payload?.cooldownSec || 0) || 0;
   if (Number(status) === 403 || String(code || '').toUpperCase() === 'HTTP_403' || String(code || '').toUpperCase() === 'FORBIDDEN') {
-    return 'Giriş yetkisi doğrulanamadı. Sürücü kodu, PIN veya cihaz eşleşmesini kontrol edin.';
+    return 'Giriş yetkisi doğrulanamadı. Kullanıcı kodu, PIN veya cihaz eşleşmesini kontrol edin.';
   }
   switch (String(code || '').toUpperCase()) {
     case 'API_BASE_URL_MISSING':
@@ -285,15 +285,27 @@ function deriveUserMessage(code, { payload = null, status = 0, fallbackMessage =
     case 'NETWORK_ERROR':
       return 'Bağlantı kurulamadı. İnternet erişimini kontrol edin.';
     case 'INVALID_CREDENTIALS':
-      return 'Sürücü kodu/e-posta veya PIN/şifre hatalı.';
+      return 'Kullanıcı kodu veya PIN/şifre hatalı.';
     case 'PIN_LOCKED':
       return cooldownSec > 0
-        ? `Çok fazla hatalı PIN denemesi oldu. ${cooldownSec} saniye sonra tekrar deneyin.`
-        : 'Çok fazla hatalı PIN denemesi oldu. Bir süre sonra tekrar deneyin.';
+        ? `Çok fazla hatalı giriş denemesi oldu. ${cooldownSec} saniye sonra tekrar deneyin.`
+        : 'Çok fazla hatalı giriş denemesi oldu. Bir süre sonra tekrar deneyin.';
     case 'DEVICE_MISMATCH':
-      return 'Bu sürücü hesabı başka bir cihaza bağlı görünüyor. Operasyon ile cihaz eşleşmesini kontrol edin.';
+      return 'Bu hesap başka bir cihaza bağlı görünüyor. Operasyon ile cihaz eşleşmesini kontrol edin.';
     case 'DEVICE_ID_REQUIRED':
       return 'Bu hesap için cihaz doğrulaması gerekli.';
+    case 'INVITE_NOT_FOUND':
+      return 'Kullanıcı kodu bulunamadı.';
+    case 'INVITE_REVOKED':
+      return 'Bu kod iptal edilmiş.';
+    case 'INVITE_EXPIRED':
+      return 'Bu kodun süresi dolmuş.';
+    case 'INVITE_ACCEPTED':
+      return 'Bu kod daha önce kullanılmış.';
+    case 'INVITE_SCOPE_INVALID':
+      return 'Bu kod bu giriş için geçerli değil.';
+    case 'INVALID_INVITE_PAYLOAD':
+      return 'Kullanıcı kodu ve PIN gerekli.';
     case 'BAD_CURRENT_PIN':
       return 'Mevcut PIN hatalı.';
     case 'CURRENT_PIN_REQUIRED':
@@ -521,6 +533,10 @@ export function isPinLockedError(error) {
   return getApiErrorCode(error) === 'PIN_LOCKED';
 }
 
+export function isCredentialLoginError(error) {
+  return getApiErrorCode(error) === 'INVALID_CREDENTIALS';
+}
+
 export function isNetworkLikeError(error) {
   const code = getApiErrorCode(error);
   return Boolean(error?.isNetworkError || code === 'NETWORK_TIMEOUT' || code === 'NETWORK_ERROR');
@@ -559,6 +575,18 @@ export async function loginDriver(identifier, password) {
       }
     }
     throw error;
+  });
+}
+
+export async function acceptPersonelInvite({ accessCode = '', pin = '' } = {}) {
+  const deviceId = await ensureDeviceId();
+  return rawRequest('/api/auth/personel-invite/accept', {
+    method: 'POST',
+    body: {
+      accessCode: String(accessCode || '').trim(),
+      pin: String(pin || '').trim(),
+      deviceId,
+    },
   });
 }
 
