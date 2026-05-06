@@ -2,6 +2,7 @@ import { Linking } from 'react-native';
 import {
   acceptKvkkRequiredMany,
   changeDriverPin,
+  changePassword,
   completeDriverShift,
   clearApiQueryCache,
   ensureDeviceId,
@@ -299,12 +300,49 @@ export function createMobileAppHandlers({
           token: changed.token,
           refreshToken: changed.refreshToken || session?.refreshToken || '',
           deviceId: session?.deviceId || state.deviceId || '',
+          passwordChangeRequired: false,
         }),
         clearPendingSessionEvent().catch(() => null),
       ]);
       clearApiQueryCache();
     }
     await syncSignedIn({ soft: false });
+  }
+
+  async function handlePasswordChange({ newPassword, confirmPassword }) {
+    try {
+      const changed = await changePassword({
+        newPassword,
+        confirmPassword,
+      });
+      if (changed?.token) {
+        const session = await getSession();
+        await Promise.all([
+        saveSession({
+          ...(session || {}),
+          token: changed.token,
+          refreshToken: '',
+          deviceId: session?.deviceId || state.deviceId || '',
+          passwordChangeRequired: false,
+        }),
+        clearPendingSessionEvent().catch(() => null),
+      ]);
+        clearApiQueryCache();
+      }
+      setScreen('today');
+      await syncSignedIn({ soft: false });
+    } catch (error) {
+      if (isSessionFailureError(error)) {
+        await applySessionFailure(error);
+        return;
+      }
+      setState((prev) => ({
+        ...prev,
+        error: humanize(error),
+        lastErrorAt: new Date().toISOString(),
+      }));
+      throw error;
+    }
   }
 
   async function handleRefresh() {
@@ -685,6 +723,7 @@ export function createMobileAppHandlers({
     handleUndoStop,
     handleLogin,
     handlePinChange,
+    handlePasswordChange,
     handleRefresh,
     handleLogout,
     handleToggleVoiceGuidance,

@@ -47,7 +47,9 @@ const state = read('src/app/mobileAppState.js');
 const handlers = read('src/app/mobileAppHandlers.js');
 const storage = read('src/lib/storage.js');
 const api = read('src/lib/api.js');
+const roleSurface = read('src/lib/roleSurface.js');
 const roleHome = read('src/screens/RoleHomeScreen.js');
+const roleLiveCard = read('src/screens/RoleLivePremiumCard.js');
 
 must(has(JSON.stringify(pkg.scripts || {}), 'check:m95d'), 'package exposes m95d entrypoint');
 must(has(app, 'fetchParentChildren'), 'app wires parent children fetch');
@@ -74,11 +76,12 @@ must(has(api, 'fetchLiveVehicles'), 'api exposes live vehicles fetch');
 must(has(api, 'reportSelfNoShow'), 'api exposes self no-show report');
 must(has(handlers, 'handleSelectChild'), 'handlers expose child selection');
 must(has(handlers, 'handleReportNoShow'), 'handlers expose no-show reporting');
-must(has(roleHome, 'Personel Canlı Takip'), 'role home shows personel live title');
-must(has(roleHome, 'Veli Canlı Takip'), 'role home shows parent live title');
+must(has(roleSurface, "legacySubtitle: 'Personel canlı takip'"), 'role surface keeps personel live title');
+must(has(roleSurface, "legacySubtitle: 'Veli canlı takip'"), 'role surface keeps parent live title');
+must(has(roleLiveCard, "surface.legacySubtitle || legacyLabels?.liveTitle || 'Canlı takip'"), 'premium card renders live title bridge');
 must(has(roleHome, 'Bugün servisi kullanmayacağım'), 'role home shows personel no-show action');
 must(has(roleHome, 'Bugün öğrencim servise binmeyecek'), 'role home shows parent no-show action');
-must(has(roleHome, 'Canlı servis durumu') || has(roleHome, 'Canlı takip'), 'role home shows live tracking content');
+must(has(roleLiveCard, 'Canlı takip') || has(roleLiveCard, 'Servis akışı ve kritik bilgiler tek yerde.'), 'premium card shows live tracking content');
 must(has(roleHome, 'Çocuk seçimi'), 'role home shows child chooser');
 must(has(roleHome, 'Servis seçimi'), 'role home shows shift chooser');
 

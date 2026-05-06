@@ -1,3 +1,5 @@
+import { BRAND_NAME } from "../config/brand.js";
+
 export default function BrandMark({ compact = false, subtitle = null, centered = false }) {
   const gap = compact ? 10 : 14;
   const size = compact ? 36 : 44;
@@ -14,13 +16,13 @@ export default function BrandMark({ compact = false, subtitle = null, centered =
     >
       <img
         src="/vardis-logo.svg"
-        alt="Vardis"
+        alt={BRAND_NAME}
         width={size}
         height={size}
         style={{ borderRadius: compact ? 10 : 12, boxShadow: "0 6px 18px rgba(15,23,42,0.16)" }}
       />
       <div>
-        <div style={{ fontWeight: 900, fontSize: titleSize, lineHeight: 1.05, letterSpacing: "0.01em" }}>Vardis</div>
+        <div style={{ fontWeight: 900, fontSize: titleSize, lineHeight: 1.05, letterSpacing: "0.01em" }}>{BRAND_NAME}</div>
         {subtitle ? (
           <div className="muted" style={{ marginTop: 4, fontSize: subSize }}>
             {subtitle}

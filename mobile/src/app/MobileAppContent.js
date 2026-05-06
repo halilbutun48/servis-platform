@@ -1,5 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import LoginScreen from '../screens/LoginScreen';
+import ForcePasswordChangeScreen from '../screens/ForcePasswordChangeScreen';
 import LiveScreen from '../screens/LiveScreen';
 import DriverShellLoadingScreen from '../screens/DriverShellLoadingScreen';
 import PinChangeScreen from '../screens/PinChangeScreen';
@@ -69,6 +70,7 @@ export default function MobileAppContent({
   onDriverShellReady,
   onLogin,
   onPinChange,
+  onPasswordChange,
   onLogout,
   onRefresh,
   onOpenToday,
@@ -107,11 +109,33 @@ export default function MobileAppContent({
   const hasSession = Boolean(state?.session?.token);
   const loading = Boolean(state?.loading && !state?.me);
   const role = String(state?.me?.role || '').trim().toUpperCase();
+  const requiresPinChange = role === 'DRIVER' && Boolean(state?.me?.requirePinChange);
+  const requiresPasswordChange = Boolean(state?.me?.requirePasswordChange);
   const postLoginLoading = Boolean(
     hasSession &&
     !state?.me?.requirePinChange &&
     state?.loading
   );
+
+  if (requiresPinChange) {
+    return (
+      <PinChangeScreen
+        onSubmit={onPinChange}
+        onLogout={onLogout}
+        initialError={state?.error || ''}
+      />
+    );
+  }
+
+  if (requiresPasswordChange) {
+    return (
+      <ForcePasswordChangeScreen
+        onSubmit={onPasswordChange}
+        onLogout={onLogout}
+        initialError={state?.error || ''}
+      />
+    );
+  }
 
   if (postLoginLoading) {
     return (
@@ -149,17 +173,7 @@ export default function MobileAppContent({
     );
   }
 
-  if (state?.me?.requirePinChange) {
-    return (
-      <PinChangeScreen
-        onSubmit={onPinChange}
-        onLogout={onLogout}
-        initialError={state?.error || ''}
-      />
-    );
-  }
-
-  if (role === 'PERSONEL' || role === 'PARENT') {
+  if (role && role !== 'DRIVER') {
     return (
       <RoleHomeScreen
         role={role}

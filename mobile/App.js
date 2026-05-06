@@ -876,6 +876,7 @@ export default function App() {
       onDriverShellReady={handleDriverShellReady}
       onLogin={mobileHandlers.handleLogin}
       onPinChange={mobileHandlers.handlePinChange}
+      onPasswordChange={mobileHandlers.handlePasswordChange}
       onLogout={mobileHandlers.handleLogout}
       onRefresh={mobileHandlers.handleRefresh}
       onOpenToday={mobileHandlers.handleOpenToday}

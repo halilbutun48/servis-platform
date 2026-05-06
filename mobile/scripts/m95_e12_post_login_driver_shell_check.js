@@ -37,7 +37,7 @@ must(/Sürücü ekranı yükleniyor\.\.\./.test(shell), 'driver shell fallback h
 must(/Oturum açıldı, görev bilgileri hazırlanıyor\./.test(shell), 'driver shell fallback explains the post-login wait');
 must(/Info label="Cihaz" value=\{deviceId \? 'hazır' : 'yok'\}/.test(shell), 'driver shell fallback hides raw device id');
 must(!/\[object Object\]/.test(shell), 'driver shell fallback does not keep object-object text');
-must(/if \(role === 'PERSONEL' \|\| role === 'PARENT'\)/.test(content), 'RoleHomeScreen still handles only personel and parent');
+must(/role && role !== 'DRIVER'/.test(content), 'RoleHomeScreen routes non-driver roles');
 must(/RoleHomeScreen/.test(content), 'RoleHomeScreen import remains present for non-driver roles');
 must(/EmptyState/.test(today) && /EmptyState/.test(route), 'TodayScreen and RouteScreen keep safe empty states');
 must(/resolveDriverGpsShiftContext/.test(today), 'TodayScreen keeps safe visible shift resolution');

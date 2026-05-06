@@ -86,8 +86,8 @@ must(has(handlers, 'handleRequestBoardingChange'), 'handlers keep boarding reque
 must(has(handlers, 'handleSetDriverAvailability'), 'handlers keep availability flow');
 must(has(handlers, 'handleSpeakDriverAwareness'), 'handlers keep driver awareness speak flow');
 
-must(has(roleHome, 'Personel Canlı Takip'), 'role home keeps personel live tracking branch');
-must(has(roleHome, 'Veli Canlı Takip'), 'role home keeps parent live tracking branch');
+must(has(roleHome, 'RoleLivePremiumCard'), 'role home keeps personel live premium card bridge');
+must(has(roleHome, 'RoleOverviewPremiumCard'), 'role home keeps parent live premium card bridge');
 must(has(roleHome, 'NotificationCenterCard'), 'role home keeps notification center');
 must(has(roleHome, 'BoardingChangeCard'), 'role home keeps boarding change card');
 must(has(roleHome, 'PersonelActivationCard'), 'role home keeps personel activation card');

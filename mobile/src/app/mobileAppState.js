@@ -231,7 +231,7 @@ function compactMobileSnapshot(snapshot = {}) {
     snapshotAt: String(snapshot.snapshotAt || ''),
     lastSyncAt: String(snapshot.lastSyncAt || ''),
     lastErrorAt: String(snapshot.lastErrorAt || ''),
-    me: compactSummary(snapshot.me, ['id', 'role', 'fullName', 'requirePinChange']),
+    me: compactSummary(snapshot.me, ['id', 'role', 'fullName', 'requirePinChange', 'requirePasswordChange']),
     today: isPlainObject(snapshot.today)
       ? {
           active: compactShift(snapshot.today.active),

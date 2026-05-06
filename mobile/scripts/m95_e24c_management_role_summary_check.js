@@ -58,12 +58,7 @@ must(has(roleSurface, 'Servis operasyonunun genel görünümü'), 'role surface 
 must(has(roleSurface, 'Detaylı yönetim için web panelden devam edin.'), 'role surface keeps web panel guidance');
 must(has(roleSurface, 'Web paneli aç'), 'role surface keeps web panel action label');
 
-must(has(mobileContent, "role === 'COMPANY'"), 'mobile shell still routes company role to role home');
-must(has(mobileContent, "role === 'SCHOOL'"), 'mobile shell still routes school role to role home');
-must(has(mobileContent, "role === 'ROOM'"), 'mobile shell still routes room role to role home');
-must(has(mobileContent, "role === 'SUPER_ADMIN'"), 'mobile shell still routes super admin role to role home');
-must(has(mobileContent, "role === 'OPERATION'"), 'mobile shell still routes operation role to role home');
-must(has(mobileContent, "role === 'ORGANIZATION'"), 'mobile shell still routes organization role to role home');
+must(has(mobileContent, "role && role !== 'DRIVER'"), 'mobile shell still routes non-driver roles to role home');
 
 must(has(roleHome, 'RoleOverviewPremiumCard'), 'role home imports the management premium card');
 must(has(roleHome, 'if (isOverviewRole)'), 'role home uses the management overview branch');

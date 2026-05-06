@@ -717,6 +717,21 @@ export async function changeDriverPin(currentPin, newPin) {
   });
 }
 
+export async function changePassword({ currentPassword = '', newPassword = '', confirmPassword = '' } = {}) {
+  const body = {
+    newPassword: String(newPassword || ''),
+    confirmPassword: String(confirmPassword || ''),
+  };
+  const current = String(currentPassword || '');
+  if (current) {
+    body.currentPassword = current;
+  }
+  return request('/api/auth/change-password', {
+    method: 'POST',
+    body,
+  });
+}
+
 export async function logoutDriver() {
   const session = await getSession();
   if (!session?.refreshToken) {

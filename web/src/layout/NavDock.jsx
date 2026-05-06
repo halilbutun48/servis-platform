@@ -4,7 +4,7 @@ import { navigate } from "../router";
 import { companyBase } from "../utils/paths";
 import { getCopilotMenuEntry } from "../copilot/screenRegistry";
 import BrandMark from "../components/BrandMark";
-import { BRAND_NAME } from "../config/brand";
+import { BRAND_NAME } from "../config/brand.js";
 
 function roleTitle(role, me) {
   if (role === "SUPER_ADMIN") return "Süper Yönetici";
