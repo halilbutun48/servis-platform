@@ -46,6 +46,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `M98-E5` code + PIN gerçek kullanıcı kabul checklist’i active.
 - `M95-E25` mobil saha kabul checklist’i active.
 - `M95-E26` Android emulator smoke planı active.
+- `M95-E27` Gerçek Android cihaz saha proof hazırlığı active.
 - Mobile regression pack: `M99-A mobile regression pack` — login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'iyle yaşar.
 - Real scenario tests: `M99-B real scenario tests` — sürücü, personel, veli ve operasyon yüzeylerini gerçek senaryo pack'iyle yaşatır.
 - Field launch readiness: `M99-C field launch readiness` — gerçek cihaz, zayıf ağ, ekran kapalı GPS ve saha kanıtı hazırlığıyla yaşar.

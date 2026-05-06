@@ -78,6 +78,9 @@
 - `M95-E26 - android emulator smoke planı - active`
   - amaç: gerçek cihaz öncesi local emulator üzerinde API base, APK profil ve temel rollerin smoke planını görünür kılmak
   - komut: `node backend/scripts/m95_e26_android_emulator_smoke_plan_check.js`
+- `M95-E27 - gerçek Android cihaz saha proof hazırlığı - active`
+  - amaç: gerçek cihaz testinden önce izin, ekran, GPS, ağ ve kanıt planını kilitlemek
+  - komut: `node backend/scripts/m95_e27_real_android_device_field_proof_prep_check.js`
 - `M96-A - driver availability local state - active`
   - amaç: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak
   - komut: `node mobile/scripts/m96_a_driver_availability_check.js`
