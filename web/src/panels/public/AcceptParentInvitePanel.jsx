@@ -99,9 +99,9 @@ export default function AcceptParentInvitePanel({ path }) {
   return (
     <div className="wrap wrap--fluid">
       <div className="card">
-        <div className="title">Veli Erişimi</div>
+        <div className="title">Veli kodu + PIN ile giriş</div>
         <div className="muted" style={{ marginTop: 8 }}>
-          {info ? `${info.company?.name || "Okul"} • ${info.child?.fullName || "Öğrenci"}` : "Öğrencinize ait canlı takibe süreli erişim sağlayın."}
+          {info ? `${info.company?.name || "Okul"} • ${info.child?.fullName || "Öğrenci"}` : "Okulun verdiği veli kodu ve PIN ile süreli canlı erişim açın."}
         </div>
       </div>
 
@@ -119,20 +119,20 @@ export default function AcceptParentInvitePanel({ path }) {
 
       {!stateMeta.terminal ? (
         <div className="card" style={{ marginTop: 12 }}>
-          <div className="title">Kod + PIN ile giriş</div>
+          <div className="title">Veli kodu + PIN ile giriş</div>
           <div className="muted" style={{ marginTop: 8, marginBottom: 12 }}>
-            Okulun verdiği erişim kodu ve PIN ile giriş yapabilirsin.
+            Okulun verdiği veli kodu ve PIN ile giriş yapabilirsin.
           </div>
           {accessToken ? (
             <div className="muted" style={{ marginBottom: 12 }}>
-              Açtığın erişim linki doğrulanıyor. Otomatik giriş olmazsa aşağıdan Kod + PIN ile devam edebilirsin.
+              Açtığın veli kodu linki doğrulanıyor. Otomatik giriş olmazsa aşağıdan veli kodu + PIN ile devam edebilirsin.
             </div>
           ) : null}
           <form onSubmit={onCodePinAccess} style={{ display: "grid", gap: 10, maxWidth: 420 }}>
-            <label className="muted">Erişim Kodu<input value={accessCode} onChange={(e) => setAccessCode(String(e.target.value || "").toUpperCase())} disabled={formLocked} /></label>
+            <label className="muted">Veli Kodu<input value={accessCode} onChange={(e) => setAccessCode(String(e.target.value || "").toUpperCase())} disabled={formLocked} /></label>
             <label className="muted">PIN<input value={pin} onChange={(e) => setPin(String(e.target.value || ""))} disabled={formLocked} /></label>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="submit" disabled={formLocked}>{busy ? "..." : "Giriş yap"}</button>
+              <button type="submit" disabled={formLocked}>{busy ? "..." : "Veli kodu + PIN ile giriş"}</button>
               <button type="button" className="secondary" onClick={() => navigate("/")}>Giriş ekranına dön</button>
             </div>
           </form>

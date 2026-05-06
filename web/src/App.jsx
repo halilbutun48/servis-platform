@@ -30,6 +30,7 @@ const GeoReviewPanel = lazy(() => import("./panels/company/GeoReviewPanel"));
 const CompanyHubPanel = lazy(() => import("./panels/company/HubPanel"));
 const CompanyCheckinPanel = lazy(() => import("./panels/company/CheckinPanel"));
 const ServiceEvaluationPanel = lazy(() => import("./panels/company/ServiceEvaluationPanel"));
+const PersonelAccessPanel = lazy(() => import("./panels/company/PersonelAccessPanel"));
 const CompanyCommercialFlowPanel = lazy(() => import("./panels/company/CommercialFlowPanel"));
 const OrganizationCenterPanel = lazy(() => import("./panels/organization/CenterPanel"));
 const OrganizationPlansPanel = lazy(() => import("./panels/organization/PlansPanel"));
@@ -228,6 +229,7 @@ export default function App() {
     if (path === "/company/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/company/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/company/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
+    if (path === "/company/personel-access") return { layout: true, node: <PersonelAccessPanel /> };
     if (path === "/company/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/company/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
     if (path === "/company/copilot") return { layout: true, node: <CopilotPanel /> };
@@ -259,6 +261,7 @@ export default function App() {
     if (path === "/organization/agreements") return { layout: true, node: <CompanyAgreementsPanel /> };
     if (path === "/organization/hub") return { layout: true, node: <CompanyHubPanel /> };
     if (path === "/organization/checkin") return { layout: true, node: <CompanyCheckinPanel /> };
+    if (path === "/organization/personel-access") return { layout: true, node: <PersonelAccessPanel /> };
     if (path === "/organization/access-links") return { layout: true, node: <PassengerLinksPanel /> };
     if (path === "/organization/service-evaluation") return { layout: true, node: <ServiceEvaluationPanel /> };
     if (path === "/organization/copilot") return { layout: true, node: <CopilotPanel /> };

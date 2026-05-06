@@ -154,3 +154,34 @@ export async function changePassword({ currentPassword, newPassword, confirmPass
     body: { currentPassword, newPassword, confirmPassword },
   });
 }
+
+export async function listPersonelAccessInvites(token, take = 100) {
+  return api(`/api/company/personel-invites?take=${encodeURIComponent(String(take || 100))}`, { token });
+}
+
+export async function createPersonelAccessInvite({ token, personelId }) {
+  return api("/api/company/personel-invites", {
+    method: "POST",
+    token,
+    body: { personelId: Number(personelId) },
+  });
+}
+
+export async function revokePersonelAccessInvite({ token, id }) {
+  return api(`/api/company/personel-invites/${Number(id)}/revoke`, {
+    method: "POST",
+    token,
+    body: {},
+  });
+}
+
+export async function getPersonelInviteInfo(tokenValue) {
+  return api(`/api/auth/personel-invite/info?token=${encodeURIComponent(String(tokenValue || ""))}`);
+}
+
+export async function acceptPersonelInvite(body) {
+  return api("/api/auth/personel-invite/accept", {
+    method: "POST",
+    body,
+  });
+}

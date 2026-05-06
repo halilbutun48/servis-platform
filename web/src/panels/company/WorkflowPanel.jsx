@@ -666,6 +666,22 @@ export default function WorkflowPanel() {
         </div>
       ) : null}
 
+      {!school ? (
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 900 }}>Personel erişimi</div>
+              <div className="muted" style={{ marginTop: 4 }}>
+                Personele 7 gün geçerli kullanıcı kodu ve geçici PIN verin.
+              </div>
+            </div>
+            <button type="button" className="btn primary" onClick={() => navigate(companyPath(me, "/personel-access"))}>
+              Personel erişimi oluştur
+            </button>
+          </div>
+        </div>
+      ) : null}
+
 
       <div className="card" style={{ marginTop: 12 }}>
         <div style={{ fontWeight: 900 }}>Yeni Plan Oluştur (Guided Mode)</div>

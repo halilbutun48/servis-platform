@@ -137,9 +137,9 @@ export default function SchoolParentInvitePanel() {
       <div className="card">
         <div className="row" style={{ justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ margin: 0 }}>Veli Erişimi</h3>
+            <h3 style={{ margin: 0 }}>Veli kodu + PIN</h3>
             <div className="muted" style={{ marginTop: 6 }}>
-              Öğrenci seçilir, süreli erişim linki ve aynı süre kadar geçerli Kod + PIN üretilir. Mail, telefon veya ad soyad gerekmez.
+              Öğrenci seçilir, 7 gün geçerli veli kodu ve geçici PIN üretilir. Mail, telefon veya ad soyad gerekmez.
             </div>
           </div>
           <button type="button" className="btn" onClick={loadAll}>Yenile</button>
@@ -150,7 +150,7 @@ export default function SchoolParentInvitePanel() {
 
       <div className="grid" style={{ gridTemplateColumns: "minmax(320px, 1.1fr) minmax(340px, 1fr)", gap: 12, marginTop: 12 }}>
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Yeni erişim üret</h3>
+          <h3 style={{ marginTop: 0 }}>Yeni veli kodu üret</h3>
           <form onSubmit={onCreateAccess} style={{ display: "grid", gap: 10, maxWidth: 620 }}>
             <label className="muted">
               Öğrenci
@@ -170,23 +170,23 @@ export default function SchoolParentInvitePanel() {
             </label>
             {selectedStudent ? <div className="muted">Seçili öğrenci: <b>{selectedStudent.fullName || `#${selectedStudent.id}`}</b></div> : null}
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button type="submit" className="btn primary" disabled={busy}>{busy ? "..." : "Erişim üret"}</button>
+              <button type="submit" className="btn primary" disabled={busy}>{busy ? "..." : "Veli kodu üret"}</button>
               <button type="button" className="secondary" onClick={() => { setLastLink(""); setLastAccessCode(""); setLastPin(""); }}>Temizle</button>
             </div>
           </form>
         </div>
 
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Son üretilen erişim</h3>
+          <h3 style={{ marginTop: 0 }}>Son üretilen veli kodu + PIN</h3>
           <div className="muted" style={{ marginBottom: 10 }}>
-            Link, Kod ve PIN yalnızca üretim anında ham haliyle gösterilir. Sonradan yeniden göstermek yerine yeni erişim üret veya mevcut erişimi yenile.
+            Link, veli kodu ve PIN yalnızca üretim anında ham haliyle gösterilir. Sonradan yeniden göstermek yerine yeni erişim üret veya mevcut erişimi yenile.
           </div>
           <div style={{ display: "grid", gap: 10 }}>
             <label className="muted">Erişim Linki
               <textarea readOnly rows={4} value={lastLink} placeholder="Henüz link üretilmedi." style={{ width: "100%", resize: "vertical", background: "#0c1322", color: "#e7eefc", border: "1px solid #2b3d64", borderRadius: 10, padding: 10 }} />
             </label>
             <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <label className="muted">Erişim Kodu<input readOnly value={lastAccessCode} placeholder="-" /></label>
+              <label className="muted">Veli kodu<input readOnly value={lastAccessCode} placeholder="-" /></label>
               <label className="muted">PIN<input readOnly value={lastPin} placeholder="-" /></label>
             </div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -232,4 +232,3 @@ export default function SchoolParentInvitePanel() {
     </div>
   );
 }
-

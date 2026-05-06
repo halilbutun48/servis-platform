@@ -123,6 +123,7 @@ export default function NavDock({ role, path, me }) {
       advanced.push({ label: "Hub", path: base + "/hub" });
       advanced.push({ label: "Check-in", path: base + "/checkin" });
       advanced.push({ label: me?.companyKind === "SCHOOL" ? "Öğrenci Link" : "Personel Link", path: base + "/access-links" });
+      advanced.push({ label: "Personel Erişimi", path: base + "/personel-access" });
       if (me?.companyKind === "SCHOOL") {
         advanced.push({ label: "Veli Erişimi", path: "/school/parents" });
       }

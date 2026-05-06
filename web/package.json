@@ -8,6 +8,7 @@
     "build": "vite build",
     "check:m95e20": "node scripts/m95_e20_web_gps_source_badge_check.js",
     "check:m95e23c": "node scripts/m95_e23c_web_gps_source_visibility_check.js",
+    "check:m98e2c": "node scripts/m98_e2c_personel_access_web_check.js",
     "check:web-mobile": "node scripts/web_mobile_responsive_check.js",
     "lint": "eslint .",
     "preview": "vite preview"
