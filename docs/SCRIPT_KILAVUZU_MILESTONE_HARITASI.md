@@ -38,6 +38,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m94d_admin_payment_security_export_check.js`
 - `node backend\scripts\m94e_queue_chaos_alarm_check.js`
 - `node backend\scripts\m94e_queue_chaos_alarm_probe.js`
+- `node backend\scripts\m95_e25_mobile_field_acceptance_check.js`
 - `node backend\scripts\m97_panel_operations_check.js`
 - `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
 - `node backend\scripts\m98_e2e_code_pin_access_acceptance_check.js`
@@ -424,6 +425,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node mobile\scripts\m95_e0_android_build_readiness_check.js`
 - Ana konu: Android APK/AAB build hazırlığını resmi runbook/check altında görünür kılmak; saha kanıtından ayrı tutmak.
 
+### M95-E25 — mobil saha kabul checklist’i [CHECK]
+- Komut: `node backend\scripts\m95_e25_mobile_field_acceptance_check.js`
+- Ana konu: mobil uygulamanın saha öncesi temel kullanıcı akışlarını sade Türkçe checklist ile doğrulamak.
+
 ### M96-A — driver availability local state [CHECK]
 - Komut: `node mobile\scripts\m96_a_driver_availability_check.js`
 - Ana konu: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak.
@@ -502,6 +507,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M93`: queue durability proof ve autoReachedQueue görünürlük kanıtı
 - `M94-E`: queue chaos/alarm proof ve güvenli runtime probe
 - `M95-E0`: android apk/aab build readiness check'i
+- `M95-E25`: mobil saha kabul checklist'i
 - `M96-A`: driver availability local state check'i
 - `M96-B`: mobile notifications foundation check'i
 - `M96-C`: boarding change local model check'i

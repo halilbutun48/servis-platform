@@ -72,6 +72,9 @@
 - `M95-E0 - android apk/aab build readiness - active`
   - amaç: Android APK/AAB build hazırlığını resmi runbook/check ile görünür kılmak; saha kanıtından ayrı tutmak
   - komut: `node mobile/scripts/m95_e0_android_build_readiness_check.js`
+- `M95-E25 - mobil saha kabul checklist’i - active`
+  - amaç: mobil uygulamanın saha öncesi temel kullanıcı akışlarını sade Türkçe checklist ile doğrulamak
+  - komut: `node backend/scripts/m95_e25_mobile_field_acceptance_check.js`
 - `M96-A - driver availability local state - active`
   - amaç: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak
   - komut: `node mobile/scripts/m96_a_driver_availability_check.js`
