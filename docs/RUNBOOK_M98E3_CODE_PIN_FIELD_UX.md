@@ -92,6 +92,12 @@ Bu akış, ilk erişim veya ilk girişte kullanıcıya verilen kod ile geçici P
 - `npm run check:m98e3`
 - `npm run verify:final`
 
+## Runtime smoke
+
+- Yerel backend çalışıyorsa kısa runtime kanıtı için: `npm run smoke:m98e4`
+- Bu komut synthetic fixture ile personel erişimi oluşturma, tek seferlik kod/PIN gösterimi, public accept, ilk şifre değiştirme bayrağı ve revoke davranışını kısa uçtan uca doğrular.
+- Çıktıda raw kod, PIN veya token gösterilmez; sadece masked özet ve PASS/FAIL satırları görünür.
+
 ## Sorun çıkarsa ilk bakılacak yerler
 
 - `backend/src/routes/personelAccess.js`

@@ -7,6 +7,7 @@
     "check:brand": "node tools/check_brand.js",
     "check:m98e2e": "node backend/scripts/m98_e2e_code_pin_access_acceptance_check.js",
     "check:m98e3": "node backend/scripts/m98_e3_code_pin_field_ux_check.js",
+    "smoke:m98e4": "node backend/scripts/m98_e4_code_pin_runtime_smoke.js",
     "check:m95e23b": "node backend/scripts/m95_e23b_gps_source_visibility_check.js",
     "check:m98e2b": "node backend/scripts/m98_e2b_personel_access_backend_check.js",
     "check:m98e2d": "npm --prefix mobile run check:m98e2d",
