@@ -223,6 +223,62 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
 .panelChromeTitleBlock { min-width: 0; }
 .panelChromeActions { justify-content: flex-end; }
 
+.quality-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.quality-summary-grid > * {
+  min-width: 0;
+}
+
+.quality-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.quality-detail-main,
+.quality-detail-side,
+.quality-detail-stack {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.quality-detail-main,
+.quality-detail-side {
+  align-content: start;
+}
+
+.quality-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.quality-card-shell {
+  min-width: 0;
+  height: 100%;
+}
+
+.quality-card-shell .panelSectionTitle {
+  font-size: 15px;
+}
+
+.quality-card-shell .panelMeta,
+.quality-card-shell .panelBody {
+  line-height: 1.45;
+}
+
+.quality-card-shell textarea {
+  min-height: 88px;
+}
+
 .routePreviewBackdrop {
   background: rgba(0, 0, 0, .58);
 }
@@ -484,6 +540,9 @@ button, input, select, textarea, .btn, .secondary, .navItem {
   .panelChromeHead { flex-direction: column; align-items: flex-start; }
   .panelChromeActions, .saActions { width: 100%; justify-content: flex-start; }
   .panelChromeActions > *, .saActions > * { flex: 1 1 100%; }
+  .quality-summary-grid { grid-template-columns: 1fr; }
+  .quality-detail-layout { grid-template-columns: 1fr; }
+  .quality-metric-grid { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 641px) and (max-width: 900px) {
@@ -493,7 +552,12 @@ button, input, select, textarea, .btn, .secondary, .navItem {
   .navDockBrandName { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
   .navDockRole { font-size: 17px; font-weight: 700; margin-top: 2px; }
   .panelTitle { font-size: 20px; }
-  .panelSectionTitle { font-size: 15px; }
+.panelSectionTitle { font-size: 15px; }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .quality-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quality-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
@@ -553,6 +617,9 @@ button, input, select, textarea, .btn, .secondary, .navItem {
   .panelSectionSubtitle, .panelMeta { font-size: 12px; }
   .panelBody { font-size: 14px; line-height: 1.5; }
   .panelStatValue { font-size: 22px; }
+  .quality-summary-grid { grid-template-columns: 1fr; }
+  .quality-detail-layout { grid-template-columns: 1fr; }
+  .quality-metric-grid { grid-template-columns: 1fr; }
   .panelChromeHead { flex-direction: column; align-items: flex-start; }
   .panelChromeActions, .saActions { width: 100%; justify-content: flex-start; }
   .panelChromeActions > *, .saActions > * { flex: 1 1 100%; }

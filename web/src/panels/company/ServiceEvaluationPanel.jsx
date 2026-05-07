@@ -25,8 +25,27 @@ function fmtTR(iso) {
   });
 }
 
-function MetricCard({ title, value, note }) {
-  return <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, flex: "1 1 180px" }}><div className="muted" style={{ marginBottom: 8 }}>{title}</div><div style={{ fontSize: 26, fontWeight: 800 }}>{value}</div>{note ? <div className="muted" style={{ marginTop: 8 }}>{note}</div> : null}</div>;
+function MetricCard({ title, value, note, className = "", style }) {
+  return <div className={`quality-card-shell ${className}`.trim()} style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, minWidth: 0, width: "100%", ...style }}><div className="muted" style={{ marginBottom: 8 }}>{title}</div><div style={{ fontSize: 26, fontWeight: 800 }}>{value}</div>{note ? <div className="muted" style={{ marginTop: 8 }}>{note}</div> : null}</div>;
+}
+
+function SectionCard({ title, children, className = "", style }) {
+  return (
+    <div
+      className={`quality-card-shell ${className}`.trim()}
+      style={{
+        padding: 14,
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 14,
+        minWidth: 0,
+        width: "100%",
+        ...style,
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: 10 }}>{title}</div>
+      {children}
+    </div>
+  );
 }
 
 function StatusBadge({ value }) {
@@ -257,77 +276,79 @@ export default function ServiceEvaluationPanel() {
 
       {err ? <div style={{ marginTop: 12, color: "#f97066", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityProofReadonlyCard />
+      <div className="quality-summary-grid" style={{ marginTop: 14 }}>
+        <QualityProofReadonlyCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+        <QualityDraftScoreCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+        <QualityReviewDecisionCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+        <QualityReviewHistoryCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
       </div>
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityDraftScoreCard />
-      </div>
+      <div className="quality-detail-layout" style={{ marginTop: 16 }}>
+        <div className="quality-detail-main">
+          <div className="quality-detail-stack">
+            <div className="quality-metric-grid">
+              {cards.map((card) => <MetricCard key={card.title} {...card} style={{ height: "100%" }} />)}
+            </div>
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityReviewDecisionCard />
-      </div>
-
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityReviewHistoryCard />
-      </div>
-
-      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {cards.map((card) => <MetricCard key={card.title} {...card} />)}
-      </div>
-
-      <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
-          <div>
-            <div style={{ fontWeight: 700 }}>Değerlendirme Alanları</div>
-            <div className="muted" style={{ marginTop: 6 }}>{(evaluation?.fields || []).join(" • ") || "Henüz veri yok"}</div>
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => openCompanyList()}>Hizmetleri aç</button>
-            <button type="button" onClick={() => navigate(base + "/agreements")}>Sözleşmeleri aç</button>
+            <SectionCard title="Son Değerlendirme Bekleyen Hizmetler">
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr style={{ textAlign: "left" }}><th>Sağlayıcı</th><th>Puan</th><th>Hizmet</th><th>Durum</th><th>Değerlendirme</th><th>Tarih</th><th>Sonraki Adım</th><th>Aksiyon</th></tr></thead>
+                  <tbody>
+                    {items.length ? items.map((item) => (
+                      <tr key={item.id} onClick={() => setFocusedItemId(item.id)} style={{ cursor: 'pointer', background: String(focusedItemId || '') === String(item.id || '') ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
+                        <td>{item.providerName || "-"}</td>
+                        <td><ScorePill score={item.providerScore?.averageScore} count={item.providerScore?.evaluationCount} /></td>
+                        <td>{item.serviceLabel || "-"}</td>
+                        <td><StatusBadge value={item.statusLabel} /></td>
+                        <td><StatusBadge value={item.evaluationStatus} /></td>
+                        <td>{fmtTR(item.completedAt)}</td>
+                        <td>{item.nextStep || "-"}</td>
+                        <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {item.canEvaluate ? <button type="button" onClick={(e) => { e.stopPropagation(); setFocusedItemId(item.id); setSelected(item); }}>{item.evaluation ? "Puanı güncelle" : "Değerlendir"}</button> : null}
+                          {item.actionPath ? (
+                            <button type="button" onClick={(e) => {
+                              e.stopPropagation();
+                              const path = companyPath(me, item.actionPath.replace(/^\/company/, ""));
+                              if (path === base + "/shifts") {
+                                setFocusedItemId(item.id);
+                                openCompanyList(item.shiftId);
+                              } else {
+                                navigate(path);
+                              }
+                            }}>{item.actionLabel || "Aç"}</button>
+                          ) : "-"}
+                        </td>
+                      </tr>
+                    )) : <tr><td colSpan={8} className="muted" style={{ padding: "8px 0" }}>
+                      {Number(summary?.cards?.pendingEvaluation || 0) > 0
+                        ? `Özet kartında ${Number(summary?.cards?.pendingEvaluation || 0)} değerlendirme bekleyen hizmet görünüyor; bu listeyi genişletmek için Hizmetleri aç ile vardiya listesine geç veya ekranı yenile.`
+                        : 'Henüz değerlendirme ekranına düşen tamamlanmış hizmet yok.'}
+                    </td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </SectionCard>
           </div>
         </div>
-      </div>
 
-      <div style={{ marginTop: 16, padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14 }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>Son Değerlendirme Bekleyen Hizmetler</div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr style={{ textAlign: "left" }}><th>Sağlayıcı</th><th>Puan</th><th>Hizmet</th><th>Durum</th><th>Değerlendirme</th><th>Tarih</th><th>Sonraki Adım</th><th>Aksiyon</th></tr></thead>
-            <tbody>
-              {items.length ? items.map((item) => (
-                <tr key={item.id} onClick={() => setFocusedItemId(item.id)} style={{ cursor: 'pointer', background: String(focusedItemId || '') === String(item.id || '') ? 'rgba(61, 122, 255, 0.10)' : 'transparent' }}>
-                  <td>{item.providerName || "-"}</td>
-                  <td><ScorePill score={item.providerScore?.averageScore} count={item.providerScore?.evaluationCount} /></td>
-                  <td>{item.serviceLabel || "-"}</td>
-                  <td><StatusBadge value={item.statusLabel} /></td>
-                  <td><StatusBadge value={item.evaluationStatus} /></td>
-                  <td>{fmtTR(item.completedAt)}</td>
-                  <td>{item.nextStep || "-"}</td>
-                  <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {item.canEvaluate ? <button type="button" onClick={(e) => { e.stopPropagation(); setFocusedItemId(item.id); setSelected(item); }}>{item.evaluation ? "Puanı güncelle" : "Değerlendir"}</button> : null}
-                    {item.actionPath ? (
-                      <button type="button" onClick={(e) => {
-                        e.stopPropagation();
-                        const path = companyPath(me, item.actionPath.replace(/^\/company/, ""));
-                        if (path === base + "/shifts") {
-                          setFocusedItemId(item.id);
-                          openCompanyList(item.shiftId);
-                        } else {
-                          navigate(path);
-                        }
-                      }}>{item.actionLabel || "Aç"}</button>
-                    ) : "-"}
-                  </td>
-                </tr>
-              )) : <tr><td colSpan={8} className="muted" style={{ padding: "8px 0" }}>
-                {Number(summary?.cards?.pendingEvaluation || 0) > 0
-                  ? `Özet kartında ${Number(summary?.cards?.pendingEvaluation || 0)} değerlendirme bekleyen hizmet görünüyor; bu listeyi genişletmek için Hizmetleri aç ile vardiya listesine geç veya ekranı yenile.`
-                  : 'Henüz değerlendirme ekranına düşen tamamlanmış hizmet yok.'}
-              </td></tr>}
-            </tbody>
-          </table>
+        <div className="quality-detail-side">
+          <div className="quality-detail-stack">
+            <SectionCard title="Değerlendirme Alanları">
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+                <div>
+                  <div className="muted" style={{ marginTop: 6 }}>{(evaluation?.fields || []).join(" • ") || "Henüz veri yok"}</div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => openCompanyList()}>Hizmetleri aç</button>
+                  <button type="button" onClick={() => navigate(base + "/agreements")}>Sözleşmeleri aç</button>
+                </div>
+              </div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                Değerlendirme alanları ve sözleşme görünümü birlikte okunur.
+              </div>
+            </SectionCard>
+          </div>
         </div>
       </div>
       <EvaluationModal key={selected ? `eval-${selected.id || selected.shiftId || "x"}-${selected.evaluation?.updatedAt || selected.evaluation?.note || "new"}` : "eval-empty"} open={!!selected} item={selected} busy={saving} onClose={() => setSelected(null)} onSubmit={submitEvaluation} />

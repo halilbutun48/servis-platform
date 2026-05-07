@@ -216,8 +216,8 @@ export default function QualityReviewDecisionCard({
 
           <label>
             <div className="muted" style={{ marginBottom: 6 }}>Kısa inceleme notu</div>
-            <textarea
-              rows={3}
+          <textarea
+              rows={2}
               value={note}
               onChange={(e) => setNote(normalizeText(e.target.value).slice(0, 500))}
               placeholder="Kısa inceleme notu yazın"

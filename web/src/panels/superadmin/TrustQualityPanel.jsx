@@ -9,9 +9,19 @@ import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
 import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard";
 
-function Card({ title, children }) {
+function Card({ title, children, className = "", style }) {
   return (
-    <div style={{ padding: 14, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, flex: "1 1 280px" }}>
+    <div
+      className={`quality-card-shell ${className}`.trim()}
+      style={{
+        padding: 14,
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 8,
+        minWidth: 0,
+        width: "100%",
+        ...style,
+      }}
+    >
       <div className="panelSectionTitle" style={{ marginBottom: 8 }}>{title}</div>
       {children}
     </div>
@@ -152,75 +162,71 @@ export default function TrustQualityPanel() {
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <OperationProofReadonlyBadge />
+      <div className="quality-summary-grid" style={{ marginTop: 14 }}>
+        <OperationProofReadonlyBadge className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+        <QualityDraftScoreCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+        <QualityReviewDecisionCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
+        <QualityReviewHistoryCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
       </div>
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityProofReadonlyCard />
-      </div>
+      <div className="quality-detail-layout" style={{ marginTop: 16 }}>
+        <div className="quality-detail-main">
+          <div className="quality-detail-stack">
+            <QualityProofReadonlyCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityDraftScoreCard />
-      </div>
-
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityReviewDecisionCard />
-      </div>
-
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <QualityReviewHistoryCard />
-      </div>
-
-      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
-      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Canlı kalite özeti">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-            <div>
-              <div className="panelMeta">Tamamlanan hizmet</div>
-              <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.completedServices ?? "-"}</div>
-            </div>
-            <div>
-              <div className="panelMeta">Değerlendirme bekleyen</div>
-              <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.pendingEvaluation ?? "-"}</div>
-            </div>
-            <div>
-              <div className="panelMeta">Aktif hizmet</div>
-              <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.activeServices ?? "-"}</div>
-            </div>
-            <div>
-              <div className="panelMeta">Sağlayıcı sayısı</div>
-              <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.providerCount ?? "-"}</div>
+            <div className="panelSectionTitle" style={{ marginTop: 2 }}>Aktif operasyon</div>
+            <div className="quality-detail-stack">
+              <Card title="Canlı kalite özeti">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                  <div>
+                    <div className="panelMeta">Tamamlanan hizmet</div>
+                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.completedServices ?? "-"}</div>
+                  </div>
+                  <div>
+                    <div className="panelMeta">Değerlendirme bekleyen</div>
+                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.pendingEvaluation ?? "-"}</div>
+                  </div>
+                  <div>
+                    <div className="panelMeta">Aktif hizmet</div>
+                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.activeServices ?? "-"}</div>
+                  </div>
+                  <div>
+                    <div className="panelMeta">Sağlayıcı sayısı</div>
+                    <div className="panelStatValue" style={{ marginTop: 4 }}>{summary?.cards?.providerCount ?? "-"}</div>
+                  </div>
+                </div>
+                <div className="panelMeta" style={{ marginTop: 8 }}>Bu kart `/api/trust-quality/company/summary` ile beslenir; template kartlar roadmap tarafında kalır.</div>
+              </Card>
+              <Card title="Yol haritası: hizmet alan değerlendirmesi">
+                <div className="panelStatValue">{(evaluation?.fields || []).length} alan</div>
+                <div className="panelMeta" style={{ marginTop: 6 }}>
+                  {(evaluation?.fields || []).join(" • ") || "Henüz değerlendirme alanı yok"}
+                </div>
+              </Card>
             </div>
           </div>
-          <div className="panelMeta" style={{ marginTop: 8 }}>Bu kart `/api/trust-quality/company/summary` ile beslenir; template kartlar roadmap tarafında kalır.</div>
-        </Card>
-        <Card title="Yol haritası: hizmet alan değerlendirmesi">
-          <div className="panelStatValue">{(evaluation?.fields || []).length} alan</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            {(evaluation?.fields || []).join(" • ") || "Henüz değerlendirme alanı yok"}
-          </div>
-        </Card>
-        <Card title="Yol haritası: sağlayıcı kalite sinyali">
-          <div className="panelBody">{(providerSignal?.signals || []).join(" • ") || "Henüz sinyal yok"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>{providerSignal?.summary || "Sağlayıcı kalite ve güven görünürlüğü için özet sinyal seti."}</div>
-        </Card>
-      </div>
+        </div>
 
-      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
-      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Planlı kalite boyutları">
-          <div className="panelBody">{plannedDimensions.length ? plannedDimensions.map((item) => item.label).join(" • ") : "Planlı boyut yok"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            Aktif: {activeDimensions.length} • Planlı: {plannedDimensions.length}
+        <div className="quality-detail-side">
+          <div className="quality-detail-stack">
+            <Card title="Yol haritası: sağlayıcı kalite sinyali">
+              <div className="panelBody">{(providerSignal?.signals || []).join(" • ") || "Henüz sinyal yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>{providerSignal?.summary || "Sağlayıcı kalite ve güven görünürlüğü için özet sinyal seti."}</div>
+            </Card>
+            <Card title="Gelecek faz">
+              <div className="panelBody">{plannedDimensions.length ? plannedDimensions.map((item) => item.label).join(" • ") : "Planlı boyut yok"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                Aktif: {activeDimensions.length} • Planlı: {plannedDimensions.length}
+              </div>
+            </Card>
+            <Card title="Yol haritası kuralları">
+              <div className="panelBody">{manifest?.activeMilestone || "M63"}</div>
+              <div className="panelMeta" style={{ marginTop: 6 }}>
+                {manifestRules.join(" • ") || "Henüz yol haritası kuralı yok"}
+              </div>
+            </Card>
           </div>
-        </Card>
-        <Card title="Yol haritası kuralları">
-          <div className="panelBody">{manifest?.activeMilestone || "M63"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            {manifestRules.join(" • ") || "Henüz yol haritası kuralı yok"}
-          </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
