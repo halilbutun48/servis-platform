@@ -33,6 +33,127 @@ function extractUserQuestion(message) {
   return String(match?.[1] || raw).trim();
 }
 
+function selectedDiagnosticSurfacePath(screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext) {
+  const paths = [
+    screenDefinition?.path,
+    screenContext?.path,
+    sourceScreenDefinition?.path,
+    sourceScreenContext?.path,
+  ].map((item) => normalizeText(item)).filter(Boolean);
+  return paths.find((item) => item.startsWith('/superadmin')) || paths[0] || '';
+}
+
+function hasSelectedDiagnosticContext(screenContext) {
+  if (!screenContext) return false;
+  const facts = screenContext?.structuredFacts && typeof screenContext.structuredFacts === 'object' ? screenContext.structuredFacts : null;
+  return Boolean(
+    selectedCarrySummary(screenContext)
+    || selectedFieldRows(screenContext).length
+    || selectedBadgeRows(screenContext).length
+    || (Array.isArray(facts?.evidence) && facts.evidence.length)
+    || (Array.isArray(facts?.missing) && facts.missing.length)
+    || (Array.isArray(facts?.blockers) && facts.blockers.length)
+  );
+}
+
+function selectedDiagnosticTheme(message) {
+  const text = normalizeText(message);
+  if (!text) return '';
+  if (/(vardiya).*(başlayamıyor|baslayamiyor|başlamıyor|baslamiyor|başlatamıyor|baslatamiyor)/.test(text)) return 'SHIFT_BLOCKED';
+  if (/(araç|arac).*(harita|haritada).*(görünmüyor|gorunmuyor|yok)/.test(text) || /(haritada).*(görünmüyor|gorunmuyor).*(araç|arac)/.test(text)) return 'VEHICLE_NOT_VISIBLE';
+  if (/(sürücünün|surucunun).*(telefon gps|telefon gps['’]i|telefon gps’i).*(neden).*(devrede|aktif|açık|acik)/.test(text) || /(telefon gps|cihaz gps).*(neden).*(devrede|aktif|açık|acik)/.test(text)) return 'DRIVER_PHONE_GPS';
+  if (/(sağlayıcı|saglayici).*(neden).*(daha iyi|daha güçlü|daha guclu)/.test(text) || /(daha iyi|daha güçlü|daha guclu).*(sağlayıcı|saglayici)/.test(text)) return 'PROVIDER_BETTER';
+  if (/(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text) || /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)) return 'CONTRACT_SHIFT_TODAY';
+  if (/(hakediş|hakedis).*(neden).*(eksik|kontrol gerekli)/.test(text) || /(önizleme|onizleme).*(neden).*(eksik|kontrol gerekli)/.test(text)) return 'PAYMENT_MISSING';
+  if (/(sıradaki doğru işlem|siradaki dogru islem|sıradaki işlem|siradaki islem|sonraki doğru işlem|sonraki dogru islem|ilk neye bakayım|ilk neye bakayim|şimdi ne yapayım|simdi ne yapayim|şimdi ne yapmalıyım|simdi ne yapmaliyim|hangi ekrana gitmeliyim|nereye geçmeliyim|nereye gitmeliyim)/.test(text)) return 'NEXT_ACTION';
+  return '';
+}
+
+function sanitizeDiagnosticSupportText(text) {
+  return normalizeReplySurface(String(text || '')).replace(/Sonuç:/g, 'Özet:');
+}
+
+function selectedDiagnosticResult(theme, contextText = '') {
+  const text = normalizeText(contextText);
+  const hasNegative = /(yok|eksik|kapalı|kapali|görünmüyor|gorunmuyor)/.test(text);
+  switch (theme) {
+    case 'SHIFT_BLOCKED':
+      return 'Bu ekrandaki veriye göre bu vardiya başlayamıyor.';
+    case 'VEHICLE_NOT_VISIBLE':
+      return 'Bu ekrandaki veriye göre bu araç haritada görünmüyor.';
+    case 'DRIVER_PHONE_GPS':
+      return 'Bu ekrandaki veriye göre sürücünün telefon GPS’i devrede görünüyor.';
+    case 'PROVIDER_BETTER':
+      return 'Bu ekrandaki veriye göre bu sağlayıcı daha güçlü görünüyor.';
+    case 'CONTRACT_SHIFT_TODAY':
+      return hasNegative
+        ? 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretildiğine dair net işaret yok.'
+        : 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretilmiş görünüyor.';
+    case 'PAYMENT_MISSING':
+      return 'Bu ekrandaki veriye göre bu hakediş eksik görünüyor.';
+    case 'NEXT_ACTION':
+      return 'Bu ekrandaki veriye göre sıradaki doğru işlem önce seçili kaydı netleştirmek.';
+    default:
+      return 'Bu ekrandaki veriye göre seçili kayıt kontrol altında tutulmalı.';
+  }
+}
+
+function selectedDiagnosticSurfaceHint(theme) {
+  switch (theme) {
+    case 'SHIFT_BLOCKED':
+      return 'Araç, sürücü ve sözleşme bağı';
+    case 'VEHICLE_NOT_VISIBLE':
+      return 'Son GPS zamanı ve konum kaynağı';
+    case 'DRIVER_PHONE_GPS':
+      return 'Görev durumu ve sürücünün telefon GPS’i sinyali';
+    case 'PROVIDER_BETTER':
+      return 'Kanıt, taslak skor, inceleme kararı ve denetim izi';
+    case 'CONTRACT_SHIFT_TODAY':
+      return 'Sözleşme bağı ve bugün oluşan vardiya izi';
+    case 'PAYMENT_MISSING':
+      return 'Hakediş hazırlığı, önizleme ve CSV taslağı';
+    case 'NEXT_ACTION':
+      return 'Seçili kayıt özeti ve durum satırı';
+    default:
+      return 'Seçili kayıt özeti';
+  }
+}
+
+// COP-01B: Super Admin OP/QLT/PAY yüzeylerinde seçili kayıt bağlamına göre kısa teşhis.
+function composeSelectedRecordDiagnosticReply({ message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, conversationState }) {
+  const screenPath = selectedDiagnosticSurfacePath(screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext);
+  if (!screenPath.startsWith('/superadmin')) return null;
+  const supportedSurface = screenPath === '/superadmin' || screenPath.startsWith('/superadmin/operations') || screenPath.startsWith('/superadmin/commercial-core') || screenPath.startsWith('/superadmin/trust-quality') || screenPath.startsWith('/superadmin/operation-verification');
+  if (!supportedSurface) return null;
+  const theme = selectedDiagnosticTheme(message);
+  if (!theme) return null;
+
+  const currentContext = hasSelectedDiagnosticContext(screenContext) ? screenContext : hasSelectedDiagnosticContext(sourceScreenContext) ? sourceScreenContext : null;
+  if (!currentContext) return null;
+  const currentScreenDefinition = currentContext === screenContext ? screenDefinition : sourceScreenDefinition;
+  const fallbackContext = currentContext === screenContext ? sourceScreenContext : screenContext;
+  const fallbackScreenDefinition = fallbackContext === sourceScreenContext ? sourceScreenDefinition : screenDefinition;
+  const summary = firstNonEmpty(selectedCarrySummary(currentContext), selectedCarrySummary(fallbackContext), '');
+  const rowReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedRowReadReply(currentContext, currentScreenDefinition), selectedRowReadReply(fallbackContext, fallbackScreenDefinition), ''));
+  const missingReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(currentContext, currentScreenDefinition), selectedMissingReply(fallbackContext, fallbackScreenDefinition), ''));
+  const fieldReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedFieldReply(message, currentContext, currentScreenDefinition), selectedFieldReply(message, fallbackContext, fallbackScreenDefinition), ''));
+  const badgeReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedBadgeReply(message, currentContext, currentScreenDefinition), selectedBadgeReply(message, fallbackContext, fallbackScreenDefinition), ''));
+  const analysis = analyzeScreenState({ screenContext: currentContext, screenDefinition, conversationState });
+  const analysisReply = analysis ? sanitizeDiagnosticSupportText(analyzerReply(analysis, 'DIAGNOSIS')) : '';
+  const contextText = uniqueStrings([summary, rowReply, missingReply, fieldReply, badgeReply, analysisReply]).join(' • ');
+  const why = uniqueStrings([
+    summary ? `Seçili kayıt: ${summary}` : '',
+    rowReply,
+    missingReply,
+    fieldReply,
+    badgeReply,
+    analysisReply,
+  ]).slice(0, 2).join(' • ') || 'Bu ekrandaki veriye göre net blokaj görünmüyor.';
+  const result = selectedDiagnosticResult(theme, contextText);
+  const firstControl = selectedDiagnosticSurfaceHint(theme);
+  return `Şimdi: ${result} Neden? ${why} İlk kontrol: ${firstControl}.`.trim();
+}
+
 // COP-01A: OP/QLT/PAY ekran rehberi için kısa, güvenli cevaplar.
 function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }) {
   const screenPath = normalizeText(firstNonEmpty(screenDefinition?.path, screenContext?.path, sourceScreenDefinition?.path, sourceScreenContext?.path, ''));
@@ -1186,6 +1307,28 @@ function shiftMissingDataReply(context) {
 function composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false }) {
   const hasScreenContext = !preferEntityContext && (entityType === 'screen' || Boolean(screenContext?.path || screenDefinition?.path));
   const analysis = hasScreenContext ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;
+  const selectedRecordDiagnosticReply = composeSelectedRecordDiagnosticReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, conversationState });
+  if (selectedRecordDiagnosticReply) return toReply(selectedRecordDiagnosticReply);
+  {
+    const selectedDiagnosticPath = selectedDiagnosticSurfacePath(screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext);
+    const selectedDiagnosticText = normalizeText(message);
+    const selectedNextActionMatch = /(sıradaki doğru işlem|siradaki dogru islem|sıradaki işlem|siradaki islem|sonraki doğru işlem|sonraki dogru islem|ilk neye bakayım|ilk neye bakayim|şimdi ne yapayım|simdi ne yapayim|şimdi ne yapmalıyım|simdi ne yapmaliyim|hangi ekrana gitmeliyim|nereye geçmeliyim|nereye gitmeliyim)/.test(selectedDiagnosticText);
+    const selectedSurfaceOk = selectedDiagnosticPath === '/superadmin' || selectedDiagnosticPath.startsWith('/superadmin/operations') || selectedDiagnosticPath.startsWith('/superadmin/commercial-core') || selectedDiagnosticPath.startsWith('/superadmin/trust-quality') || selectedDiagnosticPath.startsWith('/superadmin/operation-verification');
+    const selectedHasContext = hasSelectedDiagnosticContext(screenContext) || hasSelectedDiagnosticContext(sourceScreenContext);
+    if (selectedSurfaceOk && selectedHasContext && selectedNextActionMatch) {
+      const currentContext = hasSelectedDiagnosticContext(screenContext) ? screenContext : sourceScreenContext;
+      const fallbackContext = currentContext === screenContext ? sourceScreenContext : screenContext;
+      const currentScreenDefinition = currentContext === screenContext ? screenDefinition : sourceScreenDefinition;
+      const fallbackScreenDefinition = fallbackContext === sourceScreenContext ? sourceScreenDefinition : screenDefinition;
+      const summary = firstNonEmpty(selectedCarrySummary(currentContext), selectedCarrySummary(fallbackContext), '');
+      const rowReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedRowReadReply(currentContext, currentScreenDefinition), selectedRowReadReply(fallbackContext, fallbackScreenDefinition), ''));
+      const why = uniqueStrings([
+        summary ? `Seçili kayıt: ${summary}` : '',
+        rowReply,
+      ]).slice(0, 2).join(' • ') || 'Bu ekrandaki veriye göre net blokaj görünmüyor.';
+      return toReply(`Bu ekrandaki veriye göre sıradaki doğru işlem önce seçili kaydı netleştirmek. Neden? ${why} İlk kontrol: Seçili kayıt özeti ve durum satırı.`);
+    }
+  }
   const opsQualityPaymentReply = composeOpsQualityPaymentGuideReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext });
   if (opsQualityPaymentReply) return toReply(opsQualityPaymentReply);
   if (roleMode === 'SIMPLE' && hasScreenContext && !['LOCATION_HELP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'ROW_HELP', 'MISSING_DATA_HELP', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED'].includes(questionType)) {
@@ -1671,6 +1814,7 @@ function openingActionForQuestionType(questionType, screenDefinition) {
 function ensureActionLead(reply, questionType, screenDefinition) {
   const value = normalizeReplySurface(reply);
   if (!value) return value;
+  if (/^Bu ekrandaki veriye göre/i.test(value)) return value;
   if (['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'READINESS_CHECK', 'FIRST_CONTROL', 'WHY_BLOCKED', 'STATUS_HELP', 'SAFE_NEXT_STEP', 'ROLE_HELP', 'SCREEN_PURPOSE'].includes(String(questionType || ''))) {
     if (!/^(Şimdi:|Şimdi yap:|Önce:|Önce\s)/.test(value)) {
       const lead = openingActionForQuestionType(questionType, screenDefinition);

@@ -165,6 +165,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
     addScore(scores, signals, 'SCREEN_PURPOSE', -2, 'simple-flow-not-purpose');
   }
   if (/(neden|farkı|farki|ne\s+demek)/.test(text) && pathHas(options.screenPath, ['/agreements', '/hub', '/school/parents', '/access-links', '/checkin', '/notifications', '/logs', '/operation-verification', '/acceptance', '/trust-quality', '/observability'])) addScore(scores, signals, 'SCREEN_PURPOSE', 1, 'special-screen-purpose');
+  if (pathHas(options.screenPath, ['/trust-quality']) && /(sağlayıcı|saglayici).*(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text)) addScore(scores, signals, 'SCREEN_PURPOSE', 4, 'trust-quality-provider-comparison');
 
   const shortFollowUp = isShortFollowUp(text);
   const prevType = lastQuestionType(options.conversationState);
