@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getPaymentBackboneReadinessPreview, normalizePaymentPreviewError } from "../api";
+import { getPaymentBackboneReadinessPreview, getPaymentBackboneReadinessPreviewCsv, normalizePaymentPreviewError } from "../api";
 import { useSession } from "../state/session";
 
 const STATUS_LABELS = {
@@ -188,6 +188,7 @@ export default function PaymentPreviewReadonlyCard({
   const [error, setError] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [selectedPreviewId, setSelectedPreviewId] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   const reloadSummary = useCallback(async () => {
     if (!authKey) return;
@@ -210,6 +211,37 @@ export default function PaymentPreviewReadonlyCard({
     if (!authKey) return;
     reloadSummary();
   }, [authKey, reloadSummary]);
+
+  const exportCsv = useCallback(async () => {
+    if (!authKey || loading || exporting) return;
+    setExporting(true);
+    setError("");
+    try {
+      const bucket = activeFilter === "ALL" ? "" : activeFilter;
+      const csvText = await getPaymentBackboneReadinessPreviewCsv({
+        ...(summaryParams || {}),
+        ...(bucket ? { bucket } : {}),
+      }, { token: authKey });
+      const safeStamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const filename = `hakediş_onizleme_taslagi_${safeStamp}.csv`;
+      const blob = new Blob([`\ufeff${csvText}`], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      const info = normalizePaymentPreviewError(e, "CSV taslağı indirilemedi.");
+      if (info.status === 403) setError("Bu önizlemeyi görme yetkiniz yok.");
+      else setError(info.message || "CSV taslağı indirilemedi.");
+    } finally {
+      setExporting(false);
+    }
+  }, [activeFilter, authKey, exporting, loading, summaryParams]);
 
   const items = useMemo(() => (Array.isArray(summary?.items) ? summary.items.slice(0, 10) : []), [summary]);
 
@@ -338,8 +370,18 @@ export default function PaymentPreviewReadonlyCard({
             );
           })}
         </div>
-        <div style={PAYMENT_PREVIEW_STYLES.filterSummary}>
-          {visibleItems.length ? `${visibleItems.length} kayıt gösteriliyor` : "Filtreye uygun kayıt yok."}
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={PAYMENT_PREVIEW_STYLES.filterSummary}>
+            {visibleItems.length ? `${visibleItems.length} kayıt gösteriliyor` : "Filtreye uygun kayıt yok."}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button className="btn sm" onClick={exportCsv} disabled={loading || exporting || !visibleItems.length}>
+              {exporting ? "İndiriliyor..." : "CSV taslağı indir"}
+            </button>
+            <span className="panelMeta">
+              Sadece önizleme verisi indirilir. Filtre aktifse mevcut görünüm indirilir.
+            </span>
+          </div>
         </div>
       </div>
 
@@ -413,7 +455,7 @@ export default function PaymentPreviewReadonlyCard({
             </span>
           </div>
 
-          <div style={PAYMENT_PREVIEW_STYLES.detailGrid}>
+          <div className="payment-preview-detailGrid" style={PAYMENT_PREVIEW_STYLES.detailGrid}>
             {selectedDetailFields.map((field) => (
               <div key={field.label} style={PAYMENT_PREVIEW_STYLES.detailItem}>
                 <div style={PAYMENT_PREVIEW_STYLES.detailLabel}>{field.label}</div>

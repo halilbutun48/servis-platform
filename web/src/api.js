@@ -261,6 +261,10 @@ export async function getPaymentBackboneReadinessPreview(params = {}, { token } 
   return api(`/api/commercial-core/payment-backbone/readiness/preview${buildQueryString(params)}`, { token });
 }
 
+export async function getPaymentBackboneReadinessPreviewCsv(params = {}, { token } = {}) {
+  return api(`/api/commercial-core/payment-backbone/readiness/preview.csv${buildQueryString(params)}`, { token });
+}
+
 export function normalizeQualityReviewDecisionError(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorInfo(error, fallbackMessage);
 }

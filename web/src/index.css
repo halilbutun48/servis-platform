@@ -590,6 +590,7 @@ button, input, select, textarea, .btn, .secondary, .navItem {
   .quality-summary-grid { grid-template-columns: 1fr; }
   .quality-detail-layout { grid-template-columns: 1fr; }
   .quality-metric-grid { grid-template-columns: 1fr; }
+  .payment-preview-detailGrid { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 641px) and (max-width: 900px) {
