@@ -33,6 +33,7 @@
     "check:qlt04": "node backend/scripts/qlt_04_quality_review_history_check.js",
     "check:qlt04a": "node backend/scripts/qlt_04a_quality_layout_polish_check.js",
     "check:qlt04b": "node backend/scripts/qlt_04b_compact_signal_list_check.js",
+    "check:pay01b": "node backend/scripts/pay_01b_payment_preview_readonly_check.js",
     "check:web-mobile": "npm --prefix web run check:web-mobile",
     "verify:repo": "node backend/scripts/run_repo_check_chain.js --phase all",
     "verify:snapshot": "node backend/scripts/m90_c10_physical_snapshot_hygiene_check.js",

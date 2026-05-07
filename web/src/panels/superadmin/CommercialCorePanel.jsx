@@ -6,6 +6,7 @@ import { buildPaymentSourceQuery } from "./commercialCorePanelUtils";
 import { createCommercialCorePanelActions } from "./commercialCorePanelActions";
 import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 import PaymentReadinessReadonlyCard from "../../components/PaymentReadinessReadonlyCard";
+import PaymentPreviewReadonlyCard from "../../components/PaymentPreviewReadonlyCard";
 
 export default function CommercialCorePanel() {
   const [manifest, setManifest] = useState(null);
@@ -240,6 +241,10 @@ export default function CommercialCorePanel() {
           paymentBackboneEndpointStatus={paymentBackboneEndpointStatus}
           settingsEndpointStatus={settingsEndpointStatus}
         />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <PaymentPreviewReadonlyCard />
       </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>

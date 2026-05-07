@@ -257,10 +257,22 @@ export async function getQualityReviewDecisionHistory(params = {}, { token } = {
   return api(`/api/trust-quality/review-decision/history${buildQueryString(params)}`, { token });
 }
 
+export async function getPaymentBackboneReadinessPreview(params = {}, { token } = {}) {
+  return api(`/api/commercial-core/payment-backbone/readiness/preview${buildQueryString(params)}`, { token });
+}
+
 export function normalizeQualityReviewDecisionError(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorInfo(error, fallbackMessage);
 }
 
 export function normalizeQualityReviewDecisionErrorMessage(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorMessage(error, fallbackMessage);
+}
+
+export function normalizePaymentPreviewError(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorInfo(error, fallbackMessage);
+}
+
+export function normalizePaymentPreviewErrorMessage(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorMessage(error, fallbackMessage);
 }
