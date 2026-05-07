@@ -50,6 +50,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m99_ux_01_visible_text_hygiene_check.js`
 - `node backend\scripts\op_01_operation_proof_service_proof_check.js`
 - `node backend\scripts\op_02_manual_operator_proof_note_check.js`
+- `node backend\scripts\op_03_web_operation_proof_card_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -520,6 +521,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\op_02_manual_operator_proof_note_check.js`
 - Ana konu: servis/hizmet kanıtı özetine manuel not bağlayan küçük yazma katmanını doğrulamak.
 
+### OP-03 — web servis kanıtı / manuel not küçük kartı [CHECK]
+- Komut: `node backend\scripts\op_03_web_operation_proof_card_check.js`
+- Ana konu: operasyon yüzeylerinde küçük servis kanıtı kartını ve manuel not formunu doğrulamak.
+
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
 - Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
@@ -558,3 +563,4 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M99-C`: field launch readiness check'i
 - `OP-01`: operation proof / service proof readonly kanıt omurgası check'i
 - `OP-02`: manuel operatör kanıt notu katmanı check'i
+- `OP-03`: web servis kanıtı / manuel not küçük kartı check'i

@@ -6,6 +6,7 @@ import { includesFilter, rowSelectionStyle } from "../../utils/listUi";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import RoomOperationsBoard from "./roomOperationsBoard";
+import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 
 const ENTRY_HINT_KEY = "room:operationHealthHint";
 
@@ -283,20 +284,27 @@ export default function OperationHealthPanel() {
   }, [summary]);
 
   return (
-    <div className="card">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div className="panelTitle">Oda Operasyon Paneli</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            Room için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div>
+            <div className="panelTitle">Oda Operasyon Paneli</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
+              Room için görev, servis, sürücü, araç ve biniş değişikliği görünürlüğü
+            </div>
           </div>
+          <div className="muted">Kapsam: Kendi operasyon alanınız</div>
         </div>
-        <div className="muted">Kapsam: Kendi operasyon alanınız</div>
-      </div>
 
-      <RoomOperationsBoard
-        roomSummary={summary}
-        roomData={roomOperations}
+        <div style={{ marginTop: 14 }}>
+          <OperationProofMiniCard
+            manualNoteScopeType="SHIFT"
+            manualNoteScopeId="room-operation-health"
+          />
+        </div>
+
+        <RoomOperationsBoard
+          roomSummary={summary}
+          roomData={roomOperations}
       />
 
       <div className="card" style={{ marginTop: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>

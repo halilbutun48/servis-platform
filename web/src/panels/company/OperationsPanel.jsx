@@ -4,6 +4,7 @@ import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import { useAutoReload } from "../../live/useAutoReload";
 import PanelChrome from "../../components/PanelChrome";
+import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import { displayStatusLabel } from "../../utils/displayStatus";
 import { filterNotificationDigest, fmtTR, normalizeNotificationDigest } from "../shared/operationsDigestUtils";
 import { boardingChangeDecisionLabel, boardingChangeKindLabel } from "../shared/boardingChangeUi";
@@ -214,6 +215,11 @@ export default function CompanyOperationsPanel() {
       />
 
       {err ? <div className="card err">{err}</div> : null}
+
+      <OperationProofMiniCard
+        manualNoteScopeType="SERVICE"
+        manualNoteScopeId={`company-operations-${companyKind.toLowerCase()}`}
+      />
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Personel listesi" value={metricValue(personels.length)} note="Şirket kapsamındaki personel kaydı" />

@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
+import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { countBy, filterNotificationDigest, fmtTR, normalizeNotificationDigest, topRepeatedValues } from "../shared/operationsDigestUtils";
 
@@ -104,6 +105,11 @@ export default function SuperAdminOperationsPanel() {
       {err ? <div className="card err">{err}</div> : null}
 
       <PanelKvkkHint panelKey="auditLogs" effectiveRole="SUPER_ADMIN" />
+
+      <OperationProofMiniCard
+        manualNoteScopeType="SERVICE"
+        manualNoteScopeId="superadmin-operations"
+      />
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <MiniStat title="Rol / yetki denetimi" value={metricValue(roleChecks)} note="Operasyon yüzeyi kontrol maddeleri" />

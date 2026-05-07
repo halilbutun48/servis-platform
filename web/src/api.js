@@ -1,4 +1,5 @@
 //web/src/api.js
+import { getApiErrorInfo, getApiErrorMessage } from "./utils/apiContract";
 import { makeHttpError } from "./utils/apiContract";
 
 export function getToken() {
@@ -24,6 +25,16 @@ function getOrCreateBrowserDeviceId() {
   } catch {
     return `web-fallback-${Date.now().toString(36)}`;
   }
+}
+
+function buildQueryString(params = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params || {})) {
+    if (value == null || value === "") continue;
+    query.set(key, String(value));
+  }
+  const text = query.toString();
+  return text ? `?${text}` : "";
 }
 
 export async function api(path, { method = "GET", body, token, signal } = {}) {
@@ -184,4 +195,24 @@ export async function acceptPersonelInvite(body) {
     method: "POST",
     body,
   });
+}
+
+export async function getOperationProofSummary(params = {}, { token } = {}) {
+  return api(`/api/operation-proof/summary${buildQueryString(params)}`, { token });
+}
+
+export async function postOperationProofManualNote(payload, { token } = {}) {
+  return api("/api/operation-proof/manual-note", {
+    method: "POST",
+    token,
+    body: payload,
+  });
+}
+
+export function normalizeOperationProofError(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorInfo(error, fallbackMessage);
+}
+
+export function normalizeOperationProofErrorMessage(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorMessage(error, fallbackMessage);
 }

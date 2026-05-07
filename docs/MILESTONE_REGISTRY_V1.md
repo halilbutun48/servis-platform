@@ -126,6 +126,8 @@
   - not: `M99-KVKK-01` ve `M99-UX-01` kararları korunur; bu hat readonly özet omurgasıdır.
 - `OP-02 - manuel operatör kanıt notu katmanı - active`
   - not: `OP-01` readonly omurga korunur; manuel not sinyali bu katmanda yaşar.
+- `OP-03 - web servis kanıtı / manuel not küçük kartı - active`
+  - not: `OP-01` readonly omurga ve `OP-02` manuel not katmanı korunur; web kartı yalnız görünür özet sağlar.
 - `M99-A - mobile regression pack - active`
   - amaç: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak
   - komut: `node mobile/scripts/m99_a_mobile_regression_pack_check.js`
