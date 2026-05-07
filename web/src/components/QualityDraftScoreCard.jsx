@@ -52,6 +52,14 @@ function getSignalLabel(signal = {}) {
   return SIGNAL_LABELS[id] || signal?.label || id || "-";
 }
 
+function getSignalSummary(signals = []) {
+  const visible = getVisibleSignals(signals);
+  if (!visible.length) return "";
+  const labels = visible.slice(0, 3).map((signal) => getSignalLabel(signal));
+  const remaining = Math.max(0, visible.length - labels.length);
+  return `${visible.length} sinyal • ${labels.join(", ")}${remaining > 0 ? ` +${remaining}` : ""}`;
+}
+
 function getVisibleChecklist(checklist = []) {
   return (Array.isArray(checklist) ? checklist : []).slice(0, 5);
 }
@@ -94,6 +102,7 @@ export default function QualityDraftScoreCard({
   }, [token, reloadSummary]);
 
   const visibleSignals = useMemo(() => getVisibleSignals(summary?.signals), [summary]);
+  const signalSummary = useMemo(() => getSignalSummary(summary?.signals), [summary]);
   const visibleChecklist = useMemo(() => getVisibleChecklist(summary?.checklist), [summary]);
   const visibleExplanation = useMemo(() => getVisibleExplanation(summary?.explanation), [summary]);
   const status = String(summary?.status || "NO_SCORE").toUpperCase();
@@ -148,13 +157,14 @@ export default function QualityDraftScoreCard({
       {!loading && summary?.summaryText ? <div className="panelBody">{summary.summaryText}</div> : null}
       {!loading && summary?.nextAction ? <div className="panelMeta">{summary.nextAction}</div> : null}
       {!loading && summary?.paymentImpactText ? <div className="panelMeta">{summary.paymentImpactText}</div> : null}
+      {!loading && signalSummary ? <div className="quality-compact-summary">{signalSummary}</div> : null}
       {isEmpty ? <div className="muted">Taslak kalite skoru henüz oluşmadı.</div> : null}
       {error ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{error}</div> : null}
 
       {!loading && summary ? (
         <>
           {visibleExplanation.length ? (
-            <div style={{ display: "grid", gap: 6 }}>
+            <div className="quality-mini-list">
               {visibleExplanation.map((line) => (
                 <div key={line} className="panelMeta">
                   • {line}
@@ -164,7 +174,7 @@ export default function QualityDraftScoreCard({
           ) : null}
 
           {visibleChecklist.length ? (
-            <div style={{ display: "grid", gap: 8 }}>
+            <div className="quality-mini-list">
               {visibleChecklist.map((item) => (
                 <div key={item.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <span
@@ -184,20 +194,19 @@ export default function QualityDraftScoreCard({
             </div>
           ) : null}
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="quality-chip-row">
             {visibleSignals.length ? (
               visibleSignals.map((signal) => (
                 <span
                   key={signal.id}
-                  className="pill"
+                  className="quality-chip"
                   title={signal.note || signal.label}
-                  data-status="ROLE"
                 >
                   {getSignalLabel(signal)}
                 </span>
               ))
             ) : (
-              <span className="muted">Henüz taslak kalite sinyali yok.</span>
+              <span className="quality-chip quality-chip--muted">Henüz taslak kalite sinyali yok.</span>
             )}
           </div>
         </>

@@ -266,6 +266,53 @@ hr { border: 0; border-top: 1px solid #22314f; margin: 14px 0; }
   height: 100%;
 }
 
+.quality-compact-summary {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #c8d6f6;
+}
+
+.quality-chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.quality-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #355086;
+  background: rgba(61, 122, 255, 0.12);
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.quality-chip--muted {
+  border-color: #475569;
+  background: rgba(148, 163, 184, 0.10);
+  color: #e2e8f0;
+}
+
+.quality-mini-list {
+  display: grid;
+  gap: 8px;
+}
+
+.quality-history-item {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .quality-card-shell .panelSectionTitle {
   font-size: 15px;
 }

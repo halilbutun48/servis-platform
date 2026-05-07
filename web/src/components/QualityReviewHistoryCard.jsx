@@ -51,6 +51,13 @@ function getVisibleItems(items = []) {
   return (Array.isArray(items) ? items : []).slice(0, 5);
 }
 
+function getHistorySummary(items = []) {
+  const visible = getVisibleItems(items);
+  if (!visible.length) return "";
+  const latest = visible[0];
+  return `${visible.length} kayıt • son karar: ${latest?.statusText || getStatusLabel(latest?.reviewStatus)}`;
+}
+
 export default function QualityReviewHistoryCard({
   summaryParams = null,
   className = "",
@@ -85,6 +92,7 @@ export default function QualityReviewHistoryCard({
   }, [token, reloadSummary]);
 
   const items = useMemo(() => getVisibleItems(summary?.items), [summary]);
+  const historySummary = useMemo(() => getHistorySummary(summary?.items), [summary]);
   const latestDecision = summary?.latestDecision || items[0] || null;
   const isEmpty = !loading && !summary && !error;
 
@@ -125,11 +133,12 @@ export default function QualityReviewHistoryCard({
       {!loading && summary?.summaryText ? <div className="panelBody">{summary.summaryText}</div> : null}
       {!loading && summary?.nonFinalText ? <div className="panelMeta">{summary.nonFinalText}</div> : null}
       {!loading && summary?.paymentImpactText ? <div className="panelMeta">{summary.paymentImpactText}</div> : null}
+      {!loading && historySummary ? <div className="quality-compact-summary">{historySummary}</div> : null}
       {isEmpty ? <div className="muted">Kalite karar geçmişi henüz yok.</div> : null}
       {error ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{error}</div> : null}
 
       {!loading && latestDecision ? (
-        <div style={{ display: "grid", gap: 8, padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+        <div className="quality-history-item">
           <div className="panelSectionTitle" style={{ fontSize: 14 }}>Son kalite kararı</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span className="pill" data-status={String(latestDecision.reviewStatus || "REVIEW_PENDING").toUpperCase()}>
@@ -143,9 +152,9 @@ export default function QualityReviewHistoryCard({
       ) : null}
 
       {!loading && items.length ? (
-        <div style={{ display: "grid", gap: 8 }}>
+        <div className="quality-mini-list">
           {items.map((item) => (
-            <div key={item.id} style={{ display: "grid", gap: 6, padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+            <div key={item.id} className="quality-history-item">
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span className="pill" data-status={String(item.reviewStatus || "REVIEW_PENDING").toUpperCase()}>
                   {item.statusText || getStatusLabel(item.reviewStatus)}

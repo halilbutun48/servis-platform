@@ -40,6 +40,14 @@ function getSignalLabel(signal = {}) {
   return SIGNAL_LABELS[id] || signal?.label || id || "-";
 }
 
+function getSignalSummary(signals = []) {
+  const visible = getVisibleSignals(signals);
+  if (!visible.length) return "";
+  const labels = visible.slice(0, 2).map((signal) => getSignalLabel(signal));
+  const remaining = Math.max(0, visible.length - labels.length);
+  return `${visible.length} sinyal • ${labels.join(", ")}${remaining > 0 ? ` +${remaining}` : ""}`;
+}
+
 export default function OperationProofReadonlyBadge({
   summaryParams = null,
   className = "",
@@ -73,6 +81,7 @@ export default function OperationProofReadonlyBadge({
   }, [token, reloadSummary]);
 
   const visibleSignals = useMemo(() => getVisibleSignals(summary?.signals), [summary]);
+  const signalSummary = useMemo(() => getSignalSummary(summary?.signals), [summary]);
   const status = String(summary?.status || "NOT_STARTED").toUpperCase();
   const isEmpty = !loading && status === "NOT_STARTED" && visibleSignals.length === 0 && !summary?.summaryText;
 
@@ -108,24 +117,24 @@ export default function OperationProofReadonlyBadge({
 
       {loading ? <div className="muted">Kanıt durumu yükleniyor...</div> : null}
       {!loading && summary?.summaryText ? <div className="panelMeta">{summary.summaryText}</div> : null}
+      {!loading && signalSummary ? <div className="quality-compact-summary">{signalSummary}</div> : null}
       {isEmpty ? <div className="muted">Kanıt durumu henüz oluşmadı.</div> : null}
       {error ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{error}</div> : null}
 
       {!loading && summary ? (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div className="quality-chip-row">
           {visibleSignals.length ? (
             visibleSignals.map((signal) => (
               <span
                 key={signal.id}
-                className="pill"
+                className="quality-chip"
                 title={signal.note || signal.label}
-                data-status="ROLE"
               >
                 {getSignalLabel(signal)}
               </span>
             ))
           ) : (
-            <span className="muted">Henüz güçlü kanıt sinyali yok.</span>
+            <span className="quality-chip quality-chip--muted">Henüz güçlü kanıt sinyali yok.</span>
           )}
         </div>
       ) : null}

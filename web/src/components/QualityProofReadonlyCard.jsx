@@ -47,6 +47,14 @@ function getSignalLabel(signal = {}) {
   return SIGNAL_LABELS[id] || signal?.label || id || "-";
 }
 
+function getSignalSummary(signals = []) {
+  const visible = getVisibleSignals(signals);
+  if (!visible.length) return "";
+  const labels = visible.slice(0, 3).map((signal) => getSignalLabel(signal));
+  const remaining = Math.max(0, visible.length - labels.length);
+  return `${visible.length} sinyal • ${labels.join(", ")}${remaining > 0 ? ` +${remaining}` : ""}`;
+}
+
 function getVisibleChecklist(checklist = []) {
   return (Array.isArray(checklist) ? checklist : []).slice(0, 5);
 }
@@ -84,6 +92,7 @@ export default function QualityProofReadonlyCard({
   }, [token, reloadSummary]);
 
   const visibleSignals = useMemo(() => getVisibleSignals(summary?.signals), [summary]);
+  const signalSummary = useMemo(() => getSignalSummary(summary?.signals), [summary]);
   const visibleChecklist = useMemo(() => getVisibleChecklist(summary?.checklist), [summary]);
   const status = String(summary?.status || "NOT_READY").toUpperCase();
   const isEmpty = !loading && status === "NOT_READY" && visibleSignals.length === 0 && visibleChecklist.length === 0 && !summary?.summaryText;
@@ -124,13 +133,14 @@ export default function QualityProofReadonlyCard({
       {loading ? <div className="muted">Kalite sinyalleri yükleniyor...</div> : null}
       {!loading && summary?.summaryText ? <div className="panelBody">{summary.summaryText || "Sağlayıcı karşılaştırması için hazırlık"}</div> : null}
       {!loading && summary?.nextAction ? <div className="panelMeta">{summary.nextAction}</div> : null}
+      {!loading && signalSummary ? <div className="quality-compact-summary">{signalSummary}</div> : null}
       {isEmpty ? <div className="muted">Kalite sinyali henüz oluşmadı.</div> : null}
       {error ? <div style={{ color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{error}</div> : null}
 
       {!loading && summary ? (
         <>
           {visibleChecklist.length ? (
-            <div style={{ display: "grid", gap: 8 }}>
+            <div className="quality-mini-list">
               {visibleChecklist.map((item) => (
                 <div key={item.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <span
@@ -150,20 +160,19 @@ export default function QualityProofReadonlyCard({
             </div>
           ) : null}
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="quality-chip-row">
             {visibleSignals.length ? (
               visibleSignals.map((signal) => (
                 <span
                   key={signal.id}
-                  className="pill"
+                  className="quality-chip"
                   title={signal.note || signal.label}
-                  data-status="ROLE"
                 >
                   {getSignalLabel(signal)}
                 </span>
               ))
             ) : (
-              <span className="muted">Henüz güçlü kalite sinyali yok.</span>
+              <span className="quality-chip quality-chip--muted">Henüz güçlü kalite sinyali yok.</span>
             )}
           </div>
         </>
