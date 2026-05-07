@@ -10,6 +10,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import { buildServiceEvaluationFacts } from "../../utils/copilotFacts";
 import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard";
 import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
+import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -261,6 +262,10 @@ export default function ServiceEvaluationPanel() {
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
         <QualityDraftScoreCard />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <QualityReviewDecisionCard />
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>

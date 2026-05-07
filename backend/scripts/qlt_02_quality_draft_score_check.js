@@ -202,12 +202,12 @@ must(primer, "OP-01→OP-04 evidence chain", "primer keeps OP evidence chain not
 
 must(registry, "QLT-01 - kalite puanı + sağlayıcı karşılaştırması hazırlık omurgası - active-prep", "registry keeps QLT-01 visibility");
 must(registry, "QLT-02 - kontrollü kalite skoru taslak modeli - active-draft", "registry exposes QLT-02 visibility");
-must(registry, "QLT-03 - kontrollü kalite inceleme akışı - planned", "registry exposes QLT-03 visibility");
+must(registry, "QLT-03 - kontrollü kalite inceleme akışı - active-review", "registry exposes QLT-03 visibility");
 
 must(guide, "node backend\\scripts\\qlt_02_quality_draft_score_check.js", "script guide references check:qlt02");
 must(guide, "QLT-02 — kontrollü kalite skoru taslak modeli [CHECK]", "script guide has QLT-02 section");
 must(guide, "QLT-01 — kalite puanı + sağlayıcı karşılaştırması hazırlık omurgası [CHECK]", "script guide keeps QLT-01 section");
-must(guide, "QLT-03 kontrollü kalite inceleme akışı", "script guide keeps QLT-03 note");
+must(guide, "QLT-03 kontrollü kalite inceleme kararı", "script guide keeps QLT-03 note");
 
 must(schema, "model Invite", "schema keeps Invite model");
 must(schema, "model ParentInvite", "schema keeps ParentInvite model");

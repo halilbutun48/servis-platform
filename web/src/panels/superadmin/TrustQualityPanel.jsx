@@ -6,6 +6,7 @@ import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotS
 import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard";
 import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
+import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
 
 function Card({ title, children }) {
   return (
@@ -160,6 +161,10 @@ export default function TrustQualityPanel() {
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
         <QualityDraftScoreCard />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <QualityReviewDecisionCard />
       </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>

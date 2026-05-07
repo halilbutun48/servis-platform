@@ -1,6 +1,7 @@
 import express from "express";
 import { prisma } from "../prisma.js";
 import { authRequired, requireRole, requireStepUpWrite } from "../auth/middleware.js";
+import { audit } from "../audit.js";
 import {
   getTrustQualityManifest,
   buildServiceEvaluationTemplate,
@@ -13,6 +14,8 @@ import {
 import { buildOperationProofSummary } from "../ops/operationProof.js";
 import { buildQualityProofSignalSummary } from "../ops/qualityProofSignals.js";
 import { buildQualityDraftScore } from "../ops/qualityDraftScore.js";
+import { QUALITY_REVIEW_STATUSES, buildQualityReviewDecisionSummary, normalizeQualityReviewDecision } from "../ops/qualityReviewDecision.js";
+import { findLatestQualityReviewDecisionRecord, upsertQualityReviewDecisionRecord } from "../ops/qualityReviewDecisionStore.js";
 import { readOperationVerificationRecords } from "../ops/operationVerificationRecordStore.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
@@ -39,6 +42,25 @@ function hasText(value) {
 
 function normalizeNoteText(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function normalizeReviewNoteText(value) {
+  return normalizeNoteText(value).slice(0, 500);
+}
+
+function normalizeReviewScopeType(value) {
+  const normalized = normalizeUpper(value);
+  return ["SHIFT", "SERVICE", "AGREEMENT", "ROUTE", "QUALITY_DRAFT_SCORE"].includes(normalized) ? normalized : "";
+}
+
+function normalizeReviewScopeId(value) {
+  return normalizeNoteText(value).slice(0, 160);
+}
+
+function buildReviewDecisionScopeKey(scopeType, scopeId) {
+  const type = normalizeReviewScopeType(scopeType);
+  const id = normalizeReviewScopeId(scopeId);
+  return type && id ? `${type}:${id}` : "";
 }
 
 function payloadObject(value) {
@@ -325,6 +347,15 @@ async function buildDraftScorePayload(resolvedScope) {
   });
 }
 
+async function buildQualityReviewDecisionPayload(resolvedScope, reviewScopeKey) {
+  const draftScorePayload = await buildDraftScorePayload(resolvedScope);
+  const reviewRecord = await findLatestQualityReviewDecisionRecord("QUALITY_DRAFT_SCORE", reviewScopeKey);
+  return buildQualityReviewDecisionSummary({
+    draftScoreSummary: draftScorePayload,
+    reviewStatus: reviewRecord?.reviewStatus || QUALITY_REVIEW_STATUSES.REVIEW_PENDING,
+  });
+}
+
 export function trustQualityRouter() {
   const r = express.Router();
 
@@ -437,6 +468,79 @@ export function trustQualityRouter() {
     );
 
     return res.json(payload);
+  });
+
+  // GET /api/trust-quality/review-decision/summary
+  r.get("/review-decision/summary", authRequired(), requireRole("SUPER_ADMIN", "ROOM", "COMPANY", "SCHOOL", "ORGANIZATION"), async (req, res) => {
+    const resolvedScope = await resolveQualityScope(req, res);
+    if (!resolvedScope) return;
+
+    const reviewScopeKey = buildReviewDecisionScopeKey("QUALITY_DRAFT_SCORE", resolvedScope.cacheKey || "global");
+    const payload = await rememberResponse(
+      `trust-quality:review-decision:${reviewScopeKey}`,
+      async () => buildQualityReviewDecisionPayload(resolvedScope, resolvedScope.cacheKey || "global"),
+      { ttlMs: 15000, scope: resolvedScope.scope }
+    );
+
+    return res.json(payload);
+  });
+
+  // POST /api/trust-quality/review-decision
+  r.post("/review-decision", authRequired(), requireRole("SUPER_ADMIN", "ROOM", "COMPANY", "SCHOOL", "ORGANIZATION"), async (req, res) => {
+    try {
+      const resolvedScope = await resolveQualityScope(req, res);
+      if (!resolvedScope) return;
+
+      const scopeType = normalizeReviewScopeType(req.body?.scopeType);
+      const scopeId = normalizeReviewScopeId(req.body?.scopeId);
+      const decision = normalizeQualityReviewDecision(req.body?.decision);
+      const note = normalizeReviewNoteText(req.body?.note);
+      const expectedScopeId = normalizeReviewScopeId(resolvedScope.cacheKey || "global");
+
+      if (!scopeType) {
+        return res.status(400).json({ ok: false, message: "Kapsam türü gerekli." });
+      }
+      if (!scopeId) {
+        return res.status(400).json({ ok: false, message: "Kapsam bilgisi gerekli." });
+      }
+      if (!decision || decision === QUALITY_REVIEW_STATUSES.REVIEW_PENDING) {
+        return res.status(400).json({ ok: false, message: "Geçersiz kalite inceleme kararı." });
+      }
+      if (scopeId !== expectedScopeId) {
+        return res.status(400).json({ ok: false, message: "Kapsam bu kullanıcı için geçerli değil." });
+      }
+
+      const saved = await upsertQualityReviewDecisionRecord({
+        scopeType,
+        scopeId,
+        reviewStatus: decision,
+        note,
+      }, req.user || null);
+
+      clearResponseCache("trust-quality:review-decision:", resolvedScope.scope);
+      await audit(req, {
+        action: "QUALITY_REVIEW_DECISION",
+        entity: "QualityReviewDecision",
+        entityId: null,
+        meta: {
+          scopeType: saved?.scopeType || scopeType,
+          scopeId: saved?.scopeId || scopeId,
+          reviewStatus: saved?.reviewStatus || decision,
+          notePreview: note.slice(0, 120),
+        },
+      });
+
+      return res.json({
+        ok: true,
+        message: "Kalite inceleme kararı kaydedildi.",
+        reviewStatus: saved?.reviewStatus || decision,
+        notePreview: note.slice(0, 120),
+        nonFinalText: "Bu karar kesin kalite puanı değildir",
+        paymentImpactText: "Bu karar hakediş veya komisyon hesabını etkilemez",
+      });
+    } catch (e) {
+      return res.status(400).json({ ok: false, message: e?.message || "Kalite inceleme kararı kaydedilemedi." });
+    }
   });
 
   return r;

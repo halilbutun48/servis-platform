@@ -538,7 +538,11 @@ Bu bant güncel doğrulanmış üst hattır.
 ### QLT-02 — kontrollü kalite skoru taslak modeli [CHECK]
 - Komut: `node backend\scripts\qlt_02_quality_draft_score_check.js`
 - Ana konu: OP-01/02/03/04 kanıt hattı ve QLT-01 hazırlığı üstüne kesin puan, ranking ve settlement açmadan taslak kalite skoru üretmek.
-- Not: QLT-01 hazırlık, QLT-02 taslak skor, QLT-03 kontrollü kalite inceleme akışı olarak ilerler.
+- Not: QLT-01 hazırlık, QLT-02 taslak skor, QLT-03 kontrollü kalite inceleme kararı olarak ilerler.
+
+### QLT-03 — kontrollü kalite inceleme kararı [CHECK]
+- Komut: `node backend\scripts\qlt_03_quality_review_decision_check.js`
+- Ana konu: QLT-02 taslak skor üstünde yetkili karar ve tekrar kontrol akışı kurmak; kesin kalite puanı, ranking, settlement ve komisyonu açmamak.
 
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
