@@ -214,7 +214,11 @@ must(registry, "QLT-02 - kontrollü kalite skoru taslak modeli - active-draft", 
 
 must(guide, "node backend\\scripts\\qlt_03_quality_review_decision_check.js", "script guide references check:qlt03");
 must(guide, "QLT-03 — kontrollü kalite inceleme kararı [CHECK]", "script guide has QLT-03 section");
-must(guide, "QLT-01 hazırlık, QLT-02 taslak skor, QLT-03 kontrollü kalite inceleme kararı olarak ilerler", "script guide keeps QLT chain note");
+must(
+  guide,
+  "QLT-01 hazırlık, QLT-02 taslak skor, QLT-03 kontrollü kalite inceleme kararı, QLT-04 kalite karar geçmişi / denetim izi olarak ilerler",
+  "script guide keeps QLT chain note",
+);
 
 must(schema, "model Invite", "schema keeps Invite model");
 must(schema, "model ParentInvite", "schema keeps ParentInvite model");

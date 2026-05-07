@@ -253,6 +253,10 @@ export async function postQualityReviewDecision(payload, { token } = {}) {
   });
 }
 
+export async function getQualityReviewDecisionHistory(params = {}, { token } = {}) {
+  return api(`/api/trust-quality/review-decision/history${buildQueryString(params)}`, { token });
+}
+
 export function normalizeQualityReviewDecisionError(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorInfo(error, fallbackMessage);
 }

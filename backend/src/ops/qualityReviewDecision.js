@@ -1,3 +1,4 @@
+import { maskEmail } from "../kvkk/enforcement.js";
 import { QUALITY_DRAFT_SCORE_STATUSES } from "./qualityDraftScore.js";
 
 export const QUALITY_REVIEW_DECISION_VERSION = "QLT-03";
@@ -56,6 +57,30 @@ function hasDraftEvidence(draftScoreSummary = {}) {
   return Boolean(draftStatus && draftStatus !== QUALITY_DRAFT_SCORE_STATUSES.NO_SCORE);
 }
 
+function buildReviewStatusText(reviewStatus) {
+  switch (reviewStatus) {
+    case QUALITY_REVIEW_STATUSES.REVIEWED:
+      return "İncelendi";
+    case QUALITY_REVIEW_STATUSES.NEEDS_RECHECK:
+      return "Tekrar kontrol gerekli";
+    case QUALITY_REVIEW_STATUSES.IGNORED_FOR_NOW:
+      return "Şimdilik dikkate alınmadı";
+    default:
+      return "Kalite incelemesi bekliyor";
+  }
+}
+
+function buildHistoryActorLabel(record = {}) {
+  const role = cleanText(record?.updatedByRole, "");
+  const emailMasked = maskEmail(record?.updatedByEmail);
+  if (role && emailMasked) return `${role} / ${emailMasked}`;
+  if (role) return role;
+  if (emailMasked) return emailMasked;
+  const userId = Number(record?.updatedByUserId || 0) || 0;
+  if (userId > 0) return `Kullanıcı #${userId}`;
+  return "Yetkili kullanıcı";
+}
+
 export function normalizeQualityReviewDecision(input) {
   if (!input) return "";
   if (typeof input === "string") {
@@ -109,6 +134,46 @@ function buildReviewText(reviewStatus, hasDraftEvidenceFlag) {
           : "Önce taslak kalite skoru oluşsun. Sağlayıcı sıralaması değildir.",
       };
   }
+}
+
+export function buildQualityReviewHistorySafeList(input = {}) {
+  const historyRecords = Array.isArray(input?.historyRecords)
+    ? input.historyRecords
+    : Array.isArray(input?.records)
+      ? input.records
+      : [];
+
+  return [...historyRecords]
+    .sort((a, b) => String(b?.updatedAt || b?.createdAt || "").localeCompare(String(a?.updatedAt || a?.createdAt || "")))
+    .slice(0, 10)
+    .map((record) => {
+      const reviewStatus = normalizeQualityReviewDecision(record?.reviewStatus || record?.decision || record?.status) || QUALITY_REVIEW_STATUSES.REVIEW_PENDING;
+      return {
+        id: cleanText(record?.id, "") || `${cleanText(record?.scopeType, "QUALITY_DRAFT_SCORE")}:${cleanText(record?.scopeId, "global")}:${cleanText(record?.createdAt || record?.updatedAt, "")}`,
+        scopeType: cleanText(record?.scopeType, ""),
+        scopeId: cleanText(record?.scopeId, ""),
+        reviewStatus,
+        statusText: buildReviewStatusText(reviewStatus),
+        notePreview: cleanText(record?.note, 120),
+        actorLabel: buildHistoryActorLabel(record),
+        createdAt: cleanText(record?.createdAt || record?.updatedAt, ""),
+      };
+    });
+}
+
+export function buildQualityReviewHistorySummary(input = {}) {
+  const items = buildQualityReviewHistorySafeList(input);
+  const latestDecision = items[0] || null;
+  return {
+    version: QUALITY_REVIEW_DECISION_VERSION,
+    title: "Kalite karar geçmişi",
+    summaryText: items.length ? "Denetim izi" : "Kalite karar geçmişi henüz yok.",
+    items,
+    latestDecision,
+    latestDecisionLabel: "Son kalite kararı",
+    nonFinalText: "Bu geçmiş kesin kalite puanı değildir",
+    paymentImpactText: "Bu geçmiş hakediş veya komisyon hesabını etkilemez",
+  };
 }
 
 export function buildQualityReviewChecklist(input = {}) {

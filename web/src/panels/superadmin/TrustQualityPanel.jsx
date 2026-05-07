@@ -7,6 +7,7 @@ import OperationProofReadonlyBadge from "../../components/OperationProofReadonly
 import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard";
 import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
+import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard";
 
 function Card({ title, children }) {
   return (
@@ -165,6 +166,10 @@ export default function TrustQualityPanel() {
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
         <QualityReviewDecisionCard />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <QualityReviewHistoryCard />
       </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>

@@ -28,6 +28,7 @@
     "check:qlt01": "node backend/scripts/qlt_01_quality_provider_readiness_check.js",
     "check:qlt02": "node backend/scripts/qlt_02_quality_draft_score_check.js",
     "check:qlt03": "node backend/scripts/qlt_03_quality_review_decision_check.js",
+    "check:qlt04": "node backend/scripts/qlt_04_quality_review_history_check.js",
     "check:web-mobile": "npm --prefix web run check:web-mobile",
     "verify:repo": "node backend/scripts/run_repo_check_chain.js --phase all",
     "verify:snapshot": "node backend/scripts/m90_c10_physical_snapshot_hygiene_check.js",

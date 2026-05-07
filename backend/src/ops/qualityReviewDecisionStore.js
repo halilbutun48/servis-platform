@@ -1,4 +1,5 @@
 import { createJsonFileStore } from "../lib/jsonFileStore.js";
+import { maskEmail } from "../kvkk/enforcement.js";
 import { QUALITY_REVIEW_STATUSES, normalizeQualityReviewDecision } from "./qualityReviewDecision.js";
 
 const store = createJsonFileStore("quality-review-decisions.json", { defaultValue: [] });
@@ -17,6 +18,17 @@ function cleanText(value, max = 500) {
 
 function cleanUpper(value) {
   return cleanText(value).toUpperCase();
+}
+
+function buildActorLabel(actor = {}) {
+  const role = cleanText(actor?.role, 40).toUpperCase();
+  const emailMasked = maskEmail(actor?.email);
+  if (role && emailMasked) return `${role} / ${emailMasked}`;
+  if (role) return role;
+  if (emailMasked) return emailMasked;
+  const userId = Number(actor?.id || 0) || 0;
+  if (userId > 0) return `Kullanıcı #${userId}`;
+  return "Yetkili kullanıcı";
 }
 
 function normalizeScopeType(value) {
@@ -70,9 +82,8 @@ export async function upsertQualityReviewDecisionRecord(input, actor = null) {
   await store.updateAsync((current) => {
     const list = Array.isArray(current) ? current : [];
     const scopeKey = buildQualityReviewDecisionScopeKey(scopeType, scopeId);
-    const idx = list.findIndex((item) => buildQualityReviewDecisionScopeKey(item?.scopeType, item?.scopeId) === scopeKey);
     const next = {
-      id: idx >= 0 ? list[idx].id : `QUALITY_REVIEW_DECISION:${scopeKey}`,
+      id: `QUALITY_REVIEW_DECISION:${scopeKey}:${now}:${list.length + 1}`,
       scopeType,
       scopeId,
       scopeKey,
@@ -80,11 +91,12 @@ export async function upsertQualityReviewDecisionRecord(input, actor = null) {
       note,
       updatedByUserId: Number(actor?.id || 0) || null,
       updatedByEmail: cleanText(actor?.email, 160),
-      createdAt: idx >= 0 ? list[idx].createdAt : now,
+      updatedByRole: cleanText(actor?.role, 40).toUpperCase(),
+      updatedByLabel: buildActorLabel(actor),
+      createdAt: now,
       updatedAt: now,
     };
-    if (idx >= 0) list[idx] = next;
-    else list.push(next);
+    list.push(next);
     saved = next;
     return list;
   });

@@ -136,6 +136,8 @@
   - not: `QLT-01` hazırlığı üstünden taslak skor üretir; kesin puan, ranking ve settlement yoktur.
 - `QLT-03 - kontrollü kalite inceleme akışı - active-review`
   - not: `QLT-02` sonrası kontrollü kalite inceleme kararı halkasıdır; kesin kalite puanı üretmez.
+- `QLT-04 - kalite karar geçmişi / denetim izi - active-history`
+  - not: `QLT-03` kararlarının küçük readonly geçmiş halkasıdır; kesin kalite puanı, ranking, settlement ve komisyon üretmez.
 - `M99-A - mobile regression pack - active`
   - amaç: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak
   - komut: `node mobile/scripts/m99_a_mobile_regression_pack_check.js`

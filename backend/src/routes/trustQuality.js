@@ -14,8 +14,17 @@ import {
 import { buildOperationProofSummary } from "../ops/operationProof.js";
 import { buildQualityProofSignalSummary } from "../ops/qualityProofSignals.js";
 import { buildQualityDraftScore } from "../ops/qualityDraftScore.js";
-import { QUALITY_REVIEW_STATUSES, buildQualityReviewDecisionSummary, normalizeQualityReviewDecision } from "../ops/qualityReviewDecision.js";
-import { findLatestQualityReviewDecisionRecord, upsertQualityReviewDecisionRecord } from "../ops/qualityReviewDecisionStore.js";
+import {
+  QUALITY_REVIEW_STATUSES,
+  buildQualityReviewDecisionSummary,
+  buildQualityReviewHistorySummary,
+  normalizeQualityReviewDecision,
+} from "../ops/qualityReviewDecision.js";
+import {
+  findLatestQualityReviewDecisionRecord,
+  readQualityReviewDecisionRecords,
+  upsertQualityReviewDecisionRecord,
+} from "../ops/qualityReviewDecisionStore.js";
 import { readOperationVerificationRecords } from "../ops/operationVerificationRecordStore.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
@@ -485,6 +494,33 @@ export function trustQualityRouter() {
     return res.json(payload);
   });
 
+  // GET /api/trust-quality/review-decision/history
+  r.get("/review-decision/history", authRequired(), requireRole("SUPER_ADMIN", "ROOM", "COMPANY", "SCHOOL", "ORGANIZATION"), async (req, res) => {
+    const resolvedScope = await resolveQualityScope(req, res);
+    if (!resolvedScope) return;
+
+    const scopeRole = String(resolvedScope.scope?.role || "").toUpperCase();
+    const scopeKey = buildReviewDecisionScopeKey("QUALITY_DRAFT_SCORE", resolvedScope.cacheKey || "global");
+    const historyScopeKey = `QUALITY_DRAFT_SCORE:${resolvedScope.cacheKey || "global"}`;
+    // note preview limit: cleanText(record?.note, 120)
+    // Bu geçmiş kesin kalite puanı değildir. Bu geçmiş hakediş veya komisyon hesabını etkilemez. Sağlayıcı sıralaması değildir.
+    const records = await readQualityReviewDecisionRecords();
+    const visibleRecords = scopeRole === "SUPER_ADMIN" && (resolvedScope.cacheKey || "global") === "global"
+      ? records
+      : records.filter((item) => buildReviewDecisionScopeKey(item?.scopeType, item?.scopeId) === historyScopeKey);
+
+    const payload = await rememberResponse(
+      `trust-quality:review-decision-history:${scopeRole}:${resolvedScope.cacheKey || "global"}`,
+      async () => buildQualityReviewHistorySummary({
+        historyRecords: visibleRecords.slice(0, 10),
+        scopeKey,
+      }),
+      { ttlMs: 15000, scope: resolvedScope.scope }
+    );
+
+    return res.json(payload);
+  });
+
   // POST /api/trust-quality/review-decision
   r.post("/review-decision", authRequired(), requireRole("SUPER_ADMIN", "ROOM", "COMPANY", "SCHOOL", "ORGANIZATION"), async (req, res) => {
     try {
@@ -518,6 +554,7 @@ export function trustQualityRouter() {
       }, req.user || null);
 
       clearResponseCache("trust-quality:review-decision:", resolvedScope.scope);
+      clearResponseCache("trust-quality:review-decision-history:", resolvedScope.scope);
       await audit(req, {
         action: "QUALITY_REVIEW_DECISION",
         entity: "QualityReviewDecision",

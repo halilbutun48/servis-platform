@@ -53,6 +53,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\op_03_web_operation_proof_card_check.js`
 - `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
 - `node backend\scripts\qlt_02_quality_draft_score_check.js`
+- `node backend\scripts\qlt_03_quality_review_decision_check.js`
+- `node backend\scripts\qlt_04_quality_review_history_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -538,11 +540,15 @@ Bu bant güncel doğrulanmış üst hattır.
 ### QLT-02 — kontrollü kalite skoru taslak modeli [CHECK]
 - Komut: `node backend\scripts\qlt_02_quality_draft_score_check.js`
 - Ana konu: OP-01/02/03/04 kanıt hattı ve QLT-01 hazırlığı üstüne kesin puan, ranking ve settlement açmadan taslak kalite skoru üretmek.
-- Not: QLT-01 hazırlık, QLT-02 taslak skor, QLT-03 kontrollü kalite inceleme kararı olarak ilerler.
+- Not: QLT-01 hazırlık, QLT-02 taslak skor, QLT-03 kontrollü kalite inceleme kararı, QLT-04 kalite karar geçmişi / denetim izi olarak ilerler.
 
 ### QLT-03 — kontrollü kalite inceleme kararı [CHECK]
 - Komut: `node backend\scripts\qlt_03_quality_review_decision_check.js`
 - Ana konu: QLT-02 taslak skor üstünde yetkili karar ve tekrar kontrol akışı kurmak; kesin kalite puanı, ranking, settlement ve komisyonu açmamak.
+
+### QLT-04 — kalite karar geçmişi / denetim izi [CHECK]
+- Komut: `node backend\scripts\qlt_04_quality_review_history_check.js`
+- Ana konu: QLT-03 kararlarının readonly geçmişini görünür yapmak; kesin kalite puanı, ranking, settlement ve komisyon açmamak.
 
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
@@ -583,6 +589,8 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M99-UX-01`: görünür Türkçe metin hijyeni check'i
 - `QLT-01`: kalite puanı + sağlayıcı karşılaştırması hazırlık omurgası check'i
 - `QLT-02`: kontrollü kalite skoru taslak modeli check'i
+- `QLT-03`: kontrollü kalite inceleme kararı check'i
+- `QLT-04`: kalite karar geçmişi / denetim izi check'i
 - `M99-A`: mobile regression pack check'i
 - `M99-B`: real scenario tests check'i
 - `M99-C`: field launch readiness check'i

@@ -223,6 +223,7 @@ Compatibility aliases for legacy checks:
 - `OP-04` servis kanıtı durumunu ticari/kalite yüzeylerine readonly köprü olarak bağlar; `OP-01` readonly omurga, `OP-02` manuel not ve `OP-03` küçük kart korunur; settlement aktif değildir, komisyon hesaplama aktif değildir.
 - `QLT-01` kalite puanı + sağlayıcı karşılaştırması hazırlık omurgasıdır; OP-01→OP-04 evidence chain bu hazırlığın temelidir ve kesin puan üretmez.
 - `QLT-02` kontrollü kalite skoru taslak modelidir; `QLT-01` hazırlığı üstünden taslak skor üretir, `QLT-03` kontrollü kalite inceleme kararı sonraki görünür halkadır.
+- `QLT-03` kontrollü kalite inceleme kararıdır; `QLT-04` kalite karar geçmişi / denetim izi görünürlük halkasıdır.
 
 ## M90C.9 SAFE CLOSURE / FINAL HYGIENE
 - M90C.9 görünür closure hygiene milestone kaydıdır.
