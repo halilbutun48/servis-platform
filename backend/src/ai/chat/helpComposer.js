@@ -161,6 +161,10 @@ function composeSelectedRecordDiagnosticReply({ message, screenDefinition, scree
 }
 
 // COP-01A: OP/QLT/PAY ekran rehberi için kısa, güvenli cevaplar.
+// COP-01E operasyon rehberi standardı:
+// program çerçevesinde cevap
+// sorun + neden + öneri + sıradaki adım
+// emin değilse ilk kontrolü söyler
 function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }) {
   const screenPath = normalizeText(firstNonEmpty(screenDefinition?.path, screenContext?.path, sourceScreenDefinition?.path, sourceScreenContext?.path, ''));
   if (!screenPath) return null;

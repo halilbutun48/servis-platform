@@ -32,6 +32,7 @@
     "check:cop01b": "node backend/scripts/cop_01b_selected_record_diagnostic_context_check.js",
     "check:cop01c": "node backend/scripts/cop_01c_real_context_bridge_check.js",
     "check:cop01d": "node backend/scripts/cop_01d_visible_diagnostic_signals_check.js",
+    "check:cop01e": "node backend/scripts/cop_01e_operational_guide_acceptance_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",
