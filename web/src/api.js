@@ -228,3 +228,15 @@ export function normalizeQualityProofError(error, fallbackMessage = "İşlem ba�
 export function normalizeQualityProofErrorMessage(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorMessage(error, fallbackMessage);
 }
+
+export async function getQualityDraftScoreSummary(params = {}, { token } = {}) {
+  return api(`/api/trust-quality/draft-score/summary${buildQueryString(params)}`, { token });
+}
+
+export function normalizeQualityDraftError(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorInfo(error, fallbackMessage);
+}
+
+export function normalizeQualityDraftErrorMessage(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorMessage(error, fallbackMessage);
+}

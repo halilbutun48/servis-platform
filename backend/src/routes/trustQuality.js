@@ -12,6 +12,7 @@ import {
 } from "../ops/trustQualityManifest.js";
 import { buildOperationProofSummary } from "../ops/operationProof.js";
 import { buildQualityProofSignalSummary } from "../ops/qualityProofSignals.js";
+import { buildQualityDraftScore } from "../ops/qualityDraftScore.js";
 import { readOperationVerificationRecords } from "../ops/operationVerificationRecordStore.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
@@ -304,6 +305,26 @@ async function buildOperationProofPayload(resolvedScope) {
   });
 }
 
+async function buildDraftScorePayload(resolvedScope) {
+  const proofSummary = await buildOperationProofPayload(resolvedScope);
+  const scopeRole = String(resolvedScope.scope?.role || "").toUpperCase();
+  const companySummary = scopeRole === "ROOM"
+    ? null
+    : await buildCompanyServiceEvaluationSummary({ companyId: Number(resolvedScope.scope?.companyId || 0) || 0 });
+  const qualitySummary = buildQualityProofSignalSummary({
+    scope: resolvedScope.scope,
+    proofSummary,
+    serviceSummary: companySummary,
+  });
+
+  return buildQualityDraftScore({
+    scope: resolvedScope.scope,
+    proofSummary,
+    qualitySummary,
+    serviceSummary: companySummary,
+  });
+}
+
 export function trustQualityRouter() {
   const r = express.Router();
 
@@ -398,6 +419,20 @@ export function trustQualityRouter() {
           providerScore,
         });
       },
+      { ttlMs: 15000, scope: resolvedScope.scope }
+    );
+
+    return res.json(payload);
+  });
+
+  // GET /api/trust-quality/draft-score/summary
+  r.get("/draft-score/summary", authRequired(), requireRole("SUPER_ADMIN", "ROOM", "COMPANY", "SCHOOL", "ORGANIZATION"), async (req, res) => {
+    const resolvedScope = await resolveQualityScope(req, res);
+    if (!resolvedScope) return;
+
+    const payload = await rememberResponse(
+      `trust-quality:draft-score:${resolvedScope.cacheKey}`,
+      async () => buildDraftScorePayload(resolvedScope),
       { ttlMs: 15000, scope: resolvedScope.scope }
     );
 

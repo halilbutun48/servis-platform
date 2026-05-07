@@ -132,6 +132,10 @@
   - not: `OP-01` readonly omurga, `OP-02` manuel not katmanı ve `OP-03` küçük kart korunur; settlement aktif değildir, komisyon hesaplama aktif değildir.
 - `QLT-01 - kalite puanı + sağlayıcı karşılaştırması hazırlık omurgası - active-prep`
   - not: `OP-01/02/03/04` evidence chain bu hazırlığın temelidir; kesin puan veya otomatik sıralama yoktur.
+- `QLT-02 - kontrollü kalite skoru taslak modeli - active-draft`
+  - not: `QLT-01` hazırlığı üstünden taslak skor üretir; kesin puan, ranking ve settlement yoktur.
+- `QLT-03 - kontrollü kalite inceleme akışı - planned`
+  - not: `QLT-02` sonrası kontrollü inceleme halkasıdır.
 - `M99-A - mobile regression pack - active`
   - amaç: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak
   - komut: `node mobile/scripts/m99_a_mobile_regression_pack_check.js`

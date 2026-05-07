@@ -5,6 +5,7 @@ import { getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../ut
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard";
+import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 
 function Card({ title, children }) {
   return (
@@ -155,6 +156,10 @@ export default function TrustQualityPanel() {
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
         <QualityProofReadonlyCard />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <QualityDraftScoreCard />
       </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>

@@ -9,6 +9,7 @@ import { companyPath } from "../../utils/paths";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
 import { buildServiceEvaluationFacts } from "../../utils/copilotFacts";
 import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard";
+import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -256,6 +257,10 @@ export default function ServiceEvaluationPanel() {
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
         <QualityProofReadonlyCard />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <QualityDraftScoreCard />
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
