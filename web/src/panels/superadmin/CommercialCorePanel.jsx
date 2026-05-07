@@ -8,6 +8,7 @@ import OperationProofReadonlyBadge from "../../components/OperationProofReadonly
 import PaymentReadinessReadonlyCard from "../../components/PaymentReadinessReadonlyCard";
 import PaymentPreviewReadonlyCard from "../../components/PaymentPreviewReadonlyCard";
 import PaymentReadonlySafetyBadge from "../../components/PaymentReadonlySafetyBadge";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 
 export default function CommercialCorePanel() {
   const [manifest, setManifest] = useState(null);
@@ -228,8 +229,14 @@ export default function CommercialCorePanel() {
       {err ? <div style={{ marginTop: 12, color: "#ffb17b", whiteSpace: "pre-wrap" }}>{stripHtmlNoise(err)}</div> : null}
       {okMsg ? <div style={{ marginTop: 12, color: "#7bffb2", whiteSpace: "pre-wrap" }}>{okMsg}</div> : null}
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <OperationProofReadonlyBadge />
+      <div style={{ marginTop: 14, maxWidth: 980 }}>
+        <FlowSummaryStrip
+          title="Ticari akış özeti"
+          description="Bu ekran ödeme başlatmaz. Hakediş hazırlığı, önizleme ve kanıt durumunu birlikte gösterir."
+          steps={["1. Hazırlık", "2. Önizleme", "3. CSV taslağı", "4. Son kontrol", "Ödeme kapalı"]}
+          statusText="Ödeme kapalı"
+          tone="warn"
+        />
       </div>
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
@@ -248,8 +255,12 @@ export default function CommercialCorePanel() {
         />
       </div>
 
-      <div style={{ marginTop: 14, maxWidth: 980 }}>
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
         <PaymentPreviewReadonlyCard />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 980 }}>
+        <OperationProofReadonlyBadge />
       </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>

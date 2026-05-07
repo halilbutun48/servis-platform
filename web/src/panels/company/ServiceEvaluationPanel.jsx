@@ -12,6 +12,7 @@ import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard"
 import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
 import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 
 function fmtTR(iso) {
   if (!iso) return "-";
@@ -275,6 +276,16 @@ export default function ServiceEvaluationPanel() {
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#f97066", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+
+      <div style={{ marginTop: 14, maxWidth: 980 }}>
+        <FlowSummaryStrip
+          title="Değerlendirme akışı"
+          description="Bu alan kalite değerlendirmesine yardımcı olur; ödeme veya komisyon başlatmaz."
+          steps={["Kanıt", "Taslak", "İnceleme", "Geçmiş"]}
+          statusText="Ödeme veya komisyon başlatmaz"
+          tone="info"
+        />
+      </div>
 
       <div className="quality-summary-grid" style={{ marginTop: 14 }}>
         <QualityProofReadonlyCard className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />

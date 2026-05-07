@@ -8,6 +8,7 @@ import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard"
 import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
 import QualityReviewDecisionCard from "../../components/QualityReviewDecisionCard";
 import QualityReviewHistoryCard from "../../components/QualityReviewHistoryCard";
+import FlowSummaryStrip from "../../components/FlowSummaryStrip";
 
 function Card({ title, children, className = "", style }) {
   return (
@@ -161,6 +162,16 @@ export default function TrustQualityPanel() {
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+
+      <div style={{ marginTop: 14, maxWidth: 980 }}>
+        <FlowSummaryStrip
+          title="Kalite akış özeti"
+          description="Bu ekran kesin kalite puanı vermez. Kanıt, taslak skor, inceleme kararı ve denetim izini birlikte gösterir."
+          steps={["1. Kanıt", "2. Taslak skor", "3. İnceleme", "4. Denetim izi", "Kesin puan yok"]}
+          statusText="Kesin puan yok"
+          tone="warn"
+        />
+      </div>
 
       <div className="quality-summary-grid" style={{ marginTop: 14 }}>
         <OperationProofReadonlyBadge className="quality-card-shell" style={{ height: "100%", padding: 12, gap: 8 }} />
