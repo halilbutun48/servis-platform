@@ -49,6 +49,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m99_kvkk_01_mobile_web_plain_text_check.js`
 - `node backend\scripts\m99_ux_01_visible_text_hygiene_check.js`
 - `node backend\scripts\op_01_operation_proof_service_proof_check.js`
+- `node backend\scripts\op_02_manual_operator_proof_note_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -511,6 +512,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node mobile\scripts\m99_c_field_launch_readiness_check.js`
 - Ana konu: gerçek cihaz, zayıf ağ ve saha kanıtı hazırlığını tek check'te görünür kılmak.
 
+### OP-01 — operation proof / service proof readonly kanıt omurgası [CHECK]
+- Komut: `node backend\scripts\op_01_operation_proof_service_proof_check.js`
+- Ana konu: servis kanıtı ve hizmet kanıtı için readonly özet omurgasını doğrulamak.
+
+### OP-02 — manuel operatör kanıt notu [CHECK]
+- Komut: `node backend\scripts\op_02_manual_operator_proof_note_check.js`
+- Ana konu: servis/hizmet kanıtı özetine manuel not bağlayan küçük yazma katmanını doğrulamak.
+
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
 - Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
@@ -547,3 +556,5 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M99-A`: mobile regression pack check'i
 - `M99-B`: real scenario tests check'i
 - `M99-C`: field launch readiness check'i
+- `OP-01`: operation proof / service proof readonly kanıt omurgası check'i
+- `OP-02`: manuel operatör kanıt notu katmanı check'i

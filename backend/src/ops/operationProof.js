@@ -79,6 +79,10 @@ function cleanUpper(value, fallback = "") {
   return text ? text.toUpperCase() : "";
 }
 
+function hasText(value) {
+  return cleanText(value, "").length > 0;
+}
+
 function normalizeSignalId(raw) {
   const text = cleanUpper(raw).replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
   if (!text) return "";
@@ -102,6 +106,46 @@ export function normalizeProofSignal(signal) {
     );
   }
   return "";
+}
+
+function normalizeManualNoteText(value, max = 120) {
+  const text = String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ");
+  if (!text) return "";
+  const limit = Number(max || 0) > 0 ? Math.trunc(max) : 120;
+  return text.slice(0, limit);
+}
+
+function collectManualNoteEntries(source = []) {
+  const items = Array.isArray(source) ? source : [];
+  return items
+    .map((item) => {
+      if (!item) return null;
+      if (typeof item === "string") {
+        const note = normalizeManualNoteText(item, 120);
+        return note ? { note, preview: note, updatedAt: null } : null;
+      }
+      if (typeof item !== "object") return null;
+      const signal = normalizeProofSignal(item);
+      const proofType = cleanUpper(item?.proofType);
+      const checkId = cleanUpper(item?.checkId);
+      const rawNote = item?.note || item?.message || item?.text || item?.preview || item?.manualNote;
+      const note = normalizeManualNoteText(rawNote, 120);
+      const looksLikeManualNote =
+        signal === "MANUAL_OPERATOR_NOTE" ||
+        proofType === "MANUAL_OPERATOR_NOTE" ||
+        checkId.includes("MANUAL_OPERATOR_NOTE") ||
+        Boolean(note);
+      if (!looksLikeManualNote) return null;
+      return {
+        note,
+        preview: note,
+        updatedAt: item?.updatedAt || item?.createdAt || null,
+      };
+    })
+    .filter((item) => item && hasText(item.note))
+    .sort((a, b) => String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || "")));
 }
 
 function asCount(value) {
@@ -161,6 +205,7 @@ export function buildProofChecklist(input = {}) {
   const scope = input?.scope || {};
   const companyKind = cleanUpper(scope?.companyKind);
   const scopeRole = cleanUpper(scope?.role);
+  const manualNoteEntries = collectManualNoteEntries(input.manualNotes ?? input.operationVerificationRecords);
 
   const shiftStartedCount = asCount(input.shiftStartedCount ?? input.startedShiftCount);
   const shiftCompletedCount = asCount(input.shiftCompletedCount ?? input.completedShiftCount);
@@ -170,7 +215,7 @@ export function buildProofChecklist(input = {}) {
   const boardingRecordedCount = asCount(input.boardingRecordedCount ?? input.boardingsRecordedCount);
   const noBoardRecordedCount = asCount(input.noBoardRecordedCount);
   const etaAvailableCount = asCount(input.etaAvailableCount);
-  const manualOperatorNoteCount = asCount(input.manualOperatorNoteCount);
+  const manualOperatorNoteCount = asCount(input.manualOperatorNoteCount ?? manualNoteEntries.length);
 
   const companyVisible = asBool(
     input.companyVisible ?? (scopeRole === "SUPER_ADMIN" || scopeRole === "COMPANY")
@@ -330,6 +375,8 @@ function buildTitle(scope = {}) {
 
 export function buildOperationProofSummary(input = {}) {
   const scope = input?.scope || {};
+  const manualNoteEntries = collectManualNoteEntries(input.manualNotes ?? input.operationVerificationRecords);
+  const manualNotePreview = manualNoteEntries[0]?.preview || "";
   const checklist = buildProofChecklist(input);
   const status = buildServiceProofStatus({ ...input, checklist });
   const signals = checklist
@@ -338,7 +385,10 @@ export function buildOperationProofSummary(input = {}) {
       id: normalizeProofSignal(item.id) || item.id,
       label: cleanText(item.label, item.id),
       count: asCount(item.count) || 1,
-      note: cleanText(item.note, ""),
+      note:
+        item.id === "MANUAL_OPERATOR_NOTE" && manualNotePreview
+          ? `Operatör notu: ${manualNotePreview}`
+          : cleanText(item.note, ""),
     }));
   const title = cleanText(input.title, buildTitle(scope));
   const text = proofTextMap(status);

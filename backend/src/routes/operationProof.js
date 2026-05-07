@@ -3,11 +3,20 @@ import { prisma } from "../prisma.js";
 import { authRequired, requireRole } from "../auth/middleware.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { rememberResponse } from "../utils/responseCache.js";
+import { clearResponseCacheExact } from "../utils/responseCache.js";
 import { gpsStatusFromAt } from "../gps/status.js";
 import { resolveGpsSourceVisibility } from "../gps/sourceVisibility.js";
+import { sanitizeAuditMeta } from "../kvkk/enforcement.js";
 import { buildOperationProofSummary } from "../ops/operationProof.js";
+import {
+  readOperationVerificationRecords,
+  upsertOperationVerificationRecord,
+} from "../ops/operationVerificationRecordStore.js";
 
 const SHIFT_EVIDENCE_STATUSES = new Set(["REQUESTED", "APPROVED", "ACTIVE", "DONE", "SPLIT", "REJECTED"]);
+const MANUAL_NOTE_SCOPE_TYPES = new Set(["SHIFT", "SERVICE", "AGREEMENT", "ROUTE"]);
+const MANUAL_NOTE_RECORD_PREFIX = "OPERATION_PROOF_MANUAL_NOTE";
+const MANUAL_NOTE_MAX_LENGTH = 500;
 
 function normalizeText(value) {
   return String(value || "").trim();
@@ -24,6 +33,54 @@ function parsePositiveId(value) {
 
 function hasText(value) {
   return normalizeText(value).length > 0;
+}
+
+function normalizeNoteText(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function buildManualNoteCheckId(accessScopeKey, scopeType, scopeId) {
+  return `${MANUAL_NOTE_RECORD_PREFIX}:${accessScopeKey}:${scopeType}:${scopeId}`;
+}
+
+function isManualNoteRecord(record, accessScopeKey = "") {
+  const checkId = String(record?.checkId || "");
+  if (!checkId.startsWith(`${MANUAL_NOTE_RECORD_PREFIX}:`)) return false;
+  if (!accessScopeKey || accessScopeKey === "global") return true;
+  return checkId.startsWith(`${MANUAL_NOTE_RECORD_PREFIX}:${accessScopeKey}:`);
+}
+
+function collectManualNotesForScope(records, accessScopeKey = "") {
+  const items = Array.isArray(records) ? records : [];
+  return items
+    .filter((item) => isManualNoteRecord(item, accessScopeKey))
+    .sort((a, b) => String(b?.updatedAt || b?.createdAt || "").localeCompare(String(a?.updatedAt || a?.createdAt || "")))
+    .map((item) => ({
+      note: normalizeNoteText(item?.note || ""),
+      proofType: String(item?.proofType || ""),
+      checkId: String(item?.checkId || ""),
+      updatedAt: item?.updatedAt || item?.createdAt || null,
+    }))
+    .filter((item) => hasText(item.note));
+}
+
+async function recordAudit({ actorUserId, actorRole, action, entity, entityId, meta }) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: actorUserId ?? null,
+        actorRole: actorRole ?? null,
+        action,
+        entity,
+        entityId,
+        meta: sanitizeAuditMeta(meta ?? null),
+      },
+    });
+  } catch {
+    // audit best-effort only
+  }
 }
 
 function payloadObject(value) {
@@ -260,9 +317,13 @@ async function buildOperationProofPayload(resolvedScope) {
     if (signalFlags.manualOperatorNote) counts.manualOperatorNoteCount += 1;
   }
 
+  const allVerificationRecords = await readOperationVerificationRecords();
+  const manualNotes = collectManualNotesForScope(allVerificationRecords, resolvedScope.cacheKey);
+
   return buildOperationProofSummary({
     scope: resolvedScope.scope,
     ...counts,
+    manualNotes,
   });
 }
 
@@ -288,6 +349,71 @@ export function operationProofRouter() {
       );
 
       return res.json(payload);
+    })
+  );
+
+  // POST /api/operation-proof/manual-note
+  r.post(
+    "/manual-note",
+    asyncHandler(async (req, res) => {
+      const resolvedScope = await resolveScope(req, res);
+      if (!resolvedScope) return;
+
+      const scopeType = normalizeUpper(req.body?.scopeType);
+      const scopeId = normalizeText(req.body?.scopeId);
+      const note = normalizeNoteText(req.body?.note);
+
+      if (!MANUAL_NOTE_SCOPE_TYPES.has(scopeType)) {
+        return res.status(400).json({ error: "Geçerli kapsam türü girin." });
+      }
+      if (!hasText(scopeId)) {
+        return res.status(400).json({ error: "Kapsam bilgisi gerekli." });
+      }
+      if (!hasText(note)) {
+        return res.status(400).json({ error: "Not girin." });
+      }
+      if (note.length > MANUAL_NOTE_MAX_LENGTH) {
+        return res.status(400).json({ error: "Not en fazla 500 karakter olabilir." });
+      }
+
+      const accessScopeKey = resolvedScope.cacheKey || "global";
+      const checkId = buildManualNoteCheckId(accessScopeKey, scopeType, scopeId);
+      const saved = await upsertOperationVerificationRecord(
+        {
+          roleId: normalizeUpper(req.user?.role) || "SUPER_ADMIN",
+          checkId,
+          status: "KABUL",
+          proofType: "OPERATOR_NOTE",
+          note,
+          evidenceRef: `${scopeType}:${scopeId}`,
+        },
+        req.user || null
+      );
+
+      await clearResponseCacheExact("operation-proof:summary", resolvedScope.scope);
+
+      await recordAudit({
+        actorUserId: req.user?.id ?? null,
+        actorRole: req.user?.role ?? null,
+        action: "OPERATION_PROOF_MANUAL_NOTE",
+        entity: "OperationProof",
+        entityId: saved?.id || checkId,
+        meta: {
+          accessScopeKey,
+          scopeType,
+          scopeId,
+          noteLength: note.length,
+          notePreview: note.slice(0, 120),
+        },
+      });
+
+      return res.json({
+        ok: true,
+        message: "Operatör notu kaydedildi.",
+        proofSignal: "MANUAL_OPERATOR_NOTE",
+        notePreview: note.slice(0, 120),
+        nonFinalText: "Bu özet hakediş için nihai karar değildir",
+      });
     })
   );
 
