@@ -12,6 +12,7 @@
     "check:m95e25": "node backend/scripts/m95_e25_mobile_field_acceptance_check.js",
     "check:m95e26": "node backend/scripts/m95_e26_android_emulator_smoke_plan_check.js",
     "check:m95e27": "node backend/scripts/m95_e27_real_android_device_field_proof_prep_check.js",
+    "check:m99kvkk01": "node backend/scripts/m99_kvkk_01_mobile_web_plain_text_check.js",
     "check:m98e2b": "node backend/scripts/m98_e2b_personel_access_backend_check.js",
     "check:m98e2d": "npm --prefix mobile run check:m98e2d",
     "check:m98e2c": "npm --prefix web run check:m98e2c",
