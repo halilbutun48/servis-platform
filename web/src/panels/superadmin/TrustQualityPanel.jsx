@@ -3,6 +3,8 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildTrustQualityCopilotFacts } from "../../utils/copilotFacts";
+import { getQualityProofSignalSummary, getQualityDraftScoreSummary, getQualityReviewDecisionSummary, getQualityReviewDecisionHistory } from "../../api";
 import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 import QualityProofReadonlyCard from "../../components/QualityProofReadonlyCard";
 import QualityDraftScoreCard from "../../components/QualityDraftScoreCard";
@@ -35,6 +37,10 @@ export default function TrustQualityPanel() {
   const [summary, setSummary] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
   const [providerSignal, setProviderSignal] = useState(null);
+  const [proofSummary, setProofSummary] = useState(null);
+  const [draftScoreSummary, setDraftScoreSummary] = useState(null);
+  const [reviewDecisionSummary, setReviewDecisionSummary] = useState(null);
+  const [reviewHistorySummary, setReviewHistorySummary] = useState(null);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -46,7 +52,16 @@ export default function TrustQualityPanel() {
     const summaryReady = summary != null;
     const fields = Array.isArray(evaluation?.fields) ? evaluation.fields : [];
     const signals = Array.isArray(providerSignal?.signals) ? providerSignal.signals : [];
-    if (!summary && !evaluation && !providerSignal) {
+    const qualityFacts = buildTrustQualityCopilotFacts({
+      proofSummary,
+      draftScoreSummary,
+      reviewDecisionSummary,
+      reviewHistorySummary,
+      providerSignal,
+      summary,
+      evaluation,
+    });
+    if (!summary && !evaluation && !providerSignal && !proofSummary && !draftScoreSummary && !reviewDecisionSummary && !reviewHistorySummary) {
       clearCopilotSelection('/superadmin/trust-quality');
       return;
     }
@@ -102,7 +117,12 @@ export default function TrustQualityPanel() {
         summaryReady ? `${providerCount} sağlayıcı` : null,
         fields.length ? `${fields.length} alan` : null,
         signals.length ? `${signals.length} sinyal` : null,
+        proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || null,
+        draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.summaryText || null,
+        reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || null,
+        reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || null,
         providerSignal?.summary || null,
+        qualityFacts?.copilotSummary || null,
       ].filter(Boolean).join(' • '),
       fields: [
         { label: 'Tamamlanan Hizmet', value: String(completedServices), help: 'Canlı kalite özetinde tamamlanan hizmet sayısını gösterir.' },
@@ -111,32 +131,44 @@ export default function TrustQualityPanel() {
         { label: 'Sağlayıcı Sayısı', value: String(providerCount), help: 'Canlı kalite özetinde görünen sağlayıcı sayısını gösterir.' },
         { label: 'Değerlendirme Alanı', value: String(fields.length), help: 'Hizmet değerlendirmesinde görünen alan sayısını gösterir.' },
         { label: 'Sağlayıcı Sinyali', value: String(signals.length), help: 'Sağlayıcı tarafında görünen kalite sinyali sayısını gösterir.' },
-        { label: 'Özet', value: providerSignal?.summary || '-', help: 'Güven ve kalite görünümünün kısa özetini gösterir.' },
+        { label: 'Kanıt', value: proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || '-', help: 'Servis kanıtı ve hizmet kanıtı durumunu gösterir.' },
+        { label: 'Taslak Skor', value: draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.summaryText || '-', help: 'Taslak kalite skorunun görünür bandını gösterir.' },
+        { label: 'İnceleme', value: reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.summaryText || '-', help: 'Kalite inceleme kararının durumunu gösterir.' },
+        { label: 'Geçmiş', value: reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || '-', help: 'Son kalite karar geçmişini gösterir.' },
+        { label: 'Özet', value: providerSignal?.summary || qualityFacts?.copilotSummary || '-', help: 'Güven ve kalite görünümünün kısa özetini gösterir.' },
       ],
       badges: [
         { label: 'Durum', value: summaryReady ? 'CANLI ÖZET' : 'BEKLİYOR', help: 'Canlı kalite özetinin yüklenip yüklenmediğini gösterir.' },
       ],
-      facts,
+      facts: { ...facts, ...qualityFacts },
     });
     return () => clearCopilotSelection('/superadmin/trust-quality');
-  }, [summary, evaluation, providerSignal]);
+  }, [summary, evaluation, providerSignal, proofSummary, draftScoreSummary, reviewDecisionSummary, reviewHistorySummary]);
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
     (async () => {
       try {
-        const [m, summaryPayload, evaluationTemplate, providerTemplate] = await Promise.all([
+        const [m, summaryPayload, evaluationTemplate, providerTemplate, proofPayload, draftPayload, decisionPayload, historyPayload] = await Promise.all([
           api("/api/trust-quality/manifest", { token }),
           getCompanyTrustQualitySummary(token, { ttlMs: 25000 }),
           getTrustQualityTemplate(token, { ttlMs: 25000 }),
           api("/api/trust-quality/provider-signal-template", { token }),
+          getQualityProofSignalSummary({}, { token }).catch(() => null),
+          getQualityDraftScoreSummary({}, { token }).catch(() => null),
+          getQualityReviewDecisionSummary({}, { token }).catch(() => null),
+          getQualityReviewDecisionHistory({}, { token }).catch(() => null),
         ]);
         if (cancelled) return;
         setManifest(m || null);
         setSummary(summaryPayload || null);
         setEvaluation(evaluationTemplate || null);
         setProviderSignal(providerTemplate || null);
+        setProofSummary(proofPayload || null);
+        setDraftScoreSummary(draftPayload || null);
+        setReviewDecisionSummary(decisionPayload || null);
+        setReviewHistorySummary(historyPayload || null);
       } catch (e2) {
         if (cancelled) return;
         setErr(e2?.message || String(e2));

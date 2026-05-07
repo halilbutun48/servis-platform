@@ -42,6 +42,272 @@ function splitActions(actions = []) {
   };
 }
 
+function compactText(value, fallback = '') {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  return text || String(fallback || '').trim();
+}
+
+function compactList(items = [], limit = 6) {
+  const seen = new Set();
+  const out = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    const text = compactText(item);
+    if (!text) continue;
+    const key = text.toLocaleLowerCase('tr-TR');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+export function normalizeCopilotSignal(signal, fallbackId = '') {
+  if (!signal) return null;
+  if (typeof signal === 'string') {
+    const text = compactText(signal);
+    if (!text) return null;
+    return {
+      id: compactText(fallbackId || text || 'signal'),
+      label: text,
+      value: text,
+      note: '',
+    };
+  }
+  if (typeof signal !== 'object') return null;
+  const id = compactText(signal.id || signal.key || fallbackId || signal.label || 'signal');
+  const label = compactText(signal.label || signal.title || signal.name || id || 'Sinyal');
+  const value = compactText(signal.value || signal.text || signal.state || signal.status || signal.summary || '-');
+  const note = compactText(signal.note || signal.help || signal.reason || '');
+  return {
+    id,
+    label: label || id,
+    value: value || '-',
+    note,
+  };
+}
+
+export function buildCopilotSignalSummary(signals = [], limit = 3) {
+  const rows = compactList(
+    (Array.isArray(signals) ? signals : [])
+      .map((signal) => normalizeCopilotSignal(signal))
+      .filter(Boolean)
+      .map((signal) => `${signal.label}: ${signal.value}`),
+    limit,
+  );
+  return rows.join(' • ');
+}
+
+function buildReadonlyCopilotFacts({
+  screenType = '',
+  stage = '',
+  readiness = 'REVIEW_NEEDED',
+  readinessScore = 0,
+  summary = '',
+  blockers = [],
+  evidence = [],
+  nextBestAction = '',
+  safestNextStep = '',
+  compareHint = '',
+  counters = {},
+  copilotSignals = [],
+  boundaryNotes = [],
+}) {
+  const signals = (Array.isArray(copilotSignals) ? copilotSignals : [])
+    .map((signal, idx) => normalizeCopilotSignal(signal, `signal_${idx + 1}`))
+    .filter(Boolean)
+    .slice(0, 8);
+  return {
+    screenType: compactText(screenType, 'SCREEN'),
+    stage: compactText(stage, '-'),
+    readiness: compactText(readiness, 'REVIEW_NEEDED'),
+    readinessScore: Number.isFinite(Number(readinessScore)) ? Number(readinessScore) : 0,
+    blockers: compactList(blockers, 5),
+    evidence: compactList(evidence, 6),
+    nextBestAction: compactText(nextBestAction),
+    safestNextStep: compactText(safestNextStep),
+    compareHint: compactText(compareHint),
+    counters: Object.fromEntries(
+      Object.entries(counters && typeof counters === 'object' ? counters : {})
+        .map(([key, value]) => [key, value == null || value === '' ? 0 : value]),
+    ),
+    copilotSignals: signals,
+    copilotSummary: compactList([
+      summary,
+      buildCopilotSignalSummary(signals, 3),
+      ...compactList(boundaryNotes, 3),
+    ], 3).join(' • '),
+    copilotBoundary: compactList(boundaryNotes, 4),
+  };
+}
+
+export function buildOperationsCopilotFacts({
+  operationProofSummary,
+  auditCount = 0,
+  notificationCount = 0,
+  eventCount = 0,
+}) {
+  const statusText = compactText(operationProofSummary?.statusText || operationProofSummary?.summaryText || operationProofSummary?.title || operationProofSummary?.status || 'Bekliyor', 'Bekliyor');
+  const summaryText = compactText(operationProofSummary?.summaryText || operationProofSummary?.visibilityNote || operationProofSummary?.nextAction || '', '');
+  const nonFinalText = compactText(operationProofSummary?.nonFinalText || 'Hakediş için nihai karar değildir.', 'Hakediş için nihai karar değildir.');
+  const gpsVisibility = compactText(
+    operationProofSummary?.visibilityNote
+    || (Array.isArray(operationProofSummary?.signals) && operationProofSummary.signals.some((signal) => /gps|telefon/i.test(compactText(signal?.id || signal?.label || signal?.value || ''))) ? 'Görünüyor' : 'Kontrol gerekli'),
+    'Kontrol gerekli',
+  );
+  const blockerText = compactList(
+    [
+      ...(Array.isArray(operationProofSummary?.checklist) ? operationProofSummary.checklist.filter((row) => row && row.done === false).map((row) => row?.note || row?.label || '') : []),
+      operationProofSummary?.nextAction || '',
+      summaryText,
+    ],
+    3,
+  ).join(' • ');
+  return buildReadonlyCopilotFacts({
+    screenType: 'OPERATION_PROOF',
+    stage: statusText,
+    readiness: /READY|EVIDENCE_READY|COMPLETED|REVIEWED/.test(statusText.toUpperCase()) ? 'READY' : /PARTIAL|NEEDS_REVIEW|NOT_READY/.test(statusText.toUpperCase()) ? 'REVIEW_NEEDED' : 'REVIEW_NEEDED',
+    readinessScore: /READY|EVIDENCE_READY|COMPLETED|REVIEWED/.test(statusText.toUpperCase()) ? 86 : /PARTIAL|NEEDS_REVIEW/.test(statusText.toUpperCase()) ? 58 : 40,
+    summary: summaryText || nonFinalText,
+    blockers: blockerText ? [blockerText] : [],
+    evidence: [
+      `operationProof: ${statusText}`,
+      `gpsSourceVisibility: ${gpsVisibility}`,
+      `audit/notification/event: ${auditCount}/${notificationCount}/${eventCount}`,
+    ],
+    nextBestAction: compactText(operationProofSummary?.nextAction || 'İlk bakılacak yer: Servis Kanıtı kartı.', 'İlk bakılacak yer: Servis Kanıtı kartı.'),
+    safestNextStep: 'Önce Servis Kanıtı kartındaki durum ve eksik/engel satırını oku.',
+    compareHint: 'Servis Kanıtı operasyon görünürlüğü sağlar; hakediş için nihai karar değildir.',
+    counters: {
+      auditCount: Number(auditCount || 0),
+      notificationCount: Number(notificationCount || 0),
+      eventCount: Number(eventCount || 0),
+    },
+    copilotSignals: [
+      { id: 'operationProof', label: 'Servis kanıtı', value: statusText, note: nonFinalText },
+      { id: 'gpsSourceVisibility', label: 'GPS görünürlüğü', value: gpsVisibility, note: 'Sürücünün telefon GPS’i ve araç görünürlüğü okunur.' },
+      { id: 'operationProofBlocker', label: 'Eksik / engel', value: blockerText || 'Yok', note: summaryText || nonFinalText },
+      { id: 'auditSummary', label: 'Denetim / bildirim / olay', value: `${auditCount} / ${notificationCount} / ${eventCount}`, note: 'Son denetim, bildirim ve olay özetleri.' },
+    ],
+    boundaryNotes: [nonFinalText, 'Sürücünün telefon GPS’i güvenli sinyal olarak görünür.'],
+  });
+}
+
+export function buildTrustQualityCopilotFacts({
+  proofSummary,
+  draftScoreSummary,
+  reviewDecisionSummary,
+  reviewHistorySummary,
+  providerSignal,
+  summary,
+  evaluation,
+}) {
+  const proofStatus = compactText(proofSummary?.statusText || proofSummary?.summaryText || proofSummary?.title || proofSummary?.status || 'Bekliyor', 'Bekliyor');
+  const draftBand = compactText(draftScoreSummary?.scoreBand || draftScoreSummary?.status || draftScoreSummary?.title || 'NO_SCORE', 'NO_SCORE');
+  const draftScore = draftScoreSummary?.draftScore != null ? `${Number(draftScoreSummary.draftScore)} / 100` : 'Skor yok';
+  const reviewStatus = compactText(reviewDecisionSummary?.reviewStatus || reviewDecisionSummary?.status || reviewDecisionSummary?.title || 'REVIEW_PENDING', 'REVIEW_PENDING');
+  const historyText = compactText(reviewHistorySummary?.latestDecision?.statusText || reviewHistorySummary?.summaryText || reviewHistorySummary?.title || 'Henüz geçmiş yok.', 'Henüz geçmiş yok.');
+  const providerCompare = compactText(providerSignal?.summary || summary?.summaryText || 'Sağlayıcı karşılaştırması için hazırlık', 'Sağlayıcı karşılaştırması için hazırlık');
+  const nonFinal = compactText(draftScoreSummary?.nonFinalText || reviewDecisionSummary?.nonFinalText || reviewHistorySummary?.nonFinalText || 'Bu bilgi kesin kalite puanı değildir.', 'Bu bilgi kesin kalite puanı değildir.');
+  return buildReadonlyCopilotFacts({
+    screenType: 'TRUST_QUALITY',
+    stage: reviewStatus,
+    readiness: /REVIEWED|READY_FOR_REVIEW/.test(reviewStatus.toUpperCase()) ? 'READY' : 'REVIEW_NEEDED',
+    readinessScore: /REVIEWED|READY_FOR_REVIEW/.test(reviewStatus.toUpperCase()) ? 82 : 54,
+    summary: providerCompare,
+    blockers: [nonFinal, 'Sağlayıcı sıralaması değildir.'],
+    evidence: [
+      `qualitySignal: ${draftBand}`,
+      `draftScore: ${draftScore}`,
+      `reviewDecision: ${reviewStatus}`,
+      `reviewHistory: ${historyText}`,
+    ],
+    nextBestAction: compactText(reviewDecisionSummary?.nextAction || draftScoreSummary?.nextAction || 'Önce kanıt, taslak skor ve inceleme kararını birlikte oku.', 'Önce kanıt, taslak skor ve inceleme kararını birlikte oku.'),
+    safestNextStep: 'Önce kanıt özetini aç, sonra taslak skor ve karar geçmişine geç.',
+    compareHint: compactText(providerCompare || 'Taslak skor ile inceleme kararı birlikte okunur.', 'Taslak skor ile inceleme kararı birlikte okunur.'),
+    counters: {
+      proofChecklist: Array.isArray(proofSummary?.checklist) ? proofSummary.checklist.length : 0,
+      draftChecklist: Array.isArray(draftScoreSummary?.checklist) ? draftScoreSummary.checklist.length : 0,
+      reviewChecklist: Array.isArray(reviewDecisionSummary?.checklist) ? reviewDecisionSummary.checklist.length : 0,
+      historyItems: Array.isArray(reviewHistorySummary?.items) ? reviewHistorySummary.items.length : 0,
+      evaluationFields: Array.isArray(evaluation?.fields) ? evaluation.fields.length : 0,
+    },
+    copilotSignals: [
+      { id: 'operationProof', label: 'Servis kanıtı', value: proofStatus, note: 'Kalite değerlendirmesine yardımcı olur.' },
+      { id: 'qualitySignal', label: 'Kalite sinyali', value: `${draftBand} • ${draftScore}`, note: nonFinal },
+      { id: 'reviewDecision', label: 'İnceleme kararı', value: reviewStatus, note: reviewDecisionSummary?.paymentImpactText || 'Hakediş veya komisyon hesabını etkilemez.' },
+      { id: 'reviewHistory', label: 'Denetim izi', value: historyText, note: reviewHistorySummary?.paymentImpactText || 'Bu geçmiş kesin kalite puanı değildir.' },
+      { id: 'providerComparison', label: 'Sağlayıcı karşılaştırma', value: providerCompare, note: 'Sağlayıcı sıralaması değildir.' },
+    ],
+    boundaryNotes: [nonFinal, 'Sağlayıcı sıralaması değildir.', reviewDecisionSummary?.paymentImpactText || 'Bu bilgi hakediş veya komisyon hesabını etkilemez.'],
+  });
+}
+
+export function buildCommercialCoreCopilotFacts({
+  paymentPreviewSummary,
+  paymentBackbone,
+  settings,
+  settlementStatus,
+  accountStatus,
+  operationProofSummary,
+  paymentSourcesMeta,
+  lifecycle,
+}) {
+  const previewTitle = compactText(paymentPreviewSummary?.title || paymentPreviewSummary?.summaryText || 'Hakediş önizlemesi', 'Hakediş önizlemesi');
+  const previewStatus = compactText(paymentPreviewSummary?.statusText || paymentPreviewSummary?.status || 'Taslak', 'Taslak');
+  const previewReason = compactText(paymentPreviewSummary?.detailReason || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.nextAction || 'Önizleme verisi okunuyor.', 'Önizleme verisi okunuyor.');
+  const settlementText = compactText(settlementStatus?.summaryText || settlementStatus?.status || 'Kontrol gerekli', 'Kontrol gerekli');
+  const commissionText = compactText(
+    paymentBackbone?.activeRule ? `${paymentBackbone.activeRule.paymentMode || 'OFF'} • ${paymentBackbone.activeRule.commissionBps != null ? `${Number(paymentBackbone.activeRule.commissionBps)} bps` : '-'}` : 'Komisyon kuralı tanımlı değil',
+    'Komisyon kuralı tanımlı değil',
+  );
+  const accountText = compactText(
+    paymentPreviewSummary?.paymentAccountStatus || accountStatus?.summaryText || accountStatus?.summary || settings?.globalRule?.paymentMode || 'Eksik bilgi',
+    'Eksik bilgi',
+  );
+  const contractShiftText = compactText(
+    paymentPreviewSummary?.contractOrShiftSummary || lifecycle?.summary || operationProofSummary?.summaryText || 'Sözleşmeden vardiya üretimi ayrıca kontrol edilmeli.',
+    'Sözleşmeden vardiya üretimi ayrıca kontrol edilmeli.',
+  );
+  const csvBoundary = compactText(paymentPreviewSummary?.nonFinalText || 'Ödeme başlatılmaz. Sadece önizleme verisi indirilir.', 'Ödeme başlatılmaz. Sadece önizleme verisi indirilir.');
+  const auditSummary = compactText(paymentSourcesMeta?.summary || 'Önizleme kaynakları özetleniyor.', 'Önizleme kaynakları özetleniyor.');
+  return buildReadonlyCopilotFacts({
+    screenType: 'PAYMENT_READINESS',
+    stage: previewStatus,
+    readiness: /READY|PREVIEW_READY|EVIDENCE_READY/.test(previewStatus.toUpperCase()) ? 'READY' : /NEEDS_REVIEW|PARTIAL|MISSING|EKSIK/.test(previewStatus.toUpperCase()) ? 'REVIEW_NEEDED' : 'REVIEW_NEEDED',
+    readinessScore: /READY|PREVIEW_READY|EVIDENCE_READY/.test(previewStatus.toUpperCase()) ? 80 : /NEEDS_REVIEW|PARTIAL/.test(previewStatus.toUpperCase()) ? 56 : 40,
+    summary: `${previewTitle} • ${previewStatus}`,
+    blockers: [previewReason, csvBoundary],
+    evidence: [
+      `hakediş önizleme: ${previewStatus}`,
+      `komisyon: ${commissionText}`,
+      `ödeme hesabı: ${accountText}`,
+      `sözleşme / vardiya: ${contractShiftText}`,
+      `settlement: ${settlementText}`,
+      `kaynak özeti: ${auditSummary}`,
+    ],
+    nextBestAction: compactText(paymentPreviewSummary?.nextAction || 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.', 'Önce hazır görünen kayıtları doğrula, sonra CSV taslağını indir.'),
+    safestNextStep: 'Önce hakediş önizleme kartındaki neden hazır / neden eksik satırını oku.',
+    compareHint: 'Hakediş önizlemesi yalnızca kontrol içindir; ödeme başlatılmaz.',
+    counters: {
+      previewCount: Number(paymentPreviewSummary?.totalDraftCount || paymentBackbone?.cards?.commercialSources || 0),
+      readyCount: Number(paymentPreviewSummary?.readyCount || 0),
+      missingCount: Number(paymentPreviewSummary?.missingCount || 0),
+      reviewCount: Number(paymentPreviewSummary?.reviewCount || 0),
+      sourceCount: Number(paymentSourcesMeta?.summary?.total || paymentSourcesMeta?.total || 0),
+    },
+    copilotSignals: [
+      { id: 'paymentPreviewStatus', label: 'Hakediş önizleme', value: previewStatus, note: previewReason },
+      { id: 'paymentPreviewMissingInfo', label: 'Eksik / kontrol gerekli', value: `${Number(paymentPreviewSummary?.missingCount || 0)} / ${Number(paymentPreviewSummary?.reviewCount || 0)}`, note: previewReason },
+      { id: 'commissionStatus', label: 'Komisyon durumu', value: commissionText, note: 'Aktif ödeme kapalı; sadece hazırlık görünümü.' },
+      { id: 'paymentAccountStatus', label: 'Ödeme hesabı durumu', value: accountText, note: 'Eksik bilgi veya kontrol gerekli olabilir.' },
+      { id: 'settlementStatus', label: 'Settlement durumu', value: settlementText, note: 'Aktif ödeme kapalı; settlement execute çalışmaz.' },
+      { id: 'contractShiftGeneration', label: 'Sözleşme / vardiya', value: contractShiftText, note: 'Sözleşmeden vardiya üretimi ayrıca kontrol edilir.' },
+    ],
+    boundaryNotes: [csvBoundary, 'Ödeme başlatılmaz.', 'Sadece önizleme verisi indirilir.', auditSummary],
+  });
+}
+
 export function buildGeoReviewFacts({ selected, counts, scopeMode = 'ALL', hasPlanningScope = false }) {
   const hasCoordinates = Number.isFinite(Number(selected?.homeLat)) && Number.isFinite(Number(selected?.homeLng));
   const hasAddress = Boolean(String(selected?.homeAddress || '').trim());
@@ -469,6 +735,19 @@ export function buildServiceEvaluationFacts({ item, summary }) {
     }),
   ];
   const actionMatrix = splitActions(actions);
+  const providerScoreText = hasProviderScore ? `${Number(item?.providerScore?.averageScore || 0).toFixed(1)} ★ (${item?.providerScore?.evaluationCount || 0})` : 'Henüz puan yok';
+  const copilotSignals = [
+    { id: 'qualitySignal', label: 'Kalite sinyali', value: `${status} • ${evalStatus}`, note: 'Bu kayıt kalite değerlendirmesine yardımcı olur.' },
+    { id: 'providerComparison', label: 'Sağlayıcı karşılaştırma', value: providerScoreText, note: 'Sağlayıcı sıralaması değildir.' },
+    { id: 'contractShiftGeneration', label: 'Sözleşme / vardiya', value: item?.contractShiftStatus || item?.shiftStatus || 'Kontrol gerekli', note: 'Sözleşmeden vardiya üretimi ayrıca okunur.' },
+  ];
+  const copilotSummary = [
+    item?.providerName || null,
+    item?.serviceLabel || null,
+    item?.statusLabel || null,
+    item?.evaluationStatus || null,
+    providerScoreText,
+  ].filter(Boolean).join(' • ');
   return {
     screenType: 'SERVICE_EVALUATION',
     stage: `${status}:${evalStatus}`,
@@ -497,5 +776,11 @@ export function buildServiceEvaluationFacts({ item, summary }) {
       : 'Önce hizmetin operasyon durumu ve değerlendirme rozetini kontrol et. Gerekirse Hizmetleri aç ile bağlı kayda git.',
     safestNextStep: 'En risksiz adım, seçili hizmet satırında değerlendirme rozetini ve tarih bilgisini birlikte doğrulamaktır.',
     compareHint: 'Durum rozeti hizmetin operasyon halini, Değerlendirme rozeti puan verilebilir mi bilgisini gösterir.',
+    copilotSignals,
+    copilotSummary,
+    boundaryNotes: [
+      'Bu bilgi kesin kalite puanı değildir.',
+      'Sağlayıcı sıralaması değildir.',
+    ],
   };
 }

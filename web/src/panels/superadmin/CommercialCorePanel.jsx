@@ -4,13 +4,18 @@ import { Card, fmtBps, fmtDateTime, InputRow, stripHtmlNoise } from "./commercia
 import { readOptional } from "./commercialCorePanelOptionalStates";
 import { buildPaymentSourceQuery } from "./commercialCorePanelUtils";
 import { createCommercialCorePanelActions } from "./commercialCorePanelActions";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildCommercialCoreCopilotFacts } from "../../utils/copilotFacts";
+import { useSession } from "../../state/session";
 import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 import PaymentReadinessReadonlyCard from "../../components/PaymentReadinessReadonlyCard";
 import PaymentPreviewReadonlyCard from "../../components/PaymentPreviewReadonlyCard";
 import PaymentReadonlySafetyBadge from "../../components/PaymentReadonlySafetyBadge";
 import FlowSummaryStrip from "../../components/FlowSummaryStrip";
+import { getOperationProofSummary, getPaymentBackboneReadinessPreview } from "../../api";
 
 export default function CommercialCorePanel() {
+  const { token } = useSession();
   const [manifest, setManifest] = useState(null);
   const [lifecycle, setLifecycle] = useState(null);
   const [paymentBackbone, setPaymentBackbone] = useState(null);
@@ -32,6 +37,8 @@ export default function CommercialCorePanel() {
   const [reconciliationQueue, setReconciliationQueue] = useState([]);
   const [paymentSourcesMeta, setPaymentSourcesMeta] = useState({ endpointStatus: "ok", summary: "" });
   const [paymentSources, setPaymentSources] = useState([]);
+  const [paymentPreviewSummary, setPaymentPreviewSummary] = useState(null);
+  const [operationProofSummary, setOperationProofSummary] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [roomQuery, setRoomQuery] = useState("");
   const [paymentSourceFilters, setPaymentSourceFilters] = useState({
@@ -54,7 +61,7 @@ export default function CommercialCorePanel() {
   const load = useCallback(async () => {
     setErr("");
     try {
-      const [m, l, pbRes, cfgRes, pilotRes, pilotCandidatesRes, requiredRes, requiredCandidatesRes, accountStatusRes, accountCandidatesRes, settlementStatusRes, settlementQueueRes, reconciliationStatusRes, reconciliationQueueRes, paymentSourcesRes, roomRes] = await Promise.all([
+      const [m, l, pbRes, cfgRes, pilotRes, pilotCandidatesRes, requiredRes, requiredCandidatesRes, accountStatusRes, accountCandidatesRes, settlementStatusRes, settlementQueueRes, reconciliationStatusRes, reconciliationQueueRes, paymentSourcesRes, roomRes, previewRes, opProofRes] = await Promise.all([
         api("/api/commercial-core/manifest"),
         api("/api/commercial-core/lifecycle-template"),
         readOptional("/api/commercial-core/payment-backbone/status", "paymentBackbone"),
@@ -71,6 +78,8 @@ export default function CommercialCorePanel() {
         readOptional("/api/commercial-core/payment-backbone/reconciliation/queue?take=40", "reconciliationQueue"),
         readOptional(`/api/commercial-core/payment-backbone/sources?${buildPaymentSourceQuery(paymentSourceFilters, 20).toString()}`, "paymentSources"),
         readOptional("/api/rooms?take=500", "rooms"),
+        getPaymentBackboneReadinessPreview({}, { token }).catch(() => null),
+        getOperationProofSummary({}, { token }).catch(() => null),
       ]);
       const pb = pbRes?.data || null;
       const cfg = cfgRes?.data || null;
@@ -106,8 +115,10 @@ export default function CommercialCorePanel() {
       setReconciliationStatus(reconciliation);
       setReconciliationQueueMeta(reconciliationQueueRes?.ok ? { endpointStatus: "ok", summary: "" } : (reconciliationQueueRes?.data || { endpointStatus: "missing", summary: "Settlement mutabakat kuyruğu endpointi okunamadı." }));
       setReconciliationQueue(reconciliationItems);
-      setPaymentSourcesMeta(paymentSourcesRes?.ok ? { endpointStatus: "ok", summary: paymentSourcesData?.summary?.total != null ? `${paymentSourcesData.summary.total} kaynak` : "" } : (paymentSourcesRes?.data || { endpointStatus: "missing", summary: "Ödeme kaynakları endpointi okunamadı." }));
+      setPaymentSourcesMeta(paymentSourcesRes?.ok ? { endpointStatus: "ok", total: paymentSourcesData?.summary?.total ?? paymentSourceItems.length, summary: paymentSourcesData?.summary?.total != null ? `${paymentSourcesData.summary.total} kaynak` : "" } : (paymentSourcesRes?.data || { endpointStatus: "missing", summary: "Ödeme kaynakları endpointi okunamadı." }));
       setPaymentSources(paymentSourceItems);
+      setPaymentPreviewSummary(previewRes?.data || previewRes || null);
+      setOperationProofSummary(opProofRes?.data || opProofRes || null);
       setRooms(roomItems);
       setGlobalForm({
         paymentMode: cfg?.globalRule?.paymentMode || "OFF",
@@ -134,7 +145,7 @@ export default function CommercialCorePanel() {
     } catch (e) {
       setErr(stripHtmlNoise(e?.message || String(e)));
     }
-  }, [paymentSourceFilters]);
+  }, [paymentSourceFilters, token]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -214,6 +225,47 @@ export default function CommercialCorePanel() {
     }),
     [load, setBusyKey, setErr, setOkMsg, setAccountForm, setRoomForm, globalForm, roomForm, accountForm, paymentSourceFilters],
   );
+
+  useEffect(() => {
+    const facts = buildCommercialCoreCopilotFacts({
+      paymentPreviewSummary,
+      paymentBackbone,
+      settings,
+      settlementStatus,
+      accountStatus,
+      operationProofSummary,
+      paymentSourcesMeta,
+      lifecycle,
+    });
+    if (!paymentPreviewSummary && !paymentBackbone && !settings && !settlementStatus && !accountStatus) {
+      clearCopilotSelection('/superadmin/commercial-core');
+      return;
+    }
+    setCopilotSelection({
+      scopeKey: '/superadmin/commercial-core',
+      entityType: 'screen',
+      entityId: 6112,
+      label: 'Ticari Akış',
+      summary: [
+        paymentPreviewSummary?.title || paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || null,
+        facts?.copilotSummary || null,
+      ].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Hakediş önizleme', value: paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.status || '-', help: 'Hakediş önizleme durumunu gösterir.' },
+        { label: 'Eksik bilgi', value: `${paymentPreviewSummary?.missingCount ?? 0}`, help: 'Hazır olmayan kayıtların sayısını gösterir.' },
+        { label: 'Kontrol gerekli', value: `${paymentPreviewSummary?.reviewCount ?? 0}`, help: 'Tekrar bakılması gereken kayıtların sayısını gösterir.' },
+        { label: 'Komisyon', value: paymentBackbone?.activeRule ? `${paymentBackbone.activeRule.paymentMode || 'OFF'} • ${fmtBps(paymentBackbone.activeRule.commissionBps)}` : 'Tanımlı değil', help: 'Komisyon kuralı ve ödeme modu özetini gösterir.' },
+        { label: 'Ödeme hesabı', value: paymentPreviewSummary?.paymentAccountStatus || accountStatus?.summary || '-', help: 'Ödeme hesabı hazırlığını gösterir.' },
+        { label: 'Sözleşme / vardiya', value: paymentPreviewSummary?.contractOrShiftSummary || lifecycle?.summary || '-', help: 'Sözleşme veya vardiya üretim özetini gösterir.' },
+      ],
+      badges: [
+        { label: 'Durum', value: paymentPreviewSummary?.statusText || paymentPreviewSummary?.summaryText || paymentPreviewSummary?.status || 'BEKLİYOR', help: 'Hakediş önizleme durumunu gösterir.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/superadmin/commercial-core');
+  }, [paymentPreviewSummary, paymentBackbone, settings, settlementStatus, accountStatus, operationProofSummary, paymentSourcesMeta, lifecycle]);
+
   return (
     <div className="card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>

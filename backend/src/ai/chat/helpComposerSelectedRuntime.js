@@ -201,6 +201,31 @@ export function createSelectedRuntimeHelpers(deps = {}) {
     return selectedFieldReply(message, screenContext, screenDefinition) || selectedBadgeReply(message, screenContext, screenDefinition) || '';
   }
 
+  function selectedSignalRows(screenContext) {
+    const facts = structuredFacts(screenContext);
+    const rows = Array.isArray(facts?.copilotSignals) ? facts.copilotSignals : [];
+    return rows
+      .map((row, idx) => ({
+        label: firstNonEmpty(row?.label, row?.key, row?.title, `Sinyal ${idx + 1}`),
+        value: firstNonEmpty(row?.value, row?.text, row?.status, row?.summary, '-'),
+        note: firstNonEmpty(row?.note, row?.help, row?.reason, ''),
+      }))
+      .filter((row) => row.label);
+  }
+
+  function selectedSignalReply(screenContext) {
+    const rows = selectedSignalRows(screenContext);
+    if (!rows.length) return '';
+    const summary = firstNonEmpty(structuredFacts(screenContext)?.copilotSummary, '');
+    const top = rows.slice(0, 4).map((row) => `${row.label}: ${row.value}`).join(' • ');
+    const notes = rows.filter((row) => row.note).slice(0, 2).map((row) => row.note).join(' • ');
+    return [
+      summary ? `Sinyal özeti: ${summary}.` : '',
+      top ? `Sinyaller: ${top}.` : '',
+      notes ? `İlk not: ${notes}.` : '',
+    ].filter(Boolean).join(' ');
+  }
+
   return {
     selectedFieldRows,
     selectedBadgeRows,
@@ -209,5 +234,7 @@ export function createSelectedRuntimeHelpers(deps = {}) {
     selectedBadgeReply,
     selectedMissingReply,
     selectedTermReply,
+    selectedSignalRows,
+    selectedSignalReply,
   };
 }

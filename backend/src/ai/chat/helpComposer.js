@@ -53,6 +53,9 @@ function hasSelectedDiagnosticContext(screenContext) {
     || (Array.isArray(facts?.evidence) && facts.evidence.length)
     || (Array.isArray(facts?.missing) && facts.missing.length)
     || (Array.isArray(facts?.blockers) && facts.blockers.length)
+    || selectedSignalRows(screenContext).length
+    || (Array.isArray(facts?.copilotSignals) && facts.copilotSignals.length)
+    || firstNonEmpty(facts?.copilotSummary, '')
   );
 }
 
@@ -73,7 +76,7 @@ function sanitizeDiagnosticSupportText(text) {
   return normalizeReplySurface(String(text || '')).replace(/Sonuç:/g, 'Özet:');
 }
 
-function selectedDiagnosticResult(theme, contextText = '') {
+function _selectedDiagnosticResult(theme, contextText = '') {
   const text = normalizeText(contextText);
   const hasNegative = /(yok|eksik|kapalı|kapali|görünmüyor|gorunmuyor)/.test(text);
   switch (theme) {
@@ -98,7 +101,7 @@ function selectedDiagnosticResult(theme, contextText = '') {
   }
 }
 
-function selectedDiagnosticSurfaceHint(theme) {
+function _selectedDiagnosticSurfaceHint(theme) {
   switch (theme) {
     case 'SHIFT_BLOCKED':
       return 'Araç, sürücü ve sözleşme bağı';
@@ -109,7 +112,7 @@ function selectedDiagnosticSurfaceHint(theme) {
     case 'PROVIDER_BETTER':
       return 'Kanıt, taslak skor, inceleme kararı ve denetim izi';
     case 'CONTRACT_SHIFT_TODAY':
-      return 'Sözleşme bağı ve bugün oluşan vardiya izi';
+      return 'Sözleşme / vardiya üretimi';
     case 'PAYMENT_MISSING':
       return 'Hakediş hazırlığı, önizleme ve CSV taslağı';
     case 'NEXT_ACTION':
@@ -138,19 +141,22 @@ function composeSelectedRecordDiagnosticReply({ message, screenDefinition, scree
   const missingReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(currentContext, currentScreenDefinition), selectedMissingReply(fallbackContext, fallbackScreenDefinition), ''));
   const fieldReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedFieldReply(message, currentContext, currentScreenDefinition), selectedFieldReply(message, fallbackContext, fallbackScreenDefinition), ''));
   const badgeReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedBadgeReply(message, currentContext, currentScreenDefinition), selectedBadgeReply(message, fallbackContext, fallbackScreenDefinition), ''));
+  const signalReply = sanitizeDiagnosticSupportText(firstNonEmpty(selectedSignalReply(currentContext, currentScreenDefinition), selectedSignalReply(fallbackContext, fallbackScreenDefinition), ''));
   const analysis = analyzeScreenState({ screenContext: currentContext, screenDefinition, conversationState });
   const analysisReply = analysis ? sanitizeDiagnosticSupportText(analyzerReply(analysis, 'DIAGNOSIS')) : '';
-  const contextText = uniqueStrings([summary, rowReply, missingReply, fieldReply, badgeReply, analysisReply]).join(' • ');
+  const contextText = uniqueStrings([summary, rowReply, missingReply, fieldReply, badgeReply, signalReply, analysisReply]).join(' • ');
+  const bridge = buildSelectedDiagnosticBridgeContext(currentContext, theme, contextText);
   const why = uniqueStrings([
     summary ? `Seçili kayıt: ${summary}` : '',
     rowReply,
     missingReply,
     fieldReply,
     badgeReply,
+    signalReply,
     analysisReply,
   ]).slice(0, 2).join(' • ') || 'Bu ekrandaki veriye göre net blokaj görünmüyor.';
-  const result = selectedDiagnosticResult(theme, contextText);
-  const firstControl = selectedDiagnosticSurfaceHint(theme);
+  const result = bridge.result;
+  const firstControl = bridge.firstControl;
   return `Şimdi: ${result} Neden? ${why} İlk kontrol: ${firstControl}.`.trim();
 }
 
@@ -406,7 +412,11 @@ function selectedCarrySummary(screenContext) {
   const fields = (Array.isArray(screenContext?.selectedFields) ? screenContext.selectedFields : [])
     .map((row) => ({ label: firstNonEmpty(row?.label, row?.key, ''), value: firstNonEmpty(row?.value, row?.text, '') }))
     .filter((row) => row.label && row.value);
+  const facts = structuredFacts(screenContext);
   const top = fields.slice(0, 2).map((row) => `${row.label}: ${row.value}`);
+  const copilotSummary = firstNonEmpty(facts?.copilotSummary, '');
+  if (copilotSummary && label) return `${label} (${top.join(' • ') || copilotSummary})`;
+  if (copilotSummary) return copilotSummary;
   if (label && top.length) return `${label} (${top.join(' • ')})`;
   if (label) return label;
   if (top.length) return top.join(' • ');
@@ -451,17 +461,69 @@ function tokenOverlapScore(text, hay) {
   return parts.reduce((sum, part) => sum + (target.includes(part) ? 1 : 0), 0);
 }
 
-const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFieldReply, selectedBadgeReply, selectedMissingReply, selectedTermReply } = createSelectedRuntimeHelpers({
-  firstNonEmpty,
-  normalizeText,
-  tokenOverlapScore,
-  structuredFacts,
-  structuredActionRows,
-  dataRules,
-});
+const { selectedFieldRows, selectedBadgeRows, selectedRowReadReply, selectedFieldReply, selectedBadgeReply, selectedMissingReply, selectedTermReply, selectedSignalRows, selectedSignalReply } = createSelectedRuntimeHelpers({
+    firstNonEmpty,
+    normalizeText,
+    tokenOverlapScore,
+    structuredFacts,
+    structuredActionRows,
+    dataRules,
+  });
 
-const { vehicleReadinessReply, vehicleMissingDataReply, prefersSelectedEntity, isShiftTrackingScreen, shiftScreenNoSelectionReply, openingReply, termComparisonReply, analyzerEvidenceText, analyzerReply, composeScreenLocationReply, roleHelpReply } = createEntityRuntimeHelpers({
-  firstNonEmpty,
+  function buildSelectedDiagnosticBridgeContext(screenContext, theme, contextText = '') {
+    const facts = structuredFacts(screenContext);
+    const copilotSummary = firstNonEmpty(facts?.copilotSummary, '');
+    const summary = firstNonEmpty(selectedCarrySummary(screenContext), copilotSummary, '');
+    const text = normalizeText(contextText);
+    const hasNegative = /(yok|eksik|kapalı|kapali|görünmüyor|gorunmuyor)/.test(text);
+    let result = 'Bu ekrandaki veriye göre seçili kayıt kontrol altında tutulmalı.';
+    let firstControl = 'Seçili kayıt özeti';
+    switch (theme) {
+      case 'SHIFT_BLOCKED':
+        result = 'Bu ekrandaki veriye göre bu vardiya başlayamıyor.';
+        firstControl = 'Araç, sürücü ve sözleşme bağı';
+        break;
+      case 'VEHICLE_NOT_VISIBLE':
+        result = 'Bu ekrandaki veriye göre bu araç haritada görünmüyor.';
+        firstControl = 'Son GPS zamanı ve konum kaynağı';
+        break;
+      case 'DRIVER_PHONE_GPS':
+        result = 'Bu ekrandaki veriye göre sürücünün telefon GPS’i devrede görünüyor.';
+        firstControl = 'Görev durumu ve sürücünün telefon GPS’i sinyali';
+        break;
+      case 'PROVIDER_BETTER':
+        result = 'Bu ekrandaki veriye göre bu sağlayıcı daha güçlü görünüyor.';
+        firstControl = 'Kanıt, taslak skor, inceleme kararı ve denetim izi';
+        break;
+      case 'CONTRACT_SHIFT_TODAY':
+        result = hasNegative
+          ? 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretildiğine dair net işaret yok.'
+          : 'Bu ekrandaki veriye göre bugün sözleşmeden vardiya üretilmiş görünüyor.';
+        firstControl = 'Sözleşme / vardiya üretimi';
+        break;
+      case 'PAYMENT_MISSING':
+        result = 'Bu ekrandaki veriye göre bu hakediş eksik görünüyor.';
+        firstControl = 'Hakediş hazırlığı, önizleme ve CSV taslağı';
+        break;
+      case 'NEXT_ACTION':
+        result = 'Bu ekrandaki veriye göre sıradaki doğru işlem önce seçili kaydı netleştirmek.';
+        firstControl = 'Seçili kayıt özeti ve durum satırı';
+        break;
+      default:
+        break;
+    }
+    return {
+      summary,
+      result,
+      firstControl,
+      whyMarker: 'Neden?',
+      firstControlMarker: 'İlk kontrol:',
+      copilotSummary,
+    };
+  }
+
+  const { vehicleReadinessReply, vehicleMissingDataReply, prefersSelectedEntity, isShiftTrackingScreen, shiftScreenNoSelectionReply, openingReply, termComparisonReply, analyzerEvidenceText, analyzerReply, composeScreenLocationReply, roleHelpReply } = createEntityRuntimeHelpers({
+    firstNonEmpty,
   normalizeText,
   pickTerms,
   composeSimpleScreenReply,

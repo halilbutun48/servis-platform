@@ -6,6 +6,9 @@ import PanelChrome from "../../components/PanelChrome";
 import OperationProofMiniCard from "../../components/OperationProofMiniCard";
 import PanelKvkkHint from "../shared/PanelKvkkHint";
 import { countBy, filterNotificationDigest, fmtTR, normalizeNotificationDigest, topRepeatedValues } from "../shared/operationsDigestUtils";
+import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import { buildOperationsCopilotFacts } from "../../utils/copilotFacts";
+import { getOperationProofSummary } from "../../api";
 
 function MiniStat({ title, value, note }) {
   return (
@@ -43,6 +46,7 @@ export default function SuperAdminOperationsPanel() {
   const [surface, setSurface] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [operationProofSummary, setOperationProofSummary] = useState(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -50,16 +54,18 @@ export default function SuperAdminOperationsPanel() {
     setBusy(true);
     setErr("");
     try {
-      const [manifestResp, surfaceResp, auditResp, notifResp] = await Promise.all([
+      const [manifestResp, surfaceResp, auditResp, notifResp, opProofResp] = await Promise.all([
         api("/api/operation-verification/manifest", { token }),
         api("/api/operation-verification/role-surface?role=SUPER_ADMIN", { token }),
         api("/api/admin/audit-logs?take=200", { token }),
         api("/api/notifications/my", { token }).catch(() => []),
+        getOperationProofSummary({}, { token }).catch(() => null),
       ]);
       setManifest(manifestResp || null);
       setSurface(surfaceResp || null);
       setAuditLogs(Array.isArray(auditResp?.items) ? auditResp.items : Array.isArray(auditResp) ? auditResp : []);
       setNotifications(Array.isArray(notifResp?.items) ? notifResp.items : Array.isArray(notifResp) ? notifResp : []);
+      setOperationProofSummary(opProofResp || null);
     } catch (e) {
       setErr(String(e?.message || e));
     } finally {
@@ -80,6 +86,40 @@ export default function SuperAdminOperationsPanel() {
   const actionCounts = useMemo(() => countBy(auditLogs, (item) => item?.action || ""), [auditLogs]);
   const importantLogs = useMemo(() => (Array.isArray(auditLogs) ? auditLogs : []).slice(0, 10), [auditLogs]);
   const notificationRows = useMemo(() => notifRows.slice(0, 10), [notifRows]);
+
+  useEffect(() => {
+    const facts = buildOperationsCopilotFacts({
+      operationProofSummary,
+      auditCount: Array.isArray(auditLogs) ? auditLogs.length : 0,
+      notificationCount: Array.isArray(notifications) ? notifications.length : 0,
+      eventCount: Number(surface?.checks?.length || 0),
+    });
+    if (!operationProofSummary && !auditLogs.length && !notifications.length && !surface) {
+      clearCopilotSelection('/superadmin/operations');
+      return;
+    }
+    setCopilotSelection({
+      scopeKey: '/superadmin/operations',
+      entityType: 'screen',
+      entityId: 6117,
+      label: 'Denetim Paneli',
+      summary: [
+        operationProofSummary?.title || operationProofSummary?.statusText || operationProofSummary?.summaryText || null,
+        facts?.copilotSummary || null,
+      ].filter(Boolean).join(' • '),
+      fields: [
+        { label: 'Kanıt durumu', value: operationProofSummary?.statusText || operationProofSummary?.summaryText || operationProofSummary?.status || '-', help: 'Servis kanıtı ve hizmet kanıtı özetini gösterir.' },
+        { label: 'GPS görünürlüğü', value: operationProofSummary?.visibilityNote || '-', help: 'Sürücünün telefon GPS’i ve araç görünürlüğü sinyalini gösterir.' },
+        { label: 'Eksik / engel', value: operationProofSummary?.nextAction || '-', help: 'Devam etmeden önce ilk bakılacak notu gösterir.' },
+        { label: 'Denetim', value: `${Array.isArray(auditLogs) ? auditLogs.length : 0} / ${Array.isArray(notifications) ? notifications.length : 0}`, help: 'Audit, bildirim ve olay özetini birlikte gösterir.' },
+      ],
+      badges: [
+        { label: 'Durum', value: operationProofSummary?.status || operationProofSummary?.statusText || 'BEKLİYOR', help: 'Servis kanıtı toplama durumunu gösterir.' },
+      ],
+      facts,
+    });
+    return () => clearCopilotSelection('/superadmin/operations');
+  }, [operationProofSummary, auditLogs, notifications, surface]);
 
   if (me?.role !== "SUPER_ADMIN") {
     return <div className="card err">Bu panel yalnızca SUPER_ADMIN scope için görünür.</div>;
