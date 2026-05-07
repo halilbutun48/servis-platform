@@ -27,6 +27,7 @@
     "check:m98e4c": "node backend/scripts/m98_e4c_route_mount_compat_check.js",
     "check:m98e5": "node backend/scripts/m98_e5_code_pin_manual_acceptance_check.js",
     "check:web01a": "node backend/scripts/web_01a_flow_summary_polish_check.js",
+    "check:web01b": "node backend/scripts/web_01b_superadmin_system_mode_summary_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",

@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { navigate } from "../../router";
 import { useSession } from "../../state/session";
 import PanelChrome from "../../components/PanelChrome";
+import SystemModeSummaryBand from "../../components/SystemModeSummaryBand";
 import FeedbackLoopSection from "../../components/feedback/FeedbackLoopSection";
 
 function copyText(s) {
@@ -127,6 +128,8 @@ export default function SuperAdminPanel() {
           </button>
         )}
       />
+
+      <SystemModeSummaryBand />
 
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         {/* Quick */}
