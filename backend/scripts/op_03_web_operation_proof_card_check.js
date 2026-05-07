@@ -10,10 +10,6 @@ function read(relPath) {
   return fs.readFileSync(path.join(repoRoot, relPath), "utf8");
 }
 
-function exists(relPath) {
-  return fs.existsSync(path.join(repoRoot, relPath));
-}
-
 function normalize(text) {
   return String(text || "")
     .normalize("NFKD")
