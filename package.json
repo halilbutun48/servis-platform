@@ -21,6 +21,7 @@
     "check:pay01a": "node backend/scripts/pay_01a_readonly_payment_readiness_check.js",
     "check:pay01c": "node backend/scripts/pay_01c_payment_preview_detail_filter_check.js",
     "check:pay01d": "node backend/scripts/pay_01d_payment_preview_csv_export_check.js",
+    "check:pay01e": "node backend/scripts/pay_01e_payment_readonly_closure_check.js",
     "check:m95e23c": "npm --prefix web run check:m95e23c",
     "check:m98e4b": "node backend/scripts/m98_e4b_personel_invite_router_mount_check.js",
     "check:m98e4c": "node backend/scripts/m98_e4c_route_mount_compat_check.js",

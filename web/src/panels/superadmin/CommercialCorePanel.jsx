@@ -7,6 +7,7 @@ import { createCommercialCorePanelActions } from "./commercialCorePanelActions";
 import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 import PaymentReadinessReadonlyCard from "../../components/PaymentReadinessReadonlyCard";
 import PaymentPreviewReadonlyCard from "../../components/PaymentPreviewReadonlyCard";
+import PaymentReadonlySafetyBadge from "../../components/PaymentReadonlySafetyBadge";
 
 export default function CommercialCorePanel() {
   const [manifest, setManifest] = useState(null);
@@ -229,6 +230,10 @@ export default function CommercialCorePanel() {
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
         <OperationProofReadonlyBadge />
+      </div>
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <PaymentReadonlySafetyBadge />
       </div>
 
       <div style={{ marginTop: 14, maxWidth: 760 }}>
