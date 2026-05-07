@@ -47,6 +47,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m98_e3_code_pin_field_ux_check.js`
 - `node backend\scripts\m98_e5_code_pin_manual_acceptance_check.js`
 - `node backend\scripts\m99_kvkk_01_mobile_web_plain_text_check.js`
+- `node backend\scripts\m99_ux_01_visible_text_hygiene_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -493,6 +494,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\m99_kvkk_01_mobile_web_plain_text_check.js`
 - Ana konu: mobil ve web yüzeylerinde KVKK / izin açıklamalarının sade Türkçe dilini ve görünürlük sınırlarını kabul paketi olarak doğrulamak.
 
+### M99-UX-01 — görünür Türkçe metin hijyeni / teknik terim taraması [CHECK]
+- Komut: `node backend\scripts\m99_ux_01_visible_text_hygiene_check.js`
+- Ana konu: kullanıcıya görünen metinlerde teknik / İngilizce terim taşmasını sınırlı marker setiyle doğrulamak.
+
 ### M99-A — mobile regression pack [CHECK]
 - Komut: `node mobile\scripts\m99_a_mobile_regression_pack_check.js`
 - Ana konu: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak.
@@ -537,6 +542,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M98-D`: kvkk visibility matrix check'i
 - `M98-E5`: kod + PIN gerçek kullanıcı kabul checklist'i
 - `M99-KVKK-01`: mobil/web KVKK sade metin ve izin dili check'i
+- `M99-UX-01`: görünür Türkçe metin hijyeni check'i
 - `M99-A`: mobile regression pack check'i
 - `M99-B`: real scenario tests check'i
 - `M99-C`: field launch readiness check'i
