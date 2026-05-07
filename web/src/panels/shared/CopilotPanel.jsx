@@ -262,7 +262,6 @@ export default function CopilotPanel() {
     if (chatEntityType === "screen") return selectedChatScreen;
     return chatTargetOptions.find((x) => String(x.id) === String(chatEntityId)) || null;
   }, [chatEntityType, chatTargetOptions, chatEntityId, selectedChatScreen]);
-
   useEffect(() => {
     const path = selectedChatScreen?.path || "";
     const sync = () => {
@@ -305,6 +304,9 @@ export default function CopilotPanel() {
         setChatMessages((prev) => [...prev, { role: "user", text: String(messageText || "").trim() }]);
       }
       const uiSurface = captureCopilotUiSurface();
+      const chatDiagnosticSignals = Array.isArray(chatSelection?.facts?.copilotSignals) ? chatSelection.facts.copilotSignals : [];
+      const chatDiagnosticSummary = String(chatSelection?.facts?.copilotSummary || "");
+      const chatDiagnosticSignalsVisible = Boolean(chatSelection?.facts && Array.isArray(chatSelection.facts.copilotSignals));
       const payload = await api.post("/api/ai/copilot", {
         intent: "CHAT_HELP",
         entityType: chatEntityType,
@@ -365,6 +367,10 @@ export default function CopilotPanel() {
         screenLabel: payload?.screenLabel || selectedChatScreen?.label || "",
         generatedAt: payload?.generatedAt || "",
         roleMode: payload?.roleMode || "",
+        diagnosticSignals: chatDiagnosticSignals,
+        diagnosticSignalSummary: chatDiagnosticSummary,
+        diagnosticSignalsVisible: chatDiagnosticSignalsVisible,
+        diagnosticSignalEmptyText: "Bu ekranda ek kanıt sinyali yok",
       }]);
     } catch (e2) {
       setChatErr(String(e2?.message || e2));

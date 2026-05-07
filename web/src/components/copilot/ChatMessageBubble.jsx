@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import ChatQuickActions from "./ChatQuickActions";
+import ChatDiagnosticSignals from "./ChatDiagnosticSignals";
 
 const FEEDBACK_KEY = "vardis:copilot:chat-feedback";
 const FEEDBACK_LOG_KEY = "vardis:copilot:chat-feedback-log";
@@ -136,6 +137,15 @@ export default function ChatMessageBubble({ message, onOpen, onGuide, onAsk, onC
         ) : null}
 
         <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{message?.text || "-"}</div>
+
+        {role !== "user" && (message?.diagnosticSignalsVisible || (Array.isArray(message?.diagnosticSignals) && message.diagnosticSignals.length)) ? (
+          <ChatDiagnosticSignals
+            signals={Array.isArray(message?.diagnosticSignals) ? message.diagnosticSignals : []}
+            summary={String(message?.diagnosticSignalSummary || "")}
+            visible={Boolean(message?.diagnosticSignalsVisible)}
+            emptyText={message?.diagnosticSignalEmptyText || "Bu ekranda ek kanıt sinyali yok"}
+          />
+        ) : null}
 
         {role !== "user" && ((Array.isArray(message?.responseSections) && message.responseSections.length) || message?.contextSummary || summaryBits.length || message?.followUpPrompt) ? (
           <details style={{ marginTop: 10 }}>

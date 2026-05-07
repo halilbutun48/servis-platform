@@ -34,7 +34,7 @@ has('backend/src/ai/chat/qualityScorer.js');
 const helperStart = helpText.indexOf('function composeSelectedRecordDiagnosticReply');
 const cop01aStart = helpText.indexOf('// COP-01A:', helperStart >= 0 ? helperStart : 0);
 const helperText = helperStart >= 0 && cop01aStart > helperStart ? helpText.slice(helperStart, cop01aStart) : '';
-const resultStart = helpText.indexOf('function selectedDiagnosticResult');
+const resultStart = helpText.indexOf('function _selectedDiagnosticResult');
 const resultEnd = helperStart >= 0 && resultStart >= 0 ? helperStart : -1;
 const resultText = resultStart >= 0 && resultEnd > resultStart ? helpText.slice(resultStart, resultEnd) : '';
 must(helperText, 'composeSelectedRecordDiagnosticReply', 'selected diagnostic helper exists');
