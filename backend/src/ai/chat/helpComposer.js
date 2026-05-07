@@ -1570,7 +1570,7 @@ if (questionType === 'READINESS_CHECK') {
     const knownTerms = explainTermsFromText(message, 4);
     const screenTerms = pickTerms(guide.simpleTerms || screenDefinition?.simpleTerms, 4);
     const terms = uniqueStrings([...(knownTerms || []), ...(screenTerms || [])]);
-    return toReply(`${terms.length ? terms.join(' • ') : firstNonEmpty(guide.screenExplanation, screenDefinition?.menuPurpose, guide.plainSummary, guide.summary)} ${guide.whatToDoNow ? `İstersen şimdi ${guide.whatToDoNow.toLowerCase()}` : ''}`);
+    return toReply(`Şimdi: ${terms.length ? terms.join(' • ') : firstNonEmpty(guide.screenExplanation, screenDefinition?.menuPurpose, guide.plainSummary, guide.summary)} ${guide.whatToDoNow ? `İstersen şimdi ${guide.whatToDoNow.toLowerCase()}` : ''}`.trim());
   }
   if (questionType === 'GO_TO') {
     return toReply(`${firstNonEmpty(guide.whatToDoNow, screenDefinition?.nextStep, guide.plainSummary, guide.summary)} Hangi yere gideceğini aşağıdaki düğmelerden açabilirsin.`);
@@ -1604,7 +1604,76 @@ if (questionType === 'READINESS_CHECK') {
     return toReply(`${firstNonEmpty(guide.screenExplanation, screenDefinition?.menuPurpose, guide.jobPurpose, guide.summary)} ${guide.whatToDoNow ? `Şimdi bunu yap: ${guide.whatToDoNow}` : ''}`);
   }
   if (analysis) return toReply(`${analysis.reasoningLead} ${analyzerEvidenceText(analysis)} ${analysis.nextBestAction ? `Şimdi yap: ${analysis.nextBestAction}` : ''}`.trim());
-  return toReply(`${firstNonEmpty(guide.plainSummary, screenDefinition?.menuPurpose, guide.summary)} ${guide.whatToDoNow ? `Şimdi bunu yap: ${guide.whatToDoNow}` : ''} ${guide.whatToDoNext ? `Sonra: ${guide.whatToDoNext}` : ''}`);
+  return toReply(composeGeneralProductGuideReply({
+    questionType,
+    message,
+    guide,
+    screenDefinition,
+    screenContext,
+    sourceScreenDefinition,
+    sourceScreenContext,
+    roleMode,
+    analysis,
+  }));
+}
+
+// COP-02A: program içi genel ürün rehberi fallback’i.
+// soruyu anla -> kısa cevap ver -> görünen sorun -> neden -> öneri -> sıradaki doğru işlem
+function composeGeneralProductGuideReply({ _questionType, message, guide, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, roleMode = 'OPERATIONS', analysis }) {
+  const primaryLabel = firstNonEmpty(
+    screenContext?.selectedLabel,
+    screenContext?.selectedSummary,
+    sourceScreenContext?.selectedLabel,
+    sourceScreenContext?.selectedSummary,
+    screenDefinition?.label,
+    sourceScreenDefinition?.label,
+    'bu ekran',
+  );
+  const screenLead = firstNonEmpty(
+    guide?.plainSummary,
+    guide?.screenExplanation,
+    screenDefinition?.menuPurpose,
+    sourceScreenDefinition?.menuPurpose,
+    'Bu program içi rehberdir.',
+  );
+  const visibleSignals = uniqueStrings([
+    selectedCarrySummary(screenContext),
+    selectedCarrySummary(sourceScreenContext),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedRowReadReply(screenContext, screenDefinition), selectedRowReadReply(sourceScreenContext, sourceScreenDefinition), '')),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedFieldReply(message, screenContext, screenDefinition), selectedFieldReply(message, sourceScreenContext, sourceScreenDefinition), '')),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedBadgeReply(message, screenContext, screenDefinition), selectedBadgeReply(message, sourceScreenContext, sourceScreenDefinition), '')),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedSignalReply(screenContext, screenDefinition), selectedSignalReply(sourceScreenContext, sourceScreenDefinition), '')),
+    firstNonEmpty(analysis?.reasoningLead, analysis?.nextBestAction, ''),
+    primaryLabel,
+  ]).filter(Boolean);
+  const programMeaning = uniqueStrings(visibleSignals.slice(0, 3)).join(' • ') || 'Görünen kayıt ve durum satırı ana ipucudur.';
+  const why = firstNonEmpty(
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedFieldReply(message, screenContext, screenDefinition), selectedFieldReply(message, sourceScreenContext, sourceScreenDefinition), '')),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedBadgeReply(message, screenContext, screenDefinition), selectedBadgeReply(message, sourceScreenContext, sourceScreenDefinition), '')),
+    sanitizeDiagnosticSupportText(firstNonEmpty(selectedSignalReply(screenContext, screenDefinition), selectedSignalReply(sourceScreenContext, sourceScreenDefinition), '')),
+    analysis?.reasoningLead,
+    'Bu ekrandaki veride kesin kanıt yok.',
+  );
+  const advice = firstNonEmpty(
+    analysis?.nextBestAction,
+    guide?.whatToDoNow,
+    screenDefinition?.firstStep,
+    sourceScreenDefinition?.firstStep,
+    'Önce görünen kayıt ve durum satırını kontrol et.',
+  );
+  const nextAction = firstNonEmpty(
+    guide?.whatToDoNext,
+    screenDefinition?.nextStep,
+    sourceScreenDefinition?.nextStep,
+    'İlgili ekranı açıp seçili kaydı kontrol et.',
+  );
+  const reply = `Şimdi: ${screenLead} Bu programda bunun anlamı: ${programMeaning} Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: ${nextAction}.`;
+  if (roleMode === 'SIMPLE' && !analysis?.nextBestAction) {
+    return `Şimdi: ${screenLead} Bu programda bunun anlamı: ${programMeaning} Öneri: ${advice} Sıradaki doğru işlem: ${nextAction}.`;
+  }
+  return reply;
 }
 
 
@@ -1892,7 +1961,7 @@ function ensureActionLead(reply, questionType, screenDefinition) {
 
 function buildQualityHints({ reply, questionType, quickActions, intentConfidence, roleMode }) {
   const text = normalizeReplySurface(reply);
-  const actionReady = /(Şimdi:|Şimdi yap:|Önce:|Önce\s)/.test(text);
+  const actionReady = /(Şimdi:|Şimdi yap:|Önce:|Önce\s|İlk bakılacak yer:|İlk bakılacak yer\s)/.test(text);
   const concise = text.length <= (roleMode === 'SIMPLE' ? 360 : 720);
   const hasSupportAction = (Array.isArray(quickActions) ? quickActions : []).some((row) => ['ASK', 'OPEN_ROUTE', 'OPEN_GUIDE'].includes(String(row?.actionKind || '')));
   return {

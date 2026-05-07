@@ -73,15 +73,15 @@ function applyRules(text, scoreMap, signalMap, rules = []) {
 }
 
 const BASE_RULES = [
-  { type: 'ROLE_HELP', score: 12, patterns: ['bu rolde', 'ne yapabilirim', 'rolümde', 'rolumde', 'yetkim ne', 'rol yardımı', 'rol yardimi'], label: 'role-help' },
+  { type: 'ROLE_HELP', score: 12, patterns: ['bu rolde', 'ne yapabilirim', 'rolümde', 'rolumde', 'yetkim ne', 'rol yardımı', 'rol yardimi', 'bu kullanıcı ne yapabilir', 'hangi yetkiler', 'yetki sınırı', 'rol bazlı', 'kim neyi görebilir', 'kim neyi görür'], label: 'role-help' },
   { type: 'CHECKLIST_HELP', score: 10, patterns: ['kontrol listesi', 'checklist', 'tek tek kontrol', 'kontrol etmem gerekenler'], label: 'checklist' },
   { type: 'COMMON_MISTAKE_HELP', score: 9, patterns: ['sık hata', 'en sık hata', 'sik hata', 'yaygın hata', 'yaygin hata', 'en çok hata'], label: 'common-mistake' },
-  { type: 'NEXT_SCREEN', score: 11, patterns: ['hangi ekrana', 'hangi ekrana geçeyim', 'sonra hangi ekrana', 'sonra nereye', 'sonraki ekran', 'hangi menüye', 'en doğru ekran', 'hangi ekranda devam', 'hangi yere geçeyim', 'nereye gitmeliyim', 'nereye geçeyim', 'hangi ekran hangisi'], label: 'next-screen' },
+  { type: 'NEXT_SCREEN', score: 11, patterns: ['hangi ekrana', 'hangi ekrana geçeyim', 'sonra hangi ekrana', 'sonra nereye', 'sonraki ekran', 'hangi menüye', 'en doğru ekran', 'hangi ekranda devam', 'hangi yere geçeyim', 'nereye gitmeliyim', 'nereye geçeyim', 'hangi ekran hangisi', 'mobilde bu iş nereden yapılır'], label: 'next-screen' },
   { type: 'FIRST_CONTROL', score: 9, patterns: ['önce neyi kontrol', 'once neyi kontrol', 'ilk neyi kontrol', 'ilk kontrol', 'ilk bakılacak', 'ilk bakilacak', 'önce neye bakayım', 'once neye bakayim', 'önce neye bakmaliyim', 'once neye bakmaliyim', 'önce neye bakılır', 'once neye bakilir', 'ilk neye bakayım', 'ilk neye bakayim', 'önce nereden bakayım', 'once nereden bakayim'], label: 'first-control' },
   { type: 'DETAIL_FLOW', score: 9, patterns: ['detaylı anlat', 'detayli anlat', 'adım adım detay', 'adim adim detay', 'madde madde', 'tek tek anlat', 'sırayla', 'sirayla', 'guided mode', 'guided modede', 'vardiya nasıl oluştur', 'vardiya nasil olustur', 'nasıl vardiya oluştur', 'nasil vardiya olustur', 'yeni iş nasıl kurulur', 'yeni is nasil kurulur', 'plan nasıl kurulur', 'plan nasil kurulur'], label: 'detail-flow' },
   { type: 'ROW_HELP', score: 10, patterns: ['bu satırı nasıl okurum', 'bu satiri nasil okurum', 'bu satır nasıl okunur', 'bu satir nasil okunur', 'bu kaydı nasıl okurum', 'bu kaydi nasil okurum', 'satırı nasıl okurum', 'satiri nasil okurum'], label: 'row-help' },
   { type: 'MISSING_DATA_HELP', score: 8, patterns: ['bu seçili kayıtta eksik ne var', 'bu secili kayitta eksik ne var', 'bu kayıtta ne eksik', 'bu kayitta ne eksik', 'eksik ne var', 'eksik alan', 'hangi alan boş', 'hangi alan bos'], label: 'missing-data' },
-  { type: 'READINESS_CHECK', score: 10, patterns: ['hazır mı', 'hazir mi', 'atamaya hazır mı', 'atamaya hazir mi', 'ilerlemeye hazır mı', 'iş hazır mı', 'bu kayıt hazır mı', 'bu kayit hazir mi'], label: 'readiness' },
+  { type: 'READINESS_CHECK', score: 10, patterns: ['hazır mı', 'hazir mi', 'atamaya hazır mı', 'atamaya hazir mi', 'ilerlemeye hazır mı', 'iş hazır mı', 'bu kayıt hazır mı', 'bu kayit hazir mi', 'hakediş tarafında ne kontrol etmeliyim', 'hakedis tarafında ne kontrol etmeliyim'], label: 'readiness' },
   { type: 'SAFE_NEXT_STEP', score: 9, patterns: ['en risksiz sonraki adım', 'en risksiz sonraki adim', 'en güvenli sonraki adım', 'en guvenli sonraki adim', 'en güvenli ne yapayım', 'en guvenli ne yapayim'], label: 'safe-next' },
   { type: 'WHAT_CHANGED', score: 9, patterns: ['az önce ne değişti', 'az once ne degisti', 'ne değişti', 'ne degisti', 'şimdi neden farklı', 'simdi neden farkli'], label: 'what-changed' },
   { type: 'FIELD_HELP', score: 9, patterns: ['bu sütun ne demek', 'bu sutun ne demek', 'bu kolon ne demek', 'bu alan ne demek', 'hangi sütun', 'hangi sutun'], label: 'field-help' },
@@ -89,12 +89,22 @@ const BASE_RULES = [
   { type: 'STATUS_HELP', score: 8, patterns: ['ne durumda', 'durumu ne', 'kayıt ne durumda', 'kayit ne durumda'], label: 'status-strong' },
   { type: 'STATUS_HELP', score: 2, patterns: ['durum'], label: 'status-light' },
   { type: 'COMPARE_ITEMS', score: 8, patterns: ['kaydet ile ok yap farkı', 'kaydet ile ok yap farki', 'kaydet ile ok yap aynı mı', 'kaydet + sonraki ile seç farkı', 'kaydet + sonraki ile sec farki', 'listeyi aç ile marketi aç farkı', 'listeyi ac ile marketi ac farki'], label: 'compare' },
-  { type: 'TERM_HELP', score: 7, patterns: ['ne demek', 'anlamı', 'anlami', 'bu ne demek', 'aynı şey mi', 'ayni sey mi', 'farkı ne', 'farki ne'], label: 'term-help' },
-  { type: 'WHY_BLOCKED', score: 9, patterns: ['neden kapalı', 'neden kapali', 'kapalı', 'kapali', 'devam edemiyorum', 'neden olmuyor', 'neden görünmüyor', 'neden gorunmuyor', 'neden pasif', 'neden sorunlu', 'niye sorunlu', 'sorunlu görünüyor', 'sorunlu gorunuyor', 'neden riskli', 'niye riskli', 'neden kırmızı', 'neden kirmizi'], label: 'why-blocked' },
+  { type: 'TERM_HELP', score: 7, patterns: ['ne demek', 'anlamı', 'anlami', 'bu ne demek', 'aynı şey mi', 'ayni sey mi', 'farkı ne', 'farki ne', 'sözleşme ile vardiya ilişkisi ne', 'kalite puanı kesin karar mı', 'kalite puani kesin karar mi'], label: 'term-help' },
+  { type: 'WHY_BLOCKED', score: 9, patterns: ['neden kapalı', 'neden kapali', 'kapalı', 'kapali', 'devam edemiyorum', 'neden olmuyor', 'neden görünmüyor', 'neden gorunmuyor', 'neden pasif', 'neden sorunlu', 'niye sorunlu', 'sorunlu görünüyor', 'sorunlu gorunuyor', 'neden riskli', 'niye riskli', 'neden kırmızı', 'neden kirmizi', 'bu kayıt neden ilerlemiyor', 'göremiyor olabilir miyim', 'gorunmuyor olabilir miyim', 'kvkk yüzünden', 'kvkk yuzunden'], label: 'why-blocked' },
   { type: 'BUTTON_HELP', score: 8, patterns: ['buton', 'düğme', 'dugme', 'menü', 'menu', 'kaydet', 'kaydet + sonraki', 'rehberi başlat', 'onay ver', 'önizle', 'analiz et', 'bu buton ne yapar', 'listeyi aç', 'bekleyeni aç', 'marketi aç', 'ok yap', 'büyük haritada işaretle', 'buyuk haritada isaretle', 'tüm adresleri temizle', 'tum adresleri temizle', 'tüm telefonları temizle', 'tum telefonlari temizle'], label: 'button-help' },
-  { type: 'LOCATION_HELP', score: 8, patterns: ['konum', 'gps', 'telefon gps', "telefon gps'i", 'cihaz gps', 'konum kaynağı', 'konum kaynagi'], label: 'location-help' },
-  { type: 'NEXT_STEP', score: 6, patterns: ['peki sonra', 'sonra ne', 'şimdi ne yapayım', 'simdi ne yapayim', 'şimdi ne yapacağım', 'simdi ne yapacagim', 'şimdi ne yapmalıyım', 'simdi ne yapmaliyim', 'bundan sonra ne yapayım', 'bundan sonra ne yapayim', 'bundan sonra ne yapmalıyım', 'bundan sonra ne yapmaliyim', 'sıradaki adım ne', 'siradaki adim ne', 'nasıl yaparım', 'nasil yaparim', 'adım adım', 'adim adim', 'nasıl', 'nasil'], label: 'next-step' },
-  { type: 'SCREEN_PURPOSE', score: 6, patterns: ['bu ekran', 'ne için', 'ne ise yar', 'ne işe yar', 'ekran', 'ne yapılır', 'ne yapilir', 'burada ne yapılır', 'burada ne yapilir'], label: 'screen-purpose' },
+  { type: 'LOCATION_HELP', score: 8, patterns: ['konum', 'gps', 'telefon gps', "telefon gps'i", 'cihaz gps', 'konum kaynağı', 'konum kaynagi', 'sürücünün telefon gps’i neden devrede', 'sürücünün telefon gps i neden devrede', 'sürücünün telefon gpsi neden devrede'], label: 'location-help' },
+  { type: 'NEXT_STEP', score: 6, patterns: ['peki sonra', 'sonra ne', 'şimdi ne yapayım', 'simdi ne yapayim', 'şimdi ne yapacağım', 'simdi ne yapacagim', 'şimdi ne yapmalıyım', 'simdi ne yapmaliyim', 'bundan sonra ne yapayım', 'bundan sonra ne yapayim', 'bundan sonra ne yapmalıyım', 'bundan sonra ne yapmaliyim', 'sıradaki adım ne', 'siradaki adim ne', 'sıradaki doğru işlem ne', 'siradaki dogru islem ne', 'sıradaki doğru adım ne', 'siradaki dogru adim ne', 'nasıl yaparım', 'nasil yaparim', 'adım adım', 'adim adim', 'nasıl', 'nasil'], label: 'next-step' },
+  { type: 'SCREEN_PURPOSE', score: 6, patterns: ['bu ekran', 'ne için', 'ne ise yar', 'ne işe yar', 'ekran', 'ne yapılır', 'ne yapilir', 'burada ne yapılır', 'burada ne yapilir', 'bu ekranda ne yapmalıyım', 'burada ne yapmalıyım', 'bu ekranın amacı ne', 'bu ekran ne işe yarar', 'bu ekran ne için kullanılır', 'saha kabul', 'checklist'], label: 'screen-purpose' },
+];
+
+const COP02A_GENERAL_RULES = [
+  { type: 'ROLE_HELP', score: 6, patterns: ['bu kullanıcı ne yapabilir', 'hangi yetkiler', 'yetki sınırı', 'rol bazlı', 'kim neyi görebilir', 'kim neyi görür', 'bu kullanıcı bu bilgiyi göremez', 'bu rolde ne yapabilirim', 'bu rolde burada neyi yönetebilirim'], label: 'cop02a-role-help' },
+  { type: 'SCREEN_PURPOSE', score: 5, patterns: ['bu ekranda ne yapmalıyım', 'burada ne yapmalıyım', 'bu ekranın amacı ne', 'bu ekran ne işe yarar', 'bu ekran ne için kullanılır', 'saha kabul', 'checklist'], label: 'cop02a-screen-purpose' },
+  { type: 'NEXT_STEP', score: 6, patterns: ['sıradaki doğru işlem ne', 'sıradaki doğru adım ne', 'ilk bakılacak yer', 'ilk kontrolü ne', 'önce ne yapayım', 'hangi ekrana gitmeliyim', 'mobilde bu iş nereden yapılır', 'şimdi hangi ekrana gitmeliyim'], label: 'cop02a-next-step' },
+  { type: 'WHY_BLOCKED', score: 6, patterns: ['bu kayıt neden ilerlemiyor', 'neden ilerlemiyor', 'göremiyor olabilir miyim', 'kvkk yüzünden', 'bu kayıt neden kapalı', 'bu kullanıcı bu bilgiyi göremiyor'], label: 'cop02a-why-blocked' },
+  { type: 'SCREEN_PURPOSE', score: 13, patterns: ['sözleşme ile vardiya ilişkisi ne', 'sozlesme ile vardiya iliskisi ne'], label: 'cop02a-contract-shift-purpose' },
+  { type: 'TERM_HELP', score: 5, patterns: ['sözleşme ile vardiya ilişkisi ne', 'kalite puanı kesin karar mı', 'hakediş tarafında ne kontrol etmeliyim', 'bu ekran neyi anlatıyor'], label: 'cop02a-term-help' },
+  { type: 'LOCATION_HELP', score: 5, patterns: ['sürücünün telefon gps’i neden devrede', 'sürücünün telefon gps i neden devrede', 'konum neden görünmüyor', 'haritada görünmüyor'], label: 'cop02a-location-help' },
 ];
 
 const INTENT_PRIORITY = [
@@ -143,6 +153,7 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   const scores = {};
   const signals = {};
   applyRules(text, scores, signals, BASE_RULES);
+  applyRules(text, scores, signals, COP02A_GENERAL_RULES);
 
   if (isDirectScreenSteer(text)) addScore(scores, signals, 'NEXT_SCREEN', 4, 'direct-screen-steer');
   if (/(hangi\s+ekran|hangi\s+menü|nereye\s+geçeyim|nereye\s+gitmeliyim|sonraki\s+ekran)/.test(text)) addScore(scores, signals, 'NEXT_SCREEN', 3, 'route-question');
