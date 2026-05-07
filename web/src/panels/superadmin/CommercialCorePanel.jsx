@@ -4,6 +4,7 @@ import { Card, fmtBps, fmtDateTime, InputRow, stripHtmlNoise } from "./commercia
 import { readOptional } from "./commercialCorePanelOptionalStates";
 import { buildPaymentSourceQuery } from "./commercialCorePanelUtils";
 import { createCommercialCorePanelActions } from "./commercialCorePanelActions";
+import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 
 export default function CommercialCorePanel() {
   const [manifest, setManifest] = useState(null);
@@ -223,6 +224,10 @@ export default function CommercialCorePanel() {
 
       {err ? <div style={{ marginTop: 12, color: "#ffb17b", whiteSpace: "pre-wrap" }}>{stripHtmlNoise(err)}</div> : null}
       {okMsg ? <div style={{ marginTop: 12, color: "#7bffb2", whiteSpace: "pre-wrap" }}>{okMsg}</div> : null}
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <OperationProofReadonlyBadge />
+      </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>

@@ -525,6 +525,14 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\op_03_web_operation_proof_card_check.js`
 - Ana konu: operasyon yüzeylerinde küçük servis kanıtı kartını ve manuel not formunu doğrulamak.
 
+### OP-04 — ticari/kalite readonly köprü [CHECK]
+- Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
+- Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.
+
+### OP-04 — ticari/kalite readonly köprü [CHECK]
+- Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
+- Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.
+
 ### M0->latest static verification [RUNNER]
 - Runbook: `docs/RUNBOOK_M0_LATEST_STATIC_VERIFICATION.md`
 - Komut: `node backend/scripts/run_m0_latest.js --static-only --to latest --continue`
@@ -564,3 +572,5 @@ Bu bant güncel doğrulanmış üst hattır.
 - `OP-01`: operation proof / service proof readonly kanıt omurgası check'i
 - `OP-02`: manuel operatör kanıt notu katmanı check'i
 - `OP-03`: web servis kanıtı / manuel not küçük kartı check'i
+- `OP-04`: servis kanıtı durumunu ticari/kalite yüzeylerine readonly köprü check'i
+- `OP-04`: servis kanıtı durumunu ticari/kalite yüzeylerine readonly köprü check'i

@@ -3,6 +3,7 @@ import { api } from "../../api";
 import { useSession } from "../../state/session";
 import { getCompanyTrustQualitySummary, getTrustQualityTemplate } from "../../utils/companyDataHub";
 import { clearCopilotSelection, setCopilotSelection } from "../../utils/copilotSelection";
+import OperationProofReadonlyBadge from "../../components/OperationProofReadonlyBadge";
 
 function Card({ title, children }) {
   return (
@@ -146,6 +147,10 @@ export default function TrustQualityPanel() {
       </div>
 
       {err ? <div style={{ marginTop: 12, color: "#ff7b7b", whiteSpace: "pre-wrap" }}>{err}</div> : null}
+
+      <div style={{ marginTop: 14, maxWidth: 760 }}>
+        <OperationProofReadonlyBadge />
+      </div>
 
       <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
