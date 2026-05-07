@@ -243,7 +243,7 @@ export default function CommercialCorePanel() {
         />
       </div>
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
+      <div style={{ marginTop: 14, maxWidth: 980 }}>
         <PaymentPreviewReadonlyCard />
       </div>
 

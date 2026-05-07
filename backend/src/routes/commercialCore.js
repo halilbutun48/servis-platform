@@ -117,7 +117,7 @@ const settlementLedgerExportQuerySchema = sourceListQuerySchema.extend({
 });
 
 const paymentPreviewTake = 120;
-const paymentPreviewVisibleCount = 5;
+const paymentPreviewVisibleCount = 10;
 
 function upperText(value, fallback = "") {
   const v = String(value || fallback).trim().toUpperCase();
@@ -133,6 +133,30 @@ function formatPreviewAmount(amount, currencyCode = "TRY") {
   const safeAmount = Number.isFinite(n) ? n : 0;
   const currency = String(currencyCode || "TRY").trim() || "TRY";
   return `${safeAmount.toLocaleString("tr-TR")} ${currency}`;
+}
+
+function formatPreviewCommissionStatus(paymentModeSnapshot = "OFF", commissionBpsSnapshot = 0) {
+  const mode = upperText(paymentModeSnapshot, "OFF");
+  const bps = Number(commissionBpsSnapshot || 0);
+  if (mode === "OFF") return "Komisyon kapalı";
+  if (mode === "OPTIONAL") return bps > 0 ? `Komisyon hazırlıkta • ${bps} bps` : "Komisyon hazırlıkta";
+  if (mode === "REQUIRED") return bps > 0 ? `Komisyon gerekli • ${bps} bps` : "Komisyon gerekli";
+  return "Komisyon durumu belirsiz";
+}
+
+function formatPreviewAccountStatus(companyAccountStatus = null, roomAccountStatus = null, companyAccountReady = null, roomAccountReady = null) {
+  const companyStatus = upperText(companyAccountStatus, "");
+  const roomStatus = upperText(roomAccountStatus, "");
+  const companyReady = typeof companyAccountReady === "boolean" ? companyAccountReady : null;
+  const roomReady = typeof roomAccountReady === "boolean" ? roomAccountReady : null;
+  const parts = [];
+  if (companyReady === true || companyStatus === "ACTIVE" || companyStatus === "VERIFIED") parts.push("Şirket hesabı hazır");
+  else if (companyReady === false || companyStatus === "MISSING" || companyStatus === "INACTIVE" || companyStatus === "ERROR") parts.push("Şirket hesabı eksik");
+  else parts.push("Şirket hesabı belirsiz");
+  if (roomReady === true || roomStatus === "ACTIVE" || roomStatus === "VERIFIED") parts.push("Oda hesabı hazır");
+  else if (roomReady === false || roomStatus === "MISSING" || roomStatus === "INACTIVE" || roomStatus === "ERROR") parts.push("Oda hesabı eksik");
+  else parts.push("Oda hesabı belirsiz");
+  return parts.join(" • ");
 }
 
 function resolvePreviewFinanceReady(item = {}) {
@@ -174,17 +198,60 @@ function buildPreviewSubtitle(item = {}) {
   return pieces.join(" • ");
 }
 
+function buildPreviewReason(item = {}, classification = null) {
+  const bucket = String(classification?.bucket || classifyPreviewItem(item).bucket).toUpperCase();
+  if (bucket === "READY") return "Ticari özet ve ödeme hazırlığı uyumlu görünüyor.";
+  if (bucket === "MISSING_INFO") {
+    if (item.companyAccountReady === false) return "Şirket ödeme hesabı eksik.";
+    if (item.roomAccountReady === false) return "Oda ödeme hesabı eksik.";
+    return "Eksik bilgi nedeniyle taslak görünüyor.";
+  }
+  return "Hazır görünüyor ama son kontrol gerekiyor.";
+}
+
+function buildPreviewControlNote(item = {}, classification = null) {
+  const bucket = String(classification?.bucket || classifyPreviewItem(item).bucket).toUpperCase();
+  if (bucket === "READY") return "Şimdilik ek işlem gerekmez.";
+  if (bucket === "MISSING_INFO") return "Eksik bilgi tamamlanmadan ödeme başlatılmaz.";
+  return "Son onaydan önce kontrol edilir.";
+}
+
+function buildPreviewDetailLines(item = {}, classification = null) {
+  const reason = buildPreviewReason(item, classification);
+  const subtitle = buildPreviewSubtitle(item) || "Ticari özet görünmüyor";
+  const commissionStatus = formatPreviewCommissionStatus(item.paymentModeSnapshot, item.commissionBpsSnapshot);
+  const accountStatus = formatPreviewAccountStatus(item.companyAccountStatus, item.roomAccountStatus, item.companyAccountReady, item.roomAccountReady);
+  const controlNote = buildPreviewControlNote(item, classification);
+  return [
+    `Durum: ${classification?.statusText || "Taslak"}`,
+    `Neden: ${reason}`,
+    `İlgili sözleşme veya vardiya özeti: ${subtitle}`,
+    `Komisyon durumu: ${commissionStatus}`,
+    `Ödeme hesabı durumu: ${accountStatus}`,
+    `Kontrol notu: ${controlNote}`,
+  ];
+}
+
 function mapPreviewItem(item = {}) {
   const classification = classifyPreviewItem(item);
   const amount = Number(item?.amount || item?.grossAmount || item?.settlementPlan?.grossAmount || 0);
   const currencyCode = item?.currencyCode || item?.currency || item?.settlementPlan?.currencyCode || "TRY";
   const entryStatusText = upperText(item.entryStatus || item?.settlementPlan?.status || item.settlementStatus, "DORMANT");
+  const companyAccountStatus = upperText(item?.companyAccount?.status || item?.companyAccountStatus || "", "");
+  const roomAccountStatus = upperText(item?.roomAccount?.status || item?.roomAccountStatus || "", "");
+  const paymentModeSnapshot = upperText(item.paymentModeSnapshot || item?.settlementPlan?.paymentModeSnapshot || "OFF", "OFF");
+  const commissionBpsSnapshot = Number(item.commissionBpsSnapshot || item?.settlementPlan?.commissionBpsSnapshot || 0);
+  const companyAccountReady = typeof item.companyAccountReady === "boolean" ? item.companyAccountReady : null;
+  const roomAccountReady = typeof item.roomAccountReady === "boolean" ? item.roomAccountReady : null;
+  const financeReady = typeof item.financeReady === "boolean" ? item.financeReady : null;
   return {
     id: String(item?.entryId || item?.id || item?.sourceKey || `${item?.companyId || "row"}-${item?.roomId || "scope"}`),
     title: buildPreviewTitle(item),
     subtitle: buildPreviewSubtitle(item),
     status: classification.bucket,
     statusText: classification.statusText,
+    detailReason: buildPreviewReason(item, classification),
+    detailLines: buildPreviewDetailLines(item, classification),
     entryStatusText: entryStatusText === "EXECUTED"
       ? "Tamamlandı"
       : entryStatusText === "READY"
@@ -194,6 +261,13 @@ function mapPreviewItem(item = {}) {
       : "Kontrol gerekli",
     amountText: formatPreviewAmount(amount, currencyCode),
     notePreview: normalizePreviewNote(item?.notePreview || item?.note || item?.settlementPlan?.note || ""),
+    paymentModeSnapshot,
+    commissionBpsSnapshot,
+    companyAccountStatus,
+    roomAccountStatus,
+    companyAccountReady,
+    roomAccountReady,
+    financeReady,
   };
 }
 
