@@ -56,6 +56,7 @@ import { organizationRouter } from "./routes/organization.js";
 import { schoolParentInvitesRouter } from "./routes/schoolParentInvites.js";
 import { passengerLinksRouter, publicPassengerLiveRouter } from "./routes/passengerLinks.js";
 import * as personelAccessMod from "./routes/personelAccess.js";
+import * as operationProofMod from "./routes/operationProof.js";
 import { aiRouter } from "./routes/ai.js";
 import { observabilityRouter } from "./routes/observability.js";
 import { fieldAcceptanceRouter } from "./routes/fieldAcceptance.js";
@@ -92,6 +93,7 @@ const companyPersonelsRouter = pickExport(companyPersonelsMod, "companyPersonels
 const personelShiftsRouter = pickExport(personelShiftsMod, "personelShiftsRouter");
 const personelAccessRouter = pickExport(personelAccessMod, "personelAccessRouter");
 const publicPersonelInviteRouter = pickExport(personelAccessMod, "publicPersonelInviteRouter");
+const operationProofRouter = pickExport(operationProofMod, "operationProofRouter");
 
 const companiesRouter = pickExport(companiesMod, "companiesRouter");
 const roomsRouter = pickExport(roomsMod, "roomsRouter");
@@ -110,6 +112,7 @@ assertRouteFactories({
   personelShiftsRouter,
   personelAccessRouter,
   publicPersonelInviteRouter,
+  operationProofRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,
@@ -270,6 +273,7 @@ mountCoreRoutes(app, {
   schoolParentInvitesRouter,
   personelAccessRouter,
   publicPersonelInviteRouter,
+  operationProofRouter,
   companiesRouter,
   roomsRouter,
   routeTemplatesRouter,

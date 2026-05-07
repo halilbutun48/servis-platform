@@ -28,6 +28,7 @@ export function mountCoreRoutes(app, routes, io) {
     naturalCopilotRouter,
     pilotLaunchGateRouter,
     operationVerificationRouter,
+    operationProofRouter,
     parentRouter,
     schoolParentInvitesRouter,
     personelAccessRouter,
@@ -82,6 +83,7 @@ export function mountCoreRoutes(app, routes, io) {
   app.use("/api/natural-copilot", naturalCopilotRouter());
   app.use("/api/pilot-launch-gate", pilotLaunchGateRouter);
   app.use("/api/operation-verification", operationVerificationRouter());
+  app.use("/api/operation-proof", operationProofRouter());
   app.use("/api/parent", parentRouter());
   app.use("/api/school/parent-invites", schoolParentInvitesRouter());
   app.use("/api/auth/personel-invite", resolveRouterMount(publicPersonelInviteRouter));

@@ -48,6 +48,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m98_e5_code_pin_manual_acceptance_check.js`
 - `node backend\scripts\m99_kvkk_01_mobile_web_plain_text_check.js`
 - `node backend\scripts\m99_ux_01_visible_text_hygiene_check.js`
+- `node backend\scripts\op_01_operation_proof_service_proof_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.

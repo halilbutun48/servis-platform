@@ -46,6 +46,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `M98-E5` code + PIN gerçek kullanıcı kabul checklist’i active.
 - `M99-KVKK-01` mobil/web KVKK sade metin ve izin dili active.
 - `M99-UX-01` görünür Türkçe metin hijyeni active.
+- `OP-01` OperationProof / ServiceProof merkezi kanıt omurgası active-readonly; `M99-KVKK-01` ve `M99-UX-01` kararları korunur.
 - `M95-E25` mobil saha kabul checklist’i active.
 - `M95-E26` Android emulator smoke planı active.
 - `M95-E27` Gerçek Android cihaz saha proof hazırlığı active.

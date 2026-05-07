@@ -21,6 +21,7 @@
     "check:m98e4b": "node backend/scripts/m98_e4b_personel_invite_router_mount_check.js",
     "check:m98e4c": "node backend/scripts/m98_e4c_route_mount_compat_check.js",
     "check:m98e5": "node backend/scripts/m98_e5_code_pin_manual_acceptance_check.js",
+    "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:web-mobile": "npm --prefix web run check:web-mobile",
     "verify:repo": "node backend/scripts/run_repo_check_chain.js --phase all",
     "verify:snapshot": "node backend/scripts/m90_c10_physical_snapshot_hygiene_check.js",
