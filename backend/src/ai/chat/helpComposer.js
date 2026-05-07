@@ -33,6 +33,41 @@ function extractUserQuestion(message) {
   return String(match?.[1] || raw).trim();
 }
 
+// COP-01A: OP/QLT/PAY ekran rehberi için kısa, güvenli cevaplar.
+function composeOpsQualityPaymentGuideReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext }) {
+  const screenPath = normalizeText(firstNonEmpty(screenDefinition?.path, screenContext?.path, sourceScreenDefinition?.path, sourceScreenContext?.path, ''));
+  if (!screenPath) return null;
+
+  const isSuperAdminOverview = screenPath === '/superadmin';
+  const isCommercial = screenPath === '/superadmin/commercial-core';
+  const isQuality = screenPath === '/superadmin/trust-quality';
+  const isVerification = screenPath === '/superadmin/operation-verification';
+  const isTargetSurface = isSuperAdminOverview || isCommercial || isQuality || isVerification;
+  if (!isTargetSurface) return null;
+
+  const text = normalizeText(message);
+  const relevantQuestionType = ['SCREEN_PURPOSE', 'STATUS_HELP', 'WHY_BLOCKED', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'READINESS_CHECK', 'TERM_HELP'].includes(String(questionType || ''));
+
+  const asksSystem = /(sistem durumu|sistem durumu ne demek|ne açık ne kapalı|ne acik ne kapali|ödeme neden kapalı|ödeme neden kapali|ödemeler neden kapalı|ödemeler neden kapali|neden kapalı|neden kapali)/.test(text);
+  const asksCommercial = /(hakediş|hakedis|ödeme başlat|odeme baslat|ödemeyi başlat|önizleme|onizleme|csv|csv taslağı|csv taslagi|hazırlık|hazirlik|hazır mı|hazir mi|kontrol gerekli|eksik bilgi)/.test(text);
+  const asksQuality = /(kalite puanı|kalite puani|taslak skor|inceleme kararı|inceleme karari|denetim izi|sağlayıcı sıralaması|saglayici siralamasi|kesin puan|kesin mi|tekrar kontrol gerekli|şimdilik dikkate alınmadı|simdilik dikkate alinmadi)/.test(text);
+  const asksProof = /(servis kanıtı|servis kaniti|hizmet kanıtı|hizmet kaniti|operatör notu|operatör not|operatör notu|sürücünün telefon gps['’]i|sürücünün telefon gps'i|telefon gps|araç gps|arac gps|biniş kaydı|binis kaydı|binis kaydi|kanıt ne işe yarar|kanıt ne ise yarar)/.test(text);
+
+  if ((asksProof || (isVerification && relevantQuestionType)) && isTargetSurface) {
+    return 'İlk bakılacak yer: Servis Kanıtı kartı. Servis Kanıtı operasyon görünürlüğü sağlar. Ham GPS/teknik veri göstermez. Sürücünün telefon GPS’i güvenli sinyal olarak görünür. Hakediş için nihai karar değildir.';
+  }
+  if ((asksQuality || (isQuality && relevantQuestionType)) && (isQuality || isCommercial || isSuperAdminOverview || isVerification)) {
+    return 'İlk bakılacak yer: Kalite akış özeti. Bu bilgi kesin kalite puanı değildir. Sağlayıcı sıralaması değildir. Hakediş veya komisyon hesabını etkilemez.';
+  }
+  if ((asksCommercial || (isCommercial && relevantQuestionType)) && (isCommercial || isSuperAdminOverview)) {
+    return 'İlk bakılacak yer: Ticari akış özeti. Bu ekran ödeme başlatmaz. Hakediş hazırlığı, önizleme ve CSV taslağı gösterir. Ödeme, settlement ve komisyon kapalıdır.';
+  }
+  if ((asksSystem || (isSuperAdminOverview && relevantQuestionType)) && isSuperAdminOverview) {
+    return 'İlk bakılacak yer: Sistem durumu bandı. Kanıt ve kalite hazırlıkları aktif; ödeme, settlement ve komisyon kapalıdır; saha testi bekliyor.';
+  }
+  return null;
+}
+
 export function normalizeEverydayQuestion(message) {
   const raw = String(message || '').trim();
   const text = normalizeText(raw);
@@ -1151,6 +1186,8 @@ function shiftMissingDataReply(context) {
 function composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false }) {
   const hasScreenContext = !preferEntityContext && (entityType === 'screen' || Boolean(screenContext?.path || screenDefinition?.path));
   const analysis = hasScreenContext ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;
+  const opsQualityPaymentReply = composeOpsQualityPaymentGuideReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext });
+  if (opsQualityPaymentReply) return toReply(opsQualityPaymentReply);
   if (roleMode === 'SIMPLE' && hasScreenContext && !['LOCATION_HELP', 'NEXT_SCREEN', 'FIRST_CONTROL', 'SCREEN_PURPOSE', 'ROW_HELP', 'MISSING_DATA_HELP', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHY_BLOCKED'].includes(questionType)) {
     return toReply(composeSimpleScreenReply({ questionType, guide, message, screenDefinition, screenContext }));
   }

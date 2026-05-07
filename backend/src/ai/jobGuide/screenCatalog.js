@@ -324,8 +324,14 @@ const SUPER_ADMIN = [
     commonMistakes: ['Özet bilgiyi detay sanmak.'],
     doneChecklist: ['Doğru yönetim alanı seçildi.'],
     buttonGuides: [button('Alanı aç', 'Özetten ilgili yönetim alanına geçer.', 'Detaya inmek istediğinde kullan.', 'İlgili ekran açılır.')],
-    screenMenus: [{ label: 'Companies', path: '/superadmin/companies', purpose: 'Şirket yönetimi için açılır.' }, { label: 'Rooms', path: '/superadmin/rooms', purpose: 'Oda yönetimi için açılır.' }, { label: 'Copilot', path: '/superadmin/copilot', purpose: 'Yardım için açılır.' }],
-  }),
+      screenMenus: [
+        { label: 'Companies', path: '/superadmin/companies', purpose: 'Şirket yönetimi için açılır.' },
+        { label: 'Rooms', path: '/superadmin/rooms', purpose: 'Oda yönetimi için açılır.' },
+        { label: 'Ticari Akış', path: '/superadmin/commercial-core', purpose: 'Hakediş hazırlığı, önizleme ve CSV taslağını görmek için açılır.' },
+        { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', purpose: 'Kanıt, taslak skor, inceleme ve denetim izini birlikte okumak için açılır.' },
+        { label: 'Copilot', path: '/superadmin/copilot', purpose: 'Yardım için açılır.' },
+      ],
+    }),
   screen(6102, '/superadmin/companies', 'Companies', {
     menuPurpose: 'Şirket kayıtlarını yönetmek için kullanılır.',
     forWhom: 'Super admin içindir.',
