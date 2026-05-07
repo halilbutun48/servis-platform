@@ -216,3 +216,15 @@ export function normalizeOperationProofError(error, fallbackMessage = "İşlem b
 export function normalizeOperationProofErrorMessage(error, fallbackMessage = "İşlem başarısız.") {
   return getApiErrorMessage(error, fallbackMessage);
 }
+
+export async function getQualityProofSignalSummary(params = {}, { token } = {}) {
+  return api(`/api/trust-quality/proof-signals/summary${buildQueryString(params)}`, { token });
+}
+
+export function normalizeQualityProofError(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorInfo(error, fallbackMessage);
+}
+
+export function normalizeQualityProofErrorMessage(error, fallbackMessage = "İşlem başarısız.") {
+  return getApiErrorMessage(error, fallbackMessage);
+}

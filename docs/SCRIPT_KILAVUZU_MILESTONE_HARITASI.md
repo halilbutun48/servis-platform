@@ -51,6 +51,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\op_01_operation_proof_service_proof_check.js`
 - `node backend\scripts\op_02_manual_operator_proof_note_check.js`
 - `node backend\scripts\op_03_web_operation_proof_card_check.js`
+- `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -529,6 +530,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
 - Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.
 
+### QLT-01 — kalite puanı + sağlayıcı karşılaştırması hazırlık omurgası [CHECK]
+- Komut: `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
+- Ana konu: OP-01 readonly omurga, OP-02 manuel not, OP-03 küçük kart ve OP-04 ticari/kalite readonly köprü üstüne kesin puan üretmeyen kalite hazırlık katmanı kurmak.
+
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
 - Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.
@@ -566,6 +571,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M98-E5`: kod + PIN gerçek kullanıcı kabul checklist'i
 - `M99-KVKK-01`: mobil/web KVKK sade metin ve izin dili check'i
 - `M99-UX-01`: görünür Türkçe metin hijyeni check'i
+- `QLT-01`: kalite puanı + sağlayıcı karşılaştırması hazırlık omurgası check'i
 - `M99-A`: mobile regression pack check'i
 - `M99-B`: real scenario tests check'i
 - `M99-C`: field launch readiness check'i

@@ -130,6 +130,8 @@
   - not: `OP-01` readonly omurga ve `OP-02` manuel not katmanı korunur; web kartı yalnız görünür özet sağlar.
 - `OP-04 - servis kanıtı durumunu ticari/kalite yüzeylerine readonly köprü - active-readonly`
   - not: `OP-01` readonly omurga, `OP-02` manuel not katmanı ve `OP-03` küçük kart korunur; settlement aktif değildir, komisyon hesaplama aktif değildir.
+- `QLT-01 - kalite puanı + sağlayıcı karşılaştırması hazırlık omurgası - active-prep`
+  - not: `OP-01/02/03/04` evidence chain bu hazırlığın temelidir; kesin puan veya otomatik sıralama yoktur.
 - `M99-A - mobile regression pack - active`
   - amaç: login, role routing, token/session, bildirim, biniş değişikliği ve müsaitlik regression pack'ini tek check'te yaşatmak
   - komut: `node mobile/scripts/m99_a_mobile_regression_pack_check.js`

@@ -221,6 +221,7 @@ Compatibility aliases for legacy checks:
 - Temiz readstorm kanıtı: 3000 araç, 3 cycle, 9000 / 9000 OK, errors 0, throttled 0, p95 33.21ms.
 - Not: `PASSWORD_CHANGE_REQUIRED` seed-user hijyen hatası kapanmıştır; önceki hatalar throughput problemi değildi.
 - `OP-04` servis kanıtı durumunu ticari/kalite yüzeylerine readonly köprü olarak bağlar; `OP-01` readonly omurga, `OP-02` manuel not ve `OP-03` küçük kart korunur; settlement aktif değildir, komisyon hesaplama aktif değildir.
+- `QLT-01` kalite puanı + sağlayıcı karşılaştırması hazırlık omurgasıdır; OP-01→OP-04 evidence chain bu hazırlığın temelidir ve kesin puan üretmez.
 
 ## M90C.9 SAFE CLOSURE / FINAL HYGIENE
 - M90C.9 görünür closure hygiene milestone kaydıdır.

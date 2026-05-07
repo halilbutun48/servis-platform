@@ -25,6 +25,7 @@
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",
     "check:op04": "node backend/scripts/op_04_proof_commercial_quality_readonly_bridge_check.js",
+    "check:qlt01": "node backend/scripts/qlt_01_quality_provider_readiness_check.js",
     "check:web-mobile": "npm --prefix web run check:web-mobile",
     "verify:repo": "node backend/scripts/run_repo_check_chain.js --phase all",
     "verify:snapshot": "node backend/scripts/m90_c10_physical_snapshot_hygiene_check.js",
