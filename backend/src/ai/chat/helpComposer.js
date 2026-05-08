@@ -19,6 +19,29 @@ function normalizeText(value) {
   return String(value || '').trim().toLocaleLowerCase('tr-TR');
 }
 
+function normalizeLooseText(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesStandalonePhrase(text, phrases) {
+  const value = normalizeLooseText(text);
+  if (!value) return false;
+  return (Array.isArray(phrases) ? phrases : []).some((phrase) => {
+    const normalized = normalizeLooseText(phrase);
+    if (!normalized) return false;
+    const pattern = new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapeRegExp(normalized)}(?:$|[^\\p{L}\\p{N}])`, 'iu');
+    return pattern.test(value);
+  });
+}
+
 function asText(item) {
   if (item == null) return '';
   if (typeof item === 'string') return item;
@@ -203,7 +226,8 @@ export function normalizeEverydayQuestion(message) {
   const raw = String(message || '').trim();
   const text = normalizeText(raw);
   if (!text) return raw;
-  if (/(buras[iı] ne|bu taraf ne|bu kisim ne|bu k[ıi]s[ıi]m ne|bu ekran ne( icin| için)?|burda ne yap[ıi]l[ıi]yor|burada ne yap[ıi]l[ıi]yor|ne ise yariyor|ne işe yarıyor)/.test(text)) return 'Bu ekran ne için?';
+  if (matchesStandalonePhrase(text, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'bu taraf ne', 'bu kisim ne', 'bu kısım ne', 'bu ekran ne', 'bu ekran ne için', 'bu ekran ne icin', 'burda ne yapılıyor', 'burada ne yapılıyor', 'burda ne yapiliyor', 'burada ne yapiliyor', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'ne işe yarıyor', 'ne ise yariyor'])) return 'Bu ekran ne için?';
+  if (matchesStandalonePhrase(text, ['ne yapayım', 'ne yapayim', 'şimdi ne', 'simdi ne', 'şimdi ne yapayım', 'simdi ne yapayim', 'şimdi ne yapmalıyım', 'simdi ne yapmaliyim'])) return 'Şimdi ne yapayım?';
   if (/(nereye bakcam|nereye bakicam|nereye bakca[mn]|nereye bak[iı]y[ıi]m|nereye bakay[ıi]m|ilk nereyi kontrol edeyim|once nereye bakayim|önce nereye bakayım|ilk nereyi inceleyeyim)/.test(text)) return 'İlk neye bakayım?';
   if (/(nereye g[eé]c(e|ey)im|nereye geç(e|ey)im|nereye git(sem|meliyim|ceyim|ceğim)|hangi ekrana gideyim|hangi tarafa geceyim|hangi tarafa geçeyim|sonra nereye geceyim|sonra nereye geçeyim|sonra nereye gideyim)/.test(text)) return 'Şimdi hangi ekrana gitmeliyim?';
   if (/(niye pasif|neden pasif|basam[iı]yorum|t[ıi]klan[mıi]yor|olmadi|olmad[ıi]|olmuyor|takildi|tak[ıi]ld[ıi]|patladi|patlad[ıi]|kitlendi|ilerlemiyor|tak[ıi]l[ıi]yor)/.test(text)) return 'Bu neden olmuyor?';
@@ -268,7 +292,8 @@ function looksLikeShortFollowUp(message) {
   const text = normalizeText(message);
   if (!text) return false;
   if (text.length > 72) return false;
-  return /(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra\??|simdi\??|şimdi\??|neden\??|niye\??|bunda\??|burada\??|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta|neye basayim|neye basayım|hangi ekrana|hangi ekrana gideyim|bu işlem bende görünmüyor|bu islem bende gorunmuyor|bende çıkmıyor|bende cikmiyor|burda takıldı|burada takildi|sorun kimde|kim onaylayacak|bunu kim yapabilir|tamam bunu nasıl düzeltirim|tamam bunu nasil duzeltirim|aynı kayıt için devam et|ayni kayit icin devam et|önce neyi kontrol edeyim|once neyi kontrol edeyim|bu yüzden mi başlamıyor|bu yuzden mi baslamiyor)/.test(text);
+  return /(peki|tamam|o zaman|devam|devam et|ee sonra|e sonra|sonra\??|simdi\??|şimdi\??|neden\??|niye\??|bunda\??|burada\??|aynı kayıtta|ayni kayitta|aynı satırda|ayni satirda|bu kayıtta|bu kayitta|neye basayim|neye basayım|hangi ekrana|hangi ekrana gideyim|bu işlem bende görünmüyor|bu islem bende gorunmuyor|bende çıkmıyor|bende cikmiyor|burda takıldı|burada takildi|sorun kimde|kim onaylayacak|bunu kim yapabilir|tamam bunu nasıl düzeltirim|tamam bunu nasil duzeltirim|aynı kayıt için devam et|ayni kayit icin devam et|önce neyi kontrol edeyim|once neyi kontrol edeyim|bu yüzden mi başlamıyor|bu yuzden mi baslamiyor)/.test(text)
+    || matchesStandalonePhrase(text, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'bu ekran ne', 'ne yapayım', 'ne yapayim', 'şimdi ne', 'simdi ne']);
 }
 
 function expandFollowUpMessage(message, conversationState, screenContext) {
@@ -296,6 +321,7 @@ function buildContinuityMeta({ message, conversationState, screenContext, reques
 
 function topicLabelForContext(topic) {
   const labels = {
+    SCREEN_PURPOSE: 'Ekran amacı',
     SHIFT_BLOCKED: 'Vardiya blokajı',
     VEHICLE_NOT_VISIBLE: 'GPS görünürlüğü',
     DRIVER_PHONE_GPS: 'Sürücünün telefon GPS’i',
@@ -327,6 +353,7 @@ function detectContextTopic({ message, questionType, screenPath, screenContext, 
   ));
   const theme = selectedDiagnosticTheme(message);
   if (theme) return theme;
+  if (questionType === 'SCREEN_PURPOSE') return 'SCREEN_PURPOSE';
   if (path.includes('/trust-quality') || /(kalite|saglayıcı|sağlayıcı|saglayici|provider)/.test(text)) return 'TRUST_QUALITY';
   if (path.includes('/commercial-core') || path.includes('/payment') || /(hakediş|hakedis|ödeme|odeme|settlement|komisyon|csv|önizleme|onizleme)/.test(text)) return 'PAYMENT_PREVIEW';
   if (path.includes('/map') || path.includes('/live') || /(gps|konum|harita|haritada)/.test(text)) {
@@ -393,6 +420,9 @@ function buildContextualSuggestedChips({
     chips.push('Önce ilgili satırı seç', 'Bu ekran ne işe yarıyor?', 'Sıradaki doğru işlem ne?');
   } else {
     switch (String(activeTopic || '')) {
+      case 'SCREEN_PURPOSE':
+        chips.push('Bu ekran ne için var?', 'Sıradaki adımı açıkla', 'İlgili ekrana git');
+        break;
       case 'SHIFT_BLOCKED':
         chips.push('Bu kaydı kontrol et', 'Bu yüzden mi başlamıyor?', 'Sözleşme/vardiya bağını göster');
         break;
@@ -492,6 +522,9 @@ function resolveFollowUpContextQuestion({
     if (questionType === 'WHY_BLOCKED') return `${anchor || 'bu kayıt'} için neden böyle görünüyor?`;
     if (questionType === 'READINESS_CHECK') return `${anchor || 'bu kayıt'} için eksik ne var?`;
     return `${anchor || 'bu kayıt'} için şimdi ne yapmalıyım?`;
+  }
+  if (matchesStandalonePhrase(text, ['bura ne', 'burası ne', 'burasi ne', 'bu ne', 'ne bu', 'burda ne var', 'burada ne var', 'burası ne işe yarıyor', 'burasi ne ise yariyor', 'bu ekran ne', 'bu ekran ne için', 'bu ekran ne icin'])) {
+    return 'Bu ekran ne için?';
   }
   if (questionType === 'NEXT_STEP' && /aynı kayıt/.test(text) && anchor) {
     return `${anchor} için şimdi ne yapmalıyım?`;

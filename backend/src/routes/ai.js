@@ -1,7 +1,7 @@
 import express from "express";
 import { authRequired, requireStepUp } from "../auth/middleware.js";
 import { audit } from "../audit.js";
-import { parseCopilotRequest } from "../ai/schemas.js";
+import { normalizeCopilotRequestInput, parseCopilotRequest } from "../ai/schemas.js";
 import { runCopilotFoundation } from "../ai/service.js";
 import { ENV } from "../env.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
@@ -19,9 +19,10 @@ export function aiRouter() {
         throw httpError(503, "AI_COPILOT_DISABLED", "AI_COPILOT_DISABLED");
       }
 
-      const parsed = parseCopilotRequest(req.body || {});
+      const normalizedBody = normalizeCopilotRequestInput(req.body || {});
+      const parsed = parseCopilotRequest(normalizedBody);
       if (!parsed.success) {
-        throw httpError(400, "VALIDATION_ERROR", "Validation failed", parsed.error.flatten());
+        throw httpError(400, "VALIDATION_ERROR", "Bunu anlayamadım. Kısaca ne yapmak istediğini yazabilir misin?", parsed.error.flatten());
       }
 
       const role = String(req.user?.role || "");
@@ -67,4 +68,3 @@ export function aiRouter() {
 export default aiRouter;
 
 // M46.6-C route markers: driver | personel | parent
-
