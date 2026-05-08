@@ -7,6 +7,26 @@ Current direction: **servis-platform m90d1_web_lint_inventory -> M0->M89 green -
 
 Single-roof verification update: `M91` route preview local acceptance bandı ve `M92` repo verification spine eklendi. Günlük resmi kontrol girişi `npm run verify:repo`.
 
+## 0.1) 2026-05-08 Product Backlog Update
+- DOCS-STATE-01 sonrası resmi sonraki ürün sırası `VERIFY-CHAIN-01` olarak görünür kalır.
+- P0:
+  - `VERIFY-CHAIN-01`
+  - `M95-EXPORT-01`
+- P1:
+  - `MOBILE-TEXT-01`
+  - `COP-02B`
+  - `UX-TEXT-02`
+  - `E2E-SMOKE-01`
+  - `UX-QA-01`
+- P2:
+  - `WEB-01C`
+  - `M44-T1/T5`
+  - `BRAND-FINAL-01`
+  - `CLEANUP-01`
+  - `FIELD-LAUNCH-PACK-01`
+  - `PERF-REGRESSION-01`
+- Bu sıra docs/state görünürlüğü içindir; yeni ürün davranışı açmaz.
+
 ## 0) 2026-04-19 Gece Kontrol Notu
 - `verify:repo` PASS, `verify:ci` PASS, `verify:final` PASS.
 - Repo check chain sonucu: `PASS 20 / FAIL 0`; selected static milestone set: `PASS 88 / FAIL 0 / SKIP 74`.

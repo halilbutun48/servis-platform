@@ -32,6 +32,29 @@
                           "upperRouteFrom":  82,
                           "upperRouteTo":  89
                       },
+    "recentProductClosures":  [
+                                  "WEB-01A",
+                                  "WEB-01B",
+                                  "WEB-01-FIX",
+                                  "OP-04",
+                                  "QLT-04B",
+                                  "PAY-01A-E",
+                                  "PAY-01E",
+                                  "PAY-SAFE-01",
+                                  "COP-01A-E",
+                                  "COP-01E",
+                                  "COP-02A",
+                                  "UX-KVKK-01"
+                              ],
+    "nextProductMilestone":  "VERIFY-CHAIN-01",
+    "upcomingProductMilestones":  [
+                                      "M95-EXPORT-01",
+                                      "MOBILE-TEXT-01",
+                                      "COP-02B",
+                                      "WEB-01C",
+                                      "M44-T1/T5",
+                                      "FIELD-LAUNCH-PACK-01"
+                                  ],
     "activeMilestones":  [
                              "M76A-1",
                              "M76B",

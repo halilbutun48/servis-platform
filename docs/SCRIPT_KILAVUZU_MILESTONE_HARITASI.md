@@ -51,10 +51,19 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\op_01_operation_proof_service_proof_check.js`
 - `node backend\scripts\op_02_manual_operator_proof_note_check.js`
 - `node backend\scripts\op_03_web_operation_proof_card_check.js`
+- `node backend\scripts\web_01a_flow_summary_polish_check.js`
+- `node backend\scripts\web_01b_superadmin_system_mode_summary_check.js`
+- `node backend\scripts\qlt_04b_compact_signal_list_check.js`
+- `node backend\scripts\pay_01e_payment_readonly_closure_check.js`
+- `node backend\scripts\pay_safe_01_payment_write_gate_check.js`
+- `node backend\scripts\cop_01e_operational_guide_acceptance_check.js`
+- `node backend\scripts\cop_02a_program_ici_genel_rehber_check.js`
+- `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
 - `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
 - `node backend\scripts\qlt_02_quality_draft_score_check.js`
 - `node backend\scripts\qlt_03_quality_review_decision_check.js`
 - `node backend\scripts\qlt_04_quality_review_history_check.js`
+- `node backend\scripts\docs_state_01_recent_product_closure_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -550,6 +559,20 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\qlt_04_quality_review_history_check.js`
 - Ana konu: QLT-03 kararlarının readonly geçmişini görünür yapmak; kesin kalite puanı, ranking, settlement ve komisyon açmamak.
 
+### DOCS-STATE-01 — son kapanan ürün hatları görünürlüğü [CHECK]
+- Komut: `node backend\scripts\docs_state_01_recent_product_closure_check.js`
+- Ana konu: son kapanan ürün hatlarını SSOT / registry / backlog / repo-contract state içinde görünür ve güncel tutmak; ürün davranışı değiştirmez.
+- Script alias görünürlüğü:
+  - `check:web01a`
+  - `check:web01b`
+  - `check:qlt04b`
+  - `check:pay01e`
+  - `check:paysafe01`
+  - `check:cop01e`
+  - `check:cop02a`
+  - `check:uxkvkk01`
+  - `check:docsstate01`
+
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
 - Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.
@@ -591,6 +614,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `QLT-02`: kontrollü kalite skoru taslak modeli check'i
 - `QLT-03`: kontrollü kalite inceleme kararı check'i
 - `QLT-04`: kalite karar geçmişi / denetim izi check'i
+- `DOCS-STATE-01`: son kapanan ürün hatları görünürlüğü check'i
 - `M99-A`: mobile regression pack check'i
 - `M99-B`: real scenario tests check'i
 - `M99-C`: field launch readiness check'i

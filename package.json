@@ -35,6 +35,7 @@
     "check:cop01d": "node backend/scripts/cop_01d_visible_diagnostic_signals_check.js",
     "check:cop01e": "node backend/scripts/cop_01e_operational_guide_acceptance_check.js",
     "check:cop02a": "node backend/scripts/cop_02a_program_ici_genel_rehber_check.js",
+    "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",
     "check:op03": "node backend/scripts/op_03_web_operation_proof_card_check.js",

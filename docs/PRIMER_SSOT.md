@@ -57,6 +57,16 @@ Bu primer yaşayan hattın resmi özetidir.
 - Resmi çalışma yönü: `M90` rotası içinde ihtiyaç-temelli kontrollü ilerleme.
 - Not: `M90C.9` görünürlüğü compatibility / closure marker olarak korunur; bu satır yeni büyük taşıma veya agresif refactor çağrısı değildir.
 
+## Son kapanan ürün hatları
+- `WEB-01A` ve `WEB-01B` flow/system mode akışı green kapandı; `WEB-01-FIX` görünür Türkçe sistem dili düzeltmesiyle kapandı (`8b9c9eb / v2026.05.08-web01-fix-flow-check-system-language`).
+- `PAY-01A-E` readonly ödeme/hakediş hazırlık, önizleme, detay, CSV ve kapanış hattı green kapandı; `PAY-01E` kapanış halkası da bu hattın parçasıydı.
+- `PAY-SAFE-01` aktif ödeme / settlement write güvenli kapı arkasına alındı (`5722590 / v2026.05.07-paysafe01-payment-write-gate`).
+- `OP-04` readonly proof commercial/quality bridge green kapandı.
+- `QLT-04B` compact signal list green kapandı.
+- `COP-01A-E` operasyon rehberi serisi ve `COP-02A` program-wide guide fallback green kapandı; `COP-01E` kabul halkası da bu serinin parçasıydı.
+- `UX-KVKK-01` compact boundary hint green kapandı.
+- Bu kapanışlar DOCS-STATE-01 ile resmi hafıza katmanına işlenmiş son ürün durumunu temsil eder.
+
 ## Kanonik komut hiyerarşisi (Tur 1)
 - Tur 1 / Tur 2 / Tur 3 docs-tools-wrapper hizası kapanmıştır; bundan sonraki ilerleme ihtiyaç-temelli ve kontrollü olmalıdır.
 - Resmi günlük giriş: `npm run verify:repo`.
