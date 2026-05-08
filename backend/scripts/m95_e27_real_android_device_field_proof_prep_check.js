@@ -55,6 +55,25 @@ function mustAny(text, needles, message) {
   console.log(`OK ${message}`);
 }
 
+function isShareableExportMode() {
+  return process.env.SHAREABLE_EXPORT_MODE === "1" || !fs.existsSync(path.join(repoRoot, ".git"));
+}
+
+function checkRuntimeArtifact(relPath) {
+  const absPath = path.join(repoRoot, relPath);
+  if (fs.existsSync(absPath)) {
+    console.log(`OK runtime artifact remains present: ${relPath}`);
+    return;
+  }
+
+  if (isShareableExportMode()) {
+    console.log(`INFO runtime JSON export paketinde beklenmez: ${relPath}`);
+    return;
+  }
+
+  throw new Error(`FAIL runtime artifact missing: ${relPath}`);
+}
+
 console.log("=== M95-E27 REAL ANDROID DEVICE FIELD PROOF PREP CHECK ===");
 
 const rootPkg = read("package.json");
@@ -135,10 +154,7 @@ const runtimeArtifacts = [
   "backend/artifacts/runtime-data/username-directory.json",
 ];
 for (const relPath of runtimeArtifacts) {
-  if (!exists(relPath)) {
-    throw new Error(`FAIL runtime artifact missing marker: ${relPath}`);
-  }
-  console.log(`OK runtime artifact remains present: ${relPath}`);
+  checkRuntimeArtifact(relPath);
 }
 
 console.log("=== M95-E27 REAL ANDROID DEVICE FIELD PROOF PREP CHECK PASS ===");

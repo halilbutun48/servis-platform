@@ -41,6 +41,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\m95_e25_mobile_field_acceptance_check.js`
 - `node backend\scripts\m95_e26_android_emulator_smoke_plan_check.js`
 - `node backend\scripts\m95_e27_real_android_device_field_proof_prep_check.js`
+- `node backend\scripts\m95_export_01_runtime_check_compat_check.js`
 - `node backend\scripts\m97_panel_operations_check.js`
 - `node mobile\scripts\m98_bcd_activation_kvkk_check.js`
 - `node backend\scripts\m98_e2e_code_pin_access_acceptance_check.js`
@@ -459,6 +460,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\m95_e27_real_android_device_field_proof_prep_check.js`
 - Ana konu: gerçek cihaz testinden önce izin, ekran, GPS, ağ ve kanıt planını sade Türkçe hazırlık dokümanında kilitlemek.
 
+### M95-EXPORT-01 — export zip / runtime check uyumu [CHECK]
+- Komut: `node backend\scripts\m95_export_01_runtime_check_compat_check.js`
+- Ana konu: shareable export paketinde runtime JSON yokluğunu INFO/SKIP kabul ederek saha check uyumunu korumak.
+
 ### M96-A — driver availability local state [CHECK]
 - Komut: `node mobile\scripts\m96_a_driver_availability_check.js`
 - Ana konu: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak.
@@ -606,6 +611,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `M95-E25`: mobil saha kabul checklist'i
 - `M95-E26`: Android emulator smoke planı check'i
 - `M95-E27`: gerçek Android cihaz saha proof hazırlığı check'i
+- `M95-EXPORT-01`: export zip / runtime check uyumu check'i
 - `M96-A`: driver availability local state check'i
 - `M96-B`: mobile notifications foundation check'i
 - `M96-C`: boarding change local model check'i

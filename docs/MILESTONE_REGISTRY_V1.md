@@ -67,7 +67,8 @@
 - `UX-KVKK-01 - green/closed`
 - `DOCS-STATE-01 - active/next`
 - `VERIFY-CHAIN-01 - active/next`
-- upcoming: `M95-EXPORT-01`, `MOBILE-TEXT-01`, `COP-02B`, `WEB-01C`, `M44-T1/T5`, `FIELD-LAUNCH-PACK-01`
+- `M95-EXPORT-01 - active/next`
+- upcoming: `MOBILE-TEXT-01`, `COP-02B`, `WEB-01C`, `M44-T1/T5`, `FIELD-LAUNCH-PACK-01`
 - `M91 - shift/agreement route preview`
   - amac: vardiya kaynakli sozlesme akisinda rota onizleme ve kaynak vardiya baglantisini korumak
   - komut: `tools\pack_m91_shift_agreement_route_preview.ps1 -RepoRoot D:\servis-platform`
@@ -96,6 +97,9 @@
 - `M95-E27 - gerçek Android cihaz saha proof hazırlığı - active`
   - amaç: gerçek cihaz testinden önce izin, ekran, GPS, ağ ve kanıt planını kilitlemek
   - komut: `node backend/scripts/m95_e27_real_android_device_field_proof_prep_check.js`
+- `M95-EXPORT-01 - export zip / runtime check uyumu - active`
+  - amaç: shareable export paketinde runtime JSON yokluğunu INFO/SKIP kabul edecek şekilde saha check uyumunu korumak
+  - komut: `node backend/scripts/m95_export_01_runtime_check_compat_check.js`
 - `M96-A - driver availability local state - active`
   - amaç: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak
   - komut: `node mobile/scripts/m96_a_driver_availability_check.js`

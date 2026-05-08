@@ -15,6 +15,25 @@ function assert(cond, message) {
   console.log(`OK ${message}`);
 }
 
+function isShareableExportMode() {
+  return process.env.SHAREABLE_EXPORT_MODE === "1" || !fs.existsSync(path.join(repoRoot, ".git"));
+}
+
+function checkRuntimeArtifact(relPath) {
+  const absPath = path.join(repoRoot, relPath);
+  if (fs.existsSync(absPath)) {
+    console.log(`OK runtime artifact remains present: ${relPath}`);
+    return;
+  }
+
+  if (isShareableExportMode()) {
+    console.log(`INFO runtime JSON export paketinde beklenmez: ${relPath}`);
+    return;
+  }
+
+  throw new Error(`FAIL runtime artifact missing: ${relPath}`);
+}
+
 function assertContains(text, needle, label) {
   assert(text.includes(needle), `${label}: ${needle}`);
 }
@@ -74,7 +93,7 @@ function main() {
     "backend/artifacts/runtime-data/username-directory.json",
   ];
   for (const rel of forbiddenWrites) {
-    assert(fs.existsSync(path.join(repoRoot, rel)), `runtime artifact remains present: ${rel}`);
+    checkRuntimeArtifact(rel);
   }
 
   console.log("=== M95-E25 MOBILE FIELD ACCEPTANCE CHECK PASS ===");

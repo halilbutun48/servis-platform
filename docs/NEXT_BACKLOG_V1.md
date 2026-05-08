@@ -26,6 +26,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
   - `FIELD-LAUNCH-PACK-01`
   - `PERF-REGRESSION-01`
 - `VERIFY-CHAIN-01` ürün uzantısı zinciri `check:product-extensions` ile `verify:final` içine bağlanır.
+- `M95-EXPORT-01` export zip / runtime check uyumu, shareable export paketinde runtime JSON yokluğunu INFO/SKIP kabul edecek şekilde korunur.
 - Bu sıra docs/state görünürlüğü içindir; yeni ürün davranışı açmaz.
 
 ## 0) 2026-04-19 Gece Kontrol Notu
