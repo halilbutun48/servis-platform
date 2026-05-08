@@ -67,6 +67,7 @@ function main() {
   must(pkg, '"check:qlt04b"', 'package.json keeps check:qlt04b');
   must(pkg, '"check:cop01e"', 'package.json keeps check:cop01e');
   must(pkg, '"check:uxkvkk01"', 'package.json keeps check:uxkvkk01');
+  must(pkg, '"check:cop02b"', 'package.json keeps check:cop02b');
 
   ordered(runner, [
     'check:op04',
@@ -77,6 +78,7 @@ function main() {
     'check:web01b',
     'check:cop01e',
     'check:cop02a',
+    'check:cop02b',
     'check:uxkvkk01',
     'check:docsstate01',
   ], 'product extensions runner order');

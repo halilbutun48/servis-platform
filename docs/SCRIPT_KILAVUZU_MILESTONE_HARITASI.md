@@ -581,6 +581,7 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:paysafe01`
   - `check:cop01e`
   - `check:cop02a`
+  - `check:cop02b`
   - `check:uxkvkk01`
   - `check:docsstate01`
 

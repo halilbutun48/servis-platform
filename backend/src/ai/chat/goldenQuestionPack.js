@@ -797,3 +797,26 @@ export function buildGoldenQuestionPack() {
 
   ];
 }
+
+export const COP02B_CONTEXTUAL_FOLLOW_UPS = [
+  'peki şimdi ne yapayım',
+  'neden',
+  'bu kayıt niye ilerlemiyor',
+  'hangi ekrana gideyim',
+  'bunu kim yapabilir',
+  'burada eksik ne',
+  'bu uyarı önemli mi',
+  'önce neyi kontrol edeyim',
+  'bu işlem bende görünmüyor neden',
+  'aynı kayıt için devam et',
+  'neye basayım',
+  'kim onaylayacak',
+  'bu yüzden mi başlamıyor',
+  'tamam bunu nasıl düzeltirim',
+  'bende çıkmıyor',
+  'burda takıldı',
+  'sorun kimde',
+  'bu hakediş neden hazır değil',
+  'bu araç niye yok',
+  'bu sözleşmeden vardiya çıkmış mı',
+];

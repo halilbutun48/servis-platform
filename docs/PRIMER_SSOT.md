@@ -66,6 +66,7 @@ Bu primer yaşayan hattın resmi özetidir.
 - `OP-04` readonly proof commercial/quality bridge green kapandı.
 - `QLT-04B` compact signal list green kapandı.
 - `COP-01A-E` operasyon rehberi serisi ve `COP-02A` program-wide guide fallback green kapandı; `COP-01E` kabul halkası da bu serinin parçasıydı.
+- `COP-02B` bağlamlı öneri / takip sorusu zinciri green kapandı.
 - `UX-KVKK-01` compact boundary hint green kapandı.
 - Bu kapanışlar DOCS-STATE-01 ile resmi hafıza katmanına işlenmiş son ürün durumunu temsil eder.
 

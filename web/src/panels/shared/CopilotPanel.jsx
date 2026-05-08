@@ -343,7 +343,10 @@ export default function CopilotPanel() {
         format: "json",
       }, { token });
       setChatConversationState(payload?.conversationState || null);
-      setChatSuggestedChips(Array.isArray(payload?.suggestedChips) ? payload.suggestedChips : []);
+      const contextualSuggestedChips = Array.isArray(payload?.contextualSuggestedChips) && payload.contextualSuggestedChips.length
+        ? payload.contextualSuggestedChips
+        : Array.isArray(payload?.suggestedChips) ? payload.suggestedChips : [];
+      setChatSuggestedChips(contextualSuggestedChips);
       setChatMessages((prev) => [...prev, {
         role: "assistant",
         text: payload?.reply || payload?.summary || "Yardım metni oluşmadı.",
@@ -353,6 +356,7 @@ export default function CopilotPanel() {
         quickActions: payload?.quickActions || [],
         linkedGuides: payload?.linkedGuides || [],
         suggestedChips: payload?.suggestedChips || [],
+        contextualSuggestedChips,
         questionType: payload?.questionType || "",
         questionLabel: payload?.questionLabel || "",
         intentConfidence: Number(payload?.intentConfidence || 0),
@@ -363,6 +367,14 @@ export default function CopilotPanel() {
         continuity: payload?.continuity || null,
         routePlan: payload?.routePlan || null,
         actionPlanLabel: payload?.actionPlanLabel || '',
+        contextPriority: payload?.contextPriority || null,
+        evidenceConfidence: payload?.evidenceConfidence || "",
+        activeTopic: payload?.activeTopic || "",
+        activeTopicLabel: payload?.activeTopicLabel || "",
+        roleBoundary: payload?.roleBoundary || "",
+        sameRecordLikely: Boolean(payload?.sameRecordLikely),
+        needsSelection: Boolean(payload?.needsSelection),
+        bestNextAction: payload?.bestNextAction || "",
         activeEntityLabel: payload?.activeEntityLabel || payload?.entityLabel || "",
         screenLabel: payload?.screenLabel || selectedChatScreen?.label || "",
         generatedAt: payload?.generatedAt || "",
@@ -609,7 +621,7 @@ export default function CopilotPanel() {
               ) : null}
               {chatSuggestedChips.length ? (
                 <details>
-                  <summary style={{ cursor: "pointer" }}>Örnek sorular</summary>
+                  <summary style={{ cursor: "pointer" }}>Takip önerileri</summary>
                   <div style={{ marginTop: 8 }}>
                     <SuggestedChips items={chatSuggestedChips} busy={chatBusy || autoChatBusy} onPick={runChat} />
                   </div>

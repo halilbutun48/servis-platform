@@ -14,7 +14,6 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
   - `VERIFY-CHAIN-01`
   - `M95-EXPORT-01`
 - P1:
-  - `COP-02B`
   - `UX-TEXT-02`
   - `E2E-SMOKE-01`
   - `UX-QA-01`
@@ -27,6 +26,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
   - `PERF-REGRESSION-01`
 - `VERIFY-CHAIN-01` ürün uzantısı zinciri `check:product-extensions` ile `verify:final` içine bağlanır.
 - `M95-EXPORT-01` export zip / runtime check uyumu, shareable export paketinde runtime JSON yokluğunu INFO/SKIP kabul edecek şekilde korunur.
+- `COP-02B` green/closed; bağlamlı öneri ve takip sorusu zinciri canonical product extensions altında görünür.
 - Bu sıra docs/state görünürlüğü içindir; yeni ürün davranışı açmaz.
 
 ## 0) 2026-04-19 Gece Kontrol Notu
