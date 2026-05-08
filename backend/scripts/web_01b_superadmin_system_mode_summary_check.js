@@ -41,11 +41,11 @@ function main() {
   include(systemBand, "function SystemModeSummaryBand", "SystemModeSummaryBand component missing");
   include(systemBand, "system-mode-summary-band", "SystemModeSummaryBand marker missing");
   include(systemBand, "Sistem durumu", "SystemModeSummaryBand title missing");
-  include(systemBand, "Kanıt ve kalite hazırlıkları aktif; ödeme ve settlement işlemleri kapalıdır.", "SystemModeSummaryBand description missing");
+  include(systemBand, "Kanıt ve kalite hazırlıkları aktif; ödeme ve hakediş işlemleri kapalıdır.", "SystemModeSummaryBand description missing");
   include(systemBand, "Servis kanıtı aktif", "SystemModeSummaryBand service proof chip missing");
   include(systemBand, "Kalite taslak modda", "SystemModeSummaryBand quality chip missing");
   include(systemBand, "Ödeme kapalı", "SystemModeSummaryBand payment chip missing");
-  include(systemBand, "Settlement kapalı", "SystemModeSummaryBand settlement chip missing");
+  include(systemBand, "Hakediş kapalı", "SystemModeSummaryBand hakediş chip missing");
   include(systemBand, "Komisyon kapalı", "SystemModeSummaryBand commission chip missing");
   include(systemBand, "Saha testi bekliyor", "SystemModeSummaryBand field test chip missing");
   include(systemBand, "Ödeme başlatılmaz", "SystemModeSummaryBand non-final note missing");
@@ -72,6 +72,7 @@ function main() {
   notInclude(superAdmin, "new route", "SuperAdminPanel must not add new route wording");
   notInclude(systemBand, "execute", "SystemModeSummaryBand must not expose execute wording");
   notInclude(systemBand, "settlement execute", "SystemModeSummaryBand must not expose settlement execute wording");
+  notInclude(systemBand, "settlement", "SystemModeSummaryBand must not expose settlement wording");
   notInclude(systemBand, "ödemeyi başlat", "SystemModeSummaryBand must not expose start payment wording");
   notInclude(systemBand, "çalıştır", "SystemModeSummaryBand must not expose run wording");
 

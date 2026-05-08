@@ -8,7 +8,7 @@ export default function SystemModeSummaryBand({
         <div>
           <div className="panelSectionTitle">Sistem durumu</div>
           <div className="system-mode-summary-note" style={{ marginTop: 4 }}>
-            Kanıt ve kalite hazırlıkları aktif; ödeme ve settlement işlemleri kapalıdır.
+            Kanıt ve kalite hazırlıkları aktif; ödeme ve hakediş işlemleri kapalıdır.
           </div>
         </div>
       </div>
@@ -17,7 +17,7 @@ export default function SystemModeSummaryBand({
         <span className="system-mode-summary-chip">Servis kanıtı aktif</span>
         <span className="system-mode-summary-chip">Kalite taslak modda</span>
         <span className="system-mode-summary-chip">Ödeme kapalı</span>
-        <span className="system-mode-summary-chip">Settlement kapalı</span>
+        <span className="system-mode-summary-chip">Hakediş kapalı</span>
         <span className="system-mode-summary-chip">Komisyon kapalı</span>
         <span className="system-mode-summary-chip">Saha testi bekliyor</span>
       </div>

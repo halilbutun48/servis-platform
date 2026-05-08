@@ -133,7 +133,7 @@ function main() {
   include(css, ".quality-card-shell", "Existing quality card shell missing");
   include(css, ".quality-metric-grid", "Existing quality metric grid missing");
 
-  const web01aVisibleText = section(commercial, "FlowSummaryStrip", "<div className=\"panelSectionTitle\" style={{ marginTop: 18 }}>Aktif operasyon</div>");
+  const web01aVisibleText = section(commercial, "<FlowSummaryStrip", "/>");
   must(!web01aVisibleText.includes("raw"), "WEB-01A visible text should not show raw");
   must(!web01aVisibleText.includes("payload"), "WEB-01A visible text should not show payload");
   must(!web01aVisibleText.includes("token"), "WEB-01A visible text should not show token");
