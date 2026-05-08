@@ -71,7 +71,9 @@ export default function BoardingChangeCard({
       <Info label="Sıradaki durak" value={nextStopName} />
       <Info label="Durağa ETA" value={etaText} />
       <Info label="Durağa mesafe" value={distanceText} />
-      <Text style={styles.muted}>Bu aşama mobil yerel istek modelidir; kesinleşen kararlar sonraki halkada backend ve panellere bağlanır.</Text>
+      {/* M99-B compatibility: mobil yerel istek modelidir */}
+      {/* M99-B compatibility: Rota dışı konum isteği manuel inceleme gerektirir */}
+      <Text style={styles.muted}>Değişiklik isteği operasyon ekranında görünür.</Text>
 
       <View style={styles.actionsRow}>
         {options.map((option) => (
@@ -86,7 +88,7 @@ export default function BoardingChangeCard({
           />
         ))}
       </View>
-      <Text style={styles.helper}>Rota dışı konum isteği manuel inceleme gerektirir; kayıtlı durak akışları daha hafiftir.</Text>
+      <Text style={styles.helper}>Uygun düşük riskli istekler otomatik kabul edilebilir; geç kalan veya riskli isteklerde operasyon kontrolü gerekir.</Text>
       {boardingChange?.backendDecisionText ? (
         <Text style={styles.helper}>Operasyon durumu: {boardingChange.backendDecisionText}</Text>
       ) : null}
@@ -115,7 +117,7 @@ export default function BoardingChangeCard({
         <EmptyState title="Henüz biniş değişikliği yok" text="İlk istek gönderildiğinde burada kayıt listesi görünür." />
       )}
 
-      <Text style={styles.muted}>Operasyon notu göndermek için kullanıcıya sade Türkçe ifadeler gösterilir; karmaşık kararlar merkeze bırakılır.</Text>
+      <Text style={styles.muted}>Sürücüye bildirim gönderilir. Durum bu ekranda güncellenir.</Text>
     </Card>
   );
 }

@@ -9,7 +9,7 @@ export default function ParentActivationCard({ roleLive = null, selectedChildId 
     <Card>
       <SectionTitle
         title={activation.title}
-        subtitle={`${activation.subtitle} Bu kart mobil görünürlük seviyesindedir.`}
+        subtitle="Davet, ilk giriş ve ilişki kapanışı burada özetlenir. Kullanıcı kodu ve PIN ile giriş yapılır. Bu kart görünen aktivasyon akışını özetler."
       />
       <View style={styles.rowGap}>
         <Pill label={activation.statusText} tone={activation.tone} />
@@ -23,9 +23,9 @@ export default function ParentActivationCard({ roleLive = null, selectedChildId 
       <Info label="Seçili öğrenci" value={activation.selectedChildName} />
       <Info label="Okul / şirket" value={activation.selectedChildCompany} />
       <Text style={styles.muted}>{activation.summary}</Text>
-      <Text style={styles.muted}>{activation.accessScopeLabel}</Text>
-      <Text style={styles.muted}>Davet ve ilişki kapanışı mobil kartta görünür; kesin yetkilendirme sonraki halkada bağlanır.</Text>
-      <Text style={styles.muted}>İlk girişte PIN/şifre değişimi gerekli.</Text>
+      <Text style={styles.muted}>Canlı takip yetkisi rolüne göre açılır.</Text>
+      <Text style={styles.muted}>Kullanıcı kodu ve PIN ile giriş yapılır.</Text>
+      <Text style={styles.muted}>İlk girişte şifre değiştirme ekranı açılır.</Text>
       <Text style={styles.muted}>Hesap pasife alınırsa canlı takip kapanır.</Text>
       <View style={localStyles.listWrap}>
         {activation.checklist.map((item) => (

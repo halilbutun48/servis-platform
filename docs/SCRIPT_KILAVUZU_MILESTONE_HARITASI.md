@@ -464,6 +464,10 @@ Bu bant güncel doğrulanmış üst hattır.
 - Komut: `node backend\scripts\m95_export_01_runtime_check_compat_check.js`
 - Ana konu: shareable export paketinde runtime JSON yokluğunu INFO/SKIP kabul ederek saha check uyumunu korumak.
 
+### MOBILE-TEXT-01 — mobil aktivasyon copy cleanup [CHECK]
+- Komut: `npm --prefix mobile run check:mobiletext01`
+- Ana konu: personel, veli ve biniş değişikliği kartlarındaki eski hazırlık dilini sade Türkçeye çevirmek.
+
 ### M96-A — driver availability local state [CHECK]
 - Komut: `node mobile\scripts\m96_a_driver_availability_check.js`
 - Ana konu: sürücü mola / müsaitlik / yeni iş durumunu mobil yerel state olarak görünür kılmak.

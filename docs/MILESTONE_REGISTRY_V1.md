@@ -65,10 +65,11 @@
 - `COP-02A - green/closed`
 - `OP-04 - green/closed`
 - `UX-KVKK-01 - green/closed`
+- `MOBILE-TEXT-01 - green/closed`
 - `DOCS-STATE-01 - active/next`
 - `VERIFY-CHAIN-01 - active/next`
 - `M95-EXPORT-01 - active/next`
-- upcoming: `MOBILE-TEXT-01`, `COP-02B`, `WEB-01C`, `M44-T1/T5`, `FIELD-LAUNCH-PACK-01`
+- upcoming: `COP-02B`, `WEB-01C`, `M44-T1/T5`, `FIELD-LAUNCH-PACK-01`
 - `M91 - shift/agreement route preview`
   - amac: vardiya kaynakli sozlesme akisinda rota onizleme ve kaynak vardiya baglantisini korumak
   - komut: `tools\pack_m91_shift_agreement_route_preview.ps1 -RepoRoot D:\servis-platform`

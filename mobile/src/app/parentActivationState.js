@@ -26,7 +26,7 @@ export function buildParentActivationState({
 
   return {
     title: 'Veli aktivasyon modeli',
-    subtitle: 'Davet, ilk giriş ve ilişki kapanışı burada özetlenir.',
+    subtitle: 'Davet, ilk giriş ve ilişki kapanışı burada özetlenir. Kullanıcı kodu ve PIN ile giriş yapılır.',
     statusText: active ? 'Aktif' : 'Aktivasyon bekliyor',
     tone: active ? 'ok' : 'warn',
     modelLabel: 'Veli daveti',
@@ -34,7 +34,7 @@ export function buildParentActivationState({
     firstLoginLabel: 'İlk girişte PIN/şifre değişimi gerekli.',
     deviceLabel: 'Veli oturumu tek cihazda korunur.',
     closureLabel: 'İlişki kaldırılırsa takip kapanır.',
-    accessScopeLabel: 'Takip yalnız bağlı öğrenci için görünür.',
+    accessScopeLabel: 'Canlı takip yetkisi rolüne göre açılır.',
     childCount,
     selectedChildName: cleanText(selectedChild?.fullName || selectedChild?.name || '-', '-'),
     selectedChildCompany: cleanText(selectedChild?.company?.name || selectedChild?.companyName || '-', '-'),
@@ -42,8 +42,9 @@ export function buildParentActivationState({
       ? `${childCount} bağlı öğrenci için veli erişimi açık.`
       : 'Bağlı öğrenci görünmeden veli erişimi açılmaz.',
     checklist: [
-      'Veli daveti ilk aktivasyon içindir.',
-      'İlk girişte PIN/şifre doğrulanır.',
+      'Kullanıcı kodu ve PIN ile giriş yapılır.',
+      'İlk girişte şifre değiştirme ekranı açılır.',
+      'Canlı takip yetkisi rolüne göre açılır.',
       'Bağlı öğrenci seçilince takip açılır.',
       'İlişki kaldırılırsa takip kapanır.',
       'Davet bağlantısı iptal edilebilir.',

@@ -9,11 +9,11 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
 
 ## 0.1) 2026-05-08 Product Backlog Update
 - DOCS-STATE-01 sonrası resmi sonraki ürün sırası `VERIFY-CHAIN-01` olarak görünür kalır.
+- `MOBILE-TEXT-01` green/closed; personel, veli ve biniş değişikliği kartlarındaki eski hazırlık dili sade Türkçeye çekildi.
 - P0:
   - `VERIFY-CHAIN-01`
   - `M95-EXPORT-01`
 - P1:
-  - `MOBILE-TEXT-01`
   - `COP-02B`
   - `UX-TEXT-02`
   - `E2E-SMOKE-01`

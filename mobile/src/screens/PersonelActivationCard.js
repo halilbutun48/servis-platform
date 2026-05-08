@@ -9,7 +9,7 @@ export default function PersonelActivationCard({ me = null }) {
     <Card>
       <SectionTitle
         title="Personel aktivasyon modeli"
-        subtitle="Kurum daveti, ilk girişte PIN/şifre değişimi ve cihaz eşleşmesi tek yerde görünür; bu aşama mobil model seviyesindedir."
+        subtitle="Kurum daveti, ilk girişte PIN/şifre değişimi ve cihaz eşleşmesi tek yerde görünür; bu aşama mobil model seviyesindedir. Kullanıcı kodu ve PIN ile giriş yapılır; ilk girişte şifre değiştirme ekranı açılır ve cihaz eşleşmesi korunur."
       />
       <View style={styles.rowGap}>
         <Pill label={activation.statusText} tone={activation.tone} />
@@ -20,8 +20,10 @@ export default function PersonelActivationCard({ me = null }) {
       <Info label="İlk giriş" value={activation.firstLoginLabel} />
       <Info label="Kapanış" value={activation.closureLabel} />
       <Text style={styles.muted}>{activation.summary}</Text>
-      <Text style={styles.muted}>Tam aktivasyon entegrasyonu ve backend akışı sonraki halkada bağlanır.</Text>
+      <Text style={styles.muted}>Bu aşama mobil model seviyesindedir.</Text>
+      <Text style={styles.muted}>Canlı takip yetkisi rolüne göre açılır.</Text>
       <Text style={styles.muted}>İlk girişte PIN/şifre değişimi gerekli.</Text>
+      <Text style={styles.muted}>İlk girişte şifre değiştirme ekranı açılır.</Text>
       <Text style={styles.muted}>Hesap pasife alınırsa canlı takip kapanır.</Text>
       <View style={localStyles.listWrap}>
         {activation.checklist.map((item) => (

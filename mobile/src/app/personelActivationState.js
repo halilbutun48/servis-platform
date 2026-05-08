@@ -10,10 +10,10 @@ export function buildPersonelActivationState(me = null) {
     firstLoginLabel: activationPending ? "İlk girişte PIN/şifre değişimi gerekli" : "İlk giriş tamamlandı",
     deviceLabel: "Cihaz eşleşmesi korunur",
     closureLabel: "Hesap pasife alınırsa canlı takip kapanır",
-    summary: "Personel hesabı kurum davetiyle açılır; ilk girişte erişim kişiselleştirilir.",
+    summary: "Personel hesabı kurum davetiyle açılır; kullanıcı kodu ve PIN ile giriş yapılır.",
     checklist: [
-      "Kurum hesabı açılır.",
-      "İlk girişte PIN/şifre değişimi yapılır.",
+      "Kullanıcı kodu ve PIN ile giriş yapılır.",
+      "İlk girişte şifre değiştirme ekranı açılır.",
       "Cihaz eşleşmesi korunur.",
       "Hesap pasife alınırsa erişim kapanır.",
     ],
