@@ -175,14 +175,16 @@ export default function CommercialCorePanel() {
   const settlementQueueEndpointStatus = String(settlementQueueMeta?.endpointStatus || "ok");
   const reconciliationEndpointStatus = String(reconciliationStatus?.endpointStatus || "ok");
   const reconciliationQueueEndpointStatus = String(reconciliationQueueMeta?.endpointStatus || "ok");
-  const paymentSourcesEndpointStatus = String(paymentSourcesMeta?.endpointStatus || "ok");
-  const settingsWritable = settingsEndpointStatus === "ok";
-  const pilotWritable = pilotEndpointStatus === "ok" && pilotCandidatesEndpointStatus === "ok";
-  const requiredWritable = requiredEndpointStatus === "ok" && requiredCandidatesEndpointStatus === "ok";
-  const accountWritable = accountEndpointStatus === "ok" && accountCandidatesEndpointStatus === "ok";
-  const settlementWritable = settlementEndpointStatus === "ok" && settlementQueueEndpointStatus === "ok";
-  const reconciliationWritable = reconciliationEndpointStatus === "ok" && reconciliationQueueEndpointStatus === "ok";
-  const paymentSourcesWritable = paymentSourcesEndpointStatus === "ok";
+    const paymentSourcesEndpointStatus = String(paymentSourcesMeta?.endpointStatus || "ok");
+    const settingsWritable = settingsEndpointStatus === "ok";
+    const pilotWritable = pilotEndpointStatus === "ok" && pilotCandidatesEndpointStatus === "ok";
+    const requiredWritable = requiredEndpointStatus === "ok" && requiredCandidatesEndpointStatus === "ok";
+    const accountWritable = accountEndpointStatus === "ok" && accountCandidatesEndpointStatus === "ok";
+    const settlementWritable = settlementEndpointStatus === "ok" && settlementQueueEndpointStatus === "ok";
+    const reconciliationWritable = reconciliationEndpointStatus === "ok" && reconciliationQueueEndpointStatus === "ok";
+    const paymentSourcesWritable = paymentSourcesEndpointStatus === "ok";
+    const paymentBackboneWriteEnabled = Boolean(paymentBackbone?.activationGate?.enabled);
+    const paymentBackboneSafeMode = !paymentBackboneWriteEnabled;
 
   const filteredRooms = useMemo(() => {
     const q = String(roomQuery || "").trim().toLowerCase();
@@ -291,14 +293,22 @@ export default function CommercialCorePanel() {
         />
       </div>
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <PaymentReadonlySafetyBadge />
-      </div>
+        <div style={{ marginTop: 14, maxWidth: 760 }}>
+          <PaymentReadonlySafetyBadge />
+        </div>
 
-      <div style={{ marginTop: 14, maxWidth: 760 }}>
-        <PaymentReadinessReadonlyCard
-          paymentBackbone={paymentBackbone}
-          settings={settings}
+        {paymentBackboneSafeMode ? (
+          <div style={{ marginTop: 12, maxWidth: 980 }}>
+            <div className="panelMeta">
+              Aktif ödeme kapalı · Hakediş sadece önizleme modunda · Bu ekran ödeme başlatmaz · Canlı ödeme daha sonra açılacak
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ marginTop: 14, maxWidth: 760 }}>
+          <PaymentReadinessReadonlyCard
+            paymentBackbone={paymentBackbone}
+            settings={settings}
           activeRule={activeRule}
           settlementStatus={settlementStatus}
           cards={cards}
@@ -315,13 +325,13 @@ export default function CommercialCorePanel() {
         <OperationProofReadonlyBadge />
       </div>
 
-      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
-      <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <Card title="Aktif durum">
-          <div>{manifest?.title || "Henüz ticari özet yok"}</div>
-          <div className="panelMeta" style={{ marginTop: 6 }}>
-            {manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}
-          </div>
+        <div className="panelSectionTitle" style={{ marginTop: 18 }}>Aktif operasyon</div>
+        <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Card title="Aktif durum">
+            <div>{manifest?.title || "Henüz ticari özet yok"}</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>
+              {manifest?.activeMilestone || "Aktif durum bilgisi gelmedi"}
+            </div>
         </Card>
         <Card title="Aktif adımlar">
           <div>{activeSteps.length} adım</div>
@@ -507,6 +517,8 @@ export default function CommercialCorePanel() {
         </Card>
       </div>
 
+        {paymentBackboneWriteEnabled ? (
+          <>
       <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
         <div className="panelSectionTitle">Super Admin ticari ayarlar</div>
         <div className="panelMeta">
@@ -963,11 +975,11 @@ export default function CommercialCorePanel() {
             </div>
           </Card>
         </div>
-        <Card title="Settlement mutabakat kuyruğu">
-          {Array.isArray(reconciliationQueue) && reconciliationQueue.length ? (
-            <div style={{ display: "grid", gap: 8 }}>
-              {reconciliationQueue.map((item) => {
-                const state = String(item?.reconciliationStatus || "BEKLIYOR").toUpperCase();
+          <Card title="Settlement mutabakat kuyruğu">
+            {Array.isArray(reconciliationQueue) && reconciliationQueue.length ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {reconciliationQueue.map((item) => {
+                  const state = String(item?.reconciliationStatus || "BEKLIYOR").toUpperCase();
                 const busyMatched = busyKey === `recon:ESLESTI:${item.entryId}`;
                 const busyReview = busyKey === `recon:INCELEME_GEREKLI:${item.entryId}`;
                 const busyMismatch = busyKey === `recon:UYUSMAZLIK:${item.entryId}`;
@@ -992,13 +1004,21 @@ export default function CommercialCorePanel() {
                 );
               })}
             </div>
-          ) : (
-            <div className="panelMeta">Settlement mutabakat kuyruğunda görünür satır yok.</div>
-          )}
-        </Card>
-      </div>
+            ) : (
+              <div className="panelMeta">Settlement mutabakat kuyruğunda görünür satır yok.</div>
+            )}
+          </Card>
+        </div>
+          </>
+        ) : (
+          <div style={{ marginTop: 18, padding: 14, borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+            <div className="panelSectionTitle">Canlı ödeme kapalı</div>
+            <div className="panelMeta" style={{ marginTop: 6 }}>Aktif ödeme kapalı. Bu alanlar saha öncesi gizli tutulur.</div>
+            <div className="panelMeta" style={{ marginTop: 4 }}>Hakediş sadece önizleme modunda. Canlı ödeme daha sonra açılacak.</div>
+          </div>
+        )}
 
-      <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
+        <div className="panelSectionTitle" style={{ marginTop: 18 }}>Gelecek faz</div>
       <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Card title="Planlı ticari adımlar">
           <div>{plannedSteps.length ? plannedSteps.map((item) => item.label).join(" • ") : "Planlı adım yok"}</div>

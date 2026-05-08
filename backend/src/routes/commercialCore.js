@@ -32,6 +32,7 @@ import {
   executeSettlementEntries,
   cancelSettlementEntries,
   readySettlementEntries,
+  assertPaymentBackboneWriteEnabled,
 } from "../services/paymentBackbone.js";
 import {
   buildSettlementReconciliationStatus,
@@ -387,6 +388,18 @@ async function listSettlementLedgerExportRows(query = {}) {
 export function commercialCoreRouter() {
   const r = express.Router();
   const superAdminWrite = [authRequired(), requireStepUpWrite("SUPER_ADMIN"), requireRole("SUPER_ADMIN")];
+  const paymentBackboneWriteGuard = (req, res, next) => {
+    try {
+      assertPaymentBackboneWriteEnabled();
+      return next();
+    } catch (error) {
+      return res.status(error?.status || 403).json({
+        error: error?.code || "PAYMENT_BACKBONE_WRITE_DISABLED",
+        message: error?.message || "Aktif ödeme kapalı. Bu ekran ödeme başlatmaz.",
+      });
+    }
+  };
+  const paymentBackboneWrite = [...superAdminWrite, paymentBackboneWriteGuard];
   async function auditCommercialCoreWrite(req, action, entity, entityId, meta = {}) {
     return audit(req, { action, entity, entityId: entityId ?? null, meta });
   }
@@ -411,7 +424,7 @@ export function commercialCoreRouter() {
     return res.json(await buildPaymentBackboneSettings());
   });
 
-  r.post("/payment-backbone/settings/global", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/settings/global", ...paymentBackboneWrite, async (req, res) => {
     const parsed = globalRuleSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_GLOBAL_PAYMENT_RULE", issues: parsed.error.issues });
@@ -426,7 +439,7 @@ export function commercialCoreRouter() {
     return res.json({ ok: true, item, message: "Global ticari ayar kaydedildi" });
   });
 
-  r.post("/payment-backbone/settings/room", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/settings/room", ...paymentBackboneWrite, async (req, res) => {
     const parsed = roomRuleSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_ROOM_PAYMENT_RULE", issues: parsed.error.issues });
@@ -442,7 +455,7 @@ export function commercialCoreRouter() {
     return res.json({ ok: true, item, message: "Oda bazlı ticari ayar kaydedildi" });
   });
 
-  r.delete("/payment-backbone/settings/room/:roomId", ...superAdminWrite, async (req, res) => {
+  r.delete("/payment-backbone/settings/room/:roomId", ...paymentBackboneWrite, async (req, res) => {
     const roomId = Number(req.params.roomId || 0);
     if (roomId <= 0) return res.status(400).json({ error: "INVALID_ROOM_ID" });
     const result = await disableRoomCommissionRule(roomId);
@@ -566,7 +579,7 @@ export function commercialCoreRouter() {
     return res.json({ items: await listOptionalPaymentPilotCandidates({ take }) });
   });
 
-  r.post("/payment-backbone/pilot/activate", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/pilot/activate", ...paymentBackboneWrite, async (req, res) => {
     const parsed = sourceIdsSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_OPTIONAL_PILOT_SOURCE_IDS", issues: parsed.error.issues });
@@ -579,7 +592,7 @@ export function commercialCoreRouter() {
     return res.json({ ok: true, ...result, message: "Opsiyonel ödeme pilotu kaynakları READY durumuna alındı" });
   });
 
-  r.post("/payment-backbone/pilot/deactivate", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/pilot/deactivate", ...paymentBackboneWrite, async (req, res) => {
     const parsed = sourceIdsSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_OPTIONAL_PILOT_SOURCE_IDS", issues: parsed.error.issues });
@@ -601,7 +614,7 @@ export function commercialCoreRouter() {
     return res.json({ items: await listRequiredPaymentRolloutCandidates({ take }) });
   });
 
-  r.post("/payment-backbone/required/activate", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/required/activate", ...paymentBackboneWrite, async (req, res) => {
     const parsed = sourceIdsSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_REQUIRED_ROLLOUT_SOURCE_IDS", issues: parsed.error.issues });
@@ -614,7 +627,7 @@ export function commercialCoreRouter() {
     return res.json({ ok: true, ...result, message: "Zorunlu ödeme rollout kaynakları ACTIVE durumuna alındı" });
   });
 
-  r.post("/payment-backbone/required/deactivate", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/required/deactivate", ...paymentBackboneWrite, async (req, res) => {
     const parsed = sourceIdsSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_REQUIRED_ROLLOUT_SOURCE_IDS", issues: parsed.error.issues });
@@ -636,7 +649,7 @@ export function commercialCoreRouter() {
     return res.json({ items: await listPaymentAccountReadinessCandidates({ take }) });
   });
 
-  r.post("/payment-backbone/accounts/upsert", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/accounts/upsert", ...paymentBackboneWrite, async (req, res) => {
     const parsed = paymentAccountSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_PAYMENT_ACCOUNT_PAYLOAD", issues: parsed.error.issues });
@@ -703,7 +716,7 @@ export function commercialCoreRouter() {
     return res.json({ items: await listSettlementOperationQueue({ take }) });
   });
 
-  r.post("/payment-backbone/settlement/entries/plan", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/settlement/entries/plan", ...paymentBackboneWrite, async (req, res) => {
     const parsed = settlementEntryActionSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_PLAN_PAYLOAD", issues: parsed.error.issues });
@@ -718,7 +731,7 @@ export function commercialCoreRouter() {
     return res.json({ ok: true, ...result, message: "Settlement entry satırları PLANNED durumuna alındı" });
   });
 
-  r.post("/payment-backbone/settlement/entries/execute", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/settlement/entries/execute", ...paymentBackboneWrite, async (req, res) => {
     const parsed = settlementEntryActionSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_EXECUTE_PAYLOAD", issues: parsed.error.issues });
@@ -733,7 +746,7 @@ export function commercialCoreRouter() {
     return res.json({ ok: true, ...result, message: "Settlement entry satırları EXECUTED durumuna alındı" });
   });
 
-  r.post("/payment-backbone/settlement/entries/cancel", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/settlement/entries/cancel", ...paymentBackboneWrite, async (req, res) => {
     const parsed = settlementEntryActionSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_CANCEL_PAYLOAD", issues: parsed.error.issues });
@@ -747,7 +760,7 @@ export function commercialCoreRouter() {
     return res.json({ ok: true, ...result, message: "Settlement entry satırları CANCELLED durumuna alındı" });
   });
 
-  r.post("/payment-backbone/settlement/entries/ready", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/settlement/entries/ready", ...paymentBackboneWrite, async (req, res) => {
     const parsed = settlementEntryActionSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_READY_PAYLOAD", issues: parsed.error.issues });
@@ -771,7 +784,7 @@ export function commercialCoreRouter() {
     return res.json({ items: await listSettlementReconciliationQueue({ take }) });
   });
 
-  r.post("/payment-backbone/reconciliation/records/upsert", ...superAdminWrite, async (req, res) => {
+  r.post("/payment-backbone/reconciliation/records/upsert", ...paymentBackboneWrite, async (req, res) => {
     const parsed = reconciliationRecordSchema.safeParse(req.body || {});
     if (!parsed.success) {
       return res.status(400).json({ error: "INVALID_SETTLEMENT_RECONCILIATION_PAYLOAD", issues: parsed.error.issues });

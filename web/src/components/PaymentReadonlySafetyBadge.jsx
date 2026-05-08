@@ -17,6 +17,9 @@ export default function PaymentReadonlySafetyBadge({ className = "", style }) {
         <div style={{ minWidth: 0 }}>
           <div className="panelSectionTitle">Hakediş güvenli modda</div>
           <div className="panelMeta" style={{ marginTop: 4 }}>
+            Aktif ödeme kapalı
+          </div>
+          <div className="panelMeta" style={{ marginTop: 4 }}>
             Sadece hazırlık, önizleme ve CSV taslağı
           </div>
         </div>
@@ -28,6 +31,7 @@ export default function PaymentReadonlySafetyBadge({ className = "", style }) {
         <span className="pill" data-status="INFO">Önizleme</span>
         <span className="pill" data-status="INFO">CSV taslağı</span>
         <span className="pill" data-status="WARN">Son kontrol: aktif ödeme kapalı</span>
+        <span className="pill" data-status="WARN">Canlı ödeme daha sonra açılacak</span>
       </div>
     </div>
   );

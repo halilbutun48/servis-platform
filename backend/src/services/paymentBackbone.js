@@ -1,7 +1,6 @@
 import prisma from "../prisma.js";
 import { ENV } from "../env.js";
 import { resolveAgreementSourceShiftId } from "./agreementSourceShift.js";
-
 import {
   buildPaymentAccountReadinessStatus,
   buildSettlementOperationsStatus,
@@ -13,7 +12,7 @@ import {
   readySettlementEntries,
   upsertPaymentAccountMetadata,
 } from "./paymentBackboneAccounts.js";
-
+export { isPaymentBackboneWriteEnabled, assertPaymentBackboneWriteEnabled } from "./paymentBackboneWriteGate.js";
 export const PAYMENT_MODES = ["OFF", "OPTIONAL", "REQUIRED"];
 export const COMMERCIAL_SOURCE_TYPES = ["AGREEMENT", "SHIFT_SERIES"];
 
