@@ -64,6 +64,8 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\qlt_03_quality_review_decision_check.js`
 - `node backend\scripts\qlt_04_quality_review_history_check.js`
 - `node backend\scripts\docs_state_01_recent_product_closure_check.js`
+- `node backend\scripts\run_product_extensions_check_chain.js`
+- `node backend\scripts\verify_chain_01_product_extensions_check.js`
 
 ### Orchestration mantığı
 - `npm run verify:repo` guncel tek resmi repo kontrol girisidir.
@@ -573,6 +575,13 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:uxkvkk01`
   - `check:docsstate01`
 
+### VERIFY-CHAIN-01 — product extensions canonical check chain [CHECK]
+- Komut: `node backend\scripts\verify_chain_01_product_extensions_check.js`
+- Ana konu: OP/QLT/PAY/COP/WEB son ürün kapanış check’lerini canonical doğrulama zincirinde birleştirmek; ürün davranışı değiştirmez.
+- Script alias görünürlüğü:
+  - `check:product-extensions`
+  - `check:verifychain01`
+
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
 - Ana konu: servis kanıtı durumunu ticari ve kalite yüzeylerine readonly köprü olarak doğrulamak.
@@ -615,6 +624,7 @@ Bu bant güncel doğrulanmış üst hattır.
 - `QLT-03`: kontrollü kalite inceleme kararı check'i
 - `QLT-04`: kalite karar geçmişi / denetim izi check'i
 - `DOCS-STATE-01`: son kapanan ürün hatları görünürlüğü check'i
+- `VERIFY-CHAIN-01`: son ürün check zinciri / canonical verification extension check'i
 - `M99-A`: mobile regression pack check'i
 - `M99-B`: real scenario tests check'i
 - `M99-C`: field launch readiness check'i

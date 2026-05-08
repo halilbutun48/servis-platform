@@ -69,7 +69,7 @@ must(rootPkg, '"check:qlt04b": "node backend/scripts/qlt_04b_compact_signal_list
 must(rootPkg, '"check:qlt04a": "node backend/scripts/qlt_04a_quality_layout_polish_check.js"', "root package keeps check:qlt04a");
 must(rootPkg, '"check:web-mobile": "npm --prefix web run check:web-mobile"', "root package keeps check:web-mobile");
 must(rootPkg, '"lint:web": "node backend/scripts/run_web_lint_with_evidence.js"', "root package keeps lint:web");
-must(rootPkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', "root package keeps verify:final");
+  must(rootPkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', "root package keeps verify:final");
 
 must(trustPanel, "quality-summary-grid", "trust panel keeps summary grid");
 must(trustPanel, "quality-detail-layout", "trust panel keeps detail layout");

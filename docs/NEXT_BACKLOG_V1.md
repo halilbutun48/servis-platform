@@ -25,6 +25,7 @@ Single-roof verification update: `M91` route preview local acceptance bandı ve 
   - `CLEANUP-01`
   - `FIELD-LAUNCH-PACK-01`
   - `PERF-REGRESSION-01`
+- `VERIFY-CHAIN-01` ürün uzantısı zinciri `check:product-extensions` ile `verify:final` içine bağlanır.
 - Bu sıra docs/state görünürlüğü içindir; yeni ürün davranışı açmaz.
 
 ## 0) 2026-04-19 Gece Kontrol Notu

@@ -57,7 +57,7 @@ const reports = read("src/panels/shared/ReportsPanel.jsx");
 const notifications = read("src/panels/shared/NotificationsPanel.jsx");
 
 must(rootPkg, "check:web-mobile", "root package exposes check:web-mobile");
-must(rootPkg, "npm run check:m95e23c && npm run check:web-mobile && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot", "final verify chain includes web mobile check");
+must(rootPkg, "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot", "final verify chain includes web mobile check");
 must(webPkg, "check:web-mobile", "web package exposes check:web-mobile");
 
 must(appShell, "shellTopBrand", "app shell exposes compact shell top brand block");

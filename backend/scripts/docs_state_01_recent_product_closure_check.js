@@ -68,7 +68,7 @@ function main() {
   must(pkg, '"check:uxkvkk01": "node backend/scripts/ux_kvkk_01_compact_boundary_check.js"', 'package.json preserves check:uxkvkk01');
   must(pkg, '"check:web-mobile": "npm --prefix web run check:web-mobile"', 'package.json preserves check:web-mobile');
   must(pkg, '"lint:web": "node backend/scripts/run_web_lint_with_evidence.js"', 'package.json preserves lint:web');
-  must(pkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', 'package.json preserves verify:final');
+  must(pkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', 'package.json preserves verify:final');
 
   mustIncludeAll(primer, [
     'WEB-01-FIX',

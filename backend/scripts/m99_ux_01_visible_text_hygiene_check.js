@@ -108,7 +108,7 @@ assertExists("docs/M99_KVKK_01_MOBIL_WEB_SADE_METIN_VE_IZIN_DILI.md", "KVKK plai
 assertContains(rootPkg, '"check:m99ux01": "node backend/scripts/m99_ux_01_visible_text_hygiene_check.js"', "root package exposes check:m99ux01");
 assertContains(rootPkg, '"check:m99kvkk01": "node backend/scripts/m99_kvkk_01_mobile_web_plain_text_check.js"', "root package keeps check:m99kvkk01");
 assertContains(rootPkg, '"check:web-mobile": "npm --prefix web run check:web-mobile"', "root package keeps check:web-mobile");
-assertContains(rootPkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', "root package keeps verify:final");
+  assertContains(rootPkg, '"verify:final": "npm run check:m95e23c && npm run check:web-mobile && npm run check:product-extensions && npm run verify:repo && node backend/scripts/clean_snapshot_artifacts.js && npm run verify:snapshot"', "root package keeps verify:final");
 
 assertContains(uxDoc, "M99-UX-01 Görünür Türkçe Metin Hijyeni", "ux doc title present");
 assertContains(uxDoc, "Web ve mobilde kullanıcıya görünen metinlerin sade Türkçe kalmasını sağlamak.", "ux doc purpose present");
