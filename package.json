@@ -40,6 +40,7 @@
     "check:cop02b": "node backend/scripts/cop_02b_contextual_suggestion_check.js",
     "check:cop02bfix01": "node backend/scripts/cop_02b_fix_short_natural_prompt_check.js",
     "check:cop03a": "node backend/scripts/cop_03a_screen_catalog_parity_check.js",
+    "check:cop03afix01": "node backend/scripts/cop_03a_fix_global_screen_purpose_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
     "check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",

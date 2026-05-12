@@ -814,7 +814,45 @@ export function buildGoldenQuestionPack() {
         selectedBadges: [{ label: 'Yıldız', value: '4' }],
       }),
       expectedFocus: 'Geri Bildirim ekranı anlatımı',
-      forbidden: ['harita', 'araç seç', 'canlı takip', 'vardiya/araç ekranına geç', 'Önce Önce'],
+      forbidden: ['harita', 'araç seç', 'canlı takip', 'vardiya/araç ekranına geç', 'bak..', 'Sonra: Sonra', 'Önce Önce', 'haritada doğru aracı'],
+    },
+    {
+      id: 'cop03a-drivers-purpose-short',
+      role: 'ROOM',
+      entityType: 'screen',
+      path: '/room/drivers',
+      message: 'bu ne',
+      expectedType: 'SCREEN_PURPOSE',
+      expectedFirstActionKind: 'ASK',
+      minConfidence: 0.6,
+      screenContext: ctx('/room/drivers', {
+        label: 'Sürücüler',
+        selectedFields: [
+          { label: 'Durum', value: 'Aktif' },
+          { label: 'Görev', value: 'Bağlı' },
+        ],
+      }),
+      expectedFocus: 'Sürücüler ekranı anlatımı',
+      forbidden: ['Bunu anlayamadım', 'harita', 'canlı takip', 'Önce Önce'],
+    },
+    {
+      id: 'cop03a-drivers-purpose-plain',
+      role: 'ROOM',
+      entityType: 'screen',
+      path: '/room/drivers',
+      message: 'burası ne',
+      expectedType: 'SCREEN_PURPOSE',
+      expectedFirstActionKind: 'ASK',
+      minConfidence: 0.6,
+      screenContext: ctx('/room/drivers', {
+        label: 'Sürücüler',
+        selectedFields: [
+          { label: 'Durum', value: 'Pasif' },
+          { label: 'Görev', value: 'Bekliyor' },
+        ],
+      }),
+      expectedFocus: 'Sürücüler ekranı anlatımı',
+      forbidden: ['Bunu anlayamadım', 'harita', 'canlı takip', 'Önce Önce'],
     },
     {
       id: 'cop03a-kvkk-purpose',
@@ -830,7 +868,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [{ label: 'Görünürlük', value: 'Kısıtlı' }, { label: 'Maskeleme', value: 'Aktif' }],
       }),
       expectedFocus: 'KVKK görünürlük ve sınır anlatımı',
-      forbidden: ['raw', 'payload', 'token', 'hash', 'debug', 'Önce Önce'],
+      forbidden: ['raw', 'payload', 'token', 'hash', 'debug', 'kontrol et..', 'Önce Önce'],
     },
     {
       id: 'cop03a-notifications-purpose',
@@ -846,7 +884,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [{ label: 'Durum', value: 'Okunmamış' }, { label: 'Öncelik', value: 'Kritik' }],
       }),
       expectedFocus: 'Bildirimler ekranı anlatımı',
-      forbidden: ['harita', 'araç seç', 'canlı takip', 'Önce Önce'],
+      forbidden: ['harita', 'araç seç', 'canlı takip', 'oku..', 'Önce Önce'],
     },
     {
       id: 'cop03a-company-operations-purpose',
@@ -974,7 +1012,7 @@ export function buildGoldenQuestionPack() {
         selectedFields: [{ label: 'Teklif', value: 'Hazır' }, { label: 'Sözleşme', value: 'Aktif' }],
       }),
       expectedFocus: 'Oda ticari akış anlatımı',
-      forbidden: ['ödeme başlat', 'execute', 'settlement execute', 'Önce Önce'],
+      forbidden: ['ödeme başlat', 'execute', 'settlement execute', 'Sonra: Sonra', 'Önce Önce'],
     },
     {
       id: 'cop03a-room-reports-purpose',
@@ -1023,6 +1061,22 @@ export function buildGoldenQuestionPack() {
       }),
       expectedFocus: 'Doğal Copilot rehber yüzeyi',
       forbidden: ['harita', 'araç seç', 'canlı takip', 'Önce Önce'],
+    },
+    {
+      id: 'cop03a-unknown-screen-purpose',
+      role: 'ROOM',
+      entityType: 'screen',
+      path: '/mystery/unknown-purpose',
+      message: 'bu ne',
+      expectedType: 'SCREEN_PURPOSE',
+      expectedFirstActionKind: 'ASK',
+      minConfidence: 0.5,
+      screenContext: ctx('/mystery/unknown-purpose', {
+        label: 'Bu ekran',
+        selectedFields: [{ label: 'Durum', value: 'Bilinmiyor' }],
+      }),
+      expectedFocus: 'Güvenli bilinmeyen ekran fallbacki',
+      forbidden: ['harita', 'araç seç', 'canlı takip', 'Bunu anlayamadım', 'Önce Önce'],
     },
 
   ];

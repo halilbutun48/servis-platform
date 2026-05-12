@@ -123,7 +123,7 @@ const SHARED = [
   screen(9001, '/shared/notifications', 'Bildirimler', {
     menuPurpose: 'Kullanıcıya giden uyarıları ve sistem bildirimlerini okumak için kullanılır.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Önce bildirimin türünü ve zamanını oku.',
+    firstStep: 'Bildirimin türü ve zamanı ne.',
     nextStep: 'Gerekirse loglar veya ilgili ekranı aç.',
     doNotDo: 'Bildirim ile işlem kaydını aynı şey sanma.',
     screenMenus: [
@@ -135,7 +135,7 @@ const SHARED = [
   screen(9002, '/shared/logs', 'Loglar', {
     menuPurpose: 'Sistem işlem kayıtlarını ve izleri görmek için kullanılır.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Önce neyi karşılaştıracağını netleştir.',
+    firstStep: 'Hangi kaydı karşılaştıracaksın.',
     nextStep: 'Gerekirse ilgili bildirim veya ekranı aç.',
     doNotDo: 'Log ile kullanıcı bildirimini karıştırma.',
     screenMenus: [
@@ -147,7 +147,7 @@ const SHARED = [
   screen(9003, '/shared/kvkk', 'KVKK', {
     menuPurpose: 'Görüntüleme ve paylaşım sınırlarını hatırlatmak için kullanılır.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Önce bu rolde neyin görünür olduğunu kontrol et.',
+    firstStep: 'Bu rolde hangi bilgi görünür.',
     nextStep: 'Gerekirse KVKK panelindeki detaylı açıklamayı aç.',
     doNotDo: 'Kısıtlı bilgiyi yetkisiz kullanıcıya açma.',
     simpleTerms: pickTerms(['kvkk']),
@@ -155,11 +155,11 @@ const SHARED = [
   screen(9004, '/shared/feedback', 'Geri Bildirim', {
     menuPurpose: 'Saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık, kritik, tekrarlayan, çözüldü ve kapandı durumları ile yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Bu ekran harita veya araç seçme ekranı değildir.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Önce açık veya kritik kayıt var mı bak.',
+    firstStep: 'Açık veya kritik kayıt var mı.',
     nextStep: 'Sonra tekrarlayan kayıtları ve sorumlu rolü kontrol et.',
     doNotDo: 'Bu ekranı harita, araç seçme veya canlı takip ekranı sanma.',
     stepByStep: [
-      'Açık veya kritik kayıt var mı bak.',
+      'Açık veya kritik kayıt var mı.',
       'Tekrarlayan kayıtları ayır.',
       'Sorumlu rol, yıldız ve ilgili ekran bilgisini kontrol et.',
     ],

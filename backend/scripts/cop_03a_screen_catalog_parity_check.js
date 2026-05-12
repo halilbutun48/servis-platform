@@ -199,8 +199,8 @@ function main() {
   must(helpComposer, 'normalizeActionStepText(screenDefinition?.firstStep)', 'helpComposer normalizes first step');
   must(helpComposer, 'normalizeActionStepText(guide?.whatToDoNow)', 'helpComposer normalizes guide now text');
   must(helpComposer, 'normalizeActionStepText(screenDefinition?.nextStep)', 'helpComposer normalizes next step');
-  must(helpComposer, 'normalizeActionStepText(sourceScreenDefinition?.firstStep)', 'helpComposer normalizes source first step');
-  must(helpComposer, 'normalizeActionStepText(sourceScreenDefinition?.nextStep)', 'helpComposer normalizes source next step');
+  must(helpComposer, 'normalizeVisibleReplyFragment(sourceScreenDefinition?.firstStep)', 'helpComposer normalizes source first step');
+  must(helpComposer, 'normalizeVisibleReplyFragment(sourceScreenDefinition?.nextStep)', 'helpComposer normalizes source next step');
   mustNot(helpComposer, 'Önce Önce', 'helpComposer avoids double prefix');
   must(aiRoute, 'Bunu anlayamadım. Kısaca ne yapmak istediğini yazabilir misin?', 'ai route keeps safe validation fallback');
   mustNot(aiRoute, 'Validation failed', 'ai route does not expose raw validation failure');

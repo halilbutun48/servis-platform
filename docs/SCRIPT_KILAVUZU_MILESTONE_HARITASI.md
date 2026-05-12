@@ -60,6 +60,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `node backend\scripts\cop_01e_operational_guide_acceptance_check.js`
 - `node backend\scripts\cop_02a_program_ici_genel_rehber_check.js`
 - `check:cop03a` -> `node backend\scripts\cop_03a_screen_catalog_parity_check.js`
+- `check:cop03afix01` -> `node backend\scripts\cop_03a_fix_global_screen_purpose_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
 - `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
 - `node backend\scripts\qlt_02_quality_draft_score_check.js`

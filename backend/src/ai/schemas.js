@@ -43,8 +43,26 @@ const SHORT_SCREEN_PURPOSE_PHRASES = [
   "burada ne yapılıyor",
   "burda ne yapiliyor",
   "burada ne yapiliyor",
+  "burada ne yapacağım",
+  "burada ne yapacagim",
+  "burda ne yapacağım",
+  "burda ne yapacagim",
+  "burada ne yapayım",
+  "burda ne yapayım",
   "ne işe yarıyor",
   "ne ise yariyor",
+];
+
+const SHORT_FIRST_CONTROL_PHRASES = [
+  "ilk neye bakayım",
+  "ilk neye bakayim",
+  "ilk kontrol",
+  "ilk bakılacak",
+  "ilk bakilacak",
+  "önce neye bakayım",
+  "once neye bakayim",
+  "önce neye bakmaliyim",
+  "once neye bakmaliyim",
 ];
 
 const SHORT_NEXT_STEP_PHRASES = [
@@ -59,6 +77,12 @@ const SHORT_NEXT_STEP_PHRASES = [
   "sıradaki doğru işlem ne",
   "siradaki dogru islem ne",
 ];
+
+function isShortNaturalScreenPrompt(message) {
+  const text = normalizeLooseText(message);
+  if (!text) return false;
+  return matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES) || matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES) || matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES);
+}
 
 function normalizeLooseText(value) {
   return String(value || "")
@@ -87,14 +111,23 @@ export function normalizeCopilotShortPrompt(message) {
   const raw = String(message || "").trim();
   if (!raw) return raw;
   const text = raw.toLocaleLowerCase("tr-TR");
-  if (matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES)) return "Şimdi ne yapayım?";
   if (matchesStandalonePhrase(text, SHORT_SCREEN_PURPOSE_PHRASES)) return "Bu ekran ne için?";
+  if (matchesStandalonePhrase(text, SHORT_FIRST_CONTROL_PHRASES)) return "İlk neye bakayım?";
+  if (matchesStandalonePhrase(text, SHORT_NEXT_STEP_PHRASES)) return "Şimdi ne yapayım?";
   return raw;
 }
 
 export function normalizeCopilotRequestInput(input) {
   const normalized = input && typeof input === "object" && !Array.isArray(input) ? { ...input } : {};
   normalized.message = normalizeCopilotShortPrompt(normalized.message);
+  const shortNaturalPrompt = isShortNaturalScreenPrompt(normalized.message);
+
+  if (shortNaturalPrompt && !AI_COPILOT_INTENTS.includes(String(normalized.intent || ""))) {
+    normalized.intent = "CHAT_HELP";
+  }
+  if (shortNaturalPrompt && !AI_COPILOT_ENTITY_TYPES.includes(String(normalized.entityType || ""))) {
+    normalized.entityType = "screen";
+  }
 
   if (String(normalized.intent || "") === "CHAT_HELP" && String(normalized.entityType || "") === "screen") {
     const screenId = Number(normalized.entityId || normalized.screenContext?.id || normalized.conversationState?.lastScreenId || 0);

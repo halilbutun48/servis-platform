@@ -132,23 +132,24 @@ export const ROOM = [
     simpleTerms: pickTerms(["telefonGps", "cihazGps", "konumKaynagi"]),
   }),
   screen(1105, "/room/drivers", "Sürücüler", {
-    menuPurpose: "Sürücü kayıtlarını ve araç bağını yönetmek için kullanılır.",
-    forWhom: "Sürücü planını yöneten oda kullanıcısı içindir.",
-    firstStep: "Önce doğru sürücüyü seç.",
-    nextStep: "Gerekirse araç bağını veya aktif işi kontrol et.",
-    doNotDo: "Müsait olmayan sürücüyü bağlama.",
-    stepByStep: ["Sürücüyü seç.", "Bağlı araç veya iş durumuna bak.", "Gerekirse araç ekranına geç."],
-    commonMistakes: ["Yanlış sürücüyü bağlamak.", "Mevcut bağı görmeden yeni bağ yapmak."],
-    doneChecklist: ["Doğru sürücü seçildi.", "Bağ durumu kontrol edildi."],
+    menuPurpose: "Sürücü kayıtlarını, görev uygunluğunu ve servis operasyonundaki sürücü durumunu görmek için kullanılır.",
+    forWhom: "Sürücü planını ve görev bağlantısını yöneten oda kullanıcısı içindir.",
+    firstStep: "Aktif/pasif sürücü durumu ve görev bağlantısı.",
+    nextStep: "İlgili sürücünün vardiya, araç veya bildirim durumunu kontrol et.",
+    doNotDo: "Bu ekranı harita ya da canlı takip ekranı sanma.",
+    stepByStep: ["Sürücü durumunu oku.", "Görev bağlantısını kontrol et.", "Gerekirse vardiya, araç veya bildirim ekranına geç."],
+    commonMistakes: ["Yanlış sürücüyü bağlamak.", "Mevcut durumu görmeden yeni bağ yapmak."],
+    doneChecklist: ["Doğru sürücü bulundu.", "Durum ve görev bağı kontrol edildi."],
     buttonGuides: [
       button("Yeni sürücü", "Yeni sürücü kaydı açar.", "Yeni bir sürücü sisteme eklenecekse kullan.", "Yeni kayıt formu açılır."),
-      button("Araca bağla", "Seçili sürücüyü bir araca bağlar.", "Telefon GPS'i akışı için sürücü ataması gerekiyorsa kullan.", "Bağlama akışı açılır."),
+      button("Araca bağla", "Seçili sürücüyü bir araca bağlar.", "Sürücü ve araç bağı gerekiyorsa kullan.", "Bağlama akışı açılır."),
     ],
     screenMenus: [
       { label: "Araçlar", path: "/room/vehicles", purpose: "Sürücünün bağlı olacağı aracı seçmek için açılır." },
       { label: "Vardiyalar", path: "/room/shifts", purpose: "Sürücü etkisini iş ekranında görmek için açılır." },
     ],
     simpleTerms: pickTerms(["telefonGps", "atama"]),
+    chatQuestions: ["Bu ekran ne için var?", "Bu ne?", "Burası ne?", "İlk neye bakayım?"],
   }),
   screen(1106, "/room/agreements", "Sözleşmeler", {
     menuPurpose: "Sözleşmeye bağlı işleri görmek ve yönetmek için kullanılır.",
@@ -250,7 +251,7 @@ export const ROOM = [
   screen(1115, "/room/commercial-flow", "Ticari Akışım", {
     menuPurpose: "Oda tarafındaki ticari kayıtları ve sonraki adımı görmek için kullanılır.",
     forWhom: "Oda tarafında ticari akışı izleyen kullanıcı içindir.",
-    firstStep: "Önce kaydın hangi aşamada olduğunu oku.",
+    firstStep: "Kayıt hangi aşamada.",
     nextStep: "Gerekirse vardiya veya rapor ekranına geç.",
     doNotDo: "Bu ekranı plan kurma ekranı sanma.",
     stepByStep: ["Kaydın akış türünü oku.", "Durum ve sonraki adım alanını kontrol et.", "Gerekirse ilgili vardiyaya veya rapora geç."],
@@ -269,7 +270,7 @@ export const ROOM = [
   screen(1116, "/room/reports", "Raporlar", {
     menuPurpose: "Oda tarafındaki iş, araç ve sonuç raporlarını görmek için kullanılır.",
     forWhom: "Oda tarafında rapor okuyan kullanıcı içindir.",
-    firstStep: "Önce hangi rapor türüne baktığını seç.",
+    firstStep: "Hangi rapor türüne baktığını seç.",
     nextStep: "Gerekirse bağlı vardiya veya canlı ekranına geç.",
     doNotDo: "Rapor ekranını canlı operasyon ekranı sanma.",
     stepByStep: ["Rapor türünü seç.", "Sütunları ve sayıları oku.", "Sorun veya eksik gördüysen ilgili ekrana geç."],
@@ -344,9 +345,9 @@ export const ROOM = [
 
 export const COMPANY = [
   screen(2101, "/company", "Planlama Merkezi", {
-    menuPurpose: "Yeni işi kurmak için önce bu ekrana gelirsin. Burada konumu kontrol eder, plan akışını başlatır, kişileri ve durakları hazırlayıp çözümden sonra teklifi gönderirsin.",
+    menuPurpose: "Yeni işi kurma ve planlama için kullanılır. Konumu kontrol eder, plan akışını açar, kişi ve durakları hazırlarsın; sonra teklifi gönderirsin.",
     forWhom: "Şirket, okul veya organizasyon tarafında yeni iş kuran kullanıcı içindir.",
-    firstStep: "Önce konum sorunu var mı bak. NEEDS_REVIEW varsa önce Konum İncele ekranını aç.",
+    firstStep: "İlk kontrol: konum sorunu var mı. NEEDS_REVIEW ise Konum İncele ekranına geç.",
     nextStep: "Plan kurulduktan sonra teklif ve operasyon takibi için Vardiyalar ekranına geç.",
     doNotDo: "Konumları düzeltmeden veya adımları atlayıp doğrudan teklif göndermeye çalışma.",
     stepByStep: ["Konumları kontrol et; sorun varsa Konum İncele'de düzelt.", "Rehberi Başlat düğmesiyle plan akışını aç.", "Plan paketi, tarih ve günleri seç.", "Kişi ve durak tarafını kontrol et; gerekiyorsa düzenle.", "Matris/Çöz çalıştır ve teklifi gönder.", "Son takibi Vardiyalar ekranında yap."],

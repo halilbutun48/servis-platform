@@ -293,9 +293,24 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
 }
 
 function simpleScreenChipsByPath(screenPath = '') {
-  if (pathHas(screenPath, ['/georeview'])) {
-    return ['Konum İncele ne demek?', 'OSRM nedir?', 'Matrix nedir?', 'Sonra nereye geçeyim?'];
-  }
+    if (pathHas(screenPath, ['/room/drivers'])) {
+      return ['Bu ekran ne için var?', 'Aktif/pasif sürücü durumu ne?', 'Vardiya veya araç bağı ne durumda?', 'İlk neye bakayım?'];
+    }
+    if (pathHas(screenPath, ['/shared/feedback'])) {
+      return ['Bu ekran ne için var?', 'Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?'];
+    }
+    if (pathHas(screenPath, ['/shared/kvkk'])) {
+      return ['Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?', 'Bu ekran ne için var?'];
+    }
+    if (pathHas(screenPath, ['/shared/notifications'])) {
+      return ['Bu bildirim ne anlatıyor?', 'Hangi olaydan geldi?', 'İlgili kayda geçeyim mi?', 'Bu ekran ne için var?'];
+    }
+    if (pathHas(screenPath, ['/room/commercial-flow'])) {
+      return ['Bu kayıt hangi aşamada?', 'İlk neye bakayım?', 'Hakediş neden hazır değil?', 'Sonra ne yapayım?'];
+    }
+    if (pathHas(screenPath, ['/georeview'])) {
+      return ['Konum İncele ne demek?', 'OSRM nedir?', 'Matrix nedir?', 'Sonra nereye geçeyim?'];
+    }
   if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts'])) {
     return ['Bu satırı nasıl okurum?', 'Bu sütun ne demek?', 'Bu rozet ne demek?', 'Şimdi ne yapayım?'];
   }
@@ -320,13 +335,24 @@ function simpleScreenChipsByPath(screenPath = '') {
   if (pathHas(screenPath, ['/today', '/live', '/my', '/route', '/map'])) {
     return ['Bu ekran ne için var?', 'Şimdi ne yapayım?', 'Bu ne demek?', 'Bu rolde ne yapabilirim?'];
   }
-  return ['Bu ekran ne için var?', 'Önce neyi kontrol edeyim?', 'Bu buton ne yapar?', 'Bu neden kapalı?'];
+  return ['Bu ekran ne için var?', 'İlk neye bakayım?', 'Hangi ekrana geçeyim?', 'Sıradaki adımı açıkla'];
 }
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS') {
-  const chips = [];
-  if (pathHas(screenPath, ['/georeview'])) {
-    chips.push('Konum İncele ekranı ne için var?', 'Geo Review gerekli ne demek?', 'OSRM nedir?', 'Matrix nedir?', 'Sonra nereye geçeyim?');
+    const chips = [];
+    if (pathHas(screenPath, ['/room/drivers'])) {
+      chips.push('Bu ekran ne için var?', 'Aktif/pasif sürücü durumu ne?', 'Vardiya veya araç bağı ne durumda?', 'İlk neye bakayım?', 'İlgili yere götür');
+    } else if (pathHas(screenPath, ['/shared/feedback'])) {
+      chips.push('Bu ekran ne için var?', 'Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?', 'İlgili yere götür');
+    } else if (pathHas(screenPath, ['/shared/kvkk'])) {
+      chips.push('Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?', 'Bu ekran ne için var?', 'İlgili yere götür');
+    } else if (pathHas(screenPath, ['/shared/notifications'])) {
+      chips.push('Bu bildirim ne anlatıyor?', 'Hangi olaydan geldi?', 'İlgili kayda geçeyim mi?', 'Bu ekran ne için var?', 'İlgili yere götür');
+    } else if (pathHas(screenPath, ['/room/commercial-flow'])) {
+      chips.push('Bu kayıt hangi aşamada?', 'İlk neye bakayım?', 'Hakediş neden hazır değil?', 'Sonra ne yapayım?', 'İlgili yere götür');
+    } else 
+    if (pathHas(screenPath, ['/georeview'])) {
+      chips.push('Konum İncele ekranı ne için var?', 'Geo Review gerekli ne demek?', 'OSRM nedir?', 'Matrix nedir?', 'Sonra nereye geçeyim?');
   } else if (pathHas(screenPath, ['/commercial-flow', '/service-evaluation', '/shifts'])) {
     chips.push('Bu satırı nasıl okurum?', 'Bu sütun ne demek?', 'Bu rozet ne demek?', 'Bu buton ne yapar?', 'Bu neden kapalı?', 'Bu seçili kayıtta eksik ne var?', 'Atamaya hazır mı?', 'En risksiz sonraki adım ne?');
   } else if (pathHas(screenPath, ['/offers'])) {
@@ -352,7 +378,7 @@ function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS') {
   } else if (pathHas(screenPath, ['/today', '/live'])) {
     chips.push('Bu ekran ne için var?', 'Şimdi ne yapayım?', 'Bu ne demek?', 'En risksiz sonraki adım ne?', 'İlgili yere götür');
   } else {
-    chips.push('Bu ekran ne için var?', 'Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Bu seçili kayıtta eksik ne var?', 'Atamaya hazır mı?', 'En risksiz sonraki adım ne?', 'Bu kayıt için en doğru ekran hangisi?');
+    chips.push('Bu ekran ne için var?', 'İlk neye bakayım?', 'Hangi ekrana geçeyim?', 'Sıradaki adımı açıkla', 'Bu rolde ne yapabilirim?');
   }
 
   if (roleMode === 'SIMPLE') {
