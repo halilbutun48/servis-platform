@@ -134,7 +134,7 @@ export const ROOM = [
   screen(1105, "/room/drivers", "Sürücüler", {
     menuPurpose: "Sürücü kayıtlarını, görev uygunluğunu ve servis operasyonundaki sürücü durumunu görmek için kullanılır.",
     forWhom: "Sürücü planını ve görev bağlantısını yöneten oda kullanıcısı içindir.",
-    firstStep: "Aktif/pasif sürücü durumu ve görev bağlantısı.",
+    firstStep: "Aktif/pasif sürücü durumunu ve görev bağlantısını incele.",
     nextStep: "İlgili sürücünün vardiya, araç veya bildirim durumunu kontrol et.",
     doNotDo: "Bu ekranı harita ya da canlı takip ekranı sanma.",
     stepByStep: ["Sürücü durumunu oku.", "Görev bağlantısını kontrol et.", "Gerekirse vardiya, araç veya bildirim ekranına geç."],
@@ -212,7 +212,7 @@ export const ROOM = [
   screen(1109, "/room/checkin", "Check-in", {
     menuPurpose: "Biniş, iniş veya doğrulama kayıtlarını görmek için kullanılır.",
     forWhom: "Check-in tarafını takip eden oda kullanıcısı içindir.",
-    firstStep: "Önce hangi kayıt veya iş için check-in baktığını seç.",
+  firstStep: "Check-in yapılacak kayıt veya işi netle.",
     nextStep: "Gerekirse vardiya ekranına dön.",
     doNotDo: "Check-in kaydı var diye işin tümü tamam sanma.",
     stepByStep: ["Kayıdı seç.", "Check-in olayını oku.", "Gerekirse bağlı işe dön."],
@@ -251,7 +251,7 @@ export const ROOM = [
   screen(1115, "/room/commercial-flow", "Ticari Akışım", {
     menuPurpose: "Oda tarafındaki ticari kayıtları ve sonraki adımı görmek için kullanılır.",
     forWhom: "Oda tarafında ticari akışı izleyen kullanıcı içindir.",
-    firstStep: "Kayıt hangi aşamada.",
+    firstStep: "Kaydın hangi aşamada olduğunu incele.",
     nextStep: "Gerekirse vardiya veya rapor ekranına geç.",
     doNotDo: "Bu ekranı plan kurma ekranı sanma.",
     stepByStep: ["Kaydın akış türünü oku.", "Durum ve sonraki adım alanını kontrol et.", "Gerekirse ilgili vardiyaya veya rapora geç."],
@@ -270,7 +270,7 @@ export const ROOM = [
   screen(1116, "/room/reports", "Raporlar", {
     menuPurpose: "Oda tarafındaki iş, araç ve sonuç raporlarını görmek için kullanılır.",
     forWhom: "Oda tarafında rapor okuyan kullanıcı içindir.",
-    firstStep: "Hangi rapor türüne baktığını seç.",
+    firstStep: "İncelenecek rapor türünü seç.",
     nextStep: "Gerekirse bağlı vardiya veya canlı ekranına geç.",
     doNotDo: "Rapor ekranını canlı operasyon ekranı sanma.",
     stepByStep: ["Rapor türünü seç.", "Sütunları ve sayıları oku.", "Sorun veya eksik gördüysen ilgili ekrana geç."],
@@ -286,7 +286,7 @@ export const ROOM = [
   screen(1111, "/shared/notifications", "Bildirimler", {
     menuPurpose: "Kullanıcılara giden uyarı ve haberleri görmek için kullanılır.",
     forWhom: "Bildirim takibi yapan kullanıcı içindir.",
-    firstStep: "Önce hangi bildirimin hangi olaydan geldiğini oku.",
+    firstStep: "Bildirimin hangi olaya bağlı olduğunu incele.",
     nextStep: "Gerekirse ilgili iş veya kayıt ekranına geç.",
     doNotDo: "Bildirimi işlem kaydı ile aynı sanma.",
     stepByStep: ["Bildirimi seç.", "Ne anlattığını oku.", "Gerekirse ilgili yere git."],
@@ -299,7 +299,7 @@ export const ROOM = [
   screen(1112, "/shared/logs", "Loglar", {
     menuPurpose: "Sistemde ne olduğunun kayıt altına alınmış halini görmek için kullanılır.",
     forWhom: "İşlem kaydını kontrol eden kullanıcı içindir.",
-    firstStep: "Önce hangi olay kaydını aradığını seç.",
+    firstStep: "Aradığın olayı seç veya filtrele.",
     nextStep: "Gerekirse bildirime veya ilgili işe dön.",
     doNotDo: "Log kaydını kullanıcı bildirimi sanma.",
     stepByStep: ["Kayıdı filtrele.", "Olayı oku.", "Gerekirse bağlı ekrana git."],
@@ -310,9 +310,9 @@ export const ROOM = [
     simpleTerms: pickTerms(["islemKaydi", "bildirim"]),
   }),
   screen(1117, "/shared/kvkk", "KVKK", {
-    menuPurpose: "KVKK sınırını ve hangi bilginin nerede göründüğünü kontrol etmek için kullanılır.",
+    menuPurpose: "Görünürlük sınırını ve hangi bilginin nerede göründüğünü kontrol etmek için kullanılır. KVKK sınırı rol bazlı görünürlüğü belirler.",
     forWhom: "Oda kullanıcısı içindir.",
-    firstStep: "Önce hangi bilginin görünür olup olmadığını kontrol et.",
+    firstStep: "Bu bilgi bu rolde görünmeyebilir.",
     nextStep: "Gerekirse ilgili operasyon veya bildirim ekranına dön.",
     doNotDo: "KVKK ekranını canlı operasyon kararı ekranı sanma.",
     stepByStep: ["Görünürlük alanını oku.", "Hangi bilginin kapalı olduğunu kontrol et.", "Gerekirse ilgili kayda dön."],
@@ -322,9 +322,9 @@ export const ROOM = [
     chatQuestions: ["Bu bilgi neden görünmüyor?", "Bu rolde neyi görebilirim?", "Önce neyi kontrol edeyim?"],
   }),
   screen(1118, "/shared/feedback", "Geri Bildirim", {
-    menuPurpose: "Bu ekran saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Bu ekran harita/araç seçme ekranı değildir.",
+    menuPurpose: "Bu ekran, saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Bu ekran harita/araç seçme ekranı değildir.",
     forWhom: "Saha geri bildirimlerini izleyen kullanıcı içindir.",
-    firstStep: "Önce açık veya kritik kayıt var mı bak.",
+    firstStep: "Açık veya kritik kayıtları incele.",
     nextStep: "Sonra tekrarlayan kayıtları ve sorumlu rolü kontrol et.",
     doNotDo: "Bu ekranı harita veya araç seçme ekranı sanma.",
     stepByStep: ["Açık/kritik kayıtları oku.", "Tekrarlayan kayıtları ayır.", "Sorumlu rol ve ilgili ekran bilgisini kontrol et."],
@@ -705,7 +705,7 @@ export const COMPANY = [
   screen(2115, "/company/commercial-flow", "Ticari Akışım", {
     menuPurpose: "Market, kabul ve operasyona inen ticari kayıtları tek yerde görmek için kullanılır.",
     forWhom: "Şirket tarafında ticari durumu ve sonraki adımı izleyen kullanıcı içindir.",
-    firstStep: "Önce listedeki kaydın market, kabul veya operasyon tarafında mı olduğuna bak.",
+  firstStep: "Önce listedeki kaydın market, kabul veya operasyon tarafında mı olduğunu kontrol et.",
     nextStep: "Gerekirse ilgili vardiyayı, marketi veya hizmet değerlendirme ekranını aç.",
     doNotDo: "Ticari Akışım ekranını Planlama Merkezi sanma; burada yeni plan kurulmaz.",
     stepByStep: ["Kayıtların akış türünü oku.", "Durum ve sonraki adım sütununu kontrol et.", "Gerekirse ilgili vardiyaya git.", "Operasyon başladıysa hizmet değerlendirme tarafını izle."],
@@ -745,7 +745,7 @@ export const COMPANY = [
   screen(2116, "/company/reports", "Raporlar", {
     menuPurpose: "Sürücü, araç ve durak raporlarını görmek için kullanılır.",
     forWhom: "Şirket tarafında özet tablo ve performans takibi yapan kullanıcı içindir.",
-    firstStep: "Önce hangi rapor türüne baktığını seç.",
+    firstStep: "İncelenecek rapor türünü seç.",
     nextStep: "Gerekirse bağlı vardiya veya harita ekranına geç.",
     doNotDo: "Rapor ekranını canlı operasyon ekranı sanma.",
     stepByStep: ["Rapor türünü seç.", "Sütunları ve sayıları oku.", "Sorun veya eksik gördüysen ilgili ekrana geç."],
@@ -761,7 +761,7 @@ export const COMPANY = [
   screen(2110, "/shared/notifications", "Bildirimler", {
     menuPurpose: "Kullanıcılara giden uyarı ve haberleri görmek için kullanılır.",
     forWhom: "Şirket kullanıcısı içindir.",
-    firstStep: "Önce bildirimin ne anlattığını oku.",
+    firstStep: "Bildirimin hangi olaya bağlı olduğunu incele.",
     nextStep: "Gerekirse ilgili iş veya kayıt ekranına git.",
     doNotDo: "Bildirimi işlem kaydı ile aynı sanma.",
     stepByStep: ["Bildirimi seç.", "İçeriğini oku.", "Gerekirse ilgili yere git."],
@@ -774,7 +774,7 @@ export const COMPANY = [
   screen(2111, "/shared/logs", "Loglar", {
     menuPurpose: "Sistemde ne olduğunun kayıt altına alınmış halini görmek için kullanılır.",
     forWhom: "Şirket kullanıcısı içindir.",
-    firstStep: "Önce aradığın olayı seç veya filtrele.",
+    firstStep: "Aradığın olayı seç veya filtrele.",
     nextStep: "Gerekirse ilgili bildirim veya iş ekranına dön.",
     doNotDo: "Log kaydını kullanıcı bildirimi sanma.",
     stepByStep: ["Kayıdı filtrele.", "Olayı oku.", "Gerekirse bağlı ekrana git."],
@@ -785,9 +785,9 @@ export const COMPANY = [
     simpleTerms: pickTerms(["islemKaydi", "bildirim"]),
   }),
   screen(2118, "/shared/kvkk", "KVKK", {
-    menuPurpose: "KVKK sınırını ve hangi bilginin nerede göründüğünü kontrol etmek için kullanılır.",
+    menuPurpose: "Görünürlük sınırını ve hangi bilginin nerede göründüğünü kontrol etmek için kullanılır. KVKK sınırı rol bazlı görünürlüğü belirler.",
     forWhom: "Şirket kullanıcısı içindir.",
-    firstStep: "Önce hangi bilginin görünür olup olmadığını kontrol et.",
+    firstStep: "Bu bilgi bu rolde görünmeyebilir.",
     nextStep: "Gerekirse ilgili operasyon veya bildirim ekranına dön.",
     doNotDo: "KVKK ekranını canlı operasyon kararı ekranı sanma.",
     stepByStep: ["Görünürlük alanını oku.", "Hangi bilginin kapalı olduğunu kontrol et.", "Gerekirse ilgili kayda dön."],
@@ -797,9 +797,9 @@ export const COMPANY = [
     chatQuestions: ["Bu bilgi neden görünmüyor?", "Bu rolde neyi görebilirim?", "Önce neyi kontrol edeyim?"],
   }),
   screen(2119, "/shared/feedback", "Geri Bildirim", {
-    menuPurpose: "Bu ekran saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Bu ekran harita/araç seçme ekranı değildir.",
+    menuPurpose: "Bu ekran, saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Bu ekran harita/araç seçme ekranı değildir.",
     forWhom: "Saha geri bildirimlerini izleyen kullanıcı içindir.",
-    firstStep: "Önce açık veya kritik kayıt var mı bak.",
+    firstStep: "Açık veya kritik kayıtları incele.",
     nextStep: "Sonra tekrarlayan kayıtları ve sorumlu rolü kontrol et.",
     doNotDo: "Bu ekranı harita veya araç seçme ekranı sanma.",
     stepByStep: ["Açık/kritik kayıtları oku.", "Tekrarlayan kayıtları ayır.", "Sorumlu rol ve ilgili ekran bilgisini kontrol et."],

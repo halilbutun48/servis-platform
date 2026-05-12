@@ -70,6 +70,7 @@ function main() {
   must(pkg, '"check:cop02b"', 'package.json keeps check:cop02b');
   must(pkg, '"check:cop03a"', 'package.json keeps check:cop03a');
   must(pkg, '"check:cop03afix01"', 'package.json keeps check:cop03afix01');
+  must(pkg, '"check:cop03afix02"', 'package.json keeps check:cop03afix02');
 
   ordered(runner, [
     'check:op04',
@@ -83,6 +84,7 @@ function main() {
     'check:cop02b',
     'check:cop03a',
     'check:cop03afix01',
+    'check:cop03afix02',
     'check:uxkvkk01',
     'check:docsstate01',
   ], 'product extensions runner order');
@@ -91,6 +93,7 @@ function main() {
   must(guide, 'check:verifychain01', 'script guide exposes check:verifychain01');
   must(guide, 'check:cop03a', 'script guide exposes check:cop03a');
   must(guide, 'check:cop03afix01', 'script guide exposes check:cop03afix01');
+  must(guide, 'check:cop03afix02', 'script guide exposes check:cop03afix02');
   must(guide, 'VERIFY-CHAIN-01', 'script guide mentions VERIFY-CHAIN-01');
   must(backlog, 'VERIFY-CHAIN-01', 'backlog keeps VERIFY-CHAIN-01 visible');
   must(backlog, 'P0:', 'backlog keeps P0 section');

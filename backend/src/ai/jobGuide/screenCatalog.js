@@ -123,7 +123,7 @@ const SHARED = [
   screen(9001, '/shared/notifications', 'Bildirimler', {
     menuPurpose: 'Kullanıcıya giden uyarıları ve sistem bildirimlerini okumak için kullanılır.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Bildirimin türü ve zamanı ne.',
+    firstStep: 'Bildirimin türünü ve zamanını incele.',
     nextStep: 'Gerekirse loglar veya ilgili ekranı aç.',
     doNotDo: 'Bildirim ile işlem kaydını aynı şey sanma.',
     screenMenus: [
@@ -135,7 +135,7 @@ const SHARED = [
   screen(9002, '/shared/logs', 'Loglar', {
     menuPurpose: 'Sistem işlem kayıtlarını ve izleri görmek için kullanılır.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Hangi kaydı karşılaştıracaksın.',
+    firstStep: 'Karşılaştırılacak kaydı seç.',
     nextStep: 'Gerekirse ilgili bildirim veya ekranı aç.',
     doNotDo: 'Log ile kullanıcı bildirimini karıştırma.',
     screenMenus: [
@@ -145,17 +145,17 @@ const SHARED = [
     simpleTerms: pickTerms(['islemKaydi']),
   }),
   screen(9003, '/shared/kvkk', 'KVKK', {
-    menuPurpose: 'Görüntüleme ve paylaşım sınırlarını hatırlatmak için kullanılır.',
+    menuPurpose: 'Görünürlük sınırını ve hangi bilginin nerede göründüğünü kontrol etmek için kullanılır. KVKK sınırı rol bazlı görünürlüğü belirler.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Bu rolde hangi bilgi görünür.',
+    firstStep: 'Bu bilgi bu rolde görünmeyebilir.',
     nextStep: 'Gerekirse KVKK panelindeki detaylı açıklamayı aç.',
     doNotDo: 'Kısıtlı bilgiyi yetkisiz kullanıcıya açma.',
     simpleTerms: pickTerms(['kvkk']),
   }),
   screen(9004, '/shared/feedback', 'Geri Bildirim', {
-    menuPurpose: 'Saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık, kritik, tekrarlayan, çözüldü ve kapandı durumları ile yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Bu ekran harita veya araç seçme ekranı değildir.',
+    menuPurpose: 'Bu ekran, saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık, kritik, tekrarlayan, çözüldü ve kapandı durumları ile yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Bu ekran harita veya araç seçme ekranı değildir.',
     forWhom: 'Tüm roller içindir.',
-    firstStep: 'Açık veya kritik kayıt var mı.',
+    firstStep: 'Açık veya kritik kayıtları incele.',
     nextStep: 'Sonra tekrarlayan kayıtları ve sorumlu rolü kontrol et.',
     doNotDo: 'Bu ekranı harita, araç seçme veya canlı takip ekranı sanma.',
     stepByStep: [
@@ -213,7 +213,7 @@ const DRIVER = [
       { label: 'Harita', path: '/driver/map', purpose: 'Canlı konumu görmek için açılır.' },
       { label: 'Copilot', path: '/driver/copilot', purpose: 'Takıldığında yardım almak için açılır.' },
     ],
-    firstControls: ['Önce bugün için atanmış görev var mı bak.', 'Araç, saat ve durum alanı dolu mu kontrol et.', 'Görev yoksa boş ekranı canlı görev sanma.'],
+  firstControls: ['Önce bugün için atanmış görev var mı kontrol et.', 'Araç, saat ve durum alanı dolu mu kontrol et.', 'Görev yoksa boş ekranı canlı görev sanma.'],
     stuckChecks: ['Görev görünmüyorsa bugün atanmış vardiya olmayabilir.', 'Bugün ekranını rota ekranı sanma.', 'Canlı takibe geçmeden önce görev özeti okunmalı.'],
     workflowStages: [
       { key: 'DRIVER_TODAY_READ', title: 'Bugünkü görevi oku', action: 'Görev kartındaki iş, saat ve araç bilgisini kontrol et.', doneWhen: 'Nereye ve hangi araçla çıkacağını biliyorsun.', ifBlocked: 'Atama yoksa room/company tarafında sürücü bağı kontrol edilmeli.' },
@@ -573,7 +573,7 @@ const SUPER_ADMIN = [
   screen(6117, '/superadmin/operations', 'Denetim Paneli', {
     menuPurpose: 'Servis kanıtı, GPS görünürlüğü ve operasyon blokajlarını birlikte okumak için kullanılır.',
     forWhom: 'Super admin içindir.',
-    firstStep: 'Önce denetim özetini oku.',
+    firstStep: 'Denetim özetini incele.',
     nextStep: 'Sonra kanıt, GPS ve değerlendirme satırlarını incele.',
     doNotDo: 'Harita veya araç seçme ekranı sanma.',
   }),
