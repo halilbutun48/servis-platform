@@ -153,7 +153,7 @@ function main() {
   must(help, 'Sonra:', 'helpComposer keeps next-step wording');
   must(help, 'Bu programda bunun anlamı:', 'helpComposer keeps program meaning wording');
   must(help, 'Bu ekrandaki veriye göre', 'helpComposer keeps action lead bypass marker');
-  must(help, 'Bu ekran, ${ensureVisibleSentence(purpose)}', 'helpComposer keeps natural screen-purpose lead');
+  must(help, 'return `Bu ekran, ${ensureVisibleSentence(lowercaseVisibleInitialUnlessAcronym(text))}`;', 'helpComposer keeps natural screen-purpose lead');
   must(help, 'Bu ekran için kısa rehber.', 'helpComposer keeps screen fallback lead');
   must(help, 'Bu bilgi bu rolde', 'helpComposer keeps role boundary bypass marker');
   must(help, 'FIRST_CONTROL: `İlk kontrol: ${ensureVisibleSentence(first)}`', 'helpComposer keeps first-control wording');
@@ -166,10 +166,10 @@ function main() {
   const matrixCases = [
     { id: 'matrix-superadmin-purpose', role: 'SUPER_ADMIN', path: '/superadmin', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Sistem durumu bandı'] },
     { id: 'matrix-superadmin-commercial', role: 'SUPER_ADMIN', path: '/superadmin/commercial-core', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Ticari akış'] },
-    { id: 'matrix-superadmin-ops', role: 'SUPER_ADMIN', path: '/superadmin/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Şimdi:'] },
+    { id: 'matrix-superadmin-ops', role: 'SUPER_ADMIN', path: '/superadmin/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Bu ekran,', 'açık veya riskli'] },
     { id: 'matrix-superadmin-logexport', role: 'SUPER_ADMIN', path: '/superadmin/logexport', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['İşlem kayıtlarını'] },
     { id: 'matrix-superadmin-natural-copilot', role: 'SUPER_ADMIN', path: '/superadmin/natural-copilot', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['doğal soru-cevap'] },
-    { id: 'matrix-superadmin-launch-gate', role: 'SUPER_ADMIN', path: '/superadmin/pilot-launch-gate', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Şimdi:'] },
+    { id: 'matrix-superadmin-launch-gate', role: 'SUPER_ADMIN', path: '/superadmin/pilot-launch-gate', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Bu ekran,', 'sahaya çıkış'] },
     { id: 'matrix-superadmin-regions', role: 'SUPER_ADMIN', path: '/superadmin/regions', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['atama sınırlarını'] },
     { id: 'matrix-superadmin-ssot', role: 'SUPER_ADMIN', path: '/superadmin/ssot-alignment', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['tek doğru kaynak'] },
     { id: 'matrix-room-map', role: 'ROOM', path: '/room/map', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['canlı durum'] },
@@ -177,11 +177,11 @@ function main() {
     { id: 'matrix-room-reports', role: 'ROOM', path: '/room/reports', message: 'ilk neye bakayım', expectedTypes: ['FIRST_CONTROL'], mustContain: ['İlk kontrol'] },
     { id: 'matrix-room-drivers', role: 'ROOM', path: '/room/drivers', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Sürücü kayıtlarını'] },
     { id: 'matrix-company-purpose', role: 'COMPANY', path: '/company', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Yeni işi kurma ve planlama'] },
-    { id: 'matrix-company-ops', role: 'COMPANY', path: '/company/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['açık iş'] },
+    { id: 'matrix-company-ops', role: 'COMPANY', path: '/company/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Bu ekran,', 'bekleyen işleri'] },
     { id: 'matrix-school-purpose', role: 'SCHOOL', path: '/school', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['Yeni işi kurma ve planlama'] },
     { id: 'matrix-school-ops', role: 'SCHOOL', path: '/school/operations', message: 'burada ne yapacağım', expectedTypes: ['SCREEN_PURPOSE', 'NEXT_STEP'], mustContain: ['Vardiyalar'] },
     { id: 'matrix-organization-purpose', role: 'ORGANIZATION', path: '/organization', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['gezi veya organizasyon'] },
-    { id: 'matrix-organization-ops', role: 'ORGANIZATION', path: '/organization/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['açık iş'] },
+    { id: 'matrix-organization-ops', role: 'ORGANIZATION', path: '/organization/operations', message: 'ne yapayım', expectedTypes: ['NEXT_STEP'], mustContain: ['Bu ekran,', 'bekleyen işleri'] },
     { id: 'matrix-driver-today', role: 'DRIVER', path: '/driver/today', message: 'bu ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['bugün'] },
     { id: 'matrix-driver-change-pin', role: 'DRIVER', path: '/driver/change-pin', message: 'burası ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['PIN'] },
     { id: 'matrix-personel-live', role: 'PERSONEL', path: '/personel/live', message: 'bu ekran ne', expectedTypes: ['SCREEN_PURPOSE'], mustContain: ['canlı'] },
@@ -232,13 +232,13 @@ function main() {
   const feedbackChips = buildSuggestedChips({ entityType: 'screen', questionType: 'SCREEN_PURPOSE', roleMode: 'OPERATIONS', screenPath: '/shared/feedback' });
   assertCondition(includesAny(feedbackChips.join(' '), ['Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?']), 'feedback chips are role aware');
   const driversChips = buildSuggestedChips({ entityType: 'screen', questionType: 'SCREEN_PURPOSE', roleMode: 'OPERATIONS', screenPath: '/room/drivers' });
-  assertCondition(includesAny(driversChips.join(' '), ['Aktif/pasif sürücü durumu ne?', 'Vardiya veya araç bağı ne durumda?']), 'drivers chips are role aware');
+  assertCondition(includesAny(driversChips.join(' '), ['Bu ekranı detaylı anlat', 'Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla']), 'drivers chips are role aware');
   const unknownChips = buildSuggestedChips({ entityType: 'screen', questionType: 'SCREEN_PURPOSE', roleMode: 'OPERATIONS', screenPath: '/mystery/unknown' });
   assertCondition(includesAny(unknownChips.join(' '), ['Bu ekran ne için var?', 'İlk neye bakayım?', 'Hangi ekrana geçeyim?']), 'unknown chips stay generic');
   assertCondition(JSON.stringify(feedbackChips) !== JSON.stringify(driversChips), 'chips differ by path');
 
-  must(intent, "return ['Bu ekran ne için var?', 'İlk neye bakayım?', 'Hangi ekrana geçeyim?', 'Sıradaki adımı açıkla'];", 'intent router keeps global simple screen chips');
-  must(intent, "chips.push('Bu ekran ne için var?', 'İlk neye bakayım?', 'Hangi ekrana geçeyim?', 'Sıradaki adımı açıkla', 'Bu rolde ne yapabilirim?');", 'intent router keeps global screen chips');
+  must(intent, "return ['Bu ekranı detaylı anlat', 'İlk neye bakayım?', 'Burada eksik ne olabilir?', 'Hangi ekrana geçmeliyim?'];", 'intent router keeps global simple screen chips');
+  must(intent, "chips.push('Bu ekranı detaylı anlat', 'Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla', 'İlgili yere götür');", 'intent router keeps global screen chips');
   must(intent, '/room/drivers', 'intent router keeps room drivers chips');
   must(intent, '/shared/feedback', 'intent router keeps feedback chips');
   must(intent, '/shared/kvkk', 'intent router keeps kvkk chips');
@@ -249,20 +249,20 @@ function main() {
   must(catalog, 'Açık veya kritik kayıt var mı.', 'screen catalog keeps feedback first step');
   must(catalog, 'Sonra tekrarlayan kayıtları ve sorumlu rolü kontrol et.', 'screen catalog keeps feedback next step');
   must(catalog, '/shared/kvkk', 'screen catalog keeps kvkk screen');
-  must(catalog, 'Bu rolde hangi bilgi görünür.', 'screen catalog keeps kvkk first step');
+  must(catalog, 'Bu bilgi bu rolde görünmeyebilir.', 'screen catalog keeps kvkk first step');
   must(catalog, '/shared/notifications', 'screen catalog keeps notifications screen');
-  must(catalog, 'Bildirimin türü ve zamanı ne.', 'screen catalog keeps notifications first step');
+  must(catalog, 'Bildirimin türünü ve zamanını incele.', 'screen catalog keeps notifications first step');
   must(catalog, '/shared/logs', 'screen catalog keeps logs screen');
-  must(catalog, 'Hangi kaydı karşılaştıracaksın.', 'screen catalog keeps logs first step');
+  must(catalog, 'Karşılaştırılacak kaydı seç.', 'screen catalog keeps logs first step');
 
   must(roomCompany, '/room/drivers', 'room company catalog keeps drivers screen');
   must(roomCompany, 'Sürücü kayıtlarını, görev uygunluğunu ve servis operasyonundaki sürücü durumunu görmek için kullanılır.', 'room company catalog keeps drivers natural menu purpose');
-  must(roomCompany, 'Aktif/pasif sürücü durumu ve görev bağlantısı.', 'room company catalog keeps drivers first step');
+  must(roomCompany, 'Aktif/pasif sürücü durumunu ve görev bağlantısını incele.', 'room company catalog keeps drivers first step');
   must(roomCompany, 'İlgili sürücünün vardiya, araç veya bildirim durumunu kontrol et.', 'room company catalog keeps drivers next step');
   must(roomCompany, 'Bu ekranı harita ya da canlı takip ekranı sanma.', 'room company catalog keeps drivers boundary');
   must(roomCompany, 'chatQuestions: ["Bu ekran ne için var?", "Bu ne?", "Burası ne?", "İlk neye bakayım?"]', 'room company catalog keeps drivers short questions');
-  must(roomCompany, 'Kayıt hangi aşamada.', 'room company catalog keeps commercial flow first step');
-  must(roomCompany, 'Hangi rapor türüne baktığını seç.', 'room company catalog keeps reports first step');
+  must(roomCompany, 'Kaydın hangi aşamada olduğunu incele.', 'room company catalog keeps commercial flow first step');
+  must(roomCompany, 'İncelenecek rapor türünü seç.', 'room company catalog keeps reports first step');
 
   must(pack, 'cop03a-feedback-purpose', 'golden pack keeps feedback polish case');
   must(pack, 'bak..', 'golden pack keeps feedback forbidden bak marker');
