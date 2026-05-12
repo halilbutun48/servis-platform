@@ -64,6 +64,7 @@
 - `COP-01A-E - green/closed` (`COP-01E` kabul halkası dahil)
 - `COP-02A - green/closed`
 - `COP-02B - green/closed`
+- `COP-03A - green/closed`
 - `OP-04 - green/closed`
 - `UX-KVKK-01 - green/closed`
 - `MOBILE-TEXT-01 - green/closed`

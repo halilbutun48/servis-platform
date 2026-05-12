@@ -2,6 +2,15 @@ import { pickTerms } from "./glossary.js";
 import { button, inferGuideKeyFromScreen, screen } from "./screenCatalog.shared.js";
 import { COMPANY, ROOM } from './screenCatalog.roomCompany.js';
 
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (value == null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return '';
+}
+
 const SCHOOL = COMPANY.map((x) => ({
   ...x,
   path: x.path.replace('/company', '/school'),
@@ -109,6 +118,81 @@ const ORGANIZATION = COMPANY.map((x) => {
     screenMenus: [{ label: 'Organizasyon Merkezi', path: '/organization', purpose: 'Genel özet için açılır.' }],
   }),
 ]);
+
+const SHARED = [
+  screen(9001, '/shared/notifications', 'Bildirimler', {
+    menuPurpose: 'Kullanıcıya giden uyarıları ve sistem bildirimlerini okumak için kullanılır.',
+    forWhom: 'Tüm roller içindir.',
+    firstStep: 'Önce bildirimin türünü ve zamanını oku.',
+    nextStep: 'Gerekirse loglar veya ilgili ekranı aç.',
+    doNotDo: 'Bildirim ile işlem kaydını aynı şey sanma.',
+    screenMenus: [
+      { label: 'Loglar', path: '/shared/logs', purpose: 'İşlem kaydını karşılaştırmak için açılır.' },
+      { label: 'Geri Bildirim', path: '/shared/feedback', purpose: 'Kullanıcı yorumunu ve değerlendirmeyi görmek için açılır.' },
+    ],
+    simpleTerms: pickTerms(['bildirim', 'notification']),
+  }),
+  screen(9002, '/shared/logs', 'Loglar', {
+    menuPurpose: 'Sistem işlem kayıtlarını ve izleri görmek için kullanılır.',
+    forWhom: 'Tüm roller içindir.',
+    firstStep: 'Önce neyi karşılaştıracağını netleştir.',
+    nextStep: 'Gerekirse ilgili bildirim veya ekranı aç.',
+    doNotDo: 'Log ile kullanıcı bildirimini karıştırma.',
+    screenMenus: [
+      { label: 'Bildirimler', path: '/shared/notifications', purpose: 'Kullanıcıya giden uyarıyı görmek için açılır.' },
+      { label: 'Geri Bildirim', path: '/shared/feedback', purpose: 'Geri bildirimin arkasındaki işlem kaydını görmek için açılır.' },
+    ],
+    simpleTerms: pickTerms(['islemKaydi']),
+  }),
+  screen(9003, '/shared/kvkk', 'KVKK', {
+    menuPurpose: 'Görüntüleme ve paylaşım sınırlarını hatırlatmak için kullanılır.',
+    forWhom: 'Tüm roller içindir.',
+    firstStep: 'Önce bu rolde neyin görünür olduğunu kontrol et.',
+    nextStep: 'Gerekirse KVKK panelindeki detaylı açıklamayı aç.',
+    doNotDo: 'Kısıtlı bilgiyi yetkisiz kullanıcıya açma.',
+    simpleTerms: pickTerms(['kvkk']),
+  }),
+  screen(9004, '/shared/feedback', 'Geri Bildirim', {
+    menuPurpose: 'Saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar. Personel, veli, sürücü, firma/okul/organizasyon ve oda geri bildirimleri burada izlenir. Açık, kritik, tekrarlayan, çözüldü ve kapandı durumları ile yıldız değerlendirme, kategori, ilgili ekran ve sorumlu rol bilgileri okunur. Açık/kritik/tekrarlayan/çözüldü/kapandı durumları kontrol edilir. Bu ekran harita veya araç seçme ekranı değildir.',
+    forWhom: 'Tüm roller içindir.',
+    firstStep: 'Önce açık veya kritik kayıt var mı bak.',
+    nextStep: 'Sonra tekrarlayan kayıtları ve sorumlu rolü kontrol et.',
+    doNotDo: 'Bu ekranı harita, araç seçme veya canlı takip ekranı sanma.',
+    stepByStep: [
+      'Açık veya kritik kayıt var mı bak.',
+      'Tekrarlayan kayıtları ayır.',
+      'Sorumlu rol, yıldız ve ilgili ekran bilgisini kontrol et.',
+    ],
+    commonMistakes: ['Harita veya araç seçme ekranı sanmak.', 'Tekrarlayan kaydı açık kayıtla karıştırmak.'],
+    doneChecklist: ['Açık/kritik kayıtlar görüldü.', 'Sorumlu rol ve yıldız değerlendirme okundu.'],
+    screenMenus: [
+      { label: 'Bildirimler', path: '/shared/notifications', purpose: 'İlgili kullanıcı uyarısını görmek için açılır.' },
+      { label: 'Loglar', path: '/shared/logs', purpose: 'Geri bildirimin arkasındaki işlem kaydını karşılaştırmak için açılır.' },
+      { label: 'KVKK', path: '/shared/kvkk', purpose: 'Görünürlük sınırını kontrol etmek için açılır.' },
+    ],
+    simpleTerms: pickTerms(['geriBildirim', 'degerlendirme']),
+  }),
+];
+
+function roleLabelForKey(key) {
+  return key === 'SCHOOL' ? 'OKUL' : key === 'ORGANIZATION' ? 'ORGANİZASYON' : key;
+}
+
+function buildSafeUnknownScreenDefinition(user, screenContext = {}, entityId = null) {
+  const roleKey = resolveRoleGuideKey(user, screenContext);
+  const rawPath = String(screenContext?.path || '').split('?')[0] || '';
+  const fallbackId = entityId != null ? Number(entityId) : (screenContext?.entityId != null ? Number(screenContext.entityId) : null);
+  return {
+    type: 'screen',
+    id: Number.isFinite(fallbackId) ? fallbackId : null,
+    roleKey,
+    roleLabel: roleLabelForKey(roleKey),
+    label: firstNonEmpty(screenContext?.label, 'Bu ekran'),
+    path: rawPath,
+    menuPurpose: 'Bu ekran için detaylı rehber henüz katalogda yok; görünen başlık ve panel bilgisine göre yardımcı olabilirim.',
+    isSafeFallback: true,
+  };
+}
 
 const DRIVER = [
   screen(3101, '/driver/today', 'Bugün', {
@@ -223,6 +307,18 @@ const DRIVER = [
     screenMenus: [{ label: 'Bugün', path: '/driver/today', purpose: 'Görev özetine dönmek için açılır.' }],
     simpleTerms: pickTerms(['checkin']),
   }),
+  screen(3106, '/driver/change-pin', 'PIN Değiştir', {
+    menuPurpose: 'Sürücünün kullanıcı kodu, PIN veya ilk şifre değiştirme akışını yönetmek için kullanılır.',
+    forWhom: 'Sürücü içindir.',
+    firstStep: 'Önce mevcut PIN veya ilk şifreyi doğrula.',
+    nextStep: 'Sonra yeni PIN belirle ve girişini yenile.',
+    doNotDo: 'PIN bilgisini başka biriyle paylaşma.',
+    stepByStep: ['Mevcut PIN veya ilk şifreyi doğrula.', 'Yeni PIN belirle.', 'Gerekirse tekrar giriş yap.'],
+    commonMistakes: ['Eski PIN ile yeni PIN’i karıştırmak.', 'Başkasının hesabında işlem yapmak.'],
+    doneChecklist: ['PIN değişikliği tamamlandı.', 'Yeni giriş doğrulandı.'],
+    screenMenus: [{ label: 'Bugün', path: '/driver/today', purpose: 'Göreve dönmek için açılır.' }],
+    simpleTerms: pickTerms(['pin', 'ilkSifre']),
+  }),
   screen(3105, '/driver/copilot', 'Copilot', {
     menuPurpose: 'Sürücünün ekranda ne yapacağını anlaması için sade yardım verir.',
     forWhom: 'Sürücü içindir.',
@@ -247,6 +343,7 @@ const DRIVER = [
     ],
     chatQuestions: ['Bu ekranda önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?'],
   }),
+  ...SHARED,
 ];
 
 const PERSONEL = [
@@ -285,6 +382,7 @@ const PERSONEL = [
     doneChecklist: ['Doğru yardım açıldı.'],
     buttonGuides: [button('Rehberi aç', 'Sade ekran yardımını çalıştırır.', 'Takıldığında kullan.', 'Yardım sonucu görünür.')],
   }),
+  ...SHARED,
 ];
 
 const PARENT = [
@@ -311,6 +409,7 @@ const PARENT = [
     doneChecklist: ['Ekran daha anlaşılır hale geldi.'],
     buttonGuides: [button('Rehberi aç', 'Seçili ekran için sade yardım üretir.', 'Ne gördüğünü anlamıyorsan kullan.', 'Sade yardım görünür.')],
   }),
+  ...SHARED,
 ];
 
 const SUPER_ADMIN = [
@@ -417,6 +516,35 @@ const SUPER_ADMIN = [
     buttonGuides: [button('Kaydet', 'Seçili kontrol maddesi için durum, kanıt ve notu kayıt altına alır.', 'Kontrol maddesini netleştirdiğinde kullan.', 'Kayıt, role surface üzerinde görünür hale gelir.')],
     screenMenus: [{ label: 'Canlı İzleme', path: '/superadmin/observability', purpose: 'Canlı kanıt ve saha sinyalini desteklemek için açılır.' }, { label: 'Kabul Merkezi', path: '/superadmin/acceptance', purpose: 'Saha kabul checklisti ile birlikte okumak için açılır.' }],
   }),
+  screen(6110, '/superadmin/pilot-launch-gate', 'Sahaya Çıkış Kontrolü', {
+    menuPurpose: 'Sahaya çıkış öncesi güvenli kapı ve yayın kararını görmek için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce yayın kararını ve güvenlik işaretlerini oku.',
+    nextStep: 'Gerekirse kabul merkezi veya operasyon doğrulama ekranına geç.',
+    doNotDo: 'Açık işaretler tamamlanmadan canlı yayına geçme.',
+    simpleTerms: pickTerms(['launchGate']),
+  }),
+  screen(6111, '/superadmin/ssot-alignment', 'Sistem Standartları', {
+    menuPurpose: 'Tek doğru kaynak, kural uyumu ve ekran standartlarını görmek için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce hangi standartın bozulduğunu oku.',
+    nextStep: 'Gerekirse ilgili ürün ekranına dön.',
+    doNotDo: 'Standart metnini sahadaki canlı karardan ayırmadan yorum yapma.',
+  }),
+  screen(6112, '/superadmin/commercial-core', 'Ticari Akış', {
+    menuPurpose: 'Hakediş hazırlığı, önizleme ve CSV taslağını görmek için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce hazırlık, önizleme ve güvenli mod durumunu oku.',
+    nextStep: 'Gerekirse hakediş önizleme veya CSV taslağına geç.',
+    doNotDo: 'Aktif ödeme ve settlement işlemi varmış gibi davranma.',
+  }),
+  screen(6114, '/superadmin/regions', 'Bölgeler', {
+    menuPurpose: 'Bölge, kapsam ve atama sınırlarını görmek için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce doğru bölgeyi seç.',
+    nextStep: 'Gerekirse bağlı şirket veya oda tarafına geç.',
+    doNotDo: 'Bölgeyi şirket veya oda ile aynı sanma.',
+  }),
   screen(6113, '/superadmin/trust-quality', 'Güven ve Kalite', {
     menuPurpose: 'Hizmet değerlendirmesi ve sağlayıcı kalite sinyalini birlikte görmek için kullanılır.',
     forWhom: 'Super admin içindir.',
@@ -427,6 +555,27 @@ const SUPER_ADMIN = [
     commonMistakes: ['Hizmet puanı ile sağlayıcı sinyalini karıştırmak.'],
     doneChecklist: ['Kalite sinyali okundu.'],
     screenMenus: [{ label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Kalite ve güven kontrolünü role surface tarafında desteklemek için açılır.' }],
+  }),
+  screen(6115, '/superadmin/logexport', 'Log Dışa Aktarımı', {
+    menuPurpose: 'İşlem kayıtlarını güvenli şekilde dışa aktarmak için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce hangi zaman aralığını dışa aktaracağını belirle.',
+    nextStep: 'Gerekirse kayıtları filtrele ve dışa aktar.',
+    doNotDo: 'Dışa aktarımı canlı işlemle karıştırma.',
+  }),
+  screen(6116, '/superadmin/natural-copilot', 'Doğal Copilot', {
+    menuPurpose: 'Program içi doğal soru-cevap rehberini açmak için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce hangi ekran veya kayıt hakkında konuşacağını seç.',
+    nextStep: 'Gerekirse ilgili yönetim ekranına geç.',
+    doNotDo: 'Sabit soru bankası sanıp uzun liste bekleme.',
+  }),
+  screen(6117, '/superadmin/operations', 'Denetim Paneli', {
+    menuPurpose: 'Servis kanıtı, GPS görünürlüğü ve operasyon blokajlarını birlikte okumak için kullanılır.',
+    forWhom: 'Super admin içindir.',
+    firstStep: 'Önce denetim özetini oku.',
+    nextStep: 'Sonra kanıt, GPS ve değerlendirme satırlarını incele.',
+    doNotDo: 'Harita veya araç seçme ekranı sanma.',
   }),
   screen(6104, '/superadmin/copilot', 'Copilot', {
     menuPurpose: 'Sistem genelinde rehber ve açıklama almak için kullanılır.',
@@ -439,6 +588,7 @@ const SUPER_ADMIN = [
     doneChecklist: ['Doğru rehber seçildi.'],
     buttonGuides: [button('Rehberi aç', 'Seçili yardım akışını çalıştırır.', 'Ekran veya iş açıklaması gerektiğinde kullan.', 'Sonuç görünür.')],
   }),
+  ...SHARED,
 ];
 
 const SCREEN_CATALOG = { ROOM, COMPANY, SCHOOL, ORGANIZATION, DRIVER, PERSONEL, PARENT, SUPER_ADMIN };
@@ -465,19 +615,29 @@ export function getScreenDefinitionForUser(user, screenContext = {}, entityId = 
   const key = resolveRoleGuideKey(user, screenContext);
   const list = SCREEN_CATALOG[key] || [];
   const rawPath = String(screenContext?.path || '').split('?')[0] || '';
-  let found = null;
-  if (rawPath) found = list.find((x) => x.path === rawPath) || null;
-  if (!found && entityId != null) found = list.find((x) => Number(x.id) === Number(entityId)) || null;
-  if (!found) found = list[0] || null;
-  if (!found) return null;
-  return {
-    type: 'screen',
-    id: Number(entityId || found.id || 0),
-    roleKey: key,
-    roleLabel: key === 'SCHOOL' ? 'OKUL' : key === 'ORGANIZATION' ? 'ORGANİZASYON' : key,
-    label: found.label,
-    ...found,
-  };
+  const foundByPath = rawPath ? list.find((x) => x.path === rawPath) || null : null;
+  if (foundByPath) {
+    return {
+      type: 'screen',
+      id: Number(foundByPath.id || 0),
+      roleKey: key,
+      roleLabel: roleLabelForKey(key),
+      ...foundByPath,
+    };
+  }
+  if (!rawPath && entityId != null) {
+    const foundById = list.find((x) => Number(x.id) === Number(entityId)) || null;
+    if (foundById) {
+      return {
+        type: 'screen',
+        id: Number(foundById.id || 0),
+        roleKey: key,
+        roleLabel: roleLabelForKey(key),
+        ...foundById,
+      };
+    }
+  }
+  return buildSafeUnknownScreenDefinition(user, screenContext, entityId);
 }
 
 export function buildRoleHelpSummary(user, screenContext = {}) {
@@ -486,7 +646,7 @@ export function buildRoleHelpSummary(user, screenContext = {}) {
   const first = list[0] || null;
   return {
     roleKey: key,
-    roleLabel: key === 'SCHOOL' ? 'OKUL' : key === 'ORGANIZATION' ? 'ORGANİZASYON' : key,
+    roleLabel: roleLabelForKey(key),
     screens: list.map((x) => ({ label: x.label, path: x.path, purpose: x.menuPurpose })),
     firstPath: first?.path || '',
   };

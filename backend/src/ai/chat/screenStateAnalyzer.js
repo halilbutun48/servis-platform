@@ -136,9 +136,207 @@ function badgeHas(badges, labelsOrValues) {
   return (Array.isArray(badges) ? badges : []).some((row) => wanted.some((val) => normalizeText(row?.label).includes(val) || normalizeText(row?.value).includes(val)));
 }
 
+const SURFACE_ANALYSIS_RULES = {
+  KVKK: {
+    surfaceLabel: 'KVKK',
+    reasoningLead: 'Bu ekran veri görünürlüğü, yetki sınırı, maskeleme ve saklama kuralını gösterir.',
+    nextBestAction: 'Önce bu rolde hangi bilginin görünür olduğunu kontrol et. Sonra maskeleme, retention ve log/export izini oku.',
+    safestNextStep: 'En risksiz adım, önce bu rolde görünür alanları ve saklama sınırını okumaktır.',
+    compareHint: 'KVKK ekranı ham veri açmaz; görünürlük sınırını anlatır.',
+    blocker: 'Önce bu rolde hangi bilginin görünür olduğunu kontrol et.',
+    missingData: 'Ekrandaki görünürlük, maskeleme veya retention özetleri boş görünüyor.',
+    fieldGroups: [
+      { label: 'Görünürlük', needles: ['görünür', 'görunur', 'visibility'] },
+      { label: 'Maskeleme', needles: ['maskele', 'mask'] },
+      { label: 'Saklama', needles: ['saklama', 'retention'] },
+      { label: 'Log / Export', needles: ['log', 'export'] },
+      { label: 'Yetki', needles: ['yetki', 'rol'] },
+    ],
+  },
+  NOTIFICATIONS: {
+    surfaceLabel: 'Bildirimler',
+    reasoningLead: 'Bu ekran kullanıcıya giden operasyon, görev, servis ve sistem uyarılarını toplar.',
+    nextBestAction: 'Önce okunmamış veya kritik bildirim var mı bak. Sonra ilgili kayda veya ekrana geç.',
+    safestNextStep: 'En risksiz adım, önce kritik veya okunmamış bildirimi ayırmaktır.',
+    compareHint: 'Bildirimler ekranı işlem kaydı değil; kullanıcıyı yönlendiren uyarı yüzeyidir.',
+    blocker: 'Önce okunmamış veya kritik bildirim var mı bak.',
+    missingData: 'Bildirim türü veya ilgili olay bilgisi görünmüyor.',
+    fieldGroups: [
+      { label: 'Durum', needles: ['durum', 'state', 'status'] },
+      { label: 'Öncelik', needles: ['öncelik', 'oncelik', 'kritik', 'priority'] },
+      { label: 'İlgili kayıt', needles: ['ilgili', 'related', 'ekran'] },
+      { label: 'Rol', needles: ['rol', 'sorumlu'] },
+    ],
+  },
+  LOG_EXPORT: {
+    surfaceLabel: 'Log Dışa Aktarımı',
+    reasoningLead: 'Bu ekran işlem kayıtlarını, denetim izini ve export geçmişini izler.',
+    nextBestAction: 'Önce hangi kaydı aradığını netleştir. Sonra filtre, yetki ve export geçmişini kontrol et.',
+    safestNextStep: 'En risksiz adım, önce aranan olay veya export kaydını doğrulamaktır.',
+    compareHint: 'Log ekranı ham payload göstermek için değil, işlem izini karşılaştırmak içindir.',
+    blocker: 'Önce hangi olay kaydını aradığını netleştir.',
+    missingData: 'İşlem, export veya audit izleri görünmüyor.',
+    fieldGroups: [
+      { label: 'Audit', needles: ['audit', 'iz', 'trace'] },
+      { label: 'Export', needles: ['export', 'dışa', 'disa'] },
+      { label: 'Son olay', needles: ['olay', 'event'] },
+      { label: 'Yetki', needles: ['yetki', 'rol'] },
+    ],
+  },
+  OPERATIONS: {
+    surfaceLabel: 'Operasyon Paneli',
+    reasoningLead: 'Bu ekran açık, riskli veya değişiklik isteyen işleri ve sonraki adımı gösterir.',
+    nextBestAction: 'Önce açık veya riskli kayıt var mı bak. Sonra sorumlu rol ve otomatik kabul durumunu kontrol et.',
+    safestNextStep: 'En risksiz adım, önce açık veya riskli kayıtları ayırmaktır.',
+    compareHint: 'Operasyon paneli karar yüzeyidir; harita veya ticari akış ekranı değildir.',
+    blocker: 'Önce açık veya riskli kayıt var mı bak.',
+    missingData: 'Açık iş, risk veya sorumlu rol özeti görünmüyor.',
+    fieldGroups: [
+      { label: 'Açık', needles: ['açık', 'open'] },
+      { label: 'Riskli', needles: ['risk', 'kritik', 'problem'] },
+      { label: 'Otomatik', needles: ['otomatik', 'auto'] },
+      { label: 'Sorumlu', needles: ['sorumlu', 'rol'] },
+    ],
+  },
+  COMMERCIAL_CORE: {
+    surfaceLabel: 'Ticari Akış',
+    reasoningLead: 'Bu ekran hakediş hazırlığı, önizleme, CSV taslağı ve readonly ödeme durumunu gösterir.',
+    nextBestAction: 'Önce hazırlık, önizleme ve güvenli mod durumunu oku. Sonra hakediş önizleme veya CSV taslağına geç.',
+    safestNextStep: 'En risksiz adım, önce ödeme başlatılmadığını ve sadece taslak veriyi okumaktır.',
+    compareHint: 'Ticari akış ekranı ödeme başlatmaz; hazırlanmış veriyi gösterir.',
+    blocker: 'Önce hazırlık, önizleme ve güvenli mod durumunu oku.',
+    missingData: 'Hakediş hazırlığı veya ödeme hesabı özeti görünmüyor.',
+    fieldGroups: [
+      { label: 'Hazırlık', needles: ['hazırlık', 'hazirlik'] },
+      { label: 'Önizleme', needles: ['önizleme', 'onizleme', 'preview'] },
+      { label: 'CSV', needles: ['csv', 'taslak'] },
+      { label: 'Ödeme', needles: ['ödeme', 'odeme', 'kapalı', 'kapali'] },
+      { label: 'Hakediş', needles: ['hakediş', 'hakedis'] },
+    ],
+  },
+  ROOM_COMMERCIAL_FLOW: {
+    surfaceLabel: 'Ticari Akışım',
+    reasoningLead: 'Bu ekran oda tarafındaki ticari akışı, teklif ve sözleşme ilişkisini gösterir.',
+    nextBestAction: 'Önce akış durumunu ve teklif kararını oku. Sonra sözleşme veya ilgili sağlayıcı adımına geç.',
+    safestNextStep: 'En risksiz adım, önce kaydın hangi aşamada olduğunu doğrulamaktır.',
+    compareHint: 'Bu ekran aktif ödeme başlatma ekranı değildir; ticari görünürlük sağlar.',
+    blocker: 'Önce kaydın hangi aşamada olduğunu oku.',
+    missingData: 'Teklif, sözleşme veya sağlayıcı özeti görünmüyor.',
+    fieldGroups: [
+      { label: 'Teklif', needles: ['teklif', 'offer'] },
+      { label: 'Sözleşme', needles: ['sözleşme', 'sozlesme'] },
+      { label: 'Sağlayıcı', needles: ['sağlayıcı', 'saglayici', 'provider'] },
+      { label: 'Sonraki adım', needles: ['sonraki', 'next'] },
+    ],
+  },
+  REPORTS: {
+    surfaceLabel: 'Raporlar',
+    reasoningLead: 'Bu ekran rapor, özet, filtre ve dışa aktarılan sonuçları toplar.',
+    nextBestAction: 'Önce hangi rapora baktığını seç. Sonra filtre ve özet alanlarını kontrol et.',
+    safestNextStep: 'En risksiz adım, önce rapor türünü ve filtreyi doğrulamaktır.',
+    compareHint: 'Rapor ekranı operasyon ve özet okuma yüzeyidir; canlı görev ekranı değildir.',
+    blocker: 'Önce hangi rapor türüne baktığını seç.',
+    missingData: 'Rapor türü, filtre veya özet başlığı görünmüyor.',
+    fieldGroups: [
+      { label: 'Rapor', needles: ['rapor', 'report'] },
+      { label: 'Özet', needles: ['özet', 'ozet', 'summary'] },
+      { label: 'Filtre', needles: ['filtre', 'filter'] },
+      { label: 'Export', needles: ['export', 'dışa', 'disa'] },
+    ],
+  },
+  DRIVER_PIN: {
+    surfaceLabel: 'PIN Değiştir',
+    reasoningLead: 'Bu ekran kullanıcı kodu, PIN veya ilk şifre değiştirme akışını yönetir.',
+    nextBestAction: 'Önce mevcut PIN veya ilk şifreyi doğrula. Sonra yeni PIN belirle ve girişini yenile.',
+    safestNextStep: 'En risksiz adım, önce mevcut PIN veya ilk şifreyi doğrulamaktır.',
+    compareHint: 'Bu ekran güvenlik yüzeyidir; token, hash veya canlı takip alanı değildir.',
+    blocker: 'Önce mevcut PIN veya ilk şifreyi doğrula.',
+    missingData: 'PIN veya doğrulama alanı görünmüyor.',
+    fieldGroups: [
+      { label: 'PIN', needles: ['pin'] },
+      { label: 'Şifre', needles: ['şifre', 'sifre', 'password'] },
+      { label: 'İlk giriş', needles: ['ilk giriş', 'ilk giris', 'first login'] },
+      { label: 'Doğrulama', needles: ['doğrula', 'verification'] },
+    ],
+  },
+  PILOT_LAUNCH_GATE: {
+    surfaceLabel: 'Sahaya Çıkış Kontrolü',
+    reasoningLead: 'Bu ekran sahaya çıkış öncesi kabul checklist, readiness ve kapı kontrolünü gösterir.',
+    nextBestAction: 'Önce checklist ve readiness durumunu oku. Sonra saha öncesi eksikleri kapat.',
+    safestNextStep: 'En risksiz adım, önce kabul checklistindeki açık maddeleri kapatmaktır.',
+    compareHint: 'Bu ekran canlı saha başlatma değil; çıkış öncesi kapı kontrolüdür.',
+    blocker: 'Önce checklist ve readiness durumunu oku.',
+    missingData: 'Kabul checklisti veya readiness özeti görünmüyor.',
+    fieldGroups: [
+      { label: 'Checklist', needles: ['checklist', 'kabul'] },
+      { label: 'Readiness', needles: ['readiness', 'hazır', 'hazir'] },
+      { label: 'Saha', needles: ['saha', 'field'] },
+      { label: 'Kapı', needles: ['gate', 'kapı', 'kapi'] },
+    ],
+  },
+  REGIONS: {
+    surfaceLabel: 'Bölgeler',
+    reasoningLead: 'Bu ekran bölge, kapasite ve operasyon alanı görünürlüğünü gösterir.',
+    nextBestAction: 'Önce bölge ve kapasite durumunu oku. Sonra alan veya kapsama detayına geç.',
+    safestNextStep: 'En risksiz adım, önce hangi bölgeye baktığını netleştirmektir.',
+    compareHint: 'Bu ekran operasyon haritası değildir; bölge kapasitesini anlatır.',
+    blocker: 'Önce hangi bölgeyi kontrol ettiğini netleştir.',
+    missingData: 'Bölge, kapasite veya kapsama özeti görünmüyor.',
+    fieldGroups: [
+      { label: 'Bölge', needles: ['bölge', 'bolge', 'region'] },
+      { label: 'Kapasite', needles: ['kapasite', 'capacity'] },
+      { label: 'Alan', needles: ['alan', 'area'] },
+      { label: 'Kapsama', needles: ['kapsama', 'coverage'] },
+    ],
+  },
+  SSOT_ALIGNMENT: {
+    surfaceLabel: 'Sistem Standartları',
+    reasoningLead: 'Bu ekran SSOT, milestone, repo ve doğrulama hizasını gösterir.',
+    nextBestAction: 'Önce SSOT ve milestone hizasını oku. Sonra repo/proje durumunu doğrula.',
+    safestNextStep: 'En risksiz adım, önce hangi hizanın bozulduğunu netleştirmektir.',
+    compareHint: 'Bu ekran ürün kararı değil; doğrulama ve hizalama yüzeyidir.',
+    blocker: 'Önce SSOT ve milestone hizasını kontrol et.',
+    missingData: 'SSOT, milestone veya doğrulama özetleri görünmüyor.',
+    fieldGroups: [
+      { label: 'SSOT', needles: ['ssot'] },
+      { label: 'Milestone', needles: ['milestone'] },
+      { label: 'Repo', needles: ['repo'] },
+      { label: 'Doğrulama', needles: ['verify', 'doğrulama'] },
+    ],
+  },
+  NATURAL_COPILOT: {
+    surfaceLabel: 'Doğal Copilot',
+    reasoningLead: 'Bu ekran Copilot rehber yüzeyini ve planlanan kabiliyetleri gösterir.',
+    nextBestAction: 'Önce mevcut yardım yüzeyini ve planlanan kabiliyeti ayır. Sonra ilgili ürün ekranına git.',
+    safestNextStep: 'En risksiz adım, önce mevcut rehber mi planlanan özellik mi olduğunu doğrulamaktır.',
+    compareHint: 'Bu ekran kullanıcı rehberi yüzeyidir; operasyon verisi veya ödeme ekranı değildir.',
+    blocker: 'Önce mevcut yardım yüzeyini ve planlanan kabiliyeti ayır.',
+    missingData: 'Rehber, planlanan kabiliyet veya mevcut ekran özeti görünmüyor.',
+    fieldGroups: [
+      { label: 'Rehber', needles: ['rehber', 'guide', 'copilot'] },
+      { label: 'Planlanan', needles: ['planlanan', 'planned'] },
+      { label: 'Ekran', needles: ['ekran', 'screen'] },
+      { label: 'Rol', needles: ['rol', 'role'] },
+    ],
+  },
+};
+
 function classifyScreenPath(path = '') {
   const p = normalizeText(path);
   if (p.includes('/georeview')) return 'GEOREVIEW';
+  if (p.includes('/shared/feedback')) return 'FEEDBACK';
+  if (p.includes('/shared/kvkk')) return 'KVKK';
+  if (p.includes('/shared/notifications')) return 'NOTIFICATIONS';
+  if (p.includes('/shared/logs')) return 'LOG_EXPORT';
+  if (p.includes('/company/operations') || p.includes('/school/operations') || p.includes('/organization/operations') || p.includes('/superadmin/operations')) return 'OPERATIONS';
+  if (p.includes('/room/commercial-flow')) return 'ROOM_COMMERCIAL_FLOW';
+  if (p.includes('/room/reports')) return 'REPORTS';
+  if (p.includes('/driver/change-pin')) return 'DRIVER_PIN';
+  if (p.includes('/superadmin/commercial-core')) return 'COMMERCIAL_CORE';
+  if (p.includes('/superadmin/pilot-launch-gate')) return 'PILOT_LAUNCH_GATE';
+  if (p.includes('/superadmin/regions')) return 'REGIONS';
+  if (p.includes('/superadmin/ssot-alignment')) return 'SSOT_ALIGNMENT';
+  if (p.includes('/superadmin/natural-copilot')) return 'NATURAL_COPILOT';
   if (p.includes('/commercial-flow')) return 'COMMERCIAL_FLOW';
   if (p.includes('/service-evaluation')) return 'SERVICE_EVALUATION';
   if (p.includes('/agreements')) return 'AGREEMENTS';
@@ -244,6 +442,81 @@ function analyzeGeoReview(screenContext, screenDefinition, conversationState) {
     : 'Koordinat doğruysa Kaydet ile sabitle. Seri gidiyorsan sonra Kaydet + Sonraki kullan.';
   result.safestNextStep = 'En risksiz adım, seçili kişi adını sağ panelde doğrulayıp sadece o kayıt üzerinde işaretleme yapmak.';
   result.compareHint = 'Kaydet veritabanına yazar. OK Yap yalnız büyük harita seçim modalını onaylar.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
+function analyzeFeedback(screenContext, screenDefinition, _conversationState) {
+  const result = makeResult('FEEDBACK', screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const badges = selectedBadgeRows(screenContext);
+  const status = findValue(fields, ['durum', 'state', 'status']);
+  const priority = findValue(fields, ['öncelik', 'oncelik', 'kritik', 'critical']);
+  const category = findValue(fields, ['kategori', 'category']);
+  const responsibleRole = findValue(fields, ['sorumlu rol', 'sorumlu', 'rol']);
+  const rating = findValue(fields, ['yıldız', 'yildiz', 'puan', 'rating']);
+  const relatedScreen = findValue(fields, ['ilgili ekran', 'ekran', 'screen']);
+  const repeated = findValue(fields, ['tekrarlayan', 'repeat', 'tekrar']);
+  const resolution = findValue(fields, ['çözüldü', 'cozuldu', 'kapandı', 'kapandi', 'resolved', 'closed']);
+  const note = findValue(fields, ['yorum', 'not', 'açıklama', 'aciklama', 'açiklama']);
+
+  if (!status && !priority && !category && !responsibleRole && !rating && !relatedScreen && !repeated && !resolution) {
+    result.blockers.push('Önce açık veya kritik kayıt var mı bak.');
+  }
+  if (hasBlankish(status) && hasBlankish(priority)) result.missingData.push('Açık/kritik durumu görünmüyor.');
+  if (status) result.evidence.push(`Durum: ${status}`);
+  if (priority) result.evidence.push(`Öncelik: ${priority}`);
+  if (category) result.evidence.push(`Kategori: ${category}`);
+  if (responsibleRole) result.evidence.push(`Sorumlu rol: ${responsibleRole}`);
+  if (rating) result.evidence.push(`Yıldız / Puan: ${rating}`);
+  if (relatedScreen) result.evidence.push(`İlgili ekran: ${relatedScreen}`);
+  if (repeated) result.evidence.push(`Tekrar eden: ${repeated}`);
+  if (resolution) result.evidence.push(`Kapanış: ${resolution}`);
+  if (note) result.evidence.push(`Not: ${note}`);
+  if (badgeHas(badges, ['open', 'kritik', 'critical', 'repeat', 'resolved', 'closed'])) {
+    const visible = badges.slice(0, 3).map((row) => `${row.label}: ${row.value}`).join(' • ');
+    if (visible) result.evidence.push(`Rozetler: ${visible}`);
+  }
+  result.reasoningLead = 'Bu ekran saha geri bildirimlerini, kullanıcı yorumlarını ve değerlendirme kayıtlarını toplar; harita veya araç seçme ekranı değildir.';
+  result.nextBestAction = 'Önce açık veya kritik kayıt var mı bak. Sonra tekrarlayan kayıtları ve sorumlu rolü kontrol et.';
+  result.safestNextStep = 'En risksiz adım, önce açık/kritik kayıtları ayırıp ardından sorumlu rol ve yıldız değerlendirmeyi okumaktır.';
+  result.compareHint = 'Geri Bildirim ekranı harita, araç seçme veya canlı takip ekranı değildir.';
+  applyStructuredFacts(result, screenContext);
+  applyUiSurface(result, screenContext);
+  return finalize(result);
+}
+
+function analyzeConfiguredSurface(type, screenContext, screenDefinition, conversationState, rule) {
+  const result = makeResult(type, screenContext, screenDefinition);
+  const fields = selectedFieldRows(screenContext);
+  const badges = selectedBadgeRows(screenContext);
+  const hits = [];
+
+  for (const group of Array.isArray(rule?.fieldGroups) ? rule.fieldGroups : []) {
+    const value = findValue(fields, group.needles || []);
+    if (!hasBlankish(value)) {
+      result.evidence.push(`${group.label}: ${value}`);
+      hits.push(value);
+    }
+  }
+
+  for (const group of Array.isArray(rule?.badgeGroups) ? rule.badgeGroups : []) {
+    const value = findValue(badges, group.needles || []);
+    if (!hasBlankish(value)) {
+      result.evidence.push(`${group.label}: ${value}`);
+      hits.push(value);
+    }
+  }
+
+  if (!result.selectedLabel && !hits.length) result.blockers.push(firstNonEmpty(rule?.blocker, 'Önce ilgili kayıt veya özet satırı seç.'));
+  if (!hits.length) result.missingData.push(firstNonEmpty(rule?.missingData, 'Ekrandaki özet alanları boş görünüyor.'));
+  result.reasoningLead = firstNonEmpty(rule?.reasoningLead, `Bu ekran ${rule?.surfaceLabel || screenDefinition?.label || 'bu yüzey'} için kullanılır.`);
+  result.nextBestAction = firstNonEmpty(rule?.nextBestAction, 'Önce görünen başlık ve açık kayıtları kontrol et.');
+  result.safestNextStep = firstNonEmpty(rule?.safestNextStep, 'En risksiz adım, önce seçili kayıt ve görünür özetleri birlikte okumaktır.');
+  result.compareHint = firstNonEmpty(rule?.compareHint, '');
+  const lastQuestion = normalizeText(conversationState?.lastUserMessage || '');
+  if (rule?.followUpPattern && rule?.followUpHint && rule.followUpPattern.test(lastQuestion)) result.changedHint = rule.followUpHint;
   applyStructuredFacts(result, screenContext);
   applyUiSurface(result, screenContext);
   return finalize(result);
@@ -602,6 +875,19 @@ export function analyzeScreenState({ screenContext = null, screenDefinition = nu
   const path = String(screenDefinition?.path || screenContext?.path || '');
   const type = classifyScreenPath(path);
   if (type === 'GEOREVIEW') return analyzeGeoReview(screenContext, screenDefinition, conversationState);
+  if (type === 'FEEDBACK') return analyzeFeedback(screenContext, screenDefinition, conversationState);
+  if (type === 'KVKK') return analyzeConfiguredSurface('KVKK', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.KVKK);
+  if (type === 'NOTIFICATIONS') return analyzeConfiguredSurface('NOTIFICATIONS', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.NOTIFICATIONS);
+  if (type === 'LOG_EXPORT') return analyzeConfiguredSurface('LOG_EXPORT', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.LOG_EXPORT);
+  if (type === 'OPERATIONS') return analyzeConfiguredSurface('OPERATIONS', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.OPERATIONS);
+  if (type === 'COMMERCIAL_CORE') return analyzeConfiguredSurface('COMMERCIAL_CORE', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.COMMERCIAL_CORE);
+  if (type === 'ROOM_COMMERCIAL_FLOW') return analyzeConfiguredSurface('ROOM_COMMERCIAL_FLOW', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.ROOM_COMMERCIAL_FLOW);
+  if (type === 'REPORTS') return analyzeConfiguredSurface('REPORTS', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.REPORTS);
+  if (type === 'DRIVER_PIN') return analyzeConfiguredSurface('DRIVER_PIN', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.DRIVER_PIN);
+  if (type === 'PILOT_LAUNCH_GATE') return analyzeConfiguredSurface('PILOT_LAUNCH_GATE', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.PILOT_LAUNCH_GATE);
+  if (type === 'REGIONS') return analyzeConfiguredSurface('REGIONS', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.REGIONS);
+  if (type === 'SSOT_ALIGNMENT') return analyzeConfiguredSurface('SSOT_ALIGNMENT', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.SSOT_ALIGNMENT);
+  if (type === 'NATURAL_COPILOT') return analyzeConfiguredSurface('NATURAL_COPILOT', screenContext, screenDefinition, conversationState, SURFACE_ANALYSIS_RULES.NATURAL_COPILOT);
   if (type === 'MAP') return analyzeMap(screenContext, screenDefinition, conversationState);
   if (type === 'SHIFTS') return analyzeShifts(screenContext, screenDefinition, conversationState);
   if (type === 'COMMERCIAL_FLOW') return analyzeCommercialFlow(screenContext, screenDefinition, conversationState);

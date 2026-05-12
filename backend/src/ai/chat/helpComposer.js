@@ -792,8 +792,16 @@ function composeTargetScreenLead({ sourceScreenDefinition, targetScreenDefinitio
 
 function composeScreenPurposeWithCarry({ guide, screenDefinition, sourceScreenDefinition, sourceScreenContext }) {
   const purpose = firstNonEmpty(screenDefinition?.menuPurpose, guide?.plainSummary, guide?.summary, 'Bu ekran bu işi yönetmek için kullanılır.');
-  const first = firstNonEmpty(screenDefinition?.firstStep, guide?.whatToDoNow, 'Önce doğru kayıt veya ana alanı kontrol et.');
-  const next = firstNonEmpty(screenDefinition?.nextStep, guide?.whatToDoNext, 'Sonra ilgili alt ekrana geç.');
+  const first = firstNonEmpty(
+    normalizeActionStepText(screenDefinition?.firstStep),
+    normalizeActionStepText(guide?.whatToDoNow),
+    'doğru kayıt veya ana alanı kontrol et.',
+  );
+  const next = firstNonEmpty(
+    normalizeActionStepText(screenDefinition?.nextStep),
+    normalizeActionStepText(guide?.whatToDoNext),
+    'ilgili alt ekrana geç.',
+  );
   const lead = composeTargetScreenLead({ sourceScreenDefinition, targetScreenDefinition: screenDefinition, sourceScreenContext });
   const carryHint = selectedCarrySummary(sourceScreenContext)
     ? firstNonEmpty((Array.isArray(screenDefinition?.firstControls) ? screenDefinition.firstControls : [])[0], first)
@@ -1037,7 +1045,11 @@ function roleLead(roleMode) {
 }
 
 function simpleNowText(guide, screenDefinition, fallback = 'Önce bu ekrandaki ana bilgiyi kontrol et.') {
-  return firstNonEmpty(guide?.whatToDoNow, screenDefinition?.firstStep, fallback);
+  return firstNonEmpty(
+    normalizeActionStepText(guide?.whatToDoNow),
+    normalizeActionStepText(screenDefinition?.firstStep),
+    normalizeActionStepText(fallback),
+  );
 }
 
 function simpleNextText(guide, screenDefinition) {
@@ -1394,9 +1406,9 @@ function composeDirectRouteReply({ screenDefinition, sourceScreenDefinition, sou
   const lead = composeTargetScreenLead({ sourceScreenDefinition, targetScreenDefinition: screenDefinition, sourceScreenContext });
   const rawFirst = buildTransferredFirstControls(screenDefinition, sourceScreenDefinition, sourceScreenContext)[0]
     || firstControls(screenDefinition, guide)[0]
-    || screenDefinition?.firstStep
-    || 'Önce doğru kaydı aç.';
-  const first = String(rawFirst || '').replace(/^önce\s+/i, '');
+    || normalizeActionStepText(screenDefinition?.firstStep)
+    || 'doğru kaydı aç.';
+  const first = normalizeActionStepText(rawFirst);
   return [
     lead,
     `Doğrudan hedef ekran: ${screenDefinition?.label || 'İlgili ekran'}.`,
@@ -2043,15 +2055,15 @@ function composeGeneralProductGuideReply({
     analysis?.nextBestAction,
     analysis?.safestNextStep,
     guide?.whatToDoNow,
-    screenDefinition?.firstStep,
-    sourceScreenDefinition?.firstStep,
+    normalizeActionStepText(screenDefinition?.firstStep),
+    normalizeActionStepText(sourceScreenDefinition?.firstStep),
     resolvedContextPriority.needsSelection ? 'Önce ilgili satırı seç.' : 'Önce görünen kayıt ve durum satırını kontrol et.',
   );
   const nextAction = firstNonEmpty(
     resolvedContextPriority.followUpPrompt,
     guide?.whatToDoNext,
-    screenDefinition?.nextStep,
-    sourceScreenDefinition?.nextStep,
+    normalizeActionStepText(screenDefinition?.nextStep),
+    normalizeActionStepText(sourceScreenDefinition?.nextStep),
     'İlgili ekranı açıp seçili kaydı kontrol et.',
   );
   const simpleReply = `Şimdi: ${screenLead} Bu programda bunun anlamı: ${programMeaning} Öneri: ${advice} Sıradaki doğru işlem: ${nextAction}.`;
@@ -2343,8 +2355,19 @@ function trimReplyLength(text, maxLength = 560) {
   return `${(cut > 90 ? sliced.slice(0, cut + 1) : sliced).trim()}…`;
 }
 
+function normalizeActionStepText(value) {
+  return firstNonEmpty(value, '')
+    .replace(/^(?:Önce|Once)\s*:\s*/i, '')
+    .replace(/^(?:Önce|Once)\s+/i, '')
+    .trim();
+}
+
 function openingActionForQuestionType(questionType, screenDefinition) {
-  const first = firstNonEmpty(screenDefinition?.firstStep, screenDefinition?.nextStep, 'ilgili kayıt veya alanı kontrol et');
+  const first = firstNonEmpty(
+    normalizeActionStepText(screenDefinition?.firstStep),
+    normalizeActionStepText(screenDefinition?.nextStep),
+    'ilgili kayıt veya alanı kontrol et',
+  );
   const map = {
     NEXT_STEP: `Önce ${first}.`,
     NEXT_SCREEN: `Önce ${first}.`,
@@ -2388,14 +2411,19 @@ function buildQualityHints({ reply, questionType, quickActions, intentConfidence
 }
 
 function verificationHintForQuestionType(questionType, screenDefinition, quickActions) {
-  const firstControl = firstNonEmpty(...(Array.isArray(screenDefinition?.firstControls) ? screenDefinition.firstControls : []), screenDefinition?.firstStep, 'ilgili kayıt veya ilk kontrol alanı');
+  const firstControl = firstNonEmpty(
+    ...(Array.isArray(screenDefinition?.firstControls) ? screenDefinition.firstControls.map((value) => normalizeActionStepText(value)) : []),
+    normalizeActionStepText(screenDefinition?.firstStep),
+    'ilgili kayıt veya ilk kontrol alanı',
+  );
   const screenLabel = String(screenDefinition?.label || 'bu ekran');
   const routeAction = (Array.isArray(quickActions) ? quickActions : []).find((row) => String(row?.actionKind || '') === 'OPEN_ROUTE');
+  const routeLabel = normalizeActionStepText(routeAction?.label);
   if (['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || ''))) return `${screenLabel} için önce ${firstControl} kontrolü yap; sonra yönlendirmeyi uygula.`;
   if (questionType === 'WHY_BLOCKED') return `Blokajı kesinleştirmek için önce ${firstControl} ve pasif/kırmızı alanları kontrol et.`;
   if (questionType === 'READINESS_CHECK') return `Hazır kararı vermeden önce ${firstControl} ve eksik görünen alanları kontrol et.`;
   if (questionType === 'STATUS_HELP') return `Durumu netleştirmek için önce ${firstControl} ve varsa seçili kaydın son sinyallerine bak.`;
-  if (routeAction?.label) return `${routeAction.label} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
+  if (routeLabel) return `${routeLabel} adımına geçmeden önce ${firstControl} kontrolünü yap.`;
   return `Önce ${firstControl} kontrolünü yap; sonra bu yönlendirmeyi uygula.`;
 }
 
@@ -2450,11 +2478,11 @@ function buildRoutePlan({ questionType, quickActions, screenDefinition, continui
   const routeHeavy = ['NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL', 'ROLE_HELP', 'SAFE_NEXT_STEP'].includes(String(questionType || ''));
   if (!routeHeavy && !primaryRoute) return null;
   const steps = [];
-  if (primaryRoute?.label) steps.push(`Önce ${primaryRoute.label}`);
+  if (primaryRoute?.label) steps.push(`Önce ${normalizeActionStepText(primaryRoute.label)}`);
   if (continuity?.sameEntity && continuity?.anchorLabel) steps.push(`Aynı kayıtla devam et: ${continuity.anchorLabel}`);
   const firstControl = firstNonEmpty(...(Array.isArray(screenDefinition?.firstControls) ? screenDefinition.firstControls : []), screenDefinition?.firstStep, 'ilk kontrol alanı');
   if (firstControl) steps.push(`İçeride ilk olarak şunu kontrol et: ${firstControl}`);
-  if (secondaryRoute?.label) steps.push(`Gerekirse sonra ${secondaryRoute.label}`);
+  if (secondaryRoute?.label) steps.push(`Gerekirse sonra ${normalizeActionStepText(secondaryRoute.label)}`);
   if (askAction?.askText || askAction?.label) steps.push(`Takılırsan bunu sor: ${firstNonEmpty(askAction?.askText, askAction?.label, '')}`);
   else if (guideAction?.label) steps.push(`İstersen rehber aç: ${guideAction.label}`);
   return {
