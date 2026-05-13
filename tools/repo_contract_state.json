@@ -132,7 +132,7 @@
                                 "warningThreshold":  1000,
                                 "blockThreshold":  1200,
   "currentLargeFileCount":  4,
-  "currentWarningHotFileCount":  2,
+  "currentWarningHotFileCount":  3,
                                "principles":  [
                                                   "line-count dusurmek icin kor refactor yok",
                                                   "once acceptance sonra kontrollu temizlik",
@@ -148,15 +148,19 @@
                                                                                             "class":  "justified-exception",
                                                                                             "note":  "decision-closed; migration-safe lokal degisiklik disinda line-count icin split yok"
                                                                                         },
-                                                        "web/src/panels/superadmin/CommercialCorePanel.jsx":  {
+                                                       "web/src/panels/superadmin/CommercialCorePanel.jsx":  {
                                                                                                         "class":  "safe-candidate-review",
                                                                                                         "note":  "payment preview bridge; kontrollu iyilestirme adayi"
                                                                                                     },
-                                                        "backend/src/ai/chat/goldenQuestionPack.js":  {
+                                                       "web/src/utils/copilotFacts.js":  {
+                                                                                             "class":  "safe-candidate-review",
+                                                                                             "note":  "readonly copilot facts helper; controlled cleanup adayi"
+                                                                                         },
+                                                       "backend/src/ai/chat/goldenQuestionPack.js":  {
                                                                                                              "class":  "safe-candidate-review",
                                                                                                              "note":  "copilot acceptance pack; kontrollu inceleme adayi"
                                                                                                          },
-                                                        "backend/scripts/bench_gps_publish_only.js":  {
+                                                       "backend/scripts/bench_gps_publish_only.js":  {
                                                                                                            "class":  "justified-exception",
                                                                                                            "note":  "benchmark harness; soak coverage lives here and line-count split is not worth the acceptance risk"
                                                                                                        }

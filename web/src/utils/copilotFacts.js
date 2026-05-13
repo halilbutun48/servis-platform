@@ -98,6 +98,245 @@ export function buildCopilotSignalSummary(signals = [], limit = 3) {
   return rows.join(' • ');
 }
 
+function signalText(value) {
+  return compactText(value, '');
+}
+
+function normalizeSignalText(value) {
+  return normalizeText(compactText(value, ''));
+}
+
+function scoreSignalTerms(text, terms = []) {
+  const normalized = normalizeSignalText(text);
+  if (!normalized) return 0;
+  let score = 0;
+  for (const term of Array.isArray(terms) ? terms : []) {
+    const needle = normalizeSignalText(term);
+    if (!needle) continue;
+    if (normalized.includes(needle)) {
+      score += 3;
+      continue;
+    }
+    if (needle.split(' ').some((part) => part && normalized.includes(part))) {
+      score += 1;
+    }
+  }
+  return score;
+}
+
+function pickSignalNote(id) {
+  switch (id) {
+    case 'missing-vehicle-driver':
+      return 'Önce seçili araç ve sürücü bağını doğrula.';
+    case 'route-stop':
+      return 'Rota ve durak bilgisini birlikte oku.';
+    case 'shift-status':
+      return 'Durum satırını ve bağlı vardiyayı birlikte kontrol et.';
+    case 'gps-old':
+      return 'Son GPS zamanını ve konum kaynağını kontrol et.';
+    case 'operation-proof':
+      return 'Kanıt kartını ve görünürlük satırını aç.';
+    case 'contract-shift':
+      return 'Sözleşme ile vardiya üretimi bağını kontrol et.';
+    case 'payment-info':
+      return 'Hakediş önizleme, ödeme hesabı ve komisyonu birlikte oku.';
+    case 'kvkk-access':
+      return 'Rol ve görünürlük sınırını kontrol et.';
+    case 'quality-signal':
+      return 'Kanıt, taslak skor ve inceleme kararını birlikte oku.';
+    case 'feedback-open':
+      return 'Açık veya kritik durumu önce ayır.';
+    case 'notification-source':
+      return 'Bildirimin bağlı olduğu olay kaydına git.';
+    default:
+      return '';
+  }
+}
+
+export function buildLiveFactConfidence({
+  screenType = '',
+  stage = '',
+  readiness = '',
+  readinessScore = 0,
+  summary = '',
+  blockers = [],
+  evidence = [],
+  selectedRecordStatus = '',
+  copilotSignals = [],
+} = {}) {
+  const evidenceText = compactList([...compactList(blockers, 4), ...compactList(evidence, 4)], 4).join(' • ');
+  const signalCount = Array.isArray(copilotSignals) ? copilotSignals.length : 0;
+  const screenSignal = signalCount > 0 || evidenceText ? 'Görünüyor' : 'Sınırlı';
+  const selectedSignal = signalText(selectedRecordStatus || stage || readiness || 'Seçili kayıt yok');
+  const workflowSignal = /READY/.test(normalizeSignalText(readiness)) || /READY/.test(normalizeSignalText(stage))
+    ? 'Hazır'
+    : Number.isFinite(Number(readinessScore)) && Number(readinessScore) >= 65
+      ? 'Kontrollü'
+      : 'Kısmi';
+  const combined = normalizeSignalText([screenType, stage, readiness, summary, evidenceText, selectedSignal].join(' '));
+  let missingSignal = 'Belirgin eksik yok';
+  if (/(kvkk|yetki|rol|gizli|görünmüyor|gorunmuyor)/.test(combined)) missingSignal = 'Yetki sınırı';
+  else if (/(gps|konum|telefon gps|son gps|offline)/.test(combined)) missingSignal = 'GPS bekleniyor';
+  else if (/(hakediş|hakedis|ödeme hesabı|odeme hesabi|komisyon|csv|önizleme|onizleme|eksik bilgi)/.test(combined)) missingSignal = 'Hakediş eksik bilgi';
+  else if (/(sözleşme|sozlesme|vardiya üretimi|vardiya uretimi|vardiya)/.test(combined)) missingSignal = 'Sözleşme/vardiya kontrolü';
+  else if (/(geri bildirim|feedback|açık|acik|kritik|tekrarlayan)/.test(combined)) missingSignal = 'Geri bildirim açık';
+  else if (/(bildirim|notification|olay kaynağı|olay kaynagi)/.test(combined)) missingSignal = 'Bildirim kaynağı';
+  else if (/(kalite|quality|sağlayıcı|saglayici|provider)/.test(combined)) missingSignal = 'Kalite sinyali';
+  else if (/(araç|arac|sürücü|surucu|durak|rota)/.test(combined)) missingSignal = 'Eksik veri';
+  const summaryText = selectedSignal && selectedSignal !== 'Seçili kayıt yok'
+    ? `Seçili kayıt: ${selectedSignal}. Ekrandaki sinyal ${screenSignal}. Genel workflow ${workflowSignal}. Eksik sinyal: ${missingSignal}.`
+    : `Ekrandaki sinyal ${screenSignal}. Genel workflow ${workflowSignal}. Eksik sinyal: ${missingSignal}.`;
+  return {
+    summary: summaryText,
+    rows: [
+      normalizeCopilotSignal({
+        id: 'screen_signal',
+        label: 'Ekrandaki sinyal',
+        value: screenSignal,
+        note: signalCount ? 'Ekrandan okunan sinyal var.' : 'Sinyal az.',
+      }),
+      normalizeCopilotSignal({
+        id: 'selected_record',
+        label: 'Seçili kayıt',
+        value: selectedSignal,
+        note: selectedSignal && selectedSignal !== 'Seçili kayıt yok' ? 'Seçili satırdan geliyor.' : 'Seçili kayıt görünmüyor.',
+      }),
+      normalizeCopilotSignal({
+        id: 'workflow_signal',
+        label: 'Genel workflow',
+        value: workflowSignal,
+        note: `Durum: ${signalText(readiness || stage || 'REVIEW_NEEDED')}`,
+      }),
+      normalizeCopilotSignal({
+        id: 'missing_signal',
+        label: 'Sinyal eksik',
+        value: missingSignal,
+        note: evidenceText || 'Belirgin boşluk görünmüyor.',
+      }),
+    ].filter(Boolean),
+  };
+}
+
+export function buildDiagnosticPriority({
+  screenType = '',
+  stage = '',
+  readiness = '',
+  selectedRecordStatus = '',
+  summary = '',
+  blockers = [],
+  evidence = [],
+  copilotSignals = [],
+} = {}) {
+  const signalTextParts = [
+    screenType,
+    stage,
+    readiness,
+    selectedRecordStatus,
+    summary,
+    ...compactList(blockers, 4),
+    ...compactList(evidence, 6),
+    ...compactList(
+      (Array.isArray(copilotSignals) ? copilotSignals : []).map((signal) => {
+        const normalized = normalizeCopilotSignal(signal);
+        return normalized ? `${normalized.label} ${normalized.value} ${normalized.note}` : '';
+      }),
+      8,
+    ),
+  ];
+  const text = normalizeSignalText(signalTextParts.join(' '));
+  const candidates = [
+    { id: 'missing-vehicle-driver', label: 'Eksik araç/sürücü', terms: ['araç', 'sürücü', 'driver', 'vehicle', 'plaka'] },
+    { id: 'route-stop', label: 'Rota/durak eksik', terms: ['rota', 'durak', 'route', 'stop'] },
+    { id: 'shift-status', label: 'Görev/vardiya durumu uygun değil', terms: ['vardiya', 'shift', 'approved', 'active', 'durum', 'status', 'hazır değil', 'hazir degil'] },
+    { id: 'gps-old', label: 'GPS yok/eski', terms: ['gps', 'konum', 'telefon gps', 'son gps', 'offline', 'eski'] },
+    { id: 'operation-proof', label: 'OperationProof eksik', terms: ['operationproof', 'kanıt', 'kanit', 'proof'] },
+    { id: 'contract-shift', label: 'Sözleşme/vardiya üretimi yok', terms: ['sözleşme', 'sozlesme', 'vardiya üretimi', 'vardiya uretimi', 'üretildi mi', 'uretildi mi'] },
+    { id: 'payment-info', label: 'Hakediş eksik bilgi', terms: ['hakediş', 'hakedis', 'ödeme hesabı', 'odeme hesabi', 'komisyon', 'csv', 'önizleme', 'onizleme', 'eksik bilgi'] },
+    { id: 'kvkk-access', label: 'KVKK/yetki nedeniyle görünmüyor', terms: ['kvkk', 'yetki', 'rol', 'görünmüyor', 'gorunmuyor', 'gizli'] },
+    { id: 'quality-signal', label: 'Kalite sinyali', terms: ['kalite', 'quality', 'sağlayıcı', 'saglayici', 'provider', 'değerlendirme', 'degerlendirme'] },
+    { id: 'feedback-open', label: 'Geri bildirim açık', terms: ['geri bildirim', 'feedback', 'açık', 'acik', 'kritik', 'tekrarlayan'] },
+    { id: 'notification-source', label: 'Bildirim kaynağı', terms: ['bildirim', 'notification', 'olay', 'kaynak'] },
+  ];
+  const boostedIds = new Set(
+    screenType === 'PAYMENT_READINESS'
+      ? ['payment-info', 'contract-shift', 'shift-status', 'kvkk-access']
+      : screenType === 'TRUST_QUALITY'
+        ? ['quality-signal', 'feedback-open', 'operation-proof']
+        : screenType === 'FEEDBACK'
+          ? ['feedback-open', 'notification-source', 'kvkk-access']
+          : screenType === 'MAP'
+            ? ['gps-old', 'missing-vehicle-driver', 'route-stop']
+            : screenType === 'SHIFTS'
+              ? ['missing-vehicle-driver', 'route-stop', 'shift-status', 'operation-proof']
+              : screenType === 'COMMERCIAL_FLOW'
+                ? ['payment-info', 'contract-shift', 'shift-status']
+                : [],
+  );
+  const ranked = candidates
+    .map((candidate, index) => {
+      const keywordScore = scoreSignalTerms(text, candidate.terms);
+      const screenScore = boostedIds.has(candidate.id) ? 2 : 0;
+      return {
+        ...candidate,
+        index,
+        score: keywordScore + screenScore,
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  const picked = ranked.slice(0, 4);
+  const prioritySummary = picked.length
+    ? `En olası sıra: ${picked.map((item) => item.label).join(' • ')}`
+    : 'Belirgin öncelik ayrımı yok';
+  return {
+    summary: prioritySummary,
+    rows: picked.map((item, idx) => normalizeCopilotSignal({
+      id: item.id,
+      label: `${idx + 1}. öncelik`,
+      value: item.label,
+      note: pickSignalNote(item.id),
+    })).filter(Boolean),
+  };
+}
+
+export function buildActionSimulationWording({
+  screenType = '',
+  stage = '',
+  readiness = '',
+  selectedRecordStatus = '',
+  diagnosticPriority = null,
+  roleBoundary = '',
+} = {}) {
+  const topPriority = compactText(diagnosticPriority?.rows?.[0]?.value || diagnosticPriority?.rows?.[0]?.label || '', '');
+  const normalizedScreenType = normalizeSignalText(screenType);
+  let text = 'Bu durumda doğru aksiyon şu olurdu: önce en güçlü sinyali doğrula, sonra ilgili ekranı aç; gerçek write yok.';
+  if (normalizedScreenType === 'PAYMENT_READINESS' || normalizedScreenType === 'COMMERCIAL_FLOW') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: hakediş önizleme, eksik bilgi, ödeme hesabı ve komisyon satırlarını kontrol et; gerçek write yok.';
+  } else if (normalizedScreenType === 'TRUST_QUALITY') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: kanıt, taslak skor, inceleme kararı ve denetim izini birlikte kontrol et; kesin sıralama yapma.';
+  } else if (normalizedScreenType === 'FEEDBACK') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: açık veya kritik kaydı ve sorumlu rolü kontrol et; yönetim aksiyonu yapma.';
+  } else if (normalizedScreenType === 'MAP' || normalizedScreenType === 'SHIFTS' || normalizedScreenType === 'OPERATION_PROOF') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: araç, sürücü, rota/durak ve GPS sinyalini birlikte kontrol et; sonra doğru ekranı aç.';
+  } else if (normalizedScreenType === 'KVKK' || normalizedScreenType === 'ROLE_HELP') {
+    text = 'Bu durumda doğru aksiyon şu olurdu: rol ve görünürlük sınırını kontrol et; yetkisiz yönetim aksiyonu önermem.';
+  } else if (topPriority) {
+    text = `Bu durumda doğru aksiyon şu olurdu: önce ${topPriority.toLocaleLowerCase('tr-TR')} kontrol edilir, sonra uygun ekran açılır; gerçek write yok.`;
+  }
+  if (roleBoundary) {
+    text += ' Bu rolde yönetim aksiyonu önermem.';
+  }
+  if (selectedRecordStatus && !text.includes(selectedRecordStatus)) {
+    text += ` Seçili kayıt durumu: ${selectedRecordStatus}.`;
+  }
+  if (stage && !text.includes(stage)) {
+    text += ` Aşama: ${stage}.`;
+  }
+  if (readiness && !text.includes(readiness)) {
+    text += ` Hazırlık: ${readiness}.`;
+  }
+  return text.trim();
+}
+
 function buildReadonlyCopilotFacts({
   screenType = '',
   stage = '',
@@ -112,16 +351,71 @@ function buildReadonlyCopilotFacts({
   counters = {},
   copilotSignals = [],
   boundaryNotes = [],
+  selectedRecordStatus = '',
+  liveFactConfidence = null,
+  diagnosticPriority = null,
+  actionSimulation = '',
 }) {
   const signals = (Array.isArray(copilotSignals) ? copilotSignals : [])
     .map((signal, idx) => normalizeCopilotSignal(signal, `signal_${idx + 1}`))
     .filter(Boolean)
     .slice(0, 8);
+  const selectedRecordStatusText = compactText(selectedRecordStatus, compactText(stage || readiness || summary || 'Seçili kayıt yok', 'Seçili kayıt yok'));
+  const liveFactConfidenceValue = liveFactConfidence && typeof liveFactConfidence === 'object'
+    ? {
+      summary: compactText(liveFactConfidence.summary || ''),
+      rows: Array.isArray(liveFactConfidence.rows)
+        ? liveFactConfidence.rows.map((row, idx) => normalizeCopilotSignal(row, `live_fact_${idx + 1}`)).filter(Boolean)
+        : [],
+    }
+    : buildLiveFactConfidence({
+      screenType: compactText(screenType, 'SCREEN'),
+      stage,
+      readiness,
+      readinessScore,
+      summary,
+      blockers,
+      evidence,
+      selectedRecordStatus: selectedRecordStatusText,
+      copilotSignals: signals,
+    });
+  const diagnosticPriorityValue = diagnosticPriority && typeof diagnosticPriority === 'object'
+    ? {
+      summary: compactText(diagnosticPriority.summary || ''),
+      rows: Array.isArray(diagnosticPriority.rows)
+        ? diagnosticPriority.rows.map((row, idx) => normalizeCopilotSignal(row, `diagnostic_${idx + 1}`)).filter(Boolean)
+        : [],
+    }
+    : buildDiagnosticPriority({
+      screenType: compactText(screenType, 'SCREEN'),
+      stage,
+      readiness,
+      selectedRecordStatus: selectedRecordStatusText,
+      summary,
+      blockers,
+      evidence,
+      copilotSignals: signals,
+    });
+  const actionSimulationText = compactText(
+    actionSimulation
+      || buildActionSimulationWording({
+        screenType: compactText(screenType, 'SCREEN'),
+        stage,
+        readiness,
+        selectedRecordStatus: selectedRecordStatusText,
+        diagnosticPriority: diagnosticPriorityValue,
+      }),
+    '',
+  );
   return {
     screenType: compactText(screenType, 'SCREEN'),
     stage: compactText(stage, '-'),
     readiness: compactText(readiness, 'REVIEW_NEEDED'),
     readinessScore: Number.isFinite(Number(readinessScore)) ? Number(readinessScore) : 0,
+    selectedRecordStatus: selectedRecordStatusText,
+    liveFactConfidence: liveFactConfidenceValue,
+    diagnosticPriority: diagnosticPriorityValue,
+    actionSimulation: actionSimulationText,
     blockers: compactList(blockers, 5),
     evidence: compactList(evidence, 6),
     nextBestAction: compactText(nextBestAction),
@@ -135,6 +429,9 @@ function buildReadonlyCopilotFacts({
     copilotSummary: compactList([
       summary,
       buildCopilotSignalSummary(signals, 3),
+      selectedRecordStatusText,
+      liveFactConfidenceValue?.summary || '',
+      diagnosticPriorityValue?.summary || '',
       ...compactList(boundaryNotes, 3),
     ], 3).join(' • '),
     copilotBoundary: compactList(boundaryNotes, 4),

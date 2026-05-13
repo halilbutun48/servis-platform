@@ -71,6 +71,45 @@ function applyStructuredFacts(result, screenContext) {
   result.safestNextStep = firstNonEmpty(facts?.safestNextStep, result.safestNextStep, '');
   result.changedHint = firstNonEmpty(facts?.changedHint, result.changedHint, '');
   result.compareHint = firstNonEmpty(facts?.compareHint, result.compareHint, '');
+  result.selectedRecordStatus = firstNonEmpty(facts?.selectedRecordStatus, result.selectedRecordStatus, '');
+  const liveFactConfidence = facts?.liveFactConfidence;
+  if (liveFactConfidence) {
+    if (typeof liveFactConfidence === 'object') {
+      result.liveFactConfidence = {
+        summary: firstNonEmpty(liveFactConfidence.summary, result.liveFactConfidence?.summary, ''),
+        rows: Array.isArray(liveFactConfidence.rows) ? liveFactConfidence.rows.slice(0, 6) : (Array.isArray(result.liveFactConfidence?.rows) ? result.liveFactConfidence.rows : []),
+      };
+    } else {
+      result.liveFactConfidence = {
+        summary: String(liveFactConfidence),
+        rows: Array.isArray(result.liveFactConfidence?.rows) ? result.liveFactConfidence.rows : [],
+      };
+    }
+  }
+  const diagnosticPriority = facts?.diagnosticPriority;
+  if (diagnosticPriority) {
+    if (typeof diagnosticPriority === 'object') {
+      result.diagnosticPriority = {
+        summary: firstNonEmpty(diagnosticPriority.summary, result.diagnosticPriority?.summary, ''),
+        rows: Array.isArray(diagnosticPriority.rows) ? diagnosticPriority.rows.slice(0, 6) : (Array.isArray(result.diagnosticPriority?.rows) ? result.diagnosticPriority.rows : []),
+      };
+    } else {
+      result.diagnosticPriority = {
+        summary: String(diagnosticPriority),
+        rows: Array.isArray(result.diagnosticPriority?.rows) ? result.diagnosticPriority.rows : [],
+      };
+    }
+  }
+  const actionSimulation = firstNonEmpty(
+    facts?.actionSimulation?.value,
+    facts?.actionSimulation?.summary,
+    typeof facts?.actionSimulation === 'string' ? facts.actionSimulation : '',
+    result.actionSimulation,
+    '',
+  );
+  if (actionSimulation) {
+    result.actionSimulation = String(actionSimulation);
+  }
   if (Number.isFinite(Number(facts?.readinessScore))) { result.readinessScore = Math.max(18, Math.min(97, Math.round(Number(facts.readinessScore)))); result.explicitScore = true; }
   if (facts?.readiness) { result.readiness = String(facts.readiness); result.explicitReadiness = true; }
   if (Number.isFinite(Number(facts?.healthScore))) { result.healthScore = Math.max(0.18, Math.min(0.97, Number(facts.healthScore))); result.explicitHealth = true; }
@@ -371,6 +410,10 @@ function makeResult(type, screenContext, screenDefinition) {
     safestNextStep: '',
     changedHint: '',
     compareHint: '',
+    selectedRecordStatus: '',
+    liveFactConfidence: { summary: '', rows: [] },
+    diagnosticPriority: { summary: '', rows: [] },
+    actionSimulation: '',
     disabledHints: [],
     explicitReadiness: false,
     explicitScore: false,

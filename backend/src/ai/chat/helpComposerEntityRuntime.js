@@ -99,9 +99,49 @@ export function createEntityRuntimeHelpers({
     return `kontrollü ilerlemeli (${score}/100)`;
   }
 
+  function analyzerSelectedRecordStatusText(analysis) {
+    return firstNonEmpty(
+      analysis?.selectedRecordStatus,
+      '',
+    );
+  }
+
+  function analyzerLiveFactConfidenceText(analysis) {
+    const live = analysis?.liveFactConfidence;
+    if (!live) return '';
+    if (typeof live === 'string') return live;
+    return firstNonEmpty(
+      live?.summary,
+      Array.isArray(live?.rows) ? live.rows.slice(0, 2).map((row) => `${row?.label || 'Sinyal'}: ${row?.value || '-'}`).join(' • ') : '',
+      '',
+    );
+  }
+
+  function analyzerDiagnosticPriorityText(analysis) {
+    const priority = analysis?.diagnosticPriority;
+    if (!priority) return '';
+    if (typeof priority === 'string') return priority;
+    return firstNonEmpty(
+      priority?.summary,
+      Array.isArray(priority?.rows) ? priority.rows.slice(0, 3).map((row) => row?.value || row?.label || '').filter(Boolean).join(' • ') : '',
+      '',
+    );
+  }
+
+  function analyzerActionSimulationText(analysis) {
+    const sim = analysis?.actionSimulation;
+    if (!sim) return '';
+    if (typeof sim === 'string') return sim;
+    return firstNonEmpty(sim?.value, sim?.summary, '');
+  }
+
   function analyzerReply(analysis, mode = 'DIAGNOSIS') {
     if (!analysis) return '';
     const lead = firstNonEmpty(analysis.reasoningLead, 'Bu kayıtta önce seçili veriyi net okumak gerekiyor.');
+    const selectedStatus = analyzerSelectedRecordStatusText(analysis);
+    const confidence = analyzerLiveFactConfidenceText(analysis);
+    const priority = analyzerDiagnosticPriorityText(analysis);
+    const simulation = analyzerActionSimulationText(analysis);
     const evidence = analyzerEvidenceText(analysis);
     const blocker = analysis?.blockers?.[0] ? `Ana blokaj: ${analysis.blockers[0]}` : '';
     const missing = analysis?.missingData?.[0] ? `Eksik veri: ${analysis.missingData[0]}` : '';
@@ -109,14 +149,17 @@ export function createEntityRuntimeHelpers({
     const next = analysis?.nextBestAction ? `Şimdi yap: ${analysis.nextBestAction}` : '';
     const safest = analysis?.safestNextStep ? `En risksiz adım: ${analysis.safestNextStep}` : '';
     const changed = analysis?.changedHint ? `Not: ${analysis.changedHint}` : '';
-    if (mode === 'READINESS') return `${lead} Bu kayıt şu an ${analyzerReadinessLabel(analysis)}. ${blocker || missing || disabled} ${evidence} ${next}`.trim();
-    if (mode === 'SAFE_NEXT') return `${lead} ${evidence} ${safest || next}`.trim();
-    if (mode === 'MISSING') return `${lead} ${missing || blocker || disabled || 'Belirgin eksik veri görünmüyor.'} ${evidence} ${next}`.trim();
-    if (mode === 'CHANGED') return `${lead} ${changed || 'Ekranda gerçekten neyin değiştiğini anlamak için aynı satırın durum, rozet ve sonraki adım alanlarını birlikte karşılaştır.'} ${evidence}`.trim();
-    if (mode === 'COMPARE') return `${analysis?.compareHint || lead} ${evidence}`.trim();
-    if (mode === 'EVIDENCE') return `${evidence || 'Bu yorum seçili alan, rozet ve ekrandaki görünen ipuçlarına dayanıyor.'} ${disabled}`.trim();
-    if (mode === 'SHORT') return `${lead} ${blocker || missing || disabled || ''} ${next}`.trim();
-    return `${lead} ${blocker} ${missing} ${disabled} ${evidence} ${next}`.trim();
+    const confidenceLead = confidence ? `Ekrandaki sinyale göre: ${confidence}.` : '';
+    const priorityLead = priority ? `En olası neden: ${priority}.` : '';
+    const simulationLead = simulation ? `Bu durumda doğru aksiyon şu olurdu: ${simulation}` : '';
+    if (mode === 'READINESS') return `${lead} Bu kayıt şu an ${analyzerReadinessLabel(analysis)}. ${selectedStatus ? `Seçili kayıt durumu: ${selectedStatus}.` : ''} ${priorityLead || blocker || missing || disabled} ${confidenceLead || evidence} ${simulationLead || next}`.trim();
+    if (mode === 'SAFE_NEXT') return `${lead} ${confidenceLead || evidence} ${simulationLead || safest || next}`.trim();
+    if (mode === 'MISSING') return `${lead} ${missing || priorityLead || blocker || disabled || 'Bu daha çok eksik veri gibi duruyor.'} ${confidenceLead || evidence} ${simulationLead || next}`.trim();
+    if (mode === 'CHANGED') return `${lead} ${changed || 'Ekranda gerçekten neyin değiştiğini anlamak için aynı satırın durum, rozet ve sonraki adım alanlarını birlikte karşılaştır.'} ${confidenceLead || evidence}`.trim();
+    if (mode === 'COMPARE') return `${analysis?.compareHint || lead} ${confidenceLead || evidence}`.trim();
+    if (mode === 'EVIDENCE') return `${confidenceLead || evidence || 'Bu yorum seçili alan, rozet ve ekrandaki görünen ipuçlarına dayanıyor.'} ${disabled}`.trim();
+    if (mode === 'SHORT') return `${lead} ${priorityLead || blocker || missing || disabled || ''} ${simulationLead || next}`.trim();
+    return `${lead} ${priorityLead || blocker} ${missing} ${disabled} ${confidenceLead || evidence} ${simulationLead || next}`.trim();
   }
 
   function composeScreenLocationReply({ guide, screenDefinition }) {

@@ -210,7 +210,52 @@ export function createSelectedRuntimeHelpers(deps = {}) {
 
   function selectedSignalRows(screenContext) {
     const facts = structuredFacts(screenContext);
-    const rows = Array.isArray(facts?.copilotSignals) ? facts.copilotSignals : [];
+    const rows = [];
+    const selectedRecordStatus = firstNonEmpty(facts?.selectedRecordStatus, '');
+    if (selectedRecordStatus) {
+      rows.push({
+        label: 'Seçili kayıt durumu',
+        value: selectedRecordStatus,
+        note: 'Seçili satırın ana durumu.',
+      });
+    }
+    const liveFactConfidence = facts?.liveFactConfidence && typeof facts.liveFactConfidence === 'object' ? facts.liveFactConfidence : null;
+    if (liveFactConfidence?.summary) {
+      rows.push({
+        label: 'Ekrandaki sinyal',
+        value: liveFactConfidence.summary,
+        note: 'Canlı veri değil; ekrandaki özet.',
+      });
+    }
+    if (Array.isArray(liveFactConfidence?.rows)) {
+      rows.push(...liveFactConfidence.rows);
+    }
+    const diagnosticPriority = facts?.diagnosticPriority && typeof facts.diagnosticPriority === 'object' ? facts.diagnosticPriority : null;
+    if (diagnosticPriority?.summary) {
+      rows.push({
+        label: 'Diagnostic öncelik',
+        value: diagnosticPriority.summary,
+        note: 'Olası neden sırası.',
+      });
+    }
+    if (Array.isArray(diagnosticPriority?.rows)) {
+      rows.push(...diagnosticPriority.rows);
+    }
+    const actionSimulation = firstNonEmpty(
+      facts?.actionSimulation?.value,
+      facts?.actionSimulation?.summary,
+      facts?.actionSimulation,
+      '',
+    );
+    if (actionSimulation) {
+      rows.push({
+        label: 'Aksiyon simülasyonu',
+        value: actionSimulation,
+        note: 'Gerçek write yok.',
+      });
+    }
+    const signalRows = Array.isArray(facts?.copilotSignals) ? facts.copilotSignals : [];
+    rows.push(...signalRows);
     return rows
       .map((row, idx) => ({
         label: firstNonEmpty(row?.label, row?.key, row?.title, `Sinyal ${idx + 1}`),

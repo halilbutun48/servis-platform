@@ -36,7 +36,7 @@ export const ROOM = [
       { label: 'Vardiyalar', path: '/room/shifts', reason: 'Sorunun hangi işe bağlı olduğunu görmek için.' },
       { label: 'Araçlar', path: '/room/vehicles', reason: 'Araç, sürücü veya cihaz GPS tarafını kontrol etmek için.' },
     ],
-    chatQuestions: ['Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?', 'Sürücünün telefon GPS’i neden devrede?'],
+    chatQuestions: ['Bu araç neden haritada görünmüyor?', 'Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?', 'Sürücünün telefon GPS’i neden devrede?'],
     fieldGuides: [
       { label: 'Plaka', meaning: 'Seçili aracın kimliğidir.', howToRead: 'Önce doğru aracı seçtiğini buradan doğrula.' },
       { label: 'Shift durumu', meaning: 'Seçili işin operasyon durumudur.', howToRead: 'APPROVED veya ACTIVE bilgisini diğer alanlarla birlikte oku.', risk: 'Tek başına atama tamam anlamına gelmez.' },
@@ -281,7 +281,7 @@ export const ROOM = [
       { key: 'ROOM_COMMERCIAL_READY', title: 'Hazırlığı ayır', action: 'Hazır değil, eksik bilgi veya onay bekleyen alanları ayır.', doneWhen: 'Hazırlık eksikleri netleşir.', ifBlocked: 'Hazır değilse daha ileri karar verme.' },
       { key: 'ROOM_COMMERCIAL_NEXT', title: 'Sonraki ekranı seç', action: 'Gerekirse vardiya veya rapor ekranına geç.', doneWhen: 'Bir sonraki takip ekranı belli olur.', ifBlocked: 'Kabul edilmiş kayıt ile aktif operasyonu aynı sanma.' },
     ],
-    chatQuestions: ['Bu hakediş neden hazır değil?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana geçeyim?', 'Bu kayıt ne durumda?'],
+    chatQuestions: ['Bu sözleşmeden bugün vardiya üretildi mi?', 'Bu hakediş neden hazır değil?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana geçeyim?', 'Bu kayıt ne durumda?'],
   }),
   screen(1116, "/room/reports", "Raporlar", {
     menuPurpose: "Oda tarafındaki iş, araç ve sonuç raporlarını görmek için kullanılır.",

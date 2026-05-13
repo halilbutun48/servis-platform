@@ -43,6 +43,7 @@
     "check:cop03afix01": "node backend/scripts/cop_03a_fix_global_screen_purpose_check.js",
     "check:cop03afix02": "node backend/scripts/cop_03a_fix_02_visible_reply_chip_polish_check.js",
     "check:cop03b": "node backend/scripts/cop_03b_workflow_domain_depth_check.js",
+    "check:cop03c": "node backend/scripts/cop_03c_live_data_action_simulation_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
     "check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",

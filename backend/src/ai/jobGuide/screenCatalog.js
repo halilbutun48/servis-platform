@@ -248,7 +248,7 @@ const DRIVER = [
       { label: 'Harita', path: '/driver/map', reason: 'Canlı konum, ETA ve sesli destek için.' },
     ],
     dataRules: ['Bugün ekranı görev özetidir; canlı haritanın yerine geçmez.', 'Bugün boşsa sürücüye atanmış aktif vardiya olmayabilir.', 'Araç veya saat bilgisi eksikse room/company tarafında atama bağı kontrol edilmelidir.'],
-    chatQuestions: ['Bugün önce neyi kontrol edeyim?', 'Bu seçili kayıtta eksik ne var?', 'Hangi ekrana geçeyim?', 'Bu buton ne yapar?'],
+    chatQuestions: ['Ne yapayım?', 'Bugün önce neyi kontrol edeyim?', 'Bu seçili kayıtta eksik ne var?', 'Hangi ekrana geçeyim?', 'Bu buton ne yapar?'],
     fieldGuides: [
       { label: 'Görev', meaning: 'Bugün yapacağın işin özet başlığıdır.' },
       { label: 'Araç', meaning: 'Göreve bağlı araç bilgisidir.', risk: 'Boşsa atama eksik olabilir.' },
@@ -382,6 +382,7 @@ const PERSONEL = [
     doneChecklist: ['Canlı durum okundu.'],
     buttonGuides: [button('Servisimi aç', 'Kendi servis detayını açar.', 'Daha fazla bilgi gerektiğinde kullan.', 'Servisim ekranı açılır.')],
     screenMenus: [{ label: 'Servisim', path: '/personel/my', purpose: 'Kendi servis detayın için açılır.' }, { label: 'Copilot', path: '/personel/copilot', purpose: 'Takıldığında yardım için açılır.' }],
+    chatQuestions: ['Servisim nerede?', 'Bu rolde ne yapabilirim?', 'Sıradaki doğru işlem ne?', 'Bildirim kaynağı ne?'],
   }),
   screen(4102, '/personel/my', 'Servisim', {
     menuPurpose: 'Kendi servis bilgini görmek için kullanılır.',
@@ -421,6 +422,7 @@ const PARENT = [
     doneChecklist: ['Canlı bilgi okundu.'],
     buttonGuides: [button('Yardım aç', 'Bu ekranın ne anlattığını açıklar.', 'Bilginin ne olduğunu anlamıyorsan kullan.', 'Copilot ekranı açılır.')],
     screenMenus: [{ label: 'Copilot', path: '/parent/copilot', purpose: 'Sade yardım almak için açılır.' }],
+    chatQuestions: ['Öğrencimin servisi nerede?', 'Bu bilgi neden görünmüyor?', 'Sıradaki doğru işlem ne?', 'Bildirim kaynağı ne?'],
   }),
   screen(5102, '/parent/copilot', 'Copilot', {
     menuPurpose: 'Veliye canlı ekranı sade dille açıklar ve doğru yere yönlendirir.',

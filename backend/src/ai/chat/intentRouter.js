@@ -110,11 +110,11 @@ const BASE_RULES = [
   { type: 'WHAT_CHANGED', score: 9, patterns: ['az önce ne değişti', 'az once ne degisti', 'ne değişti', 'ne degisti', 'şimdi neden farklı', 'simdi neden farkli'], label: 'what-changed' },
   { type: 'FIELD_HELP', score: 9, patterns: ['bu sütun ne demek', 'bu sutun ne demek', 'bu kolon ne demek', 'bu alan ne demek', 'hangi sütun', 'hangi sutun'], label: 'field-help' },
   { type: 'BADGE_HELP', score: 9, patterns: ['bu rozet ne demek', 'bu badge ne demek', 'durum rozeti ne demek', 'bu etiket ne demek'], label: 'badge-help' },
-  { type: 'STATUS_HELP', score: 8, patterns: ['ne durumda', 'durumu ne', 'kayıt ne durumda', 'kayit ne durumda'], label: 'status-strong' },
+  { type: 'STATUS_HELP', score: 8, patterns: ['ne durumda', 'durumu ne', 'kayıt ne durumda', 'kayit ne durumda', 'servisim nerede', 'öğrencimin servisi nerede', 'ogrencimin servisi nerede', 'çocuğumun servisi nerede', 'cocugumun servisi nerede', 'canlı servis nerede'], label: 'status-strong' },
   { type: 'STATUS_HELP', score: 2, patterns: ['durum'], label: 'status-light' },
   { type: 'COMPARE_ITEMS', score: 8, patterns: ['kaydet ile ok yap farkı', 'kaydet ile ok yap farki', 'kaydet ile ok yap aynı mı', 'kaydet + sonraki ile seç farkı', 'kaydet + sonraki ile sec farki', 'listeyi aç ile marketi aç farkı', 'listeyi ac ile marketi ac farki'], label: 'compare' },
   { type: 'TERM_HELP', score: 7, patterns: ['ne demek', 'anlamı', 'anlami', 'bu ne demek', 'aynı şey mi', 'ayni sey mi', 'farkı ne', 'farki ne', 'sözleşme ile vardiya ilişkisi ne', 'kalite puanı kesin karar mı', 'kalite puani kesin karar mi'], label: 'term-help' },
-  { type: 'WHY_BLOCKED', score: 9, patterns: ['neden kapalı', 'neden kapali', 'kapalı', 'kapali', 'devam edemiyorum', 'neden olmuyor', 'neden görünmüyor', 'neden gorunmuyor', 'neden pasif', 'neden sorunlu', 'niye sorunlu', 'sorunlu görünüyor', 'sorunlu gorunuyor', 'neden riskli', 'niye riskli', 'neden kırmızı', 'neden kirmizi', 'bu kayıt neden ilerlemiyor', 'göremiyor olabilir miyim', 'gorunmuyor olabilir miyim', 'kvkk yüzünden', 'kvkk yuzunden', 'hazır değil', 'hazir degil', 'eksik bilgi', 'hangi olaydan geldi', 'nereden geldi', 'kaynak ne', 'bu bilgi neden görünmüyor', 'bu araç neden haritada görünmüyor', 'bu sağlayıcı neden daha iyi görünüyor'], label: 'why-blocked' },
+  { type: 'WHY_BLOCKED', score: 9, patterns: ['neden kapalı', 'neden kapali', 'kapalı', 'kapali', 'devam edemiyorum', 'neden olmuyor', 'neden görünmüyor', 'neden gorunmuyor', 'neden pasif', 'neden sorunlu', 'niye sorunlu', 'sorunlu görünüyor', 'sorunlu gorunuyor', 'neden riskli', 'niye riskli', 'neden kırmızı', 'neden kirmizi', 'bu kayıt neden ilerlemiyor', 'göremiyor olabilir miyim', 'gorunmuyor olabilir miyim', 'kvkk yüzünden', 'kvkk yuzunden', 'hazır değil', 'hazir degil', 'eksik bilgi', 'hangi olaydan geldi', 'nereden geldi', 'kaynak ne', 'bu bilgi neden görünmüyor', 'bu araç neden haritada görünmüyor', 'bu sağlayıcı neden daha iyi görünüyor', 'başlayamıyor', 'baslayamiyor', 'başlamıyor', 'baslamiyor'], label: 'why-blocked' },
   { type: 'STATUS_HELP', score: 4, patterns: ['sorumlu kim', 'kimde', 'hangi rol', 'hangi olaydan', 'bildirim kaynağı', 'bildirim kaynagi', 'bu bildirim hangi olaydan geldi'], label: 'status-ownership' },
   { type: 'BUTTON_HELP', score: 8, patterns: ['buton', 'düğme', 'dugme', 'menü', 'menu', 'kaydet', 'kaydet + sonraki', 'rehberi başlat', 'onay ver', 'önizle', 'analiz et', 'bu buton ne yapar', 'listeyi aç', 'bekleyeni aç', 'marketi aç', 'ok yap', 'büyük haritada işaretle', 'buyuk haritada isaretle', 'tüm adresleri temizle', 'tum adresleri temizle', 'tüm telefonları temizle', 'tum telefonlari temizle'], label: 'button-help' },
   { type: 'LOCATION_HELP', score: 8, patterns: ['konum', 'gps', 'telefon gps', "telefon gps'i", 'cihaz gps', 'konum kaynağı', 'konum kaynagi', 'sürücünün telefon gps’i neden devrede', 'sürücünün telefon gps i neden devrede', 'sürücünün telefon gpsi neden devrede'], label: 'location-help' },
@@ -126,7 +126,7 @@ const COP02A_GENERAL_RULES = [
   { type: 'ROLE_HELP', score: 6, patterns: ['bu kullanıcı ne yapabilir', 'hangi yetkiler', 'yetki sınırı', 'rol bazlı', 'kim neyi görebilir', 'kim neyi görür', 'bu kullanıcı bu bilgiyi göremez', 'bu rolde ne yapabilirim', 'bu rolde burada neyi yönetebilirim', 'kim yapabilir', 'kim onaylayacak', 'sorumlu kim', 'bu kayıt kimde'], label: 'cop02a-role-help' },
   { type: 'SCREEN_PURPOSE', score: 5, patterns: ['bu ekranda ne yapmalıyım', 'burada ne yapmalıyım', 'bu ekranın amacı ne', 'bu ekran ne işe yarar', 'bu ekran ne için kullanılır', 'bura ne', 'burası ne', 'bu ne', 'ne bu', 'burda ne var', 'burası ne işe yarıyor', 'saha kabul', 'checklist'], label: 'cop02a-screen-purpose' },
   { type: 'NEXT_STEP', score: 6, patterns: ['sıradaki doğru işlem ne', 'sıradaki doğru adım ne', 'ilk bakılacak yer', 'ilk kontrolü ne', 'önce ne yapayım', 'ne yapayım', 'şimdi ne', 'hangi ekrana gitmeliyim', 'mobilde bu iş nereden yapılır', 'şimdi hangi ekrana gitmeliyim', 'sonra ne yapayım'], label: 'cop02a-next-step' },
-  { type: 'WHY_BLOCKED', score: 6, patterns: ['bu kayıt neden ilerlemiyor', 'neden ilerlemiyor', 'göremiyor olabilir miyim', 'kvkk yüzünden', 'bu kayıt neden kapalı', 'bu kullanıcı bu bilgiyi göremiyor', 'hazır değil', 'hazir degil', 'eksik bilgi'], label: 'cop02a-why-blocked' },
+  { type: 'WHY_BLOCKED', score: 6, patterns: ['bu kayıt neden ilerlemiyor', 'neden ilerlemiyor', 'göremiyor olabilir miyim', 'kvkk yüzünden', 'bu kayıt neden kapalı', 'bu kullanıcı bu bilgiyi göremiyor', 'hazır değil', 'hazir degil', 'eksik bilgi', 'başlayamıyor', 'baslayamiyor', 'başlamıyor', 'baslamiyor'], label: 'cop02a-why-blocked' },
   { type: 'SCREEN_PURPOSE', score: 13, patterns: ['sözleşme ile vardiya ilişkisi ne', 'sozlesme ile vardiya iliskisi ne'], label: 'cop02a-contract-shift-purpose' },
   { type: 'TERM_HELP', score: 5, patterns: ['sözleşme ile vardiya ilişkisi ne', 'kalite puanı kesin karar mı', 'hakediş tarafında ne kontrol etmeliyim', 'bu ekran neyi anlatıyor', 'sağlayıcı neden daha iyi', 'bildirim hangi olaydan', 'bu kayıt kimde'], label: 'cop02a-term-help' },
   { type: 'LOCATION_HELP', score: 5, patterns: ['sürücünün telefon gps’i neden devrede', 'sürücünün telefon gps i neden devrede', 'konum neden görünmüyor', 'haritada görünmüyor'], label: 'cop02a-location-help' },
@@ -139,10 +139,11 @@ const INTENT_PRIORITY = [
   'NEXT_SCREEN',
   'FIRST_CONTROL',
   'DETAIL_FLOW',
-  'ROW_HELP',
-  'MISSING_DATA_HELP',
-  'READINESS_CHECK',
-  'SAFE_NEXT_STEP',
+    'ROW_HELP',
+    'MISSING_DATA_HELP',
+    'CONTRACT_TO_SHIFT',
+    'READINESS_CHECK',
+    'SAFE_NEXT_STEP',
   'WHAT_CHANGED',
   'FIELD_HELP',
   'BADGE_HELP',
@@ -193,12 +194,24 @@ export function detectQuestionIntent(message, entityTypeOrOptions = 'screen', sc
   if (/(hazır|hazir).*(mi|mı)/.test(text) && options.entityType === 'shift') addScore(scores, signals, 'READINESS_CHECK', 2, 'shift-readiness-bias');
   if (/(durum|ne\s+durumda|durumu\s+ne)/.test(text) && options.entityType === 'shift') addScore(scores, signals, 'STATUS_HELP', 1, 'shift-status-bias');
   if (/(gps|konum|telefon\s+gps)/.test(text) && options.entityType === 'vehicle') addScore(scores, signals, 'LOCATION_HELP', 2, 'vehicle-location-bias');
-  if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment']) && /(hakediş|hakedis|ödeme|odeme|csv|önizleme|onizleme|hazır değil|hazir degil|hazırlık|hazirlik|eksik)/.test(text)) addScore(scores, signals, 'READINESS_CHECK', 6, 'commercial-readiness');
-  if (pathHas(options.screenPath, ['/shifts']) && /(sözleşmeden|sozlesmeden|vardiya üretildi|vardiya uretildi|üretildi mi|uretildi mi|bugün vardiya|bugun vardiya)/.test(text)) addScore(scores, signals, 'READINESS_CHECK', 6, 'contract-shift-readiness');
-  if (pathHas(options.screenPath, ['/trust-quality']) && /(sağlayıcı|saglayici|provider).*(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 5, 'trust-quality-quality-signal');
-  if (pathHas(options.screenPath, ['/shared/feedback']) && /(geri bildirim|feedback).*(açık|acik|kritik|çözüldü|cozuldu|kapandı|kapandi|sorumlu|yıldız|yildiz)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'feedback-status');
-  if (pathHas(options.screenPath, ['/shared/notifications']) && /(hangi olaydan|nereden geldi|kaynak|neden geldi|bu bildirim)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'notification-source');
-  if (pathHas(options.screenPath, ['/shared/kvkk']) && /(görünmüyor|gorunmuyor|görünürlük|gorunurluk|kim görebilir|kim gorebilir|hangi rol)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 6, 'kvkk-visibility');
+    if (pathHas(options.screenPath, ['/commercial-flow', '/commercial-core', '/payment']) && /(hakediş|hakedis|ödeme|odeme|csv|önizleme|onizleme|hazır değil|hazir degil|hazırlık|hazirlik|eksik)/.test(text)) addScore(scores, signals, 'READINESS_CHECK', 6, 'commercial-readiness');
+    if (pathHas(options.screenPath, ['/room/commercial-flow', '/commercial-flow']) && /(sözleşme|sozlesme).*(vardiya|shift)/.test(text)) addScore(scores, signals, 'CONTRACT_TO_SHIFT', 18, 'room-commercial-flow-contract-shift');
+    if (pathHas(options.screenPath, ['/room/commercial-flow', '/commercial-flow']) && /(sözleşmeden|sozlesmeden).*(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu)/.test(text)) addScore(scores, signals, 'CONTRACT_TO_SHIFT', 4, 'room-commercial-flow-contract-shift-today');
+    if (pathHas(options.screenPath, ['/room/commercial-flow', '/commercial-flow']) && /(bugün|bugun).*(vardiya).*(üretildi|uretildi|oluştu|olustu).*(sözleşme|sozlesme)/.test(text)) addScore(scores, signals, 'CONTRACT_TO_SHIFT', 4, 'room-commercial-flow-contract-shift-today-reverse');
+    if (pathHas(options.screenPath, ['/shifts']) && /(sözleşmeden|sozlesmeden|vardiya üretildi|vardiya uretildi|üretildi mi|uretildi mi|bugün vardiya|bugun vardiya)/.test(text)) addScore(scores, signals, 'READINESS_CHECK', 6, 'contract-shift-readiness');
+    if (pathHas(options.screenPath, ['/superadmin/operations']) && /(başlayamıyor|baslayamiyor|başlamıyor|baslamiyor)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 7, 'operations-start-blocked');
+    if (pathHas(options.screenPath, ['/trust-quality']) && /(sağlayıcı|saglayici|provider).*(daha iyi|daha güçlü|daha guclu|neden|karşılaştır|karsilastir)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 5, 'trust-quality-quality-signal');
+    if (pathHas(options.screenPath, ['/room/map', '/vehicles']) && /(haritada|konum|gps)/.test(text)) {
+      addScore(scores, signals, 'LOCATION_HELP', 12, 'map-vehicle-location');
+      addScore(scores, signals, 'WHY_BLOCKED', -8, 'map-vehicle-not-generic-blocked');
+    }
+    if (pathHas(options.screenPath, ['/personel/live', '/parent/live']) && /(servisim nerede|servisi nerede|öğrencimin servisi nerede|ogrencimin servisi nerede|çocuğumun servisi nerede|cocugumun servisi nerede|canlı servis nerede|canli servis nerede)/.test(text)) {
+      addScore(scores, signals, 'LOCATION_HELP', 10, 'live-service-location');
+      addScore(scores, signals, 'STATUS_HELP', -3, 'live-service-location-not-status');
+    }
+    if (pathHas(options.screenPath, ['/shared/feedback']) && /(geri bildirim|feedback).*(açık|acik|kritik|çözüldü|cozuldu|kapandı|kapandi|sorumlu|yıldız|yildiz)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'feedback-status');
+    if (pathHas(options.screenPath, ['/shared/notifications']) && /(hangi olaydan|nereden geldi|kaynak|neden geldi|bu bildirim)/.test(text)) addScore(scores, signals, 'STATUS_HELP', 5, 'notification-source');
+    if (pathHas(options.screenPath, ['/shared/kvkk']) && /(görünmüyor|gorunmuyor|görünürlük|gorunurluk|kim görebilir|kim gorebilir|hangi rol)/.test(text)) addScore(scores, signals, 'WHY_BLOCKED', 6, 'kvkk-visibility');
   if (pathHas(options.screenPath, ['/shared/feedback']) && /(hangi kayıt|hangi kayit|bu kayıt kimde|sorumlu kim|kim yapabilir)/.test(text)) addScore(scores, signals, 'ROLE_HELP', 4, 'feedback-ownership');
   if (/(konum|gps|telefon\s+gps).*(neden).*(görünmüyor|gorunmuyor|gecik|gecikiyor|yok)/.test(text) && options.entityType === 'vehicle') {
     addScore(scores, signals, 'LOCATION_HELP', 6, 'vehicle-location-diagnosis');
@@ -297,12 +310,24 @@ export function selectGuideJobType({ entityType = 'screen', questionType = 'OPEN
   }
   if (questionType === 'ROLE_HELP') return 'ROLE_HELP_GUIDE';
   if ((screenPath === '/company' || screenPath === '/organization' || screenPath === '/school') && ['DETAIL_FLOW', 'NEXT_STEP', 'SCREEN_PURPOSE'].includes(questionType)) return 'SCREEN_MENU_GUIDE';
-  if (['BUTTON_HELP', 'WHY_BLOCKED', 'CHECKLIST_HELP', 'COMMON_MISTAKE_HELP', 'FIRST_CONTROL', 'NEXT_SCREEN', 'DETAIL_FLOW', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHAT_CHANGED', 'COMPARE_ITEMS'].includes(questionType)) return 'BUTTON_ACTION_GUIDE';
+    if (['BUTTON_HELP', 'WHY_BLOCKED', 'CHECKLIST_HELP', 'COMMON_MISTAKE_HELP', 'FIRST_CONTROL', 'NEXT_SCREEN', 'DETAIL_FLOW', 'CONTRACT_TO_SHIFT', 'READINESS_CHECK', 'SAFE_NEXT_STEP', 'WHAT_CHANGED', 'COMPARE_ITEMS'].includes(questionType)) return 'BUTTON_ACTION_GUIDE';
   if (pathHas(screenPath, ['/map', '/live'])) return 'BUTTON_ACTION_GUIDE';
   return 'SCREEN_MENU_GUIDE';
 }
 
 function simpleScreenChipsByPath(screenPath = '') {
+    if (pathHas(screenPath, ['/driver/today'])) {
+      return ['Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri'];
+    }
+    if (pathHas(screenPath, ['/personel/live'])) {
+      return ['Bu ekranı detaylı anlat', 'Servisim nerede?', 'Bildirim kaynağı', 'Eksik veri'];
+    }
+    if (pathHas(screenPath, ['/parent/live'])) {
+      return ['Bu ekranı detaylı anlat', 'Öğrencimin servisi nerede?', 'Bildirim kaynağı', 'Eksik veri'];
+    }
+    if (pathHas(screenPath, ['/room/map'])) {
+      return ['Bu ekranı detaylı anlat', 'Bu araç neden haritada görünmüyor?', 'GPS bekleniyor', "Sürücünün telefon GPS’i neden devrede?"];
+    }
     if (pathHas(screenPath, ['/room/drivers'])) {
       return ['Bu ekranı detaylı anlat', 'Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla'];
     }
@@ -350,6 +375,27 @@ function simpleScreenChipsByPath(screenPath = '') {
 
 function screenChipsByPath(screenPath = '', roleMode = 'OPERATIONS') {
     const chips = [];
+    if (pathHas(screenPath, ['/driver/today'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Ne yapayım?', 'GPS bekleniyor', 'Eksik veri', 'Yetki sınırı');
+    } else if (pathHas(screenPath, ['/personel/live'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Servisim nerede?', 'Bildirim kaynağı', 'Eksik veri');
+    } else if (pathHas(screenPath, ['/parent/live'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Öğrencimin servisi nerede?', 'Bildirim kaynağı', 'Eksik veri');
+    } else if (pathHas(screenPath, ['/room/map'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Bu araç neden haritada görünmüyor?', 'GPS bekleniyor', "Sürücünün telefon GPS’i neden devrede?");
+    } else if (pathHas(screenPath, ['/superadmin/operations'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Bu vardiya neden başlayamıyor?', 'Eksik veri', 'Yetki sınırı');
+    } else if (pathHas(screenPath, ['/superadmin/commercial-core'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Bu hakediş neden hazır değil?', 'Hakediş eksik bilgi', 'Sözleşme/vardiya kontrolü');
+    } else if (pathHas(screenPath, ['/room/commercial-flow'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Hakediş eksik bilgi', 'Sözleşme/vardiya kontrolü');
+    } else if (pathHas(screenPath, ['/shared/feedback'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?', 'Geri bildirim açık', 'Bu kayıt kimde?');
+    } else if (pathHas(screenPath, ['/shared/kvkk'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'KVKK sınırı ne?', 'Yetki sınırı');
+    } else if (pathHas(screenPath, ['/shared/notifications'])) {
+      chips.push('Bu ekranı detaylı anlat', 'Okunmamış bildirim var mı?', 'Bu bildirim hangi olaydan geldi?', 'İlgili kayda gitmeli miyim?', 'Bildirim kaynağı');
+    }
     if (pathHas(screenPath, ['/room/drivers'])) {
       chips.push('Bu ekranı detaylı anlat', 'Aktif sürücüler kim?', 'Görev bağlantısı var mı?', 'Sürücü durumunu açıkla', 'İlgili yere götür');
     } else if (pathHas(screenPath, ['/shared/feedback'])) {
