@@ -128,9 +128,16 @@ export function createSelectedRuntimeHelpers(deps = {}) {
 
   function selectedFieldReply(message, screenContext, screenDefinition) {
     const genericAsk = ['bu sütun ne demek', 'bu sutun ne demek', 'bu kolon ne demek', 'bu alan ne demek'].some((x) => normalizeText(message).includes(normalizeText(x)));
-    const selectedRow = findSelectedRowByMessage(message, selectedFieldRows(screenContext)) || (genericAsk ? selectedFieldRows(screenContext)[0] || null : null);
+    const ownershipAsk = ['kim yapabilir', 'kim onaylayacak', 'sorumlu kim', 'bu kayıt kimde', 'kimde'].some((x) => normalizeText(message).includes(normalizeText(x)));
+    const ownershipRows = selectedFieldRows(screenContext).filter((row) => /sorumlu|yetki|owner|sahip|atanan|atayan|rol|onay/i.test(normalizeText([row?.label, row?.meaning, row?.help, row?.risk].filter(Boolean).join(' '))));
+    const selectedRow = findSelectedRowByMessage(message, selectedFieldRows(screenContext))
+      || (ownershipAsk ? ownershipRows[0] || null : null)
+      || (genericAsk ? selectedFieldRows(screenContext)[0] || null : null);
     const selected = selectedRow ? mergeFieldWithGuide(selectedRow, screenDefinition) : null;
-    const guide = findGuideRowByMessage(message, guideFieldRows(screenDefinition)) || (genericAsk ? guideFieldRows(screenDefinition)[0] || null : null);
+    const guideOwnershipRows = guideFieldRows(screenDefinition).filter((row) => /sorumlu|yetki|owner|sahip|atanan|atayan|rol|onay/i.test(normalizeText([row?.label, row?.meaning, row?.help, row?.risk].filter(Boolean).join(' '))));
+    const guide = findGuideRowByMessage(message, guideFieldRows(screenDefinition))
+      || (ownershipAsk ? guideOwnershipRows[0] || null : null)
+      || (genericAsk ? guideFieldRows(screenDefinition)[0] || null : null);
     const row = selected || guide;
     if (!row) return '';
     const facts = structuredFacts(screenContext);

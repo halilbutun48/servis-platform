@@ -36,7 +36,7 @@ export const ROOM = [
       { label: 'Vardiyalar', path: '/room/shifts', reason: 'Sorunun hangi işe bağlı olduğunu görmek için.' },
       { label: 'Araçlar', path: '/room/vehicles', reason: 'Araç, sürücü veya cihaz GPS tarafını kontrol etmek için.' },
     ],
-    chatQuestions: ['Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?'],
+    chatQuestions: ['Önce neyi kontrol edeyim?', 'Kontrol listesi ver', 'Sık hata ne?', 'Hangi ekrana geçeyim?', 'Bu satırı nasıl okurum?', 'Sürücünün telefon GPS’i neden devrede?'],
     fieldGuides: [
       { label: 'Plaka', meaning: 'Seçili aracın kimliğidir.', howToRead: 'Önce doğru aracı seçtiğini buradan doğrula.' },
       { label: 'Shift durumu', meaning: 'Seçili işin operasyon durumudur.', howToRead: 'APPROVED veya ACTIVE bilgisini diğer alanlarla birlikte oku.', risk: 'Tek başına atama tamam anlamına gelmez.' },
@@ -169,6 +169,16 @@ export const ROOM = [
       { label: "Vardiyalar", path: "/room/shifts", purpose: "Sözleşmenin bağlı olduğu işi görmek için açılır." },
       { label: "Teklifler", path: "/room/offers", purpose: "Sözleşme dışı teklif akışını ayırmak için açılır." },
     ],
+    workflowStages: [
+      { key: 'ROOM_AGREEMENT_PICK', title: 'Sözleşmeyi seç', action: 'Doğru sözleşme kaydını aç ve kapsamını oku.', doneWhen: 'Sözleşme kimliği ve durumu net.', ifBlocked: 'Yanlış sözleşmeyi açtıysan önce filtreyi düzelt.' },
+      { key: 'ROOM_AGREEMENT_SHIFT', title: 'Vardiya etkisini kontrol et', action: 'Bu sözleşmeden vardiya üretildi mi ve hangi iş etkileniyor birlikte oku.', doneWhen: 'Sözleşme ile vardiya bağı anlaşılır.', ifBlocked: 'Sözleşme var diye vardiya otomatik başlamış sayılmaz.' },
+      { key: 'ROOM_AGREEMENT_NEXT', title: 'Doğru ekrana geç', action: 'Gerekirse vardiya veya teklif ekranına geç.', doneWhen: 'Sonraki takip ekranı belli olur.', ifBlocked: 'Sözleşme bilgisini atama ile karıştırma.' },
+    ],
+    nextScreens: [
+      { label: 'Vardiyalar', path: '/room/shifts', reason: 'Sözleşmeden etkilenmiş işi görmek için.' },
+      { label: 'Teklifler', path: '/room/offers', reason: 'Sözleşme dışı karar akışını ayırmak için.' },
+    ],
+    chatQuestions: ['Bu sözleşmeden bugün vardiya üretildi mi?', 'Bu kayıt kimde?', 'Hangi ekrana geçeyim?', 'Sıradaki doğru işlem ne?'],
     simpleTerms: pickTerms(["sozlesme", "teklif"]),
   }),
   screen(1107, "/room/copilot", "Copilot", {
@@ -266,6 +276,12 @@ export const ROOM = [
       { label: "Vardiyalar", path: "/room/shifts", purpose: "Kayıdın bağlı olduğu işi görmek için açılır." },
       { label: "Raporlar", path: "/room/reports", purpose: "Ticari akışın rapor özetini görmek için açılır." },
     ],
+    workflowStages: [
+      { key: 'ROOM_COMMERCIAL_READ', title: 'Aşamayı oku', action: 'Kaydın market, kabul veya operasyon tarafında olup olmadığını kontrol et.', doneWhen: 'Aşama tek cümleyle söylenebilir.', ifBlocked: 'Plan kurma ekranı sanıp yanlış yerden başlamış olabilirsin.' },
+      { key: 'ROOM_COMMERCIAL_READY', title: 'Hazırlığı ayır', action: 'Hazır değil, eksik bilgi veya onay bekleyen alanları ayır.', doneWhen: 'Hazırlık eksikleri netleşir.', ifBlocked: 'Hazır değilse daha ileri karar verme.' },
+      { key: 'ROOM_COMMERCIAL_NEXT', title: 'Sonraki ekranı seç', action: 'Gerekirse vardiya veya rapor ekranına geç.', doneWhen: 'Bir sonraki takip ekranı belli olur.', ifBlocked: 'Kabul edilmiş kayıt ile aktif operasyonu aynı sanma.' },
+    ],
+    chatQuestions: ['Bu hakediş neden hazır değil?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana geçeyim?', 'Bu kayıt ne durumda?'],
   }),
   screen(1116, "/room/reports", "Raporlar", {
     menuPurpose: "Oda tarafındaki iş, araç ve sonuç raporlarını görmek için kullanılır.",
@@ -281,6 +297,12 @@ export const ROOM = [
       { label: "Canlı Takip", path: "/room/map", purpose: "Canlı aracı veya rota tarafını görmek için açılır." },
       { label: "Vardiyalar", path: "/room/shifts", purpose: "Rapordaki kaydın bağlı olduğu işi görmek için açılır." },
     ],
+    workflowStages: [
+      { key: 'ROOM_REPORT_PICK', title: 'Rapor türünü seç', action: 'İş, araç, durak veya sonuç raporunu ayır.', doneWhen: 'Doğru rapor başlığı açılır.', ifBlocked: 'Canlı ekranı rapor tablosu sanma.' },
+      { key: 'ROOM_REPORT_READ', title: 'Tabloyu oku', action: 'Sütunları, sayıları ve eksik görünen alanları birlikte kontrol et.', doneWhen: 'Rapor özeti anlaşılır.', ifBlocked: 'Tek sayı ile kesin karar verme.' },
+      { key: 'ROOM_REPORT_NEXT', title: 'Gerekirse canlı ekrana geç', action: 'Sorun varsa ilgili vardiya veya canlı takip ekranına geç.', doneWhen: 'Takip edilecek doğru ekran belli olur.', ifBlocked: 'Rapor ile canlı durumu karıştırma.' },
+    ],
+    chatQuestions: ['Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana gitmeliyim?'],
     simpleTerms: pickTerms(["rapor"]),
   }),
   screen(1111, "/shared/notifications", "Bildirimler", {
@@ -421,12 +443,12 @@ export const COMPANY = [
       { label: "Konum İncele", path: "/company/georeview", purpose: "Konum sorunu olan kayıtları düzeltmek için açılır." },
     ],
     simpleTerms: pickTerms(["sozlesme", "atama"]),
-    dataRules: ["Bu ekran yeni plan kurma yeri değildir; yeni iş için Planlama Merkezi'ne dönülür.", "APPROVED görünmesi tek başına araç ve sürücü atamasının tamamlandığı anlamına gelmez.", "Agreement badge varsa klasik offer akışı kapalı veya farklı olabilir.", "Preview açılması operasyonun sahada başladığı anlamına gelmez; atama ve durum ayrıca okunmalıdır."],
+    dataRules: ["Bu ekran yeni plan kurma yeri değildir; yeni iş için Planlama Merkezi'ne dönülür.", "APPROVED görünmesi tek başına araç ve sürücü atamasının tamamlandığı anlamına gelmez.", "Sözleşme rozeti varsa klasik teklif akışı kapalı veya farklı olabilir.", "Preview açılması operasyonun sahada başladığı anlamına gelmez; atama ve durum ayrıca okunmalıdır."],
     firstControls: ["Önce doğru vardiyayı seç.", "Takip, market ve bekleyen ayrımını doğru oku.", "Bu ekranın yeni plan kurma yeri olmadığını unutma."],
     stuckChecks: ["Onaylandı ama araç/sürücü yoksa atama katmanını kontrol et.", "Preview var diye iş bitti sanma.", "Sözleşmeli işte offer akışını normal kayıt gibi yorumlama."],
     workflowStages: [
       { key: 'COMPANY_SHIFT_PICK', title: 'Doğru liste ve vardiyayı seç', action: 'Market, Bekleyen veya Liste tarafında doğru kaydı aç.', doneWhen: 'Seçili vardiya net.', ifBlocked: 'Yanlış sekmedeysen aynı kaydı bulamazsın.' },
-      { key: 'COMPANY_SHIFT_READ', title: 'Durumu katman katman oku', action: 'Teklif, atama, operasyon ve agreement rozetlerini ayrı ayrı değerlendir.', doneWhen: 'Kayıdın hangi aşamada olduğunu söyleyebilirsin.', ifBlocked: 'Rozetleri aynı anlama geliyor sanma.' },
+      { key: 'COMPANY_SHIFT_READ', title: 'Durumu katman katman oku', action: 'Teklif, atama, operasyon ve sözleşme rozetlerini ayrı ayrı değerlendir.', doneWhen: 'Kayıdın hangi aşamada olduğunu söyleyebilirsin.', ifBlocked: 'Rozetleri aynı anlama geliyor sanma.' },
       { key: 'COMPANY_SHIFT_DECIDE', title: 'İhtiyaca göre alt akışa geç', action: 'Teklif kararı, uzatma, operasyon olayı veya preview akışından doğru olanı aç.', doneWhen: 'Bir sonraki işlem net.', ifBlocked: "Yeni iş kurman gerekiyorsa Planlama Merkezi'ne dön." },
     ],
     nextScreens: [
@@ -451,7 +473,7 @@ export const COMPANY = [
       { label: 'APPROVED', meaning: 'İş onaylıdır.', actionHint: 'Araç ve sürücü atamasını ayrıca doğrula.', risk: 'Tek başına operasyon tamamen hazır demek değildir.' },
       { label: 'ACTIVE', meaning: 'İş sahada aktif ilerliyor.' },
       { label: 'DONE', meaning: 'İş tamamlanmıştır.' },
-      { label: 'AGREEMENT', meaning: 'Sözleşme tabanlı akış olduğu için klasik offer mantığı değişebilir.' },
+      { label: 'SÖZLEŞME', meaning: 'Sözleşme tabanlı akış olduğu için klasik teklif mantığı değişebilir.' },
     ],
     rowReadHint: 'Önce durum ve hangi sekmede olduğuna bak. Sonra room, araç ve sürücü dolu mu kontrol et. En son başlangıç, bitiş ve durak bilgisiyle işin operasyon hazır olup olmadığını değerlendir.',
   }),

@@ -21,6 +21,7 @@ const steps = [
   'check:cop03a',
   'check:cop03afix01',
   'check:cop03afix02',
+  'check:cop03b',
   'check:uxkvkk01',
   'check:docsstate01',
 ];

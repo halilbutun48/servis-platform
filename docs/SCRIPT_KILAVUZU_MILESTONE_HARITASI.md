@@ -62,6 +62,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop03a` -> `node backend\scripts\cop_03a_screen_catalog_parity_check.js`
 - `check:cop03afix01` -> `node backend\scripts\cop_03a_fix_global_screen_purpose_check.js`
 - `check:cop03afix02` -> `node backend\scripts\cop_03a_fix_02_visible_reply_chip_polish_check.js`
+- `check:cop03b` -> `node backend\scripts\cop_03b_workflow_domain_depth_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
 - `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
 - `node backend\scripts\qlt_02_quality_draft_score_check.js`

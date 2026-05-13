@@ -130,6 +130,12 @@ const SHARED = [
       { label: 'Loglar', path: '/shared/logs', purpose: 'İşlem kaydını karşılaştırmak için açılır.' },
       { label: 'Geri Bildirim', path: '/shared/feedback', purpose: 'Kullanıcı yorumunu ve değerlendirmeyi görmek için açılır.' },
     ],
+    workflowStages: [
+      { key: 'SHARED_NOTIFICATION_READ', title: 'Kaynağı oku', action: 'Bildirimin hangi olaya bağlı olduğunu incele.', doneWhen: 'Kaynak olay ayırt edilir.', ifBlocked: 'Bildirimi işlem kaydı ile karıştırma.' },
+      { key: 'SHARED_NOTIFICATION_CHECK', title: 'Bağlı kaydı aç', action: 'Gerekirse log veya ilgili kayıt ekranına geç.', doneWhen: 'İlgili ekran seçilir.', ifBlocked: 'Bildirim tek başına işlem kaydı değildir.' },
+      { key: 'SHARED_NOTIFICATION_NEXT', title: 'Sonraki ekranı seç', action: 'Gerekirse loglar veya geri bildirim ekranını aç.', doneWhen: 'Doğru takip ekranı belli olur.', ifBlocked: 'Uyarı, olay ve kayıt aynı şey değildir.' },
+    ],
+    chatQuestions: ['Bu bildirim hangi olaydan geldi?', 'Bu bilgi neden görünmüyor?', 'Bu kayıt kimde?', 'Hangi ekrana gitmeliyim?'],
     simpleTerms: pickTerms(['bildirim', 'notification']),
   }),
   screen(9002, '/shared/logs', 'Loglar', {
@@ -142,6 +148,12 @@ const SHARED = [
       { label: 'Bildirimler', path: '/shared/notifications', purpose: 'Kullanıcıya giden uyarıyı görmek için açılır.' },
       { label: 'Geri Bildirim', path: '/shared/feedback', purpose: 'Geri bildirimin arkasındaki işlem kaydını görmek için açılır.' },
     ],
+    workflowStages: [
+      { key: 'SHARED_LOGS_PICK', title: 'Kayıdı seç', action: 'Karşılaştırılacak işlem kaydını aç.', doneWhen: 'Aranan olay netleşir.', ifBlocked: 'Log ile bildirimi aynı şey sanma.' },
+      { key: 'SHARED_LOGS_READ', title: 'İzleri oku', action: 'Tarih, olay ve ilgili kaydı birlikte değerlendir.', doneWhen: 'Hangi olayın ne zaman olduğu anlaşılır.', ifBlocked: 'Tek kayıt ile kesin sonuca gitme.' },
+      { key: 'SHARED_LOGS_NEXT', title: 'İlgili ekrana dön', action: 'Gerekirse bildirim, geri bildirim veya bağlı iş ekranına geç.', doneWhen: 'Doğru takip ekranı belli olur.', ifBlocked: 'Log ekranı kullanıcı bildirimi değildir.' },
+    ],
+    chatQuestions: ['Bu kayıt kimde?', 'Bu bilgi neden görünmüyor?', 'Hangi olaydan geldi?', 'Sıradaki doğru işlem ne?'],
     simpleTerms: pickTerms(['islemKaydi']),
   }),
   screen(9003, '/shared/kvkk', 'KVKK', {
@@ -150,6 +162,12 @@ const SHARED = [
     firstStep: 'Bu bilgi bu rolde görünmeyebilir.',
     nextStep: 'Gerekirse KVKK panelindeki detaylı açıklamayı aç.',
     doNotDo: 'Kısıtlı bilgiyi yetkisiz kullanıcıya açma.',
+    workflowStages: [
+      { key: 'SHARED_KVKK_CHECK', title: 'Görünürlük sınırını kontrol et', action: 'Rol ve görünürlük sınırını birlikte oku.', doneWhen: 'Neden görünmediği anlaşılır.', ifBlocked: 'Bilgiyi zorla açmaya çalışma.' },
+      { key: 'SHARED_KVKK_READ', title: 'Hangi bilgi kapalı ayır', action: 'Hangi alanın bu rolde kapalı kaldığını netleştir.', doneWhen: 'Açık / kapalı ayrımı netleşir.', ifBlocked: 'Gizli bilgiyi yetkisiz kullanıcıya önerme.' },
+      { key: 'SHARED_KVKK_NEXT', title: 'Gerekirse ilgili kayda dön', action: 'Aynı kayıt için doğru ekranı veya sorumlu rolü bul.', doneWhen: 'Takip edilecek adım belli olur.', ifBlocked: 'KVKK ekranını canlı operasyon kararı sanma.' },
+    ],
+    chatQuestions: ['Bu bilgi neden görünmüyor?', 'Hangi rol görebilir?', 'Bu rolde neyi görebilirim?', 'Sıradaki doğru işlem ne?'],
     simpleTerms: pickTerms(['kvkk']),
   }),
   screen(9004, '/shared/feedback', 'Geri Bildirim', {
@@ -170,6 +188,12 @@ const SHARED = [
       { label: 'Loglar', path: '/shared/logs', purpose: 'Geri bildirimin arkasındaki işlem kaydını karşılaştırmak için açılır.' },
       { label: 'KVKK', path: '/shared/kvkk', purpose: 'Görünürlük sınırını kontrol etmek için açılır.' },
     ],
+    workflowStages: [
+      { key: 'SHARED_FEEDBACK_READ', title: 'Durum satırını oku', action: 'Açık, kritik, çözüldü veya kapandı ayrımını kontrol et.', doneWhen: 'Kayıt durumu netleşir.', ifBlocked: 'Tek rozetle kayıt kapanmış sanma.' },
+      { key: 'SHARED_FEEDBACK_OWNER', title: 'Sorumlu rolü ayır', action: 'Hangi rolün bakması gerektiğini ve yıldız/kategori bilgisini oku.', doneWhen: 'Sorumlu ve etki netleşir.', ifBlocked: 'Yetkisiz yönetim aksiyonu önermeden sadece rolü göster.' },
+      { key: 'SHARED_FEEDBACK_NEXT', title: 'Bağlı ekrana geç', action: 'Gerekirse bildirim, log veya KVKK ekranına git.', doneWhen: 'Takip edilecek ekran belli olur.', ifBlocked: 'Harita veya araç seçme ekranı sanma.' },
+    ],
+    chatQuestions: ['Bu kayıt kimde?', 'Bu kayıt ne durumda?', 'Bu bilgi neden görünmüyor?', 'Sıradaki doğru işlem ne?'],
     simpleTerms: pickTerms(['geriBildirim', 'degerlendirme']),
   }),
 ];
@@ -536,7 +560,17 @@ const SUPER_ADMIN = [
     forWhom: 'Super admin içindir.',
     firstStep: 'Önce hazırlık, önizleme ve güvenli mod durumunu oku.',
     nextStep: 'Gerekirse hakediş önizleme veya CSV taslağına geç.',
-    doNotDo: 'Aktif ödeme ve settlement işlemi varmış gibi davranma.',
+    doNotDo: 'Aktif ödeme işlemi varmış gibi davranma.',
+    workflowStages: [
+      { key: 'SUPERADMIN_COMMERCIAL_READ', title: 'Hazırlık durumunu oku', action: 'Önce hazırlık, önizleme ve güvenli mod satırlarını birlikte kontrol et.', doneWhen: 'Hakediş önizleme ile CSV taslağı ayrılır.', ifBlocked: 'Ödeme başlatma değil sadece okuma yaptığını unutma.' },
+      { key: 'SUPERADMIN_COMMERCIAL_PREVIEW', title: 'Önizlemeyi incele', action: 'Hakediş önizleme satırındaki eksik alanları ve notları oku.', doneWhen: 'Hazır / eksik ayrımı netleşir.', ifBlocked: 'Eksik bilgi varsa önce önizleme satırını düzelt.' },
+      { key: 'SUPERADMIN_COMMERCIAL_NEXT', title: 'Güvenli sonraki adımı seç', action: 'Gerekirse kalite veya ilgili kayıt ekranına geç.', doneWhen: 'Sonraki ekran belli olur.', ifBlocked: 'Aktif ödeme işlemi varmış gibi davranma.' },
+    ],
+    nextScreens: [
+      { label: 'Güven ve Kalite', path: '/superadmin/trust-quality', reason: 'Kalite sinyalini birlikte okumak için.' },
+      { label: 'Loglar', path: '/shared/logs', reason: 'Hakediş önizleme hareketini karşılaştırmak için.' },
+    ],
+    chatQuestions: ['Bu hakediş neden hazır değil?', 'Sözleşmeden bugün vardiya üretildi mi?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana gitmeliyim?'],
   }),
   screen(6114, '/superadmin/regions', 'Bölgeler', {
     menuPurpose: 'Bölge, kapsam ve atama sınırlarını görmek için kullanılır.',
@@ -554,6 +588,16 @@ const SUPER_ADMIN = [
     stepByStep: ['Kalite özetini oku.', 'Sinyal setini gözden geçir.', 'Gerekirse bağlı hizmet ekranına geç.'],
     commonMistakes: ['Hizmet puanı ile sağlayıcı sinyalini karıştırmak.'],
     doneChecklist: ['Kalite sinyali okundu.'],
+    workflowStages: [
+      { key: 'SUPERADMIN_QUALITY_READ', title: 'Kalite sinyalini oku', action: 'Kalite özeti ile sağlayıcı sinyalini birlikte kontrol et.', doneWhen: 'Kesin puan ile sinyal ayrılır.', ifBlocked: 'Tek puanla karar verme.' },
+      { key: 'SUPERADMIN_QUALITY_REASON', title: 'Nedenini ayır', action: 'İnceleme kararı, denetim izi ve kanıtı birlikte oku.', doneWhen: 'Neden daha güçlü göründüğü anlaşılır.', ifBlocked: 'Sıralama yapma; sinyal oku.' },
+      { key: 'SUPERADMIN_QUALITY_NEXT', title: 'Bağlı ekrana geç', action: 'Gerekirse hizmet değerlendirme veya ticari akış tarafına in.', doneWhen: 'Sıradaki ekran seçilir.', ifBlocked: 'Kesin kalite puanı dili kullanma.' },
+    ],
+    nextScreens: [
+      { label: 'Denetim Paneli', path: '/superadmin/operations', reason: 'Kanıt ve GPS görünürlüğünü birlikte okumak için.' },
+      { label: 'Ticari Akış', path: '/superadmin/commercial-core', reason: 'Hakediş önizleme tarafını görmek için.' },
+    ],
+    chatQuestions: ['Bu sağlayıcı neden daha iyi görünüyor?', 'Bu kayıt ne durumda?', 'Sıradaki doğru işlem ne?', 'Hangi ekrana gitmeliyim?'],
     screenMenus: [{ label: 'Operasyon Doğrulama', path: '/superadmin/operation-verification', purpose: 'Kalite ve güven kontrolünü role surface tarafında desteklemek için açılır.' }],
   }),
   screen(6115, '/superadmin/logexport', 'Log Dışa Aktarımı', {
@@ -571,11 +615,17 @@ const SUPER_ADMIN = [
     doNotDo: 'Sabit soru bankası sanıp uzun liste bekleme.',
   }),
   screen(6117, '/superadmin/operations', 'Denetim Paneli', {
-    menuPurpose: 'Servis kanıtı, GPS görünürlüğü ve operasyon blokajlarını birlikte okumak için kullanılır.',
+    menuPurpose: 'Servis kanıtı, açık veya riskli kayıtlar, GPS görünürlüğü ve operasyon blokajlarını birlikte okumak için kullanılır.',
     forWhom: 'Super admin içindir.',
     firstStep: 'Denetim özetini incele.',
     nextStep: 'Sonra kanıt, GPS ve değerlendirme satırlarını incele.',
     doNotDo: 'Harita veya araç seçme ekranı sanma.',
+    workflowStages: [
+      { key: 'SUPERADMIN_OPERATION_PICK', title: 'Seçili kaydı doğrula', action: 'Vardiya, araç veya kanıt satırının neyi anlattığını ayır.', doneWhen: 'Kayıt tipi netleşir.', ifBlocked: 'Önce seçili satırı ve başlığı kontrol et.' },
+      { key: 'SUPERADMIN_OPERATION_REASONS', title: 'Blokaj nedenini oku', action: 'Araç görünmüyor, vardiya başlamıyor veya sürücü GPS’i neden devrede sorularını sinyalle birlikte oku.', doneWhen: 'Neden farkı anlaşılır.', ifBlocked: 'Veri yoksa uydurma; eksik alanı söyle.' },
+      { key: 'SUPERADMIN_OPERATION_NEXT', title: 'Güvenli sonraki adım', action: 'Gerekirse ilgili vardiya, araç, kanıt veya kalite ekranına geç.', doneWhen: 'Bir sonraki ekran belli olur.', ifBlocked: 'Yetkisiz yönetim işlemi önermeden sadece yol göster.' },
+    ],
+    chatQuestions: ['Bu vardiya neden başlayamıyor?', 'Bu araç neden haritada görünmüyor?', 'Sürücünün telefon GPS’i neden devrede?', 'Bunu kim yapabilir?'],
   }),
   screen(6104, '/superadmin/copilot', 'Copilot', {
     menuPurpose: 'Sistem genelinde rehber ve açıklama almak için kullanılır.',
