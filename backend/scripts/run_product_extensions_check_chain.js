@@ -27,6 +27,7 @@ const steps = [
   'check:uxkvkk01',
   'check:docsstate01',
   'check:e2esmoke01',
+  'check:fieldlaunch01',
   'check:cop03cfix02',
 ];
 
