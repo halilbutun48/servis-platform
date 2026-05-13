@@ -47,6 +47,7 @@
     "check:cop03cfix01": "node backend/scripts/cop_03c_fix_01_live_workflow_answer_quality_check.js",
     "check:cop03cfix02": "node backend/scripts/cop_03c_fix_02_live_answer_precision_check.js",
     "check:docsstate01": "node backend/scripts/docs_state_01_recent_product_closure_check.js",
+    "check:e2esmoke01": "node backend/scripts/e2e_smoke_01_demo_acceptance_check.js",
     "check:verifychain01": "node backend/scripts/verify_chain_01_product_extensions_check.js",
     "check:op01": "node backend/scripts/op_01_operation_proof_service_proof_check.js",
     "check:op02": "node backend/scripts/op_02_manual_operator_proof_note_check.js",

@@ -66,6 +66,7 @@ Kapsam: Bu doküman, M0'dan güncel latest milestone'a kadar milestone ve script
 - `check:cop03c` -> `node backend\scripts\cop_03c_live_data_action_simulation_check.js`
 - `check:cop03cfix01` -> `node backend\scripts\cop_03c_fix_01_live_workflow_answer_quality_check.js`
 - `check:cop03cfix02` -> `node backend\scripts\cop_03c_fix_02_live_answer_precision_check.js`
+- `check:e2esmoke01` -> `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
 - `node backend\scripts\ux_kvkk_01_compact_boundary_check.js`
 - `node backend\scripts\qlt_01_quality_provider_readiness_check.js`
 - `node backend\scripts\qlt_02_quality_draft_score_check.js`
@@ -595,12 +596,18 @@ Bu bant güncel doğrulanmış üst hattır.
   - `check:cop03cfix02`
   - `check:docsstate01`
 
+### E2E-SMOKE-01 — demo acceptance pack [CHECK]
+- Komut: `node backend\scripts\e2e_smoke_01_demo_acceptance_check.js`
+- Ana konu: DEMO Firma / Oda / Araç / Sürücü / Personel / sözleşme / vardiya hazırlığı için manuel acceptance readiness checklist'i görünür kılmak; runtime davranışı değiştirmez.
+- Not: bu check docs/static kabul paketi olarak yaşar; runtime API smoke çalıştırmaz.
+
 ### VERIFY-CHAIN-01 — product extensions canonical check chain [CHECK]
 - Komut: `node backend\scripts\verify_chain_01_product_extensions_check.js`
 - Ana konu: OP/QLT/PAY/COP/WEB son ürün kapanış check’lerini canonical doğrulama zincirinde birleştirmek; ürün davranışı değiştirmez.
 - Script alias görünürlüğü:
   - `check:product-extensions`
   - `check:verifychain01`
+  - `check:e2esmoke01`
 
 ### OP-04 — ticari/kalite readonly köprü [CHECK]
 - Komut: `node backend\scripts\op_04_proof_commercial_quality_readonly_bridge_check.js`
