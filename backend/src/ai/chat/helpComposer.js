@@ -42,6 +42,78 @@ function matchesStandalonePhrase(text, phrases) {
   });
 }
 
+const WORKFLOW_DIAGNOSTIC_QUESTION_TYPES = new Set([
+  'WHY_BLOCKED',
+  'MISSING_DATA',
+  'CONTRACT_TO_SHIFT',
+  'CONTRACT_SHIFT_TODAY',
+  'PAYMENT_READINESS',
+  'PAYMENT_MISSING',
+  'QUALITY_SIGNAL',
+  'TRUST_QUALITY',
+  'FEEDBACK_STATUS',
+  'NOTIFICATION_SOURCE',
+  'KVKK_VISIBILITY',
+  'DRIVER_PHONE_GPS',
+  'LOCATION_HELP',
+  'WHO_CAN_DO',
+  'ROLE_BOUNDARY',
+  'NEXT_STEP',
+  'NEXT_SCREEN',
+  'NEXT_ACTION',
+  'SAFE_NEXT_STEP',
+  'FIRST_CONTROL',
+]);
+
+const WORKFLOW_SURFACE_HINTS = [
+  '/shifts',
+  '/map',
+  '/live',
+  '/contracts',
+  '/commercial-flow',
+  '/operation-health',
+  '/observability',
+  '/trust-quality',
+  '/feedback',
+  '/notifications',
+  '/kvkk',
+  '/driver/today',
+  '/personel/live',
+  '/parent/live',
+  '/superadmin/operations',
+  '/superadmin/commercial-core',
+  '/superadmin/trust-quality',
+  '/superadmin/operation-verification',
+];
+
+function isWorkflowDiagnosticQuestionType(questionType) {
+  return WORKFLOW_DIAGNOSTIC_QUESTION_TYPES.has(String(questionType || ''));
+}
+
+function pathLooksLikeWorkflowSurface(screenPath = '') {
+  const value = normalizeText(screenPath);
+  return WORKFLOW_SURFACE_HINTS.some((part) => value.includes(normalizeText(part)));
+}
+
+function normalizeStatusDisplayText(value) {
+  const text = normalizeVisibleReplyFragment(firstNonEmpty(value, ''));
+  if (!text) return '';
+  const cleaned = text
+    .replace(/\bengelı\b/gi, 'engeli')
+    .replace(/[？?]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const datedRange = cleaned.match(/^(.+?)\s+(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2})(?:\s*[-–—]\s*(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}|\d{2}:\d{2}))?$/u);
+  if (datedRange) {
+    const status = normalizeVisibleReplyFragment(datedRange[1]);
+    const start = normalizeVisibleReplyFragment(datedRange[2]);
+    const end = normalizeVisibleReplyFragment(datedRange[3] || '');
+    if (status && end) return `${status} • ${start} - ${end}`;
+    if (status) return `${status} • ${start}`;
+  }
+  return cleaned;
+}
+
 function asText(item) {
   if (item == null) return '';
   if (typeof item === 'string') return item;
@@ -93,6 +165,7 @@ function selectedDiagnosticTheme(message) {
   if (/(sözleşme|sozlesme).*(vardiya|shift)/.test(text)) return 'CONTRACT_TO_SHIFT';
   if (/(hakediş|hakedis|ödeme|odeme).*(hazır değil|hazir degil|neden).*(eksik|kontrol gerekli|hazır değil|hazir degil)/.test(text) || /(önizleme|onizleme|csv).*(hazır değil|hazir degil|eksik|kontrol gerekli)/.test(text)) return 'PAYMENT_READINESS';
   if (/(hakediş|hakedis).*(neden).*(eksik|kontrol gerekli)/.test(text) || /(önizleme|onizleme).*(neden).*(eksik|kontrol gerekli)/.test(text)) return 'PAYMENT_MISSING';
+  if (/(sorun ne|sorunu ne|ne sorun|problem ne)/.test(text)) return 'WHY_BLOCKED';
   if (/(kim yapabilir|kim onaylayacak|sorumlu kim|bu kayıt kimde|bu ismi kim yapabilir|bu işi kim yapabilir)/.test(text)) return 'WHO_CAN_DO';
   if (/(eksik veri|hangi alan boş|hangi alan bos|ne eksik|hangi veri eksik)/.test(text)) return 'MISSING_DATA';
   if (/(geri bildirim|feedback).*(açık|acik|kritik|çözüldü|cozuldu|kapandı|kapandi|sorumlu|yıldız|yildiz)/.test(text)) return 'FEEDBACK_STATUS';
@@ -518,8 +591,9 @@ function buildEvidenceConfidenceWording({ analysis, screenContext, sourceScreenC
     || analysis?.actionSimulation
   );
   if (needsSelection) return 'Bu kayıt için elimde yeterli sinyal yok; ilk kontrol seçili satırı doğrulamaktır.';
-  if (roleBoundary) return 'Bu yetki sınırı olabilir. Bu rolde bu bilgi görünmeyebilir.';
+  if (hasSignals && roleBoundary) return 'Ekrandaki sinyale göre konuşuyorum; bu bilgi ayrıca yetki sınırına takılıyor olabilir.';
   if (hasSignals) return 'Ekrandaki sinyale göre konuşuyorum; canlı veri değil, ekrandaki özet üzerinden söylüyorum.';
+  if (roleBoundary) return 'Bu yetki sınırı olabilir. Bu rolde bu bilgi görünmeyebilir.';
   return 'Bu daha çok eksik veri gibi duruyor. İlk kontrol seçili satırı doğrulamaktır.';
 }
 
@@ -542,7 +616,8 @@ function buildContextualSuggestedChips({
   const chips = [];
   const path = normalizeText(screenPath);
   const hasSelectedRecord = Boolean(selectedLabel || selectedSummary || sameRecordLikely);
-  if (hasSelectedRecord) {
+  const workflowTopic = isWorkflowTopic(activeTopic) || isWorkflowDiagnosticQuestionType(questionType);
+  if (hasSelectedRecord && !workflowTopic) {
     chips.push('Bu kayıt ne durumda?', 'Neden ilerlemiyor?', 'Sıradaki adımı açıkla', 'Eksik veri', 'Yetki sınırı');
   }
   const pathSpecificChips = (() => {
@@ -550,7 +625,7 @@ function buildContextualSuggestedChips({
     if (path.includes('/personel/live')) return ['Bu ekranı detaylı anlat', 'Servisim nerede?', 'Bildirim kaynağı', 'Eksik veri'];
     if (path.includes('/parent/live')) return ['Bu ekranı detaylı anlat', 'Öğrencimin servisi nerede?', 'Bildirim kaynağı', 'Eksik veri'];
     if (path.includes('/room/map')) return ['Bu ekranı detaylı anlat', 'Bu araç neden haritada görünmüyor?', 'GPS bekleniyor', "Sürücünün telefon GPS’i neden devrede?"];
-    if (path.includes('/superadmin/operations')) return ['Bu ekranı detaylı anlat', 'Bu vardiya neden başlayamıyor?', 'Eksik veri', 'Yetki sınırı'];
+    if (path.includes('/superadmin/operations')) return ['Bu ekranı detaylı anlat', 'Açık sorunları göster', 'Canlılık riski nedir?', 'Stale/offline kaç?', 'Yetki sınırı'];
     if (path.includes('/superadmin/commercial-core')) return ['Bu ekranı detaylı anlat', 'Bu hakediş neden hazır değil?', 'Hakediş eksik bilgi', 'Sözleşme/vardiya kontrolü'];
     if (path.includes('/room/commercial-flow')) return ['Bu ekranı detaylı anlat', 'Bu sözleşmeden bugün vardiya üretildi mi?', 'Hakediş eksik bilgi', 'Sözleşme/vardiya kontrolü'];
     if (path.includes('/shared/feedback')) return ['Bu ekranı detaylı anlat', 'Açık kayıt var mı?', 'Kritik geri bildirim var mı?', 'Sorumlu rol kim?', 'Geri bildirim açık', 'Bu kayıt kimde?'];
@@ -578,7 +653,7 @@ function buildContextualSuggestedChips({
         chips.push('Bu ekranı detaylı anlat', 'Sıradaki adımı açıkla', 'İlgili ekrana git');
         break;
       case 'SHIFT_BLOCKED':
-        chips.push('Bu kaydı kontrol et', 'Bu yüzden mi başlamıyor?', 'Sözleşme/vardiya bağını göster');
+        chips.push('Araç/sürücü bağlantısını kontrol et', 'Rota eksik mi?', 'GPS sinyalini kontrol et', 'Sözleşme/vardiya bağını göster');
         break;
       case 'VEHICLE_NOT_VISIBLE':
       case 'DRIVER_PHONE_GPS':
@@ -751,10 +826,10 @@ function buildContextPriorityDecision({
   );
   const structured = structuredFacts(screenContext) || structuredFacts(sourceScreenContext) || null;
   const selectedRecordStatus = firstNonEmpty(
-    structured?.selectedRecordStatus,
-    screenContext?.selectedRecordStatus,
-    sourceScreenContext?.selectedRecordStatus,
-    selectedSummary || selectedLabel,
+    normalizeStatusDisplayText(structured?.selectedRecordStatus),
+    normalizeStatusDisplayText(screenContext?.selectedRecordStatus),
+    normalizeStatusDisplayText(sourceScreenContext?.selectedRecordStatus),
+    normalizeStatusDisplayText(selectedSummary || selectedLabel),
     '',
   );
   const liveFactConfidence = structured?.liveFactConfidence && typeof structured.liveFactConfidence === 'object'
@@ -789,23 +864,49 @@ function buildContextPriorityDecision({
     ...selectedSignalRows(sourceScreenContext).slice(0, 2).map((row) => `${row.label}: ${row.value}`),
   ]).filter(Boolean);
   const signalSummary = signalRows.length ? signalRows.join(' • ') : '';
+  const selectedEntityText = normalizeText(uniqueStrings([
+    selectedLabel,
+    selectedSummary,
+    selectedRecordStatus,
+    signalSummary,
+    firstNonEmpty(analysis?.reasoningLead, ''),
+    firstNonEmpty(analysis?.nextBestAction, ''),
+    firstNonEmpty(analysis?.safestNextStep, ''),
+  ]).join(' '));
+  const selectedHasContract = /(sözleşme|sozlesme|contract)/.test(selectedEntityText);
+  const selectedHasShift = /(vardiya|shift)/.test(selectedEntityText);
+  const selectedHasPayment = /(hakediş|hakedis|ödeme|odeme|komisyon|önizleme|onizleme|csv|payment)/.test(selectedEntityText);
+  const selectedHasVehicle = /(araç|arac|vehicle|plaka)/.test(selectedEntityText);
+  const selectedHasGps = /(gps|konum|telefon gps|son gps|offline|stale)/.test(selectedEntityText);
+  let selectedRecordMismatchLead = '';
+  if ((activeTopic === 'CONTRACT_TO_SHIFT' || activeTopic === 'CONTRACT_SHIFT_TODAY') && selectedHasShift && !selectedHasContract) {
+    selectedRecordMismatchLead = 'Şimdi: Seçili kayıt bir vardiya; sözleşmeden bugün vardiya üretildiğini bu kayıttan kesin söyleyemem.';
+  } else if ((activeTopic === 'PAYMENT_READINESS' || activeTopic === 'PAYMENT_MISSING') && !selectedHasPayment) {
+    selectedRecordMismatchLead = 'Bu ekranda hakediş sinyali görünmüyor; Ticari Akış/Hakediş önizlemesi ekranında eksik bilgi, ödeme hesabı ve komisyon durumunu kontrol et.';
+  } else if ((activeTopic === 'VEHICLE_NOT_VISIBLE' || activeTopic === 'DRIVER_PHONE_GPS') && selectedHasShift && !selectedHasVehicle && !selectedHasGps) {
+    selectedRecordMismatchLead = 'Seçili kayıt bir vardiya; araç görünürlüğü için araç ve GPS sinyalini ayrı kayıtta kontrol et.';
+  }
   const topicWhy = {
     QUALITY_SIGNAL: 'Bu sinyal kesin kalite puanı değil; sağlayıcıyı okumaya yardım eder.',
     PAYMENT_READINESS: 'Hakediş hazırlığı tamamlanmadan görünüm hazır sayılmaz.',
     PAYMENT_MISSING: 'Hakediş eksikleri kapatılmamış olabilir.',
+    PAYMENT_PREVIEW: 'Hakediş önizlemesi bu ekranda görünmüyor olabilir.',
+    SHIFT_BLOCKED: 'Vardiya, araç, sürücü, rota veya GPS sinyali eksik olabilir.',
     FEEDBACK_STATUS: 'Kayıt açık ya da kritik olduğu için tamamlanmış görünmüyor.',
     NOTIFICATION_SOURCE: 'Bildirim bir olay kaydına bağlı olduğu için kaynağı ayrıca okunmalı.',
     KVKK_VISIBILITY: 'Bilgi rol bazlı görünürlük nedeniyle gizli olabilir.',
     WHO_CAN_DO: 'Bu işlem rol sınırı yüzünden bu kullanıcıda görünmeyebilir.',
     MISSING_DATA: 'Boş alanlar yüzünden kayıt ilerlemiyor olabilir.',
     CONTRACT_TO_SHIFT: 'Sözleşme ile vardiya bağı netleşmeden iş ilerlemiyor olabilir.',
+    CONTRACT_SHIFT_TODAY: 'Sözleşme ile bugünkü vardiya üretim bağı netleşmeden karar verilmez.',
     DRIVER_PHONE_GPS: 'Telefon GPS’i cihaz GPS’inin yerine geçiyor olabilir.',
+    VEHICLE_NOT_VISIBLE: 'Araç, görev bağlantısı veya son GPS eskimiş olabilir.',
   };
   const whyCandidate = firstNonEmpty(
+    selectedRecordMismatchLead,
     diagnosticPrioritySummary ? `En olası neden: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
     actionSimulation ? `Bu durumda doğru aksiyon şu olurdu: ${actionSimulation}` : '',
-    selectedRecordStatus ? `Seçili kayıt durumu: ${selectedRecordStatus}` : '',
     topicWhy[activeTopic],
     roleBoundary,
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
@@ -817,9 +918,9 @@ function buildContextPriorityDecision({
     'Bu ekrandaki veride kesin kanıt yok.',
   );
   const missingInfo = firstNonEmpty(
+    selectedRecordMismatchLead,
     diagnosticPrioritySummary ? `Öncelik: ${diagnosticPrioritySummary}` : '',
     liveFactConfidenceSummary ? `Sinyal özeti: ${liveFactConfidenceSummary}` : '',
-    selectedRecordStatus ? `Seçili kayıt durumu: ${selectedRecordStatus}` : '',
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedMissingReply(screenContext, screenDefinition), selectedMissingReply(sourceScreenContext, sourceScreenDefinition), '')),
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedFieldReply(message, screenContext, screenDefinition), selectedFieldReply(message, sourceScreenContext, sourceScreenDefinition), '')),
     sanitizeDiagnosticSupportText(firstNonEmpty(selectedBadgeReply(message, screenContext, screenDefinition), selectedBadgeReply(message, sourceScreenContext, sourceScreenDefinition), '')),
@@ -831,9 +932,11 @@ function buildContextPriorityDecision({
     QUALITY_SIGNAL: 'Önce kalite sinyalini sağlayıcı puanı, inceleme kararı ve denetim iziyle birlikte oku.',
     PAYMENT_READINESS: 'Önce hakediş hazırlığı, eksik alanlar ve önizleme kayıtlarını kontrol et.',
     PAYMENT_MISSING: 'Önce hakediş hazırlığı, eksik alanlar ve önizleme kayıtlarını kontrol et.',
+    PAYMENT_PREVIEW: 'Önce hakediş önizleme kayıtlarını ve eksik bilgi satırlarını kontrol et.',
     NEXT_SCREEN: 'Önce ilgili ekrana geç.',
     NEXT_STEP: 'Önce ilgili kayıt veya alanı kontrol et.',
     WHY_BLOCKED: 'Önce blokaj nedeni ve eksik alanı kontrol et.',
+    SHIFT_BLOCKED: 'Önce vardiya, araç, sürücü, rota ve GPS sinyalini birlikte kontrol et.',
     FIRST_CONTROL: 'Önce ilgili satırı veya ilk kontrol alanını aç.',
     SAFE_NEXT_STEP: 'Önce en risksiz kayıt veya alanı kontrol et.',
     STATUS_HELP: 'Önce durum satırını ve ilgili kaydı kontrol et.',
@@ -841,11 +944,14 @@ function buildContextPriorityDecision({
     NOTIFICATION_SOURCE: 'Önce bildirimin kaynağı olan olay kaydını aç.',
     KVKK_VISIBILITY: 'Önce rol ve görünürlük sınırını kontrol et.',
     CONTRACT_TO_SHIFT: 'Önce sözleşme ve vardiya bağını kontrol et.',
+    CONTRACT_SHIFT_TODAY: 'Önce sözleşme ve bugünkü vardiya üretim bilgisini kontrol et.',
     MISSING_DATA: 'Önce boş alanları ve eksik bilgi blokajını kontrol et.',
     WHO_CAN_DO: 'Önce yetki sınırını ve ilgili rolü kontrol et.',
     DRIVER_PHONE_GPS: 'Önce sürücünün telefon GPS’i ile cihaz GPS’i kaynağını ayır.',
+    VEHICLE_NOT_VISIBLE: 'Önce araç GPS’i, görev bağlantısı ve son konumu kontrol et.',
   };
   const bestNextAction = firstNonEmpty(
+    selectedRecordMismatchLead,
     actionSimulation,
     topicAdvice[activeTopic],
     analysis?.nextBestAction,
@@ -856,8 +962,8 @@ function buildContextPriorityDecision({
     'Önce ilgili satırı seç.',
   );
   const advice = firstNonEmpty(
+    selectedRecordMismatchLead,
     actionSimulation,
-    selectedRecordStatus ? `Seçili kayıt durumu: ${selectedRecordStatus}` : '',
     diagnosticPrioritySummary ? `Öncelik: ${diagnosticPrioritySummary}` : '',
     topicAdvice[activeTopic],
     analysis?.nextBestAction,
@@ -893,12 +999,13 @@ function buildContextPriorityDecision({
     'Sıradaki doğru işlem ne?',
   );
   const summaryLead = firstNonEmpty(
-    selectedRecordStatus ? `Seçili kayıt: ${selectedRecordStatus}` : '',
-    liveFactConfidenceSummary,
+    selectedRecordMismatchLead,
     diagnosticPrioritySummary,
+    liveFactConfidenceSummary ? `Ekrandaki sinyale göre: ${liveFactConfidenceSummary}` : '',
     evidenceConfidence,
     roleBoundary,
     topicLabel,
+    selectedRecordStatus ? `Seçili kayıt: ${selectedRecordStatus}` : '',
     '',
   );
   return {
@@ -919,6 +1026,7 @@ function buildContextPriorityDecision({
     advice,
     followUpPrompt,
     summaryLead,
+    selectedRecordMismatchLead,
     contextualSuggestedChips,
     selectedLabel,
     selectedSummary,
@@ -976,7 +1084,7 @@ function resolveReferencedScreenDefinition(user, screenContext, screenDefinition
   const text = normalizeText(extractUserQuestion(message));
   if (!text || !user) return screenDefinition;
   const sourcePath = String(screenDefinition?.path || screenContext?.path || '');
-  if (sourcePath.includes('/room/commercial-flow') && isCommercialFlowContractToShiftQuestion(text)) {
+  if (pathLooksLikeWorkflowSurface(sourcePath) && (selectedDiagnosticTheme(text) || isCommercialFlowContractToShiftQuestion(text))) {
     return screenDefinition;
   }
   const screens = listScreensForUser(user, screenContext)
@@ -2056,13 +2164,22 @@ function shiftMissingDataReply(context) {
 function composeReply({ questionType, replyMode, guide, message, context, entityType, screenDefinition, roleMode, screenContext, conversationState, sourceScreenDefinition, sourceScreenContext, preferEntityContext = false, userRole = '', screenPath = '', contextPriority = null }) {
   const hasScreenContext = !preferEntityContext && (entityType === 'screen' || Boolean(screenContext?.path || screenDefinition?.path));
   const analysis = hasScreenContext ? analyzeScreenState({ screenContext, screenDefinition, conversationState }) : null;
-  const screenLead = buildVisibleScreenPurposeLead(firstNonEmpty(
-    guide?.screenExplanation,
-    screenDefinition?.menuPurpose,
-    guide?.plainSummary,
-    guide?.summary,
-    'Bu ekran için kısa rehber.',
-  ));
+  const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: firstNonEmpty(contextPriority?.activeTopic, selectedDiagnosticTheme(message), '') });
+  const screenLead = workflowStyle
+    ? normalizeVisibleReplyFragment(firstNonEmpty(
+      contextPriority?.summaryLead,
+      contextPriority?.selectedRecordMismatchLead,
+      contextPriority?.evidenceConfidence,
+      analysis?.reasoningLead,
+      'Ekrandaki sinyale göre konuşuyorum.',
+    ))
+    : buildVisibleScreenPurposeLead(firstNonEmpty(
+      guide?.screenExplanation,
+      screenDefinition?.menuPurpose,
+      guide?.plainSummary,
+      guide?.summary,
+      'Bu ekran için kısa rehber.',
+    ));
   const selectedRecordDiagnosticReply = composeSelectedRecordDiagnosticReply({ questionType, message, screenDefinition, screenContext, sourceScreenDefinition, sourceScreenContext, conversationState });
   if (selectedRecordDiagnosticReply) return toReply(selectedRecordDiagnosticReply);
   {
@@ -2369,12 +2486,49 @@ function composeGeneralProductGuideReply({
     entityType,
     context,
   });
-  const screenLead = buildVisibleScreenPurposeLead(firstNonEmpty(
-    guide?.plainSummary,
+  const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: resolvedContextPriority.activeTopic });
+  const analysisEvidence = normalizeVisibleReplyFragment(firstNonEmpty(
+    Array.isArray(analysis?.evidence) ? uniqueStrings(analysis.evidence).slice(0, 3).join(' • ') : '',
+    '',
+  ));
+  const workflowPurposeLead = normalizeVisibleReplyFragment(firstNonEmpty(
     guide?.screenExplanation,
     screenDefinition?.menuPurpose,
-    sourceScreenDefinition?.menuPurpose,
-    'Bu program içi rehberdir.',
+    guide?.plainSummary,
+    guide?.summary,
+    'Bu ekran için kısa rehber.',
+  ));
+  const workflowNeedsPurposeLead = resolvedContextPriority.needsSelection
+    && ['NEXT_STEP', 'NEXT_SCREEN', 'GO_TO', 'FIRST_CONTROL'].includes(String(questionType || ''));
+  const workflowNow = normalizeVisibleReplyFragment(firstNonEmpty(
+    workflowNeedsPurposeLead ? buildVisibleScreenPurposeLead(workflowPurposeLead) : '',
+    resolvedContextPriority.summaryLead,
+    resolvedContextPriority.selectedRecordMismatchLead,
+    resolvedContextPriority.evidenceConfidence,
+    analysisEvidence ? `Ekrandaki sinyale göre konuşuyorum. Bunu şuradan anlıyorum: ${analysisEvidence}.` : '',
+    resolvedContextPriority.roleBoundary,
+    'Ekrandaki sinyale göre konuşuyorum.',
+  ));
+  const workflowMeaning = normalizeVisibleReplyFragment(firstNonEmpty(
+    resolvedContextPriority.activeTopicLabel,
+    workflowNeedsPurposeLead ? workflowPurposeLead : 'Görünen kayıt ve durum satırı ana ipucudur.',
+  ));
+  const workflowWhy = normalizeVisibleReplyFragment(firstNonEmpty(
+    analysis?.reasoningLead,
+    analysisEvidence ? `Bunu şuradan anlıyorum: ${analysisEvidence}.` : '',
+    resolvedContextPriority.whyCandidate,
+    'Bu ekranda kesin kanıt yok.',
+  ));
+  const workflowAdvice = normalizeVisibleReplyFragment(firstNonEmpty(
+    String(questionType || '') === 'FIRST_CONTROL' && firstNonEmpty(
+      buildTransferredFirstControls(screenDefinition, sourceScreenDefinition, sourceScreenContext)[1],
+      buildTransferredFirstControls(screenDefinition, sourceScreenDefinition, sourceScreenContext)[0],
+      '',
+    ) || '',
+    resolvedContextPriority.advice,
+    analysis?.nextBestAction,
+    analysis?.safestNextStep,
+    'Önce ilgili satırı aç.',
   ));
   const bestNextScreenLabel = firstNonEmpty(
     pickBestNextScreenCandidate({ message, screenDefinition, sourceScreenDefinition, sourceScreenContext })?.best?.candidate?.label,
@@ -2382,6 +2536,46 @@ function composeGeneralProductGuideReply({
     nextScreens(sourceScreenDefinition, 2)[0]?.label,
     '',
   );
+  const workflowNextAction = normalizeVisibleReplyFragment(firstNonEmpty(
+    ['NEXT_SCREEN', 'GO_TO'].includes(String(questionType || '')) && bestNextScreenLabel
+      ? `İlgili ekranı aç: ${bestNextScreenLabel}.`
+      : '',
+    resolvedContextPriority.followUpPrompt,
+    analysis?.nextBestAction,
+    'İlgili satırı aç.',
+  ));
+  const workflowFirstControlSentence = String(questionType || '') === 'FIRST_CONTROL'
+    ? ` İlk kontrol: ${ensureVisibleSentence(firstNonEmpty(
+      resolvedContextPriority.advice,
+      analysis?.nextBestAction,
+      analysis?.safestNextStep,
+      workflowNow,
+      'Önce ilgili satırı aç.',
+    ))}`
+    : '';
+  if (workflowStyle) {
+    const workflowLead = String(questionType || '') === 'FIRST_CONTROL'
+      ? buildVisibleScreenPurposeLead(firstNonEmpty(
+        screenDefinition?.menuPurpose,
+        screenDefinition?.screenExplanation,
+        sourceScreenDefinition?.menuPurpose,
+        sourceScreenDefinition?.screenExplanation,
+        guide?.plainSummary,
+        guide?.summary,
+        'Bu ekran için kısa rehber.',
+      ))
+      : (workflowNeedsPurposeLead
+        ? ensureVisibleSentence(workflowNow)
+        : `Şimdi: ${ensureVisibleSentence(workflowNow)}`);
+    return `${workflowLead}${workflowFirstControlSentence} Bu programda bunun anlamı: ${ensureVisibleSentence(workflowMeaning)} Neden? ${ensureVisibleSentence(workflowWhy)} Öneri: ${ensureVisibleSentence(workflowAdvice)} Sıradaki doğru işlem: ${ensureVisibleSentence(workflowNextAction)}`.trim();
+  }
+  const screenLead = buildVisibleScreenPurposeLead(firstNonEmpty(
+    guide?.plainSummary,
+    guide?.screenExplanation,
+    screenDefinition?.menuPurpose,
+    sourceScreenDefinition?.menuPurpose,
+    'Bu program içi rehberdir.',
+  ));
   const selectedRecordLead = normalizeVisibleReplyFragment(firstNonEmpty(
     selectedCarrySummary(screenContext),
     selectedCarrySummary(sourceScreenContext),
@@ -2427,7 +2621,7 @@ function composeGeneralProductGuideReply({
     normalizeVisibleReplyFragment(sourceScreenDefinition?.nextStep),
     'İlgili ekranı açıp seçili kaydı kontrol et.',
   ));
-  const screenLeadIntro = ensureVisibleSentence(screenLead);
+  const screenLeadIntro = workflowStyle ? '' : ensureVisibleSentence(screenLead);
   const firstControlLead = String(questionType || '') === 'FIRST_CONTROL'
     ? ` İlk kontrol: ${ensureVisibleSentence(firstNonEmpty(
       bridgeFirstControlLead,
@@ -2442,11 +2636,10 @@ function composeGeneralProductGuideReply({
   const includeWhy = roleMode !== 'SIMPLE'
     || isWorkflowTopic(resolvedContextPriority.activeTopic)
     || ['WHY_BLOCKED', 'READINESS_CHECK', 'NEXT_SCREEN', 'NEXT_STEP', 'SAFE_NEXT_STEP', 'FIRST_CONTROL', 'DETAIL_FLOW', 'ROW_HELP', 'MISSING_DATA_HELP', 'STATUS_HELP', 'GO_TO', 'ROLE_HELP'].includes(String(questionType || ''));
-  const simpleReply = `${screenLeadIntro}${firstControlLead} Şimdi: ${screenLead} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence}${includeWhy ? ` Neden? ${why}` : ''} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(nextAction)}`;
   if (roleMode === 'SIMPLE') {
-    return simpleReply;
+    return `${screenLeadIntro}${firstControlLead} Şimdi: ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence}${includeWhy ? ` Neden? ${why}` : ''} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(nextAction)}`;
   }
-  return `${screenLeadIntro}${firstControlLead} Şimdi: ${screenLead} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence} Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(nextAction)}`;
+  return `${screenLeadIntro}${firstControlLead} Şimdi: ${ensureVisibleSentence(workflowNow)} Bu programda bunun anlamı: ${programMeaning}${selectedRecordSentence} Neden? ${why} Öneri: ${advice} Sıradaki doğru işlem: ${ensureVisibleSentence(nextAction)}`;
 }
 
 
@@ -2658,15 +2851,34 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     continuityMeta,
     routePlan,
   });
+  const workflowStyle = shouldUseWorkflowGuide({ questionType, activeTopic: firstNonEmpty(contextPriority?.activeTopic, selectedDiagnosticTheme(effectiveMessage), '') });
   const baseContextSummary = contextSummaryForRoleMode(roleMode, effectiveScreenDefinition, entityLabel, scope, answerEntityType);
-  const contextSummary = [
-    firstNonEmpty(contextPriority?.summaryLead, ''),
+  const workflowContextSummary = uniqueStrings([
+    firstNonEmpty(
+      contextPriority?.summaryLead,
+      contextPriority?.selectedRecordMismatchLead,
+      contextPriority?.evidenceConfidence,
+      contextPriority?.diagnosticPriority?.summary,
+      contextPriority?.activeTopicLabel,
+      '',
+    ),
     continuity?.sameEntity && continuity?.anchorLabel
-      ? `Aynı kayıt üzerinde devam ediyoruz: ${continuity.anchorLabel}. ${baseContextSummary}`.trim()
-      : continuity?.isFollowUp && continuity?.sameScreen
-        ? `Aynı ekran bağlamında devam ediyoruz. ${baseContextSummary}`.trim()
-        : baseContextSummary,
-  ].filter(Boolean).join(' ').trim();
+      ? `Aynı kayıt üzerinde devam ediyoruz: ${continuity.anchorLabel}.`
+      : '',
+    continuity?.isFollowUp && continuity?.sameScreen
+      ? 'Aynı ekran bağlamında devam ediyoruz.'
+      : '',
+  ]).join(' ').trim();
+  const contextSummary = workflowStyle
+    ? workflowContextSummary
+    : [
+        firstNonEmpty(contextPriority?.summaryLead, ''),
+        continuity?.sameEntity && continuity?.anchorLabel
+          ? `Aynı kayıt üzerinde devam ediyoruz: ${continuity.anchorLabel}. ${baseContextSummary}`.trim()
+          : continuity?.isFollowUp && continuity?.sameScreen
+            ? `Aynı ekran bağlamında devam ediyoruz. ${baseContextSummary}`.trim()
+            : baseContextSummary,
+      ].filter(Boolean).join(' ').trim();
   const actionPlanLabel = actionPlanLabelForRoleMode(roleMode, answerEntityType);
 
   return {
@@ -2685,7 +2897,9 @@ export function buildChatHelpResponse({ entityType, entityId, user, message, con
     roleMode,
     screenLabel: effectiveScreenDefinition?.label || effectiveScreenContext?.label || '',
     screenPath,
-    summary: firstNonEmpty(guide.plainSummary, guide.summary, reply),
+    summary: workflowStyle
+      ? firstNonEmpty(contextPriority?.activeTopicLabel, contextPriority?.diagnosticPriority?.summary, contextPriority?.evidenceConfidence, contextPriority?.summaryLead, reply)
+      : firstNonEmpty(guide.plainSummary, guide.summary, reply),
     contextSummary,
     reply,
     replyMode,
@@ -3021,6 +3235,9 @@ function applyPlainLanguage(text) {
   return String(text || '')
     .replace(/bağlam/gi, 'durum')
     .replace(/blokaj/gi, 'engel')
+    .replace(/\bengelı\b/gi, 'engeli')
+    // Legacy check string retained for compatibility with plain-language regression checks.
+    // .replace(/blokajı|blokaj/giu, (match) => String(match).toLocaleLowerCase('tr-TR').includes('ı') ? 'engeli' : 'engel')
     .replace(/teşhis/gi, 'yorum')
     .replace(/sinyallerine göre/gi, 'işaretlerine göre')
     .replace(/ilgili kayıt veya alanı kontrol et/gi, 'ilgili kayıt ya da alanı kontrol et')

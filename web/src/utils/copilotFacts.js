@@ -62,6 +62,26 @@ function compactList(items = [], limit = 6) {
   return out;
 }
 
+function normalizeStatusDisplayText(value) {
+  const text = compactText(value, '');
+  if (!text) return '';
+  const datedRange = text.match(/^(.+?)\s+(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2})(?:\s*[-–—]\s*(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}|\d{2}:\d{2}))?$/u);
+  if (datedRange) {
+    const status = compactText(datedRange[1], '');
+    const start = compactText(datedRange[2], '');
+    const end = compactText(datedRange[3] || '', '');
+    if (status && end) return `${status} • ${start} - ${end}`;
+    if (status) return `${status} • ${start}`;
+  }
+  return text
+    .replace(/\bengelı\b/gi, 'engeli')
+    .replace(/[?？]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*•\s*/g, ' • ')
+    .replace(/\s*-\s*/g, ' - ')
+    .trim();
+}
+
 export function normalizeCopilotSignal(signal, fallbackId = '') {
   if (!signal) return null;
   if (typeof signal === 'string') {
@@ -360,7 +380,7 @@ function buildReadonlyCopilotFacts({
     .map((signal, idx) => normalizeCopilotSignal(signal, `signal_${idx + 1}`))
     .filter(Boolean)
     .slice(0, 8);
-  const selectedRecordStatusText = compactText(selectedRecordStatus, compactText(stage || readiness || summary || 'Seçili kayıt yok', 'Seçili kayıt yok'));
+  const selectedRecordStatusText = normalizeStatusDisplayText(compactText(selectedRecordStatus, compactText(stage || readiness || summary || 'Seçili kayıt yok', 'Seçili kayıt yok')));
   const liveFactConfidenceValue = liveFactConfidence && typeof liveFactConfidence === 'object'
     ? {
       summary: compactText(liveFactConfidence.summary || ''),
@@ -788,15 +808,20 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
     }),
   ];
   const actionMatrix = splitActions(actions);
-  return {
+  const selectedRecordStatus = [
+    `Durum: ${status}`,
+    `Araç: ${hasVehicle ? (shift?.vehicle?.plate || `#${shift?.vehicleId}`) : 'Yok'}`,
+    `Sürücü: ${hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok'}`,
+    `Durak: ${stopCount}`,
+    `Açık teklif: ${offerCount}`,
+  ].join(' • ');
+  const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'SHIFTS',
     stage: status,
     readinessScore: approvedLike && hasVehicle && hasDriver ? (stopCount > 0 ? 88 : 74) : 42,
     readiness: approvedLike && hasVehicle && hasDriver && stopCount > 0 ? 'READY' : blockers.length ? 'NOT_READY' : 'REVIEW_NEEDED',
-    missing,
+    summary: approvedLike ? 'Vardiya hazır' : blockers.length ? 'Vardiya blokajı' : 'Vardiya kontrol altında',
     blockers,
-    ...actionMatrix,
-    counters: { visible: Number(itemCount || 0), offers: offerCount, stops: stopCount },
     evidence: [
       `Durum: ${status}`,
       `Araç: ${hasVehicle ? (shift?.vehicle?.plate || `#${shift?.vehicleId}`) : 'Yok'}`,
@@ -804,14 +829,30 @@ export function buildShiftFacts({ shift, itemCount = 0 }) {
       `Durak: ${stopCount}`,
       `Teklif: ${offerCount}`,
     ],
-    reasoningLead: blockers.length
-      ? 'Bu vardiyada ana blokaj atama veya teklif tarafında görünüyor.'
-      : 'Bu vardiyada önce durum, sonra araç-sürücü bağı ve durak hazır mı ona bakılır.',
     nextBestAction: blockers.length
       ? (offerCount > 0 && !approvedLike ? 'Önce teklif kararını kapat. Sonra araç ve sürücü alanlarını tekrar kontrol et.' : 'Önce araç ve sürücü bağını tamamla. Sonra durak ve sonraki adım alanlarını yeniden oku.')
       : 'Önce seçili vardiyanın araç, sürücü ve durak alanlarını birlikte kontrol et.',
     safestNextStep: 'En risksiz adım, seçili satırda araç ve sürücü gerçekten dolu mu onu doğrulamaktır.',
     compareHint: 'APPROVED ile tam atama aynı şey değildir; araç veya sürücü boşsa iş saha için eksiktir.',
+    counters: { visible: Number(itemCount || 0), offers: offerCount, stops: stopCount },
+    selectedRecordStatus,
+    copilotSignals: [
+      { id: 'shiftStatus', label: 'Durum', value: status, note: approvedLike ? 'Onaylı görünüyor.' : 'Önce durumu kontrol et.' },
+      { id: 'shiftVehicle', label: 'Araç', value: hasVehicle ? (shift?.vehicle?.plate || `#${shift?.vehicleId}`) : 'Yok', note: hasVehicle ? 'Araç bağlı.' : 'Araç eksik.' },
+      { id: 'shiftDriver', label: 'Sürücü', value: hasDriver ? (shift?.driver?.fullName || `#${shift?.driverId}`) : 'Yok', note: hasDriver ? 'Sürücü bağlı.' : 'Sürücü eksik.' },
+      { id: 'shiftStops', label: 'Durak', value: String(stopCount), note: stopCount > 0 ? 'Durak var.' : 'Durak eksik.' },
+      { id: 'shiftOffers', label: 'Açık teklif', value: String(offerCount), note: offerCount > 0 ? 'Teklif açık olabilir.' : 'Açık teklif yok.' },
+    ],
+    boundaryNotes: [offerCount > 0 && !approvedLike ? 'Teklif/karar akışı açık olabilir.' : ''],
+  });
+  return {
+    ...readonlyFacts,
+    missing,
+    blockers,
+    reasoningLead: blockers.length
+      ? 'Bu vardiyada ana blokaj atama veya teklif tarafında görünüyor.'
+      : 'Bu vardiyada önce durum, sonra araç-sürücü bağı ve durak hazır mı ona bakılır.',
+    ...actionMatrix,
   };
 }
 
@@ -878,27 +919,19 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
     }),
   ];
   const actionMatrix = splitActions(actions);
-  return {
+  const selectedRecordStatus = [
+    `Araç: ${selected?.plate || `#${selected?.id || '-'}`}`,
+    `Son GPS: ${gpsAge || gpsStatus || '-'}`,
+    `Sıradaki durak: ${selectedNext?.name || 'Yok'}`,
+    `ETA: ${etaReady ? `${Number(selectedEta)} dk` : 'Yok'}`,
+  ].join(' • ');
+  const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'MAP',
     stage: status,
-    hasSelectedVehicle,
-    hasShift,
-    gpsFresh,
-    etaReady,
-    nextReady,
-    totalStops,
-    emptyState: !hasSelectedVehicle || (!hasShift && totalStops <= 0 && !nextReady),
     readinessScore: hasSelectedVehicle && gpsFresh && nextReady ? 84 : 46,
     readiness: hasSelectedVehicle && gpsFresh && nextReady ? 'READY' : blockers.length ? 'NOT_READY' : 'REVIEW_NEEDED',
-    missing,
+    summary: hasSelectedVehicle ? 'Canlı takip' : 'Araç seçimi gerekiyor',
     blockers,
-    ...actionMatrix,
-    counters: {
-      vehicles: Number(vehicleCount || 0),
-      totalStops: Number(selectedStats?.total || 0),
-      remainingStops: Number(selectedStats?.remaining || 0),
-      completedStops: Number(selectedStats?.completed || 0),
-    },
     evidence: [
       `Araç: ${selected?.plate || `#${selected?.id || '-'}`}`,
       `Son GPS: ${gpsAge || gpsStatus || '-'}`,
@@ -906,11 +939,6 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
       `ETA: ${etaReady ? `${Number(selectedEta)} dk` : 'Yok'}`,
       `Kalan durak: ${Number(selectedStats?.remaining || 0)}`,
     ],
-    reasoningLead: !hasSelectedVehicle
-      ? 'Bu haritada önce seçili araç oluşmadan sonraki ekran kararı vermek erken olur.'
-      : blockers.length
-        ? 'Bu haritadaki ana sorun canlılık veya rota bağının eksik görünmesi.'
-        : 'Bu haritada önce canlılık, sonra sıradaki durak ve ETA birlikte okunmalı.',
     nextBestAction: !hasSelectedVehicle
       ? "Önce marker'a tıklayıp aracı seç. Sonra üst kartta Shift, Son GPS ve Sıradaki durak dolu mu bak."
       : blockers.length
@@ -920,6 +948,39 @@ export function buildMapFacts({ selected, selectedShift, selectedNext, selectedE
       ? "En risksiz adım, önce marker'dan doğru aracı seçmektir."
       : 'En risksiz adım, doğru aracı seçip Son GPS eski mi değil mi onu doğrulamaktır.',
     compareHint: 'Mavi aktif sıradaki parçayı, yeşil geçilen kısmı gösterir; görsel yorumla canlı karar yorumunu karıştırmamak gerekir.',
+    counters: {
+      vehicles: Number(vehicleCount || 0),
+      totalStops: Number(selectedStats?.total || 0),
+      remainingStops: Number(selectedStats?.remaining || 0),
+      completedStops: Number(selectedStats?.completed || 0),
+    },
+    selectedRecordStatus,
+    copilotSignals: [
+      { id: 'selectedVehicle', label: 'Araç', value: selected?.plate || `#${selected?.id || '-'}`, note: hasSelectedVehicle ? 'Seçili araç var.' : 'Araç seçili değil.' },
+      { id: 'gpsAge', label: 'Son GPS', value: gpsAge || gpsStatus || '-', note: gpsFresh ? 'GPS güncel görünüyor.' : 'GPS eski olabilir.' },
+      { id: 'nextStop', label: 'Sıradaki durak', value: selectedNext?.name || 'Yok', note: nextReady ? 'Sıradaki durak var.' : 'Sıradaki durak yok.' },
+      { id: 'eta', label: 'ETA', value: etaReady ? `${Number(selectedEta)} dk` : 'Yok', note: etaReady ? 'ETA okunuyor.' : 'ETA görünmüyor.' },
+      { id: 'shiftLink', label: 'Bağlı vardiya', value: hasShift ? 'Var' : 'Yok', note: hasShift ? 'Vardiya bağı görünüyor.' : 'Vardiya bağı görünmüyor.' },
+    ],
+    boundaryNotes: [!gpsFresh ? 'GPS kaynağı eski olabilir.' : ''],
+  });
+  return {
+    hasSelectedVehicle,
+    hasShift,
+    gpsFresh,
+    etaReady,
+    nextReady,
+    totalStops,
+    emptyState: !hasSelectedVehicle || (!hasShift && totalStops <= 0 && !nextReady),
+    missing,
+    blockers,
+    ...readonlyFacts,
+    reasoningLead: !hasSelectedVehicle
+      ? 'Bu haritada önce seçili araç oluşmadan sonraki ekran kararı vermek erken olur.'
+      : blockers.length
+        ? 'Bu haritadaki ana sorun canlılık veya rota bağının eksik görünmesi.'
+        : 'Bu haritada önce canlılık, sonra sıradaki durak ve ETA birlikte okunmalı.',
+    ...actionMatrix,
   };
 }
 
@@ -965,26 +1026,25 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
     }),
   ];
   const actionMatrix = splitActions(actions);
-  return {
+  const selectedRecordStatus = [
+    `Karşı taraf: ${selectedItem?.counterparty || '-'}`,
+    `Akış: ${selectedItem?.flowLabel || '-'}`,
+    `Durum: ${status}`,
+    `Sonraki adım: ${selectedItem?.nextStep || '-'}`,
+  ].join(' • ');
+  const readonlyFacts = buildReadonlyCopilotFacts({
     screenType: 'COMMERCIAL_FLOW',
     stage: `${section}:${status}`,
     readinessScore: isList ? 82 : isPending ? 61 : 39,
     readiness: isList ? 'READY' : isPending ? 'REVIEW_NEEDED' : 'NOT_READY',
-    missing: [],
+    summary: isList ? 'Operasyon listesi' : isPending ? 'Bekleyen akış' : 'Market aşaması',
     blockers,
-    ...actionMatrix,
-    counters: { market: Number(marketCount || 0), accepted: Number(acceptedCount || 0), list: Number(listCount || 0) },
     evidence: [
       `Karşı taraf: ${selectedItem?.counterparty || '-'}`,
       `Akış: ${selectedItem?.flowLabel || '-'}`,
       `Durum: ${status}`,
       `Sonraki adım: ${selectedItem?.nextStep || '-'}`,
     ],
-    reasoningLead: isMarket
-      ? 'Bu kayıt hâlâ ticari pazarlık tarafında görünüyor.'
-      : isPending
-        ? 'Bu kayıt kabul edilmiş ama operasyon hazırlığı ayrıca kontrol edilmelidir.'
-        : 'Bu kayıt operasyon tarafına geçmiş görünüyor.',
     nextBestAction: isMarket
       ? 'Önce Marketi aç veya teklif tarafını tamamla. Sonra operasyon hazırlığına bak.'
       : isPending
@@ -992,6 +1052,27 @@ export function buildCommercialFlowFacts({ selectedItem, marketCount = 0, accept
         : 'Önce Listeyi aç ve bağlı vardiyanın hazır olup olmadığını kontrol et.',
     safestNextStep: 'En risksiz adım, önce bu kaydın market mi kabul mü liste mi olduğuna bakmaktır.',
     compareHint: 'Marketi aç pazarlık tarafını gösterir; Listeyi aç operasyon tarafına götürür.',
+    counters: { market: Number(marketCount || 0), accepted: Number(acceptedCount || 0), list: Number(listCount || 0) },
+    selectedRecordStatus,
+    copilotSignals: [
+      { id: 'counterparty', label: 'Karşı taraf', value: selectedItem?.counterparty || '-', note: isMarket ? 'Pazarlık tarafı.' : 'Akış tarafı.' },
+      { id: 'flow', label: 'Akış', value: selectedItem?.flowLabel || '-', note: 'Ticari akış etiketi.' },
+      { id: 'section', label: 'Bölüm', value: section, note: isList ? 'Liste tarafı.' : isPending ? 'Bekleyen tarafı.' : 'Market tarafı.' },
+      { id: 'status', label: 'Durum', value: status, note: selectedItem?.nextStep || 'Durum satırı.' },
+      { id: 'linkedShift', label: 'Bağlı vardiya', value: selectedItem?.shiftId ? `#${selectedItem.shiftId}` : 'Yok', note: selectedItem?.shiftId ? 'Vardiya bağı görünüyor.' : 'Vardiya bağı görünmüyor.' },
+    ],
+    boundaryNotes: [isMarket ? 'Ticari karar henüz operasyon tarafına inmemiş olabilir.' : ''],
+  });
+  return {
+    missing: [],
+    blockers,
+    ...readonlyFacts,
+    reasoningLead: isMarket
+      ? 'Bu kayıt hâlâ ticari pazarlık tarafında görünüyor.'
+      : isPending
+        ? 'Bu kayıt kabul edilmiş ama operasyon hazırlığı ayrıca kontrol edilmelidir.'
+        : 'Bu kayıt operasyon tarafına geçmiş görünüyor.',
+    ...actionMatrix,
   };
 }
 

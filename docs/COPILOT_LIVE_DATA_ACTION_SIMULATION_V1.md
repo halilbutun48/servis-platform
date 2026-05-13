@@ -78,6 +78,14 @@ Yasak örnekler:
 - `ROOM`: servis sağlayıcı, araç/sürücü, operasyon, ticari akış sınırı.
 - `SUPER_ADMIN`: denetim, readonly hakediş, kalite, KVKK ve audit görünürlüğü.
 
+## COP-03C-FIX-01
+- Workflow cevapları `Bu ekran, ...` lead'i ile başlamaz.
+- Selected-record mismatch guard, konu ile kayıt tipi uyuşmadığında bunu açıkça söyler.
+- Workflow `contextSummary` kısa kalır; stale ekran amacı tekrar edilmez.
+- Yetki sınırı workflow sinyalinin önüne geçmez; yan not olarak kalır.
+- `summary` kısa konu etiketi taşır; ayrıntı `reply` içinde kalır.
+- `Soru/cevap` akışında `Şimdi / Bu programda bunun anlamı / Neden? / Öneri / Sıradaki doğru işlem` korunur.
+
 ## Sözlük
 - `Sürücünün telefon GPS’i`
 - `sözleşme`

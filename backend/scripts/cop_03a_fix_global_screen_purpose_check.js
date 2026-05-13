@@ -157,6 +157,8 @@ function main() {
   must(help, 'Bu ekran için kısa rehber.', 'helpComposer keeps screen fallback lead');
   must(help, 'Bu bilgi bu rolde', 'helpComposer keeps role boundary bypass marker');
   must(help, 'FIRST_CONTROL: `İlk kontrol: ${ensureVisibleSentence(first)}`', 'helpComposer keeps first-control wording');
+  must(help, "const workflowFirstControlSentence = String(questionType || '') === 'FIRST_CONTROL'", 'helpComposer keeps workflow first-control sentence');
+  must(help, "String(questionType || '') === 'FIRST_CONTROL' ? buildVisibleScreenPurposeLead(firstNonEmpty(", 'helpComposer keeps workflow first-control screen-first lead');
   must(help, 'SCREEN_PURPOSE: \'\',', 'helpComposer keeps screen-purpose lead blank');
   must(help, 'sameVisibleReplyFragment(first, next)', 'helpComposer avoids duplicate next step in screen-purpose replies');
   must(help, 'sameVisibleReplyFragment(now, next)', 'helpComposer avoids duplicate next step in screen replies');

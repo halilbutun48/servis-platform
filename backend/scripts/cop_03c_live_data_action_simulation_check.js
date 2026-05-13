@@ -76,6 +76,7 @@ must(pkg, '"check:cop03b"', 'package.json keeps check:cop03b');
 must(pkg, '"check:cop03afix02"', 'package.json keeps check:cop03afix02');
 must(pkg, '"check:cop03afix01"', 'package.json keeps check:cop03afix01');
 must(pkg, '"check:cop03a"', 'package.json keeps check:cop03a');
+must(pkg, '"check:cop03cfix01"', 'package.json keeps check:cop03cfix01');
 must(pkg, '"check:product-extensions": "node backend/scripts/run_product_extensions_check_chain.js"', 'package.json exposes check:product-extensions');
 must(pkg, '"verify:final"', 'package.json keeps verify:final');
 
@@ -85,14 +86,19 @@ ordered(runner, [
   'check:cop03afix02',
   'check:cop03b',
   'check:cop03c',
+  'check:cop03cfix01',
   'check:uxkvkk01',
 ], 'product extensions runner order');
 must(runner, 'check:cop03c', 'product extensions runner includes check:cop03c');
+must(runner, 'check:cop03cfix01', 'product extensions runner includes check:cop03cfix01');
 
 must(verifyChain, 'check:cop03c', 'verify chain waits for check:cop03c');
+must(verifyChain, 'check:cop03cfix01', 'verify chain waits for check:cop03cfix01');
 must(guide, 'check:cop03c', 'script guide exposes check:cop03c');
+must(guide, 'check:cop03cfix01', 'script guide exposes check:cop03cfix01');
 
 must(doc, 'COPILOT Live Data Action Simulation V1', 'live data doc title');
+must(doc, 'COP-03C-FIX-01', 'live data doc keeps fix note visible');
 ordered(doc, ['Şimdi:', 'Bu programda bunun anlamı:', 'Neden?', 'Öneri:', 'Sıradaki doğru işlem:'], 'live data doc response frame');
 must(doc, 'Vardiya / Görev / Rota / GPS', 'live data doc covers shift family');
 must(doc, 'Sözleşme → Vardiya Üretimi', 'live data doc covers contract-to-shift family');
